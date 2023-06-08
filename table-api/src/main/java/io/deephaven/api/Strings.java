@@ -145,6 +145,10 @@ public class Strings {
         return additions.stream().map(Strings::of).collect(Collectors.joining(",", "[", "]"));
     }
 
+    public static String of(final AsOfJoinMatch joinMatch) {
+        return joinMatch.leftColumn().name() + joinMatch.joinRule().operatorString() + joinMatch.rightColumn().name();
+    }
+
     public static String of(final RangeJoinMatch rangeMatch) {
         return String.format("%s%s %s %s %s %s%s",
                 rangeMatch.rangeStartRule() == RangeStartRule.LESS_THAN_OR_EQUAL_ALLOW_PRECEDING ? "<- " : "",

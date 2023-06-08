@@ -4,14 +4,15 @@
 package io.deephaven.engine.table.impl;
 
 import io.deephaven.base.verify.Assert;
+import io.deephaven.engine.context.ExecutionContext;
 import io.deephaven.engine.rowset.RowSet;
 import io.deephaven.engine.rowset.RowSetFactory;
 import io.deephaven.engine.rowset.RowSetShiftData;
 import io.deephaven.engine.rowset.TrackingWritableRowSet;
 import io.deephaven.engine.table.ModifiedColumnSet;
 import io.deephaven.engine.table.Table;
+import io.deephaven.engine.testutil.ControlledUpdateGraph;
 import io.deephaven.engine.testutil.TstUtils;
-import io.deephaven.engine.updategraph.UpdateGraphProcessor;
 import io.deephaven.engine.util.SortedBy;
 import io.deephaven.engine.table.ColumnSource;
 import io.deephaven.engine.table.impl.sources.RedirectedColumnSource;
@@ -113,9 +114,10 @@ public class BlinkTableAggregationTest {
                             ? RowSetFactory.empty()
                             : RowSetFactory.fromRange(0, refreshSize - 1);
 
-            UpdateGraphProcessor.DEFAULT.startCycleForUnitTests();
+            final ControlledUpdateGraph updateGraph = ExecutionContext.getContext().getUpdateGraph().cast();
+            updateGraph.startCycleForUnitTests();
             try {
-                UpdateGraphProcessor.DEFAULT.refreshUpdateSourceForUnitTests(() -> {
+                updateGraph.refreshUpdateSourceForUnitTests(() -> {
                     if (normalStepInserted.isNonempty()) {
                         normal.getRowSet().writableCast().insert(normalStepInserted);
                         normal.notifyListeners(
@@ -125,7 +127,7 @@ public class BlinkTableAggregationTest {
                     }
                 });
                 final RowSet finalBlinkLastInserted = blinkLastInserted;
-                UpdateGraphProcessor.DEFAULT.refreshUpdateSourceForUnitTests(() -> {
+                updateGraph.refreshUpdateSourceForUnitTests(() -> {
                     if (blinkStepInserted.isNonempty() || finalBlinkLastInserted.isNonempty()) {
                         if (blinkInternalRowSet != null) {
                             blinkInternalRowSet.clear();
@@ -139,7 +141,7 @@ public class BlinkTableAggregationTest {
                     }
                 });
             } finally {
-                UpdateGraphProcessor.DEFAULT.completeCycleForUnitTests();
+                updateGraph.completeCycleForUnitTests();
             }
             try {
                 TstUtils.assertTableEquals(expected, addOnlyExpected);

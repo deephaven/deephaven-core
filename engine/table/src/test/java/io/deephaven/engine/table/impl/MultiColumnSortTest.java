@@ -114,10 +114,10 @@ public class MultiColumnSortTest {
         final String[] columns = Arrays.stream(sortColumns).map(SortColumn::column).map(ColumnName::name)
                 .toArray(String[]::new);
 
-        Object[] lastRow = sorted.getRecord(0, columns);
+        Object[] lastRow = DataAccessHelpers.getRecord(sorted, 0, columns);
 
         for (int ii = 1; ii < sorted.intSize(); ++ii) {
-            final Object[] rowData = sorted.getRecord(ii, columns);
+            final Object[] rowData = DataAccessHelpers.getRecord(sorted, ii, columns);
 
             for (int jj = 0; jj < rowData.length; ++jj) {
                 // make sure lastRow <= rowData

@@ -151,7 +151,7 @@ public class ColumnPreviewManager {
         // Boxed Types
         // String
         // BigInt, BigDecimal
-        // DateTime
+        // Instant/ZonedDateTime/etc
         return type.isPrimitive()
                 || io.deephaven.util.type.TypeUtils.isBoxedType(type)
                 || io.deephaven.util.type.TypeUtils.isString(type)

@@ -4,7 +4,7 @@
 
 <calendar>
     <name>BEIJING</name>
-    <timeZone>TZ_SHG</timeZone>
+    <timeZone>Asia/Shanghai</timeZone>
     <language>en</language>
     <country>US</country>
     <default>

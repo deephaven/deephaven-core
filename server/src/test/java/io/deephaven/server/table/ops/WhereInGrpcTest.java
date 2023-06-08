@@ -5,27 +5,17 @@ package io.deephaven.server.table.ops;
 
 import com.google.protobuf.UnknownFieldSet;
 import com.google.protobuf.UnknownFieldSet.Field;
-import io.deephaven.engine.context.TestExecutionContext;
 import io.deephaven.engine.util.TableTools;
 import io.deephaven.proto.backplane.grpc.ExportedTableCreationResponse;
 import io.deephaven.proto.backplane.grpc.TableReference;
 import io.deephaven.proto.backplane.grpc.WhereInRequest;
 import io.deephaven.proto.util.ExportTicketHelper;
-import io.deephaven.util.SafeCloseable;
 import io.grpc.Status.Code;
 import org.junit.Test;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
 public class WhereInGrpcTest extends GrpcTableOperationTestBase<WhereInRequest> {
-
-    private SafeCloseable executionContext;
-
-    @Override
-    public void setUp() throws Exception {
-        super.setUp();
-        executionContext = TestExecutionContext.createForUnitTests().open();
-    }
 
     @Override
     public ExportedTableCreationResponse send(WhereInRequest request) {
@@ -136,7 +126,7 @@ public class WhereInGrpcTest extends GrpcTableOperationTestBase<WhereInRequest> 
 
     @Test
     public void whereInTicking() {
-        final TableReference timeTable = ref(TableTools.timeTable("00:00:01").view("Id=ii"));
+        final TableReference timeTable = ref(TableTools.timeTable("PT00:00:01").view("Id=ii"));
         final WhereInRequest request = WhereInRequest.newBuilder()
                 .setResultId(ExportTicketHelper.wrapExportIdInTicket(1))
                 .setLeftId(timeTable)
@@ -154,7 +144,7 @@ public class WhereInGrpcTest extends GrpcTableOperationTestBase<WhereInRequest> 
 
     @Test
     public void whereInLeftTicking() {
-        final TableReference timeTable = ref(TableTools.timeTable("00:00:01").view("Id=ii"));
+        final TableReference timeTable = ref(TableTools.timeTable("PT00:00:01").view("Id=ii"));
         final TableReference emptyTable = ref(TableTools.emptyTable(1).view("Id=ii"));
         final WhereInRequest request = WhereInRequest.newBuilder()
                 .setResultId(ExportTicketHelper.wrapExportIdInTicket(1))
@@ -173,7 +163,7 @@ public class WhereInGrpcTest extends GrpcTableOperationTestBase<WhereInRequest> 
 
     @Test
     public void whereInRightTicking() {
-        final TableReference timeTable = ref(TableTools.timeTable("00:00:01").view("Id=ii"));
+        final TableReference timeTable = ref(TableTools.timeTable("PT00:00:01").view("Id=ii"));
         final TableReference emptyTable = ref(TableTools.emptyTable(1).view("Id=ii"));
         final WhereInRequest request = WhereInRequest.newBuilder()
                 .setResultId(ExportTicketHelper.wrapExportIdInTicket(1))

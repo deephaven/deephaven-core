@@ -39,7 +39,7 @@ public class PropertyFile {
      *
      * @param filename name of file to load properties from
      * @param log Logger for error/warning messages, or null if not logging
-     * @param fatal If the file can't be read and fatal is true -> throw exception
+     * @param fatal If the file can't be read and fatal is true -&gt; throw exception
      */
     public PropertyFile(String filename, Logger log, boolean fatal) {
         this.log = log;

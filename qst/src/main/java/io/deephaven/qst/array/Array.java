@@ -5,7 +5,6 @@ package io.deephaven.qst.array;
 
 import io.deephaven.qst.type.Type;
 
-import java.io.Serializable;
 import java.util.Collection;
 
 /**
@@ -15,7 +14,7 @@ import java.util.Collection;
  * @see PrimitiveArray
  * @see GenericArray
  */
-public interface Array<T> extends Serializable {
+public interface Array<T> {
 
     static <T> ArrayBuilder<T, ?, ?> builder(Type<T> type) {
         return TypeToArrayBuilder.of(type, Util.DEFAULT_BUILDER_INITIAL_CAPACITY);

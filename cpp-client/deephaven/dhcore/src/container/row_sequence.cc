@@ -255,6 +255,9 @@ std::shared_ptr<RowSequence> SequentialRowSequence::drop(size_t size) const {
 }
 
 void SequentialRowSequence::forEachInterval(const std::function<void(uint64_t, uint64_t)> &f) const {
+  if (begin_ == end_) {
+    return;
+  }
   f(begin_, end_);
 }
 }  // namespace

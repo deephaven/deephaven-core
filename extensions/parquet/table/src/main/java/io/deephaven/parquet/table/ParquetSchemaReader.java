@@ -6,7 +6,6 @@ package io.deephaven.parquet.table;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import io.deephaven.UncheckedDeephavenException;
 import io.deephaven.stringset.StringSet;
-import io.deephaven.time.DateTime;
 import io.deephaven.engine.table.impl.locations.TableDataException;
 import io.deephaven.parquet.table.metadata.CodecInfo;
 import io.deephaven.parquet.table.metadata.ColumnTypeInfo;
@@ -26,6 +25,7 @@ import org.jetbrains.annotations.NotNull;
 import java.io.File;
 import java.io.IOException;
 import java.math.BigInteger;
+import java.time.Instant;
 import java.util.*;
 import java.util.function.BiFunction;
 import java.util.function.Supplier;
@@ -224,7 +224,7 @@ public class ParquetSchemaReader {
                         colDef.baseType = long.class;
                         break;
                     case INT96:
-                        colDef.baseType = DateTime.class;
+                        colDef.baseType = Instant.class;
                         break;
                     case DOUBLE:
                         colDef.baseType = double.class;
@@ -359,7 +359,7 @@ public class ParquetSchemaReader {
                         case MILLIS:
                         case MICROS:
                         case NANOS:
-                            return Optional.of(DateTime.class);
+                            return Optional.of(Instant.class);
                     }
                 }
                 errorString.setValue("TimestampLogicalType, isAdjustedToUTC=" + timestampLogicalType.isAdjustedToUTC()

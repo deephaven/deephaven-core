@@ -14,13 +14,11 @@ import io.deephaven.engine.table.ColumnDefinition;
 import io.deephaven.engine.table.Table;
 import io.deephaven.engine.table.TableDefinition;
 import io.deephaven.engine.table.WritableColumnSource;
-import io.deephaven.engine.updategraph.UpdateGraphProcessor;
-import io.deephaven.engine.util.TableTools;
+import io.deephaven.engine.table.impl.sources.ArrayBackedColumnSource;
 import io.deephaven.engine.util.config.InputTableStatusListener;
 import io.deephaven.engine.util.config.MutableInputTable;
 import io.deephaven.engine.table.impl.QueryTable;
 import io.deephaven.engine.table.impl.UpdatableTable;
-import io.deephaven.engine.table.impl.sources.ArrayBackedColumnSource;
 import io.deephaven.engine.table.ColumnSource;
 import io.deephaven.util.annotations.TestUseOnly;
 import org.jetbrains.annotations.NotNull;
@@ -50,7 +48,7 @@ abstract class BaseArrayBackedMutableTable extends UpdatableTable {
     private final Map<String, Object[]> enumValues;
 
     private String description = getDefaultDescription();
-    private Runnable onPendingChange = () -> UpdateGraphProcessor.DEFAULT.requestRefresh();
+    private Runnable onPendingChange = updateGraph::requestRefresh;
 
     long nextRow = 0;
     private long pendingProcessed = -1L;
@@ -107,7 +105,7 @@ abstract class BaseArrayBackedMutableTable extends UpdatableTable {
         });
         result.getRowSet().writableCast().insert(builder.build());
         result.getRowSet().writableCast().initializePreviousValue();
-        UpdateGraphProcessor.DEFAULT.addSource(result);
+        result.getUpdateGraph().addSource(result);
     }
 
     public BaseArrayBackedMutableTable setDescription(String newDescription) {
@@ -123,8 +121,9 @@ abstract class BaseArrayBackedMutableTable extends UpdatableTable {
      */
     @TestUseOnly
     void setOnPendingChange(final Runnable onPendingChange) {
-        this.onPendingChange =
-                onPendingChange == null ? () -> UpdateGraphProcessor.DEFAULT.requestRefresh() : onPendingChange;
+        this.onPendingChange = onPendingChange == null
+                ? updateGraph::requestRefresh
+                : onPendingChange;
     }
 
     private void processPending(RowSetChangeRecorder rowSetChangeRecorder) {
@@ -209,17 +208,89 @@ abstract class BaseArrayBackedMutableTable extends UpdatableTable {
         }
 
         @Override
-        public void add(Table newData) throws IOException {
+        public void add(@NotNull final Table newData) throws IOException {
+            checkBlockingEditSafety();
             PendingChange pendingChange = enqueueAddition(newData, true);
-            final long sequence = pendingChange.sequence;
-            waitForSequence(sequence);
+            blockingContinuation(pendingChange);
+        }
+
+        @Override
+        public void addAsync(
+                @NotNull final Table newData,
+                final boolean allowEdits,
+                @NotNull final InputTableStatusListener listener) {
+            checkAsyncEditSafety(newData);
+            final PendingChange pendingChange = enqueueAddition(newData, allowEdits);
+            asynchronousContinuation(pendingChange, listener);
+        }
+
+        private PendingChange enqueueAddition(@NotNull final Table newData, final boolean allowEdits) {
+            validateAddOrModify(newData);
+            // we want to get a clean copy of the table; that can not change out from under us or result in long reads
+            // during our UGP run
+            final Table newDataSnapshot = snapshotData(newData);
+            final PendingChange pendingChange;
+            synchronized (pendingChanges) {
+                pendingChange = new PendingChange(newDataSnapshot, false, allowEdits);
+                pendingChanges.add(pendingChange);
+            }
+            onPendingChange.run();
+            return pendingChange;
+        }
+
+        @Override
+        public void delete(@NotNull final Table table, @NotNull final TrackingRowSet rowsToDelete) throws IOException {
+            checkBlockingEditSafety();
+            final PendingChange pendingChange = enqueueDeletion(table, rowsToDelete);
+            blockingContinuation(pendingChange);
+        }
+
+        @Override
+        public void deleteAsync(
+                @NotNull final Table table,
+                @NotNull final TrackingRowSet rowsToDelete,
+                @NotNull final InputTableStatusListener listener) {
+            checkAsyncEditSafety(table);
+            final PendingChange pendingChange = enqueueDeletion(table, rowsToDelete);
+            asynchronousContinuation(pendingChange, listener);
+        }
+
+        private PendingChange enqueueDeletion(@NotNull final Table table, @NotNull final TrackingRowSet rowsToDelete) {
+            validateDelete(table);
+            final Table oldDataSnapshot = snapshotData(table, rowsToDelete);
+            final PendingChange pendingChange;
+            synchronized (pendingChanges) {
+                pendingChange = new PendingChange(oldDataSnapshot, true, false);
+                pendingChanges.add(pendingChange);
+            }
+            onPendingChange.run();
+            return pendingChange;
+        }
+
+        private Table snapshotData(@NotNull final Table data, @NotNull final TrackingRowSet rowSet) {
+            return snapshotData(data.getSubTable(rowSet));
+        }
+
+        private Table snapshotData(@NotNull final Table data) {
+            Table dataSnapshot;
+            if (data.isRefreshing()) {
+                dataSnapshot = data.snapshot();
+            } else {
+                dataSnapshot = data.select();
+            }
+            return dataSnapshot;
+        }
+
+        private void blockingContinuation(@NotNull final PendingChange pendingChange) throws IOException {
+            waitForSequence(pendingChange.sequence);
             if (pendingChange.error != null) {
                 throw new IOException(pendingChange.error);
             }
         }
 
-        private void add(Table newData, boolean allowEdits, InputTableStatusListener listener) {
-            final PendingChange pendingChange = enqueueAddition(newData, allowEdits);
+        private void asynchronousContinuation(
+                @NotNull final PendingChange pendingChange,
+                @NotNull final InputTableStatusListener listener) {
             CompletableFuture.runAsync(() -> waitForSequence(pendingChange.sequence)).thenAccept((v) -> {
                 if (pendingChange.error == null) {
                     listener.onSuccess();
@@ -232,48 +303,22 @@ abstract class BaseArrayBackedMutableTable extends UpdatableTable {
             });
         }
 
-        private PendingChange enqueueAddition(Table newData, boolean allowEdits) {
-            validateAddOrModify(newData);
-            // we want to get a clean copy of the table; that can not change out from under us or result in long reads
-            // during our UGP run
-            final Table newDataSnapshot = doSnap(newData);
-            final PendingChange pendingChange;
-            synchronized (pendingChanges) {
-                pendingChange = new PendingChange(newDataSnapshot, false, allowEdits);
-                pendingChanges.add(pendingChange);
+        private void checkBlockingEditSafety() {
+            if (updateGraph.currentThreadProcessesUpdates()) {
+                throw new UnsupportedOperationException("Attempted to make a blocking input table edit from a listener "
+                        + "or notification. This is unsupported, because it will block the update graph from making "
+                        + "progress.");
             }
-            onPendingChange.run();
-            return pendingChange;
         }
 
-        private Table doSnap(Table newData, TrackingRowSet rowSet) {
-            return doSnap(newData.getSubTable(rowSet));
-        }
-
-        private Table doSnap(Table newData) {
-            Table addTable;
-            if (newData.isRefreshing()) {
-                addTable = newData.snapshot();
-            } else {
-                addTable = newData.select();
-            }
-            return addTable;
-        }
-
-        @Override
-        public void delete(Table table, TrackingRowSet rowsToDelete) throws IOException {
-            validateDelete(table);
-            final Table oldDataSnapshot = doSnap(table, rowsToDelete);
-            final PendingChange pendingChange;
-            synchronized (pendingChanges) {
-                pendingChange = new PendingChange(oldDataSnapshot, true, false);
-                pendingChanges.add(pendingChange);
-            }
-            onPendingChange.run();
-            waitForSequence(pendingChange.sequence);
-
-            if (pendingChange.error != null) {
-                throw new IOException(pendingChange.error);
+        private void checkAsyncEditSafety(@NotNull final Table changeData) {
+            if (changeData.isRefreshing()
+                    && updateGraph.currentThreadProcessesUpdates()
+                    && !changeData.satisfied(updateGraph.clock().currentStep())) {
+                throw new UnsupportedOperationException("Attempted to make an asynchronous input table edit from a "
+                        + "listener or notification before the change data table is satisfied on the current cycle. "
+                        + "This is unsupported, because it may block the update graph from making progress or produce "
+                        + "inconsistent results.");
             }
         }
 
@@ -283,7 +328,7 @@ abstract class BaseArrayBackedMutableTable extends UpdatableTable {
         }
 
         void waitForSequence(long sequence) {
-            if (UpdateGraphProcessor.DEFAULT.exclusiveLock().isHeldByCurrentThread()) {
+            if (updateGraph.exclusiveLock().isHeldByCurrentThread()) {
                 // We're holding the lock. currentTable had better be refreshing. Wait on its UGP condition
                 // in order to allow updates.
                 while (processedSequence < sequence) {
@@ -310,7 +355,7 @@ abstract class BaseArrayBackedMutableTable extends UpdatableTable {
                 InputTableStatusListener listener) {
             Assert.neqNull(defaultValues, "defaultValues");
             if (defaultValues.isRefreshing()) {
-                UpdateGraphProcessor.DEFAULT.checkInitiateTableOperation();
+                updateGraph.checkInitiateSerialTableOperation();
             }
 
             final List<ColumnDefinition<?>> columnDefinitions = getTableDefinition().getColumns();
@@ -319,8 +364,8 @@ abstract class BaseArrayBackedMutableTable extends UpdatableTable {
             final String[] kabmtColumns =
                     getTableDefinition().getColumnNames().toArray(CollectionUtil.ZERO_LENGTH_STRING_ARRAY);
             // noinspection unchecked
-            final ArrayBackedColumnSource<Object>[] sourcesByPosition =
-                    Arrays.stream(kabmtColumns).map(sources::get).toArray(ArrayBackedColumnSource[]::new);
+            final WritableColumnSource<Object>[] sourcesByPosition =
+                    Arrays.stream(kabmtColumns).map(sources::get).toArray(WritableColumnSource[]::new);
 
             final Set<String> missingColumns = new HashSet<>(getTableDefinition().getColumnNames());
 
@@ -356,9 +401,10 @@ abstract class BaseArrayBackedMutableTable extends UpdatableTable {
                 }
             }
 
+            // noinspection resource
             final QueryTable newData = new QueryTable(getTableDefinition(),
                     RowSetFactory.flat(valueArray.length).toTracking(), sources);
-            add(newData, true, listener);
+            addAsync(newData, true, listener);
         }
 
         @Override
@@ -375,10 +421,11 @@ abstract class BaseArrayBackedMutableTable extends UpdatableTable {
 
             }
 
+            // noinspection resource
             final QueryTable newData = new QueryTable(getTableDefinition(),
                     RowSetFactory.flat(valueArray.length).toTracking(), sources);
 
-            add(newData, allowEdits, listener);
+            addAsync(newData, allowEdits, listener);
         }
 
         @NotNull
@@ -389,7 +436,7 @@ abstract class BaseArrayBackedMutableTable extends UpdatableTable {
                 WritableColumnSource<?> cs = ArrayBackedColumnSource.getMemoryColumnSource(
                         capacity, columnDefinition.getDataType());
                 // noinspection unchecked
-                final ArrayBackedColumnSource<Object> memoryColumnSource = (ArrayBackedColumnSource<Object>) cs;
+                final WritableColumnSource<Object> memoryColumnSource = (WritableColumnSource<Object>) cs;
                 memoryColumnSource.ensureCapacity(capacity);
                 sources.put(columnDefinition.getName(), memoryColumnSource);
             }

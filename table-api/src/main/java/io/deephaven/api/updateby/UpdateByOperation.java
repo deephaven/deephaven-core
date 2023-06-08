@@ -616,7 +616,7 @@ public interface UpdateByOperation {
      *
      * <pre>
      *     a = e^(-1 / tickDecay)
-     *     variance = a * (prevVariance + (1 − a) * (x − prevEma)^2)
+     *     variance = a * (prevVariance + (1 - a) * (x - prevEma)^2)
      *     ema = a * prevEma + x
      *     std = sqrt(variance)
      * </pre>
@@ -625,7 +625,7 @@ public interface UpdateByOperation {
      * @param pairs The input/output column name pairs
      * @return The aggregation
      */
-    static UpdateByOperation EmStd(long tickDecay, String... pairs) {
+    static UpdateByOperation EmStd(double tickDecay, String... pairs) {
         return EmStdSpec.ofTicks(tickDecay).clause(pairs);
     }
 
@@ -638,7 +638,7 @@ public interface UpdateByOperation {
      *
      * <pre>
      *     a = e^(-1 / tickDecay)
-     *     variance = a * (prevVariance + (1 − a) * (x − prevEma)^2)
+     *     variance = a * (prevVariance + (1 - a) * (x - prevEma)^2)
      *     ema = a * prevEma + x
      *     std = sqrt(variance)
      * </pre>
@@ -649,7 +649,7 @@ public interface UpdateByOperation {
      * @param pairs The input/output column name pairs
      * @return The aggregation
      */
-    static UpdateByOperation EmStd(final OperationControl control, long tickDecay, String... pairs) {
+    static UpdateByOperation EmStd(final OperationControl control, double tickDecay, String... pairs) {
         return EmStdSpec.ofTicks(control, tickDecay).clause(pairs);
     }
 
@@ -662,7 +662,7 @@ public interface UpdateByOperation {
      *
      * <pre>
      *     a = e^(-dt / timeDecay)
-     *     variance = a * (prevVariance + (1 − a) * (x − prevEma)^2)
+     *     variance = a * (prevVariance + (1 - a) * (x - prevEma)^2)
      *     ema = a * prevEma + x
      *     std = sqrt(variance)
      * </pre>
@@ -685,7 +685,7 @@ public interface UpdateByOperation {
      *
      * <pre>
      *     a = e^(-dt / timeDecay)
-     *     variance = a * (prevVariance + (1 − a) * (x − prevEma)^2)
+     *     variance = a * (prevVariance + (1 - a) * (x - prevEma)^2)
      *     ema = a * prevEma + x
      *     std = sqrt(variance)
      * </pre>
@@ -710,7 +710,7 @@ public interface UpdateByOperation {
      *
      * <pre>
      *     a = e^(-dt / durationDecay)
-     *     variance = a * (prevVariance + (1 − a) * (x − prevEma)^2)
+     *     variance = a * (prevVariance + (1 - a) * (x - prevEma)^2)
      *     ema = a * prevEma + x
      *     std = sqrt(variance)
      * </pre>
@@ -733,7 +733,7 @@ public interface UpdateByOperation {
      *
      * <pre>
      *     a = e^(-dt / durationDecay)
-     *     variance = a * (prevVariance + (1 − a) * (x − prevEma)^2)
+     *     variance = a * (prevVariance + (1 - a) * (x - prevEma)^2)
      *     ema = a * prevEma + x
      *     std = sqrt(variance)
      * </pre>

@@ -18,6 +18,7 @@ import io.deephaven.engine.table.TableDefinition;
 import io.deephaven.engine.context.QueryScope;
 import io.deephaven.engine.context.QueryScopeParam;
 import io.deephaven.engine.table.hierarchical.HierarchicalTable;
+import io.deephaven.engine.updategraph.UpdateGraph;
 import io.deephaven.plugin.type.ObjectType;
 import io.deephaven.plugin.type.ObjectTypeLookup;
 import io.deephaven.util.SafeCloseable;
@@ -65,7 +66,10 @@ public abstract class AbstractScriptSession<S extends AbstractScriptSession.Snap
     private final ObjectTypeLookup objectTypeLookup;
     private final Listener changeListener;
 
-    protected AbstractScriptSession(ObjectTypeLookup objectTypeLookup, @Nullable Listener changeListener) {
+    protected AbstractScriptSession(
+            UpdateGraph updateGraph,
+            ObjectTypeLookup objectTypeLookup,
+            @Nullable Listener changeListener) {
         this.objectTypeLookup = objectTypeLookup;
         this.changeListener = changeListener;
 
@@ -82,6 +86,7 @@ public abstract class AbstractScriptSession<S extends AbstractScriptSession.Snap
                 .newQueryLibrary()
                 .setQueryScope(queryScope)
                 .setQueryCompiler(compilerContext)
+                .setUpdateGraph(updateGraph)
                 .build();
     }
 
@@ -150,12 +155,6 @@ public abstract class AbstractScriptSession<S extends AbstractScriptSession.Snap
             try (S toSnapshot = takeSnapshot()) {
                 diff = applyDiff(fromSnapshot, toSnapshot, evaluateErr);
             }
-        }
-
-        // re-throw any captured exception now that our listener knows what query scope state had changed prior
-        // to the script session execution error
-        if (evaluateErr != null) {
-            throw evaluateErr;
         }
 
         return diff;

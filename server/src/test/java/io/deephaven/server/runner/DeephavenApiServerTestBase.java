@@ -6,9 +6,10 @@ package io.deephaven.server.runner;
 import dagger.BindsInstance;
 import dagger.Component;
 import io.deephaven.client.ClientDefaultsModule;
+import io.deephaven.engine.context.TestExecutionContext;
 import io.deephaven.engine.liveness.LivenessScope;
 import io.deephaven.engine.liveness.LivenessScopeStack;
-import io.deephaven.engine.updategraph.UpdateGraphProcessor;
+import io.deephaven.engine.updategraph.impl.PeriodicUpdateGraph;
 import io.deephaven.io.logger.LogBuffer;
 import io.deephaven.io.logger.LogBufferGlobal;
 import io.deephaven.proto.DeephavenChannel;
@@ -30,6 +31,7 @@ import javax.inject.Named;
 import javax.inject.Singleton;
 import java.io.PrintStream;
 import java.time.Duration;
+import java.util.Optional;
 import java.util.concurrent.TimeUnit;
 
 /**
@@ -74,6 +76,8 @@ public abstract class DeephavenApiServerTestBase {
     @Rule
     public final GrpcCleanupRule grpcCleanup = new GrpcCleanupRule();
 
+    private SafeCloseable executionContext;
+
     private TestComponent serverComponent;
     private LogBuffer logBuffer;
     private DeephavenApiServer server;
@@ -81,12 +85,12 @@ public abstract class DeephavenApiServerTestBase {
 
     @Before
     public void setUp() throws Exception {
-        if (UpdateGraphProcessor.DEFAULT.isUnitTestModeAllowed()) {
-            UpdateGraphProcessor.DEFAULT.enableUnitTestMode();
-            UpdateGraphProcessor.DEFAULT.resetForUnitTests(false);
-        }
-
         logBuffer = new LogBuffer(128);
+        {
+            // Prevent previous failures from cascading
+            final Optional<LogBuffer> maybeOldLogBuffer = LogBufferGlobal.getInstance();
+            maybeOldLogBuffer.ifPresent(LogBufferGlobal::clear);
+        }
         LogBufferGlobal.setInstance(logBuffer);
 
         final DeephavenApiServerTestConfig config = DeephavenApiServerTestConfig.builder()
@@ -103,6 +107,14 @@ public abstract class DeephavenApiServerTestBase {
                 .build();
 
         server = serverComponent.getServer();
+
+        final PeriodicUpdateGraph updateGraph = server.getUpdateGraph().cast();
+        executionContext = TestExecutionContext.createForUnitTests().withUpdateGraph(updateGraph).open();
+        if (updateGraph.isUnitTestModeAllowed()) {
+            updateGraph.enableUnitTestMode();
+            updateGraph.resetForUnitTests(false);
+        }
+
         server.startForUnitTests();
 
         scopeCloseable = LivenessScopeStack.open(new LivenessScope(true), true);
@@ -119,9 +131,11 @@ public abstract class DeephavenApiServerTestBase {
             LogBufferGlobal.clear(logBuffer);
         }
 
-        if (UpdateGraphProcessor.DEFAULT.isUnitTestModeAllowed()) {
-            UpdateGraphProcessor.DEFAULT.resetForUnitTests(true);
+        final PeriodicUpdateGraph updateGraph = server.getUpdateGraph().cast();
+        if (updateGraph.isUnitTestModeAllowed()) {
+            updateGraph.resetForUnitTests(true);
         }
+        executionContext.close();
     }
 
     public DeephavenApiServer server() {

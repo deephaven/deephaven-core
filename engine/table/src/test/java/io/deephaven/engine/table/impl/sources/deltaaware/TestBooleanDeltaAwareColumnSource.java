@@ -12,7 +12,7 @@ import io.deephaven.chunk.ObjectChunk;
 
 import io.deephaven.util.BooleanUtils;
 
-import io.deephaven.engine.updategraph.UpdateGraphProcessor;
+import io.deephaven.engine.context.ExecutionContext;
 import io.deephaven.chunk.ArrayGenerator;
 import io.deephaven.engine.table.ChunkSource;
 import io.deephaven.chunk.BooleanChunk;
@@ -21,8 +21,12 @@ import io.deephaven.engine.rowset.RowSet;
 import io.deephaven.engine.rowset.RowSetBuilderSequential;
 import io.deephaven.engine.rowset.RowSetFactory;
 
+import io.deephaven.engine.testutil.ControlledUpdateGraph;
+import io.deephaven.engine.testutil.junit4.EngineCleanup;
+import io.deephaven.util.SafeCloseable;
 import org.junit.After;
 import org.junit.Before;
+import org.junit.Rule;
 import org.junit.Test;
 
 import java.util.HashMap;
@@ -33,15 +37,21 @@ import static io.deephaven.util.QueryConstants.*;
 import static junit.framework.TestCase.*;
 
 public class TestBooleanDeltaAwareColumnSource {
+
+    @Rule
+    public final EngineCleanup framework = new EngineCleanup();
+
+    DeltaAwareColumnSource<Boolean> source;
+
     @Before
-    public void setUp() throws Exception {
-        UpdateGraphProcessor.DEFAULT.enableUnitTestMode();
-        UpdateGraphProcessor.DEFAULT.resetForUnitTests(false);
+    public void setUp() {
+         source = new DeltaAwareColumnSource<>(boolean.class);
     }
 
     @After
-    public void tearDown() throws Exception {
-        UpdateGraphProcessor.DEFAULT.resetForUnitTests(true);
+    public void tearDown() {
+        source.releaseCachedResources();
+        source = null;
     }
 
     @Test
@@ -51,8 +61,7 @@ public class TestBooleanDeltaAwareColumnSource {
         final long key1 = 6;
         final byte expected1 = ArrayGenerator.randomBooleans(rng, 1)[0];
 
-        UpdateGraphProcessor.DEFAULT.startCycleForUnitTests();
-        final DeltaAwareColumnSource<Boolean> source = new DeltaAwareColumnSource<>(boolean.class);
+        ExecutionContext.getContext().getUpdateGraph().<ControlledUpdateGraph>cast().startCycleForUnitTests();
         source.ensureCapacity(10);
 
         source.set(key1, expected1);
@@ -60,7 +69,7 @@ public class TestBooleanDeltaAwareColumnSource {
         final byte actual1 = source.getByte(key1);
         assertEquals(BooleanUtils.NULL_BOOLEAN_AS_BYTE, actual0);
         assertEquals(expected1, actual1);
-        UpdateGraphProcessor.DEFAULT.completeCycleForUnitTests();
+        ExecutionContext.getContext().getUpdateGraph().<ControlledUpdateGraph>cast().completeCycleForUnitTests();
     }
 
     @Test
@@ -72,15 +81,14 @@ public class TestBooleanDeltaAwareColumnSource {
         final byte expected0_0 = values[0];
         final byte expected0_1 = values[1];
         final byte expected1 = values[2];
-        UpdateGraphProcessor.DEFAULT.startCycleForUnitTests();
-        final DeltaAwareColumnSource<Boolean> source = new DeltaAwareColumnSource<>(boolean.class);
+        ExecutionContext.getContext().getUpdateGraph().<ControlledUpdateGraph>cast().startCycleForUnitTests();
         source.ensureCapacity(10);
         source.set(key0, expected0_0);
-        UpdateGraphProcessor.DEFAULT.completeCycleForUnitTests();
+        ExecutionContext.getContext().getUpdateGraph().<ControlledUpdateGraph>cast().completeCycleForUnitTests();
 
         source.startTrackingPrevValues();
 
-        UpdateGraphProcessor.DEFAULT.startCycleForUnitTests();
+        ExecutionContext.getContext().getUpdateGraph().<ControlledUpdateGraph>cast().startCycleForUnitTests();
         source.set(key0, expected0_1);
         source.set(key1, expected1);
 
@@ -94,7 +102,7 @@ public class TestBooleanDeltaAwareColumnSource {
         assertEquals(BooleanUtils.NULL_BOOLEAN_AS_BYTE, actual1_0);
         assertEquals(expected1, actual1_1);
 
-        UpdateGraphProcessor.DEFAULT.completeCycleForUnitTests();
+        ExecutionContext.getContext().getUpdateGraph().<ControlledUpdateGraph>cast().completeCycleForUnitTests();
     }
 
     /**
@@ -117,8 +125,7 @@ public class TestBooleanDeltaAwareColumnSource {
         final byte[] valuesPhase2 = ArrayGenerator.randomBooleans(rng, length);
         final HashMap<Long, Byte> expectedPrev = new HashMap<>();
         final HashMap<Long, Byte> expectedCurrent = new HashMap<>();
-        UpdateGraphProcessor.DEFAULT.startCycleForUnitTests();
-        final DeltaAwareColumnSource<Boolean> source = new DeltaAwareColumnSource<>(boolean.class);
+        ExecutionContext.getContext().getUpdateGraph().<ControlledUpdateGraph>cast().startCycleForUnitTests();
         source.ensureCapacity(length);
         for (long ii = 0; ii < length; ++ii) {
             final byte value = valuesPhase1[(int)ii];
@@ -136,10 +143,10 @@ public class TestBooleanDeltaAwareColumnSource {
         // Check some subranges using three ranges.
         final long[] threeRanges = {10, 30, 45, 55, 70, 90};
         checkUsingChunk(source, expectedCurrent, expectedPrev, threeRanges);
-        UpdateGraphProcessor.DEFAULT.completeCycleForUnitTests();
+        ExecutionContext.getContext().getUpdateGraph().<ControlledUpdateGraph>cast().completeCycleForUnitTests();
 
         // Now start the second cycle so we have different current and prev values.
-        UpdateGraphProcessor.DEFAULT.startCycleForUnitTests();
+        ExecutionContext.getContext().getUpdateGraph().<ControlledUpdateGraph>cast().startCycleForUnitTests();
         for (long ii = 20; ii < 40; ++ii) {
             final byte value = valuesPhase2[(int)ii];
             source.set(ii, value);
@@ -153,7 +160,7 @@ public class TestBooleanDeltaAwareColumnSource {
         checkUsingGet(source, expectedCurrent, expectedPrev, 0, length);
         checkUsingChunk(source, expectedCurrent, expectedPrev, singleRange);
         checkUsingChunk(source, expectedCurrent, expectedPrev, threeRanges);
-        UpdateGraphProcessor.DEFAULT.completeCycleForUnitTests();
+        ExecutionContext.getContext().getUpdateGraph().<ControlledUpdateGraph>cast().completeCycleForUnitTests();
     }
 
     private static void checkUsingGet(DeltaAwareColumnSource<Boolean> source, Map<Long, Byte> expectedCurrent,

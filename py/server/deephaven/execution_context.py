@@ -14,6 +14,7 @@ import jpy
 from deephaven import DHError
 from deephaven._wrapper import JObjectWrapper
 from deephaven.jcompat import to_sequence
+from deephaven.update_graph import UpdateGraph
 
 _JExecutionContext = jpy.get_type("io.deephaven.engine.context.ExecutionContext")
 
@@ -35,6 +36,10 @@ class ExecutionContext(JObjectWrapper, ContextDecorator):
     @property
     def j_object(self) -> jpy.JType:
         return self.j_exec_ctx
+
+    @property
+    def update_graph(self) -> UpdateGraph:
+        return UpdateGraph(j_update_graph=self.j_exec_ctx.getUpdateGraph())
 
     def __init__(self, j_exec_ctx):
         self.j_exec_ctx = j_exec_ctx
@@ -73,6 +78,7 @@ def make_user_exec_ctx(freeze_vars: Union[str, Sequence[str]] = None) -> Executi
                           .captureQueryCompiler()
                           .captureQueryLibrary()
                           .captureQueryScopeVars(*freeze_vars)
+                          .captureUpdateGraph()
                           .build())
             return ExecutionContext(j_exec_ctx=j_exec_ctx)
         except Exception as e:
@@ -86,4 +92,3 @@ def get_exec_ctx() -> ExecutionContext:
         a ExecutionContext
     """
     return ExecutionContext(j_exec_ctx=_JExecutionContext.getContext())
-

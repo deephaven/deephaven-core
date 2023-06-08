@@ -8,8 +8,8 @@ import io.deephaven.api.agg.spec.AggSpec;
 import io.deephaven.api.filter.Filter;
 import io.deephaven.api.snapshot.SnapshotWhenOptions;
 import io.deephaven.api.snapshot.SnapshotWhenOptions.Flag;
-import io.deephaven.api.updateby.UpdateByOperation;
 import io.deephaven.api.updateby.UpdateByControl;
+import io.deephaven.api.updateby.UpdateByOperation;
 import io.deephaven.api.util.ConcurrentMethod;
 
 import java.util.Collection;
@@ -424,11 +424,11 @@ public interface TableOperations<TOPS extends TableOperations<TOPS, TABLE>, TABL
      * Perform an as-of join with the {@code rightTable}.
      *
      * <p>
-     * Delegates to {@link #aj(Object, Collection, Collection, AsOfJoinRule)}.
+     * Delegates to {@link #asOfJoin(Object, Collection, AsOfJoinMatch, Collection)}.
      *
      * @param rightTable The right side table on the join.
-     * @param columnsToMatch A comma separated list of match conditions ("leftColumn=rightColumn" or
-     *        "columnFoundInBoth").
+     * @param columnsToMatch A comma separated list of match conditions ({@code "leftColumn>=rightColumn"},
+     *        {@code "leftColumn>rightColumn"}, {@code "columnFoundInBoth"}).
      * @return a new table joined according to the specification in columnsToMatch
      */
     TOPS aj(TABLE rightTable, String columnsToMatch);
@@ -437,50 +437,16 @@ public interface TableOperations<TOPS extends TableOperations<TOPS, TABLE>, TABL
      * Perform an as-of join with the {@code rightTable}.
      *
      * <p>
-     * Delegates to {@link #aj(Object, Collection, Collection, AsOfJoinRule)}.
+     * Delegates to {@link #asOfJoin(Object, Collection, AsOfJoinMatch, Collection)}.
      *
      * @param rightTable The right side table on the join.
-     * @param columnsToMatch A comma separated list of match conditions ("leftColumn=rightColumn" or
-     *        "columnFoundInBoth").
+     * @param columnsToMatch A comma separated list of match conditions ({@code "leftColumn>=rightColumn"},
+     *        {@code "leftColumn>rightColumn"}, {@code "columnFoundInBoth"}).
      * @param columnsToAdd A comma separated list with the columns from the left side that need to be added to the right
      *        side as a result of the match.
      * @return a new table joined according to the specification in columnsToMatch and columnsToAdd
      */
     TOPS aj(TABLE rightTable, String columnsToMatch, String columnsToAdd);
-
-    /**
-     * Perform an as-of join with the {@code rightTable}.
-     *
-     * <p>
-     * Delegates to {@link #aj(Object, Collection, Collection, AsOfJoinRule)}.
-     *
-     * @param rightTable The right side table on the join.
-     * @param columnsToMatch The match pair conditions.
-     * @param columnsToAdd The columns from the right side that need to be added to the left side as a result of the
-     *        match.
-     * @return a new table joined according to the specification in columnsToMatch and columnsToAdd
-     */
-    TOPS aj(TABLE rightTable, Collection<? extends JoinMatch> columnsToMatch,
-            Collection<? extends JoinAddition> columnsToAdd);
-
-    /**
-     * Perform an as-of join with the {@code rightTable}.
-     *
-     * <p>
-     * Looks up the columns in the {@code rightTable} that meet the match conditions in {@code columnsToMatch}. Matching
-     * is done exactly for the first n-1 columns and via a binary search for the last match pair. The columns of the
-     * {@code this} table are returned intact, together with the columns from {@code rightTable} defined in the
-     * {@code columnsToAdd}.
-     *
-     * @param rightTable The right side table on the join.
-     * @param columnsToMatch The match pair conditions.
-     * @param columnsToAdd The columns from the right side that need to be added to the left side as a result of the
-     *        match.
-     * @param asOfJoinRule The binary search operator for the last match pair.
-     * @return a new table joined according to the specification in columnsToMatch and columnsToAdd
-     */
-    TOPS aj(TABLE rightTable, Collection<? extends JoinMatch> columnsToMatch,
-            Collection<? extends JoinAddition> columnsToAdd, AsOfJoinRule asOfJoinRule);
 
     // -------------------------------------------------------------------------------------------
 
@@ -488,11 +454,11 @@ public interface TableOperations<TOPS extends TableOperations<TOPS, TABLE>, TABL
      * Perform an reverse-as-of join with the {@code rightTable}.
      *
      * <p>
-     * Delegates to {@link #raj(Object, Collection, Collection, ReverseAsOfJoinRule)}.
+     * Delegates to {@link #asOfJoin(Object, Collection, AsOfJoinMatch, Collection)}.
      *
      * @param rightTable The right side table on the join.
-     * @param columnsToMatch A comma separated list of match conditions ("leftColumn=rightColumn" or
-     *        "columnFoundInBoth").
+     * @param columnsToMatch A comma separated list of match conditions ({@code "leftColumn<=rightColumn"},
+     *        {@code "leftColumn<rightColumn"}, {@code "columnFoundInBoth"}).
      * @return a new table joined according to the specification in columnsToMatch
      */
     TOPS raj(TABLE rightTable, String columnsToMatch);
@@ -501,54 +467,24 @@ public interface TableOperations<TOPS extends TableOperations<TOPS, TABLE>, TABL
      * Perform a reverse-as-of join with the {@code rightTable}.
      *
      * <p>
-     * Delegates to {@link #raj(Object, Collection, Collection, ReverseAsOfJoinRule)}.
+     * Delegates to {@link #asOfJoin(Object, Collection, AsOfJoinMatch, Collection)}
      *
      * @param rightTable The right side table on the join.
-     * @param columnsToMatch A comma separated list of match conditions ("leftColumn=rightColumn" or
-     *        "columnFoundInBoth").
+     * @param columnsToMatch A comma separated list of match conditions ({@code "leftColumn<=rightColumn"},
+     *        {@code "leftColumn<rightColumn"}, {@code "columnFoundInBoth"}).
      * @param columnsToAdd A comma separated list with the columns from the left side that need to be added to the right
      *        side as a result of the match.
      * @return a new table joined according to the specification in columnsToMatch and columnsToAdd
      */
     TOPS raj(TABLE rightTable, String columnsToMatch, String columnsToAdd);
 
-    /**
-     * Perform a reverse-as-of join with the {@code rightTable}.
-     *
-     * <p>
-     * Delegates to {@link #raj(Object, Collection, Collection, ReverseAsOfJoinRule)}.
-     *
-     * @param rightTable The right side table on the join.
-     * @param columnsToMatch The match pair conditions.
-     * @param columnsToAdd The columns from the right side that need to be added to the left side as a result of the
-     *        match.
-     * @return a new table joined according to the specification in columnsToMatch and columnsToAdd
-     */
-    TOPS raj(TABLE rightTable, Collection<? extends JoinMatch> columnsToMatch,
-            Collection<? extends JoinAddition> columnsToAdd);
+    // -------------------------------------------------------------------------------------------
 
-    /**
-     * Perform a reverse-as-of join with the {@code rightTable}.
-     *
-     * <p>
-     * Just like {@link #aj(Object, Collection, Collection, AsOfJoinRule)}, but the matching on the last column is in
-     * reverse order, so that you find the row after the given timestamp instead of the row before.
-     *
-     * <p>
-     * Looks up the columns in the {@code rightTable} that meet the match conditions in {@code columnsToMatch}. Matching
-     * is done exactly for the first n-1 columns and via a binary search for the last match pair. The columns of
-     * {@code this} table are returned intact, together with the columns from {@code rightTable} defined in
-     * {@code columnsToAdd}.
-     *
-     * @param rightTable The right side table on the join.
-     * @param columnsToMatch The match pair conditions.
-     * @param columnsToAdd The columns from the right side that need to be added to the left side as a result of the
-     *        match.
-     * @param reverseAsOfJoinRule The binary search operator for the last match pair.
-     * @return a new table joined according to the specification in columnsToMatch and columnsToAdd
-     */
-    TOPS raj(TABLE rightTable, Collection<? extends JoinMatch> columnsToMatch,
-            Collection<? extends JoinAddition> columnsToAdd, ReverseAsOfJoinRule reverseAsOfJoinRule);
+    TOPS asOfJoin(
+            TABLE rightTable,
+            Collection<? extends JoinMatch> exactMatches,
+            AsOfJoinMatch asOfMatch,
+            Collection<? extends JoinAddition> columnsToAdd);
 
     // -------------------------------------------------------------------------------------------
 
@@ -588,7 +524,7 @@ public interface TableOperations<TOPS extends TableOperations<TOPS, TABLE>, TABL
      * <dd>A <em>single-value</em> range is a range where the left row’s values for the left start column and left end
      * column are equal and both relative matches are inclusive ({@code <=} and {@code >=}, respectively). For a
      * single-value range, only rows within the bucket where the right range column matches the single value are
-     * included in the output aggregations.</dt>
+     * included in the output aggregations.</dd>
      * <dt>invalid ranges</dt>
      * <dd>An <em>invalid</em> range occurs in two scenarios: First, when the range is inverted, i.e. when the value of
      * the left start column is greater than the value of the left end column. Second, when either relative-match is
@@ -632,9 +568,9 @@ public interface TableOperations<TOPS extends TableOperations<TOPS, TABLE>, TABL
      * Perform a range join with {@code rightTable}. For each row in {@code this} Table, this operation joins
      * {@link Aggregation aggregations} over a <em>range</em> of responsive rows from {@code rightTable} according to
      * zero-or-more <em>exact join matches</em> and one <em>range join match</em>. The operation is performed
-     * identically to {@link #rangeJoin(TABLE, Collection, RangeJoinMatch, Collection)}, after parsing is applied to the
-     * elements of {@code columnsToMatch} to produce the {@link JoinMatch exact join matches} and {@link RangeJoinMatch
-     * range join match}.
+     * identically to {@link #rangeJoin(Object, Collection, RangeJoinMatch, Collection)}, after parsing is applied to
+     * the elements of {@code columnsToMatch} to produce the {@link JoinMatch exact join matches} and
+     * {@link RangeJoinMatch range join match}.
      * <p>
      * <h4>{@code columnsToMatch} Parsing</h4>
      * <p>
@@ -669,7 +605,7 @@ public interface TableOperations<TOPS extends TableOperations<TOPS, TABLE>, TABL
      * <li>For {@link RangeStartRule#LESS_THAN less than} paired with {@link RangeEndRule#GREATER_THAN greater than}:
      *
      * <pre>
-     * "leftStartColumn < rightRangeColumn < leftEndColumn"
+     * "leftStartColumn &lt; rightRangeColumn &lt; leftEndColumn"
      * </pre>
      *
      * </li>
@@ -677,7 +613,7 @@ public interface TableOperations<TOPS extends TableOperations<TOPS, TABLE>, TABL
      * {@link RangeEndRule#GREATER_THAN_OR_EQUAL greater than or equal}:
      *
      * <pre>
-     * "leftStartColumn <= rightRangeColumn <= leftEndColumn"
+     * "leftStartColumn &lt;= rightRangeColumn &lt;= leftEndColumn"
      * </pre>
      *
      * </li>
@@ -685,7 +621,7 @@ public interface TableOperations<TOPS extends TableOperations<TOPS, TABLE>, TABL
      * with {@link RangeEndRule#GREATER_THAN_OR_EQUAL_ALLOW_FOLLOWING greater than or equal (allow following)}:
      *
      * <pre>
-     * "<- leftStartColumn <= rightRangeColumn <= leftEndColumn ->"
+     * "&lt;- leftStartColumn &lt;= rightRangeColumn &lt;= leftEndColumn -&gt;"
      * </pre>
      *
      * </li>

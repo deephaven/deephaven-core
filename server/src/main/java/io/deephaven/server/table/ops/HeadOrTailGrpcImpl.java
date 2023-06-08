@@ -47,7 +47,8 @@ public abstract class HeadOrTailGrpcImpl extends GrpcTableOperation<HeadOrTailRe
     public Table create(final HeadOrTailRequest request,
             final List<SessionState.ExportObject<Table>> sourceTables) {
         Assert.eq(sourceTables.size(), "sourceTables.size()", 1);
-        return realTableOperation.apply(sourceTables.get(0).get(), request.getNumRows());
+        final Table source = sourceTables.get(0).get();
+        return realTableOperation.apply(source, request.getNumRows());
     }
 
     @Singleton

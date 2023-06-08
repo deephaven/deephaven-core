@@ -3,19 +3,15 @@ package io.deephaven.server.table.ops;
 import com.google.rpc.Code;
 import io.deephaven.api.ColumnName;
 import io.deephaven.api.Pair;
+import io.deephaven.api.updateby.*;
 import io.deephaven.api.updateby.BadDataBehavior;
-import io.deephaven.api.updateby.ColumnUpdateOperation;
-import io.deephaven.api.updateby.OperationControl;
-import io.deephaven.api.updateby.UpdateByControl;
-import io.deephaven.api.updateby.UpdateByOperation;
 import io.deephaven.api.updateby.spec.*;
 import io.deephaven.api.updateby.spec.WindowScale;
 import io.deephaven.auth.codegen.impl.TableServiceContextualAuthWiring;
 import io.deephaven.base.verify.Assert;
 import io.deephaven.engine.table.Table;
-import io.deephaven.engine.updategraph.UpdateGraphProcessor;
+import io.deephaven.proto.backplane.grpc.*;
 import io.deephaven.proto.backplane.grpc.BatchTableRequest;
-import io.deephaven.proto.backplane.grpc.UpdateByEmaTimescale;
 import io.deephaven.proto.backplane.grpc.UpdateByRequest;
 import io.deephaven.proto.backplane.grpc.UpdateByRequest.UpdateByOperation.UpdateByColumn;
 import io.deephaven.proto.backplane.grpc.UpdateByRequest.UpdateByOperation.UpdateByColumn.UpdateBySpec.*;
@@ -30,6 +26,8 @@ import java.math.MathContext;
 import java.math.RoundingMode;
 import java.util.List;
 import java.util.stream.Collectors;
+
+import static io.deephaven.proto.backplane.grpc.BadDataBehavior.BAD_DATA_BEHAVIOR_NOT_SPECIFIED;
 
 @Singleton
 public final class UpdateByGrpcImpl extends GrpcTableOperation<UpdateByRequest> {
@@ -74,7 +72,7 @@ public final class UpdateByGrpcImpl extends GrpcTableOperation<UpdateByRequest> 
                 request.getGroupByColumnsList().stream().map(ColumnName::of).collect(Collectors.toList());
 
         if (parent.isRefreshing()) {
-            return UpdateGraphProcessor.DEFAULT.sharedLock().computeLocked(() -> control == null
+            return parent.getUpdateGraph().sharedLock().computeLocked(() -> control == null
                     ? parent.updateBy(operations, groupByColumns)
                     : parent.updateBy(control, operations, groupByColumns));
         }
@@ -142,6 +140,16 @@ public final class UpdateByGrpcImpl extends GrpcTableOperation<UpdateByRequest> 
                 return adaptFill(spec.getFill());
             case EMA:
                 return adaptEma(spec.getEma());
+            case EMS:
+                return adaptEms(spec.getEms());
+            case EM_MAX:
+                return adaptEmMax(spec.getEmMax());
+            case EM_MIN:
+                return adaptEmMin(spec.getEmMin());
+            case EM_STD:
+                return adaptEmStd(spec.getEmStd());
+            case DELTA:
+                return adaptDelta(spec.getDelta());
 
             case ROLLING_SUM:
                 return adaptRollingSum(spec.getRollingSum());
@@ -155,6 +163,12 @@ public final class UpdateByGrpcImpl extends GrpcTableOperation<UpdateByRequest> 
                 return adaptRollingMax(spec.getRollingMax());
             case ROLLING_PRODUCT:
                 return adaptRollingProduct(spec.getRollingProduct());
+            case ROLLING_COUNT:
+                return adaptRollingCount(spec.getRollingCount());
+            case ROLLING_STD:
+                return adaptRollingStd(spec.getRollingStd());
+            case ROLLING_WAVG:
+                return adaptRollingWAvg(spec.getRollingWavg());
 
             case TYPE_NOT_SET:
             default:
@@ -182,17 +196,45 @@ public final class UpdateByGrpcImpl extends GrpcTableOperation<UpdateByRequest> 
         return FillBySpec.of();
     }
 
+    // Create a spec for the Exponential Moving Average
     private static EmaSpec adaptEma(UpdateByEma ema) {
-        return ema.hasOptions() ? EmaSpec.of(adaptEmaOptions(ema.getOptions()), adaptTimescale(ema.getTimescale()))
-                : EmaSpec.of(adaptTimescale(ema.getTimescale()));
+        return ema.hasOptions() ? EmaSpec.of(adaptEmOptions(ema.getOptions()), adaptWindowScale(ema.getWindowScale()))
+                : EmaSpec.of(adaptWindowScale(ema.getWindowScale()));
     }
 
-    private static OperationControl adaptEmaOptions(UpdateByEma.UpdateByEmaOptions options) {
+    // Create a spec for the Exponential Moving Sum
+    private static EmsSpec adaptEms(UpdateByEms ems) {
+        return ems.hasOptions() ? EmsSpec.of(adaptEmOptions(ems.getOptions()), adaptWindowScale(ems.getWindowScale()))
+                : EmsSpec.of(adaptWindowScale(ems.getWindowScale()));
+    }
+
+    // Create a spec for the Exponential Moving Maximum
+    private static EmMinMaxSpec adaptEmMax(UpdateByEmMax emMax) {
+        return emMax.hasOptions()
+                ? EmMinMaxSpec.of(adaptEmOptions(emMax.getOptions()), true, adaptWindowScale(emMax.getWindowScale()))
+                : EmMinMaxSpec.of(true, adaptWindowScale(emMax.getWindowScale()));
+    }
+
+    // Create a spec for the Exponential Moving Minimum
+    private static EmMinMaxSpec adaptEmMin(UpdateByEmMin emMin) {
+        return emMin.hasOptions()
+                ? EmMinMaxSpec.of(adaptEmOptions(emMin.getOptions()), false, adaptWindowScale(emMin.getWindowScale()))
+                : EmMinMaxSpec.of(false, adaptWindowScale(emMin.getWindowScale()));
+    }
+
+    // Create a spec for the Exponential Moving Standard Deviation
+    private static EmStdSpec adaptEmStd(UpdateByEmStd emStd) {
+        return emStd.hasOptions()
+                ? EmStdSpec.of(adaptEmOptions(emStd.getOptions()), adaptWindowScale(emStd.getWindowScale()))
+                : EmStdSpec.of(adaptWindowScale(emStd.getWindowScale()));
+    }
+
+    private static OperationControl adaptEmOptions(UpdateByEmOptions options) {
         final OperationControl.Builder builder = OperationControl.builder();
-        if (options.hasOnNullValue()) {
+        if (options.getOnNanValue() == BAD_DATA_BEHAVIOR_NOT_SPECIFIED) {
             builder.onNullValue(adaptBadDataBehavior(options.getOnNullValue()));
         }
-        if (options.hasOnNanValue()) {
+        if (options.getOnNanValue() == BAD_DATA_BEHAVIOR_NOT_SPECIFIED) {
             builder.onNanValue(adaptBadDataBehavior(options.getOnNanValue()));
         }
         if (options.hasBigValueContext()) {
@@ -201,41 +243,77 @@ public final class UpdateByGrpcImpl extends GrpcTableOperation<UpdateByRequest> 
         return builder.build();
     }
 
-    private static RollingSumSpec adaptRollingSum(UpdateByColumn.UpdateBySpec.UpdateByRollingSum sum) {
+    private static DeltaSpec adaptDelta(@SuppressWarnings("unused") UpdateByDelta delta) {
+        return delta.hasOptions() ? DeltaSpec.of(adaptDeltaOptions(delta.getOptions()))
+                : DeltaSpec.of();
+    }
+
+    private static DeltaControl adaptDeltaOptions(UpdateByDeltaOptions options) {
+        switch (options.getNullBehavior()) {
+            case VALUE_DOMINATES:
+                return DeltaControl.VALUE_DOMINATES;
+            case ZERO_DOMINATES:
+                return DeltaControl.ZERO_DOMINATES;
+            default:
+                return DeltaControl.NULL_DOMINATES;
+        }
+    }
+
+    private static RollingSumSpec adaptRollingSum(UpdateByRollingSum sum) {
         return RollingSumSpec.of(
-                adaptTimescale(sum.getReverseTimescale()),
-                adaptTimescale(sum.getForwardTimescale()));
+                adaptWindowScale(sum.getReverseWindowScale()),
+                adaptWindowScale(sum.getForwardWindowScale()));
     }
 
-    private static RollingGroupSpec adaptRollingGroup(UpdateByColumn.UpdateBySpec.UpdateByRollingGroup group) {
+    private static RollingGroupSpec adaptRollingGroup(UpdateByRollingGroup group) {
         return RollingGroupSpec.of(
-                adaptTimescale(group.getReverseTimescale()),
-                adaptTimescale(group.getForwardTimescale()));
+                adaptWindowScale(group.getReverseWindowScale()),
+                adaptWindowScale(group.getForwardWindowScale()));
     }
 
-    private static RollingAvgSpec adaptRollingAvg(UpdateByColumn.UpdateBySpec.UpdateByRollingAvg avg) {
+    private static RollingAvgSpec adaptRollingAvg(UpdateByRollingAvg avg) {
         return RollingAvgSpec.of(
-                adaptTimescale(avg.getReverseTimescale()),
-                adaptTimescale(avg.getForwardTimescale()));
+                adaptWindowScale(avg.getReverseWindowScale()),
+                adaptWindowScale(avg.getForwardWindowScale()));
     }
 
-    private static RollingMinMaxSpec adaptRollingMin(UpdateByColumn.UpdateBySpec.UpdateByRollingMin min) {
+    private static RollingMinMaxSpec adaptRollingMin(UpdateByRollingMin min) {
         return RollingMinMaxSpec.of(false,
-                adaptTimescale(min.getReverseTimescale()),
-                adaptTimescale(min.getForwardTimescale()));
+                adaptWindowScale(min.getReverseWindowScale()),
+                adaptWindowScale(min.getForwardWindowScale()));
     }
 
-    private static RollingMinMaxSpec adaptRollingMax(UpdateByColumn.UpdateBySpec.UpdateByRollingMax max) {
+    private static RollingMinMaxSpec adaptRollingMax(UpdateByRollingMax max) {
         return RollingMinMaxSpec.of(true,
-                adaptTimescale(max.getReverseTimescale()),
-                adaptTimescale(max.getForwardTimescale()));
+                adaptWindowScale(max.getReverseWindowScale()),
+                adaptWindowScale(max.getForwardWindowScale()));
     }
 
-    private static RollingProductSpec adaptRollingProduct(UpdateByColumn.UpdateBySpec.UpdateByRollingProduct product) {
+    private static RollingProductSpec adaptRollingProduct(UpdateByRollingProduct product) {
         return RollingProductSpec.of(
-                adaptTimescale(product.getReverseTimescale()),
-                adaptTimescale(product.getForwardTimescale()));
+                adaptWindowScale(product.getReverseWindowScale()),
+                adaptWindowScale(product.getForwardWindowScale()));
     }
+
+    private static RollingCountSpec adaptRollingCount(UpdateByRollingCount count) {
+        return RollingCountSpec.of(
+                adaptWindowScale(count.getReverseWindowScale()),
+                adaptWindowScale(count.getForwardWindowScale()));
+    }
+
+    private static RollingStdSpec adaptRollingStd(UpdateByRollingStd std) {
+        return RollingStdSpec.of(
+                adaptWindowScale(std.getReverseWindowScale()),
+                adaptWindowScale(std.getForwardWindowScale()));
+    }
+
+    private static RollingWAvgSpec adaptRollingWAvg(UpdateByRollingWAvg wavg) {
+        return RollingWAvgSpec.of(
+                adaptWindowScale(wavg.getReverseWindowScale()),
+                adaptWindowScale(wavg.getForwardWindowScale()),
+                wavg.getWeightColumn());
+    }
+
 
     private static MathContext adaptMathContext(io.deephaven.proto.backplane.grpc.MathContext bigValueContext) {
         return new MathContext(bigValueContext.getPrecision(), adaptRoundingMode(bigValueContext.getRoundingMode()));
@@ -266,7 +344,7 @@ public final class UpdateByGrpcImpl extends GrpcTableOperation<UpdateByRequest> 
         }
     }
 
-    private static WindowScale adaptTimescale(UpdateByEmaTimescale timescale) {
+    private static WindowScale adaptWindowScale(UpdateByWindowScale timescale) {
         switch (timescale.getTypeCase()) {
             case TICKS:
                 return WindowScale.ofTicks(timescale.getTicks().getTicks());

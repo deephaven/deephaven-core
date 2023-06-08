@@ -9,13 +9,13 @@ import guru.nidi.graphviz.engine.GraphvizJdkEngine;
 import guru.nidi.graphviz.engine.Renderer;
 import io.deephaven.qst.table.LabeledTable;
 import io.deephaven.qst.table.LabeledTables;
-import org.slf4j.LoggerFactory;
+import io.deephaven.qst.table.TimeTable;
 import picocli.CommandLine;
 import picocli.CommandLine.Command;
 import picocli.CommandLine.Option;
-import picocli.CommandLine.Parameters;
 
 import java.nio.file.Path;
+import java.time.Duration;
 import java.util.concurrent.Callable;
 
 /**
@@ -34,13 +34,9 @@ class GraphVizMain implements Callable<Void> {
             defaultValue = "DOT")
     Format format;
 
-    @Parameters(arity = "1..*", paramLabel = "QST",
-            description = "QST file(s) to process. May be in the form <PATH> or <KEY>=<PATH>.",
-            converter = LabeledTableConverter.class)
-    LabeledTable[] inputTables;
-
     private Renderer render() {
-        return Graphviz.fromGraph(GraphVizBuilder.of(LabeledTables.of(inputTables))).render(format);
+        final LabeledTable myRef = LabeledTable.of("my_ref", TimeTable.of(Duration.ofSeconds(1)));
+        return Graphviz.fromGraph(GraphVizBuilder.of(LabeledTables.of(myRef))).render(format);
     }
 
     @Override

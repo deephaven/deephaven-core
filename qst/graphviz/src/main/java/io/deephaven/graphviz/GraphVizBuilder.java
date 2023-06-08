@@ -10,6 +10,7 @@ import guru.nidi.graphviz.model.MutableNode;
 import io.deephaven.qst.table.LabeledTable;
 import io.deephaven.qst.table.LabeledTables;
 import io.deephaven.qst.table.ParentsVisitor;
+import io.deephaven.qst.table.TableLabelVisitor;
 import io.deephaven.qst.table.TableSpec;
 
 import java.util.LinkedHashMap;
@@ -32,7 +33,7 @@ public class GraphVizBuilder {
      */
     public static MutableGraph of(Iterable<TableSpec> tables) {
         NodesBuilder consumer = new NodesBuilder();
-        ParentsVisitor.postOrderList(tables).forEach(consumer);
+        ParentsVisitor.postOrderWalk(tables, consumer);
         MutableGraph graph = mutGraph().setDirected(true);
         for (MutableNode node : consumer.identifiers.values()) {
             graph.add(node);
@@ -51,7 +52,7 @@ public class GraphVizBuilder {
      */
     public static MutableGraph of(LabeledTables tables) {
         NodesBuilder consumer = new NodesBuilder();
-        ParentsVisitor.postOrderList(tables.tables()).forEach(consumer);
+        ParentsVisitor.postOrderWalk(tables.tables(), consumer);
         MutableGraph graph = mutGraph().setDirected(true);
         for (MutableNode node : consumer.identifiers.values()) {
             graph.add(node);
@@ -81,7 +82,7 @@ public class GraphVizBuilder {
         @Override
         public final void accept(TableSpec table) {
             MutableNode node =
-                    mutNode(String.format("op_%d", current++)).add(Label.of(LabelBuilder.of(table)));
+                    mutNode(String.format("op_%d", current++)).add(Label.of(TableLabelVisitor.of(table)));
             if (identifiers.put(table, node) != null) {
                 throw new IllegalStateException();
             }

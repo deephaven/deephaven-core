@@ -16,7 +16,8 @@ import io.deephaven.qst.table.TableSpec;
 import java.util.List;
 
 /**
- * A table handle manager is able to execute {@linkplain TableSpec tables}, {@link }
+ * A table handle manager is able to execute commands that produce tables, by accepting {@link TableSpec}s,
+ * {@link TableCreationLogic}s, and more.
  */
 public interface TableHandleManager extends TableCreator<TableHandle> {
 

@@ -19,6 +19,6 @@ public class ZonedDateTimeAsLongSource extends UnboxedTimeBackedColumnSource<Zon
 
     @Override
     protected long toEpochNano(ZonedDateTime val) {
-        return DateTimeUtils.toEpochNano(val);
+        return DateTimeUtils.epochNanos(val);
     }
 }

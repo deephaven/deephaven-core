@@ -17,6 +17,7 @@ import io.confluent.kafka.serializers.KafkaAvroSerializer;
 import io.deephaven.UncheckedDeephavenException;
 import io.deephaven.annotations.SimpleStyle;
 import io.deephaven.base.Pair;
+import io.deephaven.engine.context.ExecutionContext;
 import io.deephaven.engine.rowset.RowSet;
 import io.deephaven.engine.rowset.RowSetFactory;
 import io.deephaven.engine.rowset.RowSetShiftData;
@@ -29,7 +30,7 @@ import io.deephaven.engine.table.impl.TableUpdateImpl;
 import io.deephaven.engine.table.impl.partitioned.PartitionedTableImpl;
 import io.deephaven.engine.table.impl.sources.ArrayBackedColumnSource;
 import io.deephaven.engine.table.impl.sources.ring.RingTableTools;
-import io.deephaven.engine.updategraph.UpdateGraphProcessor;
+import io.deephaven.engine.updategraph.UpdateGraph;
 import io.deephaven.engine.updategraph.UpdateSourceCombiner;
 import io.deephaven.engine.updategraph.UpdateSourceRegistrar;
 import io.deephaven.kafka.KafkaTools.TableType.Append;
@@ -37,7 +38,6 @@ import io.deephaven.kafka.KafkaTools.TableType.Blink;
 import io.deephaven.kafka.KafkaTools.TableType.Ring;
 import io.deephaven.kafka.KafkaTools.TableType.Visitor;
 import io.deephaven.stream.StreamToBlinkTableAdapter;
-import io.deephaven.time.DateTime;
 import io.deephaven.engine.liveness.LivenessScope;
 import io.deephaven.engine.liveness.LivenessScopeStack;
 import io.deephaven.engine.util.BigDecimalUtils;
@@ -72,6 +72,7 @@ import org.jetbrains.annotations.Nullable;
 import java.io.IOException;
 import java.io.Serializable;
 import java.math.BigDecimal;
+import java.time.Instant;
 import java.util.*;
 import java.util.concurrent.ExecutionException;
 import java.util.function.*;
@@ -238,7 +239,7 @@ public class KafkaTools {
             fass = base.doubleType().noDefault();
         } else if (type == String.class) {
             fass = base.stringType().noDefault();
-        } else if (type == DateTime.class) {
+        } else if (type == Instant.class) {
             fass = base.longBuilder().prop(logicalTypeName, "timestamp-micros").endLong().noDefault();
         } else if (type == BigDecimal.class) {
             final BigDecimalUtils.PropertyNames propertyNames =
@@ -374,7 +375,7 @@ public class KafkaTools {
                         final LogicalType logicalType = getEffectiveLogicalType(fieldName, elementTypeSchema);
                         if (LogicalTypes.timestampMicros().equals(logicalType) ||
                                 LogicalTypes.timestampMillis().equals(logicalType)) {
-                            columnsOut.add(ColumnDefinition.fromGenericType(mappedNameForColumn, DateTime[].class));
+                            columnsOut.add(ColumnDefinition.fromGenericType(mappedNameForColumn, Instant[].class));
                         } else {
                             columnsOut.add(ColumnDefinition.fromGenericType(mappedNameForColumn, long[].class));
                         }
@@ -994,8 +995,8 @@ public class KafkaTools {
          * @param includeColumns An array with an entry for each column intended to be included in the JSON output. If
          *        null, include all columns except those specified in {@code excludeColumns}. If {@code includeColumns}
          *        is not null, {@code excludeColumns} should be null.
-         * @param excludeColumns A set specifying column names to ommit; can only be used when {@columnNames} is null.
-         *        In this case all table columns except for the ones in {@code excludeColumns} will be included.
+         * @param excludeColumns A set specifying column names to omit; can only be used when {@code columnNames} is
+         *        null. In this case all table columns except for the ones in {@code excludeColumns} will be included.
          * @param columnToFieldMapping A map from column name to JSON field name to use for that column. Any column
          *        names implied by earlier arguments not included as a key in the map will be mapped to JSON fields of
          *        the same name. If null, map all columns to fields of the same name.
@@ -1038,8 +1039,9 @@ public class KafkaTools {
          * @param includeColumns An array with an entry for each column intended to be included in the JSON output. If
          *        null, include all columns except those specified in {@code excludeColumns}. If {@code includeColumns}
          *        is not null, {@code excludeColumns} should be null.
-         * @param excludeColumns A predicate specifying column names to ommit; can only be used when {@columnNames} is
-         *        null. In this case all table columns except for the ones in {@code excludeColumns} will be included.
+         * @param excludeColumns A predicate specifying column names to omit; can only be used when {@code columnNames}
+         *        is null. In this case all table columns except for the ones in {@code excludeColumns} will be
+         *        included.
          * @param columnToFieldMapping A map from column name to JSON field name to use for that column. Any column
          *        names implied by earlier arguments not included as a key in the map will be mapped to JSON fields of
          *        the same name. If null, map all columns to fields of the same name.
@@ -1330,7 +1332,7 @@ public class KafkaTools {
 
         @Override
         public UpdateSourceRegistrar getSourceRegistrar() {
-            return UpdateGraphProcessor.DEFAULT;
+            return ExecutionContext.getContext().getUpdateGraph();
         }
 
         @Override
@@ -1353,7 +1355,8 @@ public class KafkaTools {
 
     private static class PartitionedTableResultFactory implements ResultFactory<PartitionedTable> {
 
-        private final UpdateSourceCombiner refreshCombiner = new UpdateSourceCombiner();
+        private final UpdateSourceCombiner refreshCombiner =
+                new UpdateSourceCombiner(ExecutionContext.getContext().getUpdateGraph());
 
         @Override
         public UpdateSourceRegistrar getSourceRegistrar() {
@@ -1617,10 +1620,10 @@ public class KafkaTools {
             @NotNull final Produce.KeyOrValueSpec valueSpec,
             final boolean lastByKeyColumns) {
         if (table.isRefreshing()
-                && !UpdateGraphProcessor.DEFAULT.exclusiveLock().isHeldByCurrentThread()
-                && !UpdateGraphProcessor.DEFAULT.sharedLock().isHeldByCurrentThread()) {
+                && !table.getUpdateGraph().exclusiveLock().isHeldByCurrentThread()
+                && !table.getUpdateGraph().sharedLock().isHeldByCurrentThread()) {
             throw new KafkaPublisherException(
-                    "Calling thread must hold an exclusive or shared UpdateGraphProcessor lock to publish live sources");
+                    "Calling thread must hold an exclusive or shared UpdateGraph lock to publish live sources");
         }
 
         final boolean ignoreKey = keySpec.dataFormat() == DataFormat.IGNORE;
@@ -1712,7 +1715,7 @@ public class KafkaTools {
     }
 
     /**
-     * @implNote The constructor publishes {@code this} to the {@link UpdateGraphProcessor} and cannot be subclassed.
+     * @implNote The constructor publishes {@code this} to the {@link UpdateGraph} and cannot be subclassed.
      */
     private static final class StreamPartitionedTable extends PartitionedTableImpl implements Runnable {
 
@@ -1739,7 +1742,8 @@ public class KafkaTools {
                     (WritableColumnSource<Table>) table().getColumnSource(CONSTITUENT_COLUMN_NAME, Table.class);
             manage(refreshCombiner);
             refreshCombiner.addSource(this);
-            UpdateGraphProcessor.DEFAULT.addSource(refreshCombiner);
+            UpdateGraph updateGraph = table().getUpdateGraph();
+            updateGraph.addSource(refreshCombiner);
         }
 
         @Override
@@ -2011,7 +2015,7 @@ public class KafkaTools {
                 consumerProperties,
                 TIMESTAMP_COLUMN_NAME_PROPERTY,
                 TIMESTAMP_COLUMN_NAME_DEFAULT,
-                (final String colName) -> ColumnDefinition.fromGenericType(colName, DateTime.class));
+                (final String colName) -> ColumnDefinition.fromGenericType(colName, Instant.class));
         return c;
     }
 

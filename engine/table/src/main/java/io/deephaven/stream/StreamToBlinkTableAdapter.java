@@ -14,9 +14,8 @@ import io.deephaven.engine.table.ColumnDefinition;
 import io.deephaven.engine.table.Table;
 import io.deephaven.engine.table.TableDefinition;
 import io.deephaven.engine.table.impl.TableUpdateImpl;
-import io.deephaven.engine.updategraph.UpdateGraphProcessor;
+import io.deephaven.engine.updategraph.impl.PeriodicUpdateGraph;
 import io.deephaven.engine.updategraph.UpdateSourceRegistrar;
-import io.deephaven.time.DateTime;
 import io.deephaven.engine.table.ModifiedColumnSet;
 import io.deephaven.engine.table.impl.QueryTable;
 import io.deephaven.engine.table.impl.sources.*;
@@ -43,7 +42,7 @@ import java.util.Map;
  * Adapter for converting streams of data into columnar Deephaven {@link Table tables} that conform to
  * {@link Table#BLINK_TABLE_ATTRIBUTE blink table} semantics.
  *
- * @implNote The constructor publishes {@code this} to the {@link UpdateGraphProcessor} and thus cannot be subclassed.
+ * @implNote The constructor publishes {@code this} to the {@link PeriodicUpdateGraph} and thus cannot be subclassed.
  */
 public class StreamToBlinkTableAdapter extends ReferenceCountedLivenessNode
         implements SafeCloseable, StreamConsumer, Runnable {
@@ -213,10 +212,7 @@ public class StreamToBlinkTableAdapter extends ReferenceCountedLivenessNode
                     new SwitchColumnSource<>(wrapped[ii], StreamToBlinkTableAdapter::maybeClearChunkColumnSource);
 
             final ColumnSource<?> visibleSource;
-            if (columnDefinition.getDataType() == DateTime.class) {
-                // noinspection unchecked
-                visibleSource = new LongAsDateTimeColumnSource((ColumnSource<Long>) switchSource);
-            } else if (columnDefinition.getDataType() == Instant.class) {
+            if (columnDefinition.getDataType() == Instant.class) {
                 // noinspection unchecked
                 visibleSource = new LongAsInstantColumnSource((ColumnSource<Long>) switchSource);
             } else if (columnDefinition.getDataType() == Boolean.class) {
@@ -238,7 +234,7 @@ public class StreamToBlinkTableAdapter extends ReferenceCountedLivenessNode
     }
 
     /**
-     * We change the inner columns to long and byte for DateTime and Boolean, respectively. We expect our ingesters to
+     * We change the inner columns to long and byte for Instant and Boolean, respectively. We expect our ingesters to
      * pass us these primitive chunks for those types.
      *
      * @param columnType the type of the outer column
@@ -246,7 +242,7 @@ public class StreamToBlinkTableAdapter extends ReferenceCountedLivenessNode
      * @return the type of the inner column
      */
     private static Class<?> replacementType(Class<?> columnType) {
-        if (columnType == DateTime.class || columnType == Instant.class) {
+        if (columnType == Instant.class) {
             return long.class;
         } else if (columnType == Boolean.class) {
             return byte.class;

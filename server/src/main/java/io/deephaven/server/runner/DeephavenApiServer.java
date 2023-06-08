@@ -9,7 +9,8 @@ import io.deephaven.engine.table.impl.perf.QueryPerformanceRecorder;
 import io.deephaven.engine.table.impl.perf.UpdatePerformanceTracker;
 import io.deephaven.engine.table.impl.util.EngineMetrics;
 import io.deephaven.engine.table.impl.util.ServerStateTracker;
-import io.deephaven.engine.updategraph.UpdateGraphProcessor;
+import io.deephaven.engine.updategraph.UpdateGraph;
+import io.deephaven.engine.updategraph.impl.PeriodicUpdateGraph;
 import io.deephaven.engine.util.AbstractScriptSession;
 import io.deephaven.engine.util.ScriptSession;
 import io.deephaven.internal.log.LoggerFactory;
@@ -22,11 +23,13 @@ import io.deephaven.server.session.SessionService;
 import io.deephaven.uri.resolver.UriResolver;
 import io.deephaven.uri.resolver.UriResolvers;
 import io.deephaven.uri.resolver.UriResolversInstance;
+import io.deephaven.util.SafeCloseable;
 import io.deephaven.util.annotations.VisibleForTesting;
 import io.deephaven.util.process.ProcessEnvironment;
 import io.deephaven.util.process.ShutdownManager;
 
 import javax.inject.Inject;
+import javax.inject.Named;
 import javax.inject.Provider;
 import java.io.IOException;
 import java.util.Map;
@@ -41,7 +44,7 @@ public class DeephavenApiServer {
     private static final Logger log = LoggerFactory.getLogger(DeephavenApiServer.class);
 
     private final GrpcServer server;
-    private final UpdateGraphProcessor ugp;
+    private final UpdateGraph ug;
     private final LogInit logInit;
     private final Provider<ScriptSession> scriptSessionProvider;
     private final PluginRegistration pluginRegistration;
@@ -55,7 +58,7 @@ public class DeephavenApiServer {
     @Inject
     public DeephavenApiServer(
             final GrpcServer server,
-            final UpdateGraphProcessor ugp,
+            @Named(PeriodicUpdateGraph.DEFAULT_UPDATE_GRAPH_NAME) final UpdateGraph ug,
             final LogInit logInit,
             final Provider<ScriptSession> scriptSessionProvider,
             final PluginRegistration pluginRegistration,
@@ -66,7 +69,7 @@ public class DeephavenApiServer {
             final Provider<ExecutionContext> executionContextProvider,
             final ServerConfig serverConfig) {
         this.server = server;
-        this.ugp = ugp;
+        this.ug = ug;
         this.logInit = logInit;
         this.scriptSessionProvider = scriptSessionProvider;
         this.pluginRegistration = pluginRegistration;
@@ -127,16 +130,20 @@ public class DeephavenApiServer {
         scriptSessionProvider.get();
         pluginRegistration.registerAll();
 
-        log.info().append("Starting UGP...").endl();
-        ugp.start();
+        log.info().append("Starting UpdateGraph...").endl();
+        ug.<PeriodicUpdateGraph>cast().start();
 
-        EngineMetrics.maybeStartStatsCollection();
+        try (final SafeCloseable ignored = ExecutionContext.getContext().withUpdateGraph(ug).open()) {
+            EngineMetrics.maybeStartStatsCollection();
+        }
 
         log.info().append("Starting Performance Trackers...").endl();
         QueryPerformanceRecorder.installPoolAllocationRecorder();
         QueryPerformanceRecorder.installUpdateGraphLockInstrumentation();
-        UpdatePerformanceTracker.start();
-        ServerStateTracker.start();
+        try (final SafeCloseable ignored = ExecutionContext.getContext().withUpdateGraph(ug).open()) {
+            UpdatePerformanceTracker.start();
+            ServerStateTracker.start();
+        }
 
         for (UriResolver resolver : uriResolvers.resolvers()) {
             log.debug().append("Found table resolver ").append(resolver.getClass().toString()).endl();
@@ -175,4 +182,7 @@ public class DeephavenApiServer {
         server.start();
     }
 
+    public UpdateGraph getUpdateGraph() {
+        return ug;
+    }
 }

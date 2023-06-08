@@ -8,6 +8,7 @@ import io.deephaven.base.verify.Assert;
 import io.deephaven.chunk.Chunk;
 import io.deephaven.chunk.ChunkType;
 import io.deephaven.chunk.attributes.Values;
+import io.deephaven.engine.context.ExecutionContext;
 import io.deephaven.engine.rowset.RowSequence;
 import io.deephaven.engine.table.ChunkSource;
 import io.deephaven.engine.table.ColumnSource;
@@ -142,7 +143,7 @@ abstract class ArraySourceHelper<T, UArray> extends ArrayBackedColumnSource<T>
         if (prevFlusher == null) {
             return false;
         }
-        // If we want to track previous values, we make sure we are registered with the UpdateGraphProcessor.
+        // If we want to track previous values, we make sure we are registered with the PeriodicUpdateGraph.
         prevFlusher.maybeActivate();
 
         final int block = (int) (key >> LOG_BLOCK_SIZE);
@@ -184,7 +185,8 @@ abstract class ArraySourceHelper<T, UArray> extends ArrayBackedColumnSource<T>
             throw new IllegalStateException("Can't call startTrackingPrevValues() twice: " +
                     this.getClass().getCanonicalName());
         }
-        prevFlusher = new UpdateCommitter<>(this, ArraySourceHelper::commitBlocks);
+        prevFlusher = new UpdateCommitter<>(this, updateGraph,
+                ArraySourceHelper::commitBlocks);
         prevInUse = new long[numBlocks][];
     }
 

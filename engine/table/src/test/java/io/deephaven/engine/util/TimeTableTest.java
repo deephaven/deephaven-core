@@ -7,23 +7,24 @@ import io.deephaven.chunk.WritableLongChunk;
 import io.deephaven.chunk.WritableObjectChunk;
 import io.deephaven.chunk.attributes.Any;
 import io.deephaven.chunk.attributes.Values;
+import io.deephaven.engine.context.ExecutionContext;
 import io.deephaven.engine.rowset.RowSet;
 import io.deephaven.engine.rowset.RowSetFactory;
 import io.deephaven.engine.rowset.chunkattributes.RowKeys;
 import io.deephaven.engine.table.ChunkSource;
 import io.deephaven.engine.table.ColumnSource;
 import io.deephaven.engine.table.impl.QueryTable;
+import io.deephaven.engine.testutil.ControlledUpdateGraph;
 import io.deephaven.engine.testutil.testcase.RefreshingTableTestCase;
 import io.deephaven.engine.table.impl.TableUpdateValidator;
 import io.deephaven.engine.table.impl.TimeTable;
 import io.deephaven.engine.table.impl.sources.FillUnordered;
-import io.deephaven.engine.updategraph.UpdateGraphProcessor;
 import io.deephaven.engine.updategraph.UpdateSourceCombiner;
-import io.deephaven.time.DateTime;
 import io.deephaven.time.DateTimeUtils;
 import org.junit.Assert;
 import org.junit.Test;
 
+import java.time.Instant;
 import java.util.Arrays;
 import java.util.Map;
 
@@ -40,7 +41,7 @@ public class TimeTableTest extends RefreshingTableTestCase {
         super.setUp();
 
         clock = new TestClock(0);
-        updateSourceCombiner = new UpdateSourceCombiner();
+        updateSourceCombiner = new UpdateSourceCombiner(ExecutionContext.getContext().getUpdateGraph());
     }
 
     @Override
@@ -67,7 +68,8 @@ public class TimeTableTest extends RefreshingTableTestCase {
 
     private void tick(long tm) {
         clock.now = tm;
-        UpdateGraphProcessor.DEFAULT.runWithinUnitTestCycle(updateSourceCombiner::run);
+        final ControlledUpdateGraph updateGraph = ExecutionContext.getContext().getUpdateGraph().cast();
+        updateGraph.runWithinUnitTestCycle(updateSourceCombiner::run);
         validator.validate();
     }
 
@@ -107,7 +109,7 @@ public class TimeTableTest extends RefreshingTableTestCase {
     @Test
     public void testProvidedStartTimeOnBoundary() {
         build(TimeTable.newBuilder()
-                .startTime(DateTimeUtils.nanosToTime(10))
+                .startTime(DateTimeUtils.epochNanosToInstant(10))
                 .period(10));
 
         tick(9);
@@ -121,7 +123,7 @@ public class TimeTableTest extends RefreshingTableTestCase {
     @Test
     public void testProvidedStartTimeOffsetPeriod() {
         build(TimeTable.newBuilder()
-                .startTime(DateTimeUtils.nanosToTime(15))
+                .startTime(DateTimeUtils.epochNanosToInstant(15))
                 .period(10));
 
         tick(14);
@@ -173,7 +175,7 @@ public class TimeTableTest extends RefreshingTableTestCase {
     public void testBlinkProvidedStartTimeOnBoundary() {
         build(TimeTable.newBuilder()
                 .blinkTable(true)
-                .startTime(DateTimeUtils.nanosToTime(10))
+                .startTime(DateTimeUtils.epochNanosToInstant(10))
                 .period(10));
 
         tick(9);
@@ -188,7 +190,7 @@ public class TimeTableTest extends RefreshingTableTestCase {
     public void testBlinkProvidedStartTimeOffsetPeriod() {
         build(TimeTable.newBuilder()
                 .blinkTable(true)
-                .startTime(DateTimeUtils.nanosToTime(15))
+                .startTime(DateTimeUtils.epochNanosToInstant(15))
                 .period(10));
 
         tick(14);
@@ -207,15 +209,15 @@ public class TimeTableTest extends RefreshingTableTestCase {
     @Test
     public void testColumnSourceMatch() {
         build(TimeTable.newBuilder().period(10));
-        final ColumnSource<DateTime> dtColumn = timeTable.getColumnSource("Timestamp");
+        final ColumnSource<Instant> dtColumn = timeTable.getColumnSource("Timestamp");
         tick(0);
         tick(2000);
         Assert.assertEquals(timeTable.size(), 201);
 
         final Long[] longKeys = new Long[] {null, 1000L, 1050L, 1100L, 1025L};
-        final DateTime[] keys = Arrays.stream(longKeys)
-                .map(l -> l == null ? null : DateTimeUtils.nanosToTime(l))
-                .toArray(DateTime[]::new);
+        final Instant[] keys = Arrays.stream(longKeys)
+                .map(l -> l == null ? null : DateTimeUtils.epochNanosToInstant(l))
+                .toArray(Instant[]::new);
         try (final RowSet match =
                 dtColumn.match(false, false, false, RowSetFactory.fromRange(100, 110), (Object[]) keys)) {
             Assert.assertEquals(match, RowSetFactory.fromKeys(100, 105, 110));
@@ -238,12 +240,12 @@ public class TimeTableTest extends RefreshingTableTestCase {
     @Test
     public void testGetValuesMapping() {
         build(TimeTable.newBuilder().period(10));
-        final ColumnSource<DateTime> dtColumn = timeTable.getColumnSource("Timestamp");
+        final ColumnSource<Instant> dtColumn = timeTable.getColumnSource("Timestamp");
         tick(0);
         tick(2000);
         Assert.assertEquals(timeTable.size(), 201);
 
-        final Map<DateTime, RowSet> dtMap = dtColumn.getValuesMapping(RowSetFactory.fromRange(100, 109));
+        final Map<Instant, RowSet> dtMap = dtColumn.getValuesMapping(RowSetFactory.fromRange(100, 109));
         Assert.assertEquals(dtMap.size(), 10);
         dtMap.forEach((tm, rows) -> {
             Assert.assertEquals(rows.size(), 1);
@@ -261,7 +263,7 @@ public class TimeTableTest extends RefreshingTableTestCase {
     @Test
     public void testFillChunkUnordered() {
         build(TimeTable.newBuilder().period(10));
-        final ColumnSource<DateTime> dtColumn = timeTable.getColumnSource("Timestamp");
+        final ColumnSource<Instant> dtColumn = timeTable.getColumnSource("Timestamp");
         tick(0);
         tick(2000);
         Assert.assertEquals(timeTable.size(), 201);
@@ -283,9 +285,9 @@ public class TimeTableTest extends RefreshingTableTestCase {
             keys.add(106);
             keys.add(100);
 
-            // curr DateTime
+            // curr Instant
             try (final ChunkSource.FillContext context = dtColumn.makeFillContext(10);
-                    final WritableObjectChunk<DateTime, Any> dest = WritableObjectChunk.makeWritableChunk(10)) {
+                    final WritableObjectChunk<Instant, Any> dest = WritableObjectChunk.makeWritableChunk(10)) {
                 fillDtColumn.fillChunkUnordered(context, dest, keys);
                 Assert.assertEquals(dest.size(), keys.size());
                 for (int ii = 0; ii < keys.size(); ++ii) {
@@ -293,9 +295,9 @@ public class TimeTableTest extends RefreshingTableTestCase {
                 }
             }
 
-            // prev DateTime
+            // prev Instant
             try (final ChunkSource.FillContext context = dtColumn.makeFillContext(10);
-                    final WritableObjectChunk<DateTime, Any> dest = WritableObjectChunk.makeWritableChunk(10)) {
+                    final WritableObjectChunk<Instant, Any> dest = WritableObjectChunk.makeWritableChunk(10)) {
                 fillDtColumn.fillPrevChunkUnordered(context, dest, keys);
                 Assert.assertEquals(dest.size(), keys.size());
                 for (int ii = 0; ii < keys.size(); ++ii) {

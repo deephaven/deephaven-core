@@ -18,6 +18,8 @@ dependencies {
     implementation project(':Configuration')
     implementation project(':log-factory')
 
+    testImplementation project(':engine-test-utils')
+
     testRuntimeOnly project(':log-to-slf4j')
     // add configs, and some runtime dependencies to test classpaths
     testRuntimeOnly project(':configs')

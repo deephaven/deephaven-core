@@ -3,24 +3,11 @@
  */
 package io.deephaven.plot;
 
-import io.deephaven.base.testing.BaseArrayTestCase;
-import io.deephaven.engine.updategraph.UpdateGraphProcessor;
+import io.deephaven.engine.testutil.testcase.RefreshingTableTestCase;
 import io.deephaven.gui.color.Color;
 import junit.framework.TestCase;
 
-public class TestBaseFigureImpl extends BaseArrayTestCase {
-    @Override
-    public void setUp() throws Exception {
-        super.setUp();
-        UpdateGraphProcessor.DEFAULT.enableUnitTestMode();
-        UpdateGraphProcessor.DEFAULT.resetForUnitTests(false);
-    }
-
-    @Override
-    protected void tearDown() throws Exception {
-        super.tearDown();
-        UpdateGraphProcessor.DEFAULT.resetForUnitTests(true);
-    }
+public class TestBaseFigureImpl extends RefreshingTableTestCase {
 
     public void testSubplot() {
         BaseFigureImpl fig1 = new BaseFigureImpl();

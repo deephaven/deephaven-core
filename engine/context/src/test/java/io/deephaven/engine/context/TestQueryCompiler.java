@@ -4,15 +4,14 @@
 package io.deephaven.engine.context;
 
 import io.deephaven.configuration.Configuration;
-import io.deephaven.util.SafeCloseable;
-import org.junit.After;
-import org.junit.Before;
+import io.deephaven.engine.testutil.junit4.EngineCleanup;
+import io.deephaven.time.DateTimeUtils;
+import org.junit.Rule;
 import org.junit.Test;
 
 import java.lang.reflect.Method;
 import java.time.Instant;
 import java.time.LocalDateTime;
-import java.time.ZoneId;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
@@ -51,17 +50,8 @@ public class TestQueryCompiler {
         CLASS_CODE = testClassCode1.toString();
     }
 
-    private SafeCloseable executionContext;
-
-    @Before
-    public void setUp() {
-        executionContext = TestExecutionContext.createForUnitTests().open();
-    }
-
-    @After
-    public void tearDown() {
-        executionContext.close();
-    }
+    @Rule
+    public final EngineCleanup framework = new EngineCleanup();
 
     @Test
     public void testParallelCompile() throws Throwable {
@@ -168,7 +158,7 @@ public class TestQueryCompiler {
     }
 
     private String printMillis(final long millis) {
-        LocalDateTime localDateTime = LocalDateTime.ofInstant(Instant.ofEpochMilli(millis), ZoneId.systemDefault());
+        LocalDateTime localDateTime = LocalDateTime.ofInstant(Instant.ofEpochMilli(millis), DateTimeUtils.timeZone());
         return localDateTime.toString();
     }
 

@@ -22,10 +22,7 @@ import io.grpc.StatusRuntimeException;
 import io.grpc.stub.StreamObserver;
 import org.apache.commons.lang3.mutable.MutableBoolean;
 import org.apache.commons.lang3.mutable.MutableObject;
-import org.junit.After;
-import org.junit.Before;
-import org.junit.Ignore;
-import org.junit.Test;
+import org.junit.*;
 
 import java.lang.ref.WeakReference;
 import java.util.ArrayList;
@@ -50,6 +47,7 @@ public class SessionStateTest {
 
     private static final AuthContext AUTH_CONTEXT = new AuthContext.SuperUser();
 
+    private SafeCloseable executionContext;
     private LivenessScope livenessScope;
     private TestControlledScheduler scheduler;
     private SessionState session;
@@ -57,12 +55,13 @@ public class SessionStateTest {
 
     @Before
     public void setup() {
+        executionContext = TestExecutionContext.createForUnitTests().open();
         livenessScope = new LivenessScope();
         LivenessScopeStack.push(livenessScope);
         scheduler = new TestControlledScheduler();
         session = new SessionState(scheduler, TestExecutionContext::createForUnitTests, AUTH_CONTEXT);
         session.initializeExpiration(new SessionService.TokenExpiration(UUID.randomUUID(),
-                DateTimeUtils.nanosToTime(Long.MAX_VALUE).getMillis(), session));
+                DateTimeUtils.epochMillis(DateTimeUtils.epochNanosToInstant(Long.MAX_VALUE)), session));
         nextExportId = 1;
     }
 
@@ -73,6 +72,7 @@ public class SessionStateTest {
         livenessScope = null;
         scheduler = null;
         session = null;
+        executionContext.close();
     }
 
     @Test
@@ -639,7 +639,7 @@ public class SessionStateTest {
         final SessionState session =
                 new SessionState(scheduler, TestExecutionContext::createForUnitTests, AUTH_CONTEXT);
         final SessionService.TokenExpiration expiration = new SessionService.TokenExpiration(UUID.randomUUID(),
-                DateTimeUtils.nanosToTime(Long.MAX_VALUE).getMillis(), session);
+                DateTimeUtils.epochMillis(DateTimeUtils.epochNanosToInstant(Long.MAX_VALUE)), session);
         expectException(IllegalArgumentException.class, () -> this.session.initializeExpiration(expiration));
         expectException(IllegalArgumentException.class, () -> this.session.updateExpiration(expiration));
     }

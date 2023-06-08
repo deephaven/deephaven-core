@@ -16,7 +16,7 @@ from deephaven.column import byte_col, char_col, short_col, bool_col, int_col, l
 from deephaven.constants import NULL_LONG, NULL_SHORT, NULL_INT, NULL_BYTE
 from deephaven.jcompat import j_array_list
 from deephaven.pandas import to_pandas, to_table
-from deephaven.time import to_datetime
+from deephaven.time import parse_instant, epoch_nanos_to_instant
 from tests.testbase import BaseTestCase
 
 
@@ -42,7 +42,7 @@ class PandasTestCase(BaseTestCase):
             float_col(name="Float_", data=[1.01, -1.01]),
             double_col(name="Double_", data=[1.01, -1.01]),
             string_col(name="String", data=["foo", "bar"]),
-            datetime_col(name="Datetime", data=[dtypes.DateTime(1), dtypes.DateTime(-1)]),
+            datetime_col(name="Datetime", data=[epoch_nanos_to_instant(1), epoch_nanos_to_instant(-1)]),
             pyobj_col(name="PyObj", data=[CustomClass(1, "1"), CustomClass(-1, "-1")]),
             pyobj_col(name="PyObj1", data=[[1, 2, 3], CustomClass(-1, "-1")]),
             pyobj_col(name="PyObj2", data=[False, 'False']),
@@ -129,13 +129,13 @@ class PandasTestCase(BaseTestCase):
         self.assert_table_equals(table_from_df, prepared_table)
 
     def test_to_table_datetime_with_none(self):
-        datetime_str = "2021-12-10T23:59:59 NY"
-        dt = to_datetime(datetime_str)
+        datetime_str = "2021-12-10T23:59:59 ET"
+        dt = parse_instant(datetime_str)
 
-        datetime_str = "2021-12-10T23:59:59 HI"
-        dt1 = to_datetime(datetime_str)
+        datetime_str = "2021-12-10T23:59:59 US/Hawaii"
+        dt1 = parse_instant(datetime_str)
 
-        input_cols = [datetime_col(name="Datetime", data=[dtypes.DateTime(1), None, dt, dt1])]
+        input_cols = [datetime_col(name="Datetime", data=[epoch_nanos_to_instant(1), None, dt, dt1])]
         table_with_null_dt = new_table(cols=input_cols)
 
         df = to_pandas(table_with_null_dt)
@@ -156,7 +156,7 @@ class PandasTestCase(BaseTestCase):
             long_col(name="Long_", data=[1, NULL_LONG]),
             float_col(name="Float_", data=[1.01, np.nan]),
             double_col(name="Double_", data=[1.01, np.nan]),
-            datetime_col(name="Datetime", data=[dtypes.DateTime(1), None]),
+            datetime_col(name="Datetime", data=[epoch_nanos_to_instant(1), None]),
             pyobj_col(name="PyObj", data=[CustomClass(1, "1"), None]),
         ]
         test_table = new_table(cols=input_cols)
@@ -247,7 +247,7 @@ class PandasTestCase(BaseTestCase):
             long_col(name="Long_", data=[1, NULL_LONG]),
             float_col(name="Float_", data=[1.01, np.nan]),
             double_col(name="Double_", data=[1.01, np.nan]),
-            datetime_col(name="Datetime", data=[dtypes.DateTime(1), None]),
+            datetime_col(name="Datetime", data=[epoch_nanos_to_instant(1), None]),
             string_col(name="String", data=["text1", None])
             # pyobj_col(name="PyObj", data=[CustomClass(1, "1"), None]), #DH arrow export it as strings
         ]
@@ -266,7 +266,7 @@ class PandasTestCase(BaseTestCase):
             long_col(name="Long_", data=[1, NULL_LONG]),
             float_col(name="Float_", data=[1.01, np.nan]),
             double_col(name="Double_", data=[1.01, np.nan]),
-            datetime_col(name="Datetime", data=[dtypes.DateTime(1), None]),
+            datetime_col(name="Datetime", data=[epoch_nanos_to_instant(1), None]),
             string_col(name="String", data=["text1", None]),
             # pyobj_col(name="PyObj", data=[CustomClass(1, "1"), None]),  # DH arrow export it as strings
         ]
@@ -288,7 +288,22 @@ class PandasTestCase(BaseTestCase):
         df = pd.DataFrame(df_dict)
         dh_t = to_table(df)
         for c in dh_t.columns:
-            self.assertEqual(c.data_type, dtypes.DateTime)
+            self.assertEqual(c.data_type, dtypes.Instant)
+
+    def test_pandas_category_type(self):
+        df = pd.DataFrame({
+                              'zipcode': {17384: 98125, 2680: 98107, 722: 98005, 18754: 98109, 14554: 98155},
+                              'bathrooms': {17384: 1.5, 2680: 0.75, 722: 3.25, 18754: 1.0, 14554: 2.5},
+                              'sqft_lot': {17384: 1650, 2680: 3700, 722: 51836, 18754: 2640, 14554: 9603},
+                              'bedrooms': {17384: 2, 2680: 2, 722: 4, 18754: 2, 14554: 4},
+                              'sqft_living': {17384: 1430, 2680: 1440, 722: 4670, 18754: 1130, 14554: 3180},
+                              'floors': {17384: 3.0, 2680: 1.0, 722: 2.0, 18754: 1.0, 14554: 2.0}
+                          })
+        df['zipcode'] = df.zipcode.astype('category')
+        df['bathrooms'] = df.bathrooms.astype('category')
+        t = to_table(df)
+        self.assertEqual(t.columns[0].data_type, dtypes.int64)
+        self.assertEqual(t.columns[1].data_type, dtypes.double)
 
 
 if __name__ == '__main__':

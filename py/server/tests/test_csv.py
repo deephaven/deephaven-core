@@ -12,7 +12,6 @@ from tests.testbase import BaseTestCase
 class CsvTestCase(BaseTestCase):
     def test_read_simple(self):
         t = read_csv("tests/data/small_sample.csv")
-
         self.assertTrue(t.columns)
 
     def test_read_header(self):
@@ -58,6 +57,14 @@ class CsvTestCase(BaseTestCase):
 
         import os
         os.remove("./test_write.csv")
+
+    def test_read_header_row(self):
+        t = read_csv("tests/data/small_sample.csv")
+        t1 = read_csv("tests/data/small_sample.csv", header_row=2)
+        self.assertEqual(t.size, t1.size + 2)
+
+        with self.assertRaises(DHError):
+            t1 = read_csv("tests/data/small_sample.csv", headless=True, header_row=2)
 
 
 if __name__ == '__main__':

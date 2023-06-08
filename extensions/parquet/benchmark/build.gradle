@@ -58,7 +58,6 @@ task jmhRun(type: JavaExec)  {
             '-Dconfiguration.quiet=true',
             '-Djava.awt.headless=true',
             '-DQueryTable.memoizeResults=false',
-            '-DUpdateGraphProcessor.checkTableOperations=false',
             '-agentlib:jdwp=transport=dt_socket,server=y,suspend=y,address=9500'
 }
 
@@ -77,7 +76,6 @@ def createJmhTask = {
                 '-Dconfiguration.quiet=true',
                 '-Djava.awt.headless=true',
                 '-DQueryTable.memoizeResults=false',
-                '-DUpdateGraphProcessor.checkTableOperations=false',
                 "-Xmx$heapSize"
                 //'-agentlib:jdwp=transport=dt_socket,server=y,suspend=y,address=9501'
         ]

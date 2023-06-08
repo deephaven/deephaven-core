@@ -4,7 +4,7 @@
 
 <calendar>
     <name>USNYSE</name>
-    <timeZone>TZ_NY</timeZone>
+    <timeZone>America/New_York</timeZone>
     <default>
         <businessPeriod>09:30,16:00</businessPeriod>
         <weekend>Saturday</weekend>

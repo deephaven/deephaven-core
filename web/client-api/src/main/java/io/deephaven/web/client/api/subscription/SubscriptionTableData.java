@@ -284,7 +284,6 @@ public class SubscriptionTableData {
                 };
             case "java.time.Instant":
             case "java.time.ZonedDateTime":
-            case "io.deephaven.time.DateTime":
                 return (destArray, destPos, srcArray, srcPos) -> {
                     long value = Js.asArrayLike(srcArray).getAtAsAny(srcPos).asLong();
                     if (value == QueryConstants.NULL_LONG) {

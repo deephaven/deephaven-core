@@ -4,14 +4,13 @@
 package io.deephaven.engine.table.impl.util;
 
 import io.deephaven.base.verify.Assert;
+import io.deephaven.engine.context.ExecutionContext;
 import io.deephaven.engine.rowset.*;
 import io.deephaven.engine.rowset.RowSetFactory;
 import io.deephaven.engine.table.Table;
-import io.deephaven.engine.updategraph.UpdateGraphProcessor;
 import io.deephaven.engine.table.impl.QueryTable;
 import io.deephaven.engine.table.impl.AbstractColumnSource;
 import io.deephaven.engine.table.ColumnSource;
-import io.deephaven.engine.updategraph.LogicalClock;
 import io.deephaven.engine.table.impl.MutableColumnSourceGetDefaults;
 import gnu.trove.iterator.TObjectLongIterator;
 import gnu.trove.list.array.TLongArrayList;
@@ -21,6 +20,7 @@ import gnu.trove.map.TObjectLongMap;
 import gnu.trove.map.hash.TLongLongHashMap;
 import gnu.trove.map.hash.TLongObjectHashMap;
 import gnu.trove.map.hash.TObjectLongHashMap;
+import io.deephaven.engine.updategraph.UpdateGraph;
 import io.deephaven.tuple.ArrayTuple;
 
 import java.util.HashSet;
@@ -41,6 +41,9 @@ public class HashSetBackedTableFactory {
     private final int refreshIntervalMs;
     private long nextRefresh;
     private final Map<String, ColumnSource<?>> columns;
+
+    private final UpdateGraph updateGraph;
+
     private final TObjectLongMap<ArrayTuple> valueToIndexMap = new TObjectLongHashMap<>();
     private final TLongObjectMap<ArrayTuple> indexToValueMap = new TLongObjectHashMap<>();
 
@@ -61,6 +64,8 @@ public class HashSetBackedTableFactory {
         for (int ii = 0; ii < colNames.length; ++ii) {
             columns.put(colNames[ii], new ArrayTupleWrapperColumnSource(ii));
         }
+
+        updateGraph = ExecutionContext.getContext().getUpdateGraph();
     }
 
     /**
@@ -120,7 +125,7 @@ public class HashSetBackedTableFactory {
         indexToPreviousMap.put(index, vtiIt.key());
         vtiIt.remove();
 
-        indexToPreviousClock.put(index, LogicalClock.DEFAULT.currentStep());
+        indexToPreviousClock.put(index, updateGraph.clock().currentStep());
 
         indexToValueMap.remove(index);
         removedBuilder.addKey(index);
@@ -139,21 +144,21 @@ public class HashSetBackedTableFactory {
         valueToIndexMap.put(value, newIndex);
         indexToValueMap.put(newIndex, value);
 
-        if (indexToPreviousClock.get(newIndex) != LogicalClock.DEFAULT.currentStep()) {
-            indexToPreviousClock.put(newIndex, LogicalClock.DEFAULT.currentStep());
+        if (indexToPreviousClock.get(newIndex) != updateGraph.clock().currentStep()) {
+            indexToPreviousClock.put(newIndex, updateGraph.clock().currentStep());
             indexToPreviousMap.put(newIndex, null);
         }
     }
 
     /**
-     * @implNote The constructor publishes {@code this} to the {@link UpdateGraphProcessor} and cannot be subclassed.
+     * @implNote The constructor publishes {@code this} to the {@link UpdateGraph} and cannot be subclassed.
      */
     private final class HashSetBackedTable extends QueryTable implements Runnable {
         HashSetBackedTable(TrackingRowSet rowSet, Map<String, ColumnSource<?>> columns) {
             super(rowSet, columns);
             if (refreshIntervalMs >= 0) {
                 setRefreshing(true);
-                UpdateGraphProcessor.DEFAULT.addSource(this);
+                updateGraph.addSource(this);
             }
         }
 
@@ -186,7 +191,7 @@ public class HashSetBackedTableFactory {
         public void destroy() {
             super.destroy();
             if (refreshIntervalMs >= 0) {
-                UpdateGraphProcessor.DEFAULT.removeSource(this);
+                updateGraph.removeSource(this);
             }
         }
     }
@@ -214,7 +219,7 @@ public class HashSetBackedTableFactory {
         @Override
         public String getPrev(long rowKey) {
             synchronized (HashSetBackedTableFactory.this) {
-                if (indexToPreviousClock.get(rowKey) == LogicalClock.DEFAULT.currentStep()) {
+                if (indexToPreviousClock.get(rowKey) == updateGraph.clock().currentStep()) {
                     ArrayTuple row = indexToPreviousMap.get(rowKey);
                     if (row == null)
                         return null;

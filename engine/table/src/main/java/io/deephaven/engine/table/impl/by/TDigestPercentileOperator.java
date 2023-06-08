@@ -17,10 +17,10 @@ import io.deephaven.engine.table.impl.QueryTable;
 import io.deephaven.engine.table.impl.sources.DoubleArraySource;
 import io.deephaven.engine.table.impl.sources.ObjectArraySource;
 import io.deephaven.engine.table.impl.util.cast.ToDoubleCast;
-import io.deephaven.time.DateTime;
 import io.deephaven.util.QueryConstants;
 import org.jetbrains.annotations.NotNull;
 
+import java.time.Instant;
 import java.util.Collections;
 import java.util.LinkedHashMap;
 import java.util.Map;
@@ -67,9 +67,9 @@ public class TDigestPercentileOperator implements IterativeChunkedAggregationOpe
         this.digestColumnName = digestColumnName;
         this.resultNames = resultNames;
         this.digests = new ObjectArraySource<>(TDigest.class);
-        final boolean isDateTime = type == DateTime.class;
-        if (isDateTime) {
-            throw new UnsupportedOperationException("DateTime is not supported for approximate percentiles.");
+        final boolean isInstant = type == Instant.class;
+        if (isInstant) {
+            throw new UnsupportedOperationException("Instant is not supported for approximate percentiles.");
         }
         chunkType = ChunkType.fromElementType(type);
         resultColumns = new DoubleArraySource[percentiles.length];

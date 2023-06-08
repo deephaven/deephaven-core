@@ -4,12 +4,18 @@
 package io.deephaven.engine.table.impl.perf;
 
 import io.deephaven.configuration.Configuration;
-import io.deephaven.engine.table.*;
+import io.deephaven.engine.context.ExecutionContext;
+import io.deephaven.engine.table.ShiftObliviousListener;
+import io.deephaven.engine.table.Table;
+import io.deephaven.engine.table.TableUpdateListener;
+import io.deephaven.engine.table.impl.InstrumentedTableUpdateListener;
+import io.deephaven.engine.table.impl.QueryTable;
+import io.deephaven.engine.table.impl.ShiftObliviousInstrumentedListener;
 import io.deephaven.engine.tablelogger.EngineTableLoggers;
 import io.deephaven.engine.tablelogger.UpdatePerformanceLogLogger;
 import io.deephaven.engine.tablelogger.impl.memory.MemoryTableLogger;
-import io.deephaven.engine.updategraph.UpdateGraphProcessor;
-import io.deephaven.engine.table.impl.*;
+import io.deephaven.engine.updategraph.UpdateGraph;
+import io.deephaven.engine.updategraph.impl.PeriodicUpdateGraph;
 import io.deephaven.internal.log.LoggerFactory;
 import io.deephaven.io.logger.Logger;
 import io.deephaven.util.QueryConstants;
@@ -25,7 +31,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 
 /**
  * <p>
- * This tool is meant to track periodic update events that take place in an {@link UpdateGraphProcessor}. This generally
+ * This tool is meant to track periodic update events that take place in an {@link PeriodicUpdateGraph}. This generally
  * includes:
  * <ol>
  * <li>Update source {@code run()} invocations</li>
@@ -34,7 +40,7 @@ import java.util.concurrent.atomic.AtomicInteger;
  * </ol>
  * (1)
  *
- * @apiNote Regarding thread safety, this class interacts with a singleton UpdateGraphProcessor and expects all calls to
+ * @apiNote Regarding thread safety, this class interacts with a singleton PeriodicUpdateGraph and expects all calls to
  *          {@link #getEntry(String)}, {@link PerformanceEntry#onUpdateStart()}, and
  *          {@link PerformanceEntry#onUpdateEnd()} to be performed while protected by the UGP's lock.
  */
@@ -76,7 +82,8 @@ public class UpdatePerformanceTracker {
     }
 
     private void startThread() {
-        Thread driverThread = new Thread(new Driver(), "UpdatePerformanceTracker.Driver");
+        final UpdateGraph updateGraph = ExecutionContext.getContext().getUpdateGraph();
+        Thread driverThread = new Thread(new Driver(updateGraph), "UpdatePerformanceTracker.Driver");
         driverThread.setDaemon(true);
         driverThread.start();
     }
@@ -90,6 +97,13 @@ public class UpdatePerformanceTracker {
     }
 
     private class Driver implements Runnable {
+
+        private final UpdateGraph updateGraph;
+
+        public Driver(@NotNull final UpdateGraph updateGraph) {
+            this.updateGraph = updateGraph;
+        }
+
         @Override
         public void run() {
             // noinspection InfiniteLoopStatement
@@ -102,9 +116,8 @@ public class UpdatePerformanceTracker {
                     // should log, but no logger handy
                     // ignore
                 }
-                UpdateGraphProcessor.DEFAULT.sharedLock().doLocked(
-                        () -> finishInterval(intervalStartTimeMillis,
-                                System.currentTimeMillis(),
+                updateGraph.sharedLock().doLocked(
+                        () -> finishInterval(intervalStartTimeMillis, System.currentTimeMillis(),
                                 System.nanoTime() - intervalStartTimeNanos));
             }
         }
@@ -148,7 +161,7 @@ public class UpdatePerformanceTracker {
 
     /**
      * Do entry maintenance, generate an interval performance report table for all active entries, and reset for the
-     * next interval. <b>Note:</b> This method is only called under the UpdateGraphProcessor instance's lock. This
+     * next interval. <b>Note:</b> This method is only called under the PeriodicUpdateGraph instance's lock. This
      * ensures exclusive access to the entries, and also prevents any other thread from removing from entries.
      * 
      * @param intervalStartTimeMillis interval start time in millis
@@ -233,6 +246,7 @@ public class UpdatePerformanceTracker {
         }
     }
 
+    @NotNull
     public QueryTable getQueryTable() {
         return MemoryTableLogger.maybeGetQueryTable(tableLogger);
     }

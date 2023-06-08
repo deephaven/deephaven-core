@@ -9,11 +9,9 @@ import org.immutables.value.Value.Check;
 import org.immutables.value.Value.Immutable;
 import org.immutables.value.Value.Parameter;
 
-import java.io.Serializable;
-
 @Immutable
 @SimpleStyle
-abstract class SelectableImpl implements Selectable, Serializable {
+abstract class SelectableImpl implements Selectable {
 
     public static SelectableImpl of(ColumnName newColumn, Expression expression) {
         return ImmutableSelectableImpl.of(newColumn, expression);

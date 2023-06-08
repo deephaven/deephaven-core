@@ -14,7 +14,7 @@ from deephaven.column import InputColumn, Column
 from deephaven.dtypes import DType
 from deephaven.jcompat import to_sequence
 from deephaven.table import Table
-from deephaven.ugp import auto_locking_ctx
+from deephaven.update_graph import auto_locking_ctx
 
 _JTableFactory = jpy.get_type("io.deephaven.engine.table.TableFactory")
 _JTableTools = jpy.get_type("io.deephaven.engine.util.TableTools")
@@ -52,7 +52,7 @@ def time_table(period: Union[str, int], start_time: str = None) -> Table:
 
     Args:
         period (Union[str, int]): time interval between new row additions, can be expressed as an integer in
-            nanoseconds or a time interval string, e.g. "00:00:00.001"
+            nanoseconds or a time interval string, e.g. "PT00:00:00.001"
         start_time (str): start time for adding new rows
 
     Returns:

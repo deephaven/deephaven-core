@@ -27,6 +27,7 @@ public class DropColumnsGrpcImpl extends GrpcTableOperation<DropColumnsRequest> 
     public Table create(final DropColumnsRequest request,
             final List<SessionState.ExportObject<Table>> sourceTables) {
         Assert.eq(sourceTables.size(), "sourceTables.size()", 1);
-        return sourceTables.get(0).get().dropColumns(request.getColumnNamesList());
+        final Table source = sourceTables.get(0).get();
+        return source.dropColumns(request.getColumnNamesList());
     }
 }

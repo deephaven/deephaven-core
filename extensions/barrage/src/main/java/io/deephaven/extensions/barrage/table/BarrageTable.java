@@ -10,6 +10,10 @@ import io.deephaven.base.verify.Assert;
 import io.deephaven.chunk.ChunkType;
 import io.deephaven.chunk.util.pools.ChunkPoolConstants;
 import io.deephaven.configuration.Configuration;
+import io.deephaven.engine.context.ExecutionContext;
+import io.deephaven.engine.updategraph.LogicalClock;
+import io.deephaven.engine.updategraph.NotificationQueue;
+import io.deephaven.engine.updategraph.UpdateSourceRegistrar;
 import io.deephaven.engine.rowset.*;
 import io.deephaven.engine.table.*;
 import io.deephaven.engine.table.impl.QueryTable;
@@ -22,23 +26,21 @@ import io.deephaven.engine.table.impl.sources.WritableRedirectedColumnSource;
 import io.deephaven.engine.table.impl.util.BarrageMessage;
 import io.deephaven.engine.table.impl.util.LongColumnSourceWritableRowRedirection;
 import io.deephaven.engine.table.impl.util.WritableRowRedirection;
-import io.deephaven.engine.updategraph.LogicalClock;
-import io.deephaven.engine.updategraph.NotificationQueue;
-import io.deephaven.engine.updategraph.UpdateGraphProcessor;
-import io.deephaven.engine.updategraph.UpdateSourceRegistrar;
+import io.deephaven.engine.updategraph.*;
 import io.deephaven.extensions.barrage.BarragePerformanceLog;
 import io.deephaven.extensions.barrage.BarrageSubscriptionPerformanceLogger;
 import io.deephaven.internal.log.LoggerFactory;
 import io.deephaven.io.log.LogEntry;
 import io.deephaven.io.log.LogLevel;
 import io.deephaven.io.logger.Logger;
-import io.deephaven.time.DateTime;
+import io.deephaven.time.DateTimeUtils;
 import io.deephaven.util.annotations.InternalUseOnly;
 import org.HdrHistogram.Histogram;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
 import java.io.IOException;
+import java.time.Instant;
 import java.util.*;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.ScheduledFuture;
@@ -156,7 +158,7 @@ public abstract class BarrageTable extends QueryTable implements BarrageMessage.
         }
 
         // we always start empty, and can be notified this cycle if we are refreshed
-        final long currentClockValue = LogicalClock.DEFAULT.currentValue();
+        final long currentClockValue = getUpdateGraph().clock().currentValue();
         setLastNotificationStep(LogicalClock.getState(currentClockValue) == LogicalClock.State.Updating
                 ? LogicalClock.getStep(currentClockValue) - 1
                 : LogicalClock.getStep(currentClockValue));
@@ -367,8 +369,8 @@ public abstract class BarrageTable extends QueryTable implements BarrageMessage.
             final TableDefinition tableDefinition,
             final Map<String, Object> attributes,
             final long initialViewPortRows) {
-        return make(UpdateGraphProcessor.DEFAULT, UpdateGraphProcessor.DEFAULT, executorService, tableDefinition,
-                attributes, initialViewPortRows);
+        final UpdateGraph ug = ExecutionContext.getContext().getUpdateGraph();
+        return make(ug, ug, executorService, tableDefinition, attributes, initialViewPortRows);
     }
 
     @VisibleForTesting
@@ -458,7 +460,7 @@ public abstract class BarrageTable extends QueryTable implements BarrageMessage.
             processedStep.remove(0);
         }
         processedData.add(snapshotOrDelta.clone());
-        processedStep.add(LogicalClock.DEFAULT.currentStep());
+        processedStep.add(getUpdateGraph().clock().currentStep());
     }
 
     protected boolean maybeEnablePrevTracking() {
@@ -547,7 +549,7 @@ public abstract class BarrageTable extends QueryTable implements BarrageMessage.
 
         @Override
         public void run() {
-            final DateTime now = DateTime.now();
+            final Instant now = DateTimeUtils.now();
 
             final BarrageSubscriptionPerformanceLogger logger =
                     BarragePerformanceLog.getInstance().getSubscriptionLogger();
@@ -564,7 +566,7 @@ public abstract class BarrageTable extends QueryTable implements BarrageMessage.
             }
         }
 
-        private void flush(final DateTime now, final BarrageSubscriptionPerformanceLogger logger, final Histogram hist,
+        private void flush(final Instant now, final BarrageSubscriptionPerformanceLogger logger, final Histogram hist,
                 final String statType) throws IOException {
             if (hist.getTotalCount() == 0) {
                 return;

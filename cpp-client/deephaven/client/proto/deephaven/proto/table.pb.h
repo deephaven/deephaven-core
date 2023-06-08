@@ -145,6 +145,9 @@ extern Aggregation_AggregationPartitionDefaultTypeInternal _Aggregation_Aggregat
 class Aggregation_AggregationRowKey;
 struct Aggregation_AggregationRowKeyDefaultTypeInternal;
 extern Aggregation_AggregationRowKeyDefaultTypeInternal _Aggregation_AggregationRowKey_default_instance_;
+class AjRajTablesRequest;
+struct AjRajTablesRequestDefaultTypeInternal;
+extern AjRajTablesRequestDefaultTypeInternal _AjRajTablesRequest_default_instance_;
 class AndCondition;
 struct AndConditionDefaultTypeInternal;
 extern AndConditionDefaultTypeInternal _AndCondition_default_instance_;
@@ -310,15 +313,12 @@ extern UngroupRequestDefaultTypeInternal _UngroupRequest_default_instance_;
 class UnstructuredFilterTableRequest;
 struct UnstructuredFilterTableRequestDefaultTypeInternal;
 extern UnstructuredFilterTableRequestDefaultTypeInternal _UnstructuredFilterTableRequest_default_instance_;
-class UpdateByEmaTimescale;
-struct UpdateByEmaTimescaleDefaultTypeInternal;
-extern UpdateByEmaTimescaleDefaultTypeInternal _UpdateByEmaTimescale_default_instance_;
-class UpdateByEmaTimescale_UpdateByEmaTicks;
-struct UpdateByEmaTimescale_UpdateByEmaTicksDefaultTypeInternal;
-extern UpdateByEmaTimescale_UpdateByEmaTicksDefaultTypeInternal _UpdateByEmaTimescale_UpdateByEmaTicks_default_instance_;
-class UpdateByEmaTimescale_UpdateByEmaTime;
-struct UpdateByEmaTimescale_UpdateByEmaTimeDefaultTypeInternal;
-extern UpdateByEmaTimescale_UpdateByEmaTimeDefaultTypeInternal _UpdateByEmaTimescale_UpdateByEmaTime_default_instance_;
+class UpdateByDeltaOptions;
+struct UpdateByDeltaOptionsDefaultTypeInternal;
+extern UpdateByDeltaOptionsDefaultTypeInternal _UpdateByDeltaOptions_default_instance_;
+class UpdateByEmOptions;
+struct UpdateByEmOptionsDefaultTypeInternal;
+extern UpdateByEmOptionsDefaultTypeInternal _UpdateByEmOptions_default_instance_;
 class UpdateByRequest;
 struct UpdateByRequestDefaultTypeInternal;
 extern UpdateByRequestDefaultTypeInternal _UpdateByRequest_default_instance_;
@@ -343,18 +343,33 @@ extern UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByCum
 class UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByCumulativeSum;
 struct UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByCumulativeSumDefaultTypeInternal;
 extern UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByCumulativeSumDefaultTypeInternal _UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByCumulativeSum_default_instance_;
+class UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByDelta;
+struct UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByDeltaDefaultTypeInternal;
+extern UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByDeltaDefaultTypeInternal _UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByDelta_default_instance_;
+class UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByEmMax;
+struct UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByEmMaxDefaultTypeInternal;
+extern UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByEmMaxDefaultTypeInternal _UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByEmMax_default_instance_;
+class UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByEmMin;
+struct UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByEmMinDefaultTypeInternal;
+extern UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByEmMinDefaultTypeInternal _UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByEmMin_default_instance_;
+class UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByEmStd;
+struct UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByEmStdDefaultTypeInternal;
+extern UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByEmStdDefaultTypeInternal _UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByEmStd_default_instance_;
 class UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByEma;
 struct UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByEmaDefaultTypeInternal;
 extern UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByEmaDefaultTypeInternal _UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByEma_default_instance_;
-class UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByEma_UpdateByEmaOptions;
-struct UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByEma_UpdateByEmaOptionsDefaultTypeInternal;
-extern UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByEma_UpdateByEmaOptionsDefaultTypeInternal _UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByEma_UpdateByEmaOptions_default_instance_;
+class UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByEms;
+struct UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByEmsDefaultTypeInternal;
+extern UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByEmsDefaultTypeInternal _UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByEms_default_instance_;
 class UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByFill;
 struct UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByFillDefaultTypeInternal;
 extern UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByFillDefaultTypeInternal _UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByFill_default_instance_;
 class UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByRollingAvg;
 struct UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByRollingAvgDefaultTypeInternal;
 extern UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByRollingAvgDefaultTypeInternal _UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByRollingAvg_default_instance_;
+class UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByRollingCount;
+struct UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByRollingCountDefaultTypeInternal;
+extern UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByRollingCountDefaultTypeInternal _UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByRollingCount_default_instance_;
 class UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByRollingGroup;
 struct UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByRollingGroupDefaultTypeInternal;
 extern UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByRollingGroupDefaultTypeInternal _UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByRollingGroup_default_instance_;
@@ -367,12 +382,27 @@ extern UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByRol
 class UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByRollingProduct;
 struct UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByRollingProductDefaultTypeInternal;
 extern UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByRollingProductDefaultTypeInternal _UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByRollingProduct_default_instance_;
+class UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByRollingStd;
+struct UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByRollingStdDefaultTypeInternal;
+extern UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByRollingStdDefaultTypeInternal _UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByRollingStd_default_instance_;
 class UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByRollingSum;
 struct UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByRollingSumDefaultTypeInternal;
 extern UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByRollingSumDefaultTypeInternal _UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByRollingSum_default_instance_;
+class UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByRollingWAvg;
+struct UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByRollingWAvgDefaultTypeInternal;
+extern UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByRollingWAvgDefaultTypeInternal _UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByRollingWAvg_default_instance_;
 class UpdateByRequest_UpdateByOptions;
 struct UpdateByRequest_UpdateByOptionsDefaultTypeInternal;
 extern UpdateByRequest_UpdateByOptionsDefaultTypeInternal _UpdateByRequest_UpdateByOptions_default_instance_;
+class UpdateByWindowScale;
+struct UpdateByWindowScaleDefaultTypeInternal;
+extern UpdateByWindowScaleDefaultTypeInternal _UpdateByWindowScale_default_instance_;
+class UpdateByWindowScale_UpdateByWindowTicks;
+struct UpdateByWindowScale_UpdateByWindowTicksDefaultTypeInternal;
+extern UpdateByWindowScale_UpdateByWindowTicksDefaultTypeInternal _UpdateByWindowScale_UpdateByWindowTicks_default_instance_;
+class UpdateByWindowScale_UpdateByWindowTime;
+struct UpdateByWindowScale_UpdateByWindowTimeDefaultTypeInternal;
+extern UpdateByWindowScale_UpdateByWindowTimeDefaultTypeInternal _UpdateByWindowScale_UpdateByWindowTime_default_instance_;
 class Value;
 struct ValueDefaultTypeInternal;
 extern ValueDefaultTypeInternal _Value_default_instance_;
@@ -416,6 +446,7 @@ template<> ::io::deephaven::proto::backplane::grpc::Aggregation_AggregationColum
 template<> ::io::deephaven::proto::backplane::grpc::Aggregation_AggregationCount* Arena::CreateMaybeMessage<::io::deephaven::proto::backplane::grpc::Aggregation_AggregationCount>(Arena*);
 template<> ::io::deephaven::proto::backplane::grpc::Aggregation_AggregationPartition* Arena::CreateMaybeMessage<::io::deephaven::proto::backplane::grpc::Aggregation_AggregationPartition>(Arena*);
 template<> ::io::deephaven::proto::backplane::grpc::Aggregation_AggregationRowKey* Arena::CreateMaybeMessage<::io::deephaven::proto::backplane::grpc::Aggregation_AggregationRowKey>(Arena*);
+template<> ::io::deephaven::proto::backplane::grpc::AjRajTablesRequest* Arena::CreateMaybeMessage<::io::deephaven::proto::backplane::grpc::AjRajTablesRequest>(Arena*);
 template<> ::io::deephaven::proto::backplane::grpc::AndCondition* Arena::CreateMaybeMessage<::io::deephaven::proto::backplane::grpc::AndCondition>(Arena*);
 template<> ::io::deephaven::proto::backplane::grpc::ApplyPreviewColumnsRequest* Arena::CreateMaybeMessage<::io::deephaven::proto::backplane::grpc::ApplyPreviewColumnsRequest>(Arena*);
 template<> ::io::deephaven::proto::backplane::grpc::AsOfJoinTablesRequest* Arena::CreateMaybeMessage<::io::deephaven::proto::backplane::grpc::AsOfJoinTablesRequest>(Arena*);
@@ -471,9 +502,8 @@ template<> ::io::deephaven::proto::backplane::grpc::TableReference* Arena::Creat
 template<> ::io::deephaven::proto::backplane::grpc::TimeTableRequest* Arena::CreateMaybeMessage<::io::deephaven::proto::backplane::grpc::TimeTableRequest>(Arena*);
 template<> ::io::deephaven::proto::backplane::grpc::UngroupRequest* Arena::CreateMaybeMessage<::io::deephaven::proto::backplane::grpc::UngroupRequest>(Arena*);
 template<> ::io::deephaven::proto::backplane::grpc::UnstructuredFilterTableRequest* Arena::CreateMaybeMessage<::io::deephaven::proto::backplane::grpc::UnstructuredFilterTableRequest>(Arena*);
-template<> ::io::deephaven::proto::backplane::grpc::UpdateByEmaTimescale* Arena::CreateMaybeMessage<::io::deephaven::proto::backplane::grpc::UpdateByEmaTimescale>(Arena*);
-template<> ::io::deephaven::proto::backplane::grpc::UpdateByEmaTimescale_UpdateByEmaTicks* Arena::CreateMaybeMessage<::io::deephaven::proto::backplane::grpc::UpdateByEmaTimescale_UpdateByEmaTicks>(Arena*);
-template<> ::io::deephaven::proto::backplane::grpc::UpdateByEmaTimescale_UpdateByEmaTime* Arena::CreateMaybeMessage<::io::deephaven::proto::backplane::grpc::UpdateByEmaTimescale_UpdateByEmaTime>(Arena*);
+template<> ::io::deephaven::proto::backplane::grpc::UpdateByDeltaOptions* Arena::CreateMaybeMessage<::io::deephaven::proto::backplane::grpc::UpdateByDeltaOptions>(Arena*);
+template<> ::io::deephaven::proto::backplane::grpc::UpdateByEmOptions* Arena::CreateMaybeMessage<::io::deephaven::proto::backplane::grpc::UpdateByEmOptions>(Arena*);
 template<> ::io::deephaven::proto::backplane::grpc::UpdateByRequest* Arena::CreateMaybeMessage<::io::deephaven::proto::backplane::grpc::UpdateByRequest>(Arena*);
 template<> ::io::deephaven::proto::backplane::grpc::UpdateByRequest_UpdateByOperation* Arena::CreateMaybeMessage<::io::deephaven::proto::backplane::grpc::UpdateByRequest_UpdateByOperation>(Arena*);
 template<> ::io::deephaven::proto::backplane::grpc::UpdateByRequest_UpdateByOperation_UpdateByColumn* Arena::CreateMaybeMessage<::io::deephaven::proto::backplane::grpc::UpdateByRequest_UpdateByOperation_UpdateByColumn>(Arena*);
@@ -482,16 +512,26 @@ template<> ::io::deephaven::proto::backplane::grpc::UpdateByRequest_UpdateByOper
 template<> ::io::deephaven::proto::backplane::grpc::UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByCumulativeMin* Arena::CreateMaybeMessage<::io::deephaven::proto::backplane::grpc::UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByCumulativeMin>(Arena*);
 template<> ::io::deephaven::proto::backplane::grpc::UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByCumulativeProduct* Arena::CreateMaybeMessage<::io::deephaven::proto::backplane::grpc::UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByCumulativeProduct>(Arena*);
 template<> ::io::deephaven::proto::backplane::grpc::UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByCumulativeSum* Arena::CreateMaybeMessage<::io::deephaven::proto::backplane::grpc::UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByCumulativeSum>(Arena*);
+template<> ::io::deephaven::proto::backplane::grpc::UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByDelta* Arena::CreateMaybeMessage<::io::deephaven::proto::backplane::grpc::UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByDelta>(Arena*);
+template<> ::io::deephaven::proto::backplane::grpc::UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByEmMax* Arena::CreateMaybeMessage<::io::deephaven::proto::backplane::grpc::UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByEmMax>(Arena*);
+template<> ::io::deephaven::proto::backplane::grpc::UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByEmMin* Arena::CreateMaybeMessage<::io::deephaven::proto::backplane::grpc::UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByEmMin>(Arena*);
+template<> ::io::deephaven::proto::backplane::grpc::UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByEmStd* Arena::CreateMaybeMessage<::io::deephaven::proto::backplane::grpc::UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByEmStd>(Arena*);
 template<> ::io::deephaven::proto::backplane::grpc::UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByEma* Arena::CreateMaybeMessage<::io::deephaven::proto::backplane::grpc::UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByEma>(Arena*);
-template<> ::io::deephaven::proto::backplane::grpc::UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByEma_UpdateByEmaOptions* Arena::CreateMaybeMessage<::io::deephaven::proto::backplane::grpc::UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByEma_UpdateByEmaOptions>(Arena*);
+template<> ::io::deephaven::proto::backplane::grpc::UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByEms* Arena::CreateMaybeMessage<::io::deephaven::proto::backplane::grpc::UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByEms>(Arena*);
 template<> ::io::deephaven::proto::backplane::grpc::UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByFill* Arena::CreateMaybeMessage<::io::deephaven::proto::backplane::grpc::UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByFill>(Arena*);
 template<> ::io::deephaven::proto::backplane::grpc::UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByRollingAvg* Arena::CreateMaybeMessage<::io::deephaven::proto::backplane::grpc::UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByRollingAvg>(Arena*);
+template<> ::io::deephaven::proto::backplane::grpc::UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByRollingCount* Arena::CreateMaybeMessage<::io::deephaven::proto::backplane::grpc::UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByRollingCount>(Arena*);
 template<> ::io::deephaven::proto::backplane::grpc::UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByRollingGroup* Arena::CreateMaybeMessage<::io::deephaven::proto::backplane::grpc::UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByRollingGroup>(Arena*);
 template<> ::io::deephaven::proto::backplane::grpc::UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByRollingMax* Arena::CreateMaybeMessage<::io::deephaven::proto::backplane::grpc::UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByRollingMax>(Arena*);
 template<> ::io::deephaven::proto::backplane::grpc::UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByRollingMin* Arena::CreateMaybeMessage<::io::deephaven::proto::backplane::grpc::UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByRollingMin>(Arena*);
 template<> ::io::deephaven::proto::backplane::grpc::UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByRollingProduct* Arena::CreateMaybeMessage<::io::deephaven::proto::backplane::grpc::UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByRollingProduct>(Arena*);
+template<> ::io::deephaven::proto::backplane::grpc::UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByRollingStd* Arena::CreateMaybeMessage<::io::deephaven::proto::backplane::grpc::UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByRollingStd>(Arena*);
 template<> ::io::deephaven::proto::backplane::grpc::UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByRollingSum* Arena::CreateMaybeMessage<::io::deephaven::proto::backplane::grpc::UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByRollingSum>(Arena*);
+template<> ::io::deephaven::proto::backplane::grpc::UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByRollingWAvg* Arena::CreateMaybeMessage<::io::deephaven::proto::backplane::grpc::UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByRollingWAvg>(Arena*);
 template<> ::io::deephaven::proto::backplane::grpc::UpdateByRequest_UpdateByOptions* Arena::CreateMaybeMessage<::io::deephaven::proto::backplane::grpc::UpdateByRequest_UpdateByOptions>(Arena*);
+template<> ::io::deephaven::proto::backplane::grpc::UpdateByWindowScale* Arena::CreateMaybeMessage<::io::deephaven::proto::backplane::grpc::UpdateByWindowScale>(Arena*);
+template<> ::io::deephaven::proto::backplane::grpc::UpdateByWindowScale_UpdateByWindowTicks* Arena::CreateMaybeMessage<::io::deephaven::proto::backplane::grpc::UpdateByWindowScale_UpdateByWindowTicks>(Arena*);
+template<> ::io::deephaven::proto::backplane::grpc::UpdateByWindowScale_UpdateByWindowTime* Arena::CreateMaybeMessage<::io::deephaven::proto::backplane::grpc::UpdateByWindowScale_UpdateByWindowTime>(Arena*);
 template<> ::io::deephaven::proto::backplane::grpc::Value* Arena::CreateMaybeMessage<::io::deephaven::proto::backplane::grpc::Value>(Arena*);
 template<> ::io::deephaven::proto::backplane::grpc::WhereInRequest* Arena::CreateMaybeMessage<::io::deephaven::proto::backplane::grpc::WhereInRequest>(Arena*);
 PROTOBUF_NAMESPACE_CLOSE
@@ -502,19 +542,20 @@ namespace backplane {
 namespace grpc {
 
 enum MathContext_RoundingMode : int {
-  MathContext_RoundingMode_UP = 0,
-  MathContext_RoundingMode_DOWN = 1,
-  MathContext_RoundingMode_CEILING = 2,
-  MathContext_RoundingMode_FLOOR = 3,
-  MathContext_RoundingMode_HALF_UP = 4,
-  MathContext_RoundingMode_HALF_DOWN = 5,
-  MathContext_RoundingMode_HALF_EVEN = 6,
-  MathContext_RoundingMode_UNNECESSARY = 7,
+  MathContext_RoundingMode_ROUNDING_MODE_NOT_SPECIFIED = 0,
+  MathContext_RoundingMode_UP = 1,
+  MathContext_RoundingMode_DOWN = 2,
+  MathContext_RoundingMode_CEILING = 3,
+  MathContext_RoundingMode_FLOOR = 4,
+  MathContext_RoundingMode_HALF_UP = 5,
+  MathContext_RoundingMode_HALF_DOWN = 6,
+  MathContext_RoundingMode_HALF_EVEN = 7,
+  MathContext_RoundingMode_UNNECESSARY = 8,
   MathContext_RoundingMode_MathContext_RoundingMode_INT_MIN_SENTINEL_DO_NOT_USE_ = std::numeric_limits<int32_t>::min(),
   MathContext_RoundingMode_MathContext_RoundingMode_INT_MAX_SENTINEL_DO_NOT_USE_ = std::numeric_limits<int32_t>::max()
 };
 bool MathContext_RoundingMode_IsValid(int value);
-constexpr MathContext_RoundingMode MathContext_RoundingMode_RoundingMode_MIN = MathContext_RoundingMode_UP;
+constexpr MathContext_RoundingMode MathContext_RoundingMode_RoundingMode_MIN = MathContext_RoundingMode_ROUNDING_MODE_NOT_SPECIFIED;
 constexpr MathContext_RoundingMode MathContext_RoundingMode_RoundingMode_MAX = MathContext_RoundingMode_UNNECESSARY;
 constexpr int MathContext_RoundingMode_RoundingMode_ARRAYSIZE = MathContext_RoundingMode_RoundingMode_MAX + 1;
 
@@ -560,14 +601,15 @@ inline bool AsOfJoinTablesRequest_MatchRule_Parse(
     AsOfJoinTablesRequest_MatchRule_descriptor(), name, value);
 }
 enum RangeJoinTablesRequest_RangeStartRule : int {
-  RangeJoinTablesRequest_RangeStartRule_LESS_THAN = 0,
-  RangeJoinTablesRequest_RangeStartRule_LESS_THAN_OR_EQUAL = 1,
-  RangeJoinTablesRequest_RangeStartRule_LESS_THAN_OR_EQUAL_ALLOW_PRECEDING = 2,
+  RangeJoinTablesRequest_RangeStartRule_START_UNSPECIFIED = 0,
+  RangeJoinTablesRequest_RangeStartRule_LESS_THAN = 1,
+  RangeJoinTablesRequest_RangeStartRule_LESS_THAN_OR_EQUAL = 2,
+  RangeJoinTablesRequest_RangeStartRule_LESS_THAN_OR_EQUAL_ALLOW_PRECEDING = 3,
   RangeJoinTablesRequest_RangeStartRule_RangeJoinTablesRequest_RangeStartRule_INT_MIN_SENTINEL_DO_NOT_USE_ = std::numeric_limits<int32_t>::min(),
   RangeJoinTablesRequest_RangeStartRule_RangeJoinTablesRequest_RangeStartRule_INT_MAX_SENTINEL_DO_NOT_USE_ = std::numeric_limits<int32_t>::max()
 };
 bool RangeJoinTablesRequest_RangeStartRule_IsValid(int value);
-constexpr RangeJoinTablesRequest_RangeStartRule RangeJoinTablesRequest_RangeStartRule_RangeStartRule_MIN = RangeJoinTablesRequest_RangeStartRule_LESS_THAN;
+constexpr RangeJoinTablesRequest_RangeStartRule RangeJoinTablesRequest_RangeStartRule_RangeStartRule_MIN = RangeJoinTablesRequest_RangeStartRule_START_UNSPECIFIED;
 constexpr RangeJoinTablesRequest_RangeStartRule RangeJoinTablesRequest_RangeStartRule_RangeStartRule_MAX = RangeJoinTablesRequest_RangeStartRule_LESS_THAN_OR_EQUAL_ALLOW_PRECEDING;
 constexpr int RangeJoinTablesRequest_RangeStartRule_RangeStartRule_ARRAYSIZE = RangeJoinTablesRequest_RangeStartRule_RangeStartRule_MAX + 1;
 
@@ -586,14 +628,15 @@ inline bool RangeJoinTablesRequest_RangeStartRule_Parse(
     RangeJoinTablesRequest_RangeStartRule_descriptor(), name, value);
 }
 enum RangeJoinTablesRequest_RangeEndRule : int {
-  RangeJoinTablesRequest_RangeEndRule_GREATER_THAN = 0,
-  RangeJoinTablesRequest_RangeEndRule_GREATER_THAN_OR_EQUAL = 1,
-  RangeJoinTablesRequest_RangeEndRule_GREATER_THAN_OR_EQUAL_ALLOW_FOLLOWING = 2,
+  RangeJoinTablesRequest_RangeEndRule_END_UNSPECIFIED = 0,
+  RangeJoinTablesRequest_RangeEndRule_GREATER_THAN = 1,
+  RangeJoinTablesRequest_RangeEndRule_GREATER_THAN_OR_EQUAL = 2,
+  RangeJoinTablesRequest_RangeEndRule_GREATER_THAN_OR_EQUAL_ALLOW_FOLLOWING = 3,
   RangeJoinTablesRequest_RangeEndRule_RangeJoinTablesRequest_RangeEndRule_INT_MIN_SENTINEL_DO_NOT_USE_ = std::numeric_limits<int32_t>::min(),
   RangeJoinTablesRequest_RangeEndRule_RangeJoinTablesRequest_RangeEndRule_INT_MAX_SENTINEL_DO_NOT_USE_ = std::numeric_limits<int32_t>::max()
 };
 bool RangeJoinTablesRequest_RangeEndRule_IsValid(int value);
-constexpr RangeJoinTablesRequest_RangeEndRule RangeJoinTablesRequest_RangeEndRule_RangeEndRule_MIN = RangeJoinTablesRequest_RangeEndRule_GREATER_THAN;
+constexpr RangeJoinTablesRequest_RangeEndRule RangeJoinTablesRequest_RangeEndRule_RangeEndRule_MIN = RangeJoinTablesRequest_RangeEndRule_END_UNSPECIFIED;
 constexpr RangeJoinTablesRequest_RangeEndRule RangeJoinTablesRequest_RangeEndRule_RangeEndRule_MAX = RangeJoinTablesRequest_RangeEndRule_GREATER_THAN_OR_EQUAL_ALLOW_FOLLOWING;
 constexpr int RangeJoinTablesRequest_RangeEndRule_RangeEndRule_ARRAYSIZE = RangeJoinTablesRequest_RangeEndRule_RangeEndRule_MAX + 1;
 
@@ -705,15 +748,16 @@ inline bool CompareCondition_CompareOperation_Parse(
     CompareCondition_CompareOperation_descriptor(), name, value);
 }
 enum BadDataBehavior : int {
-  THROW = 0,
-  RESET = 1,
-  SKIP = 2,
-  POISON = 3,
+  BAD_DATA_BEHAVIOR_NOT_SPECIFIED = 0,
+  THROW = 1,
+  RESET = 2,
+  SKIP = 3,
+  POISON = 4,
   BadDataBehavior_INT_MIN_SENTINEL_DO_NOT_USE_ = std::numeric_limits<int32_t>::min(),
   BadDataBehavior_INT_MAX_SENTINEL_DO_NOT_USE_ = std::numeric_limits<int32_t>::max()
 };
 bool BadDataBehavior_IsValid(int value);
-constexpr BadDataBehavior BadDataBehavior_MIN = THROW;
+constexpr BadDataBehavior BadDataBehavior_MIN = BAD_DATA_BEHAVIOR_NOT_SPECIFIED;
 constexpr BadDataBehavior BadDataBehavior_MAX = POISON;
 constexpr int BadDataBehavior_ARRAYSIZE = BadDataBehavior_MAX + 1;
 
@@ -730,6 +774,33 @@ inline bool BadDataBehavior_Parse(
     ::PROTOBUF_NAMESPACE_ID::ConstStringParam name, BadDataBehavior* value) {
   return ::PROTOBUF_NAMESPACE_ID::internal::ParseNamedEnum<BadDataBehavior>(
     BadDataBehavior_descriptor(), name, value);
+}
+enum UpdateByNullBehavior : int {
+  NULL_BEHAVIOR_NOT_SPECIFIED = 0,
+  NULL_DOMINATES = 1,
+  VALUE_DOMINATES = 2,
+  ZERO_DOMINATES = 3,
+  UpdateByNullBehavior_INT_MIN_SENTINEL_DO_NOT_USE_ = std::numeric_limits<int32_t>::min(),
+  UpdateByNullBehavior_INT_MAX_SENTINEL_DO_NOT_USE_ = std::numeric_limits<int32_t>::max()
+};
+bool UpdateByNullBehavior_IsValid(int value);
+constexpr UpdateByNullBehavior UpdateByNullBehavior_MIN = NULL_BEHAVIOR_NOT_SPECIFIED;
+constexpr UpdateByNullBehavior UpdateByNullBehavior_MAX = ZERO_DOMINATES;
+constexpr int UpdateByNullBehavior_ARRAYSIZE = UpdateByNullBehavior_MAX + 1;
+
+const ::PROTOBUF_NAMESPACE_ID::EnumDescriptor* UpdateByNullBehavior_descriptor();
+template<typename T>
+inline const std::string& UpdateByNullBehavior_Name(T enum_t_value) {
+  static_assert(::std::is_same<T, UpdateByNullBehavior>::value ||
+    ::std::is_integral<T>::value,
+    "Incorrect type passed to function UpdateByNullBehavior_Name.");
+  return ::PROTOBUF_NAMESPACE_ID::internal::NameOfEnum(
+    UpdateByNullBehavior_descriptor(), enum_t_value);
+}
+inline bool UpdateByNullBehavior_Parse(
+    ::PROTOBUF_NAMESPACE_ID::ConstStringParam name, UpdateByNullBehavior* value) {
+  return ::PROTOBUF_NAMESPACE_ID::internal::ParseNamedEnum<UpdateByNullBehavior>(
+    UpdateByNullBehavior_descriptor(), name, value);
 }
 enum NullValue : int {
   NULL_VALUE = 0,
@@ -2501,6 +2572,8 @@ class MathContext final :
   // nested types ----------------------------------------------------
 
   typedef MathContext_RoundingMode RoundingMode;
+  static constexpr RoundingMode ROUNDING_MODE_NOT_SPECIFIED =
+    MathContext_RoundingMode_ROUNDING_MODE_NOT_SPECIFIED;
   static constexpr RoundingMode UP =
     MathContext_RoundingMode_UP;
   static constexpr RoundingMode DOWN =
@@ -2580,24 +2653,24 @@ class MathContext final :
 };
 // -------------------------------------------------------------------
 
-class UpdateByEmaTimescale_UpdateByEmaTicks final :
-    public ::PROTOBUF_NAMESPACE_ID::Message /* @@protoc_insertion_point(class_definition:io.deephaven.proto.backplane.grpc.UpdateByEmaTimescale.UpdateByEmaTicks) */ {
+class UpdateByWindowScale_UpdateByWindowTicks final :
+    public ::PROTOBUF_NAMESPACE_ID::Message /* @@protoc_insertion_point(class_definition:io.deephaven.proto.backplane.grpc.UpdateByWindowScale.UpdateByWindowTicks) */ {
  public:
-  inline UpdateByEmaTimescale_UpdateByEmaTicks() : UpdateByEmaTimescale_UpdateByEmaTicks(nullptr) {}
-  ~UpdateByEmaTimescale_UpdateByEmaTicks() override;
-  explicit PROTOBUF_CONSTEXPR UpdateByEmaTimescale_UpdateByEmaTicks(::PROTOBUF_NAMESPACE_ID::internal::ConstantInitialized);
+  inline UpdateByWindowScale_UpdateByWindowTicks() : UpdateByWindowScale_UpdateByWindowTicks(nullptr) {}
+  ~UpdateByWindowScale_UpdateByWindowTicks() override;
+  explicit PROTOBUF_CONSTEXPR UpdateByWindowScale_UpdateByWindowTicks(::PROTOBUF_NAMESPACE_ID::internal::ConstantInitialized);
 
-  UpdateByEmaTimescale_UpdateByEmaTicks(const UpdateByEmaTimescale_UpdateByEmaTicks& from);
-  UpdateByEmaTimescale_UpdateByEmaTicks(UpdateByEmaTimescale_UpdateByEmaTicks&& from) noexcept
-    : UpdateByEmaTimescale_UpdateByEmaTicks() {
+  UpdateByWindowScale_UpdateByWindowTicks(const UpdateByWindowScale_UpdateByWindowTicks& from);
+  UpdateByWindowScale_UpdateByWindowTicks(UpdateByWindowScale_UpdateByWindowTicks&& from) noexcept
+    : UpdateByWindowScale_UpdateByWindowTicks() {
     *this = ::std::move(from);
   }
 
-  inline UpdateByEmaTimescale_UpdateByEmaTicks& operator=(const UpdateByEmaTimescale_UpdateByEmaTicks& from) {
+  inline UpdateByWindowScale_UpdateByWindowTicks& operator=(const UpdateByWindowScale_UpdateByWindowTicks& from) {
     CopyFrom(from);
     return *this;
   }
-  inline UpdateByEmaTimescale_UpdateByEmaTicks& operator=(UpdateByEmaTimescale_UpdateByEmaTicks&& from) noexcept {
+  inline UpdateByWindowScale_UpdateByWindowTicks& operator=(UpdateByWindowScale_UpdateByWindowTicks&& from) noexcept {
     if (this == &from) return *this;
     if (GetOwningArena() == from.GetOwningArena()
   #ifdef PROTOBUF_FORCE_COPY_IN_MOVE
@@ -2620,20 +2693,20 @@ class UpdateByEmaTimescale_UpdateByEmaTicks final :
   static const ::PROTOBUF_NAMESPACE_ID::Reflection* GetReflection() {
     return default_instance().GetMetadata().reflection;
   }
-  static const UpdateByEmaTimescale_UpdateByEmaTicks& default_instance() {
+  static const UpdateByWindowScale_UpdateByWindowTicks& default_instance() {
     return *internal_default_instance();
   }
-  static inline const UpdateByEmaTimescale_UpdateByEmaTicks* internal_default_instance() {
-    return reinterpret_cast<const UpdateByEmaTimescale_UpdateByEmaTicks*>(
-               &_UpdateByEmaTimescale_UpdateByEmaTicks_default_instance_);
+  static inline const UpdateByWindowScale_UpdateByWindowTicks* internal_default_instance() {
+    return reinterpret_cast<const UpdateByWindowScale_UpdateByWindowTicks*>(
+               &_UpdateByWindowScale_UpdateByWindowTicks_default_instance_);
   }
   static constexpr int kIndexInFileMessages =
     10;
 
-  friend void swap(UpdateByEmaTimescale_UpdateByEmaTicks& a, UpdateByEmaTimescale_UpdateByEmaTicks& b) {
+  friend void swap(UpdateByWindowScale_UpdateByWindowTicks& a, UpdateByWindowScale_UpdateByWindowTicks& b) {
     a.Swap(&b);
   }
-  inline void Swap(UpdateByEmaTimescale_UpdateByEmaTicks* other) {
+  inline void Swap(UpdateByWindowScale_UpdateByWindowTicks* other) {
     if (other == this) return;
   #ifdef PROTOBUF_FORCE_COPY_IN_SWAP
     if (GetOwningArena() != nullptr &&
@@ -2646,7 +2719,7 @@ class UpdateByEmaTimescale_UpdateByEmaTicks final :
       ::PROTOBUF_NAMESPACE_ID::internal::GenericSwap(this, other);
     }
   }
-  void UnsafeArenaSwap(UpdateByEmaTimescale_UpdateByEmaTicks* other) {
+  void UnsafeArenaSwap(UpdateByWindowScale_UpdateByWindowTicks* other) {
     if (other == this) return;
     GOOGLE_DCHECK(GetOwningArena() == other->GetOwningArena());
     InternalSwap(other);
@@ -2654,13 +2727,13 @@ class UpdateByEmaTimescale_UpdateByEmaTicks final :
 
   // implements Message ----------------------------------------------
 
-  UpdateByEmaTimescale_UpdateByEmaTicks* New(::PROTOBUF_NAMESPACE_ID::Arena* arena = nullptr) const final {
-    return CreateMaybeMessage<UpdateByEmaTimescale_UpdateByEmaTicks>(arena);
+  UpdateByWindowScale_UpdateByWindowTicks* New(::PROTOBUF_NAMESPACE_ID::Arena* arena = nullptr) const final {
+    return CreateMaybeMessage<UpdateByWindowScale_UpdateByWindowTicks>(arena);
   }
   using ::PROTOBUF_NAMESPACE_ID::Message::CopyFrom;
-  void CopyFrom(const UpdateByEmaTimescale_UpdateByEmaTicks& from);
+  void CopyFrom(const UpdateByWindowScale_UpdateByWindowTicks& from);
   using ::PROTOBUF_NAMESPACE_ID::Message::MergeFrom;
-  void MergeFrom(const UpdateByEmaTimescale_UpdateByEmaTicks& from);
+  void MergeFrom(const UpdateByWindowScale_UpdateByWindowTicks& from);
   private:
   static void MergeImpl(::PROTOBUF_NAMESPACE_ID::Message* to, const ::PROTOBUF_NAMESPACE_ID::Message& from);
   public:
@@ -2677,15 +2750,15 @@ class UpdateByEmaTimescale_UpdateByEmaTicks final :
   void SharedCtor();
   void SharedDtor();
   void SetCachedSize(int size) const final;
-  void InternalSwap(UpdateByEmaTimescale_UpdateByEmaTicks* other);
+  void InternalSwap(UpdateByWindowScale_UpdateByWindowTicks* other);
 
   private:
   friend class ::PROTOBUF_NAMESPACE_ID::internal::AnyMetadata;
   static ::PROTOBUF_NAMESPACE_ID::StringPiece FullMessageName() {
-    return "io.deephaven.proto.backplane.grpc.UpdateByEmaTimescale.UpdateByEmaTicks";
+    return "io.deephaven.proto.backplane.grpc.UpdateByWindowScale.UpdateByWindowTicks";
   }
   protected:
-  explicit UpdateByEmaTimescale_UpdateByEmaTicks(::PROTOBUF_NAMESPACE_ID::Arena* arena,
+  explicit UpdateByWindowScale_UpdateByWindowTicks(::PROTOBUF_NAMESPACE_ID::Arena* arena,
                        bool is_message_owned = false);
   public:
 
@@ -2710,7 +2783,7 @@ class UpdateByEmaTimescale_UpdateByEmaTicks final :
   void _internal_set_ticks(double value);
   public:
 
-  // @@protoc_insertion_point(class_scope:io.deephaven.proto.backplane.grpc.UpdateByEmaTimescale.UpdateByEmaTicks)
+  // @@protoc_insertion_point(class_scope:io.deephaven.proto.backplane.grpc.UpdateByWindowScale.UpdateByWindowTicks)
  private:
   class _Internal;
 
@@ -2723,24 +2796,24 @@ class UpdateByEmaTimescale_UpdateByEmaTicks final :
 };
 // -------------------------------------------------------------------
 
-class UpdateByEmaTimescale_UpdateByEmaTime final :
-    public ::PROTOBUF_NAMESPACE_ID::Message /* @@protoc_insertion_point(class_definition:io.deephaven.proto.backplane.grpc.UpdateByEmaTimescale.UpdateByEmaTime) */ {
+class UpdateByWindowScale_UpdateByWindowTime final :
+    public ::PROTOBUF_NAMESPACE_ID::Message /* @@protoc_insertion_point(class_definition:io.deephaven.proto.backplane.grpc.UpdateByWindowScale.UpdateByWindowTime) */ {
  public:
-  inline UpdateByEmaTimescale_UpdateByEmaTime() : UpdateByEmaTimescale_UpdateByEmaTime(nullptr) {}
-  ~UpdateByEmaTimescale_UpdateByEmaTime() override;
-  explicit PROTOBUF_CONSTEXPR UpdateByEmaTimescale_UpdateByEmaTime(::PROTOBUF_NAMESPACE_ID::internal::ConstantInitialized);
+  inline UpdateByWindowScale_UpdateByWindowTime() : UpdateByWindowScale_UpdateByWindowTime(nullptr) {}
+  ~UpdateByWindowScale_UpdateByWindowTime() override;
+  explicit PROTOBUF_CONSTEXPR UpdateByWindowScale_UpdateByWindowTime(::PROTOBUF_NAMESPACE_ID::internal::ConstantInitialized);
 
-  UpdateByEmaTimescale_UpdateByEmaTime(const UpdateByEmaTimescale_UpdateByEmaTime& from);
-  UpdateByEmaTimescale_UpdateByEmaTime(UpdateByEmaTimescale_UpdateByEmaTime&& from) noexcept
-    : UpdateByEmaTimescale_UpdateByEmaTime() {
+  UpdateByWindowScale_UpdateByWindowTime(const UpdateByWindowScale_UpdateByWindowTime& from);
+  UpdateByWindowScale_UpdateByWindowTime(UpdateByWindowScale_UpdateByWindowTime&& from) noexcept
+    : UpdateByWindowScale_UpdateByWindowTime() {
     *this = ::std::move(from);
   }
 
-  inline UpdateByEmaTimescale_UpdateByEmaTime& operator=(const UpdateByEmaTimescale_UpdateByEmaTime& from) {
+  inline UpdateByWindowScale_UpdateByWindowTime& operator=(const UpdateByWindowScale_UpdateByWindowTime& from) {
     CopyFrom(from);
     return *this;
   }
-  inline UpdateByEmaTimescale_UpdateByEmaTime& operator=(UpdateByEmaTimescale_UpdateByEmaTime&& from) noexcept {
+  inline UpdateByWindowScale_UpdateByWindowTime& operator=(UpdateByWindowScale_UpdateByWindowTime&& from) noexcept {
     if (this == &from) return *this;
     if (GetOwningArena() == from.GetOwningArena()
   #ifdef PROTOBUF_FORCE_COPY_IN_MOVE
@@ -2763,20 +2836,20 @@ class UpdateByEmaTimescale_UpdateByEmaTime final :
   static const ::PROTOBUF_NAMESPACE_ID::Reflection* GetReflection() {
     return default_instance().GetMetadata().reflection;
   }
-  static const UpdateByEmaTimescale_UpdateByEmaTime& default_instance() {
+  static const UpdateByWindowScale_UpdateByWindowTime& default_instance() {
     return *internal_default_instance();
   }
-  static inline const UpdateByEmaTimescale_UpdateByEmaTime* internal_default_instance() {
-    return reinterpret_cast<const UpdateByEmaTimescale_UpdateByEmaTime*>(
-               &_UpdateByEmaTimescale_UpdateByEmaTime_default_instance_);
+  static inline const UpdateByWindowScale_UpdateByWindowTime* internal_default_instance() {
+    return reinterpret_cast<const UpdateByWindowScale_UpdateByWindowTime*>(
+               &_UpdateByWindowScale_UpdateByWindowTime_default_instance_);
   }
   static constexpr int kIndexInFileMessages =
     11;
 
-  friend void swap(UpdateByEmaTimescale_UpdateByEmaTime& a, UpdateByEmaTimescale_UpdateByEmaTime& b) {
+  friend void swap(UpdateByWindowScale_UpdateByWindowTime& a, UpdateByWindowScale_UpdateByWindowTime& b) {
     a.Swap(&b);
   }
-  inline void Swap(UpdateByEmaTimescale_UpdateByEmaTime* other) {
+  inline void Swap(UpdateByWindowScale_UpdateByWindowTime* other) {
     if (other == this) return;
   #ifdef PROTOBUF_FORCE_COPY_IN_SWAP
     if (GetOwningArena() != nullptr &&
@@ -2789,7 +2862,7 @@ class UpdateByEmaTimescale_UpdateByEmaTime final :
       ::PROTOBUF_NAMESPACE_ID::internal::GenericSwap(this, other);
     }
   }
-  void UnsafeArenaSwap(UpdateByEmaTimescale_UpdateByEmaTime* other) {
+  void UnsafeArenaSwap(UpdateByWindowScale_UpdateByWindowTime* other) {
     if (other == this) return;
     GOOGLE_DCHECK(GetOwningArena() == other->GetOwningArena());
     InternalSwap(other);
@@ -2797,13 +2870,13 @@ class UpdateByEmaTimescale_UpdateByEmaTime final :
 
   // implements Message ----------------------------------------------
 
-  UpdateByEmaTimescale_UpdateByEmaTime* New(::PROTOBUF_NAMESPACE_ID::Arena* arena = nullptr) const final {
-    return CreateMaybeMessage<UpdateByEmaTimescale_UpdateByEmaTime>(arena);
+  UpdateByWindowScale_UpdateByWindowTime* New(::PROTOBUF_NAMESPACE_ID::Arena* arena = nullptr) const final {
+    return CreateMaybeMessage<UpdateByWindowScale_UpdateByWindowTime>(arena);
   }
   using ::PROTOBUF_NAMESPACE_ID::Message::CopyFrom;
-  void CopyFrom(const UpdateByEmaTimescale_UpdateByEmaTime& from);
+  void CopyFrom(const UpdateByWindowScale_UpdateByWindowTime& from);
   using ::PROTOBUF_NAMESPACE_ID::Message::MergeFrom;
-  void MergeFrom(const UpdateByEmaTimescale_UpdateByEmaTime& from);
+  void MergeFrom(const UpdateByWindowScale_UpdateByWindowTime& from);
   private:
   static void MergeImpl(::PROTOBUF_NAMESPACE_ID::Message* to, const ::PROTOBUF_NAMESPACE_ID::Message& from);
   public:
@@ -2820,15 +2893,15 @@ class UpdateByEmaTimescale_UpdateByEmaTime final :
   void SharedCtor();
   void SharedDtor();
   void SetCachedSize(int size) const final;
-  void InternalSwap(UpdateByEmaTimescale_UpdateByEmaTime* other);
+  void InternalSwap(UpdateByWindowScale_UpdateByWindowTime* other);
 
   private:
   friend class ::PROTOBUF_NAMESPACE_ID::internal::AnyMetadata;
   static ::PROTOBUF_NAMESPACE_ID::StringPiece FullMessageName() {
-    return "io.deephaven.proto.backplane.grpc.UpdateByEmaTimescale.UpdateByEmaTime";
+    return "io.deephaven.proto.backplane.grpc.UpdateByWindowScale.UpdateByWindowTime";
   }
   protected:
-  explicit UpdateByEmaTimescale_UpdateByEmaTime(::PROTOBUF_NAMESPACE_ID::Arena* arena,
+  explicit UpdateByWindowScale_UpdateByWindowTime(::PROTOBUF_NAMESPACE_ID::Arena* arena,
                        bool is_message_owned = false);
   public:
 
@@ -2868,7 +2941,7 @@ class UpdateByEmaTimescale_UpdateByEmaTime final :
   void _internal_set_period_nanos(int64_t value);
   public:
 
-  // @@protoc_insertion_point(class_scope:io.deephaven.proto.backplane.grpc.UpdateByEmaTimescale.UpdateByEmaTime)
+  // @@protoc_insertion_point(class_scope:io.deephaven.proto.backplane.grpc.UpdateByWindowScale.UpdateByWindowTime)
  private:
   class _Internal;
 
@@ -2882,24 +2955,24 @@ class UpdateByEmaTimescale_UpdateByEmaTime final :
 };
 // -------------------------------------------------------------------
 
-class UpdateByEmaTimescale final :
-    public ::PROTOBUF_NAMESPACE_ID::Message /* @@protoc_insertion_point(class_definition:io.deephaven.proto.backplane.grpc.UpdateByEmaTimescale) */ {
+class UpdateByWindowScale final :
+    public ::PROTOBUF_NAMESPACE_ID::Message /* @@protoc_insertion_point(class_definition:io.deephaven.proto.backplane.grpc.UpdateByWindowScale) */ {
  public:
-  inline UpdateByEmaTimescale() : UpdateByEmaTimescale(nullptr) {}
-  ~UpdateByEmaTimescale() override;
-  explicit PROTOBUF_CONSTEXPR UpdateByEmaTimescale(::PROTOBUF_NAMESPACE_ID::internal::ConstantInitialized);
+  inline UpdateByWindowScale() : UpdateByWindowScale(nullptr) {}
+  ~UpdateByWindowScale() override;
+  explicit PROTOBUF_CONSTEXPR UpdateByWindowScale(::PROTOBUF_NAMESPACE_ID::internal::ConstantInitialized);
 
-  UpdateByEmaTimescale(const UpdateByEmaTimescale& from);
-  UpdateByEmaTimescale(UpdateByEmaTimescale&& from) noexcept
-    : UpdateByEmaTimescale() {
+  UpdateByWindowScale(const UpdateByWindowScale& from);
+  UpdateByWindowScale(UpdateByWindowScale&& from) noexcept
+    : UpdateByWindowScale() {
     *this = ::std::move(from);
   }
 
-  inline UpdateByEmaTimescale& operator=(const UpdateByEmaTimescale& from) {
+  inline UpdateByWindowScale& operator=(const UpdateByWindowScale& from) {
     CopyFrom(from);
     return *this;
   }
-  inline UpdateByEmaTimescale& operator=(UpdateByEmaTimescale&& from) noexcept {
+  inline UpdateByWindowScale& operator=(UpdateByWindowScale&& from) noexcept {
     if (this == &from) return *this;
     if (GetOwningArena() == from.GetOwningArena()
   #ifdef PROTOBUF_FORCE_COPY_IN_MOVE
@@ -2922,7 +2995,7 @@ class UpdateByEmaTimescale final :
   static const ::PROTOBUF_NAMESPACE_ID::Reflection* GetReflection() {
     return default_instance().GetMetadata().reflection;
   }
-  static const UpdateByEmaTimescale& default_instance() {
+  static const UpdateByWindowScale& default_instance() {
     return *internal_default_instance();
   }
   enum TypeCase {
@@ -2931,17 +3004,17 @@ class UpdateByEmaTimescale final :
     TYPE_NOT_SET = 0,
   };
 
-  static inline const UpdateByEmaTimescale* internal_default_instance() {
-    return reinterpret_cast<const UpdateByEmaTimescale*>(
-               &_UpdateByEmaTimescale_default_instance_);
+  static inline const UpdateByWindowScale* internal_default_instance() {
+    return reinterpret_cast<const UpdateByWindowScale*>(
+               &_UpdateByWindowScale_default_instance_);
   }
   static constexpr int kIndexInFileMessages =
     12;
 
-  friend void swap(UpdateByEmaTimescale& a, UpdateByEmaTimescale& b) {
+  friend void swap(UpdateByWindowScale& a, UpdateByWindowScale& b) {
     a.Swap(&b);
   }
-  inline void Swap(UpdateByEmaTimescale* other) {
+  inline void Swap(UpdateByWindowScale* other) {
     if (other == this) return;
   #ifdef PROTOBUF_FORCE_COPY_IN_SWAP
     if (GetOwningArena() != nullptr &&
@@ -2954,7 +3027,7 @@ class UpdateByEmaTimescale final :
       ::PROTOBUF_NAMESPACE_ID::internal::GenericSwap(this, other);
     }
   }
-  void UnsafeArenaSwap(UpdateByEmaTimescale* other) {
+  void UnsafeArenaSwap(UpdateByWindowScale* other) {
     if (other == this) return;
     GOOGLE_DCHECK(GetOwningArena() == other->GetOwningArena());
     InternalSwap(other);
@@ -2962,13 +3035,13 @@ class UpdateByEmaTimescale final :
 
   // implements Message ----------------------------------------------
 
-  UpdateByEmaTimescale* New(::PROTOBUF_NAMESPACE_ID::Arena* arena = nullptr) const final {
-    return CreateMaybeMessage<UpdateByEmaTimescale>(arena);
+  UpdateByWindowScale* New(::PROTOBUF_NAMESPACE_ID::Arena* arena = nullptr) const final {
+    return CreateMaybeMessage<UpdateByWindowScale>(arena);
   }
   using ::PROTOBUF_NAMESPACE_ID::Message::CopyFrom;
-  void CopyFrom(const UpdateByEmaTimescale& from);
+  void CopyFrom(const UpdateByWindowScale& from);
   using ::PROTOBUF_NAMESPACE_ID::Message::MergeFrom;
-  void MergeFrom(const UpdateByEmaTimescale& from);
+  void MergeFrom(const UpdateByWindowScale& from);
   private:
   static void MergeImpl(::PROTOBUF_NAMESPACE_ID::Message* to, const ::PROTOBUF_NAMESPACE_ID::Message& from);
   public:
@@ -2985,15 +3058,15 @@ class UpdateByEmaTimescale final :
   void SharedCtor();
   void SharedDtor();
   void SetCachedSize(int size) const final;
-  void InternalSwap(UpdateByEmaTimescale* other);
+  void InternalSwap(UpdateByWindowScale* other);
 
   private:
   friend class ::PROTOBUF_NAMESPACE_ID::internal::AnyMetadata;
   static ::PROTOBUF_NAMESPACE_ID::StringPiece FullMessageName() {
-    return "io.deephaven.proto.backplane.grpc.UpdateByEmaTimescale";
+    return "io.deephaven.proto.backplane.grpc.UpdateByWindowScale";
   }
   protected:
-  explicit UpdateByEmaTimescale(::PROTOBUF_NAMESPACE_ID::Arena* arena,
+  explicit UpdateByWindowScale(::PROTOBUF_NAMESPACE_ID::Arena* arena,
                        bool is_message_owned = false);
   public:
 
@@ -3004,8 +3077,8 @@ class UpdateByEmaTimescale final :
 
   // nested types ----------------------------------------------------
 
-  typedef UpdateByEmaTimescale_UpdateByEmaTicks UpdateByEmaTicks;
-  typedef UpdateByEmaTimescale_UpdateByEmaTime UpdateByEmaTime;
+  typedef UpdateByWindowScale_UpdateByWindowTicks UpdateByWindowTicks;
+  typedef UpdateByWindowScale_UpdateByWindowTime UpdateByWindowTime;
 
   // accessors -------------------------------------------------------
 
@@ -3013,45 +3086,45 @@ class UpdateByEmaTimescale final :
     kTicksFieldNumber = 1,
     kTimeFieldNumber = 2,
   };
-  // .io.deephaven.proto.backplane.grpc.UpdateByEmaTimescale.UpdateByEmaTicks ticks = 1;
+  // .io.deephaven.proto.backplane.grpc.UpdateByWindowScale.UpdateByWindowTicks ticks = 1;
   bool has_ticks() const;
   private:
   bool _internal_has_ticks() const;
   public:
   void clear_ticks();
-  const ::io::deephaven::proto::backplane::grpc::UpdateByEmaTimescale_UpdateByEmaTicks& ticks() const;
-  PROTOBUF_NODISCARD ::io::deephaven::proto::backplane::grpc::UpdateByEmaTimescale_UpdateByEmaTicks* release_ticks();
-  ::io::deephaven::proto::backplane::grpc::UpdateByEmaTimescale_UpdateByEmaTicks* mutable_ticks();
-  void set_allocated_ticks(::io::deephaven::proto::backplane::grpc::UpdateByEmaTimescale_UpdateByEmaTicks* ticks);
+  const ::io::deephaven::proto::backplane::grpc::UpdateByWindowScale_UpdateByWindowTicks& ticks() const;
+  PROTOBUF_NODISCARD ::io::deephaven::proto::backplane::grpc::UpdateByWindowScale_UpdateByWindowTicks* release_ticks();
+  ::io::deephaven::proto::backplane::grpc::UpdateByWindowScale_UpdateByWindowTicks* mutable_ticks();
+  void set_allocated_ticks(::io::deephaven::proto::backplane::grpc::UpdateByWindowScale_UpdateByWindowTicks* ticks);
   private:
-  const ::io::deephaven::proto::backplane::grpc::UpdateByEmaTimescale_UpdateByEmaTicks& _internal_ticks() const;
-  ::io::deephaven::proto::backplane::grpc::UpdateByEmaTimescale_UpdateByEmaTicks* _internal_mutable_ticks();
+  const ::io::deephaven::proto::backplane::grpc::UpdateByWindowScale_UpdateByWindowTicks& _internal_ticks() const;
+  ::io::deephaven::proto::backplane::grpc::UpdateByWindowScale_UpdateByWindowTicks* _internal_mutable_ticks();
   public:
   void unsafe_arena_set_allocated_ticks(
-      ::io::deephaven::proto::backplane::grpc::UpdateByEmaTimescale_UpdateByEmaTicks* ticks);
-  ::io::deephaven::proto::backplane::grpc::UpdateByEmaTimescale_UpdateByEmaTicks* unsafe_arena_release_ticks();
+      ::io::deephaven::proto::backplane::grpc::UpdateByWindowScale_UpdateByWindowTicks* ticks);
+  ::io::deephaven::proto::backplane::grpc::UpdateByWindowScale_UpdateByWindowTicks* unsafe_arena_release_ticks();
 
-  // .io.deephaven.proto.backplane.grpc.UpdateByEmaTimescale.UpdateByEmaTime time = 2;
+  // .io.deephaven.proto.backplane.grpc.UpdateByWindowScale.UpdateByWindowTime time = 2;
   bool has_time() const;
   private:
   bool _internal_has_time() const;
   public:
   void clear_time();
-  const ::io::deephaven::proto::backplane::grpc::UpdateByEmaTimescale_UpdateByEmaTime& time() const;
-  PROTOBUF_NODISCARD ::io::deephaven::proto::backplane::grpc::UpdateByEmaTimescale_UpdateByEmaTime* release_time();
-  ::io::deephaven::proto::backplane::grpc::UpdateByEmaTimescale_UpdateByEmaTime* mutable_time();
-  void set_allocated_time(::io::deephaven::proto::backplane::grpc::UpdateByEmaTimescale_UpdateByEmaTime* time);
+  const ::io::deephaven::proto::backplane::grpc::UpdateByWindowScale_UpdateByWindowTime& time() const;
+  PROTOBUF_NODISCARD ::io::deephaven::proto::backplane::grpc::UpdateByWindowScale_UpdateByWindowTime* release_time();
+  ::io::deephaven::proto::backplane::grpc::UpdateByWindowScale_UpdateByWindowTime* mutable_time();
+  void set_allocated_time(::io::deephaven::proto::backplane::grpc::UpdateByWindowScale_UpdateByWindowTime* time);
   private:
-  const ::io::deephaven::proto::backplane::grpc::UpdateByEmaTimescale_UpdateByEmaTime& _internal_time() const;
-  ::io::deephaven::proto::backplane::grpc::UpdateByEmaTimescale_UpdateByEmaTime* _internal_mutable_time();
+  const ::io::deephaven::proto::backplane::grpc::UpdateByWindowScale_UpdateByWindowTime& _internal_time() const;
+  ::io::deephaven::proto::backplane::grpc::UpdateByWindowScale_UpdateByWindowTime* _internal_mutable_time();
   public:
   void unsafe_arena_set_allocated_time(
-      ::io::deephaven::proto::backplane::grpc::UpdateByEmaTimescale_UpdateByEmaTime* time);
-  ::io::deephaven::proto::backplane::grpc::UpdateByEmaTimescale_UpdateByEmaTime* unsafe_arena_release_time();
+      ::io::deephaven::proto::backplane::grpc::UpdateByWindowScale_UpdateByWindowTime* time);
+  ::io::deephaven::proto::backplane::grpc::UpdateByWindowScale_UpdateByWindowTime* unsafe_arena_release_time();
 
   void clear_type();
   TypeCase type_case() const;
-  // @@protoc_insertion_point(class_scope:io.deephaven.proto.backplane.grpc.UpdateByEmaTimescale)
+  // @@protoc_insertion_point(class_scope:io.deephaven.proto.backplane.grpc.UpdateByWindowScale)
  private:
   class _Internal;
   void set_has_ticks();
@@ -3066,12 +3139,362 @@ class UpdateByEmaTimescale final :
   union TypeUnion {
     constexpr TypeUnion() : _constinit_{} {}
       ::PROTOBUF_NAMESPACE_ID::internal::ConstantInitialized _constinit_;
-    ::io::deephaven::proto::backplane::grpc::UpdateByEmaTimescale_UpdateByEmaTicks* ticks_;
-    ::io::deephaven::proto::backplane::grpc::UpdateByEmaTimescale_UpdateByEmaTime* time_;
+    ::io::deephaven::proto::backplane::grpc::UpdateByWindowScale_UpdateByWindowTicks* ticks_;
+    ::io::deephaven::proto::backplane::grpc::UpdateByWindowScale_UpdateByWindowTime* time_;
   } type_;
   mutable ::PROTOBUF_NAMESPACE_ID::internal::CachedSize _cached_size_;
   uint32_t _oneof_case_[1];
 
+  friend struct ::TableStruct_deephaven_2fproto_2ftable_2eproto;
+};
+// -------------------------------------------------------------------
+
+class UpdateByEmOptions final :
+    public ::PROTOBUF_NAMESPACE_ID::Message /* @@protoc_insertion_point(class_definition:io.deephaven.proto.backplane.grpc.UpdateByEmOptions) */ {
+ public:
+  inline UpdateByEmOptions() : UpdateByEmOptions(nullptr) {}
+  ~UpdateByEmOptions() override;
+  explicit PROTOBUF_CONSTEXPR UpdateByEmOptions(::PROTOBUF_NAMESPACE_ID::internal::ConstantInitialized);
+
+  UpdateByEmOptions(const UpdateByEmOptions& from);
+  UpdateByEmOptions(UpdateByEmOptions&& from) noexcept
+    : UpdateByEmOptions() {
+    *this = ::std::move(from);
+  }
+
+  inline UpdateByEmOptions& operator=(const UpdateByEmOptions& from) {
+    CopyFrom(from);
+    return *this;
+  }
+  inline UpdateByEmOptions& operator=(UpdateByEmOptions&& from) noexcept {
+    if (this == &from) return *this;
+    if (GetOwningArena() == from.GetOwningArena()
+  #ifdef PROTOBUF_FORCE_COPY_IN_MOVE
+        && GetOwningArena() != nullptr
+  #endif  // !PROTOBUF_FORCE_COPY_IN_MOVE
+    ) {
+      InternalSwap(&from);
+    } else {
+      CopyFrom(from);
+    }
+    return *this;
+  }
+
+  static const ::PROTOBUF_NAMESPACE_ID::Descriptor* descriptor() {
+    return GetDescriptor();
+  }
+  static const ::PROTOBUF_NAMESPACE_ID::Descriptor* GetDescriptor() {
+    return default_instance().GetMetadata().descriptor;
+  }
+  static const ::PROTOBUF_NAMESPACE_ID::Reflection* GetReflection() {
+    return default_instance().GetMetadata().reflection;
+  }
+  static const UpdateByEmOptions& default_instance() {
+    return *internal_default_instance();
+  }
+  static inline const UpdateByEmOptions* internal_default_instance() {
+    return reinterpret_cast<const UpdateByEmOptions*>(
+               &_UpdateByEmOptions_default_instance_);
+  }
+  static constexpr int kIndexInFileMessages =
+    13;
+
+  friend void swap(UpdateByEmOptions& a, UpdateByEmOptions& b) {
+    a.Swap(&b);
+  }
+  inline void Swap(UpdateByEmOptions* other) {
+    if (other == this) return;
+  #ifdef PROTOBUF_FORCE_COPY_IN_SWAP
+    if (GetOwningArena() != nullptr &&
+        GetOwningArena() == other->GetOwningArena()) {
+   #else  // PROTOBUF_FORCE_COPY_IN_SWAP
+    if (GetOwningArena() == other->GetOwningArena()) {
+  #endif  // !PROTOBUF_FORCE_COPY_IN_SWAP
+      InternalSwap(other);
+    } else {
+      ::PROTOBUF_NAMESPACE_ID::internal::GenericSwap(this, other);
+    }
+  }
+  void UnsafeArenaSwap(UpdateByEmOptions* other) {
+    if (other == this) return;
+    GOOGLE_DCHECK(GetOwningArena() == other->GetOwningArena());
+    InternalSwap(other);
+  }
+
+  // implements Message ----------------------------------------------
+
+  UpdateByEmOptions* New(::PROTOBUF_NAMESPACE_ID::Arena* arena = nullptr) const final {
+    return CreateMaybeMessage<UpdateByEmOptions>(arena);
+  }
+  using ::PROTOBUF_NAMESPACE_ID::Message::CopyFrom;
+  void CopyFrom(const UpdateByEmOptions& from);
+  using ::PROTOBUF_NAMESPACE_ID::Message::MergeFrom;
+  void MergeFrom(const UpdateByEmOptions& from);
+  private:
+  static void MergeImpl(::PROTOBUF_NAMESPACE_ID::Message* to, const ::PROTOBUF_NAMESPACE_ID::Message& from);
+  public:
+  PROTOBUF_ATTRIBUTE_REINITIALIZES void Clear() final;
+  bool IsInitialized() const final;
+
+  size_t ByteSizeLong() const final;
+  const char* _InternalParse(const char* ptr, ::PROTOBUF_NAMESPACE_ID::internal::ParseContext* ctx) final;
+  uint8_t* _InternalSerialize(
+      uint8_t* target, ::PROTOBUF_NAMESPACE_ID::io::EpsCopyOutputStream* stream) const final;
+  int GetCachedSize() const final { return _cached_size_.Get(); }
+
+  private:
+  void SharedCtor();
+  void SharedDtor();
+  void SetCachedSize(int size) const final;
+  void InternalSwap(UpdateByEmOptions* other);
+
+  private:
+  friend class ::PROTOBUF_NAMESPACE_ID::internal::AnyMetadata;
+  static ::PROTOBUF_NAMESPACE_ID::StringPiece FullMessageName() {
+    return "io.deephaven.proto.backplane.grpc.UpdateByEmOptions";
+  }
+  protected:
+  explicit UpdateByEmOptions(::PROTOBUF_NAMESPACE_ID::Arena* arena,
+                       bool is_message_owned = false);
+  public:
+
+  static const ClassData _class_data_;
+  const ::PROTOBUF_NAMESPACE_ID::Message::ClassData*GetClassData() const final;
+
+  ::PROTOBUF_NAMESPACE_ID::Metadata GetMetadata() const final;
+
+  // nested types ----------------------------------------------------
+
+  // accessors -------------------------------------------------------
+
+  enum : int {
+    kBigValueContextFieldNumber = 6,
+    kOnNullValueFieldNumber = 1,
+    kOnNanValueFieldNumber = 2,
+    kOnNullTimeFieldNumber = 3,
+    kOnNegativeDeltaTimeFieldNumber = 4,
+    kOnZeroDeltaTimeFieldNumber = 5,
+  };
+  // .io.deephaven.proto.backplane.grpc.MathContext big_value_context = 6;
+  bool has_big_value_context() const;
+  private:
+  bool _internal_has_big_value_context() const;
+  public:
+  void clear_big_value_context();
+  const ::io::deephaven::proto::backplane::grpc::MathContext& big_value_context() const;
+  PROTOBUF_NODISCARD ::io::deephaven::proto::backplane::grpc::MathContext* release_big_value_context();
+  ::io::deephaven::proto::backplane::grpc::MathContext* mutable_big_value_context();
+  void set_allocated_big_value_context(::io::deephaven::proto::backplane::grpc::MathContext* big_value_context);
+  private:
+  const ::io::deephaven::proto::backplane::grpc::MathContext& _internal_big_value_context() const;
+  ::io::deephaven::proto::backplane::grpc::MathContext* _internal_mutable_big_value_context();
+  public:
+  void unsafe_arena_set_allocated_big_value_context(
+      ::io::deephaven::proto::backplane::grpc::MathContext* big_value_context);
+  ::io::deephaven::proto::backplane::grpc::MathContext* unsafe_arena_release_big_value_context();
+
+  // .io.deephaven.proto.backplane.grpc.BadDataBehavior on_null_value = 1;
+  void clear_on_null_value();
+  ::io::deephaven::proto::backplane::grpc::BadDataBehavior on_null_value() const;
+  void set_on_null_value(::io::deephaven::proto::backplane::grpc::BadDataBehavior value);
+  private:
+  ::io::deephaven::proto::backplane::grpc::BadDataBehavior _internal_on_null_value() const;
+  void _internal_set_on_null_value(::io::deephaven::proto::backplane::grpc::BadDataBehavior value);
+  public:
+
+  // .io.deephaven.proto.backplane.grpc.BadDataBehavior on_nan_value = 2;
+  void clear_on_nan_value();
+  ::io::deephaven::proto::backplane::grpc::BadDataBehavior on_nan_value() const;
+  void set_on_nan_value(::io::deephaven::proto::backplane::grpc::BadDataBehavior value);
+  private:
+  ::io::deephaven::proto::backplane::grpc::BadDataBehavior _internal_on_nan_value() const;
+  void _internal_set_on_nan_value(::io::deephaven::proto::backplane::grpc::BadDataBehavior value);
+  public:
+
+  // .io.deephaven.proto.backplane.grpc.BadDataBehavior on_null_time = 3;
+  void clear_on_null_time();
+  ::io::deephaven::proto::backplane::grpc::BadDataBehavior on_null_time() const;
+  void set_on_null_time(::io::deephaven::proto::backplane::grpc::BadDataBehavior value);
+  private:
+  ::io::deephaven::proto::backplane::grpc::BadDataBehavior _internal_on_null_time() const;
+  void _internal_set_on_null_time(::io::deephaven::proto::backplane::grpc::BadDataBehavior value);
+  public:
+
+  // .io.deephaven.proto.backplane.grpc.BadDataBehavior on_negative_delta_time = 4;
+  void clear_on_negative_delta_time();
+  ::io::deephaven::proto::backplane::grpc::BadDataBehavior on_negative_delta_time() const;
+  void set_on_negative_delta_time(::io::deephaven::proto::backplane::grpc::BadDataBehavior value);
+  private:
+  ::io::deephaven::proto::backplane::grpc::BadDataBehavior _internal_on_negative_delta_time() const;
+  void _internal_set_on_negative_delta_time(::io::deephaven::proto::backplane::grpc::BadDataBehavior value);
+  public:
+
+  // .io.deephaven.proto.backplane.grpc.BadDataBehavior on_zero_delta_time = 5;
+  void clear_on_zero_delta_time();
+  ::io::deephaven::proto::backplane::grpc::BadDataBehavior on_zero_delta_time() const;
+  void set_on_zero_delta_time(::io::deephaven::proto::backplane::grpc::BadDataBehavior value);
+  private:
+  ::io::deephaven::proto::backplane::grpc::BadDataBehavior _internal_on_zero_delta_time() const;
+  void _internal_set_on_zero_delta_time(::io::deephaven::proto::backplane::grpc::BadDataBehavior value);
+  public:
+
+  // @@protoc_insertion_point(class_scope:io.deephaven.proto.backplane.grpc.UpdateByEmOptions)
+ private:
+  class _Internal;
+
+  template <typename T> friend class ::PROTOBUF_NAMESPACE_ID::Arena::InternalHelper;
+  typedef void InternalArenaConstructable_;
+  typedef void DestructorSkippable_;
+  ::io::deephaven::proto::backplane::grpc::MathContext* big_value_context_;
+  int on_null_value_;
+  int on_nan_value_;
+  int on_null_time_;
+  int on_negative_delta_time_;
+  int on_zero_delta_time_;
+  mutable ::PROTOBUF_NAMESPACE_ID::internal::CachedSize _cached_size_;
+  friend struct ::TableStruct_deephaven_2fproto_2ftable_2eproto;
+};
+// -------------------------------------------------------------------
+
+class UpdateByDeltaOptions final :
+    public ::PROTOBUF_NAMESPACE_ID::Message /* @@protoc_insertion_point(class_definition:io.deephaven.proto.backplane.grpc.UpdateByDeltaOptions) */ {
+ public:
+  inline UpdateByDeltaOptions() : UpdateByDeltaOptions(nullptr) {}
+  ~UpdateByDeltaOptions() override;
+  explicit PROTOBUF_CONSTEXPR UpdateByDeltaOptions(::PROTOBUF_NAMESPACE_ID::internal::ConstantInitialized);
+
+  UpdateByDeltaOptions(const UpdateByDeltaOptions& from);
+  UpdateByDeltaOptions(UpdateByDeltaOptions&& from) noexcept
+    : UpdateByDeltaOptions() {
+    *this = ::std::move(from);
+  }
+
+  inline UpdateByDeltaOptions& operator=(const UpdateByDeltaOptions& from) {
+    CopyFrom(from);
+    return *this;
+  }
+  inline UpdateByDeltaOptions& operator=(UpdateByDeltaOptions&& from) noexcept {
+    if (this == &from) return *this;
+    if (GetOwningArena() == from.GetOwningArena()
+  #ifdef PROTOBUF_FORCE_COPY_IN_MOVE
+        && GetOwningArena() != nullptr
+  #endif  // !PROTOBUF_FORCE_COPY_IN_MOVE
+    ) {
+      InternalSwap(&from);
+    } else {
+      CopyFrom(from);
+    }
+    return *this;
+  }
+
+  static const ::PROTOBUF_NAMESPACE_ID::Descriptor* descriptor() {
+    return GetDescriptor();
+  }
+  static const ::PROTOBUF_NAMESPACE_ID::Descriptor* GetDescriptor() {
+    return default_instance().GetMetadata().descriptor;
+  }
+  static const ::PROTOBUF_NAMESPACE_ID::Reflection* GetReflection() {
+    return default_instance().GetMetadata().reflection;
+  }
+  static const UpdateByDeltaOptions& default_instance() {
+    return *internal_default_instance();
+  }
+  static inline const UpdateByDeltaOptions* internal_default_instance() {
+    return reinterpret_cast<const UpdateByDeltaOptions*>(
+               &_UpdateByDeltaOptions_default_instance_);
+  }
+  static constexpr int kIndexInFileMessages =
+    14;
+
+  friend void swap(UpdateByDeltaOptions& a, UpdateByDeltaOptions& b) {
+    a.Swap(&b);
+  }
+  inline void Swap(UpdateByDeltaOptions* other) {
+    if (other == this) return;
+  #ifdef PROTOBUF_FORCE_COPY_IN_SWAP
+    if (GetOwningArena() != nullptr &&
+        GetOwningArena() == other->GetOwningArena()) {
+   #else  // PROTOBUF_FORCE_COPY_IN_SWAP
+    if (GetOwningArena() == other->GetOwningArena()) {
+  #endif  // !PROTOBUF_FORCE_COPY_IN_SWAP
+      InternalSwap(other);
+    } else {
+      ::PROTOBUF_NAMESPACE_ID::internal::GenericSwap(this, other);
+    }
+  }
+  void UnsafeArenaSwap(UpdateByDeltaOptions* other) {
+    if (other == this) return;
+    GOOGLE_DCHECK(GetOwningArena() == other->GetOwningArena());
+    InternalSwap(other);
+  }
+
+  // implements Message ----------------------------------------------
+
+  UpdateByDeltaOptions* New(::PROTOBUF_NAMESPACE_ID::Arena* arena = nullptr) const final {
+    return CreateMaybeMessage<UpdateByDeltaOptions>(arena);
+  }
+  using ::PROTOBUF_NAMESPACE_ID::Message::CopyFrom;
+  void CopyFrom(const UpdateByDeltaOptions& from);
+  using ::PROTOBUF_NAMESPACE_ID::Message::MergeFrom;
+  void MergeFrom(const UpdateByDeltaOptions& from);
+  private:
+  static void MergeImpl(::PROTOBUF_NAMESPACE_ID::Message* to, const ::PROTOBUF_NAMESPACE_ID::Message& from);
+  public:
+  PROTOBUF_ATTRIBUTE_REINITIALIZES void Clear() final;
+  bool IsInitialized() const final;
+
+  size_t ByteSizeLong() const final;
+  const char* _InternalParse(const char* ptr, ::PROTOBUF_NAMESPACE_ID::internal::ParseContext* ctx) final;
+  uint8_t* _InternalSerialize(
+      uint8_t* target, ::PROTOBUF_NAMESPACE_ID::io::EpsCopyOutputStream* stream) const final;
+  int GetCachedSize() const final { return _cached_size_.Get(); }
+
+  private:
+  void SharedCtor();
+  void SharedDtor();
+  void SetCachedSize(int size) const final;
+  void InternalSwap(UpdateByDeltaOptions* other);
+
+  private:
+  friend class ::PROTOBUF_NAMESPACE_ID::internal::AnyMetadata;
+  static ::PROTOBUF_NAMESPACE_ID::StringPiece FullMessageName() {
+    return "io.deephaven.proto.backplane.grpc.UpdateByDeltaOptions";
+  }
+  protected:
+  explicit UpdateByDeltaOptions(::PROTOBUF_NAMESPACE_ID::Arena* arena,
+                       bool is_message_owned = false);
+  public:
+
+  static const ClassData _class_data_;
+  const ::PROTOBUF_NAMESPACE_ID::Message::ClassData*GetClassData() const final;
+
+  ::PROTOBUF_NAMESPACE_ID::Metadata GetMetadata() const final;
+
+  // nested types ----------------------------------------------------
+
+  // accessors -------------------------------------------------------
+
+  enum : int {
+    kNullBehaviorFieldNumber = 1,
+  };
+  // .io.deephaven.proto.backplane.grpc.UpdateByNullBehavior null_behavior = 1;
+  void clear_null_behavior();
+  ::io::deephaven::proto::backplane::grpc::UpdateByNullBehavior null_behavior() const;
+  void set_null_behavior(::io::deephaven::proto::backplane::grpc::UpdateByNullBehavior value);
+  private:
+  ::io::deephaven::proto::backplane::grpc::UpdateByNullBehavior _internal_null_behavior() const;
+  void _internal_set_null_behavior(::io::deephaven::proto::backplane::grpc::UpdateByNullBehavior value);
+  public:
+
+  // @@protoc_insertion_point(class_scope:io.deephaven.proto.backplane.grpc.UpdateByDeltaOptions)
+ private:
+  class _Internal;
+
+  template <typename T> friend class ::PROTOBUF_NAMESPACE_ID::Arena::InternalHelper;
+  typedef void InternalArenaConstructable_;
+  typedef void DestructorSkippable_;
+  int null_behavior_;
+  mutable ::PROTOBUF_NAMESPACE_ID::internal::CachedSize _cached_size_;
   friend struct ::TableStruct_deephaven_2fproto_2ftable_2eproto;
 };
 // -------------------------------------------------------------------
@@ -3124,7 +3547,7 @@ class UpdateByRequest_UpdateByOptions final :
                &_UpdateByRequest_UpdateByOptions_default_instance_);
   }
   static constexpr int kIndexInFileMessages =
-    13;
+    15;
 
   friend void swap(UpdateByRequest_UpdateByOptions& a, UpdateByRequest_UpdateByOptions& b) {
     a.Swap(&b);
@@ -3366,7 +3789,7 @@ class UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByCumu
                &_UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByCumulativeSum_default_instance_);
   }
   static constexpr int kIndexInFileMessages =
-    14;
+    16;
 
   friend void swap(UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByCumulativeSum& a, UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByCumulativeSum& b) {
     a.Swap(&b);
@@ -3482,7 +3905,7 @@ class UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByCumu
                &_UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByCumulativeMin_default_instance_);
   }
   static constexpr int kIndexInFileMessages =
-    15;
+    17;
 
   friend void swap(UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByCumulativeMin& a, UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByCumulativeMin& b) {
     a.Swap(&b);
@@ -3598,7 +4021,7 @@ class UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByCumu
                &_UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByCumulativeMax_default_instance_);
   }
   static constexpr int kIndexInFileMessages =
-    16;
+    18;
 
   friend void swap(UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByCumulativeMax& a, UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByCumulativeMax& b) {
     a.Swap(&b);
@@ -3714,7 +4137,7 @@ class UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByCumu
                &_UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByCumulativeProduct_default_instance_);
   }
   static constexpr int kIndexInFileMessages =
-    17;
+    19;
 
   friend void swap(UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByCumulativeProduct& a, UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByCumulativeProduct& b) {
     a.Swap(&b);
@@ -3830,7 +4253,7 @@ class UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByFill
                &_UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByFill_default_instance_);
   }
   static constexpr int kIndexInFileMessages =
-    18;
+    20;
 
   friend void swap(UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByFill& a, UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByFill& b) {
     a.Swap(&b);
@@ -3899,234 +4322,6 @@ class UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByFill
 };
 // -------------------------------------------------------------------
 
-class UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByEma_UpdateByEmaOptions final :
-    public ::PROTOBUF_NAMESPACE_ID::Message /* @@protoc_insertion_point(class_definition:io.deephaven.proto.backplane.grpc.UpdateByRequest.UpdateByOperation.UpdateByColumn.UpdateBySpec.UpdateByEma.UpdateByEmaOptions) */ {
- public:
-  inline UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByEma_UpdateByEmaOptions() : UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByEma_UpdateByEmaOptions(nullptr) {}
-  ~UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByEma_UpdateByEmaOptions() override;
-  explicit PROTOBUF_CONSTEXPR UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByEma_UpdateByEmaOptions(::PROTOBUF_NAMESPACE_ID::internal::ConstantInitialized);
-
-  UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByEma_UpdateByEmaOptions(const UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByEma_UpdateByEmaOptions& from);
-  UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByEma_UpdateByEmaOptions(UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByEma_UpdateByEmaOptions&& from) noexcept
-    : UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByEma_UpdateByEmaOptions() {
-    *this = ::std::move(from);
-  }
-
-  inline UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByEma_UpdateByEmaOptions& operator=(const UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByEma_UpdateByEmaOptions& from) {
-    CopyFrom(from);
-    return *this;
-  }
-  inline UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByEma_UpdateByEmaOptions& operator=(UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByEma_UpdateByEmaOptions&& from) noexcept {
-    if (this == &from) return *this;
-    if (GetOwningArena() == from.GetOwningArena()
-  #ifdef PROTOBUF_FORCE_COPY_IN_MOVE
-        && GetOwningArena() != nullptr
-  #endif  // !PROTOBUF_FORCE_COPY_IN_MOVE
-    ) {
-      InternalSwap(&from);
-    } else {
-      CopyFrom(from);
-    }
-    return *this;
-  }
-
-  static const ::PROTOBUF_NAMESPACE_ID::Descriptor* descriptor() {
-    return GetDescriptor();
-  }
-  static const ::PROTOBUF_NAMESPACE_ID::Descriptor* GetDescriptor() {
-    return default_instance().GetMetadata().descriptor;
-  }
-  static const ::PROTOBUF_NAMESPACE_ID::Reflection* GetReflection() {
-    return default_instance().GetMetadata().reflection;
-  }
-  static const UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByEma_UpdateByEmaOptions& default_instance() {
-    return *internal_default_instance();
-  }
-  static inline const UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByEma_UpdateByEmaOptions* internal_default_instance() {
-    return reinterpret_cast<const UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByEma_UpdateByEmaOptions*>(
-               &_UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByEma_UpdateByEmaOptions_default_instance_);
-  }
-  static constexpr int kIndexInFileMessages =
-    19;
-
-  friend void swap(UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByEma_UpdateByEmaOptions& a, UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByEma_UpdateByEmaOptions& b) {
-    a.Swap(&b);
-  }
-  inline void Swap(UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByEma_UpdateByEmaOptions* other) {
-    if (other == this) return;
-  #ifdef PROTOBUF_FORCE_COPY_IN_SWAP
-    if (GetOwningArena() != nullptr &&
-        GetOwningArena() == other->GetOwningArena()) {
-   #else  // PROTOBUF_FORCE_COPY_IN_SWAP
-    if (GetOwningArena() == other->GetOwningArena()) {
-  #endif  // !PROTOBUF_FORCE_COPY_IN_SWAP
-      InternalSwap(other);
-    } else {
-      ::PROTOBUF_NAMESPACE_ID::internal::GenericSwap(this, other);
-    }
-  }
-  void UnsafeArenaSwap(UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByEma_UpdateByEmaOptions* other) {
-    if (other == this) return;
-    GOOGLE_DCHECK(GetOwningArena() == other->GetOwningArena());
-    InternalSwap(other);
-  }
-
-  // implements Message ----------------------------------------------
-
-  UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByEma_UpdateByEmaOptions* New(::PROTOBUF_NAMESPACE_ID::Arena* arena = nullptr) const final {
-    return CreateMaybeMessage<UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByEma_UpdateByEmaOptions>(arena);
-  }
-  using ::PROTOBUF_NAMESPACE_ID::Message::CopyFrom;
-  void CopyFrom(const UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByEma_UpdateByEmaOptions& from);
-  using ::PROTOBUF_NAMESPACE_ID::Message::MergeFrom;
-  void MergeFrom(const UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByEma_UpdateByEmaOptions& from);
-  private:
-  static void MergeImpl(::PROTOBUF_NAMESPACE_ID::Message* to, const ::PROTOBUF_NAMESPACE_ID::Message& from);
-  public:
-  PROTOBUF_ATTRIBUTE_REINITIALIZES void Clear() final;
-  bool IsInitialized() const final;
-
-  size_t ByteSizeLong() const final;
-  const char* _InternalParse(const char* ptr, ::PROTOBUF_NAMESPACE_ID::internal::ParseContext* ctx) final;
-  uint8_t* _InternalSerialize(
-      uint8_t* target, ::PROTOBUF_NAMESPACE_ID::io::EpsCopyOutputStream* stream) const final;
-  int GetCachedSize() const final { return _cached_size_.Get(); }
-
-  private:
-  void SharedCtor();
-  void SharedDtor();
-  void SetCachedSize(int size) const final;
-  void InternalSwap(UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByEma_UpdateByEmaOptions* other);
-
-  private:
-  friend class ::PROTOBUF_NAMESPACE_ID::internal::AnyMetadata;
-  static ::PROTOBUF_NAMESPACE_ID::StringPiece FullMessageName() {
-    return "io.deephaven.proto.backplane.grpc.UpdateByRequest.UpdateByOperation.UpdateByColumn.UpdateBySpec.UpdateByEma.UpdateByEmaOptions";
-  }
-  protected:
-  explicit UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByEma_UpdateByEmaOptions(::PROTOBUF_NAMESPACE_ID::Arena* arena,
-                       bool is_message_owned = false);
-  public:
-
-  static const ClassData _class_data_;
-  const ::PROTOBUF_NAMESPACE_ID::Message::ClassData*GetClassData() const final;
-
-  ::PROTOBUF_NAMESPACE_ID::Metadata GetMetadata() const final;
-
-  // nested types ----------------------------------------------------
-
-  // accessors -------------------------------------------------------
-
-  enum : int {
-    kBigValueContextFieldNumber = 6,
-    kOnNullValueFieldNumber = 1,
-    kOnNanValueFieldNumber = 2,
-    kOnNullTimeFieldNumber = 3,
-    kOnNegativeDeltaTimeFieldNumber = 4,
-    kOnZeroDeltaTimeFieldNumber = 5,
-  };
-  // .io.deephaven.proto.backplane.grpc.MathContext big_value_context = 6;
-  bool has_big_value_context() const;
-  private:
-  bool _internal_has_big_value_context() const;
-  public:
-  void clear_big_value_context();
-  const ::io::deephaven::proto::backplane::grpc::MathContext& big_value_context() const;
-  PROTOBUF_NODISCARD ::io::deephaven::proto::backplane::grpc::MathContext* release_big_value_context();
-  ::io::deephaven::proto::backplane::grpc::MathContext* mutable_big_value_context();
-  void set_allocated_big_value_context(::io::deephaven::proto::backplane::grpc::MathContext* big_value_context);
-  private:
-  const ::io::deephaven::proto::backplane::grpc::MathContext& _internal_big_value_context() const;
-  ::io::deephaven::proto::backplane::grpc::MathContext* _internal_mutable_big_value_context();
-  public:
-  void unsafe_arena_set_allocated_big_value_context(
-      ::io::deephaven::proto::backplane::grpc::MathContext* big_value_context);
-  ::io::deephaven::proto::backplane::grpc::MathContext* unsafe_arena_release_big_value_context();
-
-  // optional .io.deephaven.proto.backplane.grpc.BadDataBehavior on_null_value = 1;
-  bool has_on_null_value() const;
-  private:
-  bool _internal_has_on_null_value() const;
-  public:
-  void clear_on_null_value();
-  ::io::deephaven::proto::backplane::grpc::BadDataBehavior on_null_value() const;
-  void set_on_null_value(::io::deephaven::proto::backplane::grpc::BadDataBehavior value);
-  private:
-  ::io::deephaven::proto::backplane::grpc::BadDataBehavior _internal_on_null_value() const;
-  void _internal_set_on_null_value(::io::deephaven::proto::backplane::grpc::BadDataBehavior value);
-  public:
-
-  // optional .io.deephaven.proto.backplane.grpc.BadDataBehavior on_nan_value = 2;
-  bool has_on_nan_value() const;
-  private:
-  bool _internal_has_on_nan_value() const;
-  public:
-  void clear_on_nan_value();
-  ::io::deephaven::proto::backplane::grpc::BadDataBehavior on_nan_value() const;
-  void set_on_nan_value(::io::deephaven::proto::backplane::grpc::BadDataBehavior value);
-  private:
-  ::io::deephaven::proto::backplane::grpc::BadDataBehavior _internal_on_nan_value() const;
-  void _internal_set_on_nan_value(::io::deephaven::proto::backplane::grpc::BadDataBehavior value);
-  public:
-
-  // optional .io.deephaven.proto.backplane.grpc.BadDataBehavior on_null_time = 3;
-  bool has_on_null_time() const;
-  private:
-  bool _internal_has_on_null_time() const;
-  public:
-  void clear_on_null_time();
-  ::io::deephaven::proto::backplane::grpc::BadDataBehavior on_null_time() const;
-  void set_on_null_time(::io::deephaven::proto::backplane::grpc::BadDataBehavior value);
-  private:
-  ::io::deephaven::proto::backplane::grpc::BadDataBehavior _internal_on_null_time() const;
-  void _internal_set_on_null_time(::io::deephaven::proto::backplane::grpc::BadDataBehavior value);
-  public:
-
-  // optional .io.deephaven.proto.backplane.grpc.BadDataBehavior on_negative_delta_time = 4;
-  bool has_on_negative_delta_time() const;
-  private:
-  bool _internal_has_on_negative_delta_time() const;
-  public:
-  void clear_on_negative_delta_time();
-  ::io::deephaven::proto::backplane::grpc::BadDataBehavior on_negative_delta_time() const;
-  void set_on_negative_delta_time(::io::deephaven::proto::backplane::grpc::BadDataBehavior value);
-  private:
-  ::io::deephaven::proto::backplane::grpc::BadDataBehavior _internal_on_negative_delta_time() const;
-  void _internal_set_on_negative_delta_time(::io::deephaven::proto::backplane::grpc::BadDataBehavior value);
-  public:
-
-  // optional .io.deephaven.proto.backplane.grpc.BadDataBehavior on_zero_delta_time = 5;
-  bool has_on_zero_delta_time() const;
-  private:
-  bool _internal_has_on_zero_delta_time() const;
-  public:
-  void clear_on_zero_delta_time();
-  ::io::deephaven::proto::backplane::grpc::BadDataBehavior on_zero_delta_time() const;
-  void set_on_zero_delta_time(::io::deephaven::proto::backplane::grpc::BadDataBehavior value);
-  private:
-  ::io::deephaven::proto::backplane::grpc::BadDataBehavior _internal_on_zero_delta_time() const;
-  void _internal_set_on_zero_delta_time(::io::deephaven::proto::backplane::grpc::BadDataBehavior value);
-  public:
-
-  // @@protoc_insertion_point(class_scope:io.deephaven.proto.backplane.grpc.UpdateByRequest.UpdateByOperation.UpdateByColumn.UpdateBySpec.UpdateByEma.UpdateByEmaOptions)
- private:
-  class _Internal;
-
-  template <typename T> friend class ::PROTOBUF_NAMESPACE_ID::Arena::InternalHelper;
-  typedef void InternalArenaConstructable_;
-  typedef void DestructorSkippable_;
-  ::PROTOBUF_NAMESPACE_ID::internal::HasBits<1> _has_bits_;
-  mutable ::PROTOBUF_NAMESPACE_ID::internal::CachedSize _cached_size_;
-  ::io::deephaven::proto::backplane::grpc::MathContext* big_value_context_;
-  int on_null_value_;
-  int on_nan_value_;
-  int on_null_time_;
-  int on_negative_delta_time_;
-  int on_zero_delta_time_;
-  friend struct ::TableStruct_deephaven_2fproto_2ftable_2eproto;
-};
-// -------------------------------------------------------------------
-
 class UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByEma final :
     public ::PROTOBUF_NAMESPACE_ID::Message /* @@protoc_insertion_point(class_definition:io.deephaven.proto.backplane.grpc.UpdateByRequest.UpdateByOperation.UpdateByColumn.UpdateBySpec.UpdateByEma) */ {
  public:
@@ -4175,7 +4370,7 @@ class UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByEma 
                &_UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByEma_default_instance_);
   }
   static constexpr int kIndexInFileMessages =
-    20;
+    21;
 
   friend void swap(UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByEma& a, UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByEma& b) {
     a.Swap(&b);
@@ -4243,49 +4438,47 @@ class UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByEma 
 
   // nested types ----------------------------------------------------
 
-  typedef UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByEma_UpdateByEmaOptions UpdateByEmaOptions;
-
   // accessors -------------------------------------------------------
 
   enum : int {
     kOptionsFieldNumber = 1,
-    kTimescaleFieldNumber = 2,
+    kWindowScaleFieldNumber = 2,
   };
-  // .io.deephaven.proto.backplane.grpc.UpdateByRequest.UpdateByOperation.UpdateByColumn.UpdateBySpec.UpdateByEma.UpdateByEmaOptions options = 1;
+  // .io.deephaven.proto.backplane.grpc.UpdateByEmOptions options = 1;
   bool has_options() const;
   private:
   bool _internal_has_options() const;
   public:
   void clear_options();
-  const ::io::deephaven::proto::backplane::grpc::UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByEma_UpdateByEmaOptions& options() const;
-  PROTOBUF_NODISCARD ::io::deephaven::proto::backplane::grpc::UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByEma_UpdateByEmaOptions* release_options();
-  ::io::deephaven::proto::backplane::grpc::UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByEma_UpdateByEmaOptions* mutable_options();
-  void set_allocated_options(::io::deephaven::proto::backplane::grpc::UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByEma_UpdateByEmaOptions* options);
+  const ::io::deephaven::proto::backplane::grpc::UpdateByEmOptions& options() const;
+  PROTOBUF_NODISCARD ::io::deephaven::proto::backplane::grpc::UpdateByEmOptions* release_options();
+  ::io::deephaven::proto::backplane::grpc::UpdateByEmOptions* mutable_options();
+  void set_allocated_options(::io::deephaven::proto::backplane::grpc::UpdateByEmOptions* options);
   private:
-  const ::io::deephaven::proto::backplane::grpc::UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByEma_UpdateByEmaOptions& _internal_options() const;
-  ::io::deephaven::proto::backplane::grpc::UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByEma_UpdateByEmaOptions* _internal_mutable_options();
+  const ::io::deephaven::proto::backplane::grpc::UpdateByEmOptions& _internal_options() const;
+  ::io::deephaven::proto::backplane::grpc::UpdateByEmOptions* _internal_mutable_options();
   public:
   void unsafe_arena_set_allocated_options(
-      ::io::deephaven::proto::backplane::grpc::UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByEma_UpdateByEmaOptions* options);
-  ::io::deephaven::proto::backplane::grpc::UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByEma_UpdateByEmaOptions* unsafe_arena_release_options();
+      ::io::deephaven::proto::backplane::grpc::UpdateByEmOptions* options);
+  ::io::deephaven::proto::backplane::grpc::UpdateByEmOptions* unsafe_arena_release_options();
 
-  // .io.deephaven.proto.backplane.grpc.UpdateByEmaTimescale timescale = 2;
-  bool has_timescale() const;
+  // .io.deephaven.proto.backplane.grpc.UpdateByWindowScale window_scale = 2;
+  bool has_window_scale() const;
   private:
-  bool _internal_has_timescale() const;
+  bool _internal_has_window_scale() const;
   public:
-  void clear_timescale();
-  const ::io::deephaven::proto::backplane::grpc::UpdateByEmaTimescale& timescale() const;
-  PROTOBUF_NODISCARD ::io::deephaven::proto::backplane::grpc::UpdateByEmaTimescale* release_timescale();
-  ::io::deephaven::proto::backplane::grpc::UpdateByEmaTimescale* mutable_timescale();
-  void set_allocated_timescale(::io::deephaven::proto::backplane::grpc::UpdateByEmaTimescale* timescale);
+  void clear_window_scale();
+  const ::io::deephaven::proto::backplane::grpc::UpdateByWindowScale& window_scale() const;
+  PROTOBUF_NODISCARD ::io::deephaven::proto::backplane::grpc::UpdateByWindowScale* release_window_scale();
+  ::io::deephaven::proto::backplane::grpc::UpdateByWindowScale* mutable_window_scale();
+  void set_allocated_window_scale(::io::deephaven::proto::backplane::grpc::UpdateByWindowScale* window_scale);
   private:
-  const ::io::deephaven::proto::backplane::grpc::UpdateByEmaTimescale& _internal_timescale() const;
-  ::io::deephaven::proto::backplane::grpc::UpdateByEmaTimescale* _internal_mutable_timescale();
+  const ::io::deephaven::proto::backplane::grpc::UpdateByWindowScale& _internal_window_scale() const;
+  ::io::deephaven::proto::backplane::grpc::UpdateByWindowScale* _internal_mutable_window_scale();
   public:
-  void unsafe_arena_set_allocated_timescale(
-      ::io::deephaven::proto::backplane::grpc::UpdateByEmaTimescale* timescale);
-  ::io::deephaven::proto::backplane::grpc::UpdateByEmaTimescale* unsafe_arena_release_timescale();
+  void unsafe_arena_set_allocated_window_scale(
+      ::io::deephaven::proto::backplane::grpc::UpdateByWindowScale* window_scale);
+  ::io::deephaven::proto::backplane::grpc::UpdateByWindowScale* unsafe_arena_release_window_scale();
 
   // @@protoc_insertion_point(class_scope:io.deephaven.proto.backplane.grpc.UpdateByRequest.UpdateByOperation.UpdateByColumn.UpdateBySpec.UpdateByEma)
  private:
@@ -4294,8 +4487,848 @@ class UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByEma 
   template <typename T> friend class ::PROTOBUF_NAMESPACE_ID::Arena::InternalHelper;
   typedef void InternalArenaConstructable_;
   typedef void DestructorSkippable_;
-  ::io::deephaven::proto::backplane::grpc::UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByEma_UpdateByEmaOptions* options_;
-  ::io::deephaven::proto::backplane::grpc::UpdateByEmaTimescale* timescale_;
+  ::io::deephaven::proto::backplane::grpc::UpdateByEmOptions* options_;
+  ::io::deephaven::proto::backplane::grpc::UpdateByWindowScale* window_scale_;
+  mutable ::PROTOBUF_NAMESPACE_ID::internal::CachedSize _cached_size_;
+  friend struct ::TableStruct_deephaven_2fproto_2ftable_2eproto;
+};
+// -------------------------------------------------------------------
+
+class UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByEms final :
+    public ::PROTOBUF_NAMESPACE_ID::Message /* @@protoc_insertion_point(class_definition:io.deephaven.proto.backplane.grpc.UpdateByRequest.UpdateByOperation.UpdateByColumn.UpdateBySpec.UpdateByEms) */ {
+ public:
+  inline UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByEms() : UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByEms(nullptr) {}
+  ~UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByEms() override;
+  explicit PROTOBUF_CONSTEXPR UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByEms(::PROTOBUF_NAMESPACE_ID::internal::ConstantInitialized);
+
+  UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByEms(const UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByEms& from);
+  UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByEms(UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByEms&& from) noexcept
+    : UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByEms() {
+    *this = ::std::move(from);
+  }
+
+  inline UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByEms& operator=(const UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByEms& from) {
+    CopyFrom(from);
+    return *this;
+  }
+  inline UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByEms& operator=(UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByEms&& from) noexcept {
+    if (this == &from) return *this;
+    if (GetOwningArena() == from.GetOwningArena()
+  #ifdef PROTOBUF_FORCE_COPY_IN_MOVE
+        && GetOwningArena() != nullptr
+  #endif  // !PROTOBUF_FORCE_COPY_IN_MOVE
+    ) {
+      InternalSwap(&from);
+    } else {
+      CopyFrom(from);
+    }
+    return *this;
+  }
+
+  static const ::PROTOBUF_NAMESPACE_ID::Descriptor* descriptor() {
+    return GetDescriptor();
+  }
+  static const ::PROTOBUF_NAMESPACE_ID::Descriptor* GetDescriptor() {
+    return default_instance().GetMetadata().descriptor;
+  }
+  static const ::PROTOBUF_NAMESPACE_ID::Reflection* GetReflection() {
+    return default_instance().GetMetadata().reflection;
+  }
+  static const UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByEms& default_instance() {
+    return *internal_default_instance();
+  }
+  static inline const UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByEms* internal_default_instance() {
+    return reinterpret_cast<const UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByEms*>(
+               &_UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByEms_default_instance_);
+  }
+  static constexpr int kIndexInFileMessages =
+    22;
+
+  friend void swap(UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByEms& a, UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByEms& b) {
+    a.Swap(&b);
+  }
+  inline void Swap(UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByEms* other) {
+    if (other == this) return;
+  #ifdef PROTOBUF_FORCE_COPY_IN_SWAP
+    if (GetOwningArena() != nullptr &&
+        GetOwningArena() == other->GetOwningArena()) {
+   #else  // PROTOBUF_FORCE_COPY_IN_SWAP
+    if (GetOwningArena() == other->GetOwningArena()) {
+  #endif  // !PROTOBUF_FORCE_COPY_IN_SWAP
+      InternalSwap(other);
+    } else {
+      ::PROTOBUF_NAMESPACE_ID::internal::GenericSwap(this, other);
+    }
+  }
+  void UnsafeArenaSwap(UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByEms* other) {
+    if (other == this) return;
+    GOOGLE_DCHECK(GetOwningArena() == other->GetOwningArena());
+    InternalSwap(other);
+  }
+
+  // implements Message ----------------------------------------------
+
+  UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByEms* New(::PROTOBUF_NAMESPACE_ID::Arena* arena = nullptr) const final {
+    return CreateMaybeMessage<UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByEms>(arena);
+  }
+  using ::PROTOBUF_NAMESPACE_ID::Message::CopyFrom;
+  void CopyFrom(const UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByEms& from);
+  using ::PROTOBUF_NAMESPACE_ID::Message::MergeFrom;
+  void MergeFrom(const UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByEms& from);
+  private:
+  static void MergeImpl(::PROTOBUF_NAMESPACE_ID::Message* to, const ::PROTOBUF_NAMESPACE_ID::Message& from);
+  public:
+  PROTOBUF_ATTRIBUTE_REINITIALIZES void Clear() final;
+  bool IsInitialized() const final;
+
+  size_t ByteSizeLong() const final;
+  const char* _InternalParse(const char* ptr, ::PROTOBUF_NAMESPACE_ID::internal::ParseContext* ctx) final;
+  uint8_t* _InternalSerialize(
+      uint8_t* target, ::PROTOBUF_NAMESPACE_ID::io::EpsCopyOutputStream* stream) const final;
+  int GetCachedSize() const final { return _cached_size_.Get(); }
+
+  private:
+  void SharedCtor();
+  void SharedDtor();
+  void SetCachedSize(int size) const final;
+  void InternalSwap(UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByEms* other);
+
+  private:
+  friend class ::PROTOBUF_NAMESPACE_ID::internal::AnyMetadata;
+  static ::PROTOBUF_NAMESPACE_ID::StringPiece FullMessageName() {
+    return "io.deephaven.proto.backplane.grpc.UpdateByRequest.UpdateByOperation.UpdateByColumn.UpdateBySpec.UpdateByEms";
+  }
+  protected:
+  explicit UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByEms(::PROTOBUF_NAMESPACE_ID::Arena* arena,
+                       bool is_message_owned = false);
+  public:
+
+  static const ClassData _class_data_;
+  const ::PROTOBUF_NAMESPACE_ID::Message::ClassData*GetClassData() const final;
+
+  ::PROTOBUF_NAMESPACE_ID::Metadata GetMetadata() const final;
+
+  // nested types ----------------------------------------------------
+
+  // accessors -------------------------------------------------------
+
+  enum : int {
+    kOptionsFieldNumber = 1,
+    kWindowScaleFieldNumber = 2,
+  };
+  // .io.deephaven.proto.backplane.grpc.UpdateByEmOptions options = 1;
+  bool has_options() const;
+  private:
+  bool _internal_has_options() const;
+  public:
+  void clear_options();
+  const ::io::deephaven::proto::backplane::grpc::UpdateByEmOptions& options() const;
+  PROTOBUF_NODISCARD ::io::deephaven::proto::backplane::grpc::UpdateByEmOptions* release_options();
+  ::io::deephaven::proto::backplane::grpc::UpdateByEmOptions* mutable_options();
+  void set_allocated_options(::io::deephaven::proto::backplane::grpc::UpdateByEmOptions* options);
+  private:
+  const ::io::deephaven::proto::backplane::grpc::UpdateByEmOptions& _internal_options() const;
+  ::io::deephaven::proto::backplane::grpc::UpdateByEmOptions* _internal_mutable_options();
+  public:
+  void unsafe_arena_set_allocated_options(
+      ::io::deephaven::proto::backplane::grpc::UpdateByEmOptions* options);
+  ::io::deephaven::proto::backplane::grpc::UpdateByEmOptions* unsafe_arena_release_options();
+
+  // .io.deephaven.proto.backplane.grpc.UpdateByWindowScale window_scale = 2;
+  bool has_window_scale() const;
+  private:
+  bool _internal_has_window_scale() const;
+  public:
+  void clear_window_scale();
+  const ::io::deephaven::proto::backplane::grpc::UpdateByWindowScale& window_scale() const;
+  PROTOBUF_NODISCARD ::io::deephaven::proto::backplane::grpc::UpdateByWindowScale* release_window_scale();
+  ::io::deephaven::proto::backplane::grpc::UpdateByWindowScale* mutable_window_scale();
+  void set_allocated_window_scale(::io::deephaven::proto::backplane::grpc::UpdateByWindowScale* window_scale);
+  private:
+  const ::io::deephaven::proto::backplane::grpc::UpdateByWindowScale& _internal_window_scale() const;
+  ::io::deephaven::proto::backplane::grpc::UpdateByWindowScale* _internal_mutable_window_scale();
+  public:
+  void unsafe_arena_set_allocated_window_scale(
+      ::io::deephaven::proto::backplane::grpc::UpdateByWindowScale* window_scale);
+  ::io::deephaven::proto::backplane::grpc::UpdateByWindowScale* unsafe_arena_release_window_scale();
+
+  // @@protoc_insertion_point(class_scope:io.deephaven.proto.backplane.grpc.UpdateByRequest.UpdateByOperation.UpdateByColumn.UpdateBySpec.UpdateByEms)
+ private:
+  class _Internal;
+
+  template <typename T> friend class ::PROTOBUF_NAMESPACE_ID::Arena::InternalHelper;
+  typedef void InternalArenaConstructable_;
+  typedef void DestructorSkippable_;
+  ::io::deephaven::proto::backplane::grpc::UpdateByEmOptions* options_;
+  ::io::deephaven::proto::backplane::grpc::UpdateByWindowScale* window_scale_;
+  mutable ::PROTOBUF_NAMESPACE_ID::internal::CachedSize _cached_size_;
+  friend struct ::TableStruct_deephaven_2fproto_2ftable_2eproto;
+};
+// -------------------------------------------------------------------
+
+class UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByEmMin final :
+    public ::PROTOBUF_NAMESPACE_ID::Message /* @@protoc_insertion_point(class_definition:io.deephaven.proto.backplane.grpc.UpdateByRequest.UpdateByOperation.UpdateByColumn.UpdateBySpec.UpdateByEmMin) */ {
+ public:
+  inline UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByEmMin() : UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByEmMin(nullptr) {}
+  ~UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByEmMin() override;
+  explicit PROTOBUF_CONSTEXPR UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByEmMin(::PROTOBUF_NAMESPACE_ID::internal::ConstantInitialized);
+
+  UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByEmMin(const UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByEmMin& from);
+  UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByEmMin(UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByEmMin&& from) noexcept
+    : UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByEmMin() {
+    *this = ::std::move(from);
+  }
+
+  inline UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByEmMin& operator=(const UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByEmMin& from) {
+    CopyFrom(from);
+    return *this;
+  }
+  inline UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByEmMin& operator=(UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByEmMin&& from) noexcept {
+    if (this == &from) return *this;
+    if (GetOwningArena() == from.GetOwningArena()
+  #ifdef PROTOBUF_FORCE_COPY_IN_MOVE
+        && GetOwningArena() != nullptr
+  #endif  // !PROTOBUF_FORCE_COPY_IN_MOVE
+    ) {
+      InternalSwap(&from);
+    } else {
+      CopyFrom(from);
+    }
+    return *this;
+  }
+
+  static const ::PROTOBUF_NAMESPACE_ID::Descriptor* descriptor() {
+    return GetDescriptor();
+  }
+  static const ::PROTOBUF_NAMESPACE_ID::Descriptor* GetDescriptor() {
+    return default_instance().GetMetadata().descriptor;
+  }
+  static const ::PROTOBUF_NAMESPACE_ID::Reflection* GetReflection() {
+    return default_instance().GetMetadata().reflection;
+  }
+  static const UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByEmMin& default_instance() {
+    return *internal_default_instance();
+  }
+  static inline const UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByEmMin* internal_default_instance() {
+    return reinterpret_cast<const UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByEmMin*>(
+               &_UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByEmMin_default_instance_);
+  }
+  static constexpr int kIndexInFileMessages =
+    23;
+
+  friend void swap(UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByEmMin& a, UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByEmMin& b) {
+    a.Swap(&b);
+  }
+  inline void Swap(UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByEmMin* other) {
+    if (other == this) return;
+  #ifdef PROTOBUF_FORCE_COPY_IN_SWAP
+    if (GetOwningArena() != nullptr &&
+        GetOwningArena() == other->GetOwningArena()) {
+   #else  // PROTOBUF_FORCE_COPY_IN_SWAP
+    if (GetOwningArena() == other->GetOwningArena()) {
+  #endif  // !PROTOBUF_FORCE_COPY_IN_SWAP
+      InternalSwap(other);
+    } else {
+      ::PROTOBUF_NAMESPACE_ID::internal::GenericSwap(this, other);
+    }
+  }
+  void UnsafeArenaSwap(UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByEmMin* other) {
+    if (other == this) return;
+    GOOGLE_DCHECK(GetOwningArena() == other->GetOwningArena());
+    InternalSwap(other);
+  }
+
+  // implements Message ----------------------------------------------
+
+  UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByEmMin* New(::PROTOBUF_NAMESPACE_ID::Arena* arena = nullptr) const final {
+    return CreateMaybeMessage<UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByEmMin>(arena);
+  }
+  using ::PROTOBUF_NAMESPACE_ID::Message::CopyFrom;
+  void CopyFrom(const UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByEmMin& from);
+  using ::PROTOBUF_NAMESPACE_ID::Message::MergeFrom;
+  void MergeFrom(const UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByEmMin& from);
+  private:
+  static void MergeImpl(::PROTOBUF_NAMESPACE_ID::Message* to, const ::PROTOBUF_NAMESPACE_ID::Message& from);
+  public:
+  PROTOBUF_ATTRIBUTE_REINITIALIZES void Clear() final;
+  bool IsInitialized() const final;
+
+  size_t ByteSizeLong() const final;
+  const char* _InternalParse(const char* ptr, ::PROTOBUF_NAMESPACE_ID::internal::ParseContext* ctx) final;
+  uint8_t* _InternalSerialize(
+      uint8_t* target, ::PROTOBUF_NAMESPACE_ID::io::EpsCopyOutputStream* stream) const final;
+  int GetCachedSize() const final { return _cached_size_.Get(); }
+
+  private:
+  void SharedCtor();
+  void SharedDtor();
+  void SetCachedSize(int size) const final;
+  void InternalSwap(UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByEmMin* other);
+
+  private:
+  friend class ::PROTOBUF_NAMESPACE_ID::internal::AnyMetadata;
+  static ::PROTOBUF_NAMESPACE_ID::StringPiece FullMessageName() {
+    return "io.deephaven.proto.backplane.grpc.UpdateByRequest.UpdateByOperation.UpdateByColumn.UpdateBySpec.UpdateByEmMin";
+  }
+  protected:
+  explicit UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByEmMin(::PROTOBUF_NAMESPACE_ID::Arena* arena,
+                       bool is_message_owned = false);
+  public:
+
+  static const ClassData _class_data_;
+  const ::PROTOBUF_NAMESPACE_ID::Message::ClassData*GetClassData() const final;
+
+  ::PROTOBUF_NAMESPACE_ID::Metadata GetMetadata() const final;
+
+  // nested types ----------------------------------------------------
+
+  // accessors -------------------------------------------------------
+
+  enum : int {
+    kOptionsFieldNumber = 1,
+    kWindowScaleFieldNumber = 2,
+  };
+  // .io.deephaven.proto.backplane.grpc.UpdateByEmOptions options = 1;
+  bool has_options() const;
+  private:
+  bool _internal_has_options() const;
+  public:
+  void clear_options();
+  const ::io::deephaven::proto::backplane::grpc::UpdateByEmOptions& options() const;
+  PROTOBUF_NODISCARD ::io::deephaven::proto::backplane::grpc::UpdateByEmOptions* release_options();
+  ::io::deephaven::proto::backplane::grpc::UpdateByEmOptions* mutable_options();
+  void set_allocated_options(::io::deephaven::proto::backplane::grpc::UpdateByEmOptions* options);
+  private:
+  const ::io::deephaven::proto::backplane::grpc::UpdateByEmOptions& _internal_options() const;
+  ::io::deephaven::proto::backplane::grpc::UpdateByEmOptions* _internal_mutable_options();
+  public:
+  void unsafe_arena_set_allocated_options(
+      ::io::deephaven::proto::backplane::grpc::UpdateByEmOptions* options);
+  ::io::deephaven::proto::backplane::grpc::UpdateByEmOptions* unsafe_arena_release_options();
+
+  // .io.deephaven.proto.backplane.grpc.UpdateByWindowScale window_scale = 2;
+  bool has_window_scale() const;
+  private:
+  bool _internal_has_window_scale() const;
+  public:
+  void clear_window_scale();
+  const ::io::deephaven::proto::backplane::grpc::UpdateByWindowScale& window_scale() const;
+  PROTOBUF_NODISCARD ::io::deephaven::proto::backplane::grpc::UpdateByWindowScale* release_window_scale();
+  ::io::deephaven::proto::backplane::grpc::UpdateByWindowScale* mutable_window_scale();
+  void set_allocated_window_scale(::io::deephaven::proto::backplane::grpc::UpdateByWindowScale* window_scale);
+  private:
+  const ::io::deephaven::proto::backplane::grpc::UpdateByWindowScale& _internal_window_scale() const;
+  ::io::deephaven::proto::backplane::grpc::UpdateByWindowScale* _internal_mutable_window_scale();
+  public:
+  void unsafe_arena_set_allocated_window_scale(
+      ::io::deephaven::proto::backplane::grpc::UpdateByWindowScale* window_scale);
+  ::io::deephaven::proto::backplane::grpc::UpdateByWindowScale* unsafe_arena_release_window_scale();
+
+  // @@protoc_insertion_point(class_scope:io.deephaven.proto.backplane.grpc.UpdateByRequest.UpdateByOperation.UpdateByColumn.UpdateBySpec.UpdateByEmMin)
+ private:
+  class _Internal;
+
+  template <typename T> friend class ::PROTOBUF_NAMESPACE_ID::Arena::InternalHelper;
+  typedef void InternalArenaConstructable_;
+  typedef void DestructorSkippable_;
+  ::io::deephaven::proto::backplane::grpc::UpdateByEmOptions* options_;
+  ::io::deephaven::proto::backplane::grpc::UpdateByWindowScale* window_scale_;
+  mutable ::PROTOBUF_NAMESPACE_ID::internal::CachedSize _cached_size_;
+  friend struct ::TableStruct_deephaven_2fproto_2ftable_2eproto;
+};
+// -------------------------------------------------------------------
+
+class UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByEmMax final :
+    public ::PROTOBUF_NAMESPACE_ID::Message /* @@protoc_insertion_point(class_definition:io.deephaven.proto.backplane.grpc.UpdateByRequest.UpdateByOperation.UpdateByColumn.UpdateBySpec.UpdateByEmMax) */ {
+ public:
+  inline UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByEmMax() : UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByEmMax(nullptr) {}
+  ~UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByEmMax() override;
+  explicit PROTOBUF_CONSTEXPR UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByEmMax(::PROTOBUF_NAMESPACE_ID::internal::ConstantInitialized);
+
+  UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByEmMax(const UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByEmMax& from);
+  UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByEmMax(UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByEmMax&& from) noexcept
+    : UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByEmMax() {
+    *this = ::std::move(from);
+  }
+
+  inline UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByEmMax& operator=(const UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByEmMax& from) {
+    CopyFrom(from);
+    return *this;
+  }
+  inline UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByEmMax& operator=(UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByEmMax&& from) noexcept {
+    if (this == &from) return *this;
+    if (GetOwningArena() == from.GetOwningArena()
+  #ifdef PROTOBUF_FORCE_COPY_IN_MOVE
+        && GetOwningArena() != nullptr
+  #endif  // !PROTOBUF_FORCE_COPY_IN_MOVE
+    ) {
+      InternalSwap(&from);
+    } else {
+      CopyFrom(from);
+    }
+    return *this;
+  }
+
+  static const ::PROTOBUF_NAMESPACE_ID::Descriptor* descriptor() {
+    return GetDescriptor();
+  }
+  static const ::PROTOBUF_NAMESPACE_ID::Descriptor* GetDescriptor() {
+    return default_instance().GetMetadata().descriptor;
+  }
+  static const ::PROTOBUF_NAMESPACE_ID::Reflection* GetReflection() {
+    return default_instance().GetMetadata().reflection;
+  }
+  static const UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByEmMax& default_instance() {
+    return *internal_default_instance();
+  }
+  static inline const UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByEmMax* internal_default_instance() {
+    return reinterpret_cast<const UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByEmMax*>(
+               &_UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByEmMax_default_instance_);
+  }
+  static constexpr int kIndexInFileMessages =
+    24;
+
+  friend void swap(UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByEmMax& a, UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByEmMax& b) {
+    a.Swap(&b);
+  }
+  inline void Swap(UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByEmMax* other) {
+    if (other == this) return;
+  #ifdef PROTOBUF_FORCE_COPY_IN_SWAP
+    if (GetOwningArena() != nullptr &&
+        GetOwningArena() == other->GetOwningArena()) {
+   #else  // PROTOBUF_FORCE_COPY_IN_SWAP
+    if (GetOwningArena() == other->GetOwningArena()) {
+  #endif  // !PROTOBUF_FORCE_COPY_IN_SWAP
+      InternalSwap(other);
+    } else {
+      ::PROTOBUF_NAMESPACE_ID::internal::GenericSwap(this, other);
+    }
+  }
+  void UnsafeArenaSwap(UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByEmMax* other) {
+    if (other == this) return;
+    GOOGLE_DCHECK(GetOwningArena() == other->GetOwningArena());
+    InternalSwap(other);
+  }
+
+  // implements Message ----------------------------------------------
+
+  UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByEmMax* New(::PROTOBUF_NAMESPACE_ID::Arena* arena = nullptr) const final {
+    return CreateMaybeMessage<UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByEmMax>(arena);
+  }
+  using ::PROTOBUF_NAMESPACE_ID::Message::CopyFrom;
+  void CopyFrom(const UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByEmMax& from);
+  using ::PROTOBUF_NAMESPACE_ID::Message::MergeFrom;
+  void MergeFrom(const UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByEmMax& from);
+  private:
+  static void MergeImpl(::PROTOBUF_NAMESPACE_ID::Message* to, const ::PROTOBUF_NAMESPACE_ID::Message& from);
+  public:
+  PROTOBUF_ATTRIBUTE_REINITIALIZES void Clear() final;
+  bool IsInitialized() const final;
+
+  size_t ByteSizeLong() const final;
+  const char* _InternalParse(const char* ptr, ::PROTOBUF_NAMESPACE_ID::internal::ParseContext* ctx) final;
+  uint8_t* _InternalSerialize(
+      uint8_t* target, ::PROTOBUF_NAMESPACE_ID::io::EpsCopyOutputStream* stream) const final;
+  int GetCachedSize() const final { return _cached_size_.Get(); }
+
+  private:
+  void SharedCtor();
+  void SharedDtor();
+  void SetCachedSize(int size) const final;
+  void InternalSwap(UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByEmMax* other);
+
+  private:
+  friend class ::PROTOBUF_NAMESPACE_ID::internal::AnyMetadata;
+  static ::PROTOBUF_NAMESPACE_ID::StringPiece FullMessageName() {
+    return "io.deephaven.proto.backplane.grpc.UpdateByRequest.UpdateByOperation.UpdateByColumn.UpdateBySpec.UpdateByEmMax";
+  }
+  protected:
+  explicit UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByEmMax(::PROTOBUF_NAMESPACE_ID::Arena* arena,
+                       bool is_message_owned = false);
+  public:
+
+  static const ClassData _class_data_;
+  const ::PROTOBUF_NAMESPACE_ID::Message::ClassData*GetClassData() const final;
+
+  ::PROTOBUF_NAMESPACE_ID::Metadata GetMetadata() const final;
+
+  // nested types ----------------------------------------------------
+
+  // accessors -------------------------------------------------------
+
+  enum : int {
+    kOptionsFieldNumber = 1,
+    kWindowScaleFieldNumber = 2,
+  };
+  // .io.deephaven.proto.backplane.grpc.UpdateByEmOptions options = 1;
+  bool has_options() const;
+  private:
+  bool _internal_has_options() const;
+  public:
+  void clear_options();
+  const ::io::deephaven::proto::backplane::grpc::UpdateByEmOptions& options() const;
+  PROTOBUF_NODISCARD ::io::deephaven::proto::backplane::grpc::UpdateByEmOptions* release_options();
+  ::io::deephaven::proto::backplane::grpc::UpdateByEmOptions* mutable_options();
+  void set_allocated_options(::io::deephaven::proto::backplane::grpc::UpdateByEmOptions* options);
+  private:
+  const ::io::deephaven::proto::backplane::grpc::UpdateByEmOptions& _internal_options() const;
+  ::io::deephaven::proto::backplane::grpc::UpdateByEmOptions* _internal_mutable_options();
+  public:
+  void unsafe_arena_set_allocated_options(
+      ::io::deephaven::proto::backplane::grpc::UpdateByEmOptions* options);
+  ::io::deephaven::proto::backplane::grpc::UpdateByEmOptions* unsafe_arena_release_options();
+
+  // .io.deephaven.proto.backplane.grpc.UpdateByWindowScale window_scale = 2;
+  bool has_window_scale() const;
+  private:
+  bool _internal_has_window_scale() const;
+  public:
+  void clear_window_scale();
+  const ::io::deephaven::proto::backplane::grpc::UpdateByWindowScale& window_scale() const;
+  PROTOBUF_NODISCARD ::io::deephaven::proto::backplane::grpc::UpdateByWindowScale* release_window_scale();
+  ::io::deephaven::proto::backplane::grpc::UpdateByWindowScale* mutable_window_scale();
+  void set_allocated_window_scale(::io::deephaven::proto::backplane::grpc::UpdateByWindowScale* window_scale);
+  private:
+  const ::io::deephaven::proto::backplane::grpc::UpdateByWindowScale& _internal_window_scale() const;
+  ::io::deephaven::proto::backplane::grpc::UpdateByWindowScale* _internal_mutable_window_scale();
+  public:
+  void unsafe_arena_set_allocated_window_scale(
+      ::io::deephaven::proto::backplane::grpc::UpdateByWindowScale* window_scale);
+  ::io::deephaven::proto::backplane::grpc::UpdateByWindowScale* unsafe_arena_release_window_scale();
+
+  // @@protoc_insertion_point(class_scope:io.deephaven.proto.backplane.grpc.UpdateByRequest.UpdateByOperation.UpdateByColumn.UpdateBySpec.UpdateByEmMax)
+ private:
+  class _Internal;
+
+  template <typename T> friend class ::PROTOBUF_NAMESPACE_ID::Arena::InternalHelper;
+  typedef void InternalArenaConstructable_;
+  typedef void DestructorSkippable_;
+  ::io::deephaven::proto::backplane::grpc::UpdateByEmOptions* options_;
+  ::io::deephaven::proto::backplane::grpc::UpdateByWindowScale* window_scale_;
+  mutable ::PROTOBUF_NAMESPACE_ID::internal::CachedSize _cached_size_;
+  friend struct ::TableStruct_deephaven_2fproto_2ftable_2eproto;
+};
+// -------------------------------------------------------------------
+
+class UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByEmStd final :
+    public ::PROTOBUF_NAMESPACE_ID::Message /* @@protoc_insertion_point(class_definition:io.deephaven.proto.backplane.grpc.UpdateByRequest.UpdateByOperation.UpdateByColumn.UpdateBySpec.UpdateByEmStd) */ {
+ public:
+  inline UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByEmStd() : UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByEmStd(nullptr) {}
+  ~UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByEmStd() override;
+  explicit PROTOBUF_CONSTEXPR UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByEmStd(::PROTOBUF_NAMESPACE_ID::internal::ConstantInitialized);
+
+  UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByEmStd(const UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByEmStd& from);
+  UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByEmStd(UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByEmStd&& from) noexcept
+    : UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByEmStd() {
+    *this = ::std::move(from);
+  }
+
+  inline UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByEmStd& operator=(const UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByEmStd& from) {
+    CopyFrom(from);
+    return *this;
+  }
+  inline UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByEmStd& operator=(UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByEmStd&& from) noexcept {
+    if (this == &from) return *this;
+    if (GetOwningArena() == from.GetOwningArena()
+  #ifdef PROTOBUF_FORCE_COPY_IN_MOVE
+        && GetOwningArena() != nullptr
+  #endif  // !PROTOBUF_FORCE_COPY_IN_MOVE
+    ) {
+      InternalSwap(&from);
+    } else {
+      CopyFrom(from);
+    }
+    return *this;
+  }
+
+  static const ::PROTOBUF_NAMESPACE_ID::Descriptor* descriptor() {
+    return GetDescriptor();
+  }
+  static const ::PROTOBUF_NAMESPACE_ID::Descriptor* GetDescriptor() {
+    return default_instance().GetMetadata().descriptor;
+  }
+  static const ::PROTOBUF_NAMESPACE_ID::Reflection* GetReflection() {
+    return default_instance().GetMetadata().reflection;
+  }
+  static const UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByEmStd& default_instance() {
+    return *internal_default_instance();
+  }
+  static inline const UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByEmStd* internal_default_instance() {
+    return reinterpret_cast<const UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByEmStd*>(
+               &_UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByEmStd_default_instance_);
+  }
+  static constexpr int kIndexInFileMessages =
+    25;
+
+  friend void swap(UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByEmStd& a, UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByEmStd& b) {
+    a.Swap(&b);
+  }
+  inline void Swap(UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByEmStd* other) {
+    if (other == this) return;
+  #ifdef PROTOBUF_FORCE_COPY_IN_SWAP
+    if (GetOwningArena() != nullptr &&
+        GetOwningArena() == other->GetOwningArena()) {
+   #else  // PROTOBUF_FORCE_COPY_IN_SWAP
+    if (GetOwningArena() == other->GetOwningArena()) {
+  #endif  // !PROTOBUF_FORCE_COPY_IN_SWAP
+      InternalSwap(other);
+    } else {
+      ::PROTOBUF_NAMESPACE_ID::internal::GenericSwap(this, other);
+    }
+  }
+  void UnsafeArenaSwap(UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByEmStd* other) {
+    if (other == this) return;
+    GOOGLE_DCHECK(GetOwningArena() == other->GetOwningArena());
+    InternalSwap(other);
+  }
+
+  // implements Message ----------------------------------------------
+
+  UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByEmStd* New(::PROTOBUF_NAMESPACE_ID::Arena* arena = nullptr) const final {
+    return CreateMaybeMessage<UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByEmStd>(arena);
+  }
+  using ::PROTOBUF_NAMESPACE_ID::Message::CopyFrom;
+  void CopyFrom(const UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByEmStd& from);
+  using ::PROTOBUF_NAMESPACE_ID::Message::MergeFrom;
+  void MergeFrom(const UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByEmStd& from);
+  private:
+  static void MergeImpl(::PROTOBUF_NAMESPACE_ID::Message* to, const ::PROTOBUF_NAMESPACE_ID::Message& from);
+  public:
+  PROTOBUF_ATTRIBUTE_REINITIALIZES void Clear() final;
+  bool IsInitialized() const final;
+
+  size_t ByteSizeLong() const final;
+  const char* _InternalParse(const char* ptr, ::PROTOBUF_NAMESPACE_ID::internal::ParseContext* ctx) final;
+  uint8_t* _InternalSerialize(
+      uint8_t* target, ::PROTOBUF_NAMESPACE_ID::io::EpsCopyOutputStream* stream) const final;
+  int GetCachedSize() const final { return _cached_size_.Get(); }
+
+  private:
+  void SharedCtor();
+  void SharedDtor();
+  void SetCachedSize(int size) const final;
+  void InternalSwap(UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByEmStd* other);
+
+  private:
+  friend class ::PROTOBUF_NAMESPACE_ID::internal::AnyMetadata;
+  static ::PROTOBUF_NAMESPACE_ID::StringPiece FullMessageName() {
+    return "io.deephaven.proto.backplane.grpc.UpdateByRequest.UpdateByOperation.UpdateByColumn.UpdateBySpec.UpdateByEmStd";
+  }
+  protected:
+  explicit UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByEmStd(::PROTOBUF_NAMESPACE_ID::Arena* arena,
+                       bool is_message_owned = false);
+  public:
+
+  static const ClassData _class_data_;
+  const ::PROTOBUF_NAMESPACE_ID::Message::ClassData*GetClassData() const final;
+
+  ::PROTOBUF_NAMESPACE_ID::Metadata GetMetadata() const final;
+
+  // nested types ----------------------------------------------------
+
+  // accessors -------------------------------------------------------
+
+  enum : int {
+    kOptionsFieldNumber = 1,
+    kWindowScaleFieldNumber = 2,
+  };
+  // .io.deephaven.proto.backplane.grpc.UpdateByEmOptions options = 1;
+  bool has_options() const;
+  private:
+  bool _internal_has_options() const;
+  public:
+  void clear_options();
+  const ::io::deephaven::proto::backplane::grpc::UpdateByEmOptions& options() const;
+  PROTOBUF_NODISCARD ::io::deephaven::proto::backplane::grpc::UpdateByEmOptions* release_options();
+  ::io::deephaven::proto::backplane::grpc::UpdateByEmOptions* mutable_options();
+  void set_allocated_options(::io::deephaven::proto::backplane::grpc::UpdateByEmOptions* options);
+  private:
+  const ::io::deephaven::proto::backplane::grpc::UpdateByEmOptions& _internal_options() const;
+  ::io::deephaven::proto::backplane::grpc::UpdateByEmOptions* _internal_mutable_options();
+  public:
+  void unsafe_arena_set_allocated_options(
+      ::io::deephaven::proto::backplane::grpc::UpdateByEmOptions* options);
+  ::io::deephaven::proto::backplane::grpc::UpdateByEmOptions* unsafe_arena_release_options();
+
+  // .io.deephaven.proto.backplane.grpc.UpdateByWindowScale window_scale = 2;
+  bool has_window_scale() const;
+  private:
+  bool _internal_has_window_scale() const;
+  public:
+  void clear_window_scale();
+  const ::io::deephaven::proto::backplane::grpc::UpdateByWindowScale& window_scale() const;
+  PROTOBUF_NODISCARD ::io::deephaven::proto::backplane::grpc::UpdateByWindowScale* release_window_scale();
+  ::io::deephaven::proto::backplane::grpc::UpdateByWindowScale* mutable_window_scale();
+  void set_allocated_window_scale(::io::deephaven::proto::backplane::grpc::UpdateByWindowScale* window_scale);
+  private:
+  const ::io::deephaven::proto::backplane::grpc::UpdateByWindowScale& _internal_window_scale() const;
+  ::io::deephaven::proto::backplane::grpc::UpdateByWindowScale* _internal_mutable_window_scale();
+  public:
+  void unsafe_arena_set_allocated_window_scale(
+      ::io::deephaven::proto::backplane::grpc::UpdateByWindowScale* window_scale);
+  ::io::deephaven::proto::backplane::grpc::UpdateByWindowScale* unsafe_arena_release_window_scale();
+
+  // @@protoc_insertion_point(class_scope:io.deephaven.proto.backplane.grpc.UpdateByRequest.UpdateByOperation.UpdateByColumn.UpdateBySpec.UpdateByEmStd)
+ private:
+  class _Internal;
+
+  template <typename T> friend class ::PROTOBUF_NAMESPACE_ID::Arena::InternalHelper;
+  typedef void InternalArenaConstructable_;
+  typedef void DestructorSkippable_;
+  ::io::deephaven::proto::backplane::grpc::UpdateByEmOptions* options_;
+  ::io::deephaven::proto::backplane::grpc::UpdateByWindowScale* window_scale_;
+  mutable ::PROTOBUF_NAMESPACE_ID::internal::CachedSize _cached_size_;
+  friend struct ::TableStruct_deephaven_2fproto_2ftable_2eproto;
+};
+// -------------------------------------------------------------------
+
+class UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByDelta final :
+    public ::PROTOBUF_NAMESPACE_ID::Message /* @@protoc_insertion_point(class_definition:io.deephaven.proto.backplane.grpc.UpdateByRequest.UpdateByOperation.UpdateByColumn.UpdateBySpec.UpdateByDelta) */ {
+ public:
+  inline UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByDelta() : UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByDelta(nullptr) {}
+  ~UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByDelta() override;
+  explicit PROTOBUF_CONSTEXPR UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByDelta(::PROTOBUF_NAMESPACE_ID::internal::ConstantInitialized);
+
+  UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByDelta(const UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByDelta& from);
+  UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByDelta(UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByDelta&& from) noexcept
+    : UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByDelta() {
+    *this = ::std::move(from);
+  }
+
+  inline UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByDelta& operator=(const UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByDelta& from) {
+    CopyFrom(from);
+    return *this;
+  }
+  inline UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByDelta& operator=(UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByDelta&& from) noexcept {
+    if (this == &from) return *this;
+    if (GetOwningArena() == from.GetOwningArena()
+  #ifdef PROTOBUF_FORCE_COPY_IN_MOVE
+        && GetOwningArena() != nullptr
+  #endif  // !PROTOBUF_FORCE_COPY_IN_MOVE
+    ) {
+      InternalSwap(&from);
+    } else {
+      CopyFrom(from);
+    }
+    return *this;
+  }
+
+  static const ::PROTOBUF_NAMESPACE_ID::Descriptor* descriptor() {
+    return GetDescriptor();
+  }
+  static const ::PROTOBUF_NAMESPACE_ID::Descriptor* GetDescriptor() {
+    return default_instance().GetMetadata().descriptor;
+  }
+  static const ::PROTOBUF_NAMESPACE_ID::Reflection* GetReflection() {
+    return default_instance().GetMetadata().reflection;
+  }
+  static const UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByDelta& default_instance() {
+    return *internal_default_instance();
+  }
+  static inline const UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByDelta* internal_default_instance() {
+    return reinterpret_cast<const UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByDelta*>(
+               &_UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByDelta_default_instance_);
+  }
+  static constexpr int kIndexInFileMessages =
+    26;
+
+  friend void swap(UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByDelta& a, UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByDelta& b) {
+    a.Swap(&b);
+  }
+  inline void Swap(UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByDelta* other) {
+    if (other == this) return;
+  #ifdef PROTOBUF_FORCE_COPY_IN_SWAP
+    if (GetOwningArena() != nullptr &&
+        GetOwningArena() == other->GetOwningArena()) {
+   #else  // PROTOBUF_FORCE_COPY_IN_SWAP
+    if (GetOwningArena() == other->GetOwningArena()) {
+  #endif  // !PROTOBUF_FORCE_COPY_IN_SWAP
+      InternalSwap(other);
+    } else {
+      ::PROTOBUF_NAMESPACE_ID::internal::GenericSwap(this, other);
+    }
+  }
+  void UnsafeArenaSwap(UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByDelta* other) {
+    if (other == this) return;
+    GOOGLE_DCHECK(GetOwningArena() == other->GetOwningArena());
+    InternalSwap(other);
+  }
+
+  // implements Message ----------------------------------------------
+
+  UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByDelta* New(::PROTOBUF_NAMESPACE_ID::Arena* arena = nullptr) const final {
+    return CreateMaybeMessage<UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByDelta>(arena);
+  }
+  using ::PROTOBUF_NAMESPACE_ID::Message::CopyFrom;
+  void CopyFrom(const UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByDelta& from);
+  using ::PROTOBUF_NAMESPACE_ID::Message::MergeFrom;
+  void MergeFrom(const UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByDelta& from);
+  private:
+  static void MergeImpl(::PROTOBUF_NAMESPACE_ID::Message* to, const ::PROTOBUF_NAMESPACE_ID::Message& from);
+  public:
+  PROTOBUF_ATTRIBUTE_REINITIALIZES void Clear() final;
+  bool IsInitialized() const final;
+
+  size_t ByteSizeLong() const final;
+  const char* _InternalParse(const char* ptr, ::PROTOBUF_NAMESPACE_ID::internal::ParseContext* ctx) final;
+  uint8_t* _InternalSerialize(
+      uint8_t* target, ::PROTOBUF_NAMESPACE_ID::io::EpsCopyOutputStream* stream) const final;
+  int GetCachedSize() const final { return _cached_size_.Get(); }
+
+  private:
+  void SharedCtor();
+  void SharedDtor();
+  void SetCachedSize(int size) const final;
+  void InternalSwap(UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByDelta* other);
+
+  private:
+  friend class ::PROTOBUF_NAMESPACE_ID::internal::AnyMetadata;
+  static ::PROTOBUF_NAMESPACE_ID::StringPiece FullMessageName() {
+    return "io.deephaven.proto.backplane.grpc.UpdateByRequest.UpdateByOperation.UpdateByColumn.UpdateBySpec.UpdateByDelta";
+  }
+  protected:
+  explicit UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByDelta(::PROTOBUF_NAMESPACE_ID::Arena* arena,
+                       bool is_message_owned = false);
+  public:
+
+  static const ClassData _class_data_;
+  const ::PROTOBUF_NAMESPACE_ID::Message::ClassData*GetClassData() const final;
+
+  ::PROTOBUF_NAMESPACE_ID::Metadata GetMetadata() const final;
+
+  // nested types ----------------------------------------------------
+
+  // accessors -------------------------------------------------------
+
+  enum : int {
+    kOptionsFieldNumber = 1,
+  };
+  // .io.deephaven.proto.backplane.grpc.UpdateByDeltaOptions options = 1;
+  bool has_options() const;
+  private:
+  bool _internal_has_options() const;
+  public:
+  void clear_options();
+  const ::io::deephaven::proto::backplane::grpc::UpdateByDeltaOptions& options() const;
+  PROTOBUF_NODISCARD ::io::deephaven::proto::backplane::grpc::UpdateByDeltaOptions* release_options();
+  ::io::deephaven::proto::backplane::grpc::UpdateByDeltaOptions* mutable_options();
+  void set_allocated_options(::io::deephaven::proto::backplane::grpc::UpdateByDeltaOptions* options);
+  private:
+  const ::io::deephaven::proto::backplane::grpc::UpdateByDeltaOptions& _internal_options() const;
+  ::io::deephaven::proto::backplane::grpc::UpdateByDeltaOptions* _internal_mutable_options();
+  public:
+  void unsafe_arena_set_allocated_options(
+      ::io::deephaven::proto::backplane::grpc::UpdateByDeltaOptions* options);
+  ::io::deephaven::proto::backplane::grpc::UpdateByDeltaOptions* unsafe_arena_release_options();
+
+  // @@protoc_insertion_point(class_scope:io.deephaven.proto.backplane.grpc.UpdateByRequest.UpdateByOperation.UpdateByColumn.UpdateBySpec.UpdateByDelta)
+ private:
+  class _Internal;
+
+  template <typename T> friend class ::PROTOBUF_NAMESPACE_ID::Arena::InternalHelper;
+  typedef void InternalArenaConstructable_;
+  typedef void DestructorSkippable_;
+  ::io::deephaven::proto::backplane::grpc::UpdateByDeltaOptions* options_;
   mutable ::PROTOBUF_NAMESPACE_ID::internal::CachedSize _cached_size_;
   friend struct ::TableStruct_deephaven_2fproto_2ftable_2eproto;
 };
@@ -4349,7 +5382,7 @@ class UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByRoll
                &_UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByRollingSum_default_instance_);
   }
   static constexpr int kIndexInFileMessages =
-    21;
+    27;
 
   friend void swap(UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByRollingSum& a, UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByRollingSum& b) {
     a.Swap(&b);
@@ -4420,44 +5453,44 @@ class UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByRoll
   // accessors -------------------------------------------------------
 
   enum : int {
-    kReverseTimescaleFieldNumber = 1,
-    kForwardTimescaleFieldNumber = 2,
+    kReverseWindowScaleFieldNumber = 1,
+    kForwardWindowScaleFieldNumber = 2,
   };
-  // .io.deephaven.proto.backplane.grpc.UpdateByEmaTimescale reverse_timescale = 1;
-  bool has_reverse_timescale() const;
+  // .io.deephaven.proto.backplane.grpc.UpdateByWindowScale reverse_window_scale = 1;
+  bool has_reverse_window_scale() const;
   private:
-  bool _internal_has_reverse_timescale() const;
+  bool _internal_has_reverse_window_scale() const;
   public:
-  void clear_reverse_timescale();
-  const ::io::deephaven::proto::backplane::grpc::UpdateByEmaTimescale& reverse_timescale() const;
-  PROTOBUF_NODISCARD ::io::deephaven::proto::backplane::grpc::UpdateByEmaTimescale* release_reverse_timescale();
-  ::io::deephaven::proto::backplane::grpc::UpdateByEmaTimescale* mutable_reverse_timescale();
-  void set_allocated_reverse_timescale(::io::deephaven::proto::backplane::grpc::UpdateByEmaTimescale* reverse_timescale);
+  void clear_reverse_window_scale();
+  const ::io::deephaven::proto::backplane::grpc::UpdateByWindowScale& reverse_window_scale() const;
+  PROTOBUF_NODISCARD ::io::deephaven::proto::backplane::grpc::UpdateByWindowScale* release_reverse_window_scale();
+  ::io::deephaven::proto::backplane::grpc::UpdateByWindowScale* mutable_reverse_window_scale();
+  void set_allocated_reverse_window_scale(::io::deephaven::proto::backplane::grpc::UpdateByWindowScale* reverse_window_scale);
   private:
-  const ::io::deephaven::proto::backplane::grpc::UpdateByEmaTimescale& _internal_reverse_timescale() const;
-  ::io::deephaven::proto::backplane::grpc::UpdateByEmaTimescale* _internal_mutable_reverse_timescale();
+  const ::io::deephaven::proto::backplane::grpc::UpdateByWindowScale& _internal_reverse_window_scale() const;
+  ::io::deephaven::proto::backplane::grpc::UpdateByWindowScale* _internal_mutable_reverse_window_scale();
   public:
-  void unsafe_arena_set_allocated_reverse_timescale(
-      ::io::deephaven::proto::backplane::grpc::UpdateByEmaTimescale* reverse_timescale);
-  ::io::deephaven::proto::backplane::grpc::UpdateByEmaTimescale* unsafe_arena_release_reverse_timescale();
+  void unsafe_arena_set_allocated_reverse_window_scale(
+      ::io::deephaven::proto::backplane::grpc::UpdateByWindowScale* reverse_window_scale);
+  ::io::deephaven::proto::backplane::grpc::UpdateByWindowScale* unsafe_arena_release_reverse_window_scale();
 
-  // .io.deephaven.proto.backplane.grpc.UpdateByEmaTimescale forward_timescale = 2;
-  bool has_forward_timescale() const;
+  // .io.deephaven.proto.backplane.grpc.UpdateByWindowScale forward_window_scale = 2;
+  bool has_forward_window_scale() const;
   private:
-  bool _internal_has_forward_timescale() const;
+  bool _internal_has_forward_window_scale() const;
   public:
-  void clear_forward_timescale();
-  const ::io::deephaven::proto::backplane::grpc::UpdateByEmaTimescale& forward_timescale() const;
-  PROTOBUF_NODISCARD ::io::deephaven::proto::backplane::grpc::UpdateByEmaTimescale* release_forward_timescale();
-  ::io::deephaven::proto::backplane::grpc::UpdateByEmaTimescale* mutable_forward_timescale();
-  void set_allocated_forward_timescale(::io::deephaven::proto::backplane::grpc::UpdateByEmaTimescale* forward_timescale);
+  void clear_forward_window_scale();
+  const ::io::deephaven::proto::backplane::grpc::UpdateByWindowScale& forward_window_scale() const;
+  PROTOBUF_NODISCARD ::io::deephaven::proto::backplane::grpc::UpdateByWindowScale* release_forward_window_scale();
+  ::io::deephaven::proto::backplane::grpc::UpdateByWindowScale* mutable_forward_window_scale();
+  void set_allocated_forward_window_scale(::io::deephaven::proto::backplane::grpc::UpdateByWindowScale* forward_window_scale);
   private:
-  const ::io::deephaven::proto::backplane::grpc::UpdateByEmaTimescale& _internal_forward_timescale() const;
-  ::io::deephaven::proto::backplane::grpc::UpdateByEmaTimescale* _internal_mutable_forward_timescale();
+  const ::io::deephaven::proto::backplane::grpc::UpdateByWindowScale& _internal_forward_window_scale() const;
+  ::io::deephaven::proto::backplane::grpc::UpdateByWindowScale* _internal_mutable_forward_window_scale();
   public:
-  void unsafe_arena_set_allocated_forward_timescale(
-      ::io::deephaven::proto::backplane::grpc::UpdateByEmaTimescale* forward_timescale);
-  ::io::deephaven::proto::backplane::grpc::UpdateByEmaTimescale* unsafe_arena_release_forward_timescale();
+  void unsafe_arena_set_allocated_forward_window_scale(
+      ::io::deephaven::proto::backplane::grpc::UpdateByWindowScale* forward_window_scale);
+  ::io::deephaven::proto::backplane::grpc::UpdateByWindowScale* unsafe_arena_release_forward_window_scale();
 
   // @@protoc_insertion_point(class_scope:io.deephaven.proto.backplane.grpc.UpdateByRequest.UpdateByOperation.UpdateByColumn.UpdateBySpec.UpdateByRollingSum)
  private:
@@ -4466,8 +5499,8 @@ class UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByRoll
   template <typename T> friend class ::PROTOBUF_NAMESPACE_ID::Arena::InternalHelper;
   typedef void InternalArenaConstructable_;
   typedef void DestructorSkippable_;
-  ::io::deephaven::proto::backplane::grpc::UpdateByEmaTimescale* reverse_timescale_;
-  ::io::deephaven::proto::backplane::grpc::UpdateByEmaTimescale* forward_timescale_;
+  ::io::deephaven::proto::backplane::grpc::UpdateByWindowScale* reverse_window_scale_;
+  ::io::deephaven::proto::backplane::grpc::UpdateByWindowScale* forward_window_scale_;
   mutable ::PROTOBUF_NAMESPACE_ID::internal::CachedSize _cached_size_;
   friend struct ::TableStruct_deephaven_2fproto_2ftable_2eproto;
 };
@@ -4521,7 +5554,7 @@ class UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByRoll
                &_UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByRollingGroup_default_instance_);
   }
   static constexpr int kIndexInFileMessages =
-    22;
+    28;
 
   friend void swap(UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByRollingGroup& a, UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByRollingGroup& b) {
     a.Swap(&b);
@@ -4592,44 +5625,44 @@ class UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByRoll
   // accessors -------------------------------------------------------
 
   enum : int {
-    kReverseTimescaleFieldNumber = 1,
-    kForwardTimescaleFieldNumber = 2,
+    kReverseWindowScaleFieldNumber = 1,
+    kForwardWindowScaleFieldNumber = 2,
   };
-  // .io.deephaven.proto.backplane.grpc.UpdateByEmaTimescale reverse_timescale = 1;
-  bool has_reverse_timescale() const;
+  // .io.deephaven.proto.backplane.grpc.UpdateByWindowScale reverse_window_scale = 1;
+  bool has_reverse_window_scale() const;
   private:
-  bool _internal_has_reverse_timescale() const;
+  bool _internal_has_reverse_window_scale() const;
   public:
-  void clear_reverse_timescale();
-  const ::io::deephaven::proto::backplane::grpc::UpdateByEmaTimescale& reverse_timescale() const;
-  PROTOBUF_NODISCARD ::io::deephaven::proto::backplane::grpc::UpdateByEmaTimescale* release_reverse_timescale();
-  ::io::deephaven::proto::backplane::grpc::UpdateByEmaTimescale* mutable_reverse_timescale();
-  void set_allocated_reverse_timescale(::io::deephaven::proto::backplane::grpc::UpdateByEmaTimescale* reverse_timescale);
+  void clear_reverse_window_scale();
+  const ::io::deephaven::proto::backplane::grpc::UpdateByWindowScale& reverse_window_scale() const;
+  PROTOBUF_NODISCARD ::io::deephaven::proto::backplane::grpc::UpdateByWindowScale* release_reverse_window_scale();
+  ::io::deephaven::proto::backplane::grpc::UpdateByWindowScale* mutable_reverse_window_scale();
+  void set_allocated_reverse_window_scale(::io::deephaven::proto::backplane::grpc::UpdateByWindowScale* reverse_window_scale);
   private:
-  const ::io::deephaven::proto::backplane::grpc::UpdateByEmaTimescale& _internal_reverse_timescale() const;
-  ::io::deephaven::proto::backplane::grpc::UpdateByEmaTimescale* _internal_mutable_reverse_timescale();
+  const ::io::deephaven::proto::backplane::grpc::UpdateByWindowScale& _internal_reverse_window_scale() const;
+  ::io::deephaven::proto::backplane::grpc::UpdateByWindowScale* _internal_mutable_reverse_window_scale();
   public:
-  void unsafe_arena_set_allocated_reverse_timescale(
-      ::io::deephaven::proto::backplane::grpc::UpdateByEmaTimescale* reverse_timescale);
-  ::io::deephaven::proto::backplane::grpc::UpdateByEmaTimescale* unsafe_arena_release_reverse_timescale();
+  void unsafe_arena_set_allocated_reverse_window_scale(
+      ::io::deephaven::proto::backplane::grpc::UpdateByWindowScale* reverse_window_scale);
+  ::io::deephaven::proto::backplane::grpc::UpdateByWindowScale* unsafe_arena_release_reverse_window_scale();
 
-  // .io.deephaven.proto.backplane.grpc.UpdateByEmaTimescale forward_timescale = 2;
-  bool has_forward_timescale() const;
+  // .io.deephaven.proto.backplane.grpc.UpdateByWindowScale forward_window_scale = 2;
+  bool has_forward_window_scale() const;
   private:
-  bool _internal_has_forward_timescale() const;
+  bool _internal_has_forward_window_scale() const;
   public:
-  void clear_forward_timescale();
-  const ::io::deephaven::proto::backplane::grpc::UpdateByEmaTimescale& forward_timescale() const;
-  PROTOBUF_NODISCARD ::io::deephaven::proto::backplane::grpc::UpdateByEmaTimescale* release_forward_timescale();
-  ::io::deephaven::proto::backplane::grpc::UpdateByEmaTimescale* mutable_forward_timescale();
-  void set_allocated_forward_timescale(::io::deephaven::proto::backplane::grpc::UpdateByEmaTimescale* forward_timescale);
+  void clear_forward_window_scale();
+  const ::io::deephaven::proto::backplane::grpc::UpdateByWindowScale& forward_window_scale() const;
+  PROTOBUF_NODISCARD ::io::deephaven::proto::backplane::grpc::UpdateByWindowScale* release_forward_window_scale();
+  ::io::deephaven::proto::backplane::grpc::UpdateByWindowScale* mutable_forward_window_scale();
+  void set_allocated_forward_window_scale(::io::deephaven::proto::backplane::grpc::UpdateByWindowScale* forward_window_scale);
   private:
-  const ::io::deephaven::proto::backplane::grpc::UpdateByEmaTimescale& _internal_forward_timescale() const;
-  ::io::deephaven::proto::backplane::grpc::UpdateByEmaTimescale* _internal_mutable_forward_timescale();
+  const ::io::deephaven::proto::backplane::grpc::UpdateByWindowScale& _internal_forward_window_scale() const;
+  ::io::deephaven::proto::backplane::grpc::UpdateByWindowScale* _internal_mutable_forward_window_scale();
   public:
-  void unsafe_arena_set_allocated_forward_timescale(
-      ::io::deephaven::proto::backplane::grpc::UpdateByEmaTimescale* forward_timescale);
-  ::io::deephaven::proto::backplane::grpc::UpdateByEmaTimescale* unsafe_arena_release_forward_timescale();
+  void unsafe_arena_set_allocated_forward_window_scale(
+      ::io::deephaven::proto::backplane::grpc::UpdateByWindowScale* forward_window_scale);
+  ::io::deephaven::proto::backplane::grpc::UpdateByWindowScale* unsafe_arena_release_forward_window_scale();
 
   // @@protoc_insertion_point(class_scope:io.deephaven.proto.backplane.grpc.UpdateByRequest.UpdateByOperation.UpdateByColumn.UpdateBySpec.UpdateByRollingGroup)
  private:
@@ -4638,8 +5671,8 @@ class UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByRoll
   template <typename T> friend class ::PROTOBUF_NAMESPACE_ID::Arena::InternalHelper;
   typedef void InternalArenaConstructable_;
   typedef void DestructorSkippable_;
-  ::io::deephaven::proto::backplane::grpc::UpdateByEmaTimescale* reverse_timescale_;
-  ::io::deephaven::proto::backplane::grpc::UpdateByEmaTimescale* forward_timescale_;
+  ::io::deephaven::proto::backplane::grpc::UpdateByWindowScale* reverse_window_scale_;
+  ::io::deephaven::proto::backplane::grpc::UpdateByWindowScale* forward_window_scale_;
   mutable ::PROTOBUF_NAMESPACE_ID::internal::CachedSize _cached_size_;
   friend struct ::TableStruct_deephaven_2fproto_2ftable_2eproto;
 };
@@ -4693,7 +5726,7 @@ class UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByRoll
                &_UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByRollingAvg_default_instance_);
   }
   static constexpr int kIndexInFileMessages =
-    23;
+    29;
 
   friend void swap(UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByRollingAvg& a, UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByRollingAvg& b) {
     a.Swap(&b);
@@ -4764,44 +5797,44 @@ class UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByRoll
   // accessors -------------------------------------------------------
 
   enum : int {
-    kReverseTimescaleFieldNumber = 1,
-    kForwardTimescaleFieldNumber = 2,
+    kReverseWindowScaleFieldNumber = 1,
+    kForwardWindowScaleFieldNumber = 2,
   };
-  // .io.deephaven.proto.backplane.grpc.UpdateByEmaTimescale reverse_timescale = 1;
-  bool has_reverse_timescale() const;
+  // .io.deephaven.proto.backplane.grpc.UpdateByWindowScale reverse_window_scale = 1;
+  bool has_reverse_window_scale() const;
   private:
-  bool _internal_has_reverse_timescale() const;
+  bool _internal_has_reverse_window_scale() const;
   public:
-  void clear_reverse_timescale();
-  const ::io::deephaven::proto::backplane::grpc::UpdateByEmaTimescale& reverse_timescale() const;
-  PROTOBUF_NODISCARD ::io::deephaven::proto::backplane::grpc::UpdateByEmaTimescale* release_reverse_timescale();
-  ::io::deephaven::proto::backplane::grpc::UpdateByEmaTimescale* mutable_reverse_timescale();
-  void set_allocated_reverse_timescale(::io::deephaven::proto::backplane::grpc::UpdateByEmaTimescale* reverse_timescale);
+  void clear_reverse_window_scale();
+  const ::io::deephaven::proto::backplane::grpc::UpdateByWindowScale& reverse_window_scale() const;
+  PROTOBUF_NODISCARD ::io::deephaven::proto::backplane::grpc::UpdateByWindowScale* release_reverse_window_scale();
+  ::io::deephaven::proto::backplane::grpc::UpdateByWindowScale* mutable_reverse_window_scale();
+  void set_allocated_reverse_window_scale(::io::deephaven::proto::backplane::grpc::UpdateByWindowScale* reverse_window_scale);
   private:
-  const ::io::deephaven::proto::backplane::grpc::UpdateByEmaTimescale& _internal_reverse_timescale() const;
-  ::io::deephaven::proto::backplane::grpc::UpdateByEmaTimescale* _internal_mutable_reverse_timescale();
+  const ::io::deephaven::proto::backplane::grpc::UpdateByWindowScale& _internal_reverse_window_scale() const;
+  ::io::deephaven::proto::backplane::grpc::UpdateByWindowScale* _internal_mutable_reverse_window_scale();
   public:
-  void unsafe_arena_set_allocated_reverse_timescale(
-      ::io::deephaven::proto::backplane::grpc::UpdateByEmaTimescale* reverse_timescale);
-  ::io::deephaven::proto::backplane::grpc::UpdateByEmaTimescale* unsafe_arena_release_reverse_timescale();
+  void unsafe_arena_set_allocated_reverse_window_scale(
+      ::io::deephaven::proto::backplane::grpc::UpdateByWindowScale* reverse_window_scale);
+  ::io::deephaven::proto::backplane::grpc::UpdateByWindowScale* unsafe_arena_release_reverse_window_scale();
 
-  // .io.deephaven.proto.backplane.grpc.UpdateByEmaTimescale forward_timescale = 2;
-  bool has_forward_timescale() const;
+  // .io.deephaven.proto.backplane.grpc.UpdateByWindowScale forward_window_scale = 2;
+  bool has_forward_window_scale() const;
   private:
-  bool _internal_has_forward_timescale() const;
+  bool _internal_has_forward_window_scale() const;
   public:
-  void clear_forward_timescale();
-  const ::io::deephaven::proto::backplane::grpc::UpdateByEmaTimescale& forward_timescale() const;
-  PROTOBUF_NODISCARD ::io::deephaven::proto::backplane::grpc::UpdateByEmaTimescale* release_forward_timescale();
-  ::io::deephaven::proto::backplane::grpc::UpdateByEmaTimescale* mutable_forward_timescale();
-  void set_allocated_forward_timescale(::io::deephaven::proto::backplane::grpc::UpdateByEmaTimescale* forward_timescale);
+  void clear_forward_window_scale();
+  const ::io::deephaven::proto::backplane::grpc::UpdateByWindowScale& forward_window_scale() const;
+  PROTOBUF_NODISCARD ::io::deephaven::proto::backplane::grpc::UpdateByWindowScale* release_forward_window_scale();
+  ::io::deephaven::proto::backplane::grpc::UpdateByWindowScale* mutable_forward_window_scale();
+  void set_allocated_forward_window_scale(::io::deephaven::proto::backplane::grpc::UpdateByWindowScale* forward_window_scale);
   private:
-  const ::io::deephaven::proto::backplane::grpc::UpdateByEmaTimescale& _internal_forward_timescale() const;
-  ::io::deephaven::proto::backplane::grpc::UpdateByEmaTimescale* _internal_mutable_forward_timescale();
+  const ::io::deephaven::proto::backplane::grpc::UpdateByWindowScale& _internal_forward_window_scale() const;
+  ::io::deephaven::proto::backplane::grpc::UpdateByWindowScale* _internal_mutable_forward_window_scale();
   public:
-  void unsafe_arena_set_allocated_forward_timescale(
-      ::io::deephaven::proto::backplane::grpc::UpdateByEmaTimescale* forward_timescale);
-  ::io::deephaven::proto::backplane::grpc::UpdateByEmaTimescale* unsafe_arena_release_forward_timescale();
+  void unsafe_arena_set_allocated_forward_window_scale(
+      ::io::deephaven::proto::backplane::grpc::UpdateByWindowScale* forward_window_scale);
+  ::io::deephaven::proto::backplane::grpc::UpdateByWindowScale* unsafe_arena_release_forward_window_scale();
 
   // @@protoc_insertion_point(class_scope:io.deephaven.proto.backplane.grpc.UpdateByRequest.UpdateByOperation.UpdateByColumn.UpdateBySpec.UpdateByRollingAvg)
  private:
@@ -4810,8 +5843,8 @@ class UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByRoll
   template <typename T> friend class ::PROTOBUF_NAMESPACE_ID::Arena::InternalHelper;
   typedef void InternalArenaConstructable_;
   typedef void DestructorSkippable_;
-  ::io::deephaven::proto::backplane::grpc::UpdateByEmaTimescale* reverse_timescale_;
-  ::io::deephaven::proto::backplane::grpc::UpdateByEmaTimescale* forward_timescale_;
+  ::io::deephaven::proto::backplane::grpc::UpdateByWindowScale* reverse_window_scale_;
+  ::io::deephaven::proto::backplane::grpc::UpdateByWindowScale* forward_window_scale_;
   mutable ::PROTOBUF_NAMESPACE_ID::internal::CachedSize _cached_size_;
   friend struct ::TableStruct_deephaven_2fproto_2ftable_2eproto;
 };
@@ -4865,7 +5898,7 @@ class UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByRoll
                &_UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByRollingMin_default_instance_);
   }
   static constexpr int kIndexInFileMessages =
-    24;
+    30;
 
   friend void swap(UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByRollingMin& a, UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByRollingMin& b) {
     a.Swap(&b);
@@ -4936,44 +5969,44 @@ class UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByRoll
   // accessors -------------------------------------------------------
 
   enum : int {
-    kReverseTimescaleFieldNumber = 1,
-    kForwardTimescaleFieldNumber = 2,
+    kReverseWindowScaleFieldNumber = 1,
+    kForwardWindowScaleFieldNumber = 2,
   };
-  // .io.deephaven.proto.backplane.grpc.UpdateByEmaTimescale reverse_timescale = 1;
-  bool has_reverse_timescale() const;
+  // .io.deephaven.proto.backplane.grpc.UpdateByWindowScale reverse_window_scale = 1;
+  bool has_reverse_window_scale() const;
   private:
-  bool _internal_has_reverse_timescale() const;
+  bool _internal_has_reverse_window_scale() const;
   public:
-  void clear_reverse_timescale();
-  const ::io::deephaven::proto::backplane::grpc::UpdateByEmaTimescale& reverse_timescale() const;
-  PROTOBUF_NODISCARD ::io::deephaven::proto::backplane::grpc::UpdateByEmaTimescale* release_reverse_timescale();
-  ::io::deephaven::proto::backplane::grpc::UpdateByEmaTimescale* mutable_reverse_timescale();
-  void set_allocated_reverse_timescale(::io::deephaven::proto::backplane::grpc::UpdateByEmaTimescale* reverse_timescale);
+  void clear_reverse_window_scale();
+  const ::io::deephaven::proto::backplane::grpc::UpdateByWindowScale& reverse_window_scale() const;
+  PROTOBUF_NODISCARD ::io::deephaven::proto::backplane::grpc::UpdateByWindowScale* release_reverse_window_scale();
+  ::io::deephaven::proto::backplane::grpc::UpdateByWindowScale* mutable_reverse_window_scale();
+  void set_allocated_reverse_window_scale(::io::deephaven::proto::backplane::grpc::UpdateByWindowScale* reverse_window_scale);
   private:
-  const ::io::deephaven::proto::backplane::grpc::UpdateByEmaTimescale& _internal_reverse_timescale() const;
-  ::io::deephaven::proto::backplane::grpc::UpdateByEmaTimescale* _internal_mutable_reverse_timescale();
+  const ::io::deephaven::proto::backplane::grpc::UpdateByWindowScale& _internal_reverse_window_scale() const;
+  ::io::deephaven::proto::backplane::grpc::UpdateByWindowScale* _internal_mutable_reverse_window_scale();
   public:
-  void unsafe_arena_set_allocated_reverse_timescale(
-      ::io::deephaven::proto::backplane::grpc::UpdateByEmaTimescale* reverse_timescale);
-  ::io::deephaven::proto::backplane::grpc::UpdateByEmaTimescale* unsafe_arena_release_reverse_timescale();
+  void unsafe_arena_set_allocated_reverse_window_scale(
+      ::io::deephaven::proto::backplane::grpc::UpdateByWindowScale* reverse_window_scale);
+  ::io::deephaven::proto::backplane::grpc::UpdateByWindowScale* unsafe_arena_release_reverse_window_scale();
 
-  // .io.deephaven.proto.backplane.grpc.UpdateByEmaTimescale forward_timescale = 2;
-  bool has_forward_timescale() const;
+  // .io.deephaven.proto.backplane.grpc.UpdateByWindowScale forward_window_scale = 2;
+  bool has_forward_window_scale() const;
   private:
-  bool _internal_has_forward_timescale() const;
+  bool _internal_has_forward_window_scale() const;
   public:
-  void clear_forward_timescale();
-  const ::io::deephaven::proto::backplane::grpc::UpdateByEmaTimescale& forward_timescale() const;
-  PROTOBUF_NODISCARD ::io::deephaven::proto::backplane::grpc::UpdateByEmaTimescale* release_forward_timescale();
-  ::io::deephaven::proto::backplane::grpc::UpdateByEmaTimescale* mutable_forward_timescale();
-  void set_allocated_forward_timescale(::io::deephaven::proto::backplane::grpc::UpdateByEmaTimescale* forward_timescale);
+  void clear_forward_window_scale();
+  const ::io::deephaven::proto::backplane::grpc::UpdateByWindowScale& forward_window_scale() const;
+  PROTOBUF_NODISCARD ::io::deephaven::proto::backplane::grpc::UpdateByWindowScale* release_forward_window_scale();
+  ::io::deephaven::proto::backplane::grpc::UpdateByWindowScale* mutable_forward_window_scale();
+  void set_allocated_forward_window_scale(::io::deephaven::proto::backplane::grpc::UpdateByWindowScale* forward_window_scale);
   private:
-  const ::io::deephaven::proto::backplane::grpc::UpdateByEmaTimescale& _internal_forward_timescale() const;
-  ::io::deephaven::proto::backplane::grpc::UpdateByEmaTimescale* _internal_mutable_forward_timescale();
+  const ::io::deephaven::proto::backplane::grpc::UpdateByWindowScale& _internal_forward_window_scale() const;
+  ::io::deephaven::proto::backplane::grpc::UpdateByWindowScale* _internal_mutable_forward_window_scale();
   public:
-  void unsafe_arena_set_allocated_forward_timescale(
-      ::io::deephaven::proto::backplane::grpc::UpdateByEmaTimescale* forward_timescale);
-  ::io::deephaven::proto::backplane::grpc::UpdateByEmaTimescale* unsafe_arena_release_forward_timescale();
+  void unsafe_arena_set_allocated_forward_window_scale(
+      ::io::deephaven::proto::backplane::grpc::UpdateByWindowScale* forward_window_scale);
+  ::io::deephaven::proto::backplane::grpc::UpdateByWindowScale* unsafe_arena_release_forward_window_scale();
 
   // @@protoc_insertion_point(class_scope:io.deephaven.proto.backplane.grpc.UpdateByRequest.UpdateByOperation.UpdateByColumn.UpdateBySpec.UpdateByRollingMin)
  private:
@@ -4982,8 +6015,8 @@ class UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByRoll
   template <typename T> friend class ::PROTOBUF_NAMESPACE_ID::Arena::InternalHelper;
   typedef void InternalArenaConstructable_;
   typedef void DestructorSkippable_;
-  ::io::deephaven::proto::backplane::grpc::UpdateByEmaTimescale* reverse_timescale_;
-  ::io::deephaven::proto::backplane::grpc::UpdateByEmaTimescale* forward_timescale_;
+  ::io::deephaven::proto::backplane::grpc::UpdateByWindowScale* reverse_window_scale_;
+  ::io::deephaven::proto::backplane::grpc::UpdateByWindowScale* forward_window_scale_;
   mutable ::PROTOBUF_NAMESPACE_ID::internal::CachedSize _cached_size_;
   friend struct ::TableStruct_deephaven_2fproto_2ftable_2eproto;
 };
@@ -5037,7 +6070,7 @@ class UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByRoll
                &_UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByRollingMax_default_instance_);
   }
   static constexpr int kIndexInFileMessages =
-    25;
+    31;
 
   friend void swap(UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByRollingMax& a, UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByRollingMax& b) {
     a.Swap(&b);
@@ -5108,44 +6141,44 @@ class UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByRoll
   // accessors -------------------------------------------------------
 
   enum : int {
-    kReverseTimescaleFieldNumber = 1,
-    kForwardTimescaleFieldNumber = 2,
+    kReverseWindowScaleFieldNumber = 1,
+    kForwardWindowScaleFieldNumber = 2,
   };
-  // .io.deephaven.proto.backplane.grpc.UpdateByEmaTimescale reverse_timescale = 1;
-  bool has_reverse_timescale() const;
+  // .io.deephaven.proto.backplane.grpc.UpdateByWindowScale reverse_window_scale = 1;
+  bool has_reverse_window_scale() const;
   private:
-  bool _internal_has_reverse_timescale() const;
+  bool _internal_has_reverse_window_scale() const;
   public:
-  void clear_reverse_timescale();
-  const ::io::deephaven::proto::backplane::grpc::UpdateByEmaTimescale& reverse_timescale() const;
-  PROTOBUF_NODISCARD ::io::deephaven::proto::backplane::grpc::UpdateByEmaTimescale* release_reverse_timescale();
-  ::io::deephaven::proto::backplane::grpc::UpdateByEmaTimescale* mutable_reverse_timescale();
-  void set_allocated_reverse_timescale(::io::deephaven::proto::backplane::grpc::UpdateByEmaTimescale* reverse_timescale);
+  void clear_reverse_window_scale();
+  const ::io::deephaven::proto::backplane::grpc::UpdateByWindowScale& reverse_window_scale() const;
+  PROTOBUF_NODISCARD ::io::deephaven::proto::backplane::grpc::UpdateByWindowScale* release_reverse_window_scale();
+  ::io::deephaven::proto::backplane::grpc::UpdateByWindowScale* mutable_reverse_window_scale();
+  void set_allocated_reverse_window_scale(::io::deephaven::proto::backplane::grpc::UpdateByWindowScale* reverse_window_scale);
   private:
-  const ::io::deephaven::proto::backplane::grpc::UpdateByEmaTimescale& _internal_reverse_timescale() const;
-  ::io::deephaven::proto::backplane::grpc::UpdateByEmaTimescale* _internal_mutable_reverse_timescale();
+  const ::io::deephaven::proto::backplane::grpc::UpdateByWindowScale& _internal_reverse_window_scale() const;
+  ::io::deephaven::proto::backplane::grpc::UpdateByWindowScale* _internal_mutable_reverse_window_scale();
   public:
-  void unsafe_arena_set_allocated_reverse_timescale(
-      ::io::deephaven::proto::backplane::grpc::UpdateByEmaTimescale* reverse_timescale);
-  ::io::deephaven::proto::backplane::grpc::UpdateByEmaTimescale* unsafe_arena_release_reverse_timescale();
+  void unsafe_arena_set_allocated_reverse_window_scale(
+      ::io::deephaven::proto::backplane::grpc::UpdateByWindowScale* reverse_window_scale);
+  ::io::deephaven::proto::backplane::grpc::UpdateByWindowScale* unsafe_arena_release_reverse_window_scale();
 
-  // .io.deephaven.proto.backplane.grpc.UpdateByEmaTimescale forward_timescale = 2;
-  bool has_forward_timescale() const;
+  // .io.deephaven.proto.backplane.grpc.UpdateByWindowScale forward_window_scale = 2;
+  bool has_forward_window_scale() const;
   private:
-  bool _internal_has_forward_timescale() const;
+  bool _internal_has_forward_window_scale() const;
   public:
-  void clear_forward_timescale();
-  const ::io::deephaven::proto::backplane::grpc::UpdateByEmaTimescale& forward_timescale() const;
-  PROTOBUF_NODISCARD ::io::deephaven::proto::backplane::grpc::UpdateByEmaTimescale* release_forward_timescale();
-  ::io::deephaven::proto::backplane::grpc::UpdateByEmaTimescale* mutable_forward_timescale();
-  void set_allocated_forward_timescale(::io::deephaven::proto::backplane::grpc::UpdateByEmaTimescale* forward_timescale);
+  void clear_forward_window_scale();
+  const ::io::deephaven::proto::backplane::grpc::UpdateByWindowScale& forward_window_scale() const;
+  PROTOBUF_NODISCARD ::io::deephaven::proto::backplane::grpc::UpdateByWindowScale* release_forward_window_scale();
+  ::io::deephaven::proto::backplane::grpc::UpdateByWindowScale* mutable_forward_window_scale();
+  void set_allocated_forward_window_scale(::io::deephaven::proto::backplane::grpc::UpdateByWindowScale* forward_window_scale);
   private:
-  const ::io::deephaven::proto::backplane::grpc::UpdateByEmaTimescale& _internal_forward_timescale() const;
-  ::io::deephaven::proto::backplane::grpc::UpdateByEmaTimescale* _internal_mutable_forward_timescale();
+  const ::io::deephaven::proto::backplane::grpc::UpdateByWindowScale& _internal_forward_window_scale() const;
+  ::io::deephaven::proto::backplane::grpc::UpdateByWindowScale* _internal_mutable_forward_window_scale();
   public:
-  void unsafe_arena_set_allocated_forward_timescale(
-      ::io::deephaven::proto::backplane::grpc::UpdateByEmaTimescale* forward_timescale);
-  ::io::deephaven::proto::backplane::grpc::UpdateByEmaTimescale* unsafe_arena_release_forward_timescale();
+  void unsafe_arena_set_allocated_forward_window_scale(
+      ::io::deephaven::proto::backplane::grpc::UpdateByWindowScale* forward_window_scale);
+  ::io::deephaven::proto::backplane::grpc::UpdateByWindowScale* unsafe_arena_release_forward_window_scale();
 
   // @@protoc_insertion_point(class_scope:io.deephaven.proto.backplane.grpc.UpdateByRequest.UpdateByOperation.UpdateByColumn.UpdateBySpec.UpdateByRollingMax)
  private:
@@ -5154,8 +6187,8 @@ class UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByRoll
   template <typename T> friend class ::PROTOBUF_NAMESPACE_ID::Arena::InternalHelper;
   typedef void InternalArenaConstructable_;
   typedef void DestructorSkippable_;
-  ::io::deephaven::proto::backplane::grpc::UpdateByEmaTimescale* reverse_timescale_;
-  ::io::deephaven::proto::backplane::grpc::UpdateByEmaTimescale* forward_timescale_;
+  ::io::deephaven::proto::backplane::grpc::UpdateByWindowScale* reverse_window_scale_;
+  ::io::deephaven::proto::backplane::grpc::UpdateByWindowScale* forward_window_scale_;
   mutable ::PROTOBUF_NAMESPACE_ID::internal::CachedSize _cached_size_;
   friend struct ::TableStruct_deephaven_2fproto_2ftable_2eproto;
 };
@@ -5209,7 +6242,7 @@ class UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByRoll
                &_UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByRollingProduct_default_instance_);
   }
   static constexpr int kIndexInFileMessages =
-    26;
+    32;
 
   friend void swap(UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByRollingProduct& a, UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByRollingProduct& b) {
     a.Swap(&b);
@@ -5280,44 +6313,44 @@ class UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByRoll
   // accessors -------------------------------------------------------
 
   enum : int {
-    kReverseTimescaleFieldNumber = 1,
-    kForwardTimescaleFieldNumber = 2,
+    kReverseWindowScaleFieldNumber = 1,
+    kForwardWindowScaleFieldNumber = 2,
   };
-  // .io.deephaven.proto.backplane.grpc.UpdateByEmaTimescale reverse_timescale = 1;
-  bool has_reverse_timescale() const;
+  // .io.deephaven.proto.backplane.grpc.UpdateByWindowScale reverse_window_scale = 1;
+  bool has_reverse_window_scale() const;
   private:
-  bool _internal_has_reverse_timescale() const;
+  bool _internal_has_reverse_window_scale() const;
   public:
-  void clear_reverse_timescale();
-  const ::io::deephaven::proto::backplane::grpc::UpdateByEmaTimescale& reverse_timescale() const;
-  PROTOBUF_NODISCARD ::io::deephaven::proto::backplane::grpc::UpdateByEmaTimescale* release_reverse_timescale();
-  ::io::deephaven::proto::backplane::grpc::UpdateByEmaTimescale* mutable_reverse_timescale();
-  void set_allocated_reverse_timescale(::io::deephaven::proto::backplane::grpc::UpdateByEmaTimescale* reverse_timescale);
+  void clear_reverse_window_scale();
+  const ::io::deephaven::proto::backplane::grpc::UpdateByWindowScale& reverse_window_scale() const;
+  PROTOBUF_NODISCARD ::io::deephaven::proto::backplane::grpc::UpdateByWindowScale* release_reverse_window_scale();
+  ::io::deephaven::proto::backplane::grpc::UpdateByWindowScale* mutable_reverse_window_scale();
+  void set_allocated_reverse_window_scale(::io::deephaven::proto::backplane::grpc::UpdateByWindowScale* reverse_window_scale);
   private:
-  const ::io::deephaven::proto::backplane::grpc::UpdateByEmaTimescale& _internal_reverse_timescale() const;
-  ::io::deephaven::proto::backplane::grpc::UpdateByEmaTimescale* _internal_mutable_reverse_timescale();
+  const ::io::deephaven::proto::backplane::grpc::UpdateByWindowScale& _internal_reverse_window_scale() const;
+  ::io::deephaven::proto::backplane::grpc::UpdateByWindowScale* _internal_mutable_reverse_window_scale();
   public:
-  void unsafe_arena_set_allocated_reverse_timescale(
-      ::io::deephaven::proto::backplane::grpc::UpdateByEmaTimescale* reverse_timescale);
-  ::io::deephaven::proto::backplane::grpc::UpdateByEmaTimescale* unsafe_arena_release_reverse_timescale();
+  void unsafe_arena_set_allocated_reverse_window_scale(
+      ::io::deephaven::proto::backplane::grpc::UpdateByWindowScale* reverse_window_scale);
+  ::io::deephaven::proto::backplane::grpc::UpdateByWindowScale* unsafe_arena_release_reverse_window_scale();
 
-  // .io.deephaven.proto.backplane.grpc.UpdateByEmaTimescale forward_timescale = 2;
-  bool has_forward_timescale() const;
+  // .io.deephaven.proto.backplane.grpc.UpdateByWindowScale forward_window_scale = 2;
+  bool has_forward_window_scale() const;
   private:
-  bool _internal_has_forward_timescale() const;
+  bool _internal_has_forward_window_scale() const;
   public:
-  void clear_forward_timescale();
-  const ::io::deephaven::proto::backplane::grpc::UpdateByEmaTimescale& forward_timescale() const;
-  PROTOBUF_NODISCARD ::io::deephaven::proto::backplane::grpc::UpdateByEmaTimescale* release_forward_timescale();
-  ::io::deephaven::proto::backplane::grpc::UpdateByEmaTimescale* mutable_forward_timescale();
-  void set_allocated_forward_timescale(::io::deephaven::proto::backplane::grpc::UpdateByEmaTimescale* forward_timescale);
+  void clear_forward_window_scale();
+  const ::io::deephaven::proto::backplane::grpc::UpdateByWindowScale& forward_window_scale() const;
+  PROTOBUF_NODISCARD ::io::deephaven::proto::backplane::grpc::UpdateByWindowScale* release_forward_window_scale();
+  ::io::deephaven::proto::backplane::grpc::UpdateByWindowScale* mutable_forward_window_scale();
+  void set_allocated_forward_window_scale(::io::deephaven::proto::backplane::grpc::UpdateByWindowScale* forward_window_scale);
   private:
-  const ::io::deephaven::proto::backplane::grpc::UpdateByEmaTimescale& _internal_forward_timescale() const;
-  ::io::deephaven::proto::backplane::grpc::UpdateByEmaTimescale* _internal_mutable_forward_timescale();
+  const ::io::deephaven::proto::backplane::grpc::UpdateByWindowScale& _internal_forward_window_scale() const;
+  ::io::deephaven::proto::backplane::grpc::UpdateByWindowScale* _internal_mutable_forward_window_scale();
   public:
-  void unsafe_arena_set_allocated_forward_timescale(
-      ::io::deephaven::proto::backplane::grpc::UpdateByEmaTimescale* forward_timescale);
-  ::io::deephaven::proto::backplane::grpc::UpdateByEmaTimescale* unsafe_arena_release_forward_timescale();
+  void unsafe_arena_set_allocated_forward_window_scale(
+      ::io::deephaven::proto::backplane::grpc::UpdateByWindowScale* forward_window_scale);
+  ::io::deephaven::proto::backplane::grpc::UpdateByWindowScale* unsafe_arena_release_forward_window_scale();
 
   // @@protoc_insertion_point(class_scope:io.deephaven.proto.backplane.grpc.UpdateByRequest.UpdateByOperation.UpdateByColumn.UpdateBySpec.UpdateByRollingProduct)
  private:
@@ -5326,8 +6359,540 @@ class UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByRoll
   template <typename T> friend class ::PROTOBUF_NAMESPACE_ID::Arena::InternalHelper;
   typedef void InternalArenaConstructable_;
   typedef void DestructorSkippable_;
-  ::io::deephaven::proto::backplane::grpc::UpdateByEmaTimescale* reverse_timescale_;
-  ::io::deephaven::proto::backplane::grpc::UpdateByEmaTimescale* forward_timescale_;
+  ::io::deephaven::proto::backplane::grpc::UpdateByWindowScale* reverse_window_scale_;
+  ::io::deephaven::proto::backplane::grpc::UpdateByWindowScale* forward_window_scale_;
+  mutable ::PROTOBUF_NAMESPACE_ID::internal::CachedSize _cached_size_;
+  friend struct ::TableStruct_deephaven_2fproto_2ftable_2eproto;
+};
+// -------------------------------------------------------------------
+
+class UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByRollingCount final :
+    public ::PROTOBUF_NAMESPACE_ID::Message /* @@protoc_insertion_point(class_definition:io.deephaven.proto.backplane.grpc.UpdateByRequest.UpdateByOperation.UpdateByColumn.UpdateBySpec.UpdateByRollingCount) */ {
+ public:
+  inline UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByRollingCount() : UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByRollingCount(nullptr) {}
+  ~UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByRollingCount() override;
+  explicit PROTOBUF_CONSTEXPR UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByRollingCount(::PROTOBUF_NAMESPACE_ID::internal::ConstantInitialized);
+
+  UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByRollingCount(const UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByRollingCount& from);
+  UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByRollingCount(UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByRollingCount&& from) noexcept
+    : UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByRollingCount() {
+    *this = ::std::move(from);
+  }
+
+  inline UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByRollingCount& operator=(const UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByRollingCount& from) {
+    CopyFrom(from);
+    return *this;
+  }
+  inline UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByRollingCount& operator=(UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByRollingCount&& from) noexcept {
+    if (this == &from) return *this;
+    if (GetOwningArena() == from.GetOwningArena()
+  #ifdef PROTOBUF_FORCE_COPY_IN_MOVE
+        && GetOwningArena() != nullptr
+  #endif  // !PROTOBUF_FORCE_COPY_IN_MOVE
+    ) {
+      InternalSwap(&from);
+    } else {
+      CopyFrom(from);
+    }
+    return *this;
+  }
+
+  static const ::PROTOBUF_NAMESPACE_ID::Descriptor* descriptor() {
+    return GetDescriptor();
+  }
+  static const ::PROTOBUF_NAMESPACE_ID::Descriptor* GetDescriptor() {
+    return default_instance().GetMetadata().descriptor;
+  }
+  static const ::PROTOBUF_NAMESPACE_ID::Reflection* GetReflection() {
+    return default_instance().GetMetadata().reflection;
+  }
+  static const UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByRollingCount& default_instance() {
+    return *internal_default_instance();
+  }
+  static inline const UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByRollingCount* internal_default_instance() {
+    return reinterpret_cast<const UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByRollingCount*>(
+               &_UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByRollingCount_default_instance_);
+  }
+  static constexpr int kIndexInFileMessages =
+    33;
+
+  friend void swap(UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByRollingCount& a, UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByRollingCount& b) {
+    a.Swap(&b);
+  }
+  inline void Swap(UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByRollingCount* other) {
+    if (other == this) return;
+  #ifdef PROTOBUF_FORCE_COPY_IN_SWAP
+    if (GetOwningArena() != nullptr &&
+        GetOwningArena() == other->GetOwningArena()) {
+   #else  // PROTOBUF_FORCE_COPY_IN_SWAP
+    if (GetOwningArena() == other->GetOwningArena()) {
+  #endif  // !PROTOBUF_FORCE_COPY_IN_SWAP
+      InternalSwap(other);
+    } else {
+      ::PROTOBUF_NAMESPACE_ID::internal::GenericSwap(this, other);
+    }
+  }
+  void UnsafeArenaSwap(UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByRollingCount* other) {
+    if (other == this) return;
+    GOOGLE_DCHECK(GetOwningArena() == other->GetOwningArena());
+    InternalSwap(other);
+  }
+
+  // implements Message ----------------------------------------------
+
+  UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByRollingCount* New(::PROTOBUF_NAMESPACE_ID::Arena* arena = nullptr) const final {
+    return CreateMaybeMessage<UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByRollingCount>(arena);
+  }
+  using ::PROTOBUF_NAMESPACE_ID::Message::CopyFrom;
+  void CopyFrom(const UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByRollingCount& from);
+  using ::PROTOBUF_NAMESPACE_ID::Message::MergeFrom;
+  void MergeFrom(const UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByRollingCount& from);
+  private:
+  static void MergeImpl(::PROTOBUF_NAMESPACE_ID::Message* to, const ::PROTOBUF_NAMESPACE_ID::Message& from);
+  public:
+  PROTOBUF_ATTRIBUTE_REINITIALIZES void Clear() final;
+  bool IsInitialized() const final;
+
+  size_t ByteSizeLong() const final;
+  const char* _InternalParse(const char* ptr, ::PROTOBUF_NAMESPACE_ID::internal::ParseContext* ctx) final;
+  uint8_t* _InternalSerialize(
+      uint8_t* target, ::PROTOBUF_NAMESPACE_ID::io::EpsCopyOutputStream* stream) const final;
+  int GetCachedSize() const final { return _cached_size_.Get(); }
+
+  private:
+  void SharedCtor();
+  void SharedDtor();
+  void SetCachedSize(int size) const final;
+  void InternalSwap(UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByRollingCount* other);
+
+  private:
+  friend class ::PROTOBUF_NAMESPACE_ID::internal::AnyMetadata;
+  static ::PROTOBUF_NAMESPACE_ID::StringPiece FullMessageName() {
+    return "io.deephaven.proto.backplane.grpc.UpdateByRequest.UpdateByOperation.UpdateByColumn.UpdateBySpec.UpdateByRollingCount";
+  }
+  protected:
+  explicit UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByRollingCount(::PROTOBUF_NAMESPACE_ID::Arena* arena,
+                       bool is_message_owned = false);
+  public:
+
+  static const ClassData _class_data_;
+  const ::PROTOBUF_NAMESPACE_ID::Message::ClassData*GetClassData() const final;
+
+  ::PROTOBUF_NAMESPACE_ID::Metadata GetMetadata() const final;
+
+  // nested types ----------------------------------------------------
+
+  // accessors -------------------------------------------------------
+
+  enum : int {
+    kReverseWindowScaleFieldNumber = 1,
+    kForwardWindowScaleFieldNumber = 2,
+  };
+  // .io.deephaven.proto.backplane.grpc.UpdateByWindowScale reverse_window_scale = 1;
+  bool has_reverse_window_scale() const;
+  private:
+  bool _internal_has_reverse_window_scale() const;
+  public:
+  void clear_reverse_window_scale();
+  const ::io::deephaven::proto::backplane::grpc::UpdateByWindowScale& reverse_window_scale() const;
+  PROTOBUF_NODISCARD ::io::deephaven::proto::backplane::grpc::UpdateByWindowScale* release_reverse_window_scale();
+  ::io::deephaven::proto::backplane::grpc::UpdateByWindowScale* mutable_reverse_window_scale();
+  void set_allocated_reverse_window_scale(::io::deephaven::proto::backplane::grpc::UpdateByWindowScale* reverse_window_scale);
+  private:
+  const ::io::deephaven::proto::backplane::grpc::UpdateByWindowScale& _internal_reverse_window_scale() const;
+  ::io::deephaven::proto::backplane::grpc::UpdateByWindowScale* _internal_mutable_reverse_window_scale();
+  public:
+  void unsafe_arena_set_allocated_reverse_window_scale(
+      ::io::deephaven::proto::backplane::grpc::UpdateByWindowScale* reverse_window_scale);
+  ::io::deephaven::proto::backplane::grpc::UpdateByWindowScale* unsafe_arena_release_reverse_window_scale();
+
+  // .io.deephaven.proto.backplane.grpc.UpdateByWindowScale forward_window_scale = 2;
+  bool has_forward_window_scale() const;
+  private:
+  bool _internal_has_forward_window_scale() const;
+  public:
+  void clear_forward_window_scale();
+  const ::io::deephaven::proto::backplane::grpc::UpdateByWindowScale& forward_window_scale() const;
+  PROTOBUF_NODISCARD ::io::deephaven::proto::backplane::grpc::UpdateByWindowScale* release_forward_window_scale();
+  ::io::deephaven::proto::backplane::grpc::UpdateByWindowScale* mutable_forward_window_scale();
+  void set_allocated_forward_window_scale(::io::deephaven::proto::backplane::grpc::UpdateByWindowScale* forward_window_scale);
+  private:
+  const ::io::deephaven::proto::backplane::grpc::UpdateByWindowScale& _internal_forward_window_scale() const;
+  ::io::deephaven::proto::backplane::grpc::UpdateByWindowScale* _internal_mutable_forward_window_scale();
+  public:
+  void unsafe_arena_set_allocated_forward_window_scale(
+      ::io::deephaven::proto::backplane::grpc::UpdateByWindowScale* forward_window_scale);
+  ::io::deephaven::proto::backplane::grpc::UpdateByWindowScale* unsafe_arena_release_forward_window_scale();
+
+  // @@protoc_insertion_point(class_scope:io.deephaven.proto.backplane.grpc.UpdateByRequest.UpdateByOperation.UpdateByColumn.UpdateBySpec.UpdateByRollingCount)
+ private:
+  class _Internal;
+
+  template <typename T> friend class ::PROTOBUF_NAMESPACE_ID::Arena::InternalHelper;
+  typedef void InternalArenaConstructable_;
+  typedef void DestructorSkippable_;
+  ::io::deephaven::proto::backplane::grpc::UpdateByWindowScale* reverse_window_scale_;
+  ::io::deephaven::proto::backplane::grpc::UpdateByWindowScale* forward_window_scale_;
+  mutable ::PROTOBUF_NAMESPACE_ID::internal::CachedSize _cached_size_;
+  friend struct ::TableStruct_deephaven_2fproto_2ftable_2eproto;
+};
+// -------------------------------------------------------------------
+
+class UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByRollingStd final :
+    public ::PROTOBUF_NAMESPACE_ID::Message /* @@protoc_insertion_point(class_definition:io.deephaven.proto.backplane.grpc.UpdateByRequest.UpdateByOperation.UpdateByColumn.UpdateBySpec.UpdateByRollingStd) */ {
+ public:
+  inline UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByRollingStd() : UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByRollingStd(nullptr) {}
+  ~UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByRollingStd() override;
+  explicit PROTOBUF_CONSTEXPR UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByRollingStd(::PROTOBUF_NAMESPACE_ID::internal::ConstantInitialized);
+
+  UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByRollingStd(const UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByRollingStd& from);
+  UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByRollingStd(UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByRollingStd&& from) noexcept
+    : UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByRollingStd() {
+    *this = ::std::move(from);
+  }
+
+  inline UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByRollingStd& operator=(const UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByRollingStd& from) {
+    CopyFrom(from);
+    return *this;
+  }
+  inline UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByRollingStd& operator=(UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByRollingStd&& from) noexcept {
+    if (this == &from) return *this;
+    if (GetOwningArena() == from.GetOwningArena()
+  #ifdef PROTOBUF_FORCE_COPY_IN_MOVE
+        && GetOwningArena() != nullptr
+  #endif  // !PROTOBUF_FORCE_COPY_IN_MOVE
+    ) {
+      InternalSwap(&from);
+    } else {
+      CopyFrom(from);
+    }
+    return *this;
+  }
+
+  static const ::PROTOBUF_NAMESPACE_ID::Descriptor* descriptor() {
+    return GetDescriptor();
+  }
+  static const ::PROTOBUF_NAMESPACE_ID::Descriptor* GetDescriptor() {
+    return default_instance().GetMetadata().descriptor;
+  }
+  static const ::PROTOBUF_NAMESPACE_ID::Reflection* GetReflection() {
+    return default_instance().GetMetadata().reflection;
+  }
+  static const UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByRollingStd& default_instance() {
+    return *internal_default_instance();
+  }
+  static inline const UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByRollingStd* internal_default_instance() {
+    return reinterpret_cast<const UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByRollingStd*>(
+               &_UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByRollingStd_default_instance_);
+  }
+  static constexpr int kIndexInFileMessages =
+    34;
+
+  friend void swap(UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByRollingStd& a, UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByRollingStd& b) {
+    a.Swap(&b);
+  }
+  inline void Swap(UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByRollingStd* other) {
+    if (other == this) return;
+  #ifdef PROTOBUF_FORCE_COPY_IN_SWAP
+    if (GetOwningArena() != nullptr &&
+        GetOwningArena() == other->GetOwningArena()) {
+   #else  // PROTOBUF_FORCE_COPY_IN_SWAP
+    if (GetOwningArena() == other->GetOwningArena()) {
+  #endif  // !PROTOBUF_FORCE_COPY_IN_SWAP
+      InternalSwap(other);
+    } else {
+      ::PROTOBUF_NAMESPACE_ID::internal::GenericSwap(this, other);
+    }
+  }
+  void UnsafeArenaSwap(UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByRollingStd* other) {
+    if (other == this) return;
+    GOOGLE_DCHECK(GetOwningArena() == other->GetOwningArena());
+    InternalSwap(other);
+  }
+
+  // implements Message ----------------------------------------------
+
+  UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByRollingStd* New(::PROTOBUF_NAMESPACE_ID::Arena* arena = nullptr) const final {
+    return CreateMaybeMessage<UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByRollingStd>(arena);
+  }
+  using ::PROTOBUF_NAMESPACE_ID::Message::CopyFrom;
+  void CopyFrom(const UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByRollingStd& from);
+  using ::PROTOBUF_NAMESPACE_ID::Message::MergeFrom;
+  void MergeFrom(const UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByRollingStd& from);
+  private:
+  static void MergeImpl(::PROTOBUF_NAMESPACE_ID::Message* to, const ::PROTOBUF_NAMESPACE_ID::Message& from);
+  public:
+  PROTOBUF_ATTRIBUTE_REINITIALIZES void Clear() final;
+  bool IsInitialized() const final;
+
+  size_t ByteSizeLong() const final;
+  const char* _InternalParse(const char* ptr, ::PROTOBUF_NAMESPACE_ID::internal::ParseContext* ctx) final;
+  uint8_t* _InternalSerialize(
+      uint8_t* target, ::PROTOBUF_NAMESPACE_ID::io::EpsCopyOutputStream* stream) const final;
+  int GetCachedSize() const final { return _cached_size_.Get(); }
+
+  private:
+  void SharedCtor();
+  void SharedDtor();
+  void SetCachedSize(int size) const final;
+  void InternalSwap(UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByRollingStd* other);
+
+  private:
+  friend class ::PROTOBUF_NAMESPACE_ID::internal::AnyMetadata;
+  static ::PROTOBUF_NAMESPACE_ID::StringPiece FullMessageName() {
+    return "io.deephaven.proto.backplane.grpc.UpdateByRequest.UpdateByOperation.UpdateByColumn.UpdateBySpec.UpdateByRollingStd";
+  }
+  protected:
+  explicit UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByRollingStd(::PROTOBUF_NAMESPACE_ID::Arena* arena,
+                       bool is_message_owned = false);
+  public:
+
+  static const ClassData _class_data_;
+  const ::PROTOBUF_NAMESPACE_ID::Message::ClassData*GetClassData() const final;
+
+  ::PROTOBUF_NAMESPACE_ID::Metadata GetMetadata() const final;
+
+  // nested types ----------------------------------------------------
+
+  // accessors -------------------------------------------------------
+
+  enum : int {
+    kReverseWindowScaleFieldNumber = 1,
+    kForwardWindowScaleFieldNumber = 2,
+  };
+  // .io.deephaven.proto.backplane.grpc.UpdateByWindowScale reverse_window_scale = 1;
+  bool has_reverse_window_scale() const;
+  private:
+  bool _internal_has_reverse_window_scale() const;
+  public:
+  void clear_reverse_window_scale();
+  const ::io::deephaven::proto::backplane::grpc::UpdateByWindowScale& reverse_window_scale() const;
+  PROTOBUF_NODISCARD ::io::deephaven::proto::backplane::grpc::UpdateByWindowScale* release_reverse_window_scale();
+  ::io::deephaven::proto::backplane::grpc::UpdateByWindowScale* mutable_reverse_window_scale();
+  void set_allocated_reverse_window_scale(::io::deephaven::proto::backplane::grpc::UpdateByWindowScale* reverse_window_scale);
+  private:
+  const ::io::deephaven::proto::backplane::grpc::UpdateByWindowScale& _internal_reverse_window_scale() const;
+  ::io::deephaven::proto::backplane::grpc::UpdateByWindowScale* _internal_mutable_reverse_window_scale();
+  public:
+  void unsafe_arena_set_allocated_reverse_window_scale(
+      ::io::deephaven::proto::backplane::grpc::UpdateByWindowScale* reverse_window_scale);
+  ::io::deephaven::proto::backplane::grpc::UpdateByWindowScale* unsafe_arena_release_reverse_window_scale();
+
+  // .io.deephaven.proto.backplane.grpc.UpdateByWindowScale forward_window_scale = 2;
+  bool has_forward_window_scale() const;
+  private:
+  bool _internal_has_forward_window_scale() const;
+  public:
+  void clear_forward_window_scale();
+  const ::io::deephaven::proto::backplane::grpc::UpdateByWindowScale& forward_window_scale() const;
+  PROTOBUF_NODISCARD ::io::deephaven::proto::backplane::grpc::UpdateByWindowScale* release_forward_window_scale();
+  ::io::deephaven::proto::backplane::grpc::UpdateByWindowScale* mutable_forward_window_scale();
+  void set_allocated_forward_window_scale(::io::deephaven::proto::backplane::grpc::UpdateByWindowScale* forward_window_scale);
+  private:
+  const ::io::deephaven::proto::backplane::grpc::UpdateByWindowScale& _internal_forward_window_scale() const;
+  ::io::deephaven::proto::backplane::grpc::UpdateByWindowScale* _internal_mutable_forward_window_scale();
+  public:
+  void unsafe_arena_set_allocated_forward_window_scale(
+      ::io::deephaven::proto::backplane::grpc::UpdateByWindowScale* forward_window_scale);
+  ::io::deephaven::proto::backplane::grpc::UpdateByWindowScale* unsafe_arena_release_forward_window_scale();
+
+  // @@protoc_insertion_point(class_scope:io.deephaven.proto.backplane.grpc.UpdateByRequest.UpdateByOperation.UpdateByColumn.UpdateBySpec.UpdateByRollingStd)
+ private:
+  class _Internal;
+
+  template <typename T> friend class ::PROTOBUF_NAMESPACE_ID::Arena::InternalHelper;
+  typedef void InternalArenaConstructable_;
+  typedef void DestructorSkippable_;
+  ::io::deephaven::proto::backplane::grpc::UpdateByWindowScale* reverse_window_scale_;
+  ::io::deephaven::proto::backplane::grpc::UpdateByWindowScale* forward_window_scale_;
+  mutable ::PROTOBUF_NAMESPACE_ID::internal::CachedSize _cached_size_;
+  friend struct ::TableStruct_deephaven_2fproto_2ftable_2eproto;
+};
+// -------------------------------------------------------------------
+
+class UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByRollingWAvg final :
+    public ::PROTOBUF_NAMESPACE_ID::Message /* @@protoc_insertion_point(class_definition:io.deephaven.proto.backplane.grpc.UpdateByRequest.UpdateByOperation.UpdateByColumn.UpdateBySpec.UpdateByRollingWAvg) */ {
+ public:
+  inline UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByRollingWAvg() : UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByRollingWAvg(nullptr) {}
+  ~UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByRollingWAvg() override;
+  explicit PROTOBUF_CONSTEXPR UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByRollingWAvg(::PROTOBUF_NAMESPACE_ID::internal::ConstantInitialized);
+
+  UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByRollingWAvg(const UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByRollingWAvg& from);
+  UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByRollingWAvg(UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByRollingWAvg&& from) noexcept
+    : UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByRollingWAvg() {
+    *this = ::std::move(from);
+  }
+
+  inline UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByRollingWAvg& operator=(const UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByRollingWAvg& from) {
+    CopyFrom(from);
+    return *this;
+  }
+  inline UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByRollingWAvg& operator=(UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByRollingWAvg&& from) noexcept {
+    if (this == &from) return *this;
+    if (GetOwningArena() == from.GetOwningArena()
+  #ifdef PROTOBUF_FORCE_COPY_IN_MOVE
+        && GetOwningArena() != nullptr
+  #endif  // !PROTOBUF_FORCE_COPY_IN_MOVE
+    ) {
+      InternalSwap(&from);
+    } else {
+      CopyFrom(from);
+    }
+    return *this;
+  }
+
+  static const ::PROTOBUF_NAMESPACE_ID::Descriptor* descriptor() {
+    return GetDescriptor();
+  }
+  static const ::PROTOBUF_NAMESPACE_ID::Descriptor* GetDescriptor() {
+    return default_instance().GetMetadata().descriptor;
+  }
+  static const ::PROTOBUF_NAMESPACE_ID::Reflection* GetReflection() {
+    return default_instance().GetMetadata().reflection;
+  }
+  static const UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByRollingWAvg& default_instance() {
+    return *internal_default_instance();
+  }
+  static inline const UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByRollingWAvg* internal_default_instance() {
+    return reinterpret_cast<const UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByRollingWAvg*>(
+               &_UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByRollingWAvg_default_instance_);
+  }
+  static constexpr int kIndexInFileMessages =
+    35;
+
+  friend void swap(UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByRollingWAvg& a, UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByRollingWAvg& b) {
+    a.Swap(&b);
+  }
+  inline void Swap(UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByRollingWAvg* other) {
+    if (other == this) return;
+  #ifdef PROTOBUF_FORCE_COPY_IN_SWAP
+    if (GetOwningArena() != nullptr &&
+        GetOwningArena() == other->GetOwningArena()) {
+   #else  // PROTOBUF_FORCE_COPY_IN_SWAP
+    if (GetOwningArena() == other->GetOwningArena()) {
+  #endif  // !PROTOBUF_FORCE_COPY_IN_SWAP
+      InternalSwap(other);
+    } else {
+      ::PROTOBUF_NAMESPACE_ID::internal::GenericSwap(this, other);
+    }
+  }
+  void UnsafeArenaSwap(UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByRollingWAvg* other) {
+    if (other == this) return;
+    GOOGLE_DCHECK(GetOwningArena() == other->GetOwningArena());
+    InternalSwap(other);
+  }
+
+  // implements Message ----------------------------------------------
+
+  UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByRollingWAvg* New(::PROTOBUF_NAMESPACE_ID::Arena* arena = nullptr) const final {
+    return CreateMaybeMessage<UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByRollingWAvg>(arena);
+  }
+  using ::PROTOBUF_NAMESPACE_ID::Message::CopyFrom;
+  void CopyFrom(const UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByRollingWAvg& from);
+  using ::PROTOBUF_NAMESPACE_ID::Message::MergeFrom;
+  void MergeFrom(const UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByRollingWAvg& from);
+  private:
+  static void MergeImpl(::PROTOBUF_NAMESPACE_ID::Message* to, const ::PROTOBUF_NAMESPACE_ID::Message& from);
+  public:
+  PROTOBUF_ATTRIBUTE_REINITIALIZES void Clear() final;
+  bool IsInitialized() const final;
+
+  size_t ByteSizeLong() const final;
+  const char* _InternalParse(const char* ptr, ::PROTOBUF_NAMESPACE_ID::internal::ParseContext* ctx) final;
+  uint8_t* _InternalSerialize(
+      uint8_t* target, ::PROTOBUF_NAMESPACE_ID::io::EpsCopyOutputStream* stream) const final;
+  int GetCachedSize() const final { return _cached_size_.Get(); }
+
+  private:
+  void SharedCtor();
+  void SharedDtor();
+  void SetCachedSize(int size) const final;
+  void InternalSwap(UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByRollingWAvg* other);
+
+  private:
+  friend class ::PROTOBUF_NAMESPACE_ID::internal::AnyMetadata;
+  static ::PROTOBUF_NAMESPACE_ID::StringPiece FullMessageName() {
+    return "io.deephaven.proto.backplane.grpc.UpdateByRequest.UpdateByOperation.UpdateByColumn.UpdateBySpec.UpdateByRollingWAvg";
+  }
+  protected:
+  explicit UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByRollingWAvg(::PROTOBUF_NAMESPACE_ID::Arena* arena,
+                       bool is_message_owned = false);
+  public:
+
+  static const ClassData _class_data_;
+  const ::PROTOBUF_NAMESPACE_ID::Message::ClassData*GetClassData() const final;
+
+  ::PROTOBUF_NAMESPACE_ID::Metadata GetMetadata() const final;
+
+  // nested types ----------------------------------------------------
+
+  // accessors -------------------------------------------------------
+
+  enum : int {
+    kWeightColumnFieldNumber = 3,
+    kReverseWindowScaleFieldNumber = 1,
+    kForwardWindowScaleFieldNumber = 2,
+  };
+  // string weight_column = 3;
+  void clear_weight_column();
+  const std::string& weight_column() const;
+  template <typename ArgT0 = const std::string&, typename... ArgT>
+  void set_weight_column(ArgT0&& arg0, ArgT... args);
+  std::string* mutable_weight_column();
+  PROTOBUF_NODISCARD std::string* release_weight_column();
+  void set_allocated_weight_column(std::string* weight_column);
+  private:
+  const std::string& _internal_weight_column() const;
+  inline PROTOBUF_ALWAYS_INLINE void _internal_set_weight_column(const std::string& value);
+  std::string* _internal_mutable_weight_column();
+  public:
+
+  // .io.deephaven.proto.backplane.grpc.UpdateByWindowScale reverse_window_scale = 1;
+  bool has_reverse_window_scale() const;
+  private:
+  bool _internal_has_reverse_window_scale() const;
+  public:
+  void clear_reverse_window_scale();
+  const ::io::deephaven::proto::backplane::grpc::UpdateByWindowScale& reverse_window_scale() const;
+  PROTOBUF_NODISCARD ::io::deephaven::proto::backplane::grpc::UpdateByWindowScale* release_reverse_window_scale();
+  ::io::deephaven::proto::backplane::grpc::UpdateByWindowScale* mutable_reverse_window_scale();
+  void set_allocated_reverse_window_scale(::io::deephaven::proto::backplane::grpc::UpdateByWindowScale* reverse_window_scale);
+  private:
+  const ::io::deephaven::proto::backplane::grpc::UpdateByWindowScale& _internal_reverse_window_scale() const;
+  ::io::deephaven::proto::backplane::grpc::UpdateByWindowScale* _internal_mutable_reverse_window_scale();
+  public:
+  void unsafe_arena_set_allocated_reverse_window_scale(
+      ::io::deephaven::proto::backplane::grpc::UpdateByWindowScale* reverse_window_scale);
+  ::io::deephaven::proto::backplane::grpc::UpdateByWindowScale* unsafe_arena_release_reverse_window_scale();
+
+  // .io.deephaven.proto.backplane.grpc.UpdateByWindowScale forward_window_scale = 2;
+  bool has_forward_window_scale() const;
+  private:
+  bool _internal_has_forward_window_scale() const;
+  public:
+  void clear_forward_window_scale();
+  const ::io::deephaven::proto::backplane::grpc::UpdateByWindowScale& forward_window_scale() const;
+  PROTOBUF_NODISCARD ::io::deephaven::proto::backplane::grpc::UpdateByWindowScale* release_forward_window_scale();
+  ::io::deephaven::proto::backplane::grpc::UpdateByWindowScale* mutable_forward_window_scale();
+  void set_allocated_forward_window_scale(::io::deephaven::proto::backplane::grpc::UpdateByWindowScale* forward_window_scale);
+  private:
+  const ::io::deephaven::proto::backplane::grpc::UpdateByWindowScale& _internal_forward_window_scale() const;
+  ::io::deephaven::proto::backplane::grpc::UpdateByWindowScale* _internal_mutable_forward_window_scale();
+  public:
+  void unsafe_arena_set_allocated_forward_window_scale(
+      ::io::deephaven::proto::backplane::grpc::UpdateByWindowScale* forward_window_scale);
+  ::io::deephaven::proto::backplane::grpc::UpdateByWindowScale* unsafe_arena_release_forward_window_scale();
+
+  // @@protoc_insertion_point(class_scope:io.deephaven.proto.backplane.grpc.UpdateByRequest.UpdateByOperation.UpdateByColumn.UpdateBySpec.UpdateByRollingWAvg)
+ private:
+  class _Internal;
+
+  template <typename T> friend class ::PROTOBUF_NAMESPACE_ID::Arena::InternalHelper;
+  typedef void InternalArenaConstructable_;
+  typedef void DestructorSkippable_;
+  ::PROTOBUF_NAMESPACE_ID::internal::ArenaStringPtr weight_column_;
+  ::io::deephaven::proto::backplane::grpc::UpdateByWindowScale* reverse_window_scale_;
+  ::io::deephaven::proto::backplane::grpc::UpdateByWindowScale* forward_window_scale_;
   mutable ::PROTOBUF_NAMESPACE_ID::internal::CachedSize _cached_size_;
   friend struct ::TableStruct_deephaven_2fproto_2ftable_2eproto;
 };
@@ -5389,6 +6954,14 @@ class UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec final :
     kRollingMin = 10,
     kRollingMax = 11,
     kRollingProduct = 12,
+    kDelta = 13,
+    kEms = 14,
+    kEmMin = 15,
+    kEmMax = 16,
+    kEmStd = 17,
+    kRollingCount = 18,
+    kRollingStd = 19,
+    kRollingWavg = 20,
     TYPE_NOT_SET = 0,
   };
 
@@ -5397,7 +6970,7 @@ class UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec final :
                &_UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_default_instance_);
   }
   static constexpr int kIndexInFileMessages =
-    27;
+    36;
 
   friend void swap(UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec& a, UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec& b) {
     a.Swap(&b);
@@ -5471,12 +7044,20 @@ class UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec final :
   typedef UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByCumulativeProduct UpdateByCumulativeProduct;
   typedef UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByFill UpdateByFill;
   typedef UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByEma UpdateByEma;
+  typedef UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByEms UpdateByEms;
+  typedef UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByEmMin UpdateByEmMin;
+  typedef UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByEmMax UpdateByEmMax;
+  typedef UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByEmStd UpdateByEmStd;
+  typedef UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByDelta UpdateByDelta;
   typedef UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByRollingSum UpdateByRollingSum;
   typedef UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByRollingGroup UpdateByRollingGroup;
   typedef UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByRollingAvg UpdateByRollingAvg;
   typedef UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByRollingMin UpdateByRollingMin;
   typedef UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByRollingMax UpdateByRollingMax;
   typedef UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByRollingProduct UpdateByRollingProduct;
+  typedef UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByRollingCount UpdateByRollingCount;
+  typedef UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByRollingStd UpdateByRollingStd;
+  typedef UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByRollingWAvg UpdateByRollingWAvg;
 
   // accessors -------------------------------------------------------
 
@@ -5493,6 +7074,14 @@ class UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec final :
     kRollingMinFieldNumber = 10,
     kRollingMaxFieldNumber = 11,
     kRollingProductFieldNumber = 12,
+    kDeltaFieldNumber = 13,
+    kEmsFieldNumber = 14,
+    kEmMinFieldNumber = 15,
+    kEmMaxFieldNumber = 16,
+    kEmStdFieldNumber = 17,
+    kRollingCountFieldNumber = 18,
+    kRollingStdFieldNumber = 19,
+    kRollingWavgFieldNumber = 20,
   };
   // .io.deephaven.proto.backplane.grpc.UpdateByRequest.UpdateByOperation.UpdateByColumn.UpdateBySpec.UpdateByCumulativeSum sum = 1;
   bool has_sum() const;
@@ -5710,6 +7299,150 @@ class UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec final :
       ::io::deephaven::proto::backplane::grpc::UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByRollingProduct* rolling_product);
   ::io::deephaven::proto::backplane::grpc::UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByRollingProduct* unsafe_arena_release_rolling_product();
 
+  // .io.deephaven.proto.backplane.grpc.UpdateByRequest.UpdateByOperation.UpdateByColumn.UpdateBySpec.UpdateByDelta delta = 13;
+  bool has_delta() const;
+  private:
+  bool _internal_has_delta() const;
+  public:
+  void clear_delta();
+  const ::io::deephaven::proto::backplane::grpc::UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByDelta& delta() const;
+  PROTOBUF_NODISCARD ::io::deephaven::proto::backplane::grpc::UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByDelta* release_delta();
+  ::io::deephaven::proto::backplane::grpc::UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByDelta* mutable_delta();
+  void set_allocated_delta(::io::deephaven::proto::backplane::grpc::UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByDelta* delta);
+  private:
+  const ::io::deephaven::proto::backplane::grpc::UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByDelta& _internal_delta() const;
+  ::io::deephaven::proto::backplane::grpc::UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByDelta* _internal_mutable_delta();
+  public:
+  void unsafe_arena_set_allocated_delta(
+      ::io::deephaven::proto::backplane::grpc::UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByDelta* delta);
+  ::io::deephaven::proto::backplane::grpc::UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByDelta* unsafe_arena_release_delta();
+
+  // .io.deephaven.proto.backplane.grpc.UpdateByRequest.UpdateByOperation.UpdateByColumn.UpdateBySpec.UpdateByEms ems = 14;
+  bool has_ems() const;
+  private:
+  bool _internal_has_ems() const;
+  public:
+  void clear_ems();
+  const ::io::deephaven::proto::backplane::grpc::UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByEms& ems() const;
+  PROTOBUF_NODISCARD ::io::deephaven::proto::backplane::grpc::UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByEms* release_ems();
+  ::io::deephaven::proto::backplane::grpc::UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByEms* mutable_ems();
+  void set_allocated_ems(::io::deephaven::proto::backplane::grpc::UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByEms* ems);
+  private:
+  const ::io::deephaven::proto::backplane::grpc::UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByEms& _internal_ems() const;
+  ::io::deephaven::proto::backplane::grpc::UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByEms* _internal_mutable_ems();
+  public:
+  void unsafe_arena_set_allocated_ems(
+      ::io::deephaven::proto::backplane::grpc::UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByEms* ems);
+  ::io::deephaven::proto::backplane::grpc::UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByEms* unsafe_arena_release_ems();
+
+  // .io.deephaven.proto.backplane.grpc.UpdateByRequest.UpdateByOperation.UpdateByColumn.UpdateBySpec.UpdateByEmMin em_min = 15;
+  bool has_em_min() const;
+  private:
+  bool _internal_has_em_min() const;
+  public:
+  void clear_em_min();
+  const ::io::deephaven::proto::backplane::grpc::UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByEmMin& em_min() const;
+  PROTOBUF_NODISCARD ::io::deephaven::proto::backplane::grpc::UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByEmMin* release_em_min();
+  ::io::deephaven::proto::backplane::grpc::UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByEmMin* mutable_em_min();
+  void set_allocated_em_min(::io::deephaven::proto::backplane::grpc::UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByEmMin* em_min);
+  private:
+  const ::io::deephaven::proto::backplane::grpc::UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByEmMin& _internal_em_min() const;
+  ::io::deephaven::proto::backplane::grpc::UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByEmMin* _internal_mutable_em_min();
+  public:
+  void unsafe_arena_set_allocated_em_min(
+      ::io::deephaven::proto::backplane::grpc::UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByEmMin* em_min);
+  ::io::deephaven::proto::backplane::grpc::UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByEmMin* unsafe_arena_release_em_min();
+
+  // .io.deephaven.proto.backplane.grpc.UpdateByRequest.UpdateByOperation.UpdateByColumn.UpdateBySpec.UpdateByEmMax em_max = 16;
+  bool has_em_max() const;
+  private:
+  bool _internal_has_em_max() const;
+  public:
+  void clear_em_max();
+  const ::io::deephaven::proto::backplane::grpc::UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByEmMax& em_max() const;
+  PROTOBUF_NODISCARD ::io::deephaven::proto::backplane::grpc::UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByEmMax* release_em_max();
+  ::io::deephaven::proto::backplane::grpc::UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByEmMax* mutable_em_max();
+  void set_allocated_em_max(::io::deephaven::proto::backplane::grpc::UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByEmMax* em_max);
+  private:
+  const ::io::deephaven::proto::backplane::grpc::UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByEmMax& _internal_em_max() const;
+  ::io::deephaven::proto::backplane::grpc::UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByEmMax* _internal_mutable_em_max();
+  public:
+  void unsafe_arena_set_allocated_em_max(
+      ::io::deephaven::proto::backplane::grpc::UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByEmMax* em_max);
+  ::io::deephaven::proto::backplane::grpc::UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByEmMax* unsafe_arena_release_em_max();
+
+  // .io.deephaven.proto.backplane.grpc.UpdateByRequest.UpdateByOperation.UpdateByColumn.UpdateBySpec.UpdateByEmStd em_std = 17;
+  bool has_em_std() const;
+  private:
+  bool _internal_has_em_std() const;
+  public:
+  void clear_em_std();
+  const ::io::deephaven::proto::backplane::grpc::UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByEmStd& em_std() const;
+  PROTOBUF_NODISCARD ::io::deephaven::proto::backplane::grpc::UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByEmStd* release_em_std();
+  ::io::deephaven::proto::backplane::grpc::UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByEmStd* mutable_em_std();
+  void set_allocated_em_std(::io::deephaven::proto::backplane::grpc::UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByEmStd* em_std);
+  private:
+  const ::io::deephaven::proto::backplane::grpc::UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByEmStd& _internal_em_std() const;
+  ::io::deephaven::proto::backplane::grpc::UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByEmStd* _internal_mutable_em_std();
+  public:
+  void unsafe_arena_set_allocated_em_std(
+      ::io::deephaven::proto::backplane::grpc::UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByEmStd* em_std);
+  ::io::deephaven::proto::backplane::grpc::UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByEmStd* unsafe_arena_release_em_std();
+
+  // .io.deephaven.proto.backplane.grpc.UpdateByRequest.UpdateByOperation.UpdateByColumn.UpdateBySpec.UpdateByRollingCount rolling_count = 18;
+  bool has_rolling_count() const;
+  private:
+  bool _internal_has_rolling_count() const;
+  public:
+  void clear_rolling_count();
+  const ::io::deephaven::proto::backplane::grpc::UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByRollingCount& rolling_count() const;
+  PROTOBUF_NODISCARD ::io::deephaven::proto::backplane::grpc::UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByRollingCount* release_rolling_count();
+  ::io::deephaven::proto::backplane::grpc::UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByRollingCount* mutable_rolling_count();
+  void set_allocated_rolling_count(::io::deephaven::proto::backplane::grpc::UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByRollingCount* rolling_count);
+  private:
+  const ::io::deephaven::proto::backplane::grpc::UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByRollingCount& _internal_rolling_count() const;
+  ::io::deephaven::proto::backplane::grpc::UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByRollingCount* _internal_mutable_rolling_count();
+  public:
+  void unsafe_arena_set_allocated_rolling_count(
+      ::io::deephaven::proto::backplane::grpc::UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByRollingCount* rolling_count);
+  ::io::deephaven::proto::backplane::grpc::UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByRollingCount* unsafe_arena_release_rolling_count();
+
+  // .io.deephaven.proto.backplane.grpc.UpdateByRequest.UpdateByOperation.UpdateByColumn.UpdateBySpec.UpdateByRollingStd rolling_std = 19;
+  bool has_rolling_std() const;
+  private:
+  bool _internal_has_rolling_std() const;
+  public:
+  void clear_rolling_std();
+  const ::io::deephaven::proto::backplane::grpc::UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByRollingStd& rolling_std() const;
+  PROTOBUF_NODISCARD ::io::deephaven::proto::backplane::grpc::UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByRollingStd* release_rolling_std();
+  ::io::deephaven::proto::backplane::grpc::UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByRollingStd* mutable_rolling_std();
+  void set_allocated_rolling_std(::io::deephaven::proto::backplane::grpc::UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByRollingStd* rolling_std);
+  private:
+  const ::io::deephaven::proto::backplane::grpc::UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByRollingStd& _internal_rolling_std() const;
+  ::io::deephaven::proto::backplane::grpc::UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByRollingStd* _internal_mutable_rolling_std();
+  public:
+  void unsafe_arena_set_allocated_rolling_std(
+      ::io::deephaven::proto::backplane::grpc::UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByRollingStd* rolling_std);
+  ::io::deephaven::proto::backplane::grpc::UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByRollingStd* unsafe_arena_release_rolling_std();
+
+  // .io.deephaven.proto.backplane.grpc.UpdateByRequest.UpdateByOperation.UpdateByColumn.UpdateBySpec.UpdateByRollingWAvg rolling_wavg = 20;
+  bool has_rolling_wavg() const;
+  private:
+  bool _internal_has_rolling_wavg() const;
+  public:
+  void clear_rolling_wavg();
+  const ::io::deephaven::proto::backplane::grpc::UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByRollingWAvg& rolling_wavg() const;
+  PROTOBUF_NODISCARD ::io::deephaven::proto::backplane::grpc::UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByRollingWAvg* release_rolling_wavg();
+  ::io::deephaven::proto::backplane::grpc::UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByRollingWAvg* mutable_rolling_wavg();
+  void set_allocated_rolling_wavg(::io::deephaven::proto::backplane::grpc::UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByRollingWAvg* rolling_wavg);
+  private:
+  const ::io::deephaven::proto::backplane::grpc::UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByRollingWAvg& _internal_rolling_wavg() const;
+  ::io::deephaven::proto::backplane::grpc::UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByRollingWAvg* _internal_mutable_rolling_wavg();
+  public:
+  void unsafe_arena_set_allocated_rolling_wavg(
+      ::io::deephaven::proto::backplane::grpc::UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByRollingWAvg* rolling_wavg);
+  ::io::deephaven::proto::backplane::grpc::UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByRollingWAvg* unsafe_arena_release_rolling_wavg();
+
   void clear_type();
   TypeCase type_case() const;
   // @@protoc_insertion_point(class_scope:io.deephaven.proto.backplane.grpc.UpdateByRequest.UpdateByOperation.UpdateByColumn.UpdateBySpec)
@@ -5727,6 +7460,14 @@ class UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec final :
   void set_has_rolling_min();
   void set_has_rolling_max();
   void set_has_rolling_product();
+  void set_has_delta();
+  void set_has_ems();
+  void set_has_em_min();
+  void set_has_em_max();
+  void set_has_em_std();
+  void set_has_rolling_count();
+  void set_has_rolling_std();
+  void set_has_rolling_wavg();
 
   inline bool has_type() const;
   inline void clear_has_type();
@@ -5749,6 +7490,14 @@ class UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec final :
     ::io::deephaven::proto::backplane::grpc::UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByRollingMin* rolling_min_;
     ::io::deephaven::proto::backplane::grpc::UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByRollingMax* rolling_max_;
     ::io::deephaven::proto::backplane::grpc::UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByRollingProduct* rolling_product_;
+    ::io::deephaven::proto::backplane::grpc::UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByDelta* delta_;
+    ::io::deephaven::proto::backplane::grpc::UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByEms* ems_;
+    ::io::deephaven::proto::backplane::grpc::UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByEmMin* em_min_;
+    ::io::deephaven::proto::backplane::grpc::UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByEmMax* em_max_;
+    ::io::deephaven::proto::backplane::grpc::UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByEmStd* em_std_;
+    ::io::deephaven::proto::backplane::grpc::UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByRollingCount* rolling_count_;
+    ::io::deephaven::proto::backplane::grpc::UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByRollingStd* rolling_std_;
+    ::io::deephaven::proto::backplane::grpc::UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByRollingWAvg* rolling_wavg_;
   } type_;
   mutable ::PROTOBUF_NAMESPACE_ID::internal::CachedSize _cached_size_;
   uint32_t _oneof_case_[1];
@@ -5805,7 +7554,7 @@ class UpdateByRequest_UpdateByOperation_UpdateByColumn final :
                &_UpdateByRequest_UpdateByOperation_UpdateByColumn_default_instance_);
   }
   static constexpr int kIndexInFileMessages =
-    28;
+    37;
 
   friend void swap(UpdateByRequest_UpdateByOperation_UpdateByColumn& a, UpdateByRequest_UpdateByOperation_UpdateByColumn& b) {
     a.Swap(&b);
@@ -5990,7 +7739,7 @@ class UpdateByRequest_UpdateByOperation final :
                &_UpdateByRequest_UpdateByOperation_default_instance_);
   }
   static constexpr int kIndexInFileMessages =
-    29;
+    38;
 
   friend void swap(UpdateByRequest_UpdateByOperation& a, UpdateByRequest_UpdateByOperation& b) {
     a.Swap(&b);
@@ -6156,7 +7905,7 @@ class UpdateByRequest final :
                &_UpdateByRequest_default_instance_);
   }
   static constexpr int kIndexInFileMessages =
-    30;
+    39;
 
   friend void swap(UpdateByRequest& a, UpdateByRequest& b) {
     a.Swap(&b);
@@ -6397,7 +8146,7 @@ class SelectDistinctRequest final :
                &_SelectDistinctRequest_default_instance_);
   }
   static constexpr int kIndexInFileMessages =
-    31;
+    40;
 
   friend void swap(SelectDistinctRequest& a, SelectDistinctRequest& b) {
     a.Swap(&b);
@@ -6595,7 +8344,7 @@ class DropColumnsRequest final :
                &_DropColumnsRequest_default_instance_);
   }
   static constexpr int kIndexInFileMessages =
-    32;
+    41;
 
   friend void swap(DropColumnsRequest& a, DropColumnsRequest& b) {
     a.Swap(&b);
@@ -6793,7 +8542,7 @@ class UnstructuredFilterTableRequest final :
                &_UnstructuredFilterTableRequest_default_instance_);
   }
   static constexpr int kIndexInFileMessages =
-    33;
+    42;
 
   friend void swap(UnstructuredFilterTableRequest& a, UnstructuredFilterTableRequest& b) {
     a.Swap(&b);
@@ -6991,7 +8740,7 @@ class HeadOrTailRequest final :
                &_HeadOrTailRequest_default_instance_);
   }
   static constexpr int kIndexInFileMessages =
-    34;
+    43;
 
   friend void swap(HeadOrTailRequest& a, HeadOrTailRequest& b) {
     a.Swap(&b);
@@ -7174,7 +8923,7 @@ class HeadOrTailByRequest final :
                &_HeadOrTailByRequest_default_instance_);
   }
   static constexpr int kIndexInFileMessages =
-    35;
+    44;
 
   friend void swap(HeadOrTailByRequest& a, HeadOrTailByRequest& b) {
     a.Swap(&b);
@@ -7383,7 +9132,7 @@ class UngroupRequest final :
                &_UngroupRequest_default_instance_);
   }
   static constexpr int kIndexInFileMessages =
-    36;
+    45;
 
   friend void swap(UngroupRequest& a, UngroupRequest& b) {
     a.Swap(&b);
@@ -7592,7 +9341,7 @@ class MergeTablesRequest final :
                &_MergeTablesRequest_default_instance_);
   }
   static constexpr int kIndexInFileMessages =
-    37;
+    46;
 
   friend void swap(MergeTablesRequest& a, MergeTablesRequest& b) {
     a.Swap(&b);
@@ -7780,7 +9529,7 @@ class SnapshotTableRequest final :
                &_SnapshotTableRequest_default_instance_);
   }
   static constexpr int kIndexInFileMessages =
-    38;
+    47;
 
   friend void swap(SnapshotTableRequest& a, SnapshotTableRequest& b) {
     a.Swap(&b);
@@ -7952,7 +9701,7 @@ class SnapshotWhenTableRequest final :
                &_SnapshotWhenTableRequest_default_instance_);
   }
   static constexpr int kIndexInFileMessages =
-    39;
+    48;
 
   friend void swap(SnapshotWhenTableRequest& a, SnapshotWhenTableRequest& b) {
     a.Swap(&b);
@@ -8203,7 +9952,7 @@ class CrossJoinTablesRequest final :
                &_CrossJoinTablesRequest_default_instance_);
   }
   static constexpr int kIndexInFileMessages =
-    40;
+    49;
 
   friend void swap(CrossJoinTablesRequest& a, CrossJoinTablesRequest& b) {
     a.Swap(&b);
@@ -8458,7 +10207,7 @@ class NaturalJoinTablesRequest final :
                &_NaturalJoinTablesRequest_default_instance_);
   }
   static constexpr int kIndexInFileMessages =
-    41;
+    50;
 
   friend void swap(NaturalJoinTablesRequest& a, NaturalJoinTablesRequest& b) {
     a.Swap(&b);
@@ -8702,7 +10451,7 @@ class ExactJoinTablesRequest final :
                &_ExactJoinTablesRequest_default_instance_);
   }
   static constexpr int kIndexInFileMessages =
-    42;
+    51;
 
   friend void swap(ExactJoinTablesRequest& a, ExactJoinTablesRequest& b) {
     a.Swap(&b);
@@ -8946,7 +10695,7 @@ class LeftJoinTablesRequest final :
                &_LeftJoinTablesRequest_default_instance_);
   }
   static constexpr int kIndexInFileMessages =
-    43;
+    52;
 
   friend void swap(LeftJoinTablesRequest& a, LeftJoinTablesRequest& b) {
     a.Swap(&b);
@@ -9190,7 +10939,7 @@ class AsOfJoinTablesRequest final :
                &_AsOfJoinTablesRequest_default_instance_);
   }
   static constexpr int kIndexInFileMessages =
-    44;
+    53;
 
   friend void swap(AsOfJoinTablesRequest& a, AsOfJoinTablesRequest& b) {
     a.Swap(&b);
@@ -9431,6 +11180,266 @@ class AsOfJoinTablesRequest final :
 };
 // -------------------------------------------------------------------
 
+class AjRajTablesRequest final :
+    public ::PROTOBUF_NAMESPACE_ID::Message /* @@protoc_insertion_point(class_definition:io.deephaven.proto.backplane.grpc.AjRajTablesRequest) */ {
+ public:
+  inline AjRajTablesRequest() : AjRajTablesRequest(nullptr) {}
+  ~AjRajTablesRequest() override;
+  explicit PROTOBUF_CONSTEXPR AjRajTablesRequest(::PROTOBUF_NAMESPACE_ID::internal::ConstantInitialized);
+
+  AjRajTablesRequest(const AjRajTablesRequest& from);
+  AjRajTablesRequest(AjRajTablesRequest&& from) noexcept
+    : AjRajTablesRequest() {
+    *this = ::std::move(from);
+  }
+
+  inline AjRajTablesRequest& operator=(const AjRajTablesRequest& from) {
+    CopyFrom(from);
+    return *this;
+  }
+  inline AjRajTablesRequest& operator=(AjRajTablesRequest&& from) noexcept {
+    if (this == &from) return *this;
+    if (GetOwningArena() == from.GetOwningArena()
+  #ifdef PROTOBUF_FORCE_COPY_IN_MOVE
+        && GetOwningArena() != nullptr
+  #endif  // !PROTOBUF_FORCE_COPY_IN_MOVE
+    ) {
+      InternalSwap(&from);
+    } else {
+      CopyFrom(from);
+    }
+    return *this;
+  }
+
+  static const ::PROTOBUF_NAMESPACE_ID::Descriptor* descriptor() {
+    return GetDescriptor();
+  }
+  static const ::PROTOBUF_NAMESPACE_ID::Descriptor* GetDescriptor() {
+    return default_instance().GetMetadata().descriptor;
+  }
+  static const ::PROTOBUF_NAMESPACE_ID::Reflection* GetReflection() {
+    return default_instance().GetMetadata().reflection;
+  }
+  static const AjRajTablesRequest& default_instance() {
+    return *internal_default_instance();
+  }
+  static inline const AjRajTablesRequest* internal_default_instance() {
+    return reinterpret_cast<const AjRajTablesRequest*>(
+               &_AjRajTablesRequest_default_instance_);
+  }
+  static constexpr int kIndexInFileMessages =
+    54;
+
+  friend void swap(AjRajTablesRequest& a, AjRajTablesRequest& b) {
+    a.Swap(&b);
+  }
+  inline void Swap(AjRajTablesRequest* other) {
+    if (other == this) return;
+  #ifdef PROTOBUF_FORCE_COPY_IN_SWAP
+    if (GetOwningArena() != nullptr &&
+        GetOwningArena() == other->GetOwningArena()) {
+   #else  // PROTOBUF_FORCE_COPY_IN_SWAP
+    if (GetOwningArena() == other->GetOwningArena()) {
+  #endif  // !PROTOBUF_FORCE_COPY_IN_SWAP
+      InternalSwap(other);
+    } else {
+      ::PROTOBUF_NAMESPACE_ID::internal::GenericSwap(this, other);
+    }
+  }
+  void UnsafeArenaSwap(AjRajTablesRequest* other) {
+    if (other == this) return;
+    GOOGLE_DCHECK(GetOwningArena() == other->GetOwningArena());
+    InternalSwap(other);
+  }
+
+  // implements Message ----------------------------------------------
+
+  AjRajTablesRequest* New(::PROTOBUF_NAMESPACE_ID::Arena* arena = nullptr) const final {
+    return CreateMaybeMessage<AjRajTablesRequest>(arena);
+  }
+  using ::PROTOBUF_NAMESPACE_ID::Message::CopyFrom;
+  void CopyFrom(const AjRajTablesRequest& from);
+  using ::PROTOBUF_NAMESPACE_ID::Message::MergeFrom;
+  void MergeFrom(const AjRajTablesRequest& from);
+  private:
+  static void MergeImpl(::PROTOBUF_NAMESPACE_ID::Message* to, const ::PROTOBUF_NAMESPACE_ID::Message& from);
+  public:
+  PROTOBUF_ATTRIBUTE_REINITIALIZES void Clear() final;
+  bool IsInitialized() const final;
+
+  size_t ByteSizeLong() const final;
+  const char* _InternalParse(const char* ptr, ::PROTOBUF_NAMESPACE_ID::internal::ParseContext* ctx) final;
+  uint8_t* _InternalSerialize(
+      uint8_t* target, ::PROTOBUF_NAMESPACE_ID::io::EpsCopyOutputStream* stream) const final;
+  int GetCachedSize() const final { return _cached_size_.Get(); }
+
+  private:
+  void SharedCtor();
+  void SharedDtor();
+  void SetCachedSize(int size) const final;
+  void InternalSwap(AjRajTablesRequest* other);
+
+  private:
+  friend class ::PROTOBUF_NAMESPACE_ID::internal::AnyMetadata;
+  static ::PROTOBUF_NAMESPACE_ID::StringPiece FullMessageName() {
+    return "io.deephaven.proto.backplane.grpc.AjRajTablesRequest";
+  }
+  protected:
+  explicit AjRajTablesRequest(::PROTOBUF_NAMESPACE_ID::Arena* arena,
+                       bool is_message_owned = false);
+  public:
+
+  static const ClassData _class_data_;
+  const ::PROTOBUF_NAMESPACE_ID::Message::ClassData*GetClassData() const final;
+
+  ::PROTOBUF_NAMESPACE_ID::Metadata GetMetadata() const final;
+
+  // nested types ----------------------------------------------------
+
+  // accessors -------------------------------------------------------
+
+  enum : int {
+    kExactMatchColumnsFieldNumber = 4,
+    kColumnsToAddFieldNumber = 6,
+    kAsOfColumnFieldNumber = 5,
+    kResultIdFieldNumber = 1,
+    kLeftIdFieldNumber = 2,
+    kRightIdFieldNumber = 3,
+  };
+  // repeated string exact_match_columns = 4;
+  int exact_match_columns_size() const;
+  private:
+  int _internal_exact_match_columns_size() const;
+  public:
+  void clear_exact_match_columns();
+  const std::string& exact_match_columns(int index) const;
+  std::string* mutable_exact_match_columns(int index);
+  void set_exact_match_columns(int index, const std::string& value);
+  void set_exact_match_columns(int index, std::string&& value);
+  void set_exact_match_columns(int index, const char* value);
+  void set_exact_match_columns(int index, const char* value, size_t size);
+  std::string* add_exact_match_columns();
+  void add_exact_match_columns(const std::string& value);
+  void add_exact_match_columns(std::string&& value);
+  void add_exact_match_columns(const char* value);
+  void add_exact_match_columns(const char* value, size_t size);
+  const ::PROTOBUF_NAMESPACE_ID::RepeatedPtrField<std::string>& exact_match_columns() const;
+  ::PROTOBUF_NAMESPACE_ID::RepeatedPtrField<std::string>* mutable_exact_match_columns();
+  private:
+  const std::string& _internal_exact_match_columns(int index) const;
+  std::string* _internal_add_exact_match_columns();
+  public:
+
+  // repeated string columns_to_add = 6;
+  int columns_to_add_size() const;
+  private:
+  int _internal_columns_to_add_size() const;
+  public:
+  void clear_columns_to_add();
+  const std::string& columns_to_add(int index) const;
+  std::string* mutable_columns_to_add(int index);
+  void set_columns_to_add(int index, const std::string& value);
+  void set_columns_to_add(int index, std::string&& value);
+  void set_columns_to_add(int index, const char* value);
+  void set_columns_to_add(int index, const char* value, size_t size);
+  std::string* add_columns_to_add();
+  void add_columns_to_add(const std::string& value);
+  void add_columns_to_add(std::string&& value);
+  void add_columns_to_add(const char* value);
+  void add_columns_to_add(const char* value, size_t size);
+  const ::PROTOBUF_NAMESPACE_ID::RepeatedPtrField<std::string>& columns_to_add() const;
+  ::PROTOBUF_NAMESPACE_ID::RepeatedPtrField<std::string>* mutable_columns_to_add();
+  private:
+  const std::string& _internal_columns_to_add(int index) const;
+  std::string* _internal_add_columns_to_add();
+  public:
+
+  // string as_of_column = 5;
+  void clear_as_of_column();
+  const std::string& as_of_column() const;
+  template <typename ArgT0 = const std::string&, typename... ArgT>
+  void set_as_of_column(ArgT0&& arg0, ArgT... args);
+  std::string* mutable_as_of_column();
+  PROTOBUF_NODISCARD std::string* release_as_of_column();
+  void set_allocated_as_of_column(std::string* as_of_column);
+  private:
+  const std::string& _internal_as_of_column() const;
+  inline PROTOBUF_ALWAYS_INLINE void _internal_set_as_of_column(const std::string& value);
+  std::string* _internal_mutable_as_of_column();
+  public:
+
+  // .io.deephaven.proto.backplane.grpc.Ticket result_id = 1;
+  bool has_result_id() const;
+  private:
+  bool _internal_has_result_id() const;
+  public:
+  void clear_result_id();
+  const ::io::deephaven::proto::backplane::grpc::Ticket& result_id() const;
+  PROTOBUF_NODISCARD ::io::deephaven::proto::backplane::grpc::Ticket* release_result_id();
+  ::io::deephaven::proto::backplane::grpc::Ticket* mutable_result_id();
+  void set_allocated_result_id(::io::deephaven::proto::backplane::grpc::Ticket* result_id);
+  private:
+  const ::io::deephaven::proto::backplane::grpc::Ticket& _internal_result_id() const;
+  ::io::deephaven::proto::backplane::grpc::Ticket* _internal_mutable_result_id();
+  public:
+  void unsafe_arena_set_allocated_result_id(
+      ::io::deephaven::proto::backplane::grpc::Ticket* result_id);
+  ::io::deephaven::proto::backplane::grpc::Ticket* unsafe_arena_release_result_id();
+
+  // .io.deephaven.proto.backplane.grpc.TableReference left_id = 2;
+  bool has_left_id() const;
+  private:
+  bool _internal_has_left_id() const;
+  public:
+  void clear_left_id();
+  const ::io::deephaven::proto::backplane::grpc::TableReference& left_id() const;
+  PROTOBUF_NODISCARD ::io::deephaven::proto::backplane::grpc::TableReference* release_left_id();
+  ::io::deephaven::proto::backplane::grpc::TableReference* mutable_left_id();
+  void set_allocated_left_id(::io::deephaven::proto::backplane::grpc::TableReference* left_id);
+  private:
+  const ::io::deephaven::proto::backplane::grpc::TableReference& _internal_left_id() const;
+  ::io::deephaven::proto::backplane::grpc::TableReference* _internal_mutable_left_id();
+  public:
+  void unsafe_arena_set_allocated_left_id(
+      ::io::deephaven::proto::backplane::grpc::TableReference* left_id);
+  ::io::deephaven::proto::backplane::grpc::TableReference* unsafe_arena_release_left_id();
+
+  // .io.deephaven.proto.backplane.grpc.TableReference right_id = 3;
+  bool has_right_id() const;
+  private:
+  bool _internal_has_right_id() const;
+  public:
+  void clear_right_id();
+  const ::io::deephaven::proto::backplane::grpc::TableReference& right_id() const;
+  PROTOBUF_NODISCARD ::io::deephaven::proto::backplane::grpc::TableReference* release_right_id();
+  ::io::deephaven::proto::backplane::grpc::TableReference* mutable_right_id();
+  void set_allocated_right_id(::io::deephaven::proto::backplane::grpc::TableReference* right_id);
+  private:
+  const ::io::deephaven::proto::backplane::grpc::TableReference& _internal_right_id() const;
+  ::io::deephaven::proto::backplane::grpc::TableReference* _internal_mutable_right_id();
+  public:
+  void unsafe_arena_set_allocated_right_id(
+      ::io::deephaven::proto::backplane::grpc::TableReference* right_id);
+  ::io::deephaven::proto::backplane::grpc::TableReference* unsafe_arena_release_right_id();
+
+  // @@protoc_insertion_point(class_scope:io.deephaven.proto.backplane.grpc.AjRajTablesRequest)
+ private:
+  class _Internal;
+
+  template <typename T> friend class ::PROTOBUF_NAMESPACE_ID::Arena::InternalHelper;
+  typedef void InternalArenaConstructable_;
+  typedef void DestructorSkippable_;
+  ::PROTOBUF_NAMESPACE_ID::RepeatedPtrField<std::string> exact_match_columns_;
+  ::PROTOBUF_NAMESPACE_ID::RepeatedPtrField<std::string> columns_to_add_;
+  ::PROTOBUF_NAMESPACE_ID::internal::ArenaStringPtr as_of_column_;
+  ::io::deephaven::proto::backplane::grpc::Ticket* result_id_;
+  ::io::deephaven::proto::backplane::grpc::TableReference* left_id_;
+  ::io::deephaven::proto::backplane::grpc::TableReference* right_id_;
+  mutable ::PROTOBUF_NAMESPACE_ID::internal::CachedSize _cached_size_;
+  friend struct ::TableStruct_deephaven_2fproto_2ftable_2eproto;
+};
+// -------------------------------------------------------------------
+
 class RangeJoinTablesRequest final :
     public ::PROTOBUF_NAMESPACE_ID::Message /* @@protoc_insertion_point(class_definition:io.deephaven.proto.backplane.grpc.RangeJoinTablesRequest) */ {
  public:
@@ -9479,7 +11488,7 @@ class RangeJoinTablesRequest final :
                &_RangeJoinTablesRequest_default_instance_);
   }
   static constexpr int kIndexInFileMessages =
-    45;
+    55;
 
   friend void swap(RangeJoinTablesRequest& a, RangeJoinTablesRequest& b) {
     a.Swap(&b);
@@ -9548,6 +11557,8 @@ class RangeJoinTablesRequest final :
   // nested types ----------------------------------------------------
 
   typedef RangeJoinTablesRequest_RangeStartRule RangeStartRule;
+  static constexpr RangeStartRule START_UNSPECIFIED =
+    RangeJoinTablesRequest_RangeStartRule_START_UNSPECIFIED;
   static constexpr RangeStartRule LESS_THAN =
     RangeJoinTablesRequest_RangeStartRule_LESS_THAN;
   static constexpr RangeStartRule LESS_THAN_OR_EQUAL =
@@ -9580,6 +11591,8 @@ class RangeJoinTablesRequest final :
   }
 
   typedef RangeJoinTablesRequest_RangeEndRule RangeEndRule;
+  static constexpr RangeEndRule END_UNSPECIFIED =
+    RangeJoinTablesRequest_RangeEndRule_END_UNSPECIFIED;
   static constexpr RangeEndRule GREATER_THAN =
     RangeJoinTablesRequest_RangeEndRule_GREATER_THAN;
   static constexpr RangeEndRule GREATER_THAN_OR_EQUAL =
@@ -9851,7 +11864,7 @@ class ComboAggregateRequest_Aggregate final :
                &_ComboAggregateRequest_Aggregate_default_instance_);
   }
   static constexpr int kIndexInFileMessages =
-    46;
+    56;
 
   friend void swap(ComboAggregateRequest_Aggregate& a, ComboAggregateRequest_Aggregate& b) {
     a.Swap(&b);
@@ -10058,7 +12071,7 @@ class ComboAggregateRequest final :
                &_ComboAggregateRequest_default_instance_);
   }
   static constexpr int kIndexInFileMessages =
-    47;
+    57;
 
   friend void swap(ComboAggregateRequest& a, ComboAggregateRequest& b) {
     a.Swap(&b);
@@ -10343,7 +12356,7 @@ class AggregateAllRequest final :
                &_AggregateAllRequest_default_instance_);
   }
   static constexpr int kIndexInFileMessages =
-    48;
+    58;
 
   friend void swap(AggregateAllRequest& a, AggregateAllRequest& b) {
     a.Swap(&b);
@@ -10561,7 +12574,7 @@ class AggSpec_AggSpecApproximatePercentile final :
                &_AggSpec_AggSpecApproximatePercentile_default_instance_);
   }
   static constexpr int kIndexInFileMessages =
-    49;
+    59;
 
   friend void swap(AggSpec_AggSpecApproximatePercentile& a, AggSpec_AggSpecApproximatePercentile& b) {
     a.Swap(&b);
@@ -10720,7 +12733,7 @@ class AggSpec_AggSpecCountDistinct final :
                &_AggSpec_AggSpecCountDistinct_default_instance_);
   }
   static constexpr int kIndexInFileMessages =
-    50;
+    60;
 
   friend void swap(AggSpec_AggSpecCountDistinct& a, AggSpec_AggSpecCountDistinct& b) {
     a.Swap(&b);
@@ -10863,7 +12876,7 @@ class AggSpec_AggSpecDistinct final :
                &_AggSpec_AggSpecDistinct_default_instance_);
   }
   static constexpr int kIndexInFileMessages =
-    51;
+    61;
 
   friend void swap(AggSpec_AggSpecDistinct& a, AggSpec_AggSpecDistinct& b) {
     a.Swap(&b);
@@ -11006,7 +13019,7 @@ class AggSpec_AggSpecFormula final :
                &_AggSpec_AggSpecFormula_default_instance_);
   }
   static constexpr int kIndexInFileMessages =
-    52;
+    62;
 
   friend void swap(AggSpec_AggSpecFormula& a, AggSpec_AggSpecFormula& b) {
     a.Swap(&b);
@@ -11170,7 +13183,7 @@ class AggSpec_AggSpecMedian final :
                &_AggSpec_AggSpecMedian_default_instance_);
   }
   static constexpr int kIndexInFileMessages =
-    53;
+    63;
 
   friend void swap(AggSpec_AggSpecMedian& a, AggSpec_AggSpecMedian& b) {
     a.Swap(&b);
@@ -11313,7 +13326,7 @@ class AggSpec_AggSpecPercentile final :
                &_AggSpec_AggSpecPercentile_default_instance_);
   }
   static constexpr int kIndexInFileMessages =
-    54;
+    64;
 
   friend void swap(AggSpec_AggSpecPercentile& a, AggSpec_AggSpecPercentile& b) {
     a.Swap(&b);
@@ -11467,7 +13480,7 @@ class AggSpec_AggSpecSorted final :
                &_AggSpec_AggSpecSorted_default_instance_);
   }
   static constexpr int kIndexInFileMessages =
-    55;
+    65;
 
   friend void swap(AggSpec_AggSpecSorted& a, AggSpec_AggSpecSorted& b) {
     a.Swap(&b);
@@ -11619,7 +13632,7 @@ class AggSpec_AggSpecSortedColumn final :
                &_AggSpec_AggSpecSortedColumn_default_instance_);
   }
   static constexpr int kIndexInFileMessages =
-    56;
+    66;
 
   friend void swap(AggSpec_AggSpecSortedColumn& a, AggSpec_AggSpecSortedColumn& b) {
     a.Swap(&b);
@@ -11767,7 +13780,7 @@ class AggSpec_AggSpecTDigest final :
                &_AggSpec_AggSpecTDigest_default_instance_);
   }
   static constexpr int kIndexInFileMessages =
-    57;
+    67;
 
   friend void swap(AggSpec_AggSpecTDigest& a, AggSpec_AggSpecTDigest& b) {
     a.Swap(&b);
@@ -11915,7 +13928,7 @@ class AggSpec_AggSpecUnique final :
                &_AggSpec_AggSpecUnique_default_instance_);
   }
   static constexpr int kIndexInFileMessages =
-    58;
+    68;
 
   friend void swap(AggSpec_AggSpecUnique& a, AggSpec_AggSpecUnique& b) {
     a.Swap(&b);
@@ -12092,7 +14105,7 @@ class AggSpec_AggSpecNonUniqueSentinel final :
                &_AggSpec_AggSpecNonUniqueSentinel_default_instance_);
   }
   static constexpr int kIndexInFileMessages =
-    59;
+    69;
 
   friend void swap(AggSpec_AggSpecNonUniqueSentinel& a, AggSpec_AggSpecNonUniqueSentinel& b) {
     a.Swap(&b);
@@ -12400,7 +14413,7 @@ class AggSpec_AggSpecWeighted final :
                &_AggSpec_AggSpecWeighted_default_instance_);
   }
   static constexpr int kIndexInFileMessages =
-    60;
+    70;
 
   friend void swap(AggSpec_AggSpecWeighted& a, AggSpec_AggSpecWeighted& b) {
     a.Swap(&b);
@@ -12547,7 +14560,7 @@ class AggSpec_AggSpecAbsSum final :
                &_AggSpec_AggSpecAbsSum_default_instance_);
   }
   static constexpr int kIndexInFileMessages =
-    61;
+    71;
 
   friend void swap(AggSpec_AggSpecAbsSum& a, AggSpec_AggSpecAbsSum& b) {
     a.Swap(&b);
@@ -12663,7 +14676,7 @@ class AggSpec_AggSpecAvg final :
                &_AggSpec_AggSpecAvg_default_instance_);
   }
   static constexpr int kIndexInFileMessages =
-    62;
+    72;
 
   friend void swap(AggSpec_AggSpecAvg& a, AggSpec_AggSpecAvg& b) {
     a.Swap(&b);
@@ -12779,7 +14792,7 @@ class AggSpec_AggSpecFirst final :
                &_AggSpec_AggSpecFirst_default_instance_);
   }
   static constexpr int kIndexInFileMessages =
-    63;
+    73;
 
   friend void swap(AggSpec_AggSpecFirst& a, AggSpec_AggSpecFirst& b) {
     a.Swap(&b);
@@ -12895,7 +14908,7 @@ class AggSpec_AggSpecFreeze final :
                &_AggSpec_AggSpecFreeze_default_instance_);
   }
   static constexpr int kIndexInFileMessages =
-    64;
+    74;
 
   friend void swap(AggSpec_AggSpecFreeze& a, AggSpec_AggSpecFreeze& b) {
     a.Swap(&b);
@@ -13011,7 +15024,7 @@ class AggSpec_AggSpecGroup final :
                &_AggSpec_AggSpecGroup_default_instance_);
   }
   static constexpr int kIndexInFileMessages =
-    65;
+    75;
 
   friend void swap(AggSpec_AggSpecGroup& a, AggSpec_AggSpecGroup& b) {
     a.Swap(&b);
@@ -13127,7 +15140,7 @@ class AggSpec_AggSpecLast final :
                &_AggSpec_AggSpecLast_default_instance_);
   }
   static constexpr int kIndexInFileMessages =
-    66;
+    76;
 
   friend void swap(AggSpec_AggSpecLast& a, AggSpec_AggSpecLast& b) {
     a.Swap(&b);
@@ -13243,7 +15256,7 @@ class AggSpec_AggSpecMax final :
                &_AggSpec_AggSpecMax_default_instance_);
   }
   static constexpr int kIndexInFileMessages =
-    67;
+    77;
 
   friend void swap(AggSpec_AggSpecMax& a, AggSpec_AggSpecMax& b) {
     a.Swap(&b);
@@ -13359,7 +15372,7 @@ class AggSpec_AggSpecMin final :
                &_AggSpec_AggSpecMin_default_instance_);
   }
   static constexpr int kIndexInFileMessages =
-    68;
+    78;
 
   friend void swap(AggSpec_AggSpecMin& a, AggSpec_AggSpecMin& b) {
     a.Swap(&b);
@@ -13475,7 +15488,7 @@ class AggSpec_AggSpecStd final :
                &_AggSpec_AggSpecStd_default_instance_);
   }
   static constexpr int kIndexInFileMessages =
-    69;
+    79;
 
   friend void swap(AggSpec_AggSpecStd& a, AggSpec_AggSpecStd& b) {
     a.Swap(&b);
@@ -13591,7 +15604,7 @@ class AggSpec_AggSpecSum final :
                &_AggSpec_AggSpecSum_default_instance_);
   }
   static constexpr int kIndexInFileMessages =
-    70;
+    80;
 
   friend void swap(AggSpec_AggSpecSum& a, AggSpec_AggSpecSum& b) {
     a.Swap(&b);
@@ -13707,7 +15720,7 @@ class AggSpec_AggSpecVar final :
                &_AggSpec_AggSpecVar_default_instance_);
   }
   static constexpr int kIndexInFileMessages =
-    71;
+    81;
 
   friend void swap(AggSpec_AggSpecVar& a, AggSpec_AggSpecVar& b) {
     a.Swap(&b);
@@ -13851,7 +15864,7 @@ class AggSpec final :
                &_AggSpec_default_instance_);
   }
   static constexpr int kIndexInFileMessages =
-    72;
+    82;
 
   friend void swap(AggSpec& a, AggSpec& b) {
     a.Swap(&b);
@@ -14501,7 +16514,7 @@ class AggregateRequest final :
                &_AggregateRequest_default_instance_);
   }
   static constexpr int kIndexInFileMessages =
-    73;
+    83;
 
   friend void swap(AggregateRequest& a, AggregateRequest& b) {
     a.Swap(&b);
@@ -14750,7 +16763,7 @@ class Aggregation_AggregationColumns final :
                &_Aggregation_AggregationColumns_default_instance_);
   }
   static constexpr int kIndexInFileMessages =
-    74;
+    84;
 
   friend void swap(Aggregation_AggregationColumns& a, Aggregation_AggregationColumns& b) {
     a.Swap(&b);
@@ -14928,7 +16941,7 @@ class Aggregation_AggregationCount final :
                &_Aggregation_AggregationCount_default_instance_);
   }
   static constexpr int kIndexInFileMessages =
-    75;
+    85;
 
   friend void swap(Aggregation_AggregationCount& a, Aggregation_AggregationCount& b) {
     a.Swap(&b);
@@ -15076,7 +17089,7 @@ class Aggregation_AggregationRowKey final :
                &_Aggregation_AggregationRowKey_default_instance_);
   }
   static constexpr int kIndexInFileMessages =
-    76;
+    86;
 
   friend void swap(Aggregation_AggregationRowKey& a, Aggregation_AggregationRowKey& b) {
     a.Swap(&b);
@@ -15224,7 +17237,7 @@ class Aggregation_AggregationPartition final :
                &_Aggregation_AggregationPartition_default_instance_);
   }
   static constexpr int kIndexInFileMessages =
-    77;
+    87;
 
   friend void swap(Aggregation_AggregationPartition& a, Aggregation_AggregationPartition& b) {
     a.Swap(&b);
@@ -15392,7 +17405,7 @@ class Aggregation final :
                &_Aggregation_default_instance_);
   }
   static constexpr int kIndexInFileMessages =
-    78;
+    88;
 
   friend void swap(Aggregation& a, Aggregation& b) {
     a.Swap(&b);
@@ -15645,7 +17658,7 @@ class SortDescriptor final :
                &_SortDescriptor_default_instance_);
   }
   static constexpr int kIndexInFileMessages =
-    79;
+    89;
 
   friend void swap(SortDescriptor& a, SortDescriptor& b) {
     a.Swap(&b);
@@ -15849,7 +17862,7 @@ class SortTableRequest final :
                &_SortTableRequest_default_instance_);
   }
   static constexpr int kIndexInFileMessages =
-    80;
+    90;
 
   friend void swap(SortTableRequest& a, SortTableRequest& b) {
     a.Swap(&b);
@@ -16041,7 +18054,7 @@ class FilterTableRequest final :
                &_FilterTableRequest_default_instance_);
   }
   static constexpr int kIndexInFileMessages =
-    81;
+    91;
 
   friend void swap(FilterTableRequest& a, FilterTableRequest& b) {
     a.Swap(&b);
@@ -16233,7 +18246,7 @@ class SeekRowRequest final :
                &_SeekRowRequest_default_instance_);
   }
   static constexpr int kIndexInFileMessages =
-    82;
+    92;
 
   friend void swap(SeekRowRequest& a, SeekRowRequest& b) {
     a.Swap(&b);
@@ -16465,7 +18478,7 @@ class SeekRowResponse final :
                &_SeekRowResponse_default_instance_);
   }
   static constexpr int kIndexInFileMessages =
-    83;
+    93;
 
   friend void swap(SeekRowResponse& a, SeekRowResponse& b) {
     a.Swap(&b);
@@ -16608,7 +18621,7 @@ class Reference final :
                &_Reference_default_instance_);
   }
   static constexpr int kIndexInFileMessages =
-    84;
+    94;
 
   friend void swap(Reference& a, Reference& b) {
     a.Swap(&b);
@@ -16765,7 +18778,7 @@ class Literal final :
                &_Literal_default_instance_);
   }
   static constexpr int kIndexInFileMessages =
-    85;
+    95;
 
   friend void swap(Literal& a, Literal& b) {
     a.Swap(&b);
@@ -16999,7 +19012,7 @@ class Value final :
                &_Value_default_instance_);
   }
   static constexpr int kIndexInFileMessages =
-    86;
+    96;
 
   friend void swap(Value& a, Value& b) {
     a.Swap(&b);
@@ -17198,7 +19211,7 @@ class Condition final :
                &_Condition_default_instance_);
   }
   static constexpr int kIndexInFileMessages =
-    87;
+    97;
 
   friend void swap(Condition& a, Condition& b) {
     a.Swap(&b);
@@ -17551,7 +19564,7 @@ class AndCondition final :
                &_AndCondition_default_instance_);
   }
   static constexpr int kIndexInFileMessages =
-    88;
+    98;
 
   friend void swap(AndCondition& a, AndCondition& b) {
     a.Swap(&b);
@@ -17703,7 +19716,7 @@ class OrCondition final :
                &_OrCondition_default_instance_);
   }
   static constexpr int kIndexInFileMessages =
-    89;
+    99;
 
   friend void swap(OrCondition& a, OrCondition& b) {
     a.Swap(&b);
@@ -17855,7 +19868,7 @@ class NotCondition final :
                &_NotCondition_default_instance_);
   }
   static constexpr int kIndexInFileMessages =
-    90;
+    100;
 
   friend void swap(NotCondition& a, NotCondition& b) {
     a.Swap(&b);
@@ -18007,7 +20020,7 @@ class CompareCondition final :
                &_CompareCondition_default_instance_);
   }
   static constexpr int kIndexInFileMessages =
-    91;
+    101;
 
   friend void swap(CompareCondition& a, CompareCondition& b) {
     a.Swap(&b);
@@ -18239,7 +20252,7 @@ class InCondition final :
                &_InCondition_default_instance_);
   }
   static constexpr int kIndexInFileMessages =
-    92;
+    102;
 
   friend void swap(InCondition& a, InCondition& b) {
     a.Swap(&b);
@@ -18433,7 +20446,7 @@ class InvokeCondition final :
                &_InvokeCondition_default_instance_);
   }
   static constexpr int kIndexInFileMessages =
-    93;
+    103;
 
   friend void swap(InvokeCondition& a, InvokeCondition& b) {
     a.Swap(&b);
@@ -18621,7 +20634,7 @@ class IsNullCondition final :
                &_IsNullCondition_default_instance_);
   }
   static constexpr int kIndexInFileMessages =
-    94;
+    104;
 
   friend void swap(IsNullCondition& a, IsNullCondition& b) {
     a.Swap(&b);
@@ -18773,7 +20786,7 @@ class MatchesCondition final :
                &_MatchesCondition_default_instance_);
   }
   static constexpr int kIndexInFileMessages =
-    95;
+    105;
 
   friend void swap(MatchesCondition& a, MatchesCondition& b) {
     a.Swap(&b);
@@ -18963,7 +20976,7 @@ class ContainsCondition final :
                &_ContainsCondition_default_instance_);
   }
   static constexpr int kIndexInFileMessages =
-    96;
+    106;
 
   friend void swap(ContainsCondition& a, ContainsCondition& b) {
     a.Swap(&b);
@@ -19153,7 +21166,7 @@ class SearchCondition final :
                &_SearchCondition_default_instance_);
   }
   static constexpr int kIndexInFileMessages =
-    97;
+    107;
 
   friend void swap(SearchCondition& a, SearchCondition& b) {
     a.Swap(&b);
@@ -19321,7 +21334,7 @@ class FlattenRequest final :
                &_FlattenRequest_default_instance_);
   }
   static constexpr int kIndexInFileMessages =
-    98;
+    108;
 
   friend void swap(FlattenRequest& a, FlattenRequest& b) {
     a.Swap(&b);
@@ -19493,7 +21506,7 @@ class MetaTableRequest final :
                &_MetaTableRequest_default_instance_);
   }
   static constexpr int kIndexInFileMessages =
-    99;
+    109;
 
   friend void swap(MetaTableRequest& a, MetaTableRequest& b) {
     a.Swap(&b);
@@ -19665,7 +21678,7 @@ class RunChartDownsampleRequest_ZoomRange final :
                &_RunChartDownsampleRequest_ZoomRange_default_instance_);
   }
   static constexpr int kIndexInFileMessages =
-    100;
+    110;
 
   friend void swap(RunChartDownsampleRequest_ZoomRange& a, RunChartDownsampleRequest_ZoomRange& b) {
     a.Swap(&b);
@@ -19828,7 +21841,7 @@ class RunChartDownsampleRequest final :
                &_RunChartDownsampleRequest_default_instance_);
   }
   static constexpr int kIndexInFileMessages =
-    101;
+    111;
 
   friend void swap(RunChartDownsampleRequest& a, RunChartDownsampleRequest& b) {
     a.Swap(&b);
@@ -20074,7 +22087,7 @@ class CreateInputTableRequest_InputTableKind_InMemoryAppendOnly final :
                &_CreateInputTableRequest_InputTableKind_InMemoryAppendOnly_default_instance_);
   }
   static constexpr int kIndexInFileMessages =
-    102;
+    112;
 
   friend void swap(CreateInputTableRequest_InputTableKind_InMemoryAppendOnly& a, CreateInputTableRequest_InputTableKind_InMemoryAppendOnly& b) {
     a.Swap(&b);
@@ -20191,7 +22204,7 @@ class CreateInputTableRequest_InputTableKind_InMemoryKeyBacked final :
                &_CreateInputTableRequest_InputTableKind_InMemoryKeyBacked_default_instance_);
   }
   static constexpr int kIndexInFileMessages =
-    103;
+    113;
 
   friend void swap(CreateInputTableRequest_InputTableKind_InMemoryKeyBacked& a, CreateInputTableRequest_InputTableKind_InMemoryKeyBacked& b) {
     a.Swap(&b);
@@ -20355,7 +22368,7 @@ class CreateInputTableRequest_InputTableKind final :
                &_CreateInputTableRequest_InputTableKind_default_instance_);
   }
   static constexpr int kIndexInFileMessages =
-    104;
+    114;
 
   friend void swap(CreateInputTableRequest_InputTableKind& a, CreateInputTableRequest_InputTableKind& b) {
     a.Swap(&b);
@@ -20549,7 +22562,7 @@ class CreateInputTableRequest final :
                &_CreateInputTableRequest_default_instance_);
   }
   static constexpr int kIndexInFileMessages =
-    105;
+    115;
 
   friend void swap(CreateInputTableRequest& a, CreateInputTableRequest& b) {
     a.Swap(&b);
@@ -20776,7 +22789,7 @@ class WhereInRequest final :
                &_WhereInRequest_default_instance_);
   }
   static constexpr int kIndexInFileMessages =
-    106;
+    116;
 
   friend void swap(WhereInRequest& a, WhereInRequest& b) {
     a.Swap(&b);
@@ -21038,6 +23051,8 @@ class BatchTableRequest_Operation final :
     kSnapshotWhen = 37,
     kMetaTable = 38,
     kRangeJoin = 39,
+    kAj = 40,
+    kRaj = 41,
     OP_NOT_SET = 0,
   };
 
@@ -21046,7 +23061,7 @@ class BatchTableRequest_Operation final :
                &_BatchTableRequest_Operation_default_instance_);
   }
   static constexpr int kIndexInFileMessages =
-    107;
+    117;
 
   friend void swap(BatchTableRequest_Operation& a, BatchTableRequest_Operation& b) {
     a.Swap(&b);
@@ -21154,6 +23169,8 @@ class BatchTableRequest_Operation final :
     kSnapshotWhenFieldNumber = 37,
     kMetaTableFieldNumber = 38,
     kRangeJoinFieldNumber = 39,
+    kAjFieldNumber = 40,
+    kRajFieldNumber = 41,
   };
   // .io.deephaven.proto.backplane.grpc.EmptyTableRequest empty_table = 1;
   bool has_empty_table() const;
@@ -21605,23 +23622,23 @@ class BatchTableRequest_Operation final :
       ::io::deephaven::proto::backplane::grpc::LeftJoinTablesRequest* left_join);
   ::io::deephaven::proto::backplane::grpc::LeftJoinTablesRequest* unsafe_arena_release_left_join();
 
-  // .io.deephaven.proto.backplane.grpc.AsOfJoinTablesRequest as_of_join = 27;
-  bool has_as_of_join() const;
+  // .io.deephaven.proto.backplane.grpc.AsOfJoinTablesRequest as_of_join = 27 [deprecated = true];
+  PROTOBUF_DEPRECATED bool has_as_of_join() const;
   private:
   bool _internal_has_as_of_join() const;
   public:
-  void clear_as_of_join();
-  const ::io::deephaven::proto::backplane::grpc::AsOfJoinTablesRequest& as_of_join() const;
-  PROTOBUF_NODISCARD ::io::deephaven::proto::backplane::grpc::AsOfJoinTablesRequest* release_as_of_join();
-  ::io::deephaven::proto::backplane::grpc::AsOfJoinTablesRequest* mutable_as_of_join();
-  void set_allocated_as_of_join(::io::deephaven::proto::backplane::grpc::AsOfJoinTablesRequest* as_of_join);
+  PROTOBUF_DEPRECATED void clear_as_of_join();
+  PROTOBUF_DEPRECATED const ::io::deephaven::proto::backplane::grpc::AsOfJoinTablesRequest& as_of_join() const;
+  PROTOBUF_NODISCARD PROTOBUF_DEPRECATED ::io::deephaven::proto::backplane::grpc::AsOfJoinTablesRequest* release_as_of_join();
+  PROTOBUF_DEPRECATED ::io::deephaven::proto::backplane::grpc::AsOfJoinTablesRequest* mutable_as_of_join();
+  PROTOBUF_DEPRECATED void set_allocated_as_of_join(::io::deephaven::proto::backplane::grpc::AsOfJoinTablesRequest* as_of_join);
   private:
   const ::io::deephaven::proto::backplane::grpc::AsOfJoinTablesRequest& _internal_as_of_join() const;
   ::io::deephaven::proto::backplane::grpc::AsOfJoinTablesRequest* _internal_mutable_as_of_join();
   public:
-  void unsafe_arena_set_allocated_as_of_join(
+  PROTOBUF_DEPRECATED void unsafe_arena_set_allocated_as_of_join(
       ::io::deephaven::proto::backplane::grpc::AsOfJoinTablesRequest* as_of_join);
-  ::io::deephaven::proto::backplane::grpc::AsOfJoinTablesRequest* unsafe_arena_release_as_of_join();
+  PROTOBUF_DEPRECATED ::io::deephaven::proto::backplane::grpc::AsOfJoinTablesRequest* unsafe_arena_release_as_of_join();
 
   // .io.deephaven.proto.backplane.grpc.FetchTableRequest fetch_table = 28;
   bool has_fetch_table() const;
@@ -21821,6 +23838,42 @@ class BatchTableRequest_Operation final :
       ::io::deephaven::proto::backplane::grpc::RangeJoinTablesRequest* range_join);
   ::io::deephaven::proto::backplane::grpc::RangeJoinTablesRequest* unsafe_arena_release_range_join();
 
+  // .io.deephaven.proto.backplane.grpc.AjRajTablesRequest aj = 40;
+  bool has_aj() const;
+  private:
+  bool _internal_has_aj() const;
+  public:
+  void clear_aj();
+  const ::io::deephaven::proto::backplane::grpc::AjRajTablesRequest& aj() const;
+  PROTOBUF_NODISCARD ::io::deephaven::proto::backplane::grpc::AjRajTablesRequest* release_aj();
+  ::io::deephaven::proto::backplane::grpc::AjRajTablesRequest* mutable_aj();
+  void set_allocated_aj(::io::deephaven::proto::backplane::grpc::AjRajTablesRequest* aj);
+  private:
+  const ::io::deephaven::proto::backplane::grpc::AjRajTablesRequest& _internal_aj() const;
+  ::io::deephaven::proto::backplane::grpc::AjRajTablesRequest* _internal_mutable_aj();
+  public:
+  void unsafe_arena_set_allocated_aj(
+      ::io::deephaven::proto::backplane::grpc::AjRajTablesRequest* aj);
+  ::io::deephaven::proto::backplane::grpc::AjRajTablesRequest* unsafe_arena_release_aj();
+
+  // .io.deephaven.proto.backplane.grpc.AjRajTablesRequest raj = 41;
+  bool has_raj() const;
+  private:
+  bool _internal_has_raj() const;
+  public:
+  void clear_raj();
+  const ::io::deephaven::proto::backplane::grpc::AjRajTablesRequest& raj() const;
+  PROTOBUF_NODISCARD ::io::deephaven::proto::backplane::grpc::AjRajTablesRequest* release_raj();
+  ::io::deephaven::proto::backplane::grpc::AjRajTablesRequest* mutable_raj();
+  void set_allocated_raj(::io::deephaven::proto::backplane::grpc::AjRajTablesRequest* raj);
+  private:
+  const ::io::deephaven::proto::backplane::grpc::AjRajTablesRequest& _internal_raj() const;
+  ::io::deephaven::proto::backplane::grpc::AjRajTablesRequest* _internal_mutable_raj();
+  public:
+  void unsafe_arena_set_allocated_raj(
+      ::io::deephaven::proto::backplane::grpc::AjRajTablesRequest* raj);
+  ::io::deephaven::proto::backplane::grpc::AjRajTablesRequest* unsafe_arena_release_raj();
+
   void clear_op();
   OpCase op_case() const;
   // @@protoc_insertion_point(class_scope:io.deephaven.proto.backplane.grpc.BatchTableRequest.Operation)
@@ -21863,6 +23916,8 @@ class BatchTableRequest_Operation final :
   void set_has_snapshot_when();
   void set_has_meta_table();
   void set_has_range_join();
+  void set_has_aj();
+  void set_has_raj();
 
   inline bool has_op() const;
   inline void clear_has_op();
@@ -21910,6 +23965,8 @@ class BatchTableRequest_Operation final :
     ::io::deephaven::proto::backplane::grpc::SnapshotWhenTableRequest* snapshot_when_;
     ::io::deephaven::proto::backplane::grpc::MetaTableRequest* meta_table_;
     ::io::deephaven::proto::backplane::grpc::RangeJoinTablesRequest* range_join_;
+    ::io::deephaven::proto::backplane::grpc::AjRajTablesRequest* aj_;
+    ::io::deephaven::proto::backplane::grpc::AjRajTablesRequest* raj_;
   } op_;
   mutable ::PROTOBUF_NAMESPACE_ID::internal::CachedSize _cached_size_;
   uint32_t _oneof_case_[1];
@@ -21966,7 +24023,7 @@ class BatchTableRequest final :
                &_BatchTableRequest_default_instance_);
   }
   static constexpr int kIndexInFileMessages =
-    108;
+    118;
 
   friend void swap(BatchTableRequest& a, BatchTableRequest& b) {
     a.Swap(&b);
@@ -23507,68 +25564,68 @@ inline void MathContext::set_rounding_mode(::io::deephaven::proto::backplane::gr
 
 // -------------------------------------------------------------------
 
-// UpdateByEmaTimescale_UpdateByEmaTicks
+// UpdateByWindowScale_UpdateByWindowTicks
 
 // double ticks = 1;
-inline void UpdateByEmaTimescale_UpdateByEmaTicks::clear_ticks() {
+inline void UpdateByWindowScale_UpdateByWindowTicks::clear_ticks() {
   ticks_ = 0;
 }
-inline double UpdateByEmaTimescale_UpdateByEmaTicks::_internal_ticks() const {
+inline double UpdateByWindowScale_UpdateByWindowTicks::_internal_ticks() const {
   return ticks_;
 }
-inline double UpdateByEmaTimescale_UpdateByEmaTicks::ticks() const {
-  // @@protoc_insertion_point(field_get:io.deephaven.proto.backplane.grpc.UpdateByEmaTimescale.UpdateByEmaTicks.ticks)
+inline double UpdateByWindowScale_UpdateByWindowTicks::ticks() const {
+  // @@protoc_insertion_point(field_get:io.deephaven.proto.backplane.grpc.UpdateByWindowScale.UpdateByWindowTicks.ticks)
   return _internal_ticks();
 }
-inline void UpdateByEmaTimescale_UpdateByEmaTicks::_internal_set_ticks(double value) {
+inline void UpdateByWindowScale_UpdateByWindowTicks::_internal_set_ticks(double value) {
   
   ticks_ = value;
 }
-inline void UpdateByEmaTimescale_UpdateByEmaTicks::set_ticks(double value) {
+inline void UpdateByWindowScale_UpdateByWindowTicks::set_ticks(double value) {
   _internal_set_ticks(value);
-  // @@protoc_insertion_point(field_set:io.deephaven.proto.backplane.grpc.UpdateByEmaTimescale.UpdateByEmaTicks.ticks)
+  // @@protoc_insertion_point(field_set:io.deephaven.proto.backplane.grpc.UpdateByWindowScale.UpdateByWindowTicks.ticks)
 }
 
 // -------------------------------------------------------------------
 
-// UpdateByEmaTimescale_UpdateByEmaTime
+// UpdateByWindowScale_UpdateByWindowTime
 
 // string column = 1;
-inline void UpdateByEmaTimescale_UpdateByEmaTime::clear_column() {
+inline void UpdateByWindowScale_UpdateByWindowTime::clear_column() {
   column_.ClearToEmpty();
 }
-inline const std::string& UpdateByEmaTimescale_UpdateByEmaTime::column() const {
-  // @@protoc_insertion_point(field_get:io.deephaven.proto.backplane.grpc.UpdateByEmaTimescale.UpdateByEmaTime.column)
+inline const std::string& UpdateByWindowScale_UpdateByWindowTime::column() const {
+  // @@protoc_insertion_point(field_get:io.deephaven.proto.backplane.grpc.UpdateByWindowScale.UpdateByWindowTime.column)
   return _internal_column();
 }
 template <typename ArgT0, typename... ArgT>
 inline PROTOBUF_ALWAYS_INLINE
-void UpdateByEmaTimescale_UpdateByEmaTime::set_column(ArgT0&& arg0, ArgT... args) {
+void UpdateByWindowScale_UpdateByWindowTime::set_column(ArgT0&& arg0, ArgT... args) {
  
  column_.Set(static_cast<ArgT0 &&>(arg0), args..., GetArenaForAllocation());
-  // @@protoc_insertion_point(field_set:io.deephaven.proto.backplane.grpc.UpdateByEmaTimescale.UpdateByEmaTime.column)
+  // @@protoc_insertion_point(field_set:io.deephaven.proto.backplane.grpc.UpdateByWindowScale.UpdateByWindowTime.column)
 }
-inline std::string* UpdateByEmaTimescale_UpdateByEmaTime::mutable_column() {
+inline std::string* UpdateByWindowScale_UpdateByWindowTime::mutable_column() {
   std::string* _s = _internal_mutable_column();
-  // @@protoc_insertion_point(field_mutable:io.deephaven.proto.backplane.grpc.UpdateByEmaTimescale.UpdateByEmaTime.column)
+  // @@protoc_insertion_point(field_mutable:io.deephaven.proto.backplane.grpc.UpdateByWindowScale.UpdateByWindowTime.column)
   return _s;
 }
-inline const std::string& UpdateByEmaTimescale_UpdateByEmaTime::_internal_column() const {
+inline const std::string& UpdateByWindowScale_UpdateByWindowTime::_internal_column() const {
   return column_.Get();
 }
-inline void UpdateByEmaTimescale_UpdateByEmaTime::_internal_set_column(const std::string& value) {
+inline void UpdateByWindowScale_UpdateByWindowTime::_internal_set_column(const std::string& value) {
   
   column_.Set(value, GetArenaForAllocation());
 }
-inline std::string* UpdateByEmaTimescale_UpdateByEmaTime::_internal_mutable_column() {
+inline std::string* UpdateByWindowScale_UpdateByWindowTime::_internal_mutable_column() {
   
   return column_.Mutable(GetArenaForAllocation());
 }
-inline std::string* UpdateByEmaTimescale_UpdateByEmaTime::release_column() {
-  // @@protoc_insertion_point(field_release:io.deephaven.proto.backplane.grpc.UpdateByEmaTimescale.UpdateByEmaTime.column)
+inline std::string* UpdateByWindowScale_UpdateByWindowTime::release_column() {
+  // @@protoc_insertion_point(field_release:io.deephaven.proto.backplane.grpc.UpdateByWindowScale.UpdateByWindowTime.column)
   return column_.Release();
 }
-inline void UpdateByEmaTimescale_UpdateByEmaTime::set_allocated_column(std::string* column) {
+inline void UpdateByWindowScale_UpdateByWindowTime::set_allocated_column(std::string* column) {
   if (column != nullptr) {
     
   } else {
@@ -23580,44 +25637,44 @@ inline void UpdateByEmaTimescale_UpdateByEmaTime::set_allocated_column(std::stri
     column_.Set("", GetArenaForAllocation());
   }
 #endif // PROTOBUF_FORCE_COPY_DEFAULT_STRING
-  // @@protoc_insertion_point(field_set_allocated:io.deephaven.proto.backplane.grpc.UpdateByEmaTimescale.UpdateByEmaTime.column)
+  // @@protoc_insertion_point(field_set_allocated:io.deephaven.proto.backplane.grpc.UpdateByWindowScale.UpdateByWindowTime.column)
 }
 
 // sint64 period_nanos = 2 [jstype = JS_STRING];
-inline void UpdateByEmaTimescale_UpdateByEmaTime::clear_period_nanos() {
+inline void UpdateByWindowScale_UpdateByWindowTime::clear_period_nanos() {
   period_nanos_ = int64_t{0};
 }
-inline int64_t UpdateByEmaTimescale_UpdateByEmaTime::_internal_period_nanos() const {
+inline int64_t UpdateByWindowScale_UpdateByWindowTime::_internal_period_nanos() const {
   return period_nanos_;
 }
-inline int64_t UpdateByEmaTimescale_UpdateByEmaTime::period_nanos() const {
-  // @@protoc_insertion_point(field_get:io.deephaven.proto.backplane.grpc.UpdateByEmaTimescale.UpdateByEmaTime.period_nanos)
+inline int64_t UpdateByWindowScale_UpdateByWindowTime::period_nanos() const {
+  // @@protoc_insertion_point(field_get:io.deephaven.proto.backplane.grpc.UpdateByWindowScale.UpdateByWindowTime.period_nanos)
   return _internal_period_nanos();
 }
-inline void UpdateByEmaTimescale_UpdateByEmaTime::_internal_set_period_nanos(int64_t value) {
+inline void UpdateByWindowScale_UpdateByWindowTime::_internal_set_period_nanos(int64_t value) {
   
   period_nanos_ = value;
 }
-inline void UpdateByEmaTimescale_UpdateByEmaTime::set_period_nanos(int64_t value) {
+inline void UpdateByWindowScale_UpdateByWindowTime::set_period_nanos(int64_t value) {
   _internal_set_period_nanos(value);
-  // @@protoc_insertion_point(field_set:io.deephaven.proto.backplane.grpc.UpdateByEmaTimescale.UpdateByEmaTime.period_nanos)
+  // @@protoc_insertion_point(field_set:io.deephaven.proto.backplane.grpc.UpdateByWindowScale.UpdateByWindowTime.period_nanos)
 }
 
 // -------------------------------------------------------------------
 
-// UpdateByEmaTimescale
+// UpdateByWindowScale
 
-// .io.deephaven.proto.backplane.grpc.UpdateByEmaTimescale.UpdateByEmaTicks ticks = 1;
-inline bool UpdateByEmaTimescale::_internal_has_ticks() const {
+// .io.deephaven.proto.backplane.grpc.UpdateByWindowScale.UpdateByWindowTicks ticks = 1;
+inline bool UpdateByWindowScale::_internal_has_ticks() const {
   return type_case() == kTicks;
 }
-inline bool UpdateByEmaTimescale::has_ticks() const {
+inline bool UpdateByWindowScale::has_ticks() const {
   return _internal_has_ticks();
 }
-inline void UpdateByEmaTimescale::set_has_ticks() {
+inline void UpdateByWindowScale::set_has_ticks() {
   _oneof_case_[0] = kTicks;
 }
-inline void UpdateByEmaTimescale::clear_ticks() {
+inline void UpdateByWindowScale::clear_ticks() {
   if (_internal_has_ticks()) {
     if (GetArenaForAllocation() == nullptr) {
       delete type_.ticks_;
@@ -23625,11 +25682,11 @@ inline void UpdateByEmaTimescale::clear_ticks() {
     clear_has_type();
   }
 }
-inline ::io::deephaven::proto::backplane::grpc::UpdateByEmaTimescale_UpdateByEmaTicks* UpdateByEmaTimescale::release_ticks() {
-  // @@protoc_insertion_point(field_release:io.deephaven.proto.backplane.grpc.UpdateByEmaTimescale.ticks)
+inline ::io::deephaven::proto::backplane::grpc::UpdateByWindowScale_UpdateByWindowTicks* UpdateByWindowScale::release_ticks() {
+  // @@protoc_insertion_point(field_release:io.deephaven.proto.backplane.grpc.UpdateByWindowScale.ticks)
   if (_internal_has_ticks()) {
     clear_has_type();
-    ::io::deephaven::proto::backplane::grpc::UpdateByEmaTimescale_UpdateByEmaTicks* temp = type_.ticks_;
+    ::io::deephaven::proto::backplane::grpc::UpdateByWindowScale_UpdateByWindowTicks* temp = type_.ticks_;
     if (GetArenaForAllocation() != nullptr) {
       temp = ::PROTOBUF_NAMESPACE_ID::internal::DuplicateIfNonNull(temp);
     }
@@ -23639,59 +25696,59 @@ inline ::io::deephaven::proto::backplane::grpc::UpdateByEmaTimescale_UpdateByEma
     return nullptr;
   }
 }
-inline const ::io::deephaven::proto::backplane::grpc::UpdateByEmaTimescale_UpdateByEmaTicks& UpdateByEmaTimescale::_internal_ticks() const {
+inline const ::io::deephaven::proto::backplane::grpc::UpdateByWindowScale_UpdateByWindowTicks& UpdateByWindowScale::_internal_ticks() const {
   return _internal_has_ticks()
       ? *type_.ticks_
-      : reinterpret_cast< ::io::deephaven::proto::backplane::grpc::UpdateByEmaTimescale_UpdateByEmaTicks&>(::io::deephaven::proto::backplane::grpc::_UpdateByEmaTimescale_UpdateByEmaTicks_default_instance_);
+      : reinterpret_cast< ::io::deephaven::proto::backplane::grpc::UpdateByWindowScale_UpdateByWindowTicks&>(::io::deephaven::proto::backplane::grpc::_UpdateByWindowScale_UpdateByWindowTicks_default_instance_);
 }
-inline const ::io::deephaven::proto::backplane::grpc::UpdateByEmaTimescale_UpdateByEmaTicks& UpdateByEmaTimescale::ticks() const {
-  // @@protoc_insertion_point(field_get:io.deephaven.proto.backplane.grpc.UpdateByEmaTimescale.ticks)
+inline const ::io::deephaven::proto::backplane::grpc::UpdateByWindowScale_UpdateByWindowTicks& UpdateByWindowScale::ticks() const {
+  // @@protoc_insertion_point(field_get:io.deephaven.proto.backplane.grpc.UpdateByWindowScale.ticks)
   return _internal_ticks();
 }
-inline ::io::deephaven::proto::backplane::grpc::UpdateByEmaTimescale_UpdateByEmaTicks* UpdateByEmaTimescale::unsafe_arena_release_ticks() {
-  // @@protoc_insertion_point(field_unsafe_arena_release:io.deephaven.proto.backplane.grpc.UpdateByEmaTimescale.ticks)
+inline ::io::deephaven::proto::backplane::grpc::UpdateByWindowScale_UpdateByWindowTicks* UpdateByWindowScale::unsafe_arena_release_ticks() {
+  // @@protoc_insertion_point(field_unsafe_arena_release:io.deephaven.proto.backplane.grpc.UpdateByWindowScale.ticks)
   if (_internal_has_ticks()) {
     clear_has_type();
-    ::io::deephaven::proto::backplane::grpc::UpdateByEmaTimescale_UpdateByEmaTicks* temp = type_.ticks_;
+    ::io::deephaven::proto::backplane::grpc::UpdateByWindowScale_UpdateByWindowTicks* temp = type_.ticks_;
     type_.ticks_ = nullptr;
     return temp;
   } else {
     return nullptr;
   }
 }
-inline void UpdateByEmaTimescale::unsafe_arena_set_allocated_ticks(::io::deephaven::proto::backplane::grpc::UpdateByEmaTimescale_UpdateByEmaTicks* ticks) {
+inline void UpdateByWindowScale::unsafe_arena_set_allocated_ticks(::io::deephaven::proto::backplane::grpc::UpdateByWindowScale_UpdateByWindowTicks* ticks) {
   clear_type();
   if (ticks) {
     set_has_ticks();
     type_.ticks_ = ticks;
   }
-  // @@protoc_insertion_point(field_unsafe_arena_set_allocated:io.deephaven.proto.backplane.grpc.UpdateByEmaTimescale.ticks)
+  // @@protoc_insertion_point(field_unsafe_arena_set_allocated:io.deephaven.proto.backplane.grpc.UpdateByWindowScale.ticks)
 }
-inline ::io::deephaven::proto::backplane::grpc::UpdateByEmaTimescale_UpdateByEmaTicks* UpdateByEmaTimescale::_internal_mutable_ticks() {
+inline ::io::deephaven::proto::backplane::grpc::UpdateByWindowScale_UpdateByWindowTicks* UpdateByWindowScale::_internal_mutable_ticks() {
   if (!_internal_has_ticks()) {
     clear_type();
     set_has_ticks();
-    type_.ticks_ = CreateMaybeMessage< ::io::deephaven::proto::backplane::grpc::UpdateByEmaTimescale_UpdateByEmaTicks >(GetArenaForAllocation());
+    type_.ticks_ = CreateMaybeMessage< ::io::deephaven::proto::backplane::grpc::UpdateByWindowScale_UpdateByWindowTicks >(GetArenaForAllocation());
   }
   return type_.ticks_;
 }
-inline ::io::deephaven::proto::backplane::grpc::UpdateByEmaTimescale_UpdateByEmaTicks* UpdateByEmaTimescale::mutable_ticks() {
-  ::io::deephaven::proto::backplane::grpc::UpdateByEmaTimescale_UpdateByEmaTicks* _msg = _internal_mutable_ticks();
-  // @@protoc_insertion_point(field_mutable:io.deephaven.proto.backplane.grpc.UpdateByEmaTimescale.ticks)
+inline ::io::deephaven::proto::backplane::grpc::UpdateByWindowScale_UpdateByWindowTicks* UpdateByWindowScale::mutable_ticks() {
+  ::io::deephaven::proto::backplane::grpc::UpdateByWindowScale_UpdateByWindowTicks* _msg = _internal_mutable_ticks();
+  // @@protoc_insertion_point(field_mutable:io.deephaven.proto.backplane.grpc.UpdateByWindowScale.ticks)
   return _msg;
 }
 
-// .io.deephaven.proto.backplane.grpc.UpdateByEmaTimescale.UpdateByEmaTime time = 2;
-inline bool UpdateByEmaTimescale::_internal_has_time() const {
+// .io.deephaven.proto.backplane.grpc.UpdateByWindowScale.UpdateByWindowTime time = 2;
+inline bool UpdateByWindowScale::_internal_has_time() const {
   return type_case() == kTime;
 }
-inline bool UpdateByEmaTimescale::has_time() const {
+inline bool UpdateByWindowScale::has_time() const {
   return _internal_has_time();
 }
-inline void UpdateByEmaTimescale::set_has_time() {
+inline void UpdateByWindowScale::set_has_time() {
   _oneof_case_[0] = kTime;
 }
-inline void UpdateByEmaTimescale::clear_time() {
+inline void UpdateByWindowScale::clear_time() {
   if (_internal_has_time()) {
     if (GetArenaForAllocation() == nullptr) {
       delete type_.time_;
@@ -23699,11 +25756,11 @@ inline void UpdateByEmaTimescale::clear_time() {
     clear_has_type();
   }
 }
-inline ::io::deephaven::proto::backplane::grpc::UpdateByEmaTimescale_UpdateByEmaTime* UpdateByEmaTimescale::release_time() {
-  // @@protoc_insertion_point(field_release:io.deephaven.proto.backplane.grpc.UpdateByEmaTimescale.time)
+inline ::io::deephaven::proto::backplane::grpc::UpdateByWindowScale_UpdateByWindowTime* UpdateByWindowScale::release_time() {
+  // @@protoc_insertion_point(field_release:io.deephaven.proto.backplane.grpc.UpdateByWindowScale.time)
   if (_internal_has_time()) {
     clear_has_type();
-    ::io::deephaven::proto::backplane::grpc::UpdateByEmaTimescale_UpdateByEmaTime* temp = type_.time_;
+    ::io::deephaven::proto::backplane::grpc::UpdateByWindowScale_UpdateByWindowTime* temp = type_.time_;
     if (GetArenaForAllocation() != nullptr) {
       temp = ::PROTOBUF_NAMESPACE_ID::internal::DuplicateIfNonNull(temp);
     }
@@ -23713,57 +25770,275 @@ inline ::io::deephaven::proto::backplane::grpc::UpdateByEmaTimescale_UpdateByEma
     return nullptr;
   }
 }
-inline const ::io::deephaven::proto::backplane::grpc::UpdateByEmaTimescale_UpdateByEmaTime& UpdateByEmaTimescale::_internal_time() const {
+inline const ::io::deephaven::proto::backplane::grpc::UpdateByWindowScale_UpdateByWindowTime& UpdateByWindowScale::_internal_time() const {
   return _internal_has_time()
       ? *type_.time_
-      : reinterpret_cast< ::io::deephaven::proto::backplane::grpc::UpdateByEmaTimescale_UpdateByEmaTime&>(::io::deephaven::proto::backplane::grpc::_UpdateByEmaTimescale_UpdateByEmaTime_default_instance_);
+      : reinterpret_cast< ::io::deephaven::proto::backplane::grpc::UpdateByWindowScale_UpdateByWindowTime&>(::io::deephaven::proto::backplane::grpc::_UpdateByWindowScale_UpdateByWindowTime_default_instance_);
 }
-inline const ::io::deephaven::proto::backplane::grpc::UpdateByEmaTimescale_UpdateByEmaTime& UpdateByEmaTimescale::time() const {
-  // @@protoc_insertion_point(field_get:io.deephaven.proto.backplane.grpc.UpdateByEmaTimescale.time)
+inline const ::io::deephaven::proto::backplane::grpc::UpdateByWindowScale_UpdateByWindowTime& UpdateByWindowScale::time() const {
+  // @@protoc_insertion_point(field_get:io.deephaven.proto.backplane.grpc.UpdateByWindowScale.time)
   return _internal_time();
 }
-inline ::io::deephaven::proto::backplane::grpc::UpdateByEmaTimescale_UpdateByEmaTime* UpdateByEmaTimescale::unsafe_arena_release_time() {
-  // @@protoc_insertion_point(field_unsafe_arena_release:io.deephaven.proto.backplane.grpc.UpdateByEmaTimescale.time)
+inline ::io::deephaven::proto::backplane::grpc::UpdateByWindowScale_UpdateByWindowTime* UpdateByWindowScale::unsafe_arena_release_time() {
+  // @@protoc_insertion_point(field_unsafe_arena_release:io.deephaven.proto.backplane.grpc.UpdateByWindowScale.time)
   if (_internal_has_time()) {
     clear_has_type();
-    ::io::deephaven::proto::backplane::grpc::UpdateByEmaTimescale_UpdateByEmaTime* temp = type_.time_;
+    ::io::deephaven::proto::backplane::grpc::UpdateByWindowScale_UpdateByWindowTime* temp = type_.time_;
     type_.time_ = nullptr;
     return temp;
   } else {
     return nullptr;
   }
 }
-inline void UpdateByEmaTimescale::unsafe_arena_set_allocated_time(::io::deephaven::proto::backplane::grpc::UpdateByEmaTimescale_UpdateByEmaTime* time) {
+inline void UpdateByWindowScale::unsafe_arena_set_allocated_time(::io::deephaven::proto::backplane::grpc::UpdateByWindowScale_UpdateByWindowTime* time) {
   clear_type();
   if (time) {
     set_has_time();
     type_.time_ = time;
   }
-  // @@protoc_insertion_point(field_unsafe_arena_set_allocated:io.deephaven.proto.backplane.grpc.UpdateByEmaTimescale.time)
+  // @@protoc_insertion_point(field_unsafe_arena_set_allocated:io.deephaven.proto.backplane.grpc.UpdateByWindowScale.time)
 }
-inline ::io::deephaven::proto::backplane::grpc::UpdateByEmaTimescale_UpdateByEmaTime* UpdateByEmaTimescale::_internal_mutable_time() {
+inline ::io::deephaven::proto::backplane::grpc::UpdateByWindowScale_UpdateByWindowTime* UpdateByWindowScale::_internal_mutable_time() {
   if (!_internal_has_time()) {
     clear_type();
     set_has_time();
-    type_.time_ = CreateMaybeMessage< ::io::deephaven::proto::backplane::grpc::UpdateByEmaTimescale_UpdateByEmaTime >(GetArenaForAllocation());
+    type_.time_ = CreateMaybeMessage< ::io::deephaven::proto::backplane::grpc::UpdateByWindowScale_UpdateByWindowTime >(GetArenaForAllocation());
   }
   return type_.time_;
 }
-inline ::io::deephaven::proto::backplane::grpc::UpdateByEmaTimescale_UpdateByEmaTime* UpdateByEmaTimescale::mutable_time() {
-  ::io::deephaven::proto::backplane::grpc::UpdateByEmaTimescale_UpdateByEmaTime* _msg = _internal_mutable_time();
-  // @@protoc_insertion_point(field_mutable:io.deephaven.proto.backplane.grpc.UpdateByEmaTimescale.time)
+inline ::io::deephaven::proto::backplane::grpc::UpdateByWindowScale_UpdateByWindowTime* UpdateByWindowScale::mutable_time() {
+  ::io::deephaven::proto::backplane::grpc::UpdateByWindowScale_UpdateByWindowTime* _msg = _internal_mutable_time();
+  // @@protoc_insertion_point(field_mutable:io.deephaven.proto.backplane.grpc.UpdateByWindowScale.time)
   return _msg;
 }
 
-inline bool UpdateByEmaTimescale::has_type() const {
+inline bool UpdateByWindowScale::has_type() const {
   return type_case() != TYPE_NOT_SET;
 }
-inline void UpdateByEmaTimescale::clear_has_type() {
+inline void UpdateByWindowScale::clear_has_type() {
   _oneof_case_[0] = TYPE_NOT_SET;
 }
-inline UpdateByEmaTimescale::TypeCase UpdateByEmaTimescale::type_case() const {
-  return UpdateByEmaTimescale::TypeCase(_oneof_case_[0]);
+inline UpdateByWindowScale::TypeCase UpdateByWindowScale::type_case() const {
+  return UpdateByWindowScale::TypeCase(_oneof_case_[0]);
 }
+// -------------------------------------------------------------------
+
+// UpdateByEmOptions
+
+// .io.deephaven.proto.backplane.grpc.BadDataBehavior on_null_value = 1;
+inline void UpdateByEmOptions::clear_on_null_value() {
+  on_null_value_ = 0;
+}
+inline ::io::deephaven::proto::backplane::grpc::BadDataBehavior UpdateByEmOptions::_internal_on_null_value() const {
+  return static_cast< ::io::deephaven::proto::backplane::grpc::BadDataBehavior >(on_null_value_);
+}
+inline ::io::deephaven::proto::backplane::grpc::BadDataBehavior UpdateByEmOptions::on_null_value() const {
+  // @@protoc_insertion_point(field_get:io.deephaven.proto.backplane.grpc.UpdateByEmOptions.on_null_value)
+  return _internal_on_null_value();
+}
+inline void UpdateByEmOptions::_internal_set_on_null_value(::io::deephaven::proto::backplane::grpc::BadDataBehavior value) {
+  
+  on_null_value_ = value;
+}
+inline void UpdateByEmOptions::set_on_null_value(::io::deephaven::proto::backplane::grpc::BadDataBehavior value) {
+  _internal_set_on_null_value(value);
+  // @@protoc_insertion_point(field_set:io.deephaven.proto.backplane.grpc.UpdateByEmOptions.on_null_value)
+}
+
+// .io.deephaven.proto.backplane.grpc.BadDataBehavior on_nan_value = 2;
+inline void UpdateByEmOptions::clear_on_nan_value() {
+  on_nan_value_ = 0;
+}
+inline ::io::deephaven::proto::backplane::grpc::BadDataBehavior UpdateByEmOptions::_internal_on_nan_value() const {
+  return static_cast< ::io::deephaven::proto::backplane::grpc::BadDataBehavior >(on_nan_value_);
+}
+inline ::io::deephaven::proto::backplane::grpc::BadDataBehavior UpdateByEmOptions::on_nan_value() const {
+  // @@protoc_insertion_point(field_get:io.deephaven.proto.backplane.grpc.UpdateByEmOptions.on_nan_value)
+  return _internal_on_nan_value();
+}
+inline void UpdateByEmOptions::_internal_set_on_nan_value(::io::deephaven::proto::backplane::grpc::BadDataBehavior value) {
+  
+  on_nan_value_ = value;
+}
+inline void UpdateByEmOptions::set_on_nan_value(::io::deephaven::proto::backplane::grpc::BadDataBehavior value) {
+  _internal_set_on_nan_value(value);
+  // @@protoc_insertion_point(field_set:io.deephaven.proto.backplane.grpc.UpdateByEmOptions.on_nan_value)
+}
+
+// .io.deephaven.proto.backplane.grpc.BadDataBehavior on_null_time = 3;
+inline void UpdateByEmOptions::clear_on_null_time() {
+  on_null_time_ = 0;
+}
+inline ::io::deephaven::proto::backplane::grpc::BadDataBehavior UpdateByEmOptions::_internal_on_null_time() const {
+  return static_cast< ::io::deephaven::proto::backplane::grpc::BadDataBehavior >(on_null_time_);
+}
+inline ::io::deephaven::proto::backplane::grpc::BadDataBehavior UpdateByEmOptions::on_null_time() const {
+  // @@protoc_insertion_point(field_get:io.deephaven.proto.backplane.grpc.UpdateByEmOptions.on_null_time)
+  return _internal_on_null_time();
+}
+inline void UpdateByEmOptions::_internal_set_on_null_time(::io::deephaven::proto::backplane::grpc::BadDataBehavior value) {
+  
+  on_null_time_ = value;
+}
+inline void UpdateByEmOptions::set_on_null_time(::io::deephaven::proto::backplane::grpc::BadDataBehavior value) {
+  _internal_set_on_null_time(value);
+  // @@protoc_insertion_point(field_set:io.deephaven.proto.backplane.grpc.UpdateByEmOptions.on_null_time)
+}
+
+// .io.deephaven.proto.backplane.grpc.BadDataBehavior on_negative_delta_time = 4;
+inline void UpdateByEmOptions::clear_on_negative_delta_time() {
+  on_negative_delta_time_ = 0;
+}
+inline ::io::deephaven::proto::backplane::grpc::BadDataBehavior UpdateByEmOptions::_internal_on_negative_delta_time() const {
+  return static_cast< ::io::deephaven::proto::backplane::grpc::BadDataBehavior >(on_negative_delta_time_);
+}
+inline ::io::deephaven::proto::backplane::grpc::BadDataBehavior UpdateByEmOptions::on_negative_delta_time() const {
+  // @@protoc_insertion_point(field_get:io.deephaven.proto.backplane.grpc.UpdateByEmOptions.on_negative_delta_time)
+  return _internal_on_negative_delta_time();
+}
+inline void UpdateByEmOptions::_internal_set_on_negative_delta_time(::io::deephaven::proto::backplane::grpc::BadDataBehavior value) {
+  
+  on_negative_delta_time_ = value;
+}
+inline void UpdateByEmOptions::set_on_negative_delta_time(::io::deephaven::proto::backplane::grpc::BadDataBehavior value) {
+  _internal_set_on_negative_delta_time(value);
+  // @@protoc_insertion_point(field_set:io.deephaven.proto.backplane.grpc.UpdateByEmOptions.on_negative_delta_time)
+}
+
+// .io.deephaven.proto.backplane.grpc.BadDataBehavior on_zero_delta_time = 5;
+inline void UpdateByEmOptions::clear_on_zero_delta_time() {
+  on_zero_delta_time_ = 0;
+}
+inline ::io::deephaven::proto::backplane::grpc::BadDataBehavior UpdateByEmOptions::_internal_on_zero_delta_time() const {
+  return static_cast< ::io::deephaven::proto::backplane::grpc::BadDataBehavior >(on_zero_delta_time_);
+}
+inline ::io::deephaven::proto::backplane::grpc::BadDataBehavior UpdateByEmOptions::on_zero_delta_time() const {
+  // @@protoc_insertion_point(field_get:io.deephaven.proto.backplane.grpc.UpdateByEmOptions.on_zero_delta_time)
+  return _internal_on_zero_delta_time();
+}
+inline void UpdateByEmOptions::_internal_set_on_zero_delta_time(::io::deephaven::proto::backplane::grpc::BadDataBehavior value) {
+  
+  on_zero_delta_time_ = value;
+}
+inline void UpdateByEmOptions::set_on_zero_delta_time(::io::deephaven::proto::backplane::grpc::BadDataBehavior value) {
+  _internal_set_on_zero_delta_time(value);
+  // @@protoc_insertion_point(field_set:io.deephaven.proto.backplane.grpc.UpdateByEmOptions.on_zero_delta_time)
+}
+
+// .io.deephaven.proto.backplane.grpc.MathContext big_value_context = 6;
+inline bool UpdateByEmOptions::_internal_has_big_value_context() const {
+  return this != internal_default_instance() && big_value_context_ != nullptr;
+}
+inline bool UpdateByEmOptions::has_big_value_context() const {
+  return _internal_has_big_value_context();
+}
+inline void UpdateByEmOptions::clear_big_value_context() {
+  if (GetArenaForAllocation() == nullptr && big_value_context_ != nullptr) {
+    delete big_value_context_;
+  }
+  big_value_context_ = nullptr;
+}
+inline const ::io::deephaven::proto::backplane::grpc::MathContext& UpdateByEmOptions::_internal_big_value_context() const {
+  const ::io::deephaven::proto::backplane::grpc::MathContext* p = big_value_context_;
+  return p != nullptr ? *p : reinterpret_cast<const ::io::deephaven::proto::backplane::grpc::MathContext&>(
+      ::io::deephaven::proto::backplane::grpc::_MathContext_default_instance_);
+}
+inline const ::io::deephaven::proto::backplane::grpc::MathContext& UpdateByEmOptions::big_value_context() const {
+  // @@protoc_insertion_point(field_get:io.deephaven.proto.backplane.grpc.UpdateByEmOptions.big_value_context)
+  return _internal_big_value_context();
+}
+inline void UpdateByEmOptions::unsafe_arena_set_allocated_big_value_context(
+    ::io::deephaven::proto::backplane::grpc::MathContext* big_value_context) {
+  if (GetArenaForAllocation() == nullptr) {
+    delete reinterpret_cast<::PROTOBUF_NAMESPACE_ID::MessageLite*>(big_value_context_);
+  }
+  big_value_context_ = big_value_context;
+  if (big_value_context) {
+    
+  } else {
+    
+  }
+  // @@protoc_insertion_point(field_unsafe_arena_set_allocated:io.deephaven.proto.backplane.grpc.UpdateByEmOptions.big_value_context)
+}
+inline ::io::deephaven::proto::backplane::grpc::MathContext* UpdateByEmOptions::release_big_value_context() {
+  
+  ::io::deephaven::proto::backplane::grpc::MathContext* temp = big_value_context_;
+  big_value_context_ = nullptr;
+#ifdef PROTOBUF_FORCE_COPY_IN_RELEASE
+  auto* old =  reinterpret_cast<::PROTOBUF_NAMESPACE_ID::MessageLite*>(temp);
+  temp = ::PROTOBUF_NAMESPACE_ID::internal::DuplicateIfNonNull(temp);
+  if (GetArenaForAllocation() == nullptr) { delete old; }
+#else  // PROTOBUF_FORCE_COPY_IN_RELEASE
+  if (GetArenaForAllocation() != nullptr) {
+    temp = ::PROTOBUF_NAMESPACE_ID::internal::DuplicateIfNonNull(temp);
+  }
+#endif  // !PROTOBUF_FORCE_COPY_IN_RELEASE
+  return temp;
+}
+inline ::io::deephaven::proto::backplane::grpc::MathContext* UpdateByEmOptions::unsafe_arena_release_big_value_context() {
+  // @@protoc_insertion_point(field_release:io.deephaven.proto.backplane.grpc.UpdateByEmOptions.big_value_context)
+  
+  ::io::deephaven::proto::backplane::grpc::MathContext* temp = big_value_context_;
+  big_value_context_ = nullptr;
+  return temp;
+}
+inline ::io::deephaven::proto::backplane::grpc::MathContext* UpdateByEmOptions::_internal_mutable_big_value_context() {
+  
+  if (big_value_context_ == nullptr) {
+    auto* p = CreateMaybeMessage<::io::deephaven::proto::backplane::grpc::MathContext>(GetArenaForAllocation());
+    big_value_context_ = p;
+  }
+  return big_value_context_;
+}
+inline ::io::deephaven::proto::backplane::grpc::MathContext* UpdateByEmOptions::mutable_big_value_context() {
+  ::io::deephaven::proto::backplane::grpc::MathContext* _msg = _internal_mutable_big_value_context();
+  // @@protoc_insertion_point(field_mutable:io.deephaven.proto.backplane.grpc.UpdateByEmOptions.big_value_context)
+  return _msg;
+}
+inline void UpdateByEmOptions::set_allocated_big_value_context(::io::deephaven::proto::backplane::grpc::MathContext* big_value_context) {
+  ::PROTOBUF_NAMESPACE_ID::Arena* message_arena = GetArenaForAllocation();
+  if (message_arena == nullptr) {
+    delete big_value_context_;
+  }
+  if (big_value_context) {
+    ::PROTOBUF_NAMESPACE_ID::Arena* submessage_arena =
+        ::PROTOBUF_NAMESPACE_ID::Arena::InternalGetOwningArena(big_value_context);
+    if (message_arena != submessage_arena) {
+      big_value_context = ::PROTOBUF_NAMESPACE_ID::internal::GetOwnedMessage(
+          message_arena, big_value_context, submessage_arena);
+    }
+    
+  } else {
+    
+  }
+  big_value_context_ = big_value_context;
+  // @@protoc_insertion_point(field_set_allocated:io.deephaven.proto.backplane.grpc.UpdateByEmOptions.big_value_context)
+}
+
+// -------------------------------------------------------------------
+
+// UpdateByDeltaOptions
+
+// .io.deephaven.proto.backplane.grpc.UpdateByNullBehavior null_behavior = 1;
+inline void UpdateByDeltaOptions::clear_null_behavior() {
+  null_behavior_ = 0;
+}
+inline ::io::deephaven::proto::backplane::grpc::UpdateByNullBehavior UpdateByDeltaOptions::_internal_null_behavior() const {
+  return static_cast< ::io::deephaven::proto::backplane::grpc::UpdateByNullBehavior >(null_behavior_);
+}
+inline ::io::deephaven::proto::backplane::grpc::UpdateByNullBehavior UpdateByDeltaOptions::null_behavior() const {
+  // @@protoc_insertion_point(field_get:io.deephaven.proto.backplane.grpc.UpdateByDeltaOptions.null_behavior)
+  return _internal_null_behavior();
+}
+inline void UpdateByDeltaOptions::_internal_set_null_behavior(::io::deephaven::proto::backplane::grpc::UpdateByNullBehavior value) {
+  
+  null_behavior_ = value;
+}
+inline void UpdateByDeltaOptions::set_null_behavior(::io::deephaven::proto::backplane::grpc::UpdateByNullBehavior value) {
+  _internal_set_null_behavior(value);
+  // @@protoc_insertion_point(field_set:io.deephaven.proto.backplane.grpc.UpdateByDeltaOptions.null_behavior)
+}
+
 // -------------------------------------------------------------------
 
 // UpdateByRequest_UpdateByOptions
@@ -24048,243 +26323,9 @@ inline void UpdateByRequest_UpdateByOptions::set_allocated_math_context(::io::de
 
 // -------------------------------------------------------------------
 
-// UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByEma_UpdateByEmaOptions
-
-// optional .io.deephaven.proto.backplane.grpc.BadDataBehavior on_null_value = 1;
-inline bool UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByEma_UpdateByEmaOptions::_internal_has_on_null_value() const {
-  bool value = (_has_bits_[0] & 0x00000001u) != 0;
-  return value;
-}
-inline bool UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByEma_UpdateByEmaOptions::has_on_null_value() const {
-  return _internal_has_on_null_value();
-}
-inline void UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByEma_UpdateByEmaOptions::clear_on_null_value() {
-  on_null_value_ = 0;
-  _has_bits_[0] &= ~0x00000001u;
-}
-inline ::io::deephaven::proto::backplane::grpc::BadDataBehavior UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByEma_UpdateByEmaOptions::_internal_on_null_value() const {
-  return static_cast< ::io::deephaven::proto::backplane::grpc::BadDataBehavior >(on_null_value_);
-}
-inline ::io::deephaven::proto::backplane::grpc::BadDataBehavior UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByEma_UpdateByEmaOptions::on_null_value() const {
-  // @@protoc_insertion_point(field_get:io.deephaven.proto.backplane.grpc.UpdateByRequest.UpdateByOperation.UpdateByColumn.UpdateBySpec.UpdateByEma.UpdateByEmaOptions.on_null_value)
-  return _internal_on_null_value();
-}
-inline void UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByEma_UpdateByEmaOptions::_internal_set_on_null_value(::io::deephaven::proto::backplane::grpc::BadDataBehavior value) {
-  _has_bits_[0] |= 0x00000001u;
-  on_null_value_ = value;
-}
-inline void UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByEma_UpdateByEmaOptions::set_on_null_value(::io::deephaven::proto::backplane::grpc::BadDataBehavior value) {
-  _internal_set_on_null_value(value);
-  // @@protoc_insertion_point(field_set:io.deephaven.proto.backplane.grpc.UpdateByRequest.UpdateByOperation.UpdateByColumn.UpdateBySpec.UpdateByEma.UpdateByEmaOptions.on_null_value)
-}
-
-// optional .io.deephaven.proto.backplane.grpc.BadDataBehavior on_nan_value = 2;
-inline bool UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByEma_UpdateByEmaOptions::_internal_has_on_nan_value() const {
-  bool value = (_has_bits_[0] & 0x00000002u) != 0;
-  return value;
-}
-inline bool UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByEma_UpdateByEmaOptions::has_on_nan_value() const {
-  return _internal_has_on_nan_value();
-}
-inline void UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByEma_UpdateByEmaOptions::clear_on_nan_value() {
-  on_nan_value_ = 0;
-  _has_bits_[0] &= ~0x00000002u;
-}
-inline ::io::deephaven::proto::backplane::grpc::BadDataBehavior UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByEma_UpdateByEmaOptions::_internal_on_nan_value() const {
-  return static_cast< ::io::deephaven::proto::backplane::grpc::BadDataBehavior >(on_nan_value_);
-}
-inline ::io::deephaven::proto::backplane::grpc::BadDataBehavior UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByEma_UpdateByEmaOptions::on_nan_value() const {
-  // @@protoc_insertion_point(field_get:io.deephaven.proto.backplane.grpc.UpdateByRequest.UpdateByOperation.UpdateByColumn.UpdateBySpec.UpdateByEma.UpdateByEmaOptions.on_nan_value)
-  return _internal_on_nan_value();
-}
-inline void UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByEma_UpdateByEmaOptions::_internal_set_on_nan_value(::io::deephaven::proto::backplane::grpc::BadDataBehavior value) {
-  _has_bits_[0] |= 0x00000002u;
-  on_nan_value_ = value;
-}
-inline void UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByEma_UpdateByEmaOptions::set_on_nan_value(::io::deephaven::proto::backplane::grpc::BadDataBehavior value) {
-  _internal_set_on_nan_value(value);
-  // @@protoc_insertion_point(field_set:io.deephaven.proto.backplane.grpc.UpdateByRequest.UpdateByOperation.UpdateByColumn.UpdateBySpec.UpdateByEma.UpdateByEmaOptions.on_nan_value)
-}
-
-// optional .io.deephaven.proto.backplane.grpc.BadDataBehavior on_null_time = 3;
-inline bool UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByEma_UpdateByEmaOptions::_internal_has_on_null_time() const {
-  bool value = (_has_bits_[0] & 0x00000004u) != 0;
-  return value;
-}
-inline bool UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByEma_UpdateByEmaOptions::has_on_null_time() const {
-  return _internal_has_on_null_time();
-}
-inline void UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByEma_UpdateByEmaOptions::clear_on_null_time() {
-  on_null_time_ = 0;
-  _has_bits_[0] &= ~0x00000004u;
-}
-inline ::io::deephaven::proto::backplane::grpc::BadDataBehavior UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByEma_UpdateByEmaOptions::_internal_on_null_time() const {
-  return static_cast< ::io::deephaven::proto::backplane::grpc::BadDataBehavior >(on_null_time_);
-}
-inline ::io::deephaven::proto::backplane::grpc::BadDataBehavior UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByEma_UpdateByEmaOptions::on_null_time() const {
-  // @@protoc_insertion_point(field_get:io.deephaven.proto.backplane.grpc.UpdateByRequest.UpdateByOperation.UpdateByColumn.UpdateBySpec.UpdateByEma.UpdateByEmaOptions.on_null_time)
-  return _internal_on_null_time();
-}
-inline void UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByEma_UpdateByEmaOptions::_internal_set_on_null_time(::io::deephaven::proto::backplane::grpc::BadDataBehavior value) {
-  _has_bits_[0] |= 0x00000004u;
-  on_null_time_ = value;
-}
-inline void UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByEma_UpdateByEmaOptions::set_on_null_time(::io::deephaven::proto::backplane::grpc::BadDataBehavior value) {
-  _internal_set_on_null_time(value);
-  // @@protoc_insertion_point(field_set:io.deephaven.proto.backplane.grpc.UpdateByRequest.UpdateByOperation.UpdateByColumn.UpdateBySpec.UpdateByEma.UpdateByEmaOptions.on_null_time)
-}
-
-// optional .io.deephaven.proto.backplane.grpc.BadDataBehavior on_negative_delta_time = 4;
-inline bool UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByEma_UpdateByEmaOptions::_internal_has_on_negative_delta_time() const {
-  bool value = (_has_bits_[0] & 0x00000008u) != 0;
-  return value;
-}
-inline bool UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByEma_UpdateByEmaOptions::has_on_negative_delta_time() const {
-  return _internal_has_on_negative_delta_time();
-}
-inline void UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByEma_UpdateByEmaOptions::clear_on_negative_delta_time() {
-  on_negative_delta_time_ = 0;
-  _has_bits_[0] &= ~0x00000008u;
-}
-inline ::io::deephaven::proto::backplane::grpc::BadDataBehavior UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByEma_UpdateByEmaOptions::_internal_on_negative_delta_time() const {
-  return static_cast< ::io::deephaven::proto::backplane::grpc::BadDataBehavior >(on_negative_delta_time_);
-}
-inline ::io::deephaven::proto::backplane::grpc::BadDataBehavior UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByEma_UpdateByEmaOptions::on_negative_delta_time() const {
-  // @@protoc_insertion_point(field_get:io.deephaven.proto.backplane.grpc.UpdateByRequest.UpdateByOperation.UpdateByColumn.UpdateBySpec.UpdateByEma.UpdateByEmaOptions.on_negative_delta_time)
-  return _internal_on_negative_delta_time();
-}
-inline void UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByEma_UpdateByEmaOptions::_internal_set_on_negative_delta_time(::io::deephaven::proto::backplane::grpc::BadDataBehavior value) {
-  _has_bits_[0] |= 0x00000008u;
-  on_negative_delta_time_ = value;
-}
-inline void UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByEma_UpdateByEmaOptions::set_on_negative_delta_time(::io::deephaven::proto::backplane::grpc::BadDataBehavior value) {
-  _internal_set_on_negative_delta_time(value);
-  // @@protoc_insertion_point(field_set:io.deephaven.proto.backplane.grpc.UpdateByRequest.UpdateByOperation.UpdateByColumn.UpdateBySpec.UpdateByEma.UpdateByEmaOptions.on_negative_delta_time)
-}
-
-// optional .io.deephaven.proto.backplane.grpc.BadDataBehavior on_zero_delta_time = 5;
-inline bool UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByEma_UpdateByEmaOptions::_internal_has_on_zero_delta_time() const {
-  bool value = (_has_bits_[0] & 0x00000010u) != 0;
-  return value;
-}
-inline bool UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByEma_UpdateByEmaOptions::has_on_zero_delta_time() const {
-  return _internal_has_on_zero_delta_time();
-}
-inline void UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByEma_UpdateByEmaOptions::clear_on_zero_delta_time() {
-  on_zero_delta_time_ = 0;
-  _has_bits_[0] &= ~0x00000010u;
-}
-inline ::io::deephaven::proto::backplane::grpc::BadDataBehavior UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByEma_UpdateByEmaOptions::_internal_on_zero_delta_time() const {
-  return static_cast< ::io::deephaven::proto::backplane::grpc::BadDataBehavior >(on_zero_delta_time_);
-}
-inline ::io::deephaven::proto::backplane::grpc::BadDataBehavior UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByEma_UpdateByEmaOptions::on_zero_delta_time() const {
-  // @@protoc_insertion_point(field_get:io.deephaven.proto.backplane.grpc.UpdateByRequest.UpdateByOperation.UpdateByColumn.UpdateBySpec.UpdateByEma.UpdateByEmaOptions.on_zero_delta_time)
-  return _internal_on_zero_delta_time();
-}
-inline void UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByEma_UpdateByEmaOptions::_internal_set_on_zero_delta_time(::io::deephaven::proto::backplane::grpc::BadDataBehavior value) {
-  _has_bits_[0] |= 0x00000010u;
-  on_zero_delta_time_ = value;
-}
-inline void UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByEma_UpdateByEmaOptions::set_on_zero_delta_time(::io::deephaven::proto::backplane::grpc::BadDataBehavior value) {
-  _internal_set_on_zero_delta_time(value);
-  // @@protoc_insertion_point(field_set:io.deephaven.proto.backplane.grpc.UpdateByRequest.UpdateByOperation.UpdateByColumn.UpdateBySpec.UpdateByEma.UpdateByEmaOptions.on_zero_delta_time)
-}
-
-// .io.deephaven.proto.backplane.grpc.MathContext big_value_context = 6;
-inline bool UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByEma_UpdateByEmaOptions::_internal_has_big_value_context() const {
-  return this != internal_default_instance() && big_value_context_ != nullptr;
-}
-inline bool UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByEma_UpdateByEmaOptions::has_big_value_context() const {
-  return _internal_has_big_value_context();
-}
-inline void UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByEma_UpdateByEmaOptions::clear_big_value_context() {
-  if (GetArenaForAllocation() == nullptr && big_value_context_ != nullptr) {
-    delete big_value_context_;
-  }
-  big_value_context_ = nullptr;
-}
-inline const ::io::deephaven::proto::backplane::grpc::MathContext& UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByEma_UpdateByEmaOptions::_internal_big_value_context() const {
-  const ::io::deephaven::proto::backplane::grpc::MathContext* p = big_value_context_;
-  return p != nullptr ? *p : reinterpret_cast<const ::io::deephaven::proto::backplane::grpc::MathContext&>(
-      ::io::deephaven::proto::backplane::grpc::_MathContext_default_instance_);
-}
-inline const ::io::deephaven::proto::backplane::grpc::MathContext& UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByEma_UpdateByEmaOptions::big_value_context() const {
-  // @@protoc_insertion_point(field_get:io.deephaven.proto.backplane.grpc.UpdateByRequest.UpdateByOperation.UpdateByColumn.UpdateBySpec.UpdateByEma.UpdateByEmaOptions.big_value_context)
-  return _internal_big_value_context();
-}
-inline void UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByEma_UpdateByEmaOptions::unsafe_arena_set_allocated_big_value_context(
-    ::io::deephaven::proto::backplane::grpc::MathContext* big_value_context) {
-  if (GetArenaForAllocation() == nullptr) {
-    delete reinterpret_cast<::PROTOBUF_NAMESPACE_ID::MessageLite*>(big_value_context_);
-  }
-  big_value_context_ = big_value_context;
-  if (big_value_context) {
-    
-  } else {
-    
-  }
-  // @@protoc_insertion_point(field_unsafe_arena_set_allocated:io.deephaven.proto.backplane.grpc.UpdateByRequest.UpdateByOperation.UpdateByColumn.UpdateBySpec.UpdateByEma.UpdateByEmaOptions.big_value_context)
-}
-inline ::io::deephaven::proto::backplane::grpc::MathContext* UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByEma_UpdateByEmaOptions::release_big_value_context() {
-  
-  ::io::deephaven::proto::backplane::grpc::MathContext* temp = big_value_context_;
-  big_value_context_ = nullptr;
-#ifdef PROTOBUF_FORCE_COPY_IN_RELEASE
-  auto* old =  reinterpret_cast<::PROTOBUF_NAMESPACE_ID::MessageLite*>(temp);
-  temp = ::PROTOBUF_NAMESPACE_ID::internal::DuplicateIfNonNull(temp);
-  if (GetArenaForAllocation() == nullptr) { delete old; }
-#else  // PROTOBUF_FORCE_COPY_IN_RELEASE
-  if (GetArenaForAllocation() != nullptr) {
-    temp = ::PROTOBUF_NAMESPACE_ID::internal::DuplicateIfNonNull(temp);
-  }
-#endif  // !PROTOBUF_FORCE_COPY_IN_RELEASE
-  return temp;
-}
-inline ::io::deephaven::proto::backplane::grpc::MathContext* UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByEma_UpdateByEmaOptions::unsafe_arena_release_big_value_context() {
-  // @@protoc_insertion_point(field_release:io.deephaven.proto.backplane.grpc.UpdateByRequest.UpdateByOperation.UpdateByColumn.UpdateBySpec.UpdateByEma.UpdateByEmaOptions.big_value_context)
-  
-  ::io::deephaven::proto::backplane::grpc::MathContext* temp = big_value_context_;
-  big_value_context_ = nullptr;
-  return temp;
-}
-inline ::io::deephaven::proto::backplane::grpc::MathContext* UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByEma_UpdateByEmaOptions::_internal_mutable_big_value_context() {
-  
-  if (big_value_context_ == nullptr) {
-    auto* p = CreateMaybeMessage<::io::deephaven::proto::backplane::grpc::MathContext>(GetArenaForAllocation());
-    big_value_context_ = p;
-  }
-  return big_value_context_;
-}
-inline ::io::deephaven::proto::backplane::grpc::MathContext* UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByEma_UpdateByEmaOptions::mutable_big_value_context() {
-  ::io::deephaven::proto::backplane::grpc::MathContext* _msg = _internal_mutable_big_value_context();
-  // @@protoc_insertion_point(field_mutable:io.deephaven.proto.backplane.grpc.UpdateByRequest.UpdateByOperation.UpdateByColumn.UpdateBySpec.UpdateByEma.UpdateByEmaOptions.big_value_context)
-  return _msg;
-}
-inline void UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByEma_UpdateByEmaOptions::set_allocated_big_value_context(::io::deephaven::proto::backplane::grpc::MathContext* big_value_context) {
-  ::PROTOBUF_NAMESPACE_ID::Arena* message_arena = GetArenaForAllocation();
-  if (message_arena == nullptr) {
-    delete big_value_context_;
-  }
-  if (big_value_context) {
-    ::PROTOBUF_NAMESPACE_ID::Arena* submessage_arena =
-        ::PROTOBUF_NAMESPACE_ID::Arena::InternalGetOwningArena(big_value_context);
-    if (message_arena != submessage_arena) {
-      big_value_context = ::PROTOBUF_NAMESPACE_ID::internal::GetOwnedMessage(
-          message_arena, big_value_context, submessage_arena);
-    }
-    
-  } else {
-    
-  }
-  big_value_context_ = big_value_context;
-  // @@protoc_insertion_point(field_set_allocated:io.deephaven.proto.backplane.grpc.UpdateByRequest.UpdateByOperation.UpdateByColumn.UpdateBySpec.UpdateByEma.UpdateByEmaOptions.big_value_context)
-}
-
-// -------------------------------------------------------------------
-
 // UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByEma
 
-// .io.deephaven.proto.backplane.grpc.UpdateByRequest.UpdateByOperation.UpdateByColumn.UpdateBySpec.UpdateByEma.UpdateByEmaOptions options = 1;
+// .io.deephaven.proto.backplane.grpc.UpdateByEmOptions options = 1;
 inline bool UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByEma::_internal_has_options() const {
   return this != internal_default_instance() && options_ != nullptr;
 }
@@ -24297,17 +26338,17 @@ inline void UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_Update
   }
   options_ = nullptr;
 }
-inline const ::io::deephaven::proto::backplane::grpc::UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByEma_UpdateByEmaOptions& UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByEma::_internal_options() const {
-  const ::io::deephaven::proto::backplane::grpc::UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByEma_UpdateByEmaOptions* p = options_;
-  return p != nullptr ? *p : reinterpret_cast<const ::io::deephaven::proto::backplane::grpc::UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByEma_UpdateByEmaOptions&>(
-      ::io::deephaven::proto::backplane::grpc::_UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByEma_UpdateByEmaOptions_default_instance_);
+inline const ::io::deephaven::proto::backplane::grpc::UpdateByEmOptions& UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByEma::_internal_options() const {
+  const ::io::deephaven::proto::backplane::grpc::UpdateByEmOptions* p = options_;
+  return p != nullptr ? *p : reinterpret_cast<const ::io::deephaven::proto::backplane::grpc::UpdateByEmOptions&>(
+      ::io::deephaven::proto::backplane::grpc::_UpdateByEmOptions_default_instance_);
 }
-inline const ::io::deephaven::proto::backplane::grpc::UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByEma_UpdateByEmaOptions& UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByEma::options() const {
+inline const ::io::deephaven::proto::backplane::grpc::UpdateByEmOptions& UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByEma::options() const {
   // @@protoc_insertion_point(field_get:io.deephaven.proto.backplane.grpc.UpdateByRequest.UpdateByOperation.UpdateByColumn.UpdateBySpec.UpdateByEma.options)
   return _internal_options();
 }
 inline void UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByEma::unsafe_arena_set_allocated_options(
-    ::io::deephaven::proto::backplane::grpc::UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByEma_UpdateByEmaOptions* options) {
+    ::io::deephaven::proto::backplane::grpc::UpdateByEmOptions* options) {
   if (GetArenaForAllocation() == nullptr) {
     delete reinterpret_cast<::PROTOBUF_NAMESPACE_ID::MessageLite*>(options_);
   }
@@ -24319,9 +26360,9 @@ inline void UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_Update
   }
   // @@protoc_insertion_point(field_unsafe_arena_set_allocated:io.deephaven.proto.backplane.grpc.UpdateByRequest.UpdateByOperation.UpdateByColumn.UpdateBySpec.UpdateByEma.options)
 }
-inline ::io::deephaven::proto::backplane::grpc::UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByEma_UpdateByEmaOptions* UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByEma::release_options() {
+inline ::io::deephaven::proto::backplane::grpc::UpdateByEmOptions* UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByEma::release_options() {
   
-  ::io::deephaven::proto::backplane::grpc::UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByEma_UpdateByEmaOptions* temp = options_;
+  ::io::deephaven::proto::backplane::grpc::UpdateByEmOptions* temp = options_;
   options_ = nullptr;
 #ifdef PROTOBUF_FORCE_COPY_IN_RELEASE
   auto* old =  reinterpret_cast<::PROTOBUF_NAMESPACE_ID::MessageLite*>(temp);
@@ -24334,27 +26375,27 @@ inline ::io::deephaven::proto::backplane::grpc::UpdateByRequest_UpdateByOperatio
 #endif  // !PROTOBUF_FORCE_COPY_IN_RELEASE
   return temp;
 }
-inline ::io::deephaven::proto::backplane::grpc::UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByEma_UpdateByEmaOptions* UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByEma::unsafe_arena_release_options() {
+inline ::io::deephaven::proto::backplane::grpc::UpdateByEmOptions* UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByEma::unsafe_arena_release_options() {
   // @@protoc_insertion_point(field_release:io.deephaven.proto.backplane.grpc.UpdateByRequest.UpdateByOperation.UpdateByColumn.UpdateBySpec.UpdateByEma.options)
   
-  ::io::deephaven::proto::backplane::grpc::UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByEma_UpdateByEmaOptions* temp = options_;
+  ::io::deephaven::proto::backplane::grpc::UpdateByEmOptions* temp = options_;
   options_ = nullptr;
   return temp;
 }
-inline ::io::deephaven::proto::backplane::grpc::UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByEma_UpdateByEmaOptions* UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByEma::_internal_mutable_options() {
+inline ::io::deephaven::proto::backplane::grpc::UpdateByEmOptions* UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByEma::_internal_mutable_options() {
   
   if (options_ == nullptr) {
-    auto* p = CreateMaybeMessage<::io::deephaven::proto::backplane::grpc::UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByEma_UpdateByEmaOptions>(GetArenaForAllocation());
+    auto* p = CreateMaybeMessage<::io::deephaven::proto::backplane::grpc::UpdateByEmOptions>(GetArenaForAllocation());
     options_ = p;
   }
   return options_;
 }
-inline ::io::deephaven::proto::backplane::grpc::UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByEma_UpdateByEmaOptions* UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByEma::mutable_options() {
-  ::io::deephaven::proto::backplane::grpc::UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByEma_UpdateByEmaOptions* _msg = _internal_mutable_options();
+inline ::io::deephaven::proto::backplane::grpc::UpdateByEmOptions* UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByEma::mutable_options() {
+  ::io::deephaven::proto::backplane::grpc::UpdateByEmOptions* _msg = _internal_mutable_options();
   // @@protoc_insertion_point(field_mutable:io.deephaven.proto.backplane.grpc.UpdateByRequest.UpdateByOperation.UpdateByColumn.UpdateBySpec.UpdateByEma.options)
   return _msg;
 }
-inline void UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByEma::set_allocated_options(::io::deephaven::proto::backplane::grpc::UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByEma_UpdateByEmaOptions* options) {
+inline void UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByEma::set_allocated_options(::io::deephaven::proto::backplane::grpc::UpdateByEmOptions* options) {
   ::PROTOBUF_NAMESPACE_ID::Arena* message_arena = GetArenaForAllocation();
   if (message_arena == nullptr) {
     delete options_;
@@ -24374,45 +26415,45 @@ inline void UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_Update
   // @@protoc_insertion_point(field_set_allocated:io.deephaven.proto.backplane.grpc.UpdateByRequest.UpdateByOperation.UpdateByColumn.UpdateBySpec.UpdateByEma.options)
 }
 
-// .io.deephaven.proto.backplane.grpc.UpdateByEmaTimescale timescale = 2;
-inline bool UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByEma::_internal_has_timescale() const {
-  return this != internal_default_instance() && timescale_ != nullptr;
+// .io.deephaven.proto.backplane.grpc.UpdateByWindowScale window_scale = 2;
+inline bool UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByEma::_internal_has_window_scale() const {
+  return this != internal_default_instance() && window_scale_ != nullptr;
 }
-inline bool UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByEma::has_timescale() const {
-  return _internal_has_timescale();
+inline bool UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByEma::has_window_scale() const {
+  return _internal_has_window_scale();
 }
-inline void UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByEma::clear_timescale() {
-  if (GetArenaForAllocation() == nullptr && timescale_ != nullptr) {
-    delete timescale_;
+inline void UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByEma::clear_window_scale() {
+  if (GetArenaForAllocation() == nullptr && window_scale_ != nullptr) {
+    delete window_scale_;
   }
-  timescale_ = nullptr;
+  window_scale_ = nullptr;
 }
-inline const ::io::deephaven::proto::backplane::grpc::UpdateByEmaTimescale& UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByEma::_internal_timescale() const {
-  const ::io::deephaven::proto::backplane::grpc::UpdateByEmaTimescale* p = timescale_;
-  return p != nullptr ? *p : reinterpret_cast<const ::io::deephaven::proto::backplane::grpc::UpdateByEmaTimescale&>(
-      ::io::deephaven::proto::backplane::grpc::_UpdateByEmaTimescale_default_instance_);
+inline const ::io::deephaven::proto::backplane::grpc::UpdateByWindowScale& UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByEma::_internal_window_scale() const {
+  const ::io::deephaven::proto::backplane::grpc::UpdateByWindowScale* p = window_scale_;
+  return p != nullptr ? *p : reinterpret_cast<const ::io::deephaven::proto::backplane::grpc::UpdateByWindowScale&>(
+      ::io::deephaven::proto::backplane::grpc::_UpdateByWindowScale_default_instance_);
 }
-inline const ::io::deephaven::proto::backplane::grpc::UpdateByEmaTimescale& UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByEma::timescale() const {
-  // @@protoc_insertion_point(field_get:io.deephaven.proto.backplane.grpc.UpdateByRequest.UpdateByOperation.UpdateByColumn.UpdateBySpec.UpdateByEma.timescale)
-  return _internal_timescale();
+inline const ::io::deephaven::proto::backplane::grpc::UpdateByWindowScale& UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByEma::window_scale() const {
+  // @@protoc_insertion_point(field_get:io.deephaven.proto.backplane.grpc.UpdateByRequest.UpdateByOperation.UpdateByColumn.UpdateBySpec.UpdateByEma.window_scale)
+  return _internal_window_scale();
 }
-inline void UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByEma::unsafe_arena_set_allocated_timescale(
-    ::io::deephaven::proto::backplane::grpc::UpdateByEmaTimescale* timescale) {
+inline void UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByEma::unsafe_arena_set_allocated_window_scale(
+    ::io::deephaven::proto::backplane::grpc::UpdateByWindowScale* window_scale) {
   if (GetArenaForAllocation() == nullptr) {
-    delete reinterpret_cast<::PROTOBUF_NAMESPACE_ID::MessageLite*>(timescale_);
+    delete reinterpret_cast<::PROTOBUF_NAMESPACE_ID::MessageLite*>(window_scale_);
   }
-  timescale_ = timescale;
-  if (timescale) {
+  window_scale_ = window_scale;
+  if (window_scale) {
     
   } else {
     
   }
-  // @@protoc_insertion_point(field_unsafe_arena_set_allocated:io.deephaven.proto.backplane.grpc.UpdateByRequest.UpdateByOperation.UpdateByColumn.UpdateBySpec.UpdateByEma.timescale)
+  // @@protoc_insertion_point(field_unsafe_arena_set_allocated:io.deephaven.proto.backplane.grpc.UpdateByRequest.UpdateByOperation.UpdateByColumn.UpdateBySpec.UpdateByEma.window_scale)
 }
-inline ::io::deephaven::proto::backplane::grpc::UpdateByEmaTimescale* UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByEma::release_timescale() {
+inline ::io::deephaven::proto::backplane::grpc::UpdateByWindowScale* UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByEma::release_window_scale() {
   
-  ::io::deephaven::proto::backplane::grpc::UpdateByEmaTimescale* temp = timescale_;
-  timescale_ = nullptr;
+  ::io::deephaven::proto::backplane::grpc::UpdateByWindowScale* temp = window_scale_;
+  window_scale_ = nullptr;
 #ifdef PROTOBUF_FORCE_COPY_IN_RELEASE
   auto* old =  reinterpret_cast<::PROTOBUF_NAMESPACE_ID::MessageLite*>(temp);
   temp = ::PROTOBUF_NAMESPACE_ID::internal::DuplicateIfNonNull(temp);
@@ -24424,89 +26465,919 @@ inline ::io::deephaven::proto::backplane::grpc::UpdateByEmaTimescale* UpdateByRe
 #endif  // !PROTOBUF_FORCE_COPY_IN_RELEASE
   return temp;
 }
-inline ::io::deephaven::proto::backplane::grpc::UpdateByEmaTimescale* UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByEma::unsafe_arena_release_timescale() {
-  // @@protoc_insertion_point(field_release:io.deephaven.proto.backplane.grpc.UpdateByRequest.UpdateByOperation.UpdateByColumn.UpdateBySpec.UpdateByEma.timescale)
+inline ::io::deephaven::proto::backplane::grpc::UpdateByWindowScale* UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByEma::unsafe_arena_release_window_scale() {
+  // @@protoc_insertion_point(field_release:io.deephaven.proto.backplane.grpc.UpdateByRequest.UpdateByOperation.UpdateByColumn.UpdateBySpec.UpdateByEma.window_scale)
   
-  ::io::deephaven::proto::backplane::grpc::UpdateByEmaTimescale* temp = timescale_;
-  timescale_ = nullptr;
+  ::io::deephaven::proto::backplane::grpc::UpdateByWindowScale* temp = window_scale_;
+  window_scale_ = nullptr;
   return temp;
 }
-inline ::io::deephaven::proto::backplane::grpc::UpdateByEmaTimescale* UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByEma::_internal_mutable_timescale() {
+inline ::io::deephaven::proto::backplane::grpc::UpdateByWindowScale* UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByEma::_internal_mutable_window_scale() {
   
-  if (timescale_ == nullptr) {
-    auto* p = CreateMaybeMessage<::io::deephaven::proto::backplane::grpc::UpdateByEmaTimescale>(GetArenaForAllocation());
-    timescale_ = p;
+  if (window_scale_ == nullptr) {
+    auto* p = CreateMaybeMessage<::io::deephaven::proto::backplane::grpc::UpdateByWindowScale>(GetArenaForAllocation());
+    window_scale_ = p;
   }
-  return timescale_;
+  return window_scale_;
 }
-inline ::io::deephaven::proto::backplane::grpc::UpdateByEmaTimescale* UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByEma::mutable_timescale() {
-  ::io::deephaven::proto::backplane::grpc::UpdateByEmaTimescale* _msg = _internal_mutable_timescale();
-  // @@protoc_insertion_point(field_mutable:io.deephaven.proto.backplane.grpc.UpdateByRequest.UpdateByOperation.UpdateByColumn.UpdateBySpec.UpdateByEma.timescale)
+inline ::io::deephaven::proto::backplane::grpc::UpdateByWindowScale* UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByEma::mutable_window_scale() {
+  ::io::deephaven::proto::backplane::grpc::UpdateByWindowScale* _msg = _internal_mutable_window_scale();
+  // @@protoc_insertion_point(field_mutable:io.deephaven.proto.backplane.grpc.UpdateByRequest.UpdateByOperation.UpdateByColumn.UpdateBySpec.UpdateByEma.window_scale)
   return _msg;
 }
-inline void UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByEma::set_allocated_timescale(::io::deephaven::proto::backplane::grpc::UpdateByEmaTimescale* timescale) {
+inline void UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByEma::set_allocated_window_scale(::io::deephaven::proto::backplane::grpc::UpdateByWindowScale* window_scale) {
   ::PROTOBUF_NAMESPACE_ID::Arena* message_arena = GetArenaForAllocation();
   if (message_arena == nullptr) {
-    delete timescale_;
+    delete window_scale_;
   }
-  if (timescale) {
+  if (window_scale) {
     ::PROTOBUF_NAMESPACE_ID::Arena* submessage_arena =
-        ::PROTOBUF_NAMESPACE_ID::Arena::InternalGetOwningArena(timescale);
+        ::PROTOBUF_NAMESPACE_ID::Arena::InternalGetOwningArena(window_scale);
     if (message_arena != submessage_arena) {
-      timescale = ::PROTOBUF_NAMESPACE_ID::internal::GetOwnedMessage(
-          message_arena, timescale, submessage_arena);
+      window_scale = ::PROTOBUF_NAMESPACE_ID::internal::GetOwnedMessage(
+          message_arena, window_scale, submessage_arena);
     }
     
   } else {
     
   }
-  timescale_ = timescale;
-  // @@protoc_insertion_point(field_set_allocated:io.deephaven.proto.backplane.grpc.UpdateByRequest.UpdateByOperation.UpdateByColumn.UpdateBySpec.UpdateByEma.timescale)
+  window_scale_ = window_scale;
+  // @@protoc_insertion_point(field_set_allocated:io.deephaven.proto.backplane.grpc.UpdateByRequest.UpdateByOperation.UpdateByColumn.UpdateBySpec.UpdateByEma.window_scale)
+}
+
+// -------------------------------------------------------------------
+
+// UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByEms
+
+// .io.deephaven.proto.backplane.grpc.UpdateByEmOptions options = 1;
+inline bool UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByEms::_internal_has_options() const {
+  return this != internal_default_instance() && options_ != nullptr;
+}
+inline bool UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByEms::has_options() const {
+  return _internal_has_options();
+}
+inline void UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByEms::clear_options() {
+  if (GetArenaForAllocation() == nullptr && options_ != nullptr) {
+    delete options_;
+  }
+  options_ = nullptr;
+}
+inline const ::io::deephaven::proto::backplane::grpc::UpdateByEmOptions& UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByEms::_internal_options() const {
+  const ::io::deephaven::proto::backplane::grpc::UpdateByEmOptions* p = options_;
+  return p != nullptr ? *p : reinterpret_cast<const ::io::deephaven::proto::backplane::grpc::UpdateByEmOptions&>(
+      ::io::deephaven::proto::backplane::grpc::_UpdateByEmOptions_default_instance_);
+}
+inline const ::io::deephaven::proto::backplane::grpc::UpdateByEmOptions& UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByEms::options() const {
+  // @@protoc_insertion_point(field_get:io.deephaven.proto.backplane.grpc.UpdateByRequest.UpdateByOperation.UpdateByColumn.UpdateBySpec.UpdateByEms.options)
+  return _internal_options();
+}
+inline void UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByEms::unsafe_arena_set_allocated_options(
+    ::io::deephaven::proto::backplane::grpc::UpdateByEmOptions* options) {
+  if (GetArenaForAllocation() == nullptr) {
+    delete reinterpret_cast<::PROTOBUF_NAMESPACE_ID::MessageLite*>(options_);
+  }
+  options_ = options;
+  if (options) {
+    
+  } else {
+    
+  }
+  // @@protoc_insertion_point(field_unsafe_arena_set_allocated:io.deephaven.proto.backplane.grpc.UpdateByRequest.UpdateByOperation.UpdateByColumn.UpdateBySpec.UpdateByEms.options)
+}
+inline ::io::deephaven::proto::backplane::grpc::UpdateByEmOptions* UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByEms::release_options() {
+  
+  ::io::deephaven::proto::backplane::grpc::UpdateByEmOptions* temp = options_;
+  options_ = nullptr;
+#ifdef PROTOBUF_FORCE_COPY_IN_RELEASE
+  auto* old =  reinterpret_cast<::PROTOBUF_NAMESPACE_ID::MessageLite*>(temp);
+  temp = ::PROTOBUF_NAMESPACE_ID::internal::DuplicateIfNonNull(temp);
+  if (GetArenaForAllocation() == nullptr) { delete old; }
+#else  // PROTOBUF_FORCE_COPY_IN_RELEASE
+  if (GetArenaForAllocation() != nullptr) {
+    temp = ::PROTOBUF_NAMESPACE_ID::internal::DuplicateIfNonNull(temp);
+  }
+#endif  // !PROTOBUF_FORCE_COPY_IN_RELEASE
+  return temp;
+}
+inline ::io::deephaven::proto::backplane::grpc::UpdateByEmOptions* UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByEms::unsafe_arena_release_options() {
+  // @@protoc_insertion_point(field_release:io.deephaven.proto.backplane.grpc.UpdateByRequest.UpdateByOperation.UpdateByColumn.UpdateBySpec.UpdateByEms.options)
+  
+  ::io::deephaven::proto::backplane::grpc::UpdateByEmOptions* temp = options_;
+  options_ = nullptr;
+  return temp;
+}
+inline ::io::deephaven::proto::backplane::grpc::UpdateByEmOptions* UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByEms::_internal_mutable_options() {
+  
+  if (options_ == nullptr) {
+    auto* p = CreateMaybeMessage<::io::deephaven::proto::backplane::grpc::UpdateByEmOptions>(GetArenaForAllocation());
+    options_ = p;
+  }
+  return options_;
+}
+inline ::io::deephaven::proto::backplane::grpc::UpdateByEmOptions* UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByEms::mutable_options() {
+  ::io::deephaven::proto::backplane::grpc::UpdateByEmOptions* _msg = _internal_mutable_options();
+  // @@protoc_insertion_point(field_mutable:io.deephaven.proto.backplane.grpc.UpdateByRequest.UpdateByOperation.UpdateByColumn.UpdateBySpec.UpdateByEms.options)
+  return _msg;
+}
+inline void UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByEms::set_allocated_options(::io::deephaven::proto::backplane::grpc::UpdateByEmOptions* options) {
+  ::PROTOBUF_NAMESPACE_ID::Arena* message_arena = GetArenaForAllocation();
+  if (message_arena == nullptr) {
+    delete options_;
+  }
+  if (options) {
+    ::PROTOBUF_NAMESPACE_ID::Arena* submessage_arena =
+        ::PROTOBUF_NAMESPACE_ID::Arena::InternalGetOwningArena(options);
+    if (message_arena != submessage_arena) {
+      options = ::PROTOBUF_NAMESPACE_ID::internal::GetOwnedMessage(
+          message_arena, options, submessage_arena);
+    }
+    
+  } else {
+    
+  }
+  options_ = options;
+  // @@protoc_insertion_point(field_set_allocated:io.deephaven.proto.backplane.grpc.UpdateByRequest.UpdateByOperation.UpdateByColumn.UpdateBySpec.UpdateByEms.options)
+}
+
+// .io.deephaven.proto.backplane.grpc.UpdateByWindowScale window_scale = 2;
+inline bool UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByEms::_internal_has_window_scale() const {
+  return this != internal_default_instance() && window_scale_ != nullptr;
+}
+inline bool UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByEms::has_window_scale() const {
+  return _internal_has_window_scale();
+}
+inline void UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByEms::clear_window_scale() {
+  if (GetArenaForAllocation() == nullptr && window_scale_ != nullptr) {
+    delete window_scale_;
+  }
+  window_scale_ = nullptr;
+}
+inline const ::io::deephaven::proto::backplane::grpc::UpdateByWindowScale& UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByEms::_internal_window_scale() const {
+  const ::io::deephaven::proto::backplane::grpc::UpdateByWindowScale* p = window_scale_;
+  return p != nullptr ? *p : reinterpret_cast<const ::io::deephaven::proto::backplane::grpc::UpdateByWindowScale&>(
+      ::io::deephaven::proto::backplane::grpc::_UpdateByWindowScale_default_instance_);
+}
+inline const ::io::deephaven::proto::backplane::grpc::UpdateByWindowScale& UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByEms::window_scale() const {
+  // @@protoc_insertion_point(field_get:io.deephaven.proto.backplane.grpc.UpdateByRequest.UpdateByOperation.UpdateByColumn.UpdateBySpec.UpdateByEms.window_scale)
+  return _internal_window_scale();
+}
+inline void UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByEms::unsafe_arena_set_allocated_window_scale(
+    ::io::deephaven::proto::backplane::grpc::UpdateByWindowScale* window_scale) {
+  if (GetArenaForAllocation() == nullptr) {
+    delete reinterpret_cast<::PROTOBUF_NAMESPACE_ID::MessageLite*>(window_scale_);
+  }
+  window_scale_ = window_scale;
+  if (window_scale) {
+    
+  } else {
+    
+  }
+  // @@protoc_insertion_point(field_unsafe_arena_set_allocated:io.deephaven.proto.backplane.grpc.UpdateByRequest.UpdateByOperation.UpdateByColumn.UpdateBySpec.UpdateByEms.window_scale)
+}
+inline ::io::deephaven::proto::backplane::grpc::UpdateByWindowScale* UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByEms::release_window_scale() {
+  
+  ::io::deephaven::proto::backplane::grpc::UpdateByWindowScale* temp = window_scale_;
+  window_scale_ = nullptr;
+#ifdef PROTOBUF_FORCE_COPY_IN_RELEASE
+  auto* old =  reinterpret_cast<::PROTOBUF_NAMESPACE_ID::MessageLite*>(temp);
+  temp = ::PROTOBUF_NAMESPACE_ID::internal::DuplicateIfNonNull(temp);
+  if (GetArenaForAllocation() == nullptr) { delete old; }
+#else  // PROTOBUF_FORCE_COPY_IN_RELEASE
+  if (GetArenaForAllocation() != nullptr) {
+    temp = ::PROTOBUF_NAMESPACE_ID::internal::DuplicateIfNonNull(temp);
+  }
+#endif  // !PROTOBUF_FORCE_COPY_IN_RELEASE
+  return temp;
+}
+inline ::io::deephaven::proto::backplane::grpc::UpdateByWindowScale* UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByEms::unsafe_arena_release_window_scale() {
+  // @@protoc_insertion_point(field_release:io.deephaven.proto.backplane.grpc.UpdateByRequest.UpdateByOperation.UpdateByColumn.UpdateBySpec.UpdateByEms.window_scale)
+  
+  ::io::deephaven::proto::backplane::grpc::UpdateByWindowScale* temp = window_scale_;
+  window_scale_ = nullptr;
+  return temp;
+}
+inline ::io::deephaven::proto::backplane::grpc::UpdateByWindowScale* UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByEms::_internal_mutable_window_scale() {
+  
+  if (window_scale_ == nullptr) {
+    auto* p = CreateMaybeMessage<::io::deephaven::proto::backplane::grpc::UpdateByWindowScale>(GetArenaForAllocation());
+    window_scale_ = p;
+  }
+  return window_scale_;
+}
+inline ::io::deephaven::proto::backplane::grpc::UpdateByWindowScale* UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByEms::mutable_window_scale() {
+  ::io::deephaven::proto::backplane::grpc::UpdateByWindowScale* _msg = _internal_mutable_window_scale();
+  // @@protoc_insertion_point(field_mutable:io.deephaven.proto.backplane.grpc.UpdateByRequest.UpdateByOperation.UpdateByColumn.UpdateBySpec.UpdateByEms.window_scale)
+  return _msg;
+}
+inline void UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByEms::set_allocated_window_scale(::io::deephaven::proto::backplane::grpc::UpdateByWindowScale* window_scale) {
+  ::PROTOBUF_NAMESPACE_ID::Arena* message_arena = GetArenaForAllocation();
+  if (message_arena == nullptr) {
+    delete window_scale_;
+  }
+  if (window_scale) {
+    ::PROTOBUF_NAMESPACE_ID::Arena* submessage_arena =
+        ::PROTOBUF_NAMESPACE_ID::Arena::InternalGetOwningArena(window_scale);
+    if (message_arena != submessage_arena) {
+      window_scale = ::PROTOBUF_NAMESPACE_ID::internal::GetOwnedMessage(
+          message_arena, window_scale, submessage_arena);
+    }
+    
+  } else {
+    
+  }
+  window_scale_ = window_scale;
+  // @@protoc_insertion_point(field_set_allocated:io.deephaven.proto.backplane.grpc.UpdateByRequest.UpdateByOperation.UpdateByColumn.UpdateBySpec.UpdateByEms.window_scale)
+}
+
+// -------------------------------------------------------------------
+
+// UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByEmMin
+
+// .io.deephaven.proto.backplane.grpc.UpdateByEmOptions options = 1;
+inline bool UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByEmMin::_internal_has_options() const {
+  return this != internal_default_instance() && options_ != nullptr;
+}
+inline bool UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByEmMin::has_options() const {
+  return _internal_has_options();
+}
+inline void UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByEmMin::clear_options() {
+  if (GetArenaForAllocation() == nullptr && options_ != nullptr) {
+    delete options_;
+  }
+  options_ = nullptr;
+}
+inline const ::io::deephaven::proto::backplane::grpc::UpdateByEmOptions& UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByEmMin::_internal_options() const {
+  const ::io::deephaven::proto::backplane::grpc::UpdateByEmOptions* p = options_;
+  return p != nullptr ? *p : reinterpret_cast<const ::io::deephaven::proto::backplane::grpc::UpdateByEmOptions&>(
+      ::io::deephaven::proto::backplane::grpc::_UpdateByEmOptions_default_instance_);
+}
+inline const ::io::deephaven::proto::backplane::grpc::UpdateByEmOptions& UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByEmMin::options() const {
+  // @@protoc_insertion_point(field_get:io.deephaven.proto.backplane.grpc.UpdateByRequest.UpdateByOperation.UpdateByColumn.UpdateBySpec.UpdateByEmMin.options)
+  return _internal_options();
+}
+inline void UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByEmMin::unsafe_arena_set_allocated_options(
+    ::io::deephaven::proto::backplane::grpc::UpdateByEmOptions* options) {
+  if (GetArenaForAllocation() == nullptr) {
+    delete reinterpret_cast<::PROTOBUF_NAMESPACE_ID::MessageLite*>(options_);
+  }
+  options_ = options;
+  if (options) {
+    
+  } else {
+    
+  }
+  // @@protoc_insertion_point(field_unsafe_arena_set_allocated:io.deephaven.proto.backplane.grpc.UpdateByRequest.UpdateByOperation.UpdateByColumn.UpdateBySpec.UpdateByEmMin.options)
+}
+inline ::io::deephaven::proto::backplane::grpc::UpdateByEmOptions* UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByEmMin::release_options() {
+  
+  ::io::deephaven::proto::backplane::grpc::UpdateByEmOptions* temp = options_;
+  options_ = nullptr;
+#ifdef PROTOBUF_FORCE_COPY_IN_RELEASE
+  auto* old =  reinterpret_cast<::PROTOBUF_NAMESPACE_ID::MessageLite*>(temp);
+  temp = ::PROTOBUF_NAMESPACE_ID::internal::DuplicateIfNonNull(temp);
+  if (GetArenaForAllocation() == nullptr) { delete old; }
+#else  // PROTOBUF_FORCE_COPY_IN_RELEASE
+  if (GetArenaForAllocation() != nullptr) {
+    temp = ::PROTOBUF_NAMESPACE_ID::internal::DuplicateIfNonNull(temp);
+  }
+#endif  // !PROTOBUF_FORCE_COPY_IN_RELEASE
+  return temp;
+}
+inline ::io::deephaven::proto::backplane::grpc::UpdateByEmOptions* UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByEmMin::unsafe_arena_release_options() {
+  // @@protoc_insertion_point(field_release:io.deephaven.proto.backplane.grpc.UpdateByRequest.UpdateByOperation.UpdateByColumn.UpdateBySpec.UpdateByEmMin.options)
+  
+  ::io::deephaven::proto::backplane::grpc::UpdateByEmOptions* temp = options_;
+  options_ = nullptr;
+  return temp;
+}
+inline ::io::deephaven::proto::backplane::grpc::UpdateByEmOptions* UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByEmMin::_internal_mutable_options() {
+  
+  if (options_ == nullptr) {
+    auto* p = CreateMaybeMessage<::io::deephaven::proto::backplane::grpc::UpdateByEmOptions>(GetArenaForAllocation());
+    options_ = p;
+  }
+  return options_;
+}
+inline ::io::deephaven::proto::backplane::grpc::UpdateByEmOptions* UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByEmMin::mutable_options() {
+  ::io::deephaven::proto::backplane::grpc::UpdateByEmOptions* _msg = _internal_mutable_options();
+  // @@protoc_insertion_point(field_mutable:io.deephaven.proto.backplane.grpc.UpdateByRequest.UpdateByOperation.UpdateByColumn.UpdateBySpec.UpdateByEmMin.options)
+  return _msg;
+}
+inline void UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByEmMin::set_allocated_options(::io::deephaven::proto::backplane::grpc::UpdateByEmOptions* options) {
+  ::PROTOBUF_NAMESPACE_ID::Arena* message_arena = GetArenaForAllocation();
+  if (message_arena == nullptr) {
+    delete options_;
+  }
+  if (options) {
+    ::PROTOBUF_NAMESPACE_ID::Arena* submessage_arena =
+        ::PROTOBUF_NAMESPACE_ID::Arena::InternalGetOwningArena(options);
+    if (message_arena != submessage_arena) {
+      options = ::PROTOBUF_NAMESPACE_ID::internal::GetOwnedMessage(
+          message_arena, options, submessage_arena);
+    }
+    
+  } else {
+    
+  }
+  options_ = options;
+  // @@protoc_insertion_point(field_set_allocated:io.deephaven.proto.backplane.grpc.UpdateByRequest.UpdateByOperation.UpdateByColumn.UpdateBySpec.UpdateByEmMin.options)
+}
+
+// .io.deephaven.proto.backplane.grpc.UpdateByWindowScale window_scale = 2;
+inline bool UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByEmMin::_internal_has_window_scale() const {
+  return this != internal_default_instance() && window_scale_ != nullptr;
+}
+inline bool UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByEmMin::has_window_scale() const {
+  return _internal_has_window_scale();
+}
+inline void UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByEmMin::clear_window_scale() {
+  if (GetArenaForAllocation() == nullptr && window_scale_ != nullptr) {
+    delete window_scale_;
+  }
+  window_scale_ = nullptr;
+}
+inline const ::io::deephaven::proto::backplane::grpc::UpdateByWindowScale& UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByEmMin::_internal_window_scale() const {
+  const ::io::deephaven::proto::backplane::grpc::UpdateByWindowScale* p = window_scale_;
+  return p != nullptr ? *p : reinterpret_cast<const ::io::deephaven::proto::backplane::grpc::UpdateByWindowScale&>(
+      ::io::deephaven::proto::backplane::grpc::_UpdateByWindowScale_default_instance_);
+}
+inline const ::io::deephaven::proto::backplane::grpc::UpdateByWindowScale& UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByEmMin::window_scale() const {
+  // @@protoc_insertion_point(field_get:io.deephaven.proto.backplane.grpc.UpdateByRequest.UpdateByOperation.UpdateByColumn.UpdateBySpec.UpdateByEmMin.window_scale)
+  return _internal_window_scale();
+}
+inline void UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByEmMin::unsafe_arena_set_allocated_window_scale(
+    ::io::deephaven::proto::backplane::grpc::UpdateByWindowScale* window_scale) {
+  if (GetArenaForAllocation() == nullptr) {
+    delete reinterpret_cast<::PROTOBUF_NAMESPACE_ID::MessageLite*>(window_scale_);
+  }
+  window_scale_ = window_scale;
+  if (window_scale) {
+    
+  } else {
+    
+  }
+  // @@protoc_insertion_point(field_unsafe_arena_set_allocated:io.deephaven.proto.backplane.grpc.UpdateByRequest.UpdateByOperation.UpdateByColumn.UpdateBySpec.UpdateByEmMin.window_scale)
+}
+inline ::io::deephaven::proto::backplane::grpc::UpdateByWindowScale* UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByEmMin::release_window_scale() {
+  
+  ::io::deephaven::proto::backplane::grpc::UpdateByWindowScale* temp = window_scale_;
+  window_scale_ = nullptr;
+#ifdef PROTOBUF_FORCE_COPY_IN_RELEASE
+  auto* old =  reinterpret_cast<::PROTOBUF_NAMESPACE_ID::MessageLite*>(temp);
+  temp = ::PROTOBUF_NAMESPACE_ID::internal::DuplicateIfNonNull(temp);
+  if (GetArenaForAllocation() == nullptr) { delete old; }
+#else  // PROTOBUF_FORCE_COPY_IN_RELEASE
+  if (GetArenaForAllocation() != nullptr) {
+    temp = ::PROTOBUF_NAMESPACE_ID::internal::DuplicateIfNonNull(temp);
+  }
+#endif  // !PROTOBUF_FORCE_COPY_IN_RELEASE
+  return temp;
+}
+inline ::io::deephaven::proto::backplane::grpc::UpdateByWindowScale* UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByEmMin::unsafe_arena_release_window_scale() {
+  // @@protoc_insertion_point(field_release:io.deephaven.proto.backplane.grpc.UpdateByRequest.UpdateByOperation.UpdateByColumn.UpdateBySpec.UpdateByEmMin.window_scale)
+  
+  ::io::deephaven::proto::backplane::grpc::UpdateByWindowScale* temp = window_scale_;
+  window_scale_ = nullptr;
+  return temp;
+}
+inline ::io::deephaven::proto::backplane::grpc::UpdateByWindowScale* UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByEmMin::_internal_mutable_window_scale() {
+  
+  if (window_scale_ == nullptr) {
+    auto* p = CreateMaybeMessage<::io::deephaven::proto::backplane::grpc::UpdateByWindowScale>(GetArenaForAllocation());
+    window_scale_ = p;
+  }
+  return window_scale_;
+}
+inline ::io::deephaven::proto::backplane::grpc::UpdateByWindowScale* UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByEmMin::mutable_window_scale() {
+  ::io::deephaven::proto::backplane::grpc::UpdateByWindowScale* _msg = _internal_mutable_window_scale();
+  // @@protoc_insertion_point(field_mutable:io.deephaven.proto.backplane.grpc.UpdateByRequest.UpdateByOperation.UpdateByColumn.UpdateBySpec.UpdateByEmMin.window_scale)
+  return _msg;
+}
+inline void UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByEmMin::set_allocated_window_scale(::io::deephaven::proto::backplane::grpc::UpdateByWindowScale* window_scale) {
+  ::PROTOBUF_NAMESPACE_ID::Arena* message_arena = GetArenaForAllocation();
+  if (message_arena == nullptr) {
+    delete window_scale_;
+  }
+  if (window_scale) {
+    ::PROTOBUF_NAMESPACE_ID::Arena* submessage_arena =
+        ::PROTOBUF_NAMESPACE_ID::Arena::InternalGetOwningArena(window_scale);
+    if (message_arena != submessage_arena) {
+      window_scale = ::PROTOBUF_NAMESPACE_ID::internal::GetOwnedMessage(
+          message_arena, window_scale, submessage_arena);
+    }
+    
+  } else {
+    
+  }
+  window_scale_ = window_scale;
+  // @@protoc_insertion_point(field_set_allocated:io.deephaven.proto.backplane.grpc.UpdateByRequest.UpdateByOperation.UpdateByColumn.UpdateBySpec.UpdateByEmMin.window_scale)
+}
+
+// -------------------------------------------------------------------
+
+// UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByEmMax
+
+// .io.deephaven.proto.backplane.grpc.UpdateByEmOptions options = 1;
+inline bool UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByEmMax::_internal_has_options() const {
+  return this != internal_default_instance() && options_ != nullptr;
+}
+inline bool UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByEmMax::has_options() const {
+  return _internal_has_options();
+}
+inline void UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByEmMax::clear_options() {
+  if (GetArenaForAllocation() == nullptr && options_ != nullptr) {
+    delete options_;
+  }
+  options_ = nullptr;
+}
+inline const ::io::deephaven::proto::backplane::grpc::UpdateByEmOptions& UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByEmMax::_internal_options() const {
+  const ::io::deephaven::proto::backplane::grpc::UpdateByEmOptions* p = options_;
+  return p != nullptr ? *p : reinterpret_cast<const ::io::deephaven::proto::backplane::grpc::UpdateByEmOptions&>(
+      ::io::deephaven::proto::backplane::grpc::_UpdateByEmOptions_default_instance_);
+}
+inline const ::io::deephaven::proto::backplane::grpc::UpdateByEmOptions& UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByEmMax::options() const {
+  // @@protoc_insertion_point(field_get:io.deephaven.proto.backplane.grpc.UpdateByRequest.UpdateByOperation.UpdateByColumn.UpdateBySpec.UpdateByEmMax.options)
+  return _internal_options();
+}
+inline void UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByEmMax::unsafe_arena_set_allocated_options(
+    ::io::deephaven::proto::backplane::grpc::UpdateByEmOptions* options) {
+  if (GetArenaForAllocation() == nullptr) {
+    delete reinterpret_cast<::PROTOBUF_NAMESPACE_ID::MessageLite*>(options_);
+  }
+  options_ = options;
+  if (options) {
+    
+  } else {
+    
+  }
+  // @@protoc_insertion_point(field_unsafe_arena_set_allocated:io.deephaven.proto.backplane.grpc.UpdateByRequest.UpdateByOperation.UpdateByColumn.UpdateBySpec.UpdateByEmMax.options)
+}
+inline ::io::deephaven::proto::backplane::grpc::UpdateByEmOptions* UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByEmMax::release_options() {
+  
+  ::io::deephaven::proto::backplane::grpc::UpdateByEmOptions* temp = options_;
+  options_ = nullptr;
+#ifdef PROTOBUF_FORCE_COPY_IN_RELEASE
+  auto* old =  reinterpret_cast<::PROTOBUF_NAMESPACE_ID::MessageLite*>(temp);
+  temp = ::PROTOBUF_NAMESPACE_ID::internal::DuplicateIfNonNull(temp);
+  if (GetArenaForAllocation() == nullptr) { delete old; }
+#else  // PROTOBUF_FORCE_COPY_IN_RELEASE
+  if (GetArenaForAllocation() != nullptr) {
+    temp = ::PROTOBUF_NAMESPACE_ID::internal::DuplicateIfNonNull(temp);
+  }
+#endif  // !PROTOBUF_FORCE_COPY_IN_RELEASE
+  return temp;
+}
+inline ::io::deephaven::proto::backplane::grpc::UpdateByEmOptions* UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByEmMax::unsafe_arena_release_options() {
+  // @@protoc_insertion_point(field_release:io.deephaven.proto.backplane.grpc.UpdateByRequest.UpdateByOperation.UpdateByColumn.UpdateBySpec.UpdateByEmMax.options)
+  
+  ::io::deephaven::proto::backplane::grpc::UpdateByEmOptions* temp = options_;
+  options_ = nullptr;
+  return temp;
+}
+inline ::io::deephaven::proto::backplane::grpc::UpdateByEmOptions* UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByEmMax::_internal_mutable_options() {
+  
+  if (options_ == nullptr) {
+    auto* p = CreateMaybeMessage<::io::deephaven::proto::backplane::grpc::UpdateByEmOptions>(GetArenaForAllocation());
+    options_ = p;
+  }
+  return options_;
+}
+inline ::io::deephaven::proto::backplane::grpc::UpdateByEmOptions* UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByEmMax::mutable_options() {
+  ::io::deephaven::proto::backplane::grpc::UpdateByEmOptions* _msg = _internal_mutable_options();
+  // @@protoc_insertion_point(field_mutable:io.deephaven.proto.backplane.grpc.UpdateByRequest.UpdateByOperation.UpdateByColumn.UpdateBySpec.UpdateByEmMax.options)
+  return _msg;
+}
+inline void UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByEmMax::set_allocated_options(::io::deephaven::proto::backplane::grpc::UpdateByEmOptions* options) {
+  ::PROTOBUF_NAMESPACE_ID::Arena* message_arena = GetArenaForAllocation();
+  if (message_arena == nullptr) {
+    delete options_;
+  }
+  if (options) {
+    ::PROTOBUF_NAMESPACE_ID::Arena* submessage_arena =
+        ::PROTOBUF_NAMESPACE_ID::Arena::InternalGetOwningArena(options);
+    if (message_arena != submessage_arena) {
+      options = ::PROTOBUF_NAMESPACE_ID::internal::GetOwnedMessage(
+          message_arena, options, submessage_arena);
+    }
+    
+  } else {
+    
+  }
+  options_ = options;
+  // @@protoc_insertion_point(field_set_allocated:io.deephaven.proto.backplane.grpc.UpdateByRequest.UpdateByOperation.UpdateByColumn.UpdateBySpec.UpdateByEmMax.options)
+}
+
+// .io.deephaven.proto.backplane.grpc.UpdateByWindowScale window_scale = 2;
+inline bool UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByEmMax::_internal_has_window_scale() const {
+  return this != internal_default_instance() && window_scale_ != nullptr;
+}
+inline bool UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByEmMax::has_window_scale() const {
+  return _internal_has_window_scale();
+}
+inline void UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByEmMax::clear_window_scale() {
+  if (GetArenaForAllocation() == nullptr && window_scale_ != nullptr) {
+    delete window_scale_;
+  }
+  window_scale_ = nullptr;
+}
+inline const ::io::deephaven::proto::backplane::grpc::UpdateByWindowScale& UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByEmMax::_internal_window_scale() const {
+  const ::io::deephaven::proto::backplane::grpc::UpdateByWindowScale* p = window_scale_;
+  return p != nullptr ? *p : reinterpret_cast<const ::io::deephaven::proto::backplane::grpc::UpdateByWindowScale&>(
+      ::io::deephaven::proto::backplane::grpc::_UpdateByWindowScale_default_instance_);
+}
+inline const ::io::deephaven::proto::backplane::grpc::UpdateByWindowScale& UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByEmMax::window_scale() const {
+  // @@protoc_insertion_point(field_get:io.deephaven.proto.backplane.grpc.UpdateByRequest.UpdateByOperation.UpdateByColumn.UpdateBySpec.UpdateByEmMax.window_scale)
+  return _internal_window_scale();
+}
+inline void UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByEmMax::unsafe_arena_set_allocated_window_scale(
+    ::io::deephaven::proto::backplane::grpc::UpdateByWindowScale* window_scale) {
+  if (GetArenaForAllocation() == nullptr) {
+    delete reinterpret_cast<::PROTOBUF_NAMESPACE_ID::MessageLite*>(window_scale_);
+  }
+  window_scale_ = window_scale;
+  if (window_scale) {
+    
+  } else {
+    
+  }
+  // @@protoc_insertion_point(field_unsafe_arena_set_allocated:io.deephaven.proto.backplane.grpc.UpdateByRequest.UpdateByOperation.UpdateByColumn.UpdateBySpec.UpdateByEmMax.window_scale)
+}
+inline ::io::deephaven::proto::backplane::grpc::UpdateByWindowScale* UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByEmMax::release_window_scale() {
+  
+  ::io::deephaven::proto::backplane::grpc::UpdateByWindowScale* temp = window_scale_;
+  window_scale_ = nullptr;
+#ifdef PROTOBUF_FORCE_COPY_IN_RELEASE
+  auto* old =  reinterpret_cast<::PROTOBUF_NAMESPACE_ID::MessageLite*>(temp);
+  temp = ::PROTOBUF_NAMESPACE_ID::internal::DuplicateIfNonNull(temp);
+  if (GetArenaForAllocation() == nullptr) { delete old; }
+#else  // PROTOBUF_FORCE_COPY_IN_RELEASE
+  if (GetArenaForAllocation() != nullptr) {
+    temp = ::PROTOBUF_NAMESPACE_ID::internal::DuplicateIfNonNull(temp);
+  }
+#endif  // !PROTOBUF_FORCE_COPY_IN_RELEASE
+  return temp;
+}
+inline ::io::deephaven::proto::backplane::grpc::UpdateByWindowScale* UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByEmMax::unsafe_arena_release_window_scale() {
+  // @@protoc_insertion_point(field_release:io.deephaven.proto.backplane.grpc.UpdateByRequest.UpdateByOperation.UpdateByColumn.UpdateBySpec.UpdateByEmMax.window_scale)
+  
+  ::io::deephaven::proto::backplane::grpc::UpdateByWindowScale* temp = window_scale_;
+  window_scale_ = nullptr;
+  return temp;
+}
+inline ::io::deephaven::proto::backplane::grpc::UpdateByWindowScale* UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByEmMax::_internal_mutable_window_scale() {
+  
+  if (window_scale_ == nullptr) {
+    auto* p = CreateMaybeMessage<::io::deephaven::proto::backplane::grpc::UpdateByWindowScale>(GetArenaForAllocation());
+    window_scale_ = p;
+  }
+  return window_scale_;
+}
+inline ::io::deephaven::proto::backplane::grpc::UpdateByWindowScale* UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByEmMax::mutable_window_scale() {
+  ::io::deephaven::proto::backplane::grpc::UpdateByWindowScale* _msg = _internal_mutable_window_scale();
+  // @@protoc_insertion_point(field_mutable:io.deephaven.proto.backplane.grpc.UpdateByRequest.UpdateByOperation.UpdateByColumn.UpdateBySpec.UpdateByEmMax.window_scale)
+  return _msg;
+}
+inline void UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByEmMax::set_allocated_window_scale(::io::deephaven::proto::backplane::grpc::UpdateByWindowScale* window_scale) {
+  ::PROTOBUF_NAMESPACE_ID::Arena* message_arena = GetArenaForAllocation();
+  if (message_arena == nullptr) {
+    delete window_scale_;
+  }
+  if (window_scale) {
+    ::PROTOBUF_NAMESPACE_ID::Arena* submessage_arena =
+        ::PROTOBUF_NAMESPACE_ID::Arena::InternalGetOwningArena(window_scale);
+    if (message_arena != submessage_arena) {
+      window_scale = ::PROTOBUF_NAMESPACE_ID::internal::GetOwnedMessage(
+          message_arena, window_scale, submessage_arena);
+    }
+    
+  } else {
+    
+  }
+  window_scale_ = window_scale;
+  // @@protoc_insertion_point(field_set_allocated:io.deephaven.proto.backplane.grpc.UpdateByRequest.UpdateByOperation.UpdateByColumn.UpdateBySpec.UpdateByEmMax.window_scale)
+}
+
+// -------------------------------------------------------------------
+
+// UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByEmStd
+
+// .io.deephaven.proto.backplane.grpc.UpdateByEmOptions options = 1;
+inline bool UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByEmStd::_internal_has_options() const {
+  return this != internal_default_instance() && options_ != nullptr;
+}
+inline bool UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByEmStd::has_options() const {
+  return _internal_has_options();
+}
+inline void UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByEmStd::clear_options() {
+  if (GetArenaForAllocation() == nullptr && options_ != nullptr) {
+    delete options_;
+  }
+  options_ = nullptr;
+}
+inline const ::io::deephaven::proto::backplane::grpc::UpdateByEmOptions& UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByEmStd::_internal_options() const {
+  const ::io::deephaven::proto::backplane::grpc::UpdateByEmOptions* p = options_;
+  return p != nullptr ? *p : reinterpret_cast<const ::io::deephaven::proto::backplane::grpc::UpdateByEmOptions&>(
+      ::io::deephaven::proto::backplane::grpc::_UpdateByEmOptions_default_instance_);
+}
+inline const ::io::deephaven::proto::backplane::grpc::UpdateByEmOptions& UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByEmStd::options() const {
+  // @@protoc_insertion_point(field_get:io.deephaven.proto.backplane.grpc.UpdateByRequest.UpdateByOperation.UpdateByColumn.UpdateBySpec.UpdateByEmStd.options)
+  return _internal_options();
+}
+inline void UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByEmStd::unsafe_arena_set_allocated_options(
+    ::io::deephaven::proto::backplane::grpc::UpdateByEmOptions* options) {
+  if (GetArenaForAllocation() == nullptr) {
+    delete reinterpret_cast<::PROTOBUF_NAMESPACE_ID::MessageLite*>(options_);
+  }
+  options_ = options;
+  if (options) {
+    
+  } else {
+    
+  }
+  // @@protoc_insertion_point(field_unsafe_arena_set_allocated:io.deephaven.proto.backplane.grpc.UpdateByRequest.UpdateByOperation.UpdateByColumn.UpdateBySpec.UpdateByEmStd.options)
+}
+inline ::io::deephaven::proto::backplane::grpc::UpdateByEmOptions* UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByEmStd::release_options() {
+  
+  ::io::deephaven::proto::backplane::grpc::UpdateByEmOptions* temp = options_;
+  options_ = nullptr;
+#ifdef PROTOBUF_FORCE_COPY_IN_RELEASE
+  auto* old =  reinterpret_cast<::PROTOBUF_NAMESPACE_ID::MessageLite*>(temp);
+  temp = ::PROTOBUF_NAMESPACE_ID::internal::DuplicateIfNonNull(temp);
+  if (GetArenaForAllocation() == nullptr) { delete old; }
+#else  // PROTOBUF_FORCE_COPY_IN_RELEASE
+  if (GetArenaForAllocation() != nullptr) {
+    temp = ::PROTOBUF_NAMESPACE_ID::internal::DuplicateIfNonNull(temp);
+  }
+#endif  // !PROTOBUF_FORCE_COPY_IN_RELEASE
+  return temp;
+}
+inline ::io::deephaven::proto::backplane::grpc::UpdateByEmOptions* UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByEmStd::unsafe_arena_release_options() {
+  // @@protoc_insertion_point(field_release:io.deephaven.proto.backplane.grpc.UpdateByRequest.UpdateByOperation.UpdateByColumn.UpdateBySpec.UpdateByEmStd.options)
+  
+  ::io::deephaven::proto::backplane::grpc::UpdateByEmOptions* temp = options_;
+  options_ = nullptr;
+  return temp;
+}
+inline ::io::deephaven::proto::backplane::grpc::UpdateByEmOptions* UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByEmStd::_internal_mutable_options() {
+  
+  if (options_ == nullptr) {
+    auto* p = CreateMaybeMessage<::io::deephaven::proto::backplane::grpc::UpdateByEmOptions>(GetArenaForAllocation());
+    options_ = p;
+  }
+  return options_;
+}
+inline ::io::deephaven::proto::backplane::grpc::UpdateByEmOptions* UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByEmStd::mutable_options() {
+  ::io::deephaven::proto::backplane::grpc::UpdateByEmOptions* _msg = _internal_mutable_options();
+  // @@protoc_insertion_point(field_mutable:io.deephaven.proto.backplane.grpc.UpdateByRequest.UpdateByOperation.UpdateByColumn.UpdateBySpec.UpdateByEmStd.options)
+  return _msg;
+}
+inline void UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByEmStd::set_allocated_options(::io::deephaven::proto::backplane::grpc::UpdateByEmOptions* options) {
+  ::PROTOBUF_NAMESPACE_ID::Arena* message_arena = GetArenaForAllocation();
+  if (message_arena == nullptr) {
+    delete options_;
+  }
+  if (options) {
+    ::PROTOBUF_NAMESPACE_ID::Arena* submessage_arena =
+        ::PROTOBUF_NAMESPACE_ID::Arena::InternalGetOwningArena(options);
+    if (message_arena != submessage_arena) {
+      options = ::PROTOBUF_NAMESPACE_ID::internal::GetOwnedMessage(
+          message_arena, options, submessage_arena);
+    }
+    
+  } else {
+    
+  }
+  options_ = options;
+  // @@protoc_insertion_point(field_set_allocated:io.deephaven.proto.backplane.grpc.UpdateByRequest.UpdateByOperation.UpdateByColumn.UpdateBySpec.UpdateByEmStd.options)
+}
+
+// .io.deephaven.proto.backplane.grpc.UpdateByWindowScale window_scale = 2;
+inline bool UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByEmStd::_internal_has_window_scale() const {
+  return this != internal_default_instance() && window_scale_ != nullptr;
+}
+inline bool UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByEmStd::has_window_scale() const {
+  return _internal_has_window_scale();
+}
+inline void UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByEmStd::clear_window_scale() {
+  if (GetArenaForAllocation() == nullptr && window_scale_ != nullptr) {
+    delete window_scale_;
+  }
+  window_scale_ = nullptr;
+}
+inline const ::io::deephaven::proto::backplane::grpc::UpdateByWindowScale& UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByEmStd::_internal_window_scale() const {
+  const ::io::deephaven::proto::backplane::grpc::UpdateByWindowScale* p = window_scale_;
+  return p != nullptr ? *p : reinterpret_cast<const ::io::deephaven::proto::backplane::grpc::UpdateByWindowScale&>(
+      ::io::deephaven::proto::backplane::grpc::_UpdateByWindowScale_default_instance_);
+}
+inline const ::io::deephaven::proto::backplane::grpc::UpdateByWindowScale& UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByEmStd::window_scale() const {
+  // @@protoc_insertion_point(field_get:io.deephaven.proto.backplane.grpc.UpdateByRequest.UpdateByOperation.UpdateByColumn.UpdateBySpec.UpdateByEmStd.window_scale)
+  return _internal_window_scale();
+}
+inline void UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByEmStd::unsafe_arena_set_allocated_window_scale(
+    ::io::deephaven::proto::backplane::grpc::UpdateByWindowScale* window_scale) {
+  if (GetArenaForAllocation() == nullptr) {
+    delete reinterpret_cast<::PROTOBUF_NAMESPACE_ID::MessageLite*>(window_scale_);
+  }
+  window_scale_ = window_scale;
+  if (window_scale) {
+    
+  } else {
+    
+  }
+  // @@protoc_insertion_point(field_unsafe_arena_set_allocated:io.deephaven.proto.backplane.grpc.UpdateByRequest.UpdateByOperation.UpdateByColumn.UpdateBySpec.UpdateByEmStd.window_scale)
+}
+inline ::io::deephaven::proto::backplane::grpc::UpdateByWindowScale* UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByEmStd::release_window_scale() {
+  
+  ::io::deephaven::proto::backplane::grpc::UpdateByWindowScale* temp = window_scale_;
+  window_scale_ = nullptr;
+#ifdef PROTOBUF_FORCE_COPY_IN_RELEASE
+  auto* old =  reinterpret_cast<::PROTOBUF_NAMESPACE_ID::MessageLite*>(temp);
+  temp = ::PROTOBUF_NAMESPACE_ID::internal::DuplicateIfNonNull(temp);
+  if (GetArenaForAllocation() == nullptr) { delete old; }
+#else  // PROTOBUF_FORCE_COPY_IN_RELEASE
+  if (GetArenaForAllocation() != nullptr) {
+    temp = ::PROTOBUF_NAMESPACE_ID::internal::DuplicateIfNonNull(temp);
+  }
+#endif  // !PROTOBUF_FORCE_COPY_IN_RELEASE
+  return temp;
+}
+inline ::io::deephaven::proto::backplane::grpc::UpdateByWindowScale* UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByEmStd::unsafe_arena_release_window_scale() {
+  // @@protoc_insertion_point(field_release:io.deephaven.proto.backplane.grpc.UpdateByRequest.UpdateByOperation.UpdateByColumn.UpdateBySpec.UpdateByEmStd.window_scale)
+  
+  ::io::deephaven::proto::backplane::grpc::UpdateByWindowScale* temp = window_scale_;
+  window_scale_ = nullptr;
+  return temp;
+}
+inline ::io::deephaven::proto::backplane::grpc::UpdateByWindowScale* UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByEmStd::_internal_mutable_window_scale() {
+  
+  if (window_scale_ == nullptr) {
+    auto* p = CreateMaybeMessage<::io::deephaven::proto::backplane::grpc::UpdateByWindowScale>(GetArenaForAllocation());
+    window_scale_ = p;
+  }
+  return window_scale_;
+}
+inline ::io::deephaven::proto::backplane::grpc::UpdateByWindowScale* UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByEmStd::mutable_window_scale() {
+  ::io::deephaven::proto::backplane::grpc::UpdateByWindowScale* _msg = _internal_mutable_window_scale();
+  // @@protoc_insertion_point(field_mutable:io.deephaven.proto.backplane.grpc.UpdateByRequest.UpdateByOperation.UpdateByColumn.UpdateBySpec.UpdateByEmStd.window_scale)
+  return _msg;
+}
+inline void UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByEmStd::set_allocated_window_scale(::io::deephaven::proto::backplane::grpc::UpdateByWindowScale* window_scale) {
+  ::PROTOBUF_NAMESPACE_ID::Arena* message_arena = GetArenaForAllocation();
+  if (message_arena == nullptr) {
+    delete window_scale_;
+  }
+  if (window_scale) {
+    ::PROTOBUF_NAMESPACE_ID::Arena* submessage_arena =
+        ::PROTOBUF_NAMESPACE_ID::Arena::InternalGetOwningArena(window_scale);
+    if (message_arena != submessage_arena) {
+      window_scale = ::PROTOBUF_NAMESPACE_ID::internal::GetOwnedMessage(
+          message_arena, window_scale, submessage_arena);
+    }
+    
+  } else {
+    
+  }
+  window_scale_ = window_scale;
+  // @@protoc_insertion_point(field_set_allocated:io.deephaven.proto.backplane.grpc.UpdateByRequest.UpdateByOperation.UpdateByColumn.UpdateBySpec.UpdateByEmStd.window_scale)
+}
+
+// -------------------------------------------------------------------
+
+// UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByDelta
+
+// .io.deephaven.proto.backplane.grpc.UpdateByDeltaOptions options = 1;
+inline bool UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByDelta::_internal_has_options() const {
+  return this != internal_default_instance() && options_ != nullptr;
+}
+inline bool UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByDelta::has_options() const {
+  return _internal_has_options();
+}
+inline void UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByDelta::clear_options() {
+  if (GetArenaForAllocation() == nullptr && options_ != nullptr) {
+    delete options_;
+  }
+  options_ = nullptr;
+}
+inline const ::io::deephaven::proto::backplane::grpc::UpdateByDeltaOptions& UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByDelta::_internal_options() const {
+  const ::io::deephaven::proto::backplane::grpc::UpdateByDeltaOptions* p = options_;
+  return p != nullptr ? *p : reinterpret_cast<const ::io::deephaven::proto::backplane::grpc::UpdateByDeltaOptions&>(
+      ::io::deephaven::proto::backplane::grpc::_UpdateByDeltaOptions_default_instance_);
+}
+inline const ::io::deephaven::proto::backplane::grpc::UpdateByDeltaOptions& UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByDelta::options() const {
+  // @@protoc_insertion_point(field_get:io.deephaven.proto.backplane.grpc.UpdateByRequest.UpdateByOperation.UpdateByColumn.UpdateBySpec.UpdateByDelta.options)
+  return _internal_options();
+}
+inline void UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByDelta::unsafe_arena_set_allocated_options(
+    ::io::deephaven::proto::backplane::grpc::UpdateByDeltaOptions* options) {
+  if (GetArenaForAllocation() == nullptr) {
+    delete reinterpret_cast<::PROTOBUF_NAMESPACE_ID::MessageLite*>(options_);
+  }
+  options_ = options;
+  if (options) {
+    
+  } else {
+    
+  }
+  // @@protoc_insertion_point(field_unsafe_arena_set_allocated:io.deephaven.proto.backplane.grpc.UpdateByRequest.UpdateByOperation.UpdateByColumn.UpdateBySpec.UpdateByDelta.options)
+}
+inline ::io::deephaven::proto::backplane::grpc::UpdateByDeltaOptions* UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByDelta::release_options() {
+  
+  ::io::deephaven::proto::backplane::grpc::UpdateByDeltaOptions* temp = options_;
+  options_ = nullptr;
+#ifdef PROTOBUF_FORCE_COPY_IN_RELEASE
+  auto* old =  reinterpret_cast<::PROTOBUF_NAMESPACE_ID::MessageLite*>(temp);
+  temp = ::PROTOBUF_NAMESPACE_ID::internal::DuplicateIfNonNull(temp);
+  if (GetArenaForAllocation() == nullptr) { delete old; }
+#else  // PROTOBUF_FORCE_COPY_IN_RELEASE
+  if (GetArenaForAllocation() != nullptr) {
+    temp = ::PROTOBUF_NAMESPACE_ID::internal::DuplicateIfNonNull(temp);
+  }
+#endif  // !PROTOBUF_FORCE_COPY_IN_RELEASE
+  return temp;
+}
+inline ::io::deephaven::proto::backplane::grpc::UpdateByDeltaOptions* UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByDelta::unsafe_arena_release_options() {
+  // @@protoc_insertion_point(field_release:io.deephaven.proto.backplane.grpc.UpdateByRequest.UpdateByOperation.UpdateByColumn.UpdateBySpec.UpdateByDelta.options)
+  
+  ::io::deephaven::proto::backplane::grpc::UpdateByDeltaOptions* temp = options_;
+  options_ = nullptr;
+  return temp;
+}
+inline ::io::deephaven::proto::backplane::grpc::UpdateByDeltaOptions* UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByDelta::_internal_mutable_options() {
+  
+  if (options_ == nullptr) {
+    auto* p = CreateMaybeMessage<::io::deephaven::proto::backplane::grpc::UpdateByDeltaOptions>(GetArenaForAllocation());
+    options_ = p;
+  }
+  return options_;
+}
+inline ::io::deephaven::proto::backplane::grpc::UpdateByDeltaOptions* UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByDelta::mutable_options() {
+  ::io::deephaven::proto::backplane::grpc::UpdateByDeltaOptions* _msg = _internal_mutable_options();
+  // @@protoc_insertion_point(field_mutable:io.deephaven.proto.backplane.grpc.UpdateByRequest.UpdateByOperation.UpdateByColumn.UpdateBySpec.UpdateByDelta.options)
+  return _msg;
+}
+inline void UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByDelta::set_allocated_options(::io::deephaven::proto::backplane::grpc::UpdateByDeltaOptions* options) {
+  ::PROTOBUF_NAMESPACE_ID::Arena* message_arena = GetArenaForAllocation();
+  if (message_arena == nullptr) {
+    delete options_;
+  }
+  if (options) {
+    ::PROTOBUF_NAMESPACE_ID::Arena* submessage_arena =
+        ::PROTOBUF_NAMESPACE_ID::Arena::InternalGetOwningArena(options);
+    if (message_arena != submessage_arena) {
+      options = ::PROTOBUF_NAMESPACE_ID::internal::GetOwnedMessage(
+          message_arena, options, submessage_arena);
+    }
+    
+  } else {
+    
+  }
+  options_ = options;
+  // @@protoc_insertion_point(field_set_allocated:io.deephaven.proto.backplane.grpc.UpdateByRequest.UpdateByOperation.UpdateByColumn.UpdateBySpec.UpdateByDelta.options)
 }
 
 // -------------------------------------------------------------------
 
 // UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByRollingSum
 
-// .io.deephaven.proto.backplane.grpc.UpdateByEmaTimescale reverse_timescale = 1;
-inline bool UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByRollingSum::_internal_has_reverse_timescale() const {
-  return this != internal_default_instance() && reverse_timescale_ != nullptr;
+// .io.deephaven.proto.backplane.grpc.UpdateByWindowScale reverse_window_scale = 1;
+inline bool UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByRollingSum::_internal_has_reverse_window_scale() const {
+  return this != internal_default_instance() && reverse_window_scale_ != nullptr;
 }
-inline bool UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByRollingSum::has_reverse_timescale() const {
-  return _internal_has_reverse_timescale();
+inline bool UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByRollingSum::has_reverse_window_scale() const {
+  return _internal_has_reverse_window_scale();
 }
-inline void UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByRollingSum::clear_reverse_timescale() {
-  if (GetArenaForAllocation() == nullptr && reverse_timescale_ != nullptr) {
-    delete reverse_timescale_;
+inline void UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByRollingSum::clear_reverse_window_scale() {
+  if (GetArenaForAllocation() == nullptr && reverse_window_scale_ != nullptr) {
+    delete reverse_window_scale_;
   }
-  reverse_timescale_ = nullptr;
+  reverse_window_scale_ = nullptr;
 }
-inline const ::io::deephaven::proto::backplane::grpc::UpdateByEmaTimescale& UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByRollingSum::_internal_reverse_timescale() const {
-  const ::io::deephaven::proto::backplane::grpc::UpdateByEmaTimescale* p = reverse_timescale_;
-  return p != nullptr ? *p : reinterpret_cast<const ::io::deephaven::proto::backplane::grpc::UpdateByEmaTimescale&>(
-      ::io::deephaven::proto::backplane::grpc::_UpdateByEmaTimescale_default_instance_);
+inline const ::io::deephaven::proto::backplane::grpc::UpdateByWindowScale& UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByRollingSum::_internal_reverse_window_scale() const {
+  const ::io::deephaven::proto::backplane::grpc::UpdateByWindowScale* p = reverse_window_scale_;
+  return p != nullptr ? *p : reinterpret_cast<const ::io::deephaven::proto::backplane::grpc::UpdateByWindowScale&>(
+      ::io::deephaven::proto::backplane::grpc::_UpdateByWindowScale_default_instance_);
 }
-inline const ::io::deephaven::proto::backplane::grpc::UpdateByEmaTimescale& UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByRollingSum::reverse_timescale() const {
-  // @@protoc_insertion_point(field_get:io.deephaven.proto.backplane.grpc.UpdateByRequest.UpdateByOperation.UpdateByColumn.UpdateBySpec.UpdateByRollingSum.reverse_timescale)
-  return _internal_reverse_timescale();
+inline const ::io::deephaven::proto::backplane::grpc::UpdateByWindowScale& UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByRollingSum::reverse_window_scale() const {
+  // @@protoc_insertion_point(field_get:io.deephaven.proto.backplane.grpc.UpdateByRequest.UpdateByOperation.UpdateByColumn.UpdateBySpec.UpdateByRollingSum.reverse_window_scale)
+  return _internal_reverse_window_scale();
 }
-inline void UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByRollingSum::unsafe_arena_set_allocated_reverse_timescale(
-    ::io::deephaven::proto::backplane::grpc::UpdateByEmaTimescale* reverse_timescale) {
+inline void UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByRollingSum::unsafe_arena_set_allocated_reverse_window_scale(
+    ::io::deephaven::proto::backplane::grpc::UpdateByWindowScale* reverse_window_scale) {
   if (GetArenaForAllocation() == nullptr) {
-    delete reinterpret_cast<::PROTOBUF_NAMESPACE_ID::MessageLite*>(reverse_timescale_);
+    delete reinterpret_cast<::PROTOBUF_NAMESPACE_ID::MessageLite*>(reverse_window_scale_);
   }
-  reverse_timescale_ = reverse_timescale;
-  if (reverse_timescale) {
+  reverse_window_scale_ = reverse_window_scale;
+  if (reverse_window_scale) {
     
   } else {
     
   }
-  // @@protoc_insertion_point(field_unsafe_arena_set_allocated:io.deephaven.proto.backplane.grpc.UpdateByRequest.UpdateByOperation.UpdateByColumn.UpdateBySpec.UpdateByRollingSum.reverse_timescale)
+  // @@protoc_insertion_point(field_unsafe_arena_set_allocated:io.deephaven.proto.backplane.grpc.UpdateByRequest.UpdateByOperation.UpdateByColumn.UpdateBySpec.UpdateByRollingSum.reverse_window_scale)
 }
-inline ::io::deephaven::proto::backplane::grpc::UpdateByEmaTimescale* UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByRollingSum::release_reverse_timescale() {
+inline ::io::deephaven::proto::backplane::grpc::UpdateByWindowScale* UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByRollingSum::release_reverse_window_scale() {
   
-  ::io::deephaven::proto::backplane::grpc::UpdateByEmaTimescale* temp = reverse_timescale_;
-  reverse_timescale_ = nullptr;
+  ::io::deephaven::proto::backplane::grpc::UpdateByWindowScale* temp = reverse_window_scale_;
+  reverse_window_scale_ = nullptr;
 #ifdef PROTOBUF_FORCE_COPY_IN_RELEASE
   auto* old =  reinterpret_cast<::PROTOBUF_NAMESPACE_ID::MessageLite*>(temp);
   temp = ::PROTOBUF_NAMESPACE_ID::internal::DuplicateIfNonNull(temp);
@@ -24518,85 +27389,85 @@ inline ::io::deephaven::proto::backplane::grpc::UpdateByEmaTimescale* UpdateByRe
 #endif  // !PROTOBUF_FORCE_COPY_IN_RELEASE
   return temp;
 }
-inline ::io::deephaven::proto::backplane::grpc::UpdateByEmaTimescale* UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByRollingSum::unsafe_arena_release_reverse_timescale() {
-  // @@protoc_insertion_point(field_release:io.deephaven.proto.backplane.grpc.UpdateByRequest.UpdateByOperation.UpdateByColumn.UpdateBySpec.UpdateByRollingSum.reverse_timescale)
+inline ::io::deephaven::proto::backplane::grpc::UpdateByWindowScale* UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByRollingSum::unsafe_arena_release_reverse_window_scale() {
+  // @@protoc_insertion_point(field_release:io.deephaven.proto.backplane.grpc.UpdateByRequest.UpdateByOperation.UpdateByColumn.UpdateBySpec.UpdateByRollingSum.reverse_window_scale)
   
-  ::io::deephaven::proto::backplane::grpc::UpdateByEmaTimescale* temp = reverse_timescale_;
-  reverse_timescale_ = nullptr;
+  ::io::deephaven::proto::backplane::grpc::UpdateByWindowScale* temp = reverse_window_scale_;
+  reverse_window_scale_ = nullptr;
   return temp;
 }
-inline ::io::deephaven::proto::backplane::grpc::UpdateByEmaTimescale* UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByRollingSum::_internal_mutable_reverse_timescale() {
+inline ::io::deephaven::proto::backplane::grpc::UpdateByWindowScale* UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByRollingSum::_internal_mutable_reverse_window_scale() {
   
-  if (reverse_timescale_ == nullptr) {
-    auto* p = CreateMaybeMessage<::io::deephaven::proto::backplane::grpc::UpdateByEmaTimescale>(GetArenaForAllocation());
-    reverse_timescale_ = p;
+  if (reverse_window_scale_ == nullptr) {
+    auto* p = CreateMaybeMessage<::io::deephaven::proto::backplane::grpc::UpdateByWindowScale>(GetArenaForAllocation());
+    reverse_window_scale_ = p;
   }
-  return reverse_timescale_;
+  return reverse_window_scale_;
 }
-inline ::io::deephaven::proto::backplane::grpc::UpdateByEmaTimescale* UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByRollingSum::mutable_reverse_timescale() {
-  ::io::deephaven::proto::backplane::grpc::UpdateByEmaTimescale* _msg = _internal_mutable_reverse_timescale();
-  // @@protoc_insertion_point(field_mutable:io.deephaven.proto.backplane.grpc.UpdateByRequest.UpdateByOperation.UpdateByColumn.UpdateBySpec.UpdateByRollingSum.reverse_timescale)
+inline ::io::deephaven::proto::backplane::grpc::UpdateByWindowScale* UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByRollingSum::mutable_reverse_window_scale() {
+  ::io::deephaven::proto::backplane::grpc::UpdateByWindowScale* _msg = _internal_mutable_reverse_window_scale();
+  // @@protoc_insertion_point(field_mutable:io.deephaven.proto.backplane.grpc.UpdateByRequest.UpdateByOperation.UpdateByColumn.UpdateBySpec.UpdateByRollingSum.reverse_window_scale)
   return _msg;
 }
-inline void UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByRollingSum::set_allocated_reverse_timescale(::io::deephaven::proto::backplane::grpc::UpdateByEmaTimescale* reverse_timescale) {
+inline void UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByRollingSum::set_allocated_reverse_window_scale(::io::deephaven::proto::backplane::grpc::UpdateByWindowScale* reverse_window_scale) {
   ::PROTOBUF_NAMESPACE_ID::Arena* message_arena = GetArenaForAllocation();
   if (message_arena == nullptr) {
-    delete reverse_timescale_;
+    delete reverse_window_scale_;
   }
-  if (reverse_timescale) {
+  if (reverse_window_scale) {
     ::PROTOBUF_NAMESPACE_ID::Arena* submessage_arena =
-        ::PROTOBUF_NAMESPACE_ID::Arena::InternalGetOwningArena(reverse_timescale);
+        ::PROTOBUF_NAMESPACE_ID::Arena::InternalGetOwningArena(reverse_window_scale);
     if (message_arena != submessage_arena) {
-      reverse_timescale = ::PROTOBUF_NAMESPACE_ID::internal::GetOwnedMessage(
-          message_arena, reverse_timescale, submessage_arena);
+      reverse_window_scale = ::PROTOBUF_NAMESPACE_ID::internal::GetOwnedMessage(
+          message_arena, reverse_window_scale, submessage_arena);
     }
     
   } else {
     
   }
-  reverse_timescale_ = reverse_timescale;
-  // @@protoc_insertion_point(field_set_allocated:io.deephaven.proto.backplane.grpc.UpdateByRequest.UpdateByOperation.UpdateByColumn.UpdateBySpec.UpdateByRollingSum.reverse_timescale)
+  reverse_window_scale_ = reverse_window_scale;
+  // @@protoc_insertion_point(field_set_allocated:io.deephaven.proto.backplane.grpc.UpdateByRequest.UpdateByOperation.UpdateByColumn.UpdateBySpec.UpdateByRollingSum.reverse_window_scale)
 }
 
-// .io.deephaven.proto.backplane.grpc.UpdateByEmaTimescale forward_timescale = 2;
-inline bool UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByRollingSum::_internal_has_forward_timescale() const {
-  return this != internal_default_instance() && forward_timescale_ != nullptr;
+// .io.deephaven.proto.backplane.grpc.UpdateByWindowScale forward_window_scale = 2;
+inline bool UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByRollingSum::_internal_has_forward_window_scale() const {
+  return this != internal_default_instance() && forward_window_scale_ != nullptr;
 }
-inline bool UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByRollingSum::has_forward_timescale() const {
-  return _internal_has_forward_timescale();
+inline bool UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByRollingSum::has_forward_window_scale() const {
+  return _internal_has_forward_window_scale();
 }
-inline void UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByRollingSum::clear_forward_timescale() {
-  if (GetArenaForAllocation() == nullptr && forward_timescale_ != nullptr) {
-    delete forward_timescale_;
+inline void UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByRollingSum::clear_forward_window_scale() {
+  if (GetArenaForAllocation() == nullptr && forward_window_scale_ != nullptr) {
+    delete forward_window_scale_;
   }
-  forward_timescale_ = nullptr;
+  forward_window_scale_ = nullptr;
 }
-inline const ::io::deephaven::proto::backplane::grpc::UpdateByEmaTimescale& UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByRollingSum::_internal_forward_timescale() const {
-  const ::io::deephaven::proto::backplane::grpc::UpdateByEmaTimescale* p = forward_timescale_;
-  return p != nullptr ? *p : reinterpret_cast<const ::io::deephaven::proto::backplane::grpc::UpdateByEmaTimescale&>(
-      ::io::deephaven::proto::backplane::grpc::_UpdateByEmaTimescale_default_instance_);
+inline const ::io::deephaven::proto::backplane::grpc::UpdateByWindowScale& UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByRollingSum::_internal_forward_window_scale() const {
+  const ::io::deephaven::proto::backplane::grpc::UpdateByWindowScale* p = forward_window_scale_;
+  return p != nullptr ? *p : reinterpret_cast<const ::io::deephaven::proto::backplane::grpc::UpdateByWindowScale&>(
+      ::io::deephaven::proto::backplane::grpc::_UpdateByWindowScale_default_instance_);
 }
-inline const ::io::deephaven::proto::backplane::grpc::UpdateByEmaTimescale& UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByRollingSum::forward_timescale() const {
-  // @@protoc_insertion_point(field_get:io.deephaven.proto.backplane.grpc.UpdateByRequest.UpdateByOperation.UpdateByColumn.UpdateBySpec.UpdateByRollingSum.forward_timescale)
-  return _internal_forward_timescale();
+inline const ::io::deephaven::proto::backplane::grpc::UpdateByWindowScale& UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByRollingSum::forward_window_scale() const {
+  // @@protoc_insertion_point(field_get:io.deephaven.proto.backplane.grpc.UpdateByRequest.UpdateByOperation.UpdateByColumn.UpdateBySpec.UpdateByRollingSum.forward_window_scale)
+  return _internal_forward_window_scale();
 }
-inline void UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByRollingSum::unsafe_arena_set_allocated_forward_timescale(
-    ::io::deephaven::proto::backplane::grpc::UpdateByEmaTimescale* forward_timescale) {
+inline void UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByRollingSum::unsafe_arena_set_allocated_forward_window_scale(
+    ::io::deephaven::proto::backplane::grpc::UpdateByWindowScale* forward_window_scale) {
   if (GetArenaForAllocation() == nullptr) {
-    delete reinterpret_cast<::PROTOBUF_NAMESPACE_ID::MessageLite*>(forward_timescale_);
+    delete reinterpret_cast<::PROTOBUF_NAMESPACE_ID::MessageLite*>(forward_window_scale_);
   }
-  forward_timescale_ = forward_timescale;
-  if (forward_timescale) {
+  forward_window_scale_ = forward_window_scale;
+  if (forward_window_scale) {
     
   } else {
     
   }
-  // @@protoc_insertion_point(field_unsafe_arena_set_allocated:io.deephaven.proto.backplane.grpc.UpdateByRequest.UpdateByOperation.UpdateByColumn.UpdateBySpec.UpdateByRollingSum.forward_timescale)
+  // @@protoc_insertion_point(field_unsafe_arena_set_allocated:io.deephaven.proto.backplane.grpc.UpdateByRequest.UpdateByOperation.UpdateByColumn.UpdateBySpec.UpdateByRollingSum.forward_window_scale)
 }
-inline ::io::deephaven::proto::backplane::grpc::UpdateByEmaTimescale* UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByRollingSum::release_forward_timescale() {
+inline ::io::deephaven::proto::backplane::grpc::UpdateByWindowScale* UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByRollingSum::release_forward_window_scale() {
   
-  ::io::deephaven::proto::backplane::grpc::UpdateByEmaTimescale* temp = forward_timescale_;
-  forward_timescale_ = nullptr;
+  ::io::deephaven::proto::backplane::grpc::UpdateByWindowScale* temp = forward_window_scale_;
+  forward_window_scale_ = nullptr;
 #ifdef PROTOBUF_FORCE_COPY_IN_RELEASE
   auto* old =  reinterpret_cast<::PROTOBUF_NAMESPACE_ID::MessageLite*>(temp);
   temp = ::PROTOBUF_NAMESPACE_ID::internal::DuplicateIfNonNull(temp);
@@ -24608,89 +27479,89 @@ inline ::io::deephaven::proto::backplane::grpc::UpdateByEmaTimescale* UpdateByRe
 #endif  // !PROTOBUF_FORCE_COPY_IN_RELEASE
   return temp;
 }
-inline ::io::deephaven::proto::backplane::grpc::UpdateByEmaTimescale* UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByRollingSum::unsafe_arena_release_forward_timescale() {
-  // @@protoc_insertion_point(field_release:io.deephaven.proto.backplane.grpc.UpdateByRequest.UpdateByOperation.UpdateByColumn.UpdateBySpec.UpdateByRollingSum.forward_timescale)
+inline ::io::deephaven::proto::backplane::grpc::UpdateByWindowScale* UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByRollingSum::unsafe_arena_release_forward_window_scale() {
+  // @@protoc_insertion_point(field_release:io.deephaven.proto.backplane.grpc.UpdateByRequest.UpdateByOperation.UpdateByColumn.UpdateBySpec.UpdateByRollingSum.forward_window_scale)
   
-  ::io::deephaven::proto::backplane::grpc::UpdateByEmaTimescale* temp = forward_timescale_;
-  forward_timescale_ = nullptr;
+  ::io::deephaven::proto::backplane::grpc::UpdateByWindowScale* temp = forward_window_scale_;
+  forward_window_scale_ = nullptr;
   return temp;
 }
-inline ::io::deephaven::proto::backplane::grpc::UpdateByEmaTimescale* UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByRollingSum::_internal_mutable_forward_timescale() {
+inline ::io::deephaven::proto::backplane::grpc::UpdateByWindowScale* UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByRollingSum::_internal_mutable_forward_window_scale() {
   
-  if (forward_timescale_ == nullptr) {
-    auto* p = CreateMaybeMessage<::io::deephaven::proto::backplane::grpc::UpdateByEmaTimescale>(GetArenaForAllocation());
-    forward_timescale_ = p;
+  if (forward_window_scale_ == nullptr) {
+    auto* p = CreateMaybeMessage<::io::deephaven::proto::backplane::grpc::UpdateByWindowScale>(GetArenaForAllocation());
+    forward_window_scale_ = p;
   }
-  return forward_timescale_;
+  return forward_window_scale_;
 }
-inline ::io::deephaven::proto::backplane::grpc::UpdateByEmaTimescale* UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByRollingSum::mutable_forward_timescale() {
-  ::io::deephaven::proto::backplane::grpc::UpdateByEmaTimescale* _msg = _internal_mutable_forward_timescale();
-  // @@protoc_insertion_point(field_mutable:io.deephaven.proto.backplane.grpc.UpdateByRequest.UpdateByOperation.UpdateByColumn.UpdateBySpec.UpdateByRollingSum.forward_timescale)
+inline ::io::deephaven::proto::backplane::grpc::UpdateByWindowScale* UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByRollingSum::mutable_forward_window_scale() {
+  ::io::deephaven::proto::backplane::grpc::UpdateByWindowScale* _msg = _internal_mutable_forward_window_scale();
+  // @@protoc_insertion_point(field_mutable:io.deephaven.proto.backplane.grpc.UpdateByRequest.UpdateByOperation.UpdateByColumn.UpdateBySpec.UpdateByRollingSum.forward_window_scale)
   return _msg;
 }
-inline void UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByRollingSum::set_allocated_forward_timescale(::io::deephaven::proto::backplane::grpc::UpdateByEmaTimescale* forward_timescale) {
+inline void UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByRollingSum::set_allocated_forward_window_scale(::io::deephaven::proto::backplane::grpc::UpdateByWindowScale* forward_window_scale) {
   ::PROTOBUF_NAMESPACE_ID::Arena* message_arena = GetArenaForAllocation();
   if (message_arena == nullptr) {
-    delete forward_timescale_;
+    delete forward_window_scale_;
   }
-  if (forward_timescale) {
+  if (forward_window_scale) {
     ::PROTOBUF_NAMESPACE_ID::Arena* submessage_arena =
-        ::PROTOBUF_NAMESPACE_ID::Arena::InternalGetOwningArena(forward_timescale);
+        ::PROTOBUF_NAMESPACE_ID::Arena::InternalGetOwningArena(forward_window_scale);
     if (message_arena != submessage_arena) {
-      forward_timescale = ::PROTOBUF_NAMESPACE_ID::internal::GetOwnedMessage(
-          message_arena, forward_timescale, submessage_arena);
+      forward_window_scale = ::PROTOBUF_NAMESPACE_ID::internal::GetOwnedMessage(
+          message_arena, forward_window_scale, submessage_arena);
     }
     
   } else {
     
   }
-  forward_timescale_ = forward_timescale;
-  // @@protoc_insertion_point(field_set_allocated:io.deephaven.proto.backplane.grpc.UpdateByRequest.UpdateByOperation.UpdateByColumn.UpdateBySpec.UpdateByRollingSum.forward_timescale)
+  forward_window_scale_ = forward_window_scale;
+  // @@protoc_insertion_point(field_set_allocated:io.deephaven.proto.backplane.grpc.UpdateByRequest.UpdateByOperation.UpdateByColumn.UpdateBySpec.UpdateByRollingSum.forward_window_scale)
 }
 
 // -------------------------------------------------------------------
 
 // UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByRollingGroup
 
-// .io.deephaven.proto.backplane.grpc.UpdateByEmaTimescale reverse_timescale = 1;
-inline bool UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByRollingGroup::_internal_has_reverse_timescale() const {
-  return this != internal_default_instance() && reverse_timescale_ != nullptr;
+// .io.deephaven.proto.backplane.grpc.UpdateByWindowScale reverse_window_scale = 1;
+inline bool UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByRollingGroup::_internal_has_reverse_window_scale() const {
+  return this != internal_default_instance() && reverse_window_scale_ != nullptr;
 }
-inline bool UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByRollingGroup::has_reverse_timescale() const {
-  return _internal_has_reverse_timescale();
+inline bool UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByRollingGroup::has_reverse_window_scale() const {
+  return _internal_has_reverse_window_scale();
 }
-inline void UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByRollingGroup::clear_reverse_timescale() {
-  if (GetArenaForAllocation() == nullptr && reverse_timescale_ != nullptr) {
-    delete reverse_timescale_;
+inline void UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByRollingGroup::clear_reverse_window_scale() {
+  if (GetArenaForAllocation() == nullptr && reverse_window_scale_ != nullptr) {
+    delete reverse_window_scale_;
   }
-  reverse_timescale_ = nullptr;
+  reverse_window_scale_ = nullptr;
 }
-inline const ::io::deephaven::proto::backplane::grpc::UpdateByEmaTimescale& UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByRollingGroup::_internal_reverse_timescale() const {
-  const ::io::deephaven::proto::backplane::grpc::UpdateByEmaTimescale* p = reverse_timescale_;
-  return p != nullptr ? *p : reinterpret_cast<const ::io::deephaven::proto::backplane::grpc::UpdateByEmaTimescale&>(
-      ::io::deephaven::proto::backplane::grpc::_UpdateByEmaTimescale_default_instance_);
+inline const ::io::deephaven::proto::backplane::grpc::UpdateByWindowScale& UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByRollingGroup::_internal_reverse_window_scale() const {
+  const ::io::deephaven::proto::backplane::grpc::UpdateByWindowScale* p = reverse_window_scale_;
+  return p != nullptr ? *p : reinterpret_cast<const ::io::deephaven::proto::backplane::grpc::UpdateByWindowScale&>(
+      ::io::deephaven::proto::backplane::grpc::_UpdateByWindowScale_default_instance_);
 }
-inline const ::io::deephaven::proto::backplane::grpc::UpdateByEmaTimescale& UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByRollingGroup::reverse_timescale() const {
-  // @@protoc_insertion_point(field_get:io.deephaven.proto.backplane.grpc.UpdateByRequest.UpdateByOperation.UpdateByColumn.UpdateBySpec.UpdateByRollingGroup.reverse_timescale)
-  return _internal_reverse_timescale();
+inline const ::io::deephaven::proto::backplane::grpc::UpdateByWindowScale& UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByRollingGroup::reverse_window_scale() const {
+  // @@protoc_insertion_point(field_get:io.deephaven.proto.backplane.grpc.UpdateByRequest.UpdateByOperation.UpdateByColumn.UpdateBySpec.UpdateByRollingGroup.reverse_window_scale)
+  return _internal_reverse_window_scale();
 }
-inline void UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByRollingGroup::unsafe_arena_set_allocated_reverse_timescale(
-    ::io::deephaven::proto::backplane::grpc::UpdateByEmaTimescale* reverse_timescale) {
+inline void UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByRollingGroup::unsafe_arena_set_allocated_reverse_window_scale(
+    ::io::deephaven::proto::backplane::grpc::UpdateByWindowScale* reverse_window_scale) {
   if (GetArenaForAllocation() == nullptr) {
-    delete reinterpret_cast<::PROTOBUF_NAMESPACE_ID::MessageLite*>(reverse_timescale_);
+    delete reinterpret_cast<::PROTOBUF_NAMESPACE_ID::MessageLite*>(reverse_window_scale_);
   }
-  reverse_timescale_ = reverse_timescale;
-  if (reverse_timescale) {
+  reverse_window_scale_ = reverse_window_scale;
+  if (reverse_window_scale) {
     
   } else {
     
   }
-  // @@protoc_insertion_point(field_unsafe_arena_set_allocated:io.deephaven.proto.backplane.grpc.UpdateByRequest.UpdateByOperation.UpdateByColumn.UpdateBySpec.UpdateByRollingGroup.reverse_timescale)
+  // @@protoc_insertion_point(field_unsafe_arena_set_allocated:io.deephaven.proto.backplane.grpc.UpdateByRequest.UpdateByOperation.UpdateByColumn.UpdateBySpec.UpdateByRollingGroup.reverse_window_scale)
 }
-inline ::io::deephaven::proto::backplane::grpc::UpdateByEmaTimescale* UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByRollingGroup::release_reverse_timescale() {
+inline ::io::deephaven::proto::backplane::grpc::UpdateByWindowScale* UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByRollingGroup::release_reverse_window_scale() {
   
-  ::io::deephaven::proto::backplane::grpc::UpdateByEmaTimescale* temp = reverse_timescale_;
-  reverse_timescale_ = nullptr;
+  ::io::deephaven::proto::backplane::grpc::UpdateByWindowScale* temp = reverse_window_scale_;
+  reverse_window_scale_ = nullptr;
 #ifdef PROTOBUF_FORCE_COPY_IN_RELEASE
   auto* old =  reinterpret_cast<::PROTOBUF_NAMESPACE_ID::MessageLite*>(temp);
   temp = ::PROTOBUF_NAMESPACE_ID::internal::DuplicateIfNonNull(temp);
@@ -24702,85 +27573,85 @@ inline ::io::deephaven::proto::backplane::grpc::UpdateByEmaTimescale* UpdateByRe
 #endif  // !PROTOBUF_FORCE_COPY_IN_RELEASE
   return temp;
 }
-inline ::io::deephaven::proto::backplane::grpc::UpdateByEmaTimescale* UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByRollingGroup::unsafe_arena_release_reverse_timescale() {
-  // @@protoc_insertion_point(field_release:io.deephaven.proto.backplane.grpc.UpdateByRequest.UpdateByOperation.UpdateByColumn.UpdateBySpec.UpdateByRollingGroup.reverse_timescale)
+inline ::io::deephaven::proto::backplane::grpc::UpdateByWindowScale* UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByRollingGroup::unsafe_arena_release_reverse_window_scale() {
+  // @@protoc_insertion_point(field_release:io.deephaven.proto.backplane.grpc.UpdateByRequest.UpdateByOperation.UpdateByColumn.UpdateBySpec.UpdateByRollingGroup.reverse_window_scale)
   
-  ::io::deephaven::proto::backplane::grpc::UpdateByEmaTimescale* temp = reverse_timescale_;
-  reverse_timescale_ = nullptr;
+  ::io::deephaven::proto::backplane::grpc::UpdateByWindowScale* temp = reverse_window_scale_;
+  reverse_window_scale_ = nullptr;
   return temp;
 }
-inline ::io::deephaven::proto::backplane::grpc::UpdateByEmaTimescale* UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByRollingGroup::_internal_mutable_reverse_timescale() {
+inline ::io::deephaven::proto::backplane::grpc::UpdateByWindowScale* UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByRollingGroup::_internal_mutable_reverse_window_scale() {
   
-  if (reverse_timescale_ == nullptr) {
-    auto* p = CreateMaybeMessage<::io::deephaven::proto::backplane::grpc::UpdateByEmaTimescale>(GetArenaForAllocation());
-    reverse_timescale_ = p;
+  if (reverse_window_scale_ == nullptr) {
+    auto* p = CreateMaybeMessage<::io::deephaven::proto::backplane::grpc::UpdateByWindowScale>(GetArenaForAllocation());
+    reverse_window_scale_ = p;
   }
-  return reverse_timescale_;
+  return reverse_window_scale_;
 }
-inline ::io::deephaven::proto::backplane::grpc::UpdateByEmaTimescale* UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByRollingGroup::mutable_reverse_timescale() {
-  ::io::deephaven::proto::backplane::grpc::UpdateByEmaTimescale* _msg = _internal_mutable_reverse_timescale();
-  // @@protoc_insertion_point(field_mutable:io.deephaven.proto.backplane.grpc.UpdateByRequest.UpdateByOperation.UpdateByColumn.UpdateBySpec.UpdateByRollingGroup.reverse_timescale)
+inline ::io::deephaven::proto::backplane::grpc::UpdateByWindowScale* UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByRollingGroup::mutable_reverse_window_scale() {
+  ::io::deephaven::proto::backplane::grpc::UpdateByWindowScale* _msg = _internal_mutable_reverse_window_scale();
+  // @@protoc_insertion_point(field_mutable:io.deephaven.proto.backplane.grpc.UpdateByRequest.UpdateByOperation.UpdateByColumn.UpdateBySpec.UpdateByRollingGroup.reverse_window_scale)
   return _msg;
 }
-inline void UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByRollingGroup::set_allocated_reverse_timescale(::io::deephaven::proto::backplane::grpc::UpdateByEmaTimescale* reverse_timescale) {
+inline void UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByRollingGroup::set_allocated_reverse_window_scale(::io::deephaven::proto::backplane::grpc::UpdateByWindowScale* reverse_window_scale) {
   ::PROTOBUF_NAMESPACE_ID::Arena* message_arena = GetArenaForAllocation();
   if (message_arena == nullptr) {
-    delete reverse_timescale_;
+    delete reverse_window_scale_;
   }
-  if (reverse_timescale) {
+  if (reverse_window_scale) {
     ::PROTOBUF_NAMESPACE_ID::Arena* submessage_arena =
-        ::PROTOBUF_NAMESPACE_ID::Arena::InternalGetOwningArena(reverse_timescale);
+        ::PROTOBUF_NAMESPACE_ID::Arena::InternalGetOwningArena(reverse_window_scale);
     if (message_arena != submessage_arena) {
-      reverse_timescale = ::PROTOBUF_NAMESPACE_ID::internal::GetOwnedMessage(
-          message_arena, reverse_timescale, submessage_arena);
+      reverse_window_scale = ::PROTOBUF_NAMESPACE_ID::internal::GetOwnedMessage(
+          message_arena, reverse_window_scale, submessage_arena);
     }
     
   } else {
     
   }
-  reverse_timescale_ = reverse_timescale;
-  // @@protoc_insertion_point(field_set_allocated:io.deephaven.proto.backplane.grpc.UpdateByRequest.UpdateByOperation.UpdateByColumn.UpdateBySpec.UpdateByRollingGroup.reverse_timescale)
+  reverse_window_scale_ = reverse_window_scale;
+  // @@protoc_insertion_point(field_set_allocated:io.deephaven.proto.backplane.grpc.UpdateByRequest.UpdateByOperation.UpdateByColumn.UpdateBySpec.UpdateByRollingGroup.reverse_window_scale)
 }
 
-// .io.deephaven.proto.backplane.grpc.UpdateByEmaTimescale forward_timescale = 2;
-inline bool UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByRollingGroup::_internal_has_forward_timescale() const {
-  return this != internal_default_instance() && forward_timescale_ != nullptr;
+// .io.deephaven.proto.backplane.grpc.UpdateByWindowScale forward_window_scale = 2;
+inline bool UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByRollingGroup::_internal_has_forward_window_scale() const {
+  return this != internal_default_instance() && forward_window_scale_ != nullptr;
 }
-inline bool UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByRollingGroup::has_forward_timescale() const {
-  return _internal_has_forward_timescale();
+inline bool UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByRollingGroup::has_forward_window_scale() const {
+  return _internal_has_forward_window_scale();
 }
-inline void UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByRollingGroup::clear_forward_timescale() {
-  if (GetArenaForAllocation() == nullptr && forward_timescale_ != nullptr) {
-    delete forward_timescale_;
+inline void UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByRollingGroup::clear_forward_window_scale() {
+  if (GetArenaForAllocation() == nullptr && forward_window_scale_ != nullptr) {
+    delete forward_window_scale_;
   }
-  forward_timescale_ = nullptr;
+  forward_window_scale_ = nullptr;
 }
-inline const ::io::deephaven::proto::backplane::grpc::UpdateByEmaTimescale& UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByRollingGroup::_internal_forward_timescale() const {
-  const ::io::deephaven::proto::backplane::grpc::UpdateByEmaTimescale* p = forward_timescale_;
-  return p != nullptr ? *p : reinterpret_cast<const ::io::deephaven::proto::backplane::grpc::UpdateByEmaTimescale&>(
-      ::io::deephaven::proto::backplane::grpc::_UpdateByEmaTimescale_default_instance_);
+inline const ::io::deephaven::proto::backplane::grpc::UpdateByWindowScale& UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByRollingGroup::_internal_forward_window_scale() const {
+  const ::io::deephaven::proto::backplane::grpc::UpdateByWindowScale* p = forward_window_scale_;
+  return p != nullptr ? *p : reinterpret_cast<const ::io::deephaven::proto::backplane::grpc::UpdateByWindowScale&>(
+      ::io::deephaven::proto::backplane::grpc::_UpdateByWindowScale_default_instance_);
 }
-inline const ::io::deephaven::proto::backplane::grpc::UpdateByEmaTimescale& UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByRollingGroup::forward_timescale() const {
-  // @@protoc_insertion_point(field_get:io.deephaven.proto.backplane.grpc.UpdateByRequest.UpdateByOperation.UpdateByColumn.UpdateBySpec.UpdateByRollingGroup.forward_timescale)
-  return _internal_forward_timescale();
+inline const ::io::deephaven::proto::backplane::grpc::UpdateByWindowScale& UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByRollingGroup::forward_window_scale() const {
+  // @@protoc_insertion_point(field_get:io.deephaven.proto.backplane.grpc.UpdateByRequest.UpdateByOperation.UpdateByColumn.UpdateBySpec.UpdateByRollingGroup.forward_window_scale)
+  return _internal_forward_window_scale();
 }
-inline void UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByRollingGroup::unsafe_arena_set_allocated_forward_timescale(
-    ::io::deephaven::proto::backplane::grpc::UpdateByEmaTimescale* forward_timescale) {
+inline void UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByRollingGroup::unsafe_arena_set_allocated_forward_window_scale(
+    ::io::deephaven::proto::backplane::grpc::UpdateByWindowScale* forward_window_scale) {
   if (GetArenaForAllocation() == nullptr) {
-    delete reinterpret_cast<::PROTOBUF_NAMESPACE_ID::MessageLite*>(forward_timescale_);
+    delete reinterpret_cast<::PROTOBUF_NAMESPACE_ID::MessageLite*>(forward_window_scale_);
   }
-  forward_timescale_ = forward_timescale;
-  if (forward_timescale) {
+  forward_window_scale_ = forward_window_scale;
+  if (forward_window_scale) {
     
   } else {
     
   }
-  // @@protoc_insertion_point(field_unsafe_arena_set_allocated:io.deephaven.proto.backplane.grpc.UpdateByRequest.UpdateByOperation.UpdateByColumn.UpdateBySpec.UpdateByRollingGroup.forward_timescale)
+  // @@protoc_insertion_point(field_unsafe_arena_set_allocated:io.deephaven.proto.backplane.grpc.UpdateByRequest.UpdateByOperation.UpdateByColumn.UpdateBySpec.UpdateByRollingGroup.forward_window_scale)
 }
-inline ::io::deephaven::proto::backplane::grpc::UpdateByEmaTimescale* UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByRollingGroup::release_forward_timescale() {
+inline ::io::deephaven::proto::backplane::grpc::UpdateByWindowScale* UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByRollingGroup::release_forward_window_scale() {
   
-  ::io::deephaven::proto::backplane::grpc::UpdateByEmaTimescale* temp = forward_timescale_;
-  forward_timescale_ = nullptr;
+  ::io::deephaven::proto::backplane::grpc::UpdateByWindowScale* temp = forward_window_scale_;
+  forward_window_scale_ = nullptr;
 #ifdef PROTOBUF_FORCE_COPY_IN_RELEASE
   auto* old =  reinterpret_cast<::PROTOBUF_NAMESPACE_ID::MessageLite*>(temp);
   temp = ::PROTOBUF_NAMESPACE_ID::internal::DuplicateIfNonNull(temp);
@@ -24792,89 +27663,89 @@ inline ::io::deephaven::proto::backplane::grpc::UpdateByEmaTimescale* UpdateByRe
 #endif  // !PROTOBUF_FORCE_COPY_IN_RELEASE
   return temp;
 }
-inline ::io::deephaven::proto::backplane::grpc::UpdateByEmaTimescale* UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByRollingGroup::unsafe_arena_release_forward_timescale() {
-  // @@protoc_insertion_point(field_release:io.deephaven.proto.backplane.grpc.UpdateByRequest.UpdateByOperation.UpdateByColumn.UpdateBySpec.UpdateByRollingGroup.forward_timescale)
+inline ::io::deephaven::proto::backplane::grpc::UpdateByWindowScale* UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByRollingGroup::unsafe_arena_release_forward_window_scale() {
+  // @@protoc_insertion_point(field_release:io.deephaven.proto.backplane.grpc.UpdateByRequest.UpdateByOperation.UpdateByColumn.UpdateBySpec.UpdateByRollingGroup.forward_window_scale)
   
-  ::io::deephaven::proto::backplane::grpc::UpdateByEmaTimescale* temp = forward_timescale_;
-  forward_timescale_ = nullptr;
+  ::io::deephaven::proto::backplane::grpc::UpdateByWindowScale* temp = forward_window_scale_;
+  forward_window_scale_ = nullptr;
   return temp;
 }
-inline ::io::deephaven::proto::backplane::grpc::UpdateByEmaTimescale* UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByRollingGroup::_internal_mutable_forward_timescale() {
+inline ::io::deephaven::proto::backplane::grpc::UpdateByWindowScale* UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByRollingGroup::_internal_mutable_forward_window_scale() {
   
-  if (forward_timescale_ == nullptr) {
-    auto* p = CreateMaybeMessage<::io::deephaven::proto::backplane::grpc::UpdateByEmaTimescale>(GetArenaForAllocation());
-    forward_timescale_ = p;
+  if (forward_window_scale_ == nullptr) {
+    auto* p = CreateMaybeMessage<::io::deephaven::proto::backplane::grpc::UpdateByWindowScale>(GetArenaForAllocation());
+    forward_window_scale_ = p;
   }
-  return forward_timescale_;
+  return forward_window_scale_;
 }
-inline ::io::deephaven::proto::backplane::grpc::UpdateByEmaTimescale* UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByRollingGroup::mutable_forward_timescale() {
-  ::io::deephaven::proto::backplane::grpc::UpdateByEmaTimescale* _msg = _internal_mutable_forward_timescale();
-  // @@protoc_insertion_point(field_mutable:io.deephaven.proto.backplane.grpc.UpdateByRequest.UpdateByOperation.UpdateByColumn.UpdateBySpec.UpdateByRollingGroup.forward_timescale)
+inline ::io::deephaven::proto::backplane::grpc::UpdateByWindowScale* UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByRollingGroup::mutable_forward_window_scale() {
+  ::io::deephaven::proto::backplane::grpc::UpdateByWindowScale* _msg = _internal_mutable_forward_window_scale();
+  // @@protoc_insertion_point(field_mutable:io.deephaven.proto.backplane.grpc.UpdateByRequest.UpdateByOperation.UpdateByColumn.UpdateBySpec.UpdateByRollingGroup.forward_window_scale)
   return _msg;
 }
-inline void UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByRollingGroup::set_allocated_forward_timescale(::io::deephaven::proto::backplane::grpc::UpdateByEmaTimescale* forward_timescale) {
+inline void UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByRollingGroup::set_allocated_forward_window_scale(::io::deephaven::proto::backplane::grpc::UpdateByWindowScale* forward_window_scale) {
   ::PROTOBUF_NAMESPACE_ID::Arena* message_arena = GetArenaForAllocation();
   if (message_arena == nullptr) {
-    delete forward_timescale_;
+    delete forward_window_scale_;
   }
-  if (forward_timescale) {
+  if (forward_window_scale) {
     ::PROTOBUF_NAMESPACE_ID::Arena* submessage_arena =
-        ::PROTOBUF_NAMESPACE_ID::Arena::InternalGetOwningArena(forward_timescale);
+        ::PROTOBUF_NAMESPACE_ID::Arena::InternalGetOwningArena(forward_window_scale);
     if (message_arena != submessage_arena) {
-      forward_timescale = ::PROTOBUF_NAMESPACE_ID::internal::GetOwnedMessage(
-          message_arena, forward_timescale, submessage_arena);
+      forward_window_scale = ::PROTOBUF_NAMESPACE_ID::internal::GetOwnedMessage(
+          message_arena, forward_window_scale, submessage_arena);
     }
     
   } else {
     
   }
-  forward_timescale_ = forward_timescale;
-  // @@protoc_insertion_point(field_set_allocated:io.deephaven.proto.backplane.grpc.UpdateByRequest.UpdateByOperation.UpdateByColumn.UpdateBySpec.UpdateByRollingGroup.forward_timescale)
+  forward_window_scale_ = forward_window_scale;
+  // @@protoc_insertion_point(field_set_allocated:io.deephaven.proto.backplane.grpc.UpdateByRequest.UpdateByOperation.UpdateByColumn.UpdateBySpec.UpdateByRollingGroup.forward_window_scale)
 }
 
 // -------------------------------------------------------------------
 
 // UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByRollingAvg
 
-// .io.deephaven.proto.backplane.grpc.UpdateByEmaTimescale reverse_timescale = 1;
-inline bool UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByRollingAvg::_internal_has_reverse_timescale() const {
-  return this != internal_default_instance() && reverse_timescale_ != nullptr;
+// .io.deephaven.proto.backplane.grpc.UpdateByWindowScale reverse_window_scale = 1;
+inline bool UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByRollingAvg::_internal_has_reverse_window_scale() const {
+  return this != internal_default_instance() && reverse_window_scale_ != nullptr;
 }
-inline bool UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByRollingAvg::has_reverse_timescale() const {
-  return _internal_has_reverse_timescale();
+inline bool UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByRollingAvg::has_reverse_window_scale() const {
+  return _internal_has_reverse_window_scale();
 }
-inline void UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByRollingAvg::clear_reverse_timescale() {
-  if (GetArenaForAllocation() == nullptr && reverse_timescale_ != nullptr) {
-    delete reverse_timescale_;
+inline void UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByRollingAvg::clear_reverse_window_scale() {
+  if (GetArenaForAllocation() == nullptr && reverse_window_scale_ != nullptr) {
+    delete reverse_window_scale_;
   }
-  reverse_timescale_ = nullptr;
+  reverse_window_scale_ = nullptr;
 }
-inline const ::io::deephaven::proto::backplane::grpc::UpdateByEmaTimescale& UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByRollingAvg::_internal_reverse_timescale() const {
-  const ::io::deephaven::proto::backplane::grpc::UpdateByEmaTimescale* p = reverse_timescale_;
-  return p != nullptr ? *p : reinterpret_cast<const ::io::deephaven::proto::backplane::grpc::UpdateByEmaTimescale&>(
-      ::io::deephaven::proto::backplane::grpc::_UpdateByEmaTimescale_default_instance_);
+inline const ::io::deephaven::proto::backplane::grpc::UpdateByWindowScale& UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByRollingAvg::_internal_reverse_window_scale() const {
+  const ::io::deephaven::proto::backplane::grpc::UpdateByWindowScale* p = reverse_window_scale_;
+  return p != nullptr ? *p : reinterpret_cast<const ::io::deephaven::proto::backplane::grpc::UpdateByWindowScale&>(
+      ::io::deephaven::proto::backplane::grpc::_UpdateByWindowScale_default_instance_);
 }
-inline const ::io::deephaven::proto::backplane::grpc::UpdateByEmaTimescale& UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByRollingAvg::reverse_timescale() const {
-  // @@protoc_insertion_point(field_get:io.deephaven.proto.backplane.grpc.UpdateByRequest.UpdateByOperation.UpdateByColumn.UpdateBySpec.UpdateByRollingAvg.reverse_timescale)
-  return _internal_reverse_timescale();
+inline const ::io::deephaven::proto::backplane::grpc::UpdateByWindowScale& UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByRollingAvg::reverse_window_scale() const {
+  // @@protoc_insertion_point(field_get:io.deephaven.proto.backplane.grpc.UpdateByRequest.UpdateByOperation.UpdateByColumn.UpdateBySpec.UpdateByRollingAvg.reverse_window_scale)
+  return _internal_reverse_window_scale();
 }
-inline void UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByRollingAvg::unsafe_arena_set_allocated_reverse_timescale(
-    ::io::deephaven::proto::backplane::grpc::UpdateByEmaTimescale* reverse_timescale) {
+inline void UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByRollingAvg::unsafe_arena_set_allocated_reverse_window_scale(
+    ::io::deephaven::proto::backplane::grpc::UpdateByWindowScale* reverse_window_scale) {
   if (GetArenaForAllocation() == nullptr) {
-    delete reinterpret_cast<::PROTOBUF_NAMESPACE_ID::MessageLite*>(reverse_timescale_);
+    delete reinterpret_cast<::PROTOBUF_NAMESPACE_ID::MessageLite*>(reverse_window_scale_);
   }
-  reverse_timescale_ = reverse_timescale;
-  if (reverse_timescale) {
+  reverse_window_scale_ = reverse_window_scale;
+  if (reverse_window_scale) {
     
   } else {
     
   }
-  // @@protoc_insertion_point(field_unsafe_arena_set_allocated:io.deephaven.proto.backplane.grpc.UpdateByRequest.UpdateByOperation.UpdateByColumn.UpdateBySpec.UpdateByRollingAvg.reverse_timescale)
+  // @@protoc_insertion_point(field_unsafe_arena_set_allocated:io.deephaven.proto.backplane.grpc.UpdateByRequest.UpdateByOperation.UpdateByColumn.UpdateBySpec.UpdateByRollingAvg.reverse_window_scale)
 }
-inline ::io::deephaven::proto::backplane::grpc::UpdateByEmaTimescale* UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByRollingAvg::release_reverse_timescale() {
+inline ::io::deephaven::proto::backplane::grpc::UpdateByWindowScale* UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByRollingAvg::release_reverse_window_scale() {
   
-  ::io::deephaven::proto::backplane::grpc::UpdateByEmaTimescale* temp = reverse_timescale_;
-  reverse_timescale_ = nullptr;
+  ::io::deephaven::proto::backplane::grpc::UpdateByWindowScale* temp = reverse_window_scale_;
+  reverse_window_scale_ = nullptr;
 #ifdef PROTOBUF_FORCE_COPY_IN_RELEASE
   auto* old =  reinterpret_cast<::PROTOBUF_NAMESPACE_ID::MessageLite*>(temp);
   temp = ::PROTOBUF_NAMESPACE_ID::internal::DuplicateIfNonNull(temp);
@@ -24886,85 +27757,85 @@ inline ::io::deephaven::proto::backplane::grpc::UpdateByEmaTimescale* UpdateByRe
 #endif  // !PROTOBUF_FORCE_COPY_IN_RELEASE
   return temp;
 }
-inline ::io::deephaven::proto::backplane::grpc::UpdateByEmaTimescale* UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByRollingAvg::unsafe_arena_release_reverse_timescale() {
-  // @@protoc_insertion_point(field_release:io.deephaven.proto.backplane.grpc.UpdateByRequest.UpdateByOperation.UpdateByColumn.UpdateBySpec.UpdateByRollingAvg.reverse_timescale)
+inline ::io::deephaven::proto::backplane::grpc::UpdateByWindowScale* UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByRollingAvg::unsafe_arena_release_reverse_window_scale() {
+  // @@protoc_insertion_point(field_release:io.deephaven.proto.backplane.grpc.UpdateByRequest.UpdateByOperation.UpdateByColumn.UpdateBySpec.UpdateByRollingAvg.reverse_window_scale)
   
-  ::io::deephaven::proto::backplane::grpc::UpdateByEmaTimescale* temp = reverse_timescale_;
-  reverse_timescale_ = nullptr;
+  ::io::deephaven::proto::backplane::grpc::UpdateByWindowScale* temp = reverse_window_scale_;
+  reverse_window_scale_ = nullptr;
   return temp;
 }
-inline ::io::deephaven::proto::backplane::grpc::UpdateByEmaTimescale* UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByRollingAvg::_internal_mutable_reverse_timescale() {
+inline ::io::deephaven::proto::backplane::grpc::UpdateByWindowScale* UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByRollingAvg::_internal_mutable_reverse_window_scale() {
   
-  if (reverse_timescale_ == nullptr) {
-    auto* p = CreateMaybeMessage<::io::deephaven::proto::backplane::grpc::UpdateByEmaTimescale>(GetArenaForAllocation());
-    reverse_timescale_ = p;
+  if (reverse_window_scale_ == nullptr) {
+    auto* p = CreateMaybeMessage<::io::deephaven::proto::backplane::grpc::UpdateByWindowScale>(GetArenaForAllocation());
+    reverse_window_scale_ = p;
   }
-  return reverse_timescale_;
+  return reverse_window_scale_;
 }
-inline ::io::deephaven::proto::backplane::grpc::UpdateByEmaTimescale* UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByRollingAvg::mutable_reverse_timescale() {
-  ::io::deephaven::proto::backplane::grpc::UpdateByEmaTimescale* _msg = _internal_mutable_reverse_timescale();
-  // @@protoc_insertion_point(field_mutable:io.deephaven.proto.backplane.grpc.UpdateByRequest.UpdateByOperation.UpdateByColumn.UpdateBySpec.UpdateByRollingAvg.reverse_timescale)
+inline ::io::deephaven::proto::backplane::grpc::UpdateByWindowScale* UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByRollingAvg::mutable_reverse_window_scale() {
+  ::io::deephaven::proto::backplane::grpc::UpdateByWindowScale* _msg = _internal_mutable_reverse_window_scale();
+  // @@protoc_insertion_point(field_mutable:io.deephaven.proto.backplane.grpc.UpdateByRequest.UpdateByOperation.UpdateByColumn.UpdateBySpec.UpdateByRollingAvg.reverse_window_scale)
   return _msg;
 }
-inline void UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByRollingAvg::set_allocated_reverse_timescale(::io::deephaven::proto::backplane::grpc::UpdateByEmaTimescale* reverse_timescale) {
+inline void UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByRollingAvg::set_allocated_reverse_window_scale(::io::deephaven::proto::backplane::grpc::UpdateByWindowScale* reverse_window_scale) {
   ::PROTOBUF_NAMESPACE_ID::Arena* message_arena = GetArenaForAllocation();
   if (message_arena == nullptr) {
-    delete reverse_timescale_;
+    delete reverse_window_scale_;
   }
-  if (reverse_timescale) {
+  if (reverse_window_scale) {
     ::PROTOBUF_NAMESPACE_ID::Arena* submessage_arena =
-        ::PROTOBUF_NAMESPACE_ID::Arena::InternalGetOwningArena(reverse_timescale);
+        ::PROTOBUF_NAMESPACE_ID::Arena::InternalGetOwningArena(reverse_window_scale);
     if (message_arena != submessage_arena) {
-      reverse_timescale = ::PROTOBUF_NAMESPACE_ID::internal::GetOwnedMessage(
-          message_arena, reverse_timescale, submessage_arena);
+      reverse_window_scale = ::PROTOBUF_NAMESPACE_ID::internal::GetOwnedMessage(
+          message_arena, reverse_window_scale, submessage_arena);
     }
     
   } else {
     
   }
-  reverse_timescale_ = reverse_timescale;
-  // @@protoc_insertion_point(field_set_allocated:io.deephaven.proto.backplane.grpc.UpdateByRequest.UpdateByOperation.UpdateByColumn.UpdateBySpec.UpdateByRollingAvg.reverse_timescale)
+  reverse_window_scale_ = reverse_window_scale;
+  // @@protoc_insertion_point(field_set_allocated:io.deephaven.proto.backplane.grpc.UpdateByRequest.UpdateByOperation.UpdateByColumn.UpdateBySpec.UpdateByRollingAvg.reverse_window_scale)
 }
 
-// .io.deephaven.proto.backplane.grpc.UpdateByEmaTimescale forward_timescale = 2;
-inline bool UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByRollingAvg::_internal_has_forward_timescale() const {
-  return this != internal_default_instance() && forward_timescale_ != nullptr;
+// .io.deephaven.proto.backplane.grpc.UpdateByWindowScale forward_window_scale = 2;
+inline bool UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByRollingAvg::_internal_has_forward_window_scale() const {
+  return this != internal_default_instance() && forward_window_scale_ != nullptr;
 }
-inline bool UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByRollingAvg::has_forward_timescale() const {
-  return _internal_has_forward_timescale();
+inline bool UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByRollingAvg::has_forward_window_scale() const {
+  return _internal_has_forward_window_scale();
 }
-inline void UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByRollingAvg::clear_forward_timescale() {
-  if (GetArenaForAllocation() == nullptr && forward_timescale_ != nullptr) {
-    delete forward_timescale_;
+inline void UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByRollingAvg::clear_forward_window_scale() {
+  if (GetArenaForAllocation() == nullptr && forward_window_scale_ != nullptr) {
+    delete forward_window_scale_;
   }
-  forward_timescale_ = nullptr;
+  forward_window_scale_ = nullptr;
 }
-inline const ::io::deephaven::proto::backplane::grpc::UpdateByEmaTimescale& UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByRollingAvg::_internal_forward_timescale() const {
-  const ::io::deephaven::proto::backplane::grpc::UpdateByEmaTimescale* p = forward_timescale_;
-  return p != nullptr ? *p : reinterpret_cast<const ::io::deephaven::proto::backplane::grpc::UpdateByEmaTimescale&>(
-      ::io::deephaven::proto::backplane::grpc::_UpdateByEmaTimescale_default_instance_);
+inline const ::io::deephaven::proto::backplane::grpc::UpdateByWindowScale& UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByRollingAvg::_internal_forward_window_scale() const {
+  const ::io::deephaven::proto::backplane::grpc::UpdateByWindowScale* p = forward_window_scale_;
+  return p != nullptr ? *p : reinterpret_cast<const ::io::deephaven::proto::backplane::grpc::UpdateByWindowScale&>(
+      ::io::deephaven::proto::backplane::grpc::_UpdateByWindowScale_default_instance_);
 }
-inline const ::io::deephaven::proto::backplane::grpc::UpdateByEmaTimescale& UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByRollingAvg::forward_timescale() const {
-  // @@protoc_insertion_point(field_get:io.deephaven.proto.backplane.grpc.UpdateByRequest.UpdateByOperation.UpdateByColumn.UpdateBySpec.UpdateByRollingAvg.forward_timescale)
-  return _internal_forward_timescale();
+inline const ::io::deephaven::proto::backplane::grpc::UpdateByWindowScale& UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByRollingAvg::forward_window_scale() const {
+  // @@protoc_insertion_point(field_get:io.deephaven.proto.backplane.grpc.UpdateByRequest.UpdateByOperation.UpdateByColumn.UpdateBySpec.UpdateByRollingAvg.forward_window_scale)
+  return _internal_forward_window_scale();
 }
-inline void UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByRollingAvg::unsafe_arena_set_allocated_forward_timescale(
-    ::io::deephaven::proto::backplane::grpc::UpdateByEmaTimescale* forward_timescale) {
+inline void UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByRollingAvg::unsafe_arena_set_allocated_forward_window_scale(
+    ::io::deephaven::proto::backplane::grpc::UpdateByWindowScale* forward_window_scale) {
   if (GetArenaForAllocation() == nullptr) {
-    delete reinterpret_cast<::PROTOBUF_NAMESPACE_ID::MessageLite*>(forward_timescale_);
+    delete reinterpret_cast<::PROTOBUF_NAMESPACE_ID::MessageLite*>(forward_window_scale_);
   }
-  forward_timescale_ = forward_timescale;
-  if (forward_timescale) {
+  forward_window_scale_ = forward_window_scale;
+  if (forward_window_scale) {
     
   } else {
     
   }
-  // @@protoc_insertion_point(field_unsafe_arena_set_allocated:io.deephaven.proto.backplane.grpc.UpdateByRequest.UpdateByOperation.UpdateByColumn.UpdateBySpec.UpdateByRollingAvg.forward_timescale)
+  // @@protoc_insertion_point(field_unsafe_arena_set_allocated:io.deephaven.proto.backplane.grpc.UpdateByRequest.UpdateByOperation.UpdateByColumn.UpdateBySpec.UpdateByRollingAvg.forward_window_scale)
 }
-inline ::io::deephaven::proto::backplane::grpc::UpdateByEmaTimescale* UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByRollingAvg::release_forward_timescale() {
+inline ::io::deephaven::proto::backplane::grpc::UpdateByWindowScale* UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByRollingAvg::release_forward_window_scale() {
   
-  ::io::deephaven::proto::backplane::grpc::UpdateByEmaTimescale* temp = forward_timescale_;
-  forward_timescale_ = nullptr;
+  ::io::deephaven::proto::backplane::grpc::UpdateByWindowScale* temp = forward_window_scale_;
+  forward_window_scale_ = nullptr;
 #ifdef PROTOBUF_FORCE_COPY_IN_RELEASE
   auto* old =  reinterpret_cast<::PROTOBUF_NAMESPACE_ID::MessageLite*>(temp);
   temp = ::PROTOBUF_NAMESPACE_ID::internal::DuplicateIfNonNull(temp);
@@ -24976,89 +27847,89 @@ inline ::io::deephaven::proto::backplane::grpc::UpdateByEmaTimescale* UpdateByRe
 #endif  // !PROTOBUF_FORCE_COPY_IN_RELEASE
   return temp;
 }
-inline ::io::deephaven::proto::backplane::grpc::UpdateByEmaTimescale* UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByRollingAvg::unsafe_arena_release_forward_timescale() {
-  // @@protoc_insertion_point(field_release:io.deephaven.proto.backplane.grpc.UpdateByRequest.UpdateByOperation.UpdateByColumn.UpdateBySpec.UpdateByRollingAvg.forward_timescale)
+inline ::io::deephaven::proto::backplane::grpc::UpdateByWindowScale* UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByRollingAvg::unsafe_arena_release_forward_window_scale() {
+  // @@protoc_insertion_point(field_release:io.deephaven.proto.backplane.grpc.UpdateByRequest.UpdateByOperation.UpdateByColumn.UpdateBySpec.UpdateByRollingAvg.forward_window_scale)
   
-  ::io::deephaven::proto::backplane::grpc::UpdateByEmaTimescale* temp = forward_timescale_;
-  forward_timescale_ = nullptr;
+  ::io::deephaven::proto::backplane::grpc::UpdateByWindowScale* temp = forward_window_scale_;
+  forward_window_scale_ = nullptr;
   return temp;
 }
-inline ::io::deephaven::proto::backplane::grpc::UpdateByEmaTimescale* UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByRollingAvg::_internal_mutable_forward_timescale() {
+inline ::io::deephaven::proto::backplane::grpc::UpdateByWindowScale* UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByRollingAvg::_internal_mutable_forward_window_scale() {
   
-  if (forward_timescale_ == nullptr) {
-    auto* p = CreateMaybeMessage<::io::deephaven::proto::backplane::grpc::UpdateByEmaTimescale>(GetArenaForAllocation());
-    forward_timescale_ = p;
+  if (forward_window_scale_ == nullptr) {
+    auto* p = CreateMaybeMessage<::io::deephaven::proto::backplane::grpc::UpdateByWindowScale>(GetArenaForAllocation());
+    forward_window_scale_ = p;
   }
-  return forward_timescale_;
+  return forward_window_scale_;
 }
-inline ::io::deephaven::proto::backplane::grpc::UpdateByEmaTimescale* UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByRollingAvg::mutable_forward_timescale() {
-  ::io::deephaven::proto::backplane::grpc::UpdateByEmaTimescale* _msg = _internal_mutable_forward_timescale();
-  // @@protoc_insertion_point(field_mutable:io.deephaven.proto.backplane.grpc.UpdateByRequest.UpdateByOperation.UpdateByColumn.UpdateBySpec.UpdateByRollingAvg.forward_timescale)
+inline ::io::deephaven::proto::backplane::grpc::UpdateByWindowScale* UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByRollingAvg::mutable_forward_window_scale() {
+  ::io::deephaven::proto::backplane::grpc::UpdateByWindowScale* _msg = _internal_mutable_forward_window_scale();
+  // @@protoc_insertion_point(field_mutable:io.deephaven.proto.backplane.grpc.UpdateByRequest.UpdateByOperation.UpdateByColumn.UpdateBySpec.UpdateByRollingAvg.forward_window_scale)
   return _msg;
 }
-inline void UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByRollingAvg::set_allocated_forward_timescale(::io::deephaven::proto::backplane::grpc::UpdateByEmaTimescale* forward_timescale) {
+inline void UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByRollingAvg::set_allocated_forward_window_scale(::io::deephaven::proto::backplane::grpc::UpdateByWindowScale* forward_window_scale) {
   ::PROTOBUF_NAMESPACE_ID::Arena* message_arena = GetArenaForAllocation();
   if (message_arena == nullptr) {
-    delete forward_timescale_;
+    delete forward_window_scale_;
   }
-  if (forward_timescale) {
+  if (forward_window_scale) {
     ::PROTOBUF_NAMESPACE_ID::Arena* submessage_arena =
-        ::PROTOBUF_NAMESPACE_ID::Arena::InternalGetOwningArena(forward_timescale);
+        ::PROTOBUF_NAMESPACE_ID::Arena::InternalGetOwningArena(forward_window_scale);
     if (message_arena != submessage_arena) {
-      forward_timescale = ::PROTOBUF_NAMESPACE_ID::internal::GetOwnedMessage(
-          message_arena, forward_timescale, submessage_arena);
+      forward_window_scale = ::PROTOBUF_NAMESPACE_ID::internal::GetOwnedMessage(
+          message_arena, forward_window_scale, submessage_arena);
     }
     
   } else {
     
   }
-  forward_timescale_ = forward_timescale;
-  // @@protoc_insertion_point(field_set_allocated:io.deephaven.proto.backplane.grpc.UpdateByRequest.UpdateByOperation.UpdateByColumn.UpdateBySpec.UpdateByRollingAvg.forward_timescale)
+  forward_window_scale_ = forward_window_scale;
+  // @@protoc_insertion_point(field_set_allocated:io.deephaven.proto.backplane.grpc.UpdateByRequest.UpdateByOperation.UpdateByColumn.UpdateBySpec.UpdateByRollingAvg.forward_window_scale)
 }
 
 // -------------------------------------------------------------------
 
 // UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByRollingMin
 
-// .io.deephaven.proto.backplane.grpc.UpdateByEmaTimescale reverse_timescale = 1;
-inline bool UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByRollingMin::_internal_has_reverse_timescale() const {
-  return this != internal_default_instance() && reverse_timescale_ != nullptr;
+// .io.deephaven.proto.backplane.grpc.UpdateByWindowScale reverse_window_scale = 1;
+inline bool UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByRollingMin::_internal_has_reverse_window_scale() const {
+  return this != internal_default_instance() && reverse_window_scale_ != nullptr;
 }
-inline bool UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByRollingMin::has_reverse_timescale() const {
-  return _internal_has_reverse_timescale();
+inline bool UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByRollingMin::has_reverse_window_scale() const {
+  return _internal_has_reverse_window_scale();
 }
-inline void UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByRollingMin::clear_reverse_timescale() {
-  if (GetArenaForAllocation() == nullptr && reverse_timescale_ != nullptr) {
-    delete reverse_timescale_;
+inline void UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByRollingMin::clear_reverse_window_scale() {
+  if (GetArenaForAllocation() == nullptr && reverse_window_scale_ != nullptr) {
+    delete reverse_window_scale_;
   }
-  reverse_timescale_ = nullptr;
+  reverse_window_scale_ = nullptr;
 }
-inline const ::io::deephaven::proto::backplane::grpc::UpdateByEmaTimescale& UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByRollingMin::_internal_reverse_timescale() const {
-  const ::io::deephaven::proto::backplane::grpc::UpdateByEmaTimescale* p = reverse_timescale_;
-  return p != nullptr ? *p : reinterpret_cast<const ::io::deephaven::proto::backplane::grpc::UpdateByEmaTimescale&>(
-      ::io::deephaven::proto::backplane::grpc::_UpdateByEmaTimescale_default_instance_);
+inline const ::io::deephaven::proto::backplane::grpc::UpdateByWindowScale& UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByRollingMin::_internal_reverse_window_scale() const {
+  const ::io::deephaven::proto::backplane::grpc::UpdateByWindowScale* p = reverse_window_scale_;
+  return p != nullptr ? *p : reinterpret_cast<const ::io::deephaven::proto::backplane::grpc::UpdateByWindowScale&>(
+      ::io::deephaven::proto::backplane::grpc::_UpdateByWindowScale_default_instance_);
 }
-inline const ::io::deephaven::proto::backplane::grpc::UpdateByEmaTimescale& UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByRollingMin::reverse_timescale() const {
-  // @@protoc_insertion_point(field_get:io.deephaven.proto.backplane.grpc.UpdateByRequest.UpdateByOperation.UpdateByColumn.UpdateBySpec.UpdateByRollingMin.reverse_timescale)
-  return _internal_reverse_timescale();
+inline const ::io::deephaven::proto::backplane::grpc::UpdateByWindowScale& UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByRollingMin::reverse_window_scale() const {
+  // @@protoc_insertion_point(field_get:io.deephaven.proto.backplane.grpc.UpdateByRequest.UpdateByOperation.UpdateByColumn.UpdateBySpec.UpdateByRollingMin.reverse_window_scale)
+  return _internal_reverse_window_scale();
 }
-inline void UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByRollingMin::unsafe_arena_set_allocated_reverse_timescale(
-    ::io::deephaven::proto::backplane::grpc::UpdateByEmaTimescale* reverse_timescale) {
+inline void UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByRollingMin::unsafe_arena_set_allocated_reverse_window_scale(
+    ::io::deephaven::proto::backplane::grpc::UpdateByWindowScale* reverse_window_scale) {
   if (GetArenaForAllocation() == nullptr) {
-    delete reinterpret_cast<::PROTOBUF_NAMESPACE_ID::MessageLite*>(reverse_timescale_);
+    delete reinterpret_cast<::PROTOBUF_NAMESPACE_ID::MessageLite*>(reverse_window_scale_);
   }
-  reverse_timescale_ = reverse_timescale;
-  if (reverse_timescale) {
+  reverse_window_scale_ = reverse_window_scale;
+  if (reverse_window_scale) {
     
   } else {
     
   }
-  // @@protoc_insertion_point(field_unsafe_arena_set_allocated:io.deephaven.proto.backplane.grpc.UpdateByRequest.UpdateByOperation.UpdateByColumn.UpdateBySpec.UpdateByRollingMin.reverse_timescale)
+  // @@protoc_insertion_point(field_unsafe_arena_set_allocated:io.deephaven.proto.backplane.grpc.UpdateByRequest.UpdateByOperation.UpdateByColumn.UpdateBySpec.UpdateByRollingMin.reverse_window_scale)
 }
-inline ::io::deephaven::proto::backplane::grpc::UpdateByEmaTimescale* UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByRollingMin::release_reverse_timescale() {
+inline ::io::deephaven::proto::backplane::grpc::UpdateByWindowScale* UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByRollingMin::release_reverse_window_scale() {
   
-  ::io::deephaven::proto::backplane::grpc::UpdateByEmaTimescale* temp = reverse_timescale_;
-  reverse_timescale_ = nullptr;
+  ::io::deephaven::proto::backplane::grpc::UpdateByWindowScale* temp = reverse_window_scale_;
+  reverse_window_scale_ = nullptr;
 #ifdef PROTOBUF_FORCE_COPY_IN_RELEASE
   auto* old =  reinterpret_cast<::PROTOBUF_NAMESPACE_ID::MessageLite*>(temp);
   temp = ::PROTOBUF_NAMESPACE_ID::internal::DuplicateIfNonNull(temp);
@@ -25070,85 +27941,85 @@ inline ::io::deephaven::proto::backplane::grpc::UpdateByEmaTimescale* UpdateByRe
 #endif  // !PROTOBUF_FORCE_COPY_IN_RELEASE
   return temp;
 }
-inline ::io::deephaven::proto::backplane::grpc::UpdateByEmaTimescale* UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByRollingMin::unsafe_arena_release_reverse_timescale() {
-  // @@protoc_insertion_point(field_release:io.deephaven.proto.backplane.grpc.UpdateByRequest.UpdateByOperation.UpdateByColumn.UpdateBySpec.UpdateByRollingMin.reverse_timescale)
+inline ::io::deephaven::proto::backplane::grpc::UpdateByWindowScale* UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByRollingMin::unsafe_arena_release_reverse_window_scale() {
+  // @@protoc_insertion_point(field_release:io.deephaven.proto.backplane.grpc.UpdateByRequest.UpdateByOperation.UpdateByColumn.UpdateBySpec.UpdateByRollingMin.reverse_window_scale)
   
-  ::io::deephaven::proto::backplane::grpc::UpdateByEmaTimescale* temp = reverse_timescale_;
-  reverse_timescale_ = nullptr;
+  ::io::deephaven::proto::backplane::grpc::UpdateByWindowScale* temp = reverse_window_scale_;
+  reverse_window_scale_ = nullptr;
   return temp;
 }
-inline ::io::deephaven::proto::backplane::grpc::UpdateByEmaTimescale* UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByRollingMin::_internal_mutable_reverse_timescale() {
+inline ::io::deephaven::proto::backplane::grpc::UpdateByWindowScale* UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByRollingMin::_internal_mutable_reverse_window_scale() {
   
-  if (reverse_timescale_ == nullptr) {
-    auto* p = CreateMaybeMessage<::io::deephaven::proto::backplane::grpc::UpdateByEmaTimescale>(GetArenaForAllocation());
-    reverse_timescale_ = p;
+  if (reverse_window_scale_ == nullptr) {
+    auto* p = CreateMaybeMessage<::io::deephaven::proto::backplane::grpc::UpdateByWindowScale>(GetArenaForAllocation());
+    reverse_window_scale_ = p;
   }
-  return reverse_timescale_;
+  return reverse_window_scale_;
 }
-inline ::io::deephaven::proto::backplane::grpc::UpdateByEmaTimescale* UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByRollingMin::mutable_reverse_timescale() {
-  ::io::deephaven::proto::backplane::grpc::UpdateByEmaTimescale* _msg = _internal_mutable_reverse_timescale();
-  // @@protoc_insertion_point(field_mutable:io.deephaven.proto.backplane.grpc.UpdateByRequest.UpdateByOperation.UpdateByColumn.UpdateBySpec.UpdateByRollingMin.reverse_timescale)
+inline ::io::deephaven::proto::backplane::grpc::UpdateByWindowScale* UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByRollingMin::mutable_reverse_window_scale() {
+  ::io::deephaven::proto::backplane::grpc::UpdateByWindowScale* _msg = _internal_mutable_reverse_window_scale();
+  // @@protoc_insertion_point(field_mutable:io.deephaven.proto.backplane.grpc.UpdateByRequest.UpdateByOperation.UpdateByColumn.UpdateBySpec.UpdateByRollingMin.reverse_window_scale)
   return _msg;
 }
-inline void UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByRollingMin::set_allocated_reverse_timescale(::io::deephaven::proto::backplane::grpc::UpdateByEmaTimescale* reverse_timescale) {
+inline void UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByRollingMin::set_allocated_reverse_window_scale(::io::deephaven::proto::backplane::grpc::UpdateByWindowScale* reverse_window_scale) {
   ::PROTOBUF_NAMESPACE_ID::Arena* message_arena = GetArenaForAllocation();
   if (message_arena == nullptr) {
-    delete reverse_timescale_;
+    delete reverse_window_scale_;
   }
-  if (reverse_timescale) {
+  if (reverse_window_scale) {
     ::PROTOBUF_NAMESPACE_ID::Arena* submessage_arena =
-        ::PROTOBUF_NAMESPACE_ID::Arena::InternalGetOwningArena(reverse_timescale);
+        ::PROTOBUF_NAMESPACE_ID::Arena::InternalGetOwningArena(reverse_window_scale);
     if (message_arena != submessage_arena) {
-      reverse_timescale = ::PROTOBUF_NAMESPACE_ID::internal::GetOwnedMessage(
-          message_arena, reverse_timescale, submessage_arena);
+      reverse_window_scale = ::PROTOBUF_NAMESPACE_ID::internal::GetOwnedMessage(
+          message_arena, reverse_window_scale, submessage_arena);
     }
     
   } else {
     
   }
-  reverse_timescale_ = reverse_timescale;
-  // @@protoc_insertion_point(field_set_allocated:io.deephaven.proto.backplane.grpc.UpdateByRequest.UpdateByOperation.UpdateByColumn.UpdateBySpec.UpdateByRollingMin.reverse_timescale)
+  reverse_window_scale_ = reverse_window_scale;
+  // @@protoc_insertion_point(field_set_allocated:io.deephaven.proto.backplane.grpc.UpdateByRequest.UpdateByOperation.UpdateByColumn.UpdateBySpec.UpdateByRollingMin.reverse_window_scale)
 }
 
-// .io.deephaven.proto.backplane.grpc.UpdateByEmaTimescale forward_timescale = 2;
-inline bool UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByRollingMin::_internal_has_forward_timescale() const {
-  return this != internal_default_instance() && forward_timescale_ != nullptr;
+// .io.deephaven.proto.backplane.grpc.UpdateByWindowScale forward_window_scale = 2;
+inline bool UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByRollingMin::_internal_has_forward_window_scale() const {
+  return this != internal_default_instance() && forward_window_scale_ != nullptr;
 }
-inline bool UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByRollingMin::has_forward_timescale() const {
-  return _internal_has_forward_timescale();
+inline bool UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByRollingMin::has_forward_window_scale() const {
+  return _internal_has_forward_window_scale();
 }
-inline void UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByRollingMin::clear_forward_timescale() {
-  if (GetArenaForAllocation() == nullptr && forward_timescale_ != nullptr) {
-    delete forward_timescale_;
+inline void UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByRollingMin::clear_forward_window_scale() {
+  if (GetArenaForAllocation() == nullptr && forward_window_scale_ != nullptr) {
+    delete forward_window_scale_;
   }
-  forward_timescale_ = nullptr;
+  forward_window_scale_ = nullptr;
 }
-inline const ::io::deephaven::proto::backplane::grpc::UpdateByEmaTimescale& UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByRollingMin::_internal_forward_timescale() const {
-  const ::io::deephaven::proto::backplane::grpc::UpdateByEmaTimescale* p = forward_timescale_;
-  return p != nullptr ? *p : reinterpret_cast<const ::io::deephaven::proto::backplane::grpc::UpdateByEmaTimescale&>(
-      ::io::deephaven::proto::backplane::grpc::_UpdateByEmaTimescale_default_instance_);
+inline const ::io::deephaven::proto::backplane::grpc::UpdateByWindowScale& UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByRollingMin::_internal_forward_window_scale() const {
+  const ::io::deephaven::proto::backplane::grpc::UpdateByWindowScale* p = forward_window_scale_;
+  return p != nullptr ? *p : reinterpret_cast<const ::io::deephaven::proto::backplane::grpc::UpdateByWindowScale&>(
+      ::io::deephaven::proto::backplane::grpc::_UpdateByWindowScale_default_instance_);
 }
-inline const ::io::deephaven::proto::backplane::grpc::UpdateByEmaTimescale& UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByRollingMin::forward_timescale() const {
-  // @@protoc_insertion_point(field_get:io.deephaven.proto.backplane.grpc.UpdateByRequest.UpdateByOperation.UpdateByColumn.UpdateBySpec.UpdateByRollingMin.forward_timescale)
-  return _internal_forward_timescale();
+inline const ::io::deephaven::proto::backplane::grpc::UpdateByWindowScale& UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByRollingMin::forward_window_scale() const {
+  // @@protoc_insertion_point(field_get:io.deephaven.proto.backplane.grpc.UpdateByRequest.UpdateByOperation.UpdateByColumn.UpdateBySpec.UpdateByRollingMin.forward_window_scale)
+  return _internal_forward_window_scale();
 }
-inline void UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByRollingMin::unsafe_arena_set_allocated_forward_timescale(
-    ::io::deephaven::proto::backplane::grpc::UpdateByEmaTimescale* forward_timescale) {
+inline void UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByRollingMin::unsafe_arena_set_allocated_forward_window_scale(
+    ::io::deephaven::proto::backplane::grpc::UpdateByWindowScale* forward_window_scale) {
   if (GetArenaForAllocation() == nullptr) {
-    delete reinterpret_cast<::PROTOBUF_NAMESPACE_ID::MessageLite*>(forward_timescale_);
+    delete reinterpret_cast<::PROTOBUF_NAMESPACE_ID::MessageLite*>(forward_window_scale_);
   }
-  forward_timescale_ = forward_timescale;
-  if (forward_timescale) {
+  forward_window_scale_ = forward_window_scale;
+  if (forward_window_scale) {
     
   } else {
     
   }
-  // @@protoc_insertion_point(field_unsafe_arena_set_allocated:io.deephaven.proto.backplane.grpc.UpdateByRequest.UpdateByOperation.UpdateByColumn.UpdateBySpec.UpdateByRollingMin.forward_timescale)
+  // @@protoc_insertion_point(field_unsafe_arena_set_allocated:io.deephaven.proto.backplane.grpc.UpdateByRequest.UpdateByOperation.UpdateByColumn.UpdateBySpec.UpdateByRollingMin.forward_window_scale)
 }
-inline ::io::deephaven::proto::backplane::grpc::UpdateByEmaTimescale* UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByRollingMin::release_forward_timescale() {
+inline ::io::deephaven::proto::backplane::grpc::UpdateByWindowScale* UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByRollingMin::release_forward_window_scale() {
   
-  ::io::deephaven::proto::backplane::grpc::UpdateByEmaTimescale* temp = forward_timescale_;
-  forward_timescale_ = nullptr;
+  ::io::deephaven::proto::backplane::grpc::UpdateByWindowScale* temp = forward_window_scale_;
+  forward_window_scale_ = nullptr;
 #ifdef PROTOBUF_FORCE_COPY_IN_RELEASE
   auto* old =  reinterpret_cast<::PROTOBUF_NAMESPACE_ID::MessageLite*>(temp);
   temp = ::PROTOBUF_NAMESPACE_ID::internal::DuplicateIfNonNull(temp);
@@ -25160,89 +28031,89 @@ inline ::io::deephaven::proto::backplane::grpc::UpdateByEmaTimescale* UpdateByRe
 #endif  // !PROTOBUF_FORCE_COPY_IN_RELEASE
   return temp;
 }
-inline ::io::deephaven::proto::backplane::grpc::UpdateByEmaTimescale* UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByRollingMin::unsafe_arena_release_forward_timescale() {
-  // @@protoc_insertion_point(field_release:io.deephaven.proto.backplane.grpc.UpdateByRequest.UpdateByOperation.UpdateByColumn.UpdateBySpec.UpdateByRollingMin.forward_timescale)
+inline ::io::deephaven::proto::backplane::grpc::UpdateByWindowScale* UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByRollingMin::unsafe_arena_release_forward_window_scale() {
+  // @@protoc_insertion_point(field_release:io.deephaven.proto.backplane.grpc.UpdateByRequest.UpdateByOperation.UpdateByColumn.UpdateBySpec.UpdateByRollingMin.forward_window_scale)
   
-  ::io::deephaven::proto::backplane::grpc::UpdateByEmaTimescale* temp = forward_timescale_;
-  forward_timescale_ = nullptr;
+  ::io::deephaven::proto::backplane::grpc::UpdateByWindowScale* temp = forward_window_scale_;
+  forward_window_scale_ = nullptr;
   return temp;
 }
-inline ::io::deephaven::proto::backplane::grpc::UpdateByEmaTimescale* UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByRollingMin::_internal_mutable_forward_timescale() {
+inline ::io::deephaven::proto::backplane::grpc::UpdateByWindowScale* UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByRollingMin::_internal_mutable_forward_window_scale() {
   
-  if (forward_timescale_ == nullptr) {
-    auto* p = CreateMaybeMessage<::io::deephaven::proto::backplane::grpc::UpdateByEmaTimescale>(GetArenaForAllocation());
-    forward_timescale_ = p;
+  if (forward_window_scale_ == nullptr) {
+    auto* p = CreateMaybeMessage<::io::deephaven::proto::backplane::grpc::UpdateByWindowScale>(GetArenaForAllocation());
+    forward_window_scale_ = p;
   }
-  return forward_timescale_;
+  return forward_window_scale_;
 }
-inline ::io::deephaven::proto::backplane::grpc::UpdateByEmaTimescale* UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByRollingMin::mutable_forward_timescale() {
-  ::io::deephaven::proto::backplane::grpc::UpdateByEmaTimescale* _msg = _internal_mutable_forward_timescale();
-  // @@protoc_insertion_point(field_mutable:io.deephaven.proto.backplane.grpc.UpdateByRequest.UpdateByOperation.UpdateByColumn.UpdateBySpec.UpdateByRollingMin.forward_timescale)
+inline ::io::deephaven::proto::backplane::grpc::UpdateByWindowScale* UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByRollingMin::mutable_forward_window_scale() {
+  ::io::deephaven::proto::backplane::grpc::UpdateByWindowScale* _msg = _internal_mutable_forward_window_scale();
+  // @@protoc_insertion_point(field_mutable:io.deephaven.proto.backplane.grpc.UpdateByRequest.UpdateByOperation.UpdateByColumn.UpdateBySpec.UpdateByRollingMin.forward_window_scale)
   return _msg;
 }
-inline void UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByRollingMin::set_allocated_forward_timescale(::io::deephaven::proto::backplane::grpc::UpdateByEmaTimescale* forward_timescale) {
+inline void UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByRollingMin::set_allocated_forward_window_scale(::io::deephaven::proto::backplane::grpc::UpdateByWindowScale* forward_window_scale) {
   ::PROTOBUF_NAMESPACE_ID::Arena* message_arena = GetArenaForAllocation();
   if (message_arena == nullptr) {
-    delete forward_timescale_;
+    delete forward_window_scale_;
   }
-  if (forward_timescale) {
+  if (forward_window_scale) {
     ::PROTOBUF_NAMESPACE_ID::Arena* submessage_arena =
-        ::PROTOBUF_NAMESPACE_ID::Arena::InternalGetOwningArena(forward_timescale);
+        ::PROTOBUF_NAMESPACE_ID::Arena::InternalGetOwningArena(forward_window_scale);
     if (message_arena != submessage_arena) {
-      forward_timescale = ::PROTOBUF_NAMESPACE_ID::internal::GetOwnedMessage(
-          message_arena, forward_timescale, submessage_arena);
+      forward_window_scale = ::PROTOBUF_NAMESPACE_ID::internal::GetOwnedMessage(
+          message_arena, forward_window_scale, submessage_arena);
     }
     
   } else {
     
   }
-  forward_timescale_ = forward_timescale;
-  // @@protoc_insertion_point(field_set_allocated:io.deephaven.proto.backplane.grpc.UpdateByRequest.UpdateByOperation.UpdateByColumn.UpdateBySpec.UpdateByRollingMin.forward_timescale)
+  forward_window_scale_ = forward_window_scale;
+  // @@protoc_insertion_point(field_set_allocated:io.deephaven.proto.backplane.grpc.UpdateByRequest.UpdateByOperation.UpdateByColumn.UpdateBySpec.UpdateByRollingMin.forward_window_scale)
 }
 
 // -------------------------------------------------------------------
 
 // UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByRollingMax
 
-// .io.deephaven.proto.backplane.grpc.UpdateByEmaTimescale reverse_timescale = 1;
-inline bool UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByRollingMax::_internal_has_reverse_timescale() const {
-  return this != internal_default_instance() && reverse_timescale_ != nullptr;
+// .io.deephaven.proto.backplane.grpc.UpdateByWindowScale reverse_window_scale = 1;
+inline bool UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByRollingMax::_internal_has_reverse_window_scale() const {
+  return this != internal_default_instance() && reverse_window_scale_ != nullptr;
 }
-inline bool UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByRollingMax::has_reverse_timescale() const {
-  return _internal_has_reverse_timescale();
+inline bool UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByRollingMax::has_reverse_window_scale() const {
+  return _internal_has_reverse_window_scale();
 }
-inline void UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByRollingMax::clear_reverse_timescale() {
-  if (GetArenaForAllocation() == nullptr && reverse_timescale_ != nullptr) {
-    delete reverse_timescale_;
+inline void UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByRollingMax::clear_reverse_window_scale() {
+  if (GetArenaForAllocation() == nullptr && reverse_window_scale_ != nullptr) {
+    delete reverse_window_scale_;
   }
-  reverse_timescale_ = nullptr;
+  reverse_window_scale_ = nullptr;
 }
-inline const ::io::deephaven::proto::backplane::grpc::UpdateByEmaTimescale& UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByRollingMax::_internal_reverse_timescale() const {
-  const ::io::deephaven::proto::backplane::grpc::UpdateByEmaTimescale* p = reverse_timescale_;
-  return p != nullptr ? *p : reinterpret_cast<const ::io::deephaven::proto::backplane::grpc::UpdateByEmaTimescale&>(
-      ::io::deephaven::proto::backplane::grpc::_UpdateByEmaTimescale_default_instance_);
+inline const ::io::deephaven::proto::backplane::grpc::UpdateByWindowScale& UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByRollingMax::_internal_reverse_window_scale() const {
+  const ::io::deephaven::proto::backplane::grpc::UpdateByWindowScale* p = reverse_window_scale_;
+  return p != nullptr ? *p : reinterpret_cast<const ::io::deephaven::proto::backplane::grpc::UpdateByWindowScale&>(
+      ::io::deephaven::proto::backplane::grpc::_UpdateByWindowScale_default_instance_);
 }
-inline const ::io::deephaven::proto::backplane::grpc::UpdateByEmaTimescale& UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByRollingMax::reverse_timescale() const {
-  // @@protoc_insertion_point(field_get:io.deephaven.proto.backplane.grpc.UpdateByRequest.UpdateByOperation.UpdateByColumn.UpdateBySpec.UpdateByRollingMax.reverse_timescale)
-  return _internal_reverse_timescale();
+inline const ::io::deephaven::proto::backplane::grpc::UpdateByWindowScale& UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByRollingMax::reverse_window_scale() const {
+  // @@protoc_insertion_point(field_get:io.deephaven.proto.backplane.grpc.UpdateByRequest.UpdateByOperation.UpdateByColumn.UpdateBySpec.UpdateByRollingMax.reverse_window_scale)
+  return _internal_reverse_window_scale();
 }
-inline void UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByRollingMax::unsafe_arena_set_allocated_reverse_timescale(
-    ::io::deephaven::proto::backplane::grpc::UpdateByEmaTimescale* reverse_timescale) {
+inline void UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByRollingMax::unsafe_arena_set_allocated_reverse_window_scale(
+    ::io::deephaven::proto::backplane::grpc::UpdateByWindowScale* reverse_window_scale) {
   if (GetArenaForAllocation() == nullptr) {
-    delete reinterpret_cast<::PROTOBUF_NAMESPACE_ID::MessageLite*>(reverse_timescale_);
+    delete reinterpret_cast<::PROTOBUF_NAMESPACE_ID::MessageLite*>(reverse_window_scale_);
   }
-  reverse_timescale_ = reverse_timescale;
-  if (reverse_timescale) {
+  reverse_window_scale_ = reverse_window_scale;
+  if (reverse_window_scale) {
     
   } else {
     
   }
-  // @@protoc_insertion_point(field_unsafe_arena_set_allocated:io.deephaven.proto.backplane.grpc.UpdateByRequest.UpdateByOperation.UpdateByColumn.UpdateBySpec.UpdateByRollingMax.reverse_timescale)
+  // @@protoc_insertion_point(field_unsafe_arena_set_allocated:io.deephaven.proto.backplane.grpc.UpdateByRequest.UpdateByOperation.UpdateByColumn.UpdateBySpec.UpdateByRollingMax.reverse_window_scale)
 }
-inline ::io::deephaven::proto::backplane::grpc::UpdateByEmaTimescale* UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByRollingMax::release_reverse_timescale() {
+inline ::io::deephaven::proto::backplane::grpc::UpdateByWindowScale* UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByRollingMax::release_reverse_window_scale() {
   
-  ::io::deephaven::proto::backplane::grpc::UpdateByEmaTimescale* temp = reverse_timescale_;
-  reverse_timescale_ = nullptr;
+  ::io::deephaven::proto::backplane::grpc::UpdateByWindowScale* temp = reverse_window_scale_;
+  reverse_window_scale_ = nullptr;
 #ifdef PROTOBUF_FORCE_COPY_IN_RELEASE
   auto* old =  reinterpret_cast<::PROTOBUF_NAMESPACE_ID::MessageLite*>(temp);
   temp = ::PROTOBUF_NAMESPACE_ID::internal::DuplicateIfNonNull(temp);
@@ -25254,85 +28125,85 @@ inline ::io::deephaven::proto::backplane::grpc::UpdateByEmaTimescale* UpdateByRe
 #endif  // !PROTOBUF_FORCE_COPY_IN_RELEASE
   return temp;
 }
-inline ::io::deephaven::proto::backplane::grpc::UpdateByEmaTimescale* UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByRollingMax::unsafe_arena_release_reverse_timescale() {
-  // @@protoc_insertion_point(field_release:io.deephaven.proto.backplane.grpc.UpdateByRequest.UpdateByOperation.UpdateByColumn.UpdateBySpec.UpdateByRollingMax.reverse_timescale)
+inline ::io::deephaven::proto::backplane::grpc::UpdateByWindowScale* UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByRollingMax::unsafe_arena_release_reverse_window_scale() {
+  // @@protoc_insertion_point(field_release:io.deephaven.proto.backplane.grpc.UpdateByRequest.UpdateByOperation.UpdateByColumn.UpdateBySpec.UpdateByRollingMax.reverse_window_scale)
   
-  ::io::deephaven::proto::backplane::grpc::UpdateByEmaTimescale* temp = reverse_timescale_;
-  reverse_timescale_ = nullptr;
+  ::io::deephaven::proto::backplane::grpc::UpdateByWindowScale* temp = reverse_window_scale_;
+  reverse_window_scale_ = nullptr;
   return temp;
 }
-inline ::io::deephaven::proto::backplane::grpc::UpdateByEmaTimescale* UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByRollingMax::_internal_mutable_reverse_timescale() {
+inline ::io::deephaven::proto::backplane::grpc::UpdateByWindowScale* UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByRollingMax::_internal_mutable_reverse_window_scale() {
   
-  if (reverse_timescale_ == nullptr) {
-    auto* p = CreateMaybeMessage<::io::deephaven::proto::backplane::grpc::UpdateByEmaTimescale>(GetArenaForAllocation());
-    reverse_timescale_ = p;
+  if (reverse_window_scale_ == nullptr) {
+    auto* p = CreateMaybeMessage<::io::deephaven::proto::backplane::grpc::UpdateByWindowScale>(GetArenaForAllocation());
+    reverse_window_scale_ = p;
   }
-  return reverse_timescale_;
+  return reverse_window_scale_;
 }
-inline ::io::deephaven::proto::backplane::grpc::UpdateByEmaTimescale* UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByRollingMax::mutable_reverse_timescale() {
-  ::io::deephaven::proto::backplane::grpc::UpdateByEmaTimescale* _msg = _internal_mutable_reverse_timescale();
-  // @@protoc_insertion_point(field_mutable:io.deephaven.proto.backplane.grpc.UpdateByRequest.UpdateByOperation.UpdateByColumn.UpdateBySpec.UpdateByRollingMax.reverse_timescale)
+inline ::io::deephaven::proto::backplane::grpc::UpdateByWindowScale* UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByRollingMax::mutable_reverse_window_scale() {
+  ::io::deephaven::proto::backplane::grpc::UpdateByWindowScale* _msg = _internal_mutable_reverse_window_scale();
+  // @@protoc_insertion_point(field_mutable:io.deephaven.proto.backplane.grpc.UpdateByRequest.UpdateByOperation.UpdateByColumn.UpdateBySpec.UpdateByRollingMax.reverse_window_scale)
   return _msg;
 }
-inline void UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByRollingMax::set_allocated_reverse_timescale(::io::deephaven::proto::backplane::grpc::UpdateByEmaTimescale* reverse_timescale) {
+inline void UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByRollingMax::set_allocated_reverse_window_scale(::io::deephaven::proto::backplane::grpc::UpdateByWindowScale* reverse_window_scale) {
   ::PROTOBUF_NAMESPACE_ID::Arena* message_arena = GetArenaForAllocation();
   if (message_arena == nullptr) {
-    delete reverse_timescale_;
+    delete reverse_window_scale_;
   }
-  if (reverse_timescale) {
+  if (reverse_window_scale) {
     ::PROTOBUF_NAMESPACE_ID::Arena* submessage_arena =
-        ::PROTOBUF_NAMESPACE_ID::Arena::InternalGetOwningArena(reverse_timescale);
+        ::PROTOBUF_NAMESPACE_ID::Arena::InternalGetOwningArena(reverse_window_scale);
     if (message_arena != submessage_arena) {
-      reverse_timescale = ::PROTOBUF_NAMESPACE_ID::internal::GetOwnedMessage(
-          message_arena, reverse_timescale, submessage_arena);
+      reverse_window_scale = ::PROTOBUF_NAMESPACE_ID::internal::GetOwnedMessage(
+          message_arena, reverse_window_scale, submessage_arena);
     }
     
   } else {
     
   }
-  reverse_timescale_ = reverse_timescale;
-  // @@protoc_insertion_point(field_set_allocated:io.deephaven.proto.backplane.grpc.UpdateByRequest.UpdateByOperation.UpdateByColumn.UpdateBySpec.UpdateByRollingMax.reverse_timescale)
+  reverse_window_scale_ = reverse_window_scale;
+  // @@protoc_insertion_point(field_set_allocated:io.deephaven.proto.backplane.grpc.UpdateByRequest.UpdateByOperation.UpdateByColumn.UpdateBySpec.UpdateByRollingMax.reverse_window_scale)
 }
 
-// .io.deephaven.proto.backplane.grpc.UpdateByEmaTimescale forward_timescale = 2;
-inline bool UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByRollingMax::_internal_has_forward_timescale() const {
-  return this != internal_default_instance() && forward_timescale_ != nullptr;
+// .io.deephaven.proto.backplane.grpc.UpdateByWindowScale forward_window_scale = 2;
+inline bool UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByRollingMax::_internal_has_forward_window_scale() const {
+  return this != internal_default_instance() && forward_window_scale_ != nullptr;
 }
-inline bool UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByRollingMax::has_forward_timescale() const {
-  return _internal_has_forward_timescale();
+inline bool UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByRollingMax::has_forward_window_scale() const {
+  return _internal_has_forward_window_scale();
 }
-inline void UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByRollingMax::clear_forward_timescale() {
-  if (GetArenaForAllocation() == nullptr && forward_timescale_ != nullptr) {
-    delete forward_timescale_;
+inline void UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByRollingMax::clear_forward_window_scale() {
+  if (GetArenaForAllocation() == nullptr && forward_window_scale_ != nullptr) {
+    delete forward_window_scale_;
   }
-  forward_timescale_ = nullptr;
+  forward_window_scale_ = nullptr;
 }
-inline const ::io::deephaven::proto::backplane::grpc::UpdateByEmaTimescale& UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByRollingMax::_internal_forward_timescale() const {
-  const ::io::deephaven::proto::backplane::grpc::UpdateByEmaTimescale* p = forward_timescale_;
-  return p != nullptr ? *p : reinterpret_cast<const ::io::deephaven::proto::backplane::grpc::UpdateByEmaTimescale&>(
-      ::io::deephaven::proto::backplane::grpc::_UpdateByEmaTimescale_default_instance_);
+inline const ::io::deephaven::proto::backplane::grpc::UpdateByWindowScale& UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByRollingMax::_internal_forward_window_scale() const {
+  const ::io::deephaven::proto::backplane::grpc::UpdateByWindowScale* p = forward_window_scale_;
+  return p != nullptr ? *p : reinterpret_cast<const ::io::deephaven::proto::backplane::grpc::UpdateByWindowScale&>(
+      ::io::deephaven::proto::backplane::grpc::_UpdateByWindowScale_default_instance_);
 }
-inline const ::io::deephaven::proto::backplane::grpc::UpdateByEmaTimescale& UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByRollingMax::forward_timescale() const {
-  // @@protoc_insertion_point(field_get:io.deephaven.proto.backplane.grpc.UpdateByRequest.UpdateByOperation.UpdateByColumn.UpdateBySpec.UpdateByRollingMax.forward_timescale)
-  return _internal_forward_timescale();
+inline const ::io::deephaven::proto::backplane::grpc::UpdateByWindowScale& UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByRollingMax::forward_window_scale() const {
+  // @@protoc_insertion_point(field_get:io.deephaven.proto.backplane.grpc.UpdateByRequest.UpdateByOperation.UpdateByColumn.UpdateBySpec.UpdateByRollingMax.forward_window_scale)
+  return _internal_forward_window_scale();
 }
-inline void UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByRollingMax::unsafe_arena_set_allocated_forward_timescale(
-    ::io::deephaven::proto::backplane::grpc::UpdateByEmaTimescale* forward_timescale) {
+inline void UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByRollingMax::unsafe_arena_set_allocated_forward_window_scale(
+    ::io::deephaven::proto::backplane::grpc::UpdateByWindowScale* forward_window_scale) {
   if (GetArenaForAllocation() == nullptr) {
-    delete reinterpret_cast<::PROTOBUF_NAMESPACE_ID::MessageLite*>(forward_timescale_);
+    delete reinterpret_cast<::PROTOBUF_NAMESPACE_ID::MessageLite*>(forward_window_scale_);
   }
-  forward_timescale_ = forward_timescale;
-  if (forward_timescale) {
+  forward_window_scale_ = forward_window_scale;
+  if (forward_window_scale) {
     
   } else {
     
   }
-  // @@protoc_insertion_point(field_unsafe_arena_set_allocated:io.deephaven.proto.backplane.grpc.UpdateByRequest.UpdateByOperation.UpdateByColumn.UpdateBySpec.UpdateByRollingMax.forward_timescale)
+  // @@protoc_insertion_point(field_unsafe_arena_set_allocated:io.deephaven.proto.backplane.grpc.UpdateByRequest.UpdateByOperation.UpdateByColumn.UpdateBySpec.UpdateByRollingMax.forward_window_scale)
 }
-inline ::io::deephaven::proto::backplane::grpc::UpdateByEmaTimescale* UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByRollingMax::release_forward_timescale() {
+inline ::io::deephaven::proto::backplane::grpc::UpdateByWindowScale* UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByRollingMax::release_forward_window_scale() {
   
-  ::io::deephaven::proto::backplane::grpc::UpdateByEmaTimescale* temp = forward_timescale_;
-  forward_timescale_ = nullptr;
+  ::io::deephaven::proto::backplane::grpc::UpdateByWindowScale* temp = forward_window_scale_;
+  forward_window_scale_ = nullptr;
 #ifdef PROTOBUF_FORCE_COPY_IN_RELEASE
   auto* old =  reinterpret_cast<::PROTOBUF_NAMESPACE_ID::MessageLite*>(temp);
   temp = ::PROTOBUF_NAMESPACE_ID::internal::DuplicateIfNonNull(temp);
@@ -25344,89 +28215,89 @@ inline ::io::deephaven::proto::backplane::grpc::UpdateByEmaTimescale* UpdateByRe
 #endif  // !PROTOBUF_FORCE_COPY_IN_RELEASE
   return temp;
 }
-inline ::io::deephaven::proto::backplane::grpc::UpdateByEmaTimescale* UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByRollingMax::unsafe_arena_release_forward_timescale() {
-  // @@protoc_insertion_point(field_release:io.deephaven.proto.backplane.grpc.UpdateByRequest.UpdateByOperation.UpdateByColumn.UpdateBySpec.UpdateByRollingMax.forward_timescale)
+inline ::io::deephaven::proto::backplane::grpc::UpdateByWindowScale* UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByRollingMax::unsafe_arena_release_forward_window_scale() {
+  // @@protoc_insertion_point(field_release:io.deephaven.proto.backplane.grpc.UpdateByRequest.UpdateByOperation.UpdateByColumn.UpdateBySpec.UpdateByRollingMax.forward_window_scale)
   
-  ::io::deephaven::proto::backplane::grpc::UpdateByEmaTimescale* temp = forward_timescale_;
-  forward_timescale_ = nullptr;
+  ::io::deephaven::proto::backplane::grpc::UpdateByWindowScale* temp = forward_window_scale_;
+  forward_window_scale_ = nullptr;
   return temp;
 }
-inline ::io::deephaven::proto::backplane::grpc::UpdateByEmaTimescale* UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByRollingMax::_internal_mutable_forward_timescale() {
+inline ::io::deephaven::proto::backplane::grpc::UpdateByWindowScale* UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByRollingMax::_internal_mutable_forward_window_scale() {
   
-  if (forward_timescale_ == nullptr) {
-    auto* p = CreateMaybeMessage<::io::deephaven::proto::backplane::grpc::UpdateByEmaTimescale>(GetArenaForAllocation());
-    forward_timescale_ = p;
+  if (forward_window_scale_ == nullptr) {
+    auto* p = CreateMaybeMessage<::io::deephaven::proto::backplane::grpc::UpdateByWindowScale>(GetArenaForAllocation());
+    forward_window_scale_ = p;
   }
-  return forward_timescale_;
+  return forward_window_scale_;
 }
-inline ::io::deephaven::proto::backplane::grpc::UpdateByEmaTimescale* UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByRollingMax::mutable_forward_timescale() {
-  ::io::deephaven::proto::backplane::grpc::UpdateByEmaTimescale* _msg = _internal_mutable_forward_timescale();
-  // @@protoc_insertion_point(field_mutable:io.deephaven.proto.backplane.grpc.UpdateByRequest.UpdateByOperation.UpdateByColumn.UpdateBySpec.UpdateByRollingMax.forward_timescale)
+inline ::io::deephaven::proto::backplane::grpc::UpdateByWindowScale* UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByRollingMax::mutable_forward_window_scale() {
+  ::io::deephaven::proto::backplane::grpc::UpdateByWindowScale* _msg = _internal_mutable_forward_window_scale();
+  // @@protoc_insertion_point(field_mutable:io.deephaven.proto.backplane.grpc.UpdateByRequest.UpdateByOperation.UpdateByColumn.UpdateBySpec.UpdateByRollingMax.forward_window_scale)
   return _msg;
 }
-inline void UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByRollingMax::set_allocated_forward_timescale(::io::deephaven::proto::backplane::grpc::UpdateByEmaTimescale* forward_timescale) {
+inline void UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByRollingMax::set_allocated_forward_window_scale(::io::deephaven::proto::backplane::grpc::UpdateByWindowScale* forward_window_scale) {
   ::PROTOBUF_NAMESPACE_ID::Arena* message_arena = GetArenaForAllocation();
   if (message_arena == nullptr) {
-    delete forward_timescale_;
+    delete forward_window_scale_;
   }
-  if (forward_timescale) {
+  if (forward_window_scale) {
     ::PROTOBUF_NAMESPACE_ID::Arena* submessage_arena =
-        ::PROTOBUF_NAMESPACE_ID::Arena::InternalGetOwningArena(forward_timescale);
+        ::PROTOBUF_NAMESPACE_ID::Arena::InternalGetOwningArena(forward_window_scale);
     if (message_arena != submessage_arena) {
-      forward_timescale = ::PROTOBUF_NAMESPACE_ID::internal::GetOwnedMessage(
-          message_arena, forward_timescale, submessage_arena);
+      forward_window_scale = ::PROTOBUF_NAMESPACE_ID::internal::GetOwnedMessage(
+          message_arena, forward_window_scale, submessage_arena);
     }
     
   } else {
     
   }
-  forward_timescale_ = forward_timescale;
-  // @@protoc_insertion_point(field_set_allocated:io.deephaven.proto.backplane.grpc.UpdateByRequest.UpdateByOperation.UpdateByColumn.UpdateBySpec.UpdateByRollingMax.forward_timescale)
+  forward_window_scale_ = forward_window_scale;
+  // @@protoc_insertion_point(field_set_allocated:io.deephaven.proto.backplane.grpc.UpdateByRequest.UpdateByOperation.UpdateByColumn.UpdateBySpec.UpdateByRollingMax.forward_window_scale)
 }
 
 // -------------------------------------------------------------------
 
 // UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByRollingProduct
 
-// .io.deephaven.proto.backplane.grpc.UpdateByEmaTimescale reverse_timescale = 1;
-inline bool UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByRollingProduct::_internal_has_reverse_timescale() const {
-  return this != internal_default_instance() && reverse_timescale_ != nullptr;
+// .io.deephaven.proto.backplane.grpc.UpdateByWindowScale reverse_window_scale = 1;
+inline bool UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByRollingProduct::_internal_has_reverse_window_scale() const {
+  return this != internal_default_instance() && reverse_window_scale_ != nullptr;
 }
-inline bool UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByRollingProduct::has_reverse_timescale() const {
-  return _internal_has_reverse_timescale();
+inline bool UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByRollingProduct::has_reverse_window_scale() const {
+  return _internal_has_reverse_window_scale();
 }
-inline void UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByRollingProduct::clear_reverse_timescale() {
-  if (GetArenaForAllocation() == nullptr && reverse_timescale_ != nullptr) {
-    delete reverse_timescale_;
+inline void UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByRollingProduct::clear_reverse_window_scale() {
+  if (GetArenaForAllocation() == nullptr && reverse_window_scale_ != nullptr) {
+    delete reverse_window_scale_;
   }
-  reverse_timescale_ = nullptr;
+  reverse_window_scale_ = nullptr;
 }
-inline const ::io::deephaven::proto::backplane::grpc::UpdateByEmaTimescale& UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByRollingProduct::_internal_reverse_timescale() const {
-  const ::io::deephaven::proto::backplane::grpc::UpdateByEmaTimescale* p = reverse_timescale_;
-  return p != nullptr ? *p : reinterpret_cast<const ::io::deephaven::proto::backplane::grpc::UpdateByEmaTimescale&>(
-      ::io::deephaven::proto::backplane::grpc::_UpdateByEmaTimescale_default_instance_);
+inline const ::io::deephaven::proto::backplane::grpc::UpdateByWindowScale& UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByRollingProduct::_internal_reverse_window_scale() const {
+  const ::io::deephaven::proto::backplane::grpc::UpdateByWindowScale* p = reverse_window_scale_;
+  return p != nullptr ? *p : reinterpret_cast<const ::io::deephaven::proto::backplane::grpc::UpdateByWindowScale&>(
+      ::io::deephaven::proto::backplane::grpc::_UpdateByWindowScale_default_instance_);
 }
-inline const ::io::deephaven::proto::backplane::grpc::UpdateByEmaTimescale& UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByRollingProduct::reverse_timescale() const {
-  // @@protoc_insertion_point(field_get:io.deephaven.proto.backplane.grpc.UpdateByRequest.UpdateByOperation.UpdateByColumn.UpdateBySpec.UpdateByRollingProduct.reverse_timescale)
-  return _internal_reverse_timescale();
+inline const ::io::deephaven::proto::backplane::grpc::UpdateByWindowScale& UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByRollingProduct::reverse_window_scale() const {
+  // @@protoc_insertion_point(field_get:io.deephaven.proto.backplane.grpc.UpdateByRequest.UpdateByOperation.UpdateByColumn.UpdateBySpec.UpdateByRollingProduct.reverse_window_scale)
+  return _internal_reverse_window_scale();
 }
-inline void UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByRollingProduct::unsafe_arena_set_allocated_reverse_timescale(
-    ::io::deephaven::proto::backplane::grpc::UpdateByEmaTimescale* reverse_timescale) {
+inline void UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByRollingProduct::unsafe_arena_set_allocated_reverse_window_scale(
+    ::io::deephaven::proto::backplane::grpc::UpdateByWindowScale* reverse_window_scale) {
   if (GetArenaForAllocation() == nullptr) {
-    delete reinterpret_cast<::PROTOBUF_NAMESPACE_ID::MessageLite*>(reverse_timescale_);
+    delete reinterpret_cast<::PROTOBUF_NAMESPACE_ID::MessageLite*>(reverse_window_scale_);
   }
-  reverse_timescale_ = reverse_timescale;
-  if (reverse_timescale) {
+  reverse_window_scale_ = reverse_window_scale;
+  if (reverse_window_scale) {
     
   } else {
     
   }
-  // @@protoc_insertion_point(field_unsafe_arena_set_allocated:io.deephaven.proto.backplane.grpc.UpdateByRequest.UpdateByOperation.UpdateByColumn.UpdateBySpec.UpdateByRollingProduct.reverse_timescale)
+  // @@protoc_insertion_point(field_unsafe_arena_set_allocated:io.deephaven.proto.backplane.grpc.UpdateByRequest.UpdateByOperation.UpdateByColumn.UpdateBySpec.UpdateByRollingProduct.reverse_window_scale)
 }
-inline ::io::deephaven::proto::backplane::grpc::UpdateByEmaTimescale* UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByRollingProduct::release_reverse_timescale() {
+inline ::io::deephaven::proto::backplane::grpc::UpdateByWindowScale* UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByRollingProduct::release_reverse_window_scale() {
   
-  ::io::deephaven::proto::backplane::grpc::UpdateByEmaTimescale* temp = reverse_timescale_;
-  reverse_timescale_ = nullptr;
+  ::io::deephaven::proto::backplane::grpc::UpdateByWindowScale* temp = reverse_window_scale_;
+  reverse_window_scale_ = nullptr;
 #ifdef PROTOBUF_FORCE_COPY_IN_RELEASE
   auto* old =  reinterpret_cast<::PROTOBUF_NAMESPACE_ID::MessageLite*>(temp);
   temp = ::PROTOBUF_NAMESPACE_ID::internal::DuplicateIfNonNull(temp);
@@ -25438,85 +28309,85 @@ inline ::io::deephaven::proto::backplane::grpc::UpdateByEmaTimescale* UpdateByRe
 #endif  // !PROTOBUF_FORCE_COPY_IN_RELEASE
   return temp;
 }
-inline ::io::deephaven::proto::backplane::grpc::UpdateByEmaTimescale* UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByRollingProduct::unsafe_arena_release_reverse_timescale() {
-  // @@protoc_insertion_point(field_release:io.deephaven.proto.backplane.grpc.UpdateByRequest.UpdateByOperation.UpdateByColumn.UpdateBySpec.UpdateByRollingProduct.reverse_timescale)
+inline ::io::deephaven::proto::backplane::grpc::UpdateByWindowScale* UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByRollingProduct::unsafe_arena_release_reverse_window_scale() {
+  // @@protoc_insertion_point(field_release:io.deephaven.proto.backplane.grpc.UpdateByRequest.UpdateByOperation.UpdateByColumn.UpdateBySpec.UpdateByRollingProduct.reverse_window_scale)
   
-  ::io::deephaven::proto::backplane::grpc::UpdateByEmaTimescale* temp = reverse_timescale_;
-  reverse_timescale_ = nullptr;
+  ::io::deephaven::proto::backplane::grpc::UpdateByWindowScale* temp = reverse_window_scale_;
+  reverse_window_scale_ = nullptr;
   return temp;
 }
-inline ::io::deephaven::proto::backplane::grpc::UpdateByEmaTimescale* UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByRollingProduct::_internal_mutable_reverse_timescale() {
+inline ::io::deephaven::proto::backplane::grpc::UpdateByWindowScale* UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByRollingProduct::_internal_mutable_reverse_window_scale() {
   
-  if (reverse_timescale_ == nullptr) {
-    auto* p = CreateMaybeMessage<::io::deephaven::proto::backplane::grpc::UpdateByEmaTimescale>(GetArenaForAllocation());
-    reverse_timescale_ = p;
+  if (reverse_window_scale_ == nullptr) {
+    auto* p = CreateMaybeMessage<::io::deephaven::proto::backplane::grpc::UpdateByWindowScale>(GetArenaForAllocation());
+    reverse_window_scale_ = p;
   }
-  return reverse_timescale_;
+  return reverse_window_scale_;
 }
-inline ::io::deephaven::proto::backplane::grpc::UpdateByEmaTimescale* UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByRollingProduct::mutable_reverse_timescale() {
-  ::io::deephaven::proto::backplane::grpc::UpdateByEmaTimescale* _msg = _internal_mutable_reverse_timescale();
-  // @@protoc_insertion_point(field_mutable:io.deephaven.proto.backplane.grpc.UpdateByRequest.UpdateByOperation.UpdateByColumn.UpdateBySpec.UpdateByRollingProduct.reverse_timescale)
+inline ::io::deephaven::proto::backplane::grpc::UpdateByWindowScale* UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByRollingProduct::mutable_reverse_window_scale() {
+  ::io::deephaven::proto::backplane::grpc::UpdateByWindowScale* _msg = _internal_mutable_reverse_window_scale();
+  // @@protoc_insertion_point(field_mutable:io.deephaven.proto.backplane.grpc.UpdateByRequest.UpdateByOperation.UpdateByColumn.UpdateBySpec.UpdateByRollingProduct.reverse_window_scale)
   return _msg;
 }
-inline void UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByRollingProduct::set_allocated_reverse_timescale(::io::deephaven::proto::backplane::grpc::UpdateByEmaTimescale* reverse_timescale) {
+inline void UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByRollingProduct::set_allocated_reverse_window_scale(::io::deephaven::proto::backplane::grpc::UpdateByWindowScale* reverse_window_scale) {
   ::PROTOBUF_NAMESPACE_ID::Arena* message_arena = GetArenaForAllocation();
   if (message_arena == nullptr) {
-    delete reverse_timescale_;
+    delete reverse_window_scale_;
   }
-  if (reverse_timescale) {
+  if (reverse_window_scale) {
     ::PROTOBUF_NAMESPACE_ID::Arena* submessage_arena =
-        ::PROTOBUF_NAMESPACE_ID::Arena::InternalGetOwningArena(reverse_timescale);
+        ::PROTOBUF_NAMESPACE_ID::Arena::InternalGetOwningArena(reverse_window_scale);
     if (message_arena != submessage_arena) {
-      reverse_timescale = ::PROTOBUF_NAMESPACE_ID::internal::GetOwnedMessage(
-          message_arena, reverse_timescale, submessage_arena);
+      reverse_window_scale = ::PROTOBUF_NAMESPACE_ID::internal::GetOwnedMessage(
+          message_arena, reverse_window_scale, submessage_arena);
     }
     
   } else {
     
   }
-  reverse_timescale_ = reverse_timescale;
-  // @@protoc_insertion_point(field_set_allocated:io.deephaven.proto.backplane.grpc.UpdateByRequest.UpdateByOperation.UpdateByColumn.UpdateBySpec.UpdateByRollingProduct.reverse_timescale)
+  reverse_window_scale_ = reverse_window_scale;
+  // @@protoc_insertion_point(field_set_allocated:io.deephaven.proto.backplane.grpc.UpdateByRequest.UpdateByOperation.UpdateByColumn.UpdateBySpec.UpdateByRollingProduct.reverse_window_scale)
 }
 
-// .io.deephaven.proto.backplane.grpc.UpdateByEmaTimescale forward_timescale = 2;
-inline bool UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByRollingProduct::_internal_has_forward_timescale() const {
-  return this != internal_default_instance() && forward_timescale_ != nullptr;
+// .io.deephaven.proto.backplane.grpc.UpdateByWindowScale forward_window_scale = 2;
+inline bool UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByRollingProduct::_internal_has_forward_window_scale() const {
+  return this != internal_default_instance() && forward_window_scale_ != nullptr;
 }
-inline bool UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByRollingProduct::has_forward_timescale() const {
-  return _internal_has_forward_timescale();
+inline bool UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByRollingProduct::has_forward_window_scale() const {
+  return _internal_has_forward_window_scale();
 }
-inline void UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByRollingProduct::clear_forward_timescale() {
-  if (GetArenaForAllocation() == nullptr && forward_timescale_ != nullptr) {
-    delete forward_timescale_;
+inline void UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByRollingProduct::clear_forward_window_scale() {
+  if (GetArenaForAllocation() == nullptr && forward_window_scale_ != nullptr) {
+    delete forward_window_scale_;
   }
-  forward_timescale_ = nullptr;
+  forward_window_scale_ = nullptr;
 }
-inline const ::io::deephaven::proto::backplane::grpc::UpdateByEmaTimescale& UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByRollingProduct::_internal_forward_timescale() const {
-  const ::io::deephaven::proto::backplane::grpc::UpdateByEmaTimescale* p = forward_timescale_;
-  return p != nullptr ? *p : reinterpret_cast<const ::io::deephaven::proto::backplane::grpc::UpdateByEmaTimescale&>(
-      ::io::deephaven::proto::backplane::grpc::_UpdateByEmaTimescale_default_instance_);
+inline const ::io::deephaven::proto::backplane::grpc::UpdateByWindowScale& UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByRollingProduct::_internal_forward_window_scale() const {
+  const ::io::deephaven::proto::backplane::grpc::UpdateByWindowScale* p = forward_window_scale_;
+  return p != nullptr ? *p : reinterpret_cast<const ::io::deephaven::proto::backplane::grpc::UpdateByWindowScale&>(
+      ::io::deephaven::proto::backplane::grpc::_UpdateByWindowScale_default_instance_);
 }
-inline const ::io::deephaven::proto::backplane::grpc::UpdateByEmaTimescale& UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByRollingProduct::forward_timescale() const {
-  // @@protoc_insertion_point(field_get:io.deephaven.proto.backplane.grpc.UpdateByRequest.UpdateByOperation.UpdateByColumn.UpdateBySpec.UpdateByRollingProduct.forward_timescale)
-  return _internal_forward_timescale();
+inline const ::io::deephaven::proto::backplane::grpc::UpdateByWindowScale& UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByRollingProduct::forward_window_scale() const {
+  // @@protoc_insertion_point(field_get:io.deephaven.proto.backplane.grpc.UpdateByRequest.UpdateByOperation.UpdateByColumn.UpdateBySpec.UpdateByRollingProduct.forward_window_scale)
+  return _internal_forward_window_scale();
 }
-inline void UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByRollingProduct::unsafe_arena_set_allocated_forward_timescale(
-    ::io::deephaven::proto::backplane::grpc::UpdateByEmaTimescale* forward_timescale) {
+inline void UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByRollingProduct::unsafe_arena_set_allocated_forward_window_scale(
+    ::io::deephaven::proto::backplane::grpc::UpdateByWindowScale* forward_window_scale) {
   if (GetArenaForAllocation() == nullptr) {
-    delete reinterpret_cast<::PROTOBUF_NAMESPACE_ID::MessageLite*>(forward_timescale_);
+    delete reinterpret_cast<::PROTOBUF_NAMESPACE_ID::MessageLite*>(forward_window_scale_);
   }
-  forward_timescale_ = forward_timescale;
-  if (forward_timescale) {
+  forward_window_scale_ = forward_window_scale;
+  if (forward_window_scale) {
     
   } else {
     
   }
-  // @@protoc_insertion_point(field_unsafe_arena_set_allocated:io.deephaven.proto.backplane.grpc.UpdateByRequest.UpdateByOperation.UpdateByColumn.UpdateBySpec.UpdateByRollingProduct.forward_timescale)
+  // @@protoc_insertion_point(field_unsafe_arena_set_allocated:io.deephaven.proto.backplane.grpc.UpdateByRequest.UpdateByOperation.UpdateByColumn.UpdateBySpec.UpdateByRollingProduct.forward_window_scale)
 }
-inline ::io::deephaven::proto::backplane::grpc::UpdateByEmaTimescale* UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByRollingProduct::release_forward_timescale() {
+inline ::io::deephaven::proto::backplane::grpc::UpdateByWindowScale* UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByRollingProduct::release_forward_window_scale() {
   
-  ::io::deephaven::proto::backplane::grpc::UpdateByEmaTimescale* temp = forward_timescale_;
-  forward_timescale_ = nullptr;
+  ::io::deephaven::proto::backplane::grpc::UpdateByWindowScale* temp = forward_window_scale_;
+  forward_window_scale_ = nullptr;
 #ifdef PROTOBUF_FORCE_COPY_IN_RELEASE
   auto* old =  reinterpret_cast<::PROTOBUF_NAMESPACE_ID::MessageLite*>(temp);
   temp = ::PROTOBUF_NAMESPACE_ID::internal::DuplicateIfNonNull(temp);
@@ -25528,44 +28399,646 @@ inline ::io::deephaven::proto::backplane::grpc::UpdateByEmaTimescale* UpdateByRe
 #endif  // !PROTOBUF_FORCE_COPY_IN_RELEASE
   return temp;
 }
-inline ::io::deephaven::proto::backplane::grpc::UpdateByEmaTimescale* UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByRollingProduct::unsafe_arena_release_forward_timescale() {
-  // @@protoc_insertion_point(field_release:io.deephaven.proto.backplane.grpc.UpdateByRequest.UpdateByOperation.UpdateByColumn.UpdateBySpec.UpdateByRollingProduct.forward_timescale)
+inline ::io::deephaven::proto::backplane::grpc::UpdateByWindowScale* UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByRollingProduct::unsafe_arena_release_forward_window_scale() {
+  // @@protoc_insertion_point(field_release:io.deephaven.proto.backplane.grpc.UpdateByRequest.UpdateByOperation.UpdateByColumn.UpdateBySpec.UpdateByRollingProduct.forward_window_scale)
   
-  ::io::deephaven::proto::backplane::grpc::UpdateByEmaTimescale* temp = forward_timescale_;
-  forward_timescale_ = nullptr;
+  ::io::deephaven::proto::backplane::grpc::UpdateByWindowScale* temp = forward_window_scale_;
+  forward_window_scale_ = nullptr;
   return temp;
 }
-inline ::io::deephaven::proto::backplane::grpc::UpdateByEmaTimescale* UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByRollingProduct::_internal_mutable_forward_timescale() {
+inline ::io::deephaven::proto::backplane::grpc::UpdateByWindowScale* UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByRollingProduct::_internal_mutable_forward_window_scale() {
   
-  if (forward_timescale_ == nullptr) {
-    auto* p = CreateMaybeMessage<::io::deephaven::proto::backplane::grpc::UpdateByEmaTimescale>(GetArenaForAllocation());
-    forward_timescale_ = p;
+  if (forward_window_scale_ == nullptr) {
+    auto* p = CreateMaybeMessage<::io::deephaven::proto::backplane::grpc::UpdateByWindowScale>(GetArenaForAllocation());
+    forward_window_scale_ = p;
   }
-  return forward_timescale_;
+  return forward_window_scale_;
 }
-inline ::io::deephaven::proto::backplane::grpc::UpdateByEmaTimescale* UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByRollingProduct::mutable_forward_timescale() {
-  ::io::deephaven::proto::backplane::grpc::UpdateByEmaTimescale* _msg = _internal_mutable_forward_timescale();
-  // @@protoc_insertion_point(field_mutable:io.deephaven.proto.backplane.grpc.UpdateByRequest.UpdateByOperation.UpdateByColumn.UpdateBySpec.UpdateByRollingProduct.forward_timescale)
+inline ::io::deephaven::proto::backplane::grpc::UpdateByWindowScale* UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByRollingProduct::mutable_forward_window_scale() {
+  ::io::deephaven::proto::backplane::grpc::UpdateByWindowScale* _msg = _internal_mutable_forward_window_scale();
+  // @@protoc_insertion_point(field_mutable:io.deephaven.proto.backplane.grpc.UpdateByRequest.UpdateByOperation.UpdateByColumn.UpdateBySpec.UpdateByRollingProduct.forward_window_scale)
   return _msg;
 }
-inline void UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByRollingProduct::set_allocated_forward_timescale(::io::deephaven::proto::backplane::grpc::UpdateByEmaTimescale* forward_timescale) {
+inline void UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByRollingProduct::set_allocated_forward_window_scale(::io::deephaven::proto::backplane::grpc::UpdateByWindowScale* forward_window_scale) {
   ::PROTOBUF_NAMESPACE_ID::Arena* message_arena = GetArenaForAllocation();
   if (message_arena == nullptr) {
-    delete forward_timescale_;
+    delete forward_window_scale_;
   }
-  if (forward_timescale) {
+  if (forward_window_scale) {
     ::PROTOBUF_NAMESPACE_ID::Arena* submessage_arena =
-        ::PROTOBUF_NAMESPACE_ID::Arena::InternalGetOwningArena(forward_timescale);
+        ::PROTOBUF_NAMESPACE_ID::Arena::InternalGetOwningArena(forward_window_scale);
     if (message_arena != submessage_arena) {
-      forward_timescale = ::PROTOBUF_NAMESPACE_ID::internal::GetOwnedMessage(
-          message_arena, forward_timescale, submessage_arena);
+      forward_window_scale = ::PROTOBUF_NAMESPACE_ID::internal::GetOwnedMessage(
+          message_arena, forward_window_scale, submessage_arena);
     }
     
   } else {
     
   }
-  forward_timescale_ = forward_timescale;
-  // @@protoc_insertion_point(field_set_allocated:io.deephaven.proto.backplane.grpc.UpdateByRequest.UpdateByOperation.UpdateByColumn.UpdateBySpec.UpdateByRollingProduct.forward_timescale)
+  forward_window_scale_ = forward_window_scale;
+  // @@protoc_insertion_point(field_set_allocated:io.deephaven.proto.backplane.grpc.UpdateByRequest.UpdateByOperation.UpdateByColumn.UpdateBySpec.UpdateByRollingProduct.forward_window_scale)
+}
+
+// -------------------------------------------------------------------
+
+// UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByRollingCount
+
+// .io.deephaven.proto.backplane.grpc.UpdateByWindowScale reverse_window_scale = 1;
+inline bool UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByRollingCount::_internal_has_reverse_window_scale() const {
+  return this != internal_default_instance() && reverse_window_scale_ != nullptr;
+}
+inline bool UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByRollingCount::has_reverse_window_scale() const {
+  return _internal_has_reverse_window_scale();
+}
+inline void UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByRollingCount::clear_reverse_window_scale() {
+  if (GetArenaForAllocation() == nullptr && reverse_window_scale_ != nullptr) {
+    delete reverse_window_scale_;
+  }
+  reverse_window_scale_ = nullptr;
+}
+inline const ::io::deephaven::proto::backplane::grpc::UpdateByWindowScale& UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByRollingCount::_internal_reverse_window_scale() const {
+  const ::io::deephaven::proto::backplane::grpc::UpdateByWindowScale* p = reverse_window_scale_;
+  return p != nullptr ? *p : reinterpret_cast<const ::io::deephaven::proto::backplane::grpc::UpdateByWindowScale&>(
+      ::io::deephaven::proto::backplane::grpc::_UpdateByWindowScale_default_instance_);
+}
+inline const ::io::deephaven::proto::backplane::grpc::UpdateByWindowScale& UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByRollingCount::reverse_window_scale() const {
+  // @@protoc_insertion_point(field_get:io.deephaven.proto.backplane.grpc.UpdateByRequest.UpdateByOperation.UpdateByColumn.UpdateBySpec.UpdateByRollingCount.reverse_window_scale)
+  return _internal_reverse_window_scale();
+}
+inline void UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByRollingCount::unsafe_arena_set_allocated_reverse_window_scale(
+    ::io::deephaven::proto::backplane::grpc::UpdateByWindowScale* reverse_window_scale) {
+  if (GetArenaForAllocation() == nullptr) {
+    delete reinterpret_cast<::PROTOBUF_NAMESPACE_ID::MessageLite*>(reverse_window_scale_);
+  }
+  reverse_window_scale_ = reverse_window_scale;
+  if (reverse_window_scale) {
+    
+  } else {
+    
+  }
+  // @@protoc_insertion_point(field_unsafe_arena_set_allocated:io.deephaven.proto.backplane.grpc.UpdateByRequest.UpdateByOperation.UpdateByColumn.UpdateBySpec.UpdateByRollingCount.reverse_window_scale)
+}
+inline ::io::deephaven::proto::backplane::grpc::UpdateByWindowScale* UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByRollingCount::release_reverse_window_scale() {
+  
+  ::io::deephaven::proto::backplane::grpc::UpdateByWindowScale* temp = reverse_window_scale_;
+  reverse_window_scale_ = nullptr;
+#ifdef PROTOBUF_FORCE_COPY_IN_RELEASE
+  auto* old =  reinterpret_cast<::PROTOBUF_NAMESPACE_ID::MessageLite*>(temp);
+  temp = ::PROTOBUF_NAMESPACE_ID::internal::DuplicateIfNonNull(temp);
+  if (GetArenaForAllocation() == nullptr) { delete old; }
+#else  // PROTOBUF_FORCE_COPY_IN_RELEASE
+  if (GetArenaForAllocation() != nullptr) {
+    temp = ::PROTOBUF_NAMESPACE_ID::internal::DuplicateIfNonNull(temp);
+  }
+#endif  // !PROTOBUF_FORCE_COPY_IN_RELEASE
+  return temp;
+}
+inline ::io::deephaven::proto::backplane::grpc::UpdateByWindowScale* UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByRollingCount::unsafe_arena_release_reverse_window_scale() {
+  // @@protoc_insertion_point(field_release:io.deephaven.proto.backplane.grpc.UpdateByRequest.UpdateByOperation.UpdateByColumn.UpdateBySpec.UpdateByRollingCount.reverse_window_scale)
+  
+  ::io::deephaven::proto::backplane::grpc::UpdateByWindowScale* temp = reverse_window_scale_;
+  reverse_window_scale_ = nullptr;
+  return temp;
+}
+inline ::io::deephaven::proto::backplane::grpc::UpdateByWindowScale* UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByRollingCount::_internal_mutable_reverse_window_scale() {
+  
+  if (reverse_window_scale_ == nullptr) {
+    auto* p = CreateMaybeMessage<::io::deephaven::proto::backplane::grpc::UpdateByWindowScale>(GetArenaForAllocation());
+    reverse_window_scale_ = p;
+  }
+  return reverse_window_scale_;
+}
+inline ::io::deephaven::proto::backplane::grpc::UpdateByWindowScale* UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByRollingCount::mutable_reverse_window_scale() {
+  ::io::deephaven::proto::backplane::grpc::UpdateByWindowScale* _msg = _internal_mutable_reverse_window_scale();
+  // @@protoc_insertion_point(field_mutable:io.deephaven.proto.backplane.grpc.UpdateByRequest.UpdateByOperation.UpdateByColumn.UpdateBySpec.UpdateByRollingCount.reverse_window_scale)
+  return _msg;
+}
+inline void UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByRollingCount::set_allocated_reverse_window_scale(::io::deephaven::proto::backplane::grpc::UpdateByWindowScale* reverse_window_scale) {
+  ::PROTOBUF_NAMESPACE_ID::Arena* message_arena = GetArenaForAllocation();
+  if (message_arena == nullptr) {
+    delete reverse_window_scale_;
+  }
+  if (reverse_window_scale) {
+    ::PROTOBUF_NAMESPACE_ID::Arena* submessage_arena =
+        ::PROTOBUF_NAMESPACE_ID::Arena::InternalGetOwningArena(reverse_window_scale);
+    if (message_arena != submessage_arena) {
+      reverse_window_scale = ::PROTOBUF_NAMESPACE_ID::internal::GetOwnedMessage(
+          message_arena, reverse_window_scale, submessage_arena);
+    }
+    
+  } else {
+    
+  }
+  reverse_window_scale_ = reverse_window_scale;
+  // @@protoc_insertion_point(field_set_allocated:io.deephaven.proto.backplane.grpc.UpdateByRequest.UpdateByOperation.UpdateByColumn.UpdateBySpec.UpdateByRollingCount.reverse_window_scale)
+}
+
+// .io.deephaven.proto.backplane.grpc.UpdateByWindowScale forward_window_scale = 2;
+inline bool UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByRollingCount::_internal_has_forward_window_scale() const {
+  return this != internal_default_instance() && forward_window_scale_ != nullptr;
+}
+inline bool UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByRollingCount::has_forward_window_scale() const {
+  return _internal_has_forward_window_scale();
+}
+inline void UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByRollingCount::clear_forward_window_scale() {
+  if (GetArenaForAllocation() == nullptr && forward_window_scale_ != nullptr) {
+    delete forward_window_scale_;
+  }
+  forward_window_scale_ = nullptr;
+}
+inline const ::io::deephaven::proto::backplane::grpc::UpdateByWindowScale& UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByRollingCount::_internal_forward_window_scale() const {
+  const ::io::deephaven::proto::backplane::grpc::UpdateByWindowScale* p = forward_window_scale_;
+  return p != nullptr ? *p : reinterpret_cast<const ::io::deephaven::proto::backplane::grpc::UpdateByWindowScale&>(
+      ::io::deephaven::proto::backplane::grpc::_UpdateByWindowScale_default_instance_);
+}
+inline const ::io::deephaven::proto::backplane::grpc::UpdateByWindowScale& UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByRollingCount::forward_window_scale() const {
+  // @@protoc_insertion_point(field_get:io.deephaven.proto.backplane.grpc.UpdateByRequest.UpdateByOperation.UpdateByColumn.UpdateBySpec.UpdateByRollingCount.forward_window_scale)
+  return _internal_forward_window_scale();
+}
+inline void UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByRollingCount::unsafe_arena_set_allocated_forward_window_scale(
+    ::io::deephaven::proto::backplane::grpc::UpdateByWindowScale* forward_window_scale) {
+  if (GetArenaForAllocation() == nullptr) {
+    delete reinterpret_cast<::PROTOBUF_NAMESPACE_ID::MessageLite*>(forward_window_scale_);
+  }
+  forward_window_scale_ = forward_window_scale;
+  if (forward_window_scale) {
+    
+  } else {
+    
+  }
+  // @@protoc_insertion_point(field_unsafe_arena_set_allocated:io.deephaven.proto.backplane.grpc.UpdateByRequest.UpdateByOperation.UpdateByColumn.UpdateBySpec.UpdateByRollingCount.forward_window_scale)
+}
+inline ::io::deephaven::proto::backplane::grpc::UpdateByWindowScale* UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByRollingCount::release_forward_window_scale() {
+  
+  ::io::deephaven::proto::backplane::grpc::UpdateByWindowScale* temp = forward_window_scale_;
+  forward_window_scale_ = nullptr;
+#ifdef PROTOBUF_FORCE_COPY_IN_RELEASE
+  auto* old =  reinterpret_cast<::PROTOBUF_NAMESPACE_ID::MessageLite*>(temp);
+  temp = ::PROTOBUF_NAMESPACE_ID::internal::DuplicateIfNonNull(temp);
+  if (GetArenaForAllocation() == nullptr) { delete old; }
+#else  // PROTOBUF_FORCE_COPY_IN_RELEASE
+  if (GetArenaForAllocation() != nullptr) {
+    temp = ::PROTOBUF_NAMESPACE_ID::internal::DuplicateIfNonNull(temp);
+  }
+#endif  // !PROTOBUF_FORCE_COPY_IN_RELEASE
+  return temp;
+}
+inline ::io::deephaven::proto::backplane::grpc::UpdateByWindowScale* UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByRollingCount::unsafe_arena_release_forward_window_scale() {
+  // @@protoc_insertion_point(field_release:io.deephaven.proto.backplane.grpc.UpdateByRequest.UpdateByOperation.UpdateByColumn.UpdateBySpec.UpdateByRollingCount.forward_window_scale)
+  
+  ::io::deephaven::proto::backplane::grpc::UpdateByWindowScale* temp = forward_window_scale_;
+  forward_window_scale_ = nullptr;
+  return temp;
+}
+inline ::io::deephaven::proto::backplane::grpc::UpdateByWindowScale* UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByRollingCount::_internal_mutable_forward_window_scale() {
+  
+  if (forward_window_scale_ == nullptr) {
+    auto* p = CreateMaybeMessage<::io::deephaven::proto::backplane::grpc::UpdateByWindowScale>(GetArenaForAllocation());
+    forward_window_scale_ = p;
+  }
+  return forward_window_scale_;
+}
+inline ::io::deephaven::proto::backplane::grpc::UpdateByWindowScale* UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByRollingCount::mutable_forward_window_scale() {
+  ::io::deephaven::proto::backplane::grpc::UpdateByWindowScale* _msg = _internal_mutable_forward_window_scale();
+  // @@protoc_insertion_point(field_mutable:io.deephaven.proto.backplane.grpc.UpdateByRequest.UpdateByOperation.UpdateByColumn.UpdateBySpec.UpdateByRollingCount.forward_window_scale)
+  return _msg;
+}
+inline void UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByRollingCount::set_allocated_forward_window_scale(::io::deephaven::proto::backplane::grpc::UpdateByWindowScale* forward_window_scale) {
+  ::PROTOBUF_NAMESPACE_ID::Arena* message_arena = GetArenaForAllocation();
+  if (message_arena == nullptr) {
+    delete forward_window_scale_;
+  }
+  if (forward_window_scale) {
+    ::PROTOBUF_NAMESPACE_ID::Arena* submessage_arena =
+        ::PROTOBUF_NAMESPACE_ID::Arena::InternalGetOwningArena(forward_window_scale);
+    if (message_arena != submessage_arena) {
+      forward_window_scale = ::PROTOBUF_NAMESPACE_ID::internal::GetOwnedMessage(
+          message_arena, forward_window_scale, submessage_arena);
+    }
+    
+  } else {
+    
+  }
+  forward_window_scale_ = forward_window_scale;
+  // @@protoc_insertion_point(field_set_allocated:io.deephaven.proto.backplane.grpc.UpdateByRequest.UpdateByOperation.UpdateByColumn.UpdateBySpec.UpdateByRollingCount.forward_window_scale)
+}
+
+// -------------------------------------------------------------------
+
+// UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByRollingStd
+
+// .io.deephaven.proto.backplane.grpc.UpdateByWindowScale reverse_window_scale = 1;
+inline bool UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByRollingStd::_internal_has_reverse_window_scale() const {
+  return this != internal_default_instance() && reverse_window_scale_ != nullptr;
+}
+inline bool UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByRollingStd::has_reverse_window_scale() const {
+  return _internal_has_reverse_window_scale();
+}
+inline void UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByRollingStd::clear_reverse_window_scale() {
+  if (GetArenaForAllocation() == nullptr && reverse_window_scale_ != nullptr) {
+    delete reverse_window_scale_;
+  }
+  reverse_window_scale_ = nullptr;
+}
+inline const ::io::deephaven::proto::backplane::grpc::UpdateByWindowScale& UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByRollingStd::_internal_reverse_window_scale() const {
+  const ::io::deephaven::proto::backplane::grpc::UpdateByWindowScale* p = reverse_window_scale_;
+  return p != nullptr ? *p : reinterpret_cast<const ::io::deephaven::proto::backplane::grpc::UpdateByWindowScale&>(
+      ::io::deephaven::proto::backplane::grpc::_UpdateByWindowScale_default_instance_);
+}
+inline const ::io::deephaven::proto::backplane::grpc::UpdateByWindowScale& UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByRollingStd::reverse_window_scale() const {
+  // @@protoc_insertion_point(field_get:io.deephaven.proto.backplane.grpc.UpdateByRequest.UpdateByOperation.UpdateByColumn.UpdateBySpec.UpdateByRollingStd.reverse_window_scale)
+  return _internal_reverse_window_scale();
+}
+inline void UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByRollingStd::unsafe_arena_set_allocated_reverse_window_scale(
+    ::io::deephaven::proto::backplane::grpc::UpdateByWindowScale* reverse_window_scale) {
+  if (GetArenaForAllocation() == nullptr) {
+    delete reinterpret_cast<::PROTOBUF_NAMESPACE_ID::MessageLite*>(reverse_window_scale_);
+  }
+  reverse_window_scale_ = reverse_window_scale;
+  if (reverse_window_scale) {
+    
+  } else {
+    
+  }
+  // @@protoc_insertion_point(field_unsafe_arena_set_allocated:io.deephaven.proto.backplane.grpc.UpdateByRequest.UpdateByOperation.UpdateByColumn.UpdateBySpec.UpdateByRollingStd.reverse_window_scale)
+}
+inline ::io::deephaven::proto::backplane::grpc::UpdateByWindowScale* UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByRollingStd::release_reverse_window_scale() {
+  
+  ::io::deephaven::proto::backplane::grpc::UpdateByWindowScale* temp = reverse_window_scale_;
+  reverse_window_scale_ = nullptr;
+#ifdef PROTOBUF_FORCE_COPY_IN_RELEASE
+  auto* old =  reinterpret_cast<::PROTOBUF_NAMESPACE_ID::MessageLite*>(temp);
+  temp = ::PROTOBUF_NAMESPACE_ID::internal::DuplicateIfNonNull(temp);
+  if (GetArenaForAllocation() == nullptr) { delete old; }
+#else  // PROTOBUF_FORCE_COPY_IN_RELEASE
+  if (GetArenaForAllocation() != nullptr) {
+    temp = ::PROTOBUF_NAMESPACE_ID::internal::DuplicateIfNonNull(temp);
+  }
+#endif  // !PROTOBUF_FORCE_COPY_IN_RELEASE
+  return temp;
+}
+inline ::io::deephaven::proto::backplane::grpc::UpdateByWindowScale* UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByRollingStd::unsafe_arena_release_reverse_window_scale() {
+  // @@protoc_insertion_point(field_release:io.deephaven.proto.backplane.grpc.UpdateByRequest.UpdateByOperation.UpdateByColumn.UpdateBySpec.UpdateByRollingStd.reverse_window_scale)
+  
+  ::io::deephaven::proto::backplane::grpc::UpdateByWindowScale* temp = reverse_window_scale_;
+  reverse_window_scale_ = nullptr;
+  return temp;
+}
+inline ::io::deephaven::proto::backplane::grpc::UpdateByWindowScale* UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByRollingStd::_internal_mutable_reverse_window_scale() {
+  
+  if (reverse_window_scale_ == nullptr) {
+    auto* p = CreateMaybeMessage<::io::deephaven::proto::backplane::grpc::UpdateByWindowScale>(GetArenaForAllocation());
+    reverse_window_scale_ = p;
+  }
+  return reverse_window_scale_;
+}
+inline ::io::deephaven::proto::backplane::grpc::UpdateByWindowScale* UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByRollingStd::mutable_reverse_window_scale() {
+  ::io::deephaven::proto::backplane::grpc::UpdateByWindowScale* _msg = _internal_mutable_reverse_window_scale();
+  // @@protoc_insertion_point(field_mutable:io.deephaven.proto.backplane.grpc.UpdateByRequest.UpdateByOperation.UpdateByColumn.UpdateBySpec.UpdateByRollingStd.reverse_window_scale)
+  return _msg;
+}
+inline void UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByRollingStd::set_allocated_reverse_window_scale(::io::deephaven::proto::backplane::grpc::UpdateByWindowScale* reverse_window_scale) {
+  ::PROTOBUF_NAMESPACE_ID::Arena* message_arena = GetArenaForAllocation();
+  if (message_arena == nullptr) {
+    delete reverse_window_scale_;
+  }
+  if (reverse_window_scale) {
+    ::PROTOBUF_NAMESPACE_ID::Arena* submessage_arena =
+        ::PROTOBUF_NAMESPACE_ID::Arena::InternalGetOwningArena(reverse_window_scale);
+    if (message_arena != submessage_arena) {
+      reverse_window_scale = ::PROTOBUF_NAMESPACE_ID::internal::GetOwnedMessage(
+          message_arena, reverse_window_scale, submessage_arena);
+    }
+    
+  } else {
+    
+  }
+  reverse_window_scale_ = reverse_window_scale;
+  // @@protoc_insertion_point(field_set_allocated:io.deephaven.proto.backplane.grpc.UpdateByRequest.UpdateByOperation.UpdateByColumn.UpdateBySpec.UpdateByRollingStd.reverse_window_scale)
+}
+
+// .io.deephaven.proto.backplane.grpc.UpdateByWindowScale forward_window_scale = 2;
+inline bool UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByRollingStd::_internal_has_forward_window_scale() const {
+  return this != internal_default_instance() && forward_window_scale_ != nullptr;
+}
+inline bool UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByRollingStd::has_forward_window_scale() const {
+  return _internal_has_forward_window_scale();
+}
+inline void UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByRollingStd::clear_forward_window_scale() {
+  if (GetArenaForAllocation() == nullptr && forward_window_scale_ != nullptr) {
+    delete forward_window_scale_;
+  }
+  forward_window_scale_ = nullptr;
+}
+inline const ::io::deephaven::proto::backplane::grpc::UpdateByWindowScale& UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByRollingStd::_internal_forward_window_scale() const {
+  const ::io::deephaven::proto::backplane::grpc::UpdateByWindowScale* p = forward_window_scale_;
+  return p != nullptr ? *p : reinterpret_cast<const ::io::deephaven::proto::backplane::grpc::UpdateByWindowScale&>(
+      ::io::deephaven::proto::backplane::grpc::_UpdateByWindowScale_default_instance_);
+}
+inline const ::io::deephaven::proto::backplane::grpc::UpdateByWindowScale& UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByRollingStd::forward_window_scale() const {
+  // @@protoc_insertion_point(field_get:io.deephaven.proto.backplane.grpc.UpdateByRequest.UpdateByOperation.UpdateByColumn.UpdateBySpec.UpdateByRollingStd.forward_window_scale)
+  return _internal_forward_window_scale();
+}
+inline void UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByRollingStd::unsafe_arena_set_allocated_forward_window_scale(
+    ::io::deephaven::proto::backplane::grpc::UpdateByWindowScale* forward_window_scale) {
+  if (GetArenaForAllocation() == nullptr) {
+    delete reinterpret_cast<::PROTOBUF_NAMESPACE_ID::MessageLite*>(forward_window_scale_);
+  }
+  forward_window_scale_ = forward_window_scale;
+  if (forward_window_scale) {
+    
+  } else {
+    
+  }
+  // @@protoc_insertion_point(field_unsafe_arena_set_allocated:io.deephaven.proto.backplane.grpc.UpdateByRequest.UpdateByOperation.UpdateByColumn.UpdateBySpec.UpdateByRollingStd.forward_window_scale)
+}
+inline ::io::deephaven::proto::backplane::grpc::UpdateByWindowScale* UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByRollingStd::release_forward_window_scale() {
+  
+  ::io::deephaven::proto::backplane::grpc::UpdateByWindowScale* temp = forward_window_scale_;
+  forward_window_scale_ = nullptr;
+#ifdef PROTOBUF_FORCE_COPY_IN_RELEASE
+  auto* old =  reinterpret_cast<::PROTOBUF_NAMESPACE_ID::MessageLite*>(temp);
+  temp = ::PROTOBUF_NAMESPACE_ID::internal::DuplicateIfNonNull(temp);
+  if (GetArenaForAllocation() == nullptr) { delete old; }
+#else  // PROTOBUF_FORCE_COPY_IN_RELEASE
+  if (GetArenaForAllocation() != nullptr) {
+    temp = ::PROTOBUF_NAMESPACE_ID::internal::DuplicateIfNonNull(temp);
+  }
+#endif  // !PROTOBUF_FORCE_COPY_IN_RELEASE
+  return temp;
+}
+inline ::io::deephaven::proto::backplane::grpc::UpdateByWindowScale* UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByRollingStd::unsafe_arena_release_forward_window_scale() {
+  // @@protoc_insertion_point(field_release:io.deephaven.proto.backplane.grpc.UpdateByRequest.UpdateByOperation.UpdateByColumn.UpdateBySpec.UpdateByRollingStd.forward_window_scale)
+  
+  ::io::deephaven::proto::backplane::grpc::UpdateByWindowScale* temp = forward_window_scale_;
+  forward_window_scale_ = nullptr;
+  return temp;
+}
+inline ::io::deephaven::proto::backplane::grpc::UpdateByWindowScale* UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByRollingStd::_internal_mutable_forward_window_scale() {
+  
+  if (forward_window_scale_ == nullptr) {
+    auto* p = CreateMaybeMessage<::io::deephaven::proto::backplane::grpc::UpdateByWindowScale>(GetArenaForAllocation());
+    forward_window_scale_ = p;
+  }
+  return forward_window_scale_;
+}
+inline ::io::deephaven::proto::backplane::grpc::UpdateByWindowScale* UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByRollingStd::mutable_forward_window_scale() {
+  ::io::deephaven::proto::backplane::grpc::UpdateByWindowScale* _msg = _internal_mutable_forward_window_scale();
+  // @@protoc_insertion_point(field_mutable:io.deephaven.proto.backplane.grpc.UpdateByRequest.UpdateByOperation.UpdateByColumn.UpdateBySpec.UpdateByRollingStd.forward_window_scale)
+  return _msg;
+}
+inline void UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByRollingStd::set_allocated_forward_window_scale(::io::deephaven::proto::backplane::grpc::UpdateByWindowScale* forward_window_scale) {
+  ::PROTOBUF_NAMESPACE_ID::Arena* message_arena = GetArenaForAllocation();
+  if (message_arena == nullptr) {
+    delete forward_window_scale_;
+  }
+  if (forward_window_scale) {
+    ::PROTOBUF_NAMESPACE_ID::Arena* submessage_arena =
+        ::PROTOBUF_NAMESPACE_ID::Arena::InternalGetOwningArena(forward_window_scale);
+    if (message_arena != submessage_arena) {
+      forward_window_scale = ::PROTOBUF_NAMESPACE_ID::internal::GetOwnedMessage(
+          message_arena, forward_window_scale, submessage_arena);
+    }
+    
+  } else {
+    
+  }
+  forward_window_scale_ = forward_window_scale;
+  // @@protoc_insertion_point(field_set_allocated:io.deephaven.proto.backplane.grpc.UpdateByRequest.UpdateByOperation.UpdateByColumn.UpdateBySpec.UpdateByRollingStd.forward_window_scale)
+}
+
+// -------------------------------------------------------------------
+
+// UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByRollingWAvg
+
+// .io.deephaven.proto.backplane.grpc.UpdateByWindowScale reverse_window_scale = 1;
+inline bool UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByRollingWAvg::_internal_has_reverse_window_scale() const {
+  return this != internal_default_instance() && reverse_window_scale_ != nullptr;
+}
+inline bool UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByRollingWAvg::has_reverse_window_scale() const {
+  return _internal_has_reverse_window_scale();
+}
+inline void UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByRollingWAvg::clear_reverse_window_scale() {
+  if (GetArenaForAllocation() == nullptr && reverse_window_scale_ != nullptr) {
+    delete reverse_window_scale_;
+  }
+  reverse_window_scale_ = nullptr;
+}
+inline const ::io::deephaven::proto::backplane::grpc::UpdateByWindowScale& UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByRollingWAvg::_internal_reverse_window_scale() const {
+  const ::io::deephaven::proto::backplane::grpc::UpdateByWindowScale* p = reverse_window_scale_;
+  return p != nullptr ? *p : reinterpret_cast<const ::io::deephaven::proto::backplane::grpc::UpdateByWindowScale&>(
+      ::io::deephaven::proto::backplane::grpc::_UpdateByWindowScale_default_instance_);
+}
+inline const ::io::deephaven::proto::backplane::grpc::UpdateByWindowScale& UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByRollingWAvg::reverse_window_scale() const {
+  // @@protoc_insertion_point(field_get:io.deephaven.proto.backplane.grpc.UpdateByRequest.UpdateByOperation.UpdateByColumn.UpdateBySpec.UpdateByRollingWAvg.reverse_window_scale)
+  return _internal_reverse_window_scale();
+}
+inline void UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByRollingWAvg::unsafe_arena_set_allocated_reverse_window_scale(
+    ::io::deephaven::proto::backplane::grpc::UpdateByWindowScale* reverse_window_scale) {
+  if (GetArenaForAllocation() == nullptr) {
+    delete reinterpret_cast<::PROTOBUF_NAMESPACE_ID::MessageLite*>(reverse_window_scale_);
+  }
+  reverse_window_scale_ = reverse_window_scale;
+  if (reverse_window_scale) {
+    
+  } else {
+    
+  }
+  // @@protoc_insertion_point(field_unsafe_arena_set_allocated:io.deephaven.proto.backplane.grpc.UpdateByRequest.UpdateByOperation.UpdateByColumn.UpdateBySpec.UpdateByRollingWAvg.reverse_window_scale)
+}
+inline ::io::deephaven::proto::backplane::grpc::UpdateByWindowScale* UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByRollingWAvg::release_reverse_window_scale() {
+  
+  ::io::deephaven::proto::backplane::grpc::UpdateByWindowScale* temp = reverse_window_scale_;
+  reverse_window_scale_ = nullptr;
+#ifdef PROTOBUF_FORCE_COPY_IN_RELEASE
+  auto* old =  reinterpret_cast<::PROTOBUF_NAMESPACE_ID::MessageLite*>(temp);
+  temp = ::PROTOBUF_NAMESPACE_ID::internal::DuplicateIfNonNull(temp);
+  if (GetArenaForAllocation() == nullptr) { delete old; }
+#else  // PROTOBUF_FORCE_COPY_IN_RELEASE
+  if (GetArenaForAllocation() != nullptr) {
+    temp = ::PROTOBUF_NAMESPACE_ID::internal::DuplicateIfNonNull(temp);
+  }
+#endif  // !PROTOBUF_FORCE_COPY_IN_RELEASE
+  return temp;
+}
+inline ::io::deephaven::proto::backplane::grpc::UpdateByWindowScale* UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByRollingWAvg::unsafe_arena_release_reverse_window_scale() {
+  // @@protoc_insertion_point(field_release:io.deephaven.proto.backplane.grpc.UpdateByRequest.UpdateByOperation.UpdateByColumn.UpdateBySpec.UpdateByRollingWAvg.reverse_window_scale)
+  
+  ::io::deephaven::proto::backplane::grpc::UpdateByWindowScale* temp = reverse_window_scale_;
+  reverse_window_scale_ = nullptr;
+  return temp;
+}
+inline ::io::deephaven::proto::backplane::grpc::UpdateByWindowScale* UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByRollingWAvg::_internal_mutable_reverse_window_scale() {
+  
+  if (reverse_window_scale_ == nullptr) {
+    auto* p = CreateMaybeMessage<::io::deephaven::proto::backplane::grpc::UpdateByWindowScale>(GetArenaForAllocation());
+    reverse_window_scale_ = p;
+  }
+  return reverse_window_scale_;
+}
+inline ::io::deephaven::proto::backplane::grpc::UpdateByWindowScale* UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByRollingWAvg::mutable_reverse_window_scale() {
+  ::io::deephaven::proto::backplane::grpc::UpdateByWindowScale* _msg = _internal_mutable_reverse_window_scale();
+  // @@protoc_insertion_point(field_mutable:io.deephaven.proto.backplane.grpc.UpdateByRequest.UpdateByOperation.UpdateByColumn.UpdateBySpec.UpdateByRollingWAvg.reverse_window_scale)
+  return _msg;
+}
+inline void UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByRollingWAvg::set_allocated_reverse_window_scale(::io::deephaven::proto::backplane::grpc::UpdateByWindowScale* reverse_window_scale) {
+  ::PROTOBUF_NAMESPACE_ID::Arena* message_arena = GetArenaForAllocation();
+  if (message_arena == nullptr) {
+    delete reverse_window_scale_;
+  }
+  if (reverse_window_scale) {
+    ::PROTOBUF_NAMESPACE_ID::Arena* submessage_arena =
+        ::PROTOBUF_NAMESPACE_ID::Arena::InternalGetOwningArena(reverse_window_scale);
+    if (message_arena != submessage_arena) {
+      reverse_window_scale = ::PROTOBUF_NAMESPACE_ID::internal::GetOwnedMessage(
+          message_arena, reverse_window_scale, submessage_arena);
+    }
+    
+  } else {
+    
+  }
+  reverse_window_scale_ = reverse_window_scale;
+  // @@protoc_insertion_point(field_set_allocated:io.deephaven.proto.backplane.grpc.UpdateByRequest.UpdateByOperation.UpdateByColumn.UpdateBySpec.UpdateByRollingWAvg.reverse_window_scale)
+}
+
+// .io.deephaven.proto.backplane.grpc.UpdateByWindowScale forward_window_scale = 2;
+inline bool UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByRollingWAvg::_internal_has_forward_window_scale() const {
+  return this != internal_default_instance() && forward_window_scale_ != nullptr;
+}
+inline bool UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByRollingWAvg::has_forward_window_scale() const {
+  return _internal_has_forward_window_scale();
+}
+inline void UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByRollingWAvg::clear_forward_window_scale() {
+  if (GetArenaForAllocation() == nullptr && forward_window_scale_ != nullptr) {
+    delete forward_window_scale_;
+  }
+  forward_window_scale_ = nullptr;
+}
+inline const ::io::deephaven::proto::backplane::grpc::UpdateByWindowScale& UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByRollingWAvg::_internal_forward_window_scale() const {
+  const ::io::deephaven::proto::backplane::grpc::UpdateByWindowScale* p = forward_window_scale_;
+  return p != nullptr ? *p : reinterpret_cast<const ::io::deephaven::proto::backplane::grpc::UpdateByWindowScale&>(
+      ::io::deephaven::proto::backplane::grpc::_UpdateByWindowScale_default_instance_);
+}
+inline const ::io::deephaven::proto::backplane::grpc::UpdateByWindowScale& UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByRollingWAvg::forward_window_scale() const {
+  // @@protoc_insertion_point(field_get:io.deephaven.proto.backplane.grpc.UpdateByRequest.UpdateByOperation.UpdateByColumn.UpdateBySpec.UpdateByRollingWAvg.forward_window_scale)
+  return _internal_forward_window_scale();
+}
+inline void UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByRollingWAvg::unsafe_arena_set_allocated_forward_window_scale(
+    ::io::deephaven::proto::backplane::grpc::UpdateByWindowScale* forward_window_scale) {
+  if (GetArenaForAllocation() == nullptr) {
+    delete reinterpret_cast<::PROTOBUF_NAMESPACE_ID::MessageLite*>(forward_window_scale_);
+  }
+  forward_window_scale_ = forward_window_scale;
+  if (forward_window_scale) {
+    
+  } else {
+    
+  }
+  // @@protoc_insertion_point(field_unsafe_arena_set_allocated:io.deephaven.proto.backplane.grpc.UpdateByRequest.UpdateByOperation.UpdateByColumn.UpdateBySpec.UpdateByRollingWAvg.forward_window_scale)
+}
+inline ::io::deephaven::proto::backplane::grpc::UpdateByWindowScale* UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByRollingWAvg::release_forward_window_scale() {
+  
+  ::io::deephaven::proto::backplane::grpc::UpdateByWindowScale* temp = forward_window_scale_;
+  forward_window_scale_ = nullptr;
+#ifdef PROTOBUF_FORCE_COPY_IN_RELEASE
+  auto* old =  reinterpret_cast<::PROTOBUF_NAMESPACE_ID::MessageLite*>(temp);
+  temp = ::PROTOBUF_NAMESPACE_ID::internal::DuplicateIfNonNull(temp);
+  if (GetArenaForAllocation() == nullptr) { delete old; }
+#else  // PROTOBUF_FORCE_COPY_IN_RELEASE
+  if (GetArenaForAllocation() != nullptr) {
+    temp = ::PROTOBUF_NAMESPACE_ID::internal::DuplicateIfNonNull(temp);
+  }
+#endif  // !PROTOBUF_FORCE_COPY_IN_RELEASE
+  return temp;
+}
+inline ::io::deephaven::proto::backplane::grpc::UpdateByWindowScale* UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByRollingWAvg::unsafe_arena_release_forward_window_scale() {
+  // @@protoc_insertion_point(field_release:io.deephaven.proto.backplane.grpc.UpdateByRequest.UpdateByOperation.UpdateByColumn.UpdateBySpec.UpdateByRollingWAvg.forward_window_scale)
+  
+  ::io::deephaven::proto::backplane::grpc::UpdateByWindowScale* temp = forward_window_scale_;
+  forward_window_scale_ = nullptr;
+  return temp;
+}
+inline ::io::deephaven::proto::backplane::grpc::UpdateByWindowScale* UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByRollingWAvg::_internal_mutable_forward_window_scale() {
+  
+  if (forward_window_scale_ == nullptr) {
+    auto* p = CreateMaybeMessage<::io::deephaven::proto::backplane::grpc::UpdateByWindowScale>(GetArenaForAllocation());
+    forward_window_scale_ = p;
+  }
+  return forward_window_scale_;
+}
+inline ::io::deephaven::proto::backplane::grpc::UpdateByWindowScale* UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByRollingWAvg::mutable_forward_window_scale() {
+  ::io::deephaven::proto::backplane::grpc::UpdateByWindowScale* _msg = _internal_mutable_forward_window_scale();
+  // @@protoc_insertion_point(field_mutable:io.deephaven.proto.backplane.grpc.UpdateByRequest.UpdateByOperation.UpdateByColumn.UpdateBySpec.UpdateByRollingWAvg.forward_window_scale)
+  return _msg;
+}
+inline void UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByRollingWAvg::set_allocated_forward_window_scale(::io::deephaven::proto::backplane::grpc::UpdateByWindowScale* forward_window_scale) {
+  ::PROTOBUF_NAMESPACE_ID::Arena* message_arena = GetArenaForAllocation();
+  if (message_arena == nullptr) {
+    delete forward_window_scale_;
+  }
+  if (forward_window_scale) {
+    ::PROTOBUF_NAMESPACE_ID::Arena* submessage_arena =
+        ::PROTOBUF_NAMESPACE_ID::Arena::InternalGetOwningArena(forward_window_scale);
+    if (message_arena != submessage_arena) {
+      forward_window_scale = ::PROTOBUF_NAMESPACE_ID::internal::GetOwnedMessage(
+          message_arena, forward_window_scale, submessage_arena);
+    }
+    
+  } else {
+    
+  }
+  forward_window_scale_ = forward_window_scale;
+  // @@protoc_insertion_point(field_set_allocated:io.deephaven.proto.backplane.grpc.UpdateByRequest.UpdateByOperation.UpdateByColumn.UpdateBySpec.UpdateByRollingWAvg.forward_window_scale)
+}
+
+// string weight_column = 3;
+inline void UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByRollingWAvg::clear_weight_column() {
+  weight_column_.ClearToEmpty();
+}
+inline const std::string& UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByRollingWAvg::weight_column() const {
+  // @@protoc_insertion_point(field_get:io.deephaven.proto.backplane.grpc.UpdateByRequest.UpdateByOperation.UpdateByColumn.UpdateBySpec.UpdateByRollingWAvg.weight_column)
+  return _internal_weight_column();
+}
+template <typename ArgT0, typename... ArgT>
+inline PROTOBUF_ALWAYS_INLINE
+void UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByRollingWAvg::set_weight_column(ArgT0&& arg0, ArgT... args) {
+ 
+ weight_column_.Set(static_cast<ArgT0 &&>(arg0), args..., GetArenaForAllocation());
+  // @@protoc_insertion_point(field_set:io.deephaven.proto.backplane.grpc.UpdateByRequest.UpdateByOperation.UpdateByColumn.UpdateBySpec.UpdateByRollingWAvg.weight_column)
+}
+inline std::string* UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByRollingWAvg::mutable_weight_column() {
+  std::string* _s = _internal_mutable_weight_column();
+  // @@protoc_insertion_point(field_mutable:io.deephaven.proto.backplane.grpc.UpdateByRequest.UpdateByOperation.UpdateByColumn.UpdateBySpec.UpdateByRollingWAvg.weight_column)
+  return _s;
+}
+inline const std::string& UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByRollingWAvg::_internal_weight_column() const {
+  return weight_column_.Get();
+}
+inline void UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByRollingWAvg::_internal_set_weight_column(const std::string& value) {
+  
+  weight_column_.Set(value, GetArenaForAllocation());
+}
+inline std::string* UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByRollingWAvg::_internal_mutable_weight_column() {
+  
+  return weight_column_.Mutable(GetArenaForAllocation());
+}
+inline std::string* UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByRollingWAvg::release_weight_column() {
+  // @@protoc_insertion_point(field_release:io.deephaven.proto.backplane.grpc.UpdateByRequest.UpdateByOperation.UpdateByColumn.UpdateBySpec.UpdateByRollingWAvg.weight_column)
+  return weight_column_.Release();
+}
+inline void UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByRollingWAvg::set_allocated_weight_column(std::string* weight_column) {
+  if (weight_column != nullptr) {
+    
+  } else {
+    
+  }
+  weight_column_.SetAllocated(weight_column, GetArenaForAllocation());
+#ifdef PROTOBUF_FORCE_COPY_DEFAULT_STRING
+  if (weight_column_.IsDefault()) {
+    weight_column_.Set("", GetArenaForAllocation());
+  }
+#endif // PROTOBUF_FORCE_COPY_DEFAULT_STRING
+  // @@protoc_insertion_point(field_set_allocated:io.deephaven.proto.backplane.grpc.UpdateByRequest.UpdateByOperation.UpdateByColumn.UpdateBySpec.UpdateByRollingWAvg.weight_column)
 }
 
 // -------------------------------------------------------------------
@@ -26457,6 +29930,598 @@ inline ::io::deephaven::proto::backplane::grpc::UpdateByRequest_UpdateByOperatio
 inline ::io::deephaven::proto::backplane::grpc::UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByRollingProduct* UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec::mutable_rolling_product() {
   ::io::deephaven::proto::backplane::grpc::UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByRollingProduct* _msg = _internal_mutable_rolling_product();
   // @@protoc_insertion_point(field_mutable:io.deephaven.proto.backplane.grpc.UpdateByRequest.UpdateByOperation.UpdateByColumn.UpdateBySpec.rolling_product)
+  return _msg;
+}
+
+// .io.deephaven.proto.backplane.grpc.UpdateByRequest.UpdateByOperation.UpdateByColumn.UpdateBySpec.UpdateByDelta delta = 13;
+inline bool UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec::_internal_has_delta() const {
+  return type_case() == kDelta;
+}
+inline bool UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec::has_delta() const {
+  return _internal_has_delta();
+}
+inline void UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec::set_has_delta() {
+  _oneof_case_[0] = kDelta;
+}
+inline void UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec::clear_delta() {
+  if (_internal_has_delta()) {
+    if (GetArenaForAllocation() == nullptr) {
+      delete type_.delta_;
+    }
+    clear_has_type();
+  }
+}
+inline ::io::deephaven::proto::backplane::grpc::UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByDelta* UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec::release_delta() {
+  // @@protoc_insertion_point(field_release:io.deephaven.proto.backplane.grpc.UpdateByRequest.UpdateByOperation.UpdateByColumn.UpdateBySpec.delta)
+  if (_internal_has_delta()) {
+    clear_has_type();
+    ::io::deephaven::proto::backplane::grpc::UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByDelta* temp = type_.delta_;
+    if (GetArenaForAllocation() != nullptr) {
+      temp = ::PROTOBUF_NAMESPACE_ID::internal::DuplicateIfNonNull(temp);
+    }
+    type_.delta_ = nullptr;
+    return temp;
+  } else {
+    return nullptr;
+  }
+}
+inline const ::io::deephaven::proto::backplane::grpc::UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByDelta& UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec::_internal_delta() const {
+  return _internal_has_delta()
+      ? *type_.delta_
+      : reinterpret_cast< ::io::deephaven::proto::backplane::grpc::UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByDelta&>(::io::deephaven::proto::backplane::grpc::_UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByDelta_default_instance_);
+}
+inline const ::io::deephaven::proto::backplane::grpc::UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByDelta& UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec::delta() const {
+  // @@protoc_insertion_point(field_get:io.deephaven.proto.backplane.grpc.UpdateByRequest.UpdateByOperation.UpdateByColumn.UpdateBySpec.delta)
+  return _internal_delta();
+}
+inline ::io::deephaven::proto::backplane::grpc::UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByDelta* UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec::unsafe_arena_release_delta() {
+  // @@protoc_insertion_point(field_unsafe_arena_release:io.deephaven.proto.backplane.grpc.UpdateByRequest.UpdateByOperation.UpdateByColumn.UpdateBySpec.delta)
+  if (_internal_has_delta()) {
+    clear_has_type();
+    ::io::deephaven::proto::backplane::grpc::UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByDelta* temp = type_.delta_;
+    type_.delta_ = nullptr;
+    return temp;
+  } else {
+    return nullptr;
+  }
+}
+inline void UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec::unsafe_arena_set_allocated_delta(::io::deephaven::proto::backplane::grpc::UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByDelta* delta) {
+  clear_type();
+  if (delta) {
+    set_has_delta();
+    type_.delta_ = delta;
+  }
+  // @@protoc_insertion_point(field_unsafe_arena_set_allocated:io.deephaven.proto.backplane.grpc.UpdateByRequest.UpdateByOperation.UpdateByColumn.UpdateBySpec.delta)
+}
+inline ::io::deephaven::proto::backplane::grpc::UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByDelta* UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec::_internal_mutable_delta() {
+  if (!_internal_has_delta()) {
+    clear_type();
+    set_has_delta();
+    type_.delta_ = CreateMaybeMessage< ::io::deephaven::proto::backplane::grpc::UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByDelta >(GetArenaForAllocation());
+  }
+  return type_.delta_;
+}
+inline ::io::deephaven::proto::backplane::grpc::UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByDelta* UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec::mutable_delta() {
+  ::io::deephaven::proto::backplane::grpc::UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByDelta* _msg = _internal_mutable_delta();
+  // @@protoc_insertion_point(field_mutable:io.deephaven.proto.backplane.grpc.UpdateByRequest.UpdateByOperation.UpdateByColumn.UpdateBySpec.delta)
+  return _msg;
+}
+
+// .io.deephaven.proto.backplane.grpc.UpdateByRequest.UpdateByOperation.UpdateByColumn.UpdateBySpec.UpdateByEms ems = 14;
+inline bool UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec::_internal_has_ems() const {
+  return type_case() == kEms;
+}
+inline bool UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec::has_ems() const {
+  return _internal_has_ems();
+}
+inline void UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec::set_has_ems() {
+  _oneof_case_[0] = kEms;
+}
+inline void UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec::clear_ems() {
+  if (_internal_has_ems()) {
+    if (GetArenaForAllocation() == nullptr) {
+      delete type_.ems_;
+    }
+    clear_has_type();
+  }
+}
+inline ::io::deephaven::proto::backplane::grpc::UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByEms* UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec::release_ems() {
+  // @@protoc_insertion_point(field_release:io.deephaven.proto.backplane.grpc.UpdateByRequest.UpdateByOperation.UpdateByColumn.UpdateBySpec.ems)
+  if (_internal_has_ems()) {
+    clear_has_type();
+    ::io::deephaven::proto::backplane::grpc::UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByEms* temp = type_.ems_;
+    if (GetArenaForAllocation() != nullptr) {
+      temp = ::PROTOBUF_NAMESPACE_ID::internal::DuplicateIfNonNull(temp);
+    }
+    type_.ems_ = nullptr;
+    return temp;
+  } else {
+    return nullptr;
+  }
+}
+inline const ::io::deephaven::proto::backplane::grpc::UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByEms& UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec::_internal_ems() const {
+  return _internal_has_ems()
+      ? *type_.ems_
+      : reinterpret_cast< ::io::deephaven::proto::backplane::grpc::UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByEms&>(::io::deephaven::proto::backplane::grpc::_UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByEms_default_instance_);
+}
+inline const ::io::deephaven::proto::backplane::grpc::UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByEms& UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec::ems() const {
+  // @@protoc_insertion_point(field_get:io.deephaven.proto.backplane.grpc.UpdateByRequest.UpdateByOperation.UpdateByColumn.UpdateBySpec.ems)
+  return _internal_ems();
+}
+inline ::io::deephaven::proto::backplane::grpc::UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByEms* UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec::unsafe_arena_release_ems() {
+  // @@protoc_insertion_point(field_unsafe_arena_release:io.deephaven.proto.backplane.grpc.UpdateByRequest.UpdateByOperation.UpdateByColumn.UpdateBySpec.ems)
+  if (_internal_has_ems()) {
+    clear_has_type();
+    ::io::deephaven::proto::backplane::grpc::UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByEms* temp = type_.ems_;
+    type_.ems_ = nullptr;
+    return temp;
+  } else {
+    return nullptr;
+  }
+}
+inline void UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec::unsafe_arena_set_allocated_ems(::io::deephaven::proto::backplane::grpc::UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByEms* ems) {
+  clear_type();
+  if (ems) {
+    set_has_ems();
+    type_.ems_ = ems;
+  }
+  // @@protoc_insertion_point(field_unsafe_arena_set_allocated:io.deephaven.proto.backplane.grpc.UpdateByRequest.UpdateByOperation.UpdateByColumn.UpdateBySpec.ems)
+}
+inline ::io::deephaven::proto::backplane::grpc::UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByEms* UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec::_internal_mutable_ems() {
+  if (!_internal_has_ems()) {
+    clear_type();
+    set_has_ems();
+    type_.ems_ = CreateMaybeMessage< ::io::deephaven::proto::backplane::grpc::UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByEms >(GetArenaForAllocation());
+  }
+  return type_.ems_;
+}
+inline ::io::deephaven::proto::backplane::grpc::UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByEms* UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec::mutable_ems() {
+  ::io::deephaven::proto::backplane::grpc::UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByEms* _msg = _internal_mutable_ems();
+  // @@protoc_insertion_point(field_mutable:io.deephaven.proto.backplane.grpc.UpdateByRequest.UpdateByOperation.UpdateByColumn.UpdateBySpec.ems)
+  return _msg;
+}
+
+// .io.deephaven.proto.backplane.grpc.UpdateByRequest.UpdateByOperation.UpdateByColumn.UpdateBySpec.UpdateByEmMin em_min = 15;
+inline bool UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec::_internal_has_em_min() const {
+  return type_case() == kEmMin;
+}
+inline bool UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec::has_em_min() const {
+  return _internal_has_em_min();
+}
+inline void UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec::set_has_em_min() {
+  _oneof_case_[0] = kEmMin;
+}
+inline void UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec::clear_em_min() {
+  if (_internal_has_em_min()) {
+    if (GetArenaForAllocation() == nullptr) {
+      delete type_.em_min_;
+    }
+    clear_has_type();
+  }
+}
+inline ::io::deephaven::proto::backplane::grpc::UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByEmMin* UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec::release_em_min() {
+  // @@protoc_insertion_point(field_release:io.deephaven.proto.backplane.grpc.UpdateByRequest.UpdateByOperation.UpdateByColumn.UpdateBySpec.em_min)
+  if (_internal_has_em_min()) {
+    clear_has_type();
+    ::io::deephaven::proto::backplane::grpc::UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByEmMin* temp = type_.em_min_;
+    if (GetArenaForAllocation() != nullptr) {
+      temp = ::PROTOBUF_NAMESPACE_ID::internal::DuplicateIfNonNull(temp);
+    }
+    type_.em_min_ = nullptr;
+    return temp;
+  } else {
+    return nullptr;
+  }
+}
+inline const ::io::deephaven::proto::backplane::grpc::UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByEmMin& UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec::_internal_em_min() const {
+  return _internal_has_em_min()
+      ? *type_.em_min_
+      : reinterpret_cast< ::io::deephaven::proto::backplane::grpc::UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByEmMin&>(::io::deephaven::proto::backplane::grpc::_UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByEmMin_default_instance_);
+}
+inline const ::io::deephaven::proto::backplane::grpc::UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByEmMin& UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec::em_min() const {
+  // @@protoc_insertion_point(field_get:io.deephaven.proto.backplane.grpc.UpdateByRequest.UpdateByOperation.UpdateByColumn.UpdateBySpec.em_min)
+  return _internal_em_min();
+}
+inline ::io::deephaven::proto::backplane::grpc::UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByEmMin* UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec::unsafe_arena_release_em_min() {
+  // @@protoc_insertion_point(field_unsafe_arena_release:io.deephaven.proto.backplane.grpc.UpdateByRequest.UpdateByOperation.UpdateByColumn.UpdateBySpec.em_min)
+  if (_internal_has_em_min()) {
+    clear_has_type();
+    ::io::deephaven::proto::backplane::grpc::UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByEmMin* temp = type_.em_min_;
+    type_.em_min_ = nullptr;
+    return temp;
+  } else {
+    return nullptr;
+  }
+}
+inline void UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec::unsafe_arena_set_allocated_em_min(::io::deephaven::proto::backplane::grpc::UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByEmMin* em_min) {
+  clear_type();
+  if (em_min) {
+    set_has_em_min();
+    type_.em_min_ = em_min;
+  }
+  // @@protoc_insertion_point(field_unsafe_arena_set_allocated:io.deephaven.proto.backplane.grpc.UpdateByRequest.UpdateByOperation.UpdateByColumn.UpdateBySpec.em_min)
+}
+inline ::io::deephaven::proto::backplane::grpc::UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByEmMin* UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec::_internal_mutable_em_min() {
+  if (!_internal_has_em_min()) {
+    clear_type();
+    set_has_em_min();
+    type_.em_min_ = CreateMaybeMessage< ::io::deephaven::proto::backplane::grpc::UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByEmMin >(GetArenaForAllocation());
+  }
+  return type_.em_min_;
+}
+inline ::io::deephaven::proto::backplane::grpc::UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByEmMin* UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec::mutable_em_min() {
+  ::io::deephaven::proto::backplane::grpc::UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByEmMin* _msg = _internal_mutable_em_min();
+  // @@protoc_insertion_point(field_mutable:io.deephaven.proto.backplane.grpc.UpdateByRequest.UpdateByOperation.UpdateByColumn.UpdateBySpec.em_min)
+  return _msg;
+}
+
+// .io.deephaven.proto.backplane.grpc.UpdateByRequest.UpdateByOperation.UpdateByColumn.UpdateBySpec.UpdateByEmMax em_max = 16;
+inline bool UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec::_internal_has_em_max() const {
+  return type_case() == kEmMax;
+}
+inline bool UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec::has_em_max() const {
+  return _internal_has_em_max();
+}
+inline void UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec::set_has_em_max() {
+  _oneof_case_[0] = kEmMax;
+}
+inline void UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec::clear_em_max() {
+  if (_internal_has_em_max()) {
+    if (GetArenaForAllocation() == nullptr) {
+      delete type_.em_max_;
+    }
+    clear_has_type();
+  }
+}
+inline ::io::deephaven::proto::backplane::grpc::UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByEmMax* UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec::release_em_max() {
+  // @@protoc_insertion_point(field_release:io.deephaven.proto.backplane.grpc.UpdateByRequest.UpdateByOperation.UpdateByColumn.UpdateBySpec.em_max)
+  if (_internal_has_em_max()) {
+    clear_has_type();
+    ::io::deephaven::proto::backplane::grpc::UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByEmMax* temp = type_.em_max_;
+    if (GetArenaForAllocation() != nullptr) {
+      temp = ::PROTOBUF_NAMESPACE_ID::internal::DuplicateIfNonNull(temp);
+    }
+    type_.em_max_ = nullptr;
+    return temp;
+  } else {
+    return nullptr;
+  }
+}
+inline const ::io::deephaven::proto::backplane::grpc::UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByEmMax& UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec::_internal_em_max() const {
+  return _internal_has_em_max()
+      ? *type_.em_max_
+      : reinterpret_cast< ::io::deephaven::proto::backplane::grpc::UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByEmMax&>(::io::deephaven::proto::backplane::grpc::_UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByEmMax_default_instance_);
+}
+inline const ::io::deephaven::proto::backplane::grpc::UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByEmMax& UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec::em_max() const {
+  // @@protoc_insertion_point(field_get:io.deephaven.proto.backplane.grpc.UpdateByRequest.UpdateByOperation.UpdateByColumn.UpdateBySpec.em_max)
+  return _internal_em_max();
+}
+inline ::io::deephaven::proto::backplane::grpc::UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByEmMax* UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec::unsafe_arena_release_em_max() {
+  // @@protoc_insertion_point(field_unsafe_arena_release:io.deephaven.proto.backplane.grpc.UpdateByRequest.UpdateByOperation.UpdateByColumn.UpdateBySpec.em_max)
+  if (_internal_has_em_max()) {
+    clear_has_type();
+    ::io::deephaven::proto::backplane::grpc::UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByEmMax* temp = type_.em_max_;
+    type_.em_max_ = nullptr;
+    return temp;
+  } else {
+    return nullptr;
+  }
+}
+inline void UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec::unsafe_arena_set_allocated_em_max(::io::deephaven::proto::backplane::grpc::UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByEmMax* em_max) {
+  clear_type();
+  if (em_max) {
+    set_has_em_max();
+    type_.em_max_ = em_max;
+  }
+  // @@protoc_insertion_point(field_unsafe_arena_set_allocated:io.deephaven.proto.backplane.grpc.UpdateByRequest.UpdateByOperation.UpdateByColumn.UpdateBySpec.em_max)
+}
+inline ::io::deephaven::proto::backplane::grpc::UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByEmMax* UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec::_internal_mutable_em_max() {
+  if (!_internal_has_em_max()) {
+    clear_type();
+    set_has_em_max();
+    type_.em_max_ = CreateMaybeMessage< ::io::deephaven::proto::backplane::grpc::UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByEmMax >(GetArenaForAllocation());
+  }
+  return type_.em_max_;
+}
+inline ::io::deephaven::proto::backplane::grpc::UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByEmMax* UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec::mutable_em_max() {
+  ::io::deephaven::proto::backplane::grpc::UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByEmMax* _msg = _internal_mutable_em_max();
+  // @@protoc_insertion_point(field_mutable:io.deephaven.proto.backplane.grpc.UpdateByRequest.UpdateByOperation.UpdateByColumn.UpdateBySpec.em_max)
+  return _msg;
+}
+
+// .io.deephaven.proto.backplane.grpc.UpdateByRequest.UpdateByOperation.UpdateByColumn.UpdateBySpec.UpdateByEmStd em_std = 17;
+inline bool UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec::_internal_has_em_std() const {
+  return type_case() == kEmStd;
+}
+inline bool UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec::has_em_std() const {
+  return _internal_has_em_std();
+}
+inline void UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec::set_has_em_std() {
+  _oneof_case_[0] = kEmStd;
+}
+inline void UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec::clear_em_std() {
+  if (_internal_has_em_std()) {
+    if (GetArenaForAllocation() == nullptr) {
+      delete type_.em_std_;
+    }
+    clear_has_type();
+  }
+}
+inline ::io::deephaven::proto::backplane::grpc::UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByEmStd* UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec::release_em_std() {
+  // @@protoc_insertion_point(field_release:io.deephaven.proto.backplane.grpc.UpdateByRequest.UpdateByOperation.UpdateByColumn.UpdateBySpec.em_std)
+  if (_internal_has_em_std()) {
+    clear_has_type();
+    ::io::deephaven::proto::backplane::grpc::UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByEmStd* temp = type_.em_std_;
+    if (GetArenaForAllocation() != nullptr) {
+      temp = ::PROTOBUF_NAMESPACE_ID::internal::DuplicateIfNonNull(temp);
+    }
+    type_.em_std_ = nullptr;
+    return temp;
+  } else {
+    return nullptr;
+  }
+}
+inline const ::io::deephaven::proto::backplane::grpc::UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByEmStd& UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec::_internal_em_std() const {
+  return _internal_has_em_std()
+      ? *type_.em_std_
+      : reinterpret_cast< ::io::deephaven::proto::backplane::grpc::UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByEmStd&>(::io::deephaven::proto::backplane::grpc::_UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByEmStd_default_instance_);
+}
+inline const ::io::deephaven::proto::backplane::grpc::UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByEmStd& UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec::em_std() const {
+  // @@protoc_insertion_point(field_get:io.deephaven.proto.backplane.grpc.UpdateByRequest.UpdateByOperation.UpdateByColumn.UpdateBySpec.em_std)
+  return _internal_em_std();
+}
+inline ::io::deephaven::proto::backplane::grpc::UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByEmStd* UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec::unsafe_arena_release_em_std() {
+  // @@protoc_insertion_point(field_unsafe_arena_release:io.deephaven.proto.backplane.grpc.UpdateByRequest.UpdateByOperation.UpdateByColumn.UpdateBySpec.em_std)
+  if (_internal_has_em_std()) {
+    clear_has_type();
+    ::io::deephaven::proto::backplane::grpc::UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByEmStd* temp = type_.em_std_;
+    type_.em_std_ = nullptr;
+    return temp;
+  } else {
+    return nullptr;
+  }
+}
+inline void UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec::unsafe_arena_set_allocated_em_std(::io::deephaven::proto::backplane::grpc::UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByEmStd* em_std) {
+  clear_type();
+  if (em_std) {
+    set_has_em_std();
+    type_.em_std_ = em_std;
+  }
+  // @@protoc_insertion_point(field_unsafe_arena_set_allocated:io.deephaven.proto.backplane.grpc.UpdateByRequest.UpdateByOperation.UpdateByColumn.UpdateBySpec.em_std)
+}
+inline ::io::deephaven::proto::backplane::grpc::UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByEmStd* UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec::_internal_mutable_em_std() {
+  if (!_internal_has_em_std()) {
+    clear_type();
+    set_has_em_std();
+    type_.em_std_ = CreateMaybeMessage< ::io::deephaven::proto::backplane::grpc::UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByEmStd >(GetArenaForAllocation());
+  }
+  return type_.em_std_;
+}
+inline ::io::deephaven::proto::backplane::grpc::UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByEmStd* UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec::mutable_em_std() {
+  ::io::deephaven::proto::backplane::grpc::UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByEmStd* _msg = _internal_mutable_em_std();
+  // @@protoc_insertion_point(field_mutable:io.deephaven.proto.backplane.grpc.UpdateByRequest.UpdateByOperation.UpdateByColumn.UpdateBySpec.em_std)
+  return _msg;
+}
+
+// .io.deephaven.proto.backplane.grpc.UpdateByRequest.UpdateByOperation.UpdateByColumn.UpdateBySpec.UpdateByRollingCount rolling_count = 18;
+inline bool UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec::_internal_has_rolling_count() const {
+  return type_case() == kRollingCount;
+}
+inline bool UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec::has_rolling_count() const {
+  return _internal_has_rolling_count();
+}
+inline void UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec::set_has_rolling_count() {
+  _oneof_case_[0] = kRollingCount;
+}
+inline void UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec::clear_rolling_count() {
+  if (_internal_has_rolling_count()) {
+    if (GetArenaForAllocation() == nullptr) {
+      delete type_.rolling_count_;
+    }
+    clear_has_type();
+  }
+}
+inline ::io::deephaven::proto::backplane::grpc::UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByRollingCount* UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec::release_rolling_count() {
+  // @@protoc_insertion_point(field_release:io.deephaven.proto.backplane.grpc.UpdateByRequest.UpdateByOperation.UpdateByColumn.UpdateBySpec.rolling_count)
+  if (_internal_has_rolling_count()) {
+    clear_has_type();
+    ::io::deephaven::proto::backplane::grpc::UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByRollingCount* temp = type_.rolling_count_;
+    if (GetArenaForAllocation() != nullptr) {
+      temp = ::PROTOBUF_NAMESPACE_ID::internal::DuplicateIfNonNull(temp);
+    }
+    type_.rolling_count_ = nullptr;
+    return temp;
+  } else {
+    return nullptr;
+  }
+}
+inline const ::io::deephaven::proto::backplane::grpc::UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByRollingCount& UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec::_internal_rolling_count() const {
+  return _internal_has_rolling_count()
+      ? *type_.rolling_count_
+      : reinterpret_cast< ::io::deephaven::proto::backplane::grpc::UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByRollingCount&>(::io::deephaven::proto::backplane::grpc::_UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByRollingCount_default_instance_);
+}
+inline const ::io::deephaven::proto::backplane::grpc::UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByRollingCount& UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec::rolling_count() const {
+  // @@protoc_insertion_point(field_get:io.deephaven.proto.backplane.grpc.UpdateByRequest.UpdateByOperation.UpdateByColumn.UpdateBySpec.rolling_count)
+  return _internal_rolling_count();
+}
+inline ::io::deephaven::proto::backplane::grpc::UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByRollingCount* UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec::unsafe_arena_release_rolling_count() {
+  // @@protoc_insertion_point(field_unsafe_arena_release:io.deephaven.proto.backplane.grpc.UpdateByRequest.UpdateByOperation.UpdateByColumn.UpdateBySpec.rolling_count)
+  if (_internal_has_rolling_count()) {
+    clear_has_type();
+    ::io::deephaven::proto::backplane::grpc::UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByRollingCount* temp = type_.rolling_count_;
+    type_.rolling_count_ = nullptr;
+    return temp;
+  } else {
+    return nullptr;
+  }
+}
+inline void UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec::unsafe_arena_set_allocated_rolling_count(::io::deephaven::proto::backplane::grpc::UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByRollingCount* rolling_count) {
+  clear_type();
+  if (rolling_count) {
+    set_has_rolling_count();
+    type_.rolling_count_ = rolling_count;
+  }
+  // @@protoc_insertion_point(field_unsafe_arena_set_allocated:io.deephaven.proto.backplane.grpc.UpdateByRequest.UpdateByOperation.UpdateByColumn.UpdateBySpec.rolling_count)
+}
+inline ::io::deephaven::proto::backplane::grpc::UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByRollingCount* UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec::_internal_mutable_rolling_count() {
+  if (!_internal_has_rolling_count()) {
+    clear_type();
+    set_has_rolling_count();
+    type_.rolling_count_ = CreateMaybeMessage< ::io::deephaven::proto::backplane::grpc::UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByRollingCount >(GetArenaForAllocation());
+  }
+  return type_.rolling_count_;
+}
+inline ::io::deephaven::proto::backplane::grpc::UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByRollingCount* UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec::mutable_rolling_count() {
+  ::io::deephaven::proto::backplane::grpc::UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByRollingCount* _msg = _internal_mutable_rolling_count();
+  // @@protoc_insertion_point(field_mutable:io.deephaven.proto.backplane.grpc.UpdateByRequest.UpdateByOperation.UpdateByColumn.UpdateBySpec.rolling_count)
+  return _msg;
+}
+
+// .io.deephaven.proto.backplane.grpc.UpdateByRequest.UpdateByOperation.UpdateByColumn.UpdateBySpec.UpdateByRollingStd rolling_std = 19;
+inline bool UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec::_internal_has_rolling_std() const {
+  return type_case() == kRollingStd;
+}
+inline bool UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec::has_rolling_std() const {
+  return _internal_has_rolling_std();
+}
+inline void UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec::set_has_rolling_std() {
+  _oneof_case_[0] = kRollingStd;
+}
+inline void UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec::clear_rolling_std() {
+  if (_internal_has_rolling_std()) {
+    if (GetArenaForAllocation() == nullptr) {
+      delete type_.rolling_std_;
+    }
+    clear_has_type();
+  }
+}
+inline ::io::deephaven::proto::backplane::grpc::UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByRollingStd* UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec::release_rolling_std() {
+  // @@protoc_insertion_point(field_release:io.deephaven.proto.backplane.grpc.UpdateByRequest.UpdateByOperation.UpdateByColumn.UpdateBySpec.rolling_std)
+  if (_internal_has_rolling_std()) {
+    clear_has_type();
+    ::io::deephaven::proto::backplane::grpc::UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByRollingStd* temp = type_.rolling_std_;
+    if (GetArenaForAllocation() != nullptr) {
+      temp = ::PROTOBUF_NAMESPACE_ID::internal::DuplicateIfNonNull(temp);
+    }
+    type_.rolling_std_ = nullptr;
+    return temp;
+  } else {
+    return nullptr;
+  }
+}
+inline const ::io::deephaven::proto::backplane::grpc::UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByRollingStd& UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec::_internal_rolling_std() const {
+  return _internal_has_rolling_std()
+      ? *type_.rolling_std_
+      : reinterpret_cast< ::io::deephaven::proto::backplane::grpc::UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByRollingStd&>(::io::deephaven::proto::backplane::grpc::_UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByRollingStd_default_instance_);
+}
+inline const ::io::deephaven::proto::backplane::grpc::UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByRollingStd& UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec::rolling_std() const {
+  // @@protoc_insertion_point(field_get:io.deephaven.proto.backplane.grpc.UpdateByRequest.UpdateByOperation.UpdateByColumn.UpdateBySpec.rolling_std)
+  return _internal_rolling_std();
+}
+inline ::io::deephaven::proto::backplane::grpc::UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByRollingStd* UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec::unsafe_arena_release_rolling_std() {
+  // @@protoc_insertion_point(field_unsafe_arena_release:io.deephaven.proto.backplane.grpc.UpdateByRequest.UpdateByOperation.UpdateByColumn.UpdateBySpec.rolling_std)
+  if (_internal_has_rolling_std()) {
+    clear_has_type();
+    ::io::deephaven::proto::backplane::grpc::UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByRollingStd* temp = type_.rolling_std_;
+    type_.rolling_std_ = nullptr;
+    return temp;
+  } else {
+    return nullptr;
+  }
+}
+inline void UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec::unsafe_arena_set_allocated_rolling_std(::io::deephaven::proto::backplane::grpc::UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByRollingStd* rolling_std) {
+  clear_type();
+  if (rolling_std) {
+    set_has_rolling_std();
+    type_.rolling_std_ = rolling_std;
+  }
+  // @@protoc_insertion_point(field_unsafe_arena_set_allocated:io.deephaven.proto.backplane.grpc.UpdateByRequest.UpdateByOperation.UpdateByColumn.UpdateBySpec.rolling_std)
+}
+inline ::io::deephaven::proto::backplane::grpc::UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByRollingStd* UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec::_internal_mutable_rolling_std() {
+  if (!_internal_has_rolling_std()) {
+    clear_type();
+    set_has_rolling_std();
+    type_.rolling_std_ = CreateMaybeMessage< ::io::deephaven::proto::backplane::grpc::UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByRollingStd >(GetArenaForAllocation());
+  }
+  return type_.rolling_std_;
+}
+inline ::io::deephaven::proto::backplane::grpc::UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByRollingStd* UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec::mutable_rolling_std() {
+  ::io::deephaven::proto::backplane::grpc::UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByRollingStd* _msg = _internal_mutable_rolling_std();
+  // @@protoc_insertion_point(field_mutable:io.deephaven.proto.backplane.grpc.UpdateByRequest.UpdateByOperation.UpdateByColumn.UpdateBySpec.rolling_std)
+  return _msg;
+}
+
+// .io.deephaven.proto.backplane.grpc.UpdateByRequest.UpdateByOperation.UpdateByColumn.UpdateBySpec.UpdateByRollingWAvg rolling_wavg = 20;
+inline bool UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec::_internal_has_rolling_wavg() const {
+  return type_case() == kRollingWavg;
+}
+inline bool UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec::has_rolling_wavg() const {
+  return _internal_has_rolling_wavg();
+}
+inline void UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec::set_has_rolling_wavg() {
+  _oneof_case_[0] = kRollingWavg;
+}
+inline void UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec::clear_rolling_wavg() {
+  if (_internal_has_rolling_wavg()) {
+    if (GetArenaForAllocation() == nullptr) {
+      delete type_.rolling_wavg_;
+    }
+    clear_has_type();
+  }
+}
+inline ::io::deephaven::proto::backplane::grpc::UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByRollingWAvg* UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec::release_rolling_wavg() {
+  // @@protoc_insertion_point(field_release:io.deephaven.proto.backplane.grpc.UpdateByRequest.UpdateByOperation.UpdateByColumn.UpdateBySpec.rolling_wavg)
+  if (_internal_has_rolling_wavg()) {
+    clear_has_type();
+    ::io::deephaven::proto::backplane::grpc::UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByRollingWAvg* temp = type_.rolling_wavg_;
+    if (GetArenaForAllocation() != nullptr) {
+      temp = ::PROTOBUF_NAMESPACE_ID::internal::DuplicateIfNonNull(temp);
+    }
+    type_.rolling_wavg_ = nullptr;
+    return temp;
+  } else {
+    return nullptr;
+  }
+}
+inline const ::io::deephaven::proto::backplane::grpc::UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByRollingWAvg& UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec::_internal_rolling_wavg() const {
+  return _internal_has_rolling_wavg()
+      ? *type_.rolling_wavg_
+      : reinterpret_cast< ::io::deephaven::proto::backplane::grpc::UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByRollingWAvg&>(::io::deephaven::proto::backplane::grpc::_UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByRollingWAvg_default_instance_);
+}
+inline const ::io::deephaven::proto::backplane::grpc::UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByRollingWAvg& UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec::rolling_wavg() const {
+  // @@protoc_insertion_point(field_get:io.deephaven.proto.backplane.grpc.UpdateByRequest.UpdateByOperation.UpdateByColumn.UpdateBySpec.rolling_wavg)
+  return _internal_rolling_wavg();
+}
+inline ::io::deephaven::proto::backplane::grpc::UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByRollingWAvg* UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec::unsafe_arena_release_rolling_wavg() {
+  // @@protoc_insertion_point(field_unsafe_arena_release:io.deephaven.proto.backplane.grpc.UpdateByRequest.UpdateByOperation.UpdateByColumn.UpdateBySpec.rolling_wavg)
+  if (_internal_has_rolling_wavg()) {
+    clear_has_type();
+    ::io::deephaven::proto::backplane::grpc::UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByRollingWAvg* temp = type_.rolling_wavg_;
+    type_.rolling_wavg_ = nullptr;
+    return temp;
+  } else {
+    return nullptr;
+  }
+}
+inline void UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec::unsafe_arena_set_allocated_rolling_wavg(::io::deephaven::proto::backplane::grpc::UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByRollingWAvg* rolling_wavg) {
+  clear_type();
+  if (rolling_wavg) {
+    set_has_rolling_wavg();
+    type_.rolling_wavg_ = rolling_wavg;
+  }
+  // @@protoc_insertion_point(field_unsafe_arena_set_allocated:io.deephaven.proto.backplane.grpc.UpdateByRequest.UpdateByOperation.UpdateByColumn.UpdateBySpec.rolling_wavg)
+}
+inline ::io::deephaven::proto::backplane::grpc::UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByRollingWAvg* UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec::_internal_mutable_rolling_wavg() {
+  if (!_internal_has_rolling_wavg()) {
+    clear_type();
+    set_has_rolling_wavg();
+    type_.rolling_wavg_ = CreateMaybeMessage< ::io::deephaven::proto::backplane::grpc::UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByRollingWAvg >(GetArenaForAllocation());
+  }
+  return type_.rolling_wavg_;
+}
+inline ::io::deephaven::proto::backplane::grpc::UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByRollingWAvg* UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec::mutable_rolling_wavg() {
+  ::io::deephaven::proto::backplane::grpc::UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByRollingWAvg* _msg = _internal_mutable_rolling_wavg();
+  // @@protoc_insertion_point(field_mutable:io.deephaven.proto.backplane.grpc.UpdateByRequest.UpdateByOperation.UpdateByColumn.UpdateBySpec.rolling_wavg)
   return _msg;
 }
 
@@ -31513,6 +35578,475 @@ inline void AsOfJoinTablesRequest::_internal_set_as_of_match_rule(::io::deephave
 inline void AsOfJoinTablesRequest::set_as_of_match_rule(::io::deephaven::proto::backplane::grpc::AsOfJoinTablesRequest_MatchRule value) {
   _internal_set_as_of_match_rule(value);
   // @@protoc_insertion_point(field_set:io.deephaven.proto.backplane.grpc.AsOfJoinTablesRequest.as_of_match_rule)
+}
+
+// -------------------------------------------------------------------
+
+// AjRajTablesRequest
+
+// .io.deephaven.proto.backplane.grpc.Ticket result_id = 1;
+inline bool AjRajTablesRequest::_internal_has_result_id() const {
+  return this != internal_default_instance() && result_id_ != nullptr;
+}
+inline bool AjRajTablesRequest::has_result_id() const {
+  return _internal_has_result_id();
+}
+inline const ::io::deephaven::proto::backplane::grpc::Ticket& AjRajTablesRequest::_internal_result_id() const {
+  const ::io::deephaven::proto::backplane::grpc::Ticket* p = result_id_;
+  return p != nullptr ? *p : reinterpret_cast<const ::io::deephaven::proto::backplane::grpc::Ticket&>(
+      ::io::deephaven::proto::backplane::grpc::_Ticket_default_instance_);
+}
+inline const ::io::deephaven::proto::backplane::grpc::Ticket& AjRajTablesRequest::result_id() const {
+  // @@protoc_insertion_point(field_get:io.deephaven.proto.backplane.grpc.AjRajTablesRequest.result_id)
+  return _internal_result_id();
+}
+inline void AjRajTablesRequest::unsafe_arena_set_allocated_result_id(
+    ::io::deephaven::proto::backplane::grpc::Ticket* result_id) {
+  if (GetArenaForAllocation() == nullptr) {
+    delete reinterpret_cast<::PROTOBUF_NAMESPACE_ID::MessageLite*>(result_id_);
+  }
+  result_id_ = result_id;
+  if (result_id) {
+    
+  } else {
+    
+  }
+  // @@protoc_insertion_point(field_unsafe_arena_set_allocated:io.deephaven.proto.backplane.grpc.AjRajTablesRequest.result_id)
+}
+inline ::io::deephaven::proto::backplane::grpc::Ticket* AjRajTablesRequest::release_result_id() {
+  
+  ::io::deephaven::proto::backplane::grpc::Ticket* temp = result_id_;
+  result_id_ = nullptr;
+#ifdef PROTOBUF_FORCE_COPY_IN_RELEASE
+  auto* old =  reinterpret_cast<::PROTOBUF_NAMESPACE_ID::MessageLite*>(temp);
+  temp = ::PROTOBUF_NAMESPACE_ID::internal::DuplicateIfNonNull(temp);
+  if (GetArenaForAllocation() == nullptr) { delete old; }
+#else  // PROTOBUF_FORCE_COPY_IN_RELEASE
+  if (GetArenaForAllocation() != nullptr) {
+    temp = ::PROTOBUF_NAMESPACE_ID::internal::DuplicateIfNonNull(temp);
+  }
+#endif  // !PROTOBUF_FORCE_COPY_IN_RELEASE
+  return temp;
+}
+inline ::io::deephaven::proto::backplane::grpc::Ticket* AjRajTablesRequest::unsafe_arena_release_result_id() {
+  // @@protoc_insertion_point(field_release:io.deephaven.proto.backplane.grpc.AjRajTablesRequest.result_id)
+  
+  ::io::deephaven::proto::backplane::grpc::Ticket* temp = result_id_;
+  result_id_ = nullptr;
+  return temp;
+}
+inline ::io::deephaven::proto::backplane::grpc::Ticket* AjRajTablesRequest::_internal_mutable_result_id() {
+  
+  if (result_id_ == nullptr) {
+    auto* p = CreateMaybeMessage<::io::deephaven::proto::backplane::grpc::Ticket>(GetArenaForAllocation());
+    result_id_ = p;
+  }
+  return result_id_;
+}
+inline ::io::deephaven::proto::backplane::grpc::Ticket* AjRajTablesRequest::mutable_result_id() {
+  ::io::deephaven::proto::backplane::grpc::Ticket* _msg = _internal_mutable_result_id();
+  // @@protoc_insertion_point(field_mutable:io.deephaven.proto.backplane.grpc.AjRajTablesRequest.result_id)
+  return _msg;
+}
+inline void AjRajTablesRequest::set_allocated_result_id(::io::deephaven::proto::backplane::grpc::Ticket* result_id) {
+  ::PROTOBUF_NAMESPACE_ID::Arena* message_arena = GetArenaForAllocation();
+  if (message_arena == nullptr) {
+    delete reinterpret_cast< ::PROTOBUF_NAMESPACE_ID::MessageLite*>(result_id_);
+  }
+  if (result_id) {
+    ::PROTOBUF_NAMESPACE_ID::Arena* submessage_arena =
+        ::PROTOBUF_NAMESPACE_ID::Arena::InternalGetOwningArena(
+                reinterpret_cast<::PROTOBUF_NAMESPACE_ID::MessageLite*>(result_id));
+    if (message_arena != submessage_arena) {
+      result_id = ::PROTOBUF_NAMESPACE_ID::internal::GetOwnedMessage(
+          message_arena, result_id, submessage_arena);
+    }
+    
+  } else {
+    
+  }
+  result_id_ = result_id;
+  // @@protoc_insertion_point(field_set_allocated:io.deephaven.proto.backplane.grpc.AjRajTablesRequest.result_id)
+}
+
+// .io.deephaven.proto.backplane.grpc.TableReference left_id = 2;
+inline bool AjRajTablesRequest::_internal_has_left_id() const {
+  return this != internal_default_instance() && left_id_ != nullptr;
+}
+inline bool AjRajTablesRequest::has_left_id() const {
+  return _internal_has_left_id();
+}
+inline void AjRajTablesRequest::clear_left_id() {
+  if (GetArenaForAllocation() == nullptr && left_id_ != nullptr) {
+    delete left_id_;
+  }
+  left_id_ = nullptr;
+}
+inline const ::io::deephaven::proto::backplane::grpc::TableReference& AjRajTablesRequest::_internal_left_id() const {
+  const ::io::deephaven::proto::backplane::grpc::TableReference* p = left_id_;
+  return p != nullptr ? *p : reinterpret_cast<const ::io::deephaven::proto::backplane::grpc::TableReference&>(
+      ::io::deephaven::proto::backplane::grpc::_TableReference_default_instance_);
+}
+inline const ::io::deephaven::proto::backplane::grpc::TableReference& AjRajTablesRequest::left_id() const {
+  // @@protoc_insertion_point(field_get:io.deephaven.proto.backplane.grpc.AjRajTablesRequest.left_id)
+  return _internal_left_id();
+}
+inline void AjRajTablesRequest::unsafe_arena_set_allocated_left_id(
+    ::io::deephaven::proto::backplane::grpc::TableReference* left_id) {
+  if (GetArenaForAllocation() == nullptr) {
+    delete reinterpret_cast<::PROTOBUF_NAMESPACE_ID::MessageLite*>(left_id_);
+  }
+  left_id_ = left_id;
+  if (left_id) {
+    
+  } else {
+    
+  }
+  // @@protoc_insertion_point(field_unsafe_arena_set_allocated:io.deephaven.proto.backplane.grpc.AjRajTablesRequest.left_id)
+}
+inline ::io::deephaven::proto::backplane::grpc::TableReference* AjRajTablesRequest::release_left_id() {
+  
+  ::io::deephaven::proto::backplane::grpc::TableReference* temp = left_id_;
+  left_id_ = nullptr;
+#ifdef PROTOBUF_FORCE_COPY_IN_RELEASE
+  auto* old =  reinterpret_cast<::PROTOBUF_NAMESPACE_ID::MessageLite*>(temp);
+  temp = ::PROTOBUF_NAMESPACE_ID::internal::DuplicateIfNonNull(temp);
+  if (GetArenaForAllocation() == nullptr) { delete old; }
+#else  // PROTOBUF_FORCE_COPY_IN_RELEASE
+  if (GetArenaForAllocation() != nullptr) {
+    temp = ::PROTOBUF_NAMESPACE_ID::internal::DuplicateIfNonNull(temp);
+  }
+#endif  // !PROTOBUF_FORCE_COPY_IN_RELEASE
+  return temp;
+}
+inline ::io::deephaven::proto::backplane::grpc::TableReference* AjRajTablesRequest::unsafe_arena_release_left_id() {
+  // @@protoc_insertion_point(field_release:io.deephaven.proto.backplane.grpc.AjRajTablesRequest.left_id)
+  
+  ::io::deephaven::proto::backplane::grpc::TableReference* temp = left_id_;
+  left_id_ = nullptr;
+  return temp;
+}
+inline ::io::deephaven::proto::backplane::grpc::TableReference* AjRajTablesRequest::_internal_mutable_left_id() {
+  
+  if (left_id_ == nullptr) {
+    auto* p = CreateMaybeMessage<::io::deephaven::proto::backplane::grpc::TableReference>(GetArenaForAllocation());
+    left_id_ = p;
+  }
+  return left_id_;
+}
+inline ::io::deephaven::proto::backplane::grpc::TableReference* AjRajTablesRequest::mutable_left_id() {
+  ::io::deephaven::proto::backplane::grpc::TableReference* _msg = _internal_mutable_left_id();
+  // @@protoc_insertion_point(field_mutable:io.deephaven.proto.backplane.grpc.AjRajTablesRequest.left_id)
+  return _msg;
+}
+inline void AjRajTablesRequest::set_allocated_left_id(::io::deephaven::proto::backplane::grpc::TableReference* left_id) {
+  ::PROTOBUF_NAMESPACE_ID::Arena* message_arena = GetArenaForAllocation();
+  if (message_arena == nullptr) {
+    delete left_id_;
+  }
+  if (left_id) {
+    ::PROTOBUF_NAMESPACE_ID::Arena* submessage_arena =
+        ::PROTOBUF_NAMESPACE_ID::Arena::InternalGetOwningArena(left_id);
+    if (message_arena != submessage_arena) {
+      left_id = ::PROTOBUF_NAMESPACE_ID::internal::GetOwnedMessage(
+          message_arena, left_id, submessage_arena);
+    }
+    
+  } else {
+    
+  }
+  left_id_ = left_id;
+  // @@protoc_insertion_point(field_set_allocated:io.deephaven.proto.backplane.grpc.AjRajTablesRequest.left_id)
+}
+
+// .io.deephaven.proto.backplane.grpc.TableReference right_id = 3;
+inline bool AjRajTablesRequest::_internal_has_right_id() const {
+  return this != internal_default_instance() && right_id_ != nullptr;
+}
+inline bool AjRajTablesRequest::has_right_id() const {
+  return _internal_has_right_id();
+}
+inline void AjRajTablesRequest::clear_right_id() {
+  if (GetArenaForAllocation() == nullptr && right_id_ != nullptr) {
+    delete right_id_;
+  }
+  right_id_ = nullptr;
+}
+inline const ::io::deephaven::proto::backplane::grpc::TableReference& AjRajTablesRequest::_internal_right_id() const {
+  const ::io::deephaven::proto::backplane::grpc::TableReference* p = right_id_;
+  return p != nullptr ? *p : reinterpret_cast<const ::io::deephaven::proto::backplane::grpc::TableReference&>(
+      ::io::deephaven::proto::backplane::grpc::_TableReference_default_instance_);
+}
+inline const ::io::deephaven::proto::backplane::grpc::TableReference& AjRajTablesRequest::right_id() const {
+  // @@protoc_insertion_point(field_get:io.deephaven.proto.backplane.grpc.AjRajTablesRequest.right_id)
+  return _internal_right_id();
+}
+inline void AjRajTablesRequest::unsafe_arena_set_allocated_right_id(
+    ::io::deephaven::proto::backplane::grpc::TableReference* right_id) {
+  if (GetArenaForAllocation() == nullptr) {
+    delete reinterpret_cast<::PROTOBUF_NAMESPACE_ID::MessageLite*>(right_id_);
+  }
+  right_id_ = right_id;
+  if (right_id) {
+    
+  } else {
+    
+  }
+  // @@protoc_insertion_point(field_unsafe_arena_set_allocated:io.deephaven.proto.backplane.grpc.AjRajTablesRequest.right_id)
+}
+inline ::io::deephaven::proto::backplane::grpc::TableReference* AjRajTablesRequest::release_right_id() {
+  
+  ::io::deephaven::proto::backplane::grpc::TableReference* temp = right_id_;
+  right_id_ = nullptr;
+#ifdef PROTOBUF_FORCE_COPY_IN_RELEASE
+  auto* old =  reinterpret_cast<::PROTOBUF_NAMESPACE_ID::MessageLite*>(temp);
+  temp = ::PROTOBUF_NAMESPACE_ID::internal::DuplicateIfNonNull(temp);
+  if (GetArenaForAllocation() == nullptr) { delete old; }
+#else  // PROTOBUF_FORCE_COPY_IN_RELEASE
+  if (GetArenaForAllocation() != nullptr) {
+    temp = ::PROTOBUF_NAMESPACE_ID::internal::DuplicateIfNonNull(temp);
+  }
+#endif  // !PROTOBUF_FORCE_COPY_IN_RELEASE
+  return temp;
+}
+inline ::io::deephaven::proto::backplane::grpc::TableReference* AjRajTablesRequest::unsafe_arena_release_right_id() {
+  // @@protoc_insertion_point(field_release:io.deephaven.proto.backplane.grpc.AjRajTablesRequest.right_id)
+  
+  ::io::deephaven::proto::backplane::grpc::TableReference* temp = right_id_;
+  right_id_ = nullptr;
+  return temp;
+}
+inline ::io::deephaven::proto::backplane::grpc::TableReference* AjRajTablesRequest::_internal_mutable_right_id() {
+  
+  if (right_id_ == nullptr) {
+    auto* p = CreateMaybeMessage<::io::deephaven::proto::backplane::grpc::TableReference>(GetArenaForAllocation());
+    right_id_ = p;
+  }
+  return right_id_;
+}
+inline ::io::deephaven::proto::backplane::grpc::TableReference* AjRajTablesRequest::mutable_right_id() {
+  ::io::deephaven::proto::backplane::grpc::TableReference* _msg = _internal_mutable_right_id();
+  // @@protoc_insertion_point(field_mutable:io.deephaven.proto.backplane.grpc.AjRajTablesRequest.right_id)
+  return _msg;
+}
+inline void AjRajTablesRequest::set_allocated_right_id(::io::deephaven::proto::backplane::grpc::TableReference* right_id) {
+  ::PROTOBUF_NAMESPACE_ID::Arena* message_arena = GetArenaForAllocation();
+  if (message_arena == nullptr) {
+    delete right_id_;
+  }
+  if (right_id) {
+    ::PROTOBUF_NAMESPACE_ID::Arena* submessage_arena =
+        ::PROTOBUF_NAMESPACE_ID::Arena::InternalGetOwningArena(right_id);
+    if (message_arena != submessage_arena) {
+      right_id = ::PROTOBUF_NAMESPACE_ID::internal::GetOwnedMessage(
+          message_arena, right_id, submessage_arena);
+    }
+    
+  } else {
+    
+  }
+  right_id_ = right_id;
+  // @@protoc_insertion_point(field_set_allocated:io.deephaven.proto.backplane.grpc.AjRajTablesRequest.right_id)
+}
+
+// repeated string exact_match_columns = 4;
+inline int AjRajTablesRequest::_internal_exact_match_columns_size() const {
+  return exact_match_columns_.size();
+}
+inline int AjRajTablesRequest::exact_match_columns_size() const {
+  return _internal_exact_match_columns_size();
+}
+inline void AjRajTablesRequest::clear_exact_match_columns() {
+  exact_match_columns_.Clear();
+}
+inline std::string* AjRajTablesRequest::add_exact_match_columns() {
+  std::string* _s = _internal_add_exact_match_columns();
+  // @@protoc_insertion_point(field_add_mutable:io.deephaven.proto.backplane.grpc.AjRajTablesRequest.exact_match_columns)
+  return _s;
+}
+inline const std::string& AjRajTablesRequest::_internal_exact_match_columns(int index) const {
+  return exact_match_columns_.Get(index);
+}
+inline const std::string& AjRajTablesRequest::exact_match_columns(int index) const {
+  // @@protoc_insertion_point(field_get:io.deephaven.proto.backplane.grpc.AjRajTablesRequest.exact_match_columns)
+  return _internal_exact_match_columns(index);
+}
+inline std::string* AjRajTablesRequest::mutable_exact_match_columns(int index) {
+  // @@protoc_insertion_point(field_mutable:io.deephaven.proto.backplane.grpc.AjRajTablesRequest.exact_match_columns)
+  return exact_match_columns_.Mutable(index);
+}
+inline void AjRajTablesRequest::set_exact_match_columns(int index, const std::string& value) {
+  exact_match_columns_.Mutable(index)->assign(value);
+  // @@protoc_insertion_point(field_set:io.deephaven.proto.backplane.grpc.AjRajTablesRequest.exact_match_columns)
+}
+inline void AjRajTablesRequest::set_exact_match_columns(int index, std::string&& value) {
+  exact_match_columns_.Mutable(index)->assign(std::move(value));
+  // @@protoc_insertion_point(field_set:io.deephaven.proto.backplane.grpc.AjRajTablesRequest.exact_match_columns)
+}
+inline void AjRajTablesRequest::set_exact_match_columns(int index, const char* value) {
+  GOOGLE_DCHECK(value != nullptr);
+  exact_match_columns_.Mutable(index)->assign(value);
+  // @@protoc_insertion_point(field_set_char:io.deephaven.proto.backplane.grpc.AjRajTablesRequest.exact_match_columns)
+}
+inline void AjRajTablesRequest::set_exact_match_columns(int index, const char* value, size_t size) {
+  exact_match_columns_.Mutable(index)->assign(
+    reinterpret_cast<const char*>(value), size);
+  // @@protoc_insertion_point(field_set_pointer:io.deephaven.proto.backplane.grpc.AjRajTablesRequest.exact_match_columns)
+}
+inline std::string* AjRajTablesRequest::_internal_add_exact_match_columns() {
+  return exact_match_columns_.Add();
+}
+inline void AjRajTablesRequest::add_exact_match_columns(const std::string& value) {
+  exact_match_columns_.Add()->assign(value);
+  // @@protoc_insertion_point(field_add:io.deephaven.proto.backplane.grpc.AjRajTablesRequest.exact_match_columns)
+}
+inline void AjRajTablesRequest::add_exact_match_columns(std::string&& value) {
+  exact_match_columns_.Add(std::move(value));
+  // @@protoc_insertion_point(field_add:io.deephaven.proto.backplane.grpc.AjRajTablesRequest.exact_match_columns)
+}
+inline void AjRajTablesRequest::add_exact_match_columns(const char* value) {
+  GOOGLE_DCHECK(value != nullptr);
+  exact_match_columns_.Add()->assign(value);
+  // @@protoc_insertion_point(field_add_char:io.deephaven.proto.backplane.grpc.AjRajTablesRequest.exact_match_columns)
+}
+inline void AjRajTablesRequest::add_exact_match_columns(const char* value, size_t size) {
+  exact_match_columns_.Add()->assign(reinterpret_cast<const char*>(value), size);
+  // @@protoc_insertion_point(field_add_pointer:io.deephaven.proto.backplane.grpc.AjRajTablesRequest.exact_match_columns)
+}
+inline const ::PROTOBUF_NAMESPACE_ID::RepeatedPtrField<std::string>&
+AjRajTablesRequest::exact_match_columns() const {
+  // @@protoc_insertion_point(field_list:io.deephaven.proto.backplane.grpc.AjRajTablesRequest.exact_match_columns)
+  return exact_match_columns_;
+}
+inline ::PROTOBUF_NAMESPACE_ID::RepeatedPtrField<std::string>*
+AjRajTablesRequest::mutable_exact_match_columns() {
+  // @@protoc_insertion_point(field_mutable_list:io.deephaven.proto.backplane.grpc.AjRajTablesRequest.exact_match_columns)
+  return &exact_match_columns_;
+}
+
+// string as_of_column = 5;
+inline void AjRajTablesRequest::clear_as_of_column() {
+  as_of_column_.ClearToEmpty();
+}
+inline const std::string& AjRajTablesRequest::as_of_column() const {
+  // @@protoc_insertion_point(field_get:io.deephaven.proto.backplane.grpc.AjRajTablesRequest.as_of_column)
+  return _internal_as_of_column();
+}
+template <typename ArgT0, typename... ArgT>
+inline PROTOBUF_ALWAYS_INLINE
+void AjRajTablesRequest::set_as_of_column(ArgT0&& arg0, ArgT... args) {
+ 
+ as_of_column_.Set(static_cast<ArgT0 &&>(arg0), args..., GetArenaForAllocation());
+  // @@protoc_insertion_point(field_set:io.deephaven.proto.backplane.grpc.AjRajTablesRequest.as_of_column)
+}
+inline std::string* AjRajTablesRequest::mutable_as_of_column() {
+  std::string* _s = _internal_mutable_as_of_column();
+  // @@protoc_insertion_point(field_mutable:io.deephaven.proto.backplane.grpc.AjRajTablesRequest.as_of_column)
+  return _s;
+}
+inline const std::string& AjRajTablesRequest::_internal_as_of_column() const {
+  return as_of_column_.Get();
+}
+inline void AjRajTablesRequest::_internal_set_as_of_column(const std::string& value) {
+  
+  as_of_column_.Set(value, GetArenaForAllocation());
+}
+inline std::string* AjRajTablesRequest::_internal_mutable_as_of_column() {
+  
+  return as_of_column_.Mutable(GetArenaForAllocation());
+}
+inline std::string* AjRajTablesRequest::release_as_of_column() {
+  // @@protoc_insertion_point(field_release:io.deephaven.proto.backplane.grpc.AjRajTablesRequest.as_of_column)
+  return as_of_column_.Release();
+}
+inline void AjRajTablesRequest::set_allocated_as_of_column(std::string* as_of_column) {
+  if (as_of_column != nullptr) {
+    
+  } else {
+    
+  }
+  as_of_column_.SetAllocated(as_of_column, GetArenaForAllocation());
+#ifdef PROTOBUF_FORCE_COPY_DEFAULT_STRING
+  if (as_of_column_.IsDefault()) {
+    as_of_column_.Set("", GetArenaForAllocation());
+  }
+#endif // PROTOBUF_FORCE_COPY_DEFAULT_STRING
+  // @@protoc_insertion_point(field_set_allocated:io.deephaven.proto.backplane.grpc.AjRajTablesRequest.as_of_column)
+}
+
+// repeated string columns_to_add = 6;
+inline int AjRajTablesRequest::_internal_columns_to_add_size() const {
+  return columns_to_add_.size();
+}
+inline int AjRajTablesRequest::columns_to_add_size() const {
+  return _internal_columns_to_add_size();
+}
+inline void AjRajTablesRequest::clear_columns_to_add() {
+  columns_to_add_.Clear();
+}
+inline std::string* AjRajTablesRequest::add_columns_to_add() {
+  std::string* _s = _internal_add_columns_to_add();
+  // @@protoc_insertion_point(field_add_mutable:io.deephaven.proto.backplane.grpc.AjRajTablesRequest.columns_to_add)
+  return _s;
+}
+inline const std::string& AjRajTablesRequest::_internal_columns_to_add(int index) const {
+  return columns_to_add_.Get(index);
+}
+inline const std::string& AjRajTablesRequest::columns_to_add(int index) const {
+  // @@protoc_insertion_point(field_get:io.deephaven.proto.backplane.grpc.AjRajTablesRequest.columns_to_add)
+  return _internal_columns_to_add(index);
+}
+inline std::string* AjRajTablesRequest::mutable_columns_to_add(int index) {
+  // @@protoc_insertion_point(field_mutable:io.deephaven.proto.backplane.grpc.AjRajTablesRequest.columns_to_add)
+  return columns_to_add_.Mutable(index);
+}
+inline void AjRajTablesRequest::set_columns_to_add(int index, const std::string& value) {
+  columns_to_add_.Mutable(index)->assign(value);
+  // @@protoc_insertion_point(field_set:io.deephaven.proto.backplane.grpc.AjRajTablesRequest.columns_to_add)
+}
+inline void AjRajTablesRequest::set_columns_to_add(int index, std::string&& value) {
+  columns_to_add_.Mutable(index)->assign(std::move(value));
+  // @@protoc_insertion_point(field_set:io.deephaven.proto.backplane.grpc.AjRajTablesRequest.columns_to_add)
+}
+inline void AjRajTablesRequest::set_columns_to_add(int index, const char* value) {
+  GOOGLE_DCHECK(value != nullptr);
+  columns_to_add_.Mutable(index)->assign(value);
+  // @@protoc_insertion_point(field_set_char:io.deephaven.proto.backplane.grpc.AjRajTablesRequest.columns_to_add)
+}
+inline void AjRajTablesRequest::set_columns_to_add(int index, const char* value, size_t size) {
+  columns_to_add_.Mutable(index)->assign(
+    reinterpret_cast<const char*>(value), size);
+  // @@protoc_insertion_point(field_set_pointer:io.deephaven.proto.backplane.grpc.AjRajTablesRequest.columns_to_add)
+}
+inline std::string* AjRajTablesRequest::_internal_add_columns_to_add() {
+  return columns_to_add_.Add();
+}
+inline void AjRajTablesRequest::add_columns_to_add(const std::string& value) {
+  columns_to_add_.Add()->assign(value);
+  // @@protoc_insertion_point(field_add:io.deephaven.proto.backplane.grpc.AjRajTablesRequest.columns_to_add)
+}
+inline void AjRajTablesRequest::add_columns_to_add(std::string&& value) {
+  columns_to_add_.Add(std::move(value));
+  // @@protoc_insertion_point(field_add:io.deephaven.proto.backplane.grpc.AjRajTablesRequest.columns_to_add)
+}
+inline void AjRajTablesRequest::add_columns_to_add(const char* value) {
+  GOOGLE_DCHECK(value != nullptr);
+  columns_to_add_.Add()->assign(value);
+  // @@protoc_insertion_point(field_add_char:io.deephaven.proto.backplane.grpc.AjRajTablesRequest.columns_to_add)
+}
+inline void AjRajTablesRequest::add_columns_to_add(const char* value, size_t size) {
+  columns_to_add_.Add()->assign(reinterpret_cast<const char*>(value), size);
+  // @@protoc_insertion_point(field_add_pointer:io.deephaven.proto.backplane.grpc.AjRajTablesRequest.columns_to_add)
+}
+inline const ::PROTOBUF_NAMESPACE_ID::RepeatedPtrField<std::string>&
+AjRajTablesRequest::columns_to_add() const {
+  // @@protoc_insertion_point(field_list:io.deephaven.proto.backplane.grpc.AjRajTablesRequest.columns_to_add)
+  return columns_to_add_;
+}
+inline ::PROTOBUF_NAMESPACE_ID::RepeatedPtrField<std::string>*
+AjRajTablesRequest::mutable_columns_to_add() {
+  // @@protoc_insertion_point(field_mutable_list:io.deephaven.proto.backplane.grpc.AjRajTablesRequest.columns_to_add)
+  return &columns_to_add_;
 }
 
 // -------------------------------------------------------------------
@@ -43863,7 +48397,7 @@ inline ::io::deephaven::proto::backplane::grpc::LeftJoinTablesRequest* BatchTabl
   return _msg;
 }
 
-// .io.deephaven.proto.backplane.grpc.AsOfJoinTablesRequest as_of_join = 27;
+// .io.deephaven.proto.backplane.grpc.AsOfJoinTablesRequest as_of_join = 27 [deprecated = true];
 inline bool BatchTableRequest_Operation::_internal_has_as_of_join() const {
   return op_case() == kAsOfJoin;
 }
@@ -44751,6 +49285,154 @@ inline ::io::deephaven::proto::backplane::grpc::RangeJoinTablesRequest* BatchTab
   return _msg;
 }
 
+// .io.deephaven.proto.backplane.grpc.AjRajTablesRequest aj = 40;
+inline bool BatchTableRequest_Operation::_internal_has_aj() const {
+  return op_case() == kAj;
+}
+inline bool BatchTableRequest_Operation::has_aj() const {
+  return _internal_has_aj();
+}
+inline void BatchTableRequest_Operation::set_has_aj() {
+  _oneof_case_[0] = kAj;
+}
+inline void BatchTableRequest_Operation::clear_aj() {
+  if (_internal_has_aj()) {
+    if (GetArenaForAllocation() == nullptr) {
+      delete op_.aj_;
+    }
+    clear_has_op();
+  }
+}
+inline ::io::deephaven::proto::backplane::grpc::AjRajTablesRequest* BatchTableRequest_Operation::release_aj() {
+  // @@protoc_insertion_point(field_release:io.deephaven.proto.backplane.grpc.BatchTableRequest.Operation.aj)
+  if (_internal_has_aj()) {
+    clear_has_op();
+    ::io::deephaven::proto::backplane::grpc::AjRajTablesRequest* temp = op_.aj_;
+    if (GetArenaForAllocation() != nullptr) {
+      temp = ::PROTOBUF_NAMESPACE_ID::internal::DuplicateIfNonNull(temp);
+    }
+    op_.aj_ = nullptr;
+    return temp;
+  } else {
+    return nullptr;
+  }
+}
+inline const ::io::deephaven::proto::backplane::grpc::AjRajTablesRequest& BatchTableRequest_Operation::_internal_aj() const {
+  return _internal_has_aj()
+      ? *op_.aj_
+      : reinterpret_cast< ::io::deephaven::proto::backplane::grpc::AjRajTablesRequest&>(::io::deephaven::proto::backplane::grpc::_AjRajTablesRequest_default_instance_);
+}
+inline const ::io::deephaven::proto::backplane::grpc::AjRajTablesRequest& BatchTableRequest_Operation::aj() const {
+  // @@protoc_insertion_point(field_get:io.deephaven.proto.backplane.grpc.BatchTableRequest.Operation.aj)
+  return _internal_aj();
+}
+inline ::io::deephaven::proto::backplane::grpc::AjRajTablesRequest* BatchTableRequest_Operation::unsafe_arena_release_aj() {
+  // @@protoc_insertion_point(field_unsafe_arena_release:io.deephaven.proto.backplane.grpc.BatchTableRequest.Operation.aj)
+  if (_internal_has_aj()) {
+    clear_has_op();
+    ::io::deephaven::proto::backplane::grpc::AjRajTablesRequest* temp = op_.aj_;
+    op_.aj_ = nullptr;
+    return temp;
+  } else {
+    return nullptr;
+  }
+}
+inline void BatchTableRequest_Operation::unsafe_arena_set_allocated_aj(::io::deephaven::proto::backplane::grpc::AjRajTablesRequest* aj) {
+  clear_op();
+  if (aj) {
+    set_has_aj();
+    op_.aj_ = aj;
+  }
+  // @@protoc_insertion_point(field_unsafe_arena_set_allocated:io.deephaven.proto.backplane.grpc.BatchTableRequest.Operation.aj)
+}
+inline ::io::deephaven::proto::backplane::grpc::AjRajTablesRequest* BatchTableRequest_Operation::_internal_mutable_aj() {
+  if (!_internal_has_aj()) {
+    clear_op();
+    set_has_aj();
+    op_.aj_ = CreateMaybeMessage< ::io::deephaven::proto::backplane::grpc::AjRajTablesRequest >(GetArenaForAllocation());
+  }
+  return op_.aj_;
+}
+inline ::io::deephaven::proto::backplane::grpc::AjRajTablesRequest* BatchTableRequest_Operation::mutable_aj() {
+  ::io::deephaven::proto::backplane::grpc::AjRajTablesRequest* _msg = _internal_mutable_aj();
+  // @@protoc_insertion_point(field_mutable:io.deephaven.proto.backplane.grpc.BatchTableRequest.Operation.aj)
+  return _msg;
+}
+
+// .io.deephaven.proto.backplane.grpc.AjRajTablesRequest raj = 41;
+inline bool BatchTableRequest_Operation::_internal_has_raj() const {
+  return op_case() == kRaj;
+}
+inline bool BatchTableRequest_Operation::has_raj() const {
+  return _internal_has_raj();
+}
+inline void BatchTableRequest_Operation::set_has_raj() {
+  _oneof_case_[0] = kRaj;
+}
+inline void BatchTableRequest_Operation::clear_raj() {
+  if (_internal_has_raj()) {
+    if (GetArenaForAllocation() == nullptr) {
+      delete op_.raj_;
+    }
+    clear_has_op();
+  }
+}
+inline ::io::deephaven::proto::backplane::grpc::AjRajTablesRequest* BatchTableRequest_Operation::release_raj() {
+  // @@protoc_insertion_point(field_release:io.deephaven.proto.backplane.grpc.BatchTableRequest.Operation.raj)
+  if (_internal_has_raj()) {
+    clear_has_op();
+    ::io::deephaven::proto::backplane::grpc::AjRajTablesRequest* temp = op_.raj_;
+    if (GetArenaForAllocation() != nullptr) {
+      temp = ::PROTOBUF_NAMESPACE_ID::internal::DuplicateIfNonNull(temp);
+    }
+    op_.raj_ = nullptr;
+    return temp;
+  } else {
+    return nullptr;
+  }
+}
+inline const ::io::deephaven::proto::backplane::grpc::AjRajTablesRequest& BatchTableRequest_Operation::_internal_raj() const {
+  return _internal_has_raj()
+      ? *op_.raj_
+      : reinterpret_cast< ::io::deephaven::proto::backplane::grpc::AjRajTablesRequest&>(::io::deephaven::proto::backplane::grpc::_AjRajTablesRequest_default_instance_);
+}
+inline const ::io::deephaven::proto::backplane::grpc::AjRajTablesRequest& BatchTableRequest_Operation::raj() const {
+  // @@protoc_insertion_point(field_get:io.deephaven.proto.backplane.grpc.BatchTableRequest.Operation.raj)
+  return _internal_raj();
+}
+inline ::io::deephaven::proto::backplane::grpc::AjRajTablesRequest* BatchTableRequest_Operation::unsafe_arena_release_raj() {
+  // @@protoc_insertion_point(field_unsafe_arena_release:io.deephaven.proto.backplane.grpc.BatchTableRequest.Operation.raj)
+  if (_internal_has_raj()) {
+    clear_has_op();
+    ::io::deephaven::proto::backplane::grpc::AjRajTablesRequest* temp = op_.raj_;
+    op_.raj_ = nullptr;
+    return temp;
+  } else {
+    return nullptr;
+  }
+}
+inline void BatchTableRequest_Operation::unsafe_arena_set_allocated_raj(::io::deephaven::proto::backplane::grpc::AjRajTablesRequest* raj) {
+  clear_op();
+  if (raj) {
+    set_has_raj();
+    op_.raj_ = raj;
+  }
+  // @@protoc_insertion_point(field_unsafe_arena_set_allocated:io.deephaven.proto.backplane.grpc.BatchTableRequest.Operation.raj)
+}
+inline ::io::deephaven::proto::backplane::grpc::AjRajTablesRequest* BatchTableRequest_Operation::_internal_mutable_raj() {
+  if (!_internal_has_raj()) {
+    clear_op();
+    set_has_raj();
+    op_.raj_ = CreateMaybeMessage< ::io::deephaven::proto::backplane::grpc::AjRajTablesRequest >(GetArenaForAllocation());
+  }
+  return op_.raj_;
+}
+inline ::io::deephaven::proto::backplane::grpc::AjRajTablesRequest* BatchTableRequest_Operation::mutable_raj() {
+  ::io::deephaven::proto::backplane::grpc::AjRajTablesRequest* _msg = _internal_mutable_raj();
+  // @@protoc_insertion_point(field_mutable:io.deephaven.proto.backplane.grpc.BatchTableRequest.Operation.raj)
+  return _msg;
+}
+
 inline bool BatchTableRequest_Operation::has_op() const {
   return op_case() != OP_NOT_SET;
 }
@@ -45023,6 +49705,26 @@ BatchTableRequest::ops() const {
 
 // -------------------------------------------------------------------
 
+// -------------------------------------------------------------------
+
+// -------------------------------------------------------------------
+
+// -------------------------------------------------------------------
+
+// -------------------------------------------------------------------
+
+// -------------------------------------------------------------------
+
+// -------------------------------------------------------------------
+
+// -------------------------------------------------------------------
+
+// -------------------------------------------------------------------
+
+// -------------------------------------------------------------------
+
+// -------------------------------------------------------------------
+
 
 // @@protoc_insertion_point(namespace_scope)
 
@@ -45073,6 +49775,11 @@ template <> struct is_proto_enum< ::io::deephaven::proto::backplane::grpc::BadDa
 template <>
 inline const EnumDescriptor* GetEnumDescriptor< ::io::deephaven::proto::backplane::grpc::BadDataBehavior>() {
   return ::io::deephaven::proto::backplane::grpc::BadDataBehavior_descriptor();
+}
+template <> struct is_proto_enum< ::io::deephaven::proto::backplane::grpc::UpdateByNullBehavior> : ::std::true_type {};
+template <>
+inline const EnumDescriptor* GetEnumDescriptor< ::io::deephaven::proto::backplane::grpc::UpdateByNullBehavior>() {
+  return ::io::deephaven::proto::backplane::grpc::UpdateByNullBehavior_descriptor();
 }
 template <> struct is_proto_enum< ::io::deephaven::proto::backplane::grpc::NullValue> : ::std::true_type {};
 template <>

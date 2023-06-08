@@ -49,7 +49,7 @@ public interface Table extends
      * @return A Table of metadata about this Table's columns.
      */
     @ConcurrentMethod
-    Table getMeta();
+    Table meta();
 
     @ConcurrentMethod
     String getDescription();
@@ -216,9 +216,9 @@ public interface Table extends
     // -----------------------------------------------------------------------------------------------------------------
 
     /**
-     * Retrieves a {@code ColumnSource}. It is conveniently cast to @{code ColumnSource<T>} using the type that caller
-     * expects. This differs from {@link #getColumnSource(String, Class)} which uses the provided {@link Class} object
-     * to verify that the data type is a subclass of the expected class.
+     * Retrieves a {@code ColumnSource}. It is conveniently cast to {@code ColumnSource<Object>} using the type that
+     * caller expects. This differs from {@link #getColumnSource(String, Class)} which uses the provided {@link Class}
+     * object to verify that the data type is a subclass of the expected class.
      *
      * @param sourceName The name of the column
      * @param <T> The target type, as a type parameter. Inferred from context.
@@ -241,16 +241,6 @@ public interface Table extends
     Collection<? extends ColumnSource<?>> getColumnSources();
 
     // -----------------------------------------------------------------------------------------------------------------
-    // DataColumns for fetching data by row position; generally much less efficient than ColumnSource
-    // -----------------------------------------------------------------------------------------------------------------
-
-    DataColumn[] getColumns();
-
-    DataColumn getColumn(int columnIndex);
-
-    DataColumn getColumn(String columnName);
-
-    // -----------------------------------------------------------------------------------------------------------------
     // Column Iterators
     // -----------------------------------------------------------------------------------------------------------------
 
@@ -271,12 +261,6 @@ public interface Table extends
     CloseablePrimitiveIteratorOfDouble doubleColumnIterator(@NotNull String columnName);
 
     <DATA_TYPE> CloseableIterator<DATA_TYPE> objectColumnIterator(@NotNull String columnName);
-
-    // -----------------------------------------------------------------------------------------------------------------
-    // Convenience data fetching; highly inefficient
-    // -----------------------------------------------------------------------------------------------------------------
-
-    Object[] getRecord(long rowNo, String... columnNames);
 
     // -----------------------------------------------------------------------------------------------------------------
     // Filter Operations
@@ -350,28 +334,6 @@ public interface Table extends
 
     @ConcurrentMethod
     Table moveColumns(int index, boolean moveToEnd, String... columnsToMove);
-
-    /**
-     * Produce a new table with the same columns as this table, but with a new column presenting the specified DateTime
-     * column as a Long column (with each DateTime represented instead as the corresponding number of nanos since the
-     * epoch).
-     * <p>
-     * NOTE: This is a really just an updateView(), and behaves accordingly for column ordering and (re)placement. This
-     * doesn't work on data that has been brought fully into memory (e.g. via select()). Use a view instead.
-     *
-     * @param dateTimeColumnName Name of date time column
-     * @param nanosColumnName Name of nanos column
-     * @return The new table, constructed as explained above.
-     */
-    @ConcurrentMethod
-    Table dateTimeColumnAsNanos(String dateTimeColumnName, String nanosColumnName);
-
-    /**
-     * @param columnName name of column to convert from DateTime to nanos
-     * @return The result of dateTimeColumnAsNanos(columnName, columnName).
-     */
-    @ConcurrentMethod
-    Table dateTimeColumnAsNanos(String columnName);
 
     // -----------------------------------------------------------------------------------------------------------------
     // Slice Operations
@@ -467,12 +429,6 @@ public interface Table extends
      */
     @ConcurrentMethod
     Table removeBlink();
-
-    // -----------------------------------------------------------------------------------------------------------------
-    // Disaggregation Operations
-    // -----------------------------------------------------------------------------------------------------------------
-
-    Table ungroupAllBut(String... columnsNotToUngroup);
 
     // -----------------------------------------------------------------------------------------------------------------
     // PartitionBy Operations
@@ -636,36 +592,6 @@ public interface Table extends
     TreeTable tree(String idColumn, String parentColumn);
 
     // -----------------------------------------------------------------------------------------------------------------
-    // Merge Operations
-    // -----------------------------------------------------------------------------------------------------------------
-
-    /**
-     * Merge this Table with {@code others}. All rows in this Table will appear before all rows in {@code others}. If
-     * Tables in {@code others} are the result of a prior merge operation, they <em>may</em> be expanded in an attempt
-     * to avoid deeply nested structures.
-     *
-     * @apiNote It's best to avoid many chained calls to {@link #mergeBefore(Table...)} and
-     *          {@link #mergeAfter(Table...)}, as this may result in deeply-nested data structures. See
-     *          TableTools.merge(Table...).
-     * @param others The Tables to merge with
-     * @return The merged Table
-     */
-    Table mergeBefore(Table... others);
-
-    /**
-     * Merge this Table with {@code others}. All rows in this Table will appear after all rows in {@code others}. If
-     * Tables in {@code others} are the result of a prior merge operation, they <em>may</em> be expanded in an attempt
-     * to avoid deeply nested structures.
-     *
-     * @apiNote It's best to avoid many chained calls to {@link #mergeBefore(Table...)} and
-     *          {@link #mergeAfter(Table...)}, as this may result in deeply-nested data structures. See
-     *          TableTools.merge(Table...).
-     * @param others The Tables to merge with
-     * @return The merged Table
-     */
-    Table mergeAfter(Table... others);
-
-    // -----------------------------------------------------------------------------------------------------------------
     // Miscellaneous Operations
     // -----------------------------------------------------------------------------------------------------------------
 
@@ -760,25 +686,31 @@ public interface Table extends
 
     /**
      * <p>
-     * Wait for updates to this Table.
+     * Wait for updates to this Table. Should not be invoked from a {@link TableListener} or other
+     * {@link io.deephaven.engine.updategraph.NotificationQueue.Notification notification} on this Table's
+     * {@link #getUpdateGraph() update graph}. It may be suitable to wait from another update graph if doing so does not
+     * introduce any cycles.
      * <p>
-     * In some implementations, this call may also terminate in case of interrupt or spurious wakeup (see
-     * java.util.concurrent.locks.Condition#await()).
+     * In some implementations, this call may also terminate in case of interrupt or spurious wakeup.
      *
      * @throws InterruptedException In the event this thread is interrupted
+     * @see java.util.concurrent.locks.Condition#await()
      */
     void awaitUpdate() throws InterruptedException;
 
     /**
      * <p>
-     * Wait for updates to this Table.
+     * Wait for updates to this Table. Should not be invoked from a {@link TableListener} or other
+     * {@link io.deephaven.engine.updategraph.NotificationQueue.Notification notification} on this Table's
+     * {@link #getUpdateGraph() update graph}. It may be suitable to wait from another update graph if doing so does not
+     * introduce any cycles.
      * <p>
-     * In some implementations, this call may also terminate in case of interrupt or spurious wakeup (see
-     * java.util.concurrent.locks.Condition#await()).
+     * In some implementations, this call may also terminate in case of interrupt or spurious wakeup.
      *
      * @param timeout The maximum time to wait in milliseconds.
      * @return false if the timeout elapses without notification, true otherwise.
      * @throws InterruptedException In the event this thread is interrupted
+     * @see java.util.concurrent.locks.Condition#await()
      */
     boolean awaitUpdate(long timeout) throws InterruptedException;
 

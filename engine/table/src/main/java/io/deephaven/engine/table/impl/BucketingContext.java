@@ -5,7 +5,6 @@ package io.deephaven.engine.table.impl;
 
 import io.deephaven.chunk.attributes.Values;
 import io.deephaven.engine.table.Table;
-import io.deephaven.time.DateTime;
 import io.deephaven.util.BooleanUtils;
 import io.deephaven.util.datastructures.LongSizedDataStructure;
 import io.deephaven.chunk.util.hashing.ToIntFunctor;
@@ -18,6 +17,7 @@ import io.deephaven.engine.table.impl.sources.regioned.SymbolTableSource;
 import io.deephaven.util.SafeCloseable;
 import io.deephaven.util.type.TypeUtils;
 
+import java.time.Instant;
 import java.util.Arrays;
 import java.util.List;
 import java.util.stream.Collectors;
@@ -71,11 +71,11 @@ class BucketingContext implements SafeCloseable {
                         "Mismatched join types, " + columnsToMatch[ii] + ": " + leftType + " != " + rightType);
             }
 
-            if (leftType == DateTime.class) {
+            if (leftType == Instant.class) {
                 // noinspection unchecked
-                leftSources[ii] = ReinterpretUtils.dateTimeToLongSource((ColumnSource<DateTime>) leftSources[ii]);
+                leftSources[ii] = ReinterpretUtils.instantToLongSource((ColumnSource<Instant>) leftSources[ii]);
                 // noinspection unchecked
-                rightSources[ii] = ReinterpretUtils.dateTimeToLongSource((ColumnSource<DateTime>) rightSources[ii]);
+                rightSources[ii] = ReinterpretUtils.instantToLongSource((ColumnSource<Instant>) rightSources[ii]);
             } else if (leftType == boolean.class || leftType == Boolean.class) {
                 // noinspection unchecked
                 leftSources[ii] = ReinterpretUtils.booleanToByteSource((ColumnSource<Boolean>) leftSources[ii]);

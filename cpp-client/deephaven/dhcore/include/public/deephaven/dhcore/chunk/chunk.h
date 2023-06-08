@@ -230,6 +230,10 @@ public:
   /**
    * Implements the visitor pattern.
    */
+  virtual void visit(const UInt16Chunk &) = 0;
+  /**
+   * Implements the visitor pattern.
+   */
   virtual void visit(const UInt64Chunk &) = 0;
   /**
    * Implements the visitor pattern.

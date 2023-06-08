@@ -8,23 +8,27 @@ from deephaven.pandas import to_pandas
 
 from deephaven import time_table, DHError
 
-from deephaven.ugp import exclusive_lock
+from deephaven.execution_context import get_exec_ctx
 from deephaven.liveness_scope import liveness_scope
+from deephaven.update_graph import exclusive_lock
 from tests.testbase import BaseTestCase
 
-
-def create_table():
-    with exclusive_lock():
-        return time_table("00:00:00.001").update(["X=i%11"]).sort("X").tail(16)
-
-
 class LivenessTestCase(BaseTestCase):
+
+    def setUp(self) -> None:
+        super().setUp()
+        self.test_update_graph = get_exec_ctx().update_graph
+
+    def create_table(self):
+        with exclusive_lock(self.test_update_graph):
+            return time_table("PT00:00:00.001").update(["X=i%11"]).sort("X").tail(16)
+
     def test_liveness(self):
-        not_managed = create_table()
+        not_managed = self.create_table()
         with liveness_scope() as l_scope:
-            to_discard = create_table()
+            to_discard = self.create_table()
             df = to_pandas(to_discard)
-            must_keep = create_table()
+            must_keep = self.create_table()
             df = to_pandas(must_keep)
             l_scope.preserve(must_keep)
 
@@ -33,17 +37,17 @@ class LivenessTestCase(BaseTestCase):
         self.assertFalse(to_discard.j_table.tryRetainReference())
 
         with liveness_scope():
-            to_discard = create_table()
+            to_discard = self.create_table()
             df = to_pandas(to_discard)
-            must_keep = create_table()
+            must_keep = self.create_table()
             df = to_pandas(must_keep)
 
         with self.assertRaises(DHError):
             l_scope = liveness_scope()
-            to_discard = create_table()
+            to_discard = self.create_table()
             df = to_pandas(to_discard)
             l_scope_2 = liveness_scope()
-            must_keep = create_table()
+            must_keep = self.create_table()
             df = to_pandas(must_keep)
             l_scope.preserve(must_keep)
             l_scope.close()
@@ -51,16 +55,16 @@ class LivenessTestCase(BaseTestCase):
 
     def test_liveness_nested(self):
         with liveness_scope() as l_scope:
-            to_discard = create_table()
+            to_discard = self.create_table()
             df = to_pandas(to_discard)
-            must_keep = create_table()
+            must_keep = self.create_table()
             df = to_pandas(must_keep)
             l_scope.preserve(must_keep)
 
             with liveness_scope() as nested_l_scope:
-                nested_to_discard = create_table()
+                nested_to_discard = self.create_table()
                 df = to_pandas(nested_to_discard)
-                nested_must_keep = create_table()
+                nested_must_keep = self.create_table()
                 df = to_pandas(nested_must_keep)
                 nested_l_scope.preserve(nested_must_keep)
             self.assertTrue(nested_must_keep.j_table.tryRetainReference())

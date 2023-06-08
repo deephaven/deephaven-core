@@ -11,7 +11,6 @@ import io.deephaven.chunk.attributes.Values;
 import io.deephaven.engine.table.ColumnSource;
 import io.deephaven.engine.table.impl.AbstractColumnSource;
 import io.deephaven.engine.table.impl.MutableColumnSourceGetDefaults;
-import io.deephaven.time.DateTime;
 import io.deephaven.engine.rowset.RowSet;
 import io.deephaven.time.DateTimeUtils;
 import io.deephaven.util.QueryConstants;
@@ -22,7 +21,7 @@ import java.time.Instant;
 
 /**
  * DateTime column source that wraps and delegates the storage to an {@code ImmutableLongTestSource<Long>}. This also
- * provides an interface so this column can be interpreted as a long column (through UnboxedDateTimeTestSource).
+ * provides an interface so this column can be interpreted as a long column (through UnboxedInstantTestSource).
  */
 public class ImmutableInstantTestSource extends AbstractColumnSource<Instant>
         implements MutableColumnSourceGetDefaults.ForObject<Instant>, TestColumnSource<Instant> {
@@ -66,7 +65,7 @@ public class ImmutableInstantTestSource extends AbstractColumnSource<Instant>
             final ObjectChunk<Instant, Values> dtc = data.asObjectChunk();
             for (int ii = 0; ii < result.length; ++ii) {
                 final Instant dt = dtc.get(ii);
-                result[ii] = dt == null ? QueryConstants.NULL_LONG : DateTimeUtils.toEpochNano(dt);
+                result[ii] = dt == null ? QueryConstants.NULL_LONG : DateTimeUtils.epochNanos(dt);
             }
         }
         return LongChunk.chunkWrap(result);
@@ -95,7 +94,7 @@ public class ImmutableInstantTestSource extends AbstractColumnSource<Instant>
     @Override
     public Instant get(long index) {
         final Long v = longTestSource.get(index);
-        return v == null ? null : DateTimeUtils.makeInstant(v);
+        return v == null ? null : DateTimeUtils.epochNanosToInstant(v);
     }
 
     @Override
@@ -111,7 +110,7 @@ public class ImmutableInstantTestSource extends AbstractColumnSource<Instant>
     @Override
     public Instant getPrev(long index) {
         final Long v = longTestSource.getPrev(index);
-        return v == null ? null : DateTimeUtils.makeInstant(v);
+        return v == null ? null : DateTimeUtils.epochNanosToInstant(v);
     }
 
     @Override

@@ -3,11 +3,12 @@
  */
 package io.deephaven.engine.table.impl.util;
 
+import io.deephaven.engine.context.ExecutionContext;
 import io.deephaven.engine.rowset.RowSequence;
 import io.deephaven.engine.rowset.RowSet;
 import io.deephaven.engine.rowset.RowSetFactory;
-import io.deephaven.engine.updategraph.UpdateGraphProcessor;
 import io.deephaven.engine.context.QueryScope;
+import io.deephaven.engine.testutil.ControlledUpdateGraph;
 import io.deephaven.engine.util.TableTools;
 import io.deephaven.engine.table.impl.sources.RedirectedColumnSource;
 import io.deephaven.util.BooleanUtils;
@@ -107,9 +108,10 @@ public class TestRedirectedColumnSource {
         final IncrementalReleaseFilter incFilter = new IncrementalReleaseFilter(stepSz, stepSz);
         final Table live = t.where(incFilter).sort("IntsCol");
         final int chunkSz = stepSz - 7;
+        final ControlledUpdateGraph updateGraph = ExecutionContext.getContext().getUpdateGraph().cast();
         try (final WritableObjectChunk<String, Values> chunk = WritableObjectChunk.makeWritableChunk(chunkSz)) {
             while (live.size() < t.size()) {
-                UpdateGraphProcessor.DEFAULT.runWithinUnitTestCycle(incFilter::run);
+                updateGraph.runWithinUnitTestCycle(incFilter::run);
                 doFillAndCheck(live, "StringsCol", chunk, chunkSz);
             }
         }
@@ -137,11 +139,11 @@ public class TestRedirectedColumnSource {
                 TstUtils.testRefreshingTable(RowSetFactory.flat(6).toTracking(),
                         intCol("IntVal", 0, 1, 2, 3, 4, 5));
 
-        final Table a = UpdateGraphProcessor.DEFAULT.sharedLock().computeLocked(
+        final Table a = ExecutionContext.getContext().getUpdateGraph().sharedLock().computeLocked(
                 () -> qt.update("I2=3+IntVal", "BoolVal=ids6196_values[IntVal % ids6196_values.length]"));
         showWithRowSet(a);
-        final Table b = UpdateGraphProcessor.DEFAULT.sharedLock()
-                .computeLocked(() -> a.naturalJoin(a, "I2=IntVal", "BoolVal2=BoolVal"));
+        final Table b = ExecutionContext.getContext().getUpdateGraph().sharedLock().computeLocked(
+                () -> a.naturalJoin(a, "I2=IntVal", "BoolVal2=BoolVal"));
         showWithRowSet(b);
 
         final TByteList byteList = new TByteArrayList(6);
@@ -166,8 +168,8 @@ public class TestRedirectedColumnSource {
             assertArrayEquals(expecteds, chunkResult);
         }
 
-        final Table c = UpdateGraphProcessor.DEFAULT.sharedLock()
-                .computeLocked(() -> a.naturalJoin(b, "I2=IntVal", "BoolVal3=BoolVal2"));
+        final Table c = ExecutionContext.getContext().getUpdateGraph().sharedLock().computeLocked(
+                () -> a.naturalJoin(b, "I2=IntVal", "BoolVal3=BoolVal2"));
         showWithRowSet(c);
         final ColumnSource<?> reinterpretedC = c.getColumnSource("BoolVal3").reinterpret(byte.class);
         byteList.clear();
@@ -203,14 +205,15 @@ public class TestRedirectedColumnSource {
             assertArrayEquals(nullBytes, chunkResult);
         }
 
-        final Table captured = UpdateGraphProcessor.DEFAULT.sharedLock().computeLocked(c::snapshot);
+        final Table captured = ExecutionContext.getContext().getUpdateGraph().sharedLock().computeLocked(c::snapshot);
         showWithRowSet(captured);
 
-        UpdateGraphProcessor.DEFAULT.startCycleForUnitTests();
+        ExecutionContext.getContext().getUpdateGraph().<ControlledUpdateGraph>cast().startCycleForUnitTests();
         TstUtils.addToTable(qt, RowSetFactory.flat(3), intCol("IntVal", 1, 2, 3));
         qt.notifyListeners(RowSetFactory.empty(), RowSetFactory.empty(), RowSetFactory.flat(3));
 
-        UpdateGraphProcessor.DEFAULT.flushAllNormalNotificationsForUnitTests();
+        final ControlledUpdateGraph updateGraph = ExecutionContext.getContext().getUpdateGraph().cast();
+        updateGraph.flushAllNormalNotificationsForUnitTests();
 
         System.out.println("A:");
         showWithRowSet(a);
@@ -232,6 +235,6 @@ public class TestRedirectedColumnSource {
         });
         assertArrayEquals(expecteds, byteList.toArray());
 
-        UpdateGraphProcessor.DEFAULT.completeCycleForUnitTests();
+        ExecutionContext.getContext().getUpdateGraph().<ControlledUpdateGraph>cast().completeCycleForUnitTests();
     }
 }

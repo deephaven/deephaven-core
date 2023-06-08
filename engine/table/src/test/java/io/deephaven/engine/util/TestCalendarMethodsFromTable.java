@@ -7,7 +7,7 @@ import io.deephaven.base.testing.BaseArrayTestCase;
 import io.deephaven.engine.context.ExecutionContext;
 import io.deephaven.engine.table.Table;
 import io.deephaven.engine.context.QueryScope;
-import io.deephaven.time.DateTime;
+import io.deephaven.engine.table.impl.DataAccessHelpers;
 import io.deephaven.time.DateTimeUtils;
 import io.deephaven.time.calendar.BusinessCalendar;
 import io.deephaven.time.calendar.Calendars;
@@ -16,6 +16,7 @@ import io.deephaven.engine.testutil.junit4.EngineCleanup;
 import io.deephaven.test.types.OutOfBandTest;
 import org.junit.experimental.categories.Category;
 
+import java.time.Instant;
 import java.time.LocalDate;
 
 import static io.deephaven.engine.util.TableTools.emptyTable;
@@ -41,8 +42,8 @@ public class TestCalendarMethodsFromTable extends BaseArrayTestCase {
     }
 
     private final BusinessCalendar calendar = Calendars.calendar();
-    private final DateTime time1 = DateTimeUtils.convertDateTime("2002-01-01T01:00:00.000000000 NY");
-    private final DateTime time2 = DateTimeUtils.convertDateTime("2002-01-21T01:00:00.000000000 NY");
+    private final Instant time1 = DateTimeUtils.parseInstant("2002-01-01T01:00:00.000000000 NY");
+    private final Instant time2 = DateTimeUtils.parseInstant("2002-01-21T01:00:00.000000000 NY");
     private final String date1 = "2017-08-01";
     private final String date2 = "2017-08-05";
 
@@ -106,9 +107,7 @@ public class TestCalendarMethodsFromTable extends BaseArrayTestCase {
         assertEquals(calendar.dayOfWeek(date2),
                 getVal(emptyTable(1).update("dayOfWeek = dayOfWeek(date2)"), "dayOfWeek"));
 
-
-        assertEquals(calendar.timeZone(), getVal(emptyTable(1).update("timeZone = timeZone()"), "timeZone"));
-
+        assertEquals(calendar.timeZone(), getVal(emptyTable(1).update("timeZone = calendarTimeZone()"), "timeZone"));
 
         assertEquals(calendar.isBusinessDay(),
                 getVal(emptyTable(1).update("isBusinessDay = isBusinessDay()"), "isBusinessDay"));
@@ -355,6 +354,6 @@ public class TestCalendarMethodsFromTable extends BaseArrayTestCase {
     }
 
     private Object getVal(final Table t, final String column) {
-        return t.getColumn(column).get(0);
+        return DataAccessHelpers.getColumn(t, column).get(0);
     }
 }

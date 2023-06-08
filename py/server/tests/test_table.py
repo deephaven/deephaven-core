@@ -5,16 +5,18 @@ import unittest
 from types import SimpleNamespace
 from typing import List, Any
 
-from deephaven import DHError, read_csv, empty_table, SortDirection, time_table, ugp, new_table, dtypes
+from deephaven import DHError, read_csv, empty_table, SortDirection, time_table, update_graph, new_table, dtypes
 from deephaven.agg import sum_, weighted_avg, avg, pct, group, count_, first, last, max_, median, min_, std, abs_sum, \
-    var, formula, partition
+    var, formula, partition, unique, count_distinct, distinct
 from deephaven.column import datetime_col
-from deephaven.execution_context import make_user_exec_ctx
+from deephaven.execution_context import make_user_exec_ctx, get_exec_ctx
 from deephaven.html import to_html
 from deephaven.jcompat import j_hashmap
 from deephaven.pandas import to_pandas
 from deephaven.table import Table, SearchDisplayMode
+from deephaven.time import epoch_nanos_to_instant
 from tests.testbase import BaseTestCase
+from tests.testbase import BaseTestCase, table_equals
 
 
 # for scoping dependent table operation tests
@@ -58,6 +60,7 @@ class TableTestCase(BaseTestCase):
                                     weighted_avg("var", ["weights"]),
                                     ]
         self.aggs = self.aggs_for_rollup + self.aggs_not_for_rollup
+        self.test_update_graph = get_exec_ctx().update_graph
 
     def tearDown(self) -> None:
         self.test_table = None
@@ -332,7 +335,7 @@ class TableTestCase(BaseTestCase):
             result_table = left_table.aj(right_table, on=["a"])
             self.assertGreater(result_table.size, 0)
             self.assertLessEqual(result_table.size, left_table.size)
-            result_table = left_table.aj(right_table, on="a < a", joins="e")
+            result_table = left_table.aj(right_table, on="a > a", joins="e")
             self.assertGreater(result_table.size, 0)
             self.assertLessEqual(result_table.size, left_table.size)
 
@@ -340,7 +343,7 @@ class TableTestCase(BaseTestCase):
             result_table = left_table.raj(right_table, on=["a"])
             self.assertGreater(result_table.size, 0)
             self.assertLessEqual(result_table.size, left_table.size)
-            result_table = left_table.raj(right_table, on="a > a", joins="e")
+            result_table = left_table.raj(right_table, on="a < a", joins="e")
             self.assertGreater(result_table.size, 0)
             self.assertLessEqual(result_table.size, left_table.size)
 
@@ -519,7 +522,7 @@ class TableTestCase(BaseTestCase):
             self.assertEqual(result_pt.keys().to_string(), result_pt2.keys().reverse().to_string())
 
     def test_snapshot_when(self):
-        t = time_table("00:00:01").update_view(["X = i * i", "Y = i + i"])
+        t = time_table("PT00:00:01").update_view(["X = i * i", "Y = i + i"])
         with self.subTest("with defaults"):
             snapshot = self.test_table.snapshot_when(t)
             self.wait_ticking_table_update(snapshot, row_count=1, timeout=5)
@@ -540,7 +543,7 @@ class TableTestCase(BaseTestCase):
             self.assertEqual(len(snapshot.columns), len(self.test_table.columns) + 2)
 
     def test_snapshot_when_with_history(self):
-        t = time_table("00:00:01")
+        t = time_table("PT00:00:01")
         snapshot_hist = self.test_table.snapshot_when(t, history=True)
         self.wait_ticking_table_update(snapshot_hist, row_count=1, timeout=5)
         self.assertEqual(1 + len(self.test_table.columns), len(snapshot_hist.columns))
@@ -641,7 +644,8 @@ class TableTestCase(BaseTestCase):
                 "color": "RED"
             }
         ])
-        verify_layout_hint(t, "front=d;back=b;hide=d;freeze=c;columnGroups=name:Group1::children:a,b|name:Group2::children:c,d::color:#123456|name:Group3::children:e,f::color:#ff0000;")
+        verify_layout_hint(t,
+                           "front=d;back=b;hide=d;freeze=c;columnGroups=name:Group1::children:a,b|name:Group2::children:c,d::color:#123456|name:Group3::children:e,f::color:#ff0000;")
 
         t = self.test_table.layout_hints(front=["d", "e"], back=["a", "b"], freeze=["c"], hide=["d"])
         verify_layout_hint(t, "front=d,e;back=a,b;hide=d;freeze=c;")
@@ -742,8 +746,8 @@ class TableTestCase(BaseTestCase):
             t = empty_table(1).update("X = p * 10")
             return t.to_string().split()[2]
 
-        with make_user_exec_ctx(), ugp.shared_lock():
-            t = time_table("00:00:01").update("X = i").update("TableString = inner_func(X + 10)")
+        with make_user_exec_ctx(), update_graph.shared_lock(self.test_update_graph):
+            t = time_table("PT00:00:01").update("X = i").update("TableString = inner_func(X + 10)")
 
         self.wait_ticking_table_update(t, row_count=5, timeout=10)
         self.assertIn("100", t.to_string())
@@ -790,10 +794,10 @@ class TableTestCase(BaseTestCase):
         self.verify_table_data(rt, [101, 202])
 
     def test_ticking_table_scope(self):
-        from deephaven import ugp
+        from deephaven import update_graph
         x = 1
-        with ugp.shared_lock():
-            rt = time_table("00:00:01").update("X = x")
+        with update_graph.shared_lock(self.test_update_graph):
+            rt = time_table("PT00:00:01").update("X = x")
         self.wait_ticking_table_update(rt, row_count=1, timeout=5)
         self.verify_table_data(rt, [1])
         for i in range(2, 5):
@@ -803,12 +807,12 @@ class TableTestCase(BaseTestCase):
 
         x = SimpleNamespace()
         x.v = 1
-        with ugp.shared_lock():
-            rt = time_table("00:00:01").update("X = x.v").drop_columns("Timestamp")
+        with update_graph.shared_lock(self.test_update_graph):
+            rt = time_table("PT00:00:01").update("X = x.v").drop_columns("Timestamp")
         self.wait_ticking_table_update(rt, row_count=1, timeout=5)
 
         for i in range(2, 5):
-            with ugp.exclusive_lock():
+            with update_graph.exclusive_lock(self.test_update_graph):
                 x.v = i
                 self.wait_ticking_table_update(rt, row_count=rt.size + 1, timeout=5)
         self.verify_table_data(rt, list(range(1, 5)))
@@ -828,13 +832,13 @@ class TableTestCase(BaseTestCase):
         self.assertIn("2000", html_output)
 
     def test_slice(self):
-        with ugp.shared_lock():
-            t = time_table("00:00:00.01")
+        with update_graph.shared_lock(self.test_update_graph):
+            t = time_table("PT00:00:00.01")
         rt = t.slice(0, 3)
         self.assert_table_equals(t.head(3), rt)
 
         self.wait_ticking_table_update(t, row_count=5, timeout=5)
-        with ugp.shared_lock():
+        with update_graph.shared_lock(self.test_update_graph):
             rt = t.slice(t.size, -2)
             self.assertEqual(0, rt.size)
         self.wait_ticking_table_update(rt, row_count=1, timeout=5)
@@ -931,11 +935,11 @@ class TableTestCase(BaseTestCase):
 
     def test_callable_attrs_in_query(self):
         input_cols = [
-            datetime_col(name="DTCol", data=[dtypes.DateTime(1), dtypes.DateTime(10000000)]),
+            datetime_col(name="DTCol", data=[epoch_nanos_to_instant(1), epoch_nanos_to_instant(10000000)]),
         ]
         test_table = new_table(cols=input_cols)
         from deephaven.time import year, TimeZone
-        rt = test_table.update("Year = (int)year(DTCol, TimeZone.NY)")
+        rt = test_table.update("Year = (int)year(DTCol, timeZone(`ET`))")
         self.assertEqual(rt.size, test_table.size)
 
         class Foo:
@@ -983,7 +987,7 @@ class TableTestCase(BaseTestCase):
         with self.assertRaises(DHError):
             empty_table(10).await_update()
 
-        time_t = time_table("00:00:00.001")
+        time_t = time_table("PT00:00:00.001")
         updated = time_t.await_update()
         self.assertTrue(updated)
         updated = time_t.update("X = i % 2").where("X = 2").await_update(0)
@@ -1004,7 +1008,36 @@ class TableTestCase(BaseTestCase):
         self.assertEqual(len(result_table.columns), len(left_table.columns) + len(aggs))
 
         with self.assertRaises(DHError):
-            time_table("00:00:00.001").update("a = i").range_join(right_table, on=["a = a", "a < b < c"], aggs=aggs)
+            time_table("PT00:00:00.001").update("a = i").range_join(right_table, on=["a = a", "a < b < c"], aggs=aggs)
+
+    def test_agg_with_options(self):
+        test_table = self.test_table.update(["b = a % 10 > 5 ? null : b", "c = c % 10"])
+        aggs = [
+            median(cols=["ma = a", "mb = b"], average_evenly_divided=False),
+            pct(0.20, cols=["pa = a", "pb = b"], average_evenly_divided=True),
+            unique(cols=["ua = a", "ub = b"], include_nulls=True, non_unique_sentinel=-1),
+            count_distinct(cols=["csa = a", "csb = b"], count_nulls=True),
+            distinct(cols=["da = a", "db = b"], include_nulls=True),
+            ]
+        rt = test_table.agg_by(aggs=aggs, by=["c"])
+        self.assertEqual(rt.size, test_table.select_distinct(["c"]).size)
+
+        aggs_default = [
+            median(cols=["ma = a", "mb = b"]),
+            pct(0.20, cols=["pa = a", "pb = b"]),
+            unique(cols=["ua = a", "ub = b"]),
+            count_distinct(cols=["csa = a", "csb = b"]),
+            distinct(cols=["da = a", "db = b"]),
+        ]
+
+        for agg_option, agg_default in zip(aggs, aggs_default):
+            with self.subTest(agg_option):
+                rt_option = test_table.agg_by(aggs=agg_option, by=["c"])
+                rt_default = test_table.agg_by(aggs=agg_default, by=["c"])
+                self.assertFalse(table_equals(rt_option, rt_default))
+
+        with self.assertRaises(DHError):
+            agg = unique(cols=["ua = a", "ub = b"], include_nulls=True, non_unique_sentinel=None)
 
 
 if __name__ == "__main__":

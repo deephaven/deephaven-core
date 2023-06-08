@@ -11,8 +11,8 @@ import jpy
 
 import deephaven.dtypes as dht
 from deephaven import DHError
-from deephaven.table import Table
 from deephaven.constants import MAX_LONG
+from deephaven.table import Table
 
 _JCsvTools = jpy.get_type("io.deephaven.csv.CsvTools")
 _JParsers = jpy.get_type("io.deephaven.csv.parsers.Parsers")
@@ -23,6 +23,7 @@ def read(
     path: str,
     header: Dict[str, dht.DType] = None,
     headless: bool = False,
+    header_row: int = 0,
     skip_rows: int = 0,
     num_rows: int = MAX_LONG,
     ignore_empty_lines: bool = False,
@@ -38,14 +39,24 @@ def read(
     Args:
         path (str): a file path or a URL string
         header (Dict[str, DType]): a dict to define the table columns with key being the name, value being the data type
-        skip_rows (long): number of data rows to skip before processing data. This is useful when you want to parse data in chunks. Defaults to 0
-        num_rows (long): max number of rows to process. This is useful when you want to parse data in chunks. Defaults to {@link Long#MAX_VALUE} 
-        allow_missing_columns (bool): whether the library should allow missing columns in the input. If this flag is set, then rows that are too short (that have fewer columns than the header row) will be interpreted as if the missing columns contained the empty string. Defaults to false.
-        ignore_excess_columns (bool): whether the library should allow excess columns in the input. If this flag is set, then rows that are too long (that have more columns than the header row) will have those excess columns dropped. Defaults to false.
-        headless (bool): indicates if the CSV data is headless, default is False
+        headless (bool): whether the csv file doesn't have a header row, default is False
+        header_row (int): the header row number, all the rows before it will be skipped, default is 0. Must be 0 if
+            headless is True, otherwise an exception will be raised
+        skip_rows (long): number of data rows to skip before processing data. This is useful when you want to parse
+            data in chunks. Defaults to 0
+        num_rows (long): max number of rows to process. This is useful when you want to parse data in chunks.
+            Defaults to {@link Long#MAX_VALUE}
+        ignore_empty_lines (bool): whether to ignore empty lines, default is False
+        allow_missing_columns (bool): whether the library should allow missing columns in the input. If this flag is
+            set, then rows that are too short (that have fewer columns than the header row) will be interpreted as if
+            the missing columns contained the empty string. Defaults to false.
+        ignore_excess_columns (bool): whether the library should allow excess columns in the input. If this flag is
+            set, then rows that are too long (that have more columns than the header row) will have those excess columns
+            dropped. Defaults to false.
         delimiter (str): the delimiter used by the CSV, default is the comma
         quote (str): the quote character for the CSV, default is double quote
-        ignore_surrounding_spaces (bool): Indicates whether surrounding white space should be ignored for unquoted text fields, default is True
+        ignore_surrounding_spaces (bool): Indicates whether surrounding white space should be ignored for unquoted
+            text fields, default is True
         trim (bool): indicates whether to trim white space inside a quoted string, default is False
 
     Returns:
@@ -69,13 +80,14 @@ def read(
                 dht.float_: _JParsers.FLOAT_FAST,
                 dht.double: _JParsers.DOUBLE,
                 dht.string: _JParsers.STRING,
-                dht.DateTime: _JParsers.DATETIME,
+                dht.Instant: _JParsers.DATETIME,
             }
             for column_name, column_type in header.items():
                 csv_specs_builder.putParserForName(column_name, parser_map[column_type])
 
         csv_specs = (
             csv_specs_builder.hasHeaderRow(not headless)
+            .skipHeaderRows(header_row)
             .skipRows(skip_rows)
             .numRows(num_rows)
             .ignoreEmptyLines(ignore_empty_lines)
@@ -110,4 +122,3 @@ def write(table: Table, path: str, cols: List[str] = []) -> None:
         _JCsvTools.writeCsv(table.j_table, False, path, *cols)
     except Exception as e:
         raise DHError(message="write csv failed.") from e
-

@@ -160,7 +160,7 @@ public class KafkaIngester {
      * @param topic The topic to replicate
      * @param partitionToStreamConsumer A function implementing a mapping from partition to its consumer of records. The
      *        function will be invoked once per partition at construction; implementations should internally defer
-     *        resource allocation until first call to {@link KafkaStreamConsumer#consume(Object)} or
+     *        resource allocation until first call to {@link KafkaStreamConsumer#consume(List)} or
      *        {@link KafkaStreamConsumer#acceptFailure(Throwable)} if appropriate.
      * @param partitionToInitialSeekOffset A function implementing a mapping from partition to its initial seek offset,
      *        or -1 if seek to beginning is intended.
@@ -189,7 +189,7 @@ public class KafkaIngester {
      * @param partitionFilter A predicate indicating which partitions we should replicate
      * @param partitionToStreamConsumer A function implementing a mapping from partition to its consumer of records. The
      *        function will be invoked once per partition at construction; implementations should internally defer
-     *        resource allocation until first call to {@link KafkaStreamConsumer#consume(Object)} or
+     *        resource allocation until first call to {@link KafkaStreamConsumer#consume(List)} or
      *        {@link KafkaStreamConsumer#acceptFailure(Throwable)} if appropriate.
      * @param partitionToInitialSeekOffset A function implementing a mapping from partition to its initial seek offset,
      *        or -1 if seek to beginning is intended.

@@ -24,14 +24,16 @@ import java.util.function.Consumer;
 
 /**
  * An in-memory table that has keys for each row, which can be updated on the UGP.
- *
+ * <p>
  * This is used to implement in-memory editable table columns from web plugins.
  */
 public class KeyedArrayBackedMutableTable extends BaseArrayBackedMutableTable {
-    static final String DEFAULT_DESCRIPTION = "In-Memory Input Table";
+
+    private static final String DEFAULT_DESCRIPTION = "In-Memory Input Table";
 
     private final List<String> keyColumnNames;
     private final Set<String> keyColumnSet;
+
     protected final ObjectArraySource<?>[] arrayValueSources;
 
     private final TObjectLongMap<Object> keyToRowMap =
@@ -47,6 +49,7 @@ public class KeyedArrayBackedMutableTable extends BaseArrayBackedMutableTable {
      */
     public static KeyedArrayBackedMutableTable make(@NotNull TableDefinition definition,
             final String... keyColumnNames) {
+        // noinspection resource
         return make(new QueryTable(definition, RowSetFactory.empty().toTracking(),
                 NullValueColumnSource.createColumnSourceMap(definition)), keyColumnNames);
     }
@@ -62,13 +65,14 @@ public class KeyedArrayBackedMutableTable extends BaseArrayBackedMutableTable {
      */
     public static KeyedArrayBackedMutableTable make(@NotNull TableDefinition definition,
             final Map<String, Object[]> enumValues, final String... keyColumnNames) {
+        // noinspection resource
         return make(new QueryTable(definition, RowSetFactory.empty().toTracking(),
                 NullValueColumnSource.createColumnSourceMap(definition)), enumValues, keyColumnNames);
     }
 
     /**
      * Create an empty KeyedArrayBackedMutableTable.
-     *
+     * <p>
      * The initialTable is processed in order, so if there are duplicate keys only the last row is reflected in the
      * output.
      *
@@ -83,7 +87,7 @@ public class KeyedArrayBackedMutableTable extends BaseArrayBackedMutableTable {
 
     /**
      * Create an empty KeyedArrayBackedMutableTable.
-     *
+     * <p>
      * The initialTable is processed in order, so if there are duplicate keys only the last row is reflected in the
      * output.
      *
@@ -104,6 +108,7 @@ public class KeyedArrayBackedMutableTable extends BaseArrayBackedMutableTable {
 
     private KeyedArrayBackedMutableTable(@NotNull TableDefinition definition, final String[] keyColumnNames,
             final Map<String, Object[]> enumValues, final ProcessPendingUpdater processPendingUpdater) {
+        // noinspection resource
         super(RowSetFactory.empty().toTracking(), makeColumnSourceMap(definition),
                 enumValues, processPendingUpdater);
         final List<String> missingKeyColumns = new ArrayList<>(Arrays.asList(keyColumnNames));
@@ -113,7 +118,7 @@ public class KeyedArrayBackedMutableTable extends BaseArrayBackedMutableTable {
                     + ", available columns: " + definition.getColumnNames());
         }
 
-        this.keyColumnNames = Collections.unmodifiableList(new ArrayList<>(Arrays.asList(keyColumnNames)));
+        this.keyColumnNames = List.of(keyColumnNames);
         this.keyColumnSet = new HashSet<>(Arrays.asList(keyColumnNames));
         this.arrayValueSources =
                 definition.getColumnStream()
@@ -135,14 +140,12 @@ public class KeyedArrayBackedMutableTable extends BaseArrayBackedMutableTable {
         final ChunkSource<Values> keySource = makeKeySource(table);
         final int chunkCapacity = table.intSize();
 
-        final SharedContext sharedContext = SharedContext.makeSharedContext();
-
         long rowToInsert = nextRow;
         final StringBuilder errorBuilder = new StringBuilder();
 
         try (final RowSet addRowSet = table.getRowSet().copy();
-                final WritableLongChunk<RowKeys> destinations =
-                        WritableLongChunk.makeWritableChunk(chunkCapacity)) {
+                final WritableLongChunk<RowKeys> destinations = WritableLongChunk.makeWritableChunk(chunkCapacity);
+                final SharedContext sharedContext = SharedContext.makeSharedContext()) {
             try (final ChunkSource.GetContext getContext = keySource.makeGetContext(chunkCapacity, sharedContext);
                     final ChunkBoxer.BoxerKernel boxer = ChunkBoxer.getBoxer(keySource.getChunkType(), chunkCapacity)) {
                 final Chunk<? extends Values> keys = keySource.getChunk(getContext, addRowSet);
@@ -185,16 +188,14 @@ public class KeyedArrayBackedMutableTable extends BaseArrayBackedMutableTable {
             sharedContext.reset();
 
             getColumnSourceMap().forEach((name, cs) -> {
-                final ArrayBackedColumnSource<?> arrayBackedColumnSource = (ArrayBackedColumnSource<?>) cs;
-                arrayBackedColumnSource.ensureCapacity(nextRow);
-                final ColumnSource<?> sourceColumnSource = table.getColumnSource(name);
-                try (final ChunkSink.FillFromContext ffc =
-                        arrayBackedColumnSource.makeFillFromContext(chunkCapacity);
+                final WritableColumnSource<?> writableColumnSource = (WritableColumnSource<?>) cs;
+                writableColumnSource.ensureCapacity(nextRow);
+                final ColumnSource<?> sourceColumnSource = table.getColumnSource(name, cs.getType());
+                try (final ChunkSink.FillFromContext ffc = writableColumnSource.makeFillFromContext(chunkCapacity);
                         final ChunkSource.GetContext getContext =
                                 sourceColumnSource.makeGetContext(chunkCapacity, sharedContext)) {
-                    final Chunk<? extends Values> valuesChunk =
-                            sourceColumnSource.getChunk(getContext, addRowSet);
-                    arrayBackedColumnSource.fillFromChunkUnordered(ffc, valuesChunk, destinations);
+                    final Chunk<? extends Values> valuesChunk = sourceColumnSource.getChunk(getContext, addRowSet);
+                    writableColumnSource.fillFromChunkUnordered(ffc, valuesChunk, destinations);
                 }
             });
         }
@@ -205,13 +206,11 @@ public class KeyedArrayBackedMutableTable extends BaseArrayBackedMutableTable {
         final ChunkSource<Values> keySource = makeKeySource(table);
         final int chunkCapacity = table.intSize();
 
-        final SharedContext sharedContext = SharedContext.makeSharedContext();
-
-        try (final WritableLongChunk<RowKeys> destinations =
-                WritableLongChunk.makeWritableChunk(chunkCapacity)) {
-            try (final ChunkSource.GetContext getContext = keySource.makeGetContext(chunkCapacity, sharedContext);
+        try (final WritableLongChunk<RowKeys> destinations = WritableLongChunk.makeWritableChunk(chunkCapacity)) {
+            try (final SharedContext sharedContext = SharedContext.makeSharedContext();
+                    final ChunkSource.GetContext getContext = keySource.makeGetContext(chunkCapacity, sharedContext);
                     final ChunkBoxer.BoxerKernel boxer = ChunkBoxer.getBoxer(keySource.getChunkType(), chunkCapacity);
-                    final RowSet tableRowSet = table.getRowSet().copy();) {
+                    final RowSet tableRowSet = table.getRowSet().copy()) {
 
                 final Chunk<? extends Values> keys = keySource.getChunk(getContext, tableRowSet);
                 final ObjectChunk<?, ? extends Values> boxed = boxer.box(keys);
@@ -229,10 +228,9 @@ public class KeyedArrayBackedMutableTable extends BaseArrayBackedMutableTable {
 
             // null out the values, so that we do not hold onto garbage forever, we keep the keys
             for (ObjectArraySource<?> objectArraySource : arrayValueSources) {
-                try (final ChunkSink.FillFromContext ffc =
-                        objectArraySource.makeFillFromContext(chunkCapacity);
+                try (final ChunkSink.FillFromContext ffc = objectArraySource.makeFillFromContext(chunkCapacity);
                         final WritableObjectChunk<?, Values> nullChunk =
-                                WritableObjectChunk.makeWritableChunk(chunkCapacity);) {
+                                WritableObjectChunk.makeWritableChunk(chunkCapacity)) {
                     nullChunk.fillWithNullValue(0, chunkCapacity);
                     objectArraySource.fillFromChunkUnordered(ffc, nullChunk, destinations);
                 }
@@ -241,7 +239,6 @@ public class KeyedArrayBackedMutableTable extends BaseArrayBackedMutableTable {
     }
 
     private ChunkSource<Values> makeKeySource(Table table) {
-        // noinspection unchecked
         return TupleSourceFactory.makeTupleSource(
                 keyColumnNames.stream().map(table::getColumnSource).toArray(ColumnSource[]::new));
     }

@@ -18,6 +18,7 @@ from deephaven.numpy import column_to_numpy_array, _make_input_column
 from deephaven.table import Table
 
 _JPrimitiveArrayConversionUtility = jpy.get_type("io.deephaven.integrations.common.PrimitiveArrayConversionUtility")
+_JDataAccessHelpers = jpy.get_type("io.deephaven.engine.table.impl.DataAccessHelpers")
 _is_dtype_backend_supported = pd.__version__ >= "2.0.0"
 
 
@@ -35,7 +36,7 @@ def _column_to_series(table: Table, col_def: Column) -> pd.Series:
         DHError
     """
     try:
-        data_col = table.j_table.getColumn(col_def.name)
+        data_col = _JDataAccessHelpers.getColumn(table.j_table, col_def.name)
         np_array = column_to_numpy_array(col_def, data_col.getDirect())
 
         return pd.Series(data=np_array, copy=False)
@@ -221,9 +222,13 @@ def to_table(df: pd.DataFrame, cols: List[str] = None) -> Table:
         input_cols = []
         for col in cols:
             np_array = df.get(col).values
-            dtype = dtypes.from_np_dtype(np_array.dtype)
+            if isinstance(df.dtypes[col], pd.CategoricalDtype):
+                dtype = df.dtypes[col].categories.dtype
+            else:
+                dtype = np_array.dtype
+            dh_dtype = dtypes.from_np_dtype(dtype)
             np_array = _map_na(np_array)
-            input_cols.append(_make_input_column(col, np_array, dtype))
+            input_cols.append(_make_input_column(col, np_array, dh_dtype))
 
         return new_table(cols=input_cols)
     except DHError:

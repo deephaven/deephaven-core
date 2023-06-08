@@ -8,8 +8,6 @@ import io.deephaven.api.RawString;
 import io.deephaven.api.filter.Filter;
 import io.deephaven.api.literal.Literal;
 
-import java.io.Serializable;
-
 /**
  * Represents an evaluate-able expression structure.
  *
@@ -20,7 +18,7 @@ import java.io.Serializable;
  * @see Method
  * @see RawString
  */
-public interface Expression extends Serializable {
+public interface Expression {
 
     <T> T walk(Visitor<T> visitor);
 

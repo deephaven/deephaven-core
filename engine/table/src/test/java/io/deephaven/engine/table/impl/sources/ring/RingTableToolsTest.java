@@ -3,21 +3,23 @@
  */
 package io.deephaven.engine.table.impl.sources.ring;
 
+import io.deephaven.engine.context.ExecutionContext;
 import io.deephaven.engine.rowset.RowSet;
 import io.deephaven.engine.rowset.RowSetFactory;
 import io.deephaven.engine.table.Table;
 import io.deephaven.engine.table.impl.QueryTable;
 import io.deephaven.engine.table.impl.BlinkTableTools;
+import io.deephaven.engine.testutil.ControlledUpdateGraph;
 import io.deephaven.engine.testutil.TstUtils;
 import io.deephaven.engine.table.impl.util.ColumnHolder;
-import io.deephaven.engine.updategraph.UpdateGraphProcessor;
 import io.deephaven.engine.util.TableTools;
 import io.deephaven.engine.testutil.junit4.EngineCleanup;
-import io.deephaven.time.DateTime;
+import io.deephaven.time.DateTimeUtils;
 import org.junit.Rule;
 import org.junit.Test;
 
 import java.math.BigInteger;
+import java.time.Instant;
 
 import static io.deephaven.engine.testutil.TstUtils.assertEqualsByElements;
 import static io.deephaven.engine.testutil.TstUtils.assertTableEquals;
@@ -26,9 +28,9 @@ import static io.deephaven.engine.testutil.TstUtils.subset;
 import static io.deephaven.engine.util.TableTools.booleanCol;
 import static io.deephaven.engine.util.TableTools.byteCol;
 import static io.deephaven.engine.util.TableTools.charCol;
-import static io.deephaven.engine.util.TableTools.dateTimeCol;
 import static io.deephaven.engine.util.TableTools.doubleCol;
 import static io.deephaven.engine.util.TableTools.floatCol;
+import static io.deephaven.engine.util.TableTools.instantCol;
 import static io.deephaven.engine.util.TableTools.intCol;
 import static io.deephaven.engine.util.TableTools.longCol;
 import static io.deephaven.engine.util.TableTools.shortCol;
@@ -52,7 +54,7 @@ public class RingTableToolsTest {
                 longHolder(size),
                 shortHolder(size),
                 stringHolder(size),
-                dateTimeHolder(size),
+                instantHolder(size),
                 booleanHolder(size));
         for (int capacity = 1; capacity <= 256; ++capacity) {
             final Table tail = table.tail(capacity);
@@ -88,15 +90,16 @@ public class RingTableToolsTest {
                 longHolder(appendSize),
                 shortHolder(appendSize),
                 stringHolder(appendSize),
-                dateTimeHolder(appendSize),
+                instantHolder(appendSize),
                 booleanHolder(appendSize),
         };
         final BlinkTableHelper streamHelper = new BlinkTableHelper(appendSize, holders);
         final Table tail = BlinkTableTools.blinkToAppendOnly(streamHelper.blinkTable).tail(capacity);
         final Table ring = RingTableTools.of(streamHelper.blinkTable, capacity, true);
         checkEquals(tail, ring);
+        final ControlledUpdateGraph updateGraph = ExecutionContext.getContext().getUpdateGraph().cast();
         for (int i = 0; i < times; ++i) {
-            UpdateGraphProcessor.DEFAULT.runWithinUnitTestCycle(() -> {
+            updateGraph.runWithinUnitTestCycle(() -> {
                 streamHelper.addAndNotify(appendSize, holders);
                 checkEquals(tail, ring);
             });
@@ -195,12 +198,12 @@ public class RingTableToolsTest {
         return booleanCol("X_boolean", col);
     }
 
-    private static ColumnHolder dateTimeHolder(int appendSize) {
-        DateTime[] col = new DateTime[appendSize];
+    private static ColumnHolder instantHolder(int appendSize) {
+        Instant[] col = new Instant[appendSize];
         for (int i = 0; i < appendSize; ++i) {
-            col[i] = new DateTime(i);
+            col[i] = DateTimeUtils.epochNanosToInstant(i);
         }
-        return dateTimeCol("X_datetime", col);
+        return instantCol("X_datetime", col);
     }
 
     private static class BlinkTableHelper {

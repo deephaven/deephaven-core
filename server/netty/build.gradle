@@ -30,6 +30,6 @@ dependencies {
     Classpaths.inheritSlf4j(project, 'slf4j-simple', 'testRuntimeOnly')
 }
 
-test.systemProperty "UpdateGraphProcessor.allowUnitTestMode", false
+test.systemProperty "PeriodicUpdateGraph.allowUnitTestMode", false
 
 apply plugin: 'io.deephaven.java-open-nio'

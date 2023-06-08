@@ -16,7 +16,7 @@ import java.util.stream.Collectors;
 /**
  * A minimal interface for mutable shared tables, providing the ability to write to the table instance this is attached
  * to. MutableInputTable instances are set on the table as an attribute.
- *
+ * <p>
  * Implementations of this interface will make their own guarantees about how atomically changes will be applied and
  * what operations they support.
  */
@@ -61,9 +61,9 @@ public interface MutableInputTable extends InputTableRowSetter, InputTableEnumGe
     /**
      * Validates that the given table definition is suitable to be passed to {@link #delete(Table)}.
      *
-     * @param tableToDelete the definition of the table to delete
-     * @throws UnsupportedOperationException if this table does not support deletes
-     * @throws ArgumentException if the given definition isn't compatible to be used to delete
+     * @param tableToDelete The definition of the table to delete
+     * @throws UnsupportedOperationException If this table does not support deletes
+     * @throws ArgumentException If the given definition isn't compatible to be used to delete
      */
     default void validateDelete(Table tableToDelete) {
         final TableDefinition keyDefinition = tableToDelete.getDefinition();
@@ -90,42 +90,92 @@ public interface MutableInputTable extends InputTableRowSetter, InputTableEnumGe
     }
 
     /**
-     * Write newData to this table. This method will block until the rows are added. Added rows with keys that match
-     * existing rows will instead replace those rows, if supported.
+     * Write {@code newData} to this table. Added rows with keys that match existing rows will instead replace those
+     * rows, if supported.
+     * <p>
+     * This method will block until the rows are added. As a result, this method is not suitable for use from a
+     * {@link io.deephaven.engine.table.TableListener table listener} or any other
+     * {@link io.deephaven.engine.updategraph.NotificationQueue.Notification notification}-dispatched callback
+     * dispatched by this MutableInputTable's {@link io.deephaven.engine.updategraph.UpdateGraph update graph}. It may
+     * be suitable to delete from another update graph if doing so does not introduce any cycles.
      *
-     * @param newData the data to write to this table
-     *
-     * @throws IOException if there is an error writing the data
+     * @param newData The data to write to this table
+     * @throws IOException If there is an error writing the data
      */
     void add(Table newData) throws IOException;
 
     /**
-     * Delete the keys contained in the parameter table from this input table. This method will block until rows are
-     * deleted.
+     * Write {@code newData} to this table. Added rows with keys that match existing rows will instead replace those
+     * rows, if supported and {@code allowEdits == true}.
+     * <p>
+     * This method will <em>not</em> block, and can be safely used from a {@link io.deephaven.engine.table.TableListener
+     * table listener} or any other {@link io.deephaven.engine.updategraph.NotificationQueue.Notification
+     * notification}-dispatched callback as long as {@code table} is already
+     * {@link io.deephaven.engine.updategraph.NotificationQueue.Dependency#satisfied(long) satisfied} on the current
+     * cycle.
      *
-     * @param table The rows to delete.
+     * @param newData The data to write to this table
+     * @param allowEdits Whether added rows with keys that match existing rows will instead replace those rows, or
+     *        result in an error
+     * @param listener The listener for asynchronous results
+     */
+    void addAsync(Table newData, boolean allowEdits, InputTableStatusListener listener);
+
+    /**
+     * Delete the keys contained in {@code table} from this input table.
+     * <p>
+     * This method will block until the rows are deleted. As a result, this method is not suitable for use from a
+     * {@link io.deephaven.engine.table.TableListener table listener} or any other
+     * {@link io.deephaven.engine.updategraph.NotificationQueue.Notification notification}-dispatched callback
+     * dispatched by this MutableInputTable's {@link io.deephaven.engine.updategraph.UpdateGraph update graph}. It may
+     * be suitable to delete from another update graph if doing so does not introduce any cycles.
+     *
+     * @param table The rows to delete
      * @throws IOException If a problem occurred while deleting the rows.
-     * @throws UnsupportedOperationException if this table does not support deletes
+     * @throws UnsupportedOperationException If this table does not support deletes
      */
     default void delete(Table table) throws IOException {
         delete(table, table.getRowSet());
     }
 
     /**
-     * Delete the keys contained in the parameter table from this input table. This method will block until rows are
-     * deleted.
+     * Delete the keys contained in {@code table.subTable(rowSet)} from this input table.
+     * <p>
+     * This method will block until the rows are deleted. As a result, this method is not suitable for use from a
+     * {@link io.deephaven.engine.table.TableListener table listener} or any other
+     * {@link io.deephaven.engine.updategraph.NotificationQueue.Notification notification}-dispatched callback
+     * dispatched by this MutableInputTable's {@link io.deephaven.engine.updategraph.UpdateGraph update graph}. It may
+     * be suitable to delete from another update graph if doing so does not introduce any cycles.
      *
-     * @param table The rows to delete.
-     * @throws IOException if a problem occurred while deleting the rows
-     * @throws UnsupportedOperationException if this table does not support deletes
+     * @param table Table containing the rows to delete
+     * @param rowSet The rows to delete
+     * @throws IOException If a problem occurred while deleting the rows
+     * @throws UnsupportedOperationException If this table does not support deletes
      */
     default void delete(Table table, TrackingRowSet rowSet) throws IOException {
         throw new UnsupportedOperationException("Table does not support deletes");
     }
 
     /**
+     * Delete the keys contained in {@code table.subTable(rowSet)} from this input table.
+     * <p>
+     * This method will <em>not</em> block, and can be safely used from a {@link io.deephaven.engine.table.TableListener
+     * table listener} or any other {@link io.deephaven.engine.updategraph.NotificationQueue.Notification
+     * notification}-dispatched callback as long as {@code table} is already
+     * {@link io.deephaven.engine.updategraph.NotificationQueue.Dependency#satisfied(long) satisfied} on the current
+     * cycle.
+     *
+     * @param table Table containing the rows to delete
+     * @param rowSet The rows to delete
+     * @throws UnsupportedOperationException If this table does not support deletes
+     */
+    default void deleteAsync(Table table, TrackingRowSet rowSet, InputTableStatusListener listener) {
+        throw new UnsupportedOperationException("Table does not support deletes");
+    }
+
+    /**
      * Return a user-readable description of this MutableInputTable.
-     * 
+     *
      * @return a description of this input table
      */
     String getDescription();
@@ -141,7 +191,6 @@ public interface MutableInputTable extends InputTableRowSetter, InputTableEnumGe
      * Returns true if the specified column is a key.
      *
      * @param columnName the column to interrogate
-     *
      * @return true if columnName is a key column, false otherwise
      */
     default boolean isKey(String columnName) {
@@ -152,7 +201,6 @@ public interface MutableInputTable extends InputTableRowSetter, InputTableEnumGe
      * Returns true if the specified column exists in this MutableInputTable.
      *
      * @param columnName the column to interrogate
-     *
      * @return true if columnName exists in this MutableInputTable
      */
     default boolean hasColumn(String columnName) {

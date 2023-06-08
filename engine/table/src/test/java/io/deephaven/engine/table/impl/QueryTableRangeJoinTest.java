@@ -18,7 +18,6 @@ import io.deephaven.engine.table.Table;
 import io.deephaven.engine.testutil.TstUtils;
 import io.deephaven.engine.testutil.junit4.EngineCleanup;
 import io.deephaven.test.types.OutOfBandTest;
-import io.deephaven.time.DateTime;
 import org.jetbrains.annotations.NotNull;
 import org.junit.After;
 import org.junit.Before;
@@ -28,6 +27,7 @@ import org.junit.experimental.categories.Category;
 import org.opentest4j.AssertionFailedError;
 
 import java.lang.reflect.Array;
+import java.time.Instant;
 import java.util.*;
 
 import static io.deephaven.api.agg.Aggregation.*;
@@ -207,7 +207,7 @@ public class QueryTableRangeJoinTest {
 
     // endregion validation tests
 
-    private static final DateTime NOW = DateTime.now();
+    private static final Instant NOW = Instant.now();
 
     private enum Type {
         // @formatter:off
@@ -232,10 +232,10 @@ public class QueryTableRangeJoinTest {
         DOUBLE("double", "io.deephaven.vector.DoubleVectorDirect.ZERO_LENGTH_VECTOR",
                 new double[]{NULL_DOUBLE, -1, 1, 3, 5, 7, 9, Double.NaN},
                 new double[]{NULL_DOUBLE, 0, 1, 2, 4, 5, 6, 7, 8, Double.NaN}),
-        TIMESTAMP( "DateTime", "io.deephaven.vector.ObjectVectorDirect.empty()",
-                new DateTime[]{null, minus(NOW, 1), plus(NOW, 1), plus(NOW, 3), plus(NOW, 5), plus(NOW, 7),
+        TIMESTAMP("Instant", "io.deephaven.vector.ObjectVectorDirect.empty()",
+                new Instant[]{null, minus(NOW, 1), plus(NOW, 1), plus(NOW, 3), plus(NOW, 5), plus(NOW, 7),
                         plus(NOW, 9)},
-                new DateTime[]{null, NOW, plus(NOW, 1), plus(NOW, 2), plus(NOW, 4), plus(NOW, 5),
+                new Instant[]{null, NOW, plus(NOW, 1), plus(NOW, 2), plus(NOW, 4), plus(NOW, 5),
                         plus(NOW, 6), plus(NOW, 7), plus(NOW, 8)}),
         STRING("String", "io.deephaven.vector.ObjectVectorDirect.empty()",
                 new String[]{null, ">?@", "DEF", "IJK", "OPQ", "UVW", "[\\]"},

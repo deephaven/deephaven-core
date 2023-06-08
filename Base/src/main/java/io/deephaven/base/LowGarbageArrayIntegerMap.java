@@ -19,7 +19,7 @@ import java.util.Set;
  * when expanding). This set only has one {@link Iterator}, which is reused. This set is not thread safe.
  * <P>
  * Note: This class extends {@link HashMap} rather than {@link Map} (or {@link AbstractMap}) only because one of the
- * fields where we want to use it ({@link sun.nio.ch.EPollSelectorImpl#fdToKey}) is (improperly) declared as a HashMap
+ * fields where we want to use it ({@code sun.nio.ch.EPollSelectorImpl#fdToKey}) is (improperly) declared as a HashMap
  * rather than a Map.
  */
 public class LowGarbageArrayIntegerMap<T> extends HashMap<Integer, T> {

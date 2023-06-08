@@ -5,16 +5,12 @@ package io.deephaven.modelfarm;
 
 import io.deephaven.base.verify.Require;
 import io.deephaven.configuration.Configuration;
-import io.deephaven.engine.context.TestExecutionContext;
 import io.deephaven.engine.table.Table;
+import io.deephaven.engine.testutil.testcase.RefreshingTableTestCase;
 import io.deephaven.engine.util.TableTools;
 import io.deephaven.engine.table.ColumnSource;
-import io.deephaven.util.SafeCloseable;
-import junit.framework.TestCase;
 import org.apache.commons.lang3.mutable.MutableLong;
 import org.jetbrains.annotations.NotNull;
-import org.junit.After;
-import org.junit.Before;
 
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
@@ -22,27 +18,11 @@ import java.util.concurrent.atomic.AtomicInteger;
 
 import static io.deephaven.util.QueryConstants.NULL_LONG;
 
-public class TestModelFarm extends TestCase {
+public class TestModelFarm extends RefreshingTableTestCase {
 
     private final long testShutdownTimeoutSecs =
             Configuration.getInstance().getIntegerWithDefault("TestModelFarm.testShutdownTimeoutSecs", 1);
     private final int nModelFarmThreadsDefault = 8;
-
-    private SafeCloseable executionContext;
-
-    @Before
-    @Override
-    public void setUp() throws Exception {
-        super.setUp();
-        executionContext = TestExecutionContext.createForUnitTests().open();
-    }
-
-    @After
-    @Override
-    public void tearDown() throws Exception {
-        super.tearDown();
-        executionContext.close();
-    }
 
     /**
      * Ensure that the ModelFarm terminates immediately if it is shut down while not busy with an empty queue.

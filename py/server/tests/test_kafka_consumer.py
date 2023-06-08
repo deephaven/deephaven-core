@@ -5,7 +5,7 @@
 import os
 import unittest
 
-from deephaven import kafka_consumer as ck, ugp
+from deephaven import kafka_consumer as ck
 from deephaven.stream.kafka.consumer import TableType, KeyValueSpec
 from tests.testbase import BaseTestCase
 from deephaven import dtypes
@@ -19,7 +19,7 @@ class KafkaConsumerTestCase(BaseTestCase):
         self.assertEqual("KafkaOffset", cols[1].name)
         self.assertEqual(dtypes.long, cols[1].data_type)
         self.assertEqual("KafkaTimestamp", cols[2].name)
-        self.assertEqual(dtypes.DateTime, cols[2].data_type)
+        self.assertEqual(dtypes.Instant, cols[2].data_type)
 
     def test_basic_constants(self):
         """
@@ -62,7 +62,7 @@ class KafkaConsumerTestCase(BaseTestCase):
                  ('Side', dtypes.string),
                  ('Price', dtypes.double),
                  ('Qty', dtypes.int_),
-                 ('Tstamp', dtypes.DateTime)],
+                 ('Tstamp', dtypes.Instant)],
                 mapping={
                     'jsymbol': 'Symbol',
                     'jside': 'Side',
@@ -87,7 +87,7 @@ class KafkaConsumerTestCase(BaseTestCase):
         self.assertEqual("Qty", cols[6].name)
         self.assertEqual(dtypes.int_, cols[6].data_type)
         self.assertEqual("Tstamp", cols[7].name)
-        self.assertEqual(dtypes.DateTime, cols[7].data_type)
+        self.assertEqual(dtypes.Instant, cols[7].data_type)
 
     def test_avro_spec(self):
         """
@@ -221,7 +221,7 @@ class KafkaConsumerTestCase(BaseTestCase):
                  ('Side', dtypes.string),
                  ('Price', dtypes.double),
                  ('Qty', dtypes.int_),
-                 ('Tstamp', dtypes.DateTime)],
+                 ('Tstamp', dtypes.Instant)],
                 mapping={
                     'jsymbol': 'Symbol',
                     'jside': 'Side',
@@ -246,7 +246,7 @@ class KafkaConsumerTestCase(BaseTestCase):
         self.assertEqual("Qty", cols[6].name)
         self.assertEqual(dtypes.int_, cols[6].data_type)
         self.assertEqual("Tstamp", cols[7].name)
-        self.assertEqual(dtypes.DateTime, cols[7].data_type)
+        self.assertEqual(dtypes.Instant, cols[7].data_type)
 
 
 if __name__ == "__main__":

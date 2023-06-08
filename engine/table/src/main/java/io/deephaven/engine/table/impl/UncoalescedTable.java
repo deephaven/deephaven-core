@@ -3,12 +3,11 @@
  */
 package io.deephaven.engine.table.impl;
 
-import io.deephaven.api.AsOfJoinRule;
+import io.deephaven.api.AsOfJoinMatch;
 import io.deephaven.api.ColumnName;
 import io.deephaven.api.JoinAddition;
 import io.deephaven.api.JoinMatch;
 import io.deephaven.api.RangeJoinMatch;
-import io.deephaven.api.ReverseAsOfJoinRule;
 import io.deephaven.api.Selectable;
 import io.deephaven.api.SortColumn;
 import io.deephaven.api.agg.Aggregation;
@@ -19,6 +18,7 @@ import io.deephaven.api.snapshot.SnapshotWhenOptions;
 import io.deephaven.api.updateby.UpdateByOperation;
 import io.deephaven.api.updateby.UpdateByControl;
 import io.deephaven.base.verify.Assert;
+import io.deephaven.engine.context.ExecutionContext;
 import io.deephaven.engine.liveness.Liveness;
 import io.deephaven.engine.primitive.iterator.*;
 import io.deephaven.engine.rowset.TrackingRowSet;
@@ -28,6 +28,7 @@ import io.deephaven.engine.table.hierarchical.TreeTable;
 import io.deephaven.engine.table.impl.updateby.UpdateBy;
 import io.deephaven.api.util.ConcurrentMethod;
 import io.deephaven.util.QueryConstants;
+import io.deephaven.util.SafeCloseable;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
@@ -65,15 +66,17 @@ public abstract class UncoalescedTable<IMPL_TYPE extends UncoalescedTable<IMPL_T
     protected abstract Table doCoalesce();
 
     public final Table coalesce() {
-        Table localCoalesced;
-        if (Liveness.verifyCachedObjectForReuse(localCoalesced = coalesced)) {
-            return localCoalesced;
-        }
-        synchronized (coalescingLock) {
+        try (final SafeCloseable ignored = ExecutionContext.getContext().withUpdateGraph(updateGraph).open()) {
+            Table localCoalesced;
             if (Liveness.verifyCachedObjectForReuse(localCoalesced = coalesced)) {
                 return localCoalesced;
             }
-            return coalesced = doCoalesce();
+            synchronized (coalescingLock) {
+                if (Liveness.verifyCachedObjectForReuse(localCoalesced = coalesced)) {
+                    return localCoalesced;
+                }
+                return coalesced = doCoalesce();
+            }
         }
     }
 
@@ -150,16 +153,6 @@ public abstract class UncoalescedTable<IMPL_TYPE extends UncoalescedTable<IMPL_T
     }
 
     @Override
-    public DataColumn[] getColumns() {
-        return coalesce().getColumns();
-    }
-
-    @Override
-    public DataColumn getColumn(String columnName) {
-        return coalesce().getColumn(columnName);
-    }
-
-    @Override
     public <TYPE> CloseableIterator<TYPE> columnIterator(@NotNull String columnName) {
         return coalesce().columnIterator(columnName);
     }
@@ -202,11 +195,6 @@ public abstract class UncoalescedTable<IMPL_TYPE extends UncoalescedTable<IMPL_T
     @Override
     public <DATA_TYPE> CloseableIterator<DATA_TYPE> objectColumnIterator(@NotNull String columnName) {
         return coalesce().objectColumnIterator(columnName);
-    }
-
-    @Override
-    public Object[] getRecord(long rowNo, String... columnNames) {
-        return coalesce().getRecord(rowNo, columnNames);
     }
 
     @Override
@@ -283,12 +271,6 @@ public abstract class UncoalescedTable<IMPL_TYPE extends UncoalescedTable<IMPL_T
 
     @Override
     @ConcurrentMethod
-    public Table dateTimeColumnAsNanos(String dateTimeColumnName, String nanosColumnName) {
-        return coalesce().dateTimeColumnAsNanos(dateTimeColumnName, nanosColumnName);
-    }
-
-    @Override
-    @ConcurrentMethod
     public Table head(long size) {
         return coalesce().head(size);
     }
@@ -326,15 +308,9 @@ public abstract class UncoalescedTable<IMPL_TYPE extends UncoalescedTable<IMPL_T
     }
 
     @Override
-    public Table aj(Table rightTable, Collection<? extends JoinMatch> columnsToMatch,
-            Collection<? extends JoinAddition> columnsToAdd, AsOfJoinRule asOfJoinRule) {
-        return coalesce().aj(rightTable, columnsToMatch, columnsToAdd, asOfJoinRule);
-    }
-
-    @Override
-    public Table raj(Table rightTable, Collection<? extends JoinMatch> columnsToMatch,
-            Collection<? extends JoinAddition> columnsToAdd, ReverseAsOfJoinRule reverseAsOfJoinRule) {
-        return coalesce().raj(rightTable, columnsToMatch, columnsToAdd, reverseAsOfJoinRule);
+    public Table asOfJoin(Table rightTable, Collection<? extends JoinMatch> exactMatches, AsOfJoinMatch asOfMatch,
+            Collection<? extends JoinAddition> columnsToAdd) {
+        return coalesce().asOfJoin(rightTable, exactMatches, asOfMatch, columnsToAdd);
     }
 
     @Override

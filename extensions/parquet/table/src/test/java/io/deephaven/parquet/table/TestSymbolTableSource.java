@@ -18,8 +18,10 @@ import static io.deephaven.engine.testutil.TstUtils.assertTableEquals;
  * Unit tests for Parquet symbol tables
  */
 public class TestSymbolTableSource {
+
     @Rule
     public final EngineCleanup framework = new EngineCleanup();
+
     private File dataDirectory;
 
     @Before

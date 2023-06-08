@@ -7,6 +7,7 @@ import io.deephaven.base.verify.Assert;
 import io.deephaven.engine.rowset.RowSetFactory;
 import io.deephaven.engine.table.WritableColumnSource;
 import io.deephaven.engine.table.Table;
+import io.deephaven.engine.updategraph.UpdateGraph;
 import io.deephaven.qst.column.header.ColumnHeader;
 import io.deephaven.qst.table.TableHeader;
 import io.deephaven.qst.type.Type;
@@ -14,7 +15,6 @@ import io.deephaven.tablelogger.Row;
 import io.deephaven.tablelogger.RowSetter;
 import io.deephaven.tablelogger.TableWriter;
 import io.deephaven.engine.table.TableDefinition;
-import io.deephaven.engine.updategraph.UpdateGraphProcessor;
 import io.deephaven.util.QueryConstants;
 import io.deephaven.engine.table.impl.UpdateSourceQueryTable;
 import io.deephaven.engine.table.impl.sources.ArrayBackedColumnSource;
@@ -36,7 +36,7 @@ import java.util.stream.Collectors;
  * This class is not thread safe, you must synchronize externally. However, multiple setters may safely log
  * concurrently.
  *
- * @implNote The constructor publishes {@code this} to the {@link UpdateGraphProcessor} and thus cannot be subclassed.
+ * @implNote The constructor publishes {@code this} to the {@link UpdateGraph} and thus cannot be subclassed.
  */
 public final class DynamicTableWriter implements TableWriter {
     private final UpdateSourceQueryTable table;
@@ -135,7 +135,7 @@ public final class DynamicTableWriter implements TableWriter {
     /**
      * Gets the table created by this DynamicTableWriter.
      * <p>
-     * The returned table is registered with the UpdateGraphProcessor, and new rows become visible within the run loop.
+     * The returned table is registered with the PeriodicUpdateGraph, and new rows become visible within the run loop.
      *
      * @return a live table with the output of this log
      */
@@ -192,7 +192,7 @@ public final class DynamicTableWriter implements TableWriter {
     /**
      * Writes the current row created with the {@code getSetter} call, and advances the current row by one.
      * <p>
-     * The row will be made visible in the table after the UpdateGraphProcessor run cycle completes.
+     * The row will be made visible in the table after the PeriodicUpdateGraph run cycle completes.
      */
     @Override
     public void writeRow() {
@@ -413,7 +413,8 @@ public final class DynamicTableWriter implements TableWriter {
                     (currentRow) -> createRowSetter(source.getType(), (WritableColumnSource) source));
             ++ii;
         }
-        UpdateGraphProcessor.DEFAULT.addSource(table);
+        UpdateGraph updateGraph = table.getUpdateGraph();
+        updateGraph.addSource(table);
     }
 
     @SuppressWarnings("unchecked")

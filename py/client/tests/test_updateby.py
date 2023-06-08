@@ -15,7 +15,7 @@ class UpdateByTestCase(BaseTestCase):
     def setUp(self):
         super().setUp()
         pa_table = csv.read_csv(self.csv_file)
-        self.static_table = self.session.import_table(pa_table).update(["Timestamp=currentTime()"])
+        self.static_table = self.session.import_table(pa_table).update(["Timestamp=now()"])
         self.ticking_table = self.session.time_table(1000000).update(
                 ["a = i", "b = i*i % 13", "c = i * 13 % 23", "d = a + b", "e = a - b"])
 
@@ -35,10 +35,10 @@ class UpdateByTestCase(BaseTestCase):
                                    on_nan=BadDataBehavior.RESET,
                                    big_value_context=MathContext.UNLIMITED)
 
-        ops = [ema_tick_decay(time_scale_ticks=100, cols=["ema_a = a"]),
-               ema_tick_decay(time_scale_ticks=100, cols=["ema_a = a"], op_control=op_ctrl),
-               ema_time_decay(ts_col="Timestamp", time_scale=10, cols=["ema_a = a"]),
-               ema_time_decay(ts_col="Timestamp", time_scale=1000000, cols=["ema_c = c"],
+        ops = [ema_tick_decay(decay_ticks=100, cols=["ema_a = a"]),
+               ema_tick_decay(decay_ticks=100, cols=["ema_a = a"], op_control=op_ctrl),
+               ema_time_decay(ts_col="Timestamp", decay_time=10, cols=["ema_a = a"]),
+               ema_time_decay(ts_col="Timestamp", decay_time=1000000, cols=["ema_c = c"],
                               op_control=op_ctrl),
                ]
 

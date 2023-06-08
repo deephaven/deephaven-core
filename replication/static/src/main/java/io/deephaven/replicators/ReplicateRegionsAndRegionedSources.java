@@ -120,13 +120,13 @@ public class ReplicateRegionsAndRegionedSources {
     private static void fixupRegionedColumnSourceLong(String path) throws IOException {
         final File file = new File(path);
         List<String> lines = FileUtils.readLines(file, Charset.defaultCharset());
-        lines = addImport(lines, "import io.deephaven.time.DateTime;",
+        lines = addImport(lines,
                 "import io.deephaven.engine.table.ColumnSource;",
-                "import io.deephaven.engine.table.impl.sources.LocalDateWrapperSource;",
-                "import io.deephaven.engine.table.impl.sources.LocalTimeWrapperSource;",
-                "import io.deephaven.engine.table.impl.sources.ConvertableTimeSource;");
+                "import io.deephaven.engine.table.impl.sources.LongAsLocalDateColumnSource;",
+                "import io.deephaven.engine.table.impl.sources.LongAsLocalTimeColumnSource;",
+                "import io.deephaven.engine.table.impl.sources.ConvertibleTimeSource;");
         lines = addImport(lines, Instant.class, ZonedDateTime.class, LocalDate.class, LocalTime.class, ZoneId.class);
-        lines = globalReplacements(lines, "/\\*\\s+MIXIN_INTERFACES\\s+\\*/", ",ConvertableTimeSource ");
+        lines = globalReplacements(lines, "/\\*\\s+MIXIN_INTERFACES\\s+\\*/", ", ConvertibleTimeSource");
         lines = replaceRegion(lines, "reinterpretation", Arrays.asList(
                 "    @Override",
                 "    public <ALTERNATE_DATA_TYPE> boolean allowsReinterpret(@NotNull Class<ALTERNATE_DATA_TYPE> alternateDataType) {",
@@ -134,8 +134,7 @@ public class ReplicateRegionsAndRegionedSources {
                 "            return true;",
                 "        }",
                 "",
-                "        return alternateDataType == Instant.class ||",
-                "                alternateDataType == DateTime.class;",
+                "        return alternateDataType == Instant.class;",
                 "    }",
                 "",
                 "    @SuppressWarnings(\"unchecked\")",
@@ -143,8 +142,6 @@ public class ReplicateRegionsAndRegionedSources {
                 "    protected <ALTERNATE_DATA_TYPE> ColumnSource<ALTERNATE_DATA_TYPE> doReinterpret(@NotNull Class<ALTERNATE_DATA_TYPE> alternateDataType) {",
                 "        if(alternateDataType == Instant.class) {",
                 "            return (ColumnSource<ALTERNATE_DATA_TYPE>) toInstant();",
-                "        } else if(alternateDataType == DateTime.class) {",
-                "            return (ColumnSource<ALTERNATE_DATA_TYPE>) toDateTime();",
                 "        }",
                 "",
                 "        return super.doReinterpret(alternateDataType);",
@@ -160,11 +157,6 @@ public class ReplicateRegionsAndRegionedSources {
                 "        return new RegionedColumnSourceInstant((RegionedColumnSourceLong<Values>) this);",
                 "    }",
                 "",
-                "    public ColumnSource<DateTime> toDateTime() {",
-                "        //noinspection unchecked",
-                "        return new RegionedColumnSourceDateTime((RegionedColumnSourceLong<Values>) this);",
-                "    }",
-                "",
                 "    @Override",
                 "    public ColumnSource<ZonedDateTime> toZonedDateTime(ZoneId zone) {",
                 "        //noinspection unchecked",
@@ -173,12 +165,12 @@ public class ReplicateRegionsAndRegionedSources {
                 "",
                 "    @Override",
                 "    public ColumnSource<LocalTime> toLocalTime(ZoneId zone) {",
-                "        return new LocalTimeWrapperSource(toZonedDateTime(zone), zone);",
+                "        return new LongAsLocalTimeColumnSource(this, zone);",
                 "    }",
                 "",
                 "    @Override",
                 "    public ColumnSource<LocalDate> toLocalDate(ZoneId zone) {",
-                "        return new LocalDateWrapperSource(toZonedDateTime(zone), zone);",
+                "        return new LongAsLocalDateColumnSource(this, zone);",
                 "    }",
                 "",
                 "    @Override",

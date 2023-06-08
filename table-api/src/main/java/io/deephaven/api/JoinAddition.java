@@ -5,7 +5,6 @@ package io.deephaven.api;
 
 import io.deephaven.api.snapshot.SnapshotWhenOptions;
 
-import java.io.Serializable;
 import java.util.Collection;
 import java.util.List;
 import java.util.stream.Collectors;
@@ -17,11 +16,10 @@ import java.util.stream.Collectors;
  * @see TableOperations#join(Object, Collection, Collection, int)
  * @see TableOperations#naturalJoin(Object, Collection, Collection)
  * @see TableOperations#exactJoin(Object, Collection, Collection)
- * @see TableOperations#aj(Object, Collection, Collection, AsOfJoinRule)
- * @see TableOperations#raj(Object, Collection, Collection, ReverseAsOfJoinRule)
+ * @see TableOperations#asOfJoin(Object, Collection, AsOfJoinMatch, Collection)
  * @see SnapshotWhenOptions#stampColumns()
  */
-public interface JoinAddition extends Serializable {
+public interface JoinAddition {
 
     static JoinAddition of(ColumnName newColumn, ColumnName existingColumn) {
         if (newColumn.equals(existingColumn)) {

@@ -4,6 +4,7 @@
 package io.deephaven.engine.table.impl;
 
 import io.deephaven.base.verify.Assert;
+import io.deephaven.engine.context.ExecutionContext;
 import io.deephaven.engine.rowset.*;
 import io.deephaven.engine.rowset.RowSetFactory;
 import io.deephaven.engine.rowset.impl.rsp.RspArray;
@@ -11,8 +12,8 @@ import io.deephaven.engine.table.ColumnSource;
 import io.deephaven.engine.table.ModifiedColumnSet;
 import io.deephaven.engine.table.TableUpdate;
 import io.deephaven.engine.table.TableUpdateListener;
-import io.deephaven.engine.updategraph.LogicalClock;
 import io.deephaven.engine.table.impl.sources.ReversedColumnSource;
+import io.deephaven.util.annotations.VisibleForTesting;
 import org.jetbrains.annotations.NotNull;
 
 import java.util.LinkedHashMap;
@@ -28,7 +29,8 @@ public class ReverseOperation implements QueryTable.MemoizableOperation<QueryTab
      * Minimum pivot is RSP container size. This guarantees that we only generate shifts that are a multiple of
      * container size, which is important if we're using an RSP-backed OrderedLongSet to implement our RowSet.
      */
-    private static final long MINIMUM_PIVOT = RspArray.BLOCK_SIZE;
+    @VisibleForTesting
+    static final long MINIMUM_PIVOT = RspArray.BLOCK_SIZE;
     /**
      * Maximum pivot is the maximum possible row key.
      */
@@ -149,46 +151,51 @@ public class ReverseOperation implements QueryTable.MemoizableOperation<QueryTab
         final long newShift =
                 (parentRowSet.lastRowKey() > pivotPoint) ? computePivot(parentRowSet.lastRowKey()) - pivotPoint : 0;
         if (upstream.shifted().nonempty() || newShift > 0) {
-            long watermarkKey = 0;
-            final RowSetShiftData.Builder oShiftedBuilder = new RowSetShiftData.Builder();
+            // Only compute downstream shifts if there are retained rows to shift
+            if (resultRowSet.isEmpty()) {
+                downstream.shifted = RowSetShiftData.EMPTY;
+            } else {
+                long watermarkKey = 0;
+                final RowSetShiftData.Builder oShiftedBuilder = new RowSetShiftData.Builder();
 
-            // Bounds seem weird because we might need to shift all keys outside of shifts too.
-            for (int idx = upstream.shifted().size(); idx >= 0; --idx) {
-                final long nextShiftEnd;
-                final long nextShiftStart;
-                final long nextShiftDelta;
-                if (idx == 0) {
-                    nextShiftStart = nextShiftEnd = pivotPoint + 1;
-                    nextShiftDelta = 0;
-                } else {
-                    // Note: begin/end flip responsibilities in the transformation
-                    nextShiftDelta = -upstream.shifted().getShiftDelta(idx - 1);
-                    final long minStart = Math.max(-nextShiftDelta - newShift, 0);
-                    nextShiftStart = Math.max(minStart, transform(upstream.shifted().getEndRange(idx - 1)));
-                    nextShiftEnd = transform(upstream.shifted().getBeginRange(idx - 1));
-                    if (nextShiftEnd < nextShiftStart) {
+                // Bounds seem weird because we might need to shift all keys outside of shifts too.
+                for (int idx = upstream.shifted().size(); idx >= 0; --idx) {
+                    final long nextShiftEnd;
+                    final long nextShiftStart;
+                    final long nextShiftDelta;
+                    if (idx == 0) {
+                        nextShiftStart = nextShiftEnd = pivotPoint + 1;
+                        nextShiftDelta = 0;
+                    } else {
+                        // Note: begin/end flip responsibilities in the transformation
+                        nextShiftDelta = -upstream.shifted().getShiftDelta(idx - 1);
+                        final long minStart = Math.max(-nextShiftDelta - newShift, 0);
+                        nextShiftStart = Math.max(minStart, transform(upstream.shifted().getEndRange(idx - 1)));
+                        nextShiftEnd = transform(upstream.shifted().getBeginRange(idx - 1));
+                        if (nextShiftEnd < nextShiftStart) {
+                            continue;
+                        }
+                    }
+
+                    // insert range prior to here; note shift ends are inclusive so we need the -1 for endRange
+                    long innerEnd = nextShiftStart - 1 + (nextShiftDelta < 0 ? nextShiftDelta : 0);
+                    oShiftedBuilder.shiftRange(watermarkKey, innerEnd, newShift);
+
+                    if (idx == 0) {
                         continue;
                     }
+
+                    // insert this range
+                    oShiftedBuilder.shiftRange(nextShiftStart, nextShiftEnd, newShift + nextShiftDelta);
+                    watermarkKey = nextShiftEnd + 1 + (nextShiftDelta > 0 ? nextShiftDelta : 0);
                 }
 
-                // insert range prior to here; note shift ends are inclusive so we need the -1 for endRange
-                long innerEnd = nextShiftStart - 1 + (nextShiftDelta < 0 ? nextShiftDelta : 0);
-                oShiftedBuilder.shiftRange(watermarkKey, innerEnd, newShift);
-
-                if (idx == 0) {
-                    continue;
-                }
-
-                // insert this range
-                oShiftedBuilder.shiftRange(nextShiftStart, nextShiftEnd, newShift + nextShiftDelta);
-                watermarkKey = nextShiftEnd + 1 + (nextShiftDelta > 0 ? nextShiftDelta : 0);
+                downstream.shifted = oShiftedBuilder.build();
+                downstream.shifted().apply(resultRowSet);
             }
 
-            downstream.shifted = oShiftedBuilder.build();
-            downstream.shifted().apply(resultRowSet);
-
             // Update pivot logic.
-            lastPivotPointChange = LogicalClock.DEFAULT.currentStep();
+            lastPivotPointChange = parent.getUpdateGraph().clock().currentStep();
             prevPivotPoint = pivotPoint;
             pivotPoint += newShift;
         } else {
@@ -236,8 +243,10 @@ public class ReverseOperation implements QueryTable.MemoizableOperation<QueryTab
     }
 
     private long getPrevPivotPoint() {
-        if ((prevPivotPoint != pivotPoint) && (LogicalClock.DEFAULT.currentStep() != lastPivotPointChange)) {
-            prevPivotPoint = pivotPoint;
+        if ((prevPivotPoint != pivotPoint)) {
+            if (parent.getUpdateGraph().clock().currentStep() != lastPivotPointChange) {
+                prevPivotPoint = pivotPoint;
+            }
         }
         return prevPivotPoint;
     }

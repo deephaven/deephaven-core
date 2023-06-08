@@ -15,7 +15,7 @@ from deephaven.column import Column, InputColumn
 from deephaven.table import Table
 
 _JPrimitiveArrayConversionUtility = jpy.get_type("io.deephaven.integrations.common.PrimitiveArrayConversionUtility")
-
+_JDataAccessHelpers = jpy.get_type("io.deephaven.engine.table.impl.DataAccessHelpers")
 
 def _to_column_name(name: str) -> str:
     """ Transforms the given name string into a valid table column name. """
@@ -28,8 +28,8 @@ def column_to_numpy_array(col_def: Column, j_array: jpy.JType) -> np.ndarray:
     try:
         if col_def.data_type.is_primitive:
             np_array = np.frombuffer(j_array, col_def.data_type.np_type)
-        elif col_def.data_type == dtypes.DateTime:
-            longs = _JPrimitiveArrayConversionUtility.translateArrayDateTimeToLong(j_array)
+        elif col_def.data_type == dtypes.Instant:
+            longs = _JPrimitiveArrayConversionUtility.translateArrayInstantToLong(j_array)
             np_long_array = np.frombuffer(longs, np.int64)
             np_array = np_long_array.view(col_def.data_type.np_type)
         elif col_def.data_type == dtypes.bool_:
@@ -113,7 +113,7 @@ def to_numpy(table: Table, cols: List[str] = None) -> np.ndarray:
 
         j_arrays = []
         for col_def in col_defs:
-            data_col = table.j_table.getColumn(col_def.name)
+            data_col = _JDataAccessHelpers.getColumn(table.j_table, col_def.name)
             j_arrays.append(data_col.getDirect())
         return _columns_to_2d_numpy_array(col_defs[0], j_arrays)
     except DHError:

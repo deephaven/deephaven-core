@@ -10,7 +10,6 @@ import io.deephaven.engine.table.TableFactory;
 import io.deephaven.engine.table.impl.util.AppendOnlyArrayBackedMutableTable;
 import io.deephaven.engine.table.impl.util.KeyedArrayBackedMutableTable;
 import io.deephaven.engine.util.TableTools;
-import io.deephaven.time.DateTime;
 import io.deephaven.qst.TableCreator;
 import io.deephaven.qst.table.EmptyTable;
 import io.deephaven.qst.table.InMemoryAppendOnlyInputTable;
@@ -25,6 +24,7 @@ import io.deephaven.qst.table.Clock;
 import io.deephaven.qst.table.ClockSystem;
 import io.deephaven.qst.table.TimeTable;
 
+import java.time.Instant;
 import java.util.Arrays;
 import java.util.Objects;
 import java.util.stream.Stream;
@@ -64,7 +64,7 @@ public enum TableCreatorImpl implements TableCreator<Table> {
     @Override
     public final Table of(TimeTable timeTable) {
         final io.deephaven.base.clock.Clock clock = ClockAdapter.of(timeTable.clock());
-        final DateTime firstTime = timeTable.startTime().map(DateTime::of).orElse(null);
+        final Instant firstTime = timeTable.startTime().orElse(null);
         return TableTools.timeTable(clock, firstTime, timeTable.interval().toNanos());
     }
 

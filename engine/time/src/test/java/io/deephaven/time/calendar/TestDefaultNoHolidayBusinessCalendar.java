@@ -5,12 +5,14 @@ package io.deephaven.time.calendar;
 
 import io.deephaven.base.testing.BaseArrayTestCase;
 import io.deephaven.time.DateTimeUtils;
-import io.deephaven.time.TimeZone;
 
 import java.io.File;
 import java.io.FileWriter;
+import java.time.ZoneId;
 
 public class TestDefaultNoHolidayBusinessCalendar extends BaseArrayTestCase {
+
+    private static final ZoneId TZ_NY = ZoneId.of("America/New_York");
 
     private BusinessCalendar noNonBusinessDays;
     private BusinessCalendar onlyWeekends;
@@ -28,7 +30,7 @@ public class TestDefaultNoHolidayBusinessCalendar extends BaseArrayTestCase {
                 "\n" +
                 "<calendar>\n" +
                 "    <name>noNonBusinessDays</name>\n" +
-                "    <timeZone>TZ_NY</timeZone>\n" +
+                "    <timeZone>NY</timeZone>\n" +
                 "    <language>en</language>\n" +
                 "    <country>US</country>\n" +
                 "    <default>\n" +
@@ -48,7 +50,7 @@ public class TestDefaultNoHolidayBusinessCalendar extends BaseArrayTestCase {
                 "\n" +
                 "<calendar>\n" +
                 "    <name>onlyWeekends</name>\n" +
-                "    <timeZone>TZ_NY</timeZone>\n" +
+                "    <timeZone>NY</timeZone>\n" +
                 "    <language>en</language>\n" +
                 "    <country>US</country>\n" +
                 "    <default>\n" +
@@ -70,7 +72,7 @@ public class TestDefaultNoHolidayBusinessCalendar extends BaseArrayTestCase {
                 "\n" +
                 "<calendar>\n" +
                 "    <name>onlyHolidays</name>\n" +
-                "    <timeZone>TZ_NY</timeZone>\n" +
+                "    <timeZone>NY</timeZone>\n" +
                 "    <language>en</language>\n" +
                 "    <country>US</country>\n" +
                 "    <default>\n" +
@@ -93,7 +95,7 @@ public class TestDefaultNoHolidayBusinessCalendar extends BaseArrayTestCase {
                 "\n" +
                 "<calendar>\n" +
                 "    <name>weekendsAndHolidays</name>\n" +
-                "    <timeZone>TZ_NY</timeZone>\n" +
+                "    <timeZone>NY</timeZone>\n" +
                 "    <language>en</language>\n" +
                 "    <country>US</country>\n" +
                 "    <default>\n" +
@@ -159,14 +161,14 @@ public class TestDefaultNoHolidayBusinessCalendar extends BaseArrayTestCase {
         assertEquals(noNonBusinessDays.nonBusinessDaysInRange("2010-01-01", "2019-01-01"), new String[0]);
         assertEquals(
                 noNonBusinessDays.diffNonBusinessNanos(
-                        DateTimeUtils.convertDateTime("2010-01-01T01:00:00.000000000 NY"),
-                        DateTimeUtils.convertDateTime("2019-01-01T01:00:00.000000000 NY")),
+                        DateTimeUtils.parseInstant("2010-01-01T01:00:00.000000000 NY"),
+                        DateTimeUtils.parseInstant("2019-01-01T01:00:00.000000000 NY")),
                 0);
         assertEquals(noNonBusinessDays.numberOfNonBusinessDays("2010-01-01", "2019-01-01"), 0);
 
 
         assertEquals(noNonBusinessDays.name(), "noNonBusinessDays");
-        assertEquals(noNonBusinessDays.timeZone(), TimeZone.TZ_NY);
+        assertEquals(noNonBusinessDays.timeZone(), TZ_NY);
         assertEquals(noNonBusinessDays.standardBusinessDayLengthNanos(),
                 6 * DateTimeUtils.HOUR + (30 * DateTimeUtils.MINUTE));
         assertEquals(noNonBusinessDays.getBusinessSchedule("2019-06-26").getSOBD(),

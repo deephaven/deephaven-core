@@ -25,13 +25,13 @@ import io.deephaven.engine.table.impl.util.ChunkUtils;
 import io.deephaven.engine.table.impl.util.JobScheduler;
 import io.deephaven.engine.updategraph.DynamicNode;
 import io.deephaven.engine.updategraph.UpdateCommitterEx;
-import io.deephaven.engine.updategraph.UpdateGraphProcessor;
+import io.deephaven.engine.updategraph.UpdateGraph;
 import io.deephaven.engine.util.systemicmarking.SystemicObjectTracker;
-import io.deephaven.time.DateTime;
 import io.deephaven.util.SafeCloseable;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
+import java.time.Instant;
 import java.util.*;
 import java.util.function.Consumer;
 import java.util.function.LongToIntFunction;
@@ -41,7 +41,7 @@ import static io.deephaven.chunk.util.pools.ChunkPoolConstants.LARGEST_POOLED_CH
 
 final public class SelectColumnLayer extends SelectOrViewColumnLayer {
     /**
-     * The same reference as super.columnSource, but as a WritableColumnSource and maybe reinterpretted
+     * The same reference as super.columnSource, but as a WritableColumnSource and maybe reinterpreted
      */
     private final WritableColumnSource<?> writableSource;
 
@@ -50,6 +50,7 @@ final public class SelectColumnLayer extends SelectOrViewColumnLayer {
      */
     private final ExecutionContext executionContext;
 
+    private final UpdateGraph updateGraph;
     /**
      * Our parent row set, used for ensuring capacity.
      */
@@ -71,15 +72,23 @@ final public class SelectColumnLayer extends SelectOrViewColumnLayer {
      */
     private ChunkSource.WithPrev<Values> chunkSource;
 
-    SelectColumnLayer(RowSet parentRowSet, SelectAndViewAnalyzer inner, String name, SelectColumn sc,
-            WritableColumnSource<?> ws, WritableColumnSource<?> underlying,
-            String[] deps, ModifiedColumnSet mcsBuilder, boolean isRedirected,
-            boolean flattenedResult, boolean alreadyFlattenedSources) {
+    SelectColumnLayer(
+            UpdateGraph updateGraph, RowSet parentRowSet, SelectAndViewAnalyzer inner, String name, SelectColumn sc,
+            WritableColumnSource<?> ws, WritableColumnSource<?> underlying, String[] deps, ModifiedColumnSet mcsBuilder,
+            boolean isRedirected, boolean flattenedResult, boolean alreadyFlattenedSources) {
         super(inner, name, sc, ws, underlying, deps, mcsBuilder);
+        this.updateGraph = updateGraph;
         this.parentRowSet = parentRowSet;
         this.writableSource = ReinterpretUtils.maybeConvertToWritablePrimitive(ws);
         this.isRedirected = isRedirected;
-        this.executionContext = ExecutionContext.getContextToRecord();
+
+        final ExecutionContext userSuppliedContext = ExecutionContext.getContextToRecord();
+        if (userSuppliedContext != null) {
+            this.executionContext = userSuppliedContext;
+        } else {
+            // the job scheduler requires the update graph
+            this.executionContext = ExecutionContext.newBuilder().setUpdateGraph(updateGraph).build();
+        }
 
         dependencyBitSet = new BitSet();
         Arrays.stream(deps).mapToInt(inner::getLayerIndexFor).forEach(dependencyBitSet::set);
@@ -149,10 +158,9 @@ final public class SelectColumnLayer extends SelectOrViewColumnLayer {
                         // If we have shifts, that makes everything nasty; so we do not want to deal with it
                         final boolean hasShifts = upstream.shifted().nonempty();
 
-                        final boolean checkTableOperations =
-                                UpdateGraphProcessor.DEFAULT.getCheckTableOperations()
-                                        && !UpdateGraphProcessor.DEFAULT.sharedLock().isHeldByCurrentThread()
-                                        && !UpdateGraphProcessor.DEFAULT.exclusiveLock().isHeldByCurrentThread();
+                        final boolean serialTableOperationsSafe = updateGraph.serialTableOperationsSafe()
+                                || updateGraph.sharedLock().isHeldByCurrentThread()
+                                || updateGraph.exclusiveLock().isHeldByCurrentThread();
 
                         if (canParallelizeThisColumn && jobScheduler.threadCount() > 1 && !hasShifts &&
                                 ((resultTypeIsTable && totalSize > 0)
@@ -196,13 +204,13 @@ final public class SelectColumnLayer extends SelectOrViewColumnLayer {
                                     executionContext,
                                     () -> prepareParallelUpdate(jobScheduler, upstream, toClear, helper,
                                             liveResultOwner, onCompletion, this::onError, updates,
-                                            checkTableOperations),
+                                            serialTableOperationsSafe),
                                     SelectColumnLayer.this, this::onError);
                         } else {
                             jobScheduler.submit(
                                     executionContext,
                                     () -> doSerialApplyUpdate(upstream, toClear, helper, liveResultOwner, onCompletion,
-                                            checkTableOperations),
+                                            serialTableOperationsSafe),
                                     SelectColumnLayer.this, this::onError);
                         }
                     }
@@ -212,7 +220,7 @@ final public class SelectColumnLayer extends SelectOrViewColumnLayer {
     private void prepareParallelUpdate(final JobScheduler jobScheduler, final TableUpdate upstream,
             final RowSet toClear, final UpdateHelper helper, @Nullable final LivenessNode liveResultOwner,
             final SelectLayerCompletionHandler onCompletion, final Consumer<Exception> onError,
-            final List<TableUpdate> splitUpdates, final boolean checkTableOperations) {
+            final List<TableUpdate> splitUpdates, final boolean serialTableOperationsSafe) {
         // we have to do removal and previous initialization before we can do any of the actual filling in multiple
         // threads to avoid concurrency problems with our destination column sources
         doEnsureCapacity();
@@ -234,9 +242,9 @@ final public class SelectColumnLayer extends SelectOrViewColumnLayer {
             }
         }
         jobScheduler.iterateParallel(
-                executionContext, SelectColumnLayer.this, JobScheduler.DEFAULT_CONTEXT_FACTORY, 0, numTasks,
-                (ctx, ti, nec) -> doParallelApplyUpdate(
-                        splitUpdates.get(ti), helper, liveResultOwner, checkTableOperations, destinationOffsets[ti]),
+                executionContext, SelectColumnLayer.this, JobScheduler.DEFAULT_CONTEXT_FACTORY, 0,
+                numTasks, (ctx, ti, nec) -> doParallelApplyUpdate(splitUpdates.get(ti), helper, liveResultOwner,
+                        serialTableOperationsSafe, destinationOffsets[ti]),
                 () -> {
                     if (!isRedirected) {
                         clearObjectsAtThisLevel(toClear);
@@ -248,14 +256,14 @@ final public class SelectColumnLayer extends SelectOrViewColumnLayer {
 
     private void doSerialApplyUpdate(final TableUpdate upstream, final RowSet toClear, final UpdateHelper helper,
             @Nullable final LivenessNode liveResultOwner, final SelectLayerCompletionHandler onCompletion,
-            final boolean checkTableOperations) {
+            final boolean serialTableOperationsSafe) {
         doEnsureCapacity();
-        final boolean oldCheck = UpdateGraphProcessor.DEFAULT.setCheckTableOperations(checkTableOperations);
+        final boolean oldSafe = updateGraph.setSerialTableOperationsSafe(serialTableOperationsSafe);
         try {
             SystemicObjectTracker.executeSystemically(isSystemic,
                     () -> doApplyUpdate(upstream, helper, liveResultOwner, 0));
         } finally {
-            UpdateGraphProcessor.DEFAULT.setCheckTableOperations(oldCheck);
+            updateGraph.setSerialTableOperationsSafe(oldSafe);
         }
         if (!isRedirected) {
             clearObjectsAtThisLevel(toClear);
@@ -264,13 +272,14 @@ final public class SelectColumnLayer extends SelectOrViewColumnLayer {
     }
 
     private void doParallelApplyUpdate(final TableUpdate upstream, final UpdateHelper helper,
-            @Nullable final LivenessNode liveResultOwner, final boolean checkTableOperations, final long startOffset) {
-        final boolean oldCheck = UpdateGraphProcessor.DEFAULT.setCheckTableOperations(checkTableOperations);
+            @Nullable final LivenessNode liveResultOwner, final boolean serialTableOperationsSafe,
+            final long startOffset) {
+        final boolean oldSafe = updateGraph.setSerialTableOperationsSafe(serialTableOperationsSafe);
         try {
             SystemicObjectTracker.executeSystemically(isSystemic,
                     () -> doApplyUpdate(upstream, helper, liveResultOwner, startOffset));
         } finally {
-            UpdateGraphProcessor.DEFAULT.setCheckTableOperations(oldCheck);
+            updateGraph.setSerialTableOperationsSafe(oldSafe);
         }
         upstream.release();
     }
@@ -517,7 +526,7 @@ final public class SelectColumnLayer extends SelectOrViewColumnLayer {
             @NotNull final LivenessNode liveResultOwner,
             @NotNull final WritableObjectChunk<? extends LivenessReferent, Values> prevValuesToUnmanage) {
         if (prevUnmanager == null) {
-            prevUnmanager = new UpdateCommitterEx<>(this, SelectColumnLayer::unmanagePreviousValues);
+            prevUnmanager = new UpdateCommitterEx<>(this, updateGraph, SelectColumnLayer::unmanagePreviousValues);
         }
         prevUnmanager.maybeActivate(liveResultOwner);
         if (prevValueChunksToUnmanage == null) {
@@ -579,7 +588,7 @@ final public class SelectColumnLayer extends SelectOrViewColumnLayer {
 
     private void clearObjectsAtThisLevel(RowSet keys) {
         // Only bother doing this if we're holding on to references.
-        if (!writableSource.getType().isPrimitive() && (writableSource.getType() != DateTime.class)) {
+        if (!writableSource.getType().isPrimitive() && (writableSource.getType() != Instant.class)) {
             ChunkUtils.fillWithNullValue(writableSource, keys);
         }
     }
