@@ -106,7 +106,9 @@ class Session:
             use_tls (bool): if True, use a TLS connection.  Defaults to None
             pem (bytes): PEM encoded certificate to use for TLS connection. If not None implies use a TLS
                  connection and the use_tls argument should have been passed as True. Defaults to None
-            client_opts: list of tuples for name and value of options to the underlying grpc channel creation.  Defaults to None
+            client_opts: list of tuples for name and value of options to the underlying grpc channel creation.
+                Defaults to None.  See https://grpc.github.io/grpc/cpp/group__grpc__arg__keys.html for a list
+                of valid options. 
 
         Raises:
             DHError

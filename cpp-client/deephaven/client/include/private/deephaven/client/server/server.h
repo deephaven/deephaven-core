@@ -67,6 +67,7 @@ public:
   Response response_;
 };
 
+// Options for the creation of the underlying grpc channel.
 class ClientOptions {
 public:
   typedef std::vector<std::pair<std::string, int>> int_options_t;
@@ -81,16 +82,22 @@ public:
     return *this;
   }
 
-  ClientOptions &setPem(const std::string &pem) {
+  ClientOptions &setPem(const std::string &pem) {  // root certificate to use
     pem_ = pem;
     return *this;
   }
 
+  // See https://grpc.github.io/grpc/cpp/group__grpc__arg__keys.html for
+  // a list of available options.
   ClientOptions &setIntOption(const std::string &opt, const int val) {
     intOptions_.emplace_back(opt, val);
     return *this;
   }
 
+  // See https://grpc.github.io/grpc/cpp/group__grpc__arg__keys.html for
+  // a list of available options.
+  // Example:
+  //   copts.setStringOption("grpc.target_name_override", "idonthaveadnsforthishost");
   ClientOptions &setStringOption(const std::string &opt, const std::string &val) {
     stringOptions_.emplace_back(opt, val);
     return *this;
