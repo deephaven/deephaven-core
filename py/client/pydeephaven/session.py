@@ -7,7 +7,7 @@ server."""
 import base64
 import os
 import threading
-from typing import List, Union
+from typing import List, Union, Tuple
 
 import grpc
 import pyarrow as pa
@@ -89,7 +89,7 @@ class Session:
 
     def __init__(self, host: str = None, port: int = None, auth_type: str = "Anonymous", auth_token: str = "",
                  never_timeout: bool = True, session_type: str = 'python',
-                 use_tls: bool = False, pem: bytes = None, target_name_override: str = None):
+                 use_tls: bool = False, pem: bytes = None, client_opts: List[Tuple[str,Union[int|str]]] = None):
         """Initializes a Session object that connects to the Deephaven server
 
         Args:
@@ -106,8 +106,7 @@ class Session:
             use_tls (bool): if True, use a TLS connection.  Defaults to None
             pem (bytes): PEM encoded certificate to use for TLS connection. If not None implies use a TLS
                  connection and the use_tls argument should have been passed as True. Defaults to None
-            target_name_override (str): set target name override for SSL host name checking; use with caution
-                 in production, this option has security implications in certificate handling.  Defaults to None
+            client_opts: list of tuples for name and value of options to the underlying grpc channel creation.  Defaults to None
 
         Raises:
             DHError
@@ -128,9 +127,7 @@ class Session:
         self.pem = pem
         if self.pem is not None and not self.use_tls:
             raise DHError("use_tls is false but pem is not None")
-        self.target_name_override = target_name_override
-        if self.target_name_override is not None and not self.use_tls:
-            raise DHError("use_tls is false but target_name_override is not None")
+        self.client_opts = client_opts
 
         self.is_connected = False
 
@@ -258,7 +255,8 @@ class Session:
                 self._flight_client = paflight.FlightClient(
                     location=f"{scheme}://{self.host}:{self.port}",
                     middleware=[_DhClientAuthMiddlewareFactory(self)],
-                    tls_root_certs = self.pem
+                    tls_root_certs = self.pem,
+                    generic_options = self.client_opts
                 )
                 self._auth_handler = _DhClientAuthHandler(self)
                 self._flight_client.authenticate(self._auth_handler)
