@@ -90,7 +90,7 @@ class Session:
     def __init__(self, host: str = None, port: int = None, auth_type: str = "Anonymous", auth_token: str = "",
                  never_timeout: bool = True, session_type: str = 'python',
                  use_tls: bool = False, pem: bytes = None,
-                 client_opts: List[Tuple[str,Union[int|str]]] = None):
+                 client_opts: List[Tuple[str,Union[int,str]]] = None):
         """Initializes a Session object that connects to the Deephaven server
 
         Args:
