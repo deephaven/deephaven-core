@@ -109,7 +109,6 @@ public:
    * authentication method selected.
    *
    * @return A string value for the authorization header
-   *
    */
   const std::string &authorizationValue() const {
     return authorizationValue_;
@@ -131,19 +130,19 @@ public:
   /**
    * Integer-valued channel options set for server connections.
    *
-   * @return A vector of pairs of string option name and integer option value.
+   * @return A vector of pairs of string option name and integer option value
    */
   const int_options_t &intOptions() const { return intOptions_; }
   /**
    * String-valued channel options set for server connections.
    *
-   * @return A vector of pairs of string option name and string option value.
+   * @return A vector of pairs of string option name and string option value
    */
   const string_options_t &stringOptions() const { return stringOptions_; }
   /**
    * Extra headers that should be sent with each outgoing server request.
    *
-   * @return A vector of pairs of string header name and string header value.
+   * @return A vector of pairs of string header name and string header value
    */
   const extra_headers_t &extraHeaders() const { return extraHeaders_; }
 
