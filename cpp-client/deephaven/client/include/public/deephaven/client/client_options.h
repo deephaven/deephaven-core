@@ -104,7 +104,11 @@ public:
    */
   ClientOptions &addExtraHeader(std::string header_name, std::string header_value);
   /**
+   * Returns the value for the authorization header that will be sent to the server
+   * on the first request; this value is a function of the
+   * authentication method selected.
    *
+   * @return A string value for the authorization header
    *
    */
   const std::string &authorizationValue() const {
