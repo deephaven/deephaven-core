@@ -59,6 +59,9 @@ using io::deephaven::proto::backplane::script::grpc::ExecuteCommandResponse;
 using io::deephaven::proto::backplane::script::grpc::StartConsoleRequest;
 
 namespace deephaven::client::server {
+
+const char *Server::authorizationKey = "authorization";
+
 namespace {
 Ticket makeScopeReference(std::string_view tableName);
 void moveVectorData(std::vector<std::string> src,
@@ -67,7 +70,6 @@ void moveVectorData(std::vector<std::string> src,
 std::optional<std::chrono::milliseconds> extractExpirationInterval(
     const ConfigurationConstantsResponse &ccResp);
 
-const char *authorizationKey = "authorization";
 const char *timeoutKey = "http.session.durationMs";
 
 // (Potentially) re-send a handshake this often *until* the server responds to the handshake.
@@ -152,6 +154,10 @@ std::shared_ptr<Server> Server::createFromTarget(
     ConfigurationConstantsResponse ccResp;
     grpc::ClientContext ctx;
     ctx.AddMetadata(authorizationKey, authorizationValue);
+    for (const auto &header : copts.extraHeaders()) {
+      ctx.AddMetadata(header.first, header.second);
+    }
+
     auto result = cfs->GetConfigurationConstants(&ctx, ccReq, &ccResp);
 
     if (!result.ok()) {
@@ -519,16 +525,6 @@ std::pair<std::string, std::string> Server::getAuthHeader() const {
 
 const ClientOptions::extra_headers_t &Server::getExtraHeaders() const {
   return extraHeaders_;
-}
-
-void Server::addMetadata(grpc::ClientContext *ctx) {
-  {
-    std::lock_guard guard(mutex_);
-    ctx->AddMetadata(authorizationKey, sessionToken_);
-  }
-  for (const auto &header : extraHeaders_) {
-    ctx->AddMetadata(header.first, header.second);
-  }
 }
 
 void Server::processCompletionQueueForever(const std::shared_ptr<Server> &self) {

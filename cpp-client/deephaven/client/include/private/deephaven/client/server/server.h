@@ -352,6 +352,17 @@ public:
   void sendRpc(const TReq &req, std::shared_ptr<SFCallback<TResp>> responseCallback,
       TStub *stub, const TPtrToMember &pm);
 
+  template<typename Fun>
+  void forEachHeaderNameAndValue(Fun fun) {
+    {
+      std::lock_guard guard(mutex_);
+      fun(authorizationKey, sessionToken_);
+    }
+    for (const auto &header : extraHeaders_) {
+      fun(header.first, header.second);
+    }
+  }
+
   std::pair<std::string, std::string> getAuthHeader() const;
   const ClientOptions::extra_headers_t &getExtraHeaders() const;
 
@@ -359,14 +370,13 @@ public:
   void setExpirationInterval(std::chrono::milliseconds interval);
 
 private:
+  static const char *authorizationKey;
   typedef std::unique_ptr<::grpc::ClientAsyncResponseReader<ExportedTableCreationResponse>>
   (TableService::Stub::*selectOrUpdateMethod_t)(::grpc::ClientContext *context,
       const SelectOrUpdateRequest &request, ::grpc::CompletionQueue *cq);
 
   Ticket selectOrUpdateHelper(Ticket parentTicket, std::vector<std::string> columnSpecs,
       std::shared_ptr<EtcCallback> etcCallback, selectOrUpdateMethod_t method);
-
-  void addMetadata(grpc::ClientContext *ctx);
 
   static void processCompletionQueueForever(const std::shared_ptr<Server> &self);
   bool processNextCompletionQueueItem();
@@ -399,7 +409,9 @@ void Server::sendRpc(const TReq &req, std::shared_ptr<SFCallback<TResp>> respons
   auto now = std::chrono::system_clock::now();
   // Keep this in a unique_ptr at first, for cleanup in case addAuthToken throws an exception.
   auto response = std::make_unique<ServerResponseHolder<TResp>>(now, std::move(responseCallback));
-  addMetadata(&response->ctx_);
+  forEachHeaderNameAndValue([&response](const std::string &name, const std::string &value) {
+    response->ctx_.AddMetadata(name, value);
+  });
   auto rpc = (stub->*pm)(&response->ctx_, req, &completionQueue_);
   // It is the responsibility of "processNextCompletionQueueItem" to deallocate the storage pointed
   // to by 'response'.
