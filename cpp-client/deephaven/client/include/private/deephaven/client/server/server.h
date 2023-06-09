@@ -4,6 +4,7 @@
 #pragma once
 
 #include <chrono>
+#include <functional>
 #include <future>
 #include <memory>
 #include <vector>
@@ -91,6 +92,7 @@ class Server : public std::enable_shared_from_this<Server> {
   typedef io::deephaven::proto::backplane::script::grpc::StartConsoleResponse StartConsoleResponse;
   typedef io::deephaven::proto::backplane::script::grpc::ExecuteCommandResponse ExecuteCommandResponse;
 
+  typedef deephaven::client::ClientOptions ClientOptions;
   typedef deephaven::client::utility::Executor Executor;
 
   template<typename T>
@@ -100,7 +102,7 @@ class Server : public std::enable_shared_from_this<Server> {
 public:
   static std::shared_ptr<Server> createFromTarget(
       const std::string &target,
-      const deephaven::client::ClientOptions &client_options);
+      const ClientOptions &client_options);
   Server(const Server &other) = delete;
   Server &operator=(const Server &other) = delete;
   Server(Private,
@@ -110,7 +112,7 @@ public:
       std::unique_ptr<TableService::Stub> tableStub,
       std::unique_ptr<ConfigService::Stub> configStub,
       std::unique_ptr<arrow::flight::FlightClient> flightClient,
-      const deephaven::client::ClientOptions::extra_headers_t &extraHeaders,
+      ClientOptions::extra_headers_t extraHeaders,
       std::string sessionToken,
       std::chrono::milliseconds expirationInterval,
       std::chrono::system_clock::time_point nextHandshakeTime);
@@ -224,16 +226,8 @@ public:
   void sendRpc(const TReq &req, std::shared_ptr<SFCallback<TResp>> responseCallback,
       TStub *stub, const TPtrToMember &pm);
 
-  template<typename Fun>
-  void forEachHeaderNameAndValue(Fun fun) {
-    {
-      std::lock_guard guard(mutex_);
-      fun(authorizationKey, sessionToken_);
-    }
-    for (const auto &header : extraHeaders_) {
-      fun(header.first, header.second);
-    }
-  }
+  void forEachHeaderNameAndValue(std::function<
+      void(const std::string &, const std::string &)> fun);
 
   // TODO: make this private
   void setExpirationInterval(std::chrono::milliseconds interval);
@@ -259,7 +253,7 @@ private:
   std::unique_ptr<TableService::Stub> tableStub_;
   std::unique_ptr<ConfigService::Stub> configStub_;
   std::unique_ptr<arrow::flight::FlightClient> flightClient_;
-  const deephaven::client::ClientOptions::extra_headers_t extraHeaders_;
+  const ClientOptions::extra_headers_t extraHeaders_;
   grpc::CompletionQueue completionQueue_;
 
   std::atomic<int32_t> nextFreeTicketId_;

@@ -27,7 +27,6 @@
 
 using namespace std;
 using arrow::flight::FlightClient;
-using deephaven::client::ClientOptions;
 using deephaven::dhcore::utility::SFCallback;
 using deephaven::dhcore::utility::bit_cast;
 using deephaven::dhcore::utility::streamf;
@@ -219,7 +218,7 @@ Server::Server(Private,
     std::unique_ptr<TableService::Stub> tableStub,
     std::unique_ptr<ConfigService::Stub> configStub,
     std::unique_ptr<arrow::flight::FlightClient> flightClient,
-    const ClientOptions::extra_headers_t &extraHeaders,
+    ClientOptions::extra_headers_t extraHeaders,
     std::string sessionToken, std::chrono::milliseconds expirationInterval,
     std::chrono::system_clock::time_point nextHandshakeTime) :
     applicationStub_(std::move(applicationStub)),
@@ -228,7 +227,7 @@ Server::Server(Private,
     tableStub_(std::move(tableStub)),
     configStub_(std::move(configStub)),
     flightClient_(std::move(flightClient)),
-    extraHeaders_(extraHeaders),
+    extraHeaders_(std::move(extraHeaders)),
     nextFreeTicketId_(1),
     sessionToken_(std::move(sessionToken)),
     expirationInterval_(expirationInterval),
@@ -664,6 +663,17 @@ void Server::setExpirationInterval(std::chrono::milliseconds interval) {
   if (expirationTimeEstimate < nextHandshakeTime_) {
     nextHandshakeTime_ = expirationTimeEstimate;
     condVar_.notify_all();
+  }
+}
+
+void Server::forEachHeaderNameAndValue(const std::function<
+      void(const std::string &, const std::string &)> fun) {
+  mutex_.lock();
+  auto tokenCopy = sessionToken_;
+  mutex_.unlock();
+  fun(authorizationKey, tokenCopy);
+  for (const auto &header : extraHeaders_) {
+    fun(header.first, header.second);
   }
 }
 
