@@ -17,7 +17,7 @@ from deephaven.time import epoch_nanos_to_instant, format_datetime, time_zone
 from tests.testbase import BaseTestCase
 
 JArrayList = jpy.get_type("java.util.ArrayList")
-
+_JBlinkTableTools = jpy.get_type("io.deephaven.engine.table.impl.BlinkTableTools")
 
 @dataclass
 class CustomClass:
@@ -63,6 +63,11 @@ class TableFactoryTestCase(BaseTestCase):
         self.assertEqual(1, len(t.columns))
         self.assertTrue(t.is_refreshing)
         self.assertEqual("2021-11-06T13:21:00.000000000 ET", format_datetime(t.j_table.getColumnSource("Timestamp").get(0), time_zone('ET')))
+
+    def test_time_table_blink(self):
+        t = time_table("PT1s", blink_table=True)
+        self.assertEqual(1, len(t.columns))
+        self.assertTrue(_JBlinkTableTools.isBlink(t.j_table))
 
     def test_time_table_error(self):
         with self.assertRaises(DHError) as cm:
