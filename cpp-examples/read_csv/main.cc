@@ -70,7 +70,7 @@ arrow::Status doit(const TableHandleManager &manager, const std::string &csvfn) 
   auto [table_handle, fd] = manager.newTableHandleAndFlightDescriptor();
 
   arrow::flight::FlightCallOptions options;
-  wrapper.addAuthHeaders(&options);
+  wrapper.addHeaders(&options);
 
   std::unique_ptr<arrow::flight::FlightStreamWriter> fsw;
   std::unique_ptr<arrow::flight::FlightMetadataReader> fmr;

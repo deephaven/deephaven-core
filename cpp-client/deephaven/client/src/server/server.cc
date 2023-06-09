@@ -59,6 +59,9 @@ using io::deephaven::proto::backplane::script::grpc::ExecuteCommandResponse;
 using io::deephaven::proto::backplane::script::grpc::StartConsoleRequest;
 
 namespace deephaven::client::server {
+
+const char *const Server::authorizationKey = "authorization";
+
 namespace {
 Ticket makeScopeReference(std::string_view tableName);
 void moveVectorData(std::vector<std::string> src,
@@ -67,7 +70,6 @@ void moveVectorData(std::vector<std::string> src,
 std::optional<std::chrono::milliseconds> extractExpirationInterval(
     const ConfigurationConstantsResponse &ccResp);
 
-const char *authorizationKey = "authorization";
 const char *timeoutKey = "http.session.durationMs";
 
 // (Potentially) re-send a handshake this often *until* the server responds to the handshake.
@@ -75,8 +77,57 @@ const char *timeoutKey = "http.session.durationMs";
 const size_t handshakeResendIntervalMillis = 5 * 1000;
 }  // namespace
 
-std::shared_ptr<Server> Server::createFromTarget(const std::string &target, const std::string &authorizationValue) {
-  auto channel = grpc::CreateChannel(target, grpc::InsecureChannelCredentials());
+namespace {
+std::shared_ptr<grpc::ChannelCredentials> getCredentials(
+      const bool useTls,
+      const std::string &tlsRootCerts,
+      const std::string &clientCertChain,
+      const std::string &clientPrivateKey) {
+  if (!useTls) {
+    return grpc::InsecureChannelCredentials();
+  }
+  grpc::SslCredentialsOptions options;
+  if (!tlsRootCerts.empty()) {
+    options.pem_root_certs = tlsRootCerts;
+  }
+  if (!clientCertChain.empty()) {
+    options.pem_cert_chain = clientCertChain;
+  }
+  if (!clientPrivateKey.empty()) {
+    options.pem_private_key = clientPrivateKey;
+  }
+  return grpc::SslCredentials(options);
+}
+}  // namespace
+
+std::shared_ptr<Server> Server::createFromTarget(
+      const std::string &target,
+      const ClientOptions &copts) {
+  if (!copts.useTls() && !copts.tlsRootCerts().empty()) {
+    const char *message = "Server::createFromTarget: ClientOptions: useTls is false but pem provided";
+    throw std::runtime_error(DEEPHAVEN_DEBUG_MSG(message));
+  }
+
+  grpc::ChannelArguments channel_args;
+  auto options = arrow::flight::FlightClientOptions::Defaults();
+  for (const auto &opt : copts.intOptions()) {
+    channel_args.SetInt(opt.first, opt.second);
+    options.generic_options.emplace_back(opt.first, opt.second);
+  }
+  for (const auto &opt : copts.stringOptions()) {
+    channel_args.SetString(opt.first, opt.second);
+    options.generic_options.emplace_back(opt.first, opt.second);
+  }
+
+  auto credentials = getCredentials(
+         copts.useTls(),
+         copts.tlsRootCerts(),
+         copts.clientCertChain(),
+         copts.clientPrivateKey());
+  auto channel = grpc::CreateCustomChannel(
+      target, 
+      credentials,
+      channel_args);
   auto as = ApplicationService::NewStub(channel);
   auto cs = ConsoleService::NewStub(channel);
   auto ss = SessionService::NewStub(channel);
@@ -84,17 +135,28 @@ std::shared_ptr<Server> Server::createFromTarget(const std::string &target, cons
   auto cfs = ConfigService::NewStub(channel);
 
   // TODO(kosak): Warn about this string conversion or do something more general.
-  auto flightTarget = "grpc://" + target;
+  auto flightTarget = ((copts.useTls()) ? "grpc+tls://" : "grpc://") + target;
   arrow::flight::Location location;
 
   auto rc1 = arrow::flight::Location::Parse(flightTarget, &location);
   if (!rc1.ok()) {
-    auto message = stringf("Location::Parse(%o) failed, error = %o", flightTarget, rc1.ToString());
-    throw std::runtime_error(message);
+    auto message = stringf("Location::Parse(%o) failed, error = %o",
+                           flightTarget, rc1.ToString());
+    throw std::runtime_error(DEEPHAVEN_DEBUG_MSG(message));
+  }
+
+  if (!copts.tlsRootCerts().empty()) {
+    options.tls_root_certs = copts.tlsRootCerts();
+  }
+  if (!copts.clientCertChain().empty()) {
+    options.cert_chain = copts.clientCertChain();
+  }
+  if (!copts.clientPrivateKey().empty()) {
+    options.private_key = copts.clientPrivateKey();
   }
 
   std::unique_ptr<arrow::flight::FlightClient> fc;
-  auto rc2 = arrow::flight::FlightClient::Connect(location, &fc);
+  auto rc2 = arrow::flight::FlightClient::Connect(location, options, &fc);
   if (!rc2.ok()) {
     auto message = stringf("FlightClient::Connect() failed, error = %o", rc2.ToString());
     throw std::runtime_error(message);
@@ -107,7 +169,11 @@ std::shared_ptr<Server> Server::createFromTarget(const std::string &target, cons
     ConfigurationConstantsRequest ccReq;
     ConfigurationConstantsResponse ccResp;
     grpc::ClientContext ctx;
-    ctx.AddMetadata(authorizationKey, authorizationValue);
+    ctx.AddMetadata(authorizationKey, copts.authorizationValue());
+    for (const auto &header : copts.extraHeaders()) {
+      ctx.AddMetadata(header.first, header.second);
+    }
+
     auto result = cfs->GetConfigurationConstants(&ctx, ccReq, &ccResp);
 
     if (!result.ok()) {
@@ -136,8 +202,8 @@ std::shared_ptr<Server> Server::createFromTarget(const std::string &target, cons
   auto nextHandshakeTime = sendTime + expirationInterval;
 
   auto result = std::make_shared<Server>(Private(), std::move(as), std::move(cs),
-      std::move(ss), std::move(ts), std::move(cfs), std::move(fc), std::move(sessionToken),
-      expirationInterval, nextHandshakeTime);
+      std::move(ss), std::move(ts), std::move(cfs), std::move(fc), copts.extraHeaders(),
+      std::move(sessionToken), expirationInterval, nextHandshakeTime);
   std::thread t1(&processCompletionQueueForever, result);
   std::thread t2(&sendKeepaliveMessages, result);
   t1.detach();
@@ -152,6 +218,7 @@ Server::Server(Private,
     std::unique_ptr<TableService::Stub> tableStub,
     std::unique_ptr<ConfigService::Stub> configStub,
     std::unique_ptr<arrow::flight::FlightClient> flightClient,
+    ClientOptions::extra_headers_t extraHeaders,
     std::string sessionToken, std::chrono::milliseconds expirationInterval,
     std::chrono::system_clock::time_point nextHandshakeTime) :
     applicationStub_(std::move(applicationStub)),
@@ -160,6 +227,7 @@ Server::Server(Private,
     tableStub_(std::move(tableStub)),
     configStub_(std::move(configStub)),
     flightClient_(std::move(flightClient)),
+    extraHeaders_(std::move(extraHeaders)),
     nextFreeTicketId_(1),
     sessionToken_(std::move(sessionToken)),
     expirationInterval_(expirationInterval),
@@ -467,15 +535,6 @@ void Server::releaseAsync(Ticket ticket, std::shared_ptr<SFCallback<ReleaseRespo
   sendRpc(req, std::move(callback), sessionStub(), &SessionService::Stub::AsyncRelease);
 }
 
-std::pair<std::string, std::string> Server::getAuthHeader() const {
-  return std::make_pair(authorizationKey, sessionToken_);
-}
-
-void Server::addSessionToken(grpc::ClientContext *ctx) {
-  std::lock_guard guard(mutex_);
-  ctx->AddMetadata(authorizationKey, sessionToken_);
-}
-
 void Server::processCompletionQueueForever(const std::shared_ptr<Server> &self) {
   while (true) {
     if (!self->processNextCompletionQueueItem()) {
@@ -604,6 +663,17 @@ void Server::setExpirationInterval(std::chrono::milliseconds interval) {
   if (expirationTimeEstimate < nextHandshakeTime_) {
     nextHandshakeTime_ = expirationTimeEstimate;
     condVar_.notify_all();
+  }
+}
+
+void Server::forEachHeaderNameAndValue(const std::function<
+      void(const std::string &, const std::string &)> fun) {
+  mutex_.lock();
+  auto tokenCopy = sessionToken_;
+  mutex_.unlock();
+  fun(authorizationKey, tokenCopy);
+  for (const auto &header : extraHeaders_) {
+    fun(header.first, header.second);
   }
 }
 
