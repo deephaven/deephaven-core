@@ -149,8 +149,6 @@ class Session:
         self._tls_root_certs = tls_root_certs
         self._client_cert_chain = client_cert_chain
         self._client_private_key = client_private_key
-        if self._tls_root_certs is not None and not self._use_tls:
-            raise DHError("use_tls is false but tsl_root_certs is not None")
         self._client_opts = client_opts
         self._extra_headers = extra_headers if extra_headers else {}
 
