@@ -72,6 +72,7 @@ class ClientOptions {
 public:
   typedef std::vector<std::pair<std::string, int>> int_options_t;
   typedef std::vector<std::pair<std::string, std::string>> string_options_t;
+  typedef std::vector<std::pair<std::string, std::string>> extra_headers_t;
 public:
   static ClientOptions defaults() {
     return ClientOptions();
@@ -91,7 +92,7 @@ public:
   // a list of available options.
   // Example:
   //   copts.setStringOption("grpc.min_reconnect_backoff_ms", 2000)
-  ClientOptions &setIntOption(const std::string &opt, const int val) {
+  ClientOptions &addIntOption(const std::string &opt, const int val) {
     intOptions_.emplace_back(opt, val);
     return *this;
   }
@@ -100,8 +101,13 @@ public:
   // a list of available options.
   // Example:
   //   copts.setStringOption("grpc.target_name_override", "idonthaveadnsforthishost");
-  ClientOptions &setStringOption(const std::string &opt, const std::string &val) {
+  ClientOptions &addStringOption(const std::string &opt, const std::string &val) {
     stringOptions_.emplace_back(opt, val);
+    return *this;
+  }
+
+  ClientOptions &addExtraHeader(const std::string &header_name, const std::string &header_value) {
+    extraHeaders_.emplace_back(header_name, header_value);
     return *this;
   }
 
@@ -109,12 +115,14 @@ public:
   const std::string &pem() const { return pem_; }
   const int_options_t &intOptions() const { return intOptions_; }
   const string_options_t &stringOptions() const { return stringOptions_; }
+  const extra_headers_t &extraHeaders() const { return extraHeaders_; }
 private:
   ClientOptions()
     : useTls_(false)
     , pem_("")
     , intOptions_()
     , stringOptions_()
+    , extraHeaders_()
   {}
 
 private:
@@ -122,6 +130,7 @@ private:
   std::string pem_;
   int_options_t intOptions_;
   string_options_t stringOptions_;
+  extra_headers_t extraHeaders_;
 };
 
 class Server : public std::enable_shared_from_this<Server> {
@@ -170,6 +179,7 @@ public:
       std::unique_ptr<TableService::Stub> tableStub,
       std::unique_ptr<ConfigService::Stub> configStub,
       std::unique_ptr<arrow::flight::FlightClient> flightClient,
+      const ClientOptions::extra_headers_t &extraHeaders,
       std::string sessionToken,
       std::chrono::milliseconds expirationInterval,
       std::chrono::system_clock::time_point nextHandshakeTime);
@@ -284,6 +294,7 @@ public:
       TStub *stub, const TPtrToMember &pm);
 
   std::pair<std::string, std::string> getAuthHeader() const;
+  const ClientOptions::extra_headers_t &getExtraHeaders() const;
 
   // TODO: make this private
   void setExpirationInterval(std::chrono::milliseconds interval);
@@ -296,7 +307,7 @@ private:
   Ticket selectOrUpdateHelper(Ticket parentTicket, std::vector<std::string> columnSpecs,
       std::shared_ptr<EtcCallback> etcCallback, selectOrUpdateMethod_t method);
 
-  void addSessionToken(grpc::ClientContext *ctx);
+  void addMetadata(grpc::ClientContext *ctx);
 
   static void processCompletionQueueForever(const std::shared_ptr<Server> &self);
   bool processNextCompletionQueueItem();
@@ -310,6 +321,7 @@ private:
   std::unique_ptr<TableService::Stub> tableStub_;
   std::unique_ptr<ConfigService::Stub> configStub_;
   std::unique_ptr<arrow::flight::FlightClient> flightClient_;
+  const ClientOptions::extra_headers_t extraHeaders_;
   grpc::CompletionQueue completionQueue_;
 
   std::atomic<int32_t> nextFreeTicketId_;
@@ -328,7 +340,7 @@ void Server::sendRpc(const TReq &req, std::shared_ptr<SFCallback<TResp>> respons
   auto now = std::chrono::system_clock::now();
   // Keep this in a unique_ptr at first, for cleanup in case addAuthToken throws an exception.
   auto response = std::make_unique<ServerResponseHolder<TResp>>(now, std::move(responseCallback));
-  addSessionToken(&response->ctx_);
+  addMetadata(&response->ctx_);
   auto rpc = (stub->*pm)(&response->ctx_, req, &completionQueue_);
   // It is the responsibility of "processNextCompletionQueueItem" to deallocate the storage pointed
   // to by 'response'.

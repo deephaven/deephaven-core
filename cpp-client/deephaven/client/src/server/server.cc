@@ -178,8 +178,8 @@ std::shared_ptr<Server> Server::createFromTarget(
   auto nextHandshakeTime = sendTime + expirationInterval;
 
   auto result = std::make_shared<Server>(Private(), std::move(as), std::move(cs),
-      std::move(ss), std::move(ts), std::move(cfs), std::move(fc), std::move(sessionToken),
-      expirationInterval, nextHandshakeTime);
+      std::move(ss), std::move(ts), std::move(cfs), std::move(fc), copts.extraHeaders(),
+      std::move(sessionToken), expirationInterval, nextHandshakeTime);
   std::thread t1(&processCompletionQueueForever, result);
   std::thread t2(&sendKeepaliveMessages, result);
   t1.detach();
@@ -194,6 +194,7 @@ Server::Server(Private,
     std::unique_ptr<TableService::Stub> tableStub,
     std::unique_ptr<ConfigService::Stub> configStub,
     std::unique_ptr<arrow::flight::FlightClient> flightClient,
+    const ClientOptions::extra_headers_t &extraHeaders,
     std::string sessionToken, std::chrono::milliseconds expirationInterval,
     std::chrono::system_clock::time_point nextHandshakeTime) :
     applicationStub_(std::move(applicationStub)),
@@ -202,6 +203,7 @@ Server::Server(Private,
     tableStub_(std::move(tableStub)),
     configStub_(std::move(configStub)),
     flightClient_(std::move(flightClient)),
+    extraHeaders_(extraHeaders),
     nextFreeTicketId_(1),
     sessionToken_(std::move(sessionToken)),
     expirationInterval_(expirationInterval),
@@ -513,9 +515,18 @@ std::pair<std::string, std::string> Server::getAuthHeader() const {
   return std::make_pair(authorizationKey, sessionToken_);
 }
 
-void Server::addSessionToken(grpc::ClientContext *ctx) {
-  std::lock_guard guard(mutex_);
-  ctx->AddMetadata(authorizationKey, sessionToken_);
+const ClientOptions::extra_headers_t &Server::getExtraHeaders() const {
+  return extraHeaders_;
+}
+
+void Server::addMetadata(grpc::ClientContext *ctx) {
+  {
+    std::lock_guard guard(mutex_);
+    ctx->AddMetadata(authorizationKey, sessionToken_);
+  }
+  for (auto const& header : extraHeaders_) {
+    ctx->AddMetadata(header.first, header.second);
+  }
 }
 
 void Server::processCompletionQueueForever(const std::shared_ptr<Server> &self) {

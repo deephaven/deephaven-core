@@ -130,6 +130,9 @@ void SubscribeState::invoke() {
 std::shared_ptr<SubscriptionHandle> SubscribeState::invokeHelper() {
   arrow::flight::FlightCallOptions fco;
   fco.headers.push_back(server_->getAuthHeader());
+  for (auto const& header : server_->getExtraHeaders()) {
+    fco.headers.push_back(header);
+  }
   auto *client = server_->flightClient();
 
   arrow::flight::FlightDescriptor descriptor;

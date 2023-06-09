@@ -44,7 +44,7 @@ TableHandle TableMaker::makeTable(const TableHandleManager &manager, int64_t num
   auto thfd = manager.newTableHandleAndFlightDescriptor(numRows, isStatic);
 
   arrow::flight::FlightCallOptions options;
-  wrapper.addAuthHeaders(&options);
+  wrapper.addHeaders(&options);
 
   std::unique_ptr<arrow::flight::FlightStreamWriter> fsw;
   std::unique_ptr<arrow::flight::FlightMetadataReader> fmr;

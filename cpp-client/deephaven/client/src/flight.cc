@@ -19,7 +19,7 @@ FlightWrapper::~FlightWrapper() = default;
 std::shared_ptr<arrow::flight::FlightStreamReader> FlightWrapper::getFlightStreamReader(
     const TableHandle &table) const {
   arrow::flight::FlightCallOptions options;
-  addAuthHeaders(&options);
+  addHeaders(&options);
 
   std::unique_ptr<arrow::flight::FlightStreamReader> fsr;
   arrow::flight::Ticket tkt;
@@ -29,8 +29,11 @@ std::shared_ptr<arrow::flight::FlightStreamReader> FlightWrapper::getFlightStrea
   return fsr;
 }
 
-void FlightWrapper::addAuthHeaders(arrow::flight::FlightCallOptions *options) const {
+void FlightWrapper::addHeaders(arrow::flight::FlightCallOptions *options) const {
   options->headers.push_back(impl_->server()->getAuthHeader());
+  for (auto const & header : impl_->server()->getExtraHeaders()) {
+    options->headers.push_back(header);
+  }
 }
 
 arrow::flight::FlightClient *FlightWrapper::flightClient() const {

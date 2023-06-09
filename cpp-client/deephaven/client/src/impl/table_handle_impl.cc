@@ -625,6 +625,9 @@ public:
   void invokeHelper() {
     arrow::flight::FlightCallOptions options;
     options.headers.push_back(server_->getAuthHeader());
+    for (auto const& header : server_->getExtraHeaders()) {
+      options.headers.push_back(header);
+    }
 
     arrow::flight::FlightDescriptor fd;
     if (!ArrowUtil::tryConvertTicketToFlightDescriptor(ticket_.ticket(), &fd)) {

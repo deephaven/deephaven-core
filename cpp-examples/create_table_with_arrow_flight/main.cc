@@ -110,7 +110,7 @@ void doit(const TableHandleManager &manager) {
   // 10. DoPut takes FlightCallOptions, which need to at least contain the Deephaven
   // authentication headers for this session.
   arrow::flight::FlightCallOptions options;
-  wrapper.addAuthHeaders(&options);
+  wrapper.addHeaders(&options);
 
   // 11. Perform the doPut
   std::unique_ptr<arrow::flight::FlightStreamWriter> fsw;
