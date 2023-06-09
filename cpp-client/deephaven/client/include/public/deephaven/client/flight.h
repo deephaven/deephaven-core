@@ -33,7 +33,9 @@ public:
       const TableHandle &table) const;
 
   /**
-   * Add Deephaven authentication headers to Arrow FlightCallOptions.
+   * Add Deephaven authentication headers, and any other extra headers
+   * request at session creation, to Arrow FlightCallOptions.
+   *
    * This is a bit of a hack, and is used in the scenario where the caller is rolling
    * their own Arrow Flight `DoPut` operation. Example code might look like this:
    * @code
@@ -44,14 +46,14 @@ public:
    *   // Empty FlightCallOptions
    *   arrow::flight::FlightCallOptions options;
    *   // add Deephaven auth headers to the FlightCallOptions
-   *   wrapper.addAuthHeaders(&options);
+   *   wrapper.addHeaders(&options);
    *   std::unique_ptr<arrow::flight::FlightStreamWriter> fsw;
    *   std::unique_ptr<arrow::flight::FlightMetadataReader> fmr;
    *   auto status = wrapper.flightClient()->DoPut(options, fd, schema, &fsw, &fmr);
    * @endcode
    * @param options Destination object where the authentication headers should be written.
    */
-  void addAuthHeaders(arrow::flight::FlightCallOptions *options) const;
+  void addHeaders(arrow::flight::FlightCallOptions *options) const;
 
   /**
    * Gets the underlying FlightClient

@@ -624,7 +624,11 @@ public:
 
   void invokeHelper() {
     arrow::flight::FlightCallOptions options;
-    options.headers.push_back(server_->getAuthHeader());
+    server_->forEachHeaderNameAndValue(
+      [&options](const std::string &name, const std::string &value) {
+        options.headers.push_back(std::make_pair(name, value));
+      }
+    );
 
     arrow::flight::FlightDescriptor fd;
     if (!ArrowUtil::tryConvertTicketToFlightDescriptor(ticket_.ticket(), &fd)) {
