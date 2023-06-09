@@ -47,37 +47,6 @@ namespace {
 void printTableData(std::ostream &s, const TableHandle &tableHandle, bool wantHeaders);
 }  // namespace
 
-ClientOptions::ClientOptions() {
-  setDefaultAuthentication();
-  setSessionType("python");
-}
-
-ClientOptions::ClientOptions(ClientOptions &&other) noexcept = default;
-ClientOptions &ClientOptions::operator=(ClientOptions &&other) noexcept = default;
-ClientOptions::~ClientOptions() = default;
-
-ClientOptions &ClientOptions::setDefaultAuthentication() {
-  authorizationValue_ = "Anonymous";
-  return *this;
-}
-
-ClientOptions &ClientOptions::setBasicAuthentication(const std::string &username, const std::string &password) {
-  auto token = username + ':' + password;
-  authorizationValue_ = "Basic " + base64Encode(token);
-  return *this;
-}
-
-ClientOptions &ClientOptions::setCustomAuthentication(const std::string &authenticationType,
-    const std::string &authenticationToken) {
-  authorizationValue_ = authenticationType + " " + authenticationToken;
-  return *this;
-}
-
-ClientOptions &ClientOptions::setSessionType(const std::string &sessionType) {
-  this->sessionType_ = sessionType;
-  return *this;
-}
-
 Client Client::connect(const std::string &target, const ClientOptions &options) {
   auto executor = Executor::create();
   auto flightExecutor = Executor::create();
