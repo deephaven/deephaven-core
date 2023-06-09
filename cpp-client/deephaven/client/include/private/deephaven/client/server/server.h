@@ -73,7 +73,7 @@ public:
   typedef std::vector<std::pair<std::string, int>> int_options_t;
   typedef std::vector<std::pair<std::string, std::string>> string_options_t;
   typedef std::vector<std::pair<std::string, std::string>> extra_headers_t;
-public:
+
   static ClientOptions defaults() {
     return ClientOptions();
   }
@@ -83,8 +83,8 @@ public:
     return *this;
   }
 
-  ClientOptions &setPem(const std::string &pem) {  // root certificate to use
-    pem_ = pem;
+  ClientOptions &setPem(const std::string pem) {  // root certificate to use
+    pem_ = std::move(pem);
     return *this;
   }
 
@@ -116,17 +116,11 @@ public:
   const int_options_t &intOptions() const { return intOptions_; }
   const string_options_t &stringOptions() const { return stringOptions_; }
   const extra_headers_t &extraHeaders() const { return extraHeaders_; }
-private:
-  ClientOptions()
-    : useTls_(false)
-    , pem_("")
-    , intOptions_()
-    , stringOptions_()
-    , extraHeaders_()
-  {}
 
 private:
-  bool useTls_;
+  ClientOptions();
+
+  bool useTls_ = false;
   std::string pem_;
   int_options_t intOptions_;
   string_options_t stringOptions_;

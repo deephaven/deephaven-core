@@ -76,17 +76,19 @@ const size_t handshakeResendIntervalMillis = 5 * 1000;
 }  // namespace
 
 namespace {
-std::shared_ptr<grpc::ChannelCredentials> get_credentials(const bool useTls, const std::string &pem) {
+std::shared_ptr<grpc::ChannelCredentials> getCredentials(const bool useTls, const std::string &pem) {
   if (!useTls) {
     return grpc::InsecureChannelCredentials();
   }
   grpc::SslCredentialsOptions options;
-  if (pem != "") {
+  if (!pem.empty()) {
     options.pem_root_certs = pem;
   }
   return grpc::SslCredentials(options);
 }
 }  // namespace
+
+ClientOptions::ClientOptions() = default;
 
 std::shared_ptr<Server> Server::createFromTarget(
       const std::string &target,
@@ -98,21 +100,21 @@ std::shared_ptr<Server> Server::createFromTarget(
       const std::string &target,
       const std::string &authorizationValue,
       const ClientOptions &copts) {
-  if (!copts.useTls() && copts.pem() != "") {
+  if (!copts.useTls() && !copts.pem().empty()) {
     throw std::runtime_error(
         "Server::createFromTarget: ClientOptions: useTls is false but pem provided");
   }
 
   grpc::ChannelArguments channel_args;
-  for (const std::pair<std::string, int>& opt : copts.intOptions()) {
+  for (const auto &opt : copts.intOptions()) {
     channel_args.SetInt(opt.first, opt.second);
   }
-  for (const std::pair<std::string, std::string>& opt : copts.stringOptions()) {
+  for (const auto &opt : copts.stringOptions()) {
     channel_args.SetString(opt.first, opt.second);
   }
 
   auto channel = grpc::CreateCustomChannel(
-      target, get_credentials(copts.useTls(), copts.pem()), channel_args);
+      target, getCredentials(copts.useTls(), copts.pem()), channel_args);
   auto as = ApplicationService::NewStub(channel);
   auto cs = ConsoleService::NewStub(channel);
   auto ss = SessionService::NewStub(channel);
@@ -127,11 +129,11 @@ std::shared_ptr<Server> Server::createFromTarget(
   if (!rc1.ok()) {
     auto message = stringf("Location::Parse(%o) failed, error = %o",
                            flightTarget, rc1.ToString());
-    throw std::runtime_error(message);
+    throw std::runtime_error(DEEPHAVEN_DEBUG_MSG(message));
   }
 
-  arrow::flight::FlightClientOptions options = arrow::flight::FlightClientOptions::Defaults();
-  if (copts.pem() != "") {
+  auto options = arrow::flight::FlightClientOptions::Defaults();
+  if (!copts.pem().empty()) {
     options.tls_root_certs = copts.pem();
   }
 
@@ -524,7 +526,7 @@ void Server::addMetadata(grpc::ClientContext *ctx) {
     std::lock_guard guard(mutex_);
     ctx->AddMetadata(authorizationKey, sessionToken_);
   }
-  for (auto const& header : extraHeaders_) {
+  for (const auto &header : extraHeaders_) {
     ctx->AddMetadata(header.first, header.second);
   }
 }
