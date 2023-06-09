@@ -50,7 +50,7 @@ void printTableData(std::ostream &s, const TableHandle &tableHandle, bool wantHe
 Client Client::connect(const std::string &target, const ClientOptions &options) {
   auto executor = Executor::create();
   auto flightExecutor = Executor::create();
-  auto server = Server::createFromTarget(target, options.authorizationValue_);
+  auto server = Server::createFromTarget(target, options);
   auto impl = ClientImpl::create(std::move(server), executor, flightExecutor, options.sessionType_);
   return Client(std::move(impl));
 }

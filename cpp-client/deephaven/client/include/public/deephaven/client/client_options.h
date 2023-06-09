@@ -4,6 +4,8 @@
 #pragma once
 
 #include <string>
+#include <utility>  // std::pair
+#include <vector>
 
 namespace deephaven::client {
 
@@ -16,6 +18,10 @@ class Client;
  */
 class ClientOptions {
 public:
+  typedef std::vector<std::pair<std::string, int>> int_options_t;
+  typedef std::vector<std::pair<std::string, std::string>> string_options_t;
+  typedef std::vector<std::pair<std::string, std::string>> extra_headers_t;
+
   /*
    * Default constructor. Creates a default ClientOptions object with default authentication and Python scripting.
    */
@@ -54,10 +60,97 @@ public:
    * @return *this, so that methods can be chained.
    */
   ClientOptions &setSessionType(const std::string &sessionType);
+  /**
+   * Configure whether to set server connections as TLS
+   *
+   * @param useTls true if server connections should be TLS/SSL, false for insecure.
+   * @return *this, to be used for chaining
+   */
+  ClientOptions &setUseTls(bool useTls);
+  /**
+   * Sets a PEM-encoded certificate root for server connections.  The empty string
+   * means use system defaults.
+   *
+   * @param pem a PEM encoded certificate chain.
+   * @return *this, to be used for chaining
+   */
+  ClientOptions &setPem(std::string pem);
+  /**
+   * Adds an int-valued option for the configuration of the underlying gRPC channels.
+   * See https://grpc.github.io/grpc/cpp/group__grpc__arg__keys.html for a list of available options.
+   *
+   * @example copt.setIntOption("grpc.min_reconnect_backoff_ms", 2000)
+   * @param opt The option key.
+   * @param val The option valiue.
+   * @return *this, to be used for chaining
+   */
+  ClientOptions &addIntOption(std::string opt, int val);
+  /**
+   * Adds a string-valued option for the configuration of the underlying gRPC channels.
+   * See https://grpc.github.io/grpc/cpp/group__grpc__arg__keys.html for a list of available options.
+   *
+   * @example copt.setStringOption("grpc.target_name_override", "idonthaveadnsforthishost")
+   * @param opt The option key.
+   * @param val The option valiue.
+   * @return *this, to be used for chaining
+   */
+  ClientOptions &addStringOption(std::string opt, std::string val);
+  /**
+   * Adds an extra header with a constant name and value to be sent with every outgoing server request.
+   *
+   * @param header_name The header name
+   * @param header_value The header value
+   * @return *this, to be used for chaining
+   */
+  ClientOptions &addExtraHeader(std::string header_name, std::string header_value);
+  /**
+   *
+   *
+   */
+  const std::string &authorizationValue() const {
+    return authorizationValue_;
+  }
+    
+  /**
+   * Returns true if server connections should be configured for TLS/SSL.
+   *
+   * @return true if this connection should be TLS/SSL, false for insecure.
+   */
+  bool useTls() const { return useTls_; }
+  /**
+   * The PEM-encoded certificate root for server connections, or the empty string
+   * if using system defaults.
+   *
+   * @return A PEM-encoded certificate chain
+   */
+  const std::string &pem() const { return pem_; }
+  /**
+   * Integer-valued channel options set for server connections.
+   *
+   * @return A vector of pairs of string option name and integer option value.
+   */
+  const int_options_t &intOptions() const { return intOptions_; }
+  /**
+   * String-valued channel options set for server connections.
+   *
+   * @return A vector of pairs of string option name and string option value.
+   */
+  const string_options_t &stringOptions() const { return stringOptions_; }
+  /**
+   * Extra headers that should be sent with each outgoing server request.
+   *
+   * @return A vector of pairs of string header name and string header value.
+   */
+  const extra_headers_t &extraHeaders() const { return extraHeaders_; }
 
 private:
   std::string authorizationValue_;
   std::string sessionType_;
+  bool useTls_ = false;
+  std::string pem_;
+  int_options_t intOptions_;
+  string_options_t stringOptions_;
+  extra_headers_t extraHeaders_;
 
   friend class Client;
 };

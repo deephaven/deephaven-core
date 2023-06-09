@@ -27,6 +27,7 @@
 
 using namespace std;
 using arrow::flight::FlightClient;
+using deephaven::client::ClientOptions;
 using deephaven::dhcore::utility::SFCallback;
 using deephaven::dhcore::utility::bit_cast;
 using deephaven::dhcore::utility::streamf;
@@ -90,18 +91,8 @@ std::shared_ptr<grpc::ChannelCredentials> getCredentials(const bool useTls, cons
 }
 }  // namespace
 
-ClientOptions::ClientOptions() = default;
-ClientOptions::~ClientOptions() = default;
-
 std::shared_ptr<Server> Server::createFromTarget(
       const std::string &target,
-      const std::string &authorizationValue) {
-  return createFromTarget(target, authorizationValue, ClientOptions::defaults());
-}
-
-std::shared_ptr<Server> Server::createFromTarget(
-      const std::string &target,
-      const std::string &authorizationValue,
       const ClientOptions &copts) {
   if (!copts.useTls() && !copts.pem().empty()) {
     throw std::runtime_error(
@@ -154,7 +145,7 @@ std::shared_ptr<Server> Server::createFromTarget(
     ConfigurationConstantsRequest ccReq;
     ConfigurationConstantsResponse ccResp;
     grpc::ClientContext ctx;
-    ctx.AddMetadata(authorizationKey, authorizationValue);
+    ctx.AddMetadata(authorizationKey, copts.authorizationValue());
     for (const auto &header : copts.extraHeaders()) {
       ctx.AddMetadata(header.first, header.second);
     }

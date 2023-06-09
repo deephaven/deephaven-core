@@ -39,4 +39,29 @@ ClientOptions &ClientOptions::setSessionType(const std::string &sessionType) {
   return *this;
 }
 
+ClientOptions &ClientOptions::setUseTls(const bool useTls) {
+  useTls_ = useTls;
+  return *this;
+}
+
+ClientOptions &ClientOptions::setPem(const std::string pem) {
+  pem_ = std::move(pem);
+  return *this;
+}
+
+ClientOptions &ClientOptions::addIntOption(const std::string opt, const int val) {
+  intOptions_.emplace_back(std::move(opt), val);
+  return *this;
+}
+
+ClientOptions &ClientOptions::addStringOption(const std::string opt, const std::string val) {
+  stringOptions_.emplace_back(std::move(opt), std::move(val));
+  return *this;
+}
+
+ClientOptions &ClientOptions::addExtraHeader(std::string header_name, std::string header_value) {
+  extraHeaders_.emplace_back(std::move(header_name), std::move(header_value));
+  return *this;
+}
+
 }  // namespace deephaven::client
