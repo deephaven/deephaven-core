@@ -100,11 +100,14 @@ std::shared_ptr<Server> Server::createFromTarget(
   }
 
   grpc::ChannelArguments channel_args;
+  auto options = arrow::flight::FlightClientOptions::Defaults();
   for (const auto &opt : copts.intOptions()) {
     channel_args.SetInt(opt.first, opt.second);
+    options.generic_options.emplace_back(opt.first, opt.second);
   }
   for (const auto &opt : copts.stringOptions()) {
     channel_args.SetString(opt.first, opt.second);
+    options.generic_options.emplace_back(opt.first, opt.second);
   }
 
   auto channel = grpc::CreateCustomChannel(
@@ -126,7 +129,6 @@ std::shared_ptr<Server> Server::createFromTarget(
     throw std::runtime_error(DEEPHAVEN_DEBUG_MSG(message));
   }
 
-  auto options = arrow::flight::FlightClientOptions::Defaults();
   if (!copts.pem().empty()) {
     options.tls_root_certs = copts.pem();
   }
