@@ -104,8 +104,8 @@ std::shared_ptr<Server> Server::createFromTarget(
       const std::string &target,
       const ClientOptions &copts) {
   if (!copts.useTls() && !copts.tlsRootCerts().empty()) {
-    throw std::runtime_error(
-        "Server::createFromTarget: ClientOptions: useTls is false but pem provided");
+    const char *message = "Server::createFromTarget: ClientOptions: useTls is false but pem provided";
+    throw std::runtime_error(DEEPHAVEN_DEBUG_MSG(message));
   }
 
   grpc::ChannelArguments channel_args;
