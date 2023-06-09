@@ -200,7 +200,7 @@ class Session:
     def grpc_metadata(self):
         l =[(b'authorization', self._auth_token)]
         if self._extra_headers:
-            l.extend(list(tuple(self._extra_headers.items())))
+            l.extend(list(self._extra_headers.items()))
         return l
 
     @property
