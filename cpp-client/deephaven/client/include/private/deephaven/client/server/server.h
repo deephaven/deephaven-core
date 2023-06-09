@@ -363,9 +363,6 @@ public:
     }
   }
 
-  std::pair<std::string, std::string> getAuthHeader() const;
-  const ClientOptions::extra_headers_t &getExtraHeaders() const;
-
   // TODO: make this private
   void setExpirationInterval(std::chrono::milliseconds interval);
 

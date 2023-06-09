@@ -30,10 +30,11 @@ std::shared_ptr<arrow::flight::FlightStreamReader> FlightWrapper::getFlightStrea
 }
 
 void FlightWrapper::addHeaders(arrow::flight::FlightCallOptions *options) const {
-  options->headers.push_back(impl_->server()->getAuthHeader());
-  for (auto const & header : impl_->server()->getExtraHeaders()) {
-    options->headers.push_back(header);
-  }
+  impl_->server()->forEachHeaderNameAndValue(
+    [&options](const std::string &name, const std::string &value) {
+      options->headers.push_back(std::make_pair(name, value));
+    }
+  );
 }
 
 arrow::flight::FlightClient *FlightWrapper::flightClient() const {

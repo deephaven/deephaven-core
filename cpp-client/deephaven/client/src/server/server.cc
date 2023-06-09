@@ -519,14 +519,6 @@ void Server::releaseAsync(Ticket ticket, std::shared_ptr<SFCallback<ReleaseRespo
   sendRpc(req, std::move(callback), sessionStub(), &SessionService::Stub::AsyncRelease);
 }
 
-std::pair<std::string, std::string> Server::getAuthHeader() const {
-  return std::make_pair(authorizationKey, sessionToken_);
-}
-
-const ClientOptions::extra_headers_t &Server::getExtraHeaders() const {
-  return extraHeaders_;
-}
-
 void Server::processCompletionQueueForever(const std::shared_ptr<Server> &self) {
   while (true) {
     if (!self->processNextCompletionQueueItem()) {
