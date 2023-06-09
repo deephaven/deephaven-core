@@ -44,8 +44,18 @@ ClientOptions &ClientOptions::setUseTls(const bool useTls) {
   return *this;
 }
 
-ClientOptions &ClientOptions::setPem(const std::string pem) {
-  pem_ = std::move(pem);
+ClientOptions &ClientOptions::setTlsRootCerts(const std::string tlsRootCerts) {
+  tlsRootCerts_ = std::move(tlsRootCerts);
+  return *this;
+}
+
+ClientOptions &ClientOptions::setClientCertChain(const std::string clientCertChain) {
+  clientCertChain_ = std::move(clientCertChain);
+  return *this;
+}
+
+ClientOptions &ClientOptions::setClientPrivateKey(const std::string clientPrivateKey) {
+  clientPrivateKey_ = std::move(clientPrivateKey);
   return *this;
 }
 

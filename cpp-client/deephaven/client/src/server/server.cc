@@ -79,13 +79,23 @@ const size_t handshakeResendIntervalMillis = 5 * 1000;
 }  // namespace
 
 namespace {
-std::shared_ptr<grpc::ChannelCredentials> getCredentials(const bool useTls, const std::string &pem) {
+std::shared_ptr<grpc::ChannelCredentials> getCredentials(
+      const bool useTls,
+      const std::string &tlsRootCerts,
+      const std::string &clientCertChain,
+      const std::string &clientPrivateKey) {
   if (!useTls) {
     return grpc::InsecureChannelCredentials();
   }
   grpc::SslCredentialsOptions options;
-  if (!pem.empty()) {
-    options.pem_root_certs = pem;
+  if (!tlsRootCerts.empty()) {
+    options.pem_root_certs = tlsRootCerts;
+  }
+  if (!clientCertChain.empty()) {
+    options.pem_cert_chain = clientCertChain;
+  }
+  if (!clientPrivateKey.empty()) {
+    options.pem_private_key = clientPrivateKey;
   }
   return grpc::SslCredentials(options);
 }
@@ -94,7 +104,7 @@ std::shared_ptr<grpc::ChannelCredentials> getCredentials(const bool useTls, cons
 std::shared_ptr<Server> Server::createFromTarget(
       const std::string &target,
       const ClientOptions &copts) {
-  if (!copts.useTls() && !copts.pem().empty()) {
+  if (!copts.useTls() && !copts.tlsRootCerts().empty()) {
     throw std::runtime_error(
         "Server::createFromTarget: ClientOptions: useTls is false but pem provided");
   }
@@ -110,8 +120,15 @@ std::shared_ptr<Server> Server::createFromTarget(
     options.generic_options.emplace_back(opt.first, opt.second);
   }
 
+  auto credentials = getCredentials(
+         copts.useTls(),
+         copts.tlsRootCerts(),
+         copts.clientCertChain(),
+         copts.clientPrivateKey());
   auto channel = grpc::CreateCustomChannel(
-      target, getCredentials(copts.useTls(), copts.pem()), channel_args);
+      target, 
+      credentials,
+      channel_args);
   auto as = ApplicationService::NewStub(channel);
   auto cs = ConsoleService::NewStub(channel);
   auto ss = SessionService::NewStub(channel);
@@ -129,8 +146,14 @@ std::shared_ptr<Server> Server::createFromTarget(
     throw std::runtime_error(DEEPHAVEN_DEBUG_MSG(message));
   }
 
-  if (!copts.pem().empty()) {
-    options.tls_root_certs = copts.pem();
+  if (!copts.tlsRootCerts().empty()) {
+    options.tls_root_certs = copts.tlsRootCerts();
+  }
+  if (!copts.clientCertChain().empty()) {
+    options.cert_chain = copts.clientCertChain();
+  }
+  if (!copts.clientPrivateKey().empty()) {
+    options.private_key = copts.clientPrivateKey();
   }
 
   std::unique_ptr<arrow::flight::FlightClient> fc;

@@ -74,7 +74,7 @@ public:
    * @param pem a PEM encoded certificate chain.
    * @return *this, to be used for chaining
    */
-  ClientOptions &setPem(std::string pem);
+  ClientOptions &setTlsRootCerts(std::string tlsRootCerts);
   /**
    * Adds an int-valued option for the configuration of the underlying gRPC channels.
    * See https://grpc.github.io/grpc/cpp/group__grpc__arg__keys.html for a list of available options.
@@ -84,6 +84,22 @@ public:
    * @param val The option valiue.
    * @return *this, to be used for chaining
    */
+  /**
+   * Sets a PEM-encoded certificate for the client and use mutual TLS.
+   * The empty string means don't use mutual TLS.
+   *
+   * @param pem a PEM encoded certificate chain, or empty for no mutual TLS.
+   * @return *this, to be used for chaining
+   */
+  ClientOptions &setClientCertChain(std::string clientCertChain);
+  /**
+   * Sets a PEM-encoded private key for the client certificate chain when using
+   * mutual TLS.
+   *
+   * @param pem a PEM encoded private key.
+   * @return *this, to be used for chaining
+   */
+  ClientOptions &setClientPrivateKey(std::string clientCertChain);
   ClientOptions &addIntOption(std::string opt, int val);
   /**
    * Adds a string-valued option for the configuration of the underlying gRPC channels.
@@ -124,9 +140,22 @@ public:
    * The PEM-encoded certificate root for server connections, or the empty string
    * if using system defaults.
    *
-   * @return A PEM-encoded certificate chain
+   * @return A PEM-encoded certificate chain, or empty.
    */
-  const std::string &pem() const { return pem_; }
+  const std::string &tlsRootCerts() const { return tlsRootCerts_; }
+  /**
+   * The PEM-encoded certificate chain to use for the client
+   * when using mutual TLS, or the empty string for no mutual TLS.
+   *
+   * @return A PEM-encoded certificate chain, or empty.
+   */
+  const std::string &clientCertChain() const { return clientCertChain_; }
+  /**
+   * The PEM-encoded client private key to use for mutual TLS.
+   *
+   * @return A PEM-encoded private key, or empty.
+   */
+  const std::string &clientPrivateKey() const { return clientPrivateKey_; }
   /**
    * Integer-valued channel options set for server connections.
    *
@@ -150,7 +179,9 @@ private:
   std::string authorizationValue_;
   std::string sessionType_;
   bool useTls_ = false;
-  std::string pem_;
+  std::string tlsRootCerts_;
+  std::string clientCertChain_;
+  std::string clientPrivateKey_;
   int_options_t intOptions_;
   string_options_t stringOptions_;
   extra_headers_t extraHeaders_;

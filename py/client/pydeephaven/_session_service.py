@@ -17,7 +17,10 @@ class SessionService:
         """Connects to the server and returns a gRPC channel upon success."""
         target = ":".join([self.session.host, str(self.session.port)])
         if self.session._use_tls:
-            credentials = grpc.ssl_channel_credentials(root_certificates=self.session._pem)
+            credentials = grpc.ssl_channel_credentials(
+                root_certificates=self.session._tls_root_certs,
+                private_key=self.session._client_private_key,
+                certificate_chain=self.session._client_cert_chain)
             grpc_channel = grpc.secure_channel(target, credentials, self.session._client_opts) 
         else:
             grpc_channel = grpc.insecure_channel(target, self.session._client_opts)

@@ -87,9 +87,16 @@ class Session:
         is_alive (bool): check if the session is still alive (may refresh the session)
     """
 
-    def __init__(self, host: str = None, port: int = None, auth_type: str = "Anonymous", auth_token: str = "",
-                 never_timeout: bool = True, session_type: str = 'python',
-                 use_tls: bool = False, pem: bytes = None,
+    def __init__(self, host: str = None,
+                 port: int = None,
+                 auth_type: str = "Anonymous",
+                 auth_token: str = "",
+                 never_timeout: bool = True,
+                 session_type: str = 'python',
+                 use_tls: bool = False,
+                 tls_root_certs: bytes = None,
+                 client_cert_chain: bytes = None,
+                 client_private_key: bytes = None,
                  client_opts: List[Tuple[str,Union[int,str]]] = None,
                  extra_headers: Dict[bytes, bytes] = None):
         """Initializes a Session object that connects to the Deephaven server
@@ -106,17 +113,22 @@ class Session:
             never_timeout (bool): never allow the session to timeout, default is True
             session_type (str): the Deephaven session type. Defaults to 'python'
             use_tls (bool): if True, use a TLS connection.  Defaults to False
-            pem (bytes): PEM encoded certificate to use for TLS connection, or None to use system defaults.
+            tls_root_certs (bytes): PEM encoded root certificates to use for TLS connection, or None to use system defaults.
                  If not None implies use a TLS connection and the use_tls argument should have been passed
                  as True. Defaults to None
+            client_cert_chain (bytes): PEM encoded client certificate if using mutual TLS.  Defaults to None,
+                 which implies not using mutual TLS.
+            client_private_key (bytes): PEM encoded client private key for client_cert_chain if using mutual TLS.
+                 Defaults to None, which implies not using mutual TLS.
             client_opts (List[Tuple[str,Union[int,str]]): list of tuples for name and value of options to
-                the underlying grpc channel creation.  Defaults to empty.
+                the underlying grpc channel creation.  Defaults to None, which implies not using any channel
+                options.
                 See https://grpc.github.io/grpc/cpp/group__grpc__arg__keys.html for a list of valid options.
                 Example options:
                   [ ('grpc.target_name_override', 'idonthaveadnsforthishost'),
                     ('grpc.min_reconnect_backoff_ms', 2000) ]
             extra_headers (Dict[bytes, bytes]): additional headers (and values) to add to server requests.
-                Defaults to empty.
+                Defaults to None, which implies not using any extra headers.
 
         Raises:
             DHError
@@ -134,9 +146,11 @@ class Session:
             self.port = int(os.environ.get("DH_PORT", 10000))
 
         self._use_tls = use_tls
-        self._pem = pem
-        if self._pem is not None and not self._use_tls:
-            raise DHError("use_tls is false but pem is not None")
+        self._tls_root_certs = tls_root_certs
+        self._client_cert_chain = client_cert_chain
+        self._client_private_key = client_private_key
+        if self._tls_root_certs is not None and not self._use_tls:
+            raise DHError("use_tls is false but tsl_root_certs is not None")
         self._client_opts = client_opts
         self._extra_headers = extra_headers if extra_headers else {}
 
@@ -269,7 +283,9 @@ class Session:
                 self._flight_client = paflight.FlightClient(
                     location=f"{scheme}://{self.host}:{self.port}",
                     middleware=[_DhClientAuthMiddlewareFactory(self)],
-                    tls_root_certs = self._pem,
+                    tls_root_certs = self._tls_root_certs,
+                    cert_chain = self._client_cert_chain,
+                    private_key = self._client_private_key,
                     generic_options = self._client_opts
                 )
                 self._auth_handler = _DhClientAuthHandler(self)
