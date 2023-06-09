@@ -13,9 +13,12 @@ import io.deephaven.chunk.ChunkType;
 import io.deephaven.internal.log.LoggerFactory;
 import io.deephaven.io.logger.Logger;
 import io.grpc.MethodDescriptor;
+import io.grpc.protobuf.ProtoUtils;
 import org.apache.arrow.flatbuf.Message;
 import org.apache.arrow.flatbuf.MessageHeader;
 import org.apache.arrow.flatbuf.RecordBatch;
+import org.apache.arrow.flight.impl.Flight;
+import org.apache.arrow.flight.impl.FlightServiceGrpc;
 
 import java.io.InputStream;
 import java.nio.ByteBuffer;
@@ -29,6 +32,41 @@ import java.util.Iterator;
  * assuming they have received all the data.
  */
 public class BarrageChunkAppendingMarshaller implements MethodDescriptor.Marshaller<Integer> {
+
+    /**
+     * Fetch the client side descriptor for a specific DoGet invocation.
+     * <p>
+     * Instead of providing BarrageMessage as the response type, this custom marshaller will return the number of rows
+     * appended after each RecordBatch. This is informative yet hands-off process reading data into the chunks.
+     *
+     * @param columnChunkTypes the chunk types per column
+     * @param columnTypes the class type per column
+     * @param componentTypes the component class type per column
+     * @param destChunks the destination chunks
+     * @return the client side method descriptor
+     */
+    public static MethodDescriptor<Flight.Ticket, Integer> getClientDoGetDescriptor(
+            final ChunkType[] columnChunkTypes,
+            final Class<?>[] columnTypes,
+            final Class<?>[] componentTypes,
+            final WritableChunk<Values>[] destChunks) {
+        final MethodDescriptor.Marshaller<Flight.Ticket> requestMarshaller =
+                ProtoUtils.marshaller(Flight.Ticket.getDefaultInstance());
+        final MethodDescriptor<?, ?> descriptor = FlightServiceGrpc.getDoGetMethod();
+
+        return MethodDescriptor.<Flight.Ticket, Integer>newBuilder()
+                .setType(MethodDescriptor.MethodType.SERVER_STREAMING)
+                .setFullMethodName(descriptor.getFullMethodName())
+                .setSampledToLocalTracing(false)
+                .setRequestMarshaller(requestMarshaller)
+                .setResponseMarshaller(new BarrageChunkAppendingMarshaller(
+                        BARRAGE_OPTIONS, columnChunkTypes, columnTypes, componentTypes, destChunks))
+                .setSchemaDescriptor(descriptor.getSchemaDescriptor())
+                .build();
+    }
+
+    // DoGet does not get to set any options
+    private static final BarrageSnapshotOptions BARRAGE_OPTIONS = BarrageSnapshotOptions.builder().build();
 
     private static final Logger log = LoggerFactory.getLogger(BarrageChunkAppendingMarshaller.class);
 

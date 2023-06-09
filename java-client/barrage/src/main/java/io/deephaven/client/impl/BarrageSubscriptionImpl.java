@@ -85,8 +85,8 @@ public class BarrageSubscriptionImpl extends ReferenceCountedLivenessNode implem
         resultTable.addParentReference(this);
 
         final MethodDescriptor<FlightData, BarrageMessage> subscribeDescriptor =
-                getClientDoExchangeDescriptor(options, resultTable.getWireChunkTypes(), resultTable.getWireTypes(),
-                        resultTable.getWireComponentTypes(),
+                getClientDoExchangeDescriptor(options, schema.computeWireChunkTypes(), schema.computeWireTypes(),
+                        schema.computeWireComponentTypes(),
                         new BarrageStreamReader(resultTable.getDeserializationTmConsumer()));
 
         // We need to ensure that the DoExchange RPC does not get attached to the server RPC when this is being called
@@ -408,24 +408,6 @@ public class BarrageSubscriptionImpl extends ReferenceCountedLivenessNode implem
         return wrapper.dataBuffer();
     }
 
-    public static <ReqT, RespT> MethodDescriptor<ReqT, RespT> descriptorFor(
-            final MethodDescriptor.MethodType methodType,
-            final String serviceName,
-            final String methodName,
-            final MethodDescriptor.Marshaller<ReqT> requestMarshaller,
-            final MethodDescriptor.Marshaller<RespT> responseMarshaller,
-            final MethodDescriptor<?, ?> descriptor) {
-
-        return MethodDescriptor.<ReqT, RespT>newBuilder()
-                .setType(methodType)
-                .setFullMethodName(MethodDescriptor.generateFullMethodName(serviceName, methodName))
-                .setSampledToLocalTracing(false)
-                .setRequestMarshaller(requestMarshaller)
-                .setResponseMarshaller(responseMarshaller)
-                .setSchemaDescriptor(descriptor.getSchemaDescriptor())
-                .build();
-    }
-
     /**
      * Fetch the client side descriptor for a specific table schema.
      *
@@ -442,11 +424,19 @@ public class BarrageSubscriptionImpl extends ReferenceCountedLivenessNode implem
             final Class<?>[] columnTypes,
             final Class<?>[] componentTypes,
             final StreamReader streamReader) {
-        return descriptorFor(
-                MethodDescriptor.MethodType.BIDI_STREAMING, FlightServiceGrpc.SERVICE_NAME, "DoExchange",
-                ProtoUtils.marshaller(FlightData.getDefaultInstance()),
-                new BarrageDataMarshaller(options, columnChunkTypes, columnTypes, componentTypes, streamReader),
-                FlightServiceGrpc.getDoExchangeMethod());
+        final MethodDescriptor.Marshaller<FlightData> requestMarshaller =
+                ProtoUtils.marshaller(FlightData.getDefaultInstance());
+        final MethodDescriptor<?, ?> descriptor = FlightServiceGrpc.getDoExchangeMethod();
+
+        return MethodDescriptor.<FlightData, BarrageMessage>newBuilder()
+                .setType(MethodDescriptor.MethodType.BIDI_STREAMING)
+                .setFullMethodName(descriptor.getFullMethodName())
+                .setSampledToLocalTracing(false)
+                .setRequestMarshaller(requestMarshaller)
+                .setResponseMarshaller(
+                        new BarrageDataMarshaller(options, columnChunkTypes, columnTypes, componentTypes, streamReader))
+                .setSchemaDescriptor(descriptor.getSchemaDescriptor())
+                .build();
     }
 
     public static class BarrageDataMarshaller implements MethodDescriptor.Marshaller<BarrageMessage> {

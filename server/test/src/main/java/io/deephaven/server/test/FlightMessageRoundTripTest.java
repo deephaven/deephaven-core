@@ -61,14 +61,12 @@ import io.deephaven.util.SafeCloseable;
 import io.deephaven.auth.AuthContext;
 import io.grpc.*;
 import io.grpc.CallOptions;
-import io.grpc.protobuf.ProtoUtils;
 import io.grpc.stub.ClientCalls;
 import org.apache.arrow.flight.*;
 import org.apache.arrow.flight.auth.ClientAuthHandler;
 import org.apache.arrow.flight.auth2.Auth2Constants;
 import org.apache.arrow.flight.grpc.CredentialCallOption;
 import org.apache.arrow.flight.impl.Flight;
-import org.apache.arrow.flight.impl.FlightServiceGrpc;
 import org.apache.arrow.memory.ArrowBuf;
 import org.apache.arrow.memory.RootAllocator;
 import org.apache.arrow.vector.VectorSchemaRoot;
@@ -1012,17 +1010,11 @@ public abstract class FlightMessageRoundTripTest {
         final BarrageUtil.ConvertedArrowSchema convertedSchema = BarrageUtil.convertArrowSchema(schema.getSchema());
 
         // The wire chunk types are the chunk types that barrage will fill in.
-        final ChunkType[] wireChunkTypes = convertedSchema.tableDef.getColumnStream()
-                .map(ColumnDefinition::getDataType)
-                .map(ReinterpretUtils::maybeConvertToPrimitiveDataType)
-                .map(ChunkType::fromElementType)
-                .toArray(ChunkType[]::new);
+        final ChunkType[] wireChunkTypes = convertedSchema.computeWireChunkTypes();
 
         // The wire types are the expected result types of each column.
-        final Class<?>[] wireTypes = convertedSchema.tableDef.getColumnStream()
-                .map(ColumnDefinition::getDataType).toArray(Class[]::new);
-        final Class<?>[] wireComponentTypes = convertedSchema.tableDef.getColumnStream()
-                .map(ColumnDefinition::getComponentType).toArray(Class[]::new);
+        final Class<?>[] wireTypes = convertedSchema.computeWireTypes();
+        final Class<?>[] wireComponentTypes = convertedSchema.computeWireComponentTypes();
 
         // noinspection unchecked
         final WritableChunk<Values>[] destChunks = Arrays.stream(wireChunkTypes)
@@ -1030,8 +1022,8 @@ public abstract class FlightMessageRoundTripTest {
         // zero out the chunks as the marshaller will append to them.
         Arrays.stream(destChunks).forEach(dest -> dest.setSize(0));
 
-        final MethodDescriptor<Flight.Ticket, Integer> methodDescriptor = getClientDoGetDescriptor(
-                wireChunkTypes, wireTypes, wireComponentTypes, destChunks);
+        final MethodDescriptor<Flight.Ticket, Integer> methodDescriptor = BarrageChunkAppendingMarshaller
+                .getClientDoGetDescriptor(wireChunkTypes, wireTypes, wireComponentTypes, destChunks);
 
         final Ticket ticket = new Ticket("s/test".getBytes(StandardCharsets.UTF_8));
         final Iterator<Integer> msgIter = ClientCalls.blockingServerStreamingCall(
@@ -1051,48 +1043,5 @@ public abstract class FlightMessageRoundTripTest {
             Assert.eq(col_i.get(i), "col_i.get(i)", i, "i");
             Assert.equals(col_j.get(i), "col_j.get(i)", "str_" + i, "str_" + i);
         }
-    }
-
-    private static final io.deephaven.extensions.barrage.BarrageSnapshotOptions DEFAULT_BARRAGE_OPTIONS =
-            io.deephaven.extensions.barrage.BarrageSnapshotOptions.builder().build();
-
-    /**
-     * Fetch the client side descriptor for a specific DoGet invocation.
-     *
-     * @param columnChunkTypes the chunk types per column
-     * @param columnTypes the class type per column
-     * @param componentTypes the component class type per column
-     * @param destChunks the destination chunks per column
-     * @return the client side method descriptor
-     */
-    private static MethodDescriptor<Flight.Ticket, Integer> getClientDoGetDescriptor(
-            final ChunkType[] columnChunkTypes,
-            final Class<?>[] columnTypes,
-            final Class<?>[] componentTypes,
-            final WritableChunk<Values>[] destChunks) {
-        return descriptorFor(
-                MethodDescriptor.MethodType.SERVER_STREAMING, FlightServiceGrpc.SERVICE_NAME, "DoGet",
-                ProtoUtils.marshaller(Flight.Ticket.getDefaultInstance()),
-                new BarrageChunkAppendingMarshaller(
-                        DEFAULT_BARRAGE_OPTIONS, columnChunkTypes, columnTypes, componentTypes, destChunks),
-                FlightServiceGrpc.getDoGetMethod());
-    }
-
-    private static <ReqT, RespT> MethodDescriptor<ReqT, RespT> descriptorFor(
-            final MethodDescriptor.MethodType methodType,
-            final String serviceName,
-            final String methodName,
-            final MethodDescriptor.Marshaller<ReqT> requestMarshaller,
-            final MethodDescriptor.Marshaller<RespT> responseMarshaller,
-            final MethodDescriptor<?, ?> descriptor) {
-
-        return MethodDescriptor.<ReqT, RespT>newBuilder()
-                .setType(methodType)
-                .setFullMethodName(MethodDescriptor.generateFullMethodName(serviceName, methodName))
-                .setSampledToLocalTracing(false)
-                .setRequestMarshaller(requestMarshaller)
-                .setResponseMarshaller(responseMarshaller)
-                .setSchemaDescriptor(descriptor.getSchemaDescriptor())
-                .build();
     }
 }
