@@ -13,8 +13,8 @@ class Client;
  
 /**
  * The ClientOptions object is intended to be passed to Client::connect(). For convenience, the mutating methods can be
- * chained. For example:
- * auto client = Client::connect("localhost:10000", ClientOptions().setBasicAuthentication("foo", "bar").setSessionType("groovy")
+ * chained.
+ * @example auto client = Client::connect("localhost:10000", ClientOptions().setBasicAuthentication("foo", "bar").setSessionType("groovy")
  */
 class ClientOptions {
 public:

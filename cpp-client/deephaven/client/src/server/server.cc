@@ -60,7 +60,7 @@ using io::deephaven::proto::backplane::script::grpc::StartConsoleRequest;
 
 namespace deephaven::client::server {
 
-const char *Server::authorizationKey = "authorization";
+const char *const Server::authorizationKey = "authorization";
 
 namespace {
 Ticket makeScopeReference(std::string_view tableName);

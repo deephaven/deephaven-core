@@ -233,7 +233,7 @@ public:
   void setExpirationInterval(std::chrono::milliseconds interval);
 
 private:
-  static const char *authorizationKey;
+  static const char *const authorizationKey;
   typedef std::unique_ptr<::grpc::ClientAsyncResponseReader<ExportedTableCreationResponse>>
   (TableService::Stub::*selectOrUpdateMethod_t)(::grpc::ClientContext *context,
       const SelectOrUpdateRequest &request, ::grpc::CompletionQueue *cq);
