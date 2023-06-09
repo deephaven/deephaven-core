@@ -91,6 +91,7 @@ std::shared_ptr<grpc::ChannelCredentials> getCredentials(const bool useTls, cons
 }  // namespace
 
 ClientOptions::ClientOptions() = default;
+ClientOptions::~ClientOptions() = default;
 
 std::shared_ptr<Server> Server::createFromTarget(
       const std::string &target,

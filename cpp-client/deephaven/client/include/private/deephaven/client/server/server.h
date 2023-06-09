@@ -74,6 +74,8 @@ public:
   typedef std::vector<std::pair<std::string, std::string>> string_options_t;
   typedef std::vector<std::pair<std::string, std::string>> extra_headers_t;
 
+  ~ClientOptions();
+
   /**
    * Get ClientOptions object initialized with defaults.
    *
