@@ -15,6 +15,8 @@ from deephaven.constants import NULL_DOUBLE, NULL_FLOAT, NULL_LONG, NULL_INT, NU
 from deephaven.table_factory import DynamicTableWriter, ring_table
 from deephaven.time import epoch_nanos_to_instant, format_datetime, time_zone
 from tests.testbase import BaseTestCase
+from deephaven.table import Table
+from deephaven.stream import blink_to_append_only, stream_to_append_only
 
 JArrayList = jpy.get_type("java.util.ArrayList")
 _JBlinkTableTools = jpy.get_type("io.deephaven.engine.table.impl.BlinkTableTools")
@@ -304,6 +306,21 @@ class TableFactoryTestCase(BaseTestCase):
         self.assertTrue(ring_t.is_refreshing)
         self.wait_ticking_table_update(ring_t, 6, 5)
 
+    def test_blink_to_append_only(self):
+        _JTimeTable = jpy.get_type("io.deephaven.engine.table.impl.TimeTable")
+        _JBaseTable = jpy.get_type("io.deephaven.engine.table.impl.BaseTable")
+        tt = Table(_JTimeTable.newBuilder().period("PT00:00:01").blinkTable(True).build())
+        self.assertTrue(tt.is_refreshing)
+        self.assertTrue(jpy.cast(tt.j_table, _JBaseTable).isBlink())
+
+        bt = blink_to_append_only(tt)
+        self.assertTrue(bt.is_refreshing)
+        self.assertFalse(jpy.cast(bt.j_table, _JBaseTable).isBlink())
+
+        # TODO (https://github.com/deephaven/deephaven-core/issues/3853): Delete this part of the test
+        st = stream_to_append_only(tt)
+        self.assertTrue(st.is_refreshing)
+        self.assertFalse(jpy.cast(st.j_table, _JBaseTable).isBlink())
 
 if __name__ == '__main__':
     unittest.main()
