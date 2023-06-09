@@ -31,8 +31,7 @@ configurations {
     fishDataGenerator.extendsFrom jdom
     fishNet.extendsFrom fishIo
     fishNumerics.extendsFrom fishBase
-    fishUtil.extendsFrom fishConfig
-    fishNet.extendsFrom fishUtil
+    fishUtil.extendsFrom fishConfig, fishIo
     fishBaseTest.extendsFrom junit
     fishIoTest.extendsFrom fishBaseTest
 
