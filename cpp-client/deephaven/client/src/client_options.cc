@@ -34,8 +34,8 @@ ClientOptions &ClientOptions::setCustomAuthentication(const std::string &authent
   return *this;
 }
 
-ClientOptions &ClientOptions::setSessionType(const std::string &sessionType) {
-  this->sessionType_ = sessionType;
+ClientOptions &ClientOptions::setSessionType(std::string sessionType) {
+  this->sessionType_ = std::move(sessionType);
   return *this;
 }
 
@@ -44,27 +44,27 @@ ClientOptions &ClientOptions::setUseTls(const bool useTls) {
   return *this;
 }
 
-ClientOptions &ClientOptions::setTlsRootCerts(const std::string tlsRootCerts) {
+ClientOptions &ClientOptions::setTlsRootCerts(std::string tlsRootCerts) {
   tlsRootCerts_ = std::move(tlsRootCerts);
   return *this;
 }
 
-ClientOptions &ClientOptions::setClientCertChain(const std::string clientCertChain) {
+ClientOptions &ClientOptions::setClientCertChain(std::string clientCertChain) {
   clientCertChain_ = std::move(clientCertChain);
   return *this;
 }
 
-ClientOptions &ClientOptions::setClientPrivateKey(const std::string clientPrivateKey) {
+ClientOptions &ClientOptions::setClientPrivateKey(std::string clientPrivateKey) {
   clientPrivateKey_ = std::move(clientPrivateKey);
   return *this;
 }
 
-ClientOptions &ClientOptions::addIntOption(const std::string opt, const int val) {
+ClientOptions &ClientOptions::addIntOption(std::string opt, const int val) {
   intOptions_.emplace_back(std::move(opt), val);
   return *this;
 }
 
-ClientOptions &ClientOptions::addStringOption(const std::string opt, const std::string val) {
+ClientOptions &ClientOptions::addStringOption(std::string opt, const std::string val) {
   stringOptions_.emplace_back(std::move(opt), std::move(val));
   return *this;
 }

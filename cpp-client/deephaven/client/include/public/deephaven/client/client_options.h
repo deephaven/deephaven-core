@@ -59,7 +59,7 @@ public:
    * @param sessionType The scripting language for the session, such as "groovy" or "python".
    * @return *this, so that methods can be chained.
    */
-  ClientOptions &setSessionType(const std::string &sessionType);
+  ClientOptions &setSessionType(std::string sessionType);
   /**
    * Configure whether to set server connections as TLS
    *
