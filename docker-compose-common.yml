@@ -14,7 +14,7 @@ services:
       # with max memory.
       #
       # To turn on debug logging, add: -Dlogback.configurationFile=logback-debug.xml
-      - START_OPTS=-Xmx4g -Ddeephaven.console.type=${DEEPHAVEN_CONSOLE_TYPE} -Ddeephaven.application.dir=${DEEPHAVEN_APPLICATION_DIR}
+      - START_OPTS=-Xmx4g -Ddeephaven.console.type=${DEEPHAVEN_CONSOLE_TYPE} -Ddeephaven.application.dir=${DEEPHAVEN_APPLICATION_DIR} -Dauthentication.psk=${PSK}
       #
       # For remote debugging switch the line above for the one below (and also change the ports below)
       # - START_OPTS=-agentlib:jdwp=transport=dt_socket,server=y,suspend=n,address=*:5005 -Xmx4g -Ddeephaven.console.type=${DEEPHAVEN_CONSOLE_TYPE} -Ddeephaven.application.dir=${DEEPHAVEN_APPLICATION_DIR}

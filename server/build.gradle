@@ -108,7 +108,7 @@ dependencies {
 
     Classpaths.inheritImmutables(project, true)
 
-
+    runtimeOnly dependencies.project(path: ':authentication:example-providers:psk', configuration:'shadow')
 }
 
 TestTools.addEngineOutOfBandTest(project)
