@@ -19,13 +19,17 @@ import io.deephaven.barrage.flatbuf.BarrageSnapshotRequest;
 import io.deephaven.barrage.flatbuf.ColumnConversionMode;
 import io.deephaven.base.clock.Clock;
 import io.deephaven.base.verify.Assert;
-import io.deephaven.client.impl.DaggerDeephavenFlightRoot;
-import io.deephaven.client.impl.Export;
-import io.deephaven.client.impl.FlightSession;
-import io.deephaven.client.impl.FlightSessionFactory;
+import io.deephaven.chunk.ChunkType;
+import io.deephaven.chunk.LongChunk;
+import io.deephaven.chunk.ObjectChunk;
+import io.deephaven.chunk.WritableChunk;
+import io.deephaven.chunk.attributes.Values;
+import io.deephaven.client.impl.*;
 import io.deephaven.engine.context.ExecutionContext;
 import io.deephaven.engine.liveness.LivenessScopeStack;
+import io.deephaven.engine.table.ColumnDefinition;
 import io.deephaven.engine.table.Table;
+import io.deephaven.engine.table.impl.sources.ReinterpretUtils;
 import io.deephaven.engine.updategraph.UpdateGraph;
 import io.deephaven.engine.table.impl.DataAccessHelpers;
 import io.deephaven.engine.util.AbstractScriptSession;
@@ -33,6 +37,7 @@ import io.deephaven.engine.util.NoLanguageDeephavenSession;
 import io.deephaven.engine.util.ScriptSession;
 import io.deephaven.engine.util.TableDiff;
 import io.deephaven.engine.util.TableTools;
+import io.deephaven.extensions.barrage.util.BarrageChunkAppendingMarshaller;
 import io.deephaven.extensions.barrage.util.BarrageUtil;
 import io.deephaven.io.logger.LogBuffer;
 import io.deephaven.io.logger.LogBufferGlobal;
@@ -54,15 +59,16 @@ import io.deephaven.server.test.TestAuthModule.FakeBearer;
 import io.deephaven.server.util.Scheduler;
 import io.deephaven.util.SafeCloseable;
 import io.deephaven.auth.AuthContext;
-import io.grpc.ManagedChannel;
-import io.grpc.ManagedChannelBuilder;
-import io.grpc.ServerInterceptor;
-import io.grpc.Status;
+import io.grpc.*;
+import io.grpc.CallOptions;
+import io.grpc.protobuf.ProtoUtils;
+import io.grpc.stub.ClientCalls;
 import org.apache.arrow.flight.*;
 import org.apache.arrow.flight.auth.ClientAuthHandler;
 import org.apache.arrow.flight.auth2.Auth2Constants;
 import org.apache.arrow.flight.grpc.CredentialCallOption;
 import org.apache.arrow.flight.impl.Flight;
+import org.apache.arrow.flight.impl.FlightServiceGrpc;
 import org.apache.arrow.memory.ArrowBuf;
 import org.apache.arrow.memory.RootAllocator;
 import org.apache.arrow.vector.VectorSchemaRoot;
@@ -82,16 +88,8 @@ import javax.inject.Named;
 import javax.inject.Singleton;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
-import java.util.EnumSet;
-import java.util.Iterator;
-import java.util.List;
-import java.util.Map;
-import java.util.Optional;
-import java.util.Set;
-import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.Executors;
-import java.util.concurrent.ScheduledExecutorService;
-import java.util.concurrent.TimeUnit;
+import java.util.*;
+import java.util.concurrent.*;
 
 import static org.junit.Assert.*;
 
@@ -215,6 +213,8 @@ public abstract class FlightMessageRoundTripTest {
         LogBufferGlobal.setInstance(logBuffer);
 
         component = component();
+        // open execution context immediately so it can be used when resolving `scriptSession`
+        executionContext = component.executionContext().open();
 
         server = component.server();
         server.start();
@@ -222,7 +222,6 @@ public abstract class FlightMessageRoundTripTest {
 
         scriptSession = component.scriptSession();
         sessionService = component.sessionService();
-        executionContext = component.executionContext().open();
 
         serverLocation = Location.forGrpcInsecure("localhost", actualPort);
         currentSession = sessionService.newSession(new AuthContext.SuperUser());
@@ -243,7 +242,9 @@ public abstract class FlightMessageRoundTripTest {
 
         clientChannel = ManagedChannelBuilder.forTarget("localhost:" + actualPort)
                 .usePlaintext()
+                .intercept(new TestAuthClientInterceptor(currentSession.getExpiration().token.toString()))
                 .build();
+
         clientScheduler = Executors.newSingleThreadScheduledExecutor();
         FlightSessionFactory flightSessionFactory =
                 DaggerDeephavenFlightRoot.create().factoryBuilder()
@@ -253,6 +254,20 @@ public abstract class FlightMessageRoundTripTest {
                         .build();
 
         clientSession = flightSessionFactory.newFlightSession();
+    }
+
+    private static final class TestAuthClientInterceptor implements ClientInterceptor {
+        final BearerHandler callCredentials = new BearerHandler();
+
+        public TestAuthClientInterceptor(String bearerToken) {
+            callCredentials.setBearerToken(bearerToken);
+        }
+
+        @Override
+        public <ReqT, RespT> ClientCall<ReqT, RespT> interceptCall(MethodDescriptor<ReqT, RespT> method,
+                CallOptions callOptions, Channel next) {
+            return next.newCall(method, callOptions.withCallCredentials(callCredentials));
+        }
     }
 
     protected abstract TestComponent component();
@@ -983,5 +998,101 @@ public abstract class FlightMessageRoundTripTest {
         assertEquals(deephavenTable.getDefinition(), uploadedTable.getDefinition());
         assertEquals(0, (long) TableTools
                 .diffPair(deephavenTable, uploadedTable, 0, EnumSet.noneOf(TableDiff.DiffItems.class)).getSecond());
+    }
+
+
+    @Test
+    public void testBarrageMessageAppendingMarshaller() {
+        final int size = 100;
+        final Table source = TableTools.emptyTable(size).update("I = ii", "J = `str_` + i");
+        scriptSession.setVariable("test", source);
+
+        // fetch schema over flight
+        final SchemaResult schema = flightClient.getSchema(arrowFlightDescriptorForName("test"));
+        final BarrageUtil.ConvertedArrowSchema convertedSchema = BarrageUtil.convertArrowSchema(schema.getSchema());
+
+        // The wire chunk types are the chunk types that barrage will fill in.
+        final ChunkType[] wireChunkTypes = convertedSchema.tableDef.getColumnStream()
+                .map(ColumnDefinition::getDataType)
+                .map(ReinterpretUtils::maybeConvertToPrimitiveDataType)
+                .map(ChunkType::fromElementType)
+                .toArray(ChunkType[]::new);
+
+        // The wire types are the expected result types of each column.
+        final Class<?>[] wireTypes = convertedSchema.tableDef.getColumnStream()
+                .map(ColumnDefinition::getDataType).toArray(Class[]::new);
+        final Class<?>[] wireComponentTypes = convertedSchema.tableDef.getColumnStream()
+                .map(ColumnDefinition::getComponentType).toArray(Class[]::new);
+
+        // noinspection unchecked
+        final WritableChunk<Values>[] destChunks = Arrays.stream(wireChunkTypes)
+                .map(chunkType -> chunkType.makeWritableChunk(size)).toArray(WritableChunk[]::new);
+        // zero out the chunks as the marshaller will append to them.
+        Arrays.stream(destChunks).forEach(dest -> dest.setSize(0));
+
+        final MethodDescriptor<Flight.Ticket, Integer> methodDescriptor = getClientDoGetDescriptor(
+                wireChunkTypes, wireTypes, wireComponentTypes, destChunks);
+
+        final Ticket ticket = new Ticket("s/test".getBytes(StandardCharsets.UTF_8));
+        final Iterator<Integer> msgIter = ClientCalls.blockingServerStreamingCall(
+                clientChannel, methodDescriptor, CallOptions.DEFAULT,
+                Flight.Ticket.newBuilder().setTicket(ByteString.copyFrom(ticket.getBytes())).build());
+
+        long totalRows = 0;
+        while (msgIter.hasNext()) {
+            totalRows += msgIter.next();
+        }
+        Assert.eq(totalRows, "totalRows", size, "size");
+        final LongChunk<Values> col_i = destChunks[0].asLongChunk();
+        final ObjectChunk<String, Values> col_j = destChunks[1].asObjectChunk();
+        Assert.eq(col_i.size(), "col_i.size()", size, "size");
+        Assert.eq(col_j.size(), "col_j.size()", size, "size");
+        for (int i = 0; i < size; ++i) {
+            Assert.eq(col_i.get(i), "col_i.get(i)", i, "i");
+            Assert.equals(col_j.get(i), "col_j.get(i)", "str_" + i, "str_" + i);
+        }
+    }
+
+    private static final io.deephaven.extensions.barrage.BarrageSnapshotOptions DEFAULT_BARRAGE_OPTIONS =
+            io.deephaven.extensions.barrage.BarrageSnapshotOptions.builder().build();
+
+    /**
+     * Fetch the client side descriptor for a specific DoGet invocation.
+     *
+     * @param columnChunkTypes the chunk types per column
+     * @param columnTypes the class type per column
+     * @param componentTypes the component class type per column
+     * @param destChunks the destination chunks per column
+     * @return the client side method descriptor
+     */
+    private static MethodDescriptor<Flight.Ticket, Integer> getClientDoGetDescriptor(
+            final ChunkType[] columnChunkTypes,
+            final Class<?>[] columnTypes,
+            final Class<?>[] componentTypes,
+            final WritableChunk<Values>[] destChunks) {
+        return descriptorFor(
+                MethodDescriptor.MethodType.SERVER_STREAMING, FlightServiceGrpc.SERVICE_NAME, "DoGet",
+                ProtoUtils.marshaller(Flight.Ticket.getDefaultInstance()),
+                new BarrageChunkAppendingMarshaller(
+                        DEFAULT_BARRAGE_OPTIONS, columnChunkTypes, columnTypes, componentTypes, destChunks),
+                FlightServiceGrpc.getDoGetMethod());
+    }
+
+    private static <ReqT, RespT> MethodDescriptor<ReqT, RespT> descriptorFor(
+            final MethodDescriptor.MethodType methodType,
+            final String serviceName,
+            final String methodName,
+            final MethodDescriptor.Marshaller<ReqT> requestMarshaller,
+            final MethodDescriptor.Marshaller<RespT> responseMarshaller,
+            final MethodDescriptor<?, ?> descriptor) {
+
+        return MethodDescriptor.<ReqT, RespT>newBuilder()
+                .setType(methodType)
+                .setFullMethodName(MethodDescriptor.generateFullMethodName(serviceName, methodName))
+                .setSampledToLocalTracing(false)
+                .setRequestMarshaller(requestMarshaller)
+                .setResponseMarshaller(responseMarshaller)
+                .setSchemaDescriptor(descriptor.getSchemaDescriptor())
+                .build();
     }
 }

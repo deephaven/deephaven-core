@@ -1,0 +1,165 @@
+package io.deephaven.extensions.barrage.util;
+
+import com.google.common.io.LittleEndianDataInputStream;
+import com.google.protobuf.CodedInputStream;
+import gnu.trove.iterator.TLongIterator;
+import gnu.trove.list.array.TLongArrayList;
+import io.deephaven.chunk.WritableChunk;
+import io.deephaven.chunk.attributes.Values;
+import io.deephaven.extensions.barrage.BarrageSnapshotOptions;
+import io.deephaven.extensions.barrage.chunk.ChunkInputStreamGenerator;
+import io.deephaven.util.datastructures.LongSizedDataStructure;
+import io.deephaven.chunk.ChunkType;
+import io.deephaven.internal.log.LoggerFactory;
+import io.deephaven.io.logger.Logger;
+import io.grpc.MethodDescriptor;
+import org.apache.arrow.flatbuf.Message;
+import org.apache.arrow.flatbuf.MessageHeader;
+import org.apache.arrow.flatbuf.RecordBatch;
+
+import java.io.InputStream;
+import java.nio.ByteBuffer;
+import java.util.Iterator;
+
+/**
+ * This class is used to append the results of a DoGet directly into destination {@link WritableChunk<Values>}.
+ *
+ * It will append the results of a DoGet into the destination chunks, and notify the listener of the number of rows
+ * appended to the record batch in total. The user will typically want to wait for OnCompletion to be called before
+ * assuming they have received all the data.
+ */
+public class BarrageChunkAppendingMarshaller implements MethodDescriptor.Marshaller<Integer> {
+
+    private static final Logger log = LoggerFactory.getLogger(BarrageChunkAppendingMarshaller.class);
+
+    private final BarrageSnapshotOptions options;
+
+    private final ChunkType[] columnChunkTypes;
+    private final Class<?>[] columnTypes;
+    private final Class<?>[] componentTypes;
+
+    private final WritableChunk<Values>[] destChunks;
+    private long numRowsRead = 0;
+
+    public BarrageChunkAppendingMarshaller(
+            final BarrageSnapshotOptions options,
+            final ChunkType[] columnChunkTypes,
+            final Class<?>[] columnTypes,
+            final Class<?>[] componentTypes,
+            final WritableChunk<Values>[] destChunks) {
+        this.options = options;
+        this.columnChunkTypes = columnChunkTypes;
+        this.columnTypes = columnTypes;
+        this.componentTypes = componentTypes;
+        this.destChunks = destChunks;
+    }
+
+    @Override
+    public InputStream stream(final Integer value) {
+        throw new UnsupportedOperationException(
+                "BarrageDataMarshaller unexpectedly used to directly convert BarrageMessage to InputStream");
+    }
+
+    @Override
+    public Integer parse(final InputStream stream) {
+        Message header = null;
+        try {
+            boolean bodyParsed = false;
+
+            final CodedInputStream decoder = CodedInputStream.newInstance(stream);
+
+            for (int tag = decoder.readTag(); tag != 0; tag = decoder.readTag()) {
+                if (tag == BarrageProtoUtil.DATA_HEADER_TAG) {
+                    final int size = decoder.readRawVarint32();
+                    header = Message.getRootAsMessage(ByteBuffer.wrap(decoder.readRawBytes(size)));
+                    continue;
+                } else if (tag != BarrageProtoUtil.BODY_TAG) {
+                    decoder.skipField(tag);
+                    continue;
+                }
+
+                if (bodyParsed) {
+                    // although not an error for protobuf, arrow payloads should consider it one
+                    throw new IllegalStateException("Unexpected duplicate body tag");
+                }
+
+                if (header == null) {
+                    throw new IllegalStateException("Missing metadata header; cannot decode body");
+                }
+
+                if (header.headerType() != org.apache.arrow.flatbuf.MessageHeader.RecordBatch) {
+                    throw new IllegalStateException("Only know how to decode Schema/BarrageRecordBatch messages");
+                }
+
+                bodyParsed = true;
+                final int size = decoder.readRawVarint32();
+                final RecordBatch batch = (RecordBatch) header.header(new RecordBatch());
+
+                // noinspection UnstableApiUsage
+                try (final LittleEndianDataInputStream ois =
+                        new LittleEndianDataInputStream(new BarrageProtoUtil.ObjectInputStreamAdapter(decoder, size))) {
+                    final Iterator<ChunkInputStreamGenerator.FieldNodeInfo> fieldNodeIter =
+                            new FlatBufferIteratorAdapter<>(batch.nodesLength(),
+                                    i -> new ChunkInputStreamGenerator.FieldNodeInfo(batch.nodes(i)));
+
+                    final TLongArrayList bufferInfo = new TLongArrayList(batch.buffersLength());
+                    for (int bi = 0; bi < batch.buffersLength(); ++bi) {
+                        int offset = LongSizedDataStructure.intSize("BufferInfo", batch.buffers(bi).offset());
+                        int length = LongSizedDataStructure.intSize("BufferInfo", batch.buffers(bi).length());
+                        if (bi < batch.buffersLength() - 1) {
+                            final int nextOffset =
+                                    LongSizedDataStructure.intSize("BufferInfo", batch.buffers(bi + 1).offset());
+                            // our parsers handle overhanging buffers
+                            length += Math.max(0, nextOffset - offset - length);
+                        }
+                        bufferInfo.add(length);
+                    }
+                    final TLongIterator bufferInfoIter = bufferInfo.iterator();
+
+                    for (int ci = 0; ci < destChunks.length; ++ci) {
+                        final WritableChunk<Values> dest = destChunks[ci];
+
+                        final long remaining = dest.capacity() - dest.size();
+                        if (batch.length() > remaining) {
+                            throw new BarrageMarshallingException(String.format("Received RecordBatch length (%d) " +
+                                    "exceeds the remaining capacity (%d) of the destination Chunk.", batch.length(),
+                                    remaining));
+                        }
+
+                        // Barrage should return the provided chunk since there was enough room to append the data
+                        final WritableChunk<Values> retChunk = ChunkInputStreamGenerator.extractChunkFromInputStream(
+                                options, columnChunkTypes[ci], columnTypes[ci], componentTypes[ci], fieldNodeIter,
+                                bufferInfoIter, ois, dest, dest.size(), (int) batch.length());
+
+                        if (retChunk != dest) {
+                            throw new BarrageMarshallingException("Unexpected chunk returned from " +
+                                    "ChunkInputStreamGenerator.extractChunkFromInputStream");
+                        }
+
+                        // barrage does not alter the destination chunk size, so let's set it ourselves
+                        dest.setSize(dest.size() + (int) batch.length());
+                    }
+                    numRowsRead += batch.length();
+                }
+            }
+
+            if (header != null && header.headerType() == MessageHeader.Schema) {
+                // getting started, but no rows yet; schemas do not have body tags
+                return 0;
+            }
+
+            if (!bodyParsed) {
+                throw new IllegalStateException("Missing body tag");
+            }
+
+            // we're appending directly to the chunk, but courteously let our user know how many rows were read
+            return (int) numRowsRead;
+        } catch (final Exception e) {
+            log.error().append("Unable to parse a received DoGet: ").append(e).endl();
+            if (e instanceof BarrageMarshallingException) {
+                throw (BarrageMarshallingException) e;
+            }
+            throw new GrpcMarshallingException("Unable to parse DoGet", e);
+        }
+    }
+}

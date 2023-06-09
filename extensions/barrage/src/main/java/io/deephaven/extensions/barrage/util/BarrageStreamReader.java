@@ -215,6 +215,7 @@ public class BarrageStreamReader implements StreamReader {
                     // add and mod rows are never combined in a batch. all added rows must be received before the first
                     // mod rows will be received.
                     if (numAddRowsRead < numAddRowsTotal) {
+                        final long currentChunkFirstRowOffset = lastAddStartIndex;
                         for (int ci = 0; ci < msg.addColumnData.length; ++ci) {
                             final BarrageMessage.AddColumnData acd = msg.addColumnData[ci];
 
@@ -230,10 +231,13 @@ public class BarrageStreamReader implements StreamReader {
                             int chunkSize = acd.data.get(lastChunkIndex).size();
 
                             final int chunkOffset;
-                            long rowOffset = numAddRowsRead - lastAddStartIndex;
+                            long rowOffset = numAddRowsRead - currentChunkFirstRowOffset;
                             // reading the rows from this batch might overflow the existing chunk
                             if (rowOffset + batch.length() > chunkSize) {
-                                lastAddStartIndex += chunkSize;
+                                if (lastAddStartIndex == currentChunkFirstRowOffset) {
+                                    // we only want to increment this once per loop
+                                    lastAddStartIndex += chunkSize;
+                                }
 
                                 // create a new chunk before trying to write again
                                 chunkSize = (int) (Math.min(remaining, MAX_CHUNK_SIZE));
@@ -255,6 +259,7 @@ public class BarrageStreamReader implements StreamReader {
                         }
                         numAddRowsRead += batch.length();
                     } else {
+                        final long currentChunkFirstRowOffset = lastModStartIndex;
                         for (int ci = 0; ci < msg.modColumnData.length; ++ci) {
                             final BarrageMessage.ModColumnData mcd = msg.modColumnData[ci];
 
@@ -266,13 +271,15 @@ public class BarrageStreamReader implements StreamReader {
                             int chunkSize = chunk.size();
 
                             final int chunkOffset;
-                            long rowOffset = numModRowsRead - lastModStartIndex;
+                            long rowOffset = numModRowsRead - currentChunkFirstRowOffset;
                             // this batch might overflow the chunk
                             final int numRowsToRead = LongSizedDataStructure.intSize("BarrageStreamReader",
                                     Math.min(remaining, batch.length()));
                             if (rowOffset + numRowsToRead > chunkSize) {
-                                lastModStartIndex += chunkSize;
-
+                                if (lastModStartIndex == currentChunkFirstRowOffset) {
+                                    // we only want to increment this once per loop
+                                    lastModStartIndex += chunkSize;
+                                }
                                 // create a new chunk before trying to write again
                                 chunkSize = (int) (Math.min(remaining, MAX_CHUNK_SIZE));
                                 chunk = columnChunkTypes[ci].makeWritableChunk(chunkSize);
