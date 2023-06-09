@@ -74,47 +74,112 @@ public:
   typedef std::vector<std::pair<std::string, std::string>> string_options_t;
   typedef std::vector<std::pair<std::string, std::string>> extra_headers_t;
 
+  /**
+   * Get ClientOptions object initialized with defaults.
+   *
+   * @return A ClientOptions object initialized with defaults.
+   */
   static ClientOptions defaults() {
     return ClientOptions();
   }
 
+  /**
+   * Configure whether to set server connections as TLS
+   *
+   * @param useTls true if server connections should be TLS/SSL, false for insecure.
+   * @return *this, to be used for chaining
+   */
   ClientOptions &setUseTls(const bool useTls) {
     useTls_ = useTls;
     return *this;
   }
 
+  /**
+   * Sets a PEM-encoded certificate root for server connections.  The empty string
+   * means use system defaults.
+   *
+   * @param pem a PEM encoded certificate chain.
+   * @return *this, to be used for chaining
+   */
   ClientOptions &setPem(const std::string pem) {  // root certificate to use
     pem_ = std::move(pem);
     return *this;
   }
 
-  // See https://grpc.github.io/grpc/cpp/group__grpc__arg__keys.html for
-  // a list of available options.
-  // Example:
-  //   copts.setStringOption("grpc.min_reconnect_backoff_ms", 2000)
-  ClientOptions &addIntOption(const std::string &opt, const int val) {
-    intOptions_.emplace_back(opt, val);
+  /**
+   * Addss an int-valued option.
+   * See https://grpc.github.io/grpc/cpp/group__grpc__arg__keys.html for a list of available options.
+   *
+   * @example copt.setIntOption("grpc.min_reconnect_backoff_ms", 2000)
+   * @param opt The option key.
+   * @param val The option valiue.
+   * @return *this, to be used for chaining
+   */
+  ClientOptions &addIntOption(const std::string opt, const int val) {
+    intOptions_.emplace_back(std::move(opt), val);
     return *this;
   }
 
-  // See https://grpc.github.io/grpc/cpp/group__grpc__arg__keys.html for
-  // a list of available options.
-  // Example:
-  //   copts.setStringOption("grpc.target_name_override", "idonthaveadnsforthishost");
-  ClientOptions &addStringOption(const std::string &opt, const std::string &val) {
-    stringOptions_.emplace_back(opt, val);
+  /**
+   * Adds a string-valued option.
+   * See https://grpc.github.io/grpc/cpp/group__grpc__arg__keys.html for a list of available options.
+   *
+   * @example copt.setStringOption("grpc.target_name_override", "idonthaveadnsforthishost")
+   * @param opt The option key.
+   * @param val The option valiue.
+   * @return *this, to be used for chaining
+   */
+  ClientOptions &addStringOption(const std::string opt, const std::string val) {
+    stringOptions_.emplace_back(std::move(opt), std::move(val));
     return *this;
   }
 
+  /**
+   * Adds an extra header with a constant name and value to be sent with every outgoing request.
+   *
+   * @param header_name The header name
+   * @param header_value The header value
+   * @return *this, to be used for chaining
+   */
   ClientOptions &addExtraHeader(const std::string &header_name, const std::string &header_value) {
     extraHeaders_.emplace_back(header_name, header_value);
     return *this;
   }
 
+  /**
+   * Returns true if server connections should be configured for TLS/SSL.
+   *
+   * @return true if this connection should be TLS/SSL, false for insecure.
+   */
   bool useTls() const { return useTls_; }
+
+  /**
+   * The PEM-encoded certificate root for server connections, or the empty string
+   * if using system defaults.
+   *
+   * @return A PEM-encoded certificate chain
+   */
   const std::string &pem() const { return pem_; }
+
+  /**
+   * Integer-valued channel options set for server connections.
+   *
+   * @return A vector of pairs of string option name and integer option value.
+   */
   const int_options_t &intOptions() const { return intOptions_; }
+
+  /**
+   * String-valued channel options set for server connections.
+   *
+   * @return A vector of pairs of string option name and string option value.
+   */
   const string_options_t &stringOptions() const { return stringOptions_; }
+
+  /**
+   * Extra headers that should be sent with each outgoing server request.
+   *
+   * @return A vector of pairs of string header name and string header value.
+   */
   const extra_headers_t &extraHeaders() const { return extraHeaders_; }
 
 private:
