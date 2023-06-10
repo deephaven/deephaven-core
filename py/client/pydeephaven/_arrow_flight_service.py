@@ -18,7 +18,6 @@ class ArrowFlightService:
     def import_table(self, data: pa.Table) -> Table:
         """Uploads a pyarrow table into Deephaven via. Flight do_put."""
         try:
-            options = paflight.FlightCallOptions(headers=self.session.grpc_metadata)
             if not isinstance(data, (pa.Table, pa.RecordBatch)):
                 raise DHError("source data must be either a pa table or RecordBatch.")
             ticket = self.session.get_ticket()
@@ -27,8 +26,10 @@ class ArrowFlightService:
                 dh_fields.append(pa.field(name=f.name, type=f.type, metadata=map_arrow_type(f.type)))
             dh_schema = pa.schema(dh_fields)
 
+            # No need to add headers/metadata here via the options argument;
+            # or middleware is already doing it for every call.
             writer, reader = self._flight_client.do_put(
-                pa.flight.FlightDescriptor.for_path("export", str(ticket)), dh_schema, options=options)
+                pa.flight.FlightDescriptor.for_path("export", str(ticket)), dh_schema)
             writer.write_table(data)
             writer.close()
             _ = reader.read()
@@ -40,9 +41,10 @@ class ArrowFlightService:
     def do_get_table(self, table: Table) -> pa.Table:
         """Gets a snapshot of a Table via. Flight do_get."""
         try:
-            options = paflight.FlightCallOptions(headers=self.session.grpc_metadata)
             flight_ticket = paflight.Ticket(table.ticket.ticket)
-            reader = self._flight_client.do_get(flight_ticket, options=options)
+            # No need to add headers/metadata here via the options argument;
+            # or middleware is already doing it for every call.
+            reader = self._flight_client.do_get(flight_ticket)
             return reader.read_all()
         except Exception as e:
             raise DHError("failed to perform a flight DoGet on the table.") from e
