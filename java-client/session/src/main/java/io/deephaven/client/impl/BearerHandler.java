@@ -24,7 +24,7 @@ import static io.deephaven.client.impl.Authentication.AUTHORIZATION_HEADER;
  * <p>
  * As a {@link CallCredentials}, this sets the (previously attained) bearer token on requests.
  */
-final public class BearerHandler extends CallCredentials implements ClientInterceptor {
+public final class BearerHandler extends CallCredentials implements ClientInterceptor {
 
     // this is really about "authentication" not "authorization"
     public static final String BEARER_PREFIX = "Bearer ";
