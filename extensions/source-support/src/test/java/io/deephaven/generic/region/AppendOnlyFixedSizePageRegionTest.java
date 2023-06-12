@@ -293,8 +293,26 @@ public class AppendOnlyFixedSizePageRegionTest {
         }
 
         @Override
+        public @NotNull List<SortPair> getSortedColumns() {
+            // Not used but needed to compile.
+            return null;
+        }
+
+        @Override
+        public boolean hasDataIndexFor(@NotNull String... columns) {
+            // Not used but needed to compile.
+            return false;
+        }
+
+        @Override
         protected @NotNull ColumnLocation makeColumnLocation(@NotNull final String name) {
             return new TableBackedColumnLocation(this, name);
+        }
+
+        @Override
+        protected @Nullable Table getDataIndexImpl(@NotNull String... columns) {
+            // Not used but needed to compile.
+            return null;
         }
 
     }
