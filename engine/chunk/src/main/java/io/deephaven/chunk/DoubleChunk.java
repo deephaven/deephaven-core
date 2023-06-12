@@ -179,7 +179,7 @@ public class DoubleChunk<ATTR extends Any> extends ChunkBase<ATTR> {
      *
      * @param key The key to search for
      * @return The index of the key in this chunk, or else {@code (-(insertion point) - 1)} as defined by
-     *         {@link Arrays#binarySearch(double[], double)}
+     *         {@link Arrays#binarySearch}
      */
     public final int binarySearch(final double key) {
         return Arrays.binarySearch(data, offset, offset + size, key);

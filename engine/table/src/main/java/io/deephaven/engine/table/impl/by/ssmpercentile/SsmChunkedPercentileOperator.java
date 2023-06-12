@@ -55,7 +55,7 @@ public class SsmChunkedPercentileOperator implements IterativeChunkedAggregation
         if (isInstant) {
             internalResult = new LongArraySource();
             // noinspection unchecked
-            externalResult = new BoxedColumnSource.OfInstant(internalResult);
+            externalResult = new LongAsInstantColumnSource(internalResult);
             averageEvenlyDivided = false;
         } else {
             if (averageEvenlyDivided) {
