@@ -370,7 +370,6 @@ public class BarrageUtil {
         }
     }
 
-
     private static void setConversionFactor(final ConvertedArrowSchema result, final int i, final int factor) {
         if (result.conversionFactors == null) {
             result.conversionFactors = new int[result.nCols];
