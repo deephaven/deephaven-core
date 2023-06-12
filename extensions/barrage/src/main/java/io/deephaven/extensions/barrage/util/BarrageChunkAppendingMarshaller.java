@@ -26,7 +26,7 @@ import java.util.Iterator;
 
 /**
  * This class is used to append the results of a DoGet directly into destination {@link WritableChunk<Values>}.
- *
+ * <p>
  * It will append the results of a DoGet into the destination chunks, and notify the listener of the number of rows
  * appended to the record batch in total. The user will typically want to wait for OnCompletion to be called before
  * assuming they have received all the data.
