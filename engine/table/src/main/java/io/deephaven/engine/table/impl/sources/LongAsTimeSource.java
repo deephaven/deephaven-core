@@ -14,11 +14,14 @@ import io.deephaven.engine.table.impl.AbstractColumnSource;
 import io.deephaven.engine.table.impl.MutableColumnSourceGetDefaults;
 import org.jetbrains.annotations.NotNull;
 
+import java.time.*;
+
 /**
  * Reinterpret result {@link ColumnSource} implementations that translates {@code long} values to various Time types.
  */
-public abstract class BoxedLongAsTimeSource<TIME_TYPE> extends AbstractColumnSource<TIME_TYPE>
-        implements MutableColumnSourceGetDefaults.ForObject<TIME_TYPE> {
+public abstract class LongAsTimeSource<TIME_TYPE> extends AbstractColumnSource<TIME_TYPE>
+        implements MutableColumnSourceGetDefaults.ForObject<TIME_TYPE>, ConvertibleTimeSource {
+
     private final ColumnSource<Long> alternateColumnSource;
 
     private class BoxingFillContext implements FillContext {
@@ -37,7 +40,7 @@ public abstract class BoxedLongAsTimeSource<TIME_TYPE> extends AbstractColumnSou
         }
     }
 
-    public BoxedLongAsTimeSource(final Class<TIME_TYPE> type, ColumnSource<Long> alternateColumnSource) {
+    public LongAsTimeSource(final Class<TIME_TYPE> type, ColumnSource<Long> alternateColumnSource) {
         super(type);
         this.alternateColumnSource = alternateColumnSource;
     }
@@ -104,5 +107,35 @@ public abstract class BoxedLongAsTimeSource<TIME_TYPE> extends AbstractColumnSou
             dest.set(ii, makeValue(innerChunk.get(ii)));
         }
         dest.setSize(innerChunk.size());
+    }
+
+    @Override
+    public ColumnSource<ZonedDateTime> toZonedDateTime(@NotNull final ZoneId zone) {
+        return new LongAsZonedDateTimeColumnSource(alternateColumnSource, zone);
+    }
+
+    @Override
+    public ColumnSource<LocalDate> toLocalDate(@NotNull final ZoneId zone) {
+        return new LongAsLocalDateColumnSource(alternateColumnSource, zone);
+    }
+
+    @Override
+    public ColumnSource<LocalTime> toLocalTime(@NotNull final ZoneId zone) {
+        return new LongAsLocalTimeColumnSource(alternateColumnSource, zone);
+    }
+
+    @Override
+    public ColumnSource<Instant> toInstant() {
+        return new LongAsInstantColumnSource(alternateColumnSource);
+    }
+
+    @Override
+    public ColumnSource<Long> toEpochNano() {
+        return alternateColumnSource;
+    }
+
+    @Override
+    public boolean supportsTimeConversion() {
+        return true;
     }
 }

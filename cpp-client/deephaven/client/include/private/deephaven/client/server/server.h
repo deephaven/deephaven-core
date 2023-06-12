@@ -4,6 +4,7 @@
 #pragma once
 
 #include <chrono>
+#include <functional>
 #include <future>
 #include <memory>
 #include <vector>
@@ -12,6 +13,7 @@
 #include <cstdint>
 #include <arrow/flight/client.h>
 
+#include "deephaven/client/client_options.h"
 #include "deephaven/client/utility/executor.h"
 #include "deephaven/dhcore/utility/callbacks.h"
 #include "deephaven/proto/ticket.pb.h"
@@ -90,6 +92,7 @@ class Server : public std::enable_shared_from_this<Server> {
   typedef io::deephaven::proto::backplane::script::grpc::StartConsoleResponse StartConsoleResponse;
   typedef io::deephaven::proto::backplane::script::grpc::ExecuteCommandResponse ExecuteCommandResponse;
 
+  typedef deephaven::client::ClientOptions ClientOptions;
   typedef deephaven::client::utility::Executor Executor;
 
   template<typename T>
@@ -97,7 +100,9 @@ class Server : public std::enable_shared_from_this<Server> {
   typedef SFCallback<ExportedTableCreationResponse> EtcCallback;
 
 public:
-  static std::shared_ptr<Server> createFromTarget(const std::string &target, const std::string &authorizationValue);
+  static std::shared_ptr<Server> createFromTarget(
+      const std::string &target,
+      const ClientOptions &client_options);
   Server(const Server &other) = delete;
   Server &operator=(const Server &other) = delete;
   Server(Private,
@@ -107,6 +112,7 @@ public:
       std::unique_ptr<TableService::Stub> tableStub,
       std::unique_ptr<ConfigService::Stub> configStub,
       std::unique_ptr<arrow::flight::FlightClient> flightClient,
+      ClientOptions::extra_headers_t extraHeaders,
       std::string sessionToken,
       std::chrono::milliseconds expirationInterval,
       std::chrono::system_clock::time_point nextHandshakeTime);
@@ -220,20 +226,20 @@ public:
   void sendRpc(const TReq &req, std::shared_ptr<SFCallback<TResp>> responseCallback,
       TStub *stub, const TPtrToMember &pm);
 
-  std::pair<std::string, std::string> getAuthHeader() const;
+  void forEachHeaderNameAndValue(std::function<
+      void(const std::string &, const std::string &)> fun);
 
   // TODO: make this private
   void setExpirationInterval(std::chrono::milliseconds interval);
 
 private:
+  static const char *const authorizationKey;
   typedef std::unique_ptr<::grpc::ClientAsyncResponseReader<ExportedTableCreationResponse>>
   (TableService::Stub::*selectOrUpdateMethod_t)(::grpc::ClientContext *context,
       const SelectOrUpdateRequest &request, ::grpc::CompletionQueue *cq);
 
   Ticket selectOrUpdateHelper(Ticket parentTicket, std::vector<std::string> columnSpecs,
       std::shared_ptr<EtcCallback> etcCallback, selectOrUpdateMethod_t method);
-
-  void addSessionToken(grpc::ClientContext *ctx);
 
   static void processCompletionQueueForever(const std::shared_ptr<Server> &self);
   bool processNextCompletionQueueItem();
@@ -247,6 +253,7 @@ private:
   std::unique_ptr<TableService::Stub> tableStub_;
   std::unique_ptr<ConfigService::Stub> configStub_;
   std::unique_ptr<arrow::flight::FlightClient> flightClient_;
+  const ClientOptions::extra_headers_t extraHeaders_;
   grpc::CompletionQueue completionQueue_;
 
   std::atomic<int32_t> nextFreeTicketId_;
@@ -265,7 +272,9 @@ void Server::sendRpc(const TReq &req, std::shared_ptr<SFCallback<TResp>> respons
   auto now = std::chrono::system_clock::now();
   // Keep this in a unique_ptr at first, for cleanup in case addAuthToken throws an exception.
   auto response = std::make_unique<ServerResponseHolder<TResp>>(now, std::move(responseCallback));
-  addSessionToken(&response->ctx_);
+  forEachHeaderNameAndValue([&response](const std::string &name, const std::string &value) {
+    response->ctx_.AddMetadata(name, value);
+  });
   auto rpc = (stub->*pm)(&response->ctx_, req, &completionQueue_);
   // It is the responsibility of "processNextCompletionQueueItem" to deallocate the storage pointed
   // to by 'response'.

@@ -79,7 +79,7 @@ void doit(const TableHandleManager &manager) {
   std::vector<int32_t> volumes{1000, 2000, 3000, 4000};
   auto numRows = static_cast<int64_t>(symbols.size());
   if (numRows != prices.size() || numRows != volumes.size()) {
-    throw std::runtime_error(DEEPHAVEN_DEBUG_MSG("sizes don't match"));
+    throw DEEPHAVEN_EXPR_MSG(std::runtime_error(DEEPHAVEN_DEBUG_MSG("sizes don't match")));
   }
 
   // 6. Move data to Arrow column builders
@@ -110,7 +110,7 @@ void doit(const TableHandleManager &manager) {
   // 10. DoPut takes FlightCallOptions, which need to at least contain the Deephaven
   // authentication headers for this session.
   arrow::flight::FlightCallOptions options;
-  wrapper.addAuthHeaders(&options);
+  wrapper.addHeaders(&options);
 
   // 11. Perform the doPut
   std::unique_ptr<arrow::flight::FlightStreamWriter> fsw;

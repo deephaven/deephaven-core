@@ -25,7 +25,7 @@ def blink_to_append_only(table: Table) -> Table:
         DHError
     """
     try:
-        return Table(j_table=_JBlinkTableTools.blinkToAppendOnlyTable(table.j_table))
+        return Table(j_table=_JBlinkTableTools.blinkToAppendOnly(table.j_table))
     except Exception as e:
         raise DHError(e, "failed to create an append-only table.") from e
 

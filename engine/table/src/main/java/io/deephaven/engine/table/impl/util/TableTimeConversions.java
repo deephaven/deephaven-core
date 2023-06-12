@@ -46,8 +46,8 @@ public class TableTimeConversions {
         final Class<?> colType = cd.getType();
 
         // We cannot simply return the source if we are converting between types that require a zone because we don't
-        // know
-        // what the time zones are compared to the current one. so we have to reinterpret and potentially switch zones.
+        // know what the time zones are compared to the current one. so we have to reinterpret and potentially switch
+        // zones.
         if (colType == resultType && mp.leftColumn.equals(mp.rightColumn)
                 && (!requiresZone(resultType) || !requiresZone(colType))) {
             return source;

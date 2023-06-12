@@ -195,12 +195,12 @@ public abstract class NanosBasedTimeArraySource<TIME_TYPE> extends AbstractDefer
 
     @Override
     public ColumnSource<LocalDate> toLocalDate(final @NotNull ZoneId zone) {
-        return new LocalDateWrapperSource(toZonedDateTime(zone), zone);
+        return new LongAsLocalDateColumnSource(nanoSource, zone);
     }
 
     @Override
     public ColumnSource<LocalTime> toLocalTime(final @NotNull ZoneId zone) {
-        return new LocalTimeWrapperSource(toZonedDateTime(zone), zone);
+        return new LongAsLocalTimeColumnSource(nanoSource, zone);
     }
 
     @Override

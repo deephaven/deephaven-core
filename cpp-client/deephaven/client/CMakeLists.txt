@@ -54,12 +54,14 @@ set(ALL_FILES
 
     src/columns.cc
     src/expressions.cc
+    src/client_options.cc
     src/client.cc
     src/flight.cc
 
     include/public/deephaven/client/columns.h
     include/public/deephaven/client/expressions.h
     include/public/deephaven/client/client.h
+    include/public/deephaven/client/client_options.h
     include/public/deephaven/client/flight.h
     include/public/deephaven/client/utility/arrow_util.h
 

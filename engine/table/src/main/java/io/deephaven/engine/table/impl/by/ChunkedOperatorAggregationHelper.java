@@ -195,8 +195,7 @@ public class ChunkedOperatorAggregationHelper {
         for (int kci = 0; kci < keyHashTableSources.length; ++kci) {
             ColumnSource<?> resultKeyColumnSource = keyHashTableSources[kci];
             if (keySources[kci] != reinterpretedKeySources[kci]) {
-                resultKeyColumnSource =
-                        ReinterpretUtils.convertToOriginal(keySources[kci].getType(), resultKeyColumnSource);
+                resultKeyColumnSource = ReinterpretUtils.convertToOriginalType(keySources[kci], resultKeyColumnSource);
             }
             keyColumnsRaw[kci] = resultKeyColumnSource;
             if (input.isRefreshing()) {
