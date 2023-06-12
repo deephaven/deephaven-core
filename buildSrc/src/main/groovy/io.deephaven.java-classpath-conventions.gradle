@@ -32,12 +32,11 @@ configurations {
     fishNet.extendsFrom fishIo
     fishNumerics.extendsFrom fishBase
     fishUtil.extendsFrom fishConfig
-    fishStats.extendsFrom fishUtil
     fishBaseTest.extendsFrom junit
     fishIoTest.extendsFrom fishBaseTest
 
     dhNumerics.extendsFrom fishNumerics, jama
-    dhUtil.extendsFrom commonsIo, commonsLang3, commonsText, fishUtil, fishStats, jdom
+    dhUtil.extendsFrom commonsIo, commonsLang3, commonsText, fishUtil, fishNet, fishIo, jdom
     dhPlot.extendsFrom dhUtil
     dhBenchmarkSupport.extendsFrom fishData
     dhIntegrations.extendsFrom math3
@@ -73,8 +72,7 @@ dependencies {
 
     fishUtil project(':FishUtil')
 
-    fishStats project(':Net'),
-            project(':Stats')
+    fishNet project(':Net')
 
     fishBaseTest project(path: ':Base', configuration: 'tests')
 

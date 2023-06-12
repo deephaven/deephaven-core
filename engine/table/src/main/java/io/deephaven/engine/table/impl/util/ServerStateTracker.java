@@ -9,10 +9,10 @@ import io.deephaven.engine.table.impl.QueryTable;
 import io.deephaven.engine.tablelogger.EngineTableLoggers;
 import io.deephaven.engine.tablelogger.ServerStateLogLogger;
 import io.deephaven.engine.tablelogger.impl.memory.MemoryTableLogger;
-import io.deephaven.engine.updategraph.UpdateGraph;
 import io.deephaven.engine.updategraph.impl.PeriodicUpdateGraph;
 import io.deephaven.internal.log.LoggerFactory;
 import io.deephaven.io.logger.Logger;
+import io.deephaven.util.SafeCloseable;
 import org.jetbrains.annotations.NotNull;
 
 import java.io.IOException;
@@ -50,9 +50,9 @@ public class ServerStateTracker {
     }
 
     private void startThread() {
-        final UpdateGraph updateGraph = ExecutionContext.getContext().getUpdateGraph();
+        final ExecutionContext executionContext = ExecutionContext.getContext();
         Thread driverThread = new Thread(
-                new ServerStateTracker.Driver(updateGraph),
+                new ServerStateTracker.Driver(executionContext),
                 ServerStateTracker.class.getSimpleName() + ".Driver");
         driverThread.setDaemon(true);
         driverThread.start();
@@ -114,10 +114,10 @@ public class ServerStateTracker {
     }
 
     private class Driver implements Runnable {
-        private final PeriodicUpdateGraph updateGraph;
+        private final ExecutionContext executionContext;
 
-        public Driver(@NotNull final UpdateGraph updateGraph) {
-            this.updateGraph = updateGraph.cast();
+        public Driver(@NotNull final ExecutionContext executionContext) {
+            this.executionContext = executionContext;
         }
 
         @Override
@@ -136,19 +136,22 @@ public class ServerStateTracker {
                 final long prevTotalCollections = memSample.totalCollections;
                 final long prevTotalCollectionTimeMs = memSample.totalCollectionTimeMs;
                 RuntimeMemory.getInstance().read(memSample);
-                updateGraph.takeAccumulatedCycleStats(ugpAccumCycleStats);
+                executionContext.getUpdateGraph().<PeriodicUpdateGraph>cast()
+                        .takeAccumulatedCycleStats(ugpAccumCycleStats);
                 final long endTimeMillis = System.currentTimeMillis();
-                logProcessMem(
-                        intervalStartTimeMillis,
-                        endTimeMillis,
-                        memSample,
-                        prevTotalCollections,
-                        prevTotalCollectionTimeMs,
-                        ugpAccumCycleStats.cycles,
-                        ugpAccumCycleStats.cyclesOnBudget,
-                        ugpAccumCycleStats.cycleTimesMicros,
-                        ugpAccumCycleStats.safePoints,
-                        ugpAccumCycleStats.safePointPauseTimeMillis);
+                try (final SafeCloseable ignored = executionContext.open()) {
+                    logProcessMem(
+                            intervalStartTimeMillis,
+                            endTimeMillis,
+                            memSample,
+                            prevTotalCollections,
+                            prevTotalCollectionTimeMs,
+                            ugpAccumCycleStats.cycles,
+                            ugpAccumCycleStats.cyclesOnBudget,
+                            ugpAccumCycleStats.cycleTimesMicros,
+                            ugpAccumCycleStats.safePoints,
+                            ugpAccumCycleStats.safePointPauseTimeMillis);
+                }
             }
         }
     }
