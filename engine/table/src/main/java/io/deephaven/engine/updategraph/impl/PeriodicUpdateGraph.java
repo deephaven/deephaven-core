@@ -121,7 +121,7 @@ public class PeriodicUpdateGraph implements UpdateGraph {
     private LongConsumer watchDogTimeoutProcedure = null;
 
     public static final String ALLOW_UNIT_TEST_MODE_PROP = "PeriodicUpdateGraph.allowUnitTestMode";
-    private final boolean ALLOW_UNIT_TEST_MODE;
+    private final boolean allowUnitTestMode;
     private int notificationAdditionDelay = 0;
     private Random notificationRandomizer = new Random(0);
     private boolean unitTestMode = false;
@@ -131,7 +131,7 @@ public class PeriodicUpdateGraph implements UpdateGraph {
             "PeriodicUpdateGraph.targetCycleDurationMillis";
     public static final String MINIMUM_CYCLE_DURATION_TO_LOG_MILLIS_PROP =
             "PeriodicUpdateGraph.minimumCycleDurationToLogMillis";
-    private final long DEFAULT_TARGET_CYCLE_DURATION_MILLIS;
+    private final long defaultTargetCycleDurationMillis;
     private volatile long targetCycleDurationMillis;
     private final long minimumCycleDurationToLogNanos;
 
@@ -277,11 +277,17 @@ public class PeriodicUpdateGraph implements UpdateGraph {
             final long minimumCycleDurationToLogNanos,
             final int numUpdateThreads) {
         this.name = name;
-        this.ALLOW_UNIT_TEST_MODE = allowUnitTestMode;
-        this.DEFAULT_TARGET_CYCLE_DURATION_MILLIS = targetCycleDurationMillis;
+        this.allowUnitTestMode = allowUnitTestMode;
+        this.defaultTargetCycleDurationMillis = targetCycleDurationMillis;
         this.targetCycleDurationMillis = targetCycleDurationMillis;
         this.minimumCycleDurationToLogNanos = minimumCycleDurationToLogNanos;
-        this.lock = UpdateGraphLock.create(this, ALLOW_UNIT_TEST_MODE);
+        this.lock = UpdateGraphLock.create(this, this.allowUnitTestMode);
+
+        if (numUpdateThreads <= 0) {
+            this.updateThreads = Runtime.getRuntime().availableProcessors();
+        } else {
+            this.updateThreads = numUpdateThreads;
+        }
 
         notificationProcessor = makeNotificationProcessor();
         jvmIntrospectionContext = new JvmIntrospectionContext();
@@ -289,17 +295,11 @@ public class PeriodicUpdateGraph implements UpdateGraph {
         refreshThread = new Thread(ThreadInitializationFactory.wrapRunnable(() -> {
             configureRefreshThread();
             while (running) {
-                Assert.eqFalse(ALLOW_UNIT_TEST_MODE, "ALLOW_UNIT_TEST_MODE");
+                Assert.eqFalse(this.allowUnitTestMode, "allowUnitTestMode");
                 refreshTablesAndFlushNotifications();
             }
         }), "PeriodicUpdateGraph." + name + ".refreshThread");
         refreshThread.setDaemon(true);
-
-        if (numUpdateThreads <= 0) {
-            this.updateThreads = Runtime.getRuntime().availableProcessors();
-        } else {
-            this.updateThreads = numUpdateThreads;
-        }
     }
 
     public String getName() {
@@ -495,7 +495,7 @@ public class PeriodicUpdateGraph implements UpdateGraph {
      */
     @SuppressWarnings("unused")
     public void resetTargetCycleDuration() {
-        targetCycleDurationMillis = DEFAULT_TARGET_CYCLE_DURATION_MILLIS;
+        targetCycleDurationMillis = defaultTargetCycleDurationMillis;
     }
 
     /**
@@ -512,7 +512,7 @@ public class PeriodicUpdateGraph implements UpdateGraph {
         if (unitTestMode) {
             return;
         }
-        if (!ALLOW_UNIT_TEST_MODE) {
+        if (!allowUnitTestMode) {
             throw new IllegalStateException("PeriodicUpdateGraph.allowUnitTestMode=false");
         }
         if (refreshThread.isAlive()) {
@@ -527,7 +527,7 @@ public class PeriodicUpdateGraph implements UpdateGraph {
      * @return whether unit test mode is allowed
      */
     public boolean isUnitTestModeAllowed() {
-        return ALLOW_UNIT_TEST_MODE;
+        return allowUnitTestMode;
     }
 
     /**
@@ -576,7 +576,7 @@ public class PeriodicUpdateGraph implements UpdateGraph {
     public void start() {
         Assert.eqTrue(running, "running");
         Assert.eqFalse(unitTestMode, "unitTestMode");
-        Assert.eqFalse(ALLOW_UNIT_TEST_MODE, "ALLOW_UNIT_TEST_MODE");
+        Assert.eqFalse(allowUnitTestMode, "allowUnitTestMode");
         synchronized (refreshThread) {
             if (!refreshThread.isAlive()) {
                 log.info().append("PeriodicUpdateGraph starting with ").append(updateThreads)
@@ -613,7 +613,7 @@ public class PeriodicUpdateGraph implements UpdateGraph {
             ((DynamicNode) updateSource).setRefreshing(true);
         }
 
-        if (!ALLOW_UNIT_TEST_MODE) {
+        if (!allowUnitTestMode) {
             // if we are in unit test mode we never want to start the UpdateGraph
             sources.add(updateSource);
             start();
