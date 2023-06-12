@@ -19,6 +19,7 @@ import io.deephaven.engine.updategraph.impl.PeriodicUpdateGraph;
 import io.deephaven.internal.log.LoggerFactory;
 import io.deephaven.io.logger.Logger;
 import io.deephaven.util.QueryConstants;
+import io.deephaven.util.SafeCloseable;
 import org.apache.commons.lang3.mutable.MutableObject;
 import org.jetbrains.annotations.NotNull;
 
@@ -82,8 +83,8 @@ public class UpdatePerformanceTracker {
     }
 
     private void startThread() {
-        final UpdateGraph updateGraph = ExecutionContext.getContext().getUpdateGraph();
-        Thread driverThread = new Thread(new Driver(updateGraph), "UpdatePerformanceTracker.Driver");
+        final ExecutionContext executionContext = ExecutionContext.getContext();
+        Thread driverThread = new Thread(new Driver(executionContext), "UpdatePerformanceTracker.Driver");
         driverThread.setDaemon(true);
         driverThread.start();
     }
@@ -98,10 +99,10 @@ public class UpdatePerformanceTracker {
 
     private class Driver implements Runnable {
 
-        private final UpdateGraph updateGraph;
+        private final ExecutionContext executionContext;
 
-        public Driver(@NotNull final UpdateGraph updateGraph) {
-            this.updateGraph = updateGraph;
+        public Driver(@NotNull final ExecutionContext executionContext) {
+            this.executionContext = executionContext;
         }
 
         @Override
@@ -116,9 +117,11 @@ public class UpdatePerformanceTracker {
                     // should log, but no logger handy
                     // ignore
                 }
-                updateGraph.sharedLock().doLocked(
-                        () -> finishInterval(intervalStartTimeMillis, System.currentTimeMillis(),
-                                System.nanoTime() - intervalStartTimeNanos));
+                try (final SafeCloseable ignored = executionContext.open()) {
+                    executionContext.getUpdateGraph().sharedLock().doLocked(
+                            () -> finishInterval(intervalStartTimeMillis, System.currentTimeMillis(),
+                                    System.nanoTime() - intervalStartTimeNanos));
+                }
             }
         }
     }
