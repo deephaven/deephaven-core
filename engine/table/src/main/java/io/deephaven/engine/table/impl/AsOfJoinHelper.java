@@ -248,6 +248,8 @@ public class AsOfJoinHelper {
                 // noinspection unchecked
                 asOfJoinStateManager.convertRightGrouping(slots, slotCount,
                         rightGroupingTable.getColumnSource(rightGroupingBuilder.getIndexColumnName()));
+            } else {
+                asOfJoinStateManager.convertRightBuildersToIndex(slots, slotCount);
             }
         }
 

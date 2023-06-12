@@ -264,7 +264,7 @@ public class RowSetIndexer implements TrackingRowSet.Indexer {
             final Map<Object, RowSet> groupings = builder.buildGroupingMap();
             groupings.forEach((key, value) -> {
                 final RowSet resultIndex = rowSetOp.apply(value);
-                if (value.size() > 0) {
+                if (value.size() > 0 && resultIndex.size() > 0) {
                     resultCollector.accept(key, resultIndex);
                 }
             });
@@ -304,9 +304,9 @@ public class RowSetIndexer implements TrackingRowSet.Indexer {
             final List<ColumnSource<?>> keyColumns) {
         // we can generate the grouping partially from our constituents
         final ColumnSource<?>[] groupedKeyColumns =
-                keyColumns.stream().filter(ColumnSource::hasGrouping).toArray(ColumnSource[]::new);
+                keyColumns.stream().filter(cs -> cs.hasGrouping()).toArray(ColumnSource[]::new);
         final ColumnSource<?>[] notGroupedKeyColumns =
-                keyColumns.stream().filter(ColumnSource::hasGrouping).toArray(ColumnSource[]::new);
+                keyColumns.stream().filter(cs -> !cs.hasGrouping()).toArray(ColumnSource[]::new);
 
         final TupleSource<?> groupedTupleSource = TupleSourceFactory.makeTupleSource(groupedKeyColumns);
         final Map<Object, RowSet> groupedColumnsGrouping =
@@ -368,9 +368,9 @@ public class RowSetIndexer implements TrackingRowSet.Indexer {
             final List<ColumnSource> keyColumns, Set<Object> keys) {
         // we can generate the grouping partially from our constituents
         final ColumnSource[] groupedKeyColumns =
-                keyColumns.stream().filter(ColumnSource::hasGrouping).toArray(ColumnSource[]::new);
+                keyColumns.stream().filter(cs -> cs.hasGrouping()).toArray(ColumnSource[]::new);
         final ColumnSource[] notGroupedKeyColumns =
-                keyColumns.stream().filter(ColumnSource::hasGrouping).toArray(ColumnSource[]::new);
+                keyColumns.stream().filter(cs -> !cs.hasGrouping()).toArray(ColumnSource[]::new);
 
         Require.gtZero(groupedKeyColumns.length, "groupedKeyColumns.length");
         Require.gtZero(notGroupedKeyColumns.length, "notGroupedKeyColumns.length");

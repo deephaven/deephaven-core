@@ -1,6 +1,7 @@
 package io.deephaven.engine.table.impl.dataindex;
 
 import io.deephaven.api.ColumnName;
+import io.deephaven.api.Pair;
 import io.deephaven.engine.rowset.RowSet;
 import io.deephaven.engine.rowset.RowSetFactory;
 import io.deephaven.engine.table.*;
@@ -115,7 +116,7 @@ public class StaticGroupingProvider extends MemoizingGroupingProvider implements
                 new QueryTable(rowSetOfInterest.copy().toTracking(), Collections.singletonMap(keyColumnName, source));
         final Table rowSetTable = input
                 .aggNoMemo(AggregationProcessor.forExposeGroupRowSets(), false, null, ColumnName.from(keyColumnName))
-                .renameColumns(INDEX_COL_NAME, EXPOSED_GROUP_ROW_SETS.name());
+                .renameColumns(Collections.singleton(Pair.of(EXPOSED_GROUP_ROW_SETS, ColumnName.of(INDEX_COL_NAME))));
 
         return new StaticGroupingProvider(rowSetTable, keyColumnName);
     }
