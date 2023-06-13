@@ -61,7 +61,7 @@ public class SwapListener extends LivenessArtifact implements TableUpdateListene
     /**
      * The sourceTable, used to get the lastNotificationTime.
      */
-    final BaseTable sourceTable;
+    final BaseTable<?> sourceTable;
 
     /**
      * {@link WeakSimpleReference} to {@code this}, for capturing notifications from {@code sourceTable} before
@@ -75,7 +75,7 @@ public class SwapListener extends LivenessArtifact implements TableUpdateListene
     private final SwappableDelegatingReference<TableUpdateListener> referenceForSource =
             new SwappableDelegatingReference<>(initialDelegate);
 
-    public SwapListener(final BaseTable sourceTable) {
+    public SwapListener(final BaseTable<?> sourceTable) {
         this.sourceTable = sourceTable;
     }
 
@@ -90,25 +90,32 @@ public class SwapListener extends LivenessArtifact implements TableUpdateListene
     /**
      * Starts a snapshot.
      *
-     * @param clockCycle the clockCycle we are starting a snapshot on
+     * @param beforeClockValue the logical clock value we are starting a snapshot on
      * @return true if we should use previous values, false if we should use current values.
      */
-    protected synchronized boolean start(final long clockCycle) {
+    protected synchronized boolean start(final long beforeClockValue) {
         lastNotificationStep = sourceTable.getLastNotificationStep();
         success = false;
-        final long currentStep = LogicalClock.getStep(clockCycle);
-        final boolean updatedOnThisCycle = currentStep == lastNotificationStep;
-        final boolean updating = LogicalClock.getState(clockCycle) == LogicalClock.State.Updating;
+
+        final long beforeStep = LogicalClock.getStep(beforeClockValue);
+        final LogicalClock.State beforeState = LogicalClock.getState(beforeClockValue);
+
+        final boolean idle = beforeState == LogicalClock.State.Idle;
+        final boolean updatedOnThisStep = beforeStep == lastNotificationStep;
+        final boolean satisfied = idle || updatedOnThisStep || sourceTable.satisfied(beforeStep);
+        final boolean usePrev = !satisfied;
+
         if (DEBUG) {
             log.info().append("SwapListener {source=").append(System.identityHashCode(sourceTable))
                     .append(", swap=").append(System.identityHashCode(this))
-                    .append("} Start: currentStep=").append(currentStep)
-                    .append(", last=").append(lastNotificationStep)
-                    .append(", updating=").append(updating)
-                    .append(", updatedOnThisCycle=").append(updatedOnThisCycle)
+                    .append("} Start: beforeStep=").append(beforeStep)
+                    .append(", beforeState=").append(beforeState.name())
+                    .append(", lastNotificationStep=").append(lastNotificationStep)
+                    .append(", satisfied=").append(satisfied)
+                    .append(", usePrev=").append(usePrev)
                     .endl();
         }
-        return updating && !updatedOnThisCycle;
+        return usePrev;
     }
 
     /**

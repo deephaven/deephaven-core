@@ -781,7 +781,8 @@ public class ConstructSnapshot {
      * @param snapshotCompletedConsistently The {@link SnapshotCompletedConsistently} to use, or null to use * {@code
      * snapshotConsistent}
      */
-    public static SnapshotControl makeSnapshotControl(@NotNull final UsePreviousValues usePreviousValues,
+    public static SnapshotControl makeSnapshotControl(
+            @NotNull final UsePreviousValues usePreviousValues,
             @NotNull final SnapshotConsistent snapshotConsistent,
             @Nullable final SnapshotCompletedConsistently snapshotCompletedConsistently) {
         return snapshotCompletedConsistently == null
@@ -894,9 +895,13 @@ public class ConstructSnapshot {
 
         @Override
         public Boolean usePreviousValues(final long beforeClockValue) {
+            final long beforeStep = LogicalClock.getStep(beforeClockValue);
+            final LogicalClock.State beforeState = LogicalClock.getState(beforeClockValue);
+
             // noinspection AutoBoxing
-            return LogicalClock.getState(beforeClockValue) == LogicalClock.State.Updating &&
-                    source.getLastNotificationStep() != LogicalClock.getStep(beforeClockValue);
+            return beforeState == LogicalClock.State.Updating
+                    && source.getLastNotificationStep() != beforeStep
+                    && !source.satisfied(beforeStep);
         }
 
         @Override
@@ -926,9 +931,13 @@ public class ConstructSnapshot {
 
         @Override
         public Boolean usePreviousValues(final long beforeClockValue) {
+            final long beforeStep = LogicalClock.getStep(beforeClockValue);
+            final LogicalClock.State beforeState = LogicalClock.getState(beforeClockValue);
+
             // noinspection AutoBoxing
-            return LogicalClock.getState(beforeClockValue) == LogicalClock.State.Updating &&
-                    source.getLastNotificationStep() != LogicalClock.getStep(beforeClockValue);
+            return beforeState == LogicalClock.State.Updating
+                    && source.getLastNotificationStep() != beforeStep
+                    && !source.satisfied(beforeStep);
         }
 
         @Override
@@ -957,22 +966,17 @@ public class ConstructSnapshot {
                 return false;
             }
             final long beforeStep = LogicalClock.getStep(beforeClockValue);
-            final NotificationStepSource[] notYetNotified = Stream.of(sources)
-                    .filter((final NotificationStepSource source) -> source.getLastNotificationStep() != beforeStep)
+            final NotificationStepSource[] notYetSatisfied = Stream.of(sources)
+                    .filter((final NotificationStepSource source) -> source.getLastNotificationStep() != beforeStep
+                            && !source.satisfied(beforeStep))
                     .toArray(NotificationStepSource[]::new);
-            if (notYetNotified.length == sources.length) {
+            if (notYetSatisfied.length == sources.length) {
                 return true;
             }
-            if (notYetNotified.length > 0) {
-                final NotificationStepSource[] notYetSatisfied = Stream.of(sources)
-                        .filter((final NotificationQueue.Dependency dep) -> !dep.satisfied(beforeStep))
-                        .toArray(NotificationStepSource[]::new);
-                if (notYetSatisfied.length > 0
-                        && !WaitNotification.waitForSatisfaction(beforeStep, notYetSatisfied)) {
-                    if (ExecutionContext.getContext().getUpdateGraph().clock().currentStep() != beforeStep) {
-                        // If we missed a step change, we've already failed, request a do-over.
-                        return null;
-                    }
+            if (notYetSatisfied.length > 0 && !WaitNotification.waitForSatisfaction(beforeStep, notYetSatisfied)) {
+                if (ExecutionContext.getContext().getUpdateGraph().clock().currentStep() != beforeStep) {
+                    // If we missed a step change, we've already failed, request a do-over.
+                    return null;
                 }
             }
             return false;
@@ -1012,22 +1016,17 @@ public class ConstructSnapshot {
                 return false;
             }
             final long beforeStep = LogicalClock.getStep(beforeClockValue);
-            final NotificationStepSource[] notYetNotified = Stream.of(sources)
-                    .filter((final NotificationStepSource source) -> source.getLastNotificationStep() != beforeStep)
+            final NotificationStepSource[] notYetSatisfied = Stream.of(sources)
+                    .filter((final NotificationStepSource source) -> source.getLastNotificationStep() != beforeStep
+                            && !source.satisfied(beforeStep))
                     .toArray(NotificationStepSource[]::new);
-            if (notYetNotified.length == sources.length) {
+            if (notYetSatisfied.length == sources.length) {
                 return true;
             }
-            if (notYetNotified.length > 0) {
-                final NotificationStepSource[] notYetSatisfied = Stream.of(sources)
-                        .filter((final NotificationQueue.Dependency dep) -> !dep.satisfied(beforeStep))
-                        .toArray(NotificationStepSource[]::new);
-                if (notYetSatisfied.length > 0
-                        && !WaitNotification.waitForSatisfaction(beforeStep, notYetSatisfied)) {
-                    if (ExecutionContext.getContext().getUpdateGraph().clock().currentStep() != beforeStep) {
-                        // If we missed a step change, we've already failed, request a do-over.
-                        return null;
-                    }
+            if (notYetSatisfied.length > 0 && !WaitNotification.waitForSatisfaction(beforeStep, notYetSatisfied)) {
+                if (ExecutionContext.getContext().getUpdateGraph().clock().currentStep() != beforeStep) {
+                    // If we missed a step change, we've already failed, request a do-over.
+                    return null;
                 }
             }
             return false;

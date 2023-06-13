@@ -468,6 +468,7 @@ public abstract class BaseTable<IMPL_TYPE extends BaseTable<IMPL_TYPE>> extends 
             if (updateGraph.satisfied(step)) {
                 updateGraph.logDependencies().append("Root node satisfied ").append(this)
                         .endl();
+                lastSatisfiedStep = step;
                 return true;
             }
             return false;
