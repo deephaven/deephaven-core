@@ -14,8 +14,8 @@
 #' 
 #' In addition to setting your authentication parameters when you connect to a client, you can also start
 #' a console in one of our supported server languages. We currently support Python and Groovy, and if you
-#' want start a console upon client connection, you must ensure that the server you're connecting to was
-#' started with support for the language you want to use.
+#' want start a console upon client connection, ensure that the server being connected to was
+#' started with support for the preferred language.
 #' 
 #' @usage NULL
 #' @format NULL
