@@ -96,6 +96,7 @@ jvm_options = {
 
 from deephaven_internal import jvm
 jvm.init_jvm(
+    jvm_maxmem='1G',
     jvm_classpath=glob(os.environ.get('DEEPHAVEN_CLASSPATH')),
     jvm_properties=jvm_properties,
     jvm_options=jvm_options,
