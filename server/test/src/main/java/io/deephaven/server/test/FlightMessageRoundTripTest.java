@@ -216,13 +216,14 @@ public abstract class FlightMessageRoundTripTest {
 
         component = component();
 
+        executionContext = component.executionContext().open();
+
         server = component.server();
         server.start();
         int actualPort = server.getPort();
 
         scriptSession = component.scriptSession();
         sessionService = component.sessionService();
-        executionContext = component.executionContext().open();
 
         serverLocation = Location.forGrpcInsecure("localhost", actualPort);
         currentSession = sessionService.newSession(new AuthContext.SuperUser());
