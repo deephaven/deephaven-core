@@ -87,7 +87,7 @@ a variable name on the server. See `?TableHandle` for more information.
 \subsection{Arguments}{
 \if{html}{\out{<div class="arguments">}}
 \describe{
-\item{\code{table_object}}{An R Data Frame, an R Tibble, an Arrow Table, or an Arrow RecordBatchReader
+\item{\code{table_object}}{An R Data Frame, a dplyr Tibble, an Arrow Table, or an Arrow RecordBatchReader
 containing the data to import to the server.}
 }
 \if{html}{\out{</div>}}
