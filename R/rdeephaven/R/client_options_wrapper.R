@@ -20,13 +20,6 @@
 #' @format NULL
 #' @docType class
 #' 
-#' @section Methods
-#' 
-#' - `$set_default_authentication()`
-#' - `$set_basic_authentication(username, password)`
-#' - `$set_custom_authentication(auth_key, auth_value)`
-#' - `$set_session_type(session_type)`
-#' 
 #' @examples
 #' 
 #' # connect to a Deephaven server with a Python console running on "localhost:10000" using anonymous 'default' authentication
