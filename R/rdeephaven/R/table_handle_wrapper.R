@@ -5,14 +5,6 @@
 #' @usage NULL
 #' @format NULL
 #' @docType class
-#' 
-#' @section Methods
-#' 
-#' - `$bind_to_variable(name)`
-#' - `$to_arrow_record_batch_stream_reader()`
-#' - `$to_arrow_table()`
-#' - `$to_tibble()`
-#' - `$to_data_frame()`
 #'
 #' @examples
 #' 
