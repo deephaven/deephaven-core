@@ -66,13 +66,17 @@ class UpdateByTestCase(BaseTestCase):
                        op_control=cls.em_op_ctrl),
         ]
 
+        simple_op_pairs = ["UA=a", "UB=b"]
         cls.simple_ops = [
-            cum_sum,
-            cum_prod,
-            cum_min,
-            cum_max,
-            forward_fill,
-            delta,
+            cum_sum(cols=simple_op_pairs),
+            cum_prod(cols=simple_op_pairs),
+            cum_min(cols=simple_op_pairs),
+            cum_max(cols=simple_op_pairs),
+            forward_fill(cols=simple_op_pairs),
+            delta(cols=simple_op_pairs),
+            delta(cols=simple_op_pairs, delta_control=DeltaControl.NULL_DOMINATES),
+            delta(cols=simple_op_pairs, delta_control=DeltaControl.VALUE_DOMINATES),
+            delta(cols=simple_op_pairs, delta_control=DeltaControl.ZERO_DOMINATES),
         ]
 
         # Rolling Operators list shared with test_rolling_ops / test_rolling_ops_proxy
@@ -154,12 +158,10 @@ class UpdateByTestCase(BaseTestCase):
 
 
     def test_simple_ops(self):
-        pairs = ["UA=a", "UB=b"]
-
         for op in self.simple_ops:
             with self.subTest(op):
                 for t in (self.static_table, self.ticking_table):
-                    rt = t.update_by(ops=op(pairs), by="e")
+                    rt = t.update_by(ops=op, by="e")
                     self.assertTrue(rt.is_refreshing is t.is_refreshing)
                     self.assertEqual(len(rt.schema), 2 + len(t.schema))
                     self.assertGreaterEqual(rt.size, t.size)

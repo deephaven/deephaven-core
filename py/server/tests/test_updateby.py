@@ -68,13 +68,17 @@ class UpdateByTestCase(BaseTestCase):
                        op_control=cls.em_op_ctrl),
         ]
 
+        simple_op_pairs = ["UA=a", "UB=b"]
         cls.simple_ops = [
-            cum_sum,
-            cum_prod,
-            cum_min,
-            cum_max,
-            forward_fill,
-            delta
+            cum_sum(cols=simple_op_pairs),
+            cum_prod(cols=simple_op_pairs),
+            cum_min(cols=simple_op_pairs),
+            cum_max(cols=simple_op_pairs),
+            forward_fill(cols=simple_op_pairs),
+            delta(cols=simple_op_pairs),
+            delta(cols=simple_op_pairs, delta_control=DeltaControl.NULL_DOMINATES),
+            delta(cols=simple_op_pairs, delta_control=DeltaControl.VALUE_DOMINATES),
+            delta(cols=simple_op_pairs, delta_control=DeltaControl.ZERO_DOMINATES),
         ]
 
         # Rolling Operators list shared with test_rolling_ops / test_rolling_ops_proxy
@@ -184,19 +188,16 @@ class UpdateByTestCase(BaseTestCase):
                             self.assertEqual(ct.size, rct.size)                        
 
     def test_simple_ops(self):
-        pairs = ["UA=a", "UB=b"]
-
         for op in self.simple_ops:
             with self.subTest(op):
                 for t in (self.static_table, self.ticking_table):
-                    rt = t.update_by(ops=op(pairs), by="e")
+                    rt = t.update_by(ops=op, by="e")
                     self.assertTrue(rt.is_refreshing is t.is_refreshing)
                     self.assertEqual(len(rt.columns), 2 + len(t.columns))
                     with update_graph.exclusive_lock(self.test_update_graph):
                         self.assertEqual(rt.size, t.size)
 
     def test_simple_ops_proxy(self):
-        pairs = ["UA=a", "UB=b"]
         pt_proxies = [self.static_table.partition_by("c").proxy(),
                       self.ticking_table.partition_by("c").proxy(),
                       ]
@@ -204,7 +205,7 @@ class UpdateByTestCase(BaseTestCase):
         for op in self.simple_ops:
             with self.subTest(op):
                 for pt_proxy in pt_proxies:
-                    rt_proxy = pt_proxy.update_by(ops=op(pairs), by="e")
+                    rt_proxy = pt_proxy.update_by(ops=op, by="e")
 
                     self.assertTrue(rt_proxy.is_refreshing is pt_proxy.is_refreshing)
                     self.assertEqual(len(rt_proxy.target.constituent_table_columns),
