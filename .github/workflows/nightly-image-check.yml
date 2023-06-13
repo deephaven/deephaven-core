@@ -37,7 +37,7 @@ jobs:
           gradle-version: wrapper
 
       - name: Notify Slack
-        uses: slackapi/slack-github-action@v1.15.0
+        uses: slackapi/slack-github-action@v1.24.0
         id: notify-slack
         if: ${{ failure() }}
         env:
