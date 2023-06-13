@@ -3,19 +3,18 @@
 #' This makes it easy to connect to a Deephaven server with any flavor of authentication, and shields the API from
 #' any future changes to the underlying implementation.
 #' 
-#' Currently, we support three different kinds of authentication that your Deephaven server might be using:
+#' Currently, three different kinds of authentication that a Deephaven server might be using are suported:
 #' 
-#' - "default": Default (or anonymous) authentication does not require any username or password. If you are
-#'    running the Deephaven server locally, this is probably the kind of authentication you are using.
+#' - "default": Default (or anonymous) authentication does not require any username or password. If
+#'    running the Deephaven server locally, this is probably the kind of authentication needed.
 #' 
 #' - "basic": Basic authentication requires a standard username and password pair.
 #' 
 #' - "custom": Custom authentication requires general key-value pairs.
 #' 
-#' In addition to setting your authentication parameters when you connect to a client, you can also start
-#' a console in one of our supported server languages. We currently support Python and Groovy, and if you
-#' want start a console upon client connection, ensure that the server being connected to was
-#' started with support for the preferred language.
+#' In addition to setting the authentication parameters when connecting to a client, a console can be
+#' started in one of our supported server languages. Python and Groovy are currently supported, and the
+#' user must ensure that the server being connected to was started with support for the desired console language.
 #' 
 #' @usage NULL
 #' @format NULL
