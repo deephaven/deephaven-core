@@ -175,6 +175,25 @@ def _first_refreshing_table(*args, **kwargs) -> Optional["Table"]:
     return None
 
 
+def _serial_table_operations_safe(
+        ug: Union[UpdateGraph, "Table", "PartitionedTable", "PartitionTableProxy"]) -> bool:
+    """Checks if the current thread is marked as being able to safely call serial operations according to the provided
+    Update Graph (UG) without locking.
+
+    Args:
+        ug (Union[UpdateGraph, Table, PartitionedTable, PartitionTableProxy]): The Update Graph (UG) or a
+            table-like object.
+
+    Returns:
+        True if the current thread is marked as being able to safely call serial operations according to the provided
+            Update Graph (UG), False otherwise.
+    """
+    if not isinstance(ug, UpdateGraph):
+        ug = ug.update_graph
+
+    return ug.j_update_graph.serialTableOperationsSafe()
+
+
 def _current_thread_processes_updates(
         ug: Union[UpdateGraph, "Table", "PartitionedTable", "PartitionTableProxy"]) -> bool:
     """Checks if the current thread processes updates for the provided Update Graph (UG).
@@ -189,7 +208,7 @@ def _current_thread_processes_updates(
     if not isinstance(ug, UpdateGraph):
         ug = ug.update_graph
 
-    return ug.j_update_graph.currentThreadProcessesUpdates
+    return ug.j_update_graph.currentThreadProcessesUpdates()
 
 
 def auto_locking_op(f: Callable) -> Callable:
@@ -204,6 +223,7 @@ def auto_locking_op(f: Callable) -> Callable:
                 or not auto_locking
                 or has_shared_lock(arg)
                 or has_exclusive_lock(arg)
+                or _serial_table_operations_safe(arg)
                 or _current_thread_processes_updates(arg)):
             return f(*args, **kwargs)
 
@@ -224,6 +244,7 @@ def auto_locking_ctx(*args, **kwargs):
             or not auto_locking
             or has_shared_lock(arg)
             or has_exclusive_lock(arg)
+            or _serial_table_operations_safe(arg)
             or _current_thread_processes_updates(arg)):
         yield
     else:

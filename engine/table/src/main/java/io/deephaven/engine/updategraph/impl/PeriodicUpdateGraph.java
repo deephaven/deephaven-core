@@ -1398,8 +1398,7 @@ public class PeriodicUpdateGraph implements UpdateGraph {
             return new IllegalStateException("PeriodicUpdateGraph has not been started yet");
         }
 
-        private PoisonedNotificationProcessor() {
-        }
+        private PoisonedNotificationProcessor() {}
 
         @Override
         public void submit(@NotNull Notification notification) {
@@ -1427,8 +1426,7 @@ public class PeriodicUpdateGraph implements UpdateGraph {
         }
 
         @Override
-        public void shutdown() {
-        }
+        public void shutdown() {}
 
         @Override
         public void onNotificationAdded() {
