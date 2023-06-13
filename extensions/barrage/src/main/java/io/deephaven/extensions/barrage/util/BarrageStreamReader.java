@@ -250,7 +250,8 @@ public class BarrageStreamReader implements StreamReader {
                         for (int ci = 0; ci < msg.modColumnData.length; ++ci) {
                             final BarrageMessage.ModColumnData mcd = msg.modColumnData[ci];
 
-                            long remaining = mcd.rowsModified.size() - numModRowsRead;
+                            // another column may be larger than this column
+                            long remaining = Math.max(0, mcd.rowsModified.size() - numModRowsRead);
 
                             // need to add the batch row data to the column chunks
                             int lastChunkIndex = mcd.data.size() - 1;
