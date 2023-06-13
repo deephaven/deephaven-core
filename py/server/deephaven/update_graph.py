@@ -175,10 +175,27 @@ def _first_refreshing_table(*args, **kwargs) -> Optional["Table"]:
     return None
 
 
+def _current_thread_processes_updates(
+        ug: Union[UpdateGraph, "Table", "PartitionedTable", "PartitionTableProxy"]) -> bool:
+    """Checks if the current thread processes updates for the provided Update Graph (UG).
+
+    Args:
+        ug (Union[UpdateGraph, Table, PartitionedTable, PartitionTableProxy]): The Update Graph (UG) or a
+            table-like object.
+
+    Returns:
+        True if the current thread processes updates for the provided Update Graph (UG), False otherwise.
+    """
+    if not isinstance(ug, UpdateGraph):
+        ug = ug.update_graph
+
+    return ug.j_update_graph.currentThreadProcessesUpdates
+
+
 def auto_locking_op(f: Callable) -> Callable:
     """A decorator for annotating unsafe Table operations. It ensures that the decorated function runs under the UG
     shared lock if ugp.auto_locking is True, the target table-like object or any table-like arguments are refreshing,
-    and the current thread doesn't own any UG locks."""
+    the current thread doesn't own any UG lock, and the current thread is not part of the update graph."""
 
     @wraps(f)
     def do_locked(*args, **kwargs):
@@ -186,7 +203,8 @@ def auto_locking_op(f: Callable) -> Callable:
         if (not arg
                 or not auto_locking
                 or has_shared_lock(arg)
-                or has_exclusive_lock(arg)):
+                or has_exclusive_lock(arg)
+                or _current_thread_processes_updates(arg)):
             return f(*args, **kwargs)
 
         with shared_lock(arg.update_graph):
@@ -198,13 +216,15 @@ def auto_locking_op(f: Callable) -> Callable:
 @contextlib.contextmanager
 def auto_locking_ctx(*args, **kwargs):
     """An auto-locking aware context manager. It ensures that the enclosed code block runs under the UG shared lock if
-    ugp.auto_locking is True, the target table-like object or any table-like arguments are refreshing, and the current
-    thread doesn't own any UG locks."""
+    ugp.auto_locking is True, the target table-like object or any table-like arguments are refreshing, the current
+    thread doesn't own any UG lock, and the current thread is not part of the update graph."""
+
     arg = _first_refreshing_table(*args, **kwargs)
     if (not arg
             or not auto_locking
             or has_shared_lock(arg)
-            or has_exclusive_lock(arg)):
+            or has_exclusive_lock(arg)
+            or _current_thread_processes_updates(arg)):
         yield
     else:
         with shared_lock(arg.update_graph):
