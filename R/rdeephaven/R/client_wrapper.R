@@ -57,7 +57,7 @@ Client <- R6Class("Client",
         #' @description
         #' Imports a new table to the Deephaven server. Note that this new table is not automatically bound to
         #' a variable name on the server. See `?TableHandle` for more information.
-        #' @param table_object An R Data Frame, an R Tibble, an Arrow Table, or an Arrow RecordBatchReader
+        #' @param table_object An R Data Frame, a dplyr Tibble, an Arrow Table, or an Arrow RecordBatchReader
         #' containing the data to import to the server.
         #' @return TableHandle reference to the new table.
         import_table = function(table_object) {
@@ -77,7 +77,7 @@ Client <- R6Class("Client",
                 return(TableHandle$new(private$arrow_to_dh_table(table_object)))
             }
             else {
-                stop(paste0("'table_object' must be either an R Data Frame, an R Tibble, an Arrow Table, or an Arrow Record Batch Reader.
+                stop(paste0("'table_object' must be either an R Data Frame, a dplyr Tibble, an Arrow Table, or an Arrow Record Batch Reader.
                 Got object of class ", table_object_class[[1]], " instead."))
             }
         },
