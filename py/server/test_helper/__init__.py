@@ -41,10 +41,6 @@ def start_jvm(jvm_props: Dict[str, str] = None):
             jvm_properties.update(jvm_props)
 
         jvm_options = {
-            '-XX:InitialRAMPercentage=25.0',
-            '-XX:MinRAMPercentage=70.0',
-            '-XX:MaxRAMPercentage=80.0',
-
             # Allow access to java.nio.Buffer fields
             '--add-opens=java.base/java.nio=ALL-UNNAMED',
 
@@ -59,6 +55,7 @@ def start_jvm(jvm_props: Dict[str, str] = None):
         # Start up the JVM
         jpy.VerboseExceptions.enabled = True
         jvm.init_jvm(
+            jvm_maxmem='1G',
             jvm_classpath=_expand_wildcards_in_list(jvm_classpath.split(os.path.pathsep)),
             jvm_properties=jvm_properties,
             jvm_options=jvm_options
