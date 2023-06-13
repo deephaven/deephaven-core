@@ -189,8 +189,8 @@ public class BarrageBlinkTableTest extends RefreshingTableTestCase {
                     .useDeephavenNulls(useDeephavenNulls)
                     .build();
             final BarrageDataMarshaller marshaller = new BarrageDataMarshaller(
-                    options, barrageTable.getWireChunkTypes(), barrageTable.getWireTypes(),
-                    barrageTable.getWireComponentTypes(),
+                    options, schema.computeWireChunkTypes(), schema.computeWireTypes(),
+                    schema.computeWireComponentTypes(),
                     new BarrageStreamReader(barrageTable.getDeserializationTmConsumer()));
             BarrageMessageRoundTripTest.DummyObserver dummyObserver =
                     new BarrageMessageRoundTripTest.DummyObserver(marshaller, commandQueue);
