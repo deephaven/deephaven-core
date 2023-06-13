@@ -9,19 +9,18 @@ Client options provide a simple interface to the Deephaven server's authenticati
 This makes it easy to connect to a Deephaven server with any flavor of authentication, and shields the API from
 any future changes to the underlying implementation.
 
-Currently, we support three different kinds of authentication that your Deephaven server might be using:
+Currently, three different kinds of authentication that a Deephaven server might be using are suported:
 
-- "default": Default (or anonymous) authentication does not require any username or password. If you are
-   running the Deephaven server locally, this is probably the kind of authentication you are using.
+- "default": Default (or anonymous) authentication does not require any username or password. If
+   running the Deephaven server locally, this is probably the kind of authentication needed.
 
 - "basic": Basic authentication requires a standard username and password pair.
 
 - "custom": Custom authentication requires general key-value pairs.
 
-In addition to setting your authentication parameters when you connect to a client, you can also start
-a console in one of our supported server languages. We currently support Python and Groovy, and if you
-want start a console upon client connection, you must ensure that the server you're connecting to was
-started with support for the language you want to use.
+In addition to setting the authentication parameters when connecting to a client, a console can be
+started in one of our supported server languages. Python and Groovy are currently supported, and the
+user must ensure that the server being connected to was started with support for the desired console language.
 }
 \examples{
 
@@ -60,7 +59,7 @@ Create a ClientOptions instance. This will default to using default (anonymous) 
 \if{html}{\out{<a id="method-ClientOptions-set_default_authentication"></a>}}
 \if{latex}{\out{\hypertarget{method-ClientOptions-set_default_authentication}{}}}
 \subsection{Method \code{set_default_authentication()}}{
-Use default (anonymous) authentication. If you're running a Deephaven server locally, this is likely the kind of authentication it requires.
+Use default (anonymous) authentication. If running a Deephaven server locally, this is likely the kind of authentication needed.
 \subsection{Usage}{
 \if{html}{\out{<div class="r">}}\preformatted{ClientOptions$set_default_authentication()}\if{html}{\out{</div>}}
 }
@@ -108,8 +107,7 @@ Use custom (general key/value based) authentication.
 \if{html}{\out{<a id="method-ClientOptions-set_session_type"></a>}}
 \if{latex}{\out{\hypertarget{method-ClientOptions-set_session_type}{}}}
 \subsection{Method \code{set_session_type()}}{
-Set the session type of the console. Note that this will only work if the running server was already started
-with support for the console you want to use.
+Set the session type of the console (e.g. "python", "groovy", etc.). The session type must be a type supported on the server.
 \subsection{Usage}{
 \if{html}{\out{<div class="r">}}\preformatted{ClientOptions$set_session_type(session_type)}\if{html}{\out{</div>}}
 }
@@ -117,7 +115,7 @@ with support for the console you want to use.
 \subsection{Arguments}{
 \if{html}{\out{<div class="arguments">}}
 \describe{
-\item{\code{session_type}}{Desired language of the console. We currently support "python" or "groovy".}
+\item{\code{session_type}}{Desired language of the console. "python", "groovy", etc.}
 }
 \if{html}{\out{</div>}}
 }
