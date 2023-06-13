@@ -355,8 +355,7 @@ public class BarrageUtil {
         public ChunkType[] computeWireChunkTypes() {
             return tableDef.getColumnStream()
                     .map(ColumnDefinition::getDataType)
-                    .map(ReinterpretUtils::maybeConvertToPrimitiveDataType)
-                    .map(ChunkType::fromElementType)
+                    .map(ReinterpretUtils::maybeConvertToWritablePrimitiveChunkType)
                     .toArray(ChunkType[]::new);
         }
 

@@ -237,6 +237,25 @@ public class ReinterpretUtils {
     }
 
     /**
+     * If {@code dataType} is something that we prefer to handle as a primitive, emit the appropriate {@link ChunkType},
+     * else the normal ChunkType for the data type.
+     *
+     * @param dataType The data type to convert to a {@link ChunkType}
+     * @return the appropriate {@link ChunkType} to use when writing primitives to the destination
+     */
+    @NotNull
+    public static ChunkType maybeConvertToWritablePrimitiveChunkType(@NotNull final Class<?> dataType) {
+        if (dataType == Boolean.class || dataType == boolean.class) {
+            return ChunkType.Byte;
+        }
+        if (dataType == Instant.class) {
+            // Note that storing ZonedDateTime as a primitive is lossy on the time zone.
+            return ChunkType.Long;
+        }
+        return ChunkType.fromElementType(dataType);
+    }
+
+    /**
      * If {@code dataType} is something that we prefer to handle as a primitive, emit the appropriate {@link Class data
      * type to use}, else return {@code dataType}.
      *
