@@ -6,8 +6,7 @@
 \title{Deephaven TableHandles}
 \description{
 Deephaven TableHandles are references to tables living on a Deephaven server. They provide an
-interface for moving data between common R data types and Deephaven tables on the server in an efficient,
-minimum-copy manner, backed by Apache Arrow.
+interface for interacting with tables on the server.
 }
 \examples{
 
@@ -21,11 +20,11 @@ new_table_handle1 <- client$open_table("table_on_the_server")
 # convert the Deephaven table to an R data frame
 new_data_frame <- new_table_handle1$to_data_frame()
 
-# modify new dataframe in R
+# modify new data frame in R
 new_data_frame$New_Int_Col <- c(1, 2, 3, 4, 5)
 new_data_frame$New_String_Col <- c("I", "am", "a", "string", "column")
 
-# push new dataframe to the server and name it "new_table"
+# push new data frame to the server and name it "new_table"
 new_table_handle2 <- client$import_table(new_data_frame)
 new_table_handle2$bind_to_variable("new_table")
 }
@@ -63,7 +62,7 @@ enabling it to be accessed by that name from any Deephaven API.
 \subsection{Arguments}{
 \if{html}{\out{<div class="arguments">}}
 \describe{
-\item{\code{name}}{New name for this table on the server.}
+\item{\code{name}}{Name for this table on the server.}
 }
 \if{html}{\out{</div>}}
 }
