@@ -25,7 +25,7 @@ jobs:
             await script({github, context});
 
       - name: Slack Failure Message
-        uses: slackapi/slack-github-action@v1.15.0
+        uses: slackapi/slack-github-action@v1.24.0
         id: slack-failure-message
         if: failure() && github.ref == 'refs/heads/main' && github.repository_owner == 'deephaven'
         env:

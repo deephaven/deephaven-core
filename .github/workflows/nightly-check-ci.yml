@@ -91,7 +91,7 @@ jobs:
           report_paths: '**/build/test-results/*/TEST-*.xml'
 
       - name: Slack Nightly Failure
-        uses: slackapi/slack-github-action@v1.18.0
+        uses: slackapi/slack-github-action@v1.24.0
         id: slack-nightly-failure
         if: ${{ failure() && github.repository_owner == 'deephaven' }}
         with:
