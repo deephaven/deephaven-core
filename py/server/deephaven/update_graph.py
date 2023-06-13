@@ -24,6 +24,10 @@ be released after the table operation finishes. Auto locking is turned on by def
 
 
 class UpdateGraph(JObjectWrapper):
+    """An Update Graph handles table update propagation within the Deephaven query engine. It provides access to
+    various control knobs and tools for ensuring consistency or blocking update processing.
+    """
+
     j_object_type = _JUpdateGraph
 
     @property
