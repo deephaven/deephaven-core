@@ -5,12 +5,6 @@
 #' @usage NULL
 #' @format NULL
 #' @docType class
-#' 
-#' @section Methods
-#' 
-#' - `$open_table(name)`
-#' - `$import_table(table_object)`
-#' - `$run_script(script)`
 #'
 #' @examples
 #' 
