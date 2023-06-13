@@ -26,11 +26,11 @@
 #' # convert the Deephaven table to an R data frame
 #' new_data_frame <- new_table_handle1$to_data_frame()
 #' 
-#' # modify new dataframe in R
+#' # modify new data frame in R
 #' new_data_frame$New_Int_Col <- c(1, 2, 3, 4, 5)
 #' new_data_frame$New_String_Col <- c("I", "am", "a", "string", "column")
 #' 
-#' # push new dataframe to the server and name it "new_table"
+#' # push new data frame to the server and name it "new_table"
 #' new_table_handle2 <- client$import_table(new_data_frame)
 #' new_table_handle2$bind_to_variable("new_table")
 
@@ -48,7 +48,7 @@ TableHandle <- R6Class("TableHandle",
         #' @description
         #' Binds the table referenced by this TableHandle to a variable on the server,
         #' enabling it to be accessed by that name from any Deephaven API.
-        #' @param name New name for this table on the server.
+        #' @param name Name for this table on the server.
         bind_to_variable = function(name) {
             if (class(name)[[1]] != "character") {
                 stop(paste("'name' should be a character or a string. Got object of type ", class(name)[[1]], " instead."))
@@ -88,7 +88,7 @@ TableHandle <- R6Class("TableHandle",
         #' @return A Data Frame containing the data from the table referenced by this TableHandle.
         to_data_frame = function() {
             arrow_tbl = self$to_arrow_table()
-            return(as.data.frame(as.data.frame(arrow_tbl))) # TODO: for some reason as.data.frame on arrow table returns a tibble, not a dataframe
+            return(as.data.frame(as.data.frame(arrow_tbl))) # TODO: for some reason as.data.frame on arrow table returns a tibble, not a data frame
         }
 
     ),
