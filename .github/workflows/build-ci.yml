@@ -105,7 +105,7 @@ jobs:
       # https://github.com/docker/build-push-action/blob/master/docs/advanced/cache.md#github-cache
       # https://github.com/docker/buildx/pull/535
       - name: Docker build server
-        uses: docker/build-push-action@v2
+        uses: docker/build-push-action@v4
         with:
           build-args: |
             BASE=deephaven/server-base:local-build
@@ -118,7 +118,7 @@ jobs:
 
       # Note: server-slim does not need BASE/SERVER build-args like the other server images
       - name: Docker build server slim
-        uses: docker/build-push-action@v2
+        uses: docker/build-push-action@v4
         with:
           build-args: |
             DEEPHAVEN_VERSION=${{ steps.deephaven_version.outputs.deephaven_version }}
@@ -212,7 +212,7 @@ jobs:
           echo "deephaven_version=$(cat build/version)" >> $GITHUB_OUTPUT
 
       - name: Docker build
-        uses: docker/build-push-action@v2
+        uses: docker/build-push-action@v4
         with:
           build-args: |
             DEEPHAVEN_VERSION=${{ steps.deephaven_version.outputs.deephaven_version }}
@@ -299,7 +299,7 @@ jobs:
           echo "deephaven_version=$(cat build/version)" >> $GITHUB_OUTPUT
 
       - name: Build
-        uses: docker/build-push-action@v2
+        uses: docker/build-push-action@v4
         with:
           build-args: |
             DEEPHAVEN_VERSION=${{ steps.deephaven_version.outputs.deephaven_version }}
@@ -390,7 +390,7 @@ jobs:
           echo "deephaven_version=$(cat build/version)" >> $GITHUB_OUTPUT
 
       - name: Docker build
-        uses: docker/build-push-action@v2
+        uses: docker/build-push-action@v4
         with:
           build-args: |
             DEEPHAVEN_VERSION=${{ steps.deephaven_version.outputs.deephaven_version }}
@@ -475,7 +475,7 @@ jobs:
           echo "deephaven_version=$(cat build/version)" >> $GITHUB_OUTPUT
 
       - name: Docker build
-        uses: docker/build-push-action@v2
+        uses: docker/build-push-action@v4
         with:
           build-args: |
             DEEPHAVEN_VERSION=${{ steps.deephaven_version.outputs.deephaven_version }}
