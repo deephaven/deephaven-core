@@ -21,6 +21,7 @@ import io.deephaven.engine.table.Table;
 import io.deephaven.engine.table.TableDefinition;
 import io.deephaven.engine.table.impl.BaseTable;
 import io.deephaven.engine.table.impl.remote.ConstructSnapshot;
+import io.deephaven.engine.table.impl.sources.ReinterpretUtils;
 import io.deephaven.engine.table.impl.util.BarrageMessage;
 import io.deephaven.engine.updategraph.impl.PeriodicUpdateGraph;
 import io.deephaven.extensions.barrage.BarragePerformanceLog;
@@ -349,6 +350,22 @@ public class BarrageUtil {
 
         public ConvertedArrowSchema(final int nCols) {
             this.nCols = nCols;
+        }
+
+        public ChunkType[] computeWireChunkTypes() {
+            return tableDef.getColumnStream()
+                    .map(ColumnDefinition::getDataType)
+                    .map(ReinterpretUtils::maybeConvertToWritablePrimitiveChunkType)
+                    .toArray(ChunkType[]::new);
+        }
+
+        public Class<?>[] computeWireTypes() {
+            return tableDef.getColumnStream().map(ColumnDefinition::getDataType).toArray(Class[]::new);
+        }
+
+        public Class<?>[] computeWireComponentTypes() {
+            return tableDef.getColumnStream()
+                    .map(ColumnDefinition::getComponentType).toArray(Class[]::new);
         }
     }
 
