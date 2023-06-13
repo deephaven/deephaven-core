@@ -27,7 +27,7 @@ jobs:
 
       - name: Setup Crane
         if: ${{ startsWith(github.ref, 'refs/heads/release/v') }}
-        uses: imjasonh/setup-crane@v0.1
+        uses: imjasonh/setup-crane@v0.3
 
       - name: Set JAVA_HOME
         run: echo "JAVA_HOME=${{ steps.setup-java-11.outputs.path }}" >> $GITHUB_ENV
@@ -350,7 +350,7 @@ jobs:
 
       - name: Setup Crane
         if: ${{ startsWith(github.ref, 'refs/heads/release/v') }}
-        uses: imjasonh/setup-crane@v0.1
+        uses: imjasonh/setup-crane@v0.3
 
       - name: Set JAVA_HOME
         run: echo "JAVA_HOME=${{ steps.setup-java-11.outputs.path }}" >> $GITHUB_ENV
