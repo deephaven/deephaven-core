@@ -289,7 +289,7 @@ public class PeriodicUpdateGraph implements UpdateGraph {
             this.updateThreads = numUpdateThreads;
         }
 
-        notificationProcessor = makeNotificationProcessor();
+        notificationProcessor = PoisonedNotificationProcessor.INSTANCE;
         jvmIntrospectionContext = new JvmIntrospectionContext();
 
         refreshThread = new Thread(ThreadInitializationFactory.wrapRunnable(() -> {
@@ -569,7 +569,7 @@ public class PeriodicUpdateGraph implements UpdateGraph {
     }
 
     /**
-     * Start the table run thread.
+     * Install a real NotificationProcessor and start the primary refresh thread.
      *
      * @implNote Must not be in {@link #enableUnitTestMode() unit test} mode.
      */
@@ -578,6 +578,9 @@ public class PeriodicUpdateGraph implements UpdateGraph {
         Assert.eqFalse(unitTestMode, "unitTestMode");
         Assert.eqFalse(allowUnitTestMode, "allowUnitTestMode");
         synchronized (refreshThread) {
+            if (notificationProcessor instanceof PoisonedNotificationProcessor) {
+                notificationProcessor = makeNotificationProcessor();
+            }
             if (!refreshThread.isAlive()) {
                 log.info().append("PeriodicUpdateGraph starting with ").append(updateThreads)
                         .append(" notification processing threads").endl();
@@ -1384,6 +1387,57 @@ public class PeriodicUpdateGraph implements UpdateGraph {
 
         int threadCount() {
             return updateThreads.length;
+        }
+    }
+
+    private static final class PoisonedNotificationProcessor implements NotificationProcessor {
+
+        private static final NotificationProcessor INSTANCE = new PoisonedNotificationProcessor();
+
+        private static RuntimeException notYetStarted() {
+            return new IllegalStateException("PeriodicUpdateGraph has not been started yet");
+        }
+
+        private PoisonedNotificationProcessor() {
+        }
+
+        @Override
+        public void submit(@NotNull Notification notification) {
+            throw notYetStarted();
+        }
+
+        @Override
+        public void submitAll(@NotNull IntrusiveDoublyLinkedQueue<Notification> notifications) {
+            throw notYetStarted();
+        }
+
+        @Override
+        public int outstandingNotificationsCount() {
+            throw notYetStarted();
+        }
+
+        @Override
+        public void doWork() {
+            throw notYetStarted();
+        }
+
+        @Override
+        public void doAllWork() {
+            throw notYetStarted();
+        }
+
+        @Override
+        public void shutdown() {
+        }
+
+        @Override
+        public void onNotificationAdded() {
+            throw notYetStarted();
+        }
+
+        @Override
+        public void beforeNotificationsDrained() {
+            throw notYetStarted();
         }
     }
 
