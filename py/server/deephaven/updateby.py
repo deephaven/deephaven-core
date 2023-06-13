@@ -359,7 +359,6 @@ def emmax_time(ts_col: str, decay_time: Union[int, str], cols: Union[str, List[s
 
      Args:
         ts_col (str): the column in the source table to use for timestamps
-
         decay_time (Union[int, str]): the decay rate, can be expressed as an integer in nanoseconds or a time
             interval string, e.g. "PT00:00:00.001"
         cols (Union[str, List[str]]): the column(s) to be operated on, can include expressions to rename the output,
