@@ -1,7 +1,6 @@
 #' @title Deephaven TableHandles
 #' @description Deephaven TableHandles are references to tables living on a Deephaven server. They provide an
-#' interface for moving data between common R data types and Deephaven tables on the server in an efficient,
-#' minimum-copy manner, backed by Apache Arrow.
+#' interface for interacting with tables on the server.
 #' 
 #' @usage NULL
 #' @format NULL
@@ -13,7 +12,7 @@
 #' - `$to_arrow_record_batch_stream_reader()`
 #' - `$to_arrow_table()`
 #' - `$to_tibble()`
-#' - `to_data_frame()`
+#' - `$to_data_frame()`
 #'
 #' @examples
 #' 

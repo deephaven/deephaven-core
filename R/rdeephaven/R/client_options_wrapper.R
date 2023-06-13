@@ -51,7 +51,7 @@ ClientOptions <- R6Class("ClientOptions",
         },
 
         #' @description
-        #' Use default (anonymous) authentication. If you're running a Deephaven server locally, this is likely the kind of authentication it requires.
+        #' Use default (anonymous) authentication. If you're running a Deephaven server locally, this is likely the kind of authentication needed.
         set_default_authentication = function() {
             self$internal_client_options$set_default_authentication()
         },
@@ -73,9 +73,8 @@ ClientOptions <- R6Class("ClientOptions",
         },
 
         #' @description
-        #' Set the session type of the console. Note that this will only work if the running server was already started
-        #' with support for the console you want to use.
-        #' @param session_type Desired language of the console. We currently support "python" or "groovy".
+        #' Set the session type of the console (e.g. "python", "groovy", etc.). The session type must be a type supported on the server.
+        #' @param session_type Desired language of the console. "python", "groovy", etc.
         set_session_type = function(session_type) {
             self$internal_client_options$set_session_type(session_type)
         },
