@@ -6,10 +6,11 @@ set(CMAKE_CXX_STANDARD 17)
 # for CMAKE_INSTALL_{dir}
 include(GNUInstallDirs)
 
+find_package(absl REQUIRED)
 find_package(Arrow REQUIRED)
 find_package(ArrowFlight REQUIRED HINTS ${Arrow_DIR})
 find_package(Immer REQUIRED)
-find_package(Protobuf REQUIRED)
+find_package(Protobuf CONFIG REQUIRED)
 find_package(gRPC REQUIRED)
 find_package(Threads REQUIRED)
 
@@ -132,6 +133,7 @@ target_include_directories(client PRIVATE "./flatbuf")
 
 target_link_libraries(client PUBLIC dhcore)
 
+#target_link_libraries(client PUBLIC absl::log_internal)
 target_link_libraries(client PUBLIC arrow_flight_static)
 target_link_libraries(client PUBLIC arrow_static)
 target_link_libraries(client PUBLIC immer)

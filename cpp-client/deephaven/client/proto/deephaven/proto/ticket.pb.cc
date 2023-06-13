@@ -4,149 +4,199 @@
 #include "deephaven/proto/ticket.pb.h"
 
 #include <algorithm>
-
-#include <google/protobuf/io/coded_stream.h>
-#include <google/protobuf/extension_set.h>
-#include <google/protobuf/wire_format_lite.h>
-#include <google/protobuf/descriptor.h>
-#include <google/protobuf/generated_message_reflection.h>
-#include <google/protobuf/reflection_ops.h>
-#include <google/protobuf/wire_format.h>
+#include "google/protobuf/io/coded_stream.h"
+#include "google/protobuf/extension_set.h"
+#include "google/protobuf/wire_format_lite.h"
+#include "google/protobuf/descriptor.h"
+#include "google/protobuf/generated_message_reflection.h"
+#include "google/protobuf/reflection_ops.h"
+#include "google/protobuf/wire_format.h"
 // @@protoc_insertion_point(includes)
-#include <google/protobuf/port_def.inc>
 
+// Must be included last.
+#include "google/protobuf/port_def.inc"
 PROTOBUF_PRAGMA_INIT_SEG
-
 namespace _pb = ::PROTOBUF_NAMESPACE_ID;
-namespace _pbi = _pb::internal;
-
+namespace _pbi = ::PROTOBUF_NAMESPACE_ID::internal;
 namespace io {
 namespace deephaven {
 namespace proto {
 namespace backplane {
 namespace grpc {
+template <typename>
 PROTOBUF_CONSTEXPR Ticket::Ticket(
-    ::_pbi::ConstantInitialized)
-  : ticket_(&::_pbi::fixed_address_empty_string, ::_pbi::ConstantInitialized{}){}
+    ::_pbi::ConstantInitialized): _impl_{
+    /*decltype(_impl_.ticket_)*/ {
+    &::_pbi::fixed_address_empty_string, ::_pbi::ConstantInitialized {}
+  }
+
+  , /*decltype(_impl_._cached_size_)*/{}} {}
 struct TicketDefaultTypeInternal {
-  PROTOBUF_CONSTEXPR TicketDefaultTypeInternal()
-      : _instance(::_pbi::ConstantInitialized{}) {}
+  PROTOBUF_CONSTEXPR TicketDefaultTypeInternal() : _instance(::_pbi::ConstantInitialized{}) {}
   ~TicketDefaultTypeInternal() {}
   union {
     Ticket _instance;
   };
 };
-PROTOBUF_ATTRIBUTE_NO_DESTROY PROTOBUF_CONSTINIT PROTOBUF_ATTRIBUTE_INIT_PRIORITY1 TicketDefaultTypeInternal _Ticket_default_instance_;
+
+PROTOBUF_ATTRIBUTE_NO_DESTROY PROTOBUF_CONSTINIT
+    PROTOBUF_ATTRIBUTE_INIT_PRIORITY1 TicketDefaultTypeInternal _Ticket_default_instance_;
+template <typename>
 PROTOBUF_CONSTEXPR TypedTicket::TypedTicket(
-    ::_pbi::ConstantInitialized)
-  : type_(&::_pbi::fixed_address_empty_string, ::_pbi::ConstantInitialized{})
-  , ticket_(nullptr){}
+    ::_pbi::ConstantInitialized): _impl_{
+    /*decltype(_impl_._has_bits_)*/{}
+  , /*decltype(_impl_._cached_size_)*/{}
+  , /*decltype(_impl_.type_)*/ {
+    &::_pbi::fixed_address_empty_string, ::_pbi::ConstantInitialized {}
+  }
+
+  , /*decltype(_impl_.ticket_)*/nullptr} {}
 struct TypedTicketDefaultTypeInternal {
-  PROTOBUF_CONSTEXPR TypedTicketDefaultTypeInternal()
-      : _instance(::_pbi::ConstantInitialized{}) {}
+  PROTOBUF_CONSTEXPR TypedTicketDefaultTypeInternal() : _instance(::_pbi::ConstantInitialized{}) {}
   ~TypedTicketDefaultTypeInternal() {}
   union {
     TypedTicket _instance;
   };
 };
-PROTOBUF_ATTRIBUTE_NO_DESTROY PROTOBUF_CONSTINIT PROTOBUF_ATTRIBUTE_INIT_PRIORITY1 TypedTicketDefaultTypeInternal _TypedTicket_default_instance_;
+
+PROTOBUF_ATTRIBUTE_NO_DESTROY PROTOBUF_CONSTINIT
+    PROTOBUF_ATTRIBUTE_INIT_PRIORITY1 TypedTicketDefaultTypeInternal _TypedTicket_default_instance_;
 }  // namespace grpc
 }  // namespace backplane
 }  // namespace proto
 }  // namespace deephaven
 }  // namespace io
 static ::_pb::Metadata file_level_metadata_deephaven_2fproto_2fticket_2eproto[2];
-static constexpr ::_pb::EnumDescriptor const** file_level_enum_descriptors_deephaven_2fproto_2fticket_2eproto = nullptr;
-static constexpr ::_pb::ServiceDescriptor const** file_level_service_descriptors_deephaven_2fproto_2fticket_2eproto = nullptr;
-
-const uint32_t TableStruct_deephaven_2fproto_2fticket_2eproto::offsets[] PROTOBUF_SECTION_VARIABLE(protodesc_cold) = {
-  ~0u,  // no _has_bits_
-  PROTOBUF_FIELD_OFFSET(::io::deephaven::proto::backplane::grpc::Ticket, _internal_metadata_),
-  ~0u,  // no _extensions_
-  ~0u,  // no _oneof_case_
-  ~0u,  // no _weak_field_map_
-  ~0u,  // no _inlined_string_donated_
-  PROTOBUF_FIELD_OFFSET(::io::deephaven::proto::backplane::grpc::Ticket, ticket_),
-  ~0u,  // no _has_bits_
-  PROTOBUF_FIELD_OFFSET(::io::deephaven::proto::backplane::grpc::TypedTicket, _internal_metadata_),
-  ~0u,  // no _extensions_
-  ~0u,  // no _oneof_case_
-  ~0u,  // no _weak_field_map_
-  ~0u,  // no _inlined_string_donated_
-  PROTOBUF_FIELD_OFFSET(::io::deephaven::proto::backplane::grpc::TypedTicket, ticket_),
-  PROTOBUF_FIELD_OFFSET(::io::deephaven::proto::backplane::grpc::TypedTicket, type_),
+static constexpr const ::_pb::EnumDescriptor**
+    file_level_enum_descriptors_deephaven_2fproto_2fticket_2eproto = nullptr;
+static constexpr const ::_pb::ServiceDescriptor**
+    file_level_service_descriptors_deephaven_2fproto_2fticket_2eproto = nullptr;
+const ::uint32_t TableStruct_deephaven_2fproto_2fticket_2eproto::offsets[] PROTOBUF_SECTION_VARIABLE(
+    protodesc_cold) = {
+    ~0u,  // no _has_bits_
+    PROTOBUF_FIELD_OFFSET(::io::deephaven::proto::backplane::grpc::Ticket, _internal_metadata_),
+    ~0u,  // no _extensions_
+    ~0u,  // no _oneof_case_
+    ~0u,  // no _weak_field_map_
+    ~0u,  // no _inlined_string_donated_
+    ~0u,  // no _split_
+    ~0u,  // no sizeof(Split)
+    PROTOBUF_FIELD_OFFSET(::io::deephaven::proto::backplane::grpc::Ticket, _impl_.ticket_),
+    PROTOBUF_FIELD_OFFSET(::io::deephaven::proto::backplane::grpc::TypedTicket, _impl_._has_bits_),
+    PROTOBUF_FIELD_OFFSET(::io::deephaven::proto::backplane::grpc::TypedTicket, _internal_metadata_),
+    ~0u,  // no _extensions_
+    ~0u,  // no _oneof_case_
+    ~0u,  // no _weak_field_map_
+    ~0u,  // no _inlined_string_donated_
+    ~0u,  // no _split_
+    ~0u,  // no sizeof(Split)
+    PROTOBUF_FIELD_OFFSET(::io::deephaven::proto::backplane::grpc::TypedTicket, _impl_.ticket_),
+    PROTOBUF_FIELD_OFFSET(::io::deephaven::proto::backplane::grpc::TypedTicket, _impl_.type_),
+    0,
+    ~0u,
 };
-static const ::_pbi::MigrationSchema schemas[] PROTOBUF_SECTION_VARIABLE(protodesc_cold) = {
-  { 0, -1, -1, sizeof(::io::deephaven::proto::backplane::grpc::Ticket)},
-  { 7, -1, -1, sizeof(::io::deephaven::proto::backplane::grpc::TypedTicket)},
+
+static const ::_pbi::MigrationSchema
+    schemas[] PROTOBUF_SECTION_VARIABLE(protodesc_cold) = {
+        { 0, -1, -1, sizeof(::io::deephaven::proto::backplane::grpc::Ticket)},
+        { 9, 19, -1, sizeof(::io::deephaven::proto::backplane::grpc::TypedTicket)},
 };
 
 static const ::_pb::Message* const file_default_instances[] = {
-  &::io::deephaven::proto::backplane::grpc::_Ticket_default_instance_._instance,
-  &::io::deephaven::proto::backplane::grpc::_TypedTicket_default_instance_._instance,
+    &::io::deephaven::proto::backplane::grpc::_Ticket_default_instance_._instance,
+    &::io::deephaven::proto::backplane::grpc::_TypedTicket_default_instance_._instance,
 };
-
-const char descriptor_table_protodef_deephaven_2fproto_2fticket_2eproto[] PROTOBUF_SECTION_VARIABLE(protodesc_cold) =
-  "\n\034deephaven/proto/ticket.proto\022!io.deeph"
-  "aven.proto.backplane.grpc\"\030\n\006Ticket\022\016\n\006t"
-  "icket\030\001 \001(\014\"V\n\013TypedTicket\0229\n\006ticket\030\001 \001"
-  "(\0132).io.deephaven.proto.backplane.grpc.T"
-  "icket\022\014\n\004type\030\002 \001(\tBBH\001P\001Z<github.com/de"
-  "ephaven/deephaven-core/go/internal/proto"
-  "/ticketb\006proto3"
-  ;
-static ::_pbi::once_flag descriptor_table_deephaven_2fproto_2fticket_2eproto_once;
+const char descriptor_table_protodef_deephaven_2fproto_2fticket_2eproto[] PROTOBUF_SECTION_VARIABLE(protodesc_cold) = {
+    "\n\034deephaven/proto/ticket.proto\022!io.deeph"
+    "aven.proto.backplane.grpc\"\030\n\006Ticket\022\016\n\006t"
+    "icket\030\001 \001(\014\"V\n\013TypedTicket\0229\n\006ticket\030\001 \001"
+    "(\0132).io.deephaven.proto.backplane.grpc.T"
+    "icket\022\014\n\004type\030\002 \001(\tBBH\001P\001Z<github.com/de"
+    "ephaven/deephaven-core/go/internal/proto"
+    "/ticketb\006proto3"
+};
+static ::absl::once_flag descriptor_table_deephaven_2fproto_2fticket_2eproto_once;
 const ::_pbi::DescriptorTable descriptor_table_deephaven_2fproto_2fticket_2eproto = {
-    false, false, 255, descriptor_table_protodef_deephaven_2fproto_2fticket_2eproto,
+    false,
+    false,
+    255,
+    descriptor_table_protodef_deephaven_2fproto_2fticket_2eproto,
     "deephaven/proto/ticket.proto",
-    &descriptor_table_deephaven_2fproto_2fticket_2eproto_once, nullptr, 0, 2,
-    schemas, file_default_instances, TableStruct_deephaven_2fproto_2fticket_2eproto::offsets,
-    file_level_metadata_deephaven_2fproto_2fticket_2eproto, file_level_enum_descriptors_deephaven_2fproto_2fticket_2eproto,
+    &descriptor_table_deephaven_2fproto_2fticket_2eproto_once,
+    nullptr,
+    0,
+    2,
+    schemas,
+    file_default_instances,
+    TableStruct_deephaven_2fproto_2fticket_2eproto::offsets,
+    file_level_metadata_deephaven_2fproto_2fticket_2eproto,
+    file_level_enum_descriptors_deephaven_2fproto_2fticket_2eproto,
     file_level_service_descriptors_deephaven_2fproto_2fticket_2eproto,
 };
+
+// This function exists to be marked as weak.
+// It can significantly speed up compilation by breaking up LLVM's SCC
+// in the .pb.cc translation units. Large translation units see a
+// reduction of more than 35% of walltime for optimized builds. Without
+// the weak attribute all the messages in the file, including all the
+// vtables and everything they use become part of the same SCC through
+// a cycle like:
+// GetMetadata -> descriptor table -> default instances ->
+//   vtables -> GetMetadata
+// By adding a weak function here we break the connection from the
+// individual vtables back into the descriptor table.
 PROTOBUF_ATTRIBUTE_WEAK const ::_pbi::DescriptorTable* descriptor_table_deephaven_2fproto_2fticket_2eproto_getter() {
   return &descriptor_table_deephaven_2fproto_2fticket_2eproto;
 }
-
 // Force running AddDescriptors() at dynamic initialization time.
-PROTOBUF_ATTRIBUTE_INIT_PRIORITY2 static ::_pbi::AddDescriptorsRunner dynamic_init_dummy_deephaven_2fproto_2fticket_2eproto(&descriptor_table_deephaven_2fproto_2fticket_2eproto);
+PROTOBUF_ATTRIBUTE_INIT_PRIORITY2
+static ::_pbi::AddDescriptorsRunner dynamic_init_dummy_deephaven_2fproto_2fticket_2eproto(&descriptor_table_deephaven_2fproto_2fticket_2eproto);
 namespace io {
 namespace deephaven {
 namespace proto {
 namespace backplane {
 namespace grpc {
-
 // ===================================================================
 
 class Ticket::_Internal {
  public:
 };
 
-Ticket::Ticket(::PROTOBUF_NAMESPACE_ID::Arena* arena,
-                         bool is_message_owned)
-  : ::PROTOBUF_NAMESPACE_ID::Message(arena, is_message_owned) {
-  SharedCtor();
+Ticket::Ticket(::PROTOBUF_NAMESPACE_ID::Arena* arena)
+  : ::PROTOBUF_NAMESPACE_ID::Message(arena) {
+  SharedCtor(arena);
   // @@protoc_insertion_point(arena_constructor:io.deephaven.proto.backplane.grpc.Ticket)
 }
 Ticket::Ticket(const Ticket& from)
   : ::PROTOBUF_NAMESPACE_ID::Message() {
+  Ticket* const _this = this; (void)_this;
+  new (&_impl_) Impl_{
+      decltype(_impl_.ticket_) {}
+
+    , /*decltype(_impl_._cached_size_)*/{}};
+
   _internal_metadata_.MergeFrom<::PROTOBUF_NAMESPACE_ID::UnknownFieldSet>(from._internal_metadata_);
-  ticket_.InitDefault();
+  _impl_.ticket_.InitDefault();
   #ifdef PROTOBUF_FORCE_COPY_DEFAULT_STRING
-    ticket_.Set("", GetArenaForAllocation());
-  #endif // PROTOBUF_FORCE_COPY_DEFAULT_STRING
+        _impl_.ticket_.Set("", GetArenaForAllocation());
+  #endif  // PROTOBUF_FORCE_COPY_DEFAULT_STRING
   if (!from._internal_ticket().empty()) {
-    ticket_.Set(from._internal_ticket(), 
-      GetArenaForAllocation());
+    _this->_impl_.ticket_.Set(from._internal_ticket(), _this->GetArenaForAllocation());
   }
   // @@protoc_insertion_point(copy_constructor:io.deephaven.proto.backplane.grpc.Ticket)
 }
 
-inline void Ticket::SharedCtor() {
-ticket_.InitDefault();
-#ifdef PROTOBUF_FORCE_COPY_DEFAULT_STRING
-  ticket_.Set("", GetArenaForAllocation());
-#endif // PROTOBUF_FORCE_COPY_DEFAULT_STRING
+inline void Ticket::SharedCtor(::_pb::Arena* arena) {
+  (void)arena;
+  new (&_impl_) Impl_{
+      decltype(_impl_.ticket_) {}
+
+    , /*decltype(_impl_._cached_size_)*/{}
+  };
+  _impl_.ticket_.InitDefault();
+  #ifdef PROTOBUF_FORCE_COPY_DEFAULT_STRING
+        _impl_.ticket_.Set("", GetArenaForAllocation());
+  #endif  // PROTOBUF_FORCE_COPY_DEFAULT_STRING
 }
 
 Ticket::~Ticket() {
@@ -159,38 +209,39 @@ Ticket::~Ticket() {
 }
 
 inline void Ticket::SharedDtor() {
-  GOOGLE_DCHECK(GetArenaForAllocation() == nullptr);
-  ticket_.Destroy();
+  ABSL_DCHECK(GetArenaForAllocation() == nullptr);
+  _impl_.ticket_.Destroy();
 }
 
 void Ticket::SetCachedSize(int size) const {
-  _cached_size_.Set(size);
+  _impl_._cached_size_.Set(size);
 }
 
 void Ticket::Clear() {
 // @@protoc_insertion_point(message_clear_start:io.deephaven.proto.backplane.grpc.Ticket)
-  uint32_t cached_has_bits = 0;
+  ::uint32_t cached_has_bits = 0;
   // Prevent compiler warnings about cached_has_bits being unused
   (void) cached_has_bits;
 
-  ticket_.ClearToEmpty();
+  _impl_.ticket_.ClearToEmpty();
   _internal_metadata_.Clear<::PROTOBUF_NAMESPACE_ID::UnknownFieldSet>();
 }
 
 const char* Ticket::_InternalParse(const char* ptr, ::_pbi::ParseContext* ctx) {
 #define CHK_(x) if (PROTOBUF_PREDICT_FALSE(!(x))) goto failure
   while (!ctx->Done(&ptr)) {
-    uint32_t tag;
+    ::uint32_t tag;
     ptr = ::_pbi::ReadTag(ptr, &tag);
     switch (tag >> 3) {
       // bytes ticket = 1;
       case 1:
-        if (PROTOBUF_PREDICT_TRUE(static_cast<uint8_t>(tag) == 10)) {
+        if (PROTOBUF_PREDICT_TRUE(static_cast<::uint8_t>(tag) == 10)) {
           auto str = _internal_mutable_ticket();
           ptr = ::_pbi::InlineGreedyStringParser(str, ptr, ctx);
           CHK_(ptr);
-        } else
+        } else {
           goto handle_unusual;
+        }
         continue;
       default:
         goto handle_unusual;
@@ -215,16 +266,16 @@ failure:
 #undef CHK_
 }
 
-uint8_t* Ticket::_InternalSerialize(
-    uint8_t* target, ::PROTOBUF_NAMESPACE_ID::io::EpsCopyOutputStream* stream) const {
+::uint8_t* Ticket::_InternalSerialize(
+    ::uint8_t* target, ::PROTOBUF_NAMESPACE_ID::io::EpsCopyOutputStream* stream) const {
   // @@protoc_insertion_point(serialize_to_array_start:io.deephaven.proto.backplane.grpc.Ticket)
-  uint32_t cached_has_bits = 0;
+  ::uint32_t cached_has_bits = 0;
   (void) cached_has_bits;
 
   // bytes ticket = 1;
   if (!this->_internal_ticket().empty()) {
-    target = stream->WriteBytesMaybeAliased(
-        1, this->_internal_ticket(), target);
+    const std::string& _s = this->_internal_ticket();
+    target = stream->WriteBytesMaybeAliased(1, _s, target);
   }
 
   if (PROTOBUF_PREDICT_FALSE(_internal_metadata_.have_unknown_fields())) {
@@ -235,47 +286,42 @@ uint8_t* Ticket::_InternalSerialize(
   return target;
 }
 
-size_t Ticket::ByteSizeLong() const {
+::size_t Ticket::ByteSizeLong() const {
 // @@protoc_insertion_point(message_byte_size_start:io.deephaven.proto.backplane.grpc.Ticket)
-  size_t total_size = 0;
+  ::size_t total_size = 0;
 
-  uint32_t cached_has_bits = 0;
+  ::uint32_t cached_has_bits = 0;
   // Prevent compiler warnings about cached_has_bits being unused
   (void) cached_has_bits;
 
   // bytes ticket = 1;
   if (!this->_internal_ticket().empty()) {
-    total_size += 1 +
-      ::PROTOBUF_NAMESPACE_ID::internal::WireFormatLite::BytesSize(
-        this->_internal_ticket());
+    total_size += 1 + ::PROTOBUF_NAMESPACE_ID::internal::WireFormatLite::BytesSize(
+                                    this->_internal_ticket());
   }
 
-  return MaybeComputeUnknownFieldsSize(total_size, &_cached_size_);
+  return MaybeComputeUnknownFieldsSize(total_size, &_impl_._cached_size_);
 }
 
 const ::PROTOBUF_NAMESPACE_ID::Message::ClassData Ticket::_class_data_ = {
-    ::PROTOBUF_NAMESPACE_ID::Message::CopyWithSizeCheck,
+    ::PROTOBUF_NAMESPACE_ID::Message::CopyWithSourceCheck,
     Ticket::MergeImpl
 };
 const ::PROTOBUF_NAMESPACE_ID::Message::ClassData*Ticket::GetClassData() const { return &_class_data_; }
 
-void Ticket::MergeImpl(::PROTOBUF_NAMESPACE_ID::Message* to,
-                      const ::PROTOBUF_NAMESPACE_ID::Message& from) {
-  static_cast<Ticket *>(to)->MergeFrom(
-      static_cast<const Ticket &>(from));
-}
 
-
-void Ticket::MergeFrom(const Ticket& from) {
-// @@protoc_insertion_point(class_specific_merge_from_start:io.deephaven.proto.backplane.grpc.Ticket)
-  GOOGLE_DCHECK_NE(&from, this);
-  uint32_t cached_has_bits = 0;
+void Ticket::MergeImpl(::PROTOBUF_NAMESPACE_ID::Message& to_msg, const ::PROTOBUF_NAMESPACE_ID::Message& from_msg) {
+  auto* const _this = static_cast<Ticket*>(&to_msg);
+  auto& from = static_cast<const Ticket&>(from_msg);
+  // @@protoc_insertion_point(class_specific_merge_from_start:io.deephaven.proto.backplane.grpc.Ticket)
+  ABSL_DCHECK_NE(&from, _this);
+  ::uint32_t cached_has_bits = 0;
   (void) cached_has_bits;
 
   if (!from._internal_ticket().empty()) {
-    _internal_set_ticket(from._internal_ticket());
+    _this->_internal_set_ticket(from._internal_ticket());
   }
-  _internal_metadata_.MergeFrom<::PROTOBUF_NAMESPACE_ID::UnknownFieldSet>(from._internal_metadata_);
+  _this->_internal_metadata_.MergeFrom<::PROTOBUF_NAMESPACE_ID::UnknownFieldSet>(from._internal_metadata_);
 }
 
 void Ticket::CopyFrom(const Ticket& from) {
@@ -294,10 +340,8 @@ void Ticket::InternalSwap(Ticket* other) {
   auto* lhs_arena = GetArenaForAllocation();
   auto* rhs_arena = other->GetArenaForAllocation();
   _internal_metadata_.InternalSwap(&other->_internal_metadata_);
-  ::PROTOBUF_NAMESPACE_ID::internal::ArenaStringPtr::InternalSwap(
-      &ticket_, lhs_arena,
-      &other->ticket_, rhs_arena
-  );
+  ::_pbi::ArenaStringPtr::InternalSwap(&_impl_.ticket_, lhs_arena,
+                                       &other->_impl_.ticket_, rhs_arena);
 }
 
 ::PROTOBUF_NAMESPACE_ID::Metadata Ticket::GetMetadata() const {
@@ -305,49 +349,65 @@ void Ticket::InternalSwap(Ticket* other) {
       &descriptor_table_deephaven_2fproto_2fticket_2eproto_getter, &descriptor_table_deephaven_2fproto_2fticket_2eproto_once,
       file_level_metadata_deephaven_2fproto_2fticket_2eproto[0]);
 }
-
 // ===================================================================
 
 class TypedTicket::_Internal {
  public:
+  using HasBits = decltype(std::declval<TypedTicket>()._impl_._has_bits_);
+  static constexpr ::int32_t kHasBitsOffset =
+    8 * PROTOBUF_FIELD_OFFSET(TypedTicket, _impl_._has_bits_);
   static const ::io::deephaven::proto::backplane::grpc::Ticket& ticket(const TypedTicket* msg);
+  static void set_has_ticket(HasBits* has_bits) {
+    (*has_bits)[0] |= 1u;
+  }
 };
 
 const ::io::deephaven::proto::backplane::grpc::Ticket&
 TypedTicket::_Internal::ticket(const TypedTicket* msg) {
-  return *msg->ticket_;
+  return *msg->_impl_.ticket_;
 }
-TypedTicket::TypedTicket(::PROTOBUF_NAMESPACE_ID::Arena* arena,
-                         bool is_message_owned)
-  : ::PROTOBUF_NAMESPACE_ID::Message(arena, is_message_owned) {
-  SharedCtor();
+TypedTicket::TypedTicket(::PROTOBUF_NAMESPACE_ID::Arena* arena)
+  : ::PROTOBUF_NAMESPACE_ID::Message(arena) {
+  SharedCtor(arena);
   // @@protoc_insertion_point(arena_constructor:io.deephaven.proto.backplane.grpc.TypedTicket)
 }
 TypedTicket::TypedTicket(const TypedTicket& from)
   : ::PROTOBUF_NAMESPACE_ID::Message() {
+  TypedTicket* const _this = this; (void)_this;
+  new (&_impl_) Impl_{
+      decltype(_impl_._has_bits_){from._impl_._has_bits_}
+    , /*decltype(_impl_._cached_size_)*/{}
+    , decltype(_impl_.type_) {}
+
+    , decltype(_impl_.ticket_){nullptr}};
+
   _internal_metadata_.MergeFrom<::PROTOBUF_NAMESPACE_ID::UnknownFieldSet>(from._internal_metadata_);
-  type_.InitDefault();
+  _impl_.type_.InitDefault();
   #ifdef PROTOBUF_FORCE_COPY_DEFAULT_STRING
-    type_.Set("", GetArenaForAllocation());
-  #endif // PROTOBUF_FORCE_COPY_DEFAULT_STRING
+        _impl_.type_.Set("", GetArenaForAllocation());
+  #endif  // PROTOBUF_FORCE_COPY_DEFAULT_STRING
   if (!from._internal_type().empty()) {
-    type_.Set(from._internal_type(), 
-      GetArenaForAllocation());
+    _this->_impl_.type_.Set(from._internal_type(), _this->GetArenaForAllocation());
   }
-  if (from._internal_has_ticket()) {
-    ticket_ = new ::io::deephaven::proto::backplane::grpc::Ticket(*from.ticket_);
-  } else {
-    ticket_ = nullptr;
+  if ((from._impl_._has_bits_[0] & 0x00000001u) != 0) {
+    _this->_impl_.ticket_ = new ::io::deephaven::proto::backplane::grpc::Ticket(*from._impl_.ticket_);
   }
   // @@protoc_insertion_point(copy_constructor:io.deephaven.proto.backplane.grpc.TypedTicket)
 }
 
-inline void TypedTicket::SharedCtor() {
-type_.InitDefault();
-#ifdef PROTOBUF_FORCE_COPY_DEFAULT_STRING
-  type_.Set("", GetArenaForAllocation());
-#endif // PROTOBUF_FORCE_COPY_DEFAULT_STRING
-ticket_ = nullptr;
+inline void TypedTicket::SharedCtor(::_pb::Arena* arena) {
+  (void)arena;
+  new (&_impl_) Impl_{
+      decltype(_impl_._has_bits_){}
+    , /*decltype(_impl_._cached_size_)*/{}
+    , decltype(_impl_.type_) {}
+
+    , decltype(_impl_.ticket_){nullptr}
+  };
+  _impl_.type_.InitDefault();
+  #ifdef PROTOBUF_FORCE_COPY_DEFAULT_STRING
+        _impl_.type_.Set("", GetArenaForAllocation());
+  #endif  // PROTOBUF_FORCE_COPY_DEFAULT_STRING
 }
 
 TypedTicket::~TypedTicket() {
@@ -360,52 +420,57 @@ TypedTicket::~TypedTicket() {
 }
 
 inline void TypedTicket::SharedDtor() {
-  GOOGLE_DCHECK(GetArenaForAllocation() == nullptr);
-  type_.Destroy();
-  if (this != internal_default_instance()) delete ticket_;
+  ABSL_DCHECK(GetArenaForAllocation() == nullptr);
+  _impl_.type_.Destroy();
+  if (this != internal_default_instance()) delete _impl_.ticket_;
 }
 
 void TypedTicket::SetCachedSize(int size) const {
-  _cached_size_.Set(size);
+  _impl_._cached_size_.Set(size);
 }
 
 void TypedTicket::Clear() {
 // @@protoc_insertion_point(message_clear_start:io.deephaven.proto.backplane.grpc.TypedTicket)
-  uint32_t cached_has_bits = 0;
+  ::uint32_t cached_has_bits = 0;
   // Prevent compiler warnings about cached_has_bits being unused
   (void) cached_has_bits;
 
-  type_.ClearToEmpty();
-  if (GetArenaForAllocation() == nullptr && ticket_ != nullptr) {
-    delete ticket_;
+  _impl_.type_.ClearToEmpty();
+  cached_has_bits = _impl_._has_bits_[0];
+  if (cached_has_bits & 0x00000001u) {
+    ABSL_DCHECK(_impl_.ticket_ != nullptr);
+    _impl_.ticket_->Clear();
   }
-  ticket_ = nullptr;
+  _impl_._has_bits_.Clear();
   _internal_metadata_.Clear<::PROTOBUF_NAMESPACE_ID::UnknownFieldSet>();
 }
 
 const char* TypedTicket::_InternalParse(const char* ptr, ::_pbi::ParseContext* ctx) {
 #define CHK_(x) if (PROTOBUF_PREDICT_FALSE(!(x))) goto failure
+  _Internal::HasBits has_bits{};
   while (!ctx->Done(&ptr)) {
-    uint32_t tag;
+    ::uint32_t tag;
     ptr = ::_pbi::ReadTag(ptr, &tag);
     switch (tag >> 3) {
       // .io.deephaven.proto.backplane.grpc.Ticket ticket = 1;
       case 1:
-        if (PROTOBUF_PREDICT_TRUE(static_cast<uint8_t>(tag) == 10)) {
+        if (PROTOBUF_PREDICT_TRUE(static_cast<::uint8_t>(tag) == 10)) {
           ptr = ctx->ParseMessage(_internal_mutable_ticket(), ptr);
           CHK_(ptr);
-        } else
+        } else {
           goto handle_unusual;
+        }
         continue;
       // string type = 2;
       case 2:
-        if (PROTOBUF_PREDICT_TRUE(static_cast<uint8_t>(tag) == 18)) {
+        if (PROTOBUF_PREDICT_TRUE(static_cast<::uint8_t>(tag) == 18)) {
           auto str = _internal_mutable_type();
           ptr = ::_pbi::InlineGreedyStringParser(str, ptr, ctx);
           CHK_(ptr);
           CHK_(::_pbi::VerifyUTF8(str, "io.deephaven.proto.backplane.grpc.TypedTicket.type"));
-        } else
+        } else {
           goto handle_unusual;
+        }
         continue;
       default:
         goto handle_unusual;
@@ -423,6 +488,7 @@ const char* TypedTicket::_InternalParse(const char* ptr, ::_pbi::ParseContext* c
     CHK_(ptr != nullptr);
   }  // while
 message_done:
+  _impl_._has_bits_.Or(has_bits);
   return ptr;
 failure:
   ptr = nullptr;
@@ -430,14 +496,15 @@ failure:
 #undef CHK_
 }
 
-uint8_t* TypedTicket::_InternalSerialize(
-    uint8_t* target, ::PROTOBUF_NAMESPACE_ID::io::EpsCopyOutputStream* stream) const {
+::uint8_t* TypedTicket::_InternalSerialize(
+    ::uint8_t* target, ::PROTOBUF_NAMESPACE_ID::io::EpsCopyOutputStream* stream) const {
   // @@protoc_insertion_point(serialize_to_array_start:io.deephaven.proto.backplane.grpc.TypedTicket)
-  uint32_t cached_has_bits = 0;
+  ::uint32_t cached_has_bits = 0;
   (void) cached_has_bits;
 
+  cached_has_bits = _impl_._has_bits_[0];
   // .io.deephaven.proto.backplane.grpc.Ticket ticket = 1;
-  if (this->_internal_has_ticket()) {
+  if (cached_has_bits & 0x00000001u) {
     target = ::PROTOBUF_NAMESPACE_ID::internal::WireFormatLite::
       InternalWriteMessage(1, _Internal::ticket(this),
         _Internal::ticket(this).GetCachedSize(), target, stream);
@@ -445,12 +512,10 @@ uint8_t* TypedTicket::_InternalSerialize(
 
   // string type = 2;
   if (!this->_internal_type().empty()) {
+    const std::string& _s = this->_internal_type();
     ::PROTOBUF_NAMESPACE_ID::internal::WireFormatLite::VerifyUtf8String(
-      this->_internal_type().data(), static_cast<int>(this->_internal_type().length()),
-      ::PROTOBUF_NAMESPACE_ID::internal::WireFormatLite::SERIALIZE,
-      "io.deephaven.proto.backplane.grpc.TypedTicket.type");
-    target = stream->WriteStringMaybeAliased(
-        2, this->_internal_type(), target);
+        _s.data(), static_cast<int>(_s.length()), ::PROTOBUF_NAMESPACE_ID::internal::WireFormatLite::SERIALIZE, "io.deephaven.proto.backplane.grpc.TypedTicket.type");
+    target = stream->WriteStringMaybeAliased(2, _s, target);
   }
 
   if (PROTOBUF_PREDICT_FALSE(_internal_metadata_.have_unknown_fields())) {
@@ -461,57 +526,54 @@ uint8_t* TypedTicket::_InternalSerialize(
   return target;
 }
 
-size_t TypedTicket::ByteSizeLong() const {
+::size_t TypedTicket::ByteSizeLong() const {
 // @@protoc_insertion_point(message_byte_size_start:io.deephaven.proto.backplane.grpc.TypedTicket)
-  size_t total_size = 0;
+  ::size_t total_size = 0;
 
-  uint32_t cached_has_bits = 0;
+  ::uint32_t cached_has_bits = 0;
   // Prevent compiler warnings about cached_has_bits being unused
   (void) cached_has_bits;
 
   // string type = 2;
   if (!this->_internal_type().empty()) {
-    total_size += 1 +
-      ::PROTOBUF_NAMESPACE_ID::internal::WireFormatLite::StringSize(
-        this->_internal_type());
+    total_size += 1 + ::PROTOBUF_NAMESPACE_ID::internal::WireFormatLite::StringSize(
+                                    this->_internal_type());
   }
 
   // .io.deephaven.proto.backplane.grpc.Ticket ticket = 1;
-  if (this->_internal_has_ticket()) {
+  cached_has_bits = _impl_._has_bits_[0];
+  if (cached_has_bits & 0x00000001u) {
     total_size += 1 +
       ::PROTOBUF_NAMESPACE_ID::internal::WireFormatLite::MessageSize(
-        *ticket_);
+        *_impl_.ticket_);
   }
 
-  return MaybeComputeUnknownFieldsSize(total_size, &_cached_size_);
+  return MaybeComputeUnknownFieldsSize(total_size, &_impl_._cached_size_);
 }
 
 const ::PROTOBUF_NAMESPACE_ID::Message::ClassData TypedTicket::_class_data_ = {
-    ::PROTOBUF_NAMESPACE_ID::Message::CopyWithSizeCheck,
+    ::PROTOBUF_NAMESPACE_ID::Message::CopyWithSourceCheck,
     TypedTicket::MergeImpl
 };
 const ::PROTOBUF_NAMESPACE_ID::Message::ClassData*TypedTicket::GetClassData() const { return &_class_data_; }
 
-void TypedTicket::MergeImpl(::PROTOBUF_NAMESPACE_ID::Message* to,
-                      const ::PROTOBUF_NAMESPACE_ID::Message& from) {
-  static_cast<TypedTicket *>(to)->MergeFrom(
-      static_cast<const TypedTicket &>(from));
-}
 
-
-void TypedTicket::MergeFrom(const TypedTicket& from) {
-// @@protoc_insertion_point(class_specific_merge_from_start:io.deephaven.proto.backplane.grpc.TypedTicket)
-  GOOGLE_DCHECK_NE(&from, this);
-  uint32_t cached_has_bits = 0;
+void TypedTicket::MergeImpl(::PROTOBUF_NAMESPACE_ID::Message& to_msg, const ::PROTOBUF_NAMESPACE_ID::Message& from_msg) {
+  auto* const _this = static_cast<TypedTicket*>(&to_msg);
+  auto& from = static_cast<const TypedTicket&>(from_msg);
+  // @@protoc_insertion_point(class_specific_merge_from_start:io.deephaven.proto.backplane.grpc.TypedTicket)
+  ABSL_DCHECK_NE(&from, _this);
+  ::uint32_t cached_has_bits = 0;
   (void) cached_has_bits;
 
   if (!from._internal_type().empty()) {
-    _internal_set_type(from._internal_type());
+    _this->_internal_set_type(from._internal_type());
   }
-  if (from._internal_has_ticket()) {
-    _internal_mutable_ticket()->::io::deephaven::proto::backplane::grpc::Ticket::MergeFrom(from._internal_ticket());
+  if ((from._impl_._has_bits_[0] & 0x00000001u) != 0) {
+    _this->_internal_mutable_ticket()->::io::deephaven::proto::backplane::grpc::Ticket::MergeFrom(
+        from._internal_ticket());
   }
-  _internal_metadata_.MergeFrom<::PROTOBUF_NAMESPACE_ID::UnknownFieldSet>(from._internal_metadata_);
+  _this->_internal_metadata_.MergeFrom<::PROTOBUF_NAMESPACE_ID::UnknownFieldSet>(from._internal_metadata_);
 }
 
 void TypedTicket::CopyFrom(const TypedTicket& from) {
@@ -530,11 +592,10 @@ void TypedTicket::InternalSwap(TypedTicket* other) {
   auto* lhs_arena = GetArenaForAllocation();
   auto* rhs_arena = other->GetArenaForAllocation();
   _internal_metadata_.InternalSwap(&other->_internal_metadata_);
-  ::PROTOBUF_NAMESPACE_ID::internal::ArenaStringPtr::InternalSwap(
-      &type_, lhs_arena,
-      &other->type_, rhs_arena
-  );
-  swap(ticket_, other->ticket_);
+  swap(_impl_._has_bits_[0], other->_impl_._has_bits_[0]);
+  ::_pbi::ArenaStringPtr::InternalSwap(&_impl_.type_, lhs_arena,
+                                       &other->_impl_.type_, rhs_arena);
+  swap(_impl_.ticket_, other->_impl_.ticket_);
 }
 
 ::PROTOBUF_NAMESPACE_ID::Metadata TypedTicket::GetMetadata() const {
@@ -542,7 +603,6 @@ void TypedTicket::InternalSwap(TypedTicket* other) {
       &descriptor_table_deephaven_2fproto_2fticket_2eproto_getter, &descriptor_table_deephaven_2fproto_2fticket_2eproto_once,
       file_level_metadata_deephaven_2fproto_2fticket_2eproto[1]);
 }
-
 // @@protoc_insertion_point(namespace_scope)
 }  // namespace grpc
 }  // namespace backplane
@@ -559,6 +619,5 @@ Arena::CreateMaybeMessage< ::io::deephaven::proto::backplane::grpc::TypedTicket 
   return Arena::CreateMessageInternal< ::io::deephaven::proto::backplane::grpc::TypedTicket >(arena);
 }
 PROTOBUF_NAMESPACE_CLOSE
-
 // @@protoc_insertion_point(global_scope)
-#include <google/protobuf/port_undef.inc>
+#include "google/protobuf/port_undef.inc"

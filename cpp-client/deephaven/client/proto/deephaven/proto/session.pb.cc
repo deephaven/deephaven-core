@@ -4,193 +4,263 @@
 #include "deephaven/proto/session.pb.h"
 
 #include <algorithm>
-
-#include <google/protobuf/io/coded_stream.h>
-#include <google/protobuf/extension_set.h>
-#include <google/protobuf/wire_format_lite.h>
-#include <google/protobuf/descriptor.h>
-#include <google/protobuf/generated_message_reflection.h>
-#include <google/protobuf/reflection_ops.h>
-#include <google/protobuf/wire_format.h>
+#include "google/protobuf/io/coded_stream.h"
+#include "google/protobuf/extension_set.h"
+#include "google/protobuf/wire_format_lite.h"
+#include "google/protobuf/descriptor.h"
+#include "google/protobuf/generated_message_reflection.h"
+#include "google/protobuf/reflection_ops.h"
+#include "google/protobuf/wire_format.h"
 // @@protoc_insertion_point(includes)
-#include <google/protobuf/port_def.inc>
 
+// Must be included last.
+#include "google/protobuf/port_def.inc"
 PROTOBUF_PRAGMA_INIT_SEG
-
 namespace _pb = ::PROTOBUF_NAMESPACE_ID;
-namespace _pbi = _pb::internal;
-
+namespace _pbi = ::PROTOBUF_NAMESPACE_ID::internal;
 namespace io {
 namespace deephaven {
 namespace proto {
 namespace backplane {
 namespace grpc {
+template <typename>
 PROTOBUF_CONSTEXPR WrappedAuthenticationRequest::WrappedAuthenticationRequest(
-    ::_pbi::ConstantInitialized)
-  : type_(&::_pbi::fixed_address_empty_string, ::_pbi::ConstantInitialized{})
-  , payload_(&::_pbi::fixed_address_empty_string, ::_pbi::ConstantInitialized{}){}
+    ::_pbi::ConstantInitialized): _impl_{
+    /*decltype(_impl_.type_)*/ {
+    &::_pbi::fixed_address_empty_string, ::_pbi::ConstantInitialized {}
+  }
+
+  , /*decltype(_impl_.payload_)*/ {
+    &::_pbi::fixed_address_empty_string, ::_pbi::ConstantInitialized {}
+  }
+
+  , /*decltype(_impl_._cached_size_)*/{}} {}
 struct WrappedAuthenticationRequestDefaultTypeInternal {
-  PROTOBUF_CONSTEXPR WrappedAuthenticationRequestDefaultTypeInternal()
-      : _instance(::_pbi::ConstantInitialized{}) {}
+  PROTOBUF_CONSTEXPR WrappedAuthenticationRequestDefaultTypeInternal() : _instance(::_pbi::ConstantInitialized{}) {}
   ~WrappedAuthenticationRequestDefaultTypeInternal() {}
   union {
     WrappedAuthenticationRequest _instance;
   };
 };
-PROTOBUF_ATTRIBUTE_NO_DESTROY PROTOBUF_CONSTINIT PROTOBUF_ATTRIBUTE_INIT_PRIORITY1 WrappedAuthenticationRequestDefaultTypeInternal _WrappedAuthenticationRequest_default_instance_;
+
+PROTOBUF_ATTRIBUTE_NO_DESTROY PROTOBUF_CONSTINIT
+    PROTOBUF_ATTRIBUTE_INIT_PRIORITY1 WrappedAuthenticationRequestDefaultTypeInternal _WrappedAuthenticationRequest_default_instance_;
+template <typename>
 PROTOBUF_CONSTEXPR HandshakeRequest::HandshakeRequest(
-    ::_pbi::ConstantInitialized)
-  : payload_(&::_pbi::fixed_address_empty_string, ::_pbi::ConstantInitialized{})
-  , auth_protocol_(0){}
+    ::_pbi::ConstantInitialized): _impl_{
+    /*decltype(_impl_.payload_)*/ {
+    &::_pbi::fixed_address_empty_string, ::_pbi::ConstantInitialized {}
+  }
+
+  , /*decltype(_impl_.auth_protocol_)*/ 0
+
+  , /*decltype(_impl_._cached_size_)*/{}} {}
 struct HandshakeRequestDefaultTypeInternal {
-  PROTOBUF_CONSTEXPR HandshakeRequestDefaultTypeInternal()
-      : _instance(::_pbi::ConstantInitialized{}) {}
+  PROTOBUF_CONSTEXPR HandshakeRequestDefaultTypeInternal() : _instance(::_pbi::ConstantInitialized{}) {}
   ~HandshakeRequestDefaultTypeInternal() {}
   union {
     HandshakeRequest _instance;
   };
 };
-PROTOBUF_ATTRIBUTE_NO_DESTROY PROTOBUF_CONSTINIT PROTOBUF_ATTRIBUTE_INIT_PRIORITY1 HandshakeRequestDefaultTypeInternal _HandshakeRequest_default_instance_;
+
+PROTOBUF_ATTRIBUTE_NO_DESTROY PROTOBUF_CONSTINIT
+    PROTOBUF_ATTRIBUTE_INIT_PRIORITY1 HandshakeRequestDefaultTypeInternal _HandshakeRequest_default_instance_;
+template <typename>
 PROTOBUF_CONSTEXPR HandshakeResponse::HandshakeResponse(
-    ::_pbi::ConstantInitialized)
-  : metadata_header_(&::_pbi::fixed_address_empty_string, ::_pbi::ConstantInitialized{})
-  , session_token_(&::_pbi::fixed_address_empty_string, ::_pbi::ConstantInitialized{})
-  , token_deadline_time_millis_(int64_t{0})
-  , token_expiration_delay_millis_(int64_t{0}){}
+    ::_pbi::ConstantInitialized): _impl_{
+    /*decltype(_impl_.metadata_header_)*/ {
+    &::_pbi::fixed_address_empty_string, ::_pbi::ConstantInitialized {}
+  }
+
+  , /*decltype(_impl_.session_token_)*/ {
+    &::_pbi::fixed_address_empty_string, ::_pbi::ConstantInitialized {}
+  }
+
+  , /*decltype(_impl_.token_deadline_time_millis_)*/ ::int64_t{0}
+
+  , /*decltype(_impl_.token_expiration_delay_millis_)*/ ::int64_t{0}
+
+  , /*decltype(_impl_._cached_size_)*/{}} {}
 struct HandshakeResponseDefaultTypeInternal {
-  PROTOBUF_CONSTEXPR HandshakeResponseDefaultTypeInternal()
-      : _instance(::_pbi::ConstantInitialized{}) {}
+  PROTOBUF_CONSTEXPR HandshakeResponseDefaultTypeInternal() : _instance(::_pbi::ConstantInitialized{}) {}
   ~HandshakeResponseDefaultTypeInternal() {}
   union {
     HandshakeResponse _instance;
   };
 };
-PROTOBUF_ATTRIBUTE_NO_DESTROY PROTOBUF_CONSTINIT PROTOBUF_ATTRIBUTE_INIT_PRIORITY1 HandshakeResponseDefaultTypeInternal _HandshakeResponse_default_instance_;
+
+PROTOBUF_ATTRIBUTE_NO_DESTROY PROTOBUF_CONSTINIT
+    PROTOBUF_ATTRIBUTE_INIT_PRIORITY1 HandshakeResponseDefaultTypeInternal _HandshakeResponse_default_instance_;
+template <typename>
 PROTOBUF_CONSTEXPR CloseSessionResponse::CloseSessionResponse(
-    ::_pbi::ConstantInitialized){}
+    ::_pbi::ConstantInitialized) {}
 struct CloseSessionResponseDefaultTypeInternal {
-  PROTOBUF_CONSTEXPR CloseSessionResponseDefaultTypeInternal()
-      : _instance(::_pbi::ConstantInitialized{}) {}
+  PROTOBUF_CONSTEXPR CloseSessionResponseDefaultTypeInternal() : _instance(::_pbi::ConstantInitialized{}) {}
   ~CloseSessionResponseDefaultTypeInternal() {}
   union {
     CloseSessionResponse _instance;
   };
 };
-PROTOBUF_ATTRIBUTE_NO_DESTROY PROTOBUF_CONSTINIT PROTOBUF_ATTRIBUTE_INIT_PRIORITY1 CloseSessionResponseDefaultTypeInternal _CloseSessionResponse_default_instance_;
+
+PROTOBUF_ATTRIBUTE_NO_DESTROY PROTOBUF_CONSTINIT
+    PROTOBUF_ATTRIBUTE_INIT_PRIORITY1 CloseSessionResponseDefaultTypeInternal _CloseSessionResponse_default_instance_;
+template <typename>
 PROTOBUF_CONSTEXPR ReleaseRequest::ReleaseRequest(
-    ::_pbi::ConstantInitialized)
-  : id_(nullptr){}
+    ::_pbi::ConstantInitialized): _impl_{
+    /*decltype(_impl_._has_bits_)*/{}
+  , /*decltype(_impl_._cached_size_)*/{}
+  , /*decltype(_impl_.id_)*/nullptr} {}
 struct ReleaseRequestDefaultTypeInternal {
-  PROTOBUF_CONSTEXPR ReleaseRequestDefaultTypeInternal()
-      : _instance(::_pbi::ConstantInitialized{}) {}
+  PROTOBUF_CONSTEXPR ReleaseRequestDefaultTypeInternal() : _instance(::_pbi::ConstantInitialized{}) {}
   ~ReleaseRequestDefaultTypeInternal() {}
   union {
     ReleaseRequest _instance;
   };
 };
-PROTOBUF_ATTRIBUTE_NO_DESTROY PROTOBUF_CONSTINIT PROTOBUF_ATTRIBUTE_INIT_PRIORITY1 ReleaseRequestDefaultTypeInternal _ReleaseRequest_default_instance_;
+
+PROTOBUF_ATTRIBUTE_NO_DESTROY PROTOBUF_CONSTINIT
+    PROTOBUF_ATTRIBUTE_INIT_PRIORITY1 ReleaseRequestDefaultTypeInternal _ReleaseRequest_default_instance_;
+template <typename>
 PROTOBUF_CONSTEXPR ReleaseResponse::ReleaseResponse(
-    ::_pbi::ConstantInitialized){}
+    ::_pbi::ConstantInitialized) {}
 struct ReleaseResponseDefaultTypeInternal {
-  PROTOBUF_CONSTEXPR ReleaseResponseDefaultTypeInternal()
-      : _instance(::_pbi::ConstantInitialized{}) {}
+  PROTOBUF_CONSTEXPR ReleaseResponseDefaultTypeInternal() : _instance(::_pbi::ConstantInitialized{}) {}
   ~ReleaseResponseDefaultTypeInternal() {}
   union {
     ReleaseResponse _instance;
   };
 };
-PROTOBUF_ATTRIBUTE_NO_DESTROY PROTOBUF_CONSTINIT PROTOBUF_ATTRIBUTE_INIT_PRIORITY1 ReleaseResponseDefaultTypeInternal _ReleaseResponse_default_instance_;
+
+PROTOBUF_ATTRIBUTE_NO_DESTROY PROTOBUF_CONSTINIT
+    PROTOBUF_ATTRIBUTE_INIT_PRIORITY1 ReleaseResponseDefaultTypeInternal _ReleaseResponse_default_instance_;
+template <typename>
 PROTOBUF_CONSTEXPR ExportRequest::ExportRequest(
-    ::_pbi::ConstantInitialized)
-  : source_id_(nullptr)
-  , result_id_(nullptr){}
+    ::_pbi::ConstantInitialized): _impl_{
+    /*decltype(_impl_._has_bits_)*/{}
+  , /*decltype(_impl_._cached_size_)*/{}
+  , /*decltype(_impl_.source_id_)*/nullptr
+  , /*decltype(_impl_.result_id_)*/nullptr} {}
 struct ExportRequestDefaultTypeInternal {
-  PROTOBUF_CONSTEXPR ExportRequestDefaultTypeInternal()
-      : _instance(::_pbi::ConstantInitialized{}) {}
+  PROTOBUF_CONSTEXPR ExportRequestDefaultTypeInternal() : _instance(::_pbi::ConstantInitialized{}) {}
   ~ExportRequestDefaultTypeInternal() {}
   union {
     ExportRequest _instance;
   };
 };
-PROTOBUF_ATTRIBUTE_NO_DESTROY PROTOBUF_CONSTINIT PROTOBUF_ATTRIBUTE_INIT_PRIORITY1 ExportRequestDefaultTypeInternal _ExportRequest_default_instance_;
+
+PROTOBUF_ATTRIBUTE_NO_DESTROY PROTOBUF_CONSTINIT
+    PROTOBUF_ATTRIBUTE_INIT_PRIORITY1 ExportRequestDefaultTypeInternal _ExportRequest_default_instance_;
+template <typename>
 PROTOBUF_CONSTEXPR ExportResponse::ExportResponse(
-    ::_pbi::ConstantInitialized){}
+    ::_pbi::ConstantInitialized) {}
 struct ExportResponseDefaultTypeInternal {
-  PROTOBUF_CONSTEXPR ExportResponseDefaultTypeInternal()
-      : _instance(::_pbi::ConstantInitialized{}) {}
+  PROTOBUF_CONSTEXPR ExportResponseDefaultTypeInternal() : _instance(::_pbi::ConstantInitialized{}) {}
   ~ExportResponseDefaultTypeInternal() {}
   union {
     ExportResponse _instance;
   };
 };
-PROTOBUF_ATTRIBUTE_NO_DESTROY PROTOBUF_CONSTINIT PROTOBUF_ATTRIBUTE_INIT_PRIORITY1 ExportResponseDefaultTypeInternal _ExportResponse_default_instance_;
+
+PROTOBUF_ATTRIBUTE_NO_DESTROY PROTOBUF_CONSTINIT
+    PROTOBUF_ATTRIBUTE_INIT_PRIORITY1 ExportResponseDefaultTypeInternal _ExportResponse_default_instance_;
+template <typename>
 PROTOBUF_CONSTEXPR ExportNotificationRequest::ExportNotificationRequest(
-    ::_pbi::ConstantInitialized){}
+    ::_pbi::ConstantInitialized) {}
 struct ExportNotificationRequestDefaultTypeInternal {
-  PROTOBUF_CONSTEXPR ExportNotificationRequestDefaultTypeInternal()
-      : _instance(::_pbi::ConstantInitialized{}) {}
+  PROTOBUF_CONSTEXPR ExportNotificationRequestDefaultTypeInternal() : _instance(::_pbi::ConstantInitialized{}) {}
   ~ExportNotificationRequestDefaultTypeInternal() {}
   union {
     ExportNotificationRequest _instance;
   };
 };
-PROTOBUF_ATTRIBUTE_NO_DESTROY PROTOBUF_CONSTINIT PROTOBUF_ATTRIBUTE_INIT_PRIORITY1 ExportNotificationRequestDefaultTypeInternal _ExportNotificationRequest_default_instance_;
+
+PROTOBUF_ATTRIBUTE_NO_DESTROY PROTOBUF_CONSTINIT
+    PROTOBUF_ATTRIBUTE_INIT_PRIORITY1 ExportNotificationRequestDefaultTypeInternal _ExportNotificationRequest_default_instance_;
+template <typename>
 PROTOBUF_CONSTEXPR ExportNotification::ExportNotification(
-    ::_pbi::ConstantInitialized)
-  : context_(&::_pbi::fixed_address_empty_string, ::_pbi::ConstantInitialized{})
-  , dependent_handle_(&::_pbi::fixed_address_empty_string, ::_pbi::ConstantInitialized{})
-  , ticket_(nullptr)
-  , export_state_(0)
-{}
+    ::_pbi::ConstantInitialized): _impl_{
+    /*decltype(_impl_._has_bits_)*/{}
+  , /*decltype(_impl_._cached_size_)*/{}
+  , /*decltype(_impl_.context_)*/ {
+    &::_pbi::fixed_address_empty_string, ::_pbi::ConstantInitialized {}
+  }
+
+  , /*decltype(_impl_.dependent_handle_)*/ {
+    &::_pbi::fixed_address_empty_string, ::_pbi::ConstantInitialized {}
+  }
+
+  , /*decltype(_impl_.ticket_)*/nullptr
+  , /*decltype(_impl_.export_state_)*/ 0
+} {}
 struct ExportNotificationDefaultTypeInternal {
-  PROTOBUF_CONSTEXPR ExportNotificationDefaultTypeInternal()
-      : _instance(::_pbi::ConstantInitialized{}) {}
+  PROTOBUF_CONSTEXPR ExportNotificationDefaultTypeInternal() : _instance(::_pbi::ConstantInitialized{}) {}
   ~ExportNotificationDefaultTypeInternal() {}
   union {
     ExportNotification _instance;
   };
 };
-PROTOBUF_ATTRIBUTE_NO_DESTROY PROTOBUF_CONSTINIT PROTOBUF_ATTRIBUTE_INIT_PRIORITY1 ExportNotificationDefaultTypeInternal _ExportNotification_default_instance_;
+
+PROTOBUF_ATTRIBUTE_NO_DESTROY PROTOBUF_CONSTINIT
+    PROTOBUF_ATTRIBUTE_INIT_PRIORITY1 ExportNotificationDefaultTypeInternal _ExportNotification_default_instance_;
+template <typename>
 PROTOBUF_CONSTEXPR TerminationNotificationRequest::TerminationNotificationRequest(
-    ::_pbi::ConstantInitialized){}
+    ::_pbi::ConstantInitialized) {}
 struct TerminationNotificationRequestDefaultTypeInternal {
-  PROTOBUF_CONSTEXPR TerminationNotificationRequestDefaultTypeInternal()
-      : _instance(::_pbi::ConstantInitialized{}) {}
+  PROTOBUF_CONSTEXPR TerminationNotificationRequestDefaultTypeInternal() : _instance(::_pbi::ConstantInitialized{}) {}
   ~TerminationNotificationRequestDefaultTypeInternal() {}
   union {
     TerminationNotificationRequest _instance;
   };
 };
-PROTOBUF_ATTRIBUTE_NO_DESTROY PROTOBUF_CONSTINIT PROTOBUF_ATTRIBUTE_INIT_PRIORITY1 TerminationNotificationRequestDefaultTypeInternal _TerminationNotificationRequest_default_instance_;
+
+PROTOBUF_ATTRIBUTE_NO_DESTROY PROTOBUF_CONSTINIT
+    PROTOBUF_ATTRIBUTE_INIT_PRIORITY1 TerminationNotificationRequestDefaultTypeInternal _TerminationNotificationRequest_default_instance_;
+template <typename>
 PROTOBUF_CONSTEXPR TerminationNotificationResponse_StackTrace::TerminationNotificationResponse_StackTrace(
-    ::_pbi::ConstantInitialized)
-  : elements_()
-  , type_(&::_pbi::fixed_address_empty_string, ::_pbi::ConstantInitialized{})
-  , message_(&::_pbi::fixed_address_empty_string, ::_pbi::ConstantInitialized{}){}
+    ::_pbi::ConstantInitialized): _impl_{
+    /*decltype(_impl_.elements_)*/{}
+  , /*decltype(_impl_.type_)*/ {
+    &::_pbi::fixed_address_empty_string, ::_pbi::ConstantInitialized {}
+  }
+
+  , /*decltype(_impl_.message_)*/ {
+    &::_pbi::fixed_address_empty_string, ::_pbi::ConstantInitialized {}
+  }
+
+  , /*decltype(_impl_._cached_size_)*/{}} {}
 struct TerminationNotificationResponse_StackTraceDefaultTypeInternal {
-  PROTOBUF_CONSTEXPR TerminationNotificationResponse_StackTraceDefaultTypeInternal()
-      : _instance(::_pbi::ConstantInitialized{}) {}
+  PROTOBUF_CONSTEXPR TerminationNotificationResponse_StackTraceDefaultTypeInternal() : _instance(::_pbi::ConstantInitialized{}) {}
   ~TerminationNotificationResponse_StackTraceDefaultTypeInternal() {}
   union {
     TerminationNotificationResponse_StackTrace _instance;
   };
 };
-PROTOBUF_ATTRIBUTE_NO_DESTROY PROTOBUF_CONSTINIT PROTOBUF_ATTRIBUTE_INIT_PRIORITY1 TerminationNotificationResponse_StackTraceDefaultTypeInternal _TerminationNotificationResponse_StackTrace_default_instance_;
+
+PROTOBUF_ATTRIBUTE_NO_DESTROY PROTOBUF_CONSTINIT
+    PROTOBUF_ATTRIBUTE_INIT_PRIORITY1 TerminationNotificationResponse_StackTraceDefaultTypeInternal _TerminationNotificationResponse_StackTrace_default_instance_;
+template <typename>
 PROTOBUF_CONSTEXPR TerminationNotificationResponse::TerminationNotificationResponse(
-    ::_pbi::ConstantInitialized)
-  : stack_traces_()
-  , reason_(&::_pbi::fixed_address_empty_string, ::_pbi::ConstantInitialized{})
-  , abnormal_termination_(false)
-  , is_from_uncaught_exception_(false){}
+    ::_pbi::ConstantInitialized): _impl_{
+    /*decltype(_impl_.stack_traces_)*/{}
+  , /*decltype(_impl_.reason_)*/ {
+    &::_pbi::fixed_address_empty_string, ::_pbi::ConstantInitialized {}
+  }
+
+  , /*decltype(_impl_.abnormal_termination_)*/ false
+
+  , /*decltype(_impl_.is_from_uncaught_exception_)*/ false
+
+  , /*decltype(_impl_._cached_size_)*/{}} {}
 struct TerminationNotificationResponseDefaultTypeInternal {
-  PROTOBUF_CONSTEXPR TerminationNotificationResponseDefaultTypeInternal()
-      : _instance(::_pbi::ConstantInitialized{}) {}
+  PROTOBUF_CONSTEXPR TerminationNotificationResponseDefaultTypeInternal() : _instance(::_pbi::ConstantInitialized{}) {}
   ~TerminationNotificationResponseDefaultTypeInternal() {}
   union {
     TerminationNotificationResponse _instance;
   };
 };
-PROTOBUF_ATTRIBUTE_NO_DESTROY PROTOBUF_CONSTINIT PROTOBUF_ATTRIBUTE_INIT_PRIORITY1 TerminationNotificationResponseDefaultTypeInternal _TerminationNotificationResponse_default_instance_;
+
+PROTOBUF_ATTRIBUTE_NO_DESTROY PROTOBUF_CONSTINIT
+    PROTOBUF_ATTRIBUTE_INIT_PRIORITY1 TerminationNotificationResponseDefaultTypeInternal _TerminationNotificationResponse_default_instance_;
 }  // namespace grpc
 }  // namespace backplane
 }  // namespace proto
@@ -198,225 +268,282 @@ PROTOBUF_ATTRIBUTE_NO_DESTROY PROTOBUF_CONSTINIT PROTOBUF_ATTRIBUTE_INIT_PRIORIT
 }  // namespace io
 static ::_pb::Metadata file_level_metadata_deephaven_2fproto_2fsession_2eproto[13];
 static const ::_pb::EnumDescriptor* file_level_enum_descriptors_deephaven_2fproto_2fsession_2eproto[1];
-static constexpr ::_pb::ServiceDescriptor const** file_level_service_descriptors_deephaven_2fproto_2fsession_2eproto = nullptr;
-
-const uint32_t TableStruct_deephaven_2fproto_2fsession_2eproto::offsets[] PROTOBUF_SECTION_VARIABLE(protodesc_cold) = {
-  ~0u,  // no _has_bits_
-  PROTOBUF_FIELD_OFFSET(::io::deephaven::proto::backplane::grpc::WrappedAuthenticationRequest, _internal_metadata_),
-  ~0u,  // no _extensions_
-  ~0u,  // no _oneof_case_
-  ~0u,  // no _weak_field_map_
-  ~0u,  // no _inlined_string_donated_
-  PROTOBUF_FIELD_OFFSET(::io::deephaven::proto::backplane::grpc::WrappedAuthenticationRequest, type_),
-  PROTOBUF_FIELD_OFFSET(::io::deephaven::proto::backplane::grpc::WrappedAuthenticationRequest, payload_),
-  ~0u,  // no _has_bits_
-  PROTOBUF_FIELD_OFFSET(::io::deephaven::proto::backplane::grpc::HandshakeRequest, _internal_metadata_),
-  ~0u,  // no _extensions_
-  ~0u,  // no _oneof_case_
-  ~0u,  // no _weak_field_map_
-  ~0u,  // no _inlined_string_donated_
-  PROTOBUF_FIELD_OFFSET(::io::deephaven::proto::backplane::grpc::HandshakeRequest, auth_protocol_),
-  PROTOBUF_FIELD_OFFSET(::io::deephaven::proto::backplane::grpc::HandshakeRequest, payload_),
-  ~0u,  // no _has_bits_
-  PROTOBUF_FIELD_OFFSET(::io::deephaven::proto::backplane::grpc::HandshakeResponse, _internal_metadata_),
-  ~0u,  // no _extensions_
-  ~0u,  // no _oneof_case_
-  ~0u,  // no _weak_field_map_
-  ~0u,  // no _inlined_string_donated_
-  PROTOBUF_FIELD_OFFSET(::io::deephaven::proto::backplane::grpc::HandshakeResponse, metadata_header_),
-  PROTOBUF_FIELD_OFFSET(::io::deephaven::proto::backplane::grpc::HandshakeResponse, session_token_),
-  PROTOBUF_FIELD_OFFSET(::io::deephaven::proto::backplane::grpc::HandshakeResponse, token_deadline_time_millis_),
-  PROTOBUF_FIELD_OFFSET(::io::deephaven::proto::backplane::grpc::HandshakeResponse, token_expiration_delay_millis_),
-  ~0u,  // no _has_bits_
-  PROTOBUF_FIELD_OFFSET(::io::deephaven::proto::backplane::grpc::CloseSessionResponse, _internal_metadata_),
-  ~0u,  // no _extensions_
-  ~0u,  // no _oneof_case_
-  ~0u,  // no _weak_field_map_
-  ~0u,  // no _inlined_string_donated_
-  ~0u,  // no _has_bits_
-  PROTOBUF_FIELD_OFFSET(::io::deephaven::proto::backplane::grpc::ReleaseRequest, _internal_metadata_),
-  ~0u,  // no _extensions_
-  ~0u,  // no _oneof_case_
-  ~0u,  // no _weak_field_map_
-  ~0u,  // no _inlined_string_donated_
-  PROTOBUF_FIELD_OFFSET(::io::deephaven::proto::backplane::grpc::ReleaseRequest, id_),
-  ~0u,  // no _has_bits_
-  PROTOBUF_FIELD_OFFSET(::io::deephaven::proto::backplane::grpc::ReleaseResponse, _internal_metadata_),
-  ~0u,  // no _extensions_
-  ~0u,  // no _oneof_case_
-  ~0u,  // no _weak_field_map_
-  ~0u,  // no _inlined_string_donated_
-  ~0u,  // no _has_bits_
-  PROTOBUF_FIELD_OFFSET(::io::deephaven::proto::backplane::grpc::ExportRequest, _internal_metadata_),
-  ~0u,  // no _extensions_
-  ~0u,  // no _oneof_case_
-  ~0u,  // no _weak_field_map_
-  ~0u,  // no _inlined_string_donated_
-  PROTOBUF_FIELD_OFFSET(::io::deephaven::proto::backplane::grpc::ExportRequest, source_id_),
-  PROTOBUF_FIELD_OFFSET(::io::deephaven::proto::backplane::grpc::ExportRequest, result_id_),
-  ~0u,  // no _has_bits_
-  PROTOBUF_FIELD_OFFSET(::io::deephaven::proto::backplane::grpc::ExportResponse, _internal_metadata_),
-  ~0u,  // no _extensions_
-  ~0u,  // no _oneof_case_
-  ~0u,  // no _weak_field_map_
-  ~0u,  // no _inlined_string_donated_
-  ~0u,  // no _has_bits_
-  PROTOBUF_FIELD_OFFSET(::io::deephaven::proto::backplane::grpc::ExportNotificationRequest, _internal_metadata_),
-  ~0u,  // no _extensions_
-  ~0u,  // no _oneof_case_
-  ~0u,  // no _weak_field_map_
-  ~0u,  // no _inlined_string_donated_
-  ~0u,  // no _has_bits_
-  PROTOBUF_FIELD_OFFSET(::io::deephaven::proto::backplane::grpc::ExportNotification, _internal_metadata_),
-  ~0u,  // no _extensions_
-  ~0u,  // no _oneof_case_
-  ~0u,  // no _weak_field_map_
-  ~0u,  // no _inlined_string_donated_
-  PROTOBUF_FIELD_OFFSET(::io::deephaven::proto::backplane::grpc::ExportNotification, ticket_),
-  PROTOBUF_FIELD_OFFSET(::io::deephaven::proto::backplane::grpc::ExportNotification, export_state_),
-  PROTOBUF_FIELD_OFFSET(::io::deephaven::proto::backplane::grpc::ExportNotification, context_),
-  PROTOBUF_FIELD_OFFSET(::io::deephaven::proto::backplane::grpc::ExportNotification, dependent_handle_),
-  ~0u,  // no _has_bits_
-  PROTOBUF_FIELD_OFFSET(::io::deephaven::proto::backplane::grpc::TerminationNotificationRequest, _internal_metadata_),
-  ~0u,  // no _extensions_
-  ~0u,  // no _oneof_case_
-  ~0u,  // no _weak_field_map_
-  ~0u,  // no _inlined_string_donated_
-  ~0u,  // no _has_bits_
-  PROTOBUF_FIELD_OFFSET(::io::deephaven::proto::backplane::grpc::TerminationNotificationResponse_StackTrace, _internal_metadata_),
-  ~0u,  // no _extensions_
-  ~0u,  // no _oneof_case_
-  ~0u,  // no _weak_field_map_
-  ~0u,  // no _inlined_string_donated_
-  PROTOBUF_FIELD_OFFSET(::io::deephaven::proto::backplane::grpc::TerminationNotificationResponse_StackTrace, type_),
-  PROTOBUF_FIELD_OFFSET(::io::deephaven::proto::backplane::grpc::TerminationNotificationResponse_StackTrace, message_),
-  PROTOBUF_FIELD_OFFSET(::io::deephaven::proto::backplane::grpc::TerminationNotificationResponse_StackTrace, elements_),
-  ~0u,  // no _has_bits_
-  PROTOBUF_FIELD_OFFSET(::io::deephaven::proto::backplane::grpc::TerminationNotificationResponse, _internal_metadata_),
-  ~0u,  // no _extensions_
-  ~0u,  // no _oneof_case_
-  ~0u,  // no _weak_field_map_
-  ~0u,  // no _inlined_string_donated_
-  PROTOBUF_FIELD_OFFSET(::io::deephaven::proto::backplane::grpc::TerminationNotificationResponse, abnormal_termination_),
-  PROTOBUF_FIELD_OFFSET(::io::deephaven::proto::backplane::grpc::TerminationNotificationResponse, reason_),
-  PROTOBUF_FIELD_OFFSET(::io::deephaven::proto::backplane::grpc::TerminationNotificationResponse, is_from_uncaught_exception_),
-  PROTOBUF_FIELD_OFFSET(::io::deephaven::proto::backplane::grpc::TerminationNotificationResponse, stack_traces_),
+static constexpr const ::_pb::ServiceDescriptor**
+    file_level_service_descriptors_deephaven_2fproto_2fsession_2eproto = nullptr;
+const ::uint32_t TableStruct_deephaven_2fproto_2fsession_2eproto::offsets[] PROTOBUF_SECTION_VARIABLE(
+    protodesc_cold) = {
+    ~0u,  // no _has_bits_
+    PROTOBUF_FIELD_OFFSET(::io::deephaven::proto::backplane::grpc::WrappedAuthenticationRequest, _internal_metadata_),
+    ~0u,  // no _extensions_
+    ~0u,  // no _oneof_case_
+    ~0u,  // no _weak_field_map_
+    ~0u,  // no _inlined_string_donated_
+    ~0u,  // no _split_
+    ~0u,  // no sizeof(Split)
+    PROTOBUF_FIELD_OFFSET(::io::deephaven::proto::backplane::grpc::WrappedAuthenticationRequest, _impl_.type_),
+    PROTOBUF_FIELD_OFFSET(::io::deephaven::proto::backplane::grpc::WrappedAuthenticationRequest, _impl_.payload_),
+    ~0u,  // no _has_bits_
+    PROTOBUF_FIELD_OFFSET(::io::deephaven::proto::backplane::grpc::HandshakeRequest, _internal_metadata_),
+    ~0u,  // no _extensions_
+    ~0u,  // no _oneof_case_
+    ~0u,  // no _weak_field_map_
+    ~0u,  // no _inlined_string_donated_
+    ~0u,  // no _split_
+    ~0u,  // no sizeof(Split)
+    PROTOBUF_FIELD_OFFSET(::io::deephaven::proto::backplane::grpc::HandshakeRequest, _impl_.auth_protocol_),
+    PROTOBUF_FIELD_OFFSET(::io::deephaven::proto::backplane::grpc::HandshakeRequest, _impl_.payload_),
+    ~0u,  // no _has_bits_
+    PROTOBUF_FIELD_OFFSET(::io::deephaven::proto::backplane::grpc::HandshakeResponse, _internal_metadata_),
+    ~0u,  // no _extensions_
+    ~0u,  // no _oneof_case_
+    ~0u,  // no _weak_field_map_
+    ~0u,  // no _inlined_string_donated_
+    ~0u,  // no _split_
+    ~0u,  // no sizeof(Split)
+    PROTOBUF_FIELD_OFFSET(::io::deephaven::proto::backplane::grpc::HandshakeResponse, _impl_.metadata_header_),
+    PROTOBUF_FIELD_OFFSET(::io::deephaven::proto::backplane::grpc::HandshakeResponse, _impl_.session_token_),
+    PROTOBUF_FIELD_OFFSET(::io::deephaven::proto::backplane::grpc::HandshakeResponse, _impl_.token_deadline_time_millis_),
+    PROTOBUF_FIELD_OFFSET(::io::deephaven::proto::backplane::grpc::HandshakeResponse, _impl_.token_expiration_delay_millis_),
+    ~0u,  // no _has_bits_
+    PROTOBUF_FIELD_OFFSET(::io::deephaven::proto::backplane::grpc::CloseSessionResponse, _internal_metadata_),
+    ~0u,  // no _extensions_
+    ~0u,  // no _oneof_case_
+    ~0u,  // no _weak_field_map_
+    ~0u,  // no _inlined_string_donated_
+    ~0u,  // no _split_
+    ~0u,  // no sizeof(Split)
+    PROTOBUF_FIELD_OFFSET(::io::deephaven::proto::backplane::grpc::ReleaseRequest, _impl_._has_bits_),
+    PROTOBUF_FIELD_OFFSET(::io::deephaven::proto::backplane::grpc::ReleaseRequest, _internal_metadata_),
+    ~0u,  // no _extensions_
+    ~0u,  // no _oneof_case_
+    ~0u,  // no _weak_field_map_
+    ~0u,  // no _inlined_string_donated_
+    ~0u,  // no _split_
+    ~0u,  // no sizeof(Split)
+    PROTOBUF_FIELD_OFFSET(::io::deephaven::proto::backplane::grpc::ReleaseRequest, _impl_.id_),
+    0,
+    ~0u,  // no _has_bits_
+    PROTOBUF_FIELD_OFFSET(::io::deephaven::proto::backplane::grpc::ReleaseResponse, _internal_metadata_),
+    ~0u,  // no _extensions_
+    ~0u,  // no _oneof_case_
+    ~0u,  // no _weak_field_map_
+    ~0u,  // no _inlined_string_donated_
+    ~0u,  // no _split_
+    ~0u,  // no sizeof(Split)
+    PROTOBUF_FIELD_OFFSET(::io::deephaven::proto::backplane::grpc::ExportRequest, _impl_._has_bits_),
+    PROTOBUF_FIELD_OFFSET(::io::deephaven::proto::backplane::grpc::ExportRequest, _internal_metadata_),
+    ~0u,  // no _extensions_
+    ~0u,  // no _oneof_case_
+    ~0u,  // no _weak_field_map_
+    ~0u,  // no _inlined_string_donated_
+    ~0u,  // no _split_
+    ~0u,  // no sizeof(Split)
+    PROTOBUF_FIELD_OFFSET(::io::deephaven::proto::backplane::grpc::ExportRequest, _impl_.source_id_),
+    PROTOBUF_FIELD_OFFSET(::io::deephaven::proto::backplane::grpc::ExportRequest, _impl_.result_id_),
+    0,
+    1,
+    ~0u,  // no _has_bits_
+    PROTOBUF_FIELD_OFFSET(::io::deephaven::proto::backplane::grpc::ExportResponse, _internal_metadata_),
+    ~0u,  // no _extensions_
+    ~0u,  // no _oneof_case_
+    ~0u,  // no _weak_field_map_
+    ~0u,  // no _inlined_string_donated_
+    ~0u,  // no _split_
+    ~0u,  // no sizeof(Split)
+    ~0u,  // no _has_bits_
+    PROTOBUF_FIELD_OFFSET(::io::deephaven::proto::backplane::grpc::ExportNotificationRequest, _internal_metadata_),
+    ~0u,  // no _extensions_
+    ~0u,  // no _oneof_case_
+    ~0u,  // no _weak_field_map_
+    ~0u,  // no _inlined_string_donated_
+    ~0u,  // no _split_
+    ~0u,  // no sizeof(Split)
+    PROTOBUF_FIELD_OFFSET(::io::deephaven::proto::backplane::grpc::ExportNotification, _impl_._has_bits_),
+    PROTOBUF_FIELD_OFFSET(::io::deephaven::proto::backplane::grpc::ExportNotification, _internal_metadata_),
+    ~0u,  // no _extensions_
+    ~0u,  // no _oneof_case_
+    ~0u,  // no _weak_field_map_
+    ~0u,  // no _inlined_string_donated_
+    ~0u,  // no _split_
+    ~0u,  // no sizeof(Split)
+    PROTOBUF_FIELD_OFFSET(::io::deephaven::proto::backplane::grpc::ExportNotification, _impl_.ticket_),
+    PROTOBUF_FIELD_OFFSET(::io::deephaven::proto::backplane::grpc::ExportNotification, _impl_.export_state_),
+    PROTOBUF_FIELD_OFFSET(::io::deephaven::proto::backplane::grpc::ExportNotification, _impl_.context_),
+    PROTOBUF_FIELD_OFFSET(::io::deephaven::proto::backplane::grpc::ExportNotification, _impl_.dependent_handle_),
+    0,
+    ~0u,
+    ~0u,
+    ~0u,
+    ~0u,  // no _has_bits_
+    PROTOBUF_FIELD_OFFSET(::io::deephaven::proto::backplane::grpc::TerminationNotificationRequest, _internal_metadata_),
+    ~0u,  // no _extensions_
+    ~0u,  // no _oneof_case_
+    ~0u,  // no _weak_field_map_
+    ~0u,  // no _inlined_string_donated_
+    ~0u,  // no _split_
+    ~0u,  // no sizeof(Split)
+    ~0u,  // no _has_bits_
+    PROTOBUF_FIELD_OFFSET(::io::deephaven::proto::backplane::grpc::TerminationNotificationResponse_StackTrace, _internal_metadata_),
+    ~0u,  // no _extensions_
+    ~0u,  // no _oneof_case_
+    ~0u,  // no _weak_field_map_
+    ~0u,  // no _inlined_string_donated_
+    ~0u,  // no _split_
+    ~0u,  // no sizeof(Split)
+    PROTOBUF_FIELD_OFFSET(::io::deephaven::proto::backplane::grpc::TerminationNotificationResponse_StackTrace, _impl_.type_),
+    PROTOBUF_FIELD_OFFSET(::io::deephaven::proto::backplane::grpc::TerminationNotificationResponse_StackTrace, _impl_.message_),
+    PROTOBUF_FIELD_OFFSET(::io::deephaven::proto::backplane::grpc::TerminationNotificationResponse_StackTrace, _impl_.elements_),
+    ~0u,  // no _has_bits_
+    PROTOBUF_FIELD_OFFSET(::io::deephaven::proto::backplane::grpc::TerminationNotificationResponse, _internal_metadata_),
+    ~0u,  // no _extensions_
+    ~0u,  // no _oneof_case_
+    ~0u,  // no _weak_field_map_
+    ~0u,  // no _inlined_string_donated_
+    ~0u,  // no _split_
+    ~0u,  // no sizeof(Split)
+    PROTOBUF_FIELD_OFFSET(::io::deephaven::proto::backplane::grpc::TerminationNotificationResponse, _impl_.abnormal_termination_),
+    PROTOBUF_FIELD_OFFSET(::io::deephaven::proto::backplane::grpc::TerminationNotificationResponse, _impl_.reason_),
+    PROTOBUF_FIELD_OFFSET(::io::deephaven::proto::backplane::grpc::TerminationNotificationResponse, _impl_.is_from_uncaught_exception_),
+    PROTOBUF_FIELD_OFFSET(::io::deephaven::proto::backplane::grpc::TerminationNotificationResponse, _impl_.stack_traces_),
 };
-static const ::_pbi::MigrationSchema schemas[] PROTOBUF_SECTION_VARIABLE(protodesc_cold) = {
-  { 0, -1, -1, sizeof(::io::deephaven::proto::backplane::grpc::WrappedAuthenticationRequest)},
-  { 8, -1, -1, sizeof(::io::deephaven::proto::backplane::grpc::HandshakeRequest)},
-  { 16, -1, -1, sizeof(::io::deephaven::proto::backplane::grpc::HandshakeResponse)},
-  { 26, -1, -1, sizeof(::io::deephaven::proto::backplane::grpc::CloseSessionResponse)},
-  { 32, -1, -1, sizeof(::io::deephaven::proto::backplane::grpc::ReleaseRequest)},
-  { 39, -1, -1, sizeof(::io::deephaven::proto::backplane::grpc::ReleaseResponse)},
-  { 45, -1, -1, sizeof(::io::deephaven::proto::backplane::grpc::ExportRequest)},
-  { 53, -1, -1, sizeof(::io::deephaven::proto::backplane::grpc::ExportResponse)},
-  { 59, -1, -1, sizeof(::io::deephaven::proto::backplane::grpc::ExportNotificationRequest)},
-  { 65, -1, -1, sizeof(::io::deephaven::proto::backplane::grpc::ExportNotification)},
-  { 75, -1, -1, sizeof(::io::deephaven::proto::backplane::grpc::TerminationNotificationRequest)},
-  { 81, -1, -1, sizeof(::io::deephaven::proto::backplane::grpc::TerminationNotificationResponse_StackTrace)},
-  { 90, -1, -1, sizeof(::io::deephaven::proto::backplane::grpc::TerminationNotificationResponse)},
+
+static const ::_pbi::MigrationSchema
+    schemas[] PROTOBUF_SECTION_VARIABLE(protodesc_cold) = {
+        { 0, -1, -1, sizeof(::io::deephaven::proto::backplane::grpc::WrappedAuthenticationRequest)},
+        { 10, -1, -1, sizeof(::io::deephaven::proto::backplane::grpc::HandshakeRequest)},
+        { 20, -1, -1, sizeof(::io::deephaven::proto::backplane::grpc::HandshakeResponse)},
+        { 32, -1, -1, sizeof(::io::deephaven::proto::backplane::grpc::CloseSessionResponse)},
+        { 40, 49, -1, sizeof(::io::deephaven::proto::backplane::grpc::ReleaseRequest)},
+        { 50, -1, -1, sizeof(::io::deephaven::proto::backplane::grpc::ReleaseResponse)},
+        { 58, 68, -1, sizeof(::io::deephaven::proto::backplane::grpc::ExportRequest)},
+        { 70, -1, -1, sizeof(::io::deephaven::proto::backplane::grpc::ExportResponse)},
+        { 78, -1, -1, sizeof(::io::deephaven::proto::backplane::grpc::ExportNotificationRequest)},
+        { 86, 98, -1, sizeof(::io::deephaven::proto::backplane::grpc::ExportNotification)},
+        { 102, -1, -1, sizeof(::io::deephaven::proto::backplane::grpc::TerminationNotificationRequest)},
+        { 110, -1, -1, sizeof(::io::deephaven::proto::backplane::grpc::TerminationNotificationResponse_StackTrace)},
+        { 121, -1, -1, sizeof(::io::deephaven::proto::backplane::grpc::TerminationNotificationResponse)},
 };
 
 static const ::_pb::Message* const file_default_instances[] = {
-  &::io::deephaven::proto::backplane::grpc::_WrappedAuthenticationRequest_default_instance_._instance,
-  &::io::deephaven::proto::backplane::grpc::_HandshakeRequest_default_instance_._instance,
-  &::io::deephaven::proto::backplane::grpc::_HandshakeResponse_default_instance_._instance,
-  &::io::deephaven::proto::backplane::grpc::_CloseSessionResponse_default_instance_._instance,
-  &::io::deephaven::proto::backplane::grpc::_ReleaseRequest_default_instance_._instance,
-  &::io::deephaven::proto::backplane::grpc::_ReleaseResponse_default_instance_._instance,
-  &::io::deephaven::proto::backplane::grpc::_ExportRequest_default_instance_._instance,
-  &::io::deephaven::proto::backplane::grpc::_ExportResponse_default_instance_._instance,
-  &::io::deephaven::proto::backplane::grpc::_ExportNotificationRequest_default_instance_._instance,
-  &::io::deephaven::proto::backplane::grpc::_ExportNotification_default_instance_._instance,
-  &::io::deephaven::proto::backplane::grpc::_TerminationNotificationRequest_default_instance_._instance,
-  &::io::deephaven::proto::backplane::grpc::_TerminationNotificationResponse_StackTrace_default_instance_._instance,
-  &::io::deephaven::proto::backplane::grpc::_TerminationNotificationResponse_default_instance_._instance,
+    &::io::deephaven::proto::backplane::grpc::_WrappedAuthenticationRequest_default_instance_._instance,
+    &::io::deephaven::proto::backplane::grpc::_HandshakeRequest_default_instance_._instance,
+    &::io::deephaven::proto::backplane::grpc::_HandshakeResponse_default_instance_._instance,
+    &::io::deephaven::proto::backplane::grpc::_CloseSessionResponse_default_instance_._instance,
+    &::io::deephaven::proto::backplane::grpc::_ReleaseRequest_default_instance_._instance,
+    &::io::deephaven::proto::backplane::grpc::_ReleaseResponse_default_instance_._instance,
+    &::io::deephaven::proto::backplane::grpc::_ExportRequest_default_instance_._instance,
+    &::io::deephaven::proto::backplane::grpc::_ExportResponse_default_instance_._instance,
+    &::io::deephaven::proto::backplane::grpc::_ExportNotificationRequest_default_instance_._instance,
+    &::io::deephaven::proto::backplane::grpc::_ExportNotification_default_instance_._instance,
+    &::io::deephaven::proto::backplane::grpc::_TerminationNotificationRequest_default_instance_._instance,
+    &::io::deephaven::proto::backplane::grpc::_TerminationNotificationResponse_StackTrace_default_instance_._instance,
+    &::io::deephaven::proto::backplane::grpc::_TerminationNotificationResponse_default_instance_._instance,
 };
-
-const char descriptor_table_protodef_deephaven_2fproto_2fsession_2eproto[] PROTOBUF_SECTION_VARIABLE(protodesc_cold) =
-  "\n\035deephaven/proto/session.proto\022!io.deep"
-  "haven.proto.backplane.grpc\032\034deephaven/pr"
-  "oto/ticket.proto\"I\n\034WrappedAuthenticatio"
-  "nRequest\022\014\n\004type\030\004 \001(\t\022\017\n\007payload\030\005 \001(\014J"
-  "\004\010\002\020\003J\004\010\003\020\004\"B\n\020HandshakeRequest\022\031\n\rauth_"
-  "protocol\030\001 \001(\021B\002\030\001\022\023\n\007payload\030\002 \001(\014B\002\030\001\""
-  "\242\001\n\021HandshakeResponse\022\033\n\017metadata_header"
-  "\030\001 \001(\014B\002\030\001\022\031\n\rsession_token\030\002 \001(\014B\002\030\001\022(\n"
-  "\032token_deadline_time_millis\030\003 \001(\022B\004\030\0010\001\022"
-  "+\n\035token_expiration_delay_millis\030\004 \001(\022B\004"
-  "\030\0010\001\"\026\n\024CloseSessionResponse\"G\n\016ReleaseR"
-  "equest\0225\n\002id\030\001 \001(\0132).io.deephaven.proto."
-  "backplane.grpc.Ticket\"\021\n\017ReleaseResponse"
-  "\"\213\001\n\rExportRequest\022<\n\tsource_id\030\001 \001(\0132)."
-  "io.deephaven.proto.backplane.grpc.Ticket"
-  "\022<\n\tresult_id\030\002 \001(\0132).io.deephaven.proto"
-  ".backplane.grpc.Ticket\"\020\n\016ExportResponse"
-  "\"\033\n\031ExportNotificationRequest\"\267\003\n\022Export"
-  "Notification\0229\n\006ticket\030\001 \001(\0132).io.deepha"
-  "ven.proto.backplane.grpc.Ticket\022Q\n\014expor"
-  "t_state\030\002 \001(\0162;.io.deephaven.proto.backp"
-  "lane.grpc.ExportNotification.State\022\017\n\007co"
-  "ntext\030\003 \001(\t\022\030\n\020dependent_handle\030\004 \001(\t\"\347\001"
-  "\n\005State\022\013\n\007UNKNOWN\020\000\022\013\n\007PENDING\020\001\022\016\n\nPUB"
-  "LISHING\020\002\022\n\n\006QUEUED\020\003\022\013\n\007RUNNING\020\004\022\014\n\010EX"
-  "PORTED\020\005\022\014\n\010RELEASED\020\006\022\r\n\tCANCELLED\020\007\022\n\n"
-  "\006FAILED\020\010\022\025\n\021DEPENDENCY_FAILED\020\t\022\032\n\026DEPE"
-  "NDENCY_NEVER_FOUND\020\n\022\030\n\024DEPENDENCY_CANCE"
-  "LLED\020\013\022\027\n\023DEPENDENCY_RELEASED\020\014\" \n\036Termi"
-  "nationNotificationRequest\"\227\002\n\037Terminatio"
-  "nNotificationResponse\022\034\n\024abnormal_termin"
-  "ation\030\001 \001(\010\022\016\n\006reason\030\002 \001(\t\022\"\n\032is_from_u"
-  "ncaught_exception\030\003 \001(\010\022c\n\014stack_traces\030"
-  "\004 \003(\0132M.io.deephaven.proto.backplane.grp"
-  "c.TerminationNotificationResponse.StackT"
-  "race\032=\n\nStackTrace\022\014\n\004type\030\001 \001(\t\022\017\n\007mess"
-  "age\030\002 \001(\t\022\020\n\010elements\030\003 \003(\t2\273\007\n\016SessionS"
-  "ervice\022|\n\nNewSession\0223.io.deephaven.prot"
-  "o.backplane.grpc.HandshakeRequest\0324.io.d"
-  "eephaven.proto.backplane.grpc.HandshakeR"
-  "esponse\"\003\210\002\001\022\205\001\n\023RefreshSessionToken\0223.i"
-  "o.deephaven.proto.backplane.grpc.Handsha"
-  "keRequest\0324.io.deephaven.proto.backplane"
-  ".grpc.HandshakeResponse\"\003\210\002\001\022~\n\014CloseSes"
-  "sion\0223.io.deephaven.proto.backplane.grpc"
-  ".HandshakeRequest\0327.io.deephaven.proto.b"
-  "ackplane.grpc.CloseSessionResponse\"\000\022r\n\007"
-  "Release\0221.io.deephaven.proto.backplane.g"
-  "rpc.ReleaseRequest\0322.io.deephaven.proto."
-  "backplane.grpc.ReleaseResponse\"\000\022y\n\020Expo"
-  "rtFromTicket\0220.io.deephaven.proto.backpl"
-  "ane.grpc.ExportRequest\0321.io.deephaven.pr"
-  "oto.backplane.grpc.ExportResponse\"\000\022\216\001\n\023"
-  "ExportNotifications\022<.io.deephaven.proto"
-  ".backplane.grpc.ExportNotificationReques"
-  "t\0325.io.deephaven.proto.backplane.grpc.Ex"
-  "portNotification\"\0000\001\022\242\001\n\027TerminationNoti"
-  "fication\022A.io.deephaven.proto.backplane."
-  "grpc.TerminationNotificationRequest\032B.io"
-  ".deephaven.proto.backplane.grpc.Terminat"
-  "ionNotificationResponse\"\000BCH\001P\001Z=github."
-  "com/deephaven/deephaven-core/go/internal"
-  "/proto/sessionb\006proto3"
-  ;
-static const ::_pbi::DescriptorTable* const descriptor_table_deephaven_2fproto_2fsession_2eproto_deps[1] = {
-  &::descriptor_table_deephaven_2fproto_2fticket_2eproto,
+const char descriptor_table_protodef_deephaven_2fproto_2fsession_2eproto[] PROTOBUF_SECTION_VARIABLE(protodesc_cold) = {
+    "\n\035deephaven/proto/session.proto\022!io.deep"
+    "haven.proto.backplane.grpc\032\034deephaven/pr"
+    "oto/ticket.proto\"I\n\034WrappedAuthenticatio"
+    "nRequest\022\014\n\004type\030\004 \001(\t\022\017\n\007payload\030\005 \001(\014J"
+    "\004\010\002\020\003J\004\010\003\020\004\"B\n\020HandshakeRequest\022\031\n\rauth_"
+    "protocol\030\001 \001(\021B\002\030\001\022\023\n\007payload\030\002 \001(\014B\002\030\001\""
+    "\242\001\n\021HandshakeResponse\022\033\n\017metadata_header"
+    "\030\001 \001(\014B\002\030\001\022\031\n\rsession_token\030\002 \001(\014B\002\030\001\022(\n"
+    "\032token_deadline_time_millis\030\003 \001(\022B\004\030\0010\001\022"
+    "+\n\035token_expiration_delay_millis\030\004 \001(\022B\004"
+    "\030\0010\001\"\026\n\024CloseSessionResponse\"G\n\016ReleaseR"
+    "equest\0225\n\002id\030\001 \001(\0132).io.deephaven.proto."
+    "backplane.grpc.Ticket\"\021\n\017ReleaseResponse"
+    "\"\213\001\n\rExportRequest\022<\n\tsource_id\030\001 \001(\0132)."
+    "io.deephaven.proto.backplane.grpc.Ticket"
+    "\022<\n\tresult_id\030\002 \001(\0132).io.deephaven.proto"
+    ".backplane.grpc.Ticket\"\020\n\016ExportResponse"
+    "\"\033\n\031ExportNotificationRequest\"\267\003\n\022Export"
+    "Notification\0229\n\006ticket\030\001 \001(\0132).io.deepha"
+    "ven.proto.backplane.grpc.Ticket\022Q\n\014expor"
+    "t_state\030\002 \001(\0162;.io.deephaven.proto.backp"
+    "lane.grpc.ExportNotification.State\022\017\n\007co"
+    "ntext\030\003 \001(\t\022\030\n\020dependent_handle\030\004 \001(\t\"\347\001"
+    "\n\005State\022\013\n\007UNKNOWN\020\000\022\013\n\007PENDING\020\001\022\016\n\nPUB"
+    "LISHING\020\002\022\n\n\006QUEUED\020\003\022\013\n\007RUNNING\020\004\022\014\n\010EX"
+    "PORTED\020\005\022\014\n\010RELEASED\020\006\022\r\n\tCANCELLED\020\007\022\n\n"
+    "\006FAILED\020\010\022\025\n\021DEPENDENCY_FAILED\020\t\022\032\n\026DEPE"
+    "NDENCY_NEVER_FOUND\020\n\022\030\n\024DEPENDENCY_CANCE"
+    "LLED\020\013\022\027\n\023DEPENDENCY_RELEASED\020\014\" \n\036Termi"
+    "nationNotificationRequest\"\227\002\n\037Terminatio"
+    "nNotificationResponse\022\034\n\024abnormal_termin"
+    "ation\030\001 \001(\010\022\016\n\006reason\030\002 \001(\t\022\"\n\032is_from_u"
+    "ncaught_exception\030\003 \001(\010\022c\n\014stack_traces\030"
+    "\004 \003(\0132M.io.deephaven.proto.backplane.grp"
+    "c.TerminationNotificationResponse.StackT"
+    "race\032=\n\nStackTrace\022\014\n\004type\030\001 \001(\t\022\017\n\007mess"
+    "age\030\002 \001(\t\022\020\n\010elements\030\003 \003(\t2\273\007\n\016SessionS"
+    "ervice\022|\n\nNewSession\0223.io.deephaven.prot"
+    "o.backplane.grpc.HandshakeRequest\0324.io.d"
+    "eephaven.proto.backplane.grpc.HandshakeR"
+    "esponse\"\003\210\002\001\022\205\001\n\023RefreshSessionToken\0223.i"
+    "o.deephaven.proto.backplane.grpc.Handsha"
+    "keRequest\0324.io.deephaven.proto.backplane"
+    ".grpc.HandshakeResponse\"\003\210\002\001\022~\n\014CloseSes"
+    "sion\0223.io.deephaven.proto.backplane.grpc"
+    ".HandshakeRequest\0327.io.deephaven.proto.b"
+    "ackplane.grpc.CloseSessionResponse\"\000\022r\n\007"
+    "Release\0221.io.deephaven.proto.backplane.g"
+    "rpc.ReleaseRequest\0322.io.deephaven.proto."
+    "backplane.grpc.ReleaseResponse\"\000\022y\n\020Expo"
+    "rtFromTicket\0220.io.deephaven.proto.backpl"
+    "ane.grpc.ExportRequest\0321.io.deephaven.pr"
+    "oto.backplane.grpc.ExportResponse\"\000\022\216\001\n\023"
+    "ExportNotifications\022<.io.deephaven.proto"
+    ".backplane.grpc.ExportNotificationReques"
+    "t\0325.io.deephaven.proto.backplane.grpc.Ex"
+    "portNotification\"\0000\001\022\242\001\n\027TerminationNoti"
+    "fication\022A.io.deephaven.proto.backplane."
+    "grpc.TerminationNotificationRequest\032B.io"
+    ".deephaven.proto.backplane.grpc.Terminat"
+    "ionNotificationResponse\"\000BCH\001P\001Z=github."
+    "com/deephaven/deephaven-core/go/internal"
+    "/proto/sessionb\006proto3"
 };
-static ::_pbi::once_flag descriptor_table_deephaven_2fproto_2fsession_2eproto_once;
+static const ::_pbi::DescriptorTable* const descriptor_table_deephaven_2fproto_2fsession_2eproto_deps[1] =
+    {
+        &::descriptor_table_deephaven_2fproto_2fticket_2eproto,
+};
+static ::absl::once_flag descriptor_table_deephaven_2fproto_2fsession_2eproto_once;
 const ::_pbi::DescriptorTable descriptor_table_deephaven_2fproto_2fsession_2eproto = {
-    false, false, 2502, descriptor_table_protodef_deephaven_2fproto_2fsession_2eproto,
+    false,
+    false,
+    2502,
+    descriptor_table_protodef_deephaven_2fproto_2fsession_2eproto,
     "deephaven/proto/session.proto",
-    &descriptor_table_deephaven_2fproto_2fsession_2eproto_once, descriptor_table_deephaven_2fproto_2fsession_2eproto_deps, 1, 13,
-    schemas, file_default_instances, TableStruct_deephaven_2fproto_2fsession_2eproto::offsets,
-    file_level_metadata_deephaven_2fproto_2fsession_2eproto, file_level_enum_descriptors_deephaven_2fproto_2fsession_2eproto,
+    &descriptor_table_deephaven_2fproto_2fsession_2eproto_once,
+    descriptor_table_deephaven_2fproto_2fsession_2eproto_deps,
+    1,
+    13,
+    schemas,
+    file_default_instances,
+    TableStruct_deephaven_2fproto_2fsession_2eproto::offsets,
+    file_level_metadata_deephaven_2fproto_2fsession_2eproto,
+    file_level_enum_descriptors_deephaven_2fproto_2fsession_2eproto,
     file_level_service_descriptors_deephaven_2fproto_2fsession_2eproto,
 };
+
+// This function exists to be marked as weak.
+// It can significantly speed up compilation by breaking up LLVM's SCC
+// in the .pb.cc translation units. Large translation units see a
+// reduction of more than 35% of walltime for optimized builds. Without
+// the weak attribute all the messages in the file, including all the
+// vtables and everything they use become part of the same SCC through
+// a cycle like:
+// GetMetadata -> descriptor table -> default instances ->
+//   vtables -> GetMetadata
+// By adding a weak function here we break the connection from the
+// individual vtables back into the descriptor table.
 PROTOBUF_ATTRIBUTE_WEAK const ::_pbi::DescriptorTable* descriptor_table_deephaven_2fproto_2fsession_2eproto_getter() {
   return &descriptor_table_deephaven_2fproto_2fsession_2eproto;
 }
-
 // Force running AddDescriptors() at dynamic initialization time.
-PROTOBUF_ATTRIBUTE_INIT_PRIORITY2 static ::_pbi::AddDescriptorsRunner dynamic_init_dummy_deephaven_2fproto_2fsession_2eproto(&descriptor_table_deephaven_2fproto_2fsession_2eproto);
+PROTOBUF_ATTRIBUTE_INIT_PRIORITY2
+static ::_pbi::AddDescriptorsRunner dynamic_init_dummy_deephaven_2fproto_2fsession_2eproto(&descriptor_table_deephaven_2fproto_2fsession_2eproto);
 namespace io {
 namespace deephaven {
 namespace proto {
@@ -446,8 +573,9 @@ bool ExportNotification_State_IsValid(int value) {
       return false;
   }
 }
+#if (__cplusplus < 201703) && \
+  (!defined(_MSC_VER) || (_MSC_VER >= 1900 && _MSC_VER < 1912))
 
-#if (__cplusplus < 201703) && (!defined(_MSC_VER) || (_MSC_VER >= 1900 && _MSC_VER < 1912))
 constexpr ExportNotification_State ExportNotification::UNKNOWN;
 constexpr ExportNotification_State ExportNotification::PENDING;
 constexpr ExportNotification_State ExportNotification::PUBLISHING;
@@ -464,51 +592,65 @@ constexpr ExportNotification_State ExportNotification::DEPENDENCY_RELEASED;
 constexpr ExportNotification_State ExportNotification::State_MIN;
 constexpr ExportNotification_State ExportNotification::State_MAX;
 constexpr int ExportNotification::State_ARRAYSIZE;
-#endif  // (__cplusplus < 201703) && (!defined(_MSC_VER) || (_MSC_VER >= 1900 && _MSC_VER < 1912))
 
+#endif  // (__cplusplus < 201703) &&
+        // (!defined(_MSC_VER) || (_MSC_VER >= 1900 && _MSC_VER < 1912))
 // ===================================================================
 
 class WrappedAuthenticationRequest::_Internal {
  public:
 };
 
-WrappedAuthenticationRequest::WrappedAuthenticationRequest(::PROTOBUF_NAMESPACE_ID::Arena* arena,
-                         bool is_message_owned)
-  : ::PROTOBUF_NAMESPACE_ID::Message(arena, is_message_owned) {
-  SharedCtor();
+WrappedAuthenticationRequest::WrappedAuthenticationRequest(::PROTOBUF_NAMESPACE_ID::Arena* arena)
+  : ::PROTOBUF_NAMESPACE_ID::Message(arena) {
+  SharedCtor(arena);
   // @@protoc_insertion_point(arena_constructor:io.deephaven.proto.backplane.grpc.WrappedAuthenticationRequest)
 }
 WrappedAuthenticationRequest::WrappedAuthenticationRequest(const WrappedAuthenticationRequest& from)
   : ::PROTOBUF_NAMESPACE_ID::Message() {
+  WrappedAuthenticationRequest* const _this = this; (void)_this;
+  new (&_impl_) Impl_{
+      decltype(_impl_.type_) {}
+
+    , decltype(_impl_.payload_) {}
+
+    , /*decltype(_impl_._cached_size_)*/{}};
+
   _internal_metadata_.MergeFrom<::PROTOBUF_NAMESPACE_ID::UnknownFieldSet>(from._internal_metadata_);
-  type_.InitDefault();
+  _impl_.type_.InitDefault();
   #ifdef PROTOBUF_FORCE_COPY_DEFAULT_STRING
-    type_.Set("", GetArenaForAllocation());
-  #endif // PROTOBUF_FORCE_COPY_DEFAULT_STRING
+        _impl_.type_.Set("", GetArenaForAllocation());
+  #endif  // PROTOBUF_FORCE_COPY_DEFAULT_STRING
   if (!from._internal_type().empty()) {
-    type_.Set(from._internal_type(), 
-      GetArenaForAllocation());
+    _this->_impl_.type_.Set(from._internal_type(), _this->GetArenaForAllocation());
   }
-  payload_.InitDefault();
+  _impl_.payload_.InitDefault();
   #ifdef PROTOBUF_FORCE_COPY_DEFAULT_STRING
-    payload_.Set("", GetArenaForAllocation());
-  #endif // PROTOBUF_FORCE_COPY_DEFAULT_STRING
+        _impl_.payload_.Set("", GetArenaForAllocation());
+  #endif  // PROTOBUF_FORCE_COPY_DEFAULT_STRING
   if (!from._internal_payload().empty()) {
-    payload_.Set(from._internal_payload(), 
-      GetArenaForAllocation());
+    _this->_impl_.payload_.Set(from._internal_payload(), _this->GetArenaForAllocation());
   }
   // @@protoc_insertion_point(copy_constructor:io.deephaven.proto.backplane.grpc.WrappedAuthenticationRequest)
 }
 
-inline void WrappedAuthenticationRequest::SharedCtor() {
-type_.InitDefault();
-#ifdef PROTOBUF_FORCE_COPY_DEFAULT_STRING
-  type_.Set("", GetArenaForAllocation());
-#endif // PROTOBUF_FORCE_COPY_DEFAULT_STRING
-payload_.InitDefault();
-#ifdef PROTOBUF_FORCE_COPY_DEFAULT_STRING
-  payload_.Set("", GetArenaForAllocation());
-#endif // PROTOBUF_FORCE_COPY_DEFAULT_STRING
+inline void WrappedAuthenticationRequest::SharedCtor(::_pb::Arena* arena) {
+  (void)arena;
+  new (&_impl_) Impl_{
+      decltype(_impl_.type_) {}
+
+    , decltype(_impl_.payload_) {}
+
+    , /*decltype(_impl_._cached_size_)*/{}
+  };
+  _impl_.type_.InitDefault();
+  #ifdef PROTOBUF_FORCE_COPY_DEFAULT_STRING
+        _impl_.type_.Set("", GetArenaForAllocation());
+  #endif  // PROTOBUF_FORCE_COPY_DEFAULT_STRING
+  _impl_.payload_.InitDefault();
+  #ifdef PROTOBUF_FORCE_COPY_DEFAULT_STRING
+        _impl_.payload_.Set("", GetArenaForAllocation());
+  #endif  // PROTOBUF_FORCE_COPY_DEFAULT_STRING
 }
 
 WrappedAuthenticationRequest::~WrappedAuthenticationRequest() {
@@ -521,50 +663,52 @@ WrappedAuthenticationRequest::~WrappedAuthenticationRequest() {
 }
 
 inline void WrappedAuthenticationRequest::SharedDtor() {
-  GOOGLE_DCHECK(GetArenaForAllocation() == nullptr);
-  type_.Destroy();
-  payload_.Destroy();
+  ABSL_DCHECK(GetArenaForAllocation() == nullptr);
+  _impl_.type_.Destroy();
+  _impl_.payload_.Destroy();
 }
 
 void WrappedAuthenticationRequest::SetCachedSize(int size) const {
-  _cached_size_.Set(size);
+  _impl_._cached_size_.Set(size);
 }
 
 void WrappedAuthenticationRequest::Clear() {
 // @@protoc_insertion_point(message_clear_start:io.deephaven.proto.backplane.grpc.WrappedAuthenticationRequest)
-  uint32_t cached_has_bits = 0;
+  ::uint32_t cached_has_bits = 0;
   // Prevent compiler warnings about cached_has_bits being unused
   (void) cached_has_bits;
 
-  type_.ClearToEmpty();
-  payload_.ClearToEmpty();
+  _impl_.type_.ClearToEmpty();
+  _impl_.payload_.ClearToEmpty();
   _internal_metadata_.Clear<::PROTOBUF_NAMESPACE_ID::UnknownFieldSet>();
 }
 
 const char* WrappedAuthenticationRequest::_InternalParse(const char* ptr, ::_pbi::ParseContext* ctx) {
 #define CHK_(x) if (PROTOBUF_PREDICT_FALSE(!(x))) goto failure
   while (!ctx->Done(&ptr)) {
-    uint32_t tag;
+    ::uint32_t tag;
     ptr = ::_pbi::ReadTag(ptr, &tag);
     switch (tag >> 3) {
       // string type = 4;
       case 4:
-        if (PROTOBUF_PREDICT_TRUE(static_cast<uint8_t>(tag) == 34)) {
+        if (PROTOBUF_PREDICT_TRUE(static_cast<::uint8_t>(tag) == 34)) {
           auto str = _internal_mutable_type();
           ptr = ::_pbi::InlineGreedyStringParser(str, ptr, ctx);
           CHK_(ptr);
           CHK_(::_pbi::VerifyUTF8(str, "io.deephaven.proto.backplane.grpc.WrappedAuthenticationRequest.type"));
-        } else
+        } else {
           goto handle_unusual;
+        }
         continue;
       // bytes payload = 5;
       case 5:
-        if (PROTOBUF_PREDICT_TRUE(static_cast<uint8_t>(tag) == 42)) {
+        if (PROTOBUF_PREDICT_TRUE(static_cast<::uint8_t>(tag) == 42)) {
           auto str = _internal_mutable_payload();
           ptr = ::_pbi::InlineGreedyStringParser(str, ptr, ctx);
           CHK_(ptr);
-        } else
+        } else {
           goto handle_unusual;
+        }
         continue;
       default:
         goto handle_unusual;
@@ -589,26 +733,24 @@ failure:
 #undef CHK_
 }
 
-uint8_t* WrappedAuthenticationRequest::_InternalSerialize(
-    uint8_t* target, ::PROTOBUF_NAMESPACE_ID::io::EpsCopyOutputStream* stream) const {
+::uint8_t* WrappedAuthenticationRequest::_InternalSerialize(
+    ::uint8_t* target, ::PROTOBUF_NAMESPACE_ID::io::EpsCopyOutputStream* stream) const {
   // @@protoc_insertion_point(serialize_to_array_start:io.deephaven.proto.backplane.grpc.WrappedAuthenticationRequest)
-  uint32_t cached_has_bits = 0;
+  ::uint32_t cached_has_bits = 0;
   (void) cached_has_bits;
 
   // string type = 4;
   if (!this->_internal_type().empty()) {
+    const std::string& _s = this->_internal_type();
     ::PROTOBUF_NAMESPACE_ID::internal::WireFormatLite::VerifyUtf8String(
-      this->_internal_type().data(), static_cast<int>(this->_internal_type().length()),
-      ::PROTOBUF_NAMESPACE_ID::internal::WireFormatLite::SERIALIZE,
-      "io.deephaven.proto.backplane.grpc.WrappedAuthenticationRequest.type");
-    target = stream->WriteStringMaybeAliased(
-        4, this->_internal_type(), target);
+        _s.data(), static_cast<int>(_s.length()), ::PROTOBUF_NAMESPACE_ID::internal::WireFormatLite::SERIALIZE, "io.deephaven.proto.backplane.grpc.WrappedAuthenticationRequest.type");
+    target = stream->WriteStringMaybeAliased(4, _s, target);
   }
 
   // bytes payload = 5;
   if (!this->_internal_payload().empty()) {
-    target = stream->WriteBytesMaybeAliased(
-        5, this->_internal_payload(), target);
+    const std::string& _s = this->_internal_payload();
+    target = stream->WriteBytesMaybeAliased(5, _s, target);
   }
 
   if (PROTOBUF_PREDICT_FALSE(_internal_metadata_.have_unknown_fields())) {
@@ -619,57 +761,51 @@ uint8_t* WrappedAuthenticationRequest::_InternalSerialize(
   return target;
 }
 
-size_t WrappedAuthenticationRequest::ByteSizeLong() const {
+::size_t WrappedAuthenticationRequest::ByteSizeLong() const {
 // @@protoc_insertion_point(message_byte_size_start:io.deephaven.proto.backplane.grpc.WrappedAuthenticationRequest)
-  size_t total_size = 0;
+  ::size_t total_size = 0;
 
-  uint32_t cached_has_bits = 0;
+  ::uint32_t cached_has_bits = 0;
   // Prevent compiler warnings about cached_has_bits being unused
   (void) cached_has_bits;
 
   // string type = 4;
   if (!this->_internal_type().empty()) {
-    total_size += 1 +
-      ::PROTOBUF_NAMESPACE_ID::internal::WireFormatLite::StringSize(
-        this->_internal_type());
+    total_size += 1 + ::PROTOBUF_NAMESPACE_ID::internal::WireFormatLite::StringSize(
+                                    this->_internal_type());
   }
 
   // bytes payload = 5;
   if (!this->_internal_payload().empty()) {
-    total_size += 1 +
-      ::PROTOBUF_NAMESPACE_ID::internal::WireFormatLite::BytesSize(
-        this->_internal_payload());
+    total_size += 1 + ::PROTOBUF_NAMESPACE_ID::internal::WireFormatLite::BytesSize(
+                                    this->_internal_payload());
   }
 
-  return MaybeComputeUnknownFieldsSize(total_size, &_cached_size_);
+  return MaybeComputeUnknownFieldsSize(total_size, &_impl_._cached_size_);
 }
 
 const ::PROTOBUF_NAMESPACE_ID::Message::ClassData WrappedAuthenticationRequest::_class_data_ = {
-    ::PROTOBUF_NAMESPACE_ID::Message::CopyWithSizeCheck,
+    ::PROTOBUF_NAMESPACE_ID::Message::CopyWithSourceCheck,
     WrappedAuthenticationRequest::MergeImpl
 };
 const ::PROTOBUF_NAMESPACE_ID::Message::ClassData*WrappedAuthenticationRequest::GetClassData() const { return &_class_data_; }
 
-void WrappedAuthenticationRequest::MergeImpl(::PROTOBUF_NAMESPACE_ID::Message* to,
-                      const ::PROTOBUF_NAMESPACE_ID::Message& from) {
-  static_cast<WrappedAuthenticationRequest *>(to)->MergeFrom(
-      static_cast<const WrappedAuthenticationRequest &>(from));
-}
 
-
-void WrappedAuthenticationRequest::MergeFrom(const WrappedAuthenticationRequest& from) {
-// @@protoc_insertion_point(class_specific_merge_from_start:io.deephaven.proto.backplane.grpc.WrappedAuthenticationRequest)
-  GOOGLE_DCHECK_NE(&from, this);
-  uint32_t cached_has_bits = 0;
+void WrappedAuthenticationRequest::MergeImpl(::PROTOBUF_NAMESPACE_ID::Message& to_msg, const ::PROTOBUF_NAMESPACE_ID::Message& from_msg) {
+  auto* const _this = static_cast<WrappedAuthenticationRequest*>(&to_msg);
+  auto& from = static_cast<const WrappedAuthenticationRequest&>(from_msg);
+  // @@protoc_insertion_point(class_specific_merge_from_start:io.deephaven.proto.backplane.grpc.WrappedAuthenticationRequest)
+  ABSL_DCHECK_NE(&from, _this);
+  ::uint32_t cached_has_bits = 0;
   (void) cached_has_bits;
 
   if (!from._internal_type().empty()) {
-    _internal_set_type(from._internal_type());
+    _this->_internal_set_type(from._internal_type());
   }
   if (!from._internal_payload().empty()) {
-    _internal_set_payload(from._internal_payload());
+    _this->_internal_set_payload(from._internal_payload());
   }
-  _internal_metadata_.MergeFrom<::PROTOBUF_NAMESPACE_ID::UnknownFieldSet>(from._internal_metadata_);
+  _this->_internal_metadata_.MergeFrom<::PROTOBUF_NAMESPACE_ID::UnknownFieldSet>(from._internal_metadata_);
 }
 
 void WrappedAuthenticationRequest::CopyFrom(const WrappedAuthenticationRequest& from) {
@@ -688,14 +824,10 @@ void WrappedAuthenticationRequest::InternalSwap(WrappedAuthenticationRequest* ot
   auto* lhs_arena = GetArenaForAllocation();
   auto* rhs_arena = other->GetArenaForAllocation();
   _internal_metadata_.InternalSwap(&other->_internal_metadata_);
-  ::PROTOBUF_NAMESPACE_ID::internal::ArenaStringPtr::InternalSwap(
-      &type_, lhs_arena,
-      &other->type_, rhs_arena
-  );
-  ::PROTOBUF_NAMESPACE_ID::internal::ArenaStringPtr::InternalSwap(
-      &payload_, lhs_arena,
-      &other->payload_, rhs_arena
-  );
+  ::_pbi::ArenaStringPtr::InternalSwap(&_impl_.type_, lhs_arena,
+                                       &other->_impl_.type_, rhs_arena);
+  ::_pbi::ArenaStringPtr::InternalSwap(&_impl_.payload_, lhs_arena,
+                                       &other->_impl_.payload_, rhs_arena);
 }
 
 ::PROTOBUF_NAMESPACE_ID::Metadata WrappedAuthenticationRequest::GetMetadata() const {
@@ -703,40 +835,52 @@ void WrappedAuthenticationRequest::InternalSwap(WrappedAuthenticationRequest* ot
       &descriptor_table_deephaven_2fproto_2fsession_2eproto_getter, &descriptor_table_deephaven_2fproto_2fsession_2eproto_once,
       file_level_metadata_deephaven_2fproto_2fsession_2eproto[0]);
 }
-
 // ===================================================================
 
 class HandshakeRequest::_Internal {
  public:
 };
 
-HandshakeRequest::HandshakeRequest(::PROTOBUF_NAMESPACE_ID::Arena* arena,
-                         bool is_message_owned)
-  : ::PROTOBUF_NAMESPACE_ID::Message(arena, is_message_owned) {
-  SharedCtor();
+HandshakeRequest::HandshakeRequest(::PROTOBUF_NAMESPACE_ID::Arena* arena)
+  : ::PROTOBUF_NAMESPACE_ID::Message(arena) {
+  SharedCtor(arena);
   // @@protoc_insertion_point(arena_constructor:io.deephaven.proto.backplane.grpc.HandshakeRequest)
 }
 HandshakeRequest::HandshakeRequest(const HandshakeRequest& from)
   : ::PROTOBUF_NAMESPACE_ID::Message() {
+  HandshakeRequest* const _this = this; (void)_this;
+  new (&_impl_) Impl_{
+      decltype(_impl_.payload_) {}
+
+    , decltype(_impl_.auth_protocol_) {}
+
+    , /*decltype(_impl_._cached_size_)*/{}};
+
   _internal_metadata_.MergeFrom<::PROTOBUF_NAMESPACE_ID::UnknownFieldSet>(from._internal_metadata_);
-  payload_.InitDefault();
+  _impl_.payload_.InitDefault();
   #ifdef PROTOBUF_FORCE_COPY_DEFAULT_STRING
-    payload_.Set("", GetArenaForAllocation());
-  #endif // PROTOBUF_FORCE_COPY_DEFAULT_STRING
+        _impl_.payload_.Set("", GetArenaForAllocation());
+  #endif  // PROTOBUF_FORCE_COPY_DEFAULT_STRING
   if (!from._internal_payload().empty()) {
-    payload_.Set(from._internal_payload(), 
-      GetArenaForAllocation());
+    _this->_impl_.payload_.Set(from._internal_payload(), _this->GetArenaForAllocation());
   }
-  auth_protocol_ = from.auth_protocol_;
+  _this->_impl_.auth_protocol_ = from._impl_.auth_protocol_;
   // @@protoc_insertion_point(copy_constructor:io.deephaven.proto.backplane.grpc.HandshakeRequest)
 }
 
-inline void HandshakeRequest::SharedCtor() {
-payload_.InitDefault();
-#ifdef PROTOBUF_FORCE_COPY_DEFAULT_STRING
-  payload_.Set("", GetArenaForAllocation());
-#endif // PROTOBUF_FORCE_COPY_DEFAULT_STRING
-auth_protocol_ = 0;
+inline void HandshakeRequest::SharedCtor(::_pb::Arena* arena) {
+  (void)arena;
+  new (&_impl_) Impl_{
+      decltype(_impl_.payload_) {}
+
+    , decltype(_impl_.auth_protocol_) { 0 }
+
+    , /*decltype(_impl_._cached_size_)*/{}
+  };
+  _impl_.payload_.InitDefault();
+  #ifdef PROTOBUF_FORCE_COPY_DEFAULT_STRING
+        _impl_.payload_.Set("", GetArenaForAllocation());
+  #endif  // PROTOBUF_FORCE_COPY_DEFAULT_STRING
 }
 
 HandshakeRequest::~HandshakeRequest() {
@@ -749,47 +893,49 @@ HandshakeRequest::~HandshakeRequest() {
 }
 
 inline void HandshakeRequest::SharedDtor() {
-  GOOGLE_DCHECK(GetArenaForAllocation() == nullptr);
-  payload_.Destroy();
+  ABSL_DCHECK(GetArenaForAllocation() == nullptr);
+  _impl_.payload_.Destroy();
 }
 
 void HandshakeRequest::SetCachedSize(int size) const {
-  _cached_size_.Set(size);
+  _impl_._cached_size_.Set(size);
 }
 
 void HandshakeRequest::Clear() {
 // @@protoc_insertion_point(message_clear_start:io.deephaven.proto.backplane.grpc.HandshakeRequest)
-  uint32_t cached_has_bits = 0;
+  ::uint32_t cached_has_bits = 0;
   // Prevent compiler warnings about cached_has_bits being unused
   (void) cached_has_bits;
 
-  payload_.ClearToEmpty();
-  auth_protocol_ = 0;
+  _impl_.payload_.ClearToEmpty();
+  _impl_.auth_protocol_ = 0;
   _internal_metadata_.Clear<::PROTOBUF_NAMESPACE_ID::UnknownFieldSet>();
 }
 
 const char* HandshakeRequest::_InternalParse(const char* ptr, ::_pbi::ParseContext* ctx) {
 #define CHK_(x) if (PROTOBUF_PREDICT_FALSE(!(x))) goto failure
   while (!ctx->Done(&ptr)) {
-    uint32_t tag;
+    ::uint32_t tag;
     ptr = ::_pbi::ReadTag(ptr, &tag);
     switch (tag >> 3) {
       // sint32 auth_protocol = 1 [deprecated = true];
       case 1:
-        if (PROTOBUF_PREDICT_TRUE(static_cast<uint8_t>(tag) == 8)) {
-          auth_protocol_ = ::PROTOBUF_NAMESPACE_ID::internal::ReadVarintZigZag32(&ptr);
+        if (PROTOBUF_PREDICT_TRUE(static_cast<::uint8_t>(tag) == 8)) {
+          _impl_.auth_protocol_ = ::PROTOBUF_NAMESPACE_ID::internal::ReadVarintZigZag32(&ptr);
           CHK_(ptr);
-        } else
+        } else {
           goto handle_unusual;
+        }
         continue;
       // bytes payload = 2 [deprecated = true];
       case 2:
-        if (PROTOBUF_PREDICT_TRUE(static_cast<uint8_t>(tag) == 18)) {
+        if (PROTOBUF_PREDICT_TRUE(static_cast<::uint8_t>(tag) == 18)) {
           auto str = _internal_mutable_payload();
           ptr = ::_pbi::InlineGreedyStringParser(str, ptr, ctx);
           CHK_(ptr);
-        } else
+        } else {
           goto handle_unusual;
+        }
         continue;
       default:
         goto handle_unusual;
@@ -814,22 +960,23 @@ failure:
 #undef CHK_
 }
 
-uint8_t* HandshakeRequest::_InternalSerialize(
-    uint8_t* target, ::PROTOBUF_NAMESPACE_ID::io::EpsCopyOutputStream* stream) const {
+::uint8_t* HandshakeRequest::_InternalSerialize(
+    ::uint8_t* target, ::PROTOBUF_NAMESPACE_ID::io::EpsCopyOutputStream* stream) const {
   // @@protoc_insertion_point(serialize_to_array_start:io.deephaven.proto.backplane.grpc.HandshakeRequest)
-  uint32_t cached_has_bits = 0;
+  ::uint32_t cached_has_bits = 0;
   (void) cached_has_bits;
 
   // sint32 auth_protocol = 1 [deprecated = true];
   if (this->_internal_auth_protocol() != 0) {
     target = stream->EnsureSpace(target);
-    target = ::_pbi::WireFormatLite::WriteSInt32ToArray(1, this->_internal_auth_protocol(), target);
+    target = ::_pbi::WireFormatLite::WriteSInt32ToArray(
+        1, this->_internal_auth_protocol(), target);
   }
 
   // bytes payload = 2 [deprecated = true];
   if (!this->_internal_payload().empty()) {
-    target = stream->WriteBytesMaybeAliased(
-        2, this->_internal_payload(), target);
+    const std::string& _s = this->_internal_payload();
+    target = stream->WriteBytesMaybeAliased(2, _s, target);
   }
 
   if (PROTOBUF_PREDICT_FALSE(_internal_metadata_.have_unknown_fields())) {
@@ -840,55 +987,51 @@ uint8_t* HandshakeRequest::_InternalSerialize(
   return target;
 }
 
-size_t HandshakeRequest::ByteSizeLong() const {
+::size_t HandshakeRequest::ByteSizeLong() const {
 // @@protoc_insertion_point(message_byte_size_start:io.deephaven.proto.backplane.grpc.HandshakeRequest)
-  size_t total_size = 0;
+  ::size_t total_size = 0;
 
-  uint32_t cached_has_bits = 0;
+  ::uint32_t cached_has_bits = 0;
   // Prevent compiler warnings about cached_has_bits being unused
   (void) cached_has_bits;
 
   // bytes payload = 2 [deprecated = true];
   if (!this->_internal_payload().empty()) {
-    total_size += 1 +
-      ::PROTOBUF_NAMESPACE_ID::internal::WireFormatLite::BytesSize(
-        this->_internal_payload());
+    total_size += 1 + ::PROTOBUF_NAMESPACE_ID::internal::WireFormatLite::BytesSize(
+                                    this->_internal_payload());
   }
 
   // sint32 auth_protocol = 1 [deprecated = true];
   if (this->_internal_auth_protocol() != 0) {
-    total_size += ::_pbi::WireFormatLite::SInt32SizePlusOne(this->_internal_auth_protocol());
+    total_size += ::_pbi::WireFormatLite::SInt32SizePlusOne(
+        this->_internal_auth_protocol());
   }
 
-  return MaybeComputeUnknownFieldsSize(total_size, &_cached_size_);
+  return MaybeComputeUnknownFieldsSize(total_size, &_impl_._cached_size_);
 }
 
 const ::PROTOBUF_NAMESPACE_ID::Message::ClassData HandshakeRequest::_class_data_ = {
-    ::PROTOBUF_NAMESPACE_ID::Message::CopyWithSizeCheck,
+    ::PROTOBUF_NAMESPACE_ID::Message::CopyWithSourceCheck,
     HandshakeRequest::MergeImpl
 };
 const ::PROTOBUF_NAMESPACE_ID::Message::ClassData*HandshakeRequest::GetClassData() const { return &_class_data_; }
 
-void HandshakeRequest::MergeImpl(::PROTOBUF_NAMESPACE_ID::Message* to,
-                      const ::PROTOBUF_NAMESPACE_ID::Message& from) {
-  static_cast<HandshakeRequest *>(to)->MergeFrom(
-      static_cast<const HandshakeRequest &>(from));
-}
 
-
-void HandshakeRequest::MergeFrom(const HandshakeRequest& from) {
-// @@protoc_insertion_point(class_specific_merge_from_start:io.deephaven.proto.backplane.grpc.HandshakeRequest)
-  GOOGLE_DCHECK_NE(&from, this);
-  uint32_t cached_has_bits = 0;
+void HandshakeRequest::MergeImpl(::PROTOBUF_NAMESPACE_ID::Message& to_msg, const ::PROTOBUF_NAMESPACE_ID::Message& from_msg) {
+  auto* const _this = static_cast<HandshakeRequest*>(&to_msg);
+  auto& from = static_cast<const HandshakeRequest&>(from_msg);
+  // @@protoc_insertion_point(class_specific_merge_from_start:io.deephaven.proto.backplane.grpc.HandshakeRequest)
+  ABSL_DCHECK_NE(&from, _this);
+  ::uint32_t cached_has_bits = 0;
   (void) cached_has_bits;
 
   if (!from._internal_payload().empty()) {
-    _internal_set_payload(from._internal_payload());
+    _this->_internal_set_payload(from._internal_payload());
   }
   if (from._internal_auth_protocol() != 0) {
-    _internal_set_auth_protocol(from._internal_auth_protocol());
+    _this->_internal_set_auth_protocol(from._internal_auth_protocol());
   }
-  _internal_metadata_.MergeFrom<::PROTOBUF_NAMESPACE_ID::UnknownFieldSet>(from._internal_metadata_);
+  _this->_internal_metadata_.MergeFrom<::PROTOBUF_NAMESPACE_ID::UnknownFieldSet>(from._internal_metadata_);
 }
 
 void HandshakeRequest::CopyFrom(const HandshakeRequest& from) {
@@ -907,11 +1050,10 @@ void HandshakeRequest::InternalSwap(HandshakeRequest* other) {
   auto* lhs_arena = GetArenaForAllocation();
   auto* rhs_arena = other->GetArenaForAllocation();
   _internal_metadata_.InternalSwap(&other->_internal_metadata_);
-  ::PROTOBUF_NAMESPACE_ID::internal::ArenaStringPtr::InternalSwap(
-      &payload_, lhs_arena,
-      &other->payload_, rhs_arena
-  );
-  swap(auth_protocol_, other->auth_protocol_);
+  ::_pbi::ArenaStringPtr::InternalSwap(&_impl_.payload_, lhs_arena,
+                                       &other->_impl_.payload_, rhs_arena);
+
+  swap(_impl_.auth_protocol_, other->_impl_.auth_protocol_);
 }
 
 ::PROTOBUF_NAMESPACE_ID::Metadata HandshakeRequest::GetMetadata() const {
@@ -919,57 +1061,73 @@ void HandshakeRequest::InternalSwap(HandshakeRequest* other) {
       &descriptor_table_deephaven_2fproto_2fsession_2eproto_getter, &descriptor_table_deephaven_2fproto_2fsession_2eproto_once,
       file_level_metadata_deephaven_2fproto_2fsession_2eproto[1]);
 }
-
 // ===================================================================
 
 class HandshakeResponse::_Internal {
  public:
 };
 
-HandshakeResponse::HandshakeResponse(::PROTOBUF_NAMESPACE_ID::Arena* arena,
-                         bool is_message_owned)
-  : ::PROTOBUF_NAMESPACE_ID::Message(arena, is_message_owned) {
-  SharedCtor();
+HandshakeResponse::HandshakeResponse(::PROTOBUF_NAMESPACE_ID::Arena* arena)
+  : ::PROTOBUF_NAMESPACE_ID::Message(arena) {
+  SharedCtor(arena);
   // @@protoc_insertion_point(arena_constructor:io.deephaven.proto.backplane.grpc.HandshakeResponse)
 }
 HandshakeResponse::HandshakeResponse(const HandshakeResponse& from)
   : ::PROTOBUF_NAMESPACE_ID::Message() {
+  HandshakeResponse* const _this = this; (void)_this;
+  new (&_impl_) Impl_{
+      decltype(_impl_.metadata_header_) {}
+
+    , decltype(_impl_.session_token_) {}
+
+    , decltype(_impl_.token_deadline_time_millis_) {}
+
+    , decltype(_impl_.token_expiration_delay_millis_) {}
+
+    , /*decltype(_impl_._cached_size_)*/{}};
+
   _internal_metadata_.MergeFrom<::PROTOBUF_NAMESPACE_ID::UnknownFieldSet>(from._internal_metadata_);
-  metadata_header_.InitDefault();
+  _impl_.metadata_header_.InitDefault();
   #ifdef PROTOBUF_FORCE_COPY_DEFAULT_STRING
-    metadata_header_.Set("", GetArenaForAllocation());
-  #endif // PROTOBUF_FORCE_COPY_DEFAULT_STRING
+        _impl_.metadata_header_.Set("", GetArenaForAllocation());
+  #endif  // PROTOBUF_FORCE_COPY_DEFAULT_STRING
   if (!from._internal_metadata_header().empty()) {
-    metadata_header_.Set(from._internal_metadata_header(), 
-      GetArenaForAllocation());
+    _this->_impl_.metadata_header_.Set(from._internal_metadata_header(), _this->GetArenaForAllocation());
   }
-  session_token_.InitDefault();
+  _impl_.session_token_.InitDefault();
   #ifdef PROTOBUF_FORCE_COPY_DEFAULT_STRING
-    session_token_.Set("", GetArenaForAllocation());
-  #endif // PROTOBUF_FORCE_COPY_DEFAULT_STRING
+        _impl_.session_token_.Set("", GetArenaForAllocation());
+  #endif  // PROTOBUF_FORCE_COPY_DEFAULT_STRING
   if (!from._internal_session_token().empty()) {
-    session_token_.Set(from._internal_session_token(), 
-      GetArenaForAllocation());
+    _this->_impl_.session_token_.Set(from._internal_session_token(), _this->GetArenaForAllocation());
   }
-  ::memcpy(&token_deadline_time_millis_, &from.token_deadline_time_millis_,
-    static_cast<size_t>(reinterpret_cast<char*>(&token_expiration_delay_millis_) -
-    reinterpret_cast<char*>(&token_deadline_time_millis_)) + sizeof(token_expiration_delay_millis_));
+  ::memcpy(&_impl_.token_deadline_time_millis_, &from._impl_.token_deadline_time_millis_,
+    static_cast<::size_t>(reinterpret_cast<char*>(&_impl_.token_expiration_delay_millis_) -
+    reinterpret_cast<char*>(&_impl_.token_deadline_time_millis_)) + sizeof(_impl_.token_expiration_delay_millis_));
   // @@protoc_insertion_point(copy_constructor:io.deephaven.proto.backplane.grpc.HandshakeResponse)
 }
 
-inline void HandshakeResponse::SharedCtor() {
-metadata_header_.InitDefault();
-#ifdef PROTOBUF_FORCE_COPY_DEFAULT_STRING
-  metadata_header_.Set("", GetArenaForAllocation());
-#endif // PROTOBUF_FORCE_COPY_DEFAULT_STRING
-session_token_.InitDefault();
-#ifdef PROTOBUF_FORCE_COPY_DEFAULT_STRING
-  session_token_.Set("", GetArenaForAllocation());
-#endif // PROTOBUF_FORCE_COPY_DEFAULT_STRING
-::memset(reinterpret_cast<char*>(this) + static_cast<size_t>(
-    reinterpret_cast<char*>(&token_deadline_time_millis_) - reinterpret_cast<char*>(this)),
-    0, static_cast<size_t>(reinterpret_cast<char*>(&token_expiration_delay_millis_) -
-    reinterpret_cast<char*>(&token_deadline_time_millis_)) + sizeof(token_expiration_delay_millis_));
+inline void HandshakeResponse::SharedCtor(::_pb::Arena* arena) {
+  (void)arena;
+  new (&_impl_) Impl_{
+      decltype(_impl_.metadata_header_) {}
+
+    , decltype(_impl_.session_token_) {}
+
+    , decltype(_impl_.token_deadline_time_millis_) { ::int64_t{0} }
+
+    , decltype(_impl_.token_expiration_delay_millis_) { ::int64_t{0} }
+
+    , /*decltype(_impl_._cached_size_)*/{}
+  };
+  _impl_.metadata_header_.InitDefault();
+  #ifdef PROTOBUF_FORCE_COPY_DEFAULT_STRING
+        _impl_.metadata_header_.Set("", GetArenaForAllocation());
+  #endif  // PROTOBUF_FORCE_COPY_DEFAULT_STRING
+  _impl_.session_token_.InitDefault();
+  #ifdef PROTOBUF_FORCE_COPY_DEFAULT_STRING
+        _impl_.session_token_.Set("", GetArenaForAllocation());
+  #endif  // PROTOBUF_FORCE_COPY_DEFAULT_STRING
 }
 
 HandshakeResponse::~HandshakeResponse() {
@@ -982,68 +1140,72 @@ HandshakeResponse::~HandshakeResponse() {
 }
 
 inline void HandshakeResponse::SharedDtor() {
-  GOOGLE_DCHECK(GetArenaForAllocation() == nullptr);
-  metadata_header_.Destroy();
-  session_token_.Destroy();
+  ABSL_DCHECK(GetArenaForAllocation() == nullptr);
+  _impl_.metadata_header_.Destroy();
+  _impl_.session_token_.Destroy();
 }
 
 void HandshakeResponse::SetCachedSize(int size) const {
-  _cached_size_.Set(size);
+  _impl_._cached_size_.Set(size);
 }
 
 void HandshakeResponse::Clear() {
 // @@protoc_insertion_point(message_clear_start:io.deephaven.proto.backplane.grpc.HandshakeResponse)
-  uint32_t cached_has_bits = 0;
+  ::uint32_t cached_has_bits = 0;
   // Prevent compiler warnings about cached_has_bits being unused
   (void) cached_has_bits;
 
-  metadata_header_.ClearToEmpty();
-  session_token_.ClearToEmpty();
-  ::memset(&token_deadline_time_millis_, 0, static_cast<size_t>(
-      reinterpret_cast<char*>(&token_expiration_delay_millis_) -
-      reinterpret_cast<char*>(&token_deadline_time_millis_)) + sizeof(token_expiration_delay_millis_));
+  _impl_.metadata_header_.ClearToEmpty();
+  _impl_.session_token_.ClearToEmpty();
+  ::memset(&_impl_.token_deadline_time_millis_, 0, static_cast<::size_t>(
+      reinterpret_cast<char*>(&_impl_.token_expiration_delay_millis_) -
+      reinterpret_cast<char*>(&_impl_.token_deadline_time_millis_)) + sizeof(_impl_.token_expiration_delay_millis_));
   _internal_metadata_.Clear<::PROTOBUF_NAMESPACE_ID::UnknownFieldSet>();
 }
 
 const char* HandshakeResponse::_InternalParse(const char* ptr, ::_pbi::ParseContext* ctx) {
 #define CHK_(x) if (PROTOBUF_PREDICT_FALSE(!(x))) goto failure
   while (!ctx->Done(&ptr)) {
-    uint32_t tag;
+    ::uint32_t tag;
     ptr = ::_pbi::ReadTag(ptr, &tag);
     switch (tag >> 3) {
       // bytes metadata_header = 1 [deprecated = true];
       case 1:
-        if (PROTOBUF_PREDICT_TRUE(static_cast<uint8_t>(tag) == 10)) {
+        if (PROTOBUF_PREDICT_TRUE(static_cast<::uint8_t>(tag) == 10)) {
           auto str = _internal_mutable_metadata_header();
           ptr = ::_pbi::InlineGreedyStringParser(str, ptr, ctx);
           CHK_(ptr);
-        } else
+        } else {
           goto handle_unusual;
+        }
         continue;
       // bytes session_token = 2 [deprecated = true];
       case 2:
-        if (PROTOBUF_PREDICT_TRUE(static_cast<uint8_t>(tag) == 18)) {
+        if (PROTOBUF_PREDICT_TRUE(static_cast<::uint8_t>(tag) == 18)) {
           auto str = _internal_mutable_session_token();
           ptr = ::_pbi::InlineGreedyStringParser(str, ptr, ctx);
           CHK_(ptr);
-        } else
+        } else {
           goto handle_unusual;
+        }
         continue;
       // sint64 token_deadline_time_millis = 3 [deprecated = true, jstype = JS_STRING];
       case 3:
-        if (PROTOBUF_PREDICT_TRUE(static_cast<uint8_t>(tag) == 24)) {
-          token_deadline_time_millis_ = ::PROTOBUF_NAMESPACE_ID::internal::ReadVarintZigZag64(&ptr);
+        if (PROTOBUF_PREDICT_TRUE(static_cast<::uint8_t>(tag) == 24)) {
+          _impl_.token_deadline_time_millis_ = ::PROTOBUF_NAMESPACE_ID::internal::ReadVarintZigZag64(&ptr);
           CHK_(ptr);
-        } else
+        } else {
           goto handle_unusual;
+        }
         continue;
       // sint64 token_expiration_delay_millis = 4 [deprecated = true, jstype = JS_STRING];
       case 4:
-        if (PROTOBUF_PREDICT_TRUE(static_cast<uint8_t>(tag) == 32)) {
-          token_expiration_delay_millis_ = ::PROTOBUF_NAMESPACE_ID::internal::ReadVarintZigZag64(&ptr);
+        if (PROTOBUF_PREDICT_TRUE(static_cast<::uint8_t>(tag) == 32)) {
+          _impl_.token_expiration_delay_millis_ = ::PROTOBUF_NAMESPACE_ID::internal::ReadVarintZigZag64(&ptr);
           CHK_(ptr);
-        } else
+        } else {
           goto handle_unusual;
+        }
         continue;
       default:
         goto handle_unusual;
@@ -1068,34 +1230,36 @@ failure:
 #undef CHK_
 }
 
-uint8_t* HandshakeResponse::_InternalSerialize(
-    uint8_t* target, ::PROTOBUF_NAMESPACE_ID::io::EpsCopyOutputStream* stream) const {
+::uint8_t* HandshakeResponse::_InternalSerialize(
+    ::uint8_t* target, ::PROTOBUF_NAMESPACE_ID::io::EpsCopyOutputStream* stream) const {
   // @@protoc_insertion_point(serialize_to_array_start:io.deephaven.proto.backplane.grpc.HandshakeResponse)
-  uint32_t cached_has_bits = 0;
+  ::uint32_t cached_has_bits = 0;
   (void) cached_has_bits;
 
   // bytes metadata_header = 1 [deprecated = true];
   if (!this->_internal_metadata_header().empty()) {
-    target = stream->WriteBytesMaybeAliased(
-        1, this->_internal_metadata_header(), target);
+    const std::string& _s = this->_internal_metadata_header();
+    target = stream->WriteBytesMaybeAliased(1, _s, target);
   }
 
   // bytes session_token = 2 [deprecated = true];
   if (!this->_internal_session_token().empty()) {
-    target = stream->WriteBytesMaybeAliased(
-        2, this->_internal_session_token(), target);
+    const std::string& _s = this->_internal_session_token();
+    target = stream->WriteBytesMaybeAliased(2, _s, target);
   }
 
   // sint64 token_deadline_time_millis = 3 [deprecated = true, jstype = JS_STRING];
   if (this->_internal_token_deadline_time_millis() != 0) {
     target = stream->EnsureSpace(target);
-    target = ::_pbi::WireFormatLite::WriteSInt64ToArray(3, this->_internal_token_deadline_time_millis(), target);
+    target = ::_pbi::WireFormatLite::WriteSInt64ToArray(
+        3, this->_internal_token_deadline_time_millis(), target);
   }
 
   // sint64 token_expiration_delay_millis = 4 [deprecated = true, jstype = JS_STRING];
   if (this->_internal_token_expiration_delay_millis() != 0) {
     target = stream->EnsureSpace(target);
-    target = ::_pbi::WireFormatLite::WriteSInt64ToArray(4, this->_internal_token_expiration_delay_millis(), target);
+    target = ::_pbi::WireFormatLite::WriteSInt64ToArray(
+        4, this->_internal_token_expiration_delay_millis(), target);
   }
 
   if (PROTOBUF_PREDICT_FALSE(_internal_metadata_.have_unknown_fields())) {
@@ -1106,73 +1270,69 @@ uint8_t* HandshakeResponse::_InternalSerialize(
   return target;
 }
 
-size_t HandshakeResponse::ByteSizeLong() const {
+::size_t HandshakeResponse::ByteSizeLong() const {
 // @@protoc_insertion_point(message_byte_size_start:io.deephaven.proto.backplane.grpc.HandshakeResponse)
-  size_t total_size = 0;
+  ::size_t total_size = 0;
 
-  uint32_t cached_has_bits = 0;
+  ::uint32_t cached_has_bits = 0;
   // Prevent compiler warnings about cached_has_bits being unused
   (void) cached_has_bits;
 
   // bytes metadata_header = 1 [deprecated = true];
   if (!this->_internal_metadata_header().empty()) {
-    total_size += 1 +
-      ::PROTOBUF_NAMESPACE_ID::internal::WireFormatLite::BytesSize(
-        this->_internal_metadata_header());
+    total_size += 1 + ::PROTOBUF_NAMESPACE_ID::internal::WireFormatLite::BytesSize(
+                                    this->_internal_metadata_header());
   }
 
   // bytes session_token = 2 [deprecated = true];
   if (!this->_internal_session_token().empty()) {
-    total_size += 1 +
-      ::PROTOBUF_NAMESPACE_ID::internal::WireFormatLite::BytesSize(
-        this->_internal_session_token());
+    total_size += 1 + ::PROTOBUF_NAMESPACE_ID::internal::WireFormatLite::BytesSize(
+                                    this->_internal_session_token());
   }
 
   // sint64 token_deadline_time_millis = 3 [deprecated = true, jstype = JS_STRING];
   if (this->_internal_token_deadline_time_millis() != 0) {
-    total_size += ::_pbi::WireFormatLite::SInt64SizePlusOne(this->_internal_token_deadline_time_millis());
+    total_size += ::_pbi::WireFormatLite::SInt64SizePlusOne(
+        this->_internal_token_deadline_time_millis());
   }
 
   // sint64 token_expiration_delay_millis = 4 [deprecated = true, jstype = JS_STRING];
   if (this->_internal_token_expiration_delay_millis() != 0) {
-    total_size += ::_pbi::WireFormatLite::SInt64SizePlusOne(this->_internal_token_expiration_delay_millis());
+    total_size += ::_pbi::WireFormatLite::SInt64SizePlusOne(
+        this->_internal_token_expiration_delay_millis());
   }
 
-  return MaybeComputeUnknownFieldsSize(total_size, &_cached_size_);
+  return MaybeComputeUnknownFieldsSize(total_size, &_impl_._cached_size_);
 }
 
 const ::PROTOBUF_NAMESPACE_ID::Message::ClassData HandshakeResponse::_class_data_ = {
-    ::PROTOBUF_NAMESPACE_ID::Message::CopyWithSizeCheck,
+    ::PROTOBUF_NAMESPACE_ID::Message::CopyWithSourceCheck,
     HandshakeResponse::MergeImpl
 };
 const ::PROTOBUF_NAMESPACE_ID::Message::ClassData*HandshakeResponse::GetClassData() const { return &_class_data_; }
 
-void HandshakeResponse::MergeImpl(::PROTOBUF_NAMESPACE_ID::Message* to,
-                      const ::PROTOBUF_NAMESPACE_ID::Message& from) {
-  static_cast<HandshakeResponse *>(to)->MergeFrom(
-      static_cast<const HandshakeResponse &>(from));
-}
 
-
-void HandshakeResponse::MergeFrom(const HandshakeResponse& from) {
-// @@protoc_insertion_point(class_specific_merge_from_start:io.deephaven.proto.backplane.grpc.HandshakeResponse)
-  GOOGLE_DCHECK_NE(&from, this);
-  uint32_t cached_has_bits = 0;
+void HandshakeResponse::MergeImpl(::PROTOBUF_NAMESPACE_ID::Message& to_msg, const ::PROTOBUF_NAMESPACE_ID::Message& from_msg) {
+  auto* const _this = static_cast<HandshakeResponse*>(&to_msg);
+  auto& from = static_cast<const HandshakeResponse&>(from_msg);
+  // @@protoc_insertion_point(class_specific_merge_from_start:io.deephaven.proto.backplane.grpc.HandshakeResponse)
+  ABSL_DCHECK_NE(&from, _this);
+  ::uint32_t cached_has_bits = 0;
   (void) cached_has_bits;
 
   if (!from._internal_metadata_header().empty()) {
-    _internal_set_metadata_header(from._internal_metadata_header());
+    _this->_internal_set_metadata_header(from._internal_metadata_header());
   }
   if (!from._internal_session_token().empty()) {
-    _internal_set_session_token(from._internal_session_token());
+    _this->_internal_set_session_token(from._internal_session_token());
   }
   if (from._internal_token_deadline_time_millis() != 0) {
-    _internal_set_token_deadline_time_millis(from._internal_token_deadline_time_millis());
+    _this->_internal_set_token_deadline_time_millis(from._internal_token_deadline_time_millis());
   }
   if (from._internal_token_expiration_delay_millis() != 0) {
-    _internal_set_token_expiration_delay_millis(from._internal_token_expiration_delay_millis());
+    _this->_internal_set_token_expiration_delay_millis(from._internal_token_expiration_delay_millis());
   }
-  _internal_metadata_.MergeFrom<::PROTOBUF_NAMESPACE_ID::UnknownFieldSet>(from._internal_metadata_);
+  _this->_internal_metadata_.MergeFrom<::PROTOBUF_NAMESPACE_ID::UnknownFieldSet>(from._internal_metadata_);
 }
 
 void HandshakeResponse::CopyFrom(const HandshakeResponse& from) {
@@ -1191,20 +1351,16 @@ void HandshakeResponse::InternalSwap(HandshakeResponse* other) {
   auto* lhs_arena = GetArenaForAllocation();
   auto* rhs_arena = other->GetArenaForAllocation();
   _internal_metadata_.InternalSwap(&other->_internal_metadata_);
-  ::PROTOBUF_NAMESPACE_ID::internal::ArenaStringPtr::InternalSwap(
-      &metadata_header_, lhs_arena,
-      &other->metadata_header_, rhs_arena
-  );
-  ::PROTOBUF_NAMESPACE_ID::internal::ArenaStringPtr::InternalSwap(
-      &session_token_, lhs_arena,
-      &other->session_token_, rhs_arena
-  );
+  ::_pbi::ArenaStringPtr::InternalSwap(&_impl_.metadata_header_, lhs_arena,
+                                       &other->_impl_.metadata_header_, rhs_arena);
+  ::_pbi::ArenaStringPtr::InternalSwap(&_impl_.session_token_, lhs_arena,
+                                       &other->_impl_.session_token_, rhs_arena);
   ::PROTOBUF_NAMESPACE_ID::internal::memswap<
-      PROTOBUF_FIELD_OFFSET(HandshakeResponse, token_expiration_delay_millis_)
-      + sizeof(HandshakeResponse::token_expiration_delay_millis_)
-      - PROTOBUF_FIELD_OFFSET(HandshakeResponse, token_deadline_time_millis_)>(
-          reinterpret_cast<char*>(&token_deadline_time_millis_),
-          reinterpret_cast<char*>(&other->token_deadline_time_millis_));
+      PROTOBUF_FIELD_OFFSET(HandshakeResponse, _impl_.token_expiration_delay_millis_)
+      + sizeof(HandshakeResponse::_impl_.token_expiration_delay_millis_)
+      - PROTOBUF_FIELD_OFFSET(HandshakeResponse, _impl_.token_deadline_time_millis_)>(
+          reinterpret_cast<char*>(&_impl_.token_deadline_time_millis_),
+          reinterpret_cast<char*>(&other->_impl_.token_deadline_time_millis_));
 }
 
 ::PROTOBUF_NAMESPACE_ID::Metadata HandshakeResponse::GetMetadata() const {
@@ -1212,20 +1368,19 @@ void HandshakeResponse::InternalSwap(HandshakeResponse* other) {
       &descriptor_table_deephaven_2fproto_2fsession_2eproto_getter, &descriptor_table_deephaven_2fproto_2fsession_2eproto_once,
       file_level_metadata_deephaven_2fproto_2fsession_2eproto[2]);
 }
-
 // ===================================================================
 
 class CloseSessionResponse::_Internal {
  public:
 };
 
-CloseSessionResponse::CloseSessionResponse(::PROTOBUF_NAMESPACE_ID::Arena* arena,
-                         bool is_message_owned)
-  : ::PROTOBUF_NAMESPACE_ID::internal::ZeroFieldsBase(arena, is_message_owned) {
+CloseSessionResponse::CloseSessionResponse(::PROTOBUF_NAMESPACE_ID::Arena* arena)
+  : ::PROTOBUF_NAMESPACE_ID::internal::ZeroFieldsBase(arena) {
   // @@protoc_insertion_point(arena_constructor:io.deephaven.proto.backplane.grpc.CloseSessionResponse)
 }
 CloseSessionResponse::CloseSessionResponse(const CloseSessionResponse& from)
   : ::PROTOBUF_NAMESPACE_ID::internal::ZeroFieldsBase() {
+  CloseSessionResponse* const _this = this; (void)_this;
   _internal_metadata_.MergeFrom<::PROTOBUF_NAMESPACE_ID::UnknownFieldSet>(from._internal_metadata_);
   // @@protoc_insertion_point(copy_constructor:io.deephaven.proto.backplane.grpc.CloseSessionResponse)
 }
@@ -1251,43 +1406,54 @@ const ::PROTOBUF_NAMESPACE_ID::Message::ClassData*CloseSessionResponse::GetClass
       &descriptor_table_deephaven_2fproto_2fsession_2eproto_getter, &descriptor_table_deephaven_2fproto_2fsession_2eproto_once,
       file_level_metadata_deephaven_2fproto_2fsession_2eproto[3]);
 }
-
 // ===================================================================
 
 class ReleaseRequest::_Internal {
  public:
+  using HasBits = decltype(std::declval<ReleaseRequest>()._impl_._has_bits_);
+  static constexpr ::int32_t kHasBitsOffset =
+    8 * PROTOBUF_FIELD_OFFSET(ReleaseRequest, _impl_._has_bits_);
   static const ::io::deephaven::proto::backplane::grpc::Ticket& id(const ReleaseRequest* msg);
+  static void set_has_id(HasBits* has_bits) {
+    (*has_bits)[0] |= 1u;
+  }
 };
 
 const ::io::deephaven::proto::backplane::grpc::Ticket&
 ReleaseRequest::_Internal::id(const ReleaseRequest* msg) {
-  return *msg->id_;
+  return *msg->_impl_.id_;
 }
 void ReleaseRequest::clear_id() {
-  if (GetArenaForAllocation() == nullptr && id_ != nullptr) {
-    delete id_;
-  }
-  id_ = nullptr;
+  if (_impl_.id_ != nullptr) _impl_.id_->Clear();
+  _impl_._has_bits_[0] &= ~0x00000001u;
 }
-ReleaseRequest::ReleaseRequest(::PROTOBUF_NAMESPACE_ID::Arena* arena,
-                         bool is_message_owned)
-  : ::PROTOBUF_NAMESPACE_ID::Message(arena, is_message_owned) {
-  SharedCtor();
+ReleaseRequest::ReleaseRequest(::PROTOBUF_NAMESPACE_ID::Arena* arena)
+  : ::PROTOBUF_NAMESPACE_ID::Message(arena) {
+  SharedCtor(arena);
   // @@protoc_insertion_point(arena_constructor:io.deephaven.proto.backplane.grpc.ReleaseRequest)
 }
 ReleaseRequest::ReleaseRequest(const ReleaseRequest& from)
   : ::PROTOBUF_NAMESPACE_ID::Message() {
+  ReleaseRequest* const _this = this; (void)_this;
+  new (&_impl_) Impl_{
+      decltype(_impl_._has_bits_){from._impl_._has_bits_}
+    , /*decltype(_impl_._cached_size_)*/{}
+    , decltype(_impl_.id_){nullptr}};
+
   _internal_metadata_.MergeFrom<::PROTOBUF_NAMESPACE_ID::UnknownFieldSet>(from._internal_metadata_);
-  if (from._internal_has_id()) {
-    id_ = new ::io::deephaven::proto::backplane::grpc::Ticket(*from.id_);
-  } else {
-    id_ = nullptr;
+  if ((from._impl_._has_bits_[0] & 0x00000001u) != 0) {
+    _this->_impl_.id_ = new ::io::deephaven::proto::backplane::grpc::Ticket(*from._impl_.id_);
   }
   // @@protoc_insertion_point(copy_constructor:io.deephaven.proto.backplane.grpc.ReleaseRequest)
 }
 
-inline void ReleaseRequest::SharedCtor() {
-id_ = nullptr;
+inline void ReleaseRequest::SharedCtor(::_pb::Arena* arena) {
+  (void)arena;
+  new (&_impl_) Impl_{
+      decltype(_impl_._has_bits_){}
+    , /*decltype(_impl_._cached_size_)*/{}
+    , decltype(_impl_.id_){nullptr}
+  };
 }
 
 ReleaseRequest::~ReleaseRequest() {
@@ -1300,40 +1466,44 @@ ReleaseRequest::~ReleaseRequest() {
 }
 
 inline void ReleaseRequest::SharedDtor() {
-  GOOGLE_DCHECK(GetArenaForAllocation() == nullptr);
-  if (this != internal_default_instance()) delete id_;
+  ABSL_DCHECK(GetArenaForAllocation() == nullptr);
+  if (this != internal_default_instance()) delete _impl_.id_;
 }
 
 void ReleaseRequest::SetCachedSize(int size) const {
-  _cached_size_.Set(size);
+  _impl_._cached_size_.Set(size);
 }
 
 void ReleaseRequest::Clear() {
 // @@protoc_insertion_point(message_clear_start:io.deephaven.proto.backplane.grpc.ReleaseRequest)
-  uint32_t cached_has_bits = 0;
+  ::uint32_t cached_has_bits = 0;
   // Prevent compiler warnings about cached_has_bits being unused
   (void) cached_has_bits;
 
-  if (GetArenaForAllocation() == nullptr && id_ != nullptr) {
-    delete id_;
+  cached_has_bits = _impl_._has_bits_[0];
+  if (cached_has_bits & 0x00000001u) {
+    ABSL_DCHECK(_impl_.id_ != nullptr);
+    _impl_.id_->Clear();
   }
-  id_ = nullptr;
+  _impl_._has_bits_.Clear();
   _internal_metadata_.Clear<::PROTOBUF_NAMESPACE_ID::UnknownFieldSet>();
 }
 
 const char* ReleaseRequest::_InternalParse(const char* ptr, ::_pbi::ParseContext* ctx) {
 #define CHK_(x) if (PROTOBUF_PREDICT_FALSE(!(x))) goto failure
+  _Internal::HasBits has_bits{};
   while (!ctx->Done(&ptr)) {
-    uint32_t tag;
+    ::uint32_t tag;
     ptr = ::_pbi::ReadTag(ptr, &tag);
     switch (tag >> 3) {
       // .io.deephaven.proto.backplane.grpc.Ticket id = 1;
       case 1:
-        if (PROTOBUF_PREDICT_TRUE(static_cast<uint8_t>(tag) == 10)) {
+        if (PROTOBUF_PREDICT_TRUE(static_cast<::uint8_t>(tag) == 10)) {
           ptr = ctx->ParseMessage(_internal_mutable_id(), ptr);
           CHK_(ptr);
-        } else
+        } else {
           goto handle_unusual;
+        }
         continue;
       default:
         goto handle_unusual;
@@ -1351,6 +1521,7 @@ const char* ReleaseRequest::_InternalParse(const char* ptr, ::_pbi::ParseContext
     CHK_(ptr != nullptr);
   }  // while
 message_done:
+  _impl_._has_bits_.Or(has_bits);
   return ptr;
 failure:
   ptr = nullptr;
@@ -1358,14 +1529,15 @@ failure:
 #undef CHK_
 }
 
-uint8_t* ReleaseRequest::_InternalSerialize(
-    uint8_t* target, ::PROTOBUF_NAMESPACE_ID::io::EpsCopyOutputStream* stream) const {
+::uint8_t* ReleaseRequest::_InternalSerialize(
+    ::uint8_t* target, ::PROTOBUF_NAMESPACE_ID::io::EpsCopyOutputStream* stream) const {
   // @@protoc_insertion_point(serialize_to_array_start:io.deephaven.proto.backplane.grpc.ReleaseRequest)
-  uint32_t cached_has_bits = 0;
+  ::uint32_t cached_has_bits = 0;
   (void) cached_has_bits;
 
+  cached_has_bits = _impl_._has_bits_[0];
   // .io.deephaven.proto.backplane.grpc.Ticket id = 1;
-  if (this->_internal_has_id()) {
+  if (cached_has_bits & 0x00000001u) {
     target = ::PROTOBUF_NAMESPACE_ID::internal::WireFormatLite::
       InternalWriteMessage(1, _Internal::id(this),
         _Internal::id(this).GetCachedSize(), target, stream);
@@ -1379,47 +1551,45 @@ uint8_t* ReleaseRequest::_InternalSerialize(
   return target;
 }
 
-size_t ReleaseRequest::ByteSizeLong() const {
+::size_t ReleaseRequest::ByteSizeLong() const {
 // @@protoc_insertion_point(message_byte_size_start:io.deephaven.proto.backplane.grpc.ReleaseRequest)
-  size_t total_size = 0;
+  ::size_t total_size = 0;
 
-  uint32_t cached_has_bits = 0;
+  ::uint32_t cached_has_bits = 0;
   // Prevent compiler warnings about cached_has_bits being unused
   (void) cached_has_bits;
 
   // .io.deephaven.proto.backplane.grpc.Ticket id = 1;
-  if (this->_internal_has_id()) {
+  cached_has_bits = _impl_._has_bits_[0];
+  if (cached_has_bits & 0x00000001u) {
     total_size += 1 +
       ::PROTOBUF_NAMESPACE_ID::internal::WireFormatLite::MessageSize(
-        *id_);
+        *_impl_.id_);
   }
 
-  return MaybeComputeUnknownFieldsSize(total_size, &_cached_size_);
+  return MaybeComputeUnknownFieldsSize(total_size, &_impl_._cached_size_);
 }
 
 const ::PROTOBUF_NAMESPACE_ID::Message::ClassData ReleaseRequest::_class_data_ = {
-    ::PROTOBUF_NAMESPACE_ID::Message::CopyWithSizeCheck,
+    ::PROTOBUF_NAMESPACE_ID::Message::CopyWithSourceCheck,
     ReleaseRequest::MergeImpl
 };
 const ::PROTOBUF_NAMESPACE_ID::Message::ClassData*ReleaseRequest::GetClassData() const { return &_class_data_; }
 
-void ReleaseRequest::MergeImpl(::PROTOBUF_NAMESPACE_ID::Message* to,
-                      const ::PROTOBUF_NAMESPACE_ID::Message& from) {
-  static_cast<ReleaseRequest *>(to)->MergeFrom(
-      static_cast<const ReleaseRequest &>(from));
-}
 
-
-void ReleaseRequest::MergeFrom(const ReleaseRequest& from) {
-// @@protoc_insertion_point(class_specific_merge_from_start:io.deephaven.proto.backplane.grpc.ReleaseRequest)
-  GOOGLE_DCHECK_NE(&from, this);
-  uint32_t cached_has_bits = 0;
+void ReleaseRequest::MergeImpl(::PROTOBUF_NAMESPACE_ID::Message& to_msg, const ::PROTOBUF_NAMESPACE_ID::Message& from_msg) {
+  auto* const _this = static_cast<ReleaseRequest*>(&to_msg);
+  auto& from = static_cast<const ReleaseRequest&>(from_msg);
+  // @@protoc_insertion_point(class_specific_merge_from_start:io.deephaven.proto.backplane.grpc.ReleaseRequest)
+  ABSL_DCHECK_NE(&from, _this);
+  ::uint32_t cached_has_bits = 0;
   (void) cached_has_bits;
 
-  if (from._internal_has_id()) {
-    _internal_mutable_id()->::io::deephaven::proto::backplane::grpc::Ticket::MergeFrom(from._internal_id());
+  if ((from._impl_._has_bits_[0] & 0x00000001u) != 0) {
+    _this->_internal_mutable_id()->::io::deephaven::proto::backplane::grpc::Ticket::MergeFrom(
+        from._internal_id());
   }
-  _internal_metadata_.MergeFrom<::PROTOBUF_NAMESPACE_ID::UnknownFieldSet>(from._internal_metadata_);
+  _this->_internal_metadata_.MergeFrom<::PROTOBUF_NAMESPACE_ID::UnknownFieldSet>(from._internal_metadata_);
 }
 
 void ReleaseRequest::CopyFrom(const ReleaseRequest& from) {
@@ -1436,7 +1606,8 @@ bool ReleaseRequest::IsInitialized() const {
 void ReleaseRequest::InternalSwap(ReleaseRequest* other) {
   using std::swap;
   _internal_metadata_.InternalSwap(&other->_internal_metadata_);
-  swap(id_, other->id_);
+  swap(_impl_._has_bits_[0], other->_impl_._has_bits_[0]);
+  swap(_impl_.id_, other->_impl_.id_);
 }
 
 ::PROTOBUF_NAMESPACE_ID::Metadata ReleaseRequest::GetMetadata() const {
@@ -1444,20 +1615,19 @@ void ReleaseRequest::InternalSwap(ReleaseRequest* other) {
       &descriptor_table_deephaven_2fproto_2fsession_2eproto_getter, &descriptor_table_deephaven_2fproto_2fsession_2eproto_once,
       file_level_metadata_deephaven_2fproto_2fsession_2eproto[4]);
 }
-
 // ===================================================================
 
 class ReleaseResponse::_Internal {
  public:
 };
 
-ReleaseResponse::ReleaseResponse(::PROTOBUF_NAMESPACE_ID::Arena* arena,
-                         bool is_message_owned)
-  : ::PROTOBUF_NAMESPACE_ID::internal::ZeroFieldsBase(arena, is_message_owned) {
+ReleaseResponse::ReleaseResponse(::PROTOBUF_NAMESPACE_ID::Arena* arena)
+  : ::PROTOBUF_NAMESPACE_ID::internal::ZeroFieldsBase(arena) {
   // @@protoc_insertion_point(arena_constructor:io.deephaven.proto.backplane.grpc.ReleaseResponse)
 }
 ReleaseResponse::ReleaseResponse(const ReleaseResponse& from)
   : ::PROTOBUF_NAMESPACE_ID::internal::ZeroFieldsBase() {
+  ReleaseResponse* const _this = this; (void)_this;
   _internal_metadata_.MergeFrom<::PROTOBUF_NAMESPACE_ID::UnknownFieldSet>(from._internal_metadata_);
   // @@protoc_insertion_point(copy_constructor:io.deephaven.proto.backplane.grpc.ReleaseResponse)
 }
@@ -1483,62 +1653,71 @@ const ::PROTOBUF_NAMESPACE_ID::Message::ClassData*ReleaseResponse::GetClassData(
       &descriptor_table_deephaven_2fproto_2fsession_2eproto_getter, &descriptor_table_deephaven_2fproto_2fsession_2eproto_once,
       file_level_metadata_deephaven_2fproto_2fsession_2eproto[5]);
 }
-
 // ===================================================================
 
 class ExportRequest::_Internal {
  public:
+  using HasBits = decltype(std::declval<ExportRequest>()._impl_._has_bits_);
+  static constexpr ::int32_t kHasBitsOffset =
+    8 * PROTOBUF_FIELD_OFFSET(ExportRequest, _impl_._has_bits_);
   static const ::io::deephaven::proto::backplane::grpc::Ticket& source_id(const ExportRequest* msg);
+  static void set_has_source_id(HasBits* has_bits) {
+    (*has_bits)[0] |= 1u;
+  }
   static const ::io::deephaven::proto::backplane::grpc::Ticket& result_id(const ExportRequest* msg);
+  static void set_has_result_id(HasBits* has_bits) {
+    (*has_bits)[0] |= 2u;
+  }
 };
 
 const ::io::deephaven::proto::backplane::grpc::Ticket&
 ExportRequest::_Internal::source_id(const ExportRequest* msg) {
-  return *msg->source_id_;
+  return *msg->_impl_.source_id_;
 }
 const ::io::deephaven::proto::backplane::grpc::Ticket&
 ExportRequest::_Internal::result_id(const ExportRequest* msg) {
-  return *msg->result_id_;
+  return *msg->_impl_.result_id_;
 }
 void ExportRequest::clear_source_id() {
-  if (GetArenaForAllocation() == nullptr && source_id_ != nullptr) {
-    delete source_id_;
-  }
-  source_id_ = nullptr;
+  if (_impl_.source_id_ != nullptr) _impl_.source_id_->Clear();
+  _impl_._has_bits_[0] &= ~0x00000001u;
 }
 void ExportRequest::clear_result_id() {
-  if (GetArenaForAllocation() == nullptr && result_id_ != nullptr) {
-    delete result_id_;
-  }
-  result_id_ = nullptr;
+  if (_impl_.result_id_ != nullptr) _impl_.result_id_->Clear();
+  _impl_._has_bits_[0] &= ~0x00000002u;
 }
-ExportRequest::ExportRequest(::PROTOBUF_NAMESPACE_ID::Arena* arena,
-                         bool is_message_owned)
-  : ::PROTOBUF_NAMESPACE_ID::Message(arena, is_message_owned) {
-  SharedCtor();
+ExportRequest::ExportRequest(::PROTOBUF_NAMESPACE_ID::Arena* arena)
+  : ::PROTOBUF_NAMESPACE_ID::Message(arena) {
+  SharedCtor(arena);
   // @@protoc_insertion_point(arena_constructor:io.deephaven.proto.backplane.grpc.ExportRequest)
 }
 ExportRequest::ExportRequest(const ExportRequest& from)
   : ::PROTOBUF_NAMESPACE_ID::Message() {
+  ExportRequest* const _this = this; (void)_this;
+  new (&_impl_) Impl_{
+      decltype(_impl_._has_bits_){from._impl_._has_bits_}
+    , /*decltype(_impl_._cached_size_)*/{}
+    , decltype(_impl_.source_id_){nullptr}
+    , decltype(_impl_.result_id_){nullptr}};
+
   _internal_metadata_.MergeFrom<::PROTOBUF_NAMESPACE_ID::UnknownFieldSet>(from._internal_metadata_);
-  if (from._internal_has_source_id()) {
-    source_id_ = new ::io::deephaven::proto::backplane::grpc::Ticket(*from.source_id_);
-  } else {
-    source_id_ = nullptr;
+  if ((from._impl_._has_bits_[0] & 0x00000001u) != 0) {
+    _this->_impl_.source_id_ = new ::io::deephaven::proto::backplane::grpc::Ticket(*from._impl_.source_id_);
   }
-  if (from._internal_has_result_id()) {
-    result_id_ = new ::io::deephaven::proto::backplane::grpc::Ticket(*from.result_id_);
-  } else {
-    result_id_ = nullptr;
+  if ((from._impl_._has_bits_[0] & 0x00000002u) != 0) {
+    _this->_impl_.result_id_ = new ::io::deephaven::proto::backplane::grpc::Ticket(*from._impl_.result_id_);
   }
   // @@protoc_insertion_point(copy_constructor:io.deephaven.proto.backplane.grpc.ExportRequest)
 }
 
-inline void ExportRequest::SharedCtor() {
-::memset(reinterpret_cast<char*>(this) + static_cast<size_t>(
-    reinterpret_cast<char*>(&source_id_) - reinterpret_cast<char*>(this)),
-    0, static_cast<size_t>(reinterpret_cast<char*>(&result_id_) -
-    reinterpret_cast<char*>(&source_id_)) + sizeof(result_id_));
+inline void ExportRequest::SharedCtor(::_pb::Arena* arena) {
+  (void)arena;
+  new (&_impl_) Impl_{
+      decltype(_impl_._has_bits_){}
+    , /*decltype(_impl_._cached_size_)*/{}
+    , decltype(_impl_.source_id_){nullptr}
+    , decltype(_impl_.result_id_){nullptr}
+  };
 }
 
 ExportRequest::~ExportRequest() {
@@ -1551,53 +1730,60 @@ ExportRequest::~ExportRequest() {
 }
 
 inline void ExportRequest::SharedDtor() {
-  GOOGLE_DCHECK(GetArenaForAllocation() == nullptr);
-  if (this != internal_default_instance()) delete source_id_;
-  if (this != internal_default_instance()) delete result_id_;
+  ABSL_DCHECK(GetArenaForAllocation() == nullptr);
+  if (this != internal_default_instance()) delete _impl_.source_id_;
+  if (this != internal_default_instance()) delete _impl_.result_id_;
 }
 
 void ExportRequest::SetCachedSize(int size) const {
-  _cached_size_.Set(size);
+  _impl_._cached_size_.Set(size);
 }
 
 void ExportRequest::Clear() {
 // @@protoc_insertion_point(message_clear_start:io.deephaven.proto.backplane.grpc.ExportRequest)
-  uint32_t cached_has_bits = 0;
+  ::uint32_t cached_has_bits = 0;
   // Prevent compiler warnings about cached_has_bits being unused
   (void) cached_has_bits;
 
-  if (GetArenaForAllocation() == nullptr && source_id_ != nullptr) {
-    delete source_id_;
+  cached_has_bits = _impl_._has_bits_[0];
+  if (cached_has_bits & 0x00000003u) {
+    if (cached_has_bits & 0x00000001u) {
+      ABSL_DCHECK(_impl_.source_id_ != nullptr);
+      _impl_.source_id_->Clear();
+    }
+    if (cached_has_bits & 0x00000002u) {
+      ABSL_DCHECK(_impl_.result_id_ != nullptr);
+      _impl_.result_id_->Clear();
+    }
   }
-  source_id_ = nullptr;
-  if (GetArenaForAllocation() == nullptr && result_id_ != nullptr) {
-    delete result_id_;
-  }
-  result_id_ = nullptr;
+  _impl_._has_bits_.Clear();
   _internal_metadata_.Clear<::PROTOBUF_NAMESPACE_ID::UnknownFieldSet>();
 }
 
 const char* ExportRequest::_InternalParse(const char* ptr, ::_pbi::ParseContext* ctx) {
 #define CHK_(x) if (PROTOBUF_PREDICT_FALSE(!(x))) goto failure
+  _Internal::HasBits has_bits{};
   while (!ctx->Done(&ptr)) {
-    uint32_t tag;
+    ::uint32_t tag;
     ptr = ::_pbi::ReadTag(ptr, &tag);
     switch (tag >> 3) {
       // .io.deephaven.proto.backplane.grpc.Ticket source_id = 1;
       case 1:
-        if (PROTOBUF_PREDICT_TRUE(static_cast<uint8_t>(tag) == 10)) {
+        if (PROTOBUF_PREDICT_TRUE(static_cast<::uint8_t>(tag) == 10)) {
           ptr = ctx->ParseMessage(_internal_mutable_source_id(), ptr);
           CHK_(ptr);
-        } else
+        } else {
           goto handle_unusual;
+        }
         continue;
       // .io.deephaven.proto.backplane.grpc.Ticket result_id = 2;
       case 2:
-        if (PROTOBUF_PREDICT_TRUE(static_cast<uint8_t>(tag) == 18)) {
+        if (PROTOBUF_PREDICT_TRUE(static_cast<::uint8_t>(tag) == 18)) {
           ptr = ctx->ParseMessage(_internal_mutable_result_id(), ptr);
           CHK_(ptr);
-        } else
+        } else {
           goto handle_unusual;
+        }
         continue;
       default:
         goto handle_unusual;
@@ -1615,6 +1801,7 @@ const char* ExportRequest::_InternalParse(const char* ptr, ::_pbi::ParseContext*
     CHK_(ptr != nullptr);
   }  // while
 message_done:
+  _impl_._has_bits_.Or(has_bits);
   return ptr;
 failure:
   ptr = nullptr;
@@ -1622,21 +1809,22 @@ failure:
 #undef CHK_
 }
 
-uint8_t* ExportRequest::_InternalSerialize(
-    uint8_t* target, ::PROTOBUF_NAMESPACE_ID::io::EpsCopyOutputStream* stream) const {
+::uint8_t* ExportRequest::_InternalSerialize(
+    ::uint8_t* target, ::PROTOBUF_NAMESPACE_ID::io::EpsCopyOutputStream* stream) const {
   // @@protoc_insertion_point(serialize_to_array_start:io.deephaven.proto.backplane.grpc.ExportRequest)
-  uint32_t cached_has_bits = 0;
+  ::uint32_t cached_has_bits = 0;
   (void) cached_has_bits;
 
+  cached_has_bits = _impl_._has_bits_[0];
   // .io.deephaven.proto.backplane.grpc.Ticket source_id = 1;
-  if (this->_internal_has_source_id()) {
+  if (cached_has_bits & 0x00000001u) {
     target = ::PROTOBUF_NAMESPACE_ID::internal::WireFormatLite::
       InternalWriteMessage(1, _Internal::source_id(this),
         _Internal::source_id(this).GetCachedSize(), target, stream);
   }
 
   // .io.deephaven.proto.backplane.grpc.Ticket result_id = 2;
-  if (this->_internal_has_result_id()) {
+  if (cached_has_bits & 0x00000002u) {
     target = ::PROTOBUF_NAMESPACE_ID::internal::WireFormatLite::
       InternalWriteMessage(2, _Internal::result_id(this),
         _Internal::result_id(this).GetCachedSize(), target, stream);
@@ -1650,57 +1838,61 @@ uint8_t* ExportRequest::_InternalSerialize(
   return target;
 }
 
-size_t ExportRequest::ByteSizeLong() const {
+::size_t ExportRequest::ByteSizeLong() const {
 // @@protoc_insertion_point(message_byte_size_start:io.deephaven.proto.backplane.grpc.ExportRequest)
-  size_t total_size = 0;
+  ::size_t total_size = 0;
 
-  uint32_t cached_has_bits = 0;
+  ::uint32_t cached_has_bits = 0;
   // Prevent compiler warnings about cached_has_bits being unused
   (void) cached_has_bits;
 
-  // .io.deephaven.proto.backplane.grpc.Ticket source_id = 1;
-  if (this->_internal_has_source_id()) {
-    total_size += 1 +
-      ::PROTOBUF_NAMESPACE_ID::internal::WireFormatLite::MessageSize(
-        *source_id_);
-  }
+  cached_has_bits = _impl_._has_bits_[0];
+  if (cached_has_bits & 0x00000003u) {
+    // .io.deephaven.proto.backplane.grpc.Ticket source_id = 1;
+    if (cached_has_bits & 0x00000001u) {
+      total_size += 1 +
+        ::PROTOBUF_NAMESPACE_ID::internal::WireFormatLite::MessageSize(
+          *_impl_.source_id_);
+    }
 
-  // .io.deephaven.proto.backplane.grpc.Ticket result_id = 2;
-  if (this->_internal_has_result_id()) {
-    total_size += 1 +
-      ::PROTOBUF_NAMESPACE_ID::internal::WireFormatLite::MessageSize(
-        *result_id_);
-  }
+    // .io.deephaven.proto.backplane.grpc.Ticket result_id = 2;
+    if (cached_has_bits & 0x00000002u) {
+      total_size += 1 +
+        ::PROTOBUF_NAMESPACE_ID::internal::WireFormatLite::MessageSize(
+          *_impl_.result_id_);
+    }
 
-  return MaybeComputeUnknownFieldsSize(total_size, &_cached_size_);
+  }
+  return MaybeComputeUnknownFieldsSize(total_size, &_impl_._cached_size_);
 }
 
 const ::PROTOBUF_NAMESPACE_ID::Message::ClassData ExportRequest::_class_data_ = {
-    ::PROTOBUF_NAMESPACE_ID::Message::CopyWithSizeCheck,
+    ::PROTOBUF_NAMESPACE_ID::Message::CopyWithSourceCheck,
     ExportRequest::MergeImpl
 };
 const ::PROTOBUF_NAMESPACE_ID::Message::ClassData*ExportRequest::GetClassData() const { return &_class_data_; }
 
-void ExportRequest::MergeImpl(::PROTOBUF_NAMESPACE_ID::Message* to,
-                      const ::PROTOBUF_NAMESPACE_ID::Message& from) {
-  static_cast<ExportRequest *>(to)->MergeFrom(
-      static_cast<const ExportRequest &>(from));
-}
 
-
-void ExportRequest::MergeFrom(const ExportRequest& from) {
-// @@protoc_insertion_point(class_specific_merge_from_start:io.deephaven.proto.backplane.grpc.ExportRequest)
-  GOOGLE_DCHECK_NE(&from, this);
-  uint32_t cached_has_bits = 0;
+void ExportRequest::MergeImpl(::PROTOBUF_NAMESPACE_ID::Message& to_msg, const ::PROTOBUF_NAMESPACE_ID::Message& from_msg) {
+  auto* const _this = static_cast<ExportRequest*>(&to_msg);
+  auto& from = static_cast<const ExportRequest&>(from_msg);
+  // @@protoc_insertion_point(class_specific_merge_from_start:io.deephaven.proto.backplane.grpc.ExportRequest)
+  ABSL_DCHECK_NE(&from, _this);
+  ::uint32_t cached_has_bits = 0;
   (void) cached_has_bits;
 
-  if (from._internal_has_source_id()) {
-    _internal_mutable_source_id()->::io::deephaven::proto::backplane::grpc::Ticket::MergeFrom(from._internal_source_id());
+  cached_has_bits = from._impl_._has_bits_[0];
+  if (cached_has_bits & 0x00000003u) {
+    if (cached_has_bits & 0x00000001u) {
+      _this->_internal_mutable_source_id()->::io::deephaven::proto::backplane::grpc::Ticket::MergeFrom(
+          from._internal_source_id());
+    }
+    if (cached_has_bits & 0x00000002u) {
+      _this->_internal_mutable_result_id()->::io::deephaven::proto::backplane::grpc::Ticket::MergeFrom(
+          from._internal_result_id());
+    }
   }
-  if (from._internal_has_result_id()) {
-    _internal_mutable_result_id()->::io::deephaven::proto::backplane::grpc::Ticket::MergeFrom(from._internal_result_id());
-  }
-  _internal_metadata_.MergeFrom<::PROTOBUF_NAMESPACE_ID::UnknownFieldSet>(from._internal_metadata_);
+  _this->_internal_metadata_.MergeFrom<::PROTOBUF_NAMESPACE_ID::UnknownFieldSet>(from._internal_metadata_);
 }
 
 void ExportRequest::CopyFrom(const ExportRequest& from) {
@@ -1717,12 +1909,13 @@ bool ExportRequest::IsInitialized() const {
 void ExportRequest::InternalSwap(ExportRequest* other) {
   using std::swap;
   _internal_metadata_.InternalSwap(&other->_internal_metadata_);
+  swap(_impl_._has_bits_[0], other->_impl_._has_bits_[0]);
   ::PROTOBUF_NAMESPACE_ID::internal::memswap<
-      PROTOBUF_FIELD_OFFSET(ExportRequest, result_id_)
-      + sizeof(ExportRequest::result_id_)
-      - PROTOBUF_FIELD_OFFSET(ExportRequest, source_id_)>(
-          reinterpret_cast<char*>(&source_id_),
-          reinterpret_cast<char*>(&other->source_id_));
+      PROTOBUF_FIELD_OFFSET(ExportRequest, _impl_.result_id_)
+      + sizeof(ExportRequest::_impl_.result_id_)
+      - PROTOBUF_FIELD_OFFSET(ExportRequest, _impl_.source_id_)>(
+          reinterpret_cast<char*>(&_impl_.source_id_),
+          reinterpret_cast<char*>(&other->_impl_.source_id_));
 }
 
 ::PROTOBUF_NAMESPACE_ID::Metadata ExportRequest::GetMetadata() const {
@@ -1730,20 +1923,19 @@ void ExportRequest::InternalSwap(ExportRequest* other) {
       &descriptor_table_deephaven_2fproto_2fsession_2eproto_getter, &descriptor_table_deephaven_2fproto_2fsession_2eproto_once,
       file_level_metadata_deephaven_2fproto_2fsession_2eproto[6]);
 }
-
 // ===================================================================
 
 class ExportResponse::_Internal {
  public:
 };
 
-ExportResponse::ExportResponse(::PROTOBUF_NAMESPACE_ID::Arena* arena,
-                         bool is_message_owned)
-  : ::PROTOBUF_NAMESPACE_ID::internal::ZeroFieldsBase(arena, is_message_owned) {
+ExportResponse::ExportResponse(::PROTOBUF_NAMESPACE_ID::Arena* arena)
+  : ::PROTOBUF_NAMESPACE_ID::internal::ZeroFieldsBase(arena) {
   // @@protoc_insertion_point(arena_constructor:io.deephaven.proto.backplane.grpc.ExportResponse)
 }
 ExportResponse::ExportResponse(const ExportResponse& from)
   : ::PROTOBUF_NAMESPACE_ID::internal::ZeroFieldsBase() {
+  ExportResponse* const _this = this; (void)_this;
   _internal_metadata_.MergeFrom<::PROTOBUF_NAMESPACE_ID::UnknownFieldSet>(from._internal_metadata_);
   // @@protoc_insertion_point(copy_constructor:io.deephaven.proto.backplane.grpc.ExportResponse)
 }
@@ -1769,20 +1961,19 @@ const ::PROTOBUF_NAMESPACE_ID::Message::ClassData*ExportResponse::GetClassData()
       &descriptor_table_deephaven_2fproto_2fsession_2eproto_getter, &descriptor_table_deephaven_2fproto_2fsession_2eproto_once,
       file_level_metadata_deephaven_2fproto_2fsession_2eproto[7]);
 }
-
 // ===================================================================
 
 class ExportNotificationRequest::_Internal {
  public:
 };
 
-ExportNotificationRequest::ExportNotificationRequest(::PROTOBUF_NAMESPACE_ID::Arena* arena,
-                         bool is_message_owned)
-  : ::PROTOBUF_NAMESPACE_ID::internal::ZeroFieldsBase(arena, is_message_owned) {
+ExportNotificationRequest::ExportNotificationRequest(::PROTOBUF_NAMESPACE_ID::Arena* arena)
+  : ::PROTOBUF_NAMESPACE_ID::internal::ZeroFieldsBase(arena) {
   // @@protoc_insertion_point(arena_constructor:io.deephaven.proto.backplane.grpc.ExportNotificationRequest)
 }
 ExportNotificationRequest::ExportNotificationRequest(const ExportNotificationRequest& from)
   : ::PROTOBUF_NAMESPACE_ID::internal::ZeroFieldsBase() {
+  ExportNotificationRequest* const _this = this; (void)_this;
   _internal_metadata_.MergeFrom<::PROTOBUF_NAMESPACE_ID::UnknownFieldSet>(from._internal_metadata_);
   // @@protoc_insertion_point(copy_constructor:io.deephaven.proto.backplane.grpc.ExportNotificationRequest)
 }
@@ -1808,71 +1999,89 @@ const ::PROTOBUF_NAMESPACE_ID::Message::ClassData*ExportNotificationRequest::Get
       &descriptor_table_deephaven_2fproto_2fsession_2eproto_getter, &descriptor_table_deephaven_2fproto_2fsession_2eproto_once,
       file_level_metadata_deephaven_2fproto_2fsession_2eproto[8]);
 }
-
 // ===================================================================
 
 class ExportNotification::_Internal {
  public:
+  using HasBits = decltype(std::declval<ExportNotification>()._impl_._has_bits_);
+  static constexpr ::int32_t kHasBitsOffset =
+    8 * PROTOBUF_FIELD_OFFSET(ExportNotification, _impl_._has_bits_);
   static const ::io::deephaven::proto::backplane::grpc::Ticket& ticket(const ExportNotification* msg);
+  static void set_has_ticket(HasBits* has_bits) {
+    (*has_bits)[0] |= 1u;
+  }
 };
 
 const ::io::deephaven::proto::backplane::grpc::Ticket&
 ExportNotification::_Internal::ticket(const ExportNotification* msg) {
-  return *msg->ticket_;
+  return *msg->_impl_.ticket_;
 }
 void ExportNotification::clear_ticket() {
-  if (GetArenaForAllocation() == nullptr && ticket_ != nullptr) {
-    delete ticket_;
-  }
-  ticket_ = nullptr;
+  if (_impl_.ticket_ != nullptr) _impl_.ticket_->Clear();
+  _impl_._has_bits_[0] &= ~0x00000001u;
 }
-ExportNotification::ExportNotification(::PROTOBUF_NAMESPACE_ID::Arena* arena,
-                         bool is_message_owned)
-  : ::PROTOBUF_NAMESPACE_ID::Message(arena, is_message_owned) {
-  SharedCtor();
+ExportNotification::ExportNotification(::PROTOBUF_NAMESPACE_ID::Arena* arena)
+  : ::PROTOBUF_NAMESPACE_ID::Message(arena) {
+  SharedCtor(arena);
   // @@protoc_insertion_point(arena_constructor:io.deephaven.proto.backplane.grpc.ExportNotification)
 }
 ExportNotification::ExportNotification(const ExportNotification& from)
   : ::PROTOBUF_NAMESPACE_ID::Message() {
+  ExportNotification* const _this = this; (void)_this;
+  new (&_impl_) Impl_{
+      decltype(_impl_._has_bits_){from._impl_._has_bits_}
+    , /*decltype(_impl_._cached_size_)*/{}
+    , decltype(_impl_.context_) {}
+
+    , decltype(_impl_.dependent_handle_) {}
+
+    , decltype(_impl_.ticket_){nullptr}
+    , decltype(_impl_.export_state_) {}
+  };
+
   _internal_metadata_.MergeFrom<::PROTOBUF_NAMESPACE_ID::UnknownFieldSet>(from._internal_metadata_);
-  context_.InitDefault();
+  _impl_.context_.InitDefault();
   #ifdef PROTOBUF_FORCE_COPY_DEFAULT_STRING
-    context_.Set("", GetArenaForAllocation());
-  #endif // PROTOBUF_FORCE_COPY_DEFAULT_STRING
+        _impl_.context_.Set("", GetArenaForAllocation());
+  #endif  // PROTOBUF_FORCE_COPY_DEFAULT_STRING
   if (!from._internal_context().empty()) {
-    context_.Set(from._internal_context(), 
-      GetArenaForAllocation());
+    _this->_impl_.context_.Set(from._internal_context(), _this->GetArenaForAllocation());
   }
-  dependent_handle_.InitDefault();
+  _impl_.dependent_handle_.InitDefault();
   #ifdef PROTOBUF_FORCE_COPY_DEFAULT_STRING
-    dependent_handle_.Set("", GetArenaForAllocation());
-  #endif // PROTOBUF_FORCE_COPY_DEFAULT_STRING
+        _impl_.dependent_handle_.Set("", GetArenaForAllocation());
+  #endif  // PROTOBUF_FORCE_COPY_DEFAULT_STRING
   if (!from._internal_dependent_handle().empty()) {
-    dependent_handle_.Set(from._internal_dependent_handle(), 
-      GetArenaForAllocation());
+    _this->_impl_.dependent_handle_.Set(from._internal_dependent_handle(), _this->GetArenaForAllocation());
   }
-  if (from._internal_has_ticket()) {
-    ticket_ = new ::io::deephaven::proto::backplane::grpc::Ticket(*from.ticket_);
-  } else {
-    ticket_ = nullptr;
+  if ((from._impl_._has_bits_[0] & 0x00000001u) != 0) {
+    _this->_impl_.ticket_ = new ::io::deephaven::proto::backplane::grpc::Ticket(*from._impl_.ticket_);
   }
-  export_state_ = from.export_state_;
+  _this->_impl_.export_state_ = from._impl_.export_state_;
   // @@protoc_insertion_point(copy_constructor:io.deephaven.proto.backplane.grpc.ExportNotification)
 }
 
-inline void ExportNotification::SharedCtor() {
-context_.InitDefault();
-#ifdef PROTOBUF_FORCE_COPY_DEFAULT_STRING
-  context_.Set("", GetArenaForAllocation());
-#endif // PROTOBUF_FORCE_COPY_DEFAULT_STRING
-dependent_handle_.InitDefault();
-#ifdef PROTOBUF_FORCE_COPY_DEFAULT_STRING
-  dependent_handle_.Set("", GetArenaForAllocation());
-#endif // PROTOBUF_FORCE_COPY_DEFAULT_STRING
-::memset(reinterpret_cast<char*>(this) + static_cast<size_t>(
-    reinterpret_cast<char*>(&ticket_) - reinterpret_cast<char*>(this)),
-    0, static_cast<size_t>(reinterpret_cast<char*>(&export_state_) -
-    reinterpret_cast<char*>(&ticket_)) + sizeof(export_state_));
+inline void ExportNotification::SharedCtor(::_pb::Arena* arena) {
+  (void)arena;
+  new (&_impl_) Impl_{
+      decltype(_impl_._has_bits_){}
+    , /*decltype(_impl_._cached_size_)*/{}
+    , decltype(_impl_.context_) {}
+
+    , decltype(_impl_.dependent_handle_) {}
+
+    , decltype(_impl_.ticket_){nullptr}
+    , decltype(_impl_.export_state_) { 0 }
+
+  };
+  _impl_.context_.InitDefault();
+  #ifdef PROTOBUF_FORCE_COPY_DEFAULT_STRING
+        _impl_.context_.Set("", GetArenaForAllocation());
+  #endif  // PROTOBUF_FORCE_COPY_DEFAULT_STRING
+  _impl_.dependent_handle_.InitDefault();
+  #ifdef PROTOBUF_FORCE_COPY_DEFAULT_STRING
+        _impl_.dependent_handle_.Set("", GetArenaForAllocation());
+  #endif  // PROTOBUF_FORCE_COPY_DEFAULT_STRING
 }
 
 ExportNotification::~ExportNotification() {
@@ -1885,74 +2094,81 @@ ExportNotification::~ExportNotification() {
 }
 
 inline void ExportNotification::SharedDtor() {
-  GOOGLE_DCHECK(GetArenaForAllocation() == nullptr);
-  context_.Destroy();
-  dependent_handle_.Destroy();
-  if (this != internal_default_instance()) delete ticket_;
+  ABSL_DCHECK(GetArenaForAllocation() == nullptr);
+  _impl_.context_.Destroy();
+  _impl_.dependent_handle_.Destroy();
+  if (this != internal_default_instance()) delete _impl_.ticket_;
 }
 
 void ExportNotification::SetCachedSize(int size) const {
-  _cached_size_.Set(size);
+  _impl_._cached_size_.Set(size);
 }
 
 void ExportNotification::Clear() {
 // @@protoc_insertion_point(message_clear_start:io.deephaven.proto.backplane.grpc.ExportNotification)
-  uint32_t cached_has_bits = 0;
+  ::uint32_t cached_has_bits = 0;
   // Prevent compiler warnings about cached_has_bits being unused
   (void) cached_has_bits;
 
-  context_.ClearToEmpty();
-  dependent_handle_.ClearToEmpty();
-  if (GetArenaForAllocation() == nullptr && ticket_ != nullptr) {
-    delete ticket_;
+  _impl_.context_.ClearToEmpty();
+  _impl_.dependent_handle_.ClearToEmpty();
+  cached_has_bits = _impl_._has_bits_[0];
+  if (cached_has_bits & 0x00000001u) {
+    ABSL_DCHECK(_impl_.ticket_ != nullptr);
+    _impl_.ticket_->Clear();
   }
-  ticket_ = nullptr;
-  export_state_ = 0;
+  _impl_.export_state_ = 0;
+  _impl_._has_bits_.Clear();
   _internal_metadata_.Clear<::PROTOBUF_NAMESPACE_ID::UnknownFieldSet>();
 }
 
 const char* ExportNotification::_InternalParse(const char* ptr, ::_pbi::ParseContext* ctx) {
 #define CHK_(x) if (PROTOBUF_PREDICT_FALSE(!(x))) goto failure
+  _Internal::HasBits has_bits{};
   while (!ctx->Done(&ptr)) {
-    uint32_t tag;
+    ::uint32_t tag;
     ptr = ::_pbi::ReadTag(ptr, &tag);
     switch (tag >> 3) {
       // .io.deephaven.proto.backplane.grpc.Ticket ticket = 1;
       case 1:
-        if (PROTOBUF_PREDICT_TRUE(static_cast<uint8_t>(tag) == 10)) {
+        if (PROTOBUF_PREDICT_TRUE(static_cast<::uint8_t>(tag) == 10)) {
           ptr = ctx->ParseMessage(_internal_mutable_ticket(), ptr);
           CHK_(ptr);
-        } else
+        } else {
           goto handle_unusual;
+        }
         continue;
       // .io.deephaven.proto.backplane.grpc.ExportNotification.State export_state = 2;
       case 2:
-        if (PROTOBUF_PREDICT_TRUE(static_cast<uint8_t>(tag) == 16)) {
-          uint64_t val = ::PROTOBUF_NAMESPACE_ID::internal::ReadVarint64(&ptr);
+        if (PROTOBUF_PREDICT_TRUE(static_cast<::uint8_t>(tag) == 16)) {
+          ::int32_t val = ::PROTOBUF_NAMESPACE_ID::internal::ReadVarint32(&ptr);
           CHK_(ptr);
           _internal_set_export_state(static_cast<::io::deephaven::proto::backplane::grpc::ExportNotification_State>(val));
-        } else
+        } else {
           goto handle_unusual;
+        }
         continue;
       // string context = 3;
       case 3:
-        if (PROTOBUF_PREDICT_TRUE(static_cast<uint8_t>(tag) == 26)) {
+        if (PROTOBUF_PREDICT_TRUE(static_cast<::uint8_t>(tag) == 26)) {
           auto str = _internal_mutable_context();
           ptr = ::_pbi::InlineGreedyStringParser(str, ptr, ctx);
           CHK_(ptr);
           CHK_(::_pbi::VerifyUTF8(str, "io.deephaven.proto.backplane.grpc.ExportNotification.context"));
-        } else
+        } else {
           goto handle_unusual;
+        }
         continue;
       // string dependent_handle = 4;
       case 4:
-        if (PROTOBUF_PREDICT_TRUE(static_cast<uint8_t>(tag) == 34)) {
+        if (PROTOBUF_PREDICT_TRUE(static_cast<::uint8_t>(tag) == 34)) {
           auto str = _internal_mutable_dependent_handle();
           ptr = ::_pbi::InlineGreedyStringParser(str, ptr, ctx);
           CHK_(ptr);
           CHK_(::_pbi::VerifyUTF8(str, "io.deephaven.proto.backplane.grpc.ExportNotification.dependent_handle"));
-        } else
+        } else {
           goto handle_unusual;
+        }
         continue;
       default:
         goto handle_unusual;
@@ -1970,6 +2186,7 @@ const char* ExportNotification::_InternalParse(const char* ptr, ::_pbi::ParseCon
     CHK_(ptr != nullptr);
   }  // while
 message_done:
+  _impl_._has_bits_.Or(has_bits);
   return ptr;
 failure:
   ptr = nullptr;
@@ -1977,14 +2194,15 @@ failure:
 #undef CHK_
 }
 
-uint8_t* ExportNotification::_InternalSerialize(
-    uint8_t* target, ::PROTOBUF_NAMESPACE_ID::io::EpsCopyOutputStream* stream) const {
+::uint8_t* ExportNotification::_InternalSerialize(
+    ::uint8_t* target, ::PROTOBUF_NAMESPACE_ID::io::EpsCopyOutputStream* stream) const {
   // @@protoc_insertion_point(serialize_to_array_start:io.deephaven.proto.backplane.grpc.ExportNotification)
-  uint32_t cached_has_bits = 0;
+  ::uint32_t cached_has_bits = 0;
   (void) cached_has_bits;
 
+  cached_has_bits = _impl_._has_bits_[0];
   // .io.deephaven.proto.backplane.grpc.Ticket ticket = 1;
-  if (this->_internal_has_ticket()) {
+  if (cached_has_bits & 0x00000001u) {
     target = ::PROTOBUF_NAMESPACE_ID::internal::WireFormatLite::
       InternalWriteMessage(1, _Internal::ticket(this),
         _Internal::ticket(this).GetCachedSize(), target, stream);
@@ -1994,27 +2212,23 @@ uint8_t* ExportNotification::_InternalSerialize(
   if (this->_internal_export_state() != 0) {
     target = stream->EnsureSpace(target);
     target = ::_pbi::WireFormatLite::WriteEnumToArray(
-      2, this->_internal_export_state(), target);
+        2, this->_internal_export_state(), target);
   }
 
   // string context = 3;
   if (!this->_internal_context().empty()) {
+    const std::string& _s = this->_internal_context();
     ::PROTOBUF_NAMESPACE_ID::internal::WireFormatLite::VerifyUtf8String(
-      this->_internal_context().data(), static_cast<int>(this->_internal_context().length()),
-      ::PROTOBUF_NAMESPACE_ID::internal::WireFormatLite::SERIALIZE,
-      "io.deephaven.proto.backplane.grpc.ExportNotification.context");
-    target = stream->WriteStringMaybeAliased(
-        3, this->_internal_context(), target);
+        _s.data(), static_cast<int>(_s.length()), ::PROTOBUF_NAMESPACE_ID::internal::WireFormatLite::SERIALIZE, "io.deephaven.proto.backplane.grpc.ExportNotification.context");
+    target = stream->WriteStringMaybeAliased(3, _s, target);
   }
 
   // string dependent_handle = 4;
   if (!this->_internal_dependent_handle().empty()) {
+    const std::string& _s = this->_internal_dependent_handle();
     ::PROTOBUF_NAMESPACE_ID::internal::WireFormatLite::VerifyUtf8String(
-      this->_internal_dependent_handle().data(), static_cast<int>(this->_internal_dependent_handle().length()),
-      ::PROTOBUF_NAMESPACE_ID::internal::WireFormatLite::SERIALIZE,
-      "io.deephaven.proto.backplane.grpc.ExportNotification.dependent_handle");
-    target = stream->WriteStringMaybeAliased(
-        4, this->_internal_dependent_handle(), target);
+        _s.data(), static_cast<int>(_s.length()), ::PROTOBUF_NAMESPACE_ID::internal::WireFormatLite::SERIALIZE, "io.deephaven.proto.backplane.grpc.ExportNotification.dependent_handle");
+    target = stream->WriteStringMaybeAliased(4, _s, target);
   }
 
   if (PROTOBUF_PREDICT_FALSE(_internal_metadata_.have_unknown_fields())) {
@@ -2025,76 +2239,72 @@ uint8_t* ExportNotification::_InternalSerialize(
   return target;
 }
 
-size_t ExportNotification::ByteSizeLong() const {
+::size_t ExportNotification::ByteSizeLong() const {
 // @@protoc_insertion_point(message_byte_size_start:io.deephaven.proto.backplane.grpc.ExportNotification)
-  size_t total_size = 0;
+  ::size_t total_size = 0;
 
-  uint32_t cached_has_bits = 0;
+  ::uint32_t cached_has_bits = 0;
   // Prevent compiler warnings about cached_has_bits being unused
   (void) cached_has_bits;
 
   // string context = 3;
   if (!this->_internal_context().empty()) {
-    total_size += 1 +
-      ::PROTOBUF_NAMESPACE_ID::internal::WireFormatLite::StringSize(
-        this->_internal_context());
+    total_size += 1 + ::PROTOBUF_NAMESPACE_ID::internal::WireFormatLite::StringSize(
+                                    this->_internal_context());
   }
 
   // string dependent_handle = 4;
   if (!this->_internal_dependent_handle().empty()) {
-    total_size += 1 +
-      ::PROTOBUF_NAMESPACE_ID::internal::WireFormatLite::StringSize(
-        this->_internal_dependent_handle());
+    total_size += 1 + ::PROTOBUF_NAMESPACE_ID::internal::WireFormatLite::StringSize(
+                                    this->_internal_dependent_handle());
   }
 
   // .io.deephaven.proto.backplane.grpc.Ticket ticket = 1;
-  if (this->_internal_has_ticket()) {
+  cached_has_bits = _impl_._has_bits_[0];
+  if (cached_has_bits & 0x00000001u) {
     total_size += 1 +
       ::PROTOBUF_NAMESPACE_ID::internal::WireFormatLite::MessageSize(
-        *ticket_);
+        *_impl_.ticket_);
   }
 
   // .io.deephaven.proto.backplane.grpc.ExportNotification.State export_state = 2;
   if (this->_internal_export_state() != 0) {
     total_size += 1 +
-      ::_pbi::WireFormatLite::EnumSize(this->_internal_export_state());
+                  ::_pbi::WireFormatLite::EnumSize(this->_internal_export_state());
   }
 
-  return MaybeComputeUnknownFieldsSize(total_size, &_cached_size_);
+  return MaybeComputeUnknownFieldsSize(total_size, &_impl_._cached_size_);
 }
 
 const ::PROTOBUF_NAMESPACE_ID::Message::ClassData ExportNotification::_class_data_ = {
-    ::PROTOBUF_NAMESPACE_ID::Message::CopyWithSizeCheck,
+    ::PROTOBUF_NAMESPACE_ID::Message::CopyWithSourceCheck,
     ExportNotification::MergeImpl
 };
 const ::PROTOBUF_NAMESPACE_ID::Message::ClassData*ExportNotification::GetClassData() const { return &_class_data_; }
 
-void ExportNotification::MergeImpl(::PROTOBUF_NAMESPACE_ID::Message* to,
-                      const ::PROTOBUF_NAMESPACE_ID::Message& from) {
-  static_cast<ExportNotification *>(to)->MergeFrom(
-      static_cast<const ExportNotification &>(from));
-}
 
-
-void ExportNotification::MergeFrom(const ExportNotification& from) {
-// @@protoc_insertion_point(class_specific_merge_from_start:io.deephaven.proto.backplane.grpc.ExportNotification)
-  GOOGLE_DCHECK_NE(&from, this);
-  uint32_t cached_has_bits = 0;
+void ExportNotification::MergeImpl(::PROTOBUF_NAMESPACE_ID::Message& to_msg, const ::PROTOBUF_NAMESPACE_ID::Message& from_msg) {
+  auto* const _this = static_cast<ExportNotification*>(&to_msg);
+  auto& from = static_cast<const ExportNotification&>(from_msg);
+  // @@protoc_insertion_point(class_specific_merge_from_start:io.deephaven.proto.backplane.grpc.ExportNotification)
+  ABSL_DCHECK_NE(&from, _this);
+  ::uint32_t cached_has_bits = 0;
   (void) cached_has_bits;
 
   if (!from._internal_context().empty()) {
-    _internal_set_context(from._internal_context());
+    _this->_internal_set_context(from._internal_context());
   }
   if (!from._internal_dependent_handle().empty()) {
-    _internal_set_dependent_handle(from._internal_dependent_handle());
+    _this->_internal_set_dependent_handle(from._internal_dependent_handle());
   }
-  if (from._internal_has_ticket()) {
-    _internal_mutable_ticket()->::io::deephaven::proto::backplane::grpc::Ticket::MergeFrom(from._internal_ticket());
+  if ((from._impl_._has_bits_[0] & 0x00000001u) != 0) {
+    _this->_internal_mutable_ticket()->::io::deephaven::proto::backplane::grpc::Ticket::MergeFrom(
+        from._internal_ticket());
   }
   if (from._internal_export_state() != 0) {
-    _internal_set_export_state(from._internal_export_state());
+    _this->_internal_set_export_state(from._internal_export_state());
   }
-  _internal_metadata_.MergeFrom<::PROTOBUF_NAMESPACE_ID::UnknownFieldSet>(from._internal_metadata_);
+  _this->_internal_metadata_.MergeFrom<::PROTOBUF_NAMESPACE_ID::UnknownFieldSet>(from._internal_metadata_);
 }
 
 void ExportNotification::CopyFrom(const ExportNotification& from) {
@@ -2113,20 +2323,17 @@ void ExportNotification::InternalSwap(ExportNotification* other) {
   auto* lhs_arena = GetArenaForAllocation();
   auto* rhs_arena = other->GetArenaForAllocation();
   _internal_metadata_.InternalSwap(&other->_internal_metadata_);
-  ::PROTOBUF_NAMESPACE_ID::internal::ArenaStringPtr::InternalSwap(
-      &context_, lhs_arena,
-      &other->context_, rhs_arena
-  );
-  ::PROTOBUF_NAMESPACE_ID::internal::ArenaStringPtr::InternalSwap(
-      &dependent_handle_, lhs_arena,
-      &other->dependent_handle_, rhs_arena
-  );
+  swap(_impl_._has_bits_[0], other->_impl_._has_bits_[0]);
+  ::_pbi::ArenaStringPtr::InternalSwap(&_impl_.context_, lhs_arena,
+                                       &other->_impl_.context_, rhs_arena);
+  ::_pbi::ArenaStringPtr::InternalSwap(&_impl_.dependent_handle_, lhs_arena,
+                                       &other->_impl_.dependent_handle_, rhs_arena);
   ::PROTOBUF_NAMESPACE_ID::internal::memswap<
-      PROTOBUF_FIELD_OFFSET(ExportNotification, export_state_)
-      + sizeof(ExportNotification::export_state_)
-      - PROTOBUF_FIELD_OFFSET(ExportNotification, ticket_)>(
-          reinterpret_cast<char*>(&ticket_),
-          reinterpret_cast<char*>(&other->ticket_));
+      PROTOBUF_FIELD_OFFSET(ExportNotification, _impl_.export_state_)
+      + sizeof(ExportNotification::_impl_.export_state_)
+      - PROTOBUF_FIELD_OFFSET(ExportNotification, _impl_.ticket_)>(
+          reinterpret_cast<char*>(&_impl_.ticket_),
+          reinterpret_cast<char*>(&other->_impl_.ticket_));
 }
 
 ::PROTOBUF_NAMESPACE_ID::Metadata ExportNotification::GetMetadata() const {
@@ -2134,20 +2341,19 @@ void ExportNotification::InternalSwap(ExportNotification* other) {
       &descriptor_table_deephaven_2fproto_2fsession_2eproto_getter, &descriptor_table_deephaven_2fproto_2fsession_2eproto_once,
       file_level_metadata_deephaven_2fproto_2fsession_2eproto[9]);
 }
-
 // ===================================================================
 
 class TerminationNotificationRequest::_Internal {
  public:
 };
 
-TerminationNotificationRequest::TerminationNotificationRequest(::PROTOBUF_NAMESPACE_ID::Arena* arena,
-                         bool is_message_owned)
-  : ::PROTOBUF_NAMESPACE_ID::internal::ZeroFieldsBase(arena, is_message_owned) {
+TerminationNotificationRequest::TerminationNotificationRequest(::PROTOBUF_NAMESPACE_ID::Arena* arena)
+  : ::PROTOBUF_NAMESPACE_ID::internal::ZeroFieldsBase(arena) {
   // @@protoc_insertion_point(arena_constructor:io.deephaven.proto.backplane.grpc.TerminationNotificationRequest)
 }
 TerminationNotificationRequest::TerminationNotificationRequest(const TerminationNotificationRequest& from)
   : ::PROTOBUF_NAMESPACE_ID::internal::ZeroFieldsBase() {
+  TerminationNotificationRequest* const _this = this; (void)_this;
   _internal_metadata_.MergeFrom<::PROTOBUF_NAMESPACE_ID::UnknownFieldSet>(from._internal_metadata_);
   // @@protoc_insertion_point(copy_constructor:io.deephaven.proto.backplane.grpc.TerminationNotificationRequest)
 }
@@ -2173,52 +2379,64 @@ const ::PROTOBUF_NAMESPACE_ID::Message::ClassData*TerminationNotificationRequest
       &descriptor_table_deephaven_2fproto_2fsession_2eproto_getter, &descriptor_table_deephaven_2fproto_2fsession_2eproto_once,
       file_level_metadata_deephaven_2fproto_2fsession_2eproto[10]);
 }
-
 // ===================================================================
 
 class TerminationNotificationResponse_StackTrace::_Internal {
  public:
 };
 
-TerminationNotificationResponse_StackTrace::TerminationNotificationResponse_StackTrace(::PROTOBUF_NAMESPACE_ID::Arena* arena,
-                         bool is_message_owned)
-  : ::PROTOBUF_NAMESPACE_ID::Message(arena, is_message_owned),
-  elements_(arena) {
-  SharedCtor();
+TerminationNotificationResponse_StackTrace::TerminationNotificationResponse_StackTrace(::PROTOBUF_NAMESPACE_ID::Arena* arena)
+  : ::PROTOBUF_NAMESPACE_ID::Message(arena) {
+  SharedCtor(arena);
   // @@protoc_insertion_point(arena_constructor:io.deephaven.proto.backplane.grpc.TerminationNotificationResponse.StackTrace)
 }
 TerminationNotificationResponse_StackTrace::TerminationNotificationResponse_StackTrace(const TerminationNotificationResponse_StackTrace& from)
-  : ::PROTOBUF_NAMESPACE_ID::Message(),
-      elements_(from.elements_) {
+  : ::PROTOBUF_NAMESPACE_ID::Message() {
+  TerminationNotificationResponse_StackTrace* const _this = this; (void)_this;
+  new (&_impl_) Impl_{
+      decltype(_impl_.elements_){from._impl_.elements_}
+    , decltype(_impl_.type_) {}
+
+    , decltype(_impl_.message_) {}
+
+    , /*decltype(_impl_._cached_size_)*/{}};
+
   _internal_metadata_.MergeFrom<::PROTOBUF_NAMESPACE_ID::UnknownFieldSet>(from._internal_metadata_);
-  type_.InitDefault();
+  _impl_.type_.InitDefault();
   #ifdef PROTOBUF_FORCE_COPY_DEFAULT_STRING
-    type_.Set("", GetArenaForAllocation());
-  #endif // PROTOBUF_FORCE_COPY_DEFAULT_STRING
+        _impl_.type_.Set("", GetArenaForAllocation());
+  #endif  // PROTOBUF_FORCE_COPY_DEFAULT_STRING
   if (!from._internal_type().empty()) {
-    type_.Set(from._internal_type(), 
-      GetArenaForAllocation());
+    _this->_impl_.type_.Set(from._internal_type(), _this->GetArenaForAllocation());
   }
-  message_.InitDefault();
+  _impl_.message_.InitDefault();
   #ifdef PROTOBUF_FORCE_COPY_DEFAULT_STRING
-    message_.Set("", GetArenaForAllocation());
-  #endif // PROTOBUF_FORCE_COPY_DEFAULT_STRING
+        _impl_.message_.Set("", GetArenaForAllocation());
+  #endif  // PROTOBUF_FORCE_COPY_DEFAULT_STRING
   if (!from._internal_message().empty()) {
-    message_.Set(from._internal_message(), 
-      GetArenaForAllocation());
+    _this->_impl_.message_.Set(from._internal_message(), _this->GetArenaForAllocation());
   }
   // @@protoc_insertion_point(copy_constructor:io.deephaven.proto.backplane.grpc.TerminationNotificationResponse.StackTrace)
 }
 
-inline void TerminationNotificationResponse_StackTrace::SharedCtor() {
-type_.InitDefault();
-#ifdef PROTOBUF_FORCE_COPY_DEFAULT_STRING
-  type_.Set("", GetArenaForAllocation());
-#endif // PROTOBUF_FORCE_COPY_DEFAULT_STRING
-message_.InitDefault();
-#ifdef PROTOBUF_FORCE_COPY_DEFAULT_STRING
-  message_.Set("", GetArenaForAllocation());
-#endif // PROTOBUF_FORCE_COPY_DEFAULT_STRING
+inline void TerminationNotificationResponse_StackTrace::SharedCtor(::_pb::Arena* arena) {
+  (void)arena;
+  new (&_impl_) Impl_{
+      decltype(_impl_.elements_){arena}
+    , decltype(_impl_.type_) {}
+
+    , decltype(_impl_.message_) {}
+
+    , /*decltype(_impl_._cached_size_)*/{}
+  };
+  _impl_.type_.InitDefault();
+  #ifdef PROTOBUF_FORCE_COPY_DEFAULT_STRING
+        _impl_.type_.Set("", GetArenaForAllocation());
+  #endif  // PROTOBUF_FORCE_COPY_DEFAULT_STRING
+  _impl_.message_.InitDefault();
+  #ifdef PROTOBUF_FORCE_COPY_DEFAULT_STRING
+        _impl_.message_.Set("", GetArenaForAllocation());
+  #endif  // PROTOBUF_FORCE_COPY_DEFAULT_STRING
 }
 
 TerminationNotificationResponse_StackTrace::~TerminationNotificationResponse_StackTrace() {
@@ -2231,56 +2449,59 @@ TerminationNotificationResponse_StackTrace::~TerminationNotificationResponse_Sta
 }
 
 inline void TerminationNotificationResponse_StackTrace::SharedDtor() {
-  GOOGLE_DCHECK(GetArenaForAllocation() == nullptr);
-  type_.Destroy();
-  message_.Destroy();
+  ABSL_DCHECK(GetArenaForAllocation() == nullptr);
+  _internal_mutable_elements()->~RepeatedPtrField();
+  _impl_.type_.Destroy();
+  _impl_.message_.Destroy();
 }
 
 void TerminationNotificationResponse_StackTrace::SetCachedSize(int size) const {
-  _cached_size_.Set(size);
+  _impl_._cached_size_.Set(size);
 }
 
 void TerminationNotificationResponse_StackTrace::Clear() {
 // @@protoc_insertion_point(message_clear_start:io.deephaven.proto.backplane.grpc.TerminationNotificationResponse.StackTrace)
-  uint32_t cached_has_bits = 0;
+  ::uint32_t cached_has_bits = 0;
   // Prevent compiler warnings about cached_has_bits being unused
   (void) cached_has_bits;
 
-  elements_.Clear();
-  type_.ClearToEmpty();
-  message_.ClearToEmpty();
+  _internal_mutable_elements()->Clear();
+  _impl_.type_.ClearToEmpty();
+  _impl_.message_.ClearToEmpty();
   _internal_metadata_.Clear<::PROTOBUF_NAMESPACE_ID::UnknownFieldSet>();
 }
 
 const char* TerminationNotificationResponse_StackTrace::_InternalParse(const char* ptr, ::_pbi::ParseContext* ctx) {
 #define CHK_(x) if (PROTOBUF_PREDICT_FALSE(!(x))) goto failure
   while (!ctx->Done(&ptr)) {
-    uint32_t tag;
+    ::uint32_t tag;
     ptr = ::_pbi::ReadTag(ptr, &tag);
     switch (tag >> 3) {
       // string type = 1;
       case 1:
-        if (PROTOBUF_PREDICT_TRUE(static_cast<uint8_t>(tag) == 10)) {
+        if (PROTOBUF_PREDICT_TRUE(static_cast<::uint8_t>(tag) == 10)) {
           auto str = _internal_mutable_type();
           ptr = ::_pbi::InlineGreedyStringParser(str, ptr, ctx);
           CHK_(ptr);
           CHK_(::_pbi::VerifyUTF8(str, "io.deephaven.proto.backplane.grpc.TerminationNotificationResponse.StackTrace.type"));
-        } else
+        } else {
           goto handle_unusual;
+        }
         continue;
       // string message = 2;
       case 2:
-        if (PROTOBUF_PREDICT_TRUE(static_cast<uint8_t>(tag) == 18)) {
+        if (PROTOBUF_PREDICT_TRUE(static_cast<::uint8_t>(tag) == 18)) {
           auto str = _internal_mutable_message();
           ptr = ::_pbi::InlineGreedyStringParser(str, ptr, ctx);
           CHK_(ptr);
           CHK_(::_pbi::VerifyUTF8(str, "io.deephaven.proto.backplane.grpc.TerminationNotificationResponse.StackTrace.message"));
-        } else
+        } else {
           goto handle_unusual;
+        }
         continue;
       // repeated string elements = 3;
       case 3:
-        if (PROTOBUF_PREDICT_TRUE(static_cast<uint8_t>(tag) == 26)) {
+        if (PROTOBUF_PREDICT_TRUE(static_cast<::uint8_t>(tag) == 26)) {
           ptr -= 1;
           do {
             ptr += 1;
@@ -2290,8 +2511,9 @@ const char* TerminationNotificationResponse_StackTrace::_InternalParse(const cha
             CHK_(::_pbi::VerifyUTF8(str, "io.deephaven.proto.backplane.grpc.TerminationNotificationResponse.StackTrace.elements"));
             if (!ctx->DataAvailable(ptr)) break;
           } while (::PROTOBUF_NAMESPACE_ID::internal::ExpectTag<26>(ptr));
-        } else
+        } else {
           goto handle_unusual;
+        }
         continue;
       default:
         goto handle_unusual;
@@ -2316,39 +2538,33 @@ failure:
 #undef CHK_
 }
 
-uint8_t* TerminationNotificationResponse_StackTrace::_InternalSerialize(
-    uint8_t* target, ::PROTOBUF_NAMESPACE_ID::io::EpsCopyOutputStream* stream) const {
+::uint8_t* TerminationNotificationResponse_StackTrace::_InternalSerialize(
+    ::uint8_t* target, ::PROTOBUF_NAMESPACE_ID::io::EpsCopyOutputStream* stream) const {
   // @@protoc_insertion_point(serialize_to_array_start:io.deephaven.proto.backplane.grpc.TerminationNotificationResponse.StackTrace)
-  uint32_t cached_has_bits = 0;
+  ::uint32_t cached_has_bits = 0;
   (void) cached_has_bits;
 
   // string type = 1;
   if (!this->_internal_type().empty()) {
+    const std::string& _s = this->_internal_type();
     ::PROTOBUF_NAMESPACE_ID::internal::WireFormatLite::VerifyUtf8String(
-      this->_internal_type().data(), static_cast<int>(this->_internal_type().length()),
-      ::PROTOBUF_NAMESPACE_ID::internal::WireFormatLite::SERIALIZE,
-      "io.deephaven.proto.backplane.grpc.TerminationNotificationResponse.StackTrace.type");
-    target = stream->WriteStringMaybeAliased(
-        1, this->_internal_type(), target);
+        _s.data(), static_cast<int>(_s.length()), ::PROTOBUF_NAMESPACE_ID::internal::WireFormatLite::SERIALIZE, "io.deephaven.proto.backplane.grpc.TerminationNotificationResponse.StackTrace.type");
+    target = stream->WriteStringMaybeAliased(1, _s, target);
   }
 
   // string message = 2;
   if (!this->_internal_message().empty()) {
+    const std::string& _s = this->_internal_message();
     ::PROTOBUF_NAMESPACE_ID::internal::WireFormatLite::VerifyUtf8String(
-      this->_internal_message().data(), static_cast<int>(this->_internal_message().length()),
-      ::PROTOBUF_NAMESPACE_ID::internal::WireFormatLite::SERIALIZE,
-      "io.deephaven.proto.backplane.grpc.TerminationNotificationResponse.StackTrace.message");
-    target = stream->WriteStringMaybeAliased(
-        2, this->_internal_message(), target);
+        _s.data(), static_cast<int>(_s.length()), ::PROTOBUF_NAMESPACE_ID::internal::WireFormatLite::SERIALIZE, "io.deephaven.proto.backplane.grpc.TerminationNotificationResponse.StackTrace.message");
+    target = stream->WriteStringMaybeAliased(2, _s, target);
   }
 
   // repeated string elements = 3;
-  for (int i = 0, n = this->_internal_elements_size(); i < n; i++) {
+  for (int i = 0, n = this->_internal_elements_size(); i < n; ++i) {
     const auto& s = this->_internal_elements(i);
     ::PROTOBUF_NAMESPACE_ID::internal::WireFormatLite::VerifyUtf8String(
-      s.data(), static_cast<int>(s.length()),
-      ::PROTOBUF_NAMESPACE_ID::internal::WireFormatLite::SERIALIZE,
-      "io.deephaven.proto.backplane.grpc.TerminationNotificationResponse.StackTrace.elements");
+        s.data(), static_cast<int>(s.length()), ::PROTOBUF_NAMESPACE_ID::internal::WireFormatLite::SERIALIZE, "io.deephaven.proto.backplane.grpc.TerminationNotificationResponse.StackTrace.elements");
     target = stream->WriteString(3, s, target);
   }
 
@@ -2360,66 +2576,59 @@ uint8_t* TerminationNotificationResponse_StackTrace::_InternalSerialize(
   return target;
 }
 
-size_t TerminationNotificationResponse_StackTrace::ByteSizeLong() const {
+::size_t TerminationNotificationResponse_StackTrace::ByteSizeLong() const {
 // @@protoc_insertion_point(message_byte_size_start:io.deephaven.proto.backplane.grpc.TerminationNotificationResponse.StackTrace)
-  size_t total_size = 0;
+  ::size_t total_size = 0;
 
-  uint32_t cached_has_bits = 0;
+  ::uint32_t cached_has_bits = 0;
   // Prevent compiler warnings about cached_has_bits being unused
   (void) cached_has_bits;
 
   // repeated string elements = 3;
-  total_size += 1 *
-      ::PROTOBUF_NAMESPACE_ID::internal::FromIntSize(elements_.size());
-  for (int i = 0, n = elements_.size(); i < n; i++) {
+  total_size += 1 * ::PROTOBUF_NAMESPACE_ID::internal::FromIntSize(_internal_elements().size());
+  for (int i = 0, n = _internal_elements().size(); i < n; ++i) {
     total_size += ::PROTOBUF_NAMESPACE_ID::internal::WireFormatLite::StringSize(
-      elements_.Get(i));
+        _internal_elements().Get(i));
   }
 
   // string type = 1;
   if (!this->_internal_type().empty()) {
-    total_size += 1 +
-      ::PROTOBUF_NAMESPACE_ID::internal::WireFormatLite::StringSize(
-        this->_internal_type());
+    total_size += 1 + ::PROTOBUF_NAMESPACE_ID::internal::WireFormatLite::StringSize(
+                                    this->_internal_type());
   }
 
   // string message = 2;
   if (!this->_internal_message().empty()) {
-    total_size += 1 +
-      ::PROTOBUF_NAMESPACE_ID::internal::WireFormatLite::StringSize(
-        this->_internal_message());
+    total_size += 1 + ::PROTOBUF_NAMESPACE_ID::internal::WireFormatLite::StringSize(
+                                    this->_internal_message());
   }
 
-  return MaybeComputeUnknownFieldsSize(total_size, &_cached_size_);
+  return MaybeComputeUnknownFieldsSize(total_size, &_impl_._cached_size_);
 }
 
 const ::PROTOBUF_NAMESPACE_ID::Message::ClassData TerminationNotificationResponse_StackTrace::_class_data_ = {
-    ::PROTOBUF_NAMESPACE_ID::Message::CopyWithSizeCheck,
+    ::PROTOBUF_NAMESPACE_ID::Message::CopyWithSourceCheck,
     TerminationNotificationResponse_StackTrace::MergeImpl
 };
 const ::PROTOBUF_NAMESPACE_ID::Message::ClassData*TerminationNotificationResponse_StackTrace::GetClassData() const { return &_class_data_; }
 
-void TerminationNotificationResponse_StackTrace::MergeImpl(::PROTOBUF_NAMESPACE_ID::Message* to,
-                      const ::PROTOBUF_NAMESPACE_ID::Message& from) {
-  static_cast<TerminationNotificationResponse_StackTrace *>(to)->MergeFrom(
-      static_cast<const TerminationNotificationResponse_StackTrace &>(from));
-}
 
-
-void TerminationNotificationResponse_StackTrace::MergeFrom(const TerminationNotificationResponse_StackTrace& from) {
-// @@protoc_insertion_point(class_specific_merge_from_start:io.deephaven.proto.backplane.grpc.TerminationNotificationResponse.StackTrace)
-  GOOGLE_DCHECK_NE(&from, this);
-  uint32_t cached_has_bits = 0;
+void TerminationNotificationResponse_StackTrace::MergeImpl(::PROTOBUF_NAMESPACE_ID::Message& to_msg, const ::PROTOBUF_NAMESPACE_ID::Message& from_msg) {
+  auto* const _this = static_cast<TerminationNotificationResponse_StackTrace*>(&to_msg);
+  auto& from = static_cast<const TerminationNotificationResponse_StackTrace&>(from_msg);
+  // @@protoc_insertion_point(class_specific_merge_from_start:io.deephaven.proto.backplane.grpc.TerminationNotificationResponse.StackTrace)
+  ABSL_DCHECK_NE(&from, _this);
+  ::uint32_t cached_has_bits = 0;
   (void) cached_has_bits;
 
-  elements_.MergeFrom(from.elements_);
+  _this->_internal_mutable_elements()->MergeFrom(from._internal_elements());
   if (!from._internal_type().empty()) {
-    _internal_set_type(from._internal_type());
+    _this->_internal_set_type(from._internal_type());
   }
   if (!from._internal_message().empty()) {
-    _internal_set_message(from._internal_message());
+    _this->_internal_set_message(from._internal_message());
   }
-  _internal_metadata_.MergeFrom<::PROTOBUF_NAMESPACE_ID::UnknownFieldSet>(from._internal_metadata_);
+  _this->_internal_metadata_.MergeFrom<::PROTOBUF_NAMESPACE_ID::UnknownFieldSet>(from._internal_metadata_);
 }
 
 void TerminationNotificationResponse_StackTrace::CopyFrom(const TerminationNotificationResponse_StackTrace& from) {
@@ -2438,15 +2647,12 @@ void TerminationNotificationResponse_StackTrace::InternalSwap(TerminationNotific
   auto* lhs_arena = GetArenaForAllocation();
   auto* rhs_arena = other->GetArenaForAllocation();
   _internal_metadata_.InternalSwap(&other->_internal_metadata_);
-  elements_.InternalSwap(&other->elements_);
-  ::PROTOBUF_NAMESPACE_ID::internal::ArenaStringPtr::InternalSwap(
-      &type_, lhs_arena,
-      &other->type_, rhs_arena
-  );
-  ::PROTOBUF_NAMESPACE_ID::internal::ArenaStringPtr::InternalSwap(
-      &message_, lhs_arena,
-      &other->message_, rhs_arena
-  );
+  _internal_mutable_elements()->InternalSwap(
+      other->_internal_mutable_elements());
+  ::_pbi::ArenaStringPtr::InternalSwap(&_impl_.type_, lhs_arena,
+                                       &other->_impl_.type_, rhs_arena);
+  ::_pbi::ArenaStringPtr::InternalSwap(&_impl_.message_, lhs_arena,
+                                       &other->_impl_.message_, rhs_arena);
 }
 
 ::PROTOBUF_NAMESPACE_ID::Metadata TerminationNotificationResponse_StackTrace::GetMetadata() const {
@@ -2454,47 +2660,60 @@ void TerminationNotificationResponse_StackTrace::InternalSwap(TerminationNotific
       &descriptor_table_deephaven_2fproto_2fsession_2eproto_getter, &descriptor_table_deephaven_2fproto_2fsession_2eproto_once,
       file_level_metadata_deephaven_2fproto_2fsession_2eproto[11]);
 }
-
 // ===================================================================
 
 class TerminationNotificationResponse::_Internal {
  public:
 };
 
-TerminationNotificationResponse::TerminationNotificationResponse(::PROTOBUF_NAMESPACE_ID::Arena* arena,
-                         bool is_message_owned)
-  : ::PROTOBUF_NAMESPACE_ID::Message(arena, is_message_owned),
-  stack_traces_(arena) {
-  SharedCtor();
+TerminationNotificationResponse::TerminationNotificationResponse(::PROTOBUF_NAMESPACE_ID::Arena* arena)
+  : ::PROTOBUF_NAMESPACE_ID::Message(arena) {
+  SharedCtor(arena);
   // @@protoc_insertion_point(arena_constructor:io.deephaven.proto.backplane.grpc.TerminationNotificationResponse)
 }
 TerminationNotificationResponse::TerminationNotificationResponse(const TerminationNotificationResponse& from)
-  : ::PROTOBUF_NAMESPACE_ID::Message(),
-      stack_traces_(from.stack_traces_) {
+  : ::PROTOBUF_NAMESPACE_ID::Message() {
+  TerminationNotificationResponse* const _this = this; (void)_this;
+  new (&_impl_) Impl_{
+      decltype(_impl_.stack_traces_){from._impl_.stack_traces_}
+    , decltype(_impl_.reason_) {}
+
+    , decltype(_impl_.abnormal_termination_) {}
+
+    , decltype(_impl_.is_from_uncaught_exception_) {}
+
+    , /*decltype(_impl_._cached_size_)*/{}};
+
   _internal_metadata_.MergeFrom<::PROTOBUF_NAMESPACE_ID::UnknownFieldSet>(from._internal_metadata_);
-  reason_.InitDefault();
+  _impl_.reason_.InitDefault();
   #ifdef PROTOBUF_FORCE_COPY_DEFAULT_STRING
-    reason_.Set("", GetArenaForAllocation());
-  #endif // PROTOBUF_FORCE_COPY_DEFAULT_STRING
+        _impl_.reason_.Set("", GetArenaForAllocation());
+  #endif  // PROTOBUF_FORCE_COPY_DEFAULT_STRING
   if (!from._internal_reason().empty()) {
-    reason_.Set(from._internal_reason(), 
-      GetArenaForAllocation());
+    _this->_impl_.reason_.Set(from._internal_reason(), _this->GetArenaForAllocation());
   }
-  ::memcpy(&abnormal_termination_, &from.abnormal_termination_,
-    static_cast<size_t>(reinterpret_cast<char*>(&is_from_uncaught_exception_) -
-    reinterpret_cast<char*>(&abnormal_termination_)) + sizeof(is_from_uncaught_exception_));
+  ::memcpy(&_impl_.abnormal_termination_, &from._impl_.abnormal_termination_,
+    static_cast<::size_t>(reinterpret_cast<char*>(&_impl_.is_from_uncaught_exception_) -
+    reinterpret_cast<char*>(&_impl_.abnormal_termination_)) + sizeof(_impl_.is_from_uncaught_exception_));
   // @@protoc_insertion_point(copy_constructor:io.deephaven.proto.backplane.grpc.TerminationNotificationResponse)
 }
 
-inline void TerminationNotificationResponse::SharedCtor() {
-reason_.InitDefault();
-#ifdef PROTOBUF_FORCE_COPY_DEFAULT_STRING
-  reason_.Set("", GetArenaForAllocation());
-#endif // PROTOBUF_FORCE_COPY_DEFAULT_STRING
-::memset(reinterpret_cast<char*>(this) + static_cast<size_t>(
-    reinterpret_cast<char*>(&abnormal_termination_) - reinterpret_cast<char*>(this)),
-    0, static_cast<size_t>(reinterpret_cast<char*>(&is_from_uncaught_exception_) -
-    reinterpret_cast<char*>(&abnormal_termination_)) + sizeof(is_from_uncaught_exception_));
+inline void TerminationNotificationResponse::SharedCtor(::_pb::Arena* arena) {
+  (void)arena;
+  new (&_impl_) Impl_{
+      decltype(_impl_.stack_traces_){arena}
+    , decltype(_impl_.reason_) {}
+
+    , decltype(_impl_.abnormal_termination_) { false }
+
+    , decltype(_impl_.is_from_uncaught_exception_) { false }
+
+    , /*decltype(_impl_._cached_size_)*/{}
+  };
+  _impl_.reason_.InitDefault();
+  #ifdef PROTOBUF_FORCE_COPY_DEFAULT_STRING
+        _impl_.reason_.Set("", GetArenaForAllocation());
+  #endif  // PROTOBUF_FORCE_COPY_DEFAULT_STRING
 }
 
 TerminationNotificationResponse::~TerminationNotificationResponse() {
@@ -2507,63 +2726,67 @@ TerminationNotificationResponse::~TerminationNotificationResponse() {
 }
 
 inline void TerminationNotificationResponse::SharedDtor() {
-  GOOGLE_DCHECK(GetArenaForAllocation() == nullptr);
-  reason_.Destroy();
+  ABSL_DCHECK(GetArenaForAllocation() == nullptr);
+  _internal_mutable_stack_traces()->~RepeatedPtrField();
+  _impl_.reason_.Destroy();
 }
 
 void TerminationNotificationResponse::SetCachedSize(int size) const {
-  _cached_size_.Set(size);
+  _impl_._cached_size_.Set(size);
 }
 
 void TerminationNotificationResponse::Clear() {
 // @@protoc_insertion_point(message_clear_start:io.deephaven.proto.backplane.grpc.TerminationNotificationResponse)
-  uint32_t cached_has_bits = 0;
+  ::uint32_t cached_has_bits = 0;
   // Prevent compiler warnings about cached_has_bits being unused
   (void) cached_has_bits;
 
-  stack_traces_.Clear();
-  reason_.ClearToEmpty();
-  ::memset(&abnormal_termination_, 0, static_cast<size_t>(
-      reinterpret_cast<char*>(&is_from_uncaught_exception_) -
-      reinterpret_cast<char*>(&abnormal_termination_)) + sizeof(is_from_uncaught_exception_));
+  _internal_mutable_stack_traces()->Clear();
+  _impl_.reason_.ClearToEmpty();
+  ::memset(&_impl_.abnormal_termination_, 0, static_cast<::size_t>(
+      reinterpret_cast<char*>(&_impl_.is_from_uncaught_exception_) -
+      reinterpret_cast<char*>(&_impl_.abnormal_termination_)) + sizeof(_impl_.is_from_uncaught_exception_));
   _internal_metadata_.Clear<::PROTOBUF_NAMESPACE_ID::UnknownFieldSet>();
 }
 
 const char* TerminationNotificationResponse::_InternalParse(const char* ptr, ::_pbi::ParseContext* ctx) {
 #define CHK_(x) if (PROTOBUF_PREDICT_FALSE(!(x))) goto failure
   while (!ctx->Done(&ptr)) {
-    uint32_t tag;
+    ::uint32_t tag;
     ptr = ::_pbi::ReadTag(ptr, &tag);
     switch (tag >> 3) {
       // bool abnormal_termination = 1;
       case 1:
-        if (PROTOBUF_PREDICT_TRUE(static_cast<uint8_t>(tag) == 8)) {
-          abnormal_termination_ = ::PROTOBUF_NAMESPACE_ID::internal::ReadVarint64(&ptr);
+        if (PROTOBUF_PREDICT_TRUE(static_cast<::uint8_t>(tag) == 8)) {
+          _impl_.abnormal_termination_ = ::PROTOBUF_NAMESPACE_ID::internal::ReadVarint64(&ptr);
           CHK_(ptr);
-        } else
+        } else {
           goto handle_unusual;
+        }
         continue;
       // string reason = 2;
       case 2:
-        if (PROTOBUF_PREDICT_TRUE(static_cast<uint8_t>(tag) == 18)) {
+        if (PROTOBUF_PREDICT_TRUE(static_cast<::uint8_t>(tag) == 18)) {
           auto str = _internal_mutable_reason();
           ptr = ::_pbi::InlineGreedyStringParser(str, ptr, ctx);
           CHK_(ptr);
           CHK_(::_pbi::VerifyUTF8(str, "io.deephaven.proto.backplane.grpc.TerminationNotificationResponse.reason"));
-        } else
+        } else {
           goto handle_unusual;
+        }
         continue;
       // bool is_from_uncaught_exception = 3;
       case 3:
-        if (PROTOBUF_PREDICT_TRUE(static_cast<uint8_t>(tag) == 24)) {
-          is_from_uncaught_exception_ = ::PROTOBUF_NAMESPACE_ID::internal::ReadVarint64(&ptr);
+        if (PROTOBUF_PREDICT_TRUE(static_cast<::uint8_t>(tag) == 24)) {
+          _impl_.is_from_uncaught_exception_ = ::PROTOBUF_NAMESPACE_ID::internal::ReadVarint64(&ptr);
           CHK_(ptr);
-        } else
+        } else {
           goto handle_unusual;
+        }
         continue;
       // repeated .io.deephaven.proto.backplane.grpc.TerminationNotificationResponse.StackTrace stack_traces = 4;
       case 4:
-        if (PROTOBUF_PREDICT_TRUE(static_cast<uint8_t>(tag) == 34)) {
+        if (PROTOBUF_PREDICT_TRUE(static_cast<::uint8_t>(tag) == 34)) {
           ptr -= 1;
           do {
             ptr += 1;
@@ -2571,8 +2794,9 @@ const char* TerminationNotificationResponse::_InternalParse(const char* ptr, ::_
             CHK_(ptr);
             if (!ctx->DataAvailable(ptr)) break;
           } while (::PROTOBUF_NAMESPACE_ID::internal::ExpectTag<34>(ptr));
-        } else
+        } else {
           goto handle_unusual;
+        }
         continue;
       default:
         goto handle_unusual;
@@ -2597,32 +2821,32 @@ failure:
 #undef CHK_
 }
 
-uint8_t* TerminationNotificationResponse::_InternalSerialize(
-    uint8_t* target, ::PROTOBUF_NAMESPACE_ID::io::EpsCopyOutputStream* stream) const {
+::uint8_t* TerminationNotificationResponse::_InternalSerialize(
+    ::uint8_t* target, ::PROTOBUF_NAMESPACE_ID::io::EpsCopyOutputStream* stream) const {
   // @@protoc_insertion_point(serialize_to_array_start:io.deephaven.proto.backplane.grpc.TerminationNotificationResponse)
-  uint32_t cached_has_bits = 0;
+  ::uint32_t cached_has_bits = 0;
   (void) cached_has_bits;
 
   // bool abnormal_termination = 1;
   if (this->_internal_abnormal_termination() != 0) {
     target = stream->EnsureSpace(target);
-    target = ::_pbi::WireFormatLite::WriteBoolToArray(1, this->_internal_abnormal_termination(), target);
+    target = ::_pbi::WireFormatLite::WriteBoolToArray(
+        1, this->_internal_abnormal_termination(), target);
   }
 
   // string reason = 2;
   if (!this->_internal_reason().empty()) {
+    const std::string& _s = this->_internal_reason();
     ::PROTOBUF_NAMESPACE_ID::internal::WireFormatLite::VerifyUtf8String(
-      this->_internal_reason().data(), static_cast<int>(this->_internal_reason().length()),
-      ::PROTOBUF_NAMESPACE_ID::internal::WireFormatLite::SERIALIZE,
-      "io.deephaven.proto.backplane.grpc.TerminationNotificationResponse.reason");
-    target = stream->WriteStringMaybeAliased(
-        2, this->_internal_reason(), target);
+        _s.data(), static_cast<int>(_s.length()), ::PROTOBUF_NAMESPACE_ID::internal::WireFormatLite::SERIALIZE, "io.deephaven.proto.backplane.grpc.TerminationNotificationResponse.reason");
+    target = stream->WriteStringMaybeAliased(2, _s, target);
   }
 
   // bool is_from_uncaught_exception = 3;
   if (this->_internal_is_from_uncaught_exception() != 0) {
     target = stream->EnsureSpace(target);
-    target = ::_pbi::WireFormatLite::WriteBoolToArray(3, this->_internal_is_from_uncaught_exception(), target);
+    target = ::_pbi::WireFormatLite::WriteBoolToArray(
+        3, this->_internal_is_from_uncaught_exception(), target);
   }
 
   // repeated .io.deephaven.proto.backplane.grpc.TerminationNotificationResponse.StackTrace stack_traces = 4;
@@ -2641,71 +2865,66 @@ uint8_t* TerminationNotificationResponse::_InternalSerialize(
   return target;
 }
 
-size_t TerminationNotificationResponse::ByteSizeLong() const {
+::size_t TerminationNotificationResponse::ByteSizeLong() const {
 // @@protoc_insertion_point(message_byte_size_start:io.deephaven.proto.backplane.grpc.TerminationNotificationResponse)
-  size_t total_size = 0;
+  ::size_t total_size = 0;
 
-  uint32_t cached_has_bits = 0;
+  ::uint32_t cached_has_bits = 0;
   // Prevent compiler warnings about cached_has_bits being unused
   (void) cached_has_bits;
 
   // repeated .io.deephaven.proto.backplane.grpc.TerminationNotificationResponse.StackTrace stack_traces = 4;
   total_size += 1UL * this->_internal_stack_traces_size();
-  for (const auto& msg : this->stack_traces_) {
+  for (const auto& msg : this->_internal_stack_traces()) {
     total_size +=
       ::PROTOBUF_NAMESPACE_ID::internal::WireFormatLite::MessageSize(msg);
   }
 
   // string reason = 2;
   if (!this->_internal_reason().empty()) {
-    total_size += 1 +
-      ::PROTOBUF_NAMESPACE_ID::internal::WireFormatLite::StringSize(
-        this->_internal_reason());
+    total_size += 1 + ::PROTOBUF_NAMESPACE_ID::internal::WireFormatLite::StringSize(
+                                    this->_internal_reason());
   }
 
   // bool abnormal_termination = 1;
   if (this->_internal_abnormal_termination() != 0) {
-    total_size += 1 + 1;
+    total_size += 2;
   }
 
   // bool is_from_uncaught_exception = 3;
   if (this->_internal_is_from_uncaught_exception() != 0) {
-    total_size += 1 + 1;
+    total_size += 2;
   }
 
-  return MaybeComputeUnknownFieldsSize(total_size, &_cached_size_);
+  return MaybeComputeUnknownFieldsSize(total_size, &_impl_._cached_size_);
 }
 
 const ::PROTOBUF_NAMESPACE_ID::Message::ClassData TerminationNotificationResponse::_class_data_ = {
-    ::PROTOBUF_NAMESPACE_ID::Message::CopyWithSizeCheck,
+    ::PROTOBUF_NAMESPACE_ID::Message::CopyWithSourceCheck,
     TerminationNotificationResponse::MergeImpl
 };
 const ::PROTOBUF_NAMESPACE_ID::Message::ClassData*TerminationNotificationResponse::GetClassData() const { return &_class_data_; }
 
-void TerminationNotificationResponse::MergeImpl(::PROTOBUF_NAMESPACE_ID::Message* to,
-                      const ::PROTOBUF_NAMESPACE_ID::Message& from) {
-  static_cast<TerminationNotificationResponse *>(to)->MergeFrom(
-      static_cast<const TerminationNotificationResponse &>(from));
-}
 
-
-void TerminationNotificationResponse::MergeFrom(const TerminationNotificationResponse& from) {
-// @@protoc_insertion_point(class_specific_merge_from_start:io.deephaven.proto.backplane.grpc.TerminationNotificationResponse)
-  GOOGLE_DCHECK_NE(&from, this);
-  uint32_t cached_has_bits = 0;
+void TerminationNotificationResponse::MergeImpl(::PROTOBUF_NAMESPACE_ID::Message& to_msg, const ::PROTOBUF_NAMESPACE_ID::Message& from_msg) {
+  auto* const _this = static_cast<TerminationNotificationResponse*>(&to_msg);
+  auto& from = static_cast<const TerminationNotificationResponse&>(from_msg);
+  // @@protoc_insertion_point(class_specific_merge_from_start:io.deephaven.proto.backplane.grpc.TerminationNotificationResponse)
+  ABSL_DCHECK_NE(&from, _this);
+  ::uint32_t cached_has_bits = 0;
   (void) cached_has_bits;
 
-  stack_traces_.MergeFrom(from.stack_traces_);
+  _this->_internal_mutable_stack_traces()->MergeFrom(from._internal_stack_traces());
   if (!from._internal_reason().empty()) {
-    _internal_set_reason(from._internal_reason());
+    _this->_internal_set_reason(from._internal_reason());
   }
   if (from._internal_abnormal_termination() != 0) {
-    _internal_set_abnormal_termination(from._internal_abnormal_termination());
+    _this->_internal_set_abnormal_termination(from._internal_abnormal_termination());
   }
   if (from._internal_is_from_uncaught_exception() != 0) {
-    _internal_set_is_from_uncaught_exception(from._internal_is_from_uncaught_exception());
+    _this->_internal_set_is_from_uncaught_exception(from._internal_is_from_uncaught_exception());
   }
-  _internal_metadata_.MergeFrom<::PROTOBUF_NAMESPACE_ID::UnknownFieldSet>(from._internal_metadata_);
+  _this->_internal_metadata_.MergeFrom<::PROTOBUF_NAMESPACE_ID::UnknownFieldSet>(from._internal_metadata_);
 }
 
 void TerminationNotificationResponse::CopyFrom(const TerminationNotificationResponse& from) {
@@ -2724,17 +2943,15 @@ void TerminationNotificationResponse::InternalSwap(TerminationNotificationRespon
   auto* lhs_arena = GetArenaForAllocation();
   auto* rhs_arena = other->GetArenaForAllocation();
   _internal_metadata_.InternalSwap(&other->_internal_metadata_);
-  stack_traces_.InternalSwap(&other->stack_traces_);
-  ::PROTOBUF_NAMESPACE_ID::internal::ArenaStringPtr::InternalSwap(
-      &reason_, lhs_arena,
-      &other->reason_, rhs_arena
-  );
+  _internal_mutable_stack_traces()->InternalSwap(other->_internal_mutable_stack_traces());
+  ::_pbi::ArenaStringPtr::InternalSwap(&_impl_.reason_, lhs_arena,
+                                       &other->_impl_.reason_, rhs_arena);
   ::PROTOBUF_NAMESPACE_ID::internal::memswap<
-      PROTOBUF_FIELD_OFFSET(TerminationNotificationResponse, is_from_uncaught_exception_)
-      + sizeof(TerminationNotificationResponse::is_from_uncaught_exception_)
-      - PROTOBUF_FIELD_OFFSET(TerminationNotificationResponse, abnormal_termination_)>(
-          reinterpret_cast<char*>(&abnormal_termination_),
-          reinterpret_cast<char*>(&other->abnormal_termination_));
+      PROTOBUF_FIELD_OFFSET(TerminationNotificationResponse, _impl_.is_from_uncaught_exception_)
+      + sizeof(TerminationNotificationResponse::_impl_.is_from_uncaught_exception_)
+      - PROTOBUF_FIELD_OFFSET(TerminationNotificationResponse, _impl_.abnormal_termination_)>(
+          reinterpret_cast<char*>(&_impl_.abnormal_termination_),
+          reinterpret_cast<char*>(&other->_impl_.abnormal_termination_));
 }
 
 ::PROTOBUF_NAMESPACE_ID::Metadata TerminationNotificationResponse::GetMetadata() const {
@@ -2742,7 +2959,6 @@ void TerminationNotificationResponse::InternalSwap(TerminationNotificationRespon
       &descriptor_table_deephaven_2fproto_2fsession_2eproto_getter, &descriptor_table_deephaven_2fproto_2fsession_2eproto_once,
       file_level_metadata_deephaven_2fproto_2fsession_2eproto[12]);
 }
-
 // @@protoc_insertion_point(namespace_scope)
 }  // namespace grpc
 }  // namespace backplane
@@ -2803,6 +3019,5 @@ Arena::CreateMaybeMessage< ::io::deephaven::proto::backplane::grpc::TerminationN
   return Arena::CreateMessageInternal< ::io::deephaven::proto::backplane::grpc::TerminationNotificationResponse >(arena);
 }
 PROTOBUF_NAMESPACE_CLOSE
-
 // @@protoc_insertion_point(global_scope)
-#include <google/protobuf/port_undef.inc>
+#include "google/protobuf/port_undef.inc"

@@ -5,7 +5,6 @@
 
 #include <string>
 #include <arrow/type.h>
-#include <arrow/util/string_view.h>
 #include "deephaven/dhcore/types.h"
 
 namespace deephaven::client::arrowutil {
@@ -22,7 +21,7 @@ public:
   /**
    * The "convert" function for string_view is std::string
    */
-  static void convert(arrow::util::string_view sv, std::string *dest) {
+  static void convert(std::string_view sv, std::string *dest) {
     dest->clear();
     dest->append(sv.data(), sv.size());
   }
