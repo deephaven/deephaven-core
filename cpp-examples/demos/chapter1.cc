@@ -13,7 +13,7 @@
 using deephaven::client::Client;
 using deephaven::client::TableHandle;
 using deephaven::client::TableHandleManager;
-using deephaven::client::utility::okOrThrow;
+using deephaven::client::utility::valueOrThrow;
 
 namespace {
 void mainMenu(const TableHandleManager &manager);
@@ -151,11 +151,7 @@ void printTable(const TableHandle &table, bool nullAware) {
   auto fsr = table.getFlightStreamReader();
 
   while (true) {
-    arrow::Result<arrow::flight::FlightStreamChunk> result = fsr->Next();
-    if (!result.ok()) {
-      throw std::runtime_error(DEEPHAVEN_DEBUG_MSG("result from Next not ok"));
-    }
-    auto chunk = result.ValueOrDie();
+    auto chunk = valueOrThrow(DEEPHAVEN_EXPR_MSG(fsr->Next()));
     if (chunk.data == nullptr) {
       break;
     }
