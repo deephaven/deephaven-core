@@ -4,6 +4,7 @@ import io.grpc.internal.GrpcUtil;
 import jakarta.servlet.AsyncContext;
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
+import jakarta.servlet.ServletOutputStream;
 import jakarta.servlet.ServletRequest;
 import jakarta.servlet.ServletResponse;
 import jakarta.servlet.http.HttpFilter;
@@ -87,7 +88,13 @@ public class GrpcWebFilter extends HttpFilter {
                                             throw new IllegalStateException(
                                                     "Incorrectly sized buffer, trailer payload will be sized wrong");
                                         }
-                                        wrappedResponse.getOutputStream().write(payload.array());
+                                        ServletOutputStream outputStream = wrappedResponse.getOutputStream();
+
+                                        // Guard for async cases
+                                        // TODO handle "unready" cases
+                                        if (outputStream.isReady()) {
+                                            outputStream.write(payload.array());
+                                        }
                                     }
                                 }
                             } catch (IOException e) {
@@ -97,8 +104,15 @@ public class GrpcWebFilter extends HttpFilter {
                                 logger.log(Level.FINE, "Error sending grpc-web trailers", e);
                             }
 
-                            // Let the superclass complete the stream so we formally close it
-                            super.complete();
+                            try {
+                                // Let the superclass complete the stream so we formally close it
+                                super.complete();
+                            } catch (Exception e) {
+                                // As above, complete() should not throw, so just log this failure and continue.
+                                // This statement is somewhat dubious, since Jetty itself is clearly throwing in
+                                // complete()... leading us to add this try/catch to begin with.
+                                logger.log(Level.FINE, "Error invoking complete() on underlying stream", e);
+                            }
                         }
                     };
                 }
