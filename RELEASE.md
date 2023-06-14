@@ -125,17 +125,19 @@ The specific action can be found based off of the name of the release branch: [?
 
 The "Publish" step creates the artifacts and publishes the jars to a [Maven Central staging repository](https://s01.oss.sonatype.org).
 
-The "Upload Applications" step uploads the Deephahven server application as a *temporary* GitHub action artifact.
+The "Upload Artifacts" step uploads the Deephaven server application, the deephaven-core wheel, and the deephaven-server wheel as *temporary* GitHub action artifacts.
 
 The "Publish deephaven-core to PyPi" uploads the deephaven-core wheel to [PyPi](https://pypi.org/project/deephaven-core/).
+If this step fails, the deephaven-core wheel from the "Upload Artifacts" step can be uploaded manually.
 
 The "Publish deephaven-server to PyPi" uploads the deephaven-server wheel to [PyPi](https://pypi.org/project/deephaven-server/).
+If this step fails, the deephaven-server wheel from the "Upload Artifacts" step can be uploaded manually.
 
 Once the workflow job is done, ensure all publication sources have the new artifacts.
 
 ### 5. Download artifacts
 
-Once the full publish-ci.yml worflow is done, the Deephaven server application artifact can be downloaded from the GitHub Artifacts (located in the "Summary" tab of the action), and the deephaven-core wheel can be downloaded from PyPi.
+Once the full publish-ci.yml worflow is done, the release artifacts can be downloaded from the GitHub Artifacts (located in the "Summary" tab of the action).
 These are currently manual steps taken from the browser.
 
 There is potential in the future for QA-ing these artifacts above and beyond the integration testing that CI provides, as the release is not set in stone yet.
