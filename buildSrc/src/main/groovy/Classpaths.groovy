@@ -96,7 +96,7 @@ class Classpaths {
     static final String GRPC_GROUP = 'io.grpc'
     static final String GRPC_NAME = 'grpc-bom'
     // Only bump this in concert w/ BORINGSSL_VERSION
-    static final String GRPC_VERSION = '1.50.1'
+    static final String GRPC_VERSION = '1.56.0'
 
     // TODO(deephaven-core#1685): Create strategy around updating and maintaining protoc version
     static final String PROTOBUF_GROUP = 'com.google.protobuf'
@@ -107,7 +107,7 @@ class Classpaths {
     static final String BORINGSSL_GROUP = 'io.netty'
     static final String BORINGSSL_NAME = 'netty-tcnative-boringssl-static'
     // Only bump this in concert w/ GRPC_VERSION
-    static final String BORINGSSL_VERSION = '2.0.54.Final'
+    static final String BORINGSSL_VERSION = '2.0.61.Final'
 
     static final String JACKSON_GROUP = 'com.fasterxml.jackson'
     static final String JACKSON_NAME = 'jackson-bom'
