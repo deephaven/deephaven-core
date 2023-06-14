@@ -8,22 +8,22 @@ server-side operations from the comfort of RStudio or any other R interface.
 The Deephaven Client currently provides three basic functionalities:
 
 1. Connecting to a Deephaven server
--   with anonymous authentication, without the requirement for a username or password
--   with basic authentication that requires a username and password
--   with custom authentication that requires general key-value credentials
+   -   with anonymous authentication, without the requirement for a username or password
+   -   with basic authentication that requires a username and password
+   -   with custom authentication that requires general key-value credentials
 
 2. Interfacing with Deephaven Tables on the server
--   Retrieve references to tables on the server without importing any of their data locally
--   Pull table data into an [Arrow RecordBatchReader](https://arrow.apache.org/docs/r/reference/RecordBatchReader.html),
+   -   Retrieve references to tables on the server without importing any of their data locally
+   -   Pull table data into an [Arrow RecordBatchReader](https://arrow.apache.org/docs/r/reference/RecordBatchReader.html),
 an [Arrow Table](https://arrow.apache.org/docs/r/reference/Table.html),
 a [dplyr Tibble](https://tibble.tidyverse.org),
 or an [R Data Frame](https://stat.ethz.ch/R-manual/R-devel/library/base/html/data.frame.html)
--   Create new tables on the server from any of the formats listed above
--   Bind new server-side tables to variable names, enabling access from outside the current R session
+   -   Create new tables on the server from any of the formats listed above
+   -   Bind new server-side tables to variable names, enabling access from outside the current R session
 
 3. Running scripts on the server
--   If your server is equipped with a console, run a script in that console
--   Currently, Python and Groovy are supported
+   -   If your server is equipped with a console, run a script in that console
+   -   Currently, Python and Groovy are supported
 
 ## Installation
 
