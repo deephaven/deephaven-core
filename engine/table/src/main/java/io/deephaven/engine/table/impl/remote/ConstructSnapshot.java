@@ -1162,8 +1162,7 @@ public class ConstructSnapshot {
                 }
                 if (snapshotSuccessful) {
                     if (functionSuccessful) {
-                        step = usePrev ? LogicalClock.getStep(beforeClockValue) - 1
-                                : LogicalClock.getStep(beforeClockValue);
+                        step = LogicalClock.getStep(beforeClockValue) - (usePrev ? 1 : 0);
                         snapshotLivenessScope.transferTo(initialLivenessManager);
                     }
                     break;

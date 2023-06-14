@@ -13,8 +13,8 @@ import io.deephaven.base.verify.Assert;
 import io.deephaven.base.verify.Require;
 import io.deephaven.configuration.Configuration;
 import io.deephaven.engine.context.ExecutionContext;
-import io.deephaven.engine.context.PoisonedUpdateGraph;
 import io.deephaven.engine.exceptions.UpdateGraphConflictException;
+import io.deephaven.engine.table.impl.util.StepUpdater;
 import io.deephaven.engine.updategraph.NotificationQueue;
 import io.deephaven.engine.updategraph.UpdateGraph;
 import io.deephaven.engine.exceptions.NotSortableException;
@@ -45,6 +45,7 @@ import org.jetbrains.annotations.Nullable;
 import java.io.*;
 import java.util.*;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicLongFieldUpdater;
 import java.util.concurrent.atomic.AtomicReferenceFieldUpdater;
 import java.util.concurrent.locks.Condition;
 import java.util.function.BiConsumer;
@@ -84,6 +85,10 @@ public abstract class BaseTable<IMPL_TYPE extends BaseTable<IMPL_TYPE>> extends 
                 throw new UnsupportedOperationException("EMPTY_CHILDREN does not support adds");
             }, Collections.emptyList());
 
+    @SuppressWarnings("rawtypes")
+    private static final AtomicLongFieldUpdater<BaseTable> LAST_SATISFIED_STEP_UPDATER =
+            AtomicLongFieldUpdater.newUpdater(BaseTable.class, "lastSatisfiedStep");
+
     /**
      * This table's definition.
      */
@@ -99,6 +104,11 @@ public abstract class BaseTable<IMPL_TYPE extends BaseTable<IMPL_TYPE>> extends 
      */
     protected final UpdateGraph updateGraph;
 
+    /**
+     * The last clock step when this table dispatched a notification.
+     */
+    private volatile long lastNotificationStep;
+
     // Fields for DynamicNode implementation and update propagation support
     private volatile boolean refreshing;
     @SuppressWarnings({"FieldMayBeFinal", "unused"}) // Set via ensureField with CONDITION_UPDATER
@@ -108,8 +118,8 @@ public abstract class BaseTable<IMPL_TYPE extends BaseTable<IMPL_TYPE>> extends 
     @SuppressWarnings("FieldMayBeFinal") // Set via ensureField with CHILD_LISTENER_REFERENCES_UPDATER
     private volatile SimpleReferenceManager<TableUpdateListener, ? extends SimpleReference<TableUpdateListener>> childListenerReferences =
             EMPTY_CHILD_LISTENER_REFERENCES;
-    private volatile long lastNotificationStep;
-    private volatile long lastSatisfiedStep;
+    @SuppressWarnings("FieldMayBeFinal")
+    private volatile long lastSatisfiedStep = NotificationStepReceiver.NULL_NOTIFICATION_STEP;
     private volatile boolean isFailed;
 
     /**
@@ -468,7 +478,7 @@ public abstract class BaseTable<IMPL_TYPE extends BaseTable<IMPL_TYPE>> extends 
             if (updateGraph.satisfied(step)) {
                 updateGraph.logDependencies().append("Root node satisfied ").append(this)
                         .endl();
-                lastSatisfiedStep = step;
+                StepUpdater.tryUpdateRecordedStep(LAST_SATISFIED_STEP_UPDATER, this, step);
                 return true;
             }
             return false;
@@ -493,7 +503,7 @@ public abstract class BaseTable<IMPL_TYPE extends BaseTable<IMPL_TYPE>> extends 
                 .append("All parents dependencies satisfied for ").append(this)
                 .endl();
 
-        lastSatisfiedStep = step;
+        StepUpdater.tryUpdateRecordedStep(LAST_SATISFIED_STEP_UPDATER, this, step);
 
         return true;
     }
@@ -1252,7 +1262,7 @@ public abstract class BaseTable<IMPL_TYPE extends BaseTable<IMPL_TYPE>> extends 
     }
 
     public interface SwapListenerFactory<T extends SwapListener> {
-        T newListener(BaseTable sourceTable);
+        T newListener(BaseTable<?> sourceTable);
     }
 
     /**
