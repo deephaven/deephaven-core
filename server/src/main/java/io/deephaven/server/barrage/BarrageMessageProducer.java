@@ -236,7 +236,7 @@ public class BarrageMessageProducer<MessageView> extends LivenessArtifact
     private final WritableColumnSource<?>[] deltaColumns;
 
     /**
-     * This is the last step on which the UGP-synced RowSet was updated. This is used only for consistency checking
+     * This is the last step on which the UG-synced RowSet was updated. This is used only for consistency checking
      * between our initial creation and subsequent updates.
      */
     private long lastIndexClockStep = 0;
@@ -2135,10 +2135,10 @@ public class BarrageMessageProducer<MessageView> extends LivenessArtifact
 
             capturedLastIndexClockStep = getLastIndexClockStep();
 
-            final LogicalClock.State state = LogicalClock.getState(beforeClockValue);
-            final long step = LogicalClock.getStep(beforeClockValue);
-            if (state != LogicalClock.State.Updating) {
-                this.step = step;
+            final LogicalClock.State beforeState = LogicalClock.getState(beforeClockValue);
+            final long beforeStep = LogicalClock.getStep(beforeClockValue);
+            if (beforeState == LogicalClock.State.Idle) {
+                this.step = beforeStep;
                 return false;
             }
 
@@ -2199,8 +2199,7 @@ public class BarrageMessageProducer<MessageView> extends LivenessArtifact
             onGetSnapshot.run();
         }
 
-        final SnapshotControl snapshotControl =
-                new SnapshotControl(snapshotSubscriptions);
+        final SnapshotControl snapshotControl = new SnapshotControl(snapshotSubscriptions);
         final BarrageMessage msg = ConstructSnapshot.constructBackplaneSnapshotInPositionSpace(
                 this, parent, columnsToSnapshot, positionsToSnapshot, reversePositionsToSnapshot,
                 snapshotControl);

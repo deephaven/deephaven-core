@@ -29,6 +29,7 @@ import java.util.*;
  * source table, but a refreshing filter in which case our listener recorder is null.
  */
 class WhereListener extends MergedListener {
+
     private final QueryTable sourceTable;
     private final QueryTable.FilteredTable result;
     private final WritableRowSet currentMapping;
@@ -36,10 +37,11 @@ class WhereListener extends MergedListener {
     private final ModifiedColumnSet filterColumns;
     private final ListenerRecorder recorder;
     private final long minimumThreadSize;
-    private long initialNotificationStep = NotificationStepReceiver.NULL_NOTIFICATION_STEP;
-    private long finalNotificationStep = NotificationStepReceiver.NULL_NOTIFICATION_STEP;
     private final boolean permitParallelization;
     private final int segmentCount;
+
+    private volatile long initialNotificationStep = NotificationStepReceiver.NULL_NOTIFICATION_STEP;
+    private volatile long finalNotificationStep = NotificationStepReceiver.NULL_NOTIFICATION_STEP;
 
     WhereListener(
             final Logger log,

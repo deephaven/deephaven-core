@@ -8,6 +8,7 @@ import io.deephaven.base.log.LogOutputAppendable;
 import io.deephaven.base.verify.Assert;
 import io.deephaven.configuration.Configuration;
 import io.deephaven.engine.context.ExecutionContext;
+import io.deephaven.engine.table.impl.util.StepUpdater;
 import io.deephaven.engine.updategraph.NotificationQueue;
 import io.deephaven.engine.exceptions.UncheckedTableException;
 import io.deephaven.engine.table.TableListener;
@@ -50,7 +51,9 @@ public abstract class InstrumentedTableListenerBase extends LivenessArtifact
             .getInstance()
             .getBooleanWithDefault("InstrumentedTableListenerBase.verboseLogging", false);
 
+    @SuppressWarnings("FieldMayBeFinal")
     private volatile long lastCompletedStep = NotificationStepReceiver.NULL_NOTIFICATION_STEP;
+    @SuppressWarnings("FieldMayBeFinal")
     private volatile long lastEnqueuedStep = NotificationStepReceiver.NULL_NOTIFICATION_STEP;
 
     InstrumentedTableListenerBase(@Nullable String description, boolean terminalListener) {
@@ -97,6 +100,9 @@ public abstract class InstrumentedTableListenerBase extends LivenessArtifact
 
     @Override
     public boolean satisfied(final long step) {
+        StepUpdater.checkForOlderStep(step, lastCompletedStep);
+        StepUpdater.checkForOlderStep(step, lastEnqueuedStep);
+
         // Check and see if we've already been completed.
         if (lastCompletedStep == step) {
             getUpdateGraph().logDependencies()
@@ -148,8 +154,7 @@ public abstract class InstrumentedTableListenerBase extends LivenessArtifact
 
         // Mark this node as completed. All our dependencies have been satisfied, but we are not enqueued, so we can
         // never actually execute.
-        final long oldLastCompletedStep = LAST_COMPLETED_STEP_UPDATER.getAndSet(this, step);
-        Assert.lt(oldLastCompletedStep, "oldLastCompletedStep", step, "step");
+        StepUpdater.tryUpdateRecordedStep(LAST_COMPLETED_STEP_UPDATER, this, step);
         return true;
     }
 
@@ -161,7 +166,9 @@ public abstract class InstrumentedTableListenerBase extends LivenessArtifact
 
     protected abstract void onFailureInternal(Throwable originalException, Entry sourceEntry);
 
-    protected final void onFailureInternalWithDependent(final BaseTable<?> dependent, final Throwable originalException,
+    protected final void onFailureInternalWithDependent(
+            final BaseTable<?> dependent,
+            final Throwable originalException,
             final Entry sourceEntry) {
         dependent.notifyListenersOnError(originalException, sourceEntry);
 
@@ -234,9 +241,8 @@ public abstract class InstrumentedTableListenerBase extends LivenessArtifact
                         + ", step=" + currentStep + ", lastCompletedStep=" + lastCompletedStep);
             }
 
-            final long oldLastEnqueuedStep =
-                    LAST_ENQUEUED_STEP_UPDATER.getAndSet(InstrumentedTableListenerBase.this, currentStep);
-            Assert.lt(oldLastEnqueuedStep, "oldLastEnqueuedStep", currentStep, "currentStep");
+            StepUpdater.forceUpdateRecordedStep(
+                    LAST_ENQUEUED_STEP_UPDATER, InstrumentedTableListenerBase.this, currentStep);
         }
 
         @Override
@@ -321,9 +327,8 @@ public abstract class InstrumentedTableListenerBase extends LivenessArtifact
                 onFailure(e, entry);
             } finally {
                 entry.onUpdateEnd();
-                final long oldLastCompletedStep =
-                        LAST_COMPLETED_STEP_UPDATER.getAndSet(InstrumentedTableListenerBase.this, currentStep);
-                Assert.lt(oldLastCompletedStep, "oldLastCompletedStep", currentStep, "currentStep");
+                StepUpdater.forceUpdateRecordedStep(
+                        LAST_COMPLETED_STEP_UPDATER, InstrumentedTableListenerBase.this, currentStep);
             }
         }
     }
