@@ -13,11 +13,14 @@ import io.deephaven.engine.table.ChunkSource;
 import io.deephaven.engine.table.ColumnSource;
 import io.deephaven.engine.table.SharedContext;
 import io.deephaven.engine.table.Table;
+import io.deephaven.engine.table.impl.util.StepUpdater;
 import io.deephaven.engine.updategraph.NotificationQueue.Dependency;
 import io.deephaven.engine.updategraph.UpdateGraph;
 import io.deephaven.util.SafeCloseable;
 import io.deephaven.util.SafeCloseableArray;
 import org.jetbrains.annotations.NotNull;
+
+import java.util.concurrent.atomic.AtomicLongFieldUpdater;
 
 import static io.deephaven.engine.table.iterators.ChunkedColumnIterator.DEFAULT_CHUNK_SIZE;
 
@@ -51,6 +54,9 @@ public class ConstituentDependency implements Dependency {
                 new ConstituentDependency(resultUpdatedDependency, result.getRowSet(), dependencyColumns));
     }
 
+    private static final AtomicLongFieldUpdater<ConstituentDependency> LAST_SATISFIED_STEP_UPDATER =
+            AtomicLongFieldUpdater.newUpdater(ConstituentDependency.class, "lastSatisfiedStep");
+
     /**
      * A {@link Dependency dependency} used to determine if the result table is done updating for this cycle. See
      * {@link #install(Table, Dependency)} for more information.
@@ -59,7 +65,10 @@ public class ConstituentDependency implements Dependency {
     private final RowSet resultRows;
     private final ColumnSource<? extends Dependency>[] dependencyColumns;
 
-    private volatile long lastSatisfiedStep;
+    @SuppressWarnings("FieldMayBeFinal")
+    private volatile long lastSatisfiedStep = NotificationStepReceiver.NULL_NOTIFICATION_STEP;
+
+    private long lastQueriedStep = NotificationStepReceiver.NULL_NOTIFICATION_STEP;
     private long firstUnsatisfiedRowPosition = 0;
 
     private ConstituentDependency(
@@ -83,6 +92,7 @@ public class ConstituentDependency implements Dependency {
 
     @Override
     public boolean satisfied(final long step) {
+        StepUpdater.checkForOlderStep(step, lastSatisfiedStep);
         if (lastSatisfiedStep == step) {
             return true;
         }
@@ -95,12 +105,19 @@ public class ConstituentDependency implements Dependency {
         }
         // Now that we know the result is updated (or won't be), it's safe to look at current contents.
         if (resultRows.isEmpty()) {
-            lastSatisfiedStep = step;
+            StepUpdater.tryUpdateRecordedStep(LAST_SATISFIED_STEP_UPDATER, this, step);
             return true;
         }
         synchronized (this) {
+            StepUpdater.checkForOlderStep(step, lastSatisfiedStep);
+            StepUpdater.checkForOlderStep(step, lastQueriedStep);
             if (lastSatisfiedStep == step) {
                 return true;
+            }
+            if (lastQueriedStep != step) {
+                // Re-initialize for this cycle
+                lastQueriedStep = step;
+                firstUnsatisfiedRowPosition = 0;
             }
             final int chunkSize = Math.toIntExact(Math.min(DEFAULT_CHUNK_SIZE, resultRows.size()));
             final int numColumns = dependencyColumns.length;
@@ -142,10 +159,9 @@ public class ConstituentDependency implements Dependency {
                     "resultRows.size()");
             getUpdateGraph().logDependencies()
                     .append("All constituent dependencies satisfied for ").append(this)
+                    .append(", step=").append(step)
                     .endl();
-            lastSatisfiedStep = step;
-            firstUnsatisfiedRowPosition = 0; // Re-initialize for next cycle
-
+            StepUpdater.tryUpdateRecordedStep(LAST_SATISFIED_STEP_UPDATER, this, step);
             return true;
         }
     }
