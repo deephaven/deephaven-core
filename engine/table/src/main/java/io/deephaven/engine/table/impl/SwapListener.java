@@ -93,7 +93,7 @@ public class SwapListener extends LivenessArtifact implements TableUpdateListene
      * @param beforeClockValue the logical clock value we are starting a snapshot on
      * @return true if we should use previous values, false if we should use current values.
      */
-    protected synchronized boolean start(final long beforeClockValue) {
+    protected synchronized Boolean start(final long beforeClockValue) {
         lastNotificationStep = sourceTable.getLastNotificationStep();
         success = false;
 
@@ -102,7 +102,12 @@ public class SwapListener extends LivenessArtifact implements TableUpdateListene
 
         final boolean idle = beforeState == LogicalClock.State.Idle;
         final boolean updatedOnThisStep = beforeStep == lastNotificationStep;
-        final boolean satisfied = idle || updatedOnThisStep || sourceTable.satisfied(beforeStep);
+        final boolean satisfied;
+        try {
+            satisfied = idle || updatedOnThisStep || sourceTable.satisfied(beforeStep);
+        } catch (ClockInconsistencyException e) {
+            return null;
+        }
         final boolean usePrev = !satisfied;
 
         if (DEBUG) {

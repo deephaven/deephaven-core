@@ -10,8 +10,7 @@ import io.deephaven.base.verify.Assert;
 import io.deephaven.configuration.Configuration;
 import io.deephaven.datastructures.util.CollectionUtil;
 import io.deephaven.engine.context.ExecutionContext;
-import io.deephaven.engine.updategraph.LogicalClock;
-import io.deephaven.engine.updategraph.UpdateGraph;
+import io.deephaven.engine.updategraph.*;
 import io.deephaven.engine.rowset.*;
 import io.deephaven.engine.table.SharedContext;
 import io.deephaven.engine.table.impl.sources.ReinterpretUtils;
@@ -22,8 +21,6 @@ import io.deephaven.engine.table.ColumnDefinition;
 import io.deephaven.engine.exceptions.CancellationException;
 import io.deephaven.engine.table.Table;
 import io.deephaven.engine.table.TableDefinition;
-import io.deephaven.engine.updategraph.NotificationQueue;
-import io.deephaven.engine.updategraph.WaitNotification;
 import io.deephaven.util.datastructures.LongSizedDataStructure;
 import io.deephaven.engine.liveness.LivenessManager;
 import io.deephaven.engine.liveness.LivenessScope;
@@ -898,10 +895,14 @@ public class ConstructSnapshot {
             final long beforeStep = LogicalClock.getStep(beforeClockValue);
             final LogicalClock.State beforeState = LogicalClock.getState(beforeClockValue);
 
-            // noinspection AutoBoxing
-            return beforeState == LogicalClock.State.Updating
-                    && source.getLastNotificationStep() != beforeStep
-                    && !source.satisfied(beforeStep);
+            try {
+                // noinspection AutoBoxing
+                return beforeState == LogicalClock.State.Updating
+                        && source.getLastNotificationStep() != beforeStep
+                        && !source.satisfied(beforeStep);
+            } catch (ClockInconsistencyException e) {
+                return null;
+            }
         }
 
         @Override
@@ -934,10 +935,14 @@ public class ConstructSnapshot {
             final long beforeStep = LogicalClock.getStep(beforeClockValue);
             final LogicalClock.State beforeState = LogicalClock.getState(beforeClockValue);
 
-            // noinspection AutoBoxing
-            return beforeState == LogicalClock.State.Updating
-                    && source.getLastNotificationStep() != beforeStep
-                    && !source.satisfied(beforeStep);
+            try {
+                // noinspection AutoBoxing
+                return beforeState == LogicalClock.State.Updating
+                        && source.getLastNotificationStep() != beforeStep
+                        && !source.satisfied(beforeStep);
+            } catch (ClockInconsistencyException e) {
+                return null;
+            }
         }
 
         @Override
@@ -966,10 +971,15 @@ public class ConstructSnapshot {
                 return false;
             }
             final long beforeStep = LogicalClock.getStep(beforeClockValue);
-            final NotificationStepSource[] notYetSatisfied = Stream.of(sources)
-                    .filter((final NotificationStepSource source) -> source.getLastNotificationStep() != beforeStep
-                            && !source.satisfied(beforeStep))
-                    .toArray(NotificationStepSource[]::new);
+            final NotificationStepSource[] notYetSatisfied;
+            try {
+                notYetSatisfied = Stream.of(sources)
+                        .filter((final NotificationStepSource source) -> source.getLastNotificationStep() != beforeStep
+                                && !source.satisfied(beforeStep))
+                        .toArray(NotificationStepSource[]::new);
+            } catch (ClockInconsistencyException e) {
+                return null;
+            }
             if (notYetSatisfied.length == sources.length) {
                 return true;
             }
@@ -1016,10 +1026,15 @@ public class ConstructSnapshot {
                 return false;
             }
             final long beforeStep = LogicalClock.getStep(beforeClockValue);
-            final NotificationStepSource[] notYetSatisfied = Stream.of(sources)
-                    .filter((final NotificationStepSource source) -> source.getLastNotificationStep() != beforeStep
-                            && !source.satisfied(beforeStep))
-                    .toArray(NotificationStepSource[]::new);
+            final NotificationStepSource[] notYetSatisfied;
+            try {
+                notYetSatisfied = Stream.of(sources)
+                        .filter((final NotificationStepSource source) -> source.getLastNotificationStep() != beforeStep
+                                && !source.satisfied(beforeStep))
+                        .toArray(NotificationStepSource[]::new);
+            } catch (ClockInconsistencyException e) {
+                return null;
+            }
             if (notYetSatisfied.length == sources.length) {
                 return true;
             }

@@ -215,6 +215,9 @@ public abstract class MergedListener extends LivenessArtifact implements Notific
 
     @Override
     public boolean satisfied(final long step) {
+        StepUpdater.checkForOlderStep(step, lastCompletedStep);
+        StepUpdater.checkForOlderStep(step, lastEnqueuedStep);
+
         // Check and see if we've already been completed.
         if (lastCompletedStep == step) {
             getUpdateGraph().logDependencies()

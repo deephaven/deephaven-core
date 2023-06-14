@@ -3,6 +3,7 @@ package io.deephaven.engine.table.impl;
 import io.deephaven.engine.context.ExecutionContext;
 import io.deephaven.engine.table.TableUpdateListener;
 import io.deephaven.engine.table.impl.remote.ConstructSnapshot;
+import io.deephaven.engine.updategraph.ClockInconsistencyException;
 import io.deephaven.engine.updategraph.LogicalClock;
 import io.deephaven.engine.updategraph.WaitNotification;
 import io.deephaven.internal.log.LoggerFactory;
@@ -47,9 +48,16 @@ public final class SwapListenerEx extends SwapListener {
 
         final boolean idle = beforeState == LogicalClock.State.Idle;
         final boolean sourceUpdatedOnThisStep = lastNotificationStep == beforeStep;
-        final boolean sourceSatisfied = idle || sourceUpdatedOnThisStep || sourceTable.satisfied(beforeStep);
+        final boolean sourceSatisfied;
         final boolean extraUpdatedOnThisStep = extraLastNotificationStep == beforeStep;
-        final boolean extraSatisfied = idle || extraUpdatedOnThisStep || extra.satisfied(beforeStep);
+        final boolean extraSatisfied;
+
+        try {
+            sourceSatisfied = idle || sourceUpdatedOnThisStep || sourceTable.satisfied(beforeStep);
+            extraSatisfied = idle || extraUpdatedOnThisStep || extra.satisfied(beforeStep);
+        } catch (ClockInconsistencyException e) {
+            return null;
+        }
 
         final Boolean usePrev;
         if (sourceSatisfied == extraSatisfied) {
@@ -83,7 +91,7 @@ public final class SwapListenerEx extends SwapListener {
     }
 
     @Override
-    public boolean start(final long beforeClockValue) {
+    public Boolean start(final long beforeClockValue) {
         throw new UnsupportedOperationException("Use startWithExtra");
     }
 

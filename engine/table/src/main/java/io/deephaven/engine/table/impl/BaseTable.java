@@ -471,6 +471,9 @@ public abstract class BaseTable<IMPL_TYPE extends BaseTable<IMPL_TYPE>> extends 
             return true;
         }
 
+        StepUpdater.checkForOlderStep(step, lastSatisfiedStep);
+        StepUpdater.checkForOlderStep(step, lastNotificationStep);
+
         final Collection<Object> localParents = parents;
         // If we have no parents whatsoever then we are a source, and have no dependency chain other than the UGP
         // itself

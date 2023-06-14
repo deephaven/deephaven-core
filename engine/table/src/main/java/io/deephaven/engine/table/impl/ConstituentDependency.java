@@ -92,6 +92,7 @@ public class ConstituentDependency implements Dependency {
 
     @Override
     public boolean satisfied(final long step) {
+        StepUpdater.checkForOlderStep(step, lastSatisfiedStep);
         if (lastSatisfiedStep == step) {
             return true;
         }
@@ -108,6 +109,8 @@ public class ConstituentDependency implements Dependency {
             return true;
         }
         synchronized (this) {
+            StepUpdater.checkForOlderStep(step, lastSatisfiedStep);
+            StepUpdater.checkForOlderStep(step, lastQueriedStep);
             if (lastSatisfiedStep == step) {
                 return true;
             }

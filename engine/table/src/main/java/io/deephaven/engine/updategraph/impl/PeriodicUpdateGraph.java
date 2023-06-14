@@ -14,6 +14,7 @@ import io.deephaven.engine.context.ExecutionContext;
 import io.deephaven.engine.liveness.LivenessManager;
 import io.deephaven.engine.liveness.LivenessScope;
 import io.deephaven.engine.liveness.LivenessScopeStack;
+import io.deephaven.engine.table.impl.util.StepUpdater;
 import io.deephaven.engine.updategraph.*;
 import io.deephaven.engine.util.reference.CleanupReferenceProcessorInstance;
 import io.deephaven.engine.util.systemicmarking.SystemicObjectTracker;
@@ -708,6 +709,7 @@ public class PeriodicUpdateGraph implements UpdateGraph {
 
     @Override
     public boolean satisfied(final long step) {
+        StepUpdater.checkForOlderStep(step, sourcesLastSatisfiedStep);
         return sourcesLastSatisfiedStep == step;
     }
 
