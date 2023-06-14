@@ -32,21 +32,31 @@ or an [R Data Frame](https://stat.ethz.ch/R-manual/R-devel/library/base/html/dat
 
 Currently, the R client is only supported on Ubuntu 20.04 or 22.04 and must be built from source.
 
-1. Clone this repository into a local directory using git's sparse-checkout or subversion.
-2. From the new local copy of this repo, run the following commands:
+1. Choose a directory where the client source code will live. Here, the source code will be downloaded into a new directory called `deephaven`.
+   Navigate into that directory and clone this subdirectory of `deephaven-core` using git's sparse-checkout:
    ```bash
-   cd lib
+   mkdir deephaven
+   cd deephaven
+   git init
+   git remote add -f origin https://github.com/deephaven/deephaven-core.git
+   git config core.sparseCheckout true
+   echo "R/rdeephaven" >> .git/info/sparse-checkout
+   git pull origin main
+   ```
+3. Now, navigate into the source code `lib` directory and build the C++ client and dependencies:
+   ```bash
+   cd R/rdeephaven/lib
    chmod +x build-cpp.sh
    ./build-cpp.sh
    ```
    This will build all of the C++ client dependencies in a manner that is compatible with Rcpp, and will then build the Deephaven C++ client.
-3. With the C++ client installed, start an R console and build and install the R client as follows:
+4. With the C++ client installed, start an R console and build and install the R client as follows:
    ```bash
    R
-   >> install.packages("/path/to/source", repos=NULL, type="source")
+   >> install.packages("/path/to/rdeephaven", repos=NULL, type="source")
    ```
    This last command can also be executed from RStudio without the need for explicitly starting an R console.
-4. Now, run
+5. Now, run
    ```R
    library(rdeephaven)
    ```
