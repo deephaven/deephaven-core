@@ -32,7 +32,7 @@ import java.util.Objects;
 /**
  * Utilities for creating a {@link Field}.
  */
-public class FieldAdapter implements Type.Visitor, PrimitiveType.Visitor {
+public class FieldAdapter implements Type.Visitor<Field>, PrimitiveType.Visitor<Field> {
 
     /**
      * Convert a {@code header} into a {@link Field}.
@@ -41,7 +41,7 @@ public class FieldAdapter implements Type.Visitor, PrimitiveType.Visitor {
      * @return the field
      */
     public static Field of(ColumnHeader<?> header) {
-        return header.componentType().walk(new FieldAdapter(header.name())).out();
+        return header.componentType().walk(new FieldAdapter(header.name()));
     }
 
     public static Field byteField(String name) {
@@ -95,83 +95,77 @@ public class FieldAdapter implements Type.Visitor, PrimitiveType.Visitor {
 
     private final String name;
 
-    private Field out;
-
     private FieldAdapter(String name) {
         this.name = Objects.requireNonNull(name);
     }
 
-    Field out() {
-        return Objects.requireNonNull(out);
+    @Override
+    public Field visit(PrimitiveType<?> primitive) {
+        return primitive.walk((PrimitiveType.Visitor<Field>) this);
     }
 
     @Override
-    public void visit(PrimitiveType<?> primitive) {
-        primitive.walk((PrimitiveType.Visitor) this);
-    }
-
-    @Override
-    public void visit(GenericType<?> generic) {
-        generic.walk(new Visitor() {
+    public Field visit(GenericType<?> generic) {
+        return generic.walk(new Visitor<Field>() {
             @Override
-            public void visit(StringType stringType) {
-                out = stringField(name);
+            public Field visit(StringType stringType) {
+                return stringField(name);
             }
 
             @Override
-            public void visit(InstantType instantType) {
-                out = instantField(name);
+            public Field visit(InstantType instantType) {
+                return instantField(name);
             }
 
             @Override
-            public void visit(ArrayType<?, ?> arrayType) {
+            public Field visit(ArrayType<?, ?> arrayType) {
                 throw new UnsupportedOperationException();
             }
 
             @Override
-            public void visit(CustomType<?> customType) {
+            public Field visit(CustomType<?> customType) {
                 throw new UnsupportedOperationException();
             }
         });
     }
 
     @Override
-    public void visit(ByteType byteType) {
-        out = byteField(name);
+    public Field visit(ByteType byteType) {
+        return byteField(name);
     }
 
     @Override
-    public void visit(BooleanType booleanType) {
-        out = booleanField(name);
+    public Field visit(BooleanType booleanType) {
+        return booleanField(name);
     }
 
     @Override
-    public void visit(CharType charType) {
-        out = charField(name);
+    public Field visit(CharType charType) {
+        return charField(name);
     }
 
     @Override
-    public void visit(ShortType shortType) {
-        out = shortField(name);
+    public Field visit(ShortType shortType) {
+        return shortField(name);
     }
 
     @Override
-    public void visit(IntType intType) {
-        out = intField(name);
+    public Field visit(IntType intType) {
+        return intField(name);
     }
 
     @Override
-    public void visit(LongType longType) {
-        out = longField(name);
+    public Field visit(LongType longType) {
+        return longField(name);
     }
 
     @Override
-    public void visit(FloatType floatType) {
-        out = floatField(name);
+    public Field visit(FloatType floatType) {
+        return floatField(name);
     }
 
     @Override
-    public void visit(DoubleType doubleType) {
-        out = doubleField(name);
+    public Field visit(DoubleType doubleType) {
+        return doubleField(name);
     }
 }

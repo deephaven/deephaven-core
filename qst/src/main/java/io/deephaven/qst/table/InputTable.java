@@ -18,12 +18,12 @@ public interface InputTable extends TableSpec {
      */
     TableSchema schema();
 
-    <V extends Visitor> V walk(V visitor);
+    <R> R walk(Visitor<R> visitor);
 
-    interface Visitor {
+    interface Visitor<R> {
 
-        void visit(InMemoryAppendOnlyInputTable inMemoryAppendOnly);
+        R visit(InMemoryAppendOnlyInputTable inMemoryAppendOnly);
 
-        void visit(InMemoryKeyBackedInputTable inMemoryKeyBacked);
+        R visit(InMemoryKeyBackedInputTable inMemoryKeyBacked);
     }
 }

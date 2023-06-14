@@ -68,9 +68,8 @@ public abstract class PrimitiveVectorType<T, ComponentType>
     public abstract PrimitiveType<ComponentType> componentType();
 
     @Override
-    public final <V extends ArrayType.Visitor> V walk(V visitor) {
-        visitor.visit(this);
-        return visitor;
+    public final <R> R walk(ArrayType.Visitor<R> visitor) {
+        return visitor.visit(this);
     }
 
     @Check

@@ -62,24 +62,24 @@ public interface PrimitiveArray<T> extends Array<T> {
 
     PrimitiveType<T> componentType();
 
-    <V extends Visitor> V walk(V visitor);
+    <R> R walk(Visitor<R> visitor);
 
 
-    interface Visitor {
-        void visit(ByteArray byteArray);
+    interface Visitor<R> {
+        R visit(ByteArray byteArray);
 
-        void visit(BooleanArray booleanArray);
+        R visit(BooleanArray booleanArray);
 
-        void visit(CharArray charArray);
+        R visit(CharArray charArray);
 
-        void visit(ShortArray shortArray);
+        R visit(ShortArray shortArray);
 
-        void visit(IntArray intArray);
+        R visit(IntArray intArray);
 
-        void visit(LongArray longArray);
+        R visit(LongArray longArray);
 
-        void visit(FloatArray floatArray);
+        R visit(FloatArray floatArray);
 
-        void visit(DoubleArray doubleArray);
+        R visit(DoubleArray doubleArray);
     }
 }

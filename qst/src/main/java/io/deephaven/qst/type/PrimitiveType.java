@@ -20,23 +20,23 @@ public interface PrimitiveType<T> extends Type<T> {
 
     Class<T> boxedClass();
 
-    <V extends Visitor> V walk(V visitor);
+    <R> R walk(Visitor<R> visitor);
 
-    interface Visitor {
-        void visit(BooleanType booleanType);
+    interface Visitor<R> {
+        R visit(BooleanType booleanType);
 
-        void visit(ByteType byteType);
+        R visit(ByteType byteType);
 
-        void visit(CharType charType);
+        R visit(CharType charType);
 
-        void visit(ShortType shortType);
+        R visit(ShortType shortType);
 
-        void visit(IntType intType);
+        R visit(IntType intType);
 
-        void visit(LongType longType);
+        R visit(LongType longType);
 
-        void visit(FloatType floatType);
+        R visit(FloatType floatType);
 
-        void visit(DoubleType doubleType);
+        R visit(DoubleType doubleType);
     }
 }

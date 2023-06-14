@@ -4,6 +4,7 @@
 package io.deephaven.qst.type;
 
 import io.deephaven.annotations.SimpleStyle;
+import io.deephaven.qst.type.PrimitiveType.Visitor;
 import org.immutables.value.Value.Immutable;
 
 /**
@@ -33,9 +34,8 @@ public abstract class FloatType extends PrimitiveTypeBase<Float> {
     }
 
     @Override
-    public final <V extends PrimitiveType.Visitor> V walk(V visitor) {
-        visitor.visit(this);
-        return visitor;
+    public final <R> R walk(PrimitiveType.Visitor<R> visitor) {
+        return visitor.visit(this);
     }
 
     @Override

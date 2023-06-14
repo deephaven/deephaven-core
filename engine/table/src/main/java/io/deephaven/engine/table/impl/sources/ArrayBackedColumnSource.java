@@ -97,16 +97,14 @@ public abstract class ArrayBackedColumnSource<T>
             block -> Arrays.fill(block, 0));
 
     public static WritableColumnSource<?> from(Array<?> array) {
-        return array.walk(new ArrayAdapter<>()).getOut();
+        return array.walk(new ArrayAdapter<>());
     }
 
     public static <T> ArrayBackedColumnSource<T> from(PrimitiveArray<T> array) {
         ArrayAdapter<T> adapter = new ArrayAdapter<>();
-        array.walk((PrimitiveArray.Visitor) adapter);
         // noinspection unchecked
-        return (ArrayBackedColumnSource<T>) adapter.getOut();
+        return (ArrayBackedColumnSource<T>) array.walk((PrimitiveArray.Visitor<WritableColumnSource<?>>) adapter);
     }
-
 
     /**
      * The highest slot that can be used without a call to {@link #ensureCapacity(long)}.
@@ -564,86 +562,82 @@ public abstract class ArrayBackedColumnSource<T>
         return getChunkByFilling(context, rowSequence);
     }
 
-    private static class ArrayAdapter<T> implements Array.Visitor, PrimitiveArray.Visitor {
-        private WritableColumnSource<?> out;
+    private static class ArrayAdapter<T>
+            implements Array.Visitor<WritableColumnSource<?>>, PrimitiveArray.Visitor<WritableColumnSource<?>> {
 
-        public WritableColumnSource<?> getOut() {
-            return Objects.requireNonNull(out);
+        @Override
+        public WritableColumnSource<?> visit(PrimitiveArray<?> primitive) {
+            return primitive.walk((PrimitiveArray.Visitor<WritableColumnSource<?>>) this);
         }
 
         @Override
-        public void visit(PrimitiveArray<?> primitive) {
-            primitive.walk((PrimitiveArray.Visitor) this);
+        public WritableColumnSource<?> visit(ByteArray byteArray) {
+            return ArrayBackedColumnSource.getMemoryColumnSource(byteArray.values());
         }
 
         @Override
-        public void visit(ByteArray byteArray) {
-            out = ArrayBackedColumnSource.getMemoryColumnSource(byteArray.values());
+        public WritableColumnSource<?> visit(BooleanArray booleanArray) {
+            return ArrayBackedColumnSource.getBooleanMemoryColumnSource(booleanArray.values());
         }
 
         @Override
-        public void visit(BooleanArray booleanArray) {
-            out = ArrayBackedColumnSource.getBooleanMemoryColumnSource(booleanArray.values());
+        public WritableColumnSource<?> visit(CharArray charArray) {
+            return ArrayBackedColumnSource.getMemoryColumnSource(charArray.values());
         }
 
         @Override
-        public void visit(CharArray charArray) {
-            out = ArrayBackedColumnSource.getMemoryColumnSource(charArray.values());
+        public WritableColumnSource<?> visit(ShortArray shortArray) {
+            return ArrayBackedColumnSource.getMemoryColumnSource(shortArray.values());
         }
 
         @Override
-        public void visit(ShortArray shortArray) {
-            out = ArrayBackedColumnSource.getMemoryColumnSource(shortArray.values());
+        public WritableColumnSource<?> visit(IntArray intArray) {
+            return ArrayBackedColumnSource.getMemoryColumnSource(intArray.values());
         }
 
         @Override
-        public void visit(IntArray intArray) {
-            out = ArrayBackedColumnSource.getMemoryColumnSource(intArray.values());
+        public WritableColumnSource<?> visit(LongArray longArray) {
+            return ArrayBackedColumnSource.getMemoryColumnSource(longArray.values());
         }
 
         @Override
-        public void visit(LongArray longArray) {
-            out = ArrayBackedColumnSource.getMemoryColumnSource(longArray.values());
+        public WritableColumnSource<?> visit(FloatArray floatArray) {
+            return ArrayBackedColumnSource.getMemoryColumnSource(floatArray.values());
         }
 
         @Override
-        public void visit(FloatArray floatArray) {
-            out = ArrayBackedColumnSource.getMemoryColumnSource(floatArray.values());
+        public WritableColumnSource<?> visit(DoubleArray doubleArray) {
+            return ArrayBackedColumnSource.getMemoryColumnSource(doubleArray.values());
         }
 
         @Override
-        public void visit(DoubleArray doubleArray) {
-            out = ArrayBackedColumnSource.getMemoryColumnSource(doubleArray.values());
-        }
-
-        @Override
-        public void visit(GenericArray<?> generic) {
-            generic.componentType().walk(new Visitor() {
+        public WritableColumnSource<?> visit(GenericArray<?> generic) {
+            return generic.componentType().walk(new Visitor<>() {
                 @Override
-                public void visit(StringType stringType) {
-                    out = ArrayBackedColumnSource.getMemoryColumnSource(
+                public WritableColumnSource<?> visit(StringType stringType) {
+                    return ArrayBackedColumnSource.getMemoryColumnSource(
                             generic.cast(stringType).values(), String.class, null);
                 }
 
                 @Override
-                public void visit(InstantType instantType) {
-                    out = ArrayBackedColumnSource.getMemoryColumnSource(
+                public WritableColumnSource<?> visit(InstantType instantType) {
+                    return ArrayBackedColumnSource.getMemoryColumnSource(
                             generic.cast(instantType).values(), Instant.class, null);
                 }
 
                 @Override
-                public void visit(ArrayType<?, ?> arrayType) {
+                public WritableColumnSource<?> visit(ArrayType<?, ?> arrayType) {
                     // noinspection unchecked
                     ArrayType<T, ?> tType = (ArrayType<T, ?>) arrayType;
-                    out = ArrayBackedColumnSource.getMemoryColumnSource(
+                    return ArrayBackedColumnSource.getMemoryColumnSource(
                             generic.cast(tType).values(), tType.clazz(), arrayType.componentType().clazz());
                 }
 
                 @Override
-                public void visit(CustomType<?> customType) {
+                public WritableColumnSource<?> visit(CustomType<?> customType) {
                     // noinspection unchecked
                     CustomType<T> tType = (CustomType<T>) customType;
-                    out = ArrayBackedColumnSource.getMemoryColumnSource(
+                    return ArrayBackedColumnSource.getMemoryColumnSource(
                             generic.cast(tType).values(), tType.clazz(), null);
                 }
             });
