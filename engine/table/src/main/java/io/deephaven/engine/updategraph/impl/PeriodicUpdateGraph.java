@@ -14,6 +14,7 @@ import io.deephaven.engine.context.ExecutionContext;
 import io.deephaven.engine.liveness.LivenessManager;
 import io.deephaven.engine.liveness.LivenessScope;
 import io.deephaven.engine.liveness.LivenessScopeStack;
+import io.deephaven.engine.table.impl.util.StepUpdater;
 import io.deephaven.engine.updategraph.*;
 import io.deephaven.engine.util.reference.CleanupReferenceProcessorInstance;
 import io.deephaven.engine.util.systemicmarking.SystemicObjectTracker;
@@ -708,6 +709,7 @@ public class PeriodicUpdateGraph implements UpdateGraph {
 
     @Override
     public boolean satisfied(final long step) {
+        StepUpdater.checkForOlderStep(step, sourcesLastSatisfiedStep);
         return sourcesLastSatisfiedStep == step;
     }
 
@@ -838,20 +840,33 @@ public class PeriodicUpdateGraph implements UpdateGraph {
 
     /**
      * Begin the next {@link LogicalClockImpl#startUpdateCycle() update cycle} while in {@link #enableUnitTestMode()
-     * unit-test} mode. Note that this happens on a simulated UpdateGraph run thread, rather than this thread.
+     * unit-test} mode. Note that this happens on a simulated UpdateGraph run thread, rather than this thread. This
+     * overload is the same as {@code startCycleForUnitTests(true)}.
      */
     @TestUseOnly
     public void startCycleForUnitTests() {
+        startCycleForUnitTests(true);
+    }
+
+    /**
+     * Begin the next {@link LogicalClockImpl#startUpdateCycle() update cycle} while in {@link #enableUnitTestMode()
+     * unit-test} mode. Note that this happens on a simulated UpdateGraph run thread, rather than this thread.
+     *
+     * @param sourcesSatisfied Whether sources should be marked as satisfied by this invocation; if {@code false}, the
+     *        caller must control source satisfaction using {@link #markSourcesRefreshedForUnitTests()}.
+     */
+    @TestUseOnly
+    public void startCycleForUnitTests(final boolean sourcesSatisfied) {
         Assert.assertion(unitTestMode, "unitTestMode");
         try {
-            unitTestRefreshThreadPool.submit(this::startCycleForUnitTestsInternal).get();
+            unitTestRefreshThreadPool.submit(() -> startCycleForUnitTestsInternal(sourcesSatisfied)).get();
         } catch (InterruptedException | ExecutionException e) {
             throw new UncheckedDeephavenException(e);
         }
     }
 
     @TestUseOnly
-    private void startCycleForUnitTestsInternal() {
+    private void startCycleForUnitTestsInternal(final boolean sourcesSatisfied) {
         // noinspection AutoBoxing
         isUpdateThread.set(true);
         exclusiveLock().lock();
@@ -861,6 +876,20 @@ public class PeriodicUpdateGraph implements UpdateGraph {
         LivenessScopeStack.push(refreshScope);
 
         logicalClock.startUpdateCycle();
+        if (sourcesSatisfied) {
+            markSourcesRefreshedForUnitTests();
+        }
+    }
+
+    /**
+     * Record that sources have been satisfied within a unit test cycle.
+     */
+    @TestUseOnly
+    public void markSourcesRefreshedForUnitTests() {
+        Assert.assertion(unitTestMode, "unitTestMode");
+        if (sourcesLastSatisfiedStep >= logicalClock.currentStep()) {
+            throw new IllegalStateException("Already marked sources as satisfied!");
+        }
         sourcesLastSatisfiedStep = logicalClock.currentStep();
     }
 
@@ -872,6 +901,8 @@ public class PeriodicUpdateGraph implements UpdateGraph {
     @TestUseOnly
     public void completeCycleForUnitTests() {
         Assert.assertion(unitTestMode, "unitTestMode");
+        Assert.eq(sourcesLastSatisfiedStep, "sourcesLastSatisfiedStep", logicalClock.currentStep(),
+                "logicalClock.currentStep()");
         try {
             unitTestRefreshThreadPool.submit(this::completeCycleForUnitTestsInternal).get();
         } catch (InterruptedException | ExecutionException e) {
@@ -897,14 +928,30 @@ public class PeriodicUpdateGraph implements UpdateGraph {
 
     /**
      * Execute the given runnable wrapped with {@link #startCycleForUnitTests()} and
-     * {@link #completeCycleForUnitTests()}. Note that the runnable is run on the current thread.
+     * {@link #completeCycleForUnitTests()}. Note that the runnable is run on the current thread. This is equivalent to
+     * {@code runWithinUnitTestCycle(runnable, true)}.
      *
-     * @param runnable the runnable to execute.
+     * @param runnable The runnable to execute
      */
     @TestUseOnly
-    public <T extends Exception> void runWithinUnitTestCycle(ThrowingRunnable<T> runnable)
+    public <T extends Exception> void runWithinUnitTestCycle(@NotNull final ThrowingRunnable<T> runnable) throws T {
+        runWithinUnitTestCycle(runnable, true);
+    }
+
+    /**
+     * Execute the given runnable wrapped with {@link #startCycleForUnitTests()} and
+     * {@link #completeCycleForUnitTests()}. Note that the runnable is run on the current thread.
+     *
+     * @param runnable The runnable to execute
+     * @param sourcesSatisfied Whether sources should be marked as satisfied by this invocation; if {@code false}, the
+     *        caller must control source satisfaction using {@link #markSourcesRefreshedForUnitTests()}.
+     */
+    @TestUseOnly
+    public <T extends Exception> void runWithinUnitTestCycle(
+            @NotNull final ThrowingRunnable<T> runnable,
+            final boolean sourcesSatisfied)
             throws T {
-        startCycleForUnitTests();
+        startCycleForUnitTests(sourcesSatisfied);
         try {
             runnable.run();
         } finally {
