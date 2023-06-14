@@ -52,11 +52,9 @@ Currently, the R client is only supported on Ubuntu 20.04 or 22.04 and must be b
 3. With the C++ client installed, start an R console and build and install the R client as follows:
    ```bash
    R
-   >> install.packages("/path/to/rdeephaven", repos=NULL, type="source")
-   ```
    This last command can also be executed from RStudio without the need for explicitly starting an R console.
 4. Now, run
-   ```R
+   ```r
    library(rdeephaven)
    ```
    in the R session, and start using the client!
