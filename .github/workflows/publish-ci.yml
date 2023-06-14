@@ -63,14 +63,15 @@ jobs:
           ORG_GRADLE_PROJECT_signingPassword: ${{ secrets.CI_AT_DEEPHAVEN_PASSWORD }}
           ORG_GRADLE_PROJECT_signingRequired: true
 
-      - name: Upload Applications
+      - name: Upload Artifacts
         if: ${{ startsWith(github.ref, 'refs/heads/release/v') }}
         uses: actions/upload-artifact@v3
         with:
-          name: applications
+          name: artifacts
           path: |
             server/jetty-app/build/distributions/
-            server/netty-app/build/distributions/
+            py/server/build/wheel/
+            py/embedded-server/build/wheel/
 
       - name: Publish deephaven-core to PyPi
         if: ${{ startsWith(github.ref, 'refs/heads/release/v') }}
