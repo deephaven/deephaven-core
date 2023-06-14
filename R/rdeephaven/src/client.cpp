@@ -25,13 +25,27 @@ public:
     // TODO: DEEPHAVEN QUERY METHODS WILL GO HERE
 
     /**
+     * Whether the table was static at the time internal_tbl_hdl was created.
+    */
+    bool isStatic() {
+        return internal_tbl_hdl.isStatic();
+    };
+
+    /**
+     * Number of rows in the table at the time internal_tbl_hdl was created.
+    */
+    int64_t numRows() {
+        return internal_tbl_hdl.numRows();
+    };
+
+    /**
      * Binds the table referenced by this table handle to a variable on the server called tableName.
      * Without this call, new tables are not accessible from the client.
      * @param tableName Name for the new table on the server.
     */
     void bindToVariable(std::string tableName) {
         internal_tbl_hdl.bindToVariable(tableName);
-    }
+    };
 
     /**
      * Creates and returns a pointer to an ArrowArrayStream C struct containing the data from the table referenced by internal_tbl_hdl.
@@ -95,7 +109,7 @@ public:
     /**
      * Fetches a reference to a table named tableName on the server if it exists.
      * @param tableName Name of the table to search for.
-     * @return TableHandle reference to the fetched table. 
+     * @return TableHandle reference to the fetched table.
     */
     TableHandleWrapper* openTable(std::string tableName) {
         return new TableHandleWrapper(internal_tbl_hdl_mngr.fetchTable(tableName));
@@ -138,7 +152,7 @@ public:
      * Uses a pointer to a populated ArrowArrayStream C struct to create a new table on the server from the data in the C struct.
      * @param stream_ptr Pointer to an existing and populated ArrayArrayStream, populated by a call to RecordBatchReader$export_to_c(ptr) from R.
     */
-    TableHandleWrapper* newTableFromArrowArrayStreamPtr(Rcpp::XPtr<ArrowArrayStream> stream_ptr) {
+    TableHandleWrapper* newTableFromArrowArrayStreamPtr(Rcpp::XPtr<ArrowArrayStream> stream_ptr, int64_t numRows) {
 
         auto wrapper = internal_tbl_hdl_mngr.createFlightWrapper();
         arrow::flight::FlightCallOptions options;
@@ -151,7 +165,7 @@ public:
         // write RecordBatchReader data to table on server with DoPut
         std::unique_ptr<arrow::flight::FlightStreamWriter> fsw;
         std::unique_ptr<arrow::flight::FlightMetadataReader> fmr;
-        auto [new_tbl_hdl, fd] = internal_tbl_hdl_mngr.newTableHandleAndFlightDescriptor();
+        auto [new_tbl_hdl, fd] = internal_tbl_hdl_mngr.newTableHandleAndFlightDescriptor(numRows, true);
         DEEPHAVEN_EXPR_MSG(wrapper.flightClient()->DoPut(options, fd, schema, &fsw, &fmr)); // TODO: need to add okOrThrow
         while(true) {
             std::shared_ptr<arrow::RecordBatch> this_batch;
@@ -163,7 +177,6 @@ public:
         }
         DEEPHAVEN_EXPR_MSG(fsw->DoneWriting()); // TODO: need to add okOrThrow
         DEEPHAVEN_EXPR_MSG(fsw->Close()); // TODO: need to add okOrThrow
-
         return new TableHandleWrapper(new_tbl_hdl);
     };
 
@@ -200,25 +213,27 @@ RCPP_EXPOSED_CLASS(ArrowArrayStream)
 
 RCPP_MODULE(DeephavenInternalModule) {
 
-    class_<TableHandleWrapper>("INTERNAL_TableHandle")
-    .method("bind_to_variable", &TableHandleWrapper::bindToVariable)
-    .method("get_arrow_array_stream_ptr", &TableHandleWrapper::getArrowArrayStreamPtr)
-    ;
+        class_<TableHandleWrapper>("INTERNAL_TableHandle")
+        .method("is_static", &TableHandleWrapper::isStatic)
+        .method("num_rows", &TableHandleWrapper::numRows)
+        .method("bind_to_variable", &TableHandleWrapper::bindToVariable)
+        .method("get_arrow_array_stream_ptr", &TableHandleWrapper::getArrowArrayStreamPtr)
+        ;
 
-    class_<ClientOptionsWrapper>("INTERNAL_ClientOptions")
-    .constructor()
-    .method("set_default_authentication", &ClientOptionsWrapper::setDefaultAuthentication)
-    .method("set_basic_authentication", &ClientOptionsWrapper::setBasicAuthentication)
-    .method("set_custom_authentication", &ClientOptionsWrapper::setCustomAuthentication)
-    .method("set_session_type", &ClientOptionsWrapper::setSessionType)
-    ;
+        class_<ClientOptionsWrapper>("INTERNAL_ClientOptions")
+        .constructor()
+        .method("set_default_authentication", &ClientOptionsWrapper::setDefaultAuthentication)
+        .method("set_basic_authentication", &ClientOptionsWrapper::setBasicAuthentication)
+        .method("set_custom_authentication", &ClientOptionsWrapper::setCustomAuthentication)
+        .method("set_session_type", &ClientOptionsWrapper::setSessionType)
+        ;
 
-    class_<ClientWrapper>("INTERNAL_Client")
-    .factory<const std::string&, const ClientOptionsWrapper&>(newClientWrapper)
-    .method("open_table", &ClientWrapper::openTable)
-    .method("check_for_table", &ClientWrapper::checkForTable)
-    .method("run_script", &ClientWrapper::runScript)
-    .method("new_arrow_array_stream_ptr", &ClientWrapper::newArrowArrayStreamPtr)
-    .method("new_table_from_arrow_array_stream_ptr", &ClientWrapper::newTableFromArrowArrayStreamPtr)
-    ;
+        class_<ClientWrapper>("INTERNAL_Client")
+        .factory<const std::string&, const ClientOptionsWrapper&>(newClientWrapper)
+        .method("open_table", &ClientWrapper::openTable)
+        .method("check_for_table", &ClientWrapper::checkForTable)
+        .method("run_script", &ClientWrapper::runScript)
+        .method("new_arrow_array_stream_ptr", &ClientWrapper::newArrowArrayStreamPtr)
+        .method("new_table_from_arrow_array_stream_ptr", &ClientWrapper::newTableFromArrowArrayStreamPtr)
+        ;
 }

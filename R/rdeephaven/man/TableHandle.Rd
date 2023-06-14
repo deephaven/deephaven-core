@@ -28,6 +28,15 @@ new_data_frame$New_String_Col <- c("I", "am", "a", "string", "column")
 new_table_handle2 <- client$import_table(new_data_frame)
 new_table_handle2$bind_to_variable("new_table")
 }
+\section{Active bindings}{
+\if{html}{\out{<div class="r6-active-bindings">}}
+\describe{
+\item{\code{is_static}}{Indicator variable for whether the table referenced by this TableHandle is static or not.}
+
+\item{\code{num_rows}}{Number of rows in the table referenced by this TableHandle. This value is only well-defined for static tables.}
+}
+\if{html}{\out{</div>}}
+}
 \section{Methods}{
 \subsection{Public methods}{
 \itemize{

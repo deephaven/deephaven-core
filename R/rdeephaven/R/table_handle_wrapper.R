@@ -2,6 +2,9 @@
 #' @description Deephaven TableHandles are references to tables living on a Deephaven server. They provide an
 #' interface for interacting with tables on the server.
 #' 
+#' @field is_static Indicator variable for whether the table referenced by this TableHandle is static or not.
+#' @field num_rows Number of rows in the table referenced by this TableHandle. This value is only well-defined for static tables.
+#' 
 #' @usage NULL
 #' @format NULL
 #' @docType class
@@ -35,6 +38,8 @@ TableHandle <- R6Class("TableHandle",
                 you are trying to call the constructor of TableHandle directly, which is not advised.")
             }
             private$internal_table_handle <- table_handle
+            private$is_static_field <- private$internal_table_handle$is_static()
+            private$num_rows_field <- private$internal_table_handle$num_rows()
         },
 
         #' @description
@@ -82,9 +87,29 @@ TableHandle <- R6Class("TableHandle",
             arrow_tbl = self$to_arrow_table()
             return(as.data.frame(as.data.frame(arrow_tbl))) # TODO: for some reason as.data.frame on arrow table returns a tibble, not a data frame
         }
+    ),
+    active = list(
 
+        #' @description
+        #' Indicator variable for whether the table referenced by this TableHandle is static or not.
+        #' @return TRUE if the table is static, FALSE if the table is ticking.
+        is_static = function() {
+            return(private$is_static_field)
+        },
+
+        #' @description
+        #' Number of rows in the table referenced by this TableHandle. This value is only well-defined for static tables.
+        #' @return The number of rows in the table, if the table is static.
+        num_rows = function() {
+            if(!private$is_static_field) {
+                stop("The table referenced by this TableHandle is not a static table, so the number of rows is not well-defined.")
+            }
+            return(private$num_rows_field)
+        }
     ),
     private = list(
-        internal_table_handle = NULL
+        internal_table_handle = NULL,
+        is_static_field = NULL,
+        num_rows_field = NULL
     )
 )

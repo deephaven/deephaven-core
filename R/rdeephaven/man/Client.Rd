@@ -81,7 +81,7 @@ TableHandle reference to the requested table.
 Imports a new table to the Deephaven server. Note that this new table is not automatically bound to
 a variable name on the server. See `?TableHandle` for more information.
 \subsection{Usage}{
-\if{html}{\out{<div class="r">}}\preformatted{Client$import_table(table_object)}\if{html}{\out{</div>}}
+\if{html}{\out{<div class="r">}}\preformatted{Client$import_table(table_object, num_rows = NULL)}\if{html}{\out{</div>}}
 }
 
 \subsection{Arguments}{
@@ -89,6 +89,9 @@ a variable name on the server. See `?TableHandle` for more information.
 \describe{
 \item{\code{table_object}}{An R Data Frame, a dplyr Tibble, an Arrow Table, or an Arrow RecordBatchReader
 containing the data to import to the server.}
+
+\item{\code{num_rows}}{Optional integer argument, only used if table_object is an Arrow RecordBatchReader.
+Number of rows in the table represented by the RecordBatchReader.}
 }
 \if{html}{\out{</div>}}
 }
