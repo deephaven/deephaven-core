@@ -92,6 +92,7 @@ public class GrpcWebOutputStream extends ServletOutputStream implements WriteLis
         }
         if (waiting != null) {
             waiting.run();
+            waiting = null;
         }
     }
 
