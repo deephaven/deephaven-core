@@ -122,7 +122,7 @@ class Classpaths {
 
     static final String GUAVA_GROUP = 'com.google.guava'
     static final String GUAVA_NAME = 'guava'
-    static final String GUAVA_VERSION = '31.1-jre'
+    static final String GUAVA_VERSION = '32.0.1-jre'
 
     static boolean addDependency(Configuration conf, String group, String name, String version, Action<? super DefaultExternalModuleDependency> configure = Actions.doNothing()) {
         if (!conf.dependencies.find { it.name == name && it.group == group}) {
