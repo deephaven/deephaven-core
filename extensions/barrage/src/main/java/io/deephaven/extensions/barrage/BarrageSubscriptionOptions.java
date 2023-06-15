@@ -29,6 +29,7 @@ public abstract class BarrageSubscriptionOptions implements StreamReaderOptions 
                 .minUpdateIntervalMs(options.minUpdateIntervalMs())
                 .batchSize(options.batchSize())
                 .maxMessageSize(options.maxMessageSize())
+                .columnsAsList(options.columnsAsList())
                 .build();
     }
 
@@ -44,6 +45,16 @@ public abstract class BarrageSubscriptionOptions implements StreamReaderOptions 
     @Override
     @Default
     public boolean useDeephavenNulls() {
+        return false;
+    }
+
+    /**
+     * Requesting clients can specify whether they want columns to be returned wrapped in a list. This enables easier
+     * support in some official arrow clients, but is not the default.
+     */
+    @Override
+    @Default
+    public boolean columnsAsList() {
         return false;
     }
 
@@ -99,12 +110,15 @@ public abstract class BarrageSubscriptionOptions implements StreamReaderOptions 
                 builder, ColumnConversionMode.conversionModeEnumToFb(columnConversionMode()), useDeephavenNulls(),
                 minUpdateIntervalMs(),
                 batchSize(),
-                maxMessageSize());
+                maxMessageSize(),
+                columnsAsList());
     }
 
     public interface Builder {
 
         Builder useDeephavenNulls(boolean useDeephavenNulls);
+
+        Builder columnsAsList(boolean columnsAsList);
 
         Builder columnConversionMode(ColumnConversionMode columnConversionMode);
 
