@@ -774,25 +774,9 @@ public abstract class FlightMessageRoundTripTest {
             // stuff table into the scope
             scriptSession.setVariable(staticTableName, table);
 
-            // build up a snapshot request incorrectly
-            byte[] empty = new byte[0];
-
-            FlightDescriptor fd = FlightDescriptor.command(empty);
-
-            try (FlightClient.ExchangeReaderWriter erw = flightClient.doExchange(fd)) {
-
-                Exception exception = assertThrows(FlightRuntimeException.class, () -> {
-                    erw.getReader().next();
-                });
-
-                String expectedMessage = "expected BarrageMessageWrapper magic bytes in FlightDescriptor.cmd";
-                String actualMessage = exception.getMessage();
-
-                assertTrue(actualMessage.contains(expectedMessage));
-            }
-
-            byte[] magic = new byte[] {100, 112, 104, 110}; // equivalent to '0x6E687064' (ASCII "dphn")
-            fd = FlightDescriptor.command(magic);
+            // java-flight requires us to send a message, but cannot add app metadata, send a dummy message
+            byte[] empty = new byte[] {};
+            final FlightDescriptor fd = FlightDescriptor.command(empty);
             try (FlightClient.ExchangeReaderWriter erw = flightClient.doExchange(fd);
                     final RootAllocator allocator = new RootAllocator(Integer.MAX_VALUE)) {
 
