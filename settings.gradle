@@ -272,8 +272,6 @@ project(':plugin-hierarchicaltable').projectDir = file('plugin/hierarchicaltable
 include(':plugin-gc-app')
 project(':plugin-gc-app').projectDir = file('plugin/gc-app')
 
-include(':envoy')
-
 include(':grpc-proxy')
 
 include(':uri')
