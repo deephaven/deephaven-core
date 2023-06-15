@@ -25,10 +25,6 @@ jobs:
           distribution: 'temurin'
           java-version: '17'
 
-      - name: Setup Crane
-        if: ${{ startsWith(github.ref, 'refs/heads/release/v') }}
-        uses: imjasonh/setup-crane@v0.3
-
       - name: Set JAVA_HOME
         run: echo "JAVA_HOME=${{ steps.setup-java-11.outputs.path }}" >> $GITHUB_ENV
 
@@ -93,7 +89,7 @@ jobs:
         uses: burrunan/gradle-cache-action@v1
         with:
           job-id: build-server
-          arguments: --scan outputVersion createCraneTagScript docker-server-slim:prepareDocker docker-server:prepareDockerAll
+          arguments: --scan outputVersion docker-server-slim:prepareDocker docker-server:prepareDockerAll
           gradle-version: wrapper
 
       - name: Get Deephaven Version
@@ -126,13 +122,6 @@ jobs:
           builder: ${{ steps.buildx.outputs.name }}
           context: ./docker/server-slim/build/context/
           push: false
-
-      - name: Tag upstream images
-        if: ${{ startsWith(github.ref, 'refs/heads/release/v') }}
-        run: |
-          ./docker/registry/protoc-base/build/crane/retag.sh
-          ./docker/registry/slim-base/build/crane/retag.sh
-          ./docker/registry/server-base/build/crane/retag.sh
 
   web-plugin-packager:
     runs-on: ubuntu-22.04
