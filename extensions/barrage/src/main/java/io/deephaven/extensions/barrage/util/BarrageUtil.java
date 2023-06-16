@@ -389,6 +389,9 @@ public class BarrageUtil {
                 i -> ArrowType.getTypeForField(schema.fields(i)),
                 i -> visitor -> {
                     final org.apache.arrow.flatbuf.Field field = schema.fields(i);
+                    if (field.dictionary() != null) {
+                        throw Exceptions.statusRuntimeException(Code.INVALID_ARGUMENT, "Dictionary encoding is not supported");
+                    }
                     for (int j = 0; j < field.customMetadataLength(); j++) {
                         final KeyValue keyValue = field.customMetadata(j);
                         visitor.accept(keyValue.key(), keyValue.value());
