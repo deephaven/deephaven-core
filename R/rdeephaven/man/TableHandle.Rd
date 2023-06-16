@@ -33,7 +33,7 @@ new_table_handle2$bind_to_variable("new_table")
 \itemize{
 \item \href{#method-TableHandle-new}{\code{TableHandle$new()}}
 \item \href{#method-TableHandle-is_static}{\code{TableHandle$is_static()}}
-\item \href{#method-TableHandle-num_rows}{\code{TableHandle$num_rows()}}
+\item \href{#method-TableHandle-nrow}{\code{TableHandle$nrow()}}
 \item \href{#method-TableHandle-bind_to_variable}{\code{TableHandle$bind_to_variable()}}
 \item \href{#method-TableHandle-to_arrow_record_batch_stream_reader}{\code{TableHandle$to_arrow_record_batch_stream_reader()}}
 \item \href{#method-TableHandle-to_arrow_table}{\code{TableHandle$to_arrow_table()}}
@@ -65,12 +65,12 @@ TRUE if the table is static, or FALSE if the table is ticking.
 }
 }
 \if{html}{\out{<hr>}}
-\if{html}{\out{<a id="method-TableHandle-num_rows"></a>}}
-\if{latex}{\out{\hypertarget{method-TableHandle-num_rows}{}}}
-\subsection{Method \code{num_rows()}}{
+\if{html}{\out{<a id="method-TableHandle-nrow"></a>}}
+\if{latex}{\out{\hypertarget{method-TableHandle-nrow}{}}}
+\subsection{Method \code{nrow()}}{
 Number of rows in the table referenced by this TableHandle, currently only implemented for static tables.
 \subsection{Usage}{
-\if{html}{\out{<div class="r">}}\preformatted{TableHandle$num_rows()}\if{html}{\out{</div>}}
+\if{html}{\out{<div class="r">}}\preformatted{TableHandle$nrow()}\if{html}{\out{</div>}}
 }
 
 \subsection{Returns}{

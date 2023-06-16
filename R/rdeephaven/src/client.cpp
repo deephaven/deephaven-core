@@ -30,14 +30,14 @@ public:
     */
     bool isStatic() {
         return internal_tbl_hdl.isStatic();
-    };
+    }
 
     /**
      * Number of rows in the table at the time internal_tbl_hdl was created.
     */
     int64_t numRows() {
         return internal_tbl_hdl.numRows();
-    };
+    }
 
     /**
      * Binds the table referenced by this table handle to a variable on the server called tableName.
@@ -46,7 +46,7 @@ public:
     */
     void bindToVariable(std::string tableName) {
         internal_tbl_hdl.bindToVariable(tableName);
-    };
+    }
 
     /**
      * Creates and returns a pointer to an ArrowArrayStream C struct containing the data from the table referenced by internal_tbl_hdl.
@@ -65,7 +65,7 @@ public:
 
         // XPtr is needed here to ensure Rcpp can properly handle type casting, as it does not like raw pointers
         return Rcpp::XPtr<ArrowArrayStream>(stream_ptr, true);
-    };
+    }
 
 private:
     deephaven::client::TableHandle internal_tbl_hdl;
@@ -78,23 +78,23 @@ public:
 
     ClientOptionsWrapper() {
         internal_options = new deephaven::client::ClientOptions();
-    };
+    }
 
     void setDefaultAuthentication() {
         internal_options->setDefaultAuthentication();
-    };
+    }
 
     void setBasicAuthentication(const std::string &username, const std::string &password) {
         internal_options->setBasicAuthentication(username, password);
-    };
+    }
 
     void setCustomAuthentication(const std::string &authenticationKey, const std::string &authenticationValue) {
         internal_options->setCustomAuthentication(authenticationKey, authenticationValue);
-    };
+    }
 
     void setSessionType(const std::string &sessionType) {
         internal_options->setSessionType(sessionType);
-    };
+    }
 
 private:
 
@@ -114,7 +114,7 @@ public:
     */
     TableHandleWrapper* openTable(std::string tableName) {
         return new TableHandleWrapper(internal_tbl_hdl_mngr.fetchTable(tableName));
-    };
+    }
 
     /**
      * Runs a script on the server in the console language if a console was created.
@@ -122,7 +122,7 @@ public:
     */
     void runScript(std::string code) {
         internal_tbl_hdl_mngr.runScript(code);
-    };
+    }
 
     /**
      * Checks for the existence of a table named tableName on the server.
@@ -138,7 +138,7 @@ public:
             return false;
         }
         return true;
-    };
+    }
 
     /**
      * Allocates memory for an ArrowArrayStream C struct and returns a pointer to the new chunk of memory.
@@ -147,7 +147,7 @@ public:
     SEXP newArrowArrayStreamPtr() {
         ArrowArrayStream* stream_ptr = new ArrowArrayStream();
         return Rcpp::XPtr<ArrowArrayStream>(stream_ptr, true);
-    };
+    }
 
     /**
      * Uses a pointer to a populated ArrowArrayStream C struct to create a new table on the server from the data in the C struct.
@@ -179,7 +179,7 @@ public:
         deephaven::client::utility::okOrThrow(DEEPHAVEN_EXPR_MSG(fsw->DoneWriting()));
         deephaven::client::utility::okOrThrow(DEEPHAVEN_EXPR_MSG(fsw->Close()));
         return new TableHandleWrapper(new_tbl_hdl);
-    };
+    }
 
 private:
     ClientWrapper(deephaven::client::Client ref) : internal_client(std::move(ref)) {};

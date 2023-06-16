@@ -48,9 +48,9 @@ TableHandle <- R6Class("TableHandle",
         #' @description
         #' Number of rows in the table referenced by this TableHandle, currently only implemented for static tables.
         #' @return The number of rows in the table.
-        num_rows = function() {
+        nrow = function() {
             if(!private$is_static_field) {
-                stop("The number of rows is not yet supported for non-static tables.")
+                stop("The number of rows is not yet supported for dynamic tables.")
             }
             return(private$internal_table_handle$num_rows())
         },
