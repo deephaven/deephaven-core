@@ -61,20 +61,20 @@ Whether the table referenced by this TableHandle is static or not.
 }
 
 \subsection{Returns}{
-TRUE if the table is static, FALSE if the table is ticking.
+TRUE if the table is static, or FALSE if the table is ticking.
 }
 }
 \if{html}{\out{<hr>}}
 \if{html}{\out{<a id="method-TableHandle-num_rows"></a>}}
 \if{latex}{\out{\hypertarget{method-TableHandle-num_rows}{}}}
 \subsection{Method \code{num_rows()}}{
-Number of rows in the table referenced by this TableHandle. This value is only well-defined for static tables.
+Number of rows in the table referenced by this TableHandle, currently only implemented for static tables.
 \subsection{Usage}{
 \if{html}{\out{<div class="r">}}\preformatted{TableHandle$num_rows()}\if{html}{\out{</div>}}
 }
 
 \subsection{Returns}{
-The number of rows in the table, if the table is static.
+The number of rows in the table.
 }
 }
 \if{html}{\out{<hr>}}

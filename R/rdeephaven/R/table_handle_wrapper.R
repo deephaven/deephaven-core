@@ -40,17 +40,17 @@ TableHandle <- R6Class("TableHandle",
 
         #' @description
         #' Whether the table referenced by this TableHandle is static or not.
-        #' @return TRUE if the table is static, FALSE if the table is ticking.
+        #' @return TRUE if the table is static, or FALSE if the table is ticking.
         is_static = function() {
             return(private$is_static_field)
         },
 
         #' @description
-        #' Number of rows in the table referenced by this TableHandle. This value is only well-defined for static tables.
-        #' @return The number of rows in the table, if the table is static.
+        #' Number of rows in the table referenced by this TableHandle, currently only implemented for static tables.
+        #' @return The number of rows in the table.
         num_rows = function() {
             if(!private$is_static_field) {
-                stop("The table referenced by this TableHandle is not a static table, so the number of rows is not well-defined.")
+                stop("The number of rows is not yet supported for non-static tables.")
             }
             return(private$internal_table_handle$num_rows())
         },

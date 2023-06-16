@@ -63,7 +63,7 @@ Client <- R6Class("Client",
                 return(TableHandle$new(private$tibble_to_dh_table(table_object)))
             }
             else if (table_object_class[[1]] == "RecordBatchReader") {
-                num_rows = dim(table_object$read_table())[[1]] # TODO: delete when Corey fixes c++ api
+                num_rows = dim(table_object$read_table())[[1]] # TODO: delete when c++ api fix is merged
                 return(TableHandle$new(private$rbr_to_dh_table(table_object, num_rows))) # TODO: return(TableHandle$new(private$rbr_to_dh_table(table_object)))
             }
             else if ((length(table_object_class) == 4 &&
