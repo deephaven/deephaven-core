@@ -44,11 +44,13 @@ C++ compiler and tool suite (cmake etc).
 
    Example:
    ```
-   mkdir -p $HOME/dhcpp
-   cd $HOME/dhcpp
+   export DHCPP=$HOME/dhcpp  # Put your choice of location for the installation here.
+   mkdir -p $DHCPP
+   cd $DHCPP
    wget https://github.com/deephaven/deephaven-base-images/raw/main/cpp-client/build-dependencies.sh
    chmod +x ./build-dependencies.sh
-   # Maybe edit build-dependencies.sh to reflect choices of build tools and build target
+   # Maybe edit build-dependencies.sh to reflect choices of build tools and build target;
+   # defaults should work fine for supported platforms.
    ./build-dependencies.sh
    ```
 
@@ -57,10 +59,9 @@ C++ compiler and tool suite (cmake etc).
    ```
    cd $DHSRC/deephaven-core/cpp-client/deephaven/
    mkdir build && cd build
-   export DEEPHAVEN_LOCAL=$HOME/dhcpp/local  # This should reflect your selection in the previous point.
-   export CMAKE_PREFIX_PATH=${DEEPHAVEN_LOCAL}/abseil:${DEEPHAVEN_LOCAL}/boost:${DEEPHAVEN_LOCAL}/cares:${DEEPHAVEN_LOCAL}/flatbuffers:${DEEPHAVEN_LOCAL}/gflags:${DEEPHAVEN_LOCAL}/immer:${DEEPHAVEN_LOCAL}/protobuf:${DEEPHAVEN_LOCAL}/re2:${DEEPHAVEN_LOCAL}/zlib:${DEEPHAVEN_LOCAL}/grpc:${DEEPHAVEN_LOCAL}/arrow:${DEEPHAVEN_LOCAL}/deephaven
-   export NCPUS=$(getconf _NPROCESSORS_ONLN)
-   cmake -DCMAKE_INSTALL_PREFIX=${DEEPHAVEN_LOCAL}/deephaven .. && make -j$NCPUS install
+   export DHCPP=$HOME/dhcpp  # This should reflect your selection in the previous point.
+   source $DHCPP/env.sh
+   cmake -DCMAKE_INSTALL_PREFIX=${DHCPP}/local/deephaven .. && make -j$NCPUS install
    ```
 
 8. Build and run the deephaven example which uses the installed client.
