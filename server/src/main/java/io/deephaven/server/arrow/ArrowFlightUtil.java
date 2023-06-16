@@ -171,7 +171,7 @@ public class ArrowFlightUtil {
 
             if (mi.header.headerType() != MessageHeader.RecordBatch) {
                 throw Exceptions.statusRuntimeException(Code.INVALID_ARGUMENT,
-                        "Only schema/record-batch messages supported, but I got " + mi.header.headerType());
+                        "Only schema/record-batch messages supported, instead got " + MessageHeader.name(mi.header.headerType()));
             }
 
             final int numColumns = resultTable.getColumnSources().size();
