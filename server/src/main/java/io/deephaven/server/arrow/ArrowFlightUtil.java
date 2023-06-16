@@ -93,7 +93,7 @@ public class ArrowFlightUtil {
 
                     // push the schema to the listener
                     listener.onNext(streamGeneratorFactory.getSchemaView(
-                            fbb -> BarrageUtil.makeTableSchemaPayload(fbb,
+                            fbb -> BarrageUtil.makeTableSchemaPayload(fbb, DEFAULT_SNAPSHOT_DESER_OPTIONS,
                                     table.getDefinition(), table.getAttributes())));
 
                     // shared code between `DoGet` and `BarrageSnapshotRequest`
@@ -379,25 +379,6 @@ public class ArrowFlightUtil {
                 }
 
                 isFirstMsg = false;
-
-                // The magic value is '0x6E687064'. It is the numerical representation of the ASCII "dphn".
-                int size = message.descriptor.getCmd().size();
-                if (size == 4) {
-                    ByteBuffer bb = message.descriptor.getCmd().asReadOnlyByteBuffer();
-
-                    // set the order to little-endian (FlatBuffers default)
-                    bb.order(ByteOrder.LITTLE_ENDIAN);
-
-                    // read and compare the value to the "magic" bytes
-                    long value = (long) bb.getInt(0) & 0xFFFFFFFFL;
-                    if (value != BarrageUtil.FLATBUFFER_MAGIC) {
-                        throw Exceptions.statusRuntimeException(Code.INVALID_ARGUMENT,
-                                myPrefix + "expected BarrageMessageWrapper magic bytes in FlightDescriptor.cmd");
-                    }
-                } else {
-                    throw Exceptions.statusRuntimeException(Code.INVALID_ARGUMENT,
-                            myPrefix + "expected BarrageMessageWrapper magic bytes in FlightDescriptor.cmd");
-                }
             }
         }
 
@@ -485,6 +466,7 @@ public class ArrowFlightUtil {
                                 // push the schema to the listener
                                 listener.onNext(streamGeneratorFactory.getSchemaView(
                                         fbb -> BarrageUtil.makeTableSchemaPayload(fbb,
+                                                snapshotOptAdapter.adapt(snapshotRequest),
                                                 table.getDefinition(), table.getAttributes())));
 
                                 // collect the viewport and columnsets (if provided)

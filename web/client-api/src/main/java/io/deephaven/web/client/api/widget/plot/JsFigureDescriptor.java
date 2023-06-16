@@ -8,6 +8,7 @@ import io.deephaven.web.client.api.JsTable;
 import io.deephaven.web.client.fu.JsData;
 import jsinterop.annotations.JsConstructor;
 import jsinterop.annotations.JsIgnore;
+import jsinterop.annotations.JsNullable;
 import jsinterop.annotations.JsType;
 import jsinterop.base.Js;
 import jsinterop.base.JsPropertyMap;
@@ -20,15 +21,23 @@ import java.util.Set;
  */
 @JsType(name = "FigureDescriptor", namespace = "dh.plot")
 public class JsFigureDescriptor {
+    @JsNullable
     public String title;
+    @JsNullable
     public String titleFont;
+    @JsNullable
     public String titleColor;
+    @JsNullable
     public boolean isResizable;
+    @JsNullable
     public boolean isDefaultTheme;
 
+    @JsNullable
     public double updateInterval;
 
+    @JsNullable
     public int cols;
+    @JsNullable
     public int rows;
 
     public JsArray<JsChartDescriptor> charts;
