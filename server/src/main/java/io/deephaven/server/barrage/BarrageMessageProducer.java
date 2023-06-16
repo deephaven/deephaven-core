@@ -1511,9 +1511,8 @@ public class BarrageMessageProducer<MessageView> extends LivenessArtifact
 
                 try (final RowSet clientView =
                         vp != null ? propRowSetForMessage.subSetForPositions(vp, isReversed) : null) {
-                    subscription.listener
-                            .onNext(generator.getSubView(subscription.options, false, vp, subscription.reverseViewport,
-                                    clientView, cols));
+                    subscription.listener.onNext(generator.getSubView(
+                            subscription.options, false, vp, subscription.reverseViewport, clientView, cols));
                 } catch (final Exception e) {
                     try {
                         subscription.listener.onError(GrpcUtil.securelyWrapError(log, e));
@@ -1574,7 +1573,7 @@ public class BarrageMessageProducer<MessageView> extends LivenessArtifact
                 if (subscription.pendingInitialSnapshot) {
                     // Send schema metadata to this new client.
                     subscription.listener.onNext(streamGeneratorFactory.getSchemaView(
-                            fbb -> BarrageUtil.makeTableSchemaPayload(fbb,
+                            fbb -> BarrageUtil.makeTableSchemaPayload(fbb, subscription.options,
                                     parent.getDefinition(), parent.getAttributes())));
                 }
 

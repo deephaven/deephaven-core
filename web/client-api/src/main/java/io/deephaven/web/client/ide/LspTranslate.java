@@ -22,7 +22,7 @@ public class LspTranslate {
         final CompletionItem item = new CompletionItem();
         item.setStart((int) src.getStart());
         item.setLength((int) src.getLength());
-        item.setCommitCharacters(src.getCommitCharactersList());
+        item.commitCharacters = src.getCommitCharactersList();
         item.textEdit = toJs(src.getTextEdit());
         item.label = src.getLabel();
         item.deprecated = src.getDeprecated();
@@ -52,7 +52,7 @@ public class LspTranslate {
         for (int i = 0; i < textEdits.getLength(); i++) {
             edits.push(toJs(textEdits.getAt(i)));
         }
-        item.setAdditionalTextEdits(edits);
+        item.additionalTextEdits = edits;
         return item;
     }
 
@@ -106,7 +106,7 @@ public class LspTranslate {
         for (int i = 0; i < paramsList.getLength(); i++) {
             params.push(toJs(paramsList.getAt(i)));
         }
-        item.setParameters(params);
+        item.parameters = params;
         return item;
     }
 

@@ -50,7 +50,6 @@ public class JsRollupConfig {
     public JsPropertyMap<JsArray<@TsTypeRef(JsAggregationOperation.class) String>> aggregations =
             Js.cast(JsObject.create(null));
     public boolean includeConstituents = false;
-    // TODO optional
     @JsNullable
     public boolean includeOriginalColumns = false;
     public boolean includeDescriptions = true;
