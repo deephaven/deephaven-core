@@ -3,19 +3,13 @@
  */
 package io.deephaven.web.shared.ide.lsp;
 
-import com.google.gwt.core.client.JavaScriptObject;
 import elemental2.core.JsArray;
 import jsinterop.annotations.JsIgnore;
-import jsinterop.annotations.JsProperty;
 import jsinterop.annotations.JsType;
-import jsinterop.base.Js;
 
 import java.io.Serializable;
-import java.lang.reflect.Array;
-import java.util.Arrays;
 import java.util.Objects;
 
-import static io.deephaven.web.shared.fu.JsArrays.setArray;
 
 @JsType(namespace = "dh.lsp")
 public class CompletionItem implements Serializable {
@@ -31,8 +25,8 @@ public class CompletionItem implements Serializable {
     public String sortText;
     public String filterText;
     public int insertTextFormat;
-    private TextEdit[] additionalTextEdits;
-    private String[] commitCharacters;
+    public JsArray<TextEdit> additionalTextEdits;
+    public JsArray<String> commitCharacters;
 
     public CompletionItem() {
         start = length = 0;
@@ -59,64 +53,10 @@ public class CompletionItem implements Serializable {
         this.length = length;
     }
 
-    @JsProperty(name = "commitCharacters")
-    public Object commitCharacters_() {
-        return getCommitCharacters();
-    }
-
-    @JsIgnore
-    public String[] getCommitCharacters() {
-        return commitCharacters == null ? new String[0] : commitCharacters;
-    }
-
-    @JsProperty
-    public void setCommitCharacters(Object args) {
-        setArray(args, a -> this.commitCharacters = a);
-    }
-
-    @JsProperty(name = "additionalTextEdits")
-    public Object additionalTextEdits_() {
-        if (additionalTextEdits != null) {
-            return Js.cast(Js.<JsArray<TextDocumentContentChangeEvent>>uncheckedCast(additionalTextEdits).slice());
-        } else {
-            return null;
-        }
-    }
-
-    @JsIgnore
-    public Object getAdditionalTextEdits() {
-        return additionalTextEdits;
-    }
-
     @JsIgnore
     public CompletionItem sortText(String sortText) {
         this.sortText = sortText;
         return this;
-    }
-
-    public void addAdditionalTextEdits(TextEdit... edit) {
-        if (this.additionalTextEdits == null) {
-            setAdditionalTextEdits(edit);
-        } else {
-            int existing = additionalTextEdits.length;
-            additionalTextEdits = Arrays.copyOf(this.additionalTextEdits, existing + edit.length);
-            System.arraycopy(edit, 0, additionalTextEdits, existing, edit.length);
-        }
-    }
-
-    @JsProperty
-    public void setAdditionalTextEdits(Object args) {
-        if (args == null || args instanceof TextEdit[]) {
-            additionalTextEdits = (TextEdit[]) args;
-        } else if (args instanceof JavaScriptObject) {
-            // this is actually javascript. We can do terrible things here and it's ok
-            final int length = Array.getLength(args);
-            final TextEdit[] typed = new TextEdit[length];
-            System.arraycopy(args, 0, typed, 0, length);
-            this.additionalTextEdits = typed;
-        } else {
-            throw new IllegalArgumentException("Not a TextEdit[] or js []" + args);
-        }
     }
 
     /**
@@ -171,8 +111,7 @@ public class CompletionItem implements Serializable {
             return false;
         if (!Objects.equals(textEdit, that.textEdit))
             return false;
-        // Probably incorrect - comparing Object[] arrays with Arrays.equals
-        return Arrays.equals(additionalTextEdits, that.additionalTextEdits);
+        return Objects.equals(additionalTextEdits, that.additionalTextEdits);
     }
 
     @Override
@@ -181,7 +120,7 @@ public class CompletionItem implements Serializable {
         int result = start;
         result = 31 * result + length;
         result = 31 * result + textEdit.hashCode();
-        result = 31 * result + Arrays.hashCode(additionalTextEdits);
+        result = 31 * result + Objects.hashCode(additionalTextEdits);
         return result;
     }
 }
