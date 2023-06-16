@@ -17,15 +17,16 @@ import java.util.Set;
 import java.util.stream.Collectors;
 
 /**
- * Tool to wrap Python Callables into Java functional interfaces. Useful for Java-aware Python code to implement
- * Java functional interfaces to pass callbacks/handlers/etc to Python-oblivious Java APIs.
+ * Tool to wrap Python Callables into Java functional interfaces. Useful for Java-aware Python code to implement Java
+ * functional interfaces to pass callbacks/handlers/etc to Python-oblivious Java APIs.
  */
 public class JavaLambdaFactory {
     /**
-     * Wraps a python callable in a java functional interface, with an optional extra step to coerce a returned value
-     * to handle Deephaven nulls.
+     * Wraps a python callable in a java functional interface, with an optional extra step to coerce a returned value to
+     * handle Deephaven nulls.
+     * 
      * @param samInterface the Java interface to wrap the callable in. If this has more than one abstract method, an
-     *                     exception will be thrown.
+     *        exception will be thrown.
      * @param callable The Python Callable to wrap
      * @param coerceToType An optional, expected return type for the Callable to return.
      * @param <T> the type of the lambda to return
@@ -40,20 +41,25 @@ public class JavaLambdaFactory {
             throw new IllegalArgumentException("Provided interface " + samInterface + " has zero abstract methods");
         }
         if (abstractMethods.size() > 1) {
-            throw new IllegalArgumentException("Provided interface " + samInterface + " has too many abstract methods: " + abstractMethods);
+            throw new IllegalArgumentException(
+                    "Provided interface " + samInterface + " has too many abstract methods: " + abstractMethods);
         }
         if (coerceToType == null) {
             coerceToType = Object.class;
         }
 
         MethodHandles.Lookup caller = MethodHandles.lookup();
-        // Look up our helper method below. The best option would be tu use the LambdaMetafactory here and directly instantiate our lambda around
-        // this method reference, but we don't know the expected arity/types. We could generate new methods/etc on the fly at which point we could
-        // just implement the class on the fly, and skip the LambdaMetafactory entirely. Instead, we'll do a little more work on the MethodHandle,
+        // Look up our helper method below. The best option would be tu use the LambdaMetafactory here and directly
+        // instantiate our lambda around
+        // this method reference, but we don't know the expected arity/types. We could generate new methods/etc on the
+        // fly at which point we could
+        // just implement the class on the fly, and skip the LambdaMetafactory entirely. Instead, we'll do a little more
+        // work on the MethodHandle,
         // and then wrap in a proxy, using provided JVM tools.
         MethodHandle helper;
         try {
-            helper = caller.findStatic(JavaLambdaFactory.class, "invoke", MethodType.methodType(Object.class, PyObject.class, Class.class, Object[].class));
+            helper = caller.findStatic(JavaLambdaFactory.class, "invoke",
+                    MethodType.methodType(Object.class, PyObject.class, Class.class, Object[].class));
         } catch (NoSuchMethodException | IllegalAccessException e) {
             throw new IllegalStateException("Internal error, failed to find JavaLambdaFactory.invoke() method", e);
         }
