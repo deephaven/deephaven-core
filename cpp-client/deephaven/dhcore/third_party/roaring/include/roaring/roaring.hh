@@ -1,5 +1,5 @@
 // !!! DO NOT EDIT - THIS IS AN AUTO-GENERATED FILE !!!
-// Created by amalgamation.sh on Sun 18 Sep 2022 02:41:22 PM EDT
+// Created by amalgamation.sh on 2023-06-16T02:17:14Z
 
 /*
  * The CRoaring project is under a dual license (Apache/MIT).
@@ -67,6 +67,7 @@ A C++ header for Roaring Bitmaps.
 #include <cstdarg>
 
 #include <algorithm>
+#include <initializer_list>
 #include <new>
 #include <stdexcept>
 #include <string>
@@ -113,14 +114,22 @@ public:
     }
 
     /**
-     * Construct a bitmap from a list of integer values.
+     * Construct a bitmap from a list of 32-bit integer values.
      */
     Roaring(size_t n, const uint32_t *data) : Roaring() {
         api::roaring_bitmap_add_many(&roaring, n, data);
     }
 
     /**
-     * Copy constructor
+     * Construct a bitmap from an initializer list.
+     */
+    Roaring(std::initializer_list<uint32_t> l) : Roaring() {
+        addMany(l.size(), l.begin());
+    }
+
+    /**
+     * Copy constructor.
+     * It may throw std::runtime_error if there is insufficient memory.
      */
     Roaring(const Roaring &r) : Roaring() {
         if (!api::roaring_bitmap_overwrite(&roaring, &r.roaring)) {
@@ -132,8 +141,8 @@ public:
     }
 
     /**
-     * Move constructor. The moved object remains valid, i.e.
-     * all methods can still be called on it.
+     * Move constructor. The moved-from object remains valid but empty, i.e.
+     * it behaves as though it was just freshly constructed.
      */
     Roaring(Roaring &&r) noexcept : roaring(r.roaring) {
         //
@@ -157,7 +166,7 @@ public:
     }
 
     /**
-     * Construct a bitmap from a list of integer values.
+     * Construct a bitmap from a list of uint32_t values.
      */
     static Roaring bitmapOf(size_t n, ...) {
         Roaring ans;
@@ -171,89 +180,99 @@ public:
     }
 
     /**
+     * Construct a bitmap from a list of uint32_t values.
+     * E.g., bitmapOfList({1,2,3}).
+     */
+    static Roaring bitmapOfList(std::initializer_list<uint32_t> l) {
+        Roaring ans;
+        ans.addMany(l.size(), l.begin());
+        return ans;
+    }
+
+    /**
      * Add value x
      */
-    void add(uint32_t x) { api::roaring_bitmap_add(&roaring, x); }
+    void add(uint32_t x) noexcept { api::roaring_bitmap_add(&roaring, x); }
 
     /**
      * Add value x
      * Returns true if a new value was added, false if the value was already
      * existing.
      */
-    bool addChecked(uint32_t x) {
+    bool addChecked(uint32_t x) noexcept {
         return api::roaring_bitmap_add_checked(&roaring, x);
     }
 
     /**
      * Add all values in range [min, max)
      */
-    void addRange(const uint64_t min, const uint64_t max)  {
+    void addRange(const uint64_t min, const uint64_t max) noexcept {
         return api::roaring_bitmap_add_range(&roaring, min, max);
     }
 
     /**
      * Add all values in range [min, max]
      */
-    void addRangeClosed(const uint32_t min, const uint32_t max)  {
+    void addRangeClosed(const uint32_t min, const uint32_t max) noexcept {
         return api::roaring_bitmap_add_range_closed(&roaring, min, max);
     }
 
     /**
      * Add value n_args from pointer vals
      */
-    void addMany(size_t n_args, const uint32_t *vals) {
+    void addMany(size_t n_args, const uint32_t *vals) noexcept {
         api::roaring_bitmap_add_many(&roaring, n_args, vals);
     }
 
     /**
      * Remove value x
      */
-    void remove(uint32_t x) { api::roaring_bitmap_remove(&roaring, x); }
+    void remove(uint32_t x) noexcept { api::roaring_bitmap_remove(&roaring, x); }
 
     /**
      * Remove value x
      * Returns true if a new value was removed, false if the value was not
      * existing.
      */
-    bool removeChecked(uint32_t x) {
+    bool removeChecked(uint32_t x) noexcept {
         return api::roaring_bitmap_remove_checked(&roaring, x);
     }
 
     /**
      * Remove all values in range [min, max)
      */
-    void removeRange(uint64_t min, uint64_t max) {
+    void removeRange(uint64_t min, uint64_t max) noexcept {
         return api::roaring_bitmap_remove_range(&roaring, min, max);
     }
 
     /**
      * Remove all values in range [min, max]
      */
-    void removeRangeClosed(uint32_t min, uint32_t max) {
+    void removeRangeClosed(uint32_t min, uint32_t max) noexcept {
         return api::roaring_bitmap_remove_range_closed(&roaring, min, max);
     }
 
     /**
      * Return the largest value (if not empty)
      */
-    uint32_t maximum() const { return api::roaring_bitmap_maximum(&roaring); }
+    uint32_t maximum() const noexcept { return api::roaring_bitmap_maximum(&roaring); }
 
     /**
      * Return the smallest value (if not empty)
      */
-    uint32_t minimum() const { return api::roaring_bitmap_minimum(&roaring); }
+    uint32_t minimum() const noexcept { return api::roaring_bitmap_minimum(&roaring); }
 
     /**
      * Check if value x is present
      */
-    bool contains(uint32_t x) const {
+    bool contains(uint32_t x) const noexcept {
         return api::roaring_bitmap_contains(&roaring, x);
     }
 
     /**
      * Check if all values from x (included) to y (excluded) are present
      */
-    bool containsRange(const uint64_t x, const uint64_t y) const {
+    bool containsRange(const uint64_t x, const uint64_t y) const noexcept {
         return api::roaring_bitmap_contains_range(&roaring, x, y);
     }
 
@@ -281,6 +300,7 @@ public:
     /**
      * Copies the content of the provided bitmap, and
      * discard the current content.
+     * It may throw std::runtime_error if there is insufficient memory.
      */
     Roaring &operator=(const Roaring &r) {
         if (!api::roaring_bitmap_overwrite(&roaring, &r.roaring)) {
@@ -308,11 +328,23 @@ public:
     }
 
     /**
+     * Assignment from an initializer list.
+     */
+    Roaring &operator=(std::initializer_list<uint32_t> l) {
+        // Delegate to move assignment operator
+        *this = Roaring(l);
+        return *this;
+    }
+
+    /**
      * Compute the intersection between the current bitmap and the provided
      * bitmap, writing the result in the current bitmap. The provided bitmap
      * is not modified.
+     *
+     * Performance hint: if you are computing the intersection between several
+     * bitmaps, two-by-two, it is best to start with the smallest bitmap.
      */
-    Roaring &operator&=(const Roaring &r) {
+    Roaring &operator&=(const Roaring &r) noexcept {
         api::roaring_bitmap_and_inplace(&roaring, &r.roaring);
         return *this;
     }
@@ -322,7 +354,7 @@ public:
      * bitmap, writing the result in the current bitmap. The provided bitmap
      * is not modified.
      */
-    Roaring &operator-=(const Roaring &r) {
+    Roaring &operator-=(const Roaring &r) noexcept {
         api::roaring_bitmap_andnot_inplace(&roaring, &r.roaring);
         return *this;
     }
@@ -334,7 +366,7 @@ public:
      *
      * See also the fastunion function to aggregate many bitmaps more quickly.
      */
-    Roaring &operator|=(const Roaring &r) {
+    Roaring &operator|=(const Roaring &r) noexcept {
         api::roaring_bitmap_or_inplace(&roaring, &r.roaring);
         return *this;
     }
@@ -344,7 +376,7 @@ public:
      * bitmap, writing the result in the current bitmap. The provided bitmap
      * is not modified.
      */
-    Roaring &operator^=(const Roaring &r) {
+    Roaring &operator^=(const Roaring &r) noexcept {
         api::roaring_bitmap_xor_inplace(&roaring, &r.roaring);
         return *this;
     }
@@ -352,31 +384,31 @@ public:
     /**
      * Exchange the content of this bitmap with another.
      */
-    void swap(Roaring &r) { std::swap(r.roaring, roaring); }
+    void swap(Roaring &r) noexcept { std::swap(r.roaring, roaring); }
 
     /**
      * Get the cardinality of the bitmap (number of elements).
      */
-    uint64_t cardinality() const {
+    uint64_t cardinality() const noexcept {
         return api::roaring_bitmap_get_cardinality(&roaring);
     }
 
     /**
      * Returns true if the bitmap is empty (cardinality is zero).
      */
-    bool isEmpty() const { return api::roaring_bitmap_is_empty(&roaring); }
+    bool isEmpty() const noexcept { return api::roaring_bitmap_is_empty(&roaring); }
 
     /**
      * Returns true if the bitmap is subset of the other.
      */
-    bool isSubset(const Roaring &r) const {
+    bool isSubset(const Roaring &r) const noexcept {
         return api::roaring_bitmap_is_subset(&roaring, &r.roaring);
     }
 
     /**
      * Returns true if the bitmap is strict subset of the other.
      */
-    bool isStrictSubset(const Roaring &r) const {
+    bool isStrictSubset(const Roaring &r) const noexcept {
         return api::roaring_bitmap_is_strict_subset(&roaring, &r.roaring);
     }
 
@@ -385,37 +417,45 @@ public:
      * responsible to ensure that there is enough memory allocated
      * (e.g., ans = new uint32[mybitmap.cardinality()];)
      */
-    void toUint32Array(uint32_t *ans) const {
+    void toUint32Array(uint32_t *ans) const noexcept {
         api::roaring_bitmap_to_uint32_array(&roaring, ans);
     }
     /**
      * To int array with pagination
      */
-    void rangeUint32Array(uint32_t *ans, size_t offset, size_t limit) const {
+    void rangeUint32Array(uint32_t *ans, size_t offset, size_t limit) const noexcept {
         api::roaring_bitmap_range_uint32_array(&roaring, offset, limit, ans);
     }
 
     /**
      * Return true if the two bitmaps contain the same elements.
      */
-    bool operator==(const Roaring &r) const {
+    bool operator==(const Roaring &r) const noexcept {
         return api::roaring_bitmap_equals(&roaring, &r.roaring);
     }
 
     /**
-     * Compute the negation of the roaring bitmap within a specified interval.
-     * interval: [range_start, range_end).
-     * Areas outside the range are passed through unchanged.
+     * Compute the negation of the roaring bitmap within the half-open interval
+     * [range_start, range_end). Areas outside the interval are unchanged.
      */
-    void flip(uint64_t range_start, uint64_t range_end) {
+    void flip(uint64_t range_start, uint64_t range_end) noexcept {
         api::roaring_bitmap_flip_inplace(&roaring, range_start, range_end);
+    }
+
+    /**
+     * Compute the negation of the roaring bitmap within the closed interval
+     * [range_start, range_end]. Areas outside the interval are unchanged.
+     */
+    void flipClosed(uint32_t range_start, uint32_t range_end) noexcept {
+        api::roaring_bitmap_flip_inplace(
+            &roaring, range_start, uint64_t(range_end) + 1);
     }
 
     /**
      * Remove run-length encoding even when it is more space efficient.
      * Return whether a change was applied.
      */
-    bool removeRunCompression() {
+    bool removeRunCompression() noexcept {
         return api::roaring_bitmap_remove_run_compression(&roaring);
     }
 
@@ -425,13 +465,13 @@ public:
      * Returns true if the result has at least one run container.  Additional
      * savings might be possible by calling shrinkToFit().
      */
-    bool runOptimize() { return api::roaring_bitmap_run_optimize(&roaring); }
+    bool runOptimize() noexcept { return api::roaring_bitmap_run_optimize(&roaring); }
 
     /**
      * If needed, reallocate memory to shrink the memory usage. Returns
      * the number of bytes saved.
      */
-    size_t shrinkToFit() { return api::roaring_bitmap_shrink_to_fit(&roaring); }
+    size_t shrinkToFit() noexcept { return api::roaring_bitmap_shrink_to_fit(&roaring); }
 
     /**
      * Iterate over the bitmap elements. The function iterator is called once
@@ -454,21 +494,21 @@ public:
      * this function returns true and sets element to the element of given rank.
      * Otherwise, it returns false.
      */
-    bool select(uint32_t rnk, uint32_t *element) const {
+    bool select(uint32_t rnk, uint32_t *element) const noexcept {
         return api::roaring_bitmap_select(&roaring, rnk, element);
     }
 
     /**
      * Computes the size of the intersection between two bitmaps.
      */
-    uint64_t and_cardinality(const Roaring &r) const {
+    uint64_t and_cardinality(const Roaring &r) const noexcept {
         return api::roaring_bitmap_and_cardinality(&roaring, &r.roaring);
     }
 
     /**
      * Check whether the two bitmaps intersect.
      */
-    bool intersect(const Roaring &r) const {
+    bool intersect(const Roaring &r) const noexcept {
         return api::roaring_bitmap_intersect(&roaring, &r.roaring);
     }
 
@@ -479,21 +519,21 @@ public:
      *
      * The Jaccard index is undefined if both bitmaps are empty.
      */
-    double jaccard_index(const Roaring &r) const {
+    double jaccard_index(const Roaring &r) const noexcept {
         return api::roaring_bitmap_jaccard_index(&roaring, &r.roaring);
     }
 
     /**
      * Computes the size of the union between two bitmaps.
      */
-    uint64_t or_cardinality(const Roaring &r) const {
+    uint64_t or_cardinality(const Roaring &r) const noexcept {
         return api::roaring_bitmap_or_cardinality(&roaring, &r.roaring);
     }
 
     /**
      * Computes the size of the difference (andnot) between two bitmaps.
      */
-    uint64_t andnot_cardinality(const Roaring &r) const {
+    uint64_t andnot_cardinality(const Roaring &r) const noexcept {
         return api::roaring_bitmap_andnot_cardinality(&roaring, &r.roaring);
     }
 
@@ -501,7 +541,7 @@ public:
      * Computes the size of the symmetric difference (andnot) between two
      * bitmaps.
      */
-    uint64_t xor_cardinality(const Roaring &r) const {
+    uint64_t xor_cardinality(const Roaring &r) const noexcept {
         return api::roaring_bitmap_xor_cardinality(&roaring, &r.roaring);
     }
 
@@ -513,8 +553,19 @@ public:
      * 1 when ranking the smallest value, but the select function returns the
      * smallest value when using index 0.
      */
-    uint64_t rank(uint32_t x) const {
+    uint64_t rank(uint32_t x) const noexcept {
         return api::roaring_bitmap_rank(&roaring, x);
+    }
+
+    /**
+     * Returns the index of x in the set, index start from 0.
+     * If the set doesn't contain x , this function will return -1.
+     * The difference with rank function is that this function will return -1
+     * when x isn't in the set, but the rank function will return a
+     * non-negative number.
+     */
+    int64_t getIndex(uint32_t x) const noexcept {
+        return api::roaring_bitmap_get_index(&roaring, x);
     }
 
     /**
@@ -556,11 +607,12 @@ public:
      *      }  // namespace serialization
      *      }  // namespace boost
      */
-    size_t write(char *buf, bool portable = true) const {
-        if (portable)
+    size_t write(char *buf, bool portable = true) const noexcept {
+        if (portable) {
             return api::roaring_bitmap_portable_serialize(&roaring, buf);
-        else
+        } else {
             return api::roaring_bitmap_serialize(&roaring, buf);
+        }
     }
 
     /**
@@ -573,6 +625,11 @@ public:
      *
      * This function is unsafe in the sense that if you provide bad data,
      * many, many bytes could be read. See also readSafe.
+     *
+     * The function may throw std::runtime_error if a bitmap could not be read. Not that even
+     * if it does not throw, the bitmap could still be unusable if the loaded
+     * data does not match the portable Roaring specification: you should
+     * ensure that the data you load come from a serialized bitmap.
      */
     static Roaring read(const char *buf, bool portable = true) {
         roaring_bitmap_t * r = portable
@@ -587,7 +644,23 @@ public:
     /**
      * Read a bitmap from a serialized version, reading no more than maxbytes
      * bytes.  This is meant to be compatible with the Java and Go versions.
+     * The function itself is safe in the sense that it will not cause buffer overflows.
+     * However, for correct operations, it is assumed that the bitmap read was once
+     * serialized from a valid bitmap. If you provided an incorrect input (garbage), then the
+     * bitmap read may not be in a valid state and following operations may not lead
+     * to sensible results. It is your responsability to ensure that the input bytes
+     * follow the format specification if you want a usable bitmap:
+     * https://github.com/RoaringBitmap/RoaringFormatSpec
+     * In particular, the serialized array containers need to be in sorted order, and the
+     * run containers should be in sorted non-overlapping order. This is is guaranteed to
+     * happen when serializing an existing bitmap, but not for random inputs.
+     * Note that this function assumes that your bitmap was serialized in *portable* mode
+     * (which is the default with the 'write' method).
      *
+     * The function may throw std::runtime_error if a bitmap could not be read. Not that even
+     * if it does not throw, the bitmap could still be unusable if the loaded
+     * data does not match the portable Roaring specification: you should
+     * ensure that the data you load come from a serialized bitmap.
      */
     static Roaring readSafe(const char *buf, size_t maxbytes) {
         roaring_bitmap_t * r =
@@ -606,13 +679,18 @@ public:
      * can save space compared to the portable format (e.g., for very
      * sparse bitmaps).
      */
-    size_t getSizeInBytes(bool portable = true) const {
-        if (portable)
+    size_t getSizeInBytes(bool portable = true) const noexcept {
+        if (portable) {
             return api::roaring_bitmap_portable_size_in_bytes(&roaring);
-        else
+        } else {
             return api::roaring_bitmap_size_in_bytes(&roaring);
+        }
     }
 
+    /**
+     * For advanced users.
+     * This function may throw std::runtime_error.
+     */
     static const Roaring frozenView(const char *buf, size_t length) {
         const roaring_bitmap_t *s =
             api::roaring_bitmap_frozen_view(buf, length);
@@ -624,17 +702,29 @@ public:
         return r;
     }
 
-    void writeFrozen(char *buf) const {
+    /**
+     * For advanced users.
+     */
+    void writeFrozen(char *buf) const noexcept {
         roaring_bitmap_frozen_serialize(&roaring, buf);
     }
 
-    size_t getFrozenSizeInBytes() const {
+    /**
+     * For advanced users.
+     */
+    size_t getFrozenSizeInBytes() const noexcept {
         return roaring_bitmap_frozen_size_in_bytes(&roaring);
     }
 
     /**
      * Computes the intersection between two bitmaps and returns new bitmap.
      * The current bitmap and the provided bitmap are unchanged.
+     *
+     * Performance hint: if you are computing the intersection between several
+     * bitmaps, two-by-two, it is best to start with the smallest bitmap.
+     * Consider also using the operator &= to avoid needlessly creating
+     * many temporary bitmaps.
+     * This function may throw std::runtime_error.
      */
     Roaring operator&(const Roaring &o) const {
         roaring_bitmap_t *r = api::roaring_bitmap_and(&roaring, &o.roaring);
@@ -647,6 +737,7 @@ public:
     /**
      * Computes the difference between two bitmaps and returns new bitmap.
      * The current bitmap and the provided bitmap are unchanged.
+     * This function may throw std::runtime_error.
      */
     Roaring operator-(const Roaring &o) const {
         roaring_bitmap_t *r = api::roaring_bitmap_andnot(&roaring, &o.roaring);
@@ -659,6 +750,7 @@ public:
     /**
      * Computes the union between two bitmaps and returns new bitmap.
      * The current bitmap and the provided bitmap are unchanged.
+     * This function may throw std::runtime_error.
      */
     Roaring operator|(const Roaring &o) const {
         roaring_bitmap_t *r = api::roaring_bitmap_or(&roaring, &o.roaring);
@@ -671,6 +763,7 @@ public:
     /**
      * Computes the symmetric union between two bitmaps and returns new bitmap.
      * The current bitmap and the provided bitmap are unchanged.
+     * This function may throw std::runtime_error.
      */
     Roaring operator^(const Roaring &o) const {
         roaring_bitmap_t *r = api::roaring_bitmap_xor(&roaring, &o.roaring);
@@ -683,19 +776,19 @@ public:
     /**
      * Whether or not we apply copy and write.
      */
-    void setCopyOnWrite(bool val) {
+    void setCopyOnWrite(bool val) noexcept {
         api::roaring_bitmap_set_copy_on_write(&roaring, val);
     }
 
     /**
      * Print the content of the bitmap
      */
-    void printf() const { api::roaring_bitmap_printf(&roaring); }
+    void printf() const noexcept { api::roaring_bitmap_printf(&roaring); }
 
     /**
      * Print the content of the bitmap into a string
      */
-    std::string toString() const {
+    std::string toString() const noexcept {
         struct iter_data {
             std::string str{}; // The empty constructor silences warnings from pedantic static analyzers.
             char first_char = '{';
@@ -720,13 +813,14 @@ public:
     /**
      * Whether or not copy and write is active.
      */
-    bool getCopyOnWrite() const {
+    bool getCopyOnWrite() const noexcept {
         return api::roaring_bitmap_get_copy_on_write(&roaring);
     }
 
     /**
      * Computes the logical or (union) between "n" bitmaps (referenced by a
      * pointer).
+     * This function may throw std::runtime_error.
      */
     static Roaring fastunion(size_t n, const Roaring **inputs) {
         const roaring_bitmap_t **x =
@@ -875,21 +969,29 @@ inline RoaringSetBitForwardIterator &Roaring::end() const {
 #endif /* INCLUDE_ROARING_HH_ */
 /* end file cpp/roaring.hh */
 /* begin file cpp/roaring64map.hh */
-/*
-A C++ header for 64-bit Roaring Bitmaps, implemented by way of a map of many
-32-bit Roaring Bitmaps.
+/**
+ * A C++ header for 64-bit Roaring Bitmaps, 
+ * implemented by way of a map of many
+ * 32-bit Roaring Bitmaps.
+ * 
+ * Reference (format specification) :
+ * https://github.com/RoaringBitmap/RoaringFormatSpec#extention-for-64-bit-implementations
 */
 #ifndef INCLUDE_ROARING_64_MAP_HH_
 #define INCLUDE_ROARING_64_MAP_HH_
 
 #include <algorithm>
+#include <cinttypes> // PRIu64 macro
 #include <cstdarg>  // for va_list handling in bitmapOf()
 #include <cstdio>  // for std::printf() in the printf() method
 #include <cstring>  // for std::memcpy()
+#include <functional>
+#include <initializer_list>
 #include <limits>
 #include <map>
 #include <new>
 #include <numeric>
+#include <queue>
 #include <stdexcept>
 #include <string>
 #include <utility>
@@ -922,6 +1024,13 @@ public:
     Roaring64Map(size_t n, const uint64_t *data) { addMany(n, data); }
 
     /**
+     * Construct a bitmap from an initializer list.
+     */
+    Roaring64Map(std::initializer_list<uint64_t> l) {
+        addMany(l.size(), l.begin());
+    }
+
+    /**
      * Construct a 64-bit map from a 32-bit one
      */
     explicit Roaring64Map(const Roaring &r) { emplaceOrInsert(0, r); }
@@ -952,10 +1061,19 @@ public:
     /**
      * Move assignment operator.
      */
-     Roaring64Map &operator=(Roaring64Map &&r) noexcept = default;
+    Roaring64Map &operator=(Roaring64Map &&r) noexcept = default;
 
     /**
-     * Construct a bitmap from a list of integer values.
+     * Assignment from an initializer list.
+     */
+    Roaring64Map &operator=(std::initializer_list<uint64_t> l) {
+        // Delegate to move assignment operator
+        *this = Roaring64Map(l);
+        return *this;
+    }
+
+    /**
+     * Construct a bitmap from a list of uint64_t values.
      */
     static Roaring64Map bitmapOf(size_t n...) {
         Roaring64Map ans;
@@ -969,34 +1087,49 @@ public:
     }
 
     /**
-     * Add value x
+     * Construct a bitmap from a list of uint64_t values.
+     * E.g., bitmapOfList({1,2,3}).
+     */
+    static Roaring64Map bitmapOfList(std::initializer_list<uint64_t> l) {
+        Roaring64Map ans;
+        ans.addMany(l.size(), l.begin());
+        return ans;
+    }
+
+    /**
+     * Adds value x.
      */
     void add(uint32_t x) {
-        roarings[0].add(x);
-        roarings[0].setCopyOnWrite(copyOnWrite);
-    }
-    void add(uint64_t x) {
-        roarings[highBytes(x)].add(lowBytes(x));
-        roarings[highBytes(x)].setCopyOnWrite(copyOnWrite);
+        lookupOrCreateInner(0).add(x);
     }
 
     /**
-     * Add value x
-     * Returns true if a new value was added, false if the value was already existing.
+     * Adds value x.
+     */
+    void add(uint64_t x) {
+        lookupOrCreateInner(highBytes(x)).add(lowBytes(x));
+    }
+
+    /**
+     * Adds value x.
+     * Returns true if a new value was added, false if the value was already
+     * present.
      */
     bool addChecked(uint32_t x) {
-        bool result = roarings[0].addChecked(x);
-        roarings[0].setCopyOnWrite(copyOnWrite);
-        return result;
-    }
-    bool addChecked(uint64_t x) {
-        bool result = roarings[highBytes(x)].addChecked(lowBytes(x));
-        roarings[highBytes(x)].setCopyOnWrite(copyOnWrite);
-        return result;
+        return lookupOrCreateInner(0).addChecked(x);
     }
 
     /**
-     * Add all values in range [min, max)
+     * Adds value x.
+     * Returns true if a new value was added, false if the value was already
+     * present.
+     */
+    bool addChecked(uint64_t x) {
+        return lookupOrCreateInner(highBytes(x)).addChecked(lowBytes(x));
+    }
+
+    /**
+     * Adds all values in the half-open interval [min, max).
      */
     void addRange(uint64_t min, uint64_t max) {
         if (min >= max) {
@@ -1006,11 +1139,15 @@ public:
     }
 
     /**
-     * Add all values in range [min, max]
+     * Adds all values in the closed interval [min, max].
      */
     void addRangeClosed(uint32_t min, uint32_t max) {
-        roarings[0].addRangeClosed(min, max);
+        lookupOrCreateInner(0).addRangeClosed(min, max);
     }
+
+    /**
+     * Adds all values in the closed interval [min, max]
+     */
     void addRangeClosed(uint64_t min, uint64_t max) {
         if (min > max) {
             return;
@@ -1019,70 +1156,154 @@ public:
         uint32_t start_low = lowBytes(min);
         uint32_t end_high = highBytes(max);
         uint32_t end_low = lowBytes(max);
+
+        // We put std::numeric_limits<>::max in parentheses to avoid a
+        // clash with the Windows.h header under Windows.
+        const uint32_t uint32_max = (std::numeric_limits<uint32_t>::max)();
+
+        // Fill in any nonexistent slots with empty Roarings. This simplifies
+        // the logic below, allowing it to simply iterate over the map between
+        // 'start_high' and 'end_high' in a linear fashion.
+        auto current_iter = ensureRangePopulated(start_high, end_high);
+
+        // If start and end land on the same inner bitmap, then we can do the
+        // whole operation in one call.
         if (start_high == end_high) {
-            roarings[start_high].addRangeClosed(start_low, end_low);
-            roarings[start_high].setCopyOnWrite(copyOnWrite);
+            auto &bitmap = current_iter->second;
+            bitmap.addRangeClosed(start_low, end_low);
             return;
         }
-        // we put std::numeric_limits<>::max/min in parenthesis to avoid a clash
-        // with the Windows.h header under Windows
-        roarings[start_high].addRangeClosed(
-            start_low, (std::numeric_limits<uint32_t>::max)());
-        roarings[start_high].setCopyOnWrite(copyOnWrite);
-        start_high++;
-        for (; start_high < end_high; ++start_high) {
-            roarings[start_high].addRangeClosed(
-                (std::numeric_limits<uint32_t>::min)(),
-                (std::numeric_limits<uint32_t>::max)());
-            roarings[start_high].setCopyOnWrite(copyOnWrite);
+
+        // Because start and end don't land on the same inner bitmap,
+        // we need to do this in multiple steps:
+        // 1. Partially fill the first bitmap with values from the closed
+        //    interval [start_low, uint32_max]
+        // 2. Fill intermediate bitmaps completely: [0, uint32_max]
+        // 3. Partially fill the last bitmap with values from the closed
+        //    interval [0, end_low]
+        auto num_intermediate_bitmaps = end_high - start_high - 1;
+
+        // Step 1: Partially fill the first bitmap.
+        {
+            auto &bitmap = current_iter->second;
+            bitmap.addRangeClosed(start_low, uint32_max);
+            ++current_iter;
         }
-        roarings[end_high].addRangeClosed(
-            (std::numeric_limits<uint32_t>::min)(), end_low);
-        roarings[end_high].setCopyOnWrite(copyOnWrite);
+
+        // Step 2. Fill intermediate bitmaps completely.
+        if (num_intermediate_bitmaps != 0) {
+            auto &first_intermediate = current_iter->second;
+            first_intermediate.addRangeClosed(0, uint32_max);
+            ++current_iter;
+
+            // Now make (num_intermediate_bitmaps - 1) copies of this.
+            for (uint32_t i = 1; i != num_intermediate_bitmaps; ++i) {
+                auto &next_intermediate = current_iter->second;
+                next_intermediate = first_intermediate;
+                ++current_iter;
+            }
+        }
+
+        // Step 3: Partially fill the last bitmap.
+        auto &bitmap = current_iter->second;
+        bitmap.addRangeClosed(0, end_low);
     }
 
     /**
-     * Add value n_args from pointer vals
+     * Adds 'n_args' values from the contiguous memory range starting at 'vals'.
      */
     void addMany(size_t n_args, const uint32_t *vals) {
-        Roaring &roaring = roarings[0];
-        roaring.addMany(n_args, vals);
-        roaring.setCopyOnWrite(copyOnWrite);
+        lookupOrCreateInner(0).addMany(n_args, vals);
     }
 
+    /**
+     * Adds 'n_args' values from the contiguous memory range starting at 'vals'.
+     */
     void addMany(size_t n_args, const uint64_t *vals) {
+        // Potentially reduce outer map lookups by optimistically
+        // assuming that adjacent values will belong to the same inner bitmap.
+        Roaring *last_inner_bitmap = nullptr;
+        uint32_t last_value_high = 0;
         for (size_t lcv = 0; lcv < n_args; lcv++) {
-            roarings[highBytes(vals[lcv])].add(lowBytes(vals[lcv]));
-            roarings[highBytes(vals[lcv])].setCopyOnWrite(copyOnWrite);
+            auto value = vals[lcv];
+            auto value_high = highBytes(value);
+            auto value_low = lowBytes(value);
+            if (last_inner_bitmap == nullptr || value_high != last_value_high) {
+                last_inner_bitmap = &lookupOrCreateInner(value_high);
+                last_value_high = value_high;
+            }
+            last_inner_bitmap->add(value_low);
         }
     }
 
     /**
-     * Remove value x
+     * Removes value x.
      */
-    void remove(uint32_t x) { roarings[0].remove(x); }
-    void remove(uint64_t x) {
-        auto roaring_iter = roarings.find(highBytes(x));
-        if (roaring_iter != roarings.cend())
-            roaring_iter->second.remove(lowBytes(x));
+    void remove(uint32_t x) {
+        auto iter = roarings.begin();
+        // Since x is a uint32_t, highbytes(x) == 0. The inner bitmap we are
+        // looking for, if it exists, will be at the first slot of 'roarings'.
+        if (iter == roarings.end() || iter->first != 0) {
+            return;
+        }
+        auto &bitmap = iter->second;
+        bitmap.remove(x);
+        eraseIfEmpty(iter);
     }
 
     /**
-     * Remove value x
-     * Returns true if a new value was removed, false if the value was not existing.
+     * Removes value x.
+     */
+    void remove(uint64_t x) {
+        auto iter = roarings.find(highBytes(x));
+        if (iter == roarings.end()) {
+            return;
+        }
+        auto &bitmap = iter->second;
+        bitmap.remove(lowBytes(x));
+        eraseIfEmpty(iter);
+    }
+
+    /**
+     * Removes value x
+     * Returns true if a new value was removed, false if the value was not
+     * present.
      */
     bool removeChecked(uint32_t x) {
-        return roarings[0].removeChecked(x);
-    }
-    bool removeChecked(uint64_t x) {
-        auto roaring_iter = roarings.find(highBytes(x));
-        if (roaring_iter != roarings.cend())
-            return roaring_iter->second.removeChecked(lowBytes(x));
-        return false;
+        auto iter = roarings.begin();
+        // Since x is a uint32_t, highbytes(x) == 0. The inner bitmap we are
+        // looking for, if it exists, will be at the first slot of 'roarings'.
+        if (iter == roarings.end() || iter->first != 0) {
+            return false;
+        }
+        auto &bitmap = iter->second;
+        if (!bitmap.removeChecked(x)) {
+            return false;
+        }
+        eraseIfEmpty(iter);
+        return true;
     }
 
     /**
-     * Remove all values in range [min, max)
+     * Remove value x
+     * Returns true if a new value was removed, false if the value was not
+     * present.
+     */
+    bool removeChecked(uint64_t x) {
+        auto iter = roarings.find(highBytes(x));
+        if (iter == roarings.end()) {
+            return false;
+        }
+        auto &bitmap = iter->second;
+        if (!bitmap.removeChecked(lowBytes(x))) {
+            return false;
+        }
+        eraseIfEmpty(iter);
+        return true;
+    }
+
+    /**
+     * Removes all values in the half-open interval [min, max).
      */
     void removeRange(uint64_t min, uint64_t max) {
         if (min >= max) {
@@ -1092,11 +1313,24 @@ public:
     }
 
     /**
-     * Remove all values in range [min, max]
+     * Removes all values in the closed interval [min, max].
      */
     void removeRangeClosed(uint32_t min, uint32_t max) {
-        return roarings[0].removeRangeClosed(min, max);
+        auto iter = roarings.begin();
+        // Since min and max are uint32_t, highbytes(min or max) == 0. The inner
+        // bitmap we are looking for, if it exists, will be at the first slot of
+        // 'roarings'.
+        if (iter == roarings.end() || iter->first != 0) {
+            return;
+        }
+        auto &bitmap = iter->second;
+        bitmap.removeRangeClosed(min, max);
+        eraseIfEmpty(iter);
     }
+
+    /**
+     * Removes all values in the closed interval [min, max].
+     */
     void removeRangeClosed(uint64_t min, uint64_t max) {
         if (min > max) {
             return;
@@ -1106,35 +1340,75 @@ public:
         uint32_t end_high = highBytes(max);
         uint32_t end_low = lowBytes(max);
 
+        // We put std::numeric_limits<>::max in parentheses to avoid a
+        // clash with the Windows.h header under Windows.
+        const uint32_t uint32_max = (std::numeric_limits<uint32_t>::max)();
+
+        // If the outer map is empty, end_high is less than the first key,
+        // or start_high is greater than the last key, then exit now because
+        // there is no work to do.
         if (roarings.empty() || end_high < roarings.cbegin()->first ||
             start_high > (roarings.crbegin())->first) {
             return;
         }
 
+        // If we get here, start_iter points to the first entry in the outer map
+        // with key >= start_high. Such an entry is known to exist (i.e. the
+        // iterator will not be equal to end()) because start_high <= the last
+        // key in the map (thanks to the above if statement).
         auto start_iter = roarings.lower_bound(start_high);
+        // end_iter points to the first entry in the outer map with
+        // key >= end_high, if such a key exists. Otherwise, it equals end().
         auto end_iter = roarings.lower_bound(end_high);
+
+        // Note that the 'lower_bound' method will find the start and end slots,
+        // if they exist; otherwise it will find the next-higher slots.
+        // In the case where 'start' landed on an existing slot, we need to do a
+        // partial erase of that slot, and likewise for 'end'. But all the slots
+        // in between can be fully erased. More precisely:
+        //
+        // 1. If the start point falls on an existing entry, there are two
+        //    subcases:
+        //    a. if the end point falls on that same entry, remove the closed
+        //       interval [start_low, end_low] from that entry and we are done.
+        //    b. Otherwise, remove the closed interval [start_low, uint32_max]
+        //       from that entry, advance start_iter, and fall through to step 2.
+        // 2. Completely erase all slots in the half-open interval
+        //    [start_iter, end_iter)
+        // 3. If the end point falls on an existing entry, remove the closed
+        //    interval [0, end_high] from it.
+
+        // Step 1. If the start point falls on an existing entry...
         if (start_iter->first == start_high) {
+            auto &start_inner = start_iter->second;
+            // 1a. if the end point falls on that same entry...
             if (start_iter == end_iter) {
-                start_iter->second.removeRangeClosed(start_low, end_low);
+                start_inner.removeRangeClosed(start_low, end_low);
+                eraseIfEmpty(start_iter);
                 return;
             }
-            // we put std::numeric_limits<>::max/min in parenthesis
-            // to avoid a clash with the Windows.h header under Windows
-            start_iter->second.removeRangeClosed(
-                start_low, (std::numeric_limits<uint32_t>::max)());
-            start_iter++;
+
+            // 1b. Otherwise, remove the closed range [start_low, uint32_max]...
+            start_inner.removeRangeClosed(start_low, uint32_max);
+            // Advance start_iter, but keep the old value so we can check the
+            // bitmap we just modified for emptiness and erase if it necessary.
+            auto temp = start_iter++;
+            eraseIfEmpty(temp);
         }
 
+        // 2. Completely erase all slots in the half-open interval...
         roarings.erase(start_iter, end_iter);
 
-        if (end_iter != roarings.cend() && end_iter->first == end_high) {
-            end_iter->second.removeRangeClosed(
-                (std::numeric_limits<uint32_t>::min)(), end_low);
+        // 3. If the end point falls on an existing entry...
+        if (end_iter != roarings.end() && end_iter->first == end_high) {
+            auto &end_inner = end_iter->second;
+            end_inner.removeRangeClosed(0, end_low);
+            eraseIfEmpty(end_iter);
         }
     }
 
     /**
-     * Clear the bitmap
+     * Clears the bitmap.
      */
     void clear() {
         roarings.clear();
@@ -1185,16 +1459,61 @@ public:
     }
 
     /**
-     * Compute the intersection between the current bitmap and the provided
-     * bitmap, writing the result in the current bitmap. The provided bitmap
-     * is not modified.
+     * Compute the intersection of the current bitmap and the provided bitmap,
+     * writing the result in the current bitmap. The provided bitmap is not
+     * modified.
+     *
+     * Performance hint: if you are computing the intersection between several
+     * bitmaps, two-by-two, it is best to start with the smallest bitmap.
      */
-    Roaring64Map &operator&=(const Roaring64Map &r) {
-        for (auto &map_entry : roarings) {
-            if (r.roarings.count(map_entry.first) == 1)
-                map_entry.second &= r.roarings.at(map_entry.first);
-            else
-                map_entry.second = Roaring();
+    Roaring64Map &operator&=(const Roaring64Map &other) {
+        if (this == &other) {
+            // ANDing *this with itself is a no-op.
+            return *this;
+        }
+
+        // Logic table summarizing what to do when a given outer key is
+        // present vs. absent from self and other.
+        //
+        // self     other    (self & other)  work to do
+        // --------------------------------------------
+        // absent   absent   empty           None
+        // absent   present  empty           None
+        // present  absent   empty           Erase self
+        // present  present  empty or not    Intersect self with other, but
+        //                                   erase self if result is empty.
+        //
+        // Because there is only work to do when a key is present in 'self', the
+        // main for loop iterates over entries in 'self'.
+
+        decltype(roarings.begin()) self_next;
+        for (auto self_iter = roarings.begin(); self_iter != roarings.end();
+             self_iter = self_next) {
+            // Do the 'next' operation now, so we don't have to worry about
+            // invalidation of self_iter down below with the 'erase' operation.
+            self_next = std::next(self_iter);
+
+            auto self_key = self_iter->first;
+            auto &self_bitmap = self_iter->second;
+
+            auto other_iter = other.roarings.find(self_key);
+            if (other_iter == other.roarings.end()) {
+                // 'other' doesn't have self_key. In the logic table above,
+                // this reflects the case (self.present & other.absent).
+                // So, erase self.
+                roarings.erase(self_iter);
+                continue;
+            }
+
+            // Both sides have self_key. In the logic table above, this reflects
+            // the case (self.present & other.present). So, intersect self with
+            // other.
+            const auto &other_bitmap = other_iter->second;
+            self_bitmap &= other_bitmap;
+            if (self_bitmap.isEmpty()) {
+                // ...but if intersection is empty, remove it altogether.
+                roarings.erase(self_iter);
+            }
         }
         return *this;
     }
@@ -1204,44 +1523,177 @@ public:
      * bitmap, writing the result in the current bitmap. The provided bitmap
      * is not modified.
      */
-    Roaring64Map &operator-=(const Roaring64Map &r) {
-        for (auto &map_entry : roarings) {
-            if (r.roarings.count(map_entry.first) == 1)
-                map_entry.second -= r.roarings.at(map_entry.first);
+    Roaring64Map &operator-=(const Roaring64Map &other) {
+        if (this == &other) {
+            // Subtracting *this from itself results in the empty map.
+            roarings.clear();
+            return *this;
+        }
+
+        // Logic table summarizing what to do when a given outer key is
+        // present vs. absent from self and other.
+        //
+        // self     other    (self - other)  work to do
+        // --------------------------------------------
+        // absent   absent   empty           None
+        // absent   present  empty           None
+        // present  absent   unchanged       None
+        // present  present  empty or not    Subtract other from self, but
+        //                                   erase self if result is empty
+        //
+        // Because there is only work to do when a key is present in both 'self'
+        // and 'other', the main while loop ping-pongs back and forth until it
+        // finds the next key that is the same on both sides.
+
+        auto self_iter = roarings.begin();
+        auto other_iter = other.roarings.cbegin();
+
+        while (self_iter != roarings.end() &&
+               other_iter != other.roarings.cend()) {
+            auto self_key = self_iter->first;
+            auto other_key = other_iter->first;
+            if (self_key < other_key) {
+                // Because self_key is < other_key, advance self_iter to the
+                // first point where self_key >= other_key (or end).
+                self_iter = roarings.lower_bound(other_key);
+                continue;
+            }
+
+            if (self_key > other_key) {
+                // Because self_key is > other_key, advance other_iter to the
+                // first point where other_key >= self_key (or end).
+                other_iter = other.roarings.lower_bound(self_key);
+                continue;
+            }
+
+            // Both sides have self_key. In the logic table above, this reflects
+            // the case (self.present & other.present). So subtract other from
+            // self.
+            auto &self_bitmap = self_iter->second;
+            const auto &other_bitmap = other_iter->second;
+            self_bitmap -= other_bitmap;
+
+            if (self_bitmap.isEmpty()) {
+                // ...but if subtraction is empty, remove it altogether.
+                self_iter = roarings.erase(self_iter);
+            } else {
+                ++self_iter;
+            }
+            ++other_iter;
         }
         return *this;
     }
 
     /**
-     * Compute the union between the current bitmap and the provided bitmap,
+     * Compute the union of the current bitmap and the provided bitmap,
      * writing the result in the current bitmap. The provided bitmap is not
      * modified.
      *
      * See also the fastunion function to aggregate many bitmaps more quickly.
      */
-    Roaring64Map &operator|=(const Roaring64Map &r) {
-        for (const auto &map_entry : r.roarings) {
-            if (roarings.count(map_entry.first) == 0) {
-                roarings[map_entry.first] = map_entry.second;
-                roarings[map_entry.first].setCopyOnWrite(copyOnWrite);
-            } else
-                roarings[map_entry.first] |= map_entry.second;
+    Roaring64Map &operator|=(const Roaring64Map &other) {
+        if (this == &other) {
+            // ORing *this with itself is a no-op.
+            return *this;
+        }
+
+        // Logic table summarizing what to do when a given outer key is
+        // present vs. absent from self and other.
+        //
+        // self     other    (self | other)  work to do
+        // --------------------------------------------
+        // absent   absent   empty           None
+        // absent   present  not empty       Copy other to self and set flags
+        // present  absent   unchanged       None
+        // present  present  not empty       self |= other
+        //
+        // Because there is only work to do when a key is present in 'other',
+        // the main for loop iterates over entries in 'other'.
+
+        for (const auto &other_entry : other.roarings) {
+            const auto &other_bitmap = other_entry.second;
+
+            // Try to insert other_bitmap into self at other_key. We take
+            // advantage of the fact that std::map::insert will not overwrite an
+            // existing entry.
+            auto insert_result = roarings.insert(other_entry);
+            auto self_iter = insert_result.first;
+            auto insert_happened = insert_result.second;
+            auto &self_bitmap = self_iter->second;
+
+            if (insert_happened) {
+                // Key was not present in self, so insert was performed above.
+                // In the logic table above, this reflects the case
+                // (self.absent | other.present). Because the copy has already
+                // happened, thanks to the 'insert' operation above, we just
+                // need to set the copyOnWrite flag.
+                self_bitmap.setCopyOnWrite(copyOnWrite);
+                continue;
+            }
+
+            // Both sides have self_key, and the insert was not performed. In
+            // the logic table above, this reflects the case
+            // (self.present & other.present). So OR other into self.
+            self_bitmap |= other_bitmap;
         }
         return *this;
     }
 
     /**
-     * Compute the symmetric union between the current bitmap and the provided
-     * bitmap, writing the result in the current bitmap. The provided bitmap
-     * is not modified.
+     * Compute the XOR of the current bitmap and the provided bitmap, writing
+     * the result in the current bitmap. The provided bitmap is not modified.
      */
-    Roaring64Map &operator^=(const Roaring64Map &r) {
-        for (const auto &map_entry : r.roarings) {
-            if (roarings.count(map_entry.first) == 0) {
-                roarings[map_entry.first] = map_entry.second;
-                roarings[map_entry.first].setCopyOnWrite(copyOnWrite);
-            } else
-                roarings[map_entry.first] ^= map_entry.second;
+    Roaring64Map &operator^=(const Roaring64Map &other) {
+        if (this == &other) {
+            // XORing *this with itself results in the empty map.
+            roarings.clear();
+            return *this;
+        }
+
+        // Logic table summarizing what to do when a given outer key is
+        // present vs. absent from self and other.
+        //
+        // self     other    (self ^ other)  work to do
+        // --------------------------------------------
+        // absent   absent   empty           None
+        // absent   present  non-empty       Copy other to self and set flags
+        // present  absent   unchanged       None
+        // present  present  empty or not    XOR other into self, but erase self
+        //                                   if result is empty.
+        //
+        // Because there is only work to do when a key is present in 'other',
+        // the main for loop iterates over entries in 'other'.
+
+        for (const auto &other_entry : other.roarings) {
+            const auto &other_bitmap = other_entry.second;
+
+            // Try to insert other_bitmap into self at other_key. We take
+            // advantage of the fact that std::map::insert will not overwrite an
+            // existing entry.
+            auto insert_result = roarings.insert(other_entry);
+            auto self_iter = insert_result.first;
+            auto insert_happened = insert_result.second;
+            auto &self_bitmap = self_iter->second;
+
+            if (insert_happened) {
+                // Key was not present in self, so insert was performed above.
+                // In the logic table above, this reflects the case
+                // (self.absent ^ other.present). Because the copy has already
+                // happened, thanks to the 'insert' operation above, we just
+                // need to set the copyOnWrite flag.
+                self_bitmap.setCopyOnWrite(copyOnWrite);
+                continue;
+            }
+
+            // Both sides have self_key, and the insert was not performed. In
+            // the logic table above, this reflects the case
+            // (self.present ^ other.present). So XOR other into self.
+            self_bitmap ^= other_bitmap;
+
+            if (self_bitmap.isEmpty()) {
+                // ...but if intersection is empty, remove it altogether.
+                roarings.erase(self_iter);
+            }
         }
         return *this;
     }
@@ -1398,39 +1850,98 @@ public:
     }
 
     /**
-     * Compute the negation of the roaring bitmap within a specified interval.
-     * areas outside the range are passed through unchanged.
+     * Computes the negation of the roaring bitmap within the half-open interval
+     * [min, max). Areas outside the interval are unchanged.
      */
-    void flip(uint64_t range_start, uint64_t range_end) {
-        if (range_start >= range_end) {
-          return;
-        }
-        uint32_t start_high = highBytes(range_start);
-        uint32_t start_low = lowBytes(range_start);
-        uint32_t end_high = highBytes(range_end);
-        uint32_t end_low = lowBytes(range_end);
-
-        if (start_high == end_high) {
-            roarings[start_high].flip(start_low, end_low);
+    void flip(uint64_t min, uint64_t max) {
+        if (min >= max) {
             return;
         }
-        // we put std::numeric_limits<>::max/min in parentheses
-        // to avoid a clash with the Windows.h header under Windows
-        // flip operates on the range [lower_bound, upper_bound)
-        const uint64_t max_upper_bound =
-            static_cast<uint64_t>((std::numeric_limits<uint32_t>::max)()) + 1;
-        roarings[start_high].flip(start_low, max_upper_bound);
-        roarings[start_high++].setCopyOnWrite(copyOnWrite);
+        flipClosed(min, max - 1);
+    }
 
-        for (; start_high <= highBytes(range_end) - 1; ++start_high) {
-            roarings[start_high].flip((std::numeric_limits<uint32_t>::min)(),
-                                      max_upper_bound);
-            roarings[start_high].setCopyOnWrite(copyOnWrite);
+    /**
+     * Computes the negation of the roaring bitmap within the closed interval
+     * [min, max]. Areas outside the interval are unchanged.
+     */
+    void flipClosed(uint32_t min, uint32_t max) {
+        auto iter = roarings.begin();
+        // Since min and max are uint32_t, highbytes(min or max) == 0. The inner
+        // bitmap we are looking for, if it exists, will be at the first slot of
+        // 'roarings'. If it does not exist, we have to create it.
+        if (iter == roarings.end() || iter->first != 0) {
+            iter = roarings.emplace_hint(iter, std::piecewise_construct,
+                                         std::forward_as_tuple(0),
+                                         std::forward_as_tuple());
+            auto &bitmap = iter->second;
+            bitmap.setCopyOnWrite(copyOnWrite);
+        }
+        auto &bitmap = iter->second;
+        bitmap.flipClosed(min, max);
+        eraseIfEmpty(iter);
+    }
+
+    /**
+     * Computes the negation of the roaring bitmap within the closed interval
+     * [min, max]. Areas outside the interval are unchanged.
+     */
+    void flipClosed(uint64_t min, uint64_t max) {
+        if (min > max) {
+          return;
+        }
+        uint32_t start_high = highBytes(min);
+        uint32_t start_low = lowBytes(min);
+        uint32_t end_high = highBytes(max);
+        uint32_t end_low = lowBytes(max);
+
+        // We put std::numeric_limits<>::max in parentheses to avoid a
+        // clash with the Windows.h header under Windows.
+        const uint32_t uint32_max = (std::numeric_limits<uint32_t>::max)();
+
+        // Fill in any nonexistent slots with empty Roarings. This simplifies
+        // the logic below, allowing it to simply iterate over the map between
+        // 'start_high' and 'end_high' in a linear fashion.
+        auto current_iter = ensureRangePopulated(start_high, end_high);
+
+        // If start and end land on the same inner bitmap, then we can do the
+        // whole operation in one call.
+        if (start_high == end_high) {
+            auto &bitmap = current_iter->second;
+            bitmap.flipClosed(start_low, end_low);
+            eraseIfEmpty(current_iter);
+            return;
         }
 
-        roarings[start_high].flip((std::numeric_limits<uint32_t>::min)(),
-                                  end_low);
-        roarings[start_high].setCopyOnWrite(copyOnWrite);
+        // Because start and end don't land on the same inner bitmap,
+        // we need to do this in multiple steps:
+        // 1. Partially flip the first bitmap in the closed interval
+        //    [start_low, uint32_max]
+        // 2. Flip intermediate bitmaps completely: [0, uint32_max]
+        // 3. Partially flip the last bitmap in the closed interval
+        //    [0, end_low]
+
+        auto num_intermediate_bitmaps = end_high - start_high - 1;
+
+        // 1. Partially flip the first bitmap.
+        {
+            auto &bitmap = current_iter->second;
+            bitmap.flipClosed(start_low, uint32_max);
+            auto temp = current_iter++;
+            eraseIfEmpty(temp);
+        }
+
+        // 2. Flip intermediate bitmaps completely.
+        for (uint32_t i = 0; i != num_intermediate_bitmaps; ++i) {
+            auto &bitmap = current_iter->second;
+            bitmap.flipClosed(0, uint32_max);
+            auto temp = current_iter++;
+            eraseIfEmpty(temp);
+        }
+
+        // 3. Partially flip the last bitmap.
+        auto &bitmap = current_iter->second;
+        bitmap.flipClosed(0, end_low);
+        eraseIfEmpty(current_iter);
     }
 
     /**
@@ -1502,20 +2013,29 @@ public:
     }
 
     /**
-     * If the size of the roaring bitmap is strictly greater than rank, then
-     * this function returns true and set element to the element of given
-     * rank.  Otherwise, it returns false.
+     * Selects the value at index 'rank' in the bitmap, where the smallest value
+     * is at index 0. If 'rank' < cardinality(), returns true with *element set
+     * to the element of the specified rank. Otherwise, returns false and the
+     * contents of *element are unspecified.
      */
-    bool select(uint64_t rnk, uint64_t *element) const {
+    bool select(uint64_t rank, uint64_t *element) const {
         for (const auto &map_entry : roarings) {
-            uint64_t sub_cardinality = (uint64_t)map_entry.second.cardinality();
-            if (rnk < sub_cardinality) {
-                *element = ((uint64_t)map_entry.first) << 32;
-                // assuming little endian
-                return map_entry.second.select((uint32_t)rnk,
-                                               ((uint32_t *)element));
+            auto key = map_entry.first;
+            const auto &bitmap = map_entry.second;
+
+            uint64_t sub_cardinality = bitmap.cardinality();
+            if (rank < sub_cardinality) {
+                uint32_t low_bytes;
+                // Casting rank to uint32_t is safe because
+                // rank < sub_cardinality and sub_cardinality <= 2^32.
+                if (!bitmap.select((uint32_t)rank, &low_bytes)) {
+                    ROARING_TERMINATE("Logic error: bitmap.select() "
+                        "returned false despite rank < cardinality()");
+                }
+                *element = uniteBytes(key, low_bytes);
+                return true;
             }
-            rnk -= sub_cardinality;
+            rank -= sub_cardinality;
         }
         return false;
     }
@@ -1540,6 +2060,29 @@ public:
             result += roaring_iter->second.cardinality();
         }
         return result;
+    }
+
+    /**
+     * Returns the index of x in the set, index start from 0.
+     * If the set doesn't contain x , this function will return -1.
+     * The difference with rank function is that this function will return -1
+     * when x isn't in the set, but the rank function will return a
+     * non-negative number.
+     */
+    int64_t getIndex(uint64_t x) const {
+        int64_t index = 0;
+        auto roaring_destination = roarings.find(highBytes(x));
+        if (roaring_destination != roarings.cend()) {
+            for (auto roaring_iter = roarings.cbegin();
+                 roaring_iter != roaring_destination; ++roaring_iter) {
+                index += roaring_iter->second.cardinality();
+            }
+            auto low_idx = roaring_destination->second.getIndex(lowBytes(x));
+            if (low_idx < 0) return -1;
+            index += low_idx;
+            return index;
+        }
+        return -1;
     }
 
     /**
@@ -1757,6 +2300,11 @@ public:
     /**
      * Computes the intersection between two bitmaps and returns new bitmap.
      * The current bitmap and the provided bitmap are unchanged.
+     *
+     * Performance hint: if you are computing the intersection between several
+     * bitmaps, two-by-two, it is best to start with the smallest bitmap.
+     * Consider also using the operator &= to avoid needlessly creating
+     * many temporary bitmaps.
      */
     Roaring64Map operator&(const Roaring64Map &o) const {
         return Roaring64Map(*this) &= o;
@@ -1799,90 +2347,27 @@ public:
     }
 
     /**
-     * Print the content of the bitmap
+     * Print the contents of the bitmap to stdout.
+     * Note: this method adds a final newline, but toString() does not.
      */
     void printf() const {
-        if (!isEmpty()) {
-            auto map_iter = roarings.cbegin();
-            while (map_iter->second.isEmpty()) ++map_iter;
-            struct iter_data {
-                uint32_t high_bits{};
-                char first_char{'{'};
-            } outer_iter_data;
-            outer_iter_data.high_bits = roarings.begin()->first;
-            map_iter->second.iterate(
-                [](uint32_t low_bits, void *inner_iter_data) -> bool {
-                    std::printf("%c%llu",
-                                ((iter_data *)inner_iter_data)->first_char,
-                                (long long unsigned)uniteBytes(
-                                    ((iter_data *)inner_iter_data)->high_bits,
-                                    low_bits));
-                    ((iter_data *)inner_iter_data)->first_char = ',';
-                    return true;
-                },
-                (void *)&outer_iter_data);
-            std::for_each(
-                ++map_iter, roarings.cend(),
-                [](const std::pair<const uint32_t, Roaring> &map_entry) {
-                    map_entry.second.iterate(
-                        [](uint32_t low_bits, void *high_bits) -> bool {
-                            std::printf(",%llu",
-                                        (long long unsigned)uniteBytes(
-                                            *(uint32_t *)high_bits, low_bits));
-                            return true;
-                        },
-                        (void *)&map_entry.first);
-                });
-        } else
-            std::printf("{");
-        std::printf("}\n");
+        auto sink = [](const std::string &s) {
+            fputs(s.c_str(), stdout);
+        };
+        printToSink(sink);
+        sink("\n");
     }
 
     /**
-     * Print the content of the bitmap into a string
+     * Print the contents of the bitmap into a string.
      */
     std::string toString() const {
-        struct iter_data {
-            std::string str{}; // The empty constructor silences warnings from pedantic static analyzers.
-            uint32_t high_bits{0};
-            char first_char{'{'};
-        } outer_iter_data;
-        if (!isEmpty()) {
-            auto map_iter = roarings.cbegin();
-            while (map_iter->second.isEmpty()) ++map_iter;
-            outer_iter_data.high_bits = roarings.begin()->first;
-            map_iter->second.iterate(
-                [](uint32_t low_bits, void *inner_iter_data) -> bool {
-                    ((iter_data *)inner_iter_data)->str +=
-                        ((iter_data *)inner_iter_data)->first_char;
-                    ((iter_data *)inner_iter_data)->str += std::to_string(
-                        uniteBytes(((iter_data *)inner_iter_data)->high_bits,
-                                   low_bits));
-                    ((iter_data *)inner_iter_data)->first_char = ',';
-                    return true;
-                },
-                (void *)&outer_iter_data);
-            std::for_each(
-                ++map_iter, roarings.cend(),
-                [&outer_iter_data](
-                    const std::pair<const uint32_t, Roaring> &map_entry) {
-                    outer_iter_data.high_bits = map_entry.first;
-                    map_entry.second.iterate(
-                        [](uint32_t low_bits, void *inner_iter_data) -> bool {
-                            ((iter_data *)inner_iter_data)->str +=
-                                ((iter_data *)inner_iter_data)->first_char;
-                            ((iter_data *)inner_iter_data)->str +=
-                                std::to_string(uniteBytes(
-                                    ((iter_data *)inner_iter_data)->high_bits,
-                                    low_bits));
-                            return true;
-                        },
-                        (void *)&outer_iter_data);
-                });
-        } else
-            outer_iter_data.str = '{';
-        outer_iter_data.str += '}';
-        return outer_iter_data.str;
+        std::string result;
+        auto sink = [&result](const std::string &s) {
+            result += s;
+        };
+        printToSink(sink);
+        return result;
     }
 
     /**
@@ -1895,12 +2380,124 @@ public:
      * pointer).
      */
     static Roaring64Map fastunion(size_t n, const Roaring64Map **inputs) {
-        Roaring64Map ans;
-        // not particularly fast
-        for (size_t lcv = 0; lcv < n; ++lcv) {
-            ans |= *(inputs[lcv]);
+        // The strategy here is to basically do a "group by" operation.
+        // We group the input roarings by key, do a 32-bit
+        // roaring_bitmap_or_many on each group, and collect the results.
+        // We accomplish the "group by" operation using a priority queue, which
+        // tracks the next key for each of our input maps. At each step, our
+        // algorithm takes the next subset of maps that share the same next key,
+        // runs roaring_bitmap_or_many on those bitmaps, and then advances the
+        // current_iter on all the affected entries and then repeats.
+
+        // There is an entry in our priority queue for each of the 'n' inputs.
+        // For a given Roaring64Map, we look at its underlying 'roarings'
+        // std::map, and take its begin() and end(). This forms our half-open
+        // interval [current_iter, end_iter), which we keep in the priority
+        // queue as a pq_entry. These entries are updated (removed and then
+        // reinserted with the pq_entry.iterator field advanced by one step) as
+        // our algorithm progresses. But when a given interval becomes empty
+        // (i.e. pq_entry.iterator == pq_entry.end) it is not returned to the
+        // priority queue.
+        struct pq_entry {
+            roarings_t::const_iterator iterator;
+            roarings_t::const_iterator end;
+        };
+
+        // Custom comparator for the priority queue.
+        auto pq_comp = [](const pq_entry &lhs, const pq_entry &rhs) {
+            auto left_key = lhs.iterator->first;
+            auto right_key = rhs.iterator->first;
+
+            // We compare in the opposite direction than normal because priority
+            // queues normally order from largest to smallest, but we want
+            // smallest to largest.
+            return left_key > right_key;
+        };
+
+        // Create and populate the priority queue.
+        std::priority_queue<pq_entry, std::vector<pq_entry>, decltype(pq_comp)> pq(pq_comp);
+        for (size_t i = 0; i < n; ++i) {
+            const auto &roarings = inputs[i]->roarings;
+            if (roarings.begin() != roarings.end()) {
+                pq.push({roarings.begin(), roarings.end()});
+            }
         }
-        return ans;
+
+        // A reusable vector that holds the pointers to the inner bitmaps that
+        // we pass to the underlying 32-bit fastunion operation.
+        std::vector<const roaring_bitmap_t*> group_bitmaps;
+
+        // Summary of the algorithm:
+        // 1. While the priority queue is not empty:
+        //    A. Get its lowest key. Call this group_key
+        //    B. While the lowest entry in the priority queue has a key equal to
+        //       group_key:
+        //       1. Remove this entry (the pair {current_iter, end_iter}) from
+        //          the priority queue.
+        //       2. Add the bitmap pointed to by current_iter to a list of
+        //          32-bit bitmaps to process.
+        //       3. Advance current_iter. Now it will point to a bitmap entry
+        //          with some key greater than group_key (or it will point to
+        //          end()).
+        //       4. If current_iter != end_iter, reinsert the pair into the
+        //          priority queue.
+        //    C. Invoke the 32-bit roaring_bitmap_or_many() and add to result
+        Roaring64Map result;
+        while (!pq.empty()) {
+            // Find the next key (the lowest key) in the priority queue.
+            auto group_key = pq.top().iterator->first;
+
+            // The purpose of the inner loop is to gather all the inner bitmaps
+            // that share "group_key" into "group_bitmaps" so that they can be
+            // fed to roaring_bitmap_or_many(). While we are doing this, we
+            // advance those iterators to their next value and reinsert them
+            // into the priority queue (unless they reach their end).
+            group_bitmaps.clear();
+            while (!pq.empty()) {
+                auto candidate_current_iter = pq.top().iterator;
+                auto candidate_end_iter = pq.top().end;
+
+                auto candidate_key = candidate_current_iter->first;
+                const auto &candidate_bitmap = candidate_current_iter->second;
+
+                // This element will either be in the group (having
+                // key == group_key) or it will not be in the group (having
+                // key > group_key). (Note it cannot have key < group_key
+                // because of the ordered nature of the priority queue itself
+                // and the ordered nature of all the underlying roaring maps).
+                if (candidate_key != group_key) {
+                    // This entry, and (thanks to the nature of the priority
+                    // queue) all other entries as well, are all greater than
+                    // group_key, so we're done collecting elements for the
+                    // current group. Because of the way this loop was written,
+                    // the group will will always contain at least one element.
+                    break;
+                }
+
+                group_bitmaps.push_back(&candidate_bitmap.roaring);
+                // Remove this entry from the priority queue. Note this
+                // invalidates pq.top() so make sure you don't have any dangling
+                // references to it.
+                pq.pop();
+
+                // Advance 'candidate_current_iter' and insert a new entry
+                // {candidate_current_iter, candidate_end_iter} into the
+                // priority queue (unless it has reached its end).
+                ++candidate_current_iter;
+                if (candidate_current_iter != candidate_end_iter) {
+                    pq.push({candidate_current_iter, candidate_end_iter});
+                }
+            }
+
+            // Use the fast inner union to combine these.
+            auto *inner_result = roaring_bitmap_or_many(group_bitmaps.size(),
+                group_bitmaps.data());
+            // Insert the 32-bit result at end of the 'roarings' map of the
+            // result we are building.
+            result.roarings.insert(result.roarings.end(),
+                std::make_pair(group_key, Roaring(inner_result)));
+        }
+        return result;
     }
 
     friend class Roaring64MapSetBitForwardIterator;
@@ -1926,7 +2523,8 @@ public:
     const_iterator end() const;
 
 private:
-    std::map<uint32_t, Roaring> roarings{}; // The empty constructor silences warnings from pedantic static analyzers.
+    typedef std::map<uint32_t, Roaring> roarings_t;
+    roarings_t roarings{}; // The empty constructor silences warnings from pedantic static analyzers.
     bool copyOnWrite{false};
     static uint32_t highBytes(const uint64_t in) { return uint32_t(in >> 32); }
     static uint32_t lowBytes(const uint64_t in) { return uint32_t(in); }
@@ -1951,6 +2549,102 @@ private:
         roarings.emplace(key, std::move(value));
 #endif
     }
+
+    /*
+     * Look up 'key' in the 'roarings' map. If it does not exist, create it.
+     * Also, set its copyOnWrite flag to 'copyOnWrite'. Then return a reference
+     * to the (already existing or newly created) inner bitmap.
+     */
+    Roaring &lookupOrCreateInner(uint32_t key) {
+        auto &bitmap = roarings[key];
+        bitmap.setCopyOnWrite(copyOnWrite);
+        return bitmap;
+    }
+
+    /**
+     * Prints the contents of the bitmap to a caller-provided sink function.
+     */
+    void printToSink(const std::function<void(const std::string &)> &sink) const {
+        sink("{");
+
+        // Storage for snprintf. Big enough to store the decimal representation
+        // of the largest uint64_t value and trailing \0.
+        char buffer[32];
+        const char *separator = "";
+        // Reusable, and therefore avoids many repeated heap allocations.
+        std::string callback_string;
+        for (const auto &entry : roarings) {
+            auto high_bits = entry.first;
+            const auto &bitmap = entry.second;
+            for (const auto low_bits : bitmap) {
+                auto value = uniteBytes(high_bits, low_bits);
+                snprintf(buffer, sizeof(buffer), "%" PRIu64, value);
+                callback_string = separator;
+                callback_string.append(buffer);
+                sink(callback_string);
+                separator = ",";
+            }
+        }
+        sink("}");
+    }
+
+    /**
+     * Ensures that every key in the closed interval [start_high, end_high]
+     * refers to a Roaring bitmap rather being an empty slot. Inserts empty
+     * Roaring bitmaps if necessary. The interval must be valid and non-empty.
+     * Returns an iterator to the bitmap at start_high.
+     */
+    roarings_t::iterator ensureRangePopulated(uint32_t start_high,
+                                              uint32_t end_high) {
+        if (start_high > end_high) {
+            ROARING_TERMINATE("Logic error: start_high > end_high");
+        }
+        // next_populated_iter points to the first entry in the outer map with
+        // key >= start_high, or end().
+        auto next_populated_iter = roarings.lower_bound(start_high);
+
+        // Use uint64_t to avoid an infinite loop when end_high == uint32_max.
+        roarings_t::iterator start_iter{};  // Definitely assigned in loop.
+        for (uint64_t slot = start_high; slot <= end_high; ++slot) {
+            roarings_t::iterator slot_iter;
+            if (next_populated_iter != roarings.end() &&
+                next_populated_iter->first == slot) {
+                // 'slot' index has caught up to next_populated_iter.
+                // Note it here and advance next_populated_iter.
+                slot_iter = next_populated_iter++;
+            } else {
+                // 'slot' index has not yet caught up to next_populated_iter.
+                // Make a fresh entry {key = 'slot', value = Roaring()}, insert
+                // it just prior to next_populated_iter, and set its copy
+                // on write flag. We take pains to use emplace_hint and
+                // piecewise_construct to minimize effort.
+                slot_iter = roarings.emplace_hint(
+                    next_populated_iter, std::piecewise_construct,
+                    std::forward_as_tuple(uint32_t(slot)),
+                    std::forward_as_tuple());
+                auto &bitmap = slot_iter->second;
+                bitmap.setCopyOnWrite(copyOnWrite);
+            }
+
+            // Make a note of the iterator of the starting slot. It will be
+            // needed for the return value.
+            if (slot == start_high) {
+                start_iter = slot_iter;
+            }
+        }
+        return start_iter;
+    }
+
+    /**
+     * Erases the entry pointed to by 'iter' from the 'roarings' map. Warning:
+     * this invalidates 'iter'.
+     */
+    void eraseIfEmpty(roarings_t::iterator iter) {
+        const auto &bitmap = iter->second;
+        if (bitmap.isEmpty()) {
+            roarings.erase(iter);
+        }
+    }
 };
 
 /**
@@ -1960,7 +2654,7 @@ class Roaring64MapSetBitForwardIterator {
 public:
     typedef std::forward_iterator_tag iterator_category;
     typedef uint64_t *pointer;
-    typedef uint64_t &reference_type;
+    typedef uint64_t &reference;
     typedef uint64_t value_type;
     typedef int64_t difference_type;
     typedef Roaring64MapSetBitForwardIterator type_of_iterator;
