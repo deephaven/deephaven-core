@@ -107,7 +107,7 @@ Use custom (general key/value based) authentication.
 \if{html}{\out{<a id="method-ClientOptions-set_session_type"></a>}}
 \if{latex}{\out{\hypertarget{method-ClientOptions-set_session_type}{}}}
 \subsection{Method \code{set_session_type()}}{
-Set the session type of the console (e.g. "python", "groovy", etc.). The session type must be a type supported on the server.
+Set the session type of the console (e.g., "python", "groovy", etc.). The session type must be supported on the server.
 \subsection{Usage}{
 \if{html}{\out{<div class="r">}}\preformatted{ClientOptions$set_session_type(session_type)}\if{html}{\out{</div>}}
 }
