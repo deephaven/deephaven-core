@@ -28,19 +28,12 @@ new_data_frame$New_String_Col <- c("I", "am", "a", "string", "column")
 new_table_handle2 <- client$import_table(new_data_frame)
 new_table_handle2$bind_to_variable("new_table")
 }
-\section{Active bindings}{
-\if{html}{\out{<div class="r6-active-bindings">}}
-\describe{
-\item{\code{is_static}}{Indicator variable for whether the table referenced by this TableHandle is static or not.}
-
-\item{\code{num_rows}}{Number of rows in the table referenced by this TableHandle. This value is only well-defined for static tables.}
-}
-\if{html}{\out{</div>}}
-}
 \section{Methods}{
 \subsection{Public methods}{
 \itemize{
 \item \href{#method-TableHandle-new}{\code{TableHandle$new()}}
+\item \href{#method-TableHandle-is_static}{\code{TableHandle$is_static()}}
+\item \href{#method-TableHandle-num_rows}{\code{TableHandle$num_rows()}}
 \item \href{#method-TableHandle-bind_to_variable}{\code{TableHandle$bind_to_variable()}}
 \item \href{#method-TableHandle-to_arrow_record_batch_stream_reader}{\code{TableHandle$to_arrow_record_batch_stream_reader()}}
 \item \href{#method-TableHandle-to_arrow_table}{\code{TableHandle$to_arrow_table()}}
@@ -57,6 +50,32 @@ new_table_handle2$bind_to_variable("new_table")
 \if{html}{\out{<div class="r">}}\preformatted{TableHandle$new(table_handle)}\if{html}{\out{</div>}}
 }
 
+}
+\if{html}{\out{<hr>}}
+\if{html}{\out{<a id="method-TableHandle-is_static"></a>}}
+\if{latex}{\out{\hypertarget{method-TableHandle-is_static}{}}}
+\subsection{Method \code{is_static()}}{
+Whether the table referenced by this TableHandle is static or not.
+\subsection{Usage}{
+\if{html}{\out{<div class="r">}}\preformatted{TableHandle$is_static()}\if{html}{\out{</div>}}
+}
+
+\subsection{Returns}{
+TRUE if the table is static, FALSE if the table is ticking.
+}
+}
+\if{html}{\out{<hr>}}
+\if{html}{\out{<a id="method-TableHandle-num_rows"></a>}}
+\if{latex}{\out{\hypertarget{method-TableHandle-num_rows}{}}}
+\subsection{Method \code{num_rows()}}{
+Number of rows in the table referenced by this TableHandle. This value is only well-defined for static tables.
+\subsection{Usage}{
+\if{html}{\out{<div class="r">}}\preformatted{TableHandle$num_rows()}\if{html}{\out{</div>}}
+}
+
+\subsection{Returns}{
+The number of rows in the table, if the table is static.
+}
 }
 \if{html}{\out{<hr>}}
 \if{html}{\out{<a id="method-TableHandle-bind_to_variable"></a>}}

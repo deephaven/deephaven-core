@@ -53,10 +53,8 @@ Client <- R6Class("Client",
         #' a variable name on the server. See `?TableHandle` for more information.
         #' @param table_object An R Data Frame, a dplyr Tibble, an Arrow Table, or an Arrow RecordBatchReader
         #' containing the data to import to the server.
-        #' @param num_rows Optional integer argument, only used if table_object is an Arrow RecordBatchReader.
-        #' Number of rows in the table represented by the RecordBatchReader.
         #' @return TableHandle reference to the new table.
-        import_table = function(table_object, num_rows=NULL) {
+        import_table = function(table_object) {
             table_object_class = class(table_object)
             if (table_object_class[[1]] == "data.frame") {
                 return(TableHandle$new(private$df_to_dh_table(table_object)))
@@ -65,7 +63,8 @@ Client <- R6Class("Client",
                 return(TableHandle$new(private$tibble_to_dh_table(table_object)))
             }
             else if (table_object_class[[1]] == "RecordBatchReader") {
-                return(TableHandle$new(private$rbr_to_dh_table(table_object, num_rows)))
+                num_rows = dim(table_object$read_table())[[1]] # TODO: delete when Corey fixes c++ api
+                return(TableHandle$new(private$rbr_to_dh_table(table_object, num_rows))) # TODO: return(TableHandle$new(private$rbr_to_dh_table(table_object)))
             }
             else if ((length(table_object_class) == 4 &&
                       table_object_class[[1]] == "Table" &&
@@ -100,15 +99,15 @@ Client <- R6Class("Client",
             }
         },
 
-        rbr_to_dh_table = function(rbr, num_rows) {
+        rbr_to_dh_table = function(rbr, num_rows) { # TODO: rbr_to_dh_table = function(rbr)
             ptr = private$internal_client$new_arrow_array_stream_ptr()
             rbr$export_to_c(ptr)
-            return(private$internal_client$new_table_from_arrow_array_stream_ptr(ptr, num_rows)) # quietly fails if rbr contains non-standard types
+            return(private$internal_client$new_table_from_arrow_array_stream_ptr(ptr, num_rows)) # TODO: return(private$internal_client$new_table_from_arrow_array_stream_ptr(ptr))
         },
 
         arrow_to_dh_table = function(arrow_tbl) {
             rbr = as_record_batch_reader(arrow_tbl)
-            return(private$rbr_to_dh_table(rbr, dim(arrow_tbl)[1]))
+            return(private$rbr_to_dh_table(rbr, dim(arrow_tbl)[1])) # TODO: return(private$rbr_to_dh_table(rbr))
         },
 
         tibble_to_dh_table = function(tibbl) {
