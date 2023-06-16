@@ -214,27 +214,27 @@ RCPP_EXPOSED_CLASS(ArrowArrayStream)
 
 RCPP_MODULE(DeephavenInternalModule) {
 
-        class_<TableHandleWrapper>("INTERNAL_TableHandle")
-        .method("is_static", &TableHandleWrapper::isStatic)
-        .method("num_rows", &TableHandleWrapper::numRows)
-        .method("bind_to_variable", &TableHandleWrapper::bindToVariable)
-        .method("get_arrow_array_stream_ptr", &TableHandleWrapper::getArrowArrayStreamPtr)
-        ;
+    class_<TableHandleWrapper>("INTERNAL_TableHandle")
+    .method("is_static", &TableHandleWrapper::isStatic)
+    .method("num_rows", &TableHandleWrapper::numRows)
+    .method("bind_to_variable", &TableHandleWrapper::bindToVariable)
+    .method("get_arrow_array_stream_ptr", &TableHandleWrapper::getArrowArrayStreamPtr)
+    ;
 
-        class_<ClientOptionsWrapper>("INTERNAL_ClientOptions")
-        .constructor()
-        .method("set_default_authentication", &ClientOptionsWrapper::setDefaultAuthentication)
-        .method("set_basic_authentication", &ClientOptionsWrapper::setBasicAuthentication)
-        .method("set_custom_authentication", &ClientOptionsWrapper::setCustomAuthentication)
-        .method("set_session_type", &ClientOptionsWrapper::setSessionType)
-        ;
+    class_<ClientOptionsWrapper>("INTERNAL_ClientOptions")
+    .constructor()
+    .method("set_default_authentication", &ClientOptionsWrapper::setDefaultAuthentication)
+    .method("set_basic_authentication", &ClientOptionsWrapper::setBasicAuthentication)
+    .method("set_custom_authentication", &ClientOptionsWrapper::setCustomAuthentication)
+    .method("set_session_type", &ClientOptionsWrapper::setSessionType)
+    ;
 
-        class_<ClientWrapper>("INTERNAL_Client")
-        .factory<const std::string&, const ClientOptionsWrapper&>(newClientWrapper)
-        .method("open_table", &ClientWrapper::openTable)
-        .method("check_for_table", &ClientWrapper::checkForTable)
-        .method("run_script", &ClientWrapper::runScript)
-        .method("new_arrow_array_stream_ptr", &ClientWrapper::newArrowArrayStreamPtr)
-        .method("new_table_from_arrow_array_stream_ptr", &ClientWrapper::newTableFromArrowArrayStreamPtr)
-        ;
+    class_<ClientWrapper>("INTERNAL_Client")
+    .factory<const std::string&, const ClientOptionsWrapper&>(newClientWrapper)
+    .method("open_table", &ClientWrapper::openTable)
+    .method("check_for_table", &ClientWrapper::checkForTable)
+    .method("run_script", &ClientWrapper::runScript)
+    .method("new_arrow_array_stream_ptr", &ClientWrapper::newArrowArrayStreamPtr)
+    .method("new_table_from_arrow_array_stream_ptr", &ClientWrapper::newTableFromArrowArrayStreamPtr)
+    ;
 }
