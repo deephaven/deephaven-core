@@ -44,7 +44,7 @@ public class CoreClient extends HasEventHandling {
 
     private final IdeConnection ideConnection;
 
-    public CoreClient(String serverUrl, Object connectOptions) {
+    public CoreClient(String serverUrl, @TsTypeRef(ConnectOptions.class) @JsOptional Object connectOptions) {
         ideConnection = new IdeConnection(serverUrl, connectOptions, true);
 
         // For now the only real connection is the IdeConnection, so we re-fire the auth token refresh
