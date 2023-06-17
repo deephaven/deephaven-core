@@ -41,7 +41,6 @@ DEPENDENCY_LIBS = \
 
 # tells the compiler where to look for additional include directories
 PKG_CXXFLAGS = \
-        -I$(DHCPP)/local/deephaven/include \
 	-I$(DHCPP)/local/deephaven/include \
 	-I$(DHCPP)/local/arrow/include \
 	-I/usr/share/R/include \
