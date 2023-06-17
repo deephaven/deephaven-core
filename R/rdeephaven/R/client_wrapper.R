@@ -63,7 +63,8 @@ Client <- R6Class("Client",
                 return(TableHandle$new(private$tibble_to_dh_table(table_object)))
             }
             else if (table_object_class[[1]] == "RecordBatchReader") {
-                return(TableHandle$new(private$rbr_to_dh_table(table_object)))
+                num_rows = dim(table_object$read_table())[[1]] # TODO: delete when c++ api fix is merged
+                return(TableHandle$new(private$rbr_to_dh_table(table_object, num_rows))) # TODO: return(TableHandle$new(private$rbr_to_dh_table(table_object)))
             }
             else if ((length(table_object_class) == 4 &&
                       table_object_class[[1]] == "Table" &&
@@ -98,15 +99,15 @@ Client <- R6Class("Client",
             }
         },
 
-        rbr_to_dh_table = function(rbr) {
+        rbr_to_dh_table = function(rbr, num_rows) { # TODO: rbr_to_dh_table = function(rbr)
             ptr = private$internal_client$new_arrow_array_stream_ptr()
             rbr$export_to_c(ptr)
-            return(private$internal_client$new_table_from_arrow_array_stream_ptr(ptr))
+            return(private$internal_client$new_table_from_arrow_array_stream_ptr(ptr, num_rows)) # TODO: return(private$internal_client$new_table_from_arrow_array_stream_ptr(ptr))
         },
 
         arrow_to_dh_table = function(arrow_tbl) {
             rbr = as_record_batch_reader(arrow_tbl)
-            return(private$rbr_to_dh_table(rbr))
+            return(private$rbr_to_dh_table(rbr, dim(arrow_tbl)[1])) # TODO: return(private$rbr_to_dh_table(rbr))
         },
 
         tibble_to_dh_table = function(tibbl) {
