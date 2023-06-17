@@ -44,13 +44,9 @@ set(ALL_FILES
     include/private/deephaven/client/impl/table_handle_manager_impl.h
     include/private/deephaven/client/impl/util.h
 
-    src/arrowutil/arrow_flight.cc
-
-    include/private/deephaven/client/arrowutil/arrow_traits.h
-    include/private/deephaven/client/arrowutil/arrow_flight.h
-    include/private/deephaven/client/arrowutil/arrow_visitors.h
-    include/private/deephaven/client/arrowutil/arrow_value_converter.h
     include/private/deephaven/client/arrowutil/arrow_column_source.h
+    include/private/deephaven/client/arrowutil/arrow_value_converter.h
+    include/private/deephaven/client/arrowutil/arrow_visitors.h
 
     src/columns.cc
     src/expressions.cc

@@ -42,20 +42,17 @@ class LazyStateInfo final {
   typedef io::deephaven::proto::backplane::grpc::Ticket Ticket;
 
 public:
-  LazyStateInfo(Ticket ticket, int64_t numRows, bool isStatic);
+  LazyStateInfo(int64_t numRows, bool isStatic);
   LazyStateInfo(const LazyStateInfo &other);
   LazyStateInfo &operator=(const LazyStateInfo &other);
   LazyStateInfo(LazyStateInfo &&other) noexcept;
   LazyStateInfo &operator=(LazyStateInfo &&other) noexcept;
   ~LazyStateInfo();
 
-  Ticket &ticket() { return ticket_; }
-  const Ticket &ticket() const { return ticket_; }
   int64_t numRows() const { return numRows_; }
   bool isStatic() const { return isStatic_; }
 
 private:
-  Ticket ticket_;
   int64_t numRows_ = 0;
   bool isStatic_ = false;
 };
@@ -63,6 +60,7 @@ private:
 class ExportedTableCreationCallback final
     : public deephaven::dhcore::utility::SFCallback<io::deephaven::proto::backplane::grpc::ExportedTableCreationResponse> {
   typedef io::deephaven::proto::backplane::grpc::ExportedTableCreationResponse ExportedTableCreationResponse;
+  typedef io::deephaven::proto::backplane::grpc::Ticket Ticket;
   typedef deephaven::client::server::Server Server;
   typedef deephaven::client::utility::Executor Executor;
 
@@ -74,13 +72,17 @@ class ExportedTableCreationCallback final
   using CBFuture = deephaven::dhcore::utility::CBFuture<T>;
 
 public:
-  explicit ExportedTableCreationCallback(CBPromise<LazyStateInfo> &&infoPromise);
+  ExportedTableCreationCallback(std::shared_ptr<TableHandleImpl> dependency, Ticket expectedTicket,
+      CBPromise<LazyStateInfo> infoPromise);
   ~ExportedTableCreationCallback() final;
 
   void onSuccess(ExportedTableCreationResponse item) final;
   void onFailure(std::exception_ptr ep) final;
 
 private:
+  // Hold a dependency on the parent until this callback is done.
+  std::shared_ptr<TableHandleImpl> dependency_;
+  Ticket expectedTicket_;
   CBPromise<LazyStateInfo> infoPromise_;
 };
 
@@ -100,11 +102,13 @@ class LazyState final {
 
 public:
   LazyState(std::shared_ptr<Server> server, std::shared_ptr<Executor> flightExecutor,
-      CBFuture<LazyStateInfo> infoFuture);
+      CBFuture<LazyStateInfo> infoFuture, Ticket ticket);
   ~LazyState();
 
   std::shared_ptr<Schema> getSchema();
   void getSchemaAsync(std::shared_ptr<SFCallback<std::shared_ptr<Schema>>> cb);
+
+  void releaseAsync();
 
   /**
    * Used in tests.
@@ -117,6 +121,7 @@ private:
   std::shared_ptr<Server> server_;
   std::shared_ptr<Executor> flightExecutor_;
   CBFuture<LazyStateInfo> infoFuture_;
+  Ticket ticket_;
 
   std::atomic_flag schemaRequestSent_ = {};
   CBPromise<std::shared_ptr<Schema>> schemaPromise_;
@@ -145,12 +150,12 @@ class TableHandleImpl : public std::enable_shared_from_this<TableHandleImpl> {
   using SFCallback = deephaven::dhcore::utility::SFCallback<Args...>;
 public:
   static std::pair<std::shared_ptr<internal::ExportedTableCreationCallback>, std::shared_ptr<internal::LazyState>>
-  createEtcCallback(const TableHandleManagerImpl *thm);
+  createEtcCallback(std::shared_ptr<TableHandleImpl> dependency, const TableHandleManagerImpl *thm, Ticket resultTicket);
 
-  static std::shared_ptr<TableHandleImpl> create(std::shared_ptr<const TableHandleImpl> parent,
-      std::shared_ptr<TableHandleManagerImpl> thm, Ticket ticket, std::shared_ptr<internal::LazyState> lazyState);
-  TableHandleImpl(Private, std::shared_ptr<const TableHandleImpl> &&parent, std::shared_ptr<TableHandleManagerImpl> &&thm,
-      Ticket &&ticket, std::shared_ptr<internal::LazyState> &&lazyState);
+  static std::shared_ptr<TableHandleImpl> create(std::shared_ptr<TableHandleManagerImpl> thm, Ticket ticket,
+      std::shared_ptr<internal::LazyState> lazyState);
+  TableHandleImpl(Private, std::shared_ptr<TableHandleManagerImpl> &&thm, Ticket &&ticket,
+      std::shared_ptr<internal::LazyState> &&lazyState);
   ~TableHandleImpl();
 
   std::shared_ptr<TableHandleImpl> select(std::vector<std::string> columnSpecs);
@@ -192,13 +197,13 @@ public:
   std::shared_ptr<TableHandleImpl> merge(std::string keyColumn, std::vector<Ticket> sourceTickets);
 
   std::shared_ptr<TableHandleImpl> crossJoin(const TableHandleImpl &rightSide,
-      std::vector<std::string> columnsToMatch, std::vector<std::string> columnsToAdd) const;
+      std::vector<std::string> columnsToMatch, std::vector<std::string> columnsToAdd);
 
   std::shared_ptr<TableHandleImpl> naturalJoin(const TableHandleImpl &rightSide,
-      std::vector<std::string> columnsToMatch, std::vector<std::string> columnsToAdd) const;
+      std::vector<std::string> columnsToMatch, std::vector<std::string> columnsToAdd);
 
   std::shared_ptr<TableHandleImpl> exactJoin(const TableHandleImpl &rightSide,
-      std::vector<std::string> columnsToMatch, std::vector<std::string> columnsToAdd) const;
+      std::vector<std::string> columnsToMatch, std::vector<std::string> columnsToAdd);
 
   std::shared_ptr<TableHandleImpl> asOfJoin(AsOfJoinTablesRequest::MatchRule matchRule,
       const TableHandleImpl &rightSide, std::vector<std::string> columnsToMatch,
@@ -241,10 +246,6 @@ private:
   std::shared_ptr<TableHandleImpl> headOrTailByHelper(int64_t n, bool head,
       std::vector<std::string> columnSpecs);
 
-  /**
-   * This TableHandleImpl holds a dependency on its parent so that the parent's lifetime is as least as long as this.
-   */
-  std::shared_ptr<const TableHandleImpl> parent_;
   std::shared_ptr<TableHandleManagerImpl> managerImpl_;
   Ticket ticket_;
   std::shared_ptr<internal::LazyState> lazyState_;

@@ -41,12 +41,4 @@ arrow::flight::FlightClient *FlightWrapper::flightClient() const {
   const auto *server = impl_->server().get();
   return server->flightClient();
 }
-
-TableHandleAndFlightDescriptor::TableHandleAndFlightDescriptor(TableHandle tableHandle,
-    arrow::flight::FlightDescriptor flightDescriptor) : tableHandle_(std::move(tableHandle)),
-    flightDescriptor_(std::move(flightDescriptor)) {}
-TableHandleAndFlightDescriptor::~TableHandleAndFlightDescriptor() = default;
-
-TableHandleAndFlightDescriptor::TableHandleAndFlightDescriptor(TableHandleAndFlightDescriptor &&other) noexcept = default;
-TableHandleAndFlightDescriptor &TableHandleAndFlightDescriptor::operator=(TableHandleAndFlightDescriptor &&other) noexcept = default;
 }  // namespace deephaven::client
