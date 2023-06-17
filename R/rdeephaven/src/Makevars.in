@@ -50,7 +50,6 @@ PKG_CXXFLAGS = \
 
 # list of required libraries, including deephaven and associated dependencies
 PKG_LIBS = \
-	$(SHLIB_OPENMP_CXXFLAGS) \
 	$(R_CPPFLAGS) \
 	-L/usr/lib/R/lib -lR \
 	$(R_CXXFLAGS) \
