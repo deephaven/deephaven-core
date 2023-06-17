@@ -142,7 +142,7 @@ public:
 
         auto wrapper = internal_tbl_hdl_mngr.createFlightWrapper();
         arrow::flight::FlightCallOptions options;
-        wrapper.addAuthHeaders(&options);
+        wrapper.addHeaders(&options);
 
         // extract RecordBatchReader from the struct pointed to by the passed tream_ptr
         std::shared_ptr<arrow::RecordBatchReader> record_batch_reader = arrow::ImportRecordBatchReader(stream_ptr.get()).ValueOrDie();
@@ -151,7 +151,7 @@ public:
         // write RecordBatchReader data to table on server with DoPut
         std::unique_ptr<arrow::flight::FlightStreamWriter> fsw;
         std::unique_ptr<arrow::flight::FlightMetadataReader> fmr;
-        auto [new_tbl_hdl, fd] = internal_tbl_hdl_mngr.newTableHandleAndFlightDescriptor();
+        auto [new_tbl_hdl, fd] = internal_tbl_hdl_mngr.newTableHandleAndFlightDescriptor(0, true);
         DEEPHAVEN_EXPR_MSG(wrapper.flightClient()->DoPut(options, fd, schema, &fsw, &fmr)); // TODO: need to add okOrThrow
         while(true) {
             std::shared_ptr<arrow::RecordBatch> this_batch;

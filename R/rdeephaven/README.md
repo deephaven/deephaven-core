@@ -32,30 +32,40 @@ or an [R Data Frame](https://stat.ethz.ch/R-manual/R-devel/library/base/html/dat
 
 Currently, the R client is only supported on Ubuntu 20.04 or 22.04 and must be built from source.
 
-1. Choose a directory where the client source code will live. Here, the source code will be downloaded into a new directory called `deephaven`.
+0. Build the cpp-client (and any dependent libraries) according to the instructions in
+   https://github.com/deephaven/deephaven-core/blob/main/cpp-client/README.md.
+   Follow the instructions at least to the point for "Build and install Deephaven C++ client".
+   At that point you would have both the Deephaven C++ client and any C++ libraries it depends on,
+   all installed in a particular directory of your choosing.
+   Define an environment variable `DHCPP` and assign it an absolute path to that directory.
+   The instructions that follow assume that `$DHCPP` points there.
+1. Choose a directory where the Deephaven R client source code will live.
+   Here, the source code will be downloaded into a new directory called `rdeephaven`.
    Navigate into that directory and clone this subdirectory of `deephaven-core` using git's sparse-checkout:
    ```bash
-   mkdir deephaven
-   cd deephaven
+   mkdir rdeephaven
+   cd rdeephaven
    git init
    git remote add -f origin https://github.com/deephaven/deephaven-core.git
    git config core.sparseCheckout true
    echo "R/rdeephaven" >> .git/info/sparse-checkout
    git pull origin main
    ```
-2. Now, navigate into the source code `lib` directory and build the C++ client and dependencies:
+2. Copy the file in `R/rdeephaven/src/Makevars.in` to `R/rdeephaven/src/Makevars` and
+   in the fourth line substitute the location of the Deephaven C++ client installtion you produced
+   above.  Eg, if your Deephaven C++ client installation is in `/home/cfs/dhcpp`,
+   the line should read
    ```bash
-   cd R/rdeephaven/lib
-   chmod +x build-cpp.sh
-   ./build-cpp.sh
+   DHCPP = /home/cfs/dhcpp
    ```
-3. With the C++ client installed, start an R console with this command:
+
+3. Start an R console with this command:
    ```bash
    R
    ```
-   and in that console, install the client:
+   and in that console, install the client (replace repos with your choice):
    ```r
-   install.packages("/path/to/rdeephaven", repos=NULL, type="source")
+   install.packages("/path/to/rdeephaven", repos="https://packagemanager.rstudio.com/all/__linux__/jammy/latest", type="source", dependencies=TRUE)
    ```
    This last command can also be executed from RStudio without the need for explicitly starting an R console.
 5. Now, run
