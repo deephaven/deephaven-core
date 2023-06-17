@@ -13,11 +13,15 @@ C++ compiler and tool suite (cmake etc).
    sudo apt update
    sudo apt install curl git g++ cmake make build-essential zlib1g-dev libssl-dev
    ```
+
 4. Make a new directory for the Deephaven source code and assign that directory
    to a temporary shell variable. This will make subsequent build steps easier.
    ```
-   mkdir -p ~/src/deephaven && cd ~/src/deephaven && export DHSRC=`pwd`
+   export DHSRC=$HOME/src/deephaven
+   mkdir -p $DHSRC
+   cd $DHSRC
    ```
+
 5. Clone deephaven-core sources.
    ```
    cd $DHSRC
@@ -27,9 +31,9 @@ C++ compiler and tool suite (cmake etc).
 6. Build and install dependencies for Deephaven C++ client.
 
    Get the `build-dependencies.sh` script from Deephaven's base images repository
-   at `https://github.com/deephaven/deephaven-base-images/blob/main/cpp-client`
+   at https://github.com/deephaven/deephaven-base-images/blob/main/cpp-client
    You can download it directly from the link
-   `https://github.com/deephaven/deephaven-base-images/raw/main/cpp-client/build-dependencies.sh`
+   https://github.com/deephaven/deephaven-base-images/raw/main/cpp-client/build-dependencies.sh
    (this script is also used from our automated tools, to generate a docker image to
    support tests runs; that's why it lives in a separate repo).
    The script downloads, builds and installs the dependent libraries
@@ -44,7 +48,7 @@ C++ compiler and tool suite (cmake etc).
 
    Example:
    ```
-   export DHCPP=$HOME/dhcpp  # Put your choice of location for the installation here.
+   # Ensure you have DHCPP defined as above.
    mkdir -p $DHCPP
    cd $DHCPP
    wget https://github.com/deephaven/deephaven-base-images/raw/main/cpp-client/build-dependencies.sh
