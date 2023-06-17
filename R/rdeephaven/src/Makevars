@@ -1,11 +1,12 @@
 $(info The name of the shared library to be created is: $(SHLIB))
 rwildcard=$(foreach d,$(wildcard $(1:=/*)),$(call rwildcard,$d,$2) $(filter $(subst *,%,$2),$d))
 
-# 1. Copy this file to "Makevars"
-# 2. Substitute below the location of the installation for the Deephaven C++ client
-# 3. Remove this comment
-DHCPP = /replace/me
-
+#
+# The code below assumes an environment variable DHCPP is defined and
+# points to a pre-existing directory where the deephaven C++ client
+# and its dependent libraries was built, as per the instructions in
+# https://github.com/deephaven/deephaven-core/blob/main/cpp-client/README.md
+#
 
 DEPENDENCY_DIRS = \
 	-L$(DHCPP)/local/re2/lib \
@@ -18,6 +19,12 @@ DEPENDENCY_DIRS = \
 	-L$(DHCPP)/local/arrow/lib
 
 
+#
+# Note the name of the protobuf library changes to -lprotobuf
+# if the C++ client and its dependent libraries are built with
+#   CMAKE_BUILD_TYPE=Release
+# The value -lprotobufd matches the default build type `Debug`
+#
 DEPENDENCY_LIBS = \
         -lclient \
         -lprotobufd \
@@ -70,6 +77,7 @@ CXX_STD = CXX17
 SOURCES = $(wildcard *.cpp)
 # compiled objects to link
 OBJECTS = $(SOURCES:.cpp=.o)
+
 
 all: $(SHLIB)
 
