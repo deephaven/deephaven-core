@@ -10,7 +10,7 @@ if (project.findProperty('jacoco.enabled') == 'true') {
 
 def testJar = project.tasks.register 'testJar', Jar, { Jar jar ->
     jar.from project.sourceSets.test.output
-    jar.classifier = 'test'
+    jar.archiveClassifier = 'test'
 }
 
 configurations {

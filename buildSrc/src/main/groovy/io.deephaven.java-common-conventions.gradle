@@ -3,7 +3,6 @@ plugins {
     id 'java'
     id 'io.deephaven.java-classpath-conventions'
     id 'io.deephaven.java-license-conventions'
-    id 'io.deephaven.java-header-conventions'
     id 'io.deephaven.java-toolchain-conventions'
     id 'io.deephaven.java-jar-conventions'
 }

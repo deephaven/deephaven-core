@@ -146,9 +146,9 @@ By default only runs in CI; to run locally:
             // so we don't stomp over top of previous reports.
             reports.all {
                 Report report ->
-                    String rebased = report.destination.absolutePath
+                    String rebased = report.outputLocation.get().asFile.absolutePath
                             .replace "${separator}test$separator", "$separator$type$separator"
-                    (report as SimpleReport).destination = new File(rebased)
+                    (report as SimpleReport).outputLocation.set(new File(rebased))
             }
             // this is not part of the standard class; it is glued on later by jacoco plugin;
             // we want to give each test it's own output files for jacoco analysis,
