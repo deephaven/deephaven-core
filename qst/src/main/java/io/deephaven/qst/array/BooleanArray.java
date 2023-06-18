@@ -4,6 +4,7 @@
 package io.deephaven.qst.array;
 
 import io.deephaven.qst.type.BooleanType;
+import io.deephaven.util.BooleanUtils;
 
 import java.util.Arrays;
 import java.util.Collection;
@@ -59,6 +60,16 @@ public final class BooleanArray extends PrimitiveArrayBase<Boolean> {
      */
     public final byte[] values() {
         return values;
+    }
+
+    @Override
+    public final Boolean value(int index) {
+        return BooleanUtils.byteAsBoolean(values[index]);
+    }
+
+    @Override
+    public boolean isNull(int index) {
+        return values[index] == BooleanUtils.NULL_BOOLEAN_AS_BYTE;
     }
 
     @Override

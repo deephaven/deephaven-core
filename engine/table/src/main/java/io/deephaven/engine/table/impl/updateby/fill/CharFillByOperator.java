@@ -4,7 +4,7 @@ import io.deephaven.base.verify.Assert;
 import io.deephaven.chunk.CharChunk;
 import io.deephaven.chunk.Chunk;
 import io.deephaven.chunk.attributes.Values;
-import io.deephaven.engine.table.MatchPair;
+import io.deephaven.engine.table.impl.MatchPair;
 import io.deephaven.engine.table.impl.updateby.UpdateByOperator;
 import io.deephaven.engine.table.impl.updateby.internal.BaseCharUpdateByOperator;
 import io.deephaven.engine.table.impl.util.RowRedirection;
@@ -25,8 +25,8 @@ public class CharFillByOperator extends BaseCharUpdateByOperator {
         }
 
         @Override
-        public void setValuesChunk(@NotNull final Chunk<? extends Values> valuesChunk) {
-            charValueChunk = valuesChunk.asCharChunk();
+        public void setValueChunks(@NotNull final Chunk<? extends Values>[] valueChunks) {
+            charValueChunk = valueChunks[0].asCharChunk();
         }
 
         @Override
@@ -52,8 +52,8 @@ public class CharFillByOperator extends BaseCharUpdateByOperator {
 
     @NotNull
     @Override
-    public UpdateByOperator.Context makeUpdateContext(final int chunkSize) {
-        return new Context(chunkSize);
+    public UpdateByOperator.Context makeUpdateContext(final int affectedChunkSize, final int influencerChunkSize) {
+        return new Context(affectedChunkSize);
     }
 
     // region extra-methods

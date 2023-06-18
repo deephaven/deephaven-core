@@ -3,15 +3,15 @@
  */
 #include "test_util.h"
 #include "deephaven/client/utility/table_maker.h"
-#include "deephaven/client/utility/utility.h"
+#include "deephaven/dhcore/utility/utility.h"
 #include <cstdlib>
 
 using deephaven::client::TableHandle;
 using deephaven::client::utility::okOrThrow;
-using deephaven::client::utility::valueOrThrow;
-using deephaven::client::utility::streamf;
-using deephaven::client::utility::stringf;
 using deephaven::client::utility::TableMaker;
+using deephaven::client::utility::valueOrThrow;
+using deephaven::dhcore::utility::streamf;
+using deephaven::dhcore::utility::stringf;
 
 namespace deephaven::client::tests {
 ColumnNamesForTests::ColumnNamesForTests() : importDate_("ImportDate"), ticker_("Ticker"),
@@ -114,14 +114,14 @@ TableMakerForTests TableMakerForTests::create() {
   return TableMakerForTests(std::move(client), std::move(testTable), std::move(cn), std::move(cd));
 }
 
-Client TableMakerForTests::createClient() {
+Client TableMakerForTests::createClient(const ClientOptions &options) {
   const char *hostptr = std::getenv("DH_HOST");
   const char *portptr = std::getenv("DH_PORT");
   std::string host = (hostptr == nullptr) ? "localhost" : hostptr;
   std::string port = (portptr == nullptr) ? "10000" : portptr;
   std::string connectionString(host + ":" + port);
   streamf(std::cerr, "Connecting to %o\n", connectionString);
-  auto client = Client::connect(connectionString);
+  auto client = Client::connect(connectionString, options);
   return client;
 }
 

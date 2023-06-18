@@ -7,6 +7,7 @@ import io.deephaven.internal.log.LoggerFactory;
 import io.deephaven.io.logger.Logger;
 import io.deephaven.lang.completion.ChunkerCompleter;
 import io.deephaven.lang.completion.CompletionLookups;
+import io.deephaven.lang.completion.CustomCompletion;
 import io.deephaven.lang.parse.CompletionParser;
 import io.deephaven.lang.parse.LspTools;
 import io.deephaven.lang.parse.ParsedDocument;
@@ -16,13 +17,12 @@ import io.deephaven.proto.util.Exceptions;
 import io.deephaven.server.console.ConsoleServiceGrpcImpl;
 import io.deephaven.server.session.SessionCloseableObserver;
 import io.deephaven.server.session.SessionState;
-import io.deephaven.util.SafeCloseable;
 import io.grpc.stub.StreamObserver;
-import org.jpy.PyObject;
 
 import java.util.Collection;
 import java.util.Collections;
 import java.util.Map;
+import java.util.Set;
 import java.util.WeakHashMap;
 import java.util.stream.Collectors;
 
@@ -41,6 +41,7 @@ public class JavaAutoCompleteObserver extends SessionCloseableObserver<AutoCompl
     private static final Map<SessionState, CompletionParser> parsers = Collections.synchronizedMap(new WeakHashMap<>());
 
     private final CompletionParser parser;
+    private final Set<CustomCompletion.Factory> customCompletionFactory;
 
     private static CompletionParser ensureParserForSession(SessionState session) {
         return parsers.computeIfAbsent(session, s -> {
@@ -53,9 +54,11 @@ public class JavaAutoCompleteObserver extends SessionCloseableObserver<AutoCompl
         });
     }
 
-    public JavaAutoCompleteObserver(SessionState session, StreamObserver<AutoCompleteResponse> responseObserver) {
+    public JavaAutoCompleteObserver(SessionState session, StreamObserver<AutoCompleteResponse> responseObserver,
+            Set<CustomCompletion.Factory> customCompletionFactory) {
         super(session, responseObserver);
         parser = ensureParserForSession(session);
+        this.customCompletionFactory = customCompletionFactory;
     }
 
     @Override
@@ -171,7 +174,7 @@ public class JavaAutoCompleteObserver extends SessionCloseableObserver<AutoCompl
         final ScriptSession scriptSession = exportedConsole.get();
         final VariableProvider vars = scriptSession.getVariableProvider();
         final VersionedTextDocumentIdentifier doc = request.getTextDocument();
-        final CompletionLookups h = CompletionLookups.preload(scriptSession);
+        final CompletionLookups h = CompletionLookups.preload(scriptSession, customCompletionFactory);
         // The only stateful part of a completer is the CompletionLookups, which are already
         // once-per-session-cached
         // so, we'll just create a new completer for each request. No need to hang onto these guys.

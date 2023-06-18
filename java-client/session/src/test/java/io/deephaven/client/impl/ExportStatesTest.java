@@ -199,7 +199,7 @@ public class ExportStatesTest {
 
     @Test
     public void checkUnexportedParent() {
-        final HeadTable empty42head6 = TableSpec.empty(42L).head(6);
+        final TableSpec empty42head6 = TableSpec.empty(42L).head(6);
         final Export export = export(empty42head6);
         assertThat(export.table()).isEqualTo(empty42head6);
 
@@ -212,7 +212,7 @@ public class ExportStatesTest {
     @Test
     public void reusePreviousExports() {
         final EmptyTable empty42 = TableSpec.empty(42L);
-        final HeadTable empty42head6 = empty42.head(6);
+        final TableSpec empty42head6 = empty42.head(6);
         try (final Export e1 = export(empty42); final Export e2 = export(empty42head6)) {
             assertThat(batches).hasSize(2); // Check that we are re-using the
             // ticket from e1 assertThat(batches.get(1).getOpsList()).hasSize(1);
@@ -223,7 +223,7 @@ public class ExportStatesTest {
     @Test
     public void mustReexportIfPreviousHasBeenReleased() {
         final EmptyTable empty42 = TableSpec.empty(42L);
-        final HeadTable empty42head6 = empty42.head(6);
+        final TableSpec empty42head6 = empty42.head(6);
         try (final Export e1 = export(empty42)) {
             // ignore
         }

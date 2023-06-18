@@ -75,7 +75,7 @@ public class MathUtil {
     };
 
     /**
-     * Compute 10^n as a int for 0 <= n <= 9.
+     * Compute 10^n as a int for 0 &lt;= n &lt;= 9.
      *
      * @param n the exponent
      * @return 10^n
@@ -95,9 +95,9 @@ public class MathUtil {
     };
 
     /**
-     * Compute the number of base 10 digits in n's representation, for n >= 0.
+     * Compute the number of base 10 digits in n's representation, for n &gt;= 0.
      * 
-     * @param n an integer >= 0
+     * @param n an integer &gt;= 0
      * @return how many digits in n's base 10 representation.
      */
     public static int base10digits(int n) {

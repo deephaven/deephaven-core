@@ -1,0 +1,7 @@
+digraph {
+"op_0" ["label"="newTable(3, TableHeader{headers={a=io.deephaven.qst.type.IntType, b=io.deephaven.qst.type.StringType}})"]
+"op_1" ["label"="view(__p_0_0=a,__p_0_1=b)"]
+"op_2" ["label"="view(b=__p_0_1,a=__p_0_0)"]
+"op_1" -> "op_0"
+"op_2" -> "op_1"
+}

@@ -10,9 +10,9 @@ package io.deephaven.engine.rowset.impl.rsp.container;
  * <pre>
  * {@code
  * bitmap.forEach(new ShortConsumer() {
- *   public boolean accept(short value) {
- *     // do something here
- *   }
+ *     public boolean accept(short value) {
+ *         // do something here
+ *     }
  * });
  * }
  * </pre>

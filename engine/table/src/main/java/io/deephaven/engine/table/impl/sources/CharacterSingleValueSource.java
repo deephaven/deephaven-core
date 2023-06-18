@@ -6,8 +6,8 @@ package io.deephaven.engine.table.impl.sources;
 import io.deephaven.chunk.WritableCharChunk;
 import io.deephaven.chunk.WritableChunk;
 import io.deephaven.chunk.attributes.Values;
+import io.deephaven.engine.context.ExecutionContext;
 import io.deephaven.engine.table.impl.MutableColumnSourceGetDefaults;
-import io.deephaven.engine.updategraph.LogicalClock;
 import io.deephaven.engine.rowset.chunkattributes.RowKeys;
 import io.deephaven.chunk.CharChunk;
 import io.deephaven.chunk.Chunk;
@@ -42,7 +42,7 @@ public class CharacterSingleValueSource extends SingleValueColumnSource<Characte
     @Override
     public final void set(Character value) {
         if (isTrackingPrevValues) {
-            final long currentStep = LogicalClock.DEFAULT.currentStep();
+            final long currentStep = updateGraph.clock().currentStep();
             if (changeTime < currentStep) {
                 prev = current;
                 changeTime = currentStep;
@@ -55,7 +55,7 @@ public class CharacterSingleValueSource extends SingleValueColumnSource<Characte
     @Override
     public final void set(char value) {
         if (isTrackingPrevValues) {
-            final long currentStep = LogicalClock.DEFAULT.currentStep();
+            final long currentStep = updateGraph.clock().currentStep();
             if (changeTime < currentStep) {
                 prev = current;
                 changeTime = currentStep;
@@ -88,7 +88,7 @@ public class CharacterSingleValueSource extends SingleValueColumnSource<Characte
         if (rowKey == RowSequence.NULL_ROW_KEY) {
             return NULL_CHAR;
         }
-        if (!isTrackingPrevValues || changeTime < LogicalClock.DEFAULT.currentStep()) {
+        if (!isTrackingPrevValues || changeTime < updateGraph.clock().currentStep()) {
             return current;
         }
         return prev;

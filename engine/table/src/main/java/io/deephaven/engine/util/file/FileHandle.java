@@ -203,7 +203,7 @@ public final class FileHandle implements SeekableByteChannel {
 
     /**
      * <p>
-     * Attempt to write {@code source.remaining(){} bytes, starting from {@code position} (0-indexed) in the file.
+     * Attempt to write {@code source.remaining()} bytes, starting from {@code position} (0-indexed) in the file.
      * <p>
      * See {@link FileChannel#write(ByteBuffer, long)}.
      *

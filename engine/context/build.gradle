@@ -11,12 +11,13 @@ configurations {
 
 dependencies {
     api project(':authentication')
+    api project(':Util')
 
     implementation project(':Configuration')
     implementation project(':DataStructures')
     implementation project(':log-factory')
-    implementation project(':Util')
     implementation project(':engine-time')
+    implementation project(':engine-updategraph')
     implementation project(':table-api')
     implementation project(':IO')
 
@@ -25,6 +26,7 @@ dependencies {
     Classpaths.inheritCommonsText(project, 'implementation')
 
     testImplementation TestTools.projectDependency(project, 'Base')
+    testImplementation project(':engine-test-utils')
 
     testRuntimeOnly project(':log-to-slf4j'),
             project(path: ':configs'),

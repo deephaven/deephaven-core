@@ -61,7 +61,7 @@ public class GenerateFigureImmutable {
         this.functionNamer = functionNamer == null ? JavaFunction::getMethodName : functionNamer;
 
         for (final String imp : interfaces) {
-            final Class<?> c = Class.forName(imp);
+            final Class<?> c = Class.forName(imp, false, Thread.currentThread().getContextClassLoader());
             log.info("Processing class: " + c);
 
             for (final Method m : c.getMethods()) {
@@ -892,7 +892,7 @@ public class GenerateFigureImmutable {
 
         final Set<GroovyStaticImportGenerator.JavaFunction> functionSet = new HashSet<>();
         for (String iface : interfaces) {
-            final Class<?> c = Class.forName(iface);
+            final Class<?> c = Class.forName(iface, false, Thread.currentThread().getContextClassLoader());
             log.info("Processing class: " + c);
 
             for (final java.lang.reflect.Method m : c.getMethods()) {

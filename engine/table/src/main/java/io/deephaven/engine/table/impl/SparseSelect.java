@@ -16,7 +16,6 @@ import io.deephaven.engine.table.impl.perf.QueryPerformanceRecorder;
 import io.deephaven.engine.table.impl.sources.ArrayBackedColumnSource;
 import io.deephaven.engine.table.impl.sources.ObjectSparseArraySource;
 import io.deephaven.engine.table.impl.sources.SparseArrayColumnSource;
-import io.deephaven.engine.updategraph.UpdateGraphProcessor;
 import io.deephaven.util.SafeCloseableArray;
 import io.deephaven.util.SafeCloseablePair;
 import io.deephaven.util.thread.NamingThreadFactory;
@@ -136,7 +135,7 @@ public class SparseSelect {
         return QueryPerformanceRecorder.withNugget("sparseSelect(" + Arrays.toString(columnNames) + ")",
                 source.sizeForInstrumentation(), () -> {
                     if (source.isRefreshing()) {
-                        UpdateGraphProcessor.DEFAULT.checkInitiateTableOperation();
+                        source.getUpdateGraph().checkInitiateSerialTableOperation();
                     }
 
                     final Map<String, ColumnSource<?>> resultColumns = new LinkedHashMap<>();

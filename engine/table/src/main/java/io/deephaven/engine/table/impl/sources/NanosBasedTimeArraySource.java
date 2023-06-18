@@ -9,21 +9,19 @@ import io.deephaven.chunk.LongChunk;
 import io.deephaven.chunk.WritableChunk;
 import io.deephaven.chunk.attributes.Values;
 import io.deephaven.engine.rowset.RowSequence;
-import io.deephaven.engine.rowset.RowSet;
 import io.deephaven.engine.rowset.chunkattributes.RowKeys;
 import io.deephaven.engine.table.ChunkSource;
 import io.deephaven.engine.table.ColumnSource;
 import io.deephaven.engine.table.WritableColumnSource;
 import io.deephaven.engine.table.WritableSourceWithPrepareForParallelPopulation;
 import io.deephaven.engine.table.impl.util.ShiftData;
-import io.deephaven.time.DateTime;
 import org.jetbrains.annotations.NotNull;
 
 import java.time.*;
 
 public abstract class NanosBasedTimeArraySource<TIME_TYPE> extends AbstractDeferredGroupingColumnSource<TIME_TYPE>
         implements FillUnordered<Values>, ShiftData.ShiftCallback, WritableColumnSource<TIME_TYPE>,
-        InMemoryColumnSource, WritableSourceWithPrepareForParallelPopulation, ConvertableTimeSource {
+        InMemoryColumnSource, WritableSourceWithPrepareForParallelPopulation, ConvertibleTimeSource {
 
     protected final LongArraySource nanoSource;
 
@@ -98,8 +96,8 @@ public abstract class NanosBasedTimeArraySource<TIME_TYPE> extends AbstractDefer
     }
 
     @Override
-    public void prepareForParallelPopulation(RowSet rowSet) {
-        nanoSource.prepareForParallelPopulation(rowSet);
+    public void prepareForParallelPopulation(RowSequence rowSequence) {
+        nanoSource.prepareForParallelPopulation(rowSequence);
     }
     // endregion
 
@@ -166,8 +164,7 @@ public abstract class NanosBasedTimeArraySource<TIME_TYPE> extends AbstractDefer
     @Override
     public <ALTERNATE_DATA_TYPE> boolean allowsReinterpret(
             @NotNull final Class<ALTERNATE_DATA_TYPE> alternateDataType) {
-        return alternateDataType == long.class || alternateDataType == Instant.class
-                || alternateDataType == DateTime.class;
+        return alternateDataType == long.class || alternateDataType == Instant.class;
     }
 
     @SuppressWarnings("unchecked")
@@ -176,8 +173,6 @@ public abstract class NanosBasedTimeArraySource<TIME_TYPE> extends AbstractDefer
             @NotNull Class<ALTERNATE_DATA_TYPE> alternateDataType) {
         if (alternateDataType == this.getType()) {
             return (ColumnSource<ALTERNATE_DATA_TYPE>) this;
-        } else if (alternateDataType == DateTime.class) {
-            return (ColumnSource<ALTERNATE_DATA_TYPE>) toDateTime();
         } else if (alternateDataType == long.class || alternateDataType == Long.class) {
             return (ColumnSource<ALTERNATE_DATA_TYPE>) toEpochNano();
         } else if (alternateDataType == Instant.class) {
@@ -200,17 +195,12 @@ public abstract class NanosBasedTimeArraySource<TIME_TYPE> extends AbstractDefer
 
     @Override
     public ColumnSource<LocalDate> toLocalDate(final @NotNull ZoneId zone) {
-        return new LocalDateWrapperSource(toZonedDateTime(zone), zone);
+        return new LongAsLocalDateColumnSource(nanoSource, zone);
     }
 
     @Override
     public ColumnSource<LocalTime> toLocalTime(final @NotNull ZoneId zone) {
-        return new LocalTimeWrapperSource(toZonedDateTime(zone), zone);
-    }
-
-    @Override
-    public ColumnSource<DateTime> toDateTime() {
-        return new DateTimeArraySource(nanoSource);
+        return new LongAsLocalTimeColumnSource(nanoSource, zone);
     }
 
     @Override

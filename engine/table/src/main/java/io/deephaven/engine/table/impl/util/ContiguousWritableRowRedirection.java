@@ -8,6 +8,7 @@ import io.deephaven.base.verify.Assert;
 import io.deephaven.base.verify.Require;
 import io.deephaven.chunk.WritableChunk;
 import io.deephaven.chunk.WritableLongChunk;
+import io.deephaven.engine.context.ExecutionContext;
 import io.deephaven.engine.rowset.RowSequence;
 import io.deephaven.engine.rowset.chunkattributes.RowKeys;
 import io.deephaven.engine.updategraph.UpdateCommitter;
@@ -147,7 +148,9 @@ public class ContiguousWritableRowRedirection implements WritableRowRedirection 
         Assert.eqNull(updateCommitter, "updateCommitter");
         checkpoint =
                 new TLongLongHashMap(Math.min(size, 1024 * 1024), 0.75f, UPDATES_KEY_NOT_FOUND, UPDATES_KEY_NOT_FOUND);
-        updateCommitter = new UpdateCommitter<>(this, ContiguousWritableRowRedirection::commitUpdates);
+        updateCommitter = new UpdateCommitter<>(this,
+                ExecutionContext.getContext().getUpdateGraph(),
+                ContiguousWritableRowRedirection::commitUpdates);
     }
 
     private synchronized void commitUpdates() {

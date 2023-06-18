@@ -3,6 +3,7 @@
  */
 package io.deephaven.engine.table.impl.select;
 
+import io.deephaven.api.literal.Literal;
 import io.deephaven.base.string.cache.CompressedString;
 import io.deephaven.engine.context.ExecutionContext;
 import io.deephaven.engine.rowset.WritableRowSet;
@@ -13,17 +14,27 @@ import io.deephaven.engine.table.impl.preview.DisplayWrapper;
 import io.deephaven.engine.context.QueryScope;
 import io.deephaven.time.DateTimeUtils;
 import io.deephaven.util.type.ArrayTypeUtils;
-import io.deephaven.time.DateTime;
 import io.deephaven.engine.table.ColumnSource;
 import io.deephaven.engine.rowset.RowSet;
 import org.jetbrains.annotations.NotNull;
 import org.jpy.PyObject;
 
+import java.time.Instant;
 import java.util.*;
 
 public class MatchFilter extends WhereFilterImpl {
 
     private static final long serialVersionUID = 1L;
+
+    static MatchFilter ofLiterals(
+            String columnName,
+            Collection<Literal> literals,
+            boolean inverted) {
+        return new MatchFilter(
+                inverted ? MatchType.Inverted : MatchType.Regular,
+                columnName,
+                literals.stream().map(AsObject::of).toArray());
+    }
 
     @NotNull
     private final String columnName;
@@ -104,7 +115,7 @@ public class MatchFilter extends WhereFilterImpl {
 
     @Override
     public synchronized void init(TableDefinition tableDefinition) {
-        if (initialized || strValues == null) {
+        if (initialized) {
             return;
         }
         ColumnDefinition<?> column = tableDefinition.getColumn(columnName);
@@ -112,12 +123,16 @@ public class MatchFilter extends WhereFilterImpl {
             throw new RuntimeException("Column \"" + columnName
                     + "\" doesn't exist in this table, available columns: " + tableDefinition.getColumnNames());
         }
+        if (strValues == null) {
+            initialized = true;
+            return;
+        }
         final List<Object> valueList = new ArrayList<>();
         final QueryScope queryScope = ExecutionContext.getContext().getQueryScope();
         final ColumnTypeConvertor convertor =
                 ColumnTypeConvertorFactory.getConvertor(column.getDataType(), column.getName());
         for (String strValue : strValues) {
-            if (queryScope.hasParamName(strValue)) {
+            if (queryScope != null && queryScope.hasParamName(strValue)) {
                 Object paramValue = queryScope.readParamValue(strValue);
                 if (paramValue != null && paramValue.getClass().isArray()) {
                     ArrayTypeUtils.ArrayAccessor<?> accessor = ArrayTypeUtils.getArrayAccessor(paramValue);
@@ -151,6 +166,12 @@ public class MatchFilter extends WhereFilterImpl {
     public WritableRowSet filter(RowSet selection, RowSet fullSet, Table table, boolean usePrev) {
         final ColumnSource columnSource = table.getColumnSource(columnName);
         return columnSource.match(invertMatch, usePrev, caseInsensitive, selection, values);
+    }
+
+    @Override
+    public WritableRowSet filterInverse(RowSet selection, RowSet fullSet, Table table, boolean usePrev) {
+        final ColumnSource columnSource = table.getColumnSource(columnName);
+        return columnSource.match(!invertMatch, usePrev, caseInsensitive, selection, values);
     }
 
     @Override
@@ -263,6 +284,7 @@ public class MatchFilter extends WhereFilterImpl {
                 return new ColumnTypeConvertor() {
                     @Override
                     Object convertStringLiteral(String str) {
+                        // TODO(web-client-ui#1243): Confusing quick filter behavior around string column "null"
                         if (str.equals("null")) {
                             return null;
                         }
@@ -321,15 +343,15 @@ public class MatchFilter extends WhereFilterImpl {
                     }
                 };
             }
-            if (cls == DateTime.class) {
+            if (cls == Instant.class) {
                 return new ColumnTypeConvertor() {
                     @Override
                     Object convertStringLiteral(String str) {
                         if (str.charAt(0) != '\'' || str.charAt(str.length() - 1) != '\'') {
                             throw new IllegalArgumentException(
-                                    "DateTime literal not enclosed in single-quotes (\"" + str + "\")");
+                                    "Instant literal not enclosed in single-quotes (\"" + str + "\")");
                         }
-                        return DateTimeUtils.convertDateTime(str.substring(1, str.length() - 1));
+                        return DateTimeUtils.parseInstant(str.substring(1, str.length() - 1));
                     }
                 };
             }
@@ -425,5 +447,58 @@ public class MatchFilter extends WhereFilterImpl {
             copy.values = values;
         }
         return copy;
+    }
+
+    private enum AsObject implements Literal.Visitor<Object> {
+        INSTANCE;
+
+        public static Object of(Literal literal) {
+            return literal.walk(INSTANCE);
+        }
+
+        @Override
+        public Object visit(boolean literal) {
+            return literal;
+        }
+
+        @Override
+        public Object visit(char literal) {
+            return literal;
+        }
+
+        @Override
+        public Object visit(byte literal) {
+            return literal;
+        }
+
+        @Override
+        public Object visit(short literal) {
+            return literal;
+        }
+
+        @Override
+        public Object visit(int literal) {
+            return literal;
+        }
+
+        @Override
+        public Object visit(long literal) {
+            return literal;
+        }
+
+        @Override
+        public Object visit(float literal) {
+            return literal;
+        }
+
+        @Override
+        public Object visit(double literal) {
+            return literal;
+        }
+
+        @Override
+        public Object visit(String literal) {
+            return literal;
+        }
     }
 }

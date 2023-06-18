@@ -137,7 +137,7 @@ public enum JsDataHandler {
             addNode.apply(new Node(data.length, nullCount));
         }
     },
-    DATE_TIME(Type.Int, "io.deephaven.time.DateTime", "datetime", "java.time.Instant", "java.time.ZonedDateTime") {
+    DATE_TIME(Type.Int, "java.time.Instant", "datetime", "java.time.ZonedDateTime") {
         // Ensures that the 'T' separator character is in the date time
         private String ensureSeparator(String s) {
             if (s.charAt(SEPARATOR_INDEX) == ' ') {

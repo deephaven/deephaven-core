@@ -54,17 +54,17 @@ public class AppendLinks implements LinkConsumer {
     }
 
     @Override
-    public void link(TableSpec table) {
-        node(dependent).addLink(node(table));
+    public void link(TableSpec parent) {
+        node(dependent).addLink(node(parent));
     }
 
     @Override
-    public void link(TableSpec table, int linkIndex) {
-        node(dependent).addLink(to(node(table)).with(Label.of(Integer.toString(linkIndex))));
+    public void link(TableSpec parent, int linkIndex) {
+        node(dependent).addLink(to(node(parent)).with(Label.of(Integer.toString(linkIndex))));
     }
 
     @Override
-    public void link(TableSpec table, String linkLabel) {
-        node(dependent).addLink(to(node(table)).with(Label.of(linkLabel)));
+    public void link(TableSpec parent, String linkLabel) {
+        node(dependent).addLink(to(node(parent)).with(Label.of(linkLabel)));
     }
 }

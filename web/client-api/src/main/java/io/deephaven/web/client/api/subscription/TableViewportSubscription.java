@@ -134,7 +134,7 @@ public class TableViewportSubscription extends HasEventHandling {
                     batcher.setFlat(true);
                 });
                 // TODO handle updateInterval core#188
-                Column[] columnsToSub = table.isStreamTable() ? Js.uncheckedCast(table.getColumns()) : columns;
+                Column[] columnsToSub = table.isBlinkTable() ? Js.uncheckedCast(table.getColumns()) : columns;
                 table.setInternalViewport(firstRow, lastRow, columnsToSub);
 
                 // Listen for events and refire them on ourselves, optionally on the original table
@@ -213,8 +213,8 @@ public class TableViewportSubscription extends HasEventHandling {
                     "Can't change refreshIntervalMs on a later call to setViewport, it must be consistent or omitted");
         }
         copy.then(table -> {
-            if (!table.isStreamTable()) {
-                // we only set stream table viewports once; and that's in the constructor
+            if (!table.isBlinkTable()) {
+                // we only set blink table viewports once; and that's in the constructor
                 table.setInternalViewport(firstRow, lastRow, columns);
             }
             return Promise.resolve(table);
@@ -299,9 +299,10 @@ public class TableViewportSubscription extends HasEventHandling {
 
     @JsMethod
     public Promise<TableData> snapshot(JsRangeSet rows, Column[] columns) {
+        retainForExternalUse();
         // TODO #1039 slice rows and drop columns
         return copy.then(table -> {
-            final ClientTableState state = table.state();
+            final ClientTableState state = table.lastVisibleState();
             String[] columnTypes = Arrays.stream(state.getTableDef().getColumns())
                     .map(ColumnDefinition::getType)
                     .toArray(String[]::new);

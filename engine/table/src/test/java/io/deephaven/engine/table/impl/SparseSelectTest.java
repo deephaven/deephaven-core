@@ -3,6 +3,7 @@
  */
 package io.deephaven.engine.table.impl;
 
+import io.deephaven.engine.context.ExecutionContext;
 import io.deephaven.engine.liveness.LivenessScope;
 import io.deephaven.engine.liveness.LivenessScopeStack;
 import io.deephaven.engine.rowset.RowSetBuilderSequential;
@@ -12,11 +13,9 @@ import io.deephaven.engine.table.impl.sources.ArrayBackedColumnSource;
 import io.deephaven.engine.testutil.*;
 import io.deephaven.engine.testutil.generator.*;
 import io.deephaven.engine.testutil.testcase.RefreshingTableTestCase;
-import io.deephaven.engine.updategraph.UpdateGraphProcessor;
 import io.deephaven.engine.util.TableTools;
 import io.deephaven.engine.testutil.junit4.EngineCleanup;
 import io.deephaven.test.types.OutOfBandTest;
-import io.deephaven.time.DateTime;
 import io.deephaven.time.DateTimeUtils;
 import io.deephaven.util.SafeCloseable;
 import junit.framework.TestCase;
@@ -45,7 +44,7 @@ public class SparseSelectTest {
         }
         for (final int size : sizes) {
             for (int seed = 0; seed < 1; ++seed) {
-                System.out.println(DateTime.now() + ": Size = " + size + ", seed=" + seed);
+                System.out.println(DateTimeUtils.now() + ": Size = " + size + ", seed=" + seed);
                 try (final SafeCloseable ignored = LivenessScopeStack.open(new LivenessScope(true), true)) {
                     testSparseSelect(size, seed);
                 }
@@ -60,7 +59,7 @@ public class SparseSelectTest {
         final QueryTable queryTable = getTable(size, random,
                 columnInfo = initColumnInfos(
                         new String[] {"Sym", "intCol", "doubleCol", "boolCol", "floatCol", "longCol", "charCol",
-                                "byteCol", "shortCol", "dateTime"},
+                                "byteCol", "shortCol", "instant"},
                         new SetGenerator<>("a", "b", "c", "d", "e"),
                         new IntGenerator(10, 100),
                         new SetGenerator<>(10.1, 20.1, 30.1),
@@ -70,8 +69,8 @@ public class SparseSelectTest {
                         new CharGenerator('a', 'z'),
                         new ByteGenerator(),
                         new ShortGenerator(),
-                        new UnsortedDateTimeGenerator(DateTimeUtils.convertDateTime("2019-01-10T00:00:00 NY"),
-                                DateTimeUtils.convertDateTime("2019-01-20T00:00:00 NY"))));
+                        new UnsortedInstantGenerator(DateTimeUtils.parseInstant("2019-01-10T00:00:00 NY"),
+                                DateTimeUtils.parseInstant("2019-01-20T00:00:00 NY"))));
 
         final Table sortedTable = queryTable.sort("intCol");
 
@@ -93,7 +92,7 @@ public class SparseSelectTest {
                 },
                 new EvalNugget() {
                     public Table e() {
-                        return SparseSelect.sparseSelect(queryTable, "dateTime");
+                        return SparseSelect.sparseSelect(queryTable, "instant");
                     }
                 },
                 new EvalNugget() {
@@ -132,7 +131,7 @@ public class SparseSelectTest {
                                 .groupBy("Sym").sort("Sym").ungroup())),
                 new QueryTableTestBase.TableComparator(queryTable, SparseSelect.sparseSelect(queryTable)),
                 new QueryTableTestBase.TableComparator(queryTable,
-                        SparseSelect.partialSparseSelect(queryTable, Arrays.asList("shortCol", "dateTime"))),
+                        SparseSelect.partialSparseSelect(queryTable, Arrays.asList("shortCol", "instant"))),
                 new QueryTableTestBase.TableComparator(sortedTable, SparseSelect.sparseSelect(sortedTable))
         };
 
@@ -187,7 +186,8 @@ public class SparseSelectTest {
         assertTableEquals(selected, table);
         assertTableEquals(TstUtils.prevTable(selected), TstUtils.prevTable(table));
 
-        UpdateGraphProcessor.DEFAULT.runWithinUnitTestCycle(() -> {
+        final ControlledUpdateGraph updateGraph = ExecutionContext.getContext().getUpdateGraph().cast();
+        updateGraph.runWithinUnitTestCycle(() -> {
             addToTable(table, i(2), TableTools.longCol("Value", 3));
             table.notifyListeners(i(2), i(), i());
         });
@@ -198,7 +198,7 @@ public class SparseSelectTest {
         TableTools.show(table);
         TableTools.show(selected);
 
-        UpdateGraphProcessor.DEFAULT.runWithinUnitTestCycle(() -> {
+        updateGraph.runWithinUnitTestCycle(() -> {
             addToTable(table, i(1L << 20 + 2), TableTools.longCol("Value", 4));
             table.notifyListeners(i(1L << 20 + 2), i(), i());
         });

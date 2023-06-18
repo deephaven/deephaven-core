@@ -4,6 +4,7 @@
 package io.deephaven.qst.table;
 
 import io.deephaven.api.TableOperations;
+import io.deephaven.api.TableOperationsDefaults;
 import io.deephaven.qst.TableCreationLogic;
 import io.deephaven.qst.TableCreator;
 import io.deephaven.qst.TableCreator.OperationsToTable;
@@ -14,7 +15,6 @@ import java.io.BufferedInputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.ObjectInputStream;
-import java.io.Serializable;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.Collection;
@@ -33,7 +33,7 @@ import java.util.Collection;
  * @see TableCreator
  * @see io.deephaven.api.TableOperations
  */
-public interface TableSpec extends TableOperations<TableSpec, TableSpec>, TableSchema, Serializable {
+public interface TableSpec extends TableOperationsDefaults<TableSpec, TableSpec>, TableSchema {
 
     static EmptyTable empty(long size) {
         return EmptyTable.of(size);
@@ -63,25 +63,6 @@ public interface TableSpec extends TableOperations<TableSpec, TableSpec>, TableS
 
     static TicketTable ticket(byte[] ticket) {
         return TicketTable.of(ticket);
-    }
-
-    /**
-     * Create a table via java deserialization.
-     *
-     * <p>
-     * Note: stability of the format is not guaranteed.
-     *
-     * @param path the path to the file
-     * @return the table
-     * @throws IOException if an I/O error occurs
-     * @throws ClassNotFoundException Class of a serialized object cannot be found.
-     */
-    static TableSpec file(Path path) throws IOException, ClassNotFoundException {
-        try (InputStream in = Files.newInputStream(path);
-                BufferedInputStream buf = new BufferedInputStream(in);
-                ObjectInputStream oIn = new ObjectInputStream(buf)) {
-            return (TableSpec) oIn.readObject();
-        }
     }
 
     TableCreationLogic logic();
@@ -132,7 +113,7 @@ public interface TableSpec extends TableOperations<TableSpec, TableSpec>, TableS
 
         void visit(AsOfJoinTable aj);
 
-        void visit(ReverseAsOfJoinTable raj);
+        void visit(RangeJoinTable rangeJoinTable);
 
         void visit(ViewTable viewTable);
 

@@ -5,13 +5,17 @@ package io.deephaven.api;
 
 import io.deephaven.api.agg.Aggregation;
 import io.deephaven.api.agg.spec.AggSpec;
-import io.deephaven.api.expression.AsOfJoinMatchFactory;
 import io.deephaven.api.filter.Filter;
-import io.deephaven.api.updateby.UpdateByOperation;
 import io.deephaven.api.updateby.UpdateByControl;
+import io.deephaven.api.updateby.UpdateByOperation;
 import io.deephaven.api.util.ConcurrentMethod;
 
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collection;
+import java.util.Collections;
+import java.util.Iterator;
+import java.util.List;
 import java.util.stream.Collectors;
 
 /**
@@ -48,7 +52,7 @@ public interface TableOperationsDefaults<TOPS extends TableOperations<TOPS, TABL
     @Override
     @ConcurrentMethod
     default TOPS where(String... filters) {
-        return where(Filter.from(filters));
+        return where(Filter.and(Filter.from(filters)));
     }
 
     // -----------------------------------------------------------------------------------------------------------------
@@ -79,25 +83,31 @@ public interface TableOperationsDefaults<TOPS extends TableOperations<TOPS, TABL
 
     @Override
     @ConcurrentMethod
-    default TOPS updateView(String... newColumns) {
-        return updateView(Selectable.from((newColumns)));
+    default TOPS updateView(String... columns) {
+        return updateView(Selectable.from((columns)));
     }
 
     // -----------------------------------------------------------------------------------------------------------------
 
     @Override
-    default TOPS update(String... newColumns) {
-        return update(Selectable.from((newColumns)));
+    default TOPS update(String... columns) {
+        return update(Selectable.from((columns)));
     }
 
     // -----------------------------------------------------------------------------------------------------------------
 
     @Override
-    default TOPS lazyUpdate(String... newColumns) {
-        return lazyUpdate(Selectable.from((newColumns)));
+    default TOPS lazyUpdate(String... colummns) {
+        return lazyUpdate(Selectable.from((colummns)));
     }
 
     // -----------------------------------------------------------------------------------------------------------------
+
+
+    @Override
+    default TOPS select() {
+        return select(Collections.emptyList());
+    }
 
     @Override
     default TOPS select(String... columns) {
@@ -136,6 +146,11 @@ public interface TableOperationsDefaults<TOPS extends TableOperations<TOPS, TABL
     // -----------------------------------------------------------------------------------------------------------------
 
     @Override
+    default TOPS join(TABLE rightTable) {
+        return join(rightTable, Collections.emptyList(), Collections.emptyList());
+    }
+
+    @Override
     default TOPS join(TABLE rightTable, String columnsToMatch) {
         return join(rightTable, JoinMatch.from(splitToCollection(columnsToMatch)), Collections.emptyList());
     }
@@ -150,46 +165,67 @@ public interface TableOperationsDefaults<TOPS extends TableOperations<TOPS, TABL
 
     @Override
     default TOPS aj(TABLE rightTable, String columnsToMatch) {
-        final AsOfJoinMatchFactory.AsOfJoinResult result =
-                AsOfJoinMatchFactory.getAjExpressions(splitToCollection(columnsToMatch));
-        return aj(rightTable, Arrays.asList(result.matches), Collections.emptyList(), result.rule);
+        final List<String> matches = splitToList(columnsToMatch);
+        return asOfJoin(
+                rightTable,
+                JoinMatch.from(matches.subList(0, matches.size() - 1)),
+                AsOfJoinMatch.parseForAj(matches.get(matches.size() - 1)),
+                Collections.emptyList());
     }
 
     @Override
     default TOPS aj(TABLE rightTable, String columnsToMatch, String columnsToAdd) {
-        final AsOfJoinMatchFactory.AsOfJoinResult result =
-                AsOfJoinMatchFactory.getAjExpressions(splitToCollection(columnsToMatch));
-        return aj(rightTable, Arrays.asList(result.matches), JoinAddition.from(splitToCollection(columnsToAdd)),
-                result.rule);
-    }
-
-    @Override
-    default TOPS aj(TABLE rightTable, Collection<? extends JoinMatch> columnsToMatch,
-            Collection<? extends JoinAddition> columnsToAdd) {
-        return aj(rightTable, columnsToMatch, columnsToAdd, AsOfJoinRule.LESS_THAN_EQUAL);
+        final List<String> matches = splitToList(columnsToMatch);
+        return asOfJoin(
+                rightTable,
+                JoinMatch.from(matches.subList(0, matches.size() - 1)),
+                AsOfJoinMatch.parseForAj(matches.get(matches.size() - 1)),
+                JoinAddition.from(splitToCollection(columnsToAdd)));
     }
 
     // -----------------------------------------------------------------------------------------------------------------
 
     @Override
     default TOPS raj(TABLE rightTable, String columnsToMatch) {
-        final AsOfJoinMatchFactory.ReverseAsOfJoinResult result =
-                AsOfJoinMatchFactory.getRajExpressions(splitToCollection(columnsToMatch));
-        return raj(rightTable, Arrays.asList(result.matches), Collections.emptyList(), result.rule);
+        final List<String> matches = splitToList(columnsToMatch);
+        return asOfJoin(
+                rightTable,
+                JoinMatch.from(matches.subList(0, matches.size() - 1)),
+                AsOfJoinMatch.parseForRaj(matches.get(matches.size() - 1)),
+                Collections.emptyList());
     }
 
     @Override
     default TOPS raj(TABLE rightTable, String columnsToMatch, String columnsToAdd) {
-        final AsOfJoinMatchFactory.ReverseAsOfJoinResult result =
-                AsOfJoinMatchFactory.getRajExpressions(splitToCollection(columnsToMatch));
-        return raj(rightTable, Arrays.asList(result.matches), JoinAddition.from(splitToCollection(columnsToAdd)),
-                result.rule);
+        final List<String> matches = splitToList(columnsToMatch);
+        return asOfJoin(
+                rightTable,
+                JoinMatch.from(matches.subList(0, matches.size() - 1)),
+                AsOfJoinMatch.parseForRaj(matches.get(matches.size() - 1)),
+                JoinAddition.from(splitToCollection(columnsToAdd)));
     }
 
+    // -----------------------------------------------------------------------------------------------------------------
+
     @Override
-    default TOPS raj(TABLE rightTable, Collection<? extends JoinMatch> columnsToMatch,
-            Collection<? extends JoinAddition> columnsToAdd) {
-        return raj(rightTable, columnsToMatch, columnsToAdd, ReverseAsOfJoinRule.GREATER_THAN_EQUAL);
+    default TOPS rangeJoin(
+            final TABLE rightTable,
+            final Collection<String> columnsToMatch,
+            final Collection<? extends Aggregation> aggregations) {
+        if (columnsToMatch.isEmpty()) {
+            throw new IllegalArgumentException(
+                    "No match expressions found; must include at least a range match expression");
+        }
+        final Iterator<String> matchExpressions = columnsToMatch.iterator();
+        final int numExactMatches = columnsToMatch.size() - 1;
+        final Collection<JoinMatch> exactMatches = numExactMatches == 0
+                ? Collections.emptyList()
+                : new ArrayList<>(numExactMatches);
+        for (int emi = 0; emi < numExactMatches; ++emi) {
+            exactMatches.add(JoinMatch.parse(matchExpressions.next()));
+        }
+        final RangeJoinMatch rangeMatch = RangeJoinMatch.parse(matchExpressions.next());
+        return rangeJoin(rightTable, exactMatches, rangeMatch, aggregations);
     }
 
     // -----------------------------------------------------------------------------------------------------------------
@@ -310,6 +346,12 @@ public interface TableOperationsDefaults<TOPS extends TableOperations<TOPS, TABL
     }
 
     @Override
+    default TOPS updateBy(final UpdateByControl control, final UpdateByOperation operation) {
+        return updateBy(control, Collections.singletonList(operation),
+                Collections.emptyList());
+    }
+
+    @Override
     default TOPS updateBy(final Collection<? extends UpdateByOperation> operations) {
         return updateBy(UpdateByControl.defaultInstance(), operations, Collections.emptyList());
     }
@@ -322,6 +364,12 @@ public interface TableOperationsDefaults<TOPS extends TableOperations<TOPS, TABL
     @Override
     default TOPS updateBy(final UpdateByOperation operation, final String... byColumns) {
         return updateBy(UpdateByControl.defaultInstance(), Collections.singletonList(operation),
+                ColumnName.from(byColumns));
+    }
+
+    @Override
+    default TOPS updateBy(final UpdateByControl control, final UpdateByOperation operation, final String... byColumns) {
+        return updateBy(control, Collections.singletonList(operation),
                 ColumnName.from(byColumns));
     }
 
@@ -342,12 +390,6 @@ public interface TableOperationsDefaults<TOPS extends TableOperations<TOPS, TABL
     @ConcurrentMethod
     default TOPS selectDistinct(String... columns) {
         return selectDistinct(Selectable.from(columns));
-    }
-
-    @Override
-    @ConcurrentMethod
-    default TOPS selectDistinct(Selectable... columns) {
-        return selectDistinct(Arrays.asList(columns));
     }
 
     // -------------------------------------------------------------------------------------------
@@ -705,8 +747,15 @@ public interface TableOperationsDefaults<TOPS extends TableOperations<TOPS, TABL
     // -------------------------------------------------------------------------------------------
 
     static Collection<String> splitToCollection(String string) {
-        return string.trim().isEmpty() ? Collections.emptyList()
-                : Arrays.stream(string.split(",")).map(String::trim).filter(s -> !s.isEmpty())
+        return splitToList(string);
+    }
+
+    static List<String> splitToList(String string) {
+        return string.trim().isEmpty()
+                ? Collections.emptyList()
+                : Arrays.stream(string.split(","))
+                        .map(String::trim)
+                        .filter(s -> !s.isEmpty())
                         .collect(Collectors.toList());
     }
 }

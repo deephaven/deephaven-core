@@ -15,6 +15,7 @@ import numpy as np
 import pandas as pd
 
 from deephaven import DHError
+from deephaven.constants import NULL_BYTE, NULL_SHORT, NULL_INT, NULL_LONG, NULL_FLOAT, NULL_DOUBLE, NULL_CHAR
 
 _JQstType = jpy.get_type("io.deephaven.qst.type.Type")
 _JTableTools = jpy.get_type("io.deephaven.engine.util.TableTools")
@@ -24,7 +25,10 @@ _j_name_type_map: Dict[str, DType] = {}
 
 
 def _qst_custom_type(cls_name: str):
-    return _JQstType.find(_JTableTools.typeFromName(cls_name))
+    try:
+        return _JQstType.find(_JTableTools.typeFromName(cls_name))
+    except:
+        return None
 
 
 class DType:
@@ -98,10 +102,20 @@ BigDecimal = DType(j_name="java.math.BigDecimal")
 """Java BigDecimal type"""
 StringSet = DType(j_name="io.deephaven.stringset.StringSet")
 """Deephaven StringSet type"""
-DateTime = DType(j_name="io.deephaven.time.DateTime", np_type=np.dtype("datetime64[ns]"))
-"""Deephaven DateTime type"""
-Period = DType(j_name="io.deephaven.time.Period")
-"""Deephaven time period type"""
+Instant = DType(j_name="java.time.Instant", np_type=np.dtype("datetime64[ns]"))
+"""Instant date time type"""
+LocalDate = DType(j_name="java.time.LocalDate")
+"""Local date type"""
+LocalTime = DType(j_name="java.time.LocalTime")
+"""Local time type"""
+ZonedDateTime = DType(j_name="java.time.ZonedDateTime")
+"""Zoned date time type"""
+Duration = DType(j_name="java.time.Duration")
+"""Time period type, which is a unit of time in terms of clock time (24-hour days, hours, minutes, seconds, and nanoseconds)."""
+Period = DType(j_name="java.time.Period")
+"""Time period type, which is a unit of time in terms of calendar time (days, weeks, months, years, etc.)."""
+TimeZone = DType(j_name="java.time.ZoneId")
+"""Time zone type."""
 PyObject = DType(j_name="org.jpy.PyObject")
 """Python object type"""
 JObject = DType(j_name="java.lang.Object")
@@ -134,8 +148,40 @@ float_array = double_array
 """Double-precision floating-point array type"""
 string_array = DType(j_name='[Ljava.lang.String;')
 """Java String array type"""
-datetime_array = DType(j_name='[Lio.deephaven.time.DateTime;')
-"""Deephaven DateTime array type"""
+instant_array = DType(j_name='[Ljava.time.Instant;')
+"""Java Instant array type"""
+zdt_array = DType(j_name='[Ljava.time.ZonedDateTime;')
+"""Zoned date time array type"""
+
+_PRIMITIVE_DTYPE_NULL_MAP = {
+    bool_: NULL_BYTE,
+    byte: NULL_BYTE,
+    char: NULL_CHAR,
+    int16: NULL_SHORT,
+    int32: NULL_INT,
+    int64: NULL_LONG,
+    float32: NULL_FLOAT,
+    float64: NULL_DOUBLE,
+}
+
+
+def null_remap(dtype: DType) -> Callable[[Any], Any]:
+    """ Creates a null value remap function for the provided DType.
+
+    Args:
+        dtype (DType): the DType instance
+
+    Returns:
+        a Callable
+
+    Raises:
+        TypeError
+    """
+    null_value = _PRIMITIVE_DTYPE_NULL_MAP.get(dtype)
+    if null_value is None:
+        raise TypeError("null_remap() must be called with a primitive DType")
+
+    return lambda v: null_value if v is None else v
 
 
 def array(dtype: DType, seq: Sequence, remap: Callable[[Any], Any] = None) -> jpy.JType:
@@ -157,22 +203,23 @@ def array(dtype: DType, seq: Sequence, remap: Callable[[Any], Any] = None) -> jp
         DHError
     """
     try:
+        if isinstance(seq, str) and dtype == char:
+            # ord is the Python builtin function that takes a unicode character and returns an integer code point value
+            remap = ord
+
         if remap:
             if not callable(remap):
                 raise ValueError("Not a callable")
             seq = [remap(v) for v in seq]
-        else:
-            if isinstance(seq, str) and dtype == char:
-                return array(char, seq, remap=ord)
 
         if isinstance(seq, np.ndarray):
             if dtype == bool_:
                 bytes_ = seq.astype(dtype=np.int8)
                 j_bytes = array(byte, bytes_)
                 seq = _JPrimitiveArrayConversionUtility.translateArrayByteToBoolean(j_bytes)
-            elif dtype == DateTime:
+            elif dtype == Instant:
                 longs = jpy.array('long', seq.astype('datetime64[ns]').astype('int64'))
-                seq = _JPrimitiveArrayConversionUtility.translateArrayLongToDateTime(longs)
+                seq = _JPrimitiveArrayConversionUtility.translateArrayLongToInstant(longs)
 
         return jpy.array(dtype.j_type, seq)
     except Exception as e:
@@ -207,6 +254,9 @@ def from_np_dtype(np_dtype: Union[np.dtype, pd.api.extensions.ExtensionDtype]) -
 
     if np_dtype.kind in {'U', 'S'}:
         return string
+
+    if np_dtype.kind in {'M'}:
+        return Instant
 
     for _, dtype in _j_name_type_map.items():
         if np.dtype(dtype.np_type) == np_dtype and dtype.np_type != np.object_:

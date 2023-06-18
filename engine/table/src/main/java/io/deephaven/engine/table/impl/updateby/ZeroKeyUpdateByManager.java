@@ -7,6 +7,7 @@ import io.deephaven.engine.table.ColumnSource;
 import io.deephaven.engine.table.ModifiedColumnSet;
 import io.deephaven.engine.table.impl.QueryTable;
 import io.deephaven.engine.table.impl.TableUpdateImpl;
+import io.deephaven.engine.table.impl.util.RowRedirection;
 import io.deephaven.engine.table.impl.util.WritableRowRedirection;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
@@ -47,7 +48,7 @@ public class ZeroKeyUpdateByManager extends UpdateBy {
             @NotNull final String[] preservedColumns,
             @NotNull final Map<String, ? extends ColumnSource<?>> resultSources,
             @Nullable final String timestampColumnName,
-            @Nullable final WritableRowRedirection rowRedirection,
+            @Nullable final RowRedirection rowRedirection,
             @NotNull final UpdateByControl control) {
         super(source, windows, inputSources, timestampColumnName, rowRedirection, control);
         final String bucketDescription = this + "-bucket-[]";

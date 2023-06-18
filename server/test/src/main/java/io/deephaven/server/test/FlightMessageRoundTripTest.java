@@ -19,20 +19,26 @@ import io.deephaven.barrage.flatbuf.BarrageSnapshotRequest;
 import io.deephaven.barrage.flatbuf.ColumnConversionMode;
 import io.deephaven.base.clock.Clock;
 import io.deephaven.base.verify.Assert;
-import io.deephaven.client.impl.DaggerDeephavenFlightRoot;
-import io.deephaven.client.impl.Export;
-import io.deephaven.client.impl.FlightSession;
-import io.deephaven.client.impl.FlightSessionFactory;
+import io.deephaven.chunk.ChunkType;
+import io.deephaven.chunk.LongChunk;
+import io.deephaven.chunk.ObjectChunk;
+import io.deephaven.chunk.WritableChunk;
+import io.deephaven.chunk.attributes.Values;
+import io.deephaven.client.impl.*;
 import io.deephaven.engine.context.ExecutionContext;
 import io.deephaven.engine.liveness.LivenessScopeStack;
 import io.deephaven.engine.table.Table;
-import io.deephaven.engine.updategraph.UpdateGraphProcessor;
+import io.deephaven.engine.updategraph.UpdateGraph;
+import io.deephaven.engine.table.impl.DataAccessHelpers;
 import io.deephaven.engine.util.AbstractScriptSession;
 import io.deephaven.engine.util.NoLanguageDeephavenSession;
 import io.deephaven.engine.util.ScriptSession;
 import io.deephaven.engine.util.TableDiff;
 import io.deephaven.engine.util.TableTools;
+import io.deephaven.extensions.barrage.BarrageSubscriptionOptions;
+import io.deephaven.extensions.barrage.util.BarrageChunkAppendingMarshaller;
 import io.deephaven.extensions.barrage.util.BarrageUtil;
+import io.deephaven.extensions.barrage.util.StreamReaderOptions;
 import io.deephaven.io.logger.LogBuffer;
 import io.deephaven.io.logger.LogBufferGlobal;
 import io.deephaven.proto.backplane.grpc.SortTableRequest;
@@ -53,10 +59,9 @@ import io.deephaven.server.test.TestAuthModule.FakeBearer;
 import io.deephaven.server.util.Scheduler;
 import io.deephaven.util.SafeCloseable;
 import io.deephaven.auth.AuthContext;
-import io.grpc.ManagedChannel;
-import io.grpc.ManagedChannelBuilder;
-import io.grpc.ServerInterceptor;
-import io.grpc.Status;
+import io.grpc.*;
+import io.grpc.CallOptions;
+import io.grpc.stub.ClientCalls;
 import org.apache.arrow.flight.*;
 import org.apache.arrow.flight.auth.ClientAuthHandler;
 import org.apache.arrow.flight.auth2.Auth2Constants;
@@ -64,7 +69,10 @@ import org.apache.arrow.flight.grpc.CredentialCallOption;
 import org.apache.arrow.flight.impl.Flight;
 import org.apache.arrow.memory.ArrowBuf;
 import org.apache.arrow.memory.RootAllocator;
+import org.apache.arrow.vector.FieldVector;
 import org.apache.arrow.vector.VectorSchemaRoot;
+import org.apache.arrow.vector.complex.ListVector;
+import org.apache.arrow.vector.types.Types;
 import org.apache.arrow.vector.types.pojo.ArrowType;
 import org.apache.arrow.vector.types.pojo.Field;
 import org.apache.arrow.vector.types.pojo.Schema;
@@ -82,18 +90,10 @@ import javax.inject.Singleton;
 import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.nio.charset.StandardCharsets;
-import java.util.EnumSet;
-import java.util.Iterator;
-import java.util.List;
-import java.util.Map;
-import java.util.Optional;
-import java.util.Set;
-import java.util.UUID;
-import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.Executors;
-import java.util.concurrent.ScheduledExecutorService;
-import java.util.concurrent.TimeUnit;
+import java.util.*;
+import java.util.concurrent.*;
 
+import static io.deephaven.client.impl.BarrageSubscriptionImpl.makeRequestInternal;
 import static org.junit.Assert.*;
 
 /**
@@ -114,8 +114,8 @@ public abstract class FlightMessageRoundTripTest {
 
         @Singleton
         @Provides
-        AbstractScriptSession<?> provideAbstractScriptSession() {
-            return new NoLanguageDeephavenSession("non-script-session");
+        AbstractScriptSession<?> provideAbstractScriptSession(final UpdateGraph updateGraph) {
+            return new NoLanguageDeephavenSession(updateGraph, "non-script-session");
         }
 
         @Provides
@@ -168,8 +168,8 @@ public abstract class FlightMessageRoundTripTest {
 
         @Provides
         @Singleton
-        static UpdateGraphProcessor provideUpdateGraphProcessor() {
-            return UpdateGraphProcessor.DEFAULT;
+        static UpdateGraph provideUpdateGraph() {
+            return ExecutionContext.getContext().getUpdateGraph();
         }
     }
 
@@ -216,6 +216,10 @@ public abstract class FlightMessageRoundTripTest {
         LogBufferGlobal.setInstance(logBuffer);
 
         component = component();
+        // open execution context immediately so it can be used when resolving `scriptSession`
+        executionContext = component.executionContext().open();
+
+        executionContext = component.executionContext().open();
 
         server = component.server();
         server.start();
@@ -223,7 +227,6 @@ public abstract class FlightMessageRoundTripTest {
 
         scriptSession = component.scriptSession();
         sessionService = component.sessionService();
-        executionContext = component.executionContext().open();
 
         serverLocation = Location.forGrpcInsecure("localhost", actualPort);
         currentSession = sessionService.newSession(new AuthContext.SuperUser());
@@ -244,7 +247,9 @@ public abstract class FlightMessageRoundTripTest {
 
         clientChannel = ManagedChannelBuilder.forTarget("localhost:" + actualPort)
                 .usePlaintext()
+                .intercept(new TestAuthClientInterceptor(currentSession.getExpiration().token.toString()))
                 .build();
+
         clientScheduler = Executors.newSingleThreadScheduledExecutor();
         FlightSessionFactory flightSessionFactory =
                 DaggerDeephavenFlightRoot.create().factoryBuilder()
@@ -254,6 +259,20 @@ public abstract class FlightMessageRoundTripTest {
                         .build();
 
         clientSession = flightSessionFactory.newFlightSession();
+    }
+
+    private static final class TestAuthClientInterceptor implements ClientInterceptor {
+        final BearerHandler callCredentials = new BearerHandler();
+
+        public TestAuthClientInterceptor(String bearerToken) {
+            callCredentials.setBearerToken(bearerToken);
+        }
+
+        @Override
+        public <ReqT, RespT> ClientCall<ReqT, RespT> interceptCall(MethodDescriptor<ReqT, RespT> method,
+                CallOptions callOptions, Channel next) {
+            return next.newCall(method, callOptions.withCallCredentials(callCredentials));
+        }
     }
 
     protected abstract TestComponent component();
@@ -536,7 +555,7 @@ public abstract class FlightMessageRoundTripTest {
 
     @Test
     public void testTimestampColumns() throws Exception {
-        assertRoundTripDataEqual(TableTools.emptyTable(10).update("tm = DateTime.now()"));
+        assertRoundTripDataEqual(TableTools.emptyTable(10).update("tm = DateTimeUtils.now()"));
         assertRoundTripDataEqual(TableTools.emptyTable(10).update("instant = java.time.Instant.now()"));
         assertRoundTripDataEqual(TableTools.emptyTable(10).update("zonedDateTime = java.time.ZonedDateTime.now()"));
     }
@@ -610,8 +629,8 @@ public abstract class FlightMessageRoundTripTest {
         final String tickingTableName = "flightInfoTestTicking";
         final Table table = TableTools.emptyTable(10).update("I = i");
 
-        final Table tickingTable = UpdateGraphProcessor.DEFAULT.sharedLock()
-                .computeLocked(() -> TableTools.timeTable(1_000_000).update("I = i"));
+        final Table tickingTable = ExecutionContext.getContext().getUpdateGraph().sharedLock().computeLocked(
+                () -> TableTools.timeTable(1_000_000).update("I = i"));
 
         // stuff table into the scope
         scriptSession.setVariable(staticTableName, table);
@@ -641,8 +660,8 @@ public abstract class FlightMessageRoundTripTest {
         final String tickingTableName = "flightInfoTestTicking";
         final Table table = TableTools.emptyTable(10).update("I = i");
 
-        final Table tickingTable = UpdateGraphProcessor.DEFAULT.sharedLock()
-                .computeLocked(() -> TableTools.timeTable(1_000_000).update("I = i"));
+        final Table tickingTable = ExecutionContext.getContext().getUpdateGraph().sharedLock().computeLocked(
+                () -> TableTools.timeTable(1_000_000).update("I = i"));
 
         try (final SafeCloseable ignored = LivenessScopeStack.open(scriptSession, false)) {
             // stuff table into the scope
@@ -732,12 +751,13 @@ public abstract class FlightMessageRoundTripTest {
                     org.apache.arrow.vector.IntVector iv =
                             (org.apache.arrow.vector.IntVector) root.getVector(0);
                     for (int i = 0; i < rowCount; ++i) {
-                        assertEquals("int match:", table.getColumn(0).get(offset + i), iv.get(i));
+                        assertEquals("int match:", DataAccessHelpers.getColumn(table, 0).get(offset + i), iv.get(i));
                     }
                     org.apache.arrow.vector.Float8Vector dv =
                             (org.apache.arrow.vector.Float8Vector) root.getVector(1);
                     for (int i = 0; i < rowCount; ++i) {
-                        assertEquals("double match: ", table.getColumn(1).get(offset + i), dv.get(i));
+                        assertEquals("double match: ", DataAccessHelpers.getColumn(table, 1).get(offset + i),
+                                dv.get(i));
                     }
                 }
                 assertEquals(table.size(), totalRowCount);
@@ -754,25 +774,9 @@ public abstract class FlightMessageRoundTripTest {
             // stuff table into the scope
             scriptSession.setVariable(staticTableName, table);
 
-            // build up a snapshot request incorrectly
-            byte[] empty = new byte[0];
-
-            FlightDescriptor fd = FlightDescriptor.command(empty);
-
-            try (FlightClient.ExchangeReaderWriter erw = flightClient.doExchange(fd)) {
-
-                Exception exception = assertThrows(FlightRuntimeException.class, () -> {
-                    erw.getReader().next();
-                });
-
-                String expectedMessage = "expected BarrageMessageWrapper magic bytes in FlightDescriptor.cmd";
-                String actualMessage = exception.getMessage();
-
-                assertTrue(actualMessage.contains(expectedMessage));
-            }
-
-            byte[] magic = new byte[] {100, 112, 104, 110}; // equivalent to '0x6E687064' (ASCII "dphn")
-            fd = FlightDescriptor.command(magic);
+            // java-flight requires us to send a message, but cannot add app metadata, send a dummy message
+            byte[] empty = new byte[] {};
+            final FlightDescriptor fd = FlightDescriptor.command(empty);
             try (FlightClient.ExchangeReaderWriter erw = flightClient.doExchange(fd);
                     final RootAllocator allocator = new RootAllocator(Integer.MAX_VALUE)) {
 
@@ -983,5 +987,90 @@ public abstract class FlightMessageRoundTripTest {
         assertEquals(deephavenTable.getDefinition(), uploadedTable.getDefinition());
         assertEquals(0, (long) TableTools
                 .diffPair(deephavenTable, uploadedTable, 0, EnumSet.noneOf(TableDiff.DiffItems.class)).getSecond());
+    }
+
+
+    @Test
+    public void testBarrageMessageAppendingMarshaller() {
+        final int size = 100;
+        final Table source = TableTools.emptyTable(size).update("I = ii", "J = `str_` + i");
+        scriptSession.setVariable("test", source);
+
+        // fetch schema over flight
+        final SchemaResult schema = flightClient.getSchema(arrowFlightDescriptorForName("test"));
+        final BarrageUtil.ConvertedArrowSchema convertedSchema = BarrageUtil.convertArrowSchema(schema.getSchema());
+
+        // The wire chunk types are the chunk types that barrage will fill in.
+        final ChunkType[] wireChunkTypes = convertedSchema.computeWireChunkTypes();
+
+        // The wire types are the expected result types of each column.
+        final Class<?>[] wireTypes = convertedSchema.computeWireTypes();
+        final Class<?>[] wireComponentTypes = convertedSchema.computeWireComponentTypes();
+
+        // noinspection unchecked
+        final WritableChunk<Values>[] destChunks = Arrays.stream(wireChunkTypes)
+                .map(chunkType -> chunkType.makeWritableChunk(size)).toArray(WritableChunk[]::new);
+        // zero out the chunks as the marshaller will append to them.
+        Arrays.stream(destChunks).forEach(dest -> dest.setSize(0));
+
+        final MethodDescriptor<Flight.Ticket, Integer> methodDescriptor = BarrageChunkAppendingMarshaller
+                .getClientDoGetDescriptor(wireChunkTypes, wireTypes, wireComponentTypes, destChunks);
+
+        final Ticket ticket = new Ticket("s/test".getBytes(StandardCharsets.UTF_8));
+        final Iterator<Integer> msgIter = ClientCalls.blockingServerStreamingCall(
+                clientChannel, methodDescriptor, CallOptions.DEFAULT,
+                Flight.Ticket.newBuilder().setTicket(ByteString.copyFrom(ticket.getBytes())).build());
+
+        long totalRows = 0;
+        while (msgIter.hasNext()) {
+            totalRows += msgIter.next();
+        }
+        Assert.eq(totalRows, "totalRows", size, "size");
+        final LongChunk<Values> col_i = destChunks[0].asLongChunk();
+        final ObjectChunk<String, Values> col_j = destChunks[1].asObjectChunk();
+        Assert.eq(col_i.size(), "col_i.size()", size, "size");
+        Assert.eq(col_j.size(), "col_j.size()", size, "size");
+        for (int i = 0; i < size; ++i) {
+            Assert.eq(col_i.get(i), "col_i.get(i)", i, "i");
+            Assert.equals(col_j.get(i), "col_j.get(i)", "str_" + i, "str_" + i);
+        }
+    }
+
+    @Test
+    public void testColumnsAsListFeature() throws Exception {
+        // bind the table in the session
+        // this should be a refreshing table so we can validate that modifications are also wrapped
+        final UpdateGraph updateGraph = ExecutionContext.getContext().getUpdateGraph();
+        try (final SafeCloseable ignored = updateGraph.sharedLock().lockCloseable()) {
+            final Table appendOnly = TableTools.timeTable("PT1s")
+                    .update("I = ii % 3", "J = `str_` + i");
+            final Table withMods = appendOnly.lastBy("I");
+            scriptSession.setVariable("test", withMods);
+        }
+
+        final BarrageSubscriptionOptions options = BarrageSubscriptionOptions.builder()
+                .columnsAsList(true)
+                .build();
+
+        final TicketTable ticket = TicketTable.fromQueryScopeField("test");
+        // fetch with DoExchange w/option enabled
+        try (FlightClient.ExchangeReaderWriter stream = flightClient.doExchange(arrowFlightDescriptorForName("test"));
+                final RootAllocator allocator = new RootAllocator(Integer.MAX_VALUE)) {
+
+            // make a subscription request for test
+            final ByteBuffer request = makeRequestInternal(null, null, false, options, ticket.ticket());
+            ArrowBuf data = allocator.buffer(request.remaining());
+            data.writeBytes(request.array(), request.arrayOffset() + request.position(), request.remaining());
+            stream.getWriter().putMetadata(data);
+
+            // read messages until we see at least one modification batch:
+            for (int ii = 0; ii < 5; ++ii) {
+                Assert.eqTrue(stream.getReader().next(), "stream.getReader().next()");
+                final VectorSchemaRoot root = stream.getReader().getRoot();
+                Assert.eqTrue(root.getVector("I") instanceof ListVector, "column is wrapped in list");
+                Assert.eqTrue(root.getVector("J") instanceof ListVector, "column is wrapped in list");
+                Assert.eqTrue(root.getVector("Timestamp") instanceof ListVector, "column is wrapped in list");
+            }
+        }
     }
 }

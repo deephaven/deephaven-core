@@ -29,7 +29,6 @@ dependencies {
     testImplementation project(':log-to-slf4j')
 }
 
-test {
-}
+test.systemProperty "PeriodicUpdateGraph.allowUnitTestMode", false
 
 apply plugin: 'io.deephaven.java-open-nio'

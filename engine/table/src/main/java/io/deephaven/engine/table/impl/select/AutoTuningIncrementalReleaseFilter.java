@@ -3,13 +3,11 @@
  */
 package io.deephaven.engine.table.impl.select;
 
-import io.deephaven.base.clock.Clock;
-import io.deephaven.engine.updategraph.UpdateGraphProcessor;
+import io.deephaven.engine.updategraph.TerminalNotification;
+import io.deephaven.engine.updategraph.impl.PeriodicUpdateGraph;
 import io.deephaven.internal.log.LoggerFactory;
 import io.deephaven.io.logger.Logger;
-import io.deephaven.engine.updategraph.TerminalNotification;
 import io.deephaven.util.annotations.ScriptApi;
-import org.jetbrains.annotations.NotNull;
 
 import java.text.DecimalFormat;
 
@@ -200,7 +198,8 @@ public class AutoTuningIncrementalReleaseFilter extends BaseIncrementalReleaseFi
             }
         } else {
             final long cycleDurationNanos = cycleEndNanos - lastRefreshNanos;
-            final long targetCycleNanos = UpdateGraphProcessor.DEFAULT.getTargetCycleDurationMillis() * 1000 * 1000;
+            final long targetCycleNanos =
+                    updateGraph.<PeriodicUpdateGraph>cast().getTargetCycleDurationMillis() * 1000 * 1000;
             final double rowsPerNanoSecond = ((double) nextSize) / cycleDurationNanos;
             nextSize = Math.max((long) (rowsPerNanoSecond * targetCycleNanos * targetFactor), 1L);
             if (verbose) {
@@ -218,13 +217,13 @@ public class AutoTuningIncrementalReleaseFilter extends BaseIncrementalReleaseFi
                         .append(decimalFormat.format(eta)).append(" sec").endl();
             }
         }
-        UpdateGraphProcessor.DEFAULT.addNotification(new TerminalNotification() {
+        updateGraph.addNotification(new TerminalNotification() {
             final boolean captureReleasedAll = releasedAll;
 
             @Override
             public void run() {
                 cycleEndNanos = System.nanoTime();
-                UpdateGraphProcessor.DEFAULT.requestRefresh();
+                updateGraph.requestRefresh();
                 if (!captureReleasedAll && releasedAll) {
                     final DecimalFormat decimalFormat = new DecimalFormat("###,###.##");
                     final long durationNanos = cycleEndNanos - firstCycleNanos;

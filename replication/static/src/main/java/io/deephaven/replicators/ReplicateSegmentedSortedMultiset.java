@@ -9,6 +9,7 @@ import org.apache.commons.io.FileUtils;
 import java.io.File;
 import java.io.IOException;
 import java.nio.charset.Charset;
+import java.time.Instant;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
@@ -17,12 +18,11 @@ import java.util.function.Function;
 import static io.deephaven.replication.ReplicatePrimitiveCode.*;
 import static io.deephaven.replication.ReplicationUtils.*;
 
-//
 public class ReplicateSegmentedSortedMultiset {
     public static void main(String[] args) throws IOException {
         charToAllButBooleanAndLong(
                 "engine/table/src/main/java/io/deephaven/engine/table/impl/ssms/CharSegmentedSortedMultiset.java");
-        insertDateTimeExtensions(charToLong(
+        insertInstantExtensions(charToLong(
                 "engine/table/src/main/java/io/deephaven/engine/table/impl/ssms/CharSegmentedSortedMultiset.java"));
 
         String objectSsm = charToObject(
@@ -72,7 +72,7 @@ public class ReplicateSegmentedSortedMultiset {
         fixupLongKernelOperator(
                 charToLong(
                         "engine/table/src/main/java/io/deephaven/engine/table/impl/by/ssmcountdistinct/distinct/CharChunkedDistinctOperator.java"),
-                "    externalResult = new DateTimeSsmSourceWrapper(internalResult);");
+                "    externalResult = new InstantSsmSourceWrapper(internalResult);");
         fixupObjectKernelOperator(
                 charToObject(
                         "engine/table/src/main/java/io/deephaven/engine/table/impl/by/ssmcountdistinct/distinct/CharChunkedDistinctOperator.java"),
@@ -83,7 +83,7 @@ public class ReplicateSegmentedSortedMultiset {
         fixupLongKernelOperator(
                 charToLong(
                         "engine/table/src/main/java/io/deephaven/engine/table/impl/by/ssmcountdistinct/unique/CharChunkedUniqueOperator.java"),
-                "    externalResult = new BoxedColumnSource.OfDateTime(internalResult);");
+                "    externalResult = new LongAsInstantColumnSource(internalResult);");
         fixupObjectKernelOperator(
                 charToObject(
                         "engine/table/src/main/java/io/deephaven/engine/table/impl/by/ssmcountdistinct/unique/CharChunkedUniqueOperator.java"),
@@ -100,7 +100,7 @@ public class ReplicateSegmentedSortedMultiset {
         fixupLongKernelOperator(
                 charToLong(
                         "engine/table/src/main/java/io/deephaven/engine/table/impl/by/ssmcountdistinct/distinct/CharRollupDistinctOperator.java"),
-                "    externalResult = new DateTimeSsmSourceWrapper(internalResult);");
+                "    externalResult = new InstantSsmSourceWrapper(internalResult);");
         fixupObjectKernelOperator(
                 charToObject(
                         "engine/table/src/main/java/io/deephaven/engine/table/impl/by/ssmcountdistinct/distinct/CharRollupDistinctOperator.java"),
@@ -111,7 +111,7 @@ public class ReplicateSegmentedSortedMultiset {
         fixupLongKernelOperator(
                 charToLong(
                         "engine/table/src/main/java/io/deephaven/engine/table/impl/by/ssmcountdistinct/unique/CharRollupUniqueOperator.java"),
-                "    externalResult = new BoxedColumnSource.OfDateTime(internalResult);");
+                "    externalResult = new LongAsInstantColumnSource(internalResult);");
         fixupObjectKernelOperator(
                 charToObject(
                         "engine/table/src/main/java/io/deephaven/engine/table/impl/by/ssmcountdistinct/unique/CharRollupUniqueOperator.java"),
@@ -122,14 +122,14 @@ public class ReplicateSegmentedSortedMultiset {
         final File longFile = new File(longPath);
         List<String> lines = FileUtils.readLines(longFile, Charset.defaultCharset());
         lines = addImport(lines,
-                "import io.deephaven.engine.table.impl.sources.BoxedColumnSource;",
-                "import io.deephaven.time.DateTime;",
-                "import io.deephaven.engine.table.impl.by.ssmcountdistinct.DateTimeSsmSourceWrapper;");
+                "import io.deephaven.engine.table.impl.sources.LongAsInstantColumnSource;",
+                "import io.deephaven.engine.table.impl.by.ssmcountdistinct.InstantSsmSourceWrapper;");
+        lines = addImport(lines, Instant.class);
         lines = replaceRegion(lines, "Constructor",
                 indent(Collections.singletonList("Class<?> type,"), 12));
         lines = replaceRegion(lines, "ResultAssignment",
                 indent(Arrays.asList(
-                        "if(type == DateTime.class) {",
+                        "if(type == Instant.class) {",
                         externalResultSetter,
                         "} else {",
                         "    externalResult = internalResult;",
@@ -232,58 +232,58 @@ public class ReplicateSegmentedSortedMultiset {
                                 "                }"));
     }
 
-    private static void insertDateTimeExtensions(String longPath) throws IOException {
+    private static void insertInstantExtensions(String longPath) throws IOException {
         final File longFile = new File(longPath);
         List<String> lines = FileUtils.readLines(longFile, Charset.defaultCharset());
 
         lines = addImport(lines,
-                "import io.deephaven.time.DateTime;",
                 "import io.deephaven.vector.ObjectVectorDirect;",
                 "import io.deephaven.time.DateTimeUtils;");
+        lines = addImport(lines, Instant.class);
         lines = insertRegion(lines, "Extensions",
                 Arrays.asList(
-                        "    public DateTime getAsDate(long i) {",
-                        "        return DateTimeUtils.nanosToTime(get(i));",
+                        "    public Instant getAsInstant(long i) {",
+                        "        return DateTimeUtils.epochNanosToInstant(get(i));",
                         "    }",
                         "",
-                        "    public ObjectVector<DateTime> subArrayAsDate(long fromIndexInclusive, long toIndexExclusive) {",
-                        "        return new ObjectVectorDirect<>(keyArrayAsDate(fromIndexInclusive, toIndexExclusive));",
+                        "    public ObjectVector<Instant> subArrayAsInstants(long fromIndexInclusive, long toIndexExclusive) {",
+                        "        return new ObjectVectorDirect<>(keyArrayAsInstants(fromIndexInclusive, toIndexExclusive));",
                         "    }",
                         "",
-                        "    public ObjectVector<DateTime> subArrayByPositionsAsDates(long[] positions) {",
-                        "        final DateTime[] keyArray = new DateTime[positions.length];",
+                        "    public ObjectVector<Instant> subArrayByPositionsAsInstants(long[] positions) {",
+                        "        final Instant[] keyArray = new Instant[positions.length];",
                         "        int writePos = 0;",
                         "        for (long position : positions) {",
-                        "            keyArray[writePos++] = getAsDate(position);",
+                        "            keyArray[writePos++] = getAsInstant(position);",
                         "        }",
                         "",
                         "        return new ObjectVectorDirect<>(keyArray);",
                         "    }",
                         "",
-                        "    public DateTime[] toDateArray() {",
-                        "        return keyArrayAsDate();",
+                        "    public Instant[] toInstantArray() {",
+                        "        return keyArrayAsInstants();",
                         "    }",
                         "",
-                        "    public Chunk<Values> toDateChunk() {",
-                        "        return ObjectChunk.chunkWrap(toDateArray());",
+                        "    public Chunk<Values> toInstantChunk() {",
+                        "        return ObjectChunk.chunkWrap(toInstantArray());",
                         "    }",
                         "",
-                        "    public void fillDateChunk(WritableChunk destChunk) {",
+                        "    public void fillInstantChunk(WritableChunk destChunk) {",
                         "        if(isEmpty()) {",
                         "            return ;",
                         "        }",
                         "",
                         "        //noinspection unchecked",
-                        "        WritableObjectChunk<DateTime, Values> writable = destChunk.asWritableObjectChunk();",
+                        "        WritableObjectChunk<Instant, Values> writable = destChunk.asWritableObjectChunk();",
                         "        if (leafCount == 1) {",
                         "            for(int ii = 0; ii < size(); ii++) {",
-                        "                writable.set(ii, DateTimeUtils.nanosToTime(directoryValues[ii]));",
+                        "                writable.set(ii, DateTimeUtils.epochNanosToInstant(directoryValues[ii]));",
                         "            }",
                         "        } else if (leafCount > 0) {",
                         "            int offset = 0;",
                         "            for (int li = 0; li < leafCount; ++li) {",
                         "                for(int jj = 0; jj < leafSizes[li]; jj++) {",
-                        "                    writable.set(jj + offset, DateTimeUtils.nanosToTime(leafValues[li][jj]));",
+                        "                    writable.set(jj + offset, DateTimeUtils.epochNanosToInstant(leafValues[li][jj]));",
                         "                }",
                         "                offset += leafSizes[li];",
                         "            }",
@@ -291,12 +291,12 @@ public class ReplicateSegmentedSortedMultiset {
                         "    }",
                         "",
                         "",
-                        "    public ObjectVector<DateTime> getDirectAsDate() {",
-                        "        return new ObjectVectorDirect<>(keyArrayAsDate());",
+                        "    public ObjectVector<Instant> getDirectAsInstants() {",
+                        "        return new ObjectVectorDirect<>(keyArrayAsInstants());",
                         "    }",
                         "",
-                        "    private DateTime[] keyArrayAsDate() {",
-                        "        return keyArrayAsDate(0, size()-1);",
+                        "    private Instant[] keyArrayAsInstants() {",
+                        "        return keyArrayAsInstants(0, size()-1);",
                         "    }",
                         "",
                         "    /**",
@@ -305,16 +305,16 @@ public class ReplicateSegmentedSortedMultiset {
                         "     * @param last",
                         "     * @return",
                         "     */",
-                        "    private DateTime[] keyArrayAsDate(long first, long last) {",
+                        "    private Instant[] keyArrayAsInstants(long first, long last) {",
                         "        if(isEmpty()) {",
-                        "            return DateTimeUtils.ZERO_LENGTH_DATETIME_ARRAY;",
+                        "            return DateTimeUtils.ZERO_LENGTH_INSTANT_ARRAY;",
                         "        }",
                         "",
                         "        final int totalSize = (int)(last - first + 1);",
-                        "        final DateTime[] keyArray = new DateTime[intSize()];",
+                        "        final Instant[] keyArray = new Instant[intSize()];",
                         "        if (leafCount == 1) {",
                         "            for(int ii = 0; ii < totalSize; ii++) {",
-                        "                keyArray[ii] = DateTimeUtils.nanosToTime(directoryValues[ii + (int)first]);",
+                        "                keyArray[ii] = DateTimeUtils.epochNanosToInstant(directoryValues[ii + (int)first]);",
                         "            }",
                         "        } else if (leafCount > 0) {",
                         "            int offset = 0;",
@@ -326,7 +326,7 @@ public class ReplicateSegmentedSortedMultiset {
                         "                    if(toSkip < leafSizes[li]) {",
                         "                        final int nToCopy = Math.min(leafSizes[li] - toSkip, totalSize);",
                         "                        for(int jj = 0; jj < nToCopy; jj++) {",
-                        "                            keyArray[jj] = DateTimeUtils.nanosToTime(leafValues[li][jj + toSkip]);",
+                        "                            keyArray[jj] = DateTimeUtils.epochNanosToInstant(leafValues[li][jj + toSkip]);",
                         "                        }",
                         "                        copied = nToCopy;",
                         "                        offset = copied;",
@@ -337,7 +337,7 @@ public class ReplicateSegmentedSortedMultiset {
                         "                } else {",
                         "                    int nToCopy = Math.min(leafSizes[li], totalSize - copied);",
                         "                    for(int jj = 0; jj < nToCopy; jj++) {",
-                        "                        keyArray[jj + offset] = DateTimeUtils.nanosToTime(leafValues[li][jj]);",
+                        "                        keyArray[jj + offset] = DateTimeUtils.epochNanosToInstant(leafValues[li][jj]);",
                         "                    }",
                         "                    offset += leafSizes[li];",
                         "                    copied += nToCopy;",
@@ -347,11 +347,11 @@ public class ReplicateSegmentedSortedMultiset {
                         "        return keyArray;",
                         "    }",
                         "",
-                        "    public String toDateString() {",
+                        "    public String toInstantString() {",
                         "        final StringBuilder arrAsString = new StringBuilder(\"[\");",
                         "        if (leafCount == 1) {",
                         "            for(int ii = 0; ii < intSize(); ii++) {",
-                        "                arrAsString.append(DateTimeUtils.nanosToTime(directoryValues[ii])).append(\", \");",
+                        "                arrAsString.append(DateTimeUtils.epochNanosToInstant(directoryValues[ii])).append(\", \");",
                         "            }",
                         "            ",
                         "            arrAsString.replace(arrAsString.length() - 2, arrAsString.length(), \"]\");",
@@ -359,7 +359,7 @@ public class ReplicateSegmentedSortedMultiset {
                         "        } else if (leafCount > 0) {",
                         "            for (int li = 0; li < leafCount; ++li) {",
                         "                for(int ai = 0; ai < leafSizes[li]; ai++) {",
-                        "                    arrAsString.append(DateTimeUtils.nanosToTime(leafValues[li][ai])).append(\", \");",
+                        "                    arrAsString.append(DateTimeUtils.epochNanosToInstant(leafValues[li][ai])).append(\", \");",
                         "                }",
                         "            }",
                         "",

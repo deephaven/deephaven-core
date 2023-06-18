@@ -58,9 +58,9 @@ public abstract class SystemCpuOshi implements PropertySet {
     /**
      * Gets the Processor ID. This is a hexidecimal string representing an 8-byte value, normally obtained using the
      * CPUID opcode with the EAX register set to 1. The first four bytes are the resulting contents of the EAX register,
-     * which is the Processor signature, represented in human-readable form by {@link #getIdentifier()} . The remaining
-     * four bytes are the contents of the EDX register, containing feature flags.
-     *
+     * which is the Processor signature. The remaining four bytes are the contents of the EDX register, containing
+     * feature flags.
+     * <p>
      * NOTE: The order of returned bytes is platform and software dependent. Values may be in either Big Endian or
      * Little Endian order.
      *

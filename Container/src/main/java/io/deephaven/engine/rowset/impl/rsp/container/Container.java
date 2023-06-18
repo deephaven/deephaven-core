@@ -142,7 +142,7 @@ public abstract class Container {
 
     /**
      * Returns a new Container containing the two provided ranges. The ranges provided should be nonempty, disjoint and
-     * provided in appearance order, ie, start2 > start1.
+     * provided in appearance order, ie, start2 &gt; start1.
      *
      * @param start1 start of first range, inclusive.
      * @param end1 end of first range, exclusive.
@@ -1149,7 +1149,7 @@ public abstract class Container {
      *
      * @param outPositions accept is called in this consumer for each resulting position range.
      * @param inValues input iterator that provides the key ranges; these must each exist in the container.
-     * @param maxPos maximum position to add to outPositions; values of position > maxPos are not added.
+     * @param maxPos maximum position to add to outPositions; values of position &gt; maxPos are not added.
      * @return true if maxPos was reached, false otherwise.
      */
     public abstract boolean findRanges(RangeConsumer outPositions, RangeIterator inValues, int maxPos);

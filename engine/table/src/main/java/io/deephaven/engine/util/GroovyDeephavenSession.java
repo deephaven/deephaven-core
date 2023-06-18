@@ -14,9 +14,9 @@ import io.deephaven.engine.context.ExecutionContext;
 import io.deephaven.engine.context.QueryCompiler;
 import io.deephaven.configuration.Configuration;
 import io.deephaven.engine.exceptions.CancellationException;
-import io.deephaven.engine.updategraph.UpdateGraphProcessor;
 import io.deephaven.engine.context.QueryScope;
 import io.deephaven.api.util.NameValidator;
+import io.deephaven.engine.updategraph.UpdateGraph;
 import io.deephaven.engine.util.GroovyDeephavenSession.GroovySnapshot;
 import io.deephaven.engine.util.scripts.ScriptPathLoader;
 import io.deephaven.engine.util.scripts.ScriptPathLoaderState;
@@ -123,17 +123,20 @@ public class GroovyDeephavenSession extends AbstractScriptSession<GroovySnapshot
     private transient SourceClosure sourceClosure;
     private transient SourceClosure sourceOnceClosure;
 
-    public GroovyDeephavenSession(ObjectTypeLookup objectTypeLookup, final RunScripts runScripts)
-            throws IOException {
-        this(objectTypeLookup, null, runScripts);
+    public GroovyDeephavenSession(
+            final UpdateGraph updateGraph,
+            final ObjectTypeLookup objectTypeLookup,
+            final RunScripts runScripts) throws IOException {
+        this(updateGraph, objectTypeLookup, null, runScripts);
     }
 
     public GroovyDeephavenSession(
+            final UpdateGraph updateGraph,
             ObjectTypeLookup objectTypeLookup,
             @Nullable final Listener changeListener,
             final RunScripts runScripts)
             throws IOException {
-        super(objectTypeLookup, changeListener);
+        super(updateGraph, objectTypeLookup, changeListener);
 
         this.scriptFinder = new ScriptFinder(DEFAULT_SCRIPT_PATH);
 
@@ -164,7 +167,7 @@ public class GroovyDeephavenSession extends AbstractScriptSession<GroovySnapshot
         final String scriptName = script.substring(0, script.indexOf("."));
 
         log.info("Executing script: " + script);
-        evaluateScript(FileUtils.readTextFile(file), scriptName);
+        evaluateScript(FileUtils.readTextFile(file), scriptName).throwIfError();
     }
 
     private final Set<String> executedScripts = new HashSet<>();
@@ -225,7 +228,8 @@ public class GroovyDeephavenSession extends AbstractScriptSession<GroovySnapshot
             updateClassloader(lastCommand);
 
             try {
-                UpdateGraphProcessor.DEFAULT.exclusiveLock().doLockedInterruptibly(() -> evaluateCommand(lastCommand));
+                ExecutionContext.getContext().getUpdateGraph().exclusiveLock()
+                        .doLockedInterruptibly(() -> evaluateCommand(lastCommand));
             } catch (InterruptedException e) {
                 throw new CancellationException(e.getMessage() != null ? e.getMessage() : "Query interrupted",
                         maybeRewriteStackTrace(scriptName, currentScriptName, e, lastCommand, commandPrefix));
@@ -499,7 +503,6 @@ public class GroovyDeephavenSession extends AbstractScriptSession<GroovySnapshot
         final String commandPrefix = "package " + PACKAGE + ";\n" +
                 "import static io.deephaven.engine.util.TableTools.*;\n" +
                 "import static io.deephaven.engine.table.impl.util.TableLoggers.*;\n" +
-                "import static io.deephaven.engine.table.impl.util.PerformanceQueries.*;\n" +
                 "import io.deephaven.api.*;\n" +
                 "import io.deephaven.api.filter.*;\n" +
                 "import io.deephaven.engine.table.DataColumn;\n" +
@@ -510,12 +513,14 @@ public class GroovyDeephavenSession extends AbstractScriptSession<GroovySnapshot
                 "import java.lang.reflect.Array;\n" +
                 "import io.deephaven.util.type.TypeUtils;\n" +
                 "import io.deephaven.util.type.ArrayTypeUtils;\n" +
-                "import io.deephaven.time.DateTime;\n" +
                 "import io.deephaven.time.DateTimeUtils;\n" +
                 "import io.deephaven.base.string.cache.CompressedString;\n" +
                 "import static io.deephaven.base.string.cache.CompressedString.compress;\n" +
-                "import org.joda.time.LocalTime;\n" +
-                "import io.deephaven.time.Period;\n" +
+                "import java.time.Instant;\n" +
+                "import java.time.LocalDate;\n" +
+                "import java.time.LocalTime;\n" +
+                "import java.time.ZoneId;\n" +
+                "import java.time.ZonedDateTime;\n" +
                 "import io.deephaven.engine.context.QueryScopeParam;\n" +
                 "import io.deephaven.engine.context.QueryScope;\n" +
                 "import java.util.*;\n" +
@@ -523,10 +528,13 @@ public class GroovyDeephavenSession extends AbstractScriptSession<GroovySnapshot
                 "import static io.deephaven.util.QueryConstants.*;\n" +
                 "import static io.deephaven.libs.GroovyStaticImports.*;\n" +
                 "import static io.deephaven.time.DateTimeUtils.*;\n" +
-                "import static io.deephaven.time.TimeZone.*;\n" +
                 "import static io.deephaven.engine.table.impl.lang.QueryLanguageFunctionUtils.*;\n" +
                 "import static io.deephaven.api.agg.Aggregation.*;\n" +
                 "import static io.deephaven.api.updateby.UpdateByOperation.*;\n" +
+                "import io.deephaven.api.updateby.UpdateByControl;\n" +
+                "import io.deephaven.api.updateby.OperationControl;\n" +
+                "import io.deephaven.api.updateby.DeltaControl;\n" +
+                "import io.deephaven.api.updateby.BadDataBehavior;\n" +
 
                 String.join("\n", scriptImports) + "\n";
         return new Pair<>(commandPrefix, commandPrefix + command
@@ -821,19 +829,6 @@ public class GroovyDeephavenSession extends AbstractScriptSession<GroovySnapshot
         @Override
         public int priority() {
             return 0;
-        }
-    }
-
-    @AutoService(InitScript.class)
-    public static class PerformanceQueries implements InitScript {
-        @Override
-        public String getScriptPath() {
-            return "groovy/1-performance.groovy";
-        }
-
-        @Override
-        public int priority() {
-            return 1;
         }
     }
 

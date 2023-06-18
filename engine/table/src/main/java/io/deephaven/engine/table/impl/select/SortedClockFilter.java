@@ -13,7 +13,7 @@ import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
 /**
- * This will filter a table on a DateTime column for all rows greater than "now" according to a supplied clock. It
+ * This will filter a table on an Instant column for all rows greater than "now" according to a supplied clock. It
  * requires sorting of the input table according to the specified timestamp column, leveraging this for a very efficient
  * implementation (albeit one that requires sorting first) and an output sequence that is monotonically nondecreasing in
  * the specified column.
@@ -80,5 +80,10 @@ public class SortedClockFilter extends ClockFilter {
         final RowSetBuilderRandom addedBuilder =
                 range.consumeKeysAndAppendAdded(nanosColumnSource, clock.currentTimeNanos(), null);
         return addedBuilder == null ? null : addedBuilder.build();
+    }
+
+    @Override
+    public boolean permitParallelization() {
+        return false;
     }
 }

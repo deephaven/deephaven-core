@@ -6,9 +6,10 @@
 #include <memory>
 #include <string_view>
 #include "deephaven/client/columns.h"
+#include "deephaven/client/client_options.h"
 #include "deephaven/client/expressions.h"
-#include "deephaven/client/ticking.h"
-#include "deephaven/client/utility/callbacks.h"
+#include "deephaven/dhcore/ticking/ticking.h"
+#include "deephaven/dhcore/utility/callbacks.h"
 
 /**
  * Arrow-related classes, used by TableHandleManager::newTableHandleAndFlightDescriptor() and
@@ -17,7 +18,6 @@
  */
 namespace deephaven::client {
 class FlightWrapper;
-class TableHandleAndFlightDescriptor;
 }  // namespace deephaven::client
 
 /**
@@ -67,6 +67,8 @@ namespace deephaven::client {
  * This class is move-only.
  */
 class TableHandleManager {
+  template<typename... Args>
+  using SFCallback = deephaven::dhcore::utility::SFCallback<Args...>;
 public:
   /*
    * Default constructor. Creates a (useless) empty client object.
@@ -116,13 +118,33 @@ public:
   TableHandle timeTable(std::chrono::system_clock::time_point startTime,
       std::chrono::system_clock::duration period) const;
   /**
-   * Allocate a fresh TableHandle and return both it and its corresponding Arrow FlightDescriptor.
-   * This is used when the caller wants to do an Arrow DoPut operation.
-   * The object returned is only forward-referenced in this file. If you want to use it, you will
-   * also need to include deephaven/client/flight.h.
-   * @return A TableHandle and Arrow FlightDescriptor referring to the new table.
+   * Allocate a fresh client ticket. This is a low level operation, typically used when the caller wants to do an Arrow
+   * doPut operation.
+   * @example
+   * auto ticket = manager.newTicket();
+   * auto flightDescriptor = convertTicketToFlightDescriptor(ticket);
+   * // [do arrow operations here to put your table to the server]
+   * // Once that is done, you can bind the ticket to a TableHandle
+   * auto tableHandle = manager.makeTableHandleFromTicket(ticket);
    */
-  TableHandleAndFlightDescriptor newTableHandleAndFlightDescriptor() const;
+  std::string newTicket() const;
+  /**
+   * Creates a TableHandle that owns the underlying ticket and its resources. The ticket argument is typically
+   * created with newTicket() and then populated e.g. with Arrow operations.
+   */
+  TableHandle makeTableHandleFromTicket(std::string ticket) const;
+  /**
+   * Execute a script on the server. This assumes that the Client was created with a sessionType corresponding to
+   * the language of the script (typically either "python" or "groovy") and that the code matches that language.
+   */
+  void runScript(std::string code) const;
+  /**
+   * The async version of runScript(std::string variable) code.
+   * @param code The script to run on the server.
+   * @param callback The asynchronous callback.
+   */
+  void runScriptAsync(std::string code, std::shared_ptr<SFCallback<>> callback) const;
+
   /**
    * Creates a FlightWrapper that is used for Arrow Flight integration. Arrow Flight is the primary
    * way to push data into or pull data out of the system. The object returned is only
@@ -136,13 +158,16 @@ private:
   std::shared_ptr<impl::TableHandleManagerImpl> impl_;
 };
 
+
 /**
  * The main class for interacting with Deephaven. Start here to connect with
  * the server and to get a TableHandleManager.
  */
 class Client {
   template<typename... Args>
-  using SFCallback = deephaven::client::utility::SFCallback<Args...>;
+  using SFCallback = deephaven::dhcore::utility::SFCallback<Args...>;
+
+  typedef deephaven::dhcore::ticking::TickingUpdate TickingUpdate;
 
 public:
   typedef void (*CCallback)(TickingUpdate, void *);
@@ -151,12 +176,14 @@ public:
    * Default constructor. Creates a (useless) empty client object.
    */
   Client();
+
   /**
-   * Factory method to connect to a Deephaven server
+   * Factory method to connect to a Deephaven server using the specified options.
    * @param target A connection string in the format host:port. For example "localhost:10000".
+   * @param options An options object for setting options like authentication and script language.
    * @return A Client object conneted to the Deephaven server.
    */
-  static Client connect(const std::string &target);
+  static Client connect(const std::string &target, const ClientOptions &options = {});
   /**
    * Move constructor
    */
@@ -579,6 +606,8 @@ struct StringHolder {
  * server resource is destructed, the resource will be released.
  */
 class TableHandle {
+  typedef deephaven::dhcore::ticking::TickingCallback TickingCallback;
+  typedef deephaven::dhcore::ticking::TickingUpdate TickingUpdate;
   typedef deephaven::client::BooleanExpression BooleanExpression;
   typedef deephaven::client::Column Column;
   typedef deephaven::client::DateTimeCol DateTimeCol;
@@ -590,10 +619,10 @@ class TableHandle {
   typedef deephaven::client::subscription::SubscriptionHandle SubscriptionHandle;
 
   template<typename... Args>
-  using Callback = deephaven::client::utility::Callback<Args...>;
+  using Callback = deephaven::dhcore::utility::Callback<Args...>;
 
   template<typename... Args>
-  using SFCallback = deephaven::client::utility::SFCallback<Args...>;
+  using SFCallback = deephaven::dhcore::utility::SFCallback<Args...>;
 
 public:
   TableHandle();
@@ -1284,6 +1313,26 @@ public:
    * Used internally, for debugging.
    */
   void observe() const;
+
+  /**
+   * A specialized operation to release the state of this TableHandle. This operation is normally done by the
+   * destructor, so most programs will never need to call this method.. If there are no other copies of this
+   * TableHandle, and if there are no "child" TableHandles dependent on this TableHandle, then the corresponding server
+   * resources will be released.
+   */
+  void release() {
+    impl_.reset();
+  }
+
+  /**
+   * Number of rows in the table at the time this TableHandle was created.
+   */
+  int64_t numRows();
+
+  /**
+   * Whether the table was static at the time this TableHandle was created.
+   */
+  bool isStatic();
 
   /**
    * Used internally. Returns the underlying impl object.

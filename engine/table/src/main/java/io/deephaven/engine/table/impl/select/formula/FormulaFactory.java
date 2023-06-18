@@ -7,7 +7,6 @@ import io.deephaven.engine.context.QueryScopeParam;
 import io.deephaven.engine.table.impl.select.Formula;
 import io.deephaven.engine.table.ColumnSource;
 import io.deephaven.engine.rowset.TrackingRowSet;
-import io.deephaven.engine.context.ExecutionContext;
 
 import java.util.Map;
 

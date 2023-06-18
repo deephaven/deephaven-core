@@ -5,6 +5,8 @@ package io.deephaven.web.client.api;
 
 import com.vertispan.tsdefs.annotations.TsName;
 import com.vertispan.tsdefs.annotations.TsTypeRef;
+import com.vertispan.tsdefs.annotations.TsUnion;
+import com.vertispan.tsdefs.annotations.TsUnionMember;
 import elemental2.core.JsArray;
 import elemental2.dom.CustomEventInit;
 import elemental2.dom.DomGlobal;
@@ -15,22 +17,31 @@ import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.hierarchicalt
 import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.object_pb.FetchObjectRequest;
 import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.partitionedtable_pb.PartitionByRequest;
 import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.partitionedtable_pb.PartitionByResponse;
+import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.table_pb.AggregateRequest;
 import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.table_pb.AsOfJoinTablesRequest;
+import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.table_pb.BatchTableRequest;
 import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.table_pb.CrossJoinTablesRequest;
+import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.table_pb.DropColumnsRequest;
 import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.table_pb.ExactJoinTablesRequest;
+import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.table_pb.ExportedTableCreationResponse;
 import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.table_pb.Literal;
 import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.table_pb.NaturalJoinTablesRequest;
 import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.table_pb.RunChartDownsampleRequest;
 import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.table_pb.SeekRowRequest;
 import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.table_pb.SeekRowResponse;
 import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.table_pb.SelectDistinctRequest;
+import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.table_pb.SelectOrUpdateRequest;
 import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.table_pb.SnapshotTableRequest;
 import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.table_pb.SnapshotWhenTableRequest;
+import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.table_pb.TableReference;
+import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.table_pb.batchtablerequest.Operation;
 import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.table_pb.runchartdownsamplerequest.ZoomRange;
+import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.table_pb_service.ResponseStream;
 import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.ticket_pb.Ticket;
 import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.ticket_pb.TypedTicket;
 import io.deephaven.web.client.api.barrage.def.ColumnDefinition;
 import io.deephaven.web.client.api.barrage.def.TableAttributesDefinition;
+import io.deephaven.web.client.api.barrage.stream.ResponseStreamWrapper;
 import io.deephaven.web.client.api.batch.RequestBatcher;
 import io.deephaven.web.client.api.console.JsVariableType;
 import io.deephaven.web.client.api.filter.FilterCondition;
@@ -60,11 +71,13 @@ import io.deephaven.web.shared.fu.JsConsumer;
 import io.deephaven.web.shared.fu.JsProvider;
 import io.deephaven.web.shared.fu.JsRunnable;
 import io.deephaven.web.shared.fu.RemoverFn;
-import jsinterop.annotations.JsIgnore;
 import jsinterop.annotations.JsMethod;
 import jsinterop.annotations.JsNullable;
 import jsinterop.annotations.JsOptional;
+import jsinterop.annotations.JsOverlay;
+import jsinterop.annotations.JsPackage;
 import jsinterop.annotations.JsProperty;
+import jsinterop.annotations.JsType;
 import jsinterop.base.Any;
 import jsinterop.base.Js;
 import jsinterop.base.JsPropertyMap;
@@ -84,7 +97,7 @@ import static io.deephaven.web.client.fu.LazyPromise.logError;
  * inform the UI right away that they have taken place.
  */
 @TsName(namespace = "dh", name = "Table")
-public class JsTable extends HasLifecycle implements HasTableBinding {
+public class JsTable extends HasLifecycle implements HasTableBinding, JoinableTable {
     @JsProperty(namespace = "dh.Table")
     /**
      * The table size has updated, so live scrollbars and the like can be updated accordingly.
@@ -160,7 +173,7 @@ public class JsTable extends HasLifecycle implements HasTableBinding {
 
     private boolean hasInputTable;
 
-    private boolean isStreamTable;
+    private boolean isBlinkTable;
 
     private final List<JsRunnable> onClosed;
 
@@ -194,7 +207,7 @@ public class JsTable extends HasLifecycle implements HasTableBinding {
         this.subscriptionId = nextSubscriptionId++;
         this.workerConnection = table.workerConnection;
         this.hasInputTable = table.hasInputTable;
-        this.isStreamTable = table.isStreamTable;
+        this.isBlinkTable = table.isBlinkTable;
         this.currentState = table.currentState;
         this.lastVisibleState = table.lastVisibleState;
         this.size = table.size;
@@ -303,14 +316,14 @@ public class JsTable extends HasLifecycle implements HasTableBinding {
     }
 
     @JsMethod
-    public boolean isStreamTable() {
-        return isStreamTable;
+    public boolean isBlinkTable() {
+        return isBlinkTable;
     }
 
     /**
      * If .hasInputTable is true, you may call this method to gain access to an InputTable object which can be used to
      * mutate the data within the table. If the table is not an Input Table, the promise will be immediately rejected.
-     * 
+     *
      * @return
      */
     @JsMethod
@@ -489,7 +502,7 @@ public class JsTable extends HasLifecycle implements HasTableBinding {
      * immediately return the new value, but you may receive update events using the old sort before the new sort is
      * applied, and the `sortchanged` event fires. Reusing existing, applied sorts may enable this to perform better on
      * the server. The `updated` event will also fire, but `rowadded` and `rowremoved` will not.
-     * 
+     *
      * @param sort
      * @return
      */
@@ -527,7 +540,7 @@ public class JsTable extends HasLifecycle implements HasTableBinding {
      * will immediately return the new value, but you may receive update events using the old filter before the new one
      * is applied, and the `filterchanged` event fires. Reusing existing, applied filters may enable this to perform
      * better on the server. The `updated` event will also fire, but `rowadded` and `rowremoved` will not.
-     * 
+     *
      * @param filter
      * @return
      */
@@ -558,23 +571,49 @@ public class JsTable extends HasLifecycle implements HasTableBinding {
         return JsItr.slice(currentFilter);
     }
 
+    @TsUnion
+    @JsType(name = "?", namespace = JsPackage.GLOBAL, isNative = true)
+    public interface CustomColumnArgUnionType {
+        @JsOverlay
+        default boolean isString() {
+            return (Object) this instanceof String;
+        }
+
+        @JsOverlay
+        default boolean isCustomColumn() {
+            return (Object) this instanceof CustomColumn;
+        }
+
+        @JsOverlay
+        @TsUnionMember
+        default String asString() {
+            return Js.asString(this);
+        }
+
+        @JsOverlay
+        @TsUnionMember
+        default CustomColumn asCustomColumn() {
+            return Js.cast(this);
+        }
+    }
+
     /**
      * used when adding new filter and sort operations to the table, as long as they are present.
-     * 
+     *
      * @param customColumns
      * @return
      */
     @JsMethod
     @SuppressWarnings("unusable-by-js")
-    // TODO union this
-    public JsArray<CustomColumn> applyCustomColumns(Object[] customColumns) {
-        String[] customColumnStrings = Arrays.stream(customColumns).map(obj -> {
-            if (obj instanceof String || obj instanceof CustomColumn) {
-                return obj.toString();
+    public JsArray<CustomColumn> applyCustomColumns(JsArray<CustomColumnArgUnionType> customColumns) {
+        String[] customColumnStrings = customColumns.map((item, index, array) -> {
+            if (item.isString() || item.isCustomColumn()) {
+                return item.toString();
             }
 
-            return (new CustomColumn((JsPropertyMap<Object>) obj)).toString();
-        }).toArray(String[]::new);
+            return (new CustomColumn((JsPropertyMap<Object>) item)).toString();
+        }).asArray(new String[0]);
+
         final List<CustomColumnDescriptor> newCustomColumns = CustomColumnDescriptor.from(customColumnStrings);
 
         // take a look at the current custom columns so we can return it
@@ -592,7 +631,7 @@ public class JsTable extends HasLifecycle implements HasTableBinding {
                     batcher.customColumns(newCustomColumns);
                     batcher.filter(current.getFilters());
                     batcher.sort(current.getSorts());
-                }).catch_(logError(() -> "Failed to apply custom columns: " + Arrays.toString(customColumns)));
+                }).catch_(logError(() -> "Failed to apply custom columns: " + customColumns));
 
             }
         }
@@ -628,7 +667,7 @@ public class JsTable extends HasLifecycle implements HasTableBinding {
      * provided, a default of one second will be used. Until this is called, no data will be available. Invoking this
      * will result in events to be fired once data becomes available, starting with an `updated` event and a `rowadded`
      * event per row in that range. The returned object allows the viewport to be closed when no longer needed.
-     * 
+     *
      * @param firstRow
      * @param lastRow
      * @param columns
@@ -789,10 +828,9 @@ public class JsTable extends HasLifecycle implements HasTableBinding {
      *         per second as necessary. Note that multiple calls to this method will each produce a new TotalsTable
      *         which must have close() called on it when not in use.
      */
-    // TODO: #37: Need SmartKey support for this functionality
-    // @JsMethod
+    @JsMethod
     public Promise<JsTotalsTable> getTotalsTable(
-            /* @JsOptional @JsNullable */ @TsTypeRef(JsTotalsTableConfig.class) Object config) {
+            @JsOptional @JsNullable @TsTypeRef(JsTotalsTableConfig.class) Object config) {
         // fetch the handle and wrap it in a new jstable. listen for changes
         // on the parent table, and re-fetch each time.
 
@@ -802,8 +840,7 @@ public class JsTable extends HasLifecycle implements HasTableBinding {
     /**
      * @return The default configuration to be used when building a `TotalsTable` for this table.
      */
-    // TODO: #37: Need SmartKey support for this functionality
-    // @JsMethod
+    @JsMethod
     public JsTotalsTableConfig getTotalsTableConfig() {
         // we want to communicate to the JS dev that there is no default config, so we allow
         // returning null here, rather than a default config. They can then easily build a
@@ -813,7 +850,6 @@ public class JsTable extends HasLifecycle implements HasTableBinding {
     }
 
     private Promise<JsTotalsTable> fetchTotals(Object config, JsProvider<ClientTableState> state) {
-
         JsTotalsTableConfig directive = getTotalsDirectiveFromOptionalConfig(config);
         ClientTableState[] lastGood = {null};
         final JsTableFetch totalsFactory = (callback, newState, metadata) -> {
@@ -835,14 +871,55 @@ public class JsTable extends HasLifecycle implements HasTableBinding {
             JsLog.debug("Sending totals table fetch ", directive, " for ", target,
                     "(", LazyString.of(target::getHandle), "), into ", LazyString.of(newState::getHandle), "(",
                     newState, ")");
-            // workerConnection.getServer().fetchTotalsTable(
-            // target.getHandle(),
-            // newState.getHandle(),
-            // directive.serialize(),
-            // directive.groupByArray(),
-            // callback
-            // );
-            throw new UnsupportedOperationException("totalsTables");
+
+            AggregateRequest requestMessage = directive.buildRequest(getColumns());
+            JsArray<String> updateViewExprs = directive.getCustomColumns();
+            JsArray<String> dropColumns = directive.getDropColumns();
+            requestMessage.setSourceId(target.getHandle().makeTableReference());
+            requestMessage.setResultId(newState.getHandle().makeTicket());
+            if (updateViewExprs.length != 0) {
+                SelectOrUpdateRequest columnExpr = new SelectOrUpdateRequest();
+                columnExpr.setResultId(requestMessage.getResultId());
+                requestMessage.setResultId();
+                columnExpr.setColumnSpecsList(updateViewExprs);
+                columnExpr.setSourceId(new TableReference());
+                columnExpr.getSourceId().setBatchOffset(0);
+                BatchTableRequest batch = new BatchTableRequest();
+                Operation aggOp = new Operation();
+                aggOp.setAggregate(requestMessage);
+                Operation colsOp = new Operation();
+                colsOp.setUpdateView(columnExpr);
+                batch.addOps(aggOp);
+                batch.addOps(colsOp);
+                if (dropColumns.length != 0) {
+                    DropColumnsRequest drop = new DropColumnsRequest();
+                    drop.setColumnNamesList(dropColumns);
+                    drop.setResultId(columnExpr.getResultId());
+                    columnExpr.setResultId();
+                    drop.setSourceId(new TableReference());
+                    drop.getSourceId().setBatchOffset(1);
+
+                    Operation dropOp = new Operation();
+                    dropOp.setDropColumns(drop);
+                    batch.addOps(dropOp);
+                }
+                ResponseStreamWrapper<ExportedTableCreationResponse> stream = ResponseStreamWrapper
+                        .of(workerConnection.tableServiceClient().batch(batch, workerConnection.metadata()));
+                stream.onData(creationResponse -> {
+                    if (creationResponse.getResultId().hasTicket()) {
+                        // represents the final output
+                        callback.apply(null, creationResponse);
+                    }
+                });
+                stream.onEnd(status -> {
+                    if (!status.isOk()) {
+                        callback.apply(status, null);
+                    }
+                });
+            } else {
+                workerConnection.tableServiceClient().aggregate(requestMessage, workerConnection.metadata(),
+                        callback::apply);
+            }
         };
         String summary = "totals table " + directive + ", " + directive.groupBy.join(",");
         final ClientTableState totals = workerConnection.newState(totalsFactory, summary);
@@ -933,10 +1010,9 @@ public class JsTable extends HasLifecycle implements HasTableBinding {
      * @return a promise that will resolve to a Totals Table of this table, ignoring any filters. See `getTotalsTable()`
      *         above for more specifics.
      */
-    // TODO: #37: Need SmartKey support for this functionality
-    // @JsMethod
+    @JsMethod
     public Promise<JsTotalsTable> getGrandTotalsTable(
-            /* @JsNullable @JsOptional */ @TsTypeRef(JsTotalsTableConfig.class) Object config) {
+            @JsOptional @JsNullable @TsTypeRef(JsTotalsTableConfig.class) Object config) {
         // As in getTotalsTable, but this time we want to skip any filters - this could mean use the
         // most-derived table which has no filter, or the least-derived table which has all custom columns.
         // Currently, these two mean the same thing.
@@ -1050,6 +1126,7 @@ public class JsTable extends HasLifecycle implements HasTableBinding {
                 .then(state -> Promise.resolve(new JsTable(workerConnection, state)));
     }
 
+    @Override
     @JsMethod
     public Promise<JsTable> snapshot(JsTable baseTable, @JsOptional Boolean doInitialSnapshot,
             @JsOptional String[] stampColumns) {
@@ -1060,12 +1137,12 @@ public class JsTable extends HasLifecycle implements HasTableBinding {
         } else {
             realDoInitialSnapshot = true;
         }
-        final String[] realStampColums;
+        final String[] realStampColumns;
         if (stampColumns == null) {
-            realStampColums = new String[0]; // server doesn't like null
+            realStampColumns = new String[0]; // server doesn't like null
         } else {
             // make sure we pass an actual string array
-            realStampColums = Arrays.stream(stampColumns).toArray(String[]::new);
+            realStampColumns = Arrays.stream(stampColumns).toArray(String[]::new);
         }
         final String fetchSummary =
                 "snapshot(" + baseTable + ", " + doInitialSnapshot + ", " + Arrays.toString(stampColumns) + ")";
@@ -1075,7 +1152,7 @@ public class JsTable extends HasLifecycle implements HasTableBinding {
             request.setTriggerId(state().getHandle().makeTableReference());
             request.setResultId(state.getHandle().makeTicket());
             request.setInitial(realDoInitialSnapshot);
-            request.setStampColumnsList(realStampColums);
+            request.setStampColumnsList(realStampColumns);
 
             workerConnection.tableServiceClient().snapshotWhen(request, metadata, c::apply);
         }, fetchSummary).refetch(this, workerConnection.metadata())
@@ -1098,9 +1175,10 @@ public class JsTable extends HasLifecycle implements HasTableBinding {
      * @param asOfMatchRule
      * @return
      */
+    @Override
     @JsMethod
     @Deprecated
-    public Promise<JsTable> join(Object joinType, JsTable rightTable, JsArray<String> columnsToMatch,
+    public Promise<JsTable> join(Object joinType, JoinableTable rightTable, JsArray<String> columnsToMatch,
             @JsOptional @JsNullable JsArray<String> columnsToAdd, @JsOptional @JsNullable Object asOfMatchRule) {
         if (joinType.equals("AJ") || joinType.equals("RAJ")) {
             return asOfJoin(rightTable, columnsToMatch, columnsToAdd, (String) asOfMatchRule);
@@ -1126,10 +1204,11 @@ public class JsTable extends HasLifecycle implements HasTableBinding {
      *         "LESS_THAN_EQUAL" - the allowed values are: - "LESS_THAN_EQUAL" - "LESS_THAN" - "GREATER_THAN_EQUAL" -
      *         "GREATER_THAN"
      */
+    @Override
     @JsMethod
-    public Promise<JsTable> asOfJoin(JsTable rightTable, JsArray<String> columnsToMatch,
+    public Promise<JsTable> asOfJoin(JoinableTable rightTable, JsArray<String> columnsToMatch,
             @JsOptional @JsNullable JsArray<String> columnsToAdd, @JsOptional @JsNullable String asOfMatchRule) {
-        if (rightTable.workerConnection != workerConnection) {
+        if (rightTable.state().getConnection() != workerConnection) {
             throw new IllegalStateException(
                     "Table argument passed to join is not from the same worker as current table");
         }
@@ -1161,10 +1240,11 @@ public class JsTable extends HasLifecycle implements HasTableBinding {
      *         control how the key space is distributed between the rows in the two tables, see the Java `Table` class
      *         for details.
      */
+    @Override
     @JsMethod
-    public Promise<JsTable> crossJoin(JsTable rightTable, JsArray<String> columnsToMatch,
+    public Promise<JsTable> crossJoin(JoinableTable rightTable, JsArray<String> columnsToMatch,
             @JsOptional JsArray<String> columnsToAdd, @JsOptional Double reserve_bits) {
-        if (rightTable.workerConnection != workerConnection) {
+        if (rightTable.state().getConnection() != workerConnection) {
             throw new IllegalStateException(
                     "Table argument passed to join is not from the same worker as current table");
         }
@@ -1192,10 +1272,11 @@ public class JsTable extends HasLifecycle implements HasTableBinding {
      *         join operation. The `columnsToAdd` parameter is optional, not specifying it will result in all columns
      *         from the right table being added to the output.
      */
+    @Override
     @JsMethod
-    public Promise<JsTable> exactJoin(JsTable rightTable, JsArray<String> columnsToMatch,
+    public Promise<JsTable> exactJoin(JoinableTable rightTable, JsArray<String> columnsToMatch,
             @JsOptional JsArray<String> columnsToAdd) {
-        if (rightTable.workerConnection != workerConnection) {
+        if (rightTable.state().getConnection() != workerConnection) {
             throw new IllegalStateException(
                     "Table argument passed to join is not from the same worker as current table");
         }
@@ -1220,10 +1301,11 @@ public class JsTable extends HasLifecycle implements HasTableBinding {
      *         join operation. The `columnsToAdd` parameter is optional, not specifying it will result in all columns
      *         from the right table being added to the output.
      */
+    @Override
     @JsMethod
-    public Promise<JsTable> naturalJoin(JsTable rightTable, JsArray<String> columnsToMatch,
+    public Promise<JsTable> naturalJoin(JoinableTable rightTable, JsArray<String> columnsToMatch,
             @JsOptional JsArray<String> columnsToAdd) {
-        if (rightTable.workerConnection != workerConnection) {
+        if (rightTable.state().getConnection() != workerConnection) {
             throw new IllegalStateException(
                     "Table argument passed to join is not from the same worker as current table");
         }
@@ -1248,7 +1330,7 @@ public class JsTable extends HasLifecycle implements HasTableBinding {
     /**
      * Creates a new PartitionedTable from the contents of the current table, partitioning data based on the specified
      * keys.
-     * 
+     *
      * @param keys
      * @param dropKeys
      * @return
@@ -1805,7 +1887,7 @@ public class JsTable extends HasLifecycle implements HasTableBinding {
             if (state == currentState) {
                 lastVisibleState = state;
                 hasInputTable = s.getTableDef().getAttributes().isInputTable();
-                isStreamTable = s.getTableDef().getAttributes().isStreamTable();
+                isBlinkTable = s.getTableDef().getAttributes().isBlinkTable();
 
                 // defer the size change so that is there is a viewport sub also waiting for onRunning, it gets it first
                 LazyPromise.runLater(() -> {

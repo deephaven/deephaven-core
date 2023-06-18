@@ -19,7 +19,7 @@ import java.util.Collections;
 import java.util.List;
 
 /**
- * A filter for comparable types (including DateTime) for {@link Condition} values: <br>
+ * A filter for comparable types (including Instant) for {@link Condition} values: <br>
  * <ul>
  * <li>LESS_THAN</li>
  * <li>LESS_THAN_OR_EQUAL</li>
@@ -28,6 +28,7 @@ import java.util.List;
  * </ul>
  */
 public class RangeConditionFilter extends WhereFilterImpl {
+
     private final String columnName;
     private final Condition condition;
     private final String value;
@@ -37,6 +38,17 @@ public class RangeConditionFilter extends WhereFilterImpl {
 
     private WhereFilter filter;
     private final FormulaParserConfiguration parserConfiguration;
+
+    /**
+     * Creates a RangeConditionFilter.
+     *
+     * @param columnName the column to filter
+     * @param condition the condition for filtering
+     * @param value a String representation of the numeric filter value
+     */
+    public RangeConditionFilter(String columnName, Condition condition, String value) {
+        this(columnName, condition, value, null, null, null);
+    }
 
     /**
      * Creates a RangeConditionFilter.
@@ -198,21 +210,21 @@ public class RangeConditionFilter extends WhereFilterImpl {
     private static LongRangeFilter makeDateTimeRangeFilter(String columnName, Condition condition, String value) {
         switch (condition) {
             case LESS_THAN:
-                return new DateTimeRangeFilter(columnName, parseDateTimeNanos(value), Long.MIN_VALUE, true, false);
+                return new InstantRangeFilter(columnName, parseInstantNanos(value), Long.MIN_VALUE, true, false);
             case LESS_THAN_OR_EQUAL:
-                return new DateTimeRangeFilter(columnName, parseDateTimeNanos(value), Long.MIN_VALUE, true, true);
+                return new InstantRangeFilter(columnName, parseInstantNanos(value), Long.MIN_VALUE, true, true);
             case GREATER_THAN:
-                return new DateTimeRangeFilter(columnName, parseDateTimeNanos(value), Long.MAX_VALUE, false, true);
+                return new InstantRangeFilter(columnName, parseInstantNanos(value), Long.MAX_VALUE, false, true);
             case GREATER_THAN_OR_EQUAL:
-                return new DateTimeRangeFilter(columnName, parseDateTimeNanos(value), Long.MAX_VALUE, true, true);
+                return new InstantRangeFilter(columnName, parseInstantNanos(value), Long.MAX_VALUE, true, true);
             default:
                 throw new IllegalArgumentException("RangeConditionFilter does not support condition " + condition);
         }
     }
 
-    private static long parseDateTimeNanos(String value) {
+    private static long parseInstantNanos(String value) {
         if (value.startsWith("'") && value.endsWith("'")) {
-            return DateTimeUtils.convertDateTime(value.substring(1, value.length() - 1)).getNanos();
+            return DateTimeUtils.epochNanos(DateTimeUtils.parseInstant(value.substring(1, value.length() - 1)));
         }
         return Long.parseLong(value);
     }
@@ -236,6 +248,11 @@ public class RangeConditionFilter extends WhereFilterImpl {
     @Override
     public WritableRowSet filter(RowSet selection, RowSet fullSet, Table table, boolean usePrev) {
         return filter.filter(selection, fullSet, table, usePrev);
+    }
+
+    @Override
+    public WritableRowSet filterInverse(RowSet selection, RowSet fullSet, Table table, boolean usePrev) {
+        return filter.filterInverse(selection, fullSet, table, usePrev);
     }
 
     @Override

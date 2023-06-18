@@ -7,7 +7,6 @@ import io.deephaven.engine.table.ColumnDefinition;
 import io.deephaven.engine.table.Table;
 import io.deephaven.engine.table.TableDefinition;
 import io.deephaven.engine.context.QueryScope.MissingVariableException;
-import io.deephaven.time.DateTime;
 import io.deephaven.engine.util.VariableProvider;
 import io.deephaven.io.logger.Logger;
 import io.deephaven.lang.api.HasScope;
@@ -22,6 +21,7 @@ import io.deephaven.proto.backplane.script.grpc.*;
 import java.lang.reflect.Field;
 import java.lang.reflect.Method;
 import java.lang.reflect.Modifier;
+import java.time.Instant;
 import java.util.*;
 import java.util.concurrent.CompletableFuture;
 import java.util.regex.Pattern;
@@ -50,7 +50,7 @@ public class ChunkerCompleter implements CompletionHandler {
     private ParsedDocument doc;
 
     public ChunkerCompleter(final Logger log, VariableProvider variables) {
-        this(log, variables, new CompletionLookups());
+        this(log, variables, new CompletionLookups(Collections.emptySet()));
     }
 
     public ChunkerCompleter(final Logger log, VariableProvider variables, CompletionLookups lookups) {
@@ -784,7 +784,7 @@ public class ChunkerCompleter implements CompletionHandler {
         // for now, this will be a naive replacement, but later we'll want to look at _where_
         // in the invoke the cursor is; when on the ending paren, we'd likely want to look at
         // whether we are the argument to something, and if so, do a type check, and suggest useful .coercions().
-        String name = node.getName().trim();
+        String name = node.getName();
 
         // Now, for our magic-named methods that we want to handle...
         boolean inArguments = node.isCursorInArguments(request.getCandidate());
@@ -984,6 +984,9 @@ public class ChunkerCompleter implements CompletionHandler {
                 maybeColumnComplete(results, node, replaceNode, request, direction);
                 break;
         }
+        // Try to delegate to another implementation
+        lookups.getCustomCompletions().methodArgumentCompletion(this, node, replaceNode, request, direction, results);
+
         if (node.getEndIndex() < request.getOffset()) {
             // user's cursor is actually past the end of our method...
             Class<?> scopeType;
@@ -1024,10 +1027,11 @@ public class ChunkerCompleter implements CompletionHandler {
         if (result.isPresent()) {
             return result;
         }
-        switch (o.getName()) {
-            // This used to be where we'd intercept certain well-known-service-variables, like "engine";
-            // leaving this here in case we have add and such service to the OSS completer.
+        Optional<Class<?>> customResult = lookups.getCustomCompletions().resolveScopeType(o);
+        if (customResult.isPresent()) {
+            return customResult;
         }
+
         // Ok, maybe the user hasn't run the query yet.
         // See if there's any named assign's that have a value of engine.i|t|etc
 
@@ -1352,10 +1356,17 @@ public class ChunkerCompleter implements CompletionHandler {
             }
             return definition;
         } else if (previous instanceof ChunkerInvoke) {
+            ChunkerInvoke invoke = (ChunkerInvoke) previous;
             // recurse into each scope node and use the result of our parent's type to compute our own.
             // This allows us to hack in special support for statically analyzing expressions which return tables.
+            TableDefinition attempt = findTableDefinition(invoke.getScope(), offset);
 
-            return findTableDefinition(((ChunkerInvoke) previous).getScope(), offset);
+            if (attempt != null) {
+                return attempt;
+            }
+
+            // If that fails, try a custom implementation
+            return lookups.getCustomCompletions().resolveTableDefinition(invoke, offset).orElse(null);
         }
         return null;
     }
@@ -1371,21 +1382,15 @@ public class ChunkerCompleter implements CompletionHandler {
         if (scope != null && scope.size() > 0) {
             IsScope root = scope.get(0);
             if (root instanceof ChunkerIdent) {
-                if ("engine".equals(root.getName())) {
-                    if (scope.size() > 1) {
-                        root = scope.get(1);
-                    }
-                } else {
-                    // look for the table in binding
-                    final TableDefinition def = offset.getTableDefinition(this, doc, variables, root.getName());
-                    if (def != null) {
-                        final ColumnDefinition col = def.getColumn(columnName);
-                        if (col == null) {
-                            // might happen if user did someTable.update("NewCol=123").update("NewCol=
-                            // we can handle this by inspecting the scope chain, but leaving edge case out for now.
-                        } else {
-                            return col.getDataType();
-                        }
+                // look for the table in binding
+                final TableDefinition def = offset.getTableDefinition(this, doc, variables, root.getName());
+                if (def != null) {
+                    final ColumnDefinition col = def.getColumn(columnName);
+                    if (col == null) {
+                        // might happen if user did someTable.update("NewCol=123").update("NewCol=
+                        // we can handle this by inspecting the scope chain, but leaving edge case out for now.
+                    } else {
+                        return col.getDataType();
                     }
                 }
             }
@@ -1395,7 +1400,7 @@ public class ChunkerCompleter implements CompletionHandler {
             case "Date":
                 return String.class;
             case "Timestamp":
-                return DateTime.class;
+                return Instant.class;
         }
 
         // failure; allow anything...

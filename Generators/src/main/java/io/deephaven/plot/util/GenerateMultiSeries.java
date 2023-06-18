@@ -46,9 +46,11 @@ public class GenerateMultiSeries {
         }
 
         final Set<Method> skip = new HashSet<>();
-        skip.add(Class.forName("io.deephaven.plot.datasets.DataSeries").getMethod("pointSize", int.class));
-        skip.add(Class.forName("io.deephaven.plot.datasets.DataSeries").getMethod("pointSize", double.class));
-        skip.add(Class.forName("io.deephaven.plot.datasets.DataSeries").getMethod("pointSize", long.class));
+        final Class<?> dataSeriesClass = Class.forName("io.deephaven.plot.datasets.DataSeries", false,
+                Thread.currentThread().getContextClassLoader());
+        skip.add(dataSeriesClass.getMethod("pointSize", int.class));
+        skip.add(dataSeriesClass.getMethod("pointSize", double.class));
+        skip.add(dataSeriesClass.getMethod("pointSize", long.class));
 
         new Generator("io.deephaven.plot.datasets.multiseries.MultiSeries",
                 "DataSeriesInternal",
@@ -170,7 +172,7 @@ public class GenerateMultiSeries {
             this.isTransform = isTransform;
             this.isSwappable = isSwappable;
             this.interfaces = interfaces;
-            output = Class.forName(outputClass);
+            output = Class.forName(outputClass, false, Thread.currentThread().getContextClassLoader());
 
             final int mod = output.getModifiers();
             isInterface = Modifier.isInterface(mod);
@@ -241,7 +243,7 @@ public class GenerateMultiSeries {
             final List<GroovyStaticImportGenerator.JavaFunction> sortedMethods = new ArrayList<>();
             final List<GroovyStaticImportGenerator.JavaFunction> methodsWithFunctionParameter = new ArrayList<>();
             for (final String clazz : interfaces) {
-                final Class dataseries = Class.forName(clazz);
+                final Class dataseries = Class.forName(clazz, false, Thread.currentThread().getContextClassLoader());
                 final Method[] methods = Arrays.stream(dataseries.getMethods())
                         .filter(m -> !skip.contains(m))
                         .toArray(Method[]::new);
@@ -561,7 +563,8 @@ public class GenerateMultiSeries {
                     : "getPartitionedTableHandle().getTable(), ");
 
             if (function.getMethodName().equals("pointColorByY")) {
-                final Class c = Class.forName("io.deephaven.plot.datasets.multiseries." + returnClass);
+                final Class c = Class.forName("io.deephaven.plot.datasets.multiseries." + returnClass, false,
+                        Thread.currentThread().getContextClassLoader());
                 final Method[] methods = Arrays.stream(c.getDeclaredMethods())
                         .filter(m -> m.getName().equals(tableMethodName))
                         .filter(m -> m.getParameterTypes().length > 0 && m.getParameterTypes()[0].equals(Table.class))
@@ -586,7 +589,8 @@ public class GenerateMultiSeries {
                 return code.append(", multiSeriesKey), this").toString();
             }
 
-            final Class c = Class.forName(function.getClassName());
+            final Class c = Class.forName(function.getClassName(), false,
+                    Thread.currentThread().getContextClassLoader());
             final Method[] methods = Arrays.stream(c.getMethods())
                     .filter(m -> m.getName().equals(tableMethodName))
                     .filter(m -> m.getParameterTypes().length > 0 && m.getParameterTypes()[0].equals(Table.class))

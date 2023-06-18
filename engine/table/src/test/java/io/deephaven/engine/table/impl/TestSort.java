@@ -3,60 +3,30 @@
  */
 package io.deephaven.engine.table.impl;
 
-import io.deephaven.base.testing.BaseArrayTestCase;
-import io.deephaven.engine.context.QueryCompiler;
-import io.deephaven.configuration.Configuration;
-import io.deephaven.engine.context.TestExecutionContext;
 import io.deephaven.engine.exceptions.NotSortableException;
 import io.deephaven.engine.table.DataColumn;
 import io.deephaven.engine.table.Table;
-import io.deephaven.engine.updategraph.UpdateGraphProcessor;
-import io.deephaven.time.DateTime;
+import io.deephaven.engine.testutil.testcase.RefreshingTableTestCase;
 import io.deephaven.engine.rowset.RowSetFactory;
 import io.deephaven.test.types.OutOfBandTest;
+import io.deephaven.time.DateTimeUtils;
 import io.deephaven.util.QueryConstants;
 import io.deephaven.engine.util.TableTools;
 import io.deephaven.engine.table.impl.sources.ArrayBackedColumnSource;
 import io.deephaven.engine.table.ColumnSource;
 import io.deephaven.engine.table.impl.util.ColumnHolder;
 
+import java.time.Instant;
 import java.util.Arrays;
 import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.function.BiFunction;
 
-import io.deephaven.util.SafeCloseable;
 import org.jetbrains.annotations.NotNull;
 import org.junit.experimental.categories.Category;
 
 @Category(OutOfBandTest.class)
-public class TestSort extends BaseArrayTestCase {
-
-    private static final boolean ENABLE_QUERY_COMPILER_LOGGING = Configuration.getInstance()
-            .getBooleanForClassWithDefault(TestSort.class, "QueryCompiler.logEnabled", false);
-
-    private boolean lastMemoize = false;
-    private boolean oldQueryCompilerLogEnabled;
-    private SafeCloseable executionContext;
-
-    @Override
-    protected void setUp() throws Exception {
-        super.setUp();
-        UpdateGraphProcessor.DEFAULT.enableUnitTestMode();
-        UpdateGraphProcessor.DEFAULT.resetForUnitTests(false);
-        lastMemoize = QueryTable.setMemoizeResults(false);
-        oldQueryCompilerLogEnabled = QueryCompiler.setLogEnabled(ENABLE_QUERY_COMPILER_LOGGING);
-        executionContext = TestExecutionContext.createForUnitTests().open();
-    }
-
-    @Override
-    protected void tearDown() throws Exception {
-        super.tearDown();
-        QueryCompiler.setLogEnabled(oldQueryCompilerLogEnabled);
-        QueryTable.setMemoizeResults(lastMemoize);
-        UpdateGraphProcessor.DEFAULT.resetForUnitTests(true);
-        executionContext.close();
-    }
+public class TestSort extends RefreshingTableTestCase {
 
     @FunctionalInterface
     interface ThrowingConsumer<A, T extends Exception> {
@@ -480,12 +450,12 @@ public class TestSort extends BaseArrayTestCase {
         }
     }
 
-    private class DateTimeGenerator extends DataGenerator {
+    private class InstantGenerator extends DataGenerator {
         public Class getType() {
-            return DateTime.class;
+            return Instant.class;
         }
 
-        public DateTime makeEntry() {
+        public Instant makeEntry() {
             if (Math.random() < nullFraction) {
                 return null;
             }
@@ -494,8 +464,7 @@ public class TestSort extends BaseArrayTestCase {
             long offset = (int) Math.rint(Math.random() * 3600);
             offset *= 1000000000;
 
-            DateTime dateTime = new DateTime((startTime * 1000000000) - offset);
-            return dateTime;
+            return DateTimeUtils.epochNanosToInstant((startTime * 1000000000) - offset);
         }
 
         @Override
@@ -628,7 +597,7 @@ public class TestSort extends BaseArrayTestCase {
     private Comparable[][] createBoxedData(Table source, int ncols, int size) {
         final Comparable[][] boxedData = new Comparable[ncols][];
         for (int ii = 0; ii < ncols; ++ii) {
-            final DataColumn column = source.getColumn("Column" + ii);
+            final DataColumn column = DataAccessHelpers.getColumn(source, "Column" + ii);
             boxedData[ii] = new Comparable[size];
             for (int jj = 0; jj < size; ++jj) {
                 boxedData[ii][jj] = (Comparable) column.get(jj);
@@ -683,11 +652,11 @@ public class TestSort extends BaseArrayTestCase {
 
         // Now sort the table by the sentinel, which should just give us a simple ordering.
         assertEquals(source.size(), size);
-        assertEquals(source.getColumn("Sentinel").size(), size);
+        assertEquals(DataAccessHelpers.getColumn(source, "Sentinel").size(), size);
 
         Table result0 = source.sort("Sentinel");
         // show(result0);
-        DataColumn col = result0.getColumn("Sentinel");
+        DataColumn col = DataAccessHelpers.getColumn(result0, "Sentinel");
         assertEquals(col.size(), size);
         for (int jj = 0; jj < size; ++jj) {
             assertEquals(jj + 1, col.get(jj));
@@ -695,7 +664,7 @@ public class TestSort extends BaseArrayTestCase {
 
         Table result1 = source.sortDescending("Sentinel");
         // show(result1);
-        col = result1.getColumn("Sentinel");
+        col = DataAccessHelpers.getColumn(result1, "Sentinel");
         assertEquals(col.size(), size);
         for (int jj = 0; jj < size; ++jj) {
             assertEquals(size - jj, col.get(jj));
@@ -715,9 +684,9 @@ public class TestSort extends BaseArrayTestCase {
             // TableTools.show(resultDescending);
 
 
-            DataColumn colAscending = resultAscending.getColumn("Sentinel");
+            DataColumn colAscending = DataAccessHelpers.getColumn(resultAscending, "Sentinel");
             assertEquals(colAscending.size(), size);
-            DataColumn colDescending = resultDescending.getColumn("Sentinel");
+            DataColumn colDescending = DataAccessHelpers.getColumn(resultDescending, "Sentinel");
             assertEquals(colDescending.size(), size);
 
             MultiColumnSortHelper multiColumnSortHelper = new MultiColumnSortHelper(columnData, ii);

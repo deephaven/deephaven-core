@@ -10,7 +10,7 @@ import io.deephaven.base.verify.Assert;
 import io.deephaven.chunk.Chunk;
 import io.deephaven.chunk.IntChunk;
 import io.deephaven.chunk.attributes.Values;
-import io.deephaven.engine.table.MatchPair;
+import io.deephaven.engine.table.impl.MatchPair;
 import io.deephaven.engine.table.impl.updateby.UpdateByOperator;
 import io.deephaven.engine.table.impl.updateby.internal.BaseIntUpdateByOperator;
 import io.deephaven.engine.table.impl.util.RowRedirection;
@@ -30,8 +30,8 @@ public class IntRollingMinMaxOperator extends BaseIntUpdateByOperator {
         protected AggregatingIntRingBuffer aggMinMax;
         protected boolean evaluationNeeded;
 
-        protected Context(final int chunkSize) {
-            super(chunkSize);
+        protected Context(final int affectedChunkSize, final int influencerChunkSize) {
+            super(affectedChunkSize);
             if (isMax) {
                 aggMinMax = new AggregatingIntRingBuffer(BUFFER_INITIAL_CAPACITY, Integer.MIN_VALUE, (a, b) -> {
                     if (a == NULL_INT) {
@@ -62,8 +62,8 @@ public class IntRollingMinMaxOperator extends BaseIntUpdateByOperator {
         }
 
         @Override
-        public void setValuesChunk(@NotNull final Chunk<? extends Values> valuesChunk) {
-            intInfluencerValuesChunk = valuesChunk.asIntChunk();
+        public void setValueChunks(@NotNull final Chunk<? extends Values>[] valueChunks) {
+            intInfluencerValuesChunk = valueChunks[0].asIntChunk();
         }
 
         @Override
@@ -133,8 +133,8 @@ public class IntRollingMinMaxOperator extends BaseIntUpdateByOperator {
 
     @NotNull
     @Override
-    public UpdateByOperator.Context makeUpdateContext(final int chunkSize) {
-        return new Context(chunkSize);
+    public UpdateByOperator.Context makeUpdateContext(final int affectedChunkSize, final int influencerChunkSize) {
+        return new Context(affectedChunkSize, influencerChunkSize);
     }
 
     public IntRollingMinMaxOperator(@NotNull final MatchPair pair,

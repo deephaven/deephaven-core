@@ -13,7 +13,7 @@ from deephaven.jcompat import to_sequence
 from deephaven.table import Table
 import jpy
 
-from deephaven.ugp import auto_locking_ctx
+from deephaven.update_graph import auto_locking_ctx
 
 _JOuterJoinTools = jpy.get_type("io.deephaven.engine.util.OuterJoinTools")
 

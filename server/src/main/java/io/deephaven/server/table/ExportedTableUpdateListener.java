@@ -4,12 +4,15 @@
 package io.deephaven.server.table;
 
 import com.google.rpc.Code;
+import io.deephaven.engine.context.ExecutionContext;
 import io.deephaven.engine.rowset.TrackingRowSet;
 import io.deephaven.engine.table.TableUpdate;
 import io.deephaven.engine.table.impl.BaseTable;
 import io.deephaven.engine.table.impl.InstrumentedTableUpdateListener;
 import io.deephaven.engine.table.impl.NotificationStepReceiver;
 import io.deephaven.engine.table.impl.SwapListener;
+import io.deephaven.engine.table.impl.UncoalescedTable;
+import io.deephaven.engine.updategraph.NotificationQueue;
 import io.deephaven.hash.KeyedLongObjectHashMap;
 import io.deephaven.hash.KeyedLongObjectKey;
 import io.deephaven.internal.log.LoggerFactory;
@@ -20,6 +23,7 @@ import io.deephaven.proto.backplane.grpc.Ticket;
 import io.deephaven.proto.util.Exceptions;
 import io.deephaven.proto.util.ExportTicketHelper;
 import io.deephaven.server.session.SessionState;
+import io.deephaven.util.SafeCloseable;
 import io.grpc.StatusRuntimeException;
 import io.grpc.stub.StreamObserver;
 import org.apache.commons.lang3.mutable.MutableLong;
@@ -75,7 +79,10 @@ public class ExportedTableUpdateListener implements StreamObserver<ExportNotific
                     try {
                         final Object obj = export.get();
                         if (obj instanceof BaseTable) {
-                            onNewTableExport(ticket, exportId, (BaseTable) obj);
+                            try (final SafeCloseable ignored = ExecutionContext.getContext().withUpdateGraph(
+                                    ((NotificationQueue.Dependency) obj).getUpdateGraph()).open()) {
+                                onNewTableExport(ticket, exportId, (BaseTable<?>) obj);
+                            }
                         }
                     } finally {
                         export.dropReference();
@@ -118,6 +125,10 @@ public class ExportedTableUpdateListener implements StreamObserver<ExportNotific
      * @param table the table that was just exported
      */
     private synchronized void onNewTableExport(final Ticket ticket, final int exportId, final BaseTable table) {
+        if (table instanceof UncoalescedTable) {
+            // uncoalesced tables have no size and don't get updates
+            return;
+        }
         if (!table.isRefreshing()) {
             sendUpdateMessage(ticket, table.size(), null);
             return;

@@ -3,11 +3,12 @@ package io.deephaven.engine.table.impl.sources;
 import io.deephaven.engine.table.ColumnSource;
 import io.deephaven.engine.table.impl.AbstractColumnSource;
 import io.deephaven.engine.table.impl.MutableColumnSourceGetDefaults;
-import io.deephaven.time.DateTime;
 import org.jetbrains.annotations.NotNull;
 
+import java.time.Instant;
+
 /**
- * Reinterpret result for many {@link ColumnSource} implementations that internally represent {@link DateTime} values
+ * Reinterpret result for many {@link ColumnSource} implementations that internally represent {@link Instant} values
  * as {@code long} values.
  */
 public class UnboxedLongBackedColumnSource<T> extends AbstractColumnSource<Long> implements MutableColumnSourceGetDefaults.ForLong {

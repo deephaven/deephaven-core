@@ -4,12 +4,13 @@
 #include "deephaven/client/flight.h"
 #include "deephaven/client/flight.h"
 #include "deephaven/client/utility/table_maker.h"
-#include "deephaven/client/utility/utility.h"
 #include "deephaven/client/utility/arrow_util.h"
+#include "deephaven/dhcore/utility/utility.h"
 
 using deephaven::client::TableHandle;
 using deephaven::client::utility::okOrThrow;
 using deephaven::client::utility::valueOrThrow;
+using deephaven::dhcore::utility::stringf;
 
 #include <memory>
 
@@ -40,14 +41,15 @@ TableHandle TableMaker::makeTable(const TableHandleManager &manager) {
   auto schema = valueOrThrow(DEEPHAVEN_EXPR_MSG(schemaBuilder_.Finish()));
 
   auto wrapper = manager.createFlightWrapper();
-  auto thfd = manager.newTableHandleAndFlightDescriptor();
+  auto ticket = manager.newTicket();
+  auto flightDescriptor = convertTicketToFlightDescriptor(ticket);
 
   arrow::flight::FlightCallOptions options;
-  wrapper.addAuthHeaders(&options);
+  wrapper.addHeaders(&options);
 
   std::unique_ptr<arrow::flight::FlightStreamWriter> fsw;
   std::unique_ptr<arrow::flight::FlightMetadataReader> fmr;
-  okOrThrow(DEEPHAVEN_EXPR_MSG(wrapper.flightClient()->DoPut(options, thfd.flightDescriptor(),
+  okOrThrow(DEEPHAVEN_EXPR_MSG(wrapper.flightClient()->DoPut(options, flightDescriptor,
       schema, &fsw, &fmr)));
   auto batch = arrow::RecordBatch::Make(schema, numRows_, std::move(columns_));
 
@@ -57,7 +59,7 @@ TableHandle TableMaker::makeTable(const TableHandleManager &manager) {
   std::shared_ptr<arrow::Buffer> buf;
   okOrThrow(DEEPHAVEN_EXPR_MSG(fmr->ReadMetadata(&buf)));
   okOrThrow(DEEPHAVEN_EXPR_MSG(fsw->Close()));
-  return std::move(thfd.tableHandle());
+  return manager.makeTableHandleFromTicket(std::move(ticket));
 }
 
 namespace internal {

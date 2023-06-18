@@ -27,7 +27,7 @@ _ARROW_DH_DATA_TYPE_MAPPING = {
     pa.timestamp('s'): '',
     pa.timestamp('ms'): '',
     pa.timestamp('us'): '',
-    pa.timestamp('ns'): 'io.deephaven.time.DateTime',
+    pa.timestamp('ns'): 'java.time.Instant',
     pa.date32(): '',
     pa.date64(): '',
     pa.duration('s'): '',
@@ -50,13 +50,13 @@ _ARROW_DH_DATA_TYPE_MAPPING = {
 }
 
 
-def map_arrow_type(arrow_type) -> Dict[str, str]:
+def map_arrow_type(arrow_type: pa.DataType) -> Dict[str, str]:
     """Maps an Arrow type to the corresponding Deephaven column data type."""
     dh_type = _ARROW_DH_DATA_TYPE_MAPPING.get(arrow_type)
     if not dh_type:
         # if this is a case of timestamp with tz specified
         if isinstance(arrow_type, pa.TimestampType):
-            dh_type = "io.deephaven.time.DateTime"
+            dh_type = "java.time.Instant"
 
     if not dh_type:
         raise DHError(message=f'unsupported arrow data type : {arrow_type}, refer to '

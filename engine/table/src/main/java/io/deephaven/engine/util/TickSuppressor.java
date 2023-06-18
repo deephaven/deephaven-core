@@ -6,7 +6,6 @@ package io.deephaven.engine.util;
 import io.deephaven.chunk.attributes.Values;
 import io.deephaven.engine.table.*;
 import io.deephaven.engine.table.impl.TableUpdateImpl;
-import io.deephaven.engine.updategraph.UpdateGraphProcessor;
 import io.deephaven.engine.table.impl.*;
 import io.deephaven.chunk.util.hashing.ChunkEquals;
 import io.deephaven.chunk.*;
@@ -46,7 +45,7 @@ public class TickSuppressor {
             return input;
         }
 
-        UpdateGraphProcessor.DEFAULT.checkInitiateTableOperation();
+        input.getUpdateGraph().checkInitiateSerialTableOperation();
 
         final QueryTable resultTable =
                 new QueryTable(input.getDefinition(), input.getRowSet(), input.getColumnSourceMap());
@@ -94,7 +93,7 @@ public class TickSuppressor {
             return input;
         }
 
-        UpdateGraphProcessor.DEFAULT.checkInitiateTableOperation();
+        input.getUpdateGraph().checkInitiateSerialTableOperation();
 
         final QueryTable coalesced = (QueryTable) input.coalesce();
 

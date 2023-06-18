@@ -28,10 +28,8 @@ import io.deephaven.engine.table.impl.perf.QueryPerformanceRecorder;
 import io.deephaven.engine.table.impl.sources.*;
 import io.deephaven.engine.table.impl.sources.sparse.SparseConstants;
 import io.deephaven.engine.table.impl.util.*;
-import io.deephaven.engine.updategraph.DynamicNode;
-import io.deephaven.engine.updategraph.LogicalClock;
-import io.deephaven.engine.updategraph.TerminalNotification;
-import io.deephaven.engine.updategraph.UpdateGraphProcessor;
+import io.deephaven.engine.updategraph.*;
+import io.deephaven.engine.updategraph.impl.PeriodicUpdateGraph;
 import io.deephaven.engine.util.systemicmarking.SystemicObjectTracker;
 import io.deephaven.util.SafeCloseable;
 import io.deephaven.util.SafeCloseableArray;
@@ -95,14 +93,16 @@ public abstract class UpdateBy {
 
     static class UpdateByRedirectionHelper {
         @Nullable
-        private final WritableRowRedirection rowRedirection;
+        private final RowRedirection rowRedirection;
         private final WritableRowSet freeRows;
         private long maxInnerRowKey;
 
-        private UpdateByRedirectionHelper(@Nullable final WritableRowRedirection rowRedirection) {
+        private UpdateByRedirectionHelper(@Nullable final RowRedirection rowRedirection) {
             this.rowRedirection = rowRedirection;
             // noinspection resource
-            this.freeRows = rowRedirection == null ? null : RowSetFactory.empty().toTracking();
+            this.freeRows = rowRedirection == null || !rowRedirection.isWritable()
+                    ? null
+                    : RowSetFactory.empty().toTracking();
             this.maxInnerRowKey = 0;
         }
 
@@ -118,15 +118,29 @@ public abstract class UpdateBy {
          * Process the upstream {@link TableUpdate update} and return the rowset of dense keys that need cleared for
          * Object array sources
          */
-        private WritableRowSet processUpdateForRedirection(@NotNull final TableUpdate upstream,
-                final TrackingRowSet sourceRowSet) {
+        private WritableRowSet processUpdateForRedirection(
+                @NotNull final TableUpdate upstream,
+                @NotNull final TrackingRowSet sourceRowSet) {
             assert rowRedirection != null;
 
+            if (!rowRedirection.isWritable()) {
+                // The inner row key space is always a flattened view of the outer row key space in this case.
+                maxInnerRowKey = sourceRowSet.size() - 1;
+                final WritableRowSet denseRowsToClear = sourceRowSet.prev().invert(upstream.removed());
+                if (denseRowsToClear.isNonempty() && upstream.added().isNonempty()) {
+                    try (final RowSet invertedAdds = sourceRowSet.invert(upstream.added())) {
+                        denseRowsToClear.remove(invertedAdds);
+                    }
+                }
+                return denseRowsToClear;
+            }
+
+            final WritableRowRedirection writableRowRedirection = rowRedirection.writableCast();
             final WritableRowSet toClear;
 
             if (upstream.removed().isNonempty()) {
                 final RowSetBuilderRandom freeBuilder = RowSetFactory.builderRandom();
-                upstream.removed().forAllRowKeys(key -> freeBuilder.addKey(rowRedirection.remove(key)));
+                upstream.removed().forAllRowKeys(key -> freeBuilder.addKey(writableRowRedirection.remove(key)));
                 // store all freed rows as the candidate toClear set
                 toClear = freeBuilder.build();
                 freeRows.insert(toClear);
@@ -137,7 +151,7 @@ public abstract class UpdateBy {
             if (upstream.shifted().nonempty()) {
                 try (final WritableRowSet prevRowSetLessRemoves = sourceRowSet.copyPrev()) {
                     prevRowSetLessRemoves.remove(upstream.removed());
-                    rowRedirection.applyShift(prevRowSetLessRemoves, upstream.shifted());
+                    writableRowRedirection.applyShift(prevRowSetLessRemoves, upstream.shifted());
                 }
             }
 
@@ -145,7 +159,7 @@ public abstract class UpdateBy {
                 final WritableRowSet.Iterator freeIt = freeRows.iterator();
                 upstream.added().forAllRowKeys(outerKey -> {
                     final long innerKey = freeIt.hasNext() ? freeIt.nextLong() : maxInnerRowKey++;
-                    rowRedirection.put(outerKey, innerKey);
+                    writableRowRedirection.put(outerKey, innerKey);
                 });
                 if (freeIt.hasNext()) {
                     try (final RowSet added = freeRows.subSetByKeyRange(0, freeIt.nextLong() - 1)) {
@@ -181,7 +195,7 @@ public abstract class UpdateBy {
             @NotNull final UpdateByWindow[] windows,
             @NotNull final ColumnSource<?>[] inputSources,
             @Nullable String timestampColumnName,
-            @Nullable final WritableRowRedirection rowRedirection,
+            @Nullable final RowRedirection rowRedirection,
             @NotNull final UpdateByControl control) {
 
         this.source = source;
@@ -239,6 +253,7 @@ public abstract class UpdateBy {
         /** For cacheable sources, track how many windows require this source */
         final AtomicIntegerArray inputSourceReferenceCounts;
         final JobScheduler jobScheduler;
+        final ExecutionContext executionContext;
         final CompletableFuture<Void> waitForResult;
 
         /***
@@ -284,12 +299,14 @@ public abstract class UpdateBy {
                     dirtyWindowOperators[winIdx].set(0, windows[winIdx].operators.length);
                 }
                 // Create the proper JobScheduler for the following parallel tasks
-                if (OperationInitializationThreadPool.NUM_THREADS > 1
-                        && !OperationInitializationThreadPool.isInitializationThread()) {
+                if (OperationInitializationThreadPool.canParallelize()) {
                     jobScheduler = new OperationInitializationPoolJobScheduler();
                 } else {
                     jobScheduler = ImmediateJobScheduler.INSTANCE;
                 }
+                executionContext = ExecutionContext.newBuilder()
+                        .captureUpdateGraph()
+                        .markSystemic().build();
                 waitForResult = new CompletableFuture<>();
             } else {
                 // Determine which windows need to be computed.
@@ -313,11 +330,14 @@ public abstract class UpdateBy {
                     }
                 }
                 // Create the proper JobScheduler for the following parallel tasks
-                if (UpdateGraphProcessor.DEFAULT.getUpdateThreads() > 1) {
-                    jobScheduler = new UpdateGraphProcessorJobScheduler();
+                if (source.getUpdateGraph().parallelismFactor() > 1) {
+                    jobScheduler = new UpdateGraphJobScheduler(source.getUpdateGraph());
                 } else {
                     jobScheduler = ImmediateJobScheduler.INSTANCE;
                 }
+                executionContext = ExecutionContext.newBuilder()
+                        .setUpdateGraph(result().getUpdateGraph())
+                        .markSystemic().build();
                 waitForResult = null;
             }
         }
@@ -440,7 +460,7 @@ public abstract class UpdateBy {
             if (initialStep) {
                 for (int srcIdx : cacheableSourceIndices) {
                     if (inputSourceCacheNeeded[srcIdx]) {
-                        // create a RowSet to be used by `InverseWrappedRowSetWritableRowRedirection`
+                        // create a RowSet to be used by `InverseWrappedRowSetRowRedirection`
                         inputSourceRowSets.set(srcIdx, source.getRowSet().copy());
 
                         // record how many operators require this input source
@@ -461,7 +481,7 @@ public abstract class UpdateBy {
 
             final int[] dirtyWindowIndices = dirtyWindows.stream().toArray();
 
-            jobScheduler.iterateParallel(ExecutionContext.getContextToRecord(),
+            jobScheduler.iterateParallel(executionContext,
                     chainAppendables(this, stringToAppendable("-computeCachedColumnRowSets")),
                     JobScheduler.DEFAULT_CONTEXT_FACTORY, 0, cacheableSourceIndices.length,
                     (context, idx, nec) -> {
@@ -513,7 +533,7 @@ public abstract class UpdateBy {
          */
         private void prepareForParallelPopulation(
                 final Runnable onParallelPopulationComplete) {
-            jobScheduler.iterateParallel(ExecutionContext.getContextToRecord(),
+            jobScheduler.iterateParallel(executionContext,
                     chainAppendables(this, stringToAppendable("-prepareForParallelPopulation")),
                     JobScheduler.DEFAULT_CONTEXT_FACTORY, 0,
                     windows.length,
@@ -573,7 +593,7 @@ public abstract class UpdateBy {
 
             final int[] dirtyWindowIndices = dirtyWindows.stream().toArray();
 
-            jobScheduler.iterateSerial(ExecutionContext.getContextToRecord(),
+            jobScheduler.iterateSerial(executionContext,
                     chainAppendables(this, stringToAppendable("-processWindows")),
                     JobScheduler.DEFAULT_CONTEXT_FACTORY, 0,
                     dirtyWindowIndices.length,
@@ -660,7 +680,7 @@ public abstract class UpdateBy {
             operatorSets.add(opList.toArray());
 
             // Process each set of similar operators in this window serially.
-            jobScheduler.iterateSerial(ExecutionContext.getContextToRecord(),
+            jobScheduler.iterateSerial(executionContext,
                     chainAppendables(this, stringAndIndexToAppendable("-processWindowOperators", winIdx)),
                     JobScheduler.DEFAULT_CONTEXT_FACTORY, 0,
                     operatorSets.size(),
@@ -699,7 +719,7 @@ public abstract class UpdateBy {
                 return;
             }
 
-            jobScheduler.iterateParallel(ExecutionContext.getContextToRecord(),
+            jobScheduler.iterateParallel(executionContext,
                     chainAppendables(this, stringAndIndexToAppendable("-cacheOperatorInputSources", winIdx)),
                     JobScheduler.DEFAULT_CONTEXT_FACTORY, 0, srcIndices.length,
                     (context, idx, nestedErrorConsumer, sourceComplete) -> createCachedColumnSource(
@@ -737,7 +757,7 @@ public abstract class UpdateBy {
             innerSource.ensureCapacity(inputRowSet.size());
 
             // there will be no updates to this cached column source, so use a simple redirection
-            final WritableRowRedirection rowRedirection = new InverseWrappedRowSetWritableRowRedirection(inputRowSet);
+            final RowRedirection rowRedirection = new InverseWrappedRowSetRowRedirection(inputRowSet);
             final WritableColumnSource<?> outputSource =
                     WritableRedirectedColumnSource.maybeRedirect(rowRedirection, innerSource, 0);
 
@@ -754,11 +774,11 @@ public abstract class UpdateBy {
 
                 @Override
                 public void close() {
-                    SafeCloseable.closeArray(rsIt, ffc, gc);
+                    SafeCloseable.closeAll(rsIt, ffc, gc);
                 }
             }
 
-            jobScheduler.iterateParallel(ExecutionContext.getContextToRecord(),
+            jobScheduler.iterateParallel(executionContext,
                     chainAppendables(this, stringToAppendable("-createCachedColumnSource")),
                     BatchThreadContext::new, 0, taskCount,
                     (ctx, idx, nec) -> {
@@ -803,7 +823,8 @@ public abstract class UpdateBy {
 
                     for (int ii = 0; ii < opIndices.length; ii++) {
                         final int opIdx = opIndices[ii];
-                        winOpContexts[ii] = windows[winIdx].operators[opIdx].makeUpdateContext(maxAffectedChunkSize);
+                        winOpContexts[ii] = windows[winIdx].operators[opIdx].makeUpdateContext(maxAffectedChunkSize,
+                                maxInfluencerChunkSize);
                     }
 
                     chunkArr = new Chunk[srcIndices.length];
@@ -823,7 +844,7 @@ public abstract class UpdateBy {
                 }
             }
 
-            jobScheduler.iterateParallel(ExecutionContext.getContextToRecord(),
+            jobScheduler.iterateParallel(executionContext,
                     chainAppendables(this, stringAndIndexToAppendable("-processWindowBucketOperators", winIdx)),
                     OperatorThreadContext::new,
                     0, dirtyBuckets.length,
@@ -899,7 +920,7 @@ public abstract class UpdateBy {
             }
 
             // release remaining resources
-            SafeCloseable.closeArray(changedRows, toClear);
+            SafeCloseable.closeAll(changedRows, toClear);
             upstream.release();
 
             // accumulate performance data
@@ -911,7 +932,7 @@ public abstract class UpdateBy {
                         outerNugget.addBaseEntry(accumulated);
                     }
                 } else {
-                    UpdateGraphProcessor.DEFAULT.addNotification(new TerminalNotification() {
+                    source.getUpdateGraph().addNotification(new TerminalNotification() {
                         @Override
                         public void run() {
                             synchronized (accumulated) {
@@ -1002,14 +1023,14 @@ public abstract class UpdateBy {
                 bucket.finalizeUpdate();
             }
 
-            SafeCloseable.closeArray(changedRows, toClear);
+            SafeCloseable.closeAll(changedRows, toClear);
 
             upstream.release();
         }
     }
 
     /**
-     * Disconnect result from the {@link UpdateGraphProcessor}, deliver downstream failure notifications, and cleanup if
+     * Disconnect result from the {@link PeriodicUpdateGraph}, deliver downstream failure notifications, and cleanup if
      * needed.
      *
      * @param error The {@link Throwable} to deliver, either from upstream or update processing
@@ -1073,7 +1094,8 @@ public abstract class UpdateBy {
             final QueryTable result = result();
             if (result.isFailed()) {
                 Assert.eq(result.getLastNotificationStep(), "result.getLastNotificationStep()",
-                        LogicalClock.DEFAULT.currentStep(), "LogicalClock.DEFAULT.currentStep()");
+                        getUpdateGraph().clock().currentStep(),
+                        "getUpdateGraph().clock().currentStep()");
                 return;
             }
 
@@ -1122,13 +1144,15 @@ public abstract class UpdateBy {
             @NotNull final Collection<? extends ColumnName> byColumns,
             @NotNull final UpdateByControl control) {
 
+        QueryTable.checkInitiateOperation(source);
+
         // create the rowRedirection if instructed
-        final WritableRowRedirection rowRedirection;
+        final RowRedirection rowRedirection;
         if (control.useRedirectionOrDefault()) {
             if (!source.isRefreshing()) {
                 if (!source.isFlat() && SparseConstants.sparseStructureExceedsOverhead(source.getRowSet(),
                         control.maxStaticSparseMemoryOverheadOrDefault())) {
-                    rowRedirection = new InverseWrappedRowSetWritableRowRedirection(source.getRowSet());
+                    rowRedirection = new InverseWrappedRowSetRowRedirection(source.getRowSet());
                 } else {
                     rowRedirection = null;
                 }
@@ -1263,7 +1287,7 @@ public abstract class UpdateBy {
                 if (source.isRefreshing()) {
                     // start tracking previous values
                     if (rowRedirection != null) {
-                        rowRedirection.startTrackingPrevValues();
+                        rowRedirection.writableCast().startTrackingPrevValues();
                     }
                     for (UpdateByWindow win : windowArr) {
                         for (UpdateByOperator op : win.operators) {
@@ -1306,7 +1330,7 @@ public abstract class UpdateBy {
             if (source.isRefreshing()) {
                 // start tracking previous values
                 if (rowRedirection != null) {
-                    rowRedirection.startTrackingPrevValues();
+                    rowRedirection.writableCast().startTrackingPrevValues();
                 }
                 for (UpdateByWindow win : windowArr) {
                     for (UpdateByOperator op : win.operators) {

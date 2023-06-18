@@ -10,7 +10,7 @@ import io.deephaven.base.verify.Assert;
 import io.deephaven.chunk.Chunk;
 import io.deephaven.chunk.ByteChunk;
 import io.deephaven.chunk.attributes.Values;
-import io.deephaven.engine.table.MatchPair;
+import io.deephaven.engine.table.impl.MatchPair;
 import io.deephaven.engine.table.impl.updateby.UpdateByOperator;
 import io.deephaven.engine.table.impl.updateby.internal.BaseLongUpdateByOperator;
 import io.deephaven.engine.table.impl.util.RowRedirection;
@@ -29,7 +29,6 @@ public class ByteRollingSumOperator extends BaseLongUpdateByOperator {
         protected ByteChunk<? extends Values> byteInfluencerValuesChunk;
         protected ByteRingBuffer byteWindowValues;
 
-
         protected Context(final int chunkSize) {
             super(chunkSize);
             byteWindowValues = new ByteRingBuffer(RING_BUFFER_INITIAL_CAPACITY, true);
@@ -43,8 +42,8 @@ public class ByteRollingSumOperator extends BaseLongUpdateByOperator {
 
 
         @Override
-        public void setValuesChunk(@NotNull final Chunk<? extends Values> valuesChunk) {
-            byteInfluencerValuesChunk = valuesChunk.asByteChunk();
+        public void setValueChunks(@NotNull final Chunk<? extends Values>[] valueChunks) {
+            byteInfluencerValuesChunk = valueChunks[0].asByteChunk();
         }
 
         @Override
@@ -102,8 +101,8 @@ public class ByteRollingSumOperator extends BaseLongUpdateByOperator {
 
     @NotNull
     @Override
-    public UpdateByOperator.Context makeUpdateContext(final int chunkSize) {
-        return new Context(chunkSize);
+    public UpdateByOperator.Context makeUpdateContext(final int affectedChunkSize, final int influencerChunkSize) {
+        return new Context(affectedChunkSize);
     }
 
     public ByteRollingSumOperator(@NotNull final MatchPair pair,

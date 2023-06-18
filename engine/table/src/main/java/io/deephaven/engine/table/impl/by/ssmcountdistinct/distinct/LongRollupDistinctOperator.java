@@ -8,10 +8,12 @@
  */
 package io.deephaven.engine.table.impl.by.ssmcountdistinct.distinct;
 
-import io.deephaven.engine.table.impl.sources.BoxedColumnSource;
-import io.deephaven.time.DateTime;
-import io.deephaven.engine.table.impl.by.ssmcountdistinct.DateTimeSsmSourceWrapper;
+import java.time.Instant;
 
+import io.deephaven.engine.table.impl.sources.LongAsInstantColumnSource;
+import io.deephaven.engine.table.impl.by.ssmcountdistinct.InstantSsmSourceWrapper;
+
+import io.deephaven.engine.context.ExecutionContext;
 import io.deephaven.engine.rowset.WritableRowSet;
 import io.deephaven.engine.rowset.RowSet;
 import io.deephaven.engine.rowset.RowSetFactory;
@@ -61,8 +63,8 @@ public class LongRollupDistinctOperator implements IterativeChunkedAggregationOp
         this.internalResult = new LongSsmBackedSource();
         // endregion SsmCreation
         // region ResultAssignment
-        if(type == DateTime.class) {
-            externalResult = new DateTimeSsmSourceWrapper(internalResult);
+        if(type == Instant.class) {
+            externalResult = new InstantSsmSourceWrapper(internalResult);
         } else {
             externalResult = internalResult;
         }
@@ -506,7 +508,7 @@ public class LongRollupDistinctOperator implements IterativeChunkedAggregationOp
             throw new IllegalStateException("startTrackingPrevValues must only be called once");
         }
 
-        prevFlusher = new UpdateCommitter<>(this, LongRollupDistinctOperator::flushPrevious);
+        prevFlusher = new UpdateCommitter<>(this, ExecutionContext.getContext().getUpdateGraph(), LongRollupDistinctOperator::flushPrevious);
         touchedStates = RowSetFactory.empty();
         internalResult.startTrackingPrevValues();
     }

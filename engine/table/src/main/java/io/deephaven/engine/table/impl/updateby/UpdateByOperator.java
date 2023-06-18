@@ -8,6 +8,7 @@ import io.deephaven.engine.rowset.RowSequence;
 import io.deephaven.engine.rowset.RowSet;
 import io.deephaven.engine.rowset.chunkattributes.OrderedRowKeys;
 import io.deephaven.engine.table.*;
+import io.deephaven.engine.table.impl.MatchPair;
 import io.deephaven.engine.table.impl.QueryTable;
 import io.deephaven.engine.table.impl.util.RowRedirection;
 import io.deephaven.util.SafeCloseable;
@@ -64,7 +65,7 @@ public abstract class UpdateByOperator {
                     "isValueValid() must be overridden by time-aware cumulative operators");
         }
 
-        protected abstract void setValuesChunk(@NotNull Chunk<? extends Values> valuesChunk);
+        protected abstract void setValueChunks(@NotNull Chunk<? extends Values>[] valueChunks);
 
         protected void setPosChunks(final LongChunk<OrderedRowKeys> affectedPosChunk,
                 final LongChunk<OrderedRowKeys> influencerPosChunk) {
@@ -226,11 +227,12 @@ public abstract class UpdateByOperator {
     /**
      * Make an {@link Context} suitable for use with updates.
      *
-     * @param chunkSize The expected size of chunks that will be provided during the update,
+     * @param affectedChunkSize The maximum size of affected chunks that will be provided during the update.
+     * @param influencerChunkSize The maximum size of influencer chunks that will be provided during the update.
      * @return a new context
      */
     @NotNull
-    public abstract Context makeUpdateContext(final int chunkSize);
+    public abstract Context makeUpdateContext(final int affectedChunkSize, final int influencerChunkSize);
 
     /**
      * Perform any bookkeeping required at the end of a single part of the update. This is always preceded with a call

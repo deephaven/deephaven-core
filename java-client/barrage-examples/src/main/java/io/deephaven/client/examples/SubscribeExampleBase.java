@@ -8,6 +8,7 @@ import io.deephaven.client.impl.BarrageSubscription;
 import io.deephaven.client.impl.TableHandle;
 import io.deephaven.client.impl.TableHandleManager;
 import io.deephaven.engine.rowset.RowSetFactory;
+import io.deephaven.engine.table.impl.DataAccessHelpers;
 import io.deephaven.engine.table.TableUpdate;
 import io.deephaven.engine.table.TableUpdateListener;
 import io.deephaven.engine.table.impl.InstrumentedTableUpdateListener;
@@ -69,7 +70,7 @@ abstract class SubscribeExampleBase extends BarrageClientExampleBase {
 
             System.out.println("Subscription established");
             System.out.println("Table info: rows = " + subscriptionTable.size() + ", cols = " +
-                    subscriptionTable.getColumns().length);
+                    DataAccessHelpers.getColumns(subscriptionTable).length);
             TableTools.show(subscriptionTable);
             System.out.println("");
 

@@ -4,6 +4,7 @@
 package io.deephaven.engine.table.impl;
 
 import io.deephaven.base.verify.Assert;
+import io.deephaven.engine.context.ExecutionContext;
 import io.deephaven.engine.rowset.*;
 import io.deephaven.engine.rowset.RowSetFactory;
 import io.deephaven.engine.rowset.impl.rsp.RspArray;
@@ -11,8 +12,9 @@ import io.deephaven.engine.table.ColumnSource;
 import io.deephaven.engine.table.ModifiedColumnSet;
 import io.deephaven.engine.table.TableUpdate;
 import io.deephaven.engine.table.TableUpdateListener;
-import io.deephaven.engine.updategraph.LogicalClock;
 import io.deephaven.engine.table.impl.sources.ReversedColumnSource;
+import io.deephaven.util.annotations.VisibleForTesting;
+import org.jetbrains.annotations.NotNull;
 
 import java.util.LinkedHashMap;
 import java.util.Map;
@@ -23,15 +25,24 @@ public class ReverseOperation implements QueryTable.MemoizableOperation<QueryTab
     private QueryTable resultTable;
     private ModifiedColumnSet.Transformer mcsTransformer;
 
-    // minimum pivot is RowSet container size -- this guarantees that we only generate container shifts
-    private static final long MINIMUM_PIVOT = RspArray.BLOCK_SIZE;
-    // since we are using highest one bit, this should be a power of two
+    /**
+     * Minimum pivot is RSP container size. This guarantees that we only generate shifts that are a multiple of
+     * container size, which is important if we're using an RSP-backed OrderedLongSet to implement our RowSet.
+     */
+    @VisibleForTesting
+    static final long MINIMUM_PIVOT = RspArray.BLOCK_SIZE;
+    /**
+     * Maximum pivot is the maximum possible row key.
+     */
+    private static final long MAXIMUM_PIVOT = Long.MAX_VALUE;
+    /**
+     * Since we are using highest one bit of maximum parent row key, this should be a power of two greater than one.
+     */
     private static final int PIVOT_GROWTH_FACTOR = 4;
 
     private long pivotPoint;
-    private long prevPivot;
-    private long lastPivotChange;
-    private long resultSize;
+    private long prevPivotPoint;
+    private long lastPivotPointChange;
 
     public ReverseOperation(QueryTable parent) {
         this.parent = parent;
@@ -68,22 +79,17 @@ public class ReverseOperation implements QueryTable.MemoizableOperation<QueryTab
 
     @Override
     public Result<QueryTable> initialize(boolean usePrev, long beforeClock) {
-        final Map<String, ColumnSource<?>> resultColumnSources;
-        final TrackingWritableRowSet resultRowSet;
-        try (final RowSet prevCopy = usePrev ? parent.getRowSet().copyPrev() : null) {
-            final RowSet rowSetToReverse = usePrev ? prevCopy : parent.getRowSet();
-            prevPivot = pivotPoint = computePivot(rowSetToReverse.lastRowKey());
-            lastPivotChange = usePrev ? beforeClock - 1 : beforeClock;
+        final RowSet rowSetToReverse = usePrev ? parent.getRowSet().prev() : parent.getRowSet();
+        prevPivotPoint = pivotPoint = computePivot(rowSetToReverse.lastRowKey());
+        lastPivotPointChange = usePrev ? beforeClock - 1 : beforeClock;
 
-            resultColumnSources = new LinkedHashMap<>();
-            for (Map.Entry<String, ColumnSource<?>> entry : parent.getColumnSourceMap().entrySet()) {
-                resultColumnSources.put(entry.getKey(), new ReversedColumnSource<>(entry.getValue(), this));
-            }
-
-            resultRowSet = transform(rowSetToReverse).toTracking();
-            resultSize = resultRowSet.size();
-            Assert.eq(resultSize, "resultSize", rowSetToReverse.size(), "rowSetToReverse.size()");
+        final Map<String, ColumnSource<?>> resultColumnSources = new LinkedHashMap<>();
+        for (Map.Entry<String, ColumnSource<?>> entry : parent.getColumnSourceMap().entrySet()) {
+            resultColumnSources.put(entry.getKey(), new ReversedColumnSource<>(entry.getValue(), this));
         }
+
+        final TrackingWritableRowSet resultRowSet = transform(rowSetToReverse).toTracking();
+        Assert.eq(resultRowSet.size(), "resultRowSet.size()", rowSetToReverse.size(), "rowSetToReverse.size()");
 
         resultTable = new QueryTable(parent.getDefinition(), resultRowSet, resultColumnSources);
         mcsTransformer = parent.newModifiedColumnSetIdentityTransformer(resultTable);
@@ -105,88 +111,92 @@ public class ReverseOperation implements QueryTable.MemoizableOperation<QueryTab
     }
 
     private void onUpdate(final TableUpdate upstream) {
-        final WritableRowSet rowSet = resultTable.getRowSet().writableCast();
+        final WritableRowSet resultRowSet = resultTable.getRowSet().writableCast();
         final TrackingRowSet parentRowSet = parent.getRowSet();
-        if (resultSize != rowSet.size()) {
+        if (resultRowSet.size() != parentRowSet.sizePrev()) {
             QueryTable.log.error()
-                    .append("Result Size Mismatch: Result rowSet: ")
-                    .append(rowSet).append(" size=").append(rowSet.size())
-                    .append(", expected result size=").append(resultSize)
-                    .append(", Original rowSet: ")
+                    .append("Result Size Mismatch: Pre-Update Result RowSet: ")
+                    .append(resultRowSet).append(" size=").append(resultRowSet.size())
+                    .append(", Parent RowSet: ")
                     .append(parentRowSet).append(" size=").append(parentRowSet.size())
-                    .append(", Previous Original rowSet: ")
-                    .append(parentRowSet.copyPrev()).append(" size=").append(parentRowSet.sizePrev())
+                    .append(", Parent Previous RowSet: ")
+                    .append(parentRowSet.prev()).append(" size=").append(parentRowSet.sizePrev())
                     .append(", Added: ").append(upstream.added()).append(" size=").append(upstream.added().size())
                     .append(", Removed: ").append(upstream.removed()).append(" size=").append(upstream.removed().size())
                     .endl();
-            // noinspection ThrowableNotThrown
-            Assert.statementNeverExecuted("Result Size Mismatch");
+            Assert.eq(resultRowSet.size(), "resultRowSet.size()", parentRowSet.sizePrev(), "parentRowSet.sizePrev()");
         }
 
-        if (parentRowSet.size() != (rowSet.size() + upstream.added().size() - upstream.removed().size())) {
+        if (parentRowSet.size() != (resultRowSet.size() + upstream.added().size() - upstream.removed().size())) {
             QueryTable.log.error()
-                    .append("Parent Size Mismatch: Result rowSet: ")
-                    .append(rowSet).append(" size=").append(rowSet.size())
-                    .append(", Original rowSet: ")
+                    .append("Parent Size Mismatch: Pre-Update Result RowSet: ")
+                    .append(resultRowSet).append(" size=").append(resultRowSet.size())
+                    .append(", Parent RowSet: ")
                     .append(parentRowSet).append(" size=").append(parentRowSet.size())
                     .append(", Added: ").append(upstream.added()).append(" size=").append(upstream.added().size())
                     .append(", Removed: ").append(upstream.removed()).append(" size=").append(upstream.removed().size())
                     .endl();
-            // noinspection ThrowableNotThrown
-            Assert.statementNeverExecuted("Parent Size Mismatch");
+            Assert.eq(parentRowSet.size(), "parentRowSet.size()",
+                    resultRowSet.size() + upstream.added().size() - upstream.removed().size(),
+                    "resultRowSet.size() + upstream.added().size() - upstream.removed().size()");
         }
 
         final TableUpdateImpl downstream = new TableUpdateImpl();
 
         // removed is in pre-shift keyspace
         downstream.removed = transform(upstream.removed());
-        rowSet.remove(downstream.removed());
+        resultRowSet.remove(downstream.removed());
 
         // transform shifted and apply to our RowSet
         final long newShift =
                 (parentRowSet.lastRowKey() > pivotPoint) ? computePivot(parentRowSet.lastRowKey()) - pivotPoint : 0;
         if (upstream.shifted().nonempty() || newShift > 0) {
-            long watermarkKey = 0;
-            final RowSetShiftData.Builder oShiftedBuilder = new RowSetShiftData.Builder();
+            // Only compute downstream shifts if there are retained rows to shift
+            if (resultRowSet.isEmpty()) {
+                downstream.shifted = RowSetShiftData.EMPTY;
+            } else {
+                long watermarkKey = 0;
+                final RowSetShiftData.Builder oShiftedBuilder = new RowSetShiftData.Builder();
 
-            // Bounds seem weird because we might need to shift all keys outside of shifts too.
-            for (int idx = upstream.shifted().size(); idx >= 0; --idx) {
-                final long nextShiftEnd;
-                final long nextShiftStart;
-                final long nextShiftDelta;
-                if (idx <= 0) {
-                    nextShiftStart = nextShiftEnd = pivotPoint + 1;
-                    nextShiftDelta = 0;
-                } else {
-                    // Note: begin/end flip responsibilities in the transformation
-                    nextShiftDelta = -upstream.shifted().getShiftDelta(idx - 1);
-                    final long minStart = Math.max(-nextShiftDelta - newShift, 0);
-                    nextShiftStart = Math.max(minStart, transform(upstream.shifted().getEndRange(idx - 1)));
-                    nextShiftEnd = transform(upstream.shifted().getBeginRange(idx - 1));
-                    if (nextShiftEnd < nextShiftStart) {
+                // Bounds seem weird because we might need to shift all keys outside of shifts too.
+                for (int idx = upstream.shifted().size(); idx >= 0; --idx) {
+                    final long nextShiftEnd;
+                    final long nextShiftStart;
+                    final long nextShiftDelta;
+                    if (idx == 0) {
+                        nextShiftStart = nextShiftEnd = pivotPoint + 1;
+                        nextShiftDelta = 0;
+                    } else {
+                        // Note: begin/end flip responsibilities in the transformation
+                        nextShiftDelta = -upstream.shifted().getShiftDelta(idx - 1);
+                        final long minStart = Math.max(-nextShiftDelta - newShift, 0);
+                        nextShiftStart = Math.max(minStart, transform(upstream.shifted().getEndRange(idx - 1)));
+                        nextShiftEnd = transform(upstream.shifted().getBeginRange(idx - 1));
+                        if (nextShiftEnd < nextShiftStart) {
+                            continue;
+                        }
+                    }
+
+                    // insert range prior to here; note shift ends are inclusive so we need the -1 for endRange
+                    long innerEnd = nextShiftStart - 1 + (nextShiftDelta < 0 ? nextShiftDelta : 0);
+                    oShiftedBuilder.shiftRange(watermarkKey, innerEnd, newShift);
+
+                    if (idx == 0) {
                         continue;
                     }
+
+                    // insert this range
+                    oShiftedBuilder.shiftRange(nextShiftStart, nextShiftEnd, newShift + nextShiftDelta);
+                    watermarkKey = nextShiftEnd + 1 + (nextShiftDelta > 0 ? nextShiftDelta : 0);
                 }
 
-                // insert range prior to here; note shift ends are inclusive so we need the -1 for endRange
-                long innerEnd = nextShiftStart - 1 + (nextShiftDelta < 0 ? nextShiftDelta : 0);
-                oShiftedBuilder.shiftRange(watermarkKey, innerEnd, newShift);
-
-                if (idx <= 0) {
-                    continue;
-                }
-
-                // insert this range
-                oShiftedBuilder.shiftRange(nextShiftStart, nextShiftEnd, newShift + nextShiftDelta);
-                watermarkKey = nextShiftEnd + 1 + (nextShiftDelta > 0 ? nextShiftDelta : 0);
+                downstream.shifted = oShiftedBuilder.build();
+                downstream.shifted().apply(resultRowSet);
             }
 
-            downstream.shifted = oShiftedBuilder.build();
-            downstream.shifted().apply(rowSet);
-
             // Update pivot logic.
-            lastPivotChange = LogicalClock.DEFAULT.currentStep();
-            prevPivot = pivotPoint;
+            lastPivotPointChange = parent.getUpdateGraph().clock().currentStep();
+            prevPivotPoint = pivotPoint;
             pivotPoint += newShift;
         } else {
             downstream.shifted = RowSetShiftData.EMPTY;
@@ -194,7 +204,7 @@ public class ReverseOperation implements QueryTable.MemoizableOperation<QueryTab
 
         // added/modified are in post-shift keyspace
         downstream.added = transform(upstream.added());
-        rowSet.insert(downstream.added());
+        resultRowSet.insert(downstream.added());
         downstream.modified = transform(upstream.modified());
 
         Assert.eq(downstream.added().size(), "update.added.size()", upstream.added().size(), "upstream.added.size()");
@@ -209,59 +219,60 @@ public class ReverseOperation implements QueryTable.MemoizableOperation<QueryTab
             mcsTransformer.transform(upstream.modifiedColumnSet(), downstream.modifiedColumnSet);
         }
 
-        if (rowSet.size() != parentRowSet.size()) {
+        if (resultRowSet.size() != parentRowSet.size()) {
             QueryTable.log.error()
-                    .append("Size Mismatch: Result rowSet: ").append(rowSet)
-                    .append("Original rowSet: ").append(parentRowSet)
-                    .append("Upstream update: ").append(upstream)
-                    .append("Downstream update: ").append(downstream)
+                    .append("Size Mismatch: Result RowSet: ").append(resultRowSet)
+                    .append("Parent RowSet: ").append(parentRowSet)
+                    .append("Upstream Update: ").append(upstream)
+                    .append("Downstream Update: ").append(downstream)
                     .endl();
-            Assert.neq(rowSet.size(), "rowSet.size()", parentRowSet.size(), "parent.build().size()");
+            Assert.eq(resultRowSet.size(), "resultRowSet.size()", parentRowSet.size(), "parentRowSet.size()");
         }
 
         resultTable.notifyListeners(downstream);
-        resultSize = rowSet.size();
     }
 
-    private long computePivot(long maxInnerIndex) {
-        final long highestOneBit = Long.highestOneBit(maxInnerIndex);
-        if (highestOneBit > (Long.MAX_VALUE / PIVOT_GROWTH_FACTOR)) {
-            return Long.MAX_VALUE;
+    private static long computePivot(final long parentLastRowKey) {
+        final long highestOneBit = Long.highestOneBit(parentLastRowKey);
+        if (highestOneBit > (MAXIMUM_PIVOT / PIVOT_GROWTH_FACTOR)) {
+            return MAXIMUM_PIVOT;
         } else {
-            // make it big enough that we should be able to accommodate what we are adding now, plus a bit more
+            // Make it big enough that we should be able to accommodate what we are adding now, plus a bit more
             return Math.max(highestOneBit * PIVOT_GROWTH_FACTOR - 1, MINIMUM_PIVOT);
         }
     }
 
-    private long getPivotPrev() {
-        if ((prevPivot != pivotPoint) && (LogicalClock.DEFAULT.currentStep() != lastPivotChange)) {
-            prevPivot = pivotPoint;
+    private long getPrevPivotPoint() {
+        if ((prevPivotPoint != pivotPoint)) {
+            if (parent.getUpdateGraph().clock().currentStep() != lastPivotPointChange) {
+                prevPivotPoint = pivotPoint;
+            }
         }
-        return prevPivot;
+        return prevPivotPoint;
     }
 
     /**
-     * Transform an outer (reversed) RowSet to the inner (unreversed) RowSet, or vice versa.
+     * Transform an outer (reversed) RowSet to the inner (un-reversed) RowSet, or vice versa.
      *
-     * @param rowSetToTransform the outer RowSet
-     * @return the corresponding inner RowSet
+     * @param outerRowSet The outer (reversed) RowSet
+     * @return The corresponding inner RowSet
      */
-    public WritableRowSet transform(final RowSet rowSetToTransform) {
-        return transform(rowSetToTransform, false);
+    public WritableRowSet transform(@NotNull final RowSet outerRowSet) {
+        return transform(outerRowSet, false);
     }
 
     /**
-     * Transform an outer (reversed) RowSet to the inner (unreversed) RowSet as of the previous cycle, or vice versa.
+     * Transform an outer (reversed) RowSet to the inner (un-reversed) RowSet as of the previous cycle, or vice versa.
      *
-     * @param outerRowSet the outer RowSet
-     * @return the corresponding inner RowSet
+     * @param outerRowSet The outer (reversed) RowSet
+     * @return The corresponding inner RowSet
      */
-    public WritableRowSet transformPrev(final RowSet outerRowSet) {
+    public WritableRowSet transformPrev(@NotNull final RowSet outerRowSet) {
         return transform(outerRowSet, true);
     }
 
-    private WritableRowSet transform(final RowSet outerRowSet, final boolean usePrev) {
-        final long pivot = usePrev ? getPivotPrev() : pivotPoint;
+    private WritableRowSet transform(@NotNull final RowSet outerRowSet, final boolean usePrev) {
+        final long pivot = usePrev ? getPrevPivotPoint() : pivotPoint;
         final RowSetBuilderRandom reversedBuilder = RowSetFactory.builderRandom();
 
         for (final RowSet.RangeIterator rangeIterator = outerRowSet.rangeIterator(); rangeIterator.hasNext();) {
@@ -280,22 +291,22 @@ public class ReverseOperation implements QueryTable.MemoizableOperation<QueryTab
     }
 
     /**
-     * Transform an outer (reversed) RowSet to the inner (unreversed) RowSet, or vice versa.
+     * Transform an outer (reversed) row key to the inner (un-reversed) row key, or vice versa.
      *
-     * @param outerIndex the outer RowSet
-     * @return the corresponding inner RowSet
+     * @param outerRowKey The outer (reversed) row key
+     * @return The corresponding inner row key
      */
-    public long transform(long outerIndex) {
-        return (outerIndex < 0) ? outerIndex : pivotPoint - outerIndex;
+    public long transform(final long outerRowKey) {
+        return (outerRowKey < 0) ? outerRowKey : pivotPoint - outerRowKey;
     }
 
     /**
-     * Transform an outer (reversed) RowSet to the inner (unreversed) RowSet as of the previous cycle, or vice versa.
+     * Transform an outer (reversed) row key to the inner (un-reversed) row key as of the previous cycle, or vice versa.
      *
-     * @param outerIndex the outer RowSet
-     * @return the corresponding inner RowSet
+     * @param outerRowKey The outer (reversed) row key
+     * @return The corresponding inner row key
      */
-    public long transformPrev(long outerIndex) {
-        return (outerIndex < 0) ? outerIndex : getPivotPrev() - outerIndex;
+    public long transformPrev(final long outerRowKey) {
+        return (outerRowKey < 0) ? outerRowKey : getPrevPivotPoint() - outerRowKey;
     }
 }

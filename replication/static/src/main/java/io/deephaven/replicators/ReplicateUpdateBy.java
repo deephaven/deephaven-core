@@ -8,8 +8,10 @@ import org.jetbrains.annotations.NotNull;
 import java.io.File;
 import java.io.IOException;
 import java.nio.charset.Charset;
+import java.time.Instant;
 import java.util.Collections;
 import java.util.List;
+import java.util.Map;
 
 import static io.deephaven.replication.ReplicationUtils.*;
 
@@ -84,7 +86,7 @@ public class ReplicateUpdateBy {
                 fixupByte(f);
             }
 
-            if (f.contains("Long") && f.contains("MinMax")) {
+            if (f.contains("Long")) {
                 augmentLongWithReinterps(f);
             }
         }
@@ -93,13 +95,18 @@ public class ReplicateUpdateBy {
                 "engine/table/src/main/java/io/deephaven/engine/table/impl/updateby/prod/ShortCumProdOperator.java",
                 "engine/table/src/main/java/io/deephaven/engine/table/impl/updateby/prod/FloatCumProdOperator.java");
 
-        replicateNumericOperator(
-                "engine/table/src/main/java/io/deephaven/engine/table/impl/updateby/ema/ShortEMAOperator.java",
-                "engine/table/src/main/java/io/deephaven/engine/table/impl/updateby/ema/FloatEMAOperator.java");
-
-        replicateNumericOperator(
-                "engine/table/src/main/java/io/deephaven/engine/table/impl/updateby/rollingsum/ShortRollingSumOperator.java",
-                "engine/table/src/main/java/io/deephaven/engine/table/impl/updateby/rollingsum/FloatRollingSumOperator.java");
+        files = ReplicatePrimitiveCode.charToAllButBooleanAndFloats(
+                "engine/table/src/main/java/io/deephaven/engine/table/impl/updateby/em/CharEMOperator.java");
+        for (final String f : files) {
+            if (f.contains("Integer")) {
+                fixupInteger(f);
+            }
+            if (f.contains("Byte")) {
+                fixupByte(f);
+            }
+        }
+        ReplicatePrimitiveCode.floatToAllFloatingPoints(
+                "engine/table/src/main/java/io/deephaven/engine/table/impl/updateby/em/FloatEMOperator.java");
 
         files = ReplicatePrimitiveCode.charToIntegers(
                 "engine/table/src/main/java/io/deephaven/engine/table/impl/updateby/rollingavg/CharRollingAvgOperator.java",
@@ -132,6 +139,62 @@ public class ReplicateUpdateBy {
                 fixupInteger(f);
             }
         }
+
+        files = ReplicatePrimitiveCode.charToAllButBoolean(
+                "engine/table/src/main/java/io/deephaven/engine/table/impl/updateby/delta/CharDeltaOperator.java",
+                exemptions);
+        for (final String f : files) {
+            if (f.contains("Int")) {
+                fixupInteger(f);
+            }
+        }
+
+        files = ReplicatePrimitiveCode.charToAllButBoolean(
+                "engine/table/src/main/java/io/deephaven/engine/table/impl/updateby/rollingcount/CharRollingCountOperator.java");
+        for (final String f : files) {
+            if (f.contains("Integer")) {
+                fixupInteger(f);
+            }
+
+            if (f.contains("Byte")) {
+                fixupByte(f);
+            }
+        }
+
+        files = ReplicatePrimitiveCode.charToAllButBoolean(
+                "engine/table/src/main/java/io/deephaven/engine/table/impl/updateby/rollingstd/CharRollingStdOperator.java");
+        for (final String f : files) {
+            if (f.contains("Integer")) {
+                fixupInteger(f);
+            }
+            if (f.contains("Byte")) {
+                fixupByte(f);
+            }
+        }
+
+        files = ReplicatePrimitiveCode.charToAllButBoolean(
+                "engine/table/src/main/java/io/deephaven/engine/table/impl/updateby/rollingwavg/CharRollingWAvgOperator.java");
+        for (final String f : files) {
+            if (f.contains("Integer")) {
+                fixupInteger(f);
+            }
+        }
+
+        files = ReplicatePrimitiveCode.charToIntegers(
+                "engine/table/src/main/java/io/deephaven/engine/table/impl/updateby/emstd/CharEmStdOperator.java",
+                exemptions);
+        for (final String f : files) {
+            if (f.contains("Int")) {
+                fixupInteger(f);
+            }
+
+            if (f.contains("Byte")) {
+                fixupByte(f);
+            }
+        }
+        ReplicatePrimitiveCode.floatToAllFloatingPoints(
+                "engine/table/src/main/java/io/deephaven/engine/table/impl/updateby/emstd/FloatEmStdOperator.java");
+
     }
 
     private static void replicateNumericOperator(@NotNull final String shortClass, @NotNull final String floatClass)
@@ -348,12 +411,10 @@ public class ReplicateUpdateBy {
     private static void augmentLongWithReinterps(final String longResult) throws IOException {
         final File objectFile = new File(longResult);
         List<String> lines = FileUtils.readLines(objectFile, Charset.defaultCharset());
-        lines = addImport(lines, "import io.deephaven.engine.table.ColumnSource;",
-                "import java.util.Map;",
-                "import java.util.Collections;",
-                "import io.deephaven.time.DateTime;",
-                "import java.time.Instant;",
+        lines = addImport(lines,
+                "import io.deephaven.engine.table.ColumnSource;",
                 "import io.deephaven.engine.table.impl.sources.ReinterpretUtils;");
+        lines = addImport(lines, Instant.class, Map.class, Collections.class);
         lines = replaceRegion(lines, "extra-fields",
                 Collections.singletonList("    private final Class<?> type;"));
         lines = replaceRegion(lines, "extra-constructor-args",
@@ -366,8 +427,8 @@ public class ReplicateUpdateBy {
                                 "    @Override\n" +
                                 "    public Map<String, ColumnSource<?>> getOutputColumns() {\n" +
                                 "        final ColumnSource<?> actualOutput;\n" +
-                                "        if(type == DateTime.class) {\n" +
-                                "            actualOutput = ReinterpretUtils.longToDateTimeSource(outputSource);\n" +
+                                "        if(type == Instant.class) {\n" +
+                                "            actualOutput = ReinterpretUtils.longToInstantSource(outputSource);\n" +
                                 "        } else {\n" +
                                 "            actualOutput = outputSource;\n" +
                                 "        }\n" +

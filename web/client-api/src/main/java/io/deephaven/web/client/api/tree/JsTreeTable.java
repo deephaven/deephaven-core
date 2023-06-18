@@ -5,6 +5,8 @@ package io.deephaven.web.client.api.tree;
 
 import com.vertispan.tsdefs.annotations.TsInterface;
 import com.vertispan.tsdefs.annotations.TsName;
+import com.vertispan.tsdefs.annotations.TsUnion;
+import com.vertispan.tsdefs.annotations.TsUnionMember;
 import elemental2.core.JsArray;
 import elemental2.core.JsObject;
 import elemental2.core.Uint8Array;
@@ -52,6 +54,8 @@ import jsinterop.annotations.JsIgnore;
 import jsinterop.annotations.JsMethod;
 import jsinterop.annotations.JsNullable;
 import jsinterop.annotations.JsOptional;
+import jsinterop.annotations.JsOverlay;
+import jsinterop.annotations.JsPackage;
 import jsinterop.annotations.JsProperty;
 import jsinterop.annotations.JsType;
 import jsinterop.base.Any;
@@ -836,11 +840,11 @@ public class JsTreeTable extends HasLifecycle {
      * row index, or the row object itself. The second parameter is a boolean value, false by default, specifying if the
      * row and all descendants should be fully expanded. Equivalent to `setExpanded(row, true)` with an optional third
      * boolean parameter.
-     * 
+     *
      * @param row
      * @param expandDescendants
      */
-    public void expand(Any row, @JsOptional Boolean expandDescendants) {
+    public void expand(RowReferenceUnion row, @JsOptional Boolean expandDescendants) {
         setExpanded(row, true, expandDescendants);
     }
 
@@ -850,8 +854,34 @@ public class JsTreeTable extends HasLifecycle {
      *
      * @param row
      */
-    public void collapse(Any row) {
+    public void collapse(RowReferenceUnion row) {
         setExpanded(row, false, false);
+    }
+
+    @TsUnion
+    @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
+    public interface RowReferenceUnion {
+        @JsOverlay
+        default boolean isTreeRow() {
+            return this instanceof TreeRow;
+        }
+
+        @JsOverlay
+        default boolean isNumber() {
+            return (Object) this instanceof Double;
+        }
+
+        @JsOverlay
+        @TsUnionMember
+        default TreeRow asTreeRow() {
+            return Js.cast(this);
+        }
+
+        @JsOverlay
+        @TsUnionMember
+        default double asNumber() {
+            return Js.asDouble(this);
+        }
     }
 
     /**
@@ -863,7 +893,7 @@ public class JsTreeTable extends HasLifecycle {
      * @param isExpanded
      * @param expandDescendants
      */
-    public void setExpanded(Any row, boolean isExpanded, @JsOptional Boolean expandDescendants) {
+    public void setExpanded(RowReferenceUnion row, boolean isExpanded, @JsOptional Boolean expandDescendants) {
         // TODO check row number is within bounds
         final double action;
         if (!isExpanded) {
@@ -875,10 +905,10 @@ public class JsTreeTable extends HasLifecycle {
         }
 
         final TreeRow r;
-        if ("number".equals(Js.typeof(row))) {
-            r = currentViewportData.rows.getAt((int) (row.asDouble() - currentViewportData.offset));
-        } else if (row instanceof TreeRow) {
-            r = (TreeRow) row;
+        if (row.isNumber()) {
+            r = currentViewportData.rows.getAt((int) (row.asNumber() - currentViewportData.offset));
+        } else if (row.isTreeRow()) {
+            r = row.asTreeRow();
         } else {
             throw new IllegalArgumentException("row parameter must be an index or a row");
         }
@@ -900,13 +930,15 @@ public class JsTreeTable extends HasLifecycle {
      * @return true if the given row is expanded, false otherwise. Equivalent to `TreeRow.isExpanded`, if an instance of
      *         the row is available.
      */
-    public boolean isExpanded(Object row) {
-        if (row instanceof Double) {
-            row = currentViewportData.rows.getAt((int) ((double) row - currentViewportData.offset));
-        } else if (!(row instanceof TreeRow)) {
+    public boolean isExpanded(RowReferenceUnion row) {
+        final TreeRow r;
+        if (row.isNumber()) {
+            r = currentViewportData.rows.getAt((int) (row.asNumber() - currentViewportData.offset));
+        } else if (row.isTreeRow()) {
+            r = row.asTreeRow();
+        } else {
             throw new IllegalArgumentException("row parameter must be an index or a row");
         }
-        TreeRow r = (TreeRow) row;
 
         return r.isExpanded();
     }
@@ -936,10 +968,20 @@ public class JsTreeTable extends HasLifecycle {
         return promise.asPromise();
     }
 
+    @JsProperty(name = "isClosed")
+    public boolean isClosed() {
+        return closed;
+    }
+
     /**
      * Indicates that the table will no longer be used, and server resources can be freed.
      */
     public void close() {
+        if (closed) {
+            return;
+        }
+        closed = true;
+
         JsLog.debug("Closing tree table", this);
 
         connection.unregisterSimpleReconnectable(this);
@@ -978,7 +1020,7 @@ public class JsTreeTable extends HasLifecycle {
 
     /**
      * Applies the given sort to all levels of the tree. Returns the previous sort in use.
-     * 
+     *
      * @param sort
      * @return
      */
@@ -1116,31 +1158,31 @@ public class JsTreeTable extends HasLifecycle {
         });
     }
 
-    // @JsMethod
-    // public Promise<JsTotalsTableConfig> getTotalsTableConfig() {
-    // // we want to communicate to the JS dev that there is no default config, so we allow
-    // // returning null here, rather than a default config. They can then easily build a
-    // // default config, but without this ability, there is no way to indicate that the
-    // // config omitted a totals table
-    // return sourceTable.get().then(t -> Promise.resolve(t.getTotalsTableConfig()));
-    // }
-    //
-    // @JsMethod
-    // public Promise<JsTotalsTable> getTotalsTable(@JsOptional Object config) {
-    // return sourceTable.get().then(t -> {
-    // // if this is the first time it is used, it might not be filtered correctly, so check that the filters match
-    // // up.
-    // if (!t.getFilter().asList().equals(getFilter().asList())) {
-    // t.applyFilter(getFilter().asArray(new FilterCondition[0]));
-    // }
-    // return Promise.resolve(t.getTotalsTable(config));
-    // });
-    // }
-    //
-    // @JsMethod
-    // public Promise<JsTotalsTable> getGrandTotalsTable(@JsOptional Object config) {
-    // return sourceTable.get().then(t -> Promise.resolve(t.getGrandTotalsTable(config)));
-    // }
+    @JsMethod
+    public Promise<JsTotalsTableConfig> getTotalsTableConfig() {
+        // we want to communicate to the JS dev that there is no default config, so we allow
+        // returning null here, rather than a default config. They can then easily build a
+        // default config, but without this ability, there is no way to indicate that the
+        // config omitted a totals table
+        return sourceTable.get().then(t -> Promise.resolve(t.getTotalsTableConfig()));
+    }
+
+    @JsMethod
+    public Promise<JsTotalsTable> getTotalsTable(@JsOptional Object config) {
+        return sourceTable.get().then(t -> {
+            // if this is the first time it is used, it might not be filtered correctly, so check that the filters match
+            // up.
+            if (!t.getFilter().asList().equals(getFilter().asList())) {
+                t.applyFilter(getFilter().asArray(new FilterCondition[0]));
+            }
+            return Promise.resolve(t.getTotalsTable(config));
+        });
+    }
+
+    @JsMethod
+    public Promise<JsTotalsTable> getGrandTotalsTable(@JsOptional Object config) {
+        return sourceTable.get().then(t -> Promise.resolve(t.getGrandTotalsTable(config)));
+    }
 
     // TODO core#279 restore this with protobuf once smartkey has some pb-based analog
     // private static final int SERIALIZED_VERSION = 1;

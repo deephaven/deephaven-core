@@ -5,18 +5,18 @@
  */
 package io.deephaven.engine.table.impl.updateby.fill;
 
-import io.deephaven.engine.table.ColumnSource;
+import java.time.Instant;
 import java.util.Map;
 import java.util.Collections;
-import io.deephaven.time.DateTime;
-import java.time.Instant;
+
+import io.deephaven.engine.table.ColumnSource;
 import io.deephaven.engine.table.impl.sources.ReinterpretUtils;
 
 import io.deephaven.base.verify.Assert;
 import io.deephaven.chunk.LongChunk;
 import io.deephaven.chunk.Chunk;
 import io.deephaven.chunk.attributes.Values;
-import io.deephaven.engine.table.MatchPair;
+import io.deephaven.engine.table.impl.MatchPair;
 import io.deephaven.engine.table.impl.updateby.UpdateByOperator;
 import io.deephaven.engine.table.impl.updateby.internal.BaseLongUpdateByOperator;
 import io.deephaven.engine.table.impl.util.RowRedirection;
@@ -38,8 +38,8 @@ public class LongFillByOperator extends BaseLongUpdateByOperator {
         }
 
         @Override
-        public void setValuesChunk(@NotNull final Chunk<? extends Values> valuesChunk) {
-            longValueChunk = valuesChunk.asLongChunk();
+        public void setValueChunks(@NotNull final Chunk<? extends Values>[] valueChunks) {
+            longValueChunk = valueChunks[0].asLongChunk();
         }
 
         @Override
@@ -67,8 +67,8 @@ public class LongFillByOperator extends BaseLongUpdateByOperator {
 
     @NotNull
     @Override
-    public UpdateByOperator.Context makeUpdateContext(final int chunkSize) {
-        return new Context(chunkSize);
+    public UpdateByOperator.Context makeUpdateContext(final int affectedChunkSize, final int influencerChunkSize) {
+        return new Context(affectedChunkSize);
     }
 
     // region extra-methods
@@ -76,8 +76,8 @@ public class LongFillByOperator extends BaseLongUpdateByOperator {
     @Override
     public Map<String, ColumnSource<?>> getOutputColumns() {
         final ColumnSource<?> actualOutput;
-        if(type == DateTime.class) {
-            actualOutput = ReinterpretUtils.longToDateTimeSource(outputSource);
+        if(type == Instant.class) {
+            actualOutput = ReinterpretUtils.longToInstantSource(outputSource);
         } else {
             actualOutput = outputSource;
         }

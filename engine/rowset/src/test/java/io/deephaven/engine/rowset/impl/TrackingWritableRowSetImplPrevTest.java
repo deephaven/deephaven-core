@@ -3,29 +3,21 @@
  */
 package io.deephaven.engine.rowset.impl;
 
+import io.deephaven.engine.context.ExecutionContext;
 import io.deephaven.engine.rowset.RowSetFactory;
 import io.deephaven.engine.rowset.TrackingRowSet;
 import io.deephaven.engine.rowset.TrackingWritableRowSet;
-import io.deephaven.engine.updategraph.LogicalClock;
-import io.deephaven.engine.updategraph.UpdateGraphProcessor;
-import org.junit.After;
-import org.junit.Before;
+import io.deephaven.engine.testutil.junit4.EngineCleanup;
+import io.deephaven.engine.updategraph.LogicalClockImpl;
+import org.junit.Rule;
 import org.junit.Test;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 
 public class TrackingWritableRowSetImplPrevTest {
-    @Before
-    public void setUp() throws Exception {
-        UpdateGraphProcessor.DEFAULT.enableUnitTestMode();
-        UpdateGraphProcessor.DEFAULT.resetForUnitTests(false);
-    }
-
-    @After
-    public void tearDown() throws Exception {
-        UpdateGraphProcessor.DEFAULT.resetForUnitTests(true);
-    }
+    @Rule
+    final public EngineCleanup engineCleanup = new EngineCleanup();
 
     @Test
     public void testPrevWithEmptyConstruction() {
@@ -44,7 +36,8 @@ public class TrackingWritableRowSetImplPrevTest {
         ix.insert(2L);
         assertEquals(1L, ix.sizePrev());
         assertEquals(1L, ix.firstRowKeyPrev());
-        LogicalClock.DEFAULT.startUpdateCycle();
+        final LogicalClockImpl clock = (LogicalClockImpl) ExecutionContext.getContext().getUpdateGraph().clock();
+        clock.startUpdateCycle();
         assertEquals(2L, ix.sizePrev());
         assertEquals(2L, ix.lastRowKeyPrev());
         ix.insert(3L);
@@ -55,7 +48,7 @@ public class TrackingWritableRowSetImplPrevTest {
         assertEquals(4L, ix.size());
         assertEquals(2L, ix.sizePrev());
         assertEquals(2L, ix.lastRowKeyPrev());
-        LogicalClock.DEFAULT.completeUpdateCycle();
+        clock.completeUpdateCycle();
         assertEquals(4L, ix.size());
         assertEquals(2L, ix.sizePrev());
         assertEquals(2L, ix.lastRowKeyPrev());
@@ -63,7 +56,7 @@ public class TrackingWritableRowSetImplPrevTest {
         assertEquals(5L, ix.size());
         assertEquals(2L, ix.sizePrev());
         assertEquals(2L, ix.lastRowKeyPrev());
-        LogicalClock.DEFAULT.startUpdateCycle();
+        clock.startUpdateCycle();
         assertEquals(5L, ix.size());
         assertEquals(5L, ix.sizePrev());
         assertEquals(5L, ix.lastRowKeyPrev());
@@ -85,7 +78,8 @@ public class TrackingWritableRowSetImplPrevTest {
         assertEquals(2L, ix.sizePrev());
         assertEquals(1L, ix.firstRowKeyPrev());
         assertEquals(3L, ix.lastRowKeyPrev());
-        LogicalClock.DEFAULT.startUpdateCycle();
+        final LogicalClockImpl clock = (LogicalClockImpl) ExecutionContext.getContext().getUpdateGraph().clock();
+        clock.startUpdateCycle();
         assertEquals(3L, ix.sizePrev());
         assertEquals(1L, ix.firstRowKeyPrev());
         assertEquals(5L, ix.lastRowKeyPrev());
@@ -99,7 +93,7 @@ public class TrackingWritableRowSetImplPrevTest {
         assertEquals(3L, ix.sizePrev());
         assertEquals(1L, ix.firstRowKeyPrev());
         assertEquals(5L, ix.lastRowKeyPrev());
-        LogicalClock.DEFAULT.completeUpdateCycle();
+        clock.completeUpdateCycle();
         assertEquals(5L, ix.size());
         assertEquals(3L, ix.sizePrev());
         assertEquals(1L, ix.firstRowKeyPrev());
@@ -109,7 +103,7 @@ public class TrackingWritableRowSetImplPrevTest {
         assertEquals(3L, ix.sizePrev());
         assertEquals(1L, ix.firstRowKeyPrev());
         assertEquals(5L, ix.lastRowKeyPrev());
-        LogicalClock.DEFAULT.startUpdateCycle();
+        clock.startUpdateCycle();
         assertEquals(6L, ix.size());
         assertEquals(6L, ix.sizePrev());
         assertEquals(11L, ix.lastRowKeyPrev());
@@ -117,41 +111,42 @@ public class TrackingWritableRowSetImplPrevTest {
 
     @Test
     public void testPrevWithSingleThenRspThenEmptyThenSingle() {
-        LogicalClock.DEFAULT.resetForUnitTests();
+        final LogicalClockImpl clock = (LogicalClockImpl) ExecutionContext.getContext().getUpdateGraph().clock();
+        clock.resetForUnitTests();
         final TrackingWritableRowSet ix = RowSetFactory.fromKeys(1L).toTracking();
         assertEquals(1L, ix.size());
         assertEquals(1L, ix.firstRowKey());
         assertEquals(1L, ix.sizePrev());
         assertEquals(1L, ix.firstRowKeyPrev());
-        LogicalClock.DEFAULT.startUpdateCycle();
+        clock.startUpdateCycle();
         ix.insert(3L);
         assertEquals(2L, ix.size());
         assertEquals(3L, ix.lastRowKey());
         assertEquals(1L, ix.sizePrev());
         assertEquals(1L, ix.firstRowKeyPrev());
-        LogicalClock.DEFAULT.completeUpdateCycle();
+        clock.completeUpdateCycle();
         assertEquals(1L, ix.sizePrev());
         assertEquals(1L, ix.lastRowKeyPrev());
-        LogicalClock.DEFAULT.startUpdateCycle();
+        clock.startUpdateCycle();
         assertEquals(2L, ix.sizePrev());
         assertEquals(3L, ix.lastRowKeyPrev());
-        LogicalClock.DEFAULT.completeUpdateCycle();
+        clock.completeUpdateCycle();
         assertEquals(2L, ix.sizePrev());
         assertEquals(3L, ix.lastRowKeyPrev());
-        LogicalClock.DEFAULT.startUpdateCycle();
+        clock.startUpdateCycle();
         ix.removeRange(0, 4);
         assertEquals(2L, ix.sizePrev());
         assertEquals(3L, ix.lastRowKeyPrev());
-        LogicalClock.DEFAULT.completeUpdateCycle();
+        clock.completeUpdateCycle();
         assertEquals(2L, ix.sizePrev());
         assertEquals(3L, ix.lastRowKeyPrev());
-        LogicalClock.DEFAULT.startUpdateCycle();
+        clock.startUpdateCycle();
         assertTrue(ix.copyPrev().isEmpty());
         ix.insert(1L);
         assertTrue(ix.copyPrev().isEmpty());
-        LogicalClock.DEFAULT.completeUpdateCycle();
+        clock.completeUpdateCycle();
         assertTrue(ix.copyPrev().isEmpty());
-        LogicalClock.DEFAULT.startUpdateCycle();
+        clock.startUpdateCycle();
         assertEquals(1L, ix.sizePrev());
         assertEquals(1L, ix.lastRowKeyPrev());
     }

@@ -67,7 +67,6 @@ public class JsRollupConfig {
      * as if they were Column.constituentType instead of Column.type. Defaults to false.
      */
     public boolean includeConstituents = false;
-    // TODO optional
     @JsNullable
     public boolean includeOriginalColumns = false;
     /**

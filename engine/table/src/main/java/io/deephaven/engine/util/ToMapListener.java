@@ -3,9 +3,9 @@
  */
 package io.deephaven.engine.util;
 
+import io.deephaven.engine.context.ExecutionContext;
 import io.deephaven.engine.table.Table;
 import io.deephaven.engine.table.TableUpdate;
-import io.deephaven.engine.updategraph.UpdateGraphProcessor;
 import io.deephaven.engine.table.impl.perf.QueryPerformanceRecorder;
 import io.deephaven.engine.table.impl.InstrumentedTableUpdateListenerAdapter;
 import io.deephaven.engine.table.ColumnSource;
@@ -54,20 +54,17 @@ public class ToMapListener<K, V> extends InstrumentedTableUpdateListenerAdapter 
 
     public static <K1, V1> ToMapListener<K1, V1> make(Table source, ColumnSource<K1> keySource,
             ColumnSource<V1> valueSource) {
-        // noinspection unchecked
         return QueryPerformanceRecorder.withNugget("ToMapListener",
                 () -> new ToMapListener<>(source, keySource, valueSource));
     }
 
     public static <K1, V1> ToMapListener<K1, V1> make(Table source, LongFunction<K1> keyProducer,
             LongFunction<K1> prevKeyProducer, LongFunction<V1> valueProducer, LongFunction<V1> prevValueProducer) {
-        // noinspection unchecked
         return QueryPerformanceRecorder.withNugget("ToMapListener",
                 () -> new ToMapListener<>(source, keyProducer, prevKeyProducer, valueProducer, prevValueProducer));
     }
 
     private ToMapListener(Table source, String keySourceName, String valueSourceName) {
-        // noinspection unchecked
         this(source, source.getColumnSource(keySourceName), source.getColumnSource(valueSourceName));
     }
 
@@ -107,7 +104,7 @@ public class ToMapListener<K, V> extends InstrumentedTableUpdateListenerAdapter 
         upstream.modified().forAllRowKeys(adder);
 
         currentMap = newMap;
-        UpdateGraphProcessor.DEFAULT.addNotification(new Flusher());
+        getUpdateGraph().addNotification(new Flusher());
     }
 
     @Override
@@ -158,7 +155,7 @@ public class ToMapListener<K, V> extends InstrumentedTableUpdateListenerAdapter 
      * @return the value associated with key
      */
     public <T> T get(K key, LongFunction<T> valueProducer, LongFunction<T> prevValueProducer) {
-        final LogicalClock.State state = LogicalClock.DEFAULT.currentState();
+        final LogicalClock.State state = getUpdateGraph().clock().currentState();
         final TObjectLongHashMap<Object> map;
         if (state == LogicalClock.State.Idle && (map = currentMap) != null) {
             final long row = map.get(key);

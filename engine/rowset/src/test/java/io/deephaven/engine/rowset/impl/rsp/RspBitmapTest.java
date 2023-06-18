@@ -14,6 +14,7 @@ import io.deephaven.engine.rowset.chunkattributes.OrderedRowKeys;
 import io.deephaven.engine.rowset.impl.*;
 import io.deephaven.engine.rowset.impl.rsp.container.ArrayContainer;
 import io.deephaven.engine.rowset.impl.rsp.container.Container;
+import io.deephaven.engine.rowset.impl.sortedranges.SortedRanges;
 import io.deephaven.test.types.OutOfBandTest;
 import io.deephaven.util.datastructures.LongAbortableConsumer;
 import org.apache.commons.lang3.mutable.MutableInt;
@@ -3673,7 +3674,7 @@ public class RspBitmapTest {
         rb = rb.add(2 * BLOCK_SIZE + BLOCK_LAST);
         rb = rb.addRange(3 * BLOCK_SIZE, 3 * BLOCK_SIZE + BLOCK_LAST);
         final OrderedLongSet.BuilderSequential b = new OrderedLongSetBuilderSequential();
-        rb.invert(b, new TrackingWritableRowSetImpl(rb).rangeIterator(), rb.getCardinality());
+        rb.invert(b, new WritableRowSetImpl(rb).rangeIterator(), rb.getCardinality());
         final OrderedLongSet timpl = b.getOrderedLongSet();
         assertEquals(rb.getCardinality(), timpl.ixCardinality());
         assertTrue(timpl.ixContainsRange(0, rb.getCardinality() - 1));
@@ -4379,7 +4380,7 @@ public class RspBitmapTest {
         final long v0 = 10;
         final long v1 = 10 + BLOCK_SIZE;
         final RspBitmap rsp = vs2rb(v0, v1);
-        final RowSet r = new TrackingWritableRowSetImpl(rsp);
+        final RowSet r = new WritableRowSetImpl(rsp);
         final RowSet.SearchIterator sit = r.searchIterator();
         final long ans1 = sit.binarySearchValue((long k, int ignored) -> Long.compare(v0, k), 1);
         assertEquals(v0, ans1);
@@ -4395,7 +4396,7 @@ public class RspBitmapTest {
         final long rangeStart1 = BLOCK_SIZE;
         final long rangeLast1 = BLOCK_SIZE + BLOCK_LAST;
         final RspBitmap rsp = vs2rb(value0, rangeStart1, -rangeLast1);
-        final RowSet r = new TrackingWritableRowSetImpl(rsp);
+        final RowSet r = new WritableRowSetImpl(rsp);
         final RowSet.SearchIterator sit = r.searchIterator();
         final long ans1 = sit.binarySearchValue((long k, int ignored) -> Long.compare(value0, k), 1);
         assertEquals(value0, ans1);
@@ -4490,5 +4491,16 @@ public class RspBitmapTest {
         final RspBitmap r2 = new RspBitmap(r1, 0, 0);
         assertEquals(r2.ixCardinality(), r1.ixCardinality());
         assertTrue(r2.ixMinusOnNew(r1).ixIsEmpty());
+    }
+
+    @Test
+    public void testRegressionGitHubIssue2517() {
+        final SortedRanges sr = SortedRanges.makeSingleRange(10, 20);
+        final RspBitmap other = RspBitmap.makeSingleRange(65536 + 10, 65536 + 11);
+        OrderedLongSet olset = sr.ixInsertWithShift(0, other);
+        olset = olset.ixAppendRange(65536 + 200, 65536 + 300);
+        assertEquals(2, other.getCardinality());
+        assertEquals(65536 + 10, other.first());
+        assertEquals(65536 + 11, other.last());
     }
 }

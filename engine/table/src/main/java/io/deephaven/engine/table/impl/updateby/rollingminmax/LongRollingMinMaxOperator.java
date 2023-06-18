@@ -10,7 +10,7 @@ import io.deephaven.base.verify.Assert;
 import io.deephaven.chunk.Chunk;
 import io.deephaven.chunk.LongChunk;
 import io.deephaven.chunk.attributes.Values;
-import io.deephaven.engine.table.MatchPair;
+import io.deephaven.engine.table.impl.MatchPair;
 import io.deephaven.engine.table.impl.updateby.UpdateByOperator;
 import io.deephaven.engine.table.impl.updateby.internal.BaseLongUpdateByOperator;
 import io.deephaven.engine.table.impl.util.RowRedirection;
@@ -30,8 +30,8 @@ public class LongRollingMinMaxOperator extends BaseLongUpdateByOperator {
         protected AggregatingLongRingBuffer aggMinMax;
         protected boolean evaluationNeeded;
 
-        protected Context(final int chunkSize) {
-            super(chunkSize);
+        protected Context(final int affectedChunkSize, final int influencerChunkSize) {
+            super(affectedChunkSize);
             if (isMax) {
                 aggMinMax = new AggregatingLongRingBuffer(BUFFER_INITIAL_CAPACITY, Long.MIN_VALUE, (a, b) -> {
                     if (a == NULL_LONG) {
@@ -62,8 +62,8 @@ public class LongRollingMinMaxOperator extends BaseLongUpdateByOperator {
         }
 
         @Override
-        public void setValuesChunk(@NotNull final Chunk<? extends Values> valuesChunk) {
-            longInfluencerValuesChunk = valuesChunk.asLongChunk();
+        public void setValueChunks(@NotNull final Chunk<? extends Values>[] valueChunks) {
+            longInfluencerValuesChunk = valueChunks[0].asLongChunk();
         }
 
         @Override
@@ -133,8 +133,8 @@ public class LongRollingMinMaxOperator extends BaseLongUpdateByOperator {
 
     @NotNull
     @Override
-    public UpdateByOperator.Context makeUpdateContext(final int chunkSize) {
-        return new Context(chunkSize);
+    public UpdateByOperator.Context makeUpdateContext(final int affectedChunkSize, final int influencerChunkSize) {
+        return new Context(affectedChunkSize, influencerChunkSize);
     }
 
     public LongRollingMinMaxOperator(@NotNull final MatchPair pair,

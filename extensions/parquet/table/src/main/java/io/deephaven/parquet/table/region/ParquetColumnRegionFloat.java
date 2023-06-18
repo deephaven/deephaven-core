@@ -26,14 +26,16 @@ public final class ParquetColumnRegionFloat<ATTR extends Any> extends ParquetCol
         super(columnChunkPageStore.mask(), columnChunkPageStore);
     }
 
+    // region getBytes
+    // endregion getBytes
+
     @Override
-    public float getFloat(final long elementIndex) {
-        final ChunkPage<ATTR> page = getChunkPageContaining(elementIndex);
+    public float getFloat(final long rowKey) {
+        final ChunkPage<ATTR> page = getChunkPageContaining(rowKey);
         try {
-            return page.asFloatChunk().get(page.getChunkOffset(elementIndex));
+            return page.asFloatChunk().get(page.getChunkOffset(rowKey));
         } catch (Exception e) {
-            throw new TableDataException("Error retrieving float at table float rowSet " + elementIndex
-                    + ", from a parquet table", e);
+            throw new TableDataException("Error retrieving float at row key " + rowKey + " from a parquet table", e);
         }
     }
 }

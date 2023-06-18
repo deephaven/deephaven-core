@@ -190,4 +190,4 @@ pageviews_summary = pageviews_stg \
             agg.count_('total'),
             agg.max_(['max_received_at = received_at'])
         ]) \
-    .update(['dt_ms = (DateTime.now() - max_received_at)/1_000_000.0'])
+    .update(['dt_ms = (DateTimeUtils.now() - max_received_at)/1_000_000.0'])

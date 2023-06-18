@@ -3,6 +3,7 @@
  */
 package io.deephaven.server.console;
 
+import com.google.common.base.Throwables;
 import com.google.rpc.Code;
 import io.deephaven.base.LockFreeArrayQueue;
 import io.deephaven.configuration.Configuration;
@@ -19,6 +20,7 @@ import io.deephaven.io.logger.LogBuffer;
 import io.deephaven.io.logger.LogBufferRecord;
 import io.deephaven.io.logger.LogBufferRecordListener;
 import io.deephaven.io.logger.Logger;
+import io.deephaven.lang.completion.CustomCompletion;
 import io.deephaven.proto.backplane.grpc.FieldInfo;
 import io.deephaven.proto.backplane.grpc.FieldsChangeUpdate;
 import io.deephaven.proto.backplane.grpc.Ticket;
@@ -43,6 +45,7 @@ import javax.inject.Provider;
 import javax.inject.Singleton;
 import java.util.Map;
 import java.util.Objects;
+import java.util.Set;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 import static io.deephaven.extensions.barrage.util.GrpcUtil.safelyComplete;
@@ -74,18 +77,20 @@ public class ConsoleServiceGrpcImpl extends ConsoleServiceGrpc.ConsoleServiceImp
     private final Provider<ScriptSession> scriptSessionProvider;
     private final Scheduler scheduler;
     private final LogBuffer logBuffer;
+    private final Set<CustomCompletion.Factory> customCompletionFactory;
 
     @Inject
     public ConsoleServiceGrpcImpl(final TicketRouter ticketRouter,
             final SessionService sessionService,
             final Provider<ScriptSession> scriptSessionProvider,
             final Scheduler scheduler,
-            final LogBuffer logBuffer) {
+            final LogBuffer logBuffer, Set<CustomCompletion.Factory> customCompletionFactory) {
         this.ticketRouter = ticketRouter;
         this.sessionService = sessionService;
         this.scriptSessionProvider = scriptSessionProvider;
         this.scheduler = Objects.requireNonNull(scheduler);
         this.logBuffer = Objects.requireNonNull(logBuffer);
+        this.customCompletionFactory = customCompletionFactory;
     }
 
     @Override
@@ -176,8 +181,11 @@ public class ConsoleServiceGrpcImpl extends ConsoleServiceGrpc.ConsoleServiceImp
                             .forEach(entry -> fieldChanges.addUpdated(makeVariableDefinition(entry)));
                     changes.removed.entrySet()
                             .forEach(entry -> fieldChanges.addRemoved(makeVariableDefinition(entry)));
-                    responseObserver.onNext(diff.setChanges(fieldChanges).build());
-                    responseObserver.onCompleted();
+                    if (changes.error != null) {
+                        diff.setErrorMessage(Throwables.getStackTraceAsString(changes.error));
+                        log.error().append("Error running script: ").append(changes.error).endl();
+                    }
+                    safelyComplete(responseObserver, diff.setChanges(fieldChanges).build());
                 });
     }
 
@@ -284,7 +292,7 @@ public class ConsoleServiceGrpcImpl extends ConsoleServiceGrpc.ConsoleServiceImp
                     : new NoopAutoCompleteObserver(session, responseObserver);
         }
 
-        return new JavaAutoCompleteObserver(session, responseObserver);
+        return new JavaAutoCompleteObserver(session, responseObserver, customCompletionFactory);
     }
 
     private static class NoopAutoCompleteObserver extends SessionCloseableObserver<AutoCompleteResponse>

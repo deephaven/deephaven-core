@@ -4,7 +4,7 @@ import io.deephaven.base.RingBuffer;
 import io.deephaven.chunk.Chunk;
 import io.deephaven.chunk.ObjectChunk;
 import io.deephaven.chunk.attributes.Values;
-import io.deephaven.engine.table.MatchPair;
+import io.deephaven.engine.table.impl.MatchPair;
 import io.deephaven.engine.table.impl.updateby.UpdateByOperator;
 import io.deephaven.engine.table.impl.updateby.internal.BaseObjectUpdateByOperator;
 import io.deephaven.engine.table.impl.util.RowRedirection;
@@ -36,8 +36,8 @@ public final class BigDecimalRollingSumOperator extends BaseObjectUpdateByOperat
 
 
         @Override
-        public void setValuesChunk(@NotNull final Chunk<? extends Values> valuesChunk) {
-            objectInfluencerValuesChunk = valuesChunk.asObjectChunk();
+        public void setValueChunks(@NotNull final Chunk<? extends Values>[] valueChunks) {
+            objectInfluencerValuesChunk = valueChunks[0].asObjectChunk();
         }
 
         @Override
@@ -93,8 +93,8 @@ public final class BigDecimalRollingSumOperator extends BaseObjectUpdateByOperat
 
     @NotNull
     @Override
-    public UpdateByOperator.Context makeUpdateContext(final int chunkSize) {
-        return new Context(chunkSize);
+    public UpdateByOperator.Context makeUpdateContext(final int affectedChunkSize, final int influencerChunkSize) {
+        return new Context(affectedChunkSize);
     }
 
     public BigDecimalRollingSumOperator(@NotNull final MatchPair pair,

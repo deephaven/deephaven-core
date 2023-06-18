@@ -1,17 +1,18 @@
-adbc-driver-manager==0.2.0
-adbc-driver-postgresql==0.2.0
+adbc-driver-manager==0.4.0
+adbc-driver-postgresql==0.4.0
 connectorx==0.3.1; platform.machine == 'x86_64'
 deephaven-plugin==0.3.0
 java-utilities==0.2.0
 jedi==0.18.2
 jpy==0.13.0
-llvmlite==0.39.1
-numba==0.56.4
-numpy==1.23.5
-pandas==1.5.3
+llvmlite==0.40.0
+numba==0.57.0
+numpy==1.24.3
+pandas==2.0.2
 parso==0.8.3
-pyarrow==11.0.0
+pyarrow==12.0.0
 python-dateutil==2.8.2
-pytz==2022.7.1
+pytz==2023.3
 six==1.16.0
-turbodbc==4.5.10
+turbodbc==4.6.0
+tzdata==2023.3

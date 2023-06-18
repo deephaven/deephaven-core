@@ -41,6 +41,9 @@ public class ConnectOptions {
     @Option(names = {"-u", "--user-agent"}, description = "The user-agent.")
     String userAgent;
 
+    @Option(names = {"--override-authority"}, description = "The override authority.")
+    String overrideAuthority;
+
     @Option(names = {"--max-inbound-message-size"}, description = "The maximum inbound message size, " +
             "defaults to 100MB")
     Integer maxInboundMessageSize;
@@ -55,6 +58,9 @@ public class ConnectOptions {
         final Builder builder = ClientConfig.builder().target(target);
         if (userAgent != null) {
             builder.userAgent(userAgent);
+        }
+        if (overrideAuthority != null) {
+            builder.overrideAuthority(overrideAuthority);
         }
         if (maxInboundMessageSize != null) {
             builder.maxInboundMessageSize(maxInboundMessageSize);

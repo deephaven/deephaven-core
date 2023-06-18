@@ -125,17 +125,19 @@ The specific action can be found based off of the name of the release branch: [?
 
 The "Publish" step creates the artifacts and publishes the jars to a [Maven Central staging repository](https://s01.oss.sonatype.org).
 
-The "Upload Applications" step uploads the Deephahven server application as a *temporary* GitHub action artifact.
+The "Upload Artifacts" step uploads the Deephaven server application, the deephaven-core wheel, and the deephaven-server wheel as *temporary* GitHub action artifacts.
 
 The "Publish deephaven-core to PyPi" uploads the deephaven-core wheel to [PyPi](https://pypi.org/project/deephaven-core/).
+If this step fails, the deephaven-core wheel from the "Upload Artifacts" step can be uploaded manually.
 
 The "Publish deephaven-server to PyPi" uploads the deephaven-server wheel to [PyPi](https://pypi.org/project/deephaven-server/).
+If this step fails, the deephaven-server wheel from the "Upload Artifacts" step can be uploaded manually.
 
 Once the workflow job is done, ensure all publication sources have the new artifacts.
 
 ### 5. Download artifacts
 
-Once the full publish-ci.yml worflow is done, the Deephaven server application artifact can be downloaded from the GitHub Artifacts (located in the "Summary" tab of the action), and the deephaven-core wheel can be downloaded from PyPi.
+Once the full publish-ci.yml worflow is done, the release artifacts can be downloaded from the GitHub Artifacts (located in the "Summary" tab of the action).
 These are currently manual steps taken from the browser.
 
 There is potential in the future for QA-ing these artifacts above and beyond the integration testing that CI provides, as the release is not set in stone yet.
@@ -219,42 +221,7 @@ Ping Margaret.
 
 ### 13. Deephaven images
 
-Navigate to your checkout of [deephaven/deephaven-server-docker](https://github.com/deephaven/deephaven-server-docker).
-Like before, `upstream` is expected to be the proper remote repository - in this case, `git@github.com:deephaven/deephaven-server-docker.git`. 
-
-```shell
-$ git remote get-url upstream
-git@github.com:deephaven/deephaven-server-docker.git
-```
-
-Checkout the appropriate commit, create a release branch, update `DEEPHAVEN_VERSION` to the new version, and push.
-
-```shell
-$ git fetch upstream
-$ git checkout upstream/main
-# If doing a patch release, instead check out the appropriate <sha>
-# $ git checkout <sha>
-$ git checkout -b release/vX.Y.Z
-# edit files `server.hcl` and `server-slim.hcl` and update the `DEEPHAVEN_VERSION`
-$ git add server.hcl server-slim.hcl
-$ git commit -m "Bump DEEPHAVEN_VERSION to X.Y.Z"
-$ git push -u upstream release/vX.Y.Z
-```
-
-This will create the [Release CI](https://github.com/deephaven/deephaven-server-docker/actions/workflows/release-ci.yml) job.
-
-Monitor the release.
-If all is green, you should be able to test the new release:
-
-```shell
-$ docker run --rm --name deephaven -p 10000:10000 ghcr.io/deephaven/server:X.Y.Z
-```
-
-The docker image release process is more forgiving than releasing jar artifacts.
-If something goes wrong during this stage, it can easily be corrected.
-
-If applicable (typically, during a normal release), follow-up, and create a PR to merge `release/vX.Y.Z` into `main`.
-Patch releases will not typically be merged back into main.
+Follow the release process as described at [deephaven-server-docker/RELEASE.md](https://github.com/deephaven/deephaven-server-docker/blob/main/RELEASE.md).
 
 ### 14. Let everybody know
 

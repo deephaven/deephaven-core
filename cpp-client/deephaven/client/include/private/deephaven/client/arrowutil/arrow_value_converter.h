@@ -6,7 +6,7 @@
 #include <string>
 #include <arrow/type.h>
 #include <arrow/util/string_view.h>
-#include <deephaven/client/types.h>
+#include "deephaven/dhcore/types.h"
 
 namespace deephaven::client::arrowutil {
 class ArrowValueConverter {
@@ -31,8 +31,8 @@ public:
    * The "convert" function for the nanos-since-epoch representation of timestamps is
    * deephaven::client::DateTime.
    */
-  static void convert(int64_t src, deephaven::client::DateTime *dest) {
-    *dest = deephaven::client::DateTime::fromNanos(src);
+  static void convert(int64_t src, deephaven::dhcore::DateTime *dest) {
+    *dest = deephaven::dhcore::DateTime::fromNanos(src);
   }
 };
 }  // namespace deephaven::client::arrowutil

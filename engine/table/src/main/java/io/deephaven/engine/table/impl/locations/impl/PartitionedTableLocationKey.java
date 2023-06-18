@@ -94,7 +94,7 @@ public abstract class PartitionedTableLocationKey implements ImmutableTableLocat
                 } else if (partitionValue instanceof LogOutputAppendable) {
                     logOutput.append((LogOutputAppendable) partitionValue);
                 } else {
-                    // Boolean, DateTime, or some other arbitrary object we haven't considered
+                    // Boolean, Instant, or some other arbitrary object we haven't considered
                     logOutput.append(partitionValue.toString());
                 }
 

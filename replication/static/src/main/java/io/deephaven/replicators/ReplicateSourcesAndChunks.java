@@ -39,6 +39,8 @@ public class ReplicateSourcesAndChunks {
         charToAllButBoolean(
                 "engine/table/src/main/java/io/deephaven/engine/table/impl/sources/aggregate/SlicedCharAggregateColumnSource.java");
         charToAllButBoolean(
+                "engine/table/src/main/java/io/deephaven/engine/table/impl/sources/aggregate/RangeAggregateColumnSourceChar.java");
+        charToAllButBoolean(
                 "engine/table/src/main/java/io/deephaven/engine/table/impl/sources/UngroupedCharArrayColumnSource.java");
         charToAllButBoolean(
                 "engine/table/src/main/java/io/deephaven/engine/table/impl/sources/UngroupedCharVectorColumnSource.java");
@@ -74,6 +76,13 @@ public class ReplicateSourcesAndChunks {
         charToAll("engine/chunk/src/main/java/io/deephaven/chunk/sized/SizedCharChunk.java");
         replicateObjectSizedChunk();
 
+        charToAll("engine/table/src/main/java/io/deephaven/engine/page/CharChunkPage.java");
+        replicateObjectChunkPage("engine/table/src/main/java/io/deephaven/engine/page/CharChunkPage.java");
+
+        charToAll("extensions/source-support/src/main/java/io/deephaven/generic/page/ChunkHolderPageChar.java");
+        replicateObjectChunkPage(
+                "extensions/source-support/src/main/java/io/deephaven/generic/page/ChunkHolderPageChar.java");
+
         replicateChunks();
         replicateWritableChunks();
 
@@ -108,15 +117,31 @@ public class ReplicateSourcesAndChunks {
         FileUtils.writeLines(classFile, lines);
     }
 
+    private static void replicateObjectChunkPage(final String charPath) throws IOException {
+        String path = ReplicatePrimitiveCode.charToObject(charPath);
+        final File classFile = new File(path);
+        List<String> lines = FileUtils.readLines(classFile, Charset.defaultCharset());
+        lines = globalReplacements(lines,
+                "<ATTR extends Any>", "<T, ATTR extends Any>",
+                " <ATTR", " <T, ATTR",
+                "Object\\[]", "T[]",
+                "Object value", "T value",
+                "Object get\\(", "T get(");
+        lines = lines.stream().map(x -> x.replaceAll("ObjectChunk<([^,>]+)>", "ObjectChunk<T, $1>"))
+                .collect(Collectors.toList());
+        lines = lines.stream().map(x -> x.replaceAll("ObjectChunkPage<([^,>]+)>", "ObjectChunkPage<T, $1>"))
+                .collect(Collectors.toList());
+        FileUtils.writeLines(classFile, lines);
+    }
+
     private static void fixupImmutableLongArraySource(String longImmutableSource) throws IOException {
         final File resultClassJavaFile = new File(longImmutableSource);
         List<String> lines = FileUtils.readLines(resultClassJavaFile, Charset.defaultCharset());
-        lines = addImport(lines, "import io.deephaven.time.DateTime;");
         lines = addImport(lines, "import io.deephaven.engine.table.ColumnSource;");
         lines = addImport(lines, LongFunction.class, ToLongFunction.class, Instant.class, ZonedDateTime.class,
                 LocalDate.class, LocalTime.class, Require.class, ZoneId.class);
         lines = standardCleanups(lines);
-        lines = globalReplacements(lines, "/\\*\\s*MIXIN_IMPLS\\s*\\*/", ", ConvertableTimeSource");
+        lines = globalReplacements(lines, "/\\*\\s*MIXIN_IMPLS\\s*\\*/", ", ConvertibleTimeSource");
         lines = replaceRegion(lines, "fillChunkByRanges", l -> addLongToBoxedAdapter(l, "LongFunction<R>",
                 "WritableObjectChunk<R, ? super Values>", "asWritableObjectChunk"));
         lines = replaceRegion(lines, "fillChunkByKeys", l -> addLongToBoxedAdapter(l, "LongFunction<R>",
@@ -135,7 +160,7 @@ public class ReplicateSourcesAndChunks {
         lines = replaceRegion(lines, "reinterpretation", Arrays.asList(
                 "    @Override",
                 "    public <ALTERNATE_DATA_TYPE> boolean allowsReinterpret(@NotNull final Class<ALTERNATE_DATA_TYPE> alternateDataType) {",
-                "        return alternateDataType == long.class || alternateDataType == Instant.class || alternateDataType == DateTime.class;",
+                "        return alternateDataType == long.class || alternateDataType == Instant.class;",
                 "    }",
                 "",
                 "    @SuppressWarnings(\"unchecked\")",
@@ -143,8 +168,6 @@ public class ReplicateSourcesAndChunks {
                 "    protected <ALTERNATE_DATA_TYPE> ColumnSource<ALTERNATE_DATA_TYPE> doReinterpret(@NotNull Class<ALTERNATE_DATA_TYPE> alternateDataType) {",
                 "        if (alternateDataType == this.getType()) {",
                 "            return (ColumnSource<ALTERNATE_DATA_TYPE>) this;",
-                "        } else if(alternateDataType == DateTime.class) {",
-                "            return (ColumnSource<ALTERNATE_DATA_TYPE>) toDateTime();",
                 "        } else if (alternateDataType == Instant.class) {",
                 "            return (ColumnSource<ALTERNATE_DATA_TYPE>) toInstant();",
                 "        }",
@@ -164,17 +187,12 @@ public class ReplicateSourcesAndChunks {
                 "",
                 "    @Override",
                 "    public ColumnSource<LocalDate> toLocalDate(final @NotNull ZoneId zone) {",
-                "        return new LocalDateWrapperSource(toZonedDateTime(zone), zone);",
+                "        return new LongAsLocalDateColumnSource(this, zone);",
                 "    }",
                 "",
                 "    @Override",
                 "    public ColumnSource<LocalTime> toLocalTime(final @NotNull ZoneId zone) {",
-                "        return new LocalTimeWrapperSource(toZonedDateTime(zone), zone);",
-                "    }",
-                "",
-                "    @Override",
-                "    public ColumnSource<DateTime> toDateTime() {",
-                "        return new ImmutableDateTimeArraySource(this);",
+                "        return new LongAsLocalTimeColumnSource(this, zone);",
                 "    }",
                 "",
                 "    @Override",
@@ -192,16 +210,15 @@ public class ReplicateSourcesAndChunks {
     private static void fixupImmutableConstantLongSource(String longImmutableSource) throws IOException {
         final File resultClassJavaFile = new File(longImmutableSource);
         List<String> lines = FileUtils.readLines(resultClassJavaFile, Charset.defaultCharset());
-        lines = addImport(lines, "import io.deephaven.time.DateTime;");
         lines = addImport(lines, "import io.deephaven.engine.table.ColumnSource;");
         lines = addImport(lines, Instant.class, ZonedDateTime.class, LocalDate.class, LocalTime.class, Require.class,
                 ZoneId.class);
         lines = standardCleanups(lines);
-        lines = globalReplacements(lines, "/\\*\\s*MIXIN_IMPLS\\s*\\*/", ", ConvertableTimeSource");
+        lines = globalReplacements(lines, "/\\*\\s*MIXIN_IMPLS\\s*\\*/", ", ConvertibleTimeSource");
         lines = replaceRegion(lines, "reinterpretation", Arrays.asList(
                 "    @Override",
                 "    public <ALTERNATE_DATA_TYPE> boolean allowsReinterpret(@NotNull final Class<ALTERNATE_DATA_TYPE> alternateDataType) {",
-                "        return alternateDataType == long.class || alternateDataType == Instant.class || alternateDataType == DateTime.class;",
+                "        return alternateDataType == long.class || alternateDataType == Instant.class;",
                 "    }",
                 "",
                 "    @SuppressWarnings(\"unchecked\")",
@@ -209,8 +226,6 @@ public class ReplicateSourcesAndChunks {
                 "    protected <ALTERNATE_DATA_TYPE> ColumnSource<ALTERNATE_DATA_TYPE> doReinterpret(@NotNull Class<ALTERNATE_DATA_TYPE> alternateDataType) {",
                 "        if (alternateDataType == this.getType()) {",
                 "            return (ColumnSource<ALTERNATE_DATA_TYPE>) this;",
-                "        } else if(alternateDataType == DateTime.class) {",
-                "            return (ColumnSource<ALTERNATE_DATA_TYPE>) toDateTime();",
                 "        } else if (alternateDataType == Instant.class) {",
                 "            return (ColumnSource<ALTERNATE_DATA_TYPE>) toInstant();",
                 "        }",
@@ -230,17 +245,12 @@ public class ReplicateSourcesAndChunks {
                 "",
                 "    @Override",
                 "    public ColumnSource<LocalDate> toLocalDate(final @NotNull ZoneId zone) {",
-                "        return new LocalDateWrapperSource(toZonedDateTime(zone), zone);",
+                "        return new LongAsLocalDateColumnSource(this, zone);",
                 "    }",
                 "",
                 "    @Override",
                 "    public ColumnSource<LocalTime> toLocalTime(final @NotNull ZoneId zone) {",
-                "        return new LocalTimeWrapperSource(toZonedDateTime(zone), zone);",
-                "    }",
-                "",
-                "    @Override",
-                "    public ColumnSource<DateTime> toDateTime() {",
-                "        return new ImmutableConstantDateTimeSource(this);",
+                "        return new LongAsLocalTimeColumnSource(this, zone);",
                 "    }",
                 "",
                 "    @Override",
@@ -258,12 +268,11 @@ public class ReplicateSourcesAndChunks {
     private static void fixupImmutable2DLongArraySource(String longImmutableSource) throws IOException {
         final File resultClassJavaFile = new File(longImmutableSource);
         List<String> lines = FileUtils.readLines(resultClassJavaFile, Charset.defaultCharset());
-        lines = addImport(lines, "import io.deephaven.time.DateTime;");
         lines = addImport(lines, "import io.deephaven.engine.table.ColumnSource;");
         lines = addImport(lines, LongFunction.class, ToLongFunction.class, Instant.class, ZonedDateTime.class,
                 LocalDate.class, LocalTime.class, Require.class, ZoneId.class);
         lines = standardCleanups(lines);
-        lines = globalReplacements(lines, "/\\*\\s*MIXIN_IMPLS\\s*\\*/", ", ConvertableTimeSource");
+        lines = globalReplacements(lines, "/\\*\\s*MIXIN_IMPLS\\s*\\*/", ", ConvertibleTimeSource");
         lines = replaceRegion(lines, "fillChunkByRanges", l -> addLongToBoxedAdapter(l, "LongFunction<R>",
                 "WritableObjectChunk<R, ? super Values>", "asWritableObjectChunk"));
         lines = replaceRegion(lines, "fillChunkByKeys", l -> addLongToBoxedAdapter(l, "LongFunction<R>",
@@ -282,7 +291,7 @@ public class ReplicateSourcesAndChunks {
         lines = replaceRegion(lines, "reinterpretation", Arrays.asList(
                 "    @Override",
                 "    public <ALTERNATE_DATA_TYPE> boolean allowsReinterpret(@NotNull final Class<ALTERNATE_DATA_TYPE> alternateDataType) {",
-                "        return alternateDataType == long.class || alternateDataType == Instant.class || alternateDataType == DateTime.class;",
+                "        return alternateDataType == long.class || alternateDataType == Instant.class;",
                 "    }",
                 "",
                 "    @SuppressWarnings(\"unchecked\")",
@@ -290,8 +299,6 @@ public class ReplicateSourcesAndChunks {
                 "    protected <ALTERNATE_DATA_TYPE> ColumnSource<ALTERNATE_DATA_TYPE> doReinterpret(@NotNull Class<ALTERNATE_DATA_TYPE> alternateDataType) {",
                 "        if (alternateDataType == this.getType()) {",
                 "            return (ColumnSource<ALTERNATE_DATA_TYPE>) this;",
-                "        } else if(alternateDataType == DateTime.class) {",
-                "            return (ColumnSource<ALTERNATE_DATA_TYPE>) toDateTime();",
                 "        } else if (alternateDataType == Instant.class) {",
                 "            return (ColumnSource<ALTERNATE_DATA_TYPE>) toInstant();",
                 "        }",
@@ -311,17 +318,12 @@ public class ReplicateSourcesAndChunks {
                 "",
                 "    @Override",
                 "    public ColumnSource<LocalDate> toLocalDate(final @NotNull ZoneId zone) {",
-                "        return new LocalDateWrapperSource(toZonedDateTime(zone), zone);",
+                "        return new LongAsLocalDateColumnSource(this, zone);",
                 "    }",
                 "",
                 "    @Override",
                 "    public ColumnSource<LocalTime> toLocalTime(final @NotNull ZoneId zone) {",
-                "        return new LocalTimeWrapperSource(toZonedDateTime(zone), zone);",
-                "    }",
-                "",
-                "    @Override",
-                "    public ColumnSource<DateTime> toDateTime() {",
-                "        return new Immutable2DDateTimeArraySource(this);",
+                "        return new LongAsLocalTimeColumnSource(this, zone);",
                 "    }",
                 "",
                 "    @Override",
@@ -340,7 +342,8 @@ public class ReplicateSourcesAndChunks {
         final File resultClassJavaFile = new File(byteImmutableSource);
         List<String> lines = FileUtils.readLines(resultClassJavaFile, Charset.defaultCharset());
         lines = addImport(lines, "import io.deephaven.engine.table.ColumnSource;");
-        lines = replaceRegion(lines, "reinterpretation", Arrays.asList("    @Override",
+        lines = replaceRegion(lines, "reinterpretation", Arrays.asList(
+                "    @Override",
                 "    public <ALTERNATE_DATA_TYPE> boolean allowsReinterpret(",
                 "            @NotNull final Class<ALTERNATE_DATA_TYPE> alternateDataType) {",
                 "        return alternateDataType == Boolean.class;",
@@ -591,6 +594,8 @@ public class ReplicateSourcesAndChunks {
         List<String> classLines = FileUtils.readLines(classFile, Charset.defaultCharset());
         classLines = ReplicationUtils.removeRegion(classLines, "BufferImports");
         classLines = ReplicationUtils.removeRegion(classLines, "CopyToBuffer");
+        classLines = ReplicationUtils.removeRegion(classLines, "BinarySearchImports");
+        classLines = ReplicationUtils.removeRegion(classLines, "BinarySearch");
         FileUtils.writeLines(classFile, classLines);
     }
 
@@ -886,12 +891,11 @@ public class ReplicateSourcesAndChunks {
         final File classFile = new File(className);
         List<String> lines = FileUtils.readLines(classFile, Charset.defaultCharset());
         lines = addImport(lines,
-                "import io.deephaven.time.DateTime;",
                 "import io.deephaven.engine.table.impl.util.copy.CopyKernel;");
         lines = addImport(lines, LongFunction.class, ToLongFunction.class, Instant.class, ZonedDateTime.class,
                 LocalDate.class, LocalTime.class, Require.class, ZoneId.class);
         lines = standardCleanups(lines);
-        lines = globalReplacements(lines, "/\\*\\s*MIXIN_IMPLS\\s*\\*/", ", ConvertableTimeSource");
+        lines = globalReplacements(lines, "/\\*\\s*MIXIN_IMPLS\\s*\\*/", ", ConvertibleTimeSource");
         lines = replaceRegion(lines, "getAndAddUnsafe", Arrays.asList(
                 "    public final long getAndAddUnsafe(long index, long addend) {",
                 "        final int blockIndex = (int) (index >> LOG_BLOCK_SIZE);",
@@ -932,7 +936,7 @@ public class ReplicateSourcesAndChunks {
         lines = replaceRegion(lines, "reinterpretation", Arrays.asList(
                 "    @Override",
                 "    public <ALTERNATE_DATA_TYPE> boolean allowsReinterpret(@NotNull final Class<ALTERNATE_DATA_TYPE> alternateDataType) {",
-                "        return alternateDataType == long.class || alternateDataType == Instant.class || alternateDataType == DateTime.class;",
+                "        return alternateDataType == long.class || alternateDataType == Instant.class;",
                 "    }",
                 "",
                 "    @SuppressWarnings(\"unchecked\")",
@@ -940,8 +944,6 @@ public class ReplicateSourcesAndChunks {
                 "    protected <ALTERNATE_DATA_TYPE> ColumnSource<ALTERNATE_DATA_TYPE> doReinterpret(@NotNull Class<ALTERNATE_DATA_TYPE> alternateDataType) {",
                 "        if (alternateDataType == this.getType()) {",
                 "            return (ColumnSource<ALTERNATE_DATA_TYPE>) this;",
-                "        } else if(alternateDataType == DateTime.class) {",
-                "            return (ColumnSource<ALTERNATE_DATA_TYPE>) toDateTime();",
                 "        } else if (alternateDataType == Instant.class) {",
                 "            return (ColumnSource<ALTERNATE_DATA_TYPE>) toInstant();",
                 "        }",
@@ -961,17 +963,12 @@ public class ReplicateSourcesAndChunks {
                 "",
                 "    @Override",
                 "    public ColumnSource<LocalDate> toLocalDate(final @NotNull ZoneId zone) {",
-                "        return new LocalDateWrapperSource(toZonedDateTime(zone), zone);",
+                "        return new LongAsLocalDateColumnSource(this, zone);",
                 "    }",
                 "",
                 "    @Override",
                 "    public ColumnSource<LocalTime> toLocalTime(final @NotNull ZoneId zone) {",
-                "        return new LocalTimeWrapperSource(toZonedDateTime(zone), zone);",
-                "    }",
-                "",
-                "    @Override",
-                "    public ColumnSource<DateTime> toDateTime() {",
-                "        return new DateTimeArraySource(this);",
+                "        return new LongAsLocalTimeColumnSource(this, zone);",
                 "    }",
                 "",
                 "    @Override",
@@ -991,11 +988,10 @@ public class ReplicateSourcesAndChunks {
                 "engine/table/src/main/java/io/deephaven/engine/table/impl/sources/CharacterSparseArraySource.java");
         final File classFile = new File(className);
         List<String> lines = FileUtils.readLines(classFile, Charset.defaultCharset());
-        lines = addImport(lines, "import io.deephaven.time.DateTime;");
         lines = addImport(lines, LongFunction.class, ToLongFunction.class, Instant.class, ZonedDateTime.class,
                 LocalDate.class, LocalTime.class, Require.class, ZoneId.class);
         lines = standardCleanups(lines);
-        lines = globalReplacements(lines, "/\\*\\s*MIXIN_IMPLS\\s*\\*/", ", ConvertableTimeSource");
+        lines = globalReplacements(lines, "/\\*\\s*MIXIN_IMPLS\\s*\\*/", ", ConvertibleTimeSource");
         lines = replaceRegion(lines, "fillByRanges", l -> addLongToBoxedAdapter(l, "LongFunction<R>",
                 "WritableObjectChunk<R, ? super Values>", "asWritableObjectChunk"));
         lines = replaceRegion(lines, "fillByKeys", l -> addLongToBoxedAdapter(l, "LongFunction<R>",
@@ -1014,7 +1010,7 @@ public class ReplicateSourcesAndChunks {
         lines = replaceRegion(lines, "reinterpretation", Arrays.asList(
                 "    @Override",
                 "    public <ALTERNATE_DATA_TYPE> boolean allowsReinterpret(@NotNull final Class<ALTERNATE_DATA_TYPE> alternateDataType) {",
-                "        return alternateDataType == long.class || alternateDataType == Instant.class || alternateDataType == DateTime.class;",
+                "        return alternateDataType == long.class || alternateDataType == Instant.class;",
                 "    }",
                 "",
                 "    @SuppressWarnings(\"unchecked\")",
@@ -1022,8 +1018,6 @@ public class ReplicateSourcesAndChunks {
                 "    protected <ALTERNATE_DATA_TYPE> ColumnSource<ALTERNATE_DATA_TYPE> doReinterpret(@NotNull Class<ALTERNATE_DATA_TYPE> alternateDataType) {",
                 "        if (alternateDataType == this.getType()) {",
                 "            return (ColumnSource<ALTERNATE_DATA_TYPE>) this;",
-                "        } else if(alternateDataType == DateTime.class) {",
-                "            return (ColumnSource<ALTERNATE_DATA_TYPE>) toDateTime();",
                 "        } else if (alternateDataType == Instant.class) {",
                 "            return (ColumnSource<ALTERNATE_DATA_TYPE>) toInstant();",
                 "        }",
@@ -1043,17 +1037,12 @@ public class ReplicateSourcesAndChunks {
                 "",
                 "    @Override",
                 "    public ColumnSource<LocalDate> toLocalDate(final @NotNull ZoneId zone) {",
-                "        return new LocalDateWrapperSource(toZonedDateTime(zone), zone);",
+                "        return new LongAsLocalDateColumnSource(this, zone);",
                 "    }",
                 "",
                 "    @Override",
                 "    public ColumnSource<LocalTime> toLocalTime(final @NotNull ZoneId zone) {",
-                "        return new LocalTimeWrapperSource(toZonedDateTime(zone), zone);",
-                "    }",
-                "",
-                "    @Override",
-                "    public ColumnSource<DateTime> toDateTime() {",
-                "        return new DateTimeSparseArraySource(this);",
+                "        return new LongAsLocalTimeColumnSource(this, zone);",
                 "    }",
                 "",
                 "    @Override",
@@ -1493,8 +1482,8 @@ public class ReplicateSourcesAndChunks {
                 "        }",
                 "",
                 "        @Override",
-                "        public void prepareForParallelPopulation(RowSet rowSet) {",
-                "           wrapped.prepareForParallelPopulation(rowSet);",
+                "        public void prepareForParallelPopulation(RowSequence rowSequence) {",
+                "           wrapped.prepareForParallelPopulation(rowSequence);",
                 "        }",
                 "    }"));
         FileUtils.writeLines(booleanFile, lines);

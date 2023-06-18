@@ -11,8 +11,8 @@ package io.deephaven.engine.table.impl.sources;
 import io.deephaven.chunk.WritableShortChunk;
 import io.deephaven.chunk.WritableChunk;
 import io.deephaven.chunk.attributes.Values;
+import io.deephaven.engine.context.ExecutionContext;
 import io.deephaven.engine.table.impl.MutableColumnSourceGetDefaults;
-import io.deephaven.engine.updategraph.LogicalClock;
 import io.deephaven.engine.rowset.chunkattributes.RowKeys;
 import io.deephaven.chunk.ShortChunk;
 import io.deephaven.chunk.Chunk;
@@ -47,7 +47,7 @@ public class ShortSingleValueSource extends SingleValueColumnSource<Short> imple
     @Override
     public final void set(Short value) {
         if (isTrackingPrevValues) {
-            final long currentStep = LogicalClock.DEFAULT.currentStep();
+            final long currentStep = updateGraph.clock().currentStep();
             if (changeTime < currentStep) {
                 prev = current;
                 changeTime = currentStep;
@@ -60,7 +60,7 @@ public class ShortSingleValueSource extends SingleValueColumnSource<Short> imple
     @Override
     public final void set(short value) {
         if (isTrackingPrevValues) {
-            final long currentStep = LogicalClock.DEFAULT.currentStep();
+            final long currentStep = updateGraph.clock().currentStep();
             if (changeTime < currentStep) {
                 prev = current;
                 changeTime = currentStep;
@@ -93,7 +93,7 @@ public class ShortSingleValueSource extends SingleValueColumnSource<Short> imple
         if (rowKey == RowSequence.NULL_ROW_KEY) {
             return NULL_SHORT;
         }
-        if (!isTrackingPrevValues || changeTime < LogicalClock.DEFAULT.currentStep()) {
+        if (!isTrackingPrevValues || changeTime < updateGraph.clock().currentStep()) {
             return current;
         }
         return prev;

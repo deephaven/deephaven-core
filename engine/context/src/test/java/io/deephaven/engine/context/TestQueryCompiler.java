@@ -4,15 +4,19 @@
 package io.deephaven.engine.context;
 
 import io.deephaven.configuration.Configuration;
+import io.deephaven.engine.testutil.junit4.EngineCleanup;
+import io.deephaven.time.DateTimeUtils;
 import io.deephaven.util.SafeCloseable;
 import org.junit.After;
 import org.junit.Before;
+import org.junit.Rule;
 import org.junit.Test;
+import org.junit.rules.TemporaryFolder;
 
+import java.io.IOException;
 import java.lang.reflect.Method;
 import java.time.Instant;
 import java.time.LocalDateTime;
-import java.time.ZoneId;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
@@ -51,16 +55,28 @@ public class TestQueryCompiler {
         CLASS_CODE = testClassCode1.toString();
     }
 
-    private SafeCloseable executionContext;
+    @Rule
+    public final EngineCleanup framework = new EngineCleanup();
+
+    @Rule
+    public TemporaryFolder folder = new TemporaryFolder();
+
+    private SafeCloseable executionContextClosable;
 
     @Before
-    public void setUp() {
-        executionContext = TestExecutionContext.createForUnitTests().open();
+    public void setUp() throws IOException {
+        executionContextClosable = ExecutionContext.newBuilder()
+                .captureUpdateGraph()
+                .captureQueryLibrary()
+                .captureQueryScope()
+                .setQueryCompiler(QueryCompiler.create(folder.newFolder(), TestQueryCompiler.class.getClassLoader()))
+                .build()
+                .open();
     }
 
     @After
     public void tearDown() {
-        executionContext.close();
+        executionContextClosable.close();
     }
 
     @Test
@@ -168,7 +184,7 @@ public class TestQueryCompiler {
     }
 
     private String printMillis(final long millis) {
-        LocalDateTime localDateTime = LocalDateTime.ofInstant(Instant.ofEpochMilli(millis), ZoneId.systemDefault());
+        LocalDateTime localDateTime = LocalDateTime.ofInstant(Instant.ofEpochMilli(millis), DateTimeUtils.timeZone());
         return localDateTime.toString();
     }
 

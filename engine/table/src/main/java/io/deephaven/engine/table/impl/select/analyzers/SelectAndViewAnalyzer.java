@@ -11,6 +11,7 @@ import io.deephaven.engine.rowset.RowSet;
 import io.deephaven.engine.rowset.RowSetFactory;
 import io.deephaven.engine.rowset.TrackingRowSet;
 import io.deephaven.engine.table.*;
+import io.deephaven.engine.table.impl.MatchPair;
 import io.deephaven.engine.table.impl.QueryTable;
 import io.deephaven.engine.table.impl.select.FormulaColumn;
 import io.deephaven.engine.table.impl.select.SelectColumn;
@@ -19,9 +20,11 @@ import io.deephaven.engine.table.impl.select.SwitchColumn;
 import io.deephaven.engine.table.impl.sources.InMemoryColumnSource;
 import io.deephaven.engine.table.impl.sources.SingleValueColumnSource;
 import io.deephaven.engine.table.impl.sources.WritableRedirectedColumnSource;
-import io.deephaven.engine.table.impl.util.InverseWrappedRowSetWritableRowRedirection;
+import io.deephaven.engine.table.impl.util.InverseWrappedRowSetRowRedirection;
 import io.deephaven.engine.table.impl.util.JobScheduler;
+import io.deephaven.engine.table.impl.util.RowRedirection;
 import io.deephaven.engine.table.impl.util.WritableRowRedirection;
+import io.deephaven.engine.updategraph.UpdateGraph;
 import io.deephaven.io.log.impl.LogOutputStringImpl;
 import io.deephaven.util.SafeCloseable;
 import io.deephaven.util.SafeCloseablePair;
@@ -67,14 +70,17 @@ public abstract class SelectAndViewAnalyzer implements LogOutputAppendable {
             boolean useShiftedColumns,
             final boolean allowInternalFlatten,
             final SelectColumn... selectColumns) {
+        final UpdateGraph updateGraph = sourceTable.getUpdateGraph();
         SelectAndViewAnalyzer analyzer = createBaseLayer(columnSources, publishTheseSources);
         final Map<String, ColumnDefinition<?>> columnDefinitions = new LinkedHashMap<>();
-        final WritableRowRedirection rowRedirection;
+        final RowRedirection rowRedirection;
         if (mode == Mode.SELECT_REDIRECTED_STATIC) {
-            rowRedirection = new InverseWrappedRowSetWritableRowRedirection(rowSet);
+            rowRedirection = new InverseWrappedRowSetRowRedirection(rowSet);
         } else if (mode == Mode.SELECT_REDIRECTED_REFRESHING && rowSet.size() < Integer.MAX_VALUE) {
-            rowRedirection = WritableRowRedirection.FACTORY.createRowRedirection(rowSet.intSize());
-            analyzer = analyzer.createRedirectionLayer(rowSet, rowRedirection);
+            final WritableRowRedirection writableRowRedirection =
+                    WritableRowRedirection.FACTORY.createRowRedirection(rowSet.intSize());
+            analyzer = analyzer.createRedirectionLayer(rowSet, writableRowRedirection);
+            rowRedirection = writableRowRedirection;
         } else {
             rowRedirection = null;
         }
@@ -183,9 +189,8 @@ public abstract class SelectAndViewAnalyzer implements LogOutputAppendable {
                     final WritableColumnSource<?> scs =
                             flatResult || flattenedResult ? sc.newFlatDestInstance(targetDestinationCapacity)
                                     : sc.newDestInstance(targetDestinationCapacity);
-                    analyzer =
-                            analyzer.createLayerForSelect(rowSet, sc.getName(), sc, scs, null, distinctDeps, mcsBuilder,
-                                    false, flattenedResult, flatResult && flattenedResult);
+                    analyzer = analyzer.createLayerForSelect(updateGraph, rowSet, sc.getName(), sc, scs, null,
+                            distinctDeps, mcsBuilder, false, flattenedResult, flatResult && flattenedResult);
                     if (flattenedResult) {
                         numberOfInternallyFlattenedColumns++;
                     }
@@ -195,9 +200,8 @@ public abstract class SelectAndViewAnalyzer implements LogOutputAppendable {
                     final WritableColumnSource<?> underlyingSource = sc.newDestInstance(rowSet.size());
                     final WritableColumnSource<?> scs = WritableRedirectedColumnSource.maybeRedirect(
                             rowRedirection, underlyingSource, rowSet.size());
-                    analyzer =
-                            analyzer.createLayerForSelect(rowSet, sc.getName(), sc, scs, underlyingSource, distinctDeps,
-                                    mcsBuilder, true, false, false);
+                    analyzer = analyzer.createLayerForSelect(updateGraph, rowSet, sc.getName(), sc, scs,
+                            underlyingSource, distinctDeps, mcsBuilder, true, false, false);
                     break;
                 }
                 case SELECT_REDIRECTED_REFRESHING:
@@ -212,9 +216,8 @@ public abstract class SelectAndViewAnalyzer implements LogOutputAppendable {
                         scs = WritableRedirectedColumnSource.maybeRedirect(
                                 rowRedirection, underlyingSource, rowSet.intSize());
                     }
-                    analyzer =
-                            analyzer.createLayerForSelect(rowSet, sc.getName(), sc, scs, underlyingSource, distinctDeps,
-                                    mcsBuilder, rowRedirection != null, false, false);
+                    analyzer = analyzer.createLayerForSelect(updateGraph, rowSet, sc.getName(), sc, scs,
+                            underlyingSource, distinctDeps, mcsBuilder, rowRedirection != null, false, false);
                     break;
                 }
                 default:
@@ -325,11 +328,12 @@ public abstract class SelectAndViewAnalyzer implements LogOutputAppendable {
         return new StaticFlattenLayer(this, parentRowSet);
     }
 
-    private SelectAndViewAnalyzer createLayerForSelect(RowSet parentRowset, String name, SelectColumn sc,
-            WritableColumnSource<?> cs, WritableColumnSource<?> underlyingSource,
-            String[] parentColumnDependencies, ModifiedColumnSet mcsBuilder, boolean isRedirected,
-            boolean flattenResult, boolean alreadyFlattened) {
-        return new SelectColumnLayer(parentRowset, this, name, sc, cs, underlyingSource, parentColumnDependencies,
+    private SelectAndViewAnalyzer createLayerForSelect(
+            UpdateGraph updateGraph, RowSet parentRowset, String name, SelectColumn sc, WritableColumnSource<?> cs,
+            WritableColumnSource<?> underlyingSource, String[] parentColumnDependencies, ModifiedColumnSet mcsBuilder,
+            boolean isRedirected, boolean flattenResult, boolean alreadyFlattened) {
+        return new SelectColumnLayer(updateGraph, parentRowset, this, name, sc, cs, underlyingSource,
+                parentColumnDependencies,
                 mcsBuilder, isRedirected, flattenResult, alreadyFlattened);
     }
 

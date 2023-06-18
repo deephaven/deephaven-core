@@ -16,7 +16,9 @@ import io.deephaven.chunk.*;
 import io.deephaven.chunk.attributes.Values;
 import io.deephaven.engine.rowset.chunkattributes.OrderedRowKeyRanges;
 import io.deephaven.engine.rowset.chunkattributes.RowKeys;
+import io.deephaven.util.SafeCloseable;
 import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
 
 // This worked-out example is a sketch of the problem we are trying to solve.
 //
@@ -262,30 +264,33 @@ public final class DeltaAwareColumnSource<T> extends AbstractColumnSource<T>
         // deltaKeysDS: the above, translated to the delta coordinate space
         final RowSet[] splitResult = new RowSet[2];
         splitKeys(rowSequence, dRows, splitResult);
-        final RowSet baselineKeysBS = splitResult[1];
-        final RowSet deltaKeysBS = splitResult[0];
+        try (final RowSet baselineKeysBS = splitResult[1]; final RowSet deltaKeysBS = splitResult[0]) {
 
-        // If one or the other is empty, shortcut here
-        if (deltaKeysBS.isEmpty()) {
-            // By the way, baselineKeysBS equals rowSequence, so you could pick either one
-            return getOrFillSimple(baseline, context.baseline, optionalDest, baselineKeysBS);
+            // If one or the other is empty, shortcut here
+            if (deltaKeysBS.isEmpty()) {
+                // By the way, baselineKeysBS equals rowSequence, so you could pick either one
+                return getOrFillSimple(baseline, context.baseline, optionalDest, baselineKeysBS);
+            }
+
+            try (final RowSet deltaKeysDS = dRows.invert(deltaKeysBS)) {
+                if (baselineKeysBS.isEmpty()) {
+                    return getOrFillSimple(delta, context.delta, optionalDest, deltaKeysDS);
+                }
+
+                // Always use "get" to pull in the baseline and delta pieces
+                final Chunk<? extends Values> bChunk = baseline.getChunk(context.baseline.getContext, baselineKeysBS);
+                final Chunk<? extends Values> dChunk = delta.getChunk(context.delta.getContext, deltaKeysDS);
+                // Merge them into either the user-provided chunk, or our own preallocated chunk. Note that 'destToUse'
+                // will always be non-null. This is because if we arrived here from fillChunk(), then optionalDest will
+                // be non-null. Otherwise (if we arrived here from getChunk()), then optionalDest will be null, but
+                // context.optionalChunk will be non-null (having been created through makeGetContext()).
+                final WritableChunk<? super Values> destToUse = optionalDest != null
+                        ? optionalDest
+                        : context.optionalChunk;
+                ChunkMerger.merge(bChunk, dChunk, baselineKeysBS, deltaKeysBS, destToUse);
+                return destToUse;
+            }
         }
-
-        final RowSet deltaKeysDS = dRows.invert(deltaKeysBS);
-        if (baselineKeysBS.isEmpty()) {
-            return getOrFillSimple(delta, context.delta, optionalDest, deltaKeysDS);
-        }
-
-        // Always use "get" to pull in the baseline and delta pieces
-        final Chunk<? extends Values> bChunk = baseline.getChunk(context.baseline.getContext, baselineKeysBS);
-        final Chunk<? extends Values> dChunk = delta.getChunk(context.delta.getContext, deltaKeysDS);
-        // Merge them into either the user-provided chunk, or our own preallocated chunk. Note that 'destToUse' will
-        // always be non-null. This is because if we arrived here from fillChunk(), then optionalDest will be non-null.
-        // Otherwise (if we arrived here from getChunk()), then optionalDest will be null, but context.optionalChunk
-        // will be non-null (having been created through makeGetContext()).
-        final WritableChunk<? super Values> destToUse = optionalDest != null ? optionalDest : context.optionalChunk;
-        ChunkMerger.merge(bChunk, dChunk, baselineKeysBS, deltaKeysBS, destToUse);
-        return destToUse;
     }
 
     @SuppressWarnings({"rawtypes", "unchecked"})
@@ -611,8 +616,10 @@ public final class DeltaAwareColumnSource<T> extends AbstractColumnSource<T>
          * twice during the lifetime of a given DeltaAwareColumnSource: once at construction and once at the time of
          * startTrackingPrevValues().
          */
-        chunkAdapter = ThreadLocal.withInitial(() -> ChunkAdapter.create(getType(), baseline, delta));
-        updateCommitter = new UpdateCommitter<>(this, DeltaAwareColumnSource::commitValues);
+        try (final SafeCloseable ignored = chunkAdapter.get()) {
+            chunkAdapter = ThreadLocal.withInitial(() -> ChunkAdapter.create(getType(), baseline, delta));
+        }
+        updateCommitter = new UpdateCommitter<>(this, updateGraph, DeltaAwareColumnSource::commitValues);
     }
 
     @Override
@@ -623,6 +630,14 @@ public final class DeltaAwareColumnSource<T> extends AbstractColumnSource<T>
     @Override
     public boolean isImmutable() {
         return false;
+    }
+
+    @Override
+    public void releaseCachedResources() {
+        super.releaseCachedResources();
+        try (final SafeCloseable ignored = chunkAdapter.get()) {
+            chunkAdapter.remove();
+        }
     }
 
     /**
@@ -661,14 +676,26 @@ public final class DeltaAwareColumnSource<T> extends AbstractColumnSource<T>
          */
         final WritableChunk<Values> optionalChunk;
 
-        private DAContext(GetAndFillContexts baseline, GetAndFillContexts delta, WritableChunk<Values> optionalChunk) {
+        private DAContext(
+                @NotNull final GetAndFillContexts baseline,
+                @NotNull final GetAndFillContexts delta,
+                @Nullable final WritableChunk<Values> optionalChunk) {
             this.baseline = baseline;
             this.delta = delta;
             this.optionalChunk = optionalChunk;
         }
+
+        @Override
+        public void close() {
+            baseline.close();
+            delta.close();
+            if (optionalChunk != null) {
+                optionalChunk.close();
+            }
+        }
     }
 
-    private static class GetAndFillContexts {
+    private static class GetAndFillContexts implements SafeCloseable {
         @SuppressWarnings("rawtypes")
         static GetAndFillContexts createForGet(ChunkSource chunkSource, int chunkCapacity) {
             return new GetAndFillContexts(chunkSource.makeGetContext(chunkCapacity), null);
@@ -689,9 +716,19 @@ public final class DeltaAwareColumnSource<T> extends AbstractColumnSource<T>
          */
         final ChunkSource.FillContext optionalFillContext;
 
-        private GetAndFillContexts(ChunkSource.GetContext getContext, ChunkSource.FillContext optionalFillContext) {
+        private GetAndFillContexts(
+                @NotNull final ChunkSource.GetContext getContext,
+                @Nullable final ChunkSource.FillContext optionalFillContext) {
             this.getContext = getContext;
             this.optionalFillContext = optionalFillContext;
+        }
+
+        @Override
+        public void close() {
+            getContext.close();
+            if (optionalFillContext != null) {
+                optionalFillContext.close();
+            }
         }
     }
 }

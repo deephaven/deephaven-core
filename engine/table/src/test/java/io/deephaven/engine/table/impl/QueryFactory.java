@@ -3,8 +3,7 @@
  */
 package io.deephaven.engine.table.impl;
 
-import io.deephaven.time.DateTime;
-
+import java.time.Instant;
 import java.util.*;
 import java.util.stream.Collectors;
 
@@ -55,7 +54,8 @@ public class QueryFactory {
     private static final String[] DEFAULT_COLUMN_NAMES = {"Timestamp", "MyString", "MyInt", "MyLong", "MyFloat",
             "MyDouble", "MyBoolean", "MyChar", "MyShort", "MyByte", "MyBigDecimal", "MyBigInteger"};
     private static final Class[] DEFAULT_COLUMN_TYPES =
-            {DateTime.class, String.class, Integer.class, Long.class, Float.class, Double.class, Boolean.class,
+            {
+                    Instant.class, String.class, Integer.class, Long.class, Float.class, Double.class, Boolean.class,
                     Character.class, short.class, byte.class, java.math.BigDecimal.class, java.math.BigInteger.class};
     // Copy and modify this block of code if you want to disable an operation.
     private static final String[] IMPLEMENTED_OPS = {"where", "merge", "flatten", "slice", "head", "tail", "headPct",
@@ -663,7 +663,7 @@ public class QueryFactory {
         StringBuilder filter = new StringBuilder();
         switch (columnTypes[colNum].getSimpleName()) {
 
-            case "DateTime":
+            case "Instant":
                 filter.append(colName).append(" > ").append(random.nextInt(1000) * 1_000_000_000L);
                 break;
 
@@ -825,7 +825,7 @@ public class QueryFactory {
                 "\tSystem.out.println(\"column: \"+colNum+\"[Seed] \" + seed);\n" +
                 "\tcolumnRandoms[colNum] = new Random(seed);\n" +
                 "}\n\n" +
-                "tt = timeTable(\"00:00:00.1\");" +
+                "tt = timeTable(\"PT00:00:00.1\");" +
                 "tickingValues = tt.update(\n" +
                 "\"MyString=new String(`a`+i)\",\n" +
                 "\"MyInt=new Integer(i)\",\n" +
@@ -850,7 +850,8 @@ public class QueryFactory {
                 "}\n" +
                 "\n" +
                 "randomValues = emptyTable(size)\n" +
-                ".update(\"Timestamp= i%nullPoints[0] == 0 ? null : new DateTime(i*1_000_000_000L)\")\n" +
+                ".update(\"Timestamp= i%nullPoints[0] == 0 ? null : DateTimeUtils.epochNanosToInstant(i*1_000_000_000L)\")\n"
+                +
                 ".update(\"MyString=(i%nullPoints[1] == 0 ? null : `a`+ (columnRandoms[0].nextInt(scale*2) - scale) )\",\n"
                 +
                 "\"MyInt=(i%nullPoints[2] == 0 ? null : columnRandoms[1].nextInt(scale*2) - scale )\",\n" +

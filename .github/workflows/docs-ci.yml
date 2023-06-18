@@ -20,14 +20,6 @@ jobs:
           distribution: 'temurin'
           java-version: '11'
 
-      # TODO(deephaven-core#1513): Remove non-LTS JDK 15 as part of javadocs process
-      - name: Setup JDK 15
-        id: setup-java-15
-        uses: actions/setup-java@v3
-        with:
-          distribution: 'zulu'
-          java-version: '15'
-
       - name: Setup JDK 17
         id: setup-java-17
         uses: actions/setup-java@v3
@@ -42,7 +34,7 @@ jobs:
         run: |
           cat .github/env/${{ runner.os }}/gradle.properties >> gradle.properties
           echo >> gradle.properties
-          echo "org.gradle.java.installations.paths=${{ steps.setup-java-11.outputs.path }},${{ steps.setup-java-15.outputs.path }},${{ steps.setup-java-17.outputs.path }}" >> gradle.properties
+          echo "org.gradle.java.installations.paths=${{ steps.setup-java-11.outputs.path }},${{ steps.setup-java-17.outputs.path }}" >> gradle.properties
           cat gradle.properties
 
       - name: All Javadoc
@@ -61,7 +53,7 @@ jobs:
 
       - name: Deploy Javadoc
         if: ${{ github.ref == 'refs/heads/main' }}
-        uses: burnett01/rsync-deployments@4.1
+        uses: burnett01/rsync-deployments@5.2
         with:
           switches: -avzr --delete
           path: combined-javadoc/build/docs/javadoc/
@@ -84,14 +76,6 @@ jobs:
           distribution: 'temurin'
           java-version: '11'
 
-      # TODO(deephaven-core#1513): Remove non-LTS JDK 15 as part of javadocs process
-      - name: Setup JDK 15
-        id: setup-java-15
-        uses: actions/setup-java@v3
-        with:
-          distribution: 'zulu'
-          java-version: '15'
-
       - name: Setup JDK 17
         id: setup-java-17
         uses: actions/setup-java@v3
@@ -106,7 +90,7 @@ jobs:
         run: |
           cat .github/env/${{ runner.os }}/gradle.properties >> gradle.properties
           echo >> gradle.properties
-          echo "org.gradle.java.installations.paths=${{ steps.setup-java-11.outputs.path }},${{ steps.setup-java-15.outputs.path }},${{ steps.setup-java-17.outputs.path }}" >> gradle.properties
+          echo "org.gradle.java.installations.paths=${{ steps.setup-java-11.outputs.path }},${{ steps.setup-java-17.outputs.path }}" >> gradle.properties
           cat gradle.properties
 
       - name: Generate Python Docs
@@ -118,7 +102,7 @@ jobs:
 
       - name: Deploy Python Docs
         if: ${{ github.ref == 'refs/heads/main' }}
-        uses: burnett01/rsync-deployments@4.1
+        uses: burnett01/rsync-deployments@5.2
         with:
           switches: -avzr --delete
           path: sphinx/build/docs/
@@ -130,7 +114,7 @@ jobs:
 
       - name: Deploy Client Python Docs
         if: ${{ github.ref == 'refs/heads/main' }}
-        uses: burnett01/rsync-deployments@4.1
+        uses: burnett01/rsync-deployments@5.2
         with:
           switches: -avzr --delete
           path: sphinx/build/pyclient-docs/
@@ -180,7 +164,7 @@ jobs:
 
       - name: Deploy Client C++ Docs
         if: ${{ github.ref == 'refs/heads/main' }}
-        uses: burnett01/rsync-deployments@4.1
+        uses: burnett01/rsync-deployments@5.2
         with:
           switches: -avzr --delete
           path: sphinx/build/cppClientDocs/
@@ -192,7 +176,7 @@ jobs:
 
       - name: Deploy Client C++ Example Docs
         if: ${{ github.ref == 'refs/heads/main' }}
-        uses: burnett01/rsync-deployments@4.1
+        uses: burnett01/rsync-deployments@5.2
         with:
           switches: -avzr --delete
           path: sphinx/build/cppExamplesDocs/

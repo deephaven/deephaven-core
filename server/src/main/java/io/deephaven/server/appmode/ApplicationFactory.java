@@ -95,7 +95,7 @@ public class ApplicationFactory implements ApplicationConfig.Visitor {
 
     private void evaluateScripts(List<Path> files) {
         for (Path file : files) {
-            scriptSession.evaluateScript(absolutePath(file));
+            scriptSession.evaluateScript(absolutePath(file)).throwIfError();
         }
     }
 }

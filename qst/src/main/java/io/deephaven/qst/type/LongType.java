@@ -23,6 +23,11 @@ public abstract class LongType extends PrimitiveTypeBase<Long> {
     }
 
     @Override
+    public final Class<Long> boxedClass() {
+        return Long.class;
+    }
+
+    @Override
     public final NativeArrayType<long[], Long> arrayType() {
         return NativeArrayType.of(long[].class, this);
     }

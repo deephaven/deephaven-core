@@ -10,7 +10,7 @@ import io.deephaven.base.verify.Assert;
 import io.deephaven.chunk.Chunk;
 import io.deephaven.chunk.IntChunk;
 import io.deephaven.chunk.attributes.Values;
-import io.deephaven.engine.table.MatchPair;
+import io.deephaven.engine.table.impl.MatchPair;
 import io.deephaven.engine.table.impl.updateby.UpdateByOperator;
 import io.deephaven.engine.table.impl.updateby.internal.BaseDoubleUpdateByOperator;
 import io.deephaven.engine.table.impl.util.RowRedirection;
@@ -25,11 +25,11 @@ public class IntRollingAvgOperator extends BaseDoubleUpdateByOperator {
     // endregion extra-fields
 
     protected class Context extends BaseDoubleUpdateByOperator.Context {
-        protected IntChunk<? extends Values> intInfluencerValuesChunk;
+        protected IntChunk<? extends Values> influencerValuesChunk;
         protected IntRingBuffer intWindowValues;
 
-        protected Context(final int chunkSize) {
-            super(chunkSize);
+        protected Context(final int affectedChunkSize, final int influencerChunkSize) {
+            super(affectedChunkSize);
             intWindowValues = new IntRingBuffer(BUFFER_INITIAL_CAPACITY, true);
         }
 
@@ -40,8 +40,8 @@ public class IntRollingAvgOperator extends BaseDoubleUpdateByOperator {
         }
 
         @Override
-        public void setValuesChunk(@NotNull final Chunk<? extends Values> valuesChunk) {
-            intInfluencerValuesChunk = valuesChunk.asIntChunk();
+        public void setValueChunks(@NotNull final Chunk<? extends Values>[] valueChunks) {
+            influencerValuesChunk = valueChunks[0].asIntChunk();
         }
 
         @Override
@@ -49,7 +49,7 @@ public class IntRollingAvgOperator extends BaseDoubleUpdateByOperator {
             intWindowValues.ensureRemaining(count);
 
             for (int ii = 0; ii < count; ii++) {
-                final int val = intInfluencerValuesChunk.get(pos + ii);
+                final int val = influencerValuesChunk.get(pos + ii);
                 intWindowValues.addUnsafe(val);
 
                 // increase the running sum
@@ -100,8 +100,8 @@ public class IntRollingAvgOperator extends BaseDoubleUpdateByOperator {
 
     @NotNull
     @Override
-    public UpdateByOperator.Context makeUpdateContext(final int chunkSize) {
-        return new Context(chunkSize);
+    public UpdateByOperator.Context makeUpdateContext(final int affectedChunkSize, final int influencerChunkSize) {
+        return new Context(affectedChunkSize, influencerChunkSize);
     }
 
     public IntRollingAvgOperator(@NotNull final MatchPair pair,

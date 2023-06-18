@@ -329,7 +329,7 @@ public interface RowSet extends RowSequence, LongSizedDataStructure, SafeCloseab
         /**
          * <p>
          * Advance the current iterator position until {@code currentValue()} is greater than or equal to `v`. The
-         * operation is a no-op (and returns true) if currentValue() is already >= 'v'. Returns true if the operation
+         * operation is a no-op (and returns true) if currentValue() is already &gt;= 'v'. Returns true if the operation
          * was successful. Otherwise, returns false. In this case the iteration is over and the iterator is exhausted;
          * calls to {@code hasNext()} will return false, any other operation is undefined.
          * </p>
@@ -368,8 +368,8 @@ public interface RowSet extends RowSequence, LongSizedDataStructure, SafeCloseab
          * @return -1 if the iterator was exhausted at entry or the target was to the left of the initial position at
          *         the time of the call, in which case the iterator is not changed; the resulting current position
          *         otherwise. In this later case the current position is guaranteed to satisfy comp.compareTargetTo(v,
-         *         dir) >= 0 and if also comp.compareTargetTo(v, dir) &gt; 0, then v is the biggest such value for which
-         *         comp.compareTargetTo(v, dir) &gt; 0.
+         *         dir) &gt;= 0 and if also comp.compareTargetTo(v, dir) &gt; 0, then v is the biggest such value for
+         *         which comp.compareTargetTo(v, dir) &gt; 0.
          */
         long binarySearchValue(TargetComparator comp, int dir);
     }

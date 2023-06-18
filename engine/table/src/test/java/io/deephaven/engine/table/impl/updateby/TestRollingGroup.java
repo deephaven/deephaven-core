@@ -4,19 +4,21 @@ import io.deephaven.api.ColumnName;
 import io.deephaven.api.updateby.UpdateByControl;
 import io.deephaven.api.updateby.UpdateByOperation;
 import io.deephaven.base.verify.Assert;
+import io.deephaven.engine.context.ExecutionContext;
 import io.deephaven.engine.rowset.RowSet;
 import io.deephaven.engine.table.ColumnDefinition;
 import io.deephaven.engine.table.PartitionedTable;
 import io.deephaven.engine.table.Table;
+import io.deephaven.engine.table.impl.DataAccessHelpers;
 import io.deephaven.engine.table.impl.QueryTable;
+import io.deephaven.engine.testutil.ControlledUpdateGraph;
 import io.deephaven.engine.testutil.EvalNugget;
 import io.deephaven.engine.testutil.GenerateTableUpdates;
 import io.deephaven.engine.testutil.TstUtils;
-import io.deephaven.engine.testutil.generator.SortedDateTimeGenerator;
+import io.deephaven.engine.testutil.generator.SortedInstantGenerator;
 import io.deephaven.engine.testutil.generator.TestDataGenerator;
-import io.deephaven.engine.updategraph.UpdateGraphProcessor;
 import io.deephaven.test.types.OutOfBandTest;
-import io.deephaven.time.DateTime;
+import io.deephaven.time.DateTimeUtils;
 import io.deephaven.vector.*;
 import org.jetbrains.annotations.NotNull;
 import org.junit.Test;
@@ -25,6 +27,7 @@ import org.junit.experimental.categories.Category;
 import java.math.BigDecimal;
 import java.math.BigInteger;
 import java.time.Duration;
+import java.time.Instant;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Objects;
@@ -34,7 +37,6 @@ import java.util.stream.Collectors;
 import static io.deephaven.engine.testutil.GenerateTableUpdates.generateAppends;
 import static io.deephaven.engine.testutil.testcase.RefreshingTableTestCase.simulateShiftAwareStep;
 import static io.deephaven.engine.util.TableTools.intCol;
-import static io.deephaven.time.DateTimeUtils.convertDateTime;
 import static io.deephaven.util.QueryConstants.NULL_LONG;
 import static org.junit.Assert.assertArrayEquals;
 
@@ -145,30 +147,32 @@ public class TestRollingGroup extends BaseUpdateByTest {
 
         final Table summed = t.updateBy(UpdateByOperation.RollingGroup(prevTicks, postTicks, columns));
         for (String col : t.getDefinition().getColumnNamesArray()) {
-            assertWithRollingGroupTicks(t.getColumn(col).getDirect(), summed.getColumn(col).getDirect(),
-                    summed.getColumn(col).getType(), prevTicks, postTicks);
+            assertWithRollingGroupTicks(DataAccessHelpers.getColumn(t, col).getDirect(),
+                    DataAccessHelpers.getColumn(summed, col).getDirect(),
+                    DataAccessHelpers.getColumn(summed, col).getType(), prevTicks, postTicks);
         }
     }
 
     private void doTestStaticZeroKeyTimed(final Duration prevTime, final Duration postTime) {
         final QueryTable t = createTestTable(STATIC_TABLE_SIZE, false, false, false, 0xFFFABBBC,
-                new String[] {"ts"}, new TestDataGenerator[] {new SortedDateTimeGenerator(
-                        convertDateTime("2022-03-09T09:00:00.000 NY"),
-                        convertDateTime("2022-03-09T16:30:00.000 NY"))}).t;
+                new String[] {"ts"}, new TestDataGenerator[] {new SortedInstantGenerator(
+                        DateTimeUtils.parseInstant("2022-03-09T09:00:00.000 NY"),
+                        DateTimeUtils.parseInstant("2022-03-09T16:30:00.000 NY"))}).t;
 
         final Table summed =
                 t.updateBy(UpdateByOperation.RollingGroup("ts", prevTime, postTime, columns));
 
 
-        final DateTime[] ts = (DateTime[]) t.getColumn("ts").getDirect();
+        final Instant[] ts = (Instant[]) DataAccessHelpers.getColumn(t, "ts").getDirect();
         final long[] timestamps = new long[t.intSize()];
         for (int i = 0; i < t.intSize(); i++) {
-            timestamps[i] = ts[i].getNanos();
+            timestamps[i] = DateTimeUtils.epochNanos(ts[i]);
         }
 
         for (String col : t.getDefinition().getColumnNamesArray()) {
-            assertWithRollingGroupTime(t.getColumn(col).getDirect(), summed.getColumn(col).getDirect(), timestamps,
-                    summed.getColumn(col).getType(), prevTime.toNanos(), postTime.toNanos());
+            assertWithRollingGroupTime(DataAccessHelpers.getColumn(t, col).getDirect(),
+                    DataAccessHelpers.getColumn(summed, col).getDirect(), timestamps,
+                    DataAccessHelpers.getColumn(summed, col).getType(), prevTime.toNanos(), postTime.toNanos());
         }
     }
 
@@ -279,8 +283,9 @@ public class TestRollingGroup extends BaseUpdateByTest {
 
         preOp.partitionedTransform(postOp, (source, actual) -> {
             Arrays.stream(columns).forEach(col -> {
-                assertWithRollingGroupTicks(source.getColumn(col).getDirect(), actual.getColumn(col).getDirect(),
-                        actual.getColumn(col).getType(), prevTicks, postTicks);
+                assertWithRollingGroupTicks(DataAccessHelpers.getColumn(source, col).getDirect(),
+                        DataAccessHelpers.getColumn(actual, col).getDirect(),
+                        DataAccessHelpers.getColumn(actual, col).getType(), prevTicks, postTicks);
             });
             return source;
         });
@@ -288,9 +293,9 @@ public class TestRollingGroup extends BaseUpdateByTest {
 
     private void doTestStaticBucketedTimed(boolean grouped, Duration prevTime, Duration postTime) {
         final QueryTable t = createTestTable(STATIC_TABLE_SIZE, true, grouped, false, 0xFFFABBBC,
-                new String[] {"ts"}, new TestDataGenerator[] {new SortedDateTimeGenerator(
-                        convertDateTime("2022-03-09T09:00:00.000 NY"),
-                        convertDateTime("2022-03-09T16:30:00.000 NY"))}).t;
+                new String[] {"ts"}, new TestDataGenerator[] {new SortedInstantGenerator(
+                        DateTimeUtils.parseInstant("2022-03-09T09:00:00.000 NY"),
+                        DateTimeUtils.parseInstant("2022-03-09T16:30:00.000 NY"))}).t;
 
         final Table summed =
                 t.updateBy(UpdateByOperation.RollingGroup("ts", prevTime, postTime, columns), "Sym");
@@ -302,15 +307,16 @@ public class TestRollingGroup extends BaseUpdateByTest {
         String[] columns = t.getDefinition().getColumnStream().map(ColumnDefinition::getName).toArray(String[]::new);
 
         preOp.partitionedTransform(postOp, (source, actual) -> {
-            DateTime[] ts = (DateTime[]) source.getColumn("ts").getDirect();
+            Instant[] ts = (Instant[]) DataAccessHelpers.getColumn(source, "ts").getDirect();
             long[] timestamps = new long[source.intSize()];
             for (int i = 0; i < source.intSize(); i++) {
-                timestamps[i] = ts[i].getNanos();
+                timestamps[i] = DateTimeUtils.epochNanos(ts[i]);
             }
             Arrays.stream(columns).forEach(col -> {
-                assertWithRollingGroupTime(source.getColumn(col).getDirect(), actual.getColumn(col).getDirect(),
+                assertWithRollingGroupTime(DataAccessHelpers.getColumn(source, col).getDirect(),
+                        DataAccessHelpers.getColumn(actual, col).getDirect(),
                         timestamps,
-                        actual.getColumn(col).getType(), prevTime.toNanos(), postTime.toNanos());
+                        DataAccessHelpers.getColumn(actual, col).getType(), prevTime.toNanos(), postTime.toNanos());
             });
             return source;
         });
@@ -491,17 +497,17 @@ public class TestRollingGroup extends BaseUpdateByTest {
 
         final Random billy = new Random(0xB177B177);
         for (int ii = 0; ii < DYNAMIC_UPDATE_STEPS; ii++) {
-            UpdateGraphProcessor.DEFAULT
-                    .runWithinUnitTestCycle(() -> generateAppends(DYNAMIC_UPDATE_SIZE, billy, t, result.infos));
+            ExecutionContext.getContext().getUpdateGraph().<ControlledUpdateGraph>cast().runWithinUnitTestCycle(
+                    () -> generateAppends(DYNAMIC_UPDATE_SIZE, billy, t, result.infos));
             TstUtils.validate("Table", nuggets);
         }
     }
 
     private void doTestAppendOnlyTimed(boolean bucketed, Duration prevTime, Duration postTime) {
         final CreateResult result = createTestTable(DYNAMIC_TABLE_SIZE, bucketed, false, true, 0x31313131,
-                new String[] {"ts"}, new TestDataGenerator[] {new SortedDateTimeGenerator(
-                        convertDateTime("2022-03-09T09:00:00.000 NY"),
-                        convertDateTime("2022-03-09T16:30:00.000 NY"))});
+                new String[] {"ts"}, new TestDataGenerator[] {new SortedInstantGenerator(
+                        DateTimeUtils.parseInstant("2022-03-09T09:00:00.000 NY"),
+                        DateTimeUtils.parseInstant("2022-03-09T16:30:00.000 NY"))});
         final QueryTable t = result.t;
         t.setAttribute(Table.ADD_ONLY_TABLE_ATTRIBUTE, Boolean.TRUE);
 
@@ -521,8 +527,8 @@ public class TestRollingGroup extends BaseUpdateByTest {
 
         final Random billy = new Random(0xB177B177);
         for (int ii = 0; ii < DYNAMIC_UPDATE_STEPS; ii++) {
-            UpdateGraphProcessor.DEFAULT
-                    .runWithinUnitTestCycle(() -> generateAppends(DYNAMIC_UPDATE_SIZE, billy, t, result.infos));
+            ExecutionContext.getContext().getUpdateGraph().<ControlledUpdateGraph>cast().runWithinUnitTestCycle(
+                    () -> generateAppends(DYNAMIC_UPDATE_SIZE, billy, t, result.infos));
             TstUtils.validate("Table", nuggets);
         }
     }
@@ -659,7 +665,7 @@ public class TestRollingGroup extends BaseUpdateByTest {
 
         final Random billy = new Random(0xB177B177);
         for (int ii = 0; ii < DYNAMIC_UPDATE_STEPS; ii++) {
-            UpdateGraphProcessor.DEFAULT.runWithinUnitTestCycle(
+            ExecutionContext.getContext().getUpdateGraph().<ControlledUpdateGraph>cast().runWithinUnitTestCycle(
                     () -> GenerateTableUpdates.generateTableUpdates(DYNAMIC_UPDATE_SIZE, billy, t, result.infos));
             TstUtils.validate("Table - step " + ii, nuggets);
         }
@@ -668,9 +674,9 @@ public class TestRollingGroup extends BaseUpdateByTest {
     private void doTestTickingTimed(final boolean bucketed, final Duration prevTime, final Duration postTime) {
 
         final CreateResult result = createTestTable(DYNAMIC_TABLE_SIZE, bucketed, false, true, 0x31313131,
-                new String[] {"ts"}, new TestDataGenerator[] {new SortedDateTimeGenerator(
-                        convertDateTime("2022-03-09T09:00:00.000 NY"),
-                        convertDateTime("2022-03-09T16:30:00.000 NY"))});
+                new String[] {"ts"}, new TestDataGenerator[] {new SortedInstantGenerator(
+                        DateTimeUtils.parseInstant("2022-03-09T09:00:00.000 NY"),
+                        DateTimeUtils.parseInstant("2022-03-09T16:30:00.000 NY"))});
 
         final QueryTable t = result.t;
 
@@ -686,7 +692,7 @@ public class TestRollingGroup extends BaseUpdateByTest {
 
         final Random billy = new Random(0xB177B177);
         for (int ii = 0; ii < DYNAMIC_UPDATE_STEPS; ii++) {
-            UpdateGraphProcessor.DEFAULT.runWithinUnitTestCycle(
+            ExecutionContext.getContext().getUpdateGraph().<ControlledUpdateGraph>cast().runWithinUnitTestCycle(
                     () -> GenerateTableUpdates.generateTableUpdates(DYNAMIC_UPDATE_SIZE, billy, t, result.infos));
             TstUtils.validate("Table - step " + ii, nuggets);
         }
@@ -730,9 +736,9 @@ public class TestRollingGroup extends BaseUpdateByTest {
         final Duration postTime = Duration.ofMinutes(0);
 
         final CreateResult result = createTestTable(DYNAMIC_TABLE_SIZE, true, false, true, 0x31313131,
-                new String[] {"ts"}, new TestDataGenerator[] {new SortedDateTimeGenerator(
-                        convertDateTime("2022-03-09T09:00:00.000 NY"),
-                        convertDateTime("2022-03-09T16:30:00.000 NY"))});
+                new String[] {"ts"}, new TestDataGenerator[] {new SortedInstantGenerator(
+                        DateTimeUtils.parseInstant("2022-03-09T09:00:00.000 NY"),
+                        DateTimeUtils.parseInstant("2022-03-09T16:30:00.000 NY"))});
 
         final QueryTable t = result.t;
 
@@ -805,9 +811,9 @@ public class TestRollingGroup extends BaseUpdateByTest {
         final Duration postTime = Duration.ofMinutes(0);
 
         final CreateResult result = createTestTable(STATIC_TABLE_SIZE, false, false, true, 0x31313131,
-                new String[] {"ts"}, new TestDataGenerator[] {new SortedDateTimeGenerator(
-                        convertDateTime("2022-03-09T09:00:00.000 NY"),
-                        convertDateTime("2022-03-09T16:30:00.000 NY"))});
+                new String[] {"ts"}, new TestDataGenerator[] {new SortedInstantGenerator(
+                        DateTimeUtils.parseInstant("2022-03-09T09:00:00.000 NY"),
+                        DateTimeUtils.parseInstant("2022-03-09T16:30:00.000 NY"))});
 
         final QueryTable t = result.t;
 
@@ -827,9 +833,9 @@ public class TestRollingGroup extends BaseUpdateByTest {
         final Duration postTime = Duration.ofMinutes(0);
 
         final CreateResult result = createTestTable(STATIC_TABLE_SIZE, true, false, true, 0x31313131,
-                new String[] {"ts"}, new TestDataGenerator[] {new SortedDateTimeGenerator(
-                        convertDateTime("2022-03-09T09:00:00.000 NY"),
-                        convertDateTime("2022-03-09T16:30:00.000 NY"))});
+                new String[] {"ts"}, new TestDataGenerator[] {new SortedInstantGenerator(
+                        DateTimeUtils.parseInstant("2022-03-09T09:00:00.000 NY"),
+                        DateTimeUtils.parseInstant("2022-03-09T16:30:00.000 NY"))});
 
         final QueryTable t = result.t;
 
@@ -881,9 +887,9 @@ public class TestRollingGroup extends BaseUpdateByTest {
         final Duration postTime = Duration.ofMinutes(0);
 
         final CreateResult result = createTestTable(STATIC_TABLE_SIZE, false, false, true, 0x31313131,
-                new String[] {"ts"}, new TestDataGenerator[] {new SortedDateTimeGenerator(
-                        convertDateTime("2022-03-09T09:00:00.000 NY"),
-                        convertDateTime("2022-03-09T16:30:00.000 NY"))});
+                new String[] {"ts"}, new TestDataGenerator[] {new SortedInstantGenerator(
+                        DateTimeUtils.parseInstant("2022-03-09T09:00:00.000 NY"),
+                        DateTimeUtils.parseInstant("2022-03-09T16:30:00.000 NY"))});
 
         final QueryTable t = result.t;
 
@@ -951,9 +957,9 @@ public class TestRollingGroup extends BaseUpdateByTest {
         final Duration postTime = Duration.ofMinutes(5);
 
         final CreateResult result = createTestTable(STATIC_TABLE_SIZE, false, false, true, 0x31313131,
-                new String[] {"ts"}, new TestDataGenerator[] {new SortedDateTimeGenerator(
-                        convertDateTime("2022-03-09T09:00:00.000 NY"),
-                        convertDateTime("2022-03-09T16:30:00.000 NY"))});
+                new String[] {"ts"}, new TestDataGenerator[] {new SortedInstantGenerator(
+                        DateTimeUtils.parseInstant("2022-03-09T09:00:00.000 NY"),
+                        DateTimeUtils.parseInstant("2022-03-09T16:30:00.000 NY"))});
 
         final QueryTable t = result.t;
 
@@ -988,9 +994,9 @@ public class TestRollingGroup extends BaseUpdateByTest {
         final Duration postTime = Duration.ofMinutes(5_000_000);
 
         final CreateResult result = createTestTable(STATIC_TABLE_SIZE, false, false, true, 0x31313131,
-                new String[] {"ts"}, new TestDataGenerator[] {new SortedDateTimeGenerator(
-                        convertDateTime("2022-03-09T09:00:00.000 NY"),
-                        convertDateTime("2022-03-09T16:30:00.000 NY"))});
+                new String[] {"ts"}, new TestDataGenerator[] {new SortedInstantGenerator(
+                        DateTimeUtils.parseInstant("2022-03-09T09:00:00.000 NY"),
+                        DateTimeUtils.parseInstant("2022-03-09T16:30:00.000 NY"))});
 
         final QueryTable t = result.t;
 
@@ -1032,39 +1038,39 @@ public class TestRollingGroup extends BaseUpdateByTest {
 
         // Test mod 2.
         Table filteredTable = ungrouped.where("mod2==0");
-        int[] filteredArray = (int[]) filteredTable.getColumn("idx").getDirect();
+        int[] filteredArray = (int[]) DataAccessHelpers.getColumn(filteredTable, "idx").getDirect();
         for (int ii = 0; ii < filteredArray.length; ii++) {
             Assert.eq(0, "filteredArray[ii] % 2", filteredArray[ii] % 2);
         }
         filteredTable = ungrouped.where("mod2==1");
-        filteredArray = (int[]) filteredTable.getColumn("idx").getDirect();
+        filteredArray = (int[]) DataAccessHelpers.getColumn(filteredTable, "idx").getDirect();
         for (int ii = 0; ii < filteredArray.length; ii++) {
             Assert.eq(1, "filteredArray[ii] % 2", filteredArray[ii] % 2);
         }
 
         // Test mod 5
         filteredTable = ungrouped.where("mod5==0");
-        filteredArray = (int[]) filteredTable.getColumn("idx").getDirect();
+        filteredArray = (int[]) DataAccessHelpers.getColumn(filteredTable, "idx").getDirect();
         for (int ii = 0; ii < filteredArray.length; ii++) {
             Assert.eq(0, "filteredArray[ii] % 5", filteredArray[ii] % 5);
         }
         filteredTable = ungrouped.where("mod5==1");
-        filteredArray = (int[]) filteredTable.getColumn("idx").getDirect();
+        filteredArray = (int[]) DataAccessHelpers.getColumn(filteredTable, "idx").getDirect();
         for (int ii = 0; ii < filteredArray.length; ii++) {
             Assert.eq(1, "filteredArray[ii] % 5", filteredArray[ii] % 5);
         }
         filteredTable = ungrouped.where("mod5==2");
-        filteredArray = (int[]) filteredTable.getColumn("idx").getDirect();
+        filteredArray = (int[]) DataAccessHelpers.getColumn(filteredTable, "idx").getDirect();
         for (int ii = 0; ii < filteredArray.length; ii++) {
             Assert.eq(2, "filteredArray[ii] % 5", filteredArray[ii] % 5);
         }
         filteredTable = ungrouped.where("mod5==3");
-        filteredArray = (int[]) filteredTable.getColumn("idx").getDirect();
+        filteredArray = (int[]) DataAccessHelpers.getColumn(filteredTable, "idx").getDirect();
         for (int ii = 0; ii < filteredArray.length; ii++) {
             Assert.eq(3, "filteredArray[ii] % 5", filteredArray[ii] % 5);
         }
         filteredTable = ungrouped.where("mod5==4");
-        filteredArray = (int[]) filteredTable.getColumn("idx").getDirect();
+        filteredArray = (int[]) DataAccessHelpers.getColumn(filteredTable, "idx").getDirect();
         for (int ii = 0; ii < filteredArray.length; ii++) {
             Assert.eq(4, "filteredArray[ii] % 5", filteredArray[ii] % 5);
         }
@@ -1090,8 +1096,9 @@ public class TestRollingGroup extends BaseUpdateByTest {
         final Table summed = t.updateBy(ops);
 
         for (String col : t.getDefinition().getColumnNamesArray()) {
-            assertWithRollingGroupTicks(t.getColumn(col).getDirect(), summed.getColumn(col).getDirect(),
-                    summed.getColumn(col).getType(), prevTicks, postTicks);
+            assertWithRollingGroupTicks(DataAccessHelpers.getColumn(t, col).getDirect(),
+                    DataAccessHelpers.getColumn(summed, col).getDirect(),
+                    DataAccessHelpers.getColumn(summed, col).getType(), prevTicks, postTicks);
         }
     }
 

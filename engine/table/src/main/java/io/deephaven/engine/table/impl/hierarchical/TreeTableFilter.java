@@ -12,6 +12,7 @@ import io.deephaven.chunk.Chunk;
 import io.deephaven.chunk.ObjectChunk;
 import io.deephaven.chunk.attributes.Values;
 import io.deephaven.configuration.Configuration;
+import io.deephaven.engine.context.ExecutionContext;
 import io.deephaven.engine.rowset.*;
 import io.deephaven.engine.rowset.RowSetFactory;
 import io.deephaven.engine.table.*;
@@ -156,14 +157,17 @@ public class TreeTableFilter {
         parentIdSource = source.getColumnSource(tree.getParentIdentifierColumn().name());
 
         if (source.isRefreshing()) {
-            final SwapListenerEx swapListener = new SwapListenerEx(source, sourceRowLookup);
-            source.addUpdateListener(swapListener);
-            ConstructSnapshot.callDataSnapshotFunction(System.identityHashCode(source) + ": ",
-                    swapListener.makeSnapshotControl(),
-                    (usePrev, beforeClockValue) -> {
-                        doInitialFilter(swapListener, usePrev);
-                        return true;
-                    });
+            try (final SafeCloseable ignored = ExecutionContext.getContext().withUpdateGraph(
+                    source.getUpdateGraph()).open()) {
+                final SwapListenerEx swapListener = new SwapListenerEx(source, sourceRowLookup);
+                source.addUpdateListener(swapListener);
+                ConstructSnapshot.callDataSnapshotFunction(System.identityHashCode(source) + ": ",
+                        swapListener.makeSnapshotControl(),
+                        (usePrev, beforeClockValue) -> {
+                            doInitialFilter(swapListener, usePrev);
+                            return true;
+                        });
+            }
         } else {
             doInitialFilter(null, false);
         }

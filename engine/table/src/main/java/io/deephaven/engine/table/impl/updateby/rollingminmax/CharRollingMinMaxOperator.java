@@ -5,7 +5,7 @@ import io.deephaven.base.verify.Assert;
 import io.deephaven.chunk.Chunk;
 import io.deephaven.chunk.CharChunk;
 import io.deephaven.chunk.attributes.Values;
-import io.deephaven.engine.table.MatchPair;
+import io.deephaven.engine.table.impl.MatchPair;
 import io.deephaven.engine.table.impl.updateby.UpdateByOperator;
 import io.deephaven.engine.table.impl.updateby.internal.BaseCharUpdateByOperator;
 import io.deephaven.engine.table.impl.util.RowRedirection;
@@ -25,8 +25,8 @@ public class CharRollingMinMaxOperator extends BaseCharUpdateByOperator {
         protected AggregatingCharRingBuffer aggMinMax;
         protected boolean evaluationNeeded;
 
-        protected Context(final int chunkSize) {
-            super(chunkSize);
+        protected Context(final int affectedChunkSize, final int influencerChunkSize) {
+            super(affectedChunkSize);
             if (isMax) {
                 aggMinMax = new AggregatingCharRingBuffer(BUFFER_INITIAL_CAPACITY, Character.MIN_VALUE, (a, b) -> {
                     if (a == NULL_CHAR) {
@@ -57,8 +57,8 @@ public class CharRollingMinMaxOperator extends BaseCharUpdateByOperator {
         }
 
         @Override
-        public void setValuesChunk(@NotNull final Chunk<? extends Values> valuesChunk) {
-            charInfluencerValuesChunk = valuesChunk.asCharChunk();
+        public void setValueChunks(@NotNull final Chunk<? extends Values>[] valueChunks) {
+            charInfluencerValuesChunk = valueChunks[0].asCharChunk();
         }
 
         @Override
@@ -128,8 +128,8 @@ public class CharRollingMinMaxOperator extends BaseCharUpdateByOperator {
 
     @NotNull
     @Override
-    public UpdateByOperator.Context makeUpdateContext(final int chunkSize) {
-        return new Context(chunkSize);
+    public UpdateByOperator.Context makeUpdateContext(final int affectedChunkSize, final int influencerChunkSize) {
+        return new Context(affectedChunkSize, influencerChunkSize);
     }
 
     public CharRollingMinMaxOperator(@NotNull final MatchPair pair,

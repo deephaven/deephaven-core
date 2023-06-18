@@ -4,6 +4,8 @@
 package io.deephaven.web.client.api.filter;
 
 import com.vertispan.tsdefs.annotations.TsTypeRef;
+import com.vertispan.tsdefs.annotations.TsUnion;
+import com.vertispan.tsdefs.annotations.TsUnionMember;
 import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.Table_pb;
 import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.table_pb.CompareCondition;
 import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.table_pb.Condition;
@@ -18,8 +20,11 @@ import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.table_pb.Valu
 import io.deephaven.web.client.api.Column;
 import io.deephaven.web.client.api.DateWrapper;
 import io.deephaven.web.client.api.LongWrapper;
+import javaemul.internal.annotations.DoNotAutobox;
 import jsinterop.annotations.JsIgnore;
 import jsinterop.annotations.JsMethod;
+import jsinterop.annotations.JsOverlay;
+import jsinterop.annotations.JsPackage;
 import jsinterop.annotations.JsType;
 import jsinterop.base.Any;
 import jsinterop.base.Js;
@@ -40,7 +45,7 @@ public class FilterValue {
 
     /**
      * Constructs a string for the filter API from the given parameter.
-     * 
+     *
      * @param input
      * @return
      */
@@ -58,28 +63,66 @@ public class FilterValue {
         return new FilterValue(lit);
     }
 
+    @TsUnion
+    @JsType(name = "?", namespace = JsPackage.GLOBAL, isNative = true)
+    public interface OfNumberUnionParam {
+        @JsOverlay
+        static OfNumberUnionParam of(@DoNotAutobox Object value) {
+            return Js.cast(value);
+        }
+
+        @JsOverlay
+        default boolean isLongWrapper() {
+            return this instanceof LongWrapper;
+        }
+
+        @JsOverlay
+        default boolean isNumber() {
+            return (Object) this instanceof Double;
+        }
+
+        @TsUnionMember
+        @JsOverlay
+        default LongWrapper asLongWrapper() {
+            return Js.cast(this);
+        }
+
+        @TsUnionMember
+        @JsOverlay
+        default double asNumber() {
+            return Js.asDouble(this);
+        }
+    }
+
+    @JsIgnore
+    public static FilterValue ofNumber(double input) {
+        return ofNumber(Js.cast(input));
+    }
+
     /**
      * Constructs a number for the filter API from the given parameter. Can also be used on the values returned from
      * `Row.get` for DateTime values. To create a filter with a date, use `dh.DateWrapper.ofJsDate` or
      * `dh.i18n.DateTimeFormat.parse`. To create a filter with a 64-bit long integer, use `dh.LongWrapper.ofString`.
-     * 
+     *
      * @param input
      * @return
      */
-    @JsMethod(namespace = "dh.FilterValue")
-    public static FilterValue ofNumber(@TsTypeRef(Any.class) Object input) {
+    public static FilterValue ofNumber(OfNumberUnionParam input) {
         Objects.requireNonNull(input);
-        if (input instanceof DateWrapper) {
+        if (input.isLongWrapper()) {
+            LongWrapper value = input.asLongWrapper();
+            if (value instanceof DateWrapper) {
+                Literal lit = new Literal();
+                lit.setNanoTimeValue(((DateWrapper) input).valueOf());
+                return new FilterValue(lit);
+            } else {
+                Literal lit = new Literal();
+                lit.setLongValue(((LongWrapper) input).valueOf());
+                return new FilterValue(lit);
+            }
+        } else if (input.isNumber()) {
             Literal lit = new Literal();
-            lit.setNanoTimeValue(((DateWrapper) input).valueOf());
-            return new FilterValue(lit);
-        } else if (input instanceof LongWrapper) {
-            Literal lit = new Literal();
-            lit.setLongValue(((LongWrapper) input).valueOf());
-            return new FilterValue(lit);
-        } else if (Js.typeof(input).equals("number")) {
-            Literal lit = new Literal();
-            lit.setDoubleValue(Js.asDouble(input));
+            lit.setDoubleValue(input.asNumber());
             return new FilterValue(lit);
         } else {
             // not sure what the input is, try to toString(), then parse to Double, and use that
@@ -91,7 +134,7 @@ public class FilterValue {
 
     /**
      * Constructs a boolean for the filter API from the given parameter.
-     * 
+     *
      * @param b
      * @return
      */
@@ -340,7 +383,7 @@ public class FilterValue {
      * string argument. _ `matches` - Returns true if the current string value matches the supplied string argument used
      * as a Java regular expression. _ `contains` - Returns true if the current string value contains the supplied
      * string argument. When invoking against a constant, this should be avoided in favor of FilterValue.contains.
-     * 
+     *
      * @param method
      * @param args
      * @return

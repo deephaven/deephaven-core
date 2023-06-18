@@ -5,7 +5,7 @@
 
 #include <memory>
 #include <string_view>
-#include "deephaven/client/types.h"
+#include "deephaven/dhcore/types.h"
 
 namespace deephaven::client {
 class AssignedColumn;
@@ -427,7 +427,7 @@ public:
 };
 
 class DateTimeExpression : public Expression {
-  typedef deephaven::client::DateTime DateTime;
+  typedef deephaven::dhcore::DateTime DateTime;
 
 public:
   /**

@@ -3,7 +3,9 @@
  */
 package io.deephaven.client.impl;
 
+import io.deephaven.qst.array.BooleanArray;
 import org.apache.arrow.vector.BigIntVector;
+import org.apache.arrow.vector.BitVector;
 import org.apache.arrow.vector.Float4Vector;
 import org.apache.arrow.vector.Float8Vector;
 import org.apache.arrow.vector.IntVector;
@@ -26,6 +28,19 @@ public class VectorHelper {
         vector.allocateNew(len);
         for (int i = 0; i < len; i++) {
             vector.set(i, array[offset + i]);
+        }
+        vector.setValueCount(len);
+    }
+
+    public static void fill(BitVector vector, BooleanArray array, int offset, int len) {
+        vector.allocateNew(len);
+        for (int i = 0; i < len; i++) {
+            Boolean value = array.value(offset + i);
+            if (value == null) {
+                vector.set(i, 0, 0);
+            } else {
+                vector.set(i, value ? 1 : 0);
+            }
         }
         vector.setValueCount(len);
     }

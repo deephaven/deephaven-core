@@ -10,8 +10,9 @@ from deephaven.table import Table, PartitionedTable
 
 from deephaven.filters import Filter
 
-from deephaven import read_csv, DHError, new_table, ugp, time_table
+from deephaven import read_csv, DHError, new_table, update_graph, time_table
 from tests.testbase import BaseTestCase
+from deephaven.execution_context import get_exec_ctx
 
 
 def transform_func(t: Table) -> Table:
@@ -38,6 +39,7 @@ class PartitionedTableTestCase(BaseTestCase):
         super().setUp()
         self.test_table = read_csv("tests/data/test_table.csv").tail(num_rows=100)
         self.partitioned_table = self.test_table.partition_by(by=["c", "e"])
+        self.test_update_graph = get_exec_ctx().update_graph
 
     def tearDown(self):
         self.partitioned_table = None
@@ -140,8 +142,8 @@ class PartitionedTableTestCase(BaseTestCase):
             self.assertIn("f", [col.name for col in pt.constituent_table_columns])
 
     def test_partition_agg(self):
-        with ugp.shared_lock():
-            test_table = time_table("00:00:00.001").update(["X=i", "Y=i%13", "Z=X*Y"])
+        with update_graph.shared_lock(self.test_update_graph):
+            test_table = time_table("PT00:00:00.001").update(["X=i", "Y=i%13", "Z=X*Y"])
         self.wait_ticking_table_update(test_table, row_count=1, timeout=5)
         agg = partition("aggPartition", include_by_columns=True)
         pt = PartitionedTable.from_partitioned_table(test_table.agg_by(agg, ["Y"]))
@@ -157,8 +159,8 @@ class PartitionedTableTestCase(BaseTestCase):
         self.assertEqual(3, len(pt.constituent_table_columns))
 
     def test_from_partitioned_table(self):
-        with ugp.shared_lock():
-            test_table = time_table("00:00:00.001").update(["X=i", "Y=i%13", "Z=X*Y"])
+        with update_graph.shared_lock(self.test_update_graph):
+            test_table = time_table("PT00:00:00.001").update(["X=i", "Y=i%13", "Z=X*Y"])
 
         pt = test_table.partition_by("Y")
         self.assertTrue(pt.is_refreshing)
@@ -189,11 +191,11 @@ class PartitionedTableTestCase(BaseTestCase):
         self.assertIn("no column named", str(cm.exception))
 
     def test_from_constituent_tables(self):
-        with ugp.shared_lock():
-            test_table = time_table("00:00:00.001").update(["X=i", "Y=i%13", "Z=X*Y"])
-            test_table1 = time_table("00:00:01").update(["X=i", "Y=i%23", "Z=X*Y"])
-            test_table2 = time_table("00:00:00.001").update(["X=i", "Y=i%23", "Z=`foo`"])
-            test_table3 = time_table("00:00:00.001").update(["X=i", "Y=i%23", "Z=(int)(X*Y)"])
+        with update_graph.shared_lock(self.test_update_graph):
+            test_table = time_table("PT00:00:00.001").update(["X=i", "Y=i%13", "Z=X*Y"])
+            test_table1 = time_table("PT00:00:01").update(["X=i", "Y=i%23", "Z=X*Y"])
+            test_table2 = time_table("PT00:00:00.001").update(["X=i", "Y=i%23", "Z=`foo`"])
+            test_table3 = time_table("PT00:00:00.001").update(["X=i", "Y=i%23", "Z=(int)(X*Y)"])
 
         pt = PartitionedTable.from_constituent_tables([test_table, test_table1])
         self.assertEqual("__CONSTITUENT__", pt.constituent_column)
@@ -211,8 +213,8 @@ class PartitionedTableTestCase(BaseTestCase):
         select_distinct_table = self.test_table.select_distinct(["c", "e"])
         self.assertEqual(keys_table.size, select_distinct_table.size)
 
-        with ugp.shared_lock():
-            test_table = time_table("00:00:00.001").update(["X=i", "Y=i%13", "Z=X*Y"])
+        with update_graph.shared_lock(self.test_update_graph):
+            test_table = time_table("PT00:00:00.001").update(["X=i", "Y=i%13", "Z=X*Y"])
         pt = test_table.partition_by("Y")
         self.wait_ticking_table_update(test_table, row_count=20, timeout=5)
         keys_table = pt.keys()

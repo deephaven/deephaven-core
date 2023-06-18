@@ -1,7 +1,6 @@
 package io.deephaven.client;
 
 import io.deephaven.qst.table.EmptyTable;
-import io.deephaven.qst.table.SnapshotTable;
 import io.deephaven.qst.table.TableSpec;
 import io.deephaven.qst.table.TimeTable;
 import org.junit.runner.RunWith;
@@ -18,11 +17,11 @@ public class SnapshotSessionTest extends TableSpecTestBase {
         return iterable(snapshot(), snapshotTicking());
     }
 
-    static SnapshotTable snapshot() {
+    static TableSpec snapshot() {
         return EmptyTable.of(1000).view("I=i").snapshot();
     }
 
-    static SnapshotTable snapshotTicking() {
+    static TableSpec snapshotTicking() {
         return TimeTable.of(Duration.ofSeconds(1)).snapshot();
     }
 

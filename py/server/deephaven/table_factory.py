@@ -14,7 +14,7 @@ from deephaven.column import InputColumn, Column
 from deephaven.dtypes import DType
 from deephaven.jcompat import to_sequence
 from deephaven.table import Table
-from deephaven.ugp import auto_locking_ctx
+from deephaven.update_graph import auto_locking_ctx
 
 _JTableFactory = jpy.get_type("io.deephaven.engine.table.TableFactory")
 _JTableTools = jpy.get_type("io.deephaven.engine.util.TableTools")
@@ -26,6 +26,7 @@ _JKeyedArrayBackedMutableTable = jpy.get_type("io.deephaven.engine.table.impl.ut
 _JTableDefinition = jpy.get_type("io.deephaven.engine.table.TableDefinition")
 _JTable = jpy.get_type("io.deephaven.engine.table.Table")
 _J_INPUT_TABLE_ATTRIBUTE = _JTable.INPUT_TABLE_ATTRIBUTE
+_JRingTableTools = jpy.get_type("io.deephaven.engine.table.impl.sources.ring.RingTableTools")
 
 
 def empty_table(size: int) -> Table:
@@ -46,13 +47,15 @@ def empty_table(size: int) -> Table:
         raise DHError(e, "failed to create an empty table.") from e
 
 
-def time_table(period: Union[str, int], start_time: str = None) -> Table:
+def time_table(period: Union[str, int], start_time: str = None, blink_table: bool = False) -> Table:
     """Creates a table that adds a new row on a regular interval.
 
     Args:
         period (Union[str, int]): time interval between new row additions, can be expressed as an integer in
-            nanoseconds or a time interval string, e.g. "00:00:00.001"
-        start_time (str): start time for adding new rows
+            nanoseconds or a time interval string, e.g. "PT00:00:00.001" or "PT1s"
+        start_time (str, optional): start time for adding new rows, defaults to None which means use the current time
+            as the start time
+        blink_table (bool, optional): if the time table should be a blink table, defaults to False
 
     Returns:
         a Table
@@ -61,11 +64,13 @@ def time_table(period: Union[str, int], start_time: str = None) -> Table:
         DHError
     """
     try:
+        builder = _JTableTools.timeTableBuilder()
+        builder.period(period)
         if start_time:
-            return Table(j_table=_JTableTools.timeTable(start_time, period))
-        else:
-            return Table(j_table=_JTableTools.timeTable(period))
-
+            builder.startTime(start_time)
+        if blink_table:
+            builder.blinkTable(blink_table)
+        return Table(j_table=builder.build())
     except Exception as e:
         raise DHError(e, "failed to create a time table.") from e
 
@@ -291,3 +296,27 @@ def input_table(col_defs: Dict[str, DType] = None, init_table: Table = None,
         DHError
     """
     return InputTable(col_defs=col_defs, init_table=init_table, key_cols=key_cols)
+
+
+def ring_table(parent: Table, capacity: int, initialize: bool = True) -> Table:
+    """Creates a ring table that retains the latest 'capacity' number of rows from the parent table.
+    Latest rows are determined solely by the new rows added to the parent table, deleted rows are ignored,
+    and updated rows are not expected and will raise an exception.
+
+    Ring table is mostly used with blink tables which do not retain their own data for more than an update cycle.
+
+    Args:
+        parent (Table): the parent table
+        capacity (int): the capacity of the ring table
+        initialize (bool): whether to initialize the ring table with a snapshot of the parent table, default is True
+
+    Returns:
+        a Table
+
+    Raises:
+        DHError
+    """
+    try:
+        return Table(j_table=_JRingTableTools.of(parent.j_table, capacity, initialize))
+    except Exception as e:
+        raise DHError(e, "failed to create a ring table.") from e

@@ -15,11 +15,11 @@ import java.util.Optional;
 public abstract class EmaSpec extends UpdateBySpecBase {
 
     public static EmaSpec of(OperationControl control, WindowScale windowScale) {
-        return ImmutableEmaSpec.builder().control(control).timeScale(windowScale).build();
+        return ImmutableEmaSpec.builder().control(control).windowScale(windowScale).build();
     }
 
     public static EmaSpec of(WindowScale windowScale) {
-        return ImmutableEmaSpec.builder().timeScale(windowScale).build();
+        return ImmutableEmaSpec.builder().windowScale(windowScale).build();
     }
 
     public static EmaSpec ofTime(final OperationControl control,
@@ -42,17 +42,17 @@ public abstract class EmaSpec extends UpdateBySpecBase {
         return of(WindowScale.ofTime(timestampCol, emaDuration));
     }
 
-    public static EmaSpec ofTicks(OperationControl control, long tickWindow) {
+    public static EmaSpec ofTicks(OperationControl control, double tickWindow) {
         return of(control, WindowScale.ofTicks(tickWindow));
     }
 
-    public static EmaSpec ofTicks(long tickWindow) {
+    public static EmaSpec ofTicks(double tickWindow) {
         return of(WindowScale.ofTicks(tickWindow));
     }
 
     public abstract Optional<OperationControl> control();
 
-    public abstract WindowScale timeScale();
+    public abstract WindowScale windowScale();
 
     public final OperationControl controlOrDefault() {
         return control().orElseGet(OperationControl::defaultInstance);
@@ -61,7 +61,8 @@ public abstract class EmaSpec extends UpdateBySpecBase {
     @Override
     public final boolean applicableTo(Class<?> inputType) {
         // is primitive or boxed numeric?
-        return applicableToNumeric(inputType);
+        return applicableToNumeric(inputType)
+                || inputType == char.class || inputType == Character.class;
     }
 
     @Override

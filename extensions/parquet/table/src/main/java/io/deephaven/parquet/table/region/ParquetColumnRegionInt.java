@@ -26,14 +26,16 @@ public final class ParquetColumnRegionInt<ATTR extends Any> extends ParquetColum
         super(columnChunkPageStore.mask(), columnChunkPageStore);
     }
 
+    // region getBytes
+    // endregion getBytes
+
     @Override
-    public int getInt(final long elementIndex) {
-        final ChunkPage<ATTR> page = getChunkPageContaining(elementIndex);
+    public int getInt(final long rowKey) {
+        final ChunkPage<ATTR> page = getChunkPageContaining(rowKey);
         try {
-            return page.asIntChunk().get(page.getChunkOffset(elementIndex));
+            return page.asIntChunk().get(page.getChunkOffset(rowKey));
         } catch (Exception e) {
-            throw new TableDataException("Error retrieving int at table int rowSet " + elementIndex
-                    + ", from a parquet table", e);
+            throw new TableDataException("Error retrieving int at row key " + rowKey + " from a parquet table", e);
         }
     }
 }

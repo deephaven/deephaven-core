@@ -5,8 +5,9 @@ package io.deephaven.benchmark.engine;
 
 import io.deephaven.chunk.attributes.Values;
 import io.deephaven.chunk.WritableChunk;
+import io.deephaven.engine.context.ExecutionContext;
+import io.deephaven.engine.context.TestExecutionContext;
 import io.deephaven.engine.table.Table;
-import io.deephaven.engine.updategraph.UpdateGraphProcessor;
 import io.deephaven.engine.table.impl.select.IncrementalReleaseFilter;
 import io.deephaven.engine.table.ChunkSource;
 import io.deephaven.engine.table.ColumnSource;
@@ -15,6 +16,7 @@ import io.deephaven.engine.rowset.RowSequence;
 import io.deephaven.benchmarking.BenchmarkTools;
 import io.deephaven.benchmarking.runner.TableBenchmarkState;
 import io.deephaven.engine.rowset.RowSet;
+import io.deephaven.engine.testutil.ControlledUpdateGraph;
 import org.openjdk.jmh.annotations.Benchmark;
 import org.openjdk.jmh.annotations.Level;
 import org.openjdk.jmh.annotations.Setup;
@@ -67,13 +69,15 @@ public abstract class RedirectionBenchBase {
         chunkCapacity = Integer.parseInt(params.getParam("chunkCapacity"));
         skipResultsProcessing = Boolean.parseBoolean(params.getParam("skipResultsProcessing"));
 
-        UpdateGraphProcessor.DEFAULT.enableUnitTestMode();
+        TestExecutionContext.createForUnitTests().open();
+        final ControlledUpdateGraph updateGraph = ExecutionContext.getContext().getUpdateGraph().cast();
+        updateGraph.enableUnitTestMode();
 
         state = new TableBenchmarkState(BenchmarkTools.stripName(params.getBenchmark()), params.getWarmup().getCount());
 
         final QueryData queryData = getQuery();
         for (int step = 0; step < queryData.steps; ++step) {
-            UpdateGraphProcessor.DEFAULT.runWithinUnitTestCycle(queryData.incrementalReleaseFilter::run);
+            updateGraph.runWithinUnitTestCycle(queryData.incrementalReleaseFilter::run);
         }
         inputTable = queryData.live;
         nFillCols = queryData.fillCols.length;

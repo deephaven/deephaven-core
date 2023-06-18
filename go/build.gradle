@@ -75,7 +75,7 @@ def testGoClient = Docker.registerDockerTask(project, 'testGoClient') {
                       ''')
         copyFile('.', '/project/')
         environmentVariable 'DH_HOST', deephavenDocker.containerName.get()
-        environmentVariable 'DH_PORT', '8080'
+        environmentVariable 'DH_PORT', '10000'
     }
     containerDependencies.dependsOn = [deephavenDocker.healthyTask]
     containerDependencies.finalizedBy = deephavenDocker.endTask
@@ -83,4 +83,5 @@ def testGoClient = Docker.registerDockerTask(project, 'testGoClient') {
     parentContainers = [ Docker.registryTask(project, 'go') ]
     entrypoint = ['./go-test-to-junit.sh', '/out/go-test.xml', '/out/go.log']
 }
+deephavenDocker.shouldLogIfTaskFails tasks.named('testGoClientRun')
 tasks.check.dependsOn(testGoClient)

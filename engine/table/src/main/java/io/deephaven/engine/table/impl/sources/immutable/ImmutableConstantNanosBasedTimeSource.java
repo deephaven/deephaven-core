@@ -12,13 +12,8 @@ import io.deephaven.engine.rowset.RowSequence;
 import io.deephaven.engine.rowset.chunkattributes.RowKeys;
 import io.deephaven.engine.table.ColumnSource;
 import io.deephaven.engine.table.impl.AbstractColumnSource;
-import io.deephaven.engine.table.impl.sources.ConvertableTimeSource;
-import io.deephaven.engine.table.impl.sources.InMemoryColumnSource;
-import io.deephaven.engine.table.impl.sources.LocalDateWrapperSource;
-import io.deephaven.engine.table.impl.sources.LocalTimeWrapperSource;
-import io.deephaven.engine.table.impl.sources.RowKeyAgnosticChunkSource;
+import io.deephaven.engine.table.impl.sources.*;
 import io.deephaven.engine.table.impl.util.ShiftData;
-import io.deephaven.time.DateTime;
 import org.jetbrains.annotations.NotNull;
 
 import java.time.Instant;
@@ -29,7 +24,7 @@ import java.time.ZonedDateTime;
 
 public abstract class ImmutableConstantNanosBasedTimeSource<TIME_TYPE> extends AbstractColumnSource<TIME_TYPE>
         implements ShiftData.ShiftCallback, InMemoryColumnSource, RowKeyAgnosticChunkSource<Values>,
-        ConvertableTimeSource {
+        ConvertibleTimeSource {
 
     protected final ImmutableConstantLongSource nanoSource;
 
@@ -123,8 +118,7 @@ public abstract class ImmutableConstantNanosBasedTimeSource<TIME_TYPE> extends A
     @Override
     public <ALTERNATE_DATA_TYPE> boolean allowsReinterpret(
             @NotNull final Class<ALTERNATE_DATA_TYPE> alternateDataType) {
-        return alternateDataType == long.class || alternateDataType == Instant.class
-                || alternateDataType == DateTime.class;
+        return alternateDataType == long.class || alternateDataType == Instant.class;
     }
 
     @SuppressWarnings("unchecked")
@@ -133,8 +127,6 @@ public abstract class ImmutableConstantNanosBasedTimeSource<TIME_TYPE> extends A
             @NotNull Class<ALTERNATE_DATA_TYPE> alternateDataType) {
         if (alternateDataType == this.getType()) {
             return (ColumnSource<ALTERNATE_DATA_TYPE>) this;
-        } else if (alternateDataType == DateTime.class) {
-            return (ColumnSource<ALTERNATE_DATA_TYPE>) toDateTime();
         } else if (alternateDataType == long.class || alternateDataType == Long.class) {
             return (ColumnSource<ALTERNATE_DATA_TYPE>) toEpochNano();
         } else if (alternateDataType == Instant.class) {
@@ -157,17 +149,12 @@ public abstract class ImmutableConstantNanosBasedTimeSource<TIME_TYPE> extends A
 
     @Override
     public ColumnSource<LocalDate> toLocalDate(final @NotNull ZoneId zone) {
-        return new LocalDateWrapperSource(toZonedDateTime(zone), zone);
+        return new LongAsLocalDateColumnSource(nanoSource, zone);
     }
 
     @Override
     public ColumnSource<LocalTime> toLocalTime(final @NotNull ZoneId zone) {
-        return new LocalTimeWrapperSource(toZonedDateTime(zone), zone);
-    }
-
-    @Override
-    public ColumnSource<DateTime> toDateTime() {
-        return new ImmutableConstantDateTimeSource(nanoSource);
+        return new LongAsLocalTimeColumnSource(nanoSource, zone);
     }
 
     @Override

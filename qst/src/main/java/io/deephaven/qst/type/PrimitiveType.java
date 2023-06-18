@@ -18,6 +18,8 @@ package io.deephaven.qst.type;
  */
 public interface PrimitiveType<T> extends Type<T> {
 
+    Class<T> boxedClass();
+
     <V extends Visitor> V walk(V visitor);
 
     interface Visitor {

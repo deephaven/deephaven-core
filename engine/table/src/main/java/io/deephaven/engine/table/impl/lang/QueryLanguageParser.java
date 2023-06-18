@@ -90,7 +90,7 @@ import io.deephaven.base.verify.Require;
 import io.deephaven.configuration.Configuration;
 import io.deephaven.engine.context.ExecutionContext;
 import io.deephaven.engine.context.QueryScope;
-import io.deephaven.engine.table.MatchPair;
+import io.deephaven.engine.table.impl.MatchPair;
 import io.deephaven.engine.table.impl.ShiftedColumnsFactory;
 import io.deephaven.engine.util.PyCallableWrapper.ColumnChunkArgument;
 import io.deephaven.engine.util.PyCallableWrapper.ConstantChunkArgument;

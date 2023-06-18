@@ -7,6 +7,9 @@ import io.deephaven.base.Pair;
 import io.deephaven.base.verify.Assert;
 import io.deephaven.base.verify.Require;
 import io.deephaven.chunk.Chunk;
+import io.deephaven.chunk.ChunkType;
+import io.deephaven.chunk.WritableChunk;
+import io.deephaven.chunk.WritableLongChunk;
 import io.deephaven.chunk.attributes.Values;
 import io.deephaven.configuration.Configuration;
 import io.deephaven.engine.liveness.LivenessScopeStack;
@@ -19,17 +22,19 @@ import io.deephaven.engine.table.impl.AbstractColumnSource;
 import io.deephaven.engine.table.impl.BaseTable;
 import io.deephaven.engine.table.impl.PrevColumnSource;
 import io.deephaven.engine.table.impl.QueryTable;
+import io.deephaven.engine.table.impl.select.Formula;
+import io.deephaven.engine.table.impl.sources.RedirectedColumnSource;
+import io.deephaven.engine.table.impl.sources.ViewColumnSource;
 import io.deephaven.engine.table.impl.util.ColumnHolder;
+import io.deephaven.engine.table.impl.util.LongColumnSourceRowRedirection;
+import io.deephaven.engine.table.impl.util.RowRedirection;
 import io.deephaven.engine.testutil.generator.TestDataGenerator;
-import io.deephaven.engine.testutil.junit4.EngineCleanup;
 import io.deephaven.engine.testutil.rowset.RowSetTstUtils;
 import io.deephaven.engine.testutil.sources.ByteTestSource;
-import io.deephaven.engine.testutil.sources.DateTimeTestSource;
 import io.deephaven.engine.testutil.sources.DoubleTestSource;
 import io.deephaven.engine.testutil.sources.FloatTestSource;
 import io.deephaven.engine.testutil.sources.ImmutableByteTestSource;
 import io.deephaven.engine.testutil.sources.ImmutableCharTestSource;
-import io.deephaven.engine.testutil.sources.ImmutableDateTimeTestSource;
 import io.deephaven.engine.testutil.sources.ImmutableColumnHolder;
 import io.deephaven.engine.testutil.sources.CharTestSource;
 import io.deephaven.engine.testutil.sources.ImmutableDoubleTestSource;
@@ -50,7 +55,7 @@ import io.deephaven.engine.util.TableDiff;
 import io.deephaven.engine.util.TableTools;
 import io.deephaven.stringset.HashStringSet;
 import io.deephaven.stringset.StringSet;
-import io.deephaven.time.DateTime;
+import io.deephaven.time.DateTimeUtils;
 import io.deephaven.util.QueryConstants;
 import io.deephaven.util.SafeCloseable;
 import io.deephaven.util.type.TypeUtils;
@@ -70,6 +75,8 @@ import java.nio.charset.StandardCharsets;
 import java.time.Instant;
 import java.util.*;
 import java.util.function.BiConsumer;
+import java.util.function.Function;
+import java.util.stream.Collectors;
 
 /**
  * Utility functions to create and update test tables, compare results, and otherwise make unit testing more pleasant.
@@ -150,7 +157,7 @@ public class TstUtils {
                         + rowSet.size() + ", arraySize=" + columnHolder.size());
             }
 
-            if (!(columnSource instanceof DateTimeTestSource && columnHolder.dataType == long.class)
+            if (!(columnSource instanceof InstantTestSource && columnHolder.dataType == long.class)
                     && !(columnSource.getType() == Boolean.class && columnHolder.dataType == Boolean.class)
                     && (columnSource.getType() != TypeUtils.getUnboxedTypeIfBoxed(columnHolder.dataType))) {
                 throw new UnsupportedOperationException(columnHolder.name + ": Adding invalid type: source.getType()="
@@ -401,10 +408,10 @@ public class TstUtils {
         return TableTools.col(colName, data);
     }
 
-    public static ColumnHolder<DateTime> getRandomDateTimeCol(String colName, int size, Random random) {
-        final DateTime[] data = new DateTime[size];
+    public static ColumnHolder<Instant> getRandomInstantCol(String colName, int size, Random random) {
+        final Instant[] data = new Instant[size];
         for (int i = 0; i < data.length; i++) {
-            data[i] = new DateTime(random.nextLong());
+            data[i] = DateTimeUtils.epochAutoToInstant(random.nextLong());
         }
         return ColumnHolder.createColumnHolder(colName, false, data);
     }
@@ -629,9 +636,6 @@ public class TstUtils {
             } else if (unboxedType == double.class) {
                 // noinspection unchecked
                 result = (AbstractColumnSource<T>) new ImmutableDoubleTestSource(rowSet, chunkData);
-            } else if (unboxedType == DateTime.class) {
-                // noinspection unchecked
-                result = (AbstractColumnSource<T>) new ImmutableDateTimeTestSource(rowSet, chunkData);
             } else if (unboxedType == Instant.class) {
                 // noinspection unchecked
                 result = (AbstractColumnSource<T>) new ImmutableInstantTestSource(rowSet, chunkData);
@@ -661,9 +665,6 @@ public class TstUtils {
             } else if (unboxedType == double.class) {
                 // noinspection unchecked
                 result = (AbstractColumnSource<T>) new DoubleTestSource(rowSet, chunkData);
-            } else if (unboxedType == DateTime.class) {
-                // noinspection unchecked
-                result = (AbstractColumnSource<T>) new DateTimeTestSource(rowSet, chunkData);
             } else if (unboxedType == Instant.class) {
                 // noinspection unchecked
                 result = (AbstractColumnSource<T>) new InstantTestSource(rowSet, chunkData);
@@ -942,5 +943,107 @@ public class TstUtils {
     public static void tableRangesAreEqual(Table table1, Table table2, long from1, long from2, long size) {
         assertTableEquals(table1.tail(table1.size() - from1).head(size),
                 table2.tail(table2.size() - from2).head(size));
+    }
+
+    /**
+     * Make a copy of {@code table} with a new RowSet that introduces sparsity by multiplying each row key by
+     * {@code sparsityFactor}.
+     * 
+     * @param table The Table to make a sparse copy of (must be static)
+     * @param sparsityFactor The sparsity factor to apply
+     * @return A sparse copy of {@code table}
+     */
+    public static Table sparsify(@NotNull final Table table, final long sparsityFactor) {
+        // Only static support for now. For refreshing support, add a listener to propagate expanded TableUpdates.
+        Assert.assertion(!table.isRefreshing(), "!table.isRefreshing()");
+
+        final WritableRowSet outputRowSet;
+        {
+            final RowSetBuilderSequential builder = RowSetFactory.builderSequential();
+            final RowSet inputRowSet = table.getRowSet();
+            // Using multiplyExact here allows us to throw an ArithmeticException if we'll overflow
+            final long expectedLastRowKey = Math.multiplyExact(inputRowSet.lastRowKey(), sparsityFactor);
+            inputRowSet.forAllRowKeys((final long rowKey) -> builder.appendKey(rowKey * sparsityFactor));
+            // noinspection resource
+            outputRowSet = builder.build();
+            Assert.eq(expectedLastRowKey, "expectedLastRowKey", outputRowSet.lastRowKey(), "outputRowSet.lastRowKey()");
+        }
+        final Map<String, ? extends ColumnSource<?>> outputColumnSources;
+        {
+            final RowRedirection densifyingRedirection = new LongColumnSourceRowRedirection<>(
+                    new ViewColumnSource<>(Long.class, new DensifyRowKeysFormula(sparsityFactor), true));
+            outputColumnSources = table.getColumnSourceMap().entrySet().stream().collect(Collectors.toMap(
+                    (Function<Map.Entry<String, ? extends ColumnSource<?>>, String>) Map.Entry::getKey,
+                    (final Map.Entry<String, ? extends ColumnSource<?>> entry) -> RedirectedColumnSource
+                            .maybeRedirect(densifyingRedirection, entry.getValue()),
+                    Assert::neverInvoked,
+                    LinkedHashMap::new));
+        }
+        return new QueryTable(outputRowSet.toTracking(), outputColumnSources);
+    }
+
+    private static final class DensifyRowKeysFormula extends Formula {
+
+        private static final FillContext FILL_CONTEXT = new FillContext() {};
+
+        private final long sparsityFactor;
+
+        private DensifyRowKeysFormula(final long sparsityFactor) {
+            super(null);
+            this.sparsityFactor = sparsityFactor;
+        }
+
+        private long densify(final long rowKey) {
+            Assert.eqZero(rowKey % sparsityFactor, "rowKey % sparsityFactor");
+            return rowKey / sparsityFactor;
+        }
+
+        @Override
+        public Long get(final long rowKey) {
+            return TypeUtils.box(densify(rowKey));
+        }
+
+        @Override
+        public Long getPrev(final long rowKey) {
+            return get(rowKey);
+        }
+
+        @Override
+        public long getLong(long rowKey) {
+            return densify(rowKey);
+        }
+
+        @Override
+        public long getPrevLong(long rowKey) {
+            return getLong(rowKey);
+        }
+
+        @Override
+        protected ChunkType getChunkType() {
+            return ChunkType.Long;
+        }
+
+        @Override
+        public FillContext makeFillContext(final int chunkCapacity) {
+            return FILL_CONTEXT;
+        }
+
+        @Override
+        public void fillChunk(
+                @NotNull final FillContext context,
+                @NotNull final WritableChunk<? super Values> destination,
+                @NotNull final RowSequence rowSequence) {
+            destination.setSize(0);
+            final WritableLongChunk<? super Values> typedDestination = destination.asWritableLongChunk();
+            rowSequence.forAllRowKeys((final long rowKey) -> typedDestination.add(getLong(rowKey)));
+        }
+
+        @Override
+        public void fillPrevChunk(
+                @NotNull final FillContext context,
+                @NotNull final WritableChunk<? super Values> destination,
+                @NotNull final RowSequence rowSequence) {
+            fillChunk(context, destination, rowSequence);
+        }
     }
 }

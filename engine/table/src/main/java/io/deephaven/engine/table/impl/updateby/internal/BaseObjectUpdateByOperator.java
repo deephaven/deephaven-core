@@ -16,6 +16,7 @@ import io.deephaven.engine.rowset.RowSequence;
 import io.deephaven.engine.rowset.RowSet;
 import io.deephaven.engine.rowset.chunkattributes.OrderedRowKeys;
 import io.deephaven.engine.table.*;
+import io.deephaven.engine.table.impl.MatchPair;
 import io.deephaven.engine.table.impl.sources.*;
 import io.deephaven.engine.table.impl.updateby.UpdateByOperator;
 import io.deephaven.engine.table.impl.util.RowRedirection;
@@ -37,8 +38,8 @@ public abstract class BaseObjectUpdateByOperator<T> extends UpdateByOperator {
     // endregion extra-fields
 
     protected abstract class Context extends UpdateByOperator.Context {
-        public final ChunkSink.FillFromContext outputFillContext;
-        public final WritableObjectChunk<T, Values> outputValues;
+        protected final ChunkSink.FillFromContext outputFillContext;
+        protected final WritableObjectChunk<T, Values> outputValues;
 
         public T curVal = null;
 
@@ -53,7 +54,7 @@ public abstract class BaseObjectUpdateByOperator<T> extends UpdateByOperator {
                                          @Nullable final LongChunk<? extends Values> tsChunk,
                                          final int len) {
 
-            setValuesChunk(valueChunkArr[0]);
+            setValueChunks(valueChunkArr);
 
             // chunk processing
             for (int ii = 0; ii < len; ii++) {
@@ -74,7 +75,7 @@ public abstract class BaseObjectUpdateByOperator<T> extends UpdateByOperator {
                                       @NotNull final IntChunk<? extends Values> popChunk,
                                       final int len) {
 
-            setValuesChunk(influencerValueChunkArr[0]);
+            setValueChunks(influencerValueChunkArr);
             setPosChunks(affectedPosChunk, influencerPosChunk);
 
             int pushIndex = 0;
@@ -109,7 +110,7 @@ public abstract class BaseObjectUpdateByOperator<T> extends UpdateByOperator {
         }
 
         @Override
-        public void setValuesChunk(@NotNull final Chunk<? extends Values> valuesChunk) {}
+        public void setValueChunks(@NotNull final Chunk<? extends Values>[] valueChunks) {}
 
         @Override
         public void writeToOutputChunk(final int outIdx) {

@@ -1,33 +1,39 @@
 package io.deephaven.engine.table.impl.updateby;
 
-import io.deephaven.api.agg.Pair;
+import io.deephaven.api.Pair;
 import io.deephaven.api.updateby.ColumnUpdateOperation;
 import io.deephaven.api.updateby.OperationControl;
 import io.deephaven.api.updateby.UpdateByControl;
 import io.deephaven.api.updateby.UpdateByOperation;
 import io.deephaven.api.updateby.spec.*;
 import io.deephaven.engine.table.ColumnSource;
-import io.deephaven.engine.table.MatchPair;
+import io.deephaven.engine.table.impl.MatchPair;
 import io.deephaven.engine.table.Table;
-import io.deephaven.engine.table.impl.updateby.ema.*;
+import io.deephaven.engine.table.impl.updateby.em.*;
+import io.deephaven.engine.table.impl.updateby.emstd.*;
+import io.deephaven.engine.table.impl.updateby.delta.*;
 import io.deephaven.engine.table.impl.updateby.fill.*;
 import io.deephaven.engine.table.impl.updateby.minmax.*;
 import io.deephaven.engine.table.impl.updateby.prod.*;
+import io.deephaven.engine.table.impl.updateby.rollingcount.*;
 import io.deephaven.engine.table.impl.updateby.rollinggroup.*;
 import io.deephaven.engine.table.impl.updateby.rollingavg.*;
 import io.deephaven.engine.table.impl.updateby.rollingminmax.*;
+import io.deephaven.engine.table.impl.updateby.rollingstd.*;
 import io.deephaven.engine.table.impl.updateby.rollingsum.*;
 import io.deephaven.engine.table.impl.updateby.rollingproduct.*;
+import io.deephaven.engine.table.impl.updateby.rollingwavg.*;
 import io.deephaven.engine.table.impl.updateby.sum.*;
-import io.deephaven.engine.table.impl.util.WritableRowRedirection;
+import io.deephaven.engine.table.impl.util.RowRedirection;
 import io.deephaven.hash.KeyedObjectHashMap;
 import io.deephaven.hash.KeyedObjectKey;
-import io.deephaven.time.DateTime;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
 import java.math.BigDecimal;
 import java.math.BigInteger;
+import java.math.MathContext;
+import java.time.Instant;
 import java.util.*;
 import java.util.stream.Collectors;
 
@@ -42,13 +48,13 @@ public class UpdateByOperatorFactory {
     private final Table source;
     private final MatchPair[] groupByColumns;
     @Nullable
-    private final WritableRowRedirection rowRedirection;
+    private final RowRedirection rowRedirection;
     @NotNull
     private final UpdateByControl control;
 
     public UpdateByOperatorFactory(@NotNull final Table source,
             @NotNull final MatchPair[] groupByColumns,
-            @Nullable final WritableRowRedirection rowRedirection,
+            @Nullable final RowRedirection rowRedirection,
             @NotNull final UpdateByControl control) {
         this.source = source;
         this.groupByColumns = groupByColumns;
@@ -85,6 +91,9 @@ public class UpdateByOperatorFactory {
         if (v.rollingGroupSpec != null) {
             v.ops.add(v.makeRollingGroupOperator(v.rollingGroupPairs, source, v.rollingGroupSpec));
         }
+
+        // Each EmStd operator needs to be paired with an Ema operator. If one already exists for the input column,
+        // use it. Otherwise create one but hide the output columns.
         return v.ops;
     }
 
@@ -214,10 +223,9 @@ public class UpdateByOperatorFactory {
 
                         final RollingOpSpec rollingSpec = (RollingOpSpec) spec;
 
-                        // Windowed ops are unique per type (ticks/time-based) and window dimensions
-                        hash = 31 * hash + Objects.hashCode(rollingSpec.revWindowScale().timestampCol());
-                        hash = 31 * hash + Long.hashCode(rollingSpec.revWindowScale().timescaleUnits());
-                        hash = 31 * hash + Long.hashCode(rollingSpec.fwdWindowScale().timescaleUnits());
+                        // Leverage ImmutableWindowScale.hashCode() function.
+                        hash = 31 * hash + Objects.hashCode(rollingSpec.revWindowScale());
+                        hash = 31 * hash + Objects.hashCode(rollingSpec.fwdWindowScale());
                         return hash;
                     }
 
@@ -247,8 +255,9 @@ public class UpdateByOperatorFactory {
                         if (!Objects.equals(rsA.revWindowScale().timestampCol(), rsB.revWindowScale().timestampCol())) {
                             return false;
                         }
-                        return rsA.revWindowScale().timescaleUnits() == rsB.revWindowScale().timescaleUnits() &&
-                                rsA.fwdWindowScale().timescaleUnits() == rsB.fwdWindowScale().timescaleUnits();
+                        // Leverage ImmutableWindowScale.equals() functions.
+                        return Objects.equals(rsA.revWindowScale(), rsB.revWindowScale()) &&
+                                Objects.equals(rsA.fwdWindowScale(), rsB.fwdWindowScale());
                     }
                 });
 
@@ -284,8 +293,8 @@ public class UpdateByOperatorFactory {
          * @return true if the type is one of the useable time types
          */
         public boolean isTimeType(final @NotNull Class<?> type) {
-            // TODO: extend time handling similar to enterprise (Instant, ZonedDateTime, LocalDate, LocalTime)
-            return type == DateTime.class;
+            // TODO: extend time handling similar to enterprise (ZonedDateTime, LocalDate, LocalTime)
+            return type == Instant.class;
         }
 
         @Override
@@ -299,14 +308,56 @@ public class UpdateByOperatorFactory {
 
         @Override
         public Void visit(@NotNull final EmaSpec es) {
-            final boolean isTimeBased = es.timeScale().isTimeBased();
-            final String timestampCol = es.timeScale().timestampCol();
+            final boolean isTimeBased = es.windowScale().isTimeBased();
+            final String timestampCol = es.windowScale().timestampCol();
 
             Arrays.stream(pairs)
                     .filter(p -> !isTimeBased || !p.rightColumn().equals(timestampCol))
                     .map(fc -> makeEmaOperator(fc,
                             source,
                             es))
+                    .forEach(ops::add);
+            return null;
+        }
+
+        @Override
+        public Void visit(@NotNull final EmsSpec spec) {
+            final boolean isTimeBased = spec.windowScale().isTimeBased();
+            final String timestampCol = spec.windowScale().timestampCol();
+
+            Arrays.stream(pairs)
+                    .filter(p -> !isTimeBased || !p.rightColumn().equals(timestampCol))
+                    .map(fc -> makeEmsOperator(fc,
+                            source,
+                            spec))
+                    .forEach(ops::add);
+            return null;
+        }
+
+        @Override
+        public Void visit(@NotNull final EmMinMaxSpec spec) {
+            final boolean isTimeBased = spec.windowScale().isTimeBased();
+            final String timestampCol = spec.windowScale().timestampCol();
+
+            Arrays.stream(pairs)
+                    .filter(p -> !isTimeBased || !p.rightColumn().equals(timestampCol))
+                    .map(fc -> makeEmMinMaxOperator(fc,
+                            source,
+                            spec))
+                    .forEach(ops::add);
+            return null;
+        }
+
+        @Override
+        public Void visit(@NotNull final EmStdSpec spec) {
+            final boolean isTimeBased = spec.windowScale().isTimeBased();
+            final String timestampCol = spec.windowScale().timestampCol();
+
+            Arrays.stream(pairs)
+                    .filter(p -> !isTimeBased || !p.rightColumn().equals(timestampCol))
+                    .map(fc -> makeEmStdOperator(fc,
+                            source,
+                            spec))
                     .forEach(ops::add);
             return null;
         }
@@ -339,6 +390,14 @@ public class UpdateByOperatorFactory {
         public Void visit(CumProdSpec cps) {
             Arrays.stream(pairs)
                     .map(fc -> makeCumProdOperator(fc, source))
+                    .forEach(ops::add);
+            return null;
+        }
+
+        @Override
+        public Void visit(@NotNull final DeltaSpec spec) {
+            Arrays.stream(pairs)
+                    .map(fc -> makeDeltaOperator(fc, source, spec))
                     .forEach(ops::add);
             return null;
         }
@@ -416,51 +475,297 @@ public class UpdateByOperatorFactory {
             return null;
         }
 
+        @Override
+        public Void visit(@NotNull final RollingWAvgSpec rws) {
+            final boolean isTimeBased = rws.revWindowScale().isTimeBased();
+            final String timestampCol = rws.revWindowScale().timestampCol();
+
+            Arrays.stream(pairs)
+                    .filter(p -> !isTimeBased || !p.rightColumn().equals(timestampCol))
+                    .map(fc -> makeRollingWAvgOperator(fc,
+                            source,
+                            rws))
+                    .forEach(ops::add);
+            return null;
+        }
+
+        @Override
+        public Void visit(@NotNull final RollingStdSpec spec) {
+            final boolean isTimeBased = spec.revWindowScale().isTimeBased();
+            final String timestampCol = spec.revWindowScale().timestampCol();
+
+            Arrays.stream(pairs)
+                    .filter(p -> !isTimeBased || !p.rightColumn().equals(timestampCol))
+                    .map(fc -> makeRollingStdOperator(fc,
+                            source,
+                            spec))
+                    .forEach(ops::add);
+            return null;
+        }
+
+        @Override
+        public Void visit(@NotNull final RollingCountSpec spec) {
+            final boolean isTimeBased = spec.revWindowScale().isTimeBased();
+            final String timestampCol = spec.revWindowScale().timestampCol();
+
+            Arrays.stream(pairs)
+                    .filter(p -> !isTimeBased || !p.rightColumn().equals(timestampCol))
+                    .map(fc -> makeRollingCountOperator(fc,
+                            source,
+                            spec))
+                    .forEach(ops::add);
+            return null;
+        }
+
         private UpdateByOperator makeEmaOperator(@NotNull final MatchPair pair,
                 @NotNull final Table source,
-                @NotNull final EmaSpec ema) {
+                @NotNull final EmaSpec spec) {
             // noinspection rawtypes
             final ColumnSource columnSource = source.getColumnSource(pair.rightColumn);
             final Class<?> csType = columnSource.getType();
 
             final String[] affectingColumns;
-            if (ema.timeScale().timestampCol() == null) {
+            if (spec.windowScale().timestampCol() == null) {
                 affectingColumns = new String[] {pair.rightColumn};
             } else {
-                affectingColumns = new String[] {ema.timeScale().timestampCol(), pair.rightColumn};
+                affectingColumns = new String[] {spec.windowScale().timestampCol(), pair.rightColumn};
             }
 
             // use the correct units from the EmaSpec (depending on if Time or Tick based)
-            final long timeScaleUnits = ema.timeScale().timescaleUnits();
-            final OperationControl control = ema.controlOrDefault();
+            final double timeScaleUnits = spec.windowScale().getFractionalTimeScaleUnits();
+            final OperationControl control = spec.controlOrDefault();
+            final MathContext mathCtx = control.bigValueContextOrDefault();
+
+            final BasePrimitiveEMOperator.EmFunction doubleFunction = (prev, cur, alpha, oneMinusAlpha) -> {
+                final double decayedVal = prev * alpha;
+                return decayedVal + (oneMinusAlpha * cur);
+            };
+            final BaseBigNumberEMOperator.EmFunction bdFunction = (prev, cur, alpha, oneMinusAlpha) -> {
+                final BigDecimal decayedVal = prev.multiply(alpha, mathCtx);
+                return decayedVal.add(cur.multiply(oneMinusAlpha, mathCtx), mathCtx);
+            };
 
             if (csType == byte.class || csType == Byte.class) {
-                return new ByteEMAOperator(pair, affectingColumns, rowRedirection, control,
-                        ema.timeScale().timestampCol(), timeScaleUnits, columnSource, NULL_BYTE);
+                return new ByteEMOperator(pair, affectingColumns, rowRedirection, control,
+                        spec.windowScale().timestampCol(), timeScaleUnits, columnSource, doubleFunction, NULL_BYTE);
+            } else if (csType == char.class || csType == Character.class) {
+                return new CharEMOperator(pair, affectingColumns, rowRedirection, control,
+                        spec.windowScale().timestampCol(), timeScaleUnits, columnSource, doubleFunction);
             } else if (csType == short.class || csType == Short.class) {
-                return new ShortEMAOperator(pair, affectingColumns, rowRedirection, control,
-                        ema.timeScale().timestampCol(), timeScaleUnits, columnSource);
+                return new ShortEMOperator(pair, affectingColumns, rowRedirection, control,
+                        spec.windowScale().timestampCol(), timeScaleUnits, columnSource, doubleFunction);
             } else if (csType == int.class || csType == Integer.class) {
-                return new IntEMAOperator(pair, affectingColumns, rowRedirection, control,
-                        ema.timeScale().timestampCol(), timeScaleUnits, columnSource);
+                return new IntEMOperator(pair, affectingColumns, rowRedirection, control,
+                        spec.windowScale().timestampCol(), timeScaleUnits, columnSource, doubleFunction);
             } else if (csType == long.class || csType == Long.class) {
-                return new LongEMAOperator(pair, affectingColumns, rowRedirection, control,
-                        ema.timeScale().timestampCol(), timeScaleUnits, columnSource);
+                return new LongEMOperator(pair, affectingColumns, rowRedirection, control,
+                        spec.windowScale().timestampCol(), timeScaleUnits, columnSource, doubleFunction);
             } else if (csType == float.class || csType == Float.class) {
-                return new FloatEMAOperator(pair, affectingColumns, rowRedirection, control,
-                        ema.timeScale().timestampCol(), timeScaleUnits, columnSource);
+                return new FloatEMOperator(pair, affectingColumns, rowRedirection, control,
+                        spec.windowScale().timestampCol(), timeScaleUnits, columnSource, doubleFunction);
             } else if (csType == double.class || csType == Double.class) {
-                return new DoubleEMAOperator(pair, affectingColumns, rowRedirection, control,
-                        ema.timeScale().timestampCol(), timeScaleUnits, columnSource);
+                return new DoubleEMOperator(pair, affectingColumns, rowRedirection, control,
+                        spec.windowScale().timestampCol(), timeScaleUnits, columnSource, doubleFunction);
             } else if (csType == BigDecimal.class) {
-                return new BigDecimalEMAOperator(pair, affectingColumns, rowRedirection, control,
-                        ema.timeScale().timestampCol(), timeScaleUnits, columnSource);
+                return new BigDecimalEMOperator(pair, affectingColumns, rowRedirection, control,
+                        spec.windowScale().timestampCol(), timeScaleUnits, columnSource, bdFunction);
             } else if (csType == BigInteger.class) {
-                return new BigIntegerEMAOperator(pair, affectingColumns, rowRedirection, control,
-                        ema.timeScale().timestampCol(), timeScaleUnits, columnSource);
+                return new BigIntegerEMOperator(pair, affectingColumns, rowRedirection, control,
+                        spec.windowScale().timestampCol(), timeScaleUnits, columnSource, bdFunction);
             }
 
             throw new IllegalArgumentException("Can not perform EMA on type " + csType);
+        }
+
+        private UpdateByOperator makeEmsOperator(@NotNull final MatchPair pair,
+                @NotNull final Table source,
+                @NotNull final EmsSpec spec) {
+            // noinspection rawtypes
+            final ColumnSource columnSource = source.getColumnSource(pair.rightColumn);
+            final Class<?> csType = columnSource.getType();
+
+            final String[] affectingColumns;
+            if (spec.windowScale().timestampCol() == null) {
+                affectingColumns = new String[] {pair.rightColumn};
+            } else {
+                affectingColumns = new String[] {spec.windowScale().timestampCol(), pair.rightColumn};
+            }
+
+            // use the correct units from the EmsSpec (depending on if Time or Tick based)
+            final double timeScaleUnits = spec.windowScale().getFractionalTimeScaleUnits();
+            final OperationControl control = spec.controlOrDefault();
+            final MathContext mathCtx = control.bigValueContextOrDefault();
+
+            final BasePrimitiveEMOperator.EmFunction doubleFunction = (prev, cur, alpha, oneMinusAlpha) -> {
+                final double decayedVal = prev * alpha;
+                return decayedVal + cur;
+            };
+            final BaseBigNumberEMOperator.EmFunction bdFunction = (prev, cur, alpha, oneMinusAlpha) -> {
+                final BigDecimal decayedVal = prev.multiply(alpha, mathCtx);
+                return decayedVal.add(cur, mathCtx);
+            };
+
+            if (csType == byte.class || csType == Byte.class) {
+                return new ByteEMOperator(pair, affectingColumns, rowRedirection, control,
+                        spec.windowScale().timestampCol(), timeScaleUnits, columnSource, doubleFunction, NULL_BYTE);
+            } else if (csType == char.class || csType == Character.class) {
+                return new CharEMOperator(pair, affectingColumns, rowRedirection, control,
+                        spec.windowScale().timestampCol(), timeScaleUnits, columnSource, doubleFunction);
+            } else if (csType == short.class || csType == Short.class) {
+                return new ShortEMOperator(pair, affectingColumns, rowRedirection, control,
+                        spec.windowScale().timestampCol(), timeScaleUnits, columnSource, doubleFunction);
+            } else if (csType == int.class || csType == Integer.class) {
+                return new IntEMOperator(pair, affectingColumns, rowRedirection, control,
+                        spec.windowScale().timestampCol(), timeScaleUnits, columnSource, doubleFunction);
+            } else if (csType == long.class || csType == Long.class) {
+                return new LongEMOperator(pair, affectingColumns, rowRedirection, control,
+                        spec.windowScale().timestampCol(), timeScaleUnits, columnSource, doubleFunction);
+            } else if (csType == float.class || csType == Float.class) {
+                return new FloatEMOperator(pair, affectingColumns, rowRedirection, control,
+                        spec.windowScale().timestampCol(), timeScaleUnits, columnSource, doubleFunction);
+            } else if (csType == double.class || csType == Double.class) {
+                return new DoubleEMOperator(pair, affectingColumns, rowRedirection, control,
+                        spec.windowScale().timestampCol(), timeScaleUnits, columnSource, doubleFunction);
+            } else if (csType == BigDecimal.class) {
+                return new BigDecimalEMOperator(pair, affectingColumns, rowRedirection, control,
+                        spec.windowScale().timestampCol(), timeScaleUnits, columnSource, bdFunction);
+            } else if (csType == BigInteger.class) {
+                return new BigIntegerEMOperator(pair, affectingColumns, rowRedirection, control,
+                        spec.windowScale().timestampCol(), timeScaleUnits, columnSource, bdFunction);
+            }
+
+            throw new IllegalArgumentException("Can not perform EMS on type " + csType);
+        }
+
+        private UpdateByOperator makeEmMinMaxOperator(@NotNull final MatchPair pair,
+                @NotNull final Table source,
+                @NotNull final EmMinMaxSpec spec) {
+            // noinspection rawtypes
+            final ColumnSource columnSource = source.getColumnSource(pair.rightColumn);
+            final Class<?> csType = columnSource.getType();
+
+            final String[] affectingColumns;
+            if (spec.windowScale().timestampCol() == null) {
+                affectingColumns = new String[] {pair.rightColumn};
+            } else {
+                affectingColumns = new String[] {spec.windowScale().timestampCol(), pair.rightColumn};
+            }
+
+            // use the correct units from the EmMinMaxSpec (depending on if Time or Tick based)
+            final double timeScaleUnits = spec.windowScale().getFractionalTimeScaleUnits();
+            final OperationControl control = spec.controlOrDefault();
+            final MathContext mathCtx = control.bigValueContextOrDefault();
+
+            final BasePrimitiveEMOperator.EmFunction doubleFunction;
+            final BaseBigNumberEMOperator.EmFunction bdFunction;
+
+            if (spec.isMax()) {
+                doubleFunction = (prev, cur, alpha, oneMinusAlpha) -> {
+                    final double decayedVal = prev * alpha;
+                    return Math.max(decayedVal, cur);
+                };
+                bdFunction = (prev, cur, alpha, oneMinusAlpha) -> {
+                    final BigDecimal decayedVal = prev.multiply(alpha, mathCtx);
+                    return decayedVal.compareTo(cur) == 1
+                            ? decayedVal
+                            : cur;
+                };
+            } else {
+                doubleFunction = (prev, cur, alpha, oneMinusAlpha) -> {
+                    final double decayedVal = prev * alpha;
+                    return Math.min(decayedVal, cur);
+                };
+                bdFunction = (prev, cur, alpha, oneMinusAlpha) -> {
+                    final BigDecimal decayedVal = prev.multiply(alpha, mathCtx);
+                    return decayedVal.compareTo(cur) == -1
+                            ? decayedVal
+                            : cur;
+                };
+            }
+
+            if (csType == byte.class || csType == Byte.class) {
+                return new ByteEMOperator(pair, affectingColumns, rowRedirection, control,
+                        spec.windowScale().timestampCol(), timeScaleUnits, columnSource, doubleFunction, NULL_BYTE);
+            } else if (csType == char.class || csType == Character.class) {
+                return new CharEMOperator(pair, affectingColumns, rowRedirection, control,
+                        spec.windowScale().timestampCol(), timeScaleUnits, columnSource, doubleFunction);
+            } else if (csType == short.class || csType == Short.class) {
+                return new ShortEMOperator(pair, affectingColumns, rowRedirection, control,
+                        spec.windowScale().timestampCol(), timeScaleUnits, columnSource, doubleFunction);
+            } else if (csType == int.class || csType == Integer.class) {
+                return new IntEMOperator(pair, affectingColumns, rowRedirection, control,
+                        spec.windowScale().timestampCol(), timeScaleUnits, columnSource, doubleFunction);
+            } else if (csType == long.class || csType == Long.class) {
+                return new LongEMOperator(pair, affectingColumns, rowRedirection, control,
+                        spec.windowScale().timestampCol(), timeScaleUnits, columnSource, doubleFunction);
+            } else if (csType == float.class || csType == Float.class) {
+                return new FloatEMOperator(pair, affectingColumns, rowRedirection, control,
+                        spec.windowScale().timestampCol(), timeScaleUnits, columnSource, doubleFunction);
+            } else if (csType == double.class || csType == Double.class) {
+                return new DoubleEMOperator(pair, affectingColumns, rowRedirection, control,
+                        spec.windowScale().timestampCol(), timeScaleUnits, columnSource, doubleFunction);
+            } else if (csType == BigDecimal.class) {
+                return new BigDecimalEMOperator(pair, affectingColumns, rowRedirection, control,
+                        spec.windowScale().timestampCol(), timeScaleUnits, columnSource, bdFunction);
+            } else if (csType == BigInteger.class) {
+                return new BigIntegerEMOperator(pair, affectingColumns, rowRedirection, control,
+                        spec.windowScale().timestampCol(), timeScaleUnits, columnSource, bdFunction);
+            }
+
+            throw new IllegalArgumentException("Can not perform EmMinMax on type " + csType);
+        }
+
+        private UpdateByOperator makeEmStdOperator(@NotNull final MatchPair pair,
+                @NotNull final Table source,
+                @NotNull final EmStdSpec spec) {
+            // noinspection rawtypes
+            final ColumnSource columnSource = source.getColumnSource(pair.rightColumn);
+            final Class<?> csType = columnSource.getType();
+
+            final String[] affectingColumns;
+            if (spec.windowScale().timestampCol() == null) {
+                affectingColumns = new String[] {pair.rightColumn};
+            } else {
+                affectingColumns = new String[] {spec.windowScale().timestampCol(), pair.rightColumn};
+            }
+
+            // use the correct units from the EmaSpec (depending on if Time or Tick based)
+            final double timeScaleUnits = spec.windowScale().getFractionalTimeScaleUnits();
+            final OperationControl control = spec.controlOrDefault();
+            final MathContext mathCtx = control.bigValueContextOrDefault();
+
+            final boolean sourceRefreshing = source.isRefreshing();
+
+            if (csType == byte.class || csType == Byte.class) {
+                return new ByteEmStdOperator(pair, affectingColumns, rowRedirection, control,
+                        spec.windowScale().timestampCol(), timeScaleUnits, columnSource, sourceRefreshing, NULL_BYTE);
+            } else if (csType == char.class || csType == Character.class) {
+                return new CharEmStdOperator(pair, affectingColumns, rowRedirection, control,
+                        spec.windowScale().timestampCol(), timeScaleUnits, columnSource, sourceRefreshing);
+            } else if (csType == short.class || csType == Short.class) {
+                return new ShortEmStdOperator(pair, affectingColumns, rowRedirection, control,
+                        spec.windowScale().timestampCol(), timeScaleUnits, columnSource, sourceRefreshing);
+            } else if (csType == int.class || csType == Integer.class) {
+                return new IntEmStdOperator(pair, affectingColumns, rowRedirection, control,
+                        spec.windowScale().timestampCol(), timeScaleUnits, columnSource, sourceRefreshing);
+            } else if (csType == long.class || csType == Long.class) {
+                return new LongEmStdOperator(pair, affectingColumns, rowRedirection, control,
+                        spec.windowScale().timestampCol(), timeScaleUnits, columnSource, sourceRefreshing);
+            } else if (csType == float.class || csType == Float.class) {
+                return new FloatEmStdOperator(pair, affectingColumns, rowRedirection, control,
+                        spec.windowScale().timestampCol(), timeScaleUnits, columnSource, sourceRefreshing);
+            } else if (csType == double.class || csType == Double.class) {
+                return new DoubleEmStdOperator(pair, affectingColumns, rowRedirection, control,
+                        spec.windowScale().timestampCol(), timeScaleUnits, columnSource, sourceRefreshing);
+            } else if (csType == BigDecimal.class) {
+                return new BigDecimalEmStdOperator(pair, affectingColumns, rowRedirection, control,
+                        spec.windowScale().timestampCol(), timeScaleUnits, columnSource, sourceRefreshing, mathCtx);
+            } else if (csType == BigInteger.class) {
+                return new BigIntegerEmStdOperator(pair, affectingColumns, rowRedirection, control,
+                        spec.windowScale().timestampCol(), timeScaleUnits, columnSource, sourceRefreshing, mathCtx);
+            }
+
+            throw new IllegalArgumentException("Can not perform EmStd on type " + csType);
         }
 
         private UpdateByOperator makeCumProdOperator(MatchPair fc, Table source) {
@@ -558,6 +863,35 @@ public class UpdateByOperatorFactory {
             }
         }
 
+        private UpdateByOperator makeDeltaOperator(@NotNull final MatchPair pair,
+                @NotNull final Table source,
+                @NotNull final DeltaSpec ds) {
+            final ColumnSource columnSource = source.getColumnSource(pair.rightColumn);
+            final Class<?> csType = columnSource.getType();
+
+            if (csType == Character.class || csType == char.class) {
+                return new CharDeltaOperator(pair, rowRedirection, ds.deltaControlOrDefault(), columnSource);
+            } else if (csType == byte.class || csType == Byte.class) {
+                return new ByteDeltaOperator(pair, rowRedirection, ds.deltaControlOrDefault(), columnSource);
+            } else if (csType == short.class || csType == Short.class) {
+                return new ShortDeltaOperator(pair, rowRedirection, ds.deltaControlOrDefault(), columnSource);
+            } else if (csType == int.class || csType == Integer.class) {
+                return new IntDeltaOperator(pair, rowRedirection, ds.deltaControlOrDefault(), columnSource);
+            } else if (csType == long.class || csType == Long.class || isTimeType(csType)) {
+                return new LongDeltaOperator(pair, rowRedirection, ds.deltaControlOrDefault(), columnSource);
+            } else if (csType == float.class || csType == Float.class) {
+                return new FloatDeltaOperator(pair, rowRedirection, ds.deltaControlOrDefault(), columnSource);
+            } else if (csType == double.class || csType == Double.class) {
+                return new DoubleDeltaOperator(pair, rowRedirection, ds.deltaControlOrDefault(), columnSource);
+            } else if (csType == BigDecimal.class) {
+                return new BigDecimalDeltaOperator(pair, rowRedirection, ds.deltaControlOrDefault(), columnSource);
+            } else if (csType == BigInteger.class) {
+                return new BigIntegerDeltaOperator(pair, rowRedirection, ds.deltaControlOrDefault(), columnSource);
+            }
+
+            throw new IllegalArgumentException("Can not perform Delta on type " + csType);
+        }
+
         private UpdateByOperator makeRollingSumOperator(@NotNull final MatchPair pair,
                 @NotNull final Table source,
                 @NotNull final RollingSumSpec rs) {
@@ -572,8 +906,8 @@ public class UpdateByOperatorFactory {
                 affectingColumns = new String[] {rs.revWindowScale().timestampCol(), pair.rightColumn};
             }
 
-            final long prevWindowScaleUnits = rs.revWindowScale().timescaleUnits();
-            final long fwdWindowScaleUnits = rs.fwdWindowScale().timescaleUnits();
+            final long prevWindowScaleUnits = rs.revWindowScale().getTimeScaleUnits();
+            final long fwdWindowScaleUnits = rs.fwdWindowScale().getTimeScaleUnits();
 
             if (csType == Boolean.class || csType == boolean.class) {
                 return new ByteRollingSumOperator(pair, affectingColumns, rowRedirection,
@@ -639,8 +973,8 @@ public class UpdateByOperatorFactory {
                 affectingColumns[ii] = pair.rightColumn;
             }
 
-            final long prevWindowScaleUnits = rg.revWindowScale().timescaleUnits();
-            final long fwdWindowScaleUnits = rg.fwdWindowScale().timescaleUnits();
+            final long prevWindowScaleUnits = rg.revWindowScale().getTimeScaleUnits();
+            final long fwdWindowScaleUnits = rg.fwdWindowScale().getTimeScaleUnits();
 
             return new RollingGroupOperator(pairs, affectingColumns, rowRedirection,
                     rg.revWindowScale().timestampCol(),
@@ -661,8 +995,8 @@ public class UpdateByOperatorFactory {
                 affectingColumns = new String[] {rs.revWindowScale().timestampCol(), pair.rightColumn};
             }
 
-            final long prevWindowScaleUnits = rs.revWindowScale().timescaleUnits();
-            final long fwdWindowScaleUnits = rs.fwdWindowScale().timescaleUnits();
+            final long prevWindowScaleUnits = rs.revWindowScale().getTimeScaleUnits();
+            final long fwdWindowScaleUnits = rs.fwdWindowScale().getTimeScaleUnits();
 
             if (csType == Boolean.class || csType == boolean.class) {
                 return new ByteRollingAvgOperator(pair, affectingColumns, rowRedirection,
@@ -722,8 +1056,8 @@ public class UpdateByOperatorFactory {
                 affectingColumns = new String[] {rmm.revWindowScale().timestampCol(), pair.rightColumn};
             }
 
-            final long prevWindowScaleUnits = rmm.revWindowScale().timescaleUnits();
-            final long fwdWindowScaleUnits = rmm.fwdWindowScale().timescaleUnits();
+            final long prevWindowScaleUnits = rmm.revWindowScale().getTimeScaleUnits();
+            final long fwdWindowScaleUnits = rmm.fwdWindowScale().getTimeScaleUnits();
 
             if (csType == byte.class || csType == Byte.class) {
                 return new ByteRollingMinMaxOperator(pair, affectingColumns, rowRedirection,
@@ -777,8 +1111,8 @@ public class UpdateByOperatorFactory {
                 affectingColumns = new String[] {rs.revWindowScale().timestampCol(), pair.rightColumn};
             }
 
-            final long prevWindowScaleUnits = rs.revWindowScale().timescaleUnits();
-            final long fwdWindowScaleUnits = rs.fwdWindowScale().timescaleUnits();
+            final long prevWindowScaleUnits = rs.revWindowScale().getTimeScaleUnits();
+            final long fwdWindowScaleUnits = rs.fwdWindowScale().getTimeScaleUnits();
 
             if (csType == byte.class || csType == Byte.class) {
                 return new ByteRollingProductOperator(pair, affectingColumns, rowRedirection,
@@ -819,6 +1153,191 @@ public class UpdateByOperatorFactory {
             }
 
             throw new IllegalArgumentException("Can not perform RollingProduct on type " + csType);
+        }
+
+        private UpdateByOperator makeRollingCountOperator(@NotNull final MatchPair pair,
+                @NotNull final Table source,
+                @NotNull final RollingCountSpec rs) {
+            // noinspection rawtypes
+            final ColumnSource columnSource = source.getColumnSource(pair.rightColumn);
+            final Class<?> csType = columnSource.getType();
+
+            final String[] affectingColumns;
+            if (rs.revWindowScale().timestampCol() == null) {
+                affectingColumns = new String[] {pair.rightColumn};
+            } else {
+                affectingColumns = new String[] {rs.revWindowScale().timestampCol(), pair.rightColumn};
+            }
+
+            final long prevWindowScaleUnits = rs.revWindowScale().getTimeScaleUnits();
+            final long fwdWindowScaleUnits = rs.fwdWindowScale().getTimeScaleUnits();
+
+            if (csType == boolean.class || csType == Boolean.class) {
+                return new ByteRollingCountOperator(pair, affectingColumns, rowRedirection,
+                        rs.revWindowScale().timestampCol(),
+                        prevWindowScaleUnits, fwdWindowScaleUnits, NULL_BOOLEAN_AS_BYTE);
+            } else if (csType == byte.class || csType == Byte.class) {
+                return new ByteRollingCountOperator(pair, affectingColumns, rowRedirection,
+                        rs.revWindowScale().timestampCol(),
+                        prevWindowScaleUnits, fwdWindowScaleUnits, NULL_BYTE);
+            } else if (csType == char.class || csType == Character.class) {
+                return new CharRollingCountOperator(pair, affectingColumns, rowRedirection,
+                        rs.revWindowScale().timestampCol(),
+                        prevWindowScaleUnits, fwdWindowScaleUnits);
+            } else if (csType == short.class || csType == Short.class) {
+                return new ShortRollingCountOperator(pair, affectingColumns, rowRedirection,
+                        rs.revWindowScale().timestampCol(),
+                        prevWindowScaleUnits, fwdWindowScaleUnits);
+            } else if (csType == int.class || csType == Integer.class) {
+                return new IntRollingCountOperator(pair, affectingColumns, rowRedirection,
+                        rs.revWindowScale().timestampCol(),
+                        prevWindowScaleUnits, fwdWindowScaleUnits);
+            } else if (csType == long.class || csType == Long.class) {
+                return new LongRollingCountOperator(pair, affectingColumns, rowRedirection,
+                        rs.revWindowScale().timestampCol(),
+                        prevWindowScaleUnits, fwdWindowScaleUnits);
+            } else if (csType == float.class || csType == Float.class) {
+                return new FloatRollingCountOperator(pair, affectingColumns, rowRedirection,
+                        rs.revWindowScale().timestampCol(),
+                        prevWindowScaleUnits, fwdWindowScaleUnits);
+            } else if (csType == double.class || csType == Double.class) {
+                return new DoubleRollingCountOperator(pair, affectingColumns, rowRedirection,
+                        rs.revWindowScale().timestampCol(),
+                        prevWindowScaleUnits, fwdWindowScaleUnits);
+            } else {
+                return new ObjectRollingCountOperator(pair, affectingColumns, rowRedirection,
+                        rs.revWindowScale().timestampCol(),
+                        prevWindowScaleUnits, fwdWindowScaleUnits);
+            }
+        }
+
+        private UpdateByOperator makeRollingStdOperator(@NotNull final MatchPair pair,
+                @NotNull final Table source,
+                @NotNull final RollingStdSpec rs) {
+            // noinspection rawtypes
+            final ColumnSource columnSource = source.getColumnSource(pair.rightColumn);
+            final Class<?> csType = columnSource.getType();
+
+            final String[] affectingColumns;
+            if (rs.revWindowScale().timestampCol() == null) {
+                affectingColumns = new String[] {pair.rightColumn};
+            } else {
+                affectingColumns = new String[] {rs.revWindowScale().timestampCol(), pair.rightColumn};
+            }
+
+            final long prevWindowScaleUnits = rs.revWindowScale().getTimeScaleUnits();
+            final long fwdWindowScaleUnits = rs.fwdWindowScale().getTimeScaleUnits();
+
+            if (csType == Boolean.class || csType == boolean.class) {
+                return new ByteRollingStdOperator(pair, affectingColumns, rowRedirection,
+                        rs.revWindowScale().timestampCol(),
+                        prevWindowScaleUnits, fwdWindowScaleUnits, NULL_BOOLEAN_AS_BYTE);
+            } else if (csType == byte.class || csType == Byte.class) {
+                return new ByteRollingStdOperator(pair, affectingColumns, rowRedirection,
+                        rs.revWindowScale().timestampCol(),
+                        prevWindowScaleUnits, fwdWindowScaleUnits, NULL_BYTE);
+            } else if (csType == char.class || csType == Character.class) {
+                return new CharRollingStdOperator(pair, affectingColumns, rowRedirection,
+                        rs.revWindowScale().timestampCol(),
+                        prevWindowScaleUnits, fwdWindowScaleUnits);
+            } else if (csType == short.class || csType == Short.class) {
+                return new ShortRollingStdOperator(pair, affectingColumns, rowRedirection,
+                        rs.revWindowScale().timestampCol(),
+                        prevWindowScaleUnits, fwdWindowScaleUnits);
+            } else if (csType == int.class || csType == Integer.class) {
+                return new IntRollingStdOperator(pair, affectingColumns, rowRedirection,
+                        rs.revWindowScale().timestampCol(),
+                        prevWindowScaleUnits, fwdWindowScaleUnits);
+            } else if (csType == long.class || csType == Long.class) {
+                return new LongRollingStdOperator(pair, affectingColumns, rowRedirection,
+                        rs.revWindowScale().timestampCol(),
+                        prevWindowScaleUnits, fwdWindowScaleUnits);
+            } else if (csType == float.class || csType == Float.class) {
+                return new FloatRollingStdOperator(pair, affectingColumns, rowRedirection,
+                        rs.revWindowScale().timestampCol(),
+                        prevWindowScaleUnits, fwdWindowScaleUnits);
+            } else if (csType == double.class || csType == Double.class) {
+                return new DoubleRollingStdOperator(pair, affectingColumns, rowRedirection,
+                        rs.revWindowScale().timestampCol(),
+                        prevWindowScaleUnits, fwdWindowScaleUnits);
+            } else if (csType == BigDecimal.class) {
+                return new BigDecimalRollingStdOperator(pair, affectingColumns, rowRedirection,
+                        rs.revWindowScale().timestampCol(),
+                        prevWindowScaleUnits, fwdWindowScaleUnits, control.mathContextOrDefault());
+            } else if (csType == BigInteger.class) {
+                return new BigIntegerRollingStdOperator(pair, affectingColumns, rowRedirection,
+                        rs.revWindowScale().timestampCol(),
+                        prevWindowScaleUnits, fwdWindowScaleUnits, control.mathContextOrDefault());
+            }
+
+            throw new IllegalArgumentException("Can not perform RollingStd on type " + csType);
+        }
+
+        private UpdateByOperator makeRollingWAvgOperator(@NotNull final MatchPair pair,
+                @NotNull final Table source,
+                @NotNull final RollingWAvgSpec rs) {
+            // noinspection rawtypes
+            final ColumnSource columnSource = source.getColumnSource(pair.rightColumn);
+            final Class<?> csType = columnSource.getType();
+
+            final ColumnSource weightColumnSource = source.getColumnSource(rs.weightCol());
+            final Class<?> weightCsType = weightColumnSource.getType();
+
+            if (!rs.weightColumnApplicableTo(weightCsType)) {
+                throw new IllegalArgumentException("Can not perform RollingWAvg on weight column type " + csType);
+            }
+
+            final String[] affectingColumns;
+            if (rs.revWindowScale().timestampCol() == null) {
+                affectingColumns = new String[] {pair.rightColumn, rs.weightCol()};
+            } else {
+                affectingColumns = new String[] {rs.revWindowScale().timestampCol(), pair.rightColumn, rs.weightCol()};
+            }
+
+            final long prevWindowScaleUnits = rs.revWindowScale().getTimeScaleUnits();
+            final long fwdWindowScaleUnits = rs.fwdWindowScale().getTimeScaleUnits();
+
+            if (csType == BigDecimal.class || csType == BigInteger.class ||
+                    weightCsType == BigDecimal.class || weightCsType == BigInteger.class) {
+                // We need to produce a BigDecimal result output. All input columns will be cast to BigDecimal so
+                // there is no distinction between input types.
+                return new BigDecimalRollingWAvgOperator(pair, affectingColumns, rowRedirection,
+                        rs.revWindowScale().timestampCol(),
+                        prevWindowScaleUnits, fwdWindowScaleUnits, rs.weightCol(), weightColumnSource,
+                        columnSource, control.mathContextOrDefault());
+            }
+
+            if (csType == byte.class || csType == Byte.class) {
+                return new ByteRollingWAvgOperator(pair, affectingColumns, rowRedirection,
+                        rs.revWindowScale().timestampCol(),
+                        prevWindowScaleUnits, fwdWindowScaleUnits, rs.weightCol(), weightColumnSource);
+            } else if (csType == char.class || csType == Character.class) {
+                return new CharRollingWAvgOperator(pair, affectingColumns, rowRedirection,
+                        rs.revWindowScale().timestampCol(),
+                        prevWindowScaleUnits, fwdWindowScaleUnits, rs.weightCol(), weightColumnSource);
+            } else if (csType == short.class || csType == Short.class) {
+                return new ShortRollingWAvgOperator(pair, affectingColumns, rowRedirection,
+                        rs.revWindowScale().timestampCol(),
+                        prevWindowScaleUnits, fwdWindowScaleUnits, rs.weightCol(), weightColumnSource);
+            } else if (csType == int.class || csType == Integer.class) {
+                return new IntRollingWAvgOperator(pair, affectingColumns, rowRedirection,
+                        rs.revWindowScale().timestampCol(),
+                        prevWindowScaleUnits, fwdWindowScaleUnits, rs.weightCol(), weightColumnSource);
+            } else if (csType == long.class || csType == Long.class) {
+                return new LongRollingWAvgOperator(pair, affectingColumns, rowRedirection,
+                        rs.revWindowScale().timestampCol(),
+                        prevWindowScaleUnits, fwdWindowScaleUnits, rs.weightCol(), weightColumnSource);
+            } else if (csType == float.class || csType == Float.class) {
+                return new FloatRollingWAvgOperator(pair, affectingColumns, rowRedirection,
+                        rs.revWindowScale().timestampCol(),
+                        prevWindowScaleUnits, fwdWindowScaleUnits, rs.weightCol(), weightColumnSource);
+            } else if (csType == double.class || csType == Double.class) {
+                return new DoubleRollingWAvgOperator(pair, affectingColumns, rowRedirection,
+                        rs.revWindowScale().timestampCol(),
+                        prevWindowScaleUnits, fwdWindowScaleUnits, rs.weightCol(), weightColumnSource);
+            }
+
+            throw new IllegalArgumentException("Can not perform RollingWAvg on type " + csType);
         }
     }
 }

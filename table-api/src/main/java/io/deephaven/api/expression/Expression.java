@@ -3,26 +3,36 @@
  */
 package io.deephaven.api.expression;
 
+import io.deephaven.api.ColumnName;
 import io.deephaven.api.RawString;
-import io.deephaven.api.Selectable;
-import io.deephaven.api.value.Value;
-
-import java.io.Serializable;
+import io.deephaven.api.filter.Filter;
+import io.deephaven.api.literal.Literal;
 
 /**
  * Represents an evaluate-able expression structure.
  *
- * @see Selectable
+ * @see Literal
+ * @see ColumnName
+ * @see Filter
+ * @see Function
+ * @see Method
+ * @see RawString
  */
-public interface Expression extends Serializable {
+public interface Expression {
 
-    <V extends Visitor> V walk(V visitor);
+    <T> T walk(Visitor<T> visitor);
 
-    interface Visitor {
-        // TODO (deephaven-core#830): Add more table api Expression structuring
+    interface Visitor<T> {
+        T visit(Literal literal);
 
-        void visit(Value value);
+        T visit(ColumnName columnName);
 
-        void visit(RawString rawString);
+        T visit(Filter filter);
+
+        T visit(Function function);
+
+        T visit(Method method);
+
+        T visit(RawString rawString);
     }
 }

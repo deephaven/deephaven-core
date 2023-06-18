@@ -10,7 +10,7 @@ import io.deephaven.base.verify.Assert;
 import io.deephaven.chunk.Chunk;
 import io.deephaven.chunk.LongChunk;
 import io.deephaven.chunk.attributes.Values;
-import io.deephaven.engine.table.MatchPair;
+import io.deephaven.engine.table.impl.MatchPair;
 import io.deephaven.engine.table.impl.updateby.UpdateByOperator;
 import io.deephaven.engine.table.impl.updateby.internal.BaseLongUpdateByOperator;
 import io.deephaven.engine.table.impl.util.RowRedirection;
@@ -28,7 +28,6 @@ public class LongRollingSumOperator extends BaseLongUpdateByOperator {
         protected LongChunk<? extends Values> longInfluencerValuesChunk;
         protected LongRingBuffer longWindowValues;
 
-
         protected Context(final int chunkSize) {
             super(chunkSize);
             longWindowValues = new LongRingBuffer(RING_BUFFER_INITIAL_CAPACITY, true);
@@ -42,8 +41,8 @@ public class LongRollingSumOperator extends BaseLongUpdateByOperator {
 
 
         @Override
-        public void setValuesChunk(@NotNull final Chunk<? extends Values> valuesChunk) {
-            longInfluencerValuesChunk = valuesChunk.asLongChunk();
+        public void setValueChunks(@NotNull final Chunk<? extends Values>[] valueChunks) {
+            longInfluencerValuesChunk = valueChunks[0].asLongChunk();
         }
 
         @Override
@@ -101,8 +100,8 @@ public class LongRollingSumOperator extends BaseLongUpdateByOperator {
 
     @NotNull
     @Override
-    public UpdateByOperator.Context makeUpdateContext(final int chunkSize) {
-        return new Context(chunkSize);
+    public UpdateByOperator.Context makeUpdateContext(final int affectedChunkSize, final int influencerChunkSize) {
+        return new Context(affectedChunkSize);
     }
 
     public LongRollingSumOperator(@NotNull final MatchPair pair,

@@ -166,7 +166,7 @@ public interface CategoryDataSeries extends DataSeries {
      * Sets the point color. Unspecified points use the default color.
      *
      * @param category data point
-     * @param color color
+     * @param pointColor color
      * @return this CategoryDataSeries
      */
     CategoryDataSeries pointColor(final Comparable category, final Paint pointColor);

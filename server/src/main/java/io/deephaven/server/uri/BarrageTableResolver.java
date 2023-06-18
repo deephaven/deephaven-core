@@ -68,23 +68,24 @@ public final class BarrageTableResolver implements UriResolver {
     }
 
     private final BarrageSessionFactoryBuilder builder;
-
     private final ScheduledExecutorService executor;
-
     private final BufferAllocator allocator;
-
     private final SSLConfig sslConfig;
-
+    private final ClientChannelFactory clientChannelFactory;
     private final Map<DeephavenTarget, BarrageSession> sessions;
 
     @Inject
     public BarrageTableResolver(
-            BarrageSessionFactoryBuilder builder, ScheduledExecutorService executor, BufferAllocator allocator,
-            @Named("client.sslConfig") SSLConfig sslConfig) {
+            BarrageSessionFactoryBuilder builder,
+            ScheduledExecutorService executor,
+            BufferAllocator allocator,
+            @Named("client.sslConfig") SSLConfig sslConfig,
+            ClientChannelFactory clientChannelFactory) {
         this.builder = Objects.requireNonNull(builder);
         this.executor = Objects.requireNonNull(executor);
         this.allocator = Objects.requireNonNull(allocator);
         this.sslConfig = Objects.requireNonNull(sslConfig);
+        this.clientChannelFactory = Objects.requireNonNull(clientChannelFactory);
         this.sessions = new ConcurrentHashMap<>();
     }
 
@@ -168,7 +169,8 @@ public final class BarrageTableResolver implements UriResolver {
      * @param table the table spec
      * @param viewport the position-space viewport to use for the subscription
      * @param columns the columns to include in the subscription
-     * @param reverseViewport Whether to treat {@code viewport} as offsets from {@link #size()} rather than {@code 0}
+     * @param reverseViewport Whether to treat {@code viewport} as offsets from {@link Table#size()} rather than
+     *        {@code 0}
      * @return the subscribed table
      */
     public Table subscribe(String targetUri, TableSpec table, RowSet viewport, BitSet columns, boolean reverseViewport)
@@ -185,7 +187,8 @@ public final class BarrageTableResolver implements UriResolver {
      * @param options the options
      * @param viewport the position-space viewport to use for the subscription
      * @param columns the columns to include in the subscription
-     * @param reverseViewport Whether to treat {@code viewport} as offsets from {@link #size()} rather than {@code 0}
+     * @param reverseViewport Whether to treat {@code viewport} as offsets from {@link Table#size()} rather than
+     *        {@code 0}
      * @return the subscribed table
      */
     public Table subscribe(DeephavenTarget target, TableSpec table, BarrageSubscriptionOptions options, RowSet viewport,
@@ -261,7 +264,8 @@ public final class BarrageTableResolver implements UriResolver {
      * @param table the table spec
      * @param viewport the position-space viewport to use for the snapshot
      * @param columns the columns to include in the snapshot
-     * @param reverseViewport Whether to treat {@code viewport} as offsets from {@link #size()} rather than {@code 0}
+     * @param reverseViewport Whether to treat {@code viewport} as offsets from {@link Table#size()} rather than
+     *        {@code 0}
      * @return the table to snapshot
      */
     public Table snapshot(String targetUri, TableSpec table, RowSet viewport, BitSet columns, boolean reverseViewport)
@@ -278,7 +282,8 @@ public final class BarrageTableResolver implements UriResolver {
      * @param options the options
      * @param viewport the position-space viewport to use for the snapshot
      * @param columns the columns to include in the snapshot
-     * @param reverseViewport Whether to treat {@code viewport} as offsets from {@link #size()} rather than {@code 0}
+     * @param reverseViewport Whether to treat {@code viewport} as offsets from {@link Table#size()} rather than
+     *        {@code 0}
      * @return the table to snapshot
      */
     public Table snapshot(DeephavenTarget target, TableSpec table, BarrageSubscriptionOptions options, RowSet viewport,
@@ -304,7 +309,7 @@ public final class BarrageTableResolver implements UriResolver {
     }
 
     private BarrageSession newSession(ClientConfig config) {
-        return newSession(ChannelHelper.channel(config));
+        return newSession(clientChannelFactory.create(config));
     }
 
     private BarrageSession newSession(ManagedChannel channel) {

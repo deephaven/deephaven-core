@@ -80,7 +80,7 @@ public abstract class InstrumentedTableUpdateListenerAdapter extends Instrumente
     @Override
     public void onFailureInternal(Throwable originalException, Entry sourceEntry) {
         try {
-            AsyncErrorLogger.log(DateTimeUtils.currentTimeMillis(), sourceEntry, sourceEntry,
+            AsyncErrorLogger.log(DateTimeUtils.nowMillisResolution(), sourceEntry, sourceEntry,
                     originalException);
             AsyncClientErrorNotifier.reportError(originalException);
         } catch (IOException e) {

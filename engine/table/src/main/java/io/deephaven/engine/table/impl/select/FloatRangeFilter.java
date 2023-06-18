@@ -15,6 +15,22 @@ import io.deephaven.util.QueryConstants;
 
 public class FloatRangeFilter extends AbstractRangeFilter {
 
+    public static FloatRangeFilter lt(String columnName, float x) {
+        return new FloatRangeFilter(columnName, x, QueryConstants.NULL_FLOAT, true, false);
+    }
+
+    public static FloatRangeFilter leq(String columnName, float x) {
+        return new FloatRangeFilter(columnName, x, QueryConstants.NULL_FLOAT, true, true);
+    }
+
+    public static FloatRangeFilter gt(String columnName, float x) {
+        return new FloatRangeFilter(columnName, x, Float.NaN, false, true);
+    }
+
+    public static FloatRangeFilter geq(String columnName, float x) {
+        return new FloatRangeFilter(columnName, x, Float.NaN, true, true);
+    }
+
     private final float upper;
     private final float lower;
 
@@ -24,8 +40,7 @@ public class FloatRangeFilter extends AbstractRangeFilter {
 
     public FloatRangeFilter(String columnName, float val1, float val2, boolean lowerInclusive, boolean upperInclusive) {
         super(columnName, lowerInclusive, upperInclusive);
-
-        if(val1 > val2) {
+        if(FloatComparisons.gt(val1, val2)) {
             upper = val1;
             lower = val2;
         } else {
@@ -39,20 +54,19 @@ public class FloatRangeFilter extends AbstractRangeFilter {
         final double parsed = Double.parseDouble(val);
         final double offset = Math.pow(10, -precision);
         final boolean positiveOrZero = parsed >= 0;
-
         return new FloatRangeFilter(columnName, (float)parsed, (float)(positiveOrZero ? parsed + offset : parsed - offset), positiveOrZero, !positiveOrZero);
     }
 
     static WhereFilter makeFloatRangeFilter(String columnName, Condition condition, String value) {
         switch (condition) {
             case LESS_THAN:
-                return new FloatRangeFilter(columnName, Float.parseFloat(value), QueryConstants.NULL_FLOAT, true, false);
+                return lt(columnName, Float.parseFloat(value));
             case LESS_THAN_OR_EQUAL:
-                return new FloatRangeFilter(columnName, Float.parseFloat(value), QueryConstants.NULL_FLOAT, true, true);
+                return leq(columnName, Float.parseFloat(value));
             case GREATER_THAN:
-                return new FloatRangeFilter(columnName, Float.parseFloat(value), Float.NaN, false, true);
+                return gt(columnName, Float.parseFloat(value));
             case GREATER_THAN_OR_EQUAL:
-                return new FloatRangeFilter(columnName, Float.parseFloat(value), Float.NaN, true, true);
+                return geq(columnName, Float.parseFloat(value));
             default:
                 throw new IllegalArgumentException("RangeConditionFilter does not support condition " + condition);
         }

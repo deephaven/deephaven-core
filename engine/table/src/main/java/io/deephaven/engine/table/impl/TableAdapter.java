@@ -1,10 +1,14 @@
 package io.deephaven.engine.table.impl;
 
+import io.deephaven.api.AsOfJoinMatch;
 import io.deephaven.api.ColumnName;
+import io.deephaven.api.JoinAddition;
 import io.deephaven.api.JoinMatch;
+import io.deephaven.api.RangeJoinMatch;
 import io.deephaven.api.Selectable;
 import io.deephaven.api.SortColumn;
 import io.deephaven.api.agg.Aggregation;
+import io.deephaven.api.Pair;
 import io.deephaven.api.agg.spec.AggSpec;
 import io.deephaven.api.filter.Filter;
 import io.deephaven.api.snapshot.SnapshotWhenOptions;
@@ -17,6 +21,7 @@ import io.deephaven.engine.rowset.TrackingRowSet;
 import io.deephaven.engine.table.*;
 import io.deephaven.engine.table.hierarchical.RollupTable;
 import io.deephaven.engine.table.hierarchical.TreeTable;
+import io.deephaven.engine.updategraph.UpdateGraph;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
@@ -56,6 +61,11 @@ public interface TableAdapter extends TableDefaults {
 
     @Override
     default String getDescription() {
+        return throwUnsupported();
+    }
+
+    @Override
+    default UpdateGraph getUpdateGraph() {
         return throwUnsupported();
     }
 
@@ -149,11 +159,6 @@ public interface TableAdapter extends TableDefaults {
     }
 
     @Override
-    default DataColumn getColumn(String columnName) {
-        return throwUnsupported();
-    }
-
-    @Override
     default <DATA_TYPE> CloseableIterator<DATA_TYPE> columnIterator(@NotNull String columnName) {
         return throwUnsupported();
     }
@@ -199,11 +204,6 @@ public interface TableAdapter extends TableDefaults {
     }
 
     @Override
-    default Object[] getRecord(long rowNo, String... columnNames) {
-        return throwUnsupported();
-    }
-
-    @Override
     default Table wouldMatch(WouldMatchPair... matchers) {
         return throwUnsupported();
     }
@@ -214,17 +214,12 @@ public interface TableAdapter extends TableDefaults {
     }
 
     @Override
-    default Table renameColumns(MatchPair... pairs) {
+    default Table renameColumns(Collection<Pair> pairs) {
         return throwUnsupported();
     }
 
     @Override
     default Table moveColumns(int index, boolean moveToEnd, String... columnsToMove) {
-        return throwUnsupported();
-    }
-
-    @Override
-    default Table dateTimeColumnAsNanos(String dateTimeColumnName, String nanosColumnName) {
         return throwUnsupported();
     }
 
@@ -244,30 +239,32 @@ public interface TableAdapter extends TableDefaults {
     }
 
     @Override
-    default Table exactJoin(Table rightTable, MatchPair[] columnsToMatch, MatchPair[] columnsToAdd) {
+    default Table exactJoin(Table rightTable, Collection<? extends JoinMatch> columnsToMatch,
+            Collection<? extends JoinAddition> columnsToAdd) {
         return throwUnsupported();
     }
 
     @Override
-    default Table aj(Table rightTable, MatchPair[] columnsToMatch, MatchPair[] columnsToAdd,
-            AsOfMatchRule asOfMatchRule) {
+    default Table asOfJoin(Table rightTable, Collection<? extends JoinMatch> exactMatches, AsOfJoinMatch asOfMatch,
+            Collection<? extends JoinAddition> columnsToAdd) {
         return throwUnsupported();
     }
 
     @Override
-    default Table raj(Table rightTable, MatchPair[] columnsToMatch, MatchPair[] columnsToAdd,
-            AsOfMatchRule asOfMatchRule) {
+    default Table naturalJoin(Table rightTable, Collection<? extends JoinMatch> columnsToMatch,
+            Collection<? extends JoinAddition> columnsToAdd) {
         return throwUnsupported();
     }
 
     @Override
-    default Table naturalJoin(Table rightTable, MatchPair[] columnsToMatch, MatchPair[] columnsToAdd) {
+    default Table join(Table rightTable, Collection<? extends JoinMatch> columnsToMatch,
+            Collection<? extends JoinAddition> columnsToAdd, int reserveBits) {
         return throwUnsupported();
     }
 
     @Override
-    default Table join(Table rightTable, MatchPair[] columnsToMatch, MatchPair[] columnsToAdd,
-            int numRightBitsToReserve) {
+    default Table rangeJoin(@NotNull Table rightTable, @NotNull Collection<? extends JoinMatch> exactMatches,
+            @NotNull RangeJoinMatch rangeMatch, @NotNull Collection<? extends Aggregation> aggregations) {
         return throwUnsupported();
     }
 
@@ -287,7 +284,7 @@ public interface TableAdapter extends TableDefaults {
     }
 
     @Override
-    default Table dropStream() {
+    default Table removeBlink() {
         return throwUnsupported();
     }
 
@@ -441,7 +438,7 @@ public interface TableAdapter extends TableDefaults {
     }
 
     @Override
-    default Table where(Collection<? extends Filter> filters) {
+    default Table where(Filter filter) {
         return throwUnsupported();
     }
 

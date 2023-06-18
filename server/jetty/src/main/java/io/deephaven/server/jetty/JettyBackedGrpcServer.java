@@ -25,11 +25,18 @@ import org.apache.arrow.flight.auth.AuthConstants;
 import org.apache.arrow.flight.auth2.Auth2Constants;
 import org.eclipse.jetty.alpn.server.ALPNServerConnectionFactory;
 import org.eclipse.jetty.http.HttpHeader;
+import org.eclipse.jetty.http.HttpMethod;
+import org.eclipse.jetty.http2.HTTP2Connection;
+import org.eclipse.jetty.http2.HTTP2Session;
 import org.eclipse.jetty.http2.parser.RateControl;
 import org.eclipse.jetty.http2.server.HTTP2CServerConnectionFactory;
+import org.eclipse.jetty.http2.server.HTTP2ServerConnection;
 import org.eclipse.jetty.http2.server.HTTP2ServerConnectionFactory;
+import org.eclipse.jetty.io.Connection;
 import org.eclipse.jetty.security.ConstraintSecurityHandler;
 import org.eclipse.jetty.server.ForwardedRequestCustomizer;
+import org.eclipse.jetty.server.Handler;
+import org.eclipse.jetty.server.HandlerContainer;
 import org.eclipse.jetty.server.HttpConfiguration;
 import org.eclipse.jetty.server.HttpConnectionFactory;
 import org.eclipse.jetty.server.SecureRequestCustomizer;
@@ -37,6 +44,7 @@ import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.ServerConnector;
 import org.eclipse.jetty.server.SslConnectionFactory;
 import org.eclipse.jetty.server.handler.HandlerCollection;
+import org.eclipse.jetty.server.handler.gzip.GzipHandler;
 import org.eclipse.jetty.servlet.DefaultServlet;
 import org.eclipse.jetty.servlet.ErrorPageErrorHandler;
 import org.eclipse.jetty.servlet.FilterHolder;
@@ -58,6 +66,7 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.EnumSet;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.TimeUnit;
@@ -91,11 +100,12 @@ public class JettyBackedGrpcServer implements GrpcServer {
         }
         context.setInitParameter(DefaultServlet.CONTEXT_INIT + "dirAllowed", "false");
 
-        // For the Web UI, cache everything in the static folder
-        // https://create-react-app.dev/docs/production-build/#static-file-caching
-        context.addFilter(NoCacheFilter.class, "/ide/*", EnumSet.noneOf(DispatcherType.class));
+        // Cache all of the appropriate assets folders
+        for (String appRoot : List.of("/ide/", "/iframe/table/", "/iframe/chart/")) {
+            context.addFilter(NoCacheFilter.class, appRoot + "*", EnumSet.noneOf(DispatcherType.class));
+            context.addFilter(CacheFilter.class, appRoot + "assets/*", EnumSet.noneOf(DispatcherType.class));
+        }
         context.addFilter(NoCacheFilter.class, "/jsapi/*", EnumSet.noneOf(DispatcherType.class));
-        context.addFilter(CacheFilter.class, "/ide/assets/*", EnumSet.noneOf(DispatcherType.class));
         context.addFilter(DropIfModifiedSinceHeader.class, "/*", EnumSet.noneOf(DispatcherType.class));
 
         context.setSecurityHandler(new ConstraintSecurityHandler());
@@ -201,7 +211,23 @@ public class JettyBackedGrpcServer implements GrpcServer {
         JsPlugins.maybeAdd(handlers::addHandler);
         // Set up /*
         handlers.addHandler(context);
-        jetty.setHandler(handlers);
+
+        final Handler handler;
+        if (config.httpCompressionOrDefault()) {
+            final GzipHandler gzipHandler = new GzipHandler();
+            // The default of 32 bytes seems a bit small.
+            gzipHandler.setMinGzipSize(1024);
+            // The GzipHandler documentation says GET is the default, but the constructor shows both GET and POST.
+            // This should ensure our gRPC messages don't get compressed for now, but we may need to be more explicit in
+            // the future as gRPC can technically operate over GET.
+            gzipHandler.setIncludedMethods(HttpMethod.GET.asString());
+            // Otherwise, the other defaults seem reasonable.
+            gzipHandler.setHandler(handlers);
+            handler = gzipHandler;
+        } else {
+            handler = handlers;
+        }
+        jetty.setHandler(handler);
     }
 
     @Override
@@ -287,11 +313,10 @@ public class JettyBackedGrpcServer implements GrpcServer {
         final HttpConnectionFactory http11 = config.http1OrDefault() ? new HttpConnectionFactory(httpConfig) : null;
         final ServerConnector serverConnector;
         if (config.ssl().isPresent()) {
-            // Consider allowing configuration of sniHostCheck
-            final boolean sniHostCheck = true;
-            httpConfig.addCustomizer(new SecureRequestCustomizer(sniHostCheck));
+            httpConfig.addCustomizer(new SecureRequestCustomizer(config.sniHostCheck()));
             final HTTP2ServerConnectionFactory h2 = new HTTP2ServerConnectionFactory(httpConfig);
             h2.setRateControlFactory(new RateControl.Factory() {});
+
             final ALPNServerConnectionFactory alpn = new ALPNServerConnectionFactory();
             alpn.setDefaultProtocol(http11 != null ? http11.getProtocol() : h2.getProtocol());
             // The Jetty server is getting intermediate setup by default if none are configured. This is most similar to
@@ -322,6 +347,22 @@ public class JettyBackedGrpcServer implements GrpcServer {
 
         // Give connections extra time to shutdown, since we have an explicit server shutdown
         serverConnector.setShutdownIdleTimeout(serverConnector.getIdleTimeout());
+
+        // Override the h2 stream timeout with a specified value
+        serverConnector.addEventListener(new Connection.Listener() {
+            @Override
+            public void onOpened(Connection connection) {
+                if (connection instanceof HTTP2ServerConnection) {
+                    HTTP2Session session = (HTTP2Session) ((HTTP2Connection) connection).getSession();
+                    session.setStreamIdleTimeout(config.http2StreamIdleTimeoutOrDefault());
+                }
+            }
+
+            @Override
+            public void onClosed(Connection connection) {
+
+            }
+        });
 
         return serverConnector;
     }

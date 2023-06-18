@@ -3,13 +3,14 @@
  */
 package io.deephaven.server.table.ops;
 
+import io.deephaven.api.Selectable;
 import io.deephaven.auth.codegen.impl.TableServiceContextualAuthWiring;
 import io.deephaven.base.verify.Assert;
 import io.deephaven.datastructures.util.CollectionUtil;
 import io.deephaven.engine.table.Table;
 import io.deephaven.engine.table.impl.select.SelectColumn;
 import io.deephaven.engine.table.impl.select.SelectColumnFactory;
-import io.deephaven.engine.updategraph.UpdateGraphProcessor;
+import io.deephaven.engine.updategraph.UpdateGraph;
 import io.deephaven.proto.backplane.grpc.BatchTableRequest;
 import io.deephaven.proto.backplane.grpc.SelectOrUpdateRequest;
 import io.deephaven.server.session.SessionState;
@@ -17,13 +18,15 @@ import io.deephaven.server.table.validation.ColumnExpressionValidator;
 
 import javax.inject.Inject;
 import javax.inject.Singleton;
+import java.util.Arrays;
+import java.util.Collection;
 import java.util.List;
 import java.util.function.Function;
 
 public abstract class UpdateOrSelectGrpcImpl extends GrpcTableOperation<SelectOrUpdateRequest> {
     @FunctionalInterface
     protected interface RealTableOperation {
-        Table apply(Table source, SelectColumn[] selectColumns);
+        Table apply(Table source, Collection<? extends Selectable> columns);
     }
 
     private final RealTableOperation realTableOperation;
@@ -50,11 +53,12 @@ public abstract class UpdateOrSelectGrpcImpl extends GrpcTableOperation<SelectOr
         ColumnExpressionValidator.validateColumnExpressions(expressions, columnSpecs, parent);
 
         if (parent.isRefreshing() && requiresSharedLock) {
-            return UpdateGraphProcessor.DEFAULT.sharedLock()
-                    .computeLocked(() -> realTableOperation.apply(parent, expressions));
+            final UpdateGraph updateGraph = parent.getUpdateGraph();
+            return updateGraph.sharedLock().computeLocked(
+                    () -> realTableOperation.apply(parent, Arrays.asList(expressions)));
         }
 
-        return realTableOperation.apply(parent, expressions);
+        return realTableOperation.apply(parent, Arrays.asList(expressions));
     }
 
     @Singleton

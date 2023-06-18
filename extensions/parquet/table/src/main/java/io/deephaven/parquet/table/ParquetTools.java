@@ -8,11 +8,11 @@ import io.deephaven.base.ClassUtil;
 import io.deephaven.base.FileUtils;
 import io.deephaven.base.Pair;
 import io.deephaven.base.verify.Require;
+import io.deephaven.engine.context.ExecutionContext;
 import io.deephaven.engine.table.ColumnDefinition;
 import io.deephaven.engine.table.Table;
 import io.deephaven.engine.table.TableDefinition;
 import io.deephaven.engine.table.impl.locations.util.TableDataRefreshService;
-import io.deephaven.engine.updategraph.UpdateGraphProcessor;
 import io.deephaven.engine.util.TableTools;
 import io.deephaven.vector.*;
 import io.deephaven.stringset.StringSet;
@@ -484,7 +484,7 @@ public class ParquetTools {
                         : "Read multiple parquet files with " + locationKeyFinder,
                 RegionedTableComponentFactoryImpl.INSTANCE,
                 locationProvider,
-                readInstructions.isRefreshing() ? UpdateGraphProcessor.DEFAULT : null);
+                readInstructions.isRefreshing() ? ExecutionContext.getContext().getUpdateGraph() : null);
     }
 
     /**

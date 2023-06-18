@@ -1,7 +1,7 @@
 package io.deephaven.lang.completion
 
-import io.deephaven.base.clock.Clock;
-import io.deephaven.engine.context.TestExecutionContext
+import io.deephaven.base.clock.Clock
+import io.deephaven.engine.context.TestExecutionContext;
 import io.deephaven.engine.table.Table
 import io.deephaven.engine.table.TableDefinition
 import io.deephaven.engine.util.VariableProvider
@@ -9,14 +9,15 @@ import io.deephaven.internal.log.LoggerFactory
 import io.deephaven.io.logger.Logger
 import io.deephaven.lang.parse.CompletionParser
 import io.deephaven.proto.backplane.script.grpc.CompletionItem
-import io.deephaven.time.DateTime
 import io.deephaven.util.SafeCloseable
 import spock.lang.Specification
 import spock.lang.Unroll
 
+import java.time.Instant
+
 class ColumnExpressionCompletionHandlerTest extends Specification implements ChunkerCompleterMixin {
 
-    private static String src_(String methodName = 't', String columnName = 'Date', String completion = "cur") {
+    private static String src_(String methodName = 't', String columnName = 'Date', String completion = "prev") {
         return """u = ${methodName}.update('$columnName = $completion"""
     }
 
@@ -34,7 +35,7 @@ class ColumnExpressionCompletionHandlerTest extends Specification implements Chu
     def "Completion at #position should find typesafe column completion for partially completed column expressions"(int position, Set<String> completions) {
         given:
 
-//u = t.update('Date=cur
+//u = t.update('Date=prev
             String src = src_()
             CompletionParser p = new CompletionParser()
             doc = p.parse(src)
@@ -43,7 +44,7 @@ class ColumnExpressionCompletionHandlerTest extends Specification implements Chu
         VariableProvider variables = Mock(VariableProvider) {
                 (0..1) * getVariableNames() >> ['t']
                 (0..1) * getVariableType('t') >> Table
-                (0..1) * getTableDefinition('t') >> TableDefinition.from(['Date', 'DateClock'], [DateTime, Clock]
+                (0..1) * getTableDefinition('t') >> TableDefinition.from(['Date', 'DateTime'], [String, Instant]
                 )
             }
 
@@ -68,13 +69,27 @@ class ColumnExpressionCompletionHandlerTest extends Specification implements Chu
             position | completions
             // between `e=`, expect method name completions, and a single column name completion, for Clock
             19 | [
-                src_('t', 'Date', "currentTime()'"),
-                src_('t', 'Date', "currentTimeMillis()'"),
+                src_('t', 'Date', "previousDay("),
+                src_('t', 'Date', "previousDay(\""),
+                src_('t', 'Date', "previousDay()'"),
+                src_('t', 'Date', "previousBusinessDay("),
+                src_('t', 'Date', "previousBusinessDay(\""),
+                src_('t', 'Date', "previousBusinessDay()'"),
+                src_('t', 'Date', "previousNonBusinessDay("),
+                src_('t', 'Date', "previousNonBusinessDay(\""),
+                src_('t', 'Date', "previousNonBusinessDay()'"),
             ]
             18 | [
-                src_('t', 'Date', "currentTime()'"),
-                src_('t', 'Date', "currentTimeMillis()'"),
-                src_('t', 'DateClock', "cur"),
+                src_('t', 'Date', "previousDay("),
+                src_('t', 'Date', "previousDay(\""),
+                src_('t', 'Date', "previousDay()'"),
+                src_('t', 'Date', "previousBusinessDay("),
+                src_('t', 'Date', "previousBusinessDay(\""),
+                src_('t', 'Date', "previousBusinessDay()'"),
+                src_('t', 'Date', "previousNonBusinessDay("),
+                src_('t', 'Date', "previousNonBusinessDay(\""),
+                src_('t', 'Date', "previousNonBusinessDay()'"),
+                src_('t', 'DateTime', "prev"),
             ]
     }
 

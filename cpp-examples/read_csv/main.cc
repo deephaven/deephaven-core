@@ -13,10 +13,10 @@
 #include "deephaven/client/client.h"
 #include "deephaven/client/flight.h"
 #include "deephaven/client/utility/arrow_util.h"
-#include "deephaven/client/utility/utility.h"
 
 using deephaven::client::TableHandleManager;
 using deephaven::client::Client;
+using deephaven::client::utility::convertTicketToFlightDescriptor;
 using deephaven::client::utility::okOrThrow;
 using deephaven::client::utility::valueOrThrow;
 
@@ -68,11 +68,12 @@ arrow::Status doit(const TableHandleManager &manager, const std::string &csvfn) 
 
   auto wrapper = manager.createFlightWrapper();
 
-  auto [table_handle, fd] = manager.newTableHandleAndFlightDescriptor();
+  auto ticket = manager.newTicket();
 
   arrow::flight::FlightCallOptions options;
-  wrapper.addAuthHeaders(&options);
+  wrapper.addHeaders(&options);
 
+  auto fd = convertTicketToFlightDescriptor(ticket);
   std::unique_ptr<arrow::flight::FlightStreamWriter> fsw;
   std::unique_ptr<arrow::flight::FlightMetadataReader> fmr;
   okOrThrow(DEEPHAVEN_EXPR_MSG(
@@ -96,6 +97,7 @@ arrow::Status doit(const TableHandleManager &manager, const std::string &csvfn) 
   okOrThrow(DEEPHAVEN_EXPR_MSG(fmr->ReadMetadata(&buf)));
   okOrThrow(DEEPHAVEN_EXPR_MSG(fsw->Close()));
 
+  auto table_handle = manager.makeTableHandleFromTicket(ticket);
   std::cout << "table is:\n" << table_handle.stream(true) << std::endl;
   table_handle.bindToVariable("showme");
   return arrow::Status::OK();

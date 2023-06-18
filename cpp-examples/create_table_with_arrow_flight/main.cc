@@ -10,9 +10,10 @@ using deephaven::client::NumCol;
 using deephaven::client::Client;
 using deephaven::client::TableHandle;
 using deephaven::client::TableHandleManager;
+using deephaven::client::utility::convertTicketToFlightDescriptor;
 using deephaven::client::utility::okOrThrow;
-using deephaven::client::utility::valueOrThrow;
 using deephaven::client::utility::TableMaker;
+using deephaven::client::utility::valueOrThrow;
 
 namespace {
 void doit(const TableHandleManager &manager);
@@ -79,7 +80,7 @@ void doit(const TableHandleManager &manager) {
   std::vector<int32_t> volumes{1000, 2000, 3000, 4000};
   auto numRows = static_cast<int64_t>(symbols.size());
   if (numRows != prices.size() || numRows != volumes.size()) {
-    throw std::runtime_error(DEEPHAVEN_DEBUG_MSG("sizes don't match"));
+    throw DEEPHAVEN_EXPR_MSG(std::runtime_error(DEEPHAVEN_DEBUG_MSG("sizes don't match")));
   }
 
   // 6. Move data to Arrow column builders
@@ -104,30 +105,36 @@ void doit(const TableHandleManager &manager) {
   // 8. Get a Deephaven "FlightWrapper" object to access Arrow Flight
   auto wrapper = manager.createFlightWrapper();
 
-  // 9. Allocate a TableHandle and get its corresponding Arrow flight descriptor
-  auto [table, fd] = manager.newTableHandleAndFlightDescriptor();
+  // 9. Allocate a Ticket to be used to reference the result
+  auto ticket = manager.newTicket();
 
   // 10. DoPut takes FlightCallOptions, which need to at least contain the Deephaven
   // authentication headers for this session.
   arrow::flight::FlightCallOptions options;
-  wrapper.addAuthHeaders(&options);
+  wrapper.addHeaders(&options);
 
-  // 11. Perform the doPut
+  // 11. Make a FlightDescriptor from the ticket
+  auto fd = deephaven::client::utility::convertTicketToFlightDescriptor(ticket);
+
+  // 12. Perform the doPut
   std::unique_ptr<arrow::flight::FlightStreamWriter> fsw;
   std::unique_ptr<arrow::flight::FlightMetadataReader> fmr;
   okOrThrow(DEEPHAVEN_EXPR_MSG(wrapper.flightClient()->DoPut(options, fd, schema, &fsw, &fmr)));
 
-  // 12. Make a RecordBatch containing both the schema and the data
+  // 13. Make a RecordBatch containing both the schema and the data
   auto batch = arrow::RecordBatch::Make(schema, numRows, std::move(columns));
   okOrThrow(DEEPHAVEN_EXPR_MSG(fsw->WriteRecordBatch(*batch)));
   okOrThrow(DEEPHAVEN_EXPR_MSG(fsw->DoneWriting()));
 
-  // 13. Read back a metadata message (ignored), then close the Writer
+  // 14. Read back a metadata message (ignored), then close the Writer
   std::shared_ptr<arrow::Buffer> buf;
   okOrThrow(DEEPHAVEN_EXPR_MSG(fmr->ReadMetadata(&buf)));
   okOrThrow(DEEPHAVEN_EXPR_MSG(fsw->Close()));
 
-  // 14. Use Deephaven high level operations to fetch the table and print it
+  // 15. Now that the table is ready, bind the ticket to a TableHandle.
+  auto table = manager.makeTableHandleFromTicket(ticket);
+
+  // 16. Use Deephaven high level operations to fetch the table and print it
   std::cout << "table is:\n" << table.stream(true) << std::endl;
 }
 }  // namespace

@@ -10,6 +10,7 @@ dependencies {
     implementation project(':extensions-csv')
     implementation project(':extensions-arrow')
     implementation project(':extensions-parquet-table')
+    implementation project(':extensions-performance')
     implementation project(':extensions-jdbc')
     implementation project(':Util');
     implementation project(':Integrations')
@@ -26,7 +27,9 @@ dependencies {
     implementation 'org.hdrhistogram:HdrHistogram:2.1.12'
 
     implementation project(':proto:proto-backplane-grpc-flight')
-    implementation project(':open-api-lang-tools')
+    api(project(':open-api-lang-tools')) {
+        because 'downstream dagger compile, see deephaven-core#1722'
+    }
     api(project(':log-factory')) {
         because 'downstream dagger compile, see deephaven-core#1722'
     }
@@ -92,6 +95,7 @@ dependencies {
     testImplementation project(':proto:proto-backplane-grpc')
 
     testImplementation project(':base-test-utils')
+    testImplementation project(':engine-context')
     testImplementation project(':engine-test-utils')
     testImplementation TestTools.projectDependency(project, 'engine-context')
     testImplementation TestTools.projectDependency(project, 'Util')

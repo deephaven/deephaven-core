@@ -10,7 +10,7 @@ import io.deephaven.base.verify.Assert;
 import io.deephaven.chunk.Chunk;
 import io.deephaven.chunk.ByteChunk;
 import io.deephaven.chunk.attributes.Values;
-import io.deephaven.engine.table.MatchPair;
+import io.deephaven.engine.table.impl.MatchPair;
 import io.deephaven.engine.table.impl.updateby.UpdateByOperator;
 import io.deephaven.engine.table.impl.updateby.internal.BaseDoubleUpdateByOperator;
 import io.deephaven.engine.table.impl.util.RowRedirection;
@@ -26,11 +26,11 @@ public class ByteRollingAvgOperator extends BaseDoubleUpdateByOperator {
     // endregion extra-fields
 
     protected class Context extends BaseDoubleUpdateByOperator.Context {
-        protected ByteChunk<? extends Values> byteInfluencerValuesChunk;
+        protected ByteChunk<? extends Values> influencerValuesChunk;
         protected ByteRingBuffer byteWindowValues;
 
-        protected Context(final int chunkSize) {
-            super(chunkSize);
+        protected Context(final int affectedChunkSize, final int influencerChunkSize) {
+            super(affectedChunkSize);
             byteWindowValues = new ByteRingBuffer(BUFFER_INITIAL_CAPACITY, true);
         }
 
@@ -41,8 +41,8 @@ public class ByteRollingAvgOperator extends BaseDoubleUpdateByOperator {
         }
 
         @Override
-        public void setValuesChunk(@NotNull final Chunk<? extends Values> valuesChunk) {
-            byteInfluencerValuesChunk = valuesChunk.asByteChunk();
+        public void setValueChunks(@NotNull final Chunk<? extends Values>[] valueChunks) {
+            influencerValuesChunk = valueChunks[0].asByteChunk();
         }
 
         @Override
@@ -50,7 +50,7 @@ public class ByteRollingAvgOperator extends BaseDoubleUpdateByOperator {
             byteWindowValues.ensureRemaining(count);
 
             for (int ii = 0; ii < count; ii++) {
-                final byte val = byteInfluencerValuesChunk.get(pos + ii);
+                final byte val = influencerValuesChunk.get(pos + ii);
                 byteWindowValues.addUnsafe(val);
 
                 // increase the running sum
@@ -101,8 +101,8 @@ public class ByteRollingAvgOperator extends BaseDoubleUpdateByOperator {
 
     @NotNull
     @Override
-    public UpdateByOperator.Context makeUpdateContext(final int chunkSize) {
-        return new Context(chunkSize);
+    public UpdateByOperator.Context makeUpdateContext(final int affectedChunkSize, final int influencerChunkSize) {
+        return new Context(affectedChunkSize, influencerChunkSize);
     }
 
     public ByteRollingAvgOperator(@NotNull final MatchPair pair,

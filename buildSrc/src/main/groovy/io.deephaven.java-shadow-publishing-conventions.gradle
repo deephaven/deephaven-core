@@ -5,6 +5,7 @@ plugins {
   id 'signing'
   id 'maven-publish'
   id 'com.github.johnrengelman.shadow'
+  id 'io.deephaven.javadoc-conventions'
 }
 
 java {
@@ -13,9 +14,6 @@ java {
 }
 
 tasks.withType(Javadoc) {
-  options.addStringOption('Xdoclint:none', '-quiet')
-  options.addStringOption('Xmaxwarns', '1')
-
   // https://github.com/gradle/gradle/issues/19869
   options.addStringOption('sourcepath', sourceSets.main.allJava.getSourceDirectories().getAsPath())
 }

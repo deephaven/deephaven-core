@@ -3,6 +3,7 @@
  */
 package io.deephaven.engine.table.impl;
 
+import io.deephaven.engine.context.ExecutionContext;
 import io.deephaven.engine.rowset.RowSet;
 import io.deephaven.engine.rowset.RowSetFactory;
 import io.deephaven.engine.rowset.RowSetShiftData;
@@ -10,7 +11,8 @@ import io.deephaven.engine.rowset.TrackingWritableRowSet;
 import io.deephaven.engine.table.*;
 import io.deephaven.engine.table.impl.partitioned.PartitionedTableImpl;
 import io.deephaven.engine.table.impl.sources.ArrayBackedColumnSource;
-import io.deephaven.engine.updategraph.UpdateGraphProcessor;
+import io.deephaven.engine.updategraph.NotificationQueue;
+import io.deephaven.engine.updategraph.UpdateGraph;
 import io.deephaven.engine.updategraph.UpdateSourceCombiner;
 import io.deephaven.engine.table.impl.locations.*;
 import io.deephaven.engine.table.impl.locations.impl.SingleTableLocationProvider;
@@ -120,7 +122,7 @@ public class SourcePartitionedTable extends PartitionedTableImpl {
             final boolean needToRefreshLocations = refreshLocations && tableLocationProvider.supportsSubscriptions();
             if (needToRefreshLocations || refreshSizes) {
                 result.setRefreshing(true);
-                refreshCombiner = new UpdateSourceCombiner();
+                refreshCombiner = new UpdateSourceCombiner(result.getUpdateGraph());
                 result.addParentReference(refreshCombiner);
             } else {
                 refreshCombiner = null;
@@ -158,7 +160,8 @@ public class SourcePartitionedTable extends PartitionedTableImpl {
 
             if (result.isRefreshing()) {
                 // noinspection ConstantConditions
-                UpdateGraphProcessor.DEFAULT.addSource(refreshCombiner);
+                UpdateGraph updateGraph = result.getUpdateGraph();
+                updateGraph.addSource(refreshCombiner);
             }
         }
 

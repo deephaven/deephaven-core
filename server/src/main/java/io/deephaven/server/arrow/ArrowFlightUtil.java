@@ -13,12 +13,14 @@ import io.deephaven.barrage.flatbuf.BarrageSnapshotRequest;
 import io.deephaven.barrage.flatbuf.BarrageSubscriptionRequest;
 import io.deephaven.base.verify.Assert;
 import io.deephaven.configuration.Configuration;
+import io.deephaven.engine.context.ExecutionContext;
 import io.deephaven.engine.liveness.SingletonLivenessManager;
 import io.deephaven.engine.rowset.*;
 import io.deephaven.engine.table.Table;
 import io.deephaven.engine.table.impl.BaseTable;
 import io.deephaven.engine.table.impl.QueryTable;
 import io.deephaven.engine.table.impl.util.BarrageMessage;
+import io.deephaven.engine.updategraph.UpdateGraph;
 import io.deephaven.extensions.barrage.BarragePerformanceLog;
 import io.deephaven.extensions.barrage.BarrageSnapshotOptions;
 import io.deephaven.extensions.barrage.BarrageStreamGenerator;
@@ -39,6 +41,7 @@ import io.deephaven.server.hierarchicaltable.HierarchicalTableView;
 import io.deephaven.server.hierarchicaltable.HierarchicalTableViewSubscription;
 import io.deephaven.server.session.SessionState;
 import io.deephaven.server.session.TicketRouter;
+import io.deephaven.util.SafeCloseable;
 import io.grpc.stub.ServerCallStreamObserver;
 import io.grpc.stub.StreamObserver;
 import org.apache.arrow.flatbuf.MessageHeader;
@@ -68,7 +71,7 @@ public class ArrowFlightUtil {
             final Flight.Ticket request,
             final StreamObserver<InputStream> observer) {
 
-        final SessionState.ExportObject<BaseTable> export =
+        final SessionState.ExportObject<BaseTable<?>> export =
                 ticketRouter.resolve(session, request, "request");
 
         final BarragePerformanceLog.SnapshotMetricsHelper metrics =
@@ -90,7 +93,7 @@ public class ArrowFlightUtil {
 
                     // push the schema to the listener
                     listener.onNext(streamGeneratorFactory.getSchemaView(
-                            fbb -> BarrageUtil.makeTableSchemaPayload(fbb,
+                            fbb -> BarrageUtil.makeTableSchemaPayload(fbb, DEFAULT_SNAPSHOT_DESER_OPTIONS,
                                     table.getDefinition(), table.getAttributes())));
 
                     // shared code between `DoGet` and `BarrageSnapshotRequest`
@@ -376,25 +379,6 @@ public class ArrowFlightUtil {
                 }
 
                 isFirstMsg = false;
-
-                // The magic value is '0x6E687064'. It is the numerical representation of the ASCII "dphn".
-                int size = message.descriptor.getCmd().size();
-                if (size == 4) {
-                    ByteBuffer bb = message.descriptor.getCmd().asReadOnlyByteBuffer();
-
-                    // set the order to little-endian (FlatBuffers default)
-                    bb.order(ByteOrder.LITTLE_ENDIAN);
-
-                    // read and compare the value to the "magic" bytes
-                    long value = (long) bb.getInt(0) & 0xFFFFFFFFL;
-                    if (value != BarrageUtil.FLATBUFFER_MAGIC) {
-                        throw Exceptions.statusRuntimeException(Code.INVALID_ARGUMENT,
-                                myPrefix + "expected BarrageMessageWrapper magic bytes in FlightDescriptor.cmd");
-                    }
-                } else {
-                    throw Exceptions.statusRuntimeException(Code.INVALID_ARGUMENT,
-                            myPrefix + "expected BarrageMessageWrapper magic bytes in FlightDescriptor.cmd");
-                }
             }
         }
 
@@ -482,6 +466,7 @@ public class ArrowFlightUtil {
                                 // push the schema to the listener
                                 listener.onNext(streamGeneratorFactory.getSchemaView(
                                         fbb -> BarrageUtil.makeTableSchemaPayload(fbb,
+                                                snapshotOptAdapter.adapt(snapshotRequest),
                                                 table.getDefinition(), table.getAttributes())));
 
                                 // collect the viewport and columnsets (if provided)
@@ -590,24 +575,32 @@ public class ArrowFlightUtil {
 
                 final io.deephaven.barrage.flatbuf.BarrageSubscriptionOptions options =
                         subscriptionRequest.subscriptionOptions();
-                long minUpdateIntervalMs = options == null ? 0 : options.minUpdateIntervalMs();
-                if (minUpdateIntervalMs == 0) {
+                final long minUpdateIntervalMs;
+                if (options == null || options.minUpdateIntervalMs() == 0) {
                     minUpdateIntervalMs = DEFAULT_MIN_UPDATE_INTERVAL_MS;
+                } else {
+                    minUpdateIntervalMs = options.minUpdateIntervalMs();
                 }
 
                 final Object export = parent.get();
                 if (export instanceof QueryTable) {
                     final QueryTable table = (QueryTable) export;
-                    bmp = table.getResult(bmpOperationFactory.create(table, minUpdateIntervalMs));
-                    if (bmp.isRefreshing()) {
-                        manage(bmp);
+                    final UpdateGraph ug = table.getUpdateGraph();
+                    try (final SafeCloseable ignored = ExecutionContext.getContext().withUpdateGraph(ug).open()) {
+                        bmp = table.getResult(bmpOperationFactory.create(table, minUpdateIntervalMs));
+                        if (bmp.isRefreshing()) {
+                            manage(bmp);
+                        }
                     }
                 } else if (export instanceof HierarchicalTableView) {
                     final HierarchicalTableView hierarchicalTableView = (HierarchicalTableView) export;
-                    htvs = htvsFactory.create(hierarchicalTableView, listener,
-                            subscriptionOptAdapter.adapt(subscriptionRequest), minUpdateIntervalMs);
-                    if (hierarchicalTableView.getHierarchicalTable().getSource().isRefreshing()) {
-                        manage(htvs);
+                    final UpdateGraph ug = hierarchicalTableView.getHierarchicalTable().getSource().getUpdateGraph();
+                    try (final SafeCloseable ignored = ExecutionContext.getContext().withUpdateGraph(ug).open()) {
+                        htvs = htvsFactory.create(hierarchicalTableView, listener,
+                                subscriptionOptAdapter.adapt(subscriptionRequest), minUpdateIntervalMs);
+                        if (hierarchicalTableView.getHierarchicalTable().getSource().isRefreshing()) {
+                            manage(htvs);
+                        }
                     }
                 } else {
                     GrpcUtil.safelyError(listener, Code.FAILED_PRECONDITION, "Ticket ("

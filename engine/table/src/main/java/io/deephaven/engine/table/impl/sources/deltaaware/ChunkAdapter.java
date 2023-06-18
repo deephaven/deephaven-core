@@ -8,10 +8,11 @@ import io.deephaven.util.BooleanUtils;
 import io.deephaven.engine.table.ChunkSource;
 import io.deephaven.engine.table.ChunkSink;
 import io.deephaven.chunk.*;
+import io.deephaven.util.SafeCloseable;
 
-public class ChunkAdapter<T> {
-    public static <T> ChunkAdapter<T> create(Class type, final ChunkSink baseline,
-            final ChunkSink delta) {
+public class ChunkAdapter<T> implements SafeCloseable {
+
+    public static <T> ChunkAdapter<T> create(Class type, final ChunkSink baseline, final ChunkSink delta) {
         // noinspection unchecked
         return type == Boolean.class ? (ChunkAdapter<T>) new BooleanChunkAdapter(baseline, delta)
                 : new ChunkAdapter<>(baseline, delta);
@@ -166,6 +167,12 @@ public class ChunkAdapter<T> {
     private void finishSet(final long index) {
         soleKey.setKey(index);
         delta.fillFromChunk(deltaFillFromContext, baseChunk, soleKey);
+    }
+
+    @Override
+    public void close() {
+        final SafeCloseable deltaContextToClose = deltaContext == baselineContext ? null : deltaContext;
+        SafeCloseable.closeAll(baselineContext, deltaContextToClose, deltaFillFromContext, soleKey, baseChunk);
     }
 
     private static class BooleanChunkAdapter extends ChunkAdapter<Boolean> {

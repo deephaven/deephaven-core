@@ -9,7 +9,6 @@ dependencies {
     api project(':qst')
 
     implementation project(':engine-chunk')
-    implementation project(':engine-context')
     implementation project(':hotspot')
     implementation project(':log-factory')
     implementation project(':Configuration')
@@ -20,7 +19,10 @@ dependencies {
     compileOnly 'com.google.code.findbugs:jsr305:3.0.2'
     compileOnly depAnnotations
 
+    testImplementation project(':engine-context')
+
     Classpaths.inheritJUnitClassic(project, 'testImplementation')
+    testImplementation project(':engine-test-utils')
 
     testRuntimeOnly project(':log-to-slf4j'),
             project(path: ':configs'),

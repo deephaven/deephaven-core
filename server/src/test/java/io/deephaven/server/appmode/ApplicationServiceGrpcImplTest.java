@@ -3,8 +3,9 @@
  */
 package io.deephaven.server.appmode;
 
+import io.deephaven.engine.context.ExecutionContext;
 import io.deephaven.engine.context.TestExecutionContext;
-import io.deephaven.engine.liveness.LivenessScopeStack;
+import io.deephaven.engine.testutil.junit4.EngineCleanup;
 import io.deephaven.engine.util.NoLanguageDeephavenSession;
 import io.deephaven.engine.util.ScriptSession;
 import io.deephaven.plugin.type.ObjectTypeLookup;
@@ -15,12 +16,12 @@ import io.deephaven.server.session.SessionService;
 import io.deephaven.server.session.SessionServiceGrpcImpl;
 import io.deephaven.server.session.SessionState;
 import io.deephaven.server.util.TestControlledScheduler;
-import io.deephaven.util.SafeCloseable;
 import io.deephaven.auth.AuthContext;
 import io.grpc.Context;
 import io.grpc.stub.StreamObserver;
 import org.junit.After;
 import org.junit.Before;
+import org.junit.Rule;
 import org.junit.Test;
 
 import java.util.Collections;
@@ -29,17 +30,19 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import static org.junit.Assert.assertEquals;
 
 public class ApplicationServiceGrpcImplTest {
+
+    @Rule
+    public final EngineCleanup framework = new EngineCleanup();
+
     private static final long TOKEN_EXPIRE_MS = 1_000_000;
     private static final AuthContext AUTH_CONTEXT = new AuthContext.SuperUser();
 
-    private SafeCloseable livenessScope;
     private TestControlledScheduler scheduler;
     private SessionService sessionService;
     private ApplicationServiceGrpcImpl applicationServiceGrpcImpl;
 
     @Before
     public void setup() {
-        livenessScope = LivenessScopeStack.open();
         scheduler = new TestControlledScheduler();
         sessionService = new SessionService(scheduler,
                 authContext -> new SessionState(scheduler, TestExecutionContext::createForUnitTests, authContext),
@@ -50,11 +53,8 @@ public class ApplicationServiceGrpcImplTest {
 
     @After
     public void teardown() {
-        livenessScope.close();
-
         scheduler = null;
         sessionService = null;
-        livenessScope = null;
     }
 
     /**
@@ -85,7 +85,8 @@ public class ApplicationServiceGrpcImplTest {
         faultyObserverShouldStillWork.set(false);
 
         // trigger a change
-        ScriptSession scriptSession = new NoLanguageDeephavenSession();
+        ScriptSession scriptSession = new NoLanguageDeephavenSession(
+                ExecutionContext.getDefaultContext().getUpdateGraph());
         scriptSession.setVariable("key", "hello world");
         ScriptSession.Changes changes = new ScriptSession.Changes();
         changes.created.put("key", "Object");

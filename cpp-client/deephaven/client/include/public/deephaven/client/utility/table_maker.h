@@ -19,7 +19,7 @@
 
 #include "deephaven/client/client.h"
 #include "deephaven/client/utility/arrow_util.h"
-#include "deephaven/client/utility/utility.h"
+#include "deephaven/dhcore/utility/utility.h"
 
 namespace deephaven::client::utility {
 namespace internal {
@@ -100,7 +100,6 @@ public:
   /**
    * Make the table. Call this after all your calls to addColumn().
    * @param manager The TableHandleManager
-   * @param tableName The name of the table
    * @return The TableHandle referencing the newly-created table.
    */
   TableHandle makeTable(const TableHandleManager &manager);
@@ -200,7 +199,7 @@ const char * const TypeConverterTraits<std::optional<T>>::deephavenTypeName =
 template<typename T>
 TypeConverter TypeConverter::createNew(const std::vector<T> &values) {
   using deephaven::client::utility::okOrThrow;
-  using deephaven::client::utility::stringf;
+  using deephaven::dhcore::utility::stringf;
 
   typedef TypeConverterTraits<T> traits_t;
 

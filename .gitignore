@@ -55,3 +55,4 @@ node_modules
 .project
 .classpath
 .settings
+.Rproj.user

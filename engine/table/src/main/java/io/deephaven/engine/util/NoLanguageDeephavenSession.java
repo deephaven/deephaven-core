@@ -4,6 +4,7 @@
 package io.deephaven.engine.util;
 
 import io.deephaven.engine.context.QueryScope;
+import io.deephaven.engine.updategraph.UpdateGraph;
 import io.deephaven.engine.util.scripts.ScriptPathLoader;
 import io.deephaven.engine.util.scripts.ScriptPathLoaderState;
 import org.jetbrains.annotations.NotNull;
@@ -25,12 +26,12 @@ public class NoLanguageDeephavenSession extends AbstractScriptSession<AbstractSc
     private final String scriptType;
     private final Map<String, Object> variables;
 
-    public NoLanguageDeephavenSession() {
-        this(SCRIPT_TYPE);
+    public NoLanguageDeephavenSession(final UpdateGraph updateGraph) {
+        this(updateGraph, SCRIPT_TYPE);
     }
 
-    public NoLanguageDeephavenSession(final String scriptType) {
-        super(null, null);
+    public NoLanguageDeephavenSession(final UpdateGraph updateGraph, final String scriptType) {
+        super(updateGraph, null, null);
 
         this.scriptType = scriptType;
         variables = new LinkedHashMap<>();

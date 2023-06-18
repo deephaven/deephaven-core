@@ -12,6 +12,7 @@ from deephaven.column import byte_col, char_col, short_col, bool_col, int_col, l
     string_col, datetime_col, jobj_col, ColumnType
 from deephaven.constants import MAX_BYTE, MAX_SHORT, MAX_INT, MAX_LONG
 from deephaven.jcompat import j_array_list
+from deephaven.time import epoch_nanos_to_instant
 from tests.testbase import BaseTestCase
 
 
@@ -53,7 +54,7 @@ class ColumnTestCase(BaseTestCase):
             _ = string_col(name="String", data=[1, -1.01])
 
         with self.assertRaises(DHError) as cm:
-            _ = datetime_col(name="Datetime", data=[dtypes.DateTime(round(time.time())), False])
+            _ = datetime_col(name="Datetime", data=[epoch_nanos_to_instant(round(time.time())), False])
 
         with self.assertRaises(DHError) as cm:
             _ = jobj_col(name="JObj", data=[jobj, CustomClass(-1, "-1")])
@@ -71,6 +72,12 @@ class ColumnTestCase(BaseTestCase):
 
         self.assertIsNone(test_table.columns[0].component_type)
         self.assertEqual(test_table.columns[1].component_type, dtypes.double)
+
+    def test_vector_column(self):
+        t = empty_table(0).update_view("StringColumn=`abc`").group_by()
+        self.assertTrue(t.columns[0].data_type.j_name.endswith("ObjectVector"))
+        self.assertEqual(t.columns[0].component_type, dtypes.string)
+        self.assertIsNone(t.columns[0].data_type.qst_type)
 
     def test_numeric_columns(self):
         x = [MAX_BYTE, MAX_SHORT, MAX_INT, MAX_LONG, 1, 999999]

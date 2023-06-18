@@ -15,7 +15,7 @@
 #include "deephaven/client/impl/table_handle_manager_impl.h"
 #include "deephaven/client/subscription/subscription_handle.h"
 #include "deephaven/client/utility/arrow_util.h"
-#include "deephaven/client/utility/utility.h"
+#include "deephaven/dhcore/utility/utility.h"
 
 using grpc::Channel;
 using grpc::ClientContext;
@@ -35,22 +35,23 @@ using deephaven::client::impl::AggregateImpl;
 using deephaven::client::impl::ClientImpl;
 using deephaven::client::subscription::SubscriptionHandle;
 using deephaven::client::utility::Executor;
-using deephaven::client::utility::SimpleOstringstream;
-using deephaven::client::utility::SFCallback;
-using deephaven::client::utility::separatedList;
-using deephaven::client::utility::stringf;
 using deephaven::client::utility::okOrThrow;
+using deephaven::dhcore::utility::base64Encode;
+using deephaven::dhcore::utility::separatedList;
+using deephaven::dhcore::utility::SFCallback;
+using deephaven::dhcore::utility::SimpleOstringstream;
+using deephaven::dhcore::utility::stringf;
 
 namespace deephaven::client {
 namespace {
 void printTableData(std::ostream &s, const TableHandle &tableHandle, bool wantHeaders);
 }  // namespace
 
-Client Client::connect(const std::string &target) {
+Client Client::connect(const std::string &target, const ClientOptions &options) {
   auto executor = Executor::create();
   auto flightExecutor = Executor::create();
-  auto server = Server::createFromTarget(target);
-  auto impl = ClientImpl::create(std::move(server), executor, flightExecutor);
+  auto server = Server::createFromTarget(target, options);
+  auto impl = ClientImpl::create(std::move(server), executor, flightExecutor, options.sessionType_);
   return Client(std::move(impl));
 }
 
@@ -87,17 +88,26 @@ TableHandle TableHandleManager::timeTable(int64_t startTimeNanos, int64_t period
   return TableHandle(std::move(qsImpl));
 }
 
-TableHandleAndFlightDescriptor TableHandleManager::newTableHandleAndFlightDescriptor() const {
-  auto [thImpl, fd] = impl_->newTicket();
-  TableHandle th(std::move(thImpl));
-  return {std::move(th), std::move(fd)};
-}
-
 TableHandle TableHandleManager::timeTable(std::chrono::system_clock::time_point startTime,
     std::chrono::system_clock::duration period) const {
   auto stNanos = std::chrono::duration_cast<std::chrono::nanoseconds>(startTime.time_since_epoch()).count();
   auto dNanos = std::chrono::duration_cast<std::chrono::nanoseconds>(period).count();
   return timeTable(stNanos, dNanos);
+}
+
+std::string TableHandleManager::newTicket() const {
+  return impl_->newTicket();
+}
+
+TableHandle TableHandleManager::makeTableHandleFromTicket(std::string ticket) const {
+  auto handleImpl = impl_->makeTableHandleFromTicket(std::move(ticket));
+  return TableHandle(std::move(handleImpl));
+}
+
+void TableHandleManager::runScript(std::string code) const {
+  auto res = SFCallback<>::createForFuture();
+  impl_->runScriptAsync(std::move(code), std::move(res.first));
+  (void)res.second.get();
 }
 
 namespace {
@@ -493,6 +503,14 @@ internal::TableHandleStreamAdaptor TableHandle::stream(bool wantHeaders) const {
 
 void TableHandle::observe() const {
   impl_->observe();
+}
+
+int64_t TableHandle::numRows() {
+  return impl_->numRows();
+}
+
+bool TableHandle::isStatic() {
+  return impl_->isStatic();
 }
 
 std::shared_ptr<arrow::flight::FlightStreamReader> TableHandle::getFlightStreamReader() const {

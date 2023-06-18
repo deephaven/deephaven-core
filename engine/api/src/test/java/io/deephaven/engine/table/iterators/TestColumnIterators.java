@@ -7,10 +7,9 @@ import io.deephaven.engine.table.Table;
 import io.deephaven.engine.testutil.ColumnInfo;
 import io.deephaven.engine.testutil.TstUtils;
 import io.deephaven.engine.testutil.generator.*;
+import io.deephaven.engine.testutil.junit4.EngineCleanup;
 import org.apache.commons.lang3.mutable.MutableInt;
-import org.junit.AfterClass;
-import org.junit.BeforeClass;
-import org.junit.Test;
+import org.junit.*;
 
 import java.util.Objects;
 import java.util.Random;
@@ -24,10 +23,13 @@ import static junit.framework.TestCase.assertTrue;
  */
 public class TestColumnIterators {
 
-    private static Table input;
+    @Rule
+    public final EngineCleanup framework = new EngineCleanup();
 
-    @BeforeClass
-    public static void setUpOnce() {
+    private Table input;
+
+    @Before
+    public void setUp() {
         input = TstUtils.getTable(false, 100_000, new Random(0), new ColumnInfo[] {
                 new ColumnInfo<>(new CharGenerator('A', 'z', 0.1), "CharCol"),
                 new ColumnInfo<>(new ByteGenerator((byte) -100, (byte) 100, 0.1), "ByteCol"),
@@ -41,8 +43,8 @@ public class TestColumnIterators {
         });
     }
 
-    @AfterClass
-    public static void tearDownOnce() {
+    @After
+    public void tearDown() {
         input = null;
     }
 

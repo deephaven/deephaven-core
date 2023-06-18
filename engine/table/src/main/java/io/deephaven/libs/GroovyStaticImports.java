@@ -189,7 +189,7 @@ public class GroovyStaticImports {
     public static  double avg( io.deephaven.vector.LongVector values ) {return Numeric.avg( values );}
     /** @see io.deephaven.function.Numeric#avg(io.deephaven.vector.ShortVector) */
     public static  double avg( io.deephaven.vector.ShortVector values ) {return Numeric.avg( values );}
-    /** @see io.deephaven.function.BinSearch#binSearchIndex(T[],T,io.deephaven.function.BinSearchAlgo) */
+    /** @see io.deephaven.function.BinSearch#binSearchIndex(java.lang.Comparable[],java.lang.Comparable,io.deephaven.function.BinSearchAlgo) */
     public static <T extends java.lang.Comparable<? super T>> int binSearchIndex( T[] values, T key, io.deephaven.function.BinSearchAlgo choiceWhenEquals ) {return BinSearch.binSearchIndex( values, key, choiceWhenEquals );}
     /** @see io.deephaven.function.BinSearch#binSearchIndex(byte[],byte,io.deephaven.function.BinSearchAlgo) */
     public static  int binSearchIndex( byte[] values, byte key, io.deephaven.function.BinSearchAlgo choiceWhenEquals ) {return BinSearch.binSearchIndex( values, key, choiceWhenEquals );}
@@ -219,7 +219,7 @@ public class GroovyStaticImports {
     public static  int binSearchIndex( io.deephaven.vector.LongVector values, long key, io.deephaven.function.BinSearchAlgo choiceWhenEquals ) {return BinSearch.binSearchIndex( values, key, choiceWhenEquals );}
     /** @see io.deephaven.function.BinSearch#binSearchIndex(io.deephaven.vector.ShortVector,short,io.deephaven.function.BinSearchAlgo) */
     public static  int binSearchIndex( io.deephaven.vector.ShortVector values, short key, io.deephaven.function.BinSearchAlgo choiceWhenEquals ) {return BinSearch.binSearchIndex( values, key, choiceWhenEquals );}
-    /** @see io.deephaven.function.BinSearch#binSearchIndex(io.deephaven.vector.ObjectVector,T,io.deephaven.function.BinSearchAlgo) */
+    /** @see io.deephaven.function.BinSearch#binSearchIndex(io.deephaven.vector.ObjectVector,java.lang.Comparable,io.deephaven.function.BinSearchAlgo) */
     public static <T extends java.lang.Comparable<? super T>> int binSearchIndex( io.deephaven.vector.ObjectVector<T> values, T key, io.deephaven.function.BinSearchAlgo choiceWhenEquals ) {return BinSearch.binSearchIndex( values, key, choiceWhenEquals );}
     /** @see io.deephaven.function.Cast#castDouble(byte) */
     public static  double castDouble( byte value ) {return Cast.castDouble( value );}
@@ -413,7 +413,7 @@ public class GroovyStaticImports {
     public static  long clamp( long value, long min, long max ) {return Numeric.clamp( value, min, max );}
     /** @see io.deephaven.function.Numeric#clamp(short,short,short) */
     public static  short clamp( short value, short min, short max ) {return Numeric.clamp( value, min, max );}
-    /** @see io.deephaven.function.Basic#concat(T[][]) */
+    /** @see io.deephaven.function.Basic#concat(java.lang.Object[][]) */
     public static <T> T[] concat( T[][] values ) {return Basic.concat( values );}
     /** @see io.deephaven.function.Basic#concat(io.deephaven.vector.ByteVector[]) */
     public static  byte[] concat( io.deephaven.vector.ByteVector[] values ) {return Basic.concat( values );}
@@ -853,11 +853,11 @@ public class GroovyStaticImports {
     public static  long countDistinct( io.deephaven.vector.LongVector values, boolean countNull ) {return Basic.countDistinct( values, countNull );}
     /** @see io.deephaven.function.Basic#countDistinct(io.deephaven.vector.ShortVector,boolean) */
     public static  long countDistinct( io.deephaven.vector.ShortVector values, boolean countNull ) {return Basic.countDistinct( values, countNull );}
-    /** @see io.deephaven.function.Basic#countDistinctObj(T[]) */
+    /** @see io.deephaven.function.Basic#countDistinctObj(java.lang.Comparable[]) */
     public static <T extends java.lang.Comparable<? super T>> long countDistinctObj( T[] values ) {return Basic.countDistinctObj( values );}
     /** @see io.deephaven.function.Basic#countDistinctObj(io.deephaven.vector.ObjectVector) */
     public static <T extends java.lang.Comparable<? super T>> long countDistinctObj( io.deephaven.vector.ObjectVector<T> values ) {return Basic.countDistinctObj( values );}
-    /** @see io.deephaven.function.Basic#countDistinctObj(T[],boolean) */
+    /** @see io.deephaven.function.Basic#countDistinctObj(java.lang.Comparable[],boolean) */
     public static <T extends java.lang.Comparable<? super T>> long countDistinctObj( T[] values, boolean countNull ) {return Basic.countDistinctObj( values, countNull );}
     /** @see io.deephaven.function.Basic#countDistinctObj(io.deephaven.vector.ObjectVector,boolean) */
     public static <T extends java.lang.Comparable<? super T>> long countDistinctObj( io.deephaven.vector.ObjectVector<T> values, boolean countNull ) {return Basic.countDistinctObj( values, countNull );}
@@ -897,7 +897,7 @@ public class GroovyStaticImports {
     public static  long countNeg( io.deephaven.vector.LongVector values ) {return Numeric.countNeg( values );}
     /** @see io.deephaven.function.Numeric#countNeg(io.deephaven.vector.ShortVector) */
     public static  long countNeg( io.deephaven.vector.ShortVector values ) {return Numeric.countNeg( values );}
-    /** @see io.deephaven.function.Basic#countObj(T[]) */
+    /** @see io.deephaven.function.Basic#countObj(java.lang.Object[]) */
     public static <T> long countObj( T[] values ) {return Basic.countObj( values );}
     /** @see io.deephaven.function.Basic#countObj(io.deephaven.vector.ObjectVector) */
     public static <T> long countObj( io.deephaven.vector.ObjectVector<T> values ) {return Basic.countObj( values );}
@@ -1461,11 +1461,11 @@ public class GroovyStaticImports {
     public static  long[] distinct( io.deephaven.vector.LongVector values, boolean includeNull ) {return Basic.distinct( values, includeNull );}
     /** @see io.deephaven.function.Basic#distinct(io.deephaven.vector.ShortVector,boolean) */
     public static  short[] distinct( io.deephaven.vector.ShortVector values, boolean includeNull ) {return Basic.distinct( values, includeNull );}
-    /** @see io.deephaven.function.Basic#distinctObj(T[]) */
+    /** @see io.deephaven.function.Basic#distinctObj(java.lang.Comparable[]) */
     public static <T extends java.lang.Comparable<? super T>> T[] distinctObj( T[] values ) {return Basic.distinctObj( values );}
     /** @see io.deephaven.function.Basic#distinctObj(io.deephaven.vector.ObjectVector) */
     public static <T extends java.lang.Comparable<? super T>> T[] distinctObj( io.deephaven.vector.ObjectVector<T> values ) {return Basic.distinctObj( values );}
-    /** @see io.deephaven.function.Basic#distinctObj(T[],boolean) */
+    /** @see io.deephaven.function.Basic#distinctObj(java.lang.Comparable[],boolean) */
     public static <T extends java.lang.Comparable<? super T>> T[] distinctObj( T[] values, boolean includeNull ) {return Basic.distinctObj( values, includeNull );}
     /** @see io.deephaven.function.Basic#distinctObj(io.deephaven.vector.ObjectVector,boolean) */
     public static <T extends java.lang.Comparable<? super T>> T[] distinctObj( io.deephaven.vector.ObjectVector<T> values, boolean includeNull ) {return Basic.distinctObj( values, includeNull );}
@@ -1551,11 +1551,11 @@ public class GroovyStaticImports {
     public static  long firstIndexOf( short val, short[] values ) {return Basic.firstIndexOf( val, values );}
     /** @see io.deephaven.function.Basic#firstIndexOf(short,io.deephaven.vector.ShortVector) */
     public static  long firstIndexOf( short val, io.deephaven.vector.ShortVector values ) {return Basic.firstIndexOf( val, values );}
-    /** @see io.deephaven.function.Basic#firstIndexOfObj(T,T[]) */
+    /** @see io.deephaven.function.Basic#firstIndexOfObj(java.lang.Object,java.lang.Object[]) */
     public static <T> long firstIndexOfObj( T val, T[] values ) {return Basic.firstIndexOfObj( val, values );}
-    /** @see io.deephaven.function.Basic#firstIndexOfObj(T,io.deephaven.vector.ObjectVector) */
+    /** @see io.deephaven.function.Basic#firstIndexOfObj(java.lang.Object,io.deephaven.vector.ObjectVector) */
     public static <T> long firstIndexOfObj( T val, io.deephaven.vector.ObjectVector<T> values ) {return Basic.firstIndexOfObj( val, values );}
-    /** @see io.deephaven.function.Basic#firstObj(T[]) */
+    /** @see io.deephaven.function.Basic#firstObj(java.lang.Object[]) */
     public static <T> T firstObj( T[] values ) {return Basic.firstObj( values );}
     /** @see io.deephaven.function.Basic#firstObj(io.deephaven.vector.ObjectVector) */
     public static <T> T firstObj( io.deephaven.vector.ObjectVector<T> values ) {return Basic.firstObj( values );}
@@ -1599,7 +1599,7 @@ public class GroovyStaticImports {
     public static  long[] forwardFill( io.deephaven.vector.LongVector values ) {return Basic.forwardFill( values );}
     /** @see io.deephaven.function.Basic#forwardFill(io.deephaven.vector.ShortVector) */
     public static  short[] forwardFill( io.deephaven.vector.ShortVector values ) {return Basic.forwardFill( values );}
-    /** @see io.deephaven.function.Basic#forwardFillObj(T[]) */
+    /** @see io.deephaven.function.Basic#forwardFillObj(java.lang.Object[]) */
     public static <T> T[] forwardFillObj( T[] values ) {return Basic.forwardFillObj( values );}
     /** @see io.deephaven.function.Basic#forwardFillObj(io.deephaven.vector.ObjectVector) */
     public static <T> T[] forwardFillObj( io.deephaven.vector.ObjectVector<T> values ) {return Basic.forwardFillObj( values );}
@@ -1673,13 +1673,13 @@ public class GroovyStaticImports {
     public static  long[] ifelse( io.deephaven.vector.ObjectVector<java.lang.Boolean> condition, long trueCase, long falseCase ) {return Basic.ifelse( condition, trueCase, falseCase );}
     /** @see io.deephaven.function.Basic#ifelse(io.deephaven.vector.ObjectVector,short,short) */
     public static  short[] ifelse( io.deephaven.vector.ObjectVector<java.lang.Boolean> condition, short trueCase, short falseCase ) {return Basic.ifelse( condition, trueCase, falseCase );}
-    /** @see io.deephaven.function.Basic#ifelseObj(java.lang.Boolean[],T,T) */
+    /** @see io.deephaven.function.Basic#ifelseObj(java.lang.Boolean[],java.lang.Object,java.lang.Object) */
     public static <T> T[] ifelseObj( java.lang.Boolean[] condition, T trueCase, T falseCase ) {return Basic.ifelseObj( condition, trueCase, falseCase );}
-    /** @see io.deephaven.function.Basic#ifelseObj(java.lang.Boolean[],T[],T[]) */
+    /** @see io.deephaven.function.Basic#ifelseObj(java.lang.Boolean[],java.lang.Object[],java.lang.Object[]) */
     public static <T> T[] ifelseObj( java.lang.Boolean[] condition, T[] trueCase, T[] falseCase ) {return Basic.ifelseObj( condition, trueCase, falseCase );}
-    /** @see io.deephaven.function.Basic#ifelseObj(java.lang.Boolean,T,T) */
+    /** @see io.deephaven.function.Basic#ifelseObj(java.lang.Boolean,java.lang.Object,java.lang.Object) */
     public static <T> T ifelseObj( java.lang.Boolean condition, T trueCase, T falseCase ) {return Basic.ifelseObj( condition, trueCase, falseCase );}
-    /** @see io.deephaven.function.Basic#ifelseObj(io.deephaven.vector.ObjectVector,T,T) */
+    /** @see io.deephaven.function.Basic#ifelseObj(io.deephaven.vector.ObjectVector,java.lang.Object,java.lang.Object) */
     public static <T> T[] ifelseObj( io.deephaven.vector.ObjectVector<java.lang.Boolean> condition, T trueCase, T falseCase ) {return Basic.ifelseObj( condition, trueCase, falseCase );}
     /** @see io.deephaven.function.Basic#ifelseObj(io.deephaven.vector.ObjectVector,io.deephaven.vector.ObjectVector,io.deephaven.vector.ObjectVector) */
     public static <T> T[] ifelseObj( io.deephaven.vector.ObjectVector<java.lang.Boolean> condition, io.deephaven.vector.ObjectVector<T> trueCase, io.deephaven.vector.ObjectVector<T> falseCase ) {return Basic.ifelseObj( condition, trueCase, falseCase );}
@@ -1697,11 +1697,11 @@ public class GroovyStaticImports {
     public static  boolean in( long testedValues, long[] possibleValues ) {return Basic.in( testedValues, possibleValues );}
     /** @see io.deephaven.function.Basic#in(short,short[]) */
     public static  boolean in( short testedValues, short[] possibleValues ) {return Basic.in( testedValues, possibleValues );}
-    /** @see io.deephaven.function.Basic#inObj(T,T[]) */
+    /** @see io.deephaven.function.Basic#inObj(java.lang.Object,java.lang.Object[]) */
     public static <T> boolean inObj( T testedValue, T[] possibleValues ) {return Basic.inObj( testedValue, possibleValues );}
-    /** @see io.deephaven.function.Basic#inObj(T,io.deephaven.vector.ObjectVector) */
+    /** @see io.deephaven.function.Basic#inObj(java.lang.Object,io.deephaven.vector.ObjectVector) */
     public static <T> boolean inObj( T testedValue, io.deephaven.vector.ObjectVector<T> possibleValues ) {return Basic.inObj( testedValue, possibleValues );}
-    /** @see io.deephaven.function.Basic#inRange(T,T,T) */
+    /** @see io.deephaven.function.Basic#inRange(java.lang.Comparable,java.lang.Comparable,java.lang.Comparable) */
     public static <T extends java.lang.Comparable<? super T>> boolean inRange( T testedValue, T lowInclusiveValue, T highInclusiveValue ) {return Basic.inRange( testedValue, lowInclusiveValue, highInclusiveValue );}
     /** @see io.deephaven.function.Basic#inRange(byte,byte,byte) */
     public static  boolean inRange( byte testedValue, byte lowInclusiveValue, byte highInclusiveValue ) {return Basic.inRange( testedValue, lowInclusiveValue, highInclusiveValue );}
@@ -1753,7 +1753,7 @@ public class GroovyStaticImports {
     public static  long indexOfMax( io.deephaven.vector.LongVector values ) {return Numeric.indexOfMax( values );}
     /** @see io.deephaven.function.Numeric#indexOfMax(io.deephaven.vector.ShortVector) */
     public static  long indexOfMax( io.deephaven.vector.ShortVector values ) {return Numeric.indexOfMax( values );}
-    /** @see io.deephaven.function.Numeric#indexOfMaxObj(T[]) */
+    /** @see io.deephaven.function.Numeric#indexOfMaxObj(java.lang.Comparable[]) */
     public static <T extends java.lang.Comparable<T>> long indexOfMaxObj( T[] values ) {return Numeric.indexOfMaxObj( values );}
     /** @see io.deephaven.function.Numeric#indexOfMaxObj(io.deephaven.vector.ObjectVector) */
     public static <T extends java.lang.Comparable<T>> long indexOfMaxObj( io.deephaven.vector.ObjectVector<T> values ) {return Numeric.indexOfMaxObj( values );}
@@ -1793,7 +1793,7 @@ public class GroovyStaticImports {
     public static  long indexOfMin( io.deephaven.vector.LongVector values ) {return Numeric.indexOfMin( values );}
     /** @see io.deephaven.function.Numeric#indexOfMin(io.deephaven.vector.ShortVector) */
     public static  long indexOfMin( io.deephaven.vector.ShortVector values ) {return Numeric.indexOfMin( values );}
-    /** @see io.deephaven.function.Numeric#indexOfMinObj(T[]) */
+    /** @see io.deephaven.function.Numeric#indexOfMinObj(java.lang.Comparable[]) */
     public static <T extends java.lang.Comparable<T>> long indexOfMinObj( T[] values ) {return Numeric.indexOfMinObj( values );}
     /** @see io.deephaven.function.Numeric#indexOfMinObj(io.deephaven.vector.ObjectVector) */
     public static <T extends java.lang.Comparable<T>> long indexOfMinObj( io.deephaven.vector.ObjectVector<T> values ) {return Numeric.indexOfMinObj( values );}
@@ -1869,7 +1869,7 @@ public class GroovyStaticImports {
     public static  boolean isNaN( long value ) {return Numeric.isNaN( value );}
     /** @see io.deephaven.function.Numeric#isNaN(short) */
     public static  boolean isNaN( short value ) {return Numeric.isNaN( value );}
-    /** @see io.deephaven.function.Basic#isNull(T) */
+    /** @see io.deephaven.function.Basic#isNull(java.lang.Object) */
     public static <T> boolean isNull( T value ) {return Basic.isNull( value );}
     /** @see io.deephaven.function.Basic#isNull(byte) */
     public static  boolean isNull( byte value ) {return Basic.isNull( value );}
@@ -1913,11 +1913,11 @@ public class GroovyStaticImports {
     public static  long last( io.deephaven.vector.LongVector values ) {return Basic.last( values );}
     /** @see io.deephaven.function.Basic#last(io.deephaven.vector.ShortVector) */
     public static  short last( io.deephaven.vector.ShortVector values ) {return Basic.last( values );}
-    /** @see io.deephaven.function.Basic#lastObj(T[]) */
+    /** @see io.deephaven.function.Basic#lastObj(java.lang.Object[]) */
     public static <T> T lastObj( T[] values ) {return Basic.lastObj( values );}
     /** @see io.deephaven.function.Basic#lastObj(io.deephaven.vector.ObjectVector) */
     public static <T> T lastObj( io.deephaven.vector.ObjectVector<T> values ) {return Basic.lastObj( values );}
-    /** @see io.deephaven.function.Basic#len(T[]) */
+    /** @see io.deephaven.function.Basic#len(java.lang.Object[]) */
     public static <T> long len( T[] values ) {return Basic.len( values );}
     /** @see io.deephaven.function.Basic#len(byte[]) */
     public static  long len( byte[] values ) {return Basic.len( values );}
@@ -2007,7 +2007,7 @@ public class GroovyStaticImports {
     public static  long max( io.deephaven.vector.LongVector values ) {return Numeric.max( values );}
     /** @see io.deephaven.function.Numeric#max(io.deephaven.vector.ShortVector) */
     public static  short max( io.deephaven.vector.ShortVector values ) {return Numeric.max( values );}
-    /** @see io.deephaven.function.Numeric#maxObj(T[]) */
+    /** @see io.deephaven.function.Numeric#maxObj(java.lang.Comparable[]) */
     public static <T extends java.lang.Comparable<T>> T maxObj( T[] values ) {return Numeric.maxObj( values );}
     /** @see io.deephaven.function.Numeric#maxObj(io.deephaven.vector.ObjectVector) */
     public static <T extends java.lang.Comparable<T>> T maxObj( io.deephaven.vector.ObjectVector<T> values ) {return Numeric.maxObj( values );}
@@ -2083,7 +2083,7 @@ public class GroovyStaticImports {
     public static  long min( io.deephaven.vector.LongVector values ) {return Numeric.min( values );}
     /** @see io.deephaven.function.Numeric#min(io.deephaven.vector.ShortVector) */
     public static  short min( io.deephaven.vector.ShortVector values ) {return Numeric.min( values );}
-    /** @see io.deephaven.function.Numeric#minObj(T[]) */
+    /** @see io.deephaven.function.Numeric#minObj(java.lang.Comparable[]) */
     public static <T extends java.lang.Comparable<T>> T minObj( T[] values ) {return Numeric.minObj( values );}
     /** @see io.deephaven.function.Numeric#minObj(io.deephaven.vector.ObjectVector) */
     public static <T extends java.lang.Comparable<T>> T minObj( io.deephaven.vector.ObjectVector<T> values ) {return Numeric.minObj( values );}
@@ -2119,7 +2119,7 @@ public class GroovyStaticImports {
     public static  long nth( long index, io.deephaven.vector.LongVector values ) {return Basic.nth( index, values );}
     /** @see io.deephaven.function.Basic#nth(long,io.deephaven.vector.ShortVector) */
     public static  short nth( long index, io.deephaven.vector.ShortVector values ) {return Basic.nth( index, values );}
-    /** @see io.deephaven.function.Basic#nthObj(long,T[]) */
+    /** @see io.deephaven.function.Basic#nthObj(long,java.lang.Object[]) */
     public static <T> T nthObj( long index, T[] values ) {return Basic.nthObj( index, values );}
     /** @see io.deephaven.function.Basic#nthObj(long,io.deephaven.vector.ObjectVector) */
     public static <T> T nthObj( long index, io.deephaven.vector.ObjectVector<T> values ) {return Basic.nthObj( index, values );}
@@ -2307,7 +2307,7 @@ public class GroovyStaticImports {
     public static  long randomLong( long min, long max ) {return Random.randomLong( min, max );}
     /** @see io.deephaven.function.Random#randomLong(long,long,int) */
     public static  long[] randomLong( long min, long max, int size ) {return Random.randomLong( min, max, size );}
-    /** @see io.deephaven.function.BinSearch#rawBinSearchIndex(T[],T,io.deephaven.function.BinSearchAlgo) */
+    /** @see io.deephaven.function.BinSearch#rawBinSearchIndex(java.lang.Comparable[],java.lang.Comparable,io.deephaven.function.BinSearchAlgo) */
     public static <T extends java.lang.Comparable<? super T>> int rawBinSearchIndex( T[] values, T key, io.deephaven.function.BinSearchAlgo choiceWhenEquals ) {return BinSearch.rawBinSearchIndex( values, key, choiceWhenEquals );}
     /** @see io.deephaven.function.BinSearch#rawBinSearchIndex(byte[],byte,io.deephaven.function.BinSearchAlgo) */
     public static  int rawBinSearchIndex( byte[] values, byte key, io.deephaven.function.BinSearchAlgo choiceWhenEquals ) {return BinSearch.rawBinSearchIndex( values, key, choiceWhenEquals );}
@@ -2337,9 +2337,9 @@ public class GroovyStaticImports {
     public static  int rawBinSearchIndex( io.deephaven.vector.LongVector values, long key, io.deephaven.function.BinSearchAlgo choiceWhenEquals ) {return BinSearch.rawBinSearchIndex( values, key, choiceWhenEquals );}
     /** @see io.deephaven.function.BinSearch#rawBinSearchIndex(io.deephaven.vector.ShortVector,short,io.deephaven.function.BinSearchAlgo) */
     public static  int rawBinSearchIndex( io.deephaven.vector.ShortVector values, short key, io.deephaven.function.BinSearchAlgo choiceWhenEquals ) {return BinSearch.rawBinSearchIndex( values, key, choiceWhenEquals );}
-    /** @see io.deephaven.function.BinSearch#rawBinSearchIndex(io.deephaven.vector.ObjectVector,T,io.deephaven.function.BinSearchAlgo) */
+    /** @see io.deephaven.function.BinSearch#rawBinSearchIndex(io.deephaven.vector.ObjectVector,java.lang.Comparable,io.deephaven.function.BinSearchAlgo) */
     public static <T extends java.lang.Comparable<? super T>> int rawBinSearchIndex( io.deephaven.vector.ObjectVector<T> values, T key, io.deephaven.function.BinSearchAlgo choiceWhenEquals ) {return BinSearch.rawBinSearchIndex( values, key, choiceWhenEquals );}
-    /** @see io.deephaven.function.Basic#repeat(T,int) */
+    /** @see io.deephaven.function.Basic#repeat(java.lang.Object,int) */
     public static <T> T[] repeat( T value, int size ) {return Basic.repeat( value, size );}
     /** @see io.deephaven.function.Basic#repeat(byte,int) */
     public static  byte[] repeat( byte value, int size ) {return Basic.repeat( value, size );}
@@ -2379,9 +2379,9 @@ public class GroovyStaticImports {
     public static  double[] replaceIfNonFinite( io.deephaven.vector.DoubleVector values, double replacement ) {return Numeric.replaceIfNonFinite( values, replacement );}
     /** @see io.deephaven.function.Numeric#replaceIfNonFinite(io.deephaven.vector.FloatVector,float) */
     public static  float[] replaceIfNonFinite( io.deephaven.vector.FloatVector values, float replacement ) {return Numeric.replaceIfNonFinite( values, replacement );}
-    /** @see io.deephaven.function.Basic#replaceIfNull(T,T) */
+    /** @see io.deephaven.function.Basic#replaceIfNull(java.lang.Object,java.lang.Object) */
     public static <T> T replaceIfNull( T value, T replacement ) {return Basic.replaceIfNull( value, replacement );}
-    /** @see io.deephaven.function.Basic#replaceIfNull(T[],T) */
+    /** @see io.deephaven.function.Basic#replaceIfNull(java.lang.Object[],java.lang.Object) */
     public static <T> T[] replaceIfNull( T[] values, T replacement ) {return Basic.replaceIfNull( values, replacement );}
     /** @see io.deephaven.function.Basic#replaceIfNull(byte,byte) */
     public static  byte replaceIfNull( byte value, byte replacement ) {return Basic.replaceIfNull( value, replacement );}
@@ -2421,7 +2421,7 @@ public class GroovyStaticImports {
     public static  long[] replaceIfNull( io.deephaven.vector.LongVector values, long replacement ) {return Basic.replaceIfNull( values, replacement );}
     /** @see io.deephaven.function.Basic#replaceIfNull(io.deephaven.vector.ShortVector,short) */
     public static  short[] replaceIfNull( io.deephaven.vector.ShortVector values, short replacement ) {return Basic.replaceIfNull( values, replacement );}
-    /** @see io.deephaven.function.Basic#replaceIfNull(io.deephaven.vector.ObjectVector,T) */
+    /** @see io.deephaven.function.Basic#replaceIfNull(io.deephaven.vector.ObjectVector,java.lang.Object) */
     public static <T> T[] replaceIfNull( io.deephaven.vector.ObjectVector<T> values, T replacement ) {return Basic.replaceIfNull( values, replacement );}
     /** @see io.deephaven.function.Basic#replaceIfNull(long,long) */
     public static  long replaceIfNull( long value, long replacement ) {return Basic.replaceIfNull( value, replacement );}
@@ -2467,7 +2467,7 @@ public class GroovyStaticImports {
     public static  long[] reverse( io.deephaven.vector.LongVector values ) {return Basic.reverse( values );}
     /** @see io.deephaven.function.Basic#reverse(io.deephaven.vector.ShortVector) */
     public static  short[] reverse( io.deephaven.vector.ShortVector values ) {return Basic.reverse( values );}
-    /** @see io.deephaven.function.Basic#reverseObj(T[]) */
+    /** @see io.deephaven.function.Basic#reverseObj(java.lang.Object[]) */
     public static <T> T[] reverseObj( T[] values ) {return Basic.reverseObj( values );}
     /** @see io.deephaven.function.Basic#reverseObj(io.deephaven.vector.ObjectVector) */
     public static <T> T[] reverseObj( io.deephaven.vector.ObjectVector<T> values ) {return Basic.reverseObj( values );}
@@ -2603,19 +2603,19 @@ public class GroovyStaticImports {
     public static  long[] sortDescending( io.deephaven.vector.LongVector values ) {return Sort.sortDescending( values );}
     /** @see io.deephaven.function.Sort#sortDescending(io.deephaven.vector.ShortVector) */
     public static  short[] sortDescending( io.deephaven.vector.ShortVector values ) {return Sort.sortDescending( values );}
-    /** @see io.deephaven.function.Sort#sortDescendingObj(T[]) */
+    /** @see io.deephaven.function.Sort#sortDescendingObj(java.lang.Comparable[]) */
     public static <T extends java.lang.Comparable<? super T>> T[] sortDescendingObj( T[] values ) {return Sort.sortDescendingObj( values );}
     /** @see io.deephaven.function.Sort#sortDescendingObj(io.deephaven.vector.ObjectVector) */
     public static <T extends java.lang.Comparable<? super T>> T[] sortDescendingObj( io.deephaven.vector.ObjectVector<T> values ) {return Sort.sortDescendingObj( values );}
-    /** @see io.deephaven.function.Sort#sortDescendingObj(T[],java.util.Comparator) */
+    /** @see io.deephaven.function.Sort#sortDescendingObj(java.lang.Comparable[],java.util.Comparator) */
     public static <T extends java.lang.Comparable<? super T>> T[] sortDescendingObj( T[] values, java.util.Comparator<T> comparator ) {return Sort.sortDescendingObj( values, comparator );}
     /** @see io.deephaven.function.Sort#sortDescendingObj(io.deephaven.vector.ObjectVector,java.util.Comparator) */
     public static <T extends java.lang.Comparable<? super T>> T[] sortDescendingObj( io.deephaven.vector.ObjectVector<T> values, java.util.Comparator<T> comparator ) {return Sort.sortDescendingObj( values, comparator );}
-    /** @see io.deephaven.function.Sort#sortObj(T[]) */
+    /** @see io.deephaven.function.Sort#sortObj(java.lang.Comparable[]) */
     public static <T extends java.lang.Comparable<? super T>> T[] sortObj( T[] values ) {return Sort.sortObj( values );}
     /** @see io.deephaven.function.Sort#sortObj(io.deephaven.vector.ObjectVector) */
     public static <T extends java.lang.Comparable<? super T>> T[] sortObj( io.deephaven.vector.ObjectVector<T> values ) {return Sort.sortObj( values );}
-    /** @see io.deephaven.function.Sort#sortObj(T[],java.util.Comparator) */
+    /** @see io.deephaven.function.Sort#sortObj(java.lang.Comparable[],java.util.Comparator) */
     public static <T extends java.lang.Comparable<? super T>> T[] sortObj( T[] values, java.util.Comparator<T> comparator ) {return Sort.sortObj( values, comparator );}
     /** @see io.deephaven.function.Sort#sortObj(io.deephaven.vector.ObjectVector,java.util.Comparator) */
     public static <T extends java.lang.Comparable<? super T>> T[] sortObj( io.deephaven.vector.ObjectVector<T> values, java.util.Comparator<T> comparator ) {return Sort.sortObj( values, comparator );}
@@ -2863,7 +2863,7 @@ public class GroovyStaticImports {
     public static  io.deephaven.vector.LongVector vec( long[] values ) {return Basic.vec( values );}
     /** @see io.deephaven.function.Basic#vec(short[]) */
     public static  io.deephaven.vector.ShortVector vec( short[] values ) {return Basic.vec( values );}
-    /** @see io.deephaven.function.Basic#vecObj(T[]) */
+    /** @see io.deephaven.function.Basic#vecObj(java.lang.Object[]) */
     public static <T> io.deephaven.vector.ObjectVector<T> vecObj( T[] values ) {return Basic.vecObj( values );}
     /** @see io.deephaven.function.Numeric#wavg(byte[],byte[]) */
     public static  double wavg( byte[] values, byte[] weights ) {return Numeric.wavg( values, weights );}

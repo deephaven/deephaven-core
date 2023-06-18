@@ -8,6 +8,7 @@
  */
 package io.deephaven.engine.table.impl.by.ssmcountdistinct.distinct;
 
+import io.deephaven.engine.context.ExecutionContext;
 import io.deephaven.engine.rowset.WritableRowSet;
 import io.deephaven.engine.rowset.RowSet;
 import io.deephaven.engine.rowset.RowSetFactory;
@@ -497,7 +498,7 @@ public class IntRollupDistinctOperator implements IterativeChunkedAggregationOpe
             throw new IllegalStateException("startTrackingPrevValues must only be called once");
         }
 
-        prevFlusher = new UpdateCommitter<>(this, IntRollupDistinctOperator::flushPrevious);
+        prevFlusher = new UpdateCommitter<>(this, ExecutionContext.getContext().getUpdateGraph(), IntRollupDistinctOperator::flushPrevious);
         touchedStates = RowSetFactory.empty();
         internalResult.startTrackingPrevValues();
     }

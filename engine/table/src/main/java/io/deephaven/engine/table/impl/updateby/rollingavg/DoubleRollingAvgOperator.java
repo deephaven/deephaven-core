@@ -10,7 +10,7 @@ import io.deephaven.base.verify.Assert;
 import io.deephaven.chunk.Chunk;
 import io.deephaven.chunk.DoubleChunk;
 import io.deephaven.chunk.attributes.Values;
-import io.deephaven.engine.table.MatchPair;
+import io.deephaven.engine.table.impl.MatchPair;
 import io.deephaven.engine.table.impl.updateby.UpdateByOperator;
 import io.deephaven.engine.table.impl.updateby.internal.BaseDoubleUpdateByOperator;
 import io.deephaven.engine.table.impl.util.RowRedirection;
@@ -28,8 +28,8 @@ public class DoubleRollingAvgOperator extends BaseDoubleUpdateByOperator {
         protected DoubleChunk<? extends Values> doubleInfluencerValuesChunk;
         protected AggregatingDoubleRingBuffer aggSum;
 
-        protected Context(final int chunkSize) {
-            super(chunkSize);
+        protected Context(final int affectedChunkSize, final int influencerChunkSize) {
+            super(affectedChunkSize);
             aggSum = new AggregatingDoubleRingBuffer(PAIRWISE_BUFFER_INITIAL_SIZE, 0.0f, (a, b) -> {
                 if (a == NULL_DOUBLE) {
                     return b;
@@ -47,8 +47,8 @@ public class DoubleRollingAvgOperator extends BaseDoubleUpdateByOperator {
         }
 
         @Override
-        public void setValuesChunk(@NotNull final Chunk<? extends Values> valuesChunk) {
-            doubleInfluencerValuesChunk = valuesChunk.asDoubleChunk();
+        public void setValueChunks(@NotNull final Chunk<? extends Values>[] valueChunks) {
+            doubleInfluencerValuesChunk = valueChunks[0].asDoubleChunk();
         }
 
         @Override
@@ -97,8 +97,8 @@ public class DoubleRollingAvgOperator extends BaseDoubleUpdateByOperator {
 
     @NotNull
     @Override
-    public UpdateByOperator.Context makeUpdateContext(final int chunkSize) {
-        return new Context(chunkSize);
+    public UpdateByOperator.Context makeUpdateContext(final int affectedChunkSize, final int influencerChunkSize) {
+        return new Context(affectedChunkSize, influencerChunkSize);
     }
 
     public DoubleRollingAvgOperator(@NotNull final MatchPair pair,

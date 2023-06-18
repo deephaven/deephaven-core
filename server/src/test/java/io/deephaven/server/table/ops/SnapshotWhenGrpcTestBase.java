@@ -22,8 +22,8 @@ public abstract class SnapshotWhenGrpcTestBase extends GrpcTableOperationTestBas
 
     @Test
     public void snapshotTicking() {
-        final TableReference timeTable1 = ref(TableTools.timeTable("00:00:01").view("Id=ii"));
-        final TableReference timeTable2 = ref(TableTools.timeTable("00:00:02"));
+        final TableReference timeTable1 = ref(TableTools.timeTable("PT00:00:01").view("Id=ii"));
+        final TableReference timeTable2 = ref(TableTools.timeTable("PT00:00:02"));
         final SnapshotWhenTableRequest request = builder()
                 .setResultId(ExportTicketHelper.wrapExportIdInTicket(1))
                 .setBaseId(timeTable1)
@@ -40,8 +40,8 @@ public abstract class SnapshotWhenGrpcTestBase extends GrpcTableOperationTestBas
 
     @Test
     public void snapshotTickingDoInitial() {
-        final TableReference timeTable1 = ref(TableTools.timeTable("00:00:01").view("Id=ii"));
-        final TableReference timeTable2 = ref(TableTools.timeTable("00:00:02"));
+        final TableReference timeTable1 = ref(TableTools.timeTable("PT00:00:01").view("Id=ii"));
+        final TableReference timeTable2 = ref(TableTools.timeTable("PT00:00:02"));
         final SnapshotWhenTableRequest request = builder()
                 .setResultId(ExportTicketHelper.wrapExportIdInTicket(1))
                 .setBaseId(timeTable1)
@@ -59,8 +59,8 @@ public abstract class SnapshotWhenGrpcTestBase extends GrpcTableOperationTestBas
 
     @Test
     public void snapshotTickingStamp() {
-        final TableReference timeTable1 = ref(TableTools.timeTable("00:00:01").view("Id=ii"));
-        final TableReference timeTable2 = ref(TableTools.timeTable("00:00:02").updateView("Id=ii"));
+        final TableReference timeTable1 = ref(TableTools.timeTable("PT00:00:01").view("Id=ii"));
+        final TableReference timeTable2 = ref(TableTools.timeTable("PT00:00:02").updateView("Id=ii"));
         final SnapshotWhenTableRequest request = builder()
                 .setResultId(ExportTicketHelper.wrapExportIdInTicket(1))
                 .setBaseId(timeTable1)
@@ -78,8 +78,8 @@ public abstract class SnapshotWhenGrpcTestBase extends GrpcTableOperationTestBas
 
     @Test
     public void snapshotTickingStampRename() {
-        final TableReference timeTable1 = ref(TableTools.timeTable("00:00:01"));
-        final TableReference timeTable2 = ref(TableTools.timeTable("00:00:02"));
+        final TableReference timeTable1 = ref(TableTools.timeTable("PT00:00:01"));
+        final TableReference timeTable2 = ref(TableTools.timeTable("PT00:00:02"));
         final SnapshotWhenTableRequest request = builder()
                 .setResultId(ExportTicketHelper.wrapExportIdInTicket(1))
                 .setBaseId(timeTable1)
@@ -97,8 +97,8 @@ public abstract class SnapshotWhenGrpcTestBase extends GrpcTableOperationTestBas
 
     @Test
     public void snapshotTickingStampDoInitial() {
-        final TableReference timeTable1 = ref(TableTools.timeTable("00:00:01").view("Id=ii"));
-        final TableReference timeTable2 = ref(TableTools.timeTable("00:00:02").updateView("Id=ii"));
+        final TableReference timeTable1 = ref(TableTools.timeTable("PT00:00:01").view("Id=ii"));
+        final TableReference timeTable2 = ref(TableTools.timeTable("PT00:00:02").updateView("Id=ii"));
         final SnapshotWhenTableRequest request = builder()
                 .setResultId(ExportTicketHelper.wrapExportIdInTicket(1))
                 .setBaseId(timeTable1)
@@ -117,8 +117,8 @@ public abstract class SnapshotWhenGrpcTestBase extends GrpcTableOperationTestBas
 
     @Test
     public void snapshotTickingNoStamps() {
-        final TableReference timeTable1 = ref(TableTools.timeTable("00:00:01"));
-        final TableReference timeTable2 = ref(TableTools.timeTable("00:00:02").dropColumns("Timestamp"));
+        final TableReference timeTable1 = ref(TableTools.timeTable("PT00:00:01"));
+        final TableReference timeTable2 = ref(TableTools.timeTable("PT00:00:02").dropColumns("Timestamp"));
         final SnapshotWhenTableRequest request = builder()
                 .setResultId(ExportTicketHelper.wrapExportIdInTicket(1))
                 .setBaseId(timeTable1)
@@ -135,8 +135,8 @@ public abstract class SnapshotWhenGrpcTestBase extends GrpcTableOperationTestBas
 
     @Test
     public void snapshotTickingNoStampsDoInitial() {
-        final TableReference timeTable1 = ref(TableTools.timeTable("00:00:01"));
-        final TableReference timeTable2 = ref(TableTools.timeTable("00:00:02").dropColumns("Timestamp"));
+        final TableReference timeTable1 = ref(TableTools.timeTable("PT00:00:01"));
+        final TableReference timeTable2 = ref(TableTools.timeTable("PT00:00:02").dropColumns("Timestamp"));
         final SnapshotWhenTableRequest request = builder()
                 .setResultId(ExportTicketHelper.wrapExportIdInTicket(1))
                 .setBaseId(timeTable1)
@@ -154,8 +154,8 @@ public abstract class SnapshotWhenGrpcTestBase extends GrpcTableOperationTestBas
 
     @Test
     public void missingResultId() {
-        final TableReference timeTable1 = ref(TableTools.timeTable("00:00:01").view("Id=ii"));
-        final TableReference timeTable2 = ref(TableTools.timeTable("00:00:02"));
+        final TableReference timeTable1 = ref(TableTools.timeTable("PT00:00:01").view("Id=ii"));
+        final TableReference timeTable2 = ref(TableTools.timeTable("PT00:00:02"));
         final SnapshotWhenTableRequest request = builder()
                 .setBaseId(timeTable1)
                 .setTriggerId(timeTable2)
@@ -165,7 +165,7 @@ public abstract class SnapshotWhenGrpcTestBase extends GrpcTableOperationTestBas
 
     @Test
     public void missingBaseId() {
-        final TableReference timeTable2 = ref(TableTools.timeTable("00:00:02"));
+        final TableReference timeTable2 = ref(TableTools.timeTable("PT00:00:02"));
         final SnapshotWhenTableRequest request = builder()
                 .setResultId(ExportTicketHelper.wrapExportIdInTicket(1))
                 .setTriggerId(timeTable2)
@@ -176,7 +176,7 @@ public abstract class SnapshotWhenGrpcTestBase extends GrpcTableOperationTestBas
 
     @Test
     public void missingTriggerId() {
-        final TableReference timeTable1 = ref(TableTools.timeTable("00:00:01").view("Id=ii"));
+        final TableReference timeTable1 = ref(TableTools.timeTable("PT00:00:01").view("Id=ii"));
         final SnapshotWhenTableRequest request = builder()
                 .setResultId(ExportTicketHelper.wrapExportIdInTicket(1))
                 .setBaseId(timeTable1)

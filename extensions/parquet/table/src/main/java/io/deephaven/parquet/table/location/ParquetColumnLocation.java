@@ -212,7 +212,8 @@ final class ParquetColumnLocation<ATTR extends Values> extends AbstractColumnLoc
                             localPageCache.castAttr(), endPosReader,
                             ROW_KEY_TO_SUB_REGION_ROW_INDEX_MASK,
                             makeToPage(columnTypes.get(END_POS), ParquetInstructions.EMPTY, END_POS,
-                                    endPosReader, LAST_KEY_COL_DEF)).pageStore).get();
+                                    endPosReader, LAST_KEY_COL_DEF)).pageStore)
+                    .get();
         } catch (IOException e) {
             throw new UncheckedIOException(e);
         }
@@ -615,7 +616,7 @@ final class ParquetColumnLocation<ATTR extends Values> extends AbstractColumnLoc
                         toPage = ToLongPage.create(pageType);
                         break;
                     case INT96:
-                        toPage = ToDateTimePageFromInt96.create(pageType);
+                        toPage = ToInstantPageFromInt96.create(pageType);
                         break;
                     case DOUBLE:
                         toPage = ToDoublePage.create(pageType);
@@ -701,7 +702,7 @@ final class ParquetColumnLocation<ATTR extends Values> extends AbstractColumnLoc
                 LogicalTypeAnnotation.TimestampLogicalTypeAnnotation timestampLogicalType) {
             if (timestampLogicalType.isAdjustedToUTC()) {
                 return Optional
-                        .of(ToDateTimePage.create(componentType, timestampLogicalType.getUnit()));
+                        .of(ToInstantPage.create(componentType, timestampLogicalType.getUnit()));
             }
             return Optional.empty();
         }

@@ -7,13 +7,14 @@
 #include <set>
 #include <string>
 #include "deephaven/client/client.h"
-#include "deephaven/client/ticking.h"
 #include "deephaven/client/server/server.h"
 #include "deephaven/client/subscription/subscription_handle.h"
-#include "deephaven/client/utility/callbacks.h"
-#include "deephaven/client/utility/cbfuture.h"
 #include "deephaven/client/utility/executor.h"
-#include "deephaven/client/utility/misc.h"
+#include "deephaven/dhcore/table/schema.h"
+#include "deephaven/dhcore/ticking/ticking.h"
+#include "deephaven/dhcore/types.h"
+#include "deephaven/dhcore/utility/callbacks.h"
+#include "deephaven/dhcore/utility/cbfuture.h"
 #include "deephaven/proto/session.pb.h"
 #include "deephaven/proto/session.grpc.pb.h"
 #include "deephaven/proto/table.pb.h"
@@ -37,72 +38,94 @@ class TableHandleManagerImpl;
 namespace internal {
 class GetColumnDefsCallback;
 
+class LazyStateInfo final {
+  typedef io::deephaven::proto::backplane::grpc::Ticket Ticket;
+
+public:
+  LazyStateInfo(int64_t numRows, bool isStatic);
+  LazyStateInfo(const LazyStateInfo &other);
+  LazyStateInfo &operator=(const LazyStateInfo &other);
+  LazyStateInfo(LazyStateInfo &&other) noexcept;
+  LazyStateInfo &operator=(LazyStateInfo &&other) noexcept;
+  ~LazyStateInfo();
+
+  int64_t numRows() const { return numRows_; }
+  bool isStatic() const { return isStatic_; }
+
+private:
+  int64_t numRows_ = 0;
+  bool isStatic_ = false;
+};
+
 class ExportedTableCreationCallback final
-    : public deephaven::client::utility::SFCallback<io::deephaven::proto::backplane::grpc::ExportedTableCreationResponse> {
+    : public deephaven::dhcore::utility::SFCallback<io::deephaven::proto::backplane::grpc::ExportedTableCreationResponse> {
   typedef io::deephaven::proto::backplane::grpc::ExportedTableCreationResponse ExportedTableCreationResponse;
   typedef io::deephaven::proto::backplane::grpc::Ticket Ticket;
   typedef deephaven::client::server::Server Server;
-  typedef deephaven::client::utility::ColumnDefinitions ColumnDefinitions;
   typedef deephaven::client::utility::Executor Executor;
 
   template<typename T>
-  using SFCallback = deephaven::client::utility::SFCallback<T>;
+  using SFCallback = deephaven::dhcore::utility::SFCallback<T>;
   template<typename T>
-  using CBPromise = deephaven::client::utility::CBPromise<T>;
+  using CBPromise = deephaven::dhcore::utility::CBPromise<T>;
   template<typename T>
-  using CBFuture = deephaven::client::utility::CBFuture<T>;
+  using CBFuture = deephaven::dhcore::utility::CBFuture<T>;
 
 public:
-  explicit ExportedTableCreationCallback(CBPromise<Ticket> &&ticketPromise);
+  ExportedTableCreationCallback(std::shared_ptr<TableHandleImpl> dependency, Ticket expectedTicket,
+      CBPromise<LazyStateInfo> infoPromise);
   ~ExportedTableCreationCallback() final;
 
   void onSuccess(ExportedTableCreationResponse item) final;
   void onFailure(std::exception_ptr ep) final;
 
 private:
-  CBPromise<Ticket> ticketPromise_;
-
-  friend class GetColumnDefsCallback;
+  // Hold a dependency on the parent until this callback is done.
+  std::shared_ptr<TableHandleImpl> dependency_;
+  Ticket expectedTicket_;
+  CBPromise<LazyStateInfo> infoPromise_;
 };
 
 class LazyState final {
+  typedef deephaven::dhcore::table::Schema Schema;
   typedef io::deephaven::proto::backplane::grpc::ExportedTableCreationResponse ExportedTableCreationResponse;
   typedef io::deephaven::proto::backplane::grpc::Ticket Ticket;
   typedef deephaven::client::server::Server Server;
-  typedef deephaven::client::utility::ColumnDefinitions ColumnDefinitions;
   typedef deephaven::client::utility::Executor Executor;
 
   template<typename T>
-  using SFCallback = deephaven::client::utility::SFCallback<T>;
+  using SFCallback = deephaven::dhcore::utility::SFCallback<T>;
   template<typename T>
-  using CBPromise = deephaven::client::utility::CBPromise<T>;
+  using CBPromise = deephaven::dhcore::utility::CBPromise<T>;
   template<typename T>
-  using CBFuture = deephaven::client::utility::CBFuture<T>;
+  using CBFuture = deephaven::dhcore::utility::CBFuture<T>;
 
 public:
   LazyState(std::shared_ptr<Server> server, std::shared_ptr<Executor> flightExecutor,
-      CBFuture<Ticket> ticketFuture);
+      CBFuture<LazyStateInfo> infoFuture, Ticket ticket);
   ~LazyState();
 
-  std::shared_ptr<ColumnDefinitions> getColumnDefinitions();
-  void getColumnDefinitionsAsync(
-      std::shared_ptr<SFCallback<std::shared_ptr<ColumnDefinitions>>> cb);
+  std::shared_ptr<Schema> getSchema();
+  void getSchemaAsync(std::shared_ptr<SFCallback<std::shared_ptr<Schema>>> cb);
+
+  void releaseAsync();
 
   /**
    * Used in tests.
    */
   void waitUntilReady();
 
+  const LazyStateInfo &info();
+
 private:
   std::shared_ptr<Server> server_;
   std::shared_ptr<Executor> flightExecutor_;
-  CBFuture<Ticket> ticketFuture_;
-  std::atomic_flag requestSent_ = {};
+  CBFuture<LazyStateInfo> infoFuture_;
+  Ticket ticket_;
 
-  CBPromise<std::shared_ptr<ColumnDefinitions>> colDefsPromise_;
-  CBFuture<std::shared_ptr<ColumnDefinitions>> colDefsFuture_;
-
-  friend class GetColumnDefsCallback;
+  std::atomic_flag schemaRequestSent_ = {};
+  CBPromise<std::shared_ptr<Schema>> schemaPromise_;
+  CBFuture<std::shared_ptr<Schema>> schemaFuture_;
 };
 }  // namespace internal
 
@@ -117,20 +140,22 @@ class TableHandleImpl : public std::enable_shared_from_this<TableHandleImpl> {
   typedef deephaven::client::impl::BooleanExpressionImpl BooleanExpressionImpl;
   typedef deephaven::client::subscription::SubscriptionHandle SubscriptionHandle;
   typedef deephaven::client::utility::Executor Executor;
+  typedef deephaven::dhcore::ticking::TickingCallback TickingCallback;
+  typedef deephaven::dhcore::ElementTypeId ElementTypeId;
   typedef io::deephaven::proto::backplane::grpc::AsOfJoinTablesRequest AsOfJoinTablesRequest;
   typedef io::deephaven::proto::backplane::grpc::ComboAggregateRequest ComboAggregateRequest;
   typedef io::deephaven::proto::backplane::grpc::Ticket Ticket;
 
   template<typename ...Args>
-  using SFCallback = deephaven::client::utility::SFCallback<Args...>;
+  using SFCallback = deephaven::dhcore::utility::SFCallback<Args...>;
 public:
   static std::pair<std::shared_ptr<internal::ExportedTableCreationCallback>, std::shared_ptr<internal::LazyState>>
-  createEtcCallback(const TableHandleManagerImpl *thm);
+  createEtcCallback(std::shared_ptr<TableHandleImpl> dependency, const TableHandleManagerImpl *thm, Ticket resultTicket);
 
-  static std::shared_ptr<TableHandleImpl> create(std::shared_ptr<TableHandleManagerImpl> thm,
-      Ticket ticket, std::shared_ptr<internal::LazyState> lazyState);
-  TableHandleImpl(Private, std::shared_ptr<TableHandleManagerImpl> &&thm,
-      Ticket &&ticket, std::shared_ptr<internal::LazyState> &&lazyState);
+  static std::shared_ptr<TableHandleImpl> create(std::shared_ptr<TableHandleManagerImpl> thm, Ticket ticket,
+      std::shared_ptr<internal::LazyState> lazyState);
+  TableHandleImpl(Private, std::shared_ptr<TableHandleManagerImpl> &&thm, Ticket &&ticket,
+      std::shared_ptr<internal::LazyState> &&lazyState);
   ~TableHandleImpl();
 
   std::shared_ptr<TableHandleImpl> select(std::vector<std::string> columnSpecs);
@@ -172,13 +197,13 @@ public:
   std::shared_ptr<TableHandleImpl> merge(std::string keyColumn, std::vector<Ticket> sourceTickets);
 
   std::shared_ptr<TableHandleImpl> crossJoin(const TableHandleImpl &rightSide,
-      std::vector<std::string> columnsToMatch, std::vector<std::string> columnsToAdd) const;
+      std::vector<std::string> columnsToMatch, std::vector<std::string> columnsToAdd);
 
   std::shared_ptr<TableHandleImpl> naturalJoin(const TableHandleImpl &rightSide,
-      std::vector<std::string> columnsToMatch, std::vector<std::string> columnsToAdd) const;
+      std::vector<std::string> columnsToMatch, std::vector<std::string> columnsToAdd);
 
   std::shared_ptr<TableHandleImpl> exactJoin(const TableHandleImpl &rightSide,
-      std::vector<std::string> columnsToMatch, std::vector<std::string> columnsToAdd) const;
+      std::vector<std::string> columnsToMatch, std::vector<std::string> columnsToAdd);
 
   std::shared_ptr<TableHandleImpl> asOfJoin(AsOfJoinTablesRequest::MatchRule matchRule,
       const TableHandleImpl &rightSide, std::vector<std::string> columnsToMatch,
@@ -201,13 +226,15 @@ public:
    */
   void observe();
 
+  int64_t numRows();
+  bool isStatic();
+
   const std::shared_ptr<TableHandleManagerImpl> &managerImpl() const { return managerImpl_; }
 
   const Ticket &ticket() const { return ticket_; }
 
 private:
-  void lookupHelper(const std::string &columnName,
-      std::initializer_list<arrow::Type::type> validTypes);
+  void lookupHelper(const std::string &columnName, std::initializer_list<ElementTypeId::Enum> validTypes);
 
   std::shared_ptr<TableHandleImpl> defaultAggregateByDescriptor(
       ComboAggregateRequest::Aggregate descriptor, std::vector<std::string> groupByColumns);

@@ -6,6 +6,7 @@ package io.deephaven.server.table;
 import io.deephaven.UncheckedDeephavenException;
 import io.deephaven.auth.AuthContext;
 import io.deephaven.base.verify.Assert;
+import io.deephaven.engine.context.ExecutionContext;
 import io.deephaven.engine.context.TestExecutionContext;
 import io.deephaven.engine.liveness.LivenessScopeStack;
 import io.deephaven.engine.rowset.RowSetFactory;
@@ -13,8 +14,8 @@ import io.deephaven.engine.rowset.RowSetShiftData;
 import io.deephaven.engine.table.ModifiedColumnSet;
 import io.deephaven.engine.table.impl.QueryTable;
 import io.deephaven.engine.table.impl.TableUpdateImpl;
+import io.deephaven.engine.testutil.ControlledUpdateGraph;
 import io.deephaven.engine.testutil.TstUtils;
-import io.deephaven.engine.updategraph.UpdateGraphProcessor;
 import io.deephaven.engine.util.systemicmarking.SystemicObjectTracker;
 import io.deephaven.proto.backplane.grpc.ExportedTableUpdateMessage;
 import io.deephaven.proto.backplane.grpc.Ticket;
@@ -40,15 +41,19 @@ public class ExportTableUpdateListenerTest {
 
     private static final AuthContext AUTH_CONTEXT = new AuthContext.SuperUser();
 
-    private static final UpdateGraphProcessor updateGraphProcessor = UpdateGraphProcessor.DEFAULT;
+    private SafeCloseable executionContext;
+    private ControlledUpdateGraph updateGraph;
+
     private TestControlledScheduler scheduler;
     private TestSessionState session;
     private QueuingResponseObserver observer;
 
     @Before
     public void setup() {
-        UpdateGraphProcessor.DEFAULT.enableUnitTestMode();
-        UpdateGraphProcessor.DEFAULT.resetForUnitTests(false);
+        executionContext = TestExecutionContext.createForUnitTests().open();
+        updateGraph = ExecutionContext.getContext().getUpdateGraph().cast();
+        updateGraph.enableUnitTestMode();
+        updateGraph.resetForUnitTests(false);
         SystemicObjectTracker.markThreadSystemic();
 
         scheduler = new TestControlledScheduler();
@@ -58,11 +63,13 @@ public class ExportTableUpdateListenerTest {
 
     @After
     public void tearDown() {
-        UpdateGraphProcessor.DEFAULT.resetForUnitTests(true);
+        updateGraph.resetForUnitTests(true);
 
         scheduler = null;
         session = null;
         observer = null;
+
+        executionContext.close();
     }
 
     @Test
@@ -210,7 +217,7 @@ public class ExportTableUpdateListenerTest {
         // validate we receive an initial table size update
         expectSizes(t1.getExportId(), 42);
 
-        updateGraphProcessor.runWithinUnitTestCycle(() -> {
+        updateGraph.runWithinUnitTestCycle(() -> {
             src.notifyListenersOnError(new RuntimeException("awful error occurred!"), null);
         });
 
@@ -278,7 +285,8 @@ public class ExportTableUpdateListenerTest {
         expectNoMessage();
 
         // export mid-tick
-        updateGraphProcessor.runWithinUnitTestCycle(() -> {
+        // Must be off-thread to use concurrent instantiation
+        updateGraph.runWithinUnitTestCycle(() -> {
             final TableUpdateImpl update = new TableUpdateImpl();
             update.added = RowSetFactory.fromRange(src.getRowSet().lastRowKey() + 1, src.getRowSet().lastRowKey() + 42);
             update.removed = i();
@@ -300,15 +308,16 @@ public class ExportTableUpdateListenerTest {
                 throw new UncheckedDeephavenException(ie);
             }
 
+            updateGraph.markSourcesRefreshedForUnitTests();
             src.notifyListeners(update);
-        });
+        }, false);
 
         // we should get both a run and the update in the same flush
         expectSizes(t1.getValue().getExportId(), 42, 84);
     }
 
     private void addRowsToSource(final QueryTable src, final long nRows) {
-        updateGraphProcessor.runWithinUnitTestCycle(() -> {
+        updateGraph.runWithinUnitTestCycle(() -> {
             final TableUpdateImpl update = new TableUpdateImpl();
             update.added =
                     RowSetFactory.fromRange(src.getRowSet().lastRowKey() + 1, src.getRowSet().lastRowKey() + nRows);
@@ -332,8 +341,9 @@ public class ExportTableUpdateListenerTest {
     }
 
     private void expectNoMessage() {
-        updateGraphProcessor.runWithinUnitTestCycle(() -> {
-        }); // flush our terminal notification
+        // flush our terminal notification
+        updateGraph.runWithinUnitTestCycle(() -> {
+        });
         final ExportedTableUpdateMessage batch = observer.msgQueue.poll();
         Assert.eqNull(batch, "batch");
     }
@@ -342,7 +352,7 @@ public class ExportTableUpdateListenerTest {
         public TestSessionState() {
             super(scheduler, TestExecutionContext::createForUnitTests, AUTH_CONTEXT);
             initializeExpiration(new SessionService.TokenExpiration(UUID.randomUUID(),
-                    DateTimeUtils.nanosToTime(Long.MAX_VALUE).getMillis(), this));
+                    DateTimeUtils.epochMillis(DateTimeUtils.epochNanosToInstant(Long.MAX_VALUE)), this));
         }
     }
 

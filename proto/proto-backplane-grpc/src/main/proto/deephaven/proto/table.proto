@@ -145,8 +145,27 @@ service TableService {
 
   /*
    * Returns the result of an as of join operation.
+   *
+   * Deprecated: Please use AjTables or RajTables.
    */
-  rpc AsOfJoinTables(AsOfJoinTablesRequest) returns (ExportedTableCreationResponse) {}
+  rpc AsOfJoinTables(AsOfJoinTablesRequest) returns (ExportedTableCreationResponse) {
+    option deprecated = true;
+  }
+
+  /*
+   * Returns the result of an aj operation.
+   */
+  rpc AjTables(AjRajTablesRequest) returns (ExportedTableCreationResponse) {}
+
+  /*
+   * Returns the result of an raj operation.
+   */
+  rpc RajTables(AjRajTablesRequest) returns (ExportedTableCreationResponse) {}
+
+  /*
+   * Returns the result of a range join operation.
+   */
+  rpc RangeJoinTables(RangeJoinTablesRequest) returns (ExportedTableCreationResponse) {}
 
   /*
    * Returns the result of an aggregate table operation.
@@ -261,7 +280,9 @@ message ExportedTableCreationResponse {
   // Whether or not this table might change.
   bool is_static = 5;
 
-  // The current number of rows for this table.
+  // The current number of rows for this table. If this is negative, the table isn't coalesced, meaning the
+  // size isn't known without scanning partitions. Typically, the client should filter the data by the
+  // partitioning columns first.
   sint64 size = 6 [jstype=JS_STRING];
 
   // TODO: attributes
@@ -306,14 +327,15 @@ message SelectOrUpdateRequest {
 
 message MathContext {
   enum RoundingMode {
-    UP = 0;
-    DOWN = 1;
-    CEILING = 2;
-    FLOOR = 3;
-    HALF_UP = 4;
-    HALF_DOWN = 5;
-    HALF_EVEN = 6;
-    UNNECESSARY = 7;
+    ROUNDING_MODE_NOT_SPECIFIED = 0;
+    UP = 1;
+    DOWN = 2;
+    CEILING = 3;
+    FLOOR = 4;
+    HALF_UP = 5;
+    HALF_DOWN = 6;
+    HALF_EVEN = 7;
+    UNNECESSARY = 8;
   }
   sint32 precision = 1;
   RoundingMode rounding_mode = 2;
@@ -321,17 +343,70 @@ message MathContext {
 
 // Directives for how to handle {@code null} and {@code NaN} values
 enum BadDataBehavior {
+  // When not specified will use the server default.
+  BAD_DATA_BEHAVIOR_NOT_SPECIFIED = 0;
+
   // Throw an exception and abort processing when bad data is encountered.
-  THROW = 0;
+  THROW = 1;
 
   // Reset the state for the bucket to {@code null} when invalid data is encountered.
-  RESET = 1;
+  RESET = 2;
 
   // Skip and do not process the invalid data without changing state.
-  SKIP = 2;
+  SKIP = 3;
 
   // Allow the bad data to poison the result. This is only valid for use with NaN.
-  POISON = 3;
+  POISON = 4;
+}
+
+// Directives for how to handle {@code null} and {@code NaN} values
+enum UpdateByNullBehavior {
+  // When not specified will use the server default.
+  NULL_BEHAVIOR_NOT_SPECIFIED = 0;
+
+  // In the case of Current - null, the null dominates so Column[i] - null = null
+  NULL_DOMINATES = 1;
+
+  // In the case of Current - null, the current value dominates so Column[i] - null = Column[i]
+  VALUE_DOMINATES = 2;
+
+  // In the case of Current - null, return zero so Column[i] - null = 0
+  ZERO_DOMINATES = 3;
+}
+
+// Reusable window scale message for the UpdateBy rolling operations.
+message UpdateByWindowScale {
+  message UpdateByWindowTicks {
+    double ticks = 1;
+  }
+  message UpdateByWindowTime {
+    string column = 1;
+    sint64 period_nanos = 2 [jstype=JS_STRING];
+  }
+  oneof type {
+    UpdateByWindowTicks ticks = 1;
+    UpdateByWindowTime time = 2;
+  }
+}
+
+// Reusable options for the UpdateBy exponential moving operations.
+message UpdateByEmOptions {
+  BadDataBehavior on_null_value = 1;
+
+  BadDataBehavior on_nan_value = 2;
+
+  BadDataBehavior on_null_time = 3;
+
+  BadDataBehavior on_negative_delta_time = 4;
+
+  BadDataBehavior on_zero_delta_time = 5;
+
+  MathContext big_value_context = 6;
+}
+
+// Reusable options for the UpdateBy delta operation.
+message UpdateByDeltaOptions {
+  UpdateByNullBehavior null_behavior = 1;
 }
 
 // Create a table with the same rowset as its parent that will perform the specified set of row
@@ -368,7 +443,6 @@ message UpdateByRequest {
     optional double target_load_factor = 6;
 
     // The math context.
-    // If unset, defaults to server-provided defaults.
     MathContext math_context = 7;
   }
 
@@ -396,41 +470,79 @@ message UpdateByRequest {
         }
 
         message UpdateByEma {
-          message UpdateByEmaOptions {
-            // If unset, defaults to server-provided defaults.
-            optional BadDataBehavior on_null_value = 1;
+          UpdateByEmOptions options = 1;
+          UpdateByWindowScale window_scale = 2;
+        }
 
-            // If unset, defaults to server-provided defaults.
-            optional BadDataBehavior on_nan_value = 2;
+        message UpdateByEms {
+          UpdateByEmOptions options = 1;
+          UpdateByWindowScale window_scale = 2;
+        }
 
-            // If unset, defaults to server-provided defaults.
-            optional BadDataBehavior on_null_time = 3;
+        message UpdateByEmMin {
+          UpdateByEmOptions options = 1;
+          UpdateByWindowScale window_scale = 2;
+        }
 
-            // If unset, defaults to server-provided defaults.
-            optional BadDataBehavior on_negative_delta_time = 4;
+        message UpdateByEmMax {
+          UpdateByEmOptions options = 1;
+          UpdateByWindowScale window_scale = 2;
+        }
 
-            // If unset, defaults to server-provided defaults.
-            optional BadDataBehavior on_zero_delta_time = 5;
+        message UpdateByEmStd {
+          UpdateByEmOptions options = 1;
+          UpdateByWindowScale window_scale = 2;
+        }
 
-            // If unset, defaults to server-provided defaults.
-            MathContext big_value_context = 6;
-          }
-          message UpdateByEmaTimescale {
-            message UpdateByEmaTicks {
-              sint64 ticks = 1 [jstype=JS_STRING];
-            }
-            message UpdateByEmaTime {
-              string column = 1;
-              sint64 period_nanos = 2 [jstype=JS_STRING];
-            }
-            oneof type {
-              UpdateByEmaTicks ticks = 1;
-              UpdateByEmaTime time = 2;
-            }
-          }
-          // If unset, defaults to server-provided defaults.
-          UpdateByEmaOptions options = 1;
-          UpdateByEmaTimescale timescale = 2;
+        message UpdateByDelta {
+          UpdateByDeltaOptions options = 1;
+        }
+
+        message UpdateByRollingSum {
+          UpdateByWindowScale reverse_window_scale = 1;
+          UpdateByWindowScale forward_window_scale = 2;
+        }
+
+        message UpdateByRollingGroup {
+          UpdateByWindowScale reverse_window_scale = 1;
+          UpdateByWindowScale forward_window_scale = 2;
+        }
+
+        message UpdateByRollingAvg {
+          UpdateByWindowScale reverse_window_scale = 1;
+          UpdateByWindowScale forward_window_scale = 2;
+        }
+
+        message UpdateByRollingMin {
+          UpdateByWindowScale reverse_window_scale = 1;
+          UpdateByWindowScale forward_window_scale = 2;
+        }
+
+        message UpdateByRollingMax {
+          UpdateByWindowScale reverse_window_scale = 1;
+          UpdateByWindowScale forward_window_scale = 2;
+        }
+
+        message UpdateByRollingProduct {
+          UpdateByWindowScale reverse_window_scale = 1;
+          UpdateByWindowScale forward_window_scale = 2;
+        }
+
+        message UpdateByRollingCount {
+          UpdateByWindowScale reverse_window_scale = 1;
+          UpdateByWindowScale forward_window_scale = 2;
+        }
+
+        message UpdateByRollingStd {
+          UpdateByWindowScale reverse_window_scale = 1;
+          UpdateByWindowScale forward_window_scale = 2;
+        }
+
+        message UpdateByRollingWAvg {
+          UpdateByWindowScale reverse_window_scale = 1;
+          UpdateByWindowScale forward_window_scale = 2;
+          // Column name for the source of input weights.
+          string weight_column = 3;
         }
 
         oneof type {
@@ -440,6 +552,20 @@ message UpdateByRequest {
           UpdateByCumulativeProduct product = 4;
           UpdateByFill fill = 5;
           UpdateByEma ema = 6;
+          UpdateByRollingSum rolling_sum = 7;
+          UpdateByRollingGroup rolling_group = 8;
+          UpdateByRollingAvg rolling_avg = 9;
+          UpdateByRollingMin rolling_min = 10;
+          UpdateByRollingMax rolling_max = 11;
+          UpdateByRollingProduct rolling_product = 12;
+          UpdateByDelta delta = 13;
+          UpdateByEms ems = 14;
+          UpdateByEmMin em_min = 15;
+          UpdateByEmMax em_max = 16;
+          UpdateByEmStd em_std = 17;
+          UpdateByRollingCount rolling_count = 18;
+          UpdateByRollingStd rolling_std = 19;
+          UpdateByRollingWAvg rolling_wavg = 20;
         }
       }
 
@@ -454,7 +580,6 @@ message UpdateByRequest {
   Ticket result_id = 1;
   TableReference source_id = 2;
 
-  // If unset, defaults to server-provided defaults.
   UpdateByOptions options = 3;
   repeated UpdateByOperation operations = 4;
   repeated string group_by_columns = 5;
@@ -567,7 +692,9 @@ message LeftJoinTablesRequest {
 }
 
 message AsOfJoinTablesRequest {
+  option deprecated = true;
   enum MatchRule {
+    option deprecated = true;
     LESS_THAN_EQUAL = 0;
     LESS_THAN = 1;
     GREATER_THAN_EQUAL = 2;
@@ -581,6 +708,45 @@ message AsOfJoinTablesRequest {
   // Direction to search to find a match. LESS_THAN_EQUAL and LESS_THAN will be used to make a
   // Table.aj() call, and GREATER_THAN_EQUAL and GREATER_THAN will be used to make a Table.raj() call.
   MatchRule as_of_match_rule = 7;
+}
+
+message AjRajTablesRequest {
+  Ticket result_id = 1;
+  TableReference left_id = 2;
+  TableReference right_id = 3;
+  repeated string exact_match_columns = 4;
+  // This is a comparison expression for the inexact as-of join match. In the case of an as-of join (aj), the comparison
+  // operator can be either ">=" or ">"; for example, "Foo>=Bar" or "Foo>Bar". In the case of a reverse-as-of join (raj),
+  // the comparison operator can be either "<=" or "<"; for example, "Foo<=Bar" or "Foo<Bar". In the case where the
+  // column name exists in both tables, the single column name can be used and it will inherit the default comparison
+  // operator: in the aj case, "Foo" is equivalent to "Foo>=Foo"; in the raj case, "Foo" is equivalent to "Foo<=Foo".
+  string as_of_column = 5;
+  repeated string columns_to_add = 6;
+}
+
+message RangeJoinTablesRequest {
+  enum RangeStartRule {
+    START_UNSPECIFIED = 0;
+    LESS_THAN = 1;
+    LESS_THAN_OR_EQUAL = 2;
+    LESS_THAN_OR_EQUAL_ALLOW_PRECEDING = 3;
+  }
+  enum RangeEndRule {
+    END_UNSPECIFIED = 0;
+    GREATER_THAN = 1;
+    GREATER_THAN_OR_EQUAL = 2;
+    GREATER_THAN_OR_EQUAL_ALLOW_FOLLOWING = 3;
+  }
+  Ticket result_id = 1;
+  TableReference left_id = 2;
+  TableReference right_id = 3;
+  repeated string exact_match_columns = 4;
+  string left_start_column = 5;
+  RangeStartRule range_start_rule = 6;
+  string right_range_column = 7;
+  RangeEndRule range_end_rule = 8;
+  string left_end_column = 9;
+  repeated Aggregation aggregations = 10;
 }
 
 message ComboAggregateRequest {
@@ -1088,7 +1254,7 @@ message BatchTableRequest {
       NaturalJoinTablesRequest natural_join = 24;
       ExactJoinTablesRequest exact_join = 25;
       LeftJoinTablesRequest left_join = 26;
-      AsOfJoinTablesRequest as_of_join = 27;
+      AsOfJoinTablesRequest as_of_join = 27 [deprecated=true];
       FetchTableRequest fetch_table = 28;
       ApplyPreviewColumnsRequest apply_preview_columns = 30;
       CreateInputTableRequest create_input_table = 31;
@@ -1099,6 +1265,9 @@ message BatchTableRequest {
       SnapshotTableRequest snapshot = 36;
       SnapshotWhenTableRequest snapshot_when = 37;
       MetaTableRequest meta_table = 38;
+      RangeJoinTablesRequest range_join = 39;
+      AjRajTablesRequest aj = 40;
+      AjRajTablesRequest raj = 41;
     }
   }
 }

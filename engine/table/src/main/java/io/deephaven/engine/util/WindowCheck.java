@@ -22,25 +22,26 @@ import io.deephaven.engine.table.Table;
 import io.deephaven.engine.table.TableUpdate;
 import io.deephaven.engine.table.impl.TableUpdateImpl;
 import io.deephaven.engine.table.impl.sources.ReinterpretUtils;
+import io.deephaven.engine.updategraph.UpdateGraph;
+import io.deephaven.engine.updategraph.impl.PeriodicUpdateGraph;
 import io.deephaven.time.DateTimeUtils;
-import io.deephaven.engine.updategraph.UpdateGraphProcessor;
-import io.deephaven.time.DateTime;
 import io.deephaven.engine.table.impl.*;
 import io.deephaven.engine.table.impl.AbstractColumnSource;
 import io.deephaven.engine.table.ColumnSource;
-import io.deephaven.engine.updategraph.LogicalClock;
 import io.deephaven.engine.table.impl.MutableColumnSourceGetDefaults;
 import io.deephaven.base.RAPriQueue;
 import gnu.trove.map.hash.TLongObjectHashMap;
 import io.deephaven.util.QueryConstants;
 import org.jetbrains.annotations.NotNull;
 
+import java.time.Instant;
 import java.util.*;
 
 /**
  * Adds a Boolean column that is true if a Timestamp is within the specified window.
  */
 public class WindowCheck {
+
     private WindowCheck() {}
 
     /**
@@ -79,12 +80,14 @@ public class WindowCheck {
      * See {@link WindowCheck#addTimeWindow(QueryTable, String, long, String)} for a description, the internal version
      * gives you access to the TimeWindowListener for unit testing purposes.
      *
-     * @param addToMonitor should we add this to the UpdateGraphProcessor
+     * @param addToMonitor should we add this to the PeriodicUpdateGraph
      * @return a pair of the result table and the TimeWindowListener that drives it
      */
     static Pair<Table, TimeWindowListener> addTimeWindowInternal(Clock clock, QueryTable table,
             String timestampColumn, long windowNanos, String inWindowColumn, boolean addToMonitor) {
-        UpdateGraphProcessor.DEFAULT.checkInitiateTableOperation();
+        if (table.isRefreshing()) {
+            table.getUpdateGraph().checkInitiateSerialTableOperation();
+        }
         final Map<String, ColumnSource<?>> resultColumns = new LinkedHashMap<>(table.getColumnSourceMap());
 
         final InWindowColumnSource inWindowColumnSource;
@@ -107,7 +110,7 @@ public class WindowCheck {
         result.addParentReference(timeWindowListener);
         result.manage(table);
         if (addToMonitor) {
-            UpdateGraphProcessor.DEFAULT.addSource(timeWindowListener);
+            result.getUpdateGraph().addSource(timeWindowListener);
         }
         return new Pair<>(result, timeWindowListener);
     }
@@ -116,7 +119,7 @@ public class WindowCheck {
      * The TimeWindowListener maintains a priority queue of rows that are within a configured window, when they pass out
      * of the window, the InWindow column is set to false and a modification tick happens.
      *
-     * It implements {@link Runnable}, so that we can be inserted into the {@link UpdateGraphProcessor}.
+     * It implements {@link Runnable}, so that we can be inserted into the {@link PeriodicUpdateGraph}.
      */
     static class TimeWindowListener extends MergedListener implements Runnable {
         private final InWindowColumnSource inWindowColumnSource;
@@ -396,7 +399,8 @@ public class WindowCheck {
         @Override
         public void destroy() {
             super.destroy();
-            UpdateGraphProcessor.DEFAULT.removeSource(this);
+            UpdateGraph updateGraph = result.getUpdateGraph();
+            updateGraph.removeSource(this);
         }
     }
 
@@ -419,20 +423,23 @@ public class WindowCheck {
         private final long windowNanos;
         private final ColumnSource<Long> timeStampSource;
 
-        private long prevTime = 0;
-        private long currentTime = 0;
-        private long clockStep = LogicalClock.DEFAULT.currentStep();
-        private final long initialStep = clockStep;
+        private long prevTime;
+        private long currentTime;
+        private long clockStep;
+        private final long initialStep;
 
         InWindowColumnSource(Table table, String timestampColumn, long windowNanos) {
             super(Boolean.class);
             this.windowNanos = windowNanos;
 
-            final ColumnSource<DateTime> timeStampSource = table.getColumnSource(timestampColumn);
-            if (!DateTime.class.isAssignableFrom(timeStampSource.getType())) {
-                throw new IllegalArgumentException(timestampColumn + " is not of type DateTime!");
+            clockStep = updateGraph.clock().currentStep();
+            initialStep = clockStep;
+
+            final ColumnSource<Instant> timeStampSource = table.getColumnSource(timestampColumn);
+            if (!Instant.class.isAssignableFrom(timeStampSource.getType())) {
+                throw new IllegalArgumentException(timestampColumn + " is not of type Instant!");
             }
-            this.timeStampSource = ReinterpretUtils.dateTimeToLongSource(timeStampSource);
+            this.timeStampSource = ReinterpretUtils.instantToLongSource(timeStampSource);
         }
 
         /**
@@ -481,7 +488,7 @@ public class WindowCheck {
         private void captureTime() {
             prevTime = currentTime;
             currentTime = getTimeNanos();
-            clockStep = LogicalClock.DEFAULT.currentStep();
+            clockStep = updateGraph.clock().currentStep();
         }
 
         @Override
@@ -537,7 +544,7 @@ public class WindowCheck {
         }
 
         private long timeStampForPrev() {
-            final long currentStep = LogicalClock.DEFAULT.currentStep();
+            final long currentStep = updateGraph.clock().currentStep();
             return (clockStep < currentStep || clockStep == initialStep) ? currentTime : prevTime;
         }
     }

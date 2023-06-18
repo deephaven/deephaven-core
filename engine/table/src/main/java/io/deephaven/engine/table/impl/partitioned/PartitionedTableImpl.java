@@ -20,6 +20,7 @@ import io.deephaven.engine.rowset.RowSet;
 import io.deephaven.engine.rowset.RowSetFactory;
 import io.deephaven.engine.table.*;
 import io.deephaven.engine.table.impl.BaseTable;
+import io.deephaven.engine.table.impl.MatchPair;
 import io.deephaven.engine.table.impl.MemoizedOperationKey;
 import io.deephaven.engine.table.impl.QueryTable;
 import io.deephaven.engine.table.impl.remote.ConstructSnapshot;
@@ -28,7 +29,7 @@ import io.deephaven.engine.table.impl.select.WhereFilter;
 import io.deephaven.engine.table.impl.sources.NullValueColumnSource;
 import io.deephaven.engine.table.impl.sources.UnionSourceManager;
 import io.deephaven.engine.table.iterators.ChunkedObjectColumnIterator;
-import io.deephaven.engine.updategraph.UpdateGraphProcessor;
+import io.deephaven.engine.updategraph.UpdateGraph;
 import io.deephaven.util.SafeCloseable;
 import org.apache.commons.lang3.mutable.MutableInt;
 import org.apache.commons.lang3.mutable.MutableObject;
@@ -153,10 +154,14 @@ public class PartitionedTableImpl extends LivenessArtifact implements Partitione
                 return merged;
             }
             if (table.isRefreshing()) {
-                UpdateGraphProcessor.DEFAULT.checkInitiateTableOperation();
+                table.getUpdateGraph().checkInitiateSerialTableOperation();
             }
-            final UnionSourceManager unionSourceManager = new UnionSourceManager(this);
-            merged = unionSourceManager.getResult();
+
+            try (final SafeCloseable ignored =
+                    ExecutionContext.getContext().withUpdateGraph(table.getUpdateGraph()).open()) {
+                final UnionSourceManager unionSourceManager = new UnionSourceManager(this);
+                merged = unionSourceManager.getResult();
+            }
 
             merged.setAttribute(Table.MERGED_TABLE_ATTRIBUTE, Boolean.TRUE);
             if (!constituentChangesPermitted) {
@@ -235,7 +240,7 @@ public class PartitionedTableImpl extends LivenessArtifact implements Partitione
                     + " found in filters: " + filters);
         }
         return new PartitionedTableImpl(
-                table.where(whereFilters),
+                table.where(Filter.and(whereFilters)),
                 keyColumnNames,
                 uniqueKeys,
                 constituentColumnName,
@@ -279,9 +284,9 @@ public class PartitionedTableImpl extends LivenessArtifact implements Partitione
             final Table asRefreshingIfNeeded = maybeCopyAsRefreshing(table, expectRefreshingResults);
 
             // Perform the transformation
-            resultTable = asRefreshingIfNeeded.update(new TableTransformationColumn(
+            resultTable = asRefreshingIfNeeded.update(List.of(new TableTransformationColumn(
                     constituentColumnName, executionContext,
-                    asRefreshingIfNeeded.isRefreshing() ? transformer : assertResultsStatic(transformer)));
+                    asRefreshingIfNeeded.isRefreshing() ? transformer : assertResultsStatic(transformer))));
             enclosingScope.manage(resultTable);
 
             // Make sure we have a valid result constituent definition
@@ -308,8 +313,9 @@ public class PartitionedTableImpl extends LivenessArtifact implements Partitione
             @NotNull final BinaryOperator<Table> transformer,
             final boolean expectRefreshingResults) {
         // Check safety before doing any extra work
+        final UpdateGraph updateGraph = table.getUpdateGraph(other.table());
         if (table.isRefreshing() || other.table().isRefreshing()) {
-            UpdateGraphProcessor.DEFAULT.checkInitiateTableOperation();
+            updateGraph.checkInitiateSerialTableOperation();
         }
 
         // Validate join compatibility
@@ -324,15 +330,16 @@ public class PartitionedTableImpl extends LivenessArtifact implements Partitione
             final MatchPair[] joinAdditions =
                     new MatchPair[] {new MatchPair(RHS_CONSTITUENT, other.constituentColumnName())};
             final Table joined = uniqueKeys
-                    ? table.naturalJoin(other.table(), joinPairs, joinAdditions)
+                    ? table.naturalJoin(other.table(), Arrays.asList(joinPairs), Arrays.asList(joinAdditions))
                             .where(new MatchFilter(Inverted, RHS_CONSTITUENT, (Object) null))
-                    : table.join(other.table(), joinPairs, joinAdditions);
+                    : table.join(other.table(), Arrays.asList(joinPairs), Arrays.asList(joinAdditions));
 
             final Table asRefreshingIfNeeded = maybeCopyAsRefreshing(joined, expectRefreshingResults);
 
             resultTable = asRefreshingIfNeeded
-                    .update(new BiTableTransformationColumn(constituentColumnName, RHS_CONSTITUENT, executionContext,
-                            asRefreshingIfNeeded.isRefreshing() ? transformer : assertResultsStatic(transformer)))
+                    .update(List.of(new BiTableTransformationColumn(constituentColumnName, RHS_CONSTITUENT,
+                            executionContext,
+                            asRefreshingIfNeeded.isRefreshing() ? transformer : assertResultsStatic(transformer))))
                     .dropColumns(RHS_CONSTITUENT);
             enclosingScope.manage(resultTable);
 
@@ -426,14 +433,18 @@ public class PartitionedTableImpl extends LivenessArtifact implements Partitione
     private Table[] snapshotConstituents() {
         if (constituentChangesPermitted) {
             final MutableObject<Table[]> resultHolder = new MutableObject<>();
-            ConstructSnapshot.callDataSnapshotFunction(
-                    "PartitionedTable.constituents(): ",
-                    ConstructSnapshot.makeSnapshotControl(false, true, (QueryTable) table.coalesce()),
-                    (final boolean usePrev, final long beforeClockValue) -> {
-                        resultHolder.setValue(fetchConstituents(usePrev));
-                        return true;
-                    });
-            return resultHolder.getValue();
+
+            try (final SafeCloseable ignored = ExecutionContext.getContext().withUpdateGraph(
+                    table.getUpdateGraph()).open()) {
+                ConstructSnapshot.callDataSnapshotFunction(
+                        "PartitionedTable.constituents(): ",
+                        ConstructSnapshot.makeSnapshotControl(false, true, (QueryTable) table.coalesce()),
+                        (final boolean usePrev, final long beforeClockValue) -> {
+                            resultHolder.setValue(fetchConstituents(usePrev));
+                            return true;
+                        });
+                return resultHolder.getValue();
+            }
         } else {
             return fetchConstituents(false);
         }

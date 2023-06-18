@@ -1,0 +1,12 @@
+plugins {
+    id 'io.deephaven.project.register'
+    id 'java-library'
+}
+
+dependencies {
+    implementation project(':DHProcess')
+    implementation project(':engine-table')
+    implementation project(':Plot')
+    Classpaths.inheritAutoService(project)
+    Classpaths.inheritGroovy(project, 'groovy', 'implementation')
+}

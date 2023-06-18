@@ -7,7 +7,6 @@ import io.deephaven.engine.rowset.*;
 import io.deephaven.engine.rowset.RowSetFactory;
 import io.deephaven.engine.table.ModifiedColumnSet;
 import io.deephaven.engine.table.TableUpdate;
-import io.deephaven.engine.updategraph.UpdateGraphProcessor;
 import io.deephaven.engine.table.ColumnSource;
 import gnu.trove.impl.Constants;
 import gnu.trove.set.TLongSet;
@@ -108,7 +107,7 @@ public class UpdatableTable extends QueryTable implements Runnable {
         }
     }
 
-    private static RowSet setToIndex(@NotNull final TLongSet set) {
+    private static RowSet setToRowSet(@NotNull final TLongSet set) {
         final RowSetBuilderRandom builder = RowSetFactory.builderRandom();
         set.forEach(key -> {
             builder.addKey(key);
@@ -122,9 +121,9 @@ public class UpdatableTable extends QueryTable implements Runnable {
     public void run() {
         updater.accept(rowSetChangeRecorder);
 
-        final RowSet added = setToIndex(addedSet);
-        final RowSet removed = setToIndex(removedSet);
-        final RowSet modified = setToIndex(modifiedSet);
+        final RowSet added = setToRowSet(addedSet);
+        final RowSet removed = setToRowSet(removedSet);
+        final RowSet modified = setToRowSet(modifiedSet);
         getRowSet().writableCast().update(added, removed);
         if (added.isNonempty() || removed.isNonempty() || modified.isNonempty()) {
             final TableUpdateImpl update = new TableUpdateImpl();
@@ -148,6 +147,6 @@ public class UpdatableTable extends QueryTable implements Runnable {
     @Override
     public void destroy() {
         super.destroy();
-        UpdateGraphProcessor.DEFAULT.removeSource(this);
+        updateGraph.removeSource(this);
     }
 }

@@ -3,21 +3,30 @@
  */
 package io.deephaven.plot.datasets.data;
 
-import io.deephaven.base.testing.BaseArrayTestCase;
+import io.deephaven.engine.testutil.junit4.EngineCleanup;
 import io.deephaven.plot.BaseFigureImpl;
 import io.deephaven.plot.util.tables.*;
 import io.deephaven.engine.table.Table;
-import io.deephaven.time.DateTime;
 import io.deephaven.engine.util.TableTools;
+import io.deephaven.time.DateTimeUtils;
+import org.junit.Before;
+import org.junit.Rule;
+import org.junit.Test;
 
+import java.time.Instant;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Date;
 import java.util.List;
 
 import static io.deephaven.util.QueryConstants.*;
+import static junit.framework.TestCase.assertEquals;
+import static junit.framework.TestCase.assertNull;
 
-public class TestIndexableData extends BaseArrayTestCase {
+public class TestIndexableData {
+
+    @Rule
+    final public EngineCleanup framework = new EngineCleanup();
 
     private final int SIZE = 200;
     private final short[] shortArray = new short[SIZE];
@@ -28,10 +37,10 @@ public class TestIndexableData extends BaseArrayTestCase {
     private final Number[] numberArray = new Number[SIZE];
     private final List<Double> numberList = new ArrayList<>(SIZE);
     private final Date[] dateArray = new Date[SIZE];
-    private final DateTime[] dateTimesArray = new DateTime[SIZE];
+    private final Instant[] instantsArray = new Instant[SIZE];
 
-    @Override
-    public void setUp() throws Exception {
+    @Before
+    public void setUp() {
         short i = 0;
         shortArray[i] = NULL_SHORT;
         intArray[i] = NULL_INT;
@@ -41,7 +50,7 @@ public class TestIndexableData extends BaseArrayTestCase {
         numberArray[i] = null;
         numberList.add(i, null);
         dateArray[i] = null;
-        dateTimesArray[i] = null;
+        instantsArray[i] = null;
 
         for (i = 1; i < SIZE; i++) {
             shortArray[i] = i;
@@ -52,10 +61,11 @@ public class TestIndexableData extends BaseArrayTestCase {
             numberArray[i] = i;
             numberList.add(i, (double) i);
             dateArray[i] = new Date(i, 1, 1);
-            dateTimesArray[i] = new DateTime(i);
+            instantsArray[i] = DateTimeUtils.epochNanosToInstant(i);
         }
     }
 
+    @Test
     public void testIndexableNumericData() {
         final IndexableNumericData shortData = new IndexableNumericDataArrayShort(shortArray, null);
         final IndexableNumericData intData = new IndexableNumericDataArrayInt(intArray, null);
@@ -65,11 +75,12 @@ public class TestIndexableData extends BaseArrayTestCase {
         final IndexableNumericData numberData = new IndexableNumericDataArrayNumber<>(numberArray, null);
         final IndexableNumericData listData = new IndexableNumericDataListNumber<>(numberList, null);
         final IndexableNumericData dateData = new IndexableNumericDataArrayDate(dateArray, null);
-        final IndexableNumericData dateTimeData = new IndexableNumericDataArrayDateTime(dateTimesArray, null);
-        checkData(shortData, intData, doubleData, longData, floatData, numberData, listData, dateTimeData);
+        final IndexableNumericData instantData = new IndexableNumericDataArrayInstant(instantsArray, null);
+        checkData(shortData, intData, doubleData, longData, floatData, numberData, listData, instantData);
         checkDateData(dateData);
     }
 
+    @Test
     public void testIndexableDouble() {
         IndexableData shortData = new IndexableDataDouble(shortArray, false, null);
         IndexableData intData = new IndexableDataDouble(intArray, false, null);
@@ -88,11 +99,13 @@ public class TestIndexableData extends BaseArrayTestCase {
         checkData(null, true, shortData, intData, doubleData, longData, floatData, numberData);
     }
 
+    @Test
     public void testIndexableInteger() {
         final IndexableData intData = new IndexableDataInteger(intArray, null);
         checkData(null, true, intData);
     }
 
+    @Test
     public void testIndexableDataTable() {
         final Table t = TableTools.newTable(TableTools.shortCol("shortCol", shortArray),
                 TableTools.intCol("intCol", intArray), TableTools.doubleCol("doubleCol", doubleArray),
@@ -125,6 +138,7 @@ public class TestIndexableData extends BaseArrayTestCase {
         checkData(null, false, shortData, intData, doubleData, floatData, longData, numberData);
     }
 
+    @Test
     public void testIndexableDataInfinite() {
         final IndexableDataInfinite indexableDataInfinite =
                 new IndexableDataInfinite<>(new IndexableDataDouble(doubleArray, true, null));
@@ -138,6 +152,7 @@ public class TestIndexableData extends BaseArrayTestCase {
         assertNull(indexableDataInfinite.get(doubleArray.length + 1));
     }
 
+    @Test
     public void testIndexableDataWithDefault() {
         final IndexableDataWithDefault indexableDataWithDefault = new IndexableDataWithDefault(null);
 
@@ -197,6 +212,7 @@ public class TestIndexableData extends BaseArrayTestCase {
         }
     }
 
+    @Test
     public void testDoubleStream() {
         final double[] data = {1, 2, 3, 4};
         final double target = Arrays.stream(data).sum();

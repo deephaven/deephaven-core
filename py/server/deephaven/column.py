@@ -66,7 +66,8 @@ class InputColumn(Column):
                 self.j_column = _JColumn.empty(self.j_column_header)
             else:
                 if self.data_type.is_primitive:
-                    self.j_column = _JColumn.ofUnsafe(self.name, dtypes.array(self.data_type, self.input_data))
+                    self.j_column = _JColumn.ofUnsafe(self.name, dtypes.array(self.data_type, self.input_data,
+                                                                              remap=dtypes.null_remap(self.data_type)))
                 else:
                     self.j_column = _JColumn.of(self.j_column_header, dtypes.array(self.data_type, self.input_data))
         except Exception as e:
@@ -200,7 +201,7 @@ def datetime_col(name: str, data: Sequence) -> InputColumn:
     Returns:
         a new input column
     """
-    return InputColumn(name=name, data_type=dtypes.DateTime, input_data=data)
+    return InputColumn(name=name, data_type=dtypes.Instant, input_data=data)
 
 
 def pyobj_col(name: str, data: Sequence) -> InputColumn:
