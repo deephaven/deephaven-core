@@ -44,8 +44,8 @@ private:
 }  // namespace internal
 
 /**
- * An abstract base class representing a Deephaven clienttable. This is used for example in
- * TickingUpdate to provide clienttable snapshots to a caller who has subscribed to ticking tables.
+ * An abstract base class representing a Deephaven table. This is used for example in
+ * TickingUpdate to provide table snapshots to a caller who has subscribed to ticking tables.
  */
 class ClientTable {
 public:
