@@ -37,8 +37,10 @@ public class ViewportRow implements TableData.Row {
     }
 
     /**
+     * the data for the given column's cell
+     * 
      * @param column
-     * @return the data for the given column's cell.
+     * @return Any
      */
     @Override
     @JsMethod
@@ -52,8 +54,10 @@ public class ViewportRow implements TableData.Row {
     }
 
     /**
+     * the format object for the given columns' cell
+     * 
      * @param column
-     * @return the format object for the given columns' cell.
+     * @return {@link Format}.
      */
     @Override
     @JsMethod

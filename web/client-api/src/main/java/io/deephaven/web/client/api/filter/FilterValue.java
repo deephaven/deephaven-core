@@ -101,8 +101,9 @@ public class FilterValue {
 
     /**
      * Constructs a number for the filter API from the given parameter. Can also be used on the values returned from
-     * `Row.get` for DateTime values. To create a filter with a date, use `dh.DateWrapper.ofJsDate` or
-     * `dh.i18n.DateTimeFormat.parse`. To create a filter with a 64-bit long integer, use `dh.LongWrapper.ofString`.
+     * <b><Row.get/b> for DateTime values. To create a filter with a date, use <b>dh.DateWrapper.ofJsDate</b> or
+     * <b>dh.i18n.DateTimeFormat.parse</b>. To create a filter with a 64-bit long integer, use
+     * <b>dh.LongWrapper.ofString</b>.
      *
      * @param input
      * @return
@@ -168,8 +169,10 @@ public class FilterValue {
     }
 
     /**
+     * a filter condition checking if the current value is equal to the given parameter
+     * 
      * @param term
-     * @return a filter condition checking if the current value is equal to the given parameter.
+     * @return {@link FilterCondition}
      */
     public FilterCondition eq(FilterValue term) {
         return makeCompare(term, CompareCondition.CompareOperation.getEQUALS());
@@ -189,66 +192,82 @@ public class FilterValue {
     }
 
     /**
+     * a filter condition checking if the current value is equal to the given parameter, ignoring differences of upper
+     * vs lower case
+     * 
      * @param term
-     * @return a filter condition checking if the current value is equal to the given parameter, ignoring differences of
-     *         upper vs lower case.
+     * @return {@link FilterCondition}
      */
     public FilterCondition eqIgnoreCase(FilterValue term) {
         return inIgnoreCase(new FilterValue[] {term});
     }
 
     /**
+     * a filter condition checking if the current value is not equal to the given parameter
+     * 
      * @param term
-     * @return a filter condition checking if the current value is not equal to the given parameter.
+     * @return {@link FilterCondition}
      */
     public FilterCondition notEq(FilterValue term) {
         return makeCompare(term, CompareCondition.CompareOperation.getNOT_EQUALS());
     }
 
     /**
+     * a filter condition checking if the current value is not equal to the given parameter, ignoring differences of
+     * upper vs lower case
+     * 
      * @param term
-     * @return a filter condition checking if the current value is not equal to the given parameter, ignoring
-     *         differences of upper vs lower case.
+     * @return {@link FilterCondition}
      */
     public FilterCondition notEqIgnoreCase(FilterValue term) {
         return notInIgnoreCase(new FilterValue[] {term});
     }
 
     /**
+     * a filter condition checking if the current value is greater than the given parameter
+     * 
      * @param term
-     * @return a filter condition checking if the current value is greater than the given parameter.
+     * @return {@link FilterCondition}
      */
     public FilterCondition greaterThan(FilterValue term) {
         return makeCompare(term, CompareCondition.CompareOperation.getGREATER_THAN());
     }
 
     /**
+     * a filter condition checking if the current value is less than the given parameter
+     * 
      * @param term
-     * @return a filter condition checking if the current value is less than the given parameter.
+     * @return {@link FilterCondition}
      */
     public FilterCondition lessThan(FilterValue term) {
         return makeCompare(term, CompareCondition.CompareOperation.getLESS_THAN());
     }
 
     /**
+     * a filter condition checking if the current value is greater than or equal to the given parameter
+     * 
      * @param term
-     * @return a filter condition checking if the current value is greater than or equal to the given parameter.
+     * @return {@link FilterCondition}
      */
     public FilterCondition greaterThanOrEqualTo(FilterValue term) {
         return makeCompare(term, CompareCondition.CompareOperation.getGREATER_THAN_OR_EQUAL());
     }
 
     /**
+     * a filter condition checking if the current value is less than or equal to the given parameter
+     * 
      * @param term
-     * @return a filter condition checking if the current value is less than or equal to the given parameter.
+     * @return {@link FilterCondition}
      */
     public FilterCondition lessThanOrEqualTo(FilterValue term) {
         return makeCompare(term, CompareCondition.CompareOperation.getLESS_THAN_OR_EQUAL());
     }
 
     /**
+     * a filter condition checking if the current value is in the given set of values
+     * 
      * @param terms
-     * @return a filter condition checking if the current value is in the given set of values.
+     * @return {@link FilterCondition}
      */
     public FilterCondition in(FilterValue[] terms) {
         return makeIn(terms, Table_pb.MatchType.getREGULAR(), Table_pb.CaseSensitivity.getMATCH_CASE());
@@ -267,43 +286,53 @@ public class FilterValue {
     }
 
     /**
+     * a filter condition checking if the current value is in the given set of values, ignoring differences of upper vs
+     * lower case
+     * 
      * @param terms
-     * @return a filter condition checking if the current value is in the given set of values, ignoring differences of
-     *         upper vs lower case.
+     * @return {@link FilterCondition}
      */
     public FilterCondition inIgnoreCase(FilterValue[] terms) {
         return makeIn(terms, Table_pb.MatchType.getREGULAR(), Table_pb.CaseSensitivity.getIGNORE_CASE());
     }
 
     /**
+     * a filter condition checking that the current value is not in the given set of values
+     * 
      * @param terms
-     * @return a filter condition checking that the current value is not in the given set of values.
+     * @return {@link FilterCondition}
      */
     public FilterCondition notIn(FilterValue[] terms) {
         return makeIn(terms, Table_pb.MatchType.getINVERTED(), Table_pb.CaseSensitivity.getMATCH_CASE());
     }
 
     /**
+     * a filter condition checking that the current value is not in the given set of values, ignoring differences of
+     * upper vs lower case
+     * 
      * @param terms
-     * @return a filter condition checking that the current value is not in the given set of values, ignoring
-     *         differences of upper vs lower case.
+     * @return {@link FilterCondition}
      */
     public FilterCondition notInIgnoreCase(FilterValue[] terms) {
         return makeIn(terms, Table_pb.MatchType.getINVERTED(), Table_pb.CaseSensitivity.getIGNORE_CASE());
     }
 
     /**
+     * a filter condition checking if the given value contains the given string value
+     * 
      * @param term
-     * @return a filter condition checking if the given value contains the given string value.
+     * @return {@link FilterCondition}
      */
     public FilterCondition contains(FilterValue term) {
         return makeContains(term, Table_pb.CaseSensitivity.getMATCH_CASE());
     }
 
     /**
+     * a filter condition checking if the given value contains the given string value, ignoring differences of upper vs
+     * lower case
+     * 
      * @param term
-     * @return a filter condition checking if the given value contains the given string value, ignoring differences of
-     *         upper vs lower case.
+     * @return {@link FilterCondition}
      */
     public FilterCondition containsIgnoreCase(FilterValue term) {
         return makeContains(term, Table_pb.CaseSensitivity.getIGNORE_CASE());
@@ -321,18 +350,22 @@ public class FilterValue {
     }
 
     /**
+     * a filter condition checking if the given value matches the provided regular expressions string. Regex patterns
+     * use Java regex syntax
+     * 
      * @param pattern
-     * @return a filter condition checking if the given value matches the provided regular expressions string. Regex
-     *         patterns use Java regex syntax.
+     * @return {@link FilterCondition}
      */
     public FilterCondition matches(FilterValue pattern) {
         return makeMatches(pattern, Table_pb.CaseSensitivity.getMATCH_CASE());
     }
 
     /**
+     * a filter condition checking if the given value matches the provided regular expressions string, ignoring
+     * differences of upper vs lower case. Regex patterns use Java regex syntax
+     * 
      * @param pattern
-     * @return a filter condition checking if the given value matches the provided regular expressions string, ignoring
-     *         differences of upper vs lower case. Regex patterns use Java regex syntax.
+     * @return {@link FilterCondition}
      */
     public FilterCondition matchesIgnoreCase(FilterValue pattern) {
         return makeMatches(pattern, Table_pb.CaseSensitivity.getIGNORE_CASE());
@@ -351,21 +384,27 @@ public class FilterValue {
     }
 
     /**
-     * @return a filter condition checking if the current value is a true boolean.
+     * a filter condition checking if the current value is a true boolean
+     * 
+     * @return {@link FilterCondition}
      */
     public FilterCondition isTrue() {
         return eq(FilterValue.ofBoolean(true));
     }
 
     /**
-     * @return a filter condition checking if the current value is a false boolean.
+     * a filter condition checking if the current value is a false boolean
+     * 
+     * @return {@link FilterCondition}
      */
     public FilterCondition isFalse() {
         return eq(FilterValue.ofBoolean(false));
     }
 
     /**
-     * @return a filter condition checking if the current value is a null value.
+     * a filter condition checking if the current value is a null value
+     * 
+     * @return {@link FilterCondition}
      */
     public FilterCondition isNull() {
         IsNullCondition isNull = new IsNullCondition();
@@ -378,11 +417,18 @@ public class FilterValue {
 
     /**
      * a filter condition invoking the given method on the current value, with the given parameters. Currently supported
-     * functions that can be invoked on a String: _ `startsWith` - Returns true if the current string value starts with
-     * the supplied string argument. _ `endsWith` - Returns true if the current string value ends with the supplied
-     * string argument. _ `matches` - Returns true if the current string value matches the supplied string argument used
-     * as a Java regular expression. _ `contains` - Returns true if the current string value contains the supplied
-     * string argument. When invoking against a constant, this should be avoided in favor of FilterValue.contains.
+     * functions that can be invoked on a String:
+     * <ul>
+     * <li><b>startsWith</b>: Returns true if the current string value starts with the supplied string argument</li>
+     * <li><b>endsWith</b>: Returns true if the current string value ends with the supplied string argument</li>
+     * <li><b>matches</b>: Returns true if the current string value matches the supplied string argument used as a Java
+     * regular expression</li>
+     * <li><b>contains</b>: Returns true if the current string value contains the supplied string argument
+     * <p>
+     * When invoking against a constant, this should be avoided in favor of FilterValue.contains
+     * </p>
+     * </li>
+     * </ul>
      *
      * @param method
      * @param args

@@ -7,7 +7,7 @@ import jsinterop.base.JsPropertyMap;
 
 /**
  * Presently optional and not used by the server, this allows the client to specify some authentication details. String
- * authToken` - base 64 encoded auth token. String serviceId` - The service ID to use for the connection.
+ * authToken <i>- base 64 encoded auth token. String serviceId -</i> The service ID to use for the connection.
  */
 @JsType(namespace = "dh")
 public class ConnectOptions {

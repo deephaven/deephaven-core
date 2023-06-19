@@ -45,11 +45,11 @@ public class Column {
     private final boolean isInputTableKeyColumn;
 
     /**
-     * Format entire rows colors using the expression specified. Returns a `CustomColumn` object to apply to a table
-     * using `applyCustomColumns` with the parameters specified.
+     * Format entire rows colors using the expression specified. Returns a <b>CustomColumn</b> object to apply to a
+     * table using <b>applyCustomColumns</b> with the parameters specified.
      * 
      * @param expression
-     * @return
+     * @return {@link CustomColumn}
      */
     @JsMethod(namespace = "dh.Column")
     public static CustomColumn formatRowColor(String expression) {
@@ -57,9 +57,11 @@ public class Column {
     }
 
     /**
+     * a <b>CustomColumn</b> object to apply using <b>applyCustomColumns</b> with the expression specified.
+     * 
      * @param name
      * @param expression
-     * @return a `CustomColumn` object to apply using `applyCustomColumns` with the expression specified.
+     * @return {@link CustomColumn}
      */
     @JsMethod(namespace = "dh.Column")
     public static CustomColumn createCustomColumn(String name, String expression) {
@@ -82,8 +84,10 @@ public class Column {
     }
 
     /**
+     * the value for this column in the given row. Type will be consistent with the type of the Column.
+     * 
      * @param row
-     * @return the value for this column in the given row. Type will be consistent with the type of the Column.
+     * @return Any
      */
     @JsMethod
     public Any get(TableData.Row row) {
@@ -97,7 +101,7 @@ public class Column {
 
     /**
      * @deprecated do not use. Internal index of the column in the table, to be used as a key on the Row.
-     * @return
+     * @return int
      */
     @Deprecated
     @JsProperty(name = "index")
@@ -110,7 +114,9 @@ public class Column {
     }
 
     /**
-     * @return Type of the row data that can be found in this column.
+     * Type of the row data that can be found in this column.
+     * 
+     * @return String
      */
     @JsProperty
     public String getType() {
@@ -118,7 +124,9 @@ public class Column {
     }
 
     /**
-     * @return Label for this column.
+     * Label for this column.
+     * 
+     * @return String
      */
     @JsProperty
     public String getName() {
@@ -145,9 +153,9 @@ public class Column {
 
     /**
      * If this column is part of a roll-up tree table, represents the type of the row data that can be found in this
-     * column for leaf nodes if includeConstituents is enabled. Otherwise, it is `null`.
+     * column for leaf nodes if includeConstituents is enabled. Otherwise, it is <b>null</b>.
      * 
-     * @return
+     * @return String
      */
     @JsProperty
     @JsNullable
@@ -176,8 +184,11 @@ public class Column {
     }
 
     /**
-     * @return True if this column is a partition column. Partition columns are used for filtering uncoalesced tables
-     *         (see `isUncoalesced` property on `Table`)
+     * True if this column is a partition column. Partition columns are used for filtering uncoalesced tables (see
+     * <b>isUncoalesced</b> property on <b>Table</b>)
+     * 
+     * @return boolean
+     *
      */
     @JsProperty
     public boolean getIsPartitionColumn() {
@@ -191,7 +202,7 @@ public class Column {
     /**
      * Creates a sort builder object, to be used when sorting by this column.
      * 
-     * @return
+     * @return {@link Sort}
      */
     @JsMethod
     public Sort sort() {
@@ -202,7 +213,7 @@ public class Column {
      * Creates a new value for use in filters based on this column. Used either as a parameter to another filter
      * operation, or as a builder to create a filter operation.
      * 
-     * @return
+     * @return {@link FilterValue}
      */
     @JsMethod
     public FilterValue filter() {
@@ -210,8 +221,10 @@ public class Column {
     }
 
     /**
+     * a <b>CustomColumn</b> object to apply using `applyCustomColumns` with the expression specified.
+     * 
      * @param expression
-     * @return a `CustomColumn` object to apply using `applyCustomColumns` with the expression specified.
+     * @return {@link CustomColumn}
      */
     @JsMethod
     public CustomColumn formatColor(String expression) {
@@ -219,8 +232,10 @@ public class Column {
     }
 
     /**
+     * a <b>CustomColumn</b> object to apply using <b>applyCustomColumns</b> with the expression specified.
+     * 
      * @param expression
-     * @return a `CustomColumn` object to apply using `applyCustomColumns` with the expression specified.
+     * @return {@link CustomColumn}
      */
     @JsMethod
     public CustomColumn formatNumber(String expression) {
@@ -228,8 +243,10 @@ public class Column {
     }
 
     /**
+     * a <b>CustomColumn</b> object to apply using <b>applyCustomColumns</b> with the expression specified.
+     * 
      * @param expression
-     * @return a `CustomColumn` object to apply using `applyCustomColumns` with the expression specified.
+     * @return {@link CustomColumn}
      */
     @JsMethod
     public CustomColumn formatDate(String expression) {

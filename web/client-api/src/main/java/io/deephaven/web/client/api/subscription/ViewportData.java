@@ -272,7 +272,9 @@ public class ViewportData implements TableData {
     }
 
     /**
-     * @return The index of the first returned row.
+     * The index of the first returned row
+     * 
+     * @return double
      */
     @JsProperty
     public double getOffset() {
@@ -311,7 +313,9 @@ public class ViewportData implements TableData {
     }
 
     /**
-     * @return An array of rows of data.
+     * An array of rows of data
+     * 
+     * @return {@link ViewportRow} array.
      */
     @Override
     @JsProperty
@@ -327,7 +331,9 @@ public class ViewportData implements TableData {
     }
 
     /**
-     * @return A list of columns describing the data types in each row.
+     * A list of columns describing the data types in each row
+     * 
+     * @return {@link Column} array.
      */
     @Override
     @JsProperty

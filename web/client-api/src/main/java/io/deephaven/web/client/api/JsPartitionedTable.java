@@ -181,8 +181,10 @@ public class JsPartitionedTable extends HasLifecycle {
     }
 
     /**
+     * the table with the given key.
+     * 
      * @param key
-     * @return the table with the given key.
+     * @return Promise of dh.Table
      */
     public Promise<JsTable> getTable(Object key) {
         // Wrap non-arrays in an array so we are consistent with how we track keys
@@ -212,8 +214,11 @@ public class JsPartitionedTable extends HasLifecycle {
     }
 
     /**
-     * @return The set of all currently known keys. This is kept up to date, so getting the list after adding an event
-     *         listener for `keyadded` will ensure no keys are missed.
+     * The set of all currently known keys. This is kept up to date, so getting the list after adding an event listener
+     * for <b>keyadded</b> will ensure no keys are missed.
+     * 
+     * @return Set of Object
+     *
      */
     public JsSet<Object> getKeys() {
         if (subscription.getColumns().length == 1) {
@@ -223,7 +228,9 @@ public class JsPartitionedTable extends HasLifecycle {
     }
 
     /**
-     * @return The count of known keys.
+     * The count of known keys.
+     * 
+     * @return int
      */
     @JsProperty(name = "size")
     public int size() {

@@ -26,7 +26,9 @@ public class JsHoliday {
     }
 
     /**
-     * @return Read-only. The date of the Holiday.
+     * The date of the Holiday.
+     * 
+     * @return {@link LocalDateWrapper}
      */
     @JsProperty
     public LocalDateWrapper getDate() {
@@ -34,7 +36,9 @@ public class JsHoliday {
     }
 
     /**
-     * @return Read-only. The business periods that are open on the holiday.
+     * The business periods that are open on the holiday.
+     * 
+     * @return dh.calendar.BusinessPeriod
      */
     @JsProperty
     public JsArray<JsBusinessPeriod> getBusinessPeriods() {

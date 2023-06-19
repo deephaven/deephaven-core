@@ -104,8 +104,10 @@ public class JsColumnStatistics {
     /**
      * Gets the type of formatting that should be used for given statistic.
      *
+     * the format type for a statistic. A null return value means that the column formatting should be used.
+     *
      * @param name the display name of the statistic
-     * @return the format type for a statistic. A null return value means that the column formatting should be used.
+     * @return String
      */
     @JsMethod
     public String getType(String name) {
@@ -115,7 +117,9 @@ public class JsColumnStatistics {
     /**
      * Gets a map with the display name of statistics as keys and the numeric stat as a value.
      *
-     * @return A map of each statistic's name to its value.
+     * A map of each statistic's name to its value.
+     *
+     * @return Map of String and Object
      */
     @JsProperty
     public JsMap<String, Object> getStatisticsMap() {
@@ -124,10 +128,12 @@ public class JsColumnStatistics {
 
 
     /**
-     * Gets a map with the name of each unique value as key and the count a the value.
+     * Gets a map with the name of each unique value as key and the count a the value. A map of each unique value's name
+     * to the count of how many times it occurred in the column. This map will be empty for tables containing more than
+     * 19 unique values.
      *
-     * @return A map of each unique value's name to the count of how many times it occurred in the column. This map will
-     *         be empty for tables containing more than 19 unique values.
+     * @return Map of String double
+     *
      */
     @JsProperty
     public JsMap<String, Double> getUniqueValues() {

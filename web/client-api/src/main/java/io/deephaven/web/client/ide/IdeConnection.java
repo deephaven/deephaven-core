@@ -47,7 +47,7 @@ public class IdeConnection extends QueryConnectable<IdeConnection> {
     private final ConnectOptions options;
 
     /**
-     * creates a new instance, from which console sessions can be made. `options` are optional.
+     * creates a new instance, from which console sessions can be made. <b>options</b> are optional.
      * 
      * @param serverUrl The url used when connecting to the server. Read-only.
      * @param connectOptions Optional Object
@@ -110,7 +110,9 @@ public class IdeConnection extends QueryConnectable<IdeConnection> {
     }
 
     /**
-     * @return The url used when connecting to the server. Read-only.
+     * The url used when connecting to the server.
+     * 
+     * @return String.
      */
     @Override
     @JsIgnore

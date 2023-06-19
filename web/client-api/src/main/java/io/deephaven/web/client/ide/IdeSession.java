@@ -112,8 +112,10 @@ public class IdeSession extends HasEventHandling {
     }
 
     /**
+     * Load the named Figure, including its tables and tablemaps as needed.
+     * 
      * @param name
-     * @return Load the named Figure, including its tables and tablemaps as needed.
+     * @return promise of dh.plot.Figure
      */
     public Promise<JsFigure> getFigure(String name) {
         return connection.getVariableDefinition(name, JsVariableType.FIGURE).then(connection::getFigure);

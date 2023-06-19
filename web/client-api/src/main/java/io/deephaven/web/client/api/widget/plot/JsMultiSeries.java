@@ -135,8 +135,10 @@ public class JsMultiSeries {
     }
 
     /**
-     * @return Read-only. The plotting style to use for the series that will be created. See `SeriesPlotStyle` enum for
-     *         more details.
+     * The plotting style to use for the series that will be created. See <b>SeriesPlotStyle</b> enum for more details.
+     * 
+     * @return int
+     *
      */
     @JsProperty
     @TsTypeRef(JsSeriesPlotStyle.class)
@@ -145,7 +147,9 @@ public class JsMultiSeries {
     }
 
     /**
-     * @return Read-only. The name for this multi-series.
+     * The name for this multi-series.
+     * 
+     * @return String
      */
     @JsProperty
     public String getName() {

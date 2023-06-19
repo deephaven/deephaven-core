@@ -112,7 +112,7 @@ public abstract class QueryConnectable<Self extends QueryConnectable<Self>> exte
      * log messages as are presently available.
      * 
      * @param callback
-     * @return
+     * @return {@link JsRunnable}
      */
     @JsMethod
     public JsRunnable onLogMessage(JsConsumer<LogItem> callback) {

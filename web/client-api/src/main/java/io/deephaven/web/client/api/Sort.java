@@ -38,7 +38,9 @@ public class Sort {
     }
 
     /**
-     * @return The column which is sorted.
+     * The column which is sorted.
+     * 
+     * @return {@link Column}
      */
     @JsProperty
     public Column getColumn() {
@@ -46,7 +48,9 @@ public class Sort {
     }
 
     /**
-     * @return The direction of this sort, either `ASC`, `DESC`, or `REVERSE`.
+     * The direction of this sort, either <b>ASC</b>, <b>DESC</b>, or <b>REVERSE</b>.
+     * 
+     * @return String
      */
     @JsProperty
     public String getDirection() {
@@ -54,7 +58,9 @@ public class Sort {
     }
 
     /**
-     * @return True if the absolute value of the column should be used when sorting; defaults to false.
+     * True if the absolute value of the column should be used when sorting; defaults to false.
+     * 
+     * @return boolean
      */
     @JsProperty(name = "isAbs")
     public boolean isAbs() {
@@ -64,7 +70,7 @@ public class Sort {
     /**
      * Builds a Sort instance to sort values in ascending order.
      * 
-     * @return
+     * @return {@link Sort}
      */
     @JsMethod
     public Sort asc() {
@@ -77,7 +83,7 @@ public class Sort {
     /**
      * Builds a Sort instance to sort values in descending order.
      * 
-     * @return
+     * @return {@link Sort}
      */
     @JsMethod
     public Sort desc() {
@@ -90,7 +96,7 @@ public class Sort {
     /**
      * Builds a Sort instance which takes the absolute value before applying order.
      * 
-     * @return
+     * @return {@link Sort}
      */
     @JsMethod
     public Sort abs() {

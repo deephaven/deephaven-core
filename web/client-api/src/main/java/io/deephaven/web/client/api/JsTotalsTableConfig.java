@@ -47,9 +47,9 @@ import java.util.stream.Collectors;
 /**
  * Describes how a Totals Table will be generated from its parent table. Each table has a default (which may be null)
  * indicating how that table was configured when it was declared, and each Totals Table has a similar property
- * describing how it was created. Both the `Table.getTotalsTable` and `Table.getGrandTotalsTable` methods take this
- * config as an optional parameter - without it, the table's default will be used, or if null, a default instance of
- * `TotalsTableConfig` will be supplied.
+ * describing how it was created. Both the <b>Table.getTotalsTable</b> and <b>Table.getGrandTotalsTable</b> methods take
+ * this config as an optional parameter - without it, the table's default will be used, or if null, a default instance
+ * of <b>TotalsTableConfig</b> will be supplied.
  *
  * This class has a no-arg constructor, allowing an instance to be made with the default values provided. However, any
  * JS object can be passed in to the methods which accept instances of this type, provided their values adhere to the

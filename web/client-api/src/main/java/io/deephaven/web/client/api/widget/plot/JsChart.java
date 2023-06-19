@@ -73,7 +73,9 @@ public class JsChart extends HasEventHandling {
     }
 
     /**
-     * @return Read-only. The type of this chart, see `ChartType` enum for more details.
+     * The type of this chart, see <b>ChartType</b> enum for more details.
+     * 
+     * @return int
      */
     @JsProperty
     @TsTypeRef(JsChartType.class)
@@ -82,7 +84,9 @@ public class JsChart extends HasEventHandling {
     }
 
     /**
-     * @return Read-only. The title of the chart.
+     * The title of the chart.
+     * 
+     * @return String
      */
     @JsProperty
     @JsNullable
@@ -136,7 +140,9 @@ public class JsChart extends HasEventHandling {
     }
 
     /**
-     * @return Read-only. The series data for display in this chart.
+     * The series data for display in this chart.
+     * 
+     * @return dh.plot.Series
      */
     @JsIgnore
     public JsSeries[] getSeries() {
@@ -144,7 +150,9 @@ public class JsChart extends HasEventHandling {
     }
 
     /**
-     * @return Read-only. The multi-series data for display in this chart
+     * The multi-series data for display in this chart
+     * 
+     * @return dh.plot.MultiSeries
      */
     @JsIgnore
     public JsMultiSeries[] getMultiSeries() {
@@ -152,7 +160,9 @@ public class JsChart extends HasEventHandling {
     }
 
     /**
-     * @return Read-only. The axes used in this chart.
+     * The axes used in this chart.
+     * 
+     * @return dh.plot.Axis
      */
     @JsProperty
     public JsAxis[] getAxes() {

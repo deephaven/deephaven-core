@@ -22,7 +22,9 @@ public class JsCommandResult {
     }
 
     /**
-     * @return Describes changes made in the course of this command.
+     * Describes changes made in the course of this command.
+     * 
+     * @return {@link JsVariableChanges}.
      */
     @JsProperty
     public JsVariableChanges getChanges() {
@@ -30,7 +32,9 @@ public class JsCommandResult {
     }
 
     /**
-     * @return If the command failed, the error message will be provided here.
+     * If the command failed, the error message will be provided here.
+     * 
+     * @return String
      */
     @JsProperty
     public String getError() {

@@ -24,7 +24,9 @@ public class LogItem implements Serializable {
     private String message;
 
     /**
-     * @return Timestamp of the message in microseconds since Jan 1, 1970 UTC.
+     * Timestamp of the message in microseconds since Jan 1, 1970 UTC.
+     * 
+     * @return double
      */
     @JsProperty
     public double getMicros() {
@@ -36,7 +38,9 @@ public class LogItem implements Serializable {
     }
 
     /**
-     * @return The level of the log message, enabling the client to ignore messages.
+     * The level of the log message, enabling the client to ignore messages.
+     * 
+     * @return String
      */
     @JsProperty
     public String getLogLevel() {
@@ -48,7 +52,9 @@ public class LogItem implements Serializable {
     }
 
     /**
-     * @return The log message written on the server.
+     * The log message written on the server.
+     * 
+     * @return String
      */
     @JsProperty
     public String getMessage() {

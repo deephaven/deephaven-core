@@ -46,37 +46,37 @@ import java.util.stream.Stream;
  *
  * The Deephaven JS API supports automatic lossless downsampling of time-series data, when that data is plotted in one
  * or more line series. Using a scatter plot or a X-axis of some type other than DateTime will prevent this feature from
- * being applied to a series. To enable this feature, invoke `Axis.range(...)` to specify the length in pixels of the
- * axis on the screen, and the range of values that are visible, and the server will use that width (and range, if any)
- * to reduce the number of points sent to the client.
+ * being applied to a series. To enable this feature, invoke <b>Axis.range(...)</b> to specify the length in pixels of
+ * the axis on the screen, and the range of values that are visible, and the server will use that width (and range, if
+ * any) to reduce the number of points sent to the client.
  *
- * Downsampling can also be controlled when calling either `Figure.subscribe()` or `Series.subscribe()` - both can be
- * given an optional `dh.plot.DownsampleOptions` argument. Presently only two valid values exist, `DEFAULT`, and
- * `DISABLE`, and if no argument is specified, `DEFAULT` is assumed. If there are more than 30,000 rows in a table,
- * downsampling will be encouraged - data will not load without calling `subscribe(DISABLE)` or enabling downsampling
- * via `Axis.range(...)`. If there are more than 200,000 rows, data will refuse to load without downsampling and
- * `subscribe(DISABLE)` would have no effect.
+ * Downsampling can also be controlled when calling either <b>Figure.subscribe()</b> or <b>Series.subscribe()</b> - both
+ * can be given an optional <b>dh.plot.DownsampleOptions</b> argument. Presently only two valid values exist,
+ * <b>DEFAULT</b>, and <b>DISABLE</b>, and if no argument is specified, <b>DEFAULT</b> is assumed. If there are more
+ * than 30,000 rows in a table, downsampling will be encouraged - data will not load without calling
+ * <b>subscribe(DISABLE)</b> or enabling downsampling via <b>Axis.range(...)</b>. If there are more than 200,000 rows,
+ * data will refuse to load without downsampling and <b>subscribe(DISABLE)</b> would have no effect.
  *
  * Downsampled data looks like normal data, except that select items have been removed if they would be redundant in the
  * UI given the current configuration. Individual rows are intact, so that a tooltip or some other UI item is sure to be
  * accurate and consistent, and at least the highest and lowest value for each axis will be retained as well, to ensure
  * that the "important" values are visible.
  *
- * Four events exist to help with interacting with downsampled data, all fired from the `Figure` instance itself. First,
- * `downsampleneeded` indicates that more than 30,000 rows would be fetched, and so specifying downsampling is no longer
- * optional - it must either be enabled (calling `axis.range(...)`), or disabled. If the figure is configured for
- * downsampling, when a change takes place that requires that the server perform some downsampling work, the
- * `downsamplestarted` event will first be fired, which can be used to present a brief loading message, indicating to
- * the user why data is not ready yet - when the server side process is complete, `downsamplefinished` will be fired.
- * These events will repeat when the range changes, such as when zooming, panning, or resizing the figure. Finally,
- * `downsamplefailed` indicates that something when wrong when downsampling, or possibly that downsampling cannot be
- * disabled due to the number of rows in the table.
+ * Four events exist to help with interacting with downsampled data, all fired from the <b>Figure</b> instance itself.
+ * First, <b>downsampleneeded</b> indicates that more than 30,000 rows would be fetched, and so specifying downsampling
+ * is no longer optional - it must either be enabled (calling <b>axis.range(...)</b>), or disabled. If the figure is
+ * configured for downsampling, when a change takes place that requires that the server perform some downsampling work,
+ * the <b>downsamplestarted</b> event will first be fired, which can be used to present a brief loading message,
+ * indicating to the user why data is not ready yet - when the server side process is complete,
+ * <b>downsamplefinished</b> will be fired. These events will repeat when the range changes, such as when zooming,
+ * panning, or resizing the figure. Finally, <b>downsamplefailed</b> indicates that something when wrong when
+ * downsampling, or possibly that downsampling cannot be disabled due to the number of rows in the table.
  */
 @JsType(name = "Figure", namespace = "dh.plot")
 public class JsFigure extends HasLifecycle {
 
     /**
-     * The data within this figure was updated. `event.detail` is `FigureUpdateEventData`
+     * The data within this figure was updated. <b>event.detail</b> is <b>FigureUpdateEventData</b>
      */
     @JsProperty(namespace = "dh.plot.Figure")
     public static final String EVENT_UPDATED = "updated",
@@ -90,19 +90,19 @@ public class JsFigure extends HasLifecycle {
             EVENT_RECONNECTFAILED = JsTable.EVENT_RECONNECTFAILED,
             /**
              * The API is updating how downsampling works on this Figure, probably in response to a call to
-             * `Axis.range()` or subscribe(). The `event.detail` value is an array of `Series` instances which are
-             * affected by this.
+             * <b>Axis.range()</b> or subscribe(). The <b>event.detail</b> value is an array of <b>Series</b> instances
+             * which are affected by this.
              */
             EVENT_DOWNSAMPLESTARTED = "downsamplestarted",
             /**
-             * Downsampling has finished on the given `Series` instances, and data will arrive shortly. The
-             * `event.detail` value is the array of `Series` instances.
+             * Downsampling has finished on the given <b>Series</b> instances, and data will arrive shortly. The
+             * <b>event.detail</b> value is the array of <b>Series</b> instances.
              */
             EVENT_DOWNSAMPLEFINISHED = "downsamplefinished",
             /**
-             * Downsampling failed for some reason on one or more series. The `event.detail` object has three
-             * properties, the `message` string describing what went wrong, the `size` number showing the full size of
-             * the table, and the `series` property, an array of `Series` instances affected.
+             * Downsampling failed for some reason on one or more series. The <b>event.detail</b> object has three
+             * properties, the <b>message</b> string describing what went wrong, the <b>size</b> number showing the full
+             * size of the table, and the <b>series</b> property, an array of <b>Series</b> instances affected.
              */
             EVENT_DOWNSAMPLEFAILED = "downsamplefailed",
             /**
@@ -274,7 +274,9 @@ public class JsFigure extends HasLifecycle {
 
 
     /**
-     * @return Read-only. The title of the figure.
+     * The title of the figure.
+     * 
+     * @return String
      */
     @JsProperty
     @JsNullable
@@ -311,7 +313,9 @@ public class JsFigure extends HasLifecycle {
     }
 
     /**
-     * @return Read-only. The charts to draw.
+     * The charts to draw.
+     * 
+     * @return dh.plot.Chart
      */
     @JsProperty
     public JsChart[] getCharts() {

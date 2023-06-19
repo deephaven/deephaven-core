@@ -15,24 +15,92 @@ import java.util.Map;
 /**
  * Represents the timezones supported by Deephaven. Can be used to format dates, taking into account the offset changing
  * throughout the year (potentially changing each year). These instances mostly are useful at this time to pass to the
- * `DateTimeFormat.format()` methods, though also support a few properties at this time to see details about each
+ * <b>DateTimeFormat.format()</b> methods, though also support a few properties at this time to see details about each
  * instance.
  *
  *
  * The following timezone codes are supported when getting a timezone object - instances appearing in the same line will
  * return the same details:
  *
- *
- * - `GMT`/`UTC` - `Asia/Tokyo` - `Asia/Seoul` - `Asia/Hong_Kong` - `Asia/Singapore` - `Asia/Calcutta`/`Asia/Kolkata` -
- * `Europe/Berlin` - `Europe/London` - `America/Sao_Paulo` - `America/St_Johns` - `America/Halifax` - `America/New_York`
- * - `America/Chicago` - `America/Denver` - `America/Los_Angeles` - `America/Anchorage` - `Pacific/Honolulu`
+ * <ul>
+ * <li>GMT/UTC</li>
+ * <li>Asia/Tokyo</li>
+ * <li>Asia/Seoul</li>
+ * <li>Asia/Hong_Kong</li>
+ * <li>Asia/Singapore</li>
+ * <li>Asia/Calcutta/Asia/Kolkata</li>
+ * <li>Europe/Berlin</li>
+ * <li>Europe/London</li>
+ * <li>America/Sao_Paulo</li>
+ * <li>America/St_Johns</li>
+ * <li>America/Halifax</li>
+ * <li>America/New_York</li>
+ * <li>America/Chicago</li>
+ * <li>America/Denver</li>
+ * <li>America/Los_Angeles</li>
+ * <li>America/Anchorage</li>
+ * <li>Pacific/Honolulu</li>
+ * </ul>
  *
  * A Timezone object can also be created from an abbreviation. The following abbreviations are supported:
  *
- * - `UTC` - `GMT` - `Z` - `NY` - `ET` - `EST` - `EDT` - `MN` - `CT` - `CST` - `CDT` - `MT` - `MST` - `MDT` - `PT` -
- * `PST` - `PDT` - `HI` - `HST` - `HDT` - `BT` - `BRST` - `BRT` - `KR` - `KST` - `HK` - `HKT` - `JP` - `JST` - `AT` -
- * `AST` - `ADT` - `NF` - `NST` - `NDT` - `AL` - `AKST` - `AKDT` - `IN` - `IST` - `CE` - `CET` - `CEST` - `SG` - `SGT` -
- * `LON` - `BST` - `MOS` - `SHG` - `CH` - `NL` - `TW` - `SYD` - `AEST` - `AEDT`
+ * <ul>
+ * <li>UTC</li>
+ * <li>GMT</li>
+ * <li>Z</li>
+ * <li>NY</li>
+ * <li>ET</li>
+ * <li>EST</li>
+ * <li>EDT</li>
+ * <li>MN</li>
+ * <li>CT</li>
+ * <li>CST</li>
+ * <li>CDT</li>
+ * <li>MT</li>
+ * <li>MST</li>
+ * <li>MDT</li>
+ * <li>PT</li>
+ * <li>PST</li>
+ * <li>PDT</li>
+ * <li>HI</li>
+ * <li>HST</li>
+ * <li>HDT</li>
+ * <li>BT</li>
+ * <li>BRST</li>
+ * <li>BRT</li>
+ * <li>KR</li>
+ * <li>KST</li>
+ * <li>HK</li>
+ * <li>HKT</li>
+ * <li>JP</li>
+ * <li>JST</li>
+ * <li>AT</li>
+ * <li>AST</li>
+ * <li>ADT</li>
+ * <li>NF</li>
+ * <li>NST</li>
+ * <li>NDT</li>
+ * <li>AL</li>
+ * <li>AKST</li>
+ * <li>AKDT</li>
+ * <li>IN</li>
+ * <li>IST</li>
+ * <li>CE</li>
+ * <li>CET</li>
+ * <li>CEST</li>
+ * <li>SG</li>
+ * <li>SGT</li>
+ * <li>LON</li>
+ * <li>BST</li>
+ * <li>MOS</li>
+ * <li>SHG</li>
+ * <li>CH</li>
+ * <li>NL</li>
+ * <li>TW</li>
+ * <li>SYD</li>
+ * <li>AEST</li>
+ * <li>AEDT</li>
+ * </ul>
  */
 @JsType(name = "TimeZone", namespace = "dh.i18n")
 public class JsTimeZone {
@@ -47,7 +115,7 @@ public class JsTimeZone {
      * Factory method which creates timezone instances from one of the supported keys.
      * 
      * @param tzCode
-     * @return
+     * @return dh.i18n.TimeZone
      */
     public static JsTimeZone getTimeZone(String tzCode) {
         if (!timeZones.containsKey(tzCode)) {
@@ -621,8 +689,9 @@ public class JsTimeZone {
     }
 
     /**
-     * @return the timezone code that represents this `TimeZone`, usually the same key as was use to create this
-     *         instance.
+     * the timezone code that represents this `TimeZone`, usually the same key as was use to create this instance
+     * 
+     * @return String
      */
     @JsProperty(name = "id")
     public String getID() {
@@ -630,7 +699,9 @@ public class JsTimeZone {
     }
 
     /**
-     * @return the standard offset of this timezone, in minutes.
+     * the standard offset of this timezone, in minutes
+     * 
+     * @return int
      */
     @JsProperty
     public int getStandardOffset() {

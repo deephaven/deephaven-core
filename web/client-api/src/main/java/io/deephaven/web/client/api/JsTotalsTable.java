@@ -68,7 +68,9 @@ public class JsTotalsTable implements JoinableTable {
     }
 
     /**
-     * @return Read-only. The configuration used when creating this Totals Table.
+     * The configuration used when creating this Totals Table.
+     * 
+     * @return {@link ClientTableState}
      */
     @JsIgnore
     @Override
@@ -86,8 +88,8 @@ public class JsTotalsTable implements JoinableTable {
     /**
      * Specifies the range of items to pass to the client and update as they change. If the columns parameter is not
      * provided, all columns will be used. Until this is called, no data will be available. Invoking this will result in
-     * events to be fired once data becomes available, starting with an `updated` event and one `rowadded` event per row
-     * in that range.
+     * events to be fired once data becomes available, starting with an <b>updated</b> event and one <b>rowadded</b>
+     * event per row in that range.
      *
      * @param firstRow
      * @param lastRow
@@ -105,8 +107,10 @@ public class JsTotalsTable implements JoinableTable {
     }
 
     /**
-     * @return the currently visible viewport. If the current set of operations has not yet resulted in data, it will
-     *         not resolve until that data is ready.
+     * the currently visible viewport. If the current set of operations has not yet resulted in data, it will not
+     * resolve until that data is ready.
+     * 
+     * @return Promise of {@link TableData}
      */
     @JsMethod
     public Promise<TableData> getViewportData() {
@@ -114,10 +118,11 @@ public class JsTotalsTable implements JoinableTable {
     }
 
     /**
-     * @return Read-only. The columns present on this table. Note that this may not include all columns in the parent
-     *         table, and in cases where a given column has more than one aggregation applied, the column name will have
-     *         a suffix indicating the aggregation used. This suffixed name will be of the form `columnName + '__' +
-     *         aggregationName`.
+     * The columns present on this table. Note that this may not include all columns in the parent table, and in cases
+     * where a given column has more than one aggregation applied, the column name will have a suffix indicating the
+     * aggregation used. This suffixed name will be of the form <b>columnName + '__' + aggregationName</b>.
+     * 
+     * @return {@link Column} array
      */
     @JsProperty
     public JsArray<Column> getColumns() {
@@ -125,9 +130,12 @@ public class JsTotalsTable implements JoinableTable {
     }
 
     /**
+     * a column by the given name. You should prefer to always retrieve a new Column instance instead of caching a
+     * returned value.
+     * 
      * @param key
-     * @return a column by the given name. You should prefer to always retrieve a new Column instance instead of caching
-     *         a returned value.
+     * @return {@link Column}
+     *
      */
     @JsMethod
     public Column findColumn(String key) {
@@ -135,8 +143,10 @@ public class JsTotalsTable implements JoinableTable {
     }
 
     /**
+     * multiple columns specified by the given names.
+     * 
      * @param keys
-     * @return multiple columns specified by the given names.
+     * @return {@link Column} array
      */
     @JsMethod
     public Column[] findColumns(String[] keys) {
@@ -152,8 +162,11 @@ public class JsTotalsTable implements JoinableTable {
     }
 
     /**
-     * @return Read-only. The total number of rows in this table. This may change as the base table's configuration,
-     *         filter, or contents change.
+     * The total number of rows in this table. This may change as the base table's configuration, filter, or contents
+     * change.
+     * 
+     * @return double
+     *
      */
     @JsProperty
     public double getSize() {
@@ -188,11 +201,12 @@ public class JsTotalsTable implements JoinableTable {
     /**
      * Replace the currently set sort on this table. Returns the previously set value. Note that the sort property will
      * immediately return the new value, but you may receive update events using the old sort before the new sort is
-     * applied, and the `sortchanged` event fires. Reusing existing, applied sorts may enable this to perform better on
-     * the server. The `updated` event will also fire, but `rowadded` and `rowremoved` will not.
+     * applied, and the <b>sortchanged</b> event fires. Reusing existing, applied sorts may enable this to perform
+     * better on the server. The <b>updated</b> event will also fire, but <b>rowadded</b> and <b>rowremoved</b> will
+     * not.
      *
      * @param sort
-     * @return
+     * @return {@link Sort} array
      */
     @JsMethod
     public JsArray<Sort> applySort(Sort[] sort) {
@@ -214,11 +228,12 @@ public class JsTotalsTable implements JoinableTable {
     /**
      * Replace the currently set filters on the table. Returns the previously set value. Note that the filter property
      * will immediately return the new value, but you may receive update events using the old filter before the new one
-     * is applied, and the `filterchanged` event fires. Reusing existing, applied filters may enable this to perform
-     * better on the server. The `updated` event will also fire, but `rowadded` and `rowremoved` will not.
+     * is applied, and the <b>filterchanged</b> event fires. Reusing existing, applied filters may enable this to
+     * perform better on the server. The <b>updated</b> event will also fire, but <b>rowadded</b> and <b>rowremoved</b>
+     * will not.
      *
      * @param filter
-     * @return
+     * @return {@link FilterCondition} array
      */
     @JsMethod
     public JsArray<FilterCondition> applyFilter(FilterCondition[] filter) {
@@ -230,9 +245,11 @@ public class JsTotalsTable implements JoinableTable {
     }
 
     /**
-     * @return Read-only. An ordered list of Sorts to apply to the table. To update, call applySort(). Note that this
-     *         getter will return the new value immediately, even though it may take a little time to update on the
-     *         server. You may listen for the `sortchanged` event to know when to update the UI.
+     * An ordered list of Sorts to apply to the table. To update, call applySort(). Note that this getter will return
+     * the new value immediately, even though it may take a little time to update on the server. You may listen for the
+     * <b>sortchanged</b> event to know when to update the UI.
+     * 
+     * @return {@link Sort} array
      */
     @JsProperty
     public JsArray<Sort> getSort() {
@@ -240,9 +257,11 @@ public class JsTotalsTable implements JoinableTable {
     }
 
     /**
-     * @return Read-only. An ordered list of Filters to apply to the table. To update, call applyFilter(). Note that
-     *         this getter will return the new value immediately, even though it may take a little time to update on the
-     *         server. You may listen for the `filterchanged` event to know when to update the UI.
+     * An ordered list of Filters to apply to the table. To update, call applyFilter(). Note that this getter will
+     * return the new value immediately, even though it may take a little time to update on the server. You may listen
+     * for the <b>filterchanged</b> event to know when to update the UI.
+     * 
+     * @return {@link FilterCondition} array
      */
     @JsProperty
     public JsArray<FilterCondition> getFilter() {
@@ -250,8 +269,10 @@ public class JsTotalsTable implements JoinableTable {
     }
 
     /**
-     * @return Read-only. An ordered list of custom column formulas to add to the table, either adding new columns or
-     *         replacing existing ones. To update, call `applyCustomColumns()`.
+     * Read-only. An ordered list of custom column formulas to add to the table, either adding new columns or replacing
+     * existing ones. To update, call <b>applyCustomColumns()</b>.
+     * 
+     * @return {@link CustomColumn} array
      */
     @JsProperty
     public JsArray<CustomColumn> getCustomColumns() {

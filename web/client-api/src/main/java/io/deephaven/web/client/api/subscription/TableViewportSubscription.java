@@ -259,7 +259,9 @@ public class TableViewportSubscription extends HasEventHandling {
     }
 
     /**
-     * @return Gets the data currently visible in this viewport.
+     * Gets the data currently visible in this viewport
+     * 
+     * @return Promise of {@link TableData}.
      */
     @JsMethod
     public Promise<TableData> getViewportData() {

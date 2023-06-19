@@ -45,8 +45,11 @@ public class JsAxis {
     }
 
     /**
-     * @return The calendar with the business hours and holidays to transform plot data against. Defaults to null, or no
-     *         transform.
+     * The calendar with the business hours and holidays to transform plot data against. Defaults to null, or no
+     * transform.
+     * 
+     * @return dh.calendar.BusinessCalendar
+     *
      */
     @JsProperty
     public JsBusinessCalendar getBusinessCalendar() {
@@ -54,7 +57,9 @@ public class JsAxis {
     }
 
     /**
-     * @return Read-only. The unique id for this axis.
+     * The unique id for this axis.
+     * 
+     * @return String
      */
     @JsProperty
     public String getId() {
@@ -62,7 +67,9 @@ public class JsAxis {
     }
 
     /**
-     * @return Read-only. The type for this axis. See `AxisFormatType` enum for more details.
+     * The type for this axis. See <b>AxisFormatType</b> enum for more details.
+     * 
+     * @return int
      */
     @JsProperty
     @TsTypeRef(JsAxisFormatType.class)
@@ -71,7 +78,9 @@ public class JsAxis {
     }
 
     /**
-     * @return Read-only. The type for this axis, indicating how it will be drawn. See `AxisType` enum for more details.
+     * The type for this axis, indicating how it will be drawn. See <b>AxisType</b> enum for more details.
+     * 
+     * @return int
      */
     @JsProperty
     @TsTypeRef(JsAxisType.class)
@@ -80,7 +89,9 @@ public class JsAxis {
     }
 
     /**
-     * @return Read-only. The position for this axis. See `AxisPosition` enum for more details.
+     * The position for this axis. See <b>AxisPosition</b> enum for more details.
+     * 
+     * @return int
      */
     @JsProperty
     @TsTypeRef(JsAxisPosition.class)
@@ -94,7 +105,9 @@ public class JsAxis {
     }
 
     /**
-     * @return Read-only. The label for this axis.
+     * The label for this axis.
+     * 
+     * @return String
      */
     @JsProperty
     public String getLabel() {
@@ -118,8 +131,9 @@ public class JsAxis {
     // }
 
     /**
-     * @return Read-only. The format pattern to use with this axis. Use the type to determine which type of formatter to
-     *         use.
+     * The format pattern to use with this axis. Use the type to determine which type of formatter to use.
+     * 
+     * @return String
      */
     @JsProperty
     @JsNullable

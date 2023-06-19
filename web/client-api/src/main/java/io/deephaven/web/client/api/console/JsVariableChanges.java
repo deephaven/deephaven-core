@@ -15,8 +15,9 @@ import jsinterop.base.Js;
 
 /**
  * Describes changes in the current set of variables in the script session. Note that variables that changed value
- * without changing type will be included as `updated`, but if a new value with one type replaces an old value with a
- * different type, this will be included as an entry in both `removed` and `created` to indicate the old and new types.
+ * without changing type will be included as <b>updated</b>, but if a new value with one type replaces an old value with
+ * a different type, this will be included as an entry in both <b>removed</b> and <b>created</b> to indicate the old and
+ * new types.
  */
 @TsInterface
 @TsName(namespace = "dh.ide", name = "VariableChanges")

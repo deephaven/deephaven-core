@@ -79,10 +79,12 @@ public class JsNumberFormat {
     private static final Map<String, JsNumberFormat> cache = new HashMap<>();
 
     /**
+     * a number format instance matching the specified format. If this format has not been specified before, a new
+     * instance will be created and cached for later reuse. Prefer this method to calling the constructor directly to
+     * take advantage of caching
+     * 
      * @param pattern
-     * @return a number format instance matching the specified format. If this format has not been specified before, a
-     *         new instance will be created and cached for later reuse. Prefer this method to calling the constructor
-     *         directly to take advantage of caching.
+     * @return dh.i18n.NumberFormat
      */
     public static JsNumberFormat getFormat(String pattern) {
         return cache.computeIfAbsent(pattern, JsNumberFormat::new);
@@ -93,19 +95,19 @@ public class JsNumberFormat {
      *
      * @param pattern
      * @param text
-     * @return
+     * @return double
      */
     public static double parse(String pattern, String text) {
         return getFormat(pattern).parse(text);
     }
 
     /**
-     * Formats the specified number (or Java `long`, `BigInteger` or `BigDecimal` value) using the cached format
-     * matching the given pattern string.
+     * Formats the specified number (or Java <b>long</b>, <b>BigInteger</b> or <b>BigDecimal</b> value) using the cached
+     * format matching the given pattern string.
      *
      * @param pattern
      * @param number
-     * @return
+     * @return String
      */
     public static String format(String pattern, NumberUnion number) {
         return getFormat(pattern).format(number);
@@ -129,7 +131,7 @@ public class JsNumberFormat {
      * Parses the given text using this instance's pattern into a JS Number.
      *
      * @param text
-     * @return
+     * @return double
      */
     public double parse(String text) {
         return wrapped.parse(text);
@@ -149,7 +151,7 @@ public class JsNumberFormat {
      * Formats the specified number (or Java `long`, `BigInteger` or `BigDecimal` value) using this instance's pattern.
      *
      * @param number
-     * @return
+     * @return String
      */
     public String format(NumberUnion number) {
         Objects.requireNonNull(number);

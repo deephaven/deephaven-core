@@ -244,7 +244,9 @@ public class RangeSet implements Serializable {
     }
 
     /**
-     * @return a new iterator over all indexes in this collection.
+     * a new iterator over all indexes in this collection.
+     * 
+     * @return Iterator of {@link Range}
      */
     public Iterator<Range> rangeIterator() {
         return Arrays.asList(sortedRanges).iterator();
@@ -261,9 +263,11 @@ public class RangeSet implements Serializable {
     }
 
     /**
-     * @return The total count of items contained in this collection. In some cases this can be expensive to compute,
-     *         and generally should not be needed except for debugging purposes, or preallocating space (i.e., do not
-     *         call this property each time through a loop).
+     * The total count of items contained in this collection. In some cases this can be expensive to compute, and
+     * generally should not be needed except for debugging purposes, or preallocating space (i.e., do not call this
+     * property each time through a loop).
+     * 
+     * @return long
      */
     public long size() {
         return Arrays.stream(sortedRanges).mapToLong(Range::size).sum();

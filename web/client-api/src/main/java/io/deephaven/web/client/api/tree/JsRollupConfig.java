@@ -44,8 +44,8 @@ import java.util.Set;
 import java.util.stream.Collector;
 
 /**
- * Describes a grouping and aggregations for a roll-up table. Pass to the `Table.rollup` function to create a roll-up
- * table.
+ * Describes a grouping and aggregations for a roll-up table. Pass to the <b>Table.rollup</b> function to create a
+ * roll-up table.
  */
 @JsType(name = "RollupConfig", namespace = "dh")
 public class JsRollupConfig {

@@ -41,7 +41,9 @@ public class SeriesDataSource {
     }
 
     /**
-     * @return the axis that this source should be drawn on.
+     * the axis that this source should be drawn on.
+     * 
+     * @return dh.plot.Axis
      */
     @JsProperty
     public JsAxis getAxis() {
@@ -49,7 +51,9 @@ public class SeriesDataSource {
     }
 
     /**
-     * @return the feature of this series represented by this source. See the `SourceType` enum for more details.
+     * the feature of this series represented by this source. See the <b>SourceType</b> enum for more details.
+     * 
+     * @return int
      */
     @JsProperty
     @TsTypeRef(JsSourceType.class)
@@ -58,7 +62,9 @@ public class SeriesDataSource {
     }
 
     /**
-     * @return the type of data stored in the underlying table's Column.
+     * the type of data stored in the underlying table's Column.
+     * 
+     * @return String
      */
     @JsProperty
     public String getColumnType() {

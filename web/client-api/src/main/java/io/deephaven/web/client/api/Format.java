@@ -42,7 +42,9 @@ public class Format {
     }
 
     /**
-     * @return Color to apply to the text, in `#rrggbb` format.
+     * Color to apply to the text, in <b>#rrggbb</b> format.
+     * 
+     * @return String
      */
     @JsNullable
     @JsProperty
@@ -58,7 +60,9 @@ public class Format {
     }
 
     /**
-     * @return Color to apply to the cell's background, in `#rrggbb` format.
+     * Color to apply to the cell's background, in <b>#rrggbb</b> format.
+     * 
+     * @return String
      */
     @JsNullable
     @JsProperty
@@ -89,7 +93,9 @@ public class Format {
     }
 
     /**
-     * @return The format string to apply to the value of this cell.
+     * The format string to apply to the value of this cell.
+     * 
+     * @return String
      */
     @JsNullable
     @JsProperty

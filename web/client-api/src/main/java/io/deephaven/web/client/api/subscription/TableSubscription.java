@@ -35,8 +35,8 @@ public class TableSubscription extends HasEventHandling {
 
     /**
      * Indicates that some new data is available on the client, either an initial snapshot or a delta update. The
-     * `detail` field of the event will contain a TableSubscriptionEventData detailing what has changed, or allowing
-     * access to the entire range of items currently in the subscribed columns.
+     * <b>detail</b> field of the event will contain a TableSubscriptionEventData detailing what has changed, or
+     * allowing access to the entire range of items currently in the subscribed columns.
      */
     public static final String EVENT_UPDATED = "updated";
 
@@ -89,7 +89,9 @@ public class TableSubscription extends HasEventHandling {
     }
 
     /**
-     * @return The columns that were subscribed to when this subscription was created.
+     * The columns that were subscribed to when this subscription was created
+     * 
+     * @return {@link Column}
      */
     @JsProperty
     public JsArray<Column> getColumns() {

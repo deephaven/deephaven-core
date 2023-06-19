@@ -60,7 +60,9 @@ public class JsInputTable {
     }
 
     /**
-     * @return A list of the key columns, by name.
+     * A list of the key columns, by name
+     * 
+     * @return String array.
      */
     @JsProperty
     public String[] getKeys() {
@@ -68,7 +70,9 @@ public class JsInputTable {
     }
 
     /**
-     * @return A list of the key Column objects.
+     * A list of the key Column objects
+     * 
+     * @return {@link Column} array.
      */
     @JsProperty
     public Column[] getKeyColumns() {
@@ -76,7 +80,9 @@ public class JsInputTable {
     }
 
     /**
-     * @return A list of the value columns, by name.
+     * A list of the value columns, by name
+     * 
+     * @return String array.
      */
     @JsProperty
     public String[] getValues() {
@@ -84,7 +90,9 @@ public class JsInputTable {
     }
 
     /**
-     * @return A list of the value Column objects.
+     * A list of the value Column objects
+     * 
+     * @return {@link Column} array.
      */
     @JsProperty
     public Column[] getValueColumns() {
@@ -97,7 +105,7 @@ public class JsInputTable {
      * 
      * @param row
      * @param userTimeZone
-     * @return
+     * @return Promise of dh.InputTable
      */
     public Promise<JsInputTable> addRow(JsPropertyMap<?> row, @JsOptional String userTimeZone) {
         return addRows(new JsPropertyMap[] {row}, userTimeZone);
@@ -108,7 +116,7 @@ public class JsInputTable {
      * 
      * @param rows
      * @param userTimeZone
-     * @return
+     * @return Promise of dh.InputTable
      */
     public Promise<JsInputTable> addRows(JsPropertyMap<?>[] rows, @JsOptional String userTimeZone) {
         String[] names =
@@ -138,7 +146,7 @@ public class JsInputTable {
      * resolved to the same InputTable instance this method was called upon once the server returns.
      *
      * @param tableToAdd
-     * @return
+     * @return Promise of dh.InputTable
      */
     public Promise<JsInputTable> addTable(JsTable tableToAdd) {
         return addTables(new JsTable[] {tableToAdd});
@@ -148,7 +156,7 @@ public class JsInputTable {
      * Add multiple tables to this Input Table.
      * 
      * @param tablesToAdd
-     * @return
+     * @return Promise of dh.InputTable
      */
     public Promise<JsInputTable> addTables(JsTable[] tablesToAdd) {
         if (tablesToAdd.length == 0) {
@@ -195,7 +203,7 @@ public class JsInputTable {
      * Deletes an entire table from this Input Table. Key columns must match the Input Table.
      * 
      * @param tableToDelete
-     * @return
+     * @return Promise of dh.InputTable
      */
     public Promise<JsInputTable> deleteTable(JsTable tableToDelete) {
         return deleteTables(new JsTable[] {tableToDelete});
@@ -290,7 +298,9 @@ public class JsInputTable {
     }
 
     /**
-     * @return The source table for this Input Table.
+     * The source table for this Input Table
+     * 
+     * @return dh.table
      */
     @JsProperty
     public JsTable getTable() {

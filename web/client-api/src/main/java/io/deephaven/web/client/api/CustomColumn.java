@@ -90,7 +90,9 @@ public class CustomColumn {
     }
 
     /**
-     * @return The name of the column to use.
+     * The name of the column to use.
+     * 
+     * @return String
      */
     @JsProperty
     public String getName() {
@@ -98,7 +100,16 @@ public class CustomColumn {
     }
 
     /**
-     * @return Type of custom column. One of `FORMAT_COLOR`, `FORMAT_NUMBER`, `FORMAT_DATE`, or `NEW`.
+     * Type of custom column. One of
+     *
+     * <ul>
+     * <li>FORMAT_COLOR</li>
+     * <li>FORMAT_NUMBER</li>
+     * <li>FORMAT_DATE</li>
+     * <li>NEW</li>
+     * </ul>
+     *
+     * @return String
      */
     @JsProperty
     public String getType() {
@@ -106,7 +117,9 @@ public class CustomColumn {
     }
 
     /**
-     * @return The expression to evaluate this custom column.
+     * The expression to evaluate this custom column.
+     * 
+     * @return String
      */
     @JsProperty
     public String getExpression() {

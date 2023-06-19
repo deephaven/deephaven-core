@@ -169,13 +169,14 @@ public class JsDateTimeFormat {
 
     /**
      * Takes a variety of objects to interpret as a date, and formats them using this instance's pattern. Inputs can
-     * include a `String` value of a number expressed in nanoseconds, a `Number` value expressed in nanoseconds, a JS
-     * `Date` object (necessarily in milliseconds), or a wrapped Java `long` value, expressed in nanoseconds. A
-     * `TimeZone` object can optionally be provided to format this date as the current date/time in that timezone.
+     * include a <b>String</b> value of a number expressed in nanoseconds, a <b>Number</b> value expressed in
+     * nanoseconds, a JS <b>Date</b> object (necessarily in milliseconds), or a wrapped Java <b>long</b> value,
+     * expressed in nanoseconds. A <b>TimeZone</b> object can optionally be provided to format this date as the current
+     * date/time in that timezone.
      * 
      * @param date
      * @param timeZone
-     * @return
+     * @return String
      */
     // TODO accept a TimeZone object here, or perhaps just a string
     // -(new Date()).getTimezoneOffset()/60 lets you read your current offset
@@ -250,8 +251,8 @@ public class JsDateTimeFormat {
     }
 
     /**
-     * Parses the given string using this instance's pattern, and returns a wrapped Java `long` value in nanoseconds. A
-     * `TimeZone` object can optionally be provided to parse to a desired timezone.
+     * Parses the given string using this instance's pattern, and returns a wrapped Java <b>long</b> value in
+     * nanoseconds. A <b>TimeZone</b> object can optionally be provided to parse to a desired timezone.
      * 
      * @param text
      * @param tz
@@ -308,7 +309,7 @@ public class JsDateTimeFormat {
     }
 
     /**
-     * Parses the given string using this instance's pattern, and returns a JS `Date` object in milliseconds.
+     * Parses the given string using this instance's pattern, and returns a JS <b>Date</b> object in milliseconds.
      * 
      * @param text
      * @return

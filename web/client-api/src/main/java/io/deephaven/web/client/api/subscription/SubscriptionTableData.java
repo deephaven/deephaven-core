@@ -537,7 +537,9 @@ public class SubscriptionTableData {
         }
 
         /**
-         * @return A lazily computed array of all rows in the entire table.
+         * A lazily computed array of all rows in the entire table
+         * 
+         * @return {@link SubscriptionRow} array.
          */
         @Override
         public JsArray<SubscriptionRow> getRows() {
@@ -559,8 +561,10 @@ public class SubscriptionTableData {
         }
 
         /**
+         * Reads a row object from the table, from which any subscribed column can be read
+         * 
          * @param index
-         * @return Reads a row object from the table, from which any subscribed column can be read.
+         * @return {@link SubscriptionRow}
          */
         @Override
         public SubscriptionRow get(long index) {
@@ -573,9 +577,11 @@ public class SubscriptionTableData {
         }
 
         /**
+         * a specific cell from the table, from the specified row and column
+         * 
          * @param index
          * @param column
-         * @return a specific cell from the table, from the specified row and column.
+         * @return Any
          */
         @Override
         public Any getData(long index, Column column) {
@@ -585,9 +591,11 @@ public class SubscriptionTableData {
         }
 
         /**
+         * the Format to use for a cell from the specified row and column
+         * 
          * @param index
          * @param column
-         * @return the Format to use for a cell from the specified row and column.
+         * @return {@link Format}
          */
         @Override
         public Format getFormat(int index, Column column) {
@@ -626,7 +634,9 @@ public class SubscriptionTableData {
         }
 
         /**
-         * @return The ordered set of row indexes added since the last update.
+         * The ordered set of row indexes added since the last update
+         * 
+         * @return dh.RangeSet
          */
         @JsProperty
         public JsRangeSet getAdded() {
@@ -634,7 +644,9 @@ public class SubscriptionTableData {
         }
 
         /**
-         * @return The ordered set of row indexes removed since the last update.
+         * The ordered set of row indexes removed since the last update
+         * 
+         * @return dh.RangeSet
          */
         @JsProperty
         public JsRangeSet getRemoved() {
@@ -642,7 +654,9 @@ public class SubscriptionTableData {
         }
 
         /**
-         * @return The ordered set of row indexes updated since the last update.
+         * The ordered set of row indexes updated since the last update
+         * 
+         * @return dh.RangeSet
          */
         @JsProperty
         public JsRangeSet getModified() {

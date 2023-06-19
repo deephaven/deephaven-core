@@ -115,7 +115,9 @@ public class JsSeries {
     }
 
     /**
-     * @return Read-only. The plotting style to use for this series. See `SeriesPlotStyle` enum for more details.
+     * The plotting style to use for this series. See <b>SeriesPlotStyle</b> enum for more details.
+     * 
+     * @return int
      */
     @JsProperty
     @TsTypeRef(JsSeriesPlotStyle.class)
@@ -124,7 +126,9 @@ public class JsSeries {
     }
 
     /**
-     * @return Read-only. The name for this series.
+     * The name for this series.
+     * 
+     * @return String
      */
     @JsProperty
     public String getName() {
@@ -217,8 +221,11 @@ public class JsSeries {
     }
 
     /**
-     * @return Read-only. Contains details on how to access data within the chart for this series. keyed with the way
-     *         that this series uses the axis.
+     * Contains details on how to access data within the chart for this series. keyed with the way that this series uses
+     * the axis.
+     * 
+     * @return {@link SeriesDataSource}
+     *
      */
     @JsProperty
     public SeriesDataSource[] getSources() {
@@ -236,7 +243,9 @@ public class JsSeries {
     }
 
     /**
-     * @return indicates that this series belongs to a MultiSeries, null otherwise
+     * indicates that this series belongs to a MultiSeries, null otherwise
+     * 
+     * @return dh.plot.MultiSeries
      */
     @JsProperty
     public JsMultiSeries getMultiSeries() {
