@@ -32,32 +32,36 @@ or an [R Data Frame](https://stat.ethz.ch/R-manual/R-devel/library/base/html/dat
 
 Currently, the R client is only supported on Ubuntu 20.04 or 22.04 and must be built from source.
 
-1. Choose a directory where the client source code will live. Here, the source code will be downloaded into a new directory called `deephaven`.
+1. Build the cpp-client (and any dependent libraries) according to the instructions in
+   https://github.com/deephaven/deephaven-core/blob/main/cpp-client/README.md.
+   Follow the instructions at least to the point for "Build and install Deephaven C++ client".
+   At that point you would have both the Deephaven C++ client and any C++ libraries it depends on,
+   all installed in a particular directory of your choosing.
+   Define an environment variable `DHCPP` and assign it an absolute path to that directory.
+
+2. Choose a directory where the Deephaven R client source code will live.
+   Here, the source code will be downloaded into a new directory called `rdeephaven`.
    Navigate into that directory and clone this subdirectory of `deephaven-core` using git's sparse-checkout:
    ```bash
-   mkdir deephaven
-   cd deephaven
+   mkdir rdeephaven
+   cd rdeephaven
    git init
    git remote add -f origin https://github.com/deephaven/deephaven-core.git
    git config core.sparseCheckout true
    echo "R/rdeephaven" >> .git/info/sparse-checkout
    git pull origin main
    ```
-2. Now, navigate into the source code `lib` directory and build the C++ client and dependencies:
-   ```bash
-   cd R/rdeephaven/lib
-   chmod +x build-cpp.sh
-   ./build-cpp.sh
-   ```
-3. With the C++ client installed, start an R console with this command:
+
+3. Start an R console with this command:
    ```bash
    R
    ```
-   and in that console, install the client:
+   and in that console, install the client
    ```r
-   install.packages("/path/to/rdeephaven", repos=NULL, type="source")
+   install.packages("/path/to/rdeephaven", repos=NULL, type="source", dependencies=TRUE)
    ```
    This last command can also be executed from RStudio without the need for explicitly starting an R console.
+
 5. Now, run
    ```r
    library(rdeephaven)

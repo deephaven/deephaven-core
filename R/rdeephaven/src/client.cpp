@@ -157,7 +157,7 @@ public:
 
         auto wrapper = internal_tbl_hdl_mngr.createFlightWrapper();
         arrow::flight::FlightCallOptions options;
-        wrapper.addAuthHeaders(&options);
+        wrapper.addHeaders(&options);
 
         // extract RecordBatchReader from the struct pointed to by the passed stream_ptr
         std::shared_ptr<arrow::RecordBatchReader> record_batch_reader = arrow::ImportRecordBatchReader(stream_ptr.get()).ValueOrDie();
