@@ -48,7 +48,9 @@ C++ compiler and tool suite (cmake etc).
 
    Example:
    ```
-   export DHCPP=$HOME/dhcpp  # This should reflect your selection for where dependencies will live
+   # This should reflect your selection for where dependencies will live
+   export DHCPP=$HOME/dhcpp
+   # If the directory already exists from a previous attempt, ensure is clean/empty
    mkdir -p $DHCPP
    cd $DHCPP
    wget https://github.com/deephaven/deephaven-base-images/raw/main/cpp-client/build-dependencies.sh
@@ -66,8 +68,6 @@ C++ compiler and tool suite (cmake etc).
    source $DHCPP/env.sh
    cd $DHSRC/deephaven-core/cpp-client/deephaven/
    mkdir build && cd build
-   export DHCPP=$HOME/dhcpp  # This should reflect your selection in the previous point.
-   source $DHCPP/env.sh
    cmake -DCMAKE_INSTALL_PREFIX=${DHCPP}/local/deephaven .. && make -j$NCPUS install
    ```
 
