@@ -130,6 +130,7 @@ def j_binary_operator(func: Callable[[T, T], T], dtype: DType) -> jpy.JType:
         func, dtype.qst_type.clazz()
     )
 
+
 def j_lambda(func: Callable, lambda_jtype:jpy.JType, return_dtype: DType = None):
     """Constructs a Java "lambda" type implementing the specified interface which when called will invoke the given Python
     Callable.
