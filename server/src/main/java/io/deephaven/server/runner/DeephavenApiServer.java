@@ -127,20 +127,21 @@ public class DeephavenApiServer {
 
         log.info().append("Initializing Script Session...").endl();
 
-        scriptSessionProvider.get();
+        final ScriptSession scriptSession = scriptSessionProvider.get();
         pluginRegistration.registerAll();
+        final ExecutionContext executionContext = scriptSession.getExecutionContext();
 
         log.info().append("Starting UpdateGraph...").endl();
         ug.<PeriodicUpdateGraph>cast().start();
 
-        try (final SafeCloseable ignored = ExecutionContext.getContext().withUpdateGraph(ug).open()) {
+        try (final SafeCloseable ignored = executionContext.open()) {
             EngineMetrics.maybeStartStatsCollection();
         }
 
         log.info().append("Starting Performance Trackers...").endl();
         QueryPerformanceRecorder.installPoolAllocationRecorder();
         QueryPerformanceRecorder.installUpdateGraphLockInstrumentation();
-        try (final SafeCloseable ignored = ExecutionContext.getContext().withUpdateGraph(ug).open()) {
+        try (final SafeCloseable ignored = executionContext.open()) {
             UpdatePerformanceTracker.start();
             ServerStateTracker.start();
         }
