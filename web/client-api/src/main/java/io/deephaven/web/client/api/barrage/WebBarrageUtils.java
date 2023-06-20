@@ -76,6 +76,18 @@ public class WebBarrageUtils {
                 .setColumns(cols);
     }
 
+    public enum DatabarFormatColumnType {
+        VALUE,
+        AXIS,
+        MAX,
+        MIN,
+        POSITIVE_COLOR,
+        NEGATIVE_COLOR,
+        VALUE_PLACEMENT,
+        DIRECTION,
+        OPACITY,
+        MARKERS // always empty for now
+    }
     public static ColumnDefinition[] readColumnDefinitions(Schema schema) {
         ColumnDefinition[] cols = new ColumnDefinition[(int) schema.fieldsLength()];
         for (int i = 0; i < schema.fieldsLength(); i++) {
@@ -88,7 +100,8 @@ public class WebBarrageUtils {
             cols[i].setType(fieldMetadata.get("type"));
             cols[i].setStyleColumn("true".equals(fieldMetadata.get("isStyle")));
             cols[i].setFormatColumn("true".equals(fieldMetadata.get("isDateFormat"))
-                    || "true".equals(fieldMetadata.get("isNumberFormat")));
+                    || "true".equals(fieldMetadata.get("isNumberFormat"))
+                    || "true".equals(fieldMetadata.get("isDatabarFormat")));
             cols[i].setForRow("true".equals(fieldMetadata.get("isRowStyle")));
 
             String formatColumnName = fieldMetadata.get("dateFormatColumn");
@@ -120,6 +133,9 @@ public class WebBarrageUtils {
             cols[i].setRollupGroupByColumn("true".equals(fieldMetadata.get("rollupTable.isGroupByColumn")));
             cols[i].setRollupAggregationInputColumn(fieldMetadata.get("rollupTable.aggregationInputColumnName"));
 
+            for (DatabarFormatColumnType value : DatabarFormatColumnType.values()) {
+                cols[i].setDatabar(value, fieldMetadata.get("databar." + value.name()));
+            }
         }
         return cols;
     }

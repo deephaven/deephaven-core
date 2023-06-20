@@ -14,6 +14,7 @@ public interface ColumnFormatting {
         private static final String TABLE_STYLE_FORMAT_SUFFIX = "__TABLE_STYLE_FORMAT";
         private static final String TABLE_NUMBER_FORMAT_SUFFIX = "__TABLE_NUMBER_FORMAT";
         private static final String TABLE_DATE_FORMAT_SUFFIX = "__TABLE_DATE_FORMAT";
+        public static final String TABLE_DATABAR_FORMAT_SUFFIX = "__TABLE_DATABAR_FORMAT";
         private static final String ROW_FORMAT_NAME = "__ROW";
         public static final String ROW_FORMAT_WILDCARD = "*";
         private static final String ROW_STYLE_FORMAT_COLUMN = ROW_FORMAT_NAME + TABLE_STYLE_FORMAT_SUFFIX;
@@ -74,6 +75,22 @@ public interface ColumnFormatting {
         return baseColumn + Constants.TABLE_NUMBER_FORMAT_SUFFIX;
     }
 
+    enum DatabarFormatColumnType {
+        VALUE,
+        AXIS,
+        MAX,
+        MIN,
+        POSITIVE_COLOR,
+        NEGATIVE_COLOR,
+        VALUE_PLACEMENT,
+        DIRECTION,
+        OPACITY,
+        MARKERS // always empty for now
+    }
+    static String getDatabarFormatColumnName(String baseColumn, DatabarFormatColumnType prop) {
+        return baseColumn + "_" + prop.name() + Constants.TABLE_DATABAR_FORMAT_SUFFIX;
+    }
+
     /**
      * Returns true if this column name is a hidden number formatting column.
      *
@@ -100,6 +117,10 @@ public interface ColumnFormatting {
      */
     static boolean isDateFormatColumn(@NotNull final String columnName) {
         return columnName.endsWith(Constants.TABLE_DATE_FORMAT_SUFFIX);
+    }
+
+    static boolean isDatabarFormatColumn(@NotNull final String columnName) {
+        return columnName.endsWith(Constants.TABLE_DATABAR_FORMAT_SUFFIX);
     }
 
     /**

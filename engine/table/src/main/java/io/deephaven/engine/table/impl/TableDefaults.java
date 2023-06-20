@@ -26,12 +26,18 @@ import java.util.*;
 import java.util.function.UnaryOperator;
 import java.util.stream.Collectors;
 
+import static io.deephaven.api.agg.Aggregation.AggMax;
+import static io.deephaven.api.agg.Aggregation.AggMin;
+import static io.deephaven.engine.util.TableTools.col;
+
 /**
  * Sub-interface to capture default methods rom {@link Table}.
  */
 public interface TableDefaults extends Table, TableOperationsDefaults<Table, Table> {
 
     Table[] ZERO_LENGTH_TABLE_ARRAY = new Table[0];
+
+    final String DATA_BAR_SUFFIX = ColumnFormatting.Constants.TABLE_DATABAR_FORMAT_SUFFIX;
 
     @Override
     default Table coalesce() {
@@ -221,6 +227,35 @@ public interface TableDefaults extends Table, TableOperationsDefaults<Table, Tab
         }
 
         return updateView(selectColumns);
+    }
+
+    @Override
+    default Table formatDatabar(String column, String valueColumn, String axis, Double min, Double max,
+            String positiveColor, String negativeColor, String valuePlacement, String direction, Double opacity) {
+        String prefix = column + DATA_BAR_SUFFIX;
+        Table newTable = this;
+
+        if (min == null) {
+            newTable = newTable.naturalJoin(this.aggBy(AggMin(ColumnFormatting.getDatabarFormatColumnName(column, ColumnFormatting.DatabarFormatColumnType.MIN) + valueColumn)), "");
+        } else {
+            newTable = newTable.naturalJoin(TableTools.newTable(col(prefix + "_MIN", min)), "");
+        }
+
+        if (max == null) {
+            newTable = newTable.naturalJoin(this.aggBy(AggMax(prefix + "_MAX=" + valueColumn)), "");
+        } else {
+            newTable = newTable.naturalJoin(TableTools.newTable(col(prefix + "_MAX", max)), "");
+        }
+
+        return newTable.naturalJoin(
+            TableTools.newTable(
+                col( "_AXIS" + prefix, axis),
+                col("_POSITIVE_COLOR" + prefix, positiveColor),
+                col("_NEGATIVE_COLOR" + prefix, negativeColor),
+                col("_VALUE_PLACEMENT" + prefix, valuePlacement),
+                col("_DIRECTION" + prefix, direction),
+                col("_OPACITY" + prefix, opacity)),
+            "");
     }
 
     @Override

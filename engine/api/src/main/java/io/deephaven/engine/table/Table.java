@@ -301,6 +301,10 @@ public interface Table extends
     @ConcurrentMethod
     Table formatColumnWhere(String columnName, String condition, String formula);
 
+    @ConcurrentMethod
+    Table formatDatabar(String column, String valueColumn, String axis, Double min, Double max,
+            String positiveColor, String negativeColor, String valuePlacement, String direction, Double opacity);
+
     /**
      * Produce a new table with the specified columns moved to the leftmost position. Columns can be renamed with the
      * usual syntax, i.e. {@code "NewColumnName=OldColumnName")}.

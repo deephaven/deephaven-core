@@ -207,6 +207,14 @@ public class BarrageUtil {
                 putMetadata(metadata, "dateFormatColumn", dateFormatName);
             }
 
+            // formatColumn for each new column created in databars
+            for (ColumnFormatting.DatabarFormatColumnType type : ColumnFormatting.DatabarFormatColumnType.values()) {
+                String databarName = ColumnFormatting.getDatabarFormatColumnName(name, type);
+                if(formatColumns.contains(databarName)) {
+                    putMetadata(metadata, "databar." + type.name(), databarName);
+                }
+            }
+
             // Add type information
             if (isTypeNativelySupported(dataType)) {
                 putMetadata(metadata, ATTR_TYPE_TAG, dataType.getCanonicalName());
@@ -228,6 +236,7 @@ public class BarrageUtil {
             putMetadata(metadata, "isStyle", ColumnFormatting.isStyleFormatColumn(name) + "");
             putMetadata(metadata, "isNumberFormat", ColumnFormatting.isNumberFormatColumn(name) + "");
             putMetadata(metadata, "isDateFormat", ColumnFormatting.isDateFormatColumn(name) + "");
+            putMetadata(metadata, "isDatabarFormat", ColumnFormatting.isDatabarFormatColumn(name) + "");
 
             final String columnDescription = columnDescriptions.get(name);
             if (columnDescription != null) {
