@@ -100,11 +100,9 @@ public:
   /**
    * Make the table. Call this after all your calls to addColumn().
    * @param manager The TableHandleManager
-   * @param numRows The number of rows in your table. This will be reflected in TableHandle::numRows()
-   * @param isStatic Whether your table is static. This will be reflected in TableHandle::isStatic().
    * @return The TableHandle referencing the newly-created table.
    */
-  TableHandle makeTable(const TableHandleManager &manager, int64_t numRows, bool isStatic);
+  TableHandle makeTable(const TableHandleManager &manager);
 
 private:
   void finishAddColumn(std::string name, internal::TypeConverter info);

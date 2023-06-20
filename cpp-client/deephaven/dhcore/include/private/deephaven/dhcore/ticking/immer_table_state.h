@@ -7,7 +7,7 @@
 #include "deephaven/dhcore/column/column_source.h"
 #include "deephaven/dhcore/container/row_sequence.h"
 #include "deephaven/dhcore/immerutil/abstract_flex_vector.h"
-#include "deephaven/dhcore/table/table.h"
+#include "deephaven/dhcore/clienttable/client_table.h"
 #include "deephaven/dhcore/ticking/space_mapper.h"
 
 namespace deephaven::dhcore::ticking {
@@ -17,8 +17,8 @@ class ImmerTableState final {
   typedef deephaven::dhcore::column::ColumnSource ColumnSource;
   typedef deephaven::dhcore::container::RowSequence RowSequence;
   typedef deephaven::dhcore::immerutil::AbstractFlexVectorBase AbstractFlexVectorBase;
-  typedef deephaven::dhcore::table::Schema Schema;
-  typedef deephaven::dhcore::table::Table Table;
+  typedef deephaven::dhcore::clienttable::ClientTable ClientTable;
+  typedef deephaven::dhcore::clienttable::Schema Schema;
 
 public:
   explicit ImmerTableState(std::shared_ptr<Schema> schema);
@@ -55,7 +55,7 @@ public:
   void applyShifts(const RowSequence &startIndex, const RowSequence &endIndex,
       const RowSequence &destIndex);
 
-  std::shared_ptr<Table> snapshot() const;
+  std::shared_ptr<ClientTable> snapshot() const;
 
 private:
   std::shared_ptr<Schema> schema_;

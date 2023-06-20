@@ -10,7 +10,7 @@
 #include <set>
 #include "deephaven/dhcore/utility/callbacks.h"
 #include "deephaven/dhcore/container/row_sequence.h"
-#include "deephaven/dhcore/table/table.h"
+#include "deephaven/dhcore/clienttable/client_table.h"
 
 namespace deephaven::dhcore::ticking {
 class TickingUpdate;
@@ -71,7 +71,7 @@ public:
   /**
    * Alias.
    */
-  typedef deephaven::dhcore::table::Table Table;
+  typedef deephaven::dhcore::clienttable::ClientTable Table;
 
   /**
    * Default constructor.
