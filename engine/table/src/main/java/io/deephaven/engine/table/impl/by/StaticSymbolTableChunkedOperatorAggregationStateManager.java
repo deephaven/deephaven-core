@@ -45,7 +45,7 @@ public class StaticSymbolTableChunkedOperatorAggregationStateManager implements 
 
     @Override
     public int maxTableSize() {
-        return MAX_ARRAY_SIZE;
+        return tableSize;
     }
 
     @Override
@@ -54,24 +54,26 @@ public class StaticSymbolTableChunkedOperatorAggregationStateManager implements 
     }
 
     @Override
-    public void add(final SafeCloseable bc, final RowSequence orderedKeys, final ColumnSource<?>[] sources, final MutableInt nextOutputPosition, final WritableIntChunk<RowKeys> outputPositions) {
-        if (orderedKeys.isEmpty()) {
+    public void add(final SafeCloseable bc, final RowSequence rowSequence, final ColumnSource<?>[] sources, final MutableInt nextOutputPosition, final WritableIntChunk<RowKeys> outputPositions) {
+        if (rowSequence.isEmpty()) {
             return;
         }
 
-        outputPositions.setSize(orderedKeys.intSize());
+        outputPositions.setSize(rowSequence.intSize());
 
-        try (final RowSequence.Iterator okIt = orderedKeys.getRowSequenceIterator();
-             final ChunkSource.FillContext fillContext = mappedKeySource.makeFillContext(CHUNK_SIZE);
+        final int maxChunkSize = Math.min(rowSequence.intSize(), CHUNK_SIZE);
+
+        try (final RowSequence.Iterator rsIt = rowSequence.getRowSequenceIterator();
+             final ChunkSource.FillContext fillContext = mappedKeySource.makeFillContext(maxChunkSize);
              final WritableLongChunk<RowKeys> symbolTableValues = WritableLongChunk.makeWritableChunk(tableSize);
-             final WritableIntChunk<Values> symbolLookupChunk = WritableIntChunk.makeWritableChunk(CHUNK_SIZE) ) {
+             final WritableIntChunk<Values> symbolLookupChunk = WritableIntChunk.makeWritableChunk(maxChunkSize)) {
 
             symbolTableValues.setSize(0);
 
             final int firstNewPosition = nextPosition;
 
-            while (okIt.hasMore()) {
-                final RowSequence nextKeys = okIt.getNextRowSequenceWithLength(CHUNK_SIZE);
+            while (rsIt.hasMore()) {
+                final RowSequence nextKeys = rsIt.getNextRowSequenceWithLength(maxChunkSize);
                 final LongChunk<Values> symbolSourceChunk = mappedKeySource.fillChunkWithSymbolSource(fillContext, symbolLookupChunk, nextKeys);
 
                 final int chunkSize = symbolLookupChunk.size();
@@ -108,23 +110,23 @@ public class StaticSymbolTableChunkedOperatorAggregationStateManager implements 
         final ColumnSource<?> symbolColumnSource = symbolTable.getColumnSource(SymbolTableSource.SYMBOL_COLUMN_NAME);
 
         int symbolIterIdx = 0;
-        int nextPosition = firstNewPosition;
+        int localPosition = firstNewPosition;
         if (nullPosition >= firstNewPosition) {
-            while (symbolIterIdx < nullPosition-firstNewPosition) {
-                keyColumn.set(nextPosition++, (String)symbolColumnSource.get(symbolTableValues.get(symbolIterIdx++)));
+            while (symbolIterIdx < nullPosition - firstNewPosition) {
+                keyColumn.set(localPosition++, (String) symbolColumnSource.get(symbolTableValues.get(symbolIterIdx++)));
             }
 
-            keyColumn.set(nextPosition++, null);
+            keyColumn.set(localPosition++, null);
         }
 
         while (symbolIterIdx < symbolTableValues.size()) {
-            keyColumn.set(nextPosition++, (String)symbolColumnSource.get(symbolTableValues.get(symbolIterIdx++)));
+            keyColumn.set(localPosition++, (String) symbolColumnSource.get(symbolTableValues.get(symbolIterIdx++)));
         }
     }
 
     @Override
     public ColumnSource<?>[] getKeyHashTableSources() {
-        return new ColumnSource[] {keyColumn};
+        return new ColumnSource[]{keyColumn};
     }
 
     @Override

@@ -325,19 +325,17 @@ public class ChunkedOperatorAggregationHelper {
             if (symbolTableToUse != null) {
                 stateManager = new StaticSymbolTableChunkedOperatorAggregationStateManager(reinterpretedKeySources[0],
                         symbolTableToUse);
+            } else if (USE_OPEN_ADDRESSED_STATE_MANAGER) {
+                stateManager = TypedHasherFactory.make(
+                        StaticChunkedOperatorAggregationStateManagerOpenAddressedBase.class,
+                        reinterpretedKeySources,
+                        keySources, control.initialHashTableSize(input), control.getMaximumLoadFactor(),
+                        control.getTargetLoadFactor());
             } else {
-                if (USE_OPEN_ADDRESSED_STATE_MANAGER) {
-                    stateManager = TypedHasherFactory.make(
-                            StaticChunkedOperatorAggregationStateManagerOpenAddressedBase.class,
-                            reinterpretedKeySources,
-                            keySources, control.initialHashTableSize(input), control.getMaximumLoadFactor(),
-                            control.getTargetLoadFactor());
-                } else {
-                    stateManager = TypedHasherFactory.make(
-                            StaticChunkedOperatorAggregationStateManagerTypedBase.class, reinterpretedKeySources,
-                            keySources, control.initialHashTableSize(input), control.getMaximumLoadFactor(),
-                            control.getTargetLoadFactor());
-                }
+                stateManager = TypedHasherFactory.make(
+                        StaticChunkedOperatorAggregationStateManagerTypedBase.class, reinterpretedKeySources,
+                        keySources, control.initialHashTableSize(input), control.getMaximumLoadFactor(),
+                        control.getTargetLoadFactor());
             }
         }
         ac.supplyRowLookup(() -> stateManager::findPositionForKey);

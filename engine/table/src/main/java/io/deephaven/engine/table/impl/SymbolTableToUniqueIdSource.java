@@ -65,8 +65,7 @@ public class SymbolTableToUniqueIdSource extends AbstractColumnSource<Integer>
     public WritableLongChunk<Values> fillChunkWithSymbolSource(@NotNull final FillContext context,
             @NotNull final WritableChunk<? super Values> destination, @NotNull final RowSequence orderedKeys) {
         final WritableIntChunk<? super Values> destAsInt = destination.asWritableIntChunk();
-        final SymbolTableToUniqueIdSource.LongToIntFillContext longToIntContext =
-                (SymbolTableToUniqueIdSource.LongToIntFillContext) context;
+        final LongToIntFillContext longToIntContext = (LongToIntFillContext) context;
         final WritableLongChunk<Values> longChunk = longToIntContext.longChunk;
         symbolSource.fillChunk(longToIntContext.innerFillContext, longChunk, orderedKeys);
         for (int ii = 0; ii < longChunk.size(); ++ii) {
