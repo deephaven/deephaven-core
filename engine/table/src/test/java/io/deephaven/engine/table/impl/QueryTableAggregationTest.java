@@ -3842,28 +3842,48 @@ public class QueryTableAggregationTest {
             final Table t1 = new InMemoryTable(
                     new String[] {"StringKeys", "GroupedInts"},
                     new Object[] {
-                            new String[] {"key1", "key2", "key1", "key2", "key1", "key2", "key1", "key2", "key1"},
-                            new short[] {1, 1, 2, 2, 2, 3, 3, 3, 3}
+                            new String[] {"key1", "key1", "key2", "key2", "key3", "key2", "key4", "key2", "key1"},
+                            new short[] {1, 1, 2, 2, 3, 2, 4, 2, 1}
                     });
-            final Table t1_asc = t1.sort("StringKeys");
-            final Table t1_desc = t1.sortDescending("StringKeys");
+            final Table t2 = new InMemoryTable(
+                    new String[] {"StringKeys", "GroupedInts"},
+                    new Object[] {
+                            new String[] {"key4", null, "key3", null, "key1", null, null},
+                            new short[] {4, 0, 3, 0, 1, 0, 0}
+                    });
+            final Table t3 = new InMemoryTable(
+                    new String[] {"StringKeys", "GroupedInts"},
+                    new Object[] {
+                            new String[] {"key5", "key4", "key2", "key5", "key6"},
+                            new short[] {5, 4, 2, 5, 6}
+                    });
+            final Table t4 = new InMemoryTable(
+                    new String[] {"StringKeys", "GroupedInts"},
+                    new Object[] {
+                            new String[] {null, "key6", "key6", "key6", "key6", "key7", null},
+                            new short[] {0, 6, 6, 6, 6, 7, 0}
+                    });
+
 
             ParquetTools.writeTable(t1, new File(testRootFile,
                     "Date=2021-07-20" + File.separator + "Num=100" + File.separator + "file1.parquet"));
-            ParquetTools.writeTable(t1_asc, new File(testRootFile,
+            ParquetTools.writeTable(t2, new File(testRootFile,
                     "Date=2021-07-20" + File.separator + "Num=200" + File.separator + "file2.parquet"));
-            ParquetTools.writeTable(t1_desc, new File(testRootFile,
+            ParquetTools.writeTable(t3, new File(testRootFile,
                     "Date=2021-07-21" + File.separator + "Num=300" + File.separator + "file3.parquet"));
+            ParquetTools.writeTable(t4, new File(testRootFile,
+                    "Date=2021-07-21" + File.separator + "Num=400" + File.separator + "file4.parquet"));
 
             final Table merged = TableTools.merge(
                     t1.updateView("Date=`2021-07-20`", "Num=100"),
-                    t1_asc.updateView("Date=`2021-07-20`", "Num=200"),
-                    t1_desc.updateView("Date=`2021-07-21`", "Num=300")).moveColumnsUp("Date", "Num");
+                    t2.updateView("Date=`2021-07-20`", "Num=200"),
+                    t3.updateView("Date=`2021-07-21`", "Num=300"),
+                    t4.updateView("Date=`2021-07-21`", "Num=400")).moveColumnsUp("Date", "Num");
 
             final Table loaded = ParquetTools.readPartitionedTableInferSchema(
                     new ParquetKeyValuePartitionedLayout(testRootFile, 2), ParquetInstructions.EMPTY);
 
-            // make sure the sources are identical
+            // verify the sources are identical
             assertTableEquals(merged, loaded);
 
             final Table merged_summed = merged.aggBy(AggSum("GroupedInts"), "StringKeys");
@@ -3871,7 +3891,7 @@ public class QueryTableAggregationTest {
 
             TableTools.showWithRowSet(loaded_summed);
 
-            // make sure aggregations are identical
+            // verify aggregations are identical
             assertTableEquals(merged_summed, loaded_summed);
         } finally {
             FileUtils.deleteRecursively(testRootFile);
