@@ -3870,6 +3870,8 @@ public class QueryTableAggregationTest {
             final Table loaded_summed = loaded.aggBy(AggSum("GroupedInts"), "StringKeys");
 
             TableTools.showWithRowSet(loaded_summed);
+
+            // make sure aggregations are identical
             assertTableEquals(merged_summed, loaded_summed);
         } finally {
             FileUtils.deleteRecursively(testRootFile);
