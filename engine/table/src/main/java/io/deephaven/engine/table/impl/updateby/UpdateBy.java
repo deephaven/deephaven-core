@@ -1144,6 +1144,8 @@ public abstract class UpdateBy {
             @NotNull final Collection<? extends ColumnName> byColumns,
             @NotNull final UpdateByControl control) {
 
+        System.out.println("Hit this line");
+
         QueryTable.checkInitiateOperation(source);
 
         // create the rowRedirection if instructed
