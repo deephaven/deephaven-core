@@ -26,7 +26,7 @@ public class PskAuthenticationHandler implements AuthenticationRequestHandler {
     private static final String PSK;
     static {
         String pskFromConfig = Configuration.getInstance().getStringWithDefault("authentication.psk", null);
-        // If this feature is enabled by no value given, generate a 64-bit number and encode as
+        // If this feature is enabled but no value is given, generate a 64-bit number and encode as
         // base-36 (lower case and numbers).
         PSK = Optional.ofNullable(pskFromConfig).map(String::trim).filter(s -> !s.isEmpty())
                 .orElseGet(() -> Long.toString(Math.abs(new Random().nextLong()), 36));
