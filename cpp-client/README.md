@@ -48,13 +48,13 @@ C++ compiler and tool suite (cmake etc).
 
    Example:
    ```
-   # Ensure you have DHCPP defined as above.
+   export DHCPP=$HOME/dhcpp  # This should reflect your selection for where dependencies will live
    mkdir -p $DHCPP
    cd $DHCPP
    wget https://github.com/deephaven/deephaven-base-images/raw/main/cpp-client/build-dependencies.sh
    chmod +x ./build-dependencies.sh
-   # Maybe edit build-dependencies.sh to reflect choices of build tools and build target;
-   # defaults should work fine for supported platforms.
+   # Maybe edit build-dependencies.sh to reflect choices of build tools and build target, if you
+   # want anything different than defaults; defaults should work fine for supported platforms.
    ./build-dependencies.sh
    ```
 
@@ -63,7 +63,6 @@ C++ compiler and tool suite (cmake etc).
    the build.
 
    ```
-   export DHCPP=$HOME/dhcpp  # This should reflect your selection in the previous point.
    source $DHCPP/env.sh
    cd $DHSRC/deephaven-core/cpp-client/deephaven/
    mkdir build && cd build
