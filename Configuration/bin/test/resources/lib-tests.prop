@@ -1,0 +1,22 @@
+# Props for util and configuration unit tests
+include=
+
+measurement.per_thread_cpu=false
+
+# For TestConfiguration
+cacheDir=cache
+
+# NIO driver thread pool
+#
+# TODO: if we reach the maximum thread count, the driver will crash the process if it comes
+# TODO: to a handoff and there is no thread waiting to become the leader.  The most likely reason
+# TODO: for this to happen is a deadlock, but another possibility is a temporary situation in
+# TODO: all of the created threads are waiting on RPCs or locks.
+#
+NIO.driver.workTimeout=100
+NIO.driver.initialThreadCount=20
+NIO.driver.maxThreadCount=400
+NIO.driver.useFast=true
+
+Comm.fatalErrorHandlerFactoryClass=io.deephaven.base.ThrowRuntimeExceptionFatalErrorHandlerFactory
+default.processEnvironmentFactory=io.deephaven.util.process.DefaultProcessEnvironment$Factory

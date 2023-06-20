@@ -1,0 +1,67 @@
+QueryCompiler.logEnabledDefault=false
+UpdatePerformanceTracker.reportingMode=LISTENER_ONLY
+UpdatePerformanceTracker.reportIntervalMillis=60000
+measurement.per_thread_cpu=false
+allocation.stats.enabled=false
+statsdriver.enabled=true
+
+#
+# NIO driver thread pool
+#
+# TODO: if we reach the maximum thread count, the driver will crash the process if it comes
+# TODO: to a handoff and there is no thread waiting to become the leader.  The most likely reason
+# TODO: for this to happen is a deadlock, but another possibility is a temporary situation in
+# TODO: all of the created threads are waiting on RPCs or locks.
+#
+NIO.driver.workTimeout=100
+NIO.driver.initialThreadCount=4
+NIO.driver.maxThreadCount=16
+NIO.driver.useFast=true
+
+QueryLibrary.defaultPackageImportList=default_package_imports.txt
+QueryLibrary.defaultClassImportList=default_class_imports.txt
+QueryLibrary.defaultStaticImportList=default_static_imports.txt
+
+StringUtils.cacheSize=0
+
+TrackedFileHandleFactory.maxOpenFiles=1024
+
+###### Time Zone & Calendars #####
+user.timezone=America/New_York
+timezone.aliases=/default_time_zone_aliases.csv
+Calendar.default=USNYSE
+Calendar.importPath=/default_calendar_imports.txt
+
+QueryPerformanceRecorder.packageFilter.internal=defaultPackageFilters.qpr
+
+########## Deephaven Groovy and Python Session defaults ##########
+
+GroovyDeephavenSession.initScripts=core/deephaven_core_utils.groovy
+
+PythonDeephavenSession.initScripts=core/deephaven_jpy_init.py
+
+default.processEnvironmentFactory=io.deephaven.util.process.DefaultProcessEnvironment$Factory
+
+deephaven.console.type=python
+
+# Default session duration is 5 minutes
+http.session.durationMs=300000
+
+# Default to allowing anonymous access, but don't yet warn users that it is unsafe by default
+AuthHandlers=io.deephaven.auth.AnonymousAuthenticationHandler
+authentication.anonymous.warn=true
+
+# List of configuration properties to provide to unauthenticated clients, so that they can decide how best to prove their
+# identity to the server.
+authentication.client.configuration.list=AuthHandlers
+
+# List of configuration properties to provide to authenticated clients, so they can interact with the server.
+client.configuration.list=java.version,deephaven.version,barrage.version,http.session.durationMs
+# Version list to add to the configuration property list. Each `=`-delimited pair denotes a short name for a versioned
+# jar, and a class that is found in that jar. Any such keys will be made available to the client.configuration.list
+# as <key>.version.
+client.version.list=deephaven=io.deephaven.engine.table.Table,barrage=io.deephaven.barrage.flatbuf.BarrageMessageWrapper
+
+
+# Specifies additional setup to run on threads that can perform table operations with user code. Comma-separated list, instances must be of type io.deephaven.util.thread.ThreadInitializationFactory
+thread.initialization=io.deephaven.server.console.python.DebuggingInitializer
