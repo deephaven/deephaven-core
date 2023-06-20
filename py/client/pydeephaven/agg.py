@@ -317,7 +317,7 @@ def unique(cols: Union[str, List[str]] = None, include_nulls: bool = False,
            non_unique_sentinel: Any = None) -> Aggregation:
     """Creates a Unique aggregation which computes the single unique value within an aggregation group for each of
     the given columns. If all values in a column are null, or if there is more than one distinct value in a column, the
-    result is null or the specified non_unique_sentinel value.
+    result is the specified non_unique_sentinel value (defaults to null).
 
     Args:
         cols (Union[str, List[str]]): the column(s) to aggregate on, can be renaming expressions, i.e. "new_col = col";
