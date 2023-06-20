@@ -2,8 +2,8 @@
 
 #include <string>
 #include <vector>
-#include "deephaven/dhcore/table/schema.h"
-#include "deephaven/dhcore/table/table.h"
+#include "deephaven/dhcore/clienttable/client_table.h"
+#include "deephaven/dhcore/clienttable/schema.h"
 #include "deephaven/dhcore/utility/utility.h"
 #include "deephaven/dhcore/column/column_source.h"
 #include "deephaven/dhcore/column/array_column_source.h"

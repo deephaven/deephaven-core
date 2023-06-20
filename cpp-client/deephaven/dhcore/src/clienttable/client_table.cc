@@ -1,12 +1,12 @@
 /*
  * Copyright (c) 2016-2022 Deephaven Data Labs and Patent Pending
  */
-#include "deephaven/dhcore/table/table.h"
+#include "deephaven/dhcore/clienttable/client_table.h"
 
 #include "deephaven/dhcore/chunk/chunk_maker.h"
 #include "deephaven/dhcore/chunk/chunk.h"
+#include "deephaven/dhcore/clienttable/schema.h"
 #include "deephaven/dhcore/container/row_sequence.h"
-#include "deephaven/dhcore/table/schema.h"
 #include "deephaven/dhcore/utility/utility.h"
 
 #include <optional>
@@ -22,19 +22,19 @@ using deephaven::dhcore::utility::separatedList;
 using deephaven::dhcore::utility::SimpleOstringstream;
 using deephaven::dhcore::utility::stringf;
 
-namespace deephaven::dhcore::table {
+namespace deephaven::dhcore::clienttable {
 namespace {
-void printTableData(std::ostream &stream, const Table &table,
+void printTableData(std::ostream &stream, const ClientTable &table,
     const std::vector<size_t> &whichCols,
     const std::vector<std::shared_ptr<RowSequence>> &rowSequences,
     bool wantHeaders, bool wantRowNumbers, bool highlightCells);
 }  // namespace
 
-std::optional<size_t> Table::getColumnIndex(std::string_view name, bool strict) const {
+std::optional<size_t> ClientTable::getColumnIndex(std::string_view name, bool strict) const {
   return schema()->getColumnIndex(name, strict);
 }
 
-std::shared_ptr<ColumnSource> Table::getColumn(std::string_view name, bool strict) const {
+std::shared_ptr<ColumnSource> ClientTable::getColumn(std::string_view name, bool strict) const {
   auto index = getColumnIndex(name, strict);
   if (!index.has_value()) {
     return {};
@@ -42,36 +42,36 @@ std::shared_ptr<ColumnSource> Table::getColumn(std::string_view name, bool stric
   return getColumn(*index);
 }
 
-internal::TableStreamAdaptor Table::stream(bool wantHeaders, bool wantRowNumbers) const {
+internal::TableStreamAdaptor ClientTable::stream(bool wantHeaders, bool wantRowNumbers) const {
   std::vector<std::shared_ptr<RowSequence>> rowSequences{getRowSequence()};
   return {*this, std::move(rowSequences), wantHeaders, wantRowNumbers, false};
 }
 
-internal::TableStreamAdaptor Table::stream(bool wantHeaders, bool wantRowNumbers,
+internal::TableStreamAdaptor ClientTable::stream(bool wantHeaders, bool wantRowNumbers,
     std::shared_ptr<RowSequence> rowSequence) const {
   std::vector<std::shared_ptr<RowSequence>> rowSequences{std::move(rowSequence)};
   return {*this, std::move(rowSequences), wantHeaders, wantRowNumbers, false};
 }
 
-internal::TableStreamAdaptor Table::stream(bool wantHeaders, bool wantRowNumbers,
+internal::TableStreamAdaptor ClientTable::stream(bool wantHeaders, bool wantRowNumbers,
     std::vector<std::shared_ptr<RowSequence>> rowSequences) const {
   return {*this, std::move(rowSequences), wantHeaders, wantRowNumbers, true};
 }
 
-std::string Table::toString(bool wantHeaders, bool wantRowNumbers) const {
+std::string ClientTable::toString(bool wantHeaders, bool wantRowNumbers) const {
   SimpleOstringstream oss;
   oss << stream(wantHeaders, wantRowNumbers);
   return std::move(oss.str());
 }
 
-std::string Table::toString(bool wantHeaders, bool wantRowNumbers,
+std::string ClientTable::toString(bool wantHeaders, bool wantRowNumbers,
     std::shared_ptr<RowSequence> rowSequence) const {
   SimpleOstringstream oss;
   oss << stream(wantHeaders, wantRowNumbers, std::move(rowSequence));
   return std::move(oss.str());
 }
 
-std::string Table::toString(bool wantHeaders, bool wantRowNumbers,
+std::string ClientTable::toString(bool wantHeaders, bool wantRowNumbers,
     std::vector<std::shared_ptr<RowSequence>> rowSequences) const {
   SimpleOstringstream oss;
   oss << stream(wantHeaders, wantRowNumbers, std::move(rowSequences));
@@ -181,7 +181,7 @@ private:
   std::shared_ptr<uint64_t[]> build_;
 };
 
-void printTableData(std::ostream &stream, const Table &table,
+void printTableData(std::ostream &stream, const ClientTable &table,
     const std::vector<size_t> &whichCols,
     const std::vector<std::shared_ptr<RowSequence>> &rowSequences,
     bool wantHeaders, bool wantRowNumbers, bool highlightCells) {
@@ -378,4 +378,4 @@ bool RowMerger::isCellPresent(size_t colIndex, size_t chunkOffset) const {
   return rowSequenceStates_[colIndexToUse].isPresent_[chunkOffset];
 }
 }  // namespace
-}  // namespace deephaven::dhcore::table
+}  // namespace deephaven::dhcore::clienttable

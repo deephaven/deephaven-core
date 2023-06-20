@@ -88,18 +88,20 @@ TableHandle TableHandleManager::timeTable(int64_t startTimeNanos, int64_t period
   return TableHandle(std::move(qsImpl));
 }
 
-TableHandleAndFlightDescriptor TableHandleManager::newTableHandleAndFlightDescriptor(int64_t numRows,
-    bool isStatic) const {
-  auto [thImpl, fd] = impl_->newTicket(numRows, isStatic);
-  TableHandle th(std::move(thImpl));
-  return {std::move(th), std::move(fd)};
-}
-
 TableHandle TableHandleManager::timeTable(std::chrono::system_clock::time_point startTime,
     std::chrono::system_clock::duration period) const {
   auto stNanos = std::chrono::duration_cast<std::chrono::nanoseconds>(startTime.time_since_epoch()).count();
   auto dNanos = std::chrono::duration_cast<std::chrono::nanoseconds>(period).count();
   return timeTable(stNanos, dNanos);
+}
+
+std::string TableHandleManager::newTicket() const {
+  return impl_->newTicket();
+}
+
+TableHandle TableHandleManager::makeTableHandleFromTicket(std::string ticket) const {
+  auto handleImpl = impl_->makeTableHandleFromTicket(std::move(ticket));
+  return TableHandle(std::move(handleImpl));
 }
 
 void TableHandleManager::runScript(std::string code) const {
