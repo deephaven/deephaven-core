@@ -57,7 +57,7 @@ public:
         std::shared_ptr<arrow::flight::FlightStreamReader> fsr = internal_tbl_hdl.getFlightStreamReader();
 
         std::vector<std::shared_ptr<arrow::RecordBatch>> empty_record_batches;
-        DEEPHAVEN_EXPR_MSG(fsr->ReadAll(&empty_record_batches)); // TODO: need to add OK or throw
+        deephaven::client::utility::okOrThrow(DEEPHAVEN_EXPR_MSG(fsr->ReadAll(&empty_record_batches))); // TODO: need to add OK or throw
 
         std::shared_ptr<arrow::RecordBatchReader> record_batch_reader = arrow::RecordBatchReader::Make(empty_record_batches).ValueOrDie();
         ArrowArrayStream* stream_ptr = new ArrowArrayStream();
@@ -153,11 +153,11 @@ public:
      * Uses a pointer to a populated ArrowArrayStream C struct to create a new table on the server from the data in the C struct.
      * @param stream_ptr Pointer to an existing and populated ArrayArrayStream, populated by a call to RecordBatchReader$export_to_c(ptr) from R.
     */
-    TableHandleWrapper* newTableFromArrowArrayStreamPtr(Rcpp::XPtr<ArrowArrayStream> stream_ptr, int64_t numRows) { // TODO: remove numRows arg when c++ api fix is merged
+    TableHandleWrapper* newTableFromArrowArrayStreamPtr(Rcpp::XPtr<ArrowArrayStream> stream_ptr) {
 
         auto wrapper = internal_tbl_hdl_mngr.createFlightWrapper();
         arrow::flight::FlightCallOptions options;
-        wrapper.addAuthHeaders(&options);
+        wrapper.addHeaders(&options);
 
         // extract RecordBatchReader from the struct pointed to by the passed stream_ptr
         std::shared_ptr<arrow::RecordBatchReader> record_batch_reader = arrow::ImportRecordBatchReader(stream_ptr.get()).ValueOrDie();
@@ -166,7 +166,10 @@ public:
         // write RecordBatchReader data to table on server with DoPut
         std::unique_ptr<arrow::flight::FlightStreamWriter> fsw;
         std::unique_ptr<arrow::flight::FlightMetadataReader> fmr;
-        auto [new_tbl_hdl, fd] = internal_tbl_hdl_mngr.newTableHandleAndFlightDescriptor(numRows, true); // TODO: remove numRows arg when c++ api fix is merged
+
+        auto ticket = internal_tbl_hdl_mngr.newTicket();
+        auto fd = deephaven::client::utility::convertTicketToFlightDescriptor(ticket);
+        
         deephaven::client::utility::okOrThrow(DEEPHAVEN_EXPR_MSG(wrapper.flightClient()->DoPut(options, fd, schema, &fsw, &fmr)));
         while(true) {
             std::shared_ptr<arrow::RecordBatch> this_batch;
@@ -178,6 +181,8 @@ public:
         }
         deephaven::client::utility::okOrThrow(DEEPHAVEN_EXPR_MSG(fsw->DoneWriting()));
         deephaven::client::utility::okOrThrow(DEEPHAVEN_EXPR_MSG(fsw->Close()));
+
+        auto new_tbl_hdl = internal_tbl_hdl_mngr.makeTableHandleFromTicket(ticket);
         return new TableHandleWrapper(new_tbl_hdl);
     }
 
