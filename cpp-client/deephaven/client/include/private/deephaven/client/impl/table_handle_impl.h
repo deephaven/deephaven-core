@@ -10,7 +10,7 @@
 #include "deephaven/client/server/server.h"
 #include "deephaven/client/subscription/subscription_handle.h"
 #include "deephaven/client/utility/executor.h"
-#include "deephaven/dhcore/table/schema.h"
+#include "deephaven/dhcore/clienttable/schema.h"
 #include "deephaven/dhcore/ticking/ticking.h"
 #include "deephaven/dhcore/types.h"
 #include "deephaven/dhcore/utility/callbacks.h"
@@ -87,7 +87,7 @@ private:
 };
 
 class LazyState final {
-  typedef deephaven::dhcore::table::Schema Schema;
+  typedef deephaven::dhcore::clienttable::Schema Schema;
   typedef io::deephaven::proto::backplane::grpc::ExportedTableCreationResponse ExportedTableCreationResponse;
   typedef io::deephaven::proto::backplane::grpc::Ticket Ticket;
   typedef deephaven::client::server::Server Server;
