@@ -50,12 +50,10 @@ public class JavaLambdaFactory {
 
         MethodHandles.Lookup caller = MethodHandles.lookup();
         // Look up our helper method below. The best option would be tu use the LambdaMetafactory here and directly
-        // instantiate our lambda around
-        // this method reference, but we don't know the expected arity/types. We could generate new methods/etc on the
-        // fly at which point we could
-        // just implement the class on the fly, and skip the LambdaMetafactory entirely. Instead, we'll do a little more
-        // work on the MethodHandle,
-        // and then wrap in a proxy, using provided JVM tools.
+        // instantiate our lambda around this method reference, but we don't know the expected arity/types. We could
+        // generate new methods/etc on the fly at which point we could just implement the class on the fly, and skip the
+        // LambdaMetafactory entirely. Instead, we'll do a little more work on the MethodHandle, and then wrap in a
+        // proxy, using provided JVM tools.
         MethodHandle helper;
         try {
             helper = caller.findStatic(JavaLambdaFactory.class, "invoke",
