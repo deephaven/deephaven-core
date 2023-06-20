@@ -70,7 +70,7 @@ TEST_CASE("Support all types", "[select]") {
   maker.addColumn("doubleData", doubleData);
   maker.addColumn("stringData", stringData);
 
-  auto t = maker.makeTable(tm.client().getManager(), (int64_t)boolData.size(), true);
+  auto t = maker.makeTable(tm.client().getManager());
 
   std::cout << t.stream(true) << '\n';
 
@@ -99,7 +99,7 @@ TEST_CASE("Create / update / fetch a table", "[select]") {
   maker.addColumn("IntValue", intData);
   maker.addColumn("DoubleValue", doubleData);
   maker.addColumn("StringValue", stringData);
-  auto t = maker.makeTable(tm.client().getManager(), (int64_t)intData.size(), true);
+  auto t = maker.makeTable(tm.client().getManager());
   auto t2 = t.update("Q2 = IntValue * 100");
   std::cout << t2.stream(true) << '\n';
   auto t3 = t2.update("Q3 = Q2 + 10");

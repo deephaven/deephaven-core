@@ -1,0 +1,63 @@
+name: Tag Base Images CI
+
+on:
+  push:
+    branches: [ 'main', 'tag/**', 'release/v*' ]
+
+jobs:
+  tag-base-images:
+    runs-on: ubuntu-22.04
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v3
+
+      - name: Setup JDK 11
+        id: setup-java-11
+        uses: actions/setup-java@v3
+        with:
+          distribution: 'temurin'
+          java-version: '11'
+
+      - name: Setup JDK 17
+        id: setup-java-17
+        uses: actions/setup-java@v3
+        with:
+          distribution: 'temurin'
+          java-version: '17'
+
+      - name: Setup Crane
+        if: ${{ startsWith(github.ref, 'refs/heads/release/v') }}
+        uses: imjasonh/setup-crane@v0.3
+
+      - name: Set JAVA_HOME
+        run: echo "JAVA_HOME=${{ steps.setup-java-11.outputs.path }}" >> $GITHUB_ENV
+
+      - name: Setup gradle properties
+        run: |
+          cat .github/env/${{ runner.os }}/gradle.properties >> gradle.properties
+          echo >> gradle.properties
+          echo "org.gradle.java.installations.paths=${{ steps.setup-java-11.outputs.path }},${{ steps.setup-java-17.outputs.path }}," >> gradle.properties
+          cat gradle.properties
+
+      - name: Login to ghcr.io
+        if: github.event_name != 'pull_request'
+        uses: docker/login-action@v2
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Create Crane scripts
+        uses: burrunan/gradle-cache-action@v1
+        with:
+          job-id: crane-scripts
+          arguments: createCraneTagScript
+          gradle-version: wrapper
+
+      - name: Tag upstream images
+        if: ${{ startsWith(github.ref, 'refs/heads/release/v') }}
+        run: |
+          ./docker/registry/cpp-client-base/build/crane/retag.sh
+          ./docker/registry/protoc-base/build/crane/retag.sh
+          ./docker/registry/slim-base/build/crane/retag.sh
+          ./docker/registry/server-base/build/crane/retag.sh

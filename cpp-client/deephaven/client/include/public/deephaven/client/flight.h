@@ -64,26 +64,4 @@ public:
 private:
   std::shared_ptr<impl::TableHandleManagerImpl> impl_;
 };
-
-/**
- * The return type for TableHandleManager::newTableHandleAndFlightDescriptor(), defined in
- * deephaven/client/client.h.
- */
-class TableHandleAndFlightDescriptor {
-public:
-  TableHandleAndFlightDescriptor(TableHandle tableHandle,
-      arrow::flight::FlightDescriptor flightDescriptor);
-  TableHandleAndFlightDescriptor(TableHandleAndFlightDescriptor &&other) noexcept;
-  TableHandleAndFlightDescriptor &operator=(TableHandleAndFlightDescriptor &&other) noexcept;
-  ~TableHandleAndFlightDescriptor();
-
-  TableHandle &tableHandle() { return tableHandle_; }
-  const TableHandle &tableHandle() const { return tableHandle_; }
-
-  arrow::flight::FlightDescriptor &flightDescriptor() { return flightDescriptor_; }
-  const arrow::flight::FlightDescriptor &flightDescriptor() const { return flightDescriptor_; }
-
-  TableHandle tableHandle_;
-  arrow::flight::FlightDescriptor flightDescriptor_;
-};
 }  // namespace deephaven::client

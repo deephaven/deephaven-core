@@ -1,12 +1,12 @@
 /*
  * Copyright (c) 2016-2022 Deephaven Data Labs and Patent Pending
  */
-#include "deephaven/dhcore/table/schema.h"
+#include "deephaven/dhcore/clienttable/schema.h"
 #include "deephaven/dhcore/utility/utility.h"
 
 using deephaven::dhcore::utility::stringf;
 
-namespace deephaven::dhcore::table {
+namespace deephaven::dhcore::clienttable {
 std::shared_ptr<Schema> Schema::create(std::vector<std::string> names, std::vector<ElementTypeId::Enum> types) {
   if (names.size() != types.size()) {
     auto message = stringf("Sizes differ: %o vs %o", names.size(), types.size());
@@ -41,4 +41,4 @@ std::optional<size_t> Schema::getColumnIndex(std::string_view name, bool strict)
   auto message = stringf(R"(Column name "%o" not found)", name);
   throw std::runtime_error(DEEPHAVEN_DEBUG_MSG(message));
 }
-}  // namespace deephaven::dhcore::table
+}  // namespace deephaven::dhcore::clienttable
