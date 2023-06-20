@@ -48,23 +48,26 @@ C++ compiler and tool suite (cmake etc).
 
    Example:
    ```
-   # Ensure you have DHCPP defined as above.
+   # This should reflect your selection for where dependencies will live
+   export DHCPP=$HOME/dhcpp
+   # If the directory already exists from a previous attempt, ensure is clean/empty
    mkdir -p $DHCPP
    cd $DHCPP
    wget https://github.com/deephaven/deephaven-base-images/raw/main/cpp-client/build-dependencies.sh
    chmod +x ./build-dependencies.sh
-   # Maybe edit build-dependencies.sh to reflect choices of build tools and build target;
-   # defaults should work fine for supported platforms.
+   # Maybe edit build-dependencies.sh to reflect choices of build tools and build target, if you
+   # want anything different than defaults; defaults should work fine for supported platforms.
    ./build-dependencies.sh
    ```
 
-7. Build and install Deephaven C++ client
+7. Build and install Deephaven C++ client.  Running `build-dependencies.sh` should have
+   created an `env.sh` file that we source below to set relevant environment variables for
+   the build.
 
    ```
+   source $DHCPP/env.sh
    cd $DHSRC/deephaven-core/cpp-client/deephaven/
    mkdir build && cd build
-   export DHCPP=$HOME/dhcpp  # This should reflect your selection in the previous point.
-   source $DHCPP/env.sh
    cmake -DCMAKE_INSTALL_PREFIX=${DHCPP}/local/deephaven .. && make -j$NCPUS install
    ```
 
