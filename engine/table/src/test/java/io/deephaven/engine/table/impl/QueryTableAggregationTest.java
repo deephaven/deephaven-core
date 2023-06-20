@@ -36,8 +36,10 @@ import io.deephaven.engine.testutil.testcase.RefreshingTableTestCase;
 import io.deephaven.engine.util.TableDiff;
 import io.deephaven.engine.util.TableTools;
 import io.deephaven.engine.util.systemicmarking.SystemicObjectTracker;
+import io.deephaven.parquet.table.ParquetInstructions;
 import io.deephaven.parquet.table.ParquetTableWriter;
 import io.deephaven.parquet.table.ParquetTools;
+import io.deephaven.parquet.table.layout.ParquetKeyValuePartitionedLayout;
 import io.deephaven.qst.table.AggregateAllTable;
 import io.deephaven.test.types.OutOfBandTest;
 import io.deephaven.time.DateTimeUtils;
@@ -3831,6 +3833,47 @@ public class QueryTableAggregationTest {
         });
         TestCase.assertEquals(1, aggregated.size());
         assertTableEquals(expectedEmpty, aggregated);
+    }
+
+    @Test
+    public void testMultiPartitionSymbolTableBy() throws IOException {
+        final File testRootFile = Files.createTempDirectory(QueryTableAggregationTest.class.getName()).toFile();
+        try {
+            final Table t1 = new InMemoryTable(
+                    new String[] {"StringKeys", "GroupedInts"},
+                    new Object[] {
+                            new String[] {"key1", "key2", "key1", "key2", "key1", "key2", "key1", "key2", "key1"},
+                            new short[] {1, 1, 2, 2, 2, 3, 3, 3, 3}
+                    });
+            final Table t1_asc = t1.sort("StringKeys");
+            final Table t1_desc = t1.sortDescending("StringKeys");
+
+            ParquetTools.writeTable(t1, new File(testRootFile,
+                    "Date=2021-07-20" + File.separator + "Num=100" + File.separator + "file1.parquet"));
+            ParquetTools.writeTable(t1_asc, new File(testRootFile,
+                    "Date=2021-07-20" + File.separator + "Num=200" + File.separator + "file2.parquet"));
+            ParquetTools.writeTable(t1_desc, new File(testRootFile,
+                    "Date=2021-07-21" + File.separator + "Num=300" + File.separator + "file3.parquet"));
+
+            final Table merged = TableTools.merge(
+                    t1.updateView("Date=`2021-07-20`", "Num=100"),
+                    t1_asc.updateView("Date=`2021-07-20`", "Num=200"),
+                    t1_desc.updateView("Date=`2021-07-21`", "Num=300")).moveColumnsUp("Date", "Num");
+
+            final Table loaded = ParquetTools.readPartitionedTableInferSchema(
+                    new ParquetKeyValuePartitionedLayout(testRootFile, 2), ParquetInstructions.EMPTY);
+
+            // make sure the sources are identical
+            assertTableEquals(merged, loaded);
+
+            final Table merged_summed = merged.aggBy(AggSum("GroupedInts"), "StringKeys");
+            final Table loaded_summed = loaded.aggBy(AggSum("GroupedInts"), "StringKeys");
+
+            TableTools.showWithRowSet(loaded_summed);
+            assertTableEquals(merged_summed, loaded_summed);
+        } finally {
+            FileUtils.deleteRecursively(testRootFile);
+        }
     }
 
     @Test
