@@ -57,7 +57,7 @@ public:
         std::shared_ptr<arrow::flight::FlightStreamReader> fsr = internal_tbl_hdl.getFlightStreamReader();
 
         std::vector<std::shared_ptr<arrow::RecordBatch>> empty_record_batches;
-        deephaven::client::utility::okOrThrow(DEEPHAVEN_EXPR_MSG(fsr->ReadAll(&empty_record_batches))); // TODO: need to add OK or throw
+        deephaven::client::utility::okOrThrow(DEEPHAVEN_EXPR_MSG(fsr->ReadAll(&empty_record_batches)));
 
         std::shared_ptr<arrow::RecordBatchReader> record_batch_reader = arrow::RecordBatchReader::Make(empty_record_batches).ValueOrDie();
         ArrowArrayStream* stream_ptr = new ArrowArrayStream();
