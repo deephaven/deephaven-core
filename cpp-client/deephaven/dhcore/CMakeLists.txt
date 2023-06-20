@@ -12,6 +12,8 @@ set(ALL_FILES
     src/types.cc
     src/chunk/chunk.cc
     src/chunk/chunk_maker.cc
+    src/clienttable/schema.cc
+    src/clienttable/client_table.cc
     src/column/array_column_source.cc
     src/column/column_source.cc
     src/column/column_source_helpers.cc
@@ -19,8 +21,6 @@ set(ALL_FILES
     src/container/row_sequence.cc
     src/immerutil/abstract_flex_vector.cc
     src/immerutil/immer_column_source.cc
-    src/table/schema.cc
-    src/table/table.cc
     src/ticking/barrage_processor.cc
     src/ticking/immer_table_state.cc
     src/ticking/index_decoder.cc
@@ -40,14 +40,14 @@ set(ALL_FILES
     include/public/deephaven/dhcore/chunk/chunk.h
     include/public/deephaven/dhcore/chunk/chunk_maker.h
     include/public/deephaven/dhcore/chunk/chunk_traits.h
+    include/public/deephaven/dhcore/clienttable/schema.h
+    include/public/deephaven/dhcore/clienttable/client_table.h
     include/public/deephaven/dhcore/column/array_column_source.h
     include/public/deephaven/dhcore/column/buffer_column_source.h
     include/public/deephaven/dhcore/column/column_source.h
     include/public/deephaven/dhcore/column/column_source_helpers.h
     include/public/deephaven/dhcore/column/column_source_utils.h
     include/public/deephaven/dhcore/container/row_sequence.h
-    include/public/deephaven/dhcore/table/schema.h
-    include/public/deephaven/dhcore/table/table.h
     include/public/deephaven/dhcore/ticking/barrage_processor.h
     include/public/deephaven/dhcore/ticking/ticking.h
     include/public/deephaven/dhcore/utility/callbacks.h
