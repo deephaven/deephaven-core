@@ -78,6 +78,7 @@ def runInDocker = { String name, String sourcePath, List<String> command, Closur
             volume '/data'
             volume '/cache'
             environmentVariable 'DEEPHAVEN_CLASSPATH', '/classpath/*:/classpath:/opt/deephaven/server/lib/*:/opt/deephaven/server/lib/'
+            environmentVariable 'DEEPHAVEN_MAXMEM', '2G'
             environmentVariable 'DEEPHAVEN_PROPFILE', 'dh-defaults.prop'
             environmentVariable 'DEEPHAVEN_VERSION', project.version
 
