@@ -52,14 +52,16 @@ C++ compiler and tool suite (cmake etc).
    ./build-dependencies.sh
    ```
 
-7. Build and install Deephaven C++ client
+7. Build and install Deephaven C++ client.  Running `build-dependencies.sh` should have
+   created an `env.sh` file that we source below to set relevant environment variables for
+   the build.
 
    ```
+   export DHCPP=$HOME/dhcpp  # This should reflect your selection in the previous point.
+   export DEEPHAVEN_LOCAL=$DHCPP/local
+   source $DHCPP/env.sh
    cd $DHSRC/deephaven-core/cpp-client/deephaven/
    mkdir build && cd build
-   export DEEPHAVEN_LOCAL=$HOME/dhcpp/local  # This should reflect your selection in the previous point.
-   export CMAKE_PREFIX_PATH=${DEEPHAVEN_LOCAL}/abseil:${DEEPHAVEN_LOCAL}/boost:${DEEPHAVEN_LOCAL}/cares:${DEEPHAVEN_LOCAL}/flatbuffers:${DEEPHAVEN_LOCAL}/gflags:${DEEPHAVEN_LOCAL}/immer:${DEEPHAVEN_LOCAL}/protobuf:${DEEPHAVEN_LOCAL}/re2:${DEEPHAVEN_LOCAL}/zlib:${DEEPHAVEN_LOCAL}/grpc:${DEEPHAVEN_LOCAL}/arrow:${DEEPHAVEN_LOCAL}/deephaven
-   export NCPUS=$(getconf _NPROCESSORS_ONLN)
    cmake -DCMAKE_INSTALL_PREFIX=${DEEPHAVEN_LOCAL}/deephaven .. && make -j$NCPUS install
    ```
 
