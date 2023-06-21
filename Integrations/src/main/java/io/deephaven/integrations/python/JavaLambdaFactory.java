@@ -72,7 +72,7 @@ public class JavaLambdaFactory {
         return MethodHandleProxies.asInterfaceInstance(samInterface, nonVarArgs);
     }
 
-    public static Object invoke(PyObject callable, Class<?> coerceToType, Object... args) {
+    private static Object invoke(PyObject callable, Class<?> coerceToType, Object... args) {
         PyObject out = callable.call("__call__", args);
         if (coerceToType != null) {
             return PythonValueGetter.getValue(out, coerceToType);
