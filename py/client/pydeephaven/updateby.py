@@ -210,7 +210,7 @@ def ema_tick_decay(decay_ticks: float, cols: Union[str, List[str]],
         raise DHError("failed to create a tick-decay EMA UpdateByOperation.") from e
 
 
-def ema_time_decay(ts_col: str, decay_time: int, cols: Union[str, List[str]],
+def ema_time_decay(ts_col: str, decay_time: Union[int, str], cols: Union[str, List[str]],
                    op_control: OperationControl = None) -> UpdateByOperation:
     """Creates an EMA(exponential moving average) UpdateByOperation for the supplied column names, using time as the
     decay unit.
@@ -234,7 +234,11 @@ def ema_time_decay(ts_col: str, decay_time: int, cols: Union[str, List[str]],
         DHError
     """
     try:
-        window_scale = _GrpcUpdateByWindowScale(time=_GrpcUpdateByWindowTime(column=ts_col, period_nanos=decay_time))
+        if isinstance(decay_time, str):
+            window_scale = _GrpcUpdateByWindowScale(time=_GrpcUpdateByWindowTime(column=ts_col, duration_string=decay_time))
+        else:
+            window_scale = _GrpcUpdateByWindowScale(time=_GrpcUpdateByWindowTime(column=ts_col, nanos=decay_time))
+
         ub_ema = _GrpcUpdateByEma(options=op_control.make_grpc_message() if op_control else None,
                                   window_scale=window_scale)
         ub_spec = _GrpcUpdateBySpec(ema=ub_ema)

@@ -35,12 +35,15 @@ class UpdateByTestCase(BaseTestCase):
                                    on_nan=BadDataBehavior.RESET,
                                    big_value_context=MathContext.UNLIMITED)
 
-        ops = [ema_tick_decay(decay_ticks=100, cols=["ema_a = a"]),
-               ema_tick_decay(decay_ticks=100, cols=["ema_a = a"], op_control=op_ctrl),
-               ema_time_decay(ts_col="Timestamp", decay_time=10, cols=["ema_a = a"]),
-               ema_time_decay(ts_col="Timestamp", decay_time=1000000, cols=["ema_c = c"],
-                              op_control=op_ctrl),
-               ]
+        ops = [
+            ema_tick_decay(decay_ticks=100, cols="ema_a = a"),
+            ema_tick_decay(decay_ticks=100, cols="ema_a = a", op_control=op_ctrl),
+            ema_time_decay(ts_col="Timestamp", decay_time=10, cols="ema_a = a"),
+            ema_time_decay(ts_col="Timestamp", decay_time=1000000, cols=["ema_c = c"], op_control=op_ctrl),
+            ema_time_decay(ts_col="Timestamp", decay_time="00:00:00.001", cols="ema_c = c", op_control=op_ctrl),
+            ema_time_decay(ts_col="Timestamp", decay_time="PT00:00:00.001", cols="ema_c = c", op_control=op_ctrl),
+            ema_time_decay(ts_col="Timestamp", decay_time="PT1M", cols="ema_c = c", op_control=op_ctrl),
+            ]
 
         for op in ops:
             for t in (self.static_table, self.ticking_table):
