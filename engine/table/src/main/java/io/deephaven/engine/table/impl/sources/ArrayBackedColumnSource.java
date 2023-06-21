@@ -102,7 +102,7 @@ public abstract class ArrayBackedColumnSource<T>
 
     public static <T> WritableColumnSource<T> from(PrimitiveArray<T> array) {
         PrimitiveArray.Visitor<WritableColumnSource<?>> adapter = new ArrayAdapter<>();
-        //noinspection unchecked
+        // noinspection unchecked
         return (WritableColumnSource<T>) array.walk(adapter);
     }
 
