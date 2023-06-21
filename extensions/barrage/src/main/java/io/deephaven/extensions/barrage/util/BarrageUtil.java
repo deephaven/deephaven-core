@@ -452,6 +452,8 @@ public class BarrageUtil {
                 // TODO (deephaven-core#3403) widen this check for better assurances
                 Class<?> defaultType = getDefaultType(getArrowType.apply(i), result, i);
                 Assert.eq(type.getValue(), "deephaven column type", defaultType, "arrow inferred type");
+                // force to boxed boolean to allow nullability in the column sources
+                type.setValue(Boolean.class);
             }
             columns[i] = ColumnDefinition.fromGenericType(name, type.getValue(), componentType.getValue());
         }
