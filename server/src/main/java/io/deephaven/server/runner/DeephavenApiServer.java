@@ -5,6 +5,7 @@ package io.deephaven.server.runner;
 
 import io.deephaven.auth.AuthenticationRequestHandler;
 import io.deephaven.engine.context.ExecutionContext;
+import io.deephaven.engine.table.impl.OperationInitializationThreadPool;
 import io.deephaven.engine.table.impl.perf.QueryPerformanceRecorder;
 import io.deephaven.engine.table.impl.perf.UpdatePerformanceTracker;
 import io.deephaven.engine.table.impl.util.EngineMetrics;
@@ -23,7 +24,6 @@ import io.deephaven.server.session.SessionService;
 import io.deephaven.uri.resolver.UriResolver;
 import io.deephaven.uri.resolver.UriResolvers;
 import io.deephaven.uri.resolver.UriResolversInstance;
-import io.deephaven.util.SafeCloseable;
 import io.deephaven.util.annotations.VisibleForTesting;
 import io.deephaven.util.process.ProcessEnvironment;
 import io.deephaven.util.process.ShutdownManager;
@@ -129,11 +129,14 @@ public class DeephavenApiServer {
         scriptSessionProvider.get();
         pluginRegistration.registerAll();
 
-        log.info().append("Initializing ExecutionContext for Main Thread...").endl();
+        log.info().append("Initializing Execution Context for Main Thread...").endl();
         // noinspection resource
         executionContextProvider.get().open();
 
-        log.info().append("Starting UpdateGraph...").endl();
+        log.info().append("Starting Operation Initialization Thread Pool...").endl();
+        OperationInitializationThreadPool.start();
+
+        log.info().append("Starting Update Graph...").endl();
         ug.<PeriodicUpdateGraph>cast().start();
 
         EngineMetrics.maybeStartStatsCollection();
