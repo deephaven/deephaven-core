@@ -287,7 +287,11 @@ def ema_time(ts_col: str, decay_time: Union[int, str], cols: Union[str, List[str
         DHError
     """
     try:
-        window_scale = _GrpcUpdateByWindowScale(time=_GrpcUpdateByWindowTime(column=ts_col, period_nanos=decay_time))
+        if isinstance(decay_time, str):
+            window_scale = _GrpcUpdateByWindowScale(time=_GrpcUpdateByWindowTime(column=ts_col, duration_string=decay_time))
+        else:
+            window_scale = _GrpcUpdateByWindowScale(time=_GrpcUpdateByWindowTime(column=ts_col, period_nanos=decay_time))
+
         ub_ema = _GrpcUpdateByEma(options=op_control.make_grpc_message() if op_control else None,
                                   window_scale=window_scale)
         ub_spec = _GrpcUpdateBySpec(ema=ub_ema)
@@ -355,7 +359,11 @@ def ems_time(ts_col: str, decay_time: Union[int, str], cols: Union[str, List[str
         DHError
      """
     try:
-        window_scale = _GrpcUpdateByWindowScale(time=_GrpcUpdateByWindowTime(column=ts_col, period_nanos=decay_time))
+        if isinstance(decay_time, str):
+            window_scale = _GrpcUpdateByWindowScale(time=_GrpcUpdateByWindowTime(column=ts_col, duration_string=decay_time))
+        else:
+            window_scale = _GrpcUpdateByWindowScale(time=_GrpcUpdateByWindowTime(column=ts_col, period_nanos=decay_time))
+
         ub_ems = _GrpcUpdateByEms(options=op_control.make_grpc_message() if op_control else None,
                                   window_scale=window_scale)
         ub_spec = _GrpcUpdateBySpec(ems=ub_ems)
@@ -423,7 +431,11 @@ def emmin_time(ts_col: str, decay_time: Union[int, str], cols: Union[str, List[s
         DHError
      """
     try:
-        window_scale = _GrpcUpdateByWindowScale(time=_GrpcUpdateByWindowTime(column=ts_col, period_nanos=decay_time))
+        if isinstance(decay_time, str):
+            window_scale = _GrpcUpdateByWindowScale(time=_GrpcUpdateByWindowTime(column=ts_col, duration_string=decay_time))
+        else:
+            window_scale = _GrpcUpdateByWindowScale(time=_GrpcUpdateByWindowTime(column=ts_col, period_nanos=decay_time))
+
         ub_emmin = _GrpcUpdateByEmMin(options=op_control.make_grpc_message() if op_control else None,
                                   window_scale=window_scale)
         ub_spec = _GrpcUpdateBySpec(em_min=ub_emmin)
@@ -491,7 +503,11 @@ def emmax_time(ts_col: str, decay_time: Union[int, str], cols: Union[str, List[s
         DHError
      """
     try:
-        window_scale = _GrpcUpdateByWindowScale(time=_GrpcUpdateByWindowTime(column=ts_col, period_nanos=decay_time))
+        if isinstance(decay_time, str):
+            window_scale = _GrpcUpdateByWindowScale(time=_GrpcUpdateByWindowTime(column=ts_col, duration_string=decay_time))
+        else:
+            window_scale = _GrpcUpdateByWindowScale(time=_GrpcUpdateByWindowTime(column=ts_col, period_nanos=decay_time))
+
         ub_emmax = _GrpcUpdateByEmMax(options=op_control.make_grpc_message() if op_control else None,
                                   window_scale=window_scale)
         ub_spec = _GrpcUpdateBySpec(em_max=ub_emmax)
@@ -562,7 +578,11 @@ def emstd_time(ts_col: str, decay_time: Union[int, str], cols: Union[str, List[s
         DHError
      """
     try:
-        window_scale = _GrpcUpdateByWindowScale(time=_GrpcUpdateByWindowTime(column=ts_col, period_nanos=decay_time))
+        if isinstance(decay_time, str):
+            window_scale = _GrpcUpdateByWindowScale(time=_GrpcUpdateByWindowTime(column=ts_col, duration_string=decay_time))
+        else:
+            window_scale = _GrpcUpdateByWindowScale(time=_GrpcUpdateByWindowTime(column=ts_col, period_nanos=decay_time))
+
         ub_emstd = _GrpcUpdateByEmStd(options=op_control.make_grpc_message() if op_control else None,
                                   window_scale=window_scale)
         ub_spec = _GrpcUpdateBySpec(em_std=ub_emstd)
@@ -639,9 +659,9 @@ def rolling_sum_time(ts_col: str, cols: Union[str, List[str]], rev_time: Union[i
         ts_col (str): the timestamp column for determining the window
         cols (Union[str, List[str]]): the column(s) to be operated on, can include expressions to rename the output,
             i.e. "new_col = col"; when empty, update_by perform the rolling sum operation on all columns.
-        rev_time (int): the look-behind window size, can be expressed as an integer in nanoseconds or a time
+        rev_time (Union[int, str]): the look-behind window size, can be expressed as an integer in nanoseconds or a time
             interval string, e.g. "PT00:00:.001" or "PT5M"
-        fwd_time (int): the look-ahead window size, can be expressed as an integer in nanoseconds or a time
+        fwd_time (Union[int, str]): the look-ahead window size, can be expressed as an integer in nanoseconds or a time
             interval string, e.g. "PT00:00:.001" or "PT5M", default is 0
 
     Returns:
@@ -655,6 +675,7 @@ def rolling_sum_time(ts_col: str, cols: Union[str, List[str]], rev_time: Union[i
             rev_window_scale = _GrpcUpdateByWindowScale(time=_GrpcUpdateByWindowTime(column=ts_col, duration_string=rev_time))
         else:
             rev_window_scale = _GrpcUpdateByWindowScale(time=_GrpcUpdateByWindowTime(column=ts_col, period_nanos=rev_time))
+
         if isinstance(fwd_time, str):
             fwd_window_scale = _GrpcUpdateByWindowScale(time=_GrpcUpdateByWindowTime(column=ts_col, duration_string=fwd_time))
         else:
@@ -736,9 +757,9 @@ def rolling_group_time(ts_col: str, cols: Union[str, List[str]], rev_time: Union
         ts_col (str): the timestamp column for determining the window
         cols (Union[str, List[str]]): the column(s) to be operated on, can include expressions to rename the output,
             i.e. "new_col = col"; when empty, update_by perform the rolling sum operation on all columns.
-        rev_time (int): the look-behind window size, can be expressed as an integer in nanoseconds or a time
+        rev_time (Union[int, str]): the look-behind window size, can be expressed as an integer in nanoseconds or a time
             interval string, e.g. "PT00:00:.001" or "PT5M"
-        fwd_time (int): the look-ahead window size, can be expressed as an integer in nanoseconds or a time
+        fwd_time (Union[int, str]): the look-ahead window size, can be expressed as an integer in nanoseconds or a time
             interval string, e.g. "PT00:00:.001" or "PT5M", default is 0
 
     Returns:
@@ -752,6 +773,7 @@ def rolling_group_time(ts_col: str, cols: Union[str, List[str]], rev_time: Union
             rev_window_scale = _GrpcUpdateByWindowScale(time=_GrpcUpdateByWindowTime(column=ts_col, duration_string=rev_time))
         else:
             rev_window_scale = _GrpcUpdateByWindowScale(time=_GrpcUpdateByWindowTime(column=ts_col, period_nanos=rev_time))
+
         if isinstance(fwd_time, str):
             fwd_window_scale = _GrpcUpdateByWindowScale(time=_GrpcUpdateByWindowTime(column=ts_col, duration_string=fwd_time))
         else:
@@ -833,9 +855,9 @@ def rolling_avg_time(ts_col: str, cols: Union[str, List[str]], rev_time: Union[i
         ts_col (str): the timestamp column for determining the window
         cols (Union[str, List[str]]): the column(s) to be operated on, can include expressions to rename the output,
             i.e. "new_col = col"; when empty, update_by perform the rolling sum operation on all columns.
-        rev_time (int): the look-behind window size, can be expressed as an integer in nanoseconds or a time
+        rev_time (Union[int, str]): the look-behind window size, can be expressed as an integer in nanoseconds or a time
             interval string, e.g. "PT00:00:.001" or "PT5M"
-        fwd_time (int): the look-ahead window size, can be expressed as an integer in nanoseconds or a time
+        fwd_time (Union[int, str]): the look-ahead window size, can be expressed as an integer in nanoseconds or a time
             interval string, e.g. "PT00:00:.001" or "PT5M", default is 0
 
     Returns:
@@ -849,6 +871,7 @@ def rolling_avg_time(ts_col: str, cols: Union[str, List[str]], rev_time: Union[i
             rev_window_scale = _GrpcUpdateByWindowScale(time=_GrpcUpdateByWindowTime(column=ts_col, duration_string=rev_time))
         else:
             rev_window_scale = _GrpcUpdateByWindowScale(time=_GrpcUpdateByWindowTime(column=ts_col, period_nanos=rev_time))
+
         if isinstance(fwd_time, str):
             fwd_window_scale = _GrpcUpdateByWindowScale(time=_GrpcUpdateByWindowTime(column=ts_col, duration_string=fwd_time))
         else:
@@ -930,9 +953,9 @@ def rolling_min_time(ts_col: str, cols: Union[str, List[str]], rev_time: Union[i
         ts_col (str): the timestamp column for determining the window
         cols (Union[str, List[str]]): the column(s) to be operated on, can include expressions to rename the output,
             i.e. "new_col = col"; when empty, update_by perform the rolling sum operation on all columns.
-        rev_time (int): the look-behind window size, can be expressed as an integer in nanoseconds or a time
+        rev_time (Union[int, str]): the look-behind window size, can be expressed as an integer in nanoseconds or a time
             interval string, e.g. "PT00:00:.001" or "PT5M"
-        fwd_time (int): the look-ahead window size, can be expressed as an integer in nanoseconds or a time
+        fwd_time (Union[int, str]): the look-ahead window size, can be expressed as an integer in nanoseconds or a time
             interval string, e.g. "PT00:00:.001" or "PT5M", default is 0
 
     Returns:
@@ -946,6 +969,7 @@ def rolling_min_time(ts_col: str, cols: Union[str, List[str]], rev_time: Union[i
             rev_window_scale = _GrpcUpdateByWindowScale(time=_GrpcUpdateByWindowTime(column=ts_col, duration_string=rev_time))
         else:
             rev_window_scale = _GrpcUpdateByWindowScale(time=_GrpcUpdateByWindowTime(column=ts_col, period_nanos=rev_time))
+
         if isinstance(fwd_time, str):
             fwd_window_scale = _GrpcUpdateByWindowScale(time=_GrpcUpdateByWindowTime(column=ts_col, duration_string=fwd_time))
         else:
@@ -1027,9 +1051,9 @@ def rolling_max_time(ts_col: str, cols: Union[str, List[str]], rev_time: Union[i
         ts_col (str): the timestamp column for determining the window
         cols (Union[str, List[str]]): the column(s) to be operated on, can include expressions to rename the output,
             i.e. "new_col = col"; when empty, update_by perform the rolling sum operation on all columns.
-        rev_time (int): the look-behind window size, can be expressed as an integer in nanoseconds or a time
+        rev_time (Union[int, str]): the look-behind window size, can be expressed as an integer in nanoseconds or a time
             interval string, e.g. "PT00:00:.001" or "PT5M"
-        fwd_time (int): the look-ahead window size, can be expressed as an integer in nanoseconds or a time
+        fwd_time (Union[int, str]): the look-ahead window size, can be expressed as an integer in nanoseconds or a time
             interval string, e.g. "PT00:00:.001" or "PT5M", default is 0
 
     Returns:
@@ -1043,6 +1067,7 @@ def rolling_max_time(ts_col: str, cols: Union[str, List[str]], rev_time: Union[i
             rev_window_scale = _GrpcUpdateByWindowScale(time=_GrpcUpdateByWindowTime(column=ts_col, duration_string=rev_time))
         else:
             rev_window_scale = _GrpcUpdateByWindowScale(time=_GrpcUpdateByWindowTime(column=ts_col, period_nanos=rev_time))
+
         if isinstance(fwd_time, str):
             fwd_window_scale = _GrpcUpdateByWindowScale(time=_GrpcUpdateByWindowTime(column=ts_col, duration_string=fwd_time))
         else:
@@ -1124,9 +1149,9 @@ def rolling_prod_time(ts_col: str, cols: Union[str, List[str]], rev_time: Union[
         ts_col (str): the timestamp column for determining the window
         cols (Union[str, List[str]]): the column(s) to be operated on, can include expressions to rename the output,
             i.e. "new_col = col"; when empty, update_by perform the rolling sum operation on all columns.
-        rev_time (int): the look-behind window size, can be expressed as an integer in nanoseconds or a time
+        rev_time (Union[int, str]): the look-behind window size, can be expressed as an integer in nanoseconds or a time
             interval string, e.g. "PT00:00:.001" or "PT5M"
-        fwd_time (int): the look-ahead window size, can be expressed as an integer in nanoseconds or a time
+        fwd_time (Union[int, str]): the look-ahead window size, can be expressed as an integer in nanoseconds or a time
             interval string, e.g. "PT00:00:.001" or "PT5M", default is 0
 
     Returns:
@@ -1140,6 +1165,7 @@ def rolling_prod_time(ts_col: str, cols: Union[str, List[str]], rev_time: Union[
             rev_window_scale = _GrpcUpdateByWindowScale(time=_GrpcUpdateByWindowTime(column=ts_col, duration_string=rev_time))
         else:
             rev_window_scale = _GrpcUpdateByWindowScale(time=_GrpcUpdateByWindowTime(column=ts_col, period_nanos=rev_time))
+
         if isinstance(fwd_time, str):
             fwd_window_scale = _GrpcUpdateByWindowScale(time=_GrpcUpdateByWindowTime(column=ts_col, duration_string=fwd_time))
         else:
@@ -1221,9 +1247,9 @@ def rolling_count_time(ts_col: str, cols: Union[str, List[str]], rev_time: Union
         ts_col (str): the timestamp column for determining the window
         cols (Union[str, List[str]]): the column(s) to be operated on, can include expressions to rename the output,
             i.e. "new_col = col"; when empty, update_by perform the rolling sum operation on all columns.
-        rev_time (int): the look-behind window size, can be expressed as an integer in nanoseconds or a time
+        rev_time (Union[int, str]): the look-behind window size, can be expressed as an integer in nanoseconds or a time
             interval string, e.g. "PT00:00:.001" or "PT5M"
-        fwd_time (int): the look-ahead window size, can be expressed as an integer in nanoseconds or a time
+        fwd_time (Union[int, str]): the look-ahead window size, can be expressed as an integer in nanoseconds or a time
             interval string, e.g. "PT00:00:.001" or "PT5M", default is 0
 
     Returns:
@@ -1237,6 +1263,7 @@ def rolling_count_time(ts_col: str, cols: Union[str, List[str]], rev_time: Union
             rev_window_scale = _GrpcUpdateByWindowScale(time=_GrpcUpdateByWindowTime(column=ts_col, duration_string=rev_time))
         else:
             rev_window_scale = _GrpcUpdateByWindowScale(time=_GrpcUpdateByWindowTime(column=ts_col, period_nanos=rev_time))
+
         if isinstance(fwd_time, str):
             fwd_window_scale = _GrpcUpdateByWindowScale(time=_GrpcUpdateByWindowTime(column=ts_col, duration_string=fwd_time))
         else:
@@ -1318,9 +1345,9 @@ def rolling_std_time(ts_col: str, cols: Union[str, List[str]], rev_time: Union[i
         ts_col (str): the timestamp column for determining the window
         cols (Union[str, List[str]]): the column(s) to be operated on, can include expressions to rename the output,
             i.e. "new_col = col"; when empty, update_by perform the rolling sum operation on all columns.
-        rev_time (int): the look-behind window size, can be expressed as an integer in nanoseconds or a time
+        rev_time (Union[int, str]): the look-behind window size, can be expressed as an integer in nanoseconds or a time
             interval string, e.g. "PT00:00:.001" or "PT5M"
-        fwd_time (int): the look-ahead window size, can be expressed as an integer in nanoseconds or a time
+        fwd_time (Union[int, str]): the look-ahead window size, can be expressed as an integer in nanoseconds or a time
             interval string, e.g. "PT00:00:.001" or "PT5M", default is 0
 
     Returns:
@@ -1334,6 +1361,7 @@ def rolling_std_time(ts_col: str, cols: Union[str, List[str]], rev_time: Union[i
             rev_window_scale = _GrpcUpdateByWindowScale(time=_GrpcUpdateByWindowTime(column=ts_col, duration_string=rev_time))
         else:
             rev_window_scale = _GrpcUpdateByWindowScale(time=_GrpcUpdateByWindowTime(column=ts_col, period_nanos=rev_time))
+
         if isinstance(fwd_time, str):
             fwd_window_scale = _GrpcUpdateByWindowScale(time=_GrpcUpdateByWindowTime(column=ts_col, duration_string=fwd_time))
         else:
@@ -1367,8 +1395,6 @@ def rolling_wavg_tick(weight_col: str, cols: Union[str, List[str]], rev_ticks: i
             current row (inclusive)
 
     Args:
-        cols (Union[str, List[str]]): the column(s) to be operated on, can include expressions to rename the output,
-            i.e. "new_col = col"; when empty, update_by perform the rolling weighted average operation on all columns.
         cols (Union[str, List[str]]): the column(s) to be operated on, can include expressions to rename the output,
             i.e. "new_col = col"; when empty, update_by perform the rolling weighted average operation on all columns.
         weight_col (str):  the column containing the weight values
@@ -1420,9 +1446,9 @@ def rolling_wavg_time(ts_col: str, weight_col: str, cols: Union[str, List[str]],
         cols (Union[str, List[str]]): the column(s) to be operated on, can include expressions to rename the output,
             i.e. "new_col = col"; when empty, update_by perform the rolling weighted average operation on all columns.
         weight_col (str):  the column containing the weight values
-        rev_time (int): the look-behind window size, can be expressed as an integer in nanoseconds or a time
+        rev_time (Union[int, str]): the look-behind window size, can be expressed as an integer in nanoseconds or a time
             interval string, e.g. "PT00:00:.001" or "PT5M"
-        fwd_time (int): the look-ahead window size, can be expressed as an integer in nanoseconds or a time
+        fwd_time (Union[int, str]): the look-ahead window size, can be expressed as an integer in nanoseconds or a time
             interval string, e.g. "PT00:00:.001" or "PT5M", default is 0
 
     Returns:
@@ -1436,6 +1462,7 @@ def rolling_wavg_time(ts_col: str, weight_col: str, cols: Union[str, List[str]],
             rev_window_scale = _GrpcUpdateByWindowScale(time=_GrpcUpdateByWindowTime(column=ts_col, duration_string=rev_time))
         else:
             rev_window_scale = _GrpcUpdateByWindowScale(time=_GrpcUpdateByWindowTime(column=ts_col, period_nanos=rev_time))
+
         if isinstance(fwd_time, str):
             fwd_window_scale = _GrpcUpdateByWindowScale(time=_GrpcUpdateByWindowTime(column=ts_col, duration_string=fwd_time))
         else:
