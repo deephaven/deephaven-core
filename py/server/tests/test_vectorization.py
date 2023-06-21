@@ -251,6 +251,13 @@ class VectorizationTestCase(BaseTestCase):
         result = source.update(f"X = my_sum({','.join(cols)})")
         self.assertEqual(len(cols) + 1, len(result.columns))
 
+    def test_enclosed_by_parentheses(self):
+        def sinc(x) -> np.double:
+            return np.sinc(x)
+
+        t = empty_table(100).update(["X = 0.1 * i", "SincXS=((sinc(X)))"])
+        self.assertEqual(t.columns[0].data_type, dtypes.double)
+
 
 if __name__ == "__main__":
     unittest.main()
