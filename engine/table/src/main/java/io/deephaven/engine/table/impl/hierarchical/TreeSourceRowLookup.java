@@ -1,10 +1,12 @@
 package io.deephaven.engine.table.impl.hierarchical;
 
+import io.deephaven.engine.context.ExecutionContext;
 import io.deephaven.engine.liveness.LivenessArtifact;
 import io.deephaven.engine.table.ColumnSource;
 import io.deephaven.engine.table.impl.NotificationStepSource;
 import io.deephaven.engine.table.impl.QueryTable;
 import io.deephaven.engine.table.impl.by.AggregationRowLookup;
+import io.deephaven.engine.updategraph.UpdateGraph;
 import org.jetbrains.annotations.NotNull;
 
 import static io.deephaven.engine.rowset.RowSequence.NULL_ROW_KEY;
@@ -16,12 +18,14 @@ import static io.deephaven.engine.table.impl.by.TreeConstants.SOURCE_ROW_LOOKUP_
  */
 final class TreeSourceRowLookup extends LivenessArtifact implements NotificationStepSource {
 
+    private final UpdateGraph updateGraph;
     private final Object source;
     private final NotificationStepSource parent;
     private final AggregationRowLookup rowLookup;
     private final ColumnSource<Long> sourceRowKeyColumnSource;
 
     TreeSourceRowLookup(@NotNull final Object source, @NotNull final QueryTable sourceRowLookupTable) {
+        this.updateGraph = ExecutionContext.getContext().getUpdateGraph();
         this.source = source;
         if (sourceRowLookupTable.isRefreshing()) {
             parent = sourceRowLookupTable;
@@ -36,6 +40,11 @@ final class TreeSourceRowLookup extends LivenessArtifact implements Notification
 
     boolean sameSource(@NotNull final Object source) {
         return this.source == source;
+    }
+
+    @Override
+    public UpdateGraph getUpdateGraph() {
+        return updateGraph;
     }
 
     /**

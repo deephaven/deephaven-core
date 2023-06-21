@@ -14,7 +14,7 @@ import io.deephaven.engine.rowset.RowSetFactory;
 import io.deephaven.engine.rowset.RowSetShiftData;
 import io.deephaven.engine.table.Table;
 import io.deephaven.engine.table.impl.util.BarrageMessage;
-import io.deephaven.engine.updategraph.UpdateGraphProcessor;
+import io.deephaven.engine.updategraph.UpdateGraph;
 import io.deephaven.extensions.barrage.BarrageSubscriptionOptions;
 import io.deephaven.extensions.barrage.chunk.ChunkInputStreamGenerator;
 import io.deephaven.extensions.barrage.table.BarrageTable;
@@ -118,8 +118,9 @@ public class ArrowToTableConverter {
         }
 
         final Condition completedCondition;
-        if (UpdateGraphProcessor.DEFAULT.exclusiveLock().isHeldByCurrentThread()) {
-            completedCondition = UpdateGraphProcessor.DEFAULT.exclusiveLock().newCondition();
+        final UpdateGraph updateGraph = resultTable.getUpdateGraph();
+        if (updateGraph.exclusiveLock().isHeldByCurrentThread()) {
+            completedCondition = updateGraph.exclusiveLock().newCondition();
         } else {
             completedCondition = null;
         }
@@ -148,7 +149,8 @@ public class ArrowToTableConverter {
 
     private void signalCompletion(final Condition completedCondition) {
         if (completedCondition != null) {
-            UpdateGraphProcessor.DEFAULT.requestSignal(completedCondition);
+            UpdateGraph updateGraph = resultTable.getUpdateGraph();
+            updateGraph.requestSignal(completedCondition);
         } else {
             synchronized (ArrowToTableConverter.this) {
                 ArrowToTableConverter.this.notifyAll();
@@ -168,9 +170,9 @@ public class ArrowToTableConverter {
         resultTable.setFlat();
 
         columnConversionFactors = result.conversionFactors;
-        columnChunkTypes = resultTable.getWireChunkTypes();
-        columnTypes = resultTable.getWireTypes();
-        componentTypes = resultTable.getWireComponentTypes();
+        columnChunkTypes = result.computeWireChunkTypes();
+        columnTypes = result.computeWireTypes();
+        componentTypes = result.computeWireComponentTypes();
 
         // retain reference until the resultTable can be sealed
         resultTable.retainReference();

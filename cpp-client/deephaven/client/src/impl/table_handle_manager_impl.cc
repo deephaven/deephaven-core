@@ -22,10 +22,8 @@ namespace deephaven::client::impl {
 std::shared_ptr<TableHandleManagerImpl> TableHandleManagerImpl::create(std::optional<Ticket> consoleId,
     std::shared_ptr<Server> server, std::shared_ptr<Executor> executor,
     std::shared_ptr<Executor> flightExecutor) {
-  auto result = std::make_shared<TableHandleManagerImpl>(Private(), std::move(consoleId),
+  return std::make_shared<TableHandleManagerImpl>(Private(), std::move(consoleId),
       std::move(server), std::move(executor), std::move(flightExecutor));
-  result->self_ = result;
-  return result;
 }
 
 TableHandleManagerImpl::TableHandleManagerImpl(Private, std::optional<Ticket> &&consoleId,
@@ -38,22 +36,25 @@ TableHandleManagerImpl::TableHandleManagerImpl(Private, std::optional<Ticket> &&
 TableHandleManagerImpl::~TableHandleManagerImpl() = default;
 
 std::shared_ptr<TableHandleImpl> TableHandleManagerImpl::emptyTable(int64_t size) {
-  auto [cb, ls] = TableHandleImpl::createEtcCallback(this);
-  auto resultTicket = server_->emptyTableAsync(size, cb);
-  return TableHandleImpl::create(self_.lock(), std::move(resultTicket), std::move(ls));
+  auto resultTicket = server_->newTicket();
+  auto [cb, ls] = TableHandleImpl::createEtcCallback(nullptr, this, resultTicket);
+  server_->emptyTableAsync(size, cb, resultTicket);
+  return TableHandleImpl::create(shared_from_this(), std::move(resultTicket), std::move(ls));
 }
 
 std::shared_ptr<TableHandleImpl> TableHandleManagerImpl::fetchTable(std::string tableName) {
-  auto [cb, ls] = TableHandleImpl::createEtcCallback(this);
-  auto resultTicket = server_->fetchTableAsync(std::move(tableName), cb);
-  return TableHandleImpl::create(self_.lock(), std::move(resultTicket), std::move(ls));
+  auto resultTicket = server_->newTicket();
+  auto [cb, ls] = TableHandleImpl::createEtcCallback(nullptr, this, resultTicket);
+  server_->fetchTableAsync(std::move(tableName), cb, resultTicket);
+  return TableHandleImpl::create(shared_from_this(), std::move(resultTicket), std::move(ls));
 }
 
 std::shared_ptr<TableHandleImpl> TableHandleManagerImpl::timeTable(int64_t startTimeNanos,
     int64_t periodNanos) {
-  auto [cb, ls] = TableHandleImpl::createEtcCallback(this);
-  auto resultTicket = server_->timeTableAsync(startTimeNanos, periodNanos, std::move(cb));
-  return TableHandleImpl::create(self_.lock(), std::move(resultTicket), std::move(ls));
+  auto resultTicket = server_->newTicket();
+  auto [cb, ls] = TableHandleImpl::createEtcCallback(nullptr, this, resultTicket);
+  server_->timeTableAsync(startTimeNanos, periodNanos, std::move(cb), resultTicket);
+  return TableHandleImpl::create(shared_from_this(), std::move(resultTicket), std::move(ls));
 }
 
 void TableHandleManagerImpl::runScriptAsync(std::string code, std::shared_ptr<SFCallback<>> callback) {
@@ -80,15 +81,11 @@ void TableHandleManagerImpl::runScriptAsync(std::string code, std::shared_ptr<SF
   server_->executeCommandAsync(*consoleId_, std::move(code), std::move(cb));
 }
 
-std::tuple<std::shared_ptr<TableHandleImpl>, arrow::flight::FlightDescriptor>
-TableHandleManagerImpl::newTicket(int64_t numRows, bool isStatic) const {
-  auto[ticket, fd] = server_->newTicketAndFlightDescriptor();
-
-  CBPromise<internal::LazyStateInfo> infoPromise;
-  internal::LazyStateInfo info(ticket, numRows, isStatic);
-  infoPromise.setValue(std::move(info));
-  auto ls = std::make_shared<internal::LazyState>(server_, flightExecutor_, infoPromise.makeFuture());
-  auto th = TableHandleImpl::create(self_.lock(), std::move(ticket), std::move(ls));
-  return std::make_tuple(std::move(th), std::move(fd));
+std::shared_ptr<TableHandleImpl> TableHandleManagerImpl::makeTableHandleFromTicket(std::string ticket) {
+  Ticket resultTicket;
+  *resultTicket.mutable_ticket() = std::move(ticket);
+  auto [cb, ls] = TableHandleImpl::createEtcCallback(nullptr, this, resultTicket);
+  server_->getExportedTableCreationResponseAsync(resultTicket, std::move(cb));
+  return TableHandleImpl::create(shared_from_this(), std::move(resultTicket), std::move(ls));
 }
 }  // namespace deephaven::client::impl

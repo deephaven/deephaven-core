@@ -4,13 +4,16 @@
 
 import jpy
 
-from deephaven import DHError, read_csv, empty_table
+from deephaven import read_csv, empty_table
+from deephaven.execution_context import ExecutionContext
 from deephaven.experimental import sql
 from tests.testbase import BaseTestCase
+from test_helper import py_dh_session
 
 _JTableSpec = jpy.get_type("io.deephaven.qst.table.TableSpec")
 
-some_global_table = empty_table(42)
+with ExecutionContext(j_exec_ctx=py_dh_session.getExecutionContext()):
+    some_global_table = empty_table(42)
 
 
 class SqlTest(BaseTestCase):

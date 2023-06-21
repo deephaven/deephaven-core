@@ -1,8 +1,9 @@
 package io.deephaven.engine.table.impl;
 
-import io.deephaven.engine.liveness.LivenessReferent;
+import io.deephaven.engine.context.ExecutionContext;
 import io.deephaven.engine.table.TableUpdateListener;
 import io.deephaven.engine.table.impl.remote.ConstructSnapshot;
+import io.deephaven.engine.updategraph.ClockInconsistencyException;
 import io.deephaven.engine.updategraph.LogicalClock;
 import io.deephaven.engine.updategraph.WaitNotification;
 import io.deephaven.internal.log.LoggerFactory;
@@ -22,7 +23,7 @@ public final class SwapListenerEx extends SwapListener {
 
     private long extraLastNotificationStep;
 
-    public SwapListenerEx(@NotNull final BaseTable sourceTable, @NotNull final NotificationStepSource extra) {
+    public SwapListenerEx(@NotNull final BaseTable<?> sourceTable, @NotNull final NotificationStepSource extra) {
         super(sourceTable);
         this.extra = extra;
     }
@@ -45,49 +46,52 @@ public final class SwapListenerEx extends SwapListener {
         final long beforeStep = LogicalClock.getStep(beforeClockValue);
         final LogicalClock.State beforeState = LogicalClock.getState(beforeClockValue);
 
-        final Boolean result;
-        if (beforeState == LogicalClock.State.Idle) {
-            result = false;
-        } else {
-            final boolean sourceUpdatedOnThisCycle = lastNotificationStep == beforeStep;
-            final boolean extraUpdatedOnThisCycle = extraLastNotificationStep == beforeStep;
+        final boolean idle = beforeState == LogicalClock.State.Idle;
+        final boolean sourceUpdatedOnThisStep = lastNotificationStep == beforeStep;
+        final boolean sourceSatisfied;
+        final boolean extraUpdatedOnThisStep = extraLastNotificationStep == beforeStep;
+        final boolean extraSatisfied;
 
-            if (sourceUpdatedOnThisCycle) {
-                if (extraUpdatedOnThisCycle || extra.satisfied(beforeStep)) {
-                    result = false;
-                } else {
-                    WaitNotification.waitForSatisfaction(beforeStep, extra);
-                    extraLastNotificationStep = extra.getLastNotificationStep();
-                    result = LogicalClock.DEFAULT.currentStep() == beforeStep ? false : null;
-                }
-            } else if (extraUpdatedOnThisCycle) {
-                if (sourceTable.satisfied(beforeStep)) {
-                    result = false;
-                } else {
-                    WaitNotification.waitForSatisfaction(beforeStep, sourceTable);
-                    lastNotificationStep = sourceTable.getLastNotificationStep();
-                    result = LogicalClock.DEFAULT.currentStep() == beforeStep ? false : null;
-                }
-            } else {
-                result = true;
-            }
+        try {
+            sourceSatisfied = idle || sourceUpdatedOnThisStep || sourceTable.satisfied(beforeStep);
+            extraSatisfied = idle || extraUpdatedOnThisStep || extra.satisfied(beforeStep);
+        } catch (ClockInconsistencyException e) {
+            return null;
         }
+
+        final Boolean usePrev;
+        if (sourceSatisfied == extraSatisfied) {
+            usePrev = !sourceSatisfied;
+        } else if (sourceSatisfied) {
+            WaitNotification.waitForSatisfaction(beforeStep, extra);
+            extraLastNotificationStep = extra.getLastNotificationStep();
+            final long postWaitStep = ExecutionContext.getContext().getUpdateGraph().clock().currentStep();
+            usePrev = postWaitStep == beforeStep ? false : null;
+        } else {
+            WaitNotification.waitForSatisfaction(beforeStep, sourceTable);
+            lastNotificationStep = sourceTable.getLastNotificationStep();
+            final long postWaitStep = ExecutionContext.getContext().getUpdateGraph().clock().currentStep();
+            usePrev = postWaitStep == beforeStep ? false : null;
+        }
+
         if (DEBUG) {
-            log.info().append("SwapListenerEx start() source=")
-                    .append(System.identityHashCode(sourceTable))
-                    .append(". swap=")
-                    .append(System.identityHashCode(this))
-                    .append(", start={").append(beforeStep).append(",").append(beforeState.toString())
-                    .append("}, last=").append(lastNotificationStep)
-                    .append(", extraLast=").append(extraLastNotificationStep)
-                    .append(", result=").append(result)
+            log.info().append("SwapListenerEx {source=").append(System.identityHashCode(sourceTable))
+                    .append(", extra=").append(System.identityHashCode(extra))
+                    .append(", swap=").append(System.identityHashCode(this))
+                    .append("} Start: beforeStep=").append(beforeStep)
+                    .append(", beforeState=").append(beforeState.name())
+                    .append(", sourceLastNotificationStep=").append(lastNotificationStep)
+                    .append(", sourceSatisfied=").append(sourceSatisfied)
+                    .append(", extraLastNotificationStep=").append(extraLastNotificationStep)
+                    .append(", extraSatisfied=").append(extraSatisfied)
+                    .append(", usePrev=").append(usePrev)
                     .endl();
         }
-        return result;
+        return usePrev;
     }
 
     @Override
-    public boolean start(final long beforeClockValue) {
+    public Boolean start(final long beforeClockValue) {
         throw new UnsupportedOperationException("Use startWithExtra");
     }
 

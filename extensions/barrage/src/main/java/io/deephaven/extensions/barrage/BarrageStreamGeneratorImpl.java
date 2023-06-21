@@ -24,9 +24,9 @@ import io.deephaven.chunk.sized.SizedLongChunk;
 import io.deephaven.configuration.Configuration;
 import io.deephaven.engine.rowset.*;
 import io.deephaven.engine.rowset.impl.ExternalizableRowSetUtils;
-import io.deephaven.engine.table.TableDefinition;
 import io.deephaven.engine.table.impl.util.BarrageMessage;
 import io.deephaven.extensions.barrage.chunk.ChunkInputStreamGenerator;
+import io.deephaven.extensions.barrage.chunk.SingleElementListHeaderInputStreamGenerator;
 import io.deephaven.extensions.barrage.util.BarrageProtoUtil.ExposedByteArrayOutputStream;
 import io.deephaven.extensions.barrage.util.BarrageUtil;
 import io.deephaven.extensions.barrage.util.DefensiveDrainable;
@@ -707,7 +707,11 @@ public class BarrageStreamGeneratorImpl implements
         RecordBatch.startRecordBatch(header);
         RecordBatch.addNodes(header, nodesOffset);
         RecordBatch.addBuffers(header, buffersOffset);
-        RecordBatch.addLength(header, numRows);
+        if (view.options().columnsAsList()) {
+            RecordBatch.addLength(header, 1);
+        } else {
+            RecordBatch.addLength(header, numRows);
+        }
         final int headerOffset = RecordBatch.endRecordBatch(header);
 
         header.finish(MessageHelper.wrapInMessage(header, headerOffset,
@@ -881,7 +885,19 @@ public class BarrageStreamGeneratorImpl implements
                 final RowSet adjustedOffsets = shift == 0 ? null : myAddedOffsets.shift(shift)) {
             // every column must write to the stream
             for (final ChunkListInputStreamGenerator data : addColumnData) {
-                if (myAddedOffsets.isEmpty() || data.generators.length == 0) {
+                final int numElements = data.generators.length == 0
+                        ? 0
+                        : myAddedOffsets.intSize("BarrageStreamGenerator");
+                if (view.options().columnsAsList()) {
+                    // if we are sending columns as a list, we need to add the list buffers before each column
+                    final SingleElementListHeaderInputStreamGenerator listHeader =
+                            new SingleElementListHeaderInputStreamGenerator(numElements);
+                    listHeader.visitFieldNodes(fieldNodeListener);
+                    listHeader.visitBuffers(bufferListener);
+                    addStream.accept(listHeader);
+                }
+
+                if (numElements == 0) {
                     // use an empty generator to publish the column data
                     try (final RowSet empty = RowSetFactory.empty()) {
                         final ChunkInputStreamGenerator.DrainableColumn drainableColumn =
@@ -975,7 +991,17 @@ public class BarrageStreamGeneratorImpl implements
             numRows = Math.max(numRows, myModOffsets.size());
 
             try {
-                if (myModOffsets.isEmpty() || generator == null) {
+                final int numElements = generator == null ? 0 : myModOffsets.intSize("BarrageStreamGenerator");
+                if (view.options().columnsAsList()) {
+                    // if we are sending columns as a list, we need to add the list buffers before each column
+                    final SingleElementListHeaderInputStreamGenerator listHeader =
+                            new SingleElementListHeaderInputStreamGenerator(numElements);
+                    listHeader.visitFieldNodes(fieldNodeListener);
+                    listHeader.visitBuffers(bufferListener);
+                    addStream.accept(listHeader);
+                }
+
+                if (numElements == 0) {
                     // use the empty generator to publish the column data
                     try (final RowSet empty = RowSetFactory.empty()) {
                         final ChunkInputStreamGenerator.DrainableColumn drainableColumn =

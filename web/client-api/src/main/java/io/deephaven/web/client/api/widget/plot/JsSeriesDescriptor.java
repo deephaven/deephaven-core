@@ -7,6 +7,7 @@ import elemental2.core.JsArray;
 import io.deephaven.web.client.fu.JsData;
 import jsinterop.annotations.JsConstructor;
 import jsinterop.annotations.JsIgnore;
+import jsinterop.annotations.JsNullable;
 import jsinterop.annotations.JsType;
 import jsinterop.base.JsPropertyMap;
 
@@ -16,20 +17,32 @@ import java.util.Map;
 public class JsSeriesDescriptor {
     // TODO (deephaven-core#3442) change to some kind of String+int union type
     public String plotStyle;
+    @JsNullable
     public String name;
 
+    @JsNullable
     public Boolean linesVisible;
+    @JsNullable
     public Boolean shapesVisible;
+    @JsNullable
     public Boolean gradientVisible;
 
+    @JsNullable
     public String lineColor;
+    @JsNullable
     public String pointLabelFormat;
+    @JsNullable
     public String xToolTipPattern;
+    @JsNullable
     public String yToolTipPattern;
 
+    @JsNullable
     public String shapeLabel;
+    @JsNullable
     public Double shapeSize;
+    @JsNullable
     public String shapeColor;
+    @JsNullable
     public String shape;
 
     public JsArray<JsSourceDescriptor> dataSources;

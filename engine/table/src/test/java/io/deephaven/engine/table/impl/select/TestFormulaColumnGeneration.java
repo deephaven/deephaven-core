@@ -49,6 +49,7 @@ public class TestFormulaColumnGeneration {
                 .newQueryLibrary("DEFAULT")
                 .captureQueryCompiler()
                 .captureQueryScope()
+                .captureUpdateGraph()
                 .build().open();
     }
 

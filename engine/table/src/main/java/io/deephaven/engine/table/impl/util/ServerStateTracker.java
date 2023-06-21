@@ -4,13 +4,16 @@
 package io.deephaven.engine.table.impl.util;
 
 import io.deephaven.configuration.Configuration;
+import io.deephaven.engine.context.ExecutionContext;
+import io.deephaven.engine.table.impl.QueryTable;
 import io.deephaven.engine.tablelogger.EngineTableLoggers;
 import io.deephaven.engine.tablelogger.ServerStateLogLogger;
-import io.deephaven.engine.table.impl.QueryTable;
 import io.deephaven.engine.tablelogger.impl.memory.MemoryTableLogger;
-import io.deephaven.engine.updategraph.UpdateGraphProcessor;
-import io.deephaven.io.logger.Logger;
+import io.deephaven.engine.updategraph.impl.PeriodicUpdateGraph;
 import io.deephaven.internal.log.LoggerFactory;
+import io.deephaven.io.logger.Logger;
+import io.deephaven.util.SafeCloseable;
+import org.jetbrains.annotations.NotNull;
 
 import java.io.IOException;
 import java.util.Arrays;
@@ -38,17 +41,18 @@ public class ServerStateTracker {
     private final Logger logger;
 
     private final ServerStateLogLogger processMemLogger;
-    private final UpdateGraphProcessor.AccumulatedCycleStats ugpAccumCycleStats;
+    private final PeriodicUpdateGraph.AccumulatedCycleStats ugpAccumCycleStats;
 
     private ServerStateTracker() {
         logger = LoggerFactory.getLogger(ServerStateTracker.class);
         processMemLogger = EngineTableLoggers.get().serverStateLogLogger();
-        ugpAccumCycleStats = new UpdateGraphProcessor.AccumulatedCycleStats();
+        ugpAccumCycleStats = new PeriodicUpdateGraph.AccumulatedCycleStats();
     }
 
     private void startThread() {
+        final ExecutionContext executionContext = ExecutionContext.getContext();
         Thread driverThread = new Thread(
-                new ServerStateTracker.Driver(),
+                new ServerStateTracker.Driver(executionContext),
                 ServerStateTracker.class.getSimpleName() + ".Driver");
         driverThread.setDaemon(true);
         driverThread.start();
@@ -110,6 +114,12 @@ public class ServerStateTracker {
     }
 
     private class Driver implements Runnable {
+        private final ExecutionContext executionContext;
+
+        public Driver(@NotNull final ExecutionContext executionContext) {
+            this.executionContext = executionContext;
+        }
+
         @Override
         public void run() {
             final RuntimeMemory.Sample memSample = new RuntimeMemory.Sample();
@@ -126,19 +136,22 @@ public class ServerStateTracker {
                 final long prevTotalCollections = memSample.totalCollections;
                 final long prevTotalCollectionTimeMs = memSample.totalCollectionTimeMs;
                 RuntimeMemory.getInstance().read(memSample);
-                UpdateGraphProcessor.DEFAULT.accumulatedCycleStats.take(ugpAccumCycleStats);
+                executionContext.getUpdateGraph().<PeriodicUpdateGraph>cast()
+                        .takeAccumulatedCycleStats(ugpAccumCycleStats);
                 final long endTimeMillis = System.currentTimeMillis();
-                logProcessMem(
-                        intervalStartTimeMillis,
-                        endTimeMillis,
-                        memSample,
-                        prevTotalCollections,
-                        prevTotalCollectionTimeMs,
-                        ugpAccumCycleStats.cycles,
-                        ugpAccumCycleStats.cyclesOnBudget,
-                        ugpAccumCycleStats.cycleTimesMicros,
-                        ugpAccumCycleStats.safePoints,
-                        ugpAccumCycleStats.safePointPauseTimeMillis);
+                try (final SafeCloseable ignored = executionContext.open()) {
+                    logProcessMem(
+                            intervalStartTimeMillis,
+                            endTimeMillis,
+                            memSample,
+                            prevTotalCollections,
+                            prevTotalCollectionTimeMs,
+                            ugpAccumCycleStats.cycles,
+                            ugpAccumCycleStats.cyclesOnBudget,
+                            ugpAccumCycleStats.cycleTimesMicros,
+                            ugpAccumCycleStats.safePoints,
+                            ugpAccumCycleStats.safePointPauseTimeMillis);
+                }
             }
         }
     }

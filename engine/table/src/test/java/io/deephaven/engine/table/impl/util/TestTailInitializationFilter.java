@@ -3,13 +3,14 @@
  */
 package io.deephaven.engine.table.impl.util;
 
+import io.deephaven.engine.context.ExecutionContext;
 import io.deephaven.engine.rowset.RowSet;
 import io.deephaven.engine.rowset.RowSetBuilderSequential;
 import io.deephaven.engine.rowset.RowSetFactory;
 import io.deephaven.engine.table.Table;
-import io.deephaven.engine.testutil.sources.InstantTestSource;
+import io.deephaven.engine.testutil.ControlledUpdateGraph;
 import io.deephaven.time.DateTimeUtils;
-import io.deephaven.engine.updategraph.UpdateGraphProcessor;
+import io.deephaven.engine.testutil.sources.InstantTestSource;
 import io.deephaven.engine.util.TableTools;
 import io.deephaven.engine.testutil.testcase.RefreshingTableTestCase;
 import io.deephaven.engine.table.impl.QueryTable;
@@ -42,11 +43,12 @@ public class TestTailInitializationFilter extends RefreshingTableTestCase {
 
         final Table slice0_100_filtered = input.slice(0, 100).where("Timestamp >= '" + threshold1 + "'");
         final Table slice100_200_filtered = input.slice(100, 200).where("Timestamp >= '" + threshold2 + "'");
-        final Table expected = UpdateGraphProcessor.DEFAULT.sharedLock()
-                .computeLocked(() -> TableTools.merge(slice0_100_filtered, slice100_200_filtered));
+        final ControlledUpdateGraph updateGraph = ExecutionContext.getContext().getUpdateGraph().cast();
+        final Table expected = updateGraph.sharedLock().computeLocked(
+                () -> TableTools.merge(slice0_100_filtered, slice100_200_filtered));
         assertTableEquals(filtered, expected);
 
-        UpdateGraphProcessor.DEFAULT.runWithinUnitTestCycle(() -> {
+        updateGraph.runWithinUnitTestCycle(() -> {
             final Instant[] data2 = new Instant[4];
             data2[0] = DateTimeUtils.parseInstant("2020-08-20T06:00:00 NY");
             data2[1] = DateTimeUtils.parseInstant("2020-08-20T06:30:00 NY");
@@ -61,7 +63,7 @@ public class TestTailInitializationFilter extends RefreshingTableTestCase {
         final Table slice100_102 = input.slice(100, 102);
         final Table slice102_202_filtered = input.slice(102, 202).where("Timestamp >= '" + threshold2 + "'");
         final Table slice202_204 = input.slice(202, 204);
-        final Table expected2 = UpdateGraphProcessor.DEFAULT.sharedLock().computeLocked(
+        final Table expected2 = updateGraph.sharedLock().computeLocked(
                 () -> TableTools.merge(slice0_100_filtered, slice100_102, slice102_202_filtered, slice202_204));
         assertTableEquals(filtered, expected2);
     }

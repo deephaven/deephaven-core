@@ -29,6 +29,7 @@ public abstract class BarrageSubscriptionOptions implements StreamReaderOptions 
                 .minUpdateIntervalMs(options.minUpdateIntervalMs())
                 .batchSize(options.batchSize())
                 .maxMessageSize(options.maxMessageSize())
+                .columnsAsList(options.columnsAsList())
                 .build();
     }
 
@@ -48,6 +49,16 @@ public abstract class BarrageSubscriptionOptions implements StreamReaderOptions 
     }
 
     /**
+     * Requesting clients can specify whether they want columns to be returned wrapped in a list. This enables easier
+     * support in some official arrow clients, but is not the default.
+     */
+    @Override
+    @Default
+    public boolean columnsAsList() {
+        return false;
+    }
+
+    /**
      * By default, we should not specify anything; the server will use whatever it is configured with. If multiple
      * subscriptions exist on a table (via the same client or via multiple clients) then the server will re-use state
      * needed to perform barrage-acrobatics for both of them. This greatly reduces the burden each client adds to the
@@ -60,8 +71,8 @@ public abstract class BarrageSubscriptionOptions implements StreamReaderOptions 
      *
      * Related, when shortening the minUpdateInterval, you typically want to shorten the server's UGP cycle enough to
      * update at least as quickly. This can be done on the server with the flag
-     * {@code io.deephaven.engine.updategraph.UpdateGraphProcessor#defaultTargetCycleTime}, or
-     * {@code -DUpdateGraphProcessor.targetcycletime=1000}.
+     * {@code io.deephaven.engine.updategraph.impl.PeriodicUpdateGraph#defaultTargetCycleTime}, or
+     * {@code -DPeriodicUpdateGraph.targetcycletime=1000}.
      *
      * @return the update interval to subscribe for
      */
@@ -99,12 +110,15 @@ public abstract class BarrageSubscriptionOptions implements StreamReaderOptions 
                 builder, ColumnConversionMode.conversionModeEnumToFb(columnConversionMode()), useDeephavenNulls(),
                 minUpdateIntervalMs(),
                 batchSize(),
-                maxMessageSize());
+                maxMessageSize(),
+                columnsAsList());
     }
 
     public interface Builder {
 
         Builder useDeephavenNulls(boolean useDeephavenNulls);
+
+        Builder columnsAsList(boolean columnsAsList);
 
         Builder columnConversionMode(ColumnConversionMode columnConversionMode);
 

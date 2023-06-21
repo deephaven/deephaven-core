@@ -4,8 +4,12 @@
 package io.deephaven.engine.updategraph;
 
 import io.deephaven.base.log.LogOutputAppendable;
+import io.deephaven.engine.exceptions.UpdateGraphConflictException;
 import io.deephaven.util.datastructures.linked.IntrusiveDoublyLinkedNode;
 import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
+
+import java.util.Collection;
 
 /**
  * Interface for notification of update graph node changes.
@@ -26,14 +30,14 @@ public interface NotificationQueue {
         boolean isTerminal();
 
         /**
-         * If a terminal notification must be executed on the main UGP thread, it must override this method, so that the
-         * notification is not executed on the run pool.
-         *
+         * If a terminal notification must be executed serially (typically under an UpdateGraph's exclusive lock), it
+         * must override this method so that the notification is not executed concurrently with other notifications.
+         * <p>
          * It is an error to return true if this notification is not terminal
          *
-         * @return true if this notification must be executed directly under the protection of the UGP lock
+         * @return true if this notification must be executed serially
          */
-        boolean mustExecuteWithUgpLock();
+        boolean mustExecuteWithUpdateGraphLock();
 
         /**
          * Can this notification be executed? That is, are all of it's dependencies satisfied.
@@ -56,10 +60,65 @@ public interface NotificationQueue {
          *
          * @param step The step for which we are testing satisfaction
          * @return Whether the dependency is satisfied on {@code step} (and will not fire subsequent notifications)
-         * @implNote For all practical purposes, all implementations should consider whether the
-         *           {@link UpdateGraphProcessor} itself is satisfied if they have no other dependencies.
+         * @throws ClockInconsistencyException if step is observed to be before the highest step known to this
+         *         Dependency; this is a best effort validation, in order to allow concurrent snapshots to fail fast or
+         *         improper update processing to be detected
+         * @implNote For all practical purposes, all implementations should consider whether the {@link UpdateGraph}
+         *           itself is satisfied if they have no other dependencies.
          */
         boolean satisfied(long step);
+
+        /**
+         * @return the update graph that this dependency is a part of
+         */
+        UpdateGraph getUpdateGraph();
+
+        default UpdateGraph getUpdateGraph(Dependency... dependencies) {
+            return NotificationQueue.Dependency.getUpdateGraph(this, dependencies);
+        }
+
+        /**
+         * Examine all {@code dependencies} excluding non-refreshing {@link DynamicNode dynamic nodes}, and verify that
+         * they are using the same {@link UpdateGraph}.
+         * <p>
+         * If a singular update graph was found in this process, return it.
+         * <p>
+         * Otherwise, if all dependencies are non-refreshing {@link DynamicNode dynamic nodes}, return null.
+         *
+         * @param first at least one dependency is helpful
+         * @param dependencies the dependencies to examine
+         * @return the singular {@link UpdateGraph} used by all {@code dependencies}, or null if all
+         *         {@code dependencies} are non-refreshing {@link DynamicNode dynamic nodes}
+         * @throws UpdateGraphConflictException if multiple update graphs were found in the dependencies
+         */
+        static UpdateGraph getUpdateGraph(@Nullable Dependency first, Dependency... dependencies) {
+            UpdateGraph graph = null;
+            UpdateGraph firstNonNullGraph = null;
+
+            if (first != null) {
+                firstNonNullGraph = first.getUpdateGraph();
+                if (!DynamicNode.isDynamicAndNotRefreshing(first)) {
+                    graph = first.getUpdateGraph();
+                }
+            }
+
+            for (final Dependency other : dependencies) {
+                if (other != null && firstNonNullGraph == null) {
+                    firstNonNullGraph = other.getUpdateGraph();
+                }
+                if (other == null || DynamicNode.isDynamicAndNotRefreshing(other)) {
+                    continue;
+                }
+                if (graph == null) {
+                    graph = other.getUpdateGraph();
+                } else if (graph != other.getUpdateGraph()) {
+                    throw new UpdateGraphConflictException("Multiple update graphs found in dependencies: " + graph
+                            + " and " + other.getUpdateGraph());
+                }
+            }
+
+            return graph == null ? firstNonNullGraph : graph;
+        }
     }
 
     /**
@@ -70,6 +129,14 @@ public interface NotificationQueue {
      * @param notification The notification to add
      */
     void addNotification(@NotNull Notification notification);
+
+    /**
+     * Enqueue a collection of notifications to be flushed.
+     *
+     * @param notifications The notification to enqueue
+     * @see #addNotification(Notification)
+     */
+    void addNotifications(@NotNull final Collection<? extends Notification> notifications);
 
     /**
      * Add a notification for this NotificationQueue to deliver (by invoking its run() method), iff the delivery step is

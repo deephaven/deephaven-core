@@ -4,19 +4,20 @@
 package io.deephaven.integrations.learn;
 
 import io.deephaven.engine.table.impl.InMemoryTable;
-import org.junit.Assert;
-import org.junit.BeforeClass;
-import org.junit.Test;
+import io.deephaven.engine.testutil.junit4.EngineCleanup;
+import org.junit.*;
 
 import java.util.function.Function;
 
 public class ScattererTest {
 
-    private static InMemoryTable table;
+    @Rule
+    public final EngineCleanup framework = new EngineCleanup();
 
+    private InMemoryTable table;
 
-    @BeforeClass
-    public static void setup() {
+    @Before
+    public void setup() {
         table = new InMemoryTable(
                 new String[] {"Column1", "Column2", "Column3"},
                 new Object[] {

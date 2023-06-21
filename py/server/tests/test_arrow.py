@@ -21,8 +21,8 @@ from tests.testbase import BaseTestCase
 class ArrowTestCase(BaseTestCase):
     test_table: Table
 
-    @classmethod
-    def setUpClass(cls) -> None:
+    def setUp(self) -> None:
+        super().setUp()
         cols = [
             bool_col(name="Boolean", data=[True, False]),
             byte_col(name="Byte", data=(1, -1)),
@@ -36,11 +36,11 @@ class ArrowTestCase(BaseTestCase):
             string_col(name="String", data=["foo", "bar"]),
             datetime_col(name="Datetime", data=[epoch_nanos_to_instant(1), epoch_nanos_to_instant(-1)]),
         ]
-        cls.test_table = new_table(cols=cols)
+        self.test_table = new_table(cols=cols)
 
-    @classmethod
-    def tearDownClass(cls) -> None:
-        del cls.test_table
+    def tearDown(self) -> None:
+        del self.test_table
+        super().tearDown()
 
     def verify_type_conversion(self, pa_types: List[pa.DataType], pa_data: List[Any], cast_for_round_trip: bool = False):
         fields = [pa.field(f"f{i}", ty) for i, ty in enumerate(pa_types)]

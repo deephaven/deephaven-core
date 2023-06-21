@@ -1,8 +1,9 @@
 package io.deephaven.engine.bench;
 
+import io.deephaven.engine.context.ExecutionContext;
 import io.deephaven.engine.table.Table;
 import io.deephaven.engine.table.impl.select.IncrementalReleaseFilter;
-import io.deephaven.engine.updategraph.UpdateGraphProcessor;
+import io.deephaven.engine.testutil.ControlledUpdateGraph;
 import io.deephaven.engine.util.TableTools;
 import io.deephaven.engine.testutil.junit4.EngineCleanup;
 import org.openjdk.jmh.annotations.Benchmark;
@@ -50,7 +51,7 @@ public abstract class IncrementalSortRedirectionBase {
     private static final int REMAINING_ROWS = 1000000;
 
     private EngineCleanup engine;
-    private UpdateGraphProcessor ugp;
+    private ControlledUpdateGraph ug;
     private IncrementalReleaseFilter filter;
     private Table ms;
     private int numCycles;
@@ -60,7 +61,7 @@ public abstract class IncrementalSortRedirectionBase {
     public void setup(Blackhole blackhole) throws Exception {
         engine = new EngineCleanup();
         engine.setUp();
-        ugp = UpdateGraphProcessor.DEFAULT;
+        ug = ExecutionContext.getContext().getUpdateGraph().cast();
 
         final int componentSize = 2000000;
         final int numBuckets = 2000;
@@ -72,11 +73,11 @@ public abstract class IncrementalSortRedirectionBase {
         numCycles = remainingRows / cycleIncrement;
 
         // create the initial table
-        ugp.startCycleForUnitTests();
+        ug.startCycleForUnitTests();
         ms = create(componentSize, numBuckets, numParts, initialSize, cycleIncrement);
         listener = new BlackholeListener(blackhole);
         ms.addUpdateListener(listener);
-        ugp.completeCycleForUnitTests();
+        ug.completeCycleForUnitTests();
 
     }
 
@@ -99,7 +100,7 @@ public abstract class IncrementalSortRedirectionBase {
         listener = null;
         ms.close();
         ms = null;
-        ugp = null;
+        ug = null;
         engine.tearDown();
         engine = null;
     }
@@ -108,11 +109,11 @@ public abstract class IncrementalSortRedirectionBase {
     @OperationsPerInvocation(REMAINING_ROWS)
     public void numRows() throws Throwable {
         for (int i = 0; i < numCycles; ++i) {
-            ugp.startCycleForUnitTests();
+            ug.startCycleForUnitTests();
             try {
                 filter.run();
             } finally {
-                ugp.completeCycleForUnitTests();
+                ug.completeCycleForUnitTests();
             }
             if (listener.e != null) {
                 throw listener.e;

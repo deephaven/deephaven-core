@@ -7,7 +7,6 @@ import io.deephaven.api.JoinMatch;
 import io.deephaven.auth.codegen.impl.TableServiceContextualAuthWiring;
 import io.deephaven.base.verify.Assert;
 import io.deephaven.engine.table.Table;
-import io.deephaven.engine.updategraph.UpdateGraphProcessor;
 import io.deephaven.proto.backplane.grpc.AjRajTablesRequest;
 import io.deephaven.proto.backplane.grpc.BatchTableRequest.Operation;
 import io.deephaven.proto.backplane.grpc.TableReference;
@@ -29,46 +28,37 @@ public abstract class AjRajGrpcImpl extends GrpcTableOperation<AjRajTablesReques
     @Singleton
     public static class AjGrpcImpl extends AjRajGrpcImpl {
         @Inject
-        public AjGrpcImpl(
-                final TableServiceContextualAuthWiring authWiring,
-                final UpdateGraphProcessor updateGraphProcessor) {
+        public AjGrpcImpl(final TableServiceContextualAuthWiring authWiring) {
             super(
                     authWiring::checkPermissionAjTables,
                     Operation::getAj,
-                    AsOfJoinMatch::parseForAj,
-                    updateGraphProcessor);
+                    AsOfJoinMatch::parseForAj);
         }
     }
 
     @Singleton
     public static class RajGrpcImpl extends AjRajGrpcImpl {
         @Inject
-        public RajGrpcImpl(
-                final TableServiceContextualAuthWiring authWiring,
-                final UpdateGraphProcessor updateGraphProcessor) {
+        public RajGrpcImpl(final TableServiceContextualAuthWiring authWiring) {
             super(
                     authWiring::checkPermissionRajTables,
                     Operation::getRaj,
-                    AsOfJoinMatch::parseForRaj,
-                    updateGraphProcessor);
+                    AsOfJoinMatch::parseForRaj);
         }
     }
 
-    private final UpdateGraphProcessor updateGraphProcessor;
     private final Function<String, AsOfJoinMatch> joinMatchParser;
 
     private AjRajGrpcImpl(
             PermissionFunction<AjRajTablesRequest> permission,
             Function<Operation, AjRajTablesRequest> getRequest,
-            Function<String, AsOfJoinMatch> joinMatchParser,
-            UpdateGraphProcessor updateGraphProcessor) {
+            Function<String, AsOfJoinMatch> joinMatchParser) {
         super(
                 permission,
                 getRequest,
                 AjRajTablesRequest::getResultId,
                 AjRajGrpcImpl::refs);
         this.joinMatchParser = Objects.requireNonNull(joinMatchParser);
-        this.updateGraphProcessor = Objects.requireNonNull(updateGraphProcessor);
     }
 
     @Override
@@ -107,7 +97,10 @@ public abstract class AjRajGrpcImpl extends GrpcTableOperation<AjRajTablesReques
     }
 
     private SafeCloseable lock(Table left, Table right) {
-        return left.isRefreshing() || right.isRefreshing() ? updateGraphProcessor.sharedLock().lockCloseable() : null;
+        if (left.isRefreshing() || right.isRefreshing()) {
+            return left.getUpdateGraph(right).sharedLock().lockCloseable();
+        }
+        return null;
     }
 
     private static List<TableReference> refs(AjRajTablesRequest request) {

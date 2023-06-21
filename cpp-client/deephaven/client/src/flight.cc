@@ -19,7 +19,7 @@ FlightWrapper::~FlightWrapper() = default;
 std::shared_ptr<arrow::flight::FlightStreamReader> FlightWrapper::getFlightStreamReader(
     const TableHandle &table) const {
   arrow::flight::FlightCallOptions options;
-  addAuthHeaders(&options);
+  addHeaders(&options);
 
   std::unique_ptr<arrow::flight::FlightStreamReader> fsr;
   arrow::flight::Ticket tkt;
@@ -29,20 +29,16 @@ std::shared_ptr<arrow::flight::FlightStreamReader> FlightWrapper::getFlightStrea
   return fsr;
 }
 
-void FlightWrapper::addAuthHeaders(arrow::flight::FlightCallOptions *options) const {
-  options->headers.push_back(impl_->server()->getAuthHeader());
+void FlightWrapper::addHeaders(arrow::flight::FlightCallOptions *options) const {
+  impl_->server()->forEachHeaderNameAndValue(
+    [&options](const std::string &name, const std::string &value) {
+      options->headers.push_back(std::make_pair(name, value));
+    }
+  );
 }
 
 arrow::flight::FlightClient *FlightWrapper::flightClient() const {
   const auto *server = impl_->server().get();
   return server->flightClient();
 }
-
-TableHandleAndFlightDescriptor::TableHandleAndFlightDescriptor(TableHandle tableHandle,
-    arrow::flight::FlightDescriptor flightDescriptor) : tableHandle_(std::move(tableHandle)),
-    flightDescriptor_(std::move(flightDescriptor)) {}
-TableHandleAndFlightDescriptor::~TableHandleAndFlightDescriptor() = default;
-
-TableHandleAndFlightDescriptor::TableHandleAndFlightDescriptor(TableHandleAndFlightDescriptor &&other) noexcept = default;
-TableHandleAndFlightDescriptor &TableHandleAndFlightDescriptor::operator=(TableHandleAndFlightDescriptor &&other) noexcept = default;
 }  // namespace deephaven::client

@@ -542,7 +542,7 @@ public class SubscriptionTableData {
 
         @Override
         public Row get(int index) {
-            return get(LongWrapper.of(index));
+            return this.get((long) index);
         }
 
         @Override

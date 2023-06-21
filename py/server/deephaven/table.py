@@ -27,7 +27,7 @@ from deephaven.column import Column, ColumnType
 from deephaven.filters import Filter, and_, or_
 from deephaven.jcompat import j_unary_operator, j_binary_operator, j_map_to_dict, j_hashmap
 from deephaven.jcompat import to_sequence, j_array_list
-from deephaven.ugp import auto_locking_ctx
+from deephaven.update_graph import auto_locking_ctx, UpdateGraph
 from deephaven.updateby import UpdateByOperation
 
 # Table
@@ -507,6 +507,7 @@ class Table(JObjectWrapper):
         self._definition = self.j_table.getDefinition()
         self._schema = None
         self._is_refreshing = None
+        self._update_graph = None
         self._is_flat = None
 
     def __repr__(self):
@@ -536,6 +537,13 @@ class Table(JObjectWrapper):
         if self._is_refreshing is None:
             self._is_refreshing = self.j_table.isRefreshing()
         return self._is_refreshing
+
+    @property
+    def update_graph(self) -> UpdateGraph:
+        """The update graph of the table."""
+        if self._update_graph is None:
+            self._update_graph = UpdateGraph(self.j_table.getUpdateGraph())
+        return self._update_graph
 
     @property
     def is_flat(self) -> bool:
@@ -2299,6 +2307,11 @@ class PartitionedTable(JObjectWrapper):
         return self._table
 
     @property
+    def update_graph(self) -> UpdateGraph:
+        """The underlying partitioned table's update graph."""
+        return self.table.update_graph
+
+    @property
     def is_refreshing(self) -> bool:
         """Whether the underlying partitioned table is refreshing."""
         if self._is_refreshing is None:
@@ -2553,6 +2566,11 @@ class PartitionedTableProxy(JObjectWrapper):
     def is_refreshing(self) -> bool:
         """Whether this proxy represents a refreshing partitioned table."""
         return self.target.is_refreshing
+
+    @property
+    def update_graph(self) -> UpdateGraph:
+        """The underlying partitioned table proxy's update graph."""
+        return self.target.update_graph
 
     def __init__(self, j_pt_proxy):
         self.j_pt_proxy = jpy.cast(j_pt_proxy, _JPartitionedTableProxy)

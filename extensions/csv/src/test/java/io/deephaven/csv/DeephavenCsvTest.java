@@ -5,8 +5,10 @@ package io.deephaven.csv;
 
 import io.deephaven.csv.util.CsvReaderException;
 import io.deephaven.engine.table.Table;
+import io.deephaven.engine.testutil.junit4.EngineCleanup;
 import io.deephaven.engine.util.TableTools;
 import org.apache.commons.io.input.ReaderInputStream;
+import org.junit.Rule;
 import org.junit.Test;
 
 import java.io.StringReader;
@@ -18,6 +20,9 @@ import java.time.ZoneId;
 import static io.deephaven.engine.testutil.TstUtils.assertTableEquals;
 
 public class DeephavenCsvTest {
+
+    @Rule
+    public final EngineCleanup base = new EngineCleanup();
 
     @Test
     public void instantCustomTimezone() throws CsvReaderException {

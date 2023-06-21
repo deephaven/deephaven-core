@@ -3,11 +3,11 @@ package io.deephaven.app;
 import com.sun.management.GarbageCollectionNotificationInfo;
 import io.deephaven.appmode.ApplicationState;
 import io.deephaven.appmode.ApplicationState.Listener;
+import io.deephaven.engine.context.ExecutionContext;
 import io.deephaven.engine.liveness.LivenessScope;
 import io.deephaven.engine.liveness.LivenessScopeStack;
 import io.deephaven.engine.table.Table;
 import io.deephaven.engine.table.impl.sources.ring.RingTableTools;
-import io.deephaven.engine.updategraph.UpdateGraphProcessor;
 import io.deephaven.stream.StreamToBlinkTableAdapter;
 import io.deephaven.util.SafeCloseable;
 
@@ -162,7 +162,7 @@ public final class GcApplication implements ApplicationState.Factory, Notificati
     private void setNotificationInfo(ApplicationState state) {
         notificationInfoPublisher = new GcNotificationPublisher();
         final StreamToBlinkTableAdapter adapter = new StreamToBlinkTableAdapter(GcNotificationPublisher.definition(),
-                notificationInfoPublisher, UpdateGraphProcessor.DEFAULT, NOTIFICATION_INFO);
+                notificationInfoPublisher, ExecutionContext.getContext().getUpdateGraph(), NOTIFICATION_INFO);
         final Table notificationInfo = adapter.table();
         state.setField(NOTIFICATION_INFO, notificationInfo);
         if (notificationInfoStatsEnabled()) {
@@ -177,7 +177,7 @@ public final class GcApplication implements ApplicationState.Factory, Notificati
     private void setPools(ApplicationState state) {
         poolsPublisher = new GcPoolsPublisher();
         final StreamToBlinkTableAdapter adapter = new StreamToBlinkTableAdapter(GcPoolsPublisher.definition(),
-                poolsPublisher, UpdateGraphProcessor.DEFAULT, POOLS);
+                poolsPublisher, ExecutionContext.getContext().getUpdateGraph(), POOLS);
         final Table pools = adapter.table();
         state.setField(POOLS, pools);
         if (poolStatsEnabled()) {

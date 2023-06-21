@@ -38,6 +38,7 @@ public class JsAggregationOperation {
         switch (aggregationType) {
             case COUNT:
             case COUNT_DISTINCT:
+            case DISTINCT:
             case FIRST:
             case LAST:
             case UNIQUE: {

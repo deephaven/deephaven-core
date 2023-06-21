@@ -15,8 +15,6 @@ import io.deephaven.engine.table.Table;
 import io.deephaven.engine.table.TableDefinition;
 import io.deephaven.engine.table.WritableColumnSource;
 import io.deephaven.engine.table.impl.sources.ArrayBackedColumnSource;
-import io.deephaven.engine.updategraph.LogicalClock;
-import io.deephaven.engine.updategraph.UpdateGraphProcessor;
 import io.deephaven.engine.util.config.InputTableStatusListener;
 import io.deephaven.engine.util.config.MutableInputTable;
 import io.deephaven.engine.table.impl.QueryTable;
@@ -50,7 +48,7 @@ abstract class BaseArrayBackedMutableTable extends UpdatableTable {
     private final Map<String, Object[]> enumValues;
 
     private String description = getDefaultDescription();
-    private Runnable onPendingChange = UpdateGraphProcessor.DEFAULT::requestRefresh;
+    private Runnable onPendingChange = updateGraph::requestRefresh;
 
     long nextRow = 0;
     private long pendingProcessed = -1L;
@@ -107,7 +105,7 @@ abstract class BaseArrayBackedMutableTable extends UpdatableTable {
         });
         result.getRowSet().writableCast().insert(builder.build());
         result.getRowSet().writableCast().initializePreviousValue();
-        UpdateGraphProcessor.DEFAULT.addSource(result);
+        result.getUpdateGraph().addSource(result);
     }
 
     public BaseArrayBackedMutableTable setDescription(String newDescription) {
@@ -123,7 +121,9 @@ abstract class BaseArrayBackedMutableTable extends UpdatableTable {
      */
     @TestUseOnly
     void setOnPendingChange(final Runnable onPendingChange) {
-        this.onPendingChange = onPendingChange == null ? UpdateGraphProcessor.DEFAULT::requestRefresh : onPendingChange;
+        this.onPendingChange = onPendingChange == null
+                ? updateGraph::requestRefresh
+                : onPendingChange;
     }
 
     private void processPending(RowSetChangeRecorder rowSetChangeRecorder) {
@@ -304,7 +304,7 @@ abstract class BaseArrayBackedMutableTable extends UpdatableTable {
         }
 
         private void checkBlockingEditSafety() {
-            if (UpdateGraphProcessor.DEFAULT.isRefreshThread()) {
+            if (updateGraph.currentThreadProcessesUpdates()) {
                 throw new UnsupportedOperationException("Attempted to make a blocking input table edit from a listener "
                         + "or notification. This is unsupported, because it will block the update graph from making "
                         + "progress.");
@@ -313,8 +313,8 @@ abstract class BaseArrayBackedMutableTable extends UpdatableTable {
 
         private void checkAsyncEditSafety(@NotNull final Table changeData) {
             if (changeData.isRefreshing()
-                    && UpdateGraphProcessor.DEFAULT.isRefreshThread()
-                    && !changeData.satisfied(LogicalClock.DEFAULT.currentStep())) {
+                    && updateGraph.currentThreadProcessesUpdates()
+                    && !changeData.satisfied(updateGraph.clock().currentStep())) {
                 throw new UnsupportedOperationException("Attempted to make an asynchronous input table edit from a "
                         + "listener or notification before the change data table is satisfied on the current cycle. "
                         + "This is unsupported, because it may block the update graph from making progress or produce "
@@ -328,7 +328,7 @@ abstract class BaseArrayBackedMutableTable extends UpdatableTable {
         }
 
         void waitForSequence(long sequence) {
-            if (UpdateGraphProcessor.DEFAULT.exclusiveLock().isHeldByCurrentThread()) {
+            if (updateGraph.exclusiveLock().isHeldByCurrentThread()) {
                 // We're holding the lock. currentTable had better be refreshing. Wait on its UGP condition
                 // in order to allow updates.
                 while (processedSequence < sequence) {
@@ -355,7 +355,7 @@ abstract class BaseArrayBackedMutableTable extends UpdatableTable {
                 InputTableStatusListener listener) {
             Assert.neqNull(defaultValues, "defaultValues");
             if (defaultValues.isRefreshing()) {
-                UpdateGraphProcessor.DEFAULT.checkInitiateTableOperation();
+                updateGraph.checkInitiateSerialTableOperation();
             }
 
             final List<ColumnDefinition<?>> columnDefinitions = getTableDefinition().getColumns();

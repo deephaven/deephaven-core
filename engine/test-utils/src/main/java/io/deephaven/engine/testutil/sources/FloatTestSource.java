@@ -14,12 +14,12 @@ import io.deephaven.chunk.Chunk;
 import io.deephaven.chunk.ChunkType;
 import io.deephaven.chunk.ObjectChunk;
 import io.deephaven.chunk.attributes.Values;
+import io.deephaven.engine.context.ExecutionContext;
 import io.deephaven.engine.rowset.RowSet;
 import io.deephaven.engine.rowset.RowSetBuilderRandom;
 import io.deephaven.engine.rowset.RowSetFactory;
 import io.deephaven.engine.table.impl.AbstractColumnSource;
 import io.deephaven.engine.table.impl.MutableColumnSourceGetDefaults;
-import io.deephaven.engine.updategraph.LogicalClock;
 import io.deephaven.engine.updategraph.TerminalNotification;
 import io.deephaven.engine.updategraph.UpdateCommitter;
 import io.deephaven.util.QueryConstants;
@@ -39,12 +39,13 @@ import java.util.function.LongConsumer;
  */
 public class FloatTestSource extends AbstractColumnSource<Float>
         implements MutableColumnSourceGetDefaults.ForFloat, TestColumnSource<Float> {
-    private long lastAdditionTime = LogicalClock.DEFAULT.currentStep();
+
+    private long lastAdditionTime;
     protected final Long2FloatOpenHashMap data = new Long2FloatOpenHashMap();
     protected Long2FloatOpenHashMap prevData;
 
     private final UpdateCommitter<FloatTestSource> prevFlusher =
-            new UpdateCommitter<>(this, FloatTestSource::flushPrevious);
+            new UpdateCommitter<>(this, updateGraph, FloatTestSource::flushPrevious);
 
     // region empty constructor
     public FloatTestSource() {
@@ -55,6 +56,7 @@ public class FloatTestSource extends AbstractColumnSource<Float>
     // region chunk constructor
     public FloatTestSource(RowSet rowSet, Chunk<Values> data) {
         super(float.class);
+        lastAdditionTime = updateGraph.clock().currentStep();
         add(rowSet, data);
         setDefaultReturnValue(this.data);
         this.prevData = this.data;
@@ -113,7 +115,7 @@ public class FloatTestSource extends AbstractColumnSource<Float>
     // endregion chunk add
 
     private void maybeInitializePrevForStep() {
-        long currentStep = LogicalClock.DEFAULT.currentStep();
+        long currentStep = updateGraph.clock().currentStep();
         if (currentStep == lastAdditionTime) {
             return;
         }

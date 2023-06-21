@@ -10,10 +10,9 @@ import io.deephaven.engine.table.TableUpdate;
 import io.deephaven.engine.table.impl.perf.BasePerformanceEntry;
 import io.deephaven.engine.table.impl.select.analyzers.SelectAndViewAnalyzer;
 import io.deephaven.engine.updategraph.TerminalNotification;
-import io.deephaven.engine.updategraph.UpdateGraphProcessor;
 import io.deephaven.engine.table.impl.util.ImmediateJobScheduler;
 import io.deephaven.engine.table.impl.util.JobScheduler;
-import io.deephaven.engine.table.impl.util.UpdateGraphProcessorJobScheduler;
+import io.deephaven.engine.table.impl.util.UpdateGraphJobScheduler;
 
 import java.util.BitSet;
 import java.util.Map;
@@ -59,7 +58,7 @@ class SelectOrUpdateListener extends BaseTable.ListenerImpl {
         this.enableParallelUpdate =
                 (QueryTable.FORCE_PARALLEL_SELECT_AND_UPDATE ||
                         (QueryTable.ENABLE_PARALLEL_SELECT_AND_UPDATE
-                                && UpdateGraphProcessor.DEFAULT.getUpdateThreads() > 1))
+                                && getUpdateGraph().parallelismFactor() > 1))
                         && analyzer.allowCrossColumnParallelization();
         analyzer.setAllNewColumns(allNewColumns);
     }
@@ -86,7 +85,7 @@ class SelectOrUpdateListener extends BaseTable.ListenerImpl {
         JobScheduler jobScheduler;
 
         if (enableParallelUpdate) {
-            jobScheduler = new UpdateGraphProcessorJobScheduler();
+            jobScheduler = new UpdateGraphJobScheduler(getUpdateGraph());
         } else {
             jobScheduler = ImmediateJobScheduler.INSTANCE;
         }
@@ -131,7 +130,7 @@ class SelectOrUpdateListener extends BaseTable.ListenerImpl {
             // if the entry exists, then we install a terminal notification so that we don't lose the performance from
             // this execution
             if (accumulated != null) {
-                UpdateGraphProcessor.DEFAULT.addNotification(new TerminalNotification() {
+                getUpdateGraph().addNotification(new TerminalNotification() {
                     @Override
                     public void run() {
                         synchronized (accumulated) {

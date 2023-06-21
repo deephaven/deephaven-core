@@ -12,11 +12,7 @@ import io.deephaven.engine.rowset.RowSequence;
 import io.deephaven.engine.rowset.chunkattributes.RowKeys;
 import io.deephaven.engine.table.ColumnSource;
 import io.deephaven.engine.table.impl.AbstractColumnSource;
-import io.deephaven.engine.table.impl.sources.ConvertibleTimeSource;
-import io.deephaven.engine.table.impl.sources.InMemoryColumnSource;
-import io.deephaven.engine.table.impl.sources.LocalDateWrapperSource;
-import io.deephaven.engine.table.impl.sources.LocalTimeWrapperSource;
-import io.deephaven.engine.table.impl.sources.RowKeyAgnosticChunkSource;
+import io.deephaven.engine.table.impl.sources.*;
 import io.deephaven.engine.table.impl.util.ShiftData;
 import org.jetbrains.annotations.NotNull;
 
@@ -153,12 +149,12 @@ public abstract class ImmutableConstantNanosBasedTimeSource<TIME_TYPE> extends A
 
     @Override
     public ColumnSource<LocalDate> toLocalDate(final @NotNull ZoneId zone) {
-        return new LocalDateWrapperSource(toZonedDateTime(zone), zone);
+        return new LongAsLocalDateColumnSource(nanoSource, zone);
     }
 
     @Override
     public ColumnSource<LocalTime> toLocalTime(final @NotNull ZoneId zone) {
-        return new LocalTimeWrapperSource(toZonedDateTime(zone), zone);
+        return new LongAsLocalTimeColumnSource(nanoSource, zone);
     }
 
     @Override

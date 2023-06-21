@@ -7,7 +7,7 @@ server."""
 import base64
 import os
 import threading
-from typing import List, Union
+from typing import Dict, List, Union, Tuple
 
 import grpc
 import pyarrow as pa
@@ -56,7 +56,9 @@ class _DhClientAuthMiddleware(ClientMiddleware):
 
     def sending_headers(self):
         return {
-            "authorization": self._session._auth_token
+            **{
+                "authorization": self._session._auth_token
+            }, **self._session._extra_headers
         }
 
 
@@ -87,8 +89,18 @@ class Session:
         is_alive (bool): check if the session is still alive (may refresh the session)
     """
 
-    def __init__(self, host: str = None, port: int = None, auth_type: str = "Anonymous", auth_token: str = "",
-                 never_timeout: bool = True, session_type: str = 'python'):
+    def __init__(self, host: str = None,
+                 port: int = None,
+                 auth_type: str = "Anonymous",
+                 auth_token: str = "",
+                 never_timeout: bool = True,
+                 session_type: str = 'python',
+                 use_tls: bool = False,
+                 tls_root_certs: bytes = None,
+                 client_cert_chain: bytes = None,
+                 client_private_key: bytes = None,
+                 client_opts: List[Tuple[str, Union[int, str]]] = None,
+                 extra_headers: Dict[bytes, bytes] = None):
         """Initializes a Session object that connects to the Deephaven server
 
         Args:
@@ -100,8 +112,25 @@ class Session:
             auth_token (str): the authentication token string. When auth_type is 'Basic', it must be
                 "user:password"; when auth_type is "Anonymous', it will be ignored; when auth_type is a custom-built
                 authenticator, it must conform to the specific requirement of the authenticator
-            never_timeout (bool, optional): never allow the session to timeout, default is True
-            session_type (str, optional): the Deephaven session type. Defaults to 'python'
+            never_timeout (bool): never allow the session to timeout, default is True
+            session_type (str): the Deephaven session type. Defaults to 'python'
+            use_tls (bool): if True, use a TLS connection.  Defaults to False
+            tls_root_certs (bytes): PEM encoded root certificates to use for TLS connection, or None to use system defaults.
+                 If not None implies use a TLS connection and the use_tls argument should have been passed
+                 as True. Defaults to None
+            client_cert_chain (bytes): PEM encoded client certificate if using mutual TLS.  Defaults to None,
+                 which implies not using mutual TLS.
+            client_private_key (bytes): PEM encoded client private key for client_cert_chain if using mutual TLS.
+                 Defaults to None, which implies not using mutual TLS.
+            client_opts (List[Tuple[str,Union[int,str]]): list of tuples for name and value of options to
+                the underlying grpc channel creation.  Defaults to None, which implies not using any channel
+                options.
+                See https://grpc.github.io/grpc/cpp/group__grpc__arg__keys.html for a list of valid options.
+                Example options:
+                  [ ('grpc.target_name_override', 'idonthaveadnsforthishost'),
+                    ('grpc.min_reconnect_backoff_ms', 2000) ]
+            extra_headers (Dict[bytes, bytes]): additional headers (and values) to add to server requests.
+                Defaults to None, which implies not using any extra headers.
 
         Raises:
             DHError
@@ -117,6 +146,13 @@ class Session:
         self.port = port
         if not port:
             self.port = int(os.environ.get("DH_PORT", 10000))
+
+        self._use_tls = use_tls
+        self._tls_root_certs = tls_root_certs
+        self._client_cert_chain = client_cert_chain
+        self._client_private_key = client_private_key
+        self._client_opts = client_opts
+        self._extra_headers = extra_headers if extra_headers else {}
 
         self.is_connected = False
 
@@ -162,7 +198,10 @@ class Session:
 
     @property
     def grpc_metadata(self):
-        return [(b'authorization', self._auth_token)]
+        l = [(b'authorization', self._auth_token)]
+        if self._extra_headers:
+            l.extend(list(self._extra_headers.items()))
+        return l
 
     @property
     def table_service(self) -> TableService:
@@ -240,8 +279,15 @@ class Session:
     def _connect(self):
         with self._r_lock:
             try:
-                self._flight_client = paflight.connect(location=(self.host, self.port), middleware=[
-                    _DhClientAuthMiddlewareFactory(self)])
+                scheme = "grpc+tls" if self._use_tls else "grpc"
+                self._flight_client = paflight.FlightClient(
+                    location=f"{scheme}://{self.host}:{self.port}",
+                    middleware=[_DhClientAuthMiddlewareFactory(self)],
+                    tls_root_certs=self._tls_root_certs,
+                    cert_chain=self._client_cert_chain,
+                    private_key=self._client_private_key,
+                    generic_options=self._client_opts
+                )
                 self._auth_handler = _DhClientAuthHandler(self)
                 self._flight_client.authenticate(self._auth_handler)
             except Exception as e:
@@ -254,18 +300,19 @@ class Session:
             if not session_duration:
                 raise DHError("server configuration is missing http.session.durationMs")
 
+            self.is_connected = True
+
             self._timeout = int(session_duration.string_value)
             if self._never_timeout:
                 self._keep_alive()
 
-            self.is_connected = True
-
     def _keep_alive(self):
-        if self._keep_alive_timer:
-            self._refresh_token()
-        self._keep_alive_timer = threading.Timer(self._timeout / 2 / 1000, self._keep_alive)
-        self._keep_alive_timer.daemon = True
-        self._keep_alive_timer.start()
+        if self.is_connected:
+            if self._keep_alive_timer:
+                self._refresh_token()
+            self._keep_alive_timer = threading.Timer(self._timeout / 2 / 1000, self._keep_alive)
+            self._keep_alive_timer.daemon = True
+            self._keep_alive_timer.start()
 
     def _refresh_token(self):
         with self._r_lock:
@@ -286,7 +333,7 @@ class Session:
                 return True
 
             try:
-                self.session_service.refresh_token()
+                self._flight_client.authenticate(self._auth_handler)
                 return True
             except DHError as e:
                 self.is_connected = False
@@ -372,7 +419,7 @@ class Session:
 
         Args:
             period (int): the interval (in nano seconds) at which the time table ticks (adds a row)
-            start_time (int, optional): the start time for the time table in nano seconds, default is None (meaning now)
+            start_time (int): the start time for the time table in nano seconds, default is None (meaning now)
 
         Returns:
             a Table object

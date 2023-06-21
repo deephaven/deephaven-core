@@ -95,6 +95,7 @@ dependencies {
     testImplementation project(':proto:proto-backplane-grpc')
 
     testImplementation project(':base-test-utils')
+    testImplementation project(':engine-context')
     testImplementation project(':engine-test-utils')
     testImplementation TestTools.projectDependency(project, 'engine-context')
     testImplementation TestTools.projectDependency(project, 'Util')

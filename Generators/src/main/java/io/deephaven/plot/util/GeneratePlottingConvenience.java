@@ -49,7 +49,7 @@ public class GeneratePlottingConvenience {
             final int lastDot = staticImport.lastIndexOf(".");
             final String classPath = staticImport.substring(0, lastDot);
             final String methodName = staticImport.substring(lastDot + 1);
-            final Class<?> c = Class.forName(classPath);
+            final Class<?> c = Class.forName(classPath, false, Thread.currentThread().getContextClassLoader());
             log.info("Processing static class: " + c);
 
             final Method[] methods = Arrays.stream(c.getMethods()).filter(
@@ -64,7 +64,7 @@ public class GeneratePlottingConvenience {
         }
 
         for (final String imp : imports) {
-            final Class<?> c = Class.forName(imp);
+            final Class<?> c = Class.forName(imp, false, Thread.currentThread().getContextClassLoader());
             log.info("Processing class: " + c);
 
             for (final Method m : c.getMethods()) {

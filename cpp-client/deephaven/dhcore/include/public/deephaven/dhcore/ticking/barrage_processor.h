@@ -8,7 +8,7 @@
 #include <optional>
 #include <vector>
 #include "deephaven/dhcore/chunk/chunk.h"
-#include "deephaven/dhcore/table/schema.h"
+#include "deephaven/dhcore/clienttable/schema.h"
 #include "deephaven/dhcore/ticking/ticking.h"
 
 namespace deephaven::dhcore::ticking {
@@ -18,7 +18,7 @@ class BarrageProcessorImpl;
 
 class BarrageProcessor final {
 protected:
-  typedef deephaven::dhcore::table::Schema Schema;
+  typedef deephaven::dhcore::clienttable::Schema Schema;
   typedef deephaven::dhcore::column::ColumnSource ColumnSource;
 
 public:

@@ -47,41 +47,10 @@ namespace {
 void printTableData(std::ostream &s, const TableHandle &tableHandle, bool wantHeaders);
 }  // namespace
 
-ClientOptions::ClientOptions() {
-  setDefaultAuthentication();
-  setSessionType("python");
-}
-
-ClientOptions::ClientOptions(ClientOptions &&other) noexcept = default;
-ClientOptions &ClientOptions::operator=(ClientOptions &&other) noexcept = default;
-ClientOptions::~ClientOptions() = default;
-
-ClientOptions &ClientOptions::setDefaultAuthentication() {
-  authorizationValue_ = "Anonymous";
-  return *this;
-}
-
-ClientOptions &ClientOptions::setBasicAuthentication(const std::string &username, const std::string &password) {
-  auto token = username + ':' + password;
-  authorizationValue_ = "Basic " + base64Encode(token);
-  return *this;
-}
-
-ClientOptions &ClientOptions::setCustomAuthentication(const std::string &authenticationType,
-    const std::string &authenticationToken) {
-  authorizationValue_ = authenticationType + " " + authenticationToken;
-  return *this;
-}
-
-ClientOptions &ClientOptions::setSessionType(const std::string &sessionType) {
-  this->sessionType_ = sessionType;
-  return *this;
-}
-
 Client Client::connect(const std::string &target, const ClientOptions &options) {
   auto executor = Executor::create();
   auto flightExecutor = Executor::create();
-  auto server = Server::createFromTarget(target, options.authorizationValue_);
+  auto server = Server::createFromTarget(target, options);
   auto impl = ClientImpl::create(std::move(server), executor, flightExecutor, options.sessionType_);
   return Client(std::move(impl));
 }
@@ -119,18 +88,20 @@ TableHandle TableHandleManager::timeTable(int64_t startTimeNanos, int64_t period
   return TableHandle(std::move(qsImpl));
 }
 
-TableHandleAndFlightDescriptor TableHandleManager::newTableHandleAndFlightDescriptor(int64_t numRows,
-    bool isStatic) const {
-  auto [thImpl, fd] = impl_->newTicket(numRows, isStatic);
-  TableHandle th(std::move(thImpl));
-  return {std::move(th), std::move(fd)};
-}
-
 TableHandle TableHandleManager::timeTable(std::chrono::system_clock::time_point startTime,
     std::chrono::system_clock::duration period) const {
   auto stNanos = std::chrono::duration_cast<std::chrono::nanoseconds>(startTime.time_since_epoch()).count();
   auto dNanos = std::chrono::duration_cast<std::chrono::nanoseconds>(period).count();
   return timeTable(stNanos, dNanos);
+}
+
+std::string TableHandleManager::newTicket() const {
+  return impl_->newTicket();
+}
+
+TableHandle TableHandleManager::makeTableHandleFromTicket(std::string ticket) const {
+  auto handleImpl = impl_->makeTableHandleFromTicket(std::move(ticket));
+  return TableHandle(std::move(handleImpl));
 }
 
 void TableHandleManager::runScript(std::string code) const {

@@ -11,9 +11,12 @@ import io.deephaven.api.filter.Filter;
 import io.deephaven.api.snapshot.SnapshotWhenOptions.Flag;
 import io.deephaven.base.FileUtils;
 import io.deephaven.base.Pair;
+import io.deephaven.base.log.LogOutput;
 import io.deephaven.base.verify.AssertionFailure;
 import io.deephaven.datastructures.util.CollectionUtil;
+import io.deephaven.engine.context.ExecutionContext;
 import io.deephaven.engine.context.QueryScope;
+import io.deephaven.engine.exceptions.UpdateGraphConflictException;
 import io.deephaven.engine.liveness.LivenessScopeStack;
 import io.deephaven.engine.liveness.SingletonLivenessManager;
 import io.deephaven.engine.rowset.*;
@@ -33,17 +36,21 @@ import io.deephaven.engine.testutil.*;
 import io.deephaven.engine.testutil.generator.*;
 import io.deephaven.engine.testutil.testcase.RefreshingTableTestCase;
 import io.deephaven.engine.updategraph.LogicalClock;
-import io.deephaven.engine.updategraph.UpdateGraphProcessor;
+import io.deephaven.engine.updategraph.UpdateGraph;
+import io.deephaven.engine.updategraph.UpdateGraphLock;
 import io.deephaven.engine.util.TableTools;
+import io.deephaven.io.log.LogEntry;
 import io.deephaven.parquet.table.ParquetTools;
 import io.deephaven.test.types.OutOfBandTest;
 import io.deephaven.time.DateTimeUtils;
 import io.deephaven.util.QueryConstants;
 import io.deephaven.util.SafeCloseable;
+import io.deephaven.util.locks.AwareFunctionalLock;
 import io.deephaven.vector.*;
 import junit.framework.TestCase;
 import org.apache.commons.lang3.mutable.MutableObject;
 import org.apache.groovy.util.Maps;
+import org.jetbrains.annotations.MustBeInvokedByOverriders;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 import org.junit.Assert;
@@ -68,10 +75,10 @@ import static org.junit.Assert.assertArrayEquals;
 
 /**
  * Test of QueryTable functionality.
- *
+ * <p>
  * This test used to be a catch all, but at over 7,000 lines became unwieldy. It is still somewhat of a catch-all, but
  * some specific classes of tests have been broken out.
- *
+ * <p>
  * See also {@link QueryTableAggregationTest}, {@link QueryTableJoinTest}, {@link QueryTableSelectUpdateTest},
  * {@link QueryTableFlattenTest}, and {@link QueryTableSortTest}.
  */
@@ -292,7 +299,8 @@ public class QueryTableTest extends QueryTableTestBase {
         final ShiftObliviousListener table2Listener = newListenerWithGlobals(table2);
         table2.addUpdateListener(table2Listener);
 
-        UpdateGraphProcessor.DEFAULT.runWithinUnitTestCycle(() -> {
+        final ControlledUpdateGraph updateGraph = ExecutionContext.getContext().getUpdateGraph().cast();
+        updateGraph.runWithinUnitTestCycle(() -> {
             addToTable(table1, i(7, 9), col("x", 4, 5), col("y", 'd', 'e'));
             table1.notifyListeners(i(7, 9), i(), i());
         });
@@ -303,7 +311,7 @@ public class QueryTableTest extends QueryTableTestBase {
         assertEquals(modified, i());
         assertEquals(removed, i());
 
-        UpdateGraphProcessor.DEFAULT.runWithinUnitTestCycle(() -> {
+        updateGraph.runWithinUnitTestCycle(() -> {
             addToTable(table1, i(7, 9), col("x", 3, 10), col("y", 'e', 'd'));
             table1.notifyListeners(i(), i(), i(7, 9));
         });
@@ -314,7 +322,7 @@ public class QueryTableTest extends QueryTableTestBase {
         assertEquals(modified, i(7, 9));
         assertEquals(removed, i());
 
-        UpdateGraphProcessor.DEFAULT.runWithinUnitTestCycle(() -> {
+        updateGraph.runWithinUnitTestCycle(() -> {
             removeRows(table1, i(2, 6, 7));
             table1.notifyListeners(i(), i(2, 6, 7), i());
         });
@@ -326,7 +334,7 @@ public class QueryTableTest extends QueryTableTestBase {
         assertEquals(removed, i(2, 6, 7));
         assertEquals(modified, i());
 
-        UpdateGraphProcessor.DEFAULT.runWithinUnitTestCycle(() -> {
+        updateGraph.runWithinUnitTestCycle(() -> {
             removeRows(table1, i(9));
             addToTable(table1, i(2, 4, 6), col("x", 1, 22, 3), col("y", 'a', 'x', 'c'));
             table1.notifyListeners(i(2, 6), i(9), i(4));
@@ -345,7 +353,7 @@ public class QueryTableTest extends QueryTableTestBase {
         final ShiftObliviousListener table4Listener = newListenerWithGlobals(table4);
         table4.addUpdateListener(table4Listener);
 
-        UpdateGraphProcessor.DEFAULT.runWithinUnitTestCycle(() -> {
+        updateGraph.runWithinUnitTestCycle(() -> {
             addToTable(table3, i(7, 9), col("x", 4, 5), col("y", 'd', 'e'));
             table3.notifyListeners(i(7, 9), i(), i());
         });
@@ -358,7 +366,7 @@ public class QueryTableTest extends QueryTableTestBase {
         assertEquals(removed, i());
 
 
-        UpdateGraphProcessor.DEFAULT.runWithinUnitTestCycle(() -> {
+        updateGraph.runWithinUnitTestCycle(() -> {
             addToTable(table3, i(7, 9), col("x", 3, 10), col("y", 'e', 'd'));
             table3.notifyListeners(i(), i(), i(7, 9));
         });
@@ -370,7 +378,7 @@ public class QueryTableTest extends QueryTableTestBase {
         assertEquals(modified, i(7, 9));
         assertEquals(removed, i());
 
-        UpdateGraphProcessor.DEFAULT.runWithinUnitTestCycle(() -> {
+        updateGraph.runWithinUnitTestCycle(() -> {
             removeRows(table3, i(2, 6, 7));
             table3.notifyListeners(i(), i(2, 6, 7), i());
         });
@@ -383,7 +391,7 @@ public class QueryTableTest extends QueryTableTestBase {
         assertEquals(modified, i());
 
 
-        UpdateGraphProcessor.DEFAULT.runWithinUnitTestCycle(() -> {
+        updateGraph.runWithinUnitTestCycle(() -> {
             removeRows(table3, i(9));
             addToTable(table3, i(2, 4, 6), col("x", 1, 22, 3), col("y", 'a', 'x', 'c'));
             table3.notifyListeners(i(2, 6), i(9), i(4));
@@ -960,7 +968,8 @@ public class QueryTableTest extends QueryTableTestBase {
 
         checkReverse(table, reversed, "Ticker");
 
-        UpdateGraphProcessor.DEFAULT.runWithinUnitTestCycle(() -> {
+        final ControlledUpdateGraph updateGraph = ExecutionContext.getContext().getUpdateGraph().cast();
+        updateGraph.runWithinUnitTestCycle(() -> {
             final ColumnHolder<?>[] columnAdditions =
                     new ColumnHolder<?>[] {col("Ticker", "SPY", "VXX"), col("Timestamp", 60L, 70L)};
             addToTable(table, i(2048, 2049), columnAdditions);
@@ -974,7 +983,7 @@ public class QueryTableTest extends QueryTableTestBase {
         assertEquals("TSLA", reversed.getColumnSource("Ticker").getPrev(reversed.getRowSet().copyPrev().get(0)));
 
 
-        UpdateGraphProcessor.DEFAULT.runWithinUnitTestCycle(() -> {
+        updateGraph.runWithinUnitTestCycle(() -> {
         });
 
         assertEquals("VXX", reversed.getColumnSource("Ticker").getPrev(reversed.getRowSet().copyPrev().get(0)));
@@ -1007,7 +1016,7 @@ public class QueryTableTest extends QueryTableTestBase {
         assertEquals(Integer.MAX_VALUE, (long) licsr.get(1));
         assertEquals(0, (long) licsr.get(2));
 
-        UpdateGraphProcessor.DEFAULT.runWithinUnitTestCycle(() -> {
+        updateGraph.runWithinUnitTestCycle(() -> {
             bigTable.getRowSet().writableCast().insert(Long.MAX_VALUE);
             bigTable.notifyListeners(i(Long.MAX_VALUE), i(), i());
         });
@@ -1030,9 +1039,10 @@ public class QueryTableTest extends QueryTableTestBase {
 
         checkReverse(table, reversed, "Timestamp");
 
-        UpdateGraphProcessor.DEFAULT.runWithinUnitTestCycle(() -> {
-            final ColumnHolder<?>[] columnAdditions = new ColumnHolder<?>[] {col("Timestamp", 2048L, 2049L)};
-            addToTable(table, i(2048, 2049), columnAdditions);
+        final ControlledUpdateGraph updateGraph = ExecutionContext.getContext().getUpdateGraph().cast();
+        updateGraph.runWithinUnitTestCycle(() -> {
+            final ColumnHolder<?>[] columnAdditions1 = new ColumnHolder<?>[] {col("Timestamp", 2048L, 2049L)};
+            addToTable(table, i(2048, 2049), columnAdditions1);
             table.notifyListeners(i(2048, 2049), i(), i());
         });
 
@@ -1040,14 +1050,14 @@ public class QueryTableTest extends QueryTableTestBase {
 
         checkReverse(table, reversed, "Timestamp");
 
-        UpdateGraphProcessor.DEFAULT.runWithinUnitTestCycle(() -> {
+        updateGraph.runWithinUnitTestCycle(() -> {
             removeRows(table, i(1, 2048, 2049));
             table.notifyListeners(i(), i(1, 2048, 2049), i());
         });
 
         assertEquals(0, reversed.size());
 
-        UpdateGraphProcessor.DEFAULT.runWithinUnitTestCycle(() -> {
+        updateGraph.runWithinUnitTestCycle(() -> {
             final ColumnHolder<?>[] columnAdditions = new ColumnHolder<?>[] {col("Timestamp", 8192L)};
             addToTable(table, i(8192L), columnAdditions);
             table.notifyListeners(i(8192L), i(), i());
@@ -1075,7 +1085,8 @@ public class QueryTableTest extends QueryTableTestBase {
                 new io.deephaven.engine.table.impl.SimpleListener(reverseTable);
         reverseTable.addUpdateListener(listener);
 
-        UpdateGraphProcessor.DEFAULT.runWithinUnitTestCycle(() -> {
+        final ControlledUpdateGraph updateGraph = ExecutionContext.getContext().getUpdateGraph().cast();
+        updateGraph.runWithinUnitTestCycle(() -> {
             TableUpdateImpl downstream = new TableUpdateImpl();
             downstream.added = i();
             downstream.removed = i();
@@ -1101,7 +1112,8 @@ public class QueryTableTest extends QueryTableTestBase {
                 new io.deephaven.engine.table.impl.SimpleListener(reversedTable);
         reversedTable.addUpdateListener(listener);
 
-        UpdateGraphProcessor.DEFAULT.runWithinUnitTestCycle(() -> {
+        final ControlledUpdateGraph updateGraph = ExecutionContext.getContext().getUpdateGraph().cast();
+        updateGraph.runWithinUnitTestCycle(() -> {
             TableUpdateImpl downstream = new TableUpdateImpl();
             downstream.added = i();
             downstream.removed = i();
@@ -1164,7 +1176,8 @@ public class QueryTableTest extends QueryTableTestBase {
         final long nextSize = ReverseOperation.MINIMUM_PIVOT + 2;
         final int[] data = new int[Math.toIntExact(nextSize - 1)];
         Arrays.fill(data, 200);
-        UpdateGraphProcessor.DEFAULT.runWithinUnitTestCycle(() -> {
+        final ControlledUpdateGraph updateGraph = ExecutionContext.getContext().getUpdateGraph().cast();
+        updateGraph.runWithinUnitTestCycle(() -> {
             TstUtils.addToTable(table, RowSetFactory.fromRange(1, nextSize - 1), intCol("Sentinel", data));
             final TableUpdateImpl downstream = new TableUpdateImpl();
             downstream.added = RowSetFactory.flat(nextSize);
@@ -1199,14 +1212,15 @@ public class QueryTableTest extends QueryTableTestBase {
         final Table expect1 = newTable(col("A", 3, 1, 2), col("B", "c", "a", "b"), col("T", 2, 2, 2));
         assertTableEquals(expect1, snapshot);
 
-        UpdateGraphProcessor.DEFAULT.runWithinUnitTestCycle(() -> {
+        final ControlledUpdateGraph updateGraph = ExecutionContext.getContext().getUpdateGraph().cast();
+        updateGraph.runWithinUnitTestCycle(() -> {
             addToTable(base, i(20, 40), col("A", 30, 50), col("B", "aa", "bc"));
             base.notifyListeners(i(20, 40), i(), i());
         });
         show(snapshot, 50);
         assertTableEquals(expect1, snapshot);
 
-        UpdateGraphProcessor.DEFAULT.runWithinUnitTestCycle(() -> {
+        updateGraph.runWithinUnitTestCycle(() -> {
             addToTable(trigger2, i(3), col("T", 5));
             trigger2.notifyListeners(i(3), i(), i());
         });
@@ -1215,7 +1229,7 @@ public class QueryTableTest extends QueryTableTestBase {
                 newTable(col("A", 3, 30, 1, 2, 50), col("B", "c", "aa", "a", "b", "bc"), col("T", 5, 5, 5, 5, 5));
         assertTableEquals(expect2, snapshot);
 
-        UpdateGraphProcessor.DEFAULT.runWithinUnitTestCycle(() -> {
+        updateGraph.runWithinUnitTestCycle(() -> {
             removeRows(base, i(10, 20, 30));
             addToTable(base, i(25), col("A", 11), col("B", "A"));
             base.notifyListeners(i(), i(10, 20, 30), i(25));
@@ -1223,7 +1237,7 @@ public class QueryTableTest extends QueryTableTestBase {
         show(snapshot, 50);
         assertTableEquals(expect2, snapshot);
 
-        UpdateGraphProcessor.DEFAULT.runWithinUnitTestCycle(() -> {
+        updateGraph.runWithinUnitTestCycle(() -> {
             addToTable(trigger2, i(4, 5), col("T", 7, 8));
             trigger2.notifyListeners(i(4, 5), i(), i());
         });
@@ -1246,13 +1260,14 @@ public class QueryTableTest extends QueryTableTestBase {
         validateUpdates(actual);
         assertTableEquals(expected, actual);
 
-        UpdateGraphProcessor.DEFAULT.runWithinUnitTestCycle(() -> {
+        final ControlledUpdateGraph updateGraph = ExecutionContext.getContext().getUpdateGraph().cast();
+        updateGraph.runWithinUnitTestCycle(() -> {
             addToTable(base, i(20, 40), col("A", 30, 50), col("B", "aa", "bc"));
             base.notifyListeners(i(20, 40), i(), i());
         });
         assertTableEquals(expected.where("A in 1, 2, 3"), actual);
 
-        UpdateGraphProcessor.DEFAULT.runWithinUnitTestCycle(() -> {
+        updateGraph.runWithinUnitTestCycle(() -> {
             addToTable(left1, i(3), col("T", 5));
             left1.notifyListeners(i(3), i(), i());
         });
@@ -1274,13 +1289,14 @@ public class QueryTableTest extends QueryTableTestBase {
         validateUpdates(actual);
         assertTableEquals(ex1, actual);
 
-        UpdateGraphProcessor.DEFAULT.runWithinUnitTestCycle(() -> {
+        final ControlledUpdateGraph updateGraph = ExecutionContext.getContext().getUpdateGraph().cast();
+        updateGraph.runWithinUnitTestCycle(() -> {
             addToTable(right, i(20, 40), col("A", 30, 50), col("B", "aa", "bc"));
             right.notifyListeners(i(20, 40), i(), i());
         });
         assertTableEquals(ex1, actual);
 
-        UpdateGraphProcessor.DEFAULT.runWithinUnitTestCycle(() -> {
+        updateGraph.runWithinUnitTestCycle(() -> {
             addToTable(trigger1, i(3), col("T", 5));
             trigger1.notifyListeners(i(3), i(), i());
         });
@@ -1288,13 +1304,13 @@ public class QueryTableTest extends QueryTableTestBase {
                 col("B", new ObjectVector[] {new ObjectVectorDirect<>("c", "aa", "a", "b", "bc")}), intCol("T", 5));
         assertTableEquals(ex2, actual);
 
-        UpdateGraphProcessor.DEFAULT.runWithinUnitTestCycle(() -> {
+        updateGraph.runWithinUnitTestCycle(() -> {
             addToTable(right, i(20), intCol("A", 31), stringCol("B", "aaa"));
             right.notifyListeners(i(), i(), i(20));
         });
         assertTableEquals(ex2, actual);
 
-        UpdateGraphProcessor.DEFAULT.runWithinUnitTestCycle(() -> {
+        updateGraph.runWithinUnitTestCycle(() -> {
             addToTable(trigger1, i(4), col("T", 6));
             trigger1.notifyListeners(i(4), i(), i());
         });
@@ -1320,7 +1336,8 @@ public class QueryTableTest extends QueryTableTestBase {
                 col("A", 3, 1, 2, 3, 1, 2),
                 col("B", "c", "a", "b", "c", "a", "b")));
 
-        UpdateGraphProcessor.DEFAULT.runWithinUnitTestCycle(() -> {
+        final ControlledUpdateGraph updateGraph = ExecutionContext.getContext().getUpdateGraph().cast();
+        updateGraph.runWithinUnitTestCycle(() -> {
             addToTable(base, i(20, 40), col("A", 30, 50), col("B", "aa", "bc"));
             base.notifyListeners(i(20, 40), i(), i());
         });
@@ -1330,7 +1347,7 @@ public class QueryTableTest extends QueryTableTestBase {
                 col("A", 3, 1, 2, 3, 1, 2),
                 col("B", "c", "a", "b", "c", "a", "b")));
 
-        UpdateGraphProcessor.DEFAULT.runWithinUnitTestCycle(() -> {
+        updateGraph.runWithinUnitTestCycle(() -> {
             addToTable(trigger2, i(3), col("T", 5));
             trigger2.notifyListeners(i(3), i(), i());
         });
@@ -1340,7 +1357,7 @@ public class QueryTableTest extends QueryTableTestBase {
                 col("A", 3, 1, 2, 3, 1, 2, 3, 30, 1, 2, 50),
                 col("B", "c", "a", "b", "c", "a", "b", "c", "aa", "a", "b", "bc")));
 
-        UpdateGraphProcessor.DEFAULT.runWithinUnitTestCycle(() -> {
+        updateGraph.runWithinUnitTestCycle(() -> {
             removeRows(base, i(10, 20, 30));
             addToTable(base, i(25), col("A", 11), col("B", "A"));
             base.notifyListeners(i(), i(10, 20, 30), i(25));
@@ -1351,7 +1368,7 @@ public class QueryTableTest extends QueryTableTestBase {
                 col("A", 3, 1, 2, 3, 1, 2, 3, 30, 1, 2, 50),
                 col("B", "c", "a", "b", "c", "a", "b", "c", "aa", "a", "b", "bc")));
 
-        UpdateGraphProcessor.DEFAULT.runWithinUnitTestCycle(() -> {
+        updateGraph.runWithinUnitTestCycle(() -> {
             addToTable(trigger2, i(4, 5), col("T", 7, 8));
             trigger2.notifyListeners(i(4, 5), i(), i());
         });
@@ -1361,7 +1378,7 @@ public class QueryTableTest extends QueryTableTestBase {
                 col("A", 3, 1, 2, 3, 1, 2, 3, 30, 1, 2, 50, 11, 50, 11, 50),
                 col("B", "c", "a", "b", "c", "a", "b", "c", "aa", "a", "b", "bc", "A", "bc", "A", "bc")));
 
-        UpdateGraphProcessor.DEFAULT.runWithinUnitTestCycle(() -> {
+        updateGraph.runWithinUnitTestCycle(() -> {
             final RowSet rowsToRemove = base.getRowSet().copy();
             removeRows(base, rowsToRemove);
             base.notifyListeners(i(), rowsToRemove, i());
@@ -1372,7 +1389,7 @@ public class QueryTableTest extends QueryTableTestBase {
                 col("A", 3, 1, 2, 3, 1, 2, 3, 30, 1, 2, 50, 11, 50, 11, 50),
                 col("B", "c", "a", "b", "c", "a", "b", "c", "aa", "a", "b", "bc", "A", "bc", "A", "bc")));
 
-        UpdateGraphProcessor.DEFAULT.runWithinUnitTestCycle(() -> {
+        updateGraph.runWithinUnitTestCycle(() -> {
             addToTable(trigger2, i(6), col("T", 9));
             trigger2.notifyListeners(i(6), i(), i());
         });
@@ -1395,49 +1412,70 @@ public class QueryTableTest extends QueryTableTestBase {
         final Table snappedOfSnap = snappedDep.snapshotWhen(trigger, Flag.INITIAL);
         validateUpdates(snappedOfSnap);
 
-        UpdateGraphProcessor.DEFAULT.runWithinUnitTestCycle(() -> {
-            TestCase.assertTrue(snappedFirst.satisfied(LogicalClock.DEFAULT.currentStep()));
-            TestCase.assertTrue(snappedDep.satisfied(LogicalClock.DEFAULT.currentStep()));
-            TestCase.assertTrue(snappedOfSnap.satisfied(LogicalClock.DEFAULT.currentStep()));
+        final ControlledUpdateGraph updateGraph = ExecutionContext.getContext().getUpdateGraph().cast();
+        updateGraph.runWithinUnitTestCycle(() -> {
+            TestCase.assertTrue(
+                    snappedFirst.satisfied(ExecutionContext.getContext().getUpdateGraph().clock().currentStep()));
+            TestCase.assertTrue(
+                    snappedDep.satisfied(ExecutionContext.getContext().getUpdateGraph().clock().currentStep()));
+            TestCase.assertTrue(
+                    snappedOfSnap.satisfied(ExecutionContext.getContext().getUpdateGraph().clock().currentStep()));
         });
 
-        UpdateGraphProcessor.DEFAULT.runWithinUnitTestCycle(() -> {
+        // This will do the notification for left; at which point we can do the first snapshot
+        // This should flush the TUV and the select
+        // Now we should flush the second snapshot
+        // This should flush the second TUV
+        // And now we should be done
+        updateGraph.runWithinUnitTestCycle(() -> {
             addToTable(trigger, i(2), col("T", 2));
             trigger.notifyListeners(i(2), i(), i());
-            TestCase.assertFalse(snappedFirst.satisfied(LogicalClock.DEFAULT.currentStep()));
-            TestCase.assertFalse(snappedDep.satisfied(LogicalClock.DEFAULT.currentStep()));
-            TestCase.assertFalse(snappedOfSnap.satisfied(LogicalClock.DEFAULT.currentStep()));
+            TestCase.assertFalse(
+                    snappedFirst.satisfied(ExecutionContext.getContext().getUpdateGraph().clock().currentStep()));
+            TestCase.assertFalse(
+                    snappedDep.satisfied(ExecutionContext.getContext().getUpdateGraph().clock().currentStep()));
+            TestCase.assertFalse(
+                    snappedOfSnap.satisfied(ExecutionContext.getContext().getUpdateGraph().clock().currentStep()));
 
             // This will do the notification for left; at which point we can do the first snapshot
-            boolean flushed = UpdateGraphProcessor.DEFAULT.flushOneNotificationForUnitTests();
+            boolean flushed = updateGraph.flushOneNotificationForUnitTests();
 
             TestCase.assertTrue(flushed);
-            TestCase.assertTrue(snappedFirst.satisfied(LogicalClock.DEFAULT.currentStep()));
-            TestCase.assertFalse(snappedDep.satisfied(LogicalClock.DEFAULT.currentStep()));
-            TestCase.assertFalse(snappedOfSnap.satisfied(LogicalClock.DEFAULT.currentStep()));
+            TestCase.assertTrue(
+                    snappedFirst.satisfied(ExecutionContext.getContext().getUpdateGraph().clock().currentStep()));
+            TestCase.assertFalse(
+                    snappedDep.satisfied(ExecutionContext.getContext().getUpdateGraph().clock().currentStep()));
+            TestCase.assertFalse(
+                    snappedOfSnap.satisfied(ExecutionContext.getContext().getUpdateGraph().clock().currentStep()));
 
             // This should flush the TUV and the select
-            flushed = UpdateGraphProcessor.DEFAULT.flushOneNotificationForUnitTests();
+            flushed = updateGraph.flushOneNotificationForUnitTests();
             TestCase.assertTrue(flushed);
-            flushed = UpdateGraphProcessor.DEFAULT.flushOneNotificationForUnitTests();
+            flushed = updateGraph.flushOneNotificationForUnitTests();
             TestCase.assertTrue(flushed);
-            TestCase.assertTrue(snappedFirst.satisfied(LogicalClock.DEFAULT.currentStep()));
-            TestCase.assertTrue(snappedDep.satisfied(LogicalClock.DEFAULT.currentStep()));
-            TestCase.assertFalse(snappedOfSnap.satisfied(LogicalClock.DEFAULT.currentStep()));
+            TestCase.assertTrue(
+                    snappedFirst.satisfied(ExecutionContext.getContext().getUpdateGraph().clock().currentStep()));
+            TestCase.assertTrue(
+                    snappedDep.satisfied(ExecutionContext.getContext().getUpdateGraph().clock().currentStep()));
+            TestCase.assertFalse(
+                    snappedOfSnap.satisfied(ExecutionContext.getContext().getUpdateGraph().clock().currentStep()));
 
             // Now we should flush the second snapshot
-            flushed = UpdateGraphProcessor.DEFAULT.flushOneNotificationForUnitTests();
+            flushed = updateGraph.flushOneNotificationForUnitTests();
             TestCase.assertTrue(flushed);
-            TestCase.assertTrue(snappedFirst.satisfied(LogicalClock.DEFAULT.currentStep()));
-            TestCase.assertTrue(snappedDep.satisfied(LogicalClock.DEFAULT.currentStep()));
-            TestCase.assertTrue(snappedOfSnap.satisfied(LogicalClock.DEFAULT.currentStep()));
+            TestCase.assertTrue(
+                    snappedFirst.satisfied(ExecutionContext.getContext().getUpdateGraph().clock().currentStep()));
+            TestCase.assertTrue(
+                    snappedDep.satisfied(ExecutionContext.getContext().getUpdateGraph().clock().currentStep()));
+            TestCase.assertTrue(
+                    snappedOfSnap.satisfied(ExecutionContext.getContext().getUpdateGraph().clock().currentStep()));
 
             // This should flush the second TUV
-            flushed = UpdateGraphProcessor.DEFAULT.flushOneNotificationForUnitTests();
+            flushed = updateGraph.flushOneNotificationForUnitTests();
             TestCase.assertTrue(flushed);
 
             // And now we should be done
-            flushed = UpdateGraphProcessor.DEFAULT.flushOneNotificationForUnitTests();
+            flushed = updateGraph.flushOneNotificationForUnitTests();
             TestCase.assertFalse(flushed);
         });
         TableTools.show(snappedOfSnap);
@@ -1453,7 +1491,8 @@ public class QueryTableTest extends QueryTableTestBase {
         final Table snapshot = base.snapshotWhen(trigger, Flag.INITIAL);
         validateUpdates(snapshot);
 
-        UpdateGraphProcessor.DEFAULT.runWithinUnitTestCycle(() -> {
+        final ControlledUpdateGraph updateGraph = ExecutionContext.getContext().getUpdateGraph().cast();
+        updateGraph.runWithinUnitTestCycle(() -> {
             addToTable(base, i(20), col("A", 2));
             trigger.notifyListeners(i(), i(), i(0));
         });
@@ -1469,7 +1508,8 @@ public class QueryTableTest extends QueryTableTestBase {
         final Table snapshot = base.snapshotWhen(trigger, Flag.INITIAL);
         validateUpdates(snapshot);
 
-        UpdateGraphProcessor.DEFAULT.runWithinUnitTestCycle(() -> {
+        final ControlledUpdateGraph updateGraph = ExecutionContext.getContext().getUpdateGraph().cast();
+        updateGraph.runWithinUnitTestCycle(() -> {
             removeRows(base, i(20));
             trigger.notifyListeners(i(), i(), i(0));
         });
@@ -1485,7 +1525,8 @@ public class QueryTableTest extends QueryTableTestBase {
         final Table snapshot = base.snapshotWhen(trigger, Flag.INITIAL);
         validateUpdates(snapshot);
 
-        UpdateGraphProcessor.DEFAULT.runWithinUnitTestCycle(() -> {
+        final ControlledUpdateGraph updateGraph = ExecutionContext.getContext().getUpdateGraph().cast();
+        updateGraph.runWithinUnitTestCycle(() -> {
             base.notifyListeners(i(), i(), i(20));
             trigger.notifyListeners(i(), i(), i(0));
         });
@@ -1504,122 +1545,162 @@ public class QueryTableTest extends QueryTableTestBase {
         final Table snappedDep = snappedFirst.select("B=testSnapshotDependenciesCounter.incrementAndGet()");
         final Table snappedOfSnap = snappedDep.snapshotWhen(trigger, Flag.INCREMENTAL);
 
-        UpdateGraphProcessor.DEFAULT.runWithinUnitTestCycle(() -> {
+        final ControlledUpdateGraph updateGraph = ExecutionContext.getContext().getUpdateGraph().cast();
+        updateGraph.runWithinUnitTestCycle(() -> {
             System.out.println("Checking everything is satisfied with no updates.");
-            TestCase.assertTrue(snappedFirst.satisfied(LogicalClock.DEFAULT.currentStep()));
-            TestCase.assertTrue(snappedDep.satisfied(LogicalClock.DEFAULT.currentStep()));
-            TestCase.assertTrue(snappedOfSnap.satisfied(LogicalClock.DEFAULT.currentStep()));
+            TestCase.assertTrue(
+                    snappedFirst.satisfied(ExecutionContext.getContext().getUpdateGraph().clock().currentStep()));
+            TestCase.assertTrue(
+                    snappedDep.satisfied(ExecutionContext.getContext().getUpdateGraph().clock().currentStep()));
+            TestCase.assertTrue(
+                    snappedOfSnap.satisfied(ExecutionContext.getContext().getUpdateGraph().clock().currentStep()));
             System.out.println("Simple Update Cycle Complete.");
         });
 
-        UpdateGraphProcessor.DEFAULT.runWithinUnitTestCycle(() -> {
+        updateGraph.runWithinUnitTestCycle(() -> {
             System.out.println("Adding Table.");
             addToTable(trigger, i(2), col("T", 2));
             trigger.notifyListeners(i(2), i(), i());
 
             System.out.println("Checking initial satisfaction.");
-            TestCase.assertFalse(snappedFirst.satisfied(LogicalClock.DEFAULT.currentStep()));
-            TestCase.assertFalse(snappedDep.satisfied(LogicalClock.DEFAULT.currentStep()));
-            TestCase.assertFalse(snappedOfSnap.satisfied(LogicalClock.DEFAULT.currentStep()));
+            TestCase.assertFalse(
+                    snappedFirst.satisfied(ExecutionContext.getContext().getUpdateGraph().clock().currentStep()));
+            TestCase.assertFalse(
+                    snappedDep.satisfied(ExecutionContext.getContext().getUpdateGraph().clock().currentStep()));
+            TestCase.assertFalse(
+                    snappedOfSnap.satisfied(ExecutionContext.getContext().getUpdateGraph().clock().currentStep()));
 
             System.out.println("Flushing first notification.");
             // this will do the notification for left
-            boolean flushed = UpdateGraphProcessor.DEFAULT.flushOneNotificationForUnitTests();
+            boolean flushed2 = updateGraph.flushOneNotificationForUnitTests();
 
             System.out.println("Checking satisfaction after #1.");
-            TestCase.assertTrue(flushed);
-            TestCase.assertFalse(snappedFirst.satisfied(LogicalClock.DEFAULT.currentStep()));
-            TestCase.assertFalse(snappedDep.satisfied(LogicalClock.DEFAULT.currentStep()));
-            TestCase.assertFalse(snappedOfSnap.satisfied(LogicalClock.DEFAULT.currentStep()));
+            TestCase.assertTrue(flushed2);
+            TestCase.assertFalse(
+                    snappedFirst.satisfied(ExecutionContext.getContext().getUpdateGraph().clock().currentStep()));
+            TestCase.assertFalse(
+                    snappedDep.satisfied(ExecutionContext.getContext().getUpdateGraph().clock().currentStep()));
+            TestCase.assertFalse(
+                    snappedOfSnap.satisfied(ExecutionContext.getContext().getUpdateGraph().clock().currentStep()));
 
             System.out.println("Flushing second notification, which should be our listener recorder");
-            flushed = UpdateGraphProcessor.DEFAULT.flushOneNotificationForUnitTests();
+            flushed2 = updateGraph.flushOneNotificationForUnitTests();
 
             System.out.println("Checking satisfaction after #2.");
-            TestCase.assertTrue(flushed);
-            TestCase.assertFalse(snappedFirst.satisfied(LogicalClock.DEFAULT.currentStep()));
-            TestCase.assertFalse(snappedDep.satisfied(LogicalClock.DEFAULT.currentStep()));
-            TestCase.assertFalse(snappedOfSnap.satisfied(LogicalClock.DEFAULT.currentStep()));
+            TestCase.assertTrue(flushed2);
+            TestCase.assertFalse(
+                    snappedFirst.satisfied(ExecutionContext.getContext().getUpdateGraph().clock().currentStep()));
+            TestCase.assertFalse(
+                    snappedDep.satisfied(ExecutionContext.getContext().getUpdateGraph().clock().currentStep()));
+            TestCase.assertFalse(
+                    snappedOfSnap.satisfied(ExecutionContext.getContext().getUpdateGraph().clock().currentStep()));
 
             System.out.println("Flushing third notification, which should be our merged listener");
 
             System.out.println("Checking satisfaction after #3.");
-            flushed = UpdateGraphProcessor.DEFAULT.flushOneNotificationForUnitTests();
+            flushed2 = updateGraph.flushOneNotificationForUnitTests();
             // this will do the merged notification; which means the snaphsot is satisfied
-            TestCase.assertTrue(flushed);
-            TestCase.assertTrue(snappedFirst.satisfied(LogicalClock.DEFAULT.currentStep()));
-            TestCase.assertFalse(snappedDep.satisfied(LogicalClock.DEFAULT.currentStep()));
-            TestCase.assertFalse(snappedOfSnap.satisfied(LogicalClock.DEFAULT.currentStep()));
+            TestCase.assertTrue(flushed2);
+            TestCase.assertTrue(
+                    snappedFirst.satisfied(ExecutionContext.getContext().getUpdateGraph().clock().currentStep()));
+            TestCase.assertFalse(
+                    snappedDep.satisfied(ExecutionContext.getContext().getUpdateGraph().clock().currentStep()));
+            TestCase.assertFalse(
+                    snappedOfSnap.satisfied(ExecutionContext.getContext().getUpdateGraph().clock().currentStep()));
 
             // now we should flush the select
-            flushed = UpdateGraphProcessor.DEFAULT.flushOneNotificationForUnitTests();
-            TestCase.assertTrue(flushed);
-            TestCase.assertTrue(snappedFirst.satisfied(LogicalClock.DEFAULT.currentStep()));
-            TestCase.assertTrue(snappedDep.satisfied(LogicalClock.DEFAULT.currentStep()));
-            TestCase.assertFalse(snappedOfSnap.satisfied(LogicalClock.DEFAULT.currentStep()));
+            flushed2 = updateGraph.flushOneNotificationForUnitTests();
+            TestCase.assertTrue(flushed2);
+            TestCase.assertTrue(
+                    snappedFirst.satisfied(ExecutionContext.getContext().getUpdateGraph().clock().currentStep()));
+            TestCase.assertTrue(
+                    snappedDep.satisfied(ExecutionContext.getContext().getUpdateGraph().clock().currentStep()));
+            TestCase.assertFalse(
+                    snappedOfSnap.satisfied(ExecutionContext.getContext().getUpdateGraph().clock().currentStep()));
 
             // now we should flush the second snapshot recorder
-            flushed = UpdateGraphProcessor.DEFAULT.flushOneNotificationForUnitTests();
-            TestCase.assertTrue(flushed);
-            TestCase.assertTrue(snappedFirst.satisfied(LogicalClock.DEFAULT.currentStep()));
-            TestCase.assertTrue(snappedDep.satisfied(LogicalClock.DEFAULT.currentStep()));
-            TestCase.assertFalse(snappedOfSnap.satisfied(LogicalClock.DEFAULT.currentStep()));
+            flushed2 = updateGraph.flushOneNotificationForUnitTests();
+            TestCase.assertTrue(flushed2);
+            TestCase.assertTrue(
+                    snappedFirst.satisfied(ExecutionContext.getContext().getUpdateGraph().clock().currentStep()));
+            TestCase.assertTrue(
+                    snappedDep.satisfied(ExecutionContext.getContext().getUpdateGraph().clock().currentStep()));
+            TestCase.assertFalse(
+                    snappedOfSnap.satisfied(ExecutionContext.getContext().getUpdateGraph().clock().currentStep()));
 
             // now we should flush the second snapshot merged listener
-            flushed = UpdateGraphProcessor.DEFAULT.flushOneNotificationForUnitTests();
-            TestCase.assertTrue(flushed);
-            TestCase.assertTrue(snappedFirst.satisfied(LogicalClock.DEFAULT.currentStep()));
-            TestCase.assertTrue(snappedDep.satisfied(LogicalClock.DEFAULT.currentStep()));
-            TestCase.assertTrue(snappedOfSnap.satisfied(LogicalClock.DEFAULT.currentStep()));
+            flushed2 = updateGraph.flushOneNotificationForUnitTests();
+            TestCase.assertTrue(flushed2);
+            TestCase.assertTrue(
+                    snappedFirst.satisfied(ExecutionContext.getContext().getUpdateGraph().clock().currentStep()));
+            TestCase.assertTrue(
+                    snappedDep.satisfied(ExecutionContext.getContext().getUpdateGraph().clock().currentStep()));
+            TestCase.assertTrue(
+                    snappedOfSnap.satisfied(ExecutionContext.getContext().getUpdateGraph().clock().currentStep()));
 
             // nothing left
-            flushed = UpdateGraphProcessor.DEFAULT.flushOneNotificationForUnitTests();
-            TestCase.assertFalse(flushed);
+            flushed2 = updateGraph.flushOneNotificationForUnitTests();
+            TestCase.assertFalse(flushed2);
         });
         TableTools.show(snappedOfSnap);
 
         TestCase.assertEquals(snappedOfSnap.size(), 1);
         TestCase.assertEquals(DataAccessHelpers.getColumn(snappedOfSnap, "B").get(0), 1);
 
-        UpdateGraphProcessor.DEFAULT.runWithinUnitTestCycle(() -> {
+        // this will do the notification for right; at which point we can should get the update going through
+        // nothing left
+        updateGraph.runWithinUnitTestCycle(() -> {
             System.out.println("Adding Right Table.");
             addToTable(base, i(2), col("A", 3));
             base.notifyListeners(i(2), i(), i());
 
             System.out.println("Checking initial satisfaction.");
-            TestCase.assertFalse(snappedFirst.satisfied(LogicalClock.DEFAULT.currentStep()));
-            TestCase.assertFalse(snappedDep.satisfied(LogicalClock.DEFAULT.currentStep()));
-            TestCase.assertFalse(snappedOfSnap.satisfied(LogicalClock.DEFAULT.currentStep()));
+            TestCase.assertFalse(
+                    snappedFirst.satisfied(ExecutionContext.getContext().getUpdateGraph().clock().currentStep()));
+            TestCase.assertFalse(
+                    snappedDep.satisfied(ExecutionContext.getContext().getUpdateGraph().clock().currentStep()));
+            TestCase.assertFalse(
+                    snappedOfSnap.satisfied(ExecutionContext.getContext().getUpdateGraph().clock().currentStep()));
 
             System.out.println("Flushing first notification.");
             // this will do the notification for right; at which point we can should get the update going through
-            boolean flushed = UpdateGraphProcessor.DEFAULT.flushOneNotificationForUnitTests();
+            boolean flushed1 = updateGraph.flushOneNotificationForUnitTests();
 
             System.out.println("Checking satisfaction after #1.");
-            TestCase.assertTrue(flushed);
-            TestCase.assertFalse(snappedFirst.satisfied(LogicalClock.DEFAULT.currentStep()));
-            TestCase.assertFalse(snappedDep.satisfied(LogicalClock.DEFAULT.currentStep()));
-            TestCase.assertFalse(snappedOfSnap.satisfied(LogicalClock.DEFAULT.currentStep()));
+            TestCase.assertTrue(flushed1);
+            TestCase.assertFalse(
+                    snappedFirst.satisfied(ExecutionContext.getContext().getUpdateGraph().clock().currentStep()));
+            TestCase.assertFalse(
+                    snappedDep.satisfied(ExecutionContext.getContext().getUpdateGraph().clock().currentStep()));
+            TestCase.assertFalse(
+                    snappedOfSnap.satisfied(ExecutionContext.getContext().getUpdateGraph().clock().currentStep()));
 
             System.out.println("Flushing second notification, which should be our merged listener");
-            flushed = UpdateGraphProcessor.DEFAULT.flushOneNotificationForUnitTests();
+            flushed1 = updateGraph.flushOneNotificationForUnitTests();
 
             System.out.println("Checking satisfaction after #2.");
-            TestCase.assertTrue(flushed);
-            TestCase.assertTrue(snappedFirst.satisfied(LogicalClock.DEFAULT.currentStep()));
-            TestCase.assertTrue(snappedDep.satisfied(LogicalClock.DEFAULT.currentStep()));
-            TestCase.assertTrue(snappedOfSnap.satisfied(LogicalClock.DEFAULT.currentStep()));
+            TestCase.assertTrue(flushed1);
+            TestCase.assertTrue(
+                    snappedFirst.satisfied(ExecutionContext.getContext().getUpdateGraph().clock().currentStep()));
+            TestCase.assertTrue(
+                    snappedDep.satisfied(ExecutionContext.getContext().getUpdateGraph().clock().currentStep()));
+            TestCase.assertTrue(
+                    snappedOfSnap.satisfied(ExecutionContext.getContext().getUpdateGraph().clock().currentStep()));
 
             // nothing left
-            flushed = UpdateGraphProcessor.DEFAULT.flushOneNotificationForUnitTests();
-            TestCase.assertFalse(flushed);
+            flushed1 = updateGraph.flushOneNotificationForUnitTests();
+            TestCase.assertFalse(flushed1);
         });
         TableTools.show(snappedOfSnap);
 
         TestCase.assertEquals(snappedOfSnap.size(), 1);
         TestCase.assertEquals(DataAccessHelpers.getColumn(snappedOfSnap, "B").get(0), 1);
 
-        UpdateGraphProcessor.DEFAULT.runWithinUnitTestCycle(() -> {
+        // now we should flush the select
+        // now we should flush the second snapshot recorder
+        // now we should flush the second snapshot merged listener
+        // nothing left
+        updateGraph.runWithinUnitTestCycle(() -> {
             System.out.println("Adding Right Table.");
             addToTable(base, i(2), col("A", 3));
             base.notifyListeners(i(2), i(), i());
@@ -1629,68 +1710,92 @@ public class QueryTableTest extends QueryTableTestBase {
             trigger.notifyListeners(i(3), i(), i());
 
             System.out.println("Checking initial satisfaction.");
-            TestCase.assertFalse(snappedFirst.satisfied(LogicalClock.DEFAULT.currentStep()));
-            TestCase.assertFalse(snappedDep.satisfied(LogicalClock.DEFAULT.currentStep()));
-            TestCase.assertFalse(snappedOfSnap.satisfied(LogicalClock.DEFAULT.currentStep()));
+            TestCase.assertFalse(
+                    snappedFirst.satisfied(ExecutionContext.getContext().getUpdateGraph().clock().currentStep()));
+            TestCase.assertFalse(
+                    snappedDep.satisfied(ExecutionContext.getContext().getUpdateGraph().clock().currentStep()));
+            TestCase.assertFalse(
+                    snappedOfSnap.satisfied(ExecutionContext.getContext().getUpdateGraph().clock().currentStep()));
 
             System.out.println("Flushing first notification.");
-            boolean flushed = UpdateGraphProcessor.DEFAULT.flushOneNotificationForUnitTests();
+            boolean flushed = updateGraph.flushOneNotificationForUnitTests();
             System.out.println("Checking satisfaction after #1.");
             TestCase.assertTrue(flushed);
-            TestCase.assertFalse(snappedFirst.satisfied(LogicalClock.DEFAULT.currentStep()));
-            TestCase.assertFalse(snappedDep.satisfied(LogicalClock.DEFAULT.currentStep()));
-            TestCase.assertFalse(snappedOfSnap.satisfied(LogicalClock.DEFAULT.currentStep()));
+            TestCase.assertFalse(
+                    snappedFirst.satisfied(ExecutionContext.getContext().getUpdateGraph().clock().currentStep()));
+            TestCase.assertFalse(
+                    snappedDep.satisfied(ExecutionContext.getContext().getUpdateGraph().clock().currentStep()));
+            TestCase.assertFalse(
+                    snappedOfSnap.satisfied(ExecutionContext.getContext().getUpdateGraph().clock().currentStep()));
 
             System.out.println("Flushing second notification, which should be the recorder for our second snapshot");
-            flushed = UpdateGraphProcessor.DEFAULT.flushOneNotificationForUnitTests();
+            flushed = updateGraph.flushOneNotificationForUnitTests();
 
             System.out.println("Checking satisfaction after #2.");
             TestCase.assertTrue(flushed);
-            TestCase.assertFalse(snappedFirst.satisfied(LogicalClock.DEFAULT.currentStep()));
-            TestCase.assertFalse(snappedDep.satisfied(LogicalClock.DEFAULT.currentStep()));
-            TestCase.assertFalse(snappedOfSnap.satisfied(LogicalClock.DEFAULT.currentStep()));
+            TestCase.assertFalse(
+                    snappedFirst.satisfied(ExecutionContext.getContext().getUpdateGraph().clock().currentStep()));
+            TestCase.assertFalse(
+                    snappedDep.satisfied(ExecutionContext.getContext().getUpdateGraph().clock().currentStep()));
+            TestCase.assertFalse(
+                    snappedOfSnap.satisfied(ExecutionContext.getContext().getUpdateGraph().clock().currentStep()));
 
             System.out.println("Flushing third notification, which should be our right recorder");
-            flushed = UpdateGraphProcessor.DEFAULT.flushOneNotificationForUnitTests();
+            flushed = updateGraph.flushOneNotificationForUnitTests();
 
             System.out.println("Checking satisfaction after #3.");
             TestCase.assertTrue(flushed);
-            TestCase.assertFalse(snappedFirst.satisfied(LogicalClock.DEFAULT.currentStep()));
-            TestCase.assertFalse(snappedDep.satisfied(LogicalClock.DEFAULT.currentStep()));
-            TestCase.assertFalse(snappedOfSnap.satisfied(LogicalClock.DEFAULT.currentStep()));
+            TestCase.assertFalse(
+                    snappedFirst.satisfied(ExecutionContext.getContext().getUpdateGraph().clock().currentStep()));
+            TestCase.assertFalse(
+                    snappedDep.satisfied(ExecutionContext.getContext().getUpdateGraph().clock().currentStep()));
+            TestCase.assertFalse(
+                    snappedOfSnap.satisfied(ExecutionContext.getContext().getUpdateGraph().clock().currentStep()));
 
             System.out.println("Flushing fourth notification, which should be our MergedListener");
-            flushed = UpdateGraphProcessor.DEFAULT.flushOneNotificationForUnitTests();
+            flushed = updateGraph.flushOneNotificationForUnitTests();
 
             System.out.println("Checking satisfaction after #4.");
             TestCase.assertTrue(flushed);
-            TestCase.assertTrue(snappedFirst.satisfied(LogicalClock.DEFAULT.currentStep()));
-            TestCase.assertFalse(snappedDep.satisfied(LogicalClock.DEFAULT.currentStep()));
-            TestCase.assertFalse(snappedOfSnap.satisfied(LogicalClock.DEFAULT.currentStep()));
+            TestCase.assertTrue(
+                    snappedFirst.satisfied(ExecutionContext.getContext().getUpdateGraph().clock().currentStep()));
+            TestCase.assertFalse(
+                    snappedDep.satisfied(ExecutionContext.getContext().getUpdateGraph().clock().currentStep()));
+            TestCase.assertFalse(
+                    snappedOfSnap.satisfied(ExecutionContext.getContext().getUpdateGraph().clock().currentStep()));
 
             // now we should flush the select
-            flushed = UpdateGraphProcessor.DEFAULT.flushOneNotificationForUnitTests();
+            flushed = updateGraph.flushOneNotificationForUnitTests();
             TestCase.assertTrue(flushed);
-            TestCase.assertTrue(snappedFirst.satisfied(LogicalClock.DEFAULT.currentStep()));
-            TestCase.assertTrue(snappedDep.satisfied(LogicalClock.DEFAULT.currentStep()));
-            TestCase.assertFalse(snappedOfSnap.satisfied(LogicalClock.DEFAULT.currentStep()));
+            TestCase.assertTrue(
+                    snappedFirst.satisfied(ExecutionContext.getContext().getUpdateGraph().clock().currentStep()));
+            TestCase.assertTrue(
+                    snappedDep.satisfied(ExecutionContext.getContext().getUpdateGraph().clock().currentStep()));
+            TestCase.assertFalse(
+                    snappedOfSnap.satisfied(ExecutionContext.getContext().getUpdateGraph().clock().currentStep()));
 
             // now we should flush the second snapshot recorder
-            flushed = UpdateGraphProcessor.DEFAULT.flushOneNotificationForUnitTests();
+            flushed = updateGraph.flushOneNotificationForUnitTests();
             TestCase.assertTrue(flushed);
-            TestCase.assertTrue(snappedFirst.satisfied(LogicalClock.DEFAULT.currentStep()));
-            TestCase.assertTrue(snappedDep.satisfied(LogicalClock.DEFAULT.currentStep()));
-            TestCase.assertFalse(snappedOfSnap.satisfied(LogicalClock.DEFAULT.currentStep()));
+            TestCase.assertTrue(
+                    snappedFirst.satisfied(ExecutionContext.getContext().getUpdateGraph().clock().currentStep()));
+            TestCase.assertTrue(
+                    snappedDep.satisfied(ExecutionContext.getContext().getUpdateGraph().clock().currentStep()));
+            TestCase.assertFalse(
+                    snappedOfSnap.satisfied(ExecutionContext.getContext().getUpdateGraph().clock().currentStep()));
 
             // now we should flush the second snapshot merged listener
-            flushed = UpdateGraphProcessor.DEFAULT.flushOneNotificationForUnitTests();
+            flushed = updateGraph.flushOneNotificationForUnitTests();
             TestCase.assertTrue(flushed);
-            TestCase.assertTrue(snappedFirst.satisfied(LogicalClock.DEFAULT.currentStep()));
-            TestCase.assertTrue(snappedDep.satisfied(LogicalClock.DEFAULT.currentStep()));
-            TestCase.assertTrue(snappedOfSnap.satisfied(LogicalClock.DEFAULT.currentStep()));
+            TestCase.assertTrue(
+                    snappedFirst.satisfied(ExecutionContext.getContext().getUpdateGraph().clock().currentStep()));
+            TestCase.assertTrue(
+                    snappedDep.satisfied(ExecutionContext.getContext().getUpdateGraph().clock().currentStep()));
+            TestCase.assertTrue(
+                    snappedOfSnap.satisfied(ExecutionContext.getContext().getUpdateGraph().clock().currentStep()));
 
             // nothing left
-            flushed = UpdateGraphProcessor.DEFAULT.flushOneNotificationForUnitTests();
+            flushed = updateGraph.flushOneNotificationForUnitTests();
             TestCase.assertFalse(flushed);
         });
         TableTools.show(snappedOfSnap);
@@ -1716,14 +1821,14 @@ public class QueryTableTest extends QueryTableTestBase {
         final SingletonLivenessManager singletonManager = new SingletonLivenessManager(whereIn);
 
         // This will release setTable once and whereIn once, Rcs are now (1,2)
-        UpdateGraphProcessor.DEFAULT.exclusiveLock().doLocked(setScope::close);
+        ExecutionContext.getContext().getUpdateGraph().exclusiveLock().doLocked(setScope::close);
 
         assertEquals(0, whereIn.size());
 
-        UpdateGraphProcessor.DEFAULT.startCycleForUnitTests();
+        ExecutionContext.getContext().getUpdateGraph().<ControlledUpdateGraph>cast().startCycleForUnitTests();
         addToTable(setTable, i(0), col("Key", "B"));
         setTable.notifyListeners(i(0), i(), i());
-        UpdateGraphProcessor.DEFAULT.completeCycleForUnitTests();
+        ExecutionContext.getContext().getUpdateGraph().<ControlledUpdateGraph>cast().completeCycleForUnitTests();
 
         assertEquals(1, whereIn.size());
         assertEquals(new Object[] {"B", 2}, DataAccessHelpers.getRecord(whereIn, 0));
@@ -1734,17 +1839,17 @@ public class QueryTableTest extends QueryTableTestBase {
         assertTrue(setTable.tryRetainReference());
         setTable.dropReference();
 
-        UpdateGraphProcessor.DEFAULT.startCycleForUnitTests();
+        ExecutionContext.getContext().getUpdateGraph().<ControlledUpdateGraph>cast().startCycleForUnitTests();
         addToTable(setTable, i(1), col("Key", "D"));
         setTable.notifyListeners(i(1), i(), i());
-        UpdateGraphProcessor.DEFAULT.completeCycleForUnitTests();
+        ExecutionContext.getContext().getUpdateGraph().<ControlledUpdateGraph>cast().completeCycleForUnitTests();
 
         assertEquals(2, whereIn.size());
         assertEquals(new Object[] {"B", 2}, DataAccessHelpers.getRecord(whereIn, 0));
         assertEquals(new Object[] {"D", 4}, DataAccessHelpers.getRecord(whereIn, 1));
 
         // Everything is dropped after this, the singletonManager was holding everything.
-        UpdateGraphProcessor.DEFAULT.exclusiveLock().doLocked(singletonManager::release);
+        ExecutionContext.getContext().getUpdateGraph().exclusiveLock().doLocked(singletonManager::release);
 
         assertFalse(whereIn.tryRetainReference());
         assertFalse(setTable.tryRetainReference());
@@ -1770,7 +1875,8 @@ public class QueryTableTest extends QueryTableTestBase {
         snapshot.addUpdateListener(listener = newListenerWithGlobals(snapshot));
         listener.reset();
 
-        UpdateGraphProcessor.DEFAULT.runWithinUnitTestCycle(() -> {
+        final ControlledUpdateGraph updateGraph = ExecutionContext.getContext().getUpdateGraph().cast();
+        updateGraph.runWithinUnitTestCycle(() -> {
             addToTable(base, i(20, 40), col("A", 30, 50), col("B", "aa", "bc"));
             base.notifyListeners(i(20, 40), i(), i());
         });
@@ -1778,7 +1884,7 @@ public class QueryTableTest extends QueryTableTestBase {
         assertTableEquals(snapshot, testRefreshingTable(intCol("A"), stringCol("B"), intCol("T")));
         assertEquals(listener.getCount(), 0);
 
-        UpdateGraphProcessor.DEFAULT.runWithinUnitTestCycle(() -> {
+        updateGraph.runWithinUnitTestCycle(() -> {
             addToTable(trigger2, i(3), col("T", 5));
             trigger2.notifyListeners(i(3), i(), i());
         });
@@ -1793,7 +1899,7 @@ public class QueryTableTest extends QueryTableTestBase {
         assertEquals(i(), removed);
         listener.reset();
 
-        UpdateGraphProcessor.DEFAULT.runWithinUnitTestCycle(() -> {
+        updateGraph.runWithinUnitTestCycle(() -> {
             removeRows(base, i(10, 20, 30));
             addToTable(base, i(25, 75), col("A", 11, 34), col("B", "A", "Q"));
             base.notifyListeners(i(75), i(10, 20, 30), i(25));
@@ -1805,7 +1911,7 @@ public class QueryTableTest extends QueryTableTestBase {
                 col("T", 5, 5, 5, 5, 5)));
         assertEquals(listener.getCount(), 0);
 
-        UpdateGraphProcessor.DEFAULT.runWithinUnitTestCycle(() -> {
+        updateGraph.runWithinUnitTestCycle(() -> {
             addToTable(trigger2, i(4, 5), col("T", 7, 8));
             trigger2.notifyListeners(i(4, 5), i(), i());
         });
@@ -1834,7 +1940,8 @@ public class QueryTableTest extends QueryTableTestBase {
         assertTableEquals(expected, result);
 
         final Table result2 = base.snapshotWhen(trigger, Flag.INCREMENTAL);
-        UpdateGraphProcessor.DEFAULT.runWithinUnitTestCycle(() -> {
+        final ControlledUpdateGraph updateGraph = ExecutionContext.getContext().getUpdateGraph().cast();
+        updateGraph.runWithinUnitTestCycle(() -> {
             addToTable(trigger, i(1), col("T", 2));
             trigger.notifyListeners(i(1), i(), i());
         });
@@ -1863,7 +1970,8 @@ public class QueryTableTest extends QueryTableTestBase {
         snapshot.addUpdateListener(listener = new io.deephaven.engine.table.impl.SimpleListener(snapshot));
         listener.reset();
 
-        UpdateGraphProcessor.DEFAULT.runWithinUnitTestCycle(() -> {
+        final ControlledUpdateGraph updateGraph = ExecutionContext.getContext().getUpdateGraph().cast();
+        updateGraph.runWithinUnitTestCycle(() -> {
             assertTableEquals(prevTable(snapshot), firstResult);
             assertTableEquals(snapshot, firstResult);
 
@@ -1876,7 +1984,7 @@ public class QueryTableTest extends QueryTableTestBase {
         assertEquals(listener.getCount(), 0);
 
 
-        UpdateGraphProcessor.DEFAULT.runWithinUnitTestCycle(() -> {
+        updateGraph.runWithinUnitTestCycle(() -> {
             addToTable(trigger, i(3), col("T", 5));
             trigger.notifyListeners(i(3), i(), i());
             assertEquals("", diff(prevTable(snapshot), firstResult, 10));
@@ -1894,7 +2002,7 @@ public class QueryTableTest extends QueryTableTestBase {
         assertTrue(listener.update.shifted().empty());
         listener.reset();
 
-        UpdateGraphProcessor.DEFAULT.runWithinUnitTestCycle(() -> {
+        updateGraph.runWithinUnitTestCycle(() -> {
             removeRows(base, i(10, 20, 30));
             addToTable(base, i(25, 75), col("A", 11, 34), col("B", "A", "Q"));
             base.notifyListeners(i(75), i(10, 20, 30), i(25));
@@ -1903,7 +2011,7 @@ public class QueryTableTest extends QueryTableTestBase {
         assertTableEquals(snapshot, secondResult);
         assertEquals(listener.getCount(), 0);
 
-        UpdateGraphProcessor.DEFAULT.runWithinUnitTestCycle(() -> {
+        updateGraph.runWithinUnitTestCycle(() -> {
             addToTable(trigger, i(4, 5), col("T", 7, 8));
             trigger.notifyListeners(i(4, 5), i(), i());
         });
@@ -1918,12 +2026,12 @@ public class QueryTableTest extends QueryTableTestBase {
         assertTrue(listener.update.shifted().empty());
         listener.reset();
 
-        UpdateGraphProcessor.DEFAULT.runWithinUnitTestCycle(() -> {
+        updateGraph.runWithinUnitTestCycle(() -> {
             addToTable(base, i(25), col("A", 12), col("B", "R"));
             base.notifyListeners(i(), i(), i(25));
         });
 
-        UpdateGraphProcessor.DEFAULT.runWithinUnitTestCycle(() -> {
+        updateGraph.runWithinUnitTestCycle(() -> {
             addToTable(trigger, i(6), col("T", 9));
             trigger.notifyListeners(i(6), i(), i());
         });
@@ -1976,7 +2084,8 @@ public class QueryTableTest extends QueryTableTestBase {
                 final boolean modRight = random.nextBoolean();
                 final boolean modifyRightFirst = modRight && modStamp && random.nextBoolean();
 
-                UpdateGraphProcessor.DEFAULT.runWithinUnitTestCycle(() -> {
+                final ControlledUpdateGraph updateGraph = ExecutionContext.getContext().getUpdateGraph().cast();
+                updateGraph.runWithinUnitTestCycle(() -> {
                     if (printTableUpdates) {
                         System.out.println("Step = " + fstep + ", modStamp=" + modStamp + ", modRight=" + modRight
                                 + ", modifyRightFirst=" + modifyRightFirst);
@@ -1986,10 +2095,10 @@ public class QueryTableTest extends QueryTableTestBase {
                         GenerateTableUpdates.generateTableUpdates(filteredSize, random, base, rightInfo);
                     }
                     if (modStamp) {
-                        final long lastStamp = stampTable.getRowSet().lastRowKey();
+                        final long lastStamp1 = stampTable.getRowSet().lastRowKey();
                         final int numAdditions = 1 + random.nextInt(stampSize);
                         final RowSet stampsToAdd =
-                                RowSetFactory.fromRange(lastStamp + 1, lastStamp + numAdditions);
+                                RowSetFactory.fromRange(lastStamp1 + 1, lastStamp1 + numAdditions);
 
                         final ColumnHolder<?>[] columnAdditions = new ColumnHolder<?>[stampInfo.length];
                         for (int ii = 0; ii < columnAdditions.length; ii++) {
@@ -2090,13 +2199,14 @@ public class QueryTableTest extends QueryTableTestBase {
         final Supplier<TableUpdateImpl> newUpdate =
                 () -> new TableUpdateImpl(i(), i(), i(), RowSetShiftData.EMPTY, ModifiedColumnSet.EMPTY);
 
-        UpdateGraphProcessor.DEFAULT.runWithinUnitTestCycle(() -> {
+        final ControlledUpdateGraph updateGraph = ExecutionContext.getContext().getUpdateGraph().cast();
+        updateGraph.runWithinUnitTestCycle(() -> {
             addToTable(queryTable, i(3), col("intCol", 30));
             removeRows(queryTable, i(2));
-            final TableUpdateImpl update = newUpdate.get();
-            update.added = i(3);
-            update.removed = i(2);
-            queryTable.notifyListeners(update);
+            final TableUpdateImpl update3 = newUpdate.get();
+            update3.added = i(3);
+            update3.removed = i(2);
+            queryTable.notifyListeners(update3);
         });
 
         Assert.assertEquals("simpleListener.getCount() == 1", 1, simpleListener.getCount());
@@ -2107,12 +2217,12 @@ public class QueryTableTest extends QueryTableTestBase {
         Assert.assertEquals("simpleListener.update.added = {1}", i(1), simpleListener.update.added());
         Assert.assertEquals("simpleListener.update.removed = {1}", i(1), simpleListener.update.removed());
 
-        UpdateGraphProcessor.DEFAULT.runWithinUnitTestCycle(() -> {
+        updateGraph.runWithinUnitTestCycle(() -> {
             addToTable(queryTable, i(3), col("intCol", 30));
-            final TableUpdateImpl update = newUpdate.get();
-            update.modified = i(3);
-            update.modifiedColumnSet = queryTable.newModifiedColumnSet("intCol");
-            queryTable.notifyListeners(update);
+            final TableUpdateImpl update2 = newUpdate.get();
+            update2.modified = i(3);
+            update2.modifiedColumnSet = queryTable.newModifiedColumnSet("intCol");
+            queryTable.notifyListeners(update2);
         });
 
         Assert.assertEquals("simpleListener.getCount() == 2", 2, simpleListener.getCount());
@@ -2122,13 +2232,13 @@ public class QueryTableTest extends QueryTableTestBase {
         Assert.assertEquals("simpleListener.update.modified = {1}", i(1), simpleListener.update.modified());
         Assert.assertEquals("simpleListener.update.shifted.size() = 0", 0, simpleListener.update.shifted().size());
 
-        UpdateGraphProcessor.DEFAULT.runWithinUnitTestCycle(() -> {
+        updateGraph.runWithinUnitTestCycle(() -> {
             addToTable(queryTable, i(3, 5), col("intCol", 30, 50));
-            final TableUpdateImpl update = newUpdate.get();
-            update.added = i(5);
-            update.modified = i(3);
-            update.modifiedColumnSet = queryTable.newModifiedColumnSet("intCol");
-            queryTable.notifyListeners(update);
+            final TableUpdateImpl update1 = newUpdate.get();
+            update1.added = i(5);
+            update1.modified = i(3);
+            update1.modifiedColumnSet = queryTable.newModifiedColumnSet("intCol");
+            queryTable.notifyListeners(update1);
         });
 
         Assert.assertEquals("simpleListener.getCount() == 3", 3, simpleListener.getCount());
@@ -2145,7 +2255,7 @@ public class QueryTableTest extends QueryTableTestBase {
         Assert.assertEquals("simpleListener.update.shifted.getShiftDelta(0) = 1", 1,
                 simpleListener.update.shifted().getShiftDelta(0));
 
-        UpdateGraphProcessor.DEFAULT.runWithinUnitTestCycle(() -> {
+        updateGraph.runWithinUnitTestCycle(() -> {
             removeRows(queryTable, i(4));
             final TableUpdateImpl update = newUpdate.get();
             update.removed = i(4);
@@ -2180,13 +2290,14 @@ public class QueryTableTest extends QueryTableTestBase {
         final Supplier<TableUpdateImpl> newUpdate =
                 () -> new TableUpdateImpl(i(), i(), i(), RowSetShiftData.EMPTY, ModifiedColumnSet.EMPTY);
 
-        UpdateGraphProcessor.DEFAULT.runWithinUnitTestCycle(() -> {
+        final ControlledUpdateGraph updateGraph = ExecutionContext.getContext().getUpdateGraph().cast();
+        updateGraph.runWithinUnitTestCycle(() -> {
             addToTable(queryTable, i(3), col("intCol", 30));
             removeRows(queryTable, i(2));
-            final TableUpdateImpl update = newUpdate.get();
-            update.added = i(3);
-            update.removed = i(2);
-            queryTable.notifyListeners(update);
+            final TableUpdateImpl update3 = newUpdate.get();
+            update3.added = i(3);
+            update3.removed = i(2);
+            queryTable.notifyListeners(update3);
         });
 
         Assert.assertEquals("simpleListener.getCount() == 1", 1, simpleListener.getCount());
@@ -2197,12 +2308,12 @@ public class QueryTableTest extends QueryTableTestBase {
         Assert.assertEquals("simpleListener.update.added = {3}", i(3), simpleListener.update.added());
         Assert.assertEquals("simpleListener.update.removed = {2}", i(2), simpleListener.update.removed());
 
-        UpdateGraphProcessor.DEFAULT.runWithinUnitTestCycle(() -> {
+        updateGraph.runWithinUnitTestCycle(() -> {
             addToTable(queryTable, i(3), col("intCol", 30));
-            final TableUpdateImpl update = newUpdate.get();
-            update.modified = i(3);
-            update.modifiedColumnSet = queryTable.newModifiedColumnSet("intCol");
-            queryTable.notifyListeners(update);
+            final TableUpdateImpl update2 = newUpdate.get();
+            update2.modified = i(3);
+            update2.modifiedColumnSet = queryTable.newModifiedColumnSet("intCol");
+            queryTable.notifyListeners(update2);
         });
 
         Assert.assertEquals("simpleListener.getCount() == 2", 2, simpleListener.getCount());
@@ -2212,13 +2323,13 @@ public class QueryTableTest extends QueryTableTestBase {
         Assert.assertEquals("simpleListener.update.modified = {3}", i(3), simpleListener.update.modified());
         Assert.assertEquals("simpleListener.update.shifted.size() = 0", 0, simpleListener.update.shifted().size());
 
-        UpdateGraphProcessor.DEFAULT.runWithinUnitTestCycle(() -> {
+        updateGraph.runWithinUnitTestCycle(() -> {
             addToTable(queryTable, i(3, 5), col("intCol", 30, 50));
-            final TableUpdateImpl update = newUpdate.get();
-            update.added = i(5);
-            update.modified = i(3);
-            update.modifiedColumnSet = queryTable.newModifiedColumnSet("intCol");
-            queryTable.notifyListeners(update);
+            final TableUpdateImpl update1 = newUpdate.get();
+            update1.added = i(5);
+            update1.modified = i(3);
+            update1.modifiedColumnSet = queryTable.newModifiedColumnSet("intCol");
+            queryTable.notifyListeners(update1);
         });
 
         Assert.assertEquals("simpleListener.getCount() == 3", 3, simpleListener.getCount());
@@ -2235,7 +2346,7 @@ public class QueryTableTest extends QueryTableTestBase {
         // Assert.assertEquals("simpleListener.update.shifted.getShiftDelta(0) = 1", 1,
         // simpleListener.update.shifted.getShiftDelta(0));
 
-        UpdateGraphProcessor.DEFAULT.runWithinUnitTestCycle(() -> {
+        updateGraph.runWithinUnitTestCycle(() -> {
             removeRows(queryTable, i(4));
             final TableUpdateImpl update = newUpdate.get();
             update.removed = i(4);
@@ -2420,7 +2531,8 @@ public class QueryTableTest extends QueryTableTestBase {
             fail("Expected does not match previous value!");
         }
 
-        UpdateGraphProcessor.DEFAULT.runWithinUnitTestCycle(() -> {
+        final ControlledUpdateGraph updateGraph = ExecutionContext.getContext().getUpdateGraph().cast();
+        updateGraph.runWithinUnitTestCycle(() -> {
         });
 
         intPrevDirect =
@@ -2447,7 +2559,8 @@ public class QueryTableTest extends QueryTableTestBase {
             t1.addUpdateListener(errorListener);
 
             // This is too big, we should fail
-            UpdateGraphProcessor.DEFAULT.runWithinUnitTestCycle(() -> {
+            final ControlledUpdateGraph updateGraph = ExecutionContext.getContext().getUpdateGraph().cast();
+            updateGraph.runWithinUnitTestCycle(() -> {
                 final long bigIndex = 1L << 55;
                 addToTable(table, i(bigIndex), intCol("X", 3),
                         new ColumnHolder<>("Y", String[].class, String.class, false, new String[] {"f"}));
@@ -2483,7 +2596,8 @@ public class QueryTableTest extends QueryTableTestBase {
             validateUpdates(t1);
 
             // This is too big, we should fail
-            UpdateGraphProcessor.DEFAULT.runWithinUnitTestCycle(() -> {
+            final ControlledUpdateGraph updateGraph = ExecutionContext.getContext().getUpdateGraph().cast();
+            updateGraph.runWithinUnitTestCycle(() -> {
                 addToTable(table, i(9), col("X", 3), new ColumnHolder<>("Y", String[].class, String.class, false,
                         new String[] {"f", "g", "h", "i", "j", "k"}));
                 table.notifyListeners(i(9), i(), i());
@@ -2501,7 +2615,7 @@ public class QueryTableTest extends QueryTableTestBase {
             assertEquals(Arrays.asList("a", "b", "c", "d", "e"), Arrays.asList((String[]) IndexedDataColumn
                     .makePreviousColumn(t1.getRowSet(), t1.getColumnSource("Y")).getDirect()));
 
-            UpdateGraphProcessor.DEFAULT.runWithinUnitTestCycle(() -> {
+            updateGraph.runWithinUnitTestCycle(() -> {
             });
 
             assertEquals(Arrays.asList("X", "Y"), t1.getDefinition().getColumnNames());
@@ -2973,7 +3087,18 @@ public class QueryTableTest extends QueryTableTestBase {
         final MutableObject<QueryTable> nj = new MutableObject<>();
         final MutableObject<QueryTable> ft = new MutableObject<>();
 
-        UpdateGraphProcessor.DEFAULT.runWithinUnitTestCycle(() -> {
+        // now is safe to create the nj
+        // The real test happens here. Off of the UGP thread we do an operation, one that supports concurrent
+        // instantiation, such that we use prev values when applicable. Assume the parent table has not ticked
+        // this cycle: 1) if the parent table pre-existed then we want to use prev values (to handle when parent
+        // is mid-tick but unpublished) 2) if the parent table was created this cycle, then A) prev values are
+        // undefined, B) it must have been created AFTER any of its dependencies may have ticked this cycle and
+        // C) the table is not allowed to tick this cycle.
+        // The specific scenario we are trying to catch is when the parent re-uses data structures (i.e. RowSet)
+        // from its parent, which have valid prev values, but the prev values must not be used during the first
+        // cycle.
+        final ControlledUpdateGraph updateGraph = ExecutionContext.getContext().getUpdateGraph().cast();
+        updateGraph.runWithinUnitTestCycle(() -> {
             final RowSet newRows = i(2, 4, 18, 20);
             addToTable(lTable, newRows, col("X", "e", "f", "g", "h"));
             final TableUpdateImpl update = new TableUpdateImpl();
@@ -3022,7 +3147,7 @@ public class QueryTableTest extends QueryTableTestBase {
         // to coalesce a table and immediately make it garbage.
 
         // This regression check verifies that we do not see a lastNotificationStep !=
-        // LogicalClock.DEFAULT.currentStep()
+        // ExecutionContext.getContext().getUpdateGraph().logicalClock().currentStep()
         // assertion error when notifying from an uncoalesced table.
 
         final TrackingWritableRowSet parentRowSet = RowSetFactory.empty().toTracking();
@@ -3031,7 +3156,8 @@ public class QueryTableTest extends QueryTableTestBase {
         final UncoalescedTable<?> table = new MockUncoalescedTable(supplier);
         table.setRefreshing(true);
 
-        UpdateGraphProcessor.DEFAULT.runWithinUnitTestCycle(() -> {
+        final ControlledUpdateGraph updateGraph = ExecutionContext.getContext().getUpdateGraph().cast();
+        updateGraph.runWithinUnitTestCycle(() -> {
             final TableUpdateImpl update = new TableUpdateImpl();
 
             update.added = RowSetFactory.fromKeys(parentRowSet.size());
@@ -3042,7 +3168,8 @@ public class QueryTableTest extends QueryTableTestBase {
 
             parentRowSet.insert(update.added());
             table.notifyListeners(update);
-            Assert.assertEquals(LogicalClock.DEFAULT.currentStep(), table.getLastNotificationStep());
+            Assert.assertEquals(ExecutionContext.getContext().getUpdateGraph().clock().currentStep(),
+                    table.getLastNotificationStep());
         });
     }
 
@@ -3059,7 +3186,8 @@ public class QueryTableTest extends QueryTableTestBase {
         final TableUpdateListener listener = new io.deephaven.engine.table.impl.SimpleListener(src);
         src.addUpdateListener(listener);
 
-        UpdateGraphProcessor.DEFAULT.runWithinUnitTestCycle(() -> {
+        final ControlledUpdateGraph updateGraph = ExecutionContext.getContext().getUpdateGraph().cast();
+        updateGraph.runWithinUnitTestCycle(() -> {
             addToTable(src, update.added());
             src.notifyListeners(update);
         });
@@ -3075,7 +3203,8 @@ public class QueryTableTest extends QueryTableTestBase {
         update.shifted = RowSetShiftData.EMPTY;
         update.modifiedColumnSet = ModifiedColumnSet.EMPTY;
 
-        UpdateGraphProcessor.DEFAULT.runWithinUnitTestCycle(() -> {
+        final ControlledUpdateGraph updateGraph = ExecutionContext.getContext().getUpdateGraph().cast();
+        updateGraph.runWithinUnitTestCycle(() -> {
             addToTable(src, update.added());
             src.notifyListeners(update);
         });
@@ -3095,7 +3224,8 @@ public class QueryTableTest extends QueryTableTestBase {
         final ShiftObliviousListener listener = new SimpleShiftObliviousListener(src);
         src.addUpdateListener(listener);
 
-        UpdateGraphProcessor.DEFAULT.runWithinUnitTestCycle(() -> {
+        final ControlledUpdateGraph updateGraph = ExecutionContext.getContext().getUpdateGraph().cast();
+        updateGraph.runWithinUnitTestCycle(() -> {
             addToTable(src, update.added());
             src.notifyListeners(update);
         });
@@ -3116,7 +3246,8 @@ public class QueryTableTest extends QueryTableTestBase {
                 new io.deephaven.engine.table.impl.SimpleListener(src);
         src.addUpdateListener(listener);
 
-        UpdateGraphProcessor.DEFAULT.runWithinUnitTestCycle(() -> {
+        final ControlledUpdateGraph updateGraph = ExecutionContext.getContext().getUpdateGraph().cast();
+        updateGraph.runWithinUnitTestCycle(() -> {
             addToTable(src, update.added());
             src.notifyListeners(update);
         });
@@ -3145,7 +3276,8 @@ public class QueryTableTest extends QueryTableTestBase {
         int i = 1;
         for (int step = 0; step < 2; ++step) {
             final int key = i++;
-            UpdateGraphProcessor.DEFAULT.runWithinUnitTestCycle(() -> {
+            final ControlledUpdateGraph updateGraph = ExecutionContext.getContext().getUpdateGraph().cast();
+            updateGraph.runWithinUnitTestCycle(() -> {
                 final RowSet addRowSet = i(key);
                 addToTable(t1, addRowSet, intCol("T", key));
                 t1.notifyListeners(addRowSet, i(), i());
@@ -3245,6 +3377,144 @@ public class QueryTableTest extends QueryTableTestBase {
         @Override
         protected MockUncoalescedTable copy() {
             return new MockUncoalescedTable(supplier);
+        }
+    }
+
+    public void testMultipleUpdateGraphs() {
+        final QueryTable r1, s1, r2, s2;
+        final UpdateGraph g1 = new DummyUpdateGraph("one");
+        final UpdateGraph g2 = new DummyUpdateGraph("two");
+
+        try (final SafeCloseable ignored = ExecutionContext.getContext().withUpdateGraph(g1).open()) {
+            r1 = testRefreshingTable(i().toTracking(), intCol("T"));
+            s1 = testTable(i().toTracking(), intCol("T"));
+        }
+        try (final SafeCloseable ignored = ExecutionContext.getContext().withUpdateGraph(g2).open()) {
+            r2 = testRefreshingTable(i().toTracking(), intCol("T"));
+            s2 = testTable(i().toTracking(), intCol("T"));
+        }
+
+        try {
+            g1.sharedLock().computeLocked(() -> g2.sharedLock().computeLocked(() -> merge(r1, r2)));
+            fail("Expected conflict");
+        } catch (UpdateGraphConflictException expected) {
+        }
+
+        try {
+            g1.sharedLock().computeLocked(() -> g2.sharedLock().computeLocked(() -> merge(s1, r1, s2, r2)));
+            fail("Expected conflict");
+        } catch (UpdateGraphConflictException expected) {
+        }
+
+        assertEquals(g1, g1.sharedLock().computeLocked(() -> merge(r1, s2).getUpdateGraph()));
+        assertEquals(g1, g1.sharedLock().computeLocked(() -> merge(s2, r1).getUpdateGraph()));
+        assertEquals(g1, g1.sharedLock().computeLocked(() -> merge(r1, s1, s2).getUpdateGraph()));
+        assertEquals(g1, g1.sharedLock().computeLocked(() -> merge(s2, s1, r1).getUpdateGraph()));
+
+        assertEquals(g2, g2.sharedLock().computeLocked(() -> merge(r2, s1).getUpdateGraph()));
+        assertEquals(g2, g2.sharedLock().computeLocked(() -> merge(s1, r2).getUpdateGraph()));
+        assertEquals(g2, g2.sharedLock().computeLocked(() -> merge(r2, s2, s1).getUpdateGraph()));
+        assertEquals(g2, g2.sharedLock().computeLocked(() -> merge(s1, s2, r2).getUpdateGraph()));
+    }
+
+    private static final class DummyUpdateGraph implements UpdateGraph {
+
+        private final String name;
+        private final UpdateGraphLock lock;
+
+        private final ThreadLocal<Boolean> serialTableOperationsSafe = ThreadLocal.withInitial(() -> false);
+
+        private DummyUpdateGraph(@NotNull final String name) {
+            this.name = name;
+            lock = UpdateGraphLock.create(this, true);
+        }
+
+        @Override
+        public LogOutput append(LogOutput logOutput) {
+            return logOutput.append(getClass().getName());
+        }
+
+        @Override
+        public boolean satisfied(long step) {
+            throw new UnsupportedOperationException();
+        }
+
+        @Override
+        public UpdateGraph getUpdateGraph() {
+            return this;
+        }
+
+        @Override
+        public void addNotification(@NotNull Notification notification) {
+            throw new UnsupportedOperationException();
+        }
+
+        @Override
+        public void addNotifications(@NotNull Collection<? extends Notification> notifications) {
+            throw new UnsupportedOperationException();
+        }
+
+        @Override
+        public boolean maybeAddNotification(@NotNull Notification notification, long deliveryStep) {
+            throw new UnsupportedOperationException();
+        }
+
+        @Override
+        public AwareFunctionalLock sharedLock() {
+            return lock.sharedLock();
+        }
+
+        @Override
+        public AwareFunctionalLock exclusiveLock() {
+            return lock.exclusiveLock();
+        }
+
+        @Override
+        public LogicalClock clock() {
+            return () -> 1;
+        }
+
+        @Override
+        public int parallelismFactor() {
+            return 1;
+        }
+
+        @Override
+        public LogEntry logDependencies() {
+            throw new UnsupportedOperationException();
+        }
+
+        @Override
+        public boolean currentThreadProcessesUpdates() {
+            return false;
+        }
+
+        @Override
+        public boolean serialTableOperationsSafe() {
+            return serialTableOperationsSafe.get();
+        }
+
+        @Override
+        public boolean setSerialTableOperationsSafe(final boolean newValue) {
+            final boolean oldValue = serialTableOperationsSafe.get();
+            serialTableOperationsSafe.set(newValue);
+            return oldValue;
+        }
+
+        @Override
+        public boolean supportsRefreshing() {
+            return true;
+        }
+
+        @Override
+        public void addSource(@NotNull Runnable updateSource) {}
+
+        @Override
+        public void removeSource(@NotNull Runnable updateSource) {}
+
+        @Override
+        public void requestRefresh() {
+            throw new UnsupportedOperationException();
         }
     }
 }

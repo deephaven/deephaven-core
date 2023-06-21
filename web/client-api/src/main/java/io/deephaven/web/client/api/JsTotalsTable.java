@@ -143,7 +143,7 @@ public class JsTotalsTable implements JoinableTable {
     }
 
     @JsMethod
-    public JsArray<CustomColumn> applyCustomColumns(Object[] customColumns) {
+    public JsArray<CustomColumn> applyCustomColumns(JsArray<JsTable.CustomColumnArgUnionType> customColumns) {
         return wrappedTable.applyCustomColumns(customColumns);
     }
 

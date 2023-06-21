@@ -5,6 +5,8 @@ package io.deephaven.web.client.api;
 
 import com.vertispan.tsdefs.annotations.TsName;
 import com.vertispan.tsdefs.annotations.TsTypeRef;
+import com.vertispan.tsdefs.annotations.TsUnion;
+import com.vertispan.tsdefs.annotations.TsUnionMember;
 import elemental2.core.JsArray;
 import elemental2.dom.CustomEventInit;
 import elemental2.dom.DomGlobal;
@@ -19,6 +21,7 @@ import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.table_pb.Aggr
 import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.table_pb.AsOfJoinTablesRequest;
 import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.table_pb.BatchTableRequest;
 import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.table_pb.CrossJoinTablesRequest;
+import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.table_pb.DropColumnsRequest;
 import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.table_pb.ExactJoinTablesRequest;
 import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.table_pb.ExportedTableCreationResponse;
 import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.table_pb.Literal;
@@ -71,7 +74,10 @@ import io.deephaven.web.shared.fu.RemoverFn;
 import jsinterop.annotations.JsMethod;
 import jsinterop.annotations.JsNullable;
 import jsinterop.annotations.JsOptional;
+import jsinterop.annotations.JsOverlay;
+import jsinterop.annotations.JsPackage;
 import jsinterop.annotations.JsProperty;
+import jsinterop.annotations.JsType;
 import jsinterop.base.Any;
 import jsinterop.base.Js;
 import jsinterop.base.JsPropertyMap;
@@ -444,17 +450,43 @@ public class JsTable extends HasLifecycle implements HasTableBinding, JoinableTa
         return JsItr.slice(currentFilter);
     }
 
+    @TsUnion
+    @JsType(name = "?", namespace = JsPackage.GLOBAL, isNative = true)
+    public interface CustomColumnArgUnionType {
+        @JsOverlay
+        default boolean isString() {
+            return (Object) this instanceof String;
+        }
+
+        @JsOverlay
+        default boolean isCustomColumn() {
+            return (Object) this instanceof CustomColumn;
+        }
+
+        @JsOverlay
+        @TsUnionMember
+        default String asString() {
+            return Js.asString(this);
+        }
+
+        @JsOverlay
+        @TsUnionMember
+        default CustomColumn asCustomColumn() {
+            return Js.cast(this);
+        }
+    }
+
     @JsMethod
     @SuppressWarnings("unusable-by-js")
-    // TODO union this
-    public JsArray<CustomColumn> applyCustomColumns(Object[] customColumns) {
-        String[] customColumnStrings = Arrays.stream(customColumns).map(obj -> {
-            if (obj instanceof String || obj instanceof CustomColumn) {
-                return obj.toString();
+    public JsArray<CustomColumn> applyCustomColumns(JsArray<CustomColumnArgUnionType> customColumns) {
+        String[] customColumnStrings = customColumns.map((item, index, array) -> {
+            if (item.isString() || item.isCustomColumn()) {
+                return item.toString();
             }
 
-            return (new CustomColumn((JsPropertyMap<Object>) obj)).toString();
-        }).toArray(String[]::new);
+            return (new CustomColumn((JsPropertyMap<Object>) item)).toString();
+        }).asArray(new String[0]);
+
         final List<CustomColumnDescriptor> newCustomColumns = CustomColumnDescriptor.from(customColumnStrings);
 
         // take a look at the current custom columns so we can return it
@@ -472,7 +504,7 @@ public class JsTable extends HasLifecycle implements HasTableBinding, JoinableTa
                     batcher.customColumns(newCustomColumns);
                     batcher.filter(current.getFilters());
                     batcher.sort(current.getSorts());
-                }).catch_(logError(() -> "Failed to apply custom columns: " + Arrays.toString(customColumns)));
+                }).catch_(logError(() -> "Failed to apply custom columns: " + customColumns));
 
             }
         }
@@ -666,14 +698,13 @@ public class JsTable extends HasLifecycle implements HasTableBinding, JoinableTa
             JsArray<String> dropColumns = directive.getDropColumns();
             requestMessage.setSourceId(target.getHandle().makeTableReference());
             requestMessage.setResultId(newState.getHandle().makeTicket());
-            if (updateViewExprs != null && updateViewExprs.length != 0) {
+            if (updateViewExprs.length != 0) {
                 SelectOrUpdateRequest columnExpr = new SelectOrUpdateRequest();
                 columnExpr.setResultId(requestMessage.getResultId());
                 requestMessage.setResultId();
                 columnExpr.setColumnSpecsList(updateViewExprs);
-                TableReference prev = new TableReference();
-                prev.setBatchOffset(0);
-                columnExpr.setSourceId(prev);
+                columnExpr.setSourceId(new TableReference());
+                columnExpr.getSourceId().setBatchOffset(0);
                 BatchTableRequest batch = new BatchTableRequest();
                 Operation aggOp = new Operation();
                 aggOp.setAggregate(requestMessage);
@@ -681,6 +712,18 @@ public class JsTable extends HasLifecycle implements HasTableBinding, JoinableTa
                 colsOp.setUpdateView(columnExpr);
                 batch.addOps(aggOp);
                 batch.addOps(colsOp);
+                if (dropColumns.length != 0) {
+                    DropColumnsRequest drop = new DropColumnsRequest();
+                    drop.setColumnNamesList(dropColumns);
+                    drop.setResultId(columnExpr.getResultId());
+                    columnExpr.setResultId();
+                    drop.setSourceId(new TableReference());
+                    drop.getSourceId().setBatchOffset(1);
+
+                    Operation dropOp = new Operation();
+                    dropOp.setDropColumns(drop);
+                    batch.addOps(dropOp);
+                }
                 ResponseStreamWrapper<ExportedTableCreationResponse> stream = ResponseStreamWrapper
                         .of(workerConnection.tableServiceClient().batch(batch, workerConnection.metadata()));
                 stream.onData(creationResponse -> {

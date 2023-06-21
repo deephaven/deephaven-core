@@ -9,7 +9,7 @@ import io.deephaven.configuration.Configuration;
 import io.deephaven.engine.table.ModifiedColumnSet;
 import io.deephaven.engine.table.Table;
 import io.deephaven.engine.table.TableUpdate;
-import io.deephaven.engine.updategraph.UpdateGraphProcessor;
+import io.deephaven.engine.updategraph.UpdateGraph;
 import io.deephaven.engine.liveness.LivenessArtifact;
 import io.deephaven.engine.liveness.LivenessScope;
 import io.deephaven.engine.table.impl.*;
@@ -54,12 +54,11 @@ public class PublishToKafka<K, V> extends LivenessArtifact {
      * The new publisher will produce records for existing {@code table} data at construction.
      * <p>
      * If {@code table} is a dynamic, refreshing table ({@link Table#isRefreshing()}), the calling thread must block the
-     * {@link UpdateGraphProcessor#DEFAULT UpdateGraphProcessor} by holding either its
-     * {@link UpdateGraphProcessor#exclusiveLock() exclusive lock} or its {@link UpdateGraphProcessor#sharedLock()
-     * shared lock}. The publisher will install a listener in order to produce new records as updates become available.
-     * Callers must be sure to maintain a reference to the publisher and ensure that it remains
-     * {@link io.deephaven.engine.liveness.LivenessReferent live}. The easiest way to do this may be to construct the
-     * publisher enclosed by a {@link io.deephaven.engine.liveness.LivenessScope liveness scope} with
+     * {@link UpdateGraph update graph} by holding either its {@link UpdateGraph#exclusiveLock() exclusive lock} or its
+     * {@link UpdateGraph#sharedLock() shared lock}. The publisher will install a listener in order to produce new
+     * records as updates become available. Callers must be sure to maintain a reference to the publisher and ensure
+     * that it remains {@link io.deephaven.engine.liveness.LivenessReferent live}. The easiest way to do this may be to
+     * construct the publisher enclosed by a {@link io.deephaven.engine.liveness.LivenessScope liveness scope} with
      * {@code enforceStrongReachability} specified as {@code true}, and {@link LivenessScope#release() release} the
      * scope when publication is no longer needed. For example:
      * 

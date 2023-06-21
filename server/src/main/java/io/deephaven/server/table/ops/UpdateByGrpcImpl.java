@@ -10,8 +10,9 @@ import io.deephaven.api.updateby.spec.WindowScale;
 import io.deephaven.auth.codegen.impl.TableServiceContextualAuthWiring;
 import io.deephaven.base.verify.Assert;
 import io.deephaven.engine.table.Table;
-import io.deephaven.engine.updategraph.UpdateGraphProcessor;
 import io.deephaven.proto.backplane.grpc.*;
+import io.deephaven.proto.backplane.grpc.BatchTableRequest;
+import io.deephaven.proto.backplane.grpc.UpdateByRequest;
 import io.deephaven.proto.backplane.grpc.UpdateByRequest.UpdateByOperation.UpdateByColumn;
 import io.deephaven.proto.backplane.grpc.UpdateByRequest.UpdateByOperation.UpdateByColumn.UpdateBySpec.*;
 import io.deephaven.proto.backplane.grpc.UpdateByRequest.UpdateByOptions;
@@ -71,7 +72,7 @@ public final class UpdateByGrpcImpl extends GrpcTableOperation<UpdateByRequest> 
                 request.getGroupByColumnsList().stream().map(ColumnName::of).collect(Collectors.toList());
 
         if (parent.isRefreshing()) {
-            return UpdateGraphProcessor.DEFAULT.sharedLock().computeLocked(() -> control == null
+            return parent.getUpdateGraph().sharedLock().computeLocked(() -> control == null
                     ? parent.updateBy(operations, groupByColumns)
                     : parent.updateBy(control, operations, groupByColumns));
         }

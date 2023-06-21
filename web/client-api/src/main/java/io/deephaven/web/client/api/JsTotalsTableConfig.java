@@ -246,7 +246,7 @@ public class JsTotalsTableConfig {
                     agg.setCount(count);
                     aggColumns.forEach((p0, p1, p2) -> {
                         String colName = p0.split("=")[0].trim();
-                        customColumns.push(colName + "__Count = Count");
+                        customColumns.push(colName + " = Count");
                         return null;
                     });
                     dropColumns.push("Count");

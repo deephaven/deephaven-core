@@ -11,7 +11,7 @@
 namespace deephaven::client::impl {
 class TableHandleImpl;
 
-class TableHandleManagerImpl {
+class TableHandleManagerImpl final : public std::enable_shared_from_this<TableHandleManagerImpl> {
   struct Private {};
   typedef deephaven::client::server::Server Server;
   typedef deephaven::client::utility::Executor Executor;
@@ -43,11 +43,15 @@ public:
   void runScriptAsync(std::string code, std::shared_ptr<SFCallback<>> callback);
 
   /**
-   * For locally creating a new ticket, e.g. when making a table with Arrow. numRows and isStatic are needed
-   * so that TableHandleImpl has something to report for TableHandleImpl::numRows() and TableHandleImpl::isStatic().
+   * See the documentation for Server::newTicket().
    */
-  std::tuple<std::shared_ptr<TableHandleImpl>, arrow::flight::FlightDescriptor> newTicket(int64_t numRows,
-      bool isStatic) const;
+  std::string newTicket() {
+    auto ticket = server_->newTicket();
+    // our API only wants the internal string part.
+    return std::move(*ticket.mutable_ticket());
+  }
+
+  std::shared_ptr<TableHandleImpl> makeTableHandleFromTicket(std::string ticket);
 
   const std::optional<Ticket> &consoleId() const { return consoleId_; }
   const std::shared_ptr<Server> &server() const { return server_; }
@@ -59,6 +63,5 @@ private:
   std::shared_ptr<Server> server_;
   std::shared_ptr<Executor> executor_;
   std::shared_ptr<Executor> flightExecutor_;
-  std::weak_ptr<TableHandleManagerImpl> self_;
 };
 }  // namespace deephaven::client::impl

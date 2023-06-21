@@ -17,6 +17,8 @@ import java.time.LocalTime;
 import io.deephaven.base.verify.Require;
 import java.time.ZoneId;
 
+import io.deephaven.engine.context.ExecutionContext;
+import io.deephaven.engine.table.ColumnSource;
 import io.deephaven.engine.table.impl.DefaultGetContext;
 import io.deephaven.chunk.*;
 import io.deephaven.engine.rowset.chunkattributes.OrderedRowKeyRanges;
@@ -24,9 +26,7 @@ import io.deephaven.engine.rowset.chunkattributes.RowKeys;
 import io.deephaven.chunk.attributes.Values;
 import io.deephaven.engine.rowset.chunkattributes.OrderedRowKeys;
 import io.deephaven.engine.rowset.RowSet;
-import io.deephaven.engine.table.ColumnSource;
 import io.deephaven.engine.table.impl.MutableColumnSourceGetDefaults;
-import io.deephaven.engine.updategraph.LogicalClock;
 import io.deephaven.engine.updategraph.UpdateCommitter;
 import io.deephaven.engine.table.impl.sources.sparse.LongOneOrN;
 import io.deephaven.engine.rowset.RowSequence;
@@ -277,7 +277,7 @@ public class LongSparseArraySource extends SparseArrayColumnSource<Long>
         // prevFlusher == null means we are not tracking previous values yet (or maybe ever).
         // If prepareForParallelPopulation was called on this cycle, it's assumed that all previous values have already
         // been recorded.
-        return prevFlusher != null && prepareForParallelPopulationClockCycle != LogicalClock.DEFAULT.currentStep();
+        return prevFlusher != null && prepareForParallelPopulationClockCycle != updateGraph.clock().currentStep();
     }
 
     @Override
@@ -286,7 +286,7 @@ public class LongSparseArraySource extends SparseArrayColumnSource<Long>
             throw new IllegalStateException("Can't call startTrackingPrevValues() twice: " +
                     this.getClass().getCanonicalName());
         }
-        prevFlusher = new UpdateCommitter<>(this, LongSparseArraySource::commitUpdates);
+        prevFlusher = new UpdateCommitter<>(this, updateGraph, LongSparseArraySource::commitUpdates);
     }
 
     private void commitUpdates() {
@@ -401,7 +401,7 @@ public class LongSparseArraySource extends SparseArrayColumnSource<Long>
         if (!shouldTrackPrevious()) {
             return null;
         }
-        // If we want to track previous values, we make sure we are registered with the UpdateGraphProcessor.
+        // If we want to track previous values, we make sure we are registered with the PeriodicUpdateGraph.
         prevFlusher.maybeActivate();
 
         final int block0 = (int) (key >> BLOCK0_SHIFT) & BLOCK0_MASK;
@@ -425,7 +425,7 @@ public class LongSparseArraySource extends SparseArrayColumnSource<Long>
 
     @Override
     public void prepareForParallelPopulation(final RowSequence changedRows) {
-        final long currentStep = LogicalClock.DEFAULT.currentStep();
+        final long currentStep = updateGraph.clock().currentStep();
         if (prepareForParallelPopulationClockCycle == currentStep) {
             throw new IllegalStateException("May not call prepareForParallelPopulation twice on one clock cycle!");
         }
@@ -977,7 +977,7 @@ public class LongSparseArraySource extends SparseArrayColumnSource<Long>
         // endregion chunkDecl
         final LongChunk<OrderedRowKeys> keys = rowSequence.asRowKeyChunk();
 
-        final boolean trackPrevious = shouldTrackPrevious();;
+        final boolean trackPrevious = shouldTrackPrevious();
 
         if (trackPrevious) {
             prevFlusher.maybeActivate();
@@ -1039,7 +1039,7 @@ public class LongSparseArraySource extends SparseArrayColumnSource<Long>
         // endregion chunkDecl
         final LongChunk<OrderedRowKeys> keys = rowSequence.asRowKeyChunk();
 
-        final boolean trackPrevious = shouldTrackPrevious();;
+        final boolean trackPrevious = shouldTrackPrevious();
 
         if (trackPrevious) {
             prevFlusher.maybeActivate();
@@ -1235,7 +1235,7 @@ public class LongSparseArraySource extends SparseArrayColumnSource<Long>
         final LongChunk<? extends Values> chunk = src.asLongChunk();
         // endregion chunkDecl
 
-        final boolean trackPrevious = shouldTrackPrevious();;
+        final boolean trackPrevious = shouldTrackPrevious();
 
         if (trackPrevious) {
             prevFlusher.maybeActivate();
@@ -1294,7 +1294,7 @@ public class LongSparseArraySource extends SparseArrayColumnSource<Long>
         final ObjectChunk<R, ? extends Values> chunk = src.asObjectChunk();
         // endregion chunkDecl
 
-        final boolean trackPrevious = shouldTrackPrevious();;
+        final boolean trackPrevious = shouldTrackPrevious();
 
         if (trackPrevious) {
             prevFlusher.maybeActivate();
@@ -1413,12 +1413,12 @@ public class LongSparseArraySource extends SparseArrayColumnSource<Long>
 
     @Override
     public ColumnSource<LocalDate> toLocalDate(final @NotNull ZoneId zone) {
-        return new LocalDateWrapperSource(toZonedDateTime(zone), zone);
+        return new LongAsLocalDateColumnSource(this, zone);
     }
 
     @Override
     public ColumnSource<LocalTime> toLocalTime(final @NotNull ZoneId zone) {
-        return new LocalTimeWrapperSource(toZonedDateTime(zone), zone);
+        return new LongAsLocalTimeColumnSource(this, zone);
     }
 
     @Override

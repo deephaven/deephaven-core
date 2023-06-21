@@ -14,6 +14,7 @@ import io.deephaven.chunk.attributes.ChunkLengths;
 import io.deephaven.chunk.attributes.ChunkPositions;
 import io.deephaven.chunk.attributes.Values;
 import io.deephaven.configuration.Configuration;
+import io.deephaven.engine.context.ExecutionContext;
 import io.deephaven.engine.rowset.RowSetFactory;
 import io.deephaven.engine.table.*;
 import io.deephaven.engine.rowset.*;
@@ -194,8 +195,7 @@ public class ChunkedOperatorAggregationHelper {
         for (int kci = 0; kci < keyHashTableSources.length; ++kci) {
             ColumnSource<?> resultKeyColumnSource = keyHashTableSources[kci];
             if (keySources[kci] != reinterpretedKeySources[kci]) {
-                resultKeyColumnSource =
-                        ReinterpretUtils.convertToOriginal(keySources[kci].getType(), resultKeyColumnSource);
+                resultKeyColumnSource = ReinterpretUtils.convertToOriginalType(keySources[kci], resultKeyColumnSource);
             }
             keyColumnsRaw[kci] = resultKeyColumnSource;
             if (input.isRefreshing()) {
@@ -1619,6 +1619,7 @@ public class ChunkedOperatorAggregationHelper {
             @NotNull final AggregationContext ac,
             @NotNull final MutableInt outputPosition,
             @NotNull final Supplier<OperatorAggregationStateManager> stateManagerSupplier) {
+
         // This logic is duplicative of the logic in the main aggregation function, but it's hard to consolidate
         // further. A better strategy might be to do a selectDistinct first, but that would result in more hash table
         // inserts.
@@ -1635,16 +1636,20 @@ public class ChunkedOperatorAggregationHelper {
 
         final OperatorAggregationStateManager stateManager;
         if (initialKeys.isRefreshing()) {
-            final MutableObject<OperatorAggregationStateManager> stateManagerHolder = new MutableObject<>();
-            ConstructSnapshot.callDataSnapshotFunction(
-                    "InitialKeyTableSnapshot-" + System.identityHashCode(initialKeys) + ": ",
-                    ConstructSnapshot.makeSnapshotControl(false, true, (NotificationStepSource) initialKeys),
-                    (final boolean usePrev, final long beforeClockValue) -> {
-                        stateManagerHolder.setValue(makeInitializedStateManager(initialKeys, reinterpretedKeySources,
-                                ac, outputPosition, stateManagerSupplier, useGroupingAllowed, usePrev));
-                        return true;
-                    });
-            stateManager = stateManagerHolder.getValue();
+            try (final SafeCloseable ignored = ExecutionContext.getContext().withUpdateGraph(
+                    initialKeys.getUpdateGraph()).open()) {
+                final MutableObject<OperatorAggregationStateManager> stateManagerHolder = new MutableObject<>();
+                ConstructSnapshot.callDataSnapshotFunction(
+                        "InitialKeyTableSnapshot-" + System.identityHashCode(initialKeys) + ": ",
+                        ConstructSnapshot.makeSnapshotControl(false, true, (NotificationStepSource) initialKeys),
+                        (final boolean usePrev, final long beforeClockValue) -> {
+                            stateManagerHolder.setValue(makeInitializedStateManager(
+                                    initialKeys, reinterpretedKeySources, ac, outputPosition, stateManagerSupplier,
+                                    useGroupingAllowed, usePrev));
+                            return true;
+                        });
+                stateManager = stateManagerHolder.getValue();
+            }
         } else {
             stateManager = makeInitializedStateManager(initialKeys, reinterpretedKeySources,
                     ac, outputPosition, stateManagerSupplier, useGroupingAllowed, false);

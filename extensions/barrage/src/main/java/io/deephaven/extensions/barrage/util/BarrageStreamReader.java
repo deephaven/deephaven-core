@@ -28,7 +28,6 @@ import io.deephaven.io.logger.Logger;
 import org.apache.arrow.flatbuf.Message;
 import org.apache.arrow.flatbuf.MessageHeader;
 import org.apache.arrow.flatbuf.RecordBatch;
-import org.apache.commons.lang3.mutable.MutableInt;
 
 import java.io.IOException;
 import java.io.InputStream;
@@ -52,8 +51,6 @@ public class BarrageStreamReader implements StreamReader {
     private long numModRowsRead = 0;
     private long numModRowsTotal = 0;
 
-    private long lastAddStartIndex = 0;
-    private long lastModStartIndex = 0;
     private BarrageMessage msg = null;
 
     public BarrageStreamReader(final LongConsumer deserializeTmConsumer) {
@@ -104,8 +101,6 @@ public class BarrageStreamReader implements StreamReader {
 
                         numAddRowsRead = 0;
                         numModRowsRead = 0;
-                        lastAddStartIndex = 0;
-                        lastModStartIndex = 0;
 
                         if (msg.isSnapshot) {
                             final ByteBuffer effectiveViewport = metadata.effectiveViewportAsByteBuffer();
@@ -135,7 +130,9 @@ public class BarrageStreamReader implements StreamReader {
 
                             // create an initial chunk of the correct size
                             final int chunkSize = (int) (Math.min(msg.rowsIncluded.size(), MAX_CHUNK_SIZE));
-                            msg.addColumnData[ci].data.add(columnChunkTypes[ci].makeWritableChunk(chunkSize));
+                            final WritableChunk<Values> chunk = columnChunkTypes[ci].makeWritableChunk(chunkSize);
+                            chunk.setSize(0);
+                            msg.addColumnData[ci].data.add(chunk);
                         }
                         numAddRowsTotal = msg.rowsIncluded.size();
 
@@ -154,7 +151,9 @@ public class BarrageStreamReader implements StreamReader {
                             // create an initial chunk of the correct size
                             final int chunkSize = (int) (Math.min(msg.modColumnData[ci].rowsModified.size(),
                                     MAX_CHUNK_SIZE));
-                            msg.modColumnData[ci].data.add(columnChunkTypes[ci].makeWritableChunk(chunkSize));
+                            final WritableChunk<Values> chunk = columnChunkTypes[ci].makeWritableChunk(chunkSize);
+                            chunk.setSize(0);
+                            msg.modColumnData[ci].data.add(chunk);
 
                             numModRowsTotal = Math.max(numModRowsTotal, msg.modColumnData[ci].rowsModified.size());
                         }
@@ -228,68 +227,54 @@ public class BarrageStreamReader implements StreamReader {
                             // select the current chunk size and read the size
                             int lastChunkIndex = acd.data.size() - 1;
                             WritableChunk<Values> chunk = (WritableChunk<Values>) acd.data.get(lastChunkIndex);
-                            int chunkSize = acd.data.get(lastChunkIndex).size();
 
-                            final int chunkOffset;
-                            long rowOffset = numAddRowsRead - lastAddStartIndex;
-                            // reading the rows from this batch might overflow the existing chunk
-                            if (rowOffset + batch.length() > chunkSize) {
-                                lastAddStartIndex += chunkSize;
-
-                                // create a new chunk before trying to write again
-                                chunkSize = (int) (Math.min(remaining, MAX_CHUNK_SIZE));
-
+                            if (batch.length() > chunk.capacity() - chunk.size()) {
+                                // reading the rows from this batch will overflow the existing chunk; create a new one
+                                final int chunkSize = (int) (Math.min(remaining, MAX_CHUNK_SIZE));
                                 chunk = columnChunkTypes[ci].makeWritableChunk(chunkSize);
                                 acd.data.add(chunk);
 
-                                chunkOffset = 0;
+                                chunk.setSize(0);
                                 ++lastChunkIndex;
-                            } else {
-                                chunkOffset = (int) rowOffset;
                             }
 
                             // fill the chunk with data and assign back into the array
                             acd.data.set(lastChunkIndex,
                                     ChunkInputStreamGenerator.extractChunkFromInputStream(options, columnChunkTypes[ci],
                                             columnTypes[ci], componentTypes[ci], fieldNodeIter, bufferInfoIter, ois,
-                                            chunk, chunkOffset, chunkSize));
+                                            chunk, chunk.size(), (int) batch.length()));
+                            chunk.setSize(chunk.size() + (int) batch.length());
                         }
                         numAddRowsRead += batch.length();
                     } else {
                         for (int ci = 0; ci < msg.modColumnData.length; ++ci) {
                             final BarrageMessage.ModColumnData mcd = msg.modColumnData[ci];
 
-                            long remaining = mcd.rowsModified.size() - numModRowsRead;
+                            // another column may be larger than this column
+                            long remaining = Math.max(0, mcd.rowsModified.size() - numModRowsRead);
 
                             // need to add the batch row data to the column chunks
                             int lastChunkIndex = mcd.data.size() - 1;
                             WritableChunk<Values> chunk = (WritableChunk<Values>) mcd.data.get(lastChunkIndex);
-                            int chunkSize = chunk.size();
 
-                            final int chunkOffset;
-                            long rowOffset = numModRowsRead - lastModStartIndex;
-                            // this batch might overflow the chunk
                             final int numRowsToRead = LongSizedDataStructure.intSize("BarrageStreamReader",
                                     Math.min(remaining, batch.length()));
-                            if (rowOffset + numRowsToRead > chunkSize) {
-                                lastModStartIndex += chunkSize;
-
-                                // create a new chunk before trying to write again
-                                chunkSize = (int) (Math.min(remaining, MAX_CHUNK_SIZE));
+                            if (numRowsToRead > chunk.capacity() - chunk.size()) {
+                                // reading the rows from this batch will overflow the existing chunk; create a new one
+                                final int chunkSize = (int) (Math.min(remaining, MAX_CHUNK_SIZE));
                                 chunk = columnChunkTypes[ci].makeWritableChunk(chunkSize);
                                 mcd.data.add(chunk);
 
-                                chunkOffset = 0;
+                                chunk.setSize(0);
                                 ++lastChunkIndex;
-                            } else {
-                                chunkOffset = (int) rowOffset;
                             }
 
                             // fill the chunk with data and assign back into the array
                             mcd.data.set(lastChunkIndex,
                                     ChunkInputStreamGenerator.extractChunkFromInputStream(options, columnChunkTypes[ci],
                                             columnTypes[ci], componentTypes[ci], fieldNodeIter, bufferInfoIter, ois,
-                                            chunk, chunkOffset, numRowsToRead));
+                                            chunk, chunk.size(), numRowsToRead));
+                            chunk.setSize(chunk.size() + numRowsToRead);
                         }
                         numModRowsRead += batch.length();
                     }

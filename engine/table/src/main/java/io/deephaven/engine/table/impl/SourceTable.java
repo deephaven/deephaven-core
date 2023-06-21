@@ -173,7 +173,7 @@ public abstract class SourceTable<IMPL_TYPE extends SourceTable<IMPL_TYPE>> exte
                             return;
                         }
                         rowSet.initializePreviousValue();
-                        final long currentClockValue = LogicalClock.DEFAULT.currentValue();
+                        final long currentClockValue = getUpdateGraph().clock().currentValue();
                         setLastNotificationStep(LogicalClock.getState(currentClockValue) == LogicalClock.State.Updating
                                 ? LogicalClock.getStep(currentClockValue) - 1
                                 : LogicalClock.getStep(currentClockValue));
@@ -240,7 +240,7 @@ public abstract class SourceTable<IMPL_TYPE extends SourceTable<IMPL_TYPE>> exte
         initialize();
 
         final SwapListener swapListener =
-                createSwapListenerIfRefreshing((final BaseTable parent) -> new SwapListener(parent) {
+                createSwapListenerIfRefreshing((final BaseTable<?> parent) -> new SwapListener(parent) {
 
                     @Override
                     public void destroy() {

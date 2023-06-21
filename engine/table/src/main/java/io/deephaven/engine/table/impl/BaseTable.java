@@ -10,7 +10,13 @@ import io.deephaven.base.log.LogOutput;
 import io.deephaven.base.reference.SimpleReference;
 import io.deephaven.base.reference.WeakSimpleReference;
 import io.deephaven.base.verify.Assert;
+import io.deephaven.base.verify.Require;
 import io.deephaven.configuration.Configuration;
+import io.deephaven.engine.context.ExecutionContext;
+import io.deephaven.engine.exceptions.UpdateGraphConflictException;
+import io.deephaven.engine.table.impl.util.StepUpdater;
+import io.deephaven.engine.updategraph.NotificationQueue;
+import io.deephaven.engine.updategraph.UpdateGraph;
 import io.deephaven.engine.exceptions.NotSortableException;
 import io.deephaven.engine.liveness.LivenessReferent;
 import io.deephaven.engine.rowset.RowSet;
@@ -23,6 +29,7 @@ import io.deephaven.engine.table.impl.select.SourceColumn;
 import io.deephaven.engine.table.impl.select.SwitchColumn;
 import io.deephaven.engine.table.impl.util.FieldUtils;
 import io.deephaven.engine.updategraph.*;
+import io.deephaven.engine.updategraph.impl.PeriodicUpdateGraph;
 import io.deephaven.engine.util.systemicmarking.SystemicObjectTracker;
 import io.deephaven.hash.KeyedObjectHashSet;
 import io.deephaven.internal.log.LoggerFactory;
@@ -38,6 +45,7 @@ import org.jetbrains.annotations.Nullable;
 import java.io.*;
 import java.util.*;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicLongFieldUpdater;
 import java.util.concurrent.atomic.AtomicReferenceFieldUpdater;
 import java.util.concurrent.locks.Condition;
 import java.util.function.BiConsumer;
@@ -63,7 +71,7 @@ public abstract class BaseTable<IMPL_TYPE extends BaseTable<IMPL_TYPE>> extends 
     private static final Logger log = LoggerFactory.getLogger(BaseTable.class);
 
     private static final AtomicReferenceFieldUpdater<BaseTable, Condition> CONDITION_UPDATER =
-            AtomicReferenceFieldUpdater.newUpdater(BaseTable.class, Condition.class, "updateGraphProcessorCondition");
+            AtomicReferenceFieldUpdater.newUpdater(BaseTable.class, Condition.class, "updateGraphCondition");
 
     private static final AtomicReferenceFieldUpdater<BaseTable, Collection> PARENTS_UPDATER =
             AtomicReferenceFieldUpdater.newUpdater(BaseTable.class, Collection.class, "parents");
@@ -77,6 +85,10 @@ public abstract class BaseTable<IMPL_TYPE extends BaseTable<IMPL_TYPE>> extends 
                 throw new UnsupportedOperationException("EMPTY_CHILDREN does not support adds");
             }, Collections.emptyList());
 
+    @SuppressWarnings("rawtypes")
+    private static final AtomicLongFieldUpdater<BaseTable> LAST_SATISFIED_STEP_UPDATER =
+            AtomicLongFieldUpdater.newUpdater(BaseTable.class, "lastSatisfiedStep");
+
     /**
      * This table's definition.
      */
@@ -87,17 +99,27 @@ public abstract class BaseTable<IMPL_TYPE extends BaseTable<IMPL_TYPE>> extends 
      */
     protected final String description;
 
+    /**
+     * This table's update graph.
+     */
+    protected final UpdateGraph updateGraph;
+
+    /**
+     * The last clock step when this table dispatched a notification.
+     */
+    private volatile long lastNotificationStep;
+
     // Fields for DynamicNode implementation and update propagation support
     private volatile boolean refreshing;
     @SuppressWarnings({"FieldMayBeFinal", "unused"}) // Set via ensureField with CONDITION_UPDATER
-    private volatile Condition updateGraphProcessorCondition;
+    private volatile Condition updateGraphCondition;
     @SuppressWarnings("FieldMayBeFinal") // Set via ensureField with PARENTS_UPDATER
     private volatile Collection<Object> parents = EMPTY_PARENTS;
     @SuppressWarnings("FieldMayBeFinal") // Set via ensureField with CHILD_LISTENER_REFERENCES_UPDATER
     private volatile SimpleReferenceManager<TableUpdateListener, ? extends SimpleReference<TableUpdateListener>> childListenerReferences =
             EMPTY_CHILD_LISTENER_REFERENCES;
-    private volatile long lastNotificationStep;
-    private volatile long lastSatisfiedStep;
+    @SuppressWarnings("FieldMayBeFinal")
+    private volatile long lastSatisfiedStep = NotificationStepReceiver.NULL_NOTIFICATION_STEP;
     private volatile boolean isFailed;
 
     /**
@@ -112,7 +134,8 @@ public abstract class BaseTable<IMPL_TYPE extends BaseTable<IMPL_TYPE>> extends 
         super(attributes);
         this.definition = definition;
         this.description = description;
-        lastNotificationStep = LogicalClock.DEFAULT.currentStep();
+        updateGraph = Require.neqNull(ExecutionContext.getContext().getUpdateGraph(), "UpdateGraph");
+        lastNotificationStep = updateGraph.clock().currentStep();
 
         // Properly flag this table as systemic or not. Note that we use the initial attributes map, rather than
         // getAttribute, in order to avoid triggering the "immutable after first access" restrictions of
@@ -135,6 +158,11 @@ public abstract class BaseTable<IMPL_TYPE extends BaseTable<IMPL_TYPE>> extends 
     @Override
     public String getDescription() {
         return description;
+    }
+
+    @Override
+    public UpdateGraph getUpdateGraph() {
+        return updateGraph;
     }
 
     @Override
@@ -418,6 +446,10 @@ public abstract class BaseTable<IMPL_TYPE extends BaseTable<IMPL_TYPE>> extends 
 
     @Override
     public final void addParentReference(@NotNull final Object parent) {
+        if (parent instanceof NotificationQueue.Dependency) {
+            // Ensure that we are in the same update graph
+            getUpdateGraph((NotificationQueue.Dependency) parent);
+        }
         if (DynamicNode.notDynamicOrIsRefreshing(parent)) {
             setRefreshing(true);
             ensureParents().add(parent);
@@ -439,12 +471,17 @@ public abstract class BaseTable<IMPL_TYPE extends BaseTable<IMPL_TYPE>> extends 
             return true;
         }
 
+        StepUpdater.checkForOlderStep(step, lastSatisfiedStep);
+        StepUpdater.checkForOlderStep(step, lastNotificationStep);
+
         final Collection<Object> localParents = parents;
         // If we have no parents whatsoever then we are a source, and have no dependency chain other than the UGP
         // itself
         if (localParents.isEmpty()) {
-            if (UpdateGraphProcessor.DEFAULT.satisfied(step)) {
-                UpdateGraphProcessor.DEFAULT.logDependencies().append("Root node satisfied ").append(this).endl();
+            if (updateGraph.satisfied(step)) {
+                updateGraph.logDependencies().append("Root node satisfied ").append(this)
+                        .endl();
+                StepUpdater.tryUpdateRecordedStep(LAST_SATISFIED_STEP_UPDATER, this, step);
                 return true;
             }
             return false;
@@ -455,7 +492,7 @@ public abstract class BaseTable<IMPL_TYPE extends BaseTable<IMPL_TYPE>> extends 
             for (Object parent : localParents) {
                 if (parent instanceof NotificationQueue.Dependency) {
                     if (!((NotificationQueue.Dependency) parent).satisfied(step)) {
-                        UpdateGraphProcessor.DEFAULT.logDependencies()
+                        updateGraph.logDependencies()
                                 .append("Parents dependencies not satisfied for ").append(this)
                                 .append(", parent=").append((NotificationQueue.Dependency) parent)
                                 .endl();
@@ -465,38 +502,38 @@ public abstract class BaseTable<IMPL_TYPE extends BaseTable<IMPL_TYPE>> extends 
             }
         }
 
-        UpdateGraphProcessor.DEFAULT.logDependencies()
+        updateGraph.logDependencies()
                 .append("All parents dependencies satisfied for ").append(this)
                 .endl();
 
-        lastSatisfiedStep = step;
+        StepUpdater.tryUpdateRecordedStep(LAST_SATISFIED_STEP_UPDATER, this, step);
 
         return true;
     }
 
     @Override
     public void awaitUpdate() throws InterruptedException {
-        UpdateGraphProcessor.DEFAULT.exclusiveLock().doLocked(ensureCondition()::await);
+        updateGraph.exclusiveLock().doLocked(ensureCondition()::await);
     }
 
     @Override
     public boolean awaitUpdate(long timeout) throws InterruptedException {
         final MutableBoolean result = new MutableBoolean(false);
-        UpdateGraphProcessor.DEFAULT.exclusiveLock()
-                .doLocked(() -> result.setValue(ensureCondition().await(timeout, TimeUnit.MILLISECONDS)));
+        updateGraph.exclusiveLock().doLocked(
+                () -> result.setValue(ensureCondition().await(timeout, TimeUnit.MILLISECONDS)));
 
         return result.booleanValue();
     }
 
     private Condition ensureCondition() {
         return FieldUtils.ensureField(this, CONDITION_UPDATER, null,
-                () -> UpdateGraphProcessor.DEFAULT.exclusiveLock().newCondition());
+                () -> updateGraph.exclusiveLock().newCondition());
     }
 
     private void maybeSignal() {
-        final Condition localCondition = updateGraphProcessorCondition;
+        final Condition localCondition = updateGraphCondition;
         if (localCondition != null) {
-            UpdateGraphProcessor.DEFAULT.requestSignal(localCondition);
+            updateGraph.requestSignal(localCondition);
         }
     }
 
@@ -505,7 +542,7 @@ public abstract class BaseTable<IMPL_TYPE extends BaseTable<IMPL_TYPE>> extends 
         addUpdateListener(new LegacyListenerAdapter(listener, getRowSet()));
         if (replayInitialImage) {
             if (isRefreshing()) {
-                UpdateGraphProcessor.DEFAULT.checkInitiateTableOperation();
+                updateGraph.checkInitiateSerialTableOperation();
             }
             if (getRowSet().isNonempty()) {
                 listener.setInitialImage(getRowSet());
@@ -520,6 +557,10 @@ public abstract class BaseTable<IMPL_TYPE extends BaseTable<IMPL_TYPE>> extends 
             throw new IllegalStateException("Can not listen to failed table " + description);
         }
         if (isRefreshing()) {
+            // ensure that listener is in the same update graph if applicable
+            if (listener instanceof NotificationQueue.Dependency) {
+                getUpdateGraph((NotificationQueue.Dependency) listener);
+            }
             ensureChildListenerReferences().add(listener);
         }
     }
@@ -557,6 +598,10 @@ public abstract class BaseTable<IMPL_TYPE extends BaseTable<IMPL_TYPE>> extends 
 
     @Override
     public final boolean setRefreshing(boolean refreshing) {
+        if (refreshing && !updateGraph.supportsRefreshing()) {
+            throw new UpdateGraphConflictException("Attempt to setRefreshing(true) but Table was constructed with a " +
+                    "static-only UpdateGraph.");
+        }
         return this.refreshing = refreshing;
     }
 
@@ -594,9 +639,9 @@ public abstract class BaseTable<IMPL_TYPE extends BaseTable<IMPL_TYPE>> extends 
      */
     public final void notifyListeners(final TableUpdate update) {
         Assert.eqFalse(isFailed, "isFailed");
-        final long currentStep = LogicalClock.DEFAULT.currentStep();
+        final long currentStep = updateGraph.clock().currentStep();
         // tables may only be updated once per cycle
-        Assert.lt(lastNotificationStep, "lastNotificationStep", currentStep, "LogicalClock.DEFAULT.currentStep()");
+        Assert.lt(lastNotificationStep, "lastNotificationStep", currentStep, "updateGraph.clock().currentStep()");
 
         Assert.eqTrue(update.valid(), "update.valid()");
         if (update.empty()) {
@@ -757,8 +802,9 @@ public abstract class BaseTable<IMPL_TYPE extends BaseTable<IMPL_TYPE>> extends 
      */
     public final void notifyListenersOnError(final Throwable e, @Nullable final TableListener.Entry sourceEntry) {
         Assert.eqFalse(isFailed, "isFailed");
-        final long currentStep = LogicalClock.DEFAULT.currentStep();
-        Assert.lt(lastNotificationStep, "lastNotificationStep", currentStep, "LogicalClock.DEFAULT.currentStep()");
+        final long currentStep = updateGraph.clock().currentStep();
+        Assert.lt(lastNotificationStep, "lastNotificationStep", currentStep,
+                "updateGraph.clock().currentStep()");
 
         isFailed = true;
         maybeSignal();
@@ -772,13 +818,13 @@ public abstract class BaseTable<IMPL_TYPE extends BaseTable<IMPL_TYPE>> extends 
     /**
      * Get the notification queue to insert notifications into as they are generated by listeners during
      * {@link #notifyListeners} and {@link #notifyListenersOnError(Throwable, TableListener.Entry)}. This method may be
-     * overridden to provide a different notification queue than the {@link UpdateGraphProcessor#DEFAULT} instance for
+     * overridden to provide a different notification queue than the table's {@link PeriodicUpdateGraph} instance for
      * more complex behavior.
      *
      * @return The {@link NotificationQueue} to add to
      */
     protected NotificationQueue getNotificationQueue() {
-        return UpdateGraphProcessor.DEFAULT;
+        return updateGraph;
     }
 
     @Override
@@ -813,9 +859,9 @@ public abstract class BaseTable<IMPL_TYPE extends BaseTable<IMPL_TYPE>> extends 
 
         @ReferentialIntegrity
         private final Table parent;
-        private final BaseTable dependent;
+        private final BaseTable<?> dependent;
 
-        public ShiftObliviousListenerImpl(String description, Table parent, BaseTable dependent) {
+        public ShiftObliviousListenerImpl(String description, Table parent, BaseTable<?> dependent) {
             super(description);
             this.parent = parent;
             this.dependent = dependent;
@@ -1212,14 +1258,14 @@ public abstract class BaseTable<IMPL_TYPE extends BaseTable<IMPL_TYPE>> extends 
     public static void initializeWithSnapshot(
             String logPrefix, SwapListener swapListener, ConstructSnapshot.SnapshotFunction snapshotFunction) {
         if (swapListener == null) {
-            snapshotFunction.call(false, LogicalClock.DEFAULT.currentValue());
+            snapshotFunction.call(false, ExecutionContext.getContext().getUpdateGraph().clock().currentValue());
             return;
         }
         ConstructSnapshot.callDataSnapshotFunction(logPrefix, swapListener.makeSnapshotControl(), snapshotFunction);
     }
 
     public interface SwapListenerFactory<T extends SwapListener> {
-        T newListener(BaseTable sourceTable);
+        T newListener(BaseTable<?> sourceTable);
     }
 
     /**

@@ -3,22 +3,24 @@
  */
 package io.deephaven.engine.util.scripts;
 
+import io.deephaven.engine.context.ExecutionContext;
 import io.deephaven.engine.table.Table;
 import io.deephaven.engine.table.TableDefinition;
+import io.deephaven.engine.testutil.junit4.EngineCleanup;
 import io.deephaven.engine.util.GroovyDeephavenSession;
 import io.deephaven.engine.liveness.LivenessScope;
 import io.deephaven.engine.liveness.LivenessScopeStack;
 import io.deephaven.engine.util.ScriptSession;
 import io.deephaven.plugin.type.ObjectTypeLookup.NoOp;
 import org.apache.commons.lang3.mutable.MutableInt;
-import org.junit.After;
-import org.junit.Assert;
-import org.junit.Before;
-import org.junit.Test;
+import org.junit.*;
 
 import java.io.IOException;
 
 public class TestGroovyDeephavenSession {
+
+    @Rule
+    public final EngineCleanup framework = new EngineCleanup();
 
     private LivenessScope livenessScope;
     private GroovyDeephavenSession session;
@@ -27,7 +29,9 @@ public class TestGroovyDeephavenSession {
     public void setup() throws IOException {
         livenessScope = new LivenessScope();
         LivenessScopeStack.push(livenessScope);
-        session = new GroovyDeephavenSession(NoOp.INSTANCE, null, GroovyDeephavenSession.RunScripts.none());
+        session = new GroovyDeephavenSession(
+                ExecutionContext.getContext().getUpdateGraph(), NoOp.INSTANCE, null,
+                GroovyDeephavenSession.RunScripts.none());
     }
 
     @After

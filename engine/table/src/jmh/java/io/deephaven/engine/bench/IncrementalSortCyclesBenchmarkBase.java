@@ -1,8 +1,9 @@
 package io.deephaven.engine.bench;
 
+import io.deephaven.engine.context.ExecutionContext;
 import io.deephaven.engine.table.Table;
 import io.deephaven.engine.table.impl.select.IncrementalReleaseFilter;
-import io.deephaven.engine.updategraph.UpdateGraphProcessor;
+import io.deephaven.engine.testutil.ControlledUpdateGraph;
 import io.deephaven.engine.util.TableTools;
 import io.deephaven.engine.testutil.junit4.EngineCleanup;
 import org.openjdk.jmh.annotations.BenchmarkMode;
@@ -30,7 +31,7 @@ public abstract class IncrementalSortCyclesBenchmarkBase {
     }
 
     private EngineCleanup engine;
-    private UpdateGraphProcessor ugp;
+    private ControlledUpdateGraph ug;
     private IncrementalReleaseFilter filter;
     private Table out;
     private BlackholeListener listener;
@@ -41,8 +42,8 @@ public abstract class IncrementalSortCyclesBenchmarkBase {
             throws Exception {
         engine = new EngineCleanup();
         engine.setUp();
-        ugp = UpdateGraphProcessor.DEFAULT;
-        ugp.startCycleForUnitTests();
+        ug = ExecutionContext.getContext().getUpdateGraph().cast();
+        ug.startCycleForUnitTests();
         try {
             this.numCycles = numCycles;
             filter = new IncrementalReleaseFilter(initialSize, cycleSize);
@@ -56,7 +57,7 @@ public abstract class IncrementalSortCyclesBenchmarkBase {
             listener = new BlackholeListener(blackhole);
             out.addUpdateListener(listener);
         } finally {
-            ugp.completeCycleForUnitTests();
+            ug.completeCycleForUnitTests();
         }
     }
 
@@ -67,18 +68,18 @@ public abstract class IncrementalSortCyclesBenchmarkBase {
         listener = null;
         out.close();
         out = null;
-        ugp = null;
+        ug = null;
         engine.tearDown();
         engine = null;
     }
 
     public void runCycles() throws Throwable {
         for (int i = 0; i < numCycles; ++i) {
-            ugp.startCycleForUnitTests();
+            ug.startCycleForUnitTests();
             try {
                 filter.run();
             } finally {
-                ugp.completeCycleForUnitTests();
+                ug.completeCycleForUnitTests();
             }
             if (listener.e != null) {
                 throw listener.e;

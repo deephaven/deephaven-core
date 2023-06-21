@@ -9,8 +9,8 @@ include(GNUInstallDirs)
 find_package(Arrow REQUIRED)
 find_package(ArrowFlight REQUIRED HINTS ${Arrow_DIR})
 find_package(Immer REQUIRED)
-find_package(Protobuf REQUIRED)
-find_package(gRPC REQUIRED)
+find_package(Protobuf CONFIG REQUIRED)
+find_package(gRPC CONFIG REQUIRED)
 find_package(Threads REQUIRED)
 
 add_subdirectory(../dhcore dhcore_dir)
@@ -44,22 +44,20 @@ set(ALL_FILES
     include/private/deephaven/client/impl/table_handle_manager_impl.h
     include/private/deephaven/client/impl/util.h
 
-    src/arrowutil/arrow_flight.cc
-
-    include/private/deephaven/client/arrowutil/arrow_traits.h
-    include/private/deephaven/client/arrowutil/arrow_flight.h
-    include/private/deephaven/client/arrowutil/arrow_visitors.h
-    include/private/deephaven/client/arrowutil/arrow_value_converter.h
     include/private/deephaven/client/arrowutil/arrow_column_source.h
+    include/private/deephaven/client/arrowutil/arrow_value_converter.h
+    include/private/deephaven/client/arrowutil/arrow_visitors.h
 
     src/columns.cc
     src/expressions.cc
+    src/client_options.cc
     src/client.cc
     src/flight.cc
 
     include/public/deephaven/client/columns.h
     include/public/deephaven/client/expressions.h
     include/public/deephaven/client/client.h
+    include/public/deephaven/client/client_options.h
     include/public/deephaven/client/flight.h
     include/public/deephaven/client/utility/arrow_util.h
 

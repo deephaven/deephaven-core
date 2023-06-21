@@ -89,15 +89,15 @@ public interface MutableInputTable extends InputTableRowSetter, InputTableEnumGe
         }
     }
 
-    // TODO (https://github.com/deephaven/deephaven-core/pull/3506): Update this advice for multiple update graphs,
-    // and on the blocking delete methods, as well.
     /**
      * Write {@code newData} to this table. Added rows with keys that match existing rows will instead replace those
      * rows, if supported.
      * <p>
      * This method will block until the rows are added. As a result, this method is not suitable for use from a
      * {@link io.deephaven.engine.table.TableListener table listener} or any other
-     * {@link io.deephaven.engine.updategraph.NotificationQueue.Notification notification}-dispatched callback.
+     * {@link io.deephaven.engine.updategraph.NotificationQueue.Notification notification}-dispatched callback
+     * dispatched by this MutableInputTable's {@link io.deephaven.engine.updategraph.UpdateGraph update graph}. It may
+     * be suitable to delete from another update graph if doing so does not introduce any cycles.
      *
      * @param newData The data to write to this table
      * @throws IOException If there is an error writing the data
@@ -126,7 +126,9 @@ public interface MutableInputTable extends InputTableRowSetter, InputTableEnumGe
      * <p>
      * This method will block until the rows are deleted. As a result, this method is not suitable for use from a
      * {@link io.deephaven.engine.table.TableListener table listener} or any other
-     * {@link io.deephaven.engine.updategraph.NotificationQueue.Notification notification}-dispatched callback.
+     * {@link io.deephaven.engine.updategraph.NotificationQueue.Notification notification}-dispatched callback
+     * dispatched by this MutableInputTable's {@link io.deephaven.engine.updategraph.UpdateGraph update graph}. It may
+     * be suitable to delete from another update graph if doing so does not introduce any cycles.
      *
      * @param table The rows to delete
      * @throws IOException If a problem occurred while deleting the rows.
@@ -141,7 +143,9 @@ public interface MutableInputTable extends InputTableRowSetter, InputTableEnumGe
      * <p>
      * This method will block until the rows are deleted. As a result, this method is not suitable for use from a
      * {@link io.deephaven.engine.table.TableListener table listener} or any other
-     * {@link io.deephaven.engine.updategraph.NotificationQueue.Notification notification}-dispatched callback.
+     * {@link io.deephaven.engine.updategraph.NotificationQueue.Notification notification}-dispatched callback
+     * dispatched by this MutableInputTable's {@link io.deephaven.engine.updategraph.UpdateGraph update graph}. It may
+     * be suitable to delete from another update graph if doing so does not introduce any cycles.
      *
      * @param table Table containing the rows to delete
      * @param rowSet The rows to delete
