@@ -24,6 +24,7 @@ import io.deephaven.extensions.barrage.util.*;
 import io.deephaven.internal.log.LoggerFactory;
 import io.deephaven.io.logger.Logger;
 import io.deephaven.util.annotations.ReferentialIntegrity;
+import io.deephaven.util.annotations.VisibleForTesting;
 import io.grpc.CallOptions;
 import io.grpc.ClientCall;
 import io.grpc.Context;
@@ -34,6 +35,7 @@ import io.grpc.stub.ClientCalls;
 import io.grpc.stub.ClientResponseObserver;
 import org.apache.arrow.flight.impl.Flight.FlightData;
 import org.apache.arrow.flight.impl.FlightServiceGrpc;
+import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
 import java.io.InputStream;
@@ -204,8 +206,8 @@ public class BarrageSubscriptionImpl extends ReferenceCountedLivenessNode implem
 
             // Send the initial subscription:
             observer.onNext(FlightData.newBuilder()
-                    .setAppMetadata(
-                            ByteStringAccess.wrap(makeRequestInternal(viewport, columns, reverseViewport, options)))
+                    .setAppMetadata(ByteStringAccess.wrap(makeRequestInternal(
+                            viewport, columns, reverseViewport, options, tableHandle.ticketId().bytes())))
                     .build());
             subscribed = true;
 
@@ -367,11 +369,13 @@ public class BarrageSubscriptionImpl extends ReferenceCountedLivenessNode implem
                 .append(System.identityHashCode(this)).append("/");
     }
 
-    private ByteBuffer makeRequestInternal(
+    @VisibleForTesting
+    static public ByteBuffer makeRequestInternal(
             @Nullable final RowSet viewport,
             @Nullable final BitSet columns,
             boolean reverseViewport,
-            @Nullable BarrageSubscriptionOptions options) {
+            @Nullable BarrageSubscriptionOptions options,
+            @NotNull byte[] ticketId) {
 
         final FlatBufferBuilder metadata = new FlatBufferBuilder();
 
@@ -389,7 +393,7 @@ public class BarrageSubscriptionImpl extends ReferenceCountedLivenessNode implem
             optOffset = options.appendTo(metadata);
         }
 
-        final int ticOffset = BarrageSubscriptionRequest.createTicketVector(metadata, tableHandle.ticketId().bytes());
+        final int ticOffset = BarrageSubscriptionRequest.createTicketVector(metadata, ticketId);
         BarrageSubscriptionRequest.startBarrageSubscriptionRequest(metadata);
         BarrageSubscriptionRequest.addColumns(metadata, colOffset);
         BarrageSubscriptionRequest.addViewport(metadata, vpOffset);

@@ -25,8 +25,8 @@ using deephaven::dhcore::column::ColumnSource;
 using deephaven::dhcore::container::RowSequence;
 using deephaven::dhcore::container::RowSequenceBuilder;
 using deephaven::dhcore::immerutil::AbstractFlexVectorBase;
-using deephaven::dhcore::table::Schema;
-using deephaven::dhcore::table::Table;
+using deephaven::dhcore::clienttable::Schema;
+using deephaven::dhcore::clienttable::ClientTable;
 using deephaven::dhcore::utility::makeReservedVector;
 using deephaven::dhcore::utility::streamf;
 using deephaven::dhcore::utility::stringf;
@@ -57,7 +57,7 @@ public:
       const std::vector<std::shared_ptr<ColumnSource>> &sources,
       std::vector<size_t> *begins, const std::vector<size_t> &ends, const void *metadata, size_t metadataSize);
 
-  std::tuple<std::shared_ptr<Table>, std::shared_ptr<RowSequence>, std::shared_ptr<Table>> processRemoves(
+  std::tuple<std::shared_ptr<ClientTable>, std::shared_ptr<RowSequence>, std::shared_ptr<ClientTable>> processRemoves(
       const RowSequence &removedRows);
 
   size_t numCols_ = 0;
@@ -70,9 +70,9 @@ public:
   ~AwaitingAdds();
 
   void init(std::vector<std::shared_ptr<RowSequence>> perColumnModifies,
-      std::shared_ptr<Table> prev,
+      std::shared_ptr<ClientTable> prev,
       std::shared_ptr<RowSequence> removedRowsIndexSpace,
-      std::shared_ptr<Table> afterRemoves,
+      std::shared_ptr<ClientTable> afterRemoves,
       std::shared_ptr<RowSequence> addedRowsIndexSpace);
 
   std::optional<TickingUpdate> processNextChunk(BarrageProcessorImpl *owner,
@@ -84,9 +84,9 @@ public:
   bool firstTime_ = true;
 
   std::vector<std::shared_ptr<RowSequence>> perColumnModifies_;
-  std::shared_ptr<Table> prev_;
+  std::shared_ptr<ClientTable> prev_;
   std::shared_ptr<RowSequence> removedRowsIndexSpace_;
-  std::shared_ptr<Table> afterRemoves_;
+  std::shared_ptr<ClientTable> afterRemoves_;
   std::shared_ptr<RowSequence> addedRowsIndexSpace_;
 
   std::shared_ptr<RowSequence> addedRowsRemaining_;
@@ -97,7 +97,7 @@ public:
   AwaitingModifies();
   ~AwaitingModifies();
 
-  void init(std::shared_ptr<Table> afterAdds);
+  void init(std::shared_ptr<ClientTable> afterAdds);
 
   std::optional<TickingUpdate> processNextChunk(BarrageProcessorImpl *owner,
       const std::vector<std::shared_ptr<ColumnSource>> &sources,
@@ -107,7 +107,7 @@ public:
 
   bool firstTime_ = true;
 
-  std::shared_ptr<Table> afterAdds_;
+  std::shared_ptr<ClientTable> afterAdds_;
   std::vector<std::shared_ptr<RowSequence>> modifiedRowsRemaining_;
   std::vector<std::shared_ptr<RowSequence>> modifiedRowsIndexSpace_;
 };
@@ -117,7 +117,7 @@ public:
   BuildingResult();
   ~BuildingResult();
 
-  void init(std::shared_ptr<Table> afterModifies);
+  void init(std::shared_ptr<ClientTable> afterModifies);
 
     std::optional<TickingUpdate> processNextChunk(BarrageProcessorImpl *owner,
       const std::vector<std::shared_ptr<ColumnSource>> &sources,
@@ -125,7 +125,7 @@ public:
 
   void reset();
 
-  std::shared_ptr<Table> afterModifies_;
+  std::shared_ptr<ClientTable> afterModifies_;
 };
 
 bool allEmpty(const std::vector<std::shared_ptr<RowSequence>> &rowSequences);
@@ -302,13 +302,13 @@ std::optional<TickingUpdate> AwaitingMetadata::processNextChunk(BarrageProcessor
   return owner->awaitingAdds_.processNextChunk(owner, sources, begins, ends, nullptr, 0);
 }
 
-std::tuple<std::shared_ptr<Table>, std::shared_ptr<RowSequence>, std::shared_ptr<Table>>
+std::tuple<std::shared_ptr<ClientTable>, std::shared_ptr<RowSequence>, std::shared_ptr<ClientTable>>
 AwaitingMetadata::processRemoves(const RowSequence &removedRows) {
   auto prev = tableState_.snapshot();
   // The reason we special-case "empty" is because when the tables are unchanged, we prefer
   // to indicate this via pointer equality (e.g. beforeRemoves == afterRemoves).
   std::shared_ptr<RowSequence> removedRowsIndexSpace;
-  std::shared_ptr<Table> afterRemoves;
+  std::shared_ptr<ClientTable> afterRemoves;
   if (removedRows.empty()) {
     removedRowsIndexSpace = RowSequence::createEmpty();
     afterRemoves = prev;
@@ -326,8 +326,8 @@ void AwaitingAdds::reset() {
   *this = AwaitingAdds();
 }
 
-void AwaitingAdds::init(std::vector<std::shared_ptr<RowSequence>> perColumnModifies, std::shared_ptr<Table> prev,
-    std::shared_ptr<RowSequence> removedRowsIndexSpace, std::shared_ptr<Table> afterRemoves,
+void AwaitingAdds::init(std::vector<std::shared_ptr<RowSequence>> perColumnModifies, std::shared_ptr<ClientTable> prev,
+    std::shared_ptr<RowSequence> removedRowsIndexSpace, std::shared_ptr<ClientTable> afterRemoves,
     std::shared_ptr<RowSequence> addedRowsIndexSpace) {
 
   auto result = std::make_shared<AwaitingAdds>();
@@ -414,7 +414,7 @@ void AwaitingModifies::reset() {
   *this = AwaitingModifies();
 }
 
-void AwaitingModifies::init(std::shared_ptr<Table> afterAdds) {
+void AwaitingModifies::init(std::shared_ptr<ClientTable> afterAdds) {
   afterAdds_ = std::move(afterAdds);
 }
 
@@ -509,7 +509,7 @@ void BuildingResult::reset() {
   *this = BuildingResult();
 }
 
-void BuildingResult::init(std::shared_ptr<Table> afterModifies) {
+void BuildingResult::init(std::shared_ptr<ClientTable> afterModifies) {
   afterModifies_ = std::move(afterModifies);
 }
 

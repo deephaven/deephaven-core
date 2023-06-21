@@ -11,10 +11,10 @@
 #include "deephaven/dhcore/column/column_source.h"
 #include "deephaven/dhcore/container/row_sequence.h"
 
-namespace deephaven::dhcore::table {
+namespace deephaven::dhcore::clienttable {
 /**
- * The table schema that goes along with a Table class. This Schema object tells you about
- * the names and data types of the table columns.
+ * The clienttable schema that goes along with a Table class. This Schema object tells you about
+ * the names and data types of the clienttable columns.
  */
 class Schema {
   struct Private {};
@@ -54,4 +54,4 @@ private:
   std::vector<ElementTypeId::Enum> types_;
   std::map<std::string_view, size_t, std::less<>> index_;
 };
-}  // namespace deephaven::dhcore::table
+}  // namespace deephaven::dhcore::clienttable

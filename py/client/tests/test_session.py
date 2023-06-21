@@ -41,6 +41,7 @@ class SessionTestCase(BaseTestCase):
             token2 = session._auth_token
             self.assertNotEqual(token1, token2)
         session.close()
+        sleep(400)
 
     def test_empty_table(self):
         session = Session()
@@ -103,7 +104,6 @@ class SessionTestCase(BaseTestCase):
         pa_table2 = new_table.to_arrow()
         self.assertEqual(pa_table, pa_table2)
 
-    @unittest.skip("GH ticket filed #941.")
     def test_import_table_ints(self):
         types = [pa.int8(), pa.int16(), pa.int32(), pa.int64()]
         exception_list = []

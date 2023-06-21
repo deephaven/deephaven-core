@@ -39,4 +39,13 @@ TEST_CASE("TableHandle Dynamic Attributes", "[attributes]") {
   auto t = thm.timeTable(0, 1'000'000'000).update("II = ii");
   CHECK(!t.isStatic());
 }
+
+TEST_CASE("TableHandle Created by DoPut", "[attributes]") {
+  auto tm = TableMakerForTests::create();
+  auto table = tm.table();
+  CHECK(table.isStatic());
+  // The columns all have the same size, so look at the source data for any one of them and get its size
+  auto expectedSize = int64_t(tm.columnData().importDate().size());
+  CHECK(table.numRows() == expectedSize);
+}
 }  // namespace deephaven::client::tests
