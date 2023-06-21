@@ -126,25 +126,23 @@ public class DeephavenApiServer {
         AbstractScriptSession.createScriptCache();
 
         log.info().append("Initializing Script Session...").endl();
-
-        final ScriptSession scriptSession = scriptSessionProvider.get();
+        scriptSessionProvider.get();
         pluginRegistration.registerAll();
-        final ExecutionContext executionContext = scriptSession.getExecutionContext();
+
+        log.info().append("Initializing ExecutionContext for Main Thread...").endl();
+        // noinspection resource
+        executionContextProvider.get().open();
 
         log.info().append("Starting UpdateGraph...").endl();
         ug.<PeriodicUpdateGraph>cast().start();
 
-        try (final SafeCloseable ignored = executionContext.open()) {
-            EngineMetrics.maybeStartStatsCollection();
-        }
+        EngineMetrics.maybeStartStatsCollection();
 
         log.info().append("Starting Performance Trackers...").endl();
         QueryPerformanceRecorder.installPoolAllocationRecorder();
         QueryPerformanceRecorder.installUpdateGraphLockInstrumentation();
-        try (final SafeCloseable ignored = executionContext.open()) {
-            UpdatePerformanceTracker.start();
-            ServerStateTracker.start();
-        }
+        UpdatePerformanceTracker.start();
+        ServerStateTracker.start();
 
         for (UriResolver resolver : uriResolvers.resolvers()) {
             log.debug().append("Found table resolver ").append(resolver.getClass().toString()).endl();
