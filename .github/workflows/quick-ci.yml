@@ -28,7 +28,8 @@ jobs:
 
       - name: Setup gradle properties
         run: |
-          cat .github/env/ubuntu-22.04-4-16/gradle.properties >> gradle.properties
+          cat .github/env/${{ runner.os }}/gradle.properties >> gradle.properties
+          .github/scripts/print-gradle-workers-max.sh >> gradle.properties
           echo >> gradle.properties
           echo "org.gradle.java.installations.paths=${{ steps.setup-java-11.outputs.path }}" >> gradle.properties
           cat gradle.properties
