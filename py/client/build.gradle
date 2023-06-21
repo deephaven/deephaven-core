@@ -75,7 +75,7 @@ tasks.register('updateProtobuf', Sync) {
 String randomSuffix = UUID.randomUUID().toString();
 deephavenDocker {
     envVars.set([
-        'START_OPTS':'-Xmx512m'
+        'START_OPTS':'-Xmx512m -DAuthHandlers=io.deephaven.auth.AnonymousAuthenticationHandler'
     ])
     containerName.set "pydeephaven-test-container-${randomSuffix}"
     networkName.set "pydeephaven-network-${randomSuffix}"
