@@ -1973,14 +1973,19 @@ public final class QueryLanguageParser extends GenericVisitorAdapter<Class<?>, Q
 
         // Python vectorized functions(numba, DH) return arrays of primitive/Object types. This will break the generated
         // expression evaluation code that expects singular values. This check makes sure that numba/dh vectorized
-        // functions must be used alone as the entire expression.
-        n.getParentNode().ifPresent(parent -> {
-            if (parent.getClass() == CastExpr.class) {
+        // functions must be used alone as the entire expression after removing the enclosing parentheses.
+        Node n1 = n;
+        while (n1.hasParentNode()) {
+            n1 = n1.getParentNode().get();
+            Class cls = n1.getClass();
+
+            if (cls == CastExpr.class) {
                 throw new RuntimeException(
-                        "The return values of Python vectorized function can't be cast: " + parent);
+                        "The return values of Python vectorized function can't be cast: " + n1);
+            } else if (cls != EnclosedExpr.class) {
+                throw new RuntimeException("Python vectorized function can't be used in another expression: " + n1);
             }
-            throw new RuntimeException("Python vectorized function can't be used in another expression: " + parent);
-        });
+        }
 
         for (int i = 0; i < expressions.length; i++) {
             if (!(expressions[i] instanceof NameExpr) && !(expressions[i] instanceof LiteralExpr)) {
