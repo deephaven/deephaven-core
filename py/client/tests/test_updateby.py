@@ -40,8 +40,8 @@ class UpdateByTestCase(BaseTestCase):
             ema_tick_decay(decay_ticks=100, cols="ema_a = a", op_control=op_ctrl),
             ema_time_decay(ts_col="Timestamp", decay_time=10, cols="ema_a = a"),
             ema_time_decay(ts_col="Timestamp", decay_time=1000000, cols=["ema_c = c"], op_control=op_ctrl),
-            ema_time_decay(ts_col="Timestamp", decay_time="00:00:00.001", cols="ema_c = c", op_control=op_ctrl),
             ema_time_decay(ts_col="Timestamp", decay_time="PT00:00:00.001", cols="ema_c = c", op_control=op_ctrl),
+            ema_time_decay(ts_col="Timestamp", decay_time="PT1M", cols="ema_c = c"),
             ema_time_decay(ts_col="Timestamp", decay_time="PT1M", cols="ema_c = c", op_control=op_ctrl),
             ]
 
@@ -53,6 +53,20 @@ class UpdateByTestCase(BaseTestCase):
                     self.assertEqual(len(rt.schema), 1 + len(t.schema))
                     if not rt.is_refreshing:
                         self.assertEqual(rt.size, t.size)
+
+    def test_multiple_ops(self):
+        multiple_ops = [
+            cum_sum(["sum_a=a", "sum_b=b"]),
+            cum_max(["max_a=a", "max_d=d"]),
+            ema_tick_decay(10, ["ema_d=d", "ema_e=e"]),
+            ema_time_decay("Timestamp", "PT00:00:00.1", ["ema_time_d=d", "ema_time_e=e"]),
+        ]
+        for t in (self.static_table, self.ticking_table):
+            rt = t.update_by(ops=multiple_ops, by="c")
+            self.assertTrue(rt.is_refreshing is t.is_refreshing)
+            self.assertEqual(len(rt.schema), 8 + len(t.schema))
+            if not rt.is_refreshing:
+                self.assertEqual(rt.size, t.size)
 
 
 if __name__ == '__main__':

@@ -237,7 +237,20 @@ class UpdateByTestCase(BaseTestCase):
                         self.assertTrue(rct.is_refreshing is ct.is_refreshing)
                         self.assertEqual(len(rct.columns), 2 + len(ct.columns))
                         with update_graph.exclusive_lock(self.test_update_graph):
-                            self.assertEqual(ct.size, rct.size)                       
+                            self.assertEqual(ct.size, rct.size)
+    def test_multiple_ops(self):
+        multiple_ops = [
+            cum_sum(["sum_a=a", "sum_b=b"]),
+            cum_max(["max_a=a", "max_d=d"]),
+            ema_tick(10, ["ema_d=d", "ema_e=e"]),
+            ema_time("Timestamp", "PT00:00:00.1", ["ema_time_d=d", "ema_time_e=e"]),
+        ]
+        for t in (self.static_table, self.ticking_table):
+            rt = t.update_by(ops=multiple_ops, by="c")
+            self.assertTrue(rt.is_refreshing is t.is_refreshing)
+            self.assertEqual(len(rt.columns), 8 + len(t.columns))
+            with update_graph.exclusive_lock(self.test_update_graph):
+                self.assertEqual(rt.size, t.size)
 
 if __name__ == '__main__':
     unittest.main()
