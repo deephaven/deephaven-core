@@ -256,7 +256,14 @@ class VectorizationTestCase(BaseTestCase):
             return np.sinc(x)
 
         t = empty_table(100).update(["X = 0.1 * i", "SincXS=((sinc(X)))"])
-        self.assertEqual(t.columns[0].data_type, dtypes.double)
+        self.assertEqual(t.columns[1].data_type, dtypes.double)
+        self.assertEqual(deephaven.table._vectorized_count, 1)
+
+        def sinc2(x):
+            return np.sinc(x)
+
+        t = empty_table(100).update(["X = 0.1 * i", "SincXS=((sinc2(X)))"])
+        self.assertEqual(t.columns[1].data_type, dtypes.PyObject)
 
 
 if __name__ == "__main__":
