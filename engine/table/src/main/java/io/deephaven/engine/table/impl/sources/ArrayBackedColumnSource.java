@@ -100,10 +100,10 @@ public abstract class ArrayBackedColumnSource<T>
         return array.walk(new ArrayAdapter<>());
     }
 
-    public static <T> ArrayBackedColumnSource<T> from(PrimitiveArray<T> array) {
-        ArrayAdapter<T> adapter = new ArrayAdapter<>();
-        // noinspection unchecked
-        return (ArrayBackedColumnSource<T>) array.walk((PrimitiveArray.Visitor<WritableColumnSource<?>>) adapter);
+    public static <T> WritableColumnSource<T> from(PrimitiveArray<T> array) {
+        PrimitiveArray.Visitor<WritableColumnSource<?>> adapter = new ArrayAdapter<>();
+        //noinspection unchecked
+        return (WritableColumnSource<T>) array.walk(adapter);
     }
 
     /**

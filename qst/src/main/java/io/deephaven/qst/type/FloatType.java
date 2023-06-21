@@ -4,7 +4,6 @@
 package io.deephaven.qst.type;
 
 import io.deephaven.annotations.SimpleStyle;
-import io.deephaven.qst.type.PrimitiveType.Visitor;
 import org.immutables.value.Value.Immutable;
 
 /**
