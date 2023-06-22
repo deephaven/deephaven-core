@@ -13,7 +13,6 @@ import io.deephaven.base.text.TimestampBuffer;
 import io.deephaven.configuration.Configuration;
 import io.deephaven.io.log.*;
 import io.deephaven.io.sched.TimedJob;
-import io.deephaven.io.log.impl.LogBufferPoolImpl;
 import io.deephaven.io.log.impl.LogEntryPoolImpl;
 import io.deephaven.io.log.impl.LogSinkImpl;
 
@@ -125,7 +124,7 @@ public class StatsDriver extends TimedJob {
             this.sink = null;
             this.entries = null;
         } else {
-            LogBufferPool bufferPool = new LogBufferPoolImpl(History.INTERVALS.length * 20, BUFFER_SIZE);
+            LogBufferPool bufferPool = LogBufferPool.ofStrict(History.INTERVALS.length * 20, BUFFER_SIZE);
             this.entryPool = new LogEntryPoolImpl(History.INTERVALS.length * 20, bufferPool);
             this.sink = new LogSinkImpl<>(path, 3600 * 1000, entryPool, true);
             this.entries = new LogEntry[History.INTERVALS.length];
@@ -136,7 +135,7 @@ public class StatsDriver extends TimedJob {
             this.sinkHisto = null;
             this.entriesHisto = null;
         } else {
-            LogBufferPool bufferPool = new LogBufferPoolImpl(History.INTERVALS.length * 20, BUFFER_SIZE);
+            LogBufferPool bufferPool = LogBufferPool.ofStrict(History.INTERVALS.length * 20, BUFFER_SIZE);
             this.entryPoolHisto = new LogEntryPoolImpl(History.INTERVALS.length * 20, bufferPool);
             this.sinkHisto = new LogSinkImpl<>(histoPath, 3600 * 1000, entryPoolHisto, true);
             this.entriesHisto = new LogEntry[History.INTERVALS.length];

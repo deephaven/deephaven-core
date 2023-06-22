@@ -4,16 +4,19 @@
 package io.deephaven.io.log.impl;
 
 import io.deephaven.base.ArrayUtil;
+import io.deephaven.base.log.LogOutput;
 import io.deephaven.base.verify.Assert;
 import io.deephaven.io.log.LogBufferPool;
-import io.deephaven.base.log.LogOutput;
 import io.deephaven.io.streams.ByteBufferOutputStream;
 import io.deephaven.io.streams.ByteBufferSink;
 
 import java.io.IOException;
 import java.nio.ByteBuffer;
+import java.util.Objects;
 
 public abstract class LogOutputBaseImpl implements LogOutput, ByteBufferSink {
+    private static final int START_SIZE_BYTES = 128;
+
     // the stream in which we produce our output
     protected final ByteBufferOutputStream stream;
 
@@ -21,13 +24,9 @@ public abstract class LogOutputBaseImpl implements LogOutput, ByteBufferSink {
     private int endOfHeaderPosition;
 
     // where the output buffers come from
-    @SuppressWarnings("WeakerAccess")
-    protected final LogBufferPool bufferPool;
-
-    // the buffers in this entry
-    protected ByteBuffer[] buffers;
-    @SuppressWarnings("WeakerAccess")
-    protected int bufferCount;
+    private final LogBufferPool bufferPool;
+    private ByteBuffer[] buffers;
+    private int bufferCount;
 
     @SuppressWarnings("WeakerAccess")
     public LogOutputBaseImpl(LogBufferPool bufferPool) {
@@ -49,8 +48,8 @@ public abstract class LogOutputBaseImpl implements LogOutput, ByteBufferSink {
         return endOfHeaderPosition;
     }
 
-    private ByteBuffer nextBuffer() {
-        ByteBuffer byteBuffer = bufferPool.take();
+    private ByteBuffer nextBuffer(int need) {
+        ByteBuffer byteBuffer = Objects.requireNonNull(bufferPool.take(need));
         buffers = ArrayUtil.put(buffers, bufferCount, byteBuffer, ByteBuffer.class);
         bufferCount++;
         stream.setBuffer(byteBuffer);
@@ -58,8 +57,9 @@ public abstract class LogOutputBaseImpl implements LogOutput, ByteBufferSink {
     }
 
     @Override // from ByteBufferSink
-    public ByteBuffer acceptBuffer(ByteBuffer b, int need) throws IOException {
-        return nextBuffer();
+    public ByteBuffer acceptBuffer(ByteBuffer b, int need) {
+        assert b == buffers[bufferCount - 1];
+        return nextBuffer(need);
     }
 
     @Override // from ByteBufferSink
@@ -71,7 +71,7 @@ public abstract class LogOutputBaseImpl implements LogOutput, ByteBufferSink {
     @Override // from LogOutput
     public LogOutput start() {
         clear();
-        nextBuffer();
+        nextBuffer(START_SIZE_BYTES);
         return this;
     }
 
@@ -88,8 +88,8 @@ public abstract class LogOutputBaseImpl implements LogOutput, ByteBufferSink {
     @Override // from LogOutput
     public int size() {
         int byteCount = 0;
-        for (int nIndex = 0, nLength = bufferCount; nIndex < nLength; nIndex++) {
-            byteCount += buffers[nIndex].position();
+        for (int i = 0; i < bufferCount; ++i) {
+            byteCount += buffers[i].position();
         }
         return byteCount;
     }
@@ -106,10 +106,9 @@ public abstract class LogOutputBaseImpl implements LogOutput, ByteBufferSink {
 
     @Override // from LogOutput
     public LogOutput clear() {
-        for (int nIndex = 0, nLength = bufferCount; nIndex < nLength; nIndex++) {
-            buffers[nIndex].clear();
-            bufferPool.give(buffers[nIndex]);
-            buffers[nIndex] = null;
+        for (int i = 0; i < bufferCount; ++i) {
+            bufferPool.give(buffers[i]);
+            buffers[i] = null;
         }
         bufferCount = 0;
         stream.setBuffer(null);
