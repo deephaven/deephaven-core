@@ -121,8 +121,8 @@ C++ compiler and tool suite (cmake etc).
 # Updating proto generated C++ stubs (intended for developers)
    1. Ensure you have a local installation of the dependent libraries
       as described earlier in this document.  Source the `env.sh`
-      file to ensure you have the correct definition in your
-      shell for the steps below.
+      file to ensure you have the correct environment variable definitions
+      in your shell for the steps below.
 
    2. In the `proto/proto-backend-grpc/src/main/proto` directory
       (relative from your deephave-core clone base directory),
