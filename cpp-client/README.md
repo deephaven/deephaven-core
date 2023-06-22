@@ -82,7 +82,7 @@ C++ compiler and tool suite (cmake etc).
    and may require manual modifications in other parts of the build
    (if this is your first time building, we suggest you stick with defaults).
 
-   The `env.sh` file contains environment varibale definitions in bourne
+   The `env.sh` file contains environment variable definitions in bourne
    shell syntax (compatible with bash) that will indicate to cmake
    the location of the libraries just built, via definition of a suitable
    `CMAKE_PREFIX_PATH`.  This file is intended to be `source`'d
