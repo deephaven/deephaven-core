@@ -77,13 +77,7 @@ public class GrpcWebServletResponse extends HttpServletResponseWrapper {
 
                 // Write the payload to the wire, then complete the stream. This may complete asynchronously, so we
                 // won't call super.complete() here.
-                try {
-                    outputStream.writeAndCloseWhenReady(payload.array(), safelyComplete);
-                } catch (IOException e) {
-                    safelyComplete.run();
-                }
-
-                // return now, we'll manage calling super.complete() in the lambda above
+                outputStream.writeAndCloseWhenReady(payload.array(), safelyComplete);
                 return;
             }
         }

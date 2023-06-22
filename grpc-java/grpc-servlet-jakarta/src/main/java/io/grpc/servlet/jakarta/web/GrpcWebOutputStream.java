@@ -31,13 +31,15 @@ public class GrpcWebOutputStream extends ServletOutputStream implements WriteLis
      * @param bytes the bytes to write once writing is possible
      * @param close a Runnable to invoke once this write is complete
      */
-    public synchronized void writeAndCloseWhenReady(byte[] bytes, Runnable close) throws IOException {
+    public synchronized void writeAndCloseWhenReady(byte[] bytes, Runnable close) {
         if (writeListener == null) {
             throw new IllegalStateException("writeListener");
         }
         if (isReady()) {
             try {
                 write(bytes);
+            } catch (IOException ignored) {
+                // Ignore this error, we're closing anyway
             } finally {
                 close.run();
             }
