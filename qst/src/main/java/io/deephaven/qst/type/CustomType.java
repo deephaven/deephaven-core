@@ -31,9 +31,8 @@ public abstract class CustomType<T> extends GenericTypeBase<T> {
     public abstract Class<T> clazz();
 
     @Override
-    public final <V extends GenericType.Visitor> V walk(V visitor) {
-        visitor.visit(this);
-        return visitor;
+    public final <R> R walk(GenericType.Visitor<R> visitor) {
+        return visitor.visit(this);
     }
 
     @Check

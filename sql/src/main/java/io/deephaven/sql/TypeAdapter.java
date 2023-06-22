@@ -27,12 +27,11 @@ import org.apache.calcite.sql.type.SqlTypeName;
 
 import java.util.Objects;
 
-final class TypeAdapter implements Type.Visitor, GenericType.Visitor, PrimitiveType.Visitor {
+final class TypeAdapter
+        implements Type.Visitor<RelDataType>, GenericType.Visitor<RelDataType>, PrimitiveType.Visitor<RelDataType> {
 
     public static RelDataType of(Type<?> type, RelDataTypeFactory typeFactory) {
-        final TypeAdapter adapter = new TypeAdapter(typeFactory);
-        type.walk(adapter);
-        return Objects.requireNonNull(adapter.out);
+        return type.walk(new TypeAdapter(typeFactory));
     }
 
     public static RelDataType of(TableHeader tableHeader, RelDataTypeFactory typeFactory) {
@@ -44,80 +43,79 @@ final class TypeAdapter implements Type.Visitor, GenericType.Visitor, PrimitiveT
     }
 
     private final RelDataTypeFactory typeFactory;
-    private RelDataType out;
 
     private TypeAdapter(RelDataTypeFactory typeFactory) {
         this.typeFactory = Objects.requireNonNull(typeFactory);
     }
 
     @Override
-    public void visit(PrimitiveType<?> primitiveType) {
-        primitiveType.walk((PrimitiveType.Visitor) this);
+    public RelDataType visit(PrimitiveType<?> primitiveType) {
+        return primitiveType.walk((PrimitiveType.Visitor<RelDataType>) this);
     }
 
     @Override
-    public void visit(BooleanType booleanType) {
-        out = create(SqlTypeName.BOOLEAN);
+    public RelDataType visit(BooleanType booleanType) {
+        return create(SqlTypeName.BOOLEAN);
     }
 
     @Override
-    public void visit(ByteType byteType) {
-        out = create(SqlTypeName.TINYINT);
+    public RelDataType visit(ByteType byteType) {
+        return create(SqlTypeName.TINYINT);
     }
 
     @Override
-    public void visit(CharType charType) {
-        out = create(SqlTypeName.CHAR);
+    public RelDataType visit(CharType charType) {
+        return create(SqlTypeName.CHAR);
     }
 
     @Override
-    public void visit(ShortType shortType) {
-        out = create(SqlTypeName.SMALLINT);
+    public RelDataType visit(ShortType shortType) {
+        return create(SqlTypeName.SMALLINT);
     }
 
     @Override
-    public void visit(IntType intType) {
-        out = create(SqlTypeName.INTEGER);
+    public RelDataType visit(IntType intType) {
+        return create(SqlTypeName.INTEGER);
     }
 
     @Override
-    public void visit(LongType longType) {
-        out = create(SqlTypeName.BIGINT);
+    public RelDataType visit(LongType longType) {
+        return create(SqlTypeName.BIGINT);
     }
 
     @Override
-    public void visit(FloatType floatType) {
-        out = create(SqlTypeName.REAL);
+    public RelDataType visit(FloatType floatType) {
+        return create(SqlTypeName.REAL);
     }
 
     @Override
-    public void visit(DoubleType doubleType) {
-        out = create(SqlTypeName.DOUBLE);
+    public RelDataType visit(DoubleType doubleType) {
+        return create(SqlTypeName.DOUBLE);
     }
 
     @Override
-    public void visit(GenericType<?> genericType) {
-        genericType.walk((GenericType.Visitor) this);
+    public RelDataType visit(GenericType<?> genericType) {
+        return genericType.walk((GenericType.Visitor<RelDataType>) this);
     }
 
     @Override
-    public void visit(StringType stringType) {
-        out = create(SqlTypeName.VARCHAR);
+    public RelDataType visit(StringType stringType) {
+        return create(SqlTypeName.VARCHAR);
     }
 
     @Override
-    public void visit(InstantType instantType) {
-        out = create(SqlTypeName.TIMESTAMP);
+    public RelDataType visit(InstantType instantType) {
+        return create(SqlTypeName.TIMESTAMP);
     }
 
     @Override
-    public void visit(ArrayType<?, ?> arrayType) {
+    public RelDataType visit(ArrayType<?, ?> arrayType) {
         // SQLTODO(array-type)
         throw new UnsupportedOperationException("SQLTODO(array-type)");
     }
 
     @Override
-    public void visit(CustomType<?> customType) {
+    public RelDataType visit(CustomType<?> customType) {
         // SQLTODO(custom-type)
         throw new UnsupportedOperationException("SQLTODO(custom-type)");
     }
