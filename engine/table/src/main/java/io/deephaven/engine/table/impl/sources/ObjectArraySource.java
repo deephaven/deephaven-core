@@ -5,7 +5,6 @@ package io.deephaven.engine.table.impl.sources;
 
 import gnu.trove.list.array.TIntArrayList;
 import io.deephaven.base.verify.Assert;
-import io.deephaven.engine.context.ExecutionContext;
 import io.deephaven.engine.table.impl.MutableColumnSourceGetDefaults;
 import io.deephaven.engine.rowset.chunkattributes.OrderedRowKeyRanges;
 import io.deephaven.engine.rowset.chunkattributes.OrderedRowKeys;
@@ -248,6 +247,10 @@ public class ObjectArraySource<T> extends ArraySourceHelper<T, T[]> implements M
         final FillSparseChunkContext<T[]> ctx = new FillSparseChunkContext<>();
         indices.forEachRowKey((final long v) -> {
             if (v >= ctx.capForCurrentBlock) {
+                if (v > maxIndex) {
+                    dest.set(ctx.offset++, null);
+                    return true;
+                }
                 ctx.currentBlockNo = getBlockNo(v);
                 ctx.capForCurrentBlock = (ctx.currentBlockNo + 1L) << LOG_BLOCK_SIZE;
                 ctx.currentBlock = blocks[ctx.currentBlockNo];
@@ -275,6 +278,10 @@ public class ObjectArraySource<T> extends ArraySourceHelper<T, T[]> implements M
         final FillSparseChunkContext<T[]> ctx = new FillSparseChunkContext<>();
         indices.forEachRowKey((final long v) -> {
             if (v >= ctx.capForCurrentBlock) {
+                if (v > maxIndex) {
+                    dest.set(ctx.offset++, null);
+                    return true;
+                }
                 ctx.currentBlockNo = getBlockNo(v);
                 ctx.capForCurrentBlock = (ctx.currentBlockNo + 1L) << LOG_BLOCK_SIZE;
                 ctx.currentBlock = blocks[ctx.currentBlockNo];

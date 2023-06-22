@@ -12,7 +12,6 @@ import gnu.trove.list.array.TIntArrayList;
 import io.deephaven.base.verify.Assert;
 import io.deephaven.chunk.*;
 import io.deephaven.chunk.attributes.Values;
-import io.deephaven.engine.context.ExecutionContext;
 import io.deephaven.engine.rowset.RowSequence;
 import io.deephaven.engine.rowset.chunkattributes.OrderedRowKeyRanges;
 import io.deephaven.engine.rowset.chunkattributes.OrderedRowKeys;
@@ -37,7 +36,7 @@ import static io.deephaven.util.type.TypeUtils.unbox;
  * <p>
  * The C-haracterArraySource is replicated to all other types with
  * io.deephaven.engine.table.impl.sources.Replicate.
- *
+ * <p>
  * (C-haracter is deliberately spelled that way in order to prevent Replicate from altering this very comment).
  */
 public class DoubleArraySource extends ArraySourceHelper<Double, double[]>
@@ -326,7 +325,21 @@ public class DoubleArraySource extends ArraySourceHelper<Double, double[]>
         final WritableDoubleChunk<? super Values> chunk = destination.asWritableDoubleChunk();
         // endregion chunkDecl
         MutableInt destOffset = new MutableInt(0);
-        rowSequence.forAllRowKeyRanges((final long from, final long to) -> {
+        rowSequence.forAllRowKeyRanges((final long from, long to) -> {
+            int valuesAtEnd = 0;
+
+            if (from > maxIndex) {
+                // the whole region is beyond us
+                final int sz = LongSizedDataStructure.intSize("int cast", to - from + 1);
+                destination.fillWithNullValue(destOffset.intValue(), sz);
+                destOffset.add(sz);
+                return;
+            } else if (to > maxIndex) {
+                // only part of the region is beyond us
+                valuesAtEnd = LongSizedDataStructure.intSize("int cast", to - maxIndex);
+                to = maxIndex;
+            }
+
             final int fromBlock = getBlockNo(from);
             final int toBlock = getBlockNo(to);
             final int fromOffsetInBlock = (int) (from & INDEX_MASK);
@@ -353,6 +366,11 @@ public class DoubleArraySource extends ArraySourceHelper<Double, double[]>
                 destination.copyFromArray(getBlock(toBlock), 0, destOffset.intValue(), restSz);
                 // endregion copyFromArray
                 destOffset.add(restSz);
+            }
+
+            if (valuesAtEnd > 0) {
+                destination.fillWithNullValue(destOffset.intValue(), valuesAtEnd);
+                destOffset.add(valuesAtEnd);
             }
         });
         destination.setSize(destOffset.intValue());
@@ -402,7 +420,20 @@ public class DoubleArraySource extends ArraySourceHelper<Double, double[]>
             destOffset.add(length);
         };
 
-        rowSequence.forAllRowKeyRanges((final long from, final long to) -> {
+        rowSequence.forAllRowKeyRanges((final long from, long to) -> {
+            int valuesAtEnd = 0;
+            if (from > maxIndex) {
+                // the whole region is beyond us
+                final int sz = LongSizedDataStructure.intSize("int cast", to - from + 1);
+                destination.fillWithNullValue(destOffset.intValue(), sz);
+                destOffset.add(sz);
+                return;
+            } else if (to > maxIndex) {
+                // only part of the region is beyond us
+                valuesAtEnd = LongSizedDataStructure.intSize("int cast", to - maxIndex);
+                to = maxIndex;
+            }
+
             final int fromBlock = getBlockNo(from);
             final int toBlock = getBlockNo(to);
             final int fromOffsetInBlock = (int) (from & INDEX_MASK);
@@ -419,6 +450,11 @@ public class DoubleArraySource extends ArraySourceHelper<Double, double[]>
 
                 int restSz = (int) (to & INDEX_MASK) + 1;
                 lambda.copy(toBlock, 0, restSz);
+            }
+
+            if (valuesAtEnd > 0) {
+                destination.fillWithNullValue(destOffset.intValue(), valuesAtEnd);
+                destOffset.add(valuesAtEnd);
             }
         });
         destination.setSize(destOffset.intValue());
@@ -441,6 +477,10 @@ public class DoubleArraySource extends ArraySourceHelper<Double, double[]>
         final FillSparseChunkContext<double[]> ctx = new FillSparseChunkContext<>();
         rows.forAllRowKeys((final long v) -> {
             if (v >= ctx.capForCurrentBlock) {
+                if (v > maxIndex) {
+                    chunk.set(ctx.offset++, NULL_DOUBLE);
+                    return;
+                }
                 ctx.currentBlockNo = getBlockNo(v);
                 ctx.capForCurrentBlock = (ctx.currentBlockNo + 1L) << LOG_BLOCK_SIZE;
                 ctx.currentBlock = blocks[ctx.currentBlockNo];
@@ -476,6 +516,10 @@ public class DoubleArraySource extends ArraySourceHelper<Double, double[]>
         final FillSparseChunkContext<double[]> ctx = new FillSparseChunkContext<>();
         rows.forAllRowKeys((final long v) -> {
             if (v >= ctx.capForCurrentBlock) {
+                if (v > maxIndex) {
+                    chunk.set(ctx.offset++, NULL_DOUBLE);
+                    return;
+                }
                 ctx.currentBlockNo = getBlockNo(v);
                 ctx.capForCurrentBlock = (ctx.currentBlockNo + 1L) << LOG_BLOCK_SIZE;
                 ctx.currentBlock = blocks[ctx.currentBlockNo];
