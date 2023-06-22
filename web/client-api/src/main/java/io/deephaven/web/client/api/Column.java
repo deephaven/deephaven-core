@@ -101,9 +101,6 @@ public class Column {
         return description;
     }
 
-//    @JsMethod
-//    public String getDatabarColumns(){}
-
     public IntStream getRequiredColumns() {
         Builder builder = IntStream.builder();
         builder.accept(index);

@@ -79,17 +79,9 @@ public interface ColumnFormatting {
     }
 
     enum DatabarFormatColumnType {
-        VALUE,
-        AXIS,
-        MAX,
-        MIN,
-        POSITIVE_COLOR,
-        NEGATIVE_COLOR,
-        VALUE_PLACEMENT,
-        DIRECTION,
-        OPACITY,
-        MARKERS // always empty for now
+        VALUE, AXIS, MAX, MIN, POSITIVE_COLOR, NEGATIVE_COLOR, VALUE_PLACEMENT, DIRECTION, OPACITY, MARKERS
     }
+
     static String getDatabarFormatColumnName(String baseColumn, DatabarFormatColumnType prop) {
         return baseColumn + "_" + prop.name() + Constants.TABLE_DATABAR_FORMAT_SUFFIX;
     }

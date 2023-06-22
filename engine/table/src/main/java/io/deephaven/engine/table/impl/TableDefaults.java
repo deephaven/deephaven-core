@@ -37,7 +37,7 @@ public interface TableDefaults extends Table, TableOperationsDefaults<Table, Tab
 
     Table[] ZERO_LENGTH_TABLE_ARRAY = new Table[0];
 
-    final String DATA_BAR_SUFFIX = ColumnFormatting.Constants.TABLE_DATABAR_FORMAT_SUFFIX;
+    String DATA_BAR_SUFFIX = ColumnFormatting.Constants.TABLE_DATABAR_FORMAT_SUFFIX;
 
     @Override
     default Table coalesce() {
@@ -234,27 +234,42 @@ public interface TableDefaults extends Table, TableOperationsDefaults<Table, Tab
             String positiveColor, String negativeColor, String valuePlacement, String direction, Double opacity) {
         Table newTable = this;
 
+        String minColumn =
+                ColumnFormatting.getDatabarFormatColumnName(column, ColumnFormatting.DatabarFormatColumnType.MIN);
         if (min == null) {
-            newTable = newTable.naturalJoin(this.aggBy(AggMin(ColumnFormatting.getDatabarFormatColumnName(column, ColumnFormatting.DatabarFormatColumnType.MIN) + "=" + valueColumn)), "");
+            newTable = newTable.naturalJoin(this.aggBy(AggMin(minColumn + "=" + valueColumn)), "");
         } else {
-            newTable = newTable.naturalJoin(TableTools.newTable(col(ColumnFormatting.getDatabarFormatColumnName(column, ColumnFormatting.DatabarFormatColumnType.MIN), min)), "");
+            newTable = newTable.naturalJoin(TableTools.newTable(col(minColumn, min)), "");
         }
 
+        String maxColumn =
+                ColumnFormatting.getDatabarFormatColumnName(column, ColumnFormatting.DatabarFormatColumnType.MAX);
         if (max == null) {
-            newTable = newTable.naturalJoin(this.aggBy(AggMin(ColumnFormatting.getDatabarFormatColumnName(column, ColumnFormatting.DatabarFormatColumnType.MAX) + "=" + valueColumn)),"");
+            newTable = newTable.naturalJoin(this.aggBy(AggMax(maxColumn + "=" + valueColumn)), "");
         } else {
-            newTable = newTable.naturalJoin(TableTools.newTable(col(ColumnFormatting.getDatabarFormatColumnName(column, ColumnFormatting.DatabarFormatColumnType.MAX), max)), "");
+            newTable = newTable.naturalJoin(TableTools.newTable(col(maxColumn, max)), "");
         }
+
+        String valueOutputColumn =
+                ColumnFormatting.getDatabarFormatColumnName(column, ColumnFormatting.DatabarFormatColumnType.VALUE);
+        newTable = newTable.updateView(valueOutputColumn + "= (" + valueColumn + " - " + minColumn + ") / (" + maxColumn
+                + " - " + minColumn + ")");
 
         return newTable.naturalJoin(
-            TableTools.newTable(
-                col(ColumnFormatting.getDatabarFormatColumnName(column, ColumnFormatting.DatabarFormatColumnType.AXIS), axis),
-                col(ColumnFormatting.getDatabarFormatColumnName(column, ColumnFormatting.DatabarFormatColumnType.POSITIVE_COLOR), positiveColor),
-                col(ColumnFormatting.getDatabarFormatColumnName(column, ColumnFormatting.DatabarFormatColumnType.NEGATIVE_COLOR), negativeColor),
-                col(ColumnFormatting.getDatabarFormatColumnName(column, ColumnFormatting.DatabarFormatColumnType.VALUE_PLACEMENT), valuePlacement),
-                col(ColumnFormatting.getDatabarFormatColumnName(column, ColumnFormatting.DatabarFormatColumnType.DIRECTION), direction),
-                col(ColumnFormatting.getDatabarFormatColumnName(column, ColumnFormatting.DatabarFormatColumnType.OPACITY), opacity)),
-            "");
+                TableTools.newTable(
+                        col(ColumnFormatting.getDatabarFormatColumnName(column,
+                                ColumnFormatting.DatabarFormatColumnType.AXIS), axis),
+                        col(ColumnFormatting.getDatabarFormatColumnName(column,
+                                ColumnFormatting.DatabarFormatColumnType.POSITIVE_COLOR), positiveColor),
+                        col(ColumnFormatting.getDatabarFormatColumnName(column,
+                                ColumnFormatting.DatabarFormatColumnType.NEGATIVE_COLOR), negativeColor),
+                        col(ColumnFormatting.getDatabarFormatColumnName(column,
+                                ColumnFormatting.DatabarFormatColumnType.VALUE_PLACEMENT), valuePlacement),
+                        col(ColumnFormatting.getDatabarFormatColumnName(column,
+                                ColumnFormatting.DatabarFormatColumnType.DIRECTION), direction),
+                        col(ColumnFormatting.getDatabarFormatColumnName(column,
+                                ColumnFormatting.DatabarFormatColumnType.OPACITY), opacity)),
+                "");
     }
 
     @Override

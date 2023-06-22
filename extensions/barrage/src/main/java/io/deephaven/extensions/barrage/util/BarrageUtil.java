@@ -209,7 +209,7 @@ public class BarrageUtil {
 
             for (ColumnFormatting.DatabarFormatColumnType type : ColumnFormatting.DatabarFormatColumnType.values()) {
                 String databarName = ColumnFormatting.getDatabarFormatColumnName(name, type);
-                if(formatColumns.contains(databarName)) {
+                if (formatColumns.contains(databarName)) {
                     putMetadata(metadata, "databar." + type.name(), databarName);
                 }
             }

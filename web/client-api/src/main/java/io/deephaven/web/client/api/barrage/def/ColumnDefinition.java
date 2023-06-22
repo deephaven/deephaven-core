@@ -226,8 +226,6 @@ public class ColumnDefinition {
         this.rollupAggregationInputColumn = rollupAggregationInputColumn;
     }
 
-    public Map<String, String> getDatabarColumn() { return databarColumn; }
-
     public void setDatabar(String key, String value) {
         this.databarColumn.put(key, value);
     }

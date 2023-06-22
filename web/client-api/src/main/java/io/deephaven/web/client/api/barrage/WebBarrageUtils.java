@@ -77,17 +77,9 @@ public class WebBarrageUtils {
     }
 
     public enum DatabarFormatColumnType {
-        VALUE,
-        AXIS,
-        MAX,
-        MIN,
-        POSITIVE_COLOR,
-        NEGATIVE_COLOR,
-        VALUE_PLACEMENT,
-        DIRECTION,
-        OPACITY,
-        MARKERS // always empty for now
+        VALUE, AXIS, MAX, MIN, POSITIVE_COLOR, NEGATIVE_COLOR, VALUE_PLACEMENT, DIRECTION, OPACITY, MARKERS
     }
+
     public static ColumnDefinition[] readColumnDefinitions(Schema schema) {
         ColumnDefinition[] cols = new ColumnDefinition[(int) schema.fieldsLength()];
         for (int i = 0; i < schema.fieldsLength(); i++) {
@@ -101,7 +93,7 @@ public class WebBarrageUtils {
             cols[i].setStyleColumn("true".equals(fieldMetadata.get("isStyle")));
             cols[i].setFormatColumn("true".equals(fieldMetadata.get("isDateFormat"))
                     || "true".equals(fieldMetadata.get("isNumberFormat"))
-                    || "true".equals(fieldMetadata.get("isDatabarFormat"))
+            // || "true".equals(fieldMetadata.get("isDatabarFormat"))
             );
             cols[i].setForRow("true".equals(fieldMetadata.get("isRowStyle")));
 
