@@ -5,6 +5,7 @@
 
 #include <arrow/array.h>
 #include <arrow/buffer.h>
+#include <arrow/scalar.h>
 #include <atomic>
 #include "deephaven/client/arrowutil/arrow_column_source.h"
 #include "deephaven/client/server/server.h"
@@ -12,6 +13,7 @@
 #include "deephaven/client/utility/executor.h"
 #include "deephaven/dhcore/ticking/ticking.h"
 #include "deephaven/dhcore/utility/callbacks.h"
+#include "deephaven/dhcore/utility/utility.h"
 #include "deephaven/dhcore/ticking/barrage_processor.h"
 
 using deephaven::dhcore::column::ColumnSource;
@@ -21,6 +23,10 @@ using deephaven::dhcore::ticking::BarrageProcessor;
 using deephaven::dhcore::ticking::TickingCallback;
 using deephaven::dhcore::utility::Callback;
 using deephaven::dhcore::utility::makeReservedVector;
+using deephaven::dhcore::utility::separatedList;
+using deephaven::dhcore::utility::streamf;
+using deephaven::dhcore::utility::stringf;
+using deephaven::dhcore::utility::verboseCast;
 using deephaven::client::arrowutil::ArrowInt8ColumnSource;
 using deephaven::client::arrowutil::ArrowInt16ColumnSource;
 using deephaven::client::arrowutil::ArrowInt32ColumnSource;
@@ -92,9 +98,12 @@ public:
 private:
   std::vector<uint8_t> data_;
 };
-std::vector<std::shared_ptr<ColumnSource>> arraysToColumnSources(
-    const std::vector<std::shared_ptr<arrow::Array>> &arrays);
-std::shared_ptr<ColumnSource> arrayToColumnSource(const arrow::Array &array);
+struct ColumnSourceAndSize {
+  std::shared_ptr<ColumnSource> columnSource_;
+  size_t size_ = 0;
+};
+
+ColumnSourceAndSize arrayToColumnSource(const arrow::Array &array);
 }  // namespace
 
 std::shared_ptr<SubscriptionHandle> SubscriptionThread::start( std::shared_ptr<Server> server,
@@ -131,7 +140,7 @@ std::shared_ptr<SubscriptionHandle> SubscribeState::invokeHelper() {
   arrow::flight::FlightCallOptions fco;
   server_->forEachHeaderNameAndValue(
     [&fco](const std::string &name, const std::string &value) {
-      fco.headers.push_back(std::make_pair(name, value));
+      fco.headers.emplace_back(name, value);
     }
   );
   auto *client = server_->flightClient();
@@ -208,11 +217,14 @@ void UpdateProcessor::runForeverHelper() {
   while (true) {
     okOrThrow(DEEPHAVEN_EXPR_MSG(fsr_->Next(&flightStreamChunk)));
     const auto &cols = flightStreamChunk.data->columns();
+    auto columnSources = makeReservedVector<std::shared_ptr<ColumnSource>>(cols.size());
     auto sizes = makeReservedVector<size_t>(cols.size());
-    for (const auto &col: cols) {
-      sizes.push_back(col->length());
+    for (const auto &col : cols) {
+      auto css = arrayToColumnSource(*col);
+      columnSources.push_back(std::move(css.columnSource_));
+      sizes.push_back(css.size_);
     }
-    auto columnSources = arraysToColumnSources(cols);
+
     const void *metadata = nullptr;
     size_t metadataSize = 0;
     if (flightStreamChunk.app_metadata != nullptr) {
@@ -231,60 +243,65 @@ OwningBuffer::OwningBuffer(std::vector<uint8_t> data) :
     arrow::Buffer(data.data(), (int64_t)data.size()), data_(std::move(data)) {}
 OwningBuffer::~OwningBuffer() = default;
 
-std::vector<std::shared_ptr<ColumnSource>> arraysToColumnSources(
-    const std::vector<std::shared_ptr<arrow::Array>> &arrays) {
-  std::vector<std::shared_ptr<ColumnSource>> result;
-  result.reserve(arrays.size());
-  for (const auto &array : arrays) {
-    result.push_back(arrayToColumnSource(*array));
-  }
-  return result;
-}
-
 struct ArrayToColumnSourceVisitor final : public arrow::ArrayVisitor {
+  explicit ArrayToColumnSourceVisitor(std::shared_ptr<arrow::Array> storage) : storage_(std::move(storage)) {}
+
   arrow::Status Visit(const arrow::Int8Array &array) final {
-    result_ = ArrowInt8ColumnSource::create(&array);
+    result_ = ArrowInt8ColumnSource::create(std::move(storage_), &array);
     return arrow::Status::OK();
   }
 
   arrow::Status Visit(const arrow::Int16Array &array) final {
-    result_ = ArrowInt16ColumnSource::create(&array);
+    result_ = ArrowInt16ColumnSource::create(std::move(storage_), &array);
     return arrow::Status::OK();
   }
 
   arrow::Status Visit(const arrow::Int32Array &array) final {
-    result_ = ArrowInt32ColumnSource::create(&array);
+    result_ = ArrowInt32ColumnSource::create(std::move(storage_), &array);
     return arrow::Status::OK();
   }
 
   arrow::Status Visit(const arrow::Int64Array &array) final {
-    result_ = ArrowInt64ColumnSource::create(&array);
+    result_ = ArrowInt64ColumnSource::create(std::move(storage_), &array);
     return arrow::Status::OK();
   }
 
   arrow::Status Visit(const arrow::BooleanArray &array) final {
-    result_ = ArrowBooleanColumnSource::create(&array);
+    result_ = ArrowBooleanColumnSource::create(std::move(storage_), &array);
     return arrow::Status::OK();
   }
 
   arrow::Status Visit(const arrow::StringArray &array) final {
-    result_ = ArrowStringColumnSource::create(&array);
+    result_ = ArrowStringColumnSource::create(std::move(storage_), &array);
     return arrow::Status::OK();
   }
 
   arrow::Status Visit(const arrow::TimestampArray &array) final {
-    result_ = ArrowDateTimeColumnSource::create(&array);
+    result_ = ArrowDateTimeColumnSource::create(std::move(storage_), &array);
     return arrow::Status::OK();
   }
 
+  // We keep a shared_ptr to the arrow array in order to keep the underlying storage alive.
+  std::shared_ptr<arrow::Array> storage_;
   std::shared_ptr<ColumnSource> result_;
 };
 
 // Creates a non-owning chunk of the right type that points to the corresponding array data.
-std::shared_ptr<ColumnSource> arrayToColumnSource(const arrow::Array &array) {
-  ArrayToColumnSourceVisitor v;
-  okOrThrow(DEEPHAVEN_EXPR_MSG(array.Accept(&v)));
-  return std::move(v.result_);
+ColumnSourceAndSize arrayToColumnSource(const arrow::Array &array) {
+  const auto *listArray = verboseCast<const arrow::ListArray*>(DEEPHAVEN_EXPR_MSG(&array));
+
+  if (listArray->length() != 1) {
+    auto message = stringf("Expected array of length 1, got %o", array.length());
+    throw std::runtime_error(DEEPHAVEN_DEBUG_MSG(message));
+  }
+
+  const auto listElement = listArray->GetScalar(0).ValueOrDie();
+  const auto *listScalar = verboseCast<const arrow::ListScalar*>(DEEPHAVEN_EXPR_MSG(listElement.get()));
+  const auto &listScalarValue = listScalar->value;
+
+  ArrayToColumnSourceVisitor v(listScalarValue);
+  okOrThrow(DEEPHAVEN_EXPR_MSG(listScalarValue->Accept(&v)));
+  return {std::move(v.result_), size_t(listScalarValue->length())};
 }
 }  // namespace
 }  // namespace deephaven::client::subscription
