@@ -101,7 +101,8 @@ public class WebBarrageUtils {
             cols[i].setStyleColumn("true".equals(fieldMetadata.get("isStyle")));
             cols[i].setFormatColumn("true".equals(fieldMetadata.get("isDateFormat"))
                     || "true".equals(fieldMetadata.get("isNumberFormat"))
-                    || "true".equals(fieldMetadata.get("isDatabarFormat")));
+                    || "true".equals(fieldMetadata.get("isDatabarFormat"))
+            );
             cols[i].setForRow("true".equals(fieldMetadata.get("isRowStyle")));
 
             String formatColumnName = fieldMetadata.get("dateFormatColumn");
@@ -134,7 +135,7 @@ public class WebBarrageUtils {
             cols[i].setRollupAggregationInputColumn(fieldMetadata.get("rollupTable.aggregationInputColumnName"));
 
             for (DatabarFormatColumnType value : DatabarFormatColumnType.values()) {
-                cols[i].setDatabar(value, fieldMetadata.get("databar." + value.name()));
+                cols[i].setDatabar(value.name(), fieldMetadata.get("databar." + value.name()));
             }
         }
         return cols;

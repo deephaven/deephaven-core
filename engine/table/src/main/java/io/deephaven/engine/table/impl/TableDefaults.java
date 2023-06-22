@@ -232,29 +232,28 @@ public interface TableDefaults extends Table, TableOperationsDefaults<Table, Tab
     @Override
     default Table formatDatabar(String column, String valueColumn, String axis, Double min, Double max,
             String positiveColor, String negativeColor, String valuePlacement, String direction, Double opacity) {
-        String prefix = column + DATA_BAR_SUFFIX;
         Table newTable = this;
 
         if (min == null) {
-            newTable = newTable.naturalJoin(this.aggBy(AggMin(ColumnFormatting.getDatabarFormatColumnName(column, ColumnFormatting.DatabarFormatColumnType.MIN) + valueColumn)), "");
+            newTable = newTable.naturalJoin(this.aggBy(AggMin(ColumnFormatting.getDatabarFormatColumnName(column, ColumnFormatting.DatabarFormatColumnType.MIN) + "=" + valueColumn)), "");
         } else {
-            newTable = newTable.naturalJoin(TableTools.newTable(col(prefix + "_MIN", min)), "");
+            newTable = newTable.naturalJoin(TableTools.newTable(col(ColumnFormatting.getDatabarFormatColumnName(column, ColumnFormatting.DatabarFormatColumnType.MIN), min)), "");
         }
 
         if (max == null) {
-            newTable = newTable.naturalJoin(this.aggBy(AggMax(prefix + "_MAX=" + valueColumn)), "");
+            newTable = newTable.naturalJoin(this.aggBy(AggMin(ColumnFormatting.getDatabarFormatColumnName(column, ColumnFormatting.DatabarFormatColumnType.MAX) + "=" + valueColumn)),"");
         } else {
-            newTable = newTable.naturalJoin(TableTools.newTable(col(prefix + "_MAX", max)), "");
+            newTable = newTable.naturalJoin(TableTools.newTable(col(ColumnFormatting.getDatabarFormatColumnName(column, ColumnFormatting.DatabarFormatColumnType.MAX), max)), "");
         }
 
         return newTable.naturalJoin(
             TableTools.newTable(
-                col( "_AXIS" + prefix, axis),
-                col("_POSITIVE_COLOR" + prefix, positiveColor),
-                col("_NEGATIVE_COLOR" + prefix, negativeColor),
-                col("_VALUE_PLACEMENT" + prefix, valuePlacement),
-                col("_DIRECTION" + prefix, direction),
-                col("_OPACITY" + prefix, opacity)),
+                col(ColumnFormatting.getDatabarFormatColumnName(column, ColumnFormatting.DatabarFormatColumnType.AXIS), axis),
+                col(ColumnFormatting.getDatabarFormatColumnName(column, ColumnFormatting.DatabarFormatColumnType.POSITIVE_COLOR), positiveColor),
+                col(ColumnFormatting.getDatabarFormatColumnName(column, ColumnFormatting.DatabarFormatColumnType.NEGATIVE_COLOR), negativeColor),
+                col(ColumnFormatting.getDatabarFormatColumnName(column, ColumnFormatting.DatabarFormatColumnType.VALUE_PLACEMENT), valuePlacement),
+                col(ColumnFormatting.getDatabarFormatColumnName(column, ColumnFormatting.DatabarFormatColumnType.DIRECTION), direction),
+                col(ColumnFormatting.getDatabarFormatColumnName(column, ColumnFormatting.DatabarFormatColumnType.OPACITY), opacity)),
             "");
     }
 

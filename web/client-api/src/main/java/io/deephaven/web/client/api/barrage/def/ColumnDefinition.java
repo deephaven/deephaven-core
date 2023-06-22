@@ -6,6 +6,7 @@ package io.deephaven.web.client.api.barrage.def;
 import io.deephaven.web.client.api.Column;
 import io.deephaven.web.client.api.barrage.WebBarrageUtils;
 
+import java.util.HashMap;
 import java.util.Map;
 
 public class ColumnDefinition {
@@ -28,7 +29,7 @@ public class ColumnDefinition {
     private boolean isRollupGroupByColumn;
     private String rollupAggregationInputColumn;
 
-    private Map<String, String> databarColumn;
+    private Map<String, String> databarColumn = new HashMap<>();
 
     // Indicates that this is a style column for the row
     private boolean forRow;
@@ -225,7 +226,9 @@ public class ColumnDefinition {
         this.rollupAggregationInputColumn = rollupAggregationInputColumn;
     }
 
-    public void setDatabar(WebBarrageUtils.DatabarFormatColumnType key, String value) {
-        this.databarColumn.put(key.toString(), value);
+    public Map<String, String> getDatabarColumn() { return databarColumn; }
+
+    public void setDatabar(String key, String value) {
+        this.databarColumn.put(key, value);
     }
 }

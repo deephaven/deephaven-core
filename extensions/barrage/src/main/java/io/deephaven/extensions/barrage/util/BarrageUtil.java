@@ -207,7 +207,6 @@ public class BarrageUtil {
                 putMetadata(metadata, "dateFormatColumn", dateFormatName);
             }
 
-            // formatColumn for each new column created in databars
             for (ColumnFormatting.DatabarFormatColumnType type : ColumnFormatting.DatabarFormatColumnType.values()) {
                 String databarName = ColumnFormatting.getDatabarFormatColumnName(name, type);
                 if(formatColumns.contains(databarName)) {

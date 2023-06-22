@@ -27,7 +27,10 @@ public interface ColumnFormatting {
      * @return true if the columnName is a formatting column; false otherwise
      */
     static boolean isFormattingColumn(String columnName) {
-        return isStyleFormatColumn(columnName) || isNumberFormatColumn(columnName) || isDateFormatColumn(columnName);
+        return isStyleFormatColumn(columnName)
+                || isNumberFormatColumn(columnName)
+                || isDateFormatColumn(columnName)
+                || isDatabarFormatColumn(columnName);
     }
 
     /**
