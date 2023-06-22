@@ -318,7 +318,7 @@ public class BarrageUtil {
                 throw Exceptions.statusRuntimeException(Code.INVALID_ARGUMENT, exMsg +
                         " of intType(signed=" + intType.getIsSigned() + ", bitWidth=" + intType.getBitWidth() + ")");
             case Bool:
-                return boolean.class;
+                return Boolean.class;
             case Duration:
                 final ArrowType.Duration durationType = (ArrowType.Duration) arrowType;
                 final TimeUnit durationUnit = durationType.getUnit();
@@ -466,11 +466,13 @@ public class BarrageUtil {
             if (type.getValue() == null) {
                 Class<?> defaultType = getDefaultType(getArrowType.apply(i), result, i);
                 type.setValue(defaultType);
-            } else if (type.getValue() == boolean.class) {
+            } else if (type.getValue() == boolean.class || type.getValue() == Boolean.class) {
                 // check existing barrage clients that might be sending int8 instead of bool
                 // TODO (deephaven-core#3403) widen this check for better assurances
                 Class<?> defaultType = getDefaultType(getArrowType.apply(i), result, i);
-                Assert.eq(type.getValue(), "deephaven column type", defaultType, "arrow inferred type");
+                Assert.eq(Boolean.class, "deephaven column type", defaultType, "arrow inferred type");
+                // force to boxed boolean to allow nullability in the column sources
+                type.setValue(Boolean.class);
             }
             columns[i] = ColumnDefinition.fromGenericType(name, type.getValue(), componentType.getValue());
         }
