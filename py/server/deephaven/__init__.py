@@ -7,7 +7,7 @@ unlocks the unique power of Deephaven to the Python community.
 
 """
 
-__version__ = "0.25.2"
+__version__ = "0.25.3"
 
 from deephaven_internal import jvm
 
