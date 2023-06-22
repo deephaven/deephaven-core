@@ -13,7 +13,7 @@ import io.deephaven.io.log.LogLevel;
 import io.deephaven.io.logger.LogBuffer;
 import io.deephaven.io.logger.LogBufferOutputStream;
 import io.deephaven.server.auth.CommunityAuthorizationModule;
-import io.deephaven.server.console.SessionToExecutionStateModule;
+import io.deephaven.server.console.ExecutionContextModule;
 import io.deephaven.server.console.groovy.GroovyConsoleSessionModule;
 import io.deephaven.server.console.python.PythonConsoleSessionModule;
 import io.deephaven.server.console.python.PythonGlobalScopeModule;
@@ -53,7 +53,7 @@ public class EmbeddedServer {
             HealthCheckModule.class,
             PythonConsoleSessionModule.class,
             GroovyConsoleSessionModule.class,
-            SessionToExecutionStateModule.class,
+            ExecutionContextModule.class,
             CommunityAuthorizationModule.class,
             ClientDefaultsModule.class,
     })
