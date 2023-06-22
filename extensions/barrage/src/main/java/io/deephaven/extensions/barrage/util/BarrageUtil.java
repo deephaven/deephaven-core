@@ -207,6 +207,7 @@ public class BarrageUtil {
             final Map<String, String> metadata = fieldMetadataFactory.apply(name);
 
             putMetadata(metadata, "isPartitioning", column.isPartitioning() + "");
+            putMetadata(metadata, "isSortable", (dataType.isPrimitive() || Comparable.class.isAssignableFrom(dataType)) + "");
 
             // Wire up style and format column references
             final String styleFormatName = ColumnFormatting.getStyleFormatColumn(name);
