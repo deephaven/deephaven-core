@@ -20,8 +20,16 @@ public interface LogEntry extends LogOutput, LogSink.Element {
 
     LogEntry start(LogSink sink, LogLevel level, long currentTimeMicros, Throwable t);
 
+    /**
+     * Completes the log entry. Callers should not use {@code this} after completion. End or {@link #endl()} should be
+     * called exactly once.
+     */
     void end();
 
+    /**
+     * Completes the log entry with a newline. Callers should not use {@code this} after completion. Endl or
+     * {@link #end()} should be called exactly once.
+     */
     void endl();
 
     LogEntry append(boolean b);
