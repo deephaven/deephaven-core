@@ -226,7 +226,6 @@ public class ByteBufferOutputStream extends java.io.OutputStream implements Data
     }
 
     private void putUtf8(int c) {
-        // todo: is this better if we have char c?
         if (c <= 0x7f) {
             if (c == 0) {
                 buf.put((byte) 0xC0);
