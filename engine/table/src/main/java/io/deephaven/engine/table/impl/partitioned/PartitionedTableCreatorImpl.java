@@ -72,19 +72,13 @@ public enum PartitionedTableCreatorImpl implements PartitionedTableFactory.Creat
                     + " has unsupported data type " + constituentColumnDefinition.getDataType());
         }
 
-        // Validate change support
-        if (!table.isRefreshing() && constituentChangesPermitted) {
-            throw new IllegalArgumentException("Partitioned table " + table
-                    + " is static, but constituent changes are permitted");
-        }
-
         return new PartitionedTableImpl(
                 table,
                 keyColumnNames,
                 uniqueKeys,
                 constituentColumnName,
                 constituentDefinition,
-                constituentChangesPermitted,
+                constituentChangesPermitted && table.isRefreshing(),
                 true);
     }
 

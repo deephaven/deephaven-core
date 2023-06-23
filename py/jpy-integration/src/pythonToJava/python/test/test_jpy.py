@@ -29,7 +29,7 @@ class TestJpy(unittest.TestCase):
 
   @classmethod
   def setUpClass(cls):
-    jpyutil.init_jvm()
+    jpyutil.init_jvm(jvm_maxmem='512M')
 
   @classmethod
   def tearDownClass(cls):

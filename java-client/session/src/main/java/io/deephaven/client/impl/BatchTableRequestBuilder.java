@@ -192,12 +192,13 @@ class BatchTableRequestBuilder {
         @Override
         public void visit(TimeTable timeTable) {
             // noinspection Convert2Lambda
-            timeTable.clock().walk(new Visitor() {
+            timeTable.clock().walk(new Visitor<Void>() {
                 @Override
-                public void visit(ClockSystem system) {
+                public Void visit(ClockSystem system) {
                     // Even though this is functionally a no-op at the moment, it's good practice to
                     // include this visitor here since the number of TimeProvider implementations is
                     // expected to expand in the future.
+                    return null;
                 }
             });
 
@@ -523,18 +524,18 @@ class BatchTableRequestBuilder {
                     builder.setSchema(ByteStringAccess.wrap(SchemaBytes.of(header)));
                 }
             });
-            inputTable.walk(new InputTable.Visitor() {
+            builder.setKind(inputTable.walk(new InputTable.Visitor<InputTableKind>() {
                 @Override
-                public void visit(InMemoryAppendOnlyInputTable inMemoryAppendOnly) {
-                    builder.setKind(InputTableKind.newBuilder().setInMemoryAppendOnly(InMemoryAppendOnly.newBuilder()));
+                public InputTableKind visit(InMemoryAppendOnlyInputTable inMemoryAppendOnly) {
+                    return InputTableKind.newBuilder().setInMemoryAppendOnly(InMemoryAppendOnly.newBuilder()).build();
                 }
 
                 @Override
-                public void visit(InMemoryKeyBackedInputTable inMemoryKeyBacked) {
-                    builder.setKind(InputTableKind.newBuilder().setInMemoryKeyBacked(
-                            InMemoryKeyBacked.newBuilder().addAllKeyColumns(inMemoryKeyBacked.keys())));
+                public InputTableKind visit(InMemoryKeyBackedInputTable inMemoryKeyBacked) {
+                    return InputTableKind.newBuilder().setInMemoryKeyBacked(
+                            InMemoryKeyBacked.newBuilder().addAllKeyColumns(inMemoryKeyBacked.keys())).build();
                 }
-            });
+            }));
             out = op(Builder::setCreateInputTable, builder);
         }
 

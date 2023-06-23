@@ -14,17 +14,17 @@ package io.deephaven.qst.type;
  */
 public interface GenericType<T> extends Type<T> {
 
-    <V extends Visitor> V walk(V visitor);
+    <R> R walk(Visitor<R> visitor);
 
-    interface Visitor {
-        void visit(StringType stringType);
+    interface Visitor<R> {
+        R visit(StringType stringType);
 
-        void visit(InstantType instantType);
+        R visit(InstantType instantType);
 
-        void visit(ArrayType<?, ?> arrayType);
+        R visit(ArrayType<?, ?> arrayType);
 
         // Implementation note: when adding new types here, add type to TypeHelper
 
-        void visit(CustomType<?> customType);
+        R visit(CustomType<?> customType);
     }
 }

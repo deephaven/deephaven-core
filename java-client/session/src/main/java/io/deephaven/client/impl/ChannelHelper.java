@@ -15,7 +15,7 @@ import io.grpc.stub.MetadataUtils;
 import io.netty.handler.ssl.SslContextBuilder;
 import io.netty.handler.ssl.SupportedCipherSuiteFilter;
 import nl.altindag.ssl.SSLFactory;
-import nl.altindag.ssl.util.NettySslUtils;
+import nl.altindag.ssl.netty.util.NettySslUtils;
 
 import javax.net.ssl.SSLException;
 import java.util.Map;

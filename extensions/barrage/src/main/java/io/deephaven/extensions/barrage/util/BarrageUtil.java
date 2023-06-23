@@ -21,6 +21,7 @@ import io.deephaven.engine.table.Table;
 import io.deephaven.engine.table.TableDefinition;
 import io.deephaven.engine.table.impl.BaseTable;
 import io.deephaven.engine.table.impl.remote.ConstructSnapshot;
+import io.deephaven.engine.table.impl.sources.ReinterpretUtils;
 import io.deephaven.engine.table.impl.util.BarrageMessage;
 import io.deephaven.engine.updategraph.impl.PeriodicUpdateGraph;
 import io.deephaven.extensions.barrage.BarragePerformanceLog;
@@ -53,6 +54,7 @@ import org.apache.commons.lang3.mutable.MutableObject;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
+import java.lang.reflect.Array;
 import java.math.BigDecimal;
 import java.math.BigInteger;
 import java.time.Instant;
@@ -121,7 +123,8 @@ public class BarrageUtil {
     public static ByteString schemaBytesFromTableDefinition(
             @NotNull final TableDefinition tableDefinition,
             @NotNull final Map<String, Object> attributes) {
-        return schemaBytes(fbb -> makeTableSchemaPayload(fbb, tableDefinition, attributes));
+        return schemaBytes(fbb -> makeTableSchemaPayload(
+                fbb, DEFAULT_SNAPSHOT_DESER_OPTIONS, tableDefinition, attributes));
     }
 
     public static ByteString schemaBytes(@NotNull final ToIntFunction<FlatBufferBuilder> schemaPayloadWriter) {
@@ -139,6 +142,7 @@ public class BarrageUtil {
 
     public static int makeTableSchemaPayload(
             @NotNull final FlatBufferBuilder builder,
+            @NotNull final StreamReaderOptions options,
             @NotNull final TableDefinition tableDefinition,
             @NotNull final Map<String, Object> attributes) {
         final Map<String, String> schemaMetadata = attributesToMetadata(attributes);
@@ -146,7 +150,8 @@ public class BarrageUtil {
         final Map<String, String> descriptions = GridAttributes.getColumnDescriptions(attributes);
         final MutableInputTable inputTable = (MutableInputTable) attributes.get(Table.INPUT_TABLE_ATTRIBUTE);
         final List<Field> fields = columnDefinitionsToFields(
-                descriptions, inputTable, tableDefinition.getColumns(), ignored -> new HashMap<>())
+                descriptions, inputTable, tableDefinition.getColumns(), ignored -> new HashMap<>(),
+                options.columnsAsList())
                 .collect(Collectors.toList());
 
         return new Schema(fields, schemaMetadata).getSchema(builder);
@@ -178,6 +183,16 @@ public class BarrageUtil {
             @Nullable final MutableInputTable inputTable,
             @NotNull final Collection<ColumnDefinition<?>> columnDefinitions,
             @NotNull final Function<String, Map<String, String>> fieldMetadataFactory) {
+        return columnDefinitionsToFields(columnDescriptions, inputTable, columnDefinitions, fieldMetadataFactory,
+                false);
+    }
+
+    public static Stream<Field> columnDefinitionsToFields(
+            @NotNull final Map<String, String> columnDescriptions,
+            @Nullable final MutableInputTable inputTable,
+            @NotNull final Collection<ColumnDefinition<?>> columnDefinitions,
+            @NotNull final Function<String, Map<String, String>> fieldMetadataFactory,
+            final boolean columnsAsList) {
         // Find the format columns
         final Set<String> formatColumns = new HashSet<>();
         columnDefinitions.stream().map(ColumnDefinition::getName)
@@ -187,8 +202,8 @@ public class BarrageUtil {
         // Build metadata for columns and add the fields
         return columnDefinitions.stream().map((final ColumnDefinition<?> column) -> {
             final String name = column.getName();
-            final Class<?> dataType = column.getDataType();
-            final Class<?> componentType = column.getComponentType();
+            Class<?> dataType = column.getDataType();
+            Class<?> componentType = column.getComponentType();
             final Map<String, String> metadata = fieldMetadataFactory.apply(name);
 
             putMetadata(metadata, "isPartitioning", column.isPartitioning() + "");
@@ -243,6 +258,11 @@ public class BarrageUtil {
             }
             if (inputTable != null) {
                 putMetadata(metadata, "inputtable.isKey", inputTable.getKeyNames().contains(name) + "");
+            }
+
+            if (columnsAsList) {
+                componentType = dataType;
+                dataType = Array.newInstance(dataType, 0).getClass();
             }
 
             if (Vector.class.isAssignableFrom(dataType)) {
@@ -357,6 +377,22 @@ public class BarrageUtil {
 
         public ConvertedArrowSchema(final int nCols) {
             this.nCols = nCols;
+        }
+
+        public ChunkType[] computeWireChunkTypes() {
+            return tableDef.getColumnStream()
+                    .map(ColumnDefinition::getDataType)
+                    .map(ReinterpretUtils::maybeConvertToWritablePrimitiveChunkType)
+                    .toArray(ChunkType[]::new);
+        }
+
+        public Class<?>[] computeWireTypes() {
+            return tableDef.getColumnStream().map(ColumnDefinition::getDataType).toArray(Class[]::new);
+        }
+
+        public Class<?>[] computeWireComponentTypes() {
+            return tableDef.getColumnStream()
+                    .map(ColumnDefinition::getComponentType).toArray(Class[]::new);
         }
     }
 

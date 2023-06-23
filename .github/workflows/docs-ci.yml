@@ -53,7 +53,7 @@ jobs:
 
       - name: Deploy Javadoc
         if: ${{ github.ref == 'refs/heads/main' }}
-        uses: burnett01/rsync-deployments@4.1
+        uses: burnett01/rsync-deployments@5.2
         with:
           switches: -avzr --delete
           path: combined-javadoc/build/docs/javadoc/
@@ -102,7 +102,7 @@ jobs:
 
       - name: Deploy Python Docs
         if: ${{ github.ref == 'refs/heads/main' }}
-        uses: burnett01/rsync-deployments@4.1
+        uses: burnett01/rsync-deployments@5.2
         with:
           switches: -avzr --delete
           path: sphinx/build/docs/
@@ -114,7 +114,7 @@ jobs:
 
       - name: Deploy Client Python Docs
         if: ${{ github.ref == 'refs/heads/main' }}
-        uses: burnett01/rsync-deployments@4.1
+        uses: burnett01/rsync-deployments@5.2
         with:
           switches: -avzr --delete
           path: sphinx/build/pyclient-docs/
@@ -164,7 +164,7 @@ jobs:
 
       - name: Deploy Client C++ Docs
         if: ${{ github.ref == 'refs/heads/main' }}
-        uses: burnett01/rsync-deployments@4.1
+        uses: burnett01/rsync-deployments@5.2
         with:
           switches: -avzr --delete
           path: sphinx/build/cppClientDocs/
@@ -176,7 +176,7 @@ jobs:
 
       - name: Deploy Client C++ Example Docs
         if: ${{ github.ref == 'refs/heads/main' }}
-        uses: burnett01/rsync-deployments@4.1
+        uses: burnett01/rsync-deployments@5.2
         with:
           switches: -avzr --delete
           path: sphinx/build/cppExamplesDocs/

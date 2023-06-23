@@ -308,8 +308,9 @@ public class ExportTableUpdateListenerTest {
                 throw new UncheckedDeephavenException(ie);
             }
 
+            updateGraph.markSourcesRefreshedForUnitTests();
             src.notifyListeners(update);
-        });
+        }, false);
 
         // we should get both a run and the update in the same flush
         expectSizes(t1.getValue().getExportId(), 42, 84);

@@ -100,17 +100,17 @@ public class EmbeddedServer {
                 .withErr(null)
                 .build()
                 .injectFields(this);
+
+        checkGlobals(scriptSession.get(), null);
+
+        // We need to open the systemic execution context to permanently install the contexts for this thread.
+        scriptSession.get().getExecutionContext().open();
     }
 
     public void start() throws Exception {
         server.run();
 
-        final ScriptSession scriptSession = this.scriptSession.get();
-        checkGlobals(scriptSession, null);
-        Bootstrap.printf("Server started on port %d%n", server.server().getPort());
-
-        // We need to open the systemic execution context to permanently install the contexts for this thread.
-        scriptSession.getExecutionContext().open();
+        Bootstrap.printf("Server started on port %d%n", getPort());
     }
 
     private void checkGlobals(ScriptSession scriptSession, @Nullable ScriptSession.SnapshotScope lastSnapshot) {

@@ -10,8 +10,7 @@ import io.deephaven.base.verify.Assert;
 import io.deephaven.configuration.Configuration;
 import io.deephaven.datastructures.util.CollectionUtil;
 import io.deephaven.engine.context.ExecutionContext;
-import io.deephaven.engine.updategraph.LogicalClock;
-import io.deephaven.engine.updategraph.UpdateGraph;
+import io.deephaven.engine.updategraph.*;
 import io.deephaven.engine.rowset.*;
 import io.deephaven.engine.table.SharedContext;
 import io.deephaven.engine.table.impl.sources.ReinterpretUtils;
@@ -22,8 +21,6 @@ import io.deephaven.engine.table.ColumnDefinition;
 import io.deephaven.engine.exceptions.CancellationException;
 import io.deephaven.engine.table.Table;
 import io.deephaven.engine.table.TableDefinition;
-import io.deephaven.engine.updategraph.NotificationQueue;
-import io.deephaven.engine.updategraph.WaitNotification;
 import io.deephaven.util.datastructures.LongSizedDataStructure;
 import io.deephaven.engine.liveness.LivenessManager;
 import io.deephaven.engine.liveness.LivenessScope;
@@ -781,7 +778,8 @@ public class ConstructSnapshot {
      * @param snapshotCompletedConsistently The {@link SnapshotCompletedConsistently} to use, or null to use * {@code
      * snapshotConsistent}
      */
-    public static SnapshotControl makeSnapshotControl(@NotNull final UsePreviousValues usePreviousValues,
+    public static SnapshotControl makeSnapshotControl(
+            @NotNull final UsePreviousValues usePreviousValues,
             @NotNull final SnapshotConsistent snapshotConsistent,
             @Nullable final SnapshotCompletedConsistently snapshotCompletedConsistently) {
         return snapshotCompletedConsistently == null
@@ -894,9 +892,17 @@ public class ConstructSnapshot {
 
         @Override
         public Boolean usePreviousValues(final long beforeClockValue) {
-            // noinspection AutoBoxing
-            return LogicalClock.getState(beforeClockValue) == LogicalClock.State.Updating &&
-                    source.getLastNotificationStep() != LogicalClock.getStep(beforeClockValue);
+            final long beforeStep = LogicalClock.getStep(beforeClockValue);
+            final LogicalClock.State beforeState = LogicalClock.getState(beforeClockValue);
+
+            try {
+                // noinspection AutoBoxing
+                return beforeState == LogicalClock.State.Updating
+                        && source.getLastNotificationStep() != beforeStep
+                        && !source.satisfied(beforeStep);
+            } catch (ClockInconsistencyException e) {
+                return null;
+            }
         }
 
         @Override
@@ -926,9 +932,17 @@ public class ConstructSnapshot {
 
         @Override
         public Boolean usePreviousValues(final long beforeClockValue) {
-            // noinspection AutoBoxing
-            return LogicalClock.getState(beforeClockValue) == LogicalClock.State.Updating &&
-                    source.getLastNotificationStep() != LogicalClock.getStep(beforeClockValue);
+            final long beforeStep = LogicalClock.getStep(beforeClockValue);
+            final LogicalClock.State beforeState = LogicalClock.getState(beforeClockValue);
+
+            try {
+                // noinspection AutoBoxing
+                return beforeState == LogicalClock.State.Updating
+                        && source.getLastNotificationStep() != beforeStep
+                        && !source.satisfied(beforeStep);
+            } catch (ClockInconsistencyException e) {
+                return null;
+            }
         }
 
         @Override
@@ -957,22 +971,22 @@ public class ConstructSnapshot {
                 return false;
             }
             final long beforeStep = LogicalClock.getStep(beforeClockValue);
-            final NotificationStepSource[] notYetNotified = Stream.of(sources)
-                    .filter((final NotificationStepSource source) -> source.getLastNotificationStep() != beforeStep)
-                    .toArray(NotificationStepSource[]::new);
-            if (notYetNotified.length == sources.length) {
+            final NotificationStepSource[] notYetSatisfied;
+            try {
+                notYetSatisfied = Stream.of(sources)
+                        .filter((final NotificationStepSource source) -> source.getLastNotificationStep() != beforeStep
+                                && !source.satisfied(beforeStep))
+                        .toArray(NotificationStepSource[]::new);
+            } catch (ClockInconsistencyException e) {
+                return null;
+            }
+            if (notYetSatisfied.length == sources.length) {
                 return true;
             }
-            if (notYetNotified.length > 0) {
-                final NotificationStepSource[] notYetSatisfied = Stream.of(sources)
-                        .filter((final NotificationQueue.Dependency dep) -> !dep.satisfied(beforeStep))
-                        .toArray(NotificationStepSource[]::new);
-                if (notYetSatisfied.length > 0
-                        && !WaitNotification.waitForSatisfaction(beforeStep, notYetSatisfied)) {
-                    if (ExecutionContext.getContext().getUpdateGraph().clock().currentStep() != beforeStep) {
-                        // If we missed a step change, we've already failed, request a do-over.
-                        return null;
-                    }
+            if (notYetSatisfied.length > 0 && !WaitNotification.waitForSatisfaction(beforeStep, notYetSatisfied)) {
+                if (ExecutionContext.getContext().getUpdateGraph().clock().currentStep() != beforeStep) {
+                    // If we missed a step change, we've already failed, request a do-over.
+                    return null;
                 }
             }
             return false;
@@ -1012,22 +1026,22 @@ public class ConstructSnapshot {
                 return false;
             }
             final long beforeStep = LogicalClock.getStep(beforeClockValue);
-            final NotificationStepSource[] notYetNotified = Stream.of(sources)
-                    .filter((final NotificationStepSource source) -> source.getLastNotificationStep() != beforeStep)
-                    .toArray(NotificationStepSource[]::new);
-            if (notYetNotified.length == sources.length) {
+            final NotificationStepSource[] notYetSatisfied;
+            try {
+                notYetSatisfied = Stream.of(sources)
+                        .filter((final NotificationStepSource source) -> source.getLastNotificationStep() != beforeStep
+                                && !source.satisfied(beforeStep))
+                        .toArray(NotificationStepSource[]::new);
+            } catch (ClockInconsistencyException e) {
+                return null;
+            }
+            if (notYetSatisfied.length == sources.length) {
                 return true;
             }
-            if (notYetNotified.length > 0) {
-                final NotificationStepSource[] notYetSatisfied = Stream.of(sources)
-                        .filter((final NotificationQueue.Dependency dep) -> !dep.satisfied(beforeStep))
-                        .toArray(NotificationStepSource[]::new);
-                if (notYetSatisfied.length > 0
-                        && !WaitNotification.waitForSatisfaction(beforeStep, notYetSatisfied)) {
-                    if (ExecutionContext.getContext().getUpdateGraph().clock().currentStep() != beforeStep) {
-                        // If we missed a step change, we've already failed, request a do-over.
-                        return null;
-                    }
+            if (notYetSatisfied.length > 0 && !WaitNotification.waitForSatisfaction(beforeStep, notYetSatisfied)) {
+                if (ExecutionContext.getContext().getUpdateGraph().clock().currentStep() != beforeStep) {
+                    // If we missed a step change, we've already failed, request a do-over.
+                    return null;
                 }
             }
             return false;
@@ -1163,8 +1177,7 @@ public class ConstructSnapshot {
                 }
                 if (snapshotSuccessful) {
                     if (functionSuccessful) {
-                        step = usePrev ? LogicalClock.getStep(beforeClockValue) - 1
-                                : LogicalClock.getStep(beforeClockValue);
+                        step = LogicalClock.getStep(beforeClockValue) - (usePrev ? 1 : 0);
                         snapshotLivenessScope.transferTo(initialLivenessManager);
                     }
                     break;

@@ -6,6 +6,7 @@
 
 #include "deephaven/client/client.h"
 #include "deephaven/client/flight.h"
+#include "deephaven/client/utility/arrow_util.h"
 
 #include <arrow/c/abi.h>
 #include <arrow/c/bridge.h>
@@ -25,6 +26,20 @@ public:
     // TODO: DEEPHAVEN QUERY METHODS WILL GO HERE
 
     /**
+     * Whether the table was static at the time internal_tbl_hdl was created.
+    */
+    bool isStatic() {
+        return internal_tbl_hdl.isStatic();
+    }
+
+    /**
+     * Number of rows in the table at the time internal_tbl_hdl was created.
+    */
+    int64_t numRows() {
+        return internal_tbl_hdl.numRows();
+    }
+
+    /**
      * Binds the table referenced by this table handle to a variable on the server called tableName.
      * Without this call, new tables are not accessible from the client.
      * @param tableName Name for the new table on the server.
@@ -42,7 +57,7 @@ public:
         std::shared_ptr<arrow::flight::FlightStreamReader> fsr = internal_tbl_hdl.getFlightStreamReader();
 
         std::vector<std::shared_ptr<arrow::RecordBatch>> empty_record_batches;
-        DEEPHAVEN_EXPR_MSG(fsr->ReadAll(&empty_record_batches)); // TODO: need to add OK or throw
+        deephaven::client::utility::okOrThrow(DEEPHAVEN_EXPR_MSG(fsr->ReadAll(&empty_record_batches)));
 
         std::shared_ptr<arrow::RecordBatchReader> record_batch_reader = arrow::RecordBatchReader::Make(empty_record_batches).ValueOrDie();
         ArrowArrayStream* stream_ptr = new ArrowArrayStream();
@@ -50,7 +65,7 @@ public:
 
         // XPtr is needed here to ensure Rcpp can properly handle type casting, as it does not like raw pointers
         return Rcpp::XPtr<ArrowArrayStream>(stream_ptr, true);
-    };
+    }
 
 private:
     deephaven::client::TableHandle internal_tbl_hdl;
@@ -63,23 +78,23 @@ public:
 
     ClientOptionsWrapper() {
         internal_options = new deephaven::client::ClientOptions();
-    };
+    }
 
     void setDefaultAuthentication() {
         internal_options->setDefaultAuthentication();
-    };
+    }
 
     void setBasicAuthentication(const std::string &username, const std::string &password) {
         internal_options->setBasicAuthentication(username, password);
-    };
+    }
 
     void setCustomAuthentication(const std::string &authenticationKey, const std::string &authenticationValue) {
         internal_options->setCustomAuthentication(authenticationKey, authenticationValue);
-    };
+    }
 
     void setSessionType(const std::string &sessionType) {
         internal_options->setSessionType(sessionType);
-    };
+    }
 
 private:
 
@@ -95,11 +110,11 @@ public:
     /**
      * Fetches a reference to a table named tableName on the server if it exists.
      * @param tableName Name of the table to search for.
-     * @return TableHandle reference to the fetched table. 
+     * @return TableHandle reference to the fetched table.
     */
     TableHandleWrapper* openTable(std::string tableName) {
         return new TableHandleWrapper(internal_tbl_hdl_mngr.fetchTable(tableName));
-    };
+    }
 
     /**
      * Runs a script on the server in the console language if a console was created.
@@ -107,7 +122,7 @@ public:
     */
     void runScript(std::string code) {
         internal_tbl_hdl_mngr.runScript(code);
-    };
+    }
 
     /**
      * Checks for the existence of a table named tableName on the server.
@@ -123,7 +138,7 @@ public:
             return false;
         }
         return true;
-    };
+    }
 
     /**
      * Allocates memory for an ArrowArrayStream C struct and returns a pointer to the new chunk of memory.
@@ -132,7 +147,7 @@ public:
     SEXP newArrowArrayStreamPtr() {
         ArrowArrayStream* stream_ptr = new ArrowArrayStream();
         return Rcpp::XPtr<ArrowArrayStream>(stream_ptr, true);
-    };
+    }
 
     /**
      * Uses a pointer to a populated ArrowArrayStream C struct to create a new table on the server from the data in the C struct.
@@ -142,30 +157,34 @@ public:
 
         auto wrapper = internal_tbl_hdl_mngr.createFlightWrapper();
         arrow::flight::FlightCallOptions options;
-        wrapper.addAuthHeaders(&options);
+        wrapper.addHeaders(&options);
 
-        // extract RecordBatchReader from the struct pointed to by the passed tream_ptr
+        // extract RecordBatchReader from the struct pointed to by the passed stream_ptr
         std::shared_ptr<arrow::RecordBatchReader> record_batch_reader = arrow::ImportRecordBatchReader(stream_ptr.get()).ValueOrDie();
         auto schema = record_batch_reader.get()->schema();
 
         // write RecordBatchReader data to table on server with DoPut
         std::unique_ptr<arrow::flight::FlightStreamWriter> fsw;
         std::unique_ptr<arrow::flight::FlightMetadataReader> fmr;
-        auto [new_tbl_hdl, fd] = internal_tbl_hdl_mngr.newTableHandleAndFlightDescriptor();
-        DEEPHAVEN_EXPR_MSG(wrapper.flightClient()->DoPut(options, fd, schema, &fsw, &fmr)); // TODO: need to add okOrThrow
+
+        auto ticket = internal_tbl_hdl_mngr.newTicket();
+        auto fd = deephaven::client::utility::convertTicketToFlightDescriptor(ticket);
+        
+        deephaven::client::utility::okOrThrow(DEEPHAVEN_EXPR_MSG(wrapper.flightClient()->DoPut(options, fd, schema, &fsw, &fmr)));
         while(true) {
             std::shared_ptr<arrow::RecordBatch> this_batch;
-            DEEPHAVEN_EXPR_MSG(record_batch_reader->ReadNext(&this_batch)); // TODO: need to add ok or throw
+            deephaven::client::utility::okOrThrow(DEEPHAVEN_EXPR_MSG(record_batch_reader->ReadNext(&this_batch)));
             if (this_batch == nullptr) {
                 break;
             }
-            DEEPHAVEN_EXPR_MSG(fsw->WriteRecordBatch(*this_batch)); // TODO: need to add okOrThrow
+            deephaven::client::utility::okOrThrow(DEEPHAVEN_EXPR_MSG(fsw->WriteRecordBatch(*this_batch)));
         }
-        DEEPHAVEN_EXPR_MSG(fsw->DoneWriting()); // TODO: need to add okOrThrow
-        DEEPHAVEN_EXPR_MSG(fsw->Close()); // TODO: need to add okOrThrow
+        deephaven::client::utility::okOrThrow(DEEPHAVEN_EXPR_MSG(fsw->DoneWriting()));
+        deephaven::client::utility::okOrThrow(DEEPHAVEN_EXPR_MSG(fsw->Close()));
 
+        auto new_tbl_hdl = internal_tbl_hdl_mngr.makeTableHandleFromTicket(ticket);
         return new TableHandleWrapper(new_tbl_hdl);
-    };
+    }
 
 private:
     ClientWrapper(deephaven::client::Client ref) : internal_client(std::move(ref)) {};
@@ -201,6 +220,8 @@ RCPP_EXPOSED_CLASS(ArrowArrayStream)
 RCPP_MODULE(DeephavenInternalModule) {
 
     class_<TableHandleWrapper>("INTERNAL_TableHandle")
+    .method("is_static", &TableHandleWrapper::isStatic)
+    .method("num_rows", &TableHandleWrapper::numRows)
     .method("bind_to_variable", &TableHandleWrapper::bindToVariable)
     .method("get_arrow_array_stream_ptr", &TableHandleWrapper::getArrowArrayStreamPtr)
     ;

@@ -18,7 +18,6 @@
  */
 namespace deephaven::client {
 class FlightWrapper;
-class TableHandleAndFlightDescriptor;
 }  // namespace deephaven::client
 
 /**
@@ -119,15 +118,21 @@ public:
   TableHandle timeTable(std::chrono::system_clock::time_point startTime,
       std::chrono::system_clock::duration period) const;
   /**
-   * Allocate a fresh TableHandle and return both it and its corresponding Arrow FlightDescriptor.
-   * This is used when the caller wants to do an Arrow DoPut operation.
-   * The object returned is only forward-referenced in this file. If you want to use it, you will
-   * also need to include deephaven/client/flight.h.
-   * @param numRows The number of table rows (reflected back when you call TableHandle::numRows())
-   * @param isStatic Whether the table is static (reflected back when youcall TableHandle::isStatic())
-   * @return A TableHandle and Arrow FlightDescriptor referring to the new table.
+   * Allocate a fresh client ticket. This is a low level operation, typically used when the caller wants to do an Arrow
+   * doPut operation.
+   * @example
+   * auto ticket = manager.newTicket();
+   * auto flightDescriptor = convertTicketToFlightDescriptor(ticket);
+   * // [do arrow operations here to put your table to the server]
+   * // Once that is done, you can bind the ticket to a TableHandle
+   * auto tableHandle = manager.makeTableHandleFromTicket(ticket);
    */
-  TableHandleAndFlightDescriptor newTableHandleAndFlightDescriptor(int64_t numRows, bool isStatic) const;
+  std::string newTicket() const;
+  /**
+   * Creates a TableHandle that owns the underlying ticket and its resources. The ticket argument is typically
+   * created with newTicket() and then populated e.g. with Arrow operations.
+   */
+  TableHandle makeTableHandleFromTicket(std::string ticket) const;
   /**
    * Execute a script on the server. This assumes that the Client was created with a sessionType corresponding to
    * the language of the script (typically either "python" or "groovy") and that the code matches that language.

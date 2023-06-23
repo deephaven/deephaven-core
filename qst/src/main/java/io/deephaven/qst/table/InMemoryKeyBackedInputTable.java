@@ -39,8 +39,7 @@ public abstract class InMemoryKeyBackedInputTable extends InputTableBase {
     }
 
     @Override
-    public final <V extends InputTable.Visitor> V walk(V visitor) {
-        visitor.visit(this);
-        return visitor;
+    public final <R> R walk(InputTable.Visitor<R> visitor) {
+        return visitor.visit(this);
     }
 }

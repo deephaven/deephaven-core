@@ -7,6 +7,7 @@ import io.deephaven.base.verify.Assert;
 import io.deephaven.internal.log.LoggerFactory;
 import io.deephaven.io.logger.Logger;
 import io.deephaven.util.annotations.TestUseOnly;
+import io.deephaven.util.process.ProcessEnvironment;
 
 import java.util.concurrent.atomic.AtomicLong;
 
@@ -47,6 +48,9 @@ public class LogicalClockImpl implements LogicalClock {
      */
     public final long startUpdateCycle() {
         final long beforeValue = currentValue.get();
+        if (beforeValue == Long.MAX_VALUE) {
+            ProcessEnvironment.get().getFatalErrorReporter().report("Maximum logical clock cycles exceeded");
+        }
         Assert.eq(LogicalClock.getState(beforeValue), "getState(beforeValue)", State.Idle);
         final long afterValue = currentValue.incrementAndGet();
         Assert.eq(afterValue, "currentValue.incrementAndGet()", beforeValue + 1, "beforeValue + 1");
@@ -60,6 +64,8 @@ public class LogicalClockImpl implements LogicalClock {
      */
     public final void completeUpdateCycle() {
         final long value = currentValue.get();
+        // If we try to exceed our maximum clock value, it will be on an Idle to Updating transition, since
+        // Long.MAX_VALUE & STATE_MASK == 1, which means that the maximum value occurs upon reaching an Idle phase.
         Assert.eq(LogicalClock.getState(value), "getState(value)", State.Updating);
         Assert.eq(currentValue.incrementAndGet(), "currentValue.incrementAndGet()", value + 1, "value + 1");
     }

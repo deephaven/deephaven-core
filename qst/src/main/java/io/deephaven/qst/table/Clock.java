@@ -10,9 +10,9 @@ package io.deephaven.qst.table;
  */
 public interface Clock {
 
-    <V extends Visitor> V walk(V visitor);
+    <R> R walk(Visitor<R> visitor);
 
-    interface Visitor {
-        void visit(ClockSystem system);
+    interface Visitor<R> {
+        R visit(ClockSystem system);
     }
 }
