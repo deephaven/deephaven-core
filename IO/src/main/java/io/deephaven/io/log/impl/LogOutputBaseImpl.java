@@ -9,13 +9,15 @@ import io.deephaven.base.verify.Assert;
 import io.deephaven.io.log.LogBufferPool;
 import io.deephaven.io.streams.ByteBufferOutputStream;
 import io.deephaven.io.streams.ByteBufferSink;
+import org.jetbrains.annotations.VisibleForTesting;
 
 import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.util.Objects;
 
 public abstract class LogOutputBaseImpl implements LogOutput, ByteBufferSink {
-    private static final int START_SIZE_BYTES = 128;
+    @VisibleForTesting
+    static final int START_SIZE_BYTES = 128;
 
     // the stream in which we produce our output
     protected final ByteBufferOutputStream stream;
