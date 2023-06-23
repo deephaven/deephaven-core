@@ -27,14 +27,14 @@ public class AnonymousAuthenticationHandler implements AuthenticationRequestHand
     @Override
     public void initialize(String targetUrl) {
         if (WARN_ANONYMOUS_ACCESS) {
-            log.warn().endl().endl().endl().endl().endl();
+            log.warn().nl().nl().nl().nl().endl();
             log.warn().append("================================================================================")
                     .endl();
             log.warn().append("WARNING! Anonymous authentication is enabled. This is not recommended!").endl();
             log.warn().append("       Listening on ").append(targetUrl).endl();
             log.warn().append("================================================================================")
                     .endl();
-            log.warn().endl().endl().endl().endl().endl();
+            log.warn().nl().nl().nl().nl().endl();
         } else {
             log.info().append("Anonymous authentication is enabled. Listening on ").append(targetUrl).endl();
         }
