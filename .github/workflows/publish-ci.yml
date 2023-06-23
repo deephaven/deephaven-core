@@ -92,5 +92,5 @@ jobs:
         uses: pypa/gh-action-pypi-publish@release/v1
         with:
           user: __token__
-          password: ${{ secrets.DEEPHAVENCLIENT_PYPI_TOKEN }}
+          password: ${{ secrets.PYDEEPHAVEN_PYPI_TOKEN }}
           packages_dir: py/client/build/wheel/
