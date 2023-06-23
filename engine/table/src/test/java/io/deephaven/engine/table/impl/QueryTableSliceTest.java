@@ -20,6 +20,7 @@ import io.deephaven.engine.rowset.RowSetShiftData;
 import io.deephaven.test.types.OutOfBandTest;
 import java.util.Random;
 
+import org.junit.Assert;
 import org.junit.experimental.categories.Category;
 
 import static io.deephaven.engine.util.TableTools.col;
