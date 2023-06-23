@@ -92,9 +92,8 @@ public final class LoggerSlf4j implements Logger {
         }
 
         @Override
-        public LogEntry endl() {
+        public void endl() {
             super.end();
-            return this;
         }
     }
 

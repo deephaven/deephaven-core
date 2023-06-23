@@ -83,15 +83,14 @@ public class ConsolidatingLogEntry extends LogOutputStringImpl implements LogEnt
     }
 
     @Override // from LogEntry
-    public LogEntry end() {
+    public void end() {
         throw Assert.statementNeverExecuted();
     }
 
     @Override // from LogEntry
-    public LogEntry endl() {
+    public void endl() {
         m_monitor.endl(builder.toString());
         builder.setLength(0);
-        return this;
     }
 
     // ################################################################
