@@ -13,6 +13,17 @@ import "deephaven/proto/ticket.proto";
 
 service ObjectService {
     rpc FetchObject(FetchObjectRequest) returns (FetchObjectResponse) {}
+    rpc MessageStream(stream MessageRequest) returns (stream MessageResponse) {}
+
+    /*
+     * Half of the browser-based (browser's can't do bidirectional streams without websockets)
+     * implementation for MessageStream.
+     */
+    rpc OpenMessageStream(MessageRequest) returns (stream MessageResponse) {}
+    /*
+     * Other half of the browser-based implementation for MessageStream.
+     */
+    rpc NextMessageStream(MessageRequest) returns (BrowserNextResponse) {}
 }
 
 message FetchObjectRequest {
@@ -23,4 +34,17 @@ message FetchObjectResponse {
     string type = 1;
     bytes data = 2;
     repeated io.deephaven.proto.backplane.grpc.TypedTicket typed_export_id = 3;
+}
+
+message MessageRequest {
+    io.deephaven.proto.backplane.grpc.TypedTicket source_id = 1;
+    bytes data = 2;
+}
+
+message MessageResponse {
+    bytes data = 1;
+    repeated io.deephaven.proto.backplane.grpc.TypedTicket typed_export_id = 2;
+}
+
+message BrowserNextResponse {
 }
