@@ -1,0 +1,6 @@
+{
+  "trust": {
+    "type": "certs",
+    "path": "ca.crt"
+  }
+}

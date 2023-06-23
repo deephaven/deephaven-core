@@ -1,0 +1,5 @@
+# suppress inspection "UnusedProperty" for whole file
+includefiles=resources/test3.prop
+override1=false
+test1=true
+override3=true

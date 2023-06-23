@@ -1,0 +1,4 @@
+# suppress inspection "UnusedProperty" for whole file
+[] {
+    foo=bar
+}
