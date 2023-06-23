@@ -13,6 +13,7 @@ dependencies {
 
     Classpaths.inheritArrow(project, 'arrow-format', 'implementation')
     Classpaths.inheritArrow(project, 'arrow-vector', 'implementation')
+    Classpaths.inheritArrow(project, 'arrow-compression', 'implementation')
 
     testImplementation TestTools.projectDependency(project, 'engine-table'),
             TestTools.projectDependency(project, 'Util')
