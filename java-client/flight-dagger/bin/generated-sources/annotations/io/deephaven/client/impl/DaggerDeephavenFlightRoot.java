@@ -42,48 +42,48 @@ public final class DaggerDeephavenFlightRoot {
   private static final class FlightSubcomponentBuilder implements FlightSubcomponent.Builder {
     private final DeephavenFlightRootImpl deephavenFlightRootImpl;
 
-    private ManagedChannel managedChannel;
-
-    private ScheduledExecutorService scheduler;
-
     private BufferAllocator allocator;
 
     private String authenticationTypeAndValue;
+
+    private ManagedChannel managedChannel;
+
+    private ScheduledExecutorService scheduler;
 
     private FlightSubcomponentBuilder(DeephavenFlightRootImpl deephavenFlightRootImpl) {
       this.deephavenFlightRootImpl = deephavenFlightRootImpl;
     }
 
     @Override
-    public FlightSubcomponentBuilder managedChannel(ManagedChannel channel) {
-      this.managedChannel = Preconditions.checkNotNull(channel);
+    public FlightSubcomponentBuilder allocator(BufferAllocator arg0) {
+      this.allocator = Preconditions.checkNotNull(arg0);
       return this;
     }
 
     @Override
-    public FlightSubcomponentBuilder scheduler(ScheduledExecutorService scheduler) {
-      this.scheduler = Preconditions.checkNotNull(scheduler);
+    public FlightSubcomponentBuilder authenticationTypeAndValue(String arg0) {
+      this.authenticationTypeAndValue = arg0;
       return this;
     }
 
     @Override
-    public FlightSubcomponentBuilder allocator(BufferAllocator bufferAllocator) {
-      this.allocator = Preconditions.checkNotNull(bufferAllocator);
+    public FlightSubcomponentBuilder managedChannel(ManagedChannel arg0) {
+      this.managedChannel = Preconditions.checkNotNull(arg0);
       return this;
     }
 
     @Override
-    public FlightSubcomponentBuilder authenticationTypeAndValue(String authenticationTypeAndValue) {
-      this.authenticationTypeAndValue = authenticationTypeAndValue;
+    public FlightSubcomponentBuilder scheduler(ScheduledExecutorService arg0) {
+      this.scheduler = Preconditions.checkNotNull(arg0);
       return this;
     }
 
     @Override
     public FlightSubcomponent build() {
+      Preconditions.checkBuilderRequirement(allocator, BufferAllocator.class);
       Preconditions.checkBuilderRequirement(managedChannel, ManagedChannel.class);
       Preconditions.checkBuilderRequirement(scheduler, ScheduledExecutorService.class);
-      Preconditions.checkBuilderRequirement(allocator, BufferAllocator.class);
-      return new FlightSubcomponentImpl(deephavenFlightRootImpl, managedChannel, scheduler, allocator, authenticationTypeAndValue);
+      return new FlightSubcomponentImpl(deephavenFlightRootImpl, allocator, authenticationTypeAndValue, managedChannel, scheduler);
     }
   }
 
@@ -101,8 +101,8 @@ public final class DaggerDeephavenFlightRoot {
     private final FlightSubcomponentImpl flightSubcomponentImpl = this;
 
     private FlightSubcomponentImpl(DeephavenFlightRootImpl deephavenFlightRootImpl,
-        ManagedChannel managedChannelParam, ScheduledExecutorService schedulerParam,
-        BufferAllocator allocatorParam, String authenticationTypeAndValueParam) {
+        BufferAllocator allocatorParam, String authenticationTypeAndValueParam,
+        ManagedChannel managedChannelParam, ScheduledExecutorService schedulerParam) {
       this.deephavenFlightRootImpl = deephavenFlightRootImpl;
       this.managedChannel = managedChannelParam;
       this.scheduler = schedulerParam;
