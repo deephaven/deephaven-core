@@ -15,6 +15,7 @@ from pydeephaven.proto import table_pb2
 _GrpcUpdateByOperation = table_pb2.UpdateByRequest.UpdateByOperation
 _GrpcUpdateByColumn = _GrpcUpdateByOperation.UpdateByColumn
 _GrpcUpdateBySpec = _GrpcUpdateByColumn.UpdateBySpec
+_GrpcUpdateByEmOptions = table_pb2.UpdateByEmOptions
 _GrpcUpdateByEma = _GrpcUpdateBySpec.UpdateByEma
 _GrpcUpdateByEms = _GrpcUpdateBySpec.UpdateByEms
 _GrpcUpdateByEmMin = _GrpcUpdateBySpec.UpdateByEmMin
@@ -30,7 +31,6 @@ _GrpcUpdateByRollingCount = _GrpcUpdateBySpec.UpdateByRollingCount
 _GrpcUpdateByRollingStd = _GrpcUpdateBySpec.UpdateByRollingStd
 _GrpcUpdateByRollingWAvg = _GrpcUpdateBySpec.UpdateByRollingWAvg
 _GrpcUpdateByDeltaOptions = table_pb2.UpdateByDeltaOptions
-_GrpcUpdateByEmOptions = table_pb2.UpdateByEmOptions
 _GrpcUpdateByWindowScale = table_pb2.UpdateByWindowScale
 _GrpcUpdateByWindowTicks = _GrpcUpdateByWindowScale.UpdateByWindowTicks
 _GrpcUpdateByWindowTime = _GrpcUpdateByWindowScale.UpdateByWindowTime
@@ -290,7 +290,7 @@ def ema_time(ts_col: str, decay_time: Union[int, str], cols: Union[str, List[str
         if isinstance(decay_time, str):
             window_scale = _GrpcUpdateByWindowScale(time=_GrpcUpdateByWindowTime(column=ts_col, duration_string=decay_time))
         else:
-            window_scale = _GrpcUpdateByWindowScale(time=_GrpcUpdateByWindowTime(column=ts_col, period_nanos=decay_time))
+            window_scale = _GrpcUpdateByWindowScale(time=_GrpcUpdateByWindowTime(column=ts_col, nanos=decay_time))
 
         ub_ema = _GrpcUpdateByEma(options=op_control.make_grpc_message() if op_control else None,
                                   window_scale=window_scale)
@@ -362,7 +362,7 @@ def ems_time(ts_col: str, decay_time: Union[int, str], cols: Union[str, List[str
         if isinstance(decay_time, str):
             window_scale = _GrpcUpdateByWindowScale(time=_GrpcUpdateByWindowTime(column=ts_col, duration_string=decay_time))
         else:
-            window_scale = _GrpcUpdateByWindowScale(time=_GrpcUpdateByWindowTime(column=ts_col, period_nanos=decay_time))
+            window_scale = _GrpcUpdateByWindowScale(time=_GrpcUpdateByWindowTime(column=ts_col, nanos=decay_time))
 
         ub_ems = _GrpcUpdateByEms(options=op_control.make_grpc_message() if op_control else None,
                                   window_scale=window_scale)
@@ -434,7 +434,7 @@ def emmin_time(ts_col: str, decay_time: Union[int, str], cols: Union[str, List[s
         if isinstance(decay_time, str):
             window_scale = _GrpcUpdateByWindowScale(time=_GrpcUpdateByWindowTime(column=ts_col, duration_string=decay_time))
         else:
-            window_scale = _GrpcUpdateByWindowScale(time=_GrpcUpdateByWindowTime(column=ts_col, period_nanos=decay_time))
+            window_scale = _GrpcUpdateByWindowScale(time=_GrpcUpdateByWindowTime(column=ts_col, nanos=decay_time))
 
         ub_emmin = _GrpcUpdateByEmMin(options=op_control.make_grpc_message() if op_control else None,
                                   window_scale=window_scale)
@@ -506,7 +506,7 @@ def emmax_time(ts_col: str, decay_time: Union[int, str], cols: Union[str, List[s
         if isinstance(decay_time, str):
             window_scale = _GrpcUpdateByWindowScale(time=_GrpcUpdateByWindowTime(column=ts_col, duration_string=decay_time))
         else:
-            window_scale = _GrpcUpdateByWindowScale(time=_GrpcUpdateByWindowTime(column=ts_col, period_nanos=decay_time))
+            window_scale = _GrpcUpdateByWindowScale(time=_GrpcUpdateByWindowTime(column=ts_col, nanos=decay_time))
 
         ub_emmax = _GrpcUpdateByEmMax(options=op_control.make_grpc_message() if op_control else None,
                                   window_scale=window_scale)
@@ -581,7 +581,7 @@ def emstd_time(ts_col: str, decay_time: Union[int, str], cols: Union[str, List[s
         if isinstance(decay_time, str):
             window_scale = _GrpcUpdateByWindowScale(time=_GrpcUpdateByWindowTime(column=ts_col, duration_string=decay_time))
         else:
-            window_scale = _GrpcUpdateByWindowScale(time=_GrpcUpdateByWindowTime(column=ts_col, period_nanos=decay_time))
+            window_scale = _GrpcUpdateByWindowScale(time=_GrpcUpdateByWindowTime(column=ts_col, nanos=decay_time))
 
         ub_emstd = _GrpcUpdateByEmStd(options=op_control.make_grpc_message() if op_control else None,
                                   window_scale=window_scale)
@@ -654,7 +654,7 @@ def rolling_sum_time(ts_col: str, cols: Union[str, List[str]], rev_time: Union[i
             current row timestamp (inclusive), this is a purely backwards looking window
         rev_time = "-PT00:05:00", fwd_time = "PT00:10:00"} - contains rows from 5m following through 10m
             following the current row timestamp (inclusive), this is a purely forwards looking window
-    
+
     Args:
         ts_col (str): the timestamp column for determining the window
         cols (Union[str, List[str]]): the column(s) to be operated on, can include expressions to rename the output,
@@ -674,12 +674,12 @@ def rolling_sum_time(ts_col: str, cols: Union[str, List[str]], rev_time: Union[i
         if isinstance(rev_time, str):
             rev_window_scale = _GrpcUpdateByWindowScale(time=_GrpcUpdateByWindowTime(column=ts_col, duration_string=rev_time))
         else:
-            rev_window_scale = _GrpcUpdateByWindowScale(time=_GrpcUpdateByWindowTime(column=ts_col, period_nanos=rev_time))
+            rev_window_scale = _GrpcUpdateByWindowScale(time=_GrpcUpdateByWindowTime(column=ts_col, nanos=rev_time))
 
         if isinstance(fwd_time, str):
             fwd_window_scale = _GrpcUpdateByWindowScale(time=_GrpcUpdateByWindowTime(column=ts_col, duration_string=fwd_time))
         else:
-            fwd_window_scale = _GrpcUpdateByWindowScale(time=_GrpcUpdateByWindowTime(column=ts_col, period_nanos=fwd_time))
+            fwd_window_scale = _GrpcUpdateByWindowScale(time=_GrpcUpdateByWindowTime(column=ts_col, nanos=fwd_time))
 
         ub_rolling = _GrpcUpdateByRollingSum(reverse_window_scale=rev_window_scale,
                                              forward_window_scale=fwd_window_scale)
@@ -772,12 +772,12 @@ def rolling_group_time(ts_col: str, cols: Union[str, List[str]], rev_time: Union
         if isinstance(rev_time, str):
             rev_window_scale = _GrpcUpdateByWindowScale(time=_GrpcUpdateByWindowTime(column=ts_col, duration_string=rev_time))
         else:
-            rev_window_scale = _GrpcUpdateByWindowScale(time=_GrpcUpdateByWindowTime(column=ts_col, period_nanos=rev_time))
+            rev_window_scale = _GrpcUpdateByWindowScale(time=_GrpcUpdateByWindowTime(column=ts_col, nanos=rev_time))
 
         if isinstance(fwd_time, str):
             fwd_window_scale = _GrpcUpdateByWindowScale(time=_GrpcUpdateByWindowTime(column=ts_col, duration_string=fwd_time))
         else:
-            fwd_window_scale = _GrpcUpdateByWindowScale(time=_GrpcUpdateByWindowTime(column=ts_col, period_nanos=fwd_time))
+            fwd_window_scale = _GrpcUpdateByWindowScale(time=_GrpcUpdateByWindowTime(column=ts_col, nanos=fwd_time))
 
         ub_rolling = _GrpcUpdateByRollingGroup(reverse_window_scale=rev_window_scale,
                                              forward_window_scale=fwd_window_scale)
@@ -870,12 +870,12 @@ def rolling_avg_time(ts_col: str, cols: Union[str, List[str]], rev_time: Union[i
         if isinstance(rev_time, str):
             rev_window_scale = _GrpcUpdateByWindowScale(time=_GrpcUpdateByWindowTime(column=ts_col, duration_string=rev_time))
         else:
-            rev_window_scale = _GrpcUpdateByWindowScale(time=_GrpcUpdateByWindowTime(column=ts_col, period_nanos=rev_time))
+            rev_window_scale = _GrpcUpdateByWindowScale(time=_GrpcUpdateByWindowTime(column=ts_col, nanos=rev_time))
 
         if isinstance(fwd_time, str):
             fwd_window_scale = _GrpcUpdateByWindowScale(time=_GrpcUpdateByWindowTime(column=ts_col, duration_string=fwd_time))
         else:
-            fwd_window_scale = _GrpcUpdateByWindowScale(time=_GrpcUpdateByWindowTime(column=ts_col, period_nanos=fwd_time))
+            fwd_window_scale = _GrpcUpdateByWindowScale(time=_GrpcUpdateByWindowTime(column=ts_col, nanos=fwd_time))
 
         ub_rolling = _GrpcUpdateByRollingAvg(reverse_window_scale=rev_window_scale,
                                                forward_window_scale=fwd_window_scale)
@@ -968,12 +968,12 @@ def rolling_min_time(ts_col: str, cols: Union[str, List[str]], rev_time: Union[i
         if isinstance(rev_time, str):
             rev_window_scale = _GrpcUpdateByWindowScale(time=_GrpcUpdateByWindowTime(column=ts_col, duration_string=rev_time))
         else:
-            rev_window_scale = _GrpcUpdateByWindowScale(time=_GrpcUpdateByWindowTime(column=ts_col, period_nanos=rev_time))
+            rev_window_scale = _GrpcUpdateByWindowScale(time=_GrpcUpdateByWindowTime(column=ts_col, nanos=rev_time))
 
         if isinstance(fwd_time, str):
             fwd_window_scale = _GrpcUpdateByWindowScale(time=_GrpcUpdateByWindowTime(column=ts_col, duration_string=fwd_time))
         else:
-            fwd_window_scale = _GrpcUpdateByWindowScale(time=_GrpcUpdateByWindowTime(column=ts_col, period_nanos=fwd_time))
+            fwd_window_scale = _GrpcUpdateByWindowScale(time=_GrpcUpdateByWindowTime(column=ts_col, nanos=fwd_time))
 
         ub_rolling = _GrpcUpdateByRollingMin(reverse_window_scale=rev_window_scale,
                                                forward_window_scale=fwd_window_scale)
@@ -1066,12 +1066,12 @@ def rolling_max_time(ts_col: str, cols: Union[str, List[str]], rev_time: Union[i
         if isinstance(rev_time, str):
             rev_window_scale = _GrpcUpdateByWindowScale(time=_GrpcUpdateByWindowTime(column=ts_col, duration_string=rev_time))
         else:
-            rev_window_scale = _GrpcUpdateByWindowScale(time=_GrpcUpdateByWindowTime(column=ts_col, period_nanos=rev_time))
+            rev_window_scale = _GrpcUpdateByWindowScale(time=_GrpcUpdateByWindowTime(column=ts_col, nanos=rev_time))
 
         if isinstance(fwd_time, str):
             fwd_window_scale = _GrpcUpdateByWindowScale(time=_GrpcUpdateByWindowTime(column=ts_col, duration_string=fwd_time))
         else:
-            fwd_window_scale = _GrpcUpdateByWindowScale(time=_GrpcUpdateByWindowTime(column=ts_col, period_nanos=fwd_time))
+            fwd_window_scale = _GrpcUpdateByWindowScale(time=_GrpcUpdateByWindowTime(column=ts_col, nanos=fwd_time))
 
         ub_rolling = _GrpcUpdateByRollingMax(reverse_window_scale=rev_window_scale,
                                                forward_window_scale=fwd_window_scale)
@@ -1164,12 +1164,12 @@ def rolling_prod_time(ts_col: str, cols: Union[str, List[str]], rev_time: Union[
         if isinstance(rev_time, str):
             rev_window_scale = _GrpcUpdateByWindowScale(time=_GrpcUpdateByWindowTime(column=ts_col, duration_string=rev_time))
         else:
-            rev_window_scale = _GrpcUpdateByWindowScale(time=_GrpcUpdateByWindowTime(column=ts_col, period_nanos=rev_time))
+            rev_window_scale = _GrpcUpdateByWindowScale(time=_GrpcUpdateByWindowTime(column=ts_col, nanos=rev_time))
 
         if isinstance(fwd_time, str):
             fwd_window_scale = _GrpcUpdateByWindowScale(time=_GrpcUpdateByWindowTime(column=ts_col, duration_string=fwd_time))
         else:
-            fwd_window_scale = _GrpcUpdateByWindowScale(time=_GrpcUpdateByWindowTime(column=ts_col, period_nanos=fwd_time))
+            fwd_window_scale = _GrpcUpdateByWindowScale(time=_GrpcUpdateByWindowTime(column=ts_col, nanos=fwd_time))
 
         ub_rolling = _GrpcUpdateByRollingProduct(reverse_window_scale=rev_window_scale,
                                                forward_window_scale=fwd_window_scale)
@@ -1262,12 +1262,12 @@ def rolling_count_time(ts_col: str, cols: Union[str, List[str]], rev_time: Union
         if isinstance(rev_time, str):
             rev_window_scale = _GrpcUpdateByWindowScale(time=_GrpcUpdateByWindowTime(column=ts_col, duration_string=rev_time))
         else:
-            rev_window_scale = _GrpcUpdateByWindowScale(time=_GrpcUpdateByWindowTime(column=ts_col, period_nanos=rev_time))
+            rev_window_scale = _GrpcUpdateByWindowScale(time=_GrpcUpdateByWindowTime(column=ts_col, nanos=rev_time))
 
         if isinstance(fwd_time, str):
             fwd_window_scale = _GrpcUpdateByWindowScale(time=_GrpcUpdateByWindowTime(column=ts_col, duration_string=fwd_time))
         else:
-            fwd_window_scale = _GrpcUpdateByWindowScale(time=_GrpcUpdateByWindowTime(column=ts_col, period_nanos=fwd_time))
+            fwd_window_scale = _GrpcUpdateByWindowScale(time=_GrpcUpdateByWindowTime(column=ts_col, nanos=fwd_time))
 
         ub_rolling = _GrpcUpdateByRollingCount(reverse_window_scale=rev_window_scale,
                                                forward_window_scale=fwd_window_scale)
@@ -1360,12 +1360,12 @@ def rolling_std_time(ts_col: str, cols: Union[str, List[str]], rev_time: Union[i
         if isinstance(rev_time, str):
             rev_window_scale = _GrpcUpdateByWindowScale(time=_GrpcUpdateByWindowTime(column=ts_col, duration_string=rev_time))
         else:
-            rev_window_scale = _GrpcUpdateByWindowScale(time=_GrpcUpdateByWindowTime(column=ts_col, period_nanos=rev_time))
+            rev_window_scale = _GrpcUpdateByWindowScale(time=_GrpcUpdateByWindowTime(column=ts_col, nanos=rev_time))
 
         if isinstance(fwd_time, str):
             fwd_window_scale = _GrpcUpdateByWindowScale(time=_GrpcUpdateByWindowTime(column=ts_col, duration_string=fwd_time))
         else:
-            fwd_window_scale = _GrpcUpdateByWindowScale(time=_GrpcUpdateByWindowTime(column=ts_col, period_nanos=fwd_time))
+            fwd_window_scale = _GrpcUpdateByWindowScale(time=_GrpcUpdateByWindowTime(column=ts_col, nanos=fwd_time))
 
         ub_rolling = _GrpcUpdateByRollingStd(reverse_window_scale=rev_window_scale,
                                              forward_window_scale=fwd_window_scale)
@@ -1415,7 +1415,7 @@ def rolling_wavg_tick(weight_col: str, cols: Union[str, List[str]], rev_ticks: i
                                               weight_column=weight_col)
         ub_spec = _GrpcUpdateBySpec(rolling_wavg=ub_rolling)
         ub_column = _GrpcUpdateByColumn(spec=ub_spec, match_pairs=to_list(cols))
-        return UpdateByOperation(ub_column=ub_column)        
+        return UpdateByOperation(ub_column=ub_column)
     except Exception as e:
         raise DHError(e, "failed to create a rolling weighted average (tick) UpdateByOperation.") from e
 
@@ -1461,12 +1461,12 @@ def rolling_wavg_time(ts_col: str, weight_col: str, cols: Union[str, List[str]],
         if isinstance(rev_time, str):
             rev_window_scale = _GrpcUpdateByWindowScale(time=_GrpcUpdateByWindowTime(column=ts_col, duration_string=rev_time))
         else:
-            rev_window_scale = _GrpcUpdateByWindowScale(time=_GrpcUpdateByWindowTime(column=ts_col, period_nanos=rev_time))
+            rev_window_scale = _GrpcUpdateByWindowScale(time=_GrpcUpdateByWindowTime(column=ts_col, nanos=rev_time))
 
         if isinstance(fwd_time, str):
             fwd_window_scale = _GrpcUpdateByWindowScale(time=_GrpcUpdateByWindowTime(column=ts_col, duration_string=fwd_time))
         else:
-            fwd_window_scale = _GrpcUpdateByWindowScale(time=_GrpcUpdateByWindowTime(column=ts_col, period_nanos=fwd_time))
+            fwd_window_scale = _GrpcUpdateByWindowScale(time=_GrpcUpdateByWindowTime(column=ts_col, nanos=fwd_time))
 
         ub_rolling = _GrpcUpdateByRollingWAvg(reverse_window_scale=rev_window_scale,
                                               forward_window_scale=fwd_window_scale,

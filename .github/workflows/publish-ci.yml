@@ -32,9 +32,7 @@ jobs:
 
       - name: Setup gradle properties
         run: |
-          cat .github/env/${{ runner.os }}/gradle.properties >> gradle.properties
-          echo >> gradle.properties
-          echo "org.gradle.java.installations.paths=${{ steps.setup-java-11.outputs.path }},${{ steps.setup-java-17.outputs.path }}," >> gradle.properties
+          .github/scripts/gradle-properties.sh >> gradle.properties
           cat gradle.properties
 
       # TODO(deephaven-core#2614): Improve gradle/CI assemble and publishing of artifacts
@@ -52,8 +50,7 @@ jobs:
         uses: burrunan/gradle-cache-action@v1
         with:
           job-id: publish
-          # Note: even though we specify org.gradle.parallel=false in our CI gradle.properties, we want to be explicit
-          # here about no parallelism to ensure we don't create disjointed staging repositories.
+          # We need to be explicit here about no parallelism to ensure we don't create disjointed staging repositories.
           arguments: --no-parallel server-netty-app:build server-jetty-app:build py-server:build py-embedded-server:build publish
           gradle-version: wrapper
         env:
@@ -63,14 +60,15 @@ jobs:
           ORG_GRADLE_PROJECT_signingPassword: ${{ secrets.CI_AT_DEEPHAVEN_PASSWORD }}
           ORG_GRADLE_PROJECT_signingRequired: true
 
-      - name: Upload Applications
+      - name: Upload Artifacts
         if: ${{ startsWith(github.ref, 'refs/heads/release/v') }}
         uses: actions/upload-artifact@v3
         with:
-          name: applications
+          name: artifacts
           path: |
             server/jetty-app/build/distributions/
-            server/netty-app/build/distributions/
+            py/server/build/wheel/
+            py/embedded-server/build/wheel/
 
       - name: Publish deephaven-core to PyPi
         if: ${{ startsWith(github.ref, 'refs/heads/release/v') }}

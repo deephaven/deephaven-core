@@ -84,7 +84,7 @@ public class PartitionedTableFactory {
      *        {@link TableDefinition#checkMutualCompatibility(TableDefinition) mutually compatible} with all values in
      *        the "constituent" column of {@code table}
      * @param constituentChangesPermitted Whether {@code table} is permitted to report changes that impact the
-     *        constituent column
+     *        constituent column; ignored (and treated as {@code false}) if {@code !table.isRefreshing()}
      * @return A new PartitionedTable as described
      */
     public static PartitionedTable of(

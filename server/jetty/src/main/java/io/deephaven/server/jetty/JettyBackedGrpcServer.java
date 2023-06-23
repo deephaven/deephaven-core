@@ -20,7 +20,7 @@ import jakarta.servlet.DispatcherType;
 import jakarta.websocket.Endpoint;
 import jakarta.websocket.server.ServerEndpointConfig;
 import nl.altindag.ssl.SSLFactory;
-import nl.altindag.ssl.util.JettySslUtils;
+import nl.altindag.ssl.jetty.util.JettySslUtils;
 import org.apache.arrow.flight.auth.AuthConstants;
 import org.apache.arrow.flight.auth2.Auth2Constants;
 import org.eclipse.jetty.alpn.server.ALPNServerConnectionFactory;

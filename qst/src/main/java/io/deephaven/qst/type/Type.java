@@ -159,12 +159,12 @@ public interface Type<T> {
      */
     NativeArrayType<?, T> arrayType();
 
-    <V extends Visitor> V walk(V visitor);
+    <R> R walk(Visitor<R> visitor);
 
-    interface Visitor {
-        void visit(PrimitiveType<?> primitiveType);
+    interface Visitor<R> {
+        R visit(PrimitiveType<?> primitiveType);
 
-        void visit(GenericType<?> genericType);
+        R visit(GenericType<?> genericType);
 
         // Implementation note: when adding new types here, add type to TypeHelper
     }

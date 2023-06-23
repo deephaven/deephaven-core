@@ -137,47 +137,37 @@ public enum TableCreatorImpl implements TableCreator<Table> {
         return TableTools.merge(tables);
     }
 
-    static class ClockAdapter implements Clock.Visitor {
+    enum ClockAdapter implements Clock.Visitor<io.deephaven.base.clock.Clock> {
+        INSTANCE;
 
         public static io.deephaven.base.clock.Clock of(Clock provider) {
-            return provider.walk(new ClockAdapter()).getOut();
-        }
-
-        private io.deephaven.base.clock.Clock out;
-
-        public io.deephaven.base.clock.Clock getOut() {
-            return Objects.requireNonNull(out);
+            return provider.walk(INSTANCE);
         }
 
         @Override
-        public void visit(ClockSystem system) {
-            out = io.deephaven.base.clock.Clock.system();
+        public io.deephaven.base.clock.Clock visit(ClockSystem system) {
+            return io.deephaven.base.clock.Clock.system();
         }
     }
 
-    static class UpdatableTableAdapter implements InputTable.Visitor {
+    enum UpdatableTableAdapter implements InputTable.Visitor<UpdatableTable> {
+        INSTANCE;
 
         public static UpdatableTable of(InputTable inputTable) {
-            return inputTable.walk(new UpdatableTableAdapter()).out();
-        }
-
-        private UpdatableTable out;
-
-        public UpdatableTable out() {
-            return Objects.requireNonNull(out);
+            return inputTable.walk(INSTANCE);
         }
 
         @Override
-        public void visit(InMemoryAppendOnlyInputTable inMemoryAppendOnly) {
+        public UpdatableTable visit(InMemoryAppendOnlyInputTable inMemoryAppendOnly) {
             final TableDefinition definition = DefinitionAdapter.of(inMemoryAppendOnly.schema());
-            out = AppendOnlyArrayBackedMutableTable.make(definition);
+            return AppendOnlyArrayBackedMutableTable.make(definition);
         }
 
         @Override
-        public void visit(InMemoryKeyBackedInputTable inMemoryKeyBacked) {
+        public UpdatableTable visit(InMemoryKeyBackedInputTable inMemoryKeyBacked) {
             final TableDefinition definition = DefinitionAdapter.of(inMemoryKeyBacked.schema());
             final String[] keyColumnNames = inMemoryKeyBacked.keys().toArray(String[]::new);
-            out = KeyedArrayBackedMutableTable.make(definition, keyColumnNames);
+            return KeyedArrayBackedMutableTable.make(definition, keyColumnNames);
         }
     }
 

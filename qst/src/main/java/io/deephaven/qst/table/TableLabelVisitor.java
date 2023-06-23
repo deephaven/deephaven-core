@@ -164,17 +164,17 @@ public class TableLabelVisitor extends TableVisitorGeneric {
 
     @Override
     public void visit(InputTable inputTable) {
-        inputTable.walk(new InputTable.Visitor() {
+        sb.append(inputTable.walk(new InputTable.Visitor<String>() {
             @Override
-            public void visit(InMemoryAppendOnlyInputTable inMemoryAppendOnly) {
-                sb.append("InMemoryAppendOnlyInputTable(...)");
+            public String visit(InMemoryAppendOnlyInputTable inMemoryAppendOnly) {
+                return "InMemoryAppendOnlyInputTable(...)";
             }
 
             @Override
-            public void visit(InMemoryKeyBackedInputTable inMemoryKeyBacked) {
-                sb.append("InMemoryKeyBackedInputTable(...)");
+            public String visit(InMemoryKeyBackedInputTable inMemoryKeyBacked) {
+                return "InMemoryKeyBackedInputTable(...)";
             }
-        });
+        }));
     }
 
     @Override

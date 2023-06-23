@@ -14,6 +14,7 @@ import io.deephaven.engine.context.ExecutionContext;
 import io.deephaven.engine.liveness.LivenessManager;
 import io.deephaven.engine.liveness.LivenessScope;
 import io.deephaven.engine.liveness.LivenessScopeStack;
+import io.deephaven.engine.table.impl.util.StepUpdater;
 import io.deephaven.engine.updategraph.*;
 import io.deephaven.engine.util.reference.CleanupReferenceProcessorInstance;
 import io.deephaven.engine.util.systemicmarking.SystemicObjectTracker;
@@ -121,7 +122,7 @@ public class PeriodicUpdateGraph implements UpdateGraph {
     private LongConsumer watchDogTimeoutProcedure = null;
 
     public static final String ALLOW_UNIT_TEST_MODE_PROP = "PeriodicUpdateGraph.allowUnitTestMode";
-    private final boolean ALLOW_UNIT_TEST_MODE;
+    private final boolean allowUnitTestMode;
     private int notificationAdditionDelay = 0;
     private Random notificationRandomizer = new Random(0);
     private boolean unitTestMode = false;
@@ -131,7 +132,7 @@ public class PeriodicUpdateGraph implements UpdateGraph {
             "PeriodicUpdateGraph.targetCycleDurationMillis";
     public static final String MINIMUM_CYCLE_DURATION_TO_LOG_MILLIS_PROP =
             "PeriodicUpdateGraph.minimumCycleDurationToLogMillis";
-    private final long DEFAULT_TARGET_CYCLE_DURATION_MILLIS;
+    private final long defaultTargetCycleDurationMillis;
     private volatile long targetCycleDurationMillis;
     private final long minimumCycleDurationToLogNanos;
 
@@ -277,29 +278,29 @@ public class PeriodicUpdateGraph implements UpdateGraph {
             final long minimumCycleDurationToLogNanos,
             final int numUpdateThreads) {
         this.name = name;
-        this.ALLOW_UNIT_TEST_MODE = allowUnitTestMode;
-        this.DEFAULT_TARGET_CYCLE_DURATION_MILLIS = targetCycleDurationMillis;
+        this.allowUnitTestMode = allowUnitTestMode;
+        this.defaultTargetCycleDurationMillis = targetCycleDurationMillis;
         this.targetCycleDurationMillis = targetCycleDurationMillis;
         this.minimumCycleDurationToLogNanos = minimumCycleDurationToLogNanos;
-        this.lock = UpdateGraphLock.create(this, ALLOW_UNIT_TEST_MODE);
-
-        notificationProcessor = makeNotificationProcessor();
-        jvmIntrospectionContext = new JvmIntrospectionContext();
-
-        refreshThread = new Thread(ThreadInitializationFactory.wrapRunnable(() -> {
-            configureRefreshThread();
-            while (running) {
-                Assert.eqFalse(ALLOW_UNIT_TEST_MODE, "ALLOW_UNIT_TEST_MODE");
-                refreshTablesAndFlushNotifications();
-            }
-        }), "PeriodicUpdateGraph." + name + ".refreshThread");
-        refreshThread.setDaemon(true);
+        this.lock = UpdateGraphLock.create(this, this.allowUnitTestMode);
 
         if (numUpdateThreads <= 0) {
             this.updateThreads = Runtime.getRuntime().availableProcessors();
         } else {
             this.updateThreads = numUpdateThreads;
         }
+
+        notificationProcessor = PoisonedNotificationProcessor.INSTANCE;
+        jvmIntrospectionContext = new JvmIntrospectionContext();
+
+        refreshThread = new Thread(ThreadInitializationFactory.wrapRunnable(() -> {
+            configureRefreshThread();
+            while (running) {
+                Assert.eqFalse(this.allowUnitTestMode, "allowUnitTestMode");
+                refreshTablesAndFlushNotifications();
+            }
+        }), "PeriodicUpdateGraph." + name + ".refreshThread");
+        refreshThread.setDaemon(true);
     }
 
     public String getName() {
@@ -495,7 +496,7 @@ public class PeriodicUpdateGraph implements UpdateGraph {
      */
     @SuppressWarnings("unused")
     public void resetTargetCycleDuration() {
-        targetCycleDurationMillis = DEFAULT_TARGET_CYCLE_DURATION_MILLIS;
+        targetCycleDurationMillis = defaultTargetCycleDurationMillis;
     }
 
     /**
@@ -512,7 +513,7 @@ public class PeriodicUpdateGraph implements UpdateGraph {
         if (unitTestMode) {
             return;
         }
-        if (!ALLOW_UNIT_TEST_MODE) {
+        if (!allowUnitTestMode) {
             throw new IllegalStateException("PeriodicUpdateGraph.allowUnitTestMode=false");
         }
         if (refreshThread.isAlive()) {
@@ -527,7 +528,7 @@ public class PeriodicUpdateGraph implements UpdateGraph {
      * @return whether unit test mode is allowed
      */
     public boolean isUnitTestModeAllowed() {
-        return ALLOW_UNIT_TEST_MODE;
+        return allowUnitTestMode;
     }
 
     /**
@@ -569,15 +570,18 @@ public class PeriodicUpdateGraph implements UpdateGraph {
     }
 
     /**
-     * Start the table run thread.
+     * Install a real NotificationProcessor and start the primary refresh thread.
      *
      * @implNote Must not be in {@link #enableUnitTestMode() unit test} mode.
      */
     public void start() {
         Assert.eqTrue(running, "running");
         Assert.eqFalse(unitTestMode, "unitTestMode");
-        Assert.eqFalse(ALLOW_UNIT_TEST_MODE, "ALLOW_UNIT_TEST_MODE");
+        Assert.eqFalse(allowUnitTestMode, "allowUnitTestMode");
         synchronized (refreshThread) {
+            if (notificationProcessor instanceof PoisonedNotificationProcessor) {
+                notificationProcessor = makeNotificationProcessor();
+            }
             if (!refreshThread.isAlive()) {
                 log.info().append("PeriodicUpdateGraph starting with ").append(updateThreads)
                         .append(" notification processing threads").endl();
@@ -613,7 +617,7 @@ public class PeriodicUpdateGraph implements UpdateGraph {
             ((DynamicNode) updateSource).setRefreshing(true);
         }
 
-        if (!ALLOW_UNIT_TEST_MODE) {
+        if (!allowUnitTestMode) {
             // if we are in unit test mode we never want to start the UpdateGraph
             sources.add(updateSource);
             start();
@@ -705,6 +709,7 @@ public class PeriodicUpdateGraph implements UpdateGraph {
 
     @Override
     public boolean satisfied(final long step) {
+        StepUpdater.checkForOlderStep(step, sourcesLastSatisfiedStep);
         return sourcesLastSatisfiedStep == step;
     }
 
@@ -835,20 +840,33 @@ public class PeriodicUpdateGraph implements UpdateGraph {
 
     /**
      * Begin the next {@link LogicalClockImpl#startUpdateCycle() update cycle} while in {@link #enableUnitTestMode()
-     * unit-test} mode. Note that this happens on a simulated UpdateGraph run thread, rather than this thread.
+     * unit-test} mode. Note that this happens on a simulated UpdateGraph run thread, rather than this thread. This
+     * overload is the same as {@code startCycleForUnitTests(true)}.
      */
     @TestUseOnly
     public void startCycleForUnitTests() {
+        startCycleForUnitTests(true);
+    }
+
+    /**
+     * Begin the next {@link LogicalClockImpl#startUpdateCycle() update cycle} while in {@link #enableUnitTestMode()
+     * unit-test} mode. Note that this happens on a simulated UpdateGraph run thread, rather than this thread.
+     *
+     * @param sourcesSatisfied Whether sources should be marked as satisfied by this invocation; if {@code false}, the
+     *        caller must control source satisfaction using {@link #markSourcesRefreshedForUnitTests()}.
+     */
+    @TestUseOnly
+    public void startCycleForUnitTests(final boolean sourcesSatisfied) {
         Assert.assertion(unitTestMode, "unitTestMode");
         try {
-            unitTestRefreshThreadPool.submit(this::startCycleForUnitTestsInternal).get();
+            unitTestRefreshThreadPool.submit(() -> startCycleForUnitTestsInternal(sourcesSatisfied)).get();
         } catch (InterruptedException | ExecutionException e) {
             throw new UncheckedDeephavenException(e);
         }
     }
 
     @TestUseOnly
-    private void startCycleForUnitTestsInternal() {
+    private void startCycleForUnitTestsInternal(final boolean sourcesSatisfied) {
         // noinspection AutoBoxing
         isUpdateThread.set(true);
         exclusiveLock().lock();
@@ -858,6 +876,20 @@ public class PeriodicUpdateGraph implements UpdateGraph {
         LivenessScopeStack.push(refreshScope);
 
         logicalClock.startUpdateCycle();
+        if (sourcesSatisfied) {
+            markSourcesRefreshedForUnitTests();
+        }
+    }
+
+    /**
+     * Record that sources have been satisfied within a unit test cycle.
+     */
+    @TestUseOnly
+    public void markSourcesRefreshedForUnitTests() {
+        Assert.assertion(unitTestMode, "unitTestMode");
+        if (sourcesLastSatisfiedStep >= logicalClock.currentStep()) {
+            throw new IllegalStateException("Already marked sources as satisfied!");
+        }
         sourcesLastSatisfiedStep = logicalClock.currentStep();
     }
 
@@ -869,6 +901,8 @@ public class PeriodicUpdateGraph implements UpdateGraph {
     @TestUseOnly
     public void completeCycleForUnitTests() {
         Assert.assertion(unitTestMode, "unitTestMode");
+        Assert.eq(sourcesLastSatisfiedStep, "sourcesLastSatisfiedStep", logicalClock.currentStep(),
+                "logicalClock.currentStep()");
         try {
             unitTestRefreshThreadPool.submit(this::completeCycleForUnitTestsInternal).get();
         } catch (InterruptedException | ExecutionException e) {
@@ -894,14 +928,30 @@ public class PeriodicUpdateGraph implements UpdateGraph {
 
     /**
      * Execute the given runnable wrapped with {@link #startCycleForUnitTests()} and
-     * {@link #completeCycleForUnitTests()}. Note that the runnable is run on the current thread.
+     * {@link #completeCycleForUnitTests()}. Note that the runnable is run on the current thread. This is equivalent to
+     * {@code runWithinUnitTestCycle(runnable, true)}.
      *
-     * @param runnable the runnable to execute.
+     * @param runnable The runnable to execute
      */
     @TestUseOnly
-    public <T extends Exception> void runWithinUnitTestCycle(ThrowingRunnable<T> runnable)
+    public <T extends Exception> void runWithinUnitTestCycle(@NotNull final ThrowingRunnable<T> runnable) throws T {
+        runWithinUnitTestCycle(runnable, true);
+    }
+
+    /**
+     * Execute the given runnable wrapped with {@link #startCycleForUnitTests()} and
+     * {@link #completeCycleForUnitTests()}. Note that the runnable is run on the current thread.
+     *
+     * @param runnable The runnable to execute
+     * @param sourcesSatisfied Whether sources should be marked as satisfied by this invocation; if {@code false}, the
+     *        caller must control source satisfaction using {@link #markSourcesRefreshedForUnitTests()}.
+     */
+    @TestUseOnly
+    public <T extends Exception> void runWithinUnitTestCycle(
+            @NotNull final ThrowingRunnable<T> runnable,
+            final boolean sourcesSatisfied)
             throws T {
-        startCycleForUnitTests();
+        startCycleForUnitTests(sourcesSatisfied);
         try {
             runnable.run();
         } finally {
@@ -1384,6 +1434,55 @@ public class PeriodicUpdateGraph implements UpdateGraph {
 
         int threadCount() {
             return updateThreads.length;
+        }
+    }
+
+    private static final class PoisonedNotificationProcessor implements NotificationProcessor {
+
+        private static final NotificationProcessor INSTANCE = new PoisonedNotificationProcessor();
+
+        private static RuntimeException notYetStarted() {
+            return new IllegalStateException("PeriodicUpdateGraph has not been started yet");
+        }
+
+        private PoisonedNotificationProcessor() {}
+
+        @Override
+        public void submit(@NotNull Notification notification) {
+            throw notYetStarted();
+        }
+
+        @Override
+        public void submitAll(@NotNull IntrusiveDoublyLinkedQueue<Notification> notifications) {
+            throw notYetStarted();
+        }
+
+        @Override
+        public int outstandingNotificationsCount() {
+            throw notYetStarted();
+        }
+
+        @Override
+        public void doWork() {
+            throw notYetStarted();
+        }
+
+        @Override
+        public void doAllWork() {
+            throw notYetStarted();
+        }
+
+        @Override
+        public void shutdown() {}
+
+        @Override
+        public void onNotificationAdded() {
+            throw notYetStarted();
+        }
+
+        @Override
+        public void beforeNotificationsDrained() {
+            throw notYetStarted();
         }
     }
 

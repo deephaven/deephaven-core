@@ -54,7 +54,7 @@ class TypeHelper {
         return Optional.ofNullable((Type<T>) MAPPINGS.get(clazz));
     }
 
-    static class AddMappings implements Type.Visitor, GenericType.Visitor {
+    static class AddMappings implements Type.Visitor<Void>, GenericType.Visitor<Void> {
 
         private final Map<Class<?>, Type<?>> mappings = new HashMap<>();
 
@@ -71,42 +71,47 @@ class TypeHelper {
         }
 
         @Override
-        public void visit(PrimitiveType<?> primitiveType) {
+        public Void visit(PrimitiveType<?> primitiveType) {
             addUnchecked(primitiveType.clazz(), primitiveType);
             addUnchecked(primitiveType.boxedClass(), primitiveType);
+            return null;
         }
 
         @Override
-        public void visit(GenericType<?> genericType) {
-            genericType.walk((GenericType.Visitor) this);
+        public Void visit(GenericType<?> genericType) {
+            genericType.walk((GenericType.Visitor<Void>) this);
+            return null;
         }
 
         @Override
-        public void visit(StringType stringType) {
+        public Void visit(StringType stringType) {
             add(String.class, stringType);
+            return null;
         }
 
         @Override
-        public void visit(InstantType instantType) {
+        public Void visit(InstantType instantType) {
             add(Instant.class, instantType);
+            return null;
         }
 
         @Override
-        public void visit(ArrayType<?, ?> arrayType) {
-            arrayType.walk(new ArrayType.Visitor() {
+        public Void visit(ArrayType<?, ?> arrayType) {
+            return arrayType.walk(new ArrayType.Visitor<Void>() {
                 @Override
-                public void visit(NativeArrayType<?, ?> nativeArrayType) {
+                public Void visit(NativeArrayType<?, ?> nativeArrayType) {
                     throw new IllegalArgumentException(
                             "Native array types should not be created statically, they will be found dynamically");
                 }
 
                 @Override
-                public void visit(PrimitiveVectorType<?, ?> vectorPrimitiveType) {
+                public Void visit(PrimitiveVectorType<?, ?> vectorPrimitiveType) {
                     addUnchecked(vectorPrimitiveType.clazz(), vectorPrimitiveType);
+                    return null;
                 }
 
                 @Override
-                public void visit(GenericVectorType<?, ?> genericVectorType) {
+                public Void visit(GenericVectorType<?, ?> genericVectorType) {
                     // The engine array type by itself is not specific enough
                     throw new IllegalStateException(
                             "Should not be adding GenericVectorType as static mapping");
@@ -118,7 +123,7 @@ class TypeHelper {
         // knownTypes()
 
         @Override
-        public void visit(CustomType<?> customType) {
+        public Void visit(CustomType<?> customType) {
             throw new IllegalStateException("Should not be adding custom type as static mapping");
         }
     }

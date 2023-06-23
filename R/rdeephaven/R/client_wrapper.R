@@ -5,18 +5,11 @@
 #' @usage NULL
 #' @format NULL
 #' @docType class
-#' 
-#' @section Methods
-#' 
-#' - `$open_table(name)`
-#' - `$import_table(table_object)`
-#' - `$run_script(script)`
 #'
 #' @examples
 #' 
-#' # connect to the Deephaven server running on "localhost:10000" with anonymous 'default' authentication
+#' # connect to the Deephaven server running on "localhost:10000" using anonymous 'default' authentication
 #' client_options <- ClientOptions$new()
-#' client_options$set_default_authentication()
 #' client <- Client$new(target="localhost:10000", client_options=client_options)
 #' 
 #' # open a table that already exists on the server
@@ -45,7 +38,7 @@ Client <- R6Class("Client",
 
         #' @description
         #' Opens a table named 'name' from the server if it exists.
-        #' @param name Name of the table to open from the server as a string.
+        #' @param name Name of the table to open from the server, passed as a string.
         #' @return TableHandle reference to the requested table.
         open_table = function(name) {
             private$verify_string(name, "name")
@@ -58,7 +51,7 @@ Client <- R6Class("Client",
         #' @description
         #' Imports a new table to the Deephaven server. Note that this new table is not automatically bound to
         #' a variable name on the server. See `?TableHandle` for more information.
-        #' @param table_object An R Data Frame, an R Tibble, an Arrow Table, or an Arrow RecordBatchReader
+        #' @param table_object An R Data Frame, a dplyr Tibble, an Arrow Table, or an Arrow RecordBatchReader
         #' containing the data to import to the server.
         #' @return TableHandle reference to the new table.
         import_table = function(table_object) {
@@ -78,14 +71,14 @@ Client <- R6Class("Client",
                 return(TableHandle$new(private$arrow_to_dh_table(table_object)))
             }
             else {
-                stop(paste0("'table_object' must be either an R Data Frame, an R Tibble, an Arrow Table, or an Arrow Record Batch Reader.
+                stop(paste0("'table_object' must be either an R Data Frame, a dplyr Tibble, an Arrow Table, or an Arrow Record Batch Reader.
                 Got object of class ", table_object_class[[1]], " instead."))
             }
         },
 
         #' @description
         #' Runs a script on the server. The script must be in the language that the server console was started with.
-        #' @param script Code to be executed on the server as a string.
+        #' @param script Code to be executed on the server, passed as a string.
         run_script = function(script) {
             private$verify_string(script, "script")
             private$internal_client$run_script(script)

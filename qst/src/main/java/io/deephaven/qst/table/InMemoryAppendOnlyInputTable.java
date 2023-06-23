@@ -27,8 +27,7 @@ public abstract class InMemoryAppendOnlyInputTable extends InputTableBase {
     abstract UUID id();
 
     @Override
-    public final <V extends InputTable.Visitor> V walk(V visitor) {
-        visitor.visit(this);
-        return visitor;
+    public final <R> R walk(InputTable.Visitor<R> visitor) {
+        return visitor.visit(this);
     }
 }

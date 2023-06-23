@@ -40,30 +40,40 @@ class UpdateByTestCase(BaseTestCase):
             ema_time(ts_col="Timestamp", decay_time=10, cols="ema_a = a"),
             ema_time(ts_col="Timestamp", decay_time="PT00:00:00.001", cols="ema_c = c",
                      op_control=cls.em_op_ctrl),
+            ema_time(ts_col="Timestamp", decay_time="PT1M", cols="ema_c = c"),
+            ema_time(ts_col="Timestamp", decay_time="PT1M", cols="ema_c = c", op_control=cls.em_op_ctrl),
             # exponential moving sum
             ems_tick(decay_ticks=100, cols="ems_a = a"),
             ems_tick(decay_ticks=100, cols="ems_a = a", op_control=cls.em_op_ctrl),
             ems_time(ts_col="Timestamp", decay_time=10, cols="ems_a = a"),
             ems_time(ts_col="Timestamp", decay_time="PT00:00:00.001", cols="ems_c = c",
                      op_control=cls.em_op_ctrl),
+            ems_time(ts_col="Timestamp", decay_time="PT1M", cols="ema_c = c"),
+            ems_time(ts_col="Timestamp", decay_time="PT1M", cols="ema_c = c", op_control=cls.em_op_ctrl),
             # exponential moving minimum
             emmin_tick(decay_ticks=100, cols="emmin_a = a"),
             emmin_tick(decay_ticks=100, cols="emmin_a = a", op_control=cls.em_op_ctrl),
             emmin_time(ts_col="Timestamp", decay_time=10, cols="emmin_a = a"),
             emmin_time(ts_col="Timestamp", decay_time="PT00:00:00.001", cols="emmin_c = c",
                        op_control=cls.em_op_ctrl),
+            emmin_time(ts_col="Timestamp", decay_time="PT1M", cols="ema_c = c"),
+            emmin_time(ts_col="Timestamp", decay_time="PT1M", cols="ema_c = c", op_control=cls.em_op_ctrl),
             # exponential moving maximum
             emmax_tick(decay_ticks=100, cols="emmax_a = a"),
             emmax_tick(decay_ticks=100, cols="emmax_a = a", op_control=cls.em_op_ctrl),
             emmax_time(ts_col="Timestamp", decay_time=10, cols="emmax_a = a"),
             emmax_time(ts_col="Timestamp", decay_time="PT00:00:00.001", cols="emmax_c = c",
                        op_control=cls.em_op_ctrl),
+            emmax_time(ts_col="Timestamp", decay_time="PT1M", cols="ema_c = c"),
+            emmax_time(ts_col="Timestamp", decay_time="PT1M", cols="ema_c = c", op_control=cls.em_op_ctrl),
             # exponential moving standard deviation
             emstd_tick(decay_ticks=100, cols="emstd_a = a"),
             emstd_tick(decay_ticks=100, cols="emstd_a = a", op_control=cls.em_op_ctrl),
             emstd_time(ts_col="Timestamp", decay_time=10, cols="emstd_a = a"),
             emstd_time(ts_col="Timestamp", decay_time="PT00:00:00.001", cols="emtd_c = c",
                        op_control=cls.em_op_ctrl),
+            emstd_time(ts_col="Timestamp", decay_time="PT1M", cols="ema_c = c"),
+            emstd_time(ts_col="Timestamp", decay_time="PT1M", cols="ema_c = c", op_control=cls.em_op_ctrl),
         ]
 
         simple_op_pairs = ["UA=a", "UB=b"]
@@ -171,8 +181,8 @@ class UpdateByTestCase(BaseTestCase):
                     rt = t.update_by(ops=op, by="b")
                     self.assertTrue(rt.is_refreshing is t.is_refreshing)
                     self.assertEqual(len(rt.schema), 1 + len(t.schema))
-                    self.assertGreaterEqual(rt.size, t.size)
-
+                    if not rt.is_refreshing:
+                        self.assertEqual(rt.size, t.size)
 
     def test_rolling_ops(self):
         for op in self.rolling_ops:
@@ -182,6 +192,21 @@ class UpdateByTestCase(BaseTestCase):
                     self.assertTrue(rt.is_refreshing is t.is_refreshing)
                     self.assertEqual(len(rt.schema), 2 + len(t.schema))
                     self.assertGreaterEqual(rt.size, t.size)
+
+    def test_multiple_ops(self):
+        multiple_ops = [
+            cum_sum(["sum_a=a", "sum_b=b"]),
+            cum_max(["max_a=a", "max_d=d"]),
+            ema_tick(10, ["ema_d=d", "ema_e=e"]),
+            ema_time("Timestamp", "PT00:00:00.1", ["ema_time_d=d", "ema_time_e=e"]),
+            rolling_wavg_tick(weight_col="b", cols=["rwavg_a = a", "rwavg_d = d"], rev_ticks=10),
+        ]
+        for t in (self.static_table, self.ticking_table):
+            rt = t.update_by(ops=multiple_ops, by="c")
+            self.assertTrue(rt.is_refreshing is t.is_refreshing)
+            self.assertEqual(len(rt.schema), 10 + len(t.schema))
+            if not rt.is_refreshing:
+                self.assertEqual(rt.size, t.size)
 
 
 if __name__ == '__main__':

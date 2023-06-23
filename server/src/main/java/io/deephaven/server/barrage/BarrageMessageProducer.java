@@ -236,7 +236,7 @@ public class BarrageMessageProducer<MessageView> extends LivenessArtifact
     private final WritableColumnSource<?>[] deltaColumns;
 
     /**
-     * This is the last step on which the UGP-synced RowSet was updated. This is used only for consistency checking
+     * This is the last step on which the UG-synced RowSet was updated. This is used only for consistency checking
      * between our initial creation and subsequent updates.
      */
     private long lastIndexClockStep = 0;
@@ -1511,9 +1511,8 @@ public class BarrageMessageProducer<MessageView> extends LivenessArtifact
 
                 try (final RowSet clientView =
                         vp != null ? propRowSetForMessage.subSetForPositions(vp, isReversed) : null) {
-                    subscription.listener
-                            .onNext(generator.getSubView(subscription.options, false, vp, subscription.reverseViewport,
-                                    clientView, cols));
+                    subscription.listener.onNext(generator.getSubView(
+                            subscription.options, false, vp, subscription.reverseViewport, clientView, cols));
                 } catch (final Exception e) {
                     try {
                         subscription.listener.onError(GrpcUtil.securelyWrapError(log, e));
@@ -1574,7 +1573,7 @@ public class BarrageMessageProducer<MessageView> extends LivenessArtifact
                 if (subscription.pendingInitialSnapshot) {
                     // Send schema metadata to this new client.
                     subscription.listener.onNext(streamGeneratorFactory.getSchemaView(
-                            fbb -> BarrageUtil.makeTableSchemaPayload(fbb,
+                            fbb -> BarrageUtil.makeTableSchemaPayload(fbb, subscription.options,
                                     parent.getDefinition(), parent.getAttributes())));
                 }
 
@@ -2135,10 +2134,10 @@ public class BarrageMessageProducer<MessageView> extends LivenessArtifact
 
             capturedLastIndexClockStep = getLastIndexClockStep();
 
-            final LogicalClock.State state = LogicalClock.getState(beforeClockValue);
-            final long step = LogicalClock.getStep(beforeClockValue);
-            if (state != LogicalClock.State.Updating) {
-                this.step = step;
+            final LogicalClock.State beforeState = LogicalClock.getState(beforeClockValue);
+            final long beforeStep = LogicalClock.getStep(beforeClockValue);
+            if (beforeState == LogicalClock.State.Idle) {
+                this.step = beforeStep;
                 return false;
             }
 
@@ -2199,8 +2198,7 @@ public class BarrageMessageProducer<MessageView> extends LivenessArtifact
             onGetSnapshot.run();
         }
 
-        final SnapshotControl snapshotControl =
-                new SnapshotControl(snapshotSubscriptions);
+        final SnapshotControl snapshotControl = new SnapshotControl(snapshotSubscriptions);
         final BarrageMessage msg = ConstructSnapshot.constructBackplaneSnapshotInPositionSpace(
                 this, parent, columnsToSnapshot, positionsToSnapshot, reversePositionsToSnapshot,
                 snapshotControl);
