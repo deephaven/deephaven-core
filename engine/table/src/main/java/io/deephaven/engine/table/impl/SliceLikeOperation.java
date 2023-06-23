@@ -36,6 +36,7 @@ public class SliceLikeOperation implements QueryTable.Operation<QueryTable> {
                 0, 0, true) {
             @Override
             protected long getLastPositionExclusive() {
+                // Assuming percent is not negative here
                 return (long) Math.ceil(percent * parent.size());
             }
         };
@@ -46,6 +47,7 @@ public class SliceLikeOperation implements QueryTable.Operation<QueryTable> {
                 0, 0, false) {
             @Override
             protected long getFirstPositionInclusive() {
+                // Assuming percent is not negative here
                 return -(long) Math.ceil(percent * parent.size());
             }
         };

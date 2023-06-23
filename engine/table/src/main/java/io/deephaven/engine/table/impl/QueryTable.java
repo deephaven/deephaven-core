@@ -636,6 +636,10 @@ public class QueryTable extends BaseTable<QueryTable> {
 
     @Override
     public Table headPct(final double percent) {
+        if (percent < 0 || percent > 1) {
+            throw new IllegalArgumentException(
+                    "headPct percentage provided should be between [0,1]: percent=" + percent);
+        }
         final UpdateGraph updateGraph = getUpdateGraph();
         try (final SafeCloseable ignored = ExecutionContext.getContext().withUpdateGraph(updateGraph).open()) {
             return getResult(SliceLikeOperation.headPct(this, percent));
@@ -644,6 +648,10 @@ public class QueryTable extends BaseTable<QueryTable> {
 
     @Override
     public Table tailPct(final double percent) {
+        if (percent < 0 || percent > 1) {
+            throw new IllegalArgumentException(
+                    "tailPct percentage provided should be between [0,1]: percent=" + percent);
+        }
         final UpdateGraph updateGraph = getUpdateGraph();
         try (final SafeCloseable ignored = ExecutionContext.getContext().withUpdateGraph(updateGraph).open()) {
             return getResult(SliceLikeOperation.tailPct(this, percent));

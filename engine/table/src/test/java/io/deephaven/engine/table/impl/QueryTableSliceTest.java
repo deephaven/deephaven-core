@@ -442,6 +442,28 @@ public class QueryTableSliceTest extends QueryTableTestBase {
                 TstUtils.testRefreshingTable(i(2).toTracking(), col("x", 1), col("y", 'a')));
         assertTableEquals(table.tailPct(0.1),
                 TstUtils.testRefreshingTable(i(6).toTracking(), col("x", 3), col("y", 'c')));
+
+        // Test for invalid parameters (negative or >1)
+        try {
+            table.headPct(-0.5);
+            Assert.fail("Exception expected for invalid arguments");
+        } catch (IllegalArgumentException expected) {
+        }
+        try {
+            table.headPct(1.5);
+            Assert.fail("Exception expected for invalid arguments");
+        } catch (IllegalArgumentException expected) {
+        }
+        try {
+            table.tailPct(-0.5);
+            Assert.fail("Exception expected for invalid arguments");
+        } catch (IllegalArgumentException expected) {
+        }
+        try {
+            table.tailPct(1.5);
+            Assert.fail("Exception expected for invalid arguments");
+        } catch (IllegalArgumentException expected) {
+        }
     }
 
     public void testHeadTailPctIncremental() {
