@@ -5,8 +5,6 @@ package io.deephaven.qst.table;
 
 import io.deephaven.annotations.NodeStyle;
 import io.deephaven.api.ColumnName;
-import org.immutables.value.Value.Check;
-import org.immutables.value.Value.Default;
 import org.immutables.value.Value.Immutable;
 
 import java.util.List;
@@ -24,9 +22,8 @@ public abstract class DropColumnsTable extends TableBase implements SingleParent
     public abstract List<ColumnName> dropColumns();
 
     @Override
-    public final <V extends Visitor> V walk(V visitor) {
-        visitor.visit(this);
-        return visitor;
+    public final <T> T walk(Visitor<T> visitor) {
+        return visitor.visit(this);
     }
 
     public interface Builder {
