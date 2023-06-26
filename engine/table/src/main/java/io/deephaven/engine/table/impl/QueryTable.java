@@ -638,7 +638,7 @@ public class QueryTable extends BaseTable<QueryTable> {
     public Table headPct(final double percent) {
         if (percent < 0 || percent > 1) {
             throw new IllegalArgumentException(
-                    "headPct percentage of rows must be between [0,1]: : percent=" + percent);
+                    "percentage of rows must be between [0,1]: percent=" + percent);
         }
         final UpdateGraph updateGraph = getUpdateGraph();
         try (final SafeCloseable ignored = ExecutionContext.getContext().withUpdateGraph(updateGraph).open()) {
@@ -650,7 +650,7 @@ public class QueryTable extends BaseTable<QueryTable> {
     public Table tailPct(final double percent) {
         if (percent < 0 || percent > 1) {
             throw new IllegalArgumentException(
-                    "tailPct percentage of rows must be between [0,1]: percent=" + percent);
+                    "percentage of rows must be between [0,1]: percent=" + percent);
         }
         final UpdateGraph updateGraph = getUpdateGraph();
         try (final SafeCloseable ignored = ExecutionContext.getContext().withUpdateGraph(updateGraph).open()) {
