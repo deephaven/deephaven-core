@@ -134,7 +134,7 @@ public class HierarchicalTableSchemaUtil {
             @NotNull final FlatBufferBuilder builder,
             @NotNull final RollupTable rollupTable) {
 
-        final Map<String, String> schemaMetadata = attributesToMetadata(rollupTable.getAttributes());
+        final Map<String, String> schemaMetadata = attributesToMetadata(rollupTable.getAttributes(), rollupTable.getAvailableColumnDefinitions());
 
         final Set<String> groupByColumns = rollupTable.getGroupByColumns().stream()
                 .map(ColumnName::name)
@@ -154,7 +154,7 @@ public class HierarchicalTableSchemaUtil {
             @NotNull final FlatBufferBuilder builder,
             @NotNull final TreeTable treeTable) {
 
-        final Map<String, String> schemaMetadata = attributesToMetadata(treeTable.getAttributes());
+        final Map<String, String> schemaMetadata = attributesToMetadata(treeTable.getAttributes(), treeTable.getAvailableColumnDefinitions());
 
         final Stream<Field> structuralFields = getStructuralFields(treeTable);
         final Stream<Field> nodeFields = getTreeNodeFields(treeTable);

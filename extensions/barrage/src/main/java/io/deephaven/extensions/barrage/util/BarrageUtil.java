@@ -145,7 +145,7 @@ public class BarrageUtil {
             @NotNull final StreamReaderOptions options,
             @NotNull final TableDefinition tableDefinition,
             @NotNull final Map<String, Object> attributes) {
-        final Map<String, String> schemaMetadata = attributesToMetadata(attributes);
+        final Map<String, String> schemaMetadata = attributesToMetadata(attributes, tableDefinition.getColumns());
 
         final Map<String, String> descriptions = GridAttributes.getColumnDescriptions(attributes);
         final MutableInputTable inputTable = (MutableInputTable) attributes.get(Table.INPUT_TABLE_ATTRIBUTE);
@@ -158,9 +158,33 @@ public class BarrageUtil {
     }
 
     @NotNull
-    public static Map<String, String> attributesToMetadata(@NotNull final Map<String, Object> attributes) {
+    public static Map<String, String> attributesToMetadata(@NotNull final Map<String, Object> attributes, @NotNull final Collection<ColumnDefinition<?>> columnDefinitions) {
         final Map<String, String> metadata = new HashMap<>();
-        for (final Map.Entry<String, Object> entry : attributes.entrySet()) {
+
+        List<String> sortableColumns = new ArrayList<>();
+        List<ColumnDefinition<?>> columnsToCheck = new ArrayList<>(columnDefinitions);
+
+        if(attributes.containsKey(GridAttributes.SORTABLE_COLUMNS_ATTRIBUTE)) {
+            String[] restrictedSortColumns = attributes.get(GridAttributes.SORTABLE_COLUMNS_ATTRIBUTE).toString().split(",");
+            columnsToCheck.removeIf(col -> Arrays.stream(restrictedSortColumns).noneMatch(name -> name.equals(col.getName())));
+        }
+
+        columnsToCheck.forEach(col -> {
+            Class<?> dataType = col.getDataType();
+            if(dataType.isPrimitive() || Comparable.class.isAssignableFrom(dataType)) {
+                sortableColumns.add(col.getName());
+            }
+        });
+
+        Map<String, Object> modifiedAttributes = new HashMap<>(attributes);
+        if (sortableColumns.size() > 0) {
+            modifiedAttributes.put(GridAttributes.SORTABLE_COLUMNS_ATTRIBUTE, String.join(",", sortableColumns));
+        } else {
+            modifiedAttributes.remove(GridAttributes.SORTABLE_COLUMNS_ATTRIBUTE);
+        }
+
+
+        for (final Map.Entry<String, Object> entry : modifiedAttributes.entrySet()) {
             final String key = entry.getKey();
             final Object val = entry.getValue();
             if (val instanceof Byte || val instanceof Short || val instanceof Integer ||
