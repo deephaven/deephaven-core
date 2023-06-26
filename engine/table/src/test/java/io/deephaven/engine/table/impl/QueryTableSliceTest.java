@@ -420,6 +420,8 @@ public class QueryTableSliceTest extends QueryTableTestBase {
         doSliceTest(table, "bcdefghijklmnopqrstuvwxy", 1, -1);
         doSliceTest(table, "", 2, 2);
         doSliceTest(table, "c", 2, 3);
+        doSliceTest(table, "wxy", -4, 25);
+        doSliceTest(table, "", -4, 20);
     }
 
     private void doSliceTest(QueryTable table, String expected, int firstPositionInclusive, int lastPositionExclusive) {

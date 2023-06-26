@@ -16,10 +16,6 @@ public class SliceLikeOperation implements QueryTable.Operation<QueryTable> {
     public static SliceLikeOperation slice(final QueryTable parent, final long firstPositionInclusive,
             final long lastPositionExclusive, final String op) {
 
-        if (firstPositionInclusive < 0 && lastPositionExclusive > 0) {
-            throw new IllegalArgumentException("Can not slice with a negative first position (" + firstPositionInclusive
-                    + ") and positive last position (" + lastPositionExclusive + ")");
-        }
         // note: first >= 0 && last < 0 is allowed, otherwise first must be less than last
         if ((firstPositionInclusive < 0 || lastPositionExclusive >= 0)
                 && lastPositionExclusive < firstPositionInclusive) {
