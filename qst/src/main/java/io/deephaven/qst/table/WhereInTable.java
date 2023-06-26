@@ -33,9 +33,8 @@ public abstract class WhereInTable extends TableBase {
     public abstract boolean inverted();
 
     @Override
-    public final <V extends Visitor> V walk(V visitor) {
-        visitor.visit(this);
-        return visitor;
+    public final <T> T walk(Visitor<T> visitor) {
+        return visitor.visit(this);
     }
 
     @Check

@@ -3,157 +3,157 @@
  */
 package io.deephaven.qst.table;
 
-public abstract class TableVisitorGeneric implements TableSpec.Visitor {
+public abstract class TableVisitorGeneric<T> implements TableSpec.Visitor<T> {
 
-    public abstract void accept(TableSpec t);
+    public abstract T accept(TableSpec t);
 
     @Override
-    public void visit(EmptyTable emptyTable) {
-        accept(emptyTable);
+    public T visit(EmptyTable emptyTable) {
+        return accept(emptyTable);
     }
 
     @Override
-    public void visit(NewTable newTable) {
-        accept(newTable);
+    public T visit(NewTable newTable) {
+        return accept(newTable);
     }
 
     @Override
-    public void visit(TimeTable timeTable) {
-        accept(timeTable);
+    public T visit(TimeTable timeTable) {
+        return accept(timeTable);
     }
 
     @Override
-    public void visit(MergeTable mergeTable) {
-        accept(mergeTable);
+    public T visit(MergeTable mergeTable) {
+        return accept(mergeTable);
     }
 
     @Override
-    public void visit(HeadTable headTable) {
-        accept(headTable);
+    public T visit(HeadTable headTable) {
+        return accept(headTable);
     }
 
     @Override
-    public void visit(TailTable tailTable) {
-        accept(tailTable);
+    public T visit(TailTable tailTable) {
+        return accept(tailTable);
     }
 
     @Override
-    public void visit(ReverseTable reverseTable) {
-        accept(reverseTable);
+    public T visit(ReverseTable reverseTable) {
+        return accept(reverseTable);
     }
 
     @Override
-    public void visit(SortTable sortTable) {
-        accept(sortTable);
+    public T visit(SortTable sortTable) {
+        return accept(sortTable);
     }
 
     @Override
-    public void visit(SnapshotTable snapshotTable) {
-        accept(snapshotTable);
+    public T visit(SnapshotTable snapshotTable) {
+        return accept(snapshotTable);
     }
 
     @Override
-    public void visit(SnapshotWhenTable snapshotWhenTable) {
-        accept(snapshotWhenTable);
+    public T visit(SnapshotWhenTable snapshotWhenTable) {
+        return accept(snapshotWhenTable);
     }
 
     @Override
-    public void visit(WhereTable whereTable) {
-        accept(whereTable);
+    public T visit(WhereTable whereTable) {
+        return accept(whereTable);
     }
 
     @Override
-    public void visit(WhereInTable whereInTable) {
-        accept(whereInTable);
+    public T visit(WhereInTable whereInTable) {
+        return accept(whereInTable);
     }
 
     @Override
-    public void visit(NaturalJoinTable naturalJoinTable) {
-        accept(naturalJoinTable);
+    public T visit(NaturalJoinTable naturalJoinTable) {
+        return accept(naturalJoinTable);
     }
 
     @Override
-    public void visit(ExactJoinTable exactJoinTable) {
-        accept(exactJoinTable);
+    public T visit(ExactJoinTable exactJoinTable) {
+        return accept(exactJoinTable);
     }
 
     @Override
-    public void visit(JoinTable joinTable) {
-        accept(joinTable);
+    public T visit(JoinTable joinTable) {
+        return accept(joinTable);
     }
 
     @Override
-    public void visit(AsOfJoinTable aj) {
-        accept(aj);
+    public T visit(AsOfJoinTable aj) {
+        return accept(aj);
     }
 
     @Override
-    public void visit(RangeJoinTable rangeJoinTable) {
-        accept(rangeJoinTable);
+    public T visit(RangeJoinTable rangeJoinTable) {
+        return accept(rangeJoinTable);
     }
 
     @Override
-    public void visit(ViewTable viewTable) {
-        accept(viewTable);
+    public T visit(ViewTable viewTable) {
+        return accept(viewTable);
     }
 
     @Override
-    public void visit(SelectTable selectTable) {
-        accept(selectTable);
+    public T visit(SelectTable selectTable) {
+        return accept(selectTable);
     }
 
     @Override
-    public void visit(UpdateViewTable updateViewTable) {
-        accept(updateViewTable);
+    public T visit(UpdateViewTable updateViewTable) {
+        return accept(updateViewTable);
     }
 
     @Override
-    public void visit(UpdateTable updateTable) {
-        accept(updateTable);
+    public T visit(UpdateTable updateTable) {
+        return accept(updateTable);
     }
 
     @Override
-    public void visit(LazyUpdateTable lazyUpdateTable) {
-        accept(lazyUpdateTable);
+    public T visit(LazyUpdateTable lazyUpdateTable) {
+        return accept(lazyUpdateTable);
     }
 
     @Override
-    public void visit(AggregateAllTable aggregateAllTable) {
-        accept(aggregateAllTable);
+    public T visit(AggregateAllTable aggregateAllTable) {
+        return accept(aggregateAllTable);
     }
 
     @Override
-    public void visit(AggregateTable aggregateTable) {
-        accept(aggregateTable);
+    public T visit(AggregateTable aggregateTable) {
+        return accept(aggregateTable);
     }
 
     @Override
-    public void visit(TicketTable ticketTable) {
-        accept(ticketTable);
+    public T visit(TicketTable ticketTable) {
+        return accept(ticketTable);
     }
 
     @Override
-    public void visit(InputTable inputTable) {
-        accept(inputTable);
+    public T visit(InputTable inputTable) {
+        return accept(inputTable);
     }
 
     @Override
-    public void visit(SelectDistinctTable selectDistinctTable) {
-        accept(selectDistinctTable);
+    public T visit(SelectDistinctTable selectDistinctTable) {
+        return accept(selectDistinctTable);
     }
 
     @Override
-    public void visit(UpdateByTable updateByTable) {
-        accept(updateByTable);
+    public T visit(UpdateByTable updateByTable) {
+        return accept(updateByTable);
     }
 
     @Override
-    public void visit(UngroupTable ungroupTable) {
-        accept(ungroupTable);
+    public T visit(UngroupTable ungroupTable) {
+        return accept(ungroupTable);
     }
 
     @Override
-    public void visit(DropColumnsTable dropColumnsTable) {
-        accept(dropColumnsTable);
+    public T visit(DropColumnsTable dropColumnsTable) {
+        return accept(dropColumnsTable);
     }
 }
