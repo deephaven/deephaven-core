@@ -158,20 +158,23 @@ public class BarrageUtil {
     }
 
     @NotNull
-    public static Map<String, String> attributesToMetadata(@NotNull final Map<String, Object> attributes, @NotNull final Collection<ColumnDefinition<?>> columnDefinitions) {
+    public static Map<String, String> attributesToMetadata(@NotNull final Map<String, Object> attributes,
+            @NotNull final Collection<ColumnDefinition<?>> columnDefinitions) {
         final Map<String, String> metadata = new HashMap<>();
 
         List<String> sortableColumns = new ArrayList<>();
         List<ColumnDefinition<?>> columnsToCheck = new ArrayList<>(columnDefinitions);
 
-        if(attributes.containsKey(GridAttributes.SORTABLE_COLUMNS_ATTRIBUTE)) {
-            String[] restrictedSortColumns = attributes.get(GridAttributes.SORTABLE_COLUMNS_ATTRIBUTE).toString().split(",");
-            columnsToCheck.removeIf(col -> Arrays.stream(restrictedSortColumns).noneMatch(name -> name.equals(col.getName())));
+        if (attributes.containsKey(GridAttributes.SORTABLE_COLUMNS_ATTRIBUTE)) {
+            String[] restrictedSortColumns =
+                    attributes.get(GridAttributes.SORTABLE_COLUMNS_ATTRIBUTE).toString().split(",");
+            columnsToCheck.removeIf(
+                    col -> Arrays.stream(restrictedSortColumns).noneMatch(name -> name.equals(col.getName())));
         }
 
         columnsToCheck.forEach(col -> {
             Class<?> dataType = col.getDataType();
-            if(dataType.isPrimitive() || Comparable.class.isAssignableFrom(dataType)) {
+            if (dataType.isPrimitive() || Comparable.class.isAssignableFrom(dataType)) {
                 sortableColumns.add(col.getName());
             }
         });
@@ -231,7 +234,6 @@ public class BarrageUtil {
             final Map<String, String> metadata = fieldMetadataFactory.apply(name);
 
             putMetadata(metadata, "isPartitioning", column.isPartitioning() + "");
-            putMetadata(metadata, "isSortable", (dataType.isPrimitive() || Comparable.class.isAssignableFrom(dataType)) + "");
 
             // Wire up style and format column references
             final String styleFormatName = ColumnFormatting.getStyleFormatColumn(name);
