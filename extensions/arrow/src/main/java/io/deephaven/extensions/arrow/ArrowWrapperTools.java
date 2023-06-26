@@ -52,6 +52,7 @@ import io.deephaven.util.annotations.ReferentialIntegrity;
 import io.deephaven.util.annotations.TestUseOnly;
 import io.deephaven.util.datastructures.LongSizedDataStructure;
 import io.deephaven.util.datastructures.SizeException;
+import org.apache.arrow.compression.CommonsCompressionFactory;
 import org.apache.arrow.flatbuf.Message;
 import org.apache.arrow.flatbuf.RecordBatch;
 import org.apache.arrow.memory.BufferAllocator;
@@ -403,7 +404,8 @@ public class ArrowWrapperTools {
             } catch (IOException e) {
                 throw new UncheckedIOException(e);
             }
-            return new Shareable(this, new ArrowFileReader(channel, rootAllocator));
+            return new Shareable(this, new ArrowFileReader(
+                    channel, rootAllocator, CommonsCompressionFactory.INSTANCE));
         }
 
         @NotNull

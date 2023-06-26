@@ -144,17 +144,15 @@ public class DelayedLogEntryImpl2 implements LogEntry {
     }
 
     @Override
-    public LogEntry end() {
+    public void end() {
         // noinspection unchecked
         logSink.write(this);
-        return this;
     }
 
     @Override
-    public LogEntry endl() {
+    public void endl() {
         nl();
         end();
-        return this;
     }
 
     @Override

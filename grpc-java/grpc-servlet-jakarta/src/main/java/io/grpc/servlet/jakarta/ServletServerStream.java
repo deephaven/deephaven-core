@@ -225,7 +225,12 @@ final class ServletServerStream extends AbstractServerStream {
         @Override
         public void writeHeaders(Metadata headers) {
             writeHeadersToServletResponse(headers);
-            resp.setTrailerFields(trailerSupplier);
+            try {
+                resp.setTrailerFields(trailerSupplier);
+            } catch (IllegalStateException e) {
+                logger.log(WARNING, String.format("[{%s}] Exception writing trailers", logId), e);
+                cancel(Status.fromThrowable(e));
+            }
             try {
                 writer.flush();
             } catch (IOException e) {

@@ -85,7 +85,7 @@ class UpdateByBuilder {
                 return UpdateByWindowScale.newBuilder()
                         .setTime(UpdateByWindowScale.UpdateByWindowTime.newBuilder()
                                 .setColumn(windowScale.timestampCol())
-                                .setPeriodNanos(windowScale.timeUnits())
+                                .setNanos(windowScale.timeUnits())
                                 .build())
                         .build();
             } else {

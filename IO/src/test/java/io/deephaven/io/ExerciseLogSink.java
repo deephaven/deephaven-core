@@ -4,14 +4,13 @@
 package io.deephaven.io;
 
 import io.deephaven.io.log.*;
-import io.deephaven.io.log.impl.LogBufferPoolImpl;
 import io.deephaven.io.log.impl.LogEntryPoolImpl;
 import io.deephaven.io.log.impl.LogSinkImpl;
 
 public class ExerciseLogSink {
 
     public static void main(String[] args) {
-        LogBufferPool bufferPool = new LogBufferPoolImpl(1000, 512);
+        LogBufferPool bufferPool = LogBufferPool.ofStrict(1000, 512);
         LogEntryPool entryPool = new LogEntryPoolImpl(1000, bufferPool);
         LogSink sink = new LogSinkImpl<LogEntry>("/tmp/test1.log", 5000, entryPool);
 
