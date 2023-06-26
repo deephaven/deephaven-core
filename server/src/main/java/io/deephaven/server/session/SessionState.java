@@ -589,7 +589,7 @@ public class SessionState {
             this.errorTransformer = null;
             this.session = null;
             this.exportId = NON_EXPORT_ID;
-            this.result = Require.neqNull(result, "result");
+            this.result = result;
             this.dependentCount = 0;
             this.hasHadWorkSet = true;
             this.logIdentity = Integer.toHexString(System.identityHashCode(this)) + "-sessionless";
