@@ -71,6 +71,33 @@ ClientOptions <- R6Class("ClientOptions",
             self$internal_client_options$set_session_type(session_type)
         },
 
+        #' @description
+        #' Use the TLS protocol in authentication and subsequent communication.
+        #' @param root_certs Optional PEM-encoded certificate root for server connections. Defaults to system defaults.
+        use_tls = function(root_certs = "") {
+            self$internal_client_options$set_use_tls(TRUE, root_certs)
+        },
+
+        add_int_option = function(opt, val) {
+            self$internal_client_options$add_int_option(opt, val)
+        },
+
+        #' @description
+        #' Adds a string-valued option for the configuration of the underlying gRPC channels.
+        #' @param opt The option key.
+        #' @param val The option valiue.
+        add_string_option = function(opt, val) {
+            self$internal_client_options$add_string_option(opt, val)
+        },
+
+        #' @description
+        #' Adds an extra header with a constant name and value to be sent with every outgoing server request.
+        #' @param header_name The header name
+        #' @param header_value The header value
+        add_extra_header = function(header_name, header_value) {
+            self$internal_client_options$add_extra_header(header_name, header_value)
+        },
+
         internal_client_options = NULL
     )
 )
