@@ -130,8 +130,9 @@ public class BarrageSubscriptionImpl extends ReferenceCountedLivenessNode implem
                 listener.handleBarrageMessage(barrageMessage);
 
                 // If the initial table is empty the first message will contain a size of 0, which won't get propagated
-                // through the listener because BaseTable will not propagate empty updates, even if they are the initial one.
-                if(!isCompleted() && resultTable.isEmpty()) {
+                // through the listener because BaseTable will not propagate empty updates, even if they are the initial
+                // one.
+                if (!isCompleted() && resultTable.isEmpty()) {
                     signalCompletion();
                 }
             }
