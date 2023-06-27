@@ -8,6 +8,7 @@ import org.jetbrains.annotations.NotNull;
 
 import java.io.Serializable;
 import java.time.Instant;
+import java.time.ZonedDateTime;
 import java.util.Arrays;
 
 /**
@@ -166,6 +167,16 @@ public class BusinessSchedule implements Serializable {
     }
 
     /**
+     * Determines if the specified time is a business time for the day.
+     *
+     * @param time time.
+     * @return true if the time is a business time for the day; otherwise, false.
+     */
+    public boolean isBusinessTime(final ZonedDateTime time) {
+        return isBusinessTime(time.toInstant());
+    }
+
+    /**
      * Returns the amount of business time in nanoseconds that has elapsed on the given day by the specified time.
      *
      * @param time time
@@ -186,5 +197,15 @@ public class BusinessSchedule implements Serializable {
         }
 
         return elapsed;
+    }
+
+    /**
+     * Returns the amount of business time in nanoseconds that has elapsed on the given day by the specified time.
+     *
+     * @param time time
+     * @return business time in nanoseconds that has elapsed on the given day by the specified time
+     */
+    public long businessTimeElapsed(final ZonedDateTime time) {
+        return businessTimeElapsed(time.toInstant());
     }
 }

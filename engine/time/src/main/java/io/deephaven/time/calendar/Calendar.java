@@ -4,65 +4,121 @@
 package io.deephaven.time.calendar;
 
 import io.deephaven.time.DateTimeUtils;
+import io.deephaven.util.QueryConstants;
 
-import java.time.DayOfWeek;
-import java.time.Instant;
-import java.time.ZoneId;
+import java.time.*;
+import java.time.temporal.ChronoUnit;
+import java.util.ArrayList;
+import java.util.List;
+
+//TODO: review all docs
+
+//TODO: future_day / past_day
+//TODO: add regions
 
 /**
  * A calendar.
  *
+ * A calendar is associated with a specific time zone.
  *
- * To comply with the ISO-8601 standard for Dates, Strings should be of the form "yyyy-MM-dd",
- *
- *
- * Methods on Instant may not be precisely defined enough to return an Instant, e.g nextDay(). In these cases, the
- * method will return a String as discussed above.
- *
- *
- * To maintain consistency, each calendar has two fields: a name, and a time zone. A calendar with the same schedule but
- * a different time zone is considered a different calendar.
- *
- *
- * Frequently, the default implementation for methods on Instants is to call the corresponding method on a String with
- * {@code DateTimeUtils.formatDate}. This can be slower than methods written explicitly for DateTimes. If performance is
- * an issue, consider overriding these methods with other behavior.
+ * Date strings must be in a format that can be parsed by {@code DateTimeUtils#parseDate}.  Methods that accept
+ * strings can be slower than methods written explicitly for {@code Instant}, {@code ZonedDateTime}, or {@code LocalDate}.
  */
-public interface Calendar {
+public class Calendar {
+    
+    private final String name;
+    private final String description;
+    private final ZoneId timeZone;
+
+    /**
+     * Creates a new calendar.
+     * 
+     * @param name calendar name.
+     * @param description calendar description.
+     * @param timeZone calendar time zone.
+     */
+    public Calendar(String name, String description, ZoneId timeZone) {
+        this.name = name;
+        this.description = description;
+        this.timeZone = timeZone;
+    }
 
     /**
      * Gets the name of the calendar.
      *
      * @return the name of the calendar
      */
-    String name();
+    public String name() {
+        return name;
+    }
+
+    /**
+     * Gets the description of the calendar.
+     *
+     * @return the description of the calendar
+     */
+    public String description() {
+        return description;
+    }
+    
+    /**
+     * Gets the timezone of the calendar.
+     *
+     * @return the time zone of the calendar
+     */
+    public ZoneId timeZone() {
+        return timeZone;
+    }
 
     /**
      * Gets the current date.
      *
      * @return the current day
      */
-    default String currentDay() {
+    public LocalDate currentDay() {
         return DateTimeUtils.today(timeZone());
     }
 
+        ***today /tomorrow /yesterday
+
     /**
-     * Gets yesterday's date.
+     * Gets the date the specified number of days prior to the input date.
      *
-     * @return the date before the current day
+     * @param date date; if null, return null
+     * @param days number of days;
+     * @return the date {@code days} before {@code date}
      */
-    default String previousDay() {
-        return previousDay(currentDay());
+    public LocalDate previousDay(final LocalDate date, final int days) {
+        if (date == null) {
+            return null;
+        }
+
+        return date.minusDays(days);
     }
 
     /**
-     * Gets the date the specified number of days prior to the current day.
+     * Gets the previous date.
      *
-     * @param days number of days;
-     * @return the date {@code days} before the current day
+     * @param date date; if null, return null
+     * @return the day before {@code date}
      */
-    default String previousDay(final int days) {
-        return previousDay(currentDay(), days);
+    public LocalDate previousDay(final LocalDate date) {
+        return previousDay(date, 1);
+    }
+
+    /**
+     * Gets the date the specified number of days prior to the input date.
+     *
+     * @param time time; if null, return null
+     * @param days number of days;
+     * @return the date {@code days} before {@code date}
+     */
+    public LocalDate previousDay(final ZonedDateTime time, final int days) {
+        if (time == null) {
+            return null;
+        }
+
+        return previousDay(time.withZoneSameInstant(timeZone()), days);
     }
 
     /**
@@ -71,7 +127,9 @@ public interface Calendar {
      * @param time time; if null, return null
      * @return the day before {@code time}
      */
-    String previousDay(final Instant time);
+    public LocalDate previousDay(final ZonedDateTime time) {
+        return previousDay(time, 1);
+    }
 
     /**
      * Gets the date the specified number of days prior to the input date.
@@ -80,15 +138,23 @@ public interface Calendar {
      * @param days number of days;
      * @return the date {@code days} before {@code date}
      */
-    String previousDay(final Instant time, final int days);
+    public LocalDate previousDay(final Instant time, final int days) {
+        if (time == null) {
+            return null;
+        }
+
+        return previousDay(DateTimeUtils.toZonedDateTime(time, timeZone()), days);
+    }
 
     /**
      * Gets the previous date.
      *
-     * @param date date; if null, return null
-     * @return the date before {@code date}
+     * @param time time; if null, return null
+     * @return the day before {@code time}
      */
-    String previousDay(final String date);
+    public LocalDate previousDay(final Instant time) {
+        return previousDay(time, 1);
+    }
 
     /**
      * Gets the date the specified number of days prior to the input date.
@@ -97,25 +163,56 @@ public interface Calendar {
      * @param days number of days;
      * @return the date {@code days} before {@code date}
      */
-    String previousDay(final String date, final int days);
+    public LocalDate previousDay(final String date, final int days) {
+        if (date == null) {
+            return null;
+        }
 
-    /**
-     * Gets tomorrow's date.
-     *
-     * @return the date after the current day
-     */
-    default String nextDay() {
-        return nextDay(currentDay());
+        return previousDay(DateStringUtils.parseLocalDate(date), days);
     }
 
     /**
-     * Gets the date {@code days} after the current day.
+     * Gets the previous date.
+     *
+     * @param date date; if null, return null
+     * @return the date before {@code date}
+     */
+    public LocalDate previousDay(final String date) {
+        return previousDay(date, 1);
+    }
+
+    /**
+     * Gets the date the specified number of days prior to the current day.
      *
      * @param days number of days;
-     * @return the day after the current day
+     * @return the date {@code days} before the current day
      */
-    default String nextDay(final int days) {
-        return nextDay(currentDay(), days);
+    public LocalDate previousDay(final int days) {
+        return previousDay(currentDay(), days);
+    }
+
+    /**
+     * Gets yesterday's date.
+     *
+     * @return the date before the current day
+     */
+    public LocalDate previousDay() {
+        return previousDay(1);
+    }
+
+    /**
+     * Gets the date {@code days} after the input {@code time}.
+     *
+     * @param date date; if null, return null
+     * @param days number of days;
+     * @return the day after {@code date}
+     */
+    public LocalDate nextDay(final LocalDate date, final int days) {
+        if (date == null) {
+            return null;
+        }
+
+        return date.plusDays(days);
     }
 
     /**
@@ -124,7 +221,9 @@ public interface Calendar {
      * @param time time; if null, return null
      * @return the day after {@code time}
      */
-    String nextDay(final Instant time);
+    public LocalDate nextDay(final LocalDate time) {
+        return nextDay(time, 1);
+    }
 
     /**
      * Gets the date {@code days} after the input {@code time}.
@@ -133,15 +232,48 @@ public interface Calendar {
      * @param days number of days;
      * @return the day after {@code time}
      */
-    String nextDay(final Instant time, final int days);
+    public LocalDate nextDay(final ZonedDateTime time, final int days) {
+        if (time == null) {
+            return null;
+        }
+
+        return nextDay(time.withZoneSameInstant(timeZone()).toLocalDate(), days);
+    }
 
     /**
      * Gets the next date.
      *
-     * @param date date; if null, return null
-     * @return the date after {@code time}
+     * @param time time; if null, return null
+     * @return the day after {@code time}
      */
-    String nextDay(final String date);
+    public LocalDate nextDay(final ZonedDateTime time) {
+        return nextDay(time, 1);
+    }
+
+    /**
+     * Gets the date {@code days} after the input {@code time}.
+     *
+     * @param time time; if null, return null
+     * @param days number of days;
+     * @return the day after {@code time}
+     */
+    public LocalDate nextDay(final Instant time, final int days) {
+        if (time == null) {
+            return null;
+        }
+
+        return nextDay(DateTimeUtils.toZonedDateTime(time, timeZone()).toLocalDate(), days);
+    }
+
+    /**
+     * Gets the next date.
+     *
+     * @param time time; if null, return null
+     * @return the day after {@code time}
+     */
+    public LocalDate nextDay(final Instant time) {
+        return nextDay(time, 1);
+    }
 
     /**
      * Gets the date {@code days} after the input {@code date}.
@@ -150,118 +282,263 @@ public interface Calendar {
      * @param days number of days;
      * @return the day after {@code time}
      */
-    String nextDay(final String date, final int days);
+    public LocalDate nextDay(final String date, final int days) {
+        if (date == null) {
+            return null;
+        }
 
-    /**
-     * Gets the days in a given range.
-     *
-     * @param start start of a time range; if null, return empty array
-     * @param end end of a time range; if null, return empty array
-     * @return the inclusive days between {@code start} and {@code end}
-     */
-    String[] daysInRange(Instant start, Instant end);
-
-    /**
-     * Gets the days in a given range.
-     *
-     * @param start start of a time range; if null, return empty array
-     * @param end end of a time range; if null, return empty array
-     * @return the inclusive days between {@code start} and {@code end}
-     */
-    String[] daysInRange(final String start, final String end);
-
-    /**
-     * Gets the number of days in a given range, end date exclusive.
-     *
-     * @param start start of a time range; if null, return {@code NULL_INT}
-     * @param end end of a time range; if null, return {@code NULL_INT}
-     * @return the number days between {@code start} and {@code end}, inclusive and exclusive respectively.
-     */
-    int numberOfDays(final Instant start, final Instant end);
-
-    /**
-     * Gets the number of days in a given range.
-     *
-     * @param start start of a time range; if null, return {@code NULL_INT}
-     * @param end end of a time range; if null, return {@code NULL_INT}
-     * @param endInclusive whether to treat the {@code end} inclusive or exclusively
-     * @return the number of days between {@code start} and {@code end}, inclusive and {@code endInclusive}
-     *         respectively.
-     */
-    int numberOfDays(final Instant start, final Instant end, final boolean endInclusive);
-
-    /**
-     * Gets the number of days in a given range, end date exclusive.
-     *
-     * @param start start of a time range; if null, return {@code NULL_INT}
-     * @param end end of a time range; if null, return {@code NULL_INT}
-     * @return the number of days between {@code start} and {@code end}, inclusive and exclusive respectively.
-     */
-    int numberOfDays(final String start, final String end);
-
-    /**
-     * Gets the number of days in a given range.
-     *
-     * @param start start of a time range; if null, return {@code NULL_INT}
-     * @param end end of a time range; if null, return {@code NULL_INT}
-     * @param endInclusive whether to treat the {@code end} inclusive or exclusively
-     * @return the number of days between {@code start} and {@code end}, inclusive and {@code endInclusive}
-     *         respectively.
-     */
-    int numberOfDays(final String start, final String end, final boolean endInclusive);
-
-    /**
-     * Returns the amount of time in nanoseconds between {@code start} and {@code end}.
-     *
-     * @param start start time; if null, return NULL_LONG
-     * @param end end time; if null, return NULL_LONG
-     * @return the amount of time in nanoseconds between the {@code start} and {@code end}
-     */
-    long diffNanos(final Instant start, final Instant end);
-
-    /**
-     * Returns the amount of time in days between {@code start} and {@code end}.
-     *
-     * @param start start time; if null, return NULL_LONG
-     * @param end end time; if null, return NULL_LONG
-     * @return the amount of time in days between the {@code start} and {@code end}
-     */
-    double diffDay(final Instant start, final Instant end);
-
-    /**
-     * Returns the number of 365 day years between {@code start} and {@code end}.
-     *
-     * @param start start; if null, return null
-     * @param end end; if null, return null
-     * @return the amount of time in years between the {@code start} and {@code end}
-     */
-    double diffYear365(Instant start, Instant end);
-
-    /**
-     * Returns the number of average (365.2425 day) years between {@code start} and {@code end}.
-     *
-     * @param start start; if null, return null
-     * @param end end; if null, return null
-     * @return the amount of time in years between the {@code start} and {@code end}
-     */
-    double diffYearAvg(Instant start, Instant end);
-
-    /**
-     * Gets the day of the week for the current day.
-     *
-     * @return the day of the week of the current day
-     */
-    default DayOfWeek dayOfWeek() {
-        return dayOfWeek(currentDay());
+        return nextDay(DateStringUtils.parseLocalDate(date), days);
     }
 
     /**
-     * Gets the day of the week for a time.
+     * Gets the next date.
      *
-     * @param time time; if null, return null
-     * @return the day of the week of {@code time}
+     * @param date date; if null, return null
+     * @return the date after {@code time}
      */
-    DayOfWeek dayOfWeek(final Instant time);
+    public LocalDate nextDay(final String date) {
+        return nextDay(date, 1);
+    }
+
+    /**
+     * Gets the date {@code days} after the current day.
+     *
+     * @param days number of days;
+     * @return the day after the current day
+     */
+    public LocalDate nextDay(final int days) {
+        return nextDay(currentDay(), days);
+    }
+
+    /**
+     * Gets tomorrow's date.
+     *
+     * @return the date after the current day
+     */
+    public LocalDate nextDay() {
+        return nextDay(currentDay());
+    }
+
+    /**
+     * Gets the days in a given range.
+     *
+     * @param start start of a time range; if null, return empty array
+     * @param end   end of a time range; if null, return empty array
+     * @return the inclusive days between {@code start} and {@code end}
+     */
+    public LocalDate[] daysInRange(final LocalDate start, final LocalDate end) {
+        if (start == null || end == null) {
+            return new LocalDate[0];
+        }
+
+        LocalDate day = start;
+        List<LocalDate> dateList = new ArrayList<>();
+
+        while (!day.isAfter(end)) {
+            dateList.add(day);
+            day = day.plusDays(1);
+        }
+
+        return dateList.toArray(new LocalDate[0]);
+    }
+
+    /**
+     * Gets the days in a given range.
+     *
+     * @param start start of a time range; if null, return empty array
+     * @param end   end of a time range; if null, return empty array
+     * @return the inclusive days between {@code start} and {@code end}
+     */
+    public LocalDate[] daysInRange(final ZonedDateTime start, final ZonedDateTime end) {
+        if (start == null || end == null) {
+            return new LocalDate[0];
+        }
+
+        return daysInRange(start.withZoneSameInstant(timeZone()).toLocalDate(), end.withZoneSameInstant(timeZone()).toLocalDate());
+    }
+
+    /**
+     * Gets the days in a given range.
+     *
+     * @param start start of a time range; if null, return empty array
+     * @param end   end of a time range; if null, return empty array
+     * @return the inclusive days between {@code start} and {@code end}
+     */
+    public LocalDate[] daysInRange(final Instant start, final Instant end) {
+        if (start == null || end == null) {
+            return new LocalDate[0];
+        }
+
+        return daysInRange(DateTimeUtils.toZonedDateTime(start, timeZone()).toLocalDate(), DateTimeUtils.toZonedDateTime(end, timeZone()).toLocalDate());
+    }
+
+    /**
+     * Gets the days in a given range.
+     *
+     * @param start start of a time range; if null, return empty array
+     * @param end   end of a time range; if null, return empty array
+     * @return the inclusive days between {@code start} and {@code end}
+     */
+    public LocalDate[] daysInRange(final String start, final String end) {
+        if (start == null || end == null) {
+            return new LocalDate[0];
+        }
+
+        return daysInRange(DateTimeUtils.parseLocalDate(start), DateTimeUtils.parseLocalDate(end));
+    }
+
+    /**
+     * Gets the number of days in a given range.
+     *
+     * @param start        start of a time range
+     * @param end          end of a time range
+     * @param endInclusive whether to treat the {@code end} inclusive or exclusively
+     * @return the number of days between {@code start} and {@code end}, or {@code NULL_INT} if any input is null.
+     */
+    public int numberOfDays(final LocalDate start, final LocalDate end, final boolean endInclusive) {
+        if (start == null || end == null) {
+            return QueryConstants.NULL_INT;
+        }
+
+        int days = (int) ChronoUnit.DAYS.between(start, end);
+        if (days < 0) {
+            days = days - (endInclusive ? 1 : 0);
+        } else {
+            days = days + (endInclusive ? 1 : 0);
+        }
+        return days;
+    }
+
+    /**
+     * Gets the number of days in a given range, end date exclusive.
+     *
+     * @param start start of a time range
+     * @param end   end of a time range
+     * @return the number of days between {@code start} and {@code end}, or {@code NULL_INT} if any input is null.
+     */
+    public int numberOfDays(final LocalDate start, final LocalDate end) {
+        return numberOfDays(start, end, false);
+    }
+
+    /**
+     * Gets the number of days in a given range.
+     *
+     * @param start        start of a time range
+     * @param end          end of a time range
+     * @param endInclusive whether to treat the {@code end} inclusive or exclusively
+     * @return the number of days between {@code start} and {@code end}, or {@code NULL_INT} if any input is null.
+     */
+    public int numberOfDays(final ZonedDateTime start, final ZonedDateTime end, final boolean endInclusive) {
+        if (start == null || end == null) {
+            return QueryConstants.NULL_INT;
+        }
+
+        return numberOfDays(start.withZoneSameInstant(timeZone()).toLocalDate(), end.withZoneSameInstant(timeZone()).toLocalDate(), endInclusive);
+    }
+
+    /**
+     * Gets the number of days in a given range, end date exclusive.
+     *
+     * @param start start of a time range
+     * @param end   end of a time range
+     * @return the number of days between {@code start} and {@code end}, or {@code NULL_INT} if any input is null.
+     */
+    public int numberOfDays(final ZonedDateTime start, final ZonedDateTime end) {
+        return numberOfDays(start, end, false);
+    }
+
+    /**
+     * Gets the number of days in a given range.
+     *
+     * @param start        start of a time range
+     * @param end          end of a time range
+     * @param endInclusive whether to treat the {@code end} inclusive or exclusively
+     * @return the number of days between {@code start} and {@code end}, or {@code NULL_INT} if any input is null.
+     */
+    public int numberOfDays(final Instant start, final Instant end, final boolean endInclusive) {
+        if (start == null || end == null) {
+            return QueryConstants.NULL_INT;
+        }
+
+        return numberOfDays(DateTimeUtils.toZonedDateTime(start, timeZone()).toLocalDate(), DateTimeUtils.toZonedDateTime(end, timeZone()).toLocalDate(), endInclusive);
+    }
+
+    /**
+     * Gets the number of days in a given range, end date exclusive.
+     *
+     * @param start start of a time range
+     * @param end   end of a time range
+     * @return the number of days between {@code start} and {@code end}, or {@code NULL_INT} if any input is null.
+     */
+    public int numberOfDays(final Instant start, final Instant end) {
+        return numberOfDays(start, end, false);
+    }
+
+    /**
+     * Gets the number of days in a given range.
+     *
+     * @param start        start of a time range
+     * @param end          end of a time range
+     * @param endInclusive whether to treat the {@code end} inclusive or exclusively
+     * @return the number of days between {@code start} and {@code end}, or {@code NULL_INT} if any input is null.
+     */
+    public int numberOfDays(final String start, final String end, final boolean endInclusive) {
+        if (start == null || end == null) {
+            return QueryConstants.NULL_INT;
+        }
+
+        return numberOfDays(DateTimeUtils.parseLocalDate(start), DateTimeUtils.parseLocalDate(end), endInclusive);
+    }
+
+    /**
+     * Gets the number of days in a given range, end date exclusive.
+     *
+     * @param start start of a time range
+     * @param end   end of a time range
+     * @return the number of days between {@code start} and {@code end}, or {@code NULL_INT} if any input is null.
+     */
+    public int numberOfDays(final String start, final String end) {
+        return numberOfDays(start, end, false);
+    }
+
+    //TODO: remove
+//    /**
+//     * Returns the amount of time in nanoseconds between {@code start} and {@code end}.
+//     *
+//     * @param start start time; if null, return NULL_LONG
+//     * @param end end time; if null, return NULL_LONG
+//     * @return the amount of time in nanoseconds between the {@code start} and {@code end}
+//     */
+//    long diffNanos(final Instant start, final Instant end);
+//
+//    /**
+//     * Returns the amount of time in days between {@code start} and {@code end}.
+//     *
+//     * @param start start time; if null, return NULL_LONG
+//     * @param end end time; if null, return NULL_LONG
+//     * @return the amount of time in days between the {@code start} and {@code end}
+//     */
+//    double diffDay(final Instant start, final Instant end);
+//
+//    /**
+//     * Returns the number of 365 day years between {@code start} and {@code end}.
+//     *
+//     * @param start start; if null, return null
+//     * @param end end; if null, return null
+//     * @return the amount of time in years between the {@code start} and {@code end}
+//     */
+//    double diffYear365(final Instant start, final Instant end);
+//
+//    /**
+//     * Returns the number of average (365.2425 day) years between {@code start} and {@code end}.
+//     *
+//     * @param start start; if null, return null
+//     * @param end end; if null, return null
+//     * @return the amount of time in years between the {@code start} and {@code end}
+//     */
+//    double diffYearAvg(final Instant start, final Instant end);
+
+    //TODO: leave these dayOfWeek methods or remove them and just use DateTimeUtils?!
 
     /**
      * Gets the day of the week for a time.
@@ -269,12 +546,63 @@ public interface Calendar {
      * @param date date; if null, return null
      * @return the day of the week of {@code date}
      */
-    DayOfWeek dayOfWeek(final String date);
+    public DayOfWeek dayOfWeek(final LocalDate date) {
+        if (date == null) {
+            return null;
+        }
+
+        return DayOfWeek.of(DateTimeUtils.dayOfWeek(date, timeZone()));
+    }
+    
+    /**
+     * Gets the day of the week for a time.
+     *
+     * @param time time; if null, return null
+     * @return the day of the week of {@code time}
+     */
+    public DayOfWeek dayOfWeek(final ZonedDateTime time) {
+        if (time == null) {
+            return null;
+        }
+
+        return dayOfWeek(time.withZoneSameInstant(timeZone()));
+    }
+    
+    /**
+     * Gets the day of the week for a time.
+     *
+     * @param time time; if null, return null
+     * @return the day of the week of {@code time}
+     */
+    public DayOfWeek dayOfWeek(final Instant time) {
+        if (time == null) {
+            return null;
+        }
+
+        return dayOfWeek(DateTimeUtils.toLocalDate(time, timeZone()));
+    }
 
     /**
-     * Gets the timezone of the calendar.
+     * Gets the day of the week for a time.
      *
-     * @return the time zone of the calendar
+     * @param date date; if null, return null
+     * @return the day of the week of {@code date}
      */
-    ZoneId timeZone();
+    public DayOfWeek dayOfWeek(final String date) {
+        if (date == null) {
+            return null;
+        }
+
+        return dayOfWeek(DateTimeUtils.parseLocalDate(date));
+    }
+
+    /**
+     * Gets the day of the week for the current day.
+     *
+     * @return the day of the week of the current day
+     */
+    public DayOfWeek dayOfWeek() {
+        return dayOfWeek(currentDay());
+    }
+
 }

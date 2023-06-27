@@ -58,24 +58,6 @@ public class DefaultNoHolidayBusinessCalendar extends AbstractBusinessCalendar {
     }
 
     @Override
-    @Deprecated
-    public BusinessSchedule getBusinessDay(final Instant time) {
-        return calendar.getBusinessDay(time);
-    }
-
-    @Override
-    @Deprecated
-    public BusinessSchedule getBusinessDay(final String date) {
-        return calendar.getBusinessDay(date);
-    }
-
-    @Override
-    @Deprecated
-    public BusinessSchedule getBusinessDay(final LocalDate date) {
-        return calendar.getBusinessDay(date);
-    }
-
-    @Override
     public BusinessSchedule getBusinessSchedule(final Instant time) {
         return calendar.getBusinessSchedule(time);
     }

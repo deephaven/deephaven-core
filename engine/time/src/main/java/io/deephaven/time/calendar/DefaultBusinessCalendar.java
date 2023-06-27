@@ -6,7 +6,6 @@ package io.deephaven.time.calendar;
 import io.deephaven.base.Pair;
 import io.deephaven.time.DateTimeUtils;
 import io.deephaven.time.TimeZoneAliases;
-import io.deephaven.util.QueryConstants;
 import io.deephaven.util.annotations.VisibleForTesting;
 import org.jdom2.Document;
 import org.jdom2.Element;
@@ -33,7 +32,7 @@ import java.util.regex.Pattern;
  * Overrides many default {@link Calendar} and BusinessCalendar methods for improved performance. See the documentation
  * of Calendar for details.
  */
-public class DefaultBusinessCalendar extends AbstractBusinessCalendar implements Serializable {
+public class DefaultBusinessCalendar extends BusinessCalendar implements Serializable {
 
     private static final long serialVersionUID = -5887343387358189382L;
 
@@ -324,85 +323,7 @@ public class DefaultBusinessCalendar extends AbstractBusinessCalendar implements
         return Collections.unmodifiableList(defaultBusinessPeriodStrings);
     }
 
-    @Override
-    public Map<LocalDate, BusinessSchedule> getHolidays() {
-        return Collections.unmodifiableMap(holidays);
-    }
 
-    @Override
-    public boolean isBusinessDay(DayOfWeek day) {
-        return !weekendDays.contains(day);
-    }
-
-    @Override
-    public String name() {
-        return calendarName;
-    }
-
-    @Override
-    public ZoneId timeZone() {
-        return timeZone;
-    }
-
-    @Override
-    public long standardBusinessDayLengthNanos() {
-        return lengthOfDefaultDayNanos;
-    }
-
-    @Override
-    @Deprecated
-    public BusinessSchedule getBusinessDay(final Instant time) {
-        if (time == null) {
-            return null;
-        }
-
-        final LocalDate localDate = LocalDate.ofYearDay(DateTimeUtils.year(time, timeZone()),
-                DateTimeUtils.dayOfYear(time, timeZone()));
-
-        return getBusinessSchedule(localDate);
-    }
-
-    @Override
-    @Deprecated
-    public BusinessSchedule getBusinessDay(final String date) {
-        if (date == null) {
-            return null;
-        }
-
-        return getBusinessSchedule(DateStringUtils.parseLocalDate(date));
-    }
-
-    @Override
-    @Deprecated
-    public BusinessSchedule getBusinessDay(final LocalDate date) {
-        return dates.computeIfAbsent(date, this::newBusinessDay);
-    }
-
-    @Override
-    public BusinessSchedule getBusinessSchedule(final Instant time) {
-        if (time == null) {
-            return null;
-        }
-
-        final LocalDate localDate = LocalDate.ofYearDay(DateTimeUtils.year(time, timeZone()),
-                DateTimeUtils.dayOfYear(time, timeZone()));
-
-        return getBusinessSchedule(localDate);
-    }
-
-    @Override
-    public BusinessSchedule getBusinessSchedule(final String date) {
-        if (date == null) {
-            return null;
-        }
-
-        return getBusinessSchedule(DateStringUtils.parseLocalDate(date));
-    }
-
-    @Override
-    public BusinessSchedule getBusinessSchedule(final LocalDate date) {
-        return dates.computeIfAbsent(date, this::newBusinessDay);
-    }
 
     private static String getText(Element element) {
         return element == null ? null : element.getTextTrim();
@@ -426,77 +347,6 @@ public class DefaultBusinessCalendar extends AbstractBusinessCalendar implements
         return new BusinessSchedule(parseBusinessPeriods(timeZone, date, businessPeriodStrings));
     }
 
-    @Override
-    public long diffBusinessNanos(final Instant start, final Instant end) {
-        if (start == null || end == null) {
-            return QueryConstants.NULL_LONG;
-        }
-        if (DateTimeUtils.isAfter(start, end)) {
-            return -diffBusinessNanos(end, start);
-        }
-
-        long dayDiffNanos = 0;
-        Instant day = start;
-        while (!DateTimeUtils.isAfter(day, end)) {
-            if (isBusinessDay(day)) {
-                BusinessSchedule businessDate = getBusinessSchedule(day);
-
-                if (businessDate != null) {
-                    for (BusinessPeriod businessPeriod : businessDate.getBusinessPeriods()) {
-                        Instant endOfPeriod = businessPeriod.getEndTime();
-                        Instant startOfPeriod = businessPeriod.getStartTime();
-
-                        // noinspection StatementWithEmptyBody
-                        if (DateTimeUtils.isAfter(day, endOfPeriod) || DateTimeUtils.isBefore(end, startOfPeriod)) {
-                            // continue
-                        } else if (!DateTimeUtils.isAfter(day, startOfPeriod)) {
-                            if (DateTimeUtils.isBefore(end, endOfPeriod)) {
-                                dayDiffNanos += DateTimeUtils.minus(end, startOfPeriod);
-                            } else {
-                                dayDiffNanos += businessPeriod.getLength();
-                            }
-                        } else {
-                            if (DateTimeUtils.isAfter(end, endOfPeriod)) {
-                                dayDiffNanos += DateTimeUtils.minus(endOfPeriod, day);
-                            } else {
-                                dayDiffNanos += DateTimeUtils.minus(end, day);
-                            }
-                        }
-                    }
-                }
-            }
-            day = getBusinessSchedule(nextBusinessDay(day)).getSOBD();
-        }
-        return dayDiffNanos;
-    }
-
-    @Override
-    public double diffBusinessYear(final Instant startTime, final Instant endTime) {
-        if (startTime == null || endTime == null) {
-            return QueryConstants.NULL_DOUBLE;
-        }
-
-        double businessYearDiff = 0.0;
-        Instant time = startTime;
-        while (!DateTimeUtils.isAfter(time, endTime)) {
-            // get length of the business year
-            final int startYear = DateTimeUtils.year(startTime, timeZone());
-            final long businessYearLength = cachedYearLengths.computeIfAbsent(startYear, this::getBusinessYearLength);
-
-            final Instant endOfYear = getFirstBusinessDateTimeOfYear(startYear + 1);
-            final long yearDiff;
-            if (DateTimeUtils.isAfter(endOfYear, endTime)) {
-                yearDiff = diffBusinessNanos(time, endTime);
-            } else {
-                yearDiff = diffBusinessNanos(time, endOfYear);
-            }
-
-            businessYearDiff += (double) yearDiff / (double) businessYearLength;
-            time = endOfYear;
-        }
-
-        return businessYearDiff;
-    }
 
     private long getBusinessYearLength(final int year) {
         int numDays = 365 + (DateStringUtils.isLeapYear(year) ? 1 : 0);
