@@ -356,8 +356,8 @@ public interface Table extends
      * If the firstPosition is negative and the lastPosition is negative, they are both counted from the end of the
      * table. For example, slice(-2, -1) returns the second to last row of the table.
      * <p>
-     * If firstPosition is negative and lastPosition is positive, then the firstRow is counted from the end of
-     * the table, inclusively. The lastPosition is counted from the beginning of the table. For example, slice(-3, 5)
+     * If firstPosition is negative and lastPosition is positive, then firstPosition is counted from the end of the
+     * table, inclusively. The lastPosition is counted from the beginning of the table. For example, slice(-3, 5)
      * returns all rows starting from the third-last row to the fourth row of the table. If there are no rows between
      * these positions, the function will return an empty table.
      *
