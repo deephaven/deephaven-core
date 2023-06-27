@@ -23,21 +23,21 @@ public class StaticCalendarMethodsTest extends BaseArrayTestCase {
     public void testCalendarMethods() {
         assertEquals(calendar.name(), StaticCalendarMethods.name());
 
-        assertEquals(calendar.currentDay(), StaticCalendarMethods.currentDay());
+        assertEquals(calendar.currentDate(), StaticCalendarMethods.currentDay());
 
-        assertEquals(calendar.previousDay(), StaticCalendarMethods.previousDay());
-        assertEquals(calendar.previousDay(4), StaticCalendarMethods.previousDay(4));
-        assertEquals(calendar.previousDay(time1), StaticCalendarMethods.previousDay(time1));
-        assertEquals(calendar.previousDay(time1, 4), StaticCalendarMethods.previousDay(time1, 4));
-        assertEquals(calendar.previousDay(date1), StaticCalendarMethods.previousDay(date1));
-        assertEquals(calendar.previousDay(date1, 14), StaticCalendarMethods.previousDay(date1, 14));
+        assertEquals(calendar.pastDate(), StaticCalendarMethods.previousDay());
+        assertEquals(calendar.pastDate(4), StaticCalendarMethods.previousDay(4));
+        assertEquals(calendar.pastDate(time1), StaticCalendarMethods.previousDay(time1));
+        assertEquals(calendar.pastDate(time1, 4), StaticCalendarMethods.previousDay(time1, 4));
+        assertEquals(calendar.pastDate(date1), StaticCalendarMethods.previousDay(date1));
+        assertEquals(calendar.pastDate(date1, 14), StaticCalendarMethods.previousDay(date1, 14));
 
-        assertEquals(calendar.nextDay(), StaticCalendarMethods.nextDay());
-        assertEquals(calendar.nextDay(4), StaticCalendarMethods.nextDay(4));
-        assertEquals(calendar.nextDay(time2), StaticCalendarMethods.nextDay(time2));
-        assertEquals(calendar.nextDay(time2, 4), StaticCalendarMethods.nextDay(time2, 4));
-        assertEquals(calendar.nextDay(date2), StaticCalendarMethods.nextDay(date2));
-        assertEquals(calendar.nextDay(date2, 14), StaticCalendarMethods.nextDay(date2, 14));
+        assertEquals(calendar.futureDate(), StaticCalendarMethods.nextDay());
+        assertEquals(calendar.futureDate(4), StaticCalendarMethods.nextDay(4));
+        assertEquals(calendar.futureDate(time2), StaticCalendarMethods.nextDay(time2));
+        assertEquals(calendar.futureDate(time2, 4), StaticCalendarMethods.nextDay(time2, 4));
+        assertEquals(calendar.futureDate(date2), StaticCalendarMethods.nextDay(date2));
+        assertEquals(calendar.futureDate(date2, 14), StaticCalendarMethods.nextDay(date2, 14));
 
         assertEquals(calendar.daysInRange(time1, time2), StaticCalendarMethods.daysInRange(time1, time2));
         assertEquals(calendar.daysInRange(date1, date2), StaticCalendarMethods.daysInRange(date1, date2));

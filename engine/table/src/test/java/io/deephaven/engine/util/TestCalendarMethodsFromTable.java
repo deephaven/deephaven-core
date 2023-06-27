@@ -60,29 +60,29 @@ public class TestCalendarMethodsFromTable extends BaseArrayTestCase {
 
         assertEquals(calendar.name(), getVal(emptyTable(1).update("Name = name()"), "Name"));
 
-        assertEquals(calendar.currentDay(), getVal(emptyTable(1).update("currentDay = currentDay()"), "currentDay"));
+        assertEquals(calendar.currentDate(), getVal(emptyTable(1).update("currentDay = currentDay()"), "currentDay"));
 
-        assertEquals(calendar.previousDay(),
+        assertEquals(calendar.pastDate(),
                 getVal(emptyTable(1).update("previousDay = previousDay()"), "previousDay"));
-        assertEquals(calendar.previousDay(4),
+        assertEquals(calendar.pastDate(4),
                 getVal(emptyTable(1).update("previousDay = previousDay(4)"), "previousDay"));
-        assertEquals(calendar.previousDay(time1),
+        assertEquals(calendar.pastDate(time1),
                 getVal(emptyTable(1).update("previousDay = previousDay(time1)"), "previousDay"));
-        assertEquals(calendar.previousDay(time1, 4),
+        assertEquals(calendar.pastDate(time1, 4),
                 getVal(emptyTable(1).update("previousDay = previousDay(time1, 4)"), "previousDay"));
-        assertEquals(calendar.previousDay(date1),
+        assertEquals(calendar.pastDate(date1),
                 getVal(emptyTable(1).update("previousDay = previousDay(date1)"), "previousDay"));
-        assertEquals(calendar.previousDay(date1, 14),
+        assertEquals(calendar.pastDate(date1, 14),
                 getVal(emptyTable(1).update("previousDay = previousDay(date1, 14)"), "previousDay"));
 
 
-        assertEquals(calendar.nextDay(), getVal(emptyTable(1).update("nextDay = nextDay()"), "nextDay"));
-        assertEquals(calendar.nextDay(4), getVal(emptyTable(1).update("nextDay = nextDay(4)"), "nextDay"));
-        assertEquals(calendar.nextDay(time1), getVal(emptyTable(1).update("nextDay = nextDay(time1)"), "nextDay"));
-        assertEquals(calendar.nextDay(time1, 4),
+        assertEquals(calendar.futureDate(), getVal(emptyTable(1).update("nextDay = nextDay()"), "nextDay"));
+        assertEquals(calendar.futureDate(4), getVal(emptyTable(1).update("nextDay = nextDay(4)"), "nextDay"));
+        assertEquals(calendar.futureDate(time1), getVal(emptyTable(1).update("nextDay = nextDay(time1)"), "nextDay"));
+        assertEquals(calendar.futureDate(time1, 4),
                 getVal(emptyTable(1).update("nextDay = nextDay(time1, 4)"), "nextDay"));
-        assertEquals(calendar.nextDay(date1), getVal(emptyTable(1).update("nextDay = nextDay(date1)"), "nextDay"));
-        assertEquals(calendar.nextDay(date1, 14),
+        assertEquals(calendar.futureDate(date1), getVal(emptyTable(1).update("nextDay = nextDay(date1)"), "nextDay"));
+        assertEquals(calendar.futureDate(date1, 14),
                 getVal(emptyTable(1).update("nextDay = nextDay(date1, 14)"), "nextDay"));
 
         assertEquals(calendar.daysInRange(time1, time2),

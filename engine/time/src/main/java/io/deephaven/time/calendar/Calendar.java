@@ -200,43 +200,40 @@ public class Calendar {
         return minusDays(time.toInstant(), days);
     }
 
-//TODO: future_day / past_day
-    //TODO: rename currentDate? -> nextDate() or futureDate()
+    /**
+     * The current date.
+     *
+     * @return current date
+     */
+    public LocalDate currentDate() {
+        return DateTimeUtils.today(timeZone());
+    }
+
     /**
      * Adds a specified number of days to the current date.  Adding negative days is equivalent to subtracting days.
      *
      * @param days number of days to add.
      * @return {@code days} days after the current date
      */
-    public LocalDate nextDay(int days) {
-        return plusDays(currentDay(), days);
+    public LocalDate futureDate(int days) {
+        return plusDays(currentDate(), days);
     }
 
-//TODO: future_day / past_day
-    //TODO: rename previousDate?
     /**
      * Subtracts a specified number of days from the current date.  Subtracting negative days is equivalent to adding days.
      *
      * @param days number of days to subtract.
      * @return {@code days} days before the current date
      */
-    public LocalDate previousDay(int days) {
-        return minusDays(currentDay(), days);
-    }
-
-    //TODO: rename currentDate? -> nextDate() or futureDate()
-    /**
-     * The current date.
-     *
-     * @return current date
-     */
-    public LocalDate currentDay() {
-        return DateTimeUtils.today(timeZone());
+    public LocalDate pastDate(int days) {
+        return minusDays(currentDate(), days);
     }
 
     // endregion
 
     // region Ranges
+
+    **
 
     /**
      * Gets the days in a given range.
