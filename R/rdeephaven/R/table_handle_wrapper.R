@@ -61,7 +61,9 @@ TableHandle <- R6Class("TableHandle",
         #' @param name Name for this table on the server.
         bind_to_variable = function(name) {
             if (class(name)[[1]] != "character") {
-                stop(paste("'name' should be a character or a string. Got object of type ", class(name)[[1]], " instead."))
+                stop(paste("'name' should be a single character or string. Got object of type", class(name)[[1]], "instead."))
+            } else if (length(name) != 1) {
+                stop(paste("'name should be a single character or string. Got a character vector of length", length(name), "instead."))
             }
             private$internal_table_handle$bind_to_variable(name)
         },
