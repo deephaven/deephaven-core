@@ -26,9 +26,8 @@ public abstract class JoinTable extends JoinBase {
     public abstract OptionalInt reserveBits();
 
     @Override
-    public final <V extends Visitor> V walk(V visitor) {
-        visitor.visit(this);
-        return visitor;
+    public final <T> T walk(Visitor<T> visitor) {
+        return visitor.visit(this);
     }
 
     public interface Builder extends Join.Builder<JoinTable, Builder> {
