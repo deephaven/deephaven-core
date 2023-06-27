@@ -129,7 +129,7 @@ func Example_inputTable() {
 	//        metadata: ["deephaven:inputtable.isKey": "false", "deephaven:isDateFormat": "false", "deephaven:isNumberFormat": "false", "deephaven:isPartitioning": "false", "deephaven:isRowStyle": "false", "deephaven:isStyle": "false", "deephaven:type": "float"]
 	//     - Volume: type=int32, nullable
 	//         metadata: ["deephaven:inputtable.isKey": "false", "deephaven:isDateFormat": "false", "deephaven:isNumberFormat": "false", "deephaven:isPartitioning": "false", "deephaven:isRowStyle": "false", "deephaven:isStyle": "false", "deephaven:type": "int"]
-	//   metadata: ["deephaven:unsent.attribute.InputTable": ""]
+	//   metadata: ["deephaven:attribute.SortableColumns": "Ticker,Close,Volume", "deephaven:attribute_type.SortableColumns": "java.lang.String", "deephaven:unsent.attribute.InputTable": ""]
 	//   rows: 4
 	//   col[0][Ticker]: ["XRX" "XYZZY" "GME" "ZNGA"]
 	//   col[1][Close]: [53.8 88.5 453 544.9]
