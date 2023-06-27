@@ -168,7 +168,6 @@ test_that("bind_to_variable fails nicely on bad inputs", {
 
     expect_error(data$th1$bind_to_variable(list("list", "of", "strings")),
         "'name' should be a single character or string. Got object of type list instead.")
-
 })
 
 #test_file("/home/user/deephaven/src/deephaven/deephaven-core/R/rdeephaven/tests/testthat/test_table_handle_wrapper.R")
