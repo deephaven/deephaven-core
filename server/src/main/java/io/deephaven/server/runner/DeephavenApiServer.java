@@ -130,8 +130,10 @@ public class DeephavenApiServer {
         pluginRegistration.registerAll();
 
         log.info().append("Initializing Execution Context for Main Thread...").endl();
+        final ExecutionContext executionContext = executionContextProvider.get();
+
         // noinspection resource
-        executionContextProvider.get().open();
+        executionContext.open();
 
         log.info().append("Starting Operation Initialization Thread Pool...").endl();
         OperationInitializationThreadPool.start();
@@ -144,7 +146,10 @@ public class DeephavenApiServer {
         log.info().append("Starting Performance Trackers...").endl();
         QueryPerformanceRecorder.installPoolAllocationRecorder();
         QueryPerformanceRecorder.installUpdateGraphLockInstrumentation();
+
+        UpdatePerformanceTracker.initialize(executionContext);
         UpdatePerformanceTracker.start();
+
         ServerStateTracker.start();
 
         for (UriResolver resolver : uriResolvers.resolvers()) {

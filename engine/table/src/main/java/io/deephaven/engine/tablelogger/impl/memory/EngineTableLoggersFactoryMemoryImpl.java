@@ -39,6 +39,6 @@ public class EngineTableLoggersFactoryMemoryImpl implements EngineTableLoggers.F
 
     @Override
     public UpdatePerformanceLogLogger updatePerformanceLogLogger() {
-        return new UpdatePerformanceLogLoggerMemoryImpl();
+        return UpdatePerformanceLogLogger.Noop.INSTANCE;
     }
 }
