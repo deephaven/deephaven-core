@@ -11,9 +11,9 @@ import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
 import java.util.List;
 
+//TODO: update all headers
 //TODO: review all docs
 
-//TODO: future_day / past_day
 //TODO: add regions
 
 /**
@@ -30,6 +30,8 @@ public class Calendar {
     private final String description;
     private final ZoneId timeZone;
 
+    // region Constructors
+
     /**
      * Creates a new calendar.
      * 
@@ -42,6 +44,10 @@ public class Calendar {
         this.description = description;
         this.timeZone = timeZone;
     }
+
+    // endregion
+
+    // region Getters
 
     /**
      * Gets the name of the calendar.
@@ -70,144 +76,20 @@ public class Calendar {
         return timeZone;
     }
 
-    /**
-     * Gets the current date.
-     *
-     * @return the current day
-     */
-    public LocalDate currentDay() {
-        return DateTimeUtils.today(timeZone());
-    }
+    // endregion
 
-        ***today /tomorrow /yesterday
+    // region Arithmetic
+
+    //TODO should these methods be named add/subtract or plus/minus?
 
     /**
-     * Gets the date the specified number of days prior to the input date.
+     * Adds a specified number of days to an input date.  Adding negative days is equivalent to subtracting days.
      *
-     * @param date date; if null, return null
-     * @param days number of days;
-     * @return the date {@code days} before {@code date}
+     * @param date date
+     * @param days number of days to add
+     * @return {@code days} days after {@code date}; null if {@code date} is null
      */
-    public LocalDate previousDay(final LocalDate date, final int days) {
-        if (date == null) {
-            return null;
-        }
-
-        return date.minusDays(days);
-    }
-
-    /**
-     * Gets the previous date.
-     *
-     * @param date date; if null, return null
-     * @return the day before {@code date}
-     */
-    public LocalDate previousDay(final LocalDate date) {
-        return previousDay(date, 1);
-    }
-
-    /**
-     * Gets the date the specified number of days prior to the input date.
-     *
-     * @param time time; if null, return null
-     * @param days number of days;
-     * @return the date {@code days} before {@code date}
-     */
-    public LocalDate previousDay(final ZonedDateTime time, final int days) {
-        if (time == null) {
-            return null;
-        }
-
-        return previousDay(time.withZoneSameInstant(timeZone()), days);
-    }
-
-    /**
-     * Gets the previous date.
-     *
-     * @param time time; if null, return null
-     * @return the day before {@code time}
-     */
-    public LocalDate previousDay(final ZonedDateTime time) {
-        return previousDay(time, 1);
-    }
-
-    /**
-     * Gets the date the specified number of days prior to the input date.
-     *
-     * @param time time; if null, return null
-     * @param days number of days;
-     * @return the date {@code days} before {@code date}
-     */
-    public LocalDate previousDay(final Instant time, final int days) {
-        if (time == null) {
-            return null;
-        }
-
-        return previousDay(DateTimeUtils.toZonedDateTime(time, timeZone()), days);
-    }
-
-    /**
-     * Gets the previous date.
-     *
-     * @param time time; if null, return null
-     * @return the day before {@code time}
-     */
-    public LocalDate previousDay(final Instant time) {
-        return previousDay(time, 1);
-    }
-
-    /**
-     * Gets the date the specified number of days prior to the input date.
-     *
-     * @param date date; if null, return null
-     * @param days number of days;
-     * @return the date {@code days} before {@code date}
-     */
-    public LocalDate previousDay(final String date, final int days) {
-        if (date == null) {
-            return null;
-        }
-
-        return previousDay(DateStringUtils.parseLocalDate(date), days);
-    }
-
-    /**
-     * Gets the previous date.
-     *
-     * @param date date; if null, return null
-     * @return the date before {@code date}
-     */
-    public LocalDate previousDay(final String date) {
-        return previousDay(date, 1);
-    }
-
-    /**
-     * Gets the date the specified number of days prior to the current day.
-     *
-     * @param days number of days;
-     * @return the date {@code days} before the current day
-     */
-    public LocalDate previousDay(final int days) {
-        return previousDay(currentDay(), days);
-    }
-
-    /**
-     * Gets yesterday's date.
-     *
-     * @return the date before the current day
-     */
-    public LocalDate previousDay() {
-        return previousDay(1);
-    }
-
-    /**
-     * Gets the date {@code days} after the input {@code time}.
-     *
-     * @param date date; if null, return null
-     * @param days number of days;
-     * @return the day after {@code date}
-     */
-    public LocalDate nextDay(final LocalDate date, final int days) {
+    public LocalDate addDays(final LocalDate date, final int days) {
         if (date == null) {
             return null;
         }
@@ -216,108 +98,148 @@ public class Calendar {
     }
 
     /**
-     * Gets the next date.
+     * Adds a specified number of days to an input date.  Adding negative days is equivalent to subtracting days.
      *
-     * @param time time; if null, return null
-     * @return the day after {@code time}
+     * @param date date
+     * @param days number of days to add
+     * @return {@code days} days after {@code date}; null if {@code date} is null
      */
-    public LocalDate nextDay(final LocalDate time) {
-        return nextDay(time, 1);
-    }
-
-    /**
-     * Gets the date {@code days} after the input {@code time}.
-     *
-     * @param time time; if null, return null
-     * @param days number of days;
-     * @return the day after {@code time}
-     */
-    public LocalDate nextDay(final ZonedDateTime time, final int days) {
-        if (time == null) {
-            return null;
-        }
-
-        return nextDay(time.withZoneSameInstant(timeZone()).toLocalDate(), days);
-    }
-
-    /**
-     * Gets the next date.
-     *
-     * @param time time; if null, return null
-     * @return the day after {@code time}
-     */
-    public LocalDate nextDay(final ZonedDateTime time) {
-        return nextDay(time, 1);
-    }
-
-    /**
-     * Gets the date {@code days} after the input {@code time}.
-     *
-     * @param time time; if null, return null
-     * @param days number of days;
-     * @return the day after {@code time}
-     */
-    public LocalDate nextDay(final Instant time, final int days) {
-        if (time == null) {
-            return null;
-        }
-
-        return nextDay(DateTimeUtils.toZonedDateTime(time, timeZone()).toLocalDate(), days);
-    }
-
-    /**
-     * Gets the next date.
-     *
-     * @param time time; if null, return null
-     * @return the day after {@code time}
-     */
-    public LocalDate nextDay(final Instant time) {
-        return nextDay(time, 1);
-    }
-
-    /**
-     * Gets the date {@code days} after the input {@code date}.
-     *
-     * @param date time; if null, return null
-     * @param days number of days;
-     * @return the day after {@code time}
-     */
-    public LocalDate nextDay(final String date, final int days) {
+    public LocalDate addDays(final String date, final int days) {
         if (date == null) {
             return null;
         }
 
-        return nextDay(DateStringUtils.parseLocalDate(date), days);
+        //TODO: quiet parsing?  document exception?
+        return addDays(DateTimeUtils.parseLocalDate(date), days);
     }
 
     /**
-     * Gets the next date.
+     * Adds a specified number of days to an input time.  Adding negative days is equivalent to subtracting days.
      *
-     * @param date date; if null, return null
-     * @return the date after {@code time}
+     * @param time time
+     * @param days number of days to add
+     * @return {@code days} days after {@code time}; null if {@code date} is null
      */
-    public LocalDate nextDay(final String date) {
-        return nextDay(date, 1);
+    public LocalDate addDays(final Instant time, final int days) {
+        if (time == null) {
+            return null;
+        }
+
+        return addDays(DateTimeUtils.toLocalDate(time, timeZone), days);
     }
 
     /**
-     * Gets the date {@code days} after the current day.
+     * Adds a specified number of days to an input time.  Adding negative days is equivalent to subtracting days.
      *
-     * @param days number of days;
-     * @return the day after the current day
+     * @param time time
+     * @param days number of days to add
+     * @return {@code days} days after {@code time}; null if {@code date} is null
      */
-    public LocalDate nextDay(final int days) {
-        return nextDay(currentDay(), days);
+    public LocalDate addDays(final ZonedDateTime time, final int days) {
+        if (time == null) {
+            return null;
+        }
+
+        return addDays(time.toInstant(), days);
     }
 
     /**
-     * Gets tomorrow's date.
+     * Subtracts a specified number of days to an input date.  Subtracting negative days is equivalent to adding days.
      *
-     * @return the date after the current day
+     * @param date date
+     * @param days number of days to add
+     * @return {@code days} days after {@code date}; null if {@code date} is null
      */
-    public LocalDate nextDay() {
-        return nextDay(currentDay());
+    public LocalDate subtractDays(final LocalDate date, final int days) {
+        if (date == null) {
+            return null;
+        }
+
+        return date.minusDays(days);
     }
+
+    /**
+     * Subtracts a specified number of days to an input date.  Subtracting negative days is equivalent to adding days.
+     *
+     * @param date date
+     * @param days number of days to add
+     * @return {@code days} days after {@code date}; null if {@code date} is null
+     */
+    public LocalDate subtractDays(final String date, final int days) {
+        if (date == null) {
+            return null;
+        }
+
+        return subtractDays(DateTimeUtils.parseLocalDate(date), days);
+    }
+
+    /**
+     * Subtracts a specified number of days to an input time.  Subtracting negative days is equivalent to adding days.
+     *
+     * @param time time
+     * @param days number of days to add
+     * @return {@code days} days after {@code time}; null if {@code date} is null
+     */
+    public LocalDate subtractDays(final Instant time, final int days) {
+        if (time == null) {
+            return null;
+        }
+
+        return subtractDays(DateTimeUtils.toLocalDate(time, timeZone), days);
+    }
+
+    /**
+     * Subtracts a specified number of days to an input time.  Subtracting negative days is equivalent to adding days.
+     *
+     * @param time time
+     * @param days number of days to add
+     * @return {@code days} days after {@code time}; null if {@code date} is null
+     */
+    public LocalDate subtractDays(final ZonedDateTime time, final int days) {
+        if (time == null) {
+            return null;
+        }
+
+        return subtractDays(time.toInstant(), days);
+    }
+
+//TODO: future_day / past_day
+    //TODO: rename currentDate? -> nextDate() or futureDate()
+    /**
+     * Adds a specified number of days to the current date.  Adding negative days is equivalent to subtracting days.
+     *
+     * @param days number of days to add.
+     * @return {@code days} days after the current date
+     */
+    public LocalDate nextDay(int days) {
+        return addDays(currentDay(), days);
+    }
+
+//TODO: future_day / past_day
+    //TODO: rename previousDate?
+    /**
+     * Subtracts a specified number of days from the current date.  Subtracting negative days is equivalent to adding days.
+     *
+     * @param days number of days to subtract.
+     * @return {@code days} days before the current date
+     */
+    public LocalDate previousDay(int days) {
+        return subtractDays(currentDay(), days);
+    }
+
+    //TODO: rename currentDate? -> nextDate() or futureDate()
+    /**
+     * The current date.
+     *
+     * @return current date
+     */
+    public LocalDate currentDay() {
+        return DateTimeUtils.today(timeZone());
+    }
+
+    // endregion
+
+    // region Ranges
 
     /**
      * Gets the days in a given range.
@@ -387,6 +309,7 @@ public class Calendar {
         return daysInRange(DateTimeUtils.parseLocalDate(start), DateTimeUtils.parseLocalDate(end));
     }
 
+    //TODO: add InRange to the names?
     /**
      * Gets the number of days in a given range.
      *
@@ -501,108 +424,18 @@ public class Calendar {
         return numberOfDays(start, end, false);
     }
 
-    //TODO: remove
-//    /**
-//     * Returns the amount of time in nanoseconds between {@code start} and {@code end}.
-//     *
-//     * @param start start time; if null, return NULL_LONG
-//     * @param end end time; if null, return NULL_LONG
-//     * @return the amount of time in nanoseconds between the {@code start} and {@code end}
-//     */
-//    long diffNanos(final Instant start, final Instant end);
-//
-//    /**
-//     * Returns the amount of time in days between {@code start} and {@code end}.
-//     *
-//     * @param start start time; if null, return NULL_LONG
-//     * @param end end time; if null, return NULL_LONG
-//     * @return the amount of time in days between the {@code start} and {@code end}
-//     */
-//    double diffDay(final Instant start, final Instant end);
-//
-//    /**
-//     * Returns the number of 365 day years between {@code start} and {@code end}.
-//     *
-//     * @param start start; if null, return null
-//     * @param end end; if null, return null
-//     * @return the amount of time in years between the {@code start} and {@code end}
-//     */
-//    double diffYear365(final Instant start, final Instant end);
-//
-//    /**
-//     * Returns the number of average (365.2425 day) years between {@code start} and {@code end}.
-//     *
-//     * @param start start; if null, return null
-//     * @param end end; if null, return null
-//     * @return the amount of time in years between the {@code start} and {@code end}
-//     */
-//    double diffYearAvg(final Instant start, final Instant end);
+    //TODO:
+//    diffBusinessDay
+//            diffBusinessDay
+//    diffBusinessNanos
+//            diffBusinessNanos
+//    diffBusinessYear
+//            diffBusinessYear
+//    diffNonBusinessDay
+//            diffNonBusinessDay
+//    diffNonBusinessNanos
+//            diffNonBusinessNanos
 
-    //TODO: leave these dayOfWeek methods or remove them and just use DateTimeUtils?!
-
-    /**
-     * Gets the day of the week for a time.
-     *
-     * @param date date; if null, return null
-     * @return the day of the week of {@code date}
-     */
-    public DayOfWeek dayOfWeek(final LocalDate date) {
-        if (date == null) {
-            return null;
-        }
-
-        return DayOfWeek.of(DateTimeUtils.dayOfWeek(date, timeZone()));
-    }
-    
-    /**
-     * Gets the day of the week for a time.
-     *
-     * @param time time; if null, return null
-     * @return the day of the week of {@code time}
-     */
-    public DayOfWeek dayOfWeek(final ZonedDateTime time) {
-        if (time == null) {
-            return null;
-        }
-
-        return dayOfWeek(time.withZoneSameInstant(timeZone()));
-    }
-    
-    /**
-     * Gets the day of the week for a time.
-     *
-     * @param time time; if null, return null
-     * @return the day of the week of {@code time}
-     */
-    public DayOfWeek dayOfWeek(final Instant time) {
-        if (time == null) {
-            return null;
-        }
-
-        return dayOfWeek(DateTimeUtils.toLocalDate(time, timeZone()));
-    }
-
-    /**
-     * Gets the day of the week for a time.
-     *
-     * @param date date; if null, return null
-     * @return the day of the week of {@code date}
-     */
-    public DayOfWeek dayOfWeek(final String date) {
-        if (date == null) {
-            return null;
-        }
-
-        return dayOfWeek(DateTimeUtils.parseLocalDate(date));
-    }
-
-    /**
-     * Gets the day of the week for the current day.
-     *
-     * @return the day of the week of the current day
-     */
-    public DayOfWeek dayOfWeek() {
-        return dayOfWeek(currentDay());
-    }
+    // endregion
 
 }
