@@ -32,11 +32,7 @@ Client <- R6Class("Client",
         #' @param client_options ClientOptions instance with the parameters needed to connect to the server.
         #' See ?ClientOptions for more information.
         initialize = function(target, client_options) {
-            if (class(target)[[1]] != "character") {
-                stop(paste("'target' should be a single string with the address of a running Deephaven server. Got object of type", class(target)[[1]], "instead."))
-            } else if (length(target) != 1) {
-                stop(paste("'target' should be a single string with the address of a running Deephaven server. Got a character vector of length", length(target), "instead."))
-            }
+            private$verify_string(target, "target")
             if (class(client_options)[[1]] != "ClientOptions") {
                 stop(paste("'client_options' should be a Deephaven ClientOptions object. Got object of type", class(client_options)[[1]], "instead."))
             }
@@ -100,11 +96,10 @@ Client <- R6Class("Client",
         },
 
         verify_string = function(string_candidate, arg_name) {
-            if (length(string_candidate) != 1) {
-                stop(paste0("'", arg_name, "' must be passed as a single string. Got object of length ", length(string_candidate), " instead."))
-            }
-            if (class(string_candidate) != "character") {
+            if (class(string_candidate)[[1]] != "character") {
                 stop(paste0("'", arg_name, "' must be passed as a single string. Got object of class ", class(string_candidate)[[1]], " instead."))
+            } else if (length(string_candidate) != 1) {
+                stop(paste0("'", arg_name, "' must be passed as a single string. Got character vector of length ", length(string_candidate), " instead."))
             }
         },
 
