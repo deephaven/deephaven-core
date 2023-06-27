@@ -32,17 +32,45 @@ public class VectorHelper {
         vector.setValueCount(len);
     }
 
+    public static void fill(TinyIntVector vector, Collection<Byte> values) {
+        vector.allocateNew(values.size());
+        int i = 0;
+        for (Byte value : values) {
+            if (value == null) {
+                vector.setNull(i);
+            } else {
+                vector.set(i, value);
+            }
+            ++i;
+        }
+        vector.setValueCount(values.size());
+    }
+
     public static void fill(BitVector vector, BooleanArray array, int offset, int len) {
         vector.allocateNew(len);
         for (int i = 0; i < len; i++) {
             Boolean value = array.value(offset + i);
             if (value == null) {
-                vector.set(i, 0, 0);
+                vector.setNull(i);
             } else {
                 vector.set(i, value ? 1 : 0);
             }
         }
         vector.setValueCount(len);
+    }
+
+    public static void fill(BitVector vector, Collection<Boolean> values) {
+        vector.allocateNew(values.size());
+        int i = 0;
+        for (Boolean value : values) {
+            if (value == null) {
+                vector.setNull(i);
+            } else {
+                vector.set(i, value ? 1 : 0);
+            }
+            ++i;
+        }
+        vector.setValueCount(values.size());
     }
 
     public static void fill(UInt2Vector vector, char[] array, int offset, int len) {
@@ -53,12 +81,40 @@ public class VectorHelper {
         vector.setValueCount(len);
     }
 
+    public static void fill(UInt2Vector vector, Collection<Character> values) {
+        vector.allocateNew(values.size());
+        int i = 0;
+        for (Character value : values) {
+            if (value == null) {
+                vector.setNull(i);
+            } else {
+                vector.set(i, value);
+            }
+            ++i;
+        }
+        vector.setValueCount(values.size());
+    }
+
     public static void fill(SmallIntVector vector, short[] array, int offset, int len) {
         vector.allocateNew(len);
         for (int i = 0; i < len; i++) {
             vector.set(i, array[offset + i]);
         }
         vector.setValueCount(len);
+    }
+
+    public static void fill(SmallIntVector vector, Collection<Short> values) {
+        vector.allocateNew(values.size());
+        int i = 0;
+        for (Short value : values) {
+            if (value == null) {
+                vector.setNull(i);
+            } else {
+                vector.set(i, value);
+            }
+            ++i;
+        }
+        vector.setValueCount(values.size());
     }
 
     public static void fill(IntVector vector, int[] array, int offset, int len) {
@@ -69,12 +125,40 @@ public class VectorHelper {
         vector.setValueCount(len);
     }
 
+    public static void fill(IntVector vector, Collection<Integer> values) {
+        vector.allocateNew(values.size());
+        int i = 0;
+        for (Integer value : values) {
+            if (value == null) {
+                vector.setNull(i);
+            } else {
+                vector.set(i, value);
+            }
+            ++i;
+        }
+        vector.setValueCount(values.size());
+    }
+
     public static void fill(BigIntVector vector, long[] array, int offset, int len) {
         vector.allocateNew(len);
         for (int i = 0; i < len; i++) {
             vector.set(i, array[offset + i]);
         }
         vector.setValueCount(len);
+    }
+
+    public static void fill(BigIntVector vector, Collection<Long> values) {
+        vector.allocateNew(values.size());
+        int i = 0;
+        for (Long value : values) {
+            if (value == null) {
+                vector.setNull(i);
+            } else {
+                vector.set(i, value);
+            }
+            ++i;
+        }
+        vector.setValueCount(values.size());
     }
 
     public static void fill(Float4Vector vector, float[] array, int offset, int len) {
@@ -85,12 +169,40 @@ public class VectorHelper {
         vector.setValueCount(len);
     }
 
+    public static void fill(Float4Vector vector, Collection<Float> values) {
+        vector.allocateNew(values.size());
+        int i = 0;
+        for (Float value : values) {
+            if (value == null) {
+                vector.setNull(i);
+            } else {
+                vector.set(i, value);
+            }
+            ++i;
+        }
+        vector.setValueCount(values.size());
+    }
+
     public static void fill(Float8Vector vector, double[] array, int offset, int len) {
         vector.allocateNew(len);
         for (int i = 0; i < len; i++) {
             vector.set(i, array[offset + i]);
         }
         vector.setValueCount(len);
+    }
+
+    public static void fill(Float8Vector vector, Collection<Double> values) {
+        vector.allocateNew(values.size());
+        int i = 0;
+        for (Double value : values) {
+            if (value == null) {
+                vector.setNull(i);
+            } else {
+                vector.set(i, value);
+            }
+            ++i;
+        }
+        vector.setValueCount(values.size());
     }
 
     public static void fill(VarCharVector vector, Collection<String> array) {

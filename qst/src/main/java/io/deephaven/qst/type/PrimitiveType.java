@@ -20,6 +20,8 @@ public interface PrimitiveType<T> extends Type<T> {
 
     Class<T> boxedClass();
 
+    BoxedType<T> boxedType();
+
     <R> R walk(Visitor<R> visitor);
 
     interface Visitor<R> {

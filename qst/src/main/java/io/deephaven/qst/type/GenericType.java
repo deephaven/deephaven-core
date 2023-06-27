@@ -14,9 +14,13 @@ package io.deephaven.qst.type;
  */
 public interface GenericType<T> extends Type<T> {
 
+    NativeArrayType<T[], T> arrayType();
+
     <R> R walk(Visitor<R> visitor);
 
     interface Visitor<R> {
+        R visit(BoxedType<?> boxedType);
+
         R visit(StringType stringType);
 
         R visit(InstantType instantType);

@@ -34,10 +34,14 @@ class TypeHelper {
                 DoubleType.instance());
     }
 
+    static Stream<BoxedType<?>> boxedTypes() {
+        return primitiveTypes().map(BoxedType::of);
+    }
+
     static Stream<GenericType<?>> genericTypes() {
-        return Stream.concat(
+        return Stream.concat(Stream.concat(
                 Stream.of(StringType.instance(), InstantType.instance()),
-                primitiveVectorTypes());
+                primitiveVectorTypes()), boxedTypes());
     }
 
     static Stream<PrimitiveVectorType<?, ?>> primitiveVectorTypes() {
@@ -73,13 +77,18 @@ class TypeHelper {
         @Override
         public Void visit(PrimitiveType<?> primitiveType) {
             addUnchecked(primitiveType.clazz(), primitiveType);
-            addUnchecked(primitiveType.boxedClass(), primitiveType);
             return null;
         }
 
         @Override
         public Void visit(GenericType<?> genericType) {
             genericType.walk((GenericType.Visitor<Void>) this);
+            return null;
+        }
+
+        @Override
+        public Void visit(BoxedType<?> boxedType) {
+            addUnchecked(boxedType.clazz(), boxedType);
             return null;
         }
 
