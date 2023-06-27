@@ -2498,10 +2498,26 @@ public class DateTimeUtils {
     }
 
     /**
+     * Returns a 1-based int value of the day of the week for a {@link ZonedDateTime} in the specified time zone, with 1
+     * being Monday and 7 being Sunday.
+     *
+     * @param date date to find the day of the week of
+     * @return {@link QueryConstants#NULL_INT} if either input is {@code null}; otherwise, the day of the week
+     */
+    @ScriptApi
+    public static int dayOfWeek(@Nullable final LocalDate date) {
+        if (date == null) {
+            return io.deephaven.util.QueryConstants.NULL_INT;
+        }
+
+        return date.getDayOfWeek().getValue();
+    }
+
+    /**
      * Returns a 1-based int value of the day of the week for an {@link Instant} in the specified time zone, with 1
      * being Monday and 7 being Sunday.
      *
-     * @param instant time to find the day of the month of
+     * @param instant time to find the day of the week of
      * @param timeZone time zone
      * @return {@link QueryConstants#NULL_INT} if either input is {@code null}; otherwise, the day of the week
      */
@@ -2518,7 +2534,7 @@ public class DateTimeUtils {
      * Returns a 1-based int value of the day of the week for a {@link ZonedDateTime} in the specified time zone, with 1
      * being Monday and 7 being Sunday.
      *
-     * @param dateTime time to find the day of the month of
+     * @param dateTime time to find the day of the week of
      * @return {@link QueryConstants#NULL_INT} if either input is {@code null}; otherwise, the day of the week
      */
     @ScriptApi
@@ -2528,6 +2544,22 @@ public class DateTimeUtils {
         }
 
         return dateTime.getDayOfWeek().getValue();
+    }
+
+    /**
+     * Returns a 1-based int value of the day of the month for a {@link ZonedDateTime} and specified time zone. The
+     * first day of the month returns 1, the second day returns 2, etc.
+     *
+     * @param date date to find the day of the month of
+     * @return A {@link QueryConstants#NULL_INT} if either input is {@code null}; otherwise, the day of the month
+     */
+    @ScriptApi
+    public static int dayOfMonth(@Nullable final LocalDate date) {
+        if (date == null) {
+            return io.deephaven.util.QueryConstants.NULL_INT;
+        }
+
+        return date.getDayOfMonth();
     }
 
     /**
@@ -2564,10 +2596,26 @@ public class DateTimeUtils {
     }
 
     /**
+     * Returns a 1-based int value of the day of the year (Julian date) for a {@link ZonedDateTime} in the specified
+     * time zone. The first day of the year returns 1, the second day returns 2, etc.
+     *
+     * @param date date to find the day of the year of
+     * @return {@link QueryConstants#NULL_INT} if either input is {@code null}; otherwise, the day of the year
+     */
+    @ScriptApi
+    public static int dayOfYear(@Nullable final LocalDate date) {
+        if (date == null) {
+            return io.deephaven.util.QueryConstants.NULL_INT;
+        }
+
+        return date.getDayOfYear();
+    }
+
+    /**
      * Returns a 1-based int value of the day of the year (Julian date) for an {@link Instant} in the specified time
      * zone. The first day of the year returns 1, the second day returns 2, etc.
      *
-     * @param instant time to find the day of the month of
+     * @param instant time to find the day of the year of
      * @param timeZone time zone
      * @return {@link QueryConstants#NULL_INT} if either input is {@code null}; otherwise, the day of the year
      */
@@ -2584,7 +2632,7 @@ public class DateTimeUtils {
      * Returns a 1-based int value of the day of the year (Julian date) for a {@link ZonedDateTime} in the specified
      * time zone. The first day of the year returns 1, the second day returns 2, etc.
      *
-     * @param dateTime time to find the day of the month of
+     * @param dateTime time to find the day of the year of
      * @return {@link QueryConstants#NULL_INT} if either input is {@code null}; otherwise, the day of the year
      */
     @ScriptApi
@@ -2597,10 +2645,26 @@ public class DateTimeUtils {
     }
 
     /**
+     * Returns a 1-based int value of the month of the year (Julian date) for a {@link LocalDate}.
+     * January is 1, February is 2, etc.
+     *
+     * @param date date to find the month of the year of
+     * @return {@link QueryConstants#NULL_INT} if either input is {@code null}; otherwise, the month of the year
+     */
+    @ScriptApi
+    public static int monthOfYear(@Nullable final LocalDate date) {
+        if (date == null) {
+            return io.deephaven.util.QueryConstants.NULL_INT;
+        }
+
+        return date.getMonthValue();
+    }
+
+    /**
      * Returns a 1-based int value of the month of the year (Julian date) for an {@link Instant} in the specified time
      * zone. January is 1, February is 2, etc.
      *
-     * @param instant time to find the day of the month of
+     * @param instant time to find the month of the year of
      * @param timeZone time zone
      * @return {@link QueryConstants#NULL_INT} if either input is {@code null}; otherwise, the month of the year
      */
@@ -2617,7 +2681,7 @@ public class DateTimeUtils {
      * Returns a 1-based int value of the month of the year (Julian date) for a {@link ZonedDateTime} in the specified
      * time zone. January is 1, February is 2, etc.
      *
-     * @param dateTime time to find the day of the month of
+     * @param dateTime time to find the month of the year of
      * @return {@link QueryConstants#NULL_INT} if either input is {@code null}; otherwise, the month of the year
      */
     @ScriptApi
@@ -2630,9 +2694,24 @@ public class DateTimeUtils {
     }
 
     /**
+     * Returns the year for a {@link LocalDate}.
+     *
+     * @param date date to find the year of
+     * @return {@link QueryConstants#NULL_INT} if either input is {@code null}; otherwise, the year
+     */
+    @ScriptApi
+    public static int year(@Nullable final LocalDate date) {
+        if (date == null) {
+            return io.deephaven.util.QueryConstants.NULL_INT;
+        }
+
+        return date.getYear();
+    }
+
+    /**
      * Returns the year for an {@link Instant} in the specified time zone.
      *
-     * @param instant time to find the day of the month of
+     * @param instant time to find the year of
      * @param timeZone time zone
      * @return {@link QueryConstants#NULL_INT} if either input is {@code null}; otherwise, the year
      */
@@ -2648,7 +2727,7 @@ public class DateTimeUtils {
     /**
      * Returns the year for a {@link ZonedDateTime} in the specified time zone.
      *
-     * @param dateTime time to find the day of the month of
+     * @param dateTime time to find the year of
      * @return {@link QueryConstants#NULL_INT} if either input is {@code null}; otherwise, the year
      */
     @ScriptApi
@@ -2661,9 +2740,25 @@ public class DateTimeUtils {
     }
 
     /**
+     * Returns the year of the century (two-digit year) for a {@link LocalDate} in the specified time zone.
+     *
+     * @param date date to find the year of
+     * @return {@link QueryConstants#NULL_INT} if either input is {@code null}; otherwise, the year of the century
+     *         (two-digit year)
+     */
+    @ScriptApi
+    public static int yearOfCentury(@Nullable final LocalDate date) {
+        if (date == null) {
+            return io.deephaven.util.QueryConstants.NULL_INT;
+        }
+
+        return year(date) % 100;
+    }
+
+    /**
      * Returns the year of the century (two-digit year) for an {@link Instant} in the specified time zone.
      *
-     * @param instant time to find the day of the month of
+     * @param instant time to find the year of
      * @param timeZone time zone
      * @return {@link QueryConstants#NULL_INT} if either input is {@code null}; otherwise, the year of the century
      *         (two-digit year)
@@ -2693,6 +2788,25 @@ public class DateTimeUtils {
         return year(dateTime) % 100;
     }
 
+    /**
+     * Returns an {@link ZonedDateTime} for the prior midnight in the specified time zone.
+     *
+     * @param date date to compute the prior midnight for
+     * @param timeZone time zone
+     * @return {@code null} if either input is {@code null}; otherwise an {@link ZonedDateTime} representing the prior
+     *         midnight in the specified time zone
+     */
+    @ScriptApi
+    @Nullable
+    public static ZonedDateTime atMidnight(@Nullable final LocalDate date, @Nullable ZoneId timeZone) {
+        if (date == null || timeZone == null) {
+            return null;
+        }
+
+        return date.atStartOfDay(timeZone);
+    }
+
+    //TODO: return ZDT?
     /**
      * Returns an {@link Instant} for the prior midnight in the specified time zone.
      *
