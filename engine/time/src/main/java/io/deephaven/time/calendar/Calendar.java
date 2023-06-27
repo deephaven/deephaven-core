@@ -13,8 +13,7 @@ import java.util.List;
 
 //TODO: update all headers
 //TODO: review all docs
-
-//TODO: add regions
+//TODO: review API
 
 /**
  * A calendar.
@@ -80,8 +79,6 @@ public class Calendar {
 
     // region Arithmetic
 
-    //TODO should these methods be named add/subtract or plus/minus?
-
     /**
      * Adds a specified number of days to an input date.  Adding negative days is equivalent to subtracting days.
      *
@@ -89,7 +86,7 @@ public class Calendar {
      * @param days number of days to add
      * @return {@code days} days after {@code date}; null if {@code date} is null
      */
-    public LocalDate addDays(final LocalDate date, final int days) {
+    public LocalDate plusDays(final LocalDate date, final int days) {
         if (date == null) {
             return null;
         }
@@ -104,13 +101,13 @@ public class Calendar {
      * @param days number of days to add
      * @return {@code days} days after {@code date}; null if {@code date} is null
      */
-    public LocalDate addDays(final String date, final int days) {
+    public LocalDate plusDays(final String date, final int days) {
         if (date == null) {
             return null;
         }
 
         //TODO: quiet parsing?  document exception?
-        return addDays(DateTimeUtils.parseLocalDate(date), days);
+        return plusDays(DateTimeUtils.parseLocalDate(date), days);
     }
 
     /**
@@ -120,12 +117,12 @@ public class Calendar {
      * @param days number of days to add
      * @return {@code days} days after {@code time}; null if {@code date} is null
      */
-    public LocalDate addDays(final Instant time, final int days) {
+    public LocalDate plusDays(final Instant time, final int days) {
         if (time == null) {
             return null;
         }
 
-        return addDays(DateTimeUtils.toLocalDate(time, timeZone), days);
+        return plusDays(DateTimeUtils.toLocalDate(time, timeZone), days);
     }
 
     /**
@@ -135,22 +132,22 @@ public class Calendar {
      * @param days number of days to add
      * @return {@code days} days after {@code time}; null if {@code date} is null
      */
-    public LocalDate addDays(final ZonedDateTime time, final int days) {
+    public LocalDate plusDays(final ZonedDateTime time, final int days) {
         if (time == null) {
             return null;
         }
 
-        return addDays(time.toInstant(), days);
+        return plusDays(time.toInstant(), days);
     }
 
     /**
      * Subtracts a specified number of days to an input date.  Subtracting negative days is equivalent to adding days.
      *
      * @param date date
-     * @param days number of days to add
+     * @param days number of days to subtract
      * @return {@code days} days after {@code date}; null if {@code date} is null
      */
-    public LocalDate subtractDays(final LocalDate date, final int days) {
+    public LocalDate minusDays(final LocalDate date, final int days) {
         if (date == null) {
             return null;
         }
@@ -162,45 +159,45 @@ public class Calendar {
      * Subtracts a specified number of days to an input date.  Subtracting negative days is equivalent to adding days.
      *
      * @param date date
-     * @param days number of days to add
+     * @param days number of days to subtract
      * @return {@code days} days after {@code date}; null if {@code date} is null
      */
-    public LocalDate subtractDays(final String date, final int days) {
+    public LocalDate minusDays(final String date, final int days) {
         if (date == null) {
             return null;
         }
 
-        return subtractDays(DateTimeUtils.parseLocalDate(date), days);
+        return minusDays(DateTimeUtils.parseLocalDate(date), days);
     }
 
     /**
      * Subtracts a specified number of days to an input time.  Subtracting negative days is equivalent to adding days.
      *
      * @param time time
-     * @param days number of days to add
+     * @param days number of days to subtract
      * @return {@code days} days after {@code time}; null if {@code date} is null
      */
-    public LocalDate subtractDays(final Instant time, final int days) {
+    public LocalDate minusDays(final Instant time, final int days) {
         if (time == null) {
             return null;
         }
 
-        return subtractDays(DateTimeUtils.toLocalDate(time, timeZone), days);
+        return minusDays(DateTimeUtils.toLocalDate(time, timeZone), days);
     }
 
     /**
      * Subtracts a specified number of days to an input time.  Subtracting negative days is equivalent to adding days.
      *
      * @param time time
-     * @param days number of days to add
+     * @param days number of days to subtract
      * @return {@code days} days after {@code time}; null if {@code date} is null
      */
-    public LocalDate subtractDays(final ZonedDateTime time, final int days) {
+    public LocalDate minusDays(final ZonedDateTime time, final int days) {
         if (time == null) {
             return null;
         }
 
-        return subtractDays(time.toInstant(), days);
+        return minusDays(time.toInstant(), days);
     }
 
 //TODO: future_day / past_day
@@ -212,7 +209,7 @@ public class Calendar {
      * @return {@code days} days after the current date
      */
     public LocalDate nextDay(int days) {
-        return addDays(currentDay(), days);
+        return plusDays(currentDay(), days);
     }
 
 //TODO: future_day / past_day
@@ -224,7 +221,7 @@ public class Calendar {
      * @return {@code days} days before the current date
      */
     public LocalDate previousDay(int days) {
-        return subtractDays(currentDay(), days);
+        return minusDays(currentDay(), days);
     }
 
     //TODO: rename currentDate? -> nextDate() or futureDate()
