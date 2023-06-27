@@ -3,7 +3,7 @@
 #
 from abc import ABC, abstractmethod
 from enum import Enum
-from typing import List, Any
+from typing import List, Any, Union
 
 import pyarrow as pa
 
@@ -53,7 +53,7 @@ class NoneOp(TableOp):
 
 
 class TimeTableOp(TableOp):
-    def __init__(self, start_time: int = 0, period: int = 1000000000):
+    def __init__(self, start_time: Union[int, str] = 0, period: Union[int, str] = 1000000000):
         self.start_time = start_time
         self.period = period
 
@@ -62,7 +62,23 @@ class TimeTableOp(TableOp):
         return table_service_stub.TimeTable
 
     def make_grpc_request(self, result_id, source_id) -> Any:
-        return table_pb2.TimeTableRequest(result_id=result_id, start_time_nanos=self.start_time,
+        if isinstance(self.start_time, str):
+            if isinstance(self.period, str):
+                return table_pb2.TimeTableRequest(result_id=result_id,
+                                                  start_time_string=self.start_time,
+                                                  period_string=self.period)
+
+            return table_pb2.TimeTableRequest(result_id=result_id,
+                                              start_time_string=self.start_time,
+                                              period_nanos=self.period)
+
+        if isinstance(self.period, str):
+            return table_pb2.TimeTableRequest(result_id=result_id,
+                                              start_time_nanos=self.start_time,
+                                              period_string=self.period)
+
+        return table_pb2.TimeTableRequest(result_id=result_id,
+                                          start_time_nanos=self.start_time,
                                           period_nanos=self.period)
 
     def make_grpc_request_for_batch(self, result_id, source_id) -> Any:

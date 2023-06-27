@@ -24,6 +24,18 @@ class TableTestCase(BaseTestCase):
         table.close()
         self.assertTrue(table.is_closed)
 
+    def test_time_table(self):
+        periods = [1000000000, 100, "PT1S", "PT00:00:00.001"]
+        start_times = [None, "2021-01-01T11:00 ET", "2020-10-01T11:00:34.001 PT"]
+
+        for p in periods:
+            for st in start_times:
+                t = self.session.time_table(period=p, start_time=st)
+                column_specs = ["Col1 = i", "Col2 = i * 2"]
+                t2 = t.update(formulas=column_specs)
+                # time table has a default timestamp column
+                self.assertEqual(len(column_specs) + 1, len(t2.schema))
+
     def test_update(self):
         t = self.session.time_table(period=10000000)
         column_specs = ["Col1 = i", "Col2 = i * 2"]

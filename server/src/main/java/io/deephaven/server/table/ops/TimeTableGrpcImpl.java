@@ -19,6 +19,7 @@ import io.grpc.StatusRuntimeException;
 
 import javax.inject.Inject;
 import javax.inject.Singleton;
+import java.time.Instant;
 import java.util.List;
 
 @Singleton
@@ -37,7 +38,9 @@ public class TimeTableGrpcImpl extends GrpcTableOperation<TimeTableRequest> {
 
     @Override
     public void validateRequest(final TimeTableRequest request) throws StatusRuntimeException {
-        final long periodNanos = request.getPeriodNanos();
+        final long periodNanos = request.hasPeriodString()
+                ? DateTimeUtils.parseDurationNanos(request.getPeriodString())
+                : request.getPeriodNanos();
         if (periodNanos <= 0) {
             throw Exceptions.statusRuntimeException(Code.FAILED_PRECONDITION,
                     "periodNanos must be >= 0 (found: " + periodNanos + ")");
@@ -48,9 +51,27 @@ public class TimeTableGrpcImpl extends GrpcTableOperation<TimeTableRequest> {
     public Table create(final TimeTableRequest request,
             final List<SessionState.ExportObject<Table>> sourceTables) {
         Assert.eq(sourceTables.size(), "sourceTables.size()", 0);
+        if (request.hasStartTimeString()) {
+            final Instant startTime = DateTimeUtils.parseInstant(request.getStartTimeString());
+            if (request.hasPeriodString()) {
+                final long periodValue = DateTimeUtils.parseDurationNanos(request.getPeriodString());
+                return new TimeTable(ExecutionContext.getContext().getUpdateGraph(), scheduler,
+                        startTime, periodValue, false);
+            }
+            final long periodValue = request.getPeriodNanos();
+            return new TimeTable(ExecutionContext.getContext().getUpdateGraph(), scheduler,
+                    startTime, periodValue, false);
+
+        }
         final long startTime = request.getStartTimeNanos();
+        if (request.hasPeriodString()) {
+            final long periodValue = DateTimeUtils.parseDurationNanos(request.getPeriodString());
+            return new TimeTable(ExecutionContext.getContext().getUpdateGraph(), scheduler,
+                    startTime <= 0 ? null : DateTimeUtils.epochNanosToInstant(startTime), periodValue, false);
+        }
         final long periodValue = request.getPeriodNanos();
         return new TimeTable(ExecutionContext.getContext().getUpdateGraph(), scheduler,
                 startTime <= 0 ? null : DateTimeUtils.epochNanosToInstant(startTime), periodValue, false);
+
     }
 }
