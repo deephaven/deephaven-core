@@ -58,7 +58,7 @@ Currently, the R client is only supported on Ubuntu 20.04 or 22.04 and must be b
    ```
    and in that console, install the client
    ```r
-   install.packages("/path/to/rdeephaven", repos=NULL, type="source", dependencies=TRUE)
+   install.packages("/path/to/rdeephaven", INSTALL_opts="--install-tests", repos=NULL, type="source", dependencies=TRUE)
    ```
    This last command can also be executed from RStudio without the need for explicitly starting an R console.
 
@@ -67,6 +67,14 @@ Currently, the R client is only supported on Ubuntu 20.04 or 22.04 and must be b
    library(rdeephaven)
    ```
    in the R session, and start using the client!
+
+## Running the unit tests
+
+The Deephaven R client utilizes R's `testthat` package to perform unit tests. In order to run these unit tests, install `testthat` via `install.packages("testthat")`. Then, from an R session with `rdeephaven` installed, run the unit tests:
+```r
+library(testthat)
+test_package("rdeephaven")
+```
    
 ## High-level design overview
 
