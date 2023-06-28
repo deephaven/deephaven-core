@@ -85,19 +85,19 @@ public class TestCalendarMethodsFromTable extends BaseArrayTestCase {
         assertEquals(calendar.futureDate(date1, 14),
                 getVal(emptyTable(1).update("nextDay = nextDay(date1, 14)"), "nextDay"));
 
-        assertEquals(calendar.daysInRange(time1, time2),
+        assertEquals(calendar.calendarDates(time1, time2),
                 (String[]) getVal(emptyTable(1).update("daysInRange = daysInRange(time1, time2)"), "daysInRange"));
-        assertEquals(calendar.daysInRange(date1, date2),
+        assertEquals(calendar.calendarDates(date1, date2),
                 (String[]) getVal(emptyTable(1).update("daysInRange = daysInRange(date1, date2)"), "daysInRange"));
 
 
-        assertEquals(calendar.numberOfDays(time1, time2),
+        assertEquals(calendar.numberCalendarDates(time1, time2),
                 getVal(emptyTable(1).update("numberOfDays = numberOfDays(time1, time2)"), "numberOfDays"));
-        assertEquals(calendar.numberOfDays(time1, time2, true),
+        assertEquals(calendar.numberCalendarDates(time1, time2, true),
                 getVal(emptyTable(1).update("numberOfDays = numberOfDays(time1, time2, true)"), "numberOfDays"));
-        assertEquals(calendar.numberOfDays(date1, date2),
+        assertEquals(calendar.numberCalendarDates(date1, date2),
                 getVal(emptyTable(1).update("numberOfDays = numberOfDays(date1, date2)"), "numberOfDays"));
-        assertEquals(calendar.numberOfDays(date1, date2, true),
+        assertEquals(calendar.numberCalendarDates(date1, date2, true),
                 getVal(emptyTable(1).update("numberOfDays = numberOfDays(date1, date2, true)"), "numberOfDays"));
 
 
@@ -241,18 +241,18 @@ public class TestCalendarMethodsFromTable extends BaseArrayTestCase {
                 emptyTable(1).update("nextNonBusinessDay = nextNonBusinessDay(date1, 16)"), "nextNonBusinessDay"));
 
 
-        assertEquals(calendar.businessDaysInRange(time1, time2),
+        assertEquals(calendar.businessDates(time1, time2),
                 (String[]) getVal(emptyTable(1).update("businessDaysInRange = businessDaysInRange(time1, time2)"),
                         "businessDaysInRange"));
-        assertEquals(calendar.businessDaysInRange(date1, date2),
+        assertEquals(calendar.businessDates(date1, date2),
                 (String[]) getVal(emptyTable(1).update("businessDaysInRange = businessDaysInRange(date1, date2)"),
                         "businessDaysInRange"));
 
 
-        assertEquals(calendar.nonBusinessDaysInRange(time1, time2),
+        assertEquals(calendar.nonBusinessDates(time1, time2),
                 (String[]) getVal(emptyTable(1).update("nonBusinessDaysInRange = nonBusinessDaysInRange(time1, time2)"),
                         "nonBusinessDaysInRange"));
-        assertEquals(calendar.nonBusinessDaysInRange(date1, date2),
+        assertEquals(calendar.nonBusinessDates(date1, date2),
                 (String[]) getVal(emptyTable(1).update("nonBusinessDaysInRange = nonBusinessDaysInRange(date1, date2)"),
                         "nonBusinessDaysInRange"));
 
@@ -279,13 +279,13 @@ public class TestCalendarMethodsFromTable extends BaseArrayTestCase {
         assertEquals(calendar.numberOfBusinessDays(time1, time2),
                 getVal(emptyTable(1).update("numberOfBusinessDays = numberOfBusinessDays(time1, time2)"),
                         "numberOfBusinessDays"));
-        assertEquals(calendar.numberOfBusinessDays(time1, time2, true),
+        assertEquals(calendar.numberBusinessDates(time1, time2, true),
                 getVal(emptyTable(1).update("numberOfBusinessDays = numberOfBusinessDays(time1, time2, true)"),
                         "numberOfBusinessDays"));
         assertEquals(calendar.numberOfBusinessDays(date1, date2),
                 getVal(emptyTable(1).update("numberOfBusinessDays = numberOfBusinessDays(date1, date2)"),
                         "numberOfBusinessDays"));
-        assertEquals(calendar.numberOfBusinessDays(date1, date2, true),
+        assertEquals(calendar.numberBusinessDates(date1, date2, true),
                 getVal(emptyTable(1).update("numberOfBusinessDays = numberOfBusinessDays(date1, date2, true)"),
                         "numberOfBusinessDays"));
 
@@ -293,13 +293,13 @@ public class TestCalendarMethodsFromTable extends BaseArrayTestCase {
         assertEquals(calendar.numberOfNonBusinessDays(time1, time2),
                 getVal(emptyTable(1).update("numberOfNonBusinessDays = numberOfNonBusinessDays(time1, time2)"),
                         "numberOfNonBusinessDays"));
-        assertEquals(calendar.numberOfNonBusinessDays(time1, time2, true),
+        assertEquals(calendar.numberNonBusinessDates(time1, time2, true),
                 getVal(emptyTable(1).update("numberOfNonBusinessDays = numberOfNonBusinessDays(time1, time2, true)"),
                         "numberOfNonBusinessDays"));
         assertEquals(calendar.numberOfNonBusinessDays(date1, date2),
                 getVal(emptyTable(1).update("numberOfNonBusinessDays = numberOfNonBusinessDays(date1, date2)"),
                         "numberOfNonBusinessDays"));
-        assertEquals(calendar.numberOfNonBusinessDays(date1, date2, true),
+        assertEquals(calendar.numberNonBusinessDates(date1, date2, true),
                 getVal(emptyTable(1).update("numberOfNonBusinessDays = numberOfNonBusinessDays(date1, date2, true)"),
                         "numberOfNonBusinessDays"));
 

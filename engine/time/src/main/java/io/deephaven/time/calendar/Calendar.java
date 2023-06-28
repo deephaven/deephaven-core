@@ -1,5 +1,5 @@
 /**
- * Copyright (c) 2016-2022 Deephaven Data Labs and Patent Pending
+ * Copyright (c) 2016-2023 Deephaven Data Labs and Patent Pending
  */
 package io.deephaven.time.calendar;
 
@@ -11,9 +11,7 @@ import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
 import java.util.List;
 
-//TODO: update all headers
 //TODO: review all docs
-//TODO: review API
 
 /**
  * A calendar.
@@ -233,8 +231,6 @@ public class Calendar {
 
     // region Ranges
 
-    **
-
     /**
      * Gets the days in a given range.
      *
@@ -242,7 +238,7 @@ public class Calendar {
      * @param end   end of a time range; if null, return empty array
      * @return the inclusive days between {@code start} and {@code end}
      */
-    public LocalDate[] daysInRange(final LocalDate start, final LocalDate end) {
+    public LocalDate[] calendarDates(final LocalDate start, final LocalDate end) {
         if (start == null || end == null) {
             return new LocalDate[0];
         }
@@ -265,12 +261,12 @@ public class Calendar {
      * @param end   end of a time range; if null, return empty array
      * @return the inclusive days between {@code start} and {@code end}
      */
-    public LocalDate[] daysInRange(final ZonedDateTime start, final ZonedDateTime end) {
+    public LocalDate[] calendarDates(final ZonedDateTime start, final ZonedDateTime end) {
         if (start == null || end == null) {
             return new LocalDate[0];
         }
 
-        return daysInRange(start.withZoneSameInstant(timeZone()).toLocalDate(), end.withZoneSameInstant(timeZone()).toLocalDate());
+        return calendarDates(start.withZoneSameInstant(timeZone()).toLocalDate(), end.withZoneSameInstant(timeZone()).toLocalDate());
     }
 
     /**
@@ -280,12 +276,12 @@ public class Calendar {
      * @param end   end of a time range; if null, return empty array
      * @return the inclusive days between {@code start} and {@code end}
      */
-    public LocalDate[] daysInRange(final Instant start, final Instant end) {
+    public LocalDate[] calendarDates(final Instant start, final Instant end) {
         if (start == null || end == null) {
             return new LocalDate[0];
         }
 
-        return daysInRange(DateTimeUtils.toZonedDateTime(start, timeZone()).toLocalDate(), DateTimeUtils.toZonedDateTime(end, timeZone()).toLocalDate());
+        return calendarDates(DateTimeUtils.toZonedDateTime(start, timeZone()).toLocalDate(), DateTimeUtils.toZonedDateTime(end, timeZone()).toLocalDate());
     }
 
     /**
@@ -295,15 +291,14 @@ public class Calendar {
      * @param end   end of a time range; if null, return empty array
      * @return the inclusive days between {@code start} and {@code end}
      */
-    public LocalDate[] daysInRange(final String start, final String end) {
+    public LocalDate[] calendarDates(final String start, final String end) {
         if (start == null || end == null) {
             return new LocalDate[0];
         }
 
-        return daysInRange(DateTimeUtils.parseLocalDate(start), DateTimeUtils.parseLocalDate(end));
+        return calendarDates(DateTimeUtils.parseLocalDate(start), DateTimeUtils.parseLocalDate(end));
     }
 
-    //TODO: add InRange to the names?
     /**
      * Gets the number of days in a given range.
      *
@@ -312,7 +307,7 @@ public class Calendar {
      * @param endInclusive whether to treat the {@code end} inclusive or exclusively
      * @return the number of days between {@code start} and {@code end}, or {@code NULL_INT} if any input is null.
      */
-    public int numberOfDays(final LocalDate start, final LocalDate end, final boolean endInclusive) {
+    public int numberCalendarDates(final LocalDate start, final LocalDate end, final boolean endInclusive) {
         if (start == null || end == null) {
             return QueryConstants.NULL_INT;
         }
@@ -333,8 +328,8 @@ public class Calendar {
      * @param end   end of a time range
      * @return the number of days between {@code start} and {@code end}, or {@code NULL_INT} if any input is null.
      */
-    public int numberOfDays(final LocalDate start, final LocalDate end) {
-        return numberOfDays(start, end, false);
+    public int numberCalendarDates(final LocalDate start, final LocalDate end) {
+        return numberCalendarDates(start, end, false);
     }
 
     /**
@@ -345,12 +340,12 @@ public class Calendar {
      * @param endInclusive whether to treat the {@code end} inclusive or exclusively
      * @return the number of days between {@code start} and {@code end}, or {@code NULL_INT} if any input is null.
      */
-    public int numberOfDays(final ZonedDateTime start, final ZonedDateTime end, final boolean endInclusive) {
+    public int numberCalendarDates(final ZonedDateTime start, final ZonedDateTime end, final boolean endInclusive) {
         if (start == null || end == null) {
             return QueryConstants.NULL_INT;
         }
 
-        return numberOfDays(start.withZoneSameInstant(timeZone()).toLocalDate(), end.withZoneSameInstant(timeZone()).toLocalDate(), endInclusive);
+        return numberCalendarDates(start.withZoneSameInstant(timeZone()).toLocalDate(), end.withZoneSameInstant(timeZone()).toLocalDate(), endInclusive);
     }
 
     /**
@@ -360,8 +355,8 @@ public class Calendar {
      * @param end   end of a time range
      * @return the number of days between {@code start} and {@code end}, or {@code NULL_INT} if any input is null.
      */
-    public int numberOfDays(final ZonedDateTime start, final ZonedDateTime end) {
-        return numberOfDays(start, end, false);
+    public int numberCalendarDates(final ZonedDateTime start, final ZonedDateTime end) {
+        return numberCalendarDates(start, end, false);
     }
 
     /**
@@ -372,12 +367,12 @@ public class Calendar {
      * @param endInclusive whether to treat the {@code end} inclusive or exclusively
      * @return the number of days between {@code start} and {@code end}, or {@code NULL_INT} if any input is null.
      */
-    public int numberOfDays(final Instant start, final Instant end, final boolean endInclusive) {
+    public int numberCalendarDates(final Instant start, final Instant end, final boolean endInclusive) {
         if (start == null || end == null) {
             return QueryConstants.NULL_INT;
         }
 
-        return numberOfDays(DateTimeUtils.toZonedDateTime(start, timeZone()).toLocalDate(), DateTimeUtils.toZonedDateTime(end, timeZone()).toLocalDate(), endInclusive);
+        return numberCalendarDates(DateTimeUtils.toZonedDateTime(start, timeZone()).toLocalDate(), DateTimeUtils.toZonedDateTime(end, timeZone()).toLocalDate(), endInclusive);
     }
 
     /**
@@ -387,8 +382,8 @@ public class Calendar {
      * @param end   end of a time range
      * @return the number of days between {@code start} and {@code end}, or {@code NULL_INT} if any input is null.
      */
-    public int numberOfDays(final Instant start, final Instant end) {
-        return numberOfDays(start, end, false);
+    public int numberCalendarDates(final Instant start, final Instant end) {
+        return numberCalendarDates(start, end, false);
     }
 
     /**
@@ -399,12 +394,12 @@ public class Calendar {
      * @param endInclusive whether to treat the {@code end} inclusive or exclusively
      * @return the number of days between {@code start} and {@code end}, or {@code NULL_INT} if any input is null.
      */
-    public int numberOfDays(final String start, final String end, final boolean endInclusive) {
+    public int numberCalendarDates(final String start, final String end, final boolean endInclusive) {
         if (start == null || end == null) {
             return QueryConstants.NULL_INT;
         }
 
-        return numberOfDays(DateTimeUtils.parseLocalDate(start), DateTimeUtils.parseLocalDate(end), endInclusive);
+        return numberCalendarDates(DateTimeUtils.parseLocalDate(start), DateTimeUtils.parseLocalDate(end), endInclusive);
     }
 
     /**
@@ -414,11 +409,11 @@ public class Calendar {
      * @param end   end of a time range
      * @return the number of days between {@code start} and {@code end}, or {@code NULL_INT} if any input is null.
      */
-    public int numberOfDays(final String start, final String end) {
-        return numberOfDays(start, end, false);
+    public int numberCalendarDates(final String start, final String end) {
+        return numberCalendarDates(start, end, false);
     }
 
-    //TODO:
+    //TODO: time diff methods?
 //    diffBusinessDay
 //            diffBusinessDay
 //    diffBusinessNanos

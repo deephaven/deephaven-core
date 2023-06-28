@@ -39,13 +39,13 @@ public class StaticCalendarMethodsTest extends BaseArrayTestCase {
         assertEquals(calendar.futureDate(date2), StaticCalendarMethods.nextDay(date2));
         assertEquals(calendar.futureDate(date2, 14), StaticCalendarMethods.nextDay(date2, 14));
 
-        assertEquals(calendar.daysInRange(time1, time2), StaticCalendarMethods.daysInRange(time1, time2));
-        assertEquals(calendar.daysInRange(date1, date2), StaticCalendarMethods.daysInRange(date1, date2));
+        assertEquals(calendar.calendarDates(time1, time2), StaticCalendarMethods.daysInRange(time1, time2));
+        assertEquals(calendar.calendarDates(date1, date2), StaticCalendarMethods.daysInRange(date1, date2));
 
-        assertEquals(calendar.numberOfDays(time1, time2), StaticCalendarMethods.numberOfDays(time1, time2));
-        assertEquals(calendar.numberOfDays(time1, time2, true), StaticCalendarMethods.numberOfDays(time1, time2, true));
-        assertEquals(calendar.numberOfDays(date1, date2), StaticCalendarMethods.numberOfDays(date1, date2));
-        assertEquals(calendar.numberOfDays(date1, date2, true), StaticCalendarMethods.numberOfDays(date1, date2, true));
+        assertEquals(calendar.numberCalendarDates(time1, time2), StaticCalendarMethods.numberOfDays(time1, time2));
+        assertEquals(calendar.numberCalendarDates(time1, time2, true), StaticCalendarMethods.numberOfDays(time1, time2, true));
+        assertEquals(calendar.numberCalendarDates(date1, date2), StaticCalendarMethods.numberOfDays(date1, date2));
+        assertEquals(calendar.numberCalendarDates(date1, date2, true), StaticCalendarMethods.numberOfDays(date1, date2, true));
 
 
         assertEquals(calendar.dayOfWeek(), StaticCalendarMethods.dayOfWeek());
@@ -122,15 +122,15 @@ public class StaticCalendarMethodsTest extends BaseArrayTestCase {
         assertEquals(calendar.nextNonBusinessDay(date1, 16), StaticCalendarMethods.nextNonBusinessDay(date1, 16));
 
 
-        assertEquals(calendar.businessDaysInRange(time1, time2),
+        assertEquals(calendar.businessDates(time1, time2),
                 StaticCalendarMethods.businessDaysInRange(time1, time2));
-        assertEquals(calendar.businessDaysInRange(date1, date2),
+        assertEquals(calendar.businessDates(date1, date2),
                 StaticCalendarMethods.businessDaysInRange(date1, date2));
 
 
-        assertEquals(calendar.nonBusinessDaysInRange(time1, time2),
+        assertEquals(calendar.nonBusinessDates(time1, time2),
                 StaticCalendarMethods.nonBusinessDaysInRange(time1, time2));
-        assertEquals(calendar.nonBusinessDaysInRange(date1, date2),
+        assertEquals(calendar.nonBusinessDates(date1, date2),
                 StaticCalendarMethods.nonBusinessDaysInRange(date1, date2));
 
 
@@ -147,21 +147,21 @@ public class StaticCalendarMethodsTest extends BaseArrayTestCase {
 
         assertEquals(calendar.numberOfBusinessDays(time1, time2),
                 StaticCalendarMethods.numberOfBusinessDays(time1, time2));
-        assertEquals(calendar.numberOfBusinessDays(time1, time2, true),
+        assertEquals(calendar.numberBusinessDates(time1, time2, true),
                 StaticCalendarMethods.numberOfBusinessDays(time1, time2, true));
         assertEquals(calendar.numberOfBusinessDays(date1, date2),
                 StaticCalendarMethods.numberOfBusinessDays(date1, date2));
-        assertEquals(calendar.numberOfBusinessDays(date1, date2, true),
+        assertEquals(calendar.numberBusinessDates(date1, date2, true),
                 StaticCalendarMethods.numberOfBusinessDays(date1, date2, true));
 
 
         assertEquals(calendar.numberOfNonBusinessDays(time1, time2),
                 StaticCalendarMethods.numberOfNonBusinessDays(time1, time2));
-        assertEquals(calendar.numberOfNonBusinessDays(time1, time2, true),
+        assertEquals(calendar.numberNonBusinessDates(time1, time2, true),
                 StaticCalendarMethods.numberOfNonBusinessDays(time1, time2, true));
         assertEquals(calendar.numberOfNonBusinessDays(date1, date2),
                 StaticCalendarMethods.numberOfNonBusinessDays(date1, date2));
-        assertEquals(calendar.numberOfNonBusinessDays(date1, date2, true),
+        assertEquals(calendar.numberNonBusinessDates(date1, date2, true),
                 StaticCalendarMethods.numberOfNonBusinessDays(date1, date2, true));
 
 

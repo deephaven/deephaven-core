@@ -281,7 +281,7 @@ public class TestDefaultBusinessCalendar extends BaseArrayTestCase {
                 "2017-03-14"
         };
 
-        String[] results = USNYSE.daysInRange(startDate, endDate);
+        String[] results = USNYSE.calendarDates(startDate, endDate);
         Arrays.sort(goodResults);
         Arrays.sort(results);
         boolean answer = Arrays.equals(goodResults, results);
@@ -290,7 +290,7 @@ public class TestDefaultBusinessCalendar extends BaseArrayTestCase {
 
         startDate = DateTimeUtils.parseInstant("2017-03-11T01:00:00.000000000 JP");
         endDate = DateTimeUtils.parseInstant("2017-03-14T01:00:00.000000000 JP");
-        results = JPOSE.daysInRange(startDate, endDate);
+        results = JPOSE.calendarDates(startDate, endDate);
         Arrays.sort(goodResults);
         Arrays.sort(results);
         answer = Arrays.equals(goodResults, results);
@@ -298,8 +298,8 @@ public class TestDefaultBusinessCalendar extends BaseArrayTestCase {
 
 
         startDate = null;
-        assertEquals(USNYSE.daysInRange(startDate, endDate).length, 0);
-        assertEquals(JPOSE.daysInRange(startDate, endDate).length, 0);
+        assertEquals(USNYSE.calendarDates(startDate, endDate).length, 0);
+        assertEquals(JPOSE.calendarDates(startDate, endDate).length, 0);
     }
 
     public void testDateStringRange() {
@@ -311,13 +311,13 @@ public class TestDefaultBusinessCalendar extends BaseArrayTestCase {
                 "2014-03-01", "2014-03-02", "2014-03-03", "2014-03-04", "2014-03-05"
         };
 
-        String[] results = USNYSE.daysInRange(startDate, endDate);
+        String[] results = USNYSE.calendarDates(startDate, endDate);
         Arrays.sort(goodResults);
         Arrays.sort(results);
         boolean answer = Arrays.equals(goodResults, results);
         assertTrue(answer);
 
-        results = JPOSE.daysInRange(startDate, endDate);
+        results = JPOSE.calendarDates(startDate, endDate);
         Arrays.sort(goodResults);
         Arrays.sort(results);
         answer = Arrays.equals(goodResults, results);
@@ -326,114 +326,114 @@ public class TestDefaultBusinessCalendar extends BaseArrayTestCase {
         startDate = "2020-01-01";
         endDate = "2020-01-20";
 
-        results = USNYSE.daysInRange(startDate, endDate);
+        results = USNYSE.calendarDates(startDate, endDate);
         assertEquals(results.length, 20);
 
-        results = JPOSE.daysInRange(startDate, endDate);
+        results = JPOSE.calendarDates(startDate, endDate);
         assertEquals(results.length, 20);
 
         startDate = null;
-        assertEquals(USNYSE.daysInRange(startDate, endDate).length, 0);
-        assertEquals(JPOSE.daysInRange(startDate, endDate).length, 0);
+        assertEquals(USNYSE.calendarDates(startDate, endDate).length, 0);
+        assertEquals(JPOSE.calendarDates(startDate, endDate).length, 0);
 
 
         // incorrectly formatted days
-        assertEquals(new String[0], USNYSE.daysInRange("2018-02-31", "2019-02-31"));
+        assertEquals(new String[0], USNYSE.calendarDates("2018-02-31", "2019-02-31"));
     }
 
     public void testNumberOfDays() {
         Instant startDate = DateTimeUtils.parseInstant("2014-02-18T01:00:00.000000000 NY");
         Instant endDate = DateTimeUtils.parseInstant("2014-03-05T01:00:00.000000000 NY");
 
-        assertEquals(USNYSE.numberOfDays(startDate, endDate), 15);
+        assertEquals(USNYSE.numberCalendarDates(startDate, endDate), 15);
         assertEquals(USNYSE.numberOfBusinessDays(startDate, endDate), 11);
-        assertEquals(USNYSE.numberOfBusinessDays(startDate, endDate, false), 11);
-        assertEquals(USNYSE.numberOfBusinessDays(startDate, endDate, true), 12);
+        assertEquals(USNYSE.numberBusinessDates(startDate, endDate, false), 11);
+        assertEquals(USNYSE.numberBusinessDates(startDate, endDate, true), 12);
         assertEquals(USNYSE.numberOfNonBusinessDays(startDate, endDate), 4);
-        assertEquals(USNYSE.numberOfNonBusinessDays(startDate, endDate, false), 4);
-        assertEquals(USNYSE.numberOfNonBusinessDays(startDate, endDate, true), 4);
+        assertEquals(USNYSE.numberNonBusinessDates(startDate, endDate, false), 4);
+        assertEquals(USNYSE.numberNonBusinessDates(startDate, endDate, true), 4);
 
 
         startDate = DateTimeUtils.parseInstant("2020-01-01T01:00:00.000000000 NY");
         endDate = DateTimeUtils.parseInstant("2020-01-20T01:00:00.000000000 NY");
 
-        assertEquals(USNYSE.numberOfDays(startDate, endDate), 19);
+        assertEquals(USNYSE.numberCalendarDates(startDate, endDate), 19);
         assertEquals(USNYSE.numberOfBusinessDays(startDate, endDate), 12);
-        assertEquals(USNYSE.numberOfBusinessDays(startDate, endDate, true), 12);
+        assertEquals(USNYSE.numberBusinessDates(startDate, endDate, true), 12);
         assertEquals(USNYSE.numberOfNonBusinessDays(startDate, endDate), 7);
-        assertEquals(USNYSE.numberOfNonBusinessDays(startDate, endDate, true), 8);
+        assertEquals(USNYSE.numberNonBusinessDates(startDate, endDate, true), 8);
 
         startDate = endDate;
-        assertEquals(USNYSE.numberOfDays(startDate, endDate), 0);
+        assertEquals(USNYSE.numberCalendarDates(startDate, endDate), 0);
         assertEquals(USNYSE.numberOfBusinessDays(startDate, endDate), 0);
-        assertEquals(USNYSE.numberOfBusinessDays(startDate, endDate, true), 0);
+        assertEquals(USNYSE.numberBusinessDates(startDate, endDate, true), 0);
         assertEquals(USNYSE.numberOfNonBusinessDays(startDate, endDate), 0);
-        assertEquals(USNYSE.numberOfNonBusinessDays(startDate, endDate, true), 1);
+        assertEquals(USNYSE.numberNonBusinessDates(startDate, endDate, true), 1);
 
         startDate = DateTimeUtils.parseInstant("2020-01-02T01:00:00.000000000 NY");
         endDate = startDate;
-        assertEquals(USNYSE.numberOfDays(startDate, endDate), 0);
+        assertEquals(USNYSE.numberCalendarDates(startDate, endDate), 0);
         assertEquals(USNYSE.numberOfBusinessDays(startDate, endDate), 0);
-        assertEquals(USNYSE.numberOfBusinessDays(startDate, endDate, true), 1);
+        assertEquals(USNYSE.numberBusinessDates(startDate, endDate, true), 1);
         assertEquals(USNYSE.numberOfNonBusinessDays(startDate, endDate), 0);
-        assertEquals(USNYSE.numberOfNonBusinessDays(startDate, endDate, true), 0);
+        assertEquals(USNYSE.numberNonBusinessDates(startDate, endDate, true), 0);
 
         startDate = null;
-        assertEquals(USNYSE.numberOfDays(startDate, endDate), QueryConstants.NULL_INT);
+        assertEquals(USNYSE.numberCalendarDates(startDate, endDate), QueryConstants.NULL_INT);
         assertEquals(USNYSE.numberOfBusinessDays(startDate, endDate), QueryConstants.NULL_INT);
-        assertEquals(USNYSE.numberOfBusinessDays(startDate, endDate, true), QueryConstants.NULL_INT);
+        assertEquals(USNYSE.numberBusinessDates(startDate, endDate, true), QueryConstants.NULL_INT);
         assertEquals(USNYSE.numberOfNonBusinessDays(startDate, endDate), QueryConstants.NULL_INT);
-        assertEquals(USNYSE.numberOfNonBusinessDays(startDate, endDate, true), QueryConstants.NULL_INT);
+        assertEquals(USNYSE.numberNonBusinessDates(startDate, endDate, true), QueryConstants.NULL_INT);
 
         startDate = DateTimeUtils.parseInstant("2014-02-18T01:00:00.000000000 NY");
         endDate = null;
-        assertEquals(USNYSE.numberOfDays(startDate, endDate), QueryConstants.NULL_INT);
+        assertEquals(USNYSE.numberCalendarDates(startDate, endDate), QueryConstants.NULL_INT);
         assertEquals(USNYSE.numberOfBusinessDays(startDate, endDate), QueryConstants.NULL_INT);
-        assertEquals(USNYSE.numberOfBusinessDays(startDate, endDate, true), QueryConstants.NULL_INT);
+        assertEquals(USNYSE.numberBusinessDates(startDate, endDate, true), QueryConstants.NULL_INT);
         assertEquals(USNYSE.numberOfNonBusinessDays(startDate, endDate), QueryConstants.NULL_INT);
-        assertEquals(USNYSE.numberOfNonBusinessDays(startDate, endDate, true), QueryConstants.NULL_INT);
+        assertEquals(USNYSE.numberNonBusinessDates(startDate, endDate, true), QueryConstants.NULL_INT);
 
         startDate = DateTimeUtils.parseInstant("2014-02-18T01:00:00.000000000 NY");
         endDate = DateTimeUtils.parseInstant("2017-02-18T01:00:00.000000000 NY");
-        assertEquals(USNYSE.numberOfDays(startDate, endDate), 1096);
-        assertEquals(USNYSE.numberOfDays(startDate, endDate, true), 1097);
+        assertEquals(USNYSE.numberCalendarDates(startDate, endDate), 1096);
+        assertEquals(USNYSE.numberCalendarDates(startDate, endDate, true), 1097);
         assertEquals(USNYSE.numberOfBusinessDays(startDate, endDate), 758);
-        assertEquals(USNYSE.numberOfBusinessDays(startDate, endDate, true), 758);
+        assertEquals(USNYSE.numberBusinessDates(startDate, endDate, true), 758);
         assertEquals(USNYSE.numberOfNonBusinessDays(startDate, endDate), 338);
-        assertEquals(USNYSE.numberOfNonBusinessDays(startDate, endDate, true), 339);
+        assertEquals(USNYSE.numberNonBusinessDates(startDate, endDate, true), 339);
     }
 
     public void testNumberOfDaysString() {
         String startDate = "2014-02-18";
         String endDate = "2014-03-05";
 
-        assertEquals(USNYSE.numberOfDays(startDate, endDate), 15);
+        assertEquals(USNYSE.numberCalendarDates(startDate, endDate), 15);
         assertEquals(USNYSE.numberOfBusinessDays(startDate, endDate), 11);
         assertEquals(USNYSE.numberOfNonBusinessDays(startDate, endDate), 4);
 
-        assertEquals(USNYSE.numberOfDays(startDate, endDate, false), 15);
-        assertEquals(USNYSE.numberOfBusinessDays(startDate, endDate, false), 11);
-        assertEquals(USNYSE.numberOfNonBusinessDays(startDate, endDate, false), 4);
+        assertEquals(USNYSE.numberCalendarDates(startDate, endDate, false), 15);
+        assertEquals(USNYSE.numberBusinessDates(startDate, endDate, false), 11);
+        assertEquals(USNYSE.numberNonBusinessDates(startDate, endDate, false), 4);
 
-        assertEquals(USNYSE.numberOfDays(startDate, endDate, true), 16);
-        assertEquals(USNYSE.numberOfBusinessDays(startDate, endDate, true), 12);
-        assertEquals(USNYSE.numberOfNonBusinessDays(startDate, endDate, true), 4);
+        assertEquals(USNYSE.numberCalendarDates(startDate, endDate, true), 16);
+        assertEquals(USNYSE.numberBusinessDates(startDate, endDate, true), 12);
+        assertEquals(USNYSE.numberNonBusinessDates(startDate, endDate, true), 4);
 
-        assertEquals(USNYSE.numberOfDays(endDate, startDate), -15);
+        assertEquals(USNYSE.numberCalendarDates(endDate, startDate), -15);
         assertEquals(USNYSE.numberOfBusinessDays(endDate, startDate), -11);
         assertEquals(USNYSE.numberOfNonBusinessDays(endDate, startDate), -4);
 
-        assertEquals(USNYSE.numberOfDays(endDate, startDate, false), -15);
-        assertEquals(USNYSE.numberOfBusinessDays(endDate, startDate, false), -11);
-        assertEquals(USNYSE.numberOfNonBusinessDays(endDate, startDate, false), -4);
+        assertEquals(USNYSE.numberCalendarDates(endDate, startDate, false), -15);
+        assertEquals(USNYSE.numberBusinessDates(endDate, startDate, false), -11);
+        assertEquals(USNYSE.numberNonBusinessDates(endDate, startDate, false), -4);
 
-        assertEquals(USNYSE.numberOfDays(endDate, startDate, true), -16);
-        assertEquals(USNYSE.numberOfBusinessDays(endDate, startDate, true), -12);
-        assertEquals(USNYSE.numberOfNonBusinessDays(endDate, startDate, true), -4);
+        assertEquals(USNYSE.numberCalendarDates(endDate, startDate, true), -16);
+        assertEquals(USNYSE.numberBusinessDates(endDate, startDate, true), -12);
+        assertEquals(USNYSE.numberNonBusinessDates(endDate, startDate, true), -4);
 
         endDate = startDate;
 
-        assertEquals(USNYSE.numberOfDays(startDate, endDate), 0);
+        assertEquals(USNYSE.numberCalendarDates(startDate, endDate), 0);
         assertEquals(USNYSE.numberOfBusinessDays(startDate, endDate), 0);
         assertEquals(USNYSE.numberOfNonBusinessDays(startDate, endDate), 0);
 
@@ -441,18 +441,18 @@ public class TestDefaultBusinessCalendar extends BaseArrayTestCase {
         startDate = "2020-01-01";
         endDate = "2020-01-20";
 
-        assertEquals(USNYSE.numberOfDays(startDate, endDate), 19);
+        assertEquals(USNYSE.numberCalendarDates(startDate, endDate), 19);
         assertEquals(USNYSE.numberOfBusinessDays(startDate, endDate), 12);
         assertEquals(USNYSE.numberOfNonBusinessDays(startDate, endDate), 7);
 
         startDate = null;
-        assertEquals(USNYSE.numberOfDays(startDate, endDate), QueryConstants.NULL_INT);
+        assertEquals(USNYSE.numberCalendarDates(startDate, endDate), QueryConstants.NULL_INT);
         assertEquals(USNYSE.numberOfBusinessDays(startDate, endDate), QueryConstants.NULL_INT);
         assertEquals(USNYSE.numberOfNonBusinessDays(startDate, endDate), QueryConstants.NULL_INT);
 
         startDate = "2014-02-18";
         endDate = null;
-        assertEquals(USNYSE.numberOfDays(startDate, endDate), QueryConstants.NULL_INT);
+        assertEquals(USNYSE.numberCalendarDates(startDate, endDate), QueryConstants.NULL_INT);
         assertEquals(USNYSE.numberOfBusinessDays(startDate, endDate), QueryConstants.NULL_INT);
         assertEquals(USNYSE.numberOfNonBusinessDays(startDate, endDate), QueryConstants.NULL_INT);
 
@@ -460,17 +460,17 @@ public class TestDefaultBusinessCalendar extends BaseArrayTestCase {
 
         startDate = "2014-02-18";
         endDate = "2017-02-18";
-        assertEquals(USNYSE.numberOfDays(startDate, endDate), 1096);
-        assertEquals(USNYSE.numberOfDays(startDate, endDate, true), 1097);
+        assertEquals(USNYSE.numberCalendarDates(startDate, endDate), 1096);
+        assertEquals(USNYSE.numberCalendarDates(startDate, endDate, true), 1097);
         assertEquals(USNYSE.numberOfBusinessDays(startDate, endDate), 758);
-        assertEquals(USNYSE.numberOfBusinessDays(startDate, endDate, true), 758);
+        assertEquals(USNYSE.numberBusinessDates(startDate, endDate, true), 758);
         assertEquals(USNYSE.numberOfNonBusinessDays(startDate, endDate), 338);
-        assertEquals(USNYSE.numberOfNonBusinessDays(startDate, endDate, true), 339);
+        assertEquals(USNYSE.numberNonBusinessDates(startDate, endDate, true), 339);
 
 
         // incorrectly formatted days
         try {
-            USNYSE.numberOfDays("2018-02-31", "2019-02-31");
+            USNYSE.numberCalendarDates("2018-02-31", "2019-02-31");
             fail();
         } catch (IllegalArgumentException e) {
             // ok
@@ -1360,13 +1360,13 @@ public class TestDefaultBusinessCalendar extends BaseArrayTestCase {
                 "2017-03-14"
         };
 
-        String[] results = USNYSE.businessDaysInRange(startDate, endDate);
+        String[] results = USNYSE.businessDates(startDate, endDate);
         Arrays.sort(goodResults);
         Arrays.sort(results);
         boolean answer = Arrays.equals(goodResults, results);
         assertTrue(answer);
 
-        assertEquals(new String[0], USNYSE.businessDaysInRange(endDate, startDate));
+        assertEquals(new String[0], USNYSE.businessDates(endDate, startDate));
 
         startDate = DateTimeUtils.parseInstant("2017-11-23T01:00:00.000000000 JP");
         endDate = DateTimeUtils.parseInstant("2017-11-25T01:00:00.000000000 JP");
@@ -1375,14 +1375,14 @@ public class TestDefaultBusinessCalendar extends BaseArrayTestCase {
                 "2017-11-24"
         };
 
-        results = JPOSE.businessDaysInRange(startDate, endDate);
+        results = JPOSE.businessDates(startDate, endDate);
         Arrays.sort(goodResults);
         Arrays.sort(results);
         answer = Arrays.equals(goodResults, results);
         assertTrue(answer);
 
         startDate = null;
-        assertEquals(JPOSE.businessDaysInRange(startDate, endDate).length, 0);
+        assertEquals(JPOSE.businessDates(startDate, endDate).length, 0);
 
         // non business
         startDate = DateTimeUtils.parseInstant("2017-03-11T01:00:00.000000000 NY");
@@ -1393,7 +1393,7 @@ public class TestDefaultBusinessCalendar extends BaseArrayTestCase {
                 "2017-03-12"
         };
 
-        results = USNYSE.nonBusinessDaysInRange(startDate, endDate);
+        results = USNYSE.nonBusinessDates(startDate, endDate);
         Arrays.sort(goodResults);
         Arrays.sort(results);
         answer = Arrays.equals(goodResults, results);
@@ -1408,18 +1408,18 @@ public class TestDefaultBusinessCalendar extends BaseArrayTestCase {
                 "2017-11-25"
         };
 
-        assertEquals(new String[0], USNYSE.nonBusinessDaysInRange(endDate, startDate));
-        results = JPOSE.nonBusinessDaysInRange(startDate, endDate);
+        assertEquals(new String[0], USNYSE.nonBusinessDates(endDate, startDate));
+        results = JPOSE.nonBusinessDates(startDate, endDate);
         Arrays.sort(goodResults);
         Arrays.sort(results);
         answer = Arrays.equals(goodResults, results);
         assertTrue(answer);
 
         startDate = null;
-        assertEquals(JPOSE.nonBusinessDaysInRange(startDate, endDate).length, 0);
+        assertEquals(JPOSE.nonBusinessDates(startDate, endDate).length, 0);
 
         startDate = null;
-        assertEquals(USNYSE.nonBusinessDaysInRange(startDate, endDate).length, 0);
+        assertEquals(USNYSE.nonBusinessDates(startDate, endDate).length, 0);
     }
 
     public void testBusinessDateStringRange() {
@@ -1432,18 +1432,18 @@ public class TestDefaultBusinessCalendar extends BaseArrayTestCase {
                 "2014-03-03", "2014-03-04", "2014-03-05",
         };
 
-        assertEquals(new String[0], USNYSE.businessDaysInRange(endDate, startDate));
-        String[] results = USNYSE.businessDaysInRange(startDate, endDate);
+        assertEquals(new String[0], USNYSE.businessDates(endDate, startDate));
+        String[] results = USNYSE.businessDates(startDate, endDate);
         Arrays.sort(goodResults);
         Arrays.sort(results);
         boolean answer = Arrays.equals(goodResults, results);
         assertTrue(answer);
 
         startDate = null;
-        assertEquals(USNYSE.businessDaysInRange(startDate, endDate).length, 0);
+        assertEquals(USNYSE.businessDates(startDate, endDate).length, 0);
 
         startDate = endDate;
-        assertEquals(USNYSE.businessDaysInRange(startDate, endDate).length, 1);
+        assertEquals(USNYSE.businessDates(startDate, endDate).length, 1);
 
         // JPOSE
         startDate = "2018-01-01";
@@ -1453,7 +1453,7 @@ public class TestDefaultBusinessCalendar extends BaseArrayTestCase {
                 "2018-01-05"
         };
 
-        results = JPOSE.businessDaysInRange(startDate, endDate);
+        results = JPOSE.businessDates(startDate, endDate);
         Arrays.sort(goodResults);
         Arrays.sort(results);
         answer = Arrays.equals(goodResults, results);
@@ -1468,8 +1468,8 @@ public class TestDefaultBusinessCalendar extends BaseArrayTestCase {
                 "2020-01-18", "2020-01-19", "2020-01-20"
         };
 
-        assertEquals(new String[0], USNYSE.nonBusinessDaysInRange(endDate, startDate));
-        results = USNYSE.nonBusinessDaysInRange(startDate, endDate);
+        assertEquals(new String[0], USNYSE.nonBusinessDates(endDate, startDate));
+        results = USNYSE.nonBusinessDates(startDate, endDate);
         Arrays.sort(goodResults);
         Arrays.sort(results);
         answer = Arrays.equals(goodResults, results);
@@ -1485,7 +1485,7 @@ public class TestDefaultBusinessCalendar extends BaseArrayTestCase {
                 "2018-01-03"
         };
 
-        results = JPOSE.nonBusinessDaysInRange(startDate, endDate);
+        results = JPOSE.nonBusinessDates(startDate, endDate);
         Arrays.sort(goodResults);
         Arrays.sort(results);
         answer = Arrays.equals(goodResults, results);
@@ -1494,14 +1494,14 @@ public class TestDefaultBusinessCalendar extends BaseArrayTestCase {
 
         // null tests
         startDate = null;
-        assertEquals(USNYSE.nonBusinessDaysInRange(startDate, endDate).length, 0);
+        assertEquals(USNYSE.nonBusinessDates(startDate, endDate).length, 0);
 
         startDate = endDate = "2018-01-06";
-        assertEquals(USNYSE.nonBusinessDaysInRange(startDate, endDate).length, 1);
+        assertEquals(USNYSE.nonBusinessDates(startDate, endDate).length, 1);
 
         // incorrectly formatted days
         try {
-            USNYSE.nonBusinessDaysInRange("2018-09-31", "2018-010-31");
+            USNYSE.nonBusinessDates("2018-09-31", "2018-010-31");
             fail();
         } catch (IllegalArgumentException e) {
             // ok
