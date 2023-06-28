@@ -75,7 +75,8 @@ ClientOptions <- R6Class("ClientOptions",
         #' Use the TLS protocol in authentication and subsequent communication.
         #' @param root_certs Optional PEM-encoded certificate root for server connections. Defaults to system defaults.
         use_tls = function(root_certs = "") {
-            self$internal_client_options$set_use_tls(TRUE, root_certs)
+            self$internal_client_options$set_use_tls(TRUE)
+            self$internal_client_options$set_tls_root_certs(root_certs)
         },
 
         add_int_option = function(opt, val) {

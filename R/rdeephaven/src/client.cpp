@@ -96,8 +96,11 @@ public:
         internal_options->setSessionType(sessionType);
     }
 
-    void setUseTls(bool useTls, std::string tlsRootCerts) {
+    void setUseTls(bool useTls) {
         internal_options->setUseTls(useTls);
+    }
+
+    void setTlsRootCerts(std::string tlsRootCerts) {
         internal_options->setTlsRootCerts(tlsRootCerts);
     }
 
@@ -250,6 +253,7 @@ RCPP_MODULE(DeephavenInternalModule) {
     .method("set_custom_authentication", &ClientOptionsWrapper::setCustomAuthentication)
     .method("set_session_type", &ClientOptionsWrapper::setSessionType)
     .method("set_use_tls", &ClientOptionsWrapper::setUseTls)
+    .method("set_tls_root_certs", &ClientOptionsWrapper::setTlsRootCerts)
     .method("add_int_option", &ClientOptionsWrapper::addIntOption)
     .method("add_string_option", &ClientOptionsWrapper::addStringOption)
     .method("add_extra_header", &ClientOptionsWrapper::addExtraHeader)
