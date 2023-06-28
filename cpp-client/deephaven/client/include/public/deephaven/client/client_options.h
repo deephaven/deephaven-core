@@ -76,15 +76,6 @@ public:
    */
   ClientOptions &setTlsRootCerts(std::string tlsRootCerts);
   /**
-   * Adds an int-valued option for the configuration of the underlying gRPC channels.
-   * See https://grpc.github.io/grpc/cpp/group__grpc__arg__keys.html for a list of available options.
-   *
-   * @example copt.setIntOption("grpc.min_reconnect_backoff_ms", 2000)
-   * @param opt The option key.
-   * @param val The option valiue.
-   * @return *this, to be used for chaining
-   */
-  /**
    * Sets a PEM-encoded certificate for the client and use mutual TLS.
    * The empty string means don't use mutual TLS.
    *
@@ -100,6 +91,15 @@ public:
    * @return *this, to be used for chaining
    */
   ClientOptions &setClientPrivateKey(std::string clientCertChain);
+  /**
+   * Adds an int-valued option for the configuration of the underlying gRPC channels.
+   * See https://grpc.github.io/grpc/cpp/group__grpc__arg__keys.html for a list of available options.
+   *
+   * @example copt.setIntOption("grpc.min_reconnect_backoff_ms", 2000)
+   * @param opt The option key.
+   * @param val The option valiue.
+   * @return *this, to be used for chaining
+   */
   ClientOptions &addIntOption(std::string opt, int val);
   /**
    * Adds a string-valued option for the configuration of the underlying gRPC channels.
