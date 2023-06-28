@@ -62,12 +62,6 @@ class TimeTableOp(TableOp):
         return table_service_stub.TimeTable
 
     def make_grpc_request(self, result_id, source_id) -> Any:
-        if isinstance(self.start_time, str):
-            if isinstance(self.period, str):
-                return table_pb2.TimeTableRequest(result_id=result_id,
-                                                  start_time_string=self.start_time,
-                                                  period_string=self.period)
-
         return table_pb2.TimeTableRequest(result_id=result_id,
             start_time_nanos=self.start_time if not isinstance(self.start_time, str) else None,
             start_time_string=self.start_time if isinstance(self.start_time, str) else None,

@@ -420,8 +420,8 @@ class Session:
         Args:
             period (Union[int, str]): the interval at which the time table ticks (adds a row); units are nanoseconds
                 or a time interval string, e.g. "PT00:00:.001" or "PT1S"
-            start_time (Union[int, str]): the start time for the time table (in nanoseconds or as a ISO 8601 date time
-                formatted string); default is None (meaning now)
+            start_time (Union[int, str]): the start time for the time table in nanoseconds or as a ISO 8601 date time
+                formatted string; default is None (meaning now)
 
         Returns:
             a Table object
