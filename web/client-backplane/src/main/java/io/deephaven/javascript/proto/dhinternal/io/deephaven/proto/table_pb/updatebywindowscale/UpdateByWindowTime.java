@@ -1,7 +1,6 @@
 package io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.table_pb.updatebywindowscale;
 
 import elemental2.core.Uint8Array;
-import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.table_pb.updatebywindowscale.updatebywindowtime.WindowCase;
 import jsinterop.annotations.JsOverlay;
 import jsinterop.annotations.JsPackage;
 import jsinterop.annotations.JsProperty;
@@ -86,7 +85,7 @@ public class UpdateByWindowTime {
 
     public native String getNanos();
 
-    public native WindowCase getWindowCase();
+    public native int getWindowCase();
 
     public native boolean hasDurationString();
 

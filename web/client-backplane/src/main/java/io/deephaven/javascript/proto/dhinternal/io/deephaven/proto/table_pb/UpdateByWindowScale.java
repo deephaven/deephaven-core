@@ -1,7 +1,6 @@
 package io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.table_pb;
 
 import elemental2.core.Uint8Array;
-import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.table_pb.updatebywindowscale.TypeCase;
 import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.table_pb.updatebywindowscale.UpdateByWindowTicks;
 import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.table_pb.updatebywindowscale.UpdateByWindowTime;
 import jsinterop.annotations.JsOverlay;
@@ -154,7 +153,7 @@ public class UpdateByWindowScale {
 
     public native UpdateByWindowTime getTime();
 
-    public native TypeCase getTypeCase();
+    public native int getTypeCase();
 
     public native boolean hasTicks();
 
