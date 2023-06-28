@@ -53,6 +53,8 @@ ClientOptions <- R6Class("ClientOptions",
         #' @param username Username of the account to use for authentication, supplied as a string.
         #' @param password Password of the account, supplied as a string.
         set_basic_authentication = function(username, password) {
+            .verify_string("username", username)
+            .verify_string("password", password)
             self$internal_client_options$set_basic_authentication(username, password)
         },
 
@@ -61,6 +63,8 @@ ClientOptions <- R6Class("ClientOptions",
         #' @param auth_key Key to use for authentication, supplied as a string.
         #' @param auth_value Value to use for authentication, supplied as a string.
         set_custom_authentication = function(auth_key, auth_value) {
+            .verify_string("auth_key", auth_key)
+            .verify_string("auth_value", auth_value)
             self$internal_client_options$set_custom_authentication(auth_key, auth_value)
         },
 
@@ -68,6 +72,7 @@ ClientOptions <- R6Class("ClientOptions",
         #' Set the session type of the console (e.g., "python", "groovy", etc.). The session type must be supported on the server.
         #' @param session_type Desired language of the console. "python", "groovy", etc.
         set_session_type = function(session_type) {
+            .verify_string("session_type", session_type)
             self$internal_client_options$set_session_type(session_type)
         },
 
