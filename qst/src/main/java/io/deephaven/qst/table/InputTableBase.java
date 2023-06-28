@@ -16,8 +16,7 @@ public abstract class InputTableBase extends TableBase implements InputTable {
     abstract UUID id();
 
     @Override
-    public final <V extends TableSpec.Visitor> V walk(V visitor) {
-        visitor.visit(this);
-        return visitor;
+    public final <T> T walk(TableSpec.Visitor<T> visitor) {
+        return visitor.visit(this);
     }
 }

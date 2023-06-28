@@ -23,9 +23,8 @@ public abstract class EmptyTable extends TableBase {
     public abstract long size();
 
     @Override
-    public final <V extends TableSpec.Visitor> V walk(V visitor) {
-        visitor.visit(this);
-        return visitor;
+    public final <T> T walk(Visitor<T> visitor) {
+        return visitor.visit(this);
     }
 
     @Check

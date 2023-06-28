@@ -20,9 +20,12 @@ import io.deephaven.engine.rowset.RowSetShiftData;
 import io.deephaven.test.types.OutOfBandTest;
 import java.util.Random;
 
+import org.junit.Assert;
 import org.junit.experimental.categories.Category;
 
 import static io.deephaven.engine.util.TableTools.col;
+import static io.deephaven.engine.util.TableTools.intCol;
+import static io.deephaven.engine.util.TableTools.charCol;
 import static io.deephaven.engine.util.TableTools.emptyTable;
 import static io.deephaven.engine.testutil.TstUtils.*;
 import static io.deephaven.engine.testutil.TstUtils.initColumnInfos;
@@ -442,6 +445,34 @@ public class QueryTableSliceTest extends QueryTableTestBase {
                 TstUtils.testRefreshingTable(i(2).toTracking(), col("x", 1), col("y", 'a')));
         assertTableEquals(table.tailPct(0.1),
                 TstUtils.testRefreshingTable(i(6).toTracking(), col("x", 3), col("y", 'c')));
+        assertTableEquals(table.headPct(0),
+                TstUtils.testRefreshingTable(i().toTracking(), intCol("x"), charCol("y")));
+        assertTableEquals(table.tailPct(0),
+                TstUtils.testRefreshingTable(i().toTracking(), intCol("x"), charCol("y")));
+        assertTableEquals(table.headPct(1), table);
+        assertTableEquals(table.tailPct(1), table);
+
+        // Test for invalid parameters (negative or >1)
+        try {
+            table.headPct(-0.5);
+            Assert.fail("Exception expected for invalid arguments");
+        } catch (IllegalArgumentException expected) {
+        }
+        try {
+            table.tailPct(-0.5);
+            Assert.fail("Exception expected for invalid arguments");
+        } catch (IllegalArgumentException expected) {
+        }
+        try {
+            table.headPct(1.5);
+            Assert.fail("Exception expected for invalid arguments");
+        } catch (IllegalArgumentException expected) {
+        }
+        try {
+            table.tailPct(1.5);
+            Assert.fail("Exception expected for invalid arguments");
+        } catch (IllegalArgumentException expected) {
+        }
     }
 
     public void testHeadTailPctIncremental() {

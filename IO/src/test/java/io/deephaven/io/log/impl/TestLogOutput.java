@@ -4,6 +4,7 @@
 package io.deephaven.io.log.impl;
 
 import io.deephaven.base.log.LogOutput;
+import io.deephaven.io.log.LogBufferPool;
 import io.deephaven.io.log.LogEntry;
 import io.deephaven.io.log.LogLevel;
 import io.deephaven.io.logger.StringsLoggerImpl;
@@ -19,14 +20,14 @@ import java.util.function.Supplier;
  * should also be made into an abstract base class with concrete subclasses for TODO: entry entry impl.
  */
 public class TestLogOutput extends TestCase {
-    LogBufferPoolImpl buffers;
+    LogBufferPool buffers;
     LogOutput outputBuffer;
     StringsLoggerImpl<? extends LogEntry> logger;
 
 
     public void setUp() throws Exception {
         super.setUp();
-        this.buffers = new LogBufferPoolImpl(16, 256);
+        this.buffers = LogBufferPool.ofStrict(16, 256);
         this.outputBuffer = new LogOutputCsvImpl(buffers);
 
         Supplier<LogEntry> entryFactory = () -> new LogEntryImpl(buffers);

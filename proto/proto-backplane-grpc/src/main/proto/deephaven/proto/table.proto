@@ -381,7 +381,10 @@ message UpdateByWindowScale {
   }
   message UpdateByWindowTime {
     string column = 1;
-    sint64 period_nanos = 2 [jstype=JS_STRING];
+    oneof window {
+      sint64 nanos = 2 [jstype = JS_STRING];
+      string duration_string = 3;
+    }
   }
   oneof type {
     UpdateByWindowTicks ticks = 1;
