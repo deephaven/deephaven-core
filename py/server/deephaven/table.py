@@ -56,7 +56,7 @@ _JTableOperations = jpy.get_type("io.deephaven.api.TableOperations")
 # Dynamic Query Scope
 _JExecutionContext = jpy.get_type("io.deephaven.engine.context.ExecutionContext")
 _JScriptSessionQueryScope = jpy.get_type("io.deephaven.engine.util.AbstractScriptSession$ScriptSessionQueryScope")
-_JPythonScriptSession = jpy.get_type("io.deephaven.integrations.python.PythonDeephavenSession")
+_JPythonScriptSession = jpy.get_type("io.deephaven.engine.util.PythonDeephavenSession")
 
 # Rollup Table and Tree Table
 _JRollupTable = jpy.get_type("io.deephaven.engine.table.hierarchical.RollupTable")

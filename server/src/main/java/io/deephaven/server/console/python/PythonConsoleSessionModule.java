@@ -11,7 +11,7 @@ import io.deephaven.engine.updategraph.UpdateGraph;
 import io.deephaven.engine.updategraph.impl.PeriodicUpdateGraph;
 import io.deephaven.engine.util.PythonEvaluatorJpy;
 import io.deephaven.engine.util.ScriptSession;
-import io.deephaven.integrations.python.PythonDeephavenSession;
+import io.deephaven.engine.util.PythonDeephavenSession;
 import io.deephaven.plugin.type.ObjectTypeLookup;
 
 import javax.inject.Named;

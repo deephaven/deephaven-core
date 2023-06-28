@@ -10,7 +10,7 @@ import io.deephaven.engine.table.Table;
 import io.deephaven.engine.testutil.junit4.EngineCleanup;
 import io.deephaven.engine.util.AbstractScriptSession;
 import io.deephaven.engine.util.GroovyDeephavenSession;
-import io.deephaven.integrations.python.PythonDeephavenSession;
+import io.deephaven.engine.util.PythonDeephavenSession;
 import io.deephaven.engine.util.PythonEvaluatorJpy;
 import io.deephaven.plugin.type.ObjectTypeLookup.NoOp;
 import org.junit.After;

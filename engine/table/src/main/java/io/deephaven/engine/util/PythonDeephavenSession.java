@@ -1,7 +1,7 @@
 /**
  * Copyright (c) 2016-2022 Deephaven Data Labs and Patent Pending
  */
-package io.deephaven.integrations.python;
+package io.deephaven.engine.util;
 
 import io.deephaven.base.FileUtils;
 import io.deephaven.base.verify.Assert;
@@ -10,13 +10,7 @@ import io.deephaven.engine.context.ExecutionContext;
 import io.deephaven.engine.exceptions.CancellationException;
 import io.deephaven.engine.context.QueryScope;
 import io.deephaven.engine.updategraph.UpdateGraph;
-import io.deephaven.engine.util.AbstractScriptSession;
-import io.deephaven.engine.util.PythonEvaluator;
-import io.deephaven.engine.util.PythonEvaluatorJpy;
-import io.deephaven.engine.util.PythonScope;
-import io.deephaven.engine.util.ScriptFinder;
-import io.deephaven.engine.util.ScriptSession;
-import io.deephaven.integrations.python.PythonDeephavenSession.PythonSnapshot;
+import io.deephaven.engine.util.PythonDeephavenSession.PythonSnapshot;
 import io.deephaven.engine.util.scripts.ScriptPathLoader;
 import io.deephaven.engine.util.scripts.ScriptPathLoaderState;
 import io.deephaven.internal.log.LoggerFactory;
@@ -40,13 +34,17 @@ import java.io.FileWriter;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.AbstractMap;
 import java.util.Collections;
 import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
+import java.util.function.Function;
 import java.util.function.Supplier;
 import java.util.stream.Collectors;
+
+import static java.util.stream.Collectors.toMap;
 
 /**
  * A ScriptSession that uses a JPy cpython interpreter internally.
@@ -205,6 +203,12 @@ public class PythonDeephavenSession extends AbstractScriptSession<PythonSnapshot
         final Map<String, Object> outMap = new LinkedHashMap<>();
         scope.getEntriesMap().forEach((key, value) -> outMap.put(key, maybeUnwrap(value)));
         return outMap;
+    }
+
+    public Map<String, PyObject> getVariablesRaw() {
+        return scope.getEntriesRaw()
+                .map(e -> new AbstractMap.SimpleImmutableEntry<>(scope.convertStringKey(e.getKey()), e.getValue()))
+                .collect(toMap(Map.Entry::getKey, Map.Entry::getValue));
     }
 
     protected static class PythonSnapshot implements Snapshot, SafeCloseable {

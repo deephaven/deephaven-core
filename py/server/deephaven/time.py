@@ -5,13 +5,17 @@
 """ This module defines functions for handling Deephaven date/time data. """
 
 from __future__ import annotations
-from typing import Union, Optional
+
+import inspect
+from functools import wraps
+from inspect import Parameter
+from typing import Union, Optional, Callable
 
 import jpy
 
 from deephaven import DHError
-from deephaven.dtypes import Instant, LocalDate, LocalTime, ZonedDateTime, Duration, Period, TimeZone, from_jtype
 from deephaven.constants import NULL_INT, NULL_LONG, NULL_DOUBLE
+from deephaven.dtypes import Instant, LocalDate, LocalTime, ZonedDateTime, Duration, Period, TimeZone, from_jtype
 
 _JDateTimeUtils = jpy.get_type("io.deephaven.time.DateTimeUtils")
 
@@ -33,9 +37,38 @@ YEARS_PER_NANO_365 = 1 / YEAR_365  #: Number of 365 day years per nanosecond.
 YEARS_PER_NANO_AVG = 1 / YEAR_AVG  #: Number of average (365.2425 day) years per nanosecond.
 
 
+def _java_method(j_method: Union[jpy.JMethod, jpy.JOverloadedMethod]) -> Callable:
+    """A decorator for internal use only. It adds a few attributes to the wrapper func for use by Deephaven's
+    QueryLanguageParser to dynamically replace a Python wrapper function with the wrapped Java method.
+
+    The application of this decorator is limited to some functions in this module for now because these are the
+    utility/convenience functions that work directly on column data. If/when we wrap more such Java methods in Python,
+    we shall apply this optimization when appropriate.
+    """
+    if type(j_method) not in (jpy.JMethod, jpy.JOverloadedMethod):
+        raise ValueError("Must be a JPY wrapped Java method")
+
+    def decorator(f: Callable) -> Callable:
+        @wraps(f)
+        def wrapper(*args, **kwargs):
+            return f(*args, **kwargs)
+
+        wrapper._j_qualified_class_name = ".".join([j_method.decl_class.__module__, j_method.decl_class.__qualname__])
+        wrapper._j_simple_name = j_method.name
+        sig = inspect.signature(f)
+        wrapper._nargs = len(sig.parameters)
+        wrapper._def_args = []
+        for p in sig.parameters.values():
+            if p.default != Parameter.empty:
+                wrapper._def_args.append(p.default)
+        return wrapper
+
+    return decorator
+
+
 # region Clock
 
-
+@_java_method(j_method=_JDateTimeUtils.now)
 def now(system: bool = False, resolution: str = 'ns') -> Instant:
     """ Provides the current datetime according to a clock.
 
@@ -54,18 +87,7 @@ def now(system: bool = False, resolution: str = 'ns') -> Instant:
         DHError
     """
     try:
-        if resolution == "ns":
-            if system:
-                return _JDateTimeUtils.nowSystem()
-            else:
-                return _JDateTimeUtils.now()
-        elif resolution == "ms":
-            if system:
-                return _JDateTimeUtils.nowSystemMillisResolution()
-            else:
-                return _JDateTimeUtils.nowMillisResolution()
-        else:
-            raise ValueError("Unsupported time resolution: " + resolution)
+        return _JDateTimeUtils.now(system, resolution);
     except Exception as e:
         raise DHError(e) from e
 
@@ -1113,6 +1135,7 @@ def diff_years_avg(start: Union[Instant, ZonedDateTime], end: Union[Instant, Zon
     except Exception as e:
         raise DHError(e) from e
 
+
 # endregion
 
 # region Comparisons
@@ -1687,7 +1710,7 @@ def at_midnight(dt: Union[Instant, ZonedDateTime], tz: TimeZone) -> Union[Instan
 # endregion
 
 # region Binning
-
+@_java_method(j_method=_JDateTimeUtils.lowerBin)
 def lower_bin(dt: Union[Instant, ZonedDateTime], interval: Union[int, str], offset: Union[int, str] = 0) -> \
         Union[Instant, ZonedDateTime]:
     """ Returns a date time value, which is at the starting (lower) end of a time range defined by the interval
@@ -1709,18 +1732,14 @@ def lower_bin(dt: Union[Instant, ZonedDateTime], interval: Union[int, str], offs
         DHError
     """
     try:
-        if isinstance(interval, str):
-            interval = parse_duration_nanos(interval)
-
-        if isinstance(offset, str):
-            offset = parse_duration_nanos(offset)
-
         return _JDateTimeUtils.lowerBin(dt, interval, offset)
     except Exception as e:
         raise DHError(e) from e
 
 
-def upper_bin(dt: Union[Instant, ZonedDateTime], interval: int, offset: int = 0) -> Union[Instant, ZonedDateTime]:
+@_java_method(j_method=_JDateTimeUtils.upperBin)
+def upper_bin(dt: Union[Instant, ZonedDateTime], interval: Union[int, str], offset: Union[int, str] = 0) -> \
+        Union[Instant, ZonedDateTime]:
     """ Returns a date time value, which is at the ending (upper) end of a time range defined by the interval
      nanoseconds. For example, a 5*MINUTE interval value would return the date time value for the end of the five
      minute window that contains the input date time.
@@ -1740,13 +1759,7 @@ def upper_bin(dt: Union[Instant, ZonedDateTime], interval: int, offset: int = 0)
         DHError
     """
     try:
-        if isinstance(interval, str):
-            interval = parse_duration_nanos(interval)
-
-        if isinstance(offset, str):
-            offset = parse_duration_nanos(offset)
-
-        return _JDateTimeUtils.upperBin(dt, interval, offset)
+         return _JDateTimeUtils.upperBin(dt, interval, offset)
     except Exception as e:
         raise DHError(e) from e
 
@@ -2028,7 +2041,8 @@ def parse_zdt(s: str, quiet: bool = False) -> Optional[ZonedDateTime]:
 
 
 def parse_time_precision(s: str, quiet: bool = False) -> Optional[str]:
-    """ Returns a string indicating the level of precision in a time, datetime, or period nanos string. (e.g. 'SecondOfMinute').
+    """ Returns a string indicating the level of precision in a time, datetime, or period nanos string. (e.g.
+    'SecondOfMinute').
 
     Args:
         s (str): Time string.

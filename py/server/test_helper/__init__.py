@@ -72,7 +72,7 @@ def start_jvm_for_tests(jvm_props: Dict[str, str] = None):
         global py_dh_session
         _JPeriodicUpdateGraph = jpy.get_type("io.deephaven.engine.updategraph.impl.PeriodicUpdateGraph")
         _j_test_update_graph = _JPeriodicUpdateGraph.newBuilder("PYTHON_TEST").existingOrBuild()
-        _JPythonScriptSession = jpy.get_type("io.deephaven.integrations.python.PythonDeephavenSession")
+        _JPythonScriptSession = jpy.get_type("io.deephaven.engine.util.PythonDeephavenSession")
         py_dh_session = _JPythonScriptSession(_j_test_update_graph, py_scope_jpy)
 
 

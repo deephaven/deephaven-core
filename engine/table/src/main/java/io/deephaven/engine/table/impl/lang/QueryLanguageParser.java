@@ -92,9 +92,12 @@ import io.deephaven.engine.context.ExecutionContext;
 import io.deephaven.engine.context.QueryScope;
 import io.deephaven.engine.table.impl.MatchPair;
 import io.deephaven.engine.table.impl.ShiftedColumnsFactory;
+import io.deephaven.engine.util.AbstractScriptSession;
 import io.deephaven.engine.util.PyCallableWrapper.ColumnChunkArgument;
 import io.deephaven.engine.util.PyCallableWrapper.ConstantChunkArgument;
 import io.deephaven.engine.util.PyCallableWrapper;
+import io.deephaven.engine.util.PythonDeephavenSession;
+import io.deephaven.engine.util.PythonScopeJpyImpl;
 import io.deephaven.internal.log.LoggerFactory;
 import io.deephaven.io.logger.Logger;
 import io.deephaven.util.type.TypeUtils;
@@ -109,6 +112,8 @@ import io.deephaven.vector.ShortVector;
 import io.deephaven.vector.Vector;
 import org.apache.commons.lang3.ClassUtils;
 import org.apache.commons.lang3.exception.ExceptionUtils;
+import org.jpy.PyInputMode;
+import org.jpy.PyListWrapper;
 import org.jpy.PyObject;
 
 import java.lang.reflect.Array;
@@ -463,6 +468,66 @@ public final class QueryLanguageParser extends GenericVisitorAdapter<Class<?>, Q
                 .filter((cls) -> nestedClassName.equals(cls.getSimpleName()))
                 .collect(Collectors.toMap(Class::getSimpleName, Function.identity()));
         return m.get(nestedClassName);
+    }
+
+    private boolean pyToJavaReplaced(final Class<?> scope, final MethodCallExpr n) {
+        final String methodName = n.getNameAsString();
+        final QueryScope queryScope = ExecutionContext.getContext().getQueryScope();
+
+        if (scope == null) {
+            final Class<?> methodClass = variables.get(methodName);
+            if (methodClass == PyCallableWrapper.class) {
+                final Object paramValueRaw = queryScope.readParamValue(methodName, null);
+                final PyCallableWrapper pyCallableWrapper = (PyCallableWrapper) paramValueRaw;
+                try {
+                    String javaMethodName = pyCallableWrapper.getAttribute("_j_simple_name", String.class);
+                    n.setName(javaMethodName);
+                    int nargs = pyCallableWrapper.getAttribute("_nargs", int.class);
+                    PyListWrapper defArgList = (PyListWrapper) pyCallableWrapper.getAttribute("_def_args").asList();
+                    int defArgsToAdd = nargs - n.getArguments().size();
+                    if (defArgsToAdd > defArgList.size()) {
+                        throw new IllegalArgumentException("Missing args for " + methodName);
+                    }
+                    if (defArgsToAdd < 0) {
+                        // do nothing, could be valid if the java method has a vararg
+                    }
+                    // Since the func call follows the Java syntax, we don't do name matching for the keyword args
+                    for (int i = defArgList.size() - (nargs - n.getArguments().size()); i < defArgList.size(); i++) {
+                        Object v = PythonScopeJpyImpl.convert(defArgList.get(i));
+                        n.addArgument(v.getClass() == String.class ? "\"" + v.toString() + "\"" : v.toString());
+                    }
+                    return true;
+                } catch (IllegalArgumentException iae) {
+                    throw iae;
+                } catch (RuntimeException e) {
+                    // Not a Java replaceable callable, can safely ignore
+                }
+            }
+        } else if (scope == org.jpy.PyObject.class || scope == PyCallableWrapper.class) {
+            String pythonExpr = n.getScope().get().toString() + "." + methodName;
+            PythonDeephavenSession pds =
+                    (PythonDeephavenSession) ((AbstractScriptSession.UnsynchronizedScriptSessionQueryScope) queryScope)
+                            .scriptSession();
+            Map<String, PyObject> scopeVars = pds.getVariablesRaw();
+            PyObject pyobj;
+            try {
+                pyobj = PyObject.executeCode(pythonExpr, PyInputMode.EXPRESSION, scopeVars, null);
+            } catch (RuntimeException e) {
+                throw new RuntimeException("Cannot find Python callable: " + pythonExpr);
+            }
+            try {
+                Object obj = PythonScopeJpyImpl.convert(pyobj);
+                if (obj.getClass() == (PyCallableWrapper.class)) {
+                    String javaMethodName = ((PyCallableWrapper) obj).getAttribute("_j_simple_name", String.class);
+                    n.setScope(null);
+                    n.setName(javaMethodName);
+                    return true;
+                }
+            } catch (Exception e) {
+                // Not a Java replaceable callable, can safely ignore
+            }
+        }
+        return false;
     }
 
     private Method getMethod(final Class<?> scope, final String methodName, final Class<?>[] paramTypes,
@@ -1140,6 +1205,16 @@ public final class QueryLanguageParser extends GenericVisitorAdapter<Class<?>, Q
          * throw them to 'findClass()'. Many details are not relevant here. For example, field access is handled by a
          * different method: visit(FieldAccessExpr, StringBuilder).
          */
+        Map<String, String> pyConstantsMap = Map.of(
+                "True", "true",
+                "False", "false",
+                "None", "null");
+        final String name = n.getNameAsString();
+        String jConstant = pyConstantsMap.get(name);
+        if (jConstant != null) {
+            printer.append(jConstant);
+            return name.equals("None") ? NULL_CLASS : boolean.class;
+        }
         printer.append(n.getNameAsString());
 
         Class<?> ret = variables.get(n.getNameAsString());
@@ -1865,6 +1940,13 @@ public final class QueryLanguageParser extends GenericVisitorAdapter<Class<?>, Q
             return result;
         }).orElse(null);
 
+        if (pyToJavaReplaced(scope, n)) {
+            if (scope != null) {
+                scope = null;
+                innerPrinter.reset();
+            }
+        }
+
         Expression[] expressions = n.getArguments() == null ? new Expression[0]
                 : n.getArguments().toArray(new Expression[0]);
 
@@ -1873,7 +1955,6 @@ public final class QueryLanguageParser extends GenericVisitorAdapter<Class<?>, Q
         Class<?>[][] parameterizedTypes = getParameterizedTypes(expressions);
 
         Method method = getMethod(scope, n.getNameAsString(), expressionTypes, parameterizedTypes);
-
         Class<?>[] argumentTypes = method.getParameterTypes();
 
         // now do some parameter conversions...
@@ -1913,6 +1994,7 @@ public final class QueryLanguageParser extends GenericVisitorAdapter<Class<?>, Q
             }
         } else { // Groovy or Java method call
             printer.append(innerPrinter);
+            n.setName(method.getName());
             printer.append(n.getNameAsString());
         }
 
@@ -2536,6 +2618,12 @@ public final class QueryLanguageParser extends GenericVisitorAdapter<Class<?>, Q
 
         public boolean hasStringBuilder() {
             return builder != null;
+        }
+
+        public void reset() {
+            if (hasStringBuilder()) {
+                builder.setLength(0);
+            }
         }
 
         /**

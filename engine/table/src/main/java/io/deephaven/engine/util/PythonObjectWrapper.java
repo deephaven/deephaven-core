@@ -1,7 +1,7 @@
 /**
  * Copyright (c) 2016-2022 Deephaven Data Labs and Patent Pending
  */
-package io.deephaven.integrations.python;
+package io.deephaven.engine.util;
 
 import org.jpy.PyModule;
 import org.jpy.PyObject;

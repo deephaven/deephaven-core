@@ -334,6 +334,26 @@ public class DateTimeUtils {
         return currentClock().instantNanos();
     }
 
+    @ScriptApi
+    @NotNull
+    public static Instant now(boolean useSystem, String resolution) {
+        if (resolution.equals("ns")) {
+            if (useSystem) {
+                return nowSystem();
+            } else {
+                return now();
+            }
+        } else if (resolution.equals("ms")) {
+            if (useSystem) {
+                return nowSystemMillisResolution();
+            } else {
+                return nowMillisResolution();
+            }
+        } else {
+            throw new RuntimeException("Unsupported time resolution");
+        }
+    }
+
     /**
      * Provides the current {@link Instant instant} with millisecond resolution according to the {@link #currentClock()
      * current clock}. Under most circumstances, this method will return the current system time, but during replay
@@ -2795,6 +2815,39 @@ public class DateTimeUtils {
     }
 
     /**
+     * Returns an {@link Instant} value, which is at the starting (lower) end of a time range defined by the interval
+     * nanoseconds. For example, a 5*MINUTE intervalNanos value would return the instant value for the start of the
+     * five-minute window that contains the input instant.
+     *
+     * @param instant instant for which to evaluate the start of the containing window
+     * @param intervalNanos size of the window in nanoseconds, either as an integer value or as a time interval string,
+     *        e.g. "PT00:00:00.001" or "PT1s"
+     * @param offset The window start offset in nanoseconds, either as an integer value or as a time interval string,
+     *        e.g. "PT00:00:00.001" or "PT1s". For example, a value of MINUTE would offset all windows by one minute.
+     * @return {@code null} if either input is {@code null}; otherwise, an {@link Instant} representing the start of the
+     *         window
+     */
+    @ScriptApi
+    @Nullable
+    public static Instant lowerBin(@Nullable final Instant instant, Object intervalNanos, Object offset) {
+        long interval = getDurationNanos(intervalNanos);
+        long off = getDurationNanos(offset);
+
+        return lowerBin(instant, interval, off);
+    }
+
+    private static long getDurationNanos(Object duration) {
+        if (duration.getClass() == String.class) {
+            return parseDurationNanos((String) duration);
+        } else if (Number.class.isAssignableFrom(duration.getClass())) {
+            return ((Number) duration).longValue();
+        } else {
+            throw new RuntimeException("Invalid type for duration: " + duration.getClass());
+        }
+    }
+
+
+    /**
      * Returns a {@link ZonedDateTime} value, which is at the starting (lower) end of a time range defined by the
      * interval nanoseconds. For example, a 5*MINUTE intervalNanos value would return the zoned date time value for the
      * start of the five-minute window that contains the input zoned date time.
@@ -2802,6 +2855,8 @@ public class DateTimeUtils {
      * @param dateTime zoned date time for which to evaluate the start of the containing window
      * @param intervalNanos size of the window in nanoseconds * @param offset The window start offset in nanoseconds.
      *        For example, a value of MINUTE would offset all windows by one minute.
+     * @param offset The window start offset in nanoseconds. For example, a value of MINUTE would offset all windows by
+     *        one minute.
      * @return {@code null} if either input is {@code null}; otherwise, a {@link ZonedDateTime} representing the start
      *         of the window
      */
@@ -2814,6 +2869,28 @@ public class DateTimeUtils {
 
         return epochNanosToZonedDateTime(Numeric.lowerBin(epochNanos(dateTime) - offset, intervalNanos) + offset,
                 dateTime.getZone());
+    }
+
+    /**
+     * Returns a {@link ZonedDateTime} value, which is at the starting (lower) end of a time range defined by the
+     * interval nanoseconds. For example, a 5*MINUTE intervalNanos value would return the zoned date time value for the
+     * start of the five-minute window that contains the input zoned date time.
+     *
+     * @param dateTime zoned date time for which to evaluate the start of the containing window
+     * @param intervalNanos size of the window in nanoseconds, either as an integer value or as a time interval string,
+     *        e.g. "PT00:00:00.001" or "PT1s"
+     * @param offset The window start offset in nanoseconds, either as an integer value or as a time interval string,
+     *        e.g. "PT00:00:00.001" or "PT1s". For example, a value of MINUTE would offset all windows by one minute.
+     * @return {@code null} if either input is {@code null}; otherwise, a {@link ZonedDateTime} representing the start
+     *         of the window
+     */
+    @ScriptApi
+    @Nullable
+    public static ZonedDateTime lowerBin(@Nullable final ZonedDateTime dateTime, Object intervalNanos, Object offset) {
+        long interval = getDurationNanos(intervalNanos);
+        long off = getDurationNanos(offset);
+
+        return lowerBin(dateTime, interval, off);
     }
 
     /**
@@ -2860,8 +2937,9 @@ public class DateTimeUtils {
      * five-minute window that contains the input instant.
      *
      * @param instant instant for which to evaluate the start of the containing window
-     * @param intervalNanos size of the window in nanoseconds * @param offset The window start offset in nanoseconds.
-     *        For example, a value of MINUTE would offset all windows by one minute.
+     * @param intervalNanos size of the window in nanoseconds
+     * @param offset The window start offset in nanoseconds. For example, a value of MINUTE would offset all windows by
+     *        one minute.
      * @return {@code null} if either input is {@code null}; otherwise, an {@link Instant} representing the end of the
      *         window
      */
@@ -2877,13 +2955,36 @@ public class DateTimeUtils {
     }
 
     /**
+     * Returns an {@link Instant} value, which is at the ending (upper) end of a time range defined by the interval
+     * nanoseconds. For example, a 5*MINUTE intervalNanos value would return the instant value for the end of the
+     * five-minute window that contains the input instant.
+     *
+     * @param instant instant for which to evaluate the start of the containing window
+     * @param intervalNanos size of the window in nanoseconds, either as an integer value or as a time interval string,
+     *        e.g. "PT00:00:00.001" or "PT1s"
+     * @param offset The window start offset in nanoseconds, either as an integer value or as a time interval string,
+     *        e.g. "PT00:00:00.001" or "PT1s". For example, a value of MINUTE would offset all windows by one minute.
+     * @return {@code null} if either input is {@code null}; otherwise, an {@link Instant} representing the end of the
+     *         window
+     */
+    @ScriptApi
+    @Nullable
+    public static Instant upperBin(@Nullable final Instant instant, Object intervalNanos, Object offset) {
+        long interval = getDurationNanos(intervalNanos);
+        long off = getDurationNanos(offset);
+
+        return upperBin(instant, interval, off);
+    }
+
+    /**
      * Returns a {@link ZonedDateTime} value, which is at the ending (upper) end of a time range defined by the interval
      * nanoseconds. For example, a 5*MINUTE intervalNanos value would return the zoned date time value for the end of
      * the five-minute window that contains the input zoned date time.
      *
      * @param dateTime zoned date time for which to evaluate the start of the containing window
-     * @param intervalNanos size of the window in nanoseconds * @param offset The window start offset in nanoseconds.
-     *        For example, a value of MINUTE would offset all windows by one minute.
+     * @param intervalNanos size of the window in nanoseconds
+     * @param offset The window start offset in nanoseconds. For example, a value of MINUTE would offset all windows by
+     *        one minute.
      * @return {@code null} if either input is {@code null}; otherwise, a {@link ZonedDateTime} representing the end of
      *         the window
      */
@@ -2897,6 +2998,28 @@ public class DateTimeUtils {
 
         return epochNanosToZonedDateTime(Numeric.upperBin(epochNanos(dateTime) - offset, intervalNanos) + offset,
                 dateTime.getZone());
+    }
+
+    /**
+     * Returns a {@link ZonedDateTime} value, which is at the ending (upper) end of a time range defined by the interval
+     * nanoseconds. For example, a 5*MINUTE intervalNanos value would return the zoned date time value for the end of
+     * the five-minute window that contains the input zoned date time.
+     *
+     * @param dateTime zoned date time for which to evaluate the start of the containing window
+     * @param intervalNanos size of the window in nanoseconds, either as an integer value or as a time interval string,
+     *        e.g. "PT00:00:00.001" or "PT1s"
+     * @param offset The window start offset in nanoseconds, either as an integer value or as a time interval string,
+     *        e.g. "PT00:00:00.001" or "PT1s". For example, a value of MINUTE would offset all windows by one minute.
+     * @return {@code null} if either input is {@code null}; otherwise, a {@link ZonedDateTime} representing the end of
+     *         the window
+     */
+    @ScriptApi
+    @Nullable
+    public static ZonedDateTime upperBin(@Nullable final ZonedDateTime dateTime, Object intervalNanos, Object offset) {
+        long interval = getDurationNanos(intervalNanos);
+        long off = getDurationNanos(offset);
+
+        return upperBin(dateTime, interval, off);
     }
 
     // endregion

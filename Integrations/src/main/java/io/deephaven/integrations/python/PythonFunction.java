@@ -3,6 +3,7 @@
  */
 package io.deephaven.integrations.python;
 
+import io.deephaven.engine.util.PythonObjectWrapper;
 import io.deephaven.util.annotations.ScriptApi;
 import org.jpy.PyObject;
 

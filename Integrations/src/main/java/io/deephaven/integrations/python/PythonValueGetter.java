@@ -1,5 +1,6 @@
 package io.deephaven.integrations.python;
 
+import io.deephaven.engine.util.PythonObjectWrapper;
 import io.deephaven.util.QueryConstants;
 import org.jpy.PyObject;
 

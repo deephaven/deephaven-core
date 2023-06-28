@@ -13,7 +13,7 @@ import io.deephaven.appmode.ScriptApplication;
 import io.deephaven.appmode.StaticClassApplication;
 import io.deephaven.engine.util.GroovyDeephavenSession;
 import io.deephaven.engine.util.ScriptSession;
-import io.deephaven.integrations.python.PythonDeephavenSession;
+import io.deephaven.engine.util.PythonDeephavenSession;
 import io.deephaven.proto.util.Exceptions;
 
 import java.nio.file.Path;

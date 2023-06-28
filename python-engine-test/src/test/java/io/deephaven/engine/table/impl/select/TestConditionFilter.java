@@ -17,7 +17,7 @@ import io.deephaven.engine.context.QueryCompiler;
 import io.deephaven.engine.table.Table;
 import io.deephaven.engine.context.QueryScopeParam;
 import io.deephaven.engine.context.QueryScope;
-import io.deephaven.integrations.python.PythonDeephavenSession;
+import io.deephaven.engine.util.PythonDeephavenSession;
 import io.deephaven.engine.util.PythonScopeJpyImpl;
 import io.deephaven.engine.table.ColumnSource;
 import io.deephaven.jpy.PythonTest;

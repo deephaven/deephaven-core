@@ -2,12 +2,11 @@
 # Copyright (c) 2016-2022 Deephaven Data Labs and Patent Pending
 #
 
+import datetime
 import unittest
 from time import sleep
-import datetime
 
-from deephaven import dtypes
-from deephaven.constants import NULL_LONG, NULL_INT
+from deephaven import dtypes, empty_table
 from deephaven.time import *
 from tests.testbase import BaseTestCase
 
@@ -17,22 +16,22 @@ class TimeTestCase(BaseTestCase):
     # region Constants
 
     def test_constants(self):
-        self.assertEqual(1000,MICRO)
-        self.assertEqual(1000000,MILLI)
-        self.assertEqual(1000000000,SECOND)
-        self.assertEqual(60*1000000000,MINUTE)
-        self.assertEqual(60*60*1000000000,HOUR)
-        self.assertEqual(24*60*60*1000000000,DAY)
-        self.assertEqual(7*24*60*60*1000000000,WEEK)
-        self.assertEqual(365*24*60*60*1000000000,YEAR_365)
-        self.assertEqual(31556952000000000,YEAR_AVG)
+        self.assertEqual(1000, MICRO)
+        self.assertEqual(1000000, MILLI)
+        self.assertEqual(1000000000, SECOND)
+        self.assertEqual(60 * 1000000000, MINUTE)
+        self.assertEqual(60 * 60 * 1000000000, HOUR)
+        self.assertEqual(24 * 60 * 60 * 1000000000, DAY)
+        self.assertEqual(7 * 24 * 60 * 60 * 1000000000, WEEK)
+        self.assertEqual(365 * 24 * 60 * 60 * 1000000000, YEAR_365)
+        self.assertEqual(31556952000000000, YEAR_AVG)
 
-        self.assertEqual(1/SECOND, SECONDS_PER_NANO)
-        self.assertEqual(1/MINUTE, MINUTES_PER_NANO)
-        self.assertEqual(1/HOUR, HOURS_PER_NANO)
-        self.assertEqual(1/DAY, DAYS_PER_NANO)
-        self.assertEqual(1/YEAR_365, YEARS_PER_NANO_365)
-        self.assertEqual(1/YEAR_AVG, YEARS_PER_NANO_AVG)
+        self.assertEqual(1 / SECOND, SECONDS_PER_NANO)
+        self.assertEqual(1 / MINUTE, MINUTES_PER_NANO)
+        self.assertEqual(1 / HOUR, HOURS_PER_NANO)
+        self.assertEqual(1 / DAY, DAYS_PER_NANO)
+        self.assertEqual(1 / YEAR_365, YEARS_PER_NANO_365)
+        self.assertEqual(1 / YEAR_AVG, YEARS_PER_NANO_AVG)
 
     # endregion
 
@@ -53,7 +52,7 @@ class TimeTestCase(BaseTestCase):
         self.assertEqual(td, target)
 
     # endregion
-    
+
     # region: Time Zone
 
     def test_time_zone(self):
@@ -82,9 +81,8 @@ class TimeTestCase(BaseTestCase):
         with self.assertRaises(DHError) as cm:
             time_zone(alias)
 
-
     # endregion
-    
+
     # region: Conversions: Time Units
 
     def test_micros_to_nanos(self):
@@ -147,24 +145,23 @@ class TimeTestCase(BaseTestCase):
         self.assertEqual(t // 10 ** 3, millis_to_seconds(t))
         self.assertEqual(NULL_LONG, millis_to_seconds(NULL_LONG))
 
-
     # endregion
-    
+
     # region: Conversions: Date Time Types
 
     def test_to_instant(self):
         dt1 = parse_instant("2021-12-10T14:21:17.123456789 ET")
         dt2 = parse_zdt("2021-12-10T14:21:17.123456789 ET")
-        
+
         self.assertEqual(dt1, to_instant(dt2))
-        self.assertEquals(None,to_instant(None))
+        self.assertEqual(None, to_instant(None))
 
     def test_to_zdt(self):
         dt1 = parse_instant("2021-12-10T14:21:17.123456789 ET")
         dt2 = parse_zdt("2021-12-10T14:21:17.123456789 ET")
 
         self.assertEqual(dt2, to_zdt(dt1, time_zone("ET")))
-        self.assertEquals(None,to_zdt(None, time_zone("ET")))
+        self.assertEqual(None, to_zdt(None, time_zone("ET")))
 
     def test_make_instant(self):
         dt = parse_instant("2021-12-10T14:21:17.123456789 ET")
@@ -173,9 +170,9 @@ class TimeTestCase(BaseTestCase):
         tz = time_zone("ET")
 
         self.assertEqual(dt, make_instant(ld, lt, tz))
-        self.assertEquals(None,make_instant(ld, lt, None))
-        self.assertEquals(None,make_instant(ld, None, tz))
-        self.assertEquals(None,make_instant(None, lt, tz))
+        self.assertEqual(None, make_instant(ld, lt, None))
+        self.assertEqual(None, make_instant(ld, None, tz))
+        self.assertEqual(None, make_instant(None, lt, tz))
 
     def test_make_zdt(self):
         dt = parse_zdt("2021-12-10T14:21:17.123456789 ET")
@@ -184,9 +181,9 @@ class TimeTestCase(BaseTestCase):
         tz = time_zone("ET")
 
         self.assertEqual(dt, make_zdt(ld, lt, tz))
-        self.assertEquals(None,make_zdt(ld, lt, None))
-        self.assertEquals(None,make_zdt(ld, None, tz))
-        self.assertEquals(None,make_zdt(None, lt, tz))
+        self.assertEqual(None, make_zdt(ld, lt, None))
+        self.assertEqual(None, make_zdt(ld, None, tz))
+        self.assertEqual(None, make_zdt(None, lt, tz))
 
     def test_to_local_date(self):
         dt1 = parse_instant("2021-12-10T14:21:17.123456789 ET")
@@ -196,9 +193,9 @@ class TimeTestCase(BaseTestCase):
 
         self.assertEqual(ld, to_local_date(dt1, tz))
         self.assertEqual(ld, to_local_date(dt2, tz))
-        self.assertEquals(None,to_local_date(dt1, None))
-        self.assertEquals(None,to_local_date(dt2, None))
-        self.assertEquals(None,to_local_date(None, tz))
+        self.assertEqual(None, to_local_date(dt1, None))
+        self.assertEqual(None, to_local_date(dt2, None))
+        self.assertEqual(None, to_local_date(None, tz))
 
     def test_to_local_time(self):
         dt1 = parse_instant("2021-12-10T14:21:17.123456789 ET")
@@ -208,12 +205,12 @@ class TimeTestCase(BaseTestCase):
 
         self.assertEqual(lt, to_local_time(dt1, tz))
         self.assertEqual(lt, to_local_time(dt2, tz))
-        self.assertEquals(None,to_local_time(dt1, None))
-        self.assertEquals(None,to_local_time(dt2, None))
-        self.assertEquals(None,to_local_time(None, tz))
+        self.assertEqual(None, to_local_time(dt1, None))
+        self.assertEqual(None, to_local_time(dt2, None))
+        self.assertEqual(None, to_local_time(None, tz))
 
     # endregion
-    
+
     # region: Conversions: Epoch
 
     def test_epoch_nanos(self):
@@ -225,89 +222,89 @@ class TimeTestCase(BaseTestCase):
     def test_epoch_micros(self):
         nanos = 12345678987654321
         dt = dtypes.Instant.j_type.ofEpochSecond(0, nanos)
-        self.assertEqual(nanos // 10**3, epoch_micros(dt))
+        self.assertEqual(nanos // 10 ** 3, epoch_micros(dt))
         self.assertEqual(NULL_LONG, epoch_micros(None))
 
     def test_epoch_millis(self):
         nanos = 12345678987654321
         dt = dtypes.Instant.j_type.ofEpochSecond(0, nanos)
-        self.assertEqual(nanos // 10**6, epoch_millis(dt))
+        self.assertEqual(nanos // 10 ** 6, epoch_millis(dt))
         self.assertEqual(NULL_LONG, epoch_millis(None))
 
     def test_epoch_seconds(self):
         nanos = 12345678987654321
         dt = dtypes.Instant.j_type.ofEpochSecond(0, nanos)
-        self.assertEqual(nanos // 10**9, epoch_seconds(dt))
+        self.assertEqual(nanos // 10 ** 9, epoch_seconds(dt))
         self.assertEqual(NULL_LONG, epoch_seconds(None))
 
     def test_epoch_nanos_to_instant(self):
         nanos = 12345678987654321
         dt = dtypes.Instant.j_type.ofEpochSecond(0, nanos)
         self.assertEqual(dt, epoch_nanos_to_instant(nanos))
-        self.assertEquals(None,epoch_nanos_to_instant(NULL_LONG))
+        self.assertEqual(None, epoch_nanos_to_instant(NULL_LONG))
 
     def test_epoch_micros_to_instant(self):
         nanos = 12345678987654321
-        micros = nanos // 10**3
-        dt = dtypes.Instant.j_type.ofEpochSecond(0, micros * 10**3)
+        micros = nanos // 10 ** 3
+        dt = dtypes.Instant.j_type.ofEpochSecond(0, micros * 10 ** 3)
         self.assertEqual(dt, epoch_micros_to_instant(micros))
-        self.assertEquals(None,epoch_micros_to_instant(NULL_LONG))
+        self.assertEqual(None, epoch_micros_to_instant(NULL_LONG))
 
     def test_epoch_millis_to_instant(self):
         nanos = 12345678987654321
-        millis = nanos // 10**6
-        dt = dtypes.Instant.j_type.ofEpochSecond(0, millis * 10**6)
+        millis = nanos // 10 ** 6
+        dt = dtypes.Instant.j_type.ofEpochSecond(0, millis * 10 ** 6)
         self.assertEqual(dt, epoch_millis_to_instant(millis))
-        self.assertEquals(None,epoch_millis_to_instant(NULL_LONG))
+        self.assertEqual(None, epoch_millis_to_instant(NULL_LONG))
 
     def test_epoch_seconds_to_instant(self):
         nanos = 12345678987654321
-        seconds = nanos // 10**9
-        dt = dtypes.Instant.j_type.ofEpochSecond(0, seconds * 10**9)
+        seconds = nanos // 10 ** 9
+        dt = dtypes.Instant.j_type.ofEpochSecond(0, seconds * 10 ** 9)
         self.assertEqual(dt, epoch_seconds_to_instant(seconds))
-        self.assertEquals(None,epoch_seconds_to_instant(NULL_LONG))
+        self.assertEqual(None, epoch_seconds_to_instant(NULL_LONG))
 
     def test_epoch_nanos_to_zdt(self):
         tz = time_zone("ET")
         nanos = 12345678987654321
         dt = dtypes.Instant.j_type.ofEpochSecond(0, nanos).atZone(tz)
         self.assertEqual(dt, epoch_nanos_to_zdt(nanos, tz))
-        self.assertEquals(None,epoch_nanos_to_zdt(NULL_LONG, tz))
+        self.assertEqual(None, epoch_nanos_to_zdt(NULL_LONG, tz))
 
     def test_epoch_micros_to_zdt(self):
         tz = time_zone("ET")
         nanos = 12345678987654321
-        micros = nanos // 10**3
-        dt = dtypes.Instant.j_type.ofEpochSecond(0, micros * 10**3).atZone(tz)
+        micros = nanos // 10 ** 3
+        dt = dtypes.Instant.j_type.ofEpochSecond(0, micros * 10 ** 3).atZone(tz)
         self.assertEqual(dt, epoch_micros_to_zdt(micros, tz))
-        self.assertEquals(None,epoch_micros_to_zdt(NULL_LONG, tz))
+        self.assertEqual(None, epoch_micros_to_zdt(NULL_LONG, tz))
 
     def test_epoch_millis_to_zdt(self):
         tz = time_zone("ET")
         nanos = 12345678987654321
-        millis = nanos // 10**6
-        dt = dtypes.Instant.j_type.ofEpochSecond(0, millis * 10**6).atZone(tz)
+        millis = nanos // 10 ** 6
+        dt = dtypes.Instant.j_type.ofEpochSecond(0, millis * 10 ** 6).atZone(tz)
         self.assertEqual(dt, epoch_millis_to_zdt(millis, tz))
-        self.assertEquals(None,epoch_millis_to_zdt(NULL_LONG, tz))
+        self.assertEqual(None, epoch_millis_to_zdt(NULL_LONG, tz))
 
     def test_epoch_seconds_to_zdt(self):
         tz = time_zone("ET")
         nanos = 12345678987654321
-        seconds = nanos // 10**9
-        dt = dtypes.Instant.j_type.ofEpochSecond(0, seconds * 10**9).atZone(tz)
+        seconds = nanos // 10 ** 9
+        dt = dtypes.Instant.j_type.ofEpochSecond(0, seconds * 10 ** 9).atZone(tz)
         self.assertEqual(dt, epoch_seconds_to_zdt(seconds, tz))
-        self.assertEquals(None,epoch_seconds_to_zdt(NULL_LONG, tz))
+        self.assertEqual(None, epoch_seconds_to_zdt(NULL_LONG, tz))
 
     def test_epoch_auto_to_epoch_nanos(self):
-        nanos = 1639171277303*10**6 + 123456789
-        micros = nanos // 10**3
-        millis = nanos // 10**6
-        seconds = nanos // 10**9
-        
-        self.assertEqual(nanos,epoch_auto_to_epoch_nanos(nanos))
-        self.assertEqual(micros * 10**3,epoch_auto_to_epoch_nanos(micros))
-        self.assertEqual(millis * 10**6,epoch_auto_to_epoch_nanos(millis))
-        self.assertEqual(seconds * 10**9,epoch_auto_to_epoch_nanos(seconds))
+        nanos = 1639171277303 * 10 ** 6 + 123456789
+        micros = nanos // 10 ** 3
+        millis = nanos // 10 ** 6
+        seconds = nanos // 10 ** 9
+
+        self.assertEqual(nanos, epoch_auto_to_epoch_nanos(nanos))
+        self.assertEqual(micros * 10 ** 3, epoch_auto_to_epoch_nanos(micros))
+        self.assertEqual(millis * 10 ** 6, epoch_auto_to_epoch_nanos(millis))
+        self.assertEqual(seconds * 10 ** 9, epoch_auto_to_epoch_nanos(seconds))
         self.assertEqual(NULL_LONG, epoch_auto_to_epoch_nanos(NULL_LONG))
 
     def test_epoch_auto_to_instant(self):
@@ -320,8 +317,7 @@ class TimeTestCase(BaseTestCase):
         self.assertEqual(epoch_nanos_to_instant(micros * 10 ** 3), epoch_auto_to_instant(micros))
         self.assertEqual(epoch_nanos_to_instant(millis * 10 ** 6), epoch_auto_to_instant(millis))
         self.assertEqual(epoch_nanos_to_instant(seconds * 10 ** 9), epoch_auto_to_instant(seconds))
-        self.assertEqual(None,epoch_auto_to_instant(NULL_LONG))
-
+        self.assertEqual(None, epoch_auto_to_instant(NULL_LONG))
 
     def test_epoch_auto_to_zdt(self):
         nanos = 1639171277303 * 10 ** 6 + 123456789
@@ -330,13 +326,16 @@ class TimeTestCase(BaseTestCase):
         seconds = nanos // 10 ** 9
 
         self.assertEqual(epoch_nanos_to_zdt(nanos, time_zone("ET")), epoch_auto_to_zdt(nanos, time_zone("ET")))
-        self.assertEqual(epoch_nanos_to_zdt(micros * 10 ** 3, time_zone("ET")), epoch_auto_to_zdt(micros, time_zone("ET")))
-        self.assertEqual(epoch_nanos_to_zdt(millis * 10 ** 6, time_zone("ET")), epoch_auto_to_zdt(millis, time_zone("ET")))
-        self.assertEqual(epoch_nanos_to_zdt(seconds * 10 ** 9, time_zone("ET")), epoch_auto_to_zdt(seconds, time_zone("ET")))
-        self.assertEqual(None,epoch_auto_to_zdt(NULL_LONG, time_zone("ET")))
+        self.assertEqual(epoch_nanos_to_zdt(micros * 10 ** 3, time_zone("ET")),
+                         epoch_auto_to_zdt(micros, time_zone("ET")))
+        self.assertEqual(epoch_nanos_to_zdt(millis * 10 ** 6, time_zone("ET")),
+                         epoch_auto_to_zdt(millis, time_zone("ET")))
+        self.assertEqual(epoch_nanos_to_zdt(seconds * 10 ** 9, time_zone("ET")),
+                         epoch_auto_to_zdt(seconds, time_zone("ET")))
+        self.assertEqual(None, epoch_auto_to_zdt(NULL_LONG, time_zone("ET")))
 
     # endregion
-    
+
     # region: Conversions: Excel
 
     def test_excel(self):
@@ -345,13 +344,13 @@ class TimeTestCase(BaseTestCase):
         tz = time_zone("ET")
         excel = to_excel_time(dt1, tz)
 
-        self.assertTrue( abs(epoch_nanos(dt1) - epoch_nanos(excel_to_instant(excel, tz)) < 2_000_000 ) )
-        self.assertTrue( abs(epoch_nanos(dt1) - epoch_nanos(excel_to_zdt(excel, tz)) < 2_000_000 ) )
-        self.assertEquals(None,excel_to_instant(excel, None))
-        self.assertEquals(None,excel_to_zdt(excel, None))
+        self.assertTrue(abs(epoch_nanos(dt1) - epoch_nanos(excel_to_instant(excel, tz)) < 2_000_000))
+        self.assertTrue(abs(epoch_nanos(dt1) - epoch_nanos(excel_to_zdt(excel, tz)) < 2_000_000))
+        self.assertEqual(None, excel_to_instant(excel, None))
+        self.assertEqual(None, excel_to_zdt(excel, None))
 
     # endregion
-    
+
     # region: Arithmetic
 
     def test_plus_period(self):
@@ -372,7 +371,6 @@ class TimeTestCase(BaseTestCase):
         period = parse_period(period_str)
         dt3 = plus_period(dt1, period)
         self.assertEqual(epoch_nanos(dt2), epoch_nanos(dt3))
-
 
     def test_minus_period(self):
         dt1 = parse_instant("2021-12-10T14:21:17.123456789 ET")
@@ -444,16 +442,16 @@ class TimeTestCase(BaseTestCase):
     def test_diff_years_365(self):
         dt1 = parse_instant("2021-12-10T14:21:17.123456789 ET")
         dt2 = parse_instant("2023-12-10T14:21:17.123456789 ET")
-        self.assertEqual(2.0,diff_years_365(dt1, dt2))
-        self.assertEqual(-2.0,diff_years_365(dt2, dt1))
+        self.assertEqual(2.0, diff_years_365(dt1, dt2))
+        self.assertEqual(-2.0, diff_years_365(dt2, dt1))
         self.assertEqual(NULL_DOUBLE, diff_years_365(None, dt2))
         self.assertEqual(NULL_DOUBLE, diff_years_365(dt1, None))
 
     def test_diff_years_avg(self):
         dt1 = parse_instant("2021-12-10T14:21:17.123456789 ET")
         dt2 = parse_instant("2023-12-10T14:21:17.123456789 ET")
-        self.assertAlmostEqual(2.0,diff_years_avg(dt1, dt2), delta=1e-2)
-        self.assertAlmostEqual(-2.0,diff_years_avg(dt2, dt1), delta=1e-2)
+        self.assertAlmostEqual(2.0, diff_years_avg(dt1, dt2), delta=1e-2)
+        self.assertAlmostEqual(-2.0, diff_years_avg(dt2, dt1), delta=1e-2)
         self.assertEqual(NULL_DOUBLE, diff_years_avg(None, dt2))
         self.assertEqual(NULL_DOUBLE, diff_years_avg(dt1, None))
 
@@ -552,7 +550,7 @@ class TimeTestCase(BaseTestCase):
         timezone_str = "ET"
         tz = time_zone(timezone_str)
         dt = parse_instant(f"{datetime_str} {timezone_str}")
-        self.assertEqual(123456789+17*SECOND+21*MINUTE+14*HOUR, nanos_of_day(dt, tz))
+        self.assertEqual(123456789 + 17 * SECOND + 21 * MINUTE + 14 * HOUR, nanos_of_day(dt, tz))
         self.assertEqual(NULL_LONG, nanos_of_day(None, tz))
         self.assertEqual(NULL_LONG, nanos_of_day(dt, None))
 
@@ -561,7 +559,7 @@ class TimeTestCase(BaseTestCase):
         timezone_str = "ET"
         tz = time_zone(timezone_str)
         dt = parse_instant(f"{datetime_str} {timezone_str}")
-        self.assertEqual((123456789+17*SECOND+21*MINUTE+14*HOUR) // 10**6, millis_of_day(dt, tz))
+        self.assertEqual((123456789 + 17 * SECOND + 21 * MINUTE + 14 * HOUR) // 10 ** 6, millis_of_day(dt, tz))
         self.assertEqual(NULL_INT, millis_of_day(None, tz))
         self.assertEqual(NULL_INT, millis_of_day(dt, None))
 
@@ -570,7 +568,7 @@ class TimeTestCase(BaseTestCase):
         timezone_str = "ET"
         tz = time_zone(timezone_str)
         dt = parse_instant(f"{datetime_str} {timezone_str}")
-        self.assertEqual((123456789+17*SECOND+21*MINUTE+14*HOUR) // 10**9, second_of_day(dt, tz))
+        self.assertEqual((123456789 + 17 * SECOND + 21 * MINUTE + 14 * HOUR) // 10 ** 9, second_of_day(dt, tz))
         self.assertEqual(NULL_INT, second_of_day(None, tz))
         self.assertEqual(NULL_INT, second_of_day(dt, None))
 
@@ -579,7 +577,7 @@ class TimeTestCase(BaseTestCase):
         timezone_str = "ET"
         tz = time_zone(timezone_str)
         dt = parse_instant(f"{datetime_str} {timezone_str}")
-        self.assertEqual(21+14*60, minute_of_day(dt, tz))
+        self.assertEqual(21 + 14 * 60, minute_of_day(dt, tz))
         self.assertEqual(NULL_INT, minute_of_day(None, tz))
         self.assertEqual(NULL_INT, minute_of_day(dt, None))
 
@@ -616,7 +614,7 @@ class TimeTestCase(BaseTestCase):
         timezone_str = "ET"
         tz = time_zone(timezone_str)
         dt = parse_instant(f"{datetime_str} {timezone_str}")
-        self.assertEqual(31+3, day_of_year(dt, tz))
+        self.assertEqual(31 + 3, day_of_year(dt, tz))
         self.assertEqual(NULL_INT, day_of_year(None, tz))
         self.assertEqual(NULL_INT, day_of_year(dt, None))
 
@@ -672,13 +670,19 @@ class TimeTestCase(BaseTestCase):
     def test_lower_bin(self):
         dt = now()
         self.assertGreaterEqual(diff_nanos(lower_bin(dt, 1000000, MINUTE), dt), 0)
+        self.assertGreaterEqual(diff_nanos(lower_bin(dt, 1000000, "PT00:01:00"), dt), 0)
+        self.assertGreaterEqual(diff_nanos(lower_bin(dt, "PT00:00:00.001000000", MINUTE), dt), 0)
+        self.assertGreaterEqual(diff_nanos(lower_bin(dt, "PT00:00:00.001000000", "PT00:01:00"), dt), 0)
 
     def test_upper_bin(self):
         dt = now()
         self.assertGreaterEqual(diff_nanos(dt, upper_bin(dt, 1000000, MINUTE)), 0)
+        self.assertGreaterEqual(diff_nanos(dt, upper_bin(dt, 1000000, "PT00:01:00")), 0)
+        self.assertGreaterEqual(diff_nanos(dt, upper_bin(dt, "PT00:00:00.001000000", MINUTE)), 0)
+        self.assertGreaterEqual(diff_nanos(dt, upper_bin(dt, "PT00:00:00.001000000", "PT00:01:00")), 0)
 
     # endregion
-    
+
     # region: Format
 
     def test_format_duration_nanos(self):
@@ -706,7 +710,7 @@ class TimeTestCase(BaseTestCase):
         self.assertEqual(3, len(format_date(dt, time_zone("PT")).split("-")))
 
     # endregion
-    
+
     # region: Parse
 
     def test_parse_time_zone(self):
@@ -773,7 +777,7 @@ class TimeTestCase(BaseTestCase):
         self.assertIn("DateTimeParseException", str(cm.exception))
 
         period = parse_period(period_str, quiet=True)
-        self.assertEquals(None,period)
+        self.assertEqual(None, period)
 
     def test_parse_duration(self):
         duration_str = "PT1M"
@@ -789,7 +793,7 @@ class TimeTestCase(BaseTestCase):
         self.assertIn("DateTimeParseException", str(cm.exception))
 
         duration = parse_duration("T1Q", quiet=True)
-        self.assertEquals(None,duration)
+        self.assertEqual(None, duration)
 
     def test_parse_epoch_nanos(self):
         datetime_str = "2021-12-10T23:59:59"
@@ -807,7 +811,7 @@ class TimeTestCase(BaseTestCase):
         datetime_str = "2021-12-10T23:59:59"
         timezone_str = "--"
         dt = parse_epoch_nanos(f"{datetime_str} {timezone_str}", quiet=True)
-        self.assertEquals(NULL_LONG,dt)
+        self.assertEqual(NULL_LONG, dt)
 
     def test_parse_instant(self):
         datetime_str = "2021-12-10T23:59:59"
@@ -824,7 +828,7 @@ class TimeTestCase(BaseTestCase):
         datetime_str = "2021-12-10T23:59:59"
         timezone_str = "--"
         dt = parse_instant(f"{datetime_str} {timezone_str}", quiet=True)
-        self.assertEquals(None,dt)
+        self.assertEqual(None, dt)
 
     def test_parse_zdt(self):
         datetime_str = "2021-12-10T23:59:59"
@@ -841,7 +845,7 @@ class TimeTestCase(BaseTestCase):
         datetime_str = "2021-12-10T23:59:59"
         timezone_str = "--"
         dt = parse_zdt(f"{datetime_str} {timezone_str}", quiet=True)
-        self.assertEquals(None,dt)
+        self.assertEqual(None, dt)
 
     def test_parse_time_precision(self):
         datetime_str = "2021-12-10T23:59:59"
@@ -858,7 +862,7 @@ class TimeTestCase(BaseTestCase):
         datetime_str = "2021-12-10T23:59:59"
         timezone_str = "--"
         tp = parse_time_precision(f"{datetime_str} {timezone_str}", quiet=True)
-        self.assertEquals(None,tp)
+        self.assertEqual(None, tp)
 
     def test_parse_local_date(self):
         date_str = "2021-12-10"
@@ -872,7 +876,7 @@ class TimeTestCase(BaseTestCase):
 
         date_str = "2021-x12-10"
         dt = parse_local_date(date_str, quiet=True)
-        self.assertEquals(None,dt)
+        self.assertEqual(None, dt)
 
     def test_parse_local_time(self):
         time_str = "23:59:59"
@@ -886,7 +890,53 @@ class TimeTestCase(BaseTestCase):
 
         time_str = "23:59x:59"
         dt = parse_local_time(time_str, quiet=True)
-        self.assertEquals(None,dt)
+        self.assertEqual(None, dt)
+
+    # endregion
+
+    # region usage in query, replace with wrapped java method
+    def test_java_method(self):
+        import deephaven.time
+        import deephaven.time as dhtime
+        from deephaven.time import now as dhnow
+        from deephaven.time import now, MINUTE, lower_bin
+
+        system_arg = True
+        resolution_arg = "ns"
+        nrow = 1000
+        formulas = [
+            "deephaven.time.now()",
+            "dhtime.now()",
+            "dhnow()",
+            "now()",
+            "now(system_arg)",
+            "now(system_arg, resolution_arg)",
+            # Python built-in constants are recognized.
+            "now(True)",
+            "now(True, `ns`)",
+            "now(true, `ns`)",
+            # QLP convert it to system==True/true
+            # "now(system=True)",
+            "lower_bin(TS, `PT00:00:00.001000000`, MINUTE)",
+            "lower_bin(TS, 1000000000)",
+            "lower_bin(TS, `PT00:00:00.001000000`)",
+            "upper_bin(TS, `PT00:00:00.001000000`, MINUTE)",
+            "upper_bin(TS, 1000000000)",
+            "upper_bin(TS, `PT00:00:00.001000000`)",
+        ]
+        t = empty_table(nrow).update("TS = io.deephaven.time.DateTimeUtils.now()")
+        for f in formulas:
+            t1 = t.update(f"NewTS = {f}")
+            self.assertEqual(t1.size, nrow)
+
+        error_formulas = [
+            "lower_bin(TS)",
+            "upper_bin(TS)",
+        ]
+        for f in error_formulas:
+            with self.assertRaises(DHError) as cm:
+                t1 = t.update(f"NewTS = {f}")
+            self.assertIn("Missing args", str(cm.exception))
 
     # endregion
 
