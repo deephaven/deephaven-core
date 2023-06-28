@@ -3,6 +3,7 @@
  */
 package io.deephaven.server.object;
 
+import com.google.protobuf.ByteString;
 import com.google.protobuf.ByteStringAccess;
 import com.google.rpc.Code;
 import io.deephaven.extensions.barrage.util.BarrageProtoUtil.ExposedByteArrayOutputStream;
@@ -11,12 +12,10 @@ import io.deephaven.io.logger.Logger;
 import io.deephaven.plugin.type.ObjectType;
 import io.deephaven.plugin.type.ObjectType.Exporter;
 import io.deephaven.plugin.type.ObjectType.Exporter.Reference;
+import io.deephaven.plugin.type.ObjectType.MessageSender;
 import io.deephaven.plugin.type.ObjectTypeLookup;
-import io.deephaven.proto.backplane.grpc.FetchObjectRequest;
-import io.deephaven.proto.backplane.grpc.FetchObjectResponse;
+import io.deephaven.proto.backplane.grpc.*;
 import io.deephaven.proto.backplane.grpc.FetchObjectResponse.Builder;
-import io.deephaven.proto.backplane.grpc.ObjectServiceGrpc;
-import io.deephaven.proto.backplane.grpc.TypedTicket;
 import io.deephaven.proto.util.Exceptions;
 import io.deephaven.server.session.SessionService;
 import io.deephaven.server.session.SessionState;
@@ -27,6 +26,7 @@ import org.jetbrains.annotations.NotNull;
 
 import javax.inject.Inject;
 import java.io.IOException;
+import java.lang.Object;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
@@ -48,6 +48,48 @@ public class ObjectServiceGrpcImpl extends ObjectServiceGrpc.ObjectServiceImplBa
         this.ticketRouter = Objects.requireNonNull(ticketRouter);
         this.objectTypeLookup = Objects.requireNonNull(objectTypeLookup);
         this.typeLookup = Objects.requireNonNull(typeLookup);
+    }
+
+    private final class SendMessageObserver implements StreamObserver<MessageRequest> {
+
+        private ExportObject<ObjectType> object;
+        private final StreamObserver<MessageResponse> responseObserver;
+
+        private SendMessageObserver(StreamObserver<MessageResponse> responseObserver) {
+            this.responseObserver = responseObserver;
+        }
+
+        @Override
+        public void onNext(final MessageRequest request) {
+            SessionState session = sessionService.getCurrentSession();
+
+            if (request.hasSourceId()) {
+                // First request
+                Ticket ticket = request.getSourceId().getTypedTicket().getTicket();
+                SessionState.ExportObject<ObjectType> object = session.getExport(ticket, "sourceId");
+                session.nonExport().require(object).onError(responseObserver).submit(() -> {
+                    this.object = object;
+                    object.get().addMessageSender(new PluginMessageSender(responseObserver, session));
+                });
+            } else if (request.hasData()) {
+                // All other requests
+                session.nonExport().require(object).onError(responseObserver).submit(() -> {
+                    String msg = request.getData().toString();
+                    object.get().handleMessage(msg);
+                });
+            }
+        }
+
+        @Override
+        public void onError(final Throwable t) {
+            // ignore
+        }
+
+        @Override
+        public void onCompleted() {
+            object.get().removeMessageSender();
+            responseObserver.onCompleted();
+        }
     }
 
     @Override
@@ -74,6 +116,13 @@ public class ObjectServiceGrpcImpl extends ObjectServiceGrpc.ObjectServiceImplBa
                     responseObserver.onCompleted();
                     return null;
                 });
+    }
+
+    @Override
+    public StreamObserver<MessageRequest> messageStream(
+            StreamObserver<MessageResponse> responseObserver
+    ) {
+        return new SendMessageObserver(responseObserver);
     }
 
     private FetchObjectResponse serialize(String expectedType, SessionState state, Object object) throws IOException {
@@ -195,6 +244,43 @@ public class ObjectServiceGrpcImpl extends ObjectServiceGrpc.ObjectServiceImplBa
         @Override
         public Optional<String> type() {
             return Optional.ofNullable(type);
+        }
+    }
+
+    private final class PluginMessageSender implements MessageSender {
+
+
+        private final StreamObserver<MessageResponse> responseObserver;
+
+        private final ExportCollector exportCollector;
+
+        public PluginMessageSender(StreamObserver<MessageResponse> responseObserver, SessionState sessionState) {
+            this.responseObserver = responseObserver;
+            exportCollector = new ExportCollector(sessionState);
+        }
+
+        @Override
+        public void sendMessage(String msg) {
+            sendMessage(msg, new Object[]{});
+        }
+
+        @Override
+        public void sendMessage(String msg, Object[] objects) {
+            final MessageResponse.Builder responseBuilder = MessageResponse.newBuilder().setData(ByteString.copyFrom(msg.getBytes()));
+            for (Object obj : objects) {
+                Optional<Reference> ref = exportCollector.reference(obj, false, false);
+                if (ref.isPresent()) {
+                    ReferenceImpl refImpl = (ReferenceImpl) ref.get();
+                    responseBuilder.addTypedExportId(refImpl.typedTicket());
+                }
+            }
+
+            responseObserver.onNext(responseBuilder.build());
+        }
+
+        @Override
+        public void close() {
+            responseObserver.onCompleted();
         }
     }
 }

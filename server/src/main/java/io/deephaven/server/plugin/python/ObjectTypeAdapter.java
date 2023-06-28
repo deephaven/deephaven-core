@@ -42,6 +42,11 @@ final class ObjectTypeAdapter extends ObjectTypeBase implements AutoCloseable {
     }
 
     @Override
+    public void handleMessage(String msg) {
+        objectTypeAdapter.call("handle_message", msg);
+    }
+
+    @Override
     public String toString() {
         return objectTypeAdapter.toString();
     }

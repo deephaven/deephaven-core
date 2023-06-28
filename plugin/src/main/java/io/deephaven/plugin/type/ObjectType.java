@@ -99,4 +99,20 @@ public interface ObjectType extends Plugin {
             Optional<String> type();
         }
     }
+
+    void addMessageSender(MessageSender channel);
+
+    void removeMessageSender();
+
+    void handleMessage(String message);
+
+    void sendMessage(String message);
+
+    interface MessageSender {
+        void sendMessage(String msg);
+
+        void sendMessage(String msg, Object[] objects);
+
+        void close();
+    }
 }

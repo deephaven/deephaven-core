@@ -36,9 +36,20 @@ message FetchObjectResponse {
     repeated io.deephaven.proto.backplane.grpc.TypedTicket typed_export_id = 3;
 }
 
+message ConnectRequest {
+    io.deephaven.proto.backplane.grpc.TypedTicket typed_ticket = 1;
+}
+
+message DataRequest {
+    bytes data = 1;
+    repeated io.deephaven.proto.backplane.grpc.TypedTicket typed_export_id = 2;
+}
+
 message MessageRequest {
-    io.deephaven.proto.backplane.grpc.TypedTicket source_id = 1;
-    bytes data = 2;
+    oneof payload {
+        ConnectRequest source_id = 1;
+        DataRequest data = 2;
+    }
 }
 
 message MessageResponse {
