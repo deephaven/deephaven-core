@@ -79,6 +79,10 @@ ClientOptions <- R6Class("ClientOptions",
             self$internal_client_options$set_tls_root_certs(root_certs)
         },
 
+ 
+        #' Adds an int-valued option for the configuration of the underlying gRPC channels.
+        #' @param opt The option key.
+        #' @param val The option value.
         add_int_option = function(opt, val) {
             self$internal_client_options$add_int_option(opt, val)
         },
