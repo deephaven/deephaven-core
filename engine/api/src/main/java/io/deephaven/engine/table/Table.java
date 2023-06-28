@@ -122,7 +122,14 @@ public interface Table extends
     String UNIQUE_KEYS_ATTRIBUTE = "uniqueKeys";
     String FILTERABLE_COLUMNS_ATTRIBUTE = "FilterableColumns";
     String TOTALS_TABLE_ATTRIBUTE = "TotalsTable";
+    /**
+     * If this attribute is set, we can only add new row keys, we can never shift them, modify them, or remove them.
+     */
     String ADD_ONLY_TABLE_ATTRIBUTE = "AddOnly";
+    /**
+     * If this attribute is set, we can only append new row keys to the end of the table. We can never shift them,
+     * modify them, or remove them.
+     */
     String APPEND_ONLY_TABLE_ATTRIBUTE = "AppendOnly";
     String TEST_SOURCE_TABLE_ATTRIBUTE = "TestSource";
     /**

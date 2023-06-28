@@ -98,15 +98,19 @@ public class SliceLikeOperation implements QueryTable.Operation<QueryTable> {
         }
 
         if (operation.equals("headPct")) {
-            // headPct has a floating tail, so we can only propagate if append-only
+            // With headPct, resultTable has a floating tail. So if parent is ADD_ONLY, new rows might be added and old
+            // rows removed from resultTable as the parent grows. But if parent is APPEND_ONLY, new rows can only be
+            // appended to resultTable
             if (parent.isAppendOnly()) {
                 resultTable.setAttribute(Table.ADD_ONLY_TABLE_ATTRIBUTE, true);
                 resultTable.setAttribute(Table.APPEND_ONLY_TABLE_ATTRIBUTE, true);
             }
         } else if (!operation.equals("tailPct") && getFirstPositionInclusive() >= 0) {
-            // tailPct has a floating head, so we can't propagate either property
-            // otherwise, if the first row is fixed (not negative), then we can propagate add-only/append-only
-            if (parent.isAddOnly()) {
+            // With tailPct or when first position is negative, even if the parent is APPEND_ONLY, new rows can be added
+            // and old rows removed from resultTable as the parent grows. Therefore, we cannot propagate the property.
+            // Otherwise, we can propagate APPEND_ONLY and conditionally propagate ADD_ONLY.
+            if (parent.isAddOnly() && getLastPositionExclusive() <= 0) {
+                // The tail cannot be fixed, else we might need to remove rows
                 resultTable.setAttribute(Table.ADD_ONLY_TABLE_ATTRIBUTE, true);
             }
             if (parent.isAppendOnly()) {

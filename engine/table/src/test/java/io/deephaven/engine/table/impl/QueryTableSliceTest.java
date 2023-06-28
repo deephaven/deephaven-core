@@ -355,13 +355,17 @@ public class QueryTableSliceTest extends QueryTableTestBase {
         }
     }
 
-    public void testGrowthUpdatePattern() {
+    public void testGrowthAppendUpdatePattern() {
         final long steps = 4096;
 
         for (int j = 1; j < 100; j += 7) {
             final QueryTable upTable = getTable(true, 0, new Random(0), new ColumnInfo[0]);
+            upTable.setAttribute(Table.ADD_ONLY_TABLE_ATTRIBUTE, true);
+            upTable.setAttribute(Table.APPEND_ONLY_TABLE_ATTRIBUTE, true);
             final QueryTable queryTable = (QueryTable) upTable.updateView("I=i", "II=ii");
             final EvalNugget[] en = {
+                    EvalNugget.from(() -> queryTable.slice(10, 15)),
+                    EvalNugget.from(() -> queryTable.slice(10, -15)),
                     EvalNugget.from(() -> queryTable.slice(-35, 0)),
                     EvalNugget.from(() -> queryTable.slice(-15, 10))
             };
@@ -371,6 +375,7 @@ public class QueryTableSliceTest extends QueryTableTestBase {
                 final long jj = j;
                 final ControlledUpdateGraph updateGraph = ExecutionContext.getContext().getUpdateGraph().cast();
                 updateGraph.runWithinUnitTestCycle(() -> {
+                    // Appending the rows at the end
                     RowSet added1 = RowSetFactory.fromRange(ii * jj, (ii + 1) * jj - 1);
                     upTable.getRowSet().writableCast().insert(added1);
                     TableUpdate update =
@@ -384,6 +389,39 @@ public class QueryTableSliceTest extends QueryTableTestBase {
         }
     }
 
+    public void testGrowthPrependUpdatePattern() {
+        final int numRowsToAdd = 10;
+        final int tableSize = 50;
+        final int steps = (tableSize / numRowsToAdd);
+
+        final QueryTable upTable = getTable(true, 0, new Random(0), new ColumnInfo[0]);
+        upTable.setAttribute(Table.ADD_ONLY_TABLE_ATTRIBUTE, true);
+        final QueryTable queryTable = (QueryTable) upTable.updateView("K=k");
+        final EvalNugget[] en = {
+                EvalNugget.from(() -> queryTable.slice(10, 15)),
+                EvalNugget.from(() -> queryTable.slice(10, -15)),
+                EvalNugget.from(() -> queryTable.slice(-35, 0)),
+                EvalNugget.from(() -> queryTable.slice(-15, 10))
+        };
+
+        for (int i = steps; i > 0; --i) {
+            final long ii = i;
+            final ControlledUpdateGraph updateGraph = ExecutionContext.getContext().getUpdateGraph().cast();
+            // Prepending 10 rows at time, starting from (40, 49), (30, 39)...
+            updateGraph.runWithinUnitTestCycle(() -> {
+                RowSet added1 = RowSetFactory.fromRange((ii - 1) * numRowsToAdd, ((ii) * numRowsToAdd) - 1);
+                upTable.getRowSet().writableCast().insert(added1);
+                TableUpdate update =
+                        new TableUpdateImpl(added1, RowSetFactory.empty(),
+                                RowSetFactory.empty(), RowSetShiftData.EMPTY, ModifiedColumnSet.EMPTY);
+                upTable.notifyListeners(update);
+            });
+
+            TstUtils.validate("", en);
+        }
+    }
+
+
     public void testShrinkageUpdatePattern() {
         final int numRowsToDelete = 10;
         final int tableSize = 50;
@@ -391,6 +429,8 @@ public class QueryTableSliceTest extends QueryTableTestBase {
         final QueryTable upTable = TstUtils.testRefreshingTable(RowSetFactory.fromRange(0, tableSize - 1).toTracking());
         final QueryTable queryTable = (QueryTable) upTable.updateView("K=k");
         final EvalNugget[] en = {
+                EvalNugget.from(() -> queryTable.slice(10, 15)),
+                EvalNugget.from(() -> queryTable.slice(10, -15)),
                 EvalNugget.from(() -> queryTable.slice(-35, 0)),
                 EvalNugget.from(() -> queryTable.slice(-15, 10))
         };
