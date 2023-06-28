@@ -157,7 +157,9 @@ public class Column {
     }
 
     @JsProperty
-    public boolean getIsSortable() { return isSortable; }
+    public boolean getIsSortable() {
+        return isSortable;
+    }
 
     @JsMethod
     public FilterValue filter() {

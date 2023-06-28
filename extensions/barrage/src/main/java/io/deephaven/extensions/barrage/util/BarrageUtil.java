@@ -184,7 +184,8 @@ public class BarrageUtil {
             @NotNull final Collection<ColumnDefinition<?>> columnDefinitions,
             @NotNull final Function<String, Map<String, String>> fieldMetadataFactory,
             @NotNull final Map<String, Object> attributes) {
-        return columnDefinitionsToFields(columnDescriptions, inputTable, columnDefinitions, fieldMetadataFactory, attributes,
+        return columnDefinitionsToFields(columnDescriptions, inputTable, columnDefinitions, fieldMetadataFactory,
+                attributes,
                 false);
     }
 

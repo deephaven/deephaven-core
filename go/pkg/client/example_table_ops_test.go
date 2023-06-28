@@ -52,12 +52,12 @@ func Example_tableOps() {
     //   schema:
     //   fields: 3
     //     - Ticker: type=utf8, nullable
-    //         metadata: ["deephaven:isDateFormat": "false", "deephaven:isNumberFormat": "false", "deephaven:isPartitioning": "false", "deephaven:isRowStyle": "false", "deephaven:isStyle": "false", "deephaven:type": "java.lang.String"]
+    //         metadata: ["deephaven:isDateFormat": "false", "deephaven:isNumberFormat": "false", "deephaven:isPartitioning": "false", "deephaven:isRowStyle": "false", "deephaven:isSortable": "true", "deephaven:isStyle": "false", "deephaven:type": "java.lang.String"]
     //     - Close: type=float32, nullable
-    //        metadata: ["deephaven:isDateFormat": "false", "deephaven:isNumberFormat": "false", "deephaven:isPartitioning": "false", "deephaven:isRowStyle": "false", "deephaven:isStyle": "false", "deephaven:type": "float"]
+    //        metadata: ["deephaven:isDateFormat": "false", "deephaven:isNumberFormat": "false", "deephaven:isPartitioning": "false", "deephaven:isRowStyle": "false", "deephaven:isSortable": "true", "deephaven:isStyle": "false", "deephaven:type": "float"]
     //     - Volume: type=int32, nullable
-    //         metadata: ["deephaven:isDateFormat": "false", "deephaven:isNumberFormat": "false", "deephaven:isPartitioning": "false", "deephaven:isRowStyle": "false", "deephaven:isStyle": "false", "deephaven:type": "int"]
-    //   metadata: ["deephaven:attribute.AddOnly": "true", "deephaven:attribute.AppendOnly": "true", "deephaven:attribute.SortableColumns": "Ticker,Close,Volume", "deephaven:attribute_type.AddOnly": "java.lang.Boolean", "deephaven:attribute_type.AppendOnly": "java.lang.Boolean", "deephaven:attribute_type.SortableColumns": "java.lang.String"]
+    //         metadata: ["deephaven:isDateFormat": "false", "deephaven:isNumberFormat": "false", "deephaven:isPartitioning": "false", "deephaven:isRowStyle": "false", "deephaven:isSortable": "true", "deephaven:isStyle": "false", "deephaven:type": "int"]
+    //   metadata: ["deephaven:attribute.AddOnly": "true", "deephaven:attribute.AppendOnly": "true", "deephaven:attribute_type.AddOnly": "java.lang.Boolean", "deephaven:attribute_type.AppendOnly": "java.lang.Boolean"]
     //   rows: 5
     //   col[0][Ticker]: ["XRX" "IBM" "GME" "AAPL" "ZNGA"]
     //   col[1][Close]: [53.8 38.7 453 26.7 544.9]
@@ -67,14 +67,13 @@ func Example_tableOps() {
     //   schema:
     //   fields: 4
     //     - Ticker: type=utf8, nullable
-    //         metadata: ["deephaven:isDateFormat": "false", "deephaven:isNumberFormat": "false", "deephaven:isPartitioning": "false", "deephaven:isRowStyle": "false", "deephaven:isStyle": "false", "deephaven:type": "java.lang.String"]
+    //         metadata: ["deephaven:isDateFormat": "false", "deephaven:isNumberFormat": "false", "deephaven:isPartitioning": "false", "deephaven:isRowStyle": "false", "deephaven:isSortable": "true", "deephaven:isStyle": "false", "deephaven:type": "java.lang.String"]
     //     - Close: type=float32, nullable
-    //        metadata: ["deephaven:isDateFormat": "false", "deephaven:isNumberFormat": "false", "deephaven:isPartitioning": "false", "deephaven:isRowStyle": "false", "deephaven:isStyle": "false", "deephaven:type": "float"]
+    //        metadata: ["deephaven:isDateFormat": "false", "deephaven:isNumberFormat": "false", "deephaven:isPartitioning": "false", "deephaven:isRowStyle": "false", "deephaven:isSortable": "true", "deephaven:isStyle": "false", "deephaven:type": "float"]
     //     - Volume: type=int32, nullable
-    //         metadata: ["deephaven:isDateFormat": "false", "deephaven:isNumberFormat": "false", "deephaven:isPartitioning": "false", "deephaven:isRowStyle": "false", "deephaven:isStyle": "false", "deephaven:type": "int"]
+    //         metadata: ["deephaven:isDateFormat": "false", "deephaven:isNumberFormat": "false", "deephaven:isPartitioning": "false", "deephaven:isRowStyle": "false", "deephaven:isSortable": "true", "deephaven:isStyle": "false", "deephaven:type": "int"]
     //     - Magnitude: type=int32, nullable
-    //            metadata: ["deephaven:isDateFormat": "false", "deephaven:isNumberFormat": "false", "deephaven:isPartitioning": "false", "deephaven:isRowStyle": "false", "deephaven:isStyle": "false", "deephaven:type": "int"]
-    //   metadata: ["deephaven:attribute.SortableColumns": "Ticker,Close,Volume,Magnitude", "deephaven:attribute_type.SortableColumns": "java.lang.String"]
+    //            metadata: ["deephaven:isDateFormat": "false", "deephaven:isNumberFormat": "false", "deephaven:isPartitioning": "false", "deephaven:isRowStyle": "false", "deephaven:isSortable": "true", "deephaven:isStyle": "false", "deephaven:type": "int"]
     //   rows: 5
     //   col[0][Ticker]: ["XRX" "IBM" "GME" "AAPL" "ZNGA"]
     //   col[1][Close]: [53.8 38.7 453 26.7 544.9]
