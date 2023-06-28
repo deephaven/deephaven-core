@@ -192,6 +192,50 @@ public class SessionService {
     }
 
     @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
+    public interface PublishFromTicketType {
+        @JsOverlay
+        static SessionService.PublishFromTicketType create() {
+            return Js.uncheckedCast(JsPropertyMap.of());
+        }
+
+        @JsProperty
+        String getMethodName();
+
+        @JsProperty
+        Object getRequestType();
+
+        @JsProperty
+        Object getResponseType();
+
+        @JsProperty
+        Object getService();
+
+        @JsProperty
+        boolean isRequestStream();
+
+        @JsProperty
+        boolean isResponseStream();
+
+        @JsProperty
+        void setMethodName(String methodName);
+
+        @JsProperty
+        void setRequestStream(boolean requestStream);
+
+        @JsProperty
+        void setRequestType(Object requestType);
+
+        @JsProperty
+        void setResponseStream(boolean responseStream);
+
+        @JsProperty
+        void setResponseType(Object responseType);
+
+        @JsProperty
+        void setService(Object service);
+    }
+
+    @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
     public interface RefreshSessionTokenType {
         @JsOverlay
         static SessionService.RefreshSessionTokenType create() {
@@ -327,6 +371,7 @@ public class SessionService {
     public static SessionService.ExportFromTicketType ExportFromTicket;
     public static SessionService.ExportNotificationsType ExportNotifications;
     public static SessionService.NewSessionType NewSession;
+    public static SessionService.PublishFromTicketType PublishFromTicket;
     public static SessionService.RefreshSessionTokenType RefreshSessionToken;
     public static SessionService.ReleaseType Release;
     public static SessionService.TerminationNotificationType TerminationNotification;
