@@ -82,6 +82,7 @@ test_that("to_arrow_record_batch_stream_reader returns an identical stream reade
     # actual equality of RecordBatchStreamReaders is not expected, as they contain underlying pointers to relevant data,
     # as well as metadata from the Deephaven server, which we do not expect rbr created fully in R to have.
     # We care about equality in the sense that coercing to dataframes should yield identical dataframes, so we cast to dataframes and compare.
+    # Additionally, as.data.frame() does not convert arrow tables to data frames, but to Tibbles. Need another as.data.frame to get a data frame.
 
     rbr1 <- data$th1$to_arrow_record_batch_stream_reader()
     expect_equal(as.data.frame(as.data.frame(rbr1$read_table())), data$df1)
@@ -100,6 +101,7 @@ test_that("to_arrow_table returns a valid Arrow table", {
     data <- setup()
 
     # The rationale for casting RecordBatchStreamReaders to dataframes for comparison also applies to Arrow Tables.
+    # Additionally, as.data.frame() does not convert arrow tables to data frames, but to Tibbles. Need another as.data.frame to get a data frame.
 
     arrow_tbl1 <- data$th1$to_arrow_table()
     expect_equal(as.data.frame(as.data.frame(arrow_tbl1)), data$df1)
@@ -169,5 +171,3 @@ test_that("bind_to_variable fails nicely on bad inputs", {
     expect_error(data$th1$bind_to_variable(list("list", "of", "strings")),
         "'name' should be a single character or string. Got object of type list instead.")
 })
-
-#test_file("/home/user/deephaven/src/deephaven/deephaven-core/R/rdeephaven/tests/testthat/test_table_handle_wrapper.R")

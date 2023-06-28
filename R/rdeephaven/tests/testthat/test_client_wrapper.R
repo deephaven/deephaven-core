@@ -200,5 +200,3 @@ test_that("run_script fails nicely with bad input types", {
     expect_error(client$run_script(12345), "'script' must be passed as a single string. Got object of class numeric instead.")
     expect_error(client$run_script(c("I", "am", "a", "string")), "'script' must be passed as a single string. Got character vector of length 4 instead.")
 })
-
-#test_file("/home/user/deephaven/src/deephaven/deephaven-core/R/rdeephaven/tests/testthat/test_client_wrapper.R")
