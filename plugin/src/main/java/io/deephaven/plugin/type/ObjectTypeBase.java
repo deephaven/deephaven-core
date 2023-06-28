@@ -37,9 +37,7 @@ public abstract class ObjectTypeBase extends PluginBase implements ObjectType {
      */
     @Override
     public void sendMessage(String message) {
-        if (messageSender != null) {
-            messageSender.sendMessage(message);
-        }
+        sendMessage(message, new Object[]{});
     }
 
     public void sendMessage(String message, Object[] objects) {
