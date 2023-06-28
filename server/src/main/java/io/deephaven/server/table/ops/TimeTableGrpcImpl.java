@@ -4,6 +4,8 @@
 package io.deephaven.server.table.ops;
 
 import com.google.rpc.Code;
+import io.deephaven.api.updateby.spec.CumMinMaxSpec;
+import io.deephaven.api.updateby.spec.CumSumSpec;
 import io.deephaven.auth.codegen.impl.TableServiceContextualAuthWiring;
 import io.deephaven.base.verify.Assert;
 import io.deephaven.engine.context.ExecutionContext;
@@ -11,6 +13,7 @@ import io.deephaven.engine.table.Table;
 import io.deephaven.engine.table.impl.TimeTable;
 import io.deephaven.proto.backplane.grpc.BatchTableRequest;
 import io.deephaven.proto.backplane.grpc.TimeTableRequest;
+import io.deephaven.proto.backplane.grpc.UpdateByRequest;
 import io.deephaven.proto.util.Exceptions;
 import io.deephaven.server.session.SessionState;
 import io.deephaven.server.util.Scheduler;
@@ -51,27 +54,25 @@ public class TimeTableGrpcImpl extends GrpcTableOperation<TimeTableRequest> {
     public Table create(final TimeTableRequest request,
             final List<SessionState.ExportObject<Table>> sourceTables) {
         Assert.eq(sourceTables.size(), "sourceTables.size()", 0);
-        if (request.hasStartTimeString()) {
-            final Instant startTime = DateTimeUtils.parseInstant(request.getStartTimeString());
-            if (request.hasPeriodString()) {
-                final long periodValue = DateTimeUtils.parseDurationNanos(request.getPeriodString());
-                return new TimeTable(ExecutionContext.getContext().getUpdateGraph(), scheduler,
-                        startTime, periodValue, false);
-            }
-            final long periodValue = request.getPeriodNanos();
-            return new TimeTable(ExecutionContext.getContext().getUpdateGraph(), scheduler,
-                    startTime, periodValue, false);
 
-        }
-        final long startTime = request.getStartTimeNanos();
-        if (request.hasPeriodString()) {
-            final long periodValue = DateTimeUtils.parseDurationNanos(request.getPeriodString());
-            return new TimeTable(ExecutionContext.getContext().getUpdateGraph(), scheduler,
-                    startTime <= 0 ? null : DateTimeUtils.epochNanosToInstant(startTime), periodValue, false);
-        }
-        final long periodValue = request.getPeriodNanos();
         return new TimeTable(ExecutionContext.getContext().getUpdateGraph(), scheduler,
-                startTime <= 0 ? null : DateTimeUtils.epochNanosToInstant(startTime), periodValue, false);
+                adaptStartTime(request),
+                adaptPeriod(request),
+                false);
+    }
 
+    private static Instant adaptStartTime(@SuppressWarnings("unused") final TimeTableRequest request) {
+        if (request.hasStartTimeString()) {
+            return DateTimeUtils.parseInstant(request.getStartTimeString());
+        }
+        // Return null if start time nanos is zero or negative.
+        return request.getStartTimeNanos() <= 0 ? null : DateTimeUtils.epochNanosToInstant(request.getStartTimeNanos());
+    }
+
+    private static long adaptPeriod(@SuppressWarnings("unused") final TimeTableRequest request) {
+        if (request.hasPeriodString()) {
+            return DateTimeUtils.parseDurationNanos(request.getPeriodString());
+        }
+        return request.getPeriodNanos();
     }
 }

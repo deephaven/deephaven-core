@@ -68,18 +68,11 @@ class TimeTableOp(TableOp):
                                                   start_time_string=self.start_time,
                                                   period_string=self.period)
 
-            return table_pb2.TimeTableRequest(result_id=result_id,
-                                              start_time_string=self.start_time,
-                                              period_nanos=self.period)
-
-        if isinstance(self.period, str):
-            return table_pb2.TimeTableRequest(result_id=result_id,
-                                              start_time_nanos=self.start_time,
-                                              period_string=self.period)
-
         return table_pb2.TimeTableRequest(result_id=result_id,
-                                          start_time_nanos=self.start_time,
-                                          period_nanos=self.period)
+            start_time_nanos=self.start_time if not isinstance(self.start_time, str) else None,
+            start_time_string=self.start_time if isinstance(self.start_time, str) else None,
+            period_nanos=self.period if not isinstance(self.period, str) else None,
+            period_string=self.period if isinstance(self.period, str) else None)
 
     def make_grpc_request_for_batch(self, result_id, source_id) -> Any:
         return table_pb2.BatchTableRequest.Operation(

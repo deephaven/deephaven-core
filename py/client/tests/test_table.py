@@ -25,8 +25,9 @@ class TableTestCase(BaseTestCase):
         self.assertTrue(table.is_closed)
 
     def test_time_table(self):
-        periods = [1000000000, 100, "PT1S", "PT00:00:00.001"]
-        start_times = [None, "2021-01-01T11:00 ET", "2020-10-01T11:00:34.001 PT"]
+        SEC_TO_NS = 1_000_000_000
+        periods = [10 * SEC_TO_NS, 300 * SEC_TO_NS, "PT10S", "PT00:05:00.000"]
+        start_times = [None, "2023-01-01T11:00 ET", "2023-02-01T11:00:34.001 PT"]
 
         for p in periods:
             for st in start_times:
