@@ -135,7 +135,7 @@ public class HierarchicalTableSchemaUtil {
             @NotNull final RollupTable rollupTable) {
 
         final Map<String, String> schemaMetadata =
-                attributesToMetadata(rollupTable.getAttributes(), rollupTable.getAvailableColumnDefinitions());
+                attributesToMetadata(rollupTable.getAttributes());
 
         final Set<String> groupByColumns = rollupTable.getGroupByColumns().stream()
                 .map(ColumnName::name)
@@ -156,7 +156,7 @@ public class HierarchicalTableSchemaUtil {
             @NotNull final TreeTable treeTable) {
 
         final Map<String, String> schemaMetadata =
-                attributesToMetadata(treeTable.getAttributes(), treeTable.getAvailableColumnDefinitions());
+                attributesToMetadata(treeTable.getAttributes());
 
         final Stream<Field> structuralFields = getStructuralFields(treeTable);
         final Stream<Field> nodeFields = getTreeNodeFields(treeTable);
@@ -180,7 +180,7 @@ public class HierarchicalTableSchemaUtil {
                         putMetadata(metadata, HIERARCHICAL_TABLE_IS_ROW_EXPANDED_COLUMN, TRUE_STRING);
                     }
                     return metadata;
-                });
+                }, hierarchicalTable.getAttributes());
     }
 
     private static Stream<Field> getRollupAggregatedNodeFields(
@@ -203,7 +203,7 @@ public class HierarchicalTableSchemaUtil {
                                 aggregationColumnToInputColumnName.getOrDefault(columnName, ""));
                     }
                     return metadata;
-                });
+                }, rollupTable.getAttributes());
     }
 
     private static Stream<Field> getRollupConstituentNodeFields(
@@ -223,7 +223,7 @@ public class HierarchicalTableSchemaUtil {
                         putMetadata(metadata, ROLLUP_TABLE_IS_GROUP_BY_COLUMN, TRUE_STRING);
                     }
                     return metadata;
-                });
+                }, rollupTable.getAttributes());
     }
 
     private static Stream<Field> getTreeNodeFields(@NotNull final TreeTable treeTable) {
@@ -240,6 +240,6 @@ public class HierarchicalTableSchemaUtil {
                         putMetadata(metadata, TREE_TABLE_IS_PARENT_IDENTIFIER_COLUMN, TRUE_STRING);
                     }
                     return metadata;
-                });
+                }, treeTable.getAttributes());
     }
 }

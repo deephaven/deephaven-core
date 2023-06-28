@@ -145,49 +145,22 @@ public class BarrageUtil {
             @NotNull final StreamReaderOptions options,
             @NotNull final TableDefinition tableDefinition,
             @NotNull final Map<String, Object> attributes) {
-        final Map<String, String> schemaMetadata = attributesToMetadata(attributes, tableDefinition.getColumns());
+        final Map<String, String> schemaMetadata = attributesToMetadata(attributes);
 
         final Map<String, String> descriptions = GridAttributes.getColumnDescriptions(attributes);
         final MutableInputTable inputTable = (MutableInputTable) attributes.get(Table.INPUT_TABLE_ATTRIBUTE);
         final List<Field> fields = columnDefinitionsToFields(
                 descriptions, inputTable, tableDefinition.getColumns(), ignored -> new HashMap<>(),
-                options.columnsAsList())
+                attributes, options.columnsAsList())
                 .collect(Collectors.toList());
 
         return new Schema(fields, schemaMetadata).getSchema(builder);
     }
 
     @NotNull
-    public static Map<String, String> attributesToMetadata(@NotNull final Map<String, Object> attributes,
-            @NotNull final Collection<ColumnDefinition<?>> columnDefinitions) {
+    public static Map<String, String> attributesToMetadata(@NotNull final Map<String, Object> attributes) {
         final Map<String, String> metadata = new HashMap<>();
-
-        List<String> sortableColumns = new ArrayList<>();
-        List<ColumnDefinition<?>> columnsToCheck = new ArrayList<>(columnDefinitions);
-
-        if (attributes.containsKey(GridAttributes.SORTABLE_COLUMNS_ATTRIBUTE)) {
-            String[] restrictedSortColumns =
-                    attributes.get(GridAttributes.SORTABLE_COLUMNS_ATTRIBUTE).toString().split(",");
-            columnsToCheck.removeIf(
-                    col -> Arrays.stream(restrictedSortColumns).noneMatch(name -> name.equals(col.getName())));
-        }
-
-        columnsToCheck.forEach(col -> {
-            Class<?> dataType = col.getDataType();
-            if (dataType.isPrimitive() || Comparable.class.isAssignableFrom(dataType)) {
-                sortableColumns.add(col.getName());
-            }
-        });
-
-        Map<String, Object> modifiedAttributes = new HashMap<>(attributes);
-        if (sortableColumns.size() > 0) {
-            modifiedAttributes.put(GridAttributes.SORTABLE_COLUMNS_ATTRIBUTE, String.join(",", sortableColumns));
-        } else {
-            modifiedAttributes.remove(GridAttributes.SORTABLE_COLUMNS_ATTRIBUTE);
-        }
-
-
-        for (final Map.Entry<String, Object> entry : modifiedAttributes.entrySet()) {
+        for (final Map.Entry<String, Object> entry : attributes.entrySet()) {
             final String key = entry.getKey();
             final Object val = entry.getValue();
             if (val instanceof Byte || val instanceof Short || val instanceof Integer ||
@@ -209,8 +182,9 @@ public class BarrageUtil {
             @NotNull final Map<String, String> columnDescriptions,
             @Nullable final MutableInputTable inputTable,
             @NotNull final Collection<ColumnDefinition<?>> columnDefinitions,
-            @NotNull final Function<String, Map<String, String>> fieldMetadataFactory) {
-        return columnDefinitionsToFields(columnDescriptions, inputTable, columnDefinitions, fieldMetadataFactory,
+            @NotNull final Function<String, Map<String, String>> fieldMetadataFactory,
+            @NotNull final Map<String, Object> attributes) {
+        return columnDefinitionsToFields(columnDescriptions, inputTable, columnDefinitions, fieldMetadataFactory, attributes,
                 false);
     }
 
@@ -219,12 +193,32 @@ public class BarrageUtil {
             @Nullable final MutableInputTable inputTable,
             @NotNull final Collection<ColumnDefinition<?>> columnDefinitions,
             @NotNull final Function<String, Map<String, String>> fieldMetadataFactory,
+            @NotNull final Map<String, Object> attributes,
             final boolean columnsAsList) {
         // Find the format columns
         final Set<String> formatColumns = new HashSet<>();
         columnDefinitions.stream().map(ColumnDefinition::getName)
                 .filter(ColumnFormatting::isFormattingColumn)
                 .forEach(formatColumns::add);
+
+        // Find columns that are sortable
+        List<String> sortableColumns = new ArrayList<>();
+        List<ColumnDefinition<?>> columnsToCheck = new ArrayList<>(columnDefinitions);
+
+        // limits to restrictedSortTo columns if applicable
+        if (attributes.containsKey(GridAttributes.SORTABLE_COLUMNS_ATTRIBUTE)) {
+            String[] restrictedSortColumns =
+                    attributes.get(GridAttributes.SORTABLE_COLUMNS_ATTRIBUTE).toString().split(",");
+            columnsToCheck.removeIf(
+                    col -> Arrays.stream(restrictedSortColumns).noneMatch(name -> name.equals(col.getName())));
+        }
+
+        columnsToCheck.forEach(col -> {
+            Class<?> dataType = col.getDataType();
+            if (dataType.isPrimitive() || Comparable.class.isAssignableFrom(dataType)) {
+                sortableColumns.add(col.getName());
+            }
+        });
 
         // Build metadata for columns and add the fields
         return columnDefinitions.stream().map((final ColumnDefinition<?> column) -> {
@@ -234,6 +228,7 @@ public class BarrageUtil {
             final Map<String, String> metadata = fieldMetadataFactory.apply(name);
 
             putMetadata(metadata, "isPartitioning", column.isPartitioning() + "");
+            putMetadata(metadata, "isSortable", String.valueOf(sortableColumns.contains(name)));
 
             // Wire up style and format column references
             final String styleFormatName = ColumnFormatting.getStyleFormatColumn(name);
