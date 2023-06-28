@@ -32,7 +32,7 @@ Client <- R6Class("Client",
         #' @param client_options ClientOptions instance with the parameters needed to connect to the server.
         #' See ?ClientOptions for more information.
         initialize = function(target, client_options) {
-            private$verify_string(target, "target")
+            private$verify_string("target", target)
             if (class(client_options)[[1]] != "ClientOptions") {
                 stop(paste("'client_options' should be a Deephaven ClientOptions object. Got object of type", class(client_options)[[1]], "instead."))
             }
@@ -45,7 +45,7 @@ Client <- R6Class("Client",
         #' @param name Name of the table to open from the server, passed as a string.
         #' @return TableHandle reference to the requested table.
         open_table = function(name) {
-            private$verify_string(name, "name")
+            private$verify_string("name", name)
             if (!private$check_for_table(name)) {
                 stop(paste0("The table '", name, "' you're trying to pull does not exist on the server."))
             }
@@ -83,7 +83,7 @@ Client <- R6Class("Client",
         #' Runs a script on the server. The script must be in the language that the server console was started with.
         #' @param script Code to be executed on the server, passed as a string.
         run_script = function(script) {
-            private$verify_string(script, "script")
+            private$verify_string("script", script)
             private$internal_client$run_script(script)
         }
     ),
@@ -95,7 +95,7 @@ Client <- R6Class("Client",
             return(private$internal_client$check_for_table(name))
         },
 
-        verify_string = function(string_candidate, arg_name) {
+        verify_string = function(arg_name, string_candidate) {
             if (class(string_candidate)[[1]] != "character") {
                 stop(paste0("'", arg_name, "' must be passed as a single string. Got object of class ", class(string_candidate)[[1]], " instead."))
             } else if (length(string_candidate) != 1) {
