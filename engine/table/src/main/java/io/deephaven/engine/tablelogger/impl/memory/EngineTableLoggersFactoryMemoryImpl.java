@@ -34,7 +34,7 @@ public class EngineTableLoggersFactoryMemoryImpl implements EngineTableLoggers.F
 
     @Override
     public ServerStateLogLogger serverStateLogLogger() {
-        return new ServerStateLogLoggerMemoryImpl();
+        return ServerStateLogLogger.Noop.INSTANCE;
     }
 
     @Override
