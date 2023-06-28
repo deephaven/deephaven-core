@@ -120,8 +120,7 @@ public class ObjectServiceGrpcImpl extends ObjectServiceGrpc.ObjectServiceImplBa
 
     @Override
     public StreamObserver<MessageRequest> messageStream(
-            StreamObserver<MessageResponse> responseObserver
-    ) {
+            StreamObserver<MessageResponse> responseObserver) {
         return new SendMessageObserver(responseObserver);
     }
 
@@ -261,12 +260,13 @@ public class ObjectServiceGrpcImpl extends ObjectServiceGrpc.ObjectServiceImplBa
 
         @Override
         public void sendMessage(String msg) {
-            sendMessage(msg, new Object[]{});
+            sendMessage(msg, new Object[] {});
         }
 
         @Override
         public void sendMessage(String msg, Object[] objects) {
-            final MessageResponse.Builder responseBuilder = MessageResponse.newBuilder().setData(ByteString.copyFrom(msg.getBytes()));
+            final MessageResponse.Builder responseBuilder =
+                    MessageResponse.newBuilder().setData(ByteString.copyFrom(msg.getBytes()));
             for (Object obj : objects) {
                 Optional<Reference> ref = exportCollector.reference(obj, false, false);
                 if (ref.isPresent()) {

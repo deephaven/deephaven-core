@@ -33,11 +33,12 @@ public abstract class ObjectTypeBase extends PluginBase implements ObjectType {
 
     /**
      * Used by an ObjectType plugin to send a message to the client
+     * 
      * @param message The message to send to the client
      */
     @Override
     public void sendMessage(String message) {
-        sendMessage(message, new Object[]{});
+        sendMessage(message, new Object[] {});
     }
 
     public void sendMessage(String message, Object[] objects) {
@@ -48,6 +49,7 @@ public abstract class ObjectTypeBase extends PluginBase implements ObjectType {
 
     /**
      * Used by an ObjectType plugin to handle a message from the client
+     * 
      * @param message The message from the client
      */
     @Override
