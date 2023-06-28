@@ -357,9 +357,9 @@ public interface Table extends
      * table. For example, slice(-2, -1) returns the second to last row of the table.
      * <p>
      * If firstPosition is negative and lastPosition is positive, then firstPosition is counted from the end of the
-     * table, inclusively. The lastPosition is counted from the beginning of the table. For example, slice(-3, 5)
-     * returns all rows starting from the third-last row to the fourth row of the table. If there are no rows between
-     * these positions, the function will return an empty table.
+     * table, inclusively. The lastPosition is counted from the beginning of the table, exclusively. For example,
+     * slice(-3, 5) returns all rows starting from the third-last row to the fifth row of the table. If there are no
+     * rows between these positions, the function will return an empty table.
      *
      * @param firstPositionInclusive the first position to include in the result
      * @param lastPositionExclusive the last position to include in the result

@@ -355,14 +355,15 @@ public class QueryTableSliceTest extends QueryTableTestBase {
         }
     }
 
-    public void testTailWithGrowth() {
+    public void testGrowthUpdatePattern() {
         final long steps = 4096;
 
         for (int j = 1; j < 100; j += 7) {
             final QueryTable upTable = getTable(true, 0, new Random(0), new ColumnInfo[0]);
             final QueryTable queryTable = (QueryTable) upTable.updateView("I=i", "II=ii");
             final EvalNugget[] en = {
-                    EvalNugget.from(() -> queryTable.slice(-35, 0))
+                    EvalNugget.from(() -> queryTable.slice(-35, 0)),
+                    EvalNugget.from(() -> queryTable.slice(-15, 10))
             };
 
             for (int i = 0; i < steps; ++i) {
@@ -380,6 +381,33 @@ public class QueryTableSliceTest extends QueryTableTestBase {
 
                 TstUtils.validate("", en);
             }
+        }
+    }
+
+    public void testShrinkageUpdatePattern() {
+        final int numRowsToDelete = 10;
+        final int tableSize = 50;
+        final int steps = (tableSize / numRowsToDelete);
+        final QueryTable upTable = TstUtils.testRefreshingTable(RowSetFactory.fromRange(0, tableSize - 1).toTracking());
+        final QueryTable queryTable = (QueryTable) upTable.updateView("K=k");
+        final EvalNugget[] en = {
+                EvalNugget.from(() -> queryTable.slice(-35, 0)),
+                EvalNugget.from(() -> queryTable.slice(-15, 10))
+        };
+
+        for (int i = 0; i < steps; ++i) {
+            final long ii = i;
+            final ControlledUpdateGraph updateGraph = ExecutionContext.getContext().getUpdateGraph().cast();
+            updateGraph.runWithinUnitTestCycle(() -> {
+                RowSet removed1 = RowSetFactory.fromRange(ii * numRowsToDelete, ((ii + 1) * numRowsToDelete) - 1);
+                upTable.getRowSet().writableCast().remove(removed1);
+                TableUpdate update =
+                        new TableUpdateImpl(RowSetFactory.empty(), removed1,
+                                RowSetFactory.empty(), RowSetShiftData.EMPTY, ModifiedColumnSet.EMPTY);
+                upTable.notifyListeners(update);
+            });
+
+            TstUtils.validate("", en);
         }
     }
 
