@@ -28,6 +28,7 @@ import io.deephaven.client.impl.*;
 import io.deephaven.engine.context.ExecutionContext;
 import io.deephaven.engine.liveness.LivenessScopeStack;
 import io.deephaven.engine.table.Table;
+import io.deephaven.engine.table.impl.perf.UpdatePerformanceTracker;
 import io.deephaven.engine.updategraph.UpdateGraph;
 import io.deephaven.engine.table.impl.DataAccessHelpers;
 import io.deephaven.engine.util.AbstractScriptSession;
@@ -38,7 +39,6 @@ import io.deephaven.engine.util.TableTools;
 import io.deephaven.extensions.barrage.BarrageSubscriptionOptions;
 import io.deephaven.extensions.barrage.util.BarrageChunkAppendingMarshaller;
 import io.deephaven.extensions.barrage.util.BarrageUtil;
-import io.deephaven.extensions.barrage.util.StreamReaderOptions;
 import io.deephaven.io.logger.LogBuffer;
 import io.deephaven.io.logger.LogBufferGlobal;
 import io.deephaven.proto.backplane.grpc.SortTableRequest;
@@ -218,8 +218,9 @@ public abstract class FlightMessageRoundTripTest {
         component = component();
         // open execution context immediately so it can be used when resolving `scriptSession`
         executionContext = component.executionContext().open();
-
-        executionContext = component.executionContext().open();
+        if (!UpdatePerformanceTracker.isInitialized()) {
+            UpdatePerformanceTracker.initialize(component.executionContext());
+        }
 
         server = component.server();
         server.start();

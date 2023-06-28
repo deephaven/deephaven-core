@@ -76,7 +76,19 @@ public class UpdatePerformanceTracker {
         return local;
     }
 
+    public static boolean isInitialized() {
+        if (INSTANCE != null) {
+            return true;
+        }
+        synchronized (UpdatePerformanceTracker.class) {
+            return INSTANCE != null;
+        }
+    }
+
     public static UpdatePerformanceTracker initialize(ExecutionContext executionContext) {
+        if (INSTANCE != null) {
+            throw new IllegalStateException("UpdatePerformanceTracker already initialized");
+        }
         synchronized (UpdatePerformanceTracker.class) {
             if (INSTANCE != null) {
                 throw new IllegalStateException("UpdatePerformanceTracker already initialized");
