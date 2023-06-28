@@ -160,14 +160,14 @@ test_that("bind_to_variable fails nicely on bad inputs", {
     data <- setup()
 
     expect_error(data$th1$bind_to_variable(12345),
-        "'name' should be a single character or string. Got object of type numeric instead.")
+        "'name' must be passed as a single string. Got object of class numeric instead.")
 
     expect_error(data$th1$bind_to_variable(c("multiple", "strings")),
-        "'name should be a single character or string. Got a character vector of length 2 instead.")
+        "'name' must be passed as a single string. Got character vector of length 2 instead.")
 
     expect_error(data$th1$bind_to_variable(data$df1),
-        "'name' should be a single character or string. Got object of type data.frame instead.")
+        "'name' must be passed as a single string. Got object of class data.frame instead.")
 
     expect_error(data$th1$bind_to_variable(list("list", "of", "strings")),
-        "'name' should be a single character or string. Got object of type list instead.")
+        "'name' must be passed as a single string. Got object of class list instead.")
 })
