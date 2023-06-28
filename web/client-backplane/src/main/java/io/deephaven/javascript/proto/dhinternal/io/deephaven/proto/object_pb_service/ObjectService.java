@@ -59,6 +59,141 @@ public class ObjectService {
         void setService(Object service);
     }
 
+    @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
+    public interface MessageStreamType {
+        @JsOverlay
+        static ObjectService.MessageStreamType create() {
+            return Js.uncheckedCast(JsPropertyMap.of());
+        }
+
+        @JsProperty
+        String getMethodName();
+
+        @JsProperty
+        Object getRequestType();
+
+        @JsProperty
+        Object getResponseType();
+
+        @JsProperty
+        Object getService();
+
+        @JsProperty
+        boolean isRequestStream();
+
+        @JsProperty
+        boolean isResponseStream();
+
+        @JsProperty
+        void setMethodName(String methodName);
+
+        @JsProperty
+        void setRequestStream(boolean requestStream);
+
+        @JsProperty
+        void setRequestType(Object requestType);
+
+        @JsProperty
+        void setResponseStream(boolean responseStream);
+
+        @JsProperty
+        void setResponseType(Object responseType);
+
+        @JsProperty
+        void setService(Object service);
+    }
+
+    @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
+    public interface NextMessageStreamType {
+        @JsOverlay
+        static ObjectService.NextMessageStreamType create() {
+            return Js.uncheckedCast(JsPropertyMap.of());
+        }
+
+        @JsProperty
+        String getMethodName();
+
+        @JsProperty
+        Object getRequestType();
+
+        @JsProperty
+        Object getResponseType();
+
+        @JsProperty
+        Object getService();
+
+        @JsProperty
+        boolean isRequestStream();
+
+        @JsProperty
+        boolean isResponseStream();
+
+        @JsProperty
+        void setMethodName(String methodName);
+
+        @JsProperty
+        void setRequestStream(boolean requestStream);
+
+        @JsProperty
+        void setRequestType(Object requestType);
+
+        @JsProperty
+        void setResponseStream(boolean responseStream);
+
+        @JsProperty
+        void setResponseType(Object responseType);
+
+        @JsProperty
+        void setService(Object service);
+    }
+
+    @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
+    public interface OpenMessageStreamType {
+        @JsOverlay
+        static ObjectService.OpenMessageStreamType create() {
+            return Js.uncheckedCast(JsPropertyMap.of());
+        }
+
+        @JsProperty
+        String getMethodName();
+
+        @JsProperty
+        Object getRequestType();
+
+        @JsProperty
+        Object getResponseType();
+
+        @JsProperty
+        Object getService();
+
+        @JsProperty
+        boolean isRequestStream();
+
+        @JsProperty
+        boolean isResponseStream();
+
+        @JsProperty
+        void setMethodName(String methodName);
+
+        @JsProperty
+        void setRequestStream(boolean requestStream);
+
+        @JsProperty
+        void setRequestType(Object requestType);
+
+        @JsProperty
+        void setResponseStream(boolean responseStream);
+
+        @JsProperty
+        void setResponseType(Object responseType);
+
+        @JsProperty
+        void setService(Object service);
+    }
+
     public static ObjectService.FetchObjectType FetchObject;
+    public static ObjectService.MessageStreamType MessageStream;
+    public static ObjectService.NextMessageStreamType NextMessageStream;
+    public static ObjectService.OpenMessageStreamType OpenMessageStream;
     public static String serviceName;
 }
