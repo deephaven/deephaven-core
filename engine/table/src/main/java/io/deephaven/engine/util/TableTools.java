@@ -9,6 +9,7 @@ import io.deephaven.base.clock.Clock;
 import io.deephaven.base.verify.Require;
 import io.deephaven.datastructures.util.CollectionUtil;
 import io.deephaven.engine.context.ExecutionContext;
+import io.deephaven.engine.exceptions.ArgumentException;
 import io.deephaven.engine.rowset.WritableRowSet;
 import io.deephaven.engine.rowset.RowSequence;
 import io.deephaven.engine.rowset.RowSetFactory;
@@ -694,8 +695,7 @@ public class TableTools {
      */
     public static Table newTable(long size, List<String> names, List<ColumnSource<?>> columnSources) {
         // noinspection unchecked
-        return new QueryTable(RowSetFactory.flat(size).toTracking(),
-                newMapFromLists(LinkedHashMap.class, names, columnSources));
+        return newTable(size, newMapFromLists(LinkedHashMap.class, names, columnSources));
     }
 
     /**
@@ -706,6 +706,16 @@ public class TableTools {
      * @return a Deephaven Table
      */
     public static Table newTable(long size, Map<String, ColumnSource<?>> columns) {
+        for (final Map.Entry<String, ColumnSource<?>> entry : columns.entrySet()) {
+            final String columnName = entry.getKey();
+            if (columnName == null) {
+                throw new ArgumentException("Column names cannot be null");
+            }
+            if (entry.getValue() == null) {
+                throw new ArgumentException("Column source for " + columnName + " is null");
+            }
+        }
+
         return new QueryTable(RowSetFactory.flat(size).toTracking(), columns);
     }
 
