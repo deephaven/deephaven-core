@@ -2,7 +2,6 @@ package io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.object_pb;
 
 import elemental2.core.JsArray;
 import elemental2.core.Uint8Array;
-import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.object_pb.messagerequest.PayloadCase;
 import jsinterop.annotations.JsOverlay;
 import jsinterop.annotations.JsPackage;
 import jsinterop.annotations.JsProperty;
@@ -393,7 +392,7 @@ public class MessageRequest {
 
     public native DataRequest getData();
 
-    public native PayloadCase getPayloadCase();
+    public native int getPayloadCase();
 
     public native ConnectRequest getSourceId();
 
