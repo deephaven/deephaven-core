@@ -311,9 +311,9 @@ public class StreamToBlinkTableAdapter extends ReferenceCountedLivenessNode
             }
             return;
         }
-        //noinspection EmptyTryBlock
+        // noinspection EmptyTryBlock
         try (final SafeCloseable ignored1 = this;
-             final SafeCloseable ignored2 = downstream == null ? null : downstream::release) {
+                final SafeCloseable ignored2 = downstream == null ? null : downstream::release) {
         }
     }
 
