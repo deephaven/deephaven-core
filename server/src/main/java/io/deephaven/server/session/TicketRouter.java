@@ -107,7 +107,8 @@ public class TicketRouter {
     /**
      * Publish a new result as a flight ticket to an export object future.
      *
-     * <p>The user must call {@link SessionState.ExportBuilder#submit} to publish the result value.
+     * <p>
+     * The user must call {@link SessionState.ExportBuilder#submit} to publish the result value.
      *
      * @param session the user session context
      * @param ticket (as ByteByffer) the ticket to publish to
@@ -127,7 +128,8 @@ public class TicketRouter {
     /**
      * Publish a new result as a flight ticket to an export object future.
      *
-     * <p>The user must call {@link SessionState.ExportBuilder#submit} to publish the result value.
+     * <p>
+     * The user must call {@link SessionState.ExportBuilder#submit} to publish the result value.
      *
      * @param session the user session context
      * @param ticket (as Flight.Ticket) the ticket to publish to
@@ -147,7 +149,8 @@ public class TicketRouter {
     /**
      * Publish a new result as a flight ticket to an export object future.
      *
-     * <p>The user must call {@link SessionState.ExportBuilder#submit} to publish the result value.
+     * <p>
+     * The user must call {@link SessionState.ExportBuilder#submit} to publish the result value.
      *
      * @param session the user session context
      * @param ticket the ticket to publish to
@@ -167,7 +170,8 @@ public class TicketRouter {
     /**
      * Publish a new result as a flight descriptor to an export object future.
      *
-     * <p>The user must call {@link SessionState.ExportBuilder#submit} to publish the result value.
+     * <p>
+     * The user must call {@link SessionState.ExportBuilder#submit} to publish the result value.
      *
      * @param session the user session context
      * @param descriptor (as Flight.Descriptor) the descriptor to publish to
