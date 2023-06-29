@@ -356,7 +356,7 @@ public class ColumnDefinition<TYPE> implements LogOutputAppendable {
             @NotNull final Class<TYPE> dataType,
             @Nullable final Class<?> componentType,
             @NotNull final ColumnType columnType) {
-        this.name = Objects.requireNonNull(name);
+        this.name = Objects.requireNonNull(name, "Column names cannot be null");
         this.dataType = Objects.requireNonNull(dataType);
         this.componentType = componentType;
         this.columnType = Objects.requireNonNull(columnType);
