@@ -14,6 +14,7 @@ import io.deephaven.util.referencecounting.ReferenceCounted;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
+import java.util.Objects;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Consumer;
@@ -208,11 +209,11 @@ public interface JobScheduler {
         private class TaskInvoker implements LogOutputAppendable {
 
             private final CONTEXT_TYPE context;
-
-            private volatile boolean closed;
-
             private final int invokerIndex;
+
             private int acquiredTaskIndex;
+
+            private boolean closed;
             private boolean running;
 
             /**
@@ -277,13 +278,13 @@ public interface JobScheduler {
                 }
             }
 
-            private void reportError(@NotNull final Exception e) {
+            private synchronized void reportError(@NotNull final Exception e) {
                 try (final SafeCloseable ignored = this::close) {
-                    onTaskError(e);
+                    onTaskError(Objects.requireNonNull(e));
                 }
             }
 
-            public void close() {
+            private void close() {
                 Assert.eqFalse(closed, "closed");
                 try (final SafeCloseable ignored = context) {
                     closed = true;
