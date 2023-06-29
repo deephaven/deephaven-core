@@ -364,6 +364,18 @@ public interface Table extends
     Table slice(long firstPositionInclusive, long lastPositionExclusive);
 
     /**
+     * Extracts a subset of a table by row percentile.
+     * <p>
+     * <TODO>
+     *
+     * @param startPercentInclusive <TODO>
+     * @param endPercentExclusive <TODO>
+     * @return a new Table, which is the request subset of rows from the original table
+     */
+    @ConcurrentMethod
+    Table slicePct(double startPercentInclusive, double endPercentExclusive);
+
+    /**
      * Provides a head that selects a dynamic number of rows based on a percent.
      *
      * @param percent the fraction of the table to return (0..1), the number of rows will be rounded up. For example if

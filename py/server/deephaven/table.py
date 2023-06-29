@@ -2084,6 +2084,24 @@ class Table(JObjectWrapper):
         except Exception as e:
             raise DHError(e, "table slice operation failed.") from e
 
+    def slice_pct(self, start_pct: float, end_pct: float) -> Table:
+        """<TODO>
+
+        Args:
+            start_pct (float): <TODO>
+            end_pct (float): <TODO>
+
+        Returns:
+            a new table
+
+        Raises:
+            DHError
+        """
+        try:
+            return Table(j_table=self.j_table.slicePct(start_pct, end_pct))
+        except Exception as e:
+            raise DHError(e, "table slice_pct operation failed.") from e
+
     def rollup(self, aggs: Union[Aggregation, Sequence[Aggregation]], by: Union[str, Sequence[str]] = None,
                include_constituents: bool = False) -> RollupTable:
         """Creates a rollup table.

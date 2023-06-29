@@ -269,6 +269,7 @@ public abstract class UncoalescedTable<IMPL_TYPE extends UncoalescedTable<IMPL_T
         return coalesce().moveColumns(index, moveToEnd, columnsToMove);
     }
 
+    // Some declarations in Uncoalesced and some in Table
     @Override
     @ConcurrentMethod
     public Table head(long size) {
@@ -285,6 +286,12 @@ public abstract class UncoalescedTable<IMPL_TYPE extends UncoalescedTable<IMPL_T
     @ConcurrentMethod
     public Table slice(long firstPositionInclusive, long lastPositionExclusive) {
         return coalesce().slice(firstPositionInclusive, lastPositionExclusive);
+    }
+
+    @Override
+    @ConcurrentMethod
+    public Table slicePct(double startPercentInclusive, double endPercentExclusive) {
+        return coalesce().slicePct(startPercentInclusive, endPercentExclusive);
     }
 
     @Override

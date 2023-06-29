@@ -430,6 +430,30 @@ public class QueryTableSliceTest extends QueryTableTestBase {
         assertEquals(expected, result);
     }
 
+    public void testSlicePct() {
+        final QueryTable table = TstUtils.testRefreshingTable(
+                RowSetFactory.fromRange(10, 19).toTracking(),
+                TableTools.charCol("letter", "9876543210".toCharArray()));
+
+        doSlicePctTest(table, "9876543210", 0, 1);
+        doSlicePctTest(table, "98765432", 0, 0.8);
+        doSlicePctTest(table, "98765432", 0, 0.75);
+        doSlicePctTest(table, "9876543", 0, 0.7);
+
+        doSlicePctTest(table, "876543", 0.1, 0.7);
+        doSlicePctTest(table, "876543", 0.15, 0.7);
+        doSlicePctTest(table, "76543", 0.2, 0.7);
+    }
+
+    private void doSlicePctTest(QueryTable table, String expected, double startPercentInclusive,
+            final double endPercentExclusive) {
+        final StringBuilder chars = new StringBuilder();
+        table.slicePct(startPercentInclusive, endPercentExclusive).characterColumnIterator("letter")
+                .forEachRemaining((CharConsumer) chars::append);
+        final String result = chars.toString();
+        assertEquals(expected, result);
+    }
+
     public void testHeadTailPct() {
         final QueryTable table = TstUtils.testRefreshingTable(i(2, 4, 6).toTracking(),
                 col("x", 1, 2, 3), col("y", 'a', 'b', 'c'));
@@ -486,4 +510,6 @@ public class QueryTableSliceTest extends QueryTableTestBase {
             simulateShiftAwareStep(ctxt + " step == " + i, size, random, queryTable, columnInfo, en);
         }
     }
+
+
 }
