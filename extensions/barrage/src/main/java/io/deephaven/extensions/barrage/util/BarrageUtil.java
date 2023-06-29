@@ -120,9 +120,27 @@ public class BarrageUtil {
         return schemaBytesFromTableDefinition(table.getDefinition(), table.getAttributes());
     }
 
+    private static boolean isDataTypeSortable(final Class<?> dataType) {
+        return dataType.isPrimitive() || Comparable.class.isAssignableFrom(dataType);
+    }
+
     public static ByteString schemaBytesFromTableDefinition(
             @NotNull final TableDefinition tableDefinition,
             @NotNull final Map<String, Object> attributes) {
+
+        Set<String> sortableColumns;
+        if (attributes.containsKey(GridAttributes.SORTABLE_COLUMNS_ATTRIBUTE)) {
+            final String[] restrictedColumns = attributes.get(GridAttributes.SORTABLE_COLUMNS_ATTRIBUTE).toString().split(",");
+            sortableColumns = Arrays.stream(restrictedColumns)
+                    .filter(columnName -> isDataTypeSortable(tableDefinition.getColumn(columnName).getDataType()))
+                    .collect(Collectors.toSet());
+        } else {
+            sortableColumns = tableDefinition.getColumns().stream()
+                    .filter(columnDefinition -> isDataTypeSortable(columnDefinition.getDataType()))
+                    .map(ColumnDefinition::getName)
+                    .collect(Collectors.toSet());
+        }
+
         return schemaBytes(fbb -> makeTableSchemaPayload(
                 fbb, DEFAULT_SNAPSHOT_DESER_OPTIONS, tableDefinition, attributes));
     }
