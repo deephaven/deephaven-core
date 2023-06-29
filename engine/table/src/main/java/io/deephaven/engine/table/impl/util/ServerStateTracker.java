@@ -227,15 +227,7 @@ public class ServerStateTracker {
                 intervalUGPCyclesSafePointTimeMicros);
     }
 
-    /**
-     * Deprecated: use {@link #blinkTable()}.
-     */
-    @Deprecated(since = "0.26.0", forRemoval = true)
     public QueryTable getQueryTable() {
         return (QueryTable) BlinkTableTools.blinkToAppendOnly(blink);
-    }
-
-    public Table blinkTable() {
-        return blink;
     }
 }

@@ -271,21 +271,8 @@ public class UpdatePerformanceTracker {
         }
     }
 
-    /**
-     * Deprecated: prefer {@link #blinkTable()}.
-     */
     @NotNull
-    @Deprecated(since = "0.26.0", forRemoval = true)
     public QueryTable getQueryTable() {
         return (QueryTable) BlinkTableTools.blinkToAppendOnly(blink);
-    }
-
-    /**
-     * Returns the update performance blink table.
-     *
-     * @return the blink table
-     */
-    public Table blinkTable() {
-        return blink;
     }
 }

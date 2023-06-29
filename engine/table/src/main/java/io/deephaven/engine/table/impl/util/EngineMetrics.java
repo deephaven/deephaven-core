@@ -5,7 +5,6 @@ package io.deephaven.engine.table.impl.util;
 
 import io.deephaven.base.clock.Clock;
 import io.deephaven.configuration.Configuration;
-import io.deephaven.engine.table.Table;
 import io.deephaven.engine.table.impl.BlinkTableTools;
 import io.deephaven.engine.table.impl.QueryTable;
 import io.deephaven.engine.tablelogger.EngineTableLoggers;
@@ -22,7 +21,6 @@ import io.deephaven.stats.Driver;
 import io.deephaven.stats.StatsIntradayLogger;
 
 import java.io.IOException;
-import java.util.Optional;
 
 public class EngineMetrics {
     private static final boolean STATS_LOGGING_ENABLED = Configuration.getInstance().getBooleanWithDefault(
@@ -84,28 +82,12 @@ public class EngineMetrics {
         }
     }
 
-    /**
-     * Deprecated: see {@link #queryPerformanceTable()}.
-     */
-    @Deprecated(since = "0.26.0", forRemoval = true)
     public QueryTable getQplLoggerQueryTable() {
         return (QueryTable) BlinkTableTools.blinkToAppendOnly(qpImpl.blinkTable());
     }
 
-    public Table queryPerformanceTable() {
-        return qpImpl.blinkTable();
-    }
-
-    /**
-     * Deprecated: see {@link #queryOperationPerformanceTable()}
-     */
-    @Deprecated(since = "0.26.0", forRemoval = true)
     public QueryTable getQoplLoggerQueryTable() {
         return (QueryTable) BlinkTableTools.blinkToAppendOnly(qoplImpl.blinkTable());
-    }
-
-    public Table queryOperationPerformanceTable() {
-        return qoplImpl.blinkTable();
     }
 
     public QueryPerformanceLogLogger getQplLogger() {
@@ -120,18 +102,8 @@ public class EngineMetrics {
         return MemoryTableLogger.maybeGetQueryTable(processInfoLogger);
     }
 
-    /**
-     * Deprecated: use {@link #processMetricsBlinkTable()}.
-     */
-    @Deprecated(since = "0.26.0", forRemoval = true)
     public QueryTable getProcessMetricsQueryTable() {
-        return processMetricsBlinkTable()
-                .map(QueryTable.class::cast)
-                .orElse(null);
-    }
-
-    public Optional<Table> processMetricsBlinkTable() {
-        return Optional.ofNullable(statsImpl).map(StatsImpl::blinkTable);
+        return statsImpl == null ? null : (QueryTable) BlinkTableTools.blinkToAppendOnly(statsImpl.blinkTable());
     }
 
     private StatsIntradayLogger getStatsLogger() {
