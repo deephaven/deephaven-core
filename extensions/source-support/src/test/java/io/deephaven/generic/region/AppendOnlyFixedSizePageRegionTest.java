@@ -51,10 +51,11 @@ public class AppendOnlyFixedSizePageRegionTest {
         final Instant startTime = Instant.now();
         final Instant endTime = DateTimeUtils.plus(startTime, 1_000_000_000L);
         final SimulationClock clock = new SimulationClock(startTime, endTime, 100_000_000L);
+        final ControlledUpdateGraph updateGraph = ExecutionContext.getContext().getUpdateGraph().cast();
         final TimeTable[] timeTables = new TimeTable[] {
-                new TimeTable(ExecutionContext.getContext().getUpdateGraph(), clock, startTime, 1000, false),
-                new TimeTable(ExecutionContext.getContext().getUpdateGraph(), clock, startTime, 10000, false),
-                new TimeTable(ExecutionContext.getContext().getUpdateGraph(), clock, startTime, 100000, false)
+                new TimeTable(updateGraph, clock, startTime, 1000, false),
+                new TimeTable(updateGraph, clock, startTime, 10000, false),
+                new TimeTable(updateGraph, clock, startTime, 100000, false)
         };
         final Table[] withTypes = addTypes(timeTables);
         final DependentRegistrar dependentRegistrar = new DependentRegistrar(withTypes);
@@ -63,7 +64,6 @@ public class AppendOnlyFixedSizePageRegionTest {
         System.out.println("Initial start time: " + clock.instantNanos());
         TstUtils.assertTableEquals(expected, actual);
         clock.start();
-        final ControlledUpdateGraph updateGraph = ExecutionContext.getContext().getUpdateGraph().cast();
         while (!clock.done()) {
             updateGraph.runWithinUnitTestCycle(() -> {
                 clock.advance();
@@ -98,7 +98,8 @@ public class AppendOnlyFixedSizePageRegionTest {
         return TableTools.merge(constituents);
     }
 
-    private static Table makeRegioned(@NotNull final UpdateSourceRegistrar registrar,
+    private static Table makeRegioned(
+            @NotNull final UpdateSourceRegistrar registrar,
             @NotNull final Table... constituents) {
         assertThat(constituents).isNotNull();
         assertThat(constituents).isNotEmpty();
@@ -141,20 +142,27 @@ public class AppendOnlyFixedSizePageRegionTest {
 
         @Override
         public void run() {
-            ExecutionContext.getContext().getUpdateGraph().addNotification(new AbstractNotification(false) {
+            updateGraph.addNotification(new AbstractNotification(false) {
                 @Override
                 public boolean canExecute(final long step) {
-                    synchronized (DependentRegistrar.this) {
-                        return Arrays.stream(dependencies).allMatch(dependency -> dependency.satisfied(step));
-                    }
+                    return DependentRegistrar.this.satisfied(step);
                 }
 
                 @Override
                 public void run() {
                     synchronized (DependentRegistrar.this) {
                         final int sourcesSize = dependentSources.size();
-                        // Run the sources in reverse order, because the location listeners will be registered
-                        // after the
+                        /*
+                         * We're simulating a scenario wherein TableLocation.Listeners push new data into the
+                         * SourceTable's subscription buffers asynchronously w.r.t. the update graph cycle. For our
+                         * actual (regioned) table to match our expected (merged) table on a given cycle, our "pushes"
+                         * must be completed before the SourceTable's LocationChangePoller runs. The pushes are done by
+                         * invoking our TableBackedTableLocations' refresh methods as UpdateGraph sources, and those
+                         * location subscriptions are activated (and thus added to dependentSources) *after* the poller
+                         * is constructed and added (to dependentSources). As a result, we need to run the
+                         * dependentSources in reverse order to ensure that the first source always runs after all the
+                         * others, so it can successfully poll everything that should have been pushed for this cycle.
+                         */
                         for (int si = sourcesSize - 1; si >= 0; --si) {
                             dependentSources.get(si).run();
                         }
@@ -171,7 +179,8 @@ public class AppendOnlyFixedSizePageRegionTest {
 
         @Override
         public boolean satisfied(final long step) {
-            return updateGraph.satisfied(step);
+            return updateGraph.satisfied(step)
+                    && Arrays.stream(dependencies).allMatch(dependency -> dependency.satisfied(step));
         }
 
         @Override
