@@ -19,7 +19,7 @@ public class EngineTableLoggersFactoryMemoryImpl implements EngineTableLoggers.F
 
     @Override
     public ProcessMetricsLogLogger processMetricsLogLogger() {
-        return new ProcessMetricsLogLoggerMemoryImpl();
+        return ProcessMetricsLogLogger.Noop.INSTANCE;
     }
 
     @Override
