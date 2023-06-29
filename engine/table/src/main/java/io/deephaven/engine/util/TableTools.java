@@ -708,9 +708,6 @@ public class TableTools {
     public static Table newTable(long size, Map<String, ColumnSource<?>> columns) {
         for (final Map.Entry<String, ColumnSource<?>> entry : columns.entrySet()) {
             final String columnName = entry.getKey();
-            if (columnName == null) {
-                throw new ArgumentException("Column names cannot be null");
-            }
             if (entry.getValue() == null) {
                 throw new ArgumentException("Column source for " + columnName + " is null");
             }

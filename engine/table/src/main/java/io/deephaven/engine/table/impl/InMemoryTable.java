@@ -64,9 +64,6 @@ public class InMemoryTable extends QueryTable {
         Map<String, ColumnSource<?>> map = new LinkedHashMap<>();
         for (int i = 0; i < columnNames.length; i++) {
             final String columnName = columnNames[i];
-            if (columnName == null) {
-                throw new ArgumentException("Column names cannot be null");
-            }
             final Object array = arrayValues[i];
             if (array == null) {
                 throw new ArgumentException("Value array for column " + columnName + " is null");
