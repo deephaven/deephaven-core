@@ -167,13 +167,14 @@ public class SessionServiceGrpcImpl extends SessionServiceGrpc.SessionServiceImp
 
         final SessionState.ExportObject<Object> source = ticketRouter.resolve(
                 session, request.getSourceId(), "sourceId");
-        session.newExport(request.getResultId(), "resultId")
+        final SessionState.ExportObject<Object> destination = session.newExport(request.getResultId(), "resultId")
                 .require(source)
                 .onError(responseObserver)
-                .submit(() -> {
-                    GrpcUtil.safelyComplete(responseObserver, ExportResponse.getDefaultInstance());
-                    return source.get();
-                });
+                .submit(source::get);
+        session.nonExport()
+                .require(destination)
+                .onError(responseObserver)
+                .submit(() -> GrpcUtil.safelyComplete(responseObserver, ExportResponse.getDefaultInstance()));
     }
 
     @Override

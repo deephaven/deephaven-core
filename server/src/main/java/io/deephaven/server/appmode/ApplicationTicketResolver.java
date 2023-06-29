@@ -82,7 +82,7 @@ public class ApplicationTicketResolver extends TicketResolverBase implements App
             throw Exceptions.statusRuntimeException(Code.NOT_FOUND,
                     "Could not resolve '" + logId + "': field '" + getLogNameFor(id) + "' not found");
         }
-        Object value = authTransformation.transform(field.value());
+        Object value = authorization.transform(field.value());
         // noinspection unchecked
         return SessionState.wrapAsExport((T) value);
     }
@@ -105,7 +105,7 @@ public class ApplicationTicketResolver extends TicketResolverBase implements App
             }
             Object value = field.value();
             if (value instanceof Table) {
-                value = authTransformation.transform(value);
+                value = authorization.transform(value);
                 info = TicketRouter.getFlightInfo((Table) value, descriptor, flightTicketForName(id.app, id.fieldName));
             } else {
                 throw Exceptions.statusRuntimeException(Code.NOT_FOUND,
@@ -151,7 +151,7 @@ public class ApplicationTicketResolver extends TicketResolverBase implements App
             app.listFields().forEach(field -> {
                 Object value = field.value();
                 if (value instanceof Table) {
-                    value = authTransformation.transform(value);
+                    value = authorization.transform(value);
                     final Flight.FlightInfo info = TicketRouter.getFlightInfo((Table) value,
                             descriptorForName(app, field.name()), flightTicketForName(app, field.name()));
                     visitor.accept(info);

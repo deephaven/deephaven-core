@@ -3,6 +3,9 @@
  */
 package io.deephaven.server.session;
 
+import io.deephaven.engine.context.ExecutionContext;
+import io.deephaven.engine.table.PartitionedTable;
+import io.deephaven.engine.table.Table;
 import org.apache.arrow.flight.impl.Flight;
 import org.jetbrains.annotations.Nullable;
 
@@ -10,6 +13,46 @@ import java.nio.ByteBuffer;
 import java.util.function.Consumer;
 
 public interface TicketResolver {
+    interface Authorization {
+        /**
+         * Implementations must type check the provided source as any type of object can be stored in an export.
+         * <p>
+         *
+         * @apiNote Types typically encountered are {@link Table} and {@link PartitionedTable}. Perform an identity
+         *          mapping for any types that you do not wish to transform. This method should not error.
+         *          Implementations may wish to query {@link ExecutionContext#getAuthContext()} to apply user-specific
+         *          transformations to requested resources.
+         *
+         * @param source the object to transform (such as by applying ACLs)
+         * @return an object that has been sanitized to be used by the current user
+         */
+        <T> T transform(T source);
+
+        /**
+         * Implementations must validate that the provided ticket is authorized for the current user.
+         * <p>
+         *
+         * @apiNote Implementations may wish to query {@link ExecutionContext#getAuthContext()} to apply user-specific
+         *          transformations to requested resources.
+         *
+         * @param ticket the ticket to publish to as a byte buffer; note that the first byte is the route
+         * @throws io.grpc.StatusRuntimeException if the user is not authorized
+         */
+        void authorizePublishRequest(ByteBuffer ticket);
+
+        /**
+         * Implementations must validate that the provided ticket is authorized for the current user.
+         * <p>
+         *
+         * @apiNote Implementations may wish to query {@link ExecutionContext#getAuthContext()} to apply user-specific
+         *          transformations to requested resources.
+         *
+         * @param descriptor the flight descriptor to publish to; note that the first path element is the route
+         * @throws io.grpc.StatusRuntimeException if the user is not authorized
+         */
+        void authorizePublishRequest(Flight.FlightDescriptor descriptor);
+    }
+
     /**
      * @return the single byte prefix used as a route on the ticket
      */

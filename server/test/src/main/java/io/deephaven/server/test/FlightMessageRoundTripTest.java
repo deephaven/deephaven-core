@@ -38,7 +38,6 @@ import io.deephaven.engine.util.TableTools;
 import io.deephaven.extensions.barrage.BarrageSubscriptionOptions;
 import io.deephaven.extensions.barrage.util.BarrageChunkAppendingMarshaller;
 import io.deephaven.extensions.barrage.util.BarrageUtil;
-import io.deephaven.extensions.barrage.util.StreamReaderOptions;
 import io.deephaven.io.logger.LogBuffer;
 import io.deephaven.io.logger.LogBufferGlobal;
 import io.deephaven.proto.backplane.grpc.SortTableRequest;
@@ -50,11 +49,7 @@ import io.deephaven.qst.table.TicketTable;
 import io.deephaven.server.auth.AuthorizationProvider;
 import io.deephaven.server.console.ScopeTicketResolver;
 import io.deephaven.server.runner.GrpcServer;
-import io.deephaven.server.session.SessionService;
-import io.deephaven.server.session.SessionServiceGrpcImpl;
-import io.deephaven.server.session.SessionState;
-import io.deephaven.server.session.TicketResolver;
-import io.deephaven.server.session.TicketResolverBase;
+import io.deephaven.server.session.*;
 import io.deephaven.server.test.TestAuthModule.FakeBearer;
 import io.deephaven.server.util.Scheduler;
 import io.deephaven.util.SafeCloseable;
@@ -69,10 +64,8 @@ import org.apache.arrow.flight.grpc.CredentialCallOption;
 import org.apache.arrow.flight.impl.Flight;
 import org.apache.arrow.memory.ArrowBuf;
 import org.apache.arrow.memory.RootAllocator;
-import org.apache.arrow.vector.FieldVector;
 import org.apache.arrow.vector.VectorSchemaRoot;
 import org.apache.arrow.vector.complex.ListVector;
-import org.apache.arrow.vector.types.Types;
 import org.apache.arrow.vector.types.pojo.ArrowType;
 import org.apache.arrow.vector.types.pojo.Field;
 import org.apache.arrow.vector.types.pojo.Schema;
@@ -807,7 +800,7 @@ public abstract class FlightMessageRoundTripTest {
         final String resultTableName = tableName + "Result";
         final Table table = TableTools.emptyTable(10).update("I = i", "J = i + 0.01");
         final MutableInt numTransforms = new MutableInt();
-        component.authorizationProvider().delegateTicketTransformation = new TicketResolverBase.AuthTransformation() {
+        component.authorizationProvider().delegateTicketTransformation = new NoopTicketResolverAuthorization() {
             @Override
             public <T> T transform(T source) {
                 numTransforms.increment();

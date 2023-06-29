@@ -6,7 +6,6 @@ package io.deephaven.server.console;
 import com.google.protobuf.ByteStringAccess;
 import com.google.rpc.Code;
 import io.deephaven.base.string.EncodingInfo;
-import io.deephaven.configuration.Configuration;
 import io.deephaven.engine.context.QueryScope;
 import io.deephaven.engine.liveness.LivenessReferent;
 import io.deephaven.engine.table.Table;
@@ -37,8 +36,6 @@ import static io.deephaven.proto.util.ScopeTicketHelper.TICKET_PREFIX;
 
 @Singleton
 public class ScopeTicketResolver extends TicketResolverBase {
-    private static final boolean PUBLISH_ENABLED = Configuration.getInstance().getBooleanForClassWithDefault(
-            ScopeTicketResolver.class, "enablePublish", true);
 
     private final Provider<ScriptSession> scriptSessionProvider;
 
@@ -70,7 +67,7 @@ public class ScopeTicketResolver extends TicketResolverBase {
                                 "Could not resolve '" + logId + ": no variable exists with name '" + scopeName + "'");
                     }
                     if (scopeVar instanceof Table) {
-                        scopeVar = authTransformation.transform(scopeVar);
+                        scopeVar = authorization.transform(scopeVar);
                         return TicketRouter.getFlightInfo((Table) scopeVar, descriptor, flightTicketForName(scopeName));
                     }
 
@@ -117,7 +114,7 @@ public class ScopeTicketResolver extends TicketResolverBase {
             return scopeVar;
         });
 
-        export = authTransformation.transform(export);
+        export = authorization.transform(export);
 
         if (export == null) {
             return SessionState.wrapAsFailedExport(Exceptions.statusRuntimeException(Code.FAILED_PRECONDITION,
@@ -150,11 +147,6 @@ public class ScopeTicketResolver extends TicketResolverBase {
             final String varName,
             final String logId,
             @Nullable final Runnable onPublish) {
-        if (!PUBLISH_ENABLED) {
-            throw Exceptions.statusRuntimeException(Code.PERMISSION_DENIED,
-                    "Publishing to ScopeTickets is not enabled for this server");
-        }
-
         // We publish to the query scope after the client finishes publishing their result. We accomplish this by
         // directly depending on the result of this export builder.
         final SessionState.ExportBuilder<T> resultBuilder = session.nonExport();

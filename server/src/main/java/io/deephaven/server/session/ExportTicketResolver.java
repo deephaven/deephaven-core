@@ -92,13 +92,14 @@ public class ExportTicketResolver extends TicketResolverBase {
             final ByteBuffer ticket,
             final String logId,
             @Nullable final Runnable onPublish) {
-        try {
-            return session.newExport(ExportTicketHelper.ticketToExportId(ticket, logId));
-        } finally {
-            if (onPublish != null) {
-                onPublish.run();
-            }
+        final SessionState.ExportBuilder<T> toPublish =
+                session.newExport(ExportTicketHelper.ticketToExportId(ticket, logId));
+        if (onPublish != null) {
+            session.nonExport()
+                    .require(toPublish.getExport())
+                    .submit(onPublish);
         }
+        return toPublish;
     }
 
     @Override
@@ -107,12 +108,13 @@ public class ExportTicketResolver extends TicketResolverBase {
             final Flight.FlightDescriptor descriptor,
             final String logId,
             @Nullable final Runnable onPublish) {
-        try {
-            return session.newExport(FlightExportTicketHelper.descriptorToExportId(descriptor, logId));
-        } finally {
-            if (onPublish != null) {
-                onPublish.run();
-            }
+        final SessionState.ExportBuilder<T> toPublish =
+                session.newExport(FlightExportTicketHelper.descriptorToExportId(descriptor, logId));
+        if (onPublish != null) {
+            session.nonExport()
+                    .require(toPublish.getExport())
+                    .submit(onPublish);
         }
+        return toPublish;
     }
 }

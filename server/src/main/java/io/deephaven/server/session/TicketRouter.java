@@ -12,6 +12,7 @@ import io.deephaven.hash.KeyedObjectHashMap;
 import io.deephaven.hash.KeyedObjectKey;
 import io.deephaven.proto.backplane.grpc.Ticket;
 import io.deephaven.proto.util.Exceptions;
+import io.deephaven.server.auth.AuthorizationProvider;
 import org.apache.arrow.flight.impl.Flight;
 import org.jetbrains.annotations.Nullable;
 
@@ -28,11 +29,22 @@ public class TicketRouter {
     private final KeyedObjectHashMap<String, TicketResolver> descriptorResolverMap =
             new KeyedObjectHashMap<>(RESOLVER_OBJECT_DESCRIPTOR_ID);
 
+    private final TicketResolver.Authorization authorization;
+
     @Inject
-    public TicketRouter(final Set<TicketResolver> resolvers) {
+    public TicketRouter(
+            final AuthorizationProvider authorizationProvider,
+            final Set<TicketResolver> resolvers) {
+        this.authorization = authorizationProvider.getTicketResolverAuthorization();
         resolvers.forEach(resolver -> {
-            byteResolverMap.add(resolver);
-            descriptorResolverMap.add(resolver);
+            if (!byteResolverMap.add(resolver)) {
+                throw new IllegalArgumentException("Duplicate ticket resolver for ticket route "
+                        + resolver.ticketRoute());
+            }
+            if (!descriptorResolverMap.add(resolver)) {
+                throw new IllegalArgumentException("Duplicate ticket resolver for descriptor route "
+                        + resolver.flightDescriptorRoute());
+            }
         });
     }
 
@@ -122,6 +134,7 @@ public class TicketRouter {
             final ByteBuffer ticket,
             final String logId,
             @Nullable final Runnable onPublish) {
+        authorization.authorizePublishRequest(ticket);
         return getResolver(ticket.get(ticket.position()), logId).publish(session, ticket, logId, onPublish);
     }
 
@@ -143,6 +156,7 @@ public class TicketRouter {
             final Flight.Ticket ticket,
             final String logId,
             @Nullable final Runnable onPublish) {
+        // note this impl is an internal delegation; defer the authorization check, too
         return publish(session, ticket.getTicket().asReadOnlyByteBuffer(), logId, onPublish);
     }
 
@@ -164,6 +178,7 @@ public class TicketRouter {
             final Ticket ticket,
             final String logId,
             @Nullable final Runnable onPublish) {
+        // note this impl is an internal delegation; defer the authorization check, too
         return publish(session, ticket.getTicket().asReadOnlyByteBuffer(), logId, onPublish);
     }
 
@@ -185,6 +200,7 @@ public class TicketRouter {
             final Flight.FlightDescriptor descriptor,
             final String logId,
             @Nullable final Runnable onPublish) {
+        authorization.authorizePublishRequest(descriptor);
         return getResolver(descriptor, logId).publish(session, descriptor, logId, onPublish);
     }
 
