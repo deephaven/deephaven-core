@@ -5,7 +5,6 @@ package io.deephaven.plot.axistransformations;
 
 import io.deephaven.time.calendar.BusinessCalendar;
 import io.deephaven.time.calendar.Calendars;
-import org.junit.Ignore;
 import org.junit.Test;
 
 import java.util.Arrays;
@@ -17,11 +16,6 @@ import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
 
 public class TestAxisTransforms {
-
-    /*
-     * TODO (https://github.com/deephaven/deephaven-core/issues/3958): Determine how best to restore the calendar
-     * transform tests once calendars have been updated and/or we have test calendars in place.
-     */
 
     final double d1 = 3.5;
     final double d2 = 4.2;
@@ -72,7 +66,6 @@ public class TestAxisTransforms {
         assertEquals(Double.NaN, transform.inverseTransform(transform.transform(d9)), delta);
     }
 
-    @Ignore
     @Test
     public void testAxisTransformNames() {
         final String[] names = AxisTransforms.axisTransformNames();
@@ -83,7 +76,6 @@ public class TestAxisTransforms {
         assertTrue(nameSet.contains("USNYSE"));
     }
 
-    @Ignore
     @Test
     public void testAxisTransform() {
         assertEquals(AxisTransforms.LOG, AxisTransforms.axisTransform("log"));
@@ -91,7 +83,7 @@ public class TestAxisTransforms {
         assertEquals(AxisTransforms.SQRT, AxisTransforms.axisTransform("sqrt"));
         assertEquals(AxisTransforms.SQRT, AxisTransforms.axisTransform("SQRT"));
 
-        final BusinessCalendar cal = Calendars.calendar("UTC");
+        final BusinessCalendar cal = Calendars.calendar("USNYSE");
         final AxisTransformBusinessCalendar at1 =
                 (AxisTransformBusinessCalendar) AxisTransforms.axisTransform("USNYSE");
         assertEquals(cal, at1.getBusinessCalendar());

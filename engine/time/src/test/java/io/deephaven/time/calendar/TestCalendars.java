@@ -4,7 +4,6 @@
 package io.deephaven.time.calendar;
 
 import io.deephaven.time.DateTimeUtils;
-import org.junit.Ignore;
 import org.junit.Test;
 
 import java.time.Instant;
@@ -17,13 +16,6 @@ import static org.junit.Assert.assertTrue;
 
 public class TestCalendars {
 
-    /*
-     * TODO (https://github.com/deephaven/deephaven-core/issues/3958): Determine how best to restore these tests once
-     * calendars have been updated. Maybe we can install some test-only calendars that don't map to real calendars, and
-     * an appropriate default calendar from amongst the test calendars.
-     */
-
-    @Ignore
     @Test
     public void testIsBusinessDay() {
         BusinessCalendar usnyse = Calendars.calendar("USNYSE");
@@ -50,7 +42,6 @@ public class TestCalendars {
         assertTrue(usny.isBusinessDay(holiday2));
     }
 
-    @Ignore
     @Test
     public void testGetDefault() {
         // Default is configured via a configuration property and cannot be changed once Calendars is statically
@@ -69,7 +60,6 @@ public class TestCalendars {
         assertFalse(calendars.isBusinessDay(holiday2));
     }
 
-    @Ignore
     @Test
     public void testGetInstance() {
         BusinessCalendar usnyse = Calendars.calendar("USNYSE");
@@ -84,7 +74,6 @@ public class TestCalendars {
         assertFalse(usnyse.isBusinessDay(holiday2));
     }
 
-    @Ignore
     @Test
     public void testMapMethods() {
         Calendars calendars = Calendars.getInstance();
@@ -105,7 +94,6 @@ public class TestCalendars {
         calendars.putAll(values);
     }
 
-    @Ignore
     @Test
     public void testEquals() {
         final BusinessCalendar usnyse1 = Calendars.calendar("USNYSE");

@@ -13,7 +13,6 @@ import io.deephaven.time.calendar.Calendars;
 import io.deephaven.time.calendar.StaticCalendarMethods;
 import io.deephaven.engine.testutil.junit4.EngineCleanup;
 import io.deephaven.test.types.OutOfBandTest;
-import org.junit.Ignore;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.experimental.categories.Category;
@@ -110,12 +109,6 @@ public class TestCalendarMethodsFromTable {
                 getVal(emptyTable(1).update("isBusinessDay = isBusinessDay(date2)"), "isBusinessDay"));
     }
 
-    /*
-     * TODO (https://github.com/deephaven/deephaven-core/issues/3958): Determine how best to restore the business
-     * calendar test once calendars have been updated and/or we have test calendars in place.
-     */
-
-    @Ignore
     @Test
     public void testBusinessCalendarMethodsTable() {
 
