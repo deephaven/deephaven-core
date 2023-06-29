@@ -211,8 +211,6 @@ public class BarrageUtil {
 
         // Find columns that are sortable
         Set<String> sortableColumns;
-        // List<ColumnDefinition<?>> columnsToCheck = new ArrayList<>(columnDefinitions);
-
         if (attributes.containsKey(GridAttributes.SORTABLE_COLUMNS_ATTRIBUTE)) {
             final String[] restrictedSortColumns =
                     attributes.get(GridAttributes.SORTABLE_COLUMNS_ATTRIBUTE).toString().split(",");
@@ -225,21 +223,6 @@ public class BarrageUtil {
                     .map(ColumnDefinition::getName)
                     .collect(Collectors.toSet());
         }
-
-        // // limits to restrictedSortTo columns if applicable
-        // if (attributes.containsKey(GridAttributes.SORTABLE_COLUMNS_ATTRIBUTE)) {
-        // String[] restrictedSortColumns =
-        // attributes.get(GridAttributes.SORTABLE_COLUMNS_ATTRIBUTE).toString().split(",");
-        // columnsToCheck.removeIf(
-        // col -> Arrays.stream(restrictedSortColumns).noneMatch(name -> name.equals(col.getName())));
-        // }
-        //
-        // columnsToCheck.forEach(col -> {
-        // Class<?> dataType = col.getDataType();
-        // if (dataType.isPrimitive() || Comparable.class.isAssignableFrom(dataType)) {
-        // sortableColumns.add(col.getName());
-        // }
-        // });
 
         // Build metadata for columns and add the fields
         return columnDefinitions.stream().map((final ColumnDefinition<?> column) -> {
