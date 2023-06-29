@@ -61,4 +61,14 @@ public class UpdateSourceCombiner extends LivenessArtifact implements Runnable, 
         super.destroy();
         updateGraph.removeSource(this);
     }
+
+    @Override
+    public boolean satisfied(final long step) {
+        return updateGraph.satisfied(step);
+    }
+
+    @Override
+    public UpdateGraph getUpdateGraph() {
+        return updateGraph;
+    }
 }
