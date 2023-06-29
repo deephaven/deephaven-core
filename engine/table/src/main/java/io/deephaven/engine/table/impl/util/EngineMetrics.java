@@ -5,23 +5,23 @@ package io.deephaven.engine.table.impl.util;
 
 import io.deephaven.base.clock.Clock;
 import io.deephaven.configuration.Configuration;
+import io.deephaven.engine.table.Table;
+import io.deephaven.engine.table.impl.QueryTable;
 import io.deephaven.engine.tablelogger.EngineTableLoggers;
 import io.deephaven.engine.tablelogger.ProcessInfoLogLogger;
-import io.deephaven.engine.tablelogger.ProcessMetricsLogLogger;
 import io.deephaven.engine.tablelogger.QueryOperationPerformanceLogLogger;
 import io.deephaven.engine.tablelogger.QueryPerformanceLogLogger;
 import io.deephaven.engine.tablelogger.impl.memory.MemoryTableLogger;
-import io.deephaven.io.logger.Logger;
-import io.deephaven.stats.StatsIntradayLogger;
-import io.deephaven.engine.table.impl.QueryTable;
 import io.deephaven.internal.log.LoggerFactory;
+import io.deephaven.io.logger.Logger;
 import io.deephaven.process.ProcessInfo;
 import io.deephaven.process.ProcessInfoConfig;
 import io.deephaven.process.ProcessInfoStoreDBImpl;
-import io.deephaven.process.StatsIntradayLoggerDBImpl;
 import io.deephaven.stats.Driver;
+import io.deephaven.stats.StatsIntradayLogger;
 
 import java.io.IOException;
+import java.util.Optional;
 
 public class EngineMetrics {
     private static final boolean STATS_LOGGING_ENABLED = Configuration.getInstance().getBooleanWithDefault(
@@ -58,8 +58,7 @@ public class EngineMetrics {
     private final QueryPerformanceLogLogger qplLogger;
     private final QueryOperationPerformanceLogLogger qoplLogger;
     private final ProcessInfoLogLogger processInfoLogger;
-    private final ProcessMetricsLogLogger processMetricsLogger;
-    private final StatsIntradayLogger statsLogger;
+    private final StatsImpl statsImpl;
 
     private EngineMetrics() {
         EngineTableLoggers.Factory tableLoggerFactory = EngineTableLoggers.get();
@@ -77,11 +76,9 @@ public class EngineMetrics {
         qplLogger = tableLoggerFactory.queryPerformanceLogLogger();
         qoplLogger = tableLoggerFactory.queryOperationPerformanceLogLogger();
         if (STATS_LOGGING_ENABLED) {
-            processMetricsLogger = tableLoggerFactory.processMetricsLogLogger();
-            statsLogger = new StatsIntradayLoggerDBImpl(pInfo.getId(), processMetricsLogger);
+            statsImpl = new StatsImpl(pInfo.getId(), tableLoggerFactory.processMetricsLogLogger());
         } else {
-            processMetricsLogger = null;
-            statsLogger = null;
+            statsImpl = null;
         }
     }
 
@@ -105,15 +102,22 @@ public class EngineMetrics {
         return MemoryTableLogger.maybeGetQueryTable(processInfoLogger);
     }
 
+    /**
+     * Deprecated: use {@link #processMetricsBlinkTable()}.
+     */
+    @Deprecated(since = "0.26.0", forRemoval = true)
     public QueryTable getProcessMetricsQueryTable() {
-        if (processMetricsLogger != null) {
-            return MemoryTableLogger.maybeGetQueryTable(processMetricsLogger);
-        }
-        return null;
+        return processMetricsBlinkTable()
+                .map(QueryTable.class::cast)
+                .orElse(null);
+    }
+
+    public Optional<Table> processMetricsBlinkTable() {
+        return Optional.ofNullable(statsImpl).map(StatsImpl::blinkTable);
     }
 
     private StatsIntradayLogger getStatsLogger() {
-        return statsLogger;
+        return statsImpl;
     }
 
     public static boolean maybeStartStatsCollection() {
