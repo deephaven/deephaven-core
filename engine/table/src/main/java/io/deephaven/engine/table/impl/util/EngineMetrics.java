@@ -5,21 +5,23 @@ package io.deephaven.engine.table.impl.util;
 
 import io.deephaven.base.clock.Clock;
 import io.deephaven.configuration.Configuration;
+import io.deephaven.engine.table.Table;
+import io.deephaven.engine.table.impl.BlinkTableTools;
+import io.deephaven.engine.table.impl.QueryTable;
 import io.deephaven.engine.tablelogger.EngineTableLoggers;
 import io.deephaven.engine.tablelogger.ProcessInfoLogLogger;
 import io.deephaven.engine.tablelogger.ProcessMetricsLogLogger;
 import io.deephaven.engine.tablelogger.QueryOperationPerformanceLogLogger;
 import io.deephaven.engine.tablelogger.QueryPerformanceLogLogger;
 import io.deephaven.engine.tablelogger.impl.memory.MemoryTableLogger;
-import io.deephaven.io.logger.Logger;
-import io.deephaven.stats.StatsIntradayLogger;
-import io.deephaven.engine.table.impl.QueryTable;
 import io.deephaven.internal.log.LoggerFactory;
+import io.deephaven.io.logger.Logger;
 import io.deephaven.process.ProcessInfo;
 import io.deephaven.process.ProcessInfoConfig;
 import io.deephaven.process.ProcessInfoStoreDBImpl;
 import io.deephaven.process.StatsIntradayLoggerDBImpl;
 import io.deephaven.stats.Driver;
+import io.deephaven.stats.StatsIntradayLogger;
 
 import java.io.IOException;
 
@@ -55,8 +57,8 @@ public class EngineMetrics {
         return INSTANCE;
     }
 
-    private final QueryPerformanceLogLogger qplLogger;
-    private final QueryOperationPerformanceLogLogger qoplLogger;
+    private final QueryPerformanceImpl qpImpl;
+    private final QueryOperationPerformanceImpl qoplImpl;
     private final ProcessInfoLogLogger processInfoLogger;
     private final ProcessMetricsLogLogger processMetricsLogger;
     private final StatsIntradayLogger statsLogger;
@@ -74,8 +76,9 @@ public class EngineMetrics {
             log.fatal().append("Failed to configure process info: ").append(e.toString()).endl();
         }
         processInfoLogger = pInfoLogger;
-        qplLogger = tableLoggerFactory.queryPerformanceLogLogger();
-        qoplLogger = tableLoggerFactory.queryOperationPerformanceLogLogger();
+        qpImpl = new QueryPerformanceImpl(pInfo.getId(), tableLoggerFactory.queryPerformanceLogLogger());
+        qoplImpl = new QueryOperationPerformanceImpl(pInfo.getId(),
+                tableLoggerFactory.queryOperationPerformanceLogLogger());
         if (STATS_LOGGING_ENABLED) {
             processMetricsLogger = tableLoggerFactory.processMetricsLogLogger();
             statsLogger = new StatsIntradayLoggerDBImpl(pInfo.getId(), processMetricsLogger);
@@ -85,20 +88,36 @@ public class EngineMetrics {
         }
     }
 
+    /**
+     * Deprecated: see {@link #queryPerformanceTable()}.
+     */
+    @Deprecated(since = "0.26.0", forRemoval = true)
     public QueryTable getQplLoggerQueryTable() {
-        return MemoryTableLogger.maybeGetQueryTable(qplLogger);
+        return (QueryTable) BlinkTableTools.blinkToAppendOnly(qpImpl.blinkTable());
     }
 
+    public Table queryPerformanceTable() {
+        return qpImpl.blinkTable();
+    }
+
+    /**
+     * Deprecated: see {@link #queryOperationPerformanceTable()}
+     */
+    @Deprecated(since = "0.26.0", forRemoval = true)
     public QueryTable getQoplLoggerQueryTable() {
-        return MemoryTableLogger.maybeGetQueryTable(qoplLogger);
+        return (QueryTable) BlinkTableTools.blinkToAppendOnly(qoplImpl.blinkTable());
+    }
+
+    public Table queryOperationPerformanceTable() {
+        return qoplImpl.blinkTable();
     }
 
     public QueryPerformanceLogLogger getQplLogger() {
-        return qplLogger;
+        return qpImpl;
     }
 
     public QueryOperationPerformanceLogLogger getQoplLogger() {
-        return qoplLogger;
+        return qoplImpl;
     }
 
     public QueryTable getProcessInfoQueryTable() {
