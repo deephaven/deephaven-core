@@ -23,7 +23,69 @@ class TableHandleWrapper {
 public:
     TableHandleWrapper(deephaven::client::TableHandle ref_table) : internal_tbl_hdl(std::move(ref_table)) {};
 
-    // TODO: DEEPHAVEN QUERY METHODS WILL GO HERE
+    TableHandleWrapper* select(std::vector<std::string> columnSpecs) {};
+
+    TableHandleWrapper* view(std::vector<std::string> columnSpecs) {};
+
+    TableHandleWrapper* dropColumns(std::vector<std::string> columnSpecs) {};
+
+    TableHandleWrapper* update(std::vector<std::string> columnSpecs) {};
+
+    TableHandleWrapper* updateView(std::vector<std::string> columnSpecs) {};
+
+    TableHandleWrapper* where(std::string condition) {};
+
+    // TODO: TableHandleWrapper* sort(std::vector<SortPair> sortPairs) {};
+
+    TableHandleWrapper* by(std::vector<std::string> columnSpecs) {};
+
+    // TODO: TableHandleWrapper* by(AggregateCombo combo, std::vector<std::string> groupByColumns) {};
+
+    TableHandleWrapper* minBy(std::vector<std::string> columnSpecs) {};
+
+    TableHandleWrapper* maxBy(std::vector<std::string> columnSpecs) {};
+
+    TableHandleWrapper* sumBy(std::vector<std::string> columnSpecs) {};
+
+    TableHandleWrapper* absSumBy(std::vector<std::string> columnSpecs) {};
+
+    TableHandleWrapper* varBy(std::vector<std::string> columnSpecs) {};
+
+    TableHandleWrapper* stdBy(std::vector<std::string> columnSpecs) {};
+
+    TableHandleWrapper* avgBy(std::vector<std::string> columnSpecs) {};
+
+    TableHandleWrapper* firstBy(std::vector<std::string> columnSpecs) {};
+
+    TableHandleWrapper* lastBy(std::vector<std::string> columnSpecs) {};
+
+    TableHandleWrapper* medianBy(std::vector<std::string> columnSpecs) {};
+
+    TableHandleWrapper* percentileBy(double percentile, std::vector<std::string> columnSpecs) {};
+
+    TableHandleWrapper* percentileBy(double percentile, bool avgMedian, std::vector<std::string> columnSpecs) {};
+
+    TableHandleWrapper* countBy(std::string countByColumn, std::vector<std::string> columnSpecs) {};
+
+    TableHandleWrapper* wAvgBy(std::string weightColumn, std::vector<std::string> columnSpecs) {};
+
+    TableHandleWrapper* tailBy(int64_t n, std::vector<std::string> columnSpecs) {};
+
+    TableHandleWrapper* headBy(int64_t n, std::vector<std::string> columnSpecs) {};
+
+    TableHandleWrapper* head(int64_t n) {};
+
+    TableHandleWrapper* tail(int64_t n) {};
+
+    TableHandleWrapper* ungroup(bool nullFill, std::vector<std::string> groupByColumns) {};
+
+    TableHandleWrapper* merge(std::string keyColumn, std::vector<TableHandleWrapper> sources) {};
+
+    TableHandleWrapper* merge(std::vector<TableHandleWrapper> sources) {};
+
+    TableHandleWrapper* naturalJoin(const TableHandleWrapper &rightSide, std::vector<std::string> columnsToMatch, std::vector<std::string> columnsToAdd) {};
+
+    TableHandleWrapper* exactJoin(const TableHandleWrapper &rightSide, std::vector<std::string> columnsToMatch, std::vector<std::string> columnsToAdd) {};
 
     /**
      * Whether the table was static at the time internal_tbl_hdl was created.
@@ -115,6 +177,10 @@ public:
     TableHandleWrapper* openTable(std::string tableName) {
         return new TableHandleWrapper(internal_tbl_hdl_mngr.fetchTable(tableName));
     }
+
+    TableHandleWrapper* emptyTable(int64_t size) {};
+
+    TableHandleWrapper* timeTable(int64_t startTimeNanos, int64_t periodNanos) {};
 
     /**
      * Runs a script on the server in the console language if a console was created.
