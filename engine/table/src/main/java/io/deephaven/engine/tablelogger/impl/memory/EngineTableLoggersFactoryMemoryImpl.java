@@ -24,12 +24,12 @@ public class EngineTableLoggersFactoryMemoryImpl implements EngineTableLoggers.F
 
     @Override
     public QueryOperationPerformanceLogLogger queryOperationPerformanceLogLogger() {
-        return new QueryOperationPerformanceLogLoggerMemoryImpl();
+        return QueryOperationPerformanceLogLogger.Noop.INSTANCE;
     }
 
     @Override
     public QueryPerformanceLogLogger queryPerformanceLogLogger() {
-        return new QueryPerformanceLogLoggerMemoryImpl();
+        return QueryPerformanceLogLogger.Noop.INSTANCE;
     }
 
     @Override
