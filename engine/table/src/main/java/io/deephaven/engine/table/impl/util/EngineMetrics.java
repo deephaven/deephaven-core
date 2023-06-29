@@ -77,7 +77,8 @@ public class EngineMetrics {
         }
         processInfoLogger = pInfoLogger;
         qpImpl = new QueryPerformanceImpl(pInfo.getId(), tableLoggerFactory.queryPerformanceLogLogger());
-        qoplImpl = new QueryOperationPerformanceImpl(pInfo.getId(), tableLoggerFactory.queryOperationPerformanceLogLogger());
+        qoplImpl = new QueryOperationPerformanceImpl(pInfo.getId(),
+                tableLoggerFactory.queryOperationPerformanceLogLogger());
         if (STATS_LOGGING_ENABLED) {
             processMetricsLogger = tableLoggerFactory.processMetricsLogLogger();
             statsLogger = new StatsIntradayLoggerDBImpl(pInfo.getId(), processMetricsLogger);

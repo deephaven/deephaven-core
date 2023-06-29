@@ -70,7 +70,7 @@ class QueryPerformanceStreamPublisher implements StreamPublisher {
         // ColumnDefinition.ofLong("EvaluationNumber")
         chunks[1].asWritableLongChunk().add(evaluationNumber);
 
-        //ColumnDefinition.ofTime("StartTime");
+        // ColumnDefinition.ofTime("StartTime");
         chunks[2].asWritableLongChunk().add(DateTimeUtils.millisToNanos(nugget.getStartClockTime()));
 
         // ColumnDefinition.ofTime("EndTime")
