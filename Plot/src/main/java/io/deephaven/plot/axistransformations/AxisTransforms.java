@@ -111,9 +111,9 @@ public enum AxisTransforms implements AxisTransform, Serializable {
                 Arrays.stream(values()).map(Enum::name).collect(Collectors.toCollection(LinkedHashSet::new));
         final Set<String> calendars = new LinkedHashSet<>(Arrays.asList(Calendars.calendarNames()));
         final Set<String> conflicts = new LinkedHashSet<>(results);
-        final boolean hasConflicts = conflicts.retainAll(calendars);
+        conflicts.retainAll(calendars);
 
-        if (hasConflicts) {
+        if (!conflicts.isEmpty()) {
             log.warning("AxisTransform enum and calendar names have conflicting values: values=" + conflicts);
         }
 
