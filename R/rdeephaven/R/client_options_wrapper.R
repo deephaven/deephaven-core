@@ -80,6 +80,7 @@ ClientOptions <- R6Class("ClientOptions",
         #' Use the TLS protocol in authentication and subsequent communication.
         #' @param root_certs Optional PEM-encoded certificate root for server connections. Defaults to system defaults.
         use_tls = function(root_certs = "") {
+            .verify_string("root_certs", root_certs)
             self$internal_client_options$set_use_tls(TRUE)
             self$internal_client_options$set_tls_root_certs(root_certs)
         },
@@ -89,6 +90,8 @@ ClientOptions <- R6Class("ClientOptions",
         #' @param opt The option key.
         #' @param val The option value.
         add_int_option = function(opt, val) {
+            .verify_string("opt", opt)
+            .verify_int("val", val)
             self$internal_client_options$add_int_option(opt, val)
         },
 
@@ -97,6 +100,8 @@ ClientOptions <- R6Class("ClientOptions",
         #' @param opt The option key.
         #' @param val The option valiue.
         add_string_option = function(opt, val) {
+            .verify_string("opt", opt)
+            .verify_string("val", val)
             self$internal_client_options$add_string_option(opt, val)
         },
 
@@ -105,6 +110,8 @@ ClientOptions <- R6Class("ClientOptions",
         #' @param header_name The header name
         #' @param header_value The header value
         add_extra_header = function(header_name, header_value) {
+            .verify_string("header_name", header_name)
+            .verify_string("header_value", header_value)
             self$internal_client_options$add_extra_header(header_name, header_value)
         },
 
