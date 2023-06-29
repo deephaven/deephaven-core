@@ -12,18 +12,7 @@ import io.deephaven.engine.liveness.LivenessScopeStack;
 import io.deephaven.extensions.barrage.util.GrpcUtil;
 import io.deephaven.internal.log.LoggerFactory;
 import io.deephaven.io.logger.Logger;
-import io.deephaven.proto.backplane.grpc.CloseSessionResponse;
-import io.deephaven.proto.backplane.grpc.ExportNotification;
-import io.deephaven.proto.backplane.grpc.ExportNotificationRequest;
-import io.deephaven.proto.backplane.grpc.ExportRequest;
-import io.deephaven.proto.backplane.grpc.ExportResponse;
-import io.deephaven.proto.backplane.grpc.HandshakeRequest;
-import io.deephaven.proto.backplane.grpc.HandshakeResponse;
-import io.deephaven.proto.backplane.grpc.ReleaseRequest;
-import io.deephaven.proto.backplane.grpc.ReleaseResponse;
-import io.deephaven.proto.backplane.grpc.SessionServiceGrpc;
-import io.deephaven.proto.backplane.grpc.TerminationNotificationRequest;
-import io.deephaven.proto.backplane.grpc.TerminationNotificationResponse;
+import io.deephaven.proto.backplane.grpc.*;
 import io.deephaven.proto.util.Exceptions;
 import io.deephaven.util.SafeCloseable;
 import io.deephaven.util.function.ThrowingRunnable;
@@ -45,6 +34,7 @@ import org.jetbrains.annotations.Nullable;
 
 import javax.inject.Inject;
 import javax.inject.Singleton;
+import java.lang.Object;
 import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.UUID;
@@ -184,6 +174,37 @@ public class SessionServiceGrpcImpl extends SessionServiceGrpc.SessionServiceImp
                     GrpcUtil.safelyComplete(responseObserver, ExportResponse.getDefaultInstance());
                     return source.get();
                 });
+    }
+
+    @Override
+    public void publishFromTicket(
+            @NotNull final PublishRequest request,
+            @NotNull final StreamObserver<PublishResponse> responseObserver) {
+        final SessionState session = service.getCurrentSession();
+
+        if (!request.hasSourceId()) {
+            responseObserver
+                    .onError(Exceptions.statusRuntimeException(Code.INVALID_ARGUMENT, "Source ticket not supplied"));
+            return;
+        }
+        if (!request.hasResultId()) {
+            responseObserver
+                    .onError(Exceptions.statusRuntimeException(Code.INVALID_ARGUMENT, "Result ticket not supplied"));
+            return;
+        }
+
+        // TODO: Nate
+//        final SessionState.ExportObject<Object> source = ticketRouter.resolve(
+//                session, request.getSourceId(), "sourceId");
+//        final SessionState.ExportObject<Object> destination = ticketRouter.publish(
+//                session, request.getResultId(), "resultId");
+//        session.newExport(request.getResultId(), "resultId")
+//                .require(source)
+//                .onError(responseObserver)
+//                .submit(() -> {
+//                    GrpcUtil.safelyComplete(responseObserver, ExportResponse.getDefaultInstance());
+//                    return source.get();
+//                });
     }
 
     @Override
