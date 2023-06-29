@@ -9,14 +9,12 @@ import io.deephaven.base.verify.Assert;
 import io.deephaven.chunk.attributes.Any;
 import io.deephaven.chunk.attributes.Values;
 import io.deephaven.engine.liveness.ReferenceCountedLivenessNode;
-import io.deephaven.engine.table.ColumnSource;
-import io.deephaven.engine.table.ColumnDefinition;
-import io.deephaven.engine.table.Table;
-import io.deephaven.engine.table.TableDefinition;
+import io.deephaven.engine.table.*;
 import io.deephaven.engine.table.impl.TableUpdateImpl;
+import io.deephaven.engine.updategraph.NotificationQueue;
+import io.deephaven.engine.updategraph.UpdateGraph;
 import io.deephaven.engine.updategraph.impl.PeriodicUpdateGraph;
 import io.deephaven.engine.updategraph.UpdateSourceRegistrar;
-import io.deephaven.engine.table.ModifiedColumnSet;
 import io.deephaven.engine.table.impl.QueryTable;
 import io.deephaven.engine.table.impl.sources.*;
 import io.deephaven.chunk.ChunkType;
@@ -45,7 +43,7 @@ import java.util.Map;
  * @implNote The constructor publishes {@code this} to the {@link PeriodicUpdateGraph} and thus cannot be subclassed.
  */
 public class StreamToBlinkTableAdapter extends ReferenceCountedLivenessNode
-        implements SafeCloseable, StreamConsumer, Runnable {
+        implements SafeCloseable, StreamConsumer, Runnable, NotificationQueue.Dependency {
 
     private static final Logger log = LoggerFactory.getLogger(StreamToBlinkTableAdapter.class);
 
@@ -292,22 +290,43 @@ public class StreamToBlinkTableAdapter extends ReferenceCountedLivenessNode
 
     @Override
     public void run() {
+        final TableUpdate downstream;
         try {
-            doRefresh();
+            downstream = doRefresh();
         } catch (Exception e) {
             log.error().append("Error refreshing ").append(StreamToBlinkTableAdapter.class.getSimpleName()).append('-')
                     .append(name).append(": ").append(e).endl();
             updateSourceRegistrar.removeSource(this);
-            final QueryTable localTable = tableRef.get();
-            if (localTable != null) {
-                localTable.notifyListenersOnError(e, null);
-            } else {
-                close();
+            deliverFailure(e);
+            return;
+        }
+        deliverUpdate(downstream);
+    }
+
+    private void deliverUpdate(final TableUpdate downstream) {
+        final QueryTable localTable = tableRef.get();
+        if (localTable != null) {
+            if (downstream != null) {
+                localTable.notifyListeners(downstream);
             }
+            return;
+        }
+        //noinspection EmptyTryBlock
+        try (final SafeCloseable ignored1 = this;
+             final SafeCloseable ignored2 = downstream == null ? null : downstream::release) {
         }
     }
 
-    private void doRefresh() {
+    private void deliverFailure(@NotNull final Exception failure) {
+        final QueryTable localTable = tableRef.get();
+        if (localTable != null) {
+            localTable.notifyListenersOnError(failure, null);
+        } else {
+            close();
+        }
+    }
+
+    private TableUpdate doRefresh() {
         synchronized (this) {
             // if we have an enqueued failure we want to process it first, before we allow the streamPublisher to flush
             // itself
@@ -330,7 +349,7 @@ public class StreamToBlinkTableAdapter extends ReferenceCountedLivenessNode
             newSize = bufferChunkSources == null ? 0 : bufferChunkSources[0].getSize();
 
             if (oldSize == 0 && newSize == 0) {
-                return;
+                return null;
             }
 
             capturedBufferSources = bufferChunkSources;
@@ -359,14 +378,12 @@ public class StreamToBlinkTableAdapter extends ReferenceCountedLivenessNode
             rowSet.removeRange(newSize, oldSize - 1);
         }
 
-        final QueryTable localTable = tableRef.get();
-        if (localTable != null) {
-            localTable.notifyListeners(new TableUpdateImpl(RowSetFactory.flat(newSize),
-                    RowSetFactory.flat(oldSize), RowSetFactory.empty(),
-                    RowSetShiftData.EMPTY, ModifiedColumnSet.EMPTY));
-        } else {
-            close();
-        }
+        return new TableUpdateImpl(
+                RowSetFactory.flat(newSize),
+                RowSetFactory.flat(oldSize),
+                RowSetFactory.empty(),
+                RowSetShiftData.EMPTY,
+                ModifiedColumnSet.EMPTY);
     }
 
     @SafeVarargs
@@ -406,5 +423,15 @@ public class StreamToBlinkTableAdapter extends ReferenceCountedLivenessNode
             enqueuedFailure.add(cause);
         }
         close();
+    }
+
+    @Override
+    public boolean satisfied(final long step) {
+        return updateSourceRegistrar.satisfied(step);
+    }
+
+    @Override
+    public UpdateGraph getUpdateGraph() {
+        return updateSourceRegistrar.getUpdateGraph();
     }
 }
