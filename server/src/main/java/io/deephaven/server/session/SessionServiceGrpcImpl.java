@@ -193,18 +193,18 @@ public class SessionServiceGrpcImpl extends SessionServiceGrpc.SessionServiceImp
             return;
         }
 
-        // TODO: Nate
-//        final SessionState.ExportObject<Object> source = ticketRouter.resolve(
-//                session, request.getSourceId(), "sourceId");
-//        final SessionState.ExportObject<Object> destination = ticketRouter.publish(
-//                session, request.getResultId(), "resultId");
-//        session.newExport(request.getResultId(), "resultId")
-//                .require(source)
-//                .onError(responseObserver)
-//                .submit(() -> {
-//                    GrpcUtil.safelyComplete(responseObserver, ExportResponse.getDefaultInstance());
-//                    return source.get();
-//                });
+        final SessionState.ExportObject<Object> source = ticketRouter.resolve(
+                session, request.getSourceId(), "sourceId");
+        Ticket resultId = request.getResultId();
+
+        final SessionState.ExportBuilder<Object> publisher = ticketRouter.publish(
+                session, resultId, "resultId", () -> {
+                    // when publish is complete, complete the gRPC request
+                    GrpcUtil.safelyComplete(responseObserver, PublishResponse.getDefaultInstance());
+                });
+        publisher.require(source)
+                .onError(responseObserver)
+                .submit(source::get);
     }
 
     @Override

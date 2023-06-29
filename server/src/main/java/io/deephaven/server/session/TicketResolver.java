@@ -54,10 +54,12 @@ public interface TicketResolver {
      * @param session the user session context
      * @param ticket (as ByteByffer) the ticket to publish to
      * @param logId an end-user friendly identification of the ticket should an error occur
+     * @param onPublish an optional callback to invoke when the result is published
      * @param <T> the type of the result the export will publish
      * @return an export object; see {@link SessionState} for lifecycle propagation details
      */
-    <T> SessionState.ExportBuilder<T> publish(SessionState session, ByteBuffer ticket, final String logId);
+    <T> SessionState.ExportBuilder<T> publish(
+            SessionState session, ByteBuffer ticket, final String logId, @Nullable Runnable onPublish);
 
     /**
      * Publish a new result as a flight descriptor to an export object future.
@@ -67,11 +69,12 @@ public interface TicketResolver {
      * @param session the user session context
      * @param descriptor (as Flight.Descriptor) the descriptor to publish to
      * @param logId an end-user friendly identification of the ticket should an error occur
+     * @param onPublish an optional callback to invoke when the result is published
      * @param <T> the type of the result the export will publish
      * @return an export object; see {@link SessionState} for lifecycle propagation details
      */
-    <T> SessionState.ExportBuilder<T> publish(SessionState session, Flight.FlightDescriptor descriptor,
-            final String logId);
+    <T> SessionState.ExportBuilder<T> publish(
+            SessionState session, Flight.FlightDescriptor descriptor, final String logId, @Nullable Runnable onPublish);
 
     /**
      * Retrieve a FlightInfo for a given FlightDescriptor.

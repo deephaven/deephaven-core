@@ -118,14 +118,20 @@ public class ApplicationTicketResolver extends TicketResolverBase implements App
 
     @Override
     public <T> SessionState.ExportBuilder<T> publish(
-            SessionState session, ByteBuffer ticket, final String logId) {
+            final SessionState session,
+            final ByteBuffer ticket,
+            final String logId,
+            final Runnable onPublish) {
         throw Exceptions.statusRuntimeException(Code.FAILED_PRECONDITION,
                 "Could not publish '" + logId + "': application tickets cannot be published to");
     }
 
     @Override
     public <T> SessionState.ExportBuilder<T> publish(
-            final SessionState session, final Flight.FlightDescriptor descriptor, final String logId) {
+            final SessionState session,
+            final Flight.FlightDescriptor descriptor,
+            final String logId,
+            final Runnable onPublish) {
         throw Exceptions.statusRuntimeException(Code.FAILED_PRECONDITION,
                 "Could not publish '" + logId + "': application flight descriptors cannot be published to");
     }

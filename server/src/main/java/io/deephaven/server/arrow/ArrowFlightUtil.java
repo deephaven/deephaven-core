@@ -149,7 +149,7 @@ public class ArrowFlightUtil {
                 } else {
                     flightDescriptor = mi.descriptor;
                     resultExportBuilder = ticketRouter
-                            .<Table>publish(session, mi.descriptor, "Flight.Descriptor")
+                            .<Table>publish(session, mi.descriptor, "Flight.Descriptor", null)
                             .onError(observer);
                 }
             }

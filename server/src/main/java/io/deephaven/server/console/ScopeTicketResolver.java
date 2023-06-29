@@ -6,6 +6,7 @@ package io.deephaven.server.console;
 import com.google.protobuf.ByteStringAccess;
 import com.google.rpc.Code;
 import io.deephaven.base.string.EncodingInfo;
+import io.deephaven.configuration.Configuration;
 import io.deephaven.engine.context.QueryScope;
 import io.deephaven.engine.liveness.LivenessReferent;
 import io.deephaven.engine.table.Table;
@@ -36,6 +37,8 @@ import static io.deephaven.proto.util.ScopeTicketHelper.TICKET_PREFIX;
 
 @Singleton
 public class ScopeTicketResolver extends TicketResolverBase {
+    private static final boolean PUBLISH_ENABLED = Configuration.getInstance().getBooleanForClassWithDefault(
+            ScopeTicketResolver.class, "enablePublish", true);
 
     private final Provider<ScriptSession> scriptSessionProvider;
 
@@ -126,18 +129,32 @@ public class ScopeTicketResolver extends TicketResolverBase {
 
     @Override
     public <T> SessionState.ExportBuilder<T> publish(
-            final SessionState session, final ByteBuffer ticket, final String logId) {
-        return publish(session, nameForTicket(ticket, logId), logId);
+            final SessionState session,
+            final ByteBuffer ticket,
+            final String logId,
+            @Nullable final Runnable onPublish) {
+        return publish(session, nameForTicket(ticket, logId), logId, onPublish);
     }
 
     @Override
     public <T> SessionState.ExportBuilder<T> publish(
-            final SessionState session, final Flight.FlightDescriptor descriptor, final String logId) {
-        return publish(session, nameForDescriptor(descriptor, logId), logId);
+            final SessionState session,
+            final Flight.FlightDescriptor descriptor,
+            final String logId,
+            @Nullable final Runnable onPublish) {
+        return publish(session, nameForDescriptor(descriptor, logId), logId, onPublish);
     }
 
     private <T> SessionState.ExportBuilder<T> publish(
-            final SessionState session, final String varName, final String logId) {
+            final SessionState session,
+            final String varName,
+            final String logId,
+            @Nullable final Runnable onPublish) {
+        if (!PUBLISH_ENABLED) {
+            throw Exceptions.statusRuntimeException(Code.PERMISSION_DENIED,
+                    "Publishing to ScopeTickets is not enabled for this server");
+        }
+
         // We publish to the query scope after the client finishes publishing their result. We accomplish this by
         // directly depending on the result of this export builder.
         final SessionState.ExportBuilder<T> resultBuilder = session.nonExport();
@@ -154,6 +171,9 @@ public class ScopeTicketResolver extends TicketResolverBase {
                         gss.manage((LivenessReferent) value);
                     }
                     gss.setVariable(varName, value);
+                    if (onPublish != null) {
+                        onPublish.run();
+                    }
                 });
 
         return resultBuilder;
