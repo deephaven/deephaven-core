@@ -36,6 +36,7 @@ import io.deephaven.extensions.barrage.util.BarrageStreamReader;
 import io.deephaven.extensions.barrage.util.BarrageUtil;
 import io.deephaven.proto.flight.util.SchemaHelper;
 import io.deephaven.server.arrow.ArrowModule;
+import io.deephaven.server.session.SessionService;
 import io.deephaven.server.util.Scheduler;
 import io.deephaven.server.util.TestControlledScheduler;
 import io.deephaven.test.types.OutOfBandTest;
@@ -102,7 +103,8 @@ public class BarrageBlinkTableTest extends RefreshingTableTestCase {
         blinkTable.setAttribute(Table.BLINK_TABLE_ATTRIBUTE, true);
 
         barrageMessageProducer = blinkTable.getResult(new BarrageMessageProducer.Operation<>(
-                scheduler, daggerRoot.getStreamGeneratorFactory(), blinkTable, UPDATE_INTERVAL, () -> {
+                scheduler, new SessionService.ObfuscatingErrorTransformer(), daggerRoot.getStreamGeneratorFactory(),
+                blinkTable, UPDATE_INTERVAL, () -> {
                 }));
 
         originalTUV = TableUpdateValidator.make(blinkTable);

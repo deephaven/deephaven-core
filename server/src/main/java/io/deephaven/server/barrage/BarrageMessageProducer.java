@@ -40,6 +40,7 @@ import io.deephaven.extensions.barrage.util.GrpcUtil;
 import io.deephaven.extensions.barrage.util.StreamReader;
 import io.deephaven.internal.log.LoggerFactory;
 import io.deephaven.io.logger.Logger;
+import io.deephaven.server.session.SessionService;
 import io.deephaven.server.util.Scheduler;
 import io.deephaven.util.SafeCloseable;
 import io.deephaven.util.SafeCloseableArray;
@@ -117,6 +118,7 @@ public class BarrageMessageProducer<MessageView> extends LivenessArtifact
         }
 
         private final Scheduler scheduler;
+        private final SessionService.ErrorTransformer errorTransformer;
         private final BarrageStreamGenerator.Factory<MessageView> streamGeneratorFactory;
         private final BaseTable<?> parent;
         private final long updateIntervalMs;
@@ -125,20 +127,23 @@ public class BarrageMessageProducer<MessageView> extends LivenessArtifact
         @AssistedInject
         public Operation(
                 final Scheduler scheduler,
+                final SessionService.ErrorTransformer errorTransformer,
                 final BarrageStreamGenerator.Factory<MessageView> streamGeneratorFactory,
                 @Assisted final BaseTable<?> parent,
                 @Assisted final long updateIntervalMs) {
-            this(scheduler, streamGeneratorFactory, parent, updateIntervalMs, null);
+            this(scheduler, errorTransformer, streamGeneratorFactory, parent, updateIntervalMs, null);
         }
 
         @VisibleForTesting
         public Operation(
                 final Scheduler scheduler,
+                final SessionService.ErrorTransformer errorTransformer,
                 final BarrageStreamGenerator.Factory<MessageView> streamGeneratorFactory,
                 final BaseTable<?> parent,
                 final long updateIntervalMs,
                 @Nullable final Runnable onGetSnapshot) {
             this.scheduler = scheduler;
+            this.errorTransformer = errorTransformer;
             this.streamGeneratorFactory = streamGeneratorFactory;
             this.parent = parent;
             this.updateIntervalMs = updateIntervalMs;
@@ -164,7 +169,7 @@ public class BarrageMessageProducer<MessageView> extends LivenessArtifact
         public Result<BarrageMessageProducer<MessageView>> initialize(final boolean usePrev,
                 final long beforeClock) {
             final BarrageMessageProducer<MessageView> result = new BarrageMessageProducer<MessageView>(
-                    scheduler, streamGeneratorFactory, parent, updateIntervalMs, onGetSnapshot);
+                    scheduler, errorTransformer, streamGeneratorFactory, parent, updateIntervalMs, onGetSnapshot);
             return new Result<>(result, result.constructListener());
         }
     }
@@ -194,6 +199,7 @@ public class BarrageMessageProducer<MessageView> extends LivenessArtifact
 
     private final String logPrefix;
     private final Scheduler scheduler;
+    private final SessionService.ErrorTransformer errorTransformer;
     private final BarrageStreamGenerator.Factory<MessageView> streamGeneratorFactory;
 
     private final BaseTable<?> parent;
@@ -300,7 +306,9 @@ public class BarrageMessageProducer<MessageView> extends LivenessArtifact
 
     private final boolean parentIsRefreshing;
 
-    public BarrageMessageProducer(final Scheduler scheduler,
+    public BarrageMessageProducer(
+            final Scheduler scheduler,
+            final SessionService.ErrorTransformer errorTransformer,
             final BarrageStreamGenerator.Factory<MessageView> streamGeneratorFactory,
             final BaseTable<?> parent,
             final long updateIntervalMs,
@@ -308,6 +316,7 @@ public class BarrageMessageProducer<MessageView> extends LivenessArtifact
         this.logPrefix = "BarrageMessageProducer(" + Integer.toHexString(System.identityHashCode(this)) + "): ";
 
         this.scheduler = scheduler;
+        this.errorTransformer = errorTransformer;
         this.streamGeneratorFactory = streamGeneratorFactory;
         this.parent = parent;
         this.isBlinkTable = parent.isBlink();
@@ -993,7 +1002,7 @@ public class BarrageMessageProducer<MessageView> extends LivenessArtifact
                     }
                 } catch (final Exception exception) {
                     synchronized (BarrageMessageProducer.this) {
-                        final StatusRuntimeException apiError = GrpcUtil.securelyWrapError(log, exception);
+                        final StatusRuntimeException apiError = errorTransformer.transform(exception);
 
                         Stream.concat(activeSubscriptions.stream(), pendingSubscriptions.stream()).distinct()
                                 .forEach(sub -> GrpcUtil.safelyError(sub.listener, apiError));
@@ -1468,7 +1477,7 @@ public class BarrageMessageProducer<MessageView> extends LivenessArtifact
 
         // propagate any error notifying listeners there are no more updates incoming
         if (pendingError != null) {
-            StatusRuntimeException ex = GrpcUtil.securelyWrapError(log, pendingError);
+            StatusRuntimeException ex = errorTransformer.transform(pendingError);
             for (final Subscription subscription : activeSubscriptions) {
                 // TODO (core#801): effective error reporting to api clients
                 GrpcUtil.safelyError(subscription.listener, ex);
@@ -1515,7 +1524,7 @@ public class BarrageMessageProducer<MessageView> extends LivenessArtifact
                             subscription.options, false, vp, subscription.reverseViewport, clientView, cols));
                 } catch (final Exception e) {
                     try {
-                        subscription.listener.onError(GrpcUtil.securelyWrapError(log, e));
+                        subscription.listener.onError(errorTransformer.transform(e));
                     } catch (final Exception ignored) {
                     }
                     removeSubscription(subscription.listener);
@@ -1584,7 +1593,7 @@ public class BarrageMessageProducer<MessageView> extends LivenessArtifact
                                 subscription.subscribedColumns));
 
             } catch (final Exception e) {
-                GrpcUtil.safelyError(subscription.listener, GrpcUtil.securelyWrapError(log, e));
+                GrpcUtil.safelyError(subscription.listener, errorTransformer.transform(e));
                 removeSubscription(subscription.listener);
             }
         }

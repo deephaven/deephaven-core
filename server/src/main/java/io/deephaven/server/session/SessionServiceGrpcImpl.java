@@ -12,18 +12,7 @@ import io.deephaven.engine.liveness.LivenessScopeStack;
 import io.deephaven.extensions.barrage.util.GrpcUtil;
 import io.deephaven.internal.log.LoggerFactory;
 import io.deephaven.io.logger.Logger;
-import io.deephaven.proto.backplane.grpc.CloseSessionResponse;
-import io.deephaven.proto.backplane.grpc.ExportNotification;
-import io.deephaven.proto.backplane.grpc.ExportNotificationRequest;
-import io.deephaven.proto.backplane.grpc.ExportRequest;
-import io.deephaven.proto.backplane.grpc.ExportResponse;
-import io.deephaven.proto.backplane.grpc.HandshakeRequest;
-import io.deephaven.proto.backplane.grpc.HandshakeResponse;
-import io.deephaven.proto.backplane.grpc.ReleaseRequest;
-import io.deephaven.proto.backplane.grpc.ReleaseResponse;
-import io.deephaven.proto.backplane.grpc.SessionServiceGrpc;
-import io.deephaven.proto.backplane.grpc.TerminationNotificationRequest;
-import io.deephaven.proto.backplane.grpc.TerminationNotificationResponse;
+import io.deephaven.proto.backplane.grpc.*;
 import io.deephaven.proto.util.Exceptions;
 import io.deephaven.util.SafeCloseable;
 import io.deephaven.util.function.ThrowingRunnable;
@@ -45,6 +34,7 @@ import org.jetbrains.annotations.Nullable;
 
 import javax.inject.Inject;
 import javax.inject.Singleton;
+import java.lang.Object;
 import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.UUID;
@@ -274,12 +264,16 @@ public class SessionServiceGrpcImpl extends SessionServiceGrpc.SessionServiceImp
     @Singleton
     public static class SessionServiceInterceptor implements ServerInterceptor {
         private final SessionService service;
+        private final SessionService.ErrorTransformer errorTransformer;
         private static final Status authenticationDetailsInvalid =
                 Status.UNAUTHENTICATED.withDescription("Authentication details invalid");
 
         @Inject
-        public SessionServiceInterceptor(final SessionService service) {
+        public SessionServiceInterceptor(
+                final SessionService service,
+                final SessionService.ErrorTransformer errorTransformer) {
             this.service = service;
+            this.errorTransformer = errorTransformer;
         }
 
         @Override
@@ -321,8 +315,9 @@ public class SessionServiceGrpcImpl extends SessionServiceGrpc.SessionServiceImp
             final SessionState finalSession = session;
 
             final MutableObject<SessionServiceCallListener<ReqT, RespT>> listener = new MutableObject<>();
-            rpcWrapper(serverCall, context, finalSession, () -> listener.setValue(new SessionServiceCallListener<>(
-                    serverCallHandler.startCall(serverCall, metadata), serverCall, context, finalSession)));
+            rpcWrapper(serverCall, context, finalSession, errorTransformer, () -> listener.setValue(
+                    new SessionServiceCallListener<>(serverCallHandler.startCall(serverCall, metadata), serverCall,
+                            context, finalSession, errorTransformer)));
             if (listener.getValue() == null) {
                 return new ServerCall.Listener<>() {};
             }
@@ -335,41 +330,44 @@ public class SessionServiceGrpcImpl extends SessionServiceGrpc.SessionServiceImp
         private final ServerCall<ReqT, RespT> call;
         private final Context context;
         private final SessionState session;
+        private final SessionService.ErrorTransformer errorTransformer;
 
         public SessionServiceCallListener(
                 ServerCall.Listener<ReqT> delegate,
                 ServerCall<ReqT, RespT> call,
                 Context context,
-                SessionState session) {
+                SessionState session,
+                SessionService.ErrorTransformer errorTransformer) {
             super(delegate);
             this.call = call;
             this.context = context;
             this.session = session;
+            this.errorTransformer = errorTransformer;
         }
 
         @Override
         public void onMessage(ReqT message) {
-            rpcWrapper(call, context, session, () -> super.onMessage(message));
+            rpcWrapper(call, context, session, errorTransformer, () -> super.onMessage(message));
         }
 
         @Override
         public void onHalfClose() {
-            rpcWrapper(call, context, session, super::onHalfClose);
+            rpcWrapper(call, context, session, errorTransformer, super::onHalfClose);
         }
 
         @Override
         public void onCancel() {
-            rpcWrapper(call, context, session, super::onCancel);
+            rpcWrapper(call, context, session, errorTransformer, super::onCancel);
         }
 
         @Override
         public void onComplete() {
-            rpcWrapper(call, context, session, super::onComplete);
+            rpcWrapper(call, context, session, errorTransformer, super::onComplete);
         }
 
         @Override
         public void onReady() {
-            rpcWrapper(call, context, session, super::onReady);
+            rpcWrapper(call, context, session, errorTransformer, super::onReady);
         }
     }
 
@@ -386,25 +384,21 @@ public class SessionServiceGrpcImpl extends SessionServiceGrpc.SessionServiceImp
             @NotNull final ServerCall<ReqT, RespT> call,
             @NotNull final Context context,
             @Nullable final SessionState session,
+            @NotNull final SessionService.ErrorTransformer errorTransformer,
             @NotNull final ThrowingRunnable<InterruptedException> lambda) {
         Context previous = context.attach();
-        try (final SafeCloseable ignored1 = LivenessScopeStack.open();
-                final SafeCloseable ignored2 = session == null ? null : session.getExecutionContext().open()) {
-            lambda.run();
-        } catch (final StatusRuntimeException err) {
-            if (err.getStatus().equals(Status.UNAUTHENTICATED)) {
-                log.info().append("ignoring unauthenticated request").endl();
-            } else {
-                log.error().append(err).endl();
+        // note: we'll open the execution context here so that it may be used by the error transformer
+        try (final SafeCloseable ignored1 = session == null ? null : session.getExecutionContext().open()) {
+            try (final SafeCloseable ignored2 = LivenessScopeStack.open()) {
+                lambda.run();
+            } catch (final InterruptedException err) {
+                Thread.currentThread().interrupt();
+                closeWithError(call, errorTransformer.transform(err));
+            } catch (final Throwable err) {
+                closeWithError(call, errorTransformer.transform(err));
+            } finally {
+                context.detach(previous);
             }
-            closeWithError(call, err);
-        } catch (final InterruptedException err) {
-            Thread.currentThread().interrupt();
-            closeWithError(call, GrpcUtil.securelyWrapError(log, err, Code.UNAVAILABLE));
-        } catch (final Throwable err) {
-            closeWithError(call, GrpcUtil.securelyWrapError(log, err));
-        } finally {
-            context.detach(previous);
         }
     }
 
