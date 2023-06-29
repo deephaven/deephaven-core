@@ -19,6 +19,7 @@ import io.deephaven.engine.testutil.TstUtils;
 import io.deephaven.engine.testutil.junit4.EngineCleanup;
 import io.deephaven.engine.updategraph.AbstractNotification;
 import io.deephaven.engine.updategraph.NotificationQueue;
+import io.deephaven.engine.updategraph.UpdateGraph;
 import io.deephaven.engine.updategraph.UpdateSourceRegistrar;
 import io.deephaven.engine.util.TableTools;
 import io.deephaven.io.log.impl.LogOutputStringImpl;
@@ -113,12 +114,14 @@ public class AppendOnlyFixedSizePageRegionTest {
     private static final class DependentRegistrar implements UpdateSourceRegistrar, Runnable {
 
         private final NotificationQueue.Dependency[] dependencies;
+        private final UpdateGraph updateGraph;
 
         private final List<Runnable> dependentSources = new ArrayList<>();
 
         private DependentRegistrar(@NotNull final NotificationQueue.Dependency... dependencies) {
             this.dependencies = dependencies;
-            ExecutionContext.getContext().getUpdateGraph().addSource(this);
+            updateGraph = ExecutionContext.getContext().getUpdateGraph();
+            updateGraph.addSource(this);
         }
 
         @Override
@@ -133,7 +136,7 @@ public class AppendOnlyFixedSizePageRegionTest {
 
         @Override
         public void requestRefresh() {
-            ExecutionContext.getContext().getUpdateGraph().requestRefresh();
+            updateGraph.requestRefresh();
         }
 
         @Override
@@ -158,6 +161,22 @@ public class AppendOnlyFixedSizePageRegionTest {
                     }
                 }
             });
+        }
+
+        @Override
+        public LogOutput append(LogOutput logOutput) {
+            return logOutput.append("DependentRegistrar[")
+                    .append(LogOutput.APPENDABLE_ARRAY_FORMATTER, dependencies).append(']');
+        }
+
+        @Override
+        public boolean satisfied(final long step) {
+            return updateGraph.satisfied(step);
+        }
+
+        @Override
+        public UpdateGraph getUpdateGraph() {
+            return updateGraph;
         }
     }
 

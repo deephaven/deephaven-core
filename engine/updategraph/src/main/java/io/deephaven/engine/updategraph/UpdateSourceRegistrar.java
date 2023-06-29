@@ -10,7 +10,7 @@ import java.util.Collection;
 /**
  * Common interface for classes that can register and de-register update sources.
  */
-public interface UpdateSourceRegistrar {
+public interface UpdateSourceRegistrar extends NotificationQueue.Dependency {
 
     /**
      * Add a source to this registrar.
