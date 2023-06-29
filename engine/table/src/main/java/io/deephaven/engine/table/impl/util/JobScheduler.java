@@ -157,7 +157,8 @@ public interface JobScheduler {
                     break;
                 }
                 final TaskInvoker taskInvoker = new TaskInvoker(context, tii, initialTaskIndex);
-                scheduler.submit(executionContext, taskInvoker, description, IterationManager::onUnexpectedJobError);
+                scheduler.submit(executionContext, taskInvoker::execute, description,
+                        IterationManager::onUnexpectedJobError);
             }
         }
 
@@ -204,7 +205,7 @@ public interface JobScheduler {
             return new LogOutputStringImpl().append(this).toString();
         }
 
-        private class TaskInvoker implements Runnable, Consumer<Exception>, SafeCloseable, LogOutputAppendable {
+        private class TaskInvoker implements LogOutputAppendable {
 
             private final CONTEXT_TYPE context;
 
@@ -233,8 +234,7 @@ public interface JobScheduler {
                 acquiredTaskIndex = initialTaskIndex;
             }
 
-            @Override
-            public synchronized void run() {
+            private synchronized void execute() {
                 int runningTaskIndex;
                 do {
                     if (exception.get() != null) {
@@ -246,9 +246,13 @@ public interface JobScheduler {
                     runningTaskIndex = acquiredTaskIndex;
                     try {
                         running = true;
-                        action.run(context, runningTaskIndex, this, this::reportTaskCompleteAndResumeIteration);
+                        action.run(
+                                context,
+                                runningTaskIndex,
+                                this::reportError,
+                                this::reportTaskCompleteAndResumeIteration);
                     } catch (Exception e) {
-                        accept(e);
+                        reportError(e);
                         return;
                     } finally {
                         running = false;
@@ -269,18 +273,16 @@ public interface JobScheduler {
                         || exception.get() != null) {
                     close();
                 } else if (!running) {
-                    run();
+                    execute();
                 }
             }
 
-            @Override
-            public void accept(@NotNull final Exception e) {
-                try (final SafeCloseable ignored = this) {
+            private void reportError(@NotNull final Exception e) {
+                try (final SafeCloseable ignored = this::close) {
                     onTaskError(e);
                 }
             }
 
-            @Override
             public void close() {
                 Assert.eqFalse(closed, "closed");
                 try (final SafeCloseable ignored = context) {
