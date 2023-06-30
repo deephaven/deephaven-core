@@ -3,7 +3,9 @@
  */
 package io.deephaven.engine.table.impl.perf;
 
+import io.deephaven.auth.AuthContext;
 import io.deephaven.base.log.LogOutput;
+import io.deephaven.engine.context.ExecutionContext;
 import io.deephaven.engine.rowset.RowSet;
 import io.deephaven.engine.rowset.RowSetShiftData;
 import io.deephaven.engine.table.TableListener;
@@ -21,6 +23,8 @@ public class PerformanceEntry extends BasePerformanceEntry implements TableListe
     private final int operationNumber;
     private final String description;
     private final String callerLine;
+
+    private final AuthContext authContext;
 
     private long intervalInvocationCount;
 
@@ -44,6 +48,7 @@ public class PerformanceEntry extends BasePerformanceEntry implements TableListe
         this.operationNumber = operationNumber;
         this.description = description;
         this.callerLine = callerLine;
+        authContext = id == QueryConstants.NULL_INT ? null : ExecutionContext.getContext().getAuthContext();
         startSample = new RuntimeMemory.Sample();
         endSample = new RuntimeMemory.Sample();
         maxTotalMemory = 0;
@@ -114,6 +119,7 @@ public class PerformanceEntry extends BasePerformanceEntry implements TableListe
                 .append(", operationNumber=").append(operationNumber)
                 .append(", description='").append(description).append('\'')
                 .append(", callerLine='").append(callerLine).append('\'')
+                .append(", authContext=").append(authContext)
                 .append(", intervalUsageNanos=").append(getIntervalUsageNanos())
                 .append(", intervalCpuNanos=").append(getIntervalCpuNanos())
                 .append(", intervalUserCpuNanos=").append(getIntervalUserCpuNanos())
@@ -150,6 +156,13 @@ public class PerformanceEntry extends BasePerformanceEntry implements TableListe
 
     public String getCallerLine() {
         return callerLine;
+    }
+
+    /**
+     * @return The {@link AuthContext} that was installed when this PerformanceEntry was constructed
+     */
+    public AuthContext getAuthContext() {
+        return authContext;
     }
 
     public long getIntervalAdded() {
