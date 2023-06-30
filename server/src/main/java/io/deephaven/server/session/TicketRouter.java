@@ -134,8 +134,9 @@ public class TicketRouter {
             final ByteBuffer ticket,
             final String logId,
             @Nullable final Runnable onPublish) {
-        authorization.authorizePublishRequest(ticket);
-        return getResolver(ticket.get(ticket.position()), logId).publish(session, ticket, logId, onPublish);
+        final TicketResolver resolver = getResolver(ticket.get(ticket.position()), logId);
+        authorization.authorizePublishRequest(resolver, ticket);
+        return resolver.publish(session, ticket, logId, onPublish);
     }
 
     /**
@@ -200,8 +201,9 @@ public class TicketRouter {
             final Flight.FlightDescriptor descriptor,
             final String logId,
             @Nullable final Runnable onPublish) {
-        authorization.authorizePublishRequest(descriptor);
-        return getResolver(descriptor, logId).publish(session, descriptor, logId, onPublish);
+        final TicketResolver resolver = getResolver(descriptor, logId);
+        authorization.authorizePublishRequest(resolver, descriptor);
+        return resolver.publish(session, descriptor, logId, onPublish);
     }
 
     /**

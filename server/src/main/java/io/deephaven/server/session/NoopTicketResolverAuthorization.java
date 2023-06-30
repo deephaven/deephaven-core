@@ -1,5 +1,7 @@
 package io.deephaven.server.session;
 
+import com.google.rpc.Code;
+import io.deephaven.proto.util.Exceptions;
 import org.apache.arrow.flight.impl.Flight;
 
 import java.nio.ByteBuffer;
@@ -11,12 +13,12 @@ public class NoopTicketResolverAuthorization implements TicketResolver.Authoriza
     }
 
     @Override
-    public void authorizePublishRequest(ByteBuffer ticket) {
-        // always allowed
+    public void authorizePublishRequest(TicketResolver ticketResolver, ByteBuffer ticket) {
+        throw Exceptions.statusRuntimeException(Code.PERMISSION_DENIED, "deny all");
     }
 
     @Override
-    public void authorizePublishRequest(Flight.FlightDescriptor descriptor) {
-        // always allowed
+    public void authorizePublishRequest(TicketResolver ticketResolver, Flight.FlightDescriptor descriptor) {
+        throw Exceptions.statusRuntimeException(Code.PERMISSION_DENIED, "deny all");
     }
 }

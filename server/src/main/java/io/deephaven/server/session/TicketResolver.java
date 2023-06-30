@@ -35,10 +35,11 @@ public interface TicketResolver {
          * @apiNote Implementations may wish to query {@link ExecutionContext#getAuthContext()} to apply user-specific
          *          transformations to requested resources.
          *
+         * @param ticketResolver the ticket resolver
          * @param ticket the ticket to publish to as a byte buffer; note that the first byte is the route
          * @throws io.grpc.StatusRuntimeException if the user is not authorized
          */
-        void authorizePublishRequest(ByteBuffer ticket);
+        void authorizePublishRequest(TicketResolver ticketResolver, ByteBuffer ticket);
 
         /**
          * Implementations must validate that the provided ticket is authorized for the current user.
@@ -47,10 +48,11 @@ public interface TicketResolver {
          * @apiNote Implementations may wish to query {@link ExecutionContext#getAuthContext()} to apply user-specific
          *          transformations to requested resources.
          *
+         * @param ticketResolver the ticket resolver
          * @param descriptor the flight descriptor to publish to; note that the first path element is the route
          * @throws io.grpc.StatusRuntimeException if the user is not authorized
          */
-        void authorizePublishRequest(Flight.FlightDescriptor descriptor);
+        void authorizePublishRequest(TicketResolver ticketResolver, Flight.FlightDescriptor descriptor);
     }
 
     /**
@@ -92,6 +94,7 @@ public interface TicketResolver {
     /**
      * Publish a new result as a flight ticket to an export object future.
      *
+     * <p>
      * The user must call {@link SessionState.ExportBuilder#submit} to publish the result value.
      *
      * @param session the user session context
@@ -107,6 +110,7 @@ public interface TicketResolver {
     /**
      * Publish a new result as a flight descriptor to an export object future.
      *
+     * <p>
      * The user must call {@link SessionState.ExportBuilder#submit} to publish the result value.
      *
      * @param session the user session context
