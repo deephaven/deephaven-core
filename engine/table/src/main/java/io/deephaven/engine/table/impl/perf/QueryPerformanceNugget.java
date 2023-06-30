@@ -3,6 +3,8 @@
  */
 package io.deephaven.engine.table.impl.perf;
 
+import io.deephaven.auth.AuthContext;
+import io.deephaven.engine.context.ExecutionContext;
 import io.deephaven.time.DateTimeUtils;
 import io.deephaven.engine.table.impl.util.RuntimeMemory;
 import io.deephaven.util.QueryConstants;
@@ -35,8 +37,10 @@ public class QueryPerformanceNugget implements Serializable, AutoCloseable {
     private final int depth;
     private final String description;
     private final boolean isUser;
-    private final String callerLine;
     private final long inputSize;
+
+    private final AuthContext authContext;
+    private final String callerLine;
 
     private final long startClockTime;
 
@@ -98,13 +102,14 @@ public class QueryPerformanceNugget implements Serializable, AutoCloseable {
         this.isUser = isUser;
         this.inputSize = inputSize;
 
+        authContext = ExecutionContext.getContext().getAuthContext();
+        callerLine = QueryPerformanceRecorder.getCallerLine();
+
         final RuntimeMemory runtimeMemory = RuntimeMemory.getInstance();
         runtimeMemory.read(startMemorySample);
 
         startAllocatedBytes = ThreadProfiler.DEFAULT.getCurrentThreadAllocatedBytes();
         startPoolAllocatedBytes = QueryPerformanceRecorder.getPoolAllocatedBytesForCurrentThread();
-
-        callerLine = QueryPerformanceRecorder.getCallerLine();
 
         startClockTime = System.currentTimeMillis();
         startTimeNanos = System.nanoTime();
@@ -128,10 +133,11 @@ public class QueryPerformanceNugget implements Serializable, AutoCloseable {
         isUser = false;
         inputSize = NULL_LONG;
 
+        authContext = null;
+        callerLine = null;
+
         startAllocatedBytes = NULL_LONG;
         startPoolAllocatedBytes = NULL_LONG;
-
-        callerLine = null;
 
         startClockTime = NULL_LONG;
         startTimeNanos = NULL_LONG;
@@ -249,6 +255,13 @@ public class QueryPerformanceNugget implements Serializable, AutoCloseable {
 
     public long getInputSize() {
         return inputSize;
+    }
+
+    /**
+     * @return The {@link AuthContext} that was installed when this QueryPerformanceNugget was constructed
+     */
+    public AuthContext getAuthContext() {
+        return authContext;
     }
 
     public String getCallerLine() {

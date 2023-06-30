@@ -40,7 +40,8 @@ class QueryPerformanceStreamPublisher implements StreamPublisher {
             ColumnDefinition.ofLong("PoolAllocatedBytes"),
             ColumnDefinition.ofBoolean("WasInterrupted"),
             ColumnDefinition.ofBoolean("IsReplayer"),
-            ColumnDefinition.ofString("Exception"));
+            ColumnDefinition.ofString("Exception"),
+            ColumnDefinition.ofString("AuthContext"));
     private static final int CHUNK_SIZE = ArrayBackedColumnSource.BLOCK_SIZE;
 
     public static TableDefinition definition() {
@@ -123,6 +124,9 @@ class QueryPerformanceStreamPublisher implements StreamPublisher {
 
         // ColumnDefinition.ofString("Exception")
         chunks[17].<String>asWritableObjectChunk().add(queryProcessingResults.getException());
+
+        // ColumnDefinition.ofString("AuthContext")
+        chunks[18].<String>asWritableObjectChunk().add(Objects.toString(nugget.getAuthContext()));
 
         if (chunks[0].size() == CHUNK_SIZE) {
             flushInternal();
