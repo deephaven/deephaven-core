@@ -146,7 +146,7 @@ public class MultiJoinModifiedSlotTracker {
 
     private void maybeAllocateChunk() {
         if (pointer == allocated) {
-            allocated += StaticMultiJoinStateManager.CHUNK_SIZE;
+            allocated += JoinControl.CHUNK_SIZE;
             modifiedSlots.ensureCapacity(allocated);
             flagSource.ensureCapacity(allocated * flagLocationsPerSlot);
             this.originalRedirection.forEach(las -> las.ensureCapacity(allocated));

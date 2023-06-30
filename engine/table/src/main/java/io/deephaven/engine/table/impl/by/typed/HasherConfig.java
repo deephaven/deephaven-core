@@ -38,6 +38,8 @@ public class HasherConfig<T> {
     final List<ProbeSpec> probes;
     final List<BuildSpec> builds;
 
+    public ChunkType[] chunkTypes = null;
+
     HasherConfig(Class<T> baseClass, String classPrefix, String packageGroup, String packageMiddle,
             boolean openAddressed,
             boolean openAddressedAlternate, boolean alwaysMoveMain,

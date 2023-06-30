@@ -4,15 +4,16 @@
 package io.deephaven.engine.table.impl.by.typed;
 
 import com.squareup.javapoet.*;
-
 import io.deephaven.UncheckedDeephavenException;
 import io.deephaven.base.verify.Assert;
 import io.deephaven.chunk.*;
 import io.deephaven.chunk.attributes.Values;
 import io.deephaven.chunk.util.hashing.CharChunkHasher;
-import io.deephaven.engine.context.ExecutionContext;
 import io.deephaven.configuration.Configuration;
-import io.deephaven.engine.rowset.*;
+import io.deephaven.engine.context.ExecutionContext;
+import io.deephaven.engine.rowset.RowSequence;
+import io.deephaven.engine.rowset.RowSet;
+import io.deephaven.engine.rowset.RowSetBuilderRandom;
 import io.deephaven.engine.rowset.chunkattributes.OrderedRowKeys;
 import io.deephaven.engine.rowset.chunkattributes.RowKeys;
 import io.deephaven.engine.table.ColumnSource;
@@ -20,15 +21,17 @@ import io.deephaven.engine.table.impl.NaturalJoinModifiedSlotTracker;
 import io.deephaven.engine.table.impl.asofjoin.RightIncrementalAsOfJoinStateManagerTypedBase;
 import io.deephaven.engine.table.impl.asofjoin.StaticAsOfJoinStateManagerTypedBase;
 import io.deephaven.engine.table.impl.asofjoin.TypedAsOfJoinFactory;
-import io.deephaven.engine.table.impl.naturaljoin.RightIncrementalNaturalJoinStateManagerTypedBase;
 import io.deephaven.engine.table.impl.by.*;
+import io.deephaven.engine.table.impl.multijoin.StaticMultiJoinStateManagerTypedBase;
+import io.deephaven.engine.table.impl.multijoin.TypedMultiJoinFactory;
 import io.deephaven.engine.table.impl.naturaljoin.IncrementalNaturalJoinStateManagerTypedBase;
+import io.deephaven.engine.table.impl.naturaljoin.RightIncrementalNaturalJoinStateManagerTypedBase;
 import io.deephaven.engine.table.impl.naturaljoin.StaticNaturalJoinStateManagerTypedBase;
 import io.deephaven.engine.table.impl.naturaljoin.TypedNaturalJoinFactory;
 import io.deephaven.engine.table.impl.sources.*;
 import io.deephaven.engine.table.impl.sources.immutable.*;
-import io.deephaven.engine.table.impl.updateby.hashing.UpdateByStateManagerTypedBase;
 import io.deephaven.engine.table.impl.updateby.hashing.TypedUpdateByFactory;
+import io.deephaven.engine.table.impl.updateby.hashing.UpdateByStateManagerTypedBase;
 import io.deephaven.util.QueryConstants;
 import io.deephaven.util.compare.CharComparisons;
 import org.apache.commons.lang3.mutable.MutableInt;
@@ -333,6 +336,36 @@ public class TypedHasherFactory {
             builder.addProbe(new HasherConfig.ProbeSpec("probeHashTable", "rowState",
                     true, TypedUpdateByFactory::incrementalProbeFound, TypedUpdateByFactory::incrementalProbeMissing,
                     outputPositions));
+        } else if (baseClass.equals(StaticMultiJoinStateManagerTypedBase.class)) {
+            builder.classPrefix("StaticMultiJoinHasher").packageGroup("multijoin").packageMiddle("staticopen")
+                    .openAddressedAlternate(false)
+                    .stateType(long.class).mainStateName("slotToOutputRow")
+                    .emptyStateName("EMPTY_RIGHT_STATE")
+                    .includeOriginalSources(true)
+                    .supportRehash(true)
+                    .moveMainFull(TypedMultiJoinFactory::staticMoveMainFull)
+                    .alwaysMoveMain(true)
+                    .rehashFullSetup(TypedMultiJoinFactory::staticRehashSetup);
+
+
+            builder.addBuild(new HasherConfig.BuildSpec("buildFromLeftSide", "sentinel",
+                    true, true, TypedMultiJoinFactory::staticBuildLeftFound,
+                    TypedMultiJoinFactory::staticBuildLeftInsert,
+                    ParameterSpec.builder(TypeName.get(LongArraySource.class), "tableRedirSource").build(),
+                    ParameterSpec.builder(long.class, "tableNumber").build()));
+            //
+            // builder.addProbe(new HasherConfig.ProbeSpec("decorateLeftSide", "rightRowKey",
+            // false, TypedNaturalJoinFactory::staticProbeDecorateLeftFound,
+            // TypedNaturalJoinFactory::staticProbeDecorateLeftMissing,
+            // ParameterSpec.builder(TypeName.get(LongArraySource.class), "leftRedirections").build(),
+            // ParameterSpec.builder(long.class, "redirectionOffset").build()));
+            //
+            // builder.addBuild(new HasherConfig.BuildSpec("buildFromRightSide", "rightSideSentinel",
+            // true, true, TypedNaturalJoinFactory::staticBuildRightFound,
+            // TypedNaturalJoinFactory::staticBuildRightInsert));
+            //
+            // builder.addProbe(new HasherConfig.ProbeSpec("decorateWithRightSide", "existingStateValue",
+            // true, TypedNaturalJoinFactory::staticProbeDecorateRightFound, null));
         } else {
             throw new UnsupportedOperationException("Unknown class to make: " + baseClass);
         }
@@ -455,6 +488,16 @@ public class TypedHasherFactory {
                 if (pregeneratedHasher != null) {
                     return pregeneratedHasher;
                 }
+            } else if (hasherConfig.baseClass
+                    .equals(StaticMultiJoinStateManagerTypedBase.class)) {
+                // noinspection unchecked
+                T pregeneratedHasher =
+                        (T) io.deephaven.engine.table.impl.multijoin.typed.staticopen.gen.TypedHashDispatcher
+                                .dispatch(tableKeySources, originalKeySources, tableSize, maximumLoadFactor,
+                                        targetLoadFactor);
+                if (pregeneratedHasher != null) {
+                    return pregeneratedHasher;
+                }
             }
         }
 
@@ -511,6 +554,9 @@ public class TypedHasherFactory {
         final TypeSpec.Builder hasherBuilder =
                 TypeSpec.classBuilder(className).addModifiers(Modifier.FINAL).superclass(hasherConfig.baseClass);
         visibility.ifPresent(hasherBuilder::addModifiers);
+
+        // Store these for use by code generators.
+        hasherConfig.chunkTypes = chunkTypes;
 
         hasherBuilder.addMethod(createConstructor(hasherConfig, chunkTypes, hasherBuilder));
 

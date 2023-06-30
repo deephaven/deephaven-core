@@ -57,6 +57,23 @@ public class QueryTableMultiJoinTest extends QueryTableTestBase {
         }
     };
 
+    final static JoinControl OA_HIGH_LOAD_JOIN_CONTROL = new JoinControl() {
+        @Override
+        public int initialBuildSize() {
+            return 1 << 4;
+        }
+
+        @Override
+        public double getMaximumLoadFactor() {
+            return 0.95;
+        }
+
+        @Override
+        public double getTargetLoadFactor() {
+            return 0.9;
+        }
+    };
+
     @Before
     public void before() throws Exception {
         ChunkPoolReleaseTracking.enableStrict();
@@ -193,8 +210,8 @@ public class QueryTableMultiJoinTest extends QueryTableTestBase {
 
     @Test
     public void testStaticOverflowAndRehash() {
-        for (int size = 1000; size <= 1_000; size *= 10) {
-            testStatic(HIGH_LOAD_JOIN_CONTROL, 1000, 0, new String[] {"Key", "Key2"},
+        for (int size = 1000; size <= 100_000; size *= 10) {
+            testStatic(OA_HIGH_LOAD_JOIN_CONTROL, 1000, 0, new String[] {"Key", "Key2"},
                     CollectionUtil.ZERO_LENGTH_STRING_ARRAY);
             testStatic(REHASH_JOIN_CONTROL, 1000, 0, new String[] {"Key", "Key2"},
                     CollectionUtil.ZERO_LENGTH_STRING_ARRAY);

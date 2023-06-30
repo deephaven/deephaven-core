@@ -10,6 +10,8 @@ import io.deephaven.engine.rowset.WritableRowSet;
 import io.deephaven.engine.table.ColumnSource;
 import io.deephaven.engine.table.ModifiedColumnSet;
 import io.deephaven.engine.table.Table;
+import io.deephaven.engine.table.impl.by.typed.TypedHasherFactory;
+import io.deephaven.engine.table.impl.multijoin.StaticMultiJoinStateManagerTypedBase;
 import io.deephaven.engine.table.impl.perf.QueryPerformanceRecorder;
 import io.deephaven.engine.table.impl.select.MatchPairFactory;
 import io.deephaven.engine.table.impl.sources.RedirectedColumnSource;
@@ -38,9 +40,9 @@ import static io.deephaven.engine.rowset.RowSequence.NULL_ROW_KEY;
  * matching rows for a given key. The operation can be thought of as a merge of the key columns, followed by a
  * selectDistinct and then a series of iterative naturalJoin operations as follows:
  * </p>
- * 
+ *
  * <pre>{@code
-*     private Table doIterativeMultiJoin(String [] keyColumns, List<? extends Table> inputTables) {
+ *     private Table doIterativeMultiJoin(String [] keyColumns, List<? extends Table> inputTables) {
  *         final List<Table> keyTables = inputTables.stream().map(t -> t.view(keyColumns)).collect(Collectors.toList());
  *         final Table base = TableTools.merge(keyTables).selectDistinct(keyColumns);
  *
@@ -72,7 +74,7 @@ public class MultiJoin {
 
     /**
      * Join tables that have common key column names.
-     *
+     * <p>
      * The keys are specified in MatchPair format. All other columns are brought over to the result.
      *
      * @param keys the key column pairs in the format "Result=Source" or "ColumnInBoth"
@@ -92,7 +94,7 @@ public class MultiJoin {
 
     /**
      * A descriptor of an input to a multiJoin.
-     *
+     * <p>
      * The table, key columns, and columns to add are encapsulated in the join descriptor.
      */
     public static class JoinDescriptor {
@@ -131,7 +133,7 @@ public class MultiJoin {
 
         /**
          * Create a join descriptor.
-         *
+         * <p>
          * Key columns are renamed according to the MatchPair format. All other columns are included in the result
          * without renames.
          *
@@ -223,14 +225,20 @@ public class MultiJoin {
         }
 
         final ColumnSource<?>[] firstKeySources = getKeySources(useDescriptors[0]);
+        final ColumnSource<?>[] originalColumns = getOriginalKeyColumns(useDescriptors[0]);
         final MultiJoinStateManager stateManager;
 
+        // If any tables are refreshing, we must use a refreshing JoinManager.
         final boolean refreshing = Arrays.stream(joinDescriptors).anyMatch(jd -> jd.inputTable.isRefreshing());
         if (refreshing) {
             ExecutionContext.getContext().getUpdateGraph().checkInitiateSerialTableOperation();
             stateManager = new IncrementalMultiJoinStateManager(firstKeySources, joinControl.initialBuildSize());
         } else {
-            stateManager = new StaticMultiJoinStateManager(firstKeySources, joinControl.initialBuildSize());
+            // stateManager = new StaticMultiJoinStateManager(firstKeySources, joinControl.initialBuildSize());
+            stateManager = TypedHasherFactory.make(StaticMultiJoinStateManagerTypedBase.class,
+                    firstKeySources, originalColumns,
+                    joinControl.initialBuildSize(), joinControl.getMaximumLoadFactor(),
+                    joinControl.getTargetLoadFactor());
         }
         stateManager.setMaximumLoadFactor(joinControl.getMaximumLoadFactor());
         stateManager.setTargetLoadFactor(joinControl.getTargetLoadFactor());
@@ -245,7 +253,6 @@ public class MultiJoin {
 
         final Map<String, ColumnSource<?>> resultSources = new LinkedHashMap<>();
         final ColumnSource[] keyHashTableSources = stateManager.getKeyHashTableSources();
-        final ColumnSource<?>[] originalColumns = getOriginalKeyColumns(useDescriptors[0]);
         for (int cc = 0; cc < expectedLeftMatches.length; ++cc) {
             if (originalColumns[cc].getType() != keyHashTableSources[cc].getType()) {
                 resultSources.put(expectedLeftMatches[cc],
