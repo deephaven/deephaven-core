@@ -35,6 +35,7 @@ import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Map.Entry;
 
 /**
  * Adapter for converting streams of data into columnar Deephaven {@link Table tables} that conform to
@@ -78,6 +79,15 @@ public class StreamToBlinkTableAdapter extends ReferenceCountedLivenessNode
             @NotNull final StreamPublisher streamPublisher,
             @NotNull final UpdateSourceRegistrar updateSourceRegistrar,
             @NotNull final String name) {
+        this(tableDefinition, streamPublisher, updateSourceRegistrar, name, Map.of());
+    }
+
+    public StreamToBlinkTableAdapter(
+            @NotNull final TableDefinition tableDefinition,
+            @NotNull final StreamPublisher streamPublisher,
+            @NotNull final UpdateSourceRegistrar updateSourceRegistrar,
+            @NotNull final String name,
+            @NotNull final Map<String, Object> extraAttributes) {
         super(false);
         this.tableDefinition = tableDefinition;
         this.streamPublisher = streamPublisher;
@@ -96,6 +106,9 @@ public class StreamToBlinkTableAdapter extends ReferenceCountedLivenessNode
                 setFlat();
                 setRefreshing(true);
                 setAttribute(Table.BLINK_TABLE_ATTRIBUTE, Boolean.TRUE);
+                for (Entry<String, Object> e : extraAttributes.entrySet()) {
+                    setAttribute(e.getKey(), e.getValue());
+                }
                 addParentReference(StreamToBlinkTableAdapter.this);
             }
         };
