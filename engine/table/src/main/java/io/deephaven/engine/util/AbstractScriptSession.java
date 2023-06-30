@@ -146,8 +146,10 @@ public abstract class AbstractScriptSession<S extends AbstractScriptSession.Snap
                 final SafeCloseable ignored = LivenessScopeStack.open(this, false)) {
 
             try {
-                // actually evaluate the script
-                executionContext.apply(() -> evaluate(script, scriptName));
+                // Actually evaluate the script; use the enclosing auth context, since AbstractScriptSession's
+                // ExecutionContext never has a non-null AuthContext
+                executionContext.withAuthContext(ExecutionContext.getContext().getAuthContext())
+                        .apply(() -> evaluate(script, scriptName));
             } catch (final RuntimeException err) {
                 evaluateErr = err;
             }
