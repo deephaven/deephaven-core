@@ -22,8 +22,8 @@ import java.io.IOException;
 public class EngineMetrics {
     private static final boolean STATS_LOGGING_ENABLED = Configuration.getInstance().getBooleanWithDefault(
             "statsLoggingEnabled", true);
-    private volatile static ProcessInfo PROCESS_INFO;
-    private volatile static EngineMetrics INSTANCE;
+    private static volatile ProcessInfo PROCESS_INFO;
+    private static volatile EngineMetrics ENGINE_METRICS;
 
     public static ProcessInfo getProcessInfo() {
         ProcessInfo local;
@@ -43,10 +43,10 @@ public class EngineMetrics {
 
     public static EngineMetrics getInstance() {
         EngineMetrics local;
-        if ((local = INSTANCE) == null) {
+        if ((local = ENGINE_METRICS) == null) {
             synchronized (EngineMetrics.class) {
-                if ((local = INSTANCE) == null) {
-                    INSTANCE = local = new EngineMetrics();
+                if ((local = ENGINE_METRICS) == null) {
+                    ENGINE_METRICS = local = new EngineMetrics();
                 }
             }
         }

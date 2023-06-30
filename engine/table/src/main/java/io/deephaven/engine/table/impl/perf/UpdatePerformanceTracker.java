@@ -12,7 +12,6 @@ import io.deephaven.engine.table.impl.BlinkTableTools;
 import io.deephaven.engine.table.impl.InstrumentedTableUpdateListener;
 import io.deephaven.engine.table.impl.QueryTable;
 import io.deephaven.engine.table.impl.ShiftObliviousInstrumentedListener;
-import io.deephaven.engine.table.impl.sources.ring.RingTableTools;
 import io.deephaven.engine.tablelogger.EngineTableLoggers;
 import io.deephaven.engine.tablelogger.UpdatePerformanceLogLogger;
 import io.deephaven.engine.updategraph.UpdateGraph;
@@ -101,7 +100,8 @@ public class UpdatePerformanceTracker {
     }
 
     private void startThread() {
-        Thread driverThread = new Thread(new Driver(ExecutionContext.getContext()), "UpdatePerformanceTracker.Driver");
+        final ExecutionContext context = ExecutionContext.getContext().withUpdateGraph(updateGraph);
+        Thread driverThread = new Thread(new Driver(context), "UpdatePerformanceTracker.Driver");
         driverThread.setDaemon(true);
         driverThread.start();
     }
@@ -120,9 +120,6 @@ public class UpdatePerformanceTracker {
 
         public Driver(ExecutionContext context) {
             this.context = Objects.requireNonNull(context);
-            if (context.getUpdateGraph() != updateGraph) {
-                throw new IllegalArgumentException();
-            }
         }
 
         @Override
@@ -186,7 +183,8 @@ public class UpdatePerformanceTracker {
     /**
      * Do entry maintenance, generate an interval performance report table for all active entries, and reset for the
      * next interval. <b>Note:</b> This method is only called under the PeriodicUpdateGraph instance's shared lock. This
-     * ensures access to the entries, and also prevents any other thread from removing from entries.
+     * ensures that no other thread using the same update graph will mutate individual entries. Concurrent additions to
+     * {@link #entries} are supported by the underlying data structure.
      * 
      * @param intervalStartTimeMillis interval start time in millis
      * @param intervalEndTimeMillis interval end time in millis
