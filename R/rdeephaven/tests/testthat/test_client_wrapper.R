@@ -138,18 +138,18 @@ test_that("client connection fails nicely with bad target but good client_option
     # TODO: Bad address needs better error handling from the R side
     expect_error(client <- Client$new(target="bad address", client_options=client_options))
     expect_error(client <- Client$new(target=12345, client_options=client_options),
-        "'target' must be passed as a single string. Got object of class numeric instead.")
+        "'target' must be passed as a single string. Got an object of class numeric instead.")
     expect_error(client <- Client$new(target=c("hello", "my", "name", "is"), client_options=client_options),
-        "'target' must be passed as a single string. Got character vector of length 4 instead.")
+        "'target' must be passed as a single string. Got a character vector of length 4 instead.")
 })
 
 test_that("client connection fails nicely with good target but bad client_options", {
 
     # TODO: these all assume that the server is actually running on localhost:10000, probably bad for CI
     expect_error(client <- Client$new(target="localhost:10000", client_options="bad"),
-        "'client_options' should be a Deephaven ClientOptions object. Got object of type character instead.")
+        "'client_options' should be a Deephaven ClientOptions object. Got an object of type character instead.")
     expect_error(client <- Client$new(target="localhost:10000", client_options=12345),
-        "'client_options' should be a Deephaven ClientOptions object. Got object of type numeric instead.")
+        "'client_options' should be a Deephaven ClientOptions object. Got an object of type numeric instead.")
     
     # TODO: Invalid auth details needs better error handling from the R side
     bad_client_options1 <- ClientOptions$new()
@@ -168,9 +168,9 @@ test_that("import_table fails nicely with bad inputs", {
     client <- Client$new(target="localhost:10000", client_options=client_options)
 
     expect_error(client$import_table(12345),
-        "'table_object' must be either an R Data Frame, a dplyr Tibble, an Arrow Table, or an Arrow Record Batch Reader. Got object of class numeric instead.")
+        "'table_object' must be either an R Data Frame, a dplyr Tibble, an Arrow Table, or an Arrow Record Batch Reader. Got an object of class numeric instead.")
     expect_error(client$import_table("hello!"),
-        "'table_object' must be either an R Data Frame, a dplyr Tibble, an Arrow Table, or an Arrow Record Batch Reader. Got object of class character instead.")
+        "'table_object' must be either an R Data Frame, a dplyr Tibble, an Arrow Table, or an Arrow Record Batch Reader. Got an object of class character instead.")
     
     # TODO: this needs better error handling, but it is unclear whether that happens on the server side or the R side.
     data(iris)
@@ -178,7 +178,7 @@ test_that("import_table fails nicely with bad inputs", {
 
     data(HairEyeColor)
     expect_error(client$import_table(HairEyeColor),
-        "'table_object' must be either an R Data Frame, a dplyr Tibble, an Arrow Table, or an Arrow Record Batch Reader. Got object of class table instead.")
+        "'table_object' must be either an R Data Frame, a dplyr Tibble, an Arrow Table, or an Arrow Record Batch Reader. Got an object of class table instead.")
 })
 
 test_that("open_table fails nicely with bad inputs", {
@@ -187,9 +187,9 @@ test_that("open_table fails nicely with bad inputs", {
     client <- Client$new(target="localhost:10000", client_options=client_options)
 
     expect_error(client$open_table(""), "The table '' you're trying to pull does not exist on the server.")
-    expect_error(client$open_table(12345), "'name' must be passed as a single string. Got object of class numeric instead.")
-    expect_error(client$open_table(client_options), "'name' must be passed as a single string. Got object of class ClientOptions instead.")
-    expect_error(client$open_table(c("I", "am", "string")), "'name' must be passed as a single string. Got character vector of length 3 instead.")
+    expect_error(client$open_table(12345), "'name' must be passed as a single string. Got an object of class numeric instead.")
+    expect_error(client$open_table(client_options), "'name' must be passed as a single string. Got an object of class ClientOptions instead.")
+    expect_error(client$open_table(c("I", "am", "string")), "'name' must be passed as a single string. Got a character vector of length 3 instead.")
 })
 
 test_that("run_script fails nicely with bad input types", {
@@ -197,6 +197,6 @@ test_that("run_script fails nicely with bad input types", {
     client_options <- ClientOptions$new()
     client <- Client$new(target="localhost:10000", client_options=client_options)
 
-    expect_error(client$run_script(12345), "'script' must be passed as a single string. Got object of class numeric instead.")
-    expect_error(client$run_script(c("I", "am", "a", "string")), "'script' must be passed as a single string. Got character vector of length 4 instead.")
+    expect_error(client$run_script(12345), "'script' must be passed as a single string. Got an object of class numeric instead.")
+    expect_error(client$run_script(c("I", "am", "a", "string")), "'script' must be passed as a single string. Got a character vector of length 4 instead.")
 })

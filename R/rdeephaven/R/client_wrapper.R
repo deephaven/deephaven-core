@@ -34,7 +34,7 @@ Client <- R6Class("Client",
         initialize = function(target, client_options) {
             .verify_string("target", target)
             if (class(client_options)[[1]] != "ClientOptions") {
-                stop(paste("'client_options' should be a Deephaven ClientOptions object. Got object of type", class(client_options)[[1]], "instead."))
+                stop(paste("'client_options' should be a Deephaven ClientOptions object. Got an object of type", class(client_options)[[1]], "instead."))
             }
             private$internal_client <- new(INTERNAL_Client, target=target,
                                            client_options=client_options$internal_client_options)
@@ -75,7 +75,7 @@ Client <- R6Class("Client",
                 return(TableHandle$new(private$arrow_to_dh_table(table_object)))
             }
             else {
-                stop(paste0("'table_object' must be either an R Data Frame, a dplyr Tibble, an Arrow Table, or an Arrow Record Batch Reader. Got object of class ", table_object_class[[1]], " instead."))
+                stop(paste0("'table_object' must be either an R Data Frame, a dplyr Tibble, an Arrow Table, or an Arrow Record Batch Reader. Got an object of class ", table_object_class[[1]], " instead."))
             }
         },
 
