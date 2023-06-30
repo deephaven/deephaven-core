@@ -8,15 +8,12 @@ import io.deephaven.configuration.Configuration;
 import io.deephaven.engine.table.impl.BlinkTableTools;
 import io.deephaven.engine.table.impl.QueryTable;
 import io.deephaven.engine.tablelogger.EngineTableLoggers;
-import io.deephaven.engine.tablelogger.ProcessInfoLogLogger;
 import io.deephaven.engine.tablelogger.QueryOperationPerformanceLogLogger;
 import io.deephaven.engine.tablelogger.QueryPerformanceLogLogger;
-import io.deephaven.engine.tablelogger.impl.memory.MemoryTableLogger;
 import io.deephaven.internal.log.LoggerFactory;
 import io.deephaven.io.logger.Logger;
 import io.deephaven.process.ProcessInfo;
 import io.deephaven.process.ProcessInfoConfig;
-import io.deephaven.process.ProcessInfoStoreDBImpl;
 import io.deephaven.stats.Driver;
 import io.deephaven.stats.StatsIntradayLogger;
 
@@ -25,53 +22,52 @@ import java.io.IOException;
 public class EngineMetrics {
     private static final boolean STATS_LOGGING_ENABLED = Configuration.getInstance().getBooleanWithDefault(
             "statsLoggingEnabled", true);
-    private volatile static ProcessInfo processInfo;
+    private volatile static ProcessInfo PROCESS_INFO;
     private volatile static EngineMetrics INSTANCE;
 
     public static ProcessInfo getProcessInfo() {
-        if (processInfo == null) {
+        ProcessInfo local;
+        if ((local = PROCESS_INFO) == null) {
             synchronized (EngineMetrics.class) {
-                if (processInfo == null) {
+                if ((local = PROCESS_INFO) == null) {
                     try {
-                        processInfo = ProcessInfoConfig.createForCurrentProcess(Configuration.getInstance());
+                        PROCESS_INFO = local = ProcessInfoConfig.createForCurrentProcess(Configuration.getInstance());
                     } catch (IOException e) {
                         throw new IllegalStateException("Failed to create process info.", e);
                     }
                 }
             }
         }
-        return processInfo;
+        return local;
     }
 
     public static EngineMetrics getInstance() {
-        if (INSTANCE == null) {
+        EngineMetrics local;
+        if ((local = INSTANCE) == null) {
             synchronized (EngineMetrics.class) {
-                if (INSTANCE == null) {
-                    INSTANCE = new EngineMetrics();
+                if ((local = INSTANCE) == null) {
+                    INSTANCE = local = new EngineMetrics();
                 }
             }
         }
-        return INSTANCE;
+        return local;
     }
 
     private final QueryPerformanceImpl qpImpl;
     private final QueryOperationPerformanceImpl qoplImpl;
-    private final ProcessInfoLogLogger processInfoLogger;
+    private final ProcessInfoImpl processInfoImpl;
     private final StatsImpl statsImpl;
 
     private EngineMetrics() {
         EngineTableLoggers.Factory tableLoggerFactory = EngineTableLoggers.get();
         final Logger log = LoggerFactory.getLogger(EngineMetrics.class);
-        ProcessInfo pInfo = null;
-        ProcessInfoLogLogger pInfoLogger = null;
+        ProcessInfo pInfo = getProcessInfo();
+        processInfoImpl = new ProcessInfoImpl(pInfo.getId(), tableLoggerFactory.processInfoLogLogger());
         try {
-            pInfo = getProcessInfo();
-            pInfoLogger = tableLoggerFactory.processInfoLogLogger();
-            new ProcessInfoStoreDBImpl(pInfoLogger).put(pInfo);
+            processInfoImpl.init(pInfo);
         } catch (IOException e) {
             log.fatal().append("Failed to configure process info: ").append(e.toString()).endl();
         }
-        processInfoLogger = pInfoLogger;
         qpImpl = new QueryPerformanceImpl(pInfo.getId(), tableLoggerFactory.queryPerformanceLogLogger());
         qoplImpl = new QueryOperationPerformanceImpl(pInfo.getId(),
                 tableLoggerFactory.queryOperationPerformanceLogLogger());
@@ -99,7 +95,7 @@ public class EngineMetrics {
     }
 
     public QueryTable getProcessInfoQueryTable() {
-        return MemoryTableLogger.maybeGetQueryTable(processInfoLogger);
+        return (QueryTable) processInfoImpl.table();
     }
 
     public QueryTable getProcessMetricsQueryTable() {

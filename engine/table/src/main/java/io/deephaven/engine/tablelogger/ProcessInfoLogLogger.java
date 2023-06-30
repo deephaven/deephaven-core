@@ -1,6 +1,7 @@
 package io.deephaven.engine.tablelogger;
 
 import io.deephaven.tablelogger.Row;
+import io.deephaven.tablelogger.Row.Flags;
 
 import java.io.IOException;
 
@@ -16,4 +17,13 @@ public interface ProcessInfoLogLogger {
 
     void log(final Row.Flags flags, final String id, final String type, final String key, final String value)
             throws IOException;
+
+    enum Noop implements ProcessInfoLogLogger {
+        INSTANCE;
+
+        @Override
+        public void log(Flags flags, String id, String type, String key, String value) throws IOException {
+
+        }
+    }
 }
