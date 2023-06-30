@@ -58,15 +58,46 @@ Currently, the R client is only supported on Ubuntu 20.04 or 22.04 and must be b
    ```
    and in that console, install the client
    ```r
-   install.packages("/path/to/rdeephaven", repos=NULL, type="source", dependencies=TRUE)
+   install.packages("/path/to/rdeephaven", INSTALL_opts="--install-tests", repos=NULL, type="source", dependencies=TRUE)
    ```
    This last command can also be executed from RStudio without the need for explicitly starting an R console.
 
-5. Now, run
+4. Now, run
    ```r
    library(rdeephaven)
    ```
    in the R session, and start using the client!
+
+---
+**NOTE**
+
+If an error like this occurs in step 3:
+```bash
+client.cpp:7:10: fatal error: deephaven/client/client.h: No such file or directory
+ 7 | #include "deephaven/client/client.h"
+   |          ^~~~~~~~~~~~~~~~~~~~~~~~~~~
+compilation terminated.
+```
+this means that the C++ compiler does not know where to find the relevant header files for the Deephaven C++ client. This can happen for a handul of reasons:
+1. Step 1 was skipped, and the Deephaven C++ client was not installed. In this case, please ensure that the client is installed before attempting to build the R client.
+2. The Deephaven C++ client is installed, but the `DHCPP` environment variable is not set. To test this, run
+   ```bash
+   echo $DHCPP
+   ```
+   If this returns an empty string, set `DHCPP` according to the instructions in step 1 with
+   ```bash
+   export DHCPP=/path/to/dhcpp
+   ```
+3. The Deephaven C++ client is installed and the `DHCPP` environment variable is set, but the current project is not configured to allow the compiler to access the Deephaven `dhcpp` and `src` directories. This is more difficult to give advice on, as it is an IDE-dependent problem. Consult your IDE's documentation on C/C++ compiler include paths for more information.
+---
+
+## Running the unit tests
+
+The Deephaven R client utilizes R's `testthat` package to perform unit tests. In order to run these unit tests, install `testthat` via `install.packages("testthat")`. Then, from an R session with `rdeephaven` installed, run the unit tests:
+```r
+library(testthat)
+test_package("rdeephaven")
+```
    
 ## High-level design overview
 
