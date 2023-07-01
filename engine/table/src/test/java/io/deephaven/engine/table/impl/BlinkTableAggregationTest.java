@@ -90,20 +90,24 @@ public class BlinkTableAggregationTest {
 
         TstUtils.assertTableEquals(normal, blink);
 
+        // Apply the operator to all three tables and store the reference to the expected result
         final Table expected = operator.apply(normal);
         final Table addOnlyExpected = operator.apply(addOnly);
         final Table blinkExpected = operator.apply(blink);
         TstUtils.assertTableEquals(expected, addOnlyExpected);
         TstUtils.assertTableEquals(expected, blinkExpected);
         TestCase.assertFalse(((BaseTable<?>) blinkExpected).isBlink()); // Aggregation results are never blink tables
+        // TODO <Make sure these tests are not just for aggregations>
 
         final PrimitiveIterator.OfLong refreshSizes = LongStream.concat(
-                LongStream.of(100, 0, 1, 2, 50, 0, 1000, 1, 0),
+                LongStream.of(2, 3, 4, 100, 0, 1, 2, 50, 0, 1000, 1, 0),
                 new Random().longs(0, MAX_RANDOM_ITERATION_SIZE)).iterator();
 
         int step = 0;
         long usedSize = 0;
         RowSet blinkLastInserted = RowSetFactory.empty();
+
+        // Now send incremental updates to normal and blink table so that your expected references also update
         while (usedSize < INPUT_SIZE) {
             final long refreshSize = Math.min(INPUT_SIZE - usedSize, refreshSizes.nextLong());
             final RowSet normalStepInserted = refreshSize == 0
@@ -142,8 +146,10 @@ public class BlinkTableAggregationTest {
                 });
             } finally {
                 updateGraph.completeCycleForUnitTests();
+                TstUtils.assertTableEquals(expected, blinkExpected);
             }
             try {
+                // TODO How is addOnly getting updated when normal is being updated
                 TstUtils.assertTableEquals(expected, addOnlyExpected);
                 TstUtils.assertTableEquals(expected, blinkExpected);
             } catch (ComparisonFailure e) {
@@ -156,6 +162,16 @@ public class BlinkTableAggregationTest {
             usedSize += refreshSize;
             blinkLastInserted = blinkStepInserted;
         }
+    }
+
+    @Test
+    public void testHead() {
+        doOperatorTest(table -> table.head(7), false);
+    }
+
+    @Test
+    public void testTail() {
+        doOperatorTest(table -> table.tail(4), false);
     }
 
     @Test

@@ -3,6 +3,9 @@
  */
 package io.deephaven.engine.table.impl;
 
+import io.deephaven.engine.table.impl.BlinkTableTools;
+import io.deephaven.engine.table.impl.sources.ring.RingTableTools;
+
 import io.deephaven.engine.rowset.TrackingWritableRowSet;
 import io.deephaven.engine.rowset.WritableRowSet;
 import io.deephaven.engine.rowset.RowSet;
@@ -92,31 +95,43 @@ public class SliceLikeOperation implements QueryTable.Operation<QueryTable> {
 
     @Override
     public Result<QueryTable> initialize(boolean usePrev, long beforeClock) {
-        final TrackingRowSet resultRowSet;
-        final TrackingRowSet parentRowSet = parent.getRowSet();
-        try (final WritableRowSet parentPrev = usePrev ? parentRowSet.copyPrev() : null) {
-            resultRowSet = computeSliceIndex(usePrev ? parentPrev : parentRowSet).toTracking();
-        }
-        // result table must be a sub-table so we can pass ModifiedColumnSet to listeners when possible
-        resultTable = parent.getSubTable(resultRowSet);
-        if (isFlat) {
-            resultTable.setFlat();
-        }
+        if (!parent.isBlink()) {
+            final TrackingRowSet resultRowSet;
+            final TrackingRowSet parentRowSet = parent.getRowSet();
+            try (final WritableRowSet parentPrev = usePrev ? parentRowSet.copyPrev() : null) {
+                resultRowSet = computeSliceIndex(usePrev ? parentPrev : parentRowSet).toTracking();
+            }
+            // result table must be a sub-table so we can pass ModifiedColumnSet to listeners when possible
+            resultTable = parent.getSubTable(resultRowSet);
+            if (isFlat) {
+                resultTable.setFlat();
+            }
 
-        if (operation.equals("headPct")) {
-            // headPct has a floating tail, so we can only propagate if append-only
-            if (parent.isAppendOnly()) {
-                resultTable.setAttribute(Table.ADD_ONLY_TABLE_ATTRIBUTE, true);
-                resultTable.setAttribute(Table.APPEND_ONLY_TABLE_ATTRIBUTE, true);
+            if (operation.equals("headPct")) {
+                // headPct has a floating tail, so we can only propagate if append-only
+                if (parent.isAppendOnly()) {
+                    resultTable.setAttribute(Table.ADD_ONLY_TABLE_ATTRIBUTE, true);
+                    resultTable.setAttribute(Table.APPEND_ONLY_TABLE_ATTRIBUTE, true);
+                }
+            } else if (!operation.equals("tailPct") && getFirstPositionInclusive() >= 0) {
+                // tailPct has a floating head, so we can't propagate either property
+                // otherwise, if the first row is fixed (not negative), then we can propagate add-only/append-only
+                if (parent.isAddOnly()) {
+                    resultTable.setAttribute(Table.ADD_ONLY_TABLE_ATTRIBUTE, true);
+                }
+                if (parent.isAppendOnly()) {
+                    resultTable.setAttribute(Table.APPEND_ONLY_TABLE_ATTRIBUTE, true);
+                }
             }
-        } else if (!operation.equals("tailPct") && getFirstPositionInclusive() >= 0) {
-            // tailPct has a floating head, so we can't propagate either property
-            // otherwise, if the first row is fixed (not negative), then we can propagate add-only/append-only
-            if (parent.isAddOnly()) {
-                resultTable.setAttribute(Table.ADD_ONLY_TABLE_ATTRIBUTE, true);
-            }
-            if (parent.isAppendOnly()) {
-                resultTable.setAttribute(Table.APPEND_ONLY_TABLE_ATTRIBUTE, true);
+        } else {
+            // Parent is BLINK table here
+            if (operation.equals("head")) {
+                long size = getLastPositionExclusive();
+                resultTable = (QueryTable) BlinkTableTools.blinkToAppendOnly(parent, size);
+            } else if (operation.equals("tail")) {
+                long size = -1 * getFirstPositionInclusive(); // TODO Verify if -1 is correct
+                resultTable = (QueryTable) RingTableTools.of(parent, (int) size); // TODO Do I need to do something for
+                                                                                  // this type cast from long to int?
             }
         }
 
@@ -134,36 +149,44 @@ public class SliceLikeOperation implements QueryTable.Operation<QueryTable> {
     }
 
     private void onUpdate(final TableUpdate upstream) {
-        final TrackingWritableRowSet rowSet = resultTable.getRowSet().writableCast();
-        final RowSet sliceRowSet = computeSliceIndex(parent.getRowSet());
+        // For Blink table, we would ensure nothing shifted or modified
+        // For head, we would check if the table is full and do nothing in that case. Otherwise, we would send
+        // only send additions notification to the downstream, no deletion
 
-        final TableUpdateImpl downstream = new TableUpdateImpl();
-        downstream.removed = upstream.removed().intersect(rowSet);
-        rowSet.remove(downstream.removed());
+        if (!parent.isBlink()) {
+            final TrackingWritableRowSet rowSet = resultTable.getRowSet().writableCast();
+            final RowSet sliceRowSet = computeSliceIndex(parent.getRowSet());
+            final TableUpdateImpl downstream = new TableUpdateImpl();
+            downstream.removed = upstream.removed().intersect(rowSet);
+            rowSet.remove(downstream.removed());
 
-        downstream.shifted = upstream.shifted().intersect(rowSet);
-        downstream.shifted().apply(rowSet);
+            downstream.shifted = upstream.shifted().intersect(rowSet);
+            downstream.shifted().apply(rowSet);
 
-        // Must calculate in post-shift space what indices were removed by the slice operation.
-        final WritableRowSet opRemoved = rowSet.minus(sliceRowSet);
-        rowSet.remove(opRemoved);
-        downstream.shifted().unapply(opRemoved);
-        downstream.removed().writableCast().insert(opRemoved);
+            // Must calculate in post-shift space what indices were removed by the slice operation.
+            final WritableRowSet opRemoved = rowSet.minus(sliceRowSet);
+            rowSet.remove(opRemoved);
+            downstream.shifted().unapply(opRemoved);
+            downstream.removed().writableCast().insert(opRemoved);
 
-        // Must intersect against modified set before adding the new rows to result rowSet.
-        downstream.modified = upstream.modified().intersect(rowSet);
+            // Must intersect against modified set before adding the new rows to result rowSet.
+            downstream.modified = upstream.modified().intersect(rowSet);
 
-        downstream.added = sliceRowSet.minus(rowSet);
-        rowSet.insert(downstream.added());
 
-        // propagate an empty MCS if modified is empty
-        downstream.modifiedColumnSet = upstream.modifiedColumnSet();
-        if (downstream.modified().isEmpty()) {
-            downstream.modifiedColumnSet = resultTable.getModifiedColumnSetForUpdates();
-            downstream.modifiedColumnSet.clear();
+            downstream.added = sliceRowSet.minus(rowSet);
+            rowSet.insert(downstream.added());
+
+            // propagate an empty MCS if modified is empty
+            downstream.modifiedColumnSet = upstream.modifiedColumnSet();
+            if (downstream.modified().isEmpty()) {
+                downstream.modifiedColumnSet = resultTable.getModifiedColumnSetForUpdates();
+                downstream.modifiedColumnSet.clear();
+            }
+            resultTable.notifyListeners(downstream);
+        } else {
+            // Parent is a Blink table
+            // TODO Add a comment here explaining why this is empty
         }
-
-        resultTable.notifyListeners(downstream);
     }
 
     private WritableRowSet computeSliceIndex(RowSet useRowSet) {

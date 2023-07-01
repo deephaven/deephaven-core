@@ -5,10 +5,7 @@ package io.deephaven.engine.table.impl;
 
 import io.deephaven.base.verify.Assert;
 import io.deephaven.engine.context.ExecutionContext;
-import io.deephaven.engine.rowset.RowSet;
-import io.deephaven.engine.rowset.RowSetFactory;
-import io.deephaven.engine.rowset.RowSetShiftData;
-import io.deephaven.engine.rowset.TrackingWritableRowSet;
+import io.deephaven.engine.rowset.*;
 import io.deephaven.engine.table.*;
 import io.deephaven.engine.table.impl.perf.QueryPerformanceRecorder;
 import io.deephaven.engine.table.impl.remote.ConstructSnapshot;
@@ -41,11 +38,26 @@ public class BlinkTableTools {
     public static Table blinkToAppendOnly(final Table blinkTable) {
         final UpdateGraph updateGraph = blinkTable.getUpdateGraph();
         try (final SafeCloseable ignored = ExecutionContext.getContext().withUpdateGraph(updateGraph).open()) {
-            return internalBlinkToAppendOnly(blinkTable);
+            return internalBlinkToAppendOnly(blinkTable, false, -1);
         }
     }
 
-    private static Table internalBlinkToAppendOnly(final Table blinkTable) {
+    /**
+     * TODO Add description
+     */
+    public static Table blinkToAppendOnly(final Table blinkTable, long rowLimit) {
+        if (rowLimit < 0) {
+            throw new IllegalArgumentException("Limit cannot be negative, limit=" + rowLimit);
+        }
+        final UpdateGraph updateGraph = blinkTable.getUpdateGraph();
+        try (final SafeCloseable ignored = ExecutionContext.getContext().withUpdateGraph(updateGraph).open()) {
+            return internalBlinkToAppendOnly(blinkTable, true, rowLimit);
+            // How to do it in a better way in Java?
+        }
+    }
+
+    // TODO Choose better variable names
+    private static Table internalBlinkToAppendOnly(final Table blinkTable, boolean hasMaxRowLimit, long maxRowLimit) {
         return QueryPerformanceRecorder.withNugget("blinkToAppendOnly", () -> {
             if (!isBlink(blinkTable)) {
                 throw new IllegalArgumentException("Input is not a blink table!");
@@ -82,17 +94,28 @@ public class BlinkTableTools {
                                     (WritableColumnSource<?>) ReinterpretUtils.maybeConvertToPrimitive(newColumn);
                         }
 
-
+                        // I am a bit confused between different row types
+                        // TODO Get feedback from Larry
                         final TrackingWritableRowSet rowSet;
+                        final RowSet useRowSet;
                         if (usePrev) {
-                            try (final RowSet useRowSet = baseBlinkTable.getRowSet().copyPrev()) {
+                            try (RowSet baseRowSet = baseBlinkTable.getRowSet().copyPrev()) {
+                                if (hasMaxRowLimit && baseRowSet.size() > maxRowLimit) {
+                                    useRowSet = baseRowSet.subSetByPositionRange(0, maxRowLimit);
+                                } else {
+                                    useRowSet = baseRowSet;
+                                }
                                 rowSet = RowSetFactory.flat(useRowSet.size()).toTracking();
                                 ChunkUtils.copyData(sourceColumns, useRowSet, destColumns, rowSet, usePrev);
                             }
                         } else {
-                            rowSet = RowSetFactory.flat(baseBlinkTable.getRowSet().size()).toTracking();
-                            ChunkUtils.copyData(sourceColumns, baseBlinkTable.getRowSet(), destColumns, rowSet,
-                                    usePrev);
+                            if (hasMaxRowLimit && baseBlinkTable.getRowSet().size() > maxRowLimit) {
+                                useRowSet = baseBlinkTable.getRowSet().subSetByPositionRange(0, maxRowLimit);
+                            } else {
+                                useRowSet = baseBlinkTable.getRowSet();
+                            }
+                            rowSet = RowSetFactory.flat(useRowSet.size()).toTracking();
+                            ChunkUtils.copyData(sourceColumns, useRowSet, destColumns, rowSet, usePrev);
                         }
 
                         final QueryTable result = new QueryTable(rowSet, columns);
@@ -102,6 +125,12 @@ public class BlinkTableTools {
                         result.setFlat();
                         resultHolder.setValue(result);
 
+                        // TODO Check if this needs to be kept here
+                        if (hasMaxRowLimit && result.size() > maxRowLimit) {
+                            throw new IllegalStateException("Size of table cannot exceed the allowable limit, size="
+                                    + result.size() + ", limit=" + maxRowLimit);
+                        }
+
                         swapListener.setListenerAndResult(new BaseTable.ListenerImpl("streamToAppendOnly",
                                 baseBlinkTable, result) {
                             @Override
@@ -109,17 +138,24 @@ public class BlinkTableTools {
                                 if (upstream.modified().isNonempty() || upstream.shifted().nonempty()) {
                                     throw new IllegalArgumentException("Blink tables should not modify or shift!");
                                 }
-                                final long newRows = upstream.added().size();
-                                if (newRows == 0) {
+                                if (upstream.added().isEmpty()) {
                                     return;
                                 }
+
                                 final long currentSize = rowSet.size();
-                                columns.values().forEach(c -> c.ensureCapacity(currentSize + newRows));
+                                RowSet newRowSet = upstream.added();
+                                long newRowsSize = newRowSet.size();
+                                if (currentSize + newRowsSize >= maxRowLimit) {
+                                    // TODO Test this
+                                    newRowsSize = (maxRowLimit - currentSize);
+                                    newRowSet = upstream.added().subSetByPositionRange(0, newRowsSize);
+                                }
+                                final long totalSize = currentSize + newRowsSize;
+                                columns.values().forEach(c -> c.ensureCapacity(totalSize));
+                                final RowSet newRange = RowSetFactory.fromRange(currentSize, totalSize - 1);
 
-                                final RowSet newRange = RowSetFactory.fromRange(currentSize, currentSize + newRows - 1);
-
-                                ChunkUtils.copyData(sourceColumns, upstream.added(), destColumns, newRange, false);
-                                rowSet.insertRange(currentSize, currentSize + newRows - 1);
+                                ChunkUtils.copyData(sourceColumns, newRowSet, destColumns, newRange, false);
+                                rowSet.insertRange(currentSize, totalSize - 1);
 
                                 final TableUpdateImpl downstream = new TableUpdateImpl();
                                 downstream.added = newRange;
@@ -128,6 +164,19 @@ public class BlinkTableTools {
                                 downstream.modifiedColumnSet = ModifiedColumnSet.EMPTY;
                                 downstream.shifted = RowSetShiftData.EMPTY;
                                 result.notifyListeners(downstream);
+
+                                if (hasMaxRowLimit && totalSize > maxRowLimit) {
+                                    throw new IllegalStateException(
+                                            "Size of table cannot exceed the allowable limit, size=" + totalSize
+                                                    + ", limit=" + maxRowLimit);
+                                }
+
+                                if (totalSize == maxRowLimit) {
+                                    // No more rows can be appended
+                                    // TODO Check if this needs to be kept here
+                                    blinkTable.removeUpdateListener(this);
+                                    return;
+                                }
                             }
                         }, result);
 

@@ -611,6 +611,11 @@ public class QueryTable extends BaseTable<QueryTable> {
     public Table slice(final long firstPositionInclusive, final long lastPositionExclusive) {
         final UpdateGraph updateGraph = getUpdateGraph();
         try (final SafeCloseable ignored = ExecutionContext.getContext().withUpdateGraph(updateGraph).open()) {
+            if (isBlink()) {
+                // TODO Add unit tests for this
+                // This might make it a breaking change
+                throw unsupportedForBlinkTables("slice");
+            }
             if (firstPositionInclusive == lastPositionExclusive) {
                 return getSubTable(RowSetFactory.empty().toTracking());
             }
@@ -622,7 +627,7 @@ public class QueryTable extends BaseTable<QueryTable> {
     public Table head(final long size) {
         final UpdateGraph updateGraph = getUpdateGraph();
         try (final SafeCloseable ignored = ExecutionContext.getContext().withUpdateGraph(updateGraph).open()) {
-            return slice(0, Require.geqZero(size, "size"));
+            return getResult(SliceLikeOperation.slice(this, 0, Require.geqZero(size, "size"), "head"));
         }
     }
 
@@ -630,12 +635,17 @@ public class QueryTable extends BaseTable<QueryTable> {
     public Table tail(final long size) {
         final UpdateGraph updateGraph = getUpdateGraph();
         try (final SafeCloseable ignored = ExecutionContext.getContext().withUpdateGraph(updateGraph).open()) {
-            return slice(-Require.geqZero(size, "size"), 0);
+            return getResult(SliceLikeOperation.slice(this, -Require.geqZero(size, "size"), 0, "tail"));
         }
     }
 
     @Override
     public Table headPct(final double percent) {
+        if (isBlink()) {
+            // TODO Add unit tests for this
+            // This might make it a breaking change
+            throw unsupportedForBlinkTables("headPct");
+        }
         if (percent < 0 || percent > 1) {
             throw new IllegalArgumentException(
                     "percentage of rows must be between [0,1]: percent=" + percent);
@@ -648,6 +658,11 @@ public class QueryTable extends BaseTable<QueryTable> {
 
     @Override
     public Table tailPct(final double percent) {
+        if (isBlink()) {
+            // TODO Add unit tests for this
+            // This might make it a breaking change
+            throw unsupportedForBlinkTables("tailPct");
+        }
         if (percent < 0 || percent > 1) {
             throw new IllegalArgumentException(
                     "percentage of rows must be between [0,1]: percent=" + percent);
