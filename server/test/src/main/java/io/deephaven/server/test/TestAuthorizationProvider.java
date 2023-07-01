@@ -101,16 +101,17 @@ public class TestAuthorizationProvider implements AuthorizationProvider {
             }
 
             @Override
-            public void authorizePublishRequest(final ByteBuffer ticket) {
+            public void authorizePublishRequest(final TicketResolver ticketResolver, final ByteBuffer ticket) {
                 if (delegateTicketTransformation != null) {
-                    delegateTicketTransformation.authorizePublishRequest(ticket);
+                    delegateTicketTransformation.authorizePublishRequest(ticketResolver, ticket);
                 }
             }
 
             @Override
-            public void authorizePublishRequest(final Flight.FlightDescriptor descriptor) {
+            public void authorizePublishRequest(final TicketResolver ticketResolver,
+                    final Flight.FlightDescriptor descriptor) {
                 if (delegateTicketTransformation != null) {
-                    delegateTicketTransformation.authorizePublishRequest(descriptor);
+                    delegateTicketTransformation.authorizePublishRequest(ticketResolver, descriptor);
                 }
             }
         };

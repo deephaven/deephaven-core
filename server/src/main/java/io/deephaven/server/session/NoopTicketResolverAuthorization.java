@@ -11,12 +11,12 @@ public class NoopTicketResolverAuthorization implements TicketResolver.Authoriza
     }
 
     @Override
-    public void authorizePublishRequest(ByteBuffer ticket) {
+    public void authorizePublishRequest(TicketResolver ticketResolver, ByteBuffer ticket) {
         // always allowed
     }
 
     @Override
-    public void authorizePublishRequest(Flight.FlightDescriptor descriptor) {
+    public void authorizePublishRequest(TicketResolver ticketResolver, Flight.FlightDescriptor descriptor) {
         // always allowed
     }
 }
