@@ -122,37 +122,37 @@ public class TestDefaultNoHolidayBusinessCalendar extends BaseArrayTestCase {
 
     public void testNonBusinessDayMethods() {
         try {
-            noNonBusinessDays.previousNonBusinessDay();
+            noNonBusinessDays.pastNonBusinessDate();
             fail();
         } catch (UnsupportedOperationException e) {
             // ok
         }
         try {
-            noNonBusinessDays.previousNonBusinessDay(1);
+            noNonBusinessDays.pastNonBusinessDate(1);
             fail();
         } catch (UnsupportedOperationException e) {
             // ok
         }
         try {
-            noNonBusinessDays.previousNonBusinessDay("20190626");
+            noNonBusinessDays.pastNonBusinessDate("20190626");
             fail();
         } catch (UnsupportedOperationException e) {
             // ok
         }
         try {
-            noNonBusinessDays.nextNonBusinessDay();
+            noNonBusinessDays.futureNonBusinessDate();
             fail();
         } catch (UnsupportedOperationException e) {
             // ok
         }
         try {
-            noNonBusinessDays.nextNonBusinessDay(1);
+            noNonBusinessDays.futureNonBusinessDate(1);
             fail();
         } catch (UnsupportedOperationException e) {
             // ok
         }
         try {
-            noNonBusinessDays.nextNonBusinessDay("20190626");
+            noNonBusinessDays.futureNonBusinessDate("20190626");
             fail();
         } catch (UnsupportedOperationException e) {
             // ok
@@ -171,9 +171,9 @@ public class TestDefaultNoHolidayBusinessCalendar extends BaseArrayTestCase {
         assertEquals(noNonBusinessDays.timeZone(), TZ_NY);
         assertEquals(noNonBusinessDays.standardBusinessDayLengthNanos(),
                 6 * DateTimeUtils.HOUR + (30 * DateTimeUtils.MINUTE));
-        assertEquals(noNonBusinessDays.getBusinessSchedule("2019-06-26").getSOBD(),
-                onlyWeekends.getBusinessSchedule("2019-06-26").getSOBD());
-        assertEquals(noNonBusinessDays.getBusinessSchedule("2019-06-26").getEOBD(),
-                onlyWeekends.getBusinessSchedule("2019-06-26").getEOBD());
+        assertEquals(noNonBusinessDays.businessSchedule("2019-06-26").getSOBD(),
+                onlyWeekends.businessSchedule("2019-06-26").getSOBD());
+        assertEquals(noNonBusinessDays.businessSchedule("2019-06-26").getEOBD(),
+                onlyWeekends.businessSchedule("2019-06-26").getEOBD());
     }
 }

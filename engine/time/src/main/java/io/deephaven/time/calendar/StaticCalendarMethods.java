@@ -29,79 +29,79 @@ public class StaticCalendarMethods {
     }
 
     public static String currentDay() {
-        return Calendars.calendar().currentDay();
+        return Calendars.calendar().currentDate();
     }
 
     public static String previousDay() {
-        return Calendars.calendar().previousDay();
+        return Calendars.calendar().pastDate();
     }
 
     public static String previousDay(int days) {
-        return Calendars.calendar().previousDay(days);
+        return Calendars.calendar().pastDate(days);
     }
 
     public static String previousDay(final Instant time) {
-        return Calendars.calendar().previousDay(time);
+        return Calendars.calendar().pastDate(time);
     }
 
     public static String previousDay(final Instant time, final int days) {
-        return Calendars.calendar().previousDay(time, days);
+        return Calendars.calendar().pastDate(time, days);
     }
 
     public static String previousDay(final String date) {
-        return Calendars.calendar().previousDay(date);
+        return Calendars.calendar().pastDate(date);
     }
 
     public static String previousDay(final String date, final int days) {
-        return Calendars.calendar().previousDay(date, days);
+        return Calendars.calendar().pastDate(date, days);
     }
 
     public static String nextDay() {
-        return Calendars.calendar().nextDay();
+        return Calendars.calendar().futureDate();
     }
 
     public static String nextDay(int days) {
-        return Calendars.calendar().nextDay(days);
+        return Calendars.calendar().futureDate(days);
     }
 
     public static String nextDay(final Instant time) {
-        return Calendars.calendar().nextDay(time);
+        return Calendars.calendar().futureDate(time);
     }
 
     public static String nextDay(final Instant time, final int days) {
-        return Calendars.calendar().nextDay(time, days);
+        return Calendars.calendar().futureDate(time, days);
     }
 
     public static String nextDay(final String date) {
-        return Calendars.calendar().nextDay(date);
+        return Calendars.calendar().futureDate(date);
     }
 
     public static String nextDay(final String date, final int days) {
-        return Calendars.calendar().nextDay(date, days);
+        return Calendars.calendar().futureDate(date, days);
     }
 
     public static String[] daysInRange(Instant start, Instant end) {
-        return Calendars.calendar().daysInRange(start, end);
+        return Calendars.calendar().calendarDates(start, end);
     }
 
     public static String[] daysInRange(final String start, final String end) {
-        return Calendars.calendar().daysInRange(start, end);
+        return Calendars.calendar().calendarDates(start, end);
     }
 
     public static int numberOfDays(final Instant start, final Instant end) {
-        return Calendars.calendar().numberOfDays(start, end);
+        return Calendars.calendar().numberCalendarDates(start, end);
     }
 
     public static int numberOfDays(final Instant start, final Instant end, final boolean endInclusive) {
-        return Calendars.calendar().numberOfDays(start, end, endInclusive);
+        return Calendars.calendar().numberCalendarDates(start, end, endInclusive);
     }
 
     public static int numberOfDays(final String start, final String end) {
-        return Calendars.calendar().numberOfDays(start, end);
+        return Calendars.calendar().numberCalendarDates(start, end);
     }
 
     public static int numberOfDays(final String start, final String end, final boolean endInclusive) {
-        return Calendars.calendar().numberOfDays(start, end, endInclusive);
+        return Calendars.calendar().numberCalendarDates(start, end, endInclusive);
     }
 
     public static DayOfWeek dayOfWeek() {
@@ -141,27 +141,27 @@ public class StaticCalendarMethods {
     }
 
     public static String previousBusinessDay() {
-        return Calendars.calendar().previousBusinessDay();
+        return Calendars.calendar().pastBusinessDate();
     }
 
     public static String previousBusinessDay(int days) {
-        return Calendars.calendar().previousBusinessDay(days);
+        return Calendars.calendar().pastBusinessDate(days);
     }
 
     public static String previousBusinessDay(Instant time) {
-        return Calendars.calendar().previousBusinessDay(time);
+        return Calendars.calendar().pastBusinessDate(time);
     }
 
     public static String previousBusinessDay(Instant time, int days) {
-        return Calendars.calendar().previousBusinessDay(time, days);
+        return Calendars.calendar().pastBusinessDate(time, days);
     }
 
     public static String previousBusinessDay(String date) {
-        return Calendars.calendar().previousBusinessDay(date);
+        return Calendars.calendar().pastBusinessDate(date);
     }
 
     public static String previousBusinessDay(String date, int days) {
-        return Calendars.calendar().previousBusinessDay(date, days);
+        return Calendars.calendar().pastBusinessDate(date, days);
     }
 
     public static BusinessSchedule previousBusinessSchedule() {
@@ -189,51 +189,51 @@ public class StaticCalendarMethods {
     }
 
     public static String previousNonBusinessDay() {
-        return Calendars.calendar().previousNonBusinessDay();
+        return Calendars.calendar().pastNonBusinessDate();
     }
 
     public static String previousNonBusinessDay(int days) {
-        return Calendars.calendar().previousNonBusinessDay(days);
+        return Calendars.calendar().pastNonBusinessDate(days);
     }
 
     public static String previousNonBusinessDay(Instant time) {
-        return Calendars.calendar().previousNonBusinessDay(time);
+        return Calendars.calendar().pastNonBusinessDate(time);
     }
 
     public static String previousNonBusinessDay(Instant time, int days) {
-        return Calendars.calendar().previousNonBusinessDay(time, days);
+        return Calendars.calendar().pastNonBusinessDate(time, days);
     }
 
     public static String previousNonBusinessDay(String date) {
-        return Calendars.calendar().previousNonBusinessDay(date);
+        return Calendars.calendar().pastNonBusinessDate(date);
     }
 
     public static String previousNonBusinessDay(String date, int days) {
-        return Calendars.calendar().previousNonBusinessDay(date, days);
+        return Calendars.calendar().pastNonBusinessDate(date, days);
     }
 
     public static String nextBusinessDay() {
-        return Calendars.calendar().nextBusinessDay();
+        return Calendars.calendar().futureBusinessDate();
     }
 
     public static String nextBusinessDay(int days) {
-        return Calendars.calendar().nextBusinessDay(days);
+        return Calendars.calendar().futureBusinessDate(days);
     }
 
     public static String nextBusinessDay(Instant time) {
-        return Calendars.calendar().nextBusinessDay(time);
+        return Calendars.calendar().futureBusinessDate(time);
     }
 
     public static String nextBusinessDay(Instant time, int days) {
-        return Calendars.calendar().nextBusinessDay(time, days);
+        return Calendars.calendar().futureBusinessDate(time, days);
     }
 
     public static String nextBusinessDay(String date) {
-        return Calendars.calendar().nextBusinessDay(date);
+        return Calendars.calendar().futureBusinessDate(date);
     }
 
     public static String nextBusinessDay(String date, int days) {
-        return Calendars.calendar().nextBusinessDay(date, days);
+        return Calendars.calendar().futureBusinessDate(date, days);
     }
 
     public static BusinessSchedule nextBusinessSchedule() {
@@ -261,43 +261,43 @@ public class StaticCalendarMethods {
     }
 
     public static String nextNonBusinessDay() {
-        return Calendars.calendar().nextNonBusinessDay();
+        return Calendars.calendar().futureNonBusinessDate();
     }
 
     public static String nextNonBusinessDay(int days) {
-        return Calendars.calendar().nextNonBusinessDay(days);
+        return Calendars.calendar().futureNonBusinessDate(days);
     }
 
     public static String nextNonBusinessDay(Instant time) {
-        return Calendars.calendar().nextNonBusinessDay(time);
+        return Calendars.calendar().futureNonBusinessDate(time);
     }
 
     public static String nextNonBusinessDay(Instant time, int days) {
-        return Calendars.calendar().nextNonBusinessDay(time, days);
+        return Calendars.calendar().futureNonBusinessDate(time, days);
     }
 
     public static String nextNonBusinessDay(String date) {
-        return Calendars.calendar().nextNonBusinessDay(date);
+        return Calendars.calendar().futureNonBusinessDate(date);
     }
 
     public static String nextNonBusinessDay(String date, int days) {
-        return Calendars.calendar().nextNonBusinessDay(date, days);
+        return Calendars.calendar().futureNonBusinessDate(date, days);
     }
 
     public static String[] businessDaysInRange(Instant start, Instant end) {
-        return Calendars.calendar().businessDaysInRange(start, end);
+        return Calendars.calendar().businessDates(start, end);
     }
 
     public static String[] businessDaysInRange(String start, String end) {
-        return Calendars.calendar().businessDaysInRange(start, end);
+        return Calendars.calendar().businessDates(start, end);
     }
 
     public static String[] nonBusinessDaysInRange(Instant start, Instant end) {
-        return Calendars.calendar().nonBusinessDaysInRange(start, end);
+        return Calendars.calendar().nonBusinessDates(start, end);
     }
 
     public static String[] nonBusinessDaysInRange(String start, String end) {
-        return Calendars.calendar().nonBusinessDaysInRange(start, end);
+        return Calendars.calendar().nonBusinessDates(start, end);
     }
 
     public static long standardBusinessDayLengthNanos() {
@@ -313,15 +313,15 @@ public class StaticCalendarMethods {
     }
 
     public static double diffBusinessDay(Instant start, Instant end) {
-        return Calendars.calendar().diffBusinessDay(start, end);
+        return Calendars.calendar().diffBusinessDays(start, end);
     }
 
     public static double diffNonBusinessDay(Instant start, Instant end) {
-        return Calendars.calendar().diffNonBusinessDay(start, end);
+        return Calendars.calendar().diffNonBusinessDays(start, end);
     }
 
     public static double diffBusinessYear(Instant start, Instant end) {
-        return Calendars.calendar().diffBusinessYear(start, end);
+        return Calendars.calendar().diffBusinessYears(start, end);
     }
 
     public static int numberOfBusinessDays(Instant start, Instant end) {
@@ -329,7 +329,7 @@ public class StaticCalendarMethods {
     }
 
     public static int numberOfBusinessDays(Instant start, Instant end, boolean endInclusive) {
-        return Calendars.calendar().numberOfBusinessDays(start, end, endInclusive);
+        return Calendars.calendar().numberBusinessDates(start, end, endInclusive);
     }
 
     public static int numberOfBusinessDays(String start, String end) {
@@ -337,7 +337,7 @@ public class StaticCalendarMethods {
     }
 
     public static int numberOfBusinessDays(String start, String end, boolean endInclusive) {
-        return Calendars.calendar().numberOfBusinessDays(start, end, endInclusive);
+        return Calendars.calendar().numberBusinessDates(start, end, endInclusive);
     }
 
     public static int numberOfNonBusinessDays(Instant start, Instant end) {
@@ -345,7 +345,7 @@ public class StaticCalendarMethods {
     }
 
     public static int numberOfNonBusinessDays(Instant start, Instant end, boolean endInclusive) {
-        return Calendars.calendar().numberOfNonBusinessDays(start, end, endInclusive);
+        return Calendars.calendar().numberNonBusinessDates(start, end, endInclusive);
     }
 
     public static int numberOfNonBusinessDays(String start, String end) {
@@ -353,7 +353,7 @@ public class StaticCalendarMethods {
     }
 
     public static int numberOfNonBusinessDays(String start, String end, boolean endInclusive) {
-        return Calendars.calendar().numberOfNonBusinessDays(start, end, endInclusive);
+        return Calendars.calendar().numberNonBusinessDates(start, end, endInclusive);
     }
 
     public static double fractionOfStandardBusinessDay() {
@@ -401,14 +401,14 @@ public class StaticCalendarMethods {
     }
 
     public static BusinessSchedule getBusinessSchedule(Instant time) {
-        return Calendars.calendar().getBusinessSchedule(time);
+        return Calendars.calendar().businessSchedule(time);
     }
 
     public static BusinessSchedule getBusinessSchedule(String date) {
-        return Calendars.calendar().getBusinessSchedule(date);
+        return Calendars.calendar().businessSchedule(date);
     }
 
     public static BusinessSchedule getBusinessSchedule(LocalDate date) {
-        return Calendars.calendar().getBusinessSchedule(date);
+        return Calendars.calendar().businessSchedule(date);
     }
 }

@@ -573,117 +573,117 @@ public class TestDefaultBusinessCalendar extends BaseArrayTestCase {
     }
 
     public void testNextBusinessDay() {
-        assertEquals("2017-09-28", test.nextBusinessDay());
-        assertEquals("2017-09-29", test.nextBusinessDay(2));
-        assertEquals("2017-10-17", test.nextBusinessDay(14));
+        assertEquals("2017-09-28", test.futureBusinessDate());
+        assertEquals("2017-09-29", test.futureBusinessDate(2));
+        assertEquals("2017-10-17", test.futureBusinessDate(14));
 
         Instant day1 = DateTimeUtils.parseInstant("2016-08-31T01:00:00.000000000 NY");
         Instant day1JP = DateTimeUtils.parseInstant("2016-08-31T01:00:00.000000000 JP");
         String day2 = "2016-09-01";
-        assertNull(USNYSE.nextBusinessDay((Instant) null));
-        assertEquals(USNYSE.nextBusinessDay(day1), day2);
-        assertEquals(JPOSE.nextBusinessDay(day1JP), day2);
+        assertNull(USNYSE.futureBusinessDate((Instant) null));
+        assertEquals(USNYSE.futureBusinessDate(day1), day2);
+        assertEquals(JPOSE.futureBusinessDate(day1JP), day2);
 
-        assertNull(USNYSE.nextBusinessDay((Instant) null, 2));
-        assertEquals(USNYSE.nextBusinessDay(day1, 2), "2016-09-02");
-        assertEquals(JPOSE.nextBusinessDay(day1JP, 2), "2016-09-02");
+        assertNull(USNYSE.futureBusinessDate((Instant) null, 2));
+        assertEquals(USNYSE.futureBusinessDate(day1, 2), "2016-09-02");
+        assertEquals(JPOSE.futureBusinessDate(day1JP, 2), "2016-09-02");
 
-        assertEquals(USNYSE.nextBusinessDay(DateTimeUtils.parseInstant("2016-09-02T01:00:00.000000000 NY"), -2),
+        assertEquals(USNYSE.futureBusinessDate(DateTimeUtils.parseInstant("2016-09-02T01:00:00.000000000 NY"), -2),
                 "2016-08-31");
-        assertEquals(JPOSE.nextBusinessDay(DateTimeUtils.parseInstant("2016-09-02T01:00:00.000000000 JP"), -2),
+        assertEquals(JPOSE.futureBusinessDate(DateTimeUtils.parseInstant("2016-09-02T01:00:00.000000000 JP"), -2),
                 "2016-08-31");
 
-        assertEquals(USNYSE.nextBusinessDay(DateTimeUtils.parseInstant("2016-08-30T01:00:00.000000000 NY"), 0),
+        assertEquals(USNYSE.futureBusinessDate(DateTimeUtils.parseInstant("2016-08-30T01:00:00.000000000 NY"), 0),
                 "2016-08-30");
-        assertNull(USNYSE.nextBusinessDay(DateTimeUtils.parseInstant("2016-08-28T01:00:00.000000000 NY"), 0));
+        assertNull(USNYSE.futureBusinessDate(DateTimeUtils.parseInstant("2016-08-28T01:00:00.000000000 NY"), 0));
 
         // leap day
         day1 = DateTimeUtils.parseInstant("2016-02-28T01:00:00.000000000 NY");
         day1JP = DateTimeUtils.parseInstant("2016-02-28T01:00:00.000000000 JP");
         day2 = "2016-02-29";
-        assertEquals(USNYSE.nextBusinessDay(day1), day2);
-        assertEquals(JPOSE.nextBusinessDay(day1JP), day2);
+        assertEquals(USNYSE.futureBusinessDate(day1), day2);
+        assertEquals(JPOSE.futureBusinessDate(day1JP), day2);
 
         // new year
         day1 = DateTimeUtils.parseInstant("2013-12-31T01:00:00.000000000 NY");
         day1JP = DateTimeUtils.parseInstant("2013-12-31T01:00:00.000000000 JP");
         day2 = "2014-01-02";
-        assertEquals(USNYSE.nextBusinessDay(day1), day2);
+        assertEquals(USNYSE.futureBusinessDate(day1), day2);
 
         day2 = "2014-01-01";
-        assertEquals(JPOSE.nextBusinessDay(day1JP), day2);
+        assertEquals(JPOSE.futureBusinessDate(day1JP), day2);
 
         // Daylight savings starts in NY (UTC-7:00) at 2 AM 2017-03-12
         // Japan doesn't observe day light savings
         day1 = DateTimeUtils.parseInstant("2017-03-12T01:00:00.000000000 NY");
         day1JP = DateTimeUtils.parseInstant("2017-03-12T01:00:00.000000000 JP");
         day2 = "2017-03-13";
-        assertEquals(USNYSE.nextBusinessDay(day1), day2);
-        assertEquals(JPOSE.nextBusinessDay(day1JP), day2);
+        assertEquals(USNYSE.futureBusinessDate(day1), day2);
+        assertEquals(JPOSE.futureBusinessDate(day1JP), day2);
 
         // outside calendar range, so no day off for new years, but weekend should still be off
         day1 = DateTimeUtils.parseInstant("2069-12-31T01:00:00.000000000 NY");
         day1JP = DateTimeUtils.parseInstant("2069-12-31T01:00:00.000000000 JP");
         day2 = "2070-01-01";
-        assertEquals(USNYSE.nextBusinessDay(day1).compareTo(day2), 0);
-        assertEquals(JPOSE.nextBusinessDay(day1JP), day2);
+        assertEquals(USNYSE.futureBusinessDate(day1).compareTo(day2), 0);
+        assertEquals(JPOSE.futureBusinessDate(day1JP), day2);
 
         day1 = DateTimeUtils.parseInstant("2070-01-03T01:00:00.000000000 NY");
         day1JP = DateTimeUtils.parseInstant("2070-01-03T01:00:00.000000000 JP");
         day2 = "2070-01-06";
-        assertEquals(USNYSE.nextBusinessDay(day1), day2);
-        assertEquals(JPOSE.nextBusinessDay(day1JP), day2);
+        assertEquals(USNYSE.futureBusinessDate(day1), day2);
+        assertEquals(JPOSE.futureBusinessDate(day1JP), day2);
 
         day1 = null;
-        assertNull(USNYSE.nextBusinessDay(day1));
-        assertNull(JPOSE.nextBusinessDay(day1));
+        assertNull(USNYSE.futureBusinessDate(day1));
+        assertNull(JPOSE.futureBusinessDate(day1));
     }
 
     public void testNextBusinessDayString() {
         String day1 = "2016-08-31";
         String day2 = "2016-09-01";
-        assertNull(USNYSE.nextBusinessDay((String) null));
-        assertEquals(USNYSE.nextBusinessDay(day1), day2);
-        assertEquals(JPOSE.nextBusinessDay(day1), day2);
+        assertNull(USNYSE.futureBusinessDate((String) null));
+        assertEquals(USNYSE.futureBusinessDate(day1), day2);
+        assertEquals(JPOSE.futureBusinessDate(day1), day2);
 
-        assertNull(USNYSE.nextBusinessDay((String) null, 2));
-        assertEquals(USNYSE.nextBusinessDay(day1, 2), "2016-09-02");
-        assertEquals(JPOSE.nextBusinessDay(day1, 2), "2016-09-02");
+        assertNull(USNYSE.futureBusinessDate((String) null, 2));
+        assertEquals(USNYSE.futureBusinessDate(day1, 2), "2016-09-02");
+        assertEquals(JPOSE.futureBusinessDate(day1, 2), "2016-09-02");
 
-        assertEquals(USNYSE.nextBusinessDay("2016-09-02", -2), "2016-08-31");
-        assertEquals(JPOSE.nextBusinessDay("2016-09-02", -2), "2016-08-31");
+        assertEquals(USNYSE.futureBusinessDate("2016-09-02", -2), "2016-08-31");
+        assertEquals(JPOSE.futureBusinessDate("2016-09-02", -2), "2016-08-31");
 
-        assertEquals(USNYSE.nextBusinessDay("2016-08-30", 0), "2016-08-30");
-        assertNull(USNYSE.nextBusinessDay("2016-08-28", 0));
+        assertEquals(USNYSE.futureBusinessDate("2016-08-30", 0), "2016-08-30");
+        assertNull(USNYSE.futureBusinessDate("2016-08-28", 0));
 
         // leap day
         day1 = "2016-02-28";
         day2 = "2016-02-29";
-        assertEquals(USNYSE.nextBusinessDay(day1), day2);
-        assertEquals(JPOSE.nextBusinessDay(day1), day2);
+        assertEquals(USNYSE.futureBusinessDate(day1), day2);
+        assertEquals(JPOSE.futureBusinessDate(day1), day2);
 
         // new year
         day1 = "2013-12-31";
         day2 = "2014-01-02";
-        assertEquals(USNYSE.nextBusinessDay(day1), day2);
+        assertEquals(USNYSE.futureBusinessDate(day1), day2);
 
         day1 = "2007-01-01";
         day2 = "2007-01-04";
-        assertEquals(JPOSE.nextBusinessDay(day1), day2);
+        assertEquals(JPOSE.futureBusinessDate(day1), day2);
 
         // Daylight savings starts in NY (UTC-7:00) at 2 AM 2017-03-12
         day1 = "2017-03-12";
         day2 = "2017-03-13";
-        assertEquals(USNYSE.nextBusinessDay(day1), day2);
-        assertEquals(JPOSE.nextBusinessDay(day1), day2);
+        assertEquals(USNYSE.futureBusinessDate(day1), day2);
+        assertEquals(JPOSE.futureBusinessDate(day1), day2);
 
         day1 = null;
-        assertNull(USNYSE.nextBusinessDay(day1));
-        assertNull(JPOSE.nextBusinessDay(day1));
+        assertNull(USNYSE.futureBusinessDate(day1));
+        assertNull(JPOSE.futureBusinessDate(day1));
 
         // incorrectly formatted days
         try {
-            USNYSE.nextBusinessDay("2018-09-31");
+            USNYSE.futureBusinessDate("2018-09-31");
             fail();
         } catch (IllegalArgumentException e) {
             // ok
@@ -729,7 +729,7 @@ public class TestDefaultBusinessCalendar extends BaseArrayTestCase {
         day1JP = DateTimeUtils.parseInstant("2013-12-31T01:00:00.000000000 JP");
         day2 = "2014-01-03";
         assertEquals(
-                DateTimeUtils.formatDate(USNYSE.nextBusinessSchedule(USNYSE.nextBusinessDay(day1)).getSOBD(), TZ_NY),
+                DateTimeUtils.formatDate(USNYSE.nextBusinessSchedule(USNYSE.futureBusinessDate(day1)).getSOBD(), TZ_NY),
                 day2);
 
         day2 = "2014-01-01";
@@ -762,7 +762,7 @@ public class TestDefaultBusinessCalendar extends BaseArrayTestCase {
 
 
         // holiday
-        final BusinessSchedule holiday = USNYSE.getBusinessSchedule("2017-12-25");
+        final BusinessSchedule holiday = USNYSE.businessSchedule("2017-12-25");
         assertEquals(0, holiday.getBusinessPeriods().length);
         assertEquals(0, holiday.getLengthOfBusinessDay());
         try {
@@ -826,106 +826,106 @@ public class TestDefaultBusinessCalendar extends BaseArrayTestCase {
     }
 
     public void testNextNonBusinessDay() {
-        assertEquals("2017-09-30", test.nextNonBusinessDay());
-        assertEquals("2017-10-01", test.nextNonBusinessDay(2));
-        assertEquals("2017-10-08", test.nextNonBusinessDay(4));
+        assertEquals("2017-09-30", test.futureNonBusinessDate());
+        assertEquals("2017-10-01", test.futureNonBusinessDate(2));
+        assertEquals("2017-10-08", test.futureNonBusinessDate(4));
 
         Instant day1 = DateTimeUtils.parseInstant("2016-08-31T01:00:00.000000000 NY");
         Instant day1JP = DateTimeUtils.parseInstant("2016-08-31T01:00:00.000000000 JP");
         String day2 = "2016-09-03";
-        assertNull(USNYSE.nextNonBusinessDay((Instant) null));
-        assertEquals(USNYSE.nextNonBusinessDay(day1), day2);
-        assertEquals(JPOSE.nextNonBusinessDay(day1JP), day2);
+        assertNull(USNYSE.futureNonBusinessDate((Instant) null));
+        assertEquals(USNYSE.futureNonBusinessDate(day1), day2);
+        assertEquals(JPOSE.futureNonBusinessDate(day1JP), day2);
 
-        assertNull(USNYSE.nextNonBusinessDay((Instant) null, 2));
-        assertEquals(USNYSE.nextNonBusinessDay(day1, 2), "2016-09-04");
-        assertEquals(JPOSE.nextNonBusinessDay(day1JP, 2), "2016-09-04");
+        assertNull(USNYSE.futureNonBusinessDate((Instant) null, 2));
+        assertEquals(USNYSE.futureNonBusinessDate(day1, 2), "2016-09-04");
+        assertEquals(JPOSE.futureNonBusinessDate(day1JP, 2), "2016-09-04");
 
-        assertEquals(USNYSE.nextNonBusinessDay(DateTimeUtils.parseInstant("2016-09-04T01:00:00.000000000 NY"), -2),
+        assertEquals(USNYSE.futureNonBusinessDate(DateTimeUtils.parseInstant("2016-09-04T01:00:00.000000000 NY"), -2),
                 "2016-08-28");
-        assertEquals(JPOSE.nextNonBusinessDay(DateTimeUtils.parseInstant("2016-09-04T01:00:00.000000000 JP"), -2),
+        assertEquals(JPOSE.futureNonBusinessDate(DateTimeUtils.parseInstant("2016-09-04T01:00:00.000000000 JP"), -2),
                 "2016-08-28");
 
-        assertNull(USNYSE.nextNonBusinessDay(DateTimeUtils.parseInstant("2016-08-30T01:00:00.000000000 NY"), 0));
-        assertEquals(USNYSE.nextNonBusinessDay(DateTimeUtils.parseInstant("2016-08-28T01:00:00.000000000 NY"), 0),
+        assertNull(USNYSE.futureNonBusinessDate(DateTimeUtils.parseInstant("2016-08-30T01:00:00.000000000 NY"), 0));
+        assertEquals(USNYSE.futureNonBusinessDate(DateTimeUtils.parseInstant("2016-08-28T01:00:00.000000000 NY"), 0),
                 "2016-08-28");
 
         // leap day
         day1 = DateTimeUtils.parseInstant("2016-02-28T01:00:00.000000000 NY");
         day1JP = DateTimeUtils.parseInstant("2016-02-28T01:00:00.000000000 JP");
         day2 = "2016-03-05";
-        assertEquals(USNYSE.nextNonBusinessDay(day1), day2);
-        assertEquals(JPOSE.nextNonBusinessDay(day1JP), day2);
+        assertEquals(USNYSE.futureNonBusinessDate(day1), day2);
+        assertEquals(JPOSE.futureNonBusinessDate(day1JP), day2);
 
         // new year
         day1 = DateTimeUtils.parseInstant("2013-12-31T01:00:00.000000000 NY");
         day1JP = DateTimeUtils.parseInstant("2013-12-31T01:00:00.000000000 JP");
         day2 = "2014-01-01";
-        assertEquals(USNYSE.nextNonBusinessDay(day1), day2);
+        assertEquals(USNYSE.futureNonBusinessDate(day1), day2);
 
         day2 = "2014-01-04";
-        assertEquals(JPOSE.nextNonBusinessDay(day1JP), day2);
+        assertEquals(JPOSE.futureNonBusinessDate(day1JP), day2);
 
         // Daylight savings starts in NY (UTC-7:00) at 2 AM 2017-03-12
         day1 = DateTimeUtils.parseInstant("2017-03-12T01:00:00.000000000 NY");
         day1JP = DateTimeUtils.parseInstant("2017-03-12T01:00:00.000000000 JP");
         day2 = "2017-03-18";
-        assertEquals(USNYSE.nextNonBusinessDay(day1), day2);
-        assertEquals(JPOSE.nextNonBusinessDay(day1JP), day2);
+        assertEquals(USNYSE.futureNonBusinessDate(day1), day2);
+        assertEquals(JPOSE.futureNonBusinessDate(day1JP), day2);
 
         // outside calendar range, so no day off for new years, but weekend should still be off
         day1 = DateTimeUtils.parseInstant("2069-12-31T01:00:00.000000000 NY");
         day1JP = DateTimeUtils.parseInstant("2069-12-31T01:00:00.000000000 JP");
         day2 = "2070-01-04";
-        assertEquals(USNYSE.nextNonBusinessDay(day1).compareTo(day2), 0);
-        assertEquals(JPOSE.nextNonBusinessDay(day1JP), day2);
+        assertEquals(USNYSE.futureNonBusinessDate(day1).compareTo(day2), 0);
+        assertEquals(JPOSE.futureNonBusinessDate(day1JP), day2);
 
         day1 = null;
-        assertNull(USNYSE.nextNonBusinessDay(day1));
-        assertNull(JPOSE.nextNonBusinessDay(day1));
+        assertNull(USNYSE.futureNonBusinessDate(day1));
+        assertNull(JPOSE.futureNonBusinessDate(day1));
     }
 
     public void testNextNonBusinessDayString() {
         String day1 = "2016-08-31";
         String day2 = "2016-09-03";
-        assertNull(USNYSE.nextNonBusinessDay((String) null));
-        assertEquals(USNYSE.nextNonBusinessDay(day1), day2);
-        assertEquals(JPOSE.nextNonBusinessDay(day1), day2);
+        assertNull(USNYSE.futureNonBusinessDate((String) null));
+        assertEquals(USNYSE.futureNonBusinessDate(day1), day2);
+        assertEquals(JPOSE.futureNonBusinessDate(day1), day2);
 
-        assertNull(USNYSE.nextNonBusinessDay((String) null, 2));
-        assertEquals(USNYSE.nextNonBusinessDay(day1, 2), "2016-09-04");
-        assertEquals(JPOSE.nextNonBusinessDay(day1, 2), "2016-09-04");
+        assertNull(USNYSE.futureNonBusinessDate((String) null, 2));
+        assertEquals(USNYSE.futureNonBusinessDate(day1, 2), "2016-09-04");
+        assertEquals(JPOSE.futureNonBusinessDate(day1, 2), "2016-09-04");
 
-        assertEquals(USNYSE.nextNonBusinessDay("2016-09-04", -2), "2016-08-28");
-        assertEquals(JPOSE.nextNonBusinessDay("2016-09-04", -2), "2016-08-28");
+        assertEquals(USNYSE.futureNonBusinessDate("2016-09-04", -2), "2016-08-28");
+        assertEquals(JPOSE.futureNonBusinessDate("2016-09-04", -2), "2016-08-28");
 
-        assertNull(USNYSE.nextNonBusinessDay("2016-08-30", 0));
-        assertEquals(USNYSE.nextNonBusinessDay("2016-08-28", 0), "2016-08-28");
+        assertNull(USNYSE.futureNonBusinessDate("2016-08-30", 0));
+        assertEquals(USNYSE.futureNonBusinessDate("2016-08-28", 0), "2016-08-28");
 
         // leap day
         day1 = "2016-02-28";
         day2 = "2016-03-05";
-        assertEquals(USNYSE.nextNonBusinessDay(day1), day2);
-        assertEquals(JPOSE.nextNonBusinessDay(day1), day2);
+        assertEquals(USNYSE.futureNonBusinessDate(day1), day2);
+        assertEquals(JPOSE.futureNonBusinessDate(day1), day2);
 
         // new year
         day1 = "2013-12-31";
         day2 = "2014-01-01";
-        assertEquals(USNYSE.nextNonBusinessDay(day1), day2);
+        assertEquals(USNYSE.futureNonBusinessDate(day1), day2);
 
         // Daylight savings starts in NY (UTC-7:00) at 2 AM 2017-03-12
         day1 = "2017-03-12";
         day2 = "2017-03-18";
-        assertEquals(USNYSE.nextNonBusinessDay(day1), day2);
-        assertEquals(JPOSE.nextNonBusinessDay(day1), day2);
+        assertEquals(USNYSE.futureNonBusinessDate(day1), day2);
+        assertEquals(JPOSE.futureNonBusinessDate(day1), day2);
 
         day1 = null;
-        assertNull(USNYSE.nextNonBusinessDay(day1));
-        assertNull(JPOSE.nextNonBusinessDay(day1));
+        assertNull(USNYSE.futureNonBusinessDate(day1));
+        assertNull(JPOSE.futureNonBusinessDate(day1));
 
         // incorrectly formatted days
         try {
-            USNYSE.nextNonBusinessDay("2018-09-31");
+            USNYSE.futureNonBusinessDate("2018-09-31");
             fail();
         } catch (IllegalArgumentException e) {
             // ok
@@ -933,131 +933,131 @@ public class TestDefaultBusinessCalendar extends BaseArrayTestCase {
     }
 
     public void testLastBusinessDay() {
-        assertEquals("2017-09-26", test.previousBusinessDay());
-        assertEquals("2017-09-25", test.previousBusinessDay(2));
-        assertEquals("2017-09-07", test.previousBusinessDay(14));
+        assertEquals("2017-09-26", test.pastBusinessDate());
+        assertEquals("2017-09-25", test.pastBusinessDate(2));
+        assertEquals("2017-09-07", test.pastBusinessDate(14));
 
-        assertEquals("2017-09-24", test.previousNonBusinessDay());
-        assertEquals("2017-09-23", test.previousNonBusinessDay(2));
-        assertEquals("2017-09-16", test.previousNonBusinessDay(4));
+        assertEquals("2017-09-24", test.pastNonBusinessDate());
+        assertEquals("2017-09-23", test.pastNonBusinessDate(2));
+        assertEquals("2017-09-16", test.pastNonBusinessDate(4));
 
 
         Instant day1 = DateTimeUtils.parseInstant("2016-08-30T01:00:00.000000000 NY");
         Instant day2 = DateTimeUtils.parseInstant("2016-09-01T01:00:00.000000000 NY");
-        assertNull(USNYSE.previousBusinessDay((Instant) null, 2));
-        assertEquals(USNYSE.previousBusinessDay(day2, 2), DateTimeUtils.formatDate(day1, TZ_NY));
-        assertEquals(USNYSE.previousBusinessDay(day1, -2), DateTimeUtils.formatDate(day2, TZ_NY));
+        assertNull(USNYSE.pastBusinessDate((Instant) null, 2));
+        assertEquals(USNYSE.pastBusinessDate(day2, 2), DateTimeUtils.formatDate(day1, TZ_NY));
+        assertEquals(USNYSE.pastBusinessDate(day1, -2), DateTimeUtils.formatDate(day2, TZ_NY));
 
-        assertEquals(USNYSE.previousBusinessDay(DateTimeUtils.parseInstant("2016-08-30T15:00:00.000000000 NY"), 0),
+        assertEquals(USNYSE.pastBusinessDate(DateTimeUtils.parseInstant("2016-08-30T15:00:00.000000000 NY"), 0),
                 "2016-08-30");
-        assertNull(USNYSE.previousBusinessDay(DateTimeUtils.parseInstant("2016-08-28T15:00:00.000000000 NY"), 0));
+        assertNull(USNYSE.pastBusinessDate(DateTimeUtils.parseInstant("2016-08-28T15:00:00.000000000 NY"), 0));
 
-        assertNull(USNYSE.previousNonBusinessDay((Instant) null, 0));
-        assertNull(USNYSE.previousNonBusinessDay(DateTimeUtils.parseInstant("2016-08-30T21:00:00.000000000 NY"), 0));
+        assertNull(USNYSE.pastNonBusinessDate((Instant) null, 0));
+        assertNull(USNYSE.pastNonBusinessDate(DateTimeUtils.parseInstant("2016-08-30T21:00:00.000000000 NY"), 0));
         assertEquals(
-                USNYSE.previousNonBusinessDay(DateTimeUtils.parseInstant("2016-08-28T21:00:00.000000000 NY"), 0),
+                USNYSE.pastNonBusinessDate(DateTimeUtils.parseInstant("2016-08-28T21:00:00.000000000 NY"), 0),
                 "2016-08-28");
 
         // leap day
         day1 = DateTimeUtils.parseInstant("2016-02-29T21:00:00.000000000 NY");
         day2 = DateTimeUtils.parseInstant("2016-03-01T01:00:00.000000000 NY");
-        assertEquals(USNYSE.previousBusinessDay(day2), DateTimeUtils.formatDate(day1, TZ_NY));
+        assertEquals(USNYSE.pastBusinessDate(day2), DateTimeUtils.formatDate(day1, TZ_NY));
 
         // new year
         day1 = DateTimeUtils.parseInstant("2013-12-26T01:00:00.000000000 NY");
         day2 = DateTimeUtils.parseInstant("2014-01-02T01:00:00.000000000 NY");
-        assertEquals(USNYSE.previousBusinessDay(day2, 4), DateTimeUtils.formatDate(day1, TZ_NY));
-        assertEquals(USNYSE.previousBusinessDay(day1, -4), DateTimeUtils.formatDate(day2, TZ_NY));
+        assertEquals(USNYSE.pastBusinessDate(day2, 4), DateTimeUtils.formatDate(day1, TZ_NY));
+        assertEquals(USNYSE.pastBusinessDate(day1, -4), DateTimeUtils.formatDate(day2, TZ_NY));
 
         // Daylight savings starts in NY (UTC-7:00) at 2 AM 2017-03-12
         day1 = DateTimeUtils.parseInstant("2017-02-26T01:00:00.000000000 NY");
         day2 = DateTimeUtils.parseInstant("2017-03-13T01:00:00.000000000 NY");
-        assertEquals(USNYSE.previousNonBusinessDay(day2, 5), DateTimeUtils.formatDate(day1, TZ_NY));
-        assertEquals(USNYSE.previousNonBusinessDay(day1, -5), "2017-03-18");
+        assertEquals(USNYSE.pastNonBusinessDate(day2, 5), DateTimeUtils.formatDate(day1, TZ_NY));
+        assertEquals(USNYSE.pastNonBusinessDate(day1, -5), "2017-03-18");
 
         day1 = DateTimeUtils.parseInstant("2017-03-12T01:00:00.000000000 NY");
         day2 = DateTimeUtils.parseInstant("2017-03-13T01:00:00.000000000 NY");
-        assertEquals(USNYSE.previousNonBusinessDay(day2), DateTimeUtils.formatDate(day1, TZ_NY));
+        assertEquals(USNYSE.pastNonBusinessDate(day2), DateTimeUtils.formatDate(day1, TZ_NY));
 
         day1 = DateTimeUtils.parseInstant("2017-07-04T01:00:00.000000000 NY");
         day2 = DateTimeUtils.parseInstant("2017-07-07T01:00:00.000000000 NY");
-        assertEquals(USNYSE.previousNonBusinessDay(day2), DateTimeUtils.formatDate(day1, TZ_NY));
+        assertEquals(USNYSE.pastNonBusinessDate(day2), DateTimeUtils.formatDate(day1, TZ_NY));
 
         day1 = null;
-        assertNull(USNYSE.previousBusinessDay(day1));
-        assertNull(USNYSE.previousNonBusinessDay(day1));
+        assertNull(USNYSE.pastBusinessDate(day1));
+        assertNull(USNYSE.pastNonBusinessDate(day1));
 
 
 
         day1 = DateTimeUtils.parseInstant("2016-08-31T21:00:00.000000000 JP");
         day2 = DateTimeUtils.parseInstant("2016-09-01T21:00:00.000000000 JP");
-        assertEquals(JPOSE.previousBusinessDay(day2), DateTimeUtils.formatDate(day1, TZ_JP));
+        assertEquals(JPOSE.pastBusinessDate(day2), DateTimeUtils.formatDate(day1, TZ_JP));
 
         // leap day
         day1 = DateTimeUtils.parseInstant("2016-02-29T01:00:00.000000000 JP");
         day2 = DateTimeUtils.parseInstant("2016-03-01T01:00:00.000000000 JP");
-        assertEquals(JPOSE.previousBusinessDay(day2), DateTimeUtils.formatDate(day1, TZ_JP));
+        assertEquals(JPOSE.pastBusinessDate(day2), DateTimeUtils.formatDate(day1, TZ_JP));
 
         // new year
         day1 = DateTimeUtils.parseInstant("2013-12-31T11:00:00.000000000 JP");
         day2 = DateTimeUtils.parseInstant("2014-01-01T11:00:00.000000000 JP");
-        assertEquals(JPOSE.previousBusinessDay(day2), DateTimeUtils.formatDate(day1, TZ_JP));
+        assertEquals(JPOSE.pastBusinessDate(day2), DateTimeUtils.formatDate(day1, TZ_JP));
 
         // Daylight savings starts in JP (UTC-7:00) at 2 AM 2017-03-12
         day1 = DateTimeUtils.parseInstant("2017-03-12T01:00:00.000000000 JP");
         day2 = DateTimeUtils.parseInstant("2017-03-13T01:00:00.000000000 JP");
-        assertEquals(JPOSE.previousNonBusinessDay(day2), DateTimeUtils.formatDate(day1, TZ_JP));
+        assertEquals(JPOSE.pastNonBusinessDate(day2), DateTimeUtils.formatDate(day1, TZ_JP));
 
 
         day1 = null;
-        assertNull(JPOSE.previousBusinessDay(day1));
-        assertNull(JPOSE.previousNonBusinessDay(day1));
+        assertNull(JPOSE.pastBusinessDate(day1));
+        assertNull(JPOSE.pastNonBusinessDate(day1));
     }
 
     public void testLastBusinessDayString() {
         String day1 = "2016-08-31";
         String day2 = "2016-09-01";
-        assertNull(USNYSE.previousBusinessDay((String) null));
-        assertEquals(USNYSE.previousBusinessDay(day2), day1);
-        assertEquals(JPOSE.previousBusinessDay(day2), day1);
+        assertNull(USNYSE.pastBusinessDate((String) null));
+        assertEquals(USNYSE.pastBusinessDate(day2), day1);
+        assertEquals(JPOSE.pastBusinessDate(day2), day1);
 
-        assertNull(USNYSE.previousBusinessDay((String) null, 2));
-        assertEquals(USNYSE.previousBusinessDay("2016-08-30", 0), "2016-08-30");
-        assertNull(USNYSE.previousBusinessDay("2016-08-28", 0));
+        assertNull(USNYSE.pastBusinessDate((String) null, 2));
+        assertEquals(USNYSE.pastBusinessDate("2016-08-30", 0), "2016-08-30");
+        assertNull(USNYSE.pastBusinessDate("2016-08-28", 0));
 
         day1 = "2016-08-29";
-        assertEquals(USNYSE.previousBusinessDay(day2, 3), day1);
-        assertEquals(JPOSE.previousBusinessDay(day2, 3), day1);
-        assertEquals(USNYSE.previousBusinessDay(day1, -3), day2);
-        assertEquals(JPOSE.previousBusinessDay(day1, -3), day2);
+        assertEquals(USNYSE.pastBusinessDate(day2, 3), day1);
+        assertEquals(JPOSE.pastBusinessDate(day2, 3), day1);
+        assertEquals(USNYSE.pastBusinessDate(day1, -3), day2);
+        assertEquals(JPOSE.pastBusinessDate(day1, -3), day2);
 
         // leap day
         day1 = "2016-02-29";
         day2 = "2016-03-01";
-        assertEquals(USNYSE.previousBusinessDay(day2), day1);
-        assertEquals(JPOSE.previousBusinessDay(day2), day1);
+        assertEquals(USNYSE.pastBusinessDate(day2), day1);
+        assertEquals(JPOSE.pastBusinessDate(day2), day1);
 
         // new year
         day1 = "2013-12-30";
         day2 = "2014-01-01";
-        assertEquals(USNYSE.previousBusinessDay(day2, 2), day1);
-        assertEquals(JPOSE.previousBusinessDay(day2, 2), day1);
-        assertEquals(USNYSE.previousBusinessDay(day1, -2), "2014-01-02");
-        assertEquals(JPOSE.previousBusinessDay(day1, -2), day2);
+        assertEquals(USNYSE.pastBusinessDate(day2, 2), day1);
+        assertEquals(JPOSE.pastBusinessDate(day2, 2), day1);
+        assertEquals(USNYSE.pastBusinessDate(day1, -2), "2014-01-02");
+        assertEquals(JPOSE.pastBusinessDate(day1, -2), day2);
 
         // Daylight savings starts in NY (UTC-7:00) at 2 AM 2017-03-12
         day1 = "2017-03-10";
         day2 = "2017-03-13";
-        assertEquals(USNYSE.previousBusinessDay(day2), day1);
-        assertEquals(JPOSE.previousBusinessDay(day2), day1);
+        assertEquals(USNYSE.pastBusinessDate(day2), day1);
+        assertEquals(JPOSE.pastBusinessDate(day2), day1);
 
         day1 = null;
-        assertNull(USNYSE.previousBusinessDay(day1));
-        assertNull(JPOSE.previousBusinessDay(day1));
+        assertNull(USNYSE.pastBusinessDate(day1));
+        assertNull(JPOSE.pastBusinessDate(day1));
 
         // incorrectly formatted days
         try {
-            USNYSE.previousBusinessDay("2018-09-31");
+            USNYSE.pastBusinessDate("2018-09-31");
             fail();
         } catch (IllegalArgumentException e) {
             // ok
@@ -1181,43 +1181,43 @@ public class TestDefaultBusinessCalendar extends BaseArrayTestCase {
     public void testLastNonBusinessDayString() {
         String day1 = "2016-08-28";
         String day2 = "2016-09-01";
-        assertNull(USNYSE.previousNonBusinessDay((String) null));
-        assertEquals(USNYSE.previousNonBusinessDay(day2), day1);
-        assertEquals(JPOSE.previousNonBusinessDay(day2), day1);
+        assertNull(USNYSE.pastNonBusinessDate((String) null));
+        assertEquals(USNYSE.pastNonBusinessDate(day2), day1);
+        assertEquals(JPOSE.pastNonBusinessDate(day2), day1);
 
-        assertNull(USNYSE.previousNonBusinessDay((String) null, 2));
-        assertNull(USNYSE.previousNonBusinessDay("2016-08-30", 0));
-        assertEquals(USNYSE.previousNonBusinessDay("2016-08-28", 0), "2016-08-28");
+        assertNull(USNYSE.pastNonBusinessDate((String) null, 2));
+        assertNull(USNYSE.pastNonBusinessDate("2016-08-30", 0));
+        assertEquals(USNYSE.pastNonBusinessDate("2016-08-28", 0), "2016-08-28");
 
         // leap day
         day1 = "2016-02-27";
         day2 = "2016-03-01";
-        assertEquals(USNYSE.previousNonBusinessDay(day2, 2), day1);
-        assertEquals(JPOSE.previousNonBusinessDay(day2, 2), day1);
-        assertEquals(USNYSE.previousNonBusinessDay(day1, -2), "2016-03-05");
-        assertEquals(JPOSE.previousNonBusinessDay(day1, -2), "2016-03-05");
+        assertEquals(USNYSE.pastNonBusinessDate(day2, 2), day1);
+        assertEquals(JPOSE.pastNonBusinessDate(day2, 2), day1);
+        assertEquals(USNYSE.pastNonBusinessDate(day1, -2), "2016-03-05");
+        assertEquals(JPOSE.pastNonBusinessDate(day1, -2), "2016-03-05");
 
         // new year
         day1 = "2013-12-29";
         day2 = "2014-01-01";
-        assertEquals(USNYSE.previousNonBusinessDay(day2), day1);
-        assertEquals(JPOSE.previousNonBusinessDay(day2), day1);
+        assertEquals(USNYSE.pastNonBusinessDate(day2), day1);
+        assertEquals(JPOSE.pastNonBusinessDate(day2), day1);
 
         // Daylight savings starts in NY (UTC-7:00) at 2 AM 2017-03-12
         day1 = "2017-03-05";
         day2 = "2017-03-13";
-        assertEquals(USNYSE.previousNonBusinessDay(day2, 3), day1);
-        assertEquals(JPOSE.previousNonBusinessDay(day2, 3), day1);
-        assertEquals(USNYSE.previousNonBusinessDay(day1, -3), "2017-03-18");
-        assertEquals(JPOSE.previousNonBusinessDay(day1, -3), "2017-03-18");
+        assertEquals(USNYSE.pastNonBusinessDate(day2, 3), day1);
+        assertEquals(JPOSE.pastNonBusinessDate(day2, 3), day1);
+        assertEquals(USNYSE.pastNonBusinessDate(day1, -3), "2017-03-18");
+        assertEquals(JPOSE.pastNonBusinessDate(day1, -3), "2017-03-18");
 
         day1 = null;
-        assertNull(USNYSE.previousNonBusinessDay(day1));
-        assertNull(JPOSE.previousNonBusinessDay(day1));
+        assertNull(USNYSE.pastNonBusinessDate(day1));
+        assertNull(JPOSE.pastNonBusinessDate(day1));
 
         // incorrectly formatted days
         try {
-            USNYSE.previousNonBusinessDay("2018-09-31");
+            USNYSE.pastNonBusinessDate("2018-09-31");
             fail();
         } catch (IllegalArgumentException e) {
             // ok
@@ -1238,17 +1238,17 @@ public class TestDefaultBusinessCalendar extends BaseArrayTestCase {
         // standard business day
         Instant day1 = DateTimeUtils.parseInstant("2016-08-31T01:00:00.000000000 NY");
         Instant day2 = DateTimeUtils.parseInstant("2016-09-01T01:00:00.000000000 NY");
-        assertEquals(USNYSE.diffBusinessDay(day1, day2), 1.0);
-        assertEquals(JPOSE.diffBusinessDay(day1, day2), 1.0);
+        assertEquals(USNYSE.diffBusinessDays(day1, day2), 1.0);
+        assertEquals(JPOSE.diffBusinessDays(day1, day2), 1.0);
 
         // 2.5 standard business days
         day1 = DateTimeUtils.parseInstant("2017-01-23T01:00:00.000000000 NY");
         day2 = DateTimeUtils.parseInstant("2017-01-25T12:45:00.000000000 NY");
-        assertEquals(USNYSE.diffBusinessDay(day1, day2), 2.5);
+        assertEquals(USNYSE.diffBusinessDays(day1, day2), 2.5);
 
         day1 = DateTimeUtils.parseInstant("2017-01-23T01:00:00.000000000 JP");
         day2 = DateTimeUtils.parseInstant("2017-01-25T12:45:00.000000000 JP");
-        assertEquals(JPOSE.diffBusinessDay(day1, day2), 2.55);
+        assertEquals(JPOSE.diffBusinessDays(day1, day2), 2.55);
 
         // middle of a business period
         day1 = DateTimeUtils.parseInstant("2017-01-23T10:00:00.000000000 JP");
@@ -1268,37 +1268,37 @@ public class TestDefaultBusinessCalendar extends BaseArrayTestCase {
         // weekend non business
         day1 = DateTimeUtils.parseInstant("2017-01-21T01:00:00.000000000 NY");
         day2 = DateTimeUtils.parseInstant("2017-01-23T01:00:00.000000000 NY");
-        assertEquals(USNYSE.diffBusinessDay(day1, day2), 0.0);
+        assertEquals(USNYSE.diffBusinessDays(day1, day2), 0.0);
 
         // one business year
         day1 = DateTimeUtils.parseInstant("2016-01-01T01:00:00.000000000 NY");
         day2 = DateTimeUtils.parseInstant("2016-12-31T23:59:00.000000000 NY");
-        double yearDiff = USNYSE.diffBusinessYear(day1, day2);
+        double yearDiff = USNYSE.diffBusinessYears(day1, day2);
         assertTrue(yearDiff < 1.004);
         assertTrue(yearDiff > 0.996);
-        yearDiff = JPOSE.diffBusinessYear(day1, day2);
+        yearDiff = JPOSE.diffBusinessYears(day1, day2);
         assertTrue(yearDiff < 1.004);
         assertTrue(yearDiff > 0.996);
 
         // half year
         day1 = DateTimeUtils.parseInstant("2017-01-01T01:00:00.000000000 NY");
         day2 = DateTimeUtils.parseInstant("2017-07-02T01:00:00.000000000 NY");
-        yearDiff = USNYSE.diffBusinessYear(day1, day2);
+        yearDiff = USNYSE.diffBusinessYears(day1, day2);
         assertTrue(yearDiff < 0.503);
         assertTrue(yearDiff > 0.497);
-        yearDiff = JPOSE.diffBusinessYear(day1, day2);
+        yearDiff = JPOSE.diffBusinessYears(day1, day2);
         assertTrue(yearDiff < 0.503);
         assertTrue(yearDiff > 0.497);
 
 
         day1 = null;
-        assertEquals(USNYSE.diffBusinessYear(day1, day2), QueryConstants.NULL_DOUBLE);
-        assertEquals(USNYSE.diffBusinessDay(day1, day2), QueryConstants.NULL_DOUBLE);
+        assertEquals(USNYSE.diffBusinessYears(day1, day2), QueryConstants.NULL_DOUBLE);
+        assertEquals(USNYSE.diffBusinessDays(day1, day2), QueryConstants.NULL_DOUBLE);
         assertEquals(USNYSE.diffBusinessNanos(day1, day2), QueryConstants.NULL_LONG);
 
         day1 = day2;
-        assertEquals(USNYSE.diffBusinessYear(day1, day2), 0.0);
-        assertEquals(USNYSE.diffBusinessDay(day1, day2), 0.0);
+        assertEquals(USNYSE.diffBusinessYears(day1, day2), 0.0);
+        assertEquals(USNYSE.diffBusinessDays(day1, day2), 0.0);
         assertEquals(USNYSE.diffBusinessNanos(day1, day2), 0);
     }
 
@@ -1335,7 +1335,7 @@ public class TestDefaultBusinessCalendar extends BaseArrayTestCase {
         day1 = DateTimeUtils.parseInstant("2017-01-23T10:00:00.000000000 JP");
         day2 = DateTimeUtils.parseInstant("2017-01-23T16:00:00.000000000 JP");
         assertEquals(JPOSE.diffNonBusinessNanos(day1, day2), 2 * DateTimeUtils.HOUR);
-        assertEquals(JPOSE.diffNonBusinessDay(day1, day2),
+        assertEquals(JPOSE.diffNonBusinessDays(day1, day2),
                 ((double) (2 * DateTimeUtils.HOUR)) / (double) JPOSE.standardBusinessDayLengthNanos());
 
 
@@ -1347,7 +1347,7 @@ public class TestDefaultBusinessCalendar extends BaseArrayTestCase {
         assertEquals(USNYSE.diffNonBusinessNanos(day1, day2), 0);
 
         day1 = null;
-        assertEquals(USNYSE.diffNonBusinessDay(day1, day2), QueryConstants.NULL_DOUBLE);
+        assertEquals(USNYSE.diffNonBusinessDays(day1, day2), QueryConstants.NULL_DOUBLE);
     }
 
     public void testBusinessDateRange() {
@@ -1624,12 +1624,12 @@ public class TestDefaultBusinessCalendar extends BaseArrayTestCase {
     public void testMidnightClose() {
         assertEquals(DateTimeUtils.DAY, UTC.standardBusinessDayLengthNanos());
         assertEquals("2019-04-16", UTC.futureDate("2019-04-15"));
-        assertEquals("2019-04-16", UTC.nextBusinessDay("2019-04-15"));
-        assertEquals("2019-04-18", UTC.nextBusinessDay("2019-04-15", 3));
+        assertEquals("2019-04-16", UTC.futureBusinessDate("2019-04-15"));
+        assertEquals("2019-04-18", UTC.futureBusinessDate("2019-04-15", 3));
         assertEquals("2019-08-19",
-                UTC.nextBusinessDay(DateTimeUtils.parseInstant("2019-08-18T00:00:00.000000000 UTC")));
+                UTC.futureBusinessDate(DateTimeUtils.parseInstant("2019-08-18T00:00:00.000000000 UTC")));
 
-        assertEquals("2019-05-16", DateTimeUtils.formatDate(UTC.getBusinessSchedule("2019-05-16").getSOBD(), TZ_UTC));
-        assertEquals("2019-05-17", DateTimeUtils.formatDate(UTC.getBusinessSchedule("2019-05-16").getEOBD(), TZ_UTC));
+        assertEquals("2019-05-16", DateTimeUtils.formatDate(UTC.businessSchedule("2019-05-16").getSOBD(), TZ_UTC));
+        assertEquals("2019-05-17", DateTimeUtils.formatDate(UTC.businessSchedule("2019-05-16").getEOBD(), TZ_UTC));
     }
 }

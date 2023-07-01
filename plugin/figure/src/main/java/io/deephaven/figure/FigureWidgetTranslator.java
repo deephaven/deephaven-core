@@ -559,7 +559,7 @@ public class FigureWidgetTranslator {
             return businessPeriod;
         }).forEach(businessCalendarDescriptor::addBusinessPeriods);
 
-        businessCalendar.getHolidays().entrySet().stream().sorted(Comparator.comparing(Map.Entry::getKey))
+        businessCalendar.holidays().entrySet().stream().sorted(Comparator.comparing(Map.Entry::getKey))
                 .map(entry -> {
                     final LocalDate.Builder localDate = LocalDate.newBuilder();
                     localDate.setYear(entry.getKey().getYear());

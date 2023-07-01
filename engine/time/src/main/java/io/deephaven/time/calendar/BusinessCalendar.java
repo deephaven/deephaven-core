@@ -3,7 +3,6 @@
  */
 package io.deephaven.time.calendar;
 
-import io.deephaven.base.verify.Require;
 import io.deephaven.time.DateTimeUtils;
 import io.deephaven.util.QueryConstants;
 
@@ -16,7 +15,9 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 
+//TODO: update all headers
 //TODO: review all docs
+
 
 /**
  * A business calendar. Calendar is extended with the concept of business and non-business time.
@@ -30,81 +31,76 @@ public interface BusinessCalendar extends Calendar {
 
     // region Business Schedule
 
-    //TODO: rename
     /**
      * Gets business schedules for dates that are different from the defaults. This returns all dates that are defined
      * as a holiday for the calendar.
      *
      * @return a map of dates and to their business periods
      */
-    default Map<LocalDate, BusinessSchedule> getHolidays() {
+    default Map<LocalDate, BusinessSchedule> holidays() {
         return Collections.unmodifiableMap(holidays);
     }
 
-    //TODO: rename schedule or businessSchedule
     /**
      * Gets the indicated business day's schedule. {@code getBusinessSchedule(null)} returns {@code null}.
      *
      * @param date date
      * @return the corresponding BusinessSchedule of {@code date}
      */
-    default BusinessSchedule getBusinessSchedule(final LocalDate date) {
+    default BusinessSchedule businessSchedule(final LocalDate date) {
         return dates.computeIfAbsent(date, this::newBusinessDay);
     }
 
-    //TODO: rename schedule
     /**
      * Gets the indicated business day's schedule. {@code getBusinessSchedule(null)} returns {@code null}.
      *
      * @param time time
      * @return the corresponding BusinessSchedule of {@code time}; null if time is null
      */
-    default BusinessSchedule getBusinessSchedule(final ZonedDateTime time) {
+    default BusinessSchedule businessSchedule(final ZonedDateTime time) {
         if (time == null) {
             return null;
         }
 
-        return getBusinessSchedule(time.withZoneSameInstant(timeZone()));
+        return businessSchedule(time.withZoneSameInstant(timeZone()));
     }
 
-    //TODO: rename schedule
     /**
      * Gets the indicated business day's schedule. {@code getBusinessSchedule(null)} returns {@code null}.
      *
      * @param time time
      * @return the corresponding BusinessSchedule of {@code time}; null if time is null
      */
-    default BusinessSchedule getBusinessSchedule(final Instant time) {
+    default BusinessSchedule businessSchedule(final Instant time) {
         if (time == null) {
             return null;
         }
 
-        return getBusinessSchedule(time.atZone(timeZone()));
+        return businessSchedule(time.atZone(timeZone()));
     }
 
-    //TODO: rename schedule
     /**
      * Gets the indicated business day's schedule. {@code getBusinessSchedule(null)} returns {@code null}.
      *
      * @param date date
      * @return the corresponding BusinessSchedule of {@code date}
      */
-    default BusinessSchedule getBusinessSchedule(String date) {
+    default BusinessSchedule businessSchedule(String date) {
         if (date == null) {
             return null;
         }
 
-        return getBusinessSchedule(DateTimeUtils.parseLocalDate(date));
+        return businessSchedule(DateTimeUtils.parseLocalDate(date));
     }
 
-    //TODO: rename current schedule?
+    //TODO: rename current schedule? --> or zero arg?
     /**
      * Gets today's business schedule.
      *
      * @return today's business schedule
      */
     default BusinessSchedule currentBusinessSchedule() {
-        return getBusinessSchedule(currentDay());
+        return businessSchedule(currentDate());
     }
 
     // endregion
@@ -118,7 +114,7 @@ public interface BusinessCalendar extends Calendar {
      * @return true if the date is a business day; false otherwise.
      */
     default boolean isBusinessDay(final LocalDate date) {
-        return date != null && getBusinessSchedule(date).isBusinessDay();
+        return date != null && businessSchedule(date).isBusinessDay();
     }
 
     /**
@@ -157,7 +153,6 @@ public interface BusinessCalendar extends Calendar {
         return fractionOfStandardBusinessDay(time) > 0.0;
     }
 
-    //TODO: rename?
     /**
      * Is the day of the week a business day? A business day is a day that has a business schedule with one or more
      * business periods defined.
@@ -176,7 +171,7 @@ public interface BusinessCalendar extends Calendar {
      * @return true if the current day is a business day; false otherwise.
      */
     default boolean isBusinessDay() {
-        return isBusinessDay(currentDay());
+        return isBusinessDay(currentDate());
     }
 
     /**
@@ -191,7 +186,7 @@ public interface BusinessCalendar extends Calendar {
             return false;
         }
 
-        final LocalDate nextBusAfterDate = nextBusinessDay(date);
+        final LocalDate nextBusAfterDate = futureBusinessDate(date);
 
         if(nextBusAfterDate == null){
             ** raise an error;
@@ -254,7 +249,7 @@ public interface BusinessCalendar extends Calendar {
      * @return true if {@code date} is on the last business day of the month; false otherwise.
      */
     default boolean isLastBusinessDayOfMonth() {
-        return isLastBusinessDayOfMonth(currentDay());
+        return isLastBusinessDayOfMonth(currentDate());
     }
 
     /**
@@ -273,8 +268,8 @@ public interface BusinessCalendar extends Calendar {
             return false;
         }
 
-        final LocalDate nextBusinessDay = nextBusinessDay(date);
-        return dayOfWeek(date).compareTo(dayOfWeek(nextBusinessDay)) > 0 || numberOfDays(date, nextBusinessDay) > 6;
+        final LocalDate nextBusinessDay = futureBusinessDate(date);
+        return dayOfWeek(date).compareTo(dayOfWeek(nextBusinessDay)) > 0 || numberCalendarDates(date, nextBusinessDay) > 6;
     }
 
     /**
@@ -330,8 +325,11 @@ public interface BusinessCalendar extends Calendar {
      * @return true if {@code date} is on the last business day of the week; false otherwise.
      */
     default boolean isLastBusinessDayOfWeek() {
-        return isLastBusinessDayOfWeek(currentDay());
+        return isLastBusinessDayOfWeek(currentDate());
     }
+
+    //TODO: isLastBusinessDayOfYear()
+    //TODO: isLastNonBusinessDayOfYear() -> and other non business day equivalents
 
     // endregion
 
@@ -345,9 +343,10 @@ public interface BusinessCalendar extends Calendar {
      * @return true if the specified time is a business time; otherwise, false.
      */
     default boolean isBusinessTime(final ZonedDateTime time) {
-        return time != null && getBusinessSchedule(time).isBusinessTime(time);
+        return time != null && businessSchedule(time).isBusinessTime(time);
     }
 
+    //TODO: zero arg version?
     /**
      * Determines if the specified time is a business time. If the time falls between business periods, false will be
      * returned.
@@ -356,7 +355,7 @@ public interface BusinessCalendar extends Calendar {
      * @return true if the specified time is a business time; otherwise, false.
      */
     default boolean isBusinessTime(final Instant time) {
-        return time != null && getBusinessSchedule(time).isBusinessTime(time);
+        return time != null && businessSchedule(time).isBusinessTime(time);
     }
 
     /**
@@ -378,7 +377,7 @@ public interface BusinessCalendar extends Calendar {
      * @return ratio of the business day length and the standard business day length for the date
      */
     default double fractionOfStandardBusinessDay(final LocalDate date){
-        final BusinessSchedule schedule = getBusinessSchedule(date);
+        final BusinessSchedule schedule = businessSchedule(date);
         return schedule == null ? 0.0 : (double) schedule.getLOBD() / (double) standardBusinessDayLengthNanos();
     }
 
@@ -408,6 +407,7 @@ public interface BusinessCalendar extends Calendar {
         return time == null ? 0.0 : fractionOfStandardBusinessDay(DateTimeUtils.toLocalDate(time.toInstant(), timeZone()));
     }
 
+    //TODO: add zero arg methods for other funcs
     /**
      * Returns the ratio of the current day's business day length and the standard business day length. For example, a
      * holiday has zero business time and will therefore return 0.0. A normal business day will be of the standard
@@ -417,7 +417,7 @@ public interface BusinessCalendar extends Calendar {
      * @return ratio of the business day length and the standard business day length for the current day
      */
     default double fractionOfStandardBusinessDay() {
-        return fractionOfStandardBusinessDay(currentDay());
+        return fractionOfStandardBusinessDay(currentDate());
     }
 
     /**
@@ -427,7 +427,7 @@ public interface BusinessCalendar extends Calendar {
      * @return the fraction of the day left after {@code time}; NULL_DOUBLE if time is null
      */
     default double fractionOfBusinessDayRemaining(final Instant time){
-        final BusinessSchedule businessDate = getBusinessSchedule(time);
+        final BusinessSchedule businessDate = businessSchedule(time);
         if (businessDate == null) {
             return QueryConstants.NULL_DOUBLE;
         }
@@ -454,6 +454,7 @@ public interface BusinessCalendar extends Calendar {
         return fractionOfBusinessDayRemaining(time.toInstant());
     }
 
+    //TODO: remove Of from function names!
     /**
      * Returns the fraction of the business day complete by the given time.
      *
@@ -488,7 +489,6 @@ public interface BusinessCalendar extends Calendar {
 
     //TODO: consistently handle inclusive / exclusive in these ranges
 
-    //TODO: add InRange to name
     /**
      * Returns the number of business days between {@code start} and {@code end}.
      *
@@ -498,7 +498,7 @@ public interface BusinessCalendar extends Calendar {
      * @return number of business days between the {@code start} and {@code end}, inclusive and {@code endInclusive}
      *         respectively.
      */
-    default int numberOfBusinessDays(final LocalDate start, final LocalDate end, final boolean endInclusive)  {
+    default int numberBusinessDates(final LocalDate start, final LocalDate end, final boolean endInclusive)  {
         if (start == null || end == null) {
             return QueryConstants.NULL_INT;
         }
@@ -508,23 +508,22 @@ public interface BusinessCalendar extends Calendar {
             if (isBusinessDay(start)) {
                 days++;
             }
-            start = nextBusinessDay(start);
+            start = futureBusinessDate(start);
         } else if (start.isAfter(end)) {
             //TODO: is this working right?
-            return -numberOfBusinessDays(end, start, endInclusive);
+            return -numberBusinessDates(end, start, endInclusive);
         }
 
         LocalDate day = start;
 
         while (day.isBefore(end)) {
             days++;
-            day = nextBusinessDay(day);
+            day = futureBusinessDate(day);
         }
 
         return days + (endInclusive && isBusinessDay(end) ? 1 : 0);
     }
 
-    //TODO: add InRange to name
     //TODO: add endInclusive on all methods
     /**
      * Returns the number of business days between {@code start} and {@code end}.
@@ -535,15 +534,14 @@ public interface BusinessCalendar extends Calendar {
      * @return number of business days between the {@code start} and {@code end}, inclusive and {@code endInclusive}
      *         respectively.
      */
-    default int numberOfBusinessDays(Instant start, Instant end, final boolean endInclusive) {
+    default int numberBusinessDates(Instant start, Instant end, final boolean endInclusive) {
         if (start == null || end == null) {
             return QueryConstants.NULL_INT;
         }
 
-        return numberOfBusinessDays(DateTimeUtils.toLocalDate(start, timeZone()), DateTimeUtils.toLocalDate(end, timeZone()), endInclusive);
+        return numberBusinessDates(DateTimeUtils.toLocalDate(start, timeZone()), DateTimeUtils.toLocalDate(end, timeZone()), endInclusive);
     }
 
-    //TODO: add InRange to name
     /**
      * Returns the number of business days between {@code start} and {@code end}.
      *
@@ -553,15 +551,14 @@ public interface BusinessCalendar extends Calendar {
      * @return number of business days between the {@code start} and {@code end}, inclusive and {@code endInclusive}
      *         respectively.
      */
-    default int numberOfBusinessDays(ZonedDateTime start, ZonedDateTime end, final boolean endInclusive) {
+    default int numberBusinessDates(ZonedDateTime start, ZonedDateTime end, final boolean endInclusive) {
         if (start == null || end == null) {
             return QueryConstants.NULL_INT;
         }
 
-        return numberOfBusinessDays(DateTimeUtils.toLocalDate(start.toInstant(), timeZone()), DateTimeUtils.toLocalDate(end.toInstant(), timeZone()), endInclusive);
+        return numberBusinessDates(DateTimeUtils.toLocalDate(start.toInstant(), timeZone()), DateTimeUtils.toLocalDate(end.toInstant(), timeZone()), endInclusive);
     }
 
-    //TODO: add InRange to name
     /**
      * Returns the number of business days between {@code start} and {@code end}.
      *
@@ -571,15 +568,14 @@ public interface BusinessCalendar extends Calendar {
      * @return number of business days between the {@code start} and {@code end}, inclusive and {@code endInclusive}
      *         respectively.
      */
-    default int numberOfBusinessDays(String start, String end, final boolean endInclusive)  {
+    default int numberBusinessDates(String start, String end, final boolean endInclusive)  {
         if (start == null || end == null) {
             return QueryConstants.NULL_INT;
         }
 
-        return numberOfBusinessDays(DateTimeUtils.parseLocalDate(start), DateTimeUtils.parseLocalDate(end), endInclusive);
+        return numberBusinessDates(DateTimeUtils.parseLocalDate(start), DateTimeUtils.parseLocalDate(end), endInclusive);
     }
 
-    //TODO: add InRange to name
     /**
      * Returns the number of non-business days between {@code start} and {@code end}.
      *
@@ -589,15 +585,14 @@ public interface BusinessCalendar extends Calendar {
      * @return number of non-business days between the {@code start} and {@code end}, inclusive and {@code endInclusive}
      *         respectively.
      */
-    default int numberOfNonBusinessDays(final LocalDate start, final LocalDate end, final boolean endInclusive) {
+    default int numberNonBusinessDates(final LocalDate start, final LocalDate end, final boolean endInclusive) {
         if (start == null || end == null) {
             return QueryConstants.NULL_INT;
         }
 
-        return numberOfDays(start, end, endInclusive) - numberOfBusinessDays(start, end, endInclusive);
+        return numberCalendarDates(start, end, endInclusive) - numberBusinessDates(start, end, endInclusive);
     }
 
-    //TODO: add InRange to name
     /**
      * Returns the number of non-business days between {@code start} and {@code end}.
      *
@@ -607,15 +602,14 @@ public interface BusinessCalendar extends Calendar {
      * @return number of business days between the {@code start} and {@code end}, inclusive and {@code endInclusive}
      *         respectively.
      */
-    default int numberOfNonBusinessDays(Instant start, Instant end, final boolean endInclusive) {
+    default int numberNonBusinessDates(Instant start, Instant end, final boolean endInclusive) {
         if (start == null || end == null) {
             return QueryConstants.NULL_INT;
         }
 
-        return numberOfNonBusinessDays(DateTimeUtils.toLocalDate(start, timeZone()), DateTimeUtils.toLocalDate(end, timeZone()), endInclusive);
+        return numberNonBusinessDates(DateTimeUtils.toLocalDate(start, timeZone()), DateTimeUtils.toLocalDate(end, timeZone()), endInclusive);
     }
 
-    //TODO: add InRange to name
     /**
      * Returns the number of non-business days between {@code start} and {@code end}.
      *
@@ -625,12 +619,12 @@ public interface BusinessCalendar extends Calendar {
      * @return number of non-business days between the {@code start} and {@code end}, inclusive and {@code endInclusive}
      *         respectively.
      */
-    default int numberOfNonBusinessDays(final String start, final String end, final boolean endInclusive) {
+    default int numberNonBusinessDates(final String start, final String end, final boolean endInclusive) {
         if (start == null || end == null) {
             return QueryConstants.NULL_INT;
         }
 
-        return numberOfNonBusinessDays(DateTimeUtils.parseLocalDate(start), DateTimeUtils.parseLocalDate(end), endInclusive);
+        return numberNonBusinessDates(DateTimeUtils.parseLocalDate(start), DateTimeUtils.parseLocalDate(end), endInclusive);
     }
 
     /**
@@ -643,7 +637,7 @@ public interface BusinessCalendar extends Calendar {
      * @param end end time; if null, return empty array
      * @return inclusive business days between {@code start} and {@code end}
      */
-    default LocalDate[] businessDaysInRange(final LocalDate start, final LocalDate end) {
+    default LocalDate[] businessDates(final LocalDate start, final LocalDate end) {
         if (start == null || end == null) {
             return new LocalDate[0];
         }
@@ -671,12 +665,12 @@ public interface BusinessCalendar extends Calendar {
      * @param end end time; if null, return empty array
      * @return inclusive business days between {@code start} and {@code end}
      */
-    default LocalDate[] businessDaysInRange(final Instant start, final Instant end) {
+    default LocalDate[] businessDates(final Instant start, final Instant end) {
         if (start == null || end == null) {
             return new LocalDate[0];
         }
 
-        return businessDaysInRange(DateTimeUtils.toLocalDate(start, timeZone()), DateTimeUtils.toLocalDate(end, timeZone()));
+        return businessDates(DateTimeUtils.toLocalDate(start, timeZone()), DateTimeUtils.toLocalDate(end, timeZone()));
     }
 
     /**
@@ -689,12 +683,12 @@ public interface BusinessCalendar extends Calendar {
      * @param end end time; if null, return empty array
      * @return inclusive business days between {@code start} and {@code end}
      */
-    default LocalDate[] businessDaysInRange(final ZonedDateTime start, final ZonedDateTime end) {
+    default LocalDate[] businessDates(final ZonedDateTime start, final ZonedDateTime end) {
         if (start == null || end == null) {
             return new LocalDate[0];
         }
 
-        return businessDaysInRange(DateTimeUtils.toLocalDate(start.toInstant(), timeZone()), DateTimeUtils.toLocalDate(end.toInstant(), timeZone()));
+        return businessDates(DateTimeUtils.toLocalDate(start.toInstant(), timeZone()), DateTimeUtils.toLocalDate(end.toInstant(), timeZone()));
     }
 
     /**
@@ -707,12 +701,12 @@ public interface BusinessCalendar extends Calendar {
      * @param end end time; if null, return empty array
      * @return inclusive business days between {@code start} and {@code end}
      */
-    default LocalDate[] businessDaysInRange(String start, String end){
+    default LocalDate[] businessDates(String start, String end){
         if (start == null || end == null) {
             return new LocalDate[0];
         }
 
-        return businessDaysInRange(DateTimeUtils.parseLocalDate(start), DateTimeUtils.parseLocalDate(end));
+        return businessDates(DateTimeUtils.parseLocalDate(start), DateTimeUtils.parseLocalDate(end));
     }
 
     /**
@@ -725,7 +719,7 @@ public interface BusinessCalendar extends Calendar {
      * @param end end time; if null, return empty array
      * @return inclusive non-business days between {@code start} and {@code end}
      */
-    default LocalDate[] nonBusinessDaysInRange(final LocalDate start, final LocalDate end){
+    default LocalDate[] nonBusinessDates(final LocalDate start, final LocalDate end){
         if (start == null || end == null) {
             return new LocalDate[0];
         }
@@ -753,12 +747,12 @@ public interface BusinessCalendar extends Calendar {
      * @param end end time; if null, return empty array
      * @return inclusive non-business days between {@code start} and {@code end}
      */
-    default LocalDate[] nonBusinessDaysInRange(final Instant start, final Instant end){
+    default LocalDate[] nonBusinessDates(final Instant start, final Instant end){
         if (start == null || end == null) {
             return new LocalDate[0];
         }
 
-        return nonBusinessDaysInRange(DateTimeUtils.toLocalDate(start, timeZone()), DateTimeUtils.toLocalDate(end, timeZone()));
+        return nonBusinessDates(DateTimeUtils.toLocalDate(start, timeZone()), DateTimeUtils.toLocalDate(end, timeZone()));
     }
 
     /**
@@ -771,12 +765,12 @@ public interface BusinessCalendar extends Calendar {
      * @param end end time; if null, return empty array
      * @return inclusive non-business days between {@code start} and {@code end}
      */
-    default LocalDate[] nonBusinessDaysInRange(final ZonedDateTime start, final ZonedDateTime end){
+    default LocalDate[] nonBusinessDates(final ZonedDateTime start, final ZonedDateTime end){
         if (start == null || end == null) {
             return new LocalDate[0];
         }
 
-        return nonBusinessDaysInRange(DateTimeUtils.toLocalDate(start.toInstant(), timeZone()), DateTimeUtils.toLocalDate(end.toInstant(), timeZone()));
+        return nonBusinessDates(DateTimeUtils.toLocalDate(start.toInstant(), timeZone()), DateTimeUtils.toLocalDate(end.toInstant(), timeZone()));
     }
 
     /**
@@ -789,12 +783,12 @@ public interface BusinessCalendar extends Calendar {
      * @param end end time; if null, return empty array
      * @return inclusive non-business days between {@code start} and {@code end}
      */
-    default LocalDate[] nonBusinessDaysInRange(String start, String end){
+    default LocalDate[] nonBusinessDates(String start, String end){
         if (start == null || end == null) {
             return new LocalDate[0];
         }
 
-        return nonBusinessDaysInRange(DateTimeUtils.parseLocalDate(start), DateTimeUtils.parseLocalDate(end));
+        return nonBusinessDates(DateTimeUtils.parseLocalDate(start), DateTimeUtils.parseLocalDate(end));
     }
 
     /**
@@ -818,7 +812,7 @@ public interface BusinessCalendar extends Calendar {
 
         while (!DateTimeUtils.isAfter(day, end)) {
             if (isBusinessDay(day)) {
-                BusinessSchedule businessDate = getBusinessSchedule(day);
+                BusinessSchedule businessDate = businessSchedule(day);
 
                 if (businessDate != null) {
                     for (BusinessPeriod businessPeriod : businessDate.getBusinessPeriods()) {
@@ -844,7 +838,7 @@ public interface BusinessCalendar extends Calendar {
                     }
                 }
             }
-            day = getBusinessSchedule(nextBusinessDay(day)).getSOBD();
+            day = businessSchedule(futureBusinessDate(day)).getSOBD();
         }
         return dayDiffNanos;
     }
@@ -905,7 +899,7 @@ public interface BusinessCalendar extends Calendar {
      * @param end end time; if null, return NULL_LONG
      * @return the amount of business time in standard business days between the {@code start} and {@code end}
      */
-    default double diffBusinessDay(final Instant start, final Instant end) {
+    default double diffBusinessDays(final Instant start, final Instant end) {
         if (start == null || end == null) {
             return QueryConstants.NULL_DOUBLE;
         }
@@ -920,12 +914,12 @@ public interface BusinessCalendar extends Calendar {
      * @param end end time; if null, return NULL_LONG
      * @return the amount of business time in standard business days between the {@code start} and {@code end}
      */
-    default double diffBusinessDay(final ZonedDateTime start, final ZonedDateTime end) {
+    default double diffBusinessDays(final ZonedDateTime start, final ZonedDateTime end) {
         if (start == null || end == null) {
             return QueryConstants.NULL_DOUBLE;
         }
 
-        return diffBusinessDay(start.toInstant(), end.toInstant());
+        return diffBusinessDays(start.toInstant(), end.toInstant());
     }
 
     /**
@@ -935,7 +929,7 @@ public interface BusinessCalendar extends Calendar {
      * @param end end time; if null, return NULL_LONG
      * @return the amount of non-business time in standard business days between the {@code start} and {@code end}
      */
-    default double diffNonBusinessDay(final Instant start, final Instant end){
+    default double diffNonBusinessDays(final Instant start, final Instant end){
         if (start == null || end == null) {
             return QueryConstants.NULL_DOUBLE;
         }
@@ -950,12 +944,12 @@ public interface BusinessCalendar extends Calendar {
      * @param end end time; if null, return NULL_LONG
      * @return the amount of non-business time in standard business days between the {@code start} and {@code end}
      */
-    default double diffNonBusinessDay(final ZonedDateTime start, final ZonedDateTime end){
+    default double diffNonBusinessDays(final ZonedDateTime start, final ZonedDateTime end){
         if (start == null || end == null) {
             return QueryConstants.NULL_DOUBLE;
         }
 
-        return diffNonBusinessDay(start.toInstant(), end.toInstant());
+        return diffNonBusinessDays(start.toInstant(), end.toInstant());
     }
 
     /**
@@ -965,7 +959,7 @@ public interface BusinessCalendar extends Calendar {
      * @param end end; if null, return null
      * @return the amount of business time in business years between the {@code start} and {@code end}
      */
-   default double diffBusinessYear(final Instant start, final Instant end){
+   default double diffBusinessYears(final Instant start, final Instant end){
         if (start == null || end == null) {
             return QueryConstants.NULL_DOUBLE;
         }
@@ -999,20 +993,18 @@ public interface BusinessCalendar extends Calendar {
      * @param end end; if null, return null
      * @return the amount of business time in business years between the {@code start} and {@code end}
      */
-    default double diffBusinessYear(final ZonedDateTime start, final ZonedDateTime end) {
+    default double diffBusinessYears(final ZonedDateTime start, final ZonedDateTime end) {
         if (start == null || end == null) {
             return QueryConstants.NULL_DOUBLE;
         }
 
-        return diffBusinessYear(start.toInstant(), end.toInstant());
+        return diffBusinessYears(start.toInstant(), end.toInstant());
     }
 
     // endregion
 
     // region Arithmetic
 
-    //TODO: what is the simpliest API?
-    //TODO: simplify names?  e.g. nonbusinessday -> NBD?
     //TODO: should the add/subtract methods on Instants or ZDT return times of LocalDates?
 
     /**
@@ -1022,7 +1014,7 @@ public interface BusinessCalendar extends Calendar {
      * @param days number of days to add.
      * @return {@code days} business days after {@code date}; null if {@code date} is null or if {@code date} is not a business day and {@code days} is zero.
      */
-    default LocalDate addBusinessDays(final LocalDate date, int days) {
+    default LocalDate plusBusinessDays(final LocalDate date, int days) {
         if (date == null) {
             return null;
         } else if(days == 0){
@@ -1048,13 +1040,13 @@ public interface BusinessCalendar extends Calendar {
      * @param days number of days to add.
      * @return {@code days} business days after {@code date}; null if {@code date} is null or if {@code date} is not a business day and {@code days} is zero.
      */
-    default LocalDate addBusinessDays(final String date, int days) {
+    default LocalDate plusBusinessDays(final String date, int days) {
         if(date == null){
             return null;
         }
 
         //TODO: should the date parsing be quiet? Document exceptions?
-        return addBusinessDays(DateTimeUtils.parseLocalDate(date), days);
+        return plusBusinessDays(DateTimeUtils.parseLocalDate(date), days);
     }
 
     /**
@@ -1064,12 +1056,12 @@ public interface BusinessCalendar extends Calendar {
          * @param days number of days to add.
          * @return {@code days} business days after {@code time}; null if {@code date} is null or if {@code time} is not a business day and {@code days} is zero.
          */
-    default LocalDate addBusinessDays(final Instant time, int days) {
+    default LocalDate plusBusinessDays(final Instant time, int days) {
         if(time == null){
             return null;
         }
 
-        return addBusinessDays(DateTimeUtils.toLocalDate(time, timeZone()), days);
+        return plusBusinessDays(DateTimeUtils.toLocalDate(time, timeZone()), days);
     }
 
     /**
@@ -1079,12 +1071,12 @@ public interface BusinessCalendar extends Calendar {
      * @param days number of days to add.
      * @return {@code days} business days after {@code time}; null if {@code date} is null or if {@code time} is not a business day and {@code days} is zero.
      */
-    default LocalDate addBusinessDays(final ZonedDateTime time, int days) {
+    default LocalDate plusBusinessDays(final ZonedDateTime time, int days) {
         if(time == null){
             return null;
         }
 
-        return addBusinessDays(time.toInstant(), days);
+        return plusBusinessDays(time.toInstant(), days);
     }
 
     /**
@@ -1094,8 +1086,8 @@ public interface BusinessCalendar extends Calendar {
      * @param days number of days to subtract.
      * @return {@code days} business days before {@code time}; null if {@code date} is null or if {@code time} is not a business day and {@code days} is zero.
      */
-    default LocalDate subtractBusinessDays(final LocalDate date, int days) {
-        return addBusinessDays(date, -days);
+    default LocalDate minusBusinessDays(final LocalDate date, int days) {
+        return plusBusinessDays(date, -days);
     }
 
     /**
@@ -1105,8 +1097,8 @@ public interface BusinessCalendar extends Calendar {
      * @param days number of days to subtract.
      * @return {@code days} business days before {@code time}; null if {@code date} is null or if {@code time} is not a business day and {@code days} is zero.
      */
-    default LocalDate subtractBusinessDays(final String date, int days) {
-        return addBusinessDays(date, -days);
+    default LocalDate minusBusinessDays(final String date, int days) {
+        return plusBusinessDays(date, -days);
     }
 
     /**
@@ -1116,8 +1108,8 @@ public interface BusinessCalendar extends Calendar {
      * @param days number of days to subtract.
      * @return {@code days} business days before {@code time}; null if {@code date} is null or if {@code time} is not a business day and {@code days} is zero.
      */
-    default LocalDate subtractBusinessDays(final Instant time, int days) {
-        return addBusinessDays(time, -days);
+    default LocalDate minusBusinessDays(final Instant time, int days) {
+        return plusBusinessDays(time, -days);
     }
 
     /**
@@ -1127,8 +1119,8 @@ public interface BusinessCalendar extends Calendar {
      * @param days number of days to subtract.
      * @return {@code days} business days before {@code time}; null if {@code date} is null or if {@code time} is not a business day and {@code days} is zero.
      */
-    default LocalDate subtractBusinessDays(final ZonedDateTime time, int days) {
-        return addBusinessDays(time, -days);
+    default LocalDate minusBusinessDays(final ZonedDateTime time, int days) {
+        return plusBusinessDays(time, -days);
     }
 
     /**
@@ -1138,7 +1130,7 @@ public interface BusinessCalendar extends Calendar {
      * @param days number of days to add.
      * @return {@code days} non-business days after {@code date}; null if {@code date} is null or if {@code date} is a business day and {@code days} is zero.
      */
-    default LocalDate addNonBusinessDays(final LocalDate date, int days) {
+    default LocalDate plusNonBusinessDays(final LocalDate date, int days) {
         if (date == null) {
             return null;
         } else if(days == 0){
@@ -1164,12 +1156,12 @@ public interface BusinessCalendar extends Calendar {
      * @param days number of days to add.
      * @return {@code days} non-business days after {@code date}; null if {@code date} is null or if {@code date} is a business day and {@code days} is zero.
      */
-    default LocalDate addNonBusinessDays(final LocalDate date, int days) {
+    default LocalDate plusNonBusinessDays(final LocalDate date, int days) {
         if(date == null){
             return null;
         }
 
-        return addNonBusinessDays(DateTimeUtils.parseLocalDate(date), days);
+        return this.plusNonBusinessDays(DateTimeUtils.parseLocalDate(date), days);
     }
 
         /**
@@ -1179,12 +1171,12 @@ public interface BusinessCalendar extends Calendar {
          * @param days number of days to add.
          * @return {@code days} non-business days after {@code time}; null if {@code date} is null or if {@code date} is a business day and {@code days} is zero.
          */
-    default LocalDate addNonBusinessDays(final Instant time, int days) {
+    default LocalDate plusNonBusinessDays(final Instant time, int days) {
         if(time == null){
             return null;
         }
 
-        return addNonBusinessDays(DateTimeUtils.toLocalDate(time, timeZone()), days);
+        return this.plusNonBusinessDays(DateTimeUtils.toLocalDate(time, timeZone()), days);
     }
 
     /**
@@ -1194,12 +1186,12 @@ public interface BusinessCalendar extends Calendar {
      * @param days number of days to add.
      * @return {@code days} non-business days after {@code time}; null if {@code date} is null or if {@code date} is a business day and {@code days} is zero.
      */
-    default LocalDate addNonBusinessDays(final ZonedDateTime time, int days) {
+    default LocalDate plusNonBusinessDays(final ZonedDateTime time, int days) {
         if(time == null){
             return null;
         }
 
-        return addNonBusinessDays(time.toInstant(), days);
+        return plusNonBusinessDays(time.toInstant(), days);
     }
 
     /**
@@ -1209,8 +1201,8 @@ public interface BusinessCalendar extends Calendar {
      * @param days number of days to subtract.
      * @return {@code days} non-business days after {@code date}; null if {@code date} is null or if {@code date} is a business day and {@code days} is zero.
      */
-    default LocalDate subtractNonBusinessDays(final LocalDate date, int days) {
-        return addNonBusinessDays(date, -days);
+    default LocalDate minusNonBusinessDays(final LocalDate date, int days) {
+        return this.plusNonBusinessDays(date, -days);
     }
 
     /**
@@ -1220,7 +1212,7 @@ public interface BusinessCalendar extends Calendar {
      * @param days number of days to subtract.
      * @return {@code days} non-business days after {@code date}; null if {@code date} is null or if {@code date} is a business day and {@code days} is zero.
      */
-    default LocalDate subtractNonBusinessDays(final String date, int days) {
+    default LocalDate minusNonBusinessDays(final String date, int days) {
         return addNonBusinessDays(date, -days);
     }
 
@@ -1231,8 +1223,8 @@ public interface BusinessCalendar extends Calendar {
      * @param days number of days to subtract.
      * @return {@code days} non-business days after {@code time}; null if {@code date} is null or if {@code time} is a business day and {@code days} is zero.
      */
-    default LocalDate subtractNonBusinessDays(final Instant time, int days) {
-        return addNonBusinessDays(time, -days);
+    default LocalDate minusNonBusinessDays(final Instant time, int days) {
+        return plusNonBusinessDays(time, -days);
     }
 
     /**
@@ -1242,8 +1234,8 @@ public interface BusinessCalendar extends Calendar {
      * @param days number of days to subtract.
      * @return {@code days} non-business days after {@code time}; null if {@code date} is null or if {@code time} is a business day and {@code days} is zero.
      */
-    default LocalDate subtractNonBusinessDays(final ZonedDateTime time, int days) {
-        return addNonBusinessDays(time, -days);
+    default LocalDate minusNonBusinessDays(final ZonedDateTime time, int days) {
+        return plusNonBusinessDays(time, -days);
     }
 
     /**
@@ -1252,8 +1244,8 @@ public interface BusinessCalendar extends Calendar {
      * @param days number of days to add.
      * @return {@code days} business days after the current date; null if the current date is not a business day and {@code days} is zero.
      */
-    default LocalDate nextBusinessDay(int days) {
-        return addBusinessDays(currentDay(), days);
+    default LocalDate futureBusinessDate(int days) {
+        return plusBusinessDays(currentDate(), days);
     }
 
     /**
@@ -1262,8 +1254,8 @@ public interface BusinessCalendar extends Calendar {
      * @param days number of days to subtract.
      * @return {@code days} business days before the current date; null if the current date is not a business day and {@code days} is zero.
      */
-    default LocalDate previousBusinessDay(int days) {
-        return subtractBusinessDays(currentDay(), days);
+    default LocalDate pastBusinessDate(int days) {
+        return minusBusinessDays(currentDate(), days);
     }
 
     /**
@@ -1272,8 +1264,8 @@ public interface BusinessCalendar extends Calendar {
      * @param days number of days to add.
      * @return {@code days} non-business days after the current date; null if the current date is a business day and {@code days} is zero.
      */
-    default LocalDate nextNonBusinessDay(int days) {
-        return addNonBusinessDays(currentDay(), days);
+    default LocalDate futureNonBusinessDate(int days) {
+        return this.plusNonBusinessDays(currentDate(), days);
     }
 
     /**
@@ -1282,12 +1274,13 @@ public interface BusinessCalendar extends Calendar {
      * @param days number of days to subtract.
      * @return {@code days} non-business days before the current date; null if the current date is a business day and {@code days} is zero.
      */
-    default LocalDate previousNonBusinessDay(int days) {
-        return subtractNonBusinessDays(currentDay(), days);
+    default LocalDate pastNonBusinessDate(int days) {
+        return minusNonBusinessDays(currentDate(), days);
     }
 
     // endregion
 
+    //TODO: add to a region
     //TODO: relocate
     //TODO: remove from API?
     //TODO: rename

@@ -318,13 +318,6 @@ public class DefaultBusinessCalendar extends BusinessCalendar implements Seriali
         return businessPeriods;
     }
 
-    @Override
-    public List<String> getDefaultBusinessPeriods() {
-        return Collections.unmodifiableList(defaultBusinessPeriodStrings);
-    }
-
-
-
     private static String getText(Element element) {
         return element == null ? null : element.getTextTrim();
     }
@@ -354,7 +347,7 @@ public class DefaultBusinessCalendar extends BusinessCalendar implements Seriali
 
         for (int j = 0; j < numDays; j++) {
             final int day = j + 1;
-            final BusinessSchedule businessDate = getBusinessSchedule(LocalDate.ofYearDay(year, day));
+            final BusinessSchedule businessDate = businessSchedule(LocalDate.ofYearDay(year, day));
             yearLength += businessDate.getLOBD();
         }
 
@@ -365,7 +358,7 @@ public class DefaultBusinessCalendar extends BusinessCalendar implements Seriali
         boolean isLeap = DateStringUtils.isLeapYear(year);
         int numDays = 365 + (isLeap ? 1 : 0);
         for (int j = 0; j < numDays; j++) {
-            final BusinessSchedule businessDate = getBusinessSchedule(LocalDate.ofYearDay(year, j + 1));
+            final BusinessSchedule businessDate = businessSchedule(LocalDate.ofYearDay(year, j + 1));
             if (!(businessDate instanceof Holiday)) {
                 return businessDate.getSOBD();
             }

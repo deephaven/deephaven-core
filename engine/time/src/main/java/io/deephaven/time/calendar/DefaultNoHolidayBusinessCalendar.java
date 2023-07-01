@@ -34,7 +34,7 @@ public class DefaultNoHolidayBusinessCalendar extends AbstractBusinessCalendar {
 
     @Override
     public Map<LocalDate, BusinessSchedule> getHolidays() {
-        return calendar.getHolidays();
+        return calendar.holidays();
     }
 
     @Override
@@ -59,17 +59,17 @@ public class DefaultNoHolidayBusinessCalendar extends AbstractBusinessCalendar {
 
     @Override
     public BusinessSchedule getBusinessSchedule(final Instant time) {
-        return calendar.getBusinessSchedule(time);
+        return calendar.businessSchedule(time);
     }
 
     @Override
     public BusinessSchedule getBusinessSchedule(final String date) {
-        return calendar.getBusinessSchedule(date);
+        return calendar.businessSchedule(date);
     }
 
     @Override
     public BusinessSchedule getBusinessSchedule(final LocalDate date) {
-        return calendar.getBusinessSchedule(date);
+        return calendar.businessSchedule(date);
     }
 
     @Override
@@ -79,7 +79,7 @@ public class DefaultNoHolidayBusinessCalendar extends AbstractBusinessCalendar {
 
     @Override
     public double diffBusinessYear(final Instant startTime, final Instant endTime) {
-        return calendar.diffBusinessYear(startTime, endTime);
+        return calendar.diffBusinessYears(startTime, endTime);
     }
 
     @Override
