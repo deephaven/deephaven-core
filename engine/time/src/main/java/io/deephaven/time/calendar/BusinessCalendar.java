@@ -1,36 +1,167 @@
 /**
- * Copyright (c) 2016-2022 Deephaven Data Labs and Patent Pending
+ * Copyright (c) 2016-2023 Deephaven Data Labs and Patent Pending
  */
 package io.deephaven.time.calendar;
 
+import io.deephaven.base.verify.Require;
 import io.deephaven.time.DateTimeUtils;
 import io.deephaven.util.QueryConstants;
 
-import java.time.DayOfWeek;
-import java.time.Instant;
-import java.time.LocalDate;
-import java.time.ZonedDateTime;
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.List;
-import java.util.Map;
+import java.time.*;
+import java.util.*;
 
 //TODO: update all headers
 //TODO: review all docs
 
 
 /**
- * A business calendar. Calendar is extended with the concept of business and non-business time.
+ * A business calendar, with the concept of business and non-business time.
  *
- * To comply with the ISO-8601 standard for dates, Strings should be of the form "yyyy-MM-dd",
+ * Methods that take strings as arguments will generally be lower performance than non-string methods,
+ * since strings must first be parsed into dates or times.
  */
 //TODO: fail on out of range
-//TODO: interface, abstract class, or class?
 //TODO should the methods be DB null tolerant
+    //TODO: add null annotations
 @SuppressWarnings("unused") //TODO: remove unused annotation
 public class BusinessCalendar extends Calendar {
 
+    private final LocalDate firstValidDate;
+    private final LocalDate lastValidDate;
+    private final BusinessSchedule<LocalTime> standardBusinessSchedule;
+    private final Set<DayOfWeek> weekendDays;
+    private final Map<LocalDate, BusinessSchedule<Instant>> holidays;
+
+    // region Exceptions
+
+    /**
+     * A runtime exception that is thrown when a date is invalid.
+     */
+    public static class InvalidDateException extends RuntimeException {
+        /**
+         * Creates a new exception.
+         *
+         * @param message exception message.
+         */
+        private InvalidDateException(String message) {
+            super(message);
+        }
+
+        /**
+         * Creates a new exception.
+         *
+         * @param message exception message.
+         * @param cause cause of the exception.
+         */
+        public InvalidDateException(String message, Throwable cause) {
+            super(message, cause);
+        }
+    }
+
+    // endregion
+
+    **
+
+    // region Cache
+
+    private final Map<LocalDate,BusinessSchedule<Instant>> cachedSchedules = new HashMap<>();
+
+    private void populateSchedules() {
+        LocalDate date = firstValidDate;
+
+        while(date.compareTo(lastValidDate) <= 0) {
+
+            final BusinessSchedule<Instant> s = holidays.get(date);
+
+            if( s != null){
+                cachedSchedules.put(date, s);
+            } else if(weekendDays.contains(date.getDayOfWeek())) {
+                cachedSchedules.put(date, BusinessSchedule.toInstant(BusinessSchedule.HOLIDAY, date, timeZone()));
+            } else {
+                cachedSchedules.put(date, BusinessSchedule.toInstant(standardBusinessSchedule, date, timeZone()));
+            }
+
+            date = date.plusDays(1);
+        }
+    }
+
+    //TODO: populate year data
+    private final Map<Integer, YearData> cachedYearData = new HashMap<>();
+
+    private static class YearData {
+        private final ZonedDateTime start; //TODO: type?
+        private final ZonedDateTime end;   //TODO: type?
+        private final long businessTimeNanos;
+
+        public YearData(final ZonedDateTime start, final ZonedDateTime end, final long businessTimeNanos) {
+            this.start = start;
+            this.end = end;
+            this.businessTimeNanos = businessTimeNanos;
+        }
+    }
+
+    private void populateCachedYearData() {
+        // Only cache complete years, since incomplete years can not be fully computed.
+
+        final int yearStart = firstValidDate.getDayOfYear() == 1 ? firstValidDate.getYear() : firstValidDate.getYear() + 1;
+        final int yearEnd = ((lastValidDate.isLeapYear() && lastValidDate.getDayOfYear() == 366) || lastValidDate.getDayOfYear() == 365) ? lastValidDate.getYear() : lastValidDate.getYear() - 1;
+
+        for(int year=yearStart; year<= yearEnd; year++){
+            final LocalDate startDate =  LocalDate.ofYearDay(year, 0);
+            final LocalDate endDate = LocalDate.ofYearDay(year+1, 0);
+            final ZonedDateTime start =startDate.atTime(0,0).atZone(timeZone());
+            final ZonedDateTime end = endDate.atTime(0,0).atZone(timeZone());
+
+            LocalDate date = startDate;
+            long businessTimeNanos = 0;
+
+            while (date.isBefore(endDate)) {
+                final BusinessSchedule<Instant> bs = businessSchedule(date);
+                businessTimeNanos += bs.businessNanos();
+                date = date.plusDays(1);
+            }
+
+            final YearData yd = new YearData(start, end, businessTimeNanos);
+            cachedYearData.put(year, yd);
+        }
+    }
+
+    // endregion
+
+    // region Constructors
+
+    public BusinessCalendar(String name, String description, ZoneId timeZone, LocalDate firstValidDate, LocalDate lastValidDate, BusinessSchedule<LocalTime> standardBusinessSchedule, Set<DayOfWeek> weekendDays, Map<LocalDate, BusinessSchedule<Instant>> holidays) {
+        super(name, description, timeZone);
+        this.firstValidDate = firstValidDate;
+        this.lastValidDate = lastValidDate;
+        this.standardBusinessSchedule = standardBusinessSchedule;
+        this.weekendDays = weekendDays;
+        this.holidays = holidays;
+        populateSchedules();
+        populateCachedYearData();
+    }
+
+    // endregion
+
     // region Business Schedule
+
+    /**
+     * Gets the business schedule for a standard business day.
+     *
+     * @return business schedule for a standard business day.
+     */
+    public BusinessSchedule<LocalTime> standardBusinessSchedule() {
+        return standardBusinessSchedule;
+    }
+
+    /**
+     * Returns the length of a standard business day in nanoseconds.
+     *
+     * @return length of a standard business day in nanoseconds.
+     */
+    public long standardBusinessDayLengthNanos() {
+        return standardBusinessSchedule.businessNanos();
+    }
 
     /**
      * Gets business schedules for dates that are different from the defaults. This returns all dates that are defined
@@ -38,7 +169,7 @@ public class BusinessCalendar extends Calendar {
      *
      * @return a map of dates and to their business periods
      */
-    public Map<LocalDate, BusinessSchedule> holidays() {
+    public Map<LocalDate, BusinessSchedule<Instant>> holidays() {
         return Collections.unmodifiableMap(holidays);
     }
 
@@ -48,8 +179,16 @@ public class BusinessCalendar extends Calendar {
      * @param date date
      * @return the corresponding BusinessSchedule of {@code date}
      */
-    public BusinessSchedule businessSchedule(final LocalDate date) {
-        return dates.computeIfAbsent(date, this::newBusinessDay);
+    public BusinessSchedule<Instant> businessSchedule(final LocalDate date) {
+        Require.neqNull(date, "date");
+
+        if(date.isBefore(firstValidDate)){
+            throw new InvalidDateException("Date is before the first valid business calendar date:  date=" + date + " firstValidDate=" + firstValidDate);
+        } else if(date.isAfter(lastValidDate)){
+            throw new InvalidDateException("Date is after the last valid business calendar date:  date=" + date + " lastValidDate=" + lastValidDate);
+        }
+
+        return cachedSchedules.get(date);
     }
 
     /**
@@ -58,12 +197,9 @@ public class BusinessCalendar extends Calendar {
      * @param time time
      * @return the corresponding BusinessSchedule of {@code time}; null if time is null
      */
-    public BusinessSchedule businessSchedule(final ZonedDateTime time) {
-        if (time == null) {
-            return null;
-        }
-
-        return businessSchedule(time.withZoneSameInstant(timeZone()));
+    public BusinessSchedule<Instant> businessSchedule(final ZonedDateTime time) {
+        Require.neqNull(time, "time");
+        return businessSchedule(time.withZoneSameInstant(timeZone()).toLocalDate());
     }
 
     /**
@@ -72,11 +208,8 @@ public class BusinessCalendar extends Calendar {
      * @param time time
      * @return the corresponding BusinessSchedule of {@code time}; null if time is null
      */
-    public BusinessSchedule businessSchedule(final Instant time) {
-        if (time == null) {
-            return null;
-        }
-
+    public BusinessSchedule<Instant> businessSchedule(final Instant time) {
+        Require.neqNull(time, "time");
         return businessSchedule(time.atZone(timeZone()));
     }
 
@@ -86,11 +219,8 @@ public class BusinessCalendar extends Calendar {
      * @param date date
      * @return the corresponding BusinessSchedule of {@code date}
      */
-    public BusinessSchedule businessSchedule(String date) {
-        if (date == null) {
-            return null;
-        }
-
+    public BusinessSchedule<Instant> businessSchedule(String date) {
+        Require.neqNull(date, "date");
         return businessSchedule(DateTimeUtils.parseLocalDate(date));
     }
 
@@ -100,7 +230,7 @@ public class BusinessCalendar extends Calendar {
      *
      * @return today's business schedule
      */
-    public BusinessSchedule currentBusinessSchedule() {
+    public BusinessSchedule<Instant> currentBusinessSchedule() {
         return businessSchedule(currentDate());
     }
 
@@ -115,7 +245,7 @@ public class BusinessCalendar extends Calendar {
      * @return true if the date is a business day; false otherwise.
      */
     public boolean isBusinessDay(final LocalDate date) {
-        return date != null && businessSchedule(date).isBusinessDay();
+        return businessSchedule(date).isBusinessDay();
     }
 
     /**
@@ -125,14 +255,9 @@ public class BusinessCalendar extends Calendar {
      * @return true if the date is a business day; false otherwise.
      */
     public boolean isBusinessDay(final String date) {
-        if (date == null) {
-            return false;
-        }
-
-        return isBusinessDay(DateTimeUtils.parseLocalDate(date));
+        return businessSchedule(date).isBusinessDay();
     }
 
-    //TODO: review func
     /**
      * Does time occur on a business day?
      *
@@ -140,10 +265,9 @@ public class BusinessCalendar extends Calendar {
      * @return true if the date is a business day; false otherwise.
      */
     public boolean isBusinessDay(final ZonedDateTime time){
-        return fractionOfStandardBusinessDay(time) > 0.0;
+        return businessSchedule(time).isBusinessDay();
     }
 
-    //TODO: review func
     /**
      * Does time occur on a business day?
      *
@@ -151,7 +275,7 @@ public class BusinessCalendar extends Calendar {
      * @return true if the date is a business day; false otherwise.
      */
     public boolean isBusinessDay(final Instant time){
-        return fractionOfStandardBusinessDay(time) > 0.0;
+        return businessSchedule(time).isBusinessDay();
     }
 
     /**
@@ -165,7 +289,6 @@ public class BusinessCalendar extends Calendar {
         return !weekendDays.contains(day);
     }
 
-    //TODO: base on the current day or time?
     /**
      * Is the current day a business day?
      *
@@ -187,10 +310,10 @@ public class BusinessCalendar extends Calendar {
             return false;
         }
 
-        final LocalDate nextBusAfterDate = futureBusinessDate(date);
+        final LocalDate nextBusAfterDate = plusBusinessDays(date, 1);
 
         if(nextBusAfterDate == null){
-            ** raise an error;
+            //TODO ** raise an error;
             return false;
         }
 
@@ -206,7 +329,7 @@ public class BusinessCalendar extends Calendar {
      */
     public boolean isLastBusinessDayOfMonth(final ZonedDateTime time) {
         if(time == null){
-            ** raise an error;
+            //TODO ** raise an error;
             return false;
         }
 
@@ -222,7 +345,7 @@ public class BusinessCalendar extends Calendar {
      */
     public boolean isLastBusinessDayOfMonth(final Instant time) {
         if(time == null){
-            ** raise an error;
+            //TODO ** raise an error;
             return false;
         }
 
@@ -237,7 +360,7 @@ public class BusinessCalendar extends Calendar {
      */
     boolean isLastBusinessDayOfMonth(final String date) {
         if(date == null){
-            ** raise an error;
+            //TODO ** raise an error;
             return false;
         }
 
@@ -261,7 +384,7 @@ public class BusinessCalendar extends Calendar {
      */
     public boolean isLastBusinessDayOfWeek(final LocalDate date){
         if(date == null){
-            *** error ***
+            //TODO: *** error ***
             return false;
         }
 
@@ -269,8 +392,8 @@ public class BusinessCalendar extends Calendar {
             return false;
         }
 
-        final LocalDate nextBusinessDay = futureBusinessDate(date);
-        return dayOfWeek(date).compareTo(dayOfWeek(nextBusinessDay)) > 0 || numberCalendarDates(date, nextBusinessDay) > 6;
+        final LocalDate nextBusinessDay = plusBusinessDays(date, 1);
+        return date.getDayOfWeek().compareTo(nextBusinessDay.getDayOfWeek()) > 0 || numberCalendarDates(date, nextBusinessDay) > 6;
     }
 
     /**
@@ -282,7 +405,7 @@ public class BusinessCalendar extends Calendar {
      */
     public boolean isLastBusinessDayOfWeek(final ZonedDateTime time) {
         if(time == null){
-            *** error ***;
+            //TODO: *** error ***;
             return false;
         }
 
@@ -298,7 +421,7 @@ public class BusinessCalendar extends Calendar {
      */
     public boolean isLastBusinessDayOfWeek(final Instant time) {
         if(time == null){
-            *** error ***;
+            //TODO: *** error ***;
             return false;
         }
 
@@ -313,7 +436,7 @@ public class BusinessCalendar extends Calendar {
      */
     public boolean isLastBusinessDayOfWeek(final String date){
         if(date == null){
-            *** error ***;
+            //TODO: *** error ***;
             return false;
         }
 
@@ -359,14 +482,6 @@ public class BusinessCalendar extends Calendar {
         return time != null && businessSchedule(time).isBusinessTime(time);
     }
 
-    /**
-     * Returns the length of a standard business day in nanoseconds.
-     *
-     * @return length of a standard business day in nanoseconds.
-     */
-    public long standardBusinessDayLengthNanos() {
-        return lengthOfDefaultDayNanos;
-    }
 
     /**
      * For the given date, returns the ratio of the business day length and the standard business day length. For
@@ -378,8 +493,8 @@ public class BusinessCalendar extends Calendar {
      * @return ratio of the business day length and the standard business day length for the date
      */
     public double fractionOfStandardBusinessDay(final LocalDate date){
-        final BusinessSchedule schedule = businessSchedule(date);
-        return schedule == null ? 0.0 : (double) schedule.getLOBD() / (double) standardBusinessDayLengthNanos();
+        final BusinessSchedule<Instant> schedule = businessSchedule(date);
+        return schedule == null ? 0.0 : (double) schedule.businessNanos() / (double) standardBusinessDayLengthNanos();
     }
 
     /**
@@ -428,17 +543,17 @@ public class BusinessCalendar extends Calendar {
      * @return the fraction of the day left after {@code time}; NULL_DOUBLE if time is null
      */
     public double fractionOfBusinessDayRemaining(final Instant time){
-        final BusinessSchedule businessDate = businessSchedule(time);
+        final BusinessSchedule<Instant> businessDate = businessSchedule(time);
         if (businessDate == null) {
             return QueryConstants.NULL_DOUBLE;
         }
 
-        if (businessDate.getLOBD() == 0) {
+        if (businessDate.businessNanos() == 0) {
             return 0;
         }
 
-        final long businessDaySoFar = businessDate.businessTimeElapsed(time);
-        return (double) (businessDate.getLOBD() - businessDaySoFar) / (double) businessDate.getLOBD();
+        final long businessDaySoFar = businessDate.businessNanosElapsed(time);
+        return (double) (businessDate.businessNanos() - businessDaySoFar) / (double) businessDate.businessNanos();
     }
 
     /**
@@ -813,12 +928,12 @@ public class BusinessCalendar extends Calendar {
 
         while (!DateTimeUtils.isAfter(day, end)) {
             if (isBusinessDay(day)) {
-                BusinessSchedule businessDate = businessSchedule(day);
+                BusinessSchedule<Instant> businessDate = businessSchedule(day);
 
                 if (businessDate != null) {
-                    for (BusinessPeriod businessPeriod : businessDate.getBusinessPeriods()) {
-                        Instant endOfPeriod = businessPeriod.getEndTime();
-                        Instant startOfPeriod = businessPeriod.getStartTime();
+                    for (BusinessPeriod<Instant> businessPeriod : businessDate.periods()) {
+                        Instant endOfPeriod = businessPeriod.end();
+                        Instant startOfPeriod = businessPeriod.start();
 
                         // noinspection StatementWithEmptyBody
                         if (DateTimeUtils.isAfter(day, endOfPeriod) || DateTimeUtils.isBefore(end, startOfPeriod)) {
@@ -827,7 +942,7 @@ public class BusinessCalendar extends Calendar {
                             if (DateTimeUtils.isBefore(end, endOfPeriod)) {
                                 dayDiffNanos += DateTimeUtils.minus(end, startOfPeriod);
                             } else {
-                                dayDiffNanos += businessPeriod.getLength();
+                                dayDiffNanos += businessPeriod.nanos();
                             }
                         } else {
                             if (DateTimeUtils.isAfter(end, endOfPeriod)) {
@@ -839,7 +954,7 @@ public class BusinessCalendar extends Calendar {
                     }
                 }
             }
-            day = businessSchedule(futureBusinessDate(day)).getSOBD();
+            day = businessSchedule(plusBusinessDays(day,1)).businessStart();
         }
         return dayDiffNanos;
     }
@@ -950,7 +1065,29 @@ public class BusinessCalendar extends Calendar {
             return QueryConstants.NULL_DOUBLE;
         }
 
-        return diffNonBusinessDays(start.toInstant(), end.toInstant());
+        double businessYearDiff = 0.0;
+        ZonedDateTime time = start;
+
+        while (!DateTimeUtils.isAfter(time, end)) {
+            final int year = time.getYear();
+            final YearData yd = cachedYearData.get(year);
+
+            if(yd == null){
+                throw new InvalidDateException("Business calendar does not contain a complete year for: year=" + year);
+            }
+
+            final long yearDiff;
+            if (DateTimeUtils.isAfter(yd.end, end)) {
+                yearDiff = diffBusinessNanos(time, end);
+            } else {
+                yearDiff = diffBusinessNanos(time, yd.end);
+            }
+
+            businessYearDiff += (double) yearDiff / (double) yd.businessTimeNanos;
+            time = yd.end;
+        }
+
+        return businessYearDiff;
     }
 
     /**
@@ -965,26 +1102,7 @@ public class BusinessCalendar extends Calendar {
             return QueryConstants.NULL_DOUBLE;
         }
 
-        double businessYearDiff = 0.0;
-        Instant time = start;
-        while (!DateTimeUtils.isAfter(time, end)) {
-            // get length of the business year
-            final int startYear = DateTimeUtils.year(start, timeZone());
-            final long businessYearLength = cachedYearLengths.computeIfAbsent(startYear, this::getBusinessYearLength);
-
-            final Instant endOfYear = getFirstBusinessDateTimeOfYear(startYear + 1);
-            final long yearDiff;
-            if (DateTimeUtils.isAfter(endOfYear, end)) {
-                yearDiff = diffBusinessNanos(time, end);
-            } else {
-                yearDiff = diffBusinessNanos(time, endOfYear);
-            }
-
-            businessYearDiff += (double) yearDiff / (double) businessYearLength;
-            time = endOfYear;
-        }
-
-        return businessYearDiff;
+        return diffBusinessYears(DateTimeUtils.toZonedDateTime(start, timeZone()), DateTimeUtils.toZonedDateTime(end, timeZone()));
     }
 
     /**
