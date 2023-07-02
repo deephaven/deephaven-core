@@ -4,57 +4,68 @@
 package io.deephaven.time.calendar;
 
 import io.deephaven.time.DateTimeUtils;
+import org.jetbrains.annotations.NotNull;
 
-import java.io.Serializable;
-import java.time.Instant;
+import java.time.*;
+import java.time.temporal.ChronoUnit;
+import java.time.temporal.Temporal;
 
 /**
  * A period of business time during a business day.
+ *
+ * @param <T> time type
  */
-public class BusinessPeriod implements Serializable {
-    private static final long serialVersionUID = 8196837269495115196L;
-    private final Instant startTime;
-    private final Instant endTime;
+public class BusinessPeriod<T extends Comparable<T> & Temporal> {
+    private final T start;
+    private final T end;
+    private final long nanos;
 
-    @SuppressWarnings("ConstantConditions")
-    BusinessPeriod(final Instant startTime, final Instant endTime) {
-        this.startTime = startTime;
-        this.endTime = endTime;
+    /**
+     * Create a new business period.
+     *
+     * @param startTime start of the business period.
+     * @param endTime end of the business period.
+     */
+    BusinessPeriod(final T startTime, final T endTime) {
+        this.start = startTime;
+        this.end = endTime;
 
         if (startTime == null || endTime == null) {
             throw new IllegalArgumentException("Null argument: startTime=" + startTime + " endTime=" + endTime);
         }
 
-        if (DateTimeUtils.epochNanos(startTime) > DateTimeUtils.epochNanos(endTime)) {
+        if(startTime.compareTo(endTime) > 0) {
             throw new IllegalArgumentException("Start is after end: startTime=" + startTime + " endTime=" + endTime);
         }
+
+        this.nanos = start.until(end, ChronoUnit.NANOS);
     }
 
     /**
-     * Returns the start of the period.
+     * start of the period.
      *
-     * @return the start of the period
+     * @return start of the period
      */
-    public Instant getStartTime() {
-        return startTime;
+    public T start() {
+        return start;
     }
 
     /**
-     * Returns the end of the period.
+     * End of the period.
      *
-     * @return the end of the period
+     * @return End of the period
      */
-    public Instant getEndTime() {
-        return endTime;
+    public T end() {
+        return end;
     }
 
     /**
-     * Returns the length of the period in nanoseconds.
+     * Length of the period in nanoseconds.
      *
      * @return length of the period in nanoseconds
      */
-    public long getLength() {
-        return DateTimeUtils.minus(endTime, startTime);
+    public long nanos() {
+        return nanos;
     }
 
     /**
@@ -63,9 +74,22 @@ public class BusinessPeriod implements Serializable {
      * @param time time.
      * @return true if the time is in this period; otherwise, false.
      */
-    public boolean contains(final Instant time) {
+    public boolean contains(final T time) {
         return time != null
-                && DateTimeUtils.epochNanos(startTime) <= DateTimeUtils.epochNanos(time)
-                && DateTimeUtils.epochNanos(time) <= DateTimeUtils.epochNanos(endTime);
+                && start.compareTo(time) <= 0
+                && time.compareTo(end) <= 0;
     }
+
+    /**
+     * Converts a business period in local time to a specific date and time zone.
+     *
+     * @param p business period in local time
+     * @param date date for the new business period
+     * @param timeZone time zone for the new business period
+     * @return new business period in the specified date and time zone
+     */
+    public static BusinessPeriod<Instant> toInstant(final BusinessPeriod<LocalTime> p, final LocalDate date, final ZoneId timeZone){
+        return new BusinessPeriod<>(DateTimeUtils.toInstant(date, p.start, timeZone), DateTimeUtils.toInstant(date, p.end, timeZone));
+    }
+
 }

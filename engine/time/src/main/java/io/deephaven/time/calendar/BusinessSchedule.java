@@ -3,122 +3,109 @@
  */
 package io.deephaven.time.calendar;
 
-import io.deephaven.time.DateTimeUtils;
+import io.deephaven.base.verify.Require;
+import io.deephaven.base.verify.RequirementFailure;
 import org.jetbrains.annotations.NotNull;
 
-import java.io.Serializable;
 import java.time.Instant;
-import java.time.ZonedDateTime;
+import java.time.LocalDate;
+import java.time.LocalTime;
+import java.time.ZoneId;
+import java.time.temporal.ChronoUnit;
+import java.time.temporal.Temporal;
 import java.util.Arrays;
+import java.util.Comparator;
 
 /**
- * Description of a single business day.
+ * Schedule for a single business day.
+ *
+ * @param <T> time type
  */
-public class BusinessSchedule implements Serializable {
-
-    private static final long serialVersionUID = 1118129010491637735L;
-    private final BusinessPeriod[] openPeriods;
-    private final Instant startOfDay;
-    private final Instant endOfDay;
-    private final long lengthOfDay;
+public class BusinessSchedule<T extends Comparable<T> & Temporal> {
 
     /**
-     * Creates the BusinessSchedule instance
-     *
-     * @param businessPeriods array of {@link BusinessPeriod}
-     * @throws IllegalArgumentException if {@code businessPeriods} overlaps.
+     * A holiday with no business periods.
      */
-    BusinessSchedule(@NotNull final BusinessPeriod... businessPeriods) {
-        this.openPeriods = businessPeriods.clone();
+    public static final BusinessSchedule<LocalTime> HOLIDAY = new BusinessSchedule<>();
 
-        // make sure the periods are in order
-        Arrays.sort(this.openPeriods, (o1, o2) -> {
-            final long compared =
-                    DateTimeUtils.epochNanos(o2.getStartTime()) - DateTimeUtils.epochNanos(o1.getStartTime());
-            if (compared > 0) {
-                return -1;
-            } else if (compared == 0) {
-                return 0;
-            } else {
-                return 1;
-            }
-        });
+    private final BusinessPeriod<T>[] openPeriods;
+    private final T businessStart;
+    private final T businessEnd;
+    private final long businessNanos;
+
+    /**
+     * Creates a BusinessSchedule instance.
+     *
+     * @param businessPeriods array of business periods
+     * @throws IllegalArgumentException if {@code businessPeriods} overlaps.
+     * @throws RequirementFailure       if {@code businessPeriods} or any constituent business periods are null.
+     */
+    BusinessSchedule(@NotNull final BusinessPeriod<T>[] businessPeriods) {
+        Require.neqNull(businessPeriods, "businessPeriods");
+
+        for (int i = 0; i < businessPeriods.length; i++) {
+            Require.neqNull(businessPeriods[i], "businessPeriods[" + i + "]");
+        }
+
+        this.openPeriods = businessPeriods;
+
+        // Sort the periods
+        Arrays.sort(this.openPeriods, Comparator.comparing(BusinessPeriod::start));
 
         if (businessPeriods.length > 0) {
-            this.startOfDay = openPeriods[0].getStartTime();
-            this.endOfDay = openPeriods[openPeriods.length - 1].getEndTime();
+            this.businessStart = openPeriods[0].start();
+            this.businessEnd = openPeriods[openPeriods.length - 1].end();
         } else {
-            this.startOfDay = null;
-            this.endOfDay = null;
+            this.businessStart = null;
+            this.businessEnd = null;
         }
 
-        long lod = 0;
-
-        for (BusinessPeriod businessPeriod : openPeriods) {
-            if (businessPeriod == null) {
-                throw new IllegalArgumentException("Null period.");
-            }
-
-            lod += DateTimeUtils.minus(businessPeriod.getEndTime(), businessPeriod.getStartTime());
-        }
-
-
-        this.lengthOfDay = lod;
+        this.businessNanos = Arrays.stream(businessPeriods).map(BusinessPeriod::nanos).reduce(0L, Long::sum);
 
         // make sure the periods don't overlap
         for (int i = 1; i < this.openPeriods.length; i++) {
-            final BusinessPeriod p0 = this.openPeriods[i - 1];
-            final BusinessPeriod p1 = this.openPeriods[i];
+            final BusinessPeriod<T> p0 = this.openPeriods[i - 1];
+            final BusinessPeriod<T> p1 = this.openPeriods[i];
 
-            if (DateTimeUtils.epochNanos(p1.getStartTime()) < DateTimeUtils.epochNanos(p0.getEndTime())) {
+            if (p1.start().compareTo(p0.end()) < 0) {
                 throw new IllegalArgumentException("Periods overlap.");
             }
         }
     }
 
     /**
-     * Gets the business periods for the day.
-     *
-     * @return the BusinessPeriods for the day
+     * Creates a BusinessSchedule instance with no business periods.  THis is a holiday.
      */
-    public BusinessPeriod[] getBusinessPeriods() {
+    BusinessSchedule() {
+        //noinspection unchecked
+        this(new BusinessPeriod[0]);
+    }
+
+    /**
+     * Business periods for the day.
+     *
+     * @return business periods for the day
+     */
+    public BusinessPeriod<T>[] periods() {
         return openPeriods;
     }
 
     /**
-     * Gets the start of the business day.
+     * Start of the business day.  Equivalent to the start of the first business period.
      *
-     * @return start of the business day
+     * @return start of the business day, or null for a holiday schedule
      */
-    public Instant getSOBD() {
-        return startOfDay;
+    public T businessStart() {
+        return businessStart;
     }
 
     /**
-     * Gets the start of the business day.
+     * End of the business day.  Equivalent to the end of the last business period.
      *
-     * @return start of the business day
+     * @return end of the business day, or null for a holiday schedule
      */
-    public Instant getStartOfBusinessDay() {
-        return getSOBD();
-    }
-
-    /**
-     * Gets the end of the business day.
-     *
-     * @return end of the business day
-     */
-    public Instant getEOBD() {
-        return endOfDay;
-    }
-
-    /**
-     * Gets the end of the business day.
-     *
-     * @return end of the business day
-     */
-    public Instant getEndOfBusinessDay() {
-        return getEOBD();
+    public T businessEnd() {
+        return businessEnd;
     }
 
     /**
@@ -127,27 +114,52 @@ public class BusinessSchedule implements Serializable {
      *
      * @return length of the day in nanoseconds
      */
-    public long getLOBD() {
-        return lengthOfDay;
+    public long businessNanos() {
+        return businessNanos;
     }
 
     /**
-     * Gets the length of the business day in nanoseconds. If the business day has multiple periods, only the time
-     * during the periods is counted.
+     * Amount of business time in nanoseconds that has elapsed on the given day by the specified time.
      *
-     * @return length of the day in nanoseconds
+     * @param time time
+     * @return business time in nanoseconds that has elapsed on the given day by the specified time
      */
-    public long getLengthOfBusinessDay() {
-        return getLOBD();
+    public long businessNanosElapsed(final T time) {
+        Require.neqNull(time, "time");
+        long elapsed = 0;
+
+        for (BusinessPeriod<T> businessPeriod : openPeriods) {
+            if (time.compareTo(businessPeriod.start()) < 0) {
+                return elapsed;
+            } else if (time.compareTo(businessPeriod.end()) > 0) {
+                elapsed += businessPeriod.nanos();
+            } else {
+                elapsed += businessPeriod.start().until(time, ChronoUnit.NANOS);
+                return elapsed;
+            }
+        }
+
+        return elapsed;
     }
 
     /**
-     * Is this day a business day?
+     * Amount of business time in nanoseconds that remains until the end of the day.
      *
-     * @return true if it is a business day; false otherwise.
+     * @param time time
+     * @return business time in nanoseconds that remains until the end of the day.
      */
+    public long businessNanosRemaining(final T time) {
+        Require.neqNull(time, "time");
+        return businessNanos-businessNanosElapsed(time);
+    }
+
+        /**
+         * Is this day a business day?
+         *
+         * @return true if it is a business day; false otherwise.
+         */
     public boolean isBusinessDay() {
-        return openPeriods.length > 0;
+        return businessNanos > 0;
     }
 
     /**
@@ -156,8 +168,8 @@ public class BusinessSchedule implements Serializable {
      * @param time time.
      * @return true if the time is a business time for the day; otherwise, false.
      */
-    public boolean isBusinessTime(final Instant time) {
-        for (BusinessPeriod p : openPeriods) {
+    public boolean isBusinessTime(final T time) {
+        for (BusinessPeriod<T> p : openPeriods) {
             if (p.contains(time)) {
                 return true;
             }
@@ -167,45 +179,15 @@ public class BusinessSchedule implements Serializable {
     }
 
     /**
-     * Determines if the specified time is a business time for the day.
+     * Converts a business schedule in local time to a specific date and time zone.
      *
-     * @param time time.
-     * @return true if the time is a business time for the day; otherwise, false.
+     * @param s business schedule in local time
+     * @param date date for the new business schedule
+     * @param timeZone time zone for the new business schedule
+     * @return new business schedule in the specified date and time zone
      */
-    public boolean isBusinessTime(final ZonedDateTime time) {
-        return isBusinessTime(time.toInstant());
-    }
-
-    /**
-     * Returns the amount of business time in nanoseconds that has elapsed on the given day by the specified time.
-     *
-     * @param time time
-     * @return business time in nanoseconds that has elapsed on the given day by the specified time
-     */
-    public long businessTimeElapsed(final Instant time) {
-        long elapsed = 0;
-
-        for (BusinessPeriod businessPeriod : openPeriods) {
-            if (DateTimeUtils.isBefore(time, businessPeriod.getStartTime())) {
-                return elapsed;
-            } else if (DateTimeUtils.isAfter(time, businessPeriod.getEndTime())) {
-                elapsed += businessPeriod.getLength();
-            } else {
-                elapsed += DateTimeUtils.minus(time, businessPeriod.getStartTime());
-                return elapsed;
-            }
-        }
-
-        return elapsed;
-    }
-
-    /**
-     * Returns the amount of business time in nanoseconds that has elapsed on the given day by the specified time.
-     *
-     * @param time time
-     * @return business time in nanoseconds that has elapsed on the given day by the specified time
-     */
-    public long businessTimeElapsed(final ZonedDateTime time) {
-        return businessTimeElapsed(time.toInstant());
+    public static BusinessSchedule<Instant> toInstant(final BusinessSchedule<LocalTime> s, final LocalDate date, final ZoneId timeZone){
+        //noinspection unchecked
+        return new BusinessSchedule<>(Arrays.stream(s.periods()).map(p->BusinessPeriod.toInstant(p, date, timeZone)).toArray(BusinessPeriod[]::new));
     }
 }

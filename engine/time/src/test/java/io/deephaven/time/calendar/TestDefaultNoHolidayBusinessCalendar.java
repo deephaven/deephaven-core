@@ -171,9 +171,9 @@ public class TestDefaultNoHolidayBusinessCalendar extends BaseArrayTestCase {
         assertEquals(noNonBusinessDays.timeZone(), TZ_NY);
         assertEquals(noNonBusinessDays.standardBusinessDayLengthNanos(),
                 6 * DateTimeUtils.HOUR + (30 * DateTimeUtils.MINUTE));
-        assertEquals(noNonBusinessDays.businessSchedule("2019-06-26").getSOBD(),
-                onlyWeekends.businessSchedule("2019-06-26").getSOBD());
-        assertEquals(noNonBusinessDays.businessSchedule("2019-06-26").getEOBD(),
-                onlyWeekends.businessSchedule("2019-06-26").getEOBD());
+        assertEquals(noNonBusinessDays.businessSchedule("2019-06-26").businessStart(),
+                onlyWeekends.businessSchedule("2019-06-26").businessStart());
+        assertEquals(noNonBusinessDays.businessSchedule("2019-06-26").businessEnd(),
+                onlyWeekends.businessSchedule("2019-06-26").businessEnd());
     }
 }

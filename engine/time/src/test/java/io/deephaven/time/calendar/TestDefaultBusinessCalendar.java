@@ -763,18 +763,18 @@ public class TestDefaultBusinessCalendar extends BaseArrayTestCase {
 
         // holiday
         final BusinessSchedule holiday = USNYSE.businessSchedule("2017-12-25");
-        assertEquals(0, holiday.getBusinessPeriods().length);
-        assertEquals(0, holiday.getLengthOfBusinessDay());
+        assertEquals(0, holiday.periods().length);
+        assertEquals(0, holiday.businessNanos());
         try {
             // noinspection ResultOfMethodCallIgnored
-            holiday.getEOBD();
+            holiday.businessEnd();
             fail("Expected an exception!");
         } catch (UnsupportedOperationException e) {
             // pass
         }
         try {
             // noinspection ResultOfMethodCallIgnored
-            holiday.getSOBD();
+            holiday.businessStart();
             fail("Expected an exception!");
         } catch (UnsupportedOperationException e) {
             // pass
@@ -1629,7 +1629,7 @@ public class TestDefaultBusinessCalendar extends BaseArrayTestCase {
         assertEquals("2019-08-19",
                 UTC.futureBusinessDate(DateTimeUtils.parseInstant("2019-08-18T00:00:00.000000000 UTC")));
 
-        assertEquals("2019-05-16", DateTimeUtils.formatDate(UTC.businessSchedule("2019-05-16").getSOBD(), TZ_UTC));
-        assertEquals("2019-05-17", DateTimeUtils.formatDate(UTC.businessSchedule("2019-05-16").getEOBD(), TZ_UTC));
+        assertEquals("2019-05-16", DateTimeUtils.formatDate(UTC.businessSchedule("2019-05-16").businessStart(), TZ_UTC));
+        assertEquals("2019-05-17", DateTimeUtils.formatDate(UTC.businessSchedule("2019-05-16").businessEnd(), TZ_UTC));
     }
 }
