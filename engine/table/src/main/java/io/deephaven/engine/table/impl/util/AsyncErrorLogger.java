@@ -28,7 +28,8 @@ public class AsyncErrorLogger {
         return BlinkTableTools.blinkToAppendOnly(getInstance().blink());
     }
 
-    public static void log(Instant time, TableListener.Entry entry, TableListener.Entry sourceEntry, Throwable originalException) {
+    public static void log(Instant time, TableListener.Entry entry, TableListener.Entry sourceEntry,
+            Throwable originalException) {
         getInstance().add(time, entry, sourceEntry, originalException);
     }
 }
