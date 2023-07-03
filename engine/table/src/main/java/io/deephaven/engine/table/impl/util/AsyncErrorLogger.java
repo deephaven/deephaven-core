@@ -24,6 +24,10 @@ public class AsyncErrorLogger {
         return local;
     }
 
+    public static void init() {
+        getInstance();
+    }
+
     public static Table getErrorLog() {
         return BlinkTableTools.blinkToAppendOnly(getInstance().blink());
     }
