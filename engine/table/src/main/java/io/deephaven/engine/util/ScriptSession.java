@@ -7,8 +7,6 @@ import io.deephaven.engine.context.ExecutionContext;
 import io.deephaven.engine.context.QueryScope;
 import io.deephaven.engine.liveness.LivenessNode;
 import io.deephaven.engine.liveness.ReleasableLivenessManager;
-import io.deephaven.engine.util.scripts.ScriptPathLoader;
-import io.deephaven.engine.util.scripts.ScriptPathLoaderState;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
@@ -16,7 +14,6 @@ import java.nio.file.Path;
 import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.Set;
-import java.util.function.Supplier;
 
 /**
  * Interface for interactive console script sessions.
@@ -169,52 +166,6 @@ public interface ScriptSession extends ReleasableLivenessManager, LivenessNode {
      */
     default Throwable sanitizeThrowable(Throwable e) {
         return e;
-    }
-
-    /**
-     * Called before Application initialization, should setup sourcing from the controller (as required).
-     */
-    @Deprecated(forRemoval = true)
-    default void onApplicationInitializationBegin(Supplier<ScriptPathLoader> pathLoader,
-            ScriptPathLoaderState scriptLoaderState) {
-        throw new UnsupportedOperationException("setUseOriginalScriptLoaderState deprecated for removal");
-    }
-
-    /**
-     * Called after Application initialization.
-     */
-    @Deprecated(forRemoval = true)
-    default void onApplicationInitializationEnd() {
-        throw new UnsupportedOperationException("setUseOriginalScriptLoaderState deprecated for removal");
-    }
-
-    /**
-     * Sets the scriptPathLoader that is in use for this session.
-     *
-     * @param scriptPathLoader a supplier of a script path loader
-     * @param caching whether the source operation should cache results
-     */
-    @Deprecated(forRemoval = true)
-    default void setScriptPathLoader(Supplier<ScriptPathLoader> scriptPathLoader, boolean caching) {
-        throw new UnsupportedOperationException("setUseOriginalScriptLoaderState deprecated for removal");
-    }
-
-    /**
-     * Removes the currently configured script path loader from this script.
-     */
-    @Deprecated(forRemoval = true)
-    default void clearScriptPathLoader() {
-        throw new UnsupportedOperationException("setUseOriginalScriptLoaderState deprecated for removal");
-    }
-
-    /**
-     * Informs the session whether or not we should be using the original ScriptLoaderState for source commands.
-     *
-     * @param useOriginal whether to use the script loader state at persistent query initialization
-     */
-    @Deprecated(forRemoval = true)
-    default boolean setUseOriginalScriptLoaderState(boolean useOriginal) {
-        throw new UnsupportedOperationException("setUseOriginalScriptLoaderState deprecated for removal");
     }
 
     /**

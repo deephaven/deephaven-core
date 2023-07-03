@@ -5,8 +5,6 @@ package io.deephaven.engine.util;
 
 import io.deephaven.engine.context.QueryScope;
 import io.deephaven.engine.liveness.LivenessReferent;
-import io.deephaven.engine.util.scripts.ScriptPathLoader;
-import io.deephaven.engine.util.scripts.ScriptPathLoaderState;
 import io.deephaven.engine.context.ExecutionContext;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
@@ -17,7 +15,6 @@ import java.util.HashSet;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
-import java.util.function.Supplier;
 import java.util.stream.Stream;
 
 /**
@@ -115,32 +112,6 @@ public class DelegatingScriptSession implements ScriptSession {
     @Override
     public String scriptType() {
         return delegate.scriptType();
-    }
-
-    @Override
-    public void onApplicationInitializationBegin(Supplier<ScriptPathLoader> pathLoader,
-            ScriptPathLoaderState scriptLoaderState) {
-        throw new UnsupportedOperationException();
-    }
-
-    @Override
-    public void onApplicationInitializationEnd() {
-        throw new UnsupportedOperationException();
-    }
-
-    @Override
-    public void setScriptPathLoader(Supplier<ScriptPathLoader> scriptPathLoader, boolean caching) {
-        throw new UnsupportedOperationException();
-    }
-
-    @Override
-    public void clearScriptPathLoader() {
-        throw new UnsupportedOperationException();
-    }
-
-    @Override
-    public boolean setUseOriginalScriptLoaderState(boolean useOriginal) {
-        throw new UnsupportedOperationException();
     }
 
     @Override

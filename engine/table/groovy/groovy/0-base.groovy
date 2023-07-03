@@ -1,15 +1,5 @@
 __QUERY_NAME__="core"
 
-source = {fileName ->
-    System.err.println("source(fileName) is deprecated for removal, please consider import, or provide your own implementation")
-    __groovySession.runScript(fileName)
-}
-
-sourceOnce = {fileName ->
-    System.err.println("sourceOnce(fileName) is deprecated for removal, please consider import, or provide your own implementation")
-    __groovySession.runScriptOnce(fileName)
-}
-
 scriptImportClass = {c -> __groovySession.addScriptImportClass(c)}
 scriptImportStatic = {c -> __groovySession.addScriptImportStatic(c)}
 
