@@ -14,6 +14,7 @@ import java.util.Set;
  * This loader loads *only* using {@link GroovyDeephavenSession#findScript(String)}. Consistency locking and run methods
  * are no-ops.
  */
+@Deprecated(forRemoval = true)
 public class ConsoleScriptPathLoader implements ScriptPathLoader {
 
     @Override

@@ -13,6 +13,7 @@ import java.util.stream.Collectors;
 /**
  * A {@link ScriptPathLoader} that will load paths from multiple underlying loaders.
  */
+@Deprecated(forRemoval = true)
 public class MultiScriptPathLoader<LOADER_TYPE extends ScriptPathLoader> implements ScriptPathLoader {
 
     private final List<LOADER_TYPE> loaders;

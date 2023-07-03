@@ -9,6 +9,7 @@ import java.util.Set;
 /**
  * An interface that defines a method of loading scripts from some source.
  */
+@Deprecated(forRemoval = true)
 public interface ScriptPathLoader {
 
     /**

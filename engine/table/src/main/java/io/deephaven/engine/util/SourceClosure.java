@@ -16,6 +16,7 @@ import java.util.Map;
  * This class represents uses of the source() and sourceOnce() method calls. It will use the underlying scriptPathLoader
  * to get the script text to use.
  */
+@Deprecated(forRemoval = true)
 public class SourceClosure extends Closure<Object> {
     private final ScriptPathLoader scriptPathLoader;
     private final boolean sourceOnce;

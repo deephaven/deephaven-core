@@ -174,13 +174,19 @@ public interface ScriptSession extends ReleasableLivenessManager, LivenessNode {
     /**
      * Called before Application initialization, should setup sourcing from the controller (as required).
      */
-    void onApplicationInitializationBegin(Supplier<ScriptPathLoader> pathLoader,
-            ScriptPathLoaderState scriptLoaderState);
+    @Deprecated(forRemoval = true)
+    default void onApplicationInitializationBegin(Supplier<ScriptPathLoader> pathLoader,
+            ScriptPathLoaderState scriptLoaderState) {
+        throw new UnsupportedOperationException("setUseOriginalScriptLoaderState deprecated for removal");
+    }
 
     /**
      * Called after Application initialization.
      */
-    void onApplicationInitializationEnd();
+    @Deprecated(forRemoval = true)
+    default void onApplicationInitializationEnd() {
+        throw new UnsupportedOperationException("setUseOriginalScriptLoaderState deprecated for removal");
+    }
 
     /**
      * Sets the scriptPathLoader that is in use for this session.
@@ -188,19 +194,28 @@ public interface ScriptSession extends ReleasableLivenessManager, LivenessNode {
      * @param scriptPathLoader a supplier of a script path loader
      * @param caching whether the source operation should cache results
      */
-    void setScriptPathLoader(Supplier<ScriptPathLoader> scriptPathLoader, boolean caching);
+    @Deprecated(forRemoval = true)
+    default void setScriptPathLoader(Supplier<ScriptPathLoader> scriptPathLoader, boolean caching) {
+        throw new UnsupportedOperationException("setUseOriginalScriptLoaderState deprecated for removal");
+    }
 
     /**
      * Removes the currently configured script path loader from this script.
      */
-    void clearScriptPathLoader();
+    @Deprecated(forRemoval = true)
+    default void clearScriptPathLoader() {
+        throw new UnsupportedOperationException("setUseOriginalScriptLoaderState deprecated for removal");
+    }
 
     /**
      * Informs the session whether or not we should be using the original ScriptLoaderState for source commands.
      *
      * @param useOriginal whether to use the script loader state at persistent query initialization
      */
-    boolean setUseOriginalScriptLoaderState(boolean useOriginal);
+    @Deprecated(forRemoval = true)
+    default boolean setUseOriginalScriptLoaderState(boolean useOriginal) {
+        throw new UnsupportedOperationException("setUseOriginalScriptLoaderState deprecated for removal");
+    }
 
     /**
      * Asks the session to remove any wrapping that exists on scoped objects so that clients can fetch them. Defaults to

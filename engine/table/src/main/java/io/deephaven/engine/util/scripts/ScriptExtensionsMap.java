@@ -8,6 +8,7 @@ import java.util.*;
 /**
  * Maps from script language name to file extensions.
  */
+@Deprecated(forRemoval = true)
 public class ScriptExtensionsMap extends HashMap<String, List<String>> {
     private ScriptExtensionsMap() {
         put("Groovy", Collections.singletonList("groovy"));

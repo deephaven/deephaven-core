@@ -10,6 +10,7 @@ import java.io.InputStream;
 import java.util.Collections;
 import java.util.Set;
 
+@Deprecated(forRemoval = true)
 public class ClasspathScriptPathLoader implements ScriptPathLoader {
 
     @Override
