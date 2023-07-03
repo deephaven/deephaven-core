@@ -27,9 +27,8 @@ StringUtils.cacheSize=0
 TrackedFileHandleFactory.maxOpenFiles=1024
 
 ###### Time Zone & Calendars #####
-user.timezone=America/New_York
 timezone.aliases=/default_time_zone_aliases.csv
-Calendar.default=USNYSE
+Calendar.default=UTC
 Calendar.importPath=/default_calendar_imports.txt
 
 QueryPerformanceRecorder.packageFilter.internal=defaultPackageFilters.qpr

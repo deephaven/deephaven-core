@@ -38,7 +38,6 @@ import io.deephaven.engine.util.TableTools;
 import io.deephaven.extensions.barrage.BarrageSubscriptionOptions;
 import io.deephaven.extensions.barrage.util.BarrageChunkAppendingMarshaller;
 import io.deephaven.extensions.barrage.util.BarrageUtil;
-import io.deephaven.extensions.barrage.util.StreamReaderOptions;
 import io.deephaven.io.logger.LogBuffer;
 import io.deephaven.io.logger.LogBufferGlobal;
 import io.deephaven.proto.backplane.grpc.SortTableRequest;
@@ -217,8 +216,6 @@ public abstract class FlightMessageRoundTripTest {
 
         component = component();
         // open execution context immediately so it can be used when resolving `scriptSession`
-        executionContext = component.executionContext().open();
-
         executionContext = component.executionContext().open();
 
         server = component.server();

@@ -12,6 +12,7 @@ import io.deephaven.server.console.python.PythonGlobalScopeCopyModule;
 import io.deephaven.server.healthcheck.HealthCheckModule;
 import io.deephaven.server.log.LogModule;
 import io.deephaven.server.plugin.python.PythonPluginsRegistration;
+import io.deephaven.server.session.ObfuscatingErrorTransformerModule;
 
 /**
  * Includes some of the common modules necessary for creating a {@link DeephavenApiServerComponent} /
@@ -34,6 +35,7 @@ import io.deephaven.server.plugin.python.PythonPluginsRegistration;
  * @see GroovyConsoleSessionModule
  * @see ExecutionContextModule
  * @see ClientDefaultsModule
+ * @see ObfuscatingErrorTransformerModule
  */
 @Module(includes = {
         DeephavenApiServerModule.class,
@@ -46,6 +48,7 @@ import io.deephaven.server.plugin.python.PythonPluginsRegistration;
         GroovyConsoleSessionModule.class,
         ExecutionContextModule.class,
         ClientDefaultsModule.class,
+        ObfuscatingErrorTransformerModule.class,
 })
 public interface CommunityDefaultsModule {
 }

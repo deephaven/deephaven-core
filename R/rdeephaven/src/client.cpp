@@ -158,6 +158,26 @@ public:
         internal_options->setSessionType(sessionType);
     }
 
+    void setUseTls(bool useTls) {
+        internal_options->setUseTls(useTls);
+    }
+
+    void setTlsRootCerts(std::string tlsRootCerts) {
+        internal_options->setTlsRootCerts(tlsRootCerts);
+    }
+
+    void addIntOption(std::string opt, int val) {
+        internal_options->addIntOption(opt, val);
+    }
+
+    void addStringOption(std::string opt, std::string val) {
+        internal_options->addStringOption(opt, val);
+    }
+
+    void addExtraHeader(std::string header_name, std::string header_value) {
+        internal_options->addExtraHeader(header_name, header_value);
+    }
+
 private:
 
     deephaven::client::ClientOptions* internal_options;
@@ -298,6 +318,11 @@ RCPP_MODULE(DeephavenInternalModule) {
     .method("set_basic_authentication", &ClientOptionsWrapper::setBasicAuthentication)
     .method("set_custom_authentication", &ClientOptionsWrapper::setCustomAuthentication)
     .method("set_session_type", &ClientOptionsWrapper::setSessionType)
+    .method("set_use_tls", &ClientOptionsWrapper::setUseTls)
+    .method("set_tls_root_certs", &ClientOptionsWrapper::setTlsRootCerts)
+    .method("add_int_option", &ClientOptionsWrapper::addIntOption)
+    .method("add_string_option", &ClientOptionsWrapper::addStringOption)
+    .method("add_extra_header", &ClientOptionsWrapper::addExtraHeader)
     ;
 
     class_<ClientWrapper>("INTERNAL_Client")
