@@ -244,17 +244,15 @@ public class BusinessCalendar extends Calendar {
 
     // endregion
 
-    ***
-
     // region Business Day
 
     /**
-     * Does time occur on a business day?
+     * Is the date a business day?
      *
      * @param date date
      * @return true if the date is a business day; false otherwise
      * @throws RequirementFailure if the input is null
-     * @throws InvalidDateException if the date is not in the valid range.
+     * @throws InvalidDateException if the date is not in the valid range
      */
     public boolean isBusinessDay(final LocalDate date) {
         return businessSchedule(date).isBusinessDay();
@@ -266,72 +264,70 @@ public class BusinessCalendar extends Calendar {
      * @param date date
      * @return true if the date is a business day; false otherwise
      * @throws RequirementFailure if the input is null
-     * @throws InvalidDateException if the date is not in the valid range.
+     * @throws InvalidDateException if the date is not in the valid range
+     * @throws DateTimeUtils.DateTimeParseException if the string cannot be parsed
      */
-    **
     public boolean isBusinessDay(final String date) {
         return businessSchedule(date).isBusinessDay();
     }
 
     /**
-     * Does time occur on a business day?
+     * Is the time on a business day?
      *
      * @param time time
      * @return true if the date is a business day; false otherwise
      * @throws RequirementFailure if the input is null
-     * @throws InvalidDateException if the date is not in the valid range.
+     * @throws InvalidDateException if the date is not in the valid range
      */
     public boolean isBusinessDay(final ZonedDateTime time){
         return businessSchedule(time).isBusinessDay();
     }
 
     /**
-     * Does time occur on a business day?
+     * Is the time on a business day?
      *
      * @param time time
      * @return true if the date is a business day; false otherwise
      * @throws RequirementFailure if the input is null
-     * @throws InvalidDateException if the date is not in the valid range.
+     * @throws InvalidDateException if the date is not in the valid range
      */
     public boolean isBusinessDay(final Instant time){
         return businessSchedule(time).isBusinessDay();
     }
 
-    **
-
+    //TODO: rename?
     /**
-     * Is the day of the week a business day? A business day is a day that has a business schedule with one or more
-     * business periods defined.
+     * Is the day of the week a normal business day?
      *
      * @param day a day of the week
-     * @return true if the day is a business day; false otherwise.
+     * @return true if the day is a business day; false otherwise
+     * @throws RequirementFailure if the input is null
      */
     public boolean isBusinessDay(DayOfWeek day){
-        ** null
+        Require.neqNull(day, "day");
         return !weekendDays.contains(day);
     }
 
     /**
      * Is the current day a business day?
      *
-     * @return true if the current day is a business day; false otherwise.
+     * @return true if the current day is a business day; false otherwise
      */
     public boolean isBusinessDay() {
         return isBusinessDay(currentDate());
     }
 
-    ***
     /**
-     * Is the time on the last business day of the month with business time remaining?
+     * Is the date the last business day of the month?
      *
      * @param date date
-     * @return true if {@code date} is on the last business day of the month with business time remaining; false
-     *         otherwise.
+     * @return true if {@code date} is the last business day of the month; false otherwise
      * @throws RequirementFailure if the input is null
-     * @throws InvalidDateException if the date is not in the valid range.
+     * @throws InvalidDateException if the date is not in the valid range
      */
     boolean isLastBusinessDayOfMonth(final LocalDate date) {
-        *** null
+        Require.neqNull(date, "date");
+
         if (!isBusinessDay(date)) {
             return false;
         }
@@ -346,67 +342,50 @@ public class BusinessCalendar extends Calendar {
         return date.getMonth() != nextBusAfterDate.getMonth();
     }
 
-    ***
     /**
-     * Is the time on the last business day of the month with business time remaining?
+     * Is the time on the last business day of the month?
      *
      * @param time time
-     * @return true if {@code time} is on the last business day of the month with business time remaining; false
-     *         otherwise.
+     * @return true if {@code time} is on the last business day of the month; false otherwise
      * @throws RequirementFailure if the input is null
-     * @throws InvalidDateException if the date is not in the valid range.
+     * @throws InvalidDateException if the date is not in the valid range
      */
     public boolean isLastBusinessDayOfMonth(final ZonedDateTime time) {
-        *** null
-        if(time == null){
-            //TODO ** raise an error;
-            return false;
-        }
-
+        Require.neqNull(time, "time");
         return isLastBusinessDayOfMonth(DateTimeUtils.toLocalDate(time.withZoneSameInstant(timeZone())));
     }
 
-    ***
     /**
-     * Is the time on the last business day of the month with business time remaining?
+     * Is the time on the last business day of the month?
      *
      * @param time time
-     * @return true if {@code time} is on the last business day of the month with business time remaining; false
-     *         otherwise.
+     * @return true if {@code time} is on the last business day of the month; false otherwise
      * @throws RequirementFailure if the input is null
-     * @throws InvalidDateException if the date is not in the valid range.
+     * @throws InvalidDateException if the date is not in the valid range
      */
     public boolean isLastBusinessDayOfMonth(final Instant time) {
-        if(time == null){
-            //TODO ** raise an error;
-            return false;
-        }
-
+        Require.neqNull(time, "time");
         return isLastBusinessDayOfMonth(DateTimeUtils.toLocalDate(time, timeZone()));
     }
 
-    ***
     /**
      * Is the date the last business day of the month?
      *
      * @param date date
-     * @return true if {@code date} is on the last business day of the month; false otherwise
+     * @return true if {@code time} is on the last business day of the month; false otherwise
      * @throws RequirementFailure if the input is null
-     * @throws InvalidDateException if the date is not in the valid range.
+     * @throws InvalidDateException if the date is not in the valid range
+     * @throws DateTimeUtils.DateTimeParseException if the string cannot be parsed
      */
     boolean isLastBusinessDayOfMonth(final String date) {
-        if(date == null){
-            //TODO ** raise an error;
-            return false;
-        }
-
+        Require.neqNull(date, "date");
         return isLastBusinessDayOfMonth(DateTimeUtils.parseLocalDate(date));
     }
 
     /**
-     * Is the current day the last business day of the month?
+     * Is the current date the last business day of the month?
      *
-     * @return true if {@code date} is on the last business day of the month; false otherwise.
+     * @return true if the current date is the last business day of the month; false otherwise.
      */
     public boolean isLastBusinessDayOfMonth() {
         return isLastBusinessDayOfMonth(currentDate());
@@ -416,13 +395,12 @@ public class BusinessCalendar extends Calendar {
      * Is the date the last business day of the week?
      *
      * @param date date
-     * @return true if {@code date} is on the last business day of the week; false otherwise.
+     * @return true if {@code date} is on the last business day of the week; false otherwise
+     * @throws RequirementFailure if the input is null
+     * @throws InvalidDateException if the date is not in the valid range
      */
     public boolean isLastBusinessDayOfWeek(final LocalDate date){
-        if(date == null){
-            //TODO: *** error ***
-            return false;
-        }
+        Require.neqNull(date, "date");
 
         if (!isBusinessDay(date)) {
             return false;
@@ -433,65 +411,131 @@ public class BusinessCalendar extends Calendar {
     }
 
     /**
-     * Is the time on the last business day of the week with business time remaining?
+     * Is the time on the last business day of the week?
      *
      * @param time time
-     * @return true if {@code time} is on the last business day of the week with business time remaining; false
-     *         otherwise.
+     * @return true if {@code time} is on the last business day of the week; false otherwise
+     * @throws RequirementFailure if the input is null
+     * @throws InvalidDateException if the date is not in the valid range
      */
     public boolean isLastBusinessDayOfWeek(final ZonedDateTime time) {
-        if(time == null){
-            //TODO: *** error ***;
-            return false;
-        }
-
+        Require.neqNull(time, "time");
         return isLastBusinessDayOfWeek(DateTimeUtils.toLocalDate(time, timeZone()));
     }
 
     /**
-     * Is the time on the last business day of the week with business time remaining?
+     * Is the time on the last business day of the week?
      *
      * @param time time
-     * @return true if {@code time} is on the last business day of the week with business time remaining; false
-     *         otherwise.
+     * @return true if {@code time} is on the last business day of the week; false otherwise
+     * @throws RequirementFailure if the input is null
+     * @throws InvalidDateException if the date is not in the valid range
      */
     public boolean isLastBusinessDayOfWeek(final Instant time) {
-        if(time == null){
-            //TODO: *** error ***;
-            return false;
-        }
-
+        Require.neqNull(time, "time");
         return isLastBusinessDayOfWeek(DateTimeUtils.toLocalDate(time, timeZone()));
     }
 
     /**
-     * Is the date the last business day of the week?
+     * Is the date is last business day of the week?
      *
      * @param date date
-     * @return true if {@code date} is on the last business day of the week; false otherwise.
+     * @return true if {@code date} is the last business day of the week; false otherwise
+     * @throws RequirementFailure if the input is null
+     * @throws InvalidDateException if the date is not in the valid range
+     * @throws DateTimeUtils.DateTimeParseException if the string cannot be parsed
      */
     public boolean isLastBusinessDayOfWeek(final String date){
-        if(date == null){
-            //TODO: *** error ***;
-            return false;
-        }
-
+        Require.neqNull(date, "date");
         return isLastBusinessDayOfWeek(DateTimeUtils.parseLocalDate(date));
     }
 
     /**
-     * Is the current day the last business day of the week?
+     * Is the current date the last business day of the week?
      *
-     * @return true if {@code date} is on the last business day of the week; false otherwise.
+     * @return true if the current date is the last business day of the week; false otherwise.
      */
     public boolean isLastBusinessDayOfWeek() {
         return isLastBusinessDayOfWeek(currentDate());
     }
 
-    //TODO: isLastBusinessDayOfYear()
-    //TODO: isLastNonBusinessDayOfYear() -> and other non business day equivalents
+    /**
+     * Is the date the last business day of the year?
+     *
+     * @param date date
+     * @return true if {@code date} is the last business day of the year; false otherwise
+     * @throws RequirementFailure if the input is null
+     * @throws InvalidDateException if the date is not in the valid range
+     */
+    boolean isLastBusinessDayOfYear(final LocalDate date) {
+        Require.neqNull(date, "date");
+
+        if (!isBusinessDay(date)) {
+            return false;
+        }
+
+        final LocalDate nextBusAfterDate = plusBusinessDays(date, 1);
+
+        if(nextBusAfterDate == null){
+            //TODO ** raise an error;
+            return false;
+        }
+
+        return date.getYear() != nextBusAfterDate.getYear();
+    }
+
+    /**
+     * Is the time on the last business day of the year?
+     *
+     * @param time time
+     * @return true if {@code time} is on the last business day of the year; false otherwise
+     * @throws RequirementFailure if the input is null
+     * @throws InvalidDateException if the date is not in the valid range
+     */
+    public boolean isLastBusinessDayOfYear(final ZonedDateTime time) {
+        Require.neqNull(time, "time");
+        return isLastBusinessDayOfYear(DateTimeUtils.toLocalDate(time.withZoneSameInstant(timeZone())));
+    }
+
+    /**
+     * Is the time on the last business day of the year?
+     *
+     * @param time time
+     * @return true if {@code time} is on the last business day of the year; false otherwise
+     * @throws RequirementFailure if the input is null
+     * @throws InvalidDateException if the date is not in the valid range
+     */
+    public boolean isLastBusinessDayOfYear(final Instant time) {
+        Require.neqNull(time, "time");
+        return isLastBusinessDayOfYear(DateTimeUtils.toLocalDate(time, timeZone()));
+    }
+
+    /**
+     * Is the date the last business day of the year?
+     *
+     * @param date date
+     * @return true if {@code time} is on the last business day of the year; false otherwise
+     * @throws RequirementFailure if the input is null
+     * @throws InvalidDateException if the date is not in the valid range
+     * @throws DateTimeUtils.DateTimeParseException if the string cannot be parsed
+     */
+    boolean isLastBusinessDayOfYear(final String date) {
+        Require.neqNull(date, "date");
+        return isLastBusinessDayOfYear(DateTimeUtils.parseLocalDate(date));
+    }
+
+    /**
+     * Is the current date the last business day of the year?
+     *
+     * @return true if the current date is the last business day of the year; false otherwise.
+     */
+    public boolean isLastBusinessDayOfYear() {
+        return isLastBusinessDayOfYear(currentDate());
+    }
 
     // endregion
+
+        ***
 
     // region Business Time
 
