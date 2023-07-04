@@ -535,151 +535,214 @@ public class BusinessCalendar extends Calendar {
 
     // endregion
 
-        ***
-
     // region Business Time
 
     /**
-     * Determines if the specified time is a business time. If the time falls between business periods, false will be
-     * returned.
+     * Determines if the specified time is a business time.
+     * Business times fall within business periods of the day's business schedule.
      *
      * @param time time
      * @return true if the specified time is a business time; otherwise, false.
+     * @throws RequirementFailure if the input is null
+     * @throws InvalidDateException if the date is not in the valid range
      */
     public boolean isBusinessTime(final ZonedDateTime time) {
-        return time != null && businessSchedule(time).isBusinessTime(time);
+        Require.neqNull(time, "time");
+        return businessSchedule(time).isBusinessTime(time.toInstant());
     }
 
-    //TODO: zero arg version?
     /**
-     * Determines if the specified time is a business time. If the time falls between business periods, false will be
-     * returned.
+     * Determines if the specified time is a business time.
+     * Business times fall within business periods of the day's business schedule.
      *
      * @param time time
      * @return true if the specified time is a business time; otherwise, false.
+     * @throws RequirementFailure if the input is null
+     * @throws InvalidDateException if the date is not in the valid range
      */
     public boolean isBusinessTime(final Instant time) {
-        return time != null && businessSchedule(time).isBusinessTime(time);
+        Require.neqNull(time, "time");
+        return businessSchedule(time).isBusinessTime(time);
     }
 
+    /**
+     * Determines if the current time is a business time.
+     * Business times fall within business periods of the day's business schedule.
+     *
+     * @return true if the specified time is a business time; otherwise, false.
+     * @throws RequirementFailure if the input is null
+     * @throws InvalidDateException if the date is not in the valid range
+     */
+    public boolean isBusinessTime() {
+        return isBusinessTime(DateTimeUtils.now());
+    }
 
     /**
-     * For the given date, returns the ratio of the business day length and the standard business day length. For
-     * example, a holiday has zero business time and will therefore return 0.0. A normal business day will be of the
-     * standard length and will therefore return 1.0. A half day holiday will return 0.5.
+     * Returns the ratio of the business day length and the standard business day length.
+     * For example, a holiday has zero business time and will therefore return 0.0.
+     * A normal business day will be of the standard length and will therefore return 1.0.
+     * A half day holiday will return 0.5.
      *
-     * @see BusinessCalendar#fractionOfBusinessDayRemaining(Instant)
-     * @param date date; if null, return 0
+     * @param date date
      * @return ratio of the business day length and the standard business day length for the date
+     * @throws RequirementFailure if the input is null
+     * @throws InvalidDateException if the date is not in the valid range
      */
     public double fractionOfStandardBusinessDay(final LocalDate date){
+        Require.neqNull(date, "date");
         final BusinessSchedule<Instant> schedule = businessSchedule(date);
-        return schedule == null ? 0.0 : (double) schedule.businessNanos() / (double) standardBusinessDayLengthNanos();
+        return (double) schedule.businessNanos() / (double) standardBusinessDayLengthNanos();
     }
 
     /**
-     * For the given date, returns the ratio of the business day length and the standard business day length. For
-     * example, a holiday has zero business time and will therefore return 0.0. A normal business day will be of the
-     * standard length and will therefore return 1.0. A half day holiday will return 0.5.
+     * Returns the ratio of the business day length and the standard business day length.
+     * For example, a holiday has zero business time and will therefore return 0.0.
+     * A normal business day will be of the standard length and will therefore return 1.0.
+     * A half day holiday will return 0.5.
      *
-     * @see BusinessCalendar#fractionOfBusinessDayRemaining(Instant)
-     * @param time time; if null, return 0
+     * @param date date
      * @return ratio of the business day length and the standard business day length for the date
+     * @throws RequirementFailure if the input is null
+     * @throws InvalidDateException if the date is not in the valid range
+     * @throws DateTimeUtils.DateTimeParseException if the string cannot be parsed
+     */
+    public double fractionOfStandardBusinessDay(final String date){
+        Require.neqNull(date, "date");
+        return fractionOfStandardBusinessDay(DateTimeUtils.parseLocalDate(date));
+    }
+
+    /**
+     * Returns the ratio of the business day length and the standard business day length.
+     * For example, a holiday has zero business time and will therefore return 0.0.
+     * A normal business day will be of the standard length and will therefore return 1.0.
+     * A half day holiday will return 0.5.
+     *
+     * @param time time
+     * @return ratio of the business day length and the standard business day length for the date
+     * @throws RequirementFailure if the input is null
+     * @throws InvalidDateException if the date is not in the valid range
      */
     public double fractionOfStandardBusinessDay(final Instant time){
-        return time == null ? 0.0 : fractionOfStandardBusinessDay(DateTimeUtils.toLocalDate(time, timeZone()));
+        Require.neqNull(time, "time");
+        return fractionOfStandardBusinessDay(DateTimeUtils.toLocalDate(time, timeZone()));
     }
 
     /**
-     * For the given date, returns the ratio of the business day length and the standard business day length. For
-     * example, a holiday has zero business time and will therefore return 0.0. A normal business day will be of the
-     * standard length and will therefore return 1.0. A half day holiday will return 0.5.
+     * Returns the ratio of the business day length and the standard business day length.
+     * For example, a holiday has zero business time and will therefore return 0.0.
+     * A normal business day will be of the standard length and will therefore return 1.0.
+     * A half day holiday will return 0.5.
      *
-     * @see BusinessCalendar#fractionOfBusinessDayRemaining(Instant)
-     * @param time time; if null, return 0
+     * @param time time
      * @return ratio of the business day length and the standard business day length for the date
+     * @throws RequirementFailure if the input is null
+     * @throws InvalidDateException if the date is not in the valid range
      */
     public double fractionOfStandardBusinessDay(final ZonedDateTime time){
-        return time == null ? 0.0 : fractionOfStandardBusinessDay(DateTimeUtils.toLocalDate(time.toInstant(), timeZone()));
+        Require.neqNull(time, "time");
+        return fractionOfStandardBusinessDay(DateTimeUtils.toLocalDate(time.toInstant(), timeZone()));
     }
 
-    //TODO: add zero arg methods for other funcs
     /**
-     * Returns the ratio of the current day's business day length and the standard business day length. For example, a
-     * holiday has zero business time and will therefore return 0.0. A normal business day will be of the standard
-     * length and will therefore return 1.0. A half day holiday will return 0.5.
+     * Returns the ratio of the business day length and the standard business day length.
+     * For example, a holiday has zero business time and will therefore return 0.0.
+     * A normal business day will be of the standard length and will therefore return 1.0.
+     * A half day holiday will return 0.5.
      *
-     * @see BusinessCalendar#fractionOfBusinessDayRemaining(Instant)
-     * @return ratio of the business day length and the standard business day length for the current day
+     * @return ratio of the business day length and the standard business day length for the date
+     * @throws RequirementFailure if the input is null
+     * @throws InvalidDateException if the date is not in the valid range
      */
     public double fractionOfStandardBusinessDay() {
         return fractionOfStandardBusinessDay(currentDate());
     }
 
-    /**
-     * Returns the fraction of the business day remaining after the given time.
-     *
-     * @param time time
-     * @return the fraction of the day left after {@code time}; NULL_DOUBLE if time is null
-     */
-    public double fractionOfBusinessDayRemaining(final Instant time){
-        final BusinessSchedule<Instant> businessDate = businessSchedule(time);
-        if (businessDate == null) {
-            return QueryConstants.NULL_DOUBLE;
-        }
-
-        if (businessDate.businessNanos() == 0) {
-            return 0;
-        }
-
-        final long businessDaySoFar = businessDate.businessNanosElapsed(time);
-        return (double) (businessDate.businessNanos() - businessDaySoFar) / (double) businessDate.businessNanos();
-    }
-
-    /**
-     * Returns the fraction of the business day remaining after the given time.
-     *
-     * @param time time
-     * @return the fraction of the day left after {@code time}; NULL_DOUBLE if time is null
-     */
-    public double fractionOfBusinessDayRemaining(final ZonedDateTime time){
-        if(time == null) {
-            return QueryConstants.NULL_DOUBLE;
-        }
-
-        return fractionOfBusinessDayRemaining(time.toInstant());
-    }
-
     //TODO: remove Of from function names!
     /**
-     * Returns the fraction of the business day complete by the given time.
+     * Fraction of the business day complete.
      *
      * @param time time
-     * @return the fraction of the day complete by {@code time}; NULL_DOUBLE if time is null
+     * @return the fraction of the business day complete, or 1.0 if the day is not a business day
+     * @throws RequirementFailure if the input is null
+     * @throws InvalidDateException if the date is not in the valid range
      */
     public double fractionOfBusinessDayComplete(final Instant time) {
-        if (time == null) {
-            return QueryConstants.NULL_DOUBLE;
+        Require.neqNull(time, "time");
+
+        final BusinessSchedule<Instant> schedule = businessSchedule(time);
+
+        if(!schedule.isBusinessDay()) {
+            return 1.0;
         }
 
-        return 1.0 - fractionOfBusinessDayRemaining(time);
+        final long businessDaySoFar = schedule.businessNanosElapsed(time);
+        return (double) businessDaySoFar / (double) schedule.businessNanos();
     }
 
     /**
-     * Returns the fraction of the business day complete by the given time.
+     * Fraction of the business day complete.
      *
      * @param time time
-     * @return the fraction of the day complete by {@code time}; NULL_DOUBLE if time is null
+     * @return the fraction of the business day complete, or 1.0 if the day is not a business day
+     * @throws RequirementFailure if the input is null
+     * @throws InvalidDateException if the date is not in the valid range
      */
     public double fractionOfBusinessDayComplete(final ZonedDateTime time) {
-        if (time == null) {
-            return QueryConstants.NULL_DOUBLE;
-        }
-
+        Require.neqNull(time, "time");
         return fractionOfBusinessDayComplete(time.toInstant());
     }
 
+    /**
+     * Fraction of the current business day complete.
+     *
+     * @return the fraction of the business day complete, or 1.0 if the day is not a business day
+     * @throws RequirementFailure if the input is null
+     * @throws InvalidDateException if the date is not in the valid range
+     */
+    public double fractionOfBusinessDayComplete() {
+        return fractionOfBusinessDayComplete(DateTimeUtils.now());
+    }
+
+    /**
+     * Fraction of the business day remaining.
+     *
+     * @param time time
+     * @return the fraction of the business day complete, or 0.0 if the day is not a business day
+     * @throws RequirementFailure if the input is null
+     * @throws InvalidDateException if the date is not in the valid range
+     */
+    public double fractionOfBusinessDayRemaining(final Instant time){
+        Require.neqNull(time, "time");
+        return 1.0 - fractionOfBusinessDayComplete(time);
+    }
+
+    /**
+     * Fraction of the business day remaining.
+     *
+     * @param time time
+     * @return the fraction of the business day complete, or 0.0 if the day is not a business day
+     * @throws RequirementFailure if the input is null
+     * @throws InvalidDateException if the date is not in the valid range
+     */
+    public double fractionOfBusinessDayRemaining(final ZonedDateTime time){
+        Require.neqNull(time, "time");
+        return 1.0 - fractionOfBusinessDayComplete(time);
+    }
+
+    /**
+     * Fraction of the business day remaining.
+     *
+     * @return the fraction of the business day complete, or 0.0 if the day is not a business day
+     * @throws RequirementFailure if the input is null
+     * @throws InvalidDateException if the date is not in the valid range
+     */
+    public double fractionOfBusinessDayRemaining(){
+        return fractionOfBusinessDayRemaining(DateTimeUtils.now());
+    }
+
     // endregion
+
+    ***
 
     // region Ranges
 
