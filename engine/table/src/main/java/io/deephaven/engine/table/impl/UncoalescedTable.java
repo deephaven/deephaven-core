@@ -269,7 +269,6 @@ public abstract class UncoalescedTable<IMPL_TYPE extends UncoalescedTable<IMPL_T
         return coalesce().moveColumns(index, moveToEnd, columnsToMove);
     }
 
-    // Some declarations in Uncoalesced and some in Table
     @Override
     @ConcurrentMethod
     public Table head(long size) {

@@ -2085,11 +2085,15 @@ class Table(JObjectWrapper):
             raise DHError(e, "table slice operation failed.") from e
 
     def slice_pct(self, start_pct: float, end_pct: float) -> Table:
-        """<TODO>
+        """Extracts a subset of a table by row percentages.
+
+        Returns a subset of table in the range [startPercentInclusive * sizeOfTable , endPercentExclusive * sizeOfTable).
+        For example, for a table of size 10, slicePct(0.1, 0.7) will return a subset from the second row to the seventh
+        row. The percentage arguments must be in [0,1], otherwise the function returns an error.
 
         Args:
-            start_pct (float): <TODO>
-            end_pct (float): <TODO>
+            start_pct (float): the starting percentage point for rows to include in the result, range [0, 1]
+            end_pct (float): the ending percentage point for rows to include in the result, range [0, 1]
 
         Returns:
             a new table
