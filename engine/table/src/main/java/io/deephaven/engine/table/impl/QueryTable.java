@@ -364,6 +364,7 @@ public class QueryTable extends BaseTable<QueryTable> {
         return (ColumnSource<T>) columnSource;
     }
 
+
     @Override
     public Map<String, ColumnSource<?>> getColumnSourceMap() {
         return Collections.unmodifiableMap(columns);
@@ -612,8 +613,6 @@ public class QueryTable extends BaseTable<QueryTable> {
         final UpdateGraph updateGraph = getUpdateGraph();
         try (final SafeCloseable ignored = ExecutionContext.getContext().withUpdateGraph(updateGraph).open()) {
             if (isBlink()) {
-                // TODO Add unit tests for this
-                // This might make it a breaking change
                 throw unsupportedForBlinkTables("slice");
             }
             if (firstPositionInclusive == lastPositionExclusive) {
@@ -642,8 +641,6 @@ public class QueryTable extends BaseTable<QueryTable> {
     @Override
     public Table headPct(final double percent) {
         if (isBlink()) {
-            // TODO Add unit tests for this
-            // This might make it a breaking change
             throw unsupportedForBlinkTables("headPct");
         }
         if (percent < 0 || percent > 1) {
@@ -659,8 +656,6 @@ public class QueryTable extends BaseTable<QueryTable> {
     @Override
     public Table tailPct(final double percent) {
         if (isBlink()) {
-            // TODO Add unit tests for this
-            // This might make it a breaking change
             throw unsupportedForBlinkTables("tailPct");
         }
         if (percent < 0 || percent > 1) {

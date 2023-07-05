@@ -43,7 +43,13 @@ public class BlinkTableTools {
     }
 
     /**
-     * TODO Add description
+     * Convert a Blink Table to an in-memory append only table with a maximum count row limit.
+     * Any updates beyond that limit won't be appended to the table.
+     *
+     * @param blinkTable The input blink table
+     * @param rowLimit The maximum number of rows in the append-only table
+     * @return An append-only in-memory table representing all data encountered in the blink table across all cycles
+     * till maximum row count
      */
     public static Table blinkToAppendOnly(final Table blinkTable, long rowLimit) {
         if (rowLimit < 0) {
@@ -56,7 +62,7 @@ public class BlinkTableTools {
         }
     }
 
-    // TODO Choose better variable names
+    // TODO How do we handle default arguments. Is there a better way to do this
     private static Table internalBlinkToAppendOnly(final Table blinkTable, boolean hasMaxRowLimit, long maxRowLimit) {
         return QueryPerformanceRecorder.withNugget("blinkToAppendOnly", () -> {
             if (!isBlink(blinkTable)) {

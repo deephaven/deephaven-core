@@ -156,6 +156,7 @@ public class SliceLikeOperation implements QueryTable.Operation<QueryTable> {
 
         final TrackingWritableRowSet rowSet = resultTable.getRowSet().writableCast();
         final RowSet sliceRowSet = computeSliceIndex(parent.getRowSet());
+
         final TableUpdateImpl downstream = new TableUpdateImpl();
         downstream.removed = upstream.removed().intersect(rowSet);
         rowSet.remove(downstream.removed());
@@ -172,7 +173,6 @@ public class SliceLikeOperation implements QueryTable.Operation<QueryTable> {
         // Must intersect against modified set before adding the new rows to result rowSet.
         downstream.modified = upstream.modified().intersect(rowSet);
 
-
         downstream.added = sliceRowSet.minus(rowSet);
         rowSet.insert(downstream.added());
 
@@ -182,6 +182,7 @@ public class SliceLikeOperation implements QueryTable.Operation<QueryTable> {
             downstream.modifiedColumnSet = resultTable.getModifiedColumnSetForUpdates();
             downstream.modifiedColumnSet.clear();
         }
+
         resultTable.notifyListeners(downstream);
     }
 

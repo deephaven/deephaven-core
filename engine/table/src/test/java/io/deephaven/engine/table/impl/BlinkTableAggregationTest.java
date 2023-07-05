@@ -405,4 +405,21 @@ public class BlinkTableAggregationTest {
                 AggSortedFirst("Sym", "SymSortedFirstPrice=Price", "SymSortedFirstSize=Size"),
                 AggSortedLast("Sym", "SymSortedLastPrice=Price", "SymSortedLastSize=Size"))), true);
     }
+
+    public void testUnsupportedImpl(@NotNull final UnaryOperator<Table> operator) {
+        final QueryTable blink = TstUtils.testRefreshingTable(RowSetFactory.fromRange(0, 10).toTracking());
+        blink.setAttribute(Table.BLINK_TABLE_ATTRIBUTE, true);
+        try {
+            operator.apply(blink);
+            org.junit.Assert.fail("Exception expected for unsupported operation");
+        } catch (UnsupportedOperationException expected) {
+        }
+    }
+
+    @Test
+    public void testUnsupported() {
+        testUnsupportedImpl(table -> table.slice(0, 1));
+        testUnsupportedImpl(table -> table.headPct(1));
+        testUnsupportedImpl(table -> table.tailPct(1));
+    }
 }
