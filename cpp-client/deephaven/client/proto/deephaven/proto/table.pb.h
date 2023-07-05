@@ -2205,6 +2205,7 @@ class TimeTableRequest final :
     kResultIdFieldNumber = 1,
     kStartTimeNanosFieldNumber = 2,
     kPeriodNanosFieldNumber = 3,
+    kBlinkTableFieldNumber = 4,
   };
   // .io.deephaven.proto.backplane.grpc.Ticket result_id = 1;
   bool has_result_id() const;
@@ -2242,6 +2243,15 @@ class TimeTableRequest final :
   void _internal_set_period_nanos(int64_t value);
   public:
 
+  // bool blink_table = 4;
+  void clear_blink_table();
+  bool blink_table() const;
+  void set_blink_table(bool value);
+  private:
+  bool _internal_blink_table() const;
+  void _internal_set_blink_table(bool value);
+  public:
+
   // @@protoc_insertion_point(class_scope:io.deephaven.proto.backplane.grpc.TimeTableRequest)
  private:
   class _Internal;
@@ -2252,6 +2262,7 @@ class TimeTableRequest final :
   ::io::deephaven::proto::backplane::grpc::Ticket* result_id_;
   int64_t start_time_nanos_;
   int64_t period_nanos_;
+  bool blink_table_;
   mutable ::PROTOBUF_NAMESPACE_ID::internal::CachedSize _cached_size_;
   friend struct ::TableStruct_deephaven_2fproto_2ftable_2eproto;
 };
@@ -25305,6 +25316,26 @@ inline void TimeTableRequest::_internal_set_period_nanos(int64_t value) {
 inline void TimeTableRequest::set_period_nanos(int64_t value) {
   _internal_set_period_nanos(value);
   // @@protoc_insertion_point(field_set:io.deephaven.proto.backplane.grpc.TimeTableRequest.period_nanos)
+}
+
+// bool blink_table = 4;
+inline void TimeTableRequest::clear_blink_table() {
+  blink_table_ = false;
+}
+inline bool TimeTableRequest::_internal_blink_table() const {
+  return blink_table_;
+}
+inline bool TimeTableRequest::blink_table() const {
+  // @@protoc_insertion_point(field_get:io.deephaven.proto.backplane.grpc.TimeTableRequest.blink_table)
+  return _internal_blink_table();
+}
+inline void TimeTableRequest::_internal_set_blink_table(bool value) {
+  
+  blink_table_ = value;
+}
+inline void TimeTableRequest::set_blink_table(bool value) {
+  _internal_set_blink_table(value);
+  // @@protoc_insertion_point(field_set:io.deephaven.proto.backplane.grpc.TimeTableRequest.blink_table)
 }
 
 // -------------------------------------------------------------------

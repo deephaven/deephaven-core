@@ -5,6 +5,7 @@ package io.deephaven.qst.table;
 
 import io.deephaven.annotations.LeafStyle;
 import org.immutables.value.Value.Check;
+import org.immutables.value.Value.Default;
 import org.immutables.value.Value.Immutable;
 
 import java.time.Duration;
@@ -64,6 +65,11 @@ public abstract class TimeTable extends TableBase {
 
     public abstract Optional<Instant> startTime();
 
+    @Default
+    public boolean blinkTable() {
+        return false;
+    }
+
     abstract UUID id();
 
     @Override
@@ -84,6 +90,8 @@ public abstract class TimeTable extends TableBase {
         Builder interval(Duration interval);
 
         Builder startTime(Instant startTime);
+
+        Builder blinkTable(boolean blinkTable);
 
         Builder id(UUID id);
 

@@ -4,6 +4,7 @@
 package io.deephaven.engine.table.impl;
 
 import com.google.auto.service.AutoService;
+import io.deephaven.engine.context.ExecutionContext;
 import io.deephaven.engine.table.Table;
 import io.deephaven.engine.table.TableDefinition;
 import io.deephaven.engine.table.TableFactory;
@@ -64,7 +65,12 @@ public enum TableCreatorImpl implements TableCreator<Table> {
     public final Table of(TimeTable timeTable) {
         final io.deephaven.base.clock.Clock clock = ClockAdapter.of(timeTable.clock());
         final Instant firstTime = timeTable.startTime().orElse(null);
-        return TableTools.timeTable(clock, firstTime, timeTable.interval().toNanos());
+        return new io.deephaven.engine.table.impl.TimeTable(
+                ExecutionContext.getContext().getUpdateGraph(),
+                clock,
+                firstTime,
+                timeTable.interval().toNanos(),
+                timeTable.blinkTable());
     }
 
     @Override
