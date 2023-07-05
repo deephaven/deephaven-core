@@ -27,4 +27,9 @@ public abstract class BoxedType<T> extends GenericTypeBase<T> {
     public final <R> R walk(GenericType.Visitor<R> visitor) {
         return visitor.visit(this);
     }
+
+    @Override
+    public final String toString() {
+        return "BoxedType(" + primitiveType() + ")";
+    }
 }
