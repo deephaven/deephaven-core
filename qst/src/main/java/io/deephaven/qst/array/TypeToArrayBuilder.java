@@ -20,7 +20,8 @@ import io.deephaven.qst.type.ShortType;
 import io.deephaven.qst.type.StringType;
 import io.deephaven.qst.type.Type;
 
-class TypeToArrayBuilder implements Type.Visitor<ArrayBuilder<?, ?, ?>>, PrimitiveType.Visitor<ArrayBuilder<?, ?, ?>>, GenericType.Visitor<ArrayBuilder<?, ?, ?>> {
+class TypeToArrayBuilder implements Type.Visitor<ArrayBuilder<?, ?, ?>>, PrimitiveType.Visitor<ArrayBuilder<?, ?, ?>>,
+        GenericType.Visitor<ArrayBuilder<?, ?, ?>> {
 
     static <T> ArrayBuilder<T, ?, ?> of(Type<T> type, int initialCapacity) {
         // noinspection unchecked
