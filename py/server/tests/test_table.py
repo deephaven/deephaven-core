@@ -241,8 +241,8 @@ class TableTestCase(BaseTestCase):
         ops = [Table.slice_pct]
         for op in ops:
             with self.subTest(op=op):
-                result_table = op(self.test_table, start_pct=1, end_pct=0.7)
-                self.assertEqual(result_table.size, self.test_table.size * 1)
+                result_table = op(self.test_table, start_pct=0.1, end_pct=0.7)
+                self.assertEqual(result_table.size, self.test_table.size * 0.599)
 
     #
     # Table operation category: Sort
