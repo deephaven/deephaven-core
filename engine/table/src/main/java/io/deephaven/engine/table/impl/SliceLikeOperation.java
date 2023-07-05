@@ -149,44 +149,40 @@ public class SliceLikeOperation implements QueryTable.Operation<QueryTable> {
     }
 
     private void onUpdate(final TableUpdate upstream) {
-        // For Blink table, we would ensure nothing shifted or modified
-        // For head, we would check if the table is full and do nothing in that case. Otherwise, we would send
-        // only send additions notification to the downstream, no deletion
-
-        if (!parent.isBlink()) {
-            final TrackingWritableRowSet rowSet = resultTable.getRowSet().writableCast();
-            final RowSet sliceRowSet = computeSliceIndex(parent.getRowSet());
-            final TableUpdateImpl downstream = new TableUpdateImpl();
-            downstream.removed = upstream.removed().intersect(rowSet);
-            rowSet.remove(downstream.removed());
-
-            downstream.shifted = upstream.shifted().intersect(rowSet);
-            downstream.shifted().apply(rowSet);
-
-            // Must calculate in post-shift space what indices were removed by the slice operation.
-            final WritableRowSet opRemoved = rowSet.minus(sliceRowSet);
-            rowSet.remove(opRemoved);
-            downstream.shifted().unapply(opRemoved);
-            downstream.removed().writableCast().insert(opRemoved);
-
-            // Must intersect against modified set before adding the new rows to result rowSet.
-            downstream.modified = upstream.modified().intersect(rowSet);
-
-
-            downstream.added = sliceRowSet.minus(rowSet);
-            rowSet.insert(downstream.added());
-
-            // propagate an empty MCS if modified is empty
-            downstream.modifiedColumnSet = upstream.modifiedColumnSet();
-            if (downstream.modified().isEmpty()) {
-                downstream.modifiedColumnSet = resultTable.getModifiedColumnSetForUpdates();
-                downstream.modifiedColumnSet.clear();
-            }
-            resultTable.notifyListeners(downstream);
-        } else {
-            // Parent is a Blink table
-            // TODO Add a comment here explaining why this is empty
+        if (parent.isBlink()) {
+            // For blink tables, the update operations are automatically handled by downstream
+            return;
         }
+
+        final TrackingWritableRowSet rowSet = resultTable.getRowSet().writableCast();
+        final RowSet sliceRowSet = computeSliceIndex(parent.getRowSet());
+        final TableUpdateImpl downstream = new TableUpdateImpl();
+        downstream.removed = upstream.removed().intersect(rowSet);
+        rowSet.remove(downstream.removed());
+
+        downstream.shifted = upstream.shifted().intersect(rowSet);
+        downstream.shifted().apply(rowSet);
+
+        // Must calculate in post-shift space what indices were removed by the slice operation.
+        final WritableRowSet opRemoved = rowSet.minus(sliceRowSet);
+        rowSet.remove(opRemoved);
+        downstream.shifted().unapply(opRemoved);
+        downstream.removed().writableCast().insert(opRemoved);
+
+        // Must intersect against modified set before adding the new rows to result rowSet.
+        downstream.modified = upstream.modified().intersect(rowSet);
+
+
+        downstream.added = sliceRowSet.minus(rowSet);
+        rowSet.insert(downstream.added());
+
+        // propagate an empty MCS if modified is empty
+        downstream.modifiedColumnSet = upstream.modifiedColumnSet();
+        if (downstream.modified().isEmpty()) {
+            downstream.modifiedColumnSet = resultTable.getModifiedColumnSetForUpdates();
+            downstream.modifiedColumnSet.clear();
+        }
+        resultTable.notifyListeners(downstream);
     }
 
     private WritableRowSet computeSliceIndex(RowSet useRowSet) {

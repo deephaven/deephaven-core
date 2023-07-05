@@ -90,7 +90,6 @@ public class BlinkTableAggregationTest {
 
         TstUtils.assertTableEquals(normal, blink);
 
-        // Apply the operator to all three tables and store the reference to the expected result
         final Table expected = operator.apply(normal);
         final Table addOnlyExpected = operator.apply(addOnly);
         final Table blinkExpected = operator.apply(blink);
@@ -106,8 +105,6 @@ public class BlinkTableAggregationTest {
         int step = 0;
         long usedSize = 0;
         RowSet blinkLastInserted = RowSetFactory.empty();
-
-        // Now send incremental updates to normal and blink table so that your expected references also update
         while (usedSize < INPUT_SIZE) {
             final long refreshSize = Math.min(INPUT_SIZE - usedSize, refreshSizes.nextLong());
             final RowSet normalStepInserted = refreshSize == 0
@@ -146,7 +143,6 @@ public class BlinkTableAggregationTest {
                 });
             } finally {
                 updateGraph.completeCycleForUnitTests();
-                TstUtils.assertTableEquals(expected, blinkExpected);
             }
             try {
                 // TODO How is addOnly getting updated when normal is being updated

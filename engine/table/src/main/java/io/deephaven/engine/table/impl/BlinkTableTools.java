@@ -138,13 +138,12 @@ public class BlinkTableTools {
                                 if (upstream.modified().isNonempty() || upstream.shifted().nonempty()) {
                                     throw new IllegalArgumentException("Blink tables should not modify or shift!");
                                 }
-                                if (upstream.added().isEmpty()) {
-                                    return;
-                                }
-
-                                final long currentSize = rowSet.size();
                                 RowSet newRowSet = upstream.added();
                                 long newRowsSize = newRowSet.size();
+                                if (newRowsSize == 0) {
+                                    return;
+                                }
+                                final long currentSize = rowSet.size();
                                 if (currentSize + newRowsSize >= maxRowLimit) {
                                     // TODO Test this
                                     newRowsSize = (maxRowLimit - currentSize);
@@ -165,6 +164,7 @@ public class BlinkTableTools {
                                 downstream.shifted = RowSetShiftData.EMPTY;
                                 result.notifyListeners(downstream);
 
+                                // TODO Should this be left here
                                 if (hasMaxRowLimit && totalSize > maxRowLimit) {
                                     throw new IllegalStateException(
                                             "Size of table cannot exceed the allowable limit, size=" + totalSize
