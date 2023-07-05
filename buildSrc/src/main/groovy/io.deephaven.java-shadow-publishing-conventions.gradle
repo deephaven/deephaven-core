@@ -39,7 +39,6 @@ PublishingTools.setupPublications(project) { publication ->
           dependencyNode.appendNode('artifactId', base.archivesBaseName)
           dependencyNode.appendNode('version', it.version)
           dependencyNode.appendNode('scope', 'runtime')
-          println dependencyNode
         }
       }
     }
