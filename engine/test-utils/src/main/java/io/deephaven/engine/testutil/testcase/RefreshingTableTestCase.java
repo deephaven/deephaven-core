@@ -15,6 +15,7 @@ import io.deephaven.engine.table.impl.QueryTable;
 import io.deephaven.engine.table.impl.UpdateErrorReporter;
 import io.deephaven.engine.table.impl.perf.UpdatePerformanceTracker;
 import io.deephaven.engine.table.impl.util.AsyncClientErrorNotifier;
+import io.deephaven.engine.table.impl.util.AsyncErrorLogger;
 import io.deephaven.engine.testutil.*;
 import io.deephaven.engine.util.systemicmarking.SystemicObjectTracker;
 import io.deephaven.util.ExceptionDetails;
@@ -69,6 +70,7 @@ abstract public class RefreshingTableTestCase extends BaseArrayTestCase implemen
         oldLogEnabled = QueryCompiler.setLogEnabled(ENABLE_QUERY_COMPILER_LOGGING);
         oldSerialSafe = updateGraph.setSerialTableOperationsSafe(true);
         UpdatePerformanceTracker.getInstance().enableUnitTestMode();
+        AsyncErrorLogger.init();
         ChunkPoolReleaseTracking.enableStrict();
     }
 
