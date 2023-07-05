@@ -510,6 +510,4 @@ public class QueryTableSliceTest extends QueryTableTestBase {
             simulateShiftAwareStep(ctxt + " step == " + i, size, random, queryTable, columnInfo, en);
         }
     }
-
-
 }
