@@ -42,7 +42,7 @@ public class SliceLikeOperation implements QueryTable.Operation<QueryTable> {
         }
         return new SliceLikeOperation("slicePct",
                 "slicePct(" + startPercentInclusive + ", " + endPercentExclusive + ")",
-                parent, 0, 0, true) {
+                parent, 0, 0, startPercentInclusive == 0) {
             @Override
             protected long getFirstPositionInclusive() {
                 return (long) Math.floor(startPercentInclusive * parent.size());
