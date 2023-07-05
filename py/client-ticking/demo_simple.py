@@ -6,8 +6,8 @@ from __future__ import annotations
 import pydeephaven as pyd
 import pyarrow as pa
 import time
-from pydeephaven.table_listener import TableListener, TableUpdate, TableListenerHandle, listen
 from typing import Dict, List, Tuple
+tl = pyd.table_listener
 
 session = pyd.Session(host="localhost", port=10000)
 
@@ -23,8 +23,8 @@ table = session.time_table(1000000000).update_view([
     ])
 table = table.tail(5)
 
-class MyListener(TableListener):
-    def on_update(self, update: TableUpdate) -> None:
+class MyListener(tl.TableListener):
+    def on_update(self, update: tl.TableUpdate) -> None:
         self._show_deltas("removes", update.removed())
         self._show_deltas("adds", update.added())
         self._show_deltas("modified-prev", update.modified_prev())
@@ -38,7 +38,7 @@ class MyListener(TableListener):
         for name, data in dict.items():
             print(f"name={name}, data={data}")
 
-tlh = listen(table, MyListener())
+tlh = tl.listen(table, MyListener())
 # Start processing data in another thread
 tlh.start()
 
