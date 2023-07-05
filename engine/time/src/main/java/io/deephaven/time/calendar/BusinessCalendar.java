@@ -1563,17 +1563,4 @@ public class BusinessCalendar extends Calendar {
 
     // endregion
 
-    //TODO: add to a region
-    //TODO: relocate
-    //TODO: remove from API?
-    //TODO: rename
-    /**
-     * Gets the business periods for the public days.
-     *
-     * @return a list of strings with a comma separating open and close times
-     */
-    public List<String> getDefaultBusinessPeriods(){
-        return Collections.unmodifiableList(defaultBusinessPeriodStrings);
-    }
-
 }
