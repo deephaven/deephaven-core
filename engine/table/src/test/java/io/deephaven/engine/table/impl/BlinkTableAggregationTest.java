@@ -34,8 +34,8 @@ import java.util.stream.LongStream;
 import static io.deephaven.api.agg.Aggregation.*;
 
 /**
- * Unit tests that exercise special aggregation semantics for blink tables.
- */
+ * Unit tests that exercise operations (like aggregations) which are specialized for blink tables.
+ * */
 public class BlinkTableAggregationTest {
 
     private static final long INPUT_SIZE = 100_000L;
@@ -55,7 +55,7 @@ public class BlinkTableAggregationTest {
     }
 
     /**
-     * Execute a table operator ending in an aggregation.
+     * Execute a table operator on a blink table.
      *
      * @param operator The operator to apply
      * @param windowed Whether the blink table RowSet should be a sliding window (if {@code true}) or zero-based (if
@@ -95,11 +95,11 @@ public class BlinkTableAggregationTest {
         final Table blinkExpected = operator.apply(blink);
         TstUtils.assertTableEquals(expected, addOnlyExpected);
         TstUtils.assertTableEquals(expected, blinkExpected);
-        TestCase.assertFalse(((BaseTable<?>) blinkExpected).isBlink()); // Aggregation results are never blink tables
-        // TODO <Make sure these tests are not just for aggregations>
+        // Specialized handling for these operations, therefore results are never blink tables
+        TestCase.assertFalse(((BaseTable<?>) blinkExpected).isBlink());
 
         final PrimitiveIterator.OfLong refreshSizes = LongStream.concat(
-                LongStream.of(2, 3, 4, 100, 0, 1, 2, 50, 0, 1000, 1, 0),
+                LongStream.of(100, 0, 1, 2, 50, 0, 1000, 1, 0),
                 new Random().longs(0, MAX_RANDOM_ITERATION_SIZE)).iterator();
 
         int step = 0;
@@ -158,16 +158,6 @@ public class BlinkTableAggregationTest {
             usedSize += refreshSize;
             blinkLastInserted = blinkStepInserted;
         }
-    }
-
-    @Test
-    public void testHead() {
-        doOperatorTest(table -> table.head(7), false);
-    }
-
-    @Test
-    public void testTail() {
-        doOperatorTest(table -> table.tail(4), false);
     }
 
     @Test
@@ -421,5 +411,25 @@ public class BlinkTableAggregationTest {
         testUnsupportedImpl(table -> table.slice(0, 1));
         testUnsupportedImpl(table -> table.headPct(1));
         testUnsupportedImpl(table -> table.tailPct(1));
+    }
+
+    @Test
+    public void testTail() {
+        // Assuming refresh sizes to be : 100, 0, 1, 2, 50, 0, 1000, 1, 0
+        doOperatorTest(table -> table.tail(101), false);
+        doOperatorTest(table -> table.tail(102), false);
+        doOperatorTest(table -> table.tail(130), false);
+        doOperatorTest(table -> table.tail(1000), false);
+        doOperatorTest(table -> table.tail(5000), false);
+    }
+
+    @Test
+    public void testHead() {
+        doOperatorTest(table -> table.head(50), false);
+        doOperatorTest(table -> table.head(100), false);
+        doOperatorTest(table -> table.head(102), false);
+        doOperatorTest(table -> table.head(130), false);
+        doOperatorTest(table -> table.head(1000), false);
+        doOperatorTest(table -> table.head(5000), false);
     }
 }

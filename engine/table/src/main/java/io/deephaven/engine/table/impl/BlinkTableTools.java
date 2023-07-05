@@ -58,7 +58,6 @@ public class BlinkTableTools {
         final UpdateGraph updateGraph = blinkTable.getUpdateGraph();
         try (final SafeCloseable ignored = ExecutionContext.getContext().withUpdateGraph(updateGraph).open()) {
             return internalBlinkToAppendOnly(blinkTable, true, rowLimit);
-            // How to do it in a better way in Java?
         }
     }
 
