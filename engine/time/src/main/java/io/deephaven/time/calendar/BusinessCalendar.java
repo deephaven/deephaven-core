@@ -13,7 +13,7 @@ import java.util.*;
 
 //TODO: update all headers
 //TODO: review all docs
-
+//TODO: add final to all methods
 
 /**
  * A business calendar, with the concept of business and non-business time.
@@ -542,7 +542,7 @@ public class BusinessCalendar extends Calendar {
      * Business times fall within business periods of the day's business schedule.
      *
      * @param time time
-     * @return true if the specified time is a business time; otherwise, false.
+     * @return true if the specified time is a business time; otherwise, false
      * @throws RequirementFailure if the input is null
      * @throws InvalidDateException if the date is not in the valid range
      */
@@ -556,7 +556,7 @@ public class BusinessCalendar extends Calendar {
      * Business times fall within business periods of the day's business schedule.
      *
      * @param time time
-     * @return true if the specified time is a business time; otherwise, false.
+     * @return true if the specified time is a business time; otherwise, false
      * @throws RequirementFailure if the input is null
      * @throws InvalidDateException if the date is not in the valid range
      */
@@ -569,7 +569,7 @@ public class BusinessCalendar extends Calendar {
      * Determines if the current time is a business time.
      * Business times fall within business periods of the day's business schedule.
      *
-     * @return true if the specified time is a business time; otherwise, false.
+     * @return true if the specified time is a business time; otherwise, false
      * @throws RequirementFailure if the input is null
      * @throws InvalidDateException if the date is not in the valid range
      */
@@ -1274,12 +1274,14 @@ public class BusinessCalendar extends Calendar {
      *
      * @param date date
      * @param days number of days to add.
-     * @return {@code days} business days after {@code date}; null if {@code date} is null or if {@code date} is not a business day and {@code days} is zero.
+     * @return {@code days} business days after {@code date}; null if {@code date} is not a business day and {@code days} is zero.
+     * @throws RequirementFailure if the input is null
+     * @throws InvalidDateException if the date is not in the valid range
      */
-    public LocalDate plusBusinessDays(final LocalDate date, int days) {
-        if (date == null) {
-            return null;
-        } else if(days == 0){
+    public LocalDate plusBusinessDays(final LocalDate date, final int days) {
+        Require.neqNull(date, "date");
+
+        if(days == 0){
             return isBusinessDay() ? date : null;
         }
 
@@ -1300,44 +1302,41 @@ public class BusinessCalendar extends Calendar {
      *
      * @param date date
      * @param days number of days to add.
-     * @return {@code days} business days after {@code date}; null if {@code date} is null or if {@code date} is not a business day and {@code days} is zero.
+     * @return {@code days} business days after {@code date}; null if {@code date} is not a business day and {@code days} is zero.
+     * @throws RequirementFailure if the input is null
+     * @throws InvalidDateException if the date is not in the valid range
+     * @throws DateTimeUtils.DateTimeParseException if the string cannot be parsed
      */
-    public LocalDate plusBusinessDays(final String date, int days) {
-        if(date == null){
-            return null;
-        }
-
-        //TODO: should the date parsing be quiet? Document exceptions?
+    public LocalDate plusBusinessDays(final String date, final int days) {
+        Require.neqNull(date, "date");
         return plusBusinessDays(DateTimeUtils.parseLocalDate(date), days);
     }
 
     /**
-         * Adds a specified number of business days to an input time.  Adding negative days is equivalent to subtracting days.
-         *
-         * @param time time
-         * @param days number of days to add.
-         * @return {@code days} business days after {@code time}; null if {@code date} is null or if {@code time} is not a business day and {@code days} is zero.
+     * Adds a specified number of business days to an input date.  Adding negative days is equivalent to subtracting days.
+     *
+     * @param time time
+     * @param days number of days to add.
+     * @return {@code days} business days after {@code time}; null if {@code time} is not a business day and {@code days} is zero.
+     * @throws RequirementFailure if the input is null
+     * @throws InvalidDateException if the date is not in the valid range
          */
-    public LocalDate plusBusinessDays(final Instant time, int days) {
-        if(time == null){
-            return null;
-        }
-
+    public LocalDate plusBusinessDays(final Instant time, final int days) {
+        Require.neqNull(time, "time");
         return plusBusinessDays(DateTimeUtils.toLocalDate(time, timeZone()), days);
     }
 
     /**
-     * Adds a specified number of business days to an input time.  Adding negative days is equivalent to subtracting days.
+     * Adds a specified number of business days to an input date.  Adding negative days is equivalent to subtracting days.
      *
      * @param time time
      * @param days number of days to add.
-     * @return {@code days} business days after {@code time}; null if {@code date} is null or if {@code time} is not a business day and {@code days} is zero.
+     * @return {@code days} business days after {@code time}; null if {@code time} is not a business day and {@code days} is zero.
+     * @throws RequirementFailure if the input is null
+     * @throws InvalidDateException if the date is not in the valid range
      */
-    public LocalDate plusBusinessDays(final ZonedDateTime time, int days) {
-        if(time == null){
-            return null;
-        }
-
+    public LocalDate plusBusinessDays(final ZonedDateTime time, final int days) {
+        Require.neqNull(time, "time");
         return plusBusinessDays(time.toInstant(), days);
     }
 
@@ -1345,10 +1344,12 @@ public class BusinessCalendar extends Calendar {
      * Subtracts a specified number of business days from an input date.  Subtracting negative days is equivalent to adding days.
      *
      * @param date date
-     * @param days number of days to subtract.
-     * @return {@code days} business days before {@code time}; null if {@code date} is null or if {@code time} is not a business day and {@code days} is zero.
+     * @param days number of days to add.
+     * @return {@code days} business days before {@code date}; null if {@code date} is not a business day and {@code days} is zero.
+     * @throws RequirementFailure if the input is null
+     * @throws InvalidDateException if the date is not in the valid range
      */
-    public LocalDate minusBusinessDays(final LocalDate date, int days) {
+    public LocalDate minusBusinessDays(final LocalDate date, final int days) {
         return plusBusinessDays(date, -days);
     }
 
@@ -1356,32 +1357,39 @@ public class BusinessCalendar extends Calendar {
      * Subtracts a specified number of business days from an input date.  Subtracting negative days is equivalent to adding days.
      *
      * @param date date
-     * @param days number of days to subtract.
-     * @return {@code days} business days before {@code time}; null if {@code date} is null or if {@code time} is not a business day and {@code days} is zero.
+     * @param days number of days to add.
+     * @return {@code days} business days before {@code date}; null if {@code date} is not a business day and {@code days} is zero.
+     * @throws RequirementFailure if the input is null
+     * @throws InvalidDateException if the date is not in the valid range
+     * @throws DateTimeUtils.DateTimeParseException if the string cannot be parsed
      */
-    public LocalDate minusBusinessDays(final String date, int days) {
+    public LocalDate minusBusinessDays(final String date, final int days) {
         return plusBusinessDays(date, -days);
     }
 
     /**
-     * Subtracts a specified number of business days from an input time.  Subtracting negative days is equivalent to adding days.
+     * Subtracts a specified number of business days from an input date.  Subtracting negative days is equivalent to adding days.
      *
      * @param time time
-     * @param days number of days to subtract.
-     * @return {@code days} business days before {@code time}; null if {@code date} is null or if {@code time} is not a business day and {@code days} is zero.
+     * @param days number of days to add.
+     * @return {@code days} business days before {@code time}; null if {@code time} is not a business day and {@code days} is zero.
+     * @throws RequirementFailure if the input is null
+     * @throws InvalidDateException if the date is not in the valid range
      */
-    public LocalDate minusBusinessDays(final Instant time, int days) {
+    public LocalDate minusBusinessDays(final Instant time, final int days) {
         return plusBusinessDays(time, -days);
     }
 
     /**
-     * Subtracts a specified number of business days from an input time.  Subtracting negative days is equivalent to adding days.
+     * Subtracts a specified number of business days from an input date.  Subtracting negative days is equivalent to adding days.
      *
      * @param time time
-     * @param days number of days to subtract.
-     * @return {@code days} business days before {@code time}; null if {@code date} is null or if {@code time} is not a business day and {@code days} is zero.
+     * @param days number of days to add.
+     * @return {@code days} business days before {@code time}; null if {@code time} is not a business day and {@code days} is zero.
+     * @throws RequirementFailure if the input is null
+     * @throws InvalidDateException if the date is not in the valid range
      */
-    public LocalDate minusBusinessDays(final ZonedDateTime time, int days) {
+    public LocalDate minusBusinessDays(final ZonedDateTime time, final int days) {
         return plusBusinessDays(time, -days);
     }
 
@@ -1390,12 +1398,14 @@ public class BusinessCalendar extends Calendar {
      *
      * @param date date
      * @param days number of days to add.
-     * @return {@code days} non-business days after {@code date}; null if {@code date} is null or if {@code date} is a business day and {@code days} is zero.
+     * @return {@code days} non-business days after {@code date}; null if {@code date} is not a business day and {@code days} is zero.
+     * @throws RequirementFailure if the input is null
+     * @throws InvalidDateException if the date is not in the valid range
      */
-    public LocalDate plusNonBusinessDays(final LocalDate date, int days) {
-        if (date == null) {
-            return null;
-        } else if(days == 0){
+    public LocalDate plusNonBusinessDays(final LocalDate date, final int days) {
+        Require.neqNull(date, "date");
+
+        if(days == 0){
             return isBusinessDay() ? null : date;
         }
 
@@ -1416,43 +1426,41 @@ public class BusinessCalendar extends Calendar {
      *
      * @param date date
      * @param days number of days to add.
-     * @return {@code days} non-business days after {@code date}; null if {@code date} is null or if {@code date} is a business day and {@code days} is zero.
+     * @return {@code days} non-business days after {@code date}; null if {@code date} is not a business day and {@code days} is zero.
+     * @throws RequirementFailure if the input is null
+     * @throws InvalidDateException if the date is not in the valid range
+     * @throws DateTimeUtils.DateTimeParseException if the string cannot be parsed
      */
-    public LocalDate plusNonBusinessDays(final String date, int days) {
-        if(date == null){
-            return null;
-        }
-
+    public LocalDate plusNonBusinessDays(final String date, final int days) {
+        Require.neqNull(date, "date");
         return this.plusNonBusinessDays(DateTimeUtils.parseLocalDate(date), days);
     }
 
         /**
-         * Adds a specified number of non-business days to an input time.  Adding negative days is equivalent to subtracting days.
+         * Adds a specified number of non-business days to an input date.  Adding negative days is equivalent to subtracting days.
          *
          * @param time time
          * @param days number of days to add.
-         * @return {@code days} non-business days after {@code time}; null if {@code date} is null or if {@code date} is a business day and {@code days} is zero.
+         * @return {@code days} non-business days after {@code time}; null if {@code time} is not a business day and {@code days} is zero.
+         * @throws RequirementFailure if the input is null
+         * @throws InvalidDateException if the date is not in the valid range
          */
-    public LocalDate plusNonBusinessDays(final Instant time, int days) {
-        if(time == null){
-            return null;
-        }
-
+    public LocalDate plusNonBusinessDays(final Instant time, final int days) {
+        Require.neqNull(time, "time");
         return this.plusNonBusinessDays(DateTimeUtils.toLocalDate(time, timeZone()), days);
     }
 
     /**
-     * Adds a specified number of non-business days to an input time.  Adding negative days is equivalent to subtracting days.
+     * Adds a specified number of non-business days to an input date.  Adding negative days is equivalent to subtracting days.
      *
      * @param time time
      * @param days number of days to add.
-     * @return {@code days} non-business days after {@code time}; null if {@code date} is null or if {@code date} is a business day and {@code days} is zero.
+     * @return {@code days} non-business days after {@code time}; null if {@code time} is not a business day and {@code days} is zero.
+     * @throws RequirementFailure if the input is null
+     * @throws InvalidDateException if the date is not in the valid range
      */
-    public LocalDate plusNonBusinessDays(final ZonedDateTime time, int days) {
-        if(time == null){
-            return null;
-        }
-
+    public LocalDate plusNonBusinessDays(final ZonedDateTime time, final int days) {
+        Require.neqNull(time, "time");
         return plusNonBusinessDays(time.toInstant(), days);
     }
 
@@ -1460,10 +1468,12 @@ public class BusinessCalendar extends Calendar {
      * Subtracts a specified number of non-business days to an input date.  Subtracting negative days is equivalent to adding days.
      *
      * @param date date
-     * @param days number of days to subtract.
-     * @return {@code days} non-business days after {@code date}; null if {@code date} is null or if {@code date} is a business day and {@code days} is zero.
+     * @param days number of days to add.
+     * @return {@code days} non-business days before {@code date}; null if {@code date} is a business day and {@code days} is zero.
+     * @throws RequirementFailure if the input is null
+     * @throws InvalidDateException if the date is not in the valid range
      */
-    public LocalDate minusNonBusinessDays(final LocalDate date, int days) {
+    public LocalDate minusNonBusinessDays(final LocalDate date, final int days) {
         return this.plusNonBusinessDays(date, -days);
     }
 
@@ -1471,32 +1481,39 @@ public class BusinessCalendar extends Calendar {
      * Subtracts a specified number of non-business days to an input date.  Subtracting negative days is equivalent to adding days.
      *
      * @param date date
-     * @param days number of days to subtract.
-     * @return {@code days} non-business days after {@code date}; null if {@code date} is null or if {@code date} is a business day and {@code days} is zero.
+     * @param days number of days to add.
+     * @return {@code days} non-business days before {@code date}; null if {@code date} is a business day and {@code days} is zero.
+     * @throws RequirementFailure if the input is null
+     * @throws InvalidDateException if the date is not in the valid range
+     * @throws DateTimeUtils.DateTimeParseException if the string cannot be parsed
      */
-    public LocalDate minusNonBusinessDays(final String date, int days) {
+    public LocalDate minusNonBusinessDays(final String date, final int days) {
         return plusNonBusinessDays(date, -days);
     }
 
     /**
-     * Subtracts a specified number of non-business days to an input time.  Subtracting negative days is equivalent to adding days.
+     * Subtracts a specified number of non-business days to an input date.  Subtracting negative days is equivalent to adding days.
      *
      * @param time time
-     * @param days number of days to subtract.
-     * @return {@code days} non-business days after {@code time}; null if {@code date} is null or if {@code time} is a business day and {@code days} is zero.
+     * @param days number of days to add.
+     * @return {@code days} non-business days before {@code time}; null if {@code time} is a business day and {@code days} is zero.
+     * @throws RequirementFailure if the input is null
+     * @throws InvalidDateException if the date is not in the valid range
      */
-    public LocalDate minusNonBusinessDays(final Instant time, int days) {
+    public LocalDate minusNonBusinessDays(final Instant time, final int days) {
         return plusNonBusinessDays(time, -days);
     }
 
     /**
-     * Subtracts a specified number of non-business days to an input time.  Subtracting negative days is equivalent to adding days.
+     * Subtracts a specified number of non-business days to an input date.  Subtracting negative days is equivalent to adding days.
      *
      * @param time time
-     * @param days number of days to subtract.
-     * @return {@code days} non-business days after {@code time}; null if {@code date} is null or if {@code time} is a business day and {@code days} is zero.
+     * @param days number of days to add.
+     * @return {@code days} non-business days before {@code time}; null if {@code time} is a business day and {@code days} is zero.
+     * @throws RequirementFailure if the input is null
+     * @throws InvalidDateException if the date is not in the valid range
      */
-    public LocalDate minusNonBusinessDays(final ZonedDateTime time, int days) {
+    public LocalDate minusNonBusinessDays(final ZonedDateTime time, final int days) {
         return plusNonBusinessDays(time, -days);
     }
 
@@ -1504,9 +1521,10 @@ public class BusinessCalendar extends Calendar {
      * Adds a specified number of business days to the current date.  Adding negative days is equivalent to subtracting days.
      *
      * @param days number of days to add.
-     * @return {@code days} business days after the current date; null if the current date is not a business day and {@code days} is zero.
+     * @return {@code days} business days after the current date; null if the current date is not a business day and {@code days} is zero
+     * @throws InvalidDateException if the date is not in the valid range
      */
-    public LocalDate futureBusinessDate(int days) {
+    public LocalDate futureBusinessDate(final int days) {
         return plusBusinessDays(currentDate(), days);
     }
 
@@ -1514,9 +1532,10 @@ public class BusinessCalendar extends Calendar {
      * Subtracts a specified number of business days from the current date.  Subtracting negative days is equivalent to adding days.
      *
      * @param days number of days to subtract.
-     * @return {@code days} business days before the current date; null if the current date is not a business day and {@code days} is zero.
+     * @return {@code days} business days before the current date; null if the current date is not a business day and {@code days} is zero
+     * @throws InvalidDateException if the date is not in the valid range
      */
-    public LocalDate pastBusinessDate(int days) {
+    public LocalDate pastBusinessDate(final int days) {
         return minusBusinessDays(currentDate(), days);
     }
 
@@ -1524,9 +1543,10 @@ public class BusinessCalendar extends Calendar {
      * Adds a specified number of non-business days to the current date.  Adding negative days is equivalent to subtracting days.
      *
      * @param days number of days to add.
-     * @return {@code days} non-business days after the current date; null if the current date is a business day and {@code days} is zero.
+     * @return {@code days} non-business days after the current date; null if the current date is a business day and {@code days} is zero
+     * @throws InvalidDateException if the date is not in the valid range
      */
-    public LocalDate futureNonBusinessDate(int days) {
+    public LocalDate futureNonBusinessDate(final int days) {
         return this.plusNonBusinessDays(currentDate(), days);
     }
 
@@ -1534,9 +1554,10 @@ public class BusinessCalendar extends Calendar {
      * Subtracts a specified number of non-business days to the current date.  Subtracting negative days is equivalent to adding days.
      *
      * @param days number of days to subtract.
-     * @return {@code days} non-business days before the current date; null if the current date is a business day and {@code days} is zero.
+     * @return {@code days} non-business days before the current date; null if the current date is a business day and {@code days} is zero
+     * @throws InvalidDateException if the date is not in the valid range
      */
-    public LocalDate pastNonBusinessDate(int days) {
+    public LocalDate pastNonBusinessDate(final int days) {
         return minusNonBusinessDays(currentDate(), days);
     }
 
