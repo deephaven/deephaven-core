@@ -7,7 +7,7 @@ import pydeephaven as pyd
 import pyarrow as pa
 import time
 from typing import Dict, List, Tuple
-tl = pyd.table_listener
+from pydeephaven import TableListener, TableUpdate, listen
 
 session = pyd.Session(host="localhost", port=10000)
 
@@ -23,8 +23,8 @@ table = session.time_table(1000000000).update_view([
     ])
 table = table.tail(5)
 
-class MyListener(tl.TableListener):
-    def on_update(self, update: tl.TableUpdate) -> None:
+class MyListener(TableListener):
+    def on_update(self, update: TableUpdate) -> None:
         self._show_deltas("removes", update.removed())
         self._show_deltas("adds", update.added())
         self._show_deltas("modified-prev", update.modified_prev())
@@ -38,13 +38,13 @@ class MyListener(tl.TableListener):
         for name, data in dict.items():
             print(f"name={name}, data={data}")
 
-tlh = tl.listen(table, MyListener())
+listener_handle = listen(table, MyListener())
 # Start processing data in another thread
-tlh.start()
+listener_handle.start()
 
 # Show other work happening in the main thread
 print("Sleeping for 15 seconds")
 time.sleep(15)
 print("Waking up and stopping the listener")
 
-tlh.stop()
+listener_handle.stop()

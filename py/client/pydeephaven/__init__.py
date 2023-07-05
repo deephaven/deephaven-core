@@ -29,7 +29,7 @@ from ._table_interface import SortDirection
 from .query import Query
 
 try:
-    import pydeephaven_ticking as table_listener
+    from pydeephaven_ticking.table_listener import TableListener, TableListenerHandle, TableUpdate, listen
 except ImportError:
     pass
 

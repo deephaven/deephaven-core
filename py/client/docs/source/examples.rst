@@ -189,15 +189,14 @@ The listener can be specified either as a python function or as an implementatio
 case of implementing
 :py:class:`TableListener <pydeephaven.ticking.TableListener>`
 TableListener, the caller needs to implement
-:py:func:`on_update <pydeephaven.ticking.TableListener.on_error>`
-and
-:py:func:`on_update <pydeephaven.ticking.TableListener.on_error>`
+:py:func:`on_update <pydeephaven.ticking.TableListener.on_update>`
+and optionally
+:py:func:`on_error <pydeephaven.ticking.TableListener.on_error>`
 
 as shown in the example::
 
     import time
-    from pydeephaven import Session
-    from pydeephaven_ticking import TableListener, TableUpdate, listen
+    from pydeephaven import Session, TableListener, TableUpdate, listen
 
     session = Session()
     table = session.time_table(period=1000000000).update(formulas=["Col1 = i % 2"])

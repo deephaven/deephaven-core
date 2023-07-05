@@ -1,6 +1,9 @@
 #
 #  Copyright (c) 2016-2023 Deephaven Data Labs and Patent Pending
 #
+
+"""This module provides utilities for listening to table changes."""
+
 from abc import ABC, abstractmethod
 from inspect import signature
 from typing import Callable, Dict, Generator, List, Tuple, TypeVar, Union
@@ -12,9 +15,13 @@ import pydeephaven
 from pydeephaven.table import Table
 import threading
 
-ColDictType = Dict[str, pa.Array]
-DictGeneratorType = Generator[ColDictType, None, None]
 
+ColDictType = Dict[str, pa.Array]
+"""A dictionary mapping column name to an Arrow Array of the data update."""
+
+DictGeneratorType = Generator[ColDictType, None, None]
+"""A Generator yielding dictionaries mapping column name to an Arrow Array
+of the data update."""
 
 R = TypeVar("R")
 S = TypeVar("S")

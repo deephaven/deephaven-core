@@ -19,6 +19,3 @@ Example:
     >>> listener_handle.stop()
     >>> session.close()
 """
-
-from .table_listener import TableUpdate, TableListener, TableListenerHandle, listen
-__all__ = ["TableUpdate", "TableListener", "TableListenerHandle", "listen"]
