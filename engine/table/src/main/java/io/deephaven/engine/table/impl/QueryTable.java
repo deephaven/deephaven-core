@@ -626,6 +626,9 @@ public class QueryTable extends BaseTable<QueryTable> {
     public Table head(final long size) {
         final UpdateGraph updateGraph = getUpdateGraph();
         try (final SafeCloseable ignored = ExecutionContext.getContext().withUpdateGraph(updateGraph).open()) {
+            if (size == 0) {
+                return getSubTable(RowSetFactory.empty().toTracking());
+            }
             return getResult(SliceLikeOperation.slice(this, 0, Require.geqZero(size, "size"), "head"));
         }
     }
@@ -634,6 +637,9 @@ public class QueryTable extends BaseTable<QueryTable> {
     public Table tail(final long size) {
         final UpdateGraph updateGraph = getUpdateGraph();
         try (final SafeCloseable ignored = ExecutionContext.getContext().withUpdateGraph(updateGraph).open()) {
+            if (size == 0) {
+                return getSubTable(RowSetFactory.empty().toTracking());
+            }
             return getResult(SliceLikeOperation.slice(this, -Require.geqZero(size, "size"), 0, "tail"));
         }
     }
