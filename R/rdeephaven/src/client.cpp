@@ -23,69 +23,136 @@ class TableHandleWrapper {
 public:
     TableHandleWrapper(deephaven::client::TableHandle ref_table) : internal_tbl_hdl(std::move(ref_table)) {};
 
-    TableHandleWrapper* select(std::vector<std::string> columnSpecs) {};
+    // HELPER FUNCTIONS
 
-    TableHandleWrapper* view(std::vector<std::string> columnSpecs) {};
+    std::vector<deephaven::client::TableHandle> convertTableHandleWrapperVector(std::vector<TableHandleWrapper> input) {
+        std::vector<deephaven::client::TableHandle> output(input.size());
+        std::transform(input.begin(), input.end(),
+                       output.begin(), [](const TableHandleWrapper& wrapper) { return wrapper.internal_tbl_hdl; });
+        return output;
+    };
 
-    TableHandleWrapper* dropColumns(std::vector<std::string> columnSpecs) {};
+    // TABLE OPERATIONS
 
-    TableHandleWrapper* update(std::vector<std::string> columnSpecs) {};
+    TableHandleWrapper* select(std::vector<std::string> columnSpecs) {
+        return new TableHandleWrapper(internal_tbl_hdl.select(columnSpecs));
+    };
 
-    TableHandleWrapper* updateView(std::vector<std::string> columnSpecs) {};
+    TableHandleWrapper* view(std::vector<std::string> columnSpecs) {
+        return new TableHandleWrapper(internal_tbl_hdl.view(columnSpecs));
+    };
 
-    TableHandleWrapper* where(std::string condition) {};
+    TableHandleWrapper* dropColumns(std::vector<std::string> columnSpecs) {
+        return new TableHandleWrapper(internal_tbl_hdl.dropColumns(columnSpecs));
+    };
 
-    // TODO: TableHandleWrapper* sort(std::vector<SortPair> sortPairs) {};
+    TableHandleWrapper* update(std::vector<std::string> columnSpecs) {
+        return new TableHandleWrapper(internal_tbl_hdl.update(columnSpecs));
+    };
 
-    TableHandleWrapper* by(std::vector<std::string> columnSpecs) {};
+    TableHandleWrapper* updateView(std::vector<std::string> columnSpecs) {
+        return new TableHandleWrapper(internal_tbl_hdl.updateView(columnSpecs));
+    };
 
-    // TODO: TableHandleWrapper* by(AggregateCombo combo, std::vector<std::string> groupByColumns) {};
+    TableHandleWrapper* where(std::string condition) {
+        return new TableHandleWrapper(internal_tbl_hdl.where(condition));
+    };
 
-    TableHandleWrapper* minBy(std::vector<std::string> columnSpecs) {};
+    // TODO: TableHandleWrapper* sort(std::vector<SortPair> sortPairs) {
+    //      return new TableHandleWrapper(internal_tbl_hdl.sort(sortPairs));
+    //  };
 
-    TableHandleWrapper* maxBy(std::vector<std::string> columnSpecs) {};
+    TableHandleWrapper* by(std::vector<std::string> columnSpecs) {
+        return new TableHandleWrapper(internal_tbl_hdl.by(columnSpecs));
+    };
 
-    TableHandleWrapper* sumBy(std::vector<std::string> columnSpecs) {};
+    TableHandleWrapper* minBy(std::vector<std::string> columnSpecs) {
+        return new TableHandleWrapper(internal_tbl_hdl.minBy(columnSpecs));
+    };
 
-    TableHandleWrapper* absSumBy(std::vector<std::string> columnSpecs) {};
+    TableHandleWrapper* maxBy(std::vector<std::string> columnSpecs) {
+        return new TableHandleWrapper(internal_tbl_hdl.maxBy(columnSpecs));
+    };
 
-    TableHandleWrapper* varBy(std::vector<std::string> columnSpecs) {};
+    TableHandleWrapper* sumBy(std::vector<std::string> columnSpecs) {
+        return new TableHandleWrapper(internal_tbl_hdl.sumBy(columnSpecs));
+    };
 
-    TableHandleWrapper* stdBy(std::vector<std::string> columnSpecs) {};
+    TableHandleWrapper* absSumBy(std::vector<std::string> columnSpecs) {
+        return new TableHandleWrapper(internal_tbl_hdl.absSumBy(columnSpecs));
+    };
 
-    TableHandleWrapper* avgBy(std::vector<std::string> columnSpecs) {};
+    TableHandleWrapper* varBy(std::vector<std::string> columnSpecs) {
+        return new TableHandleWrapper(internal_tbl_hdl.varBy(columnSpecs));
+    };
 
-    TableHandleWrapper* firstBy(std::vector<std::string> columnSpecs) {};
+    TableHandleWrapper* stdBy(std::vector<std::string> columnSpecs) {
+        return new TableHandleWrapper(internal_tbl_hdl.stdBy(columnSpecs));
+    };
 
-    TableHandleWrapper* lastBy(std::vector<std::string> columnSpecs) {};
+    TableHandleWrapper* avgBy(std::vector<std::string> columnSpecs) {
+        return new TableHandleWrapper(internal_tbl_hdl.avgBy(columnSpecs));
+    };
 
-    TableHandleWrapper* medianBy(std::vector<std::string> columnSpecs) {};
+    TableHandleWrapper* firstBy(std::vector<std::string> columnSpecs) {
+        return new TableHandleWrapper(internal_tbl_hdl.firstBy(columnSpecs));
+    };
 
-    TableHandleWrapper* percentileBy(double percentile, std::vector<std::string> columnSpecs) {};
+    TableHandleWrapper* lastBy(std::vector<std::string> columnSpecs) {
+        return new TableHandleWrapper(internal_tbl_hdl.lastBy(columnSpecs));
+    };
 
-    TableHandleWrapper* percentileBy(double percentile, bool avgMedian, std::vector<std::string> columnSpecs) {};
+    TableHandleWrapper* medianBy(std::vector<std::string> columnSpecs) {
+        return new TableHandleWrapper(internal_tbl_hdl.medianBy(columnSpecs));
+    };
 
-    TableHandleWrapper* countBy(std::string countByColumn, std::vector<std::string> columnSpecs) {};
+    TableHandleWrapper* percentileBy(double percentile, std::vector<std::string> columnSpecs) {
+        return new TableHandleWrapper(internal_tbl_hdl.percentileBy(percentile, columnSpecs));
+    };
 
-    TableHandleWrapper* wAvgBy(std::string weightColumn, std::vector<std::string> columnSpecs) {};
+    TableHandleWrapper* countBy(std::string countByColumn, std::vector<std::string> columnSpecs) {
+        return new TableHandleWrapper(internal_tbl_hdl.countBy(countByColumn, columnSpecs));
+    };
 
-    TableHandleWrapper* tailBy(int64_t n, std::vector<std::string> columnSpecs) {};
+    TableHandleWrapper* wAvgBy(std::string weightColumn, std::vector<std::string> columnSpecs) {
+        return new TableHandleWrapper(internal_tbl_hdl.wAvgBy(weightColumn, columnSpecs));
+    };
 
-    TableHandleWrapper* headBy(int64_t n, std::vector<std::string> columnSpecs) {};
+    TableHandleWrapper* tailBy(int64_t n, std::vector<std::string> columnSpecs) {
+        return new TableHandleWrapper(internal_tbl_hdl.tailBy(n, columnSpecs));
+    };
 
-    TableHandleWrapper* head(int64_t n) {};
+    TableHandleWrapper* headBy(int64_t n, std::vector<std::string> columnSpecs) {
+        return new TableHandleWrapper(internal_tbl_hdl.headBy(n, columnSpecs));
+    };
 
-    TableHandleWrapper* tail(int64_t n) {};
+    TableHandleWrapper* head(int64_t n) {
+        return new TableHandleWrapper(internal_tbl_hdl.head(n));
+    };
 
-    TableHandleWrapper* ungroup(bool nullFill, std::vector<std::string> groupByColumns) {};
+    TableHandleWrapper* tail(int64_t n) {
+        return new TableHandleWrapper(internal_tbl_hdl.tail(n));
+    };
 
-    TableHandleWrapper* merge(std::string keyColumn, std::vector<TableHandleWrapper> sources) {};
+    TableHandleWrapper* ungroup(bool nullFill, std::vector<std::string> groupByColumns) {
+        return new TableHandleWrapper(internal_tbl_hdl.ungroup(nullFill, groupByColumns));
+    };
 
-    TableHandleWrapper* merge(std::vector<TableHandleWrapper> sources) {};
+    // TODO: TableHandleWrapper* merge(std::string keyColumn, std::vector<TableHandleWrapper> sources) {
+    //     return new TableHandleWrapper(internal_tbl_hdl.merge(keyColumn, convertTableHandleWrapperVector(sources)));
+    // };
 
-    TableHandleWrapper* naturalJoin(const TableHandleWrapper &rightSide, std::vector<std::string> columnsToMatch, std::vector<std::string> columnsToAdd) {};
+    TableHandleWrapper* crossJoin(const TableHandleWrapper &rightSide, std::vector<std::string> columnsToMatch, std::vector<std::string> columnsToAdd) {
+        return new TableHandleWrapper(internal_tbl_hdl.crossJoin(rightSide.internal_tbl_hdl, columnsToMatch, columnsToAdd));
+    };
 
-    TableHandleWrapper* exactJoin(const TableHandleWrapper &rightSide, std::vector<std::string> columnsToMatch, std::vector<std::string> columnsToAdd) {};
+    TableHandleWrapper* naturalJoin(const TableHandleWrapper &rightSide, std::vector<std::string> columnsToMatch, std::vector<std::string> columnsToAdd) {
+        return new TableHandleWrapper(internal_tbl_hdl.naturalJoin(rightSide.internal_tbl_hdl, columnsToMatch, columnsToAdd));
+    };
+
+    TableHandleWrapper* exactJoin(const TableHandleWrapper &rightSide, std::vector<std::string> columnsToMatch, std::vector<std::string> columnsToAdd) {
+        return new TableHandleWrapper(internal_tbl_hdl.exactJoin(rightSide.internal_tbl_hdl, columnsToMatch, columnsToAdd));
+    };
 
     /**
      * Whether the table was static at the time internal_tbl_hdl was created.
@@ -198,9 +265,9 @@ public:
         return new TableHandleWrapper(internal_tbl_hdl_mngr.fetchTable(tableName));
     }
 
-    TableHandleWrapper* emptyTable(int64_t size) {};
+    // TODO: TableHandleWrapper* emptyTable(int64_t size) {};
 
-    TableHandleWrapper* timeTable(int64_t startTimeNanos, int64_t periodNanos) {};
+    // TODO: TableHandleWrapper* timeTable(int64_t startTimeNanos, int64_t periodNanos) {};
 
     /**
      * Runs a script on the server in the console language if a console was created.
@@ -306,6 +373,36 @@ RCPP_EXPOSED_CLASS(ArrowArrayStream)
 RCPP_MODULE(DeephavenInternalModule) {
 
     class_<TableHandleWrapper>("INTERNAL_TableHandle")
+    .method("select", &TableHandleWrapper::select)
+    .method("view", &TableHandleWrapper::view)
+    .method("drop_columns", &TableHandleWrapper::dropColumns)
+    .method("update", &TableHandleWrapper::update)
+    .method("update_view", &TableHandleWrapper::updateView)
+    .method("where", &TableHandleWrapper::where)
+    // TODO: .method("sort", &TableHandleWrapper::sort)
+    .method("by", &TableHandleWrapper::by)
+    .method("min_by", &TableHandleWrapper::minBy)
+    .method("max_by", &TableHandleWrapper::maxBy)
+    .method("sum_by", &TableHandleWrapper::sumBy)
+    .method("abs_sum_by", &TableHandleWrapper::absSumBy)
+    .method("var_by", &TableHandleWrapper::varBy)
+    .method("std_by", &TableHandleWrapper::stdBy)
+    .method("avg_by", &TableHandleWrapper::avgBy)
+    .method("first_by", &TableHandleWrapper::firstBy)
+    .method("last_by", &TableHandleWrapper::lastBy)
+    .method("median_by", &TableHandleWrapper::medianBy)
+    .method("percentile_by", &TableHandleWrapper::percentileBy)
+    .method("count_by", &TableHandleWrapper::countBy)
+    .method("w_avg_by", &TableHandleWrapper::wAvgBy)
+    .method("tail_by", &TableHandleWrapper::tailBy)
+    .method("head_by", &TableHandleWrapper::headBy)
+    .method("head", &TableHandleWrapper::head)
+    .method("tail", &TableHandleWrapper::tail)
+    .method("ungroup", &TableHandleWrapper::ungroup)
+    // TODO: .method("merge", &TableHandleWrapper::merge)
+    .method("cross_join", &TableHandleWrapper::crossJoin)
+    .method("natural_join", &TableHandleWrapper::naturalJoin)
+    .method("exact_join", &TableHandleWrapper::exactJoin)
     .method("is_static", &TableHandleWrapper::isStatic)
     .method("num_rows", &TableHandleWrapper::numRows)
     .method("bind_to_variable", &TableHandleWrapper::bindToVariable)

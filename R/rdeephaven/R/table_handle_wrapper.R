@@ -34,8 +34,135 @@ TableHandle <- R6Class("TableHandle",
                 stop("'table_handle' should be an internal Deephaven TableHandle. If you're seeing this,
                 you are trying to call the constructor of TableHandle directly, which is not advised.")
             }
-            private$internal_table_handle <- table_handle
-            private$is_static_field <- private$internal_table_handle$is_static()
+            self$internal_table_handle <- table_handle
+            private$is_static_field <- self$internal_table_handle$is_static()
+        },
+
+        select = function(columns) {
+            return(TableHandle$new(self$internal_table_handle$select(columns)))
+        },
+
+        view = function(columns) {
+            return(TableHandle$new(self$internal_table_handle$view(columns)))
+        },
+
+        drop_columns = function(columns) {
+            return(TableHandle$new(self$internal_table_handle$drop_columns(columns)))
+        },
+
+        update = function(columns) {
+            return(TableHandle$new(self$internal_table_handle$update(columns)))
+        },
+
+        update_view = function(columns) {
+            return(TableHandle$new(self$internal_table_handle$update_view(columns)))
+        },
+
+        where = function(condition) {
+            return(TableHandle$new(self$internal_table_handle$where(condition)))
+        },
+
+        # TODO: sort = function(sort_pairs) {
+        #    return(TableHandle$new(self$internal_table_handle$sort(sort_pairs)))
+        #},
+
+        by = function(columns) {
+            return(TableHandle$new(self$internal_table_handle$by(columns)))
+        },
+
+        min_by = function(columns) {
+            return(TableHandle$new(self$internal_table_handle$min_by(columns)))
+        },
+
+        max_by = function(columns) {
+            return(TableHandle$new(self$internal_table_handle$max_by(columns)))
+        },
+
+        sum_by = function(columns) {
+            return(TableHandle$new(self$internal_table_handle$sum_by(columns)))
+        },
+
+        abs_sum_by = function(columns) {
+            return(TableHandle$new(self$internal_table_handle$abs_sum_by(columns)))
+        },
+
+        var_by = function(columns) {
+            return(TableHandle$new(self$internal_table_handle$var_by(columns)))
+        },
+
+        std_by = function(columns) {
+            return(TableHandle$new(self$internal_table_handle$std_by(columns)))
+        },
+
+        avg_by = function(columns) {
+            return(TableHandle$new(self$internal_table_handle$avg_by(columns)))
+        },
+
+        first_by = function(columns) {
+            return(TableHandle$new(self$internal_table_handle$first_by(columns)))
+        },
+
+        last_by = function(columns) {
+            return(TableHandle$new(self$internal_table_handle$last_by(columns)))
+        },
+
+        median_by = function(columns) {
+            return(TableHandle$new(self$internal_table_handle$median_by(columns)))
+        },
+
+        percentile_by = function(percentile, columns) {
+            return(TableHandle$new(self$internal_table_handle$percentile_by(percentile, columns)))
+        },
+
+        count_by = function(count_by_column, columns) {
+            return(TableHandle$new(self$internal_table_handle$count_by(count_by_column, columns)))
+        },
+
+        w_avg_by = function(weight_column, columns) {
+            return(TableHandle$new(self$internal_table_handle$w_avg_by(weight_column, columns)))
+        },
+
+        tail_by = function(n, columns) {
+            return(TableHandle$new(self$internal_table_handle$tail_by(n, columns)))
+        },
+
+        head_by = function(n, columns) {
+            return(TableHandle$new(self$internal_table_handle$head_by(n, columns)))
+        },
+
+        head = function(n) {
+            return(TableHandle$new(self$internal_table_handle$head(n)))
+        },
+
+        tail = function(n) {
+            return(TableHandle$new(self$internal_table_handle$tail(n)))
+        },
+
+        ungroup = function(null_fill, group_by_columns) {
+            return(TableHandle$new(self$internal_table_handle$ungroup(null_fill, group_by_columns)))
+        },
+
+        #TODO: merge = function(key_column, sources) {
+        #    return(TableHandle$new(self$internal_table_handle$merge(key_column, sources)))
+        #},
+
+        cross_join = function(right_side, columns_to_match, columns_to_add) {
+            return(TableHandle$new(self$internal_table_handle$cross_join(right_side$internal_table_handle,
+                                                                            columns_to_match, columns_to_add)))
+        },
+
+        natural_join = function(right_side, columns_to_match, columns_to_add) {
+            return(TableHandle$new(self$internal_table_handle$natural_join(right_side$internal_table_handle,
+                                                                              columns_to_match, columns_to_add)))
+        },
+
+        exact_join = function(right_side, columns_to_match, columns_to_add) {
+            print(right_side)
+            print(columns_to_match)
+            print(columns_to_add)
+            print(right_side$internal_table_handle)
+            return(TableHandle$new(self$internal_table_handle$exact_join(right_side$internal_table_handle,
+                                                                            columns_to_match, columns_to_add)))
         },
 
         #' @description
@@ -52,7 +179,7 @@ TableHandle <- R6Class("TableHandle",
             if(!private$is_static_field) {
                 stop("The number of rows is not yet supported for dynamic tables.")
             }
-            return(private$internal_table_handle$num_rows())
+            return(self$internal_table_handle$num_rows())
         },
 
         #' @description
@@ -61,14 +188,14 @@ TableHandle <- R6Class("TableHandle",
         #' @param name Name for this table on the server.
         bind_to_variable = function(name) {
             .verify_string("name", name)
-            private$internal_table_handle$bind_to_variable(name)
+            self$internal_table_handle$bind_to_variable(name)
         },
 
         #' @description
         #' Imports the table referenced by this TableHandle into an Arrow RecordBatchStreamReader.
         #' @return A RecordBatchStreamReader containing the data from the table referenced by this TableHandle.
         to_arrow_record_batch_stream_reader = function() {
-            ptr = private$internal_table_handle$get_arrow_array_stream_ptr()
+            ptr = self$internal_table_handle$get_arrow_array_stream_ptr()
             rbsr = RecordBatchStreamReader$import_from_c(ptr)
             return(rbsr)
         },
@@ -97,10 +224,11 @@ TableHandle <- R6Class("TableHandle",
         to_data_frame = function() {
             arrow_tbl = self$to_arrow_table()
             return(as.data.frame(as.data.frame(arrow_tbl))) # TODO: for some reason as.data.frame on arrow table returns a tibble, not a data frame
-        }
+        },
+        
+        internal_table_handle = NULL
     ),
     private = list(
-        internal_table_handle = NULL,
         is_static_field = NULL
     )
 )
