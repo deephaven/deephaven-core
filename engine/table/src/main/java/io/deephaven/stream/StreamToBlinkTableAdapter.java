@@ -4,20 +4,24 @@
 package io.deephaven.stream;
 
 import gnu.trove.list.array.TLongArrayList;
+import io.deephaven.base.log.LogOutput;
 import io.deephaven.base.verify.Assert;
 import io.deephaven.chunk.attributes.Values;
-import io.deephaven.engine.table.ColumnSource;
 import io.deephaven.engine.table.ColumnDefinition;
+import io.deephaven.engine.table.ColumnSource;
+import io.deephaven.engine.table.ModifiedColumnSet;
 import io.deephaven.engine.table.Table;
 import io.deephaven.engine.table.TableDefinition;
-import io.deephaven.engine.table.*;
+import io.deephaven.engine.table.TableUpdate;
 import io.deephaven.engine.table.impl.TableUpdateImpl;
+import io.deephaven.engine.table.impl.sources.ByteAsBooleanColumnSource;
+import io.deephaven.engine.table.impl.sources.LongAsInstantColumnSource;
+import io.deephaven.engine.table.impl.sources.NullValueColumnSource;
+import io.deephaven.engine.table.impl.sources.SwitchColumnSource;
 import io.deephaven.engine.updategraph.NotificationQueue;
 import io.deephaven.engine.updategraph.UpdateGraph;
-import io.deephaven.engine.updategraph.impl.PeriodicUpdateGraph;
 import io.deephaven.engine.updategraph.UpdateSourceRegistrar;
 import io.deephaven.engine.table.impl.QueryTable;
-import io.deephaven.engine.table.impl.sources.*;
 import io.deephaven.chunk.ChunkType;
 import io.deephaven.chunk.WritableChunk;
 import io.deephaven.engine.table.impl.sources.chunkcolumnsource.ChunkColumnSource;
@@ -29,6 +33,7 @@ import io.deephaven.io.logger.Logger;
 import io.deephaven.util.MultiException;
 import io.deephaven.util.SafeCloseable;
 import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
 
 import java.lang.ref.WeakReference;
 import java.time.Instant;
@@ -240,7 +245,7 @@ public class StreamToBlinkTableAdapter
         deliverUpdate(downstream);
     }
 
-    private void deliverUpdate(final TableUpdate downstream) {
+    private void deliverUpdate(@Nullable final TableUpdate downstream) {
         final QueryTable localTable = tableRef.get();
         if (localTable != null) {
             if (downstream != null) {
@@ -248,7 +253,7 @@ public class StreamToBlinkTableAdapter
                     localTable.notifyListeners(downstream);
                 } catch (Exception e) {
                     // Defer error delivery until the next cycle
-                    enqueuedFailures.add(e);
+                    enqueueFailure(e);
                 }
             }
             return;
@@ -345,17 +350,18 @@ public class StreamToBlinkTableAdapter
     }
 
     @Override
-    public void acceptFailure(@NotNull Throwable cause) {
+    public void acceptFailure(@NotNull final Throwable cause) {
         if (!alive.get()) {
             return;
         }
-        synchronized (this) {
-            if (enqueuedFailures == null) {
-                enqueuedFailures = new ArrayList<>();
-            }
-            enqueuedFailures.add(cause);
-        }
+        enqueueFailure(cause);
         // Defer closing until the error has been delivered
+    }
+
+    private void enqueueFailure(@NotNull final Throwable cause) {
+        synchronized (this) {
+            (enqueuedFailures == null ? enqueuedFailures = new ArrayList<>(1) : enqueuedFailures).add(cause);
+        }
     }
 
     @Override
@@ -366,5 +372,10 @@ public class StreamToBlinkTableAdapter
     @Override
     public UpdateGraph getUpdateGraph() {
         return updateSourceRegistrar.getUpdateGraph();
+    }
+
+    @Override
+    public LogOutput append(@NotNull final LogOutput logOutput) {
+        return logOutput.append("StreamToBlinkTableAdapter[").append(name).append(']');
     }
 }
