@@ -7,6 +7,7 @@ import io.deephaven.base.Pair;
 import io.deephaven.base.verify.Assert;
 import io.deephaven.chunk.*;
 import io.deephaven.chunk.attributes.Values;
+import io.deephaven.engine.table.TableDefinition;
 import io.deephaven.engine.table.impl.util.unboxer.ChunkUnboxer;
 import io.deephaven.time.DateTimeUtils;
 import io.deephaven.kafka.StreamPublisherBase;
@@ -43,6 +44,7 @@ public class KafkaStreamPublisher extends StreamPublisherBase implements Consume
     private final Function<Object, Object> valueToChunkObjectMapper;
 
     private KafkaStreamPublisher(
+            @NotNull final TableDefinition tableDefinition,
             @NotNull final Runnable shutdownCallback,
             final int kafkaPartitionColumnIndex,
             final int offsetColumnIndex,
@@ -53,6 +55,7 @@ public class KafkaStreamPublisher extends StreamPublisherBase implements Consume
             final int simpleValueColumnIndex,
             final Function<Object, Object> keyToChunkObjectMapper,
             final Function<Object, Object> valueToChunkObjectMapper) {
+        super(tableDefinition);
         this.shutdownCallback = shutdownCallback;
         this.kafkaPartitionColumnIndex = kafkaPartitionColumnIndex;
         this.offsetColumnIndex = offsetColumnIndex;
@@ -77,6 +80,7 @@ public class KafkaStreamPublisher extends StreamPublisherBase implements Consume
 
     public static ConsumerRecordToStreamPublisherAdapter make(
             @NotNull final Parameters parameters,
+            @NotNull final TableDefinition tableDefinition,
             @NotNull final Runnable shutdownCallback) {
         if ((parameters.getKeyProcessorArg() != null) && (parameters.getSimpleKeyColumnIndexArg() != -1)) {
             throw new IllegalArgumentException("Either keyProcessor != null or simpleKeyColumnIndex != -1");
@@ -115,6 +119,7 @@ public class KafkaStreamPublisher extends StreamPublisherBase implements Consume
         }
 
         return new KafkaStreamPublisher(
+                tableDefinition,
                 shutdownCallback,
                 parameters.getKafkaPartitionColumnIndex(),
                 parameters.getOffsetColumnIndex(),
@@ -157,7 +162,7 @@ public class KafkaStreamPublisher extends StreamPublisherBase implements Consume
 
     @Override
     public synchronized long consumeRecords(@NotNull final List<? extends ConsumerRecord<?, ?>> records) {
-        WritableChunk<? extends Values>[] chunks = getChunksToFill();
+        WritableChunk<Values>[] chunks = getChunksToFill();
         checkChunkSizes(chunks);
         int remaining = chunks[0].capacity() - chunks[0].size();
 
@@ -170,7 +175,7 @@ public class KafkaStreamPublisher extends StreamPublisherBase implements Consume
                 final WritableObjectChunk<Object, Values> valueChunkCloseable = haveValue()
                         ? WritableObjectChunk.makeWritableChunk(chunkSize)
                         : null) {
-            WritableObjectChunk<Object, ? extends Values> keyChunk;
+            WritableObjectChunk<Object, Values> keyChunk;
             if (keyChunkCloseable != null) {
                 keyChunkCloseable.setSize(0);
                 keyChunk = keyChunkCloseable;
@@ -179,7 +184,7 @@ public class KafkaStreamPublisher extends StreamPublisherBase implements Consume
             } else {
                 keyChunk = null;
             }
-            WritableObjectChunk<Object, ? extends Values> valueChunk;
+            WritableObjectChunk<Object, Values> valueChunk;
             if (valueChunkCloseable != null) {
                 valueChunkCloseable.setSize(0);
                 valueChunk = valueChunkCloseable;
@@ -189,13 +194,13 @@ public class KafkaStreamPublisher extends StreamPublisherBase implements Consume
                 valueChunk = null;
             }
 
-            WritableIntChunk<? extends Values> partitionChunk = (kafkaPartitionColumnIndex >= 0)
+            WritableIntChunk<Values> partitionChunk = (kafkaPartitionColumnIndex >= 0)
                     ? chunks[kafkaPartitionColumnIndex].asWritableIntChunk()
                     : null;
-            WritableLongChunk<? extends Values> offsetChunk = offsetColumnIndex >= 0
+            WritableLongChunk<Values> offsetChunk = offsetColumnIndex >= 0
                     ? chunks[offsetColumnIndex].asWritableLongChunk()
                     : null;
-            WritableLongChunk<? extends Values> timestampChunk = timestampColumnIndex >= 0
+            WritableLongChunk<Values> timestampChunk = timestampColumnIndex >= 0
                     ? chunks[timestampColumnIndex].asWritableLongChunk()
                     : null;
 
@@ -283,7 +288,7 @@ public class KafkaStreamPublisher extends StreamPublisherBase implements Consume
         return bytesProcessed;
     }
 
-    private void checkChunkSizes(WritableChunk<? extends Values>[] chunks) {
+    private void checkChunkSizes(WritableChunk<Values>[] chunks) {
         for (int cc = 1; cc < chunks.length; ++cc) {
             if (chunks[cc].size() != chunks[0].size()) {
                 throw new IllegalStateException("Publisher chunks have size mismatch: "
@@ -302,18 +307,16 @@ public class KafkaStreamPublisher extends StreamPublisherBase implements Consume
         }
 
         @Override
-        public void handleChunk(
-                ObjectChunk<Object, ? extends Values> inputChunk,
-                WritableChunk<? extends Values>[] publisherChunks) {
-            final WritableChunk<? extends Values> publisherChunk = publisherChunks[offset];
+        public void handleChunk(ObjectChunk<Object, Values> inputChunk, WritableChunk<Values>[] publisherChunks) {
+            final WritableChunk<Values> publisherChunk = publisherChunks[offset];
             final int existingSize = publisherChunk.size();
             publisherChunk.setSize(existingSize + inputChunk.size());
             unboxer.unboxTo(inputChunk, publisherChunk, 0, existingSize);
         }
     }
 
-    void flushKeyChunk(WritableObjectChunk<Object, ? extends Values> objectChunk,
-            WritableChunk<? extends Values>[] publisherChunks) {
+    void flushKeyChunk(WritableObjectChunk<Object, Values> objectChunk,
+            WritableChunk<Values>[] publisherChunks) {
         if (keyIsSimpleObject) {
             return;
         }
@@ -321,8 +324,7 @@ public class KafkaStreamPublisher extends StreamPublisherBase implements Consume
         objectChunk.setSize(0);
     }
 
-    void flushValueChunk(WritableObjectChunk<Object, ? extends Values> objectChunk,
-            WritableChunk<? extends Values>[] publisherChunks) {
+    void flushValueChunk(WritableObjectChunk<Object, Values> objectChunk, WritableChunk<Values>[] publisherChunks) {
         if (valueIsSimpleObject) {
             return;
         }

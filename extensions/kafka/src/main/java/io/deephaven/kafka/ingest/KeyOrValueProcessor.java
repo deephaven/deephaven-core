@@ -16,7 +16,5 @@ public interface KeyOrValueProcessor {
      * @param inputChunk the chunk containing the keys or values as Kafka deserialized them from the consumer record
      * @param publisherChunks the output chunks for this table that must be appended to.
      */
-    void handleChunk(
-            ObjectChunk<Object, ? extends Values> inputChunk,
-            WritableChunk<? extends Values>[] publisherChunks);
+    void handleChunk(ObjectChunk<Object, Values> inputChunk, WritableChunk<Values>[] publisherChunks);
 }

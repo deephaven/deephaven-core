@@ -6,6 +6,9 @@ package io.deephaven.kafka;
 import io.deephaven.chunk.WritableChunk;
 import io.deephaven.chunk.attributes.Values;
 import io.deephaven.engine.liveness.ReferenceCountedLivenessNode;
+import io.deephaven.engine.table.TableDefinition;
+import io.deephaven.engine.table.impl.sources.ArrayBackedColumnSource;
+import io.deephaven.stream.StreamChunkUtils;
 import io.deephaven.stream.StreamConsumer;
 import io.deephaven.stream.StreamPublisher;
 import org.jetbrains.annotations.NotNull;
@@ -21,12 +24,17 @@ import org.jetbrains.annotations.NotNull;
  */
 public abstract class StreamPublisherBase extends ReferenceCountedLivenessNode implements StreamPublisher {
 
+    private static final int CHUNK_SIZE = ArrayBackedColumnSource.BLOCK_SIZE;
+
+    private final TableDefinition tableDefinition;
+
     protected StreamConsumer consumer;
 
     protected WritableChunk<Values>[] chunks;
 
-    protected StreamPublisherBase() {
+    protected StreamPublisherBase(@NotNull final TableDefinition tableDefinition) {
         super(false);
+        this.tableDefinition = tableDefinition;
     }
 
     @Override
@@ -41,7 +49,7 @@ public abstract class StreamPublisherBase extends ReferenceCountedLivenessNode i
 
     protected synchronized WritableChunk<Values>[] getChunksToFill() {
         if (chunks == null) {
-            chunks = consumer.getChunksToFill();
+            chunks = StreamChunkUtils.makeChunksForDefinition(tableDefinition, CHUNK_SIZE);
         }
         return chunks;
     }

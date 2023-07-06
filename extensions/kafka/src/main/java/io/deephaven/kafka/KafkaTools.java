@@ -16,24 +16,20 @@ import io.confluent.kafka.serializers.KafkaAvroDeserializerConfig;
 import io.confluent.kafka.serializers.KafkaAvroSerializer;
 import io.deephaven.UncheckedDeephavenException;
 import io.deephaven.annotations.SimpleStyle;
-import io.deephaven.base.Pair;
 import io.deephaven.chunk.ChunkType;
 import io.deephaven.engine.context.ExecutionContext;
+import io.deephaven.engine.liveness.LivenessManager;
 import io.deephaven.engine.rowset.RowSet;
 import io.deephaven.engine.rowset.RowSetFactory;
 import io.deephaven.engine.rowset.RowSetShiftData;
 import io.deephaven.engine.rowset.WritableRowSet;
 import io.deephaven.engine.table.*;
-import io.deephaven.engine.table.impl.BaseTable;
-import io.deephaven.engine.table.impl.BlinkTableTools;
-import io.deephaven.engine.table.impl.QueryTable;
-import io.deephaven.engine.table.impl.TableUpdateImpl;
+import io.deephaven.engine.table.impl.*;
 import io.deephaven.engine.table.impl.partitioned.PartitionedTableImpl;
 import io.deephaven.engine.table.impl.sources.ArrayBackedColumnSource;
 import io.deephaven.engine.table.impl.sources.ring.RingTableTools;
 import io.deephaven.engine.updategraph.UpdateGraph;
 import io.deephaven.engine.updategraph.UpdateSourceCombiner;
-import io.deephaven.engine.updategraph.UpdateSourceRegistrar;
 import io.deephaven.kafka.KafkaTools.StreamConsumerFactory.PerPartition;
 import io.deephaven.kafka.KafkaTools.StreamConsumerFactory.Single;
 import io.deephaven.kafka.KafkaTools.TableType.Append;
@@ -83,6 +79,7 @@ import java.math.BigDecimal;
 import java.time.Instant;
 import java.util.*;
 import java.util.concurrent.ExecutionException;
+import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.*;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
@@ -1285,9 +1282,31 @@ public class KafkaTools {
             @NotNull final Consume.KeyOrValueSpec keySpec,
             @NotNull final Consume.KeyOrValueSpec valueSpec,
             @NotNull final TableType tableType) {
-        return consumeToResult(
-                kafkaProperties, topic, partitionFilter, partitionToInitialOffset, keySpec, valueSpec, tableType,
-                new TableResultFactory());
+        final MutableObject<Table> resultHolder = new MutableObject<>();
+        final ExecutionContext enclosingExecutionContext = ExecutionContext.getContext();
+        final LivenessManager enclosingLivenessManager = LivenessScopeStack.peek();
+
+        final BiFunction<TableDefinition, StreamPublisher, StreamConsumer> consumerSupplier =
+                (final TableDefinition tableDefinition, final StreamPublisher streamPublisher) -> {
+                    final StreamToBlinkTableAdapter streamToBlinkTableAdapter;
+                    try (final SafeCloseable ignored1 = enclosingExecutionContext.open();
+                            final SafeCloseable ignored2 = LivenessScopeStack.open()) {
+                        streamToBlinkTableAdapter = new StreamToBlinkTableAdapter(
+                                tableDefinition,
+                                streamPublisher,
+                                enclosingExecutionContext.getUpdateGraph(),
+                                "Kafka-" + topic + '-' + partitionFilter);
+                        final Table blinkTable = streamToBlinkTableAdapter.table();
+                        final Table result = tableType.walk(new BlinkTableOperation(blinkTable));
+                        enclosingLivenessManager.manage(result);
+                        resultHolder.setValue(result);
+                    }
+                    return streamToBlinkTableAdapter;
+                };
+
+        consume(kafkaProperties, topic, partitionFilter, partitionToInitialOffset, keySpec, valueSpec,
+                StreamConsumerFactory.single(consumerSupplier));
+        return resultHolder.getValue();
     }
 
     /**
@@ -1313,151 +1332,42 @@ public class KafkaTools {
             @NotNull final Consume.KeyOrValueSpec keySpec,
             @NotNull final Consume.KeyOrValueSpec valueSpec,
             @NotNull final TableType tableType) {
-        return consumeToResult(
-                kafkaProperties, topic, partitionFilter, partitionToInitialOffset, keySpec, valueSpec, tableType,
-                new PartitionedTableResultFactory());
-    }
+        final AtomicReference<StreamPartitionedTable> resultHolder = new AtomicReference<>();
+        final ExecutionContext enclosingExecutionContext = ExecutionContext.getContext();
+        final LivenessManager enclosingLivenessManager = LivenessScopeStack.peek();
 
-    private interface ResultFactory<TYPE> {
+        final TriFunction<TableDefinition, TopicPartition, StreamPublisher, StreamConsumer> consumerSupplier =
+                (final TableDefinition tableDefinition, final TopicPartition topicPartition,
+                        final StreamPublisher streamPublisher) -> {
+                    final StreamToBlinkTableAdapter streamToBlinkTableAdapter;
+                    try (final SafeCloseable ignored1 = enclosingExecutionContext.open();
+                            final SafeCloseable ignored2 = LivenessScopeStack.open()) {
+                        StreamPartitionedTable result = resultHolder.get();
+                        if (result == null) {
+                            synchronized (resultHolder) {
+                                result = resultHolder.get();
+                                if (result == null) {
+                                    result = new StreamPartitionedTable(tableDefinition);
+                                    enclosingLivenessManager.manage(result);
+                                    resultHolder.set(result);
+                                }
+                            }
+                        }
+                        streamToBlinkTableAdapter = new StreamToBlinkTableAdapter(
+                                tableDefinition,
+                                streamPublisher,
+                                result.refreshCombiner,
+                                "Kafka-" + topic + '-' + topicPartition.partition());
+                        final Table blinkTable = streamToBlinkTableAdapter.table();
+                        final Table derivedTable = tableType.walk(new BlinkTableOperation(blinkTable));
+                        result.enqueueAdd(topicPartition.partition(), derivedTable);
+                    }
+                    return streamToBlinkTableAdapter;
+                };
 
-        UpdateSourceRegistrar getSourceRegistrar();
-
-        Pair<TYPE, IntFunction<KafkaRecordConsumer>> makeResultAndConsumerFactoryPair(
-                @NotNull TableDefinition tableDefinition,
-                @NotNull TableType tableType,
-                @NotNull Supplier<Pair<StreamToBlinkTableAdapter, ConsumerRecordToStreamPublisherAdapter>> adapterFactory,
-                @NotNull MutableObject<KafkaIngester> kafkaIngesterHolder);
-    }
-
-    private static class TableResultFactory implements ResultFactory<Table> {
-
-        @Override
-        public UpdateSourceRegistrar getSourceRegistrar() {
-            return ExecutionContext.getContext().getUpdateGraph();
-        }
-
-        @Override
-        public Pair<Table, IntFunction<KafkaRecordConsumer>> makeResultAndConsumerFactoryPair(
-                @NotNull final TableDefinition tableDefinition,
-                @NotNull final TableType tableType,
-                @NotNull final Supplier<Pair<StreamToBlinkTableAdapter, ConsumerRecordToStreamPublisherAdapter>> adapterFactory,
-                @NotNull final MutableObject<KafkaIngester> kafkaIngesterHolder) {
-            final Pair<StreamToBlinkTableAdapter, ConsumerRecordToStreamPublisherAdapter> singleAdapterPair =
-                    adapterFactory.get();
-            final Table blinkTable = singleAdapterPair.getFirst().table();
-            final Table result = tableType.walk(new BlinkTableOperation(blinkTable));
-            final IntFunction<KafkaRecordConsumer> consumerFactory = (final int partition) -> {
-                singleAdapterPair.getFirst().setShutdownCallback(() -> kafkaIngesterHolder.getValue().shutdown());
-                return new SimpleKafkaRecordConsumer(singleAdapterPair.getSecond(), singleAdapterPair.getFirst());
-            };
-            return new Pair<>(result, consumerFactory);
-        }
-    }
-
-    private static class PartitionedTableResultFactory implements ResultFactory<PartitionedTable> {
-
-        private final UpdateSourceCombiner refreshCombiner =
-                new UpdateSourceCombiner(ExecutionContext.getContext().getUpdateGraph());
-
-        @Override
-        public UpdateSourceRegistrar getSourceRegistrar() {
-            return refreshCombiner;
-        }
-
-        @Override
-        public Pair<PartitionedTable, IntFunction<KafkaRecordConsumer>> makeResultAndConsumerFactoryPair(
-                @NotNull final TableDefinition tableDefinition,
-                @NotNull final TableType tableType,
-                @NotNull final Supplier<Pair<StreamToBlinkTableAdapter, ConsumerRecordToStreamPublisherAdapter>> adapterFactory,
-                @NotNull final MutableObject<KafkaIngester> kafkaIngesterHolder) {
-            final StreamPartitionedTable result = new StreamPartitionedTable(tableDefinition, refreshCombiner);
-            final IntFunction<KafkaRecordConsumer> consumerFactory = (final int partition) -> {
-                final Pair<StreamToBlinkTableAdapter, ConsumerRecordToStreamPublisherAdapter> partitionAdapterPair =
-                        adapterFactory.get();
-                partitionAdapterPair.getFirst()
-                        .setShutdownCallback(() -> kafkaIngesterHolder.getValue().shutdownPartition(partition));
-                final Table blinkTable = partitionAdapterPair.getFirst().table();
-                final Table partitionTable = tableType.walk(new BlinkTableOperation(blinkTable));
-                result.enqueueAdd(partition, partitionTable);
-                return new SimpleKafkaRecordConsumer(partitionAdapterPair.getSecond(), partitionAdapterPair.getFirst());
-            };
-            return new Pair<>(result, consumerFactory);
-        }
-    }
-
-    /**
-     * Consume from Kafka to a result determined by the supplied {@link ResultFactory}.
-     *
-     * @param kafkaProperties Properties to configure this table and also to be passed to create the KafkaConsumer
-     * @param topic Kafka topic name
-     * @param partitionFilter A predicate returning true for the partitions to consume. The convenience constant
-     *        {@code ALL_PARTITIONS} is defined to facilitate requesting all partitions.
-     * @param partitionToInitialOffset A function specifying the desired initial offset for each partition consumed
-     * @param keySpec Conversion specification for Kafka record keys
-     * @param valueSpec Conversion specification for Kafka record values
-     * @param tableType {@link TableType} specifying the type of tables used in the result
-     * @param resultFactory Factory for the result
-     * @return The result, derived from Kafka stream data formatted according to {@code tableType}
-     */
-    @SuppressWarnings("unused")
-    public static <RESULT_TYPE> RESULT_TYPE consumeToResult(
-            @NotNull final Properties kafkaProperties,
-            @NotNull final String topic,
-            @NotNull final IntPredicate partitionFilter,
-            @NotNull final IntToLongFunction partitionToInitialOffset,
-            @NotNull final Consume.KeyOrValueSpec keySpec,
-            @NotNull final Consume.KeyOrValueSpec valueSpec,
-            @NotNull final TableType tableType,
-            @NotNull final ResultFactory<RESULT_TYPE> resultFactory) {
-
-        final UpdateSourceRegistrar updateSourceRegistrar = resultFactory.getSourceRegistrar();
-
-        final Supplier<Pair<StreamToBlinkTableAdapter, ConsumerRecordToStreamPublisherAdapter>> adapterFactory = () -> {
-            final StreamPublisherBase streamPublisher = new StreamPublisherBase();
-            final StreamToBlinkTableAdapter streamToBlinkTableAdapter =
-                    new StreamToBlinkTableAdapter(tableDefinition, streamPublisher, updateSourceRegistrar,
-                            "Kafka-" + topic + '-' + partitionFilter);
-            streamPublisher.setChunkFactory(() -> streamToBlinkTableAdapter.makeChunksForDefinition(CHUNK_SIZE),
-                    ci -> StreamChunkUtils.chunkTypeForColumnIndex(tableDefinition, idx));
-
-            final KeyOrValueProcessor keyProcessor =
-                    getProcessor(keySpec, tableDefinition, keyIngestData);
-            final KeyOrValueProcessor valueProcessor =
-                    getProcessor(valueSpec, tableDefinition, valueIngestData);
-
-            return new Pair<>(
-                    streamToBlinkTableAdapter,
-                    KafkaStreamPublisher.make(
-                            streamPublisher,
-                            commonColumnIndices[0],
-                            commonColumnIndices[1],
-                            commonColumnIndices[2],
-                            keyProcessor,
-                            valueProcessor,
-                            keyIngestData == null ? -1 : keyIngestData.simpleColumnIndex,
-                            valueIngestData == null ? -1 : valueIngestData.simpleColumnIndex,
-                            keyIngestData == null ? Function.identity() : keyIngestData.toObjectChunkMapper,
-                            valueIngestData == null ? Function.identity() : valueIngestData.toObjectChunkMapper));
-        };
-
-        final MutableObject<KafkaIngester> kafkaIngesterHolder = new MutableObject<>();
-        final Pair<RESULT_TYPE, IntFunction<KafkaRecordConsumer>> resultAndConsumerFactoryPair =
-                resultFactory.makeResultAndConsumerFactoryPair(tableDefinition, tableType, adapterFactory,
-                        kafkaIngesterHolder);
-        final RESULT_TYPE result = resultAndConsumerFactoryPair.getFirst();
-        final IntFunction<KafkaRecordConsumer> partitionToConsumer = resultAndConsumerFactoryPair.getSecond();
-
-        final KafkaIngester ingester = new KafkaIngester(
-                log,
-                kafkaProperties,
-                topic,
-                partitionFilter,
-                partitionToConsumer,
-                partitionToInitialOffset);
-        kafkaIngesterHolder.setValue(ingester);
-        ingester.start();
-
-        return result;
+        consume(kafkaProperties, topic, partitionFilter, partitionToInitialOffset, keySpec, valueSpec,
+                StreamConsumerFactory.perPartition(consumerSupplier));
+        return resultHolder.get();
     }
 
     /**
@@ -1548,6 +1458,7 @@ public class KafkaTools {
         public Function<TopicPartition, KafkaRecordConsumer> visit(@NotNull final Single single) {
             final ConsumerRecordToStreamPublisherAdapter adapter = KafkaStreamPublisher.make(
                     publisherParameters,
+                    tableDefinition,
                     () -> ingesterSupplier.get().shutdown());
             final StreamConsumer downstreamConsumer = single.consumerSupplier().apply(
                     tableDefinition, adapter);
@@ -1560,6 +1471,7 @@ public class KafkaTools {
             return (final TopicPartition tp) -> {
                 final ConsumerRecordToStreamPublisherAdapter adapter = KafkaStreamPublisher.make(
                         publisherParameters,
+                        tableDefinition,
                         () -> ingesterSupplier.get().shutdownPartition(tp.partition()));
                 final StreamConsumer downstreamConsumer = perPartition.consumerSupplier().apply(
                         tableDefinition, tp, adapter);
@@ -1584,7 +1496,7 @@ public class KafkaTools {
      *        {@link StreamChunkUtils#chunkTypeForColumnIndex(TableDefinition, int)} for the supplied
      *        {@link TableDefinition}.
      */
-    public void consume(
+    public static void consume(
             @NotNull final Properties kafkaProperties,
             @NotNull final String topic,
             @NotNull final IntPredicate partitionFilter,
@@ -1637,8 +1549,7 @@ public class KafkaTools {
                 keyIngestData == null ? -1 : keyIngestData.simpleColumnIndex,
                 valueIngestData == null ? -1 : valueIngestData.simpleColumnIndex,
                 keyIngestData == null ? Function.identity() : keyIngestData.toObjectChunkMapper,
-                valueIngestData == null ? Function.identity() : valueIngestData.toObjectChunkMapper
-        );
+                valueIngestData == null ? Function.identity() : valueIngestData.toObjectChunkMapper);
         final MutableObject<KafkaIngester> kafkaIngesterHolder = new MutableObject<>();
 
         final Function<TopicPartition, KafkaRecordConsumer> kafkaRecordConsumerFactory = streamConsumerFactory.walk(
@@ -1888,8 +1799,7 @@ public class KafkaTools {
         private static final String PARTITION_COLUMN_NAME = "Partition";
         private static final String CONSTITUENT_COLUMN_NAME = "Table";
 
-        @SuppressWarnings({"FieldCanBeLocal", "unused"})
-        @ReferentialIntegrity
+        @ReferentialIntegrity // We also access the combiner externally, but it must be referenced regardless
         private final UpdateSourceCombiner refreshCombiner;
 
         private final WritableColumnSource<Integer> partitionColumn;
@@ -1897,19 +1807,25 @@ public class KafkaTools {
 
         private volatile long lastAddedPartitionRowKey = -1L; // NULL_ROW_KEY
 
-        private StreamPartitionedTable(
-                @NotNull final TableDefinition constituentDefinition,
-                @NotNull final UpdateSourceCombiner refreshCombiner) {
+        private StreamPartitionedTable(@NotNull final TableDefinition constituentDefinition) {
             super(makeResultTable(), Set.of(PARTITION_COLUMN_NAME), true, CONSTITUENT_COLUMN_NAME,
                     constituentDefinition, true, false);
-            this.refreshCombiner = refreshCombiner;
             partitionColumn = (WritableColumnSource<Integer>) table().getColumnSource(PARTITION_COLUMN_NAME, int.class);
             constituentColumn =
                     (WritableColumnSource<Table>) table().getColumnSource(CONSTITUENT_COLUMN_NAME, Table.class);
+            UpdateGraph updateGraph = table().getUpdateGraph();
+            refreshCombiner = new UpdateSourceCombiner(updateGraph);
             manage(refreshCombiner);
             refreshCombiner.addSource(this);
-            UpdateGraph updateGraph = table().getUpdateGraph();
             updateGraph.addSource(refreshCombiner);
+            /*
+             * Note: We do not need to use a ConstituentDependency here, because using the combiner effectively prevents
+             * delivery of the partitioned table's notification until its constituents have also had their chance to
+             * complete their update for the cycle. We could remove the combiner and use the "raw" UpdateGraph plus a
+             * ConstituentDependency if we demanded a guarantee that new constituents would only be constructed in such
+             * a way that they were unable to fire before being added to the partitioned table. Without that guarantee,
+             * we risk data loss for blink or ring tables.
+             */
         }
 
         @Override
@@ -1928,6 +1844,8 @@ public class KafkaTools {
         }
 
         public synchronized void enqueueAdd(final int partition, @NotNull final Table partitionTable) {
+            manage(partitionTable);
+
             final long partitionRowKey = lastAddedPartitionRowKey + 1;
 
             partitionColumn.ensureCapacity(partitionRowKey + 1);
