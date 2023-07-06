@@ -38,18 +38,18 @@ public class BlinkTableTools {
     public static Table blinkToAppendOnly(final Table blinkTable) {
         final UpdateGraph updateGraph = blinkTable.getUpdateGraph();
         try (final SafeCloseable ignored = ExecutionContext.getContext().withUpdateGraph(updateGraph).open()) {
-            return internalBlinkToAppendOnly(blinkTable, false, -1);
+            return internalBlinkToAppendOnly(blinkTable, false, Long.MAX_VALUE);
         }
     }
 
     /**
-     * Convert a Blink Table to an in-memory append only table with a maximum count row limit.
-     * Any updates beyond that limit won't be appended to the table.
+     * Convert a Blink Table to an in-memory append only table with a limit on maximum row count. Any updates beyond
+     * that limit won't be appended to the table.
      *
      * @param blinkTable The input blink table
      * @param rowLimit The maximum number of rows in the append-only table
      * @return An append-only in-memory table representing all data encountered in the blink table across all cycles
-     * till maximum row count
+     *         till maximum row count
      */
     public static Table blinkToAppendOnly(final Table blinkTable, long rowLimit) {
         if (rowLimit < 0) {
@@ -136,55 +136,56 @@ public class BlinkTableTools {
                                     + result.size() + ", limit=" + maxRowLimit);
                         }
 
-                        swapListener.setListenerAndResult(new BaseTable.ListenerImpl("streamToAppendOnly",
-                                baseBlinkTable, result) {
-                            @Override
-                            public void onUpdate(TableUpdate upstream) {
-                                if (upstream.modified().isNonempty() || upstream.shifted().nonempty()) {
-                                    throw new IllegalArgumentException("Blink tables should not modify or shift!");
-                                }
-                                RowSet newRowSet = upstream.added();
-                                long newRowsSize = newRowSet.size();
-                                if (newRowsSize == 0) {
-                                    return;
-                                }
-                                final long currentSize = rowSet.size();
-                                if (currentSize + newRowsSize >= maxRowLimit) {
-                                    // TODO Test this
-                                    newRowsSize = (maxRowLimit - currentSize);
-                                    newRowSet = upstream.added().subSetByPositionRange(0, newRowsSize);
-                                }
-                                final long totalSize = currentSize + newRowsSize;
-                                columns.values().forEach(c -> c.ensureCapacity(totalSize));
-                                final RowSet newRange = RowSetFactory.fromRange(currentSize, totalSize - 1);
+                        if (!hasMaxRowLimit || (hasMaxRowLimit && result.size() < maxRowLimit)) {
+                            swapListener.setListenerAndResult(new BaseTable.ListenerImpl("streamToAppendOnly",
+                                    baseBlinkTable, result) {
+                                @Override
+                                public void onUpdate(TableUpdate upstream) {
+                                    if (upstream.modified().isNonempty() || upstream.shifted().nonempty()) {
+                                        throw new IllegalArgumentException("Blink tables should not modify or shift!");
+                                    }
+                                    RowSet newRowSet = upstream.added();
+                                    long newRowsSize = newRowSet.size();
+                                    if (newRowsSize == 0) {
+                                        return;
+                                    }
+                                    final long currentSize = rowSet.size();
+                                    if (hasMaxRowLimit && currentSize + newRowsSize >= maxRowLimit) {
+                                        // TODO Test this
+                                        newRowsSize = (maxRowLimit - currentSize);
+                                        newRowSet = upstream.added().subSetByPositionRange(0, newRowsSize);
+                                    }
+                                    final long totalSize = currentSize + newRowsSize;
+                                    columns.values().forEach(c -> c.ensureCapacity(totalSize));
+                                    final RowSet newRange = RowSetFactory.fromRange(currentSize, totalSize - 1);
 
-                                ChunkUtils.copyData(sourceColumns, newRowSet, destColumns, newRange, false);
-                                rowSet.insertRange(currentSize, totalSize - 1);
+                                    ChunkUtils.copyData(sourceColumns, newRowSet, destColumns, newRange, false);
+                                    rowSet.insertRange(currentSize, totalSize - 1);
 
-                                final TableUpdateImpl downstream = new TableUpdateImpl();
-                                downstream.added = newRange;
-                                downstream.modified = RowSetFactory.empty();
-                                downstream.removed = RowSetFactory.empty();
-                                downstream.modifiedColumnSet = ModifiedColumnSet.EMPTY;
-                                downstream.shifted = RowSetShiftData.EMPTY;
-                                result.notifyListeners(downstream);
+                                    final TableUpdateImpl downstream = new TableUpdateImpl();
+                                    downstream.added = newRange;
+                                    downstream.modified = RowSetFactory.empty();
+                                    downstream.removed = RowSetFactory.empty();
+                                    downstream.modifiedColumnSet = ModifiedColumnSet.EMPTY;
+                                    downstream.shifted = RowSetShiftData.EMPTY;
+                                    result.notifyListeners(downstream);
 
-                                // TODO Should this be left here
-                                if (hasMaxRowLimit && totalSize > maxRowLimit) {
-                                    throw new IllegalStateException(
-                                            "Size of table cannot exceed the allowable limit, size=" + totalSize
-                                                    + ", limit=" + maxRowLimit);
+                                    // TODO Should this be left here
+                                    if (hasMaxRowLimit && totalSize > maxRowLimit) {
+                                        throw new IllegalStateException(
+                                                "Size of table cannot exceed the allowable limit, size=" + totalSize
+                                                        + ", limit=" + maxRowLimit);
+                                    }
+
+                                    if (hasMaxRowLimit && totalSize == maxRowLimit) {
+                                        // No more rows can be appended
+                                        // TODO Check if this needs to be kept here
+                                        blinkTable.removeUpdateListener(this);
+                                        return;
+                                    }
                                 }
-
-                                if (totalSize == maxRowLimit) {
-                                    // No more rows can be appended
-                                    // TODO Check if this needs to be kept here
-                                    blinkTable.removeUpdateListener(this);
-                                    return;
-                                }
-                            }
-                        }, result);
-
+                            }, result);
+                        }
                         return true;
                     });
 

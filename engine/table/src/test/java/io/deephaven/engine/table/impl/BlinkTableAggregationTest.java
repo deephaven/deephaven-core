@@ -35,7 +35,7 @@ import static io.deephaven.api.agg.Aggregation.*;
 
 /**
  * Unit tests that exercise operations (like aggregations) which are specialized for blink tables.
- * */
+ */
 public class BlinkTableAggregationTest {
 
     private static final long INPUT_SIZE = 100_000L;
@@ -416,6 +416,7 @@ public class BlinkTableAggregationTest {
     @Test
     public void testTail() {
         // Assuming refresh sizes to be : 100, 0, 1, 2, 50, 0, 1000, 1, 0
+        doOperatorTest(table -> table.tail(50), false); // TODO Manually Test this case
         doOperatorTest(table -> table.tail(101), false);
         doOperatorTest(table -> table.tail(102), false);
         doOperatorTest(table -> table.tail(130), false);
@@ -425,8 +426,8 @@ public class BlinkTableAggregationTest {
 
     @Test
     public void testHead() {
-        doOperatorTest(table -> table.head(50), false);
-        doOperatorTest(table -> table.head(100), false);
+        doOperatorTest(table -> table.head(50), false); // TODO Manually Test this case
+        doOperatorTest(table -> table.head(100), false); // TODO Manually Test this case
         doOperatorTest(table -> table.head(102), false);
         doOperatorTest(table -> table.head(130), false);
         doOperatorTest(table -> table.head(1000), false);
