@@ -9,7 +9,7 @@ import io.deephaven.chunk.*;
 import io.deephaven.chunk.attributes.Values;
 import io.deephaven.engine.table.impl.util.unboxer.ChunkUnboxer;
 import io.deephaven.time.DateTimeUtils;
-import io.deephaven.kafka.StreamPublisherImpl;
+import io.deephaven.kafka.StreamPublisherBase;
 import io.deephaven.util.QueryConstants;
 import org.apache.kafka.clients.consumer.ConsumerRecord;
 import org.apache.kafka.common.record.TimestampType;
@@ -18,14 +18,15 @@ import org.jetbrains.annotations.NotNull;
 import java.util.Arrays;
 import java.util.List;
 import java.util.function.Function;
+import java.util.function.IntFunction;
 import java.util.stream.Collectors;
 
 /**
  * An adapter that maps keys and values, possibly each with multiple fields, to single Deephaven columns. Each Kafka
  * record produces one Deephaven row.
  */
-public class KafkaStreamPublisher implements ConsumerRecordToStreamPublisherAdapter {
-    private final StreamPublisherImpl publisher;
+public class KafkaStreamPublisher extends StreamPublisherBase implements ConsumerRecordToStreamPublisherAdapter {
+
     private final int kafkaPartitionColumnIndex;
     private final int offsetColumnIndex;
     private final int timestampColumnIndex;
@@ -35,13 +36,12 @@ public class KafkaStreamPublisher implements ConsumerRecordToStreamPublisherAdap
     private final boolean keyIsSimpleObject;
     private final boolean valueIsSimpleObject;
 
-    final KeyOrValueProcessor keyProcessor;
-    final KeyOrValueProcessor valueProcessor;
-    final Function<Object, Object> keyToChunkObjectMapper;
-    final Function<Object, Object> valueToChunkObjectMapper;
+    private final KeyOrValueProcessor keyProcessor;
+    private final KeyOrValueProcessor valueProcessor;
+    private final Function<Object, Object> keyToChunkObjectMapper;
+    private final Function<Object, Object> valueToChunkObjectMapper;
 
     private KafkaStreamPublisher(
-            final StreamPublisherImpl publisher,
             final int kafkaPartitionColumnIndex,
             final int offsetColumnIndex,
             final int timestampColumnIndex,
@@ -51,7 +51,6 @@ public class KafkaStreamPublisher implements ConsumerRecordToStreamPublisherAdap
             final int simpleValueColumnIndex,
             final Function<Object, Object> keyToChunkObjectMapper,
             final Function<Object, Object> valueToChunkObjectMapper) {
-        this.publisher = publisher;
         this.kafkaPartitionColumnIndex = kafkaPartitionColumnIndex;
         this.offsetColumnIndex = offsetColumnIndex;
         this.timestampColumnIndex = timestampColumnIndex;
@@ -74,7 +73,7 @@ public class KafkaStreamPublisher implements ConsumerRecordToStreamPublisherAdap
     }
 
     public static ConsumerRecordToStreamPublisherAdapter make(
-            final StreamPublisherImpl publisher,
+            @NotNull final IntFunction<ChunkType> columnIndexToChunkType,
             final int kafkaPartitionColumnIndex,
             final int offsetColumnIndex,
             final int timestampColumnIndex,
@@ -101,7 +100,7 @@ public class KafkaStreamPublisher implements ConsumerRecordToStreamPublisherAdap
             final Pair<KeyOrValueProcessor, Integer> keyPair =
                     getProcessorAndSimpleIndex(
                             simpleKeyColumnIndexArg,
-                            publisher.chunkType(simpleKeyColumnIndexArg));
+                            columnIndexToChunkType.apply(simpleKeyColumnIndexArg));
             keyProcessor = keyPair.first;
             simpleKeyColumnIndex = keyPair.second;
         }
@@ -115,13 +114,12 @@ public class KafkaStreamPublisher implements ConsumerRecordToStreamPublisherAdap
             final Pair<KeyOrValueProcessor, Integer> valuePair =
                     getProcessorAndSimpleIndex(
                             simpleValueColumnIndexArg,
-                            publisher.chunkType(simpleValueColumnIndexArg));
+                            columnIndexToChunkType.apply(simpleValueColumnIndexArg));
             valueProcessor = valuePair.first;
             simpleValueColumnIndex = valuePair.second;
         }
 
         return new KafkaStreamPublisher(
-                publisher,
                 kafkaPartitionColumnIndex,
                 offsetColumnIndex,
                 timestampColumnIndex,
@@ -148,11 +146,6 @@ public class KafkaStreamPublisher implements ConsumerRecordToStreamPublisherAdap
         return new Pair<>(processor, simpleIndex);
     }
 
-    @Override
-    public long consumeRecords(List<? extends ConsumerRecord<?, ?>> records) {
-        return publisher.doLocked(() -> doConsumeRecords(records));
-    }
-
     private boolean haveKey() {
         return !keyIsSimpleObject && keyProcessor != null;
     }
@@ -161,10 +154,14 @@ public class KafkaStreamPublisher implements ConsumerRecordToStreamPublisherAdap
         return !valueIsSimpleObject && valueProcessor != null;
     }
 
-    @SuppressWarnings("unchecked")
-    // returns the number of bytes processed.
-    private long doConsumeRecords(List<? extends ConsumerRecord<?, ?>> records) {
-        WritableChunk[] chunks = publisher.getChunks();
+    @Override
+    public void propagateFailure(@NotNull final Throwable cause) {
+        consumer.acceptFailure(cause);
+    }
+
+    @Override
+    public synchronized long consumeRecords(@NotNull final List<? extends ConsumerRecord<?, ?>> records) {
+        WritableChunk<? extends Values>[] chunks = getChunksToFill();
         checkChunkSizes(chunks);
         int remaining = chunks[0].capacity() - chunks[0].size();
 
@@ -177,7 +174,7 @@ public class KafkaStreamPublisher implements ConsumerRecordToStreamPublisherAdap
                 final WritableObjectChunk<Object, Values> valueChunkCloseable = haveValue()
                         ? WritableObjectChunk.makeWritableChunk(chunkSize)
                         : null) {
-            WritableObjectChunk<Object, Values> keyChunk;
+            WritableObjectChunk<Object, ? extends Values> keyChunk;
             if (keyChunkCloseable != null) {
                 keyChunkCloseable.setSize(0);
                 keyChunk = keyChunkCloseable;
@@ -186,7 +183,7 @@ public class KafkaStreamPublisher implements ConsumerRecordToStreamPublisherAdap
             } else {
                 keyChunk = null;
             }
-            WritableObjectChunk<Object, Values> valueChunk;
+            WritableObjectChunk<Object, ? extends Values> valueChunk;
             if (valueChunkCloseable != null) {
                 valueChunkCloseable.setSize(0);
                 valueChunk = valueChunkCloseable;
@@ -196,13 +193,13 @@ public class KafkaStreamPublisher implements ConsumerRecordToStreamPublisherAdap
                 valueChunk = null;
             }
 
-            WritableIntChunk<Values> partitionChunk = (kafkaPartitionColumnIndex >= 0)
+            WritableIntChunk<? extends Values> partitionChunk = (kafkaPartitionColumnIndex >= 0)
                     ? chunks[kafkaPartitionColumnIndex].asWritableIntChunk()
                     : null;
-            WritableLongChunk<Values> offsetChunk = offsetColumnIndex >= 0
+            WritableLongChunk<? extends Values> offsetChunk = offsetColumnIndex >= 0
                     ? chunks[offsetColumnIndex].asWritableLongChunk()
                     : null;
-            WritableLongChunk<Values> timestampChunk = timestampColumnIndex >= 0
+            WritableLongChunk<? extends Values> timestampChunk = timestampColumnIndex >= 0
                     ? chunks[timestampColumnIndex].asWritableLongChunk()
                     : null;
 
@@ -216,9 +213,9 @@ public class KafkaStreamPublisher implements ConsumerRecordToStreamPublisherAdap
                     }
 
                     checkChunkSizes(chunks);
-                    publisher.flush();
+                    flush();
 
-                    chunks = publisher.getChunks();
+                    chunks = getChunksToFill();
                     checkChunkSizes(chunks);
 
                     remaining = chunks[0].capacity() - chunks[0].size();
@@ -290,7 +287,7 @@ public class KafkaStreamPublisher implements ConsumerRecordToStreamPublisherAdap
         return bytesProcessed;
     }
 
-    private void checkChunkSizes(WritableChunk[] chunks) {
+    private void checkChunkSizes(WritableChunk<? extends Values>[] chunks) {
         for (int cc = 1; cc < chunks.length; ++cc) {
             if (chunks[cc].size() != chunks[0].size()) {
                 throw new IllegalStateException("Publisher chunks have size mismatch: "
@@ -309,17 +306,18 @@ public class KafkaStreamPublisher implements ConsumerRecordToStreamPublisherAdap
         }
 
         @Override
-        public void handleChunk(ObjectChunk<Object, Values> inputChunk,
-                WritableChunk<Values>[] publisherChunks) {
-            final WritableChunk<Values> publisherChunk = publisherChunks[offset];
+        public void handleChunk(
+                ObjectChunk<Object, ? extends Values> inputChunk,
+                WritableChunk<? extends Values>[] publisherChunks) {
+            final WritableChunk<? extends Values> publisherChunk = publisherChunks[offset];
             final int existingSize = publisherChunk.size();
             publisherChunk.setSize(existingSize + inputChunk.size());
             unboxer.unboxTo(inputChunk, publisherChunk, 0, existingSize);
         }
     }
 
-    void flushKeyChunk(WritableObjectChunk<Object, Values> objectChunk,
-            WritableChunk<Values>[] publisherChunks) {
+    void flushKeyChunk(WritableObjectChunk<Object, ? extends Values> objectChunk,
+            WritableChunk<? extends Values>[] publisherChunks) {
         if (keyIsSimpleObject) {
             return;
         }
@@ -327,8 +325,8 @@ public class KafkaStreamPublisher implements ConsumerRecordToStreamPublisherAdap
         objectChunk.setSize(0);
     }
 
-    void flushValueChunk(WritableObjectChunk<Object, Values> objectChunk,
-            WritableChunk<Values>[] publisherChunks) {
+    void flushValueChunk(WritableObjectChunk<Object, ? extends Values> objectChunk,
+            WritableChunk<? extends Values>[] publisherChunks) {
         if (valueIsSimpleObject) {
             return;
         }

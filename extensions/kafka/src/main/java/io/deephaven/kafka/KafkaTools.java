@@ -37,6 +37,8 @@ import io.deephaven.kafka.KafkaTools.TableType.Append;
 import io.deephaven.kafka.KafkaTools.TableType.Blink;
 import io.deephaven.kafka.KafkaTools.TableType.Ring;
 import io.deephaven.kafka.KafkaTools.TableType.Visitor;
+import io.deephaven.stream.StreamChunkUtils;
+import io.deephaven.stream.StreamConsumer;
 import io.deephaven.stream.StreamToBlinkTableAdapter;
 import io.deephaven.engine.liveness.LivenessScope;
 import io.deephaven.engine.liveness.LivenessScopeStack;
@@ -62,6 +64,7 @@ import org.apache.kafka.clients.admin.ListTopicsResult;
 import org.apache.kafka.clients.consumer.ConsumerConfig;
 import org.apache.kafka.clients.consumer.ConsumerRecord;
 import org.apache.kafka.clients.producer.ProducerConfig;
+import org.apache.kafka.common.TopicPartition;
 import org.apache.kafka.common.serialization.*;
 import org.apache.kafka.common.utils.Utils;
 import org.immutables.value.Value.Immutable;
@@ -121,8 +124,6 @@ public class KafkaTools {
     public static final String AVRO_LATEST_VERSION = "latest";
 
     private static final Logger log = LoggerFactory.getLogger(KafkaTools.class);
-
-    private static final int CHUNK_SIZE = 2048;
 
     /**
      * Create an Avro schema object for a String containing a JSON encoded Avro schema definition.
@@ -609,9 +610,7 @@ public class KafkaTools {
         public static final KeyOrValueSpec.Ignore IGNORE = new KeyOrValueSpec.Ignore();
 
         /**
-         * Spec to explicitly ask
-         * {@link #consumeToTable(Properties, String, IntPredicate, IntToLongFunction, KeyOrValueSpec, KeyOrValueSpec, TableType)
-         * consumeToTable} to ignore either key or value.
+         * Spec to explicitly ask one of the "consume" methods to ignore either key or value.
          */
         @SuppressWarnings("unused")
         public static KeyOrValueSpec ignoreSpec() {
@@ -642,7 +641,6 @@ public class KafkaTools {
          * @param columnDefinitions An array of column definitions for specifying the table to be created. The column
          *        names should map one to JSON fields expected; is not necessary to include all fields from the expected
          *        JSON, any fields not included would be ignored.
-         *
          * @return A JSON spec for the given inputs.
          */
         @SuppressWarnings("unused")
@@ -968,9 +966,7 @@ public class KafkaTools {
         public static final KeyOrValueSpec.Ignore IGNORE = new KeyOrValueSpec.Ignore();
 
         /**
-         * Spec to explicitly ask
-         * {@link #consumeToTable(Properties, String, IntPredicate, IntToLongFunction, Consume.KeyOrValueSpec, Consume.KeyOrValueSpec, TableType)
-         * consumeToTable} to ignore either key or value.
+         * Spec to explicitly ask one of the "consume" methods to ignore either key or value.
          */
         @SuppressWarnings("unused")
         public static KeyOrValueSpec ignoreSpec() {
@@ -1321,7 +1317,7 @@ public class KafkaTools {
 
         UpdateSourceRegistrar getSourceRegistrar();
 
-        Pair<TYPE, IntFunction<KafkaStreamConsumer>> makeResultAndConsumerFactoryPair(
+        Pair<TYPE, IntFunction<KafkaRecordConsumer>> makeResultAndConsumerFactoryPair(
                 @NotNull TableDefinition tableDefinition,
                 @NotNull TableType tableType,
                 @NotNull Supplier<Pair<StreamToBlinkTableAdapter, ConsumerRecordToStreamPublisherAdapter>> adapterFactory,
@@ -1336,7 +1332,7 @@ public class KafkaTools {
         }
 
         @Override
-        public Pair<Table, IntFunction<KafkaStreamConsumer>> makeResultAndConsumerFactoryPair(
+        public Pair<Table, IntFunction<KafkaRecordConsumer>> makeResultAndConsumerFactoryPair(
                 @NotNull final TableDefinition tableDefinition,
                 @NotNull final TableType tableType,
                 @NotNull final Supplier<Pair<StreamToBlinkTableAdapter, ConsumerRecordToStreamPublisherAdapter>> adapterFactory,
@@ -1345,9 +1341,9 @@ public class KafkaTools {
                     adapterFactory.get();
             final Table blinkTable = singleAdapterPair.getFirst().table();
             final Table result = tableType.walk(new BlinkTableOperation(blinkTable));
-            final IntFunction<KafkaStreamConsumer> consumerFactory = (final int partition) -> {
+            final IntFunction<KafkaRecordConsumer> consumerFactory = (final int partition) -> {
                 singleAdapterPair.getFirst().setShutdownCallback(() -> kafkaIngesterHolder.getValue().shutdown());
-                return new SimpleKafkaStreamConsumer(singleAdapterPair.getSecond(), singleAdapterPair.getFirst());
+                return new SimpleKafkaRecordConsumer(singleAdapterPair.getSecond(), singleAdapterPair.getFirst());
             };
             return new Pair<>(result, consumerFactory);
         }
@@ -1364,13 +1360,13 @@ public class KafkaTools {
         }
 
         @Override
-        public Pair<PartitionedTable, IntFunction<KafkaStreamConsumer>> makeResultAndConsumerFactoryPair(
+        public Pair<PartitionedTable, IntFunction<KafkaRecordConsumer>> makeResultAndConsumerFactoryPair(
                 @NotNull final TableDefinition tableDefinition,
                 @NotNull final TableType tableType,
                 @NotNull final Supplier<Pair<StreamToBlinkTableAdapter, ConsumerRecordToStreamPublisherAdapter>> adapterFactory,
                 @NotNull final MutableObject<KafkaIngester> kafkaIngesterHolder) {
             final StreamPartitionedTable result = new StreamPartitionedTable(tableDefinition, refreshCombiner);
-            final IntFunction<KafkaStreamConsumer> consumerFactory = (final int partition) -> {
+            final IntFunction<KafkaRecordConsumer> consumerFactory = (final int partition) -> {
                 final Pair<StreamToBlinkTableAdapter, ConsumerRecordToStreamPublisherAdapter> partitionAdapterPair =
                         adapterFactory.get();
                 partitionAdapterPair.getFirst()
@@ -1378,14 +1374,14 @@ public class KafkaTools {
                 final Table blinkTable = partitionAdapterPair.getFirst().table();
                 final Table partitionTable = tableType.walk(new BlinkTableOperation(blinkTable));
                 result.enqueueAdd(partition, partitionTable);
-                return new SimpleKafkaStreamConsumer(partitionAdapterPair.getSecond(), partitionAdapterPair.getFirst());
+                return new SimpleKafkaRecordConsumer(partitionAdapterPair.getSecond(), partitionAdapterPair.getFirst());
             };
             return new Pair<>(result, consumerFactory);
         }
     }
 
     /**
-     * Consume from Kafka to a result {@link Table} or {@link PartitionedTable}.
+     * Consume from Kafka to a result determined by the supplied {@link ResultFactory}.
      *
      * @param kafkaProperties Properties to configure this table and also to be passed to create the KafkaConsumer
      * @param topic Kafka topic name
@@ -1395,7 +1391,8 @@ public class KafkaTools {
      * @param keySpec Conversion specification for Kafka record keys
      * @param valueSpec Conversion specification for Kafka record values
      * @param tableType {@link TableType} specifying the type of tables used in the result
-     * @return The result table containing Kafka stream data formatted according to {@code tableType}
+     * @param resultFactory Factory for the result
+     * @return The result, derived from Kafka stream data formatted according to {@code tableType}
      */
     @SuppressWarnings("unused")
     public static <RESULT_TYPE> RESULT_TYPE consumeToResult(
@@ -1407,6 +1404,120 @@ public class KafkaTools {
             @NotNull final Consume.KeyOrValueSpec valueSpec,
             @NotNull final TableType tableType,
             @NotNull final ResultFactory<RESULT_TYPE> resultFactory) {
+
+        final UpdateSourceRegistrar updateSourceRegistrar = resultFactory.getSourceRegistrar();
+
+        final Supplier<Pair<StreamToBlinkTableAdapter, ConsumerRecordToStreamPublisherAdapter>> adapterFactory = () -> {
+            final StreamPublisherBase streamPublisher = new StreamPublisherBase();
+            final StreamToBlinkTableAdapter streamToBlinkTableAdapter =
+                    new StreamToBlinkTableAdapter(tableDefinition, streamPublisher, updateSourceRegistrar,
+                            "Kafka-" + topic + '-' + partitionFilter);
+            streamPublisher.setChunkFactory(() -> streamToBlinkTableAdapter.makeChunksForDefinition(CHUNK_SIZE),
+                    ci -> StreamChunkUtils.chunkTypeForColumnIndex(tableDefinition, idx));
+
+            final KeyOrValueProcessor keyProcessor =
+                    getProcessor(keySpec, tableDefinition, keyIngestData);
+            final KeyOrValueProcessor valueProcessor =
+                    getProcessor(valueSpec, tableDefinition, valueIngestData);
+
+            return new Pair<>(
+                    streamToBlinkTableAdapter,
+                    KafkaStreamPublisher.make(
+                            streamPublisher,
+                            commonColumnIndices[0],
+                            commonColumnIndices[1],
+                            commonColumnIndices[2],
+                            keyProcessor,
+                            valueProcessor,
+                            keyIngestData == null ? -1 : keyIngestData.simpleColumnIndex,
+                            valueIngestData == null ? -1 : valueIngestData.simpleColumnIndex,
+                            keyIngestData == null ? Function.identity() : keyIngestData.toObjectChunkMapper,
+                            valueIngestData == null ? Function.identity() : valueIngestData.toObjectChunkMapper));
+        };
+
+        final MutableObject<KafkaIngester> kafkaIngesterHolder = new MutableObject<>();
+        final Pair<RESULT_TYPE, IntFunction<KafkaRecordConsumer>> resultAndConsumerFactoryPair =
+                resultFactory.makeResultAndConsumerFactoryPair(tableDefinition, tableType, adapterFactory,
+                        kafkaIngesterHolder);
+        final RESULT_TYPE result = resultAndConsumerFactoryPair.getFirst();
+        final IntFunction<KafkaRecordConsumer> partitionToConsumer = resultAndConsumerFactoryPair.getSecond();
+
+        final KafkaIngester ingester = new KafkaIngester(
+                log,
+                kafkaProperties,
+                topic,
+                partitionFilter,
+                partitionToConsumer,
+                partitionToInitialOffset);
+        kafkaIngesterHolder.setValue(ingester);
+        ingester.start();
+
+        return result;
+    }
+
+    /**
+     * Enumeration for expressing the expected relationship between partitions and stream consumers.
+     */
+    public enum PartitionToStreamConsumerRatio {
+        /**
+         * Each partition has its own unique stream consumer. When the stream consumer is destroyed, ingestion should
+         * be stopped for only the assigned partition.
+         */
+        ONE_TO_ONE {
+            @Override
+            Runnable getConsumerDestroyedCallback(
+                    @NotNull final Supplier<KafkaIngester> ingesterSupplier,
+                    @NotNull final TopicPartition partition) {
+                return () -> ingesterSupplier.get().shutdownPartition(partition.partition());
+            }
+        },
+
+        /**
+         * All partitions share the same stream consumer. When the stream consumer is destroyed, ingestion should stop
+         * for all partitions.
+         */
+        ALL_TO_ONE {
+            @Override
+            Runnable getConsumerDestroyedCallback(
+                    @NotNull final Supplier<KafkaIngester> ingesterSupplier,
+                    @NotNull final TopicPartition partition) {
+                return () -> ingesterSupplier.get().shutdown();
+            }
+        };
+
+        /**
+         * Get a callback {@link Runnable} to be invoked when a consumer is destroyed.
+         *
+         * @param ingesterSupplier A supplier for the {@link KafkaIngester}
+         * @param partition The {@link TopicPartition} for this consumer
+         * @return The callback
+         */
+        abstract Runnable getConsumerDestroyedCallback(
+                @NotNull Supplier<KafkaIngester> ingesterSupplier,
+                @NotNull TopicPartition partition);
+    }
+
+    /**
+     * Consume from Kafka to a {@link StreamConsumer} supplied by {@code streamConsumerFactory}.
+     *
+     * @param kafkaProperties Properties to configure this table and also to be passed to create the KafkaConsumer
+     * @param topic Kafka topic name
+     * @param partitionFilter A predicate returning true for the partitions to consume. The convenience constant
+     *        {@code ALL_PARTITIONS} is defined to facilitate requesting all partitions.
+     * @param partitionToInitialOffset A function specifying the desired initial offset for each partition consumed
+     * @param keySpec Conversion specification for Kafka record keys
+     * @param valueSpec Conversion specification for Kafka record values
+     * @param streamConsumerFactory A factory method for producing {@link StreamConsumer} instances; invoked per-partition
+     */
+    public void consume(
+            @NotNull final Properties kafkaProperties,
+            @NotNull final String topic,
+            @NotNull final IntPredicate partitionFilter,
+            @NotNull final IntToLongFunction partitionToInitialOffset,
+            @NotNull final Consume.KeyOrValueSpec keySpec,
+            @NotNull final Consume.KeyOrValueSpec valueSpec,
+            @NotNull final PartitionToStreamConsumerRatio ratio,
+            @NotNull final BiFunction<TableDefinition, TopicPartition, StreamConsumer> streamConsumerFactory) {
         final boolean ignoreKey = keySpec.dataFormat() == DataFormat.IGNORE;
         final boolean ignoreValue = valueSpec.dataFormat() == DataFormat.IGNORE;
         if (ignoreKey && ignoreValue) {
@@ -1442,54 +1553,36 @@ public class KafkaTools {
                         valueSpec);
 
         final TableDefinition tableDefinition = TableDefinition.of(columnDefinitions);
-        final UpdateSourceRegistrar updateSourceRegistrar = resultFactory.getSourceRegistrar();
+        final MutableObject<KafkaIngester> kafkaIngesterHolder = new MutableObject<>();
 
-        final Supplier<Pair<StreamToBlinkTableAdapter, ConsumerRecordToStreamPublisherAdapter>> adapterFactory = () -> {
-            final StreamPublisherImpl streamPublisher = new StreamPublisherImpl();
-            final StreamToBlinkTableAdapter streamToBlinkTableAdapter =
-                    new StreamToBlinkTableAdapter(tableDefinition, streamPublisher, updateSourceRegistrar,
-                            "Kafka-" + topic + '-' + partitionFilter);
-            streamPublisher.setChunkFactory(() -> streamToBlinkTableAdapter.makeChunksForDefinition(CHUNK_SIZE),
-                    streamToBlinkTableAdapter::chunkTypeForIndex);
-
-            final KeyOrValueProcessor keyProcessor =
-                    getProcessor(keySpec, tableDefinition, streamToBlinkTableAdapter, keyIngestData);
-            final KeyOrValueProcessor valueProcessor =
-                    getProcessor(valueSpec, tableDefinition, streamToBlinkTableAdapter, valueIngestData);
-
-            return new Pair<>(
-                    streamToBlinkTableAdapter,
-                    KafkaStreamPublisher.make(
-                            streamPublisher,
+        final Function<TopicPartition, KafkaRecordConsumer> kafkaRecordConsumerFactory =
+                (final TopicPartition topicPartition) -> {
+                    final StreamConsumer downstreamConsumer = streamConsumerFactory.apply(
+                            tableDefinition,
+                            topicPartition);
+                    final ConsumerRecordToStreamPublisherAdapter adapter = KafkaStreamPublisher.make(
+                            downstreamConsumer::chunkType,
                             commonColumnIndices[0],
                             commonColumnIndices[1],
                             commonColumnIndices[2],
-                            keyProcessor,
-                            valueProcessor,
+                            getProcessor(keySpec, tableDefinition, keyIngestData),
+                            getProcessor(valueSpec, tableDefinition, valueIngestData),
                             keyIngestData == null ? -1 : keyIngestData.simpleColumnIndex,
                             valueIngestData == null ? -1 : valueIngestData.simpleColumnIndex,
                             keyIngestData == null ? Function.identity() : keyIngestData.toObjectChunkMapper,
-                            valueIngestData == null ? Function.identity() : valueIngestData.toObjectChunkMapper));
-        };
-
-        final MutableObject<KafkaIngester> kafkaIngesterHolder = new MutableObject<>();
-        final Pair<RESULT_TYPE, IntFunction<KafkaStreamConsumer>> resultAndConsumerFactoryPair =
-                resultFactory.makeResultAndConsumerFactoryPair(tableDefinition, tableType, adapterFactory,
-                        kafkaIngesterHolder);
-        final RESULT_TYPE result = resultAndConsumerFactoryPair.getFirst();
-        final IntFunction<KafkaStreamConsumer> partitionToConsumer = resultAndConsumerFactoryPair.getSecond();
+                            valueIngestData == null ? Function.identity() : valueIngestData.toObjectChunkMapper);
+                    adapter.register(downstreamConsumer);
+                    return new SimpleKafkaRecordConsumer(adapter);
+                };
 
         final KafkaIngester ingester = new KafkaIngester(
                 log,
                 kafkaProperties,
                 topic,
                 partitionFilter,
-                partitionToConsumer,
+                kafkaRecordConsumerFactory,
                 partitionToInitialOffset);
-        kafkaIngesterHolder.setValue(ingester);
         ingester.start();
-
-        return result;
     }
 
     private static KeyOrValueSerializer<?> getAvroSerializer(
@@ -1792,7 +1885,6 @@ public class KafkaTools {
     private static KeyOrValueProcessor getProcessor(
             final Consume.KeyOrValueSpec spec,
             final TableDefinition tableDef,
-            final StreamToBlinkTableAdapter streamToBlinkTableAdapter,
             final KeyOrValueIngestData data) {
         switch (spec.dataFormat()) {
             case IGNORE:
@@ -1801,14 +1893,17 @@ public class KafkaTools {
             case AVRO:
                 return GenericRecordChunkAdapter.make(
                         tableDef,
-                        streamToBlinkTableAdapter::chunkTypeForIndex,
+                        ci -> StreamChunkUtils.chunkTypeForColumnIndex(tableDef, ci),
                         data.fieldPathToColumnName,
                         NESTED_FIELD_NAME_SEPARATOR_PATTERN,
                         (Schema) data.extra,
                         true);
             case JSON:
                 return JsonNodeChunkAdapter.make(
-                        tableDef, streamToBlinkTableAdapter::chunkTypeForIndex, data.fieldPathToColumnName, true);
+                        tableDef,
+                        ci -> StreamChunkUtils.chunkTypeForColumnIndex(tableDef, ci),
+                        data.fieldPathToColumnName,
+                        true);
             default:
                 throw new IllegalStateException("Unknown KeyOrvalueSpec value" + spec.dataFormat());
         }
@@ -2168,18 +2263,16 @@ public class KafkaTools {
         return (set == null) ? null : set::contains;
     }
 
-    private static class SimpleKafkaStreamConsumer implements KafkaStreamConsumer {
-        private final ConsumerRecordToStreamPublisherAdapter adapter;
-        private final StreamToBlinkTableAdapter streamToBlinkTableAdapter;
+    private static class SimpleKafkaRecordConsumer implements KafkaRecordConsumer {
 
-        public SimpleKafkaStreamConsumer(ConsumerRecordToStreamPublisherAdapter adapter,
-                StreamToBlinkTableAdapter streamToBlinkTableAdapter) {
+        private final ConsumerRecordToStreamPublisherAdapter adapter;
+
+        private SimpleKafkaRecordConsumer(@NotNull final ConsumerRecordToStreamPublisherAdapter adapter) {
             this.adapter = adapter;
-            this.streamToBlinkTableAdapter = streamToBlinkTableAdapter;
         }
 
         @Override
-        public long consume(List<? extends ConsumerRecord<?, ?>> consumerRecords) {
+        public long consume(@NotNull final List<? extends ConsumerRecord<?, ?>> consumerRecords) {
             try {
                 return adapter.consumeRecords(consumerRecords);
             } catch (Exception e) {
@@ -2189,8 +2282,8 @@ public class KafkaTools {
         }
 
         @Override
-        public void acceptFailure(@NotNull Throwable cause) {
-            streamToBlinkTableAdapter.acceptFailure(cause);
+        public void acceptFailure(@NotNull final Throwable cause) {
+            adapter.propagateFailure(cause);
         }
     }
 
