@@ -17,6 +17,7 @@ import io.confluent.kafka.serializers.KafkaAvroSerializer;
 import io.deephaven.UncheckedDeephavenException;
 import io.deephaven.annotations.SimpleStyle;
 import io.deephaven.base.Pair;
+import io.deephaven.chunk.ChunkType;
 import io.deephaven.engine.context.ExecutionContext;
 import io.deephaven.engine.rowset.RowSet;
 import io.deephaven.engine.rowset.RowSetFactory;
@@ -33,12 +34,15 @@ import io.deephaven.engine.table.impl.sources.ring.RingTableTools;
 import io.deephaven.engine.updategraph.UpdateGraph;
 import io.deephaven.engine.updategraph.UpdateSourceCombiner;
 import io.deephaven.engine.updategraph.UpdateSourceRegistrar;
+import io.deephaven.kafka.KafkaTools.StreamConsumerFactory.PerPartition;
+import io.deephaven.kafka.KafkaTools.StreamConsumerFactory.Single;
 import io.deephaven.kafka.KafkaTools.TableType.Append;
 import io.deephaven.kafka.KafkaTools.TableType.Blink;
 import io.deephaven.kafka.KafkaTools.TableType.Ring;
 import io.deephaven.kafka.KafkaTools.TableType.Visitor;
 import io.deephaven.stream.StreamChunkUtils;
 import io.deephaven.stream.StreamConsumer;
+import io.deephaven.stream.StreamPublisher;
 import io.deephaven.stream.StreamToBlinkTableAdapter;
 import io.deephaven.engine.liveness.LivenessScope;
 import io.deephaven.engine.liveness.LivenessScopeStack;
@@ -57,6 +61,7 @@ import org.apache.avro.Schema;
 import org.apache.avro.SchemaBuilder;
 import org.apache.avro.generic.GenericContainer;
 import org.apache.avro.generic.GenericRecord;
+import org.apache.commons.lang3.function.TriFunction;
 import org.apache.commons.lang3.mutable.MutableInt;
 import org.apache.commons.lang3.mutable.MutableObject;
 import org.apache.kafka.clients.admin.Admin;
@@ -1456,45 +1461,112 @@ public class KafkaTools {
     }
 
     /**
-     * Enumeration for expressing the expected relationship between partitions and stream consumers.
+     * Marker interface for {@link StreamConsumer} factory objects.
      */
-    public enum PartitionToStreamConsumerRatio {
-        /**
-         * Each partition has its own unique stream consumer. When the stream consumer is destroyed, ingestion should
-         * be stopped for only the assigned partition.
-         */
-        ONE_TO_ONE {
-            @Override
-            Runnable getConsumerDestroyedCallback(
-                    @NotNull final Supplier<KafkaIngester> ingesterSupplier,
-                    @NotNull final TopicPartition partition) {
-                return () -> ingesterSupplier.get().shutdownPartition(partition.partition());
-            }
-        },
+    public interface StreamConsumerFactory {
 
         /**
-         * All partitions share the same stream consumer. When the stream consumer is destroyed, ingestion should stop
-         * for all partitions.
+         * @param consumerSupplier The internal factory method for {@link StreamConsumer} instances
+         * @return A StreamConsumerFactory that produces a single consumer for all selected partitions
          */
-        ALL_TO_ONE {
-            @Override
-            Runnable getConsumerDestroyedCallback(
-                    @NotNull final Supplier<KafkaIngester> ingesterSupplier,
-                    @NotNull final TopicPartition partition) {
-                return () -> ingesterSupplier.get().shutdown();
-            }
-        };
+        static Single single(
+                @NotNull final BiFunction<TableDefinition, StreamPublisher, StreamConsumer> consumerSupplier) {
+            return Single.of(consumerSupplier);
+        }
 
         /**
-         * Get a callback {@link Runnable} to be invoked when a consumer is destroyed.
-         *
-         * @param ingesterSupplier A supplier for the {@link KafkaIngester}
-         * @param partition The {@link TopicPartition} for this consumer
-         * @return The callback
+         * @param consumerSupplier The internal factory method for {@link StreamConsumer} instances
+         * @return A StreamConsumerFactory that produces a new consumer for each selected partitions
          */
-        abstract Runnable getConsumerDestroyedCallback(
-                @NotNull Supplier<KafkaIngester> ingesterSupplier,
-                @NotNull TopicPartition partition);
+        static PerPartition perPartition(
+                @NotNull final TriFunction<TableDefinition, TopicPartition, StreamPublisher, StreamConsumer> consumerSupplier) {
+            return PerPartition.of(consumerSupplier);
+        }
+
+        <T, V extends Visitor<T>> T walk(V visitor);
+
+        interface Visitor<T> {
+            T visit(@NotNull Single single);
+
+            T visit(@NotNull PerPartition perPartition);
+        }
+
+        @Immutable
+        @SimpleStyle
+        abstract class Single implements StreamConsumerFactory {
+
+            public static Single of(
+                    @NotNull final BiFunction<TableDefinition, StreamPublisher, StreamConsumer> consumerSupplier) {
+                return ImmutableSingle.of(consumerSupplier);
+            }
+
+            @Parameter
+            public abstract BiFunction<TableDefinition, StreamPublisher, StreamConsumer> consumerSupplier();
+
+            @Override
+            public final <T, V extends Visitor<T>> T walk(@NotNull final V visitor) {
+                return visitor.visit(this);
+            }
+        }
+
+        @Immutable
+        @SimpleStyle
+        abstract class PerPartition implements StreamConsumerFactory {
+
+            public static PerPartition of(
+                    @NotNull final TriFunction<TableDefinition, TopicPartition, StreamPublisher, StreamConsumer> consumerSupplier) {
+                return ImmutablePerPartition.of(consumerSupplier);
+            }
+
+            @Parameter
+            public abstract TriFunction<TableDefinition, TopicPartition, StreamPublisher, StreamConsumer> consumerSupplier();
+
+            @Override
+            public final <T, V extends Visitor<T>> T walk(@NotNull final V visitor) {
+                return visitor.visit(this);
+            }
+        }
+    }
+
+    private static class KafkaRecordConsumerFactoryCreator
+            implements StreamConsumerFactory.Visitor<Function<TopicPartition, KafkaRecordConsumer>> {
+
+        private final TableDefinition tableDefinition;
+        private final KafkaStreamPublisher.Parameters publisherParameters;
+        private final Supplier<KafkaIngester> ingesterSupplier;
+
+        private KafkaRecordConsumerFactoryCreator(
+                @NotNull final TableDefinition tableDefinition,
+                @NotNull final KafkaStreamPublisher.Parameters publisherParameters,
+                @NotNull final Supplier<KafkaIngester> ingesterSupplier) {
+            this.tableDefinition = tableDefinition;
+            this.publisherParameters = publisherParameters;
+            this.ingesterSupplier = ingesterSupplier;
+        }
+
+        @Override
+        public Function<TopicPartition, KafkaRecordConsumer> visit(@NotNull final Single single) {
+            final ConsumerRecordToStreamPublisherAdapter adapter = KafkaStreamPublisher.make(
+                    publisherParameters,
+                    () -> ingesterSupplier.get().shutdown());
+            final StreamConsumer downstreamConsumer = single.consumerSupplier().apply(
+                    tableDefinition, adapter);
+            adapter.register(downstreamConsumer);
+            return (final TopicPartition tp) -> new SimpleKafkaRecordConsumer(adapter);
+        }
+
+        @Override
+        public Function<TopicPartition, KafkaRecordConsumer> visit(@NotNull final PerPartition perPartition) {
+            return (final TopicPartition tp) -> {
+                final ConsumerRecordToStreamPublisherAdapter adapter = KafkaStreamPublisher.make(
+                        publisherParameters,
+                        () -> ingesterSupplier.get().shutdownPartition(tp.partition()));
+                final StreamConsumer downstreamConsumer = perPartition.consumerSupplier().apply(
+                        tableDefinition, tp, adapter);
+                adapter.register(downstreamConsumer);
+                return new SimpleKafkaRecordConsumer(adapter);
+            };
+        }
     }
 
     /**
@@ -1507,7 +1579,10 @@ public class KafkaTools {
      * @param partitionToInitialOffset A function specifying the desired initial offset for each partition consumed
      * @param keySpec Conversion specification for Kafka record keys
      * @param valueSpec Conversion specification for Kafka record values
-     * @param streamConsumerFactory A factory method for producing {@link StreamConsumer} instances; invoked per-partition
+     * @param streamConsumerFactory A factory for producing {@link StreamConsumer} instances. The returned stream
+     *        consumers must accept {@link ChunkType chunk types} that correspond to
+     *        {@link StreamChunkUtils#chunkTypeForColumnIndex(TableDefinition, int)} for the supplied
+     *        {@link TableDefinition}.
      */
     public void consume(
             @NotNull final Properties kafkaProperties,
@@ -1516,8 +1591,7 @@ public class KafkaTools {
             @NotNull final IntToLongFunction partitionToInitialOffset,
             @NotNull final Consume.KeyOrValueSpec keySpec,
             @NotNull final Consume.KeyOrValueSpec valueSpec,
-            @NotNull final PartitionToStreamConsumerRatio ratio,
-            @NotNull final BiFunction<TableDefinition, TopicPartition, StreamConsumer> streamConsumerFactory) {
+            @NotNull final StreamConsumerFactory streamConsumerFactory) {
         final boolean ignoreKey = keySpec.dataFormat() == DataFormat.IGNORE;
         final boolean ignoreValue = valueSpec.dataFormat() == DataFormat.IGNORE;
         if (ignoreKey && ignoreValue) {
@@ -1553,27 +1627,25 @@ public class KafkaTools {
                         valueSpec);
 
         final TableDefinition tableDefinition = TableDefinition.of(columnDefinitions);
+        final KafkaStreamPublisher.Parameters publisherParameters = new KafkaStreamPublisher.Parameters(
+                (final int ci) -> StreamChunkUtils.chunkTypeForColumnIndex(tableDefinition, ci),
+                commonColumnIndices[0],
+                commonColumnIndices[1],
+                commonColumnIndices[2],
+                getProcessor(keySpec, tableDefinition, keyIngestData),
+                getProcessor(valueSpec, tableDefinition, valueIngestData),
+                keyIngestData == null ? -1 : keyIngestData.simpleColumnIndex,
+                valueIngestData == null ? -1 : valueIngestData.simpleColumnIndex,
+                keyIngestData == null ? Function.identity() : keyIngestData.toObjectChunkMapper,
+                valueIngestData == null ? Function.identity() : valueIngestData.toObjectChunkMapper
+        );
         final MutableObject<KafkaIngester> kafkaIngesterHolder = new MutableObject<>();
 
-        final Function<TopicPartition, KafkaRecordConsumer> kafkaRecordConsumerFactory =
-                (final TopicPartition topicPartition) -> {
-                    final StreamConsumer downstreamConsumer = streamConsumerFactory.apply(
-                            tableDefinition,
-                            topicPartition);
-                    final ConsumerRecordToStreamPublisherAdapter adapter = KafkaStreamPublisher.make(
-                            downstreamConsumer::chunkType,
-                            commonColumnIndices[0],
-                            commonColumnIndices[1],
-                            commonColumnIndices[2],
-                            getProcessor(keySpec, tableDefinition, keyIngestData),
-                            getProcessor(valueSpec, tableDefinition, valueIngestData),
-                            keyIngestData == null ? -1 : keyIngestData.simpleColumnIndex,
-                            valueIngestData == null ? -1 : valueIngestData.simpleColumnIndex,
-                            keyIngestData == null ? Function.identity() : keyIngestData.toObjectChunkMapper,
-                            valueIngestData == null ? Function.identity() : valueIngestData.toObjectChunkMapper);
-                    adapter.register(downstreamConsumer);
-                    return new SimpleKafkaRecordConsumer(adapter);
-                };
+        final Function<TopicPartition, KafkaRecordConsumer> kafkaRecordConsumerFactory = streamConsumerFactory.walk(
+                new KafkaRecordConsumerFactoryCreator(
+                        tableDefinition,
+                        publisherParameters,
+                        kafkaIngesterHolder::getValue));
 
         final KafkaIngester ingester = new KafkaIngester(
                 log,
@@ -1582,6 +1654,7 @@ public class KafkaTools {
                 partitionFilter,
                 kafkaRecordConsumerFactory,
                 partitionToInitialOffset);
+        kafkaIngesterHolder.setValue(ingester);
         ingester.start();
     }
 

@@ -6,6 +6,10 @@ package io.deephaven.stream;
 import gnu.trove.list.array.TLongArrayList;
 import io.deephaven.base.verify.Assert;
 import io.deephaven.chunk.attributes.Values;
+import io.deephaven.engine.table.ColumnSource;
+import io.deephaven.engine.table.ColumnDefinition;
+import io.deephaven.engine.table.Table;
+import io.deephaven.engine.table.TableDefinition;
 import io.deephaven.engine.table.*;
 import io.deephaven.engine.table.impl.TableUpdateImpl;
 import io.deephaven.engine.updategraph.NotificationQueue;
@@ -39,16 +43,15 @@ import java.util.concurrent.atomic.AtomicBoolean;
  * Adapter for converting streams of data into columnar Deephaven {@link Table tables} that conform to
  * {@link Table#BLINK_TABLE_ATTRIBUTE blink table} semantics.
  *
- * @implNote The constructor publishes {@code this} to the {@link PeriodicUpdateGraph} and thus cannot be subclassed.
+ * @implNote The constructor publishes {@code this} to an {@link UpdateSourceRegistrar} and thus cannot be subclassed.
  */
 public class StreamToBlinkTableAdapter
         implements StreamConsumer, Runnable, NotificationQueue.Dependency, SafeCloseable {
 
     private static final Logger log = LoggerFactory.getLogger(StreamToBlinkTableAdapter.class);
 
-    private static final int CHUNK_SIZE = ArrayBackedColumnSource.BLOCK_SIZE;
-
     private final TableDefinition tableDefinition;
+    private final StreamPublisher streamPublisher;
     private final UpdateSourceRegistrar updateSourceRegistrar;
     private final String name;
 
@@ -58,12 +61,6 @@ public class StreamToBlinkTableAdapter
 
     /** To start out when we have no data, we use null value column sources which are cheap and singletons. */
     private final NullValueColumnSource<?>[] nullColumnSources;
-
-    /**
-     * The {@link StreamPublisher} for this {@link StreamConsumer}. Need not be volatile or guarded by a lock, since we
-     * are sure to assign <em>before</em> becoming a source with our {@link #updateSourceRegistrar}.
-     */
-    private StreamPublisher publisher;
 
     // We accumulate data into buffer from the ingester thread; capture it into current on the UGP thread; move it into
     // prev after one cycle, and then the cycle after that we clear out the chunks and reuse them for the buffers.
@@ -81,6 +78,7 @@ public class StreamToBlinkTableAdapter
 
     public StreamToBlinkTableAdapter(
             @NotNull final TableDefinition tableDefinition,
+            @NotNull final StreamPublisher streamPublisher,
             @NotNull final UpdateSourceRegistrar updateSourceRegistrar,
             @NotNull final String name) {
         this(tableDefinition, streamPublisher, updateSourceRegistrar, name, Map.of());
@@ -93,6 +91,7 @@ public class StreamToBlinkTableAdapter
             @NotNull final String name,
             @NotNull final Map<String, Object> extraAttributes) {
         this.tableDefinition = tableDefinition;
+        this.streamPublisher = streamPublisher;
         this.updateSourceRegistrar = updateSourceRegistrar;
         this.name = name;
 
@@ -120,16 +119,12 @@ public class StreamToBlinkTableAdapter
             }
         };
         tableRef = new WeakReference<>(table);
-    }
 
-    /**
-     * Create an array of chunks suitable for passing to our accept method.
-     *
-     * @param size the size of the chunks
-     * @return an array of writable chunks
-     */
-    public WritableChunk<?>[] makeChunksForDefinition(int size) {
-        return StreamChunkUtils.makeChunksForDefinition(tableDefinition, size);
+        log.info().append("Registering ").append(StreamToBlinkTableAdapter.class.getSimpleName()).append('-')
+                .append(name)
+                .endl();
+        streamPublisher.register(this);
+        updateSourceRegistrar.addSource(this);
     }
 
     @NotNull
@@ -148,34 +143,6 @@ public class StreamToBlinkTableAdapter
             return ChunkColumnSource.make(ChunkType.fromElementType(cd.getDataType()), cd.getDataType(),
                     cd.getComponentType(), offsets);
         }
-    }
-
-    @Override
-    public void register(@NotNull final StreamPublisher publisher) {
-        if (this.publisher != null) {
-            throw new IllegalStateException(String.format(
-                    "Can not register multiple stream publisher: %s already registered, attempted to re-register %s",
-                    this.publisher, publisher));
-        }
-
-        log.info().append("Registering ").append(StreamToBlinkTableAdapter.class.getSimpleName()).append('-')
-                .append(name)
-                .endl();
-
-        this.publisher = publisher;
-        publisher.register(this);
-
-        updateSourceRegistrar.addSource(this);
-    }
-
-    @Override
-    public ChunkType chunkType(final int columnIndex) {
-        return StreamChunkUtils.chunkTypeForColumnIndex(tableDefinition, columnIndex);
-    }
-
-    @Override
-    public WritableChunk<Values>[] getChunksToFill() {
-        return StreamChunkUtils.makeChunksForDefinition(tableDefinition, CHUNK_SIZE);
     }
 
     @NotNull
@@ -245,7 +212,7 @@ public class StreamToBlinkTableAdapter
                     .append(name)
                     .endl();
             updateSourceRegistrar.removeSource(this);
-            publisher.shutdown();
+            streamPublisher.shutdown();
         }
     }
 
@@ -302,7 +269,7 @@ public class StreamToBlinkTableAdapter
     }
 
     private TableUpdate doRefresh() {
-        publisher.flush();
+        streamPublisher.flush();
         // Switch columns, update RowSet, deliver notification
 
         final long oldSize = rowSet.size();

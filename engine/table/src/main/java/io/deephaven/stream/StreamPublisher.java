@@ -16,7 +16,7 @@ public interface StreamPublisher {
      * Register a {@link StreamConsumer consumer} whose {@link StreamConsumer#accept(WritableChunk[]) accept} method
      * will be used when sufficient data is accumulated, or on {@link #flush()}.
      * <p>
-     * {@code consumer} must typically be primed to expect the same {@link io.deephaven.chunk.ChunkType chunk types}
+     * {@code consumer} must typically be primed to accept the same {@link io.deephaven.chunk.ChunkType chunk types}
      * that this produces, in the same order.
      * <p>
      * {@code consumer} should ensure that {@code this} is {@link StreamPublisher#shutdown() shutdown} when it is no
@@ -35,7 +35,7 @@ public interface StreamPublisher {
 
     /**
      * Shutdown this StreamPublisher. Implementations should stop publishing new data and release any related resources
-     * as soon as possible.
+     * as soon as practicable.
      */
     void shutdown();
 }

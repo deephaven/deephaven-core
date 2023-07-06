@@ -27,6 +27,7 @@ import java.util.stream.Collectors;
  */
 public class KafkaStreamPublisher extends StreamPublisherBase implements ConsumerRecordToStreamPublisherAdapter {
 
+    private final Runnable shutdownCallback;
     private final int kafkaPartitionColumnIndex;
     private final int offsetColumnIndex;
     private final int timestampColumnIndex;
@@ -42,6 +43,7 @@ public class KafkaStreamPublisher extends StreamPublisherBase implements Consume
     private final Function<Object, Object> valueToChunkObjectMapper;
 
     private KafkaStreamPublisher(
+            @NotNull final Runnable shutdownCallback,
             final int kafkaPartitionColumnIndex,
             final int offsetColumnIndex,
             final int timestampColumnIndex,
@@ -51,6 +53,7 @@ public class KafkaStreamPublisher extends StreamPublisherBase implements Consume
             final int simpleValueColumnIndex,
             final Function<Object, Object> keyToChunkObjectMapper,
             final Function<Object, Object> valueToChunkObjectMapper) {
+        this.shutdownCallback = shutdownCallback;
         this.kafkaPartitionColumnIndex = kafkaPartitionColumnIndex;
         this.offsetColumnIndex = offsetColumnIndex;
         this.timestampColumnIndex = timestampColumnIndex;
@@ -73,62 +76,55 @@ public class KafkaStreamPublisher extends StreamPublisherBase implements Consume
     }
 
     public static ConsumerRecordToStreamPublisherAdapter make(
-            @NotNull final IntFunction<ChunkType> columnIndexToChunkType,
-            final int kafkaPartitionColumnIndex,
-            final int offsetColumnIndex,
-            final int timestampColumnIndex,
-            final KeyOrValueProcessor keyProcessorArg,
-            final KeyOrValueProcessor valueProcessorArg,
-            final int simpleKeyColumnIndexArg,
-            final int simpleValueColumnIndexArg,
-            final Function<Object, Object> keyToChunkObjectMapper,
-            final Function<Object, Object> valueToChunkObjectMapper) {
-        if ((keyProcessorArg != null) && (simpleKeyColumnIndexArg != -1)) {
+            @NotNull final Parameters parameters,
+            @NotNull final Runnable shutdownCallback) {
+        if ((parameters.getKeyProcessorArg() != null) && (parameters.getSimpleKeyColumnIndexArg() != -1)) {
             throw new IllegalArgumentException("Either keyProcessor != null or simpleKeyColumnIndex != -1");
         }
 
-        if ((valueProcessorArg != null) && (simpleValueColumnIndexArg != -1)) {
+        if ((parameters.getValueProcessorArg() != null) && (parameters.getSimpleValueColumnIndexArg() != -1)) {
             throw new IllegalArgumentException("Either valueProcessor != null or simpleValueColumnIndex != -1");
         }
 
         final KeyOrValueProcessor keyProcessor;
         final int simpleKeyColumnIndex;
-        if (simpleKeyColumnIndexArg == -1) {
-            keyProcessor = keyProcessorArg;
+        if (parameters.getSimpleKeyColumnIndexArg() == -1) {
+            keyProcessor = parameters.getKeyProcessorArg();
             simpleKeyColumnIndex = -1;
         } else {
             final Pair<KeyOrValueProcessor, Integer> keyPair =
                     getProcessorAndSimpleIndex(
-                            simpleKeyColumnIndexArg,
-                            columnIndexToChunkType.apply(simpleKeyColumnIndexArg));
+                            parameters.getSimpleKeyColumnIndexArg(),
+                            parameters.getColumnIndexToChunkType().apply(parameters.getSimpleKeyColumnIndexArg()));
             keyProcessor = keyPair.first;
             simpleKeyColumnIndex = keyPair.second;
         }
 
         final KeyOrValueProcessor valueProcessor;
         final int simpleValueColumnIndex;
-        if (simpleValueColumnIndexArg == -1) {
-            valueProcessor = valueProcessorArg;
+        if (parameters.getSimpleValueColumnIndexArg() == -1) {
+            valueProcessor = parameters.getValueProcessorArg();
             simpleValueColumnIndex = -1;
         } else {
             final Pair<KeyOrValueProcessor, Integer> valuePair =
                     getProcessorAndSimpleIndex(
-                            simpleValueColumnIndexArg,
-                            columnIndexToChunkType.apply(simpleValueColumnIndexArg));
+                            parameters.getSimpleValueColumnIndexArg(),
+                            parameters.getColumnIndexToChunkType().apply(parameters.getSimpleValueColumnIndexArg()));
             valueProcessor = valuePair.first;
             simpleValueColumnIndex = valuePair.second;
         }
 
         return new KafkaStreamPublisher(
-                kafkaPartitionColumnIndex,
-                offsetColumnIndex,
-                timestampColumnIndex,
+                shutdownCallback,
+                parameters.getKafkaPartitionColumnIndex(),
+                parameters.getOffsetColumnIndex(),
+                parameters.getTimestampColumnIndex(),
                 keyProcessor,
                 valueProcessor,
                 simpleKeyColumnIndex,
                 simpleValueColumnIndex,
-                keyToChunkObjectMapper,
-                valueToChunkObjectMapper);
+                parameters.getKeyToChunkObjectMapper(),
+                parameters.getValueToChunkObjectMapper());
     }
 
     @NotNull
@@ -332,5 +328,89 @@ public class KafkaStreamPublisher extends StreamPublisherBase implements Consume
         }
         valueProcessor.handleChunk(objectChunk, publisherChunks);
         objectChunk.setSize(0);
+    }
+
+    @Override
+    public void shutdown() {
+        shutdownCallback.run();
+    }
+
+    public static class Parameters {
+
+        @NotNull
+        private final IntFunction<ChunkType> columnIndexToChunkType;
+        private final int kafkaPartitionColumnIndex;
+        private final int offsetColumnIndex;
+        private final int timestampColumnIndex;
+        private final KeyOrValueProcessor keyProcessorArg;
+        private final KeyOrValueProcessor valueProcessorArg;
+        private final int simpleKeyColumnIndexArg;
+        private final int simpleValueColumnIndexArg;
+        private final Function<Object, Object> keyToChunkObjectMapper;
+        private final Function<Object, Object> valueToChunkObjectMapper;
+
+        public Parameters(
+                @NotNull final IntFunction<ChunkType> columnIndexToChunkType,
+                final int kafkaPartitionColumnIndex,
+                final int offsetColumnIndex,
+                final int timestampColumnIndex,
+                final KeyOrValueProcessor keyProcessorArg,
+                final KeyOrValueProcessor valueProcessorArg,
+                final int simpleKeyColumnIndexArg,
+                final int simpleValueColumnIndexArg,
+                final Function<Object, Object> keyToChunkObjectMapper,
+                final Function<Object, Object> valueToChunkObjectMapper) {
+            this.columnIndexToChunkType = columnIndexToChunkType;
+            this.kafkaPartitionColumnIndex = kafkaPartitionColumnIndex;
+            this.offsetColumnIndex = offsetColumnIndex;
+            this.timestampColumnIndex = timestampColumnIndex;
+            this.keyProcessorArg = keyProcessorArg;
+            this.valueProcessorArg = valueProcessorArg;
+            this.simpleKeyColumnIndexArg = simpleKeyColumnIndexArg;
+            this.simpleValueColumnIndexArg = simpleValueColumnIndexArg;
+            this.keyToChunkObjectMapper = keyToChunkObjectMapper;
+            this.valueToChunkObjectMapper = valueToChunkObjectMapper;
+        }
+
+        @NotNull
+        public IntFunction<ChunkType> getColumnIndexToChunkType() {
+            return columnIndexToChunkType;
+        }
+
+        public int getKafkaPartitionColumnIndex() {
+            return kafkaPartitionColumnIndex;
+        }
+
+        public int getOffsetColumnIndex() {
+            return offsetColumnIndex;
+        }
+
+        public int getTimestampColumnIndex() {
+            return timestampColumnIndex;
+        }
+
+        public KeyOrValueProcessor getKeyProcessorArg() {
+            return keyProcessorArg;
+        }
+
+        public KeyOrValueProcessor getValueProcessorArg() {
+            return valueProcessorArg;
+        }
+
+        public int getSimpleKeyColumnIndexArg() {
+            return simpleKeyColumnIndexArg;
+        }
+
+        public int getSimpleValueColumnIndexArg() {
+            return simpleValueColumnIndexArg;
+        }
+
+        public Function<Object, Object> getKeyToChunkObjectMapper() {
+            return keyToChunkObjectMapper;
+        }
+
+        public Function<Object, Object> getValueToChunkObjectMapper() {
+            return valueToChunkObjectMapper;
+        }
     }
 }
