@@ -18,11 +18,19 @@ import io.deephaven.UncheckedDeephavenException;
 import io.deephaven.annotations.SimpleStyle;
 import io.deephaven.base.Pair;
 import io.deephaven.engine.context.ExecutionContext;
+import io.deephaven.engine.liveness.LivenessScope;
+import io.deephaven.engine.liveness.LivenessScopeStack;
 import io.deephaven.engine.rowset.RowSet;
 import io.deephaven.engine.rowset.RowSetFactory;
 import io.deephaven.engine.rowset.RowSetShiftData;
 import io.deephaven.engine.rowset.WritableRowSet;
-import io.deephaven.engine.table.*;
+import io.deephaven.engine.table.ColumnDefinition;
+import io.deephaven.engine.table.ColumnSource;
+import io.deephaven.engine.table.ModifiedColumnSet;
+import io.deephaven.engine.table.PartitionedTable;
+import io.deephaven.engine.table.Table;
+import io.deephaven.engine.table.TableDefinition;
+import io.deephaven.engine.table.WritableColumnSource;
 import io.deephaven.engine.table.impl.BaseTable;
 import io.deephaven.engine.table.impl.BlinkTableTools;
 import io.deephaven.engine.table.impl.QueryTable;
@@ -33,22 +41,33 @@ import io.deephaven.engine.table.impl.sources.ring.RingTableTools;
 import io.deephaven.engine.updategraph.UpdateGraph;
 import io.deephaven.engine.updategraph.UpdateSourceCombiner;
 import io.deephaven.engine.updategraph.UpdateSourceRegistrar;
+import io.deephaven.engine.util.BigDecimalUtils;
+import io.deephaven.internal.log.LoggerFactory;
+import io.deephaven.io.logger.Logger;
 import io.deephaven.kafka.KafkaTools.TableType.Append;
 import io.deephaven.kafka.KafkaTools.TableType.Blink;
 import io.deephaven.kafka.KafkaTools.TableType.Ring;
 import io.deephaven.kafka.KafkaTools.TableType.Visitor;
+import io.deephaven.kafka.ingest.ConsumerRecordToStreamPublisherAdapter;
+import io.deephaven.kafka.ingest.GenericRecordChunkAdapter;
+import io.deephaven.kafka.ingest.JsonNodeChunkAdapter;
+import io.deephaven.kafka.ingest.JsonNodeUtil;
+import io.deephaven.kafka.ingest.KafkaIngester;
+import io.deephaven.kafka.ingest.KafkaStreamConsumer;
+import io.deephaven.kafka.ingest.KafkaStreamPublisher;
+import io.deephaven.kafka.ingest.KeyOrValueProcessor;
+import io.deephaven.kafka.publish.GenericRecordKeyOrValueSerializer;
+import io.deephaven.kafka.publish.JsonKeyOrValueSerializer;
+import io.deephaven.kafka.publish.KafkaPublisherException;
+import io.deephaven.kafka.publish.KeyOrValueSerializer;
+import io.deephaven.kafka.publish.PublishToKafka;
+import io.deephaven.kafka.publish.SimpleKeyOrValueSerializer;
+import io.deephaven.qst.column.header.ColumnHeader;
 import io.deephaven.stream.StreamToBlinkTableAdapter;
-import io.deephaven.engine.liveness.LivenessScope;
-import io.deephaven.engine.liveness.LivenessScopeStack;
-import io.deephaven.engine.util.BigDecimalUtils;
-import io.deephaven.internal.log.LoggerFactory;
-import io.deephaven.io.logger.Logger;
-import io.deephaven.kafka.ingest.*;
-import io.deephaven.kafka.publish.*;
 import io.deephaven.util.SafeCloseable;
 import io.deephaven.util.annotations.ReferentialIntegrity;
 import io.deephaven.util.annotations.ScriptApi;
-import io.deephaven.vector.*;
+import io.deephaven.vector.ByteVector;
 import org.apache.avro.LogicalType;
 import org.apache.avro.LogicalTypes;
 import org.apache.avro.Schema;
@@ -62,7 +81,24 @@ import org.apache.kafka.clients.admin.ListTopicsResult;
 import org.apache.kafka.clients.consumer.ConsumerConfig;
 import org.apache.kafka.clients.consumer.ConsumerRecord;
 import org.apache.kafka.clients.producer.ProducerConfig;
-import org.apache.kafka.common.serialization.*;
+import org.apache.kafka.common.serialization.ByteArrayDeserializer;
+import org.apache.kafka.common.serialization.ByteArraySerializer;
+import org.apache.kafka.common.serialization.ByteBufferDeserializer;
+import org.apache.kafka.common.serialization.ByteBufferSerializer;
+import org.apache.kafka.common.serialization.Deserializer;
+import org.apache.kafka.common.serialization.DoubleDeserializer;
+import org.apache.kafka.common.serialization.DoubleSerializer;
+import org.apache.kafka.common.serialization.FloatDeserializer;
+import org.apache.kafka.common.serialization.FloatSerializer;
+import org.apache.kafka.common.serialization.IntegerDeserializer;
+import org.apache.kafka.common.serialization.IntegerSerializer;
+import org.apache.kafka.common.serialization.LongDeserializer;
+import org.apache.kafka.common.serialization.LongSerializer;
+import org.apache.kafka.common.serialization.Serializer;
+import org.apache.kafka.common.serialization.ShortDeserializer;
+import org.apache.kafka.common.serialization.ShortSerializer;
+import org.apache.kafka.common.serialization.StringDeserializer;
+import org.apache.kafka.common.serialization.StringSerializer;
 import org.apache.kafka.common.utils.Utils;
 import org.immutables.value.Value.Immutable;
 import org.immutables.value.Value.Parameter;
@@ -73,9 +109,24 @@ import java.io.IOException;
 import java.io.Serializable;
 import java.math.BigDecimal;
 import java.time.Instant;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.LinkedHashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.Objects;
+import java.util.Properties;
+import java.util.Set;
 import java.util.concurrent.ExecutionException;
-import java.util.function.*;
+import java.util.function.Function;
+import java.util.function.IntFunction;
+import java.util.function.IntPredicate;
+import java.util.function.IntToLongFunction;
+import java.util.function.Predicate;
+import java.util.function.Supplier;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
@@ -469,7 +520,7 @@ public class KafkaTools {
      * Enum to specify the expected processing (format) for Kafka KEY or VALUE fields.
      */
     public enum DataFormat {
-        IGNORE, SIMPLE, AVRO, JSON
+        IGNORE, SIMPLE, AVRO, JSON, RAW
     }
 
     public static class Consume {
@@ -602,6 +653,21 @@ public class KafkaTools {
                  */
                 public static String mapFieldNameToJsonPointerStr(final String key) {
                     return "/" + key.replace("~", "~0").replace("/", "~1");
+                }
+            }
+
+            static final class Raw extends KeyOrValueSpec {
+                private final ColumnDefinition<?> cd;
+                private final Class<? extends Deserializer<?>> deserializer;
+
+                public Raw(ColumnDefinition<?> cd, Class<? extends Deserializer<?>> deserializer) {
+                    this.cd = Objects.requireNonNull(cd);
+                    this.deserializer = Objects.requireNonNull(deserializer);
+                }
+
+                @Override
+                DataFormat dataFormat() {
+                    return DataFormat.RAW;
                 }
             }
         }
@@ -748,6 +814,11 @@ public class KafkaTools {
         @SuppressWarnings("unused")
         public static KeyOrValueSpec simpleSpec(final String columnName) {
             return new KeyOrValueSpec.Simple(columnName, null);
+        }
+
+        @SuppressWarnings("unused")
+        public static KeyOrValueSpec rawSpec(ColumnHeader<?> header, Class<? extends Deserializer<?>> deserializer) {
+            return new KeyOrValueSpec.Raw(ColumnDefinition.from(header), deserializer);
         }
     }
 
@@ -963,6 +1034,21 @@ public class KafkaTools {
                     return fieldNames;
                 }
             }
+
+            static final class Raw extends KeyOrValueSpec {
+                final String columnName;
+                final Class<? extends Serializer<?>> serializer;
+
+                public Raw(String columnName, Class<? extends Serializer<?>> serializer) {
+                    this.columnName = Objects.requireNonNull(columnName);
+                    this.serializer = Objects.requireNonNull(serializer);
+                }
+
+                @Override
+                DataFormat dataFormat() {
+                    return DataFormat.RAW;
+                }
+            }
         }
 
         public static final KeyOrValueSpec.Ignore IGNORE = new KeyOrValueSpec.Ignore();
@@ -987,6 +1073,10 @@ public class KafkaTools {
         @SuppressWarnings("unused")
         public static KeyOrValueSpec simpleSpec(final String columnName) {
             return new KeyOrValueSpec.Simple(columnName);
+        }
+
+        public static KeyOrValueSpec rawSpec(final String columnName, final Class<? extends Serializer<?>> serializer) {
+            return new KeyOrValueSpec.Raw(columnName, serializer);
         }
 
         /**
@@ -1548,7 +1638,10 @@ public class KafkaTools {
                 return null;
             case SIMPLE:
                 final Produce.KeyOrValueSpec.Simple simpleSpec = (Produce.KeyOrValueSpec.Simple) spec;
-                return new SimpleKeyOrValueSerializer(t, simpleSpec.columnName);
+                return new SimpleKeyOrValueSerializer<>(t, simpleSpec.columnName);
+            case RAW:
+                final Produce.KeyOrValueSpec.Raw rawSpec = (Produce.KeyOrValueSpec.Raw) spec;
+                return new SimpleKeyOrValueSerializer<>(t, rawSpec.columnName);
             default:
                 throw new IllegalStateException("Unrecognized spec type");
         }
@@ -1570,6 +1663,9 @@ public class KafkaTools {
             case SIMPLE:
                 final Produce.KeyOrValueSpec.Simple simpleSpec = (Produce.KeyOrValueSpec.Simple) spec;
                 return new String[] {simpleSpec.columnName};
+            case RAW:
+                final Produce.KeyOrValueSpec.Raw rawSpec = (Produce.KeyOrValueSpec.Raw) spec;
+                return new String[] {rawSpec.columnName};
             default:
                 throw new IllegalStateException("Unrecognized spec type");
         }
@@ -1679,6 +1775,9 @@ public class KafkaTools {
                 break;
             case AVRO:
                 value = AVRO_SERIALIZER;
+                break;
+            case RAW:
+                value = ((Produce.KeyOrValueSpec.Raw) spec).serializer.getName();
                 break;
             default:
                 throw new IllegalStateException("Unknown dataFormat=" + spec.dataFormat());
@@ -1797,6 +1896,7 @@ public class KafkaTools {
         switch (spec.dataFormat()) {
             case IGNORE:
             case SIMPLE:
+            case RAW:
                 return null;
             case AVRO:
                 return GenericRecordChunkAdapter.make(
@@ -1879,7 +1979,7 @@ public class KafkaTools {
         }
         final KeyOrValueIngestData data = new KeyOrValueIngestData();
         switch (keyOrValueSpec.dataFormat()) {
-            case AVRO:
+            case AVRO: {
                 setDeserIfNotSet(kafkaConsumerProperties, keyOrValue, AVRO_DESERIALIZER);
                 final Consume.KeyOrValueSpec.Avro avroSpec = (Consume.KeyOrValueSpec.Avro) keyOrValueSpec;
                 data.fieldPathToColumnName = new HashMap<>();
@@ -1893,7 +1993,8 @@ public class KafkaTools {
                         columnDefinitions, data.fieldPathToColumnName, schema, avroSpec.fieldPathToColumnName);
                 data.extra = schema;
                 break;
-            case JSON:
+            }
+            case JSON: {
                 setDeserIfNotSet(kafkaConsumerProperties, keyOrValue, STRING_DESERIALIZER);
                 data.toObjectChunkMapper = jsonToObjectChunkMapper;
                 final Consume.KeyOrValueSpec.Json jsonSpec = (Consume.KeyOrValueSpec.Json) keyOrValueSpec;
@@ -1917,7 +2018,8 @@ public class KafkaTools {
                     }
                 }
                 break;
-            case SIMPLE:
+            }
+            case SIMPLE: {
                 data.simpleColumnIndex = nextColumnIndexMut.getAndAdd(1);
                 final Consume.KeyOrValueSpec.Simple simpleSpec = (Consume.KeyOrValueSpec.Simple) keyOrValueSpec;
                 final ColumnDefinition<?> colDef;
@@ -1952,6 +2054,17 @@ public class KafkaTools {
                 setDeserIfNotSet(kafkaConsumerProperties, keyOrValue, STRING_DESERIALIZER);
                 columnDefinitions.add(colDef);
                 break;
+            }
+            case RAW: {
+                data.simpleColumnIndex = nextColumnIndexMut.getAndAdd(1);
+                final Consume.KeyOrValueSpec.Raw kafkaSpec = (Consume.KeyOrValueSpec.Raw) keyOrValueSpec;
+                final String propKey = (keyOrValue == KeyOrValue.KEY)
+                        ? ConsumerConfig.KEY_DESERIALIZER_CLASS_CONFIG
+                        : ConsumerConfig.VALUE_DESERIALIZER_CLASS_CONFIG;
+                kafkaConsumerProperties.setProperty(propKey, kafkaSpec.deserializer.getName());
+                columnDefinitions.add(kafkaSpec.cd);
+                break;
+            }
             default:
                 throw new IllegalStateException("Unhandled spec type:" + keyOrValueSpec.dataFormat());
         }
