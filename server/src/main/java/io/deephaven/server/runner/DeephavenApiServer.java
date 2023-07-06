@@ -8,6 +8,7 @@ import io.deephaven.engine.context.ExecutionContext;
 import io.deephaven.engine.table.impl.OperationInitializationThreadPool;
 import io.deephaven.engine.table.impl.perf.QueryPerformanceRecorder;
 import io.deephaven.engine.table.impl.perf.UpdatePerformanceTracker;
+import io.deephaven.engine.table.impl.util.AsyncErrorLogger;
 import io.deephaven.engine.table.impl.util.EngineMetrics;
 import io.deephaven.engine.table.impl.util.ServerStateTracker;
 import io.deephaven.engine.updategraph.UpdateGraph;
@@ -146,6 +147,7 @@ public class DeephavenApiServer {
         QueryPerformanceRecorder.installUpdateGraphLockInstrumentation();
         UpdatePerformanceTracker.start();
         ServerStateTracker.start();
+        AsyncErrorLogger.init();
 
         for (UriResolver resolver : uriResolvers.resolvers()) {
             log.debug().append("Found table resolver ").append(resolver.getClass().toString()).endl();
