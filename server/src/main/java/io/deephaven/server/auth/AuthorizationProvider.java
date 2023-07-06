@@ -2,7 +2,7 @@ package io.deephaven.server.auth;
 
 import io.deephaven.auth.AuthContext;
 import io.deephaven.auth.codegen.impl.*;
-import io.deephaven.server.session.TicketResolverBase;
+import io.deephaven.server.session.TicketResolver;
 
 public interface AuthorizationProvider {
     /**
@@ -61,9 +61,9 @@ public interface AuthorizationProvider {
     HierarchicalTableServiceContextualAuthWiring getHierarchicalTableServiceContextualAuthWiring();
 
     /**
-     * @return the authorization transformation used when resolving tickets
+     * @return the authorization provider for TicketResolvers; used when resolving from, and publishing to, tickets
      */
-    TicketResolverBase.AuthTransformation getTicketTransformation();
+    TicketResolver.Authorization getTicketResolverAuthorization();
 
     /**
      * @return the default auth context to use during start-up and in other non-interactive contexts

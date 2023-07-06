@@ -28,6 +28,7 @@ using deephaven::dhcore::immerutil::AbstractFlexVectorBase;
 using deephaven::dhcore::clienttable::Schema;
 using deephaven::dhcore::clienttable::ClientTable;
 using deephaven::dhcore::utility::makeReservedVector;
+using deephaven::dhcore::utility::separatedList;
 using deephaven::dhcore::utility::streamf;
 using deephaven::dhcore::utility::stringf;
 
@@ -163,7 +164,7 @@ std::vector<uint8_t> BarrageProcessor::createSubscriptionRequest(const void *tic
   flatbuffers::FlatBufferBuilder payloadBuilder(4096);
 
   auto subOptions = CreateBarrageSubscriptionOptions(payloadBuilder,
-      ColumnConversionMode::ColumnConversionMode_Stringify, true, 0, 4096);
+      ColumnConversionMode::ColumnConversionMode_Stringify, true, 0, 4096, 0, true);
 
   auto ticket = payloadBuilder.CreateVector(static_cast<const int8_t*>(ticketBytes), size);
   auto subreq = CreateBarrageSubscriptionRequest(payloadBuilder, ticket, {}, {}, subOptions);
@@ -517,7 +518,8 @@ std::optional<TickingUpdate> BuildingResult::processNextChunk(BarrageProcessorIm
     const std::vector<std::shared_ptr<ColumnSource>> &/*sources*/,
     std::vector<size_t> *begins, const std::vector<size_t> &ends, const void */*metadata*/, size_t /*metadataSize*/) {
   if (*begins != ends) {
-    const char *message = "Barrage logic is done processing but there is leftover caller-provided data.";
+    auto message = stringf("Barrage logic is done processing but there is leftover caller-provided data. begins = [%o]. ends=[%o]",
+        separatedList(begins->begin(), begins->end()), separatedList(ends.begin(), ends.end()));
     throw std::runtime_error(DEEPHAVEN_DEBUG_MSG(message));
   }
   auto *aa = &owner->awaitingAdds_;

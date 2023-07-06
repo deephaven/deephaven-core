@@ -69,6 +69,12 @@ service SessionService {
   rpc ExportFromTicket(ExportRequest) returns (ExportResponse) {}
 
   /*
+   * Makes a copy from a source ticket and publishes to a result ticket. Neither the source ticket, nor the destination
+   * ticket, need to be a client managed ticket.
+   */
+  rpc PublishFromTicket(PublishRequest) returns (PublishResponse) {}
+
+  /*
    * Establish a stream to manage all session exports, including those lost due to partially complete rpc calls.
    *
    * New streams will flush notifications for all un-released exports, prior to seeing any new or updated exports
@@ -167,6 +173,15 @@ message ExportRequest {
 }
 
 message ExportResponse {
+  // Intentionally empty and is here for backwards compatibility should this API change.
+}
+
+message PublishRequest {
+  Ticket source_id = 1;
+  Ticket result_id = 2;
+}
+
+message PublishResponse {
   // Intentionally empty and is here for backwards compatibility should this API change.
 }
 

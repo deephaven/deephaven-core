@@ -32,6 +32,7 @@ import io.deephaven.engine.table.impl.util.UpdateCoalescer;
 import io.deephaven.engine.updategraph.*;
 import io.deephaven.engine.updategraph.impl.PeriodicUpdateGraph;
 import io.deephaven.extensions.barrage.BarragePerformanceLog;
+import io.deephaven.extensions.barrage.BarragePerformanceLog.WriteMetricsConsumer;
 import io.deephaven.extensions.barrage.BarrageStreamGenerator;
 import io.deephaven.extensions.barrage.BarrageSubscriptionOptions;
 import io.deephaven.extensions.barrage.BarrageSubscriptionPerformanceLogger;
@@ -51,7 +52,6 @@ import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 import org.HdrHistogram.Histogram;
 
-import java.io.IOException;
 import java.time.Instant;
 import java.util.*;
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -1490,7 +1490,7 @@ public class BarrageMessageProducer<MessageView> extends LivenessArtifact
 
         lastUpdateTime = scheduler.currentTimeMillis();
         if (log.isDebugEnabled()) {
-            log.debug().append(logPrefix).append("Completed Propagation: " + lastUpdateTime);
+            log.debug().append(logPrefix).append("Completed Propagation: " + lastUpdateTime).endl();
         }
     }
 
@@ -2270,42 +2270,28 @@ public class BarrageMessageProducer<MessageView> extends LivenessArtifact
             if (!running) {
                 return;
             }
-
             final Instant now = scheduler.instantMillis();
             scheduler.runAfterDelay(BarragePerformanceLog.CYCLE_DURATION_MILLIS, this);
-
             final BarrageSubscriptionPerformanceLogger logger =
                     BarragePerformanceLog.getInstance().getSubscriptionLogger();
-            try {
-                // noinspection SynchronizationOnLocalVariableOrMethodParameter
-                synchronized (logger) {
-                    flush(now, logger, enqueue, "EnqueueMillis");
-                    flush(now, logger, aggregate, "AggregateMillis");
-                    flush(now, logger, propagate, "PropagateMillis");
-                    flush(now, logger, snapshot, "SnapshotMillis");
-                    flush(now, logger, updateJob, "UpdateJobMillis");
-                    flush(now, logger, writeTime, "WriteMillis");
-                    flush(now, logger, writeBits, "WriteMegabits");
-                }
-            } catch (IOException ioe) {
-                log.error().append(logPrefix).append("Unexpected exception while flushing barrage stats: ")
-                        .append(ioe).endl();
+            // noinspection SynchronizationOnLocalVariableOrMethodParameter
+            synchronized (logger) {
+                flush(now, logger, enqueue, "EnqueueMillis");
+                flush(now, logger, aggregate, "AggregateMillis");
+                flush(now, logger, propagate, "PropagateMillis");
+                flush(now, logger, snapshot, "SnapshotMillis");
+                flush(now, logger, updateJob, "UpdateJobMillis");
+                flush(now, logger, writeTime, "WriteMillis");
+                flush(now, logger, writeBits, "WriteMegabits");
             }
         }
 
         private void flush(final Instant now, final BarrageSubscriptionPerformanceLogger logger, final Histogram hist,
-                final String statType) throws IOException {
+                final String statType) {
             if (hist.getTotalCount() == 0) {
                 return;
             }
-            logger.log(tableId, tableKey, statType, now,
-                    hist.getTotalCount(),
-                    hist.getValueAtPercentile(50) / 1e6,
-                    hist.getValueAtPercentile(75) / 1e6,
-                    hist.getValueAtPercentile(90) / 1e6,
-                    hist.getValueAtPercentile(95) / 1e6,
-                    hist.getValueAtPercentile(99) / 1e6,
-                    hist.getMaxValue() / 1e6);
+            logger.log(tableId, tableKey, statType, now, hist);
             hist.reset();
         }
     }

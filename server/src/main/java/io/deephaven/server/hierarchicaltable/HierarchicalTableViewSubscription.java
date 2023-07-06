@@ -475,17 +475,11 @@ public class HierarchicalTableViewSubscription extends LivenessArtifact {
 
             final BarrageSubscriptionPerformanceLogger logger =
                     BarragePerformanceLog.getInstance().getSubscriptionLogger();
-            try {
-                // noinspection SynchronizationOnLocalVariableOrMethodParameter
-                synchronized (logger) {
-                    flush(now, logger, snapshotNanos, "SnapshotMillis");
-                    flush(now, logger, writeNanos, "WriteMillis");
-                    flush(now, logger, writeBits, "WriteMegabits");
-                }
-            } catch (IOException ioe) {
-                log.error().append("HierarchicalTableViewSubscription-").append(statsId)
-                        .append(": Unexpected exception while flushing barrage stats: ")
-                        .append(ioe).endl();
+            // noinspection SynchronizationOnLocalVariableOrMethodParameter
+            synchronized (logger) {
+                flush(now, logger, snapshotNanos, "SnapshotMillis");
+                flush(now, logger, writeNanos, "WriteMillis");
+                flush(now, logger, writeBits, "WriteMegabits");
             }
         }
 
@@ -493,18 +487,11 @@ public class HierarchicalTableViewSubscription extends LivenessArtifact {
                 @NotNull final Instant now,
                 @NotNull final BarrageSubscriptionPerformanceLogger logger,
                 @NotNull final Histogram hist,
-                @NotNull final String statType) throws IOException {
+                @NotNull final String statType) {
             if (hist.getTotalCount() == 0) {
                 return;
             }
-            logger.log(statsId, statsKey, statType, now,
-                    hist.getTotalCount(),
-                    hist.getValueAtPercentile(50) / 1e6,
-                    hist.getValueAtPercentile(75) / 1e6,
-                    hist.getValueAtPercentile(90) / 1e6,
-                    hist.getValueAtPercentile(95) / 1e6,
-                    hist.getValueAtPercentile(99) / 1e6,
-                    hist.getMaxValue() / 1e6);
+            logger.log(statsId, statsKey, statType, now, hist);
             hist.reset();
         }
     }

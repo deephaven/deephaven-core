@@ -171,9 +171,41 @@ public class SessionServiceGrpcImpl extends SessionServiceGrpc.SessionServiceImp
                 .require(source)
                 .onError(responseObserver)
                 .submit(() -> {
+                    final Object o = source.get();
                     GrpcUtil.safelyComplete(responseObserver, ExportResponse.getDefaultInstance());
-                    return source.get();
+                    return o;
                 });
+    }
+
+    @Override
+    public void publishFromTicket(
+            @NotNull final PublishRequest request,
+            @NotNull final StreamObserver<PublishResponse> responseObserver) {
+        final SessionState session = service.getCurrentSession();
+
+        if (!request.hasSourceId()) {
+            responseObserver
+                    .onError(Exceptions.statusRuntimeException(Code.INVALID_ARGUMENT, "Source ticket not supplied"));
+            return;
+        }
+        if (!request.hasResultId()) {
+            responseObserver
+                    .onError(Exceptions.statusRuntimeException(Code.INVALID_ARGUMENT, "Result ticket not supplied"));
+            return;
+        }
+
+        final SessionState.ExportObject<Object> source = ticketRouter.resolve(
+                session, request.getSourceId(), "sourceId");
+        Ticket resultId = request.getResultId();
+
+        final SessionState.ExportBuilder<Object> publisher = ticketRouter.publish(
+                session, resultId, "resultId", () -> {
+                    // when publish is complete, complete the gRPC request
+                    GrpcUtil.safelyComplete(responseObserver, PublishResponse.getDefaultInstance());
+                });
+        publisher.require(source)
+                .onError(responseObserver)
+                .submit(source::get);
     }
 
     @Override

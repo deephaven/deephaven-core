@@ -6,14 +6,13 @@ package io.deephaven.client.examples;
 import io.deephaven.client.impl.ExportId;
 import io.deephaven.client.impl.FlightSession;
 import io.deephaven.client.impl.HasTicketId;
-import io.deephaven.client.impl.ScopeId;
 import io.deephaven.client.impl.TableHandle;
 import io.deephaven.qst.column.header.ColumnHeader;
 import io.deephaven.qst.table.NewTable;
 import picocli.CommandLine;
+import picocli.CommandLine.ArgGroup;
 import picocli.CommandLine.Command;
 import picocli.CommandLine.Option;
-import picocli.CommandLine.Parameters;
 
 import java.time.Instant;
 import java.util.concurrent.ExecutionException;
@@ -30,8 +29,8 @@ class DoPutTable extends FlightExampleBase {
             defaultValue = "HANDLE")
     Method method;
 
-    @Parameters(arity = "1", paramLabel = "VAR", description = "Variable name to publish.")
-    String variableName;
+    @ArgGroup(exclusive = true, multiplicity = "1")
+    Ticket ticket;
 
     @Override
     protected void execute(FlightSession flight) throws Exception {
@@ -72,7 +71,7 @@ class DoPutTable extends FlightExampleBase {
     }
 
     private void publish(FlightSession flight, HasTicketId ticketId) throws InterruptedException, ExecutionException {
-        flight.session().publish(variableName, ticketId).get();
+        flight.session().publish(ticket, ticketId).get();
     }
 
     private void handle(FlightSession flight) throws Exception {
@@ -94,7 +93,7 @@ class DoPutTable extends FlightExampleBase {
 
     private void direct(FlightSession flight) {
         // This version is most efficient, but the RHS is ephemeral and can't be re-referenced
-        flight.put(new ScopeId(variableName), newTable(), bufferAllocator);
+        flight.put(ticket.asHasPathId(), newTable(), bufferAllocator);
     }
 
     public static void main(String[] args) {
