@@ -11,11 +11,13 @@
 #include <string>
 #include <cstring>
 #include <cstdint>
+#include <grpc/support/log.h>
 #include <arrow/flight/client.h>
 
 #include "deephaven/client/client_options.h"
 #include "deephaven/client/utility/executor.h"
 #include "deephaven/dhcore/utility/callbacks.h"
+#include "deephaven/dhcore/utility/utility.h"
 #include "deephaven/proto/ticket.pb.h"
 #include "deephaven/proto/ticket.grpc.pb.h"
 #include "deephaven/proto/application.pb.h"
@@ -273,8 +275,18 @@ private:
 template<typename TReq, typename TResp, typename TStub, typename TPtrToMember>
 void Server::sendRpc(const TReq &req, std::shared_ptr<SFCallback<TResp>> responseCallback,
     TStub *stub, const TPtrToMember &pm) {
+  using namespace deephaven::dhcore::utility;
+  static const auto typeName = TypeName(req);
   auto now = std::chrono::system_clock::now();
   // Keep this in a unique_ptr at first, for cleanup in case addAuthToken throws an exception.
+  gpr_log(GPR_DEBUG,
+          "%p: "
+          "Sending RPC %s "
+          "at time %s.",
+          (void*) this,
+          typeName.c_str(),
+          TimePointToStr(now).c_str());
+          
   auto response = std::make_unique<ServerResponseHolder<TResp>>(now, std::move(responseCallback));
   forEachHeaderNameAndValue([&response](const std::string &name, const std::string &value) {
     response->ctx_.AddMetadata(name, value);

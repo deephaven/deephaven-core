@@ -3,10 +3,12 @@
  */
 #pragma once
 
+#include <chrono>
 #include <cstring>
 #include <iostream>
 #include <memory>
 #include <string>
+#include <typeinfo>
 #include <vector>
 
 namespace deephaven::dhcore::utility {
@@ -238,4 +240,29 @@ inline void trueOrThrow(const DebugInfo &debugInfo, bool value) {
   }
   internal::trueOrThrowHelper(debugInfo);
 }
+
+[[nodiscard]] std::string
+EpochMillisToStr(std::int64_t epochMillis);
+
+[[nodiscard]] inline std::int64_t
+TimePointToEpochMillis(
+    const std::chrono::time_point<std::chrono::system_clock> timePoint) {
+  using namespace std::chrono;
+  const milliseconds ms = duration_cast<milliseconds>(timePoint.time_since_epoch());
+  return ms.count();
+}
+
+[[nodiscard]] inline std::string
+TimePointToStr(
+    const std::chrono::time_point<std::chrono::system_clock> timePoint) {
+  return EpochMillisToStr(TimePointToEpochMillis(timePoint));
+}
+
+[[nodiscard]] std::string Demangle(const char* name);
+
+template <class T> [[nodiscard]] std::string
+TypeName(const T& t) {
+  return Demangle(typeid(t).name());
+}
+
 }  // namespace deephaven::dhcore::utility

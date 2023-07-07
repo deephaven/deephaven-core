@@ -3,8 +3,17 @@
  */
 #include "deephaven/dhcore/utility/utility.h"
 
+#include <cassert>
+#include <ctime>
 #include <ostream>
+#include <string>
 #include <vector>
+
+#ifdef __GNUG__
+#include <cstdlib>
+#include <memory>
+#include <cxxabi.h>
+#endif
 
 using namespace std;
 
@@ -187,5 +196,55 @@ void dumpTillPercentOrEnd(ostream &result, const char **fmt) {
   result.write(start, p - start);
   *fmt = p;
 }
+
+const char DIGITS[] = { '0', '1', '2', '3', '4', '5', '6', '7', '8', '9' };
+static_assert(sizeof(DIGITS) == 10);
 }  // namespace
+
+std::string
+EpochMillisToStr(std::int64_t epochMillis) {
+  const time_t secs = epochMillis / 1000;
+  const unsigned millisRest = epochMillis % 1000;
+  struct tm tm;
+  localtime_r(&secs, &tm);
+  std::size_t resultSz = 32u;  // we need 28u + 1u; +1 for null terminated.
+  std::string result(resultSz, '#');
+  char *resBuf = &result[0];
+  strftime(resBuf, resultSz,
+           "%F"    // 10 chars: ISO-8601 date format: `YYYY-mm-dd`
+           "T"     //  1 char:  A literal "T" separator (ISO-8601).
+           "%T"    //  8 chars: ISO-8601 time format: `HH:MM:SS`
+           ".000"  //  4 chars: Placeholder for msecs
+           "%z",   //  3 chars: timezone [+-]hhmm
+           &tm);
+  const unsigned hundredMillisRest = millisRest / 100;
+  const unsigned millisRestMod100 = millisRest % 100;
+  const unsigned tensMillisRest = millisRestMod100 / 10;
+  const unsigned singleMillisRest = millisRestMod100 % 10;
+  assert(hundredMillisRest < 10);
+  resBuf[20] = DIGITS[hundredMillisRest];
+  assert(tensMillisRest < 10);
+  resBuf[21] = DIGITS[tensMillisRest];
+  assert(singleMillisRest < 10);
+  resBuf[22] = DIGITS[singleMillisRest];
+  return result;
+}
+
+#ifdef __GNUG__
+std::string Demangle(const char* name) {
+  int status = -1;
+  std::unique_ptr<char, void(*)(void*)> res {
+    abi::__cxa_demangle(name, NULL, NULL, &status),
+    std::free
+  };
+
+  return (status==0) ? res.get() : name;
+}
+#else
+// does nothing if not g++
+std::string Demangle(const char* name) {
+  return name;
+}
+#endif
+
 }  // namespace deephaven::dhcore::utility
