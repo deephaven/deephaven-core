@@ -21,9 +21,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
-import java.util.stream.Collectors;
-
-//TODO: document
 
 /**
  * A parser for reading business calendar files.
@@ -35,7 +32,7 @@ import java.util.stream.Collectors;
  *     <description>New York Stock Exchange Calendar</description>
  *     <timeZone>America/New_York</timeZone>
  *     <default>
- *         <businessPeriod>09:30,16:00</businessPeriod>
+ *         <businessPeriod><open>09:30</open><close>16:00</close></businessPeriod>
  *         <weekend>Saturday</weekend>
  *         <weekend>Sunday</weekend>
  *     </default>
@@ -46,7 +43,7 @@ import java.util.stream.Collectors;
  *     </holiday>
  *     <holiday>
  *         <date>20020705</date>
- *         <businessPeriod>09:30,13:00</businessPeriod>
+ *         <businessPeriod><open>09:30</open><close>13:00</close></businessPeriod>
  *     </holiday>
  * </calendar>
  */
@@ -132,34 +129,21 @@ public class BusinessCalendarParser {
     }
 
     private static BusinessSchedule<LocalTime> parseBusinessSchedule(final Element element) throws Exception {
-        final List<String> businessPeriodStrings = element
-                .getChildren("businessPeriod")
-                .stream()
-                .map(bp->getText(bp).trim())
-                .collect(Collectors.toList());
-
-        return businessPeriodStrings.isEmpty() ? BusinessSchedule.HOLIDAY : new BusinessSchedule<>(parseBusinessPeriods(businessPeriodStrings));
+        final List<Element> businessPeriods = element.getChildren("businessPeriod");
+        return businessPeriods.isEmpty() ? BusinessSchedule.HOLIDAY : new BusinessSchedule<>(parseBusinessPeriods(businessPeriods));
     }
 
-    private static BusinessPeriod<LocalTime>[] parseBusinessPeriods(final List<String> businessPeriodStrings) throws Exception {
+    private static BusinessPeriod<LocalTime>[] parseBusinessPeriods(final List<Element> businessPeriods) throws Exception {
         //noinspection unchecked
-        final BusinessPeriod<LocalTime>[] businessPeriods = new BusinessPeriod[businessPeriodStrings.size()];
+        final BusinessPeriod<LocalTime>[] rst = new BusinessPeriod[businessPeriods.size()];
 
-        for(int i=0; i<businessPeriodStrings.size(); i++){
-            final String bps = businessPeriodStrings.get(i);
-            final String[] openClose = bps.split(",");
-
-            if(openClose.length != 2){
-                throw new Exception("Invalid business period string: value=\"" + bps + "\"");
-            }
-
-            //TODO: change the period open/close format?
-            final LocalTime open = DateTimeUtils.parseLocalTime(openClose[0]);
-            final LocalTime close = DateTimeUtils.parseLocalTime(openClose[1]);
-            businessPeriods[i] = new BusinessPeriod<>(open, close);
+        for(int i=0; i<businessPeriods.size(); i++){
+            final LocalTime open = DateTimeUtils.parseLocalTime(getText(getRequiredChild(businessPeriods.get(i), "open")));
+            final LocalTime close = DateTimeUtils.parseLocalTime(getText(getRequiredChild(businessPeriods.get(i), "close")));
+            rst[i] = new BusinessPeriod<>(open, close);
         }
 
-        return businessPeriods;
+        return rst;
     }
 
     private static Map<LocalDate, BusinessSchedule<Instant>> parseHolidays(final Element root, final ZoneId timeZone) throws Exception{
