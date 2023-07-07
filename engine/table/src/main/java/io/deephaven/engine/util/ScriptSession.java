@@ -89,6 +89,8 @@ public interface ScriptSession extends ReleasableLivenessManager, LivenessNode {
      * Observe (and report via {@link Listener#onScopeChanges(ScriptSession, Changes) onScopeChanges}) any changes to
      * this ScriptSession's {@link QueryScope} that may have been made externally, rather than during
      * {@link #evaluateScript script evaluation}.
+     * 
+     * @apiNote This method should be regarded as an unstable API
      */
     void observeScopeChanges();
 
