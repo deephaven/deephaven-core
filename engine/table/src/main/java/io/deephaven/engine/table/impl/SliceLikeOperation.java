@@ -95,16 +95,7 @@ public class SliceLikeOperation implements QueryTable.Operation<QueryTable> {
 
     @Override
     public Result<QueryTable> initialize(boolean usePrev, long beforeClock) {
-        if (parent.isBlink()) {
-            if (operation.equals("head")) {
-                long size = getLastPositionExclusive();
-                resultTable = (QueryTable) BlinkTableTools.blinkToAppendOnly(parent, size);
-            } else if (operation.equals("tail")) {
-                long size = -1 * getFirstPositionInclusive();
-                resultTable = (QueryTable) RingTableTools.of(parent, (int) size); // TODO Do I need to do something for
-                // this type cast from long to int?
-            }
-        } else {
+        if (!parent.isBlink()) {
             final TrackingRowSet parentRowSet = parent.getRowSet();
             final TrackingRowSet resultRowSet =
                     computeSliceIndex(usePrev ? parentRowSet.prev() : parentRowSet).toTracking();
@@ -129,6 +120,15 @@ public class SliceLikeOperation implements QueryTable.Operation<QueryTable> {
                 if (parent.isAppendOnly()) {
                     resultTable.setAttribute(Table.APPEND_ONLY_TABLE_ATTRIBUTE, true);
                 }
+            }
+        } else {
+            if (operation.equals("head")) {
+                long size = getLastPositionExclusive();
+                resultTable = (QueryTable) BlinkTableTools.blinkToAppendOnly(parent, size);
+            } else if (operation.equals("tail")) {
+                long size = -1 * getFirstPositionInclusive();
+                resultTable = (QueryTable) RingTableTools.of(parent, (int) size); // TODO Do I need to do something for
+                // this type cast from long to int?
             }
         }
 
