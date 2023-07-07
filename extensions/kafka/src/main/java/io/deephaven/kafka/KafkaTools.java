@@ -30,8 +30,8 @@ import io.deephaven.engine.table.impl.sources.ArrayBackedColumnSource;
 import io.deephaven.engine.table.impl.sources.ring.RingTableTools;
 import io.deephaven.engine.updategraph.UpdateGraph;
 import io.deephaven.engine.updategraph.UpdateSourceCombiner;
-import io.deephaven.kafka.KafkaTools.StreamConsumerFactory.PerPartition;
-import io.deephaven.kafka.KafkaTools.StreamConsumerFactory.Single;
+import io.deephaven.kafka.KafkaTools.StreamConsumerRegistrarProvider.PerPartition;
+import io.deephaven.kafka.KafkaTools.StreamConsumerRegistrarProvider.Single;
 import io.deephaven.kafka.KafkaTools.TableType.Append;
 import io.deephaven.kafka.KafkaTools.TableType.Blink;
 import io.deephaven.kafka.KafkaTools.TableType.Ring;
@@ -57,7 +57,6 @@ import org.apache.avro.Schema;
 import org.apache.avro.SchemaBuilder;
 import org.apache.avro.generic.GenericContainer;
 import org.apache.avro.generic.GenericRecord;
-import org.apache.commons.lang3.function.TriFunction;
 import org.apache.commons.lang3.mutable.MutableInt;
 import org.apache.commons.lang3.mutable.MutableObject;
 import org.apache.kafka.clients.admin.Admin;
@@ -1286,12 +1285,13 @@ public class KafkaTools {
         final ExecutionContext enclosingExecutionContext = ExecutionContext.getContext();
         final LivenessManager enclosingLivenessManager = LivenessScopeStack.peek();
 
-        final BiFunction<TableDefinition, StreamPublisher, StreamConsumer> consumerSupplier =
+        final SingleConsumerRegistrar registrar =
                 (final TableDefinition tableDefinition, final StreamPublisher streamPublisher) -> {
-                    final StreamToBlinkTableAdapter streamToBlinkTableAdapter;
                     try (final SafeCloseable ignored1 = enclosingExecutionContext.open();
                             final SafeCloseable ignored2 = LivenessScopeStack.open()) {
-                        streamToBlinkTableAdapter = new StreamToBlinkTableAdapter(
+                        // StreamToBlinkTableAdapter registers itself in its constructor
+                        // noinspection resource
+                        final StreamToBlinkTableAdapter streamToBlinkTableAdapter = new StreamToBlinkTableAdapter(
                                 tableDefinition,
                                 streamPublisher,
                                 enclosingExecutionContext.getUpdateGraph(),
@@ -1301,11 +1301,10 @@ public class KafkaTools {
                         enclosingLivenessManager.manage(result);
                         resultHolder.setValue(result);
                     }
-                    return streamToBlinkTableAdapter;
                 };
 
         consume(kafkaProperties, topic, partitionFilter, partitionToInitialOffset, keySpec, valueSpec,
-                StreamConsumerFactory.single(consumerSupplier));
+                StreamConsumerRegistrarProvider.single(registrar));
         return resultHolder.getValue();
     }
 
@@ -1336,10 +1335,9 @@ public class KafkaTools {
         final ExecutionContext enclosingExecutionContext = ExecutionContext.getContext();
         final LivenessManager enclosingLivenessManager = LivenessScopeStack.peek();
 
-        final TriFunction<TableDefinition, TopicPartition, StreamPublisher, StreamConsumer> consumerSupplier =
+        final PerPartitionConsumerRegistrar registrar =
                 (final TableDefinition tableDefinition, final TopicPartition topicPartition,
                         final StreamPublisher streamPublisher) -> {
-                    final StreamToBlinkTableAdapter streamToBlinkTableAdapter;
                     try (final SafeCloseable ignored1 = enclosingExecutionContext.open();
                             final SafeCloseable ignored2 = LivenessScopeStack.open()) {
                         StreamPartitionedTable result = resultHolder.get();
@@ -1353,7 +1351,9 @@ public class KafkaTools {
                                 }
                             }
                         }
-                        streamToBlinkTableAdapter = new StreamToBlinkTableAdapter(
+                        // StreamToBlinkTableAdapter registers itself in its constructor
+                        // noinspection resource
+                        final StreamToBlinkTableAdapter streamToBlinkTableAdapter = new StreamToBlinkTableAdapter(
                                 tableDefinition,
                                 streamPublisher,
                                 result.refreshCombiner,
@@ -1362,35 +1362,66 @@ public class KafkaTools {
                         final Table derivedTable = tableType.walk(new BlinkTableOperation(blinkTable));
                         result.enqueueAdd(topicPartition.partition(), derivedTable);
                     }
-                    return streamToBlinkTableAdapter;
                 };
 
         consume(kafkaProperties, topic, partitionFilter, partitionToInitialOffset, keySpec, valueSpec,
-                StreamConsumerFactory.perPartition(consumerSupplier));
+                StreamConsumerRegistrarProvider.perPartition(registrar));
         return resultHolder.get();
     }
 
-    /**
-     * Marker interface for {@link StreamConsumer} factory objects.
-     */
-    public interface StreamConsumerFactory {
+    @FunctionalInterface
+    public interface SingleConsumerRegistrar {
 
         /**
-         * @param consumerSupplier The internal factory method for {@link StreamConsumer} instances
-         * @return A StreamConsumerFactory that produces a single consumer for all selected partitions
+         * Provide a single {@link StreamConsumer} to {@code streamPublisher} via its
+         * {@link StreamPublisher#register(StreamConsumer) register} method.
+         * 
+         * @param tableDefinition The {@link TableDefinition} for the stream to be consumed
+         * @param streamPublisher The {@link StreamPublisher} to {@link StreamPublisher#register(StreamConsumer)
+         *        register} a {@link StreamConsumer} for
          */
-        static Single single(
-                @NotNull final BiFunction<TableDefinition, StreamPublisher, StreamConsumer> consumerSupplier) {
-            return Single.of(consumerSupplier);
+        void register(
+                @NotNull TableDefinition tableDefinition,
+                @NotNull StreamPublisher streamPublisher);
+    }
+
+    @FunctionalInterface
+    public interface PerPartitionConsumerRegistrar {
+
+        /**
+         * Provide a per-partition {@link StreamConsumer} to {@code streamPublisher} via its
+         * {@link StreamPublisher#register(StreamConsumer) register} method.
+         *
+         * @param tableDefinition The {@link TableDefinition} for the stream to be consumed
+         * @param topicPartition The {@link TopicPartition} to be consumed
+         * @param streamPublisher The {@link StreamPublisher} to {@link StreamPublisher#register(StreamConsumer)
+         *        register} a {@link StreamConsumer} for
+         */
+        void register(
+                @NotNull TableDefinition tableDefinition,
+                @NotNull TopicPartition topicPartition,
+                @NotNull StreamPublisher streamPublisher);
+    }
+
+    /**
+     * Marker interface for {@link StreamConsumer} registrar provider objects.
+     */
+    public interface StreamConsumerRegistrarProvider {
+
+        /**
+         * @param registrar The internal registrar method for {@link StreamConsumer} instances
+         * @return A StreamConsumerRegistrarProvider that registers a single consumer for all selected partitions
+         */
+        static Single single(@NotNull final SingleConsumerRegistrar registrar) {
+            return Single.of(registrar);
         }
 
         /**
-         * @param consumerSupplier The internal factory method for {@link StreamConsumer} instances
-         * @return A StreamConsumerFactory that produces a new consumer for each selected partitions
+         * @param registrar The internal registrar method for {@link StreamConsumer} instances
+         * @return A StreamConsumerRegistrarProvider that registers a new consumer for each selected partition
          */
-        static PerPartition perPartition(
-                @NotNull final TriFunction<TableDefinition, TopicPartition, StreamPublisher, StreamConsumer> consumerSupplier) {
-            return PerPartition.of(consumerSupplier);
+        static PerPartition perPartition(@NotNull final PerPartitionConsumerRegistrar registrar) {
+            return PerPartition.of(registrar);
         }
 
         <T, V extends Visitor<T>> T walk(V visitor);
@@ -1403,15 +1434,14 @@ public class KafkaTools {
 
         @Immutable
         @SimpleStyle
-        abstract class Single implements StreamConsumerFactory {
+        abstract class Single implements StreamConsumerRegistrarProvider {
 
-            public static Single of(
-                    @NotNull final BiFunction<TableDefinition, StreamPublisher, StreamConsumer> consumerSupplier) {
-                return ImmutableSingle.of(consumerSupplier);
+            public static Single of(@NotNull final SingleConsumerRegistrar registrar) {
+                return ImmutableSingle.of(registrar);
             }
 
             @Parameter
-            public abstract BiFunction<TableDefinition, StreamPublisher, StreamConsumer> consumerSupplier();
+            public abstract SingleConsumerRegistrar registrar();
 
             @Override
             public final <T, V extends Visitor<T>> T walk(@NotNull final V visitor) {
@@ -1421,15 +1451,14 @@ public class KafkaTools {
 
         @Immutable
         @SimpleStyle
-        abstract class PerPartition implements StreamConsumerFactory {
+        abstract class PerPartition implements StreamConsumerRegistrarProvider {
 
-            public static PerPartition of(
-                    @NotNull final TriFunction<TableDefinition, TopicPartition, StreamPublisher, StreamConsumer> consumerSupplier) {
-                return ImmutablePerPartition.of(consumerSupplier);
+            public static PerPartition of(@NotNull final PerPartitionConsumerRegistrar registrar) {
+                return ImmutablePerPartition.of(registrar);
             }
 
             @Parameter
-            public abstract TriFunction<TableDefinition, TopicPartition, StreamPublisher, StreamConsumer> consumerSupplier();
+            public abstract PerPartitionConsumerRegistrar registrar();
 
             @Override
             public final <T, V extends Visitor<T>> T walk(@NotNull final V visitor) {
@@ -1439,7 +1468,7 @@ public class KafkaTools {
     }
 
     private static class KafkaRecordConsumerFactoryCreator
-            implements StreamConsumerFactory.Visitor<Function<TopicPartition, KafkaRecordConsumer>> {
+            implements StreamConsumerRegistrarProvider.Visitor<Function<TopicPartition, KafkaRecordConsumer>> {
 
         private final TableDefinition tableDefinition;
         private final KafkaStreamPublisher.Parameters publisherParameters;
@@ -1460,9 +1489,7 @@ public class KafkaTools {
                     publisherParameters,
                     tableDefinition,
                     () -> ingesterSupplier.get().shutdown());
-            final StreamConsumer downstreamConsumer = single.consumerSupplier().apply(
-                    tableDefinition, adapter);
-            adapter.register(downstreamConsumer);
+            single.registrar().register(tableDefinition, adapter);
             return (final TopicPartition tp) -> new SimpleKafkaRecordConsumer(adapter);
         }
 
@@ -1473,16 +1500,14 @@ public class KafkaTools {
                         publisherParameters,
                         tableDefinition,
                         () -> ingesterSupplier.get().shutdownPartition(tp.partition()));
-                final StreamConsumer downstreamConsumer = perPartition.consumerSupplier().apply(
-                        tableDefinition, tp, adapter);
-                adapter.register(downstreamConsumer);
+                perPartition.registrar().register(tableDefinition, tp, adapter);
                 return new SimpleKafkaRecordConsumer(adapter);
             };
         }
     }
 
     /**
-     * Consume from Kafka to a {@link StreamConsumer} supplied by {@code streamConsumerFactory}.
+     * Consume from Kafka to a {@link StreamConsumer} supplied by {@code streamConsumerRegistrar}.
      *
      * @param kafkaProperties Properties to configure this table and also to be passed to create the KafkaConsumer
      * @param topic Kafka topic name
@@ -1491,10 +1516,13 @@ public class KafkaTools {
      * @param partitionToInitialOffset A function specifying the desired initial offset for each partition consumed
      * @param keySpec Conversion specification for Kafka record keys
      * @param valueSpec Conversion specification for Kafka record values
-     * @param streamConsumerFactory A factory for producing {@link StreamConsumer} instances. The returned stream
-     *        consumers must accept {@link ChunkType chunk types} that correspond to
+     * @param streamConsumerRegistrarProvider A provider for a function to
+     *        {@link StreamPublisher#register(StreamConsumer) register} {@link StreamConsumer} instances. The registered
+     *        stream consumers must accept {@link ChunkType chunk types} that correspond to
      *        {@link StreamChunkUtils#chunkTypeForColumnIndex(TableDefinition, int)} for the supplied
-     *        {@link TableDefinition}.
+     *        {@link TableDefinition}. See {@link StreamConsumerRegistrarProvider#single(SingleConsumerRegistrar)
+     *        single} and {@link StreamConsumerRegistrarProvider#perPartition(PerPartitionConsumerRegistrar)
+     *        per-partition}.
      */
     public static void consume(
             @NotNull final Properties kafkaProperties,
@@ -1503,7 +1531,7 @@ public class KafkaTools {
             @NotNull final IntToLongFunction partitionToInitialOffset,
             @NotNull final Consume.KeyOrValueSpec keySpec,
             @NotNull final Consume.KeyOrValueSpec valueSpec,
-            @NotNull final StreamConsumerFactory streamConsumerFactory) {
+            @NotNull final KafkaTools.StreamConsumerRegistrarProvider streamConsumerRegistrarProvider) {
         final boolean ignoreKey = keySpec.dataFormat() == DataFormat.IGNORE;
         final boolean ignoreValue = valueSpec.dataFormat() == DataFormat.IGNORE;
         if (ignoreKey && ignoreValue) {
@@ -1552,11 +1580,9 @@ public class KafkaTools {
                 valueIngestData == null ? Function.identity() : valueIngestData.toObjectChunkMapper);
         final MutableObject<KafkaIngester> kafkaIngesterHolder = new MutableObject<>();
 
-        final Function<TopicPartition, KafkaRecordConsumer> kafkaRecordConsumerFactory = streamConsumerFactory.walk(
-                new KafkaRecordConsumerFactoryCreator(
-                        tableDefinition,
-                        publisherParameters,
-                        kafkaIngesterHolder::getValue));
+        final Function<TopicPartition, KafkaRecordConsumer> kafkaRecordConsumerFactory =
+                streamConsumerRegistrarProvider.walk(new KafkaRecordConsumerFactoryCreator(
+                        tableDefinition, publisherParameters, kafkaIngesterHolder::getValue));
 
         final KafkaIngester ingester = new KafkaIngester(
                 log,
