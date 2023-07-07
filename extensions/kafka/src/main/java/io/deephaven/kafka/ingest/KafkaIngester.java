@@ -33,7 +33,7 @@ public class KafkaIngester {
     private static final int REPORT_INTERVAL_MS = Configuration.getInstance().getIntegerForClassWithDefault(
             KafkaIngester.class, "reportIntervalMs", 60_000);
     private static final long MAX_ERRS = Configuration.getInstance().getLongForClassWithDefault(
-            KafkaIngester.class, "maxErrs", 500);
+            KafkaIngester.class, "maxErrs", 0);
 
     private final Logger log;
     private final String topic;
@@ -355,11 +355,16 @@ public class KafkaIngester {
             } catch (Throwable ex) {
                 ++messagesWithErr;
                 log.error().append(logPrefix).append("Exception while processing Kafka message:").append(ex).endl();
+                /*
+                 * TODO (https://github.com/deephaven/deephaven-core/issues/4147): If we ignore any errors, we may have
+                 * misaligned chunks due to partially consumed records. Harden the record-parsing code against this
+                 * scenario.
+                 */
                 if (messagesWithErr > MAX_ERRS) {
-                    streamConsumer.acceptFailure(ex);
                     log.error().append(logPrefix)
                             .append("Max number of errors exceeded, aborting " + this + " consumer thread.")
                             .endl();
+                    streamConsumer.acceptFailure(ex);
                     return false;
                 }
                 continue;
