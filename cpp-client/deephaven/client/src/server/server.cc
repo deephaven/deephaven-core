@@ -555,6 +555,9 @@ bool Server::processNextCompletionQueueItem() {
     auto ip = metadata.find(authorizationKey);
     {
       std::unique_lock lock(mutex_);
+      if (cancelled_) {
+        return false;
+      }
       if (ip != metadata.end()) {
         const auto &val = ip->second;
         sessionToken_.assign(val.begin(), val.end());
@@ -605,6 +608,9 @@ bool Server::keepaliveHelper() {
   // Wait for timeout or cancellation
   {
     std::unique_lock guard(mutex_);
+    if (cancelled_) {
+      return false;
+    }
     std::chrono::system_clock::time_point now;
     while (true) {
       (void) condVar_.wait_until(guard, nextHandshakeTime_);

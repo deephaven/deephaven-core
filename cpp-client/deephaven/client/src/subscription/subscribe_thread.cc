@@ -74,10 +74,10 @@ public:
       std::shared_ptr<Schema> schema, std::shared_ptr<TickingCallback> callback);
   ~UpdateProcessor() final;
 
-  void cancel(bool wait) final;
+  void cancel() final;
 
-  static void runForever(const std::shared_ptr<UpdateProcessor> &self);
-  void runForeverHelper();
+  static void run(const std::shared_ptr<UpdateProcessor> &self);
+  void runHelper();
 
 private:
   std::unique_ptr<FlightStreamReader> fsr_;
@@ -161,7 +161,7 @@ std::shared_ptr<SubscriptionHandle> SubscribeState::invokeHelper() {
   auto buffer = std::make_shared<OwningBuffer>(std::move(subReqRaw));
   okOrThrow(DEEPHAVEN_EXPR_MSG(fsw->WriteMetadata(std::move(buffer))));
 
-  // Run forever (until error or cancellation)
+  // Run (until error or cancellation)
   auto processor = UpdateProcessor::startThread(std::move(fsr), std::move(schema_),
       std::move(callback_));
   return processor;
@@ -172,7 +172,7 @@ std::shared_ptr<UpdateProcessor> UpdateProcessor::startThread(
     std::shared_ptr<TickingCallback> callback) {
   auto result = std::make_shared<UpdateProcessor>(std::move(fsr), std::move(schema),
       std::move(callback));
-  std::thread t(&runForever, result);
+  std::thread t(&run, result);
   t.detach();
   return result;
 }
@@ -183,21 +183,18 @@ UpdateProcessor::UpdateProcessor(std::unique_ptr<FlightStreamReader> fsr,
     cancelled_(false), threadAlive_(true) {}
 UpdateProcessor::~UpdateProcessor() = default;
 
-void UpdateProcessor::cancel(bool wait) {
+void UpdateProcessor::cancel() {
   cancelled_ = true;
   fsr_->Cancel();
-  if (!wait) {
-    return;
-  }
   std::unique_lock guard(mutex_);
   while (threadAlive_) {
     condVar_.wait(guard);
   }
 }
 
-void UpdateProcessor::runForever(const std::shared_ptr<UpdateProcessor> &self) {
+void UpdateProcessor::run(const std::shared_ptr<UpdateProcessor> &self) {
   try {
-    self->runForeverHelper();
+    self->runHelper();
   } catch (...) {
     // If the thread was been cancelled via explicit user action, then swallow all errors.
     if (!self->cancelled_) {
@@ -209,12 +206,12 @@ void UpdateProcessor::runForever(const std::shared_ptr<UpdateProcessor> &self) {
   self->condVar_.notify_all();
 }
 
-void UpdateProcessor::runForeverHelper() {
+void UpdateProcessor::runHelper() {
   // Reuse the chunk for efficiency.
   arrow::flight::FlightStreamChunk flightStreamChunk;
   BarrageProcessor bp(schema_);
   // Process Arrow Flight messages until error or cancellation.
-  while (true) {
+  while (!cancelled_) {
     okOrThrow(DEEPHAVEN_EXPR_MSG(fsr_->Next(&flightStreamChunk)));
     const auto &cols = flightStreamChunk.data->columns();
     auto columnSources = makeReservedVector<std::shared_ptr<ColumnSource>>(cols.size());

@@ -22,7 +22,7 @@ Executor::Executor(Private)
 Executor::~Executor() {
   {
     std::unique_lock lock(mutex_);
-    canceled_ = true;
+    cancelled_ = true;
   }
   condvar_.notify_all();
   if (std::this_thread::get_id() != thread_.get_id()) {
@@ -34,7 +34,7 @@ Executor::~Executor() {
 
 void Executor::invoke(std::shared_ptr<callback_t> cb) {
   mutex_.lock();
-  if (canceled_) {
+  if (cancelled_) {
     return;
   }
   auto needsNotify = todo_.empty();
@@ -49,12 +49,12 @@ void Executor::invoke(std::shared_ptr<callback_t> cb) {
 void Executor::run() {
   std::unique_lock<std::mutex> lock(mutex_);
   while (true) {
-    if (canceled_) {
+    if (cancelled_) {
       return;
     }
     while (todo_.empty()) {
       condvar_.wait(lock);
-      if (canceled_) {
+      if (cancelled_) {
         return;
       }
     }

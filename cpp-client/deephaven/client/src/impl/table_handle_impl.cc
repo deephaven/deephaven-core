@@ -93,7 +93,7 @@ TableHandleImpl::TableHandleImpl(Private, std::shared_ptr<TableHandleManagerImpl
 
 TableHandleImpl::~TableHandleImpl() {
   for (auto &sh : subscriptions_) {
-    sh->cancel(false);
+    sh->cancel();
   }
   this->lazyState_->releaseAsync();
 }
@@ -424,7 +424,7 @@ void TableHandleImpl::unsubscribe(std::shared_ptr<SubscriptionHandle> handle) {
   if (node.empty()) {
     return;
   }
-  node.value()->cancel(true);
+  node.value()->cancel();
 }
 
 std::vector<std::shared_ptr<ColumnImpl>> TableHandleImpl::getColumnImpls() {

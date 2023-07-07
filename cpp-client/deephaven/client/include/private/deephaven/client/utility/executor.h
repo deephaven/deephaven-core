@@ -39,6 +39,6 @@ private:
   std::condition_variable condvar_;
   std::deque<std::shared_ptr<callback_t>> todo_;
   std::thread thread_;
-  bool canceled_;
+  bool cancelled_;
 };
 }  // namespace deephaven::client::utility
