@@ -280,24 +280,25 @@ public class PythonDeephavenSession extends AbstractScriptSession<PythonSnapshot
 
     @Override
     public synchronized void setVariable(String name, @Nullable Object newValue) {
-        try (PythonSnapshot fromSnapshot = takeSnapshot()) {
-            final PyDictWrapper globals = scope.mainGlobals();
-            if (newValue == null) {
-                try {
-                    globals.delItem(name);
-                } catch (KeyError key) {
-                    // ignore
-                }
-            } else {
-                if (!(newValue instanceof PyObject)) {
-                    newValue = PythonObjectWrapper.wrap(newValue);
-                }
-                globals.setItem(name, newValue);
+        // Observe any external changes that are not yet recorded
+        observeScopeChanges();
+
+        final PyDictWrapper globals = scope.mainGlobals();
+        if (newValue == null) {
+            try {
+                globals.delItem(name);
+            } catch (KeyError key) {
+                // ignore
             }
-            try (PythonSnapshot toSnapshot = takeSnapshot()) {
-                applyDiff(fromSnapshot, toSnapshot, null);
+        } else {
+            if (!(newValue instanceof PyObject)) {
+                newValue = PythonObjectWrapper.wrap(newValue);
             }
+            globals.setItem(name, newValue);
         }
+
+        // Observe changes from this "setVariable" (potentially capturing external changes from other threads)
+        observeScopeChanges();
     }
 
     @Override

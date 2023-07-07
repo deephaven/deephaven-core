@@ -32,7 +32,6 @@ import io.deephaven.server.util.Scheduler;
 import org.jpy.PyModule;
 import org.jpy.PyObject;
 
-import javax.annotation.Nullable;
 import javax.inject.Inject;
 import javax.inject.Provider;
 import javax.inject.Singleton;
@@ -103,7 +102,7 @@ public class EmbeddedServer {
                 .build()
                 .injectFields(this);
 
-        checkGlobals(scriptSession.get(), null);
+        checkGlobals(scriptSession.get());
 
         // We need to open the systemic execution context to permanently install the contexts for this thread.
         scriptSession.get().getExecutionContext().open();
@@ -115,24 +114,10 @@ public class EmbeddedServer {
         Bootstrap.printf("Server started on port %d%n", getPort());
     }
 
-    private void checkGlobals(ScriptSession scriptSession, @Nullable ScriptSession.SnapshotScope lastSnapshot) {
-        // TODO deephaven-core#2453 make this more generic, ideally by pushing this in whole or part into script session
-        ScriptSession.SnapshotScope nextSnapshot;
-        try {
-            nextSnapshot = scriptSession.snapshot(lastSnapshot);
-        } catch (IllegalStateException e) {
-            if (e.getMessage().startsWith("Expected transition from=")) {
-                // We are limited in how we can track external changes, and the web IDE has made this change and
-                // already applied it.
-                // Take a fresh snapshot right away to continue polling
-                nextSnapshot = scriptSession.snapshot();
-            } else {
-                throw e;
-            }
-        }
-        ScriptSession.SnapshotScope s = nextSnapshot;
+    private void checkGlobals(ScriptSession scriptSession) {
+        scriptSession.observeScopeChanges();
         scheduler.runAfterDelay(100, () -> {
-            checkGlobals(scriptSession, s);
+            checkGlobals(scriptSession);
         });
     }
 

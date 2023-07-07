@@ -66,6 +66,8 @@ public abstract class AbstractScriptSession<S extends AbstractScriptSession.Snap
     private final ObjectTypeLookup objectTypeLookup;
     private final Listener changeListener;
 
+    private S lastSnapshot;
+
     protected AbstractScriptSession(
             UpdateGraph updateGraph,
             ObjectTypeLookup objectTypeLookup,
@@ -96,50 +98,24 @@ public abstract class AbstractScriptSession<S extends AbstractScriptSession.Snap
     }
 
     protected synchronized void publishInitial() {
-        try (S empty = emptySnapshot(); S snapshot = takeSnapshot()) {
-            applyDiff(empty, snapshot, null);
+        lastSnapshot = emptySnapshot();
+        observeScopeChanges();
+    }
+
+    @Override
+    public void observeScopeChanges() {
+        observeScopeChangesInternal(null);
+    }
+
+    private synchronized Changes observeScopeChangesInternal(@Nullable final RuntimeException evaluationError) {
+        final S beforeSnapshot = lastSnapshot;
+        lastSnapshot = takeSnapshot();
+        try (beforeSnapshot) {
+            return applyDiff(beforeSnapshot, lastSnapshot, evaluationError);
         }
     }
 
     protected interface Snapshot extends SafeCloseable {
-    }
-
-    @Override
-    public synchronized SnapshotScope snapshot(@Nullable final SnapshotScope previousIfPresent) {
-        final SnapshotFinisher snapshotFinisher;
-        try {
-            // noinspection unchecked
-            snapshotFinisher = (SnapshotFinisher) previousIfPresent;
-        } catch (ClassCastException cce) {
-            throw new IllegalArgumentException(String.format(
-                    "Invalid SnapshotScope %s; previous must be recorded from a call to snapshot on this ScriptSession",
-                    previousIfPresent), cce);
-        }
-        // TODO deephaven-core#2453 this should be redone, along with other scope change handling
-        final S nextBeforeSnapshot;
-        if (snapshotFinisher != null) {
-            nextBeforeSnapshot = snapshotFinisher.takeSnapshotAndApplyDiff();
-        } else {
-            nextBeforeSnapshot = takeSnapshot();
-        }
-        return new SnapshotFinisher(nextBeforeSnapshot);
-    }
-
-    private class SnapshotFinisher implements SnapshotScope {
-
-        private final S beforeSnapshot;
-
-        private SnapshotFinisher(@NotNull final S beforeSnapshot) {
-            this.beforeSnapshot = beforeSnapshot;
-        }
-
-        private S takeSnapshotAndApplyDiff() {
-            final S afterSnapshot = takeSnapshot();
-            try (beforeSnapshot) {
-                applyDiff(beforeSnapshot, afterSnapshot, null);
-            }
-            return afterSnapshot;
-        }
     }
 
     protected abstract S emptySnapshot();
@@ -158,12 +134,14 @@ public abstract class AbstractScriptSession<S extends AbstractScriptSession.Snap
 
     @Override
     public synchronized final Changes evaluateScript(final String script, final @Nullable String scriptName) {
+        // Observe any external changes that are not yet recorded
+        observeScopeChanges();
+
         RuntimeException evaluateErr = null;
         final Changes diff;
         // retain any objects which are created in the executed code, we'll release them when the script session
         // closes
-        try (S fromSnapshot = takeSnapshot();
-                final SafeCloseable ignored = LivenessScopeStack.open(this, false)) {
+        try (final SafeCloseable ignored = LivenessScopeStack.open(this, false)) {
 
             try {
                 // Actually evaluate the script; use the enclosing auth context, since AbstractScriptSession's
@@ -174,9 +152,8 @@ public abstract class AbstractScriptSession<S extends AbstractScriptSession.Snap
                 evaluateErr = err;
             }
 
-            try (S toSnapshot = takeSnapshot()) {
-                diff = applyDiff(fromSnapshot, toSnapshot, evaluateErr);
-            }
+            // Observe changes during this evaluation (potentially capturing external changes from other threads)
+            diff = observeScopeChangesInternal(evaluateErr);
         }
 
         return diff;
