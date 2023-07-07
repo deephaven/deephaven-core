@@ -680,9 +680,11 @@ public class GroovyDeephavenSession extends AbstractScriptSession<GroovySnapshot
 
     @Override
     public void setVariable(String name, @Nullable Object newValue) {
-        final Object oldValue = getVariable(name, null);
         groovyShell.getContext().setVariable(NameValidator.validateQueryParameterName(name), newValue);
-        notifyVariableChange(name, oldValue, newValue);
+
+        // Observe changes from this "setVariable" (potentially capturing previous or concurrent external changes from
+        // other threads)
+        observeScopeChanges();
     }
 
     public Binding getBinding() {
