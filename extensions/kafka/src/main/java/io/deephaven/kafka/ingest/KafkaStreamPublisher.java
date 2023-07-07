@@ -9,6 +9,7 @@ import io.deephaven.chunk.*;
 import io.deephaven.chunk.attributes.Values;
 import io.deephaven.engine.table.TableDefinition;
 import io.deephaven.engine.table.impl.util.unboxer.ChunkUnboxer;
+import io.deephaven.stream.StreamChunkUtils;
 import io.deephaven.time.DateTimeUtils;
 import io.deephaven.kafka.StreamPublisherBase;
 import io.deephaven.util.QueryConstants;
@@ -19,7 +20,6 @@ import org.jetbrains.annotations.NotNull;
 import java.util.Arrays;
 import java.util.List;
 import java.util.function.Function;
-import java.util.function.IntFunction;
 import java.util.stream.Collectors;
 
 /**
@@ -27,6 +27,8 @@ import java.util.stream.Collectors;
  * record produces one Deephaven row.
  */
 public class KafkaStreamPublisher extends StreamPublisherBase implements ConsumerRecordToStreamPublisherAdapter {
+
+    public static final int NULL_COLUMN_INDEX = -1;
 
     private final Runnable shutdownCallback;
     private final int kafkaPartitionColumnIndex;
@@ -80,46 +82,42 @@ public class KafkaStreamPublisher extends StreamPublisherBase implements Consume
 
     public static ConsumerRecordToStreamPublisherAdapter make(
             @NotNull final Parameters parameters,
-            @NotNull final TableDefinition tableDefinition,
             @NotNull final Runnable shutdownCallback) {
-        if ((parameters.getKeyProcessorArg() != null) && (parameters.getSimpleKeyColumnIndexArg() != -1)) {
-            throw new IllegalArgumentException("Either keyProcessor != null or simpleKeyColumnIndex != -1");
-        }
-
-        if ((parameters.getValueProcessorArg() != null) && (parameters.getSimpleValueColumnIndexArg() != -1)) {
-            throw new IllegalArgumentException("Either valueProcessor != null or simpleValueColumnIndex != -1");
-        }
 
         final KeyOrValueProcessor keyProcessor;
         final int simpleKeyColumnIndex;
-        if (parameters.getSimpleKeyColumnIndexArg() == -1) {
-            keyProcessor = parameters.getKeyProcessorArg();
-            simpleKeyColumnIndex = -1;
+        if (parameters.getSimpleKeyColumnIndex() == NULL_COLUMN_INDEX) {
+            keyProcessor = parameters.getKeyProcessor();
+            simpleKeyColumnIndex = NULL_COLUMN_INDEX;
         } else {
             final Pair<KeyOrValueProcessor, Integer> keyPair =
                     getProcessorAndSimpleIndex(
-                            parameters.getSimpleKeyColumnIndexArg(),
-                            parameters.getColumnIndexToChunkType().apply(parameters.getSimpleKeyColumnIndexArg()));
+                            parameters.getSimpleKeyColumnIndex(),
+                            StreamChunkUtils.chunkTypeForColumnIndex(
+                                    parameters.getTableDefinition(),
+                                    parameters.getSimpleKeyColumnIndex()));
             keyProcessor = keyPair.first;
             simpleKeyColumnIndex = keyPair.second;
         }
 
         final KeyOrValueProcessor valueProcessor;
         final int simpleValueColumnIndex;
-        if (parameters.getSimpleValueColumnIndexArg() == -1) {
-            valueProcessor = parameters.getValueProcessorArg();
-            simpleValueColumnIndex = -1;
+        if (parameters.getSimpleValueColumnIndex() == NULL_COLUMN_INDEX) {
+            valueProcessor = parameters.getValueProcessor();
+            simpleValueColumnIndex = NULL_COLUMN_INDEX;
         } else {
             final Pair<KeyOrValueProcessor, Integer> valuePair =
                     getProcessorAndSimpleIndex(
-                            parameters.getSimpleValueColumnIndexArg(),
-                            parameters.getColumnIndexToChunkType().apply(parameters.getSimpleValueColumnIndexArg()));
+                            parameters.getSimpleValueColumnIndex(),
+                            StreamChunkUtils.chunkTypeForColumnIndex(
+                                    parameters.getTableDefinition(),
+                                    parameters.getSimpleValueColumnIndex()));
             valueProcessor = valuePair.first;
             simpleValueColumnIndex = valuePair.second;
         }
 
         return new KafkaStreamPublisher(
-                tableDefinition,
+                parameters.getTableDefinition(),
                 shutdownCallback,
                 parameters.getKafkaPartitionColumnIndex(),
                 parameters.getOffsetColumnIndex(),
@@ -139,7 +137,7 @@ public class KafkaStreamPublisher extends StreamPublisherBase implements Consume
         final KeyOrValueProcessor processor;
         if (!isSimpleObject) {
             processor = new SimpleKeyOrValueProcessor(columnIndex, ChunkUnboxer.getEmptyUnboxer(chunkType));
-            simpleIndex = -1;
+            simpleIndex = NULL_COLUMN_INDEX;
         } else {
             processor = null;
             simpleIndex = columnIndex;
@@ -340,43 +338,43 @@ public class KafkaStreamPublisher extends StreamPublisherBase implements Consume
     public static class Parameters {
 
         @NotNull
-        private final IntFunction<ChunkType> columnIndexToChunkType;
+        private final TableDefinition tableDefinition;
         private final int kafkaPartitionColumnIndex;
         private final int offsetColumnIndex;
         private final int timestampColumnIndex;
-        private final KeyOrValueProcessor keyProcessorArg;
-        private final KeyOrValueProcessor valueProcessorArg;
-        private final int simpleKeyColumnIndexArg;
-        private final int simpleValueColumnIndexArg;
+        private final KeyOrValueProcessor keyProcessor;
+        private final KeyOrValueProcessor valueProcessor;
+        private final int simpleKeyColumnIndex;
+        private final int simpleValueColumnIndex;
         private final Function<Object, Object> keyToChunkObjectMapper;
         private final Function<Object, Object> valueToChunkObjectMapper;
 
-        public Parameters(
-                @NotNull final IntFunction<ChunkType> columnIndexToChunkType,
+        private Parameters(
+                @NotNull final TableDefinition tableDefinition,
                 final int kafkaPartitionColumnIndex,
                 final int offsetColumnIndex,
                 final int timestampColumnIndex,
-                final KeyOrValueProcessor keyProcessorArg,
-                final KeyOrValueProcessor valueProcessorArg,
-                final int simpleKeyColumnIndexArg,
-                final int simpleValueColumnIndexArg,
+                final KeyOrValueProcessor keyProcessor,
+                final KeyOrValueProcessor valueProcessor,
+                final int simpleKeyColumnIndex,
+                final int simpleValueColumnIndex,
                 final Function<Object, Object> keyToChunkObjectMapper,
                 final Function<Object, Object> valueToChunkObjectMapper) {
-            this.columnIndexToChunkType = columnIndexToChunkType;
+            this.tableDefinition = tableDefinition;
             this.kafkaPartitionColumnIndex = kafkaPartitionColumnIndex;
             this.offsetColumnIndex = offsetColumnIndex;
             this.timestampColumnIndex = timestampColumnIndex;
-            this.keyProcessorArg = keyProcessorArg;
-            this.valueProcessorArg = valueProcessorArg;
-            this.simpleKeyColumnIndexArg = simpleKeyColumnIndexArg;
-            this.simpleValueColumnIndexArg = simpleValueColumnIndexArg;
+            this.keyProcessor = keyProcessor;
+            this.valueProcessor = valueProcessor;
+            this.simpleKeyColumnIndex = simpleKeyColumnIndex;
+            this.simpleValueColumnIndex = simpleValueColumnIndex;
             this.keyToChunkObjectMapper = keyToChunkObjectMapper;
             this.valueToChunkObjectMapper = valueToChunkObjectMapper;
         }
 
         @NotNull
-        public IntFunction<ChunkType> getColumnIndexToChunkType() {
-            return columnIndexToChunkType;
+        public TableDefinition getTableDefinition() {
+            return tableDefinition;
         }
 
         public int getKafkaPartitionColumnIndex() {
@@ -391,20 +389,20 @@ public class KafkaStreamPublisher extends StreamPublisherBase implements Consume
             return timestampColumnIndex;
         }
 
-        public KeyOrValueProcessor getKeyProcessorArg() {
-            return keyProcessorArg;
+        public KeyOrValueProcessor getKeyProcessor() {
+            return keyProcessor;
         }
 
-        public KeyOrValueProcessor getValueProcessorArg() {
-            return valueProcessorArg;
+        public KeyOrValueProcessor getValueProcessor() {
+            return valueProcessor;
         }
 
-        public int getSimpleKeyColumnIndexArg() {
-            return simpleKeyColumnIndexArg;
+        public int getSimpleKeyColumnIndex() {
+            return simpleKeyColumnIndex;
         }
 
-        public int getSimpleValueColumnIndexArg() {
-            return simpleValueColumnIndexArg;
+        public int getSimpleValueColumnIndex() {
+            return simpleValueColumnIndex;
         }
 
         public Function<Object, Object> getKeyToChunkObjectMapper() {
@@ -413,6 +411,100 @@ public class KafkaStreamPublisher extends StreamPublisherBase implements Consume
 
         public Function<Object, Object> getValueToChunkObjectMapper() {
             return valueToChunkObjectMapper;
+        }
+
+        public static Builder builder() {
+            return new Builder();
+        }
+
+        @SuppressWarnings("UnusedReturnValue")
+        public static class Builder {
+
+            private TableDefinition tableDefinition;
+            private int kafkaPartitionColumnIndex = NULL_COLUMN_INDEX;
+            private int offsetColumnIndex = NULL_COLUMN_INDEX;
+            private int timestampColumnIndex = NULL_COLUMN_INDEX;
+            private KeyOrValueProcessor keyProcessor;
+            private KeyOrValueProcessor valueProcessor;
+            private int simpleKeyColumnIndex = NULL_COLUMN_INDEX;
+            private int simpleValueColumnIndex = NULL_COLUMN_INDEX;
+            private Function<Object, Object> keyToChunkObjectMapper = Function.identity();
+            private Function<Object, Object> valueToChunkObjectMapper = Function.identity();
+
+            private Builder() {}
+
+            public Builder setTableDefinition(@NotNull final TableDefinition tableDefinition) {
+                this.tableDefinition = tableDefinition;
+                return this;
+            }
+
+            public Builder setKafkaPartitionColumnIndex(final int kafkaPartitionColumnIndex) {
+                this.kafkaPartitionColumnIndex = kafkaPartitionColumnIndex;
+                return this;
+            }
+
+            public Builder setOffsetColumnIndex(final int offsetColumnIndex) {
+                this.offsetColumnIndex = offsetColumnIndex;
+                return this;
+            }
+
+            public Builder setTimestampColumnIndex(final int timestampColumnIndex) {
+                this.timestampColumnIndex = timestampColumnIndex;
+                return this;
+            }
+
+            public Builder setKeyProcessor(final KeyOrValueProcessor keyProcessor) {
+                this.keyProcessor = keyProcessor;
+                return this;
+            }
+
+            public Builder setValueProcessor(final KeyOrValueProcessor valueProcessor) {
+                this.valueProcessor = valueProcessor;
+                return this;
+            }
+
+            public Builder setSimpleKeyColumnIndex(final int simpleKeyColumnIndex) {
+                this.simpleKeyColumnIndex = simpleKeyColumnIndex;
+                return this;
+            }
+
+            public Builder setSimpleValueColumnIndex(final int simpleValueColumnIndex) {
+                this.simpleValueColumnIndex = simpleValueColumnIndex;
+                return this;
+            }
+
+            public Builder setKeyToChunkObjectMapper(@NotNull final Function<Object, Object> keyToChunkObjectMapper) {
+                this.keyToChunkObjectMapper = keyToChunkObjectMapper;
+                return this;
+            }
+
+            public Builder setValueToChunkObjectMapper(
+                    @NotNull final Function<Object, Object> valueToChunkObjectMapper) {
+                this.valueToChunkObjectMapper = valueToChunkObjectMapper;
+                return this;
+            }
+
+            public KafkaStreamPublisher.Parameters build() {
+                if (keyProcessor != null && simpleKeyColumnIndex >= 0) {
+                    throw new IllegalArgumentException("Only one of keyProcessor or simpleKeyColumnIndex may be set");
+                }
+
+                if (valueProcessor != null && simpleValueColumnIndex >= 0) {
+                    throw new IllegalArgumentException(
+                            "Only one of valueProcessor or simpleValueColumnIndex may be set");
+                }
+                return new KafkaStreamPublisher.Parameters(
+                        tableDefinition,
+                        kafkaPartitionColumnIndex,
+                        offsetColumnIndex,
+                        timestampColumnIndex,
+                        keyProcessor,
+                        valueProcessor,
+                        simpleKeyColumnIndex,
+                        simpleValueColumnIndex,
+                        keyToChunkObjectMapper,
+                        valueToChunkObjectMapper);
+            }
         }
     }
 }

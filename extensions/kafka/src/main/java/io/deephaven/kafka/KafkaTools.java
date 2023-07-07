@@ -83,6 +83,8 @@ import java.util.function.*;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
+import static io.deephaven.kafka.ingest.KafkaStreamPublisher.NULL_COLUMN_INDEX;
+
 public class KafkaTools {
 
     public static final String KAFKA_PARTITION_COLUMN_NAME_PROPERTY = "deephaven.partition.column.name";
@@ -1138,7 +1140,7 @@ public class KafkaTools {
             return Ring.of(capacity);
         }
 
-        <T, V extends Visitor<T>> T walk(V visitor);
+        <T> T walk(Visitor<T> visitor);
 
         interface Visitor<T> {
             T visit(Blink blink);
@@ -1165,7 +1167,7 @@ public class KafkaTools {
             }
 
             @Override
-            public final <T, V extends Visitor<T>> T walk(V visitor) {
+            public final <T> T walk(Visitor<T> visitor) {
                 return visitor.visit(this);
             }
         }
@@ -1184,7 +1186,7 @@ public class KafkaTools {
             }
 
             @Override
-            public final <T, V extends Visitor<T>> T walk(V visitor) {
+            public final <T> T walk(Visitor<T> visitor) {
                 return visitor.visit(this);
             }
         }
@@ -1206,7 +1208,7 @@ public class KafkaTools {
             public abstract int capacity();
 
             @Override
-            public final <T, V extends Visitor<T>> T walk(V visitor) {
+            public final <T> T walk(Visitor<T> visitor) {
                 return visitor.visit(this);
             }
         }
@@ -1424,7 +1426,7 @@ public class KafkaTools {
             return PerPartition.of(registrar);
         }
 
-        <T, V extends Visitor<T>> T walk(V visitor);
+        <T> T walk(Visitor<T> visitor);
 
         interface Visitor<T> {
             T visit(@NotNull Single single);
@@ -1444,7 +1446,7 @@ public class KafkaTools {
             public abstract SingleConsumerRegistrar registrar();
 
             @Override
-            public final <T, V extends Visitor<T>> T walk(@NotNull final V visitor) {
+            public final <T> T walk(@NotNull final Visitor<T> visitor) {
                 return visitor.visit(this);
             }
         }
@@ -1461,7 +1463,7 @@ public class KafkaTools {
             public abstract PerPartitionConsumerRegistrar registrar();
 
             @Override
-            public final <T, V extends Visitor<T>> T walk(@NotNull final V visitor) {
+            public final <T> T walk(@NotNull final Visitor<T> visitor) {
                 return visitor.visit(this);
             }
         }
@@ -1470,15 +1472,12 @@ public class KafkaTools {
     private static class KafkaRecordConsumerFactoryCreator
             implements StreamConsumerRegistrarProvider.Visitor<Function<TopicPartition, KafkaRecordConsumer>> {
 
-        private final TableDefinition tableDefinition;
         private final KafkaStreamPublisher.Parameters publisherParameters;
         private final Supplier<KafkaIngester> ingesterSupplier;
 
         private KafkaRecordConsumerFactoryCreator(
-                @NotNull final TableDefinition tableDefinition,
                 @NotNull final KafkaStreamPublisher.Parameters publisherParameters,
                 @NotNull final Supplier<KafkaIngester> ingesterSupplier) {
-            this.tableDefinition = tableDefinition;
             this.publisherParameters = publisherParameters;
             this.ingesterSupplier = ingesterSupplier;
         }
@@ -1487,9 +1486,8 @@ public class KafkaTools {
         public Function<TopicPartition, KafkaRecordConsumer> visit(@NotNull final Single single) {
             final ConsumerRecordToStreamPublisherAdapter adapter = KafkaStreamPublisher.make(
                     publisherParameters,
-                    tableDefinition,
                     () -> ingesterSupplier.get().shutdown());
-            single.registrar().register(tableDefinition, adapter);
+            single.registrar().register(publisherParameters.getTableDefinition(), adapter);
             return (final TopicPartition tp) -> new SimpleKafkaRecordConsumer(adapter);
         }
 
@@ -1498,9 +1496,8 @@ public class KafkaTools {
             return (final TopicPartition tp) -> {
                 final ConsumerRecordToStreamPublisherAdapter adapter = KafkaStreamPublisher.make(
                         publisherParameters,
-                        tableDefinition,
                         () -> ingesterSupplier.get().shutdownPartition(tp.partition()));
-                perPartition.registrar().register(tableDefinition, tp, adapter);
+                perPartition.registrar().register(publisherParameters.getTableDefinition(), tp, adapter);
                 return new SimpleKafkaRecordConsumer(adapter);
             };
         }
@@ -1545,44 +1542,61 @@ public class KafkaTools {
             setDeserIfNotSet(kafkaProperties, KeyOrValue.VALUE, DESERIALIZER_FOR_IGNORE);
         }
 
-        final ColumnDefinition<?>[] commonColumns = new ColumnDefinition<?>[3];
-        getCommonCols(commonColumns, 0, kafkaProperties);
-        final List<ColumnDefinition<?>> columnDefinitions = new ArrayList<>();
-        int[] commonColumnIndices = new int[3];
-        int nextColumnIndex = 0;
-        for (int i = 0; i < 3; ++i) {
-            if (commonColumns[i] != null) {
-                commonColumnIndices[i] = nextColumnIndex++;
-                columnDefinitions.add(commonColumns[i]);
-            } else {
-                commonColumnIndices[i] = -1;
-            }
-        }
+        final KafkaStreamPublisher.Parameters.Builder publisherParametersBuilder =
+                KafkaStreamPublisher.Parameters.builder();
 
-        final MutableInt nextColumnIndexMut = new MutableInt(nextColumnIndex);
+        final MutableInt nextColumnIndex = new MutableInt(0);
+        final List<ColumnDefinition<?>> columnDefinitions = new ArrayList<>();
+
+        Arrays.stream(CommonColumn.values())
+                .forEach(cc -> {
+                    final ColumnDefinition<?> commonColumnDefinition = cc.getDefinition(kafkaProperties);
+                    if (commonColumnDefinition == null) {
+                        return;
+                    }
+                    columnDefinitions.add(commonColumnDefinition);
+                    switch (cc) {
+                        case KafkaPartition:
+                            publisherParametersBuilder.setKafkaPartitionColumnIndex(nextColumnIndex.getAndIncrement());
+                            break;
+                        case Offset:
+                            publisherParametersBuilder.setOffsetColumnIndex(nextColumnIndex.getAndIncrement());
+                            break;
+                        case Timestamp:
+                            publisherParametersBuilder.setTimestampColumnIndex(nextColumnIndex.getAndIncrement());
+                            break;
+                        default:
+                            throw new UnsupportedOperationException("Unexpected common column " + cc);
+                    }
+                });
+
         final KeyOrValueIngestData keyIngestData =
-                getIngestData(KeyOrValue.KEY, kafkaProperties, columnDefinitions, nextColumnIndexMut, keySpec);
+                getIngestData(KeyOrValue.KEY, kafkaProperties, columnDefinitions, nextColumnIndex, keySpec);
         final KeyOrValueIngestData valueIngestData =
-                getIngestData(KeyOrValue.VALUE, kafkaProperties, columnDefinitions, nextColumnIndexMut,
-                        valueSpec);
+                getIngestData(KeyOrValue.VALUE, kafkaProperties, columnDefinitions, nextColumnIndex, valueSpec);
 
         final TableDefinition tableDefinition = TableDefinition.of(columnDefinitions);
-        final KafkaStreamPublisher.Parameters publisherParameters = new KafkaStreamPublisher.Parameters(
-                (final int ci) -> StreamChunkUtils.chunkTypeForColumnIndex(tableDefinition, ci),
-                commonColumnIndices[0],
-                commonColumnIndices[1],
-                commonColumnIndices[2],
-                getProcessor(keySpec, tableDefinition, keyIngestData),
-                getProcessor(valueSpec, tableDefinition, valueIngestData),
-                keyIngestData == null ? -1 : keyIngestData.simpleColumnIndex,
-                valueIngestData == null ? -1 : valueIngestData.simpleColumnIndex,
-                keyIngestData == null ? Function.identity() : keyIngestData.toObjectChunkMapper,
-                valueIngestData == null ? Function.identity() : valueIngestData.toObjectChunkMapper);
+        publisherParametersBuilder.setTableDefinition(tableDefinition);
+
+        if (keyIngestData != null) {
+            publisherParametersBuilder
+                    .setKeyProcessor(getProcessor(keySpec, tableDefinition, keyIngestData))
+                    .setSimpleKeyColumnIndex(keyIngestData.simpleColumnIndex)
+                    .setKeyToChunkObjectMapper(keyIngestData.toObjectChunkMapper);
+        }
+        if (valueIngestData != null) {
+            publisherParametersBuilder
+                    .setValueProcessor(getProcessor(valueSpec, tableDefinition, valueIngestData))
+                    .setSimpleValueColumnIndex(valueIngestData.simpleColumnIndex)
+                    .setValueToChunkObjectMapper(valueIngestData.toObjectChunkMapper);
+        }
+
+        final KafkaStreamPublisher.Parameters publisherParameters = publisherParametersBuilder.build();
         final MutableObject<KafkaIngester> kafkaIngesterHolder = new MutableObject<>();
 
         final Function<TopicPartition, KafkaRecordConsumer> kafkaRecordConsumerFactory =
-                streamConsumerRegistrarProvider.walk(new KafkaRecordConsumerFactoryCreator(
-                        tableDefinition, publisherParameters, kafkaIngesterHolder::getValue));
+                streamConsumerRegistrarProvider.walk(
+                        new KafkaRecordConsumerFactoryCreator(publisherParameters, kafkaIngesterHolder::getValue));
 
         final KafkaIngester ingester = new KafkaIngester(
                 log,
@@ -1928,7 +1942,7 @@ public class KafkaTools {
 
     private static class KeyOrValueIngestData {
         public Map<String, String> fieldPathToColumnName;
-        public int simpleColumnIndex = -1;
+        public int simpleColumnIndex = NULL_COLUMN_INDEX;
         public Function<Object, Object> toObjectChunkMapper = Function.identity();
         public Object extra;
     }
@@ -2080,55 +2094,49 @@ public class KafkaTools {
         return JsonNodeUtil.makeJsonNode(json);
     };
 
-    private static void getCommonCol(
-            @NotNull final ColumnDefinition<?>[] columnsToSet,
-            final int outOffset,
-            @NotNull final Properties consumerProperties,
-            @NotNull final String columnNameProperty,
-            @NotNull final String columnNameDefault,
-            @NotNull Function<String, ColumnDefinition<?>> builder) {
-        if (consumerProperties.containsKey(columnNameProperty)) {
-            final String partitionColumnName = consumerProperties.getProperty(columnNameProperty);
-            if (partitionColumnName == null || partitionColumnName.equals("")) {
-                columnsToSet[outOffset] = null;
-            } else {
-                columnsToSet[outOffset] = builder.apply(partitionColumnName);
-            }
-            consumerProperties.remove(columnNameProperty);
-        } else {
-            columnsToSet[outOffset] = builder.apply(columnNameDefault);
-        }
-    }
-
-    private static int getCommonCols(
-            @NotNull final ColumnDefinition<?>[] columnsToSet,
-            final int outOffset,
-            @NotNull final Properties consumerProperties) {
-        int c = outOffset;
-
-        getCommonCol(
-                columnsToSet,
-                c,
-                consumerProperties,
+    private enum CommonColumn {
+        // @formatter:off
+        KafkaPartition(
                 KAFKA_PARTITION_COLUMN_NAME_PROPERTY,
                 KAFKA_PARTITION_COLUMN_NAME_DEFAULT,
-                ColumnDefinition::ofInt);
-        ++c;
-        getCommonCol(
-                columnsToSet,
-                c++,
-                consumerProperties,
+                ColumnDefinition::ofInt),
+        Offset(
                 OFFSET_COLUMN_NAME_PROPERTY,
                 OFFSET_COLUMN_NAME_DEFAULT,
-                ColumnDefinition::ofLong);
-        getCommonCol(
-                columnsToSet,
-                c++,
-                consumerProperties,
+                ColumnDefinition::ofLong),
+        Timestamp(
                 TIMESTAMP_COLUMN_NAME_PROPERTY,
                 TIMESTAMP_COLUMN_NAME_DEFAULT,
-                (final String colName) -> ColumnDefinition.fromGenericType(colName, Instant.class));
-        return c;
+                ColumnDefinition::ofTime);
+        // @formatter:on
+
+        private final String nameProperty;
+        private final String nameDefault;
+        private final Function<String, ColumnDefinition<?>> definitionFactory;
+
+        CommonColumn(@NotNull final String nameProperty,
+                @NotNull final String nameDefault,
+                @NotNull final Function<String, ColumnDefinition<?>> definitionFactory) {
+            this.nameProperty = nameProperty;
+            this.nameDefault = nameDefault;
+            this.definitionFactory = definitionFactory;
+        }
+
+        private ColumnDefinition<?> getDefinition(@NotNull final Properties consumerProperties) {
+            final ColumnDefinition<?> result;
+            if (consumerProperties.containsKey(nameProperty)) {
+                final String partitionColumnName = consumerProperties.getProperty(nameProperty);
+                if (partitionColumnName == null || partitionColumnName.equals("")) {
+                    result = null;
+                } else {
+                    result = definitionFactory.apply(partitionColumnName);
+                }
+                consumerProperties.remove(nameProperty);
+            } else {
+                result = definitionFactory.apply(nameDefault);
+            }
+            return result;
+        }
     }
 
     private static ColumnDefinition<?> getKeyOrValueCol(

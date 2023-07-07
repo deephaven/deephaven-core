@@ -74,8 +74,10 @@ public class StreamToBlinkTableAdapter
     private ChunkColumnSource<?>[] currentChunkSources;
     private ChunkColumnSource<?>[] prevChunkSources;
 
-    /** A list of failures that have occurred. */
-    private List<Throwable> enqueuedFailures;
+    /**
+     * A list of failures that have occurred. Access should be synchronized on {@code this}.
+     */
+    private final List<Throwable> enqueuedFailures = new ArrayList<>();
 
     private volatile QueryTable table;
 
@@ -226,10 +228,10 @@ public class StreamToBlinkTableAdapter
         synchronized (this) {
             // If we have an enqueued failure we want to process it first, before we allow the streamPublisher to flush
             // itself.
-            if (enqueuedFailures != null) {
+            if (!enqueuedFailures.isEmpty()) {
                 deliverFailure(MultiException.maybeWrapInMultiException(
                         "Multiple errors encountered while ingesting stream",
-                        enqueuedFailures.toArray(new Throwable[0])));
+                        enqueuedFailures));
                 return;
             }
         }
@@ -330,7 +332,7 @@ public class StreamToBlinkTableAdapter
         }
         // Accumulate data into buffered column sources
         synchronized (this) {
-            if (enqueuedFailures != null) {
+            if (!enqueuedFailures.isEmpty()) {
                 // If we'll never deliver these chunks, dispose of them immediately.
                 SafeCloseable.closeAll(data);
                 return;
@@ -360,7 +362,7 @@ public class StreamToBlinkTableAdapter
 
     private void enqueueFailure(@NotNull final Throwable cause) {
         synchronized (this) {
-            (enqueuedFailures == null ? enqueuedFailures = new ArrayList<>(1) : enqueuedFailures).add(cause);
+            enqueuedFailures.add(cause);
         }
     }
 
