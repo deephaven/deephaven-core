@@ -39,6 +39,7 @@ import io.deephaven.kafka.KafkaTools.TableType.Visitor;
 import io.deephaven.stream.StreamChunkUtils;
 import io.deephaven.stream.StreamConsumer;
 import io.deephaven.stream.StreamPublisher;
+import io.deephaven.qst.column.header.ColumnHeader;
 import io.deephaven.stream.StreamToBlinkTableAdapter;
 import io.deephaven.engine.liveness.LivenessScope;
 import io.deephaven.engine.liveness.LivenessScopeStack;
@@ -473,7 +474,7 @@ public class KafkaTools {
      * Enum to specify the expected processing (format) for Kafka KEY or VALUE fields.
      */
     public enum DataFormat {
-        IGNORE, SIMPLE, AVRO, JSON
+        IGNORE, SIMPLE, AVRO, JSON, RAW
     }
 
     public static class Consume {
@@ -606,6 +607,21 @@ public class KafkaTools {
                  */
                 public static String mapFieldNameToJsonPointerStr(final String key) {
                     return "/" + key.replace("~", "~0").replace("/", "~1");
+                }
+            }
+
+            static final class Raw extends KeyOrValueSpec {
+                private final ColumnDefinition<?> cd;
+                private final Class<? extends Deserializer<?>> deserializer;
+
+                public Raw(ColumnDefinition<?> cd, Class<? extends Deserializer<?>> deserializer) {
+                    this.cd = Objects.requireNonNull(cd);
+                    this.deserializer = Objects.requireNonNull(deserializer);
+                }
+
+                @Override
+                DataFormat dataFormat() {
+                    return DataFormat.RAW;
                 }
             }
         }
@@ -749,6 +765,11 @@ public class KafkaTools {
         @SuppressWarnings("unused")
         public static KeyOrValueSpec simpleSpec(final String columnName) {
             return new KeyOrValueSpec.Simple(columnName, null);
+        }
+
+        @SuppressWarnings("unused")
+        public static KeyOrValueSpec rawSpec(ColumnHeader<?> header, Class<? extends Deserializer<?>> deserializer) {
+            return new KeyOrValueSpec.Raw(ColumnDefinition.from(header), deserializer);
         }
     }
 
@@ -964,6 +985,21 @@ public class KafkaTools {
                     return fieldNames;
                 }
             }
+
+            static final class Raw extends KeyOrValueSpec {
+                final String columnName;
+                final Class<? extends Serializer<?>> serializer;
+
+                public Raw(String columnName, Class<? extends Serializer<?>> serializer) {
+                    this.columnName = Objects.requireNonNull(columnName);
+                    this.serializer = Objects.requireNonNull(serializer);
+                }
+
+                @Override
+                DataFormat dataFormat() {
+                    return DataFormat.RAW;
+                }
+            }
         }
 
         public static final KeyOrValueSpec.Ignore IGNORE = new KeyOrValueSpec.Ignore();
@@ -986,6 +1022,10 @@ public class KafkaTools {
         @SuppressWarnings("unused")
         public static KeyOrValueSpec simpleSpec(final String columnName) {
             return new KeyOrValueSpec.Simple(columnName);
+        }
+
+        public static KeyOrValueSpec rawSpec(final String columnName, final Class<? extends Serializer<?>> serializer) {
+            return new KeyOrValueSpec.Raw(columnName, serializer);
         }
 
         /**
@@ -1377,7 +1417,7 @@ public class KafkaTools {
         /**
          * Provide a single {@link StreamConsumer} to {@code streamPublisher} via its
          * {@link StreamPublisher#register(StreamConsumer) register} method.
-         * 
+         *
          * @param tableDefinition The {@link TableDefinition} for the stream to be consumed
          * @param streamPublisher The {@link StreamPublisher} to {@link StreamPublisher#register(StreamConsumer)
          *        register} a {@link StreamConsumer} for
@@ -1665,7 +1705,10 @@ public class KafkaTools {
                 return null;
             case SIMPLE:
                 final Produce.KeyOrValueSpec.Simple simpleSpec = (Produce.KeyOrValueSpec.Simple) spec;
-                return new SimpleKeyOrValueSerializer(t, simpleSpec.columnName);
+                return new SimpleKeyOrValueSerializer<>(t, simpleSpec.columnName);
+            case RAW:
+                final Produce.KeyOrValueSpec.Raw rawSpec = (Produce.KeyOrValueSpec.Raw) spec;
+                return new SimpleKeyOrValueSerializer<>(t, rawSpec.columnName);
             default:
                 throw new IllegalStateException("Unrecognized spec type");
         }
@@ -1687,6 +1730,9 @@ public class KafkaTools {
             case SIMPLE:
                 final Produce.KeyOrValueSpec.Simple simpleSpec = (Produce.KeyOrValueSpec.Simple) spec;
                 return new String[] {simpleSpec.columnName};
+            case RAW:
+                final Produce.KeyOrValueSpec.Raw rawSpec = (Produce.KeyOrValueSpec.Raw) spec;
+                return new String[] {rawSpec.columnName};
             default:
                 throw new IllegalStateException("Unrecognized spec type");
         }
@@ -1796,6 +1842,9 @@ public class KafkaTools {
                 break;
             case AVRO:
                 value = AVRO_SERIALIZER;
+                break;
+            case RAW:
+                value = ((Produce.KeyOrValueSpec.Raw) spec).serializer.getName();
                 break;
             default:
                 throw new IllegalStateException("Unknown dataFormat=" + spec.dataFormat());
@@ -1920,6 +1969,7 @@ public class KafkaTools {
         switch (spec.dataFormat()) {
             case IGNORE:
             case SIMPLE:
+            case RAW:
                 return null;
             case AVRO:
                 return GenericRecordChunkAdapter.make(
@@ -2005,7 +2055,7 @@ public class KafkaTools {
         }
         final KeyOrValueIngestData data = new KeyOrValueIngestData();
         switch (keyOrValueSpec.dataFormat()) {
-            case AVRO:
+            case AVRO: {
                 setDeserIfNotSet(kafkaConsumerProperties, keyOrValue, AVRO_DESERIALIZER);
                 final Consume.KeyOrValueSpec.Avro avroSpec = (Consume.KeyOrValueSpec.Avro) keyOrValueSpec;
                 data.fieldPathToColumnName = new HashMap<>();
@@ -2019,7 +2069,8 @@ public class KafkaTools {
                         columnDefinitions, data.fieldPathToColumnName, schema, avroSpec.fieldPathToColumnName);
                 data.extra = schema;
                 break;
-            case JSON:
+            }
+            case JSON: {
                 setDeserIfNotSet(kafkaConsumerProperties, keyOrValue, STRING_DESERIALIZER);
                 data.toObjectChunkMapper = jsonToObjectChunkMapper;
                 final Consume.KeyOrValueSpec.Json jsonSpec = (Consume.KeyOrValueSpec.Json) keyOrValueSpec;
@@ -2043,7 +2094,8 @@ public class KafkaTools {
                     }
                 }
                 break;
-            case SIMPLE:
+            }
+            case SIMPLE: {
                 data.simpleColumnIndex = nextColumnIndexMut.getAndAdd(1);
                 final Consume.KeyOrValueSpec.Simple simpleSpec = (Consume.KeyOrValueSpec.Simple) keyOrValueSpec;
                 final ColumnDefinition<?> colDef;
@@ -2078,6 +2130,17 @@ public class KafkaTools {
                 setDeserIfNotSet(kafkaConsumerProperties, keyOrValue, STRING_DESERIALIZER);
                 columnDefinitions.add(colDef);
                 break;
+            }
+            case RAW: {
+                data.simpleColumnIndex = nextColumnIndexMut.getAndAdd(1);
+                final Consume.KeyOrValueSpec.Raw rawSpec = (Consume.KeyOrValueSpec.Raw) keyOrValueSpec;
+                final String propKey = (keyOrValue == KeyOrValue.KEY)
+                        ? ConsumerConfig.KEY_DESERIALIZER_CLASS_CONFIG
+                        : ConsumerConfig.VALUE_DESERIALIZER_CLASS_CONFIG;
+                kafkaConsumerProperties.setProperty(propKey, rawSpec.deserializer.getName());
+                columnDefinitions.add(rawSpec.cd);
+                break;
+            }
             default:
                 throw new IllegalStateException("Unhandled spec type:" + keyOrValueSpec.dataFormat());
         }
