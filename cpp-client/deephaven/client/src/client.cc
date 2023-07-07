@@ -48,8 +48,8 @@ void printTableData(std::ostream &s, const TableHandle &tableHandle, bool wantHe
 }  // namespace
 
 Client Client::connect(const std::string &target, const ClientOptions &options) {
-  auto executor = Executor::create();
-  auto flightExecutor = Executor::create();
+  auto executor = Executor::create("Client executor");
+  auto flightExecutor = Executor::create("Flight executor");
   auto server = Server::createFromTarget(target, options);
   auto impl = ClientImpl::create(std::move(server), executor, flightExecutor, options.sessionType_);
   return Client(std::move(impl));
@@ -61,7 +61,14 @@ Client::Client(std::shared_ptr<impl::ClientImpl> impl) : impl_(std::move(impl)) 
 }
 Client::Client(Client &&other) noexcept = default;
 Client &Client::operator=(Client &&other) noexcept = default;
-Client::~Client() = default;
+
+// There is only one Client associated with the server connection. Clients can only be moved, not copied.
+// When the client owning the state is destructed, we tear down the connection.
+Client::~Client() {
+  if (impl_ != nullptr) {
+    impl_->shutdown();
+  }
+}
 
 TableHandleManager Client::getManager() const {
   return TableHandleManager(impl_->managerImpl());

@@ -131,6 +131,8 @@ public:
   // TODO(kosak): decide on the multithreaded story here
   arrow::flight::FlightClient *flightClient() const { return flightClient_.get(); }
 
+  void shutdown();
+
   /**
    *  Allocates a new Ticket from client-managed namespace.
    */
@@ -268,21 +270,39 @@ private:
   std::string sessionToken_;
   std::chrono::milliseconds expirationInterval_;
   std::chrono::system_clock::time_point nextHandshakeTime_;
+  std::thread completionQueueThread_;
+  std::thread keepAliveThread_;
 };
 
 template<typename TReq, typename TResp, typename TStub, typename TPtrToMember>
 void Server::sendRpc(const TReq &req, std::shared_ptr<SFCallback<TResp>> responseCallback,
     TStub *stub, const TPtrToMember &pm) {
   auto now = std::chrono::system_clock::now();
-  // Keep this in a unique_ptr at first, for cleanup in case addAuthToken throws an exception.
+  // Keep this in a unique_ptr at first, in case we leave early due to cancellation or exception.
   auto response = std::make_unique<ServerResponseHolder<TResp>>(now, std::move(responseCallback));
   forEachHeaderNameAndValue([&response](const std::string &name, const std::string &value) {
     response->ctx_.AddMetadata(name, value);
   });
-  auto rpc = (stub->*pm)(&response->ctx_, req, &completionQueue_);
-  // It is the responsibility of "processNextCompletionQueueItem" to deallocate the storage pointed
-  // to by 'response'.
-  auto *rp = response.release();
-  rpc->Finish(&rp->response_, &rp->status_, rp);
+
+  // Per the GRPC documentation for CompletionQueue::Shutdown(), we must not add items to the CompletionQueue after
+  // it has been shut down. So we do a test and enqueue while under lock.
+  std::unique_lock guard(mutex_);
+  if (!cancelled_) {
+    auto rpc = (stub->*pm)(&response->ctx_, req, &completionQueue_);
+    // It is the responsibility of "processNextCompletionQueueItem" to deallocate the storage pointed
+    // to by 'response'.
+    auto *rp = response.release();
+    rpc->Finish(&rp->response_, &rp->status_, rp);
+    return;
+  }
+
+  // If we get here, we are cancelled. So instead of enqueuing the request, we need to signal failure to the callback.
+  // This can be done without holding the lock.
+  // TODO(kosak): a slight code savings can be achieved if this error code is moved to a non-template context,
+  // since it is not dependent on any template arguments.
+  guard.unlock();
+  const char *message = "Server cancelled. All further RPCs are being rejected";
+  auto eptr = std::make_exception_ptr(std::runtime_error(DEEPHAVEN_DEBUG_MSG(message)));
+  response->onFailure(std::move(eptr));
 }
 }  // namespace deephaven::client::server

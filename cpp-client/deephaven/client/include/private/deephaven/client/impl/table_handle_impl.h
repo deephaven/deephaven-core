@@ -219,7 +219,7 @@ public:
   std::shared_ptr<SubscriptionHandle> subscribe(std::shared_ptr<TickingCallback> callback);
   std::shared_ptr<SubscriptionHandle> subscribe(TableHandle::onTickCallback_t onTick,
       void *onTickUserData, TableHandle::onErrorCallback_t onError, void *onErrorUserData);
-  void unsubscribe(std::shared_ptr<SubscriptionHandle> handle);
+  void unsubscribe(const std::shared_ptr<SubscriptionHandle> &handle);
 
   /**
    * Used in tests.
@@ -249,7 +249,6 @@ private:
   std::shared_ptr<TableHandleManagerImpl> managerImpl_;
   Ticket ticket_;
   std::shared_ptr<internal::LazyState> lazyState_;
-  std::set<std::shared_ptr<SubscriptionHandle>> subscriptions_;
 };
 }  // namespace impl
 }  // namespace deephaven::client
