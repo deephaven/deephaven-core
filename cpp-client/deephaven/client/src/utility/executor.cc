@@ -24,6 +24,7 @@ Executor::~Executor() {
     std::unique_lock lock(mutex_);
     canceled_ = true;
   }
+  condvar_.notify_all();
   if (std::this_thread::get_id() != thread_.get_id()) {
     thread_.join();
   } else {
