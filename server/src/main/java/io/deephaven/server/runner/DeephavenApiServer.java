@@ -46,8 +46,9 @@ import java.util.concurrent.TimeoutException;
 public class DeephavenApiServer {
     private static final Logger log = LoggerFactory.getLogger(DeephavenApiServer.class);
 
-    private static final long CHECK_GLOBALS_INTERVAL_MILLIS = Configuration.getInstance().getLongForClassWithDefault(
-            DeephavenApiServer.class, "checkGlobalsIntervalMillis", 100);
+    private static final long CHECK_SCOPE_CHANGES_INTERVAL_MILLIS =
+            Configuration.getInstance().getLongForClassWithDefault(
+                    DeephavenApiServer.class, "checkScopeChangesIntervalMillis", 100);
 
     private final GrpcServer server;
     private final UpdateGraph ug;
@@ -135,7 +136,7 @@ public class DeephavenApiServer {
         AbstractScriptSession.createScriptCache();
 
         log.info().append("Initializing Script Session...").endl();
-        checkGlobals(scriptSessionProvider.get());
+        checkScopeChanges(scriptSessionProvider.get());
         pluginRegistration.registerAll();
 
         log.info().append("Initializing Execution Context for Main Thread...").endl();
@@ -175,10 +176,10 @@ public class DeephavenApiServer {
         return this;
     }
 
-    private void checkGlobals(ScriptSession scriptSession) {
+    private void checkScopeChanges(ScriptSession scriptSession) {
         scriptSession.observeScopeChanges();
-        scheduler.runAfterDelay(CHECK_GLOBALS_INTERVAL_MILLIS, () -> {
-            checkGlobals(scriptSession);
+        scheduler.runAfterDelay(CHECK_SCOPE_CHANGES_INTERVAL_MILLIS, () -> {
+            checkScopeChanges(scriptSession);
         });
     }
 
