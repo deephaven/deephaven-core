@@ -97,7 +97,7 @@ public interface ScriptSession extends ReleasableLivenessManager, LivenessNode {
 
     /**
      * Tracks changes in the script session bindings until the SnapshotScope is closed.
-     *
+     * <p>
      * This API should be considered unstable, see deephaven-core#2453.
      *
      * @param previousIfPresent if non-null, will be closed atomically with the new scope being opened.
@@ -105,7 +105,10 @@ public interface ScriptSession extends ReleasableLivenessManager, LivenessNode {
      */
     SnapshotScope snapshot(@Nullable SnapshotScope previousIfPresent);
 
-    interface SnapshotScope extends SafeCloseable {
+    /**
+     * Marker interface for implementation-defined SnapshotScope objects.
+     */
+    interface SnapshotScope {
     }
 
     /**

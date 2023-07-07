@@ -102,25 +102,45 @@ public abstract class AbstractScriptSession<S extends AbstractScriptSession.Snap
     }
 
     protected interface Snapshot extends SafeCloseable {
-
     }
 
     @Override
-    public synchronized SnapshotScope snapshot(@Nullable SnapshotScope previousIfPresent) {
+    public synchronized SnapshotScope snapshot(@Nullable final SnapshotScope previousIfPresent) {
+        final SnapshotFinisher snapshotFinisher;
+        try {
+            // noinspection unchecked
+            snapshotFinisher = (SnapshotFinisher) previousIfPresent;
+        } catch (ClassCastException cce) {
+            throw new IllegalArgumentException(String.format(
+                    "Invalid SnapshotScope %s; previous must be recorded from a call to snapshot on this ScriptSession",
+                    previousIfPresent), cce);
+        }
         // TODO deephaven-core#2453 this should be redone, along with other scope change handling
-        if (previousIfPresent != null) {
-            previousIfPresent.close();
+        final S nextBeforeSnapshot;
+        if (snapshotFinisher != null) {
+            nextBeforeSnapshot = snapshotFinisher.takeSnapshotAndApplyDiff();
+        } else {
+            nextBeforeSnapshot = takeSnapshot();
         }
-        S snapshot = takeSnapshot();
-        return () -> finishSnapshot(snapshot);
+        return new SnapshotFinisher(nextBeforeSnapshot);
     }
 
-    private synchronized void finishSnapshot(S beforeSnapshot) {
-        try (beforeSnapshot; S afterSnapshot = takeSnapshot()) {
-            applyDiff(beforeSnapshot, afterSnapshot, null);
+    private class SnapshotFinisher implements SnapshotScope {
+
+        private final S beforeSnapshot;
+
+        private SnapshotFinisher(@NotNull final S beforeSnapshot) {
+            this.beforeSnapshot = beforeSnapshot;
+        }
+
+        private S takeSnapshotAndApplyDiff() {
+            final S afterSnapshot = takeSnapshot();
+            try (beforeSnapshot) {
+                applyDiff(beforeSnapshot, afterSnapshot, null);
+            }
+            return afterSnapshot;
         }
     }
-
 
     protected abstract S emptySnapshot();
 
