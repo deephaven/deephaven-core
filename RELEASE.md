@@ -78,7 +78,7 @@ git@github.com:deephaven/deephaven-core.git
 Ensure you are up-to-date with `upstream/main`, or at the commit that you want to start a new release from.
 If you are unsure what commit to start from, please ask.
 Please double-check you are on the version you expect to be releasing.
-The releases have so far proceeded with `releave/vX.Y.Z`, where `X.Y.Z` is the version number (this isn't a technical requirement), please replace `X.Y.Z` with the appropriate version.
+The releases have so far proceeded with `release/vX.Y.Z`, where `X.Y.Z` is the version number (this isn't a technical requirement), please replace `X.Y.Z` with the appropriate version.
 We also separate out the release branch from `upstream/main` with an empty commit (this isn't a technical requirement).
 
 ```shell
