@@ -4,6 +4,7 @@
 package io.deephaven.server.runner;
 
 import io.deephaven.auth.AuthenticationRequestHandler;
+import io.deephaven.configuration.Configuration;
 import io.deephaven.engine.context.ExecutionContext;
 import io.deephaven.engine.table.impl.OperationInitializationThreadPool;
 import io.deephaven.engine.table.impl.perf.QueryPerformanceRecorder;
@@ -44,6 +45,9 @@ import java.util.concurrent.TimeoutException;
  */
 public class DeephavenApiServer {
     private static final Logger log = LoggerFactory.getLogger(DeephavenApiServer.class);
+
+    private static final long CHECK_GLOBALS_INTERVAL_MILLIS = Configuration.getInstance().getLongForClassWithDefault(
+            DeephavenApiServer.class, "checkGlobalsIntervalMillis", 100);
 
     private final GrpcServer server;
     private final UpdateGraph ug;
@@ -173,7 +177,7 @@ public class DeephavenApiServer {
 
     private void checkGlobals(ScriptSession scriptSession) {
         scriptSession.observeScopeChanges();
-        scheduler.runAfterDelay(100, () -> {
+        scheduler.runAfterDelay(CHECK_GLOBALS_INTERVAL_MILLIS, () -> {
             checkGlobals(scriptSession);
         });
     }
