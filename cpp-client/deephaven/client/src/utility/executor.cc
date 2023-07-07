@@ -12,17 +12,30 @@ using deephaven::dhcore::utility::streamf;
 namespace deephaven::client::utility {
 std::shared_ptr<Executor> Executor::create() {
   auto result = std::make_shared<Executor>(Private());
-  std::thread t(&threadStart, result);
-  t.detach();
   return result;
 }
 
-Executor::Executor(Private) {}
+Executor::Executor(Private)
+  : thread_(&Executor::run, this)
+{}
 
-Executor::~Executor() = default;
+Executor::~Executor() {
+  {
+    std::unique_lock lock(mutex_);
+    canceled_ = true;
+  }
+  if (std::this_thread::get_id() != thread_.get_id()) {
+    thread_.join();
+  } else {
+    thread_.detach();
+  }
+}
 
 void Executor::invoke(std::shared_ptr<callback_t> cb) {
   mutex_.lock();
+  if (canceled_) {
+    return;
+  }
   auto needsNotify = todo_.empty();
   todo_.push_back(std::move(cb));
   mutex_.unlock();
@@ -32,15 +45,17 @@ void Executor::invoke(std::shared_ptr<callback_t> cb) {
   }
 }
 
-void Executor::threadStart(std::shared_ptr<Executor> self) {
-  self->runForever();
-}
-
-void Executor::runForever() {
+void Executor::run() {
   std::unique_lock<std::mutex> lock(mutex_);
   while (true) {
+    if (canceled_) {
+      return;
+    }
     while (todo_.empty()) {
       condvar_.wait(lock);
+      if (canceled_) {
+        return;
+      }
     }
     std::vector<std::shared_ptr<callback_t>> localCallbacks(
         std::make_move_iterator(todo_.begin()), std::make_move_iterator(todo_.end()));

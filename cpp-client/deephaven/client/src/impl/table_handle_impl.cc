@@ -92,6 +92,9 @@ TableHandleImpl::TableHandleImpl(Private, std::shared_ptr<TableHandleManagerImpl
 }
 
 TableHandleImpl::~TableHandleImpl() {
+  for (auto &sh : subscriptions_) {
+    sh->cancel(false);
+  }
   this->lazyState_->releaseAsync();
 }
 

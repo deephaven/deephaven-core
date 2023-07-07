@@ -8,6 +8,7 @@
 #include <functional>
 #include <memory>
 #include <mutex>
+#include <thread>
 #include "deephaven/dhcore/utility/callbacks.h"
 #include "deephaven/dhcore/utility/utility.h"
 
@@ -32,12 +33,12 @@ public:
   }
 
 private:
-  static void threadStart(std::shared_ptr<Executor> self);
-  [[noreturn]]
-  void runForever();
+  void run();
 
   std::mutex mutex_;
   std::condition_variable condvar_;
   std::deque<std::shared_ptr<callback_t>> todo_;
+  std::thread thread_;
+  bool canceled_;
 };
 }  // namespace deephaven::client::utility

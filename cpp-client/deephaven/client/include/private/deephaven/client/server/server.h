@@ -11,6 +11,7 @@
 #include <string>
 #include <cstring>
 #include <cstdint>
+#include <thread>
 #include <arrow/flight/client.h>
 
 #include "deephaven/client/client_options.h"
@@ -245,10 +246,10 @@ private:
   void selectOrUpdateHelper(Ticket parentTicket, std::vector<std::string> columnSpecs,
       std::shared_ptr<EtcCallback> etcCallback, Ticket result, selectOrUpdateMethod_t method);
 
-  static void processCompletionQueueForever(const std::shared_ptr<Server> &self);
+  void processCompletionQueue();
   bool processNextCompletionQueueItem();
 
-  static void sendKeepaliveMessages(const std::shared_ptr<Server> &self);
+  void sendKeepaliveMessages();
   bool keepaliveHelper();
 
   std::unique_ptr<ApplicationService::Stub> applicationStub_;
@@ -268,6 +269,9 @@ private:
   std::string sessionToken_;
   std::chrono::milliseconds expirationInterval_;
   std::chrono::system_clock::time_point nextHandshakeTime_;
+
+  std::thread completionQueueThread_;
+  std::thread keepaliveThread_;
 };
 
 template<typename TReq, typename TResp, typename TStub, typename TPtrToMember>

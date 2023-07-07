@@ -204,10 +204,6 @@ std::shared_ptr<Server> Server::createFromTarget(
   auto result = std::make_shared<Server>(Private(), std::move(as), std::move(cs),
       std::move(ss), std::move(ts), std::move(cfs), std::move(fc), copts.extraHeaders(),
       std::move(sessionToken), expirationInterval, nextHandshakeTime);
-  std::thread t1(&processCompletionQueueForever, result);
-  std::thread t2(&sendKeepaliveMessages, result);
-  t1.detach();
-  t2.detach();
   return result;
 }
 
@@ -231,10 +227,30 @@ Server::Server(Private,
     nextFreeTicketId_(1),
     sessionToken_(std::move(sessionToken)),
     expirationInterval_(expirationInterval),
-    nextHandshakeTime_(nextHandshakeTime) {
+    nextHandshakeTime_(nextHandshakeTime),
+    completionQueueThread_(&Server::processCompletionQueue, this),
+    keepaliveThread_(&Server::sendKeepaliveMessages, this)
+{
 }
 
-Server::~Server() = default;
+Server::~Server() {
+  completionQueue_.Shutdown();
+  {
+    std::lock_guard guard(mutex_);
+    cancelled_ = true;
+  }
+  condVar_.notify_all();
+  // given shared_ptrs, it is possible the destructor
+  // runs in one of the threads, so take care to
+  // join only if on a different thread.
+  for (auto thread : {&completionQueueThread_, &keepaliveThread_}) {
+    if (thread->get_id() != std::this_thread::get_id()) {
+      thread->join();
+    } else {
+      thread->detach();
+    }
+  }
+}
 
 namespace {
 Ticket makeNewTicket(int32_t ticketId) {
@@ -499,9 +515,9 @@ void Server::releaseAsync(Ticket ticket, std::shared_ptr<SFCallback<ReleaseRespo
   sendRpc(req, std::move(callback), sessionStub(), &SessionService::Stub::AsyncRelease);
 }
 
-void Server::processCompletionQueueForever(const std::shared_ptr<Server> &self) {
+void Server::processCompletionQueue() {
   while (true) {
-    if (!self->processNextCompletionQueueItem()) {
+    if (!processNextCompletionQueueItem()) {
       break;
     }
   }
@@ -577,9 +593,9 @@ public:
 };
 }  // namespace
 
-void Server::sendKeepaliveMessages(const std::shared_ptr<Server> &self) {
+void Server::sendKeepaliveMessages() {
   while (true) {
-    if (!self->keepaliveHelper()) {
+    if (!keepaliveHelper()) {
       break;
     }
   }
