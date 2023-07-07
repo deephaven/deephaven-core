@@ -4,6 +4,7 @@
 package io.deephaven.engine.table.impl;
 
 import io.deephaven.base.verify.Assert;
+import io.deephaven.base.verify.RequirementFailure;
 import io.deephaven.engine.context.ExecutionContext;
 import io.deephaven.engine.rowset.RowSet;
 import io.deephaven.engine.rowset.RowSetFactory;
@@ -145,7 +146,6 @@ public class BlinkTableAggregationTest {
                 updateGraph.completeCycleForUnitTests();
             }
             try {
-                // TODO How is addOnly getting updated when normal is being updated
                 TstUtils.assertTableEquals(expected, addOnlyExpected);
                 TstUtils.assertTableEquals(expected, blinkExpected);
             } catch (ComparisonFailure e) {
@@ -416,7 +416,12 @@ public class BlinkTableAggregationTest {
     @Test
     public void testTail() {
         // Assuming refresh sizes to be : 100, 0, 1, 2, 50, 0, 1000, 1, 0
-        doOperatorTest(table -> table.tail(50), false); // TODO Manually Test this case
+        try {
+            doOperatorTest(table -> table.tail(-1), false);
+            org.junit.Assert.fail("Exception expected for negative tail size");
+        } catch (RequirementFailure expected) {
+        }
+        doOperatorTest(table -> table.tail(50), false);
         doOperatorTest(table -> table.tail(101), false);
         doOperatorTest(table -> table.tail(102), false);
         doOperatorTest(table -> table.tail(130), false);
@@ -426,8 +431,14 @@ public class BlinkTableAggregationTest {
 
     @Test
     public void testHead() {
-        doOperatorTest(table -> table.head(50), false); // TODO Manually Test this case
-        doOperatorTest(table -> table.head(100), false); // TODO Manually Test this case
+        // Assuming refresh sizes to be : 100, 0, 1, 2, 50, 0, 1000, 1, 0
+        try {
+            doOperatorTest(table -> table.head(-1), false);
+            org.junit.Assert.fail("Exception expected for negative head size");
+        } catch (RequirementFailure expected) {
+        }
+        doOperatorTest(table -> table.head(50), false);
+        doOperatorTest(table -> table.head(100), false);
         doOperatorTest(table -> table.head(102), false);
         doOperatorTest(table -> table.head(130), false);
         doOperatorTest(table -> table.head(1000), false);

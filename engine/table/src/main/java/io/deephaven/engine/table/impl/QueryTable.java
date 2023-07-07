@@ -364,7 +364,6 @@ public class QueryTable extends BaseTable<QueryTable> {
         return (ColumnSource<T>) columnSource;
     }
 
-
     @Override
     public Map<String, ColumnSource<?>> getColumnSourceMap() {
         return Collections.unmodifiableMap(columns);

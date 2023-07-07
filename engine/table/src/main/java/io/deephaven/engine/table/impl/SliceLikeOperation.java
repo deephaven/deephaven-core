@@ -95,13 +95,20 @@ public class SliceLikeOperation implements QueryTable.Operation<QueryTable> {
 
     @Override
     public Result<QueryTable> initialize(boolean usePrev, long beforeClock) {
-        if (!parent.isBlink()) {
-            final TrackingRowSet resultRowSet;
-            final TrackingRowSet parentRowSet = parent.getRowSet();
-            try (final WritableRowSet parentPrev = usePrev ? parentRowSet.copyPrev() : null) {
-                resultRowSet = computeSliceIndex(usePrev ? parentPrev : parentRowSet).toTracking();
+        if (parent.isBlink()) {
+            if (operation.equals("head")) {
+                long size = getLastPositionExclusive();
+                resultTable = (QueryTable) BlinkTableTools.blinkToAppendOnly(parent, size);
+            } else if (operation.equals("tail")) {
+                long size = -1 * getFirstPositionInclusive();
+                resultTable = (QueryTable) RingTableTools.of(parent, (int) size); // TODO Do I need to do something for
+                // this type cast from long to int?
             }
-            // result table must be a sub-table so we can pass ModifiedColumnSet to listeners when possible
+        } else {
+            final TrackingRowSet parentRowSet = parent.getRowSet();
+            final TrackingRowSet resultRowSet =
+                    computeSliceIndex(usePrev ? parentRowSet.prev() : parentRowSet).toTracking();
+            // result table must be a sub-table, so we can pass ModifiedColumnSet to listeners when possible
             resultTable = parent.getSubTable(resultRowSet);
             if (isFlat) {
                 resultTable.setFlat();
@@ -123,16 +130,6 @@ public class SliceLikeOperation implements QueryTable.Operation<QueryTable> {
                     resultTable.setAttribute(Table.APPEND_ONLY_TABLE_ATTRIBUTE, true);
                 }
             }
-        } else {
-            // Parent is BLINK table here
-            if (operation.equals("head")) {
-                long size = getLastPositionExclusive();
-                resultTable = (QueryTable) BlinkTableTools.blinkToAppendOnly(parent, size);
-            } else if (operation.equals("tail")) {
-                long size = -1 * getFirstPositionInclusive();
-                resultTable = (QueryTable) RingTableTools.of(parent, (int) size); // TODO Do I need to do something for
-                                                                                  // this type cast from long to int?
-            }
         }
 
         TableUpdateListener resultListener = null;
@@ -153,7 +150,6 @@ public class SliceLikeOperation implements QueryTable.Operation<QueryTable> {
             // For blink tables, the update operations are automatically handled by downstream
             return;
         }
-
         final TrackingWritableRowSet rowSet = resultTable.getRowSet().writableCast();
         final RowSet sliceRowSet = computeSliceIndex(parent.getRowSet());
 
