@@ -283,6 +283,10 @@ void Server::sendRpc(const TReq &req, std::shared_ptr<SFCallback<TResp>> respons
   forEachHeaderNameAndValue([&response](const std::string &name, const std::string &value) {
     response->ctx_.AddMetadata(name, value);
   });
+  std::lock_guard guard(mutex_);
+  if (cancelled_) {
+    return;
+  }
   auto rpc = (stub->*pm)(&response->ctx_, req, &completionQueue_);
   // It is the responsibility of "processNextCompletionQueueItem" to deallocate the storage pointed
   // to by 'response'.
