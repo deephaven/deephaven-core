@@ -22,6 +22,7 @@ import io.deephaven.server.config.ServerConfig;
 import io.deephaven.server.log.LogInit;
 import io.deephaven.server.plugin.PluginRegistration;
 import io.deephaven.server.session.SessionService;
+import io.deephaven.server.util.Scheduler;
 import io.deephaven.uri.resolver.UriResolver;
 import io.deephaven.uri.resolver.UriResolvers;
 import io.deephaven.uri.resolver.UriResolversInstance;
@@ -47,6 +48,7 @@ public class DeephavenApiServer {
     private final GrpcServer server;
     private final UpdateGraph ug;
     private final LogInit logInit;
+    private final Scheduler scheduler;
     private final Provider<ScriptSession> scriptSessionProvider;
     private final PluginRegistration pluginRegistration;
     private final ApplicationInjector applicationInjector;
@@ -61,6 +63,7 @@ public class DeephavenApiServer {
             final GrpcServer server,
             @Named(PeriodicUpdateGraph.DEFAULT_UPDATE_GRAPH_NAME) final UpdateGraph ug,
             final LogInit logInit,
+            final Scheduler scheduler,
             final Provider<ScriptSession> scriptSessionProvider,
             final PluginRegistration pluginRegistration,
             final ApplicationInjector applicationInjector,
@@ -72,6 +75,7 @@ public class DeephavenApiServer {
         this.server = server;
         this.ug = ug;
         this.logInit = logInit;
+        this.scheduler = scheduler;
         this.scriptSessionProvider = scriptSessionProvider;
         this.pluginRegistration = pluginRegistration;
         this.applicationInjector = applicationInjector;
@@ -127,7 +131,7 @@ public class DeephavenApiServer {
         AbstractScriptSession.createScriptCache();
 
         log.info().append("Initializing Script Session...").endl();
-        scriptSessionProvider.get();
+        checkGlobals(scriptSessionProvider.get());
         pluginRegistration.registerAll();
 
         log.info().append("Initializing Execution Context for Main Thread...").endl();
@@ -165,6 +169,13 @@ public class DeephavenApiServer {
         server.start();
         log.info().append("Server started on port ").append(server.getPort()).endl();
         return this;
+    }
+
+    private void checkGlobals(ScriptSession scriptSession) {
+        scriptSession.observeScopeChanges();
+        scheduler.runAfterDelay(100, () -> {
+            checkGlobals(scriptSession);
+        });
     }
 
     /**

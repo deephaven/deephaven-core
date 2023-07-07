@@ -62,10 +62,10 @@ public class PythonDeephavenSession extends AbstractScriptSession<PythonSnapshot
 
     public static String SCRIPT_TYPE = "Python";
 
-    private final PythonScriptSessionModule module;
-    private final ScriptFinder scriptFinder;
     private final PythonEvaluator evaluator;
     private final PythonScope<PyObject> scope;
+    private final PythonScriptSessionModule module;
+    private final ScriptFinder scriptFinder;
 
     /**
      * Create a Python ScriptSession.
@@ -89,13 +89,12 @@ public class PythonDeephavenSession extends AbstractScriptSession<PythonSnapshot
         scope = pythonEvaluator.getScope();
         executionContext.getQueryLibrary().importClass(org.jpy.PyObject.class);
         try (final SafeCloseable ignored = executionContext.open()) {
-            this.module = (PythonScriptSessionModule) PyModule.importModule("deephaven.server.script_session")
+            module = (PythonScriptSessionModule) PyModule.importModule("deephaven.server.script_session")
                     .createProxy(CallableKind.FUNCTION, PythonScriptSessionModule.class);
         }
-        this.scriptFinder = new ScriptFinder(DEFAULT_SCRIPT_PATH);
+        scriptFinder = new ScriptFinder(DEFAULT_SCRIPT_PATH);
 
         publishInitial();
-
         /*
          * And now the user-defined initialization scripts, if any.
          */
@@ -115,13 +114,16 @@ public class PythonDeephavenSession extends AbstractScriptSession<PythonSnapshot
     public PythonDeephavenSession(
             final UpdateGraph updateGraph, final PythonScope<?> scope) {
         super(updateGraph, NoOp.INSTANCE, null);
+
+        evaluator = null;
         this.scope = (PythonScope<PyObject>) scope;
         try (final SafeCloseable ignored = executionContext.open()) {
-            this.module = (PythonScriptSessionModule) PyModule.importModule("deephaven.server.script_session")
+            module = (PythonScriptSessionModule) PyModule.importModule("deephaven.server.script_session")
                     .createProxy(CallableKind.FUNCTION, PythonScriptSessionModule.class);
         }
-        this.evaluator = null;
-        this.scriptFinder = null;
+        scriptFinder = null;
+
+        publishInitial();
     }
 
     @Override
@@ -280,9 +282,6 @@ public class PythonDeephavenSession extends AbstractScriptSession<PythonSnapshot
 
     @Override
     public synchronized void setVariable(String name, @Nullable Object newValue) {
-        // Observe any external changes that are not yet recorded
-        observeScopeChanges();
-
         final PyDictWrapper globals = scope.mainGlobals();
         if (newValue == null) {
             try {
@@ -297,7 +296,8 @@ public class PythonDeephavenSession extends AbstractScriptSession<PythonSnapshot
             globals.setItem(name, newValue);
         }
 
-        // Observe changes from this "setVariable" (potentially capturing external changes from other threads)
+        // Observe changes from this "setVariable" (potentially capturing previous or concurrent external changes from
+        // other threads)
         observeScopeChanges();
     }
 

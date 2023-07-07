@@ -104,10 +104,10 @@ public abstract class AbstractScriptSession<S extends AbstractScriptSession.Snap
 
     @Override
     public void observeScopeChanges() {
-        observeScopeChangesInternal(null);
+        observeAndCollectScopeChanges(null);
     }
 
-    private synchronized Changes observeScopeChangesInternal(@Nullable final RuntimeException evaluationError) {
+    private synchronized Changes observeAndCollectScopeChanges(@Nullable final RuntimeException evaluationError) {
         final S beforeSnapshot = lastSnapshot;
         lastSnapshot = takeSnapshot();
         try (beforeSnapshot) {
@@ -153,7 +153,7 @@ public abstract class AbstractScriptSession<S extends AbstractScriptSession.Snap
             }
 
             // Observe changes during this evaluation (potentially capturing external changes from other threads)
-            diff = observeScopeChangesInternal(evaluateErr);
+            diff = observeAndCollectScopeChanges(evaluateErr);
         }
 
         return diff;
@@ -220,18 +220,6 @@ public abstract class AbstractScriptSession<S extends AbstractScriptSession.Snap
         } catch (IOException err) {
             throw new UncheckedDeephavenException(
                     String.format("could not read script file %s: ", scriptPath.toString()), err);
-        }
-    }
-
-    protected synchronized void notifyVariableChange(String name, @Nullable Object oldValue,
-            @Nullable Object newValue) {
-        if (changeListener == null) {
-            return;
-        }
-        Changes changes = new Changes();
-        applyVariableChangeToDiff(changes, name, oldValue, newValue);
-        if (!changes.isEmpty()) {
-            changeListener.onScopeChanges(this, changes);
         }
     }
 

@@ -28,7 +28,6 @@ import io.deephaven.server.runner.DeephavenApiServer;
 import io.deephaven.server.runner.DeephavenApiServerModule;
 import io.deephaven.server.runner.MainHelper;
 import io.deephaven.server.session.ObfuscatingErrorTransformerModule;
-import io.deephaven.server.util.Scheduler;
 import org.jpy.PyModule;
 import org.jpy.PyObject;
 
@@ -69,8 +68,6 @@ public class EmbeddedServer {
     @Inject
     DeephavenApiServer server;
     @Inject
-    Scheduler scheduler;
-    @Inject
     Provider<ScriptSession> scriptSession;
 
     // // this is a nice idea, but won't work, since this is the same instance that we had to disable via sysprop
@@ -102,8 +99,6 @@ public class EmbeddedServer {
                 .build()
                 .injectFields(this);
 
-        checkGlobals(scriptSession.get());
-
         // We need to open the systemic execution context to permanently install the contexts for this thread.
         scriptSession.get().getExecutionContext().open();
     }
@@ -112,13 +107,6 @@ public class EmbeddedServer {
         server.run();
 
         Bootstrap.printf("Server started on port %d%n", getPort());
-    }
-
-    private void checkGlobals(ScriptSession scriptSession) {
-        scriptSession.observeScopeChanges();
-        scheduler.runAfterDelay(100, () -> {
-            checkGlobals(scriptSession);
-        });
     }
 
     public int getPort() {
