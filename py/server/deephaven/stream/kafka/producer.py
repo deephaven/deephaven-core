@@ -10,7 +10,9 @@ import jpy
 from deephaven import DHError
 from deephaven.jcompat import j_hashmap, j_hashset, j_properties
 from deephaven._wrapper import JObjectWrapper
+from deephaven.dtypes import DType
 from deephaven.table import Table
+
 
 _JKafkaTools = jpy.get_type("io.deephaven.kafka.KafkaTools")
 _JAvroSchema = jpy.get_type("org.apache.avro.Schema")
@@ -231,5 +233,23 @@ def simple_spec(col_name: str) -> KeyValueSpec:
     """
     try:
         return KeyValueSpec(_JKafkaTools_Produce.simpleSpec(col_name))
+    except Exception as e:
+        raise DHError(e, "failed to create a Kafka key/value spec.") from e
+
+def raw_spec(col_name: str, serializer: DType) -> KeyValueSpec:
+    """Creates a raw spec with explicit kafka serializer.
+
+    Args:
+        col_name (str): the Deephaven column name
+        serializer (DType): the kafka serializer
+
+    Returns:
+        a KeyValueSpec
+
+    Raises:
+        DHError
+    """
+    try:
+        return KeyValueSpec(_JKafkaTools_Produce.simpleSpec(col_name, serializer.j_type.jclass))
     except Exception as e:
         raise DHError(e, "failed to create a Kafka key/value spec.") from e

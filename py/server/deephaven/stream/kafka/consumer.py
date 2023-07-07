@@ -19,6 +19,7 @@ from deephaven.table import Table, PartitionedTable
 _JKafkaTools = jpy.get_type("io.deephaven.kafka.KafkaTools")
 _JKafkaTools_Consume = jpy.get_type("io.deephaven.kafka.KafkaTools$Consume")
 _JPythonTools = jpy.get_type("io.deephaven.integrations.python.PythonTools")
+_JColumnHeader = jpy.get_type("io.deephaven.qst.column.header.ColumnHeader")
 ALL_PARTITIONS = _JKafkaTools.ALL_PARTITIONS
 
 SEEK_TO_BEGINNING = _JKafkaTools.SEEK_TO_BEGINNING
@@ -385,6 +386,28 @@ def simple_spec(col_name: str, data_type: DType = None) -> KeyValueSpec:
             return KeyValueSpec(j_spec=_JKafkaTools_Consume.simpleSpec(col_name))
         return KeyValueSpec(
             j_spec=_JKafkaTools_Consume.simpleSpec(col_name, data_type.qst_type.clazz())
+        )
+    except Exception as e:
+        raise DHError(e, "failed to create a Kafka key/value spec") from e
+
+
+def raw_spec(col_name: str, data_type: DType, deserializer: DType) -> KeyValueSpec:
+    """Creates a raw spec with explicit expected data_type and kafka deserializer.
+
+    Args:
+        col_name (str): the Deephaven column name
+        data_type (DType): the column data type
+        deserializer (DType): the kafka deserializer
+
+    Returns:
+        a KeyValueSpec
+
+    Raises:
+        DHError
+    """
+    try:
+        return KeyValueSpec(
+            j_spec=_JKafkaTools_Consume.rawSpec(_JColumnHeader.of(col_name, data_type.qst_type), deserializer.j_type.jclass)
         )
     except Exception as e:
         raise DHError(e, "failed to create a Kafka key/value spec") from e
