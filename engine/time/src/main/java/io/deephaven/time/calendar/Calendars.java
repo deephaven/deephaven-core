@@ -4,6 +4,7 @@
 package io.deephaven.time.calendar;
 
 import io.deephaven.base.verify.Require;
+import io.deephaven.base.verify.RequirementFailure;
 import io.deephaven.configuration.Configuration;
 import io.deephaven.io.logger.Logger;
 import io.deephaven.api.util.NameValidator;
@@ -49,6 +50,7 @@ public class Calendars implements Map<String, BusinessCalendar> {
      * @param name name of the calendar
      * @return business calendar
      * @throws IllegalArgumentException no calendar matching {@code name}
+     * @throws RequirementFailure if the input is null
      */
     public static BusinessCalendar calendar(final String name) {
         Require.neqNull(name, "name");
@@ -63,7 +65,7 @@ public class Calendars implements Map<String, BusinessCalendar> {
     }
 
     /**
-     * Returns a business calendar.
+     * Returns the default business calendar.
      *
      * @return default business calendar. The deault is specified by the {@code Calendar.default} property.
      */
@@ -72,11 +74,11 @@ public class Calendars implements Map<String, BusinessCalendar> {
     }
 
     /**
-     * Returns the default calendar name
+     * Returns the default business calendar name
      *
      * @return default business calendar name
      */
-    public static String getDefaultName() {
+    public static String defaultCalendarName() {
         return defaultName;
     }
 
@@ -128,8 +130,9 @@ public class Calendars implements Map<String, BusinessCalendar> {
                 final InputStream inputStream = this.getClass().getResourceAsStream(filePath);
                 if (inputStream != null) {
                     final File calendarFile = inputStreamToFile(inputStream);
-                    final BusinessCalendar businessCalendar = DefaultBusinessCalendar.getInstance(calendarFile);
+                    final BusinessCalendar businessCalendar = BusinessCalendarParser.loadBusinessCalendar(calendarFile);
                     addCalendar(businessCalendar);
+                    //noinspection ResultOfMethodCallIgnored
                     calendarFile.delete();
                 } else {
                     logger.warn("Could not open " + filePath + " from classpath");
@@ -170,22 +173,22 @@ public class Calendars implements Map<String, BusinessCalendar> {
     }
 
     /**
-     * Adds a calendar to the collection from the {@code filePath}
+     * Adds a calendar to the collection from a file.
      *
-     * @param filePath must be xml format
+     * @param file business calendar file
      */
-    public void addCalendarFromFile(final String filePath) {
-        addCalendarFromFile(new File(filePath));
+    public void addCalendarFromFile(final String file) {
+        addCalendarFromFile(new File(file));
     }
 
     /**
-     * Adds a calendar to the collection from the {@code file}
+     * Adds a calendar to the collection from a file.
      *
-     * @param file must be xml format
+     * @param file business calendar file
      */
     public void addCalendarFromFile(final File file) {
         if (file.getAbsolutePath().endsWith(".calendar")) {
-            final BusinessCalendar cal = DefaultBusinessCalendar.getInstance(file);
+            final BusinessCalendar cal = BusinessCalendarParser.loadBusinessCalendar(file);
             addCalendar(cal);
         } else {
             throw new UnsupportedOperationException("Calendar file must be in .calendar format");
