@@ -127,8 +127,7 @@ public class SliceLikeOperation implements QueryTable.Operation<QueryTable> {
                 resultTable = (QueryTable) BlinkTableTools.blinkToAppendOnly(parent, size);
             } else if (operation.equals("tail")) {
                 long size = -1 * getFirstPositionInclusive();
-                resultTable = (QueryTable) RingTableTools.of(parent, (int) size); // TODO Do I need to do something for
-                // this type cast from long to int?
+                resultTable = (QueryTable) RingTableTools.of(parent, Math.toIntExact(size));
             }
         }
 
