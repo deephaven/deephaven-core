@@ -9,9 +9,9 @@ import io.deephaven.engine.table.ColumnDefinition;
 import io.deephaven.engine.table.TableDefinition;
 import io.deephaven.engine.table.impl.sources.ArrayBackedColumnSource;
 import io.deephaven.qst.type.Type;
+import io.deephaven.stream.StreamChunkUtils;
 import io.deephaven.stream.StreamConsumer;
 import io.deephaven.stream.StreamPublisher;
-import io.deephaven.stream.StreamToBlinkTableAdapter;
 import org.jetbrains.annotations.NotNull;
 
 import java.util.Objects;
@@ -38,7 +38,7 @@ class AsyncErrorStreamPublisher implements StreamPublisher {
     private StreamConsumer consumer;
 
     AsyncErrorStreamPublisher() {
-        chunks = StreamToBlinkTableAdapter.makeChunksForDefinition(DEFINITION, CHUNK_SIZE);
+        chunks = StreamChunkUtils.makeChunksForDefinition(DEFINITION, CHUNK_SIZE);
     }
 
     @Override
@@ -81,10 +81,13 @@ class AsyncErrorStreamPublisher implements StreamPublisher {
 
     private void flushInternal() {
         consumer.accept(chunks);
-        chunks = StreamToBlinkTableAdapter.makeChunksForDefinition(DEFINITION, CHUNK_SIZE);
+        chunks = StreamChunkUtils.makeChunksForDefinition(DEFINITION, CHUNK_SIZE);
     }
 
     public void acceptFailure(Throwable e) {
         consumer.acceptFailure(e);
     }
+
+    @Override
+    public void shutdown() {}
 }

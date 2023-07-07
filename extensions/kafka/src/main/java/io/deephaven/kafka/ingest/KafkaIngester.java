@@ -21,33 +21,35 @@ import java.time.Duration;
 import java.util.Collections;
 import java.util.List;
 import java.util.Properties;
-import java.util.function.IntFunction;
+import java.util.function.Function;
 import java.util.function.IntPredicate;
 import java.util.function.IntToLongFunction;
 
 /**
  * An ingester that consumes an Apache Kafka topic and a subset of its partitions via one or more
- * {@link KafkaStreamConsumer stream consumers}.
+ * {@link KafkaRecordConsumer stream consumers}.
  */
 public class KafkaIngester {
     private static final int REPORT_INTERVAL_MS = Configuration.getInstance().getIntegerForClassWithDefault(
             KafkaIngester.class, "reportIntervalMs", 60_000);
     private static final long MAX_ERRS = Configuration.getInstance().getLongForClassWithDefault(
-            KafkaIngester.class, "maxErrs", 500);
-    private final KafkaConsumer<?, ?> kafkaConsumer;
-    @NotNull
+            KafkaIngester.class, "maxErrs", 0);
+
     private final Logger log;
     private final String topic;
     private final String partitionDescription;
-    private final TIntObjectHashMap<KafkaStreamConsumer> streamConsumers = new TIntObjectHashMap<>();
+    private final String logPrefix;
+    private final KafkaConsumer<?, ?> kafkaConsumer;
+
+    private final TIntObjectHashMap<KafkaRecordConsumer> streamConsumers = new TIntObjectHashMap<>();
     private final KeyedIntObjectHashMap<TopicPartition> assignedPartitions =
-            new KeyedIntObjectHashMap<>(new KeyedIntObjectKey.BasicStrict<TopicPartition>() {
+            new KeyedIntObjectHashMap<>(new KeyedIntObjectKey.BasicStrict<>() {
                 @Override
                 public int getIntKey(@NotNull final TopicPartition topicPartition) {
                     return topicPartition.partition();
                 }
             });
-    private final String logPrefix;
+
     private long messagesProcessed = 0;
     private long bytesProcessed = 0;
     private long pollCalls = 0;
@@ -160,16 +162,17 @@ public class KafkaIngester {
      * @param topic The topic to replicate
      * @param partitionToStreamConsumer A function implementing a mapping from partition to its consumer of records. The
      *        function will be invoked once per partition at construction; implementations should internally defer
-     *        resource allocation until first call to {@link KafkaStreamConsumer#consume(List)} or
-     *        {@link KafkaStreamConsumer#acceptFailure(Throwable)} if appropriate.
+     *        resource allocation until first call to {@link KafkaRecordConsumer#consume(List)} or
+     *        {@link KafkaRecordConsumer#acceptFailure(Throwable)} if appropriate.
      * @param partitionToInitialSeekOffset A function implementing a mapping from partition to its initial seek offset,
      *        or -1 if seek to beginning is intended.
      */
-    public KafkaIngester(final Logger log,
-            final Properties props,
-            final String topic,
-            final IntFunction<KafkaStreamConsumer> partitionToStreamConsumer,
-            final IntToLongFunction partitionToInitialSeekOffset) {
+    public KafkaIngester(
+            @NotNull final Logger log,
+            @NotNull final Properties props,
+            @NotNull final String topic,
+            @NotNull final Function<TopicPartition, KafkaRecordConsumer> partitionToStreamConsumer,
+            @NotNull final IntToLongFunction partitionToInitialSeekOffset) {
         this(log, props, topic, ALL_PARTITIONS, partitionToStreamConsumer, partitionToInitialSeekOffset);
     }
 
@@ -189,18 +192,19 @@ public class KafkaIngester {
      * @param partitionFilter A predicate indicating which partitions we should replicate
      * @param partitionToStreamConsumer A function implementing a mapping from partition to its consumer of records. The
      *        function will be invoked once per partition at construction; implementations should internally defer
-     *        resource allocation until first call to {@link KafkaStreamConsumer#consume(List)} or
-     *        {@link KafkaStreamConsumer#acceptFailure(Throwable)} if appropriate.
+     *        resource allocation until first call to {@link KafkaRecordConsumer#consume(List)} or
+     *        {@link KafkaRecordConsumer#acceptFailure(Throwable)} if appropriate.
      * @param partitionToInitialSeekOffset A function implementing a mapping from partition to its initial seek offset,
      *        or -1 if seek to beginning is intended.
      */
     @SuppressWarnings("rawtypes")
-    public KafkaIngester(@NotNull final Logger log,
-            final Properties props,
-            final String topic,
-            final IntPredicate partitionFilter,
-            final IntFunction<KafkaStreamConsumer> partitionToStreamConsumer,
-            final IntToLongFunction partitionToInitialSeekOffset) {
+    public KafkaIngester(
+            @NotNull final Logger log,
+            @NotNull final Properties props,
+            @NotNull final String topic,
+            @NotNull final IntPredicate partitionFilter,
+            @NotNull final Function<TopicPartition, KafkaRecordConsumer> partitionToStreamConsumer,
+            @NotNull final IntToLongFunction partitionToInitialSeekOffset) {
         this.log = log;
         this.topic = topic;
         partitionDescription = partitionFilter.toString();
@@ -211,7 +215,7 @@ public class KafkaIngester {
                 .map(pi -> new TopicPartition(topic, pi.partition()))
                 .forEach(tp -> {
                     assignedPartitions.add(tp);
-                    streamConsumers.put(tp.partition(), partitionToStreamConsumer.apply(tp.partition()));
+                    streamConsumers.put(tp.partition(), partitionToStreamConsumer.apply(tp));
                 });
         assign();
 
@@ -333,7 +337,7 @@ public class KafkaIngester {
         for (final TopicPartition topicPartition : records.partitions()) {
             final int partition = topicPartition.partition();
 
-            final KafkaStreamConsumer streamConsumer;
+            final KafkaRecordConsumer streamConsumer;
             synchronized (streamConsumers) {
                 streamConsumer = streamConsumers.get(partition);
             }
@@ -351,11 +355,16 @@ public class KafkaIngester {
             } catch (Throwable ex) {
                 ++messagesWithErr;
                 log.error().append(logPrefix).append("Exception while processing Kafka message:").append(ex).endl();
+                /*
+                 * TODO (https://github.com/deephaven/deephaven-core/issues/4147): If we ignore any errors, we may have
+                 * misaligned chunks due to partially consumed records. Harden the record-parsing code against this
+                 * scenario.
+                 */
                 if (messagesWithErr > MAX_ERRS) {
-                    streamConsumer.acceptFailure(ex);
                     log.error().append(logPrefix)
                             .append("Max number of errors exceeded, aborting " + this + " consumer thread.")
                             .endl();
+                    streamConsumer.acceptFailure(ex);
                     return false;
                 }
                 continue;

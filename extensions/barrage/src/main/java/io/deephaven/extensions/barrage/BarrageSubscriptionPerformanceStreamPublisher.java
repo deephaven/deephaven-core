@@ -8,13 +8,11 @@ import io.deephaven.chunk.attributes.Values;
 import io.deephaven.engine.table.ColumnDefinition;
 import io.deephaven.engine.table.TableDefinition;
 import io.deephaven.engine.table.impl.sources.ArrayBackedColumnSource;
+import io.deephaven.stream.StreamChunkUtils;
 import io.deephaven.stream.StreamConsumer;
 import io.deephaven.stream.StreamPublisher;
-import io.deephaven.stream.StreamToBlinkTableAdapter;
-import org.HdrHistogram.Histogram;
 import org.jetbrains.annotations.NotNull;
 
-import java.time.Instant;
 import java.util.Objects;
 
 class BarrageSubscriptionPerformanceStreamPublisher implements StreamPublisher {
@@ -41,7 +39,7 @@ class BarrageSubscriptionPerformanceStreamPublisher implements StreamPublisher {
     private StreamConsumer consumer;
 
     BarrageSubscriptionPerformanceStreamPublisher() {
-        chunks = StreamToBlinkTableAdapter.makeChunksForDefinition(DEFINITION, CHUNK_SIZE);
+        chunks = StreamChunkUtils.makeChunksForDefinition(DEFINITION, CHUNK_SIZE);
     }
 
     @Override
@@ -90,10 +88,13 @@ class BarrageSubscriptionPerformanceStreamPublisher implements StreamPublisher {
 
     private void flushInternal() {
         consumer.accept(chunks);
-        chunks = StreamToBlinkTableAdapter.makeChunksForDefinition(DEFINITION, CHUNK_SIZE);
+        chunks = StreamChunkUtils.makeChunksForDefinition(DEFINITION, CHUNK_SIZE);
     }
 
     public void acceptFailure(Throwable e) {
         consumer.acceptFailure(e);
     }
+
+    @Override
+    public void shutdown() {}
 }
