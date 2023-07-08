@@ -117,8 +117,7 @@ public:
   /**
    * The minimum finite value for the Deephaven float type.
    */
-  static constexpr const float MIN_FINITE_FLOAT = std::nextafter(-std::numeric_limits<float>::max(),
-      0.0f);
+  static /* constexpr clang dislikes */ const float MIN_FINITE_FLOAT;
   /**
    * The maximum finite value for the Deephaven float type.
    */
@@ -155,8 +154,7 @@ public:
   /**
    * The minimum finite value for the Deephaven double type.
    */
-  static constexpr const double MIN_FINITE_DOUBLE = std::nextafter(
-      -std::numeric_limits<double>::max(), 0.0f);
+  static /* constexpr clang dislikes */ const double MIN_FINITE_DOUBLE;
   /**
    * The maximum finite value for the Deephaven double type.
    */
