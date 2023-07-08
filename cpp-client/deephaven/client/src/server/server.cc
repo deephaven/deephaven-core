@@ -8,6 +8,7 @@
 #include <grpcpp/grpcpp.h>
 #include <optional>
 #include <regex>
+#include <grpc/support/log.h>
 #include <arrow/flight/client_auth.h>
 #include <arrow/flight/client.h>
 #include <arrow/flight/client_middleware.h>
@@ -128,6 +129,14 @@ std::shared_ptr<Server> Server::createFromTarget(
       target, 
       credentials,
       channel_args);
+  gpr_log(GPR_DEBUG,
+        "%s: "
+        "grpc::Channel[%p] created, "
+        "target=%s",
+        "Server::createFromTarget",
+        (void*) channel.get(),
+        target.c_str());
+
   auto as = ApplicationService::NewStub(channel);
   auto cs = ConsoleService::NewStub(channel);
   auto ss = SessionService::NewStub(channel);
@@ -161,6 +170,13 @@ std::shared_ptr<Server> Server::createFromTarget(
     auto message = stringf("FlightClient::Connect() failed, error = %o", rc2.ToString());
     throw std::runtime_error(message);
   }
+  gpr_log(GPR_DEBUG,
+          "%s: "
+          "FlightClient[%p] created, "
+          "target=%s",
+          "Server::createFromTarget",
+          (void*) fc.get(),
+          target.c_str());
 
   std::string sessionToken;
   std::chrono::milliseconds expirationInterval;
@@ -221,6 +237,8 @@ Server::Server(Private,
     ClientOptions::extra_headers_t extraHeaders,
     std::string sessionToken, std::chrono::milliseconds expirationInterval,
     std::chrono::system_clock::time_point nextHandshakeTime) :
+    me_(deephaven::dhcore::utility::ObjectId(
+            "client::server::Server", this)),
     applicationStub_(std::move(applicationStub)),
     consoleStub_(std::move(consoleStub)),
     sessionStub_(std::move(sessionStub)),
@@ -232,9 +250,12 @@ Server::Server(Private,
     sessionToken_(std::move(sessionToken)),
     expirationInterval_(expirationInterval),
     nextHandshakeTime_(nextHandshakeTime) {
+  gpr_log(GPR_DEBUG, "%s: Created.", me_.c_str());
 }
 
-Server::~Server() = default;
+Server::~Server() {
+  gpr_log(GPR_DEBUG, "%s: Destroyed.", me_.c_str());
+}
 
 namespace {
 Ticket makeNewTicket(int32_t ticketId) {

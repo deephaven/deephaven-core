@@ -5,9 +5,12 @@
 
 #include <chrono>
 #include <cstring>
+#include <cstdio>
 #include <iostream>
 #include <memory>
 #include <string>
+#include <sstream>
+#include <thread>
 #include <typeinfo>
 #include <vector>
 
@@ -263,6 +266,20 @@ TimePointToStr(
 template <class T> [[nodiscard]] std::string
 TypeName(const T& t) {
   return Demangle(typeid(t).name());
+}
+
+[[nodiscard]] inline std::string
+ObjectId(const std::string &classShortName, void* thisPtr) {
+  std::string id(classShortName + "[0x0000000000000000]");
+  snprintf(&id[classShortName.size() + 3], 16, "%p", thisPtr);
+  return id;
+}
+
+inline std::string
+ThreadIdToString(const std::thread::id tid) {
+  std::stringstream ss;
+  ss << tid;
+  return ss.str();
 }
 
 }  // namespace deephaven::dhcore::utility

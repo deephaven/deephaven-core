@@ -4,6 +4,7 @@
 #include "deephaven/client/impl/table_handle_manager_impl.h"
 
 #include <map>
+#include <grpc/support/log.h>
 #include "deephaven/client/utility/executor.h"
 #include "deephaven/client/impl/table_handle_impl.h"
 #include "deephaven/dhcore/utility/callbacks.h"
@@ -28,12 +29,18 @@ std::shared_ptr<TableHandleManagerImpl> TableHandleManagerImpl::create(std::opti
 
 TableHandleManagerImpl::TableHandleManagerImpl(Private, std::optional<Ticket> &&consoleId,
     std::shared_ptr<Server> &&server, std::shared_ptr<Executor> &&executor,
-    std::shared_ptr<Executor> &&flightExecutor) : consoleId_(std::move(consoleId)),
-    server_(std::move(server)), executor_(std::move(executor)),
+    std::shared_ptr<Executor> &&flightExecutor) :
+    me_(deephaven::dhcore::utility::ObjectId("TableHandleManagerImpl", this)),
+    consoleId_(std::move(consoleId)),
+    server_(std::move(server)),
+    executor_(std::move(executor)),
     flightExecutor_(std::move(flightExecutor)) {
+  gpr_log(GPR_DEBUG, "%s: Created.", me_.c_str());
 }
 
-TableHandleManagerImpl::~TableHandleManagerImpl() = default;
+TableHandleManagerImpl::~TableHandleManagerImpl() {
+  gpr_log(GPR_DEBUG,"%s: Destroyed.", me_.c_str());
+}
 
 std::shared_ptr<TableHandleImpl> TableHandleManagerImpl::emptyTable(int64_t size) {
   auto resultTicket = server_->newTicket();

@@ -221,11 +221,15 @@ EpochMillisToStr(std::int64_t epochMillis) {
   const unsigned millisRestMod100 = millisRest % 100;
   const unsigned tensMillisRest = millisRestMod100 / 10;
   const unsigned singleMillisRest = millisRestMod100 % 10;
+
   assert(hundredMillisRest < 10);
+  assert(resBuf[20] == '0');
   resBuf[20] = DIGITS[hundredMillisRest];
   assert(tensMillisRest < 10);
+  assert(resBuf[21] == '0');
   resBuf[21] = DIGITS[tensMillisRest];
   assert(singleMillisRest < 10);
+  assert(resBuf[22] == '0');
   resBuf[22] = DIGITS[singleMillisRest];
   return result;
 }

@@ -252,7 +252,7 @@ private:
 
   static void sendKeepaliveMessages(const std::shared_ptr<Server> &self);
   bool keepaliveHelper();
-
+  const std::string me_;  // useful printable object name for logging
   std::unique_ptr<ApplicationService::Stub> applicationStub_;
   std::unique_ptr<ConsoleService::Stub> consoleStub_;
   std::unique_ptr<SessionService::Stub> sessionStub_;
@@ -280,7 +280,7 @@ void Server::sendRpc(const TReq &req, std::shared_ptr<SFCallback<TResp>> respons
   auto now = std::chrono::system_clock::now();
   // Keep this in a unique_ptr at first, for cleanup in case addAuthToken throws an exception.
   gpr_log(GPR_DEBUG,
-          "%p: "
+          "Server[%p]: "
           "Sending RPC %s "
           "at time %s.",
           (void*) this,

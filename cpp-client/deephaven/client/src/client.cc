@@ -3,6 +3,7 @@
  */
 #include "deephaven/client/client.h"
 
+#include <grpc/support/log.h>
 #include <arrow/array.h>
 #include <arrow/scalar.h>
 #include "deephaven/client/columns.h"
