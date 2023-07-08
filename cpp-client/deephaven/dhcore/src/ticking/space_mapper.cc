@@ -28,10 +28,6 @@ struct SimpleRangeIterator {
     return *this;
   }
 
-  friend bool operator!=(const SimpleRangeIterator &lhs, const SimpleRangeIterator &rhs) {
-    return lhs.value_ != rhs.value_;
-  }
-
   uint64_t value_;
 };
 }
