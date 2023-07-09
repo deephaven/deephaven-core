@@ -3,9 +3,6 @@
  */
 package io.deephaven.engine.table.impl;
 
-import io.deephaven.engine.table.impl.BlinkTableTools;
-import io.deephaven.engine.table.impl.sources.ring.RingTableTools;
-
 import io.deephaven.engine.rowset.TrackingWritableRowSet;
 import io.deephaven.engine.rowset.WritableRowSet;
 import io.deephaven.engine.rowset.RowSet;
@@ -95,39 +92,29 @@ public class SliceLikeOperation implements QueryTable.Operation<QueryTable> {
 
     @Override
     public Result<QueryTable> initialize(boolean usePrev, long beforeClock) {
-        if (!parent.isBlink()) {
-            final TrackingRowSet parentRowSet = parent.getRowSet();
-            final TrackingRowSet resultRowSet =
-                    computeSliceIndex(usePrev ? parentRowSet.prev() : parentRowSet).toTracking();
-            // result table must be a sub-table, so we can pass ModifiedColumnSet to listeners when possible
-            resultTable = parent.getSubTable(resultRowSet);
-            if (isFlat) {
-                resultTable.setFlat();
-            }
+        final TrackingRowSet parentRowSet = parent.getRowSet();
+        final TrackingRowSet resultRowSet =
+                computeSliceRowSet(usePrev ? parentRowSet.prev() : parentRowSet).toTracking();
+        // result table must be a sub-table so we can pass ModifiedColumnSet to listeners when possible
+        resultTable = parent.getSubTable(resultRowSet);
+        if (isFlat) {
+            resultTable.setFlat();
+        }
 
-            if (operation.equals("headPct")) {
-                // headPct has a floating tail, so we can only propagate if append-only
-                if (parent.isAppendOnly()) {
-                    resultTable.setAttribute(Table.ADD_ONLY_TABLE_ATTRIBUTE, true);
-                    resultTable.setAttribute(Table.APPEND_ONLY_TABLE_ATTRIBUTE, true);
-                }
-            } else if (!operation.equals("tailPct") && getFirstPositionInclusive() >= 0) {
-                // tailPct has a floating head, so we can't propagate either property
-                // otherwise, if the first row is fixed (not negative), then we can propagate add-only/append-only
-                if (parent.isAddOnly()) {
-                    resultTable.setAttribute(Table.ADD_ONLY_TABLE_ATTRIBUTE, true);
-                }
-                if (parent.isAppendOnly()) {
-                    resultTable.setAttribute(Table.APPEND_ONLY_TABLE_ATTRIBUTE, true);
-                }
+        if (operation.equals("headPct")) {
+            // headPct has a floating tail, so we can only propagate if append-only
+            if (parent.isAppendOnly()) {
+                resultTable.setAttribute(Table.ADD_ONLY_TABLE_ATTRIBUTE, true);
+                resultTable.setAttribute(Table.APPEND_ONLY_TABLE_ATTRIBUTE, true);
             }
-        } else {
-            if (operation.equals("head")) {
-                long size = getLastPositionExclusive();
-                resultTable = (QueryTable) BlinkTableTools.blinkToAppendOnly(parent, size);
-            } else if (operation.equals("tail")) {
-                long size = -1 * getFirstPositionInclusive();
-                resultTable = (QueryTable) RingTableTools.of(parent, Math.toIntExact(size));
+        } else if (!operation.equals("tailPct") && getFirstPositionInclusive() >= 0) {
+            // tailPct has a floating head, so we can't propagate either property
+            // otherwise, if the first row is fixed (not negative), then we can propagate add-only/append-only
+            if (parent.isAddOnly()) {
+                resultTable.setAttribute(Table.ADD_ONLY_TABLE_ATTRIBUTE, true);
+            }
+            if (parent.isAppendOnly()) {
+                resultTable.setAttribute(Table.APPEND_ONLY_TABLE_ATTRIBUTE, true);
             }
         }
 
@@ -145,12 +132,8 @@ public class SliceLikeOperation implements QueryTable.Operation<QueryTable> {
     }
 
     private void onUpdate(final TableUpdate upstream) {
-        if (parent.isBlink()) {
-            // For blink tables, the update operations are automatically handled by downstream
-            return;
-        }
         final TrackingWritableRowSet rowSet = resultTable.getRowSet().writableCast();
-        final RowSet sliceRowSet = computeSliceIndex(parent.getRowSet());
+        final RowSet sliceRowSet = computeSliceRowSet(parent.getRowSet());
 
         final TableUpdateImpl downstream = new TableUpdateImpl();
         downstream.removed = upstream.removed().intersect(rowSet);
@@ -181,7 +164,7 @@ public class SliceLikeOperation implements QueryTable.Operation<QueryTable> {
         resultTable.notifyListeners(downstream);
     }
 
-    private WritableRowSet computeSliceIndex(RowSet useRowSet) {
+    private WritableRowSet computeSliceRowSet(RowSet useRowSet) {
         final long size = parent.size();
         long startSlice = getFirstPositionInclusive();
         long endSlice = getLastPositionExclusive();

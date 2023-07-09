@@ -53,6 +53,8 @@ import io.deephaven.engine.table.impl.util.JobScheduler;
 import io.deephaven.engine.table.impl.util.OperationInitializationPoolJobScheduler;
 import io.deephaven.engine.table.impl.select.analyzers.SelectAndViewAnalyzerWrapper;
 import io.deephaven.engine.table.impl.util.FieldUtils;
+import io.deephaven.engine.table.impl.sources.ring.RingTableTools;
+import io.deephaven.engine.table.impl.BlinkTableTools;
 import io.deephaven.engine.table.iterators.*;
 import io.deephaven.engine.updategraph.DynamicNode;
 import io.deephaven.engine.util.*;
@@ -609,11 +611,11 @@ public class QueryTable extends BaseTable<QueryTable> {
 
     @Override
     public Table slice(final long firstPositionInclusive, final long lastPositionExclusive) {
+        if (isBlink()) {
+            throw unsupportedForBlinkTables("slice");
+        }
         final UpdateGraph updateGraph = getUpdateGraph();
         try (final SafeCloseable ignored = ExecutionContext.getContext().withUpdateGraph(updateGraph).open()) {
-            if (isBlink()) {
-                throw unsupportedForBlinkTables("slice");
-            }
             if (firstPositionInclusive == lastPositionExclusive) {
                 return getSubTable(RowSetFactory.empty().toTracking());
             }
@@ -628,6 +630,10 @@ public class QueryTable extends BaseTable<QueryTable> {
             if (size == 0) {
                 return getSubTable(RowSetFactory.empty().toTracking());
             }
+            if (isBlink()) {
+                // The operation initialization and listener registration is handled inside BlinkTableTools
+                return BlinkTableTools.blinkToAppendOnly(this, Require.geqZero(size, "size"));
+            }
             return getResult(SliceLikeOperation.slice(this, 0, Require.geqZero(size, "size"), "head"));
         }
     }
@@ -638,6 +644,10 @@ public class QueryTable extends BaseTable<QueryTable> {
         try (final SafeCloseable ignored = ExecutionContext.getContext().withUpdateGraph(updateGraph).open()) {
             if (size == 0) {
                 return getSubTable(RowSetFactory.empty().toTracking());
+            }
+            if (isBlink()) {
+                // The operation initialization and listener registration is handled inside BlinkTableTools
+                return RingTableTools.of(this, Math.toIntExact(Require.geqZero(size, "size")));
             }
             return getResult(SliceLikeOperation.slice(this, -Require.geqZero(size, "size"), 0, "tail"));
         }
