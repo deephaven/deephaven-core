@@ -58,8 +58,7 @@ public class MultiFieldChunkAdapter implements KeyOrValueProcessor {
 
 
     @Override
-    public void handleChunk(ObjectChunk<Object, Values> inputChunk,
-            WritableChunk<Values>[] publisherChunks) {
+    public void handleChunk(ObjectChunk<Object, Values> inputChunk, WritableChunk<Values>[] publisherChunks) {
         if (!allowNulls) {
             for (int ii = 0; ii < inputChunk.size(); ++ii) {
                 if (inputChunk.get(ii) == null) {

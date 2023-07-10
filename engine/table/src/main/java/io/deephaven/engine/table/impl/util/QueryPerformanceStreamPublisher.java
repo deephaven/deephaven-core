@@ -10,9 +10,9 @@ import io.deephaven.engine.table.TableDefinition;
 import io.deephaven.engine.table.impl.perf.QueryPerformanceNugget;
 import io.deephaven.engine.table.impl.perf.QueryProcessingResults;
 import io.deephaven.engine.table.impl.sources.ArrayBackedColumnSource;
+import io.deephaven.stream.StreamChunkUtils;
 import io.deephaven.stream.StreamConsumer;
 import io.deephaven.stream.StreamPublisher;
-import io.deephaven.stream.StreamToBlinkTableAdapter;
 import io.deephaven.time.DateTimeUtils;
 import io.deephaven.util.BooleanUtils;
 import io.deephaven.util.QueryConstants;
@@ -52,7 +52,7 @@ class QueryPerformanceStreamPublisher implements StreamPublisher {
     private StreamConsumer consumer;
 
     QueryPerformanceStreamPublisher() {
-        chunks = StreamToBlinkTableAdapter.makeChunksForDefinition(DEFINITION, CHUNK_SIZE);
+        chunks = StreamChunkUtils.makeChunksForDefinition(DEFINITION, CHUNK_SIZE);
     }
 
     @Override
@@ -143,10 +143,13 @@ class QueryPerformanceStreamPublisher implements StreamPublisher {
 
     private void flushInternal() {
         consumer.accept(chunks);
-        chunks = StreamToBlinkTableAdapter.makeChunksForDefinition(DEFINITION, CHUNK_SIZE);
+        chunks = StreamChunkUtils.makeChunksForDefinition(DEFINITION, CHUNK_SIZE);
     }
 
     public void acceptFailure(Throwable e) {
         consumer.acceptFailure(e);
     }
+
+    @Override
+    public void shutdown() {}
 }
