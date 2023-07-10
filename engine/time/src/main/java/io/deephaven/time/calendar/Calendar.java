@@ -3,15 +3,20 @@
  */
 package io.deephaven.time.calendar;
 
+import io.deephaven.base.verify.Require;
+import io.deephaven.base.verify.RequirementFailure;
 import io.deephaven.time.DateTimeUtils;
-import io.deephaven.util.QueryConstants;
 
-import java.time.*;
+import java.time.Instant;
+import java.time.LocalDate;
+import java.time.ZoneId;
+import java.time.ZonedDateTime;
 import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
 import java.util.List;
 
 //TODO: review all docs
+//TODO: add final to all methods
 
 /**
  * A calendar.
@@ -71,6 +76,15 @@ public class Calendar {
      */
     public ZoneId timeZone() {
         return timeZone;
+    }
+
+    @Override
+    public String toString() {
+        return "Calendar{" +
+                "name='" + name + '\'' +
+                ", description='" + description + '\'' +
+                ", timeZone=" + timeZone +
+                '}';
     }
 
     // endregion
@@ -232,186 +246,262 @@ public class Calendar {
     // region Ranges
 
     /**
-     * Gets the days in a given range.
+     * Returns the dates in a given range.
      *
-     * @param start start of a time range; if null, return empty array
-     * @param end   end of a time range; if null, return empty array
-     * @return the inclusive days between {@code start} and {@code end}
+     * @param start start of a time range
+     * @param end   end of a time range
+     * @param startInclusive true to include {@code start} in the result; false to exclude {@code start}
+     * @param endInclusive true to include {@code end} in the result; false to exclude {@code end}
+     * @return dates between {@code start} and {@code end}
+     * @throws RequirementFailure if any input is null
      */
-    public LocalDate[] calendarDates(final LocalDate start, final LocalDate end) {
-        if (start == null || end == null) {
-            return new LocalDate[0];
-        }
+    public LocalDate[] calendarDates(final LocalDate start, final LocalDate end, final boolean startInclusive, final boolean endInclusive) {
+        Require.neqNull(start, "start");
+        Require.neqNull(end, "end");
 
-        LocalDate day = start;
         List<LocalDate> dateList = new ArrayList<>();
 
-        while (!day.isAfter(end)) {
-            dateList.add(day);
-            day = day.plusDays(1);
+        for (LocalDate day = start; !day.isAfter(end); day = day.plusDays(1)) {
+            final boolean skip = (!startInclusive && day.equals(start)) || (!endInclusive && day.equals(end));
+
+            if(!skip) {
+                dateList.add(day);
+            }
         }
 
         return dateList.toArray(new LocalDate[0]);
     }
 
     /**
-     * Gets the days in a given range.
+     * Returns the dates in a given range.
      *
-     * @param start start of a time range; if null, return empty array
-     * @param end   end of a time range; if null, return empty array
-     * @return the inclusive days between {@code start} and {@code end}
+     * @param start start of a time range
+     * @param end   end of a time range
+     * @param startInclusive true to include {@code start} in the result; false to exclude {@code start}
+     * @param endInclusive true to include {@code end} in the result; false to exclude {@code end}
+     * @return dates between {@code start} and {@code end}
+     * @throws RequirementFailure if any input is null
+     * @throws DateTimeUtils.DateTimeParseException if the string cannot be parsed
      */
-    public LocalDate[] calendarDates(final ZonedDateTime start, final ZonedDateTime end) {
-        if (start == null || end == null) {
-            return new LocalDate[0];
-        }
-
-        return calendarDates(start.withZoneSameInstant(timeZone()).toLocalDate(), end.withZoneSameInstant(timeZone()).toLocalDate());
+    public LocalDate[] calendarDates(final String start, final String end, final boolean startInclusive, final boolean endInclusive) {
+        Require.neqNull(start, "start");
+        Require.neqNull(end, "end");
+        return calendarDates(DateTimeUtils.parseLocalDate(start), DateTimeUtils.parseLocalDate(end), startInclusive, endInclusive);
     }
 
     /**
-     * Gets the days in a given range.
+     * Returns the dates in a given range.
      *
-     * @param start start of a time range; if null, return empty array
-     * @param end   end of a time range; if null, return empty array
-     * @return the inclusive days between {@code start} and {@code end}
+     * @param start start of a time range
+     * @param end   end of a time range
+     * @param startInclusive true to include {@code start} in the result; false to exclude {@code start}
+     * @param endInclusive true to include {@code end} in the result; false to exclude {@code end}
+     * @return dates between {@code start} and {@code end}
+     * @throws RequirementFailure if any input is null
+     * @throws DateTimeUtils.DateTimeParseException if the string cannot be parsed
      */
-    public LocalDate[] calendarDates(final Instant start, final Instant end) {
-        if (start == null || end == null) {
-            return new LocalDate[0];
-        }
-
-        return calendarDates(DateTimeUtils.toZonedDateTime(start, timeZone()).toLocalDate(), DateTimeUtils.toZonedDateTime(end, timeZone()).toLocalDate());
+    public LocalDate[] calendarDates(final ZonedDateTime start, final ZonedDateTime end, final boolean startInclusive, final boolean endInclusive) {
+        Require.neqNull(start, "start");
+        Require.neqNull(end, "end");
+        return calendarDates(start.withZoneSameInstant(timeZone).toLocalDate(), end.withZoneSameInstant(timeZone).toLocalDate(), startInclusive, endInclusive);
     }
 
     /**
-     * Gets the days in a given range.
+     * Returns the dates in a given range.
      *
-     * @param start start of a time range; if null, return empty array
-     * @param end   end of a time range; if null, return empty array
-     * @return the inclusive days between {@code start} and {@code end}
+     * @param start start of a time range
+     * @param end   end of a time range
+     * @param startInclusive true to include {@code start} in the result; false to exclude {@code start}
+     * @param endInclusive true to include {@code end} in the result; false to exclude {@code end}
+     * @return dates between {@code start} and {@code end}
+     * @throws RequirementFailure if any input is null
+     * @throws DateTimeUtils.DateTimeParseException if the string cannot be parsed
+     */
+    public LocalDate[] calendarDates(final Instant start, final Instant end, final boolean startInclusive, final boolean endInclusive) {
+        Require.neqNull(start, "start");
+        Require.neqNull(end, "end");
+        return calendarDates(DateTimeUtils.toLocalDate(start, timeZone), DateTimeUtils.toLocalDate(end, timeZone), startInclusive, endInclusive);
+    }
+
+    /**
+     * Returns the dates in a given range.
+     *
+     * @param start start of a time range
+     * @param end   end of a time range
+     * @return dates between {@code start} and {@code end}; including {@code start} and {@code end}
+     * @throws RequirementFailure if any input is null
+     */
+    public LocalDate[] calendarDates(final LocalDate start, final LocalDate end) {
+        return calendarDates(start,end, true, true);
+    }
+
+    /**
+     * Returns the dates in a given range.
+     *
+     * @param start start of a time range
+     * @param end   end of a time range
+     * @return dates between {@code start} and {@code end}; including {@code start} and {@code end}
+     * @throws RequirementFailure if any input is null
+     * @throws DateTimeUtils.DateTimeParseException if the string cannot be parsed
      */
     public LocalDate[] calendarDates(final String start, final String end) {
-        if (start == null || end == null) {
-            return new LocalDate[0];
-        }
-
-        return calendarDates(DateTimeUtils.parseLocalDate(start), DateTimeUtils.parseLocalDate(end));
+        return calendarDates(start,end, true, true);
     }
 
     /**
-     * Gets the number of days in a given range.
-     *
-     * @param start        start of a time range
-     * @param end          end of a time range
-     * @param endInclusive whether to treat the {@code end} inclusive or exclusively
-     * @return the number of days between {@code start} and {@code end}, or {@code NULL_INT} if any input is null.
-     */
-    public int numberCalendarDates(final LocalDate start, final LocalDate end, final boolean endInclusive) {
-        if (start == null || end == null) {
-            return QueryConstants.NULL_INT;
-        }
-
-        int days = (int) ChronoUnit.DAYS.between(start, end);
-        if (days < 0) {
-            days = days - (endInclusive ? 1 : 0);
-        } else {
-            days = days + (endInclusive ? 1 : 0);
-        }
-        return days;
-    }
-
-    /**
-     * Gets the number of days in a given range, end date exclusive.
+     * Returns the dates in a given range.
      *
      * @param start start of a time range
      * @param end   end of a time range
-     * @return the number of days between {@code start} and {@code end}, or {@code NULL_INT} if any input is null.
+     * @return dates between {@code start} and {@code end}; including {@code start} and {@code end}
+     * @throws RequirementFailure if any input is null
+     */
+    public LocalDate[] calendarDates(final ZonedDateTime start, final ZonedDateTime end) {
+        return calendarDates(start,end, true, true);
+    }
+
+    /**
+     * Returns the dates in a given range.
+     *
+     * @param start start of a time range
+     * @param end   end of a time range
+     * @return dates between {@code start} and {@code end}; including {@code start} and {@code end}
+     * @throws RequirementFailure if any input is null
+     */
+    public LocalDate[] calendarDates(final Instant start, final Instant end) {
+        return calendarDates(start,end, true, true);
+    }
+
+    /**
+     * Returns the number of dates in a given range.
+     *
+     * @param start start of a time range
+     * @param end   end of a time range
+     * @param startInclusive true to include {@code start} in the result; false to exclude {@code start}
+     * @param endInclusive true to include {@code end} in the result; false to exclude {@code end}
+     * @return number of dates between {@code start} and {@code end}
+     * @throws RequirementFailure if any input is null
+     */
+    public int numberCalendarDates(final LocalDate start, final LocalDate end, final boolean startInclusive, final boolean endInclusive) {
+        Require.neqNull(start, "start");
+        Require.neqNull(end, "end");
+
+        int days = (int) ChronoUnit.DAYS.between(start, end.plusDays(1));
+
+            if(!startInclusive){
+                days -= 1;
+            }
+
+            if(!endInclusive){
+                days -= 1;
+            }
+
+            return Math.max(days, 0);
+    }
+
+    /**
+     * Returns the number of dates in a given range.
+     *
+     * @param start start of a time range
+     * @param end   end of a time range
+     * @param startInclusive true to include {@code start} in the result; false to exclude {@code start}
+     * @param endInclusive true to include {@code end} in the result; false to exclude {@code end}
+     * @return number of dates between {@code start} and {@code end}
+     * @throws RequirementFailure if any input is null
+     * @throws DateTimeUtils.DateTimeParseException if the string cannot be parsed
+     */
+    public int numberCalendarDates(final String start, final String end, final boolean startInclusive, final boolean endInclusive) {
+        Require.neqNull(start, "start");
+        Require.neqNull(end, "end");
+        return numberCalendarDates(DateTimeUtils.parseLocalDate(start), DateTimeUtils.parseLocalDate(end), startInclusive, endInclusive);
+    }
+
+    /**
+     * Returns the number of dates in a given range.
+     *
+     * @param start start of a time range
+     * @param end   end of a time range
+     * @param startInclusive true to include {@code start} in the result; false to exclude {@code start}
+     * @param endInclusive true to include {@code end} in the result; false to exclude {@code end}
+     * @return number of dates between {@code start} and {@code end}
+     * @throws RequirementFailure if any input is null
+     * @throws DateTimeUtils.DateTimeParseException if the string cannot be parsed
+     */
+    public int numberCalendarDates(final ZonedDateTime start, final ZonedDateTime end, final boolean startInclusive, final boolean endInclusive) {
+        Require.neqNull(start, "start");
+        Require.neqNull(end, "end");
+        return numberCalendarDates(start.withZoneSameInstant(timeZone).toLocalDate(), end.withZoneSameInstant(timeZone).toLocalDate(), startInclusive, endInclusive);
+    }
+
+    /**
+     * Returns the number of dates in a given range.
+     *
+     * @param start start of a time range
+     * @param end   end of a time range
+     * @param startInclusive true to include {@code start} in the result; false to exclude {@code start}
+     * @param endInclusive true to include {@code end} in the result; false to exclude {@code end}
+     * @return number of dates between {@code start} and {@code end}
+     * @throws RequirementFailure if any input is null
+     * @throws DateTimeUtils.DateTimeParseException if the string cannot be parsed
+     */
+    public int numberCalendarDates(final Instant start, final Instant end, final boolean startInclusive, final boolean endInclusive) {
+        Require.neqNull(start, "start");
+        Require.neqNull(end, "end");
+        return numberCalendarDates(DateTimeUtils.toLocalDate(start, timeZone), DateTimeUtils.toLocalDate(end, timeZone), startInclusive, endInclusive);
+    }
+
+    /**
+     * Returns the number of dates in a given range.
+     *
+     * @param start start of a time range
+     * @param end   end of a time range
+     * @return number of dates between {@code start} and {@code end}; including {@code start} and {@code end}
+     * @throws RequirementFailure if any input is null
      */
     public int numberCalendarDates(final LocalDate start, final LocalDate end) {
-        return numberCalendarDates(start, end, false);
+        return numberCalendarDates(start,end, true, true);
     }
 
     /**
-     * Gets the number of days in a given range.
-     *
-     * @param start        start of a time range
-     * @param end          end of a time range
-     * @param endInclusive whether to treat the {@code end} inclusive or exclusively
-     * @return the number of days between {@code start} and {@code end}, or {@code NULL_INT} if any input is null.
-     */
-    public int numberCalendarDates(final ZonedDateTime start, final ZonedDateTime end, final boolean endInclusive) {
-        if (start == null || end == null) {
-            return QueryConstants.NULL_INT;
-        }
-
-        return numberCalendarDates(start.withZoneSameInstant(timeZone()).toLocalDate(), end.withZoneSameInstant(timeZone()).toLocalDate(), endInclusive);
-    }
-
-    /**
-     * Gets the number of days in a given range, end date exclusive.
+     * Returns the number of dates in a given range.
      *
      * @param start start of a time range
      * @param end   end of a time range
-     * @return the number of days between {@code start} and {@code end}, or {@code NULL_INT} if any input is null.
-     */
-    public int numberCalendarDates(final ZonedDateTime start, final ZonedDateTime end) {
-        return numberCalendarDates(start, end, false);
-    }
-
-    /**
-     * Gets the number of days in a given range.
-     *
-     * @param start        start of a time range
-     * @param end          end of a time range
-     * @param endInclusive whether to treat the {@code end} inclusive or exclusively
-     * @return the number of days between {@code start} and {@code end}, or {@code NULL_INT} if any input is null.
-     */
-    public int numberCalendarDates(final Instant start, final Instant end, final boolean endInclusive) {
-        if (start == null || end == null) {
-            return QueryConstants.NULL_INT;
-        }
-
-        return numberCalendarDates(DateTimeUtils.toZonedDateTime(start, timeZone()).toLocalDate(), DateTimeUtils.toZonedDateTime(end, timeZone()).toLocalDate(), endInclusive);
-    }
-
-    /**
-     * Gets the number of days in a given range, end date exclusive.
-     *
-     * @param start start of a time range
-     * @param end   end of a time range
-     * @return the number of days between {@code start} and {@code end}, or {@code NULL_INT} if any input is null.
-     */
-    public int numberCalendarDates(final Instant start, final Instant end) {
-        return numberCalendarDates(start, end, false);
-    }
-
-    /**
-     * Gets the number of days in a given range.
-     *
-     * @param start        start of a time range
-     * @param end          end of a time range
-     * @param endInclusive whether to treat the {@code end} inclusive or exclusively
-     * @return the number of days between {@code start} and {@code end}, or {@code NULL_INT} if any input is null.
-     */
-    public int numberCalendarDates(final String start, final String end, final boolean endInclusive) {
-        if (start == null || end == null) {
-            return QueryConstants.NULL_INT;
-        }
-
-        return numberCalendarDates(DateTimeUtils.parseLocalDate(start), DateTimeUtils.parseLocalDate(end), endInclusive);
-    }
-
-    /**
-     * Gets the number of days in a given range, end date exclusive.
-     *
-     * @param start start of a time range
-     * @param end   end of a time range
-     * @return the number of days between {@code start} and {@code end}, or {@code NULL_INT} if any input is null.
+     * @return number of dates between {@code start} and {@code end}; including {@code start} and {@code end}
+     * @throws RequirementFailure if any input is null
+     * @throws DateTimeUtils.DateTimeParseException if the string cannot be parsed
      */
     public int numberCalendarDates(final String start, final String end) {
-        return numberCalendarDates(start, end, false);
+        return numberCalendarDates(start,end, true, true);
     }
+
+    /**
+     * Returns the number of dates in a given range.
+     *
+     * @param start start of a time range
+     * @param end   end of a time range
+     * @return number of dates between {@code start} and {@code end}; including {@code start} and {@code end}
+     * @throws RequirementFailure if any input is null
+     */
+    public int numberCalendarDates(final ZonedDateTime start, final ZonedDateTime end) {
+        return numberCalendarDates(start,end, true, true);
+    }
+
+    /**
+     * Returns the number of dates in a given range.
+     *
+     * @param start start of a time range
+     * @param end   end of a time range
+     * @return number of dates between {@code start} and {@code end}; including {@code start} and {@code end}
+     * @throws RequirementFailure if any input is null
+     */
+    public int numberCalendarDates(final Instant start, final Instant end) {
+        return numberCalendarDates(start,end, true, true);
+    }
+
+    // endregion
+
+    // region Differences
 
     //TODO: time diff methods?
 //    diffBusinessDay

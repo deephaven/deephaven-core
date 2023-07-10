@@ -742,313 +742,539 @@ public class BusinessCalendar extends Calendar {
 
     // endregion
 
-    ***
-
     // region Ranges
 
-    //TODO: consistently handle inclusive / exclusive in these ranges
-
     /**
-     * Returns the number of business days between {@code start} and {@code end}.
+     * Returns the number of business dates in a given range.
      *
-     * @param start start time; if null, return NULL_INT
-     * @param end end time; if null, return NULL_INT
-     * @param endInclusive whether to treat the {@code end} inclusive or exclusively
-     * @return number of business days between the {@code start} and {@code end}, inclusive and {@code endInclusive}
-     *         respectively.
+     * @param start start of a time range
+     * @param end   end of a time range
+     * @param startInclusive true to include {@code start} in the result; false to exclude {@code start}
+     * @param endInclusive true to include {@code end} in the result; false to exclude {@code end}
+     * @return number of business dates between {@code start} and {@code end}
+     * @throws RequirementFailure if any input is null
+     * @throws InvalidDateException if the dates are not in the valid range
      */
-    public int numberBusinessDates(final LocalDate start, final LocalDate end, final boolean endInclusive)  {
-        if (start == null || end == null) {
-            return QueryConstants.NULL_INT;
-        }
+    public int numberBusinessDates(final LocalDate start, final LocalDate end, final boolean startInclusive, final boolean endInclusive)  {
+        Require.neqNull(start, "start");
+        Require.neqNull(end, "end");
 
         int days = 0;
-        if (start.isBefore(end)) {
-            if (isBusinessDay(start)) {
+
+        for (LocalDate day = start; !day.isAfter(end); day = day.plusDays(1)) {
+            final boolean skip = (!startInclusive && day.equals(start)) || (!endInclusive && day.equals(end));
+
+            if(!skip && isBusinessDay(day)) {
                 days++;
             }
-            start = plusBusinessDays(start, 1);
-        } else if (start.isAfter(end)) {
-            //TODO: is this working right?
-            return -numberBusinessDates(end, start, endInclusive);
         }
 
-        LocalDate day = start;
-
-        while (day.isBefore(end)) {
-            days++;
-            day = plusBusinessDays(day,1);
-        }
-
-        return days + (endInclusive && isBusinessDay(end) ? 1 : 0);
+        return days;
     }
 
-    //TODO: add endInclusive on all methods
     /**
-     * Returns the number of business days between {@code start} and {@code end}.
+     * Returns the number of business dates in a given range.
      *
-     * @param start start time; if null, return NULL_LONG
-     * @param end end time; if null, return NULL_LONG
-     * @param endInclusive whether to treat the {@code end} inclusive or exclusively
-     * @return number of business days between the {@code start} and {@code end}, inclusive and {@code endInclusive}
-     *         respectively.
+     * @param start start of a time range
+     * @param end   end of a time range
+     * @param startInclusive true to include {@code start} in the result; false to exclude {@code start}
+     * @param endInclusive true to include {@code end} in the result; false to exclude {@code end}
+     * @return number of business dates between {@code start} and {@code end}
+     * @throws RequirementFailure if any input is null
+     * @throws InvalidDateException if the dates are not in the valid range
+     * @throws DateTimeUtils.DateTimeParseException if the string cannot be parsed
      */
-    public int numberBusinessDates(Instant start, Instant end, final boolean endInclusive) {
-        if (start == null || end == null) {
-            return QueryConstants.NULL_INT;
-        }
-
-        return numberBusinessDates(DateTimeUtils.toLocalDate(start, timeZone()), DateTimeUtils.toLocalDate(end, timeZone()), endInclusive);
+    public int numberBusinessDates(final String start, final String end, final boolean startInclusive, final boolean endInclusive)  {
+        Require.neqNull(start, "start");
+        Require.neqNull(end, "end");
+        return numberBusinessDates(DateTimeUtils.parseLocalDate(start), DateTimeUtils.parseLocalDate(end), startInclusive, endInclusive);
     }
 
     /**
-     * Returns the number of business days between {@code start} and {@code end}.
+     * Returns the number of business dates in a given range.
      *
-     * @param start start time; if null, return NULL_LONG
-     * @param end end time; if null, return NULL_LONG
-     * @param endInclusive whether to treat the {@code end} inclusive or exclusively
-     * @return number of business days between the {@code start} and {@code end}, inclusive and {@code endInclusive}
-     *         respectively.
+     * @param start start of a time range
+     * @param end   end of a time range
+     * @param startInclusive true to include {@code start} in the result; false to exclude {@code start}
+     * @param endInclusive true to include {@code end} in the result; false to exclude {@code end}
+     * @return number of business dates between {@code start} and {@code end}
+     * @throws RequirementFailure if any input is null
+     * @throws InvalidDateException if the dates are not in the valid range
      */
-    public int numberBusinessDates(ZonedDateTime start, ZonedDateTime end, final boolean endInclusive) {
-        if (start == null || end == null) {
-            return QueryConstants.NULL_INT;
-        }
-
-        return numberBusinessDates(DateTimeUtils.toLocalDate(start.toInstant(), timeZone()), DateTimeUtils.toLocalDate(end.toInstant(), timeZone()), endInclusive);
+    public int numberBusinessDates(final ZonedDateTime start, final ZonedDateTime end, final boolean startInclusive, final boolean endInclusive)  {
+        Require.neqNull(start, "start");
+        Require.neqNull(end, "end");
+        return numberBusinessDates(start.withZoneSameInstant(timeZone()).toLocalDate(), end.withZoneSameInstant(timeZone()).toLocalDate(), startInclusive, endInclusive);
     }
 
     /**
-     * Returns the number of business days between {@code start} and {@code end}.
+     * Returns the number of business dates in a given range.
      *
-     * @param start start time; if null, return NULL_INT
-     * @param end end time; if null, return NULL_INT
-     * @param endInclusive whether to treat the {@code end} inclusive or exclusively
-     * @return number of business days between the {@code start} and {@code end}, inclusive and {@code endInclusive}
-     *         respectively.
+     * @param start start of a time range
+     * @param end   end of a time range
+     * @param startInclusive true to include {@code start} in the result; false to exclude {@code start}
+     * @param endInclusive true to include {@code end} in the result; false to exclude {@code end}
+     * @return number of business dates between {@code start} and {@code end}
+     * @throws RequirementFailure if any input is null
+     * @throws InvalidDateException if the dates are not in the valid range
      */
-    public int numberBusinessDates(String start, String end, final boolean endInclusive)  {
-        if (start == null || end == null) {
-            return QueryConstants.NULL_INT;
-        }
-
-        return numberBusinessDates(DateTimeUtils.parseLocalDate(start), DateTimeUtils.parseLocalDate(end), endInclusive);
+    public int numberBusinessDates(final Instant start, final Instant end, final boolean startInclusive, final boolean endInclusive)  {
+        Require.neqNull(start, "start");
+        Require.neqNull(end, "end");
+        return numberBusinessDates(DateTimeUtils.toLocalDate(start, timeZone()), DateTimeUtils.toLocalDate(end, timeZone()), startInclusive, endInclusive);
     }
 
     /**
-     * Returns the number of non-business days between {@code start} and {@code end}.
+     * Returns the number of business dates in a given range.
      *
-     * @param start start time; if null, return NULL_INT
-     * @param end end time; if null, return NULL_INT
-     * @param endInclusive whether to treat the {@code end} inclusive or exclusively
-     * @return number of non-business days between the {@code start} and {@code end}, inclusive and {@code endInclusive}
-     *         respectively.
+     * @param start start of a time range
+     * @param end   end of a time range
+     * @return number of business dates between {@code start} and {@code end}; including {@code start} and {@code end}
+     * @throws RequirementFailure if any input is null
+     * @throws InvalidDateException if the dates are not in the valid range
      */
-    public int numberNonBusinessDates(final LocalDate start, final LocalDate end, final boolean endInclusive) {
-        if (start == null || end == null) {
-            return QueryConstants.NULL_INT;
-        }
-
-        return numberCalendarDates(start, end, endInclusive) - numberBusinessDates(start, end, endInclusive);
+    public int numberBusinessDates(final LocalDate start, final LocalDate end) {
+        return numberBusinessDates(start,end, true, true);
     }
 
     /**
-     * Returns the number of non-business days between {@code start} and {@code end}.
+     * Returns the number of business dates in a given range.
      *
-     * @param start start time; if null, return NULL_LONG
-     * @param end end time; if null, return NULL_LONG
-     * @param endInclusive whether to treat the {@code end} inclusive or exclusively
-     * @return number of business days between the {@code start} and {@code end}, inclusive and {@code endInclusive}
-     *         respectively.
+     * @param start start of a time range
+     * @param end   end of a time range
+     * @return number of business dates between {@code start} and {@code end}; including {@code start} and {@code end}
+     * @throws RequirementFailure if any input is null
+     * @throws InvalidDateException if the dates are not in the valid range
+     * @throws DateTimeUtils.DateTimeParseException if the string cannot be parsed
      */
-    public int numberNonBusinessDates(Instant start, Instant end, final boolean endInclusive) {
-        if (start == null || end == null) {
-            return QueryConstants.NULL_INT;
-        }
-
-        return numberNonBusinessDates(DateTimeUtils.toLocalDate(start, timeZone()), DateTimeUtils.toLocalDate(end, timeZone()), endInclusive);
+    public int numberBusinessDates(final String start, final String end) {
+        return numberBusinessDates(start,end, true, true);
     }
 
     /**
-     * Returns the number of non-business days between {@code start} and {@code end}.
+     * Returns the number of business dates in a given range.
      *
-     * @param start start time; if null, return NULL_INT
-     * @param end end time; if null, return NULL_INT
-     * @param endInclusive whether to treat the {@code end} inclusive or exclusively
-     * @return number of non-business days between the {@code start} and {@code end}, inclusive and {@code endInclusive}
-     *         respectively.
+     * @param start start of a time range
+     * @param end   end of a time range
+     * @return number of business dates between {@code start} and {@code end}; including {@code start} and {@code end}
+     * @throws RequirementFailure if any input is null
+     * @throws InvalidDateException if the dates are not in the valid range
      */
-    public int numberNonBusinessDates(final String start, final String end, final boolean endInclusive) {
-        if (start == null || end == null) {
-            return QueryConstants.NULL_INT;
-        }
-
-        return numberNonBusinessDates(DateTimeUtils.parseLocalDate(start), DateTimeUtils.parseLocalDate(end), endInclusive);
+    public int numberBusinessDates(final ZonedDateTime start, final ZonedDateTime end) {
+        return numberBusinessDates(start,end, true, true);
     }
 
     /**
-     * Returns the business days between {@code start} and {@code end}, inclusive.
+     * Returns the number of business dates in a given range.
      *
-     * Because no time information (e.g., hours, minutes, seconds) is returned, the corresponding days for {@code start}
-     * and {@code end} will be included if they are business days.
+     * @param start start of a time range
+     * @param end   end of a time range
+     * @return number of business dates between {@code start} and {@code end}; including {@code start} and {@code end}
+     * @throws RequirementFailure if any input is null
+     * @throws InvalidDateException if the dates are not in the valid range
+     */
+    public int numberBusinessDates(final Instant start, final Instant end) {
+        return numberBusinessDates(start,end, true, true);
+    }
+
+    /**
+     * Returns the number of non-business dates in a given range.
      *
-     * @param start start time; if null, return empty array
-     * @param end end time; if null, return empty array
-     * @return inclusive business days between {@code start} and {@code end}
+     * @param start start of a time range
+     * @param end   end of a time range
+     * @param startInclusive true to include {@code start} in the result; false to exclude {@code start}
+     * @param endInclusive true to include {@code end} in the result; false to exclude {@code end}
+     * @return number of non-business dates between {@code start} and {@code end}
+     * @throws RequirementFailure if any input is null
+     * @throws InvalidDateException if the dates are not in the valid range
+     */
+    public int numberNonBusinessDates(final LocalDate start, final LocalDate end, final boolean startInclusive, final boolean endInclusive)  {
+        Require.neqNull(start, "start");
+        Require.neqNull(end, "end");
+
+        return numberCalendarDates(start, end, startInclusive, endInclusive) - numberBusinessDates(start, end, startInclusive, endInclusive);
+    }
+
+    /**
+     * Returns the number of non-business dates in a given range.
+     *
+     * @param start start of a time range
+     * @param end   end of a time range
+     * @param startInclusive true to include {@code start} in the result; false to exclude {@code start}
+     * @param endInclusive true to include {@code end} in the result; false to exclude {@code end}
+     * @return number of non-business dates between {@code start} and {@code end}
+     * @throws RequirementFailure if any input is null
+     * @throws InvalidDateException if the dates are not in the valid range
+     * @throws DateTimeUtils.DateTimeParseException if the string cannot be parsed
+     */
+    public int numberNonBusinessDates(final String start, final String end, final boolean startInclusive, final boolean endInclusive)  {
+        Require.neqNull(start, "start");
+        Require.neqNull(end, "end");
+        return numberNonBusinessDates(DateTimeUtils.parseLocalDate(start), DateTimeUtils.parseLocalDate(end), startInclusive, endInclusive);
+    }
+
+    /**
+     * Returns the number of non-business dates in a given range.
+     *
+     * @param start start of a time range
+     * @param end   end of a time range
+     * @param startInclusive true to include {@code start} in the result; false to exclude {@code start}
+     * @param endInclusive true to include {@code end} in the result; false to exclude {@code end}
+     * @return number of non-business dates between {@code start} and {@code end}
+     * @throws RequirementFailure if any input is null
+     * @throws InvalidDateException if the dates are not in the valid range
+     */
+    public int numberNonBusinessDates(final ZonedDateTime start, final ZonedDateTime end, final boolean startInclusive, final boolean endInclusive)  {
+        Require.neqNull(start, "start");
+        Require.neqNull(end, "end");
+        return numberNonBusinessDates(start.withZoneSameInstant(timeZone()).toLocalDate(), end.withZoneSameInstant(timeZone()).toLocalDate(), startInclusive, endInclusive);
+    }
+
+    /**
+     * Returns the number of non-business dates in a given range.
+     *
+     * @param start start of a time range
+     * @param end   end of a time range
+     * @param startInclusive true to include {@code start} in the result; false to exclude {@code start}
+     * @param endInclusive true to include {@code end} in the result; false to exclude {@code end}
+     * @return number of non-business dates between {@code start} and {@code end}
+     * @throws RequirementFailure if any input is null
+     * @throws InvalidDateException if the dates are not in the valid range
+     */
+    public int numberNonBusinessDates(final Instant start, final Instant end, final boolean startInclusive, final boolean endInclusive)  {
+        Require.neqNull(start, "start");
+        Require.neqNull(end, "end");
+        return numberNonBusinessDates(DateTimeUtils.toLocalDate(start, timeZone()), DateTimeUtils.toLocalDate(end, timeZone()), startInclusive, endInclusive);
+    }
+
+    /**
+     * Returns the number of non-business dates in a given range.
+     *
+     * @param start start of a time range
+     * @param end   end of a time range
+     * @return number of non-business dates between {@code start} and {@code end}; including {@code start} and {@code end}
+     * @throws RequirementFailure if any input is null
+     * @throws InvalidDateException if the dates are not in the valid range
+     */
+    public int numberNonBusinessDates(final LocalDate start, final LocalDate end) {
+        return numberNonBusinessDates(start,end, true, true);
+    }
+
+    /**
+     * Returns the number of non-business dates in a given range.
+     *
+     * @param start start of a time range
+     * @param end   end of a time range
+     * @return number of non-business dates between {@code start} and {@code end}; including {@code start} and {@code end}
+     * @throws RequirementFailure if any input is null
+     * @throws InvalidDateException if the dates are not in the valid range
+     * @throws DateTimeUtils.DateTimeParseException if the string cannot be parsed
+     */
+    public int numberNonBusinessDates(final String start, final String end) {
+        return numberNonBusinessDates(start,end, true, true);
+    }
+
+    /**
+     * Returns the number of non-business dates in a given range.
+     *
+     * @param start start of a time range
+     * @param end   end of a time range
+     * @return number of non-business dates between {@code start} and {@code end}; including {@code start} and {@code end}
+     * @throws RequirementFailure if any input is null
+     * @throws InvalidDateException if the dates are not in the valid range
+     */
+    public int numberNonBusinessDates(final ZonedDateTime start, final ZonedDateTime end) {
+        return numberNonBusinessDates(start,end, true, true);
+    }
+
+    /**
+     * Returns the number of non-business dates in a given range.
+     *
+     * @param start start of a time range
+     * @param end   end of a time range
+     * @return number of non-business dates between {@code start} and {@code end}; including {@code start} and {@code end}
+     * @throws RequirementFailure if any input is null
+     * @throws InvalidDateException if the dates are not in the valid range
+     */
+    public int numberNonBusinessDates(final Instant start, final Instant end) {
+        return numberNonBusinessDates(start,end, true, true);
+    }
+
+    /**
+     * Returns the business dates in a given range.
+     *
+     * @param start start of a time range
+     * @param end   end of a time range
+     * @param startInclusive true to include {@code start} in the result; false to exclude {@code start}
+     * @param endInclusive true to include {@code end} in the result; false to exclude {@code end}
+     * @return business dates between {@code start} and {@code end}
+     * @throws RequirementFailure if any input is null
+     * @throws InvalidDateException if the dates are not in the valid range
+     */
+    public LocalDate[] businessDates(final LocalDate start, final LocalDate end, final boolean startInclusive, final boolean endInclusive) {
+        Require.neqNull(start, "start");
+        Require.neqNull(end, "end");
+
+        List<LocalDate> dateList = new ArrayList<>();
+
+        for (LocalDate day = start; !day.isAfter(end); day = day.plusDays(1)) {
+            final boolean skip = (!startInclusive && day.equals(start)) || (!endInclusive && day.equals(end));
+
+            if(!skip && isBusinessDay(day)) {
+                dateList.add(day);
+            }
+        }
+
+        return dateList.toArray(new LocalDate[0]);
+    }
+
+    /**
+     * Returns the business dates in a given range.
+     *
+     * @param start start of a time range
+     * @param end   end of a time range
+     * @param startInclusive true to include {@code start} in the result; false to exclude {@code start}
+     * @param endInclusive true to include {@code end} in the result; false to exclude {@code end}
+     * @return business dates between {@code start} and {@code end}
+     * @throws RequirementFailure if any input is null
+     * @throws InvalidDateException if the dates are not in the valid range
+     * @throws DateTimeUtils.DateTimeParseException if the string cannot be parsed
+     */
+    public LocalDate[] businessDates(final String start, final String end, final boolean startInclusive, final boolean endInclusive) {
+        Require.neqNull(start, "start");
+        Require.neqNull(end, "end");
+        return businessDates(DateTimeUtils.parseLocalDate(start), DateTimeUtils.parseLocalDate(end), startInclusive, endInclusive);
+    }
+
+    /**
+     * Returns the business dates in a given range.
+     *
+     * @param start start of a time range
+     * @param end   end of a time range
+     * @param startInclusive true to include {@code start} in the result; false to exclude {@code start}
+     * @param endInclusive true to include {@code end} in the result; false to exclude {@code end}
+     * @return business dates between {@code start} and {@code end}
+     * @throws RequirementFailure if any input is null
+     * @throws InvalidDateException if the dates are not in the valid range
+     */
+    public LocalDate[] businessDates(final ZonedDateTime start, final ZonedDateTime end, final boolean startInclusive, final boolean endInclusive) {
+        Require.neqNull(start, "start");
+        Require.neqNull(end, "end");
+        return businessDates(start.withZoneSameInstant(timeZone()).toLocalDate(), end.withZoneSameInstant(timeZone()).toLocalDate(), startInclusive, endInclusive);
+    }
+
+    /**
+     * Returns the business dates in a given range.
+     *
+     * @param start start of a time range
+     * @param end   end of a time range
+     * @param startInclusive true to include {@code start} in the result; false to exclude {@code start}
+     * @param endInclusive true to include {@code end} in the result; false to exclude {@code end}
+     * @return business dates between {@code start} and {@code end}
+     * @throws RequirementFailure if any input is null
+     * @throws InvalidDateException if the dates are not in the valid range
+     */
+    public LocalDate[] businessDates(final Instant start, final Instant end, final boolean startInclusive, final boolean endInclusive) {
+        Require.neqNull(start, "start");
+        Require.neqNull(end, "end");
+        return businessDates(DateTimeUtils.toLocalDate(start, timeZone()), DateTimeUtils.toLocalDate(end, timeZone()), startInclusive, endInclusive);
+    }
+
+    /**
+     * Returns the business dates in a given range.
+     *
+     * @param start start of a time range
+     * @param end   end of a time range
+     * @return business dates between {@code start} and {@code end}; including {@code start} and {@code end}
+     * @throws RequirementFailure if any input is null
+     * @throws InvalidDateException if the dates are not in the valid range
      */
     public LocalDate[] businessDates(final LocalDate start, final LocalDate end) {
-        if (start == null || end == null) {
-            return new LocalDate[0];
-        }
-
-        LocalDate day = start;
-        final List<LocalDate> dateList = new ArrayList<>();
-
-        while (!day.isAfter(end)) {
-            if (isBusinessDay(day)) {
-                dateList.add(day);
-            }
-            day = day.plusDays(1);
-        }
-
-        return dateList.toArray(new LocalDate[0]);
+        return businessDates(start,end, true, true);
     }
 
     /**
-     * Returns the business days between {@code start} and {@code end}, inclusive.
+     * Returns the business dates in a given range.
      *
-     * Because no time information (e.g., hours, minutes, seconds) is returned, the corresponding days for {@code start}
-     * and {@code end} will be included if they are business days.
-     *
-     * @param start start time; if null, return empty array
-     * @param end end time; if null, return empty array
-     * @return inclusive business days between {@code start} and {@code end}
+     * @param start start of a time range
+     * @param end   end of a time range
+     * @return business dates between {@code start} and {@code end}; including {@code start} and {@code end}
+     * @throws RequirementFailure if any input is null
+     * @throws InvalidDateException if the dates are not in the valid range
+     * @throws DateTimeUtils.DateTimeParseException if the string cannot be parsed
      */
-    public LocalDate[] businessDates(final Instant start, final Instant end) {
-        if (start == null || end == null) {
-            return new LocalDate[0];
-        }
-
-        return businessDates(DateTimeUtils.toLocalDate(start, timeZone()), DateTimeUtils.toLocalDate(end, timeZone()));
+    public LocalDate[] businessDates(final String start, final String end) {
+        return businessDates(start,end, true, true);
     }
 
     /**
-     * Returns the business days between {@code start} and {@code end}, inclusive.
+     * Returns the business dates in a given range.
      *
-     * Because no time information (e.g., hours, minutes, seconds) is returned, the corresponding days for {@code start}
-     * and {@code end} will be included if they are business days.
-     *
-     * @param start start time; if null, return empty array
-     * @param end end time; if null, return empty array
-     * @return inclusive business days between {@code start} and {@code end}
+     * @param start start of a time range
+     * @param end   end of a time range
+     * @return business dates between {@code start} and {@code end}; including {@code start} and {@code end}
+     * @throws RequirementFailure if any input is null
+     * @throws InvalidDateException if the dates are not in the valid range
      */
     public LocalDate[] businessDates(final ZonedDateTime start, final ZonedDateTime end) {
-        if (start == null || end == null) {
-            return new LocalDate[0];
-        }
-
-        return businessDates(DateTimeUtils.toLocalDate(start.toInstant(), timeZone()), DateTimeUtils.toLocalDate(end.toInstant(), timeZone()));
+        return businessDates(start,end, true, true);
     }
 
     /**
-     * Returns the business days between {@code start} and {@code end}, inclusive.
+     * Returns the business dates in a given range.
      *
-     * Because no time information (e.g., hours, minutes, seconds) is returned, the corresponding days for {@code start}
-     * and {@code end} will be included if they are business days.
-     *
-     * @param start start time; if null, return empty array
-     * @param end end time; if null, return empty array
-     * @return inclusive business days between {@code start} and {@code end}
+     * @param start start of a time range
+     * @param end   end of a time range
+     * @return business dates between {@code start} and {@code end}; including {@code start} and {@code end}
+     * @throws RequirementFailure if any input is null
+     * @throws InvalidDateException if the dates are not in the valid range
      */
-    public LocalDate[] businessDates(String start, String end){
-        if (start == null || end == null) {
-            return new LocalDate[0];
-        }
-
-        return businessDates(DateTimeUtils.parseLocalDate(start), DateTimeUtils.parseLocalDate(end));
+    public LocalDate[] businessDates(final Instant start, final Instant end) {
+        return businessDates(start,end, true, true);
     }
 
     /**
-     * Returns the non-business days between {@code start} and {@code end}, inclusive.
+     * Returns the non-business dates in a given range.
      *
-     * Because no time information (e.g., hours, minutes, seconds) is returned, the corresponding days for {@code start}
-     * and {@code end} will be included if they are non-business days.
-     *
-     * @param start start time; if null, return empty array
-     * @param end end time; if null, return empty array
-     * @return inclusive non-business days between {@code start} and {@code end}
+     * @param start start of a time range
+     * @param end   end of a time range
+     * @param startInclusive true to include {@code start} in the result; false to exclude {@code start}
+     * @param endInclusive true to include {@code end} in the result; false to exclude {@code end}
+     * @return non-business dates between {@code start} and {@code end}
+     * @throws RequirementFailure if any input is null
+     * @throws InvalidDateException if the dates are not in the valid range
      */
-    public LocalDate[] nonBusinessDates(final LocalDate start, final LocalDate end){
-        if (start == null || end == null) {
-            return new LocalDate[0];
-        }
+    public LocalDate[] nonBusinessDates(final LocalDate start, final LocalDate end, final boolean startInclusive, final boolean endInclusive) {
+        Require.neqNull(start, "start");
+        Require.neqNull(end, "end");
 
-        LocalDate day = start;
-        final List<LocalDate> dateList = new ArrayList<>();
+        List<LocalDate> dateList = new ArrayList<>();
 
-        while (!day.isAfter(end)) {
-            if (!isBusinessDay(day)) {
+        for (LocalDate day = start; !day.isAfter(end); day = day.plusDays(1)) {
+            final boolean skip = (!startInclusive && day.equals(start)) || (!endInclusive && day.equals(end));
+
+            if(!skip && !isBusinessDay(day)) {
                 dateList.add(day);
             }
-            day = day.plusDays(1);
         }
 
         return dateList.toArray(new LocalDate[0]);
     }
 
     /**
-     * Returns the non-business days between {@code start} and {@code end}, inclusive.
+     * Returns the non-business dates in a given range.
      *
-     * Because no time information (e.g., hours, minutes, seconds) is returned, the corresponding days for {@code start}
-     * and {@code end} will be included if they are non-business days.
-     *
-     * @param start start time; if null, return empty array
-     * @param end end time; if null, return empty array
-     * @return inclusive non-business days between {@code start} and {@code end}
+     * @param start start of a time range
+     * @param end   end of a time range
+     * @param startInclusive true to include {@code start} in the result; false to exclude {@code start}
+     * @param endInclusive true to include {@code end} in the result; false to exclude {@code end}
+     * @return non-business dates between {@code start} and {@code end}
+     * @throws RequirementFailure if any input is null
+     * @throws InvalidDateException if the dates are not in the valid range
+     * @throws DateTimeUtils.DateTimeParseException if the string cannot be parsed
      */
-    public LocalDate[] nonBusinessDates(final Instant start, final Instant end){
-        if (start == null || end == null) {
-            return new LocalDate[0];
-        }
-
-        return nonBusinessDates(DateTimeUtils.toLocalDate(start, timeZone()), DateTimeUtils.toLocalDate(end, timeZone()));
+    public LocalDate[] nonBusinessDates(final String start, final String end, final boolean startInclusive, final boolean endInclusive) {
+        Require.neqNull(start, "start");
+        Require.neqNull(end, "end");
+        return nonBusinessDates(DateTimeUtils.parseLocalDate(start), DateTimeUtils.parseLocalDate(end), startInclusive, endInclusive);
     }
 
     /**
-     * Returns the non-business days between {@code start} and {@code end}, inclusive.
+     * Returns the non-business dates in a given range.
      *
-     * Because no time information (e.g., hours, minutes, seconds) is returned, the corresponding days for {@code start}
-     * and {@code end} will be included if they are non-business days.
-     *
-     * @param start start time; if null, return empty array
-     * @param end end time; if null, return empty array
-     * @return inclusive non-business days between {@code start} and {@code end}
+     * @param start start of a time range
+     * @param end   end of a time range
+     * @param startInclusive true to include {@code start} in the result; false to exclude {@code start}
+     * @param endInclusive true to include {@code end} in the result; false to exclude {@code end}
+     * @return non-business dates between {@code start} and {@code end}
+     * @throws RequirementFailure if any input is null
+     * @throws InvalidDateException if the dates are not in the valid range
      */
-    public LocalDate[] nonBusinessDates(final ZonedDateTime start, final ZonedDateTime end){
-        if (start == null || end == null) {
-            return new LocalDate[0];
-        }
-
-        return nonBusinessDates(DateTimeUtils.toLocalDate(start.toInstant(), timeZone()), DateTimeUtils.toLocalDate(end.toInstant(), timeZone()));
+    public LocalDate[] nonBusinessDates(final ZonedDateTime start, final ZonedDateTime end, final boolean startInclusive, final boolean endInclusive) {
+        Require.neqNull(start, "start");
+        Require.neqNull(end, "end");
+        return nonBusinessDates(start.withZoneSameInstant(timeZone()).toLocalDate(), end.withZoneSameInstant(timeZone()).toLocalDate(), startInclusive, endInclusive);
     }
 
     /**
-     * Returns the non-business days between {@code start} and {@code end}, inclusive.
+     * Returns the non-business dates in a given range.
      *
-     * Because no time information (e.g., hours, minutes, seconds) is returned, the corresponding days for {@code start}
-     * and {@code end} will be included if they are non-business days.
-     *
-     * @param start start time; if null, return empty array
-     * @param end end time; if null, return empty array
-     * @return inclusive non-business days between {@code start} and {@code end}
+     * @param start start of a time range
+     * @param end   end of a time range
+     * @param startInclusive true to include {@code start} in the result; false to exclude {@code start}
+     * @param endInclusive true to include {@code end} in the result; false to exclude {@code end}
+     * @return non-business dates between {@code start} and {@code end}
+     * @throws RequirementFailure if any input is null
+     * @throws InvalidDateException if the dates are not in the valid range
      */
-    public LocalDate[] nonBusinessDates(String start, String end){
-        if (start == null || end == null) {
-            return new LocalDate[0];
-        }
-
-        return nonBusinessDates(DateTimeUtils.parseLocalDate(start), DateTimeUtils.parseLocalDate(end));
+    public LocalDate[] nonBusinessDates(final Instant start, final Instant end, final boolean startInclusive, final boolean endInclusive) {
+        Require.neqNull(start, "start");
+        Require.neqNull(end, "end");
+        return nonBusinessDates(DateTimeUtils.toLocalDate(start, timeZone()), DateTimeUtils.toLocalDate(end, timeZone()), startInclusive, endInclusive);
     }
+
+    /**
+     * Returns the non-business dates in a given range.
+     *
+     * @param start start of a time range
+     * @param end   end of a time range
+     * @return non-business dates between {@code start} and {@code end}; including {@code start} and {@code end}
+     * @throws RequirementFailure if any input is null
+     * @throws InvalidDateException if the dates are not in the valid range
+     */
+    public LocalDate[] nonBusinessDates(final LocalDate start, final LocalDate end) {
+        return nonBusinessDates(start,end, true, true);
+    }
+
+    /**
+     * Returns the non-business dates in a given range.
+     *
+     * @param start start of a time range
+     * @param end   end of a time range
+     * @return non-business dates between {@code start} and {@code end}; including {@code start} and {@code end}
+     * @throws RequirementFailure if any input is null
+     * @throws InvalidDateException if the dates are not in the valid range
+     * @throws DateTimeUtils.DateTimeParseException if the string cannot be parsed
+     */
+    public LocalDate[] nonBusinessDates(final String start, final String end) {
+        return nonBusinessDates(start,end, true, true);
+    }
+
+    /**
+     * Returns the non-business dates in a given range.
+     *
+     * @param start start of a time range
+     * @param end   end of a time range
+     * @return non-business dates between {@code start} and {@code end}; including {@code start} and {@code end}
+     * @throws RequirementFailure if any input is null
+     * @throws InvalidDateException if the dates are not in the valid range
+     */
+    public LocalDate[] nonBusinessDates(final ZonedDateTime start, final ZonedDateTime end) {
+        return nonBusinessDates(start,end, true, true);
+    }
+
+    /**
+     * Returns the non-business dates in a given range.
+     *
+     * @param start start of a time range
+     * @param end   end of a time range
+     * @return non-business dates between {@code start} and {@code end}; including {@code start} and {@code end}
+     * @throws RequirementFailure if any input is null
+     * @throws InvalidDateException if the dates are not in the valid range
+     */
+    public LocalDate[] nonBusinessDates(final Instant start, final Instant end) {
+        return nonBusinessDates(start,end, true, true);
+    }
+
+    // endregion
+
+    // Differences
+
+    ****
+
+    //TODO: new range
+
+    //TODO: consistently handle inclusive / exclusive in these ranges
 
     /**
      * Returns the amount of business time in nanoseconds between {@code start} and {@code end}.
