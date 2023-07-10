@@ -50,7 +50,7 @@ public class SliceLikeOperation implements QueryTable.Operation<QueryTable> {
 
             @Override
             protected long getLastPositionExclusive() {
-                return (long) Math.ceil(endPercentExclusive * parent.size());
+                return (long) Math.floor(endPercentExclusive * parent.size());
             }
         };
     }

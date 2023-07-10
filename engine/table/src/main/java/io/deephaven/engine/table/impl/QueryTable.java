@@ -620,6 +620,9 @@ public class QueryTable extends BaseTable<QueryTable> {
 
     @Override
     public Table slicePct(final double startPercentInclusive, final double endPercentExclusive) {
+        if (isBlink()) {
+            throw unsupportedForBlinkTables("slicePct");
+        }
         final UpdateGraph updateGraph = getUpdateGraph();
         try (final SafeCloseable ignored = ExecutionContext.getContext().withUpdateGraph(updateGraph).open()) {
             return getResult(SliceLikeOperation.slicePct(this, startPercentInclusive, endPercentExclusive));
