@@ -166,7 +166,7 @@ abstract public class RefreshingTableTestCase extends BaseArrayTestCase implemen
         // System.gc();
     }
 
-    public class ErrorExpectation implements Closeable {
+    public class ErrorExpectation implements SafeCloseable {
         final boolean originalExpectError;
 
         public ErrorExpectation() {
