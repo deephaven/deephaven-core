@@ -7,7 +7,6 @@
 #include <exception>
 #include <grpcpp/grpcpp.h>
 #include <optional>
-#include <regex>
 #include <grpc/support/log.h>
 #include <arrow/flight/client_auth.h>
 #include <arrow/flight/client.h>
@@ -220,7 +219,7 @@ std::shared_ptr<Server> Server::createFromTarget(
   auto result = std::make_shared<Server>(Private(), std::move(as), std::move(cs),
       std::move(ss), std::move(ts), std::move(cfs), std::move(fc), copts.extraHeaders(),
       std::move(sessionToken), expirationInterval, nextHandshakeTime);
-  result->completionQueueThread_ = std::thread(&processCompletionQueueForever, result);
+  result->completionQueueThread_ = std::thread(&processCompletionQueueLoop, result);
   result->keepAliveThread_ = std::thread(&sendKeepaliveMessages, result);
   return result;
 }
@@ -256,13 +255,12 @@ Server::~Server() {
 }
 
 void Server::shutdown() {
-  // TODO(cristianferretti): change to logging framework
-  std::cerr << DEEPHAVEN_DEBUG_MSG("Server shutdown requested\n");
+  gpr_log(GPR_DEBUG, "%s: Server shutdown requested.", me_.c_str());
 
   std::unique_lock<std::mutex> guard(mutex_);
   if (cancelled_) {
     guard.unlock(); // to be nice
-    std::cerr << DEEPHAVEN_DEBUG_MSG("Already cancelled\n");
+    gpr_log(GPR_ERROR, "%s: Already cancelled.", me_.c_str());
     return;
   }
   cancelled_ = true;
@@ -540,14 +538,14 @@ void Server::releaseAsync(Ticket ticket, std::shared_ptr<SFCallback<ReleaseRespo
   sendRpc(req, std::move(callback), sessionStub(), &SessionService::Stub::AsyncRelease);
 }
 
-void Server::processCompletionQueueForever(const std::shared_ptr<Server> &self) {
+void Server::processCompletionQueueLoop(const std::shared_ptr<Server> &self) {
   while (true) {
     if (!self->processNextCompletionQueueItem()) {
       break;
     }
   }
-  // TODO(cristianferretti): change to logging framework
-  std::cerr << DEEPHAVEN_DEBUG_MSG("Process completion queue thread exiting\n");
+  gpr_log(GPR_INFO, "%s: Process completion queue thread exiting.",
+          self->me_.c_str());
 }
 
 bool Server::processNextCompletionQueueItem() {
@@ -590,10 +588,13 @@ bool Server::processNextCompletionQueueItem() {
     }
     cqcb->onSuccess();
   } catch (const std::exception &e) {
-    std::cerr << "Caught exception on callback, aborting: " << e.what() << "\n";
+    gpr_log(GPR_ERROR, "%s: Caught std exception on callback: "
+            "'%s', aborting.",
+            me_.c_str(),
+            e.what());
     return false;
   } catch (...) {
-    std::cerr << "Caught exception on callback, aborting\n";
+    gpr_log(GPR_ERROR, "%s: Caught exception on callback, aborting.", me_.c_str());
     return false;
   }
   return true;
@@ -612,8 +613,7 @@ public:
   }
 
   void onFailure(std::exception_ptr ep) final {
-    // TODO
-    std::cerr << "Keepalive failed\n";
+    gpr_log(GPR_ERROR, "%s: Keepalive failed.", server_->me().c_str());
   }
 
   std::shared_ptr<Server> server_;
@@ -627,8 +627,7 @@ void Server::sendKeepaliveMessages(const std::shared_ptr<Server> &self) {
     }
   }
 
-  // TODO(cristianferretti): change to logging framework
-  std::cerr << DEEPHAVEN_DEBUG_MSG("Keepalive thread exiting\n");
+  gpr_log(GPR_INFO, "%s: Keepalive thread exiting.", self->me_.c_str());
 }
 
 bool Server::keepaliveHelper() {

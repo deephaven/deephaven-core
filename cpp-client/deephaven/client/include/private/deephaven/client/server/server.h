@@ -240,6 +240,9 @@ public:
   // TODO: make this private
   void setExpirationInterval(std::chrono::milliseconds interval);
 
+  // Useful as a log line prefix for messages coming from this server.
+  const std::string &me() { return me_; }
+
 private:
   static const char *const authorizationKey;
   typedef std::unique_ptr<::grpc::ClientAsyncResponseReader<ExportedTableCreationResponse>>
@@ -249,7 +252,7 @@ private:
   void selectOrUpdateHelper(Ticket parentTicket, std::vector<std::string> columnSpecs,
       std::shared_ptr<EtcCallback> etcCallback, Ticket result, selectOrUpdateMethod_t method);
 
-  static void processCompletionQueueForever(const std::shared_ptr<Server> &self);
+  static void processCompletionQueueLoop(const std::shared_ptr<Server> &self);
   bool processNextCompletionQueueItem();
 
   static void sendKeepaliveMessages(const std::shared_ptr<Server> &self);
