@@ -42,6 +42,15 @@ TableHandleManagerImpl::~TableHandleManagerImpl() {
   gpr_log(GPR_DEBUG,"%s: Destroyed.", me_.c_str());
 }
 
+void TableHandleManagerImpl::shutdown() {
+  for (const auto &sub : subscriptions_) {
+    sub->cancel();
+  }
+  executor_->shutdown();
+  flightExecutor_->shutdown();
+  server_->shutdown();
+}
+
 std::shared_ptr<TableHandleImpl> TableHandleManagerImpl::emptyTable(int64_t size) {
   auto resultTicket = server_->newTicket();
   auto [cb, ls] = TableHandleImpl::createEtcCallback(nullptr, this, resultTicket);
@@ -94,5 +103,15 @@ std::shared_ptr<TableHandleImpl> TableHandleManagerImpl::makeTableHandleFromTick
   auto [cb, ls] = TableHandleImpl::createEtcCallback(nullptr, this, resultTicket);
   server_->getExportedTableCreationResponseAsync(resultTicket, std::move(cb));
   return TableHandleImpl::create(shared_from_this(), std::move(resultTicket), std::move(ls));
+}
+
+void TableHandleManagerImpl::addSubscriptionHandle(std::shared_ptr<SubscriptionHandle> handle) {
+  std::unique_lock guard(mutex_);
+  subscriptions_.insert(std::move(handle));
+}
+
+void TableHandleManagerImpl::removeSubscriptionHandle(const std::shared_ptr<SubscriptionHandle> &handle) {
+  std::unique_lock guard(mutex_);
+  subscriptions_.erase(handle);
 }
 }  // namespace deephaven::client::impl

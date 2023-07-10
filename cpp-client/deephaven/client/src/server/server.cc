@@ -220,10 +220,8 @@ std::shared_ptr<Server> Server::createFromTarget(
   auto result = std::make_shared<Server>(Private(), std::move(as), std::move(cs),
       std::move(ss), std::move(ts), std::move(cfs), std::move(fc), copts.extraHeaders(),
       std::move(sessionToken), expirationInterval, nextHandshakeTime);
-  std::thread t1(&processCompletionQueueForever, result);
-  std::thread t2(&sendKeepaliveMessages, result);
-  t1.detach();
-  t2.detach();
+  result->completionQueueThread_ = std::thread(&processCompletionQueueForever, result);
+  result->keepAliveThread_ = std::thread(&sendKeepaliveMessages, result);
   return result;
 }
 
@@ -255,6 +253,28 @@ Server::Server(Private,
 
 Server::~Server() {
   gpr_log(GPR_DEBUG, "%s: Destroyed.", me_.c_str());
+}
+
+void Server::shutdown() {
+  // TODO(cristianferretti): change to logging framework
+  std::cerr << DEEPHAVEN_DEBUG_MSG("Server shutdown requested\n");
+
+  std::unique_lock<std::mutex> guard(mutex_);
+  if (cancelled_) {
+    guard.unlock(); // to be nice
+    std::cerr << DEEPHAVEN_DEBUG_MSG("Already cancelled\n");
+    return;
+  }
+  cancelled_ = true;
+  guard.unlock();
+
+  // This will cause the completion queue thread to shut down.
+  completionQueue_.Shutdown();
+  // This will cause the handshake thread to shut down (because cancelled_ is true).
+  condVar_.notify_all();
+
+  completionQueueThread_.join();
+  keepAliveThread_.join();
 }
 
 namespace {
@@ -526,6 +546,8 @@ void Server::processCompletionQueueForever(const std::shared_ptr<Server> &self) 
       break;
     }
   }
+  // TODO(cristianferretti): change to logging framework
+  std::cerr << DEEPHAVEN_DEBUG_MSG("Process completion queue thread exiting\n");
 }
 
 bool Server::processNextCompletionQueueItem() {
@@ -604,6 +626,9 @@ void Server::sendKeepaliveMessages(const std::shared_ptr<Server> &self) {
       break;
     }
   }
+
+  // TODO(cristianferretti): change to logging framework
+  std::cerr << DEEPHAVEN_DEBUG_MSG("Keepalive thread exiting\n");
 }
 
 bool Server::keepaliveHelper() {

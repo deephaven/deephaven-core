@@ -7,7 +7,6 @@
 #include <map>
 #include <memory>
 #include <mutex>
-#include <set>
 #include <arrow/flight/client.h>
 #include <arrow/flight/types.h>
 #include <arrow/scalar.h>
@@ -371,20 +370,6 @@ std::shared_ptr<TableHandleImpl> TableHandleImpl::asOfJoin(AsOfJoinTablesRequest
   return TableHandleImpl::create(managerImpl_, std::move(resultTicket), std::move(ls));
 }
 
-std::shared_ptr<SubscriptionHandle> TableHandleImpl::subscribe(
-    std::shared_ptr<TickingCallback> callback) {
-  // On the flight executor thread, we invoke DoExchange (waiting for a successful response).
-  // We wait for that response here. That makes the first part of this call synchronous. If there
-  // is an error in the DoExchange invocation, the caller will get an exception here. The
-  // remainder of the interaction (namely, the sending of a BarrageSubscriptionRequest and the
-  // parsing of all the replies) is done on a newly-created thread dedicated to that job.
-  auto schema = lazyState_->getSchema();
-  auto handle = SubscriptionThread::start(managerImpl_->server(), managerImpl_->flightExecutor().get(),
-    schema, ticket_, std::move(callback));
-  subscriptions_.insert(handle);
-  return handle;
-}
-
 namespace {
 class CStyleTickingCallback final : public TickingCallback {
 public:
@@ -416,12 +401,22 @@ TableHandleImpl::subscribe(TableHandle::onTickCallback_t onTick, void *onTickUse
   return subscribe(std::move(cb));
 }
 
-void TableHandleImpl::unsubscribe(std::shared_ptr<SubscriptionHandle> handle) {
-  auto node = subscriptions_.extract(handle);
-  if (node.empty()) {
-    return;
-  }
-  node.value()->cancel(true);
+std::shared_ptr<SubscriptionHandle> TableHandleImpl::subscribe(std::shared_ptr<TickingCallback> callback) {
+  // On the flight executor thread, we invoke DoExchange (waiting for a successful response).
+  // We wait for that response here. That makes the first part of this call synchronous. If there
+  // is an error in the DoExchange invocation, the caller will get an exception here. The
+  // remainder of the interaction (namely, the sending of a BarrageSubscriptionRequest and the
+  // parsing of all the replies) is done on a newly-created thread dedicated to that job.
+  auto schema = lazyState_->getSchema();
+  auto handle = SubscriptionThread::start(managerImpl_->server(), managerImpl_->flightExecutor().get(),
+      schema, ticket_, std::move(callback));
+  managerImpl_->addSubscriptionHandle(handle);
+  return handle;
+}
+
+void TableHandleImpl::unsubscribe(const std::shared_ptr<SubscriptionHandle> &handle) {
+  managerImpl_->removeSubscriptionHandle(handle);
+  handle->cancel();
 }
 
 std::vector<std::shared_ptr<ColumnImpl>> TableHandleImpl::getColumnImpls() {
@@ -648,7 +643,7 @@ public:
     arrow::flight::FlightCallOptions options;
     server_->forEachHeaderNameAndValue(
       [&options](const std::string &name, const std::string &value) {
-        options.headers.push_back(std::make_pair(name, value));
+        options.headers.emplace_back(name, value);
       }
     );
 
