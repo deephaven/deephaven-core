@@ -62,8 +62,8 @@ public class DelegatingScriptSession implements ScriptSession {
     }
 
     @Override
-    public SnapshotScope snapshot(@Nullable SnapshotScope previousIfPresent) {
-        return delegate.snapshot(previousIfPresent);
+    public void observeScopeChanges() {
+        delegate.observeScopeChanges();
     }
 
     @NotNull
