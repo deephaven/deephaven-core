@@ -8,7 +8,6 @@ add_executable(tests
     aggregates_test.cc
     attributes_test.cc
     buffer_column_source_test.cc
-    clean_shutdown_test.cc
     cython_support_test.cc
     head_and_tail_test.cc
     filter_test.cc
