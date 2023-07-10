@@ -140,8 +140,7 @@ public class BlinkTableTools {
                                 columns.values().forEach(c -> c.ensureCapacity(totalSize));
                                 final RowSet newRange = RowSetFactory.fromRange(currentSize, totalSize - 1);
 
-                                try (final SafeCloseable ignored = subsetAdded)
-                                {
+                                try (final SafeCloseable ignored = subsetAdded) {
                                     final RowSet newRowSet = (subsetAdded == null) ? upstream.added() : subsetAdded;
                                     ChunkUtils.copyData(sourceColumns, newRowSet, destColumns, newRange, false);
                                 }
