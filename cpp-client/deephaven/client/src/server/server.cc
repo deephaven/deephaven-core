@@ -16,14 +16,6 @@
 #include <arrow/array/array_primitive.h>
 
 #include "deephaven/dhcore/utility/utility.h"
-#include "deephaven/proto/config.pb.h"
-#include "deephaven/proto/config.grpc.pb.h"
-#include "deephaven/proto/console.pb.h"
-#include "deephaven/proto/console.grpc.pb.h"
-#include "deephaven/proto/session.pb.h"
-#include "deephaven/proto/session.grpc.pb.h"
-#include "deephaven/proto/table.pb.h"
-#include "deephaven/proto/table.grpc.pb.h"
 
 using namespace std;
 using arrow::flight::FlightClient;
