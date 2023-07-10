@@ -74,9 +74,9 @@ public:
       std::shared_ptr<Schema> schema, std::shared_ptr<TickingCallback> callback);
   ~UpdateProcessor() final;
 
-  void cancel(bool wait) final;
+  void cancel() final;
 
-  static void runForever(const std::shared_ptr<UpdateProcessor> &self);
+  static void runUntilCancelled(std::shared_ptr<UpdateProcessor> self);
   void runForeverHelper();
 
 private:
@@ -84,10 +84,9 @@ private:
   std::shared_ptr<Schema> schema_;
   std::shared_ptr<TickingCallback> callback_;
 
-  std::atomic<bool> cancelled_ = false;
   std::mutex mutex_;
-  std::condition_variable condVar_;
-  bool threadAlive_ = false;
+  bool cancelled_ = false;
+  std::thread thread_;
 };
 
 class OwningBuffer final : public arrow::Buffer {
@@ -106,7 +105,7 @@ struct ColumnSourceAndSize {
 ColumnSourceAndSize arrayToColumnSource(const arrow::Array &array);
 }  // namespace
 
-std::shared_ptr<SubscriptionHandle> SubscriptionThread::start( std::shared_ptr<Server> server,
+std::shared_ptr<SubscriptionHandle> SubscriptionThread::start(std::shared_ptr<Server> server,
     Executor *flightExecutor, std::shared_ptr<Schema> schema, const Ticket &ticket,
     std::shared_ptr<TickingCallback> callback) {
   std::promise<std::shared_ptr<SubscriptionHandle>> promise;
@@ -172,30 +171,36 @@ std::shared_ptr<UpdateProcessor> UpdateProcessor::startThread(
     std::shared_ptr<TickingCallback> callback) {
   auto result = std::make_shared<UpdateProcessor>(std::move(fsr), std::move(schema),
       std::move(callback));
-  std::thread t(&runForever, result);
-  t.detach();
+  result->thread_ = std::thread(&runUntilCancelled, result);
   return result;
 }
 
 UpdateProcessor::UpdateProcessor(std::unique_ptr<FlightStreamReader> fsr,
     std::shared_ptr<Schema> schema, std::shared_ptr<TickingCallback> callback) :
     fsr_(std::move(fsr)), schema_(std::move(schema)), callback_(std::move(callback)),
-    cancelled_(false), threadAlive_(true) {}
-UpdateProcessor::~UpdateProcessor() = default;
+    cancelled_(false) {}
 
-void UpdateProcessor::cancel(bool wait) {
-  cancelled_ = true;
-  fsr_->Cancel();
-  if (!wait) {
-    return;
-  }
-  std::unique_lock guard(mutex_);
-  while (threadAlive_) {
-    condVar_.wait(guard);
-  }
+UpdateProcessor::~UpdateProcessor() {
+  cancel();
 }
 
-void UpdateProcessor::runForever(const std::shared_ptr<UpdateProcessor> &self) {
+void UpdateProcessor::cancel() {
+  // TODO(cristianferretti): change to logging framework
+  std::cerr << DEEPHAVEN_DEBUG_MSG("Susbcription shutdown requested\n");
+  std::unique_lock guard(mutex_);
+  if (cancelled_) {
+    guard.unlock(); // to be nice
+    std::cerr << DEEPHAVEN_DEBUG_MSG("Already cancelled\n");
+    return;
+  }
+  cancelled_ = true;
+  guard.unlock();
+
+  fsr_->Cancel();
+  thread_.join();
+}
+
+void UpdateProcessor::runUntilCancelled(std::shared_ptr<UpdateProcessor> self) {
   try {
     self->runForeverHelper();
   } catch (...) {
@@ -204,9 +209,6 @@ void UpdateProcessor::runForever(const std::shared_ptr<UpdateProcessor> &self) {
       self->callback_->onFailure(std::current_exception());
     }
   }
-  std::unique_lock guard(self->mutex_);
-  self->threadAlive_ = false;
-  self->condVar_.notify_all();
 }
 
 void UpdateProcessor::runForeverHelper() {

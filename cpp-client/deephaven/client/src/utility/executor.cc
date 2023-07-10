@@ -8,24 +8,44 @@
 #include "deephaven/dhcore/utility/utility.h"
 
 using deephaven::dhcore::utility::streamf;
+using deephaven::dhcore::utility::stringf;
 
 namespace deephaven::client::utility {
-std::shared_ptr<Executor> Executor::create() {
-  auto result = std::make_shared<Executor>(Private());
-  std::thread t(&threadStart, result);
-  t.detach();
+std::shared_ptr<Executor> Executor::create(std::string id) {
+  auto result = std::make_shared<Executor>(Private(), std::move(id));
+  result->executorThread_ = std::thread(&threadStart, result);
   return result;
 }
 
-Executor::Executor(Private) {}
+Executor::Executor(Private, std::string id) : id_(std::move(id)), cancelled_(false) {}
 
 Executor::~Executor() = default;
 
+void Executor::shutdown() {
+  // TODO(cristianferretti): change to logging framework
+  std::cerr << DEEPHAVEN_DEBUG_MSG(stringf("Executor '%o' shutdown requested\n", id_));
+  std::unique_lock<std::mutex> guard(mutex_);
+  if (cancelled_) {
+    guard.unlock(); // to be nice
+    std::cerr << DEEPHAVEN_DEBUG_MSG("Already cancelled\n");
+    return;
+  }
+  cancelled_ = true;
+  guard.unlock();
+  condvar_.notify_all();
+  executorThread_.join();
+}
+
 void Executor::invoke(std::shared_ptr<callback_t> cb) {
-  mutex_.lock();
+  std::unique_lock guard(mutex_);
   auto needsNotify = todo_.empty();
-  todo_.push_back(std::move(cb));
-  mutex_.unlock();
+  if (cancelled_) {
+    auto message = stringf("Executor '%o' is cancelled: ignoring invoke()\n", id_);
+    throw std::runtime_error(DEEPHAVEN_DEBUG_MSG(message));
+  } else {
+    todo_.push_back(std::move(cb));
+  }
+  guard.unlock();
 
   if (needsNotify) {
     condvar_.notify_all();
@@ -33,13 +53,21 @@ void Executor::invoke(std::shared_ptr<callback_t> cb) {
 }
 
 void Executor::threadStart(std::shared_ptr<Executor> self) {
-  self->runForever();
+  self->runUntilCancelled();
+  // TODO(cristianferretti): change to logging framework
+  std::cerr << DEEPHAVEN_DEBUG_MSG(stringf("Executor '%o' thread exiting\n", self->id_));
 }
 
-void Executor::runForever() {
+void Executor::runUntilCancelled() {
   std::unique_lock<std::mutex> lock(mutex_);
   while (true) {
-    while (todo_.empty()) {
+    while (true) {
+      if (cancelled_) {
+        return;
+      }
+      if (!todo_.empty()) {
+        break;
+      }
       condvar_.wait(lock);
     }
     std::vector<std::shared_ptr<callback_t>> localCallbacks(
