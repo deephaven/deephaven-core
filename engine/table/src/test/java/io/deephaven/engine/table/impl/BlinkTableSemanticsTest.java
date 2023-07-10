@@ -37,7 +37,7 @@ import static io.deephaven.api.agg.Aggregation.*;
 /**
  * Unit tests that exercise operations (like aggregations) which are specialized for blink tables.
  */
-public class BlinkTableAggregationTest {
+public class BlinkTableSemanticsTest {
 
     private static final long INPUT_SIZE = 100_000L;
     private static final long MAX_RANDOM_ITERATION_SIZE = 10_000;
