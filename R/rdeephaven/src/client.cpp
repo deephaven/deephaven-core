@@ -34,6 +34,8 @@ public:
 
     // TABLE OPERATIONS
 
+    // FILTER OPERATIONS
+
     TableHandleWrapper* select(std::vector<std::string> columnSpecs) {
         return new TableHandleWrapper(internal_tbl_hdl.select(columnSpecs));
     };
@@ -58,9 +60,7 @@ public:
         return new TableHandleWrapper(internal_tbl_hdl.where(condition));
     };
 
-    // TODO: TableHandleWrapper* sort(std::vector<SortPair> sortPairs) {
-    //      return new TableHandleWrapper(internal_tbl_hdl.sort(sortPairs));
-    //  };
+    // AGGREGATION OPERATIONS
 
     TableHandleWrapper* by(std::vector<std::string> columnSpecs) {
         return new TableHandleWrapper(internal_tbl_hdl.by(columnSpecs));
@@ -126,21 +126,7 @@ public:
         return new TableHandleWrapper(internal_tbl_hdl.headBy(n, columnSpecs));
     };
 
-    TableHandleWrapper* head(int64_t n) {
-        return new TableHandleWrapper(internal_tbl_hdl.head(n));
-    };
-
-    TableHandleWrapper* tail(int64_t n) {
-        return new TableHandleWrapper(internal_tbl_hdl.tail(n));
-    };
-
-    TableHandleWrapper* ungroup(bool nullFill, std::vector<std::string> groupByColumns) {
-        return new TableHandleWrapper(internal_tbl_hdl.ungroup(nullFill, groupByColumns));
-    };
-
-    // TODO: TableHandleWrapper* merge(std::string keyColumn, std::vector<TableHandleWrapper> sources) {
-    //     return new TableHandleWrapper(internal_tbl_hdl.merge(keyColumn, convertTableHandleWrapperVector(sources)));
-    // };
+    // JOIN OPERATIONS
 
     TableHandleWrapper* crossJoin(const TableHandleWrapper &rightSide, std::vector<std::string> columnsToMatch, std::vector<std::string> columnsToAdd) {
         return new TableHandleWrapper(internal_tbl_hdl.crossJoin(rightSide.internal_tbl_hdl, columnsToMatch, columnsToAdd));
@@ -153,6 +139,28 @@ public:
     TableHandleWrapper* exactJoin(const TableHandleWrapper &rightSide, std::vector<std::string> columnsToMatch, std::vector<std::string> columnsToAdd) {
         return new TableHandleWrapper(internal_tbl_hdl.exactJoin(rightSide.internal_tbl_hdl, columnsToMatch, columnsToAdd));
     };
+
+    // MISC OPERATIONS
+
+    TableHandleWrapper* head(int64_t n) {
+        return new TableHandleWrapper(internal_tbl_hdl.head(n));
+    };
+
+    TableHandleWrapper* tail(int64_t n) {
+        return new TableHandleWrapper(internal_tbl_hdl.tail(n));
+    };
+
+    TableHandleWrapper* ungroup(bool nullFill, std::vector<std::string> groupByColumns) {
+        return new TableHandleWrapper(internal_tbl_hdl.ungroup(nullFill, groupByColumns));
+    };
+
+    // TODO: TableHandleWrapper* sort(std::vector<SortPair> sortPairs) {
+    //      return new TableHandleWrapper(internal_tbl_hdl.sort(sortPairs));
+    //  };
+
+    // TODO: TableHandleWrapper* merge(std::string keyColumn, std::vector<TableHandleWrapper> sources) {
+    //     return new TableHandleWrapper(internal_tbl_hdl.merge(keyColumn, convertTableHandleWrapperVector(sources)));
+    // };
 
     /**
      * Whether the table was static at the time internal_tbl_hdl was created.
@@ -265,9 +273,13 @@ public:
         return new TableHandleWrapper(internal_tbl_hdl_mngr.fetchTable(tableName));
     }
 
-    // TODO: TableHandleWrapper* emptyTable(int64_t size) {};
+    TableHandleWrapper* emptyTable(int64_t size) {
+        return new TableHandleWrapper(internal_tbl_hdl_mngr.emptyTable(size));
+    }
 
-    // TODO: TableHandleWrapper* timeTable(int64_t startTimeNanos, int64_t periodNanos) {};
+    TableHandleWrapper* timeTable(int64_t startTimeNanos, int64_t periodNanos) {
+        return new TableHandleWrapper(internal_tbl_hdl_mngr.timeTable(startTimeNanos, periodNanos));
+    };
 
     /**
      * Runs a script on the server in the console language if a console was created.
@@ -379,7 +391,6 @@ RCPP_MODULE(DeephavenInternalModule) {
     .method("update", &TableHandleWrapper::update)
     .method("update_view", &TableHandleWrapper::updateView)
     .method("where", &TableHandleWrapper::where)
-    // TODO: .method("sort", &TableHandleWrapper::sort)
     .method("by", &TableHandleWrapper::by)
     .method("min_by", &TableHandleWrapper::minBy)
     .method("max_by", &TableHandleWrapper::maxBy)
@@ -396,13 +407,14 @@ RCPP_MODULE(DeephavenInternalModule) {
     .method("w_avg_by", &TableHandleWrapper::wAvgBy)
     .method("tail_by", &TableHandleWrapper::tailBy)
     .method("head_by", &TableHandleWrapper::headBy)
-    .method("head", &TableHandleWrapper::head)
-    .method("tail", &TableHandleWrapper::tail)
-    .method("ungroup", &TableHandleWrapper::ungroup)
-    // TODO: .method("merge", &TableHandleWrapper::merge)
     .method("cross_join", &TableHandleWrapper::crossJoin)
     .method("natural_join", &TableHandleWrapper::naturalJoin)
     .method("exact_join", &TableHandleWrapper::exactJoin)
+    .method("head", &TableHandleWrapper::head)
+    .method("tail", &TableHandleWrapper::tail)
+    .method("ungroup", &TableHandleWrapper::ungroup)
+    // TODO: .method("sort", &TableHandleWrapper::sort)
+    // TODO: .method("merge", &TableHandleWrapper::merge)
     .method("is_static", &TableHandleWrapper::isStatic)
     .method("num_rows", &TableHandleWrapper::numRows)
     .method("bind_to_variable", &TableHandleWrapper::bindToVariable)
@@ -425,6 +437,8 @@ RCPP_MODULE(DeephavenInternalModule) {
     class_<ClientWrapper>("INTERNAL_Client")
     .factory<const std::string&, const ClientOptionsWrapper&>(newClientWrapper)
     .method("open_table", &ClientWrapper::openTable)
+    .method("empty_table", &ClientWrapper::emptyTable)
+    .method("time_table", &ClientWrapper::timeTable)
     .method("check_for_table", &ClientWrapper::checkForTable)
     .method("run_script", &ClientWrapper::runScript)
     .method("new_arrow_array_stream_ptr", &ClientWrapper::newArrowArrayStreamPtr)
