@@ -6,14 +6,12 @@ package io.deephaven.time.calendar;
 import io.deephaven.base.verify.Require;
 import io.deephaven.base.verify.RequirementFailure;
 import io.deephaven.time.DateTimeUtils;
-import io.deephaven.util.QueryConstants;
 
 import java.time.*;
 import java.util.*;
 
 //TODO: update all headers
 //TODO: review all docs
-//TODO: add final to all methods
 
 /**
  * A business calendar, with the concept of business and non-business time.
@@ -123,11 +121,21 @@ public class BusinessCalendar extends Calendar {
         }
     }
 
+    private YearData getYearData(final int year){
+        final YearData yd = cachedYearData.get(year);
+
+        if(yd == null){
+            throw new InvalidDateException("Business calendar does not contain a complete year for: year=" + year);
+        }
+
+        return yd;
+    }
+
     // endregion
 
     // region Constructors
 
-    public BusinessCalendar(String name, String description, ZoneId timeZone, LocalDate firstValidDate, LocalDate lastValidDate, BusinessSchedule<LocalTime> standardBusinessSchedule, Set<DayOfWeek> weekendDays, Map<LocalDate, BusinessSchedule<Instant>> holidays) {
+    public BusinessCalendar(final String name, final String description, final ZoneId timeZone, final LocalDate firstValidDate, final LocalDate lastValidDate, final BusinessSchedule<LocalTime> standardBusinessSchedule, final Set<DayOfWeek> weekendDays, final Map<LocalDate, BusinessSchedule<Instant>> holidays) {
         super(name, description, timeZone);
         this.firstValidDate = firstValidDate;
         this.lastValidDate = lastValidDate;
@@ -227,7 +235,7 @@ public class BusinessCalendar extends Calendar {
      * @throws InvalidDateException if the date is not in the valid range
      * @throws DateTimeUtils.DateTimeParseException if the string cannot be parsed
      */
-    public BusinessSchedule<Instant> businessSchedule(String date) {
+    public BusinessSchedule<Instant> businessSchedule(final String date) {
         Require.neqNull(date, "date");
         return businessSchedule(DateTimeUtils.parseLocalDate(date));
     }
@@ -303,7 +311,7 @@ public class BusinessCalendar extends Calendar {
      * @return true if the day is a business day; false otherwise
      * @throws RequirementFailure if the input is null
      */
-    public boolean isBusinessDay(DayOfWeek day){
+    public boolean isBusinessDay(final DayOfWeek day){
         Require.neqNull(day, "day");
         return !weekendDays.contains(day);
     }
@@ -420,7 +428,7 @@ public class BusinessCalendar extends Calendar {
      */
     public boolean isLastBusinessDayOfWeek(final ZonedDateTime time) {
         Require.neqNull(time, "time");
-        return isLastBusinessDayOfWeek(DateTimeUtils.toLocalDate(time, timeZone()));
+        return isLastBusinessDayOfWeek(time.withZoneSameInstant(timeZone()).toLocalDate());
     }
 
     /**
@@ -1268,195 +1276,114 @@ public class BusinessCalendar extends Calendar {
 
     // endregion
 
-    // Differences
-
-    ****
-
-    //TODO: new range
-
-    //TODO: consistently handle inclusive / exclusive in these ranges
+    // region Differences
 
     /**
-     * Returns the amount of business time in nanoseconds between {@code start} and {@code end}.
+     * Returns the amount of business time in nanoseconds between two times.
      *
-     * @param start start time; if null, return NULL_LONG
-     * @param end end time; if null, return NULL_LONG
-     * @return the amount of business time in nanoseconds between the {@code start} and {@code end}
+     * @param start start of a time range
+     * @param end   end of a time range
+     * @return the amount of business time in nanoseconds between {@code start} and {@code end}
+     * @throws RequirementFailure if any input is null
+     * @throws InvalidDateException if the dates are not in the valid range
      */
     public long diffBusinessNanos(final Instant start, final Instant end) {
-        if (start == null || end == null) {
-            return QueryConstants.NULL_LONG;
-        }
+        Require.neqNull(start, "start");
+        Require.neqNull(end, "end");
 
         if (DateTimeUtils.isAfter(start, end)) {
             return -diffBusinessNanos(end, start);
         }
 
-        long dayDiffNanos = 0;
-        Instant day = start;
+        final LocalDate startDate = DateTimeUtils.toLocalDate(start, timeZone());
+        final LocalDate endDate = DateTimeUtils.toLocalDate(end, timeZone());
 
-        while (!DateTimeUtils.isAfter(day, end)) {
-            if (isBusinessDay(day)) {
-                BusinessSchedule<Instant> businessDate = businessSchedule(day);
+        assert startDate != null;
+        assert endDate != null;
 
-                if (businessDate != null) {
-                    for (BusinessPeriod<Instant> businessPeriod : businessDate.periods()) {
-                        Instant endOfPeriod = businessPeriod.end();
-                        Instant startOfPeriod = businessPeriod.start();
-
-                        // noinspection StatementWithEmptyBody
-                        if (DateTimeUtils.isAfter(day, endOfPeriod) || DateTimeUtils.isBefore(end, startOfPeriod)) {
-                            // continue
-                        } else if (!DateTimeUtils.isAfter(day, startOfPeriod)) {
-                            if (DateTimeUtils.isBefore(end, endOfPeriod)) {
-                                dayDiffNanos += DateTimeUtils.minus(end, startOfPeriod);
-                            } else {
-                                dayDiffNanos += businessPeriod.nanos();
-                            }
-                        } else {
-                            if (DateTimeUtils.isAfter(end, endOfPeriod)) {
-                                dayDiffNanos += DateTimeUtils.minus(endOfPeriod, day);
-                            } else {
-                                dayDiffNanos += DateTimeUtils.minus(end, day);
-                            }
-                        }
-                    }
-                }
-            }
-            day = businessSchedule(plusBusinessDays(day,1)).businessStart();
+        if(startDate.equals(endDate)) {
+            final BusinessSchedule<Instant> schedule = businessSchedule(startDate);
+            return schedule.businessNanosElapsed(end) - schedule.businessNanosElapsed(start);
         }
-        return dayDiffNanos;
+
+        long rst = businessSchedule(startDate).businessNanosRemaining(start) + businessSchedule(endDate).businessNanosElapsed(end);
+
+        for (LocalDate d = startDate.plusDays(1); d.isBefore(endDate); d = d.plusDays(1)) {
+            rst += businessSchedule(d).businessNanos();
+        }
+
+        return rst;
     }
 
     /**
-     * Returns the amount of business time in nanoseconds between {@code start} and {@code end}.
+     * Returns the amount of business time in nanoseconds between two times.
      *
-     * @param start start time; if null, return NULL_LONG
-     * @param end end time; if null, return NULL_LONG
-     * @return the amount of business time in nanoseconds between the {@code start} and {@code end}
+     * @param start start of a time range
+     * @param end   end of a time range
+     * @return the amount of business time in nanoseconds between {@code start} and {@code end}
+     * @throws RequirementFailure if any input is null
+     * @throws InvalidDateException if the dates are not in the valid range
      */
     public long diffBusinessNanos(final ZonedDateTime start, final ZonedDateTime end) {
-        if (start == null || end == null) {
-            return QueryConstants.NULL_LONG;
-        }
-
+        Require.neqNull(start, "start");
+        Require.neqNull(end, "end");
         return diffBusinessNanos(start.toInstant(), end.toInstant());
     }
 
     /**
-     * Returns the amount of non-business time in nanoseconds between {@code start} and {@code end}.
+     * Returns the amount of non-business time in nanoseconds between two times.
      *
-     * @param start start time; if null, return NULL_LONG
-     * @param end end time; if null, return NULL_LONG
-     * @return the amount of non-business time in nanoseconds between the {@code start} and {@code end}
+     * @param start start of a time range
+     * @param end   end of a time range
+     * @return the amount of nonbusiness time in nanoseconds between {@code start} and {@code end}
+     * @throws RequirementFailure if any input is null
+     * @throws InvalidDateException if the dates are not in the valid range
      */
     public long diffNonBusinessNanos(final Instant start, final Instant end) {
-        if (start == null || end == null) {
-            return QueryConstants.NULL_LONG;
-        }
-
-        if (DateTimeUtils.isAfter(start, end)) {
-            return -diffNonBusinessNanos(end, start);
-        }
-
-        return DateTimeUtils.minus(end, start) - diffBusinessNanos(start, end);
+        Require.neqNull(start, "start");
+        Require.neqNull(end, "end");
+        return DateTimeUtils.diffNanos(start, end) - diffBusinessNanos(start, end);
     }
 
     /**
-     * Returns the amount of non-business time in nanoseconds between {@code start} and {@code end}.
+     * Returns the amount of non-business time in nanoseconds between two times.
      *
-     * @param start start time; if null, return NULL_LONG
-     * @param end end time; if null, return NULL_LONG
-     * @return the amount of non-business time in nanoseconds between the {@code start} and {@code end}
+     * @param start start of a time range
+     * @param end   end of a time range
+     * @return the amount of non-business time in nanoseconds between {@code start} and {@code end}
+     * @throws RequirementFailure if any input is null
+     * @throws InvalidDateException if the dates are not in the valid range
      */
     public long diffNonBusinessNanos(final ZonedDateTime start, final ZonedDateTime end) {
-        if (start == null || end == null) {
-            return QueryConstants.NULL_LONG;
-        }
-
+        Require.neqNull(start, "start");
+        Require.neqNull(end, "end");
         return diffNonBusinessNanos(start.toInstant(), end.toInstant());
     }
 
     /**
-     * Returns the amount of business time in standard business days between {@code start} and {@code end}.
+     * Returns the amount of business time in standard business days between two times.
      *
-     * @param start start time; if null, return NULL_LONG
-     * @param end end time; if null, return NULL_LONG
-     * @return the amount of business time in standard business days between the {@code start} and {@code end}
+     * @param start start of a time range
+     * @param end   end of a time range
+     * @return the amount of business time in standard business days between {@code start} and {@code end}
+     * @throws RequirementFailure if any input is null
+     * @throws InvalidDateException if the dates are not in the valid range
      */
     public double diffBusinessDays(final Instant start, final Instant end) {
-        if (start == null || end == null) {
-            return QueryConstants.NULL_DOUBLE;
-        }
-
         return (double) diffBusinessNanos(start, end) / (double) standardBusinessDayLengthNanos();
     }
 
     /**
-     * Returns the amount of business time in standard business days between {@code start} and {@code end}.
+     * Returns the amount of business time in standard business days between two times.
      *
-     * @param start start time; if null, return NULL_LONG
-     * @param end end time; if null, return NULL_LONG
-     * @return the amount of business time in standard business days between the {@code start} and {@code end}
+     * @param start start of a time range
+     * @param end   end of a time range
+     * @return the amount of business time in standard business days between {@code start} and {@code end}
+     * @throws RequirementFailure if any input is null
+     * @throws InvalidDateException if the dates are not in the valid range
      */
     public double diffBusinessDays(final ZonedDateTime start, final ZonedDateTime end) {
-        if (start == null || end == null) {
-            return QueryConstants.NULL_DOUBLE;
-        }
-
-        return diffBusinessDays(start.toInstant(), end.toInstant());
-    }
-
-    /**
-     * Returns the amount of non-business time in standard business days between {@code start} and {@code end}.
-     *
-     * @param start start time; if null, return NULL_LONG
-     * @param end end time; if null, return NULL_LONG
-     * @return the amount of non-business time in standard business days between the {@code start} and {@code end}
-     */
-    public double diffNonBusinessDays(final Instant start, final Instant end){
-        if (start == null || end == null) {
-            return QueryConstants.NULL_DOUBLE;
-        }
-
-        return (double) diffNonBusinessNanos(start, end) / (double) standardBusinessDayLengthNanos();
-    }
-
-    /**
-     * Returns the amount of non-business time in standard business days between {@code start} and {@code end}.
-     *
-     * @param start start time; if null, return NULL_LONG
-     * @param end end time; if null, return NULL_LONG
-     * @return the amount of non-business time in standard business days between the {@code start} and {@code end}
-     */
-    public double diffNonBusinessDays(final ZonedDateTime start, final ZonedDateTime end){
-        if (start == null || end == null) {
-            return QueryConstants.NULL_DOUBLE;
-        }
-
-        double businessYearDiff = 0.0;
-        ZonedDateTime time = start;
-
-        while (!DateTimeUtils.isAfter(time, end)) {
-            final int year = time.getYear();
-            final YearData yd = cachedYearData.get(year);
-
-            if(yd == null){
-                throw new InvalidDateException("Business calendar does not contain a complete year for: year=" + year);
-            }
-
-            final long yearDiff;
-            if (DateTimeUtils.isAfter(yd.end, end)) {
-                yearDiff = diffBusinessNanos(time, end);
-            } else {
-                yearDiff = diffBusinessNanos(time, yd.end);
-            }
-
-            businessYearDiff += (double) yearDiff / (double) yd.businessTimeNanos;
-            time = yd.end;
-        }
-
-        return businessYearDiff;
+        return (double) diffBusinessNanos(start, end) / (double) standardBusinessDayLengthNanos();
     }
 
     /**
@@ -1465,13 +1392,26 @@ public class BusinessCalendar extends Calendar {
      * @param start start; if null, return null
      * @param end end; if null, return null
      * @return the amount of business time in business years between the {@code start} and {@code end}
+     * @throws RequirementFailure if any input is null
+     * @throws InvalidDateException if the dates are not in the valid range
      */
-   public double diffBusinessYears(final Instant start, final Instant end){
-        if (start == null || end == null) {
-            return QueryConstants.NULL_DOUBLE;
+    public double diffBusinessYears(final Instant start, final Instant end) {
+        Require.neqNull(start, "start");
+        Require.neqNull(end, "end");
+
+        final int yearStart = DateTimeUtils.year(start, timeZone());
+        final int yearEnd = DateTimeUtils.year(end, timeZone());
+
+        if(yearStart == yearEnd){
+            return (double) diffBusinessNanos(start, end) / (double) getYearData(yearStart).businessTimeNanos;
         }
 
-        return diffBusinessYears(DateTimeUtils.toZonedDateTime(start, timeZone()), DateTimeUtils.toZonedDateTime(end, timeZone()));
+        final YearData yearDataStart = getYearData(yearStart);
+        final YearData yearDataEnd = getYearData(yearEnd);
+
+        return (double) diffBusinessNanos(start, yearDataStart.end.toInstant()) / (double) yearDataStart.businessTimeNanos +
+                (double) diffBusinessNanos(yearDataEnd.start.toInstant(), end) / (double) yearDataEnd.businessTimeNanos +
+                yearEnd-yearStart-1;
     }
 
     /**
@@ -1480,12 +1420,12 @@ public class BusinessCalendar extends Calendar {
      * @param start start; if null, return null
      * @param end end; if null, return null
      * @return the amount of business time in business years between the {@code start} and {@code end}
+     * @throws RequirementFailure if any input is null
+     * @throws InvalidDateException if the dates are not in the valid range
      */
     public double diffBusinessYears(final ZonedDateTime start, final ZonedDateTime end) {
-        if (start == null || end == null) {
-            return QueryConstants.NULL_DOUBLE;
-        }
-
+        Require.neqNull(start, "start");
+        Require.neqNull(end, "end");
         return diffBusinessYears(start.toInstant(), end.toInstant());
     }
 

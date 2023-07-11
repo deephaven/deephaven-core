@@ -16,7 +16,6 @@ import java.util.ArrayList;
 import java.util.List;
 
 //TODO: review all docs
-//TODO: add final to all methods
 
 /**
  * A calendar.
@@ -26,6 +25,7 @@ import java.util.List;
  * Date strings must be in a format that can be parsed by {@code DateTimeUtils#parseDate}.  Methods that accept
  * strings can be slower than methods written explicitly for {@code Instant}, {@code ZonedDateTime}, or {@code LocalDate}.
  */
+@SuppressWarnings("unused") //TODO: remove unused annotation
 public class Calendar {
     
     private final String name;
@@ -41,7 +41,7 @@ public class Calendar {
      * @param description calendar description.
      * @param timeZone calendar time zone.
      */
-    public Calendar(String name, String description, ZoneId timeZone) {
+    public Calendar(final String name, final String description, final ZoneId timeZone) {
         this.name = name;
         this.description = description;
         this.timeZone = timeZone;
@@ -227,7 +227,7 @@ public class Calendar {
      * @param days number of days to add.
      * @return {@code days} days after the current date
      */
-    public LocalDate futureDate(int days) {
+    public LocalDate futureDate(final int days) {
         return plusDays(currentDate(), days);
     }
 
@@ -237,7 +237,7 @@ public class Calendar {
      * @param days number of days to subtract.
      * @return {@code days} days before the current date
      */
-    public LocalDate pastDate(int days) {
+    public LocalDate pastDate(final int days) {
         return minusDays(currentDate(), days);
     }
 
