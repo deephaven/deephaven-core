@@ -15,8 +15,6 @@ import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
 import java.util.List;
 
-//TODO: review all docs
-
 /**
  * A calendar.
  *
@@ -25,7 +23,6 @@ import java.util.List;
  * Date strings must be in a format that can be parsed by {@code DateTimeUtils#parseDate}.  Methods that accept
  * strings can be slower than methods written explicitly for {@code Instant}, {@code ZonedDateTime}, or {@code LocalDate}.
  */
-@SuppressWarnings("unused") //TODO: remove unused annotation
 public class Calendar {
     
     private final String name;
@@ -203,7 +200,7 @@ public class Calendar {
      * @return current date
      */
     public LocalDate currentDate() {
-        return DateTimeUtils.today(timeZone());
+        return DateTimeUtils.todayDate(timeZone());
     }
 
     /**
@@ -483,22 +480,6 @@ public class Calendar {
     public int numberCalendarDates(final Instant start, final Instant end) {
         return numberCalendarDates(start,end, true, true);
     }
-
-    // endregion
-
-    // region Differences
-
-    //TODO: time diff methods?
-//    diffBusinessDay
-//            diffBusinessDay
-//    diffBusinessNanos
-//            diffBusinessNanos
-//    diffBusinessYear
-//            diffBusinessYear
-//    diffNonBusinessDay
-//            diffNonBusinessDay
-//    diffNonBusinessNanos
-//            diffNonBusinessNanos
 
     // endregion
 
