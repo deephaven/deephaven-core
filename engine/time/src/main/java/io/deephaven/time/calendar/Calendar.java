@@ -17,14 +17,14 @@ import java.util.List;
 
 /**
  * A calendar.
- *
+ * <p>
  * A calendar is associated with a specific time zone.
- *
+ * <p>
  * Date strings must be in a format that can be parsed by {@code DateTimeUtils#parseDate}.  Methods that accept
  * strings can be slower than methods written explicitly for {@code Instant}, {@code ZonedDateTime}, or {@code LocalDate}.
  */
 public class Calendar {
-    
+
     private final String name;
     private final String description;
     private final ZoneId timeZone;
@@ -33,10 +33,10 @@ public class Calendar {
 
     /**
      * Creates a new calendar.
-     * 
-     * @param name calendar name.
+     *
+     * @param name        calendar name.
      * @param description calendar description.
-     * @param timeZone calendar time zone.
+     * @param timeZone    calendar time zone.
      */
     public Calendar(final String name, final String description, final ZoneId timeZone) {
         this.name = name;
@@ -65,7 +65,7 @@ public class Calendar {
     public String description() {
         return description;
     }
-    
+
     /**
      * Gets the timezone of the calendar.
      *
@@ -107,7 +107,7 @@ public class Calendar {
      * @param date date
      * @param days number of days to add
      * @return {@code days} days after {@code date}
-     * @throws RequirementFailure if the input is null
+     * @throws RequirementFailure                   if the input is null
      * @throws DateTimeUtils.DateTimeParseException if the string cannot be parsed
      */
     public LocalDate plusDays(final String date, final int days) {
@@ -160,7 +160,7 @@ public class Calendar {
      * @param date date
      * @param days number of days to subtract
      * @return {@code days} days after {@code date}
-     * @throws RequirementFailure if the input is null
+     * @throws RequirementFailure                   if the input is null
      * @throws DateTimeUtils.DateTimeParseException if the string cannot be parsed
      */
     public LocalDate minusDays(final String date, final int days) {
@@ -230,10 +230,10 @@ public class Calendar {
     /**
      * Returns the dates in a given range.
      *
-     * @param start start of a time range
-     * @param end   end of a time range
+     * @param start          start of a time range
+     * @param end            end of a time range
      * @param startInclusive true to include {@code start} in the result; false to exclude {@code start}
-     * @param endInclusive true to include {@code end} in the result; false to exclude {@code end}
+     * @param endInclusive   true to include {@code end} in the result; false to exclude {@code end}
      * @return dates between {@code start} and {@code end}
      * @throws RequirementFailure if any input is null
      */
@@ -246,7 +246,7 @@ public class Calendar {
         for (LocalDate day = start; !day.isAfter(end); day = day.plusDays(1)) {
             final boolean skip = (!startInclusive && day.equals(start)) || (!endInclusive && day.equals(end));
 
-            if(!skip) {
+            if (!skip) {
                 dateList.add(day);
             }
         }
@@ -257,12 +257,12 @@ public class Calendar {
     /**
      * Returns the dates in a given range.
      *
-     * @param start start of a time range
-     * @param end   end of a time range
+     * @param start          start of a time range
+     * @param end            end of a time range
      * @param startInclusive true to include {@code start} in the result; false to exclude {@code start}
-     * @param endInclusive true to include {@code end} in the result; false to exclude {@code end}
+     * @param endInclusive   true to include {@code end} in the result; false to exclude {@code end}
      * @return dates between {@code start} and {@code end}
-     * @throws RequirementFailure if any input is null
+     * @throws RequirementFailure                   if any input is null
      * @throws DateTimeUtils.DateTimeParseException if the string cannot be parsed
      */
     public LocalDate[] calendarDates(final String start, final String end, final boolean startInclusive, final boolean endInclusive) {
@@ -274,12 +274,12 @@ public class Calendar {
     /**
      * Returns the dates in a given range.
      *
-     * @param start start of a time range
-     * @param end   end of a time range
+     * @param start          start of a time range
+     * @param end            end of a time range
      * @param startInclusive true to include {@code start} in the result; false to exclude {@code start}
-     * @param endInclusive true to include {@code end} in the result; false to exclude {@code end}
+     * @param endInclusive   true to include {@code end} in the result; false to exclude {@code end}
      * @return dates between {@code start} and {@code end}
-     * @throws RequirementFailure if any input is null
+     * @throws RequirementFailure                   if any input is null
      * @throws DateTimeUtils.DateTimeParseException if the string cannot be parsed
      */
     public LocalDate[] calendarDates(final ZonedDateTime start, final ZonedDateTime end, final boolean startInclusive, final boolean endInclusive) {
@@ -291,12 +291,12 @@ public class Calendar {
     /**
      * Returns the dates in a given range.
      *
-     * @param start start of a time range
-     * @param end   end of a time range
+     * @param start          start of a time range
+     * @param end            end of a time range
      * @param startInclusive true to include {@code start} in the result; false to exclude {@code start}
-     * @param endInclusive true to include {@code end} in the result; false to exclude {@code end}
+     * @param endInclusive   true to include {@code end} in the result; false to exclude {@code end}
      * @return dates between {@code start} and {@code end}
-     * @throws RequirementFailure if any input is null
+     * @throws RequirementFailure                   if any input is null
      * @throws DateTimeUtils.DateTimeParseException if the string cannot be parsed
      */
     public LocalDate[] calendarDates(final Instant start, final Instant end, final boolean startInclusive, final boolean endInclusive) {
@@ -314,7 +314,7 @@ public class Calendar {
      * @throws RequirementFailure if any input is null
      */
     public LocalDate[] calendarDates(final LocalDate start, final LocalDate end) {
-        return calendarDates(start,end, true, true);
+        return calendarDates(start, end, true, true);
     }
 
     /**
@@ -323,11 +323,11 @@ public class Calendar {
      * @param start start of a time range
      * @param end   end of a time range
      * @return dates between {@code start} and {@code end}; including {@code start} and {@code end}
-     * @throws RequirementFailure if any input is null
+     * @throws RequirementFailure                   if any input is null
      * @throws DateTimeUtils.DateTimeParseException if the string cannot be parsed
      */
     public LocalDate[] calendarDates(final String start, final String end) {
-        return calendarDates(start,end, true, true);
+        return calendarDates(start, end, true, true);
     }
 
     /**
@@ -339,7 +339,7 @@ public class Calendar {
      * @throws RequirementFailure if any input is null
      */
     public LocalDate[] calendarDates(final ZonedDateTime start, final ZonedDateTime end) {
-        return calendarDates(start,end, true, true);
+        return calendarDates(start, end, true, true);
     }
 
     /**
@@ -351,16 +351,16 @@ public class Calendar {
      * @throws RequirementFailure if any input is null
      */
     public LocalDate[] calendarDates(final Instant start, final Instant end) {
-        return calendarDates(start,end, true, true);
+        return calendarDates(start, end, true, true);
     }
 
     /**
      * Returns the number of dates in a given range.
      *
-     * @param start start of a time range
-     * @param end   end of a time range
+     * @param start          start of a time range
+     * @param end            end of a time range
      * @param startInclusive true to include {@code start} in the result; false to exclude {@code start}
-     * @param endInclusive true to include {@code end} in the result; false to exclude {@code end}
+     * @param endInclusive   true to include {@code end} in the result; false to exclude {@code end}
      * @return number of dates between {@code start} and {@code end}
      * @throws RequirementFailure if any input is null
      */
@@ -370,26 +370,26 @@ public class Calendar {
 
         int days = (int) ChronoUnit.DAYS.between(start, end.plusDays(1));
 
-            if(!startInclusive){
-                days -= 1;
-            }
+        if (!startInclusive) {
+            days -= 1;
+        }
 
-            if(!endInclusive){
-                days -= 1;
-            }
+        if (!endInclusive) {
+            days -= 1;
+        }
 
-            return Math.max(days, 0);
+        return Math.max(days, 0);
     }
 
     /**
      * Returns the number of dates in a given range.
      *
-     * @param start start of a time range
-     * @param end   end of a time range
+     * @param start          start of a time range
+     * @param end            end of a time range
      * @param startInclusive true to include {@code start} in the result; false to exclude {@code start}
-     * @param endInclusive true to include {@code end} in the result; false to exclude {@code end}
+     * @param endInclusive   true to include {@code end} in the result; false to exclude {@code end}
      * @return number of dates between {@code start} and {@code end}
-     * @throws RequirementFailure if any input is null
+     * @throws RequirementFailure                   if any input is null
      * @throws DateTimeUtils.DateTimeParseException if the string cannot be parsed
      */
     public int numberCalendarDates(final String start, final String end, final boolean startInclusive, final boolean endInclusive) {
@@ -401,12 +401,12 @@ public class Calendar {
     /**
      * Returns the number of dates in a given range.
      *
-     * @param start start of a time range
-     * @param end   end of a time range
+     * @param start          start of a time range
+     * @param end            end of a time range
      * @param startInclusive true to include {@code start} in the result; false to exclude {@code start}
-     * @param endInclusive true to include {@code end} in the result; false to exclude {@code end}
+     * @param endInclusive   true to include {@code end} in the result; false to exclude {@code end}
      * @return number of dates between {@code start} and {@code end}
-     * @throws RequirementFailure if any input is null
+     * @throws RequirementFailure                   if any input is null
      * @throws DateTimeUtils.DateTimeParseException if the string cannot be parsed
      */
     public int numberCalendarDates(final ZonedDateTime start, final ZonedDateTime end, final boolean startInclusive, final boolean endInclusive) {
@@ -418,12 +418,12 @@ public class Calendar {
     /**
      * Returns the number of dates in a given range.
      *
-     * @param start start of a time range
-     * @param end   end of a time range
+     * @param start          start of a time range
+     * @param end            end of a time range
      * @param startInclusive true to include {@code start} in the result; false to exclude {@code start}
-     * @param endInclusive true to include {@code end} in the result; false to exclude {@code end}
+     * @param endInclusive   true to include {@code end} in the result; false to exclude {@code end}
      * @return number of dates between {@code start} and {@code end}
-     * @throws RequirementFailure if any input is null
+     * @throws RequirementFailure                   if any input is null
      * @throws DateTimeUtils.DateTimeParseException if the string cannot be parsed
      */
     public int numberCalendarDates(final Instant start, final Instant end, final boolean startInclusive, final boolean endInclusive) {
@@ -441,7 +441,7 @@ public class Calendar {
      * @throws RequirementFailure if any input is null
      */
     public int numberCalendarDates(final LocalDate start, final LocalDate end) {
-        return numberCalendarDates(start,end, true, true);
+        return numberCalendarDates(start, end, true, true);
     }
 
     /**
@@ -450,11 +450,11 @@ public class Calendar {
      * @param start start of a time range
      * @param end   end of a time range
      * @return number of dates between {@code start} and {@code end}; including {@code start} and {@code end}
-     * @throws RequirementFailure if any input is null
+     * @throws RequirementFailure                   if any input is null
      * @throws DateTimeUtils.DateTimeParseException if the string cannot be parsed
      */
     public int numberCalendarDates(final String start, final String end) {
-        return numberCalendarDates(start,end, true, true);
+        return numberCalendarDates(start, end, true, true);
     }
 
     /**
@@ -466,7 +466,7 @@ public class Calendar {
      * @throws RequirementFailure if any input is null
      */
     public int numberCalendarDates(final ZonedDateTime start, final ZonedDateTime end) {
-        return numberCalendarDates(start,end, true, true);
+        return numberCalendarDates(start, end, true, true);
     }
 
     /**
@@ -478,7 +478,7 @@ public class Calendar {
      * @throws RequirementFailure if any input is null
      */
     public int numberCalendarDates(final Instant start, final Instant end) {
-        return numberCalendarDates(start,end, true, true);
+        return numberCalendarDates(start, end, true, true);
     }
 
     // endregion

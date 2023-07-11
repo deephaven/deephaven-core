@@ -12,7 +12,7 @@ import java.util.*;
 
 /**
  * A business calendar, with the concept of business and non-business time.
- *
+ * <p>
  * Date strings must be in a format that can be parsed by {@code DateTimeUtils#parseDate}.  Methods that accept
  * strings can be slower than methods written explicitly for {@code Instant}, {@code ZonedDateTime}, or {@code LocalDate}.
  */
@@ -44,7 +44,7 @@ public class BusinessCalendar extends Calendar {
          * Creates a new exception.
          *
          * @param message exception message.
-         * @param cause cause of the exception.
+         * @param cause   cause of the exception.
          */
         public InvalidDateException(final String message, final Throwable cause) {
             super(message, cause);
@@ -55,19 +55,19 @@ public class BusinessCalendar extends Calendar {
 
     // region Cache
 
-    private final Map<LocalDate,BusinessSchedule<Instant>> cachedSchedules = new HashMap<>();
+    private final Map<LocalDate, BusinessSchedule<Instant>> cachedSchedules = new HashMap<>();
     private final Map<Integer, YearData> cachedYearData = new HashMap<>();
 
     private void populateSchedules() {
         LocalDate date = firstValidDate;
 
-        while(date.compareTo(lastValidDate) <= 0) {
+        while (date.compareTo(lastValidDate) <= 0) {
 
             final BusinessSchedule<Instant> s = holidays.get(date);
 
-            if( s != null){
+            if (s != null) {
                 cachedSchedules.put(date, s);
-            } else if(weekendDays.contains(date.getDayOfWeek())) {
+            } else if (weekendDays.contains(date.getDayOfWeek())) {
                 cachedSchedules.put(date, BusinessSchedule.toInstant(BusinessSchedule.HOLIDAY, date, timeZone()));
             } else {
                 cachedSchedules.put(date, BusinessSchedule.toInstant(standardBusinessSchedule, date, timeZone()));
@@ -115,10 +115,10 @@ public class BusinessCalendar extends Calendar {
         }
     }
 
-    private YearData getYearData(final int year){
+    private YearData getYearData(final int year) {
         final YearData yd = cachedYearData.get(year);
 
-        if(yd == null){
+        if (yd == null) {
             throw new InvalidDateException("Business calendar does not contain a complete year for: year=" + year);
         }
 
@@ -145,6 +145,7 @@ public class BusinessCalendar extends Calendar {
     // region Business Schedule
 
     //TODO: rename?
+
     /**
      * Business schedule for a standard business day.
      *
@@ -155,6 +156,7 @@ public class BusinessCalendar extends Calendar {
     }
 
     //TODO: rename?
+
     /**
      * Length of a standard business day in nanoseconds.
      *
@@ -179,15 +181,15 @@ public class BusinessCalendar extends Calendar {
      *
      * @param date date
      * @return the corresponding BusinessSchedule of {@code date}
-     * @throws RequirementFailure if the input is null
+     * @throws RequirementFailure   if the input is null
      * @throws InvalidDateException if the date is not in the valid range
      */
     public BusinessSchedule<Instant> businessSchedule(final LocalDate date) {
         Require.neqNull(date, "date");
 
-        if(date.isBefore(firstValidDate)){
+        if (date.isBefore(firstValidDate)) {
             throw new InvalidDateException("Date is before the first valid business calendar date:  date=" + date + " firstValidDate=" + firstValidDate);
-        } else if(date.isAfter(lastValidDate)){
+        } else if (date.isAfter(lastValidDate)) {
             throw new InvalidDateException("Date is after the last valid business calendar date:  date=" + date + " lastValidDate=" + lastValidDate);
         }
 
@@ -199,7 +201,7 @@ public class BusinessCalendar extends Calendar {
      *
      * @param time time
      * @return the corresponding BusinessSchedule of {@code date}
-     * @throws RequirementFailure if the input is null
+     * @throws RequirementFailure   if the input is null
      * @throws InvalidDateException if the date is not in the valid range
      */
     public BusinessSchedule<Instant> businessSchedule(final ZonedDateTime time) {
@@ -212,7 +214,7 @@ public class BusinessCalendar extends Calendar {
      *
      * @param time time
      * @return the corresponding BusinessSchedule of {@code date}
-     * @throws RequirementFailure if the input is null
+     * @throws RequirementFailure   if the input is null
      * @throws InvalidDateException if the date is not in the valid range
      */
     public BusinessSchedule<Instant> businessSchedule(final Instant time) {
@@ -225,8 +227,8 @@ public class BusinessCalendar extends Calendar {
      *
      * @param date date
      * @return the corresponding BusinessSchedule of {@code date}
-     * @throws RequirementFailure if the input is null
-     * @throws InvalidDateException if the date is not in the valid range
+     * @throws RequirementFailure                   if the input is null
+     * @throws InvalidDateException                 if the date is not in the valid range
      * @throws DateTimeUtils.DateTimeParseException if the string cannot be parsed
      */
     public BusinessSchedule<Instant> businessSchedule(final String date) {
@@ -235,6 +237,7 @@ public class BusinessCalendar extends Calendar {
     }
 
     //TODO: rename current schedule? --> or zero arg?
+
     /**
      * Gets today's business schedule.
      *
@@ -253,7 +256,7 @@ public class BusinessCalendar extends Calendar {
      *
      * @param date date
      * @return true if the date is a business day; false otherwise
-     * @throws RequirementFailure if the input is null
+     * @throws RequirementFailure   if the input is null
      * @throws InvalidDateException if the date is not in the valid range
      */
     public boolean isBusinessDay(final LocalDate date) {
@@ -265,8 +268,8 @@ public class BusinessCalendar extends Calendar {
      *
      * @param date date
      * @return true if the date is a business day; false otherwise
-     * @throws RequirementFailure if the input is null
-     * @throws InvalidDateException if the date is not in the valid range
+     * @throws RequirementFailure                   if the input is null
+     * @throws InvalidDateException                 if the date is not in the valid range
      * @throws DateTimeUtils.DateTimeParseException if the string cannot be parsed
      */
     public boolean isBusinessDay(final String date) {
@@ -278,10 +281,10 @@ public class BusinessCalendar extends Calendar {
      *
      * @param time time
      * @return true if the date is a business day; false otherwise
-     * @throws RequirementFailure if the input is null
+     * @throws RequirementFailure   if the input is null
      * @throws InvalidDateException if the date is not in the valid range
      */
-    public boolean isBusinessDay(final ZonedDateTime time){
+    public boolean isBusinessDay(final ZonedDateTime time) {
         return businessSchedule(time).isBusinessDay();
     }
 
@@ -290,14 +293,15 @@ public class BusinessCalendar extends Calendar {
      *
      * @param time time
      * @return true if the date is a business day; false otherwise
-     * @throws RequirementFailure if the input is null
+     * @throws RequirementFailure   if the input is null
      * @throws InvalidDateException if the date is not in the valid range
      */
-    public boolean isBusinessDay(final Instant time){
+    public boolean isBusinessDay(final Instant time) {
         return businessSchedule(time).isBusinessDay();
     }
 
     //TODO: rename?
+
     /**
      * Is the day of the week a normal business day?
      *
@@ -305,7 +309,7 @@ public class BusinessCalendar extends Calendar {
      * @return true if the day is a business day; false otherwise
      * @throws RequirementFailure if the input is null
      */
-    public boolean isBusinessDay(final DayOfWeek day){
+    public boolean isBusinessDay(final DayOfWeek day) {
         Require.neqNull(day, "day");
         return !weekendDays.contains(day);
     }
@@ -324,7 +328,7 @@ public class BusinessCalendar extends Calendar {
      *
      * @param date date
      * @return true if {@code date} is the last business day of the month; false otherwise
-     * @throws RequirementFailure if the input is null
+     * @throws RequirementFailure   if the input is null
      * @throws InvalidDateException if the date is not in the valid range
      */
     boolean isLastBusinessDayOfMonth(final LocalDate date) {
@@ -336,7 +340,7 @@ public class BusinessCalendar extends Calendar {
 
         final LocalDate nextBusAfterDate = plusBusinessDays(date, 1);
 
-        if(nextBusAfterDate == null){
+        if (nextBusAfterDate == null) {
             //TODO ** raise an error;
             return false;
         }
@@ -349,7 +353,7 @@ public class BusinessCalendar extends Calendar {
      *
      * @param time time
      * @return true if {@code time} is on the last business day of the month; false otherwise
-     * @throws RequirementFailure if the input is null
+     * @throws RequirementFailure   if the input is null
      * @throws InvalidDateException if the date is not in the valid range
      */
     public boolean isLastBusinessDayOfMonth(final ZonedDateTime time) {
@@ -362,7 +366,7 @@ public class BusinessCalendar extends Calendar {
      *
      * @param time time
      * @return true if {@code time} is on the last business day of the month; false otherwise
-     * @throws RequirementFailure if the input is null
+     * @throws RequirementFailure   if the input is null
      * @throws InvalidDateException if the date is not in the valid range
      */
     public boolean isLastBusinessDayOfMonth(final Instant time) {
@@ -375,8 +379,8 @@ public class BusinessCalendar extends Calendar {
      *
      * @param date date
      * @return true if {@code time} is on the last business day of the month; false otherwise
-     * @throws RequirementFailure if the input is null
-     * @throws InvalidDateException if the date is not in the valid range
+     * @throws RequirementFailure                   if the input is null
+     * @throws InvalidDateException                 if the date is not in the valid range
      * @throws DateTimeUtils.DateTimeParseException if the string cannot be parsed
      */
     boolean isLastBusinessDayOfMonth(final String date) {
@@ -398,10 +402,10 @@ public class BusinessCalendar extends Calendar {
      *
      * @param date date
      * @return true if {@code date} is on the last business day of the week; false otherwise
-     * @throws RequirementFailure if the input is null
+     * @throws RequirementFailure   if the input is null
      * @throws InvalidDateException if the date is not in the valid range
      */
-    public boolean isLastBusinessDayOfWeek(final LocalDate date){
+    public boolean isLastBusinessDayOfWeek(final LocalDate date) {
         Require.neqNull(date, "date");
 
         if (!isBusinessDay(date)) {
@@ -417,7 +421,7 @@ public class BusinessCalendar extends Calendar {
      *
      * @param time time
      * @return true if {@code time} is on the last business day of the week; false otherwise
-     * @throws RequirementFailure if the input is null
+     * @throws RequirementFailure   if the input is null
      * @throws InvalidDateException if the date is not in the valid range
      */
     public boolean isLastBusinessDayOfWeek(final ZonedDateTime time) {
@@ -430,7 +434,7 @@ public class BusinessCalendar extends Calendar {
      *
      * @param time time
      * @return true if {@code time} is on the last business day of the week; false otherwise
-     * @throws RequirementFailure if the input is null
+     * @throws RequirementFailure   if the input is null
      * @throws InvalidDateException if the date is not in the valid range
      */
     public boolean isLastBusinessDayOfWeek(final Instant time) {
@@ -443,11 +447,11 @@ public class BusinessCalendar extends Calendar {
      *
      * @param date date
      * @return true if {@code date} is the last business day of the week; false otherwise
-     * @throws RequirementFailure if the input is null
-     * @throws InvalidDateException if the date is not in the valid range
+     * @throws RequirementFailure                   if the input is null
+     * @throws InvalidDateException                 if the date is not in the valid range
      * @throws DateTimeUtils.DateTimeParseException if the string cannot be parsed
      */
-    public boolean isLastBusinessDayOfWeek(final String date){
+    public boolean isLastBusinessDayOfWeek(final String date) {
         Require.neqNull(date, "date");
         return isLastBusinessDayOfWeek(DateTimeUtils.parseLocalDate(date));
     }
@@ -466,7 +470,7 @@ public class BusinessCalendar extends Calendar {
      *
      * @param date date
      * @return true if {@code date} is the last business day of the year; false otherwise
-     * @throws RequirementFailure if the input is null
+     * @throws RequirementFailure   if the input is null
      * @throws InvalidDateException if the date is not in the valid range
      */
     boolean isLastBusinessDayOfYear(final LocalDate date) {
@@ -478,7 +482,7 @@ public class BusinessCalendar extends Calendar {
 
         final LocalDate nextBusAfterDate = plusBusinessDays(date, 1);
 
-        if(nextBusAfterDate == null){
+        if (nextBusAfterDate == null) {
             //TODO ** raise an error;
             return false;
         }
@@ -491,7 +495,7 @@ public class BusinessCalendar extends Calendar {
      *
      * @param time time
      * @return true if {@code time} is on the last business day of the year; false otherwise
-     * @throws RequirementFailure if the input is null
+     * @throws RequirementFailure   if the input is null
      * @throws InvalidDateException if the date is not in the valid range
      */
     public boolean isLastBusinessDayOfYear(final ZonedDateTime time) {
@@ -504,7 +508,7 @@ public class BusinessCalendar extends Calendar {
      *
      * @param time time
      * @return true if {@code time} is on the last business day of the year; false otherwise
-     * @throws RequirementFailure if the input is null
+     * @throws RequirementFailure   if the input is null
      * @throws InvalidDateException if the date is not in the valid range
      */
     public boolean isLastBusinessDayOfYear(final Instant time) {
@@ -517,8 +521,8 @@ public class BusinessCalendar extends Calendar {
      *
      * @param date date
      * @return true if {@code time} is on the last business day of the year; false otherwise
-     * @throws RequirementFailure if the input is null
-     * @throws InvalidDateException if the date is not in the valid range
+     * @throws RequirementFailure                   if the input is null
+     * @throws InvalidDateException                 if the date is not in the valid range
      * @throws DateTimeUtils.DateTimeParseException if the string cannot be parsed
      */
     boolean isLastBusinessDayOfYear(final String date) {
@@ -545,7 +549,7 @@ public class BusinessCalendar extends Calendar {
      *
      * @param time time
      * @return true if the specified time is a business time; otherwise, false
-     * @throws RequirementFailure if the input is null
+     * @throws RequirementFailure   if the input is null
      * @throws InvalidDateException if the date is not in the valid range
      */
     public boolean isBusinessTime(final ZonedDateTime time) {
@@ -559,7 +563,7 @@ public class BusinessCalendar extends Calendar {
      *
      * @param time time
      * @return true if the specified time is a business time; otherwise, false
-     * @throws RequirementFailure if the input is null
+     * @throws RequirementFailure   if the input is null
      * @throws InvalidDateException if the date is not in the valid range
      */
     public boolean isBusinessTime(final Instant time) {
@@ -572,7 +576,7 @@ public class BusinessCalendar extends Calendar {
      * Business times fall within business periods of the day's business schedule.
      *
      * @return true if the specified time is a business time; otherwise, false
-     * @throws RequirementFailure if the input is null
+     * @throws RequirementFailure   if the input is null
      * @throws InvalidDateException if the date is not in the valid range
      */
     public boolean isBusinessTime() {
@@ -587,10 +591,10 @@ public class BusinessCalendar extends Calendar {
      *
      * @param date date
      * @return ratio of the business day length and the standard business day length for the date
-     * @throws RequirementFailure if the input is null
+     * @throws RequirementFailure   if the input is null
      * @throws InvalidDateException if the date is not in the valid range
      */
-    public double fractionOfStandardBusinessDay(final LocalDate date){
+    public double fractionOfStandardBusinessDay(final LocalDate date) {
         Require.neqNull(date, "date");
         final BusinessSchedule<Instant> schedule = businessSchedule(date);
         return (double) schedule.businessNanos() / (double) standardBusinessDayLengthNanos();
@@ -604,11 +608,11 @@ public class BusinessCalendar extends Calendar {
      *
      * @param date date
      * @return ratio of the business day length and the standard business day length for the date
-     * @throws RequirementFailure if the input is null
-     * @throws InvalidDateException if the date is not in the valid range
+     * @throws RequirementFailure                   if the input is null
+     * @throws InvalidDateException                 if the date is not in the valid range
      * @throws DateTimeUtils.DateTimeParseException if the string cannot be parsed
      */
-    public double fractionOfStandardBusinessDay(final String date){
+    public double fractionOfStandardBusinessDay(final String date) {
         Require.neqNull(date, "date");
         return fractionOfStandardBusinessDay(DateTimeUtils.parseLocalDate(date));
     }
@@ -621,10 +625,10 @@ public class BusinessCalendar extends Calendar {
      *
      * @param time time
      * @return ratio of the business day length and the standard business day length for the date
-     * @throws RequirementFailure if the input is null
+     * @throws RequirementFailure   if the input is null
      * @throws InvalidDateException if the date is not in the valid range
      */
-    public double fractionOfStandardBusinessDay(final Instant time){
+    public double fractionOfStandardBusinessDay(final Instant time) {
         Require.neqNull(time, "time");
         return fractionOfStandardBusinessDay(DateTimeUtils.toLocalDate(time, timeZone()));
     }
@@ -637,10 +641,10 @@ public class BusinessCalendar extends Calendar {
      *
      * @param time time
      * @return ratio of the business day length and the standard business day length for the date
-     * @throws RequirementFailure if the input is null
+     * @throws RequirementFailure   if the input is null
      * @throws InvalidDateException if the date is not in the valid range
      */
-    public double fractionOfStandardBusinessDay(final ZonedDateTime time){
+    public double fractionOfStandardBusinessDay(final ZonedDateTime time) {
         Require.neqNull(time, "time");
         return fractionOfStandardBusinessDay(DateTimeUtils.toLocalDate(time.toInstant(), timeZone()));
     }
@@ -652,7 +656,7 @@ public class BusinessCalendar extends Calendar {
      * A half day holiday will return 0.5.
      *
      * @return ratio of the business day length and the standard business day length for the date
-     * @throws RequirementFailure if the input is null
+     * @throws RequirementFailure   if the input is null
      * @throws InvalidDateException if the date is not in the valid range
      */
     public double fractionOfStandardBusinessDay() {
@@ -660,12 +664,13 @@ public class BusinessCalendar extends Calendar {
     }
 
     //TODO: remove Of from function names!
+
     /**
      * Fraction of the business day complete.
      *
      * @param time time
      * @return the fraction of the business day complete, or 1.0 if the day is not a business day
-     * @throws RequirementFailure if the input is null
+     * @throws RequirementFailure   if the input is null
      * @throws InvalidDateException if the date is not in the valid range
      */
     public double fractionOfBusinessDayComplete(final Instant time) {
@@ -673,7 +678,7 @@ public class BusinessCalendar extends Calendar {
 
         final BusinessSchedule<Instant> schedule = businessSchedule(time);
 
-        if(!schedule.isBusinessDay()) {
+        if (!schedule.isBusinessDay()) {
             return 1.0;
         }
 
@@ -686,7 +691,7 @@ public class BusinessCalendar extends Calendar {
      *
      * @param time time
      * @return the fraction of the business day complete, or 1.0 if the day is not a business day
-     * @throws RequirementFailure if the input is null
+     * @throws RequirementFailure   if the input is null
      * @throws InvalidDateException if the date is not in the valid range
      */
     public double fractionOfBusinessDayComplete(final ZonedDateTime time) {
@@ -698,7 +703,7 @@ public class BusinessCalendar extends Calendar {
      * Fraction of the current business day complete.
      *
      * @return the fraction of the business day complete, or 1.0 if the day is not a business day
-     * @throws RequirementFailure if the input is null
+     * @throws RequirementFailure   if the input is null
      * @throws InvalidDateException if the date is not in the valid range
      */
     public double fractionOfBusinessDayComplete() {
@@ -710,10 +715,10 @@ public class BusinessCalendar extends Calendar {
      *
      * @param time time
      * @return the fraction of the business day complete, or 0.0 if the day is not a business day
-     * @throws RequirementFailure if the input is null
+     * @throws RequirementFailure   if the input is null
      * @throws InvalidDateException if the date is not in the valid range
      */
-    public double fractionOfBusinessDayRemaining(final Instant time){
+    public double fractionOfBusinessDayRemaining(final Instant time) {
         Require.neqNull(time, "time");
         return 1.0 - fractionOfBusinessDayComplete(time);
     }
@@ -723,10 +728,10 @@ public class BusinessCalendar extends Calendar {
      *
      * @param time time
      * @return the fraction of the business day complete, or 0.0 if the day is not a business day
-     * @throws RequirementFailure if the input is null
+     * @throws RequirementFailure   if the input is null
      * @throws InvalidDateException if the date is not in the valid range
      */
-    public double fractionOfBusinessDayRemaining(final ZonedDateTime time){
+    public double fractionOfBusinessDayRemaining(final ZonedDateTime time) {
         Require.neqNull(time, "time");
         return 1.0 - fractionOfBusinessDayComplete(time);
     }
@@ -735,10 +740,10 @@ public class BusinessCalendar extends Calendar {
      * Fraction of the business day remaining.
      *
      * @return the fraction of the business day complete, or 0.0 if the day is not a business day
-     * @throws RequirementFailure if the input is null
+     * @throws RequirementFailure   if the input is null
      * @throws InvalidDateException if the date is not in the valid range
      */
-    public double fractionOfBusinessDayRemaining(){
+    public double fractionOfBusinessDayRemaining() {
         return fractionOfBusinessDayRemaining(DateTimeUtils.now());
     }
 
@@ -749,15 +754,15 @@ public class BusinessCalendar extends Calendar {
     /**
      * Returns the number of business dates in a given range.
      *
-     * @param start start of a time range
-     * @param end   end of a time range
+     * @param start          start of a time range
+     * @param end            end of a time range
      * @param startInclusive true to include {@code start} in the result; false to exclude {@code start}
-     * @param endInclusive true to include {@code end} in the result; false to exclude {@code end}
+     * @param endInclusive   true to include {@code end} in the result; false to exclude {@code end}
      * @return number of business dates between {@code start} and {@code end}
-     * @throws RequirementFailure if any input is null
+     * @throws RequirementFailure   if any input is null
      * @throws InvalidDateException if the dates are not in the valid range
      */
-    public int numberBusinessDates(final LocalDate start, final LocalDate end, final boolean startInclusive, final boolean endInclusive)  {
+    public int numberBusinessDates(final LocalDate start, final LocalDate end, final boolean startInclusive, final boolean endInclusive) {
         Require.neqNull(start, "start");
         Require.neqNull(end, "end");
 
@@ -766,7 +771,7 @@ public class BusinessCalendar extends Calendar {
         for (LocalDate day = start; !day.isAfter(end); day = day.plusDays(1)) {
             final boolean skip = (!startInclusive && day.equals(start)) || (!endInclusive && day.equals(end));
 
-            if(!skip && isBusinessDay(day)) {
+            if (!skip && isBusinessDay(day)) {
                 days++;
             }
         }
@@ -777,16 +782,16 @@ public class BusinessCalendar extends Calendar {
     /**
      * Returns the number of business dates in a given range.
      *
-     * @param start start of a time range
-     * @param end   end of a time range
+     * @param start          start of a time range
+     * @param end            end of a time range
      * @param startInclusive true to include {@code start} in the result; false to exclude {@code start}
-     * @param endInclusive true to include {@code end} in the result; false to exclude {@code end}
+     * @param endInclusive   true to include {@code end} in the result; false to exclude {@code end}
      * @return number of business dates between {@code start} and {@code end}
-     * @throws RequirementFailure if any input is null
-     * @throws InvalidDateException if the dates are not in the valid range
+     * @throws RequirementFailure                   if any input is null
+     * @throws InvalidDateException                 if the dates are not in the valid range
      * @throws DateTimeUtils.DateTimeParseException if the string cannot be parsed
      */
-    public int numberBusinessDates(final String start, final String end, final boolean startInclusive, final boolean endInclusive)  {
+    public int numberBusinessDates(final String start, final String end, final boolean startInclusive, final boolean endInclusive) {
         Require.neqNull(start, "start");
         Require.neqNull(end, "end");
         return numberBusinessDates(DateTimeUtils.parseLocalDate(start), DateTimeUtils.parseLocalDate(end), startInclusive, endInclusive);
@@ -795,15 +800,15 @@ public class BusinessCalendar extends Calendar {
     /**
      * Returns the number of business dates in a given range.
      *
-     * @param start start of a time range
-     * @param end   end of a time range
+     * @param start          start of a time range
+     * @param end            end of a time range
      * @param startInclusive true to include {@code start} in the result; false to exclude {@code start}
-     * @param endInclusive true to include {@code end} in the result; false to exclude {@code end}
+     * @param endInclusive   true to include {@code end} in the result; false to exclude {@code end}
      * @return number of business dates between {@code start} and {@code end}
-     * @throws RequirementFailure if any input is null
+     * @throws RequirementFailure   if any input is null
      * @throws InvalidDateException if the dates are not in the valid range
      */
-    public int numberBusinessDates(final ZonedDateTime start, final ZonedDateTime end, final boolean startInclusive, final boolean endInclusive)  {
+    public int numberBusinessDates(final ZonedDateTime start, final ZonedDateTime end, final boolean startInclusive, final boolean endInclusive) {
         Require.neqNull(start, "start");
         Require.neqNull(end, "end");
         return numberBusinessDates(start.withZoneSameInstant(timeZone()).toLocalDate(), end.withZoneSameInstant(timeZone()).toLocalDate(), startInclusive, endInclusive);
@@ -812,15 +817,15 @@ public class BusinessCalendar extends Calendar {
     /**
      * Returns the number of business dates in a given range.
      *
-     * @param start start of a time range
-     * @param end   end of a time range
+     * @param start          start of a time range
+     * @param end            end of a time range
      * @param startInclusive true to include {@code start} in the result; false to exclude {@code start}
-     * @param endInclusive true to include {@code end} in the result; false to exclude {@code end}
+     * @param endInclusive   true to include {@code end} in the result; false to exclude {@code end}
      * @return number of business dates between {@code start} and {@code end}
-     * @throws RequirementFailure if any input is null
+     * @throws RequirementFailure   if any input is null
      * @throws InvalidDateException if the dates are not in the valid range
      */
-    public int numberBusinessDates(final Instant start, final Instant end, final boolean startInclusive, final boolean endInclusive)  {
+    public int numberBusinessDates(final Instant start, final Instant end, final boolean startInclusive, final boolean endInclusive) {
         Require.neqNull(start, "start");
         Require.neqNull(end, "end");
         return numberBusinessDates(DateTimeUtils.toLocalDate(start, timeZone()), DateTimeUtils.toLocalDate(end, timeZone()), startInclusive, endInclusive);
@@ -832,11 +837,11 @@ public class BusinessCalendar extends Calendar {
      * @param start start of a time range
      * @param end   end of a time range
      * @return number of business dates between {@code start} and {@code end}; including {@code start} and {@code end}
-     * @throws RequirementFailure if any input is null
+     * @throws RequirementFailure   if any input is null
      * @throws InvalidDateException if the dates are not in the valid range
      */
     public int numberBusinessDates(final LocalDate start, final LocalDate end) {
-        return numberBusinessDates(start,end, true, true);
+        return numberBusinessDates(start, end, true, true);
     }
 
     /**
@@ -845,12 +850,12 @@ public class BusinessCalendar extends Calendar {
      * @param start start of a time range
      * @param end   end of a time range
      * @return number of business dates between {@code start} and {@code end}; including {@code start} and {@code end}
-     * @throws RequirementFailure if any input is null
-     * @throws InvalidDateException if the dates are not in the valid range
+     * @throws RequirementFailure                   if any input is null
+     * @throws InvalidDateException                 if the dates are not in the valid range
      * @throws DateTimeUtils.DateTimeParseException if the string cannot be parsed
      */
     public int numberBusinessDates(final String start, final String end) {
-        return numberBusinessDates(start,end, true, true);
+        return numberBusinessDates(start, end, true, true);
     }
 
     /**
@@ -859,11 +864,11 @@ public class BusinessCalendar extends Calendar {
      * @param start start of a time range
      * @param end   end of a time range
      * @return number of business dates between {@code start} and {@code end}; including {@code start} and {@code end}
-     * @throws RequirementFailure if any input is null
+     * @throws RequirementFailure   if any input is null
      * @throws InvalidDateException if the dates are not in the valid range
      */
     public int numberBusinessDates(final ZonedDateTime start, final ZonedDateTime end) {
-        return numberBusinessDates(start,end, true, true);
+        return numberBusinessDates(start, end, true, true);
     }
 
     /**
@@ -872,25 +877,25 @@ public class BusinessCalendar extends Calendar {
      * @param start start of a time range
      * @param end   end of a time range
      * @return number of business dates between {@code start} and {@code end}; including {@code start} and {@code end}
-     * @throws RequirementFailure if any input is null
+     * @throws RequirementFailure   if any input is null
      * @throws InvalidDateException if the dates are not in the valid range
      */
     public int numberBusinessDates(final Instant start, final Instant end) {
-        return numberBusinessDates(start,end, true, true);
+        return numberBusinessDates(start, end, true, true);
     }
 
     /**
      * Returns the number of non-business dates in a given range.
      *
-     * @param start start of a time range
-     * @param end   end of a time range
+     * @param start          start of a time range
+     * @param end            end of a time range
      * @param startInclusive true to include {@code start} in the result; false to exclude {@code start}
-     * @param endInclusive true to include {@code end} in the result; false to exclude {@code end}
+     * @param endInclusive   true to include {@code end} in the result; false to exclude {@code end}
      * @return number of non-business dates between {@code start} and {@code end}
-     * @throws RequirementFailure if any input is null
+     * @throws RequirementFailure   if any input is null
      * @throws InvalidDateException if the dates are not in the valid range
      */
-    public int numberNonBusinessDates(final LocalDate start, final LocalDate end, final boolean startInclusive, final boolean endInclusive)  {
+    public int numberNonBusinessDates(final LocalDate start, final LocalDate end, final boolean startInclusive, final boolean endInclusive) {
         Require.neqNull(start, "start");
         Require.neqNull(end, "end");
 
@@ -900,16 +905,16 @@ public class BusinessCalendar extends Calendar {
     /**
      * Returns the number of non-business dates in a given range.
      *
-     * @param start start of a time range
-     * @param end   end of a time range
+     * @param start          start of a time range
+     * @param end            end of a time range
      * @param startInclusive true to include {@code start} in the result; false to exclude {@code start}
-     * @param endInclusive true to include {@code end} in the result; false to exclude {@code end}
+     * @param endInclusive   true to include {@code end} in the result; false to exclude {@code end}
      * @return number of non-business dates between {@code start} and {@code end}
-     * @throws RequirementFailure if any input is null
-     * @throws InvalidDateException if the dates are not in the valid range
+     * @throws RequirementFailure                   if any input is null
+     * @throws InvalidDateException                 if the dates are not in the valid range
      * @throws DateTimeUtils.DateTimeParseException if the string cannot be parsed
      */
-    public int numberNonBusinessDates(final String start, final String end, final boolean startInclusive, final boolean endInclusive)  {
+    public int numberNonBusinessDates(final String start, final String end, final boolean startInclusive, final boolean endInclusive) {
         Require.neqNull(start, "start");
         Require.neqNull(end, "end");
         return numberNonBusinessDates(DateTimeUtils.parseLocalDate(start), DateTimeUtils.parseLocalDate(end), startInclusive, endInclusive);
@@ -918,15 +923,15 @@ public class BusinessCalendar extends Calendar {
     /**
      * Returns the number of non-business dates in a given range.
      *
-     * @param start start of a time range
-     * @param end   end of a time range
+     * @param start          start of a time range
+     * @param end            end of a time range
      * @param startInclusive true to include {@code start} in the result; false to exclude {@code start}
-     * @param endInclusive true to include {@code end} in the result; false to exclude {@code end}
+     * @param endInclusive   true to include {@code end} in the result; false to exclude {@code end}
      * @return number of non-business dates between {@code start} and {@code end}
-     * @throws RequirementFailure if any input is null
+     * @throws RequirementFailure   if any input is null
      * @throws InvalidDateException if the dates are not in the valid range
      */
-    public int numberNonBusinessDates(final ZonedDateTime start, final ZonedDateTime end, final boolean startInclusive, final boolean endInclusive)  {
+    public int numberNonBusinessDates(final ZonedDateTime start, final ZonedDateTime end, final boolean startInclusive, final boolean endInclusive) {
         Require.neqNull(start, "start");
         Require.neqNull(end, "end");
         return numberNonBusinessDates(start.withZoneSameInstant(timeZone()).toLocalDate(), end.withZoneSameInstant(timeZone()).toLocalDate(), startInclusive, endInclusive);
@@ -935,15 +940,15 @@ public class BusinessCalendar extends Calendar {
     /**
      * Returns the number of non-business dates in a given range.
      *
-     * @param start start of a time range
-     * @param end   end of a time range
+     * @param start          start of a time range
+     * @param end            end of a time range
      * @param startInclusive true to include {@code start} in the result; false to exclude {@code start}
-     * @param endInclusive true to include {@code end} in the result; false to exclude {@code end}
+     * @param endInclusive   true to include {@code end} in the result; false to exclude {@code end}
      * @return number of non-business dates between {@code start} and {@code end}
-     * @throws RequirementFailure if any input is null
+     * @throws RequirementFailure   if any input is null
      * @throws InvalidDateException if the dates are not in the valid range
      */
-    public int numberNonBusinessDates(final Instant start, final Instant end, final boolean startInclusive, final boolean endInclusive)  {
+    public int numberNonBusinessDates(final Instant start, final Instant end, final boolean startInclusive, final boolean endInclusive) {
         Require.neqNull(start, "start");
         Require.neqNull(end, "end");
         return numberNonBusinessDates(DateTimeUtils.toLocalDate(start, timeZone()), DateTimeUtils.toLocalDate(end, timeZone()), startInclusive, endInclusive);
@@ -955,11 +960,11 @@ public class BusinessCalendar extends Calendar {
      * @param start start of a time range
      * @param end   end of a time range
      * @return number of non-business dates between {@code start} and {@code end}; including {@code start} and {@code end}
-     * @throws RequirementFailure if any input is null
+     * @throws RequirementFailure   if any input is null
      * @throws InvalidDateException if the dates are not in the valid range
      */
     public int numberNonBusinessDates(final LocalDate start, final LocalDate end) {
-        return numberNonBusinessDates(start,end, true, true);
+        return numberNonBusinessDates(start, end, true, true);
     }
 
     /**
@@ -968,12 +973,12 @@ public class BusinessCalendar extends Calendar {
      * @param start start of a time range
      * @param end   end of a time range
      * @return number of non-business dates between {@code start} and {@code end}; including {@code start} and {@code end}
-     * @throws RequirementFailure if any input is null
-     * @throws InvalidDateException if the dates are not in the valid range
+     * @throws RequirementFailure                   if any input is null
+     * @throws InvalidDateException                 if the dates are not in the valid range
      * @throws DateTimeUtils.DateTimeParseException if the string cannot be parsed
      */
     public int numberNonBusinessDates(final String start, final String end) {
-        return numberNonBusinessDates(start,end, true, true);
+        return numberNonBusinessDates(start, end, true, true);
     }
 
     /**
@@ -982,11 +987,11 @@ public class BusinessCalendar extends Calendar {
      * @param start start of a time range
      * @param end   end of a time range
      * @return number of non-business dates between {@code start} and {@code end}; including {@code start} and {@code end}
-     * @throws RequirementFailure if any input is null
+     * @throws RequirementFailure   if any input is null
      * @throws InvalidDateException if the dates are not in the valid range
      */
     public int numberNonBusinessDates(final ZonedDateTime start, final ZonedDateTime end) {
-        return numberNonBusinessDates(start,end, true, true);
+        return numberNonBusinessDates(start, end, true, true);
     }
 
     /**
@@ -995,22 +1000,22 @@ public class BusinessCalendar extends Calendar {
      * @param start start of a time range
      * @param end   end of a time range
      * @return number of non-business dates between {@code start} and {@code end}; including {@code start} and {@code end}
-     * @throws RequirementFailure if any input is null
+     * @throws RequirementFailure   if any input is null
      * @throws InvalidDateException if the dates are not in the valid range
      */
     public int numberNonBusinessDates(final Instant start, final Instant end) {
-        return numberNonBusinessDates(start,end, true, true);
+        return numberNonBusinessDates(start, end, true, true);
     }
 
     /**
      * Returns the business dates in a given range.
      *
-     * @param start start of a time range
-     * @param end   end of a time range
+     * @param start          start of a time range
+     * @param end            end of a time range
      * @param startInclusive true to include {@code start} in the result; false to exclude {@code start}
-     * @param endInclusive true to include {@code end} in the result; false to exclude {@code end}
+     * @param endInclusive   true to include {@code end} in the result; false to exclude {@code end}
      * @return business dates between {@code start} and {@code end}
-     * @throws RequirementFailure if any input is null
+     * @throws RequirementFailure   if any input is null
      * @throws InvalidDateException if the dates are not in the valid range
      */
     public LocalDate[] businessDates(final LocalDate start, final LocalDate end, final boolean startInclusive, final boolean endInclusive) {
@@ -1022,7 +1027,7 @@ public class BusinessCalendar extends Calendar {
         for (LocalDate day = start; !day.isAfter(end); day = day.plusDays(1)) {
             final boolean skip = (!startInclusive && day.equals(start)) || (!endInclusive && day.equals(end));
 
-            if(!skip && isBusinessDay(day)) {
+            if (!skip && isBusinessDay(day)) {
                 dateList.add(day);
             }
         }
@@ -1033,13 +1038,13 @@ public class BusinessCalendar extends Calendar {
     /**
      * Returns the business dates in a given range.
      *
-     * @param start start of a time range
-     * @param end   end of a time range
+     * @param start          start of a time range
+     * @param end            end of a time range
      * @param startInclusive true to include {@code start} in the result; false to exclude {@code start}
-     * @param endInclusive true to include {@code end} in the result; false to exclude {@code end}
+     * @param endInclusive   true to include {@code end} in the result; false to exclude {@code end}
      * @return business dates between {@code start} and {@code end}
-     * @throws RequirementFailure if any input is null
-     * @throws InvalidDateException if the dates are not in the valid range
+     * @throws RequirementFailure                   if any input is null
+     * @throws InvalidDateException                 if the dates are not in the valid range
      * @throws DateTimeUtils.DateTimeParseException if the string cannot be parsed
      */
     public LocalDate[] businessDates(final String start, final String end, final boolean startInclusive, final boolean endInclusive) {
@@ -1051,12 +1056,12 @@ public class BusinessCalendar extends Calendar {
     /**
      * Returns the business dates in a given range.
      *
-     * @param start start of a time range
-     * @param end   end of a time range
+     * @param start          start of a time range
+     * @param end            end of a time range
      * @param startInclusive true to include {@code start} in the result; false to exclude {@code start}
-     * @param endInclusive true to include {@code end} in the result; false to exclude {@code end}
+     * @param endInclusive   true to include {@code end} in the result; false to exclude {@code end}
      * @return business dates between {@code start} and {@code end}
-     * @throws RequirementFailure if any input is null
+     * @throws RequirementFailure   if any input is null
      * @throws InvalidDateException if the dates are not in the valid range
      */
     public LocalDate[] businessDates(final ZonedDateTime start, final ZonedDateTime end, final boolean startInclusive, final boolean endInclusive) {
@@ -1068,12 +1073,12 @@ public class BusinessCalendar extends Calendar {
     /**
      * Returns the business dates in a given range.
      *
-     * @param start start of a time range
-     * @param end   end of a time range
+     * @param start          start of a time range
+     * @param end            end of a time range
      * @param startInclusive true to include {@code start} in the result; false to exclude {@code start}
-     * @param endInclusive true to include {@code end} in the result; false to exclude {@code end}
+     * @param endInclusive   true to include {@code end} in the result; false to exclude {@code end}
      * @return business dates between {@code start} and {@code end}
-     * @throws RequirementFailure if any input is null
+     * @throws RequirementFailure   if any input is null
      * @throws InvalidDateException if the dates are not in the valid range
      */
     public LocalDate[] businessDates(final Instant start, final Instant end, final boolean startInclusive, final boolean endInclusive) {
@@ -1088,11 +1093,11 @@ public class BusinessCalendar extends Calendar {
      * @param start start of a time range
      * @param end   end of a time range
      * @return business dates between {@code start} and {@code end}; including {@code start} and {@code end}
-     * @throws RequirementFailure if any input is null
+     * @throws RequirementFailure   if any input is null
      * @throws InvalidDateException if the dates are not in the valid range
      */
     public LocalDate[] businessDates(final LocalDate start, final LocalDate end) {
-        return businessDates(start,end, true, true);
+        return businessDates(start, end, true, true);
     }
 
     /**
@@ -1101,12 +1106,12 @@ public class BusinessCalendar extends Calendar {
      * @param start start of a time range
      * @param end   end of a time range
      * @return business dates between {@code start} and {@code end}; including {@code start} and {@code end}
-     * @throws RequirementFailure if any input is null
-     * @throws InvalidDateException if the dates are not in the valid range
+     * @throws RequirementFailure                   if any input is null
+     * @throws InvalidDateException                 if the dates are not in the valid range
      * @throws DateTimeUtils.DateTimeParseException if the string cannot be parsed
      */
     public LocalDate[] businessDates(final String start, final String end) {
-        return businessDates(start,end, true, true);
+        return businessDates(start, end, true, true);
     }
 
     /**
@@ -1115,11 +1120,11 @@ public class BusinessCalendar extends Calendar {
      * @param start start of a time range
      * @param end   end of a time range
      * @return business dates between {@code start} and {@code end}; including {@code start} and {@code end}
-     * @throws RequirementFailure if any input is null
+     * @throws RequirementFailure   if any input is null
      * @throws InvalidDateException if the dates are not in the valid range
      */
     public LocalDate[] businessDates(final ZonedDateTime start, final ZonedDateTime end) {
-        return businessDates(start,end, true, true);
+        return businessDates(start, end, true, true);
     }
 
     /**
@@ -1128,22 +1133,22 @@ public class BusinessCalendar extends Calendar {
      * @param start start of a time range
      * @param end   end of a time range
      * @return business dates between {@code start} and {@code end}; including {@code start} and {@code end}
-     * @throws RequirementFailure if any input is null
+     * @throws RequirementFailure   if any input is null
      * @throws InvalidDateException if the dates are not in the valid range
      */
     public LocalDate[] businessDates(final Instant start, final Instant end) {
-        return businessDates(start,end, true, true);
+        return businessDates(start, end, true, true);
     }
 
     /**
      * Returns the non-business dates in a given range.
      *
-     * @param start start of a time range
-     * @param end   end of a time range
+     * @param start          start of a time range
+     * @param end            end of a time range
      * @param startInclusive true to include {@code start} in the result; false to exclude {@code start}
-     * @param endInclusive true to include {@code end} in the result; false to exclude {@code end}
+     * @param endInclusive   true to include {@code end} in the result; false to exclude {@code end}
      * @return non-business dates between {@code start} and {@code end}
-     * @throws RequirementFailure if any input is null
+     * @throws RequirementFailure   if any input is null
      * @throws InvalidDateException if the dates are not in the valid range
      */
     public LocalDate[] nonBusinessDates(final LocalDate start, final LocalDate end, final boolean startInclusive, final boolean endInclusive) {
@@ -1155,7 +1160,7 @@ public class BusinessCalendar extends Calendar {
         for (LocalDate day = start; !day.isAfter(end); day = day.plusDays(1)) {
             final boolean skip = (!startInclusive && day.equals(start)) || (!endInclusive && day.equals(end));
 
-            if(!skip && !isBusinessDay(day)) {
+            if (!skip && !isBusinessDay(day)) {
                 dateList.add(day);
             }
         }
@@ -1166,13 +1171,13 @@ public class BusinessCalendar extends Calendar {
     /**
      * Returns the non-business dates in a given range.
      *
-     * @param start start of a time range
-     * @param end   end of a time range
+     * @param start          start of a time range
+     * @param end            end of a time range
      * @param startInclusive true to include {@code start} in the result; false to exclude {@code start}
-     * @param endInclusive true to include {@code end} in the result; false to exclude {@code end}
+     * @param endInclusive   true to include {@code end} in the result; false to exclude {@code end}
      * @return non-business dates between {@code start} and {@code end}
-     * @throws RequirementFailure if any input is null
-     * @throws InvalidDateException if the dates are not in the valid range
+     * @throws RequirementFailure                   if any input is null
+     * @throws InvalidDateException                 if the dates are not in the valid range
      * @throws DateTimeUtils.DateTimeParseException if the string cannot be parsed
      */
     public LocalDate[] nonBusinessDates(final String start, final String end, final boolean startInclusive, final boolean endInclusive) {
@@ -1184,12 +1189,12 @@ public class BusinessCalendar extends Calendar {
     /**
      * Returns the non-business dates in a given range.
      *
-     * @param start start of a time range
-     * @param end   end of a time range
+     * @param start          start of a time range
+     * @param end            end of a time range
      * @param startInclusive true to include {@code start} in the result; false to exclude {@code start}
-     * @param endInclusive true to include {@code end} in the result; false to exclude {@code end}
+     * @param endInclusive   true to include {@code end} in the result; false to exclude {@code end}
      * @return non-business dates between {@code start} and {@code end}
-     * @throws RequirementFailure if any input is null
+     * @throws RequirementFailure   if any input is null
      * @throws InvalidDateException if the dates are not in the valid range
      */
     public LocalDate[] nonBusinessDates(final ZonedDateTime start, final ZonedDateTime end, final boolean startInclusive, final boolean endInclusive) {
@@ -1201,12 +1206,12 @@ public class BusinessCalendar extends Calendar {
     /**
      * Returns the non-business dates in a given range.
      *
-     * @param start start of a time range
-     * @param end   end of a time range
+     * @param start          start of a time range
+     * @param end            end of a time range
      * @param startInclusive true to include {@code start} in the result; false to exclude {@code start}
-     * @param endInclusive true to include {@code end} in the result; false to exclude {@code end}
+     * @param endInclusive   true to include {@code end} in the result; false to exclude {@code end}
      * @return non-business dates between {@code start} and {@code end}
-     * @throws RequirementFailure if any input is null
+     * @throws RequirementFailure   if any input is null
      * @throws InvalidDateException if the dates are not in the valid range
      */
     public LocalDate[] nonBusinessDates(final Instant start, final Instant end, final boolean startInclusive, final boolean endInclusive) {
@@ -1221,11 +1226,11 @@ public class BusinessCalendar extends Calendar {
      * @param start start of a time range
      * @param end   end of a time range
      * @return non-business dates between {@code start} and {@code end}; including {@code start} and {@code end}
-     * @throws RequirementFailure if any input is null
+     * @throws RequirementFailure   if any input is null
      * @throws InvalidDateException if the dates are not in the valid range
      */
     public LocalDate[] nonBusinessDates(final LocalDate start, final LocalDate end) {
-        return nonBusinessDates(start,end, true, true);
+        return nonBusinessDates(start, end, true, true);
     }
 
     /**
@@ -1234,12 +1239,12 @@ public class BusinessCalendar extends Calendar {
      * @param start start of a time range
      * @param end   end of a time range
      * @return non-business dates between {@code start} and {@code end}; including {@code start} and {@code end}
-     * @throws RequirementFailure if any input is null
-     * @throws InvalidDateException if the dates are not in the valid range
+     * @throws RequirementFailure                   if any input is null
+     * @throws InvalidDateException                 if the dates are not in the valid range
      * @throws DateTimeUtils.DateTimeParseException if the string cannot be parsed
      */
     public LocalDate[] nonBusinessDates(final String start, final String end) {
-        return nonBusinessDates(start,end, true, true);
+        return nonBusinessDates(start, end, true, true);
     }
 
     /**
@@ -1248,11 +1253,11 @@ public class BusinessCalendar extends Calendar {
      * @param start start of a time range
      * @param end   end of a time range
      * @return non-business dates between {@code start} and {@code end}; including {@code start} and {@code end}
-     * @throws RequirementFailure if any input is null
+     * @throws RequirementFailure   if any input is null
      * @throws InvalidDateException if the dates are not in the valid range
      */
     public LocalDate[] nonBusinessDates(final ZonedDateTime start, final ZonedDateTime end) {
-        return nonBusinessDates(start,end, true, true);
+        return nonBusinessDates(start, end, true, true);
     }
 
     /**
@@ -1261,11 +1266,11 @@ public class BusinessCalendar extends Calendar {
      * @param start start of a time range
      * @param end   end of a time range
      * @return non-business dates between {@code start} and {@code end}; including {@code start} and {@code end}
-     * @throws RequirementFailure if any input is null
+     * @throws RequirementFailure   if any input is null
      * @throws InvalidDateException if the dates are not in the valid range
      */
     public LocalDate[] nonBusinessDates(final Instant start, final Instant end) {
-        return nonBusinessDates(start,end, true, true);
+        return nonBusinessDates(start, end, true, true);
     }
 
     // endregion
@@ -1278,7 +1283,7 @@ public class BusinessCalendar extends Calendar {
      * @param start start of a time range
      * @param end   end of a time range
      * @return the amount of business time in nanoseconds between {@code start} and {@code end}
-     * @throws RequirementFailure if any input is null
+     * @throws RequirementFailure   if any input is null
      * @throws InvalidDateException if the dates are not in the valid range
      */
     public long diffBusinessNanos(final Instant start, final Instant end) {
@@ -1295,7 +1300,7 @@ public class BusinessCalendar extends Calendar {
         assert startDate != null;
         assert endDate != null;
 
-        if(startDate.equals(endDate)) {
+        if (startDate.equals(endDate)) {
             final BusinessSchedule<Instant> schedule = businessSchedule(startDate);
             return schedule.businessNanosElapsed(end) - schedule.businessNanosElapsed(start);
         }
@@ -1315,7 +1320,7 @@ public class BusinessCalendar extends Calendar {
      * @param start start of a time range
      * @param end   end of a time range
      * @return the amount of business time in nanoseconds between {@code start} and {@code end}
-     * @throws RequirementFailure if any input is null
+     * @throws RequirementFailure   if any input is null
      * @throws InvalidDateException if the dates are not in the valid range
      */
     public long diffBusinessNanos(final ZonedDateTime start, final ZonedDateTime end) {
@@ -1330,7 +1335,7 @@ public class BusinessCalendar extends Calendar {
      * @param start start of a time range
      * @param end   end of a time range
      * @return the amount of nonbusiness time in nanoseconds between {@code start} and {@code end}
-     * @throws RequirementFailure if any input is null
+     * @throws RequirementFailure   if any input is null
      * @throws InvalidDateException if the dates are not in the valid range
      */
     public long diffNonBusinessNanos(final Instant start, final Instant end) {
@@ -1345,7 +1350,7 @@ public class BusinessCalendar extends Calendar {
      * @param start start of a time range
      * @param end   end of a time range
      * @return the amount of non-business time in nanoseconds between {@code start} and {@code end}
-     * @throws RequirementFailure if any input is null
+     * @throws RequirementFailure   if any input is null
      * @throws InvalidDateException if the dates are not in the valid range
      */
     public long diffNonBusinessNanos(final ZonedDateTime start, final ZonedDateTime end) {
@@ -1360,7 +1365,7 @@ public class BusinessCalendar extends Calendar {
      * @param start start of a time range
      * @param end   end of a time range
      * @return the amount of business time in standard business days between {@code start} and {@code end}
-     * @throws RequirementFailure if any input is null
+     * @throws RequirementFailure   if any input is null
      * @throws InvalidDateException if the dates are not in the valid range
      */
     public double diffBusinessDays(final Instant start, final Instant end) {
@@ -1373,7 +1378,7 @@ public class BusinessCalendar extends Calendar {
      * @param start start of a time range
      * @param end   end of a time range
      * @return the amount of business time in standard business days between {@code start} and {@code end}
-     * @throws RequirementFailure if any input is null
+     * @throws RequirementFailure   if any input is null
      * @throws InvalidDateException if the dates are not in the valid range
      */
     public double diffBusinessDays(final ZonedDateTime start, final ZonedDateTime end) {
@@ -1384,9 +1389,9 @@ public class BusinessCalendar extends Calendar {
      * Returns the number of business years between {@code start} and {@code end}.
      *
      * @param start start; if null, return null
-     * @param end end; if null, return null
+     * @param end   end; if null, return null
      * @return the amount of business time in business years between the {@code start} and {@code end}
-     * @throws RequirementFailure if any input is null
+     * @throws RequirementFailure   if any input is null
      * @throws InvalidDateException if the dates are not in the valid range
      */
     public double diffBusinessYears(final Instant start, final Instant end) {
@@ -1396,7 +1401,7 @@ public class BusinessCalendar extends Calendar {
         final int yearStart = DateTimeUtils.year(start, timeZone());
         final int yearEnd = DateTimeUtils.year(end, timeZone());
 
-        if(yearStart == yearEnd){
+        if (yearStart == yearEnd) {
             return (double) diffBusinessNanos(start, end) / (double) getYearData(yearStart).businessTimeNanos;
         }
 
@@ -1405,16 +1410,16 @@ public class BusinessCalendar extends Calendar {
 
         return (double) diffBusinessNanos(start, yearDataStart.end.toInstant()) / (double) yearDataStart.businessTimeNanos +
                 (double) diffBusinessNanos(yearDataEnd.start.toInstant(), end) / (double) yearDataEnd.businessTimeNanos +
-                yearEnd-yearStart-1;
+                yearEnd - yearStart - 1;
     }
 
     /**
      * Returns the number of business years between {@code start} and {@code end}.
      *
      * @param start start; if null, return null
-     * @param end end; if null, return null
+     * @param end   end; if null, return null
      * @return the amount of business time in business years between the {@code start} and {@code end}
-     * @throws RequirementFailure if any input is null
+     * @throws RequirementFailure   if any input is null
      * @throws InvalidDateException if the dates are not in the valid range
      */
     public double diffBusinessYears(final ZonedDateTime start, final ZonedDateTime end) {
@@ -1435,13 +1440,13 @@ public class BusinessCalendar extends Calendar {
      * @param date date
      * @param days number of days to add.
      * @return {@code days} business days after {@code date}; null if {@code date} is not a business day and {@code days} is zero.
-     * @throws RequirementFailure if the input is null
+     * @throws RequirementFailure   if the input is null
      * @throws InvalidDateException if the date is not in the valid range
      */
     public LocalDate plusBusinessDays(final LocalDate date, final int days) {
         Require.neqNull(date, "date");
 
-        if(days == 0){
+        if (days == 0) {
             return isBusinessDay() ? date : null;
         }
 
@@ -1463,8 +1468,8 @@ public class BusinessCalendar extends Calendar {
      * @param date date
      * @param days number of days to add.
      * @return {@code days} business days after {@code date}; null if {@code date} is not a business day and {@code days} is zero.
-     * @throws RequirementFailure if the input is null
-     * @throws InvalidDateException if the date is not in the valid range
+     * @throws RequirementFailure                   if the input is null
+     * @throws InvalidDateException                 if the date is not in the valid range
      * @throws DateTimeUtils.DateTimeParseException if the string cannot be parsed
      */
     public LocalDate plusBusinessDays(final String date, final int days) {
@@ -1478,9 +1483,9 @@ public class BusinessCalendar extends Calendar {
      * @param time time
      * @param days number of days to add.
      * @return {@code days} business days after {@code time}; null if {@code time} is not a business day and {@code days} is zero.
-     * @throws RequirementFailure if the input is null
+     * @throws RequirementFailure   if the input is null
      * @throws InvalidDateException if the date is not in the valid range
-         */
+     */
     public LocalDate plusBusinessDays(final Instant time, final int days) {
         Require.neqNull(time, "time");
         return plusBusinessDays(DateTimeUtils.toLocalDate(time, timeZone()), days);
@@ -1492,7 +1497,7 @@ public class BusinessCalendar extends Calendar {
      * @param time time
      * @param days number of days to add.
      * @return {@code days} business days after {@code time}; null if {@code time} is not a business day and {@code days} is zero.
-     * @throws RequirementFailure if the input is null
+     * @throws RequirementFailure   if the input is null
      * @throws InvalidDateException if the date is not in the valid range
      */
     public LocalDate plusBusinessDays(final ZonedDateTime time, final int days) {
@@ -1506,7 +1511,7 @@ public class BusinessCalendar extends Calendar {
      * @param date date
      * @param days number of days to add.
      * @return {@code days} business days before {@code date}; null if {@code date} is not a business day and {@code days} is zero.
-     * @throws RequirementFailure if the input is null
+     * @throws RequirementFailure   if the input is null
      * @throws InvalidDateException if the date is not in the valid range
      */
     public LocalDate minusBusinessDays(final LocalDate date, final int days) {
@@ -1519,8 +1524,8 @@ public class BusinessCalendar extends Calendar {
      * @param date date
      * @param days number of days to add.
      * @return {@code days} business days before {@code date}; null if {@code date} is not a business day and {@code days} is zero.
-     * @throws RequirementFailure if the input is null
-     * @throws InvalidDateException if the date is not in the valid range
+     * @throws RequirementFailure                   if the input is null
+     * @throws InvalidDateException                 if the date is not in the valid range
      * @throws DateTimeUtils.DateTimeParseException if the string cannot be parsed
      */
     public LocalDate minusBusinessDays(final String date, final int days) {
@@ -1533,7 +1538,7 @@ public class BusinessCalendar extends Calendar {
      * @param time time
      * @param days number of days to add.
      * @return {@code days} business days before {@code time}; null if {@code time} is not a business day and {@code days} is zero.
-     * @throws RequirementFailure if the input is null
+     * @throws RequirementFailure   if the input is null
      * @throws InvalidDateException if the date is not in the valid range
      */
     public LocalDate minusBusinessDays(final Instant time, final int days) {
@@ -1546,7 +1551,7 @@ public class BusinessCalendar extends Calendar {
      * @param time time
      * @param days number of days to add.
      * @return {@code days} business days before {@code time}; null if {@code time} is not a business day and {@code days} is zero.
-     * @throws RequirementFailure if the input is null
+     * @throws RequirementFailure   if the input is null
      * @throws InvalidDateException if the date is not in the valid range
      */
     public LocalDate minusBusinessDays(final ZonedDateTime time, final int days) {
@@ -1559,13 +1564,13 @@ public class BusinessCalendar extends Calendar {
      * @param date date
      * @param days number of days to add.
      * @return {@code days} non-business days after {@code date}; null if {@code date} is not a business day and {@code days} is zero.
-     * @throws RequirementFailure if the input is null
+     * @throws RequirementFailure   if the input is null
      * @throws InvalidDateException if the date is not in the valid range
      */
     public LocalDate plusNonBusinessDays(final LocalDate date, final int days) {
         Require.neqNull(date, "date");
 
-        if(days == 0){
+        if (days == 0) {
             return isBusinessDay() ? null : date;
         }
 
@@ -1587,8 +1592,8 @@ public class BusinessCalendar extends Calendar {
      * @param date date
      * @param days number of days to add.
      * @return {@code days} non-business days after {@code date}; null if {@code date} is not a business day and {@code days} is zero.
-     * @throws RequirementFailure if the input is null
-     * @throws InvalidDateException if the date is not in the valid range
+     * @throws RequirementFailure                   if the input is null
+     * @throws InvalidDateException                 if the date is not in the valid range
      * @throws DateTimeUtils.DateTimeParseException if the string cannot be parsed
      */
     public LocalDate plusNonBusinessDays(final String date, final int days) {
@@ -1596,15 +1601,15 @@ public class BusinessCalendar extends Calendar {
         return this.plusNonBusinessDays(DateTimeUtils.parseLocalDate(date), days);
     }
 
-        /**
-         * Adds a specified number of non-business days to an input date.  Adding negative days is equivalent to subtracting days.
-         *
-         * @param time time
-         * @param days number of days to add.
-         * @return {@code days} non-business days after {@code time}; null if {@code time} is not a business day and {@code days} is zero.
-         * @throws RequirementFailure if the input is null
-         * @throws InvalidDateException if the date is not in the valid range
-         */
+    /**
+     * Adds a specified number of non-business days to an input date.  Adding negative days is equivalent to subtracting days.
+     *
+     * @param time time
+     * @param days number of days to add.
+     * @return {@code days} non-business days after {@code time}; null if {@code time} is not a business day and {@code days} is zero.
+     * @throws RequirementFailure   if the input is null
+     * @throws InvalidDateException if the date is not in the valid range
+     */
     public LocalDate plusNonBusinessDays(final Instant time, final int days) {
         Require.neqNull(time, "time");
         return this.plusNonBusinessDays(DateTimeUtils.toLocalDate(time, timeZone()), days);
@@ -1616,7 +1621,7 @@ public class BusinessCalendar extends Calendar {
      * @param time time
      * @param days number of days to add.
      * @return {@code days} non-business days after {@code time}; null if {@code time} is not a business day and {@code days} is zero.
-     * @throws RequirementFailure if the input is null
+     * @throws RequirementFailure   if the input is null
      * @throws InvalidDateException if the date is not in the valid range
      */
     public LocalDate plusNonBusinessDays(final ZonedDateTime time, final int days) {
@@ -1630,7 +1635,7 @@ public class BusinessCalendar extends Calendar {
      * @param date date
      * @param days number of days to add.
      * @return {@code days} non-business days before {@code date}; null if {@code date} is a business day and {@code days} is zero.
-     * @throws RequirementFailure if the input is null
+     * @throws RequirementFailure   if the input is null
      * @throws InvalidDateException if the date is not in the valid range
      */
     public LocalDate minusNonBusinessDays(final LocalDate date, final int days) {
@@ -1643,8 +1648,8 @@ public class BusinessCalendar extends Calendar {
      * @param date date
      * @param days number of days to add.
      * @return {@code days} non-business days before {@code date}; null if {@code date} is a business day and {@code days} is zero.
-     * @throws RequirementFailure if the input is null
-     * @throws InvalidDateException if the date is not in the valid range
+     * @throws RequirementFailure                   if the input is null
+     * @throws InvalidDateException                 if the date is not in the valid range
      * @throws DateTimeUtils.DateTimeParseException if the string cannot be parsed
      */
     public LocalDate minusNonBusinessDays(final String date, final int days) {
@@ -1657,7 +1662,7 @@ public class BusinessCalendar extends Calendar {
      * @param time time
      * @param days number of days to add.
      * @return {@code days} non-business days before {@code time}; null if {@code time} is a business day and {@code days} is zero.
-     * @throws RequirementFailure if the input is null
+     * @throws RequirementFailure   if the input is null
      * @throws InvalidDateException if the date is not in the valid range
      */
     public LocalDate minusNonBusinessDays(final Instant time, final int days) {
@@ -1670,7 +1675,7 @@ public class BusinessCalendar extends Calendar {
      * @param time time
      * @param days number of days to add.
      * @return {@code days} non-business days before {@code time}; null if {@code time} is a business day and {@code days} is zero.
-     * @throws RequirementFailure if the input is null
+     * @throws RequirementFailure   if the input is null
      * @throws InvalidDateException if the date is not in the valid range
      */
     public LocalDate minusNonBusinessDays(final ZonedDateTime time, final int days) {
