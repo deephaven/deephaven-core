@@ -58,15 +58,67 @@ Currently, the R client is only supported on Ubuntu 20.04 or 22.04 and must be b
    ```
    and in that console, install the client
    ```r
-   install.packages("/path/to/rdeephaven", repos=NULL, type="source", dependencies=TRUE)
+   install.packages("/path/to/rdeephaven", INSTALL_opts="--install-tests", repos=NULL, type="source", dependencies=TRUE)
    ```
    This last command can also be executed from RStudio without the need for explicitly starting an R console.
 
-5. Now, run
+4. Now, run
    ```r
    library(rdeephaven)
    ```
    in the R session, and start using the client!
+
+---
+**NOTE**
+
+If an error like this occurs in step 3:
+```bash
+client.cpp:7:10: fatal error: deephaven/client/client.h: No such file or directory
+ 7 | #include "deephaven/client/client.h"
+   |          ^~~~~~~~~~~~~~~~~~~~~~~~~~~
+compilation terminated.
+```
+this means that the C++ compiler does not know where to find the relevant header files for the Deephaven C++ client. This can happen for a handul of reasons:
+1. Step 1 was skipped, and the Deephaven C++ client was not installed. In this case, please ensure that the client is installed before attempting to build the R client.
+2. The Deephaven C++ client is installed, but the `DHCPP` environment variable is not set. To test this, run
+   ```bash
+   echo $DHCPP
+   ```
+   If this returns an empty string, set `DHCPP` according to the instructions in step 1 with
+   ```bash
+   export DHCPP=/path/to/dhcpp
+   ```
+3. The Deephaven C++ client is installed and the `DHCPP` environment variable is set, but the current project is not configured to allow the compiler to access the Deephaven `dhcpp` and `src` directories. This is more difficult to give advice on, as it is an IDE-dependent problem. Consult your IDE's documentation on C/C++ compiler include paths for more information.
+---
+
+## Running the unit tests
+
+The Deephaven R client utilizes R's `testthat` package to perform unit tests. In order to run these unit tests, install `testthat` via `install.packages("testthat")`. Then, from an R session with `rdeephaven` installed, run the unit tests:
+```r
+library(testthat)
+test_package("rdeephaven")
+```
+
+## Debugging
+
+Because the Deephaven R client is written in C++ and wrapped with `Rcpp`, standard R-level debugging is not sufficient for many kinds of problems associated with C++ code. For this reason, debugging the R client must be done with a C++ debugger. We recommend using [Valgrind](https://valgrind.org) to check for memory bugs, and using [gdb](https://www.sourceware.org/gdb/) for thorough backtraces and general debugging.
+
+### Running R with Valgrind
+
+The following was taken from [this blog post](https://kevinushey.github.io/blog/2015/04/05/debugging-with-valgrind/), which has proven very useful for getting started with Valgrind.
+1. Install Valgrind with `sudo apt-get install valgrind` or `sudo yum install valgrind`
+2. Run R under Valgrind with `R -d valgrind`
+   
+OS-dependent problems may come up in either step, and the simplest solution is to use a Linux machine or VM if one is available. Attempting these steps in a Linux Docker image may also prove difficult, and will certainly fail if the host architecture is not AMD/X86.
+
+### Running R with gdb
+
+[This article](https://www.maths.ed.ac.uk/~swood34/RCdebug/RCdebug.html) is a good resource for running R with gdb, and also touches on Valgrind use. There are several ways to run R with gdb, and here we only outline the text-based approach given near the bottom of the page.
+1. Install gdb with `sudo apt-get install gdb` or `sudo yum install gdb`
+2. Start gdb with R attached with `R -d gdb`. This will start a gdb session denoted by `(gdb)` in the console.
+3. In the gdb session, start an R console with `(gdb) run`
+
+Both Valgrind and gdb debugging is done through a console, and is not interactive from an IDE. There may be a way to make RStudio play well with Valgrind or gdb, but that is beyond the scope of these instructions.
    
 ## High-level design overview
 

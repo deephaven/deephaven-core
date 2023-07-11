@@ -61,6 +61,9 @@ struct ImmerColumnSourceImpls {
           if (destNullp != nullptr) {
             *destNullp++ = value == deephaven::dhcore::DeephavenTraits<T>::NULL_VALUE;
           }
+        } else {
+          // avoid clang complaining about unused variables
+          (void)destNullp;
         }
       }
     };
@@ -83,6 +86,11 @@ struct ImmerColumnSourceImpls {
           auto nullsEndp = srcNullFlags->begin() + srcEnd;
           immer::for_each_chunk(nullsBeginp, nullsEndp, copyNullsInner);
         }
+      } else {
+        // avoid clang complaining about unused variables.
+        (void)srcNullFlags;
+        (void)destNullp;
+        (void)copyNullsInner;
       }
     };
     rows.forEachInterval(copyOuter);

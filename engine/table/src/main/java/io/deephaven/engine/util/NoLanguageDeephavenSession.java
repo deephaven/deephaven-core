@@ -102,9 +102,9 @@ public class NoLanguageDeephavenSession extends AbstractScriptSession<AbstractSc
 
     @Override
     public void setVariable(String name, @Nullable Object newValue) {
-        Object oldValue = getVariable(name, null);
         variables.put(name, newValue);
-        notifyVariableChange(name, oldValue, newValue);
+        // changeListener is always null for NoLanguageDeephavenSession; we have no mechanism for reporting scope
+        // changes
     }
 
     @Override

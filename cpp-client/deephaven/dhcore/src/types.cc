@@ -3,6 +3,8 @@
  */
 #include "deephaven/dhcore/types.h"
 
+#include <limits>
+
 namespace deephaven::dhcore {
 const char16_t DeephavenConstants::NULL_CHAR;
 
@@ -12,7 +14,8 @@ const float DeephavenConstants::NEG_INFINITY_FLOAT;
 const float DeephavenConstants::POS_INFINITY_FLOAT;
 const float DeephavenConstants::MIN_FLOAT;
 const float DeephavenConstants::MAX_FLOAT;
-const float DeephavenConstants::MIN_FINITE_FLOAT;
+const float DeephavenConstants::MIN_FINITE_FLOAT =
+  std::nextafter(-std::numeric_limits<float>::max(), 0.0f);
 const float DeephavenConstants::MAX_FINITE_FLOAT;
 const float DeephavenConstants::MIN_POS_FLOAT;
 
@@ -22,7 +25,8 @@ const double DeephavenConstants::NEG_INFINITY_DOUBLE;
 const double DeephavenConstants::POS_INFINITY_DOUBLE;
 const double DeephavenConstants::MIN_DOUBLE;
 const double DeephavenConstants::MAX_DOUBLE;
-const double DeephavenConstants::MIN_FINITE_DOUBLE;
+const double DeephavenConstants::MIN_FINITE_DOUBLE =
+  std::nextafter(-std::numeric_limits<double>::max(), 0.0);
 const double DeephavenConstants::MAX_FINITE_DOUBLE;
 const double DeephavenConstants::MIN_POS_DOUBLE;
 

@@ -9,10 +9,9 @@ import io.deephaven.api.Strings;
 import java.nio.charset.StandardCharsets;
 import java.util.Collection;
 import java.util.Iterator;
-import java.util.Objects;
 import java.util.function.Function;
 
-public class TableLabelVisitor extends TableVisitorGeneric {
+public class TableLabelVisitor extends TableVisitorGeneric<String> {
 
     /**
      * Constructs a non-recursive label for {@code table}.
@@ -25,146 +24,129 @@ public class TableLabelVisitor extends TableVisitorGeneric {
      * @return the label
      */
     public static String of(TableSpec table) {
-        return table.walk(new TableLabelVisitor(new StringBuilder())).sb.toString();
-    }
-
-    final StringBuilder sb;
-
-    public TableLabelVisitor(StringBuilder sb) {
-        this.sb = Objects.requireNonNull(sb);
+        return table.walk(new TableLabelVisitor());
     }
 
     @Override
-    public void accept(TableSpec t) {
+    public String accept(TableSpec t) {
         // All tables are ImmutableX - we want the non-immutable version of the class, slightly
         // prettier.
-        sb.append(t.getClass().getSuperclass().getSimpleName());
+        return t.getClass().getSuperclass().getSimpleName();
     }
 
     @Override
-    public void visit(EmptyTable emptyTable) {
-        sb.append("empty(").append(emptyTable.size()).append(')');
+    public String visit(EmptyTable emptyTable) {
+        return String.format("empty(%d)", emptyTable.size());
     }
 
     @Override
-    public void visit(TimeTable timeTable) {
-        sb.append("time(").append(timeTable.interval()).append(')');
+    public String visit(TimeTable timeTable) {
+        return String.format("time(%s)", timeTable.interval());
     }
 
     @Override
-    public void visit(MergeTable mergeTable) {
-        sb.append("merge()");
+    public String visit(MergeTable mergeTable) {
+        return "merge()";
     }
 
     @Override
-    public void visit(NewTable newTable) {
-        sb.append("newTable(").append(newTable.size()).append(", ").append(newTable.header()).append(')');
+    public String visit(NewTable newTable) {
+        return String.format("newTable(%d, %s)", newTable.size(), newTable.header());
     }
 
     @Override
-    public void visit(HeadTable headTable) {
-        sb.append("head(").append(headTable.size()).append(')');
+    public String visit(HeadTable headTable) {
+        return "head(" + headTable.size() + ")";
     }
 
     @Override
-    public void visit(TailTable tailTable) {
-        sb.append("tail(").append(tailTable.size()).append(')');
+    public String visit(TailTable tailTable) {
+        return "tail(" + tailTable.size() + ")";
     }
 
     @Override
-    public void visit(NaturalJoinTable naturalJoinTable) {
-        join("naturalJoin", naturalJoinTable);
+    public String visit(NaturalJoinTable naturalJoinTable) {
+        return join("naturalJoin", naturalJoinTable);
     }
 
     @Override
-    public void visit(ExactJoinTable exactJoinTable) {
-        join("exactJoin", exactJoinTable);
+    public String visit(ExactJoinTable exactJoinTable) {
+        return join("exactJoin", exactJoinTable);
     }
 
     @Override
-    public void visit(JoinTable joinTable) {
-        join("join", joinTable);
+    public String visit(JoinTable joinTable) {
+        return join("join", joinTable);
     }
 
     @Override
-    public void visit(AsOfJoinTable aj) {
-        sb.append("asOfJoin([");
-        append(Strings::of, aj.matches(), sb);
-        sb.append("],");
-        sb.append(Strings.of(aj.joinMatch()));
-        sb.append(",");
-        append(Strings::of, aj.additions(), sb);
-        sb.append("])");
+    public String visit(AsOfJoinTable aj) {
+        return String.format("asOfJoin([%s],%s,%s)",
+                append(Strings::of, aj.matches()),
+                Strings.of(aj.joinMatch()),
+                append(Strings::of, aj.additions()));
     }
 
     @Override
-    public void visit(RangeJoinTable rangeJoinTable) {
-        sb.append("rangeJoin([");
-        append(Strings::of, rangeJoinTable.exactMatches(), sb);
-        sb.append("],");
-        sb.append(Strings.of(rangeJoinTable.rangeMatch()));
-        sb.append(",");
-        sb.append(Strings.ofAggregations(rangeJoinTable.aggregations()));
-        sb.append(")");
+    public String visit(RangeJoinTable rangeJoinTable) {
+        return String.format("rangJoin([%s],%s,%s)",
+                append(Strings::of, rangeJoinTable.exactMatches()),
+                Strings.of(rangeJoinTable.rangeMatch()),
+                Strings.ofAggregations(rangeJoinTable.aggregations()));
     }
 
     @Override
-    public void visit(ViewTable viewTable) {
-        selectable("view", viewTable);
+    public String visit(ViewTable viewTable) {
+        return selectable("view", viewTable);
     }
 
     @Override
-    public void visit(SelectTable selectTable) {
-        selectable("select", selectTable);
+    public String visit(SelectTable selectTable) {
+        return selectable("select", selectTable);
     }
 
     @Override
-    public void visit(UpdateViewTable updateViewTable) {
-        selectable("updateView", updateViewTable);
+    public String visit(UpdateViewTable updateViewTable) {
+        return selectable("updateView", updateViewTable);
     }
 
     @Override
-    public void visit(UpdateTable updateTable) {
-        selectable("update", updateTable);
+    public String visit(UpdateTable updateTable) {
+        return selectable("update", updateTable);
     }
 
     @Override
-    public void visit(LazyUpdateTable lazyUpdateTable) {
-        selectable("lazyUpdate", lazyUpdateTable);
+    public String visit(LazyUpdateTable lazyUpdateTable) {
+        return selectable("lazyUpdate", lazyUpdateTable);
     }
 
     @Override
-    public void visit(WhereTable whereTable) {
-        sb.append("where(");
-        sb.append(Strings.of(whereTable.filter()));
-        sb.append(')');
+    public String visit(WhereTable whereTable) {
+        return String.format("where(%s)", Strings.of(whereTable.filter()));
     }
 
     @Override
-    public void visit(AggregateAllTable aggregateAllTable) {
-        sb.append("aggAllBy(");
-        sb.append(aggregateAllTable.spec().description()).append(',');
-        append(Strings::of, aggregateAllTable.groupByColumns(), sb);
-        sb.append(')');
+    public String visit(AggregateAllTable aggregateAllTable) {
+        return String.format("aggAllBy(%s,%s)",
+                aggregateAllTable.spec().description(),
+                append(Strings::of, aggregateAllTable.groupByColumns()));
     }
 
     @Override
-    public void visit(AggregateTable aggregateTable) {
-        sb.append("aggBy([");
-        append(Strings::of, aggregateTable.groupByColumns(), sb);
-        sb.append("],");
-        sb.append(Strings.ofAggregations(aggregateTable.aggregations()));
-        sb.append(")");
+    public String visit(AggregateTable aggregateTable) {
+        return String.format("aggBy([%s],%s)",
+                append(Strings::of, aggregateTable.groupByColumns()),
+                Strings.ofAggregations(aggregateTable.aggregations()));
     }
 
     @Override
-    public void visit(TicketTable ticketTable) {
-        sb.append(String.format("ticketTable(%s)", new String(ticketTable.ticket(), StandardCharsets.UTF_8)));
+    public String visit(TicketTable ticketTable) {
+        return String.format("ticketTable(%s)", new String(ticketTable.ticket(), StandardCharsets.UTF_8));
     }
 
     @Override
-    public void visit(InputTable inputTable) {
-        sb.append(inputTable.walk(new InputTable.Visitor<String>() {
+    public String visit(InputTable inputTable) {
+        return inputTable.walk(new InputTable.Visitor<String>() {
             @Override
             public String visit(InMemoryAppendOnlyInputTable inMemoryAppendOnly) {
                 return "InMemoryAppendOnlyInputTable(...)";
@@ -174,70 +156,60 @@ public class TableLabelVisitor extends TableVisitorGeneric {
             public String visit(InMemoryKeyBackedInputTable inMemoryKeyBacked) {
                 return "InMemoryKeyBackedInputTable(...)";
             }
-        }));
+        });
     }
 
     @Override
-    public void visit(SelectDistinctTable selectDistinctTable) {
-        sb.append("selectDistinct(");
-        append(Strings::of, selectDistinctTable.columns(), sb);
-        sb.append(')');
+    public String visit(SelectDistinctTable selectDistinctTable) {
+        return String.format("selectDistinct(%s)", append(Strings::of, selectDistinctTable.columns()));
     }
 
     @Override
-    public void visit(UpdateByTable updateByTable) {
+    public String visit(UpdateByTable updateByTable) {
         // TODO(deephaven-core#1116): Add labeling, or structuring, for qst graphviz aggregations
-        sb.append("updateBy([");
-        append(Strings::of, updateByTable.groupByColumns(), sb);
-        sb.append("],[ todo ])");
+        return String.format("updateBy([%s])", append(Strings::of, updateByTable.groupByColumns()));
     }
 
     @Override
-    public void visit(UngroupTable ungroupTable) {
-        sb.append("ungroup(").append(ungroupTable.nullFill()).append(",[");
-        append(Strings::of, ungroupTable.ungroupColumns(), sb);
-        sb.append("])");
+    public String visit(UngroupTable ungroupTable) {
+        return String.format("ungroup(%b,[%s])",
+                ungroupTable.nullFill(),
+                append(Strings::of, ungroupTable.ungroupColumns()));
     }
 
     @Override
-    public void visit(DropColumnsTable dropColumnsTable) {
-        sb.append("dropColumns([");
-        append(Strings::of, dropColumnsTable.dropColumns(), sb);
-        sb.append("])");
+    public String visit(DropColumnsTable dropColumnsTable) {
+        return String.format("dropColumns([%s])", append(Strings::of, dropColumnsTable.dropColumns()));
     }
 
     @Override
-    public void visit(ReverseTable reverseTable) {
-        sb.append("reverse()");
+    public String visit(ReverseTable reverseTable) {
+        return "reverse()";
     }
 
     @Override
-    public void visit(SortTable sortTable) {
-        sb.append("sort([");
-        append(TableLabelVisitor::toString, sortTable.columns(), sb);
-        sb.append("])");
+    public String visit(SortTable sortTable) {
+        return String.format("sort([%s])", append(TableLabelVisitor::toString, sortTable.columns()));
     }
 
     @Override
-    public void visit(SnapshotTable snapshotTable) {
-        sb.append("snapshot()");
+    public String visit(SnapshotTable snapshotTable) {
+        return "snapshot()";
     }
 
-    private void join(String name, Join j) {
-        sb.append(name).append("([");
-        append(Strings::of, j.matches(), sb);
-        sb.append("],[");
-        append(Strings::of, j.additions(), sb);
-        sb.append("])");
+    private String join(String name, Join j) {
+        return String.format("%s([%s],[%s])",
+                name,
+                append(Strings::of, j.matches()),
+                append(Strings::of, j.additions()));
     }
 
-    private void selectable(String name, SelectableTable j) {
-        sb.append(name).append('(');
-        append(Strings::of, j.columns(), sb);
-        sb.append(')');
+    private String selectable(String name, SelectableTable j) {
+        return String.format("%s(%s)", name, append(Strings::of, j.columns()));
     }
 
-    private static <T> void append(Function<T, String> f, Collection<T> c, StringBuilder sb) {
+    private static <T> String append(Function<T, String> f, Collection<T> c) {
+        StringBuilder sb = new StringBuilder();
         Iterator<T> it = c.iterator();
         if (it.hasNext()) {
             sb.append(f.apply(it.next()));
@@ -245,6 +217,7 @@ public class TableLabelVisitor extends TableVisitorGeneric {
         while (it.hasNext()) {
             sb.append(',').append(f.apply(it.next()));
         }
+        return sb.toString();
     }
 
     private static String toString(SortColumn sort) {

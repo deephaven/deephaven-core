@@ -148,159 +148,154 @@ public interface LogOutput {
     /**
      * Formats an arbitrary object similar to Object.toString()
      */
-    ObjFormatter<Object> BASIC_FORMATTER = new ObjFormatter<Object>() {
-        @Override
-        public void format(LogOutput logOutput, Object o) {
-            if (o == null) {
-                logOutput.append("null");
-            } else {
-                logOutput.append(o.getClass().getName()).append('@').append(o.hashCode());
-            }
+    ObjFormatter<Object> BASIC_FORMATTER = (logOutput, o) -> {
+        if (o == null) {
+            logOutput.append("null");
+        } else {
+            logOutput.append(o.getClass().getName()).append('@').append(o.hashCode());
         }
     };
 
     /**
      * Formats an InetSocketAddress
      */
-    ObjFormatter<SocketAddress> SOCKADDR_FORMATTER = new LogOutput.ObjFormatter<java.net.SocketAddress>() {
-        @Override
-        public void format(LogOutput logOutput, SocketAddress sockaddr) {
-            if (sockaddr instanceof InetSocketAddress) {
-                InetSocketAddress addr = (InetSocketAddress) sockaddr;
-                if (addr.getAddress() == null) {
-                    logOutput.append("null");
-                } else {
-                    byte[] b = addr.getAddress().getAddress();
-                    logOutput.append((int) b[0] & 0xff);
-                    for (int i = 1; i < b.length; ++i) {
-                        logOutput.append('.').append((int) b[i] & 0xff);
-                    }
-                    logOutput.append(':').append(addr.getPort());
-                }
+    ObjFormatter<SocketAddress> SOCKADDR_FORMATTER = (logOutput, sockaddr) -> {
+        if (sockaddr instanceof InetSocketAddress) {
+            InetSocketAddress addr = (InetSocketAddress) sockaddr;
+            if (addr.getAddress() == null) {
+                logOutput.append("null");
             } else {
-                BASIC_FORMATTER.format(logOutput, sockaddr);
+                byte[] b = addr.getAddress().getAddress();
+                logOutput.append((int) b[0] & 0xff);
+                for (int i = 1; i < b.length; ++i) {
+                    logOutput.append('.').append((int) b[i] & 0xff);
+                }
+                logOutput.append(':').append(addr.getPort());
             }
+        } else {
+            BASIC_FORMATTER.format(logOutput, sockaddr);
         }
     };
 
     /**
      * Formats an int array
      */
-    ObjFormatter<int[]> INT_ARRAY_FORMATTER = new LogOutput.ObjFormatter<int[]>() {
-        @Override
-        public void format(LogOutput logOutput, int[] array) {
-            if (array == null) {
-                logOutput.append("null");
-            } else if (array.length == 0) {
-                logOutput.append("{}");
-            } else {
-                char delim = '{';
-                for (int i = 0; i < array.length; ++i) {
-                    logOutput.append(delim).append(array[i]);
-                    delim = ',';
-                }
-                logOutput.append('}');
+    ObjFormatter<int[]> INT_ARRAY_FORMATTER = (logOutput, array) -> {
+        if (array == null) {
+            logOutput.append("null");
+        } else if (array.length == 0) {
+            logOutput.append("{}");
+        } else {
+            char delim = '{';
+            for (int i = 0; i < array.length; ++i) {
+                logOutput.append(delim).append(array[i]);
+                delim = ',';
             }
+            logOutput.append('}');
         }
     };
 
     /**
      * Formats a String array
      */
-    ObjFormatter<String[]> STRING_ARRAY_FORMATTER = new LogOutput.ObjFormatter<String[]>() {
-        @Override
-        public void format(LogOutput logOutput, String[] array) {
-            if (array == null) {
-                logOutput.append("null");
-            } else if (array.length == 0) {
-                logOutput.append("{}");
-            } else {
-                char delim = '{';
-                for (int i = 0; i < array.length; ++i) {
-                    logOutput.append(delim).append(array[i]);
-                    delim = ',';
-                }
-                logOutput.append('}');
+    ObjFormatter<String[]> STRING_ARRAY_FORMATTER = (logOutput, array) -> {
+        if (array == null) {
+            logOutput.append("null");
+        } else if (array.length == 0) {
+            logOutput.append("{}");
+        } else {
+            char delim = '{';
+            for (int i = 0; i < array.length; ++i) {
+                logOutput.append(delim).append(array[i]);
+                delim = ',';
             }
+            logOutput.append('}');
         }
     };
 
     /**
      * Formats a String Collection
      */
-    ObjFormatter<Collection<String>> STRING_COLLECTION_FORMATTER = new LogOutput.ObjFormatter<Collection<String>>() {
-        @Override
-        public void format(LogOutput logOutput, Collection<String> collection) {
-            if (collection == null) {
-                logOutput.append("null");
-            } else if (collection.isEmpty()) {
-                logOutput.append("{}");
-            } else {
-                char delim = '{';
-                for (final String elem : collection) {
-                    logOutput.append(delim).append(elem);
-                    delim = ',';
-                }
-                logOutput.append('}');
+    ObjFormatter<Collection<String>> STRING_COLLECTION_FORMATTER = (logOutput, collection) -> {
+        if (collection == null) {
+            logOutput.append("null");
+        } else if (collection.isEmpty()) {
+            logOutput.append("{}");
+        } else {
+            char delim = '{';
+            for (final String elem : collection) {
+                logOutput.append(delim).append(elem);
+                delim = ',';
             }
+            logOutput.append('}');
         }
     };
 
     /**
-     * Formats a String Collection
+     * Formats an array of LogOutputAppendable instances
      */
-    ObjFormatter<Collection<LogOutputAppendable>> APPENDABLE_COLLECTION_FORMATTER =
-            new LogOutput.ObjFormatter<Collection<LogOutputAppendable>>() {
-                @Override
-                public void format(LogOutput logOutput, Collection<LogOutputAppendable> collection) {
-                    if (collection == null) {
-                        logOutput.append("null");
-                    } else if (collection.isEmpty()) {
-                        logOutput.append("{}");
-                    } else {
-                        char delim = '{';
-                        for (final LogOutputAppendable elem : collection) {
-                            logOutput.append(delim).append(elem);
-                            delim = ',';
-                        }
-                        logOutput.append('}');
+    ObjFormatter<LogOutputAppendable[]> APPENDABLE_ARRAY_FORMATTER =
+            (logOutput, collection) -> {
+                if (collection == null) {
+                    logOutput.append("null");
+                } else if (collection.length == 0) {
+                    logOutput.append("{}");
+                } else {
+                    char delim = '{';
+                    for (final LogOutputAppendable elem : collection) {
+                        logOutput.append(delim).append(elem);
+                        delim = ',';
                     }
+                    logOutput.append('}');
+                }
+            };
+
+    /**
+     * Formats a Collection of LogOutputAppendable instances
+     */
+    ObjFormatter<Collection<? extends LogOutputAppendable>> APPENDABLE_COLLECTION_FORMATTER =
+            (logOutput, collection) -> {
+                if (collection == null) {
+                    logOutput.append("null");
+                } else if (collection.isEmpty()) {
+                    logOutput.append("{}");
+                } else {
+                    char delim = '{';
+                    for (final LogOutputAppendable elem : collection) {
+                        logOutput.append(delim).append(elem);
+                        delim = ',';
+                    }
+                    logOutput.append('}');
                 }
             };
 
     /**
      * Formats a boolean array
      */
-    ObjFormatter<boolean[]> BOOLEAN_ARRAY_FORMATTER = new LogOutput.ObjFormatter<boolean[]>() {
-        @Override
-        public void format(LogOutput logOutput, boolean[] array) {
-            if (array == null) {
-                logOutput.append("null");
-            } else if (array.length == 0) {
-                logOutput.append("{}");
-            } else {
-                char delim = '{';
-                for (int i = 0; i < array.length; ++i) {
-                    logOutput.append(delim).append(array[i]);
-                    delim = ',';
-                }
-                logOutput.append('}');
+    ObjFormatter<boolean[]> BOOLEAN_ARRAY_FORMATTER = (logOutput, array) -> {
+        if (array == null) {
+            logOutput.append("null");
+        } else if (array.length == 0) {
+            logOutput.append("{}");
+        } else {
+            char delim = '{';
+            for (int i = 0; i < array.length; ++i) {
+                logOutput.append(delim).append(array[i]);
+                delim = ',';
             }
+            logOutput.append('}');
         }
     };
 
     /**
      * Formats byte array as a null-terminated string
      */
-    ObjFormatter<byte[]> NULL_TERMINATED_STRING_FORMATTER = new LogOutput.ObjFormatter<byte[]>() {
-        @Override
-        public void format(LogOutput logOutput, byte[] array) {
-            if (array == null) {
-                logOutput.append("null");
-            } else {
-                for (int i = 0; i < array.length && array[i] != 0; ++i) {
-                    logOutput.append((char) array[i]);
-                }
+    ObjFormatter<byte[]> NULL_TERMINATED_STRING_FORMATTER = (logOutput, array) -> {
+        if (array == null) {
+            logOutput.append("null");
+        } else {
+            for (int i = 0; i < array.length && array[i] != 0; ++i) {
+                logOutput.append((char) array[i]);
             }
         }
     };

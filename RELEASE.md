@@ -78,7 +78,7 @@ git@github.com:deephaven/deephaven-core.git
 Ensure you are up-to-date with `upstream/main`, or at the commit that you want to start a new release from.
 If you are unsure what commit to start from, please ask.
 Please double-check you are on the version you expect to be releasing.
-The releases have so far proceeded with `releave/vX.Y.Z`, where `X.Y.Z` is the version number (this isn't a technical requirement), please replace `X.Y.Z` with the appropriate version.
+The releases have so far proceeded with `release/vX.Y.Z`, where `X.Y.Z` is the version number (this isn't a technical requirement), please replace `X.Y.Z` with the appropriate version.
 We also separate out the release branch from `upstream/main` with an empty commit (this isn't a technical requirement).
 
 ```shell
@@ -132,6 +132,9 @@ If this step fails, the deephaven-core wheel from the "Upload Artifacts" step ca
 
 The "Publish deephaven-server to PyPi" uploads the deephaven-server wheel to [PyPi](https://pypi.org/project/deephaven-server/).
 If this step fails, the deephaven-server wheel from the "Upload Artifacts" step can be uploaded manually.
+
+The "Publish pydeephaven to PyPi" uploads the pydeephaven wheel to [PyPi](https://pypi.org/project/pydeephaven/).
+If this step fails, the pydeephaven wheel from the "Upload Artifacts" step can be uploaded manually.
 
 Once the workflow job is done, ensure all publication sources have the new artifacts.
 
@@ -196,7 +199,7 @@ Create a new [GitHub release](https://github.com/deephaven/deephaven-core/releas
 
 The convention is to have the Release title of the form `vX.Y.Z` and to autogenerate the release notes in comparison to the previous release tag. Question: should we always generate release notes based off of the previous minor release, instead of patch? Our git release workflow suggests we may want to do it always minor to minor.
 
-Upload the Deephaven server application, deephaven-core wheel, and SBOM artifacts.
+Upload the Deephaven server application, deephaven-core wheel, pydeephaven wheel, and SBOM artifacts.
 
 Hit the GitHub "Publish release" button.
 
@@ -210,24 +213,20 @@ $ git show go/vX.Y.Z
 $ git push upstream go/vX.Y.Z
 ```
 
-### 11. Deephaven python client
-
-To be filled in by Jianfeng.
-
-### 12. Deephaven.io release
+### 11. Deephaven.io release
 
 The (non-public) [deephaven.io](https://github.com/deephaven/deephaven.io) `next` branch needs to be merged into `main`.
 Ping Margaret.
 
-### 13. Deephaven images
+### 12. Deephaven images
 
 Follow the release process as described at [deephaven-server-docker/RELEASE.md](https://github.com/deephaven/deephaven-server-docker/blob/main/RELEASE.md).
 
-### 14. Let everybody know
+### 13. Let everybody know
 
 Ping team, ping community, ping friends - the latest Deephaven has been released!
 
-### 15. Clean-up
+### 14. Clean-up
 
 The release branches serve a purpose for kicking off CI jobs, but aren't special in other ways.
 Sometime after a release, old release branches can be safely deleted.

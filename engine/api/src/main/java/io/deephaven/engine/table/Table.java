@@ -380,12 +380,20 @@ public interface Table extends
     /**
      * Provides a head that selects a dynamic number of rows based on a percent.
      *
-     * @param percent the fraction of the table to return (0..1), the number of rows will be rounded up. For example if
-     *        there are 3 rows, headPct(50) returns the first two rows.
+     * @param percent the fraction of the table to return between [0, 1]. The number of rows will be rounded up. For
+     *        example if there are 3 rows, headPct(50) returns the first two rows. For percent values outside [0, 1],
+     *        the function will throw an exception.
      */
     @ConcurrentMethod
     Table headPct(double percent);
 
+    /**
+     * Provides a tail that selects a dynamic number of rows based on a percent.
+     *
+     * @param percent the fraction of the table to return between [0, 1]. The number of rows will be rounded up. For
+     *        example if there are 3 rows, tailPct(50) returns the last two rows. For percent values outside [0, 1], the
+     *        function will throw an exception.
+     */
     @ConcurrentMethod
     Table tailPct(double percent);
 

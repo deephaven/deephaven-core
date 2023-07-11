@@ -2,6 +2,7 @@ package io.deephaven.engine.tablelogger;
 
 import io.deephaven.engine.table.impl.perf.QueryPerformanceNugget;
 import io.deephaven.tablelogger.Row;
+import io.deephaven.tablelogger.Row.Flags;
 
 import java.io.IOException;
 
@@ -17,4 +18,13 @@ public interface QueryOperationPerformanceLogLogger {
     }
 
     void log(final Row.Flags flags, final int operationNumber, final QueryPerformanceNugget nugget) throws IOException;
+
+    enum Noop implements QueryOperationPerformanceLogLogger {
+        INSTANCE;
+
+        @Override
+        public void log(Flags flags, int operationNumber, QueryPerformanceNugget nugget) throws IOException {
+
+        }
+    }
 }
