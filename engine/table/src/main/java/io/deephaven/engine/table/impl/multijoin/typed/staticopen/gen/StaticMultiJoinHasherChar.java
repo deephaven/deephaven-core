@@ -50,20 +50,16 @@ final class StaticMultiJoinHasherChar extends StaticMultiJoinStateManagerTypedBa
                 if (sentinel == EMPTY_RIGHT_STATE) {
                     numEntries++;
                     mainKeySource0.set(tableLocation, k0);
-                    // staticBuildLeftInsert
                     final long outputKey = numEntries - 1;
                     slotToOutputRow.set(tableLocation, outputKey);
                     tableRedirSource.set(outputKey, rowKeyChunk.get(chunkPosition));
                     outputKeySources[0].set(outputKey, k0);
-                    // end
                     break;
                 } else if (eq(mainKeySource0.getUnsafe(tableLocation), k0)) {
-                    // staticBuildLeftFound
                     if (tableRedirSource.getLong(sentinel) != EMPTY_RIGHT_STATE) {
                         throw new IllegalStateException("Duplicate key found for " + keyString(sourceKeyChunks, chunkPosition) + " in table " + tableNumber + ".");
                     }
                     tableRedirSource.set(sentinel, rowKeyChunk.get(chunkPosition));
-                    // end
                     break;
                 } else {
                     tableLocation = nextTableLocation(tableLocation);
@@ -87,8 +83,6 @@ final class StaticMultiJoinHasherChar extends StaticMultiJoinStateManagerTypedBa
         mainKeySource0.setArray(destKeyArray0);
         final long [] originalStateArray = slotToOutputRow.getArray();
         slotToOutputRow.setArray(destState);
-        // staticRehashSetup
-        // end
         for (int sourceBucket = 0; sourceBucket < oldSize; ++sourceBucket) {
             final long currentStateValue = originalStateArray[sourceBucket];
             if (currentStateValue == EMPTY_RIGHT_STATE) {
@@ -102,8 +96,6 @@ final class StaticMultiJoinHasherChar extends StaticMultiJoinStateManagerTypedBa
                 if (destState[destinationTableLocation] == EMPTY_RIGHT_STATE) {
                     destKeyArray0[destinationTableLocation] = k0;
                     destState[destinationTableLocation] = originalStateArray[sourceBucket];
-                    // staticMoveMainFull
-                    // end
                     break;
                 }
                 destinationTableLocation = nextTableLocation(destinationTableLocation);

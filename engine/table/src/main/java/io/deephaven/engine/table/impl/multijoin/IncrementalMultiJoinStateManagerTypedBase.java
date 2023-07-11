@@ -42,7 +42,7 @@ import static io.deephaven.util.QueryConstants.NULL_BYTE;
 
 public abstract class IncrementalMultiJoinStateManagerTypedBase implements MultiJoinStateManager {
     protected final ColumnSource<?>[] keySourcesForErrorMessages;
-    private final List<LongArraySource> indexSources = new ArrayList<>();
+    private final List<LongArraySource> redirectionSources = new ArrayList<>();
 
     public static final long NO_RIGHT_STATE_VALUE = RowSet.NULL_ROW_KEY;
     public static final long EMPTY_RIGHT_STATE = QueryConstants.NULL_LONG;
@@ -110,7 +110,7 @@ public abstract class IncrementalMultiJoinStateManagerTypedBase implements Multi
     }
 
     public int getTableCount() {
-        return indexSources.size();
+        return redirectionSources.size();
     }
 
     private void ensureCapacity(int tableSize) {
@@ -161,20 +161,20 @@ public abstract class IncrementalMultiJoinStateManagerTypedBase implements Multi
         return new ProbeContext(buildSources, (int) Math.min(CHUNK_SIZE, maxSize));
     }
 
-    private class LocalBuildHandler implements TypedHasherUtil.BuildHandler {
+    private class BuildHandler implements TypedHasherUtil.BuildHandler {
         final LongArraySource tableRedirSource;
         final int tableNumber;
         final MultiJoinModifiedSlotTracker modifiedSlotTracker;
         final byte trackerFlag;
 
-        private LocalBuildHandler(LongArraySource tableRedirSource, int tableNumber) {
+        private BuildHandler(LongArraySource tableRedirSource, int tableNumber) {
             this.tableRedirSource = tableRedirSource;
             this.tableNumber = tableNumber;
             this.modifiedSlotTracker = null;
             this.trackerFlag = NULL_BYTE;
         }
 
-        private LocalBuildHandler(LongArraySource tableRedirSource, int tableNumber,
+        private BuildHandler(LongArraySource tableRedirSource, int tableNumber,
                 @NotNull MultiJoinModifiedSlotTracker slotTracker, byte trackerFlag) {
             this.tableRedirSource = tableRedirSource;
             this.tableNumber = tableNumber;
@@ -194,18 +194,26 @@ public abstract class IncrementalMultiJoinStateManagerTypedBase implements Multi
         }
     }
 
-    private class LocalRemoveHandler implements TypedHasherUtil.ProbeHandler {
+
+    private abstract class ProbeHandler implements TypedHasherUtil.ProbeHandler {
         final LongArraySource tableRedirSource;
         final int tableNumber;
         final MultiJoinModifiedSlotTracker modifiedSlotTracker;
         final byte trackerFlag;
 
-        private LocalRemoveHandler(LongArraySource tableRedirSource, int tableNumber,
+        private ProbeHandler(LongArraySource tableRedirSource, int tableNumber,
                 MultiJoinModifiedSlotTracker modifiedSlotTracker, byte trackerFlag) {
             this.tableRedirSource = tableRedirSource;
             this.tableNumber = tableNumber;
             this.modifiedSlotTracker = modifiedSlotTracker;
             this.trackerFlag = trackerFlag;
+        }
+    }
+
+    private class RemoveHandler extends ProbeHandler {
+        private RemoveHandler(LongArraySource tableRedirSource, int tableNumber,
+                MultiJoinModifiedSlotTracker modifiedSlotTracker, byte trackerFlag) {
+            super(tableRedirSource, tableNumber, modifiedSlotTracker, trackerFlag);
         }
 
         @Override
@@ -214,20 +222,12 @@ public abstract class IncrementalMultiJoinStateManagerTypedBase implements Multi
         }
     }
 
-    private class LocalShiftHandler implements TypedHasherUtil.ProbeHandler {
-        final LongArraySource tableRedirSource;
-        final int tableNumber;
-        final MultiJoinModifiedSlotTracker modifiedSlotTracker;
-        final byte trackerFlag;
+    private class ShiftHandler extends ProbeHandler {
         final long shiftDelta;
 
-
-        private LocalShiftHandler(LongArraySource tableRedirSource, int tableNumber,
+        private ShiftHandler(LongArraySource tableRedirSource, int tableNumber,
                 MultiJoinModifiedSlotTracker modifiedSlotTracker, byte trackerFlag, long shiftDelta) {
-            this.tableRedirSource = tableRedirSource;
-            this.tableNumber = tableNumber;
-            this.modifiedSlotTracker = modifiedSlotTracker;
-            this.trackerFlag = trackerFlag;
+            super(tableRedirSource, tableNumber, modifiedSlotTracker, trackerFlag);
             this.shiftDelta = shiftDelta;
         }
 
@@ -238,18 +238,10 @@ public abstract class IncrementalMultiJoinStateManagerTypedBase implements Multi
         }
     }
 
-    private class LocalModifyHandler implements TypedHasherUtil.ProbeHandler {
-        final LongArraySource tableRedirSource;
-        final int tableNumber;
-        final MultiJoinModifiedSlotTracker modifiedSlotTracker;
-        final byte trackerFlag;
-
-        private LocalModifyHandler(LongArraySource tableRedirSource, int tableNumber,
+    private class ModifyHandler extends ProbeHandler {
+        private ModifyHandler(LongArraySource tableRedirSource, int tableNumber,
                 MultiJoinModifiedSlotTracker modifiedSlotTracker, byte trackerFlag) {
-            this.tableRedirSource = tableRedirSource;
-            this.tableNumber = tableNumber;
-            this.modifiedSlotTracker = modifiedSlotTracker;
-            this.trackerFlag = trackerFlag;
+            super(tableRedirSource, tableNumber, modifiedSlotTracker, trackerFlag);
         }
 
         @Override
@@ -263,9 +255,9 @@ public abstract class IncrementalMultiJoinStateManagerTypedBase implements Multi
         if (table.isEmpty()) {
             return;
         }
-        final LongArraySource tableRedirSource = indexSources.get(tableNumber);
+        final LongArraySource tableRedirSource = redirectionSources.get(tableNumber);
         try (final BuildContext bc = makeBuildContext(keySources, table.size())) {
-            buildTable(true, bc, table.getRowSet(), keySources, new LocalBuildHandler(tableRedirSource, tableNumber),
+            buildTable(true, bc, table.getRowSet(), keySources, new BuildHandler(tableRedirSource, tableNumber),
                     null);
         }
     }
@@ -276,12 +268,12 @@ public abstract class IncrementalMultiJoinStateManagerTypedBase implements Multi
             return;
         }
 
-        Assert.geq(indexSources.size(), "indexSources.size()", tableNumber, "tableNumber");
-        final LongArraySource tableRedirSource = indexSources.get(tableNumber);
+        Assert.geq(redirectionSources.size(), "redirectionSources.size()", tableNumber, "tableNumber");
+        final LongArraySource tableRedirSource = redirectionSources.get(tableNumber);
 
         try (final ProbeContext pc = makeProbeContext(sources, rowSet.size())) {
             probeTable(pc, rowSet, true, sources,
-                    new LocalRemoveHandler(tableRedirSource, tableNumber, slotTracker, trackerFlag));
+                    new RemoveHandler(tableRedirSource, tableNumber, slotTracker, trackerFlag));
         }
     }
 
@@ -291,17 +283,17 @@ public abstract class IncrementalMultiJoinStateManagerTypedBase implements Multi
             return;
         }
 
-        Assert.geq(indexSources.size(), "indexSources.size()", tableNumber, "tableNumber");
-        final LongArraySource tableRedirSource = indexSources.get(tableNumber);
+        Assert.geq(redirectionSources.size(), "redirectionSources.size()", tableNumber, "tableNumber");
+        final LongArraySource tableRedirSource = redirectionSources.get(tableNumber);
 
         // Re-use the probe context for each shift range.
         try (final ProbeContext pc = makeProbeContext(sources, rowSet.size())) {
             final RowSetShiftData.Iterator sit = rowSetShiftData.applyIterator();
             while (sit.hasNext()) {
                 sit.next();
-                try (final WritableRowSet indexToShift =
+                try (final WritableRowSet rowSetToShift =
                         rowSet.subSetByKeyRange(sit.beginRange(), sit.endRange())) {
-                    probeTable(pc, indexToShift, true, sources, new LocalShiftHandler(tableRedirSource, tableNumber,
+                    probeTable(pc, rowSetToShift, true, sources, new ShiftHandler(tableRedirSource, tableNumber,
                             slotTracker, FLAG_SHIFT, sit.shiftDelta()));
                 }
             }
@@ -314,12 +306,12 @@ public abstract class IncrementalMultiJoinStateManagerTypedBase implements Multi
             return;
         }
 
-        Assert.geq(indexSources.size(), "indexSources.size()", tableNumber, "tableNumber");
-        final LongArraySource tableRedirSource = indexSources.get(tableNumber);
+        Assert.geq(redirectionSources.size(), "redirectionSources.size()", tableNumber, "tableNumber");
+        final LongArraySource tableRedirSource = redirectionSources.get(tableNumber);
 
         try (final ProbeContext pc = makeProbeContext(sources, rowSet.size())) {
             probeTable(pc, rowSet, false, sources,
-                    new LocalModifyHandler(tableRedirSource, tableNumber, slotTracker, trackerFlag));
+                    new ModifyHandler(tableRedirSource, tableNumber, slotTracker, trackerFlag));
         }
     }
 
@@ -329,12 +321,12 @@ public abstract class IncrementalMultiJoinStateManagerTypedBase implements Multi
             return;
         }
 
-        Assert.geq(indexSources.size(), "indexSources.size()", tableNumber, "tableNumber");
-        final LongArraySource tableRedirSource = indexSources.get(tableNumber);
+        Assert.geq(redirectionSources.size(), "redirectionSources.size()", tableNumber, "tableNumber");
+        final LongArraySource tableRedirSource = redirectionSources.get(tableNumber);
 
         try (final BuildContext bc = makeBuildContext(sources, rowSet.size())) {
             buildTable(false, bc, rowSet, sources,
-                    new LocalBuildHandler(tableRedirSource, tableNumber, slotTracker, trackerFlag), slotTracker);
+                    new BuildHandler(tableRedirSource, tableNumber, slotTracker, trackerFlag), slotTracker);
         }
     }
 
@@ -361,7 +353,7 @@ public abstract class IncrementalMultiJoinStateManagerTypedBase implements Multi
             final BuildContext bc,
             final RowSequence buildRows,
             final ColumnSource<?>[] buildSources,
-            final LocalBuildHandler buildHandler,
+            final BuildHandler buildHandler,
             MultiJoinModifiedSlotTracker modifiedSlotTracker) {
         try (final RowSequence.Iterator rsIt = buildRows.getRowSequenceIterator()) {
             // noinspection unchecked
@@ -528,8 +520,8 @@ public abstract class IncrementalMultiJoinStateManagerTypedBase implements Multi
     }
 
     public void getCurrentRedirections(long slot, long[] redirections) {
-        for (int tt = 0; tt < indexSources.size(); ++tt) {
-            final long redirection = indexSources.get(tt).getLong(slot);
+        for (int tt = 0; tt < redirectionSources.size(); ++tt) {
+            final long redirection = redirectionSources.get(tt).getLong(slot);
             redirections[tt] = redirection == QueryConstants.NULL_LONG ? NULL_ROW_KEY : redirection;
         }
     }
@@ -546,15 +538,15 @@ public abstract class IncrementalMultiJoinStateManagerTypedBase implements Multi
 
     @Override
     public WritableRowRedirection getRowRedirectionForTable(int tableNumber) {
-        return new LongColumnSourceWritableRowRedirection(indexSources.get(tableNumber));
+        return new LongColumnSourceWritableRowRedirection(redirectionSources.get(tableNumber));
     }
 
     @Override
     public void ensureTableCapacity(int tables) {
-        while (indexSources.size() < tables) {
+        while (redirectionSources.size() < tables) {
             final LongArraySource newRedirection = new LongArraySource();
             newRedirection.ensureCapacity(numEntries);
-            indexSources.add(newRedirection);
+            redirectionSources.add(newRedirection);
         }
     }
 

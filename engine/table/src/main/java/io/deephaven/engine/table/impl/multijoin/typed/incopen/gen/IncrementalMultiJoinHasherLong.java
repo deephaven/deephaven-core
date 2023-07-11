@@ -62,7 +62,6 @@ final class IncrementalMultiJoinHasherLong extends IncrementalMultiJoinStateMana
                         if (slotValue == EMPTY_RIGHT_STATE) {
                             break;
                         } else if (eq(alternateKeySource0.getUnsafe(alternateTableLocation), k0)) {
-                            // incrementalBuildLeftFound
                             if (tableRedirSource.getLong(slotValue) != EMPTY_RIGHT_STATE) {
                                 throw new IllegalStateException("Duplicate key found for " + keyString(sourceKeyChunks, chunkPosition) + " in table " + tableNumber + ".");
                             }
@@ -71,7 +70,6 @@ final class IncrementalMultiJoinHasherLong extends IncrementalMultiJoinStateMana
                                 final long cookie = alternateModifiedTrackerCookieSource.getUnsafe(alternateTableLocation);
                                 alternateModifiedTrackerCookieSource.set(alternateTableLocation, modifiedSlotTracker.addSlot(cookie, slotValue, tableNumber, -1L, trackerFlag));
                             }
-                            // end
                             break MAIN_SEARCH;
                         } else {
                             alternateTableLocation = alternateNextTableLocation(alternateTableLocation);
@@ -80,16 +78,13 @@ final class IncrementalMultiJoinHasherLong extends IncrementalMultiJoinStateMana
                     }
                     numEntries++;
                     mainKeySource0.set(tableLocation, k0);
-                    // incrementalBuildLeftInsert
                     final long outputKey = numEntries - 1;
                     slotToOutputRow.set(tableLocation, outputKey);
                     tableRedirSource.set(outputKey, rowKeyChunk.get(chunkPosition));
                     outputKeySources[0].set(outputKey, k0);
                     mainModifiedTrackerCookieSource.set(tableLocation, -1L);
-                    // end
                     break;
                 } else if (eq(mainKeySource0.getUnsafe(tableLocation), k0)) {
-                    // incrementalBuildLeftFound
                     if (tableRedirSource.getLong(slotValue) != EMPTY_RIGHT_STATE) {
                         throw new IllegalStateException("Duplicate key found for " + keyString(sourceKeyChunks, chunkPosition) + " in table " + tableNumber + ".");
                     }
@@ -98,7 +93,6 @@ final class IncrementalMultiJoinHasherLong extends IncrementalMultiJoinStateMana
                         final long cookie = mainModifiedTrackerCookieSource.getUnsafe(tableLocation);
                         mainModifiedTrackerCookieSource.set(tableLocation, modifiedSlotTracker.addSlot(cookie, slotValue, tableNumber, -1L, trackerFlag));
                     }
-                    // end
                     break;
                 } else {
                     tableLocation = nextTableLocation(tableLocation);
@@ -123,13 +117,11 @@ final class IncrementalMultiJoinHasherLong extends IncrementalMultiJoinStateMana
             long slotValue;
             while ((slotValue = slotToOutputRow.getUnsafe(tableLocation)) != EMPTY_RIGHT_STATE) {
                 if (eq(mainKeySource0.getUnsafe(tableLocation), k0)) {
-                    // incrementalRemoveLeftFound-main
-                    final long cookie = mainModifiedTrackerCookieSource.getUnsafe(tableLocation);
                     final long mappedRowKey = tableRedirSource.getUnsafe(slotValue);
                     tableRedirSource.set(slotValue, EMPTY_RIGHT_STATE);
                     Assert.eq(rowKeyChunk.get(chunkPosition), "rowKey", mappedRowKey, "mappedRowKey");
+                    final long cookie = mainModifiedTrackerCookieSource.getUnsafe(tableLocation);
                     mainModifiedTrackerCookieSource.set(tableLocation, modifiedSlotTracker.addSlot(cookie, slotValue, tableNumber, mappedRowKey, trackerFlag));
-                    // end
                     found = true;
                     break;
                 }
@@ -143,13 +135,11 @@ final class IncrementalMultiJoinHasherLong extends IncrementalMultiJoinStateMana
                     int alternateTableLocation = firstAlternateTableLocation;
                     while ((slotValue = alternateSlotToOutputRow.getUnsafe(alternateTableLocation)) != EMPTY_RIGHT_STATE) {
                         if (eq(alternateKeySource0.getUnsafe(alternateTableLocation), k0)) {
-                            // incrementalRemoveLeftFound-alternate
-                            final long cookie = alternateModifiedTrackerCookieSource.getUnsafe(alternateTableLocation);
                             final long mappedRowKey = tableRedirSource.getUnsafe(slotValue);
                             tableRedirSource.set(slotValue, EMPTY_RIGHT_STATE);
                             Assert.eq(rowKeyChunk.get(chunkPosition), "rowKey", mappedRowKey, "mappedRowKey");
+                            final long cookie = alternateModifiedTrackerCookieSource.getUnsafe(alternateTableLocation);
                             alternateModifiedTrackerCookieSource.set(alternateTableLocation, modifiedSlotTracker.addSlot(cookie, slotValue, tableNumber, mappedRowKey, trackerFlag));
-                            // end
                             alternateFound = true;
                             break;
                         }
@@ -158,9 +148,7 @@ final class IncrementalMultiJoinHasherLong extends IncrementalMultiJoinStateMana
                     }
                 }
                 if (!alternateFound) {
-                    // incrementalRemoveLeftMissing
                     throw new IllegalStateException("Matching row not found for " + keyString(sourceKeyChunks, chunkPosition) + " in table " + tableNumber + ".");
-                    // end
                 }
             }
         }
@@ -181,13 +169,11 @@ final class IncrementalMultiJoinHasherLong extends IncrementalMultiJoinStateMana
             long slotValue;
             while ((slotValue = slotToOutputRow.getUnsafe(tableLocation)) != EMPTY_RIGHT_STATE) {
                 if (eq(mainKeySource0.getUnsafe(tableLocation), k0)) {
-                    // incrementalShiftLeftFound-main
-                    final long cookie = mainModifiedTrackerCookieSource.getUnsafe(tableLocation);
                     final long mappedRowKey = tableRedirSource.getUnsafe(slotValue);
                     Assert.eq(rowKeyChunk.get(chunkPosition), "rowKey", mappedRowKey, "mappedRowKey");
                     tableRedirSource.set(slotValue, mappedRowKey + shiftDelta);
+                    final long cookie = mainModifiedTrackerCookieSource.getUnsafe(tableLocation);
                     mainModifiedTrackerCookieSource.set(tableLocation, modifiedSlotTracker.addSlot(cookie, slotValue, tableNumber, mappedRowKey, trackerFlag));
-                    // end
                     found = true;
                     break;
                 }
@@ -201,13 +187,11 @@ final class IncrementalMultiJoinHasherLong extends IncrementalMultiJoinStateMana
                     int alternateTableLocation = firstAlternateTableLocation;
                     while ((slotValue = alternateSlotToOutputRow.getUnsafe(alternateTableLocation)) != EMPTY_RIGHT_STATE) {
                         if (eq(alternateKeySource0.getUnsafe(alternateTableLocation), k0)) {
-                            // incrementalShiftLeftFound-alternate
-                            final long cookie = mainModifiedTrackerCookieSource.getUnsafe(tableLocation);
                             final long mappedRowKey = tableRedirSource.getUnsafe(slotValue);
                             Assert.eq(rowKeyChunk.get(chunkPosition), "rowKey", mappedRowKey, "mappedRowKey");
                             tableRedirSource.set(slotValue, mappedRowKey + shiftDelta);
+                            final long cookie = mainModifiedTrackerCookieSource.getUnsafe(tableLocation);
                             alternateModifiedTrackerCookieSource.set(alternateTableLocation, modifiedSlotTracker.addSlot(cookie, slotValue, tableNumber, mappedRowKey, trackerFlag));
-                            // end
                             alternateFound = true;
                             break;
                         }
@@ -216,9 +200,7 @@ final class IncrementalMultiJoinHasherLong extends IncrementalMultiJoinStateMana
                     }
                 }
                 if (!alternateFound) {
-                    // incrementalShiftLeftMissing
                     throw new IllegalStateException("Matching row not found for " + keyString(sourceKeyChunks, chunkPosition) + " in table " + tableNumber + ".");
-                    // end
                 }
             }
         }
@@ -238,10 +220,8 @@ final class IncrementalMultiJoinHasherLong extends IncrementalMultiJoinStateMana
             long slotValue;
             while ((slotValue = slotToOutputRow.getUnsafe(tableLocation)) != EMPTY_RIGHT_STATE) {
                 if (eq(mainKeySource0.getUnsafe(tableLocation), k0)) {
-                    // incrementalModifyLeftFound-main
                     final long cookie = mainModifiedTrackerCookieSource.getUnsafe(tableLocation);
                     mainModifiedTrackerCookieSource.set(tableLocation, modifiedSlotTracker.modifySlot(cookie, slotValue, tableNumber, trackerFlag));
-                    // end
                     found = true;
                     break;
                 }
@@ -255,10 +235,8 @@ final class IncrementalMultiJoinHasherLong extends IncrementalMultiJoinStateMana
                     int alternateTableLocation = firstAlternateTableLocation;
                     while ((slotValue = alternateSlotToOutputRow.getUnsafe(alternateTableLocation)) != EMPTY_RIGHT_STATE) {
                         if (eq(alternateKeySource0.getUnsafe(alternateTableLocation), k0)) {
-                            // incrementalModifyLeftFound-alternate
                             final long cookie = alternateModifiedTrackerCookieSource.getUnsafe(alternateTableLocation);
                             alternateModifiedTrackerCookieSource.set(alternateTableLocation, modifiedSlotTracker.modifySlot(cookie, slotValue, tableNumber, trackerFlag));
-                            // end
                             alternateFound = true;
                             break;
                         }
@@ -267,9 +245,7 @@ final class IncrementalMultiJoinHasherLong extends IncrementalMultiJoinStateMana
                     }
                 }
                 if (!alternateFound) {
-                    // incrementalModifyLeftMissing
                     throw new IllegalStateException("Matching row not found for " + keyString(sourceKeyChunks, chunkPosition) + " in table " + tableNumber + ".");
-                    // end
                 }
             }
         }
@@ -294,11 +270,9 @@ final class IncrementalMultiJoinHasherLong extends IncrementalMultiJoinStateMana
         }
         mainKeySource0.set(destinationTableLocation, k0);
         slotToOutputRow.set(destinationTableLocation, currentStateValue);
-        // incrementalMoveMainAlternate
         final long cookie  = alternateModifiedTrackerCookieSource.getUnsafe(locationToMigrate);
         mainModifiedTrackerCookieSource.set(destinationTableLocation, cookie);
         alternateModifiedTrackerCookieSource.set(locationToMigrate, -1L);
-        // end
         alternateSlotToOutputRow.set(locationToMigrate, EMPTY_RIGHT_STATE);
         return true;
     }
@@ -343,11 +317,9 @@ final class IncrementalMultiJoinHasherLong extends IncrementalMultiJoinStateMana
         mainKeySource0.setArray(destKeyArray0);
         final long [] originalStateArray = slotToOutputRow.getArray();
         slotToOutputRow.setArray(destState);
-        // incrementalRehashSetup
         final long [] oldModifiedCookie = mainModifiedTrackerCookieSource.getArray();
         final long [] destModifiedCookie = new long[tableSize];
         mainModifiedTrackerCookieSource.setArray(destModifiedCookie);
-        // end
         for (int sourceBucket = 0; sourceBucket < oldSize; ++sourceBucket) {
             final long currentStateValue = originalStateArray[sourceBucket];
             if (currentStateValue == EMPTY_RIGHT_STATE) {
@@ -361,9 +333,7 @@ final class IncrementalMultiJoinHasherLong extends IncrementalMultiJoinStateMana
                 if (destState[destinationTableLocation] == EMPTY_RIGHT_STATE) {
                     destKeyArray0[destinationTableLocation] = k0;
                     destState[destinationTableLocation] = originalStateArray[sourceBucket];
-                    // incrementalMoveMainFull
                     destModifiedCookie[destinationTableLocation] = oldModifiedCookie[sourceBucket];
-                    // end
                     break;
                 }
                 destinationTableLocation = nextTableLocation(destinationTableLocation);

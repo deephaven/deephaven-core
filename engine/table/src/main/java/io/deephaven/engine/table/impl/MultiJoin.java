@@ -59,12 +59,6 @@ import static io.deephaven.engine.table.impl.MultiJoinModifiedSlotTracker.*;
  * </pre>
  *
  * <p>
- * The multiJoin operation is more efficient than an iterative sequence of naturalJoin, because the Deephaven engine
- * must only keep a single hash table for all of the results as opposed to one for the selectDistinct and another for
- * each table.
- * </p>
- *
- * <p>
  * All tables must have the same number of key columns, with the same type. The key columns must all have the same names
  * in the resultant table (the left side of the {@link MatchPair} used to create them). The columns to add must have
  * unique names in the result table.
@@ -270,14 +264,14 @@ public class MultiJoin {
         for (int tableNumber = 0; tableNumber < useDescriptors.length; ++tableNumber) {
             final JoinDescriptor joinDescriptor = useDescriptors[tableNumber];
 
-            final WritableRowRedirection redirectionIndex = stateManager.getRowRedirectionForTable(tableNumber);
+            final WritableRowRedirection rowRedirection = stateManager.getRowRedirectionForTable(tableNumber);
             if (refreshing) {
-                redirectionIndex.startTrackingPrevValues();
+                rowRedirection.startTrackingPrevValues();
             }
             final Table inputTable = joinDescriptor.inputTable;
 
             for (final MatchPair mp : joinDescriptor.columnsToAdd) {
-                resultSources.put(mp.leftColumn, RedirectedColumnSource.alwaysRedirect(redirectionIndex,
+                resultSources.put(mp.leftColumn, RedirectedColumnSource.alwaysRedirect(rowRedirection,
                         inputTable.getColumnSource(mp.rightColumn)));
             }
         }
@@ -387,15 +381,15 @@ public class MultiJoin {
                 throw new IllegalStateException("Duplicate rows for table " + tableNumber + " on zero-key multiJoin.");
             }
 
-            final SingleValueRowRedirection redirectionIndex =
+            final SingleValueRowRedirection rowRedirection =
                     refreshing ? new WritableSingleValueRowRedirection(key) : new SingleValueRowRedirection(key);
             if (refreshing) {
-                redirectionIndex.writableSingleValueCast().startTrackingPrevValues();
+                rowRedirection.writableSingleValueCast().startTrackingPrevValues();
             }
-            redirections[tableNumber] = redirectionIndex;
+            redirections[tableNumber] = rowRedirection;
 
             for (final MatchPair mp : joinDescriptor.columnsToAdd) {
-                resultSources.put(mp.leftColumn, RedirectedColumnSource.alwaysRedirect(redirectionIndex,
+                resultSources.put(mp.leftColumn, RedirectedColumnSource.alwaysRedirect(rowRedirection,
                         inputTable.getColumnSource(mp.rightColumn)));
             }
         }

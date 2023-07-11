@@ -261,10 +261,6 @@ public class QueryTableMultiJoinTest extends QueryTableTestBase {
         final int seedInitial = 0;
         final int maxSteps = 20;
 
-        testIncremental(DEFAULT_JOIN_CONTROL, 10000, 0, maxSteps, new String[] {"Key"},
-                new String[] {"Key2"});
-
-
         for (int size = 10; size <= 10_000; size *= 10) {
             for (int seed = seedInitial; seed < seedInitial + SEEDCOUNT.applyAsInt(size); ++seed) {
                 System.out.println("Size = " + size + ", seed = " + seed);
