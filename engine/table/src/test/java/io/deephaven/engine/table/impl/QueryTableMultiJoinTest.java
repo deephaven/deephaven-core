@@ -34,22 +34,6 @@ import static io.deephaven.util.QueryConstants.NULL_INT;
 @Category(OutOfBandTest.class)
 public class QueryTableMultiJoinTest extends QueryTableTestBase {
     final static JoinControl DEFAULT_JOIN_CONTROL = new JoinControl();
-    final static JoinControl HIGH_LOAD_JOIN_CONTROL = new JoinControl() {
-        @Override
-        public int initialBuildSize() {
-            return 1 << 4;
-        }
-
-        @Override
-        public double getMaximumLoadFactor() {
-            return 20;
-        }
-
-        @Override
-        public double getTargetLoadFactor() {
-            return 19;
-        }
-    };
     final static JoinControl REHASH_JOIN_CONTROL = new JoinControl() {
         @Override
         public int initialBuildSize() {
@@ -57,7 +41,7 @@ public class QueryTableMultiJoinTest extends QueryTableTestBase {
         }
     };
 
-    final static JoinControl OA_HIGH_LOAD_JOIN_CONTROL = new JoinControl() {
+    final static JoinControl HIGH_LOAD_JOIN_CONTROL = new JoinControl() {
         @Override
         public int initialBuildSize() {
             return 1 << 4;
@@ -211,7 +195,7 @@ public class QueryTableMultiJoinTest extends QueryTableTestBase {
     @Test
     public void testStaticOverflowAndRehash() {
         for (int size = 1000; size <= 100_000; size *= 10) {
-            testStatic(OA_HIGH_LOAD_JOIN_CONTROL, 1000, 0, new String[] {"Key", "Key2"},
+            testStatic(HIGH_LOAD_JOIN_CONTROL, 1000, 0, new String[] {"Key", "Key2"},
                     CollectionUtil.ZERO_LENGTH_STRING_ARRAY);
             testStatic(REHASH_JOIN_CONTROL, 1000, 0, new String[] {"Key", "Key2"},
                     CollectionUtil.ZERO_LENGTH_STRING_ARRAY);
@@ -276,6 +260,10 @@ public class QueryTableMultiJoinTest extends QueryTableTestBase {
     public void testIncremental() {
         final int seedInitial = 0;
         final int maxSteps = 20;
+
+        testIncremental(DEFAULT_JOIN_CONTROL, 10000, 0, maxSteps, new String[] {"Key"},
+                new String[] {"Key2"});
+
 
         for (int size = 10; size <= 10_000; size *= 10) {
             for (int seed = seedInitial; seed < seedInitial + SEEDCOUNT.applyAsInt(size); ++seed) {

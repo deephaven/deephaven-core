@@ -19,7 +19,7 @@ public class TypedHashDispatcher {
     public static StaticMultiJoinStateManagerTypedBase dispatch(ColumnSource[] tableKeySources,
             ColumnSource[] originalTableKeySources, int tableSize, double maximumLoadFactor,
             double targetLoadFactor) {
-        final ChunkType[] chunkTypes = Arrays.stream(tableKeySources).map(ColumnSource::getChunkType).toArray(ChunkType[]::new);
+        final ChunkType[] chunkTypes = Arrays.stream(tableKeySources).map(ColumnSource::getChunkType).toArray(ChunkType[]::new);;
         if (chunkTypes.length == 1) {
             return dispatchSingle(chunkTypes[0], tableKeySources, originalTableKeySources, tableSize, maximumLoadFactor, targetLoadFactor);
         }

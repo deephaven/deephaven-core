@@ -11,6 +11,7 @@ import io.deephaven.engine.table.ColumnSource;
 import io.deephaven.engine.table.ModifiedColumnSet;
 import io.deephaven.engine.table.Table;
 import io.deephaven.engine.table.impl.by.typed.TypedHasherFactory;
+import io.deephaven.engine.table.impl.multijoin.IncrementalMultiJoinStateManagerTypedBase;
 import io.deephaven.engine.table.impl.multijoin.StaticMultiJoinStateManagerTypedBase;
 import io.deephaven.engine.table.impl.perf.QueryPerformanceRecorder;
 import io.deephaven.engine.table.impl.select.MatchPairFactory;
@@ -28,6 +29,7 @@ import org.jetbrains.annotations.NotNull;
 import java.util.*;
 
 import static io.deephaven.engine.rowset.RowSequence.NULL_ROW_KEY;
+import static io.deephaven.engine.table.impl.MultiJoinModifiedSlotTracker.*;
 
 /**
  * <p>
@@ -232,9 +234,12 @@ public class MultiJoin {
         final boolean refreshing = Arrays.stream(joinDescriptors).anyMatch(jd -> jd.inputTable.isRefreshing());
         if (refreshing) {
             ExecutionContext.getContext().getUpdateGraph().checkInitiateSerialTableOperation();
-            stateManager = new IncrementalMultiJoinStateManager(firstKeySources, joinControl.initialBuildSize());
+            stateManager = TypedHasherFactory.make(IncrementalMultiJoinStateManagerTypedBase.class,
+                    firstKeySources, originalColumns,
+                    joinControl.initialBuildSize(), joinControl.getMaximumLoadFactor(),
+                    joinControl.getTargetLoadFactor());
+
         } else {
-            // stateManager = new StaticMultiJoinStateManager(firstKeySources, joinControl.initialBuildSize());
             stateManager = TypedHasherFactory.make(StaticMultiJoinStateManagerTypedBase.class,
                     firstKeySources, originalColumns,
                     joinControl.initialBuildSize(), joinControl.getMaximumLoadFactor(),
@@ -287,7 +292,7 @@ public class MultiJoin {
             final Logger log = LoggerFactory.getLogger(MultiJoin.class);
 
             final MergedListener mergedListener = new MultiJoinMergedListener(
-                    (IncrementalMultiJoinStateManager) stateManager,
+                    (IncrementalMultiJoinStateManagerTypedBase) stateManager,
                     listenerRecorders,
                     Collections.emptyList(),
                     "multiJoin(" + keyColumnNames + ")",
@@ -478,12 +483,12 @@ public class MultiJoin {
     }
 
     private static class MultiJoinMergedListener extends MergedListener {
-        private final IncrementalMultiJoinStateManager stateManager;
+        private final IncrementalMultiJoinStateManagerTypedBase stateManager;
         private final List<MultiJoinListenerRecorder> recorders;
         private final ModifiedColumnSet[] modifiedColumnSets;
         private final MultiJoinModifiedSlotTracker slotTracker = new MultiJoinModifiedSlotTracker();
 
-        protected MultiJoinMergedListener(@NotNull final IncrementalMultiJoinStateManager stateManager,
+        protected MultiJoinMergedListener(@NotNull final IncrementalMultiJoinStateManagerTypedBase stateManager,
                 @NotNull final List<MultiJoinListenerRecorder> recorders,
                 @NotNull final Collection<NotificationQueue.Dependency> dependencies,
                 @NotNull final String listenerDescription,
@@ -509,46 +514,37 @@ public class MultiJoin {
 
                     if (recorder.getRemoved().isNonempty()) {
                         stateManager.processRemoved(recorder.getRemoved(), recorder.keyColumns, recorder.tableNumber,
-                                slotTracker, false);
+                                slotTracker, FLAG_REMOVE);
                     }
                     if (keysModified) {
                         stateManager.processRemoved(recorder.getModifiedPreShift(), recorder.keyColumns,
-                                recorder.tableNumber, slotTracker, true);
+                                recorder.tableNumber, slotTracker, FLAG_MODIFY);
                     }
 
                     if (recorder.getShifted().nonempty()) {
-                        try (final WritableRowSet previousToShift = recorder.getParent().getRowSet().copyPrev();
-                                final IncrementalMultiJoinStateManager.ProbeContext pc =
-                                        stateManager.makeProbeContext(recorder.keyColumns, previousToShift.size())) {
+                        try (final WritableRowSet previousToShift = recorder.getParent().getRowSet().copyPrev()) {
                             previousToShift.remove(recorder.getRemoved());
                             if (keysModified) {
                                 previousToShift.remove(recorder.getModifiedPreShift());
                             }
-
-                            final RowSetShiftData.Iterator sit = recorder.getShifted().applyIterator();
-                            while (sit.hasNext()) {
-                                sit.next();
-                                try (final WritableRowSet indexToShift =
-                                        previousToShift.subSetByKeyRange(sit.beginRange(), sit.endRange())) {
-                                    stateManager.applyShift(pc, indexToShift, recorder.keyColumns, recorder.tableNumber,
-                                            sit.shiftDelta(), slotTracker);
-                                }
-                            }
+                            stateManager.processShifts(previousToShift, recorder.getShifted(), recorder.keyColumns,
+                                    recorder.tableNumber,
+                                    slotTracker);
                         }
                     }
 
                     if (!keysModified && recorder.getModified().isNonempty()) {
                         stateManager.processModified(recorder.getModified(), recorder.keyColumns, recorder.tableNumber,
-                                slotTracker);
+                                slotTracker, FLAG_MODIFY);
                     }
 
                     if (recorder.getAdded().isNonempty()) {
                         stateManager.processAdded(recorder.getAdded(), recorder.keyColumns, recorder.tableNumber,
-                                slotTracker, false);
+                                slotTracker, FLAG_ADD);
                     }
                     if (keysModified) {
                         stateManager.processAdded(recorder.getModified(), recorder.keyColumns, recorder.tableNumber,
-                                slotTracker, true);
+                                slotTracker, FLAG_MODIFY);
                     }
                 }
             }
@@ -575,9 +571,9 @@ public class MultiJoin {
             downstream.modifiedColumnSet = result.getModifiedColumnSetForUpdates();
             downstream.modifiedColumnSet.clear();
 
-            final byte notShift = (MultiJoinModifiedSlotTracker.FLAG_ADD | MultiJoinModifiedSlotTracker.FLAG_REMOVE
-                    | MultiJoinModifiedSlotTracker.FLAG_MODIFY);
-            final byte addOrRemove = (MultiJoinModifiedSlotTracker.FLAG_ADD | MultiJoinModifiedSlotTracker.FLAG_REMOVE);
+            final byte notShift = (FLAG_ADD | FLAG_REMOVE
+                    | FLAG_MODIFY);
+            final byte addOrRemove = (FLAG_ADD | FLAG_REMOVE);
 
             slotTracker.forAllModifiedSlots((slot, originalValues, flagValues) -> {
                 if (slot >= originalSize) {

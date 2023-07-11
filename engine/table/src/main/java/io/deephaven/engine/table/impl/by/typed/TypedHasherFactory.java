@@ -17,11 +17,13 @@ import io.deephaven.engine.rowset.RowSetBuilderRandom;
 import io.deephaven.engine.rowset.chunkattributes.OrderedRowKeys;
 import io.deephaven.engine.rowset.chunkattributes.RowKeys;
 import io.deephaven.engine.table.ColumnSource;
+import io.deephaven.engine.table.impl.MultiJoinModifiedSlotTracker;
 import io.deephaven.engine.table.impl.NaturalJoinModifiedSlotTracker;
 import io.deephaven.engine.table.impl.asofjoin.RightIncrementalAsOfJoinStateManagerTypedBase;
 import io.deephaven.engine.table.impl.asofjoin.StaticAsOfJoinStateManagerTypedBase;
 import io.deephaven.engine.table.impl.asofjoin.TypedAsOfJoinFactory;
 import io.deephaven.engine.table.impl.by.*;
+import io.deephaven.engine.table.impl.multijoin.IncrementalMultiJoinStateManagerTypedBase;
 import io.deephaven.engine.table.impl.multijoin.StaticMultiJoinStateManagerTypedBase;
 import io.deephaven.engine.table.impl.multijoin.TypedMultiJoinFactory;
 import io.deephaven.engine.table.impl.naturaljoin.IncrementalNaturalJoinStateManagerTypedBase;
@@ -353,19 +355,63 @@ public class TypedHasherFactory {
                     TypedMultiJoinFactory::staticBuildLeftInsert,
                     ParameterSpec.builder(TypeName.get(LongArraySource.class), "tableRedirSource").build(),
                     ParameterSpec.builder(long.class, "tableNumber").build()));
-            //
-            // builder.addProbe(new HasherConfig.ProbeSpec("decorateLeftSide", "rightRowKey",
-            // false, TypedNaturalJoinFactory::staticProbeDecorateLeftFound,
-            // TypedNaturalJoinFactory::staticProbeDecorateLeftMissing,
-            // ParameterSpec.builder(TypeName.get(LongArraySource.class), "leftRedirections").build(),
-            // ParameterSpec.builder(long.class, "redirectionOffset").build()));
-            //
-            // builder.addBuild(new HasherConfig.BuildSpec("buildFromRightSide", "rightSideSentinel",
-            // true, true, TypedNaturalJoinFactory::staticBuildRightFound,
-            // TypedNaturalJoinFactory::staticBuildRightInsert));
-            //
-            // builder.addProbe(new HasherConfig.ProbeSpec("decorateWithRightSide", "existingStateValue",
-            // true, TypedNaturalJoinFactory::staticProbeDecorateRightFound, null));
+        } else if (baseClass.equals(IncrementalMultiJoinStateManagerTypedBase.class)) {
+            final ParameterSpec modifiedSlotTrackerParam =
+                    ParameterSpec.builder(MultiJoinModifiedSlotTracker.class, "modifiedSlotTracker").build();
+            final ParameterSpec tableRedirSourceParam =
+                    ParameterSpec.builder(TypeName.get(LongArraySource.class), "tableRedirSource").build();
+            final ParameterSpec tableNumberParam =
+                    ParameterSpec.builder(int.class, "tableNumber").build();
+            final ParameterSpec flagParam =
+                    ParameterSpec.builder(byte.class, "trackerFlag").build();
+
+            builder.classPrefix("IncrementalMultiJoinHasher").packageGroup("multijoin")
+                    .packageMiddle("incopen")
+                    .openAddressedAlternate(true)
+                    .stateType(long.class).mainStateName("slotToOutputRow")
+                    .overflowOrAlternateStateName("alternateSlotToOutputRow")
+                    .emptyStateName("EMPTY_RIGHT_STATE")
+                    .includeOriginalSources(true)
+                    .supportRehash(true)
+                    .addExtraPartialRehashParameter(modifiedSlotTrackerParam)
+                    .moveMainFull(TypedMultiJoinFactory::incrementalMoveMainFull)
+                    .moveMainAlternate(TypedMultiJoinFactory::incrementalMoveMainAlternate)
+                    .alwaysMoveMain(true)
+                    .rehashFullSetup(TypedMultiJoinFactory::incrementalRehashSetup);
+
+            builder.addBuild(new HasherConfig.BuildSpec("buildFromLeftSide", "slotValue",
+                    true, true,
+                    TypedMultiJoinFactory::incrementalBuildLeftFound,
+                    TypedMultiJoinFactory::incrementalBuildLeftInsert,
+                    tableRedirSourceParam,
+                    tableNumberParam,
+                    modifiedSlotTrackerParam,
+                    flagParam));
+
+            builder.addProbe(new HasherConfig.ProbeSpec("remove", "slotValue", true,
+                    TypedMultiJoinFactory::incrementalRemoveLeftFound,
+                    TypedMultiJoinFactory::incrementalRemoveLeftMissing,
+                    tableRedirSourceParam,
+                    tableNumberParam,
+                    modifiedSlotTrackerParam,
+                    flagParam));
+
+            builder.addProbe(new HasherConfig.ProbeSpec("shift", "slotValue", true,
+                    TypedMultiJoinFactory::incrementalShiftLeftFound,
+                    TypedMultiJoinFactory::incrementalShiftLeftMissing,
+                    tableRedirSourceParam,
+                    tableNumberParam,
+                    modifiedSlotTrackerParam,
+                    flagParam,
+                    ParameterSpec.builder(long.class, "shiftDelta").build()));
+
+            builder.addProbe(new HasherConfig.ProbeSpec("modify", "slotValue", false,
+                    TypedMultiJoinFactory::incrementalModifyLeftFound,
+                    TypedMultiJoinFactory::incrementalModifyLeftMissing,
+                    tableRedirSourceParam,
+                    tableNumberParam,
+                    modifiedSlotTrackerParam,
+                    flagParam));
         } else {
             throw new UnsupportedOperationException("Unknown class to make: " + baseClass);
         }
@@ -493,6 +539,16 @@ public class TypedHasherFactory {
                 // noinspection unchecked
                 T pregeneratedHasher =
                         (T) io.deephaven.engine.table.impl.multijoin.typed.staticopen.gen.TypedHashDispatcher
+                                .dispatch(tableKeySources, originalKeySources, tableSize, maximumLoadFactor,
+                                        targetLoadFactor);
+                if (pregeneratedHasher != null) {
+                    return pregeneratedHasher;
+                }
+            } else if (hasherConfig.baseClass
+                    .equals(IncrementalMultiJoinStateManagerTypedBase.class)) {
+                // noinspection unchecked
+                T pregeneratedHasher =
+                        (T) io.deephaven.engine.table.impl.multijoin.typed.incopen.gen.TypedHashDispatcher
                                 .dispatch(tableKeySources, originalKeySources, tableSize, maximumLoadFactor,
                                         targetLoadFactor);
                 if (pregeneratedHasher != null) {

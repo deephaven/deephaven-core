@@ -39,21 +39,24 @@ public abstract class StaticMultiJoinStateManagerTypedBase implements MultiJoinS
     public static final long EMPTY_RIGHT_STATE = QueryConstants.NULL_LONG;
     public static final long DUPLICATE_RIGHT_STATE = -2;
 
-    // the number of slots in our table
+    // The number of slots in our hash table.
     protected int tableSize;
 
+    // The number of entries in our hash table in use.
     protected long numEntries = 0;
 
-    // the table will be rehashed to a load factor of targetLoadFactor if our loadFactor exceeds maximumLoadFactor
-    // or if it falls below minimum load factor we will instead contract the table
+    // The table will be rehashed to a load factor of targetLoadFactor if our loadFactor exceeds maximumLoadFactor
+    // or if it falls below minimum load factor we will instead contract the table.
     private final double maximumLoadFactor;
 
-    // the keys for our hash entries
+    // The keys for our hash entries.
     protected final ChunkType[] chunkTypes;
     protected final WritableColumnSource[] mainKeySources;
+
+    // The output sources representing the keys of our joined table.
     protected final WritableColumnSource[] outputKeySources;
 
-    // Store sentinel information and maps hash slots to output row keys
+    // Store sentinel information and maps hash slots to output row keys.
     protected ImmutableLongArraySource slotToOutputRow = new ImmutableLongArraySource();
 
     protected StaticMultiJoinStateManagerTypedBase(ColumnSource<?>[] tableKeySources,
@@ -69,8 +72,9 @@ public abstract class StaticMultiJoinStateManagerTypedBase implements MultiJoinS
         Require.inRange(maximumLoadFactor, 0.0, 0.95, "maximumLoadFactor");
 
         mainKeySources = new WritableColumnSource[tableKeySources.length];
-        outputKeySources = new WritableColumnSource[tableKeySources.length];
         chunkTypes = new ChunkType[tableKeySources.length];
+
+        outputKeySources = new WritableColumnSource[tableKeySources.length];
 
         for (int ii = 0; ii < tableKeySources.length; ++ii) {
             chunkTypes[ii] = tableKeySources[ii].getChunkType();
@@ -107,7 +111,6 @@ public abstract class StaticMultiJoinStateManagerTypedBase implements MultiJoinS
         }
     }
 
-
     private class LeftBuildHandler implements TypedHasherUtil.BuildHandler {
         final LongArraySource tableRedirSource;
         final long tableNumber;
@@ -129,7 +132,7 @@ public abstract class StaticMultiJoinStateManagerTypedBase implements MultiJoinS
         }
     }
 
-    abstract protected void buildFromLeftSide(RowSequence rowSequence, Chunk[] sourceKeyChunks,
+    protected abstract void buildFromLeftSide(RowSequence rowSequence, Chunk[] sourceKeyChunks,
             LongArraySource tableRedirSource, long tableNumber);
 
     protected void buildTable(

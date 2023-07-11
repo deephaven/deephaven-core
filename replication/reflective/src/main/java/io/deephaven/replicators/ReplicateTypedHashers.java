@@ -11,6 +11,7 @@ import io.deephaven.chunk.ChunkType;
 import io.deephaven.engine.table.ColumnSource;
 import io.deephaven.engine.table.impl.asofjoin.RightIncrementalAsOfJoinStateManagerTypedBase;
 import io.deephaven.engine.table.impl.asofjoin.StaticAsOfJoinStateManagerTypedBase;
+import io.deephaven.engine.table.impl.multijoin.IncrementalMultiJoinStateManagerTypedBase;
 import io.deephaven.engine.table.impl.multijoin.StaticMultiJoinStateManagerTypedBase;
 import io.deephaven.engine.table.impl.naturaljoin.RightIncrementalNaturalJoinStateManagerTypedBase;
 import io.deephaven.engine.table.impl.by.IncrementalChunkedOperatorAggregationStateManagerOpenAddressedBase;
@@ -42,6 +43,7 @@ public class ReplicateTypedHashers {
         generatePackage(RightIncrementalAsOfJoinStateManagerTypedBase.class, false);
         generatePackage(UpdateByStateManagerTypedBase.class, true);
         generatePackage(StaticMultiJoinStateManagerTypedBase.class, false);
+        generatePackage(IncrementalMultiJoinStateManagerTypedBase.class, false);
     }
 
     private static void generatePackage(Class<?> baseClass, boolean doDouble) throws IOException {

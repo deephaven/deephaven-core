@@ -34,10 +34,10 @@ public class MultiJoinModifiedSlotTracker {
     private static final int FLAG_BITS = 4;
     private static final int FLAGS_PER_LOCATION = 16;
 
-    static final byte FLAG_ADD = 0x1;
-    static final byte FLAG_REMOVE = 0x2;
-    static final byte FLAG_MODIFY = 0x4;
-    static final byte FLAG_SHIFT = 0x8;
+    public static final byte FLAG_ADD = 0x1;
+    public static final byte FLAG_REMOVE = 0x2;
+    public static final byte FLAG_MODIFY = 0x4;
+    public static final byte FLAG_SHIFT = 0x8;
 
     /**
      * Remove all entries from the tracker.
@@ -103,7 +103,7 @@ public class MultiJoinModifiedSlotTracker {
      *
      * @return the cookie for future access
      */
-    long addSlot(final long cookie, final long slot, final int tableNumber, final long originalRedirection,
+    public long addSlot(final long cookie, final long slot, final int tableNumber, final long originalRedirection,
             byte flags) {
         if (!isValidCookie(cookie)) {
             return doAddition(slot, tableNumber, originalRedirection, flags);
@@ -120,11 +120,33 @@ public class MultiJoinModifiedSlotTracker {
      *
      * @return the cookie for future access
      */
-    long modifySlot(final long cookie, final long slot, final int tableNumber, byte flags) {
+    public long modifySlot(final long cookie, final long slot, final int tableNumber, byte flags) {
         if (!isValidCookie(cookie)) {
             return doModify(slot, tableNumber, flags);
         } else {
             return updateFlags(cookie, tableNumber, flags);
+        }
+    }
+
+    /**
+     * Move a main table location.
+     *
+     * @param oldTableLocation the old hash slot
+     * @param newTableLocation the new hash slot
+     */
+    public void moveTableLocation(long cookie, @SuppressWarnings("unused") int oldTableLocation,
+            int newTableLocation) {
+        if (isValidCookie(cookie)) {
+            final long pointer = getPointerFromCookie(cookie);
+
+            final long flagLocation = flagLocationForSlotAndTable(pointer, 0);
+            final long flagDestination = flagLocationForSlotAndTable(newTableLocation, 0);
+
+            // Move all the flags for the tables to the new location.
+            for (int ii = 0; ii < flagLocationsPerSlot; ++ii) {
+                flagSource.set(flagLocation + ii, flagDestination + ii);
+            }
+            modifiedSlots.set(pointer, modifiedSlots.getLong(oldTableLocation));
         }
     }
 
@@ -180,8 +202,7 @@ public class MultiJoinModifiedSlotTracker {
     private long doModify(final long slot, final int tableNumber, byte flags) {
         maybeAllocateChunk();
         initializeNextTrackerSlot(slot, tableNumber, flags);
-        for (int ii = 0; ii < this.originalRedirection.size(); ++ii) {
-            final LongArraySource originalRedirectionForTable = this.originalRedirection.get(ii);
+        for (final LongArraySource originalRedirectionForTable : this.originalRedirection) {
             originalRedirectionForTable.set(pointer, SENTINEL_UNINITIALIZED_KEY);
         }
         return getCookieFromPointer(pointer++);
