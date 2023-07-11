@@ -78,11 +78,11 @@ public class BusinessCalendar extends Calendar {
     }
 
     private static class YearData {
-        private final ZonedDateTime start; //TODO: type?
-        private final ZonedDateTime end;   //TODO: type?
+        private final Instant start;
+        private final Instant end;
         private final long businessTimeNanos;
 
-        public YearData(final ZonedDateTime start, final ZonedDateTime end, final long businessTimeNanos) {
+        public YearData(final Instant start, final Instant end, final long businessTimeNanos) {
             this.start = start;
             this.end = end;
             this.businessTimeNanos = businessTimeNanos;
@@ -110,7 +110,7 @@ public class BusinessCalendar extends Calendar {
                 date = date.plusDays(1);
             }
 
-            final YearData yd = new YearData(start, end, businessTimeNanos);
+            final YearData yd = new YearData(start.toInstant(), end.toInstant(), businessTimeNanos);
             cachedYearData.put(year, yd);
         }
     }
@@ -155,14 +155,12 @@ public class BusinessCalendar extends Calendar {
         return standardBusinessSchedule;
     }
 
-    //TODO: rename?
-
     /**
      * Length of a standard business day in nanoseconds.
      *
      * @return length of a standard business day in nanoseconds
      */
-    public long standardBusinessDayLengthNanos() {
+    public long standardBusinessDayNanos() {
         return standardBusinessSchedule.businessNanos();
     }
 
@@ -300,8 +298,6 @@ public class BusinessCalendar extends Calendar {
         return businessSchedule(time).isBusinessDay();
     }
 
-    //TODO: rename?
-
     /**
      * Is the day of the week a normal business day?
      *
@@ -339,12 +335,7 @@ public class BusinessCalendar extends Calendar {
         }
 
         final LocalDate nextBusAfterDate = plusBusinessDays(date, 1);
-
-        if (nextBusAfterDate == null) {
-            //TODO ** raise an error;
-            return false;
-        }
-
+        assert nextBusAfterDate != null;
         return date.getMonth() != nextBusAfterDate.getMonth();
     }
 
@@ -481,12 +472,7 @@ public class BusinessCalendar extends Calendar {
         }
 
         final LocalDate nextBusAfterDate = plusBusinessDays(date, 1);
-
-        if (nextBusAfterDate == null) {
-            //TODO ** raise an error;
-            return false;
-        }
-
+        assert nextBusAfterDate != null;
         return date.getYear() != nextBusAfterDate.getYear();
     }
 
@@ -594,10 +580,10 @@ public class BusinessCalendar extends Calendar {
      * @throws RequirementFailure   if the input is null
      * @throws InvalidDateException if the date is not in the valid range
      */
-    public double fractionOfStandardBusinessDay(final LocalDate date) {
+    public double fractionStandardBusinessDay(final LocalDate date) {
         Require.neqNull(date, "date");
         final BusinessSchedule<Instant> schedule = businessSchedule(date);
-        return (double) schedule.businessNanos() / (double) standardBusinessDayLengthNanos();
+        return (double) schedule.businessNanos() / (double) standardBusinessDayNanos();
     }
 
     /**
@@ -612,9 +598,9 @@ public class BusinessCalendar extends Calendar {
      * @throws InvalidDateException                 if the date is not in the valid range
      * @throws DateTimeUtils.DateTimeParseException if the string cannot be parsed
      */
-    public double fractionOfStandardBusinessDay(final String date) {
+    public double fractionStandardBusinessDay(final String date) {
         Require.neqNull(date, "date");
-        return fractionOfStandardBusinessDay(DateTimeUtils.parseLocalDate(date));
+        return fractionStandardBusinessDay(DateTimeUtils.parseLocalDate(date));
     }
 
     /**
@@ -628,9 +614,9 @@ public class BusinessCalendar extends Calendar {
      * @throws RequirementFailure   if the input is null
      * @throws InvalidDateException if the date is not in the valid range
      */
-    public double fractionOfStandardBusinessDay(final Instant time) {
+    public double fractionStandardBusinessDay(final Instant time) {
         Require.neqNull(time, "time");
-        return fractionOfStandardBusinessDay(DateTimeUtils.toLocalDate(time, timeZone()));
+        return fractionStandardBusinessDay(DateTimeUtils.toLocalDate(time, timeZone()));
     }
 
     /**
@@ -644,9 +630,9 @@ public class BusinessCalendar extends Calendar {
      * @throws RequirementFailure   if the input is null
      * @throws InvalidDateException if the date is not in the valid range
      */
-    public double fractionOfStandardBusinessDay(final ZonedDateTime time) {
+    public double fractionStandardBusinessDay(final ZonedDateTime time) {
         Require.neqNull(time, "time");
-        return fractionOfStandardBusinessDay(DateTimeUtils.toLocalDate(time.toInstant(), timeZone()));
+        return fractionStandardBusinessDay(DateTimeUtils.toLocalDate(time.toInstant(), timeZone()));
     }
 
     /**
@@ -659,11 +645,9 @@ public class BusinessCalendar extends Calendar {
      * @throws RequirementFailure   if the input is null
      * @throws InvalidDateException if the date is not in the valid range
      */
-    public double fractionOfStandardBusinessDay() {
-        return fractionOfStandardBusinessDay(currentDate());
+    public double fractionStandardBusinessDay() {
+        return fractionStandardBusinessDay(currentDate());
     }
-
-    //TODO: remove Of from function names!
 
     /**
      * Fraction of the business day complete.
@@ -673,7 +657,7 @@ public class BusinessCalendar extends Calendar {
      * @throws RequirementFailure   if the input is null
      * @throws InvalidDateException if the date is not in the valid range
      */
-    public double fractionOfBusinessDayComplete(final Instant time) {
+    public double fractionBusinessDayComplete(final Instant time) {
         Require.neqNull(time, "time");
 
         final BusinessSchedule<Instant> schedule = businessSchedule(time);
@@ -694,9 +678,9 @@ public class BusinessCalendar extends Calendar {
      * @throws RequirementFailure   if the input is null
      * @throws InvalidDateException if the date is not in the valid range
      */
-    public double fractionOfBusinessDayComplete(final ZonedDateTime time) {
+    public double fractionBusinessDayComplete(final ZonedDateTime time) {
         Require.neqNull(time, "time");
-        return fractionOfBusinessDayComplete(time.toInstant());
+        return fractionBusinessDayComplete(time.toInstant());
     }
 
     /**
@@ -706,8 +690,8 @@ public class BusinessCalendar extends Calendar {
      * @throws RequirementFailure   if the input is null
      * @throws InvalidDateException if the date is not in the valid range
      */
-    public double fractionOfBusinessDayComplete() {
-        return fractionOfBusinessDayComplete(DateTimeUtils.now());
+    public double fractionBusinessDayComplete() {
+        return fractionBusinessDayComplete(DateTimeUtils.now());
     }
 
     /**
@@ -718,9 +702,9 @@ public class BusinessCalendar extends Calendar {
      * @throws RequirementFailure   if the input is null
      * @throws InvalidDateException if the date is not in the valid range
      */
-    public double fractionOfBusinessDayRemaining(final Instant time) {
+    public double fractionBusinessDayRemaining(final Instant time) {
         Require.neqNull(time, "time");
-        return 1.0 - fractionOfBusinessDayComplete(time);
+        return 1.0 - fractionBusinessDayComplete(time);
     }
 
     /**
@@ -731,9 +715,9 @@ public class BusinessCalendar extends Calendar {
      * @throws RequirementFailure   if the input is null
      * @throws InvalidDateException if the date is not in the valid range
      */
-    public double fractionOfBusinessDayRemaining(final ZonedDateTime time) {
+    public double fractionBusinessDayRemaining(final ZonedDateTime time) {
         Require.neqNull(time, "time");
-        return 1.0 - fractionOfBusinessDayComplete(time);
+        return 1.0 - fractionBusinessDayComplete(time);
     }
 
     /**
@@ -743,8 +727,8 @@ public class BusinessCalendar extends Calendar {
      * @throws RequirementFailure   if the input is null
      * @throws InvalidDateException if the date is not in the valid range
      */
-    public double fractionOfBusinessDayRemaining() {
-        return fractionOfBusinessDayRemaining(DateTimeUtils.now());
+    public double fractionBusinessDayRemaining() {
+        return fractionBusinessDayRemaining(DateTimeUtils.now());
     }
 
     // endregion
@@ -1369,7 +1353,7 @@ public class BusinessCalendar extends Calendar {
      * @throws InvalidDateException if the dates are not in the valid range
      */
     public double diffBusinessDays(final Instant start, final Instant end) {
-        return (double) diffBusinessNanos(start, end) / (double) standardBusinessDayLengthNanos();
+        return (double) diffBusinessNanos(start, end) / (double) standardBusinessDayNanos();
     }
 
     /**
@@ -1382,7 +1366,7 @@ public class BusinessCalendar extends Calendar {
      * @throws InvalidDateException if the dates are not in the valid range
      */
     public double diffBusinessDays(final ZonedDateTime start, final ZonedDateTime end) {
-        return (double) diffBusinessNanos(start, end) / (double) standardBusinessDayLengthNanos();
+        return (double) diffBusinessNanos(start, end) / (double) standardBusinessDayNanos();
     }
 
     /**
@@ -1408,8 +1392,8 @@ public class BusinessCalendar extends Calendar {
         final YearData yearDataStart = getYearData(yearStart);
         final YearData yearDataEnd = getYearData(yearEnd);
 
-        return (double) diffBusinessNanos(start, yearDataStart.end.toInstant()) / (double) yearDataStart.businessTimeNanos +
-                (double) diffBusinessNanos(yearDataEnd.start.toInstant(), end) / (double) yearDataEnd.businessTimeNanos +
+        return (double) diffBusinessNanos(start, yearDataStart.end) / (double) yearDataStart.businessTimeNanos +
+                (double) diffBusinessNanos(yearDataEnd.start, end) / (double) yearDataEnd.businessTimeNanos +
                 yearEnd - yearStart - 1;
     }
 
