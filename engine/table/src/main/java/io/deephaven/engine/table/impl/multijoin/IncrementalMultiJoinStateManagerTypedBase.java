@@ -133,24 +133,6 @@ public abstract class IncrementalMultiJoinStateManagerTypedBase implements Multi
         private ProbeContext(ColumnSource<?>[] buildSources, int chunkSize) {
             super(buildSources, chunkSize);
         }
-
-        void startShifts(long shiftDelta) {
-            if (shiftDelta > 0) {
-                if (pendingShifts == null) {
-                    pendingShifts = new LongArraySource();
-                }
-            }
-            pendingShiftPointer = 0;
-        }
-
-        public int pendingShiftPointer;
-        public LongArraySource pendingShifts;
-
-        public void ensureShiftCapacity(long shiftDelta, long size) {
-            if (shiftDelta > 0) {
-                pendingShifts.ensureCapacity(pendingShiftPointer + 2 * size);
-            }
-        }
     }
 
     public BuildContext makeBuildContext(ColumnSource<?>[] buildSources, long maxSize) {

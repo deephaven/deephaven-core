@@ -565,8 +565,7 @@ public class MultiJoin {
             downstream.modifiedColumnSet = result.getModifiedColumnSetForUpdates();
             downstream.modifiedColumnSet.clear();
 
-            final byte notShift = (FLAG_ADD | FLAG_REMOVE
-                    | FLAG_MODIFY);
+            final byte notShift = (FLAG_ADD | FLAG_REMOVE | FLAG_MODIFY);
             final byte addOrRemove = (FLAG_ADD | FLAG_REMOVE);
 
             slotTracker.forAllModifiedSlots((slot, originalValues, flagValues) -> {
@@ -591,7 +590,7 @@ public class MultiJoin {
                         }
                         rowModified |= (flagValues[ii] & notShift) != 0;
                     } else {
-                        // if the redirection has changed and we have done anything other than a shift, we must light
+                        // If the redirection has changed and we have done anything other than a shift, we must light
                         // up all the columns for the table as a modification. Similarly, if the row was added and
                         // deleted from the original table, then we must also light up all the columns as modified.
                         if ((flagValues[ii] & addOrRemove) != 0 || currentRedirections[ii] != originalValues[ii]) {
@@ -630,10 +629,9 @@ public class MultiJoin {
                             listenerIndex++;
                         }
                     } else {
-                        // if we have not had any cells which are remapped, but we did have any modified rows then we
+                        // If we have not had any cells which are remapped, but we did have any modified rows then we
                         // need to light up all the result columns, because we know that the modified row in the input
-                        // table
-                        // must map to a row in the output table
+                        // table must map to a row in the output table.
                         if (recorder != null && recorder.tableNumber == ii) {
                             if (recorder.getModified().isNonempty()) {
                                 recorder.transformer.transform(recorder.getModifiedColumnSet(),
