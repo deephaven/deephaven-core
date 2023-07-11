@@ -92,11 +92,9 @@ public class SliceLikeOperation implements QueryTable.Operation<QueryTable> {
 
     @Override
     public Result<QueryTable> initialize(boolean usePrev, long beforeClock) {
-        final TrackingRowSet resultRowSet;
         final TrackingRowSet parentRowSet = parent.getRowSet();
-        try (final WritableRowSet parentPrev = usePrev ? parentRowSet.copyPrev() : null) {
-            resultRowSet = computeSliceIndex(usePrev ? parentPrev : parentRowSet).toTracking();
-        }
+        final TrackingRowSet resultRowSet =
+                computeSliceRowSet(usePrev ? parentRowSet.prev() : parentRowSet).toTracking();
         // result table must be a sub-table so we can pass ModifiedColumnSet to listeners when possible
         resultTable = parent.getSubTable(resultRowSet);
         if (isFlat) {
@@ -135,7 +133,7 @@ public class SliceLikeOperation implements QueryTable.Operation<QueryTable> {
 
     private void onUpdate(final TableUpdate upstream) {
         final TrackingWritableRowSet rowSet = resultTable.getRowSet().writableCast();
-        final RowSet sliceRowSet = computeSliceIndex(parent.getRowSet());
+        final RowSet sliceRowSet = computeSliceRowSet(parent.getRowSet());
 
         final TableUpdateImpl downstream = new TableUpdateImpl();
         downstream.removed = upstream.removed().intersect(rowSet);
@@ -166,7 +164,7 @@ public class SliceLikeOperation implements QueryTable.Operation<QueryTable> {
         resultTable.notifyListeners(downstream);
     }
 
-    private WritableRowSet computeSliceIndex(RowSet useRowSet) {
+    private WritableRowSet computeSliceRowSet(RowSet useRowSet) {
         final long size = parent.size();
         long startSlice = getFirstPositionInclusive();
         long endSlice = getLastPositionExclusive();
