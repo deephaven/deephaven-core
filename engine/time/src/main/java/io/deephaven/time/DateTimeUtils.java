@@ -383,7 +383,8 @@ public class DateTimeUtils {
     private abstract static class CachedDate {
 
         final ZoneId timeZone;
-        String value;
+        LocalDate date;
+        String str;
         long valueExpirationTimeMillis;
 
         private CachedDate(@NotNull final ZoneId timeZone) {
@@ -395,15 +396,26 @@ public class DateTimeUtils {
             return timeZone;
         }
 
-        public String get() {
-            return get(currentClock().currentTimeMillis());
+        public LocalDate getLocalDate() {
+            return getLocalDate(currentClock().currentTimeMillis());
         }
 
-        public synchronized String get(final long currentTimeMillis) {
+        public synchronized LocalDate getLocalDate(final long currentTimeMillis) {
             if (currentTimeMillis >= valueExpirationTimeMillis) {
                 update(currentTimeMillis);
             }
-            return value;
+            return date;
+        }
+
+        public String getStr() {
+            return getStr(currentClock().currentTimeMillis());
+        }
+
+        public synchronized String getStr(final long currentTimeMillis) {
+            if (currentTimeMillis >= valueExpirationTimeMillis) {
+                update(currentTimeMillis);
+            }
+            return str;
         }
 
         abstract void update(long currentTimeMillis);
@@ -417,7 +429,8 @@ public class DateTimeUtils {
 
         @Override
         void update(final long currentTimeMillis) {
-            value = formatDate(epochMillisToInstant(currentTimeMillis), timeZone);
+            date = toLocalDate(epochMillisToInstant(currentTimeMillis), timeZone);
+            str = formatDate(date);
             valueExpirationTimeMillis =
                     epochMillis(atMidnight(epochNanosToInstant(millisToNanos(currentTimeMillis) + DAY), timeZone));
         }
@@ -448,7 +461,7 @@ public class DateTimeUtils {
     @ScriptApi
     @NotNull
     public static String today(@NotNull final ZoneId timeZone) {
-        return cachedCurrentDates.putIfAbsent(timeZone, CachedCurrentDate::new).get();
+        return cachedCurrentDates.putIfAbsent(timeZone, CachedCurrentDate::new).getStr();
     }
 
     /**
@@ -466,6 +479,39 @@ public class DateTimeUtils {
     @NotNull
     public static String today() {
         return today(DateTimeUtils.timeZone());
+    }
+
+    /**
+     * Provides the current date string according to the {@link #currentClock() current clock}. Under most
+     * circumstances, this method will return the date according to current system time, but during replay simulations,
+     * this method can return the date according to replay time.
+     *
+     * @param timeZone the time zone
+     * @return the current date according to the current clock and time zone formatted as "yyyy-MM-dd"
+     * @see #currentClock()
+     * @see #setClock(Clock)
+     */
+    @ScriptApi
+    @NotNull
+    public static LocalDate todayDate(@NotNull final ZoneId timeZone) {
+        return cachedCurrentDates.putIfAbsent(timeZone, CachedCurrentDate::new).getLocalDate();
+    }
+
+    /**
+     * Provides the current date string according to the {@link #currentClock() current clock} and the
+     * {@link ZoneId#systemDefault() default time zone}. Under most circumstances, this method will return the date
+     * according to current system time, but during replay simulations, this method can return the date according to
+     * replay time.
+     *
+     * @return the current date according to the current clock and default time zone formatted as "yyyy-MM-dd"
+     * @see #currentClock()
+     * @see #setClock(Clock)
+     * @see ZoneId#systemDefault()
+     */
+    @ScriptApi
+    @NotNull
+    public static LocalDate todayDate() {
+        return todayDate(DateTimeUtils.timeZone());
     }
 
     // endregion
@@ -3156,6 +3202,22 @@ public class DateTimeUtils {
         }
 
         return ISO_LOCAL_DATE.format(dateTime);
+    }
+
+    /**
+     * Returns a {@link LocalDate} formatted as a "yyyy-MM-dd" string.
+     *
+     * @param date date to format as a string
+     * @return {@code null} if either input is {@code null}; otherwise, the time formatted as a "yyyy-MM-dd" string
+     */
+    @ScriptApi
+    @Nullable
+    public static String formatDate(@Nullable final LocalDate date) {
+        if (date == null) {
+            return null;
+        }
+
+        return ISO_LOCAL_DATE.format(date);
     }
 
     // endregion

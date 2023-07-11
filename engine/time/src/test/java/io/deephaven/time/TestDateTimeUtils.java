@@ -1063,7 +1063,11 @@ public class TestDateTimeUtils extends BaseArrayTestCase {
         TestCase.assertNull(DateTimeUtils.formatDate(null, TZ_NY));
         TestCase.assertNull(DateTimeUtils.formatDate(dt2, null));
 
-        TestCase.assertNull(DateTimeUtils.formatDate(null));
+        TestCase.assertNull(DateTimeUtils.formatDate((ZonedDateTime) null));
+
+        final LocalDate date = LocalDate.of(2021,2,3);
+        TestCase.assertEquals("2021-02-03", DateTimeUtils.formatDate(date));
+        TestCase.assertNull(DateTimeUtils.formatDate((LocalDate) null));
     }
 
     public void testFormatDateTime() {
@@ -1681,6 +1685,10 @@ public class TestDateTimeUtils extends BaseArrayTestCase {
             TestCase.assertEquals(DateTimeUtils.formatDate(Instant.ofEpochSecond(0, nanos), TZ_AL),
                     DateTimeUtils.today(TZ_AL));
             TestCase.assertEquals(DateTimeUtils.today(DateTimeUtils.timeZone()), DateTimeUtils.today());
+
+            TestCase.assertEquals(DateTimeUtils.toLocalDate(Instant.ofEpochSecond(0, nanos), TZ_AL),
+                    DateTimeUtils.todayDate(TZ_AL));
+            TestCase.assertEquals(DateTimeUtils.todayDate(DateTimeUtils.timeZone()), DateTimeUtils.todayDate());
         } catch (Exception ex) {
             DateTimeUtils.setClock(initial);
             throw ex;
