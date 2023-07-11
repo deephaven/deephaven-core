@@ -3,20 +3,15 @@
  */
 package io.deephaven.time.calendar;
 
+import io.deephaven.api.util.NameValidator;
 import io.deephaven.base.verify.Require;
 import io.deephaven.base.verify.RequirementFailure;
 import io.deephaven.configuration.Configuration;
-import io.deephaven.io.logger.Logger;
-import io.deephaven.api.util.NameValidator;
 import io.deephaven.internal.log.LoggerFactory;
+import io.deephaven.io.logger.Logger;
 import org.jetbrains.annotations.NotNull;
 
-import java.io.BufferedReader;
-import java.io.File;
-import java.io.FileOutputStream;
-import java.io.IOException;
-import java.io.InputStream;
-import java.io.InputStreamReader;
+import java.io.*;
 import java.nio.file.NoSuchFileException;
 import java.util.Collection;
 import java.util.HashMap;
@@ -50,7 +45,7 @@ public class Calendars implements Map<String, BusinessCalendar> {
      * @param name name of the calendar
      * @return business calendar
      * @throws IllegalArgumentException no calendar matching {@code name}
-     * @throws RequirementFailure if the input is null
+     * @throws RequirementFailure       if the input is null
      */
     public static BusinessCalendar calendar(final String name) {
         Require.neqNull(name, "name");
@@ -74,15 +69,6 @@ public class Calendars implements Map<String, BusinessCalendar> {
     }
 
     /**
-     * Returns the default business calendar name
-     *
-     * @return default business calendar name
-     */
-    public static String defaultCalendarName() {
-        return defaultName;
-    }
-
-    /**
      * Returns the names of all available calendars
      *
      * @return names of all available calendars
@@ -90,7 +76,6 @@ public class Calendars implements Map<String, BusinessCalendar> {
     public static String[] calendarNames() {
         return instance.keySet().toArray(String[]::new);
     }
-
 
 
     private final Map<String, BusinessCalendar> calendars = new HashMap<>();
