@@ -15,6 +15,7 @@ import java.time.temporal.ChronoUnit;
 import java.time.temporal.Temporal;
 import java.util.Arrays;
 import java.util.Comparator;
+import java.util.Objects;
 
 /**
  * Schedule for a single business day.
@@ -176,6 +177,21 @@ public class BusinessSchedule<T extends Comparable<T> & Temporal> {
         }
 
         return false;
+    }
+
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) return true;
+        if (!(o instanceof BusinessSchedule)) return false;
+        BusinessSchedule<?> that = (BusinessSchedule<?>) o;
+        return businessNanos == that.businessNanos && Arrays.equals(openPeriods, that.openPeriods) && Objects.equals(businessStart, that.businessStart) && Objects.equals(businessEnd, that.businessEnd);
+    }
+
+    @Override
+    public int hashCode() {
+        int result = Objects.hash(businessStart, businessEnd, businessNanos);
+        result = 31 * result + Arrays.hashCode(openPeriods);
+        return result;
     }
 
     /**
