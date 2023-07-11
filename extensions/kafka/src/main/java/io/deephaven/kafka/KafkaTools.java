@@ -693,7 +693,7 @@ public class KafkaTools {
         public static KeyOrValueSpec jsonSpec(
                 @NotNull final ColumnDefinition<?>[] columnDefinitions,
                 @Nullable final ObjectMapper objectMapper) {
-            return jsonSpec(columnDefinitions, null, null);
+            return jsonSpec(columnDefinitions, null, objectMapper);
         }
 
         /**

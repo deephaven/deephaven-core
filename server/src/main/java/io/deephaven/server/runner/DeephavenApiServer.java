@@ -3,7 +3,6 @@
  */
 package io.deephaven.server.runner;
 
-import io.deephaven.UncheckedDeephavenException;
 import io.deephaven.auth.AuthenticationRequestHandler;
 import io.deephaven.configuration.Configuration;
 import io.deephaven.engine.context.ExecutionContext;
@@ -112,7 +111,6 @@ public class DeephavenApiServer {
      * @throws ClassNotFoundException thrown if a class can't be found while finding and running an application.
      */
     public DeephavenApiServer run() throws IOException, ClassNotFoundException, TimeoutException {
-
 
         // Prevent new gRPC calls from being started
         ProcessEnvironment.getGlobalShutdownManager().registerTask(ShutdownManager.OrderingCategory.FIRST,
