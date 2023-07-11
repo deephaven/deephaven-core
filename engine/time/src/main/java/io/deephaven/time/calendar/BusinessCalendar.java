@@ -10,17 +10,12 @@ import io.deephaven.time.DateTimeUtils;
 import java.time.*;
 import java.util.*;
 
-//TODO: update all headers
-//TODO: review all docs
-
 /**
  * A business calendar, with the concept of business and non-business time.
  *
- * Methods that take strings as arguments will generally be lower performance than non-string methods,
- * since strings must first be parsed into dates or times.
+ * Date strings must be in a format that can be parsed by {@code DateTimeUtils#parseDate}.  Methods that accept
+ * strings can be slower than methods written explicitly for {@code Instant}, {@code ZonedDateTime}, or {@code LocalDate}.
  */
-//TODO should the methods be DB null tolerant
-    //TODO: add null annotations
 @SuppressWarnings("unused") //TODO: remove unused annotation
 public class BusinessCalendar extends Calendar {
 
@@ -180,7 +175,7 @@ public class BusinessCalendar extends Calendar {
     }
 
     /**
-     * Gets the indicated business day's schedule.
+     * Returns the business schedule for a date.
      *
      * @param date date
      * @return the corresponding BusinessSchedule of {@code date}
@@ -200,7 +195,7 @@ public class BusinessCalendar extends Calendar {
     }
 
     /**
-     * Gets the indicated business day's schedule.
+     * Returns the business schedule for a date.
      *
      * @param time time
      * @return the corresponding BusinessSchedule of {@code date}
@@ -213,7 +208,7 @@ public class BusinessCalendar extends Calendar {
     }
 
     /**
-     * Gets the indicated business day's schedule.
+     * Returns the business schedule for a date.
      *
      * @param time time
      * @return the corresponding BusinessSchedule of {@code date}
@@ -226,7 +221,7 @@ public class BusinessCalendar extends Calendar {
     }
 
     /**
-     * Gets the indicated business day's schedule.
+     * Returns the business schedule for a date.
      *
      * @param date date
      * @return the corresponding BusinessSchedule of {@code date}
