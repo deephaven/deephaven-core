@@ -30,6 +30,7 @@ import io.deephaven.engine.table.impl.select.MatchFilter.CaseSensitivity;
 import io.deephaven.engine.table.impl.select.MatchFilter.MatchType;
 import io.deephaven.engine.table.impl.sources.DeferredGroupingColumnSource;
 import io.deephaven.engine.table.impl.sources.LongAsInstantColumnSource;
+import io.deephaven.engine.table.impl.sources.NullValueColumnSource;
 import io.deephaven.engine.table.impl.util.BarrageMessage;
 import io.deephaven.engine.table.impl.util.ColumnHolder;
 import io.deephaven.engine.testutil.*;
@@ -50,7 +51,6 @@ import io.deephaven.vector.*;
 import junit.framework.TestCase;
 import org.apache.commons.lang3.mutable.MutableObject;
 import org.apache.groovy.util.Maps;
-import org.jetbrains.annotations.MustBeInvokedByOverriders;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 import org.junit.Assert;
@@ -65,6 +65,7 @@ import java.time.Instant;
 import java.util.*;
 import java.util.concurrent.*;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.atomic.AtomicLong;
 import java.util.function.*;
 import java.util.stream.LongStream;
 
@@ -3377,6 +3378,118 @@ public class QueryTableTest extends QueryTableTestBase {
         @Override
         protected MockUncoalescedTable copy() {
             return new MockUncoalescedTable(supplier);
+        }
+    }
+
+    public void testMergedListenerWithFailure() {
+        final ControlledUpdateGraph updateGraph = ExecutionContext.getContext().getUpdateGraph().cast();
+
+        // Note: parent1 and parent2 have no parents; they will be satisfied as long as the update graph is satisfied.
+        final QueryTable parent1 = (QueryTable) emptyTable(100).updateView("AnInt=1").coalesce();
+        parent1.setRefreshing(true);
+        final ListenerRecorder listenerRecorder1 = new ListenerRecorder("ONE", parent1, null);
+        parent1.addUpdateListener(listenerRecorder1);
+        final QueryTable parent2 = (QueryTable) emptyTable(100).updateView("AnInt=2").coalesce();
+        parent2.setRefreshing(true);
+        final ListenerRecorder listenerRecorder2 = new ListenerRecorder("TWO", parent2, null);
+        parent2.addUpdateListener(listenerRecorder2);
+
+        // Result is just a place to record last notification step and satisfy MergedListener's constructor
+        final QueryTable result = new QueryTable(
+                RowSetFactory.flat(100).toTracking(),
+                Map.of("NullString", NullValueColumnSource.getInstance(String.class, null)));
+        result.setRefreshing(true);
+        assertEquals(updateGraph.clock().currentStep(), result.getLastNotificationStep());
+        assertFalse(result.isFailed());
+
+        // Re-usable "fake update" that we'll propagate
+        final TableUpdate fakeUpdate = new TableUpdateImpl(RowSetFactory.flat(100), RowSetFactory.flat(100),
+                RowSetFactory.empty(), RowSetShiftData.EMPTY, ModifiedColumnSet.EMPTY);
+
+        // Merged listener should properly combine the two upstream notifications
+        final AtomicLong processedStep = new AtomicLong();
+        final MergedListener mergedListener = new MergedListener(
+                List.of(listenerRecorder1, listenerRecorder2), List.of(), "MERGED", result) {
+            @Override
+            protected void process() {
+                processedStep.set(getUpdateGraph().clock().currentStep());
+                result.notifyListeners(fakeUpdate.acquire());
+            }
+        };
+        result.addParentReference(mergedListener);
+        listenerRecorder1.setMergedListener(mergedListener);
+        listenerRecorder2.setMergedListener(mergedListener);
+
+        updateGraph.runWithinUnitTestCycle(() -> parent1.notifyListeners(fakeUpdate.acquire()));
+        assertEquals(updateGraph.clock().currentStep(), processedStep.get());
+        assertEquals(updateGraph.clock().currentStep(), result.getLastNotificationStep());
+        assertFalse(result.isFailed());
+
+        try (final SafeCloseable ignoredCompleter = updateGraph::completeCycleForUnitTests) {
+            final long previousStep = updateGraph.clock().currentStep();
+            updateGraph.startCycleForUnitTests(false);
+            final long currentStep = updateGraph.clock().currentStep();
+
+            // We start out unsatisfied
+            assertFalse(listenerRecorder1.satisfied(currentStep));
+            assertFalse(listenerRecorder2.satisfied(currentStep));
+            assertFalse(mergedListener.satisfied(currentStep));
+            assertFalse(result.satisfied(currentStep));
+
+            // Adding an update notification changes nothing
+            parent1.notifyListeners(fakeUpdate.acquire());
+            assertFalse(listenerRecorder1.satisfied(currentStep));
+            assertFalse(mergedListener.satisfied(currentStep));
+            assertFalse(result.satisfied(currentStep));
+
+            // Adding an error notification changes nothing
+            parent2.notifyListenersOnError(new RuntimeException("FAKE ERROR"), null);
+            assertFalse(listenerRecorder2.satisfied(currentStep));
+            assertFalse(mergedListener.satisfied(currentStep));
+            assertFalse(result.satisfied(currentStep));
+
+            // Since we have notifications enqueued, marking the update graph satisfied changes nothing
+            updateGraph.markSourcesRefreshedForUnitTests();
+            assertFalse(listenerRecorder1.satisfied(currentStep));
+            assertFalse(listenerRecorder2.satisfied(currentStep));
+            assertFalse(mergedListener.satisfied(currentStep));
+            assertFalse(result.satisfied(currentStep));
+
+            // Flushing the first parent's table update notification satisfies just its listener recorder
+            updateGraph.flushOneNotificationForUnitTests();
+            assertTrue(listenerRecorder1.satisfied(currentStep));
+            assertFalse(listenerRecorder2.satisfied(currentStep));
+            assertFalse(mergedListener.satisfied(currentStep));
+            assertFalse(result.satisfied(currentStep));
+
+            // Flushing the second parent's table update notification satisfies just its listener recorder
+            try (final SafeCloseable ignoredErrorExpectation = new ErrorExpectation()) {
+                updateGraph.flushOneNotificationForUnitTests();
+            }
+            assertTrue(listenerRecorder1.satisfied(currentStep));
+            assertTrue(listenerRecorder2.satisfied(currentStep));
+            assertFalse(mergedListener.satisfied(currentStep));
+            assertFalse(result.satisfied(currentStep));
+
+            // Make sure our recorded steps are the expected values: nothing has been delivered to the result yet
+            assertEquals(previousStep, processedStep.get());
+            assertEquals(previousStep, result.getLastNotificationStep());
+            assertFalse(result.isFailed());
+
+            // Flushing the merged listener's notification satisfies everything
+            try (final SafeCloseable ignoredErrorExpectation = new ErrorExpectation()) {
+                updateGraph.flushOneNotificationForUnitTests();
+            }
+            assertTrue(listenerRecorder1.satisfied(currentStep));
+            assertTrue(listenerRecorder2.satisfied(currentStep));
+            assertTrue(mergedListener.satisfied(currentStep));
+            assertTrue(result.satisfied(currentStep));
+
+            // Make sure our recorded steps are the expected values: we delivered a failure notification to the result,
+            // but the merged listener never processed a table update
+            assertEquals(previousStep, processedStep.get());
+            assertEquals(currentStep, result.getLastNotificationStep());
+            assertTrue(result.isFailed());
         }
     }
 
