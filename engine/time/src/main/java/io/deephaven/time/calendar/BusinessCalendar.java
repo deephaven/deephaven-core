@@ -19,7 +19,6 @@ import java.util.*;
  * Methods that take strings as arguments will generally be lower performance than non-string methods,
  * since strings must first be parsed into dates or times.
  */
-//TODO: fail on out of range
 //TODO should the methods be DB null tolerant
     //TODO: add null annotations
 @SuppressWarnings("unused") //TODO: remove unused annotation
@@ -42,7 +41,7 @@ public class BusinessCalendar extends Calendar {
          *
          * @param message exception message.
          */
-        private InvalidDateException(String message) {
+        private InvalidDateException(final String message) {
             super(message);
         }
 
@@ -52,7 +51,7 @@ public class BusinessCalendar extends Calendar {
          * @param message exception message.
          * @param cause cause of the exception.
          */
-        public InvalidDateException(String message, Throwable cause) {
+        public InvalidDateException(final String message, final Throwable cause) {
             super(message, cause);
         }
     }

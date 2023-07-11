@@ -96,13 +96,11 @@ public class Calendar {
      *
      * @param date date
      * @param days number of days to add
-     * @return {@code days} days after {@code date}; null if {@code date} is null
+     * @return {@code days} days after {@code date}
+     * @throws RequirementFailure if the input is null
      */
     public LocalDate plusDays(final LocalDate date, final int days) {
-        if (date == null) {
-            return null;
-        }
-
+        Require.neqNull(date, "date");
         return date.plusDays(days);
     }
 
@@ -111,14 +109,12 @@ public class Calendar {
      *
      * @param date date
      * @param days number of days to add
-     * @return {@code days} days after {@code date}; null if {@code date} is null
+     * @return {@code days} days after {@code date}
+     * @throws RequirementFailure if the input is null
+     * @throws DateTimeUtils.DateTimeParseException if the string cannot be parsed
      */
     public LocalDate plusDays(final String date, final int days) {
-        if (date == null) {
-            return null;
-        }
-
-        //TODO: quiet parsing?  document exception?
+        Require.neqNull(date, "date");
         return plusDays(DateTimeUtils.parseLocalDate(date), days);
     }
 
@@ -127,13 +123,11 @@ public class Calendar {
      *
      * @param time time
      * @param days number of days to add
-     * @return {@code days} days after {@code time}; null if {@code date} is null
+     * @return {@code days} days after {@code time}
+     * @throws RequirementFailure if the input is null
      */
     public LocalDate plusDays(final Instant time, final int days) {
-        if (time == null) {
-            return null;
-        }
-
+        Require.neqNull(time, "time");
         return plusDays(DateTimeUtils.toLocalDate(time, timeZone), days);
     }
 
@@ -142,13 +136,11 @@ public class Calendar {
      *
      * @param time time
      * @param days number of days to add
-     * @return {@code days} days after {@code time}; null if {@code date} is null
+     * @return {@code days} days after {@code time}
+     * @throws RequirementFailure if the input is null
      */
     public LocalDate plusDays(final ZonedDateTime time, final int days) {
-        if (time == null) {
-            return null;
-        }
-
+        Require.neqNull(time, "time");
         return plusDays(time.toInstant(), days);
     }
 
@@ -157,13 +149,11 @@ public class Calendar {
      *
      * @param date date
      * @param days number of days to subtract
-     * @return {@code days} days after {@code date}; null if {@code date} is null
+     * @return {@code days} days after {@code date}
+     * @throws RequirementFailure if the input is null
      */
     public LocalDate minusDays(final LocalDate date, final int days) {
-        if (date == null) {
-            return null;
-        }
-
+        Require.neqNull(date, "date");
         return date.minusDays(days);
     }
 
@@ -172,13 +162,12 @@ public class Calendar {
      *
      * @param date date
      * @param days number of days to subtract
-     * @return {@code days} days after {@code date}; null if {@code date} is null
+     * @return {@code days} days after {@code date}
+     * @throws RequirementFailure if the input is null
+     * @throws DateTimeUtils.DateTimeParseException if the string cannot be parsed
      */
     public LocalDate minusDays(final String date, final int days) {
-        if (date == null) {
-            return null;
-        }
-
+        Require.neqNull(date, "date");
         return minusDays(DateTimeUtils.parseLocalDate(date), days);
     }
 
@@ -187,13 +176,11 @@ public class Calendar {
      *
      * @param time time
      * @param days number of days to subtract
-     * @return {@code days} days after {@code time}; null if {@code date} is null
+     * @return {@code days} days after {@code time}
+     * @throws RequirementFailure if the input is null
      */
     public LocalDate minusDays(final Instant time, final int days) {
-        if (time == null) {
-            return null;
-        }
-
+        Require.neqNull(time, "time");
         return minusDays(DateTimeUtils.toLocalDate(time, timeZone), days);
     }
 
@@ -202,13 +189,11 @@ public class Calendar {
      *
      * @param time time
      * @param days number of days to subtract
-     * @return {@code days} days after {@code time}; null if {@code date} is null
+     * @return {@code days} days after {@code time}
+     * @throws RequirementFailure if the input is null
      */
     public LocalDate minusDays(final ZonedDateTime time, final int days) {
-        if (time == null) {
-            return null;
-        }
-
+        Require.neqNull(time, "time");
         return minusDays(time.toInstant(), days);
     }
 
