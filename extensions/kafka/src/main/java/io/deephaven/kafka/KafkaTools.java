@@ -3,6 +3,7 @@
  */
 package io.deephaven.kafka;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
 import gnu.trove.map.hash.TIntLongHashMap;
 import io.confluent.kafka.schemaregistry.avro.AvroSchema;
 import io.confluent.kafka.schemaregistry.avro.AvroSchemaProvider;
@@ -559,14 +560,18 @@ public class KafkaTools {
              * JSON spec.
              */
             static final class Json extends KeyOrValueSpec {
+                @Nullable
+                final ObjectMapper objectMapper;
                 final ColumnDefinition<?>[] columnDefinitions;
                 final Map<String, String> fieldToColumnName;
 
                 private Json(
-                        final ColumnDefinition<?>[] columnDefinitions,
-                        final Map<String, String> fieldNameToColumnName) {
+                        @NotNull final ColumnDefinition<?>[] columnDefinitions,
+                        @Nullable final Map<String, String> fieldNameToColumnName,
+                        @Nullable final ObjectMapper objectMapper) {
                     this.columnDefinitions = columnDefinitions;
                     this.fieldToColumnName = mapNonPointers(fieldNameToColumnName);
+                    this.objectMapper = objectMapper;
                 }
 
                 @Override
@@ -637,7 +642,28 @@ public class KafkaTools {
         }
 
         /**
-         * A JSON spec from a set of column definitions, with an specific mapping of JSON nodes to columns. JSON nodes
+         * A JSON spec from a set of column definitions, with a specific mapping of JSON nodes to columns and a custom
+         * {@link ObjectMapper}. JSON nodes can be specified as a string field name, or as a JSON Pointer string (see
+         * RFC 6901, ISSN: 2070-1721).
+         *
+         * @param columnDefinitions An array of column definitions for specifying the table to be created
+         * @param fieldToColumnName A mapping from JSON field names or JSON Pointer strings to column names provided in
+         *        the definition. For each field key, if it starts with '/' it is assumed to be a JSON Pointer (e.g.,
+         *        {@code "/parent/nested"} represents a pointer to the nested field {@code "nested"} inside the toplevel
+         *        field {@code "parent"}). Fields not included will be ignored
+         * @param objectMapper A custom {@link ObjectMapper} to use for deserializing JSON. May be null.
+         * @return A JSON spec for the given inputs
+         */
+        @SuppressWarnings("unused")
+        public static KeyOrValueSpec jsonSpec(
+                @NotNull final ColumnDefinition<?>[] columnDefinitions,
+                @Nullable final Map<String, String> fieldToColumnName,
+                @Nullable final ObjectMapper objectMapper) {
+            return new KeyOrValueSpec.Json(columnDefinitions, fieldToColumnName, objectMapper);
+        }
+
+        /**
+         * A JSON spec from a set of column definitions, with a specific mapping of JSON nodes to columns. JSON nodes
          * can be specified as a string field name, or as a JSON Pointer string (see RFC 6901, ISSN: 2070-1721).
          *
          * @param columnDefinitions An array of column definitions for specifying the table to be created
@@ -649,9 +675,25 @@ public class KafkaTools {
          */
         @SuppressWarnings("unused")
         public static KeyOrValueSpec jsonSpec(
-                final ColumnDefinition<?>[] columnDefinitions,
-                final Map<String, String> fieldToColumnName) {
-            return new KeyOrValueSpec.Json(columnDefinitions, fieldToColumnName);
+                @NotNull final ColumnDefinition<?>[] columnDefinitions,
+                @Nullable final Map<String, String> fieldToColumnName) {
+            return new KeyOrValueSpec.Json(columnDefinitions, fieldToColumnName, null);
+        }
+
+        /**
+         * A JSON spec from a set of column definitions using a custom {@link ObjectMapper}.
+         *
+         * @param columnDefinitions An array of column definitions for specifying the table to be created. The column
+         *        names should map one to JSON fields expected; is not necessary to include all fields from the expected
+         *        JSON, any fields not included would be ignored.
+         * @param objectMapper A custom {@link ObjectMapper} to use for deserializing JSON. May be null.
+         * @return A JSON spec for the given inputs.
+         */
+        @SuppressWarnings("unused")
+        public static KeyOrValueSpec jsonSpec(
+                @NotNull final ColumnDefinition<?>[] columnDefinitions,
+                @Nullable final ObjectMapper objectMapper) {
+            return jsonSpec(columnDefinitions, null, objectMapper);
         }
 
         /**
@@ -663,8 +705,8 @@ public class KafkaTools {
          * @return A JSON spec for the given inputs.
          */
         @SuppressWarnings("unused")
-        public static KeyOrValueSpec jsonSpec(final ColumnDefinition<?>[] columnDefinitions) {
-            return jsonSpec(columnDefinitions, null);
+        public static KeyOrValueSpec jsonSpec(@NotNull final ColumnDefinition<?>[] columnDefinitions) {
+            return jsonSpec(columnDefinitions, null, null);
         }
 
         /**
@@ -2072,8 +2114,8 @@ public class KafkaTools {
             }
             case JSON: {
                 setDeserIfNotSet(kafkaConsumerProperties, keyOrValue, STRING_DESERIALIZER);
-                data.toObjectChunkMapper = jsonToObjectChunkMapper;
                 final Consume.KeyOrValueSpec.Json jsonSpec = (Consume.KeyOrValueSpec.Json) keyOrValueSpec;
+                data.toObjectChunkMapper = jsonToObjectChunkMapper(jsonSpec.objectMapper);
                 columnDefinitions.addAll(Arrays.asList(jsonSpec.columnDefinitions));
                 // Populate out field to column name mapping from two potential sources.
                 data.fieldPathToColumnName = new HashMap<>(jsonSpec.columnDefinitions.length);
@@ -2147,14 +2189,16 @@ public class KafkaTools {
         return data;
     }
 
-    private static final Function<Object, Object> jsonToObjectChunkMapper = (final Object in) -> {
-        final String json;
-        try {
-            json = (String) in;
-        } catch (ClassCastException ex) {
-            throw new UncheckedDeephavenException("Could not convert input to json string", ex);
-        }
-        return JsonNodeUtil.makeJsonNode(json);
+    private static Function<Object, Object> jsonToObjectChunkMapper(@Nullable final ObjectMapper mapper) {
+        return (final Object in) -> {
+            final String json;
+            try {
+                json = (String) in;
+            } catch (ClassCastException ex) {
+                throw new UncheckedDeephavenException("Could not convert input to json string", ex);
+            }
+            return JsonNodeUtil.makeJsonNode(mapper, json);
+        };
     };
 
     private enum CommonColumn {
