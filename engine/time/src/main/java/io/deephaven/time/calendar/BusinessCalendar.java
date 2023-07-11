@@ -16,7 +16,6 @@ import java.util.*;
  * Date strings must be in a format that can be parsed by {@code DateTimeUtils#parseDate}.  Methods that accept
  * strings can be slower than methods written explicitly for {@code Instant}, {@code ZonedDateTime}, or {@code LocalDate}.
  */
-@SuppressWarnings("unused") //TODO: remove unused annotation
 public class BusinessCalendar extends Calendar {
 
     private final LocalDate firstValidDate;
@@ -144,8 +143,6 @@ public class BusinessCalendar extends Calendar {
 
     // region Business Schedule
 
-    //TODO: rename?
-
     /**
      * Business schedule for a standard business day.
      *
@@ -160,7 +157,7 @@ public class BusinessCalendar extends Calendar {
      *
      * @return length of a standard business day in nanoseconds
      */
-    public long standardBusinessDayNanos() {
+    public long standardBusinessNanos() {
         return standardBusinessSchedule.businessNanos();
     }
 
@@ -234,14 +231,13 @@ public class BusinessCalendar extends Calendar {
         return businessSchedule(DateTimeUtils.parseLocalDate(date));
     }
 
-    //TODO: rename current schedule? --> or zero arg?
-
     /**
-     * Gets today's business schedule.
+     * Returns the business schedule for today.
      *
      * @return today's business schedule
+     * @throws InvalidDateException                 if the date is not in the valid range
      */
-    public BusinessSchedule<Instant> currentBusinessSchedule() {
+    public BusinessSchedule<Instant> businessSchedule() {
         return businessSchedule(currentDate());
     }
 
@@ -583,7 +579,7 @@ public class BusinessCalendar extends Calendar {
     public double fractionStandardBusinessDay(final LocalDate date) {
         Require.neqNull(date, "date");
         final BusinessSchedule<Instant> schedule = businessSchedule(date);
-        return (double) schedule.businessNanos() / (double) standardBusinessDayNanos();
+        return (double) schedule.businessNanos() / (double) standardBusinessNanos();
     }
 
     /**
@@ -1353,7 +1349,7 @@ public class BusinessCalendar extends Calendar {
      * @throws InvalidDateException if the dates are not in the valid range
      */
     public double diffBusinessDays(final Instant start, final Instant end) {
-        return (double) diffBusinessNanos(start, end) / (double) standardBusinessDayNanos();
+        return (double) diffBusinessNanos(start, end) / (double) standardBusinessNanos();
     }
 
     /**
@@ -1366,7 +1362,7 @@ public class BusinessCalendar extends Calendar {
      * @throws InvalidDateException if the dates are not in the valid range
      */
     public double diffBusinessDays(final ZonedDateTime start, final ZonedDateTime end) {
-        return (double) diffBusinessNanos(start, end) / (double) standardBusinessDayNanos();
+        return (double) diffBusinessNanos(start, end) / (double) standardBusinessNanos();
     }
 
     /**

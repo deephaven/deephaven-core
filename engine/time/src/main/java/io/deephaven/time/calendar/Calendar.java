@@ -88,6 +88,8 @@ public class Calendar {
 
     // region Arithmetic
 
+    //TODO: should the add/subtract methods on Instants or ZDT return times of LocalDates?
+
     /**
      * Adds a specified number of days to an input date.  Adding negative days is equivalent to subtracting days.
      *
