@@ -11,6 +11,7 @@ import java.time.LocalTime;
 import java.time.ZoneId;
 import java.time.temporal.ChronoUnit;
 import java.time.temporal.Temporal;
+import java.util.Objects;
 
 /**
  * A period of business time during a business day.
@@ -80,6 +81,19 @@ public class BusinessPeriod<T extends Comparable<T> & Temporal> {
         return time != null
                 && start.compareTo(time) <= 0
                 && time.compareTo(end) <= 0;
+    }
+
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) return true;
+        if (!(o instanceof BusinessPeriod)) return false;
+        BusinessPeriod<?> that = (BusinessPeriod<?>) o;
+        return nanos == that.nanos && start.equals(that.start) && end.equals(that.end);
+    }
+
+    @Override
+    public int hashCode() {
+        return Objects.hash(start, end, nanos);
     }
 
     /**
