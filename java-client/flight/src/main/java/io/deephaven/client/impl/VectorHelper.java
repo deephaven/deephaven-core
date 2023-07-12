@@ -100,7 +100,7 @@ public class VectorHelper {
             if (value == null) {
                 vector.setNull(i);
             } else {
-                vector.set(i, value.getBytes(StandardCharsets.UTF_8));
+                vector.setSafe(i, value.getBytes(StandardCharsets.UTF_8));
             }
             ++i;
         }
