@@ -63,17 +63,25 @@ Client::Client(std::shared_ptr<impl::ClientImpl> impl) : impl_(std::move(impl)) 
 Client::Client(Client &&other) noexcept = default;
 Client &Client::operator=(Client &&other) noexcept = default;
 
-// There is only one Client associated with the server connection. Clients can only be moved, not copied.
-// When the client owning the state is destructed, we tear down the connection.
+// There is only one Client associated with the server connection. Clients can only be moved, not
+// copied. When the Client owning the state is destructed, we tear down the state via close().
 Client::~Client() {
-  if (impl_ != nullptr) {
-    impl_->shutdown();
+  close();
+}
+
+// Tear down Client state.
+void Client::close() {
+  // Move to local variable to be defensive.
+  auto temp = std::move(impl_);
+  if (temp != nullptr) {
+    temp->shutdown();
   }
 }
 
 TableHandleManager Client::getManager() const {
   return TableHandleManager(impl_->managerImpl());
 }
+
 
 TableHandleManager::TableHandleManager() = default;
 TableHandleManager::TableHandleManager(std::shared_ptr<impl::TableHandleManagerImpl> impl) : impl_(std::move(impl)) {}
