@@ -17,10 +17,20 @@ TEST_CASE("base64encode", "[utility]") {
 }
 
 TEST_CASE("epochMillisToStr", "[utility]") {
+  const char *tzKey = "TZ";
+  const char *originalTz = getenv(tzKey);
+  setenv(tzKey, "America/Denver", 1);
+  tzset();
   auto d1 = epochMillisToStr(1689136824000);
   auto d2 = epochMillisToStr(123456);
-  CHECK(d1 == "2023-07-12T00:40:24.000-0400");
-  CHECK(d2 == "1969-12-31T19:02:03.456-0500");
+  CHECK(d1 == "2023-07-11T22:40:24.000-0600");
+  CHECK(d2 == "1969-12-31T17:02:03.456-0700");
+  if (originalTz != nullptr) {
+    setenv(tzKey, originalTz, 1);
+  } else {
+    unsetenv(tzKey);
+  }
+  tzset();
 }
 
 TEST_CASE("objectId", "[utility]") {
