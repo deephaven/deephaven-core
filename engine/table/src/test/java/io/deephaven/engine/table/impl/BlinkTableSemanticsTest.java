@@ -4,6 +4,7 @@
 package io.deephaven.engine.table.impl;
 
 import io.deephaven.base.verify.Assert;
+import io.deephaven.base.verify.RequirementFailure;
 import io.deephaven.engine.context.ExecutionContext;
 import io.deephaven.engine.rowset.RowSet;
 import io.deephaven.engine.rowset.RowSetFactory;
@@ -34,9 +35,9 @@ import java.util.stream.LongStream;
 import static io.deephaven.api.agg.Aggregation.*;
 
 /**
- * Unit tests that exercise special aggregation semantics for blink tables.
+ * Unit tests that exercise operations (like aggregations) which are specialized for blink tables.
  */
-public class BlinkTableAggregationTest {
+public class BlinkTableSemanticsTest {
 
     private static final long INPUT_SIZE = 100_000L;
     private static final long MAX_RANDOM_ITERATION_SIZE = 10_000;
@@ -55,7 +56,7 @@ public class BlinkTableAggregationTest {
     }
 
     /**
-     * Execute a table operator ending in an aggregation.
+     * Execute a table operator on a blink table.
      *
      * @param operator The operator to apply
      * @param windowed Whether the blink table RowSet should be a sliding window (if {@code true}) or zero-based (if
@@ -95,7 +96,8 @@ public class BlinkTableAggregationTest {
         final Table blinkExpected = operator.apply(blink);
         TstUtils.assertTableEquals(expected, addOnlyExpected);
         TstUtils.assertTableEquals(expected, blinkExpected);
-        TestCase.assertFalse(((BaseTable<?>) blinkExpected).isBlink()); // Aggregation results are never blink tables
+        // Specialized handling for these operations, therefore results are never blink tables
+        TestCase.assertFalse(((BaseTable<?>) blinkExpected).isBlink());
 
         final PrimitiveIterator.OfLong refreshSizes = LongStream.concat(
                 LongStream.of(100, 0, 1, 2, 50, 0, 1000, 1, 0),
@@ -392,5 +394,54 @@ public class BlinkTableAggregationTest {
                 AggSortedLast("Price", "PriceSortedLastSym=Sym", "PriceSortedLastSize=Size"),
                 AggSortedFirst("Sym", "SymSortedFirstPrice=Price", "SymSortedFirstSize=Size"),
                 AggSortedLast("Sym", "SymSortedLastPrice=Price", "SymSortedLastSize=Size"))), true);
+    }
+
+    public void testUnsupportedImpl(@NotNull final UnaryOperator<Table> operator) {
+        final QueryTable blink = TstUtils.testRefreshingTable(RowSetFactory.fromRange(0, 10).toTracking());
+        blink.setAttribute(Table.BLINK_TABLE_ATTRIBUTE, true);
+        try {
+            operator.apply(blink);
+            org.junit.Assert.fail("Exception expected for unsupported operation");
+        } catch (UnsupportedOperationException expected) {
+        }
+    }
+
+    @Test
+    public void testUnsupported() {
+        testUnsupportedImpl(table -> table.slice(0, 1));
+        testUnsupportedImpl(table -> table.headPct(1));
+        testUnsupportedImpl(table -> table.tailPct(1));
+    }
+
+    @Test
+    public void testTail() {
+        // Assuming refresh sizes to be : 100, 0, 1, 2, 50, 0, 1000, 1, 0
+        try {
+            doOperatorTest(table -> table.tail(-1), false);
+            org.junit.Assert.fail("Exception expected for negative tail size");
+        } catch (RequirementFailure expected) {
+        }
+        doOperatorTest(table -> table.tail(50), false);
+        doOperatorTest(table -> table.tail(101), false);
+        doOperatorTest(table -> table.tail(102), false);
+        doOperatorTest(table -> table.tail(130), false);
+        doOperatorTest(table -> table.tail(1000), false);
+        doOperatorTest(table -> table.tail(5000), false);
+    }
+
+    @Test
+    public void testHead() {
+        // Assuming refresh sizes to be : 100, 0, 1, 2, 50, 0, 1000, 1, 0
+        try {
+            doOperatorTest(table -> table.head(-1), false);
+            org.junit.Assert.fail("Exception expected for negative head size");
+        } catch (RequirementFailure expected) {
+        }
+        doOperatorTest(table -> table.head(50), false);
+        doOperatorTest(table -> table.head(100), false);
+        doOperatorTest(table -> table.head(102), false);
+        doOperatorTest(table -> table.head(130), false);
+        doOperatorTest(table -> table.head(1000), false);
+        doOperatorTest(table -> table.head(5000), false);
     }
 }
