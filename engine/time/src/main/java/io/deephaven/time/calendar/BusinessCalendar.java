@@ -95,8 +95,8 @@ public class BusinessCalendar extends Calendar {
         final int yearEnd = ((lastValidDate.isLeapYear() && lastValidDate.getDayOfYear() == 366) || lastValidDate.getDayOfYear() == 365) ? lastValidDate.getYear() : lastValidDate.getYear() - 1;
 
         for (int year = yearStart; year <= yearEnd; year++) {
-            final LocalDate startDate = LocalDate.ofYearDay(year, 0);
-            final LocalDate endDate = LocalDate.ofYearDay(year + 1, 0);
+            final LocalDate startDate = LocalDate.ofYearDay(year, 1);
+            final LocalDate endDate = LocalDate.ofYearDay(year + 1, 1);
             final ZonedDateTime start = startDate.atTime(0, 0).atZone(timeZone());
             final ZonedDateTime end = endDate.atTime(0, 0).atZone(timeZone());
 
