@@ -3,10 +3,14 @@
  */
 #pragma once
 
+#include <chrono>
 #include <cstring>
+#include <cstdio>
 #include <iostream>
 #include <memory>
 #include <string>
+#include <thread>
+#include <typeinfo>
 #include <vector>
 
 namespace deephaven::dhcore::utility {
@@ -187,30 +191,7 @@ std::string formatDebugString(const char *func, const char *file, size_t line,
   ::deephaven::dhcore::utility::formatDebugString( \
     DEEPHAVEN_PRETTY_FUNCTION, __FILE__, __LINE__, MESSAGE)
 
-// https://stackoverflow.com/questions/281818/unmangling-the-result-of-stdtype-infoname
-template <typename T>
-constexpr std::string_view getTypeName() {
-#if defined(__clang__)
-  constexpr auto prefix = std::string_view{"[T = "};
-  constexpr auto suffix = "]";
-#elif defined(__GNUC__)
-  constexpr auto prefix = std::string_view{"with T = "};
-  constexpr auto suffix = "; ";
-#elif defined(__MSC_VER)
-  constexpr auto prefix = std::string_view{"get_type_name<"};
-  constexpr auto suffix = ">(void)";
-#else
-# error Unsupported compiler
-#endif
-
-  constexpr auto function = std::string_view{DEEPHAVEN_PRETTY_FUNCTION};
-
-  const auto start = function.find(prefix) + prefix.size();
-  const auto end = function.find(suffix);
-  const auto size = end - start;
-
-  return function.substr(start, size);
-}
+[[nodiscard]] std::string demangle(const char* name);
 
 template<typename DESTP, typename SRCP>
 DESTP verboseCast(const DebugInfo &debugInfo, SRCP ptr) {
@@ -222,7 +203,9 @@ DESTP verboseCast(const DebugInfo &debugInfo, SRCP ptr) {
   }
   typedef decltype(*std::declval<DESTP>()) destType_t;
   auto message = stringf("%o: Expected type %o. Got type %o",
-      debugInfo, getTypeName<destType_t>(), typeid(*ptr).name());
+      debugInfo,
+      demangle(typeid(destType_t).name()),
+      demangle(typeid(*ptr).name()));
   throw std::runtime_error(message);
 }
 
@@ -238,4 +221,27 @@ inline void trueOrThrow(const DebugInfo &debugInfo, bool value) {
   }
   internal::trueOrThrowHelper(debugInfo);
 }
+
+[[nodiscard]] std::string
+epochMillisToStr(std::chrono::milliseconds::rep epochMillis);
+
+[[nodiscard]] std::int64_t
+timePointToEpochMillis(
+    const std::chrono::time_point<std::chrono::system_clock> timePoint);
+
+[[nodiscard]] std::string
+timePointToStr(
+    const std::chrono::time_point<std::chrono::system_clock> timePoint);
+
+template <class T> [[nodiscard]] std::string
+typeName(const T& t) {
+  return demangle(typeid(t).name());
+}
+
+[[nodiscard]] std::string
+objectId(const std::string &classShortName, void* thisPtr);
+
+[[nodiscard]] inline std::string
+threadIdToString(std::thread::id tid);
+
 }  // namespace deephaven::dhcore::utility
