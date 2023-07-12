@@ -1,6 +1,9 @@
 package io.deephaven.engine.table.impl;
 
 import gnu.trove.map.hash.TObjectIntHashMap;
+import io.deephaven.api.ColumnName;
+import io.deephaven.api.JoinAddition;
+import io.deephaven.api.JoinMatch;
 import io.deephaven.chunk.ChunkType;
 import io.deephaven.engine.context.ExecutionContext;
 import io.deephaven.engine.rowset.RowSetBuilderRandom;
@@ -21,12 +24,14 @@ import io.deephaven.engine.table.impl.util.SingleValueRowRedirection;
 import io.deephaven.engine.table.impl.util.WritableRowRedirection;
 import io.deephaven.engine.table.impl.util.WritableSingleValueRowRedirection;
 import io.deephaven.engine.updategraph.NotificationQueue;
+import io.deephaven.engine.util.string.StringUtils;
 import io.deephaven.internal.log.LoggerFactory;
 import io.deephaven.io.logger.Logger;
 import io.deephaven.util.annotations.TestUseOnly;
 import org.jetbrains.annotations.NotNull;
 
 import java.util.*;
+import java.util.stream.Collectors;
 
 import static io.deephaven.engine.rowset.RowSequence.NULL_ROW_KEY;
 import static io.deephaven.engine.table.impl.MultiJoinModifiedSlotTracker.*;
@@ -95,19 +100,20 @@ public class MultiJoin {
      */
     public static class JoinDescriptor {
         private final Table inputTable;
-        private final MatchPair[] columnsToMatch;
-        private final MatchPair[] columnsToAdd;
+        private final JoinMatch[] columnsToMatch;
+        private final JoinAddition[] columnsToAdd;
 
         /**
          * Create a join descriptor.
          *
          * @param inputTable the table to include in a multiJoin
-         * @param columnsToMatch the key columns, in MatchPair format (e.g. "ResultKey=SourceKey" or "KeyInBoth").
-         * @param columnsToAdd the columns to add, in MatchPair format (e.g. "ResultColumn=SourceColumn" or
+         * @param columnsToMatch the key columns, in JoinMatch format (e.g. "ResultKey=SourceKey" or "KeyInBoth").
+         * @param columnsToAdd the columns to add, in JoinAddition format (e.g. "ResultColumn=SourceColumn" or
          *        "ColumnInBoth"), empty for all columns
          */
-        public JoinDescriptor(@NotNull final Table inputTable, @NotNull final MatchPair[] columnsToMatch,
-                @NotNull final MatchPair[] columnsToAdd) {
+        public JoinDescriptor(@NotNull final Table inputTable,
+                @NotNull JoinMatch[] columnsToMatch,
+                @NotNull JoinAddition[] columnsToAdd) {
             this.inputTable = inputTable;
             this.columnsToMatch = columnsToMatch;
             this.columnsToAdd = columnsToAdd;
@@ -117,14 +123,28 @@ public class MultiJoin {
          * Create a join descriptor.
          *
          * @param inputTable the table to include in a multiJoin
-         * @param columnsToMatch the key columns, in MatchPair format (e.g. "ResultKey=SourceKey" or "KeyInBoth").
+         * @param columnsToMatch the key columns, in JoinMatch format (e.g. "ResultKey=SourceKey" or "KeyInBoth").
+         * @param columnsToAdd the columns to add, in JoinAddition format (e.g. "ResultColumn=SourceColumn" or
+         *        "ColumnInBoth"), empty for all columns
+         */
+        public JoinDescriptor(@NotNull final Table inputTable,
+                @NotNull final Collection<? extends JoinMatch> columnsToMatch,
+                @NotNull final Collection<? extends JoinAddition> columnsToAdd) {
+            this(inputTable, columnsToMatch.toArray(JoinMatch[]::new), columnsToAdd.toArray(JoinAddition[]::new));
+        }
+
+        /**
+         * Create a join descriptor.
+         *
+         * @param inputTable the table to include in a multiJoin
+         * @param columnsToMatch the key columns, in JoinMatch format (e.g. "ResultKey=SourceKey" or "KeyInBoth").
          * @param columnsToAdd the columns to add, in MatchPair format (e.g. "ResultColumn=SourceColumn" or
          *        "ColumnInBoth"), empty for all columns
          */
-        public JoinDescriptor(@NotNull final Table inputTable, @NotNull final String[] columnsToMatch,
+        public JoinDescriptor(@NotNull final Table inputTable,
+                @NotNull final String[] columnsToMatch,
                 @NotNull final String[] columnsToAdd) {
-            this(inputTable, MatchPairFactory.getExpressions(columnsToMatch),
-                    MatchPairFactory.getExpressions(columnsToAdd));
+            this(inputTable, JoinMatch.from(columnsToMatch), JoinAddition.from(columnsToAdd));
         }
 
         /**
@@ -134,24 +154,26 @@ public class MultiJoin {
          * without renames.
          *
          * @param inputTable the table to include in a multiJoin
-         * @param columnsToMatch the key columns, in MatchPair format (e.g. "ResultKey=SourceKey" or "KeyInBoth").
+         * @param columnsToMatch the key columns, in JoinMatch format (e.g. "ResultKey=SourceKey" or "KeyInBoth").
          */
         public JoinDescriptor(@NotNull final Table inputTable, @NotNull final String... columnsToMatch) {
-            this(inputTable, MatchPairFactory.getExpressions(columnsToMatch), MatchPair.ZERO_LENGTH_MATCH_PAIR_ARRAY);
+            this(inputTable, JoinMatch.from(columnsToMatch), Collections.emptyList());
         }
 
         /**
          * Create a join descriptor.
          *
          * @param inputTable the table to include in a multiJoin
-         * @param columnsToMatch the key columns, in MatchPair format (e.g. "ResultKey=SourceKey" or "KeyInBoth").
+         * @param columnsToMatch the key columns, in JoinMatch format (e.g. "ResultKey=SourceKey" or "KeyInBoth").
          * @param columnsToAdd the columns to add, in MatchPair format (e.g. "ResultColumn=SourceColumn" or
          *        "ColumnInBoth"), empty for all columns
          */
-        public JoinDescriptor(@NotNull final Table inputTable, @NotNull final Collection<String> columnsToMatch,
-                @NotNull final Collection<String> columnsToAdd) {
-            this(inputTable, MatchPairFactory.getExpressions(columnsToMatch),
-                    MatchPairFactory.getExpressions(columnsToAdd));
+        public JoinDescriptor(@NotNull final Table inputTable, String columnsToMatch, String columnsToAdd) {
+            this(inputTable,
+                    StringUtils.isNullOrEmpty(columnsToMatch) ? Collections.emptyList()
+                            : JoinMatch.from(columnsToMatch),
+                    StringUtils.isNullOrEmpty(columnsToAdd) ? Collections.emptyList()
+                            : JoinAddition.from(columnsToAdd));
         }
     }
 
@@ -178,12 +200,13 @@ public class MultiJoin {
 
         final TObjectIntHashMap<String> usedColumns =
                 new TObjectIntHashMap<>(joinDescriptors[0].columnsToAdd.length, 0.5f, -1);
-        final String[] expectedLeftMatches = MatchPair.getLeftColumns(joinDescriptors[0].columnsToMatch);
-        if (expectedLeftMatches.length == 0) {
+        final List<String> expectedLeftMatches =
+                ColumnName.names(JoinMatch.lefts(Arrays.asList(joinDescriptors[0].columnsToMatch)));
+        if (expectedLeftMatches.size() == 0) {
             return doMultiJoinZeroKey(joinDescriptors);
         }
 
-        final Set<String> keyColumnNames = new LinkedHashSet<>(Arrays.asList(expectedLeftMatches));
+        final Set<String> keyColumnNames = new LinkedHashSet<>(expectedLeftMatches);
         for (final String keyColumn : expectedLeftMatches) {
             usedColumns.put(keyColumn, KEY_COLUMN_SENTINEL);
         }
@@ -195,10 +218,11 @@ public class MultiJoin {
         for (int jj = 0; jj < joinDescriptors.length; ++jj) {
             JoinDescriptor joinDescriptor = useDescriptors[jj];
 
-            final String[] currentLeftMatches = MatchPair.getLeftColumns(joinDescriptor.columnsToMatch);
-            if (!Arrays.equals(currentLeftMatches, expectedLeftMatches)) {
+            final List<String> currentLeftMatches =
+                    ColumnName.names(JoinMatch.lefts(Arrays.asList(joinDescriptor.columnsToMatch)));
+            if (!currentLeftMatches.equals(expectedLeftMatches)) {
                 throw new IllegalArgumentException("Key column mismatch for table " + jj + ", first key columns="
-                        + Arrays.toString(expectedLeftMatches) + " table has " + Arrays.toString(currentLeftMatches));
+                        + expectedLeftMatches + " table has " + currentLeftMatches);
             }
             final ChunkType[] currentChunkType = Arrays.stream(getKeySources(joinDescriptor))
                     .map(ColumnSource::getChunkType).toArray(ChunkType[]::new);
@@ -210,7 +234,7 @@ public class MultiJoin {
 
             joinDescriptor = maybePopulateColumnsToAdd(keyColumnNames, useDescriptors, jj);
             for (int cc = 0; cc < joinDescriptor.columnsToAdd.length; ++cc) {
-                final String columnName = joinDescriptor.columnsToAdd[cc].leftColumn;
+                final String columnName = joinDescriptor.columnsToAdd[cc].newColumn().name();
                 final int previouslyUsed = usedColumns.put(columnName, jj);
                 if (previouslyUsed != usedColumns.getNoEntryValue()) {
                     throw new IllegalArgumentException("Column " + columnName + " defined in table "
@@ -252,12 +276,12 @@ public class MultiJoin {
 
         final Map<String, ColumnSource<?>> resultSources = new LinkedHashMap<>();
         final ColumnSource[] keyHashTableSources = stateManager.getKeyHashTableSources();
-        for (int cc = 0; cc < expectedLeftMatches.length; ++cc) {
+        for (int cc = 0; cc < expectedLeftMatches.size(); ++cc) {
             if (originalColumns[cc].getType() != keyHashTableSources[cc].getType()) {
-                resultSources.put(expectedLeftMatches[cc],
+                resultSources.put(expectedLeftMatches.get(cc),
                         ReinterpretUtils.convertToOriginalType(originalColumns[cc], keyHashTableSources[cc]));
             } else {
-                resultSources.put(expectedLeftMatches[cc], keyHashTableSources[cc]);
+                resultSources.put(expectedLeftMatches.get(cc), keyHashTableSources[cc]);
             }
         }
 
@@ -270,9 +294,9 @@ public class MultiJoin {
             }
             final Table inputTable = joinDescriptor.inputTable;
 
-            for (final MatchPair mp : joinDescriptor.columnsToAdd) {
-                resultSources.put(mp.leftColumn, RedirectedColumnSource.alwaysRedirect(rowRedirection,
-                        inputTable.getColumnSource(mp.rightColumn)));
+            for (final JoinAddition ja : joinDescriptor.columnsToAdd) {
+                resultSources.put(ja.newColumn().name(), RedirectedColumnSource.alwaysRedirect(rowRedirection,
+                        inputTable.getColumnSource(ja.existingColumn().name())));
             }
         }
 
@@ -299,12 +323,18 @@ public class MultiJoin {
                     final QueryTable input = (QueryTable) jd.inputTable;
                     final ColumnSource<?>[] keySources = getKeySources(jd);
 
+
+                    final String[] matchNames =
+                            Arrays.stream(jd.columnsToMatch).map(v -> v.right().name()).toArray(String[]::new);
                     final ModifiedColumnSet sourceKeyModifiedColumnSet =
-                            input.newModifiedColumnSet(MatchPair.getRightColumns(jd.columnsToMatch));
+                            input.newModifiedColumnSet(matchNames);
+
+                    final String[] addNames =
+                            Arrays.stream(jd.columnsToAdd).map(v -> v.newColumn().name()).toArray(String[]::new);
                     resultModifiedColumnSet[ii] =
-                            result.newModifiedColumnSet(MatchPair.getLeftColumns(jd.columnsToAdd));
+                            result.newModifiedColumnSet(addNames);
                     final ModifiedColumnSet.Transformer transformer =
-                            input.newModifiedColumnSetTransformer(result, jd.columnsToAdd);
+                            input.newModifiedColumnSetTransformer(result, addNames);
 
                     final MultiJoinListenerRecorder listenerRecorder =
                             new MultiJoinListenerRecorder("multiJoin(" + ii + ")", input, result, keySources,
@@ -325,10 +355,10 @@ public class MultiJoin {
     private static JoinDescriptor maybePopulateColumnsToAdd(@NotNull final Set<String> keyColumnNames,
             @NotNull final JoinDescriptor[] useDescriptors, final int tableNumber) {
         JoinDescriptor joinDescriptor = useDescriptors[tableNumber];
-        MatchPair[] columnsToAdd = joinDescriptor.columnsToAdd;
+        JoinAddition[] columnsToAdd = joinDescriptor.columnsToAdd;
         if (columnsToAdd.length == 0) {
             // create them on the fly from the table
-            final MatchPair[] newColumnsToAdd = joinDescriptor.inputTable.getDefinition().getColumnNames().stream()
+            final JoinAddition[] newColumnsToAdd = joinDescriptor.inputTable.getDefinition().getColumnNames().stream()
                     .filter(cn -> !keyColumnNames.contains(cn)).map(MatchPairFactory::getExpression)
                     .toArray(MatchPair[]::new);
             joinDescriptor = useDescriptors[tableNumber] =
@@ -346,14 +376,16 @@ public class MultiJoin {
             JoinDescriptor joinDescriptor = useDescriptors[jj];
 
             if (joinDescriptor.columnsToMatch.length != 0) {
+                Collection<String> matches = Arrays.stream(joinDescriptor.columnsToMatch)
+                        .map(v -> v.left().name() + "=" + v.right().name()).collect(Collectors.toList());
                 throw new IllegalArgumentException(
                         "Key column mismatch for table " + jj + ", first table had no key columns this table has "
-                                + MatchPair.matchString(joinDescriptor.columnsToMatch));
+                                + matches);
             }
 
             joinDescriptor = maybePopulateColumnsToAdd(Collections.emptySet(), useDescriptors, jj);
             for (int cc = 0; cc < joinDescriptor.columnsToAdd.length; ++cc) {
-                final String columnName = joinDescriptor.columnsToAdd[cc].leftColumn;
+                final String columnName = joinDescriptor.columnsToAdd[cc].newColumn().name();
                 final int previouslyUsed = usedColumns.put(columnName, jj);
                 if (previouslyUsed != usedColumns.getNoEntryValue()) {
                     throw new IllegalArgumentException(
@@ -388,9 +420,9 @@ public class MultiJoin {
             }
             redirections[tableNumber] = rowRedirection;
 
-            for (final MatchPair mp : joinDescriptor.columnsToAdd) {
-                resultSources.put(mp.leftColumn, RedirectedColumnSource.alwaysRedirect(rowRedirection,
-                        inputTable.getColumnSource(mp.rightColumn)));
+            for (final JoinAddition ja : joinDescriptor.columnsToAdd) {
+                resultSources.put(ja.newColumn().name(), RedirectedColumnSource.alwaysRedirect(rowRedirection,
+                        inputTable.getColumnSource(ja.existingColumn().name())));
             }
         }
 
@@ -415,10 +447,12 @@ public class MultiJoin {
                 if (jd.inputTable.isRefreshing()) {
                     final QueryTable input = (QueryTable) jd.inputTable;
 
+                    final String[] addNames =
+                            Arrays.stream(jd.columnsToAdd).map(v -> v.newColumn().name()).toArray(String[]::new);
                     resultModifiedColumnSet[ii] =
-                            result.newModifiedColumnSet(MatchPair.getLeftColumns(jd.columnsToAdd));
+                            result.newModifiedColumnSet(addNames);
                     final ModifiedColumnSet.Transformer transformer =
-                            input.newModifiedColumnSetTransformer(result, jd.columnsToAdd);
+                            input.newModifiedColumnSetTransformer(result, addNames);
 
                     final MultiJoinListenerRecorder listenerRecorder = new MultiJoinListenerRecorder(
                             "multiJoin(" + ii + ")", input, result, null, null, transformer, ii);
@@ -438,8 +472,8 @@ public class MultiJoin {
     @NotNull
     private static ColumnSource[] getKeySources(@NotNull final JoinDescriptor useDescriptor) {
         return Arrays.stream(useDescriptor.columnsToMatch)
-                .map(mp -> ReinterpretUtils
-                        .maybeConvertToPrimitive(useDescriptor.inputTable.getColumnSource(mp.rightColumn)))
+                .map(jm -> ReinterpretUtils
+                        .maybeConvertToPrimitive(useDescriptor.inputTable.getColumnSource(jm.right().name())))
                 .toArray(ColumnSource[]::new);
     }
 
@@ -447,7 +481,7 @@ public class MultiJoin {
 
     private static ColumnSource<?>[] getOriginalKeyColumns(@NotNull final JoinDescriptor useDescriptor) {
         return Arrays.stream(useDescriptor.columnsToMatch)
-                .map(mp -> useDescriptor.inputTable.getColumnSource(mp.rightColumn)).toArray(ColumnSource<?>[]::new);
+                .map(jm -> useDescriptor.inputTable.getColumnSource(jm.right().name())).toArray(ColumnSource<?>[]::new);
     }
 
     private static class MultiJoinListenerRecorder extends ListenerRecorder {

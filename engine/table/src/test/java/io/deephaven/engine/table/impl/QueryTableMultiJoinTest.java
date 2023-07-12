@@ -550,91 +550,94 @@ public class QueryTableMultiJoinTest extends QueryTableTestBase {
         TstUtils.assertTableEquals(expected, result);
     }
 
-    // @Test
-    // public void testDuplicateKeys() {
-    // final Table t1 = TableTools.newTable(intCol("C1", 1, 2), intCol("C2", 1, 1), intCol("S1", 10, 11));
-    // final Table t2 = TableTools.newTable(intCol("C3", 2, 2), intCol("C4", 1, 2));
-    //
-    // final Table joined = MultiJoin.multiJoin(new MultiJoin.JoinDescriptor(t1, Collections.singletonList("Key=C1"),
-    // Collections.singletonList("S1")));
-    // assertTableEquals(TableTools.newTable(intCol("Key", 1, 2), intCol("S1", 10, 11)), joined);
-    //
-    // try {
-    // MultiJoin.multiJoin(new MultiJoin.JoinDescriptor(t1, Collections.singletonList("Key=C1"),
-    // Collections.singletonList("S1")),
-    // new MultiJoin.JoinDescriptor(t2, Collections.singletonList("Key=C3"), Collections.singletonList("C4")));
-    // Assert.fail("expected exception");
-    // } catch (IllegalStateException e) {
-    // Assert.assertEquals("Duplicate key found for 2 in table 1.", e.getMessage());
-    // }
-    //
-    // try {
-    // MultiJoin.multiJoin(new MultiJoin.JoinDescriptor(t1, Collections.emptyList(), Collections.singletonList("S1")));
-    // Assert.fail("expected exception");
-    // } catch (IllegalStateException e) {
-    // Assert.assertEquals("Duplicate rows for table 0 on zero-key multiJoin.", e.getMessage());
-    // }
-    //
-    // ((QueryTable)t1).setRefreshing(true);
-    //
-    // final QueryTable t2r = TstUtils.testRefreshingTable(intCol("C3", 2, 2), intCol("C4", 1, 2), intCol("S2", 20,
-    // 21));
-    //
-    // final ControlledUpdateGraph updateGraph = ExecutionContext.getContext().getUpdateGraph().cast();
-    //
-    // final Table joinedR = updateGraph.sharedLock().computeLocked(() -> MultiJoin.multiJoin(new
-    // MultiJoin.JoinDescriptor(t1, Collections.singletonList("Key=C1"), Collections.singletonList("S1")),
-    // new MultiJoin.JoinDescriptor(t2r, Collections.singletonList("Key=C4"), Collections.singletonList("S2"))));
-    // assertTableEquals(TableTools.newTable(intCol("Key", 1, 2), intCol("S1", 10, 11), intCol("S2", 20, 21)), joinedR);
-    //
-    // try {
-    // updateGraph.sharedLock().doLocked(() -> MultiJoin.multiJoin(new MultiJoin.JoinDescriptor(t1,
-    // Collections.singletonList("Key=C1"), Collections.singletonList("S1")),
-    // new MultiJoin.JoinDescriptor(t2r, Collections.singletonList("Key=C3"), Collections.singletonList("C4"))));
-    // Assert.fail("expected exception");
-    // } catch (IllegalStateException e) {
-    // Assert.assertEquals("Duplicate key found for 2 in table 1.", e.getMessage());
-    // }
-    //
-    // tableTestRule.allowingError(() -> {
-    // updateGraph.runWithinUnitTestCycle(() -> {
-    // addToTable(t2r, i(2), intCol("C3", 1), intCol("C4", 2), intCol("S2", 22));
-    // t2r.notifyListeners(i(2), i(), i());
-    // });
-    // }, (lot) -> {
-    // if (lot == null || lot.size() != 1) {
-    // return false;
-    // }
-    // final Throwable throwable = lot.get(0);
-    // return throwable instanceof IllegalStateException && throwable.getMessage().equals("Duplicate key found for 2 in
-    // table 1.");
-    // });
-    // tableTestRule.clearErrors();
-    //
-    // final QueryTable t3 = TstUtils.testRefreshingTable(intCol("S1"));
-    // final Table j3 = updateGraph.sharedLock().computeLocked(() -> MultiJoin.multiJoin(new
-    // MultiJoin.JoinDescriptor(t3, Collections.emptyList(), Collections.singletonList("S1"))));
-    // assertTableEquals(TableTools.newTable(intCol("S1")), j3);
-    // updateGraph.runWithinUnitTestCycle(() -> {
-    // addToTable(t3, i(0), intCol("S1", 1));
-    // t3.notifyListeners(i(0), i(), i());
-    // });
-    // assertTableEquals(TableTools.newTable(intCol("S1", 1)), j3);
-    //
-    // tableTestRule.allowingError(() -> {
-    // updateGraph.runWithinUnitTestCycle(() -> {
-    // addToTable(t3, i(2), intCol("S1", 2));
-    // t3.notifyListeners(i(2), i(), i());
-    // });
-    // }, (lot) -> {
-    // if (lot == null || lot.size() != 1) {
-    // return false;
-    // }
-    // final Throwable throwable = lot.get(0);
-    // return throwable instanceof IllegalStateException && throwable.getMessage().equals("Multiple rows in 0 for
-    // zero-key multiJoin.");
-    // });
-    // }
+    @Test
+    public void testDuplicateKeys() {
+        final Table t1 = TableTools.newTable(intCol("C1", 1, 2), intCol("C2", 1, 1), intCol("S1", 10, 11));
+        final Table t2 = TableTools.newTable(intCol("C3", 2, 2), intCol("C4", 1, 2));
+
+        final Table joined = MultiJoin.multiJoin(new MultiJoin.JoinDescriptor(t1, "Key=C1", "S1"));
+        assertTableEquals(TableTools.newTable(intCol("Key", 1, 2), intCol("S1", 10, 11)), joined);
+
+        try {
+            MultiJoin.multiJoin(new MultiJoin.JoinDescriptor(t1, "Key=C1", "S1"),
+                    new MultiJoin.JoinDescriptor(t2, "Key=C3", "C4"));
+            Assert.fail("expected exception");
+        } catch (IllegalStateException e) {
+            Assert.assertEquals("Duplicate key found for 2 in table 1.", e.getMessage());
+        }
+
+        try {
+            MultiJoin.multiJoin(new MultiJoin.JoinDescriptor(t1, "", "S1"));
+            Assert.fail("expected exception");
+        } catch (IllegalStateException e) {
+            Assert.assertEquals("Duplicate rows for table 0 on zero-key multiJoin.", e.getMessage());
+        }
+
+        t1.setRefreshing(true);
+
+        final QueryTable t2r = TstUtils.testRefreshingTable(intCol("C3", 2, 2), intCol("C4", 1, 2), intCol("S2", 20,
+                21));
+
+        final ControlledUpdateGraph updateGraph = ExecutionContext.getContext().getUpdateGraph().cast();
+
+        final Table joinedR = updateGraph.sharedLock().computeLocked(() -> MultiJoin.multiJoin(
+                new MultiJoin.JoinDescriptor(t1, "Key=C1", "S1"),
+                new MultiJoin.JoinDescriptor(t2r, "Key=C4", "S2")));
+        assertTableEquals(TableTools.newTable(intCol("Key", 1, 2), intCol("S1", 10, 11), intCol("S2", 20, 21)),
+                joinedR);
+
+        try {
+            updateGraph.sharedLock().doLocked(() -> MultiJoin.multiJoin(
+                    new MultiJoin.JoinDescriptor(t1, "Key=C1", "S1"),
+                    new MultiJoin.JoinDescriptor(t2r, "Key=C3", "C4")));
+            Assert.fail("expected exception");
+        } catch (IllegalStateException e) {
+            Assert.assertEquals("Duplicate key found for 2 in table 1.", e.getMessage());
+        }
+
+        allowingError(() -> {
+            updateGraph.runWithinUnitTestCycle(() -> {
+                addToTable(t2r, i(2), intCol("C3", 1), intCol("C4", 2), intCol("S2", 22));
+                t2r.notifyListeners(i(2), i(), i());
+            });
+        }, (lot) -> {
+            if (lot == null || lot.size() != 1) {
+                return false;
+            }
+            final Throwable throwable = lot.get(0);
+            return throwable instanceof IllegalStateException
+                    && throwable.getMessage().equals("Duplicate key found for 2 in table 1.");
+        });
+    }
+
+    @Test
+    public void testDuplicateZeroKey() {
+        final ControlledUpdateGraph updateGraph = ExecutionContext.getContext().getUpdateGraph().cast();
+
+        final QueryTable t3 = TstUtils.testRefreshingTable(intCol("S1"));
+        final Table j3 = updateGraph.sharedLock()
+                .computeLocked(() -> MultiJoin.multiJoin(new MultiJoin.JoinDescriptor(t3, null, "S1")));
+        assertTableEquals(TableTools.newTable(intCol("S1")), j3);
+        updateGraph.runWithinUnitTestCycle(() -> {
+            addToTable(t3, i(0), intCol("S1", 1));
+            t3.notifyListeners(i(0), i(), i());
+        });
+        assertTableEquals(TableTools.newTable(intCol("S1", 1)), j3);
+
+        allowingError(() -> {
+            updateGraph.runWithinUnitTestCycle(() -> {
+                addToTable(t3, i(2), intCol("S1", 2));
+                t3.notifyListeners(i(2), i(), i());
+            });
+        }, (lot) -> {
+            if (lot == null || lot.size() != 1) {
+                return false;
+            }
+            final Throwable throwable = lot.get(0);
+            return throwable instanceof IllegalStateException
+                    && throwable.getMessage().equals("Multiple rows in 0 for zero-key multiJoin.");
+        });
+    }
 
     @Test
     public void testZeroKeyTransitions() {
@@ -642,7 +645,7 @@ public class QueryTableMultiJoinTest extends QueryTableTestBase {
 
         final QueryTable t3 = TstUtils.testRefreshingTable(intCol("S1"));
         final Table j3 = updateGraph.sharedLock().computeLocked(() -> MultiJoin
-                .multiJoin(new MultiJoin.JoinDescriptor(t3, Collections.emptyList(), Collections.singletonList("S1"))));
+                .multiJoin(new MultiJoin.JoinDescriptor(t3, "", "S1")));
         final TableUpdateValidator validator = TableUpdateValidator.make("testZeroKeyTransitions", (QueryTable) j3);
         final FailureListener failureListener = new FailureListener();
         validator.getResultTable().addUpdateListener(failureListener);
@@ -695,10 +698,8 @@ public class QueryTableMultiJoinTest extends QueryTableTestBase {
 
         try {
             MultiJoin.multiJoin(
-                    new MultiJoin.JoinDescriptor(t1, Collections.singletonList("Key=B"),
-                            Collections.singletonList("A")),
-                    new MultiJoin.JoinDescriptor(t2, Collections.singletonList("KeyNotTheSame=C"),
-                            Collections.singletonList("A")));
+                    new MultiJoin.JoinDescriptor(t1, "Key=B", "A"),
+                    new MultiJoin.JoinDescriptor(t2, "KeyNotTheSame=C", "A"));
             Assert.fail("expected exception");
         } catch (IllegalArgumentException iae) {
             Assert.assertEquals(iae.getMessage(),
@@ -707,10 +708,8 @@ public class QueryTableMultiJoinTest extends QueryTableTestBase {
 
         try {
             MultiJoin.multiJoin(
-                    new MultiJoin.JoinDescriptor(t1, Collections.singletonList("Key=B"),
-                            Collections.singletonList("A")),
-                    new MultiJoin.JoinDescriptor(t2, Collections.singletonList("Key=D"),
-                            Collections.singletonList("A")));
+                    new MultiJoin.JoinDescriptor(t1, "Key=B", "A"),
+                    new MultiJoin.JoinDescriptor(t2, "Key=D", "A"));
             Assert.fail("expected exception");
         } catch (IllegalArgumentException iae) {
             Assert.assertEquals("Column A defined in table 0 and table 1", iae.getMessage());
@@ -718,10 +717,8 @@ public class QueryTableMultiJoinTest extends QueryTableTestBase {
 
         try {
             MultiJoin.multiJoin(
-                    new MultiJoin.JoinDescriptor(t1, Collections.singletonList("Key=B"),
-                            Collections.singletonList("A")),
-                    new MultiJoin.JoinDescriptor(t2, Collections.singletonList("Key=D"),
-                            Collections.singletonList("Key")));
+                    new MultiJoin.JoinDescriptor(t1, "Key=B", "A"),
+                    new MultiJoin.JoinDescriptor(t2, "Key=D", "Key"));
             Assert.fail("expected exception");
         } catch (IllegalArgumentException iae) {
             Assert.assertEquals("Column Key defined in table key columns and table 1", iae.getMessage());
@@ -729,10 +726,8 @@ public class QueryTableMultiJoinTest extends QueryTableTestBase {
 
         try {
             MultiJoin.multiJoin(
-                    new MultiJoin.JoinDescriptor(t1, Collections.singletonList("Key=B"),
-                            Collections.singletonList("A")),
-                    new MultiJoin.JoinDescriptor(t2, Collections.singletonList("Key=C"),
-                            Collections.singletonList("D")));
+                    new MultiJoin.JoinDescriptor(t1, "Key=B", "A"),
+                    new MultiJoin.JoinDescriptor(t2, "Key=C", "D"));
             Assert.fail("expected exception");
         } catch (IllegalArgumentException iae) {
             Assert.assertEquals(
@@ -742,9 +737,8 @@ public class QueryTableMultiJoinTest extends QueryTableTestBase {
 
         try {
             MultiJoin.multiJoin(
-                    new MultiJoin.JoinDescriptor(t1, Collections.emptyList(), Collections.singletonList("A")),
-                    new MultiJoin.JoinDescriptor(t2, Collections.singletonList("Key=C"),
-                            Collections.singletonList("D")));
+                    new MultiJoin.JoinDescriptor(t1, null, "A"),
+                    new MultiJoin.JoinDescriptor(t2, "Key=C", "D"));
             Assert.fail("expected exception");
         } catch (IllegalArgumentException iae) {
             Assert.assertEquals(
@@ -754,8 +748,8 @@ public class QueryTableMultiJoinTest extends QueryTableTestBase {
 
         try {
             MultiJoin.multiJoin(
-                    new MultiJoin.JoinDescriptor(t1, Collections.emptyList(), Collections.singletonList("A")),
-                    new MultiJoin.JoinDescriptor(t2, Collections.emptyList(), Collections.singletonList("A")));
+                    new MultiJoin.JoinDescriptor(t1, null, "A"),
+                    new MultiJoin.JoinDescriptor(t2, null, "A"));
             Assert.fail("expected exception");
         } catch (IllegalArgumentException iae) {
             Assert.assertEquals("Column A defined in table 0 and table 1", iae.getMessage());
