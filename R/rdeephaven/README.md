@@ -144,7 +144,12 @@ OS-dependent problems may come up in either step, and the simplest solution is t
 
 Both Valgrind and gdb debugging is done through a console, and is not interactive from an IDE. There may be a way to make RStudio play well with Valgrind or gdb, but that is beyond the scope of these instructions.
 
-Lastly, setting the environment variable `GRPC_VERBOSITY=DEBUG` will increase the verbosity of the Deephaven C++ client's gRPC dependency, which may be useful for some debugging purposes.
+### Enabling DEBUG level logging for gRPC and the C++ layer of the Deephaven R client
+
+The C++ component of the Deephaven R client uses the C++ implementation of gRPC to exchange messages with a Deephaven server.
+gRPC has an internal logging component that can be configured to log to stderr detail information about connection state and messages
+exchanged between client and server; the Deephaven R client also uses the same logging component to show client state information.
+This can be useful for debugging purposes.  To enable detailed logging, set the environment variable `GRPC_VERVOSITY=DEBUG`
    
 ## High-level design overview
 
