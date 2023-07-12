@@ -21,7 +21,8 @@ class ClientWrapper;
 
 class TableHandleWrapper {
 public:
-    TableHandleWrapper(deephaven::client::TableHandle ref_table) : internal_tbl_hdl(std::move(ref_table)) {};
+    TableHandleWrapper(deephaven::client::TableHandle ref_table) :
+        internal_tbl_hdl(std::move(ref_table)) {};
 
     // TODO: DEEPHAVEN QUERY METHODS WILL GO HERE
 
@@ -76,11 +77,8 @@ private:
 class ClientOptionsWrapper {
 public:
 
-    ClientOptionsWrapper() {
-        std::cout << "========" << std::endl;
-        std::cout << "In constructor for " << this << "\n" << std::flush;
-        internal_options = new deephaven::client::ClientOptions();
-    }
+    ClientOptionsWrapper() :
+        internal_options(std::make_shared<deephaven::client::ClientOptions>()) {}
 
     void setDefaultAuthentication() {
         internal_options->setDefaultAuthentication();
@@ -118,21 +116,16 @@ public:
         internal_options->addExtraHeader(header_name, header_value);
     }
 
-    ~ClientOptionsWrapper() {
-        std::cout << "========" << std::endl;
-        std::cout << "In destructor for " << this << "\n" << std::flush;
-        delete internal_options;
-    }
-
-private:
-    deephaven::client::ClientOptions* internal_options;
-    friend ClientWrapper* newClientWrapper(const std::string &target, const ClientOptionsWrapper &client_options);
+    std::shared_ptr<deephaven::client::ClientOptions> internal_options;
 };
 
 
 
 class ClientWrapper {
 public:
+
+    ClientWrapper(std::string target, const ClientOptionsWrapper &client_options) :
+        internal_client(deephaven::client::Client::connect(target, *client_options.internal_options)) {}
 
     /**
      * Fetches a reference to a table named tableName on the server if it exists.
@@ -214,25 +207,9 @@ public:
     }
 
 private:
-    ClientWrapper(deephaven::client::Client ref) : internal_client(std::move(ref)) {};
-
     const deephaven::client::Client internal_client;
     const deephaven::client::TableHandleManager internal_tbl_hdl_mngr = internal_client.getManager();
-
-    friend ClientWrapper* newClientWrapper(const std::string &target, const ClientOptionsWrapper &client_options);
 };
-
-// factory method for calling private constructor, Rcpp does not like <const std::string &target> in constructor
-
-/**
- * Factory method for creating a new ClientWrapper, which is responsible for maintaining a connection to the client.
- * @param target URL that the server is running on.
- * @param client_options A ClientOptionsWrapper containing the server connection information. See deephaven::client::ClientOptions for more information.
- */
-ClientWrapper* newClientWrapper(const std::string& target, const ClientOptionsWrapper &client_options) {
-    return new ClientWrapper(deephaven::client::Client::connect(target, *client_options.internal_options));
-};
-
 
 
 // ######################### RCPP GLUE #########################
@@ -266,7 +243,7 @@ RCPP_MODULE(DeephavenInternalModule) {
     ;
 
     class_<ClientWrapper>("INTERNAL_Client")
-    .factory<const std::string&, const ClientOptionsWrapper&>(newClientWrapper)
+    .constructor<std::string, const ClientOptionsWrapper&>()
     .method("open_table", &ClientWrapper::openTable)
     .method("check_for_table", &ClientWrapper::checkForTable)
     .method("run_script", &ClientWrapper::runScript)
