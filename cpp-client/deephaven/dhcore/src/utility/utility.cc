@@ -196,42 +196,23 @@ void dumpTillPercentOrEnd(ostream &result, const char **fmt) {
   result.write(start, p - start);
   *fmt = p;
 }
-
-const char DIGITS[] = { '0', '1', '2', '3', '4', '5', '6', '7', '8', '9' };
-static_assert(sizeof(DIGITS) == 10);
 }  // namespace
 
-std::string
-epochMillisToStr(const std::chrono::milliseconds::rep epochMillis) {
-  const time_t secs = epochMillis / 1000;
-  const unsigned millisRest = epochMillis % 1000;
-  struct tm tm;
-  localtime_r(&secs, &tm);
-  std::size_t resultSz = 32u;  // we need 28u + 1u; +1 for null terminated.
-  std::string result(resultSz, '#');
-  char *resBuf = &result[0];
-  strftime(resBuf, resultSz,
-           "%F"    // 10 chars: ISO-8601 date format: `YYYY-mm-dd`
-           "T"     //  1 char:  A literal "T" separator (ISO-8601).
-           "%T"    //  8 chars: ISO-8601 time format: `HH:MM:SS`
-           ".000"  //  4 chars: Placeholder for msecs
-           "%z",   //  3 chars: timezone [+-]hhmm
-           &tm);
-  const unsigned hundredMillisRest = millisRest / 100;
-  const unsigned millisRestMod100 = millisRest % 100;
-  const unsigned tensMillisRest = millisRestMod100 / 10;
-  const unsigned singleMillisRest = millisRestMod100 % 10;
+std::string epochMillisToStr(const std::chrono::milliseconds::rep epochMillis) {
+  time_t timeSecs = epochMillis / 1000;
+  auto millis = epochMillis % 1000;
+  struct tm tm = {};
+  localtime_r(&timeSecs, &tm);
+  char dateBuffer[32];  // ample
+  char millisBuffer[32];  // ample
+  char tzBuffer[32];  // ample
+  strftime(dateBuffer, sizeof(dateBuffer), "%FT%T", &tm);
+  snprintf(millisBuffer, sizeof(millisBuffer), ".%03zd", millis);
+  strftime(tzBuffer, sizeof(tzBuffer), "%z", &tm);
 
-  assert(hundredMillisRest < 10);
-  assert(resBuf[20] == '0');
-  resBuf[20] = DIGITS[hundredMillisRest];
-  assert(tensMillisRest < 10);
-  assert(resBuf[21] == '0');
-  resBuf[21] = DIGITS[tensMillisRest];
-  assert(singleMillisRest < 10);
-  assert(resBuf[22] == '0');
-  resBuf[22] = DIGITS[singleMillisRest];
-  return result;
+  SimpleOstringstream s;
+  s << dateBuffer << millisBuffer << tzBuffer;
+  return std::move(s.str());
 }
 
 std::int64_t
@@ -263,11 +244,10 @@ std::string demangle(const char* name) {
 }
 #endif
 
-std::string
-objectId(const std::string &classShortName, void *const thisPtr) {
-  std::string id(classShortName + "[0x0000000000000000]");
-  snprintf(&id[classShortName.size() + 3], 16, "%p", thisPtr);
-  return id;
+std::string objectId(const std::string &classShortName, void *const thisPtr) {
+  SimpleOstringstream s;
+  s << classShortName << '[' << thisPtr << ']';
+  return std::move(s.str());
 }
 
 std::string
