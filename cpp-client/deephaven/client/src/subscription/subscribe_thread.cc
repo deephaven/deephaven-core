@@ -7,6 +7,7 @@
 #include <arrow/buffer.h>
 #include <arrow/scalar.h>
 #include <atomic>
+#include <grpc/support/log.h>
 #include "deephaven/client/arrowutil/arrow_column_source.h"
 #include "deephaven/client/server/server.h"
 #include "deephaven/client/utility/arrow_util.h"
@@ -185,12 +186,12 @@ UpdateProcessor::~UpdateProcessor() {
 }
 
 void UpdateProcessor::cancel() {
-  // TODO(cristianferretti): change to logging framework
-  std::cerr << DEEPHAVEN_DEBUG_MSG("Susbcription shutdown requested\n");
+  static const char *const me = "UpdateProcessor::cancel";
+  gpr_log(GPR_INFO, "%s: Subscription shutdown requested.", me);
   std::unique_lock guard(mutex_);
   if (cancelled_) {
     guard.unlock(); // to be nice
-    std::cerr << DEEPHAVEN_DEBUG_MSG("Already cancelled\n");
+    gpr_log(GPR_ERROR, "%s: Already cancelled.", me);
     return;
   }
   cancelled_ = true;

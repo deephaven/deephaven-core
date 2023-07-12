@@ -5,10 +5,7 @@ package io.deephaven.engine.table.impl;
 
 import io.deephaven.base.verify.Assert;
 import io.deephaven.engine.context.ExecutionContext;
-import io.deephaven.engine.rowset.RowSet;
-import io.deephaven.engine.rowset.RowSetFactory;
-import io.deephaven.engine.rowset.RowSetShiftData;
-import io.deephaven.engine.rowset.TrackingWritableRowSet;
+import io.deephaven.engine.rowset.*;
 import io.deephaven.engine.table.*;
 import io.deephaven.engine.table.impl.perf.QueryPerformanceRecorder;
 import io.deephaven.engine.table.impl.remote.ConstructSnapshot;
@@ -41,11 +38,31 @@ public class BlinkTableTools {
     public static Table blinkToAppendOnly(final Table blinkTable) {
         final UpdateGraph updateGraph = blinkTable.getUpdateGraph();
         try (final SafeCloseable ignored = ExecutionContext.getContext().withUpdateGraph(updateGraph).open()) {
-            return internalBlinkToAppendOnly(blinkTable);
+            // Setting the size limit as maximum allowed value
+            return internalBlinkToAppendOnly(blinkTable, Long.MAX_VALUE);
         }
     }
 
-    private static Table internalBlinkToAppendOnly(final Table blinkTable) {
+    /**
+     * Convert a Blink Table to an in-memory append only table with a limit on maximum size. Any updates beyond that
+     * limit won't be appended to the table.
+     *
+     * @param blinkTable The input blink table
+     * @param sizeLimit The maximum number of rows in the append-only table
+     * @return An append-only in-memory table representing all data encountered in the blink table across all cycles
+     *         till maximum row count
+     */
+    public static Table blinkToAppendOnly(final Table blinkTable, long sizeLimit) {
+        if (sizeLimit < 0) {
+            throw new IllegalArgumentException("Size limit cannot be negative, limit=" + sizeLimit);
+        }
+        final UpdateGraph updateGraph = blinkTable.getUpdateGraph();
+        try (final SafeCloseable ignored = ExecutionContext.getContext().withUpdateGraph(updateGraph).open()) {
+            return internalBlinkToAppendOnly(blinkTable, sizeLimit);
+        }
+    }
+
+    private static Table internalBlinkToAppendOnly(final Table blinkTable, long sizeLimit) {
         return QueryPerformanceRecorder.withNugget("blinkToAppendOnly", () -> {
             if (!isBlink(blinkTable)) {
                 throw new IllegalArgumentException("Input is not a blink table!");
@@ -82,18 +99,16 @@ public class BlinkTableTools {
                                     (WritableColumnSource<?>) ReinterpretUtils.maybeConvertToPrimitive(newColumn);
                         }
 
-
-                        final TrackingWritableRowSet rowSet;
-                        if (usePrev) {
-                            try (final RowSet useRowSet = baseBlinkTable.getRowSet().copyPrev()) {
-                                rowSet = RowSetFactory.flat(useRowSet.size()).toTracking();
-                                ChunkUtils.copyData(sourceColumns, useRowSet, destColumns, rowSet, usePrev);
-                            }
+                        final RowSet baseRowSet =
+                                (usePrev ? baseBlinkTable.getRowSet().prev() : baseBlinkTable.getRowSet());
+                        final RowSet useRowSet;
+                        if (baseRowSet.size() > sizeLimit) {
+                            useRowSet = baseRowSet.subSetByPositionRange(0, sizeLimit);
                         } else {
-                            rowSet = RowSetFactory.flat(baseBlinkTable.getRowSet().size()).toTracking();
-                            ChunkUtils.copyData(sourceColumns, baseBlinkTable.getRowSet(), destColumns, rowSet,
-                                    usePrev);
+                            useRowSet = baseRowSet;
                         }
+                        final TrackingWritableRowSet rowSet = RowSetFactory.flat(useRowSet.size()).toTracking();
+                        ChunkUtils.copyData(sourceColumns, useRowSet, destColumns, rowSet, usePrev);
 
                         final QueryTable result = new QueryTable(rowSet, columns);
                         result.setRefreshing(true);
@@ -102,6 +117,8 @@ public class BlinkTableTools {
                         result.setFlat();
                         resultHolder.setValue(result);
 
+                        Assert.leq(result.size(), "result.size()", sizeLimit, "sizeLimit");
+
                         swapListener.setListenerAndResult(new BaseTable.ListenerImpl("streamToAppendOnly",
                                 baseBlinkTable, result) {
                             @Override
@@ -109,17 +126,26 @@ public class BlinkTableTools {
                                 if (upstream.modified().isNonempty() || upstream.shifted().nonempty()) {
                                     throw new IllegalArgumentException("Blink tables should not modify or shift!");
                                 }
-                                final long newRows = upstream.added().size();
-                                if (newRows == 0) {
+                                long newRowsSize = upstream.added().size();
+                                if (newRowsSize == 0) {
                                     return;
                                 }
+                                RowSet subsetAdded = null;
                                 final long currentSize = rowSet.size();
-                                columns.values().forEach(c -> c.ensureCapacity(currentSize + newRows));
+                                if (currentSize + newRowsSize >= sizeLimit) {
+                                    newRowsSize = (sizeLimit - currentSize);
+                                    subsetAdded = upstream.added().subSetByPositionRange(0, newRowsSize);
+                                }
+                                final long totalSize = currentSize + newRowsSize;
+                                columns.values().forEach(c -> c.ensureCapacity(totalSize));
+                                final RowSet newRange = RowSetFactory.fromRange(currentSize, totalSize - 1);
 
-                                final RowSet newRange = RowSetFactory.fromRange(currentSize, currentSize + newRows - 1);
-
-                                ChunkUtils.copyData(sourceColumns, upstream.added(), destColumns, newRange, false);
-                                rowSet.insertRange(currentSize, currentSize + newRows - 1);
+                                try (final SafeCloseable ignored = subsetAdded) {
+                                    final RowSet newRowSet = (subsetAdded == null) ? upstream.added() : subsetAdded;
+                                    ChunkUtils.copyData(sourceColumns, newRowSet, destColumns, newRange, false);
+                                }
+                                rowSet.insertRange(currentSize, totalSize - 1);
+                                Assert.leq(totalSize, "totalSize", sizeLimit, "sizeLimit");
 
                                 final TableUpdateImpl downstream = new TableUpdateImpl();
                                 downstream.added = newRange;
@@ -128,6 +154,11 @@ public class BlinkTableTools {
                                 downstream.modifiedColumnSet = ModifiedColumnSet.EMPTY;
                                 downstream.shifted = RowSetShiftData.EMPTY;
                                 result.notifyListeners(downstream);
+
+                                if (totalSize == sizeLimit) {
+                                    // No more rows can be appended, so remove the listener and remove all references
+                                    forceReferenceCountToZero();
+                                }
                             }
                         }, result);
 

@@ -3,6 +3,7 @@
  */
 #include "deephaven/client/client.h"
 
+#include <grpc/support/log.h>
 #include <arrow/array.h>
 #include <arrow/scalar.h>
 #include "deephaven/client/columns.h"
@@ -48,9 +49,9 @@ void printTableData(std::ostream &s, const TableHandle &tableHandle, bool wantHe
 }  // namespace
 
 Client Client::connect(const std::string &target, const ClientOptions &options) {
-  auto executor = Executor::create("Client executor");
-  auto flightExecutor = Executor::create("Flight executor");
   auto server = Server::createFromTarget(target, options);
+  auto executor = Executor::create("Client executor for " + server->me());
+  auto flightExecutor = Executor::create("Flight executor for " + server->me());
   auto impl = ClientImpl::create(std::move(server), executor, flightExecutor, options.sessionType_);
   return Client(std::move(impl));
 }

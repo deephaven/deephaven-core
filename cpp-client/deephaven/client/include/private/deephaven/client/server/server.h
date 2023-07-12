@@ -11,11 +11,13 @@
 #include <string>
 #include <cstring>
 #include <cstdint>
+#include <grpc/support/log.h>
 #include <arrow/flight/client.h>
 
 #include "deephaven/client/client_options.h"
 #include "deephaven/client/utility/executor.h"
 #include "deephaven/dhcore/utility/callbacks.h"
+#include "deephaven/dhcore/utility/utility.h"
 #include "deephaven/proto/ticket.pb.h"
 #include "deephaven/proto/ticket.grpc.pb.h"
 #include "deephaven/proto/application.pb.h"
@@ -238,6 +240,9 @@ public:
   // TODO: make this private
   void setExpirationInterval(std::chrono::milliseconds interval);
 
+  // Useful as a log line prefix for messages coming from this server.
+  const std::string &me() { return me_; }
+
 private:
   static const char *const authorizationKey;
   typedef std::unique_ptr<::grpc::ClientAsyncResponseReader<ExportedTableCreationResponse>>
@@ -247,12 +252,12 @@ private:
   void selectOrUpdateHelper(Ticket parentTicket, std::vector<std::string> columnSpecs,
       std::shared_ptr<EtcCallback> etcCallback, Ticket result, selectOrUpdateMethod_t method);
 
-  static void processCompletionQueueForever(const std::shared_ptr<Server> &self);
+  static void processCompletionQueueLoop(const std::shared_ptr<Server> &self);
   bool processNextCompletionQueueItem();
 
   static void sendKeepaliveMessages(const std::shared_ptr<Server> &self);
   bool keepaliveHelper();
-
+  const std::string me_;  // useful printable object name for logging
   std::unique_ptr<ApplicationService::Stub> applicationStub_;
   std::unique_ptr<ConsoleService::Stub> consoleStub_;
   std::unique_ptr<SessionService::Stub> sessionStub_;
@@ -277,7 +282,18 @@ private:
 template<typename TReq, typename TResp, typename TStub, typename TPtrToMember>
 void Server::sendRpc(const TReq &req, std::shared_ptr<SFCallback<TResp>> responseCallback,
     TStub *stub, const TPtrToMember &pm) {
+  using deephaven::dhcore::utility::timePointToStr;
+  using deephaven::dhcore::utility::typeName;
+  static const auto tName = typeName(req);
   auto now = std::chrono::system_clock::now();
+  gpr_log(GPR_DEBUG,
+          "Server[%p]: "
+          "Sending RPC %s "
+          "at time %s.",
+          (void*) this,
+          tName.c_str(),
+          timePointToStr(now).c_str());
+          
   // Keep this in a unique_ptr at first, in case we leave early due to cancellation or exception.
   auto response = std::make_unique<ServerResponseHolder<TResp>>(now, std::move(responseCallback));
   forEachHeaderNameAndValue([&response](const std::string &name, const std::string &value) {

@@ -32,6 +32,25 @@ or an [R Data Frame](https://stat.ethz.ch/R-manual/R-devel/library/base/html/dat
 
 Currently, the R client is only supported on Ubuntu 20.04 or 22.04 and must be built from source.
 
+0. We need a working installation of R on the machine where the R client will be built.
+   The R client requires R 4.1.2 or newer; you can install R from the standard packages
+   made available by Ubuntu 22.04.  If you want a newer R version or if you are running in
+   Ubuntu 20.04, you should install R from CRAN:
+
+   ```
+   # Download the key and install it
+   $ wget -qO- https://cloud.r-project.org/bin/linux/ubuntu/marutter_pubkey.asc | sudo gpg --dearmor -o /usr/share/keyrings/r-proj
+
+   # Add the R source list to apt's sources list
+   $ echo "deb [signed-by=/usr/share/keyrings/r-project.gpg] https://cloud.r-project.org/bin/linux/ubuntu jammy-cran40/" | sudo tee -a /etc/apt/sources.list.d/r-project.l
+
+   # update the apt package list
+   $ apt update
+
+   # install R
+   $ sudo apt install r-base r-recommended
+   ```
+
 1. Build the cpp-client (and any dependent libraries) according to the instructions in
    https://github.com/deephaven/deephaven-core/blob/main/cpp-client/README.md.
    Follow the instructions at least to the point for "Build and install Deephaven C++ client".
@@ -56,9 +75,14 @@ Currently, the R client is only supported on Ubuntu 20.04 or 22.04 and must be b
    ```bash
    R
    ```
-   and in that console, install the client
+   In that console, install the dephaven client dependencies (since we are building from source
+   dependencies will not be automatically pulled in):
    ```r
-   install.packages("/path/to/rdeephaven", INSTALL_opts="--install-tests", repos=NULL, type="source", dependencies=TRUE)
+   install.packages(c('Rcpp', 'arrow', 'R6', 'dplyr'))
+   ```
+   then install the deephaven client itself:
+   ```r
+   install.packages("/path/to/rdeephaven", INSTALL_opts="--install-tests", repos=NULL, type="source")
    ```
    This last command can also be executed from RStudio without the need for explicitly starting an R console.
 
@@ -98,6 +122,27 @@ The Deephaven R client utilizes R's `testthat` package to perform unit tests. In
 library(testthat)
 test_package("rdeephaven")
 ```
+
+## Debugging
+
+Because the Deephaven R client is written in C++ and wrapped with `Rcpp`, standard R-level debugging is not sufficient for many kinds of problems associated with C++ code. For this reason, debugging the R client must be done with a C++ debugger. We recommend using [Valgrind](https://valgrind.org) to check for memory bugs, and using [gdb](https://www.sourceware.org/gdb/) for thorough backtraces and general debugging.
+
+### Running R with Valgrind
+
+The following was taken from [this blog post](https://kevinushey.github.io/blog/2015/04/05/debugging-with-valgrind/), which has proven very useful for getting started with Valgrind.
+1. Install Valgrind with `sudo apt-get install valgrind` or `sudo yum install valgrind`
+2. Run R under Valgrind with `R -d valgrind`
+   
+OS-dependent problems may come up in either step, and the simplest solution is to use a Linux machine or VM if one is available. Attempting these steps in a Linux Docker image may also prove difficult, and will certainly fail if the host architecture is not AMD/X86.
+
+### Running R with gdb
+
+[This article](https://www.maths.ed.ac.uk/~swood34/RCdebug/RCdebug.html) is a good resource for running R with gdb, and also touches on Valgrind use. There are several ways to run R with gdb, and here we only outline the text-based approach given near the bottom of the page.
+1. Install gdb with `sudo apt-get install gdb` or `sudo yum install gdb`
+2. Start gdb with R attached with `R -d gdb`. This will start a gdb session denoted by `(gdb)` in the console.
+3. In the gdb session, start an R console with `(gdb) run`
+
+Both Valgrind and gdb debugging is done through a console, and is not interactive from an IDE. There may be a way to make RStudio play well with Valgrind or gdb, but that is beyond the scope of these instructions.
    
 ## High-level design overview
 
