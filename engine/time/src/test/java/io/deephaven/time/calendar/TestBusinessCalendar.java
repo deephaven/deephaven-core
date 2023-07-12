@@ -88,7 +88,6 @@ public class TestBusinessCalendar extends TestCalendar {
         // Current date
         assertEquals(bCalendar.businessSchedule(bCalendar.currentDate()), bCalendar.businessSchedule());
 
-
         // Check that all dates in the range work
         for(LocalDate d = firstValidDate; !d.isAfter(lastValidDate); d = d.plusDays(1)) {
             assertNotNull(bCalendar.businessSchedule(d));
@@ -131,6 +130,345 @@ public class TestBusinessCalendar extends TestCalendar {
         }
     }
 
+    public void testIsBusinessDay() {
+        assertFalse(bCalendar.isBusinessDay(holidayDate1));
+        assertFalse(bCalendar.isBusinessDay(holidayDate2));
+        assertTrue(bCalendar.isBusinessDay(halfDayDate));
+
+        // TUES - Weekday
+        LocalDate date = LocalDate.of(2023,7,11);
+        assertTrue(bCalendar.isBusinessDay(date));
+        assertTrue(bCalendar.isBusinessDay(date.toString()));
+        assertTrue(bCalendar.isBusinessDay(date.atTime(1, 2, 3).atZone(timeZone)));
+        assertTrue(bCalendar.isBusinessDay(date.atTime(1, 2, 3).atZone(timeZone).toInstant()));
+
+        // WED - Weekend
+        date = LocalDate.of(2023,7,12);
+        assertFalse(bCalendar.isBusinessDay(date));
+        assertFalse(bCalendar.isBusinessDay(date.toString()));
+        assertFalse(bCalendar.isBusinessDay(date.atTime(1, 2, 3).atZone(timeZone)));
+        assertFalse(bCalendar.isBusinessDay(date.atTime(1, 2, 3).atZone(timeZone).toInstant()));
+
+        // THURS - Weekend
+        date = LocalDate.of(2023,7,13);
+        assertFalse(bCalendar.isBusinessDay(date));
+        assertFalse(bCalendar.isBusinessDay(date.toString()));
+        assertFalse(bCalendar.isBusinessDay(date.atTime(1, 2, 3).atZone(timeZone)));
+        assertFalse(bCalendar.isBusinessDay(date.atTime(1, 2, 3).atZone(timeZone).toInstant()));
+
+        // FRI - Weekday
+        date = LocalDate.of(2023,7,14);
+        assertTrue(bCalendar.isBusinessDay(date));
+        assertTrue(bCalendar.isBusinessDay(date.toString()));
+        assertTrue(bCalendar.isBusinessDay(date.atTime(1, 2, 3).atZone(timeZone)));
+        assertTrue(bCalendar.isBusinessDay(date.atTime(1, 2, 3).atZone(timeZone).toInstant()));
+
+        // Current date
+        assertEquals(bCalendar.isBusinessDay(bCalendar.currentDate()), bCalendar.isBusinessDay());
+
+        // DayOfWeek
+
+        for (DayOfWeek dow : DayOfWeek.values()){
+            assertEquals(!weekendDays.contains(dow), bCalendar.isBusinessDay(dow));
+        }
+
+        // Check that all dates in the range work
+        for(LocalDate d = firstValidDate; !d.isAfter(lastValidDate); d = d.plusDays(1)) {
+            bCalendar.isBusinessDay(d);
+        }
+
+        try{
+            bCalendar.isBusinessDay(firstValidDate.minusDays(1));
+            fail("should throw an exception");
+        } catch (BusinessCalendar.InvalidDateException ignored){
+        }
+
+        try{
+            bCalendar.isBusinessDay(lastValidDate.plusDays(1));
+            fail("should throw an exception");
+        } catch (BusinessCalendar.InvalidDateException ignored){
+        }
+
+        try{
+            bCalendar.isBusinessDay((LocalDate) null);
+            fail("should throw an exception");
+        }catch (RequirementFailure ignored){
+        }
+
+        try{
+            bCalendar.isBusinessDay((String) null);
+            fail("should throw an exception");
+        }catch (RequirementFailure ignored){
+        }
+
+        try{
+            bCalendar.isBusinessDay((ZonedDateTime) null);
+            fail("should throw an exception");
+        }catch (RequirementFailure ignored){
+        }
+
+        try{
+            bCalendar.isBusinessDay((Instant) null);
+            fail("should throw an exception");
+        }catch (RequirementFailure ignored){
+        }
+
+        try{
+            bCalendar.isBusinessDay((DayOfWeek) null);
+            fail("should throw an exception");
+        }catch (RequirementFailure ignored){
+        }
+    }
+
+    public void testIsLastBusinessDayOfMonth() {
+        LocalDate date = LocalDate.of(2023,7,31);
+        assertTrue(bCalendar.isLastBusinessDayOfMonth(date));
+        assertTrue(bCalendar.isLastBusinessDayOfMonth(date.toString()));
+        assertTrue(bCalendar.isLastBusinessDayOfMonth(date.atTime(1, 2, 3).atZone(timeZone)));
+        assertTrue(bCalendar.isLastBusinessDayOfMonth(date.atTime(1, 2, 3).atZone(timeZone).toInstant()));
+
+        // THURS - Weekend
+        date = LocalDate.of(2023,8,31);
+        assertFalse(bCalendar.isLastBusinessDayOfMonth(date));
+        assertFalse(bCalendar.isLastBusinessDayOfMonth(date.toString()));
+        assertFalse(bCalendar.isLastBusinessDayOfMonth(date.atTime(1, 2, 3).atZone(timeZone)));
+        assertFalse(bCalendar.isLastBusinessDayOfMonth(date.atTime(1, 2, 3).atZone(timeZone).toInstant()));
+
+        // WED - Weekend
+        date = LocalDate.of(2023,8,30);
+        assertFalse(bCalendar.isLastBusinessDayOfMonth(date));
+        assertFalse(bCalendar.isLastBusinessDayOfMonth(date.toString()));
+        assertFalse(bCalendar.isLastBusinessDayOfMonth(date.atTime(1, 2, 3).atZone(timeZone)));
+        assertFalse(bCalendar.isLastBusinessDayOfMonth(date.atTime(1, 2, 3).atZone(timeZone).toInstant()));
+
+        // TUES - Weekday
+        date = LocalDate.of(2023,8,29);
+        assertTrue(bCalendar.isLastBusinessDayOfMonth(date));
+        assertTrue(bCalendar.isLastBusinessDayOfMonth(date.toString()));
+        assertTrue(bCalendar.isLastBusinessDayOfMonth(date.atTime(1, 2, 3).atZone(timeZone)));
+        assertTrue(bCalendar.isLastBusinessDayOfMonth(date.atTime(1, 2, 3).atZone(timeZone).toInstant()));
+
+        // Current date
+        assertEquals(bCalendar.isLastBusinessDayOfMonth(bCalendar.currentDate()), bCalendar.isLastBusinessDayOfMonth());
+
+        // Check that all dates in the range work
+        for(LocalDate d = firstValidDate; d.isBefore(lastValidDate); d = d.plusDays(1)) {
+            bCalendar.isLastBusinessDayOfMonth(d);
+        }
+
+        try{
+            bCalendar.isLastBusinessDayOfMonth(firstValidDate.minusDays(1));
+            fail("should throw an exception");
+        } catch (BusinessCalendar.InvalidDateException ignored){
+        }
+
+        try{
+            bCalendar.isLastBusinessDayOfMonth(lastValidDate.plusDays(1));
+            fail("should throw an exception");
+        } catch (BusinessCalendar.InvalidDateException ignored){
+        }
+
+        try{
+            bCalendar.isLastBusinessDayOfMonth((LocalDate) null);
+            fail("should throw an exception");
+        }catch (RequirementFailure ignored){
+        }
+
+        try{
+            bCalendar.isLastBusinessDayOfMonth((String) null);
+            fail("should throw an exception");
+        }catch (RequirementFailure ignored){
+        }
+
+        try{
+            bCalendar.isLastBusinessDayOfMonth((ZonedDateTime) null);
+            fail("should throw an exception");
+        }catch (RequirementFailure ignored){
+        }
+
+        try{
+            bCalendar.isLastBusinessDayOfMonth((Instant) null);
+            fail("should throw an exception");
+        }catch (RequirementFailure ignored){
+        }
+    }
+
+    public void testIsLastBusinessDayOfWeek() {
+        // FRI
+        LocalDate date = LocalDate.of(2023,7,28);
+        assertFalse(bCalendar.isLastBusinessDayOfWeek(date));
+        assertFalse(bCalendar.isLastBusinessDayOfWeek(date.toString()));
+        assertFalse(bCalendar.isLastBusinessDayOfWeek(date.atTime(1, 2, 3).atZone(timeZone)));
+        assertFalse(bCalendar.isLastBusinessDayOfWeek(date.atTime(1, 2, 3).atZone(timeZone).toInstant()));
+
+        // SAT
+        date = LocalDate.of(2023,7,29);
+        assertFalse(bCalendar.isLastBusinessDayOfWeek(date));
+        assertFalse(bCalendar.isLastBusinessDayOfWeek(date.toString()));
+        assertFalse(bCalendar.isLastBusinessDayOfWeek(date.atTime(1, 2, 3).atZone(timeZone)));
+        assertFalse(bCalendar.isLastBusinessDayOfWeek(date.atTime(1, 2, 3).atZone(timeZone).toInstant()));
+
+        // SUN
+        date = LocalDate.of(2023,7,30);
+        assertTrue(bCalendar.isLastBusinessDayOfWeek(date));
+        assertTrue(bCalendar.isLastBusinessDayOfWeek(date.toString()));
+        assertTrue(bCalendar.isLastBusinessDayOfWeek(date.atTime(1, 2, 3).atZone(timeZone)));
+        assertTrue(bCalendar.isLastBusinessDayOfWeek(date.atTime(1, 2, 3).atZone(timeZone).toInstant()));
+
+        final Set<DayOfWeek> wd = Set.of(DayOfWeek.SATURDAY, DayOfWeek.SUNDAY); 
+        final BusinessCalendar bc = new BusinessCalendar(name, description, timeZone, firstValidDate, lastValidDate, schedule, wd, holidays);
+
+        // FRI
+        date = LocalDate.of(2023,7,28);
+        assertTrue(bc.isLastBusinessDayOfWeek(date));
+        assertTrue(bc.isLastBusinessDayOfWeek(date.toString()));
+        assertTrue(bc.isLastBusinessDayOfWeek(date.atTime(1, 2, 3).atZone(timeZone)));
+        assertTrue(bc.isLastBusinessDayOfWeek(date.atTime(1, 2, 3).atZone(timeZone).toInstant()));
+
+        // SAT
+        date = LocalDate.of(2023,7,29);
+        assertFalse(bc.isLastBusinessDayOfWeek(date));
+        assertFalse(bc.isLastBusinessDayOfWeek(date.toString()));
+        assertFalse(bc.isLastBusinessDayOfWeek(date.atTime(1, 2, 3).atZone(timeZone)));
+        assertFalse(bc.isLastBusinessDayOfWeek(date.atTime(1, 2, 3).atZone(timeZone).toInstant()));
+
+        // SUN
+        date = LocalDate.of(2023,7,30);
+        assertFalse(bc.isLastBusinessDayOfWeek(date));
+        assertFalse(bc.isLastBusinessDayOfWeek(date.toString()));
+        assertFalse(bc.isLastBusinessDayOfWeek(date.atTime(1, 2, 3).atZone(timeZone)));
+        assertFalse(bc.isLastBusinessDayOfWeek(date.atTime(1, 2, 3).atZone(timeZone).toInstant()));
+
+        // Current date
+        assertEquals(bCalendar.isLastBusinessDayOfWeek(bCalendar.currentDate()), bCalendar.isLastBusinessDayOfWeek());
+
+        // Check that all dates in the range work
+        for(LocalDate d = firstValidDate; d.isBefore(lastValidDate); d = d.plusDays(1)) {
+            bCalendar.isLastBusinessDayOfWeek(d);
+        }
+
+        try{
+            bCalendar.isLastBusinessDayOfWeek(firstValidDate.minusDays(1));
+            fail("should throw an exception");
+        } catch (BusinessCalendar.InvalidDateException ignored){
+        }
+
+        try{
+            bCalendar.isLastBusinessDayOfWeek(lastValidDate.plusDays(1));
+            fail("should throw an exception");
+        } catch (BusinessCalendar.InvalidDateException ignored){
+        }
+
+        try{
+            bCalendar.isLastBusinessDayOfWeek((LocalDate) null);
+            fail("should throw an exception");
+        }catch (RequirementFailure ignored){
+        }
+
+        try{
+            bCalendar.isLastBusinessDayOfWeek((String) null);
+            fail("should throw an exception");
+        }catch (RequirementFailure ignored){
+        }
+
+        try{
+            bCalendar.isLastBusinessDayOfWeek((ZonedDateTime) null);
+            fail("should throw an exception");
+        }catch (RequirementFailure ignored){
+        }
+
+        try{
+            bCalendar.isLastBusinessDayOfWeek((Instant) null);
+            fail("should throw an exception");
+        }catch (RequirementFailure ignored){
+        }
+    }
+
+    public void testIsLastBusinessDayOfYear() {
+        LocalDate date = LocalDate.of(2023,12,29);
+        assertFalse(bCalendar.isLastBusinessDayOfYear(date));
+        assertFalse(bCalendar.isLastBusinessDayOfYear(date.toString()));
+        assertFalse(bCalendar.isLastBusinessDayOfYear(date.atTime(1, 2, 3).atZone(timeZone)));
+        assertFalse(bCalendar.isLastBusinessDayOfYear(date.atTime(1, 2, 3).atZone(timeZone).toInstant()));
+
+        date = LocalDate.of(2023,12,30);
+        assertFalse(bCalendar.isLastBusinessDayOfYear(date));
+        assertFalse(bCalendar.isLastBusinessDayOfYear(date.toString()));
+        assertFalse(bCalendar.isLastBusinessDayOfYear(date.atTime(1, 2, 3).atZone(timeZone)));
+        assertFalse(bCalendar.isLastBusinessDayOfYear(date.atTime(1, 2, 3).atZone(timeZone).toInstant()));
+
+        date = LocalDate.of(2023,12,31);
+        assertTrue(bCalendar.isLastBusinessDayOfYear(date));
+        assertTrue(bCalendar.isLastBusinessDayOfYear(date.toString()));
+        assertTrue(bCalendar.isLastBusinessDayOfYear(date.atTime(1, 2, 3).atZone(timeZone)));
+        assertTrue(bCalendar.isLastBusinessDayOfYear(date.atTime(1, 2, 3).atZone(timeZone).toInstant()));
+
+        final Set<DayOfWeek> wd = Set.of(DayOfWeek.SATURDAY, DayOfWeek.SUNDAY);
+        final BusinessCalendar bc = new BusinessCalendar(name, description, timeZone, firstValidDate, lastValidDate, schedule, wd, holidays);
+
+        date = LocalDate.of(2023,12,29);
+        assertTrue(bc.isLastBusinessDayOfYear(date));
+        assertTrue(bc.isLastBusinessDayOfYear(date.toString()));
+        assertTrue(bc.isLastBusinessDayOfYear(date.atTime(1, 2, 3).atZone(timeZone)));
+        assertTrue(bc.isLastBusinessDayOfYear(date.atTime(1, 2, 3).atZone(timeZone).toInstant()));
+
+        date = LocalDate.of(2023,12,30);
+        assertFalse(bc.isLastBusinessDayOfYear(date));
+        assertFalse(bc.isLastBusinessDayOfYear(date.toString()));
+        assertFalse(bc.isLastBusinessDayOfYear(date.atTime(1, 2, 3).atZone(timeZone)));
+        assertFalse(bc.isLastBusinessDayOfYear(date.atTime(1, 2, 3).atZone(timeZone).toInstant()));
+
+        date = LocalDate.of(2023,12,31);
+        assertFalse(bc.isLastBusinessDayOfYear(date));
+        assertFalse(bc.isLastBusinessDayOfYear(date.toString()));
+        assertFalse(bc.isLastBusinessDayOfYear(date.atTime(1, 2, 3).atZone(timeZone)));
+        assertFalse(bc.isLastBusinessDayOfYear(date.atTime(1, 2, 3).atZone(timeZone).toInstant()));
+
+        // Current date
+        assertEquals(bCalendar.isLastBusinessDayOfYear(bCalendar.currentDate()), bCalendar.isLastBusinessDayOfYear());
+
+        // Check that all dates in the range work
+        for(LocalDate d = firstValidDate; d.isBefore(lastValidDate); d = d.plusDays(1)) {
+            bCalendar.isLastBusinessDayOfYear(d);
+        }
+
+        try{
+            bCalendar.isLastBusinessDayOfYear(firstValidDate.minusDays(1));
+            fail("should throw an exception");
+        } catch (BusinessCalendar.InvalidDateException ignored){
+        }
+
+        try{
+            bCalendar.isLastBusinessDayOfYear(lastValidDate.plusDays(1));
+            fail("should throw an exception");
+        } catch (BusinessCalendar.InvalidDateException ignored){
+        }
+
+        try{
+            bCalendar.isLastBusinessDayOfYear((LocalDate) null);
+            fail("should throw an exception");
+        }catch (RequirementFailure ignored){
+        }
+
+        try{
+            bCalendar.isLastBusinessDayOfYear((String) null);
+            fail("should throw an exception");
+        }catch (RequirementFailure ignored){
+        }
+
+        try{
+            bCalendar.isLastBusinessDayOfYear((ZonedDateTime) null);
+            fail("should throw an exception");
+        }catch (RequirementFailure ignored){
+        }
+
+        try{
+            bCalendar.isLastBusinessDayOfYear((Instant) null);
+            fail("should throw an exception");
+        }catch (RequirementFailure ignored){
+        }
+    }
+    
     public void testFail() {
         fail();
     }
