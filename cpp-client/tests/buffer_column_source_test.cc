@@ -13,7 +13,16 @@ using deephaven::dhcore::container::RowSequence;
 
 namespace deephaven::client::tests {
 TEST_CASE("Simple BufferColumnSource", "[columnsource]") {
-  auto temp = dhcore::utility::epochMillisToStr(1689136824000);
-  CHECK(temp == "hello");
+  std::vector<int64_t> chunk{0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10};
+
+  auto cs = NumericBufferColumnSource<int64_t>::create(chunk.data(), chunk.size());
+
+  auto rs = RowSequence::createSequential(5, 9);
+  auto data = Int64Chunk::create(4);
+  cs->fillChunk(*rs, &data, nullptr);
+
+  std::vector<int64_t> expected{5, 6, 7, 8};
+  std::vector<int64_t> actual(data.begin(), data.end());
+  CHECK(expected == actual);
 }
 }  // namespace deephaven::client::tests
