@@ -368,8 +368,8 @@ public interface Table extends
      * <p>
      * Returns a subset of table in the range [startPercentInclusive * sizeOfTable , endPercentExclusive * sizeOfTable).
      * For example, for a table of size 10, slicePct(0.1, 0.7) will return a subset from the second row to the seventh
-     * row. Similarly, slicePct(0, 1) would return the entire table (because row positions run from 0 to size-1).
-     * The percentage arguments must be in range [0,1], otherwise the function returns an error.
+     * row. Similarly, slicePct(0, 1) would return the entire table (because row positions run from 0 to size-1). The
+     * percentage arguments must be in range [0,1], otherwise the function returns an error.
      *
      * @param startPercentInclusive the starting percentage point for rows to include in the result, range [0, 1]
      * @param endPercentExclusive the ending percentage point for rows to include in the result, range [0, 1]
