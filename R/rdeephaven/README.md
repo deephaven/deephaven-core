@@ -143,6 +143,8 @@ OS-dependent problems may come up in either step, and the simplest solution is t
 3. In the gdb session, start an R console with `(gdb) run`
 
 Both Valgrind and gdb debugging is done through a console, and is not interactive from an IDE. There may be a way to make RStudio play well with Valgrind or gdb, but that is beyond the scope of these instructions.
+
+Lastly, setting the environment variable `GRPC_VERBOSITY=DEBUG` will increase the verbosity of the Deephaven C++ client's gRPC dependency, which may be useful for some debugging purposes.
    
 ## High-level design overview
 
