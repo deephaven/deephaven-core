@@ -9,10 +9,17 @@ import java.time.ZoneId;
 import java.time.ZonedDateTime;
 
 public class TestCalendar extends BaseArrayTestCase {
-    private final String name = "TEST CALENDAR";
-    private final String description = "This is a test";
-    private final ZoneId timeZone = ZoneId.of("America/Los_Angeles");
-    private final Calendar calendar = new Calendar(name, description, timeZone);
+    protected final String name = "TEST CALENDAR";
+    protected final String description = "This is a test";
+    protected final ZoneId timeZone = ZoneId.of("America/Los_Angeles");
+
+    protected Calendar calendar;
+
+    @Override
+    protected void setUp() throws Exception {
+        super.setUp();
+        calendar = new Calendar(name, description, timeZone);
+    }
 
     public void testGetters(){
         assertEquals(name, calendar.name());
