@@ -202,7 +202,7 @@ static_assert(sizeof(DIGITS) == 10);
 }  // namespace
 
 std::string
-EpochMillisToStr(std::int64_t epochMillis) {
+epochMillisToStr(const std::chrono::milliseconds::rep epochMillis) {
   const time_t secs = epochMillis / 1000;
   const unsigned millisRest = epochMillis % 1000;
   struct tm tm;
@@ -234,21 +234,45 @@ EpochMillisToStr(std::int64_t epochMillis) {
   return result;
 }
 
-#ifdef __GNUG__
-std::string Demangle(const char* name) {
-  int status = -1;
-  std::unique_ptr<char, void(*)(void*)> res {
-    abi::__cxa_demangle(name, NULL, NULL, &status),
-    std::free
-  };
+std::int64_t
+timePointToEpochMillis(
+    const std::chrono::time_point<std::chrono::system_clock> timePoint) {
+  const auto ms = std::chrono::duration_cast<std::chrono::milliseconds>(
+      timePoint.time_since_epoch());
+  return ms.count();
+}
 
-  return (status==0) ? res.get() : name;
+std::string
+timePointToStr(
+    const std::chrono::time_point<std::chrono::system_clock> timePoint) {
+  return epochMillisToStr(timePointToEpochMillis(timePoint));
+}
+
+#ifdef __GNUG__
+std::string demangle(const char* name) {
+  int status = -1;
+  char *res = abi::__cxa_demangle(name, nullptr, nullptr, &status);
+  std::string result = status == 0 ? res : name;
+  std::free(res);
+  return result;
 }
 #else
 // does nothing if not g++
-std::string Demangle(const char* name) {
+std::string demangle(const char* name) {
   return name;
 }
 #endif
+
+std::string
+objectId(const std::string &classShortName, void *const thisPtr) {
+  std::string id(classShortName + "[0x0000000000000000]");
+  snprintf(&id[classShortName.size() + 3], 16, "%p", thisPtr);
+  return id;
+}
+
+std::string
+threadIdToString(const std::thread::id tid) {
+  return stringf("%o", tid);
+}
 
 }  // namespace deephaven::dhcore::utility

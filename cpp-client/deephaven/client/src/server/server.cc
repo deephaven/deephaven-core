@@ -226,7 +226,7 @@ Server::Server(Private,
     ClientOptions::extra_headers_t extraHeaders,
     std::string sessionToken, std::chrono::milliseconds expirationInterval,
     std::chrono::system_clock::time_point nextHandshakeTime) :
-    me_(deephaven::dhcore::utility::ObjectId(
+    me_(deephaven::dhcore::utility::objectId(
             "client::server::Server", this)),
     applicationStub_(std::move(applicationStub)),
     consoleStub_(std::move(consoleStub)),

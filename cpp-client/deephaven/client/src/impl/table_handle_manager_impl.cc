@@ -16,6 +16,7 @@ using deephaven::client::utility::Executor;
 using deephaven::dhcore::utility::SFCallback;
 using deephaven::dhcore::utility::streamf;
 using deephaven::dhcore::utility::stringf;
+using deephaven::dhcore::utility::objectId;
 using io::deephaven::proto::backplane::script::grpc::ExecuteCommandResponse;
 
 
@@ -30,7 +31,7 @@ std::shared_ptr<TableHandleManagerImpl> TableHandleManagerImpl::create(std::opti
 TableHandleManagerImpl::TableHandleManagerImpl(Private, std::optional<Ticket> &&consoleId,
     std::shared_ptr<Server> &&server, std::shared_ptr<Executor> &&executor,
     std::shared_ptr<Executor> &&flightExecutor) :
-    me_(deephaven::dhcore::utility::ObjectId("TableHandleManagerImpl", this)),
+    me_(deephaven::dhcore::utility::objectId("TableHandleManagerImpl", this)),
     consoleId_(std::move(consoleId)),
     server_(std::move(server)),
     executor_(std::move(executor)),

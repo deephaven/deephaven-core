@@ -282,16 +282,17 @@ private:
 template<typename TReq, typename TResp, typename TStub, typename TPtrToMember>
 void Server::sendRpc(const TReq &req, std::shared_ptr<SFCallback<TResp>> responseCallback,
     TStub *stub, const TPtrToMember &pm) {
-  using namespace deephaven::dhcore::utility;
-  static const auto typeName = TypeName(req);
+  using deephaven::dhcore::utility::timePointToStr;
+  using deephaven::dhcore::utility::typeName;
+  static const auto tName = typeName(req);
   auto now = std::chrono::system_clock::now();
   gpr_log(GPR_DEBUG,
           "Server[%p]: "
           "Sending RPC %s "
           "at time %s.",
           (void*) this,
-          typeName.c_str(),
-          TimePointToStr(now).c_str());
+          tName.c_str(),
+          timePointToStr(now).c_str());
           
   // Keep this in a unique_ptr at first, in case we leave early due to cancellation or exception.
   auto response = std::make_unique<ServerResponseHolder<TResp>>(now, std::move(responseCallback));
