@@ -89,4 +89,11 @@ public class TestBusinessPeriod extends BaseArrayTestCase {
         assertNotEquals(p1, p3);
         assertNotEquals(p1, p4);
     }
+
+    public void testToString() {
+        final LocalTime start = LocalTime.of(1,2,3);
+        final LocalTime end = LocalTime.of(7,8,9);
+        final BusinessPeriod<LocalTime> p1 = new BusinessPeriod<>(start, end);
+        assertEquals("BusinessPeriod{start=01:02:03, end=07:08:09}", p1.toString());
+    }
 }

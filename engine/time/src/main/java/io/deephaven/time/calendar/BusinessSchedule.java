@@ -194,6 +194,13 @@ public class BusinessSchedule<T extends Comparable<T> & Temporal> {
         return result;
     }
 
+    @Override
+    public String toString() {
+        return "BusinessSchedule{" +
+                "openPeriods=" + Arrays.toString(openPeriods) +
+                '}';
+    }
+
     /**
      * Converts a business schedule in local time to a specific date and time zone.
      *

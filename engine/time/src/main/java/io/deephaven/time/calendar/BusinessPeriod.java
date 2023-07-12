@@ -96,6 +96,14 @@ public class BusinessPeriod<T extends Comparable<T> & Temporal> {
         return Objects.hash(start, end, nanos);
     }
 
+    @Override
+    public String toString() {
+        return "BusinessPeriod{" +
+                "start=" + start +
+                ", end=" + end +
+                '}';
+    }
+
     /**
      * Converts a business period in local time to a specific date and time zone.
      *
