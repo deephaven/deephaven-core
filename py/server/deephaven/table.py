@@ -2087,9 +2087,9 @@ class Table(JObjectWrapper):
     def slice_pct(self, start_pct: float, end_pct: float) -> Table:
         """Extracts a subset of a table by row percentages.
 
-        Returns a subset of table in the range [start_pct * size_of_table , end_pct * size_of_table).
-        For example, for a table of size 10, slicePct(0.1, 0.7) will return a subset from the second row to the seventh
-        row. Similarly, slicePct(0, 1) would return the entire table (because row positions run from 0 to size-1).
+        Returns a subset of table in the range [floor(start_pct * size_of_table) , floor(end_pct * size_of_table)).
+        For example, for a table of size 10, slice_pct(0.1, 0.7) will return a subset from the second row to the seventh
+        row. Similarly, slice_pct(0, 1) would return the entire table (because row positions run from 0 to size-1).
         The percentage arguments must be in range [0,1], otherwise the function returns an error.
 
         Args:
