@@ -77,6 +77,8 @@ class ClientOptionsWrapper {
 public:
 
     ClientOptionsWrapper() {
+        std::cout << "========" << std::endl;
+        std::cout << "In constructor for " << this << "\n" << std::flush;
         internal_options = new deephaven::client::ClientOptions();
     }
 
@@ -116,8 +118,13 @@ public:
         internal_options->addExtraHeader(header_name, header_value);
     }
 
-private:
+    ~ClientOptionsWrapper() {
+        std::cout << "========" << std::endl;
+        std::cout << "In destructor for " << this << "\n" << std::flush;
+        delete internal_options;
+    }
 
+private:
     deephaven::client::ClientOptions* internal_options;
     friend ClientWrapper* newClientWrapper(const std::string &target, const ClientOptionsWrapper &client_options);
 };
@@ -216,14 +223,13 @@ private:
 };
 
 // factory method for calling private constructor, Rcpp does not like <const std::string &target> in constructor
-// the current implementation of passing authentication args to C++ client is terrible and needs to be redone. Only this could make Rcpp happy in a days work
 
 /**
  * Factory method for creating a new ClientWrapper, which is responsible for maintaining a connection to the client.
  * @param target URL that the server is running on.
  * @param client_options A ClientOptionsWrapper containing the server connection information. See deephaven::client::ClientOptions for more information.
  */
-ClientWrapper* newClientWrapper(const std::string &target, const ClientOptionsWrapper &client_options) {
+ClientWrapper* newClientWrapper(const std::string& target, const ClientOptionsWrapper &client_options) {
     return new ClientWrapper(deephaven::client::Client::connect(target, *client_options.internal_options));
 };
 
