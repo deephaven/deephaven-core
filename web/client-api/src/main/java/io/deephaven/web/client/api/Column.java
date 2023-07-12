@@ -10,6 +10,7 @@ import jsinterop.annotations.JsNullable;
 import jsinterop.annotations.JsProperty;
 import jsinterop.base.Any;
 
+import java.util.Objects;
 import java.util.stream.IntStream;
 import java.util.stream.IntStream.Builder;
 
@@ -20,6 +21,7 @@ public class Column {
     private final Integer formatColumnIndex;
     private final Integer styleColumnIndex;
     private final Integer formatStringColumnIndex;
+    private final Integer[] formatDatabarColumnIndexRange;
 
     private final boolean isPartitionColumn;
 
@@ -51,7 +53,7 @@ public class Column {
     }
 
     public Column(int jsIndex, int index, Integer formatColumnIndex, Integer styleColumnIndex, String type, String name,
-            boolean isPartitionColumn, Integer formatStringColumnIndex, String description,
+            boolean isPartitionColumn, Integer formatStringColumnIndex, Integer[] formatDatabarColumnIndex, String description,
             boolean inputTableKeyColumn) {
         this.jsIndex = jsIndex;
         this.index = index;
@@ -61,6 +63,7 @@ public class Column {
         this.name = name;
         this.isPartitionColumn = isPartitionColumn;
         this.formatStringColumnIndex = formatStringColumnIndex;
+        this.formatDatabarColumnIndexRange = formatDatabarColumnIndex;
         this.description = description;
         this.isInputTableKeyColumn = inputTableKeyColumn;
     }
@@ -74,6 +77,11 @@ public class Column {
     public Format getFormat(TableData.Row row) {
         return row.getFormat(this);
     }
+
+//    @JsMethod
+//    public Format getDatabar(TableData.Row row) {
+//        return row.getFormat(this);
+//    }
 
     @Deprecated
     @JsProperty(name = "index")
@@ -107,6 +115,11 @@ public class Column {
         if (formatStringColumnIndex != null) {
             builder.accept(formatStringColumnIndex);
         }
+        if(formatDatabarColumnIndexRange != null) {
+            for (int idx = formatDatabarColumnIndexRange[0]; idx < formatDatabarColumnIndexRange[1]; idx++) {
+                builder.accept(idx);
+            }
+        }
         if (styleColumnIndex != null) {
             builder.accept(styleColumnIndex);
         }
@@ -133,6 +146,10 @@ public class Column {
 
     public Integer getFormatStringColumnIndex() {
         return formatStringColumnIndex;
+    }
+
+    public Integer[] getFormatDatabarColumnIndexRange() {
+        return formatDatabarColumnIndexRange;
     }
 
     public Integer getStyleColumnIndex() {
@@ -181,6 +198,7 @@ public class Column {
                 ", formatColumnIndex=" + formatColumnIndex +
                 ", styleColumnIndex=" + styleColumnIndex +
                 ", formatStringColumnIndex=" + formatStringColumnIndex +
+                ", formatDatabarColumnIndex=" + formatDatabarColumnIndexRange +
                 ", type='" + type + '\'' +
                 ", name='" + name + '\'' +
                 '}';
@@ -197,14 +215,13 @@ public class Column {
 
         if (index != column.index)
             return false;
-        if (formatColumnIndex != null ? !formatColumnIndex.equals(column.formatColumnIndex)
-                : column.formatColumnIndex != null)
+        if (!Objects.equals(formatColumnIndex, column.formatColumnIndex))
             return false;
-        if (styleColumnIndex != null ? !styleColumnIndex.equals(column.styleColumnIndex)
-                : column.styleColumnIndex != null)
+        if (!Objects.equals(styleColumnIndex, column.styleColumnIndex))
             return false;
-        if (formatStringColumnIndex != null ? !formatStringColumnIndex.equals(column.formatStringColumnIndex)
-                : column.formatStringColumnIndex != null)
+        if (!Objects.equals(formatStringColumnIndex, column.formatStringColumnIndex))
+            return false;
+        if (!Objects.equals(formatDatabarColumnIndexRange, column.formatDatabarColumnIndexRange))
             return false;
         if (!type.equals(column.type))
             return false;
@@ -217,6 +234,7 @@ public class Column {
         result = 31 * result + (formatColumnIndex != null ? formatColumnIndex.hashCode() : 0);
         result = 31 * result + (styleColumnIndex != null ? styleColumnIndex.hashCode() : 0);
         result = 31 * result + (formatStringColumnIndex != null ? formatStringColumnIndex.hashCode() : 0);
+        result = 31 * result + (formatDatabarColumnIndexRange != null ? formatDatabarColumnIndexRange.hashCode() : 0);
         result = 31 * result + type.hashCode();
         result = 31 * result + name.hashCode();
         return result;
@@ -224,11 +242,11 @@ public class Column {
 
     public Column withFormatStringColumnIndex(int formatStringColumnIndex) {
         return new Column(jsIndex, index, formatColumnIndex, styleColumnIndex, type, name, isPartitionColumn,
-                formatStringColumnIndex, description, isInputTableKeyColumn);
+                formatStringColumnIndex, formatDatabarColumnIndexRange, description, isInputTableKeyColumn);
     }
 
     public Column withStyleColumnIndex(int styleColumnIndex) {
         return new Column(jsIndex, index, formatColumnIndex, styleColumnIndex, type, name, isPartitionColumn,
-                formatStringColumnIndex, description, isInputTableKeyColumn);
+                formatStringColumnIndex, formatDatabarColumnIndexRange, description, isInputTableKeyColumn);
     }
 }

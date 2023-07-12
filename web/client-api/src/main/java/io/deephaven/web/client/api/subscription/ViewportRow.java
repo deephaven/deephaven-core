@@ -14,6 +14,9 @@ import jsinterop.annotations.JsMethod;
 import jsinterop.base.Any;
 import jsinterop.base.Js;
 
+import java.util.HashMap;
+import java.util.Map;
+
 @TsInterface
 @TsName(namespace = "dh")
 public class ViewportRow implements TableData.Row {
@@ -50,6 +53,8 @@ public class ViewportRow implements TableData.Row {
         long rowColors = 0;
         String numberFormat = null;
         String formatString = null;
+        String formatDatabarString = null;
+        Map<String, String> formatDatabar = new HashMap<>();
         if (column.getStyleColumnIndex() != null) {
             JsArray<Any> colors = Js.uncheckedCast(dataColumns[column.getStyleColumnIndex()]);
             cellColors = colors.getAtAsAny(offsetInSnapshot).asLong();
@@ -65,6 +70,37 @@ public class ViewportRow implements TableData.Row {
             JsArray<Any> formatStrings = Js.uncheckedCast(dataColumns[column.getFormatStringColumnIndex()]);
             formatString = formatStrings.getAtAsAny(offsetInSnapshot).asString();
         }
-        return new Format(cellColors, rowColors, numberFormat, formatString);
+        if(column.getFormatDatabarColumnIndexRange() != null) {
+            Integer[] range = column.getFormatDatabarColumnIndexRange();
+            Integer start = range[0];
+            Integer end = range[1];
+
+            JsArray<Any> formatDatabarStrings = Js.uncheckedCast(dataColumns[start]);
+            formatDatabarString = formatDatabarStrings.getAtAsAny(offsetInSnapshot).asString();
+            formatDatabar.put("test", formatDatabarString);
+//            for (int idx = start; idx <= end; idx++) {
+//                JsArray<Any> formatDatabarStrings = Js.uncheckedCast(dataColumns[idx]);
+//                formatDatabar.put(column.getName(), formatDatabarStrings.getAtAsAny(offsetInSnapshot).asString());
+//            }
+        }
+        return new Format(cellColors, rowColors, numberFormat, formatString, formatDatabar);
     }
+
+//    @JsMethod
+//    public java.util.Map<String, String> getDatabar(Column column) {
+//        java.util.Map<String, String> databarProps = new HashMap<>();
+//
+//        if (column.getFormatDatabarColumnIndexRange() != null) {
+//            Integer[] range = column.getFormatDatabarColumnIndexRange();
+//            int start = range[0];
+//            int end = range[1];
+//            int colIdx = column.getIndex();
+//
+//            if (colIdx >= start && colIdx <= end) {
+////                databarProps.put(String.valueOf(colIdx), dataColumns[colIdx]);
+//            }
+//        }
+//
+//        return databarProps;
+//    }
 }

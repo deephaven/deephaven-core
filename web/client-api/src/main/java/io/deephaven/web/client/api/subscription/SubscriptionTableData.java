@@ -12,10 +12,7 @@ import io.deephaven.web.client.fu.JsSettings;
 import io.deephaven.web.shared.data.*;
 import io.deephaven.web.shared.data.columns.ColumnData;
 import jsinterop.annotations.JsFunction;
-import jsinterop.annotations.JsIgnore;
-import jsinterop.annotations.JsMethod;
 import jsinterop.annotations.JsProperty;
-import jsinterop.annotations.JsType;
 import jsinterop.base.Any;
 import jsinterop.base.Js;
 import jsinterop.base.JsArrayLike;
@@ -23,9 +20,8 @@ import jsinterop.base.JsArrayLike;
 import javax.annotation.Nullable;
 import java.math.BigDecimal;
 import java.math.BigInteger;
-import java.util.NavigableSet;
-import java.util.PrimitiveIterator;
-import java.util.TreeMap;
+import java.util.*;
+
 import static io.deephaven.web.client.api.subscription.ViewportData.NO_ROW_FORMAT_COLUMN;
 
 public class SubscriptionTableData {
@@ -484,6 +480,7 @@ public class SubscriptionTableData {
             long rowColors = 0;
             String numberFormat = null;
             String formatString = null;
+            Map<String, String> formatDatabarString = new HashMap<>();
             int redirectedIndex = (int) (long) redirectedIndexes.get(this.index);
             if (column.getStyleColumnIndex() != null) {
                 JsArray<Any> colors = Js.uncheckedCast(data[column.getStyleColumnIndex()]);
@@ -501,7 +498,11 @@ public class SubscriptionTableData {
                 JsArray<Any> formatStrings = Js.uncheckedCast(data[column.getFormatStringColumnIndex()]);
                 formatString = formatStrings.getAtAsAny(redirectedIndex).asString();
             }
-            return new Format(cellColors, rowColors, numberFormat, formatString);
+            if (column.getFormatDatabarColumnIndexRange() != null) {
+                JsArray<Any> formatDatabarStrings = Js.uncheckedCast(data[column.getFormatStringColumnIndex()]);
+//                formatDatabarString = formatDatabarStrings.getAtAsAny(redirectedIndex).asString();
+            }
+            return new Format(cellColors, rowColors, numberFormat, formatString, formatDatabarString);
         }
     }
 
@@ -573,6 +574,7 @@ public class SubscriptionTableData {
             long rowColors = 0;
             String numberFormat = null;
             String formatString = null;
+            Map<String, String> formatDatabarString = new HashMap<>();
             int redirectedIndex = (int) (long) redirectedIndexes.get(index);
             if (column.getStyleColumnIndex() != null) {
                 JsArray<Any> colors = Js.uncheckedCast(data[column.getStyleColumnIndex()]);
@@ -590,8 +592,49 @@ public class SubscriptionTableData {
                 JsArray<Any> formatStrings = Js.uncheckedCast(data[column.getFormatStringColumnIndex()]);
                 formatString = formatStrings.getAtAsAny(redirectedIndex).asString();
             }
-            return new Format(cellColors, rowColors, numberFormat, formatString);
+//            if (column.getFormatDatabarColumnIndexRange() != null) {
+//                JsArray<Any> formatDatabarStrings = Js.uncheckedCast(data[column.getFormatDatabarColumnIndexRange()]);
+//                formatDatabarString = formatDatabarStrings.getAtAsAny(redirectedIndex).asString();
+//            }
+            return new Format(cellColors, rowColors, numberFormat, formatString, formatDatabarString);
         }
+//        @Override
+//        public Format getDatabar(int index, Column column) {
+//            return getFormat((long) index, column);
+//        }
+
+//        @Override
+//        public Format getDatabar(long index, Column column) {
+//            long cellColors = 0;
+//            long rowColors = 0;
+//            String numberFormat = null;
+//            String formatString = null;
+//            String formatDatabarString = null;
+//            int redirectedIndex = (int) (long) redirectedIndexes.get(index);
+//            if (column.getStyleColumnIndex() != null) {
+//                JsArray<Any> colors = Js.uncheckedCast(data[column.getStyleColumnIndex()]);
+//                cellColors = colors.getAtAsAny(redirectedIndex).asLong();
+//            }
+//            if (rowStyleColumn != NO_ROW_FORMAT_COLUMN) {
+//                JsArray<Any> rowStyle = Js.uncheckedCast(data[rowStyleColumn]);
+//                rowColors = rowStyle.getAtAsAny(redirectedIndex).asLong();
+//            }
+//            if (column.getFormatColumnIndex() != null) {
+//                JsArray<Any> formatStrings = Js.uncheckedCast(data[column.getFormatColumnIndex()]);
+//                numberFormat = formatStrings.getAtAsAny(redirectedIndex).asString();
+//            }
+//            if (column.getFormatStringColumnIndex() != null) {
+//                JsArray<Any> formatStrings = Js.uncheckedCast(data[column.getFormatStringColumnIndex()]);
+//                formatString = formatStrings.getAtAsAny(redirectedIndex).asString();
+//            }
+////            if (column.getFormatDatabarColumnIndexRange() != null) {
+////                JsArray<Any> formatDatabarStrings = Js.uncheckedCast(data[column.getFormatDatabarColumnIndexRange()]);
+////                formatDatabarString = formatDatabarStrings.getAtAsAny(redirectedIndex).asString();
+////            }
+//            return new Format(cellColors, rowColors, numberFormat, formatString, formatDatabarString);
+//        }
+
+
 
         @Override
         public JsArray<Column> getColumns() {

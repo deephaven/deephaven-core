@@ -86,6 +86,13 @@ public class ViewportData implements TableData {
             if (c.getFormatStringColumnIndex() != null) {
                 data[c.getFormatStringColumnIndex()] = dataColumns[c.getFormatStringColumnIndex()];
             }
+            if (c.getFormatDatabarColumnIndexRange() != null) {
+                int start = c.getFormatDatabarColumnIndexRange()[0];
+                int end = c.getFormatDatabarColumnIndexRange()[1];
+                for (int idx = start; idx <= end; idx++) {
+                    data[index] = dataColumns[index];
+                }
+            }
         }
 
         // Handle row format column, if any
@@ -301,6 +308,16 @@ public class ViewportData implements TableData {
     public Format getFormat(long index, Column column) {
         return getRows().getAt((int) index).getFormat(column);
     }
+
+//    @Override
+//    public Map<String, String> getDatabar(int index, Column column) {
+//        return getRows().getAt(index).getDatabar(column);
+//    }
+//
+////    @Override
+//    public Map<String, String> getDatabar(long index, Column column) {
+//        return getRows().getAt((int)index).getDatabar(column);
+//    }
 
     @Override
     @JsProperty

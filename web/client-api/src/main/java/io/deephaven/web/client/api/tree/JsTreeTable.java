@@ -164,6 +164,13 @@ public class JsTreeTable extends HasLifecycle {
                 if (c.getFormatStringColumnIndex() != null) {
                     data[c.getFormatStringColumnIndex()] = dataColumns[c.getFormatStringColumnIndex()].getData();
                 }
+//                if (c.getFormatDatabarColumnIndexRange() != null) {
+//                    int start = c.getFormatDatabarColumnIndexRange()[0];
+//                    int end = c.getFormatDatabarColumnIndexRange()[1];
+//                    if (index >= start && index <= end) {
+//                        data[index] = dataColumns[index].getData();
+//                    }
+//                }
 
                 // if there is a matching constituent column array, clean it and copy from it
                 Column sourceColumn = sourceColumns.get(c.getName());
@@ -248,6 +255,15 @@ public class JsTreeTable extends HasLifecycle {
         public Format getFormat(long index, Column column) {
             return getRows().getAt((int) index).getFormat(column);
         }
+//        @Override
+//        public Format getDatabar(int index, Column column) {
+//            return getRows().getAt(index).getFormat(column);
+//        }
+//
+//        @Override
+//        public Format getDatabar(long index, Column column) {
+//            return getRows().getAt((int) index).getFormat(column);
+//        }
 
         @JsProperty
         public double getOffset() {
@@ -472,7 +488,7 @@ public class JsTreeTable extends HasLifecycle {
         }
 
         keyTableData = new Object[keyColumns.length + 2][0];
-        actionCol = new Column(-1, -1, null, null, "byte", "__action__", false, null, null, false);
+        actionCol = new Column(-1, -1, null, null, "byte", "__action__", false, null, null, null, false);
 
         sourceTable = JsLazy.of(() -> workerConnection
                 .newState(this, (c, newState, metadata) -> {

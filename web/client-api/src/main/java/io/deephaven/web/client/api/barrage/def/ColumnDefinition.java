@@ -6,6 +6,7 @@ package io.deephaven.web.client.api.barrage.def;
 import io.deephaven.web.client.api.Column;
 import io.deephaven.web.client.api.barrage.WebBarrageUtils;
 
+import java.util.Collection;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -16,10 +17,12 @@ public class ColumnDefinition {
 
     private String styleColumn;
     private String formatColumn;
+    private Map<String, String> databarColumn = new HashMap<>();
 
     private boolean isStyleColumn;
     private boolean isFormatColumn;
     private boolean isNumberFormatColumn;
+    private boolean isDatabarFormatColumn;
     private boolean isPartitionColumn;
     private boolean isHierarchicalExpandByColumn;
     private boolean isHierarchicalRowDepthColumn;
@@ -28,8 +31,6 @@ public class ColumnDefinition {
     private boolean isRollupConstituentNodeColumn;
     private boolean isRollupGroupByColumn;
     private String rollupAggregationInputColumn;
-
-    private Map<String, String> databarColumn = new HashMap<>();
 
     // Indicates that this is a style column for the row
     private boolean forRow;
@@ -76,6 +77,12 @@ public class ColumnDefinition {
         isFormatColumn = formatColumn;
     }
 
+    public boolean isDatabarFormatColumn() { return isDatabarFormatColumn; }
+
+    public void setDatabarFormatColumn(boolean databarFormatColumn) {
+        isDatabarFormatColumn = databarFormatColumn;
+    }
+
     /**
      * @deprecated Use {@link #isFormatColumn()}
      */
@@ -101,7 +108,7 @@ public class ColumnDefinition {
     }
 
     public boolean isVisible() {
-        return !isStyleColumn() && !isFormatColumn() && !isRollupConstituentNodeColumn()
+        return !isStyleColumn() && !isFormatColumn() && !isDatabarFormatColumn() && !isRollupConstituentNodeColumn()
                 && !isHierarchicalRowDepthColumn() && !isHierarchicalRowExpandedColumn();
     }
 
@@ -120,6 +127,19 @@ public class ColumnDefinition {
     public void setFormatColumnName(String formatColumn) {
         this.formatColumn = formatColumn;
     }
+
+    public String getDatabarColumnName(String key) {
+        return databarColumn.get(key);
+    }
+
+    public Collection<String> getDatabarColumnNames() {
+        return databarColumn.values();
+    }
+
+//    public void setDatabarColumnName(Map<String, String> databarColumn) {
+//    public void setDatabarColumnName(String databarColumn) {
+//        this.databarColumn = databarColumn;
+//    }
 
     public String getStyleColumnName() {
         return styleColumn;
@@ -147,11 +167,29 @@ public class ColumnDefinition {
 
     public Column makeJsColumn(int index, Map<Boolean, Map<String, ColumnDefinition>> map) {
         if (isForRow()) {
-            return makeColumn(-1, this, null, null, false, null, null, false);
+            return makeColumn(-1, this, null, null, false, null, null, null, false);
         }
         Map<String, ColumnDefinition> byNameMap = map.get(isRollupConstituentNodeColumn());
         ColumnDefinition format = byNameMap.get(getFormatColumnName());
         ColumnDefinition style = byNameMap.get(getStyleColumnName());
+        Integer[] databarFormatIndexRange = new Integer[2];
+
+        // can i optimize by just looking at first and last indexes of getDatabarColumnNames().values()
+        for (String colName: getDatabarColumnNames()) {
+            if(colName == null) {
+                continue;
+            }
+            if(databarFormatIndexRange[0] == null) {
+                databarFormatIndexRange[0] = Integer.MAX_VALUE;
+            }
+            if(databarFormatIndexRange[1] == null) {
+                databarFormatIndexRange[1] = Integer.MIN_VALUE;
+            }
+
+            ColumnDefinition column = byNameMap.get(colName);
+            databarFormatIndexRange[0] = Math.min(databarFormatIndexRange[0], column.getColumnIndex());
+            databarFormatIndexRange[1] = Math.max(databarFormatIndexRange[1], column.getColumnIndex());
+        }
 
         return makeColumn(index,
                 this,
@@ -159,15 +197,16 @@ public class ColumnDefinition {
                 style == null ? null : style.getColumnIndex(),
                 isPartitionColumn(),
                 format == null || format.isNumberFormatColumn() ? null : format.getColumnIndex(),
+                databarFormatIndexRange[0] == null || databarFormatIndexRange[1] == null ? null : databarFormatIndexRange,
                 getDescription(),
                 isInputTableKeyColumn());
     }
 
     private static Column makeColumn(int jsIndex, ColumnDefinition definition, Integer numberFormatIndex,
-            Integer styleIndex, boolean isPartitionColumn, Integer formatStringIndex, String description,
+            Integer styleIndex, boolean isPartitionColumn, Integer formatStringIndex, Integer[] formatDatabarIndexRange, String description,
             boolean inputTableKeyColumn) {
         return new Column(jsIndex, definition.getColumnIndex(), numberFormatIndex, styleIndex, definition.getType(),
-                definition.getName(), isPartitionColumn, formatStringIndex, description, inputTableKeyColumn);
+                definition.getName(), isPartitionColumn, formatStringIndex, formatDatabarIndexRange, description, inputTableKeyColumn);
     }
 
     public boolean isHierarchicalExpandByColumn() {

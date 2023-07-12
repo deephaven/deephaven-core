@@ -107,6 +107,7 @@ function openTable(t) {
 
         var viewportData = event.detail;
         var rows = viewportData.rows;
+        console.log(JSON.stringify(rows));
         for (var i = 0; i < rows.length; i++) {
             var tr = document.createElement('tr');
             for (var j = 0; j < table.columns.length; j++) {
