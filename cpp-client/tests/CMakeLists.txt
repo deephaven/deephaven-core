@@ -7,6 +7,7 @@ add_executable(tests
     add_drop_test.cc
     aggregates_test.cc
     attributes_test.cc
+    basic_test.cc
     buffer_column_source_test.cc
     cython_support_test.cc
     head_and_tail_test.cc
