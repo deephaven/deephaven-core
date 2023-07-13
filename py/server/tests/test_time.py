@@ -923,6 +923,7 @@ class TimeTestCase(BaseTestCase):
             "upper_bin(TS, `PT00:00:00.001000000`, MINUTE)",
             "upper_bin(TS, 1000000000)",
             "upper_bin(TS, `PT00:00:00.001000000`)",
+            "lower_bin(None, 1000)",
         ]
         t = empty_table(nrow).update("TS = io.deephaven.time.DateTimeUtils.now()")
         for f in formulas:
@@ -937,6 +938,11 @@ class TimeTestCase(BaseTestCase):
             with self.assertRaises(DHError) as cm:
                 t1 = t.update(f"NewTS = {f}")
             self.assertIn("Missing args", str(cm.exception))
+
+        for col in ["None", "True", "False"]:
+            with self.assertRaises(DHError) as cm:
+                t1 = t.update(f"{col} = now()")
+            self.assertIn("reserved keyword", str(cm.exception))
 
     # endregion
 

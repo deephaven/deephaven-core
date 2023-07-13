@@ -95,7 +95,7 @@ public class NameValidator {
     }
 
     private static final Set<String> QUERY_LANG_RESERVED_VARIABLE_NAMES =
-            Stream.of("in", "not", "i", "ii", "k").collect(
+            Stream.of("in", "not", "i", "ii", "k", "True", "False", "None").collect(
                     Collectors.collectingAndThen(Collectors.toSet(), Collections::unmodifiableSet));
 
     public static String validateTableName(String name) {
