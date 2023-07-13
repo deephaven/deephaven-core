@@ -3423,12 +3423,12 @@ public class SortedRangesTest {
 
     @Test
     public void testInsertAppendForCoverage() {
-        SortedRanges sr1 = vs2sar(new long[]{10, -20, 30, -40});
-        SortedRanges sr2 = vs2sar(new long[]{41, 51, 60, -62});
+        SortedRanges sr1 = vs2sar(new long[] {10, -20, 30, -40});
+        SortedRanges sr2 = vs2sar(new long[] {41, 51, 60, -62});
         OrderedLongSet t = sr1.ixInsert(sr2);
         assertTrue(t instanceof SortedRanges);
         assertEquals(t.ixCardinality(), sr1.ixCardinality(), sr2.ixCardinality());
-        for (SortedRanges sr : new SortedRanges[] { sr1, sr2 }) {
+        for (SortedRanges sr : new SortedRanges[] {sr1, sr2}) {
             try (RowSet.RangeIterator it = sr.ixRangeIterator()) {
                 while (it.hasNext()) {
                     it.next();
