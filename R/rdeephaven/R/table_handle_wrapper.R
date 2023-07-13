@@ -39,6 +39,69 @@ TableHandle <- R6Class("TableHandle",
             print("initializing!")
         },
 
+        #' @description
+        #' Whether the table referenced by this TableHandle is static or not.
+        #' @return TRUE if the table is static, or FALSE if the table is ticking.
+        is_static = function() {
+            return(private$is_static_field)
+        },
+
+        #' @description
+        #' Number of rows in the table referenced by this TableHandle, currently only implemented for static tables.
+        #' @return The number of rows in the table.
+        nrow = function() {
+            if(!private$is_static_field) {
+                stop("The number of rows is not yet supported for dynamic tables.")
+            }
+            return(self$internal_table_handle$num_rows())
+        },
+
+        #' @description
+        #' Binds the table referenced by this TableHandle to a variable on the server,
+        #' enabling it to be accessed by that name from any Deephaven API.
+        #' @param name Name for this table on the server.
+        bind_to_variable = function(name) {
+            .verify_string("name", name)
+            self$internal_table_handle$bind_to_variable(name)
+        },
+
+        #' @description
+        #' Imports the table referenced by this TableHandle into an Arrow RecordBatchStreamReader.
+        #' @return A RecordBatchStreamReader containing the data from the table referenced by this TableHandle.
+        to_arrow_record_batch_stream_reader = function() {
+            ptr = self$internal_table_handle$get_arrow_array_stream_ptr()
+            rbsr = RecordBatchStreamReader$import_from_c(ptr)
+            return(rbsr)
+        },
+
+        #' @description
+        #' Imports the table referenced by this TableHandle into an Arrow Table.
+        #' @return A Table containing the data from the table referenced by this TableHandle.
+        to_arrow_table = function() {
+            rbsr = self$to_arrow_record_batch_stream_reader()
+            arrow_tbl = rbsr$read_table()
+            return(arrow_tbl)
+        },
+
+        #' @description
+        #' Imports the table referenced by this TableHandle into a dplyr Tibble.
+        #' @return A Tibble containing the data from the table referenced by this TableHandle.
+        to_tibble = function() {
+            rbsr = self$to_arrow_record_batch_stream_reader()
+            arrow_tbl = rbsr$read_table()
+            return(as_tibble(arrow_tbl))
+        },
+
+        #' @description
+        #' Imports the table referenced by this TableHandle into an R Data Frame.
+        #' @return A Data Frame containing the data from the table referenced by this TableHandle.
+        to_data_frame = function() {
+            arrow_tbl = self$to_arrow_table()
+            return(as.data.frame(as.data.frame(arrow_tbl))) # TODO: for some reason as.data.frame on arrow table returns a tibble, not a data frame
+        },
+
+        ###################### TABLE OPERATIONS #######################
+
         # FILTERING OPERATIONS
 
         #' @description
@@ -336,67 +399,6 @@ TableHandle <- R6Class("TableHandle",
         #TODO: merge = function(key_column, sources) {
         #    return(TableHandle$new(self$internal_table_handle$merge(key_column, sources)))
         #},
-
-        #' @description
-        #' Whether the table referenced by this TableHandle is static or not.
-        #' @return TRUE if the table is static, or FALSE if the table is ticking.
-        is_static = function() {
-            return(private$is_static_field)
-        },
-
-        #' @description
-        #' Number of rows in the table referenced by this TableHandle, currently only implemented for static tables.
-        #' @return The number of rows in the table.
-        nrow = function() {
-            if(!private$is_static_field) {
-                stop("The number of rows is not yet supported for dynamic tables.")
-            }
-            return(self$internal_table_handle$num_rows())
-        },
-
-        #' @description
-        #' Binds the table referenced by this TableHandle to a variable on the server,
-        #' enabling it to be accessed by that name from any Deephaven API.
-        #' @param name Name for this table on the server.
-        bind_to_variable = function(name) {
-            .verify_string("name", name)
-            self$internal_table_handle$bind_to_variable(name)
-        },
-
-        #' @description
-        #' Imports the table referenced by this TableHandle into an Arrow RecordBatchStreamReader.
-        #' @return A RecordBatchStreamReader containing the data from the table referenced by this TableHandle.
-        to_arrow_record_batch_stream_reader = function() {
-            ptr = self$internal_table_handle$get_arrow_array_stream_ptr()
-            rbsr = RecordBatchStreamReader$import_from_c(ptr)
-            return(rbsr)
-        },
-
-        #' @description
-        #' Imports the table referenced by this TableHandle into an Arrow Table.
-        #' @return A Table containing the data from the table referenced by this TableHandle.
-        to_arrow_table = function() {
-            rbsr = self$to_arrow_record_batch_stream_reader()
-            arrow_tbl = rbsr$read_table()
-            return(arrow_tbl)
-        },
-
-        #' @description
-        #' Imports the table referenced by this TableHandle into a dplyr Tibble.
-        #' @return A Tibble containing the data from the table referenced by this TableHandle.
-        to_tibble = function() {
-            rbsr = self$to_arrow_record_batch_stream_reader()
-            arrow_tbl = rbsr$read_table()
-            return(as_tibble(arrow_tbl))
-        },
-
-        #' @description
-        #' Imports the table referenced by this TableHandle into an R Data Frame.
-        #' @return A Data Frame containing the data from the table referenced by this TableHandle.
-        to_data_frame = function() {
-            arrow_tbl = self$to_arrow_table()
-            return(as.data.frame(as.data.frame(arrow_tbl))) # TODO: for some reason as.data.frame on arrow table returns a tibble, not a data frame
-        },
         
         internal_table_handle = NULL
     ),

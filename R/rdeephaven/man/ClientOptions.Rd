@@ -136,7 +136,8 @@ Use the TLS protocol in authentication and subsequent communication.
 \subsection{Arguments}{
 \if{html}{\out{<div class="arguments">}}
 \describe{
-\item{\code{root_certs}}{Optional PEM-encoded certificate root for server connections. Defaults to system defaults.}
+\item{\code{root_certs}}{Optional PEM-encoded certificate root for server connections. Defaults to system defaults.
+Adds an int-valued option for the configuration of the underlying gRPC channels.}
 }
 \if{html}{\out{</div>}}
 }
@@ -149,6 +150,15 @@ Use the TLS protocol in authentication and subsequent communication.
 \if{html}{\out{<div class="r">}}\preformatted{ClientOptions$add_int_option(opt, val)}\if{html}{\out{</div>}}
 }
 
+\subsection{Arguments}{
+\if{html}{\out{<div class="arguments">}}
+\describe{
+\item{\code{opt}}{The option key.}
+
+\item{\code{val}}{The option value.}
+}
+\if{html}{\out{</div>}}
+}
 }
 \if{html}{\out{<hr>}}
 \if{html}{\out{<a id="method-ClientOptions-add_string_option"></a>}}
