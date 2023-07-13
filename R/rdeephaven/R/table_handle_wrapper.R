@@ -36,126 +36,251 @@ TableHandle <- R6Class("TableHandle",
             }
             self$internal_table_handle <- table_handle
             private$is_static_field <- self$internal_table_handle$is_static()
+            print("initializing!")
         },
 
+        # FILTERING OPERATIONS
+
+        #' @description
+        #' Select columns from a table. The columns can be column names or formulas like
+        #' "NewCol = A + 12". See the Deephaven documentation for the difference between "select" and "view".
+        #' @param columns The columns to select.
+        #' @return A TableHandle referencing the new table.
         select = function(columns) {
             return(TableHandle$new(self$internal_table_handle$select(columns)))
         },
 
+        #' @description
+        #' View columns from a table. The columns can be column names or formulas like
+        #' "NewCol = A + 12". See the Deephaven documentation for the difference between select() and view().
+        #' @param columns The columns to view.
+        #' @return A TableHandle referencing the new table.
         view = function(columns) {
             return(TableHandle$new(self$internal_table_handle$view(columns)))
         },
 
+        #' @description
+        #' Creates a new table from this table where the specified columns have been excluded.
+        #' @param columns The columns to exclude.
+        #' @return A TableHandle referencing the new table.
         drop_columns = function(columns) {
             return(TableHandle$new(self$internal_table_handle$drop_columns(columns)))
         },
 
+        #' @description
+        #' Creates a new table from this table, but including the additional specified columns.
+        #' See the Deephaven documentation for the difference between update() and updateView().
+        #' @param columns The columns to add. For example, {"X = A + 5", "Y = X * 2"}.
+        #' @return A TableHandle referencing the new table.
         update = function(columns) {
             return(TableHandle$new(self$internal_table_handle$update(columns)))
         },
 
+        #' @description
+        #' Creates a new view from this table, but including the additional specified columns.
+        #' See the Deephaven documentation for the difference between update() and updateView().
+        #' @param columns The columns to add. For example, {"X = A + 5", "Y = X * 2"}.
+        #' @return A TableHandle referencing the new table.
         update_view = function(columns) {
             return(TableHandle$new(self$internal_table_handle$update_view(columns)))
         },
 
+        #' @description
+        #' Creates a new table from this table, filtered by condition. Consult the Deephaven
+        #' documentation for more information about valid conditions.
+        #' @param condition A Deephaven boolean expression such as "Price > 100" or "Col3 == Col1 * Col2".
+        #' @return A TableHandle referencing the new table.
         where = function(condition) {
             return(TableHandle$new(self$internal_table_handle$where(condition)))
         },
 
-        # TODO: sort = function(sort_pairs) {
-        #    return(TableHandle$new(self$internal_table_handle$sort(sort_pairs)))
-        #},
+        # AGGREGATION OPERATIONS
 
+        #' @description
+        #' Creates a new table from this table, grouped by columns with the column content grouped
+        #' into arrays.
+        #' @param columns Columns to group by.
+        #' @return A TableHandle referencing the new table.
         by = function(columns) {
             return(TableHandle$new(self$internal_table_handle$by(columns)))
         },
 
+        #' @description
+        #' Creates a new table from this table, grouped by columns, with the "min" aggregate operation
+        #' applied to the remaining columns.
+        #' @param columns Columns to group by.
+        #' @return A TableHandle referencing the new table.
         min_by = function(columns) {
             return(TableHandle$new(self$internal_table_handle$min_by(columns)))
         },
 
+        #' @description
+        #' Creates a new table from this table, grouped by columns, with the "max" aggregate operation
+        #' applied to the remaining columns.
+        #' @param columns Columns to group by.
+        #' @return A TableHandle referencing the new table.
         max_by = function(columns) {
             return(TableHandle$new(self$internal_table_handle$max_by(columns)))
         },
 
+        #' @description
+        #' Creates a new table from this table, grouped by columns, with the "sum" aggregate operation
+        #' applied to the remaining columns.
+        #' @param columns Columns to group by.
+        #' @return A TableHandle referencing the new table.
         sum_by = function(columns) {
             return(TableHandle$new(self$internal_table_handle$sum_by(columns)))
         },
 
+        #' @description
+        #' Creates a new table from this table, grouped by columns, with the "absSum" aggregate operation
+        #' applied to the remaining columns.
+        #' @param columns Columns to group by.
+        #' @return A TableHandle referencing the new table.
         abs_sum_by = function(columns) {
             return(TableHandle$new(self$internal_table_handle$abs_sum_by(columns)))
         },
 
+        #' @description
+        #' Creates a new table from this table, grouped by columns, with the "var" aggregate operation
+        #' applied to the remaining columns.
+        #' @param columns Columns to group by.
+        #' @return A TableHandle referencing the new table.
         var_by = function(columns) {
             return(TableHandle$new(self$internal_table_handle$var_by(columns)))
         },
 
+        #' @description
+        #' Creates a new table from this table, grouped by columns, with the "std" aggregate operation
+        #' applied to the remaining columns.
+        #' @param columns Columns to group by.
+        #' @return A TableHandle referencing the new table.
         std_by = function(columns) {
             return(TableHandle$new(self$internal_table_handle$std_by(columns)))
         },
 
+        #' @description
+        #' Creates a new table from this table, grouped by columns, with the "avg" aggregate operation
+        #' applied to the remaining columns.
+        #' @param columns Columns to group by.
+        #' @return A TableHandle referencing the new table.
         avg_by = function(columns) {
             return(TableHandle$new(self$internal_table_handle$avg_by(columns)))
         },
 
+        #' @description
+        #' Creates a new table from this table, grouped by columns, with the "first" aggregate operation
+        #' applied to the remaining columns.
+        #' @param columns Columns to group by.
+        #' @return A TableHandle referencing the new table.
         first_by = function(columns) {
             return(TableHandle$new(self$internal_table_handle$first_by(columns)))
         },
 
+        #' @description
+        #' Creates a new table from this table, grouped by columns, with the "last" aggregate operation
+        #' applied to the remaining columns.
+        #' @param columns Columns to group by.
+        #' @return A TableHandle referencing the new table.
         last_by = function(columns) {
             return(TableHandle$new(self$internal_table_handle$last_by(columns)))
         },
 
+        #' @description
+        #' Creates a new table from this table, grouped by columns, with the "median" aggregate operation
+        #' applied to the remaining columns.
+        #' @param columns Columns to group by.
+        #' @return A TableHandle referencing the new table.
         median_by = function(columns) {
             return(TableHandle$new(self$internal_table_handle$median_by(columns)))
         },
 
+        #' @description
+        #' Creates a new table from this table, grouped by columns, with the "percentile" aggregate operation
+        #' applied to the remaining columns.
+        #' @param percentile The designated percentile
+        #' @param columns Columns to group by.
+        #' @return A TableHandle referencing the new table.
         percentile_by = function(percentile, columns) {
             return(TableHandle$new(self$internal_table_handle$percentile_by(percentile, columns)))
         },
 
+        #' @description
+        #' Creates a new table from this table, grouped by columns, having a new column named by
+        #' `countByColumn` containing the size of each group.
+        #' @param count_by_column Name of the output column.
+        #' @param columns Columns to group by.
+        #' @return A TableHandle referencing the new table.
         count_by = function(count_by_column, columns) {
             return(TableHandle$new(self$internal_table_handle$count_by(count_by_column, columns)))
         },
 
+        #' @description
+        #' Creates a new table from this table, grouped by columns, having a new column named by
+        #' `weightColumn` containing the weighted average of each group.
+        #' @param weight_column Name of the output column.
+        #' @param columns Columns to group by.
+        #' @return A TableHandle referencing the new table.
         w_avg_by = function(weight_column, columns) {
             return(TableHandle$new(self$internal_table_handle$w_avg_by(weight_column, columns)))
         },
 
+        #' @description
+        #' Creates a new table from this table, grouped by columns, containing the last `n` rows of
+        #' each group.
+        #' @param n Number of rows
+        #' @param columns Columns to group by.
+        #' @return A TableHandle referencing the new table.
         tail_by = function(n, columns) {
             return(TableHandle$new(self$internal_table_handle$tail_by(n, columns)))
         },
 
+        #' @description
+        #' Creates a new table from this table, grouped by columns, containing the first `n` rows of
+        #' each group.
+        #' @param n Number of rows
+        #' @param columns Columns to group by.
+        #' @return A TableHandle referencing the new table.
         head_by = function(n, columns) {
             return(TableHandle$new(self$internal_table_handle$head_by(n, columns)))
         },
 
-        head = function(n) {
-            return(TableHandle$new(self$internal_table_handle$head(n)))
-        },
+        # JOIN OPERATIONS
 
-        tail = function(n) {
-            return(TableHandle$new(self$internal_table_handle$tail(n)))
-        },
-
-        ungroup = function(null_fill, group_by_columns) {
-            return(TableHandle$new(self$internal_table_handle$ungroup(null_fill, group_by_columns)))
-        },
-
-        #TODO: merge = function(key_column, sources) {
-        #    return(TableHandle$new(self$internal_table_handle$merge(key_column, sources)))
-        #},
-
+        #' @description
+        #' Creates a new table by cross joining this table with `rightSide`. The tables are joined by
+        #' the columns in `columnsToMatch`, and columns from `rightSide` are brought in and optionally
+        #' renamed by `columnsToAdd`. Example:
+        #' @param right_side The table to join with this table
+        #' @param columns_to_match The columns to join on
+        #' @param columns_to_add The columns from the right side to add, and possibly rename.
+        #' @return A TableHandle referencing the new table.
         cross_join = function(right_side, columns_to_match, columns_to_add) {
             return(TableHandle$new(self$internal_table_handle$cross_join(right_side$internal_table_handle,
                                                                             columns_to_match, columns_to_add)))
         },
 
+        #' @description
+        #' Creates a new table by natural joining this table with `rightSide`. The tables are joined by
+        #' the columns in `columnsToMatch`, and columns from `rightSide` are brought in and optionally
+        #' renamed by `columnsToAdd`. Example:
+        #' @param right_side The table to join with this table
+        #' @param columns_to_match The columns to join on
+        #' @param columns_to_add The columns from the right side to add, and possibly rename.
+        #' @return A TableHandle referencing the new table.
         natural_join = function(right_side, columns_to_match, columns_to_add) {
             return(TableHandle$new(self$internal_table_handle$natural_join(right_side$internal_table_handle,
                                                                               columns_to_match, columns_to_add)))
         },
 
+        #' @description
+        #' Creates a new table by exact joining this table with `rightSide`. The tables are joined by
+        #' the columns in `columnsToMatch`, and columns from `rightSide` are brought in and optionally
+        #' renamed by `columnsToAdd`. Example:
+        #' @param right_side The table to join with this table
+        #' @param columns_to_match The columns to join on
+        #' @param columns_to_add The columns from the right side to add, and possibly rename.
+        #' @return A TableHandle referencing the new table.
         exact_join = function(right_side, columns_to_match, columns_to_add) {
             print(right_side)
             print(columns_to_match)
@@ -164,6 +289,53 @@ TableHandle <- R6Class("TableHandle",
             return(TableHandle$new(self$internal_table_handle$exact_join(right_side$internal_table_handle,
                                                                             columns_to_match, columns_to_add)))
         },
+
+        # MISC OPERATIONS
+
+        #' @description
+        #' Creates a new table from this table containing the first `n` rows of this table.
+        #' @param n Number of rows
+        #' @return A TableHandle referencing the new table.
+        head = function(n) {
+            return(TableHandle$new(self$internal_table_handle$head(n)))
+        },
+
+        #' @description
+        #' Creates a new table from this table containing the last `n` rows of this table.
+        #' @param n Number of rows
+        #' @return A TableHandle referencing the new table.
+        tail = function(n) {
+            return(TableHandle$new(self$internal_table_handle$tail(n)))
+        },
+
+        #' @description
+        #' Creates a new table from this table with the column array data ungrouped. This is the inverse
+        #' of the by() const operation.
+        #' @param group_by_columns Columns to ungroup.
+        #' @return A TableHandle referencing the new table.
+        ungroup = function(null_fill, group_by_columns) {
+            return(TableHandle$new(self$internal_table_handle$ungroup(null_fill, group_by_columns)))
+        },
+
+        #' @description
+        #' Creates a new table from this table, sorted by sortPairs.
+        #' @param sort_pairs A vector of SortPair objects describing the sort. Each SortPair refers to
+        #'   a column, a sort direction, and whether the sort should consider to the value's regular or
+        #'   absolute value when doing comparisons.
+        #' @return A TableHandle referencing the new table.
+        # TODO: sort = function(sort_pairs) {
+        #    return(TableHandle$new(self$internal_table_handle$sort(sort_pairs)))
+        #},
+
+        #' @description
+        #' Creates a new table by merging `sources` together. The tables are essentially stacked on top
+        #' of each other.
+        #TODO: Document keyColumn
+        #' @param sources The tables to merge.
+        #' @return A TableHandle referencing the new table.
+        #TODO: merge = function(key_column, sources) {
+        #    return(TableHandle$new(self$internal_table_handle$merge(key_column, sources)))
+        #},
 
         #' @description
         #' Whether the table referenced by this TableHandle is static or not.
