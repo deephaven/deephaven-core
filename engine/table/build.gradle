@@ -10,15 +10,6 @@ sourceSets {
     main {
         resources {
             srcDir 'groovy'
-            include 'core/*.groovy'
-        }
-        resources {
-            srcDir 'python'
-            include 'core/*.py'
-        }
-        resources {
-            srcDir 'src/main/resources'
-            include '**'
         }
     }
 }
