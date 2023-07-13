@@ -5,7 +5,7 @@ import io.deephaven.engine.table.Table;
 import io.deephaven.engine.table.impl.util.WritableRowRedirection;
 
 /**
- * This is a common interface for the static and incremental state manager so that our bucketed MultiJoin system is
+ * This is a common interface for the static and incremental state manager so that our bucketed MultiJoinTable system is
  * capable of using them interchangeably to build the table.
  */
 public interface MultiJoinStateManager {
