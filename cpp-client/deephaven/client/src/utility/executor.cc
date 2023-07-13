@@ -7,6 +7,8 @@
 #include <thread>
 #include "deephaven/dhcore/utility/utility.h"
 
+#include <grpc/support/log.h>
+
 using deephaven::dhcore::utility::streamf;
 using deephaven::dhcore::utility::stringf;
 
@@ -14,20 +16,22 @@ namespace deephaven::client::utility {
 std::shared_ptr<Executor> Executor::create(std::string id) {
   auto result = std::make_shared<Executor>(Private(), std::move(id));
   result->executorThread_ = std::thread(&threadStart, result);
+  gpr_log(GPR_DEBUG, "%s: Created.", id.c_str());
   return result;
 }
 
 Executor::Executor(Private, std::string id) : id_(std::move(id)), cancelled_(false) {}
 
-Executor::~Executor() = default;
+Executor::~Executor() {
+  gpr_log(GPR_DEBUG, "%s: Destroyed.", id_.c_str());
+}
 
 void Executor::shutdown() {
-  // TODO(cristianferretti): change to logging framework
-  std::cerr << DEEPHAVEN_DEBUG_MSG(stringf("Executor '%o' shutdown requested\n", id_));
+  gpr_log(GPR_DEBUG, "%s: Shutdown requested.", id_.c_str());
   std::unique_lock<std::mutex> guard(mutex_);
   if (cancelled_) {
     guard.unlock(); // to be nice
-    std::cerr << DEEPHAVEN_DEBUG_MSG("Already cancelled\n");
+    gpr_log(GPR_ERROR, "%s: Already cancelled.", id_.c_str());
     return;
   }
   cancelled_ = true;
@@ -53,9 +57,9 @@ void Executor::invoke(std::shared_ptr<callback_t> cb) {
 }
 
 void Executor::threadStart(std::shared_ptr<Executor> self) {
+  gpr_log(GPR_DEBUG, "%s: thread starting.", self->id_.c_str());
   self->runUntilCancelled();
-  // TODO(cristianferretti): change to logging framework
-  std::cerr << DEEPHAVEN_DEBUG_MSG(stringf("Executor '%o' thread exiting\n", self->id_));
+  gpr_log(GPR_DEBUG, "%s: thread exiting.", self->id_.c_str());
 }
 
 void Executor::runUntilCancelled() {
@@ -80,9 +84,9 @@ void Executor::runUntilCancelled() {
       try {
         cb->invoke();
       } catch (const std::exception &e) {
-        streamf(std::cerr, "Executor ignored exception: %o\n", e.what());
+        gpr_log(GPR_ERROR, "%s: Executor ignored exception: %s.", id_.c_str(), e.what());
       } catch (...) {
-        std::cerr << "Executor ignored nonstandard exception.\n";
+        gpr_log(GPR_ERROR, "%s: Executor ignored nonstandard exception.", id_.c_str());
       }
     }
 

@@ -4,6 +4,7 @@
 #include "deephaven/client/impl/table_handle_manager_impl.h"
 
 #include <map>
+#include <grpc/support/log.h>
 #include "deephaven/client/utility/executor.h"
 #include "deephaven/client/impl/table_handle_impl.h"
 #include "deephaven/dhcore/utility/callbacks.h"
@@ -15,6 +16,7 @@ using deephaven::client::utility::Executor;
 using deephaven::dhcore::utility::SFCallback;
 using deephaven::dhcore::utility::streamf;
 using deephaven::dhcore::utility::stringf;
+using deephaven::dhcore::utility::objectId;
 using io::deephaven::proto::backplane::script::grpc::ExecuteCommandResponse;
 
 
@@ -28,12 +30,18 @@ std::shared_ptr<TableHandleManagerImpl> TableHandleManagerImpl::create(std::opti
 
 TableHandleManagerImpl::TableHandleManagerImpl(Private, std::optional<Ticket> &&consoleId,
     std::shared_ptr<Server> &&server, std::shared_ptr<Executor> &&executor,
-    std::shared_ptr<Executor> &&flightExecutor) : consoleId_(std::move(consoleId)),
-    server_(std::move(server)), executor_(std::move(executor)),
+    std::shared_ptr<Executor> &&flightExecutor) :
+    me_(deephaven::dhcore::utility::objectId("TableHandleManagerImpl", this)),
+    consoleId_(std::move(consoleId)),
+    server_(std::move(server)),
+    executor_(std::move(executor)),
     flightExecutor_(std::move(flightExecutor)) {
+  gpr_log(GPR_DEBUG, "%s: Created.", me_.c_str());
 }
 
-TableHandleManagerImpl::~TableHandleManagerImpl() = default;
+TableHandleManagerImpl::~TableHandleManagerImpl() {
+  gpr_log(GPR_DEBUG,"%s: Destroyed.", me_.c_str());
+}
 
 void TableHandleManagerImpl::shutdown() {
   for (const auto &sub : subscriptions_) {

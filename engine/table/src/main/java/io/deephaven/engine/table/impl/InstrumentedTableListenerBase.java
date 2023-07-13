@@ -184,6 +184,46 @@ public abstract class InstrumentedTableListenerBase extends LivenessArtifact
         }
     }
 
+    /**
+     * Record that we are enqueuing a new notification, and validate our state re: double-notification. This step is
+     * important to ensure that {@link #satisfied(long)} will return correct results.
+     */
+    private void onNotificationCreated() {
+        final long currentStep = getUpdateGraph().clock().currentStep();
+        if (lastCompletedStep == currentStep) {
+            // noinspection ThrowableNotThrown
+            Assert.statementNeverExecuted("Enqueued after lastCompletedStep already set to current step: " + this
+                    + ", step=" + currentStep + ", lastCompletedStep=" + lastCompletedStep);
+        }
+
+        StepUpdater.forceUpdateRecordedStep(
+                LAST_ENQUEUED_STEP_UPDATER, InstrumentedTableListenerBase.this, currentStep);
+    }
+
+    /**
+     * Validate recorded state before executing a notification.
+     *
+     * @param currentStep The current logical clock step
+     */
+    private void beforeRunNotification(final long currentStep) {
+        Assert.eq(lastEnqueuedStep, "lastEnqueuedStep", currentStep, "currentStep");
+        if (lastCompletedStep >= currentStep) {
+            throw new IllegalStateException(
+                    "Execution began after lastCompletedStep already set to current step: " + this
+                            + ", step=" + currentStep + ", lastCompletedStep=" + lastCompletedStep);
+        }
+    }
+
+    /**
+     * Update recorded state after executing a notification.
+     *
+     * @param currentStep The current logical clock step
+     */
+    private void afterRunNotification(final long currentStep) {
+        StepUpdater.forceUpdateRecordedStep(
+                LAST_COMPLETED_STEP_UPDATER, InstrumentedTableListenerBase.this, currentStep);
+    }
+
     public class ErrorNotification extends AbstractNotification implements NotificationQueue.ErrorNotification {
 
         private final Throwable originalException;
@@ -193,6 +233,7 @@ public abstract class InstrumentedTableListenerBase extends LivenessArtifact
             super(terminalListener);
             this.originalException = originalException;
             this.sourceEntry = sourceEntry;
+            onNotificationCreated();
         }
 
         @Override
@@ -200,12 +241,18 @@ public abstract class InstrumentedTableListenerBase extends LivenessArtifact
             if (failed) {
                 return;
             }
+
             failed = true;
             AsyncErrorLogger.log(DateTimeUtils.nowMillisResolution(), entry, sourceEntry, originalException);
+
+            final long currentStep = getUpdateGraph().clock().currentStep();
             try {
+                beforeRunNotification(currentStep);
                 onFailure(originalException, sourceEntry);
             } catch (Exception e) {
                 log.error().append("Error propagating failure from ").append(sourceEntry).append(": ").append(e).endl();
+            } finally {
+                afterRunNotification(currentStep);
             }
         }
 
@@ -228,16 +275,7 @@ public abstract class InstrumentedTableListenerBase extends LivenessArtifact
         NotificationBase(final TableUpdate update) {
             super(terminalListener);
             this.update = update.acquire();
-
-            final long currentStep = getUpdateGraph().clock().currentStep();
-            if (lastCompletedStep == currentStep) {
-                // noinspection ThrowableNotThrown
-                Assert.statementNeverExecuted("Enqueued after lastCompletedStep already set to current step: " + this
-                        + ", step=" + currentStep + ", lastCompletedStep=" + lastCompletedStep);
-            }
-
-            StepUpdater.forceUpdateRecordedStep(
-                    LAST_ENQUEUED_STEP_UPDATER, InstrumentedTableListenerBase.this, currentStep);
+            onNotificationCreated();
         }
 
         @Override
@@ -282,13 +320,7 @@ public abstract class InstrumentedTableListenerBase extends LivenessArtifact
 
             final long currentStep = getUpdateGraph().clock().currentStep();
             try {
-                Assert.eq(lastEnqueuedStep, "lastEnqueuedStep", currentStep, "currentStep");
-                if (lastCompletedStep >= currentStep) {
-                    throw new IllegalStateException(
-                            "Execution began after lastCompletedStep already set to current step: " + this
-                                    + ", step=" + currentStep + ", lastCompletedStep=" + lastCompletedStep);
-                }
-
+                beforeRunNotification(currentStep);
                 invokeOnUpdate.run();
             } catch (Exception e) {
                 final LogEntry en = log.error().append("Uncaught exception for entry= ");
@@ -321,9 +353,8 @@ public abstract class InstrumentedTableListenerBase extends LivenessArtifact
                 failed = true;
                 onFailure(e, entry);
             } finally {
+                afterRunNotification(currentStep);
                 entry.onUpdateEnd();
-                StepUpdater.forceUpdateRecordedStep(
-                        LAST_COMPLETED_STEP_UPDATER, InstrumentedTableListenerBase.this, currentStep);
             }
         }
     }
