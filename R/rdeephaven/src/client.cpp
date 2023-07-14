@@ -116,7 +116,9 @@ public:
         internal_options->addExtraHeader(header_name, header_value);
     }
 
+private:
     std::shared_ptr<deephaven::client::ClientOptions> internal_options;
+    friend ClientWrapper;
 };
 
 
