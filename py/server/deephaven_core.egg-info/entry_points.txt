@@ -1,0 +1,2 @@
+[deephaven.plugin]
+registration_cls = deephaven.pandasplugin:PandasPluginRegistration

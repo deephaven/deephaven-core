@@ -64,7 +64,8 @@ class ColumnTestCase(BaseTestCase):
         doubles = [1.0, 2.0, 4.0, 8.0]
         test_table = new_table([
             string_col("StringColumn", strings),
-            double_col("Decimals", doubles)
+            double_col("Decimals", doubles),
+            float_col("Floats", doubles)
         ]
         )
 
@@ -72,6 +73,7 @@ class ColumnTestCase(BaseTestCase):
 
         self.assertIsNone(test_table.columns[0].component_type)
         self.assertEqual(test_table.columns[1].component_type, dtypes.double)
+        self.assertEqual(test_table.columns[1].component_type, dtypes.float32)
 
     def test_vector_column(self):
         t = empty_table(0).update_view("StringColumn=`abc`").group_by()

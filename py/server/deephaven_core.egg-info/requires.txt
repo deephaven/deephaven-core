@@ -1,0 +1,11 @@
+jpy>=0.13.0
+deephaven-plugin
+numpy
+pandas>=1.5.0
+pyarrow
+
+[:python_version < "3.12"]
+numba
+
+[autocomplete]
+jedi==0.18.2
