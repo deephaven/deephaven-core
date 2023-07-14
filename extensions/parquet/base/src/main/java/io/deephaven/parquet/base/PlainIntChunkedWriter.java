@@ -21,6 +21,11 @@ import java.nio.IntBuffer;
  */
 public class PlainIntChunkedWriter extends AbstractBulkValuesWriter<IntBuffer> {
     private static final int MAXIMUM_TOTAL_CAPACITY = Integer.MAX_VALUE / Integer.BYTES;
+
+    // This value will be considered as a NULL while writing. By default, we use the definition for QueryConstants but
+    // can be overridden.
+    private int NULL_DEF = QueryConstants.NULL_INT;
+
     private final ByteBufferAllocator allocator;
 
     private IntBuffer targetBuffer;
@@ -95,7 +100,7 @@ public class PlainIntChunkedWriter extends AbstractBulkValuesWriter<IntBuffer> {
         ensureCapacityFor(bulkValues);
         while (bulkValues.hasRemaining()) {
             final int next = bulkValues.get();
-            if (next != QueryConstants.NULL_INT) {
+            if (next != NULL_DEF) {
                 writeInteger(next);
                 dlEncoder.writeInt(DL_ITEM_PRESENT);
             } else {
@@ -105,6 +110,7 @@ public class PlainIntChunkedWriter extends AbstractBulkValuesWriter<IntBuffer> {
         return new WriteResult(rowCount);
     }
 
+    // TODO Test this method
     @NotNull
     @Override
     public WriteResult writeBulkFilterNulls(@NotNull final IntBuffer bulkValues,
@@ -114,7 +120,7 @@ public class PlainIntChunkedWriter extends AbstractBulkValuesWriter<IntBuffer> {
         IntBuffer nullOffsets = IntBuffer.allocate(4);
         while (bulkValues.hasRemaining()) {
             final int next = bulkValues.get();
-            if (next != QueryConstants.NULL_INT) {
+            if (next != NULL_DEF) {
                 writeInteger(next);
             } else {
                 nullOffsets = Helpers.ensureCapacity(nullOffsets);
@@ -123,6 +129,17 @@ public class PlainIntChunkedWriter extends AbstractBulkValuesWriter<IntBuffer> {
             i++;
         }
         return new WriteResult(rowCount, nullOffsets);
+    }
+
+    /**
+     * This method is used to provide a specialized definition of NULL while writing. The method is useful for Byte,
+     * Char, and Short data type which also used the int writer but have a different definition of NULL than default.
+     *
+     * @param nullDefinition The specialized value of NULL to consider while writing
+     */
+    @Override
+    public void setNull(int nullDefinition) {
+        NULL_DEF = nullDefinition;
     }
 
     private void ensureCapacityFor(@NotNull final IntBuffer valuesToAdd) {

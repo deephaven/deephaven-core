@@ -601,7 +601,7 @@ public class ParquetTableWriter {
                         columnWriter.addVectorPage(bufferToWrite, repeatCount, transferObject.rowCount());
                         repeatCount.clear();
                     } else if (supportNulls) {
-                        columnWriter.addPage(bufferToWrite, transferObject.rowCount());
+                        columnWriter.addPage(bufferToWrite, transferObject.rowCount(), columnType);
                     } else {
                         columnWriter.addPageNoNulls(bufferToWrite, transferObject.rowCount());
                     }
@@ -636,7 +636,7 @@ public class ParquetTableWriter {
             final TObjectIntHashMap<String> keyToPos =
                     new TObjectIntHashMap<>(Constants.DEFAULT_CAPACITY,
                             Constants.DEFAULT_LOAD_FACTOR,
-                            QueryConstants.NULL_INT);
+                            QueryConstants.NULL_INT);  // Here we are setting NULL_INT as the default value for NULLS
             int keyCount = 0;
             boolean hasNulls = false;
             try (final ChunkSource.GetContext context = dataSource.makeGetContext(maxRowsPerPage);
@@ -695,12 +695,12 @@ public class ParquetTableWriter {
 
             columnWriter.addDictionaryPage(encodedKeys, keyCount);
             final Iterator<IntBuffer> arraySizeIt = arraySizeBuffers == null ? null : arraySizeBuffers.iterator();
-            for (final IntBuffer pageBuffer : pageBuffers) {
+            for (final IntBuffer pageBuffer : pageBuffers) {  // Only holds positions in dictionary
                 pageBuffer.flip();
                 if (lengthSource != null) {
                     columnWriter.addVectorPage(pageBuffer, arraySizeIt.next(), pageBuffer.remaining());
                 } else if (hasNulls) {
-                    columnWriter.addPage(pageBuffer, pageBuffer.remaining());
+                    columnWriter.addPage(pageBuffer, pageBuffer.remaining(), String.class);
                 } else {
                     columnWriter.addPageNoNulls(pageBuffer, pageBuffer.remaining());
                 }
@@ -712,7 +712,8 @@ public class ParquetTableWriter {
     }
 
     private static boolean supportNulls(@NotNull final Class<?> columnType) {
-        return !columnType.isPrimitive();
+        return true;
+//        return !columnType.isPrimitive();
     }
 
     /**

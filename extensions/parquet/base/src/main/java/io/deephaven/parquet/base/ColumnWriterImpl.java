@@ -5,6 +5,7 @@ package io.deephaven.parquet.base;
 
 import io.deephaven.parquet.base.tempfix.ParquetMetadataConverter;
 import io.deephaven.parquet.compress.CompressorAdapter;
+import io.deephaven.util.QueryConstants;
 import org.apache.parquet.bytes.ByteBufferAllocator;
 import org.apache.parquet.bytes.BytesInput;
 import org.apache.parquet.column.ColumnDescriptor;
@@ -98,6 +99,27 @@ public class ColumnWriterImpl implements ColumnWriter {
         bulkWriter.reset();
     }
 
+    @Override
+    public void addPage(final Object pageData, final int valuesCount, final Class columnType) throws IOException {
+        if (dlEncoder == null) {
+            throw new IllegalStateException("Null values not supported");
+        }
+        initWriter();
+        // TODO Is this the right way to do it?
+        if (columnType == byte.class || columnType == Byte.class) {
+            bulkWriter.setNull(QueryConstants.NULL_BYTE);
+        } else if (columnType == short.class || columnType == Short.class) {
+            bulkWriter.setNull(QueryConstants.NULL_SHORT);
+        } else if (columnType == char.class) {
+            bulkWriter.setNull(QueryConstants.NULL_CHAR);
+        }
+        // noinspection unchecked
+        bulkWriter.writeBulkFilterNulls(pageData, dlEncoder, valuesCount);  // pageData = HeapIntBuffer for char data
+        writePage(bulkWriter.getByteBufferView(), valuesCount);
+        bulkWriter.reset();
+    }
+
+
     private void initWriter() {
         if (bulkWriter == null) {
             if (hasDictionary) {
@@ -179,18 +201,6 @@ public class ColumnWriterImpl implements ColumnWriter {
                 throw new UnsupportedOperationException("Unknown type " + primitiveType.getPrimitiveTypeName());
         }
 
-    }
-
-    @Override
-    public void addPage(final Object pageData, final int valuesCount) throws IOException {
-        if (dlEncoder == null) {
-            throw new IllegalStateException("Null values not supported");
-        }
-        initWriter();
-        // noinspection unchecked
-        bulkWriter.writeBulkFilterNulls(pageData, dlEncoder, valuesCount);
-        writePage(bulkWriter.getByteBufferView(), valuesCount);
-        bulkWriter.reset();
     }
 
     public void addVectorPage(

@@ -13,7 +13,7 @@ public interface ColumnWriter extends SafeCloseable {
 
     void addDictionaryPage(Object dictionaryValues, int valuesCount) throws IOException;
 
-    void addPage(Object pageData, int valuesCount) throws IOException;
+    void addPage(Object pageData, int valuesCount, final Class columnType) throws IOException;
 
     void addVectorPage(Object pageData, IntBuffer repeatCount, int valuesCount) throws IOException;
 }
