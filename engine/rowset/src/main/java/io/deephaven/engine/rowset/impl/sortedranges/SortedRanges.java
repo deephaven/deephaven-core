@@ -2091,7 +2091,7 @@ public abstract class SortedRanges extends RefCountedCow<SortedRanges> implement
         // there are two cases, depending on whether we need to merge our last range with
         // other's first range.
         final SortedRanges result;
-        final int otherFirstPosToRead;  // always the beginning of a range or a singleton (eg, > 0)
+        final int otherFirstPosToRead; // always the beginning of a range or a singleton (eg, > 0)
         final int ourFirstPosToWrite;
         long unpackedLast = unpackedGet(count - 1);
         if (Math.abs(unpackedLast) + 1 == other.first()) {

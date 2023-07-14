@@ -3429,7 +3429,7 @@ public class SortedRangesTest {
         t.ixValidate();
         assertTrue(t instanceof SortedRanges);
         assertEquals(t.ixCardinality(), sr0OriginalCardinality + sr1.ixCardinality());
-        for (SortedRanges sr : new SortedRanges[] { sr0, sr1 }) {
+        for (SortedRanges sr : new SortedRanges[] {sr0, sr1}) {
             try (RowSet.RangeIterator it = sr.ixRangeIterator()) {
                 while (it.hasNext()) {
                     it.next();
@@ -3441,16 +3441,16 @@ public class SortedRangesTest {
 
     @Test
     public void testInsertAppendForCoverage() {
-        testInsertAppendHelper(new long[]{10, -20, 30, -40}, new long[]{41, 51, 60, -62});
+        testInsertAppendHelper(new long[] {10, -20, 30, -40}, new long[] {41, 51, 60, -62});
     }
 
     @Test
     public void testInsertMergeAppend() {
-        testInsertAppendHelper(new long[]{10, -20, 30, -40}, new long[]{41, 51, 60, -62});
-        testInsertAppendHelper(new long[]{10, -20, 30, -40}, new long[]{41, -43, 51, 60, -62});
-        testInsertAppendHelper(new long[]{10, -20, 30, -40}, new long[]{42, 51, 60, -62});
-        testInsertAppendHelper(new long[]{10, -20, 30, 40}, new long[]{41, 51, 60, -62});
-        testInsertAppendHelper(new long[]{10, -20, 30, 40}, new long[]{41, -43, 51, 60, -62});
-        testInsertAppendHelper(new long[]{10, -20, 30, 40}, new long[]{42, 51, 60, -62});
+        testInsertAppendHelper(new long[] {10, -20, 30, -40}, new long[] {41, 51, 60, -62});
+        testInsertAppendHelper(new long[] {10, -20, 30, -40}, new long[] {41, -43, 51, 60, -62});
+        testInsertAppendHelper(new long[] {10, -20, 30, -40}, new long[] {42, 51, 60, -62});
+        testInsertAppendHelper(new long[] {10, -20, 30, 40}, new long[] {41, 51, 60, -62});
+        testInsertAppendHelper(new long[] {10, -20, 30, 40}, new long[] {41, -43, 51, 60, -62});
+        testInsertAppendHelper(new long[] {10, -20, 30, 40}, new long[] {42, 51, 60, -62});
     }
 }
