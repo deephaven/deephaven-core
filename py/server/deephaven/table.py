@@ -2089,12 +2089,12 @@ class Table(JObjectWrapper):
 
         Returns a subset of table in the range [floor(start_pct * size_of_table), floor(end_pct * size_of_table)).
         For example, for a table of size 10, slice_pct(0.1, 0.7) will return a subset from the second row to the seventh
-        row. Similarly, slice_pct(0, 1) would return the entire table (because row positions run from 0 to size-1).
-        The percentage arguments must be in range [0,1], otherwise the function returns an error.
+        row. Similarly, slice_pct(0, 1) would return the entire table (because row positions run from 0 to size - 1).
+        The percentage arguments must be in range [0, 1], otherwise the function returns an error.
 
         Args:
-            start_pct (float): the starting percentage point for rows to include in the result, range [0, 1]
-            end_pct (float): the ending percentage point for rows to include in the result, range [0, 1]
+            start_pct (float): the starting percentage point (inclusive) for rows to include in the result, range [0, 1]
+            end_pct (float): the ending percentage point (exclusive) for rows to include in the result, range [0, 1]
 
         Returns:
             a new table
