@@ -85,12 +85,10 @@ class GwtTools {
                 // See https://github.com/esoco/gwt-gradle-plugin for all options
                 /** The level of logging detail (ERROR, WARN, INFO, TRACE, DEBUG, SPAM, ALL) */
                 logLevel = "INFO"
-                /** The workDir, where we'll save gwt unitcache.  Use /tmp to avoid cluttering jenkins caches*/
-                workDir = Files.createTempDirectory("gradleGwtWork").toFile()
                 /** Where to write output files */
                 war = warPath
                 /** Compile a report that tells the "Story of Your Compile". */
-                compileReport = true
+                compileReport = false
                 /** Compile quickly with minimal optimizations. */
                 draftCompile = false
                 /** Include assert statements in compiled output. */
