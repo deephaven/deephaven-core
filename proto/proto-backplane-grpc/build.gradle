@@ -46,7 +46,7 @@ dependencies {
   // technically we should have a runtime dependency on barrage-core, but instead we are regenerating
   // the same output that it contains, and we have declared the correct dependencies as necessary
   //  compile 'io.deephaven.barrage:barrage-core:0.5.0'
-  download 'io.deephaven.barrage:barrage-core:0.5.0'
+  download 'io.deephaven.barrage:barrage-core:0.6.0'
   Classpaths.inheritArrow(project, 'flight-core', 'download')
 }
 

@@ -8,7 +8,9 @@ import org.jetbrains.annotations.NotNull;
 /**
  * An interface for accepting failures from an incoming stream in order to propagate them to downstream tables.
  */
+@FunctionalInterface
 public interface StreamFailureConsumer {
+
     /**
      * Report an error while processing the stream.
      *

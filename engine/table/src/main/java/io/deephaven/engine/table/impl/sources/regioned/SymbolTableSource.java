@@ -6,7 +6,6 @@ package io.deephaven.engine.table.impl.sources.regioned;
 import io.deephaven.engine.table.ColumnSource;
 import io.deephaven.engine.table.Table;
 import io.deephaven.engine.table.impl.QueryTable;
-import io.deephaven.engine.rowset.TrackingWritableRowSet;
 import io.deephaven.engine.rowset.RowSet;
 import org.jetbrains.annotations.NotNull;
 
@@ -31,23 +30,23 @@ public interface SymbolTableSource<SYMBOL_TYPE> extends ColumnSource<SYMBOL_TYPE
     String SYMBOL_COLUMN_NAME = "Symbol";
 
     /**
-     * @param sourceIndex The {@link RowSet} whose keys must be mappable
-     * @return Whether this SymbolTableSource can provide a symbol table that covers all keys in {@code sourceIndex}.
+     * @param sourceRowSet The {@link RowSet} whose keys must be mappable
+     * @return Whether this SymbolTableSource can provide a symbol table that covers all keys in {@code sourceRowSet}.
      */
-    boolean hasSymbolTable(@NotNull final RowSet sourceIndex);
+    boolean hasSymbolTable(@NotNull final RowSet sourceRowSet);
 
     /**
      * <p>
      * Get a static {@link Table} view of this SymbolTableSource's symbol table, providing a many:1 or 1:1 mapping of
      * unique {@code long} identifiers to the symbol values in this source.
      *
-     * @param sourceIndex The {@link RowSet} whose keys must be mappable via the result {@link Table}'s identifier
+     * @param sourceRowSet The {@link RowSet} whose keys must be mappable via the result {@link Table}'s identifier
      *        column
      * @param useLookupCaching Hint whether symbol lookups performed to generate the symbol table should apply caching.
      *        Implementations may ignore this hint.
      * @return The symbol table
      */
-    Table getStaticSymbolTable(@NotNull RowSet sourceIndex, boolean useLookupCaching);
+    Table getStaticSymbolTable(@NotNull RowSet sourceRowSet, boolean useLookupCaching);
 
     /**
      * <p>
@@ -64,4 +63,16 @@ public interface SymbolTableSource<SYMBOL_TYPE> extends ColumnSource<SYMBOL_TYPE
      * @return The symbol table
      */
     Table getSymbolTable(@NotNull QueryTable sourceTable, boolean useLookupCaching);
+
+    /**
+     * Check if the specified {@link ColumnSource} supports a symbol table for the entirety of the supplied
+     * {@link RowSet}.
+     *
+     * @param source The column source
+     * @param rowSet The {@link RowSet} for inspection.
+     * @return True if the column source can provide a complete symbol table for the provided RowSet.
+     */
+    static boolean hasSymbolTable(@NotNull final ColumnSource<?> source, @NotNull final RowSet rowSet) {
+        return source instanceof SymbolTableSource && ((SymbolTableSource<?>) source).hasSymbolTable(rowSet);
+    }
 }

@@ -78,67 +78,67 @@ public interface TableSpec extends TableOperationsDefaults<TableSpec, TableSpec>
         return ParentsVisitor.getParents(this).mapToInt(TableSpec::depth).max().orElse(-1) + 1;
     }
 
-    <V extends Visitor> V walk(V visitor);
+    <T> T walk(Visitor<T> visitor);
 
-    interface Visitor {
-        void visit(EmptyTable emptyTable);
+    interface Visitor<T> {
+        T visit(EmptyTable emptyTable);
 
-        void visit(NewTable newTable);
+        T visit(NewTable newTable);
 
-        void visit(TimeTable timeTable);
+        T visit(TimeTable timeTable);
 
-        void visit(MergeTable mergeTable);
+        T visit(MergeTable mergeTable);
 
-        void visit(HeadTable headTable);
+        T visit(HeadTable headTable);
 
-        void visit(TailTable tailTable);
+        T visit(TailTable tailTable);
 
-        void visit(ReverseTable reverseTable);
+        T visit(ReverseTable reverseTable);
 
-        void visit(SortTable sortTable);
+        T visit(SortTable sortTable);
 
-        void visit(SnapshotTable snapshotTable);
+        T visit(SnapshotTable snapshotTable);
 
-        void visit(SnapshotWhenTable snapshotWhenTable);
+        T visit(SnapshotWhenTable snapshotWhenTable);
 
-        void visit(WhereTable whereTable);
+        T visit(WhereTable whereTable);
 
-        void visit(WhereInTable whereInTable);
+        T visit(WhereInTable whereInTable);
 
-        void visit(NaturalJoinTable naturalJoinTable);
+        T visit(NaturalJoinTable naturalJoinTable);
 
-        void visit(ExactJoinTable exactJoinTable);
+        T visit(ExactJoinTable exactJoinTable);
 
-        void visit(JoinTable joinTable);
+        T visit(JoinTable joinTable);
 
-        void visit(AsOfJoinTable aj);
+        T visit(AsOfJoinTable aj);
 
-        void visit(RangeJoinTable rangeJoinTable);
+        T visit(RangeJoinTable rangeJoinTable);
 
-        void visit(ViewTable viewTable);
+        T visit(ViewTable viewTable);
 
-        void visit(SelectTable selectTable);
+        T visit(SelectTable selectTable);
 
-        void visit(UpdateViewTable updateViewTable);
+        T visit(UpdateViewTable updateViewTable);
 
-        void visit(UpdateTable updateTable);
+        T visit(UpdateTable updateTable);
 
-        void visit(LazyUpdateTable lazyUpdateTable);
+        T visit(LazyUpdateTable lazyUpdateTable);
 
-        void visit(AggregateTable aggregateTable);
+        T visit(AggregateTable aggregateTable);
 
-        void visit(AggregateAllTable aggregateAllTable);
+        T visit(AggregateAllTable aggregateAllTable);
 
-        void visit(TicketTable ticketTable);
+        T visit(TicketTable ticketTable);
 
-        void visit(InputTable inputTable);
+        T visit(InputTable inputTable);
 
-        void visit(SelectDistinctTable selectDistinctTable);
+        T visit(SelectDistinctTable selectDistinctTable);
 
-        void visit(UpdateByTable updateByTable);
+        T visit(UpdateByTable updateByTable);
 
-        void visit(UngroupTable ungroupTable);
+        T visit(UngroupTable ungroupTable);
 
-        void visit(DropColumnsTable dropColumnsTable);
+        T visit(DropColumnsTable dropColumnsTable);
     }
 }

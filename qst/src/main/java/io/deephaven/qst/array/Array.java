@@ -47,11 +47,11 @@ public interface Array<T> {
 
     int size();
 
-    <V extends Visitor> V walk(V visitor);
+    <R> R walk(Visitor<R> visitor);
 
-    interface Visitor {
-        void visit(PrimitiveArray<?> primitive);
+    interface Visitor<R> {
+        R visit(PrimitiveArray<?> primitive);
 
-        void visit(GenericArray<?> generic);
+        R visit(GenericArray<?> generic);
     }
 }

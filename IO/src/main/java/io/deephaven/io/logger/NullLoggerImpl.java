@@ -5,11 +5,11 @@ package io.deephaven.io.logger;
 
 import io.deephaven.base.ArrayUtil;
 import io.deephaven.base.ClassUtil;
+import io.deephaven.io.log.LogBufferPool;
 import io.deephaven.io.log.LogEntry;
 import io.deephaven.io.log.LogEntryPool;
 import io.deephaven.io.log.LogLevel;
 import io.deephaven.io.log.LogSink;
-import io.deephaven.io.log.impl.LogBufferPoolImpl;
 import io.deephaven.io.log.impl.LogEntryPoolImpl;
 import java.io.IOException;
 import java.io.UncheckedIOException;
@@ -41,7 +41,7 @@ public class NullLoggerImpl extends LoggerImpl {
     }
 
     public NullLoggerImpl(@NotNull final LogLevel loggingLevel) {
-        this(new LogEntryPoolImpl(1024, new LogBufferPoolImpl(2048, 1024)),
+        this(new LogEntryPoolImpl(1024, LogBufferPool.ofStrict(2048, 1024)),
                 loggingLevel,
                 new NullLoggerTimeSource(),
                 null);

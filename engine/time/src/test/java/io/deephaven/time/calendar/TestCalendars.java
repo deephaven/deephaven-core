@@ -3,16 +3,20 @@
  */
 package io.deephaven.time.calendar;
 
-import io.deephaven.base.testing.BaseArrayTestCase;
-import io.deephaven.configuration.Configuration;
 import io.deephaven.time.DateTimeUtils;
+import org.junit.Test;
 
 import java.time.Instant;
 import java.util.HashMap;
 import java.util.Map;
 
-public class TestCalendars extends BaseArrayTestCase {
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertTrue;
 
+public class TestCalendars {
+
+    @Test
     public void testIsBusinessDay() {
         BusinessCalendar usnyse = Calendars.calendar("USNYSE");
         BusinessCalendar usny = Calendars.calendar("USNY");
@@ -38,8 +42,11 @@ public class TestCalendars extends BaseArrayTestCase {
         assertTrue(usny.isBusinessDay(holiday2));
     }
 
+    @Test
     public void testGetDefault() {
-        Configuration.getInstance().setProperty("businessCalendar.default", "USNYSE");
+        // Default is configured via a configuration property and cannot be changed once Calendars is statically
+        // initialized
+        assertEquals(Calendars.getDefaultName(), "USNYSE");
         BusinessCalendar calendars = Calendars.calendar();
         // USNYSE
         Instant businessDay = DateTimeUtils.parseInstant("2016-08-31T01:00:00.000000000 NY");
@@ -53,6 +60,7 @@ public class TestCalendars extends BaseArrayTestCase {
         assertFalse(calendars.isBusinessDay(holiday2));
     }
 
+    @Test
     public void testGetInstance() {
         BusinessCalendar usnyse = Calendars.calendar("USNYSE");
         Instant businessDay = DateTimeUtils.parseInstant("2016-08-31T01:00:00.000000000 NY");
@@ -66,6 +74,7 @@ public class TestCalendars extends BaseArrayTestCase {
         assertFalse(usnyse.isBusinessDay(holiday2));
     }
 
+    @Test
     public void testMapMethods() {
         Calendars calendars = Calendars.getInstance();
 
@@ -85,6 +94,7 @@ public class TestCalendars extends BaseArrayTestCase {
         calendars.putAll(values);
     }
 
+    @Test
     public void testEquals() {
         final BusinessCalendar usnyse1 = Calendars.calendar("USNYSE");
         final BusinessCalendar usnyse2 = Calendars.calendar("USNYSE");
@@ -92,6 +102,6 @@ public class TestCalendars extends BaseArrayTestCase {
 
         assertEquals(usnyse1, usnyse2);
         assertFalse(usnyse1.equals(jpose));
-        assertFalse(usnyse1.equals((Calendar) null));
+        assertFalse(usnyse1.equals(null));
     }
 }

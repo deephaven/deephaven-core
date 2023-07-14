@@ -51,7 +51,7 @@ project.tasks.getByName('quick').dependsOn project.tasks.getByName('license')
 String randomSuffix = UUID.randomUUID().toString();
 deephavenDocker {
     envVars.set([
-            'START_OPTS':'-Xmx512m'
+            'START_OPTS':'-Xmx512m -DAuthHandlers=io.deephaven.auth.AnonymousAuthenticationHandler'
     ])
     containerName.set "dh-server-for-cpp-${randomSuffix}"
     networkName.set "cpp-test-network-${randomSuffix}"

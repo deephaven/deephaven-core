@@ -35,6 +35,24 @@ TableHandle <- R6Class("TableHandle",
                 you are trying to call the constructor of TableHandle directly, which is not advised.")
             }
             private$internal_table_handle <- table_handle
+            private$is_static_field <- private$internal_table_handle$is_static()
+        },
+
+        #' @description
+        #' Whether the table referenced by this TableHandle is static or not.
+        #' @return TRUE if the table is static, or FALSE if the table is ticking.
+        is_static = function() {
+            return(private$is_static_field)
+        },
+
+        #' @description
+        #' Number of rows in the table referenced by this TableHandle, currently only implemented for static tables.
+        #' @return The number of rows in the table.
+        nrow = function() {
+            if(!private$is_static_field) {
+                stop("The number of rows is not yet supported for dynamic tables.")
+            }
+            return(private$internal_table_handle$num_rows())
         },
 
         #' @description
@@ -42,9 +60,7 @@ TableHandle <- R6Class("TableHandle",
         #' enabling it to be accessed by that name from any Deephaven API.
         #' @param name Name for this table on the server.
         bind_to_variable = function(name) {
-            if (class(name)[[1]] != "character") {
-                stop(paste("'name' should be a character or a string. Got object of type ", class(name)[[1]], " instead."))
-            }
+            .verify_string("name", name)
             private$internal_table_handle$bind_to_variable(name)
         },
 
@@ -82,9 +98,9 @@ TableHandle <- R6Class("TableHandle",
             arrow_tbl = self$to_arrow_table()
             return(as.data.frame(as.data.frame(arrow_tbl))) # TODO: for some reason as.data.frame on arrow table returns a tibble, not a data frame
         }
-
     ),
     private = list(
-        internal_table_handle = NULL
+        internal_table_handle = NULL,
+        is_static_field = NULL
     )
 )

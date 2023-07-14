@@ -6,6 +6,7 @@
 #include <memory>
 #include "deephaven/client/server/server.h"
 #include "deephaven/client/subscription/subscription_handle.h"
+#include "deephaven/dhcore/clienttable/client_table.h"
 #include "deephaven/dhcore/ticking/ticking.h"
 #include "deephaven/proto/ticket.pb.h"
 
@@ -13,7 +14,7 @@ namespace deephaven::client::subscription {
 class SubscriptionThread {
   typedef deephaven::client::server::Server Server;
   typedef deephaven::client::utility::Executor Executor;
-  typedef deephaven::dhcore::table::Schema Schema;
+  typedef deephaven::dhcore::clienttable::Schema Schema;
   typedef io::deephaven::proto::backplane::grpc::Ticket Ticket;
   typedef deephaven::dhcore::ticking::TickingCallback TickingCallback;
 

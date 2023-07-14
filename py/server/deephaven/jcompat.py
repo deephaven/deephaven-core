@@ -131,6 +131,20 @@ def j_binary_operator(func: Callable[[T, T], T], dtype: DType) -> jpy.JType:
     )
 
 
+def j_lambda(func: Callable, lambda_jtype:jpy.JType, return_dtype: DType = None):
+    """Wraps a Python Callable as a Java "lambda" type.  
+    
+    Java lambda types must contain a single abstract method.
+    
+    Args:
+        func (Callable): Any Python Callable or object with an 'apply' method that accepts the same arguments (number and type) the target Java lambda type
+        lambda_jtype (jpy.JType): The Java lambda interface to wrap the provided callable in
+        return_dtype (DType): The expected return type if conversion should be applied.  None (the default) does not attempt to convert the return value and returns a Java Object.
+    """
+    coerce_to_type = return_dtype.qst_type.clazz() if return_dtype is not None else None
+    return jpy.get_type('io.deephaven.integrations.python.JavaLambdaFactory').create(lambda_jtype.jclass, func, coerce_to_type)
+
+
 def to_sequence(v: Union[T, Sequence[T]] = None) -> Sequence[Union[T, jpy.JType]]:
     """A convenience function to create a sequence of unwrapped object from either one or a sequence of input values to
     help JPY find the matching Java overloaded method to call.

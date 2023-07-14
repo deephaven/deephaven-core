@@ -122,7 +122,14 @@ public interface Table extends
     String UNIQUE_KEYS_ATTRIBUTE = "uniqueKeys";
     String FILTERABLE_COLUMNS_ATTRIBUTE = "FilterableColumns";
     String TOTALS_TABLE_ATTRIBUTE = "TotalsTable";
+    /**
+     * If this attribute is set, we can only add new row keys, we can never shift them, modify them, or remove them.
+     */
     String ADD_ONLY_TABLE_ATTRIBUTE = "AddOnly";
+    /**
+     * If this attribute is set, we can only append new row keys to the end of the table. We can never shift them,
+     * modify them, or remove them.
+     */
     String APPEND_ONLY_TABLE_ATTRIBUTE = "AppendOnly";
     String TEST_SOURCE_TABLE_ATTRIBUTE = "TestSource";
     /**
@@ -355,6 +362,11 @@ public interface Table extends
      * <p>
      * If the firstPosition is negative and the lastPosition is negative, they are both counted from the end of the
      * table. For example, slice(-2, -1) returns the second to last row of the table.
+     * <p>
+     * If firstPosition is negative and lastPosition is positive, then firstPosition is counted from the end of the
+     * table, inclusively. The lastPosition is counted from the beginning of the table, exclusively. For example,
+     * slice(-3, 5) returns all rows starting from the third-last row to the fifth row of the table. If there are no
+     * rows between these positions, the function will return an empty table.
      *
      * @param firstPositionInclusive the first position to include in the result
      * @param lastPositionExclusive the last position to include in the result
@@ -366,12 +378,20 @@ public interface Table extends
     /**
      * Provides a head that selects a dynamic number of rows based on a percent.
      *
-     * @param percent the fraction of the table to return (0..1), the number of rows will be rounded up. For example if
-     *        there are 3 rows, headPct(50) returns the first two rows.
+     * @param percent the fraction of the table to return between [0, 1]. The number of rows will be rounded up. For
+     *        example if there are 3 rows, headPct(50) returns the first two rows. For percent values outside [0, 1],
+     *        the function will throw an exception.
      */
     @ConcurrentMethod
     Table headPct(double percent);
 
+    /**
+     * Provides a tail that selects a dynamic number of rows based on a percent.
+     *
+     * @param percent the fraction of the table to return between [0, 1]. The number of rows will be rounded up. For
+     *        example if there are 3 rows, tailPct(50) returns the last two rows. For percent values outside [0, 1], the
+     *        function will throw an exception.
+     */
     @ConcurrentMethod
     Table tailPct(double percent);
 

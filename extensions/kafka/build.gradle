@@ -15,6 +15,7 @@ dependencies {
     // version, but has a different version to make it easier to keep confluent dependencies aligned.
     api 'org.apache.kafka:kafka-clients:7.3.0-ccs'
     api 'io.confluent:kafka-avro-serializer:7.3.0'
+    runtimeOnly 'io.confluent:kafka-protobuf-serializer:7.3.0'
 
     implementation project(':Configuration')
     implementation project(':log-factory')

@@ -32,9 +32,7 @@ jobs:
 
       - name: Setup gradle properties
         run: |
-          cat .github/env/${{ runner.os }}/gradle.properties >> gradle.properties
-          echo >> gradle.properties
-          echo "org.gradle.java.installations.paths=${{ steps.setup-java-11.outputs.path }},${{ steps.setup-java-17.outputs.path }}," >> gradle.properties
+          .github/scripts/gradle-properties.sh >> gradle.properties
           cat gradle.properties
 
       # TODO(deephaven-core#2614): Improve gradle/CI assemble and publishing of artifacts
@@ -44,7 +42,7 @@ jobs:
         uses: burrunan/gradle-cache-action@v1
         with:
           job-id: publish-local
-          arguments: server-netty-app:build server-jetty-app:build py-server:build py-embedded-server:build publishToMavenLocal
+          arguments: server-netty-app:build server-jetty-app:build py-server:build py-embedded-server:build py-client:build publishToMavenLocal
           gradle-version: wrapper
 
       - name: Publish
@@ -52,9 +50,8 @@ jobs:
         uses: burrunan/gradle-cache-action@v1
         with:
           job-id: publish
-          # Note: even though we specify org.gradle.parallel=false in our CI gradle.properties, we want to be explicit
-          # here about no parallelism to ensure we don't create disjointed staging repositories.
-          arguments: --no-parallel server-netty-app:build server-jetty-app:build py-server:build py-embedded-server:build publish
+          # We need to be explicit here about no parallelism to ensure we don't create disjointed staging repositories.
+          arguments: --no-parallel server-netty-app:build server-jetty-app:build py-server:build py-client:build py-embedded-server:build publish
           gradle-version: wrapper
         env:
           ORG_GRADLE_PROJECT_ossrhUsername: ${{ secrets.SONATYPE_USERNAME }}
@@ -72,6 +69,7 @@ jobs:
             server/jetty-app/build/distributions/
             py/server/build/wheel/
             py/embedded-server/build/wheel/
+            py/client/build/wheel/
 
       - name: Publish deephaven-core to PyPi
         if: ${{ startsWith(github.ref, 'refs/heads/release/v') }}
@@ -88,3 +86,11 @@ jobs:
           user: __token__
           password: ${{ secrets.DEEPHAVENSERVER_PYPI_TOKEN }}
           packages_dir: py/embedded-server/build/wheel/
+
+      - name: Publish pydeephaven to PyPi
+        if: ${{ startsWith(github.ref, 'refs/heads/release/v') }}
+        uses: pypa/gh-action-pypi-publish@release/v1
+        with:
+          user: __token__
+          password: ${{ secrets.PYDEEPHAVEN_PYPI_TOKEN }}
+          packages_dir: py/client/build/wheel/

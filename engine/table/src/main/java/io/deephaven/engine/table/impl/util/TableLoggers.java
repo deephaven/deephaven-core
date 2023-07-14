@@ -45,7 +45,7 @@ public class TableLoggers {
     /**
      * Return a table with metrics collected for the current engine process.
      *
-     * @return A table with metrics fopr the current engine process.
+     * @return A table with metrics for the current engine process.
      */
     @ScriptApi
     public static QueryTable processMetricsLog() {

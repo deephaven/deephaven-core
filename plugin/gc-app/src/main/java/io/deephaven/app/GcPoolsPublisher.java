@@ -9,9 +9,9 @@ import io.deephaven.engine.table.ColumnDefinition;
 import io.deephaven.engine.table.Table;
 import io.deephaven.engine.table.TableDefinition;
 import io.deephaven.engine.table.impl.sources.ArrayBackedColumnSource;
+import io.deephaven.stream.StreamChunkUtils;
 import io.deephaven.stream.StreamConsumer;
 import io.deephaven.stream.StreamPublisher;
-import io.deephaven.stream.StreamToBlinkTableAdapter;
 import io.deephaven.util.QueryConstants;
 import org.jetbrains.annotations.NotNull;
 
@@ -77,7 +77,7 @@ final class GcPoolsPublisher implements StreamPublisher {
 
     GcPoolsPublisher() {
         chunkSize = INITIAL_CHUNK_SIZE;
-        chunks = StreamToBlinkTableAdapter.makeChunksForDefinition(DEFINITION, chunkSize);
+        chunks = StreamChunkUtils.makeChunksForDefinition(DEFINITION, chunkSize);
         isFirst = true;
     }
 
@@ -139,17 +139,20 @@ final class GcPoolsPublisher implements StreamPublisher {
             consumer.accept(chunks);
         }
         chunkSize = Math.max(chunkSize, poolSize);
-        chunks = StreamToBlinkTableAdapter.makeChunksForDefinition(DEFINITION, chunkSize);
+        chunks = StreamChunkUtils.makeChunksForDefinition(DEFINITION, chunkSize);
     }
 
     private void flushInternal() {
         consumer.accept(chunks);
-        chunks = StreamToBlinkTableAdapter.makeChunksForDefinition(DEFINITION, chunkSize);
+        chunks = StreamChunkUtils.makeChunksForDefinition(DEFINITION, chunkSize);
     }
 
     public void acceptFailure(Throwable e) {
         consumer.acceptFailure(e);
     }
+
+    @Override
+    public void shutdown() {}
 
     private static boolean equals(MemoryUsage before, MemoryUsage after) {
         return before.getUsed() == after.getUsed()

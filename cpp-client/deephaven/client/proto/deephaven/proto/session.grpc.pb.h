@@ -113,6 +113,16 @@ class SessionService final {
       return std::unique_ptr< ::grpc::ClientAsyncResponseReaderInterface< ::io::deephaven::proto::backplane::grpc::ExportResponse>>(PrepareAsyncExportFromTicketRaw(context, request, cq));
     }
     //
+    // Makes a copy from a source ticket and publishes to a result ticket. Neither the source ticket, nor the destination
+    // ticket, need to be a client managed ticket.
+    virtual ::grpc::Status PublishFromTicket(::grpc::ClientContext* context, const ::io::deephaven::proto::backplane::grpc::PublishRequest& request, ::io::deephaven::proto::backplane::grpc::PublishResponse* response) = 0;
+    std::unique_ptr< ::grpc::ClientAsyncResponseReaderInterface< ::io::deephaven::proto::backplane::grpc::PublishResponse>> AsyncPublishFromTicket(::grpc::ClientContext* context, const ::io::deephaven::proto::backplane::grpc::PublishRequest& request, ::grpc::CompletionQueue* cq) {
+      return std::unique_ptr< ::grpc::ClientAsyncResponseReaderInterface< ::io::deephaven::proto::backplane::grpc::PublishResponse>>(AsyncPublishFromTicketRaw(context, request, cq));
+    }
+    std::unique_ptr< ::grpc::ClientAsyncResponseReaderInterface< ::io::deephaven::proto::backplane::grpc::PublishResponse>> PrepareAsyncPublishFromTicket(::grpc::ClientContext* context, const ::io::deephaven::proto::backplane::grpc::PublishRequest& request, ::grpc::CompletionQueue* cq) {
+      return std::unique_ptr< ::grpc::ClientAsyncResponseReaderInterface< ::io::deephaven::proto::backplane::grpc::PublishResponse>>(PrepareAsyncPublishFromTicketRaw(context, request, cq));
+    }
+    //
     // Establish a stream to manage all session exports, including those lost due to partially complete rpc calls.
     //
     // New streams will flush notifications for all un-released exports, prior to seeing any new or updated exports
@@ -172,6 +182,11 @@ class SessionService final {
       virtual void ExportFromTicket(::grpc::ClientContext* context, const ::io::deephaven::proto::backplane::grpc::ExportRequest* request, ::io::deephaven::proto::backplane::grpc::ExportResponse* response, std::function<void(::grpc::Status)>) = 0;
       virtual void ExportFromTicket(::grpc::ClientContext* context, const ::io::deephaven::proto::backplane::grpc::ExportRequest* request, ::io::deephaven::proto::backplane::grpc::ExportResponse* response, ::grpc::ClientUnaryReactor* reactor) = 0;
       //
+      // Makes a copy from a source ticket and publishes to a result ticket. Neither the source ticket, nor the destination
+      // ticket, need to be a client managed ticket.
+      virtual void PublishFromTicket(::grpc::ClientContext* context, const ::io::deephaven::proto::backplane::grpc::PublishRequest* request, ::io::deephaven::proto::backplane::grpc::PublishResponse* response, std::function<void(::grpc::Status)>) = 0;
+      virtual void PublishFromTicket(::grpc::ClientContext* context, const ::io::deephaven::proto::backplane::grpc::PublishRequest* request, ::io::deephaven::proto::backplane::grpc::PublishResponse* response, ::grpc::ClientUnaryReactor* reactor) = 0;
+      //
       // Establish a stream to manage all session exports, including those lost due to partially complete rpc calls.
       //
       // New streams will flush notifications for all un-released exports, prior to seeing any new or updated exports
@@ -198,6 +213,8 @@ class SessionService final {
     virtual ::grpc::ClientAsyncResponseReaderInterface< ::io::deephaven::proto::backplane::grpc::ReleaseResponse>* PrepareAsyncReleaseRaw(::grpc::ClientContext* context, const ::io::deephaven::proto::backplane::grpc::ReleaseRequest& request, ::grpc::CompletionQueue* cq) = 0;
     virtual ::grpc::ClientAsyncResponseReaderInterface< ::io::deephaven::proto::backplane::grpc::ExportResponse>* AsyncExportFromTicketRaw(::grpc::ClientContext* context, const ::io::deephaven::proto::backplane::grpc::ExportRequest& request, ::grpc::CompletionQueue* cq) = 0;
     virtual ::grpc::ClientAsyncResponseReaderInterface< ::io::deephaven::proto::backplane::grpc::ExportResponse>* PrepareAsyncExportFromTicketRaw(::grpc::ClientContext* context, const ::io::deephaven::proto::backplane::grpc::ExportRequest& request, ::grpc::CompletionQueue* cq) = 0;
+    virtual ::grpc::ClientAsyncResponseReaderInterface< ::io::deephaven::proto::backplane::grpc::PublishResponse>* AsyncPublishFromTicketRaw(::grpc::ClientContext* context, const ::io::deephaven::proto::backplane::grpc::PublishRequest& request, ::grpc::CompletionQueue* cq) = 0;
+    virtual ::grpc::ClientAsyncResponseReaderInterface< ::io::deephaven::proto::backplane::grpc::PublishResponse>* PrepareAsyncPublishFromTicketRaw(::grpc::ClientContext* context, const ::io::deephaven::proto::backplane::grpc::PublishRequest& request, ::grpc::CompletionQueue* cq) = 0;
     virtual ::grpc::ClientReaderInterface< ::io::deephaven::proto::backplane::grpc::ExportNotification>* ExportNotificationsRaw(::grpc::ClientContext* context, const ::io::deephaven::proto::backplane::grpc::ExportNotificationRequest& request) = 0;
     virtual ::grpc::ClientAsyncReaderInterface< ::io::deephaven::proto::backplane::grpc::ExportNotification>* AsyncExportNotificationsRaw(::grpc::ClientContext* context, const ::io::deephaven::proto::backplane::grpc::ExportNotificationRequest& request, ::grpc::CompletionQueue* cq, void* tag) = 0;
     virtual ::grpc::ClientAsyncReaderInterface< ::io::deephaven::proto::backplane::grpc::ExportNotification>* PrepareAsyncExportNotificationsRaw(::grpc::ClientContext* context, const ::io::deephaven::proto::backplane::grpc::ExportNotificationRequest& request, ::grpc::CompletionQueue* cq) = 0;
@@ -242,6 +259,13 @@ class SessionService final {
     std::unique_ptr< ::grpc::ClientAsyncResponseReader< ::io::deephaven::proto::backplane::grpc::ExportResponse>> PrepareAsyncExportFromTicket(::grpc::ClientContext* context, const ::io::deephaven::proto::backplane::grpc::ExportRequest& request, ::grpc::CompletionQueue* cq) {
       return std::unique_ptr< ::grpc::ClientAsyncResponseReader< ::io::deephaven::proto::backplane::grpc::ExportResponse>>(PrepareAsyncExportFromTicketRaw(context, request, cq));
     }
+    ::grpc::Status PublishFromTicket(::grpc::ClientContext* context, const ::io::deephaven::proto::backplane::grpc::PublishRequest& request, ::io::deephaven::proto::backplane::grpc::PublishResponse* response) override;
+    std::unique_ptr< ::grpc::ClientAsyncResponseReader< ::io::deephaven::proto::backplane::grpc::PublishResponse>> AsyncPublishFromTicket(::grpc::ClientContext* context, const ::io::deephaven::proto::backplane::grpc::PublishRequest& request, ::grpc::CompletionQueue* cq) {
+      return std::unique_ptr< ::grpc::ClientAsyncResponseReader< ::io::deephaven::proto::backplane::grpc::PublishResponse>>(AsyncPublishFromTicketRaw(context, request, cq));
+    }
+    std::unique_ptr< ::grpc::ClientAsyncResponseReader< ::io::deephaven::proto::backplane::grpc::PublishResponse>> PrepareAsyncPublishFromTicket(::grpc::ClientContext* context, const ::io::deephaven::proto::backplane::grpc::PublishRequest& request, ::grpc::CompletionQueue* cq) {
+      return std::unique_ptr< ::grpc::ClientAsyncResponseReader< ::io::deephaven::proto::backplane::grpc::PublishResponse>>(PrepareAsyncPublishFromTicketRaw(context, request, cq));
+    }
     std::unique_ptr< ::grpc::ClientReader< ::io::deephaven::proto::backplane::grpc::ExportNotification>> ExportNotifications(::grpc::ClientContext* context, const ::io::deephaven::proto::backplane::grpc::ExportNotificationRequest& request) {
       return std::unique_ptr< ::grpc::ClientReader< ::io::deephaven::proto::backplane::grpc::ExportNotification>>(ExportNotificationsRaw(context, request));
     }
@@ -271,6 +295,8 @@ class SessionService final {
       void Release(::grpc::ClientContext* context, const ::io::deephaven::proto::backplane::grpc::ReleaseRequest* request, ::io::deephaven::proto::backplane::grpc::ReleaseResponse* response, ::grpc::ClientUnaryReactor* reactor) override;
       void ExportFromTicket(::grpc::ClientContext* context, const ::io::deephaven::proto::backplane::grpc::ExportRequest* request, ::io::deephaven::proto::backplane::grpc::ExportResponse* response, std::function<void(::grpc::Status)>) override;
       void ExportFromTicket(::grpc::ClientContext* context, const ::io::deephaven::proto::backplane::grpc::ExportRequest* request, ::io::deephaven::proto::backplane::grpc::ExportResponse* response, ::grpc::ClientUnaryReactor* reactor) override;
+      void PublishFromTicket(::grpc::ClientContext* context, const ::io::deephaven::proto::backplane::grpc::PublishRequest* request, ::io::deephaven::proto::backplane::grpc::PublishResponse* response, std::function<void(::grpc::Status)>) override;
+      void PublishFromTicket(::grpc::ClientContext* context, const ::io::deephaven::proto::backplane::grpc::PublishRequest* request, ::io::deephaven::proto::backplane::grpc::PublishResponse* response, ::grpc::ClientUnaryReactor* reactor) override;
       void ExportNotifications(::grpc::ClientContext* context, const ::io::deephaven::proto::backplane::grpc::ExportNotificationRequest* request, ::grpc::ClientReadReactor< ::io::deephaven::proto::backplane::grpc::ExportNotification>* reactor) override;
       void TerminationNotification(::grpc::ClientContext* context, const ::io::deephaven::proto::backplane::grpc::TerminationNotificationRequest* request, ::io::deephaven::proto::backplane::grpc::TerminationNotificationResponse* response, std::function<void(::grpc::Status)>) override;
       void TerminationNotification(::grpc::ClientContext* context, const ::io::deephaven::proto::backplane::grpc::TerminationNotificationRequest* request, ::io::deephaven::proto::backplane::grpc::TerminationNotificationResponse* response, ::grpc::ClientUnaryReactor* reactor) override;
@@ -295,6 +321,8 @@ class SessionService final {
     ::grpc::ClientAsyncResponseReader< ::io::deephaven::proto::backplane::grpc::ReleaseResponse>* PrepareAsyncReleaseRaw(::grpc::ClientContext* context, const ::io::deephaven::proto::backplane::grpc::ReleaseRequest& request, ::grpc::CompletionQueue* cq) override;
     ::grpc::ClientAsyncResponseReader< ::io::deephaven::proto::backplane::grpc::ExportResponse>* AsyncExportFromTicketRaw(::grpc::ClientContext* context, const ::io::deephaven::proto::backplane::grpc::ExportRequest& request, ::grpc::CompletionQueue* cq) override;
     ::grpc::ClientAsyncResponseReader< ::io::deephaven::proto::backplane::grpc::ExportResponse>* PrepareAsyncExportFromTicketRaw(::grpc::ClientContext* context, const ::io::deephaven::proto::backplane::grpc::ExportRequest& request, ::grpc::CompletionQueue* cq) override;
+    ::grpc::ClientAsyncResponseReader< ::io::deephaven::proto::backplane::grpc::PublishResponse>* AsyncPublishFromTicketRaw(::grpc::ClientContext* context, const ::io::deephaven::proto::backplane::grpc::PublishRequest& request, ::grpc::CompletionQueue* cq) override;
+    ::grpc::ClientAsyncResponseReader< ::io::deephaven::proto::backplane::grpc::PublishResponse>* PrepareAsyncPublishFromTicketRaw(::grpc::ClientContext* context, const ::io::deephaven::proto::backplane::grpc::PublishRequest& request, ::grpc::CompletionQueue* cq) override;
     ::grpc::ClientReader< ::io::deephaven::proto::backplane::grpc::ExportNotification>* ExportNotificationsRaw(::grpc::ClientContext* context, const ::io::deephaven::proto::backplane::grpc::ExportNotificationRequest& request) override;
     ::grpc::ClientAsyncReader< ::io::deephaven::proto::backplane::grpc::ExportNotification>* AsyncExportNotificationsRaw(::grpc::ClientContext* context, const ::io::deephaven::proto::backplane::grpc::ExportNotificationRequest& request, ::grpc::CompletionQueue* cq, void* tag) override;
     ::grpc::ClientAsyncReader< ::io::deephaven::proto::backplane::grpc::ExportNotification>* PrepareAsyncExportNotificationsRaw(::grpc::ClientContext* context, const ::io::deephaven::proto::backplane::grpc::ExportNotificationRequest& request, ::grpc::CompletionQueue* cq) override;
@@ -305,6 +333,7 @@ class SessionService final {
     const ::grpc::internal::RpcMethod rpcmethod_CloseSession_;
     const ::grpc::internal::RpcMethod rpcmethod_Release_;
     const ::grpc::internal::RpcMethod rpcmethod_ExportFromTicket_;
+    const ::grpc::internal::RpcMethod rpcmethod_PublishFromTicket_;
     const ::grpc::internal::RpcMethod rpcmethod_ExportNotifications_;
     const ::grpc::internal::RpcMethod rpcmethod_TerminationNotification_;
   };
@@ -340,6 +369,10 @@ class SessionService final {
     // Makes a copy from a source ticket to a client managed result ticket. The source ticket does not need to be
     // a client managed ticket.
     virtual ::grpc::Status ExportFromTicket(::grpc::ServerContext* context, const ::io::deephaven::proto::backplane::grpc::ExportRequest* request, ::io::deephaven::proto::backplane::grpc::ExportResponse* response);
+    //
+    // Makes a copy from a source ticket and publishes to a result ticket. Neither the source ticket, nor the destination
+    // ticket, need to be a client managed ticket.
+    virtual ::grpc::Status PublishFromTicket(::grpc::ServerContext* context, const ::io::deephaven::proto::backplane::grpc::PublishRequest* request, ::io::deephaven::proto::backplane::grpc::PublishResponse* response);
     //
     // Establish a stream to manage all session exports, including those lost due to partially complete rpc calls.
     //
@@ -453,12 +486,32 @@ class SessionService final {
     }
   };
   template <class BaseClass>
+  class WithAsyncMethod_PublishFromTicket : public BaseClass {
+   private:
+    void BaseClassMustBeDerivedFromService(const Service* /*service*/) {}
+   public:
+    WithAsyncMethod_PublishFromTicket() {
+      ::grpc::Service::MarkMethodAsync(5);
+    }
+    ~WithAsyncMethod_PublishFromTicket() override {
+      BaseClassMustBeDerivedFromService(this);
+    }
+    // disable synchronous version of this method
+    ::grpc::Status PublishFromTicket(::grpc::ServerContext* /*context*/, const ::io::deephaven::proto::backplane::grpc::PublishRequest* /*request*/, ::io::deephaven::proto::backplane::grpc::PublishResponse* /*response*/) override {
+      abort();
+      return ::grpc::Status(::grpc::StatusCode::UNIMPLEMENTED, "");
+    }
+    void RequestPublishFromTicket(::grpc::ServerContext* context, ::io::deephaven::proto::backplane::grpc::PublishRequest* request, ::grpc::ServerAsyncResponseWriter< ::io::deephaven::proto::backplane::grpc::PublishResponse>* response, ::grpc::CompletionQueue* new_call_cq, ::grpc::ServerCompletionQueue* notification_cq, void *tag) {
+      ::grpc::Service::RequestAsyncUnary(5, context, request, response, new_call_cq, notification_cq, tag);
+    }
+  };
+  template <class BaseClass>
   class WithAsyncMethod_ExportNotifications : public BaseClass {
    private:
     void BaseClassMustBeDerivedFromService(const Service* /*service*/) {}
    public:
     WithAsyncMethod_ExportNotifications() {
-      ::grpc::Service::MarkMethodAsync(5);
+      ::grpc::Service::MarkMethodAsync(6);
     }
     ~WithAsyncMethod_ExportNotifications() override {
       BaseClassMustBeDerivedFromService(this);
@@ -469,7 +522,7 @@ class SessionService final {
       return ::grpc::Status(::grpc::StatusCode::UNIMPLEMENTED, "");
     }
     void RequestExportNotifications(::grpc::ServerContext* context, ::io::deephaven::proto::backplane::grpc::ExportNotificationRequest* request, ::grpc::ServerAsyncWriter< ::io::deephaven::proto::backplane::grpc::ExportNotification>* writer, ::grpc::CompletionQueue* new_call_cq, ::grpc::ServerCompletionQueue* notification_cq, void *tag) {
-      ::grpc::Service::RequestAsyncServerStreaming(5, context, request, writer, new_call_cq, notification_cq, tag);
+      ::grpc::Service::RequestAsyncServerStreaming(6, context, request, writer, new_call_cq, notification_cq, tag);
     }
   };
   template <class BaseClass>
@@ -478,7 +531,7 @@ class SessionService final {
     void BaseClassMustBeDerivedFromService(const Service* /*service*/) {}
    public:
     WithAsyncMethod_TerminationNotification() {
-      ::grpc::Service::MarkMethodAsync(6);
+      ::grpc::Service::MarkMethodAsync(7);
     }
     ~WithAsyncMethod_TerminationNotification() override {
       BaseClassMustBeDerivedFromService(this);
@@ -489,10 +542,10 @@ class SessionService final {
       return ::grpc::Status(::grpc::StatusCode::UNIMPLEMENTED, "");
     }
     void RequestTerminationNotification(::grpc::ServerContext* context, ::io::deephaven::proto::backplane::grpc::TerminationNotificationRequest* request, ::grpc::ServerAsyncResponseWriter< ::io::deephaven::proto::backplane::grpc::TerminationNotificationResponse>* response, ::grpc::CompletionQueue* new_call_cq, ::grpc::ServerCompletionQueue* notification_cq, void *tag) {
-      ::grpc::Service::RequestAsyncUnary(6, context, request, response, new_call_cq, notification_cq, tag);
+      ::grpc::Service::RequestAsyncUnary(7, context, request, response, new_call_cq, notification_cq, tag);
     }
   };
-  typedef WithAsyncMethod_NewSession<WithAsyncMethod_RefreshSessionToken<WithAsyncMethod_CloseSession<WithAsyncMethod_Release<WithAsyncMethod_ExportFromTicket<WithAsyncMethod_ExportNotifications<WithAsyncMethod_TerminationNotification<Service > > > > > > > AsyncService;
+  typedef WithAsyncMethod_NewSession<WithAsyncMethod_RefreshSessionToken<WithAsyncMethod_CloseSession<WithAsyncMethod_Release<WithAsyncMethod_ExportFromTicket<WithAsyncMethod_PublishFromTicket<WithAsyncMethod_ExportNotifications<WithAsyncMethod_TerminationNotification<Service > > > > > > > > AsyncService;
   template <class BaseClass>
   class WithCallbackMethod_NewSession : public BaseClass {
    private:
@@ -629,12 +682,39 @@ class SessionService final {
       ::grpc::CallbackServerContext* /*context*/, const ::io::deephaven::proto::backplane::grpc::ExportRequest* /*request*/, ::io::deephaven::proto::backplane::grpc::ExportResponse* /*response*/)  { return nullptr; }
   };
   template <class BaseClass>
+  class WithCallbackMethod_PublishFromTicket : public BaseClass {
+   private:
+    void BaseClassMustBeDerivedFromService(const Service* /*service*/) {}
+   public:
+    WithCallbackMethod_PublishFromTicket() {
+      ::grpc::Service::MarkMethodCallback(5,
+          new ::grpc::internal::CallbackUnaryHandler< ::io::deephaven::proto::backplane::grpc::PublishRequest, ::io::deephaven::proto::backplane::grpc::PublishResponse>(
+            [this](
+                   ::grpc::CallbackServerContext* context, const ::io::deephaven::proto::backplane::grpc::PublishRequest* request, ::io::deephaven::proto::backplane::grpc::PublishResponse* response) { return this->PublishFromTicket(context, request, response); }));}
+    void SetMessageAllocatorFor_PublishFromTicket(
+        ::grpc::MessageAllocator< ::io::deephaven::proto::backplane::grpc::PublishRequest, ::io::deephaven::proto::backplane::grpc::PublishResponse>* allocator) {
+      ::grpc::internal::MethodHandler* const handler = ::grpc::Service::GetHandler(5);
+      static_cast<::grpc::internal::CallbackUnaryHandler< ::io::deephaven::proto::backplane::grpc::PublishRequest, ::io::deephaven::proto::backplane::grpc::PublishResponse>*>(handler)
+              ->SetMessageAllocator(allocator);
+    }
+    ~WithCallbackMethod_PublishFromTicket() override {
+      BaseClassMustBeDerivedFromService(this);
+    }
+    // disable synchronous version of this method
+    ::grpc::Status PublishFromTicket(::grpc::ServerContext* /*context*/, const ::io::deephaven::proto::backplane::grpc::PublishRequest* /*request*/, ::io::deephaven::proto::backplane::grpc::PublishResponse* /*response*/) override {
+      abort();
+      return ::grpc::Status(::grpc::StatusCode::UNIMPLEMENTED, "");
+    }
+    virtual ::grpc::ServerUnaryReactor* PublishFromTicket(
+      ::grpc::CallbackServerContext* /*context*/, const ::io::deephaven::proto::backplane::grpc::PublishRequest* /*request*/, ::io::deephaven::proto::backplane::grpc::PublishResponse* /*response*/)  { return nullptr; }
+  };
+  template <class BaseClass>
   class WithCallbackMethod_ExportNotifications : public BaseClass {
    private:
     void BaseClassMustBeDerivedFromService(const Service* /*service*/) {}
    public:
     WithCallbackMethod_ExportNotifications() {
-      ::grpc::Service::MarkMethodCallback(5,
+      ::grpc::Service::MarkMethodCallback(6,
           new ::grpc::internal::CallbackServerStreamingHandler< ::io::deephaven::proto::backplane::grpc::ExportNotificationRequest, ::io::deephaven::proto::backplane::grpc::ExportNotification>(
             [this](
                    ::grpc::CallbackServerContext* context, const ::io::deephaven::proto::backplane::grpc::ExportNotificationRequest* request) { return this->ExportNotifications(context, request); }));
@@ -656,13 +736,13 @@ class SessionService final {
     void BaseClassMustBeDerivedFromService(const Service* /*service*/) {}
    public:
     WithCallbackMethod_TerminationNotification() {
-      ::grpc::Service::MarkMethodCallback(6,
+      ::grpc::Service::MarkMethodCallback(7,
           new ::grpc::internal::CallbackUnaryHandler< ::io::deephaven::proto::backplane::grpc::TerminationNotificationRequest, ::io::deephaven::proto::backplane::grpc::TerminationNotificationResponse>(
             [this](
                    ::grpc::CallbackServerContext* context, const ::io::deephaven::proto::backplane::grpc::TerminationNotificationRequest* request, ::io::deephaven::proto::backplane::grpc::TerminationNotificationResponse* response) { return this->TerminationNotification(context, request, response); }));}
     void SetMessageAllocatorFor_TerminationNotification(
         ::grpc::MessageAllocator< ::io::deephaven::proto::backplane::grpc::TerminationNotificationRequest, ::io::deephaven::proto::backplane::grpc::TerminationNotificationResponse>* allocator) {
-      ::grpc::internal::MethodHandler* const handler = ::grpc::Service::GetHandler(6);
+      ::grpc::internal::MethodHandler* const handler = ::grpc::Service::GetHandler(7);
       static_cast<::grpc::internal::CallbackUnaryHandler< ::io::deephaven::proto::backplane::grpc::TerminationNotificationRequest, ::io::deephaven::proto::backplane::grpc::TerminationNotificationResponse>*>(handler)
               ->SetMessageAllocator(allocator);
     }
@@ -677,7 +757,7 @@ class SessionService final {
     virtual ::grpc::ServerUnaryReactor* TerminationNotification(
       ::grpc::CallbackServerContext* /*context*/, const ::io::deephaven::proto::backplane::grpc::TerminationNotificationRequest* /*request*/, ::io::deephaven::proto::backplane::grpc::TerminationNotificationResponse* /*response*/)  { return nullptr; }
   };
-  typedef WithCallbackMethod_NewSession<WithCallbackMethod_RefreshSessionToken<WithCallbackMethod_CloseSession<WithCallbackMethod_Release<WithCallbackMethod_ExportFromTicket<WithCallbackMethod_ExportNotifications<WithCallbackMethod_TerminationNotification<Service > > > > > > > CallbackService;
+  typedef WithCallbackMethod_NewSession<WithCallbackMethod_RefreshSessionToken<WithCallbackMethod_CloseSession<WithCallbackMethod_Release<WithCallbackMethod_ExportFromTicket<WithCallbackMethod_PublishFromTicket<WithCallbackMethod_ExportNotifications<WithCallbackMethod_TerminationNotification<Service > > > > > > > > CallbackService;
   typedef CallbackService ExperimentalCallbackService;
   template <class BaseClass>
   class WithGenericMethod_NewSession : public BaseClass {
@@ -765,12 +845,29 @@ class SessionService final {
     }
   };
   template <class BaseClass>
+  class WithGenericMethod_PublishFromTicket : public BaseClass {
+   private:
+    void BaseClassMustBeDerivedFromService(const Service* /*service*/) {}
+   public:
+    WithGenericMethod_PublishFromTicket() {
+      ::grpc::Service::MarkMethodGeneric(5);
+    }
+    ~WithGenericMethod_PublishFromTicket() override {
+      BaseClassMustBeDerivedFromService(this);
+    }
+    // disable synchronous version of this method
+    ::grpc::Status PublishFromTicket(::grpc::ServerContext* /*context*/, const ::io::deephaven::proto::backplane::grpc::PublishRequest* /*request*/, ::io::deephaven::proto::backplane::grpc::PublishResponse* /*response*/) override {
+      abort();
+      return ::grpc::Status(::grpc::StatusCode::UNIMPLEMENTED, "");
+    }
+  };
+  template <class BaseClass>
   class WithGenericMethod_ExportNotifications : public BaseClass {
    private:
     void BaseClassMustBeDerivedFromService(const Service* /*service*/) {}
    public:
     WithGenericMethod_ExportNotifications() {
-      ::grpc::Service::MarkMethodGeneric(5);
+      ::grpc::Service::MarkMethodGeneric(6);
     }
     ~WithGenericMethod_ExportNotifications() override {
       BaseClassMustBeDerivedFromService(this);
@@ -787,7 +884,7 @@ class SessionService final {
     void BaseClassMustBeDerivedFromService(const Service* /*service*/) {}
    public:
     WithGenericMethod_TerminationNotification() {
-      ::grpc::Service::MarkMethodGeneric(6);
+      ::grpc::Service::MarkMethodGeneric(7);
     }
     ~WithGenericMethod_TerminationNotification() override {
       BaseClassMustBeDerivedFromService(this);
@@ -899,12 +996,32 @@ class SessionService final {
     }
   };
   template <class BaseClass>
+  class WithRawMethod_PublishFromTicket : public BaseClass {
+   private:
+    void BaseClassMustBeDerivedFromService(const Service* /*service*/) {}
+   public:
+    WithRawMethod_PublishFromTicket() {
+      ::grpc::Service::MarkMethodRaw(5);
+    }
+    ~WithRawMethod_PublishFromTicket() override {
+      BaseClassMustBeDerivedFromService(this);
+    }
+    // disable synchronous version of this method
+    ::grpc::Status PublishFromTicket(::grpc::ServerContext* /*context*/, const ::io::deephaven::proto::backplane::grpc::PublishRequest* /*request*/, ::io::deephaven::proto::backplane::grpc::PublishResponse* /*response*/) override {
+      abort();
+      return ::grpc::Status(::grpc::StatusCode::UNIMPLEMENTED, "");
+    }
+    void RequestPublishFromTicket(::grpc::ServerContext* context, ::grpc::ByteBuffer* request, ::grpc::ServerAsyncResponseWriter< ::grpc::ByteBuffer>* response, ::grpc::CompletionQueue* new_call_cq, ::grpc::ServerCompletionQueue* notification_cq, void *tag) {
+      ::grpc::Service::RequestAsyncUnary(5, context, request, response, new_call_cq, notification_cq, tag);
+    }
+  };
+  template <class BaseClass>
   class WithRawMethod_ExportNotifications : public BaseClass {
    private:
     void BaseClassMustBeDerivedFromService(const Service* /*service*/) {}
    public:
     WithRawMethod_ExportNotifications() {
-      ::grpc::Service::MarkMethodRaw(5);
+      ::grpc::Service::MarkMethodRaw(6);
     }
     ~WithRawMethod_ExportNotifications() override {
       BaseClassMustBeDerivedFromService(this);
@@ -915,7 +1032,7 @@ class SessionService final {
       return ::grpc::Status(::grpc::StatusCode::UNIMPLEMENTED, "");
     }
     void RequestExportNotifications(::grpc::ServerContext* context, ::grpc::ByteBuffer* request, ::grpc::ServerAsyncWriter< ::grpc::ByteBuffer>* writer, ::grpc::CompletionQueue* new_call_cq, ::grpc::ServerCompletionQueue* notification_cq, void *tag) {
-      ::grpc::Service::RequestAsyncServerStreaming(5, context, request, writer, new_call_cq, notification_cq, tag);
+      ::grpc::Service::RequestAsyncServerStreaming(6, context, request, writer, new_call_cq, notification_cq, tag);
     }
   };
   template <class BaseClass>
@@ -924,7 +1041,7 @@ class SessionService final {
     void BaseClassMustBeDerivedFromService(const Service* /*service*/) {}
    public:
     WithRawMethod_TerminationNotification() {
-      ::grpc::Service::MarkMethodRaw(6);
+      ::grpc::Service::MarkMethodRaw(7);
     }
     ~WithRawMethod_TerminationNotification() override {
       BaseClassMustBeDerivedFromService(this);
@@ -935,7 +1052,7 @@ class SessionService final {
       return ::grpc::Status(::grpc::StatusCode::UNIMPLEMENTED, "");
     }
     void RequestTerminationNotification(::grpc::ServerContext* context, ::grpc::ByteBuffer* request, ::grpc::ServerAsyncResponseWriter< ::grpc::ByteBuffer>* response, ::grpc::CompletionQueue* new_call_cq, ::grpc::ServerCompletionQueue* notification_cq, void *tag) {
-      ::grpc::Service::RequestAsyncUnary(6, context, request, response, new_call_cq, notification_cq, tag);
+      ::grpc::Service::RequestAsyncUnary(7, context, request, response, new_call_cq, notification_cq, tag);
     }
   };
   template <class BaseClass>
@@ -1049,12 +1166,34 @@ class SessionService final {
       ::grpc::CallbackServerContext* /*context*/, const ::grpc::ByteBuffer* /*request*/, ::grpc::ByteBuffer* /*response*/)  { return nullptr; }
   };
   template <class BaseClass>
+  class WithRawCallbackMethod_PublishFromTicket : public BaseClass {
+   private:
+    void BaseClassMustBeDerivedFromService(const Service* /*service*/) {}
+   public:
+    WithRawCallbackMethod_PublishFromTicket() {
+      ::grpc::Service::MarkMethodRawCallback(5,
+          new ::grpc::internal::CallbackUnaryHandler< ::grpc::ByteBuffer, ::grpc::ByteBuffer>(
+            [this](
+                   ::grpc::CallbackServerContext* context, const ::grpc::ByteBuffer* request, ::grpc::ByteBuffer* response) { return this->PublishFromTicket(context, request, response); }));
+    }
+    ~WithRawCallbackMethod_PublishFromTicket() override {
+      BaseClassMustBeDerivedFromService(this);
+    }
+    // disable synchronous version of this method
+    ::grpc::Status PublishFromTicket(::grpc::ServerContext* /*context*/, const ::io::deephaven::proto::backplane::grpc::PublishRequest* /*request*/, ::io::deephaven::proto::backplane::grpc::PublishResponse* /*response*/) override {
+      abort();
+      return ::grpc::Status(::grpc::StatusCode::UNIMPLEMENTED, "");
+    }
+    virtual ::grpc::ServerUnaryReactor* PublishFromTicket(
+      ::grpc::CallbackServerContext* /*context*/, const ::grpc::ByteBuffer* /*request*/, ::grpc::ByteBuffer* /*response*/)  { return nullptr; }
+  };
+  template <class BaseClass>
   class WithRawCallbackMethod_ExportNotifications : public BaseClass {
    private:
     void BaseClassMustBeDerivedFromService(const Service* /*service*/) {}
    public:
     WithRawCallbackMethod_ExportNotifications() {
-      ::grpc::Service::MarkMethodRawCallback(5,
+      ::grpc::Service::MarkMethodRawCallback(6,
           new ::grpc::internal::CallbackServerStreamingHandler< ::grpc::ByteBuffer, ::grpc::ByteBuffer>(
             [this](
                    ::grpc::CallbackServerContext* context, const::grpc::ByteBuffer* request) { return this->ExportNotifications(context, request); }));
@@ -1076,7 +1215,7 @@ class SessionService final {
     void BaseClassMustBeDerivedFromService(const Service* /*service*/) {}
    public:
     WithRawCallbackMethod_TerminationNotification() {
-      ::grpc::Service::MarkMethodRawCallback(6,
+      ::grpc::Service::MarkMethodRawCallback(7,
           new ::grpc::internal::CallbackUnaryHandler< ::grpc::ByteBuffer, ::grpc::ByteBuffer>(
             [this](
                    ::grpc::CallbackServerContext* context, const ::grpc::ByteBuffer* request, ::grpc::ByteBuffer* response) { return this->TerminationNotification(context, request, response); }));
@@ -1228,12 +1367,39 @@ class SessionService final {
     virtual ::grpc::Status StreamedExportFromTicket(::grpc::ServerContext* context, ::grpc::ServerUnaryStreamer< ::io::deephaven::proto::backplane::grpc::ExportRequest,::io::deephaven::proto::backplane::grpc::ExportResponse>* server_unary_streamer) = 0;
   };
   template <class BaseClass>
+  class WithStreamedUnaryMethod_PublishFromTicket : public BaseClass {
+   private:
+    void BaseClassMustBeDerivedFromService(const Service* /*service*/) {}
+   public:
+    WithStreamedUnaryMethod_PublishFromTicket() {
+      ::grpc::Service::MarkMethodStreamed(5,
+        new ::grpc::internal::StreamedUnaryHandler<
+          ::io::deephaven::proto::backplane::grpc::PublishRequest, ::io::deephaven::proto::backplane::grpc::PublishResponse>(
+            [this](::grpc::ServerContext* context,
+                   ::grpc::ServerUnaryStreamer<
+                     ::io::deephaven::proto::backplane::grpc::PublishRequest, ::io::deephaven::proto::backplane::grpc::PublishResponse>* streamer) {
+                       return this->StreamedPublishFromTicket(context,
+                         streamer);
+                  }));
+    }
+    ~WithStreamedUnaryMethod_PublishFromTicket() override {
+      BaseClassMustBeDerivedFromService(this);
+    }
+    // disable regular version of this method
+    ::grpc::Status PublishFromTicket(::grpc::ServerContext* /*context*/, const ::io::deephaven::proto::backplane::grpc::PublishRequest* /*request*/, ::io::deephaven::proto::backplane::grpc::PublishResponse* /*response*/) override {
+      abort();
+      return ::grpc::Status(::grpc::StatusCode::UNIMPLEMENTED, "");
+    }
+    // replace default version of method with streamed unary
+    virtual ::grpc::Status StreamedPublishFromTicket(::grpc::ServerContext* context, ::grpc::ServerUnaryStreamer< ::io::deephaven::proto::backplane::grpc::PublishRequest,::io::deephaven::proto::backplane::grpc::PublishResponse>* server_unary_streamer) = 0;
+  };
+  template <class BaseClass>
   class WithStreamedUnaryMethod_TerminationNotification : public BaseClass {
    private:
     void BaseClassMustBeDerivedFromService(const Service* /*service*/) {}
    public:
     WithStreamedUnaryMethod_TerminationNotification() {
-      ::grpc::Service::MarkMethodStreamed(6,
+      ::grpc::Service::MarkMethodStreamed(7,
         new ::grpc::internal::StreamedUnaryHandler<
           ::io::deephaven::proto::backplane::grpc::TerminationNotificationRequest, ::io::deephaven::proto::backplane::grpc::TerminationNotificationResponse>(
             [this](::grpc::ServerContext* context,
@@ -1254,14 +1420,14 @@ class SessionService final {
     // replace default version of method with streamed unary
     virtual ::grpc::Status StreamedTerminationNotification(::grpc::ServerContext* context, ::grpc::ServerUnaryStreamer< ::io::deephaven::proto::backplane::grpc::TerminationNotificationRequest,::io::deephaven::proto::backplane::grpc::TerminationNotificationResponse>* server_unary_streamer) = 0;
   };
-  typedef WithStreamedUnaryMethod_NewSession<WithStreamedUnaryMethod_RefreshSessionToken<WithStreamedUnaryMethod_CloseSession<WithStreamedUnaryMethod_Release<WithStreamedUnaryMethod_ExportFromTicket<WithStreamedUnaryMethod_TerminationNotification<Service > > > > > > StreamedUnaryService;
+  typedef WithStreamedUnaryMethod_NewSession<WithStreamedUnaryMethod_RefreshSessionToken<WithStreamedUnaryMethod_CloseSession<WithStreamedUnaryMethod_Release<WithStreamedUnaryMethod_ExportFromTicket<WithStreamedUnaryMethod_PublishFromTicket<WithStreamedUnaryMethod_TerminationNotification<Service > > > > > > > StreamedUnaryService;
   template <class BaseClass>
   class WithSplitStreamingMethod_ExportNotifications : public BaseClass {
    private:
     void BaseClassMustBeDerivedFromService(const Service* /*service*/) {}
    public:
     WithSplitStreamingMethod_ExportNotifications() {
-      ::grpc::Service::MarkMethodStreamed(5,
+      ::grpc::Service::MarkMethodStreamed(6,
         new ::grpc::internal::SplitServerStreamingHandler<
           ::io::deephaven::proto::backplane::grpc::ExportNotificationRequest, ::io::deephaven::proto::backplane::grpc::ExportNotification>(
             [this](::grpc::ServerContext* context,
@@ -1283,7 +1449,7 @@ class SessionService final {
     virtual ::grpc::Status StreamedExportNotifications(::grpc::ServerContext* context, ::grpc::ServerSplitStreamer< ::io::deephaven::proto::backplane::grpc::ExportNotificationRequest,::io::deephaven::proto::backplane::grpc::ExportNotification>* server_split_streamer) = 0;
   };
   typedef WithSplitStreamingMethod_ExportNotifications<Service > SplitStreamedService;
-  typedef WithStreamedUnaryMethod_NewSession<WithStreamedUnaryMethod_RefreshSessionToken<WithStreamedUnaryMethod_CloseSession<WithStreamedUnaryMethod_Release<WithStreamedUnaryMethod_ExportFromTicket<WithSplitStreamingMethod_ExportNotifications<WithStreamedUnaryMethod_TerminationNotification<Service > > > > > > > StreamedService;
+  typedef WithStreamedUnaryMethod_NewSession<WithStreamedUnaryMethod_RefreshSessionToken<WithStreamedUnaryMethod_CloseSession<WithStreamedUnaryMethod_Release<WithStreamedUnaryMethod_ExportFromTicket<WithStreamedUnaryMethod_PublishFromTicket<WithSplitStreamingMethod_ExportNotifications<WithStreamedUnaryMethod_TerminationNotification<Service > > > > > > > > StreamedService;
 };
 
 }  // namespace grpc

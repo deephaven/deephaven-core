@@ -86,8 +86,8 @@ final public class SelectColumnLayer extends SelectOrViewColumnLayer {
         if (userSuppliedContext != null) {
             this.executionContext = userSuppliedContext;
         } else {
-            // the job scheduler requires the update graph
-            this.executionContext = ExecutionContext.newBuilder().setUpdateGraph(updateGraph).build();
+            // The job scheduler may require the auth context and update graph
+            this.executionContext = ExecutionContext.newBuilder().markSystemic().setUpdateGraph(updateGraph).build();
         }
 
         dependencyBitSet = new BitSet();

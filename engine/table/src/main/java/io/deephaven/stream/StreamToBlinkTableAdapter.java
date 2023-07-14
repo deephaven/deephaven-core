@@ -4,21 +4,24 @@
 package io.deephaven.stream;
 
 import gnu.trove.list.array.TLongArrayList;
-import io.deephaven.UncheckedDeephavenException;
+import io.deephaven.base.log.LogOutput;
 import io.deephaven.base.verify.Assert;
-import io.deephaven.chunk.attributes.Any;
 import io.deephaven.chunk.attributes.Values;
-import io.deephaven.engine.liveness.ReferenceCountedLivenessNode;
-import io.deephaven.engine.table.ColumnSource;
 import io.deephaven.engine.table.ColumnDefinition;
+import io.deephaven.engine.table.ColumnSource;
+import io.deephaven.engine.table.ModifiedColumnSet;
 import io.deephaven.engine.table.Table;
 import io.deephaven.engine.table.TableDefinition;
+import io.deephaven.engine.table.TableUpdate;
 import io.deephaven.engine.table.impl.TableUpdateImpl;
-import io.deephaven.engine.updategraph.impl.PeriodicUpdateGraph;
+import io.deephaven.engine.table.impl.sources.ByteAsBooleanColumnSource;
+import io.deephaven.engine.table.impl.sources.LongAsInstantColumnSource;
+import io.deephaven.engine.table.impl.sources.NullValueColumnSource;
+import io.deephaven.engine.table.impl.sources.SwitchColumnSource;
+import io.deephaven.engine.updategraph.NotificationQueue;
+import io.deephaven.engine.updategraph.UpdateGraph;
 import io.deephaven.engine.updategraph.UpdateSourceRegistrar;
-import io.deephaven.engine.table.ModifiedColumnSet;
 import io.deephaven.engine.table.impl.QueryTable;
-import io.deephaven.engine.table.impl.sources.*;
 import io.deephaven.chunk.ChunkType;
 import io.deephaven.chunk.WritableChunk;
 import io.deephaven.engine.table.impl.sources.chunkcolumnsource.ChunkColumnSource;
@@ -30,6 +33,7 @@ import io.deephaven.io.logger.Logger;
 import io.deephaven.util.MultiException;
 import io.deephaven.util.SafeCloseable;
 import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
 
 import java.lang.ref.WeakReference;
 import java.time.Instant;
@@ -37,15 +41,17 @@ import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Map.Entry;
+import java.util.concurrent.atomic.AtomicBoolean;
 
 /**
  * Adapter for converting streams of data into columnar Deephaven {@link Table tables} that conform to
  * {@link Table#BLINK_TABLE_ATTRIBUTE blink table} semantics.
  *
- * @implNote The constructor publishes {@code this} to the {@link PeriodicUpdateGraph} and thus cannot be subclassed.
+ * @implNote The constructor publishes {@code this} to an {@link UpdateSourceRegistrar} and thus cannot be subclassed.
  */
-public class StreamToBlinkTableAdapter extends ReferenceCountedLivenessNode
-        implements SafeCloseable, StreamConsumer, Runnable {
+public class StreamToBlinkTableAdapter
+        implements StreamConsumer, Runnable, NotificationQueue.Dependency, SafeCloseable {
 
     private static final Logger log = LoggerFactory.getLogger(StreamToBlinkTableAdapter.class);
 
@@ -68,19 +74,29 @@ public class StreamToBlinkTableAdapter extends ReferenceCountedLivenessNode
     private ChunkColumnSource<?>[] currentChunkSources;
     private ChunkColumnSource<?>[] prevChunkSources;
 
-    /** A list of failures that have occurred. */
-    private List<Throwable> enqueuedFailure;
+    /**
+     * A list of failures that have occurred. Access should be synchronized on {@code this}.
+     */
+    private final List<Throwable> enqueuedFailures = new ArrayList<>();
 
     private volatile QueryTable table;
-    private volatile Runnable shutdownCallback;
-    private volatile boolean alive = true;
+
+    private final AtomicBoolean alive = new AtomicBoolean(true);
 
     public StreamToBlinkTableAdapter(
             @NotNull final TableDefinition tableDefinition,
             @NotNull final StreamPublisher streamPublisher,
             @NotNull final UpdateSourceRegistrar updateSourceRegistrar,
             @NotNull final String name) {
-        super(false);
+        this(tableDefinition, streamPublisher, updateSourceRegistrar, name, Map.of());
+    }
+
+    public StreamToBlinkTableAdapter(
+            @NotNull final TableDefinition tableDefinition,
+            @NotNull final StreamPublisher streamPublisher,
+            @NotNull final UpdateSourceRegistrar updateSourceRegistrar,
+            @NotNull final String name,
+            @NotNull final Map<String, Object> extraAttributes) {
         this.tableDefinition = tableDefinition;
         this.streamPublisher = streamPublisher;
         this.updateSourceRegistrar = updateSourceRegistrar;
@@ -98,7 +114,15 @@ public class StreamToBlinkTableAdapter extends ReferenceCountedLivenessNode
                 setFlat();
                 setRefreshing(true);
                 setAttribute(Table.BLINK_TABLE_ATTRIBUTE, Boolean.TRUE);
+                for (Entry<String, Object> e : extraAttributes.entrySet()) {
+                    setAttribute(e.getKey(), e.getValue());
+                }
                 addParentReference(StreamToBlinkTableAdapter.this);
+            }
+
+            @Override
+            public void destroy() {
+                StreamToBlinkTableAdapter.this.close();
             }
         };
         tableRef = new WeakReference<>(table);
@@ -110,50 +134,6 @@ public class StreamToBlinkTableAdapter extends ReferenceCountedLivenessNode
         updateSourceRegistrar.addSource(this);
     }
 
-    /**
-     * Set a callback to be invoked when this StreamToBlinkTableAdapter will no longer deliver new data to downstream
-     * consumers.
-     *
-     * @param shutdownCallback The callback
-     */
-    public void setShutdownCallback(Runnable shutdownCallback) {
-        this.shutdownCallback = shutdownCallback;
-    }
-
-    /**
-     * Create an array of chunks suitable for passing to our accept method.
-     *
-     * @param size the size of the chunks
-     * @return an array of writable chunks
-     */
-    public WritableChunk<?>[] makeChunksForDefinition(int size) {
-        return makeChunksForDefinition(tableDefinition, size);
-    }
-
-    /**
-     * Return the ChunkType for a given column index.
-     *
-     * @param idx the column index to get the ChunkType for
-     * @return the ChunkType for the specified column
-     */
-    public ChunkType chunkTypeForIndex(int idx) {
-        return chunkTypeForColumn(tableDefinition.getColumns().get(idx));
-    }
-
-    /**
-     * Make output chunks for the specified table definition.
-     *
-     * @param definition the definition to make chunks for
-     * @param size the size of the returned chunks
-     * @return an array of writable chunks
-     */
-    public static <ATTR extends Any> WritableChunk<ATTR>[] makeChunksForDefinition(
-            @NotNull final TableDefinition definition,
-            final int size) {
-        // noinspection unchecked
-        return definition.getColumnStream().map(cd -> makeChunk(cd, size)).toArray(WritableChunk[]::new);
-    }
-
     @NotNull
     private static ChunkColumnSource<?>[] makeChunkSources(TableDefinition tableDefinition) {
         final TLongArrayList offsets = new TLongArrayList();
@@ -163,7 +143,7 @@ public class StreamToBlinkTableAdapter extends ReferenceCountedLivenessNode
 
     @NotNull
     private static ChunkColumnSource<?> makeChunkSourceForColumn(TLongArrayList offsets, ColumnDefinition<?> cd) {
-        final Class<?> replacementType = replacementType(cd.getDataType());
+        final Class<?> replacementType = StreamChunkUtils.replacementType(cd.getDataType());
         if (replacementType != null) {
             return ChunkColumnSource.make(ChunkType.fromElementType(replacementType), replacementType, null, offsets);
         } else {
@@ -173,27 +153,13 @@ public class StreamToBlinkTableAdapter extends ReferenceCountedLivenessNode
     }
 
     @NotNull
-    private static WritableChunk<?> makeChunk(ColumnDefinition<?> cd, int size) {
-        final ChunkType chunkType = chunkTypeForColumn(cd);
-        WritableChunk<Any> returnValue = chunkType.makeWritableChunk(size);
-        returnValue.setSize(0);
-        return returnValue;
-    }
-
-    private static ChunkType chunkTypeForColumn(ColumnDefinition<?> cd) {
-        final Class<?> replacementType = replacementType(cd.getDataType());
-        final Class<?> useType = replacementType != null ? replacementType : cd.getDataType();
-        return ChunkType.fromElementType(useType);
-    }
-
-    @NotNull
     private static NullValueColumnSource<?>[] makeNullColumnSources(TableDefinition tableDefinition) {
         return tableDefinition.getColumnStream().map(StreamToBlinkTableAdapter::makeNullValueColumnSourceFromDefinition)
                 .toArray(NullValueColumnSource<?>[]::new);
     }
 
     private static NullValueColumnSource<?> makeNullValueColumnSourceFromDefinition(ColumnDefinition<?> cd) {
-        final Class<?> replacementType = replacementType(cd.getDataType());
+        final Class<?> replacementType = StreamChunkUtils.replacementType(cd.getDataType());
         if (replacementType != null) {
             return NullValueColumnSource.getInstance(replacementType, null);
         } else {
@@ -234,24 +200,6 @@ public class StreamToBlinkTableAdapter extends ReferenceCountedLivenessNode
     }
 
     /**
-     * We change the inner columns to long and byte for Instant and Boolean, respectively. We expect our ingesters to
-     * pass us these primitive chunks for those types.
-     *
-     * @param columnType the type of the outer column
-     *
-     * @return the type of the inner column
-     */
-    private static Class<?> replacementType(Class<?> columnType) {
-        if (columnType == Instant.class) {
-            return long.class;
-        } else if (columnType == Boolean.class) {
-            return byte.class;
-        } else {
-            return null;
-        }
-    }
-
-    /**
      * Return the {@link Table#BLINK_TABLE_ATTRIBUTE blink} {@link Table table} that this adapter is producing, and
      * ensure that this StreamToBlinkTableAdapter no longer enforces strong reachability of the result. May return
      * {@code null} if invoked more than once and the initial caller does not enforce strong reachability of the result.
@@ -266,59 +214,68 @@ public class StreamToBlinkTableAdapter extends ReferenceCountedLivenessNode
 
     @Override
     public void close() {
-        if (!alive) {
-            return;
-        }
-        synchronized (this) {
-            if (!alive) {
-                return;
-            }
-            alive = false;
+        if (alive.compareAndSet(true, false)) {
             log.info().append("Deregistering ").append(StreamToBlinkTableAdapter.class.getSimpleName()).append('-')
                     .append(name)
                     .endl();
             updateSourceRegistrar.removeSource(this);
-            final Runnable localShutdownCallback = shutdownCallback;
-            if (localShutdownCallback != null) {
-                localShutdownCallback.run();
-            }
+            streamPublisher.shutdown();
         }
-    }
-
-    @Override
-    public void destroy() {
-        close();
     }
 
     @Override
     public void run() {
+        synchronized (this) {
+            // If we have an enqueued failure we want to process it first, before we allow the streamPublisher to flush
+            // itself.
+            if (!enqueuedFailures.isEmpty()) {
+                deliverFailure(MultiException.maybeWrapInMultiException(
+                        "Multiple errors encountered while ingesting stream",
+                        enqueuedFailures));
+                return;
+            }
+        }
+        final TableUpdate downstream;
         try {
-            doRefresh();
+            downstream = doRefresh();
         } catch (Exception e) {
             log.error().append("Error refreshing ").append(StreamToBlinkTableAdapter.class.getSimpleName()).append('-')
                     .append(name).append(": ").append(e).endl();
-            updateSourceRegistrar.removeSource(this);
+            deliverFailure(e);
+            return;
+        }
+        deliverUpdate(downstream);
+    }
+
+    private void deliverUpdate(@Nullable final TableUpdate downstream) {
+        final QueryTable localTable = tableRef.get();
+        if (localTable != null) {
+            if (downstream != null) {
+                try {
+                    localTable.notifyListeners(downstream);
+                } catch (Exception e) {
+                    // Defer error delivery until the next cycle
+                    enqueueFailure(e);
+                }
+            }
+            return;
+        }
+        // noinspection EmptyTryBlock
+        try (final SafeCloseable ignored1 = this;
+                final SafeCloseable ignored2 = downstream == null ? null : downstream::release) {
+        }
+    }
+
+    private void deliverFailure(@NotNull final Throwable failure) {
+        try (final SafeCloseable ignored = this) {
             final QueryTable localTable = tableRef.get();
             if (localTable != null) {
-                localTable.notifyListenersOnError(e, null);
-            } else {
-                close();
+                localTable.notifyListenersOnError(failure, null);
             }
         }
     }
 
-    private void doRefresh() {
-        synchronized (this) {
-            // if we have an enqueued failure we want to process it first, before we allow the streamPublisher to flush
-            // itself
-            if (enqueuedFailure != null) {
-                throw new UncheckedDeephavenException(
-                        MultiException.maybeWrapInMultiException(
-                                "Multiple errors encountered while ingesting stream",
-                                enqueuedFailure.toArray(new Throwable[0])));
-            }
-        }
-
+    private TableUpdate doRefresh() {
         streamPublisher.flush();
         // Switch columns, update RowSet, deliver notification
 
@@ -330,7 +287,7 @@ public class StreamToBlinkTableAdapter extends ReferenceCountedLivenessNode
             newSize = bufferChunkSources == null ? 0 : bufferChunkSources[0].getSize();
 
             if (oldSize == 0 && newSize == 0) {
-                return;
+                return null;
             }
 
             capturedBufferSources = bufferChunkSources;
@@ -359,31 +316,31 @@ public class StreamToBlinkTableAdapter extends ReferenceCountedLivenessNode
             rowSet.removeRange(newSize, oldSize - 1);
         }
 
-        final QueryTable localTable = tableRef.get();
-        if (localTable != null) {
-            localTable.notifyListeners(new TableUpdateImpl(RowSetFactory.flat(newSize),
-                    RowSetFactory.flat(oldSize), RowSetFactory.empty(),
-                    RowSetShiftData.EMPTY, ModifiedColumnSet.EMPTY));
-        } else {
-            close();
-        }
+        return new TableUpdateImpl(
+                RowSetFactory.flat(newSize),
+                RowSetFactory.flat(oldSize),
+                RowSetFactory.empty(),
+                RowSetShiftData.EMPTY,
+                ModifiedColumnSet.EMPTY);
     }
 
     @SafeVarargs
     @Override
     public final void accept(@NotNull final WritableChunk<Values>... data) {
-        if (!alive) {
+        if (!alive.get()) {
             return;
         }
         // Accumulate data into buffered column sources
         synchronized (this) {
+            if (!enqueuedFailures.isEmpty()) {
+                // If we'll never deliver these chunks, dispose of them immediately.
+                SafeCloseable.closeAll(data);
+                return;
+            }
             if (bufferChunkSources == null) {
                 bufferChunkSources = makeChunkSources(tableDefinition);
             }
             if (data.length != bufferChunkSources.length) {
-                // TODO: Our error handling should be better when in the ingester thread; since it seems proper to kill
-                // the ingester, and also notify downstream tables
-                // https://github.com/deephaven/deephaven-core/issues/934
                 throw new IllegalStateException("StreamConsumer data length = " + data.length + " chunks, expected "
                         + bufferChunkSources.length);
             }
@@ -395,16 +352,32 @@ public class StreamToBlinkTableAdapter extends ReferenceCountedLivenessNode
     }
 
     @Override
-    public void acceptFailure(@NotNull Throwable cause) {
-        if (!alive) {
+    public void acceptFailure(@NotNull final Throwable cause) {
+        if (!alive.get()) {
             return;
         }
+        enqueueFailure(cause);
+        // Defer closing until the error has been delivered
+    }
+
+    private void enqueueFailure(@NotNull final Throwable cause) {
         synchronized (this) {
-            if (enqueuedFailure == null) {
-                enqueuedFailure = new ArrayList<>();
-            }
-            enqueuedFailure.add(cause);
+            enqueuedFailures.add(cause);
         }
-        close();
+    }
+
+    @Override
+    public boolean satisfied(final long step) {
+        return updateSourceRegistrar.satisfied(step);
+    }
+
+    @Override
+    public UpdateGraph getUpdateGraph() {
+        return updateSourceRegistrar.getUpdateGraph();
+    }
+
+    @Override
+    public LogOutput append(@NotNull final LogOutput logOutput) {
+        return logOutput.append("StreamToBlinkTableAdapter[").append(name).append(']');
     }
 }

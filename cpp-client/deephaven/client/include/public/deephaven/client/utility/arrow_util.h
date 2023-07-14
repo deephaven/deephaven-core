@@ -8,9 +8,14 @@
 #include <string>
 #include <vector>
 #include <arrow/type.h>
+#include <arrow/flight/types.h>
+#include <arrow/type.h>
+
 #include "deephaven/dhcore/utility/utility.h"
 
 namespace deephaven::client::utility {
+arrow::flight::FlightDescriptor convertTicketToFlightDescriptor(const std::string &ticket);
+
 /**
  * If result's status is OK, do nothing. Otherwise throw a runtime error with an informative message.
  * @param debugInfo A DebugInfo object, typically as provided by DEEPHAVEN_EXPR_MSG.
