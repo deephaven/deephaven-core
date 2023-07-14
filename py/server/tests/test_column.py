@@ -62,10 +62,17 @@ class ColumnTestCase(BaseTestCase):
     def test_array_column(self):
         strings = ["Str1", "Str1", "Str2", "Str2"]
         doubles = [1.0, 2.0, 4.0, 8.0]
+        numbers = [1, 2, 3, 4]
+        characters = ['a', 'b', 'c', 'd']
         test_table = new_table([
             string_col("StringColumn", strings),
             double_col("Decimals", doubles),
-            float_col("Floats", doubles)
+            float_col("Floats", doubles),
+            byte_col("Bytes", numbers),
+            short_col("Shorts", numbers),
+            char_col("Chars", characters),
+            int_col("Ints", numbers),
+            long_col("Longs", numbers),
         ]
         )
 
@@ -73,7 +80,12 @@ class ColumnTestCase(BaseTestCase):
 
         self.assertIsNone(test_table.columns[0].component_type)
         self.assertEqual(test_table.columns[1].component_type, dtypes.double)
-        self.assertEqual(test_table.columns[1].component_type, dtypes.float32)
+        self.assertEqual(test_table.columns[2].component_type, dtypes.float32)
+        self.assertEqual(test_table.columns[3].component_type, dtypes.byte)
+        self.assertEqual(test_table.columns[4].component_type, dtypes.short)
+        self.assertEqual(test_table.columns[5].component_type, dtypes.char)
+        self.assertEqual(test_table.columns[6].component_type, dtypes.int)
+        self.assertEqual(test_table.columns[7].component_type, dtypes.long)
 
     def test_vector_column(self):
         t = empty_table(0).update_view("StringColumn=`abc`").group_by()
