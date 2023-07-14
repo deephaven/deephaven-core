@@ -303,8 +303,13 @@ final class ServletServerStream extends AbstractServerStream {
             close(Status.CANCELLED.withCause(status.asRuntimeException()), new Metadata());
             CountDownLatch countDownLatch = new CountDownLatch(1);
             transportState.runOnTransportThread(() -> {
-                asyncCtx.complete();
-                countDownLatch.countDown();
+                try {
+                    asyncCtx.complete();
+                    countDownLatch.countDown();
+                } catch (final Exception err) {
+                    // this happens when the async context is already complete
+                    logger.info("Unexpected exception completing async context: " + err.getMessage());
+                }
             });
             try {
                 countDownLatch.await(5, TimeUnit.SECONDS);

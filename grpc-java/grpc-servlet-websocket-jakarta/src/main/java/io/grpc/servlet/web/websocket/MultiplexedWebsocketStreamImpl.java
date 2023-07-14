@@ -76,7 +76,7 @@ public class MultiplexedWebsocketStreamImpl extends AbstractWebsocketStreamImpl 
             try {
                 websocketSession.getBasicRemote().sendBinary(message);
             } catch (IOException e) {
-                throw Status.fromThrowable(e).asRuntimeException();
+                // ignore IOExceptions; they are likely due to unpredictable client behavior
             }
         }
 

@@ -61,8 +61,10 @@ public class SessionService {
         public StatusRuntimeException transform(final Throwable err) {
             if (err instanceof StatusRuntimeException) {
                 final StatusRuntimeException sre = (StatusRuntimeException) err;
-                if (sre.getStatus().equals(Status.UNAUTHENTICATED)) {
-                    log.info().append("ignoring unauthenticated request").endl();
+                if (sre.getStatus().getCode().equals(Status.UNAUTHENTICATED.getCode())) {
+                    log.debug().append("ignoring unauthenticated request").endl();
+                } else if (sre.getStatus().getCode().equals(Status.CANCELLED.getCode())) {
+                    log.debug().append("ignoring cancelled request").endl();
                 } else {
                     log.error().append(sre).endl();
                 }
