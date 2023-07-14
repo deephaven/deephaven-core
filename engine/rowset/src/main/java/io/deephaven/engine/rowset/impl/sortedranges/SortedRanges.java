@@ -2143,6 +2143,7 @@ public abstract class SortedRanges extends RefCountedCow<SortedRanges> implement
             otherFirstPosToRead = 0;
             ourFirstPosToWrite = count;
         }
+        // copy over the rest.
         int ourPosToWrite = ourFirstPosToWrite;
         for (int otherPosToRead = otherFirstPosToRead; otherPosToRead < other.count; ++otherPosToRead) {
             result.unpackedSet(ourPosToWrite++, other.unpackedGet(otherPosToRead));
