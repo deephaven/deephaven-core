@@ -9,6 +9,8 @@ import org.gradle.api.file.ConfigurableFileCollection
 import org.gradle.api.plugins.JavaPlugin
 import org.gradle.api.tasks.compile.JavaCompile
 
+import java.nio.file.Files
+
 /**
  * Helper to simplify / centralize configuring gwt plugins in build files
  */
@@ -84,7 +86,7 @@ class GwtTools {
                 /** The level of logging detail (ERROR, WARN, INFO, TRACE, DEBUG, SPAM, ALL) */
                 logLevel = "INFO"
                 /** The workDir, where we'll save gwt unitcache.  Use /tmp to avoid cluttering jenkins caches*/
-                workDir = new File(System.getProperty("java.io.tmpdir"), "gwtWork")
+                workDir = Files.createTempDirectory("gradleGwtWork").toFile()
                 /** Where to write output files */
                 war = warPath
                 /** Compile a report that tells the "Story of Your Compile". */
