@@ -305,10 +305,11 @@ final class ServletServerStream extends AbstractServerStream {
             transportState.runOnTransportThread(() -> {
                 try {
                     asyncCtx.complete();
-                    countDownLatch.countDown();
                 } catch (final Exception err) {
-                    // this happens when the async context is already complete
-                    logger.info("Unexpected exception completing async context: " + err.getMessage());
+                    // this may happen when the async context is already complete; it isn't surprising this may fail as
+                    // we're trying to notify the user of another known error on this stream
+                } finally {
+                    countDownLatch.countDown();
                 }
             });
             try {
