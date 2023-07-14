@@ -114,7 +114,7 @@ public class ColumnWriterImpl implements ColumnWriter {
             bulkWriter.setNull(QueryConstants.NULL_CHAR);
         }
         // noinspection unchecked
-        bulkWriter.writeBulkFilterNulls(pageData, dlEncoder, valuesCount);  // pageData = HeapIntBuffer for char data
+        bulkWriter.writeBulkFilterNulls(pageData, dlEncoder, valuesCount); // pageData = HeapIntBuffer for char data
         writePage(bulkWriter.getByteBufferView(), valuesCount);
         bulkWriter.reset();
     }

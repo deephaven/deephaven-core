@@ -50,7 +50,7 @@ public abstract class AbstractBulkValuesWriter<BUFFER_TYPE> extends ValuesWriter
     @Override
     public void setNull(int nullDefinition) {
         // TODO Should I raise an error here since this should not be called, should only be called for the
-        //  PlainIntChunkedWriter specializaiton.
+        // PlainIntChunkedWriter specializaiton.
     }
 
     /**
