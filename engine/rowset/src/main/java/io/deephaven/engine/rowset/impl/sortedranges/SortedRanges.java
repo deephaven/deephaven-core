@@ -2096,7 +2096,7 @@ public abstract class SortedRanges extends RefCountedCow<SortedRanges> implement
         final long unpackedLast = unpackedGet(count - 1);
         if (Math.abs(unpackedLast) + 1 == other.first()) {
             final boolean weEndInRange = unpackedLast < 0;
-            long otherKeyAtPos1 = -1;
+            final long otherKeyAtPos1;
             if (other.cardinality > 1 && (otherKeyAtPos1 = other.unpackedGet(1)) < 0) {
                 // we are merging a full range from other's front at our end.
                 if (weEndInRange) {
