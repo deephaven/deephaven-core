@@ -2093,7 +2093,7 @@ public abstract class SortedRanges extends RefCountedCow<SortedRanges> implement
         final SortedRanges result;
         final int otherFirstPosToRead; // always the beginning of a range or a singleton (eg, > 0)
         final int ourFirstPosToWrite;
-        long unpackedLast = unpackedGet(count - 1);
+        final long unpackedLast = unpackedGet(count - 1);
         if (Math.abs(unpackedLast) + 1 == other.first()) {
             final boolean weEndInRange = unpackedLast < 0;
             long otherKeyAtPos1 = -1;
