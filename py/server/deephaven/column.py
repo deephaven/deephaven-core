@@ -162,7 +162,7 @@ def float_col(name: str, data: Sequence) -> InputColumn:
     Returns:
         a new input column
     """
-    return InputColumn(name=name, data_type=dtypes.float_, input_data=data)
+    return InputColumn(name=name, data_type=dtypes.float32, input_data=data)
 
 
 def double_col(name: str, data: Sequence) -> InputColumn:

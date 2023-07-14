@@ -2088,7 +2088,8 @@ public abstract class SortedRanges extends RefCountedCow<SortedRanges> implement
     }
 
     public final OrderedLongSet insertImpl(final SortedRanges other, final boolean writeCheck) {
-        if (!USE_RANGES_ARRAY) {
+        // we know other can't be empty.
+        if (!USE_RANGES_ARRAY || isEmpty() || last() < other.first()) {
             final MutableObject<SortedRanges> holder = new MutableObject<>(this);
             boolean valid = insertInternal(holder, other, writeCheck);
             if (valid) {
