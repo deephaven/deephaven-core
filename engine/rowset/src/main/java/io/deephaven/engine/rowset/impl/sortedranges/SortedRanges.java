@@ -2087,68 +2087,72 @@ public abstract class SortedRanges extends RefCountedCow<SortedRanges> implement
         return insertImpl(other, true);
     }
 
+    // Returns null if the append operation can't fit on a SortedRanges object.
+    // Assumes that this.empty() == false and other.empty() == false, which should be checked by the caller.
     public final SortedRanges mergeAppend(final SortedRanges other, final boolean writeCheck) {
         // there are two cases, depending on whether we need to merge our last range with
         // other's first range.
         final SortedRanges result;
-        final int otherFirstPosToRead; // always the beginning of a range or a singleton (eg, > 0)
-        final int ourFirstPosToWrite;
-        final long unpackedLast = unpackedGet(count - 1);
+        final int otherFirstPosToRead;  // always the beginning of a range or a singleton (the value at that pos is >= 0)
+        final int firstPosToWrite;
+        long unpackedLast = unpackedGet(count - 1);
+        final long otherUnpackedLast = other.unpackedGet(other.count - 1);
         if (Math.abs(unpackedLast) + 1 == other.first()) {
             final boolean weEndInRange = unpackedLast < 0;
-            final long otherKeyAtPos1;
-            if (other.cardinality > 1 && (otherKeyAtPos1 = other.unpackedGet(1)) < 0) {
+            long otherKeyAtPos1 = -1;
+            if (other.count > 1 && (otherKeyAtPos1 = other.unpackedGet(1)) < 0) {
                 // we are merging a full range from other's front at our end.
                 if (weEndInRange) {
-                    result = ensureCanAppend(count - 1 + other.count - 2, other.last(), writeCheck);
+                    result = ensureCanAppend(count - 1 + other.count - 2, otherUnpackedLast, writeCheck);
                 } else {
-                    result = ensureCanAppend(count - 1 + other.count - 1, other.last(), writeCheck);
+                    result = ensureCanAppend(count - 1 + other.count - 1, otherUnpackedLast, writeCheck);
                 }
                 if (result == null) {
                     return null;
                 }
                 if (weEndInRange) {
-                    result.unpackedSet(count - 1, otherKeyAtPos1);
-                    ourFirstPosToWrite = count;
+                    result.unpackedSet(result.count - 1, otherKeyAtPos1);
+                    firstPosToWrite = result.count;
                 } else {
-                    result.unpackedSet(count, otherKeyAtPos1);
-                    ourFirstPosToWrite = count + 1;
+                    result.unpackedSet(result.count, otherKeyAtPos1);
+                    firstPosToWrite = result.count + 1;
                 }
                 otherFirstPosToRead = 2;
             } else {
                 // we are merging a single value from other's front at our end.
                 if (weEndInRange) {
-                    result = ensureCanAppend(count - 1 + other.count - 1, other.last(), writeCheck);
+                    result = ensureCanAppend(count - 1 + other.count - 1, otherUnpackedLast, writeCheck);
                 } else {
-                    result = ensureCanAppend(count - 1 + other.count, other.last(), writeCheck);
+                    result = ensureCanAppend(count - 1 + other.count, otherUnpackedLast, writeCheck);
                 }
                 if (result == null) {
                     return null;
                 }
                 if (weEndInRange) {
-                    result.unpackedSet(count - 1, -other.first());
-                    ourFirstPosToWrite = count;
+                    result.unpackedSet(result.count - 1, -other.first());
+                    firstPosToWrite = result.count;
                 } else {
-                    result.unpackedSet(count, -other.first());
-                    ourFirstPosToWrite = count + 1;
+                    result.unpackedSet(result.count, -other.first());
+                    firstPosToWrite = result.count + 1;
                 }
                 otherFirstPosToRead = 1;
             }
         } else {
             // there is no need to merge values from other's front at our end.
-            result = ensureCanAppend(count - 1 + other.count, other.last(), writeCheck);
+            result = ensureCanAppend(count - 1 + other.count, otherUnpackedLast, writeCheck);
             if (result == null) {
                 return null;
             }
             otherFirstPosToRead = 0;
-            ourFirstPosToWrite = count;
+            firstPosToWrite = result.count;
         }
         // copy over the rest.
-        int ourPosToWrite = ourFirstPosToWrite;
-        for (int otherPosToRead = otherFirstPosToRead; otherPosToRead < other.count; ++otherPosToRead) {
-            result.unpackedSet(ourPosToWrite++, other.unpackedGet(otherPosToRead));
+        int posToWrite = firstPosToWrite;
+        int otherPosToRead = otherFirstPosToRead;
+        while (otherPosToRead < other.count) {
+            result.unpackedSet(posToWrite++, other.unpackedGet(otherPosToRead++));
         }
-        result.count = ourPosToWrite;
+        result.count = posToWrite;
         result.cardinality += other.cardinality;
         return result;
     }
