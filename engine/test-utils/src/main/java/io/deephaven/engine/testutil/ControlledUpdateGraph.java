@@ -9,5 +9,6 @@ public class ControlledUpdateGraph extends PeriodicUpdateGraph {
 
     private ControlledUpdateGraph() {
         super("TEST", true, 1000, 25, -1);
+        getUpdatePerformanceTracker().enableUnitTestMode();
     }
 }

@@ -27,6 +27,7 @@ import io.deephaven.engine.table.impl.util.BarrageMessage;
 import io.deephaven.engine.table.impl.util.LongColumnSourceWritableRowRedirection;
 import io.deephaven.engine.table.impl.util.WritableRowRedirection;
 import io.deephaven.engine.updategraph.*;
+import io.deephaven.engine.updategraph.impl.PeriodicUpdateGraph;
 import io.deephaven.extensions.barrage.BarragePerformanceLog;
 import io.deephaven.extensions.barrage.BarrageSubscriptionPerformanceLogger;
 import io.deephaven.internal.log.LoggerFactory;
@@ -67,6 +68,7 @@ public abstract class BarrageTable extends QueryTable implements BarrageMessage.
     private final NotificationQueue notificationQueue;
     private final ScheduledExecutorService executorService;
 
+    @Nullable
     private final PerformanceEntry refreshEntry;
 
     protected final Stats stats;
@@ -143,7 +145,7 @@ public abstract class BarrageTable extends QueryTable implements BarrageMessage.
             stats = new Stats(tableKey);
         }
 
-        this.refreshEntry = UpdatePerformanceTracker.getInstance().getEntry(
+        this.refreshEntry = PeriodicUpdateGraph.createUpdatePerformanceEntry(updateGraph,
                 "BarrageTable(" + System.identityHashCode(this) + (stats != null ? ") " + stats.tableKey : ")"));
 
         if (initialViewPortRows == -1) {
@@ -250,7 +252,9 @@ public abstract class BarrageTable extends QueryTable implements BarrageMessage.
 
     @Override
     public void run() {
-        refreshEntry.onUpdateStart();
+        if (refreshEntry != null) {
+            refreshEntry.onUpdateStart();
+        }
         try {
             final long startTm = System.nanoTime();
             realRefresh();
@@ -259,7 +263,9 @@ public abstract class BarrageTable extends QueryTable implements BarrageMessage.
             beginLog(LogLevel.ERROR).append(": Failure during BarrageTable run: ").append(e).endl();
             notifyListenersOnError(e, null);
         } finally {
-            refreshEntry.onUpdateEnd();
+            if (refreshEntry != null) {
+                refreshEntry.onUpdateEnd();
+            }
         }
     }
 

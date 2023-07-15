@@ -22,6 +22,7 @@ import io.deephaven.engine.table.impl.perf.PerformanceEntry;
 import io.deephaven.engine.table.impl.perf.UpdatePerformanceTracker;
 import io.deephaven.engine.table.impl.sources.FillUnordered;
 import io.deephaven.engine.updategraph.UpdateSourceRegistrar;
+import io.deephaven.engine.updategraph.impl.PeriodicUpdateGraph;
 import io.deephaven.engine.util.TableTools;
 import io.deephaven.function.Numeric;
 import io.deephaven.util.QueryConstants;
@@ -111,6 +112,7 @@ public final class TimeTable extends QueryTable implements Runnable {
     private long lastIndex = -1;
     private final SyntheticInstantSource columnSource;
     private final Clock clock;
+    @Nullable
     private final PerformanceEntry entry;
     private final boolean isBlinkTable;
     private final UpdateSourceRegistrar registrar;
@@ -125,7 +127,8 @@ public final class TimeTable extends QueryTable implements Runnable {
         this.registrar = registrar;
         this.isBlinkTable = isBlinkTable;
         final String name = isBlinkTable ? "TimeTableBlink" : "TimeTable";
-        this.entry = UpdatePerformanceTracker.getInstance().getEntry(name + "(" + startTime + "," + period + ")");
+        this.entry = PeriodicUpdateGraph.createUpdatePerformanceEntry(
+                updateGraph, name + "(" + startTime + "," + period + ")");
         columnSource = (SyntheticInstantSource) getColumnSourceMap().get(TIMESTAMP);
         this.clock = clock;
         if (isBlinkTable) {
@@ -154,7 +157,9 @@ public final class TimeTable extends QueryTable implements Runnable {
     }
 
     private void refresh(final boolean notifyListeners) {
-        entry.onUpdateStart();
+        if (entry != null) {
+            entry.onUpdateStart();
+        }
         try {
             final Instant now = clock.instantNanos();
             long rangeStart = lastIndex + 1;
@@ -187,7 +192,9 @@ public final class TimeTable extends QueryTable implements Runnable {
                 }
             }
         } finally {
-            entry.onUpdateEnd();
+            if (entry != null) {
+                entry.onUpdateEnd();
+            }
         }
     }
 

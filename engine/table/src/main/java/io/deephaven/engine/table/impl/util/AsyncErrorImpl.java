@@ -11,6 +11,7 @@ import io.deephaven.stream.StreamToBlinkTableAdapter;
 import io.deephaven.time.DateTimeUtils;
 import io.deephaven.util.QueryConstants;
 
+import javax.annotation.Nullable;
 import java.time.Instant;
 
 class AsyncErrorImpl {
@@ -35,8 +36,8 @@ class AsyncErrorImpl {
 
     public void add(
             Instant time,
-            TableListener.Entry entry,
-            TableListener.Entry sourceEntry,
+            @Nullable TableListener.Entry entry,
+            @Nullable TableListener.Entry sourceEntry,
             Throwable originalException) {
         final int evaluationNumber;
         final int operationNumber;

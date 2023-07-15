@@ -19,6 +19,9 @@ public interface UpdatePerformanceLogLogger {
         log(DEFAULT_INTRADAY_LOGGER_FLAGS, intervalLevelDetails, performanceEntry);
     }
 
+    /**
+     * @apiNote Implementations of this method must be thread-safe.
+     */
     void log(final Row.Flags flags, final UpdatePerformanceTracker.IntervalLevelDetails intervalLevelDetails,
             final PerformanceEntry performanceEntry) throws IOException;
 
