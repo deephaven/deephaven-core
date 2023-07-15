@@ -176,7 +176,7 @@ class ParquetTestCase(BaseTestCase):
             "nullBoolColumn = (Boolean)null",
             "nullShortColumn = (short)null",
             "nullByteColumn = (byte)null",
-            # "nullCharColumn = (char)null",
+            "nullCharColumn = (char)null",
             "nullTime = (Instant)null",
             "nullString = (String)null",
             # TODO(deephaven-core#3151) BigInteger/BigDecimal columns don't roundtrip cleanly
@@ -200,6 +200,8 @@ class ParquetTestCase(BaseTestCase):
             dataframe = pandas.read_parquet("data_from_dh.parquet", use_nullable_dtypes=True)
         else:
             dataframe = pandas.read_parquet("data_from_dh.parquet", dtype_backend="numpy_nullable")
+
+        # TODO Write a test which compares "dataframe" with the dataframe generated from dh_table
 
         result_table = to_table(dataframe)
         self.assert_table_equals(dh_table, result_table)
