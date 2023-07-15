@@ -204,21 +204,24 @@ def array(dtype: DType, seq: Sequence, remap: Callable[[Any], Any] = None) -> jp
         DHError
     """
     try:
-        # print("+++++++++++++ Original Seq: ")
-        # print(seq)
+        print("+++++++++++++ Original Seq: ")
+        print(seq)
 
-        # if isinstance(seq, str) and dtype == char:
-        #     # ord is the Python builtin function that takes a unicode character and returns an integer code point value
-        #     remap = ord
+        if isinstance(seq, str) and dtype == char:
+            # ord is the Python builtin function that takes a unicode character and returns an integer code point value
+            remap = ord
 
         if remap:
             if not callable(remap):
                 raise ValueError("Not a callable")
             seq = [remap(v) for v in seq]
 
-        if isinstance(seq, str) and dtype == char:
-            # ord is the Python builtin function that takes a unicode character and returns an integer code point value
-            seq = [ord(v) for v in seq]
+        print("+++++++++++++ Remapped Seq: ")
+        print(seq)
+
+        # if isinstance(seq, str) and dtype == char:
+        #     # ord is the Python builtin function that takes a unicode character and returns an integer code point value
+        #     seq = [ord(v) for v in seq]
 
         if isinstance(seq, np.ndarray):
             if dtype == bool_:
