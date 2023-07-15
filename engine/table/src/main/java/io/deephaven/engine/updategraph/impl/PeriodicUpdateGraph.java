@@ -550,6 +550,7 @@ public class PeriodicUpdateGraph implements UpdateGraph {
         lock.reset();
         unitTestMode = true;
         unitTestRefreshThreadPool = makeUnitTestRefreshExecutor();
+        updatePerformanceTracker.enableUnitTestMode();
     }
 
     /**
