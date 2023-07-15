@@ -3446,19 +3446,19 @@ public class SortedRangesTest {
 
     @Test
     public void testInsertMergeAppend() {
-        testInsertAppendHelper(new long[]{10}, new long[]{12, 14});
-        testInsertAppendHelper(new long[]{10}, new long[]{11, 14});
-        testInsertAppendHelper(new long[]{10}, new long[]{12, -14});
-        testInsertAppendHelper(new long[]{10}, new long[]{11, -14});
-        testInsertAppendHelper(new long[]{10}, new long[]{12});
-        testInsertAppendHelper(new long[]{10}, new long[]{11});
-        testInsertAppendHelper(new long[]{10, -11}, new long[]{12});
-        testInsertAppendHelper(new long[]{10, -11}, new long[]{13});
-        testInsertAppendHelper(new long[]{10, -20, 30, -40}, new long[]{41, 51, 60, -62});
-        testInsertAppendHelper(new long[]{10, -20, 30, -40}, new long[]{41, -43, 51, 60, -62});
-        testInsertAppendHelper(new long[]{10, -20, 30, -40}, new long[]{42, 51, 60, -62});
-        testInsertAppendHelper(new long[]{10, -20, 30, 40}, new long[]{41, 51, 60, -62});
-        testInsertAppendHelper(new long[]{10, -20, 30, 40}, new long[]{41, -43, 51, 60, -62});
-        testInsertAppendHelper(new long[]{10, -20, 30, 40}, new long[]{42, 51, 60, -62});
+        testInsertAppendHelper(new long[] {10}, new long[] {12, 14});
+        testInsertAppendHelper(new long[] {10}, new long[] {11, 14});
+        testInsertAppendHelper(new long[] {10}, new long[] {12, -14});
+        testInsertAppendHelper(new long[] {10}, new long[] {11, -14});
+        testInsertAppendHelper(new long[] {10}, new long[] {12});
+        testInsertAppendHelper(new long[] {10}, new long[] {11});
+        testInsertAppendHelper(new long[] {10, -11}, new long[] {12});
+        testInsertAppendHelper(new long[] {10, -11}, new long[] {13});
+        testInsertAppendHelper(new long[] {10, -20, 30, -40}, new long[] {41, 51, 60, -62});
+        testInsertAppendHelper(new long[] {10, -20, 30, -40}, new long[] {41, -43, 51, 60, -62});
+        testInsertAppendHelper(new long[] {10, -20, 30, -40}, new long[] {42, 51, 60, -62});
+        testInsertAppendHelper(new long[] {10, -20, 30, 40}, new long[] {41, 51, 60, -62});
+        testInsertAppendHelper(new long[] {10, -20, 30, 40}, new long[] {41, -43, 51, 60, -62});
+        testInsertAppendHelper(new long[] {10, -20, 30, 40}, new long[] {42, 51, 60, -62});
     }
 }
