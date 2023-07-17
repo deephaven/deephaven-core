@@ -3,6 +3,7 @@
  */
 #include "deephaven/client/client.h"
 
+#include <grpc/support/log.h>
 #include <arrow/array.h>
 #include <arrow/scalar.h>
 #include "deephaven/client/columns.h"
@@ -48,9 +49,9 @@ void printTableData(std::ostream &s, const TableHandle &tableHandle, bool wantHe
 }  // namespace
 
 Client Client::connect(const std::string &target, const ClientOptions &options) {
-  auto executor = Executor::create();
-  auto flightExecutor = Executor::create();
   auto server = Server::createFromTarget(target, options);
+  auto executor = Executor::create("Client executor for " + server->me());
+  auto flightExecutor = Executor::create("Flight executor for " + server->me());
   auto impl = ClientImpl::create(std::move(server), executor, flightExecutor, options.sessionType_);
   return Client(std::move(impl));
 }
@@ -61,11 +62,26 @@ Client::Client(std::shared_ptr<impl::ClientImpl> impl) : impl_(std::move(impl)) 
 }
 Client::Client(Client &&other) noexcept = default;
 Client &Client::operator=(Client &&other) noexcept = default;
-Client::~Client() = default;
+
+// There is only one Client associated with the server connection. Clients can only be moved, not
+// copied. When the Client owning the state is destructed, we tear down the state via close().
+Client::~Client() {
+  close();
+}
+
+// Tear down Client state.
+void Client::close() {
+  // Move to local variable to be defensive.
+  auto temp = std::move(impl_);
+  if (temp != nullptr) {
+    temp->shutdown();
+  }
+}
 
 TableHandleManager Client::getManager() const {
   return TableHandleManager(impl_->managerImpl());
 }
+
 
 TableHandleManager::TableHandleManager() = default;
 TableHandleManager::TableHandleManager(std::shared_ptr<impl::TableHandleManagerImpl> impl) : impl_(std::move(impl)) {}
@@ -88,18 +104,20 @@ TableHandle TableHandleManager::timeTable(int64_t startTimeNanos, int64_t period
   return TableHandle(std::move(qsImpl));
 }
 
-TableHandleAndFlightDescriptor TableHandleManager::newTableHandleAndFlightDescriptor(int64_t numRows,
-    bool isStatic) const {
-  auto [thImpl, fd] = impl_->newTicket(numRows, isStatic);
-  TableHandle th(std::move(thImpl));
-  return {std::move(th), std::move(fd)};
-}
-
 TableHandle TableHandleManager::timeTable(std::chrono::system_clock::time_point startTime,
     std::chrono::system_clock::duration period) const {
   auto stNanos = std::chrono::duration_cast<std::chrono::nanoseconds>(startTime.time_since_epoch()).count();
   auto dNanos = std::chrono::duration_cast<std::chrono::nanoseconds>(period).count();
   return timeTable(stNanos, dNanos);
+}
+
+std::string TableHandleManager::newTicket() const {
+  return impl_->newTicket();
+}
+
+TableHandle TableHandleManager::makeTableHandleFromTicket(std::string ticket) const {
+  auto handleImpl = impl_->makeTableHandleFromTicket(std::move(ticket));
+  return TableHandle(std::move(handleImpl));
 }
 
 void TableHandleManager::runScript(std::string code) const {

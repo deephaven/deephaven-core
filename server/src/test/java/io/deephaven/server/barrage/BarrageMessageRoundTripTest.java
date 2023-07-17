@@ -33,6 +33,7 @@ import io.deephaven.extensions.barrage.table.BarrageTable;
 import io.deephaven.extensions.barrage.util.BarrageProtoUtil;
 import io.deephaven.extensions.barrage.util.BarrageStreamReader;
 import io.deephaven.server.arrow.ArrowModule;
+import io.deephaven.server.session.SessionService;
 import io.deephaven.server.util.Scheduler;
 import io.deephaven.server.util.TestControlledScheduler;
 import io.deephaven.test.types.OutOfBandTest;
@@ -348,7 +349,8 @@ public class BarrageMessageRoundTripTest extends RefreshingTableTestCase {
             this.makeTable = makeTable;
             this.originalTable = (QueryTable) makeTable.get();
             this.barrageMessageProducer = originalTable.getResult(new BarrageMessageProducer.Operation<>(scheduler,
-                    daggerRoot.getStreamGeneratorFactory(), originalTable, UPDATE_INTERVAL, this::onGetSnapshot));
+                    new SessionService.ObfuscatingErrorTransformer(), daggerRoot.getStreamGeneratorFactory(),
+                    originalTable, UPDATE_INTERVAL, this::onGetSnapshot));
 
             originalTUV = TableUpdateValidator.make(originalTable);
             originalTUVListener = new FailureListener("Original Table Update Validator");

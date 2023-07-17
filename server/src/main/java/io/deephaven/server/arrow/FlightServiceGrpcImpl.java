@@ -42,6 +42,7 @@ public class FlightServiceGrpcImpl extends FlightServiceGrpc.FlightServiceImplBa
     private final ScheduledExecutorService executorService;
     private final BarrageStreamGenerator.Factory<BarrageStreamGeneratorImpl.View> streamGeneratorFactory;
     private final SessionService sessionService;
+    private final SessionService.ErrorTransformer errorTransformer;
     private final TicketRouter ticketRouter;
     private final ArrowFlightUtil.DoExchangeMarshaller.Factory doExchangeFactory;
 
@@ -52,12 +53,14 @@ public class FlightServiceGrpcImpl extends FlightServiceGrpc.FlightServiceImplBa
             @Nullable final ScheduledExecutorService executorService,
             final BarrageStreamGenerator.Factory<BarrageStreamGeneratorImpl.View> streamGeneratorFactory,
             final SessionService sessionService,
+            final SessionService.ErrorTransformer errorTransformer,
             final TicketRouter ticketRouter,
             final ArrowFlightUtil.DoExchangeMarshaller.Factory doExchangeFactory,
             Map<String, AuthenticationRequestHandler> authRequestHandlers) {
         this.executorService = executorService;
         this.streamGeneratorFactory = streamGeneratorFactory;
         this.sessionService = sessionService;
+        this.errorTransformer = errorTransformer;
         this.ticketRouter = ticketRouter;
         this.doExchangeFactory = doExchangeFactory;
         this.authRequestHandlers = authRequestHandlers;
@@ -245,7 +248,8 @@ public class FlightServiceGrpcImpl extends FlightServiceGrpc.FlightServiceImplBa
      * @return the observer that grpc can delegate received messages to
      */
     public StreamObserver<InputStream> doPutCustom(final StreamObserver<Flight.PutResult> responseObserver) {
-        return new ArrowFlightUtil.DoPutObserver(sessionService.getCurrentSession(), ticketRouter, responseObserver);
+        return new ArrowFlightUtil.DoPutObserver(
+                sessionService.getCurrentSession(), ticketRouter, errorTransformer, responseObserver);
     }
 
     /**

@@ -83,9 +83,8 @@ public final class IntArray extends PrimitiveArrayBase<Integer> {
     }
 
     @Override
-    public final <V extends PrimitiveArray.Visitor> V walk(V visitor) {
-        visitor.visit(this);
-        return visitor;
+    public final <R> R walk(PrimitiveArray.Visitor<R> visitor) {
+        return visitor.visit(this);
     }
 
     @Override

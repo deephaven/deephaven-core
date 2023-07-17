@@ -27,9 +27,7 @@ import io.deephaven.chunk.attributes.Values;
 import io.deephaven.client.impl.*;
 import io.deephaven.engine.context.ExecutionContext;
 import io.deephaven.engine.liveness.LivenessScopeStack;
-import io.deephaven.engine.table.ColumnDefinition;
 import io.deephaven.engine.table.Table;
-import io.deephaven.engine.table.impl.sources.ReinterpretUtils;
 import io.deephaven.engine.updategraph.UpdateGraph;
 import io.deephaven.engine.table.impl.DataAccessHelpers;
 import io.deephaven.engine.util.AbstractScriptSession;
@@ -37,6 +35,7 @@ import io.deephaven.engine.util.NoLanguageDeephavenSession;
 import io.deephaven.engine.util.ScriptSession;
 import io.deephaven.engine.util.TableDiff;
 import io.deephaven.engine.util.TableTools;
+import io.deephaven.extensions.barrage.BarrageSubscriptionOptions;
 import io.deephaven.extensions.barrage.util.BarrageChunkAppendingMarshaller;
 import io.deephaven.extensions.barrage.util.BarrageUtil;
 import io.deephaven.io.logger.LogBuffer;
@@ -50,11 +49,7 @@ import io.deephaven.qst.table.TicketTable;
 import io.deephaven.server.auth.AuthorizationProvider;
 import io.deephaven.server.console.ScopeTicketResolver;
 import io.deephaven.server.runner.GrpcServer;
-import io.deephaven.server.session.SessionService;
-import io.deephaven.server.session.SessionServiceGrpcImpl;
-import io.deephaven.server.session.SessionState;
-import io.deephaven.server.session.TicketResolver;
-import io.deephaven.server.session.TicketResolverBase;
+import io.deephaven.server.session.*;
 import io.deephaven.server.test.TestAuthModule.FakeBearer;
 import io.deephaven.server.util.Scheduler;
 import io.deephaven.util.SafeCloseable;
@@ -70,6 +65,7 @@ import org.apache.arrow.flight.impl.Flight;
 import org.apache.arrow.memory.ArrowBuf;
 import org.apache.arrow.memory.RootAllocator;
 import org.apache.arrow.vector.VectorSchemaRoot;
+import org.apache.arrow.vector.complex.ListVector;
 import org.apache.arrow.vector.types.pojo.ArrowType;
 import org.apache.arrow.vector.types.pojo.Field;
 import org.apache.arrow.vector.types.pojo.Schema;
@@ -85,10 +81,12 @@ import org.junit.rules.ExternalResource;
 import javax.inject.Named;
 import javax.inject.Singleton;
 import java.io.IOException;
+import java.nio.ByteBuffer;
 import java.nio.charset.StandardCharsets;
 import java.util.*;
 import java.util.concurrent.*;
 
+import static io.deephaven.client.impl.BarrageSubscriptionImpl.makeRequestInternal;
 import static org.junit.Assert.*;
 
 /**
@@ -212,8 +210,6 @@ public abstract class FlightMessageRoundTripTest {
 
         component = component();
         // open execution context immediately so it can be used when resolving `scriptSession`
-        executionContext = component.executionContext().open();
-
         executionContext = component.executionContext().open();
 
         server = component.server();
@@ -769,25 +765,9 @@ public abstract class FlightMessageRoundTripTest {
             // stuff table into the scope
             scriptSession.setVariable(staticTableName, table);
 
-            // build up a snapshot request incorrectly
-            byte[] empty = new byte[0];
-
-            FlightDescriptor fd = FlightDescriptor.command(empty);
-
-            try (FlightClient.ExchangeReaderWriter erw = flightClient.doExchange(fd)) {
-
-                Exception exception = assertThrows(FlightRuntimeException.class, () -> {
-                    erw.getReader().next();
-                });
-
-                String expectedMessage = "expected BarrageMessageWrapper magic bytes in FlightDescriptor.cmd";
-                String actualMessage = exception.getMessage();
-
-                assertTrue(actualMessage.contains(expectedMessage));
-            }
-
-            byte[] magic = new byte[] {100, 112, 104, 110}; // equivalent to '0x6E687064' (ASCII "dphn")
-            fd = FlightDescriptor.command(magic);
+            // java-flight requires us to send a message, but cannot add app metadata, send a dummy message
+            byte[] empty = new byte[] {};
+            final FlightDescriptor fd = FlightDescriptor.command(empty);
             try (FlightClient.ExchangeReaderWriter erw = flightClient.doExchange(fd);
                     final RootAllocator allocator = new RootAllocator(Integer.MAX_VALUE)) {
 
@@ -818,7 +798,7 @@ public abstract class FlightMessageRoundTripTest {
         final String resultTableName = tableName + "Result";
         final Table table = TableTools.emptyTable(10).update("I = i", "J = i + 0.01");
         final MutableInt numTransforms = new MutableInt();
-        component.authorizationProvider().delegateTicketTransformation = new TicketResolverBase.AuthTransformation() {
+        component.authorizationProvider().delegateTicketTransformation = new NoopTicketResolverAuthorization() {
             @Override
             public <T> T transform(T source) {
                 numTransforms.increment();
@@ -1044,6 +1024,44 @@ public abstract class FlightMessageRoundTripTest {
         for (int i = 0; i < size; ++i) {
             Assert.eq(col_i.get(i), "col_i.get(i)", i, "i");
             Assert.equals(col_j.get(i), "col_j.get(i)", "str_" + i, "str_" + i);
+        }
+    }
+
+    @Test
+    public void testColumnsAsListFeature() throws Exception {
+        // bind the table in the session
+        // this should be a refreshing table so we can validate that modifications are also wrapped
+        final UpdateGraph updateGraph = ExecutionContext.getContext().getUpdateGraph();
+        try (final SafeCloseable ignored = updateGraph.sharedLock().lockCloseable()) {
+            final Table appendOnly = TableTools.timeTable("PT1s")
+                    .update("I = ii % 3", "J = `str_` + i");
+            final Table withMods = appendOnly.lastBy("I");
+            scriptSession.setVariable("test", withMods);
+        }
+
+        final BarrageSubscriptionOptions options = BarrageSubscriptionOptions.builder()
+                .columnsAsList(true)
+                .build();
+
+        final TicketTable ticket = TicketTable.fromQueryScopeField("test");
+        // fetch with DoExchange w/option enabled
+        try (FlightClient.ExchangeReaderWriter stream = flightClient.doExchange(arrowFlightDescriptorForName("test"));
+                final RootAllocator allocator = new RootAllocator(Integer.MAX_VALUE)) {
+
+            // make a subscription request for test
+            final ByteBuffer request = makeRequestInternal(null, null, false, options, ticket.ticket());
+            ArrowBuf data = allocator.buffer(request.remaining());
+            data.writeBytes(request.array(), request.arrayOffset() + request.position(), request.remaining());
+            stream.getWriter().putMetadata(data);
+
+            // read messages until we see at least one modification batch:
+            for (int ii = 0; ii < 5; ++ii) {
+                Assert.eqTrue(stream.getReader().next(), "stream.getReader().next()");
+                final VectorSchemaRoot root = stream.getReader().getRoot();
+                Assert.eqTrue(root.getVector("I") instanceof ListVector, "column is wrapped in list");
+                Assert.eqTrue(root.getVector("J") instanceof ListVector, "column is wrapped in list");
+                Assert.eqTrue(root.getVector("Timestamp") instanceof ListVector, "column is wrapped in list");
+            }
         }
     }
 }

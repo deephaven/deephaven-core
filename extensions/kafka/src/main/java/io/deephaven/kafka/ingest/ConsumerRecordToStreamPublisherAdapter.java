@@ -3,7 +3,9 @@
  */
 package io.deephaven.kafka.ingest;
 
+import io.deephaven.stream.StreamPublisher;
 import org.apache.kafka.clients.consumer.ConsumerRecord;
+import org.jetbrains.annotations.NotNull;
 
 import java.io.IOException;
 import java.time.Duration;
@@ -12,8 +14,15 @@ import java.util.List;
 /**
  * Converter from a stream of Kafka records to a Deephaven StreamPublisher.
  */
-@FunctionalInterface
-public interface ConsumerRecordToStreamPublisherAdapter {
+public interface ConsumerRecordToStreamPublisherAdapter extends StreamPublisher {
+
+    /**
+     * Propagate a failure from the Kafka consumer to this StreamPublisher.
+     *
+     * @param cause The failure to propagate
+     */
+    void propagateFailure(@NotNull Throwable cause);
+
     /**
      * Consume a List of Kafka records, producing zero or more rows in the output.
      *
@@ -21,5 +30,5 @@ public interface ConsumerRecordToStreamPublisherAdapter {
      * @return the number of bytes processed
      * @throws IOException if there was an error writing to the output table
      */
-    long consumeRecords(List<? extends ConsumerRecord<?, ?>> records) throws IOException;
+    long consumeRecords(@NotNull List<? extends ConsumerRecord<?, ?>> records) throws IOException;
 }

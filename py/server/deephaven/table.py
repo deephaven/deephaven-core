@@ -2084,6 +2084,29 @@ class Table(JObjectWrapper):
         except Exception as e:
             raise DHError(e, "table slice operation failed.") from e
 
+    def slice_pct(self, start_pct: float, end_pct: float) -> Table:
+        """Extracts a subset of a table by row percentages.
+
+        Returns a subset of table in the range [floor(start_pct * size_of_table), floor(end_pct * size_of_table)).
+        For example, for a table of size 10, slice_pct(0.1, 0.7) will return a subset from the second row to the seventh
+        row. Similarly, slice_pct(0, 1) would return the entire table (because row positions run from 0 to size - 1).
+        The percentage arguments must be in range [0, 1], otherwise the function returns an error.
+
+        Args:
+            start_pct (float): the starting percentage point (inclusive) for rows to include in the result, range [0, 1]
+            end_pct (float): the ending percentage point (exclusive) for rows to include in the result, range [0, 1]
+
+        Returns:
+            a new table
+
+        Raises:
+            DHError
+        """
+        try:
+            return Table(j_table=self.j_table.slicePct(start_pct, end_pct))
+        except Exception as e:
+            raise DHError(e, "table slice_pct operation failed.") from e
+
     def rollup(self, aggs: Union[Aggregation, Sequence[Aggregation]], by: Union[str, Sequence[str]] = None,
                include_constituents: bool = False) -> RollupTable:
         """Creates a rollup table.

@@ -231,9 +231,8 @@ public abstract class TableBase implements TableSpec {
     }
 
     @Override
-    public final <V extends TableSchema.Visitor> V walk(V visitor) {
-        visitor.visit(this);
-        return visitor;
+    public final <T> T walk(TableSchema.Visitor<T> visitor) {
+        return visitor.visit(this);
     }
 
     @Override

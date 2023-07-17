@@ -5,6 +5,8 @@ package io.deephaven.web.client.api;
 
 import com.vertispan.tsdefs.annotations.TsName;
 import com.vertispan.tsdefs.annotations.TsTypeRef;
+import com.vertispan.tsdefs.annotations.TsUnion;
+import com.vertispan.tsdefs.annotations.TsUnionMember;
 import elemental2.core.JsArray;
 import elemental2.dom.CustomEventInit;
 import elemental2.dom.DomGlobal;
@@ -72,7 +74,10 @@ import io.deephaven.web.shared.fu.RemoverFn;
 import jsinterop.annotations.JsMethod;
 import jsinterop.annotations.JsNullable;
 import jsinterop.annotations.JsOptional;
+import jsinterop.annotations.JsOverlay;
+import jsinterop.annotations.JsPackage;
 import jsinterop.annotations.JsProperty;
+import jsinterop.annotations.JsType;
 import jsinterop.base.Any;
 import jsinterop.base.Js;
 import jsinterop.base.JsPropertyMap;
@@ -445,17 +450,43 @@ public class JsTable extends HasLifecycle implements HasTableBinding, JoinableTa
         return JsItr.slice(currentFilter);
     }
 
+    @TsUnion
+    @JsType(name = "?", namespace = JsPackage.GLOBAL, isNative = true)
+    public interface CustomColumnArgUnionType {
+        @JsOverlay
+        default boolean isString() {
+            return (Object) this instanceof String;
+        }
+
+        @JsOverlay
+        default boolean isCustomColumn() {
+            return (Object) this instanceof CustomColumn;
+        }
+
+        @JsOverlay
+        @TsUnionMember
+        default String asString() {
+            return Js.asString(this);
+        }
+
+        @JsOverlay
+        @TsUnionMember
+        default CustomColumn asCustomColumn() {
+            return Js.cast(this);
+        }
+    }
+
     @JsMethod
     @SuppressWarnings("unusable-by-js")
-    // TODO union this
-    public JsArray<CustomColumn> applyCustomColumns(Object[] customColumns) {
-        String[] customColumnStrings = Arrays.stream(customColumns).map(obj -> {
-            if (obj instanceof String || obj instanceof CustomColumn) {
-                return obj.toString();
+    public JsArray<CustomColumn> applyCustomColumns(JsArray<CustomColumnArgUnionType> customColumns) {
+        String[] customColumnStrings = customColumns.map((item, index, array) -> {
+            if (item.isString() || item.isCustomColumn()) {
+                return item.toString();
             }
 
-            return (new CustomColumn((JsPropertyMap<Object>) obj)).toString();
-        }).toArray(String[]::new);
+            return (new CustomColumn((JsPropertyMap<Object>) item)).toString();
+        }).asArray(new String[0]);
+
         final List<CustomColumnDescriptor> newCustomColumns = CustomColumnDescriptor.from(customColumnStrings);
 
         // take a look at the current custom columns so we can return it
@@ -473,7 +504,7 @@ public class JsTable extends HasLifecycle implements HasTableBinding, JoinableTa
                     batcher.customColumns(newCustomColumns);
                     batcher.filter(current.getFilters());
                     batcher.sort(current.getSorts());
-                }).catch_(logError(() -> "Failed to apply custom columns: " + Arrays.toString(customColumns)));
+                }).catch_(logError(() -> "Failed to apply custom columns: " + customColumns));
 
             }
         }

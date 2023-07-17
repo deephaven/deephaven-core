@@ -19,7 +19,7 @@ public class OperationInitializationPoolJobScheduler implements JobScheduler {
             final Runnable runnable,
             final LogOutputAppendable description,
             final Consumer<Exception> onError) {
-        OperationInitializationThreadPool.executorService.submit(() -> {
+        OperationInitializationThreadPool.executorService().submit(() -> {
             final BasePerformanceEntry basePerformanceEntry = new BasePerformanceEntry();
             basePerformanceEntry.onBaseEntryStart();
             try (final SafeCloseable ignored = executionContext == null ? null : executionContext.open()) {

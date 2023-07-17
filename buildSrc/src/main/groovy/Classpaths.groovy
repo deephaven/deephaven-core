@@ -46,7 +46,7 @@ class Classpaths {
     static final String COMMONS_GROUP = 'org.apache.commons'
 
     static final String ARROW_GROUP = 'org.apache.arrow'
-    static final String ARROW_VERSION = '11.0.0'
+    static final String ARROW_VERSION = '12.0.1'
 
     static final String SLF4J_GROUP = 'org.slf4j'
     static final String SLF4J_VERSION = '2.0.6'
@@ -91,7 +91,7 @@ class Classpaths {
     static final String LOGBACK_VERSION = '1.4.5'
 
     static final String GROOVY_GROUP = 'org.codehaus.groovy'
-    static final String GROOVY_VERSION = '3.0.13'
+    static final String GROOVY_VERSION = '3.0.18'
 
     static final String GRPC_GROUP = 'io.grpc'
     static final String GRPC_NAME = 'grpc-bom'
@@ -101,7 +101,7 @@ class Classpaths {
     // TODO(deephaven-core#1685): Create strategy around updating and maintaining protoc version
     static final String PROTOBUF_GROUP = 'com.google.protobuf'
     static final String PROTOBUF_NAME = 'protobuf-java'
-    static final String PROTOBUF_VERSION = '3.21.9'
+    static final String PROTOBUF_VERSION = '3.23.0'
 
     // See dependency matrix for particular gRPC versions at https://github.com/grpc/grpc-java/blob/master/SECURITY.md#netty
     static final String BORINGSSL_GROUP = 'io.netty'
@@ -114,7 +114,7 @@ class Classpaths {
     static final String JACKSON_VERSION = '2.14.1'
 
     static final String SSLCONTEXT_GROUP = 'io.github.hakky54'
-    static final String SSLCONTEXT_VERSION = '7.4.8'
+    static final String SSLCONTEXT_VERSION = '8.1.1'
 
     static final String JETTY11_GROUP = 'org.eclipse.jetty'
     static final String JETTY11_NAME = 'jetty-bom'
@@ -122,7 +122,7 @@ class Classpaths {
 
     static final String GUAVA_GROUP = 'com.google.guava'
     static final String GUAVA_NAME = 'guava'
-    static final String GUAVA_VERSION = '31.1-jre'
+    static final String GUAVA_VERSION = '32.0.1-jre'
 
     static boolean addDependency(Configuration conf, String group, String name, String version, Action<? super DefaultExternalModuleDependency> configure = Actions.doNothing()) {
         if (!conf.dependencies.find { it.name == name && it.group == group}) {

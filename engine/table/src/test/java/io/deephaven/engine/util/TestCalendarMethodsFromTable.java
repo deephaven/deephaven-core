@@ -3,7 +3,6 @@
  */
 package io.deephaven.engine.util;
 
-import io.deephaven.base.testing.BaseArrayTestCase;
 import io.deephaven.engine.context.ExecutionContext;
 import io.deephaven.engine.table.Table;
 import io.deephaven.engine.context.QueryScope;
@@ -14,32 +13,24 @@ import io.deephaven.time.calendar.Calendars;
 import io.deephaven.time.calendar.StaticCalendarMethods;
 import io.deephaven.engine.testutil.junit4.EngineCleanup;
 import io.deephaven.test.types.OutOfBandTest;
+import org.junit.Rule;
+import org.junit.Test;
 import org.junit.experimental.categories.Category;
 
 import java.time.Instant;
 import java.time.LocalDate;
 
 import static io.deephaven.engine.util.TableTools.emptyTable;
+import static org.junit.Assert.assertEquals;
 
 /**
  * Tests for {@link StaticCalendarMethods} from the {@link Table} API.
  */
 @Category(OutOfBandTest.class)
-public class TestCalendarMethodsFromTable extends BaseArrayTestCase {
+public class TestCalendarMethodsFromTable {
 
-    private final EngineCleanup base = new EngineCleanup();
-
-    @Override
-    protected void setUp() throws Exception {
-        super.setUp();
-        base.setUp();
-    }
-
-    @Override
-    protected void tearDown() throws Exception {
-        super.tearDown();
-        base.tearDown();
-    }
+    @Rule
+    public final EngineCleanup framework = new EngineCleanup();
 
     private final BusinessCalendar calendar = Calendars.calendar();
     private final Instant time1 = DateTimeUtils.parseInstant("2002-01-01T01:00:00.000000000 NY");
@@ -49,6 +40,7 @@ public class TestCalendarMethodsFromTable extends BaseArrayTestCase {
 
     // test to make sure these methods work inside the query strings
     // previous clash with DateTimeUtils
+    @Test
     public void testCalendarMethodsTable() {
         if (!ExecutionContext.getContext().getQueryLibrary().getStaticImports().contains(StaticCalendarMethods.class)) {
             ExecutionContext.getContext().getQueryLibrary().importStatic(StaticCalendarMethods.class);
@@ -117,6 +109,7 @@ public class TestCalendarMethodsFromTable extends BaseArrayTestCase {
                 getVal(emptyTable(1).update("isBusinessDay = isBusinessDay(date2)"), "isBusinessDay"));
     }
 
+    @Test
     public void testBusinessCalendarMethodsTable() {
 
         if (!ExecutionContext.getContext().getQueryLibrary().getStaticImports().contains(StaticCalendarMethods.class)) {

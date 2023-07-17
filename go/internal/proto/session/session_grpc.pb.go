@@ -47,6 +47,9 @@ type SessionServiceClient interface {
 	// Makes a copy from a source ticket to a client managed result ticket. The source ticket does not need to be
 	// a client managed ticket.
 	ExportFromTicket(ctx context.Context, in *ExportRequest, opts ...grpc.CallOption) (*ExportResponse, error)
+	// Makes a copy from a source ticket and publishes to a result ticket. Neither the source ticket, nor the destination
+	// ticket, need to be a client managed ticket.
+	PublishFromTicket(ctx context.Context, in *PublishRequest, opts ...grpc.CallOption) (*PublishResponse, error)
 	// Establish a stream to manage all session exports, including those lost due to partially complete rpc calls.
 	//
 	// New streams will flush notifications for all un-released exports, prior to seeing any new or updated exports
@@ -107,6 +110,15 @@ func (c *sessionServiceClient) Release(ctx context.Context, in *ReleaseRequest, 
 func (c *sessionServiceClient) ExportFromTicket(ctx context.Context, in *ExportRequest, opts ...grpc.CallOption) (*ExportResponse, error) {
 	out := new(ExportResponse)
 	err := c.cc.Invoke(ctx, "/io.deephaven.proto.backplane.grpc.SessionService/ExportFromTicket", in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *sessionServiceClient) PublishFromTicket(ctx context.Context, in *PublishRequest, opts ...grpc.CallOption) (*PublishResponse, error) {
+	out := new(PublishResponse)
+	err := c.cc.Invoke(ctx, "/io.deephaven.proto.backplane.grpc.SessionService/PublishFromTicket", in, out, opts...)
 	if err != nil {
 		return nil, err
 	}
@@ -183,6 +195,9 @@ type SessionServiceServer interface {
 	// Makes a copy from a source ticket to a client managed result ticket. The source ticket does not need to be
 	// a client managed ticket.
 	ExportFromTicket(context.Context, *ExportRequest) (*ExportResponse, error)
+	// Makes a copy from a source ticket and publishes to a result ticket. Neither the source ticket, nor the destination
+	// ticket, need to be a client managed ticket.
+	PublishFromTicket(context.Context, *PublishRequest) (*PublishResponse, error)
 	// Establish a stream to manage all session exports, including those lost due to partially complete rpc calls.
 	//
 	// New streams will flush notifications for all un-released exports, prior to seeing any new or updated exports
@@ -213,6 +228,9 @@ func (UnimplementedSessionServiceServer) Release(context.Context, *ReleaseReques
 }
 func (UnimplementedSessionServiceServer) ExportFromTicket(context.Context, *ExportRequest) (*ExportResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method ExportFromTicket not implemented")
+}
+func (UnimplementedSessionServiceServer) PublishFromTicket(context.Context, *PublishRequest) (*PublishResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method PublishFromTicket not implemented")
 }
 func (UnimplementedSessionServiceServer) ExportNotifications(*ExportNotificationRequest, SessionService_ExportNotificationsServer) error {
 	return status.Errorf(codes.Unimplemented, "method ExportNotifications not implemented")
@@ -323,6 +341,24 @@ func _SessionService_ExportFromTicket_Handler(srv interface{}, ctx context.Conte
 	return interceptor(ctx, in, info, handler)
 }
 
+func _SessionService_PublishFromTicket_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(PublishRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(SessionServiceServer).PublishFromTicket(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: "/io.deephaven.proto.backplane.grpc.SessionService/PublishFromTicket",
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(SessionServiceServer).PublishFromTicket(ctx, req.(*PublishRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
 func _SessionService_ExportNotifications_Handler(srv interface{}, stream grpc.ServerStream) error {
 	m := new(ExportNotificationRequest)
 	if err := stream.RecvMsg(m); err != nil {
@@ -388,6 +424,10 @@ var SessionService_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "ExportFromTicket",
 			Handler:    _SessionService_ExportFromTicket_Handler,
+		},
+		{
+			MethodName: "PublishFromTicket",
+			Handler:    _SessionService_PublishFromTicket_Handler,
 		},
 		{
 			MethodName: "TerminationNotification",
