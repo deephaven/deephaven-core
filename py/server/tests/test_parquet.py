@@ -201,6 +201,10 @@ class ParquetTestCase(BaseTestCase):
         else:
             dataframe = pandas.read_parquet("data_from_dh.parquet", dtype_backend="numpy_nullable")
 
+        # Last 10 columns should all be stored as null in the parquet file, and not as NULL_INT or NULL_CHAR, etc.
+        dataframe_null_columns = dataframe.iloc[:, -10:]
+        self.assertTrue(dataframe_null_columns.isnull().values.all())
+
         result_table = to_table(dataframe)
         self.assert_table_equals(dh_table, result_table)
 
