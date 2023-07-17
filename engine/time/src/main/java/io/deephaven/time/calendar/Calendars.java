@@ -62,7 +62,7 @@ public class Calendars implements Map<String, BusinessCalendar> {
     /**
      * Returns the default business calendar.
      *
-     * @return default business calendar. The deault is specified by the {@code Calendar.default} property.
+     * @return default business calendar. The default is specified by the {@code Calendar.default} property.
      */
     public static BusinessCalendar calendar() {
         return calendar(defaultName);

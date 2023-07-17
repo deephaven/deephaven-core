@@ -7,6 +7,7 @@ import io.deephaven.base.verify.RequirementFailure;
 import io.deephaven.time.DateTimeUtils;
 
 import java.time.*;
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Set;
@@ -638,7 +639,7 @@ public class TestBusinessCalendar extends TestCalendar {
         assertEquals(1.0, bCalendar.fractionBusinessDayComplete(tAfter.toInstant()));
 
         // Current date
-        assertEquals(bCalendar.fractionBusinessDayComplete(DateTimeUtils.now()), bCalendar.fractionBusinessDayComplete());
+        assertEquals(bCalendar.fractionBusinessDayComplete(DateTimeUtils.now()), bCalendar.fractionBusinessDayComplete(), 1e-5);
 
         // Check that all dates in the range work
         for (LocalDate d = firstValidDate; !d.isAfter(lastValidDate); d = d.plusDays(1)) {
@@ -708,7 +709,7 @@ public class TestBusinessCalendar extends TestCalendar {
         assertEquals(0.0, bCalendar.fractionBusinessDayRemaining(tAfter.toInstant()));
 
         // Current date
-        assertEquals(bCalendar.fractionBusinessDayRemaining(DateTimeUtils.now()), bCalendar.fractionBusinessDayRemaining());
+        assertEquals(bCalendar.fractionBusinessDayRemaining(DateTimeUtils.now()), bCalendar.fractionBusinessDayRemaining(), 1e-5);
 
         // Check that all dates in the range work
         for (LocalDate d = firstValidDate; !d.isAfter(lastValidDate); d = d.plusDays(1)) {
@@ -727,6 +728,264 @@ public class TestBusinessCalendar extends TestCalendar {
         } catch (RequirementFailure ignored) {
         }
     }
+
+    public void testBusinessDates() {
+
+        final LocalDate start = LocalDate.of(2023,7,3);
+        final LocalDate end = LocalDate.of(2023,7,15);
+
+        final LocalDate[] nonBus = {
+                holidayDate1, // Holiday 2023-07-04
+                LocalDate.of(2023, 7, 5), // WED
+                // halfDayDate, // Half Day 2023-07-06 --> is a business day
+                LocalDate.of(2023, 7, 12), // WED
+                LocalDate.of(2023, 7, 13), // THURS
+        } ;
+
+        final LocalDate[] bus = {
+                LocalDate.of(2023,7,3),
+                LocalDate.of(2023,7,6),
+                LocalDate.of(2023,7,7),
+                LocalDate.of(2023,7,8),
+                LocalDate.of(2023,7,9),
+                LocalDate.of(2023,7,10),
+                LocalDate.of(2023,7,11),
+                LocalDate.of(2023,7,14),
+                LocalDate.of(2023,7,15),
+        };
+
+        assertEquals(bus,bCalendar.businessDates(start, end));
+        assertEquals(bus,bCalendar.businessDates(start.toString(), end.toString()));
+        assertEquals(bus,bCalendar.businessDates(start.atTime(1,24).atZone(timeZone), end.atTime(1,24).atZone(timeZone)));
+        assertEquals(bus,bCalendar.businessDates(start.atTime(1,24).atZone(timeZone).toInstant(), end.atTime(1,24).atZone(timeZone).toInstant()));
+
+        assertEquals(Arrays.copyOfRange(bus,0,bus.length-1),bCalendar.businessDates(start, end, true, false));
+        assertEquals(Arrays.copyOfRange(bus,0,bus.length-1),bCalendar.businessDates(start.toString(), end.toString(), true, false));
+        assertEquals(Arrays.copyOfRange(bus,0,bus.length-1),bCalendar.businessDates(start.atTime(1,24).atZone(timeZone), end.atTime(1,24).atZone(timeZone), true, false));
+        assertEquals(Arrays.copyOfRange(bus,0,bus.length-1),bCalendar.businessDates(start.atTime(1,24).atZone(timeZone).toInstant(), end.atTime(1,24).atZone(timeZone).toInstant(), true, false));
+
+        assertEquals(Arrays.copyOfRange(bus,1,bus.length),bCalendar.businessDates(start, end, false, true));
+        assertEquals(Arrays.copyOfRange(bus,1,bus.length),bCalendar.businessDates(start.toString(), end.toString(), false, true));
+        assertEquals(Arrays.copyOfRange(bus,1,bus.length),bCalendar.businessDates(start.atTime(1,24).atZone(timeZone), end.atTime(1,24).atZone(timeZone), false, true));
+        assertEquals(Arrays.copyOfRange(bus,1,bus.length),bCalendar.businessDates(start.atTime(1,24).atZone(timeZone).toInstant(), end.atTime(1,24).atZone(timeZone).toInstant(), false, true));
+
+        assertEquals(Arrays.copyOfRange(bus,1,bus.length-1),bCalendar.businessDates(start, end, false, false));
+        assertEquals(Arrays.copyOfRange(bus,1,bus.length-1),bCalendar.businessDates(start.toString(), end.toString(), false, false));
+        assertEquals(Arrays.copyOfRange(bus,1,bus.length-1),bCalendar.businessDates(start.atTime(1,24).atZone(timeZone), end.atTime(1,24).atZone(timeZone), false, false));
+        assertEquals(Arrays.copyOfRange(bus,1,bus.length-1),bCalendar.businessDates(start.atTime(1,24).atZone(timeZone).toInstant(), end.atTime(1,24).atZone(timeZone).toInstant(), false, false));
+    }
+
+    public void testNumberBusinessDates() {
+
+        final LocalDate start = LocalDate.of(2023,7,3);
+        final LocalDate end = LocalDate.of(2023,7,15);
+
+        final LocalDate[] nonBus = {
+                holidayDate1, // Holiday 2023-07-04
+                LocalDate.of(2023, 7, 5), // WED
+                // halfDayDate, // Half Day 2023-07-06 --> is a business day
+                LocalDate.of(2023, 7, 12), // WED
+                LocalDate.of(2023, 7, 13), // THURS
+        } ;
+
+        final LocalDate[] bus = {
+                LocalDate.of(2023,7,3),
+                LocalDate.of(2023,7,6),
+                LocalDate.of(2023,7,7),
+                LocalDate.of(2023,7,8),
+                LocalDate.of(2023,7,9),
+                LocalDate.of(2023,7,10),
+                LocalDate.of(2023,7,11),
+                LocalDate.of(2023,7,14),
+                LocalDate.of(2023,7,15),
+        };
+
+        assertEquals(bus.length,bCalendar.numberBusinessDates(start, end));
+        assertEquals(bus.length,bCalendar.numberBusinessDates(start.toString(), end.toString()));
+        assertEquals(bus.length,bCalendar.numberBusinessDates(start.atTime(1,24).atZone(timeZone), end.atTime(1,24).atZone(timeZone)));
+        assertEquals(bus.length,bCalendar.numberBusinessDates(start.atTime(1,24).atZone(timeZone).toInstant(), end.atTime(1,24).atZone(timeZone).toInstant()));
+
+        assertEquals(bus.length-1,bCalendar.numberBusinessDates(start, end, true, false));
+        assertEquals(bus.length-1,bCalendar.numberBusinessDates(start.toString(), end.toString(), true, false));
+        assertEquals(bus.length-1,bCalendar.numberBusinessDates(start.atTime(1,24).atZone(timeZone), end.atTime(1,24).atZone(timeZone), true, false));
+        assertEquals(bus.length-1,bCalendar.numberBusinessDates(start.atTime(1,24).atZone(timeZone).toInstant(), end.atTime(1,24).atZone(timeZone).toInstant(), true, false));
+
+        assertEquals(bus.length-1,bCalendar.numberBusinessDates(start, end, false, true));
+        assertEquals(bus.length-1,bCalendar.numberBusinessDates(start.toString(), end.toString(), false, true));
+        assertEquals(bus.length-1,bCalendar.numberBusinessDates(start.atTime(1,24).atZone(timeZone), end.atTime(1,24).atZone(timeZone), false, true));
+        assertEquals(bus.length-1,bCalendar.numberBusinessDates(start.atTime(1,24).atZone(timeZone).toInstant(), end.atTime(1,24).atZone(timeZone).toInstant(), false, true));
+
+        assertEquals(bus.length-2,bCalendar.numberBusinessDates(start, end, false, false));
+        assertEquals(bus.length-2,bCalendar.numberBusinessDates(start.toString(), end.toString(), false, false));
+        assertEquals(bus.length-2,bCalendar.numberBusinessDates(start.atTime(1,24).atZone(timeZone), end.atTime(1,24).atZone(timeZone), false, false));
+        assertEquals(bus.length-2,bCalendar.numberBusinessDates(start.atTime(1,24).atZone(timeZone).toInstant(), end.atTime(1,24).atZone(timeZone).toInstant(), false, false));
+    }
+
+    public void testNonBusinessDates() {
+
+        final LocalDate start = LocalDate.of(2023,7,3);
+        final LocalDate end = LocalDate.of(2023,7,15);
+
+        final LocalDate[] nonBus = {
+                holidayDate1, // Holiday 2023-07-04
+                LocalDate.of(2023, 7, 5), // WED
+                // halfDayDate, // Half Day 2023-07-06 --> is a business day
+                LocalDate.of(2023, 7, 12), // WED
+                LocalDate.of(2023, 7, 13), // THURS
+        } ;
+
+        final LocalDate[] bus = {
+                LocalDate.of(2023,7,3),
+                LocalDate.of(2023,7,6),
+                LocalDate.of(2023,7,7),
+                LocalDate.of(2023,7,8),
+                LocalDate.of(2023,7,9),
+                LocalDate.of(2023,7,10),
+                LocalDate.of(2023,7,11),
+                LocalDate.of(2023,7,14),
+                LocalDate.of(2023,7,15),
+        };
+
+        assertEquals(nonBus,bCalendar.nonBusinessDates(start, end));
+        assertEquals(nonBus,bCalendar.nonBusinessDates(start.toString(), end.toString()));
+        assertEquals(nonBus,bCalendar.nonBusinessDates(start.atTime(1,24).atZone(timeZone), end.atTime(1,24).atZone(timeZone)));
+        assertEquals(nonBus,bCalendar.nonBusinessDates(start.atTime(1,24).atZone(timeZone).toInstant(), end.atTime(1,24).atZone(timeZone).toInstant()));
+
+        assertEquals(Arrays.copyOfRange(nonBus,0,nonBus.length-1),bCalendar.nonBusinessDates(nonBus[0], nonBus[nonBus.length-1], true, false));
+        assertEquals(Arrays.copyOfRange(nonBus,0,nonBus.length-1),bCalendar.nonBusinessDates(nonBus[0].toString(), nonBus[nonBus.length-1].toString(), true, false));
+        assertEquals(Arrays.copyOfRange(nonBus,0,nonBus.length-1),bCalendar.nonBusinessDates(nonBus[0].atTime(1,24).atZone(timeZone), nonBus[nonBus.length-1].atTime(1,24).atZone(timeZone), true, false));
+        assertEquals(Arrays.copyOfRange(nonBus,0,nonBus.length-1),bCalendar.nonBusinessDates(nonBus[0].atTime(1,24).atZone(timeZone).toInstant(), nonBus[nonBus.length-1].atTime(1,24).atZone(timeZone).toInstant(), true, false));
+
+        assertEquals(Arrays.copyOfRange(nonBus,1,nonBus.length),bCalendar.nonBusinessDates(nonBus[0], nonBus[nonBus.length-1], false, true));
+        assertEquals(Arrays.copyOfRange(nonBus,1,nonBus.length),bCalendar.nonBusinessDates(nonBus[0].toString(), nonBus[nonBus.length-1].toString(), false, true));
+        assertEquals(Arrays.copyOfRange(nonBus,1,nonBus.length),bCalendar.nonBusinessDates(nonBus[0].atTime(1,24).atZone(timeZone), nonBus[nonBus.length-1].atTime(1,24).atZone(timeZone), false, true));
+        assertEquals(Arrays.copyOfRange(nonBus,1,nonBus.length),bCalendar.nonBusinessDates(nonBus[0].atTime(1,24).atZone(timeZone).toInstant(), nonBus[nonBus.length-1].atTime(1,24).atZone(timeZone).toInstant(), false, true));
+
+        assertEquals(Arrays.copyOfRange(nonBus,1,nonBus.length-1),bCalendar.nonBusinessDates(nonBus[0], nonBus[nonBus.length-1], false, false));
+        assertEquals(Arrays.copyOfRange(nonBus,1,nonBus.length-1),bCalendar.nonBusinessDates(nonBus[0].toString(), nonBus[nonBus.length-1].toString(), false, false));
+        assertEquals(Arrays.copyOfRange(nonBus,1,nonBus.length-1),bCalendar.nonBusinessDates(nonBus[0].atTime(1,24).atZone(timeZone), nonBus[nonBus.length-1].atTime(1,24).atZone(timeZone), false, false));
+        assertEquals(Arrays.copyOfRange(nonBus,1,nonBus.length-1),bCalendar.nonBusinessDates(nonBus[0].atTime(1,24).atZone(timeZone).toInstant(), nonBus[nonBus.length-1].atTime(1,24).atZone(timeZone).toInstant(), false, false));
+    }
+
+    public void testNumberNonBusinessDates() {
+
+        final LocalDate start = LocalDate.of(2023,7,3);
+        final LocalDate end = LocalDate.of(2023,7,15);
+
+        final LocalDate[] nonBus = {
+                holidayDate1, // Holiday 2023-07-04
+                LocalDate.of(2023, 7, 5), // WED
+                // halfDayDate, // Half Day 2023-07-06 --> is a business day
+                LocalDate.of(2023, 7, 12), // WED
+                LocalDate.of(2023, 7, 13), // THURS
+        } ;
+
+        final LocalDate[] bus = {
+                LocalDate.of(2023,7,3),
+                LocalDate.of(2023,7,6),
+                LocalDate.of(2023,7,7),
+                LocalDate.of(2023,7,8),
+                LocalDate.of(2023,7,9),
+                LocalDate.of(2023,7,10),
+                LocalDate.of(2023,7,11),
+                LocalDate.of(2023,7,14),
+                LocalDate.of(2023,7,15),
+        };
+
+        assertEquals(nonBus.length,bCalendar.numberNonBusinessDates(start, end));
+        assertEquals(nonBus.length,bCalendar.numberNonBusinessDates(start.toString(), end.toString()));
+        assertEquals(nonBus.length,bCalendar.numberNonBusinessDates(start.atTime(1,24).atZone(timeZone), end.atTime(1,24).atZone(timeZone)));
+        assertEquals(nonBus.length,bCalendar.numberNonBusinessDates(start.atTime(1,24).atZone(timeZone).toInstant(), end.atTime(1,24).atZone(timeZone).toInstant()));
+
+        assertEquals(nonBus.length-1,bCalendar.numberNonBusinessDates(nonBus[0], nonBus[nonBus.length-1], true, false));
+        assertEquals(nonBus.length-1,bCalendar.numberNonBusinessDates(nonBus[0].toString(), nonBus[nonBus.length-1].toString(), true, false));
+        assertEquals(nonBus.length-1,bCalendar.numberNonBusinessDates(nonBus[0].atTime(1,24).atZone(timeZone), nonBus[nonBus.length-1].atTime(1,24).atZone(timeZone), true, false));
+        assertEquals(nonBus.length-1,bCalendar.numberNonBusinessDates(nonBus[0].atTime(1,24).atZone(timeZone).toInstant(), nonBus[nonBus.length-1].atTime(1,24).atZone(timeZone).toInstant(), true, false));
+
+        assertEquals(nonBus.length-1,bCalendar.numberNonBusinessDates(nonBus[0], nonBus[nonBus.length-1], false, true));
+        assertEquals(nonBus.length-1,bCalendar.numberNonBusinessDates(nonBus[0].toString(), nonBus[nonBus.length-1].toString(), false, true));
+        assertEquals(nonBus.length-1,bCalendar.numberNonBusinessDates(nonBus[0].atTime(1,24).atZone(timeZone), nonBus[nonBus.length-1].atTime(1,24).atZone(timeZone), false, true));
+        assertEquals(nonBus.length-1,bCalendar.numberNonBusinessDates(nonBus[0].atTime(1,24).atZone(timeZone).toInstant(), nonBus[nonBus.length-1].atTime(1,24).atZone(timeZone).toInstant(), false, true));
+
+        assertEquals(nonBus.length-2,bCalendar.numberNonBusinessDates(nonBus[0], nonBus[nonBus.length-1], false, false));
+        assertEquals(nonBus.length-2,bCalendar.numberNonBusinessDates(nonBus[0].toString(), nonBus[nonBus.length-1].toString(), false, false));
+        assertEquals(nonBus.length-2,bCalendar.numberNonBusinessDates(nonBus[0].atTime(1,24).atZone(timeZone), nonBus[nonBus.length-1].atTime(1,24).atZone(timeZone), false, false));
+        assertEquals(nonBus.length-2,bCalendar.numberNonBusinessDates(nonBus[0].atTime(1,24).atZone(timeZone).toInstant(), nonBus[nonBus.length-1].atTime(1,24).atZone(timeZone).toInstant(), false, false));
+    }
+
+//    public void testNumberBusinessDates() {
+//
+//        bCalendar.businessDates(start, end, startInclusive, endInclusive)
+//
+//        ***
+//        // Normal bus day
+//        LocalDate date = LocalDate.of(2023, 7, 11);
+//        ZonedDateTime tBefore = date.atTime(8, 2, 3).atZone(timeZone);
+//        ZonedDateTime tIn = date.atTime(10, 2, 3).atZone(timeZone);
+//        ZonedDateTime tAfter = date.atTime(22, 2, 3).atZone(timeZone);
+//        assertEquals(1.0, bCalendar.fractionBusinessDayRemaining(tBefore));
+//        assertEquals(1.0, bCalendar.fractionBusinessDayRemaining(tBefore.toInstant()));
+//        assertEquals(1 - (double) bCalendar.businessSchedule(date).businessNanosElapsed(tIn.toInstant()) / (double) schedule.businessNanos(), bCalendar.fractionBusinessDayRemaining(tIn));
+//        assertEquals(1 - (double) bCalendar.businessSchedule(date).businessNanosElapsed(tIn.toInstant()) / (double) schedule.businessNanos(), bCalendar.fractionBusinessDayRemaining(tIn.toInstant()));
+//        assertEquals(0.0, bCalendar.fractionBusinessDayRemaining(tAfter));
+//        assertEquals(0.0, bCalendar.fractionBusinessDayRemaining(tAfter.toInstant()));
+//
+//        // Weekend day -- THURS
+//        date = LocalDate.of(2023, 7, 13);
+//        tBefore = date.atTime(8, 2, 3).atZone(timeZone);
+//        tIn = date.atTime(10, 2, 3).atZone(timeZone);
+//        tAfter = date.atTime(22, 2, 3).atZone(timeZone);
+//        assertEquals(0.0, bCalendar.fractionBusinessDayRemaining(tBefore));
+//        assertEquals(0.0, bCalendar.fractionBusinessDayRemaining(tBefore.toInstant()));
+//        assertEquals(0.0, bCalendar.fractionBusinessDayRemaining(tIn));
+//        assertEquals(0.0, bCalendar.fractionBusinessDayRemaining(tIn.toInstant()));
+//        assertEquals(0.0, bCalendar.fractionBusinessDayRemaining(tAfter));
+//        assertEquals(0.0, bCalendar.fractionBusinessDayRemaining(tAfter.toInstant()));
+//
+//        // Holiday
+//        date = holidayDate1;
+//        tBefore = date.atTime(8, 2, 3).atZone(timeZone);
+//        tIn = date.atTime(10, 2, 3).atZone(timeZone);
+//        tAfter = date.atTime(22, 2, 3).atZone(timeZone);
+//        assertEquals(0.0, bCalendar.fractionBusinessDayRemaining(tBefore));
+//        assertEquals(0.0, bCalendar.fractionBusinessDayRemaining(tBefore.toInstant()));
+//        assertEquals(0.0, bCalendar.fractionBusinessDayRemaining(tIn));
+//        assertEquals(0.0, bCalendar.fractionBusinessDayRemaining(tIn.toInstant()));
+//        assertEquals(0.0, bCalendar.fractionBusinessDayRemaining(tAfter));
+//        assertEquals(0.0, bCalendar.fractionBusinessDayRemaining(tAfter.toInstant()));
+//
+//        // Half day
+//        date = halfDayDate;
+//        tBefore = date.atTime(8, 2, 3).atZone(timeZone);
+//        tIn = date.atTime(10, 2, 3).atZone(timeZone);
+//        tAfter = date.atTime(22, 2, 3).atZone(timeZone);
+//        assertEquals(1.0, bCalendar.fractionBusinessDayRemaining(tBefore));
+//        assertEquals(1.0, bCalendar.fractionBusinessDayRemaining(tBefore.toInstant()));
+//        assertEquals(1 - (double) bCalendar.businessSchedule(date).businessNanosElapsed(tIn.toInstant()) / (double) halfDay.businessNanos(), bCalendar.fractionBusinessDayRemaining(tIn));
+//        assertEquals(1 - (double) bCalendar.businessSchedule(date).businessNanosElapsed(tIn.toInstant()) / (double) halfDay.businessNanos(), bCalendar.fractionBusinessDayRemaining(tIn.toInstant()));
+//        assertEquals(0.0, bCalendar.fractionBusinessDayRemaining(tAfter));
+//        assertEquals(0.0, bCalendar.fractionBusinessDayRemaining(tAfter.toInstant()));
+//
+//        // Current date
+//        assertEquals(bCalendar.fractionBusinessDayRemaining(DateTimeUtils.now()), bCalendar.fractionBusinessDayRemaining());
+//
+//        // Check that all dates in the range work
+//        for (LocalDate d = firstValidDate; !d.isAfter(lastValidDate); d = d.plusDays(1)) {
+//            bCalendar.fractionBusinessDayRemaining(d.atTime(12, 34).atZone(timeZone));
+//        }
+//
+//        try {
+//            bCalendar.fractionBusinessDayRemaining((ZonedDateTime) null);
+//            fail("should throw an exception");
+//        } catch (RequirementFailure ignored) {
+//        }
+//
+//        try {
+//            bCalendar.fractionBusinessDayRemaining((Instant) null);
+//            fail("should throw an exception");
+//        } catch (RequirementFailure ignored) {
+//        }
+//    }
 
     public void testFail() {
         fail();
