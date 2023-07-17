@@ -391,13 +391,13 @@ def simple_spec(col_name: str, data_type: DType = None) -> KeyValueSpec:
         raise DHError(e, "failed to create a Kafka key/value spec") from e
 
 
-def raw_spec(col_name: str, data_type: DType, deserializer: DType) -> KeyValueSpec:
+def raw_spec(col_name: str, data_type: str, deserializer: str) -> KeyValueSpec:
     """Creates a raw spec with explicit expected data_type and kafka deserializer.
 
     Args:
         col_name (str): the Deephaven column name
-        data_type (DType): the column data type
-        deserializer (DType): the kafka deserializer
+        data_type (str): the column data type class
+        deserializer (str): the kafka deserializer class
 
     Returns:
         a KeyValueSpec
@@ -407,7 +407,10 @@ def raw_spec(col_name: str, data_type: DType, deserializer: DType) -> KeyValueSp
     """
     try:
         return KeyValueSpec(
-            j_spec=_JKafkaTools_Consume.rawSpec(_JColumnHeader.of(col_name, data_type.qst_type), deserializer.j_type.jclass)
+            j_spec=_JKafkaTools_Consume.rawSpec(
+                _JColumnHeader.of(col_name, jpy.get_type(data_type).jclass),
+                jpy.get_type(deserializer).jclass,
+            )
         )
     except Exception as e:
         raise DHError(e, "failed to create a Kafka key/value spec") from e
