@@ -201,8 +201,6 @@ class ParquetTestCase(BaseTestCase):
         else:
             dataframe = pandas.read_parquet("data_from_dh.parquet", dtype_backend="numpy_nullable")
 
-        # TODO Write a test which compares "dataframe" with the dataframe generated from dh_table
-
         result_table = to_table(dataframe)
         self.assert_table_equals(dh_table, result_table)
 
