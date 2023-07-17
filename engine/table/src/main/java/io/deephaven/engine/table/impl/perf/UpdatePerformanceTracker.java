@@ -75,6 +75,10 @@ public class UpdatePerformanceTracker {
 
     public static synchronized void start(final UpdateSourceRegistrar registrar) {
         final UpdatePerformanceTracker upt = getInstance();
+        if (upt.adapter != null) {
+            return; // already started
+        }
+
         upt.adapter = new StreamToBlinkTableAdapter(
                 UpdatePerformanceStreamPublisher.definition(),
                 upt.publisher,
@@ -278,6 +282,9 @@ public class UpdatePerformanceTracker {
 
     @NotNull
     public QueryTable getQueryTable() {
+        if (blink == null) {
+            throw new IllegalStateException("UpdatePerformanceTracker must be started first");
+        }
         return (QueryTable) BlinkTableTools.blinkToAppendOnly(blink);
     }
 

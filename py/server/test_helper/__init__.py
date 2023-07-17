@@ -14,7 +14,6 @@ from deephaven_internal import jvm
 
 py_dh_session = None
 
-
 def start_jvm_for_tests(jvm_props: Dict[str, str] = None):
     jvm.preload_jvm_dll()
     import jpy
@@ -74,6 +73,11 @@ def start_jvm_for_tests(jvm_props: Dict[str, str] = None):
         _j_test_update_graph = _JPeriodicUpdateGraph.newBuilder("PYTHON_TEST").existingOrBuild()
         _JPythonScriptSession = jpy.get_type("io.deephaven.integrations.python.PythonDeephavenSession")
         py_dh_session = _JPythonScriptSession(_j_test_update_graph, py_scope_jpy)
+
+        _JUpdatePerformanceTracker = jpy.get_type("io.deephaven.engine.table.impl.perf.UpdatePerformanceTracker")
+        exec_ctx = py_dh_session.getExecutionContext().open()
+        _JUpdatePerformanceTracker.start(_j_test_update_graph)
+        exec_ctx.close()
 
 
 def _expand_wildcards_in_list(elements):
