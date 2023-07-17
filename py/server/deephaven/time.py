@@ -1505,12 +1505,13 @@ def hour_of_day(dt: Union[Instant, ZonedDateTime], tz: TimeZone) -> int:
         raise DHError(e) from e
 
 
-def day_of_week(dt: Union[Instant, ZonedDateTime], tz: TimeZone) -> int:
+#TODO: *** localdate with tz
+def day_of_week(dt: Union[LocalDate, Instant, ZonedDateTime], tz: TimeZone) -> int:
     """ Returns a 1-based int value of the day of the week for a date time in the specified time zone, with 1 being
     Monday and 7 being Sunday.
 
     Args:
-        dt (Union[Instant,ZonedDateTime]): Date time.
+        dt (Union[LocalDate,Instant,ZonedDateTime]): Date time.
         tz (TimeZone): Time zone.
 
     Returns:
@@ -1531,12 +1532,13 @@ def day_of_week(dt: Union[Instant, ZonedDateTime], tz: TimeZone) -> int:
         raise DHError(e) from e
 
 
-def day_of_month(dt: Union[Instant, ZonedDateTime], tz: TimeZone) -> int:
+#TODO: *** localdate with tz
+def day_of_month(dt: Union[LocalDate, Instant, ZonedDateTime], tz: TimeZone) -> int:
     """ Returns a 1-based int value of the day of the month for a date time and specified time zone.
     The first day of the month returns 1, the second day returns 2, etc.
 
     Args:
-        dt (Union[Instant,ZonedDateTime]): Date time.
+        dt (Union[LocalDate,Instant,ZonedDateTime]): Date time.
         tz (TimeZone): Time zone.
 
     Returns:
@@ -1557,12 +1559,13 @@ def day_of_month(dt: Union[Instant, ZonedDateTime], tz: TimeZone) -> int:
         raise DHError(e) from e
 
 
-def day_of_year(dt: Union[Instant, ZonedDateTime], tz: TimeZone) -> int:
+#TODO: *** localdate with tz
+def day_of_year(dt: Union[LocalDate, Instant, ZonedDateTime], tz: TimeZone) -> int:
     """ Returns a 1-based int value of the day of the year (Julian date) for a date time in the specified time zone.
     The first day of the year returns 1, the second day returns 2, etc.
 
     Args:
-        dt (Union[Instant,ZonedDateTime]): Date time.
+        dt (Union[LocalDate,Instant,ZonedDateTime]): Date time.
         tz (TimeZone): Time zone.
 
     Returns:
@@ -1583,12 +1586,13 @@ def day_of_year(dt: Union[Instant, ZonedDateTime], tz: TimeZone) -> int:
         raise DHError(e) from e
 
 
-def month_of_year(dt: Union[Instant, ZonedDateTime], tz: TimeZone) -> int:
+#TODO: *** localdate with tz
+def month_of_year(dt: Union[LocalDate, Instant, ZonedDateTime], tz: TimeZone) -> int:
     """ Returns a 1-based int value of the month of the year (Julian date) for a date time in the specified time zone.
     January is 1, February is 2, etc.
 
     Args:
-        dt (Union[Instant,ZonedDateTime]): Date time.
+        dt (Union[LocalDate,Instant,ZonedDateTime]): Date time.
         tz (TimeZone): Time zone.
 
     Returns:
@@ -1609,11 +1613,12 @@ def month_of_year(dt: Union[Instant, ZonedDateTime], tz: TimeZone) -> int:
         raise DHError(e) from e
 
 
-def year(dt: Union[Instant, ZonedDateTime], tz: TimeZone) -> int:
+#TODO: *** localdate with tz
+def year(dt: Union[LocalDate, Instant, ZonedDateTime], tz: TimeZone) -> int:
     """ Returns the year for a date time in the specified time zone.
 
     Args:
-        dt (Union[Instant,ZonedDateTime]): Date time.
+        dt (Union[LocalDate,Instant,ZonedDateTime]): Date time.
         tz (TimeZone): Time zone.
 
     Returns:
@@ -1634,11 +1639,12 @@ def year(dt: Union[Instant, ZonedDateTime], tz: TimeZone) -> int:
         raise DHError(e) from e
 
 
-def year_of_century(dt: Union[Instant, ZonedDateTime], tz: TimeZone) -> int:
+#TODO: *** localdate with tz
+def year_of_century(dt: Union[LocalDate, Instant, ZonedDateTime], tz: TimeZone) -> int:
     """ Returns the year of the century (two-digit year) for a date time in the specified time zone.
 
     Args:
-        dt (Union[Instant,ZonedDateTime]): Date time.
+        dt (Union[LocalDate,Instant,ZonedDateTime]): Date time.
         tz (TimeZone): Time zone.
 
     Returns:
@@ -1659,11 +1665,12 @@ def year_of_century(dt: Union[Instant, ZonedDateTime], tz: TimeZone) -> int:
         raise DHError(e) from e
 
 
-def at_midnight(dt: Union[Instant, ZonedDateTime], tz: TimeZone) -> Union[Instant, ZonedDateTime]:
+#TODO: *** localdate with tz
+def at_midnight(dt: Union[LocalDate, Instant, ZonedDateTime], tz: TimeZone) -> Union[Instant, ZonedDateTime]:
     """ Returns a date time for the prior midnight in the specified time zone.
 
     Args:
-        dt (Union[Instant,ZonedDateTime]): Date time.
+        dt (Union[LocalDate,Instant,ZonedDateTime]): Date time.
         tz (TimeZone): Time zone.
 
     Returns:

@@ -62,27 +62,27 @@ public class TestCalendarMethodsFromTable extends BaseArrayTestCase {
 
         assertEquals(calendar.currentDate(), getVal(emptyTable(1).update("currentDay = currentDay()"), "currentDay"));
 
-        assertEquals(calendar.pastDate(),
+        assertEquals(calendar..pastDate(1),
                 getVal(emptyTable(1).update("previousDay = previousDay()"), "previousDay"));
         assertEquals(calendar.pastDate(4),
                 getVal(emptyTable(1).update("previousDay = previousDay(4)"), "previousDay"));
-        assertEquals(calendar.pastDate(time1),
+        assertEquals(calendar.minusDays(time1,1),
                 getVal(emptyTable(1).update("previousDay = previousDay(time1)"), "previousDay"));
-        assertEquals(calendar.pastDate(time1, 4),
+        assertEquals(calendar.minusDays(time1, 4),
                 getVal(emptyTable(1).update("previousDay = previousDay(time1, 4)"), "previousDay"));
-        assertEquals(calendar.pastDate(date1),
+        assertEquals(calendar.minusDays(date1,1),
                 getVal(emptyTable(1).update("previousDay = previousDay(date1)"), "previousDay"));
-        assertEquals(calendar.pastDate(date1, 14),
+        assertEquals(calendar.minusDays(date1, 14),
                 getVal(emptyTable(1).update("previousDay = previousDay(date1, 14)"), "previousDay"));
 
 
-        assertEquals(calendar.futureDate(), getVal(emptyTable(1).update("nextDay = nextDay()"), "nextDay"));
+        assertEquals(calendar.futureDate(1), getVal(emptyTable(1).update("nextDay = nextDay(1)"), "nextDay"));
         assertEquals(calendar.futureDate(4), getVal(emptyTable(1).update("nextDay = nextDay(4)"), "nextDay"));
-        assertEquals(calendar.futureDate(time1), getVal(emptyTable(1).update("nextDay = nextDay(time1)"), "nextDay"));
-        assertEquals(calendar.futureDate(time1, 4),
+        assertEquals(calendar.plusDays(time1,1), getVal(emptyTable(1).update("nextDay = nextDay(time1)"), "nextDay"));
+        assertEquals(calendar.plusDays(time1, 4),
                 getVal(emptyTable(1).update("nextDay = nextDay(time1, 4)"), "nextDay"));
-        assertEquals(calendar.futureDate(date1), getVal(emptyTable(1).update("nextDay = nextDay(date1)"), "nextDay"));
-        assertEquals(calendar.futureDate(date1, 14),
+        assertEquals(calendar.plusDays(date1,1), getVal(emptyTable(1).update("nextDay = nextDay(date1)"), "nextDay"));
+        assertEquals(calendar.plusDays(date1, 14),
                 getVal(emptyTable(1).update("nextDay = nextDay(date1, 14)"), "nextDay"));
 
         assertEquals(calendar.calendarDates(time1, time2),
@@ -257,7 +257,7 @@ public class TestCalendarMethodsFromTable extends BaseArrayTestCase {
                         "nonBusinessDaysInRange"));
 
 
-        assertEquals(calendar.standardBusinessDayLengthNanos(),
+        assertEquals(calendar.standardBusinessNanos(),
                 getVal(emptyTable(1).update("standardBusinessDayLengthNanos = standardBusinessDayLengthNanos()"),
                         "standardBusinessDayLengthNanos"));
 
@@ -304,21 +304,21 @@ public class TestCalendarMethodsFromTable extends BaseArrayTestCase {
                         "numberOfNonBusinessDays"));
 
 
-        assertEquals(calendar.fractionOfStandardBusinessDay(),
+        assertEquals(calendar.fractionStandardBusinessDay(),
                 getVal(emptyTable(1).update("fractionOfStandardBusinessDay = fractionOfStandardBusinessDay()"),
                         "fractionOfStandardBusinessDay"));
-        assertEquals(calendar.fractionOfStandardBusinessDay(time1),
+        assertEquals(calendar.fractionStandardBusinessDay(time1),
                 getVal(emptyTable(1).update("fractionOfStandardBusinessDay = fractionOfStandardBusinessDay(time1)"),
                         "fractionOfStandardBusinessDay"));
-        assertEquals(calendar.fractionOfStandardBusinessDay(date1),
+        assertEquals(calendar.fractionStandardBusinessDay(date1),
                 getVal(emptyTable(1).update("fractionOfStandardBusinessDay = fractionOfStandardBusinessDay(date1)"),
                         "fractionOfStandardBusinessDay"));
 
 
-        assertEquals(calendar.fractionOfBusinessDayRemaining(time1),
+        assertEquals(calendar.fractionBusinessDayRemaining(time1),
                 getVal(emptyTable(1).update("fractionOfBusinessDayRemaining = fractionOfBusinessDayRemaining(time1)"),
                         "fractionOfBusinessDayRemaining"));
-        assertEquals(calendar.fractionOfBusinessDayComplete(time1),
+        assertEquals(calendar.fractionBusinessDayComplete(time1),
                 getVal(emptyTable(1).update("fractionOfBusinessDayComplete = fractionOfBusinessDayComplete(time1)"),
                         "fractionOfBusinessDayComplete"));
 
