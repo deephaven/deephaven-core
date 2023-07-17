@@ -303,8 +303,14 @@ final class ServletServerStream extends AbstractServerStream {
             close(Status.CANCELLED.withCause(status.asRuntimeException()), new Metadata());
             CountDownLatch countDownLatch = new CountDownLatch(1);
             transportState.runOnTransportThread(() -> {
-                asyncCtx.complete();
-                countDownLatch.countDown();
+                try {
+                    asyncCtx.complete();
+                } catch (final Exception err) {
+                    // this may happen when the async context is already complete; it isn't surprising this may fail as
+                    // we're trying to notify the user of another known error on this stream
+                } finally {
+                    countDownLatch.countDown();
+                }
             });
             try {
                 countDownLatch.await(5, TimeUnit.SECONDS);
