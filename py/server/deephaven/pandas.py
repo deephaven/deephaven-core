@@ -163,7 +163,6 @@ _EX_DTYPE_NULL_MAP = {
     pd.StringDtype: None,
     pd.ArrowDtype(pa.int8()): NULL_BYTE,
     pd.ArrowDtype(pa.int16()): NULL_SHORT,
-    pd.ArrowDtype(pa.uint16()): NULL_CHAR,  # Do we need this? How to test this?
     pd.ArrowDtype(pa.int32()): NULL_INT,
     pd.ArrowDtype(pa.int64()): NULL_LONG,
     pd.ArrowDtype(pa.bool_()): NULL_BYTE,
@@ -232,6 +231,7 @@ def to_table(df: pd.DataFrame, cols: List[str] = None) -> Table:
             else:
                 dtype = np_array.dtype
             dh_dtype = dtypes.from_np_dtype(dtype)
+            # print("to_table:" + str(dtype) + " -> " + str(dh_dtype))
             np_array = _map_na(np_array)
             input_cols.append(_make_input_column(col, np_array, dh_dtype))
 
