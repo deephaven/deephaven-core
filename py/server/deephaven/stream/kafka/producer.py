@@ -10,9 +10,7 @@ import jpy
 from deephaven import DHError
 from deephaven.jcompat import j_hashmap, j_hashset, j_properties
 from deephaven._wrapper import JObjectWrapper
-from deephaven.dtypes import DType
 from deephaven.table import Table
-
 
 _JKafkaTools = jpy.get_type("io.deephaven.kafka.KafkaTools")
 _JAvroSchema = jpy.get_type("org.apache.avro.Schema")
