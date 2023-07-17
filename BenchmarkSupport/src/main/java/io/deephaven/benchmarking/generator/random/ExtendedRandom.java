@@ -3,13 +3,37 @@
  */
 package io.deephaven.benchmarking.generator.random;
 
+import org.jetbrains.annotations.NotNull;
+
 import java.util.Random;
 
 /**
  * ExtendedRandom is a helper to facilitate the use of various concrete {@link Random} implementations, while providing
  * a consistent interface.
  */
-public abstract class ExtendedRandom {
+public class ExtendedRandom {
+    private final Random randSrc;
+
+    public ExtendedRandom(@NotNull final Random randSrc) {
+        this.randSrc = randSrc;
+    }
+
+    public double nextDouble() {
+        return randSrc.nextDouble();
+    }
+
+    public long nextLong() {
+        return randSrc.nextLong();
+    }
+
+    public int nextInt() {
+        return randSrc.nextInt();
+    }
+
+    public int nextInt(int n) {
+        return randSrc.nextInt(n);
+    }
+
     public final double nextDouble(double origin, double bound) {
         double r = nextDouble();
         if (origin < bound) {
@@ -56,12 +80,4 @@ public abstract class ExtendedRandom {
             return nextInt();
         }
     }
-
-    public abstract double nextDouble();
-
-    public abstract long nextLong();
-
-    public abstract int nextInt();
-
-    public abstract int nextInt(int n);
 }
