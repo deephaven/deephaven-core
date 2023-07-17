@@ -13,7 +13,7 @@ import pyarrow as pa
 from deephaven import dtypes, new_table, DHError
 from deephaven.column import byte_col, char_col, short_col, bool_col, int_col, long_col, float_col, double_col, \
     string_col, datetime_col, pyobj_col, jobj_col
-from deephaven.constants import NULL_LONG, NULL_SHORT, NULL_INT, NULL_BYTE
+from deephaven.constants import NULL_LONG, NULL_SHORT, NULL_INT, NULL_BYTE, NULL_CHAR
 from deephaven.jcompat import j_array_list
 from deephaven.pandas import to_pandas, to_table
 from deephaven.time import parse_instant, epoch_nanos_to_instant
@@ -246,6 +246,8 @@ class PandasTestCase(BaseTestCase):
             bool_col(name="Boolean", data=(True, False)),
             byte_col(name="Byte", data=(1, NULL_BYTE)),
             char_col(name="Char", data='-1'),  # Why do we have -1 here
+            # char_col(name="Char2", data='a\0'),
+            # char_col(name="Cha3", data=[65, NULL_CHAR]),
             short_col(name="Short", data=[1, NULL_SHORT]),
             int_col(name="Int_", data=[1, NULL_INT]),
             long_col(name="Long_", data=[1, NULL_LONG]),
@@ -265,6 +267,8 @@ class PandasTestCase(BaseTestCase):
             bool_col(name="Boolean", data=(True, False)),
             byte_col(name="Byte", data=(1, NULL_BYTE)),
             char_col(name="Char", data='-1'),  # Why do we have -1 here
+            # char_col(name="Char2", data='a\0'),
+            # char_col(name="Cha3", data=[65, NULL_CHAR]),
             short_col(name="Short", data=[1, NULL_SHORT]),
             int_col(name="Int_", data=[1, NULL_INT]),
             long_col(name="Long_", data=[1, NULL_LONG]),
@@ -277,7 +281,7 @@ class PandasTestCase(BaseTestCase):
         test_table = new_table(cols=input_cols)
         df = to_pandas(test_table, dtype_backend="numpy_nullable")
         dh_table = to_table(df)
-        self.assert_table_equals(test_table, dh_table)
+        self.assert_table_equals(test_table, dh_table)  # This fails for Char2 line
 
     def test_numpy_array(self):
         df_dict = {
