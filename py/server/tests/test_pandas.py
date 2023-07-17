@@ -245,9 +245,7 @@ class PandasTestCase(BaseTestCase):
         input_cols = [
             bool_col(name="Boolean", data=(True, False)),
             byte_col(name="Byte", data=(1, NULL_BYTE)),
-            char_col(name="Char", data='-1'),  # Why do we have -1 here
-            # char_col(name="Char2", data='a\0'),
-            # char_col(name="Cha3", data=[65, NULL_CHAR]),
+            char_col(name="Char", data='-1'),
             short_col(name="Short", data=[1, NULL_SHORT]),
             int_col(name="Int_", data=[1, NULL_INT]),
             long_col(name="Long_", data=[1, NULL_LONG]),
@@ -266,9 +264,7 @@ class PandasTestCase(BaseTestCase):
         input_cols = [
             bool_col(name="Boolean", data=(True, False)),
             byte_col(name="Byte", data=(1, NULL_BYTE)),
-            char_col(name="Char", data='-1'),  # Why do we have -1 here
-            # char_col(name="Char2", data='a\0'),
-            # char_col(name="Cha3", data=[65, NULL_CHAR]),
+            char_col(name="Char", data='-1'),
             short_col(name="Short", data=[1, NULL_SHORT]),
             int_col(name="Int_", data=[1, NULL_INT]),
             long_col(name="Long_", data=[1, NULL_LONG]),
@@ -281,7 +277,7 @@ class PandasTestCase(BaseTestCase):
         test_table = new_table(cols=input_cols)
         df = to_pandas(test_table, dtype_backend="numpy_nullable")
         dh_table = to_table(df)
-        self.assert_table_equals(test_table, dh_table)  # This fails for Char2 line
+        self.assert_table_equals(test_table, dh_table)
 
     def test_numpy_array(self):
         df_dict = {
