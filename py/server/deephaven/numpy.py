@@ -74,6 +74,7 @@ def _columns_to_2d_numpy_array(col_def: Column, j_arrays: List[jpy.JType]) -> np
 
 def _make_input_column(col: str, np_array: np.ndarray, dtype: DType) -> InputColumn:
     """ Creates a InputColumn with the given column name and the numpy array. """
+    # print("_make_input_column: NP Array received=" + str(np_array))
     return InputColumn(name=_to_column_name(col), data_type=dtype, input_data=np_array)
 
 

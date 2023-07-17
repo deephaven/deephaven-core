@@ -181,8 +181,7 @@ def null_remap(dtype: DType) -> Callable[[Any], Any]:
     if null_value is None:
         raise TypeError("null_remap() must be called with a primitive DType")
 
-    # return lambda v: null_value if v is None else v
-    return lambda v: null_value if (v is None or pd.isna(v)) else v
+    return lambda v: null_value if v is None else v
 
 
 def array(dtype: DType, seq: Sequence, remap: Callable[[Any], Any] = None) -> jpy.JType:
@@ -204,8 +203,7 @@ def array(dtype: DType, seq: Sequence, remap: Callable[[Any], Any] = None) -> jp
         DHError
     """
     try:
-        # print("+++++++++++++ Original Seq: ")
-        # print(seq)
+        # print("+++++++++++++ Original Seq: " + str(seq))
 
         if isinstance(seq, str) and dtype == char:
             # ord is the Python builtin function that takes a unicode character and returns an integer code point value
@@ -216,12 +214,7 @@ def array(dtype: DType, seq: Sequence, remap: Callable[[Any], Any] = None) -> jp
                 raise ValueError("Not a callable")
             seq = [remap(v) for v in seq]
 
-        # print("+++++++++++++ Remapped Seq: ")
-        # print(seq)
-
-        # if isinstance(seq, str) and dtype == char:
-        #     # ord is the Python builtin function that takes a unicode character and returns an integer code point value
-        #     seq = [ord(v) for v in seq]
+        # print("+++++++++++++ Remapped Seq: " + str(seq))
 
         if isinstance(seq, np.ndarray):
             if dtype == bool_:

@@ -177,6 +177,7 @@ class PandasTestCase(BaseTestCase):
         boolean_array = pd.array([True, False, None], dtype=pd.BooleanDtype())
         int8_array = pd.array([1, 2, None], dtype=pd.Int8Dtype())
         int16_array = pd.array([1, 2, None], dtype=pd.Int16Dtype())
+        uint16_array = pd.array([1, 2, None], dtype=pd.UInt16Dtype())
         int32_array = pd.array([1, 2, None], dtype=pd.Int32Dtype())
         int64_array = pd.array([1, 2, None], dtype=pd.Int64Dtype())
         float_array = pd.array([1.1, 2.2, None], dtype=pd.Float32Dtype())
@@ -188,6 +189,7 @@ class PandasTestCase(BaseTestCase):
             "NullableBoolean": boolean_array,
             "NullableInt8": int8_array,
             "NullableInt16": int16_array,
+            "NullableChar": uint16_array,
             "NullableInt32": int32_array,
             "NullableInt64": int64_array,
             "NullableFloat": float_array,
@@ -200,15 +202,17 @@ class PandasTestCase(BaseTestCase):
         self.assertIs(table.columns[0].data_type, dtypes.bool_)
         self.assertIs(table.columns[1].data_type, dtypes.int8)
         self.assertIs(table.columns[2].data_type, dtypes.int16)
-        self.assertIs(table.columns[3].data_type, dtypes.int32)
-        self.assertIs(table.columns[4].data_type, dtypes.int64)
-        self.assertIs(table.columns[5].data_type, dtypes.float32)
-        self.assertIs(table.columns[6].data_type, dtypes.double)
-        self.assertIs(table.columns[7].data_type, dtypes.string)
-        self.assertIs(table.columns[8].data_type, dtypes.PyObject)
+        self.assertIs(table.columns[3].data_type, dtypes.char)
+        self.assertIs(table.columns[4].data_type, dtypes.int32)
+        self.assertIs(table.columns[5].data_type, dtypes.int64)
+        self.assertIs(table.columns[6].data_type, dtypes.float32)
+        self.assertIs(table.columns[7].data_type, dtypes.double)
+        self.assertIs(table.columns[8].data_type, dtypes.string)
+        self.assertIs(table.columns[9].data_type, dtypes.PyObject)
+
         self.assertEqual(table.size, 3)
         table_string = table.to_string()
-        self.assertEqual(9, table_string.count("null"))
+        self.assertEqual(10, table_string.count("null"))
 
     def test_arrow_backend(self):
         with self.subTest("pyarrow-backend"):
@@ -241,7 +245,7 @@ class PandasTestCase(BaseTestCase):
         input_cols = [
             bool_col(name="Boolean", data=(True, False)),
             byte_col(name="Byte", data=(1, NULL_BYTE)),
-            char_col(name="Char", data='-1'),
+            char_col(name="Char", data='-1'),  # Why do we have -1 here
             short_col(name="Short", data=[1, NULL_SHORT]),
             int_col(name="Int_", data=[1, NULL_INT]),
             long_col(name="Long_", data=[1, NULL_LONG]),
@@ -260,7 +264,7 @@ class PandasTestCase(BaseTestCase):
         input_cols = [
             bool_col(name="Boolean", data=(True, False)),
             byte_col(name="Byte", data=(1, NULL_BYTE)),
-            char_col(name="Char", data='-1'),
+            char_col(name="Char", data='-1'),  # Why do we have -1 here
             short_col(name="Short", data=[1, NULL_SHORT]),
             int_col(name="Int_", data=[1, NULL_INT]),
             long_col(name="Long_", data=[1, NULL_LONG]),

@@ -13,7 +13,7 @@ import pyarrow as pa
 from deephaven import DHError, new_table, dtypes, arrow
 from deephaven.arrow import SUPPORTED_ARROW_TYPES
 from deephaven.column import Column
-from deephaven.constants import NULL_BYTE, NULL_SHORT, NULL_INT, NULL_LONG, NULL_FLOAT, NULL_DOUBLE
+from deephaven.constants import NULL_BYTE, NULL_SHORT, NULL_CHAR, NULL_INT, NULL_LONG, NULL_FLOAT, NULL_DOUBLE
 from deephaven.numpy import column_to_numpy_array, _make_input_column
 from deephaven.table import Table
 
@@ -155,6 +155,7 @@ _EX_DTYPE_NULL_MAP = {
     pd.BooleanDtype: NULL_BYTE,
     pd.Int8Dtype: NULL_BYTE,
     pd.Int16Dtype: NULL_SHORT,
+    pd.UInt16Dtype: NULL_CHAR,
     pd.Int32Dtype: NULL_INT,
     pd.Int64Dtype: NULL_LONG,
     pd.Float32Dtype: NULL_FLOAT,
@@ -162,6 +163,7 @@ _EX_DTYPE_NULL_MAP = {
     pd.StringDtype: None,
     pd.ArrowDtype(pa.int8()): NULL_BYTE,
     pd.ArrowDtype(pa.int16()): NULL_SHORT,
+    pd.ArrowDtype(pa.uint16()): NULL_CHAR,  # Do we need this? How to test this?
     pd.ArrowDtype(pa.int32()): NULL_INT,
     pd.ArrowDtype(pa.int64()): NULL_LONG,
     pd.ArrowDtype(pa.bool_()): NULL_BYTE,
@@ -174,16 +176,19 @@ _EX_DTYPE_NULL_MAP = {
 def _map_na(np_array: np.ndarray):
     """Replaces the pd.NA values in the array if it is of pandas ExtensionDtype(nullable)."""
     pd_dtype = np_array.dtype
+    # print("----- _map_na(): Processing array of data type " + str(pd_dtype) + ":" + str(np_array))
     if not isinstance(pd_dtype, pd.api.extensions.ExtensionDtype):
         return np_array
 
     dh_null = _EX_DTYPE_NULL_MAP.get(type(pd_dtype)) or _EX_DTYPE_NULL_MAP.get(pd_dtype)
+    # print("----- _map_na(): dh_null=" + str(dh_null))
     if isinstance(pd_dtype, pd.StringDtype) or isinstance(pd_dtype, pd.BooleanDtype) or pd_dtype == pd.ArrowDtype(
             pa.bool_()):
         np_array = np.array(list(map(lambda v: dh_null if v is pd.NA else v, np_array)))
     elif dh_null is not None:
         np_array = np_array.fillna(dh_null)
 
+    # print("----- _map_na(): Processed array=" + str(np_array))
     return np_array
 
 
