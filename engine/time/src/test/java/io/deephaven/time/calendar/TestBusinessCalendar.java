@@ -7,6 +7,7 @@ import io.deephaven.base.verify.RequirementFailure;
 import io.deephaven.time.DateTimeUtils;
 
 import java.time.*;
+import java.time.temporal.ChronoUnit;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Map;
@@ -734,13 +735,13 @@ public class TestBusinessCalendar extends TestCalendar {
         final LocalDate start = LocalDate.of(2023,7,3);
         final LocalDate end = LocalDate.of(2023,7,15);
 
-        final LocalDate[] nonBus = {
-                holidayDate1, // Holiday 2023-07-04
-                LocalDate.of(2023, 7, 5), // WED
-                // halfDayDate, // Half Day 2023-07-06 --> is a business day
-                LocalDate.of(2023, 7, 12), // WED
-                LocalDate.of(2023, 7, 13), // THURS
-        } ;
+//        final LocalDate[] nonBus = {
+//                holidayDate1, // Holiday 2023-07-04
+//                LocalDate.of(2023, 7, 5), // WED
+//                // halfDayDate, // Half Day 2023-07-06 --> is a business day
+//                LocalDate.of(2023, 7, 12), // WED
+//                LocalDate.of(2023, 7, 13), // THURS
+//        } ;
 
         final LocalDate[] bus = {
                 LocalDate.of(2023,7,3),
@@ -780,13 +781,13 @@ public class TestBusinessCalendar extends TestCalendar {
         final LocalDate start = LocalDate.of(2023,7,3);
         final LocalDate end = LocalDate.of(2023,7,15);
 
-        final LocalDate[] nonBus = {
-                holidayDate1, // Holiday 2023-07-04
-                LocalDate.of(2023, 7, 5), // WED
-                // halfDayDate, // Half Day 2023-07-06 --> is a business day
-                LocalDate.of(2023, 7, 12), // WED
-                LocalDate.of(2023, 7, 13), // THURS
-        } ;
+//        final LocalDate[] nonBus = {
+//                holidayDate1, // Holiday 2023-07-04
+//                LocalDate.of(2023, 7, 5), // WED
+//                // halfDayDate, // Half Day 2023-07-06 --> is a business day
+//                LocalDate.of(2023, 7, 12), // WED
+//                LocalDate.of(2023, 7, 13), // THURS
+//        } ;
 
         final LocalDate[] bus = {
                 LocalDate.of(2023,7,3),
@@ -834,17 +835,17 @@ public class TestBusinessCalendar extends TestCalendar {
                 LocalDate.of(2023, 7, 13), // THURS
         } ;
 
-        final LocalDate[] bus = {
-                LocalDate.of(2023,7,3),
-                LocalDate.of(2023,7,6),
-                LocalDate.of(2023,7,7),
-                LocalDate.of(2023,7,8),
-                LocalDate.of(2023,7,9),
-                LocalDate.of(2023,7,10),
-                LocalDate.of(2023,7,11),
-                LocalDate.of(2023,7,14),
-                LocalDate.of(2023,7,15),
-        };
+//        final LocalDate[] bus = {
+//                LocalDate.of(2023,7,3),
+//                LocalDate.of(2023,7,6),
+//                LocalDate.of(2023,7,7),
+//                LocalDate.of(2023,7,8),
+//                LocalDate.of(2023,7,9),
+//                LocalDate.of(2023,7,10),
+//                LocalDate.of(2023,7,11),
+//                LocalDate.of(2023,7,14),
+//                LocalDate.of(2023,7,15),
+//        };
 
         assertEquals(nonBus,bCalendar.nonBusinessDates(start, end));
         assertEquals(nonBus,bCalendar.nonBusinessDates(start.toString(), end.toString()));
@@ -880,17 +881,17 @@ public class TestBusinessCalendar extends TestCalendar {
                 LocalDate.of(2023, 7, 13), // THURS
         } ;
 
-        final LocalDate[] bus = {
-                LocalDate.of(2023,7,3),
-                LocalDate.of(2023,7,6),
-                LocalDate.of(2023,7,7),
-                LocalDate.of(2023,7,8),
-                LocalDate.of(2023,7,9),
-                LocalDate.of(2023,7,10),
-                LocalDate.of(2023,7,11),
-                LocalDate.of(2023,7,14),
-                LocalDate.of(2023,7,15),
-        };
+//        final LocalDate[] bus = {
+//                LocalDate.of(2023,7,3),
+//                LocalDate.of(2023,7,6),
+//                LocalDate.of(2023,7,7),
+//                LocalDate.of(2023,7,8),
+//                LocalDate.of(2023,7,9),
+//                LocalDate.of(2023,7,10),
+//                LocalDate.of(2023,7,11),
+//                LocalDate.of(2023,7,14),
+//                LocalDate.of(2023,7,15),
+//        };
 
         assertEquals(nonBus.length,bCalendar.numberNonBusinessDates(start, end));
         assertEquals(nonBus.length,bCalendar.numberNonBusinessDates(start.toString(), end.toString()));
@@ -913,79 +914,93 @@ public class TestBusinessCalendar extends TestCalendar {
         assertEquals(nonBus.length-2,bCalendar.numberNonBusinessDates(nonBus[0].atTime(1,24).atZone(timeZone).toInstant(), nonBus[nonBus.length-1].atTime(1,24).atZone(timeZone).toInstant(), false, false));
     }
 
-//    public void testNumberBusinessDates() {
-//
-//        bCalendar.businessDates(start, end, startInclusive, endInclusive)
-//
-//        ***
-//        // Normal bus day
-//        LocalDate date = LocalDate.of(2023, 7, 11);
-//        ZonedDateTime tBefore = date.atTime(8, 2, 3).atZone(timeZone);
-//        ZonedDateTime tIn = date.atTime(10, 2, 3).atZone(timeZone);
-//        ZonedDateTime tAfter = date.atTime(22, 2, 3).atZone(timeZone);
-//        assertEquals(1.0, bCalendar.fractionBusinessDayRemaining(tBefore));
-//        assertEquals(1.0, bCalendar.fractionBusinessDayRemaining(tBefore.toInstant()));
-//        assertEquals(1 - (double) bCalendar.businessSchedule(date).businessNanosElapsed(tIn.toInstant()) / (double) schedule.businessNanos(), bCalendar.fractionBusinessDayRemaining(tIn));
-//        assertEquals(1 - (double) bCalendar.businessSchedule(date).businessNanosElapsed(tIn.toInstant()) / (double) schedule.businessNanos(), bCalendar.fractionBusinessDayRemaining(tIn.toInstant()));
-//        assertEquals(0.0, bCalendar.fractionBusinessDayRemaining(tAfter));
-//        assertEquals(0.0, bCalendar.fractionBusinessDayRemaining(tAfter.toInstant()));
-//
-//        // Weekend day -- THURS
-//        date = LocalDate.of(2023, 7, 13);
-//        tBefore = date.atTime(8, 2, 3).atZone(timeZone);
-//        tIn = date.atTime(10, 2, 3).atZone(timeZone);
-//        tAfter = date.atTime(22, 2, 3).atZone(timeZone);
-//        assertEquals(0.0, bCalendar.fractionBusinessDayRemaining(tBefore));
-//        assertEquals(0.0, bCalendar.fractionBusinessDayRemaining(tBefore.toInstant()));
-//        assertEquals(0.0, bCalendar.fractionBusinessDayRemaining(tIn));
-//        assertEquals(0.0, bCalendar.fractionBusinessDayRemaining(tIn.toInstant()));
-//        assertEquals(0.0, bCalendar.fractionBusinessDayRemaining(tAfter));
-//        assertEquals(0.0, bCalendar.fractionBusinessDayRemaining(tAfter.toInstant()));
-//
-//        // Holiday
-//        date = holidayDate1;
-//        tBefore = date.atTime(8, 2, 3).atZone(timeZone);
-//        tIn = date.atTime(10, 2, 3).atZone(timeZone);
-//        tAfter = date.atTime(22, 2, 3).atZone(timeZone);
-//        assertEquals(0.0, bCalendar.fractionBusinessDayRemaining(tBefore));
-//        assertEquals(0.0, bCalendar.fractionBusinessDayRemaining(tBefore.toInstant()));
-//        assertEquals(0.0, bCalendar.fractionBusinessDayRemaining(tIn));
-//        assertEquals(0.0, bCalendar.fractionBusinessDayRemaining(tIn.toInstant()));
-//        assertEquals(0.0, bCalendar.fractionBusinessDayRemaining(tAfter));
-//        assertEquals(0.0, bCalendar.fractionBusinessDayRemaining(tAfter.toInstant()));
-//
-//        // Half day
-//        date = halfDayDate;
-//        tBefore = date.atTime(8, 2, 3).atZone(timeZone);
-//        tIn = date.atTime(10, 2, 3).atZone(timeZone);
-//        tAfter = date.atTime(22, 2, 3).atZone(timeZone);
-//        assertEquals(1.0, bCalendar.fractionBusinessDayRemaining(tBefore));
-//        assertEquals(1.0, bCalendar.fractionBusinessDayRemaining(tBefore.toInstant()));
-//        assertEquals(1 - (double) bCalendar.businessSchedule(date).businessNanosElapsed(tIn.toInstant()) / (double) halfDay.businessNanos(), bCalendar.fractionBusinessDayRemaining(tIn));
-//        assertEquals(1 - (double) bCalendar.businessSchedule(date).businessNanosElapsed(tIn.toInstant()) / (double) halfDay.businessNanos(), bCalendar.fractionBusinessDayRemaining(tIn.toInstant()));
-//        assertEquals(0.0, bCalendar.fractionBusinessDayRemaining(tAfter));
-//        assertEquals(0.0, bCalendar.fractionBusinessDayRemaining(tAfter.toInstant()));
-//
-//        // Current date
-//        assertEquals(bCalendar.fractionBusinessDayRemaining(DateTimeUtils.now()), bCalendar.fractionBusinessDayRemaining());
-//
-//        // Check that all dates in the range work
-//        for (LocalDate d = firstValidDate; !d.isAfter(lastValidDate); d = d.plusDays(1)) {
-//            bCalendar.fractionBusinessDayRemaining(d.atTime(12, 34).atZone(timeZone));
-//        }
-//
-//        try {
-//            bCalendar.fractionBusinessDayRemaining((ZonedDateTime) null);
-//            fail("should throw an exception");
-//        } catch (RequirementFailure ignored) {
-//        }
-//
-//        try {
-//            bCalendar.fractionBusinessDayRemaining((Instant) null);
-//            fail("should throw an exception");
-//        } catch (RequirementFailure ignored) {
-//        }
-//    }
+    public void testDiffBusinessNanos() {
+        // Same day
+        final ZonedDateTime zdt1 = LocalDate.of(2023,7,3).atTime(9,27).atZone(timeZone);
+        final ZonedDateTime zdt2 = LocalDate.of(2023,7,3).atTime(12,10).atZone(timeZone);
+
+        assertEquals(zdt1.until(zdt2, ChronoUnit.NANOS), bCalendar.diffBusinessNanos(zdt1,zdt2));
+        assertEquals(-zdt1.until(zdt2, ChronoUnit.NANOS), bCalendar.diffBusinessNanos(zdt2,zdt1));
+        assertEquals(zdt1.until(zdt2, ChronoUnit.NANOS), bCalendar.diffBusinessNanos(zdt1.toInstant(),zdt2.toInstant()));
+        assertEquals(-zdt1.until(zdt2, ChronoUnit.NANOS), bCalendar.diffBusinessNanos(zdt2.toInstant(),zdt1.toInstant()));
+
+        // Multiple holidays
+        final ZonedDateTime zdt3 = LocalDate.of(2023,7,8).atTime(12,54).atZone(timeZone);
+        final long target = schedule.businessNanosRemaining(zdt1.toLocalTime()) // 2023-07-03
+                // 2023-07-04 holiday
+                // 2023-07-05 weekend WED
+                + halfDay.businessNanos() // 2023-07-06 half day
+                + schedule.businessNanos() // normal day
+                + schedule.businessNanosElapsed(zdt3.toLocalTime());
+
+        assertEquals(target, bCalendar.diffBusinessNanos(zdt1, zdt3));
+        assertEquals(-target, bCalendar.diffBusinessNanos(zdt3, zdt1));
+        assertEquals(target, bCalendar.diffBusinessNanos(zdt1.toInstant(), zdt3.toInstant()));
+        assertEquals(-target, bCalendar.diffBusinessNanos(zdt3.toInstant(), zdt1.toInstant()));
+    }
+
+    public void testDiffNonBusinessNanos() {
+        // Same day
+        final ZonedDateTime zdt1 = LocalDate.of(2023,7,3).atTime(6,27).atZone(timeZone);
+        final ZonedDateTime zdt2 = LocalDate.of(2023,7,3).atTime(15,10).atZone(timeZone);
+
+        assertEquals(DateTimeUtils.diffNanos(zdt1, zdt2) - bCalendar.diffBusinessNanos(zdt1,zdt2), bCalendar.diffNonBusinessNanos(zdt1,zdt2));
+        assertEquals(- bCalendar.diffNonBusinessNanos(zdt1,zdt2), bCalendar.diffNonBusinessNanos(zdt2,zdt1));
+        assertEquals(DateTimeUtils.diffNanos(zdt1, zdt2) - bCalendar.diffBusinessNanos(zdt1,zdt2), bCalendar.diffNonBusinessNanos(zdt1.toInstant(),zdt2.toInstant()));
+        assertEquals(- bCalendar.diffNonBusinessNanos(zdt1,zdt2), bCalendar.diffNonBusinessNanos(zdt2.toInstant(),zdt1.toInstant()));
+
+        // Multiple holidays
+        final ZonedDateTime zdt3 = LocalDate.of(2023,7,8).atTime(12,54).atZone(timeZone);
+        final long target = DateTimeUtils.diffNanos(zdt1, zdt2) - bCalendar.diffBusinessNanos(zdt1, zdt3);
+
+        assertEquals(DateTimeUtils.diffNanos(zdt1, zdt3) - bCalendar.diffBusinessNanos(zdt1, zdt3), bCalendar.diffNonBusinessNanos(zdt1,zdt3));
+        assertEquals(- bCalendar.diffNonBusinessNanos(zdt1,zdt3), bCalendar.diffNonBusinessNanos(zdt3,zdt1));
+        assertEquals(DateTimeUtils.diffNanos(zdt1, zdt3) - bCalendar.diffBusinessNanos(zdt1, zdt3), bCalendar.diffNonBusinessNanos(zdt1.toInstant(),zdt3.toInstant()));
+        assertEquals(- bCalendar.diffNonBusinessNanos(zdt1,zdt3), bCalendar.diffNonBusinessNanos(zdt3.toInstant(),zdt1.toInstant()));
+    }
+
+    public void testDiffBusinessDays() {
+        final ZonedDateTime zdt1 = LocalDate.of(2023,7,3).atTime(6,27).atZone(timeZone);
+        final ZonedDateTime zdt2 = LocalDate.of(2023,7,10).atTime(15,10).atZone(timeZone);
+
+        assertEquals(bCalendar.diffBusinessNanos(zdt1, zdt2)/(double)schedule.businessNanos(), bCalendar.diffBusinessDays(zdt1, zdt2));
+        assertEquals(bCalendar.diffBusinessNanos(zdt1, zdt2)/(double)schedule.businessNanos(), bCalendar.diffBusinessDays(zdt1.toInstant(), zdt2.toInstant()));
+    }
+
+    public void testDiffBusinessYears() {
+        final ZonedDateTime zdt1 = LocalDate.of(2023,1,1).atTime(6,27).atZone(timeZone);
+        final ZonedDateTime zdt2 = LocalDate.of(2023,12,31).atTime(15,10).atZone(timeZone);
+
+        assertEquals(1.0, bCalendar.diffBusinessYears(zdt1, zdt2));
+        assertEquals(1.0, bCalendar.diffBusinessYears(zdt1.toInstant(), zdt2.toInstant()));
+
+        final ZonedDateTime zdt3 = LocalDate.of(2024,12,31).atTime(15,10).atZone(timeZone);
+
+        assertEquals(2.0, bCalendar.diffBusinessYears(zdt1, zdt3));
+        assertEquals(2.0, bCalendar.diffBusinessYears(zdt1.toInstant(), zdt3.toInstant()));
+
+        final ZonedDateTime zdt4 = LocalDate.of(2025,12,31).atTime(15,10).atZone(timeZone);
+
+        assertEquals(3.0, bCalendar.diffBusinessYears(zdt1, zdt4));
+        assertEquals(3.0, bCalendar.diffBusinessYears(zdt1.toInstant(), zdt4.toInstant()));
+
+        final ZonedDateTime zdt5 = LocalDate.of(2022,12,1).atTime(15,10).atZone(timeZone);
+        final ZonedDateTime zdt6 = LocalDate.of(2026,1,31).atTime(15,10).atZone(timeZone);
+        final long length2022 = bCalendar.diffBusinessNanos(
+                LocalDate.of(2022,1,1).atTime(0,0).atZone(timeZone),
+                LocalDate.of(2022,12,31).atTime(23,59).atZone(timeZone)
+        );
+        final long length2026 = bCalendar.diffBusinessNanos(
+                LocalDate.of(2026,1,1).atTime(0,0).atZone(timeZone),
+                LocalDate.of(2026,12,31).atTime(23,59).atZone(timeZone)
+        );
+        final double start = bCalendar.diffBusinessNanos(zdt5, zdt1) / (double)length2022;
+        final double end = bCalendar.diffBusinessNanos(zdt4, zdt6) / (double) length2026;
+
+        assertEquals(3.0+start+end, bCalendar.diffBusinessYears(zdt5, zdt6), 1e-5);
+        assertEquals(3.0+start+end, bCalendar.diffBusinessYears(zdt5.toInstant(), zdt6.toInstant()), 1e-5);
+    }
+
 
     public void testFail() {
         fail();
