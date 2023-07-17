@@ -141,6 +141,29 @@ public class BusinessCalendar extends Calendar {
 
     // endregion
 
+    // region Getters
+
+    /**
+     * Returns the first valid date for the business calendar.
+     *
+     * @return first valid date for the business calendar.
+     */
+    public LocalDate firstValidDate() {
+        return firstValidDate;
+    }
+
+    /**
+     * Returns the last valid date for the business calendar.
+     *
+     * @return last valid date for the business calendar.
+     */
+    public LocalDate lastValidDate() {
+        return lastValidDate;
+    }
+
+
+    // endregion
+
     // region Business Schedule
 
     /**

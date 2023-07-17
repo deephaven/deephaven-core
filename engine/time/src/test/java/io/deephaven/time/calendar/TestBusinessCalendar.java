@@ -47,9 +47,8 @@ public class TestBusinessCalendar extends TestCalendar {
         assertEquals(schedule, bCalendar.standardBusinessSchedule());
         assertEquals(schedule.businessNanos(), bCalendar.standardBusinessNanos());
         assertEquals(holidays, bCalendar.holidays());
-        //TODO: implement
-//        assertEquals(firstValidDate, bCalendar.firstValidDate());
-//        assertEquals(lastValidDate, bCalendar.lastValidDate());
+        assertEquals(firstValidDate, bCalendar.firstValidDate());
+        assertEquals(lastValidDate, bCalendar.lastValidDate());
     }
 
     public void testBusinessSchedule() {
