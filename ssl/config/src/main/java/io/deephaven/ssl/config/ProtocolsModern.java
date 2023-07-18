@@ -4,7 +4,7 @@
 package io.deephaven.ssl.config;
 
 import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
-import io.deephaven.annotations.SimpleStyle;
+import io.deephaven.annotations.SingletonStyle;
 import org.immutables.value.Value.Immutable;
 
 import java.util.Collections;
@@ -16,7 +16,7 @@ import java.util.List;
  * @see <a href="https://wiki.mozilla.org/Security/Server_Side_TLS#Modern_compatibility">Modern compatibility</a>
  */
 @Immutable
-@SimpleStyle
+@SingletonStyle
 @JsonDeserialize(as = ImmutableProtocolsModern.class)
 public abstract class ProtocolsModern implements Protocols {
 

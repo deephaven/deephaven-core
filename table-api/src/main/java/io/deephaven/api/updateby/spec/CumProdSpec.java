@@ -1,13 +1,13 @@
 package io.deephaven.api.updateby.spec;
 
-import io.deephaven.annotations.SimpleStyle;
+import io.deephaven.annotations.SingletonStyle;
 import org.immutables.value.Value.Immutable;
 
 /**
  * A {@link UpdateBySpec} for performing a Cumulative Product of the specified columns.
  */
 @Immutable
-@SimpleStyle
+@SingletonStyle
 public abstract class CumProdSpec extends UpdateBySpecBase {
     public static CumProdSpec of() {
         return ImmutableCumProdSpec.of();

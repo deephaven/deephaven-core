@@ -4,7 +4,7 @@
 package io.deephaven.ssl.config;
 
 import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
-import io.deephaven.annotations.SimpleStyle;
+import io.deephaven.annotations.SingletonStyle;
 import org.immutables.value.Value.Immutable;
 
 import javax.net.ssl.SSLSocket;
@@ -15,7 +15,7 @@ import javax.net.ssl.SSLSocket;
  * @see SSLSocket#getSupportedProtocols()
  */
 @Immutable
-@SimpleStyle
+@SingletonStyle
 @JsonDeserialize(as = ImmutableProtocolsJdk.class)
 public abstract class ProtocolsJdk implements Protocols {
 
