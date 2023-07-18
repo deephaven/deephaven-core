@@ -98,9 +98,10 @@ public interface BulkWriter<BUFFER_TYPE> {
     ByteBuffer getByteBufferView() throws IOException;
 
     /**
-     * This function is used to provide a specialized definition of NULL for any particular buffer type.
+     * This function is used to provide a specialized definition of NULL for this writer. For example, if setNull(65535)
+     * is called, then 65535 will be written as NULL by this writer
      *
-     * * @param nullValue The specialized value of NULL to consider while writing
+     * * @param nullValue The value which will be interpreted as NULL for this writer
      */
     void setNull(int nullValue);
 

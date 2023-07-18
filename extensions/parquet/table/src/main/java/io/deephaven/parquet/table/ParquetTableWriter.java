@@ -636,7 +636,7 @@ public class ParquetTableWriter {
             final TObjectIntHashMap<String> keyToPos =
                     new TObjectIntHashMap<>(Constants.DEFAULT_CAPACITY,
                             Constants.DEFAULT_LOAD_FACTOR,
-                            QueryConstants.NULL_INT); // Here we are setting NULL_INT as the default value for NULLS
+                            QueryConstants.NULL_INT);
             int keyCount = 0;
             boolean hasNulls = false;
             try (final ChunkSource.GetContext context = dataSource.makeGetContext(maxRowsPerPage);
@@ -695,7 +695,7 @@ public class ParquetTableWriter {
 
             columnWriter.addDictionaryPage(encodedKeys, keyCount);
             final Iterator<IntBuffer> arraySizeIt = arraySizeBuffers == null ? null : arraySizeBuffers.iterator();
-            for (final IntBuffer pageBuffer : pageBuffers) { // Only holds positions in dictionary
+            for (final IntBuffer pageBuffer : pageBuffers) {
                 pageBuffer.flip();
                 if (lengthSource != null) {
                     columnWriter.addVectorPage(pageBuffer, arraySizeIt.next(), pageBuffer.remaining());

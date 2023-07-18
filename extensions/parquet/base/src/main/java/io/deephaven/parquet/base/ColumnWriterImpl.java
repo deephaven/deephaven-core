@@ -188,18 +188,21 @@ public class ColumnWriterImpl implements ColumnWriter {
             throw new IllegalStateException("Null values not supported");
         }
         initWriter();
-        // TODO Is this the right way to do it?
+        setNullDef(columnType);
+        // noinspection unchecked
+        bulkWriter.writeBulkFilterNulls(pageData, dlEncoder, valuesCount);
+        writePage(bulkWriter.getByteBufferView(), valuesCount);
+        bulkWriter.reset();
+    }
+
+    private void setNullDef(final Class columnType) {
         if (columnType == byte.class || columnType == Byte.class) {
             bulkWriter.setNull(QueryConstants.NULL_BYTE);
         } else if (columnType == short.class || columnType == Short.class) {
             bulkWriter.setNull(QueryConstants.NULL_SHORT);
-        } else if (columnType == char.class) {
+        } else if (columnType == char.class || columnType == Character.class) {
             bulkWriter.setNull(QueryConstants.NULL_CHAR);
         }
-        // noinspection unchecked
-        bulkWriter.writeBulkFilterNulls(pageData, dlEncoder, valuesCount); // pageData = HeapIntBuffer for char data
-        writePage(bulkWriter.getByteBufferView(), valuesCount);
-        bulkWriter.reset();
     }
 
     public void addVectorPage(
