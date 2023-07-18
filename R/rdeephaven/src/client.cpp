@@ -425,20 +425,6 @@ private:
 };
 
 
-class class1 {
-public:
-    class1() = default;
-};
-
-class class2 {
-public:
-    class2() = default;
-    void method(std::vector<SEXP> args) {
-        std::cout << "hello!" << std::endl;
-    }
-};
-
-
 // ######################### RCPP GLUE #########################
 
 using namespace Rcpp;
@@ -448,19 +434,7 @@ RCPP_EXPOSED_CLASS(TableHandleWrapper)
 RCPP_EXPOSED_CLASS(AggregateWrapper)
 RCPP_EXPOSED_CLASS(ArrowArrayStream)
 
-RCPP_EXPOSED_CLASS(class1)
-RCPP_EXPOSED_CLASS(class2)
-
 RCPP_MODULE(DeephavenInternalModule) {
-
-    class_<class1>("TestClass1")
-    .constructor()
-    ;
-
-    class_<class2>("TestClass2")
-    .constructor()
-    .method("method", &class2::method)
-    ;
 
     class_<AggregateWrapper>("INTERNAL_Aggregate")
     ;
