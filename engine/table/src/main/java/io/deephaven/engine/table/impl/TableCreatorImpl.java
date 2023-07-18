@@ -25,7 +25,6 @@ import io.deephaven.qst.table.Clock;
 import io.deephaven.qst.table.ClockSystem;
 import io.deephaven.qst.table.TimeTable;
 
-import java.time.Instant;
 import java.util.Arrays;
 import java.util.stream.Stream;
 import java.util.stream.StreamSupport;
@@ -63,14 +62,13 @@ public enum TableCreatorImpl implements TableCreator<Table> {
 
     @Override
     public final Table of(TimeTable timeTable) {
-        final io.deephaven.base.clock.Clock clock = ClockAdapter.of(timeTable.clock());
-        final Instant firstTime = timeTable.startTime().orElse(null);
-        return new io.deephaven.engine.table.impl.TimeTable(
-                ExecutionContext.getContext().getUpdateGraph(),
-                clock,
-                firstTime,
-                timeTable.interval().toNanos(),
-                timeTable.blinkTable());
+        return io.deephaven.engine.table.impl.TimeTable.newBuilder()
+                .registrar(ExecutionContext.getContext().getUpdateGraph())
+                .clock(ClockAdapter.of(timeTable.clock()))
+                .startTime(timeTable.startTime().orElse(null))
+                .period(timeTable.interval())
+                .blinkTable(timeTable.blinkTable())
+                .build();
     }
 
     @Override
