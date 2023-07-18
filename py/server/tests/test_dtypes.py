@@ -101,6 +101,10 @@ class DTypesTestCase(BaseTestCase):
         np_array = np.frombuffer(j_array, dtype=np.int64)
         self.assertTrue(np.array_equal(np_array, expected))
 
+        with self.assertRaises(TypeError) as cm:
+            j_array = dtypes.array("java.lang.String", ["a", "b"])
+        self.assertIn("expects a DType", str(cm.exception))
+
     def test_integer_array(self):
         np_array = np.array([float('nan'), NULL_DOUBLE, np.inf], dtype=np.float64)
 
@@ -196,7 +200,7 @@ class DTypesTestCase(BaseTestCase):
         self.assertEqual(expected, py_array)
 
     def test_instant(self):
-        dt1 = Instant.j_type.ofEpochSecond(0,round(time.time()))
+        dt1 = Instant.j_type.ofEpochSecond(0, round(time.time()))
         dt2 = now()
         values = [dt1, dt2, None]
         j_array = dtypes.array(Instant, values)
@@ -234,7 +238,7 @@ class DTypesTestCase(BaseTestCase):
 
     def test_zdt(self):
         dt1 = ZonedDateTime.j_type.now()
-        dt2 = to_zdt(now(),time_zone(None))
+        dt2 = to_zdt(now(), time_zone(None))
         values = [dt1, dt2, None]
         j_array = dtypes.array(ZonedDateTime, values)
         self.assertTrue(all(x == y for x, y in zip(j_array, values)))

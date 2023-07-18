@@ -503,6 +503,36 @@ public class QueryTableSliceTest extends QueryTableTestBase {
         assertEquals(expected, result);
     }
 
+    public void testSlicePct() {
+        final QueryTable table = TstUtils.testRefreshingTable(
+                RowSetFactory.fromRange(10, 19).toTracking(),
+                TableTools.charCol("letter", "9876543210".toCharArray()));
+
+        doSlicePctTest(table, "9876543210", 0, 1);
+        doSlicePctTest(table, "98765432", 0, 0.8);
+        doSlicePctTest(table, "9876543", 0, 0.75);
+        doSlicePctTest(table, "9876543", 0, 0.7);
+        doSlicePctTest(table, "876543", 0.1, 0.7);
+        doSlicePctTest(table, "876543", 0.15, 0.7);
+        doSlicePctTest(table, "76543", 0.2, 0.7);
+
+        // Non-overlapping percentage ranges should give non-overlapping results and combined should be equal to the
+        // complete table
+        doSlicePctTest(table, "98", 0.0, 0.25);
+        doSlicePctTest(table, "765", 0.25, 0.5);
+        doSlicePctTest(table, "43", 0.5, 0.75);
+        doSlicePctTest(table, "210", 0.75, 1);
+    }
+
+    private void doSlicePctTest(QueryTable table, String expected, double startPercentInclusive,
+            final double endPercentExclusive) {
+        final StringBuilder chars = new StringBuilder();
+        table.slicePct(startPercentInclusive, endPercentExclusive).characterColumnIterator("letter")
+                .forEachRemaining((CharConsumer) chars::append);
+        final String result = chars.toString();
+        assertEquals(expected, result);
+    }
+
     public void testHeadTailPct() {
         final QueryTable table = TstUtils.testRefreshingTable(i(2, 4, 6).toTracking(),
                 col("x", 1, 2, 3), col("y", 'a', 'b', 'c'));

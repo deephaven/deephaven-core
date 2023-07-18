@@ -289,6 +289,12 @@ public abstract class UncoalescedTable<IMPL_TYPE extends UncoalescedTable<IMPL_T
 
     @Override
     @ConcurrentMethod
+    public Table slicePct(double startPercentInclusive, double endPercentExclusive) {
+        return coalesce().slicePct(startPercentInclusive, endPercentExclusive);
+    }
+
+    @Override
+    @ConcurrentMethod
     public Table headPct(double percent) {
         return coalesce().headPct(percent);
     }

@@ -376,6 +376,21 @@ public interface Table extends
     Table slice(long firstPositionInclusive, long lastPositionExclusive);
 
     /**
+     * Extracts a subset of a table by row percentages.
+     * <p>
+     * Returns a subset of table in the range [floor(startPercentInclusive * sizeOfTable), floor(endPercentExclusive *
+     * sizeOfTable)). For example, for a table of size 10, slicePct(0.1, 0.7) will return a subset from the second row
+     * to the seventh row. Similarly, slicePct(0, 1) would return the entire table (because row positions run from 0 to
+     * size-1). The percentage arguments must be in range [0,1], otherwise the function returns an error.
+     *
+     * @param startPercentInclusive the starting percentage point for rows to include in the result, range [0, 1]
+     * @param endPercentExclusive the ending percentage point for rows to include in the result, range [0, 1]
+     * @return a new Table, which is the requested subset of rows from the original table
+     */
+    @ConcurrentMethod
+    Table slicePct(double startPercentInclusive, double endPercentExclusive);
+
+    /**
      * Provides a head that selects a dynamic number of rows based on a percent.
      *
      * @param percent the fraction of the table to return between [0, 1]. The number of rows will be rounded up. For

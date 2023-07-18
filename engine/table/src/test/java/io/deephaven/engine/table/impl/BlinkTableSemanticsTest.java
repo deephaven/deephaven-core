@@ -409,6 +409,7 @@ public class BlinkTableSemanticsTest {
     @Test
     public void testUnsupported() {
         testUnsupportedImpl(table -> table.slice(0, 1));
+        testUnsupportedImpl(table -> table.slicePct(0, 1));
         testUnsupportedImpl(table -> table.headPct(1));
         testUnsupportedImpl(table -> table.tailPct(1));
     }

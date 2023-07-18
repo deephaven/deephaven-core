@@ -27,6 +27,30 @@ public class SliceLikeOperation implements QueryTable.Operation<QueryTable> {
                 parent, firstPositionInclusive, lastPositionExclusive, firstPositionInclusive == 0);
     }
 
+    public static SliceLikeOperation slicePct(final QueryTable parent, final double startPercentInclusive,
+            final double endPercentExclusive) {
+
+        if (startPercentInclusive < 0 || startPercentInclusive > 1
+                || endPercentExclusive < 0 || endPercentExclusive > 1) {
+            throw new IllegalArgumentException(
+                    "Cannot slice with start percentage (" + startPercentInclusive + ") and end percentage ("
+                            + endPercentExclusive + "), percentages must be between [0, 1]");
+        }
+        return new SliceLikeOperation("slicePct",
+                "slicePct(" + startPercentInclusive + ", " + endPercentExclusive + ")",
+                parent, 0, 0, startPercentInclusive == 0) {
+            @Override
+            protected long getFirstPositionInclusive() {
+                return (long) Math.floor(startPercentInclusive * parent.size());
+            }
+
+            @Override
+            protected long getLastPositionExclusive() {
+                return (long) Math.floor(endPercentExclusive * parent.size());
+            }
+        };
+    }
+
     public static SliceLikeOperation headPct(final QueryTable parent, final double percent) {
         return new SliceLikeOperation("headPct", "headPct(" + percent + ")", parent,
                 0, 0, true) {
