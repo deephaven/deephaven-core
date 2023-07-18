@@ -37,7 +37,7 @@ TableDataRefreshService.tableSizeRefreshMillis=1000
 
 ###### Time Zone & Calendars #####
 timezone.aliases=/test_time_zone_aliases.csv
-Calendar.default=USNYSE
+Calendar.default=CAL1
 Calendar.importPath=/test_calendar_imports.txt
 
 columnsFile=DeephavenColumns.xml
