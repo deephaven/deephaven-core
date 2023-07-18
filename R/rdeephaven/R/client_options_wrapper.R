@@ -32,7 +32,7 @@
 #' client_options$set_session_type("groovy")
 #' client <- Client$new(target="url/to/secure/server", client_options=client_options)
 
-
+#' @export
 ClientOptions <- R6Class("ClientOptions",
     public = list(
 

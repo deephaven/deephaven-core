@@ -32,6 +32,13 @@ new_table_handle2$bind_to_variable("new_table")
 \subsection{Public methods}{
 \itemize{
 \item \href{#method-TableHandle-new}{\code{TableHandle$new()}}
+\item \href{#method-TableHandle-is_static}{\code{TableHandle$is_static()}}
+\item \href{#method-TableHandle-nrow}{\code{TableHandle$nrow()}}
+\item \href{#method-TableHandle-bind_to_variable}{\code{TableHandle$bind_to_variable()}}
+\item \href{#method-TableHandle-to_arrow_record_batch_stream_reader}{\code{TableHandle$to_arrow_record_batch_stream_reader()}}
+\item \href{#method-TableHandle-to_arrow_table}{\code{TableHandle$to_arrow_table()}}
+\item \href{#method-TableHandle-to_tibble}{\code{TableHandle$to_tibble()}}
+\item \href{#method-TableHandle-to_data_frame}{\code{TableHandle$to_data_frame()}}
 \item \href{#method-TableHandle-select}{\code{TableHandle$select()}}
 \item \href{#method-TableHandle-view}{\code{TableHandle$view()}}
 \item \href{#method-TableHandle-drop_columns}{\code{TableHandle$drop_columns()}}
@@ -43,30 +50,23 @@ new_table_handle2$bind_to_variable("new_table")
 \item \href{#method-TableHandle-max_by}{\code{TableHandle$max_by()}}
 \item \href{#method-TableHandle-sum_by}{\code{TableHandle$sum_by()}}
 \item \href{#method-TableHandle-abs_sum_by}{\code{TableHandle$abs_sum_by()}}
+\item \href{#method-TableHandle-avg_by}{\code{TableHandle$avg_by()}}
+\item \href{#method-TableHandle-w_avg_by}{\code{TableHandle$w_avg_by()}}
 \item \href{#method-TableHandle-var_by}{\code{TableHandle$var_by()}}
 \item \href{#method-TableHandle-std_by}{\code{TableHandle$std_by()}}
-\item \href{#method-TableHandle-avg_by}{\code{TableHandle$avg_by()}}
 \item \href{#method-TableHandle-first_by}{\code{TableHandle$first_by()}}
 \item \href{#method-TableHandle-last_by}{\code{TableHandle$last_by()}}
 \item \href{#method-TableHandle-median_by}{\code{TableHandle$median_by()}}
 \item \href{#method-TableHandle-percentile_by}{\code{TableHandle$percentile_by()}}
 \item \href{#method-TableHandle-count_by}{\code{TableHandle$count_by()}}
-\item \href{#method-TableHandle-w_avg_by}{\code{TableHandle$w_avg_by()}}
-\item \href{#method-TableHandle-tail_by}{\code{TableHandle$tail_by()}}
 \item \href{#method-TableHandle-head_by}{\code{TableHandle$head_by()}}
+\item \href{#method-TableHandle-tail_by}{\code{TableHandle$tail_by()}}
 \item \href{#method-TableHandle-cross_join}{\code{TableHandle$cross_join()}}
 \item \href{#method-TableHandle-natural_join}{\code{TableHandle$natural_join()}}
 \item \href{#method-TableHandle-exact_join}{\code{TableHandle$exact_join()}}
 \item \href{#method-TableHandle-head}{\code{TableHandle$head()}}
 \item \href{#method-TableHandle-tail}{\code{TableHandle$tail()}}
 \item \href{#method-TableHandle-ungroup}{\code{TableHandle$ungroup()}}
-\item \href{#method-TableHandle-is_static}{\code{TableHandle$is_static()}}
-\item \href{#method-TableHandle-nrow}{\code{TableHandle$nrow()}}
-\item \href{#method-TableHandle-bind_to_variable}{\code{TableHandle$bind_to_variable()}}
-\item \href{#method-TableHandle-to_arrow_record_batch_stream_reader}{\code{TableHandle$to_arrow_record_batch_stream_reader()}}
-\item \href{#method-TableHandle-to_arrow_table}{\code{TableHandle$to_arrow_table()}}
-\item \href{#method-TableHandle-to_tibble}{\code{TableHandle$to_tibble()}}
-\item \href{#method-TableHandle-to_data_frame}{\code{TableHandle$to_data_frame()}}
 \item \href{#method-TableHandle-clone}{\code{TableHandle$clone()}}
 }
 }
@@ -78,6 +78,102 @@ new_table_handle2$bind_to_variable("new_table")
 \if{html}{\out{<div class="r">}}\preformatted{TableHandle$new(table_handle)}\if{html}{\out{</div>}}
 }
 
+}
+\if{html}{\out{<hr>}}
+\if{html}{\out{<a id="method-TableHandle-is_static"></a>}}
+\if{latex}{\out{\hypertarget{method-TableHandle-is_static}{}}}
+\subsection{Method \code{is_static()}}{
+Whether the table referenced by this TableHandle is static or not.
+\subsection{Usage}{
+\if{html}{\out{<div class="r">}}\preformatted{TableHandle$is_static()}\if{html}{\out{</div>}}
+}
+
+\subsection{Returns}{
+TRUE if the table is static, or FALSE if the table is ticking.
+}
+}
+\if{html}{\out{<hr>}}
+\if{html}{\out{<a id="method-TableHandle-nrow"></a>}}
+\if{latex}{\out{\hypertarget{method-TableHandle-nrow}{}}}
+\subsection{Method \code{nrow()}}{
+Number of rows in the table referenced by this TableHandle, currently only implemented for static tables.
+\subsection{Usage}{
+\if{html}{\out{<div class="r">}}\preformatted{TableHandle$nrow()}\if{html}{\out{</div>}}
+}
+
+\subsection{Returns}{
+The number of rows in the table.
+}
+}
+\if{html}{\out{<hr>}}
+\if{html}{\out{<a id="method-TableHandle-bind_to_variable"></a>}}
+\if{latex}{\out{\hypertarget{method-TableHandle-bind_to_variable}{}}}
+\subsection{Method \code{bind_to_variable()}}{
+Binds the table referenced by this TableHandle to a variable on the server,
+enabling it to be accessed by that name from any Deephaven API.
+\subsection{Usage}{
+\if{html}{\out{<div class="r">}}\preformatted{TableHandle$bind_to_variable(name)}\if{html}{\out{</div>}}
+}
+
+\subsection{Arguments}{
+\if{html}{\out{<div class="arguments">}}
+\describe{
+\item{\code{name}}{Name for this table on the server.}
+}
+\if{html}{\out{</div>}}
+}
+}
+\if{html}{\out{<hr>}}
+\if{html}{\out{<a id="method-TableHandle-to_arrow_record_batch_stream_reader"></a>}}
+\if{latex}{\out{\hypertarget{method-TableHandle-to_arrow_record_batch_stream_reader}{}}}
+\subsection{Method \code{to_arrow_record_batch_stream_reader()}}{
+Imports the table referenced by this TableHandle into an Arrow RecordBatchStreamReader.
+\subsection{Usage}{
+\if{html}{\out{<div class="r">}}\preformatted{TableHandle$to_arrow_record_batch_stream_reader()}\if{html}{\out{</div>}}
+}
+
+\subsection{Returns}{
+A RecordBatchStreamReader containing the data from the table referenced by this TableHandle.
+}
+}
+\if{html}{\out{<hr>}}
+\if{html}{\out{<a id="method-TableHandle-to_arrow_table"></a>}}
+\if{latex}{\out{\hypertarget{method-TableHandle-to_arrow_table}{}}}
+\subsection{Method \code{to_arrow_table()}}{
+Imports the table referenced by this TableHandle into an Arrow Table.
+\subsection{Usage}{
+\if{html}{\out{<div class="r">}}\preformatted{TableHandle$to_arrow_table()}\if{html}{\out{</div>}}
+}
+
+\subsection{Returns}{
+A Table containing the data from the table referenced by this TableHandle.
+}
+}
+\if{html}{\out{<hr>}}
+\if{html}{\out{<a id="method-TableHandle-to_tibble"></a>}}
+\if{latex}{\out{\hypertarget{method-TableHandle-to_tibble}{}}}
+\subsection{Method \code{to_tibble()}}{
+Imports the table referenced by this TableHandle into a dplyr Tibble.
+\subsection{Usage}{
+\if{html}{\out{<div class="r">}}\preformatted{TableHandle$to_tibble()}\if{html}{\out{</div>}}
+}
+
+\subsection{Returns}{
+A Tibble containing the data from the table referenced by this TableHandle.
+}
+}
+\if{html}{\out{<hr>}}
+\if{html}{\out{<a id="method-TableHandle-to_data_frame"></a>}}
+\if{latex}{\out{\hypertarget{method-TableHandle-to_data_frame}{}}}
+\subsection{Method \code{to_data_frame()}}{
+Imports the table referenced by this TableHandle into an R Data Frame.
+\subsection{Usage}{
+\if{html}{\out{<div class="r">}}\preformatted{TableHandle$to_data_frame()}\if{html}{\out{</div>}}
+}
+
+\subsection{Returns}{
+A Data Frame containing the data from the table referenced by this TableHandle.
+}
 }
 \if{html}{\out{<hr>}}
 \if{html}{\out{<a id="method-TableHandle-select"></a>}}
@@ -310,6 +406,50 @@ A TableHandle referencing the new table.
 }
 }
 \if{html}{\out{<hr>}}
+\if{html}{\out{<a id="method-TableHandle-avg_by"></a>}}
+\if{latex}{\out{\hypertarget{method-TableHandle-avg_by}{}}}
+\subsection{Method \code{avg_by()}}{
+Creates a new table from this table, grouped by columns, with the "avg" aggregate operation
+applied to the remaining columns.
+\subsection{Usage}{
+\if{html}{\out{<div class="r">}}\preformatted{TableHandle$avg_by(columns)}\if{html}{\out{</div>}}
+}
+
+\subsection{Arguments}{
+\if{html}{\out{<div class="arguments">}}
+\describe{
+\item{\code{columns}}{Columns to group by.}
+}
+\if{html}{\out{</div>}}
+}
+\subsection{Returns}{
+A TableHandle referencing the new table.
+}
+}
+\if{html}{\out{<hr>}}
+\if{html}{\out{<a id="method-TableHandle-w_avg_by"></a>}}
+\if{latex}{\out{\hypertarget{method-TableHandle-w_avg_by}{}}}
+\subsection{Method \code{w_avg_by()}}{
+Creates a new table from this table, grouped by columns, having a new column named by
+`weightColumn` containing the weighted average of each group.
+\subsection{Usage}{
+\if{html}{\out{<div class="r">}}\preformatted{TableHandle$w_avg_by(weight_column, columns)}\if{html}{\out{</div>}}
+}
+
+\subsection{Arguments}{
+\if{html}{\out{<div class="arguments">}}
+\describe{
+\item{\code{weight_column}}{Name of the output column.}
+
+\item{\code{columns}}{Columns to group by.}
+}
+\if{html}{\out{</div>}}
+}
+\subsection{Returns}{
+A TableHandle referencing the new table.
+}
+}
+\if{html}{\out{<hr>}}
 \if{html}{\out{<a id="method-TableHandle-var_by"></a>}}
 \if{latex}{\out{\hypertarget{method-TableHandle-var_by}{}}}
 \subsection{Method \code{var_by()}}{
@@ -338,27 +478,6 @@ Creates a new table from this table, grouped by columns, with the "std" aggregat
 applied to the remaining columns.
 \subsection{Usage}{
 \if{html}{\out{<div class="r">}}\preformatted{TableHandle$std_by(columns)}\if{html}{\out{</div>}}
-}
-
-\subsection{Arguments}{
-\if{html}{\out{<div class="arguments">}}
-\describe{
-\item{\code{columns}}{Columns to group by.}
-}
-\if{html}{\out{</div>}}
-}
-\subsection{Returns}{
-A TableHandle referencing the new table.
-}
-}
-\if{html}{\out{<hr>}}
-\if{html}{\out{<a id="method-TableHandle-avg_by"></a>}}
-\if{latex}{\out{\hypertarget{method-TableHandle-avg_by}{}}}
-\subsection{Method \code{avg_by()}}{
-Creates a new table from this table, grouped by columns, with the "avg" aggregate operation
-applied to the remaining columns.
-\subsection{Usage}{
-\if{html}{\out{<div class="r">}}\preformatted{TableHandle$avg_by(columns)}\if{html}{\out{</div>}}
 }
 
 \subsection{Arguments}{
@@ -482,19 +601,19 @@ A TableHandle referencing the new table.
 }
 }
 \if{html}{\out{<hr>}}
-\if{html}{\out{<a id="method-TableHandle-w_avg_by"></a>}}
-\if{latex}{\out{\hypertarget{method-TableHandle-w_avg_by}{}}}
-\subsection{Method \code{w_avg_by()}}{
-Creates a new table from this table, grouped by columns, having a new column named by
-`weightColumn` containing the weighted average of each group.
+\if{html}{\out{<a id="method-TableHandle-head_by"></a>}}
+\if{latex}{\out{\hypertarget{method-TableHandle-head_by}{}}}
+\subsection{Method \code{head_by()}}{
+Creates a new table from this table, grouped by columns, containing the first `n` rows of
+each group.
 \subsection{Usage}{
-\if{html}{\out{<div class="r">}}\preformatted{TableHandle$w_avg_by(weight_column, columns)}\if{html}{\out{</div>}}
+\if{html}{\out{<div class="r">}}\preformatted{TableHandle$head_by(n, columns)}\if{html}{\out{</div>}}
 }
 
 \subsection{Arguments}{
 \if{html}{\out{<div class="arguments">}}
 \describe{
-\item{\code{weight_column}}{Name of the output column.}
+\item{\code{n}}{Number of rows}
 
 \item{\code{columns}}{Columns to group by.}
 }
@@ -512,29 +631,6 @@ Creates a new table from this table, grouped by columns, containing the last `n`
 each group.
 \subsection{Usage}{
 \if{html}{\out{<div class="r">}}\preformatted{TableHandle$tail_by(n, columns)}\if{html}{\out{</div>}}
-}
-
-\subsection{Arguments}{
-\if{html}{\out{<div class="arguments">}}
-\describe{
-\item{\code{n}}{Number of rows}
-
-\item{\code{columns}}{Columns to group by.}
-}
-\if{html}{\out{</div>}}
-}
-\subsection{Returns}{
-A TableHandle referencing the new table.
-}
-}
-\if{html}{\out{<hr>}}
-\if{html}{\out{<a id="method-TableHandle-head_by"></a>}}
-\if{latex}{\out{\hypertarget{method-TableHandle-head_by}{}}}
-\subsection{Method \code{head_by()}}{
-Creates a new table from this table, grouped by columns, containing the first `n` rows of
-each group.
-\subsection{Usage}{
-\if{html}{\out{<div class="r">}}\preformatted{TableHandle$head_by(n, columns)}\if{html}{\out{</div>}}
 }
 
 \subsection{Arguments}{
@@ -687,120 +783,6 @@ of the by() const operation.
 }
 \subsection{Returns}{
 A TableHandle referencing the new table.
-}
-}
-\if{html}{\out{<hr>}}
-\if{html}{\out{<a id="method-TableHandle-is_static"></a>}}
-\if{latex}{\out{\hypertarget{method-TableHandle-is_static}{}}}
-\subsection{Method \code{is_static()}}{
-Creates a new table from this table, sorted by sortPairs.
-
-
-Creates a new table by merging `sources` together. The tables are essentially stacked on top
-of each other.
-
-
-Whether the table referenced by this TableHandle is static or not.
-\subsection{Usage}{
-\if{html}{\out{<div class="r">}}\preformatted{TableHandle$is_static()}\if{html}{\out{</div>}}
-}
-
-\subsection{Arguments}{
-\if{html}{\out{<div class="arguments">}}
-\describe{
-\item{\code{sort_pairs}}{A vector of SortPair objects describing the sort. Each SortPair refers to
-a column, a sort direction, and whether the sort should consider to the value's regular or
-absolute value when doing comparisons.}
-
-\item{\code{sources}}{The tables to merge.}
-}
-\if{html}{\out{</div>}}
-}
-\subsection{Returns}{
-A TableHandle referencing the new table.
-}
-}
-\if{html}{\out{<hr>}}
-\if{html}{\out{<a id="method-TableHandle-nrow"></a>}}
-\if{latex}{\out{\hypertarget{method-TableHandle-nrow}{}}}
-\subsection{Method \code{nrow()}}{
-Number of rows in the table referenced by this TableHandle, currently only implemented for static tables.
-\subsection{Usage}{
-\if{html}{\out{<div class="r">}}\preformatted{TableHandle$nrow()}\if{html}{\out{</div>}}
-}
-
-\subsection{Returns}{
-The number of rows in the table.
-}
-}
-\if{html}{\out{<hr>}}
-\if{html}{\out{<a id="method-TableHandle-bind_to_variable"></a>}}
-\if{latex}{\out{\hypertarget{method-TableHandle-bind_to_variable}{}}}
-\subsection{Method \code{bind_to_variable()}}{
-Binds the table referenced by this TableHandle to a variable on the server,
-enabling it to be accessed by that name from any Deephaven API.
-\subsection{Usage}{
-\if{html}{\out{<div class="r">}}\preformatted{TableHandle$bind_to_variable(name)}\if{html}{\out{</div>}}
-}
-
-\subsection{Arguments}{
-\if{html}{\out{<div class="arguments">}}
-\describe{
-\item{\code{name}}{Name for this table on the server.}
-}
-\if{html}{\out{</div>}}
-}
-}
-\if{html}{\out{<hr>}}
-\if{html}{\out{<a id="method-TableHandle-to_arrow_record_batch_stream_reader"></a>}}
-\if{latex}{\out{\hypertarget{method-TableHandle-to_arrow_record_batch_stream_reader}{}}}
-\subsection{Method \code{to_arrow_record_batch_stream_reader()}}{
-Imports the table referenced by this TableHandle into an Arrow RecordBatchStreamReader.
-\subsection{Usage}{
-\if{html}{\out{<div class="r">}}\preformatted{TableHandle$to_arrow_record_batch_stream_reader()}\if{html}{\out{</div>}}
-}
-
-\subsection{Returns}{
-A RecordBatchStreamReader containing the data from the table referenced by this TableHandle.
-}
-}
-\if{html}{\out{<hr>}}
-\if{html}{\out{<a id="method-TableHandle-to_arrow_table"></a>}}
-\if{latex}{\out{\hypertarget{method-TableHandle-to_arrow_table}{}}}
-\subsection{Method \code{to_arrow_table()}}{
-Imports the table referenced by this TableHandle into an Arrow Table.
-\subsection{Usage}{
-\if{html}{\out{<div class="r">}}\preformatted{TableHandle$to_arrow_table()}\if{html}{\out{</div>}}
-}
-
-\subsection{Returns}{
-A Table containing the data from the table referenced by this TableHandle.
-}
-}
-\if{html}{\out{<hr>}}
-\if{html}{\out{<a id="method-TableHandle-to_tibble"></a>}}
-\if{latex}{\out{\hypertarget{method-TableHandle-to_tibble}{}}}
-\subsection{Method \code{to_tibble()}}{
-Imports the table referenced by this TableHandle into a dplyr Tibble.
-\subsection{Usage}{
-\if{html}{\out{<div class="r">}}\preformatted{TableHandle$to_tibble()}\if{html}{\out{</div>}}
-}
-
-\subsection{Returns}{
-A Tibble containing the data from the table referenced by this TableHandle.
-}
-}
-\if{html}{\out{<hr>}}
-\if{html}{\out{<a id="method-TableHandle-to_data_frame"></a>}}
-\if{latex}{\out{\hypertarget{method-TableHandle-to_data_frame}{}}}
-\subsection{Method \code{to_data_frame()}}{
-Imports the table referenced by this TableHandle into an R Data Frame.
-\subsection{Usage}{
-\if{html}{\out{<div class="r">}}\preformatted{TableHandle$to_data_frame()}\if{html}{\out{</div>}}
-}
-
-\subsection{Returns}{
-A Data Frame containing the data from the table referenced by this TableHandle.
 }
 }
 \if{html}{\out{<hr>}}

@@ -14,23 +14,81 @@
 #include <Rcpp.h>
 
 // forward declaration of classes
+class AggregateWrapper;
+class TableHandleWrapper;
 class ClientOptionsWrapper;
 class ClientWrapper;
 
 // ######################### DH WRAPPERS #########################
 
+class AggregateWrapper {
+public:
+    AggregateWrapper(deephaven::client::Aggregate aggregate) :
+            internal_aggregate(std::move(aggregate)) {}
+private:
+    deephaven::client::Aggregate internal_aggregate;
+    friend TableHandleWrapper;
+};
+
+AggregateWrapper* INTERNAL_min(std::vector<std::string> columnSpecs) {
+    //AggregateWrapper* agg_wrap_ptr = new AggregateWrapper(deephaven::client::Aggregate::min(columnSpecs));
+    //return Rcpp::XPtr<AggregateWrapper>(agg_wrap_ptr, true);
+    return new AggregateWrapper(deephaven::client::Aggregate::min(columnSpecs));
+}
+
+AggregateWrapper* INTERNAL_max(std::vector<std::string> columnSpecs) {
+    return new AggregateWrapper(deephaven::client::Aggregate::max(columnSpecs));
+}
+
+AggregateWrapper* INTERNAL_sum(std::vector<std::string> columnSpecs) {
+    return new AggregateWrapper(deephaven::client::Aggregate::sum(columnSpecs));
+}
+
+AggregateWrapper* INTERNAL_absSum(std::vector<std::string> columnSpecs) {
+    return new AggregateWrapper(deephaven::client::Aggregate::absSum(columnSpecs));
+}
+
+AggregateWrapper* INTERNAL_avg(std::vector<std::string> columnSpecs) {
+    return new AggregateWrapper(deephaven::client::Aggregate::avg(columnSpecs));
+}
+
+AggregateWrapper* INTERNAL_wAvg(std::string weightColumn, std::vector<std::string> columnSpecs) {
+    return new AggregateWrapper(deephaven::client::Aggregate::wavg(weightColumn, columnSpecs));
+}
+
+AggregateWrapper* INTERNAL_var(std::vector<std::string> columnSpecs) {
+    return new AggregateWrapper(deephaven::client::Aggregate::var(columnSpecs));
+}
+
+AggregateWrapper* INTERNAL_std(std::vector<std::string> columnSpecs) {
+    return new AggregateWrapper(deephaven::client::Aggregate::std(columnSpecs));
+}
+
+AggregateWrapper* INTERNAL_first(std::vector<std::string> columnSpecs) {
+    return new AggregateWrapper(deephaven::client::Aggregate::first(columnSpecs));
+}
+
+AggregateWrapper* INTERNAL_last(std::vector<std::string> columnSpecs) {
+    return new AggregateWrapper(deephaven::client::Aggregate::last(columnSpecs));
+}
+
+AggregateWrapper* INTERNAL_median(std::vector<std::string> columnSpecs) {
+    return new AggregateWrapper(deephaven::client::Aggregate::med(columnSpecs));
+}
+
+AggregateWrapper* INTERNAL_percentile(double percentile, std::vector<std::string> columnSpecs) {
+    return new AggregateWrapper(deephaven::client::Aggregate::pct(percentile, false, columnSpecs));
+}
+
+AggregateWrapper* INTERNAL_count(std::string columnSpec) {
+    return new AggregateWrapper(deephaven::client::Aggregate::count(columnSpec));
+}
+
+
 class TableHandleWrapper {
 public:
-    TableHandleWrapper(deephaven::client::TableHandle ref_table) : internal_tbl_hdl(std::move(ref_table)) {};
-
-    // HELPER FUNCTIONS
-
-    std::vector<deephaven::client::TableHandle> convertTableHandleWrapperVector(std::vector<TableHandleWrapper> input) {
-        std::vector<deephaven::client::TableHandle> output(input.size());
-        std::transform(input.begin(), input.end(),
-                       output.begin(), [](const TableHandleWrapper& wrapper) { return wrapper.internal_tbl_hdl; });
-        return output;
-    };
+    TableHandleWrapper(deephaven::client::TableHandle ref_table) :
+        internal_tbl_hdl(std::move(ref_table)) {};
 
     // TABLE OPERATIONS
 
@@ -62,6 +120,16 @@ public:
 
     // AGGREGATION OPERATIONS
 
+    TableHandleWrapper* aggBy(std::vector<AggregateWrapper> aggregations) {
+        std::vector<deephaven::client::Aggregate> converted_aggregations;
+        converted_aggregations.reserve(aggregations.size());
+
+        for (int i = 0; i < aggregations.size(); i++) {
+            converted_aggregations.push_back(aggregations[i].internal_aggregate);
+        }
+        return new TableHandleWrapper(internal_tbl_hdl.by(deephaven::client::AggregateCombo::create(converted_aggregations)));
+    }
+
     TableHandleWrapper* by(std::vector<std::string> columnSpecs) {
         return new TableHandleWrapper(internal_tbl_hdl.by(columnSpecs));
     };
@@ -82,16 +150,20 @@ public:
         return new TableHandleWrapper(internal_tbl_hdl.absSumBy(columnSpecs));
     };
 
+    TableHandleWrapper* avgBy(std::vector<std::string> columnSpecs) {
+        return new TableHandleWrapper(internal_tbl_hdl.avgBy(columnSpecs));
+    };
+
+    TableHandleWrapper* wAvgBy(std::string weightColumn, std::vector<std::string> columnSpecs) {
+        return new TableHandleWrapper(internal_tbl_hdl.wAvgBy(weightColumn, columnSpecs));
+    };
+
     TableHandleWrapper* varBy(std::vector<std::string> columnSpecs) {
         return new TableHandleWrapper(internal_tbl_hdl.varBy(columnSpecs));
     };
 
     TableHandleWrapper* stdBy(std::vector<std::string> columnSpecs) {
         return new TableHandleWrapper(internal_tbl_hdl.stdBy(columnSpecs));
-    };
-
-    TableHandleWrapper* avgBy(std::vector<std::string> columnSpecs) {
-        return new TableHandleWrapper(internal_tbl_hdl.avgBy(columnSpecs));
     };
 
     TableHandleWrapper* firstBy(std::vector<std::string> columnSpecs) {
@@ -114,16 +186,12 @@ public:
         return new TableHandleWrapper(internal_tbl_hdl.countBy(countByColumn, columnSpecs));
     };
 
-    TableHandleWrapper* wAvgBy(std::string weightColumn, std::vector<std::string> columnSpecs) {
-        return new TableHandleWrapper(internal_tbl_hdl.wAvgBy(weightColumn, columnSpecs));
+    TableHandleWrapper* headBy(int64_t n, std::vector<std::string> columnSpecs) {
+        return new TableHandleWrapper(internal_tbl_hdl.headBy(n, columnSpecs));
     };
 
     TableHandleWrapper* tailBy(int64_t n, std::vector<std::string> columnSpecs) {
         return new TableHandleWrapper(internal_tbl_hdl.tailBy(n, columnSpecs));
-    };
-
-    TableHandleWrapper* headBy(int64_t n, std::vector<std::string> columnSpecs) {
-        return new TableHandleWrapper(internal_tbl_hdl.headBy(n, columnSpecs));
     };
 
     // JOIN OPERATIONS
@@ -213,9 +281,8 @@ private:
 class ClientOptionsWrapper {
 public:
 
-    ClientOptionsWrapper() {
-        internal_options = new deephaven::client::ClientOptions();
-    }
+    ClientOptionsWrapper() :
+        internal_options(std::make_shared<deephaven::client::ClientOptions>()) {}
 
     void setDefaultAuthentication() {
         internal_options->setDefaultAuthentication();
@@ -254,15 +321,16 @@ public:
     }
 
 private:
-
-    deephaven::client::ClientOptions* internal_options;
-    friend ClientWrapper* newClientWrapper(const std::string &target, const ClientOptionsWrapper &client_options);
+    std::shared_ptr<deephaven::client::ClientOptions> internal_options;
+    friend ClientWrapper;
 };
-
 
 
 class ClientWrapper {
 public:
+
+    ClientWrapper(std::string target, const ClientOptionsWrapper &client_options) :
+        internal_client(deephaven::client::Client::connect(target, *client_options.internal_options)) {}
 
     /**
      * Fetches a reference to a table named tableName on the server if it exists.
@@ -352,26 +420,23 @@ public:
     }
 
 private:
-    ClientWrapper(deephaven::client::Client ref) : internal_client(std::move(ref)) {};
-
     const deephaven::client::Client internal_client;
     const deephaven::client::TableHandleManager internal_tbl_hdl_mngr = internal_client.getManager();
-
-    friend ClientWrapper* newClientWrapper(const std::string &target, const ClientOptionsWrapper &client_options);
 };
 
-// factory method for calling private constructor, Rcpp does not like <const std::string &target> in constructor
-// the current implementation of passing authentication args to C++ client is terrible and needs to be redone. Only this could make Rcpp happy in a days work
 
-/**
- * Factory method for creating a new ClientWrapper, which is responsible for maintaining a connection to the client.
- * @param target URL that the server is running on.
- * @param client_options A ClientOptionsWrapper containing the server connection information. See deephaven::client::ClientOptions for more information.
- */
-ClientWrapper* newClientWrapper(const std::string &target, const ClientOptionsWrapper &client_options) {
-    return new ClientWrapper(deephaven::client::Client::connect(target, *client_options.internal_options));
+class class1 {
+public:
+    class1() = default;
 };
 
+class class2 {
+public:
+    class2() = default;
+    void method(std::vector<SEXP> args) {
+        std::cout << "hello!" << std::endl;
+    }
+};
 
 
 // ######################### RCPP GLUE #########################
@@ -380,9 +445,25 @@ using namespace Rcpp;
 
 RCPP_EXPOSED_CLASS(ClientOptionsWrapper)
 RCPP_EXPOSED_CLASS(TableHandleWrapper)
+RCPP_EXPOSED_CLASS(AggregateWrapper)
 RCPP_EXPOSED_CLASS(ArrowArrayStream)
 
+RCPP_EXPOSED_CLASS(class1)
+RCPP_EXPOSED_CLASS(class2)
+
 RCPP_MODULE(DeephavenInternalModule) {
+
+    class_<class1>("TestClass1")
+    .constructor()
+    ;
+
+    class_<class2>("TestClass2")
+    .constructor()
+    .method("method", &class2::method)
+    ;
+
+    class_<AggregateWrapper>("INTERNAL_Aggregate")
+    ;
 
     class_<TableHandleWrapper>("INTERNAL_TableHandle")
     .method("select", &TableHandleWrapper::select)
@@ -391,30 +472,35 @@ RCPP_MODULE(DeephavenInternalModule) {
     .method("update", &TableHandleWrapper::update)
     .method("update_view", &TableHandleWrapper::updateView)
     .method("where", &TableHandleWrapper::where)
+
+    //.method("agg_by", &TableHandleWrapper::aggBy)
     .method("by", &TableHandleWrapper::by)
     .method("min_by", &TableHandleWrapper::minBy)
     .method("max_by", &TableHandleWrapper::maxBy)
     .method("sum_by", &TableHandleWrapper::sumBy)
     .method("abs_sum_by", &TableHandleWrapper::absSumBy)
+    .method("avg_by", &TableHandleWrapper::avgBy)
+    .method("w_avg_by", &TableHandleWrapper::wAvgBy)
     .method("var_by", &TableHandleWrapper::varBy)
     .method("std_by", &TableHandleWrapper::stdBy)
-    .method("avg_by", &TableHandleWrapper::avgBy)
     .method("first_by", &TableHandleWrapper::firstBy)
     .method("last_by", &TableHandleWrapper::lastBy)
     .method("median_by", &TableHandleWrapper::medianBy)
     .method("percentile_by", &TableHandleWrapper::percentileBy)
     .method("count_by", &TableHandleWrapper::countBy)
-    .method("w_avg_by", &TableHandleWrapper::wAvgBy)
-    .method("tail_by", &TableHandleWrapper::tailBy)
     .method("head_by", &TableHandleWrapper::headBy)
+    .method("tail_by", &TableHandleWrapper::tailBy)
+
     .method("cross_join", &TableHandleWrapper::crossJoin)
     .method("natural_join", &TableHandleWrapper::naturalJoin)
     .method("exact_join", &TableHandleWrapper::exactJoin)
+
     .method("head", &TableHandleWrapper::head)
     .method("tail", &TableHandleWrapper::tail)
     .method("ungroup", &TableHandleWrapper::ungroup)
     // TODO: .method("sort", &TableHandleWrapper::sort)
     // TODO: .method("merge", &TableHandleWrapper::merge)
+
     .method("is_static", &TableHandleWrapper::isStatic)
     .method("num_rows", &TableHandleWrapper::numRows)
     .method("bind_to_variable", &TableHandleWrapper::bindToVariable)
@@ -435,7 +521,7 @@ RCPP_MODULE(DeephavenInternalModule) {
     ;
 
     class_<ClientWrapper>("INTERNAL_Client")
-    .factory<const std::string&, const ClientOptionsWrapper&>(newClientWrapper)
+    .constructor<std::string, const ClientOptionsWrapper&>()
     .method("open_table", &ClientWrapper::openTable)
     .method("empty_table", &ClientWrapper::emptyTable)
     .method("time_table", &ClientWrapper::timeTable)
@@ -444,4 +530,18 @@ RCPP_MODULE(DeephavenInternalModule) {
     .method("new_arrow_array_stream_ptr", &ClientWrapper::newArrowArrayStreamPtr)
     .method("new_table_from_arrow_array_stream_ptr", &ClientWrapper::newTableFromArrowArrayStreamPtr)
     ;
+
+    function("INTERNAL_min", &INTERNAL_min);
+    function("INTERNAL_max", &INTERNAL_max);
+    function("INTERNAL_sum", &INTERNAL_sum);
+    function("INTERNAL_abs_sum", &INTERNAL_absSum);
+    function("INTERNAL_avg", &INTERNAL_avg);
+    function("INTERNAL_w_avg", &INTERNAL_wAvg);
+    function("INTERNAL_var", &INTERNAL_var);
+    function("INTERNAL_std", &INTERNAL_std);
+    function("INTERNAL_first", &INTERNAL_first);
+    function("INTERNAL_last", &INTERNAL_last);
+    function("INTERNAL_median", &INTERNAL_median);
+    function("INTERNAL_percentile", &INTERNAL_percentile);
+    function("INTERNAL_count", &INTERNAL_count);
 }

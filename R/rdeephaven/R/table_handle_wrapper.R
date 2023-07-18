@@ -26,6 +26,7 @@
 #' new_table_handle2 <- client$import_table(new_data_frame)
 #' new_table_handle2$bind_to_variable("new_table")
 
+#' @export
 TableHandle <- R6Class("TableHandle",
     public = list(
 
@@ -205,6 +206,25 @@ TableHandle <- R6Class("TableHandle",
         },
 
         #' @description
+        #' Creates a new table from this table, grouped by columns, with the "avg" aggregate operation
+        #' applied to the remaining columns.
+        #' @param columns Columns to group by.
+        #' @return A TableHandle referencing the new table.
+        avg_by = function(columns) {
+            return(TableHandle$new(self$internal_table_handle$avg_by(columns)))
+        },
+
+        #' @description
+        #' Creates a new table from this table, grouped by columns, having a new column named by
+        #' `weightColumn` containing the weighted average of each group.
+        #' @param weight_column Name of the output column.
+        #' @param columns Columns to group by.
+        #' @return A TableHandle referencing the new table.
+        w_avg_by = function(weight_column, columns) {
+            return(TableHandle$new(self$internal_table_handle$w_avg_by(weight_column, columns)))
+        },
+
+        #' @description
         #' Creates a new table from this table, grouped by columns, with the "var" aggregate operation
         #' applied to the remaining columns.
         #' @param columns Columns to group by.
@@ -220,15 +240,6 @@ TableHandle <- R6Class("TableHandle",
         #' @return A TableHandle referencing the new table.
         std_by = function(columns) {
             return(TableHandle$new(self$internal_table_handle$std_by(columns)))
-        },
-
-        #' @description
-        #' Creates a new table from this table, grouped by columns, with the "avg" aggregate operation
-        #' applied to the remaining columns.
-        #' @param columns Columns to group by.
-        #' @return A TableHandle referencing the new table.
-        avg_by = function(columns) {
-            return(TableHandle$new(self$internal_table_handle$avg_by(columns)))
         },
 
         #' @description
@@ -279,13 +290,13 @@ TableHandle <- R6Class("TableHandle",
         },
 
         #' @description
-        #' Creates a new table from this table, grouped by columns, having a new column named by
-        #' `weightColumn` containing the weighted average of each group.
-        #' @param weight_column Name of the output column.
+        #' Creates a new table from this table, grouped by columns, containing the first `n` rows of
+        #' each group.
+        #' @param n Number of rows
         #' @param columns Columns to group by.
         #' @return A TableHandle referencing the new table.
-        w_avg_by = function(weight_column, columns) {
-            return(TableHandle$new(self$internal_table_handle$w_avg_by(weight_column, columns)))
+        head_by = function(n, columns) {
+            return(TableHandle$new(self$internal_table_handle$head_by(n, columns)))
         },
 
         #' @description
@@ -296,16 +307,6 @@ TableHandle <- R6Class("TableHandle",
         #' @return A TableHandle referencing the new table.
         tail_by = function(n, columns) {
             return(TableHandle$new(self$internal_table_handle$tail_by(n, columns)))
-        },
-
-        #' @description
-        #' Creates a new table from this table, grouped by columns, containing the first `n` rows of
-        #' each group.
-        #' @param n Number of rows
-        #' @param columns Columns to group by.
-        #' @return A TableHandle referencing the new table.
-        head_by = function(n, columns) {
-            return(TableHandle$new(self$internal_table_handle$head_by(n, columns)))
         },
 
         # JOIN OPERATIONS

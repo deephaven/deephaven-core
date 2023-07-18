@@ -22,7 +22,7 @@
 #' # run a python script on the server (default client options specify a Python console)
 #' client$run_script("print([i for i in range(10)])")
 
-
+#' @export
 Client <- R6Class("Client",
     public = list(
 
