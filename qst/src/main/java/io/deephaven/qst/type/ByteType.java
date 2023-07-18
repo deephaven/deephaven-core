@@ -23,8 +23,8 @@ public abstract class ByteType extends PrimitiveTypeBase<Byte> {
     }
 
     @Override
-    public final Class<Byte> boxedClass() {
-        return Byte.class;
+    public BoxedByteType boxedType() {
+        return BoxedByteType.of();
     }
 
     @Override

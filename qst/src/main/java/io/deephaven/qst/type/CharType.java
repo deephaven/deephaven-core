@@ -23,8 +23,8 @@ public abstract class CharType extends PrimitiveTypeBase<Character> {
     }
 
     @Override
-    public final Class<Character> boxedClass() {
-        return Character.class;
+    public final BoxedCharType boxedType() {
+        return BoxedCharType.of();
     }
 
     @Override

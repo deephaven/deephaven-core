@@ -23,8 +23,8 @@ public abstract class BooleanType extends PrimitiveTypeBase<Boolean> {
     }
 
     @Override
-    public final Class<Boolean> boxedClass() {
-        return Boolean.class;
+    public final BoxedBooleanType boxedType() {
+        return BoxedBooleanType.of();
     }
 
     @Override

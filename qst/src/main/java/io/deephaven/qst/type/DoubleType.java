@@ -23,8 +23,8 @@ public abstract class DoubleType extends PrimitiveTypeBase<Double> {
     }
 
     @Override
-    public final Class<Double> boxedClass() {
-        return Double.class;
+    public final BoxedDoubleType boxedType() {
+        return BoxedDoubleType.of();
     }
 
     @Override

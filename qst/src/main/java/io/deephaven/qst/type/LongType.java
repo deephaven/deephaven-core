@@ -23,8 +23,8 @@ public abstract class LongType extends PrimitiveTypeBase<Long> {
     }
 
     @Override
-    public final Class<Long> boxedClass() {
-        return Long.class;
+    public final BoxedLongType boxedType() {
+        return BoxedLongType.of();
     }
 
     @Override

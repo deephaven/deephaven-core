@@ -10,6 +10,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.function.Function;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
@@ -25,23 +26,15 @@ class TypeHelper {
     }
 
     static List<Type<?>> knownTypes() {
-        return Stream.concat(primitiveTypes(), genericTypes()).collect(Collectors.toList());
-    }
-
-    static Stream<PrimitiveType<?>> primitiveTypes() {
-        return Stream.of(BooleanType.instance(), ByteType.instance(), CharType.instance(),
-                ShortType.instance(), IntType.instance(), LongType.instance(), FloatType.instance(),
-                DoubleType.instance());
-    }
-
-    static Stream<BoxedType<?>> boxedTypes() {
-        return primitiveTypes().map(BoxedType::of);
+        return Stream.concat(PrimitiveType.instances(), genericTypes()).collect(Collectors.toList());
     }
 
     static Stream<GenericType<?>> genericTypes() {
-        return Stream.concat(Stream.concat(
+        return Stream.of(
+                BoxedType.instances(),
                 Stream.of(StringType.instance(), InstantType.instance()),
-                primitiveVectorTypes()), boxedTypes());
+                primitiveVectorTypes())
+                .flatMap(Function.identity());
     }
 
     static Stream<PrimitiveVectorType<?, ?>> primitiveVectorTypes() {

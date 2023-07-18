@@ -3,33 +3,45 @@
  */
 package io.deephaven.qst.type;
 
-import io.deephaven.annotations.SimpleStyle;
-import org.immutables.value.Value.Immutable;
-import org.immutables.value.Value.Parameter;
+import java.util.stream.Stream;
 
-@Immutable
-@SimpleStyle
-public abstract class BoxedType<T> extends GenericTypeBase<T> {
+public interface BoxedType<T> extends GenericType<T> {
 
-    public static <T> BoxedType<T> of(PrimitiveType<T> primitiveType) {
-        return ImmutableBoxedType.of(primitiveType);
+    static Stream<BoxedType<?>> instances() {
+        return Stream.of(
+                BoxedBooleanType.of(),
+                BoxedByteType.of(),
+                BoxedCharType.of(),
+                BoxedShortType.of(),
+                BoxedIntType.of(),
+                BoxedLongType.of(),
+                BoxedFloatType.of(),
+                BoxedDoubleType.of());
     }
 
-    @Parameter
-    public abstract PrimitiveType<T> primitiveType();
+    PrimitiveType<T> primitiveType();
 
-    @Override
-    public final Class<T> clazz() {
-        return primitiveType().boxedClass();
-    }
+    <R> R walk(Visitor<R> visitor);
 
-    @Override
-    public final <R> R walk(GenericType.Visitor<R> visitor) {
-        return visitor.visit(this);
-    }
+    interface Visitor<R> {
+        static <R> Visitor<R> adapt(PrimitiveType.Visitor<R> visitor) {
+            return new BoxedTypeVisitorAdapter<>(visitor);
+        }
 
-    @Override
-    public final String toString() {
-        return "BoxedType(" + primitiveType() + ")";
+        R visit(BoxedBooleanType booleanType);
+
+        R visit(BoxedByteType byteType);
+
+        R visit(BoxedCharType charType);
+
+        R visit(BoxedShortType shortType);
+
+        R visit(BoxedIntType intType);
+
+        R visit(BoxedLongType longType);
+
+        R visit(BoxedFloatType floatType);
+
+        R visit(BoxedDoubleType doubleType);
     }
 }

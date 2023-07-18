@@ -23,8 +23,8 @@ public abstract class ShortType extends PrimitiveTypeBase<Short> {
     }
 
     @Override
-    public final Class<Short> boxedClass() {
-        return Short.class;
+    public final BoxedShortType boxedType() {
+        return BoxedShortType.of();
     }
 
     @Override

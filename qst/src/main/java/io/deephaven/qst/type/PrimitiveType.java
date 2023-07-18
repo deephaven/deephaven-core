@@ -3,6 +3,8 @@
  */
 package io.deephaven.qst.type;
 
+import java.util.stream.Stream;
+
 /**
  * A primitive type.
  *
@@ -18,13 +20,27 @@ package io.deephaven.qst.type;
  */
 public interface PrimitiveType<T> extends Type<T> {
 
-    Class<T> boxedClass();
+    static Stream<PrimitiveType<?>> instances() {
+        return Stream.of(
+                BooleanType.instance(),
+                ByteType.instance(),
+                CharType.instance(),
+                ShortType.instance(),
+                IntType.instance(),
+                LongType.instance(),
+                FloatType.instance(),
+                DoubleType.instance());
+    }
 
     BoxedType<T> boxedType();
 
     <R> R walk(Visitor<R> visitor);
 
     interface Visitor<R> {
+        static <R> Visitor<R> adapt(BoxedType.Visitor<R> visitor) {
+            return new PrimitiveTypeVisitorAdapter<>(visitor);
+        }
+
         R visit(BooleanType booleanType);
 
         R visit(ByteType byteType);

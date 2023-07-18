@@ -23,8 +23,8 @@ public abstract class IntType extends PrimitiveTypeBase<Integer> {
     }
 
     @Override
-    public final Class<Integer> boxedClass() {
-        return Integer.class;
+    public final BoxedIntType boxedType() {
+        return BoxedIntType.of();
     }
 
     @Override

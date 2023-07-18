@@ -17,6 +17,14 @@ import io.deephaven.qst.array.ShortArray;
 import io.deephaven.qst.column.Column;
 import io.deephaven.qst.type.ArrayType;
 import io.deephaven.qst.type.BooleanType;
+import io.deephaven.qst.type.BoxedBooleanType;
+import io.deephaven.qst.type.BoxedByteType;
+import io.deephaven.qst.type.BoxedCharType;
+import io.deephaven.qst.type.BoxedDoubleType;
+import io.deephaven.qst.type.BoxedFloatType;
+import io.deephaven.qst.type.BoxedIntType;
+import io.deephaven.qst.type.BoxedLongType;
+import io.deephaven.qst.type.BoxedShortType;
 import io.deephaven.qst.type.BoxedType;
 import io.deephaven.qst.type.ByteType;
 import io.deephaven.qst.type.CharType;
@@ -93,45 +101,45 @@ public class FieldVectorAdapter implements Array.Visitor<FieldVector>, Primitive
         return generic.componentType().walk(new Visitor<FieldVector>() {
             @Override
             public FieldVector visit(BoxedType<?> boxedType) {
-                return boxedType.primitiveType().walk(new PrimitiveType.Visitor<FieldVector>() {
+                return boxedType.walk(new BoxedType.Visitor<FieldVector>() {
                     @Override
-                    public FieldVector visit(BooleanType booleanType) {
-                        return visitBooleanArray(generic.cast(booleanType.boxedType()));
+                    public FieldVector visit(BoxedBooleanType booleanType) {
+                        return visitBooleanArray(generic.cast(booleanType));
                     }
 
                     @Override
-                    public FieldVector visit(ByteType byteType) {
-                        return visitByteArray(generic.cast(byteType.boxedType()));
+                    public FieldVector visit(BoxedByteType byteType) {
+                        return visitByteArray(generic.cast(byteType));
                     }
 
                     @Override
-                    public FieldVector visit(CharType charType) {
-                        return visitCharacterArray(generic.cast(charType.boxedType()));
+                    public FieldVector visit(BoxedCharType charType) {
+                        return visitCharacterArray(generic.cast(charType));
                     }
 
                     @Override
-                    public FieldVector visit(ShortType shortType) {
-                        return visitShortArray(generic.cast(shortType.boxedType()));
+                    public FieldVector visit(BoxedShortType shortType) {
+                        return visitShortArray(generic.cast(shortType));
                     }
 
                     @Override
-                    public FieldVector visit(IntType intType) {
-                        return visitIntegerArray(generic.cast(intType.boxedType()));
+                    public FieldVector visit(BoxedIntType intType) {
+                        return visitIntegerArray(generic.cast(intType));
                     }
 
                     @Override
-                    public FieldVector visit(LongType longType) {
-                        return visitLongArray(generic.cast(longType.boxedType()));
+                    public FieldVector visit(BoxedLongType longType) {
+                        return visitLongArray(generic.cast(longType));
                     }
 
                     @Override
-                    public FieldVector visit(FloatType floatType) {
-                        return visitFloatArray(generic.cast(floatType.boxedType()));
+                    public FieldVector visit(BoxedFloatType floatType) {
+                        return visitFloatArray(generic.cast(floatType));
                     }
 
                     @Override
-                    public FieldVector visit(DoubleType doubleType) {
-                        return visitDoubleArray(generic.cast(doubleType.boxedType()));
+                    public FieldVector visit(BoxedDoubleType doubleType) {
+                        return visitDoubleArray(generic.cast(doubleType));
                     }
                 });
             }

@@ -23,8 +23,8 @@ public abstract class FloatType extends PrimitiveTypeBase<Float> {
     }
 
     @Override
-    public final Class<Float> boxedClass() {
-        return Float.class;
+    public final BoxedFloatType boxedType() {
+        return BoxedFloatType.of();
     }
 
     @Override
