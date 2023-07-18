@@ -35,6 +35,9 @@ def start_jvm_for_tests(jvm_props: Dict[str, str] = None):
             'Configuration.rootFile': propfile,
             'deephaven.dataDir': '/data',
             'deephaven.cacheDir': '/cache',
+
+            'Calendar.default': 'USNYSE',
+            'Calendar.importPath': '/test_calendar_imports.txt',
         }
 
         if jvm_props:

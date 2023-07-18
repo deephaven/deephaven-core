@@ -27,10 +27,7 @@ import io.deephaven.proto.util.Exceptions;
 import io.deephaven.server.auth.AuthorizationProvider;
 import io.deephaven.server.grpc.Common;
 import io.deephaven.server.grpc.GrpcErrorHelper;
-import io.deephaven.server.session.SessionService;
-import io.deephaven.server.session.SessionState;
-import io.deephaven.server.session.TicketResolverBase;
-import io.deephaven.server.session.TicketRouter;
+import io.deephaven.server.session.*;
 import io.deephaven.server.table.ops.AggregationAdapter;
 import io.deephaven.server.table.ops.FilterTableGrpcImpl;
 import io.deephaven.server.table.ops.filter.FilterFactory;
@@ -55,7 +52,7 @@ public class HierarchicalTableServiceGrpcImpl extends HierarchicalTableServiceGr
     private final TicketRouter ticketRouter;
     private final SessionService sessionService;
     private final HierarchicalTableServiceContextualAuthWiring authWiring;
-    private final TicketResolverBase.AuthTransformation authTransformation;
+    private final TicketResolver.Authorization authTransformation;
 
     @Inject
     public HierarchicalTableServiceGrpcImpl(
@@ -65,7 +62,7 @@ public class HierarchicalTableServiceGrpcImpl extends HierarchicalTableServiceGr
         this.ticketRouter = ticketRouter;
         this.sessionService = sessionService;
         this.authWiring = authorizationProvider.getHierarchicalTableServiceContextualAuthWiring();
-        this.authTransformation = authorizationProvider.getTicketTransformation();
+        this.authTransformation = authorizationProvider.getTicketResolverAuthorization();
     }
 
     @Override

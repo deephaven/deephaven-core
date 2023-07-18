@@ -19,8 +19,30 @@ tasks.withType(Javadoc) {
 }
 
 PublishingTools.setupPublications(project) { publication ->
-  // This assumes that the shadow plugin is enabled
-  project.shadow.component(publication)
+  // This assumes that the shadow plugin is enabled, rather than using the vanilla java component.
+
+  // Inlines the shadow.component call, which doesn't actually use components, and doesn't generate
+  // the pom late enough to pick up gradle's own artifactId wiring from our archivesBaseName changes
+//  project.shadow.component(publication)
+  publication.artifact(project.tasks.named("shadowJar"))
+  publication.pom {
+    withXml {
+      def root = asNode()
+      def dependenciesNode = root.appendNode('dependencies')
+
+      project.configurations.shadow.allDependencies.each {
+        if ((it instanceof ProjectDependency) || ! (it instanceof SelfResolvingDependency)) {
+          def dependencyNode = dependenciesNode.appendNode('dependency')
+          dependencyNode.appendNode('groupId', it.group)
+          BasePluginConvention base = it.dependencyProject.convention.getPlugin(BasePluginConvention)
+
+          dependencyNode.appendNode('artifactId', base.archivesBaseName)
+          dependencyNode.appendNode('version', it.version)
+          dependencyNode.appendNode('scope', 'runtime')
+        }
+      }
+    }
+  }
 }
 
 PublishingTools.setupRepositories(project)

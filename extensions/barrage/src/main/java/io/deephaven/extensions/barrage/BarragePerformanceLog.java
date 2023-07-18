@@ -6,15 +6,12 @@ package io.deephaven.extensions.barrage;
 import io.deephaven.configuration.Configuration;
 import io.deephaven.engine.table.AttributeMap;
 import io.deephaven.engine.table.Table;
-import io.deephaven.engine.table.impl.BaseTable;
+import io.deephaven.engine.table.impl.BlinkTableTools;
 import io.deephaven.engine.table.impl.QueryTable;
-import io.deephaven.internal.log.LoggerFactory;
-import io.deephaven.io.logger.Logger;
 import io.deephaven.time.DateTimeUtils;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
-import java.io.IOException;
 import java.time.Instant;
 import java.util.Map;
 import java.util.function.Supplier;
@@ -40,14 +37,15 @@ public class BarragePerformanceLog {
     private static volatile BarragePerformanceLog INSTANCE;
 
     public static BarragePerformanceLog getInstance() {
-        if (INSTANCE == null) {
+        BarragePerformanceLog local;
+        if ((local = INSTANCE) == null) {
             synchronized (BarragePerformanceLog.class) {
-                if (INSTANCE == null) {
-                    INSTANCE = new BarragePerformanceLog();
+                if ((local = INSTANCE) == null) {
+                    INSTANCE = local = new BarragePerformanceLog();
                 }
             }
         }
-        return INSTANCE;
+        return local;
     }
 
     /**
@@ -82,34 +80,28 @@ public class BarragePerformanceLog {
         return null;
     }
 
-    private final BarrageSubscriptionPerformanceLogger barrageSubscriptionPerformanceLogger;
-    private final BarrageSnapshotPerformanceLogger barrageSnapshotPerformanceLogger;
+    private final BarrageSubscriptionPerformanceLoggerImpl subImpl;
+    private final BarrageSnapshotPerformanceLoggerImpl snapImpl;
 
     private BarragePerformanceLog() {
-        final Logger log = LoggerFactory.getLogger(BarragePerformanceLog.class);
-        barrageSubscriptionPerformanceLogger = new BarrageSubscriptionPerformanceLogger();
-        barrageSubscriptionPerformanceLogger.getQueryTable().setAttribute(
-                BaseTable.BARRAGE_PERFORMANCE_KEY_ATTRIBUTE,
-                BarrageSubscriptionPerformanceLogger.getDefaultTableName());
-        barrageSnapshotPerformanceLogger = new BarrageSnapshotPerformanceLogger();
-        barrageSnapshotPerformanceLogger.getQueryTable().setAttribute(
-                BaseTable.BARRAGE_PERFORMANCE_KEY_ATTRIBUTE, BarrageSnapshotPerformanceLogger.getDefaultTableName());
+        subImpl = new BarrageSubscriptionPerformanceLoggerImpl();
+        snapImpl = new BarrageSnapshotPerformanceLoggerImpl();
     }
 
     public QueryTable getSubscriptionTable() {
-        return barrageSubscriptionPerformanceLogger.getQueryTable();
+        return (QueryTable) BlinkTableTools.blinkToAppendOnly(subImpl.blinkTable());
     }
 
     public BarrageSubscriptionPerformanceLogger getSubscriptionLogger() {
-        return barrageSubscriptionPerformanceLogger;
+        return subImpl;
     }
 
     public QueryTable getSnapshotTable() {
-        return barrageSnapshotPerformanceLogger.getQueryTable();
+        return (QueryTable) BlinkTableTools.blinkToAppendOnly(snapImpl.blinkTable());
     }
 
     public BarrageSnapshotPerformanceLogger getSnapshotLogger() {
-        return barrageSnapshotPerformanceLogger;
+        return snapImpl;
     }
 
     public interface WriteMetricsConsumer {
@@ -117,23 +109,22 @@ public class BarragePerformanceLog {
     }
 
     public static class SnapshotMetricsHelper implements WriteMetricsConsumer {
-        private final Instant requestTm = DateTimeUtils.now();
+        public final Instant requestTm = DateTimeUtils.now();
+
         public String tableId;
         public String tableKey;
         public long queueNanos;
         public long snapshotNanos;
 
+        @Override
         public void onWrite(long bytesWritten, long writeNanos) {
             if (tableKey == null) {
                 // metrics for this request are not to be reported
                 return;
             }
-
-            try {
-                BarragePerformanceLog.getInstance().getSnapshotLogger()
-                        .log(tableId, tableKey, requestTm, queueNanos, snapshotNanos, writeNanos, bytesWritten);
-            } catch (IOException ignored) {
-            }
+            BarragePerformanceLog.getInstance()
+                    .getSnapshotLogger()
+                    .log(this, writeNanos, bytesWritten);
         }
     }
 }

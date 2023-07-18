@@ -53,6 +53,8 @@ import io.deephaven.engine.table.impl.util.JobScheduler;
 import io.deephaven.engine.table.impl.util.OperationInitializationPoolJobScheduler;
 import io.deephaven.engine.table.impl.select.analyzers.SelectAndViewAnalyzerWrapper;
 import io.deephaven.engine.table.impl.util.FieldUtils;
+import io.deephaven.engine.table.impl.sources.ring.RingTableTools;
+import io.deephaven.engine.table.impl.BlinkTableTools;
 import io.deephaven.engine.table.iterators.*;
 import io.deephaven.engine.updategraph.DynamicNode;
 import io.deephaven.engine.util.*;
@@ -609,6 +611,9 @@ public class QueryTable extends BaseTable<QueryTable> {
 
     @Override
     public Table slice(final long firstPositionInclusive, final long lastPositionExclusive) {
+        if (isBlink()) {
+            throw unsupportedForBlinkTables("slice");
+        }
         final UpdateGraph updateGraph = getUpdateGraph();
         try (final SafeCloseable ignored = ExecutionContext.getContext().withUpdateGraph(updateGraph).open()) {
             if (firstPositionInclusive == lastPositionExclusive) {
@@ -619,10 +624,28 @@ public class QueryTable extends BaseTable<QueryTable> {
     }
 
     @Override
+    public Table slicePct(final double startPercentInclusive, final double endPercentExclusive) {
+        if (isBlink()) {
+            throw unsupportedForBlinkTables("slicePct");
+        }
+        final UpdateGraph updateGraph = getUpdateGraph();
+        try (final SafeCloseable ignored = ExecutionContext.getContext().withUpdateGraph(updateGraph).open()) {
+            return getResult(SliceLikeOperation.slicePct(this, startPercentInclusive, endPercentExclusive));
+        }
+    }
+
+    @Override
     public Table head(final long size) {
         final UpdateGraph updateGraph = getUpdateGraph();
         try (final SafeCloseable ignored = ExecutionContext.getContext().withUpdateGraph(updateGraph).open()) {
-            return slice(0, Require.geqZero(size, "size"));
+            if (size == 0) {
+                return getSubTable(RowSetFactory.empty().toTracking());
+            }
+            if (isBlink()) {
+                // The operation initialization and listener registration is handled inside BlinkTableTools
+                return BlinkTableTools.blinkToAppendOnly(this, Require.geqZero(size, "size"));
+            }
+            return getResult(SliceLikeOperation.slice(this, 0, Require.geqZero(size, "size"), "head"));
         }
     }
 
@@ -630,12 +653,26 @@ public class QueryTable extends BaseTable<QueryTable> {
     public Table tail(final long size) {
         final UpdateGraph updateGraph = getUpdateGraph();
         try (final SafeCloseable ignored = ExecutionContext.getContext().withUpdateGraph(updateGraph).open()) {
-            return slice(-Require.geqZero(size, "size"), 0);
+            if (size == 0) {
+                return getSubTable(RowSetFactory.empty().toTracking());
+            }
+            if (isBlink()) {
+                // The operation initialization and listener registration is handled inside BlinkTableTools
+                return RingTableTools.of(this, Math.toIntExact(Require.geqZero(size, "size")));
+            }
+            return getResult(SliceLikeOperation.slice(this, -Require.geqZero(size, "size"), 0, "tail"));
         }
     }
 
     @Override
     public Table headPct(final double percent) {
+        if (isBlink()) {
+            throw unsupportedForBlinkTables("headPct");
+        }
+        if (percent < 0 || percent > 1) {
+            throw new IllegalArgumentException(
+                    "percentage of rows must be between [0,1]: percent=" + percent);
+        }
         final UpdateGraph updateGraph = getUpdateGraph();
         try (final SafeCloseable ignored = ExecutionContext.getContext().withUpdateGraph(updateGraph).open()) {
             return getResult(SliceLikeOperation.headPct(this, percent));
@@ -644,6 +681,13 @@ public class QueryTable extends BaseTable<QueryTable> {
 
     @Override
     public Table tailPct(final double percent) {
+        if (isBlink()) {
+            throw unsupportedForBlinkTables("tailPct");
+        }
+        if (percent < 0 || percent > 1) {
+            throw new IllegalArgumentException(
+                    "percentage of rows must be between [0,1]: percent=" + percent);
+        }
         final UpdateGraph updateGraph = getUpdateGraph();
         try (final SafeCloseable ignored = ExecutionContext.getContext().withUpdateGraph(updateGraph).open()) {
             return getResult(SliceLikeOperation.tailPct(this, percent));
@@ -1460,11 +1504,7 @@ public class QueryTable extends BaseTable<QueryTable> {
 
                     final QueryTable resultTable;
                     final LivenessScope liveResultCapture = isRefreshing() ? new LivenessScope() : null;
-                    try (final SafeCloseable ignored1 = liveResultCapture != null ? liveResultCapture::release : null;
-                            final SafeCloseable ignored2 =
-                                    ExecutionContext.getDefaultContext().withUpdateGraph(getUpdateGraph()).open()) {
-                        // we open the default context here to ensure that the update processing happens in the default
-                        // context whether it is processed in parallel or not
+                    try (final SafeCloseable ignored1 = liveResultCapture != null ? liveResultCapture::release : null) {
                         try (final RowSet emptyRowSet = RowSetFactory.empty();
                                 final SelectAndViewAnalyzer.UpdateHelper updateHelper =
                                         new SelectAndViewAnalyzer.UpdateHelper(emptyRowSet, fakeUpdate)) {

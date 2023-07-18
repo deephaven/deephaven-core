@@ -89,6 +89,7 @@ public:
       testTable_(std::move(testTable)), columnNames_(std::move(columnNames)),
       columnData_(std::move(columnData)) {}
 
+  Client &client() { return client_; }
   const Client &client() const { return client_; }
 
 private:

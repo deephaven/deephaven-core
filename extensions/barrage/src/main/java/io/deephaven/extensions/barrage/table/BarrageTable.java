@@ -39,7 +39,6 @@ import org.HdrHistogram.Histogram;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
-import java.io.IOException;
 import java.time.Instant;
 import java.util.*;
 import java.util.concurrent.ScheduledExecutorService;
@@ -52,6 +51,7 @@ import java.util.function.LongConsumer;
 /**
  * A client side {@link Table} that mirrors an upstream/server side {@code Table}.
  *
+ * <p>
  * Note that <b>viewport</b>s are defined in row positions of the upstream table.
  */
 public abstract class BarrageTable extends QueryTable implements BarrageMessage.Listener, Runnable {
@@ -550,35 +550,22 @@ public abstract class BarrageTable extends QueryTable implements BarrageMessage.
         @Override
         public void run() {
             final Instant now = DateTimeUtils.now();
-
             final BarrageSubscriptionPerformanceLogger logger =
                     BarragePerformanceLog.getInstance().getSubscriptionLogger();
-            try {
-                // noinspection SynchronizationOnLocalVariableOrMethodParameter
-                synchronized (logger) {
-                    flush(now, logger, deserialize, "DeserializationMillis");
-                    flush(now, logger, processUpdate, "ProcessUpdateMillis");
-                    flush(now, logger, refresh, "RefreshMillis");
-                }
-            } catch (IOException ioe) {
-                beginLog(LogLevel.ERROR).append("Unexpected exception while flushing barrage stats: ")
-                        .append(ioe).endl();
+            // noinspection SynchronizationOnLocalVariableOrMethodParameter
+            synchronized (logger) {
+                flush(now, logger, deserialize, "DeserializationMillis");
+                flush(now, logger, processUpdate, "ProcessUpdateMillis");
+                flush(now, logger, refresh, "RefreshMillis");
             }
         }
 
         private void flush(final Instant now, final BarrageSubscriptionPerformanceLogger logger, final Histogram hist,
-                final String statType) throws IOException {
+                final String statType) {
             if (hist.getTotalCount() == 0) {
                 return;
             }
-            logger.log(tableId, tableKey, statType, now,
-                    hist.getTotalCount(),
-                    hist.getValueAtPercentile(50) / 1e6,
-                    hist.getValueAtPercentile(75) / 1e6,
-                    hist.getValueAtPercentile(90) / 1e6,
-                    hist.getValueAtPercentile(95) / 1e6,
-                    hist.getValueAtPercentile(99) / 1e6,
-                    hist.getMaxValue() / 1e6);
+            logger.log(tableId, tableKey, statType, now, hist);
             hist.reset();
         }
     }

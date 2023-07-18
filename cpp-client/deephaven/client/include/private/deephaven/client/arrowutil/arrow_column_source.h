@@ -104,11 +104,13 @@ class NumericArrowColumnSource final : public deephaven::dhcore::column::Numeric
   typedef deephaven::dhcore::column::ColumnSourceVisitor ColumnSourceVisitor;
 
 public:
-  static std::shared_ptr<NumericArrowColumnSource> create(const ARRAY_TYPE *arrowArray) {
-    return std::make_shared<NumericArrowColumnSource>(Private(), arrowArray);
+  static std::shared_ptr<NumericArrowColumnSource> create(std::shared_ptr<arrow::Array> storage,
+      const ARRAY_TYPE *arrowArray) {
+    return std::make_shared<NumericArrowColumnSource>(Private(), std::move(storage), arrowArray);
   }
 
-  explicit NumericArrowColumnSource(Private, const ARRAY_TYPE *arrowArray) : backingStore_(arrowArray) {}
+  explicit NumericArrowColumnSource(Private, std::shared_ptr<arrow::Array> storage, const ARRAY_TYPE *arrowArray) :
+      storage_(std::move(storage)), backingStore_(arrowArray) {}
 
   void fillChunk(const RowSequence &rows, Chunk *destData, BooleanChunk *optionalDestNullFlags) const final {
     typedef typename deephaven::dhcore::chunk::TypeToChunk<ELEMENT_TYPE>::type_t chunkType_t;
@@ -125,6 +127,7 @@ public:
   }
 
 private:
+  std::shared_ptr<arrow::Array> storage_;
   internal::NumericBackingStore<ARRAY_TYPE, ELEMENT_TYPE> backingStore_;
 };
 
@@ -157,11 +160,13 @@ class GenericArrowColumnSource final : public deephaven::dhcore::column::Generic
   typedef deephaven::dhcore::column::ColumnSourceVisitor ColumnSourceVisitor;
 
 public:
-  static std::shared_ptr<GenericArrowColumnSource> create(const ARRAY_TYPE *arrowArray) {
-    return std::make_shared<GenericArrowColumnSource>(Private(), arrowArray);
+  static std::shared_ptr<GenericArrowColumnSource> create(std::shared_ptr<arrow::Array> storage,
+      const ARRAY_TYPE *arrowArray) {
+    return std::make_shared<GenericArrowColumnSource>(Private(), std::move(storage), arrowArray);
   }
 
-  explicit GenericArrowColumnSource(Private, const ARRAY_TYPE *arrowArray) : backingStore_(arrowArray) {}
+  explicit GenericArrowColumnSource(Private, std::shared_ptr<arrow::Array> storage, const ARRAY_TYPE *arrowArray) :
+      storage_(std::move(storage)), backingStore_(arrowArray) {}
 
   void fillChunk(const RowSequence &rows, Chunk *destData, BooleanChunk *optionalDestNullFlags) const final {
     typedef typename deephaven::dhcore::chunk::TypeToChunk<ELEMENT_TYPE>::type_t chunkType_t;
@@ -176,6 +181,7 @@ public:
   }
 
 private:
+  std::shared_ptr<arrow::Array> storage_;
   internal::GenericBackingStore<ARRAY_TYPE, ELEMENT_TYPE> backingStore_;
 };
 

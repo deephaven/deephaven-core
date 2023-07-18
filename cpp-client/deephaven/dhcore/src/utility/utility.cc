@@ -3,8 +3,17 @@
  */
 #include "deephaven/dhcore/utility/utility.h"
 
+#include <cassert>
+#include <ctime>
 #include <ostream>
+#include <string>
 #include <vector>
+
+#ifdef __GNUG__
+#include <cstdlib>
+#include <memory>
+#include <cxxabi.h>
+#endif
 
 using namespace std;
 
@@ -188,4 +197,62 @@ void dumpTillPercentOrEnd(ostream &result, const char **fmt) {
   *fmt = p;
 }
 }  // namespace
+
+std::string epochMillisToStr(const std::chrono::milliseconds::rep epochMillis) {
+  time_t timeSecs = epochMillis / 1000;
+  auto millis = epochMillis % 1000;
+  struct tm tm = {};
+  localtime_r(&timeSecs, &tm);
+  char dateBuffer[32];  // ample
+  char millisBuffer[32];  // ample
+  char tzBuffer[32];  // ample
+  strftime(dateBuffer, sizeof(dateBuffer), "%FT%T", &tm);
+  snprintf(millisBuffer, sizeof(millisBuffer), ".%03zd", millis);
+  strftime(tzBuffer, sizeof(tzBuffer), "%z", &tm);
+
+  SimpleOstringstream s;
+  s << dateBuffer << millisBuffer << tzBuffer;
+  return std::move(s.str());
+}
+
+std::int64_t
+timePointToEpochMillis(
+    const std::chrono::time_point<std::chrono::system_clock> timePoint) {
+  const auto ms = std::chrono::duration_cast<std::chrono::milliseconds>(
+      timePoint.time_since_epoch());
+  return ms.count();
+}
+
+std::string
+timePointToStr(
+    const std::chrono::time_point<std::chrono::system_clock> timePoint) {
+  return epochMillisToStr(timePointToEpochMillis(timePoint));
+}
+
+#ifdef __GNUG__
+std::string demangle(const char* name) {
+  int status = -1;
+  char *res = abi::__cxa_demangle(name, nullptr, nullptr, &status);
+  std::string result = status == 0 ? res : name;
+  std::free(res);
+  return result;
+}
+#else
+// does nothing if not g++
+std::string demangle(const char* name) {
+  return name;
+}
+#endif
+
+std::string objectId(const std::string &classShortName, void *const thisPtr) {
+  SimpleOstringstream s;
+  s << classShortName << '[' << thisPtr << ']';
+  return std::move(s.str());
+}
+
+std::string
+threadIdToString(const std::thread::id tid) {
+  return stringf("%o", tid);
+}
+
 }  // namespace deephaven::dhcore::utility

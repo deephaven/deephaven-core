@@ -60,9 +60,7 @@ TableHandle <- R6Class("TableHandle",
         #' enabling it to be accessed by that name from any Deephaven API.
         #' @param name Name for this table on the server.
         bind_to_variable = function(name) {
-            if (class(name)[[1]] != "character") {
-                stop(paste("'name' should be a character or a string. Got object of type ", class(name)[[1]], " instead."))
-            }
+            .verify_string("name", name)
             private$internal_table_handle$bind_to_variable(name)
         },
 
