@@ -28,6 +28,7 @@ import io.deephaven.util.QueryConstants;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
+import java.time.Duration;
 import java.time.Instant;
 import java.util.Collections;
 import java.util.LinkedHashMap;
@@ -81,14 +82,17 @@ public final class TimeTable extends QueryTable implements Runnable {
             return this;
         }
 
+        public Builder period(Duration period) {
+            return period(period.toNanos());
+        }
+
         public Builder period(long period) {
             this.period = period;
             return this;
         }
 
         public Builder period(String period) {
-            this.period = parseDurationNanos(period);
-            return this;
+            return period(parseDurationNanos(period));
         }
 
         public Builder blinkTable(boolean blinkTable) {

@@ -317,6 +317,7 @@ message TimeTableRequest {
   Ticket result_id = 1;
   sint64 start_time_nanos = 2 [jstype=JS_STRING];
   sint64 period_nanos = 3 [jstype=JS_STRING];
+  bool blink_table = 4;
 }
 
 message SelectOrUpdateRequest {

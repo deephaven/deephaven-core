@@ -195,8 +195,10 @@ class BatchTableRequestBuilder {
                 }
             });
 
-            TimeTableRequest.Builder builder = TimeTableRequest.newBuilder().setResultId(ticket)
-                    .setPeriodNanos(timeTable.interval().toNanos());
+            TimeTableRequest.Builder builder = TimeTableRequest.newBuilder()
+                    .setResultId(ticket)
+                    .setPeriodNanos(timeTable.interval().toNanos())
+                    .setBlinkTable(timeTable.blinkTable());
             if (timeTable.startTime().isPresent()) {
                 final Instant startTime = timeTable.startTime().get();
                 final long epochNanos = Math.addExact(
