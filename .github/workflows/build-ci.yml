@@ -4,6 +4,10 @@ on:
   push:
     branches: [ 'main', 'build/**', 'release/v*' ]
 
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
 jobs:
   server:
     runs-on: ubuntu-22.04
