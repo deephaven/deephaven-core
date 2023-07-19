@@ -164,12 +164,10 @@ public class JsTreeTable extends HasLifecycle {
                 if (c.getFormatStringColumnIndex() != null) {
                     data[c.getFormatStringColumnIndex()] = dataColumns[c.getFormatStringColumnIndex()].getData();
                 }
-                // if (c.getFormatDatabarColumnIndexRange() != null) {
-                // int start = c.getFormatDatabarColumnIndexRange()[0];
-                // int end = c.getFormatDatabarColumnIndexRange()[1];
-                // if (index >= start && index <= end) {
-                // data[index] = dataColumns[index].getData();
-                // }
+
+                // TODO: Related to the todo in ViewportData.java. Not sure if I need this
+                // if(c.getFormatDataBarColumnIndices() != null) {
+                // c.getFormatDataBarColumnIndices().values().forEach(idx -> data[idx] = dataColumns[idx]);
                 // }
 
                 // if there is a matching constituent column array, clean it and copy from it

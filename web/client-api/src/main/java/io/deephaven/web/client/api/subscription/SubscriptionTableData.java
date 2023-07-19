@@ -8,6 +8,7 @@ import com.vertispan.tsdefs.annotations.TsName;
 import elemental2.core.JsArray;
 import elemental2.dom.CustomEventInit;
 import io.deephaven.web.client.api.*;
+import io.deephaven.web.client.api.barrage.DatabarFormatColumnType;
 import io.deephaven.web.client.fu.JsSettings;
 import io.deephaven.web.shared.data.*;
 import io.deephaven.web.shared.data.columns.ColumnData;
@@ -480,7 +481,7 @@ public class SubscriptionTableData {
             long rowColors = 0;
             String numberFormat = null;
             String formatString = null;
-            DataBarFormat formatDatabar = null;
+            DataBarFormat formatDataBar = null;
             int redirectedIndex = (int) (long) redirectedIndexes.get(this.index);
             if (column.getStyleColumnIndex() != null) {
                 JsArray<Any> colors = Js.uncheckedCast(data[column.getStyleColumnIndex()]);
@@ -498,15 +499,64 @@ public class SubscriptionTableData {
                 JsArray<Any> formatStrings = Js.uncheckedCast(data[column.getFormatStringColumnIndex()]);
                 formatString = formatStrings.getAtAsAny(redirectedIndex).asString();
             }
-            return new Format(cellColors, rowColors, numberFormat, formatString, formatDatabar);
+            if (column.getFormatDataBarColumnIndices() != null) {
+                formatDataBar = getDataBarFormat(column);
+            }
+            return new Format(cellColors, rowColors, numberFormat, formatString, formatDataBar);
         }
 
         @Override
         public DataBarFormat getDataBarFormat(Column column) {
-            // return new DatabarFormat(null, null, null, null, null, null, null, null, null);
+            Map<String, Integer> formatDatabarColumnIndices = column.getFormatDataBarColumnIndices();
+            DatabarFormatBuilder formatBuilder = new DatabarFormatBuilder();
+            int redirectedIndex = (int) (long) redirectedIndexes.get(this.index);
+
+            if (!formatDatabarColumnIndices.isEmpty()) {
+                String prefix = column.getName() + "_";
+                formatDatabarColumnIndices.entrySet().forEach(entry -> {
+                    String name = entry.getKey().split("__")[0].substring(prefix.length());
+                    int index = entry.getValue().intValue();
+                    JsArray<Any> val = Js.uncheckedCast(data[index]);
+                    DatabarFormatColumnType type = DatabarFormatColumnType.valueOf(name);
+                    switch (type) {
+                        case MIN:
+                            formatBuilder.setMin(val.getAtAsAny(redirectedIndex).asDouble());
+                            break;
+                        case MAX:
+                            formatBuilder.setMax(val.getAtAsAny(redirectedIndex).asDouble());
+                            break;
+                        case VALUE:
+                            formatBuilder.setValue(val.getAtAsAny(redirectedIndex).asDouble());
+                            break;
+                        case AXIS:
+                            formatBuilder.setAxis(val.getAtAsAny(redirectedIndex).asString());
+                            break;
+                        case POSITIVE_COLOR:
+                            if (val.getAtAsAny(redirectedIndex) != null) {
+                                formatBuilder.setPositiveColor(val.getAtAsAny(redirectedIndex).asString());
+                            }
+                            break;
+                        case NEGATIVE_COLOR:
+                            if (val.getAtAsAny(redirectedIndex) != null) {
+                                formatBuilder.setNegativeColor(val.getAtAsAny(redirectedIndex).asString());
+                            }
+                            break;
+                        case VALUE_PLACEMENT:
+                            formatBuilder.setValuePlacement(val.getAtAsAny(redirectedIndex).asString());
+                            break;
+                        case DIRECTION:
+                            formatBuilder.setDirection(val.getAtAsAny(redirectedIndex).asString());
+                            break;
+                        case OPACITY:
+                            formatBuilder.setOpacity(val.getAtAsAny(redirectedIndex).asDouble());
+                            break;
+                        default:
+                            break;
+                    }
+                });
+            }
+
             return new DatabarFormatBuilder().build();
-            // return new
-            // DatabarFormatBuilder().setMin(0.0).setMax(0.0).setValue(0.0).setAxis("test").setPositiveColor("test").setNegativeColor("test").setValuePlacement("test").setDirection("test").setOpacity(0.0).createDatabarFormat();
         }
     }
 
