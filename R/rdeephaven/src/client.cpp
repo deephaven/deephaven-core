@@ -11,13 +11,6 @@
 #include <arrow/c/abi.h>
 #include <arrow/c/bridge.h>
 
-//#include <RcppCommon.h>
-//class AggregateWrapper;
-//namespace Rcpp {
-//    template <> SEXP wrap(const std::vector<AggregateWrapper>&);
-//    template <> std::vector<AggregateWrapper> as(SEXP);
-//}
-
 #include <Rcpp.h>
 
 // forward declaration of classes
@@ -25,6 +18,11 @@ class AggregateWrapper;
 class TableHandleWrapper;
 class ClientOptionsWrapper;
 class ClientWrapper;
+
+// forward declaration of conversion functions
+std::vector<deephaven::client::Aggregate> convertRcppListToVectorOfTypeAggregate(Rcpp::List rcpp_list);
+std::vector<deephaven::client::TableHandle> convertRcppListToVectorOfTypeTableHandle(Rcpp::List rcpp_list);
+
 
 // ######################### DH WRAPPERS #########################
 
@@ -37,7 +35,22 @@ public:
 private:
     deephaven::client::Aggregate internal_aggregation;
     friend TableHandleWrapper;
+    friend std::vector<deephaven::client::Aggregate> convertRcppListToVectorOfTypeAggregate(Rcpp::List rcpp_list);
 };
+
+// ######################### conversion function for the above class
+std::vector<deephaven::client::Aggregate> convertRcppListToVectorOfTypeAggregate(Rcpp::List rcpp_list) {
+    std::vector<deephaven::client::Aggregate> converted_list;
+    converted_list.reserve(rcpp_list.size());
+
+    for(int i = 0; i < rcpp_list.size(); i++) {
+        Rcpp::Environment rcpp_list_element = rcpp_list[i];
+        Rcpp::XPtr<AggregateWrapper> xptr(rcpp_list_element.get(".pointer"));
+        deephaven::client::Aggregate internal_aggregation = xptr->internal_aggregation;
+        converted_list.push_back(internal_aggregation);
+    }
+    return converted_list;
+}
 
 AggregateWrapper* INTERNAL_min(std::vector<std::string> columnSpecs) {
     return new AggregateWrapper(deephaven::client::Aggregate::min(columnSpecs));
@@ -128,15 +141,7 @@ public:
     // AGGREGATION OPERATIONS
 
     TableHandleWrapper* aggBy(Rcpp::List aggregations) {
-        std::vector<deephaven::client::Aggregate> converted_aggregations;
-        converted_aggregations.reserve(aggregations.size());
-
-        for(int i = 0; i < aggregations.size(); i++) {
-            Rcpp::Environment aggregation = aggregations[i];
-            Rcpp::XPtr<AggregateWrapper> xptr(aggregation.get(".pointer"));
-            deephaven::client::Aggregate internal_aggregation = xptr->internal_aggregation;
-            converted_aggregations.push_back(internal_aggregation);
-        }
+        std::vector<deephaven::client::Aggregate> converted_aggregations = convertRcppListToVectorOfTypeAggregate(aggregations);
         return new TableHandleWrapper(internal_tbl_hdl.by(deephaven::client::AggregateCombo::create(converted_aggregations)));
     }
 
@@ -232,13 +237,14 @@ public:
         return new TableHandleWrapper(internal_tbl_hdl.ungroup(nullFill, groupByColumns));
     };
 
+    TableHandleWrapper* merge(std::string keyColumn, Rcpp::List sources) {
+        std::vector<deephaven::client::TableHandle> converted_sources = convertRcppListToVectorOfTypeTableHandle(sources);
+        return new TableHandleWrapper(internal_tbl_hdl.merge(keyColumn, converted_sources));
+    };
+
     // TODO: TableHandleWrapper* sort(std::vector<SortPair> sortPairs) {
     //      return new TableHandleWrapper(internal_tbl_hdl.sort(sortPairs));
     //  };
-
-    // TODO: TableHandleWrapper* merge(std::string keyColumn, std::vector<TableHandleWrapper> sources) {
-    //     return new TableHandleWrapper(internal_tbl_hdl.merge(keyColumn, convertTableHandleWrapperVector(sources)));
-    // };
 
     /**
      * Whether the table was static at the time internal_tbl_hdl was created.
@@ -284,7 +290,22 @@ public:
 
 private:
     deephaven::client::TableHandle internal_tbl_hdl;
+    friend std::vector<deephaven::client::TableHandle> convertRcppListToVectorOfTypeTableHandle(Rcpp::List rcpp_list);
 };
+
+// ######################### conversion function for the above class
+std::vector<deephaven::client::TableHandle> convertRcppListToVectorOfTypeTableHandle(Rcpp::List rcpp_list) {
+    std::vector<deephaven::client::TableHandle> converted_list;
+    converted_list.reserve(rcpp_list.size());
+
+    for(int i = 0; i < rcpp_list.size(); i++) {
+        Rcpp::Environment rcpp_list_element = rcpp_list[i];
+        Rcpp::XPtr<TableHandleWrapper> xptr(rcpp_list_element.get(".pointer"));
+        deephaven::client::TableHandle internal_tbl_hdl = xptr->internal_tbl_hdl;
+        converted_list.push_back(internal_tbl_hdl);
+    }
+    return converted_list;
+}
 
 
 // TODO: Document this guy
@@ -481,8 +502,8 @@ RCPP_MODULE(DeephavenInternalModule) {
     .method("head", &TableHandleWrapper::head)
     .method("tail", &TableHandleWrapper::tail)
     .method("ungroup", &TableHandleWrapper::ungroup)
+    .method("merge", &TableHandleWrapper::merge)
     // TODO: .method("sort", &TableHandleWrapper::sort)
-    // TODO: .method("merge", &TableHandleWrapper::merge)
 
     .method("is_static", &TableHandleWrapper::isStatic)
     .method("num_rows", &TableHandleWrapper::numRows)
