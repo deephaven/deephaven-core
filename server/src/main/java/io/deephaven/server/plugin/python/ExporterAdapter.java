@@ -9,7 +9,7 @@ import org.jpy.PyObject;
 
 import java.util.Objects;
 
-final class ExporterAdapter {
+class ExporterAdapter {
 
     private final Exporter exporter;
 
@@ -23,6 +23,6 @@ final class ExporterAdapter {
 
     // TODO(deephaven-core#1775): multivariate jpy (unwrapped) call into java
     public Reference referencePyObject(PyObject object, boolean allowUnknownType, boolean forceNew) {
-        return exporter.reference(object, allowUnknownType, forceNew, Objects::equals).orElse(null);
+        return exporter.reference(object, allowUnknownType, forceNew).orElse(null);
     }
 }

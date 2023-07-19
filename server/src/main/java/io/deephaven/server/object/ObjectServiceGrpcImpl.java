@@ -6,6 +6,7 @@ package io.deephaven.server.object;
 import com.google.protobuf.ByteString;
 import com.google.protobuf.ByteStringAccess;
 import com.google.rpc.Code;
+import io.deephaven.engine.liveness.SingletonLivenessManager;
 import io.deephaven.extensions.barrage.util.BarrageProtoUtil.ExposedByteArrayOutputStream;
 import io.deephaven.internal.log.LoggerFactory;
 import io.deephaven.io.logger.Logger;
@@ -31,7 +32,9 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
 import java.util.Optional;
-import java.util.function.BiPredicate;
+import java.util.HashMap;
+import java.util.LinkedHashMap;
+import java.util.stream.Collectors;
 
 public class ObjectServiceGrpcImpl extends ObjectServiceGrpc.ObjectServiceImplBase {
     private static final Logger log = LoggerFactory.getLogger(ObjectServiceGrpcImpl.class);
@@ -50,13 +53,23 @@ public class ObjectServiceGrpcImpl extends ObjectServiceGrpc.ObjectServiceImplBa
         this.typeLookup = Objects.requireNonNull(typeLookup);
     }
 
-    private final class SendMessageObserver implements StreamObserver<MessageRequest> {
+    private final class SendMessageObserver extends SingletonLivenessManager implements StreamObserver<MessageRequest> {
 
-        private ExportObject<ObjectType> object;
+        private ExportObject<Object> object;
         private final StreamObserver<MessageResponse> responseObserver;
 
         private SendMessageObserver(StreamObserver<MessageResponse> responseObserver) {
+            log.info().append("Creating observer").endl();
             this.responseObserver = responseObserver;
+        }
+
+        private ObjectType getObjectType() {
+            final Optional<ObjectType> o = objectTypeLookup.findObjectType(object.get());
+            if (o.isEmpty()) {
+                throw Exceptions.statusRuntimeException(Code.NOT_FOUND,
+                        String.format("No ObjectType found for object %s", object.get()));
+            }
+            return o.get();
         }
 
         @Override
@@ -65,30 +78,83 @@ public class ObjectServiceGrpcImpl extends ObjectServiceGrpc.ObjectServiceImplBa
 
             if (request.hasSourceId()) {
                 // First request
-                Ticket ticket = request.getSourceId().getTypedTicket().getTicket();
-                SessionState.ExportObject<ObjectType> object = session.getExport(ticket, "sourceId");
+                if (this.object != null) {
+                    // Ignore duplicate connection requests on the same stream
+                    return;
+                }
+
+                TypedTicket typedTicket = request.getSourceId().getTypedTicket();
+
+                final String type = typedTicket.getType();
+                if (type.isEmpty()) {
+                    throw Exceptions.statusRuntimeException(Code.INVALID_ARGUMENT, "No type supplied");
+                }
+                if (typedTicket.getTicket().getTicket().isEmpty()) {
+                    throw Exceptions.statusRuntimeException(Code.INVALID_ARGUMENT, "No ticket supplied");
+                }
+
+                final SessionState.ExportObject<Object> object = ticketRouter.resolve(
+                        session, typedTicket.getTicket(), "sourceId");
+
+                this.object = object;
+                manage(this.object);
                 session.nonExport().require(object).onError(responseObserver).submit(() -> {
-                    this.object = object;
-                    object.get().addMessageSender(new PluginMessageSender(responseObserver, session));
+                    PluginMessageSender sender = new PluginMessageSender(responseObserver, session);
+                    final Object o = object.get();
+                    final ObjectType objectType = getObjectType();
+                    final ExportCollector exportCollector = sender.getExporter();
+                    final MessageResponse.Builder builder = MessageResponse.newBuilder();
+
+                    try {
+                        builder.setData(serialize(type, o, exportCollector))
+                                .addAllTypedExportId(exportCollector.refs().stream().map(ReferenceImpl::typedTicket)
+                                        .collect(Collectors.toList()));
+                    } catch (Throwable t) {
+                        exportCollector.cleanup(t);
+                        throw new RuntimeException(t);
+                    }
+                    responseObserver.onNext(builder.build());
+                    if (objectType.supportsBidiMessaging(o)) {
+                        objectType.addMessageSender(o, sender);
+                    } else {
+                        responseObserver.onCompleted();
+                        onCompleted();
+                    }
                 });
             } else if (request.hasData()) {
                 // All other requests
-                session.nonExport().require(object).onError(responseObserver).submit(() -> {
-                    String msg = request.getData().toString();
-                    object.get().handleMessage(msg);
+                DataRequest data = request.getData();
+                List<SessionState.ExportObject<Object>> referenceObjects = data.getTypedExportIdList().stream()
+                        .map(typedTicket -> ticketRouter.resolve(session, typedTicket.getTicket(), "messageObjectId"))
+                        .collect(Collectors.toList());
+                List<SessionState.ExportObject<Object>> requireObjects = new ArrayList<>(referenceObjects);
+                requireObjects.add(object);
+                session.nonExport().require(requireObjects).onError(responseObserver).submit(() -> {
+                    byte[] msg = data.getData().toByteArray();
+                    Object[] objs = referenceObjects.stream().map(ExportObject::get).toArray();
+                    // TODO: Should we try/catch this to recover/not close from plugin errors? Or make the client
+                    // recover? Would be useful if the plugin is complex
+                    getObjectType().handleMessage(msg, object.get(), objs);
                 });
+            } else {
+                // Do something with unexpected message type?
             }
         }
 
         @Override
         public void onError(final Throwable t) {
-            // ignore
+            // Do we need to clean up export collector here and onCompleted too?
+            release();
         }
 
         @Override
         public void onCompleted() {
-            object.get().removeMessageSender();
-            responseObserver.onCompleted();
+            SessionState session = sessionService.getCurrentSession();
+            session.nonExport().require(object).onError(responseObserver).submit(() -> {
+                getObjectType().removeMessageSender();
+                responseObserver.onCompleted();
+            });
+            release();
         }
     }
 
@@ -111,8 +177,14 @@ public class ObjectServiceGrpcImpl extends ObjectServiceGrpc.ObjectServiceImplBa
                 .onError(responseObserver)
                 .submit(() -> {
                     final Object o = object.get();
-                    final FetchObjectResponse response = serialize(type, session, o);
-                    responseObserver.onNext(response);
+                    final ExportCollector exportCollector = new ExportCollector(session);
+                    final Builder builder = FetchObjectResponse.newBuilder()
+                            .setType(type)
+                            .setData(serialize(type, o, exportCollector))
+                            .addAllTypedExportId(exportCollector.refs().stream().map(ReferenceImpl::typedTicket)
+                                    .collect(Collectors.toList()));
+
+                    responseObserver.onNext(builder.build());
                     responseObserver.onCompleted();
                     return null;
                 });
@@ -124,7 +196,8 @@ public class ObjectServiceGrpcImpl extends ObjectServiceGrpc.ObjectServiceImplBa
         return new SendMessageObserver(responseObserver);
     }
 
-    private FetchObjectResponse serialize(String expectedType, SessionState state, Object object) throws IOException {
+    private ByteString serialize(String expectedType, Object object, ExportCollector exportCollector)
+            throws IOException {
         final ExposedByteArrayOutputStream out = new ExposedByteArrayOutputStream();
         // TODO(deephaven-core#1872): Optimize ObjectTypeLookup
         final Optional<ObjectType> o = objectTypeLookup.findObjectType(object);
@@ -137,82 +210,69 @@ public class ObjectServiceGrpcImpl extends ObjectServiceGrpc.ObjectServiceImplBa
             throw Exceptions.statusRuntimeException(Code.FAILED_PRECONDITION, String.format(
                     "Unexpected ObjectType, expected type '%s', actual type '%s'", expectedType, objectType.name()));
         }
-        final ExportCollector exportCollector = new ExportCollector(state);
         try {
             objectType.writeTo(exportCollector, object, out);
-            final Builder builder = FetchObjectResponse.newBuilder()
-                    .setType(objectType.name())
-                    .setData(ByteStringAccess.wrap(out.peekBuffer(), 0, out.size()));
-            for (ReferenceImpl ref : exportCollector.refs()) {
-                builder.addTypedExportId(ref.typedTicket());
-            }
-            return builder.build();
+            return ByteStringAccess.wrap(out.peekBuffer(), 0, out.size());
         } catch (Throwable t) {
-            cleanup(exportCollector, t);
+            exportCollector.cleanup(t);
             throw t;
         }
     }
 
-    private static void cleanup(ExportCollector exportCollector, Throwable t) {
-        for (ReferenceImpl ref : exportCollector.refs()) {
-            try {
-                ref.export.release();
-            } catch (Throwable inner) {
-                t.addSuppressed(inner);
-            }
-        }
-    }
-
-    private static boolean referenceEquality(Object t, Object u) {
-        return t == u;
-    }
-
-    final class ExportCollector implements Exporter {
+    class ExportCollector implements Exporter {
 
         private final SessionState sessionState;
         private final Thread thread;
-        private final List<ReferenceImpl> references;
+
+        private final HashMap<Object, ReferenceImpl> refMap;
+
+        private final ArrayList<ReferenceImpl> refQueue;
 
         public ExportCollector(SessionState sessionState) {
             this.sessionState = Objects.requireNonNull(sessionState);
             this.thread = Thread.currentThread();
-            this.references = new ArrayList<>();
+            this.refMap = new LinkedHashMap<>();
+            this.refQueue = new ArrayList<>();
         }
 
         public List<ReferenceImpl> refs() {
-            return references;
+            final ArrayList<ReferenceImpl> refs = new ArrayList<>(refQueue);
+            refQueue.clear();
+            return refs;
         }
 
         @Override
-        public Optional<Reference> reference(Object object, boolean allowUnknownType, boolean forceNew) {
-            return reference(object, allowUnknownType, forceNew, ObjectServiceGrpcImpl::referenceEquality);
+        public synchronized Optional<Reference> reference(Object object, boolean allowUnknownType, boolean forceNew) {
+            ReferenceImpl oldRef = refMap.get(object);
+
+            if (oldRef != null && !forceNew) {
+                return Optional.of(oldRef);
+            }
+
+            ReferenceImpl newRef = newReferenceImpl(object, allowUnknownType, refMap.size());
+            refMap.put(object, newRef);
+            refQueue.add(newRef);
+
+            return newRef == null ? Optional.empty() : Optional.of(newRef);
         }
 
-        @Override
-        public Optional<Reference> reference(Object object, boolean allowUnknownType, boolean forceNew,
-                BiPredicate<Object, Object> equals) {
-            if (thread != Thread.currentThread()) {
-                throw new IllegalStateException("Should only create references on the calling thread");
-            }
-            if (!forceNew) {
-                for (ReferenceImpl reference : references) {
-                    if (equals.test(object, reference.export.get())) {
-                        return Optional.of(reference);
-                    }
-                }
-            }
-            return newReferenceImpl(object, allowUnknownType);
-        }
-
-        private Optional<Reference> newReferenceImpl(Object object, boolean allowUnknownType) {
+        private ReferenceImpl newReferenceImpl(Object object, boolean allowUnknownType, int index) {
             final String type = typeLookup.type(object).orElse(null);
             if (!allowUnknownType && type == null) {
-                return Optional.empty();
+                return null;
             }
             final ExportObject<?> exportObject = sessionState.newServerSideExport(object);
-            final ReferenceImpl ref = new ReferenceImpl(references.size(), type, exportObject);
-            references.add(ref);
-            return Optional.of(ref);
+            return new ReferenceImpl(index, type, exportObject);
+        }
+
+        public void cleanup(Throwable t) {
+            for (ReferenceImpl ref : refs()) {
+                try {
+                    ref.export.release();
+                } catch (Throwable inner) {
+                    t.addSuppressed(inner);
+                }
+            }
         }
     }
 
@@ -246,33 +306,35 @@ public class ObjectServiceGrpcImpl extends ObjectServiceGrpc.ObjectServiceImplBa
         }
     }
 
-    private final class PluginMessageSender implements MessageSender {
-
+    private final class PluginMessageSender extends ExportCollector implements MessageSender {
 
         private final StreamObserver<MessageResponse> responseObserver;
 
         private final ExportCollector exportCollector;
 
         public PluginMessageSender(StreamObserver<MessageResponse> responseObserver, SessionState sessionState) {
+            super(sessionState);
             this.responseObserver = responseObserver;
             exportCollector = new ExportCollector(sessionState);
         }
 
-        @Override
-        public void sendMessage(String msg) {
-            sendMessage(msg, new Object[] {});
+        public ExportCollector getExporter() {
+            return exportCollector;
         }
 
         @Override
-        public void sendMessage(String msg, Object[] objects) {
+        public void sendMessage(byte[] msg) {
             final MessageResponse.Builder responseBuilder =
-                    MessageResponse.newBuilder().setData(ByteString.copyFrom(msg.getBytes()));
-            for (Object obj : objects) {
-                Optional<Reference> ref = exportCollector.reference(obj, false, false);
-                if (ref.isPresent()) {
-                    ReferenceImpl refImpl = (ReferenceImpl) ref.get();
-                    responseBuilder.addTypedExportId(refImpl.typedTicket());
+                    MessageResponse.newBuilder().setData(ByteString.copyFrom(msg));
+            try {
+                for (ReferenceImpl ref : exportCollector.refs()) {
+                    if (ref != null) {
+                        responseBuilder.addTypedExportId(ref.typedTicket());
+                    }
                 }
+            } catch (Throwable t) {
+                exportCollector.cleanup(t);
+                throw t;
             }
 
             responseObserver.onNext(responseBuilder.build());

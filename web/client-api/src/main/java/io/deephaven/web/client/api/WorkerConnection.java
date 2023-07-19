@@ -47,6 +47,7 @@ import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.console_pb_se
 import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.hierarchicaltable_pb_service.HierarchicalTableServiceClient;
 import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.inputtable_pb_service.InputTableServiceClient;
 import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.object_pb.FetchObjectRequest;
+import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.object_pb.FetchObjectResponse;
 import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.object_pb_service.ObjectServiceClient;
 import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.partitionedtable_pb_service.PartitionedTableServiceClient;
 import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.session_pb.ReleaseRequest;
@@ -93,6 +94,7 @@ import io.deephaven.web.shared.data.DeltaUpdates;
 import io.deephaven.web.shared.data.RangeSet;
 import io.deephaven.web.shared.data.TableSnapshot;
 import io.deephaven.web.shared.data.TableSubscriptionRequest;
+import io.deephaven.web.shared.fu.JsBiConsumer;
 import io.deephaven.web.shared.fu.JsConsumer;
 import io.deephaven.web.shared.fu.JsRunnable;
 import jsinterop.annotations.JsMethod;
@@ -862,7 +864,7 @@ public class WorkerConnection {
 
     public Promise<JsPartitionedTable> getPartitionedTable(JsVariableDefinition varDef) {
         return whenServerReady("get a partitioned table")
-                .then(server -> new JsPartitionedTable(this, new JsWidget(this, c -> fetchObject(varDef, c)))
+                .then(server -> new JsPartitionedTable(this, new JsWidget(this, createTypedTicket(varDef)))
                         .refetch());
     }
 
@@ -880,22 +882,26 @@ public class WorkerConnection {
         }
         return whenServerReady("get a figure")
                 .then(server -> new JsFigure(this,
-                        c -> fetchObject(varDef, (fail, success, ignore) -> c.apply(fail, success))).refetch());
+                        c -> fetchObject(varDef, c)).refetch());
     }
 
-    private void fetchObject(JsVariableDefinition varDef, JsWidget.WidgetFetchCallback c) {
-        FetchObjectRequest request = new FetchObjectRequest();
+    private TypedTicket createTypedTicket(JsVariableDefinition varDef) {
         TypedTicket typedTicket = new TypedTicket();
         typedTicket.setTicket(TableTicket.createTicket(varDef));
         typedTicket.setType(varDef.getType());
+        return typedTicket;
+    }
+
+    private void fetchObject(JsVariableDefinition varDef, JsBiConsumer<Object, FetchObjectResponse> c) {
+        FetchObjectRequest request = new FetchObjectRequest();
+        TypedTicket typedTicket = createTypedTicket(varDef);
         request.setSourceId(typedTicket);
-        objectServiceClient().fetchObject(request, metadata(),
-                (fail, success) -> c.handleResponse(fail, success, typedTicket.getTicket()));
+        objectServiceClient().fetchObject(request, metadata(), c::apply);
     }
 
     public Promise<JsWidget> getWidget(JsVariableDefinition varDef) {
         return whenServerReady("get a widget")
-                .then(response -> new JsWidget(this, c -> fetchObject(varDef, c)).refetch());
+                .then(response -> new JsWidget(this, createTypedTicket(varDef)).refetch());
     }
 
     public void registerSimpleReconnectable(HasLifecycle figure) {

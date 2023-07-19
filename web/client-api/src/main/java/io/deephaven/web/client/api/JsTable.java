@@ -861,16 +861,11 @@ public class JsTable extends HasLifecycle implements HasTableBinding, JoinableTa
             workerConnection.hierarchicalTableServiceClient().rollup(request, workerConnection.metadata(), c::apply);
         });
 
-        JsWidget widget = new JsWidget(workerConnection, c -> {
-            FetchObjectRequest partitionedTableRequest = new FetchObjectRequest();
-            partitionedTableRequest.setSourceId(new TypedTicket());
-            partitionedTableRequest.getSourceId().setType(JsVariableType.HIERARCHICALTABLE);
-            partitionedTableRequest.getSourceId().setTicket(rollupTicket);
-            workerConnection.objectServiceClient().fetchObject(partitionedTableRequest,
-                    workerConnection.metadata(), (fail, success) -> {
-                        c.handleResponse(fail, success, rollupTicket);
-                    });
-        });
+        TypedTicket typedTicket = new TypedTicket();
+        typedTicket.setType(JsVariableType.HIERARCHICALTABLE);
+        typedTicket.setTicket(rollupTicket);
+
+        JsWidget widget = new JsWidget(workerConnection, typedTicket);
 
         return Promise.all(widget.refetch(), rollupPromise)
                 .then(ignore -> Promise.resolve(new JsTreeTable(workerConnection, widget)));
@@ -900,16 +895,11 @@ public class JsTable extends HasLifecycle implements HasTableBinding, JoinableTa
                     c::apply);
         });
 
-        JsWidget widget = new JsWidget(workerConnection, c -> {
-            FetchObjectRequest partitionedTableRequest = new FetchObjectRequest();
-            partitionedTableRequest.setSourceId(new TypedTicket());
-            partitionedTableRequest.getSourceId().setType(JsVariableType.HIERARCHICALTABLE);
-            partitionedTableRequest.getSourceId().setTicket(treeTicket);
-            workerConnection.objectServiceClient().fetchObject(partitionedTableRequest,
-                    workerConnection.metadata(), (fail, success) -> {
-                        c.handleResponse(fail, success, treeTicket);
-                    });
-        });
+        TypedTicket typedTicket = new TypedTicket();
+        typedTicket.setType(JsVariableType.HIERARCHICALTABLE);
+        typedTicket.setTicket(treeTicket);
+
+        JsWidget widget = new JsWidget(workerConnection, typedTicket);
 
         return Promise.all(widget.refetch(), treePromise)
                 .then(ignore -> Promise.resolve(new JsTreeTable(workerConnection, widget)));
@@ -1101,17 +1091,11 @@ public class JsTable extends HasLifecycle implements HasTableBinding, JoinableTa
                     c::apply);
         });
         // construct the partitioned table around the ticket created above
+        TypedTicket typedTicket = new TypedTicket();
+        typedTicket.setType(JsVariableType.PARTITIONEDTABLE);
+        typedTicket.setTicket(partitionedTableTicket);
         Promise<JsPartitionedTable> fetchPromise =
-                new JsPartitionedTable(workerConnection, new JsWidget(workerConnection, c -> {
-                    FetchObjectRequest partitionedTableRequest = new FetchObjectRequest();
-                    partitionedTableRequest.setSourceId(new TypedTicket());
-                    partitionedTableRequest.getSourceId().setType(JsVariableType.PARTITIONEDTABLE);
-                    partitionedTableRequest.getSourceId().setTicket(partitionedTableTicket);
-                    workerConnection.objectServiceClient().fetchObject(partitionedTableRequest,
-                            workerConnection.metadata(), (fail, success) -> {
-                                c.handleResponse(fail, success, partitionedTableTicket);
-                            });
-                })).refetch();
+                new JsPartitionedTable(workerConnection, new JsWidget(workerConnection, typedTicket)).refetch();
 
         // Ensure that the partition failure propagates first, but the result of the fetch will be returned - both
         // are running concurrently.

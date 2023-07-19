@@ -716,8 +716,7 @@ public class JsFigure extends HasLifecycle {
                                 c::apply);
                     }).then(object -> {
                         JsPartitionedTable partitionedTable =
-                                new JsPartitionedTable(connection, new JsWidget(connection,
-                                        callback -> callback.handleResponse(null, object, ticket.getTicket())));
+                                new JsPartitionedTable(connection, new JsWidget(connection, ticket));
                         // TODO(deephaven-core#3604) if using a new session don't attempt a reconnect, since we might
                         // have a different figure schema entirely
                         // partitionedTable.addEventListener(JsPartitionedTable.EVENT_DISCONNECT, ignore ->

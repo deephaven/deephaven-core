@@ -49,6 +49,14 @@ public interface ObjectType extends Plugin {
     void writeTo(Exporter exporter, Object object, OutputStream out) throws IOException;
 
     /**
+     * Returns true if the {@code object} supports bidirectional communication.
+     *
+     * @param object the object
+     * @return true if the {@code object} supports bidirectional communication
+     */
+    boolean supportsBidiMessaging(Object object);
+
+    /**
      * The interface for creating new references during the {@link #writeTo(Exporter, Object, OutputStream)}.
      */
     interface Exporter {
@@ -64,20 +72,6 @@ public interface ObjectType extends Plugin {
          * @return the reference
          */
         Optional<Reference> reference(Object object, boolean allowUnknownType, boolean forceNew);
-
-        /**
-         * Gets the reference for {@code object} if it has already been created and {@code forceNew} is {@code false},
-         * otherwise creates a new one. If {@code allowUnknownType} is {@code false}, and no type can be found, no
-         * reference will be created.
-         *
-         * @param object the object
-         * @param allowUnknownType if an unknown-typed reference can be created
-         * @param forceNew if a new reference should be created
-         * @param equals the equals logic
-         * @return the reference
-         */
-        Optional<Reference> reference(Object object, boolean allowUnknownType, boolean forceNew,
-                BiPredicate<Object, Object> equals);
 
         /**
          * A reference.
@@ -100,18 +94,19 @@ public interface ObjectType extends Plugin {
         }
     }
 
-    void addMessageSender(MessageSender channel);
+    void addMessageSender(Object object, MessageSender channel);
 
     void removeMessageSender();
 
-    void handleMessage(String message);
+    void handleMessage(byte[] message, Object object, Object[] referenceObjects);
 
-    void sendMessage(String message);
+    void sendMessage(byte[] message);
 
-    interface MessageSender {
-        void sendMessage(String msg);
+    interface MessageSender extends Exporter {
 
-        void sendMessage(String msg, Object[] objects);
+        Exporter getExporter();
+
+        void sendMessage(byte[] msg);
 
         void close();
     }

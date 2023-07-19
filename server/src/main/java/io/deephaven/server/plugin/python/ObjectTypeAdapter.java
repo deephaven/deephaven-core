@@ -42,8 +42,23 @@ final class ObjectTypeAdapter extends ObjectTypeBase implements AutoCloseable {
     }
 
     @Override
-    public void handleMessage(String msg) {
-        objectTypeAdapter.call("handle_message", msg);
+    public boolean supportsBidiMessaging(Object object) {
+        return objectTypeAdapter.call(boolean.class, "supports_bidi_messaging", PyObject.class, (PyObject) object);
+    }
+
+    @Override
+    public void handleMessage(byte[] msg, Object object, Object[] referenceObjects) {
+        objectTypeAdapter.call("handle_message", msg, object, referenceObjects);
+    }
+
+    @Override
+    public void addMessageSender(Object object, MessageSender sender) {
+        objectTypeAdapter.call("add_message_sender", object, sender);
+    }
+
+    @Override
+    public void removeMessageSender() {
+        objectTypeAdapter.call("remove_message_sender");
     }
 
     @Override

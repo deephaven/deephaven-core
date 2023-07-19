@@ -9,8 +9,6 @@ import java.io.IOException;
 import java.io.OutputStream;
 
 public abstract class ObjectTypeBase extends PluginBase implements ObjectType {
-    private MessageSender messageSender;
-
     public abstract void writeCompatibleObjectTo(Exporter exporter, Object object, OutputStream out) throws IOException;
 
     @Override
@@ -22,40 +20,31 @@ public abstract class ObjectTypeBase extends PluginBase implements ObjectType {
     }
 
     @Override
-    public final void addMessageSender(MessageSender sender) {
-        messageSender = sender;
+    public boolean supportsBidiMessaging(Object obj) {
+        return false;
     }
 
     @Override
-    public final void removeMessageSender() {
-        messageSender = null;
-    }
+    public void addMessageSender(Object object, MessageSender sender) {}
+
+    @Override
+    public void removeMessageSender() {}
 
     /**
      * Used by an ObjectType plugin to send a message to the client
-     * 
+     *
      * @param message The message to send to the client
      */
     @Override
-    public void sendMessage(String message) {
-        sendMessage(message, new Object[] {});
-    }
-
-    public void sendMessage(String message, Object[] objects) {
-        if (messageSender != null) {
-            messageSender.sendMessage(message, objects);
-        }
-    }
+    public void sendMessage(byte[] message) {}
 
     /**
      * Used by an ObjectType plugin to handle a message from the client
-     * 
+     *
      * @param message The message from the client
      */
     @Override
-    public void handleMessage(String message) {
-        // By default, plugins just ignore incoming messages
-    }
+    public void handleMessage(byte[] message, Object object, Object[] referenceObjects) {}
 
     @Override
     public final <T, V extends Visitor<T>> T walk(V visitor) {
