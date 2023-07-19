@@ -19,6 +19,7 @@ import io.deephaven.engine.util.TableTools;
 import io.deephaven.api.util.ConcurrentMethod;
 import io.deephaven.engine.util.ColumnFormatting;
 import io.deephaven.engine.liveness.LivenessScopeStack;
+import io.deephaven.gui.color.Color;
 import io.deephaven.util.annotations.FinalDefault;
 
 import java.util.*;
@@ -227,6 +228,30 @@ public interface TableDefaults extends Table, TableOperationsDefaults<Table, Tab
     @Override
     default Table formatDataBar(String column, String valueColumn, String axis, Double min, Double max,
             String positiveColor, String negativeColor, String valuePlacement, String direction, Double opacity) {
+        if(!axis.equals("proportional") && !axis.equals("middle") && !axis.equals("directional")) {
+            throw new IllegalArgumentException("invalid axis option!");
+        }
+        if(min != null && max != null && min > max) {
+            throw new IllegalArgumentException("min cannot be greater than max!");
+        }
+        if(positiveColor != null) {
+            try {
+                Color c = new Color(positiveColor);
+            } catch (IllegalArgumentException e) {
+                throw new IllegalArgumentException("invalid color format!");
+            }
+        }
+        if(negativeColor != null) {
+            try {
+                Color c = new Color(negativeColor);
+            } catch (IllegalArgumentException e) {
+                throw new IllegalArgumentException("invalid color format!");
+            }
+        }
+        if(opacity > 1 || opacity < 0) {
+            throw new IllegalArgumentException("opacity must be between 0 and 1!");
+        }
+
         Table newTable = this;
 
         String minColumn =
