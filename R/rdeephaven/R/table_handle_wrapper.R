@@ -31,13 +31,12 @@ TableHandle <- R6Class("TableHandle",
     public = list(
 
         initialize = function(table_handle) {
-            if (class(table_handle)[[1]] != "Rcpp_INTERNAL_TableHandle") {
+            if (first_class(table_handle) != "Rcpp_INTERNAL_TableHandle") {
                 stop("'table_handle' should be an internal Deephaven TableHandle. If you're seeing this,
                 you are trying to call the constructor of TableHandle directly, which is not advised.")
             }
             self$internal_table_handle <- table_handle
             private$is_static_field <- self$internal_table_handle$is_static()
-            print("initializing!")
         },
 
         #' @description
@@ -62,7 +61,7 @@ TableHandle <- R6Class("TableHandle",
         #' enabling it to be accessed by that name from any Deephaven API.
         #' @param name Name for this table on the server.
         bind_to_variable = function(name) {
-            .verify_string("name", name)
+            verify_string("name", name)
             self$internal_table_handle$bind_to_variable(name)
         },
 
@@ -161,12 +160,23 @@ TableHandle <- R6Class("TableHandle",
         # AGGREGATION OPERATIONS
 
         #' @description
-        #' Creates a new table from this table, grouped by columns with the column content grouped
-        #' into arrays.
-        #' @param columns Columns to group by.
+        #' Creates a new table from this table with one or more aggregations applied to the specified columns.
+        #' @param aggregations Deephaven Aggregations to apply to this table.
         #' @return A TableHandle referencing the new table.
-        by = function(columns) {
-            return(TableHandle$new(self$internal_table_handle$by(columns)))
+        agg_by = function(aggregations) {
+
+            if ((first_class(aggregations) == "list") && (any(lapply(aggregations, first_class) != "Aggregation"))) {
+                stop("dumb!!")
+            }
+            else if ((first_class(aggregations) != "list") && (first_class(aggregations) != "Aggregation")) {
+                stop("dumber!!")
+            }
+            else if ((first_class(aggregations) != "list") && (first_class(aggregations) == "Aggregation")) {
+                aggregations = c(aggregations)
+            }
+            unwrapped_aggregations = lapply(aggregations, private$strip_r6_wrapping_from_aggregation)
+
+            return(TableHandle$new(self$internal_table_handle$agg_by(unwrapped_aggregations)))
         },
 
         #' @description
@@ -404,6 +414,11 @@ TableHandle <- R6Class("TableHandle",
         internal_table_handle = NULL
     ),
     private = list(
+
+        strip_r6_wrapping_from_aggregation = function(r6_aggregation) {
+            return(r6_aggregation$internal_aggregation)
+        },
+
         is_static_field = NULL
     )
 )

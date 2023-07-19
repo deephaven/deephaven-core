@@ -11,6 +11,13 @@
 #include <arrow/c/abi.h>
 #include <arrow/c/bridge.h>
 
+//#include <RcppCommon.h>
+//class AggregateWrapper;
+//namespace Rcpp {
+//    template <> SEXP wrap(const std::vector<AggregateWrapper>&);
+//    template <> std::vector<AggregateWrapper> as(SEXP);
+//}
+
 #include <Rcpp.h>
 
 // forward declaration of classes
@@ -23,16 +30,16 @@ class ClientWrapper;
 
 class AggregateWrapper {
 public:
+    AggregateWrapper();
     AggregateWrapper(deephaven::client::Aggregate aggregate) :
-            internal_aggregate(std::move(aggregate)) {}
+        internal_aggregation(std::move(aggregate)) {
+    }
 private:
-    deephaven::client::Aggregate internal_aggregate;
+    deephaven::client::Aggregate internal_aggregation;
     friend TableHandleWrapper;
 };
 
 AggregateWrapper* INTERNAL_min(std::vector<std::string> columnSpecs) {
-    //AggregateWrapper* agg_wrap_ptr = new AggregateWrapper(deephaven::client::Aggregate::min(columnSpecs));
-    //return Rcpp::XPtr<AggregateWrapper>(agg_wrap_ptr, true);
     return new AggregateWrapper(deephaven::client::Aggregate::min(columnSpecs));
 }
 
@@ -120,12 +127,15 @@ public:
 
     // AGGREGATION OPERATIONS
 
-    TableHandleWrapper* aggBy(std::vector<AggregateWrapper> aggregations) {
+    TableHandleWrapper* aggBy(Rcpp::List aggregations) {
         std::vector<deephaven::client::Aggregate> converted_aggregations;
         converted_aggregations.reserve(aggregations.size());
 
-        for (int i = 0; i < aggregations.size(); i++) {
-            converted_aggregations.push_back(aggregations[i].internal_aggregate);
+        for(int i = 0; i < aggregations.size(); i++) {
+            Rcpp::Environment aggregation = aggregations[i];
+            Rcpp::XPtr<AggregateWrapper> xptr(aggregation.get(".pointer"));
+            deephaven::client::Aggregate internal_aggregation = xptr->internal_aggregation;
+            converted_aggregations.push_back(internal_aggregation);
         }
         return new TableHandleWrapper(internal_tbl_hdl.by(deephaven::client::AggregateCombo::create(converted_aggregations)));
     }
@@ -447,8 +457,7 @@ RCPP_MODULE(DeephavenInternalModule) {
     .method("update_view", &TableHandleWrapper::updateView)
     .method("where", &TableHandleWrapper::where)
 
-    //.method("agg_by", &TableHandleWrapper::aggBy)
-    .method("by", &TableHandleWrapper::by)
+    .method("agg_by", &TableHandleWrapper::aggBy)
     .method("min_by", &TableHandleWrapper::minBy)
     .method("max_by", &TableHandleWrapper::maxBy)
     .method("sum_by", &TableHandleWrapper::sumBy)
