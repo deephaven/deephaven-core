@@ -5,7 +5,7 @@
 import jpy
 
 from typing import Optional, Union
-from deephaven.plugin.object import Exporter, ObjectType, Reference, BidiObjectBase, MessageSender
+from deephaven.plugin.object import Exporter, ObjectType, Reference, MessageSender
 from deephaven._wrapper import JObjectWrapper
 
 _JReference = jpy.get_type('io.deephaven.plugin.type.ObjectType$Exporter$Reference')
