@@ -9,6 +9,8 @@ import io.deephaven.engine.rowset.RowSet;
 import io.deephaven.engine.rowset.RowSetFactory;
 import io.deephaven.engine.rowset.RowSetShiftData;
 import io.deephaven.engine.table.ModifiedColumnSet;
+import io.deephaven.engine.table.MultiJoinFactory;
+import io.deephaven.engine.table.MultiJoinInput;
 import io.deephaven.engine.table.Table;
 import io.deephaven.engine.testutil.*;
 import io.deephaven.engine.testutil.generator.*;
@@ -75,7 +77,7 @@ public class QueryTableMultiJoinTest extends QueryTableTestBase {
         final Table t3 = TstUtils.testTable(col("Key", "F", "A", "B", "E"), intCol("S3", 6, 7, 8, 9),
                 doubleCol("S3b", 9.9, 10.1, 11.2, 12.3));
 
-        final Table result = MultiJoinTable.of(new String[] {"Key"}, t1, t2, t3).table();
+        final Table result = MultiJoinFactory.of(new String[] {"Key"}, t1, t2, t3).table();
         TableTools.showWithRowSet(result);
 
         final Table expected = TableTools.newTable(col("Key", "A", "B", "C", "D", "F", "E"),
@@ -97,7 +99,7 @@ public class QueryTableMultiJoinTest extends QueryTableTestBase {
 
         final Table result =
                 updateGraph.sharedLock()
-                        .computeLocked(() -> MultiJoinTable.of(new String[] {"Key"}, t1, t2, t3).table());
+                        .computeLocked(() -> MultiJoinFactory.of(new String[] {"Key"}, t1, t2, t3).table());
         System.out.println("Initial multi-join.");
         TableTools.showWithRowSet(result);
         final PrintListener printListener = new PrintListener("multiJoin", (QueryTable) result, 10);
@@ -227,7 +229,7 @@ public class QueryTableMultiJoinTest extends QueryTableTestBase {
             }
         }
 
-        final Table result = MultiJoinTable.of(joinControl, MultiJoinTable.simpleMultiJoinDescriptor(keys,
+        final Table result = MultiJoinTableImpl.of(joinControl, MultiJoinFactory.createSimpleJoinInput(keys,
                 inputTables.toArray(TableDefaults.ZERO_LENGTH_TABLE_ARRAY))).table();
         final Table expected = doIterativeMultiJoin(keys, inputTables);
 
@@ -397,8 +399,10 @@ public class QueryTableMultiJoinTest extends QueryTableTestBase {
         final ControlledUpdateGraph updateGraph = ExecutionContext.getContext().getUpdateGraph().cast();
 
         final Table expected = doIterativeMultiJoin(keys, lastByInputs);
-        final Table result = updateGraph.sharedLock().computeLocked(() -> MultiJoinTable.of(joinControl, MultiJoinTable
-                .simpleMultiJoinDescriptor(keys, lastByInputs.toArray(TableDefaults.ZERO_LENGTH_TABLE_ARRAY))).table());
+        final Table result = updateGraph.sharedLock()
+                .computeLocked(() -> MultiJoinTableImpl.of(joinControl, MultiJoinFactory
+                        .createSimpleJoinInput(keys, lastByInputs.toArray(TableDefaults.ZERO_LENGTH_TABLE_ARRAY)))
+                        .table());
 
         if (printTableUpdates()) {
             System.out.println("Initial result:");
@@ -472,7 +476,7 @@ public class QueryTableMultiJoinTest extends QueryTableTestBase {
         final ControlledUpdateGraph updateGraph = ExecutionContext.getContext().getUpdateGraph().cast();
 
         final Table expected = doIterativeMultiJoin(new String[] {"Key"}, inputTables);
-        final Table result = updateGraph.sharedLock().computeLocked(() -> MultiJoinTable.of(new String[] {"Key"},
+        final Table result = updateGraph.sharedLock().computeLocked(() -> MultiJoinFactory.of(new String[] {"Key"},
                 inputTables.toArray(TableDefaults.ZERO_LENGTH_TABLE_ARRAY)).table());
 
 
@@ -540,7 +544,7 @@ public class QueryTableMultiJoinTest extends QueryTableTestBase {
             }
         }
 
-        final Table result = MultiJoinTable.of(CollectionUtil.ZERO_LENGTH_STRING_ARRAY,
+        final Table result = MultiJoinFactory.of(CollectionUtil.ZERO_LENGTH_STRING_ARRAY,
                 inputTables.toArray(TableDefaults.ZERO_LENGTH_TABLE_ARRAY)).table();
         final Table expected = doIterativeMultiJoin(CollectionUtil.ZERO_LENGTH_STRING_ARRAY, inputTables);
 
@@ -556,19 +560,19 @@ public class QueryTableMultiJoinTest extends QueryTableTestBase {
         final Table t1 = TableTools.newTable(intCol("C1", 1, 2), intCol("C2", 1, 1), intCol("S1", 10, 11));
         final Table t2 = TableTools.newTable(intCol("C3", 2, 2), intCol("C4", 1, 2));
 
-        final Table joined = MultiJoinTable.of(new MultiJoinTable.MultiJoinTableDescriptor(t1, "Key=C1", "S1")).table();
+        final Table joined = MultiJoinTableImpl.of(MultiJoinInput.of(t1, "Key=C1", "S1")).table();
         assertTableEquals(TableTools.newTable(intCol("Key", 1, 2), intCol("S1", 10, 11)), joined);
 
         try {
-            MultiJoinTable.of(new MultiJoinTable.MultiJoinTableDescriptor(t1, "Key=C1", "S1"),
-                    new MultiJoinTable.MultiJoinTableDescriptor(t2, "Key=C3", "C4")).table();
+            MultiJoinTableImpl.of(MultiJoinInput.of(t1, "Key=C1", "S1"),
+                    MultiJoinInput.of(t2, "Key=C3", "C4")).table();
             Assert.fail("expected exception");
         } catch (IllegalStateException e) {
             Assert.assertEquals("Duplicate key found for 2 in table 1.", e.getMessage());
         }
 
         try {
-            MultiJoinTable.of(new MultiJoinTable.MultiJoinTableDescriptor(t1, "", "S1")).table();
+            MultiJoinTableImpl.of(MultiJoinInput.of(t1, "", "S1")).table();
             Assert.fail("expected exception");
         } catch (IllegalStateException e) {
             Assert.assertEquals("Duplicate rows for table 0 on zero-key multiJoin.", e.getMessage());
@@ -581,16 +585,16 @@ public class QueryTableMultiJoinTest extends QueryTableTestBase {
 
         final ControlledUpdateGraph updateGraph = ExecutionContext.getContext().getUpdateGraph().cast();
 
-        final Table joinedR = updateGraph.sharedLock().computeLocked(() -> MultiJoinTable.of(
-                new MultiJoinTable.MultiJoinTableDescriptor(t1, "Key=C1", "S1"),
-                new MultiJoinTable.MultiJoinTableDescriptor(t2r, "Key=C4", "S2")).table());
+        final Table joinedR = updateGraph.sharedLock().computeLocked(() -> MultiJoinTableImpl.of(
+                MultiJoinInput.of(t1, "Key=C1", "S1"),
+                MultiJoinInput.of(t2r, "Key=C4", "S2")).table());
         assertTableEquals(TableTools.newTable(intCol("Key", 1, 2), intCol("S1", 10, 11), intCol("S2", 20, 21)),
                 joinedR);
 
         try {
-            updateGraph.sharedLock().doLocked(() -> MultiJoinTable.of(
-                    new MultiJoinTable.MultiJoinTableDescriptor(t1, "Key=C1", "S1"),
-                    new MultiJoinTable.MultiJoinTableDescriptor(t2r, "Key=C3", "C4")).table());
+            updateGraph.sharedLock().doLocked(() -> MultiJoinTableImpl.of(
+                    MultiJoinInput.of(t1, "Key=C1", "S1"),
+                    MultiJoinInput.of(t2r, "Key=C3", "C4")).table());
             Assert.fail("expected exception");
         } catch (IllegalStateException e) {
             Assert.assertEquals("Duplicate key found for 2 in table 1.", e.getMessage());
@@ -617,7 +621,7 @@ public class QueryTableMultiJoinTest extends QueryTableTestBase {
 
         final QueryTable t3 = TstUtils.testRefreshingTable(intCol("S1"));
         final Table j3 = updateGraph.sharedLock()
-                .computeLocked(() -> MultiJoinTable.of(new MultiJoinTable.MultiJoinTableDescriptor(t3, null, "S1")))
+                .computeLocked(() -> MultiJoinTableImpl.of(MultiJoinInput.of(t3, null, "S1")))
                 .table();
         assertTableEquals(TableTools.newTable(intCol("S1")), j3);
         updateGraph.runWithinUnitTestCycle(() -> {
@@ -646,8 +650,8 @@ public class QueryTableMultiJoinTest extends QueryTableTestBase {
         final ControlledUpdateGraph updateGraph = ExecutionContext.getContext().getUpdateGraph().cast();
 
         final QueryTable t3 = TstUtils.testRefreshingTable(intCol("S1"));
-        final Table j3 = updateGraph.sharedLock().computeLocked(() -> MultiJoinTable
-                .of(new MultiJoinTable.MultiJoinTableDescriptor(t3, "", "S1")).table());
+        final Table j3 = updateGraph.sharedLock().computeLocked(() -> MultiJoinTableImpl
+                .of(MultiJoinInput.of(t3, "", "S1")).table());
         final TableUpdateValidator validator = TableUpdateValidator.make("testZeroKeyTransitions", (QueryTable) j3);
         final FailureListener failureListener = new FailureListener();
         validator.getResultTable().addUpdateListener(failureListener);
@@ -692,16 +696,16 @@ public class QueryTableMultiJoinTest extends QueryTableTestBase {
         final Table t2 = TableTools.newTable(col("A", "a", "b"), intCol("D", 3, 4), doubleCol("C", 3.0, 4.0));
 
         try {
-            MultiJoinTable.of();
+            MultiJoinFactory.of();
             Assert.fail("expected exception");
         } catch (IllegalArgumentException iae) {
             Assert.assertEquals(iae.getMessage(), "At least one table must be included in MultiJoinTable.");
         }
 
         try {
-            MultiJoinTable.of(
-                    new MultiJoinTable.MultiJoinTableDescriptor(t1, "Key=B", "A"),
-                    new MultiJoinTable.MultiJoinTableDescriptor(t2, "KeyNotTheSame=C", "A"));
+            MultiJoinTableImpl.of(
+                    MultiJoinInput.of(t1, "Key=B", "A"),
+                    MultiJoinInput.of(t2, "KeyNotTheSame=C", "A"));
             Assert.fail("expected exception");
         } catch (IllegalArgumentException iae) {
             Assert.assertEquals(iae.getMessage(),
@@ -709,27 +713,27 @@ public class QueryTableMultiJoinTest extends QueryTableTestBase {
         }
 
         try {
-            MultiJoinTable.of(
-                    new MultiJoinTable.MultiJoinTableDescriptor(t1, "Key=B", "A"),
-                    new MultiJoinTable.MultiJoinTableDescriptor(t2, "Key=D", "A"));
+            MultiJoinTableImpl.of(
+                    MultiJoinInput.of(t1, "Key=B", "A"),
+                    MultiJoinInput.of(t2, "Key=D", "A"));
             Assert.fail("expected exception");
         } catch (IllegalArgumentException iae) {
             Assert.assertEquals("Column A defined in table 0 and table 1", iae.getMessage());
         }
 
         try {
-            MultiJoinTable.of(
-                    new MultiJoinTable.MultiJoinTableDescriptor(t1, "Key=B", "A"),
-                    new MultiJoinTable.MultiJoinTableDescriptor(t2, "Key=D", "Key"));
+            MultiJoinTableImpl.of(
+                    MultiJoinInput.of(t1, "Key=B", "A"),
+                    MultiJoinInput.of(t2, "Key=D", "Key"));
             Assert.fail("expected exception");
         } catch (IllegalArgumentException iae) {
             Assert.assertEquals("Column Key defined in table key columns and table 1", iae.getMessage());
         }
 
         try {
-            MultiJoinTable.of(
-                    new MultiJoinTable.MultiJoinTableDescriptor(t1, "Key=B", "A"),
-                    new MultiJoinTable.MultiJoinTableDescriptor(t2, "Key=C", "D"));
+            MultiJoinTableImpl.of(
+                    MultiJoinInput.of(t1, "Key=B", "A"),
+                    MultiJoinInput.of(t2, "Key=C", "D"));
             Assert.fail("expected exception");
         } catch (IllegalArgumentException iae) {
             Assert.assertEquals(
@@ -738,9 +742,9 @@ public class QueryTableMultiJoinTest extends QueryTableTestBase {
         }
 
         try {
-            MultiJoinTable.of(
-                    new MultiJoinTable.MultiJoinTableDescriptor(t1, null, "A"),
-                    new MultiJoinTable.MultiJoinTableDescriptor(t2, "Key=C", "D"));
+            MultiJoinTableImpl.of(
+                    MultiJoinInput.of(t1, null, "A"),
+                    MultiJoinInput.of(t2, "Key=C", "D"));
             Assert.fail("expected exception");
         } catch (IllegalArgumentException iae) {
             Assert.assertEquals(
@@ -749,9 +753,9 @@ public class QueryTableMultiJoinTest extends QueryTableTestBase {
         }
 
         try {
-            MultiJoinTable.of(
-                    new MultiJoinTable.MultiJoinTableDescriptor(t1, null, "A"),
-                    new MultiJoinTable.MultiJoinTableDescriptor(t2, null, "A"));
+            MultiJoinTableImpl.of(
+                    MultiJoinInput.of(t1, null, "A"),
+                    MultiJoinInput.of(t2, null, "A"));
             Assert.fail("expected exception");
         } catch (IllegalArgumentException iae) {
             Assert.assertEquals("Column A defined in table 0 and table 1", iae.getMessage());
@@ -767,8 +771,8 @@ public class QueryTableMultiJoinTest extends QueryTableTestBase {
         final String columnNames = String.join(",", keyColumns);
 
         Table result = base;
-        for (int ii = 0; ii < inputTables.size(); ++ii) {
-            result = result.naturalJoin(inputTables.get(ii), columnNames);
+        for (Table inputTable : inputTables) {
+            result = result.naturalJoin(inputTable, columnNames);
         }
 
         return result;
