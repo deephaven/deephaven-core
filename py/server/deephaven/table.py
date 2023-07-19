@@ -1955,10 +1955,10 @@ class Table(JObjectWrapper):
                         direction: str = 'LTR', opacity: float = 1) -> Table:
         try:
             if isinstance(positive_color, list):
-                positive_color = _JTableTools.serialize(positive_color)
+                positive_color = ','.join(positive_color)
 
             if isinstance(negative_color, list):
-                negative_color = _JTableTools.serialize(negative_color)
+                negative_color = ','.join(negative_color)
 
             return Table(j_table=self.j_table.formatDataBar(column, value_column, axis, min, max, positive_color,
                                                             negative_color, value_placement, direction, opacity))
