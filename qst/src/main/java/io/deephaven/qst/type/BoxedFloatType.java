@@ -24,7 +24,7 @@ public abstract class BoxedFloatType extends BoxedTypeBase<Float> {
 
     @Override
     public final FloatType primitiveType() {
-        return FloatType.instance();
+        return FloatType.of();
     }
 
     @Override

@@ -32,7 +32,7 @@ class TypeHelper {
     static Stream<GenericType<?>> genericTypes() {
         return Stream.of(
                 BoxedType.instances(),
-                Stream.of(StringType.instance(), InstantType.instance()),
+                Stream.of(StringType.of(), InstantType.of()),
                 primitiveVectorTypes())
                 .flatMap(Function.identity());
     }

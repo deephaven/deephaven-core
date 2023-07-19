@@ -37,9 +37,6 @@ public interface BoxedType<T> extends GenericType<T> {
     <R> R walk(Visitor<R> visitor);
 
     interface Visitor<R> {
-        static <R> Visitor<R> adapt(PrimitiveType.Visitor<R> visitor) {
-            return new BoxedTypeVisitorAdapter<>(visitor);
-        }
 
         R visit(BoxedBooleanType booleanType);
 

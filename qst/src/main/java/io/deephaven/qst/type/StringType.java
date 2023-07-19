@@ -13,7 +13,7 @@ import org.immutables.value.Value.Immutable;
 @SingletonStyle
 public abstract class StringType extends GenericTypeBase<String> {
 
-    public static StringType instance() {
+    public static StringType of() {
         return ImmutableStringType.of();
     }
 

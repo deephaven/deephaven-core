@@ -24,7 +24,7 @@ public abstract class BoxedByteType extends BoxedTypeBase<Byte> {
 
     @Override
     public final ByteType primitiveType() {
-        return ByteType.instance();
+        return ByteType.of();
     }
 
     @Override

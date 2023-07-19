@@ -50,7 +50,7 @@ public interface Type<T> {
      * @return the boolean type
      */
     static BooleanType booleanType() {
-        return BooleanType.instance();
+        return BooleanType.of();
     }
 
     /**
@@ -59,7 +59,7 @@ public interface Type<T> {
      * @return the byte type
      */
     static ByteType byteType() {
-        return ByteType.instance();
+        return ByteType.of();
     }
 
     /**
@@ -68,7 +68,7 @@ public interface Type<T> {
      * @return the char type
      */
     static CharType charType() {
-        return CharType.instance();
+        return CharType.of();
     }
 
     /**
@@ -77,7 +77,7 @@ public interface Type<T> {
      * @return the short type
      */
     static ShortType shortType() {
-        return ShortType.instance();
+        return ShortType.of();
     }
 
     /**
@@ -86,7 +86,7 @@ public interface Type<T> {
      * @return the int type
      */
     static IntType intType() {
-        return IntType.instance();
+        return IntType.of();
     }
 
     /**
@@ -95,7 +95,7 @@ public interface Type<T> {
      * @return the long type
      */
     static LongType longType() {
-        return LongType.instance();
+        return LongType.of();
     }
 
     /**
@@ -104,7 +104,7 @@ public interface Type<T> {
      * @return the float type
      */
     static FloatType floatType() {
-        return FloatType.instance();
+        return FloatType.of();
     }
 
     /**
@@ -113,7 +113,7 @@ public interface Type<T> {
      * @return the double type
      */
     static DoubleType doubleType() {
-        return DoubleType.instance();
+        return DoubleType.of();
     }
 
     /**
@@ -122,7 +122,7 @@ public interface Type<T> {
      * @return the string type
      */
     static StringType stringType() {
-        return StringType.instance();
+        return StringType.of();
     }
 
     /**
@@ -131,7 +131,7 @@ public interface Type<T> {
      * @return the instant type
      */
     static InstantType instantType() {
-        return InstantType.instance();
+        return InstantType.of();
     }
 
     /**

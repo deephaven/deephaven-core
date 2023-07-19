@@ -13,7 +13,7 @@ import org.immutables.value.Value.Immutable;
 @SingletonStyle
 public abstract class CharType extends PrimitiveTypeBase<Character> {
 
-    public static CharType instance() {
+    public static CharType of() {
         return ImmutableCharType.of();
     }
 

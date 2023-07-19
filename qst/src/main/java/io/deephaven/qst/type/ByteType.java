@@ -13,7 +13,7 @@ import org.immutables.value.Value.Immutable;
 @SingletonStyle
 public abstract class ByteType extends PrimitiveTypeBase<Byte> {
 
-    public static ByteType instance() {
+    public static ByteType of() {
         return ImmutableByteType.of();
     }
 

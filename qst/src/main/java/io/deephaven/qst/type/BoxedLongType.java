@@ -24,7 +24,7 @@ public abstract class BoxedLongType extends BoxedTypeBase<Long> {
 
     @Override
     public final LongType primitiveType() {
-        return LongType.instance();
+        return LongType.of();
     }
 
     @Override

@@ -13,7 +13,7 @@ import org.immutables.value.Value.Immutable;
 @SingletonStyle
 public abstract class DoubleType extends PrimitiveTypeBase<Double> {
 
-    public static DoubleType instance() {
+    public static DoubleType of() {
         return ImmutableDoubleType.of();
     }
 

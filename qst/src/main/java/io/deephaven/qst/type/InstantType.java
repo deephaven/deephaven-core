@@ -15,7 +15,7 @@ import java.time.Instant;
 @SingletonStyle
 public abstract class InstantType extends GenericTypeBase<Instant> {
 
-    public static InstantType instance() {
+    public static InstantType of() {
         return ImmutableInstantType.of();
     }
 

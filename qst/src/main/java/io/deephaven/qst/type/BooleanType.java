@@ -13,7 +13,7 @@ import org.immutables.value.Value.Immutable;
 @SingletonStyle
 public abstract class BooleanType extends PrimitiveTypeBase<Boolean> {
 
-    public static BooleanType instance() {
+    public static BooleanType of() {
         return ImmutableBooleanType.of();
     }
 

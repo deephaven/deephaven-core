@@ -24,7 +24,7 @@ public abstract class BoxedIntType extends BoxedTypeBase<Integer> {
 
     @Override
     public final IntType primitiveType() {
-        return IntType.instance();
+        return IntType.of();
     }
 
     @Override

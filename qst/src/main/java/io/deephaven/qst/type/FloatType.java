@@ -13,7 +13,7 @@ import org.immutables.value.Value.Immutable;
 @SingletonStyle
 public abstract class FloatType extends PrimitiveTypeBase<Float> {
 
-    public static FloatType instance() {
+    public static FloatType of() {
         return ImmutableFloatType.of();
     }
 

@@ -22,14 +22,14 @@ public interface PrimitiveType<T> extends Type<T> {
 
     static Stream<PrimitiveType<?>> instances() {
         return Stream.of(
-                BooleanType.instance(),
-                ByteType.instance(),
-                CharType.instance(),
-                ShortType.instance(),
-                IntType.instance(),
-                LongType.instance(),
-                FloatType.instance(),
-                DoubleType.instance());
+                BooleanType.of(),
+                ByteType.of(),
+                CharType.of(),
+                ShortType.of(),
+                IntType.of(),
+                LongType.of(),
+                FloatType.of(),
+                DoubleType.of());
     }
 
     BoxedType<T> boxedType();
@@ -37,9 +37,6 @@ public interface PrimitiveType<T> extends Type<T> {
     <R> R walk(Visitor<R> visitor);
 
     interface Visitor<R> {
-        static <R> Visitor<R> adapt(BoxedType.Visitor<R> visitor) {
-            return new PrimitiveTypeVisitorAdapter<>(visitor);
-        }
 
         R visit(BooleanType booleanType);
 

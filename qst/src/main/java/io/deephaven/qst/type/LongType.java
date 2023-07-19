@@ -13,7 +13,7 @@ import org.immutables.value.Value.Immutable;
 @SingletonStyle
 public abstract class LongType extends PrimitiveTypeBase<Long> {
 
-    public static LongType instance() {
+    public static LongType of() {
         return ImmutableLongType.of();
     }
 

@@ -27,7 +27,7 @@ public interface IntVector extends Vector<IntVector>, Iterable<Integer> {
     long serialVersionUID = -1373264425081841175L;
 
     static PrimitiveVectorType<IntVector, Integer> type() {
-        return PrimitiveVectorType.of(IntVector.class, IntType.instance());
+        return PrimitiveVectorType.of(IntVector.class, IntType.of());
     }
 
     /**

@@ -13,7 +13,7 @@ import org.immutables.value.Value.Immutable;
 @SingletonStyle
 public abstract class ShortType extends PrimitiveTypeBase<Short> {
 
-    public static ShortType instance() {
+    public static ShortType of() {
         return ImmutableShortType.of();
     }
 

@@ -4,7 +4,6 @@
 package io.deephaven.qst.type;
 
 import io.deephaven.annotations.SingletonStyle;
-import io.deephaven.qst.type.BoxedType.Visitor;
 import org.immutables.value.Value.Immutable;
 
 /**
@@ -25,7 +24,7 @@ public abstract class BoxedBooleanType extends BoxedTypeBase<Boolean> {
 
     @Override
     public final BooleanType primitiveType() {
-        return BooleanType.instance();
+        return BooleanType.of();
     }
 
     @Override

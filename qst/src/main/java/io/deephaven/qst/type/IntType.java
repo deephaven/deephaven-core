@@ -13,7 +13,7 @@ import org.immutables.value.Value.Immutable;
 @SingletonStyle
 public abstract class IntType extends PrimitiveTypeBase<Integer> {
 
-    public static IntType instance() {
+    public static IntType of() {
         return ImmutableIntType.of();
     }
 
