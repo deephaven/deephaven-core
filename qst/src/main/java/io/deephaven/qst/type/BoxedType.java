@@ -5,6 +5,19 @@ package io.deephaven.qst.type;
 
 import java.util.stream.Stream;
 
+/**
+ * A boxed primitive type.
+ *
+ * @param <T> the generic type
+ * @see BoxedBooleanType
+ * @see BoxedByteType
+ * @see BoxedCharType
+ * @see BoxedShortType
+ * @see BoxedIntType
+ * @see BoxedLongType
+ * @see BoxedFloatType
+ * @see BoxedDoubleType
+ */
 public interface BoxedType<T> extends GenericType<T> {
 
     static Stream<BoxedType<?>> instances() {

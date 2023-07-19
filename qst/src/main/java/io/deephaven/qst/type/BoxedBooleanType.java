@@ -7,6 +7,9 @@ import io.deephaven.annotations.SingletonStyle;
 import io.deephaven.qst.type.BoxedType.Visitor;
 import org.immutables.value.Value.Immutable;
 
+/**
+ * The {@link Boolean} type.
+ */
 @Immutable
 @SingletonStyle
 public abstract class BoxedBooleanType extends BoxedTypeBase<Boolean> {

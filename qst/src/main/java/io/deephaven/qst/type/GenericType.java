@@ -7,6 +7,7 @@ package io.deephaven.qst.type;
  * A non-primitive object type.
  *
  * @param <T> the object type
+ * @see BoxedType
  * @see StringType
  * @see InstantType
  * @see ArrayType
