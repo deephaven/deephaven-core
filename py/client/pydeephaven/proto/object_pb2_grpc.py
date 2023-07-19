@@ -19,6 +19,21 @@ class ObjectServiceStub(object):
                 request_serializer=deephaven_dot_proto_dot_object__pb2.FetchObjectRequest.SerializeToString,
                 response_deserializer=deephaven_dot_proto_dot_object__pb2.FetchObjectResponse.FromString,
                 )
+        self.MessageStream = channel.stream_stream(
+                '/io.deephaven.proto.backplane.grpc.ObjectService/MessageStream',
+                request_serializer=deephaven_dot_proto_dot_object__pb2.MessageRequest.SerializeToString,
+                response_deserializer=deephaven_dot_proto_dot_object__pb2.MessageResponse.FromString,
+                )
+        self.OpenMessageStream = channel.unary_stream(
+                '/io.deephaven.proto.backplane.grpc.ObjectService/OpenMessageStream',
+                request_serializer=deephaven_dot_proto_dot_object__pb2.MessageRequest.SerializeToString,
+                response_deserializer=deephaven_dot_proto_dot_object__pb2.MessageResponse.FromString,
+                )
+        self.NextMessageStream = channel.unary_unary(
+                '/io.deephaven.proto.backplane.grpc.ObjectService/NextMessageStream',
+                request_serializer=deephaven_dot_proto_dot_object__pb2.MessageRequest.SerializeToString,
+                response_deserializer=deephaven_dot_proto_dot_object__pb2.BrowserNextResponse.FromString,
+                )
 
 
 class ObjectServiceServicer(object):
@@ -30,6 +45,29 @@ class ObjectServiceServicer(object):
         context.set_details('Method not implemented!')
         raise NotImplementedError('Method not implemented!')
 
+    def MessageStream(self, request_iterator, context):
+        """Missing associated documentation comment in .proto file."""
+        context.set_code(grpc.StatusCode.UNIMPLEMENTED)
+        context.set_details('Method not implemented!')
+        raise NotImplementedError('Method not implemented!')
+
+    def OpenMessageStream(self, request, context):
+        """
+        Half of the browser-based (browser's can't do bidirectional streams without websockets)
+        implementation for MessageStream.
+        """
+        context.set_code(grpc.StatusCode.UNIMPLEMENTED)
+        context.set_details('Method not implemented!')
+        raise NotImplementedError('Method not implemented!')
+
+    def NextMessageStream(self, request, context):
+        """
+        Other half of the browser-based implementation for MessageStream.
+        """
+        context.set_code(grpc.StatusCode.UNIMPLEMENTED)
+        context.set_details('Method not implemented!')
+        raise NotImplementedError('Method not implemented!')
+
 
 def add_ObjectServiceServicer_to_server(servicer, server):
     rpc_method_handlers = {
@@ -37,6 +75,21 @@ def add_ObjectServiceServicer_to_server(servicer, server):
                     servicer.FetchObject,
                     request_deserializer=deephaven_dot_proto_dot_object__pb2.FetchObjectRequest.FromString,
                     response_serializer=deephaven_dot_proto_dot_object__pb2.FetchObjectResponse.SerializeToString,
+            ),
+            'MessageStream': grpc.stream_stream_rpc_method_handler(
+                    servicer.MessageStream,
+                    request_deserializer=deephaven_dot_proto_dot_object__pb2.MessageRequest.FromString,
+                    response_serializer=deephaven_dot_proto_dot_object__pb2.MessageResponse.SerializeToString,
+            ),
+            'OpenMessageStream': grpc.unary_stream_rpc_method_handler(
+                    servicer.OpenMessageStream,
+                    request_deserializer=deephaven_dot_proto_dot_object__pb2.MessageRequest.FromString,
+                    response_serializer=deephaven_dot_proto_dot_object__pb2.MessageResponse.SerializeToString,
+            ),
+            'NextMessageStream': grpc.unary_unary_rpc_method_handler(
+                    servicer.NextMessageStream,
+                    request_deserializer=deephaven_dot_proto_dot_object__pb2.MessageRequest.FromString,
+                    response_serializer=deephaven_dot_proto_dot_object__pb2.BrowserNextResponse.SerializeToString,
             ),
     }
     generic_handler = grpc.method_handlers_generic_handler(
@@ -62,5 +115,56 @@ class ObjectService(object):
         return grpc.experimental.unary_unary(request, target, '/io.deephaven.proto.backplane.grpc.ObjectService/FetchObject',
             deephaven_dot_proto_dot_object__pb2.FetchObjectRequest.SerializeToString,
             deephaven_dot_proto_dot_object__pb2.FetchObjectResponse.FromString,
+            options, channel_credentials,
+            insecure, call_credentials, compression, wait_for_ready, timeout, metadata)
+
+    @staticmethod
+    def MessageStream(request_iterator,
+            target,
+            options=(),
+            channel_credentials=None,
+            call_credentials=None,
+            insecure=False,
+            compression=None,
+            wait_for_ready=None,
+            timeout=None,
+            metadata=None):
+        return grpc.experimental.stream_stream(request_iterator, target, '/io.deephaven.proto.backplane.grpc.ObjectService/MessageStream',
+            deephaven_dot_proto_dot_object__pb2.MessageRequest.SerializeToString,
+            deephaven_dot_proto_dot_object__pb2.MessageResponse.FromString,
+            options, channel_credentials,
+            insecure, call_credentials, compression, wait_for_ready, timeout, metadata)
+
+    @staticmethod
+    def OpenMessageStream(request,
+            target,
+            options=(),
+            channel_credentials=None,
+            call_credentials=None,
+            insecure=False,
+            compression=None,
+            wait_for_ready=None,
+            timeout=None,
+            metadata=None):
+        return grpc.experimental.unary_stream(request, target, '/io.deephaven.proto.backplane.grpc.ObjectService/OpenMessageStream',
+            deephaven_dot_proto_dot_object__pb2.MessageRequest.SerializeToString,
+            deephaven_dot_proto_dot_object__pb2.MessageResponse.FromString,
+            options, channel_credentials,
+            insecure, call_credentials, compression, wait_for_ready, timeout, metadata)
+
+    @staticmethod
+    def NextMessageStream(request,
+            target,
+            options=(),
+            channel_credentials=None,
+            call_credentials=None,
+            insecure=False,
+            compression=None,
+            wait_for_ready=None,
+            timeout=None,
+            metadata=None):
+        return grpc.experimental.unary_unary(request, target, '/io.deephaven.proto.backplane.grpc.ObjectService/NextMessageStream',
+            deephaven_dot_proto_dot_object__pb2.MessageRequest.SerializeToString,
+            deephaven_dot_proto_dot_object__pb2.BrowserNextResponse.FromString,
             options, channel_credentials,
             insecure, call_credentials, compression, wait_for_ready, timeout, metadata)

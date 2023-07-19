@@ -23,6 +23,12 @@ const _ = grpc.SupportPackageIsVersion7
 // For semantics around ctx use and closing/ending streaming RPCs, please refer to https://pkg.go.dev/google.golang.org/grpc/?tab=doc#ClientConn.NewStream.
 type ObjectServiceClient interface {
 	FetchObject(ctx context.Context, in *FetchObjectRequest, opts ...grpc.CallOption) (*FetchObjectResponse, error)
+	MessageStream(ctx context.Context, opts ...grpc.CallOption) (ObjectService_MessageStreamClient, error)
+	// Half of the browser-based (browser's can't do bidirectional streams without websockets)
+	// implementation for MessageStream.
+	OpenMessageStream(ctx context.Context, in *MessageRequest, opts ...grpc.CallOption) (ObjectService_OpenMessageStreamClient, error)
+	// Other half of the browser-based implementation for MessageStream.
+	NextMessageStream(ctx context.Context, in *MessageRequest, opts ...grpc.CallOption) (*BrowserNextResponse, error)
 }
 
 type objectServiceClient struct {
@@ -42,11 +48,89 @@ func (c *objectServiceClient) FetchObject(ctx context.Context, in *FetchObjectRe
 	return out, nil
 }
 
+func (c *objectServiceClient) MessageStream(ctx context.Context, opts ...grpc.CallOption) (ObjectService_MessageStreamClient, error) {
+	stream, err := c.cc.NewStream(ctx, &ObjectService_ServiceDesc.Streams[0], "/io.deephaven.proto.backplane.grpc.ObjectService/MessageStream", opts...)
+	if err != nil {
+		return nil, err
+	}
+	x := &objectServiceMessageStreamClient{stream}
+	return x, nil
+}
+
+type ObjectService_MessageStreamClient interface {
+	Send(*MessageRequest) error
+	Recv() (*MessageResponse, error)
+	grpc.ClientStream
+}
+
+type objectServiceMessageStreamClient struct {
+	grpc.ClientStream
+}
+
+func (x *objectServiceMessageStreamClient) Send(m *MessageRequest) error {
+	return x.ClientStream.SendMsg(m)
+}
+
+func (x *objectServiceMessageStreamClient) Recv() (*MessageResponse, error) {
+	m := new(MessageResponse)
+	if err := x.ClientStream.RecvMsg(m); err != nil {
+		return nil, err
+	}
+	return m, nil
+}
+
+func (c *objectServiceClient) OpenMessageStream(ctx context.Context, in *MessageRequest, opts ...grpc.CallOption) (ObjectService_OpenMessageStreamClient, error) {
+	stream, err := c.cc.NewStream(ctx, &ObjectService_ServiceDesc.Streams[1], "/io.deephaven.proto.backplane.grpc.ObjectService/OpenMessageStream", opts...)
+	if err != nil {
+		return nil, err
+	}
+	x := &objectServiceOpenMessageStreamClient{stream}
+	if err := x.ClientStream.SendMsg(in); err != nil {
+		return nil, err
+	}
+	if err := x.ClientStream.CloseSend(); err != nil {
+		return nil, err
+	}
+	return x, nil
+}
+
+type ObjectService_OpenMessageStreamClient interface {
+	Recv() (*MessageResponse, error)
+	grpc.ClientStream
+}
+
+type objectServiceOpenMessageStreamClient struct {
+	grpc.ClientStream
+}
+
+func (x *objectServiceOpenMessageStreamClient) Recv() (*MessageResponse, error) {
+	m := new(MessageResponse)
+	if err := x.ClientStream.RecvMsg(m); err != nil {
+		return nil, err
+	}
+	return m, nil
+}
+
+func (c *objectServiceClient) NextMessageStream(ctx context.Context, in *MessageRequest, opts ...grpc.CallOption) (*BrowserNextResponse, error) {
+	out := new(BrowserNextResponse)
+	err := c.cc.Invoke(ctx, "/io.deephaven.proto.backplane.grpc.ObjectService/NextMessageStream", in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 // ObjectServiceServer is the server API for ObjectService service.
 // All implementations must embed UnimplementedObjectServiceServer
 // for forward compatibility
 type ObjectServiceServer interface {
 	FetchObject(context.Context, *FetchObjectRequest) (*FetchObjectResponse, error)
+	MessageStream(ObjectService_MessageStreamServer) error
+	// Half of the browser-based (browser's can't do bidirectional streams without websockets)
+	// implementation for MessageStream.
+	OpenMessageStream(*MessageRequest, ObjectService_OpenMessageStreamServer) error
+	// Other half of the browser-based implementation for MessageStream.
+	NextMessageStream(context.Context, *MessageRequest) (*BrowserNextResponse, error)
 	mustEmbedUnimplementedObjectServiceServer()
 }
 
@@ -56,6 +140,15 @@ type UnimplementedObjectServiceServer struct {
 
 func (UnimplementedObjectServiceServer) FetchObject(context.Context, *FetchObjectRequest) (*FetchObjectResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method FetchObject not implemented")
+}
+func (UnimplementedObjectServiceServer) MessageStream(ObjectService_MessageStreamServer) error {
+	return status.Errorf(codes.Unimplemented, "method MessageStream not implemented")
+}
+func (UnimplementedObjectServiceServer) OpenMessageStream(*MessageRequest, ObjectService_OpenMessageStreamServer) error {
+	return status.Errorf(codes.Unimplemented, "method OpenMessageStream not implemented")
+}
+func (UnimplementedObjectServiceServer) NextMessageStream(context.Context, *MessageRequest) (*BrowserNextResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method NextMessageStream not implemented")
 }
 func (UnimplementedObjectServiceServer) mustEmbedUnimplementedObjectServiceServer() {}
 
@@ -88,6 +181,71 @@ func _ObjectService_FetchObject_Handler(srv interface{}, ctx context.Context, de
 	return interceptor(ctx, in, info, handler)
 }
 
+func _ObjectService_MessageStream_Handler(srv interface{}, stream grpc.ServerStream) error {
+	return srv.(ObjectServiceServer).MessageStream(&objectServiceMessageStreamServer{stream})
+}
+
+type ObjectService_MessageStreamServer interface {
+	Send(*MessageResponse) error
+	Recv() (*MessageRequest, error)
+	grpc.ServerStream
+}
+
+type objectServiceMessageStreamServer struct {
+	grpc.ServerStream
+}
+
+func (x *objectServiceMessageStreamServer) Send(m *MessageResponse) error {
+	return x.ServerStream.SendMsg(m)
+}
+
+func (x *objectServiceMessageStreamServer) Recv() (*MessageRequest, error) {
+	m := new(MessageRequest)
+	if err := x.ServerStream.RecvMsg(m); err != nil {
+		return nil, err
+	}
+	return m, nil
+}
+
+func _ObjectService_OpenMessageStream_Handler(srv interface{}, stream grpc.ServerStream) error {
+	m := new(MessageRequest)
+	if err := stream.RecvMsg(m); err != nil {
+		return err
+	}
+	return srv.(ObjectServiceServer).OpenMessageStream(m, &objectServiceOpenMessageStreamServer{stream})
+}
+
+type ObjectService_OpenMessageStreamServer interface {
+	Send(*MessageResponse) error
+	grpc.ServerStream
+}
+
+type objectServiceOpenMessageStreamServer struct {
+	grpc.ServerStream
+}
+
+func (x *objectServiceOpenMessageStreamServer) Send(m *MessageResponse) error {
+	return x.ServerStream.SendMsg(m)
+}
+
+func _ObjectService_NextMessageStream_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(MessageRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(ObjectServiceServer).NextMessageStream(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: "/io.deephaven.proto.backplane.grpc.ObjectService/NextMessageStream",
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(ObjectServiceServer).NextMessageStream(ctx, req.(*MessageRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
 // ObjectService_ServiceDesc is the grpc.ServiceDesc for ObjectService service.
 // It's only intended for direct use with grpc.RegisterService,
 // and not to be introspected or modified (even as a copy)
@@ -99,7 +257,23 @@ var ObjectService_ServiceDesc = grpc.ServiceDesc{
 			MethodName: "FetchObject",
 			Handler:    _ObjectService_FetchObject_Handler,
 		},
+		{
+			MethodName: "NextMessageStream",
+			Handler:    _ObjectService_NextMessageStream_Handler,
+		},
 	},
-	Streams:  []grpc.StreamDesc{},
+	Streams: []grpc.StreamDesc{
+		{
+			StreamName:    "MessageStream",
+			Handler:       _ObjectService_MessageStream_Handler,
+			ServerStreams: true,
+			ClientStreams: true,
+		},
+		{
+			StreamName:    "OpenMessageStream",
+			Handler:       _ObjectService_OpenMessageStream_Handler,
+			ServerStreams: true,
+		},
+	},
 	Metadata: "deephaven/proto/object.proto",
 }
