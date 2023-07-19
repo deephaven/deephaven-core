@@ -87,9 +87,9 @@ public class ViewportData implements TableData {
                 data[c.getFormatStringColumnIndex()] = dataColumns[c.getFormatStringColumnIndex()];
             }
             // TODO: Figure out why I don't need this section here
-//            if(c.getFormatDataBarColumnIndices() != null) {
-//                c.getFormatDataBarColumnIndices().values().forEach(idx -> data[idx] = dataColumns[idx]);
-//            }
+            // if(c.getFormatDataBarColumnIndices() != null) {
+            // c.getFormatDataBarColumnIndices().values().forEach(idx -> data[idx] = dataColumns[idx]);
+            // }
         }
 
         // Handle row format column, if any

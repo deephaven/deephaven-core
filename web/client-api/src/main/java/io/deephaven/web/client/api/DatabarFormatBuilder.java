@@ -57,6 +57,7 @@ public class DatabarFormatBuilder {
     }
 
     public DataBarFormat build() {
-        return new DataBarFormat(min, max, value, axis, positiveColor, negativeColor, valuePlacement, direction, opacity);
+        return new DataBarFormat(min, max, value, axis, positiveColor, negativeColor, valuePlacement, direction,
+                opacity);
     }
 }

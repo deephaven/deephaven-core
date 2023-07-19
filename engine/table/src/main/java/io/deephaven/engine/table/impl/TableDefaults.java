@@ -35,6 +35,7 @@ import static io.deephaven.api.agg.Aggregation.AggMin;
 public interface TableDefaults extends Table, TableOperationsDefaults<Table, Table> {
 
     Table[] ZERO_LENGTH_TABLE_ARRAY = new Table[0];
+
     @Override
     default Table coalesce() {
         if (isRefreshing()) {
@@ -228,27 +229,27 @@ public interface TableDefaults extends Table, TableOperationsDefaults<Table, Tab
     @Override
     default Table formatDataBar(String column, String valueColumn, String axis, Double min, Double max,
             String positiveColor, String negativeColor, String valuePlacement, String direction, Double opacity) {
-        if(!axis.equals("proportional") && !axis.equals("middle") && !axis.equals("directional")) {
+        if (!axis.equals("proportional") && !axis.equals("middle") && !axis.equals("directional")) {
             throw new IllegalArgumentException("invalid axis option!");
         }
-        if(min != null && max != null && min > max) {
+        if (min != null && max != null && min > max) {
             throw new IllegalArgumentException("min cannot be greater than max!");
         }
-        if(positiveColor != null) {
+        if (positiveColor != null) {
             try {
                 Color c = new Color(positiveColor);
             } catch (IllegalArgumentException e) {
                 throw new IllegalArgumentException("invalid color format!");
             }
         }
-        if(negativeColor != null) {
+        if (negativeColor != null) {
             try {
                 Color c = new Color(negativeColor);
             } catch (IllegalArgumentException e) {
                 throw new IllegalArgumentException("invalid color format!");
             }
         }
-        if(opacity > 1 || opacity < 0) {
+        if (opacity > 1 || opacity < 0) {
             throw new IllegalArgumentException("opacity must be between 0 and 1!");
         }
 

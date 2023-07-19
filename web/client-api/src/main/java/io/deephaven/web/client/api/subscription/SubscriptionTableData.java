@@ -503,9 +503,10 @@ public class SubscriptionTableData {
 
         @Override
         public DataBarFormat getDataBarFormat(Column column) {
-//            return new DatabarFormat(null, null, null, null, null, null, null, null, null);
+            // return new DatabarFormat(null, null, null, null, null, null, null, null, null);
             return new DatabarFormatBuilder().build();
-//            return new DatabarFormatBuilder().setMin(0.0).setMax(0.0).setValue(0.0).setAxis("test").setPositiveColor("test").setNegativeColor("test").setValuePlacement("test").setDirection("test").setOpacity(0.0).createDatabarFormat();
+            // return new
+            // DatabarFormatBuilder().setMin(0.0).setMax(0.0).setValue(0.0).setAxis("test").setPositiveColor("test").setNegativeColor("test").setValuePlacement("test").setDirection("test").setOpacity(0.0).createDatabarFormat();
         }
     }
 
@@ -595,12 +596,13 @@ public class SubscriptionTableData {
                 JsArray<Any> formatStrings = Js.uncheckedCast(data[column.getFormatStringColumnIndex()]);
                 formatString = formatStrings.getAtAsAny(redirectedIndex).asString();
             }
-//            if (column.getFormatDatabarColumnIndexRange() != null) {
-//                JsArray<Any> formatDatabarStrings = Js.uncheckedCast(data[column.getFormatDatabarColumnIndexRange()]);
-//                formatDatabarString = formatDatabarStrings.getAtAsAny(redirectedIndex).asString();
-//            }
+            // if (column.getFormatDatabarColumnIndexRange() != null) {
+            // JsArray<Any> formatDatabarStrings = Js.uncheckedCast(data[column.getFormatDatabarColumnIndexRange()]);
+            // formatDatabarString = formatDatabarStrings.getAtAsAny(redirectedIndex).asString();
+            // }
             return new Format(cellColors, rowColors, numberFormat, formatString, formatDatabarString);
         }
+
         @Override
         public DataBarFormat getDataBarFormat(int index, Column column) {
             return getDataBarFormat((long) index, column);

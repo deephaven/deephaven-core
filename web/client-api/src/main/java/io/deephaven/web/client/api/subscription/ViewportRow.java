@@ -66,7 +66,7 @@ public class ViewportRow implements TableData.Row {
             JsArray<Any> formatStrings = Js.uncheckedCast(dataColumns[column.getFormatStringColumnIndex()]);
             formatString = formatStrings.getAtAsAny(offsetInSnapshot).asString();
         }
-        if(column.getFormatDataBarColumnIndices() != null) {
+        if (column.getFormatDataBarColumnIndices() != null) {
             formatDataBar = getDataBarFormat(column);
         }
         return new Format(cellColors, rowColors, numberFormat, formatString, formatDataBar);
@@ -83,7 +83,7 @@ public class ViewportRow implements TableData.Row {
         Map<String, Integer> formatDatabarColumnIndices = column.getFormatDataBarColumnIndices();
         DatabarFormatBuilder formatBuilder = new DatabarFormatBuilder();
 
-        if(!formatDatabarColumnIndices.isEmpty()) {
+        if (!formatDatabarColumnIndices.isEmpty()) {
             String prefix = column.getName() + "_";
             formatDatabarColumnIndices.entrySet().forEach(entry -> {
                 String name = entry.getKey().split("__")[0].substring(prefix.length());
@@ -104,12 +104,12 @@ public class ViewportRow implements TableData.Row {
                         formatBuilder.setAxis(val.getAtAsAny(offsetInSnapshot).asString());
                         break;
                     case POSITIVE_COLOR:
-                        if(val.getAtAsAny(offsetInSnapshot) != null) {
+                        if (val.getAtAsAny(offsetInSnapshot) != null) {
                             formatBuilder.setPositiveColor(val.getAtAsAny(offsetInSnapshot).asString());
                         }
                         break;
                     case NEGATIVE_COLOR:
-                        if(val.getAtAsAny(offsetInSnapshot) != null) {
+                        if (val.getAtAsAny(offsetInSnapshot) != null) {
                             formatBuilder.setNegativeColor(val.getAtAsAny(offsetInSnapshot).asString());
                         }
                         break;

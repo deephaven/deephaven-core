@@ -54,7 +54,8 @@ public class Column {
     }
 
     public Column(int jsIndex, int index, Integer formatColumnIndex, Integer styleColumnIndex, String type, String name,
-            boolean isPartitionColumn, Integer formatStringColumnIndex, Map<String, Integer> formatDataBarColumnIndices, String description,
+            boolean isPartitionColumn, Integer formatStringColumnIndex, Map<String, Integer> formatDataBarColumnIndices,
+            String description,
             boolean inputTableKeyColumn) {
         this.jsIndex = jsIndex;
         this.index = index;
@@ -111,7 +112,7 @@ public class Column {
         if (formatStringColumnIndex != null) {
             builder.accept(formatStringColumnIndex);
         }
-        if(formatDataBarColumnIndices != null) {
+        if (formatDataBarColumnIndices != null) {
             formatDataBarColumnIndices.values().forEach(builder::accept);
         }
         if (styleColumnIndex != null) {

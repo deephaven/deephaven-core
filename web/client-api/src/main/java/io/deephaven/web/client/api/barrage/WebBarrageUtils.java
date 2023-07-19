@@ -88,8 +88,7 @@ public class WebBarrageUtils {
             cols[i].setType(fieldMetadata.get("type"));
             cols[i].setStyleColumn("true".equals(fieldMetadata.get("isStyle")));
             cols[i].setFormatColumn("true".equals(fieldMetadata.get("isDateFormat"))
-                    || "true".equals(fieldMetadata.get("isNumberFormat"))
-            );
+                    || "true".equals(fieldMetadata.get("isNumberFormat")));
             cols[i].setDataBarFormatColumn("true".equals(fieldMetadata.get("isDatabarFormat")));
             cols[i].setForRow("true".equals(fieldMetadata.get("isRowStyle")));
 

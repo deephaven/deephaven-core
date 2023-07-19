@@ -76,7 +76,9 @@ public class ColumnDefinition {
         isFormatColumn = formatColumn;
     }
 
-    public boolean isDataBarFormatColumn() { return isDataBarFormatColumn; }
+    public boolean isDataBarFormatColumn() {
+        return isDataBarFormatColumn;
+    }
 
     public void setDataBarFormatColumn(boolean dataBarFormatColumn) {
         isDataBarFormatColumn = dataBarFormatColumn;
@@ -126,6 +128,7 @@ public class ColumnDefinition {
     public void setFormatColumnName(String formatColumn) {
         this.formatColumn = formatColumn;
     }
+
     public Collection<String> getDatabarColumnNames() {
         return dataBarColumn.values();
     }
@@ -183,10 +186,12 @@ public class ColumnDefinition {
     }
 
     private static Column makeColumn(int jsIndex, ColumnDefinition definition, Integer numberFormatIndex,
-            Integer styleIndex, boolean isPartitionColumn, Integer formatStringIndex, Map<String, Integer> formatDatabarIndices, String description,
+            Integer styleIndex, boolean isPartitionColumn, Integer formatStringIndex,
+            Map<String, Integer> formatDatabarIndices, String description,
             boolean inputTableKeyColumn) {
         return new Column(jsIndex, definition.getColumnIndex(), numberFormatIndex, styleIndex, definition.getType(),
-                definition.getName(), isPartitionColumn, formatStringIndex, formatDatabarIndices, description, inputTableKeyColumn);
+                definition.getName(), isPartitionColumn, formatStringIndex, formatDatabarIndices, description,
+                inputTableKeyColumn);
     }
 
     public boolean isHierarchicalExpandByColumn() {

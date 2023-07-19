@@ -20,7 +20,8 @@ public class Format {
     private final String formatString;
     private final DataBarFormat formatDataBar;
 
-    public Format(long cellColors, long rowColors, String numberFormat, String formatString, DataBarFormat formatDataBar) {
+    public Format(long cellColors, long rowColors, String numberFormat, String formatString,
+            DataBarFormat formatDataBar) {
         this.cellColors = cellColors;
         this.rowColors = rowColors;
         this.numberFormat = numberFormat;

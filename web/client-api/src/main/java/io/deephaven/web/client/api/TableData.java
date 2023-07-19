@@ -100,6 +100,7 @@ public interface TableData {
     }
 
     DataBarFormat getDataBarFormat(int index, Column column);
+
     DataBarFormat getDataBarFormat(long index, Column column);
 
     @TsName(namespace = "dh")
