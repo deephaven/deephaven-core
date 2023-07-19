@@ -27,7 +27,7 @@ public interface DoubleVector extends Vector<DoubleVector>, Iterable<Double> {
     long serialVersionUID = -1373264425081841175L;
 
     static PrimitiveVectorType<DoubleVector, Double> type() {
-        return PrimitiveVectorType.of(DoubleVector.class, DoubleType.instance());
+        return PrimitiveVectorType.of(DoubleVector.class, DoubleType.of());
     }
 
     /**

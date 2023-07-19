@@ -17,6 +17,7 @@ import io.confluent.kafka.serializers.KafkaAvroDeserializerConfig;
 import io.confluent.kafka.serializers.KafkaAvroSerializer;
 import io.deephaven.UncheckedDeephavenException;
 import io.deephaven.annotations.SimpleStyle;
+import io.deephaven.annotations.SingletonStyle;
 import io.deephaven.chunk.ChunkType;
 import io.deephaven.engine.context.ExecutionContext;
 import io.deephaven.engine.liveness.LivenessManager;
@@ -1241,7 +1242,7 @@ public class KafkaTools {
          * {@link BlinkTableTools} for related tooling.
          */
         @Immutable
-        @SimpleStyle
+        @SingletonStyle
         abstract class Blink implements TableType {
 
             public static Blink of() {
@@ -1260,7 +1261,7 @@ public class KafkaTools {
          * @see BlinkTableTools#blinkToAppendOnly(Table)
          */
         @Immutable
-        @SimpleStyle
+        @SingletonStyle
         abstract class Append implements TableType {
 
             public static Append of() {

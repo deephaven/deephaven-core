@@ -79,7 +79,7 @@ public final class IntArray extends PrimitiveArrayBase<Integer> {
 
     @Override
     public final IntType componentType() {
-        return IntType.instance();
+        return IntType.of();
     }
 
     @Override

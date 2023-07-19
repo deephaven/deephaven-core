@@ -22,7 +22,7 @@ public interface CharVector extends Vector<CharVector>, Iterable<Character> {
     long serialVersionUID = -1373264425081841175L;
 
     static PrimitiveVectorType<CharVector, Character> type() {
-        return PrimitiveVectorType.of(CharVector.class, CharType.instance());
+        return PrimitiveVectorType.of(CharVector.class, CharType.of());
     }
 
     /**
