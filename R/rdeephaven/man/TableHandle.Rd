@@ -45,7 +45,7 @@ new_table_handle2$bind_to_variable("new_table")
 \item \href{#method-TableHandle-update}{\code{TableHandle$update()}}
 \item \href{#method-TableHandle-update_view}{\code{TableHandle$update_view()}}
 \item \href{#method-TableHandle-where}{\code{TableHandle$where()}}
-\item \href{#method-TableHandle-by}{\code{TableHandle$by()}}
+\item \href{#method-TableHandle-agg_by}{\code{TableHandle$agg_by()}}
 \item \href{#method-TableHandle-min_by}{\code{TableHandle$min_by()}}
 \item \href{#method-TableHandle-max_by}{\code{TableHandle$max_by()}}
 \item \href{#method-TableHandle-sum_by}{\code{TableHandle$sum_by()}}
@@ -67,6 +67,7 @@ new_table_handle2$bind_to_variable("new_table")
 \item \href{#method-TableHandle-head}{\code{TableHandle$head()}}
 \item \href{#method-TableHandle-tail}{\code{TableHandle$tail()}}
 \item \href{#method-TableHandle-ungroup}{\code{TableHandle$ungroup()}}
+\item \href{#method-TableHandle-merge}{\code{TableHandle$merge()}}
 \item \href{#method-TableHandle-clone}{\code{TableHandle$clone()}}
 }
 }
@@ -301,19 +302,18 @@ A TableHandle referencing the new table.
 }
 }
 \if{html}{\out{<hr>}}
-\if{html}{\out{<a id="method-TableHandle-by"></a>}}
-\if{latex}{\out{\hypertarget{method-TableHandle-by}{}}}
-\subsection{Method \code{by()}}{
-Creates a new table from this table, grouped by columns with the column content grouped
-into arrays.
+\if{html}{\out{<a id="method-TableHandle-agg_by"></a>}}
+\if{latex}{\out{\hypertarget{method-TableHandle-agg_by}{}}}
+\subsection{Method \code{agg_by()}}{
+Creates a new table from this table with one or more aggregations applied to the specified columns.
 \subsection{Usage}{
-\if{html}{\out{<div class="r">}}\preformatted{TableHandle$by(columns)}\if{html}{\out{</div>}}
+\if{html}{\out{<div class="r">}}\preformatted{TableHandle$agg_by(aggregations)}\if{html}{\out{</div>}}
 }
 
 \subsection{Arguments}{
 \if{html}{\out{<div class="arguments">}}
 \describe{
-\item{\code{columns}}{Columns to group by.}
+\item{\code{aggregations}}{Deephaven Aggregations to apply to this table.}
 }
 \if{html}{\out{</div>}}
 }
@@ -778,6 +778,34 @@ of the by() const operation.
 \if{html}{\out{<div class="arguments">}}
 \describe{
 \item{\code{group_by_columns}}{Columns to ungroup.}
+}
+\if{html}{\out{</div>}}
+}
+\subsection{Returns}{
+A TableHandle referencing the new table.
+}
+}
+\if{html}{\out{<hr>}}
+\if{html}{\out{<a id="method-TableHandle-merge"></a>}}
+\if{latex}{\out{\hypertarget{method-TableHandle-merge}{}}}
+\subsection{Method \code{merge()}}{
+Creates a new table from this table, sorted by sortPairs.
+
+
+Creates a new table by merging `sources` together. The tables are essentially stacked on top
+of each other.
+\subsection{Usage}{
+\if{html}{\out{<div class="r">}}\preformatted{TableHandle$merge(key_column, sources)}\if{html}{\out{</div>}}
+}
+
+\subsection{Arguments}{
+\if{html}{\out{<div class="arguments">}}
+\describe{
+\item{\code{sources}}{The tables to merge.}
+
+\item{\code{sort_pairs}}{A vector of SortPair objects describing the sort. Each SortPair refers to
+a column, a sort direction, and whether the sort should consider to the value's regular or
+absolute value when doing comparisons.}
 }
 \if{html}{\out{</div>}}
 }

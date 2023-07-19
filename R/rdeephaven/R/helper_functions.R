@@ -14,6 +14,7 @@ verify_string <- function(arg_name, string_candidate) {
 verify_string_vector <- function(arg_name, string_vector_candidate) {
     if (first_class(string_candidate) != "character") {
         stop(paste0("'", arg_name, "' must be passed as a string or a vector of strings. Got an object of class ", first_class(string_candidate), " instead."))
+    }
 }
 
 verify_int <- function(arg_name, int_candidate) {
