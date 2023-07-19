@@ -10,8 +10,6 @@ import elemental2.core.JsString;
 import jsinterop.annotations.JsNullable;
 import jsinterop.annotations.JsProperty;
 
-import java.util.Map;
-
 @TsInterface
 @TsName(namespace = "dh")
 public class Format {
@@ -20,14 +18,14 @@ public class Format {
 
     private final String numberFormat;
     private final String formatString;
-    private final Map<String, String> formatDatabar;
+    private final DataBarFormat formatDataBar;
 
-    public Format(long cellColors, long rowColors, String numberFormat, String formatString, Map<String, String> formatDatabar) {
+    public Format(long cellColors, long rowColors, String numberFormat, String formatString, DataBarFormat formatDataBar) {
         this.cellColors = cellColors;
         this.rowColors = rowColors;
         this.numberFormat = numberFormat;
         this.formatString = formatString;
-        this.formatDatabar = formatDatabar;
+        this.formatDataBar = formatDataBar;
     }
 
     private static int getFg(long color) {
@@ -91,8 +89,8 @@ public class Format {
 
     @JsNullable
     @JsProperty
-    public Map<String, String> getFormatDatabar() {
-        return formatDatabar;
+    public DataBarFormat getFormatDataBar() {
+        return formatDataBar;
     }
 
 }

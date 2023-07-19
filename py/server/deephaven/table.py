@@ -1949,9 +1949,10 @@ class Table(JObjectWrapper):
         except Exception as e:
             raise DHError(e, "failed to color format rows conditionally.") from e
 
-    def format_databar(self, column: str, value_column: str, min: float = None, max: float = None, axis: str = 'proportional',
-                       positive_color: Union[str, List[str]] = '#6c757d', negative_color: Union[str, List[str]] = '#9cdb6c',
-                       value_placement: str = 'beside', direction: str = 'LTR', opacity: float = 1) -> Table:
+    def format_data_bar(self, column: str, value_column: str, min: float = None, max: float = None,
+                        axis: str = 'proportional', positive_color: Union[str, List[str]] = None,
+                        negative_color: Union[str, List[str]] = None, value_placement: str = 'beside',
+                        direction: str = 'LTR', opacity: float = 1) -> Table:
         try:
             if isinstance(positive_color, list):
                 positive_color = _JTableTools.serialize(positive_color)
@@ -1959,10 +1960,10 @@ class Table(JObjectWrapper):
             if isinstance(negative_color, list):
                 negative_color = _JTableTools.serialize(negative_color)
 
-            return Table(j_table=self.j_table.formatDatabar(column, value_column, axis, min, max, positive_color,
+            return Table(j_table=self.j_table.formatDataBar(column, value_column, axis, min, max, positive_color,
                                                             negative_color, value_placement, direction, opacity))
         except Exception as e:
-            raise DHError(e, "failed to format databar.") from e
+            raise DHError(e, "failed to format data bar.") from e
 
     def layout_hints(self, front: Union[str, List[str]] = None, back: Union[str, List[str]] = None,
                      freeze: Union[str, List[str]] = None, hide: Union[str, List[str]] = None,

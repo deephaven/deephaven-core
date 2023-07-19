@@ -86,13 +86,10 @@ public class ViewportData implements TableData {
             if (c.getFormatStringColumnIndex() != null) {
                 data[c.getFormatStringColumnIndex()] = dataColumns[c.getFormatStringColumnIndex()];
             }
-            if (c.getFormatDatabarColumnIndexRange() != null) {
-                int start = c.getFormatDatabarColumnIndexRange()[0];
-                int end = c.getFormatDatabarColumnIndexRange()[1];
-                for (int idx = start; idx <= end; idx++) {
-                    data[index] = dataColumns[index];
-                }
-            }
+            // TODO: Figure out why I don't need this section here
+//            if(c.getFormatDataBarColumnIndices() != null) {
+//                c.getFormatDataBarColumnIndices().values().forEach(idx -> data[idx] = dataColumns[idx]);
+//            }
         }
 
         // Handle row format column, if any
@@ -309,15 +306,15 @@ public class ViewportData implements TableData {
         return getRows().getAt((int) index).getFormat(column);
     }
 
-//    @Override
-//    public Map<String, String> getDatabar(int index, Column column) {
-//        return getRows().getAt(index).getDatabar(column);
-//    }
-//
-////    @Override
-//    public Map<String, String> getDatabar(long index, Column column) {
-//        return getRows().getAt((int)index).getDatabar(column);
-//    }
+    @Override
+    public DataBarFormat getDataBarFormat(int index, Column column) {
+        return getRows().getAt(index).getDataBarFormat(column);
+    }
+
+    @Override
+    public DataBarFormat getDataBarFormat(long index, Column column) {
+        return getRows().getAt((int) index).getDataBarFormat(column);
+    }
 
     @Override
     @JsProperty

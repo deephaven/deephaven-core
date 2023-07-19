@@ -222,10 +222,10 @@ public class BarrageUtil {
                 putMetadata(metadata, "dateFormatColumn", dateFormatName);
             }
 
-            for (ColumnFormatting.DatabarFormatColumnType type : ColumnFormatting.DatabarFormatColumnType.values()) {
-                String databarName = ColumnFormatting.getDatabarFormatColumnName(name, type);
-                if (formatColumns.contains(databarName)) {
-                    putMetadata(metadata, "databar." + type.name(), databarName);
+            for (ColumnFormatting.DataBarFormatColumnType type : ColumnFormatting.DataBarFormatColumnType.values()) {
+                String dataBarName = ColumnFormatting.getDataBarFormatColumnName(name, type);
+                if (formatColumns.contains(dataBarName)) {
+                    putMetadata(metadata, "dataBar." + type.name(), dataBarName);
                 }
             }
 
@@ -250,7 +250,7 @@ public class BarrageUtil {
             putMetadata(metadata, "isStyle", ColumnFormatting.isStyleFormatColumn(name) + "");
             putMetadata(metadata, "isNumberFormat", ColumnFormatting.isNumberFormatColumn(name) + "");
             putMetadata(metadata, "isDateFormat", ColumnFormatting.isDateFormatColumn(name) + "");
-            putMetadata(metadata, "isDatabarFormat", ColumnFormatting.isDatabarFormatColumn(name) + "");
+            putMetadata(metadata, "isDatabarFormat", ColumnFormatting.isDataBarFormatColumn(name) + "");
 
             final String columnDescription = columnDescriptions.get(name);
             if (columnDescription != null) {

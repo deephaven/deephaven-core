@@ -255,15 +255,16 @@ public class JsTreeTable extends HasLifecycle {
         public Format getFormat(long index, Column column) {
             return getRows().getAt((int) index).getFormat(column);
         }
-//        @Override
-//        public Format getDatabar(int index, Column column) {
-//            return getRows().getAt(index).getFormat(column);
-//        }
-//
-//        @Override
-//        public Format getDatabar(long index, Column column) {
-//            return getRows().getAt((int) index).getFormat(column);
-//        }
+
+        @Override
+        public DataBarFormat getDataBarFormat(int index, Column column) {
+            return getRows().getAt(index).getDataBarFormat(column);
+        }
+
+        @Override
+        public DataBarFormat getDataBarFormat(long index, Column column) {
+            return getRows().getAt((int) index).getDataBarFormat(column);
+        }
 
         @JsProperty
         public double getOffset() {

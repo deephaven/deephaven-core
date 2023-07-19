@@ -480,7 +480,7 @@ public class SubscriptionTableData {
             long rowColors = 0;
             String numberFormat = null;
             String formatString = null;
-            Map<String, String> formatDatabarString = new HashMap<>();
+            DataBarFormat formatDatabar = null;
             int redirectedIndex = (int) (long) redirectedIndexes.get(this.index);
             if (column.getStyleColumnIndex() != null) {
                 JsArray<Any> colors = Js.uncheckedCast(data[column.getStyleColumnIndex()]);
@@ -498,11 +498,14 @@ public class SubscriptionTableData {
                 JsArray<Any> formatStrings = Js.uncheckedCast(data[column.getFormatStringColumnIndex()]);
                 formatString = formatStrings.getAtAsAny(redirectedIndex).asString();
             }
-            if (column.getFormatDatabarColumnIndexRange() != null) {
-                JsArray<Any> formatDatabarStrings = Js.uncheckedCast(data[column.getFormatStringColumnIndex()]);
-//                formatDatabarString = formatDatabarStrings.getAtAsAny(redirectedIndex).asString();
-            }
-            return new Format(cellColors, rowColors, numberFormat, formatString, formatDatabarString);
+            return new Format(cellColors, rowColors, numberFormat, formatString, formatDatabar);
+        }
+
+        @Override
+        public DataBarFormat getDataBarFormat(Column column) {
+//            return new DatabarFormat(null, null, null, null, null, null, null, null, null);
+            return new DatabarFormatBuilder().build();
+//            return new DatabarFormatBuilder().setMin(0.0).setMax(0.0).setValue(0.0).setAxis("test").setPositiveColor("test").setNegativeColor("test").setValuePlacement("test").setDirection("test").setOpacity(0.0).createDatabarFormat();
         }
     }
 
@@ -574,7 +577,7 @@ public class SubscriptionTableData {
             long rowColors = 0;
             String numberFormat = null;
             String formatString = null;
-            Map<String, String> formatDatabarString = new HashMap<>();
+            DataBarFormat formatDatabarString = null;
             int redirectedIndex = (int) (long) redirectedIndexes.get(index);
             if (column.getStyleColumnIndex() != null) {
                 JsArray<Any> colors = Js.uncheckedCast(data[column.getStyleColumnIndex()]);
@@ -598,43 +601,14 @@ public class SubscriptionTableData {
 //            }
             return new Format(cellColors, rowColors, numberFormat, formatString, formatDatabarString);
         }
-//        @Override
-//        public Format getDatabar(int index, Column column) {
-//            return getFormat((long) index, column);
-//        }
+        @Override
+        public DataBarFormat getDataBarFormat(int index, Column column) {
+            return getDataBarFormat((long) index, column);
+        }
 
-//        @Override
-//        public Format getDatabar(long index, Column column) {
-//            long cellColors = 0;
-//            long rowColors = 0;
-//            String numberFormat = null;
-//            String formatString = null;
-//            String formatDatabarString = null;
-//            int redirectedIndex = (int) (long) redirectedIndexes.get(index);
-//            if (column.getStyleColumnIndex() != null) {
-//                JsArray<Any> colors = Js.uncheckedCast(data[column.getStyleColumnIndex()]);
-//                cellColors = colors.getAtAsAny(redirectedIndex).asLong();
-//            }
-//            if (rowStyleColumn != NO_ROW_FORMAT_COLUMN) {
-//                JsArray<Any> rowStyle = Js.uncheckedCast(data[rowStyleColumn]);
-//                rowColors = rowStyle.getAtAsAny(redirectedIndex).asLong();
-//            }
-//            if (column.getFormatColumnIndex() != null) {
-//                JsArray<Any> formatStrings = Js.uncheckedCast(data[column.getFormatColumnIndex()]);
-//                numberFormat = formatStrings.getAtAsAny(redirectedIndex).asString();
-//            }
-//            if (column.getFormatStringColumnIndex() != null) {
-//                JsArray<Any> formatStrings = Js.uncheckedCast(data[column.getFormatStringColumnIndex()]);
-//                formatString = formatStrings.getAtAsAny(redirectedIndex).asString();
-//            }
-////            if (column.getFormatDatabarColumnIndexRange() != null) {
-////                JsArray<Any> formatDatabarStrings = Js.uncheckedCast(data[column.getFormatDatabarColumnIndexRange()]);
-////                formatDatabarString = formatDatabarStrings.getAtAsAny(redirectedIndex).asString();
-////            }
-//            return new Format(cellColors, rowColors, numberFormat, formatString, formatDatabarString);
-//        }
-
-
+        public DataBarFormat getDataBarFormat(long index, Column column) {
+            return new DatabarFormatBuilder().build();
+        }
 
         @Override
         public JsArray<Column> getColumns() {

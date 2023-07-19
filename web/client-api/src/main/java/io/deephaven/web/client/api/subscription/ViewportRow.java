@@ -6,15 +6,12 @@ package io.deephaven.web.client.api.subscription;
 import com.vertispan.tsdefs.annotations.TsInterface;
 import com.vertispan.tsdefs.annotations.TsName;
 import elemental2.core.JsArray;
-import io.deephaven.web.client.api.Column;
-import io.deephaven.web.client.api.Format;
-import io.deephaven.web.client.api.LongWrapper;
-import io.deephaven.web.client.api.TableData;
+import io.deephaven.web.client.api.*;
+import io.deephaven.web.client.api.barrage.DatabarFormatColumnType;
 import jsinterop.annotations.JsMethod;
 import jsinterop.base.Any;
 import jsinterop.base.Js;
 
-import java.util.HashMap;
 import java.util.Map;
 
 @TsInterface
@@ -53,8 +50,7 @@ public class ViewportRow implements TableData.Row {
         long rowColors = 0;
         String numberFormat = null;
         String formatString = null;
-        String formatDatabarString = null;
-        Map<String, String> formatDatabar = new HashMap<>();
+        DataBarFormat formatDataBar = null;
         if (column.getStyleColumnIndex() != null) {
             JsArray<Any> colors = Js.uncheckedCast(dataColumns[column.getStyleColumnIndex()]);
             cellColors = colors.getAtAsAny(offsetInSnapshot).asLong();
@@ -70,37 +66,67 @@ public class ViewportRow implements TableData.Row {
             JsArray<Any> formatStrings = Js.uncheckedCast(dataColumns[column.getFormatStringColumnIndex()]);
             formatString = formatStrings.getAtAsAny(offsetInSnapshot).asString();
         }
-        if(column.getFormatDatabarColumnIndexRange() != null) {
-            Integer[] range = column.getFormatDatabarColumnIndexRange();
-            Integer start = range[0];
-            Integer end = range[1];
-
-            JsArray<Any> formatDatabarStrings = Js.uncheckedCast(dataColumns[start]);
-            formatDatabarString = formatDatabarStrings.getAtAsAny(offsetInSnapshot).asString();
-            formatDatabar.put("test", formatDatabarString);
-//            for (int idx = start; idx <= end; idx++) {
-//                JsArray<Any> formatDatabarStrings = Js.uncheckedCast(dataColumns[idx]);
-//                formatDatabar.put(column.getName(), formatDatabarStrings.getAtAsAny(offsetInSnapshot).asString());
-//            }
+        if(column.getFormatDataBarColumnIndices() != null) {
+            formatDataBar = getDataBarFormat(column);
         }
-        return new Format(cellColors, rowColors, numberFormat, formatString, formatDatabar);
+        return new Format(cellColors, rowColors, numberFormat, formatString, formatDataBar);
     }
 
-//    @JsMethod
-//    public java.util.Map<String, String> getDatabar(Column column) {
-//        java.util.Map<String, String> databarProps = new HashMap<>();
-//
-//        if (column.getFormatDatabarColumnIndexRange() != null) {
-//            Integer[] range = column.getFormatDatabarColumnIndexRange();
-//            int start = range[0];
-//            int end = range[1];
-//            int colIdx = column.getIndex();
-//
-//            if (colIdx >= start && colIdx <= end) {
-////                databarProps.put(String.valueOf(colIdx), dataColumns[colIdx]);
-//            }
-//        }
-//
-//        return databarProps;
-//    }
+    public static native void console(Object text)
+    /*-{
+        console.log(text, typeof text);
+    }-*/;
+
+    @Override
+    @JsMethod
+    public DataBarFormat getDataBarFormat(Column column) {
+        Map<String, Integer> formatDatabarColumnIndices = column.getFormatDataBarColumnIndices();
+        DatabarFormatBuilder formatBuilder = new DatabarFormatBuilder();
+
+        if(!formatDatabarColumnIndices.isEmpty()) {
+            String prefix = column.getName() + "_";
+            formatDatabarColumnIndices.entrySet().forEach(entry -> {
+                String name = entry.getKey().split("__")[0].substring(prefix.length());
+                int index = entry.getValue().intValue();
+                JsArray<Any> val = Js.uncheckedCast(dataColumns[index]);
+                DatabarFormatColumnType type = DatabarFormatColumnType.valueOf(name);
+                switch (type) {
+                    case MIN:
+                        formatBuilder.setMin(val.getAtAsAny(offsetInSnapshot).asDouble());
+                        break;
+                    case MAX:
+                        formatBuilder.setMax(val.getAtAsAny(offsetInSnapshot).asDouble());
+                        break;
+                    case VALUE:
+                        formatBuilder.setValue(val.getAtAsAny(offsetInSnapshot).asDouble());
+                        break;
+                    case AXIS:
+                        formatBuilder.setAxis(val.getAtAsAny(offsetInSnapshot).asString());
+                        break;
+                    case POSITIVE_COLOR:
+                        if(val.getAtAsAny(offsetInSnapshot) != null) {
+                            formatBuilder.setPositiveColor(val.getAtAsAny(offsetInSnapshot).asString());
+                        }
+                        break;
+                    case NEGATIVE_COLOR:
+                        if(val.getAtAsAny(offsetInSnapshot) != null) {
+                            formatBuilder.setNegativeColor(val.getAtAsAny(offsetInSnapshot).asString());
+                        }
+                        break;
+                    case VALUE_PLACEMENT:
+                        formatBuilder.setValuePlacement(val.getAtAsAny(offsetInSnapshot).asString());
+                        break;
+                    case DIRECTION:
+                        formatBuilder.setDirection(val.getAtAsAny(offsetInSnapshot).asString());
+                        break;
+                    case OPACITY:
+                        formatBuilder.setOpacity(val.getAtAsAny(offsetInSnapshot).asDouble());
+                        break;
+                    default:
+                        break;
+                }
+            });
+        }
+        return formatBuilder.build();
+    }
 }

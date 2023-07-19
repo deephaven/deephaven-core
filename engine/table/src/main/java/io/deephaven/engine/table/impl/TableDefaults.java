@@ -12,7 +12,6 @@ import io.deephaven.api.snapshot.SnapshotWhenOptions.Flag;
 import io.deephaven.datastructures.util.CollectionUtil;
 import io.deephaven.engine.table.*;
 import io.deephaven.engine.table.hierarchical.RollupTable;
-import io.deephaven.engine.table.impl.lang.QueryLanguageParser;
 import io.deephaven.engine.table.impl.select.SelectColumn;
 import io.deephaven.engine.table.impl.select.SelectColumnFactory;
 import io.deephaven.engine.table.impl.select.WouldMatchPairFactory;
@@ -28,7 +27,6 @@ import java.util.stream.Collectors;
 
 import static io.deephaven.api.agg.Aggregation.AggMax;
 import static io.deephaven.api.agg.Aggregation.AggMin;
-import static io.deephaven.engine.util.TableTools.col;
 
 /**
  * Sub-interface to capture default methods rom {@link Table}.
@@ -36,9 +34,6 @@ import static io.deephaven.engine.util.TableTools.col;
 public interface TableDefaults extends Table, TableOperationsDefaults<Table, Table> {
 
     Table[] ZERO_LENGTH_TABLE_ARRAY = new Table[0];
-
-    String DATA_BAR_SUFFIX = ColumnFormatting.Constants.TABLE_DATABAR_FORMAT_SUFFIX;
-
     @Override
     default Table coalesce() {
         if (isRefreshing()) {
@@ -230,45 +225,44 @@ public interface TableDefaults extends Table, TableOperationsDefaults<Table, Tab
     }
 
     @Override
-    default Table formatDatabar(String column, String valueColumn, String axis, Double min, Double max,
+    default Table formatDataBar(String column, String valueColumn, String axis, Double min, Double max,
             String positiveColor, String negativeColor, String valuePlacement, String direction, Double opacity) {
         Table newTable = this;
 
         String minColumn =
-                ColumnFormatting.getDatabarFormatColumnName(column, ColumnFormatting.DatabarFormatColumnType.MIN);
+                ColumnFormatting.getDataBarFormatColumnName(column, ColumnFormatting.DataBarFormatColumnType.MIN);
         if (min == null) {
             newTable = newTable.naturalJoin(this.aggBy(AggMin(minColumn + "=" + valueColumn)), "");
         } else {
-            newTable = newTable.naturalJoin(TableTools.newTable(col(minColumn, min)), "");
+            newTable = newTable.naturalJoin(TableTools.newTable(TableTools.col(minColumn, min)), "");
         }
 
         String maxColumn =
-                ColumnFormatting.getDatabarFormatColumnName(column, ColumnFormatting.DatabarFormatColumnType.MAX);
+                ColumnFormatting.getDataBarFormatColumnName(column, ColumnFormatting.DataBarFormatColumnType.MAX);
         if (max == null) {
             newTable = newTable.naturalJoin(this.aggBy(AggMax(maxColumn + "=" + valueColumn)), "");
         } else {
-            newTable = newTable.naturalJoin(TableTools.newTable(col(maxColumn, max)), "");
+            newTable = newTable.naturalJoin(TableTools.newTable(TableTools.col(maxColumn, max)), "");
         }
 
         String valueOutputColumn =
-                ColumnFormatting.getDatabarFormatColumnName(column, ColumnFormatting.DatabarFormatColumnType.VALUE);
-        newTable = newTable.updateView(valueOutputColumn + "= (" + valueColumn + " - " + minColumn + ") / (" + maxColumn
-                + " - " + minColumn + ")");
+                ColumnFormatting.getDataBarFormatColumnName(column, ColumnFormatting.DataBarFormatColumnType.VALUE);
+        newTable = newTable.updateView(valueOutputColumn + "=" + valueColumn);
 
         return newTable.naturalJoin(
                 TableTools.newTable(
-                        col(ColumnFormatting.getDatabarFormatColumnName(column,
-                                ColumnFormatting.DatabarFormatColumnType.AXIS), axis),
-                        col(ColumnFormatting.getDatabarFormatColumnName(column,
-                                ColumnFormatting.DatabarFormatColumnType.POSITIVE_COLOR), positiveColor),
-                        col(ColumnFormatting.getDatabarFormatColumnName(column,
-                                ColumnFormatting.DatabarFormatColumnType.NEGATIVE_COLOR), negativeColor),
-                        col(ColumnFormatting.getDatabarFormatColumnName(column,
-                                ColumnFormatting.DatabarFormatColumnType.VALUE_PLACEMENT), valuePlacement),
-                        col(ColumnFormatting.getDatabarFormatColumnName(column,
-                                ColumnFormatting.DatabarFormatColumnType.DIRECTION), direction),
-                        col(ColumnFormatting.getDatabarFormatColumnName(column,
-                                ColumnFormatting.DatabarFormatColumnType.OPACITY), opacity)),
+                        TableTools.col(ColumnFormatting.getDataBarFormatColumnName(column,
+                                ColumnFormatting.DataBarFormatColumnType.AXIS), axis),
+                        TableTools.col(ColumnFormatting.getDataBarFormatColumnName(column,
+                                ColumnFormatting.DataBarFormatColumnType.POSITIVE_COLOR), positiveColor),
+                        TableTools.col(ColumnFormatting.getDataBarFormatColumnName(column,
+                                ColumnFormatting.DataBarFormatColumnType.NEGATIVE_COLOR), negativeColor),
+                        TableTools.col(ColumnFormatting.getDataBarFormatColumnName(column,
+                                ColumnFormatting.DataBarFormatColumnType.VALUE_PLACEMENT), valuePlacement),
+                        TableTools.col(ColumnFormatting.getDataBarFormatColumnName(column,
+                                ColumnFormatting.DataBarFormatColumnType.DIRECTION), direction),
+                        TableTools.col(ColumnFormatting.getDataBarFormatColumnName(column,
+                                ColumnFormatting.DataBarFormatColumnType.OPACITY), opacity)),
                 "");
     }
 

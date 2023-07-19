@@ -302,7 +302,7 @@ public interface Table extends
     Table formatColumnWhere(String columnName, String condition, String formula);
 
     @ConcurrentMethod
-    Table formatDatabar(String column, String valueColumn, String axis, Double min, Double max,
+    Table formatDataBar(String column, String valueColumn, String axis, Double min, Double max,
             String positiveColor, String negativeColor, String valuePlacement, String direction, Double opacity);
 
     /**

@@ -14,7 +14,7 @@ public interface ColumnFormatting {
         private static final String TABLE_STYLE_FORMAT_SUFFIX = "__TABLE_STYLE_FORMAT";
         private static final String TABLE_NUMBER_FORMAT_SUFFIX = "__TABLE_NUMBER_FORMAT";
         private static final String TABLE_DATE_FORMAT_SUFFIX = "__TABLE_DATE_FORMAT";
-        public static final String TABLE_DATABAR_FORMAT_SUFFIX = "__TABLE_DATABAR_FORMAT";
+        public static final String TABLE_DATA_BAR_FORMAT_SUFFIX = "__TABLE_DATA_BAR_FORMAT";
         private static final String ROW_FORMAT_NAME = "__ROW";
         public static final String ROW_FORMAT_WILDCARD = "*";
         private static final String ROW_STYLE_FORMAT_COLUMN = ROW_FORMAT_NAME + TABLE_STYLE_FORMAT_SUFFIX;
@@ -30,7 +30,7 @@ public interface ColumnFormatting {
         return isStyleFormatColumn(columnName)
                 || isNumberFormatColumn(columnName)
                 || isDateFormatColumn(columnName)
-                || isDatabarFormatColumn(columnName);
+                || isDataBarFormatColumn(columnName);
     }
 
     /**
@@ -78,12 +78,12 @@ public interface ColumnFormatting {
         return baseColumn + Constants.TABLE_NUMBER_FORMAT_SUFFIX;
     }
 
-    enum DatabarFormatColumnType {
+    enum DataBarFormatColumnType {
         VALUE, AXIS, MAX, MIN, POSITIVE_COLOR, NEGATIVE_COLOR, VALUE_PLACEMENT, DIRECTION, OPACITY, MARKERS
     }
 
-    static String getDatabarFormatColumnName(String baseColumn, DatabarFormatColumnType prop) {
-        return baseColumn + "_" + prop.name() + Constants.TABLE_DATABAR_FORMAT_SUFFIX;
+    static String getDataBarFormatColumnName(String baseColumn, DataBarFormatColumnType prop) {
+        return baseColumn + "_" + prop.name() + Constants.TABLE_DATA_BAR_FORMAT_SUFFIX;
     }
 
     /**
@@ -114,8 +114,8 @@ public interface ColumnFormatting {
         return columnName.endsWith(Constants.TABLE_DATE_FORMAT_SUFFIX);
     }
 
-    static boolean isDatabarFormatColumn(@NotNull final String columnName) {
-        return columnName.endsWith(Constants.TABLE_DATABAR_FORMAT_SUFFIX);
+    static boolean isDataBarFormatColumn(@NotNull final String columnName) {
+        return columnName.endsWith(Constants.TABLE_DATA_BAR_FORMAT_SUFFIX);
     }
 
     /**
