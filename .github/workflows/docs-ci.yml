@@ -9,6 +9,10 @@ on:
 jobs:
   javadoc:
     runs-on: ubuntu-22.04
+    concurrency:
+      group: javadoc-${{ github.workflow }}-${{ github.ref }}
+      # We don't want to cancel in-progress jobs against main because that might leave the upload in a bad state.
+      cancel-in-progress: ${{ github.ref != 'refs/heads/main' }}
     steps:
       - name: Checkout
         uses: actions/checkout@v3
@@ -63,6 +67,10 @@ jobs:
 
   pydoc:
     runs-on: ubuntu-22.04
+    concurrency:
+      group: pydoc-${{ github.workflow }}-${{ github.ref }}
+      # We don't want to cancel in-progress jobs against main because that might leave the upload in a bad state.
+      cancel-in-progress: ${{ github.ref != 'refs/heads/main' }}
     steps:
       - name: Checkout
         uses: actions/checkout@v3
@@ -130,6 +138,10 @@ jobs:
 
   cppdoc:
     runs-on: ubuntu-22.04
+    concurrency:
+      group: cppdoc-${{ github.workflow }}-${{ github.ref }}
+      # We don't want to cancel in-progress jobs against main because that might leave the upload in a bad state.
+      cancel-in-progress: ${{ github.ref != 'refs/heads/main' }}
     steps:
       - name: Checkout
         uses: actions/checkout@v3

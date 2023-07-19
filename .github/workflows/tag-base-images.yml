@@ -4,6 +4,10 @@ on:
   push:
     branches: [ 'main', 'tag/**', 'release/v*' ]
 
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: false
+
 jobs:
   tag-base-images:
     runs-on: ubuntu-22.04
