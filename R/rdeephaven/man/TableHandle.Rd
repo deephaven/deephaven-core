@@ -67,6 +67,7 @@ new_table_handle2$bind_to_variable("new_table")
 \item \href{#method-TableHandle-head}{\code{TableHandle$head()}}
 \item \href{#method-TableHandle-tail}{\code{TableHandle$tail()}}
 \item \href{#method-TableHandle-ungroup}{\code{TableHandle$ungroup()}}
+\item \href{#method-TableHandle-sort}{\code{TableHandle$sort()}}
 \item \href{#method-TableHandle-merge}{\code{TableHandle$merge()}}
 \item \href{#method-TableHandle-clone}{\code{TableHandle$clone()}}
 }
@@ -786,12 +787,31 @@ A TableHandle referencing the new table.
 }
 }
 \if{html}{\out{<hr>}}
+\if{html}{\out{<a id="method-TableHandle-sort"></a>}}
+\if{latex}{\out{\hypertarget{method-TableHandle-sort}{}}}
+\subsection{Method \code{sort()}}{
+Creates a new table from this table, sorted by sortPairs.
+\subsection{Usage}{
+\if{html}{\out{<div class="r">}}\preformatted{TableHandle$sort(sorters)}\if{html}{\out{</div>}}
+}
+
+\subsection{Arguments}{
+\if{html}{\out{<div class="arguments">}}
+\describe{
+\item{\code{sorters}}{A vector of Deephaven Sorter objects (either sort.asc or sort.desc) describing the sort.
+Each Sorter accepts a column to sort, and whether the sort should consider to the value's regular or
+absolute value when doing comparisons.}
+}
+\if{html}{\out{</div>}}
+}
+\subsection{Returns}{
+A TableHandle referencing the new table.
+}
+}
+\if{html}{\out{<hr>}}
 \if{html}{\out{<a id="method-TableHandle-merge"></a>}}
 \if{latex}{\out{\hypertarget{method-TableHandle-merge}{}}}
 \subsection{Method \code{merge()}}{
-Creates a new table from this table, sorted by sortPairs.
-
-
 Creates a new table by merging `sources` together. The tables are essentially stacked on top
 of each other.
 \subsection{Usage}{
@@ -802,10 +822,6 @@ of each other.
 \if{html}{\out{<div class="arguments">}}
 \describe{
 \item{\code{sources}}{The tables to merge.}
-
-\item{\code{sort_pairs}}{A vector of SortPair objects describing the sort. Each SortPair refers to
-a column, a sort direction, and whether the sort should consider to the value's regular or
-absolute value when doing comparisons.}
 }
 \if{html}{\out{</div>}}
 }

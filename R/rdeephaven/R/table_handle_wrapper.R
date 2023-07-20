@@ -169,14 +169,8 @@ TableHandle <- R6Class("TableHandle",
         #' @param aggregations Deephaven Aggregations to apply to this table.
         #' @return A TableHandle referencing the new table.
         agg_by = function(aggregations) {
-
-            if ((first_class(aggregations) == "list") && (any(lapply(aggregations, first_class) != "Aggregation"))) {
-                stop(paste0("'aggregations' must be a Deephaven Aggregation, or a vector of Aggregations. Got a vector with at least one element that is not a Deephaven Aggregation instead."))
-            }
-            else if ((first_class(aggregations) != "list") && (first_class(aggregations) != "Aggregation")) {
-                stop(paste0("'aggregations'  must be a Deephaven Aggregation, or a vector of Aggregations. Got an object of class ", first_class(aggregations), " instead."))
-            }
-            else if ((first_class(aggregations) != "list") && (first_class(aggregations) == "Aggregation")) {
+            verify_internal_type("Aggregation", "aggregations", aggregations)
+            if ((first_class(aggregations) != "list") && (first_class(aggregations) == "Aggregation")) {
                 aggregations = c(aggregations)
             }
             unwrapped_aggregations = lapply(aggregations, private$strip_r6_wrapping_from_aggregation)
@@ -423,13 +417,18 @@ TableHandle <- R6Class("TableHandle",
 
         #' @description
         #' Creates a new table from this table, sorted by sortPairs.
-        #' @param sort_pairs A vector of SortPair objects describing the sort. Each SortPair refers to
-        #'   a column, a sort direction, and whether the sort should consider to the value's regular or
-        #'   absolute value when doing comparisons.
+        #' @param sorters A vector of Deephaven Sorter objects (either sort.asc or sort.desc) describing the sort.
+        #' Each Sorter accepts a column to sort, and whether the sort should consider to the value's regular or
+        #' absolute value when doing comparisons.
         #' @return A TableHandle referencing the new table.
-        # TODO: sort = function(sort_pairs) {
-        #    return(TableHandle$new(self$internal_table_handle$sort(sort_pairs)))
-        #},
+        sort = function(sorters) {
+            verify_internal_type("Sorter", "sorters", sorters)
+            if ((first_class(sorters) != "list") && (first_class(sorters) == "Sorter")) {
+                sorters = c(sorters)
+            }
+            unwrapped_sorters = lapply(sorters, private$strip_r6_wrapping_from_sorter)
+            return(TableHandle$new(self$internal_table_handle$sort(unwrapped_sorters)))
+        },
 
         #' @description
         #' Creates a new table by merging `sources` together. The tables are essentially stacked on top
@@ -448,6 +447,10 @@ TableHandle <- R6Class("TableHandle",
 
         strip_r6_wrapping_from_aggregation = function(r6_aggregation) {
             return(r6_aggregation$internal_aggregation)
+        },
+
+        strip_r6_wrapping_from_sorter = function(r6_sorter) {
+            return(r6_sorter$internal_sorter)
         },
 
         is_static_field = NULL

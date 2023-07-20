@@ -5,6 +5,7 @@
 #include <vector>
 
 #include "deephaven/client/client.h"
+#include "deephaven/client/columns.h"
 #include "deephaven/client/flight.h"
 #include "deephaven/client/utility/arrow_util.h"
 
@@ -18,10 +19,12 @@ class AggregateWrapper;
 class TableHandleWrapper;
 class ClientOptionsWrapper;
 class ClientWrapper;
+class SortPairWrapper;
 
 // forward declaration of conversion functions
 std::vector<deephaven::client::Aggregate> convertRcppListToVectorOfTypeAggregate(Rcpp::List rcpp_list);
 std::vector<deephaven::client::TableHandle> convertRcppListToVectorOfTypeTableHandle(Rcpp::List rcpp_list);
+std::vector<deephaven::client::SortPair> convertRcppListToVectorOfTypeSortPair(Rcpp::List rcpp_list);
 
 
 // ######################### DH WRAPPERS #########################
@@ -30,8 +33,7 @@ class AggregateWrapper {
 public:
     AggregateWrapper();
     AggregateWrapper(deephaven::client::Aggregate aggregate) :
-        internal_aggregation(std::move(aggregate)) {
-    }
+        internal_aggregation(std::move(aggregate)) {}
 private:
     deephaven::client::Aggregate internal_aggregation;
     friend TableHandleWrapper;
@@ -102,6 +104,40 @@ AggregateWrapper* INTERNAL_percentile(double percentile, std::vector<std::string
 
 AggregateWrapper* INTERNAL_count(std::string columnSpec) {
     return new AggregateWrapper(deephaven::client::Aggregate::count(columnSpec));
+}
+
+
+class SortPairWrapper {
+public:
+    SortPairWrapper();
+    SortPairWrapper(deephaven::client::SortPair sort_pair) :
+        internal_sorter(std::move(sort_pair)) {}
+private:
+    deephaven::client::SortPair internal_sorter;
+    friend TableHandleWrapper;
+    friend std::vector<deephaven::client::SortPair> convertRcppListToVectorOfTypeSortPair(Rcpp::List rcpp_list);
+};
+
+// ######################### conversion function for the above class
+std::vector<deephaven::client::SortPair> convertRcppListToVectorOfTypeSortPair(Rcpp::List rcpp_list) {
+    std::vector<deephaven::client::SortPair> converted_list;
+    converted_list.reserve(rcpp_list.size());
+
+    for(int i = 0; i < rcpp_list.size(); i++) {
+        Rcpp::Environment rcpp_list_element = rcpp_list[i];
+        Rcpp::XPtr<SortPairWrapper> xptr(rcpp_list_element.get(".pointer"));
+        deephaven::client::SortPair internal_sorter = xptr->internal_sorter;
+        converted_list.push_back(internal_sorter);
+    }
+    return converted_list;
+}
+
+SortPairWrapper* INTERNAL_sortAsc(std::string column, bool abs) {
+    return new SortPairWrapper(deephaven::client::SortPair::ascending(column, abs));
+}
+
+SortPairWrapper* INTERNAL_sortDesc(std::string column, bool abs) {
+    return new SortPairWrapper(deephaven::client::SortPair::descending(column, abs));
 }
 
 
@@ -242,9 +278,10 @@ public:
         return new TableHandleWrapper(internal_tbl_hdl.merge(keyColumn, converted_sources));
     };
 
-    // TODO: TableHandleWrapper* sort(std::vector<SortPair> sortPairs) {
-    //      return new TableHandleWrapper(internal_tbl_hdl.sort(sortPairs));
-    //  };
+    TableHandleWrapper* sort(Rcpp::List sortPairs) {
+        std::vector<deephaven::client::SortPair> converted_sort_pairs = convertRcppListToVectorOfTypeSortPair(sortPairs);
+        return new TableHandleWrapper(internal_tbl_hdl.sort(converted_sort_pairs));
+    };
 
     /**
      * Whether the table was static at the time internal_tbl_hdl was created.
@@ -463,12 +500,33 @@ using namespace Rcpp;
 RCPP_EXPOSED_CLASS(ClientOptionsWrapper)
 RCPP_EXPOSED_CLASS(TableHandleWrapper)
 RCPP_EXPOSED_CLASS(AggregateWrapper)
+RCPP_EXPOSED_CLASS(SortPairWrapper)
 RCPP_EXPOSED_CLASS(ArrowArrayStream)
 
 RCPP_MODULE(DeephavenInternalModule) {
 
     class_<AggregateWrapper>("INTERNAL_Aggregate")
     ;
+    function("INTERNAL_min", &INTERNAL_min);
+    function("INTERNAL_max", &INTERNAL_max);
+    function("INTERNAL_sum", &INTERNAL_sum);
+    function("INTERNAL_abs_sum", &INTERNAL_absSum);
+    function("INTERNAL_avg", &INTERNAL_avg);
+    function("INTERNAL_w_avg", &INTERNAL_wAvg);
+    function("INTERNAL_var", &INTERNAL_var);
+    function("INTERNAL_std", &INTERNAL_std);
+    function("INTERNAL_first", &INTERNAL_first);
+    function("INTERNAL_last", &INTERNAL_last);
+    function("INTERNAL_median", &INTERNAL_median);
+    function("INTERNAL_percentile", &INTERNAL_percentile);
+    function("INTERNAL_count", &INTERNAL_count);
+
+
+    class_<SortPairWrapper>("INTERNAL_SortPair")
+    ;
+    function("INTERNAL_sort_asc", &INTERNAL_sortAsc);
+    function("INTERNAL_sort_desc", &INTERNAL_sortDesc);
+
 
     class_<TableHandleWrapper>("INTERNAL_TableHandle")
     .method("select", &TableHandleWrapper::select)
@@ -503,13 +561,14 @@ RCPP_MODULE(DeephavenInternalModule) {
     .method("tail", &TableHandleWrapper::tail)
     .method("ungroup", &TableHandleWrapper::ungroup)
     .method("merge", &TableHandleWrapper::merge)
-    // TODO: .method("sort", &TableHandleWrapper::sort)
+    .method("sort", &TableHandleWrapper::sort)
 
     .method("is_static", &TableHandleWrapper::isStatic)
     .method("num_rows", &TableHandleWrapper::numRows)
     .method("bind_to_variable", &TableHandleWrapper::bindToVariable)
     .method("get_arrow_array_stream_ptr", &TableHandleWrapper::getArrowArrayStreamPtr)
     ;
+
 
     class_<ClientOptionsWrapper>("INTERNAL_ClientOptions")
     .constructor()
@@ -524,6 +583,7 @@ RCPP_MODULE(DeephavenInternalModule) {
     .method("add_extra_header", &ClientOptionsWrapper::addExtraHeader)
     ;
 
+
     class_<ClientWrapper>("INTERNAL_Client")
     .constructor<std::string, const ClientOptionsWrapper&>()
     .method("open_table", &ClientWrapper::openTable)
@@ -535,17 +595,4 @@ RCPP_MODULE(DeephavenInternalModule) {
     .method("new_table_from_arrow_array_stream_ptr", &ClientWrapper::newTableFromArrowArrayStreamPtr)
     ;
 
-    function("INTERNAL_min", &INTERNAL_min);
-    function("INTERNAL_max", &INTERNAL_max);
-    function("INTERNAL_sum", &INTERNAL_sum);
-    function("INTERNAL_abs_sum", &INTERNAL_absSum);
-    function("INTERNAL_avg", &INTERNAL_avg);
-    function("INTERNAL_w_avg", &INTERNAL_wAvg);
-    function("INTERNAL_var", &INTERNAL_var);
-    function("INTERNAL_std", &INTERNAL_std);
-    function("INTERNAL_first", &INTERNAL_first);
-    function("INTERNAL_last", &INTERNAL_last);
-    function("INTERNAL_median", &INTERNAL_median);
-    function("INTERNAL_percentile", &INTERNAL_percentile);
-    function("INTERNAL_count", &INTERNAL_count);
 }

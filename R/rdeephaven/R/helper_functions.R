@@ -2,18 +2,21 @@ first_class = function(arg) {
     return(class(arg)[[1]])
 }
 
-verify_string <- function(arg_name, string_candidate) {
-    if (first_class(string_candidate) != "character") {
-        stop(paste0("'", arg_name, "' must be passed as a single string. Got an object of class ", first_class(string_candidate), " instead."))
+verify_internal_type <- function(desired_type, arg_name, candidate) {
+    if ((first_class(candidate) == "list") && (any(lapply(candidate, first_class) != desired_type))) {
+        stop(paste0("'", arg_name, "' must be a Deephaven ", desired_type, ", or a vector of ", desired_type, "s. Got a vector with at least one element that is not a Deephaven ", desired_type, " instead."))
     }
-    else if (length(string_candidate) != 1) {
-        stop(paste0("'", arg_name, "' must be passed as a single string. Got a character vector of length ", length(string_candidate), " instead."))
+    else if ((first_class(candidate) != "list") && (first_class(candidate) != desired_type)) {
+        stop(paste0("'", arg_name, "' must be a Deephaven ", desired_type, ", or a vector of ", desired_type, "s. Got an object of class ", first_class(candidate), " instead."))
     }
 }
 
-verify_string_vector <- function(arg_name, string_vector_candidate) {
-    if (first_class(string_vector_candidate) != "character") {
-        stop(paste0("'", arg_name, "' must be passed as a string or a vector of strings. Got an object of class ", first_class(string_vector_candidate), " instead."))
+verify_bool <- function(arg_name, bool_candidate) {
+    if (first_class(bool_candidate) != "logical") {
+        stop(paste0("'", arg_name, "' must be passed as a single boolean. Got an object of class ", first_class(bool_candidate), " instead."))
+    }
+    else if (length(bool_candidate) != 1) {
+        stop(paste0("'", arg_name, "' must be passed as a single boolean. Got a boolean vector of length ", length(bool_candidate), " instead."))
     }
 }
 
@@ -34,7 +37,25 @@ verify_proportion <- function(arg_name, prop_candidate) {
     if (first_class(prop_candidate) != "numeric") {
         stop(paste0("'", arg_name, "' must be a numeric type between 0 and 1 inclusive. Got an object of class ", first_class(prop_candidate), " instead."))
     }
+    else if (length(prop_candidate) != 1) {
+        stop(paste0("'", arg_name, "' must be a numeric type between 0 and 1 inclusive. Got a numeric vector of length ", length(prop_candidate), " instead."))
+    }
     else if ((prop_candidate < 0.0) || (prop_candidate > 1.0)) {
-        stop(paste0("'", arg_name, "' must be a numeric type between 0 and 1 inclusive. Got a value outside of [0, 1] instead."))
+        stop(paste0("'", arg_name, "' must be a numeric type between 0 and 1 inclusive. Got a value of ", prop_candidate, " instead."))
+    }
+}
+
+verify_string <- function(arg_name, string_candidate) {
+    if (first_class(string_candidate) != "character") {
+        stop(paste0("'", arg_name, "' must be passed as a single string. Got an object of class ", first_class(string_candidate), " instead."))
+    }
+    else if (length(string_candidate) != 1) {
+        stop(paste0("'", arg_name, "' must be passed as a single string. Got a character vector of length ", length(string_candidate), " instead."))
+    }
+}
+
+verify_string_vector <- function(arg_name, string_vector_candidate) {
+    if (first_class(string_vector_candidate) != "character") {
+        stop(paste0("'", arg_name, "' must be passed as a string or a vector of strings. Got an object of class ", first_class(string_vector_candidate), " instead."))
     }
 }
