@@ -12,8 +12,8 @@ verify_string <- function(arg_name, string_candidate) {
 }
 
 verify_string_vector <- function(arg_name, string_vector_candidate) {
-    if (first_class(string_candidate) != "character") {
-        stop(paste0("'", arg_name, "' must be passed as a string or a vector of strings. Got an object of class ", first_class(string_candidate), " instead."))
+    if (first_class(string_vector_candidate) != "character") {
+        stop(paste0("'", arg_name, "' must be passed as a string or a vector of strings. Got an object of class ", first_class(string_vector_candidate), " instead."))
     }
 }
 
@@ -27,5 +27,14 @@ verify_int <- function(arg_name, int_candidate) {
     }
     else if (length(int_candidate) != 1) {
         stop(paste0("'", arg_name, "' must be an integer. Got a numeric vector of length ", length(int_candidate), " instead."))
+    }
+}
+
+verify_proportion <- function(arg_name, prop_candidate) {
+    if (first_class(prop_candidate) != "numeric") {
+        stop(paste0("'", arg_name, "' must be a numeric type between 0 and 1 inclusive. Got an object of class ", first_class(prop_candidate), " instead."))
+    }
+    else if ((prop_candidate < 0.0) || (prop_candidate > 1.0)) {
+        stop(paste0("'", arg_name, "' must be a numeric type between 0 and 1 inclusive. Got a value outside of [0, 1] instead."))
     }
 }

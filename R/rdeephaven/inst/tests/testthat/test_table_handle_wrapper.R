@@ -152,8 +152,8 @@ test_that("to_data_frame returns a valid data frame", {
 
 test_that("trying to instantiate a TableHandle directly fails nicely", {
 
-    expect_error(TableHandle$new("hello!"), "'table_handle' should be an internal Deephaven TableHandle. If you're seeing this,
-                you are trying to call the constructor of TableHandle directly, which is not advised.")
+    expect_error(TableHandle$new("hello!"),
+        "'table_handle' should be an internal Deephaven TableHandle. If you're seeing this, you are trying to call the constructor of TableHandle directly, which is not advised.")
 })
 
 test_that("bind_to_variable fails nicely on bad inputs", {

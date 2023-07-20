@@ -32,8 +32,7 @@ TableHandle <- R6Class("TableHandle",
 
         initialize = function(table_handle) {
             if (first_class(table_handle) != "Rcpp_INTERNAL_TableHandle") {
-                stop("'table_handle' should be an internal Deephaven TableHandle. If you're seeing this,
-                you are trying to call the constructor of TableHandle directly, which is not advised.")
+                stop("'table_handle' should be an internal Deephaven TableHandle. If you're seeing this, you are trying to call the constructor of TableHandle directly, which is not advised.")
             }
             self$internal_table_handle <- table_handle
             private$is_static_field <- self$internal_table_handle$is_static()
@@ -110,7 +109,7 @@ TableHandle <- R6Class("TableHandle",
         #' @param columns The columns to select.
         #' @return A TableHandle referencing the new table.
         select = function(columns) {
-            verify_string_vector(columns, "columns")
+            verify_string_vector("columns", columns)
             return(TableHandle$new(self$internal_table_handle$select(columns)))
         },
 
@@ -120,7 +119,7 @@ TableHandle <- R6Class("TableHandle",
         #' @param columns The columns to view.
         #' @return A TableHandle referencing the new table.
         view = function(columns) {
-            verify_string_vector(columns, "columns")
+            verify_string_vector("columns", columns)
             return(TableHandle$new(self$internal_table_handle$view(columns)))
         },
 
@@ -129,7 +128,7 @@ TableHandle <- R6Class("TableHandle",
         #' @param columns The columns to exclude.
         #' @return A TableHandle referencing the new table.
         drop_columns = function(columns) {
-            verify_string_vector(columns, "columns")
+            verify_string_vector("columns", columns)
             return(TableHandle$new(self$internal_table_handle$drop_columns(columns)))
         },
 
@@ -139,7 +138,7 @@ TableHandle <- R6Class("TableHandle",
         #' @param columns The columns to add. For example, {"X = A + 5", "Y = X * 2"}.
         #' @return A TableHandle referencing the new table.
         update = function(columns) {
-            verify_string_vector(columns, "columns")
+            verify_string_vector("columns", columns)
             return(TableHandle$new(self$internal_table_handle$update(columns)))
         },
 
@@ -149,7 +148,7 @@ TableHandle <- R6Class("TableHandle",
         #' @param columns The columns to add. For example, {"X = A + 5", "Y = X * 2"}.
         #' @return A TableHandle referencing the new table.
         update_view = function(columns) {
-            verify_string_vector(columns, "columns")
+            verify_string_vector("columns", columns)
             return(TableHandle$new(self$internal_table_handle$update_view(columns)))
         },
 
@@ -159,7 +158,7 @@ TableHandle <- R6Class("TableHandle",
         #' @param condition A Deephaven boolean expression such as "Price > 100" or "Col3 == Col1 * Col2".
         #' @return A TableHandle referencing the new table.
         where = function(condition) {
-            verify_string(condition, "condition")
+            verify_string("condition", condition)
             return(TableHandle$new(self$internal_table_handle$where(condition)))
         },
 
@@ -172,10 +171,10 @@ TableHandle <- R6Class("TableHandle",
         agg_by = function(aggregations) {
 
             if ((first_class(aggregations) == "list") && (any(lapply(aggregations, first_class) != "Aggregation"))) {
-                stop("dumb!!")
+                stop(paste0("'aggregations' must be a Deephaven Aggregation, or a vector of Aggregations. Got a vector with at least one element that is not a Deephaven Aggregation instead."))
             }
             else if ((first_class(aggregations) != "list") && (first_class(aggregations) != "Aggregation")) {
-                stop("dumber!!")
+                stop(paste0("'aggregations'  must be a Deephaven Aggregation, or a vector of Aggregations. Got an object of class ", first_class(aggregations), " instead."))
             }
             else if ((first_class(aggregations) != "list") && (first_class(aggregations) == "Aggregation")) {
                 aggregations = c(aggregations)
@@ -191,7 +190,7 @@ TableHandle <- R6Class("TableHandle",
         #' @param columns Columns to group by.
         #' @return A TableHandle referencing the new table.
         min_by = function(columns) {
-            verify_string_vector(columns, "columns")
+            verify_string_vector("columns", columns)
             return(TableHandle$new(self$internal_table_handle$min_by(columns)))
         },
 
@@ -201,7 +200,7 @@ TableHandle <- R6Class("TableHandle",
         #' @param columns Columns to group by.
         #' @return A TableHandle referencing the new table.
         max_by = function(columns) {
-            verify_string_vector(columns, "columns")
+            verify_string_vector("columns", columns)
             return(TableHandle$new(self$internal_table_handle$max_by(columns)))
         },
 
@@ -211,7 +210,7 @@ TableHandle <- R6Class("TableHandle",
         #' @param columns Columns to group by.
         #' @return A TableHandle referencing the new table.
         sum_by = function(columns) {
-            verify_string_vector(columns, "columns")
+            verify_string_vector("columns", columns)
             return(TableHandle$new(self$internal_table_handle$sum_by(columns)))
         },
 
@@ -221,7 +220,7 @@ TableHandle <- R6Class("TableHandle",
         #' @param columns Columns to group by.
         #' @return A TableHandle referencing the new table.
         abs_sum_by = function(columns) {
-            verify_string_vector(columns, "columns")
+            verify_string_vector("columns", columns)
             return(TableHandle$new(self$internal_table_handle$abs_sum_by(columns)))
         },
 
@@ -231,7 +230,7 @@ TableHandle <- R6Class("TableHandle",
         #' @param columns Columns to group by.
         #' @return A TableHandle referencing the new table.
         avg_by = function(columns) {
-            verify_string_vector(columns, "columns")
+            verify_string_vector("columns", columns)
             return(TableHandle$new(self$internal_table_handle$avg_by(columns)))
         },
 
@@ -242,8 +241,8 @@ TableHandle <- R6Class("TableHandle",
         #' @param columns Columns to group by.
         #' @return A TableHandle referencing the new table.
         w_avg_by = function(weight_column, columns) {
-            verify_string(weight_column, "weight_column")
-            verify_string_vector(columns, "columns")
+            verify_string("weight_column", weight_column)
+            verify_string_vector("columns", columns)
             return(TableHandle$new(self$internal_table_handle$w_avg_by(weight_column, columns)))
         },
 
@@ -253,7 +252,7 @@ TableHandle <- R6Class("TableHandle",
         #' @param columns Columns to group by.
         #' @return A TableHandle referencing the new table.
         var_by = function(columns) {
-            verify_string_vector(columns, "columns")
+            verify_string_vector("columns", columns)
             return(TableHandle$new(self$internal_table_handle$var_by(columns)))
         },
 
@@ -263,7 +262,7 @@ TableHandle <- R6Class("TableHandle",
         #' @param columns Columns to group by.
         #' @return A TableHandle referencing the new table.
         std_by = function(columns) {
-            verify_string_vector(columns, "columns")
+            verify_string_vector("columns", columns)
             return(TableHandle$new(self$internal_table_handle$std_by(columns)))
         },
 
@@ -273,7 +272,7 @@ TableHandle <- R6Class("TableHandle",
         #' @param columns Columns to group by.
         #' @return A TableHandle referencing the new table.
         first_by = function(columns) {
-            verify_string_vector(columns, "columns")
+            verify_string_vector("columns", columns)
             return(TableHandle$new(self$internal_table_handle$first_by(columns)))
         },
 
@@ -283,7 +282,7 @@ TableHandle <- R6Class("TableHandle",
         #' @param columns Columns to group by.
         #' @return A TableHandle referencing the new table.
         last_by = function(columns) {
-            verify_string_vector(columns, "columns")
+            verify_string_vector("columns", columns)
             return(TableHandle$new(self$internal_table_handle$last_by(columns)))
         },
 
@@ -293,7 +292,7 @@ TableHandle <- R6Class("TableHandle",
         #' @param columns Columns to group by.
         #' @return A TableHandle referencing the new table.
         median_by = function(columns) {
-            verify_string_vector(columns, "columns")
+            verify_string_vector("columns", columns)
             return(TableHandle$new(self$internal_table_handle$median_by(columns)))
         },
 
@@ -304,8 +303,8 @@ TableHandle <- R6Class("TableHandle",
         #' @param columns Columns to group by.
         #' @return A TableHandle referencing the new table.
         percentile_by = function(percentile, columns) {
-            verify_string_vector(columns, "columns")
-            # TODO: type check percentile
+            verify_proportion("percentile", percentile)
+            verify_string_vector("columns", columns)
             return(TableHandle$new(self$internal_table_handle$percentile_by(percentile, columns)))
         },
 
@@ -316,8 +315,8 @@ TableHandle <- R6Class("TableHandle",
         #' @param columns Columns to group by.
         #' @return A TableHandle referencing the new table.
         count_by = function(count_by_column, columns) {
-            verify_string(count_by_column, "count_by_column")
-            verify_string_vector(columns, "columns")
+            verify_string("count_by_column", count_by_column)
+            verify_string_vector("columns", columns)
             return(TableHandle$new(self$internal_table_handle$count_by(count_by_column, columns)))
         },
 
@@ -328,8 +327,8 @@ TableHandle <- R6Class("TableHandle",
         #' @param columns Columns to group by.
         #' @return A TableHandle referencing the new table.
         head_by = function(n, columns) {
-            verify_int(n, "n")
-            verify_string_vector(columns, "columns")
+            verify_int("n", n)
+            verify_string_vector("columns", columns)
             return(TableHandle$new(self$internal_table_handle$head_by(n, columns)))
         },
 
@@ -340,8 +339,8 @@ TableHandle <- R6Class("TableHandle",
         #' @param columns Columns to group by.
         #' @return A TableHandle referencing the new table.
         tail_by = function(n, columns) {
-            verify_int(n, "n")
-            verify_string_vector(columns, "columns")
+            verify_int("n", n)
+            verify_string_vector("columns", columns)
             return(TableHandle$new(self$internal_table_handle$tail_by(n, columns)))
         },
 
@@ -356,8 +355,8 @@ TableHandle <- R6Class("TableHandle",
         #' @param columns_to_add The columns from the right side to add, and possibly rename.
         #' @return A TableHandle referencing the new table.
         cross_join = function(right_side, columns_to_match, columns_to_add) {
-            verify_string_vector(columns_to_match, "columns_to_match")
-            verify_string_vector(columns_to_add, "columns_to_add")
+            verify_string_vector("columns_to_match", columns_to_match)
+            verify_string_vector("columns_to_add", columns_to_add)
             return(TableHandle$new(self$internal_table_handle$cross_join(right_side$internal_table_handle,
                                                                             columns_to_match, columns_to_add)))
         },
@@ -371,8 +370,8 @@ TableHandle <- R6Class("TableHandle",
         #' @param columns_to_add The columns from the right side to add, and possibly rename.
         #' @return A TableHandle referencing the new table.
         natural_join = function(right_side, columns_to_match, columns_to_add) {
-            verify_string_vector(columns_to_match, "columns_to_match")
-            verify_string_vector(columns_to_add, "columns_to_add")
+            verify_string_vector("columns_to_match", columns_to_match)
+            verify_string_vector("columns_to_add", columns_to_add)
             return(TableHandle$new(self$internal_table_handle$natural_join(right_side$internal_table_handle,
                                                                               columns_to_match, columns_to_add)))
         },
@@ -386,8 +385,8 @@ TableHandle <- R6Class("TableHandle",
         #' @param columns_to_add The columns from the right side to add, and possibly rename.
         #' @return A TableHandle referencing the new table.
         exact_join = function(right_side, columns_to_match, columns_to_add) {
-            verify_string_vector(columns_to_match, "columns_to_match")
-            verify_string_vector(columns_to_add, "columns_to_add")
+            verify_string_vector("columns_to_match", columns_to_match)
+            verify_string_vector("columns_to_add", columns_to_add)
             return(TableHandle$new(self$internal_table_handle$exact_join(right_side$internal_table_handle,
                                                                             columns_to_match, columns_to_add)))
         },
@@ -399,7 +398,7 @@ TableHandle <- R6Class("TableHandle",
         #' @param n Number of rows
         #' @return A TableHandle referencing the new table.
         head = function(n) {
-            verify_int(n, "n")
+            verify_int("n", n)
             return(TableHandle$new(self$internal_table_handle$head(n)))
         },
 
@@ -408,7 +407,7 @@ TableHandle <- R6Class("TableHandle",
         #' @param n Number of rows
         #' @return A TableHandle referencing the new table.
         tail = function(n) {
-            verify_int(n, "n")
+            verify_int("n", n)
             return(TableHandle$new(self$internal_table_handle$tail(n)))
         },
 
@@ -439,7 +438,7 @@ TableHandle <- R6Class("TableHandle",
         #' @param sources The tables to merge.
         #' @return A TableHandle referencing the new table.
         merge = function(key_column, sources) {
-            verify_string(key_column, "key_column")
+            verify_string("key_column", key_column)
             return(TableHandle$new(self$internal_table_handle$merge(key_column, sources)))
         },
         
