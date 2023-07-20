@@ -20,6 +20,7 @@ import io.deephaven.engine.util.TableTools;
 import io.deephaven.engine.table.impl.QueryTable;
 import io.deephaven.test.types.OutOfBandTest;
 import junit.framework.TestCase;
+import junit.framework.Assert;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Ignore;
@@ -383,7 +384,7 @@ public class ParquetTableReadWriteTest {
         // Create an empty parent directory
         final File parentDir = new File(rootFile, "tempDir");
         parentDir.mkdir();
-        assertTrue(parentDir.exists() && parentDir.isDirectory() && parentDir.list().length==0);
+        assertTrue(parentDir.exists() && parentDir.isDirectory() && parentDir.list().length == 0);
 
         // There should be just one file in the directory on a successful write and no temporary files
         final Table tableToSave = TableTools.emptyTable(5).update("A=(int)i", "B=(long)i", "C=(double)i");
@@ -391,10 +392,11 @@ public class ParquetTableReadWriteTest {
         final File destFile = new File(parentDir, filename);
         ParquetTools.writeTable(tableToSave, destFile);
         String[] filesInDir = parentDir.list();
-        assertTrue(filesInDir.length==1 && filesInDir[0].equals(filename));
+        assertTrue(filesInDir.length == 1 && filesInDir[0].equals(filename));
 
         // This write should fail
-        final Table badTable = TableTools.emptyTable(5).updateView("InputString = ii % 2 == 0 ? Long.toString(ii) : null", "A=InputString.charAt(0)");
+        final Table badTable = TableTools.emptyTable(5)
+                .updateView("InputString = ii % 2 == 0 ? Long.toString(ii) : null", "A=InputString.charAt(0)");
         try {
             ParquetTools.writeTable(badTable, destFile);
             Assert.fail("Exception expected for invalid formula");
@@ -402,7 +404,7 @@ public class ParquetTableReadWriteTest {
         }
         // Make sure that original file is preserved and no temporary files
         filesInDir = parentDir.list();
-        assertTrue(filesInDir.length==1 && filesInDir[0].equals(filename));
+        assertTrue(filesInDir.length == 1 && filesInDir[0].equals(filename));
         Table fromDisk = ParquetTools.readTable(destFile);
         TstUtils.assertTableEquals(fromDisk, tableToSave);
 
@@ -410,7 +412,7 @@ public class ParquetTableReadWriteTest {
         final Table newTableToSave = TableTools.emptyTable(5).update("A=(int)i");
         ParquetTools.writeTable(newTableToSave, destFile);
         filesInDir = parentDir.list();
-        assertTrue(filesInDir.length==1 && filesInDir[0].equals(filename));
+        assertTrue(filesInDir.length == 1 && filesInDir[0].equals(filename));
         fromDisk = ParquetTools.readTable(destFile);
         TstUtils.assertTableEquals(fromDisk, newTableToSave);
     }
@@ -420,43 +422,51 @@ public class ParquetTableReadWriteTest {
         // Create an empty parent directory
         final File parentDir = new File(rootFile, "tempDir");
         parentDir.mkdir();
-        assertTrue(parentDir.exists() && parentDir.isDirectory() && parentDir.list().length==0);
+        assertTrue(parentDir.exists() && parentDir.isDirectory() && parentDir.list().length == 0);
 
         Integer data[] = new Integer[500 * 4];
         for (int i = 0; i < data.length; i++) {
             data[i] = i / 4;
         }
-        final TableDefinition tableDefinition = TableDefinition.of(ColumnDefinition.ofInt("v").withGrouping());
-        final Table tableToSave = TableTools.newTable(tableDefinition, TableTools.col("v", data));
+        final TableDefinition tableDefinition = TableDefinition.of(ColumnDefinition.ofInt("vvv").withGrouping());
+        final Table tableToSave = TableTools.newTable(tableDefinition, TableTools.col("vvv", data));
 
-        // For a completed write, there should be two parquet files in the directory, the table data and the grouping data
+        // For a completed write, there should be two parquet files in the directory, the table data and the grouping
+        // data
         final String filename = "groupingColumnsWriteTests.parquet";
         final File destFile = new File(parentDir, filename);
         ParquetTools.writeTable(tableToSave, destFile);
-        final String[] filesInDir = parentDir.list();
-        final String groupingFilename = ParquetTableWriter.defaultGroupingFileName(filename).apply("v");
-        assertTrue(filesInDir.length==2 && Arrays.asList(filesInDir).contains(filename)
+        String[] filesInDir = parentDir.list();
+        String groupingFilename = ParquetTableWriter.defaultGroupingFileName(filename).apply("vvv");
+        assertTrue(filesInDir.length == 2 && Arrays.asList(filesInDir).contains(filename)
                 && Arrays.asList(filesInDir).contains(groupingFilename));
 
-        // This write should fail
-//        final Table badTable = TableTools.emptyTable(5).updateView("InputString = ii % 2 == 0 ? Long.toString(ii) : null", "A=InputString.charAt(0)");
-//        try {
-//            ParquetTools.writeTable(badTable, destFile);
-//            Assert.fail("Exception expected for invalid formula");
-//        } catch (RuntimeException expected) {
-//        }
-//        // Make sure that original file is preserved and no temporary files
-//        filesInDir = parentDir.list();
-//        assertTrue(filesInDir.length==1 && filesInDir[0].equals(filename));
-//        Table fromDisk = ParquetTools.readTable(destFile);
-//        TstUtils.assertTableEquals(fromDisk, tableToSave);
-//
-//        // Write a new table successfully at the same position
-//        final Table newTableToSave = TableTools.emptyTable(5).update("A=(int)i");
-//        ParquetTools.writeTable(newTableToSave, destFile);
-//        filesInDir = parentDir.list();
-//        assertTrue(filesInDir.length==1 && filesInDir[0].equals(filename));
-//        fromDisk = ParquetTools.readTable(destFile);
-//        TstUtils.assertTableEquals(fromDisk, newTableToSave);
+        // Write another table but this write should fail
+        final TableDefinition badTableDefinition = TableDefinition.of(ColumnDefinition.ofInt("www").withGrouping());
+        final Table badTable = TableTools.newTable(badTableDefinition, TableTools.col("www", data))
+                .updateView("InputString = ii % 2 == 0 ? Long.toString(ii) : null", "A=InputString.charAt(0)");
+        try {
+            ParquetTools.writeTable(badTable, destFile);
+            Assert.fail("Exception expected for invalid formula");
+        } catch (RuntimeException expected) {
+        }
+        // Make sure that original file is preserved and no temporary files
+        filesInDir = parentDir.list();
+        assertTrue(filesInDir.length == 2 && Arrays.asList(filesInDir).contains(filename)
+                && Arrays.asList(filesInDir).contains(groupingFilename));
+        Table fromDisk = ParquetTools.readTable(destFile);
+        TstUtils.assertTableEquals(fromDisk, tableToSave);
+
+        // Write a new table successfully at the same position
+        final TableDefinition anotherTableDefinition = TableDefinition.of(ColumnDefinition.ofInt("xxx").withGrouping());
+        final Table anotherTableToSave = TableTools.newTable(anotherTableDefinition, TableTools.col("xxx", data));
+        ParquetTools.writeTable(anotherTableToSave, destFile);
+        filesInDir = parentDir.list();
+        groupingFilename = ParquetTableWriter.defaultGroupingFileName(filename).apply("xxx");
+        // The directory now should contain the updated table and its grouping file, and the grouping file for vvv
+        assertTrue(filesInDir.length == 3 && Arrays.asList(filesInDir).contains(filename)
+                && Arrays.asList(filesInDir).contains(groupingFilename));
+        fromDisk = ParquetTools.readTable(destFile);
+        TstUtils.assertTableEquals(fromDisk, anotherTableToSave);
     }
 }

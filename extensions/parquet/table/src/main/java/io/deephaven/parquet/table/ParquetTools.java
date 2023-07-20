@@ -220,35 +220,49 @@ public class ParquetTools {
         if (definition.numColumns() == 0) {
             throw new TableDataException("Cannot write a parquet table with zero columns");
         }
-        // Write to a temporary shadow file in the same directory to prevent overwriting any existing files
-        final File shadowDestFile = getShadowFilePath(destFile);
-        final File firstCreated = prepareDestinationFileLocation(shadowDestFile);
+        final File backupFile = getBackupFilePath(destFile);
+        if (destFile.exists()) {
+            if (!destFile.renameTo(backupFile)) {
+                throw new UncheckedDeephavenException("Write failed because couldn't backup existing file " +
+                        destFile.getAbsolutePath() + " to " + backupFile.getAbsolutePath());
+            }
+        }
+        final File firstCreated = prepareDestinationFileLocation(destFile);
         try {
             writeParquetTableImpl(
-                    sourceTable, definition, writeInstructions, shadowDestFile, definition.getGroupingColumnNamesArray());
-            // Given that write was successful, place the shadow file in the destination path
-            installShadowFile(destFile, shadowDestFile);
+                    sourceTable, definition, writeInstructions, destFile, definition.getGroupingColumnNamesArray());
+            if (backupFile.exists()) {
+                backupFile.delete();
+            }
         } catch (Exception e) {
-            // Delete the shadow file
             if (firstCreated != null) {
                 FileUtils.deleteRecursivelyOnNFS(firstCreated);
             } else {
                 // noinspection ResultOfMethodCallIgnored
-                shadowDestFile.delete();
+                destFile.delete();
+                // Replace back the original file
+                if (backupFile.exists()) {
+                    backupFile.renameTo(destFile);
+                }
             }
             throw e;
         }
     }
 
-    private static File getShadowFilePath(File destFilePath) {
-        return new File(destFilePath.getParent(), ".SHADOW_" + destFilePath.getName());
+    private static File getShadowFilePath(File file) {
+        return new File(file.getParent(), ".SHADOW_" + file.getName());
     }
+
+    private static File getBackupFilePath(File file) {
+        return new File(file.getParent(), '.' + file.getName() + "-OLD");
+    }
+
+
 
     /**
      * Delete the file at location destFile and rename the file at shadowDestFile to destFile
      */
-    private static void installShadowFile(@NotNull final File destFile, @NotNull final File shadowDestFile)
-    {
+    private static void installShadowFile(@NotNull final File destFile, @NotNull final File shadowDestFile) {
         final String destPath = destFile.getAbsolutePath();
         if (destFile.exists() && !destFile.delete()) {
             throw new RuntimeException("Failed to write the table at " + destFile.getAbsolutePath() + " because a "
