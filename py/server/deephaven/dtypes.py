@@ -203,8 +203,6 @@ def array(dtype: DType, seq: Sequence, remap: Callable[[Any], Any] = None) -> jp
         DHError
     """
     try:
-        # print("+++++++++++++ Original Seq: " + str(seq))
-
         if isinstance(seq, str) and dtype == char:
             # ord is the Python builtin function that takes a unicode character and returns an integer code point value
             remap = ord
@@ -213,8 +211,6 @@ def array(dtype: DType, seq: Sequence, remap: Callable[[Any], Any] = None) -> jp
             if not callable(remap):
                 raise ValueError("Not a callable")
             seq = [remap(v) for v in seq]
-
-        # print("+++++++++++++ Remapped Seq: " + str(seq))
 
         if isinstance(seq, np.ndarray):
             if dtype == bool_:

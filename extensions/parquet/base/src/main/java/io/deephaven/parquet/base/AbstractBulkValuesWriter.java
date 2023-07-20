@@ -43,14 +43,13 @@ public abstract class AbstractBulkValuesWriter<BUFFER_TYPE> extends ValuesWriter
 
     /**
      * This method is used to provide a specialized definition of NULL for PlainIntChunkedWriter. For other writers,
-     * this method does nothing
+     * this method does nothing.
      *
-     * @param nullDefinition The specialized value of NULL to consider while writing
+     * @param nullDefinition The value which will be interpreted as NULL for this writer
      */
     @Override
     public void setNull(int nullDefinition) {
-        // TODO Should I raise an error here since this should not be called, should only be called for the
-        // PlainIntChunkedWriter specializaiton.
+        throw new UnsupportedOperationException("This method should not be called");
     }
 
     /**

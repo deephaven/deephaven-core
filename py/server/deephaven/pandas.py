@@ -175,19 +175,16 @@ _EX_DTYPE_NULL_MAP = {
 def _map_na(np_array: np.ndarray):
     """Replaces the pd.NA values in the array if it is of pandas ExtensionDtype(nullable)."""
     pd_dtype = np_array.dtype
-    # print("----- _map_na(): Processing array of data type " + str(pd_dtype) + ":" + str(np_array))
     if not isinstance(pd_dtype, pd.api.extensions.ExtensionDtype):
         return np_array
 
     dh_null = _EX_DTYPE_NULL_MAP.get(type(pd_dtype)) or _EX_DTYPE_NULL_MAP.get(pd_dtype)
-    # print("----- _map_na(): dh_null=" + str(dh_null))
     if isinstance(pd_dtype, pd.StringDtype) or isinstance(pd_dtype, pd.BooleanDtype) or pd_dtype == pd.ArrowDtype(
             pa.bool_()):
         np_array = np.array(list(map(lambda v: dh_null if v is pd.NA else v, np_array)))
     elif dh_null is not None:
         np_array = np_array.fillna(dh_null)
 
-    # print("----- _map_na(): Processed array=" + str(np_array))
     return np_array
 
 
@@ -231,7 +228,6 @@ def to_table(df: pd.DataFrame, cols: List[str] = None) -> Table:
             else:
                 dtype = np_array.dtype
             dh_dtype = dtypes.from_np_dtype(dtype)
-            # print("to_table:" + str(dtype) + " -> " + str(dh_dtype))
             np_array = _map_na(np_array)
             input_cols.append(_make_input_column(col, np_array, dh_dtype))
 

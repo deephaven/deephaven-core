@@ -22,8 +22,9 @@ import java.nio.IntBuffer;
 public class PlainIntChunkedWriter extends AbstractBulkValuesWriter<IntBuffer> {
     private static final int MAXIMUM_TOTAL_CAPACITY = Integer.MAX_VALUE / Integer.BYTES;
 
-    // This value will be considered as a NULL while writing. By default, we use the definition for QueryConstants but
-    // can be overridden.
+    // This value will be considered as a NULL while writing. For example, if NULL_DEF is set as 65535, then 65535 will
+    // be written as NULL by this writer. By default, we use the definition from QueryConstants but can be overridden.
+    // TODO Can there be a better name for this?
     private int NULL_DEF = QueryConstants.NULL_INT;
 
     private final ByteBufferAllocator allocator;

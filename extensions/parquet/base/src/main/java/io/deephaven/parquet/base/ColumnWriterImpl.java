@@ -217,6 +217,7 @@ public class ColumnWriterImpl implements ColumnWriter {
         }
         initWriter();
         // noinspection unchecked
+        // TODO Should I also change this path? I don't fully understand this path. Talk to Ryan for this.
         int valueCount =
                 bulkWriter.writeBulkVector(pageData, repeatCount, rlEncoder, dlEncoder, nonNullValueCount);
         writePage(bulkWriter.getByteBufferView(), valueCount);
