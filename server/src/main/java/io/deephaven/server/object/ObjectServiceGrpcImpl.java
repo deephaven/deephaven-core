@@ -8,6 +8,7 @@ import com.google.protobuf.ByteStringAccess;
 import com.google.rpc.Code;
 import io.deephaven.engine.liveness.SingletonLivenessManager;
 import io.deephaven.extensions.barrage.util.BarrageProtoUtil.ExposedByteArrayOutputStream;
+import io.deephaven.extensions.barrage.util.GrpcUtil;
 import io.deephaven.internal.log.LoggerFactory;
 import io.deephaven.io.logger.Logger;
 import io.deephaven.plugin.type.ObjectType;
@@ -184,8 +185,7 @@ public class ObjectServiceGrpcImpl extends ObjectServiceGrpc.ObjectServiceImplBa
                             .addAllTypedExportId(exportCollector.refs().stream().map(ReferenceImpl::typedTicket)
                                     .collect(Collectors.toList()));
 
-                    responseObserver.onNext(builder.build());
-                    responseObserver.onCompleted();
+                    GrpcUtil.safelyComplete(responseObserver, builder.build());
                     return null;
                 });
     }
