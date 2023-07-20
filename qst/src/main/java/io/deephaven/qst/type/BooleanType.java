@@ -3,17 +3,17 @@
  */
 package io.deephaven.qst.type;
 
-import io.deephaven.annotations.SimpleStyle;
+import io.deephaven.annotations.SingletonStyle;
 import org.immutables.value.Value.Immutable;
 
 /**
- * The {@link Boolean} type.
+ * The primitive {@code boolean} type.
  */
 @Immutable
-@SimpleStyle
+@SingletonStyle
 public abstract class BooleanType extends PrimitiveTypeBase<Boolean> {
 
-    public static BooleanType instance() {
+    public static BooleanType of() {
         return ImmutableBooleanType.of();
     }
 
@@ -23,8 +23,8 @@ public abstract class BooleanType extends PrimitiveTypeBase<Boolean> {
     }
 
     @Override
-    public final Class<Boolean> boxedClass() {
-        return Boolean.class;
+    public final BoxedBooleanType boxedType() {
+        return BoxedBooleanType.of();
     }
 
     @Override

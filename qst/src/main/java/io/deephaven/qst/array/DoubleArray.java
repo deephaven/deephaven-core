@@ -79,7 +79,7 @@ public final class DoubleArray extends PrimitiveArrayBase<Double> {
 
     @Override
     public final DoubleType componentType() {
-        return DoubleType.instance();
+        return DoubleType.of();
     }
 
     @Override

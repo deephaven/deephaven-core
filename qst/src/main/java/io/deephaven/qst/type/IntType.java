@@ -3,17 +3,17 @@
  */
 package io.deephaven.qst.type;
 
-import io.deephaven.annotations.SimpleStyle;
+import io.deephaven.annotations.SingletonStyle;
 import org.immutables.value.Value.Immutable;
 
 /**
- * The {@link Integer} type.
+ * The primitive {@link int} type.
  */
 @Immutable
-@SimpleStyle
+@SingletonStyle
 public abstract class IntType extends PrimitiveTypeBase<Integer> {
 
-    public static IntType instance() {
+    public static IntType of() {
         return ImmutableIntType.of();
     }
 
@@ -23,8 +23,8 @@ public abstract class IntType extends PrimitiveTypeBase<Integer> {
     }
 
     @Override
-    public final Class<Integer> boxedClass() {
-        return Integer.class;
+    public final BoxedIntType boxedType() {
+        return BoxedIntType.of();
     }
 
     @Override

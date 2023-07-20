@@ -7,9 +7,6 @@ import io.deephaven.engine.context.ExecutionContext;
 import io.deephaven.engine.context.QueryScope;
 import io.deephaven.engine.liveness.LivenessNode;
 import io.deephaven.engine.liveness.ReleasableLivenessManager;
-import io.deephaven.engine.util.scripts.ScriptPathLoader;
-import io.deephaven.engine.util.scripts.ScriptPathLoaderState;
-import io.deephaven.util.SafeCloseable;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
@@ -17,7 +14,6 @@ import java.nio.file.Path;
 import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.Set;
-import java.util.function.Supplier;
 
 /**
  * Interface for interactive console script sessions.
@@ -87,26 +83,13 @@ public interface ScriptSession extends ReleasableLivenessManager, LivenessNode {
     }
 
     /**
-     * Tracks changes in the script session bindings until the SnapshotScope is closed.
-     *
-     * @return a new SnapshotScope, so that the caller can control when to stop tracking changes to bindings.
+     * Observe (and report via {@link Listener#onScopeChanges(ScriptSession, Changes) onScopeChanges}) any changes to
+     * this ScriptSession's {@link QueryScope} that may have been made externally, rather than during
+     * {@link #evaluateScript script evaluation}.
+     * 
+     * @apiNote This method should be regarded as an unstable API
      */
-    default SnapshotScope snapshot() {
-        return snapshot(null);
-    }
-
-    /**
-     * Tracks changes in the script session bindings until the SnapshotScope is closed.
-     *
-     * This API should be considered unstable, see deephaven-core#2453.
-     *
-     * @param previousIfPresent if non-null, will be closed atomically with the new scope being opened.
-     * @return a new SnapshotScope, so that the caller can control when to stop tracking changes to bindings.
-     */
-    SnapshotScope snapshot(@Nullable SnapshotScope previousIfPresent);
-
-    interface SnapshotScope extends SafeCloseable {
-    }
+    void observeScopeChanges();
 
     /**
      * Evaluates the script and manages liveness of objects that are exported to the user. This method should be called
@@ -184,37 +167,6 @@ public interface ScriptSession extends ReleasableLivenessManager, LivenessNode {
     default Throwable sanitizeThrowable(Throwable e) {
         return e;
     }
-
-    /**
-     * Called before Application initialization, should setup sourcing from the controller (as required).
-     */
-    void onApplicationInitializationBegin(Supplier<ScriptPathLoader> pathLoader,
-            ScriptPathLoaderState scriptLoaderState);
-
-    /**
-     * Called after Application initialization.
-     */
-    void onApplicationInitializationEnd();
-
-    /**
-     * Sets the scriptPathLoader that is in use for this session.
-     *
-     * @param scriptPathLoader a supplier of a script path loader
-     * @param caching whether the source operation should cache results
-     */
-    void setScriptPathLoader(Supplier<ScriptPathLoader> scriptPathLoader, boolean caching);
-
-    /**
-     * Removes the currently configured script path loader from this script.
-     */
-    void clearScriptPathLoader();
-
-    /**
-     * Informs the session whether or not we should be using the original ScriptLoaderState for source commands.
-     *
-     * @param useOriginal whether to use the script loader state at persistent query initialization
-     */
-    boolean setUseOriginalScriptLoaderState(boolean useOriginal);
 
     /**
      * Asks the session to remove any wrapping that exists on scoped objects so that clients can fetch them. Defaults to

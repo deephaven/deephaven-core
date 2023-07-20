@@ -10,35 +10,39 @@ import io.deephaven.engine.tablelogger.UpdatePerformanceLogLogger;
 
 /**
  * Provides memory table logger implementations for the engine table loggers.
+ *
+ * <p>
+ * Deprecated, use {@link EngineTableLoggers.Factory.Noop#INSTANCE}.
  */
+@Deprecated(since = "0.26.0", forRemoval = true)
 public class EngineTableLoggersFactoryMemoryImpl implements EngineTableLoggers.Factory {
     @Override
     public ProcessInfoLogLogger processInfoLogLogger() {
-        return new ProcessInfoLogLoggerMemoryImpl();
+        return ProcessInfoLogLogger.Noop.INSTANCE;
     }
 
     @Override
     public ProcessMetricsLogLogger processMetricsLogLogger() {
-        return new ProcessMetricsLogLoggerMemoryImpl();
+        return ProcessMetricsLogLogger.Noop.INSTANCE;
     }
 
     @Override
     public QueryOperationPerformanceLogLogger queryOperationPerformanceLogLogger() {
-        return new QueryOperationPerformanceLogLoggerMemoryImpl();
+        return QueryOperationPerformanceLogLogger.Noop.INSTANCE;
     }
 
     @Override
     public QueryPerformanceLogLogger queryPerformanceLogLogger() {
-        return new QueryPerformanceLogLoggerMemoryImpl();
+        return QueryPerformanceLogLogger.Noop.INSTANCE;
     }
 
     @Override
     public ServerStateLogLogger serverStateLogLogger() {
-        return new ServerStateLogLoggerMemoryImpl();
+        return ServerStateLogLogger.Noop.INSTANCE;
     }
 
     @Override
     public UpdatePerformanceLogLogger updatePerformanceLogLogger() {
-        return new UpdatePerformanceLogLoggerMemoryImpl();
+        return UpdatePerformanceLogLogger.Noop.INSTANCE;
     }
 }

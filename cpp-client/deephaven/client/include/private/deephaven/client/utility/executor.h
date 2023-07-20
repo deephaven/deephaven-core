@@ -8,6 +8,7 @@
 #include <functional>
 #include <memory>
 #include <mutex>
+#include <thread>
 #include "deephaven/dhcore/utility/callbacks.h"
 #include "deephaven/dhcore/utility/utility.h"
 
@@ -17,10 +18,12 @@ class Executor {
   };
 
 public:
-  static std::shared_ptr<Executor> create();
+  static std::shared_ptr<Executor> create(std::string id);
 
-  explicit Executor(Private);
+  explicit Executor(Private, std::string id);
   ~Executor();
+
+  void shutdown();
 
   typedef deephaven::dhcore::utility::Callback<> callback_t;
 
@@ -33,11 +36,14 @@ public:
 
 private:
   static void threadStart(std::shared_ptr<Executor> self);
-  [[noreturn]]
-  void runForever();
+  void runUntilCancelled();
 
+  // For debugging.
+  std::string id_;
   std::mutex mutex_;
   std::condition_variable condvar_;
+  bool cancelled_ = false;
   std::deque<std::shared_ptr<callback_t>> todo_;
+  std::thread executorThread_;
 };
 }  // namespace deephaven::client::utility

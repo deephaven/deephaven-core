@@ -27,7 +27,7 @@ public interface FloatVector extends Vector<FloatVector>, Iterable<Float> {
     long serialVersionUID = -1373264425081841175L;
 
     static PrimitiveVectorType<FloatVector, Float> type() {
-        return PrimitiveVectorType.of(FloatVector.class, FloatType.instance());
+        return PrimitiveVectorType.of(FloatVector.class, FloatType.of());
     }
 
     /**

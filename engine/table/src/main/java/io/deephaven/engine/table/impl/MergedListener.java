@@ -153,9 +153,9 @@ public abstract class MergedListener extends LivenessArtifact implements Notific
 
     protected void propagateErrorDownstream(
             final boolean fromProcess, @NotNull final Throwable error, @Nullable final TableListener.Entry entry) {
-        if (fromProcess && result.getLastNotificationStep() == getUpdateGraph().clock()
-                .currentStep()) {
-            // If the result managed to send its notification, we should not send our own on this cycle.
+        if (fromProcess && result.satisfied(getUpdateGraph().clock().currentStep())) {
+            // If the result is already satisfied (because it managed to send its notification, or was otherwise
+            // satisfied) we should not send our error notification on this cycle.
             if (!result.isFailed()) {
                 // If the result isn't failed, we need to mark it as such on the next cycle.
                 scheduleDelayedErrorNotifier(error, entry, List.of(result));
@@ -169,23 +169,25 @@ public abstract class MergedListener extends LivenessArtifact implements Notific
             @NotNull final Throwable error,
             @Nullable final TableListener.Entry entry,
             @NotNull final Collection<BaseTable> results) {
-        delayedErrorReference = new DelayedErrorNotifier(error, entry, results);
+        delayedErrorReference = new DelayedErrorNotifier(getUpdateGraph(), error, entry, results);
     }
 
     private static final class DelayedErrorNotifier implements Runnable {
 
+        private final UpdateGraph updateGraph;
         private final Throwable error;
         private final TableListener.Entry entry;
         private final Collection<WeakReference<BaseTable>> targetReferences;
-        private final UpdateGraph updateGraph = ExecutionContext.getContext().getUpdateGraph();
 
         private DelayedErrorNotifier(
+                @NotNull final UpdateGraph updateGraph,
                 @NotNull final Throwable error,
                 @Nullable final TableListener.Entry entry,
                 @NotNull final Collection<BaseTable> targets) {
             this.error = error;
             this.entry = entry;
             this.targetReferences = targets.stream().map(WeakReference::new).collect(Collectors.toList());
+            this.updateGraph = updateGraph;
             updateGraph.addSource(this);
         }
 

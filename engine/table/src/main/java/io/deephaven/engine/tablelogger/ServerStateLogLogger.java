@@ -1,6 +1,7 @@
 package io.deephaven.engine.tablelogger;
 
 import io.deephaven.tablelogger.Row;
+import io.deephaven.tablelogger.Row.Flags;
 
 import java.io.IOException;
 
@@ -25,4 +26,16 @@ public interface ServerStateLogLogger {
             final int intervalCollectionTimeMicros, final short intervalUGPCyclesOnBudget,
             final int[] intervalUGPCyclesTimeMicros, final short intervalUGPCyclesSafePoints,
             final int intervalUGPCyclesSafePointTimeMicros) throws IOException;
+
+    enum Noop implements ServerStateLogLogger {
+        INSTANCE;
+
+        @Override
+        public void log(Flags flags, long intervalStartTime, int intervalDurationMicros, int totalMemoryMiB,
+                int freeMemoryMiB, short intervalCollections, int intervalCollectionTimeMicros,
+                short intervalUGPCyclesOnBudget, int[] intervalUGPCyclesTimeMicros, short intervalUGPCyclesSafePoints,
+                int intervalUGPCyclesSafePointTimeMicros) throws IOException {
+
+        }
+    }
 }

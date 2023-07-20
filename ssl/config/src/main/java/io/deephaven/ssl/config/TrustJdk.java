@@ -4,14 +4,14 @@
 package io.deephaven.ssl.config;
 
 import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
-import io.deephaven.annotations.SimpleStyle;
+import io.deephaven.annotations.SingletonStyle;
 import org.immutables.value.Value.Immutable;
 
 /**
  * The trust material from the JDK.
  */
 @Immutable
-@SimpleStyle
+@SingletonStyle
 @JsonDeserialize(as = ImmutableTrustJdk.class)
 public abstract class TrustJdk extends TrustBase {
 

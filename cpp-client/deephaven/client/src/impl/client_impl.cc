@@ -20,8 +20,11 @@ using deephaven::dhcore::utility::SFCallback;
 
 namespace deephaven::client {
 namespace impl {
-std::shared_ptr<ClientImpl> ClientImpl::create(std::shared_ptr<Server> server,
-    std::shared_ptr<Executor> executor, std::shared_ptr<Executor> flightExecutor, const std::string &sessionType) {
+std::shared_ptr<ClientImpl> ClientImpl::create(
+    std::shared_ptr<Server> server,
+    std::shared_ptr<Executor> executor,
+    std::shared_ptr<Executor> flightExecutor,
+    const std::string &sessionType) {
   std::optional<Ticket> consoleTicket;
   if (!sessionType.empty()) {
     auto cb = SFCallback<StartConsoleResponse>::createForFuture();
@@ -30,7 +33,10 @@ std::shared_ptr<ClientImpl> ClientImpl::create(std::shared_ptr<Server> server,
     consoleTicket = std::move(*scr.mutable_result_id());
   }
 
-  auto thmi = TableHandleManagerImpl::create(std::move(consoleTicket), std::move(server), std::move(executor),
+  auto thmi = TableHandleManagerImpl::create(
+          std::move(consoleTicket),
+          std::move(server),
+          std::move(executor),
       std::move(flightExecutor));
   return std::make_shared<ClientImpl>(Private(), std::move(thmi));
 }

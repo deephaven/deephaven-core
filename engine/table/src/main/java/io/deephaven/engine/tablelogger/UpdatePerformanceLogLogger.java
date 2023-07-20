@@ -2,7 +2,9 @@ package io.deephaven.engine.tablelogger;
 
 import io.deephaven.engine.table.impl.perf.PerformanceEntry;
 import io.deephaven.engine.table.impl.perf.UpdatePerformanceTracker;
+import io.deephaven.engine.table.impl.perf.UpdatePerformanceTracker.IntervalLevelDetails;
 import io.deephaven.tablelogger.Row;
+import io.deephaven.tablelogger.Row.Flags;
 
 import java.io.IOException;
 
@@ -19,4 +21,13 @@ public interface UpdatePerformanceLogLogger {
 
     void log(final Row.Flags flags, final UpdatePerformanceTracker.IntervalLevelDetails intervalLevelDetails,
             final PerformanceEntry performanceEntry) throws IOException;
+
+    enum Noop implements UpdatePerformanceLogLogger {
+        INSTANCE;
+
+        @Override
+        public void log(Flags flags, IntervalLevelDetails intervalLevelDetails, PerformanceEntry performanceEntry) {
+
+        }
+    }
 }

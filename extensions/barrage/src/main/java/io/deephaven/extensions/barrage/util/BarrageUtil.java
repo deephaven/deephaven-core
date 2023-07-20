@@ -150,8 +150,8 @@ public class BarrageUtil {
         final Map<String, String> descriptions = GridAttributes.getColumnDescriptions(attributes);
         final MutableInputTable inputTable = (MutableInputTable) attributes.get(Table.INPUT_TABLE_ATTRIBUTE);
         final List<Field> fields = columnDefinitionsToFields(
-                descriptions, inputTable, tableDefinition.getColumns(), ignored -> new HashMap<>(),
-                options.columnsAsList())
+                descriptions, inputTable, tableDefinition, tableDefinition.getColumns(), ignored -> new HashMap<>(),
+                attributes, options.columnsAsList())
                 .collect(Collectors.toList());
 
         return new Schema(fields, schemaMetadata).getSchema(builder);
@@ -181,23 +181,48 @@ public class BarrageUtil {
     public static Stream<Field> columnDefinitionsToFields(
             @NotNull final Map<String, String> columnDescriptions,
             @Nullable final MutableInputTable inputTable,
+            @NotNull final TableDefinition tableDefinition,
             @NotNull final Collection<ColumnDefinition<?>> columnDefinitions,
-            @NotNull final Function<String, Map<String, String>> fieldMetadataFactory) {
-        return columnDefinitionsToFields(columnDescriptions, inputTable, columnDefinitions, fieldMetadataFactory,
+            @NotNull final Function<String, Map<String, String>> fieldMetadataFactory,
+            @NotNull final Map<String, Object> attributes) {
+        return columnDefinitionsToFields(columnDescriptions, inputTable, tableDefinition, columnDefinitions,
+                fieldMetadataFactory,
+                attributes,
                 false);
+    }
+
+    private static boolean isDataTypeSortable(final Class<?> dataType) {
+        return dataType.isPrimitive() || Comparable.class.isAssignableFrom(dataType);
     }
 
     public static Stream<Field> columnDefinitionsToFields(
             @NotNull final Map<String, String> columnDescriptions,
             @Nullable final MutableInputTable inputTable,
+            @NotNull final TableDefinition tableDefinition,
             @NotNull final Collection<ColumnDefinition<?>> columnDefinitions,
             @NotNull final Function<String, Map<String, String>> fieldMetadataFactory,
+            @NotNull final Map<String, Object> attributes,
             final boolean columnsAsList) {
         // Find the format columns
         final Set<String> formatColumns = new HashSet<>();
         columnDefinitions.stream().map(ColumnDefinition::getName)
                 .filter(ColumnFormatting::isFormattingColumn)
                 .forEach(formatColumns::add);
+
+        // Find columns that are sortable
+        Set<String> sortableColumns;
+        if (attributes.containsKey(GridAttributes.SORTABLE_COLUMNS_ATTRIBUTE)) {
+            final String[] restrictedSortColumns =
+                    attributes.get(GridAttributes.SORTABLE_COLUMNS_ATTRIBUTE).toString().split(",");
+            sortableColumns = Arrays.stream(restrictedSortColumns)
+                    .filter(columnName -> isDataTypeSortable(tableDefinition.getColumn(columnName).getDataType()))
+                    .collect(Collectors.toSet());
+        } else {
+            sortableColumns = columnDefinitions.stream()
+                    .filter(column -> isDataTypeSortable(column.getDataType()))
+                    .map(ColumnDefinition::getName)
+                    .collect(Collectors.toSet());
+        }
 
         // Build metadata for columns and add the fields
         return columnDefinitions.stream().map((final ColumnDefinition<?> column) -> {
@@ -207,6 +232,7 @@ public class BarrageUtil {
             final Map<String, String> metadata = fieldMetadataFactory.apply(name);
 
             putMetadata(metadata, "isPartitioning", column.isPartitioning() + "");
+            putMetadata(metadata, "isSortable", String.valueOf(sortableColumns.contains(name)));
 
             // Wire up style and format column references
             final String styleFormatName = ColumnFormatting.getStyleFormatColumn(name);

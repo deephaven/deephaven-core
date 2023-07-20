@@ -7,6 +7,7 @@ import io.deephaven.qst.column.header.ColumnHeader;
 import io.deephaven.qst.table.TableHeader;
 import io.deephaven.qst.type.ArrayType;
 import io.deephaven.qst.type.BooleanType;
+import io.deephaven.qst.type.BoxedType;
 import io.deephaven.qst.type.ByteType;
 import io.deephaven.qst.type.CharType;
 import io.deephaven.qst.type.CustomType;
@@ -96,6 +97,11 @@ final class TypeAdapter
     @Override
     public RelDataType visit(GenericType<?> genericType) {
         return genericType.walk((GenericType.Visitor<RelDataType>) this);
+    }
+
+    @Override
+    public RelDataType visit(BoxedType<?> boxedType) {
+        return visit(boxedType.primitiveType());
     }
 
     @Override

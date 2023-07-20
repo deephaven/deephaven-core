@@ -79,7 +79,7 @@ public final class BooleanArray extends PrimitiveArrayBase<Boolean> {
 
     @Override
     public final BooleanType componentType() {
-        return BooleanType.instance();
+        return BooleanType.of();
     }
 
     @Override

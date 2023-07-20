@@ -460,5 +460,8 @@ public class TestStreamToBlinkTableAdapter {
                 throw new RuntimeException("I am a fake failure");
             }
         }
+
+        @Override
+        public void shutdown() {}
     }
 }

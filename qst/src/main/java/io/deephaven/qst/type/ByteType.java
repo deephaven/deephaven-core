@@ -3,17 +3,17 @@
  */
 package io.deephaven.qst.type;
 
-import io.deephaven.annotations.SimpleStyle;
+import io.deephaven.annotations.SingletonStyle;
 import org.immutables.value.Value.Immutable;
 
 /**
- * The {@link Byte} type.
+ * The primitive {@code byte} type.
  */
 @Immutable
-@SimpleStyle
+@SingletonStyle
 public abstract class ByteType extends PrimitiveTypeBase<Byte> {
 
-    public static ByteType instance() {
+    public static ByteType of() {
         return ImmutableByteType.of();
     }
 
@@ -23,8 +23,8 @@ public abstract class ByteType extends PrimitiveTypeBase<Byte> {
     }
 
     @Override
-    public final Class<Byte> boxedClass() {
-        return Byte.class;
+    public BoxedByteType boxedType() {
+        return BoxedByteType.of();
     }
 
     @Override

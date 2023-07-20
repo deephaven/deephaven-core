@@ -43,6 +43,40 @@ import java.util.stream.Collectors;
 public class SessionService {
     private static final Logger log = LoggerFactory.getLogger(SessionService.class);
 
+    /**
+     * Implementations of error transformer give the server one last chance to convert errors to useful messages before
+     * responding to gRPC users.
+     */
+    @FunctionalInterface
+    public interface ErrorTransformer {
+        StatusRuntimeException transform(Throwable t);
+    }
+
+    @Singleton
+    public static class ObfuscatingErrorTransformer implements ErrorTransformer {
+        @Inject
+        public ObfuscatingErrorTransformer() {}
+
+        @Override
+        public StatusRuntimeException transform(final Throwable err) {
+            if (err instanceof StatusRuntimeException) {
+                final StatusRuntimeException sre = (StatusRuntimeException) err;
+                if (sre.getStatus().getCode().equals(Status.UNAUTHENTICATED.getCode())) {
+                    log.debug().append("ignoring unauthenticated request").endl();
+                } else if (sre.getStatus().getCode().equals(Status.CANCELLED.getCode())) {
+                    log.debug().append("ignoring cancelled request").endl();
+                } else {
+                    log.error().append(sre).endl();
+                }
+                return sre;
+            } else if (err instanceof InterruptedException) {
+                return GrpcUtil.securelyWrapError(log, err, Code.UNAVAILABLE);
+            } else {
+                return GrpcUtil.securelyWrapError(log, err);
+            }
+        }
+    }
+
     static final long MIN_COOKIE_EXPIRE_MS = 10_000; // 10 seconds
     private static final int MAX_STACK_TRACE_CAUSAL_DEPTH =
             Configuration.getInstance().getIntegerForClassWithDefault(SessionService.class,
