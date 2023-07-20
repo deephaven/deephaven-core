@@ -28,19 +28,40 @@ which functions as the data backbone for prominent hedge funds, banks, and finan
 | Java / Groovy | Yes                | Yes                |
 | C++           | No                 | Yes                |
 | JavaScript    | No                 | Yes                |
+| Go            | No                 | Yes                |
+| R             | No                 | Yes                |
 | gRPC          | -                  | Yes                |
 
 ## Run Deephaven
 
-This section is a quick start guide for running Deephaven from pre-built images.  Almost all users will want to run Deephaven using pre-built images.  It is the easiest way to deploy.  For detailed instructions, see [Launch Deephaven from pre-built images](https://deephaven.io/core/docs/tutorials/quickstart).
+There are both server- and client-side applications available, as seen in the table above.
 
-Developers interested in tinkering with and modifying source code should build from the source code. For detailed instructions on how to do this, see [Build and launch Deephaven](https://deephaven.io/core/docs/how-to-guides/launch-build).
+### Server-side
+
+Deephaven's server-side APIs allow you to connect directly to the Deephaven server and execute commands, write queries, and much more.
+
+Most users will want to run Deephaven from pre-built images. It's the easiest way to configure, deploy, and use Deephaven. For detailed instructions, see [Launch Deephaven from pre-built images](https://deephaven.io/core/docs/tutorials/quickstart).
+
+Some Python users will want to use Deephaven entirely from Python. For instructions on starting and using Deephaven from Python, see [Quick start for pip-installed Deephaven](https://deephaven.io/core/docs/tutorials/quickstart-pip/).
+
+Developers interested in tinkering with and modifying source code should build from source. For detailed instructions on how to do this, see [Build and launch Deephaven](https://deephaven.io/core/docs/how-to-guides/launch-build).
 
 If you are not sure which of the two is right for you, use the pre-built images.
 
-### Required Dependencies
+### Client-side
 
-Running Deephaven requires a few software packages.
+Deephaven's client APIs allow you to connect to a Deephaven server and execute code. Documentation links are below:
+
+- [Python](https://deephaven.io/core/client-api/python/)
+- [Java/Groovy](https://deephaven.io/core/javadoc/)
+- [C++](https://deephaven.io/core/client-api/cpp/)
+- [JavaScript](https://deephaven.io/core/docs/reference/js-api/documentation/)
+- [Go](https://pkg.go.dev/github.com/deephaven/deephaven-core/go)
+- Documentation for R can be found with the `?` operator in R.
+
+### Docker Dependencies
+
+Running Deephaven from pre-built Docker images requires a few software packages.
 
 | Package        | Version                       | OS           |
 | -------------- | ----------------------------- | ------------ |
@@ -74,125 +95,30 @@ cd deephaven-deployment
 
 > :warning: **Commands in the following sections for interacting with a deployment must be run from the deployment directory.**
 
-### Launch: Python
+### Launch options
 
-Run the following commands to launch Deephaven for Python server applications. 
-
-```bash
-curl https://raw.githubusercontent.com/deephaven/deephaven-core/main/containers/python/base/docker-compose.yml -O
-docker-compose pull
-docker-compose up -d
-```
-
-### Launch: Python with NLTK
-
-Run the following commands to launch Deephaven for Python server applications with the [NLTK](https://nltk.org/) module pre-installed.
+Deephaven offers a variety of pre-made Docker Compose YAML files for different deployments. The following commands will launch Deephaven. Replace `<URL>` with that of the deployment from the table below that best suits your needs.
 
 ```bash
-curl https://raw.githubusercontent.com/deephaven/deephaven-core/main/containers/python/NLTK/docker-compose.yml -O
-docker-compose pull
-docker-compose up -d
+curl <URL> -O
+docker compose pull
+docker compose up -d
 ```
 
-### Launch: Python with PyTorch
+| Language | Example data | Additional packages | URL |
+| Python   | No           | None                | https://raw.githubusercontent.com/deephaven/deephaven-core/main/containers/python/base/docker-compose.yml |
+| Python   | No           | SciKit-Learn        | https://raw.githubusercontent.com/deephaven/deephaven-core/main/containers/python/SciKit-Learn/docker-compose.yml |
+| Python   | No           | PyTorch             | https://raw.githubusercontent.com/deephaven/deephaven-core/main/containers/python/PyTorch/docker-compose.yml |
+| Python   | No           | TensorFlow          | https://raw.githubusercontent.com/deephaven/deephaven-core/main/containers/python/TensorFlow/docker-compose.yml |
+| Python   | No           | NLTK                | https://raw.githubusercontent.com/deephaven/deephaven-core/main/containers/python/NLTK/docker-compose.yml |
+| Python   | Yes          | None                | https://raw.githubusercontent.com/deephaven/deephaven-core/main/containers/python-examples/base/docker-compose.yml |
+| Python   | Yes          | SciKit-Learn        | https://raw.githubusercontent.com/deephaven/deephaven-core/main/containers/python-examples/SciKit-Learn/docker-compose.yml |
+| Python   | Yes          | PyTorch             | https://raw.githubusercontent.com/deephaven/deephaven-core/main/containers/python-examples/PyTorch/docker-compose.yml |
+| Python   | Yes          | TensorFlow          | https://raw.githubusercontent.com/deephaven/deephaven-core/main/containers/python-examples/TensorFlow/docker-compose.yml |
+| Python   | Yes          | NLTK                | https://raw.githubusercontent.com/deephaven/deephaven-core/main/containers/python-examples/NLTK/docker-compose.yml |
+| Groovy   | No           | None                | https://raw.githubusercontent.com/deephaven/deephaven-core/main/containers/groovy/docker-compose.yml |
+| Groovy   | Yes          | None                | https://raw.githubusercontent.com/deephaven/deephaven-core/main/containers/groovy-examples/docker-compose.yml |
 
-Run the following commands to launch Deephaven for Python server applications with the [PyTorch](https://pytorch.org/) module pre-installed.
-
-```bash
-curl https://raw.githubusercontent.com/deephaven/deephaven-core/main/containers/python/PyTorch/docker-compose.yml -O
-docker-compose pull
-docker-compose up -d
-```
-
-### Launch: Python with SciKit-Learn
-
-Run the following commands to launch Deephaven for Python server applications with the [SciKit-Learn](https://scikit-learn.org/stable/) module pre-installed.
-
-```bash
-curl https://raw.githubusercontent.com/deephaven/deephaven-core/main/containers/python/SciKit-Learn/docker-compose.yml -O
-docker-compose pull
-docker-compose up -d
-```
-
-### Launch: Python with TensorFlow
-
-Run the following commands to launch Deephaven for Python server applications with the [TensorFlow](https://www.tensorflow.org/) module pre-installed.
-
-```bash
-curl https://raw.githubusercontent.com/deephaven/deephaven-core/main/containers/python/TensorFlow/docker-compose.yml -O
-docker-compose pull
-docker-compose up -d
-```
-
-### Launch: Python with example data
-
-Run the following commands to launch Deephaven for Python server applications, with example data.
-
-```bash
-curl https://raw.githubusercontent.com/deephaven/deephaven-core/main/containers/python-examples/base/docker-compose.yml -O
-docker-compose pull
-docker-compose up -d
-```
-
-### Launch: Python with example data and NLTK
-
-Run the following commands to launch Deephaven for Python server applications, with example data and [NLTK](https://nltk.org/).
-
-```bash
-curl https://raw.githubusercontent.com/deephaven/deephaven-core/main/containers/python-examples/NLTK/docker-compose.yml -O
-docker-compose pull
-docker-compose up -d
-```
-
-### Launch: Python with example data and PyTorch
-
-Run the following commands to launch Deephaven for Python server applications, with example data and [PyTorch](https://pytorch.org/).
-
-```bash
-curl https://raw.githubusercontent.com/deephaven/deephaven-core/main/containers/python-examples/PyTorch/docker-compose.yml -O
-docker-compose pull
-docker-compose up -d
-```
-
-### Launch: Python with example data and SciKit-Learn
-
-Run the following commands to launch Deephaven for Python server applications, with example data and [SciKit-Learn](https://scikit-learn.org/stable/).
-
-```bash
-curl https://raw.githubusercontent.com/deephaven/deephaven-core/main/containers/python-examples/SciKit-Learn/docker-compose.yml -O
-docker-compose pull
-docker-compose up -d
-```
-
-### Launch: Python with example data and TensorFlow
-
-Run the following commands to launch Deephaven for Python server applications, with example data and [TensorFlow](https://www.tensorflow.org/).
-
-```bash
-curl https://raw.githubusercontent.com/deephaven/deephaven-core/main/containers/python-examples/TensorFlow/docker-compose.yml -O
-docker-compose pull
-docker-compose up -d
-```
-
-### Launch: Groovy / Java
-
-Run the following commands to launch Deephaven for Groovy / Java server applications. 
-
-```bash
-curl https://raw.githubusercontent.com/deephaven/deephaven-core/main/containers/groovy/docker-compose.yml -O
-docker-compose pull
-docker-compose up -d
-```
-
-### Launch: Groovy / Java with example data
-
-Run the following commands to launch Deephaven for Groovy / Java server applications, with example data.
-
-```bash
-curl https://raw.githubusercontent.com/deephaven/deephaven-core/main/containers/groovy-examples/docker-compose.yml -O
-docker-compose pull
-docker-compose up -d
-```
 
 ### Monitor logs
 
@@ -205,6 +131,27 @@ docker-compose logs -f
 ```
 
 Use CTRL+C to stop monitoring the logs and return to a prompt.
+
+### Authentication
+
+Deephaven, by default, comes stock with pre-shared key to authenticate any users trying to access it. If no key is set, a randomly generated key is printed to the Docker logs. The key can be found by monitoring the logs. It will look like this:
+
+```
+================================================================================
+Superuser access through pre-shared key is enabled - use 1c3opvgzl5scm to connect
+Connect automatically to Web UI with http://localhost:10000/?psk=1c3opvgzl5scm
+================================================================================
+```
+
+You can also `grep` for the key in the logs:
+
+```bash
+docker compose logs -f | grep "access through pre-shared key"
+```
+
+For more information on setting your own pre-shared key, see [How to configure and use pre-shared key authentication](https://deephaven.io/core/docs/how-to-guides/authentication/auth-psk/).
+
+For information on enabling anonymous authentication, see [How to enable anonymous authentication](https://deephaven.io/core/docs/how-to-guides/authentication/auth-anon/).
 
 ### Shutdown
 
@@ -236,6 +183,11 @@ docker-compose run examples
 
 If your deployment does not have example data, these commands will fail with `ERROR: No such service`.
 
+### Build from source
+
+If you are interested in tinkering and modifying source code for your own Deephaven deployment, or contributing to the project, see this [README](https://github.com/deephaven/deephaven-core/blob/main/server/jetty-app/README.md) for build instructions. There are several [required dependencies](https://deephaven.io/core/docs/how-to-guides/launch-build/#required-dependencies) to build and launch from source code.
+
+Additionally, see our [code of conduct](https://github.com/deephaven/deephaven-core/blob/main/CODE_OF_CONDUCT.md) and [contributing guide](https://github.com/deephaven/deephaven-core/blob/main/CONTRIBUTING.md).
 
 ## Run Deephaven IDE
 
@@ -246,7 +198,7 @@ Once Deephaven is running, you can launch a Deephaven IDE in your web browser.  
 
 ![alt_text](docs/images/ide_startup.png "Deephaven IDE")
 
-# First query
+## First query
 
 From the Deephaven IDE, you can perform your first query.
 
@@ -275,7 +227,6 @@ t = left.join(right, "DeptID", "DeptName,DeptTelephone=Telephone")
 ```
 
 ![alt_text](docs/images/ide_first_query.png "Deephaven IDE First Query")
-
 
 ## Resources
 
