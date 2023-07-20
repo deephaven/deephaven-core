@@ -249,30 +249,8 @@ public class ParquetTools {
         }
     }
 
-    private static File getShadowFilePath(File file) {
-        return new File(file.getParent(), ".SHADOW_" + file.getName());
-    }
-
     private static File getBackupFilePath(File file) {
         return new File(file.getParent(), '.' + file.getName() + "-OLD");
-    }
-
-
-
-    /**
-     * Delete the file at location destFile and rename the file at shadowDestFile to destFile
-     */
-    private static void installShadowFile(@NotNull final File destFile, @NotNull final File shadowDestFile) {
-        final String destPath = destFile.getAbsolutePath();
-        if (destFile.exists() && !destFile.delete()) {
-            throw new RuntimeException("Failed to write the table at " + destFile.getAbsolutePath() + " because a "
-                    + "file already exists at the path which couldn't be deleted.");
-        }
-        if (!shadowDestFile.renameTo(destFile)) {
-            throw new RuntimeException("Failed to write the table at " + destFile.getAbsolutePath() + " because "
-                    + "couldn't rename shadow file from " + shadowDestFile.getAbsolutePath() + " to " +
-                    destFile.getAbsolutePath());
-        }
     }
 
     /**
