@@ -33,39 +33,6 @@ import java.util.stream.Collectors;
 import static io.deephaven.engine.rowset.RowSequence.NULL_ROW_KEY;
 import static io.deephaven.engine.table.impl.MultiJoinModifiedSlotTracker.*;
 
-/**
- * <p>
- * Join unique rows from a set of tables onto a set of common keys.
- * </p>
- *
- * <p>
- * The multiJoin operation collects the set of distinct keys from the input tables, and then joins one row from each of
- * the input tables onto the result. Input tables need not have a matching row for each key, but they may not have
- * multiple matching rows for a given key. The operation can be thought of as a merge of the key columns, followed by a
- * selectDistinct and then a series of iterative naturalJoin operations as follows:
- * </p>
- *
- * <pre>{@code
- *     private Table doIterativeMultiJoin(String [] keyColumns, List<? extends Table> inputTables) {
- *         final List<Table> keyTables = inputTables.stream().map(t -> t.view(keyColumns)).collect(Collectors.toList());
- *         final Table base = TableTools.merge(keyTables).selectDistinct(keyColumns);
- *
- *         Table result = base;
- *         for (int ii = 0; ii < inputTables.size(); ++ii) {
- *             result = result.naturalJoin(inputTables.get(ii), Arrays.asList(keyColumns));
- *         }
- *
- *         return result;
- *     }
- *     }
- * </pre>
- *
- * <p>
- * All tables must have the same number of key columns, with the same type. The key columns must all have the same names
- * in the resultant table (the left side of the {@link JoinMatch} used to create them). The columns to add from the must
- * have unique names in the result table.
- * </p>
- */
 public class MultiJoinTableImpl implements MultiJoinTable {
 
     static final int KEY_COLUMN_SENTINEL = -2;
@@ -73,9 +40,9 @@ public class MultiJoinTableImpl implements MultiJoinTable {
 
     @TestUseOnly
     static MultiJoinTableImpl of(@NotNull final JoinControl joinControl,
-            @NotNull final MultiJoinInput... joinDescriptors) {
+            @NotNull final MultiJoinInput... multiJoinInputs) {
         return QueryPerformanceRecorder.withNugget("multiJoin",
-                () -> new MultiJoinTableImpl(joinControl, joinDescriptors));
+                () -> new MultiJoinTableImpl(joinControl, multiJoinInputs));
     }
 
     static MultiJoinTableImpl of(@NotNull final MultiJoinInput... joinDescriptors) {
@@ -98,30 +65,30 @@ public class MultiJoinTableImpl implements MultiJoinTable {
     }
 
     private MultiJoinTableImpl(@NotNull final JoinControl joinControl,
-            @NotNull final MultiJoinInput... joinDescriptors) {
-        table = multiJoin(joinControl, joinDescriptors);
+            @NotNull final MultiJoinInput... multiJoinInputs) {
+        table = multiJoin(joinControl, multiJoinInputs);
     }
 
     private Table multiJoin(@NotNull final JoinControl joinControl,
-            @NotNull final MultiJoinInput... joinDescriptors) {
+            @NotNull final MultiJoinInput... multiJoinInputs) {
         final TObjectIntHashMap<String> usedColumns =
-                new TObjectIntHashMap<>(joinDescriptors[0].columnsToAdd().length, 0.5f, -1);
+                new TObjectIntHashMap<>(multiJoinInputs[0].columnsToAdd().length, 0.5f, -1);
         final List<String> expectedLeftMatches =
-                ColumnName.names(JoinMatch.lefts(Arrays.asList(joinDescriptors[0].columnsToMatch())));
+                ColumnName.names(JoinMatch.lefts(Arrays.asList(multiJoinInputs[0].columnsToMatch())));
         if (expectedLeftMatches.size() == 0) {
-            return doMultiJoinZeroKey(joinDescriptors);
+            return doMultiJoinZeroKey(multiJoinInputs);
         }
 
         final Set<String> keyColumnNames = new LinkedHashSet<>(expectedLeftMatches);
         for (final String keyColumn : expectedLeftMatches) {
             usedColumns.put(keyColumn, KEY_COLUMN_SENTINEL);
         }
-        final ChunkType[] expectedChunkTypes = Arrays.stream(getKeySources(joinDescriptors[0]))
+        final ChunkType[] expectedChunkTypes = Arrays.stream(getKeySources(multiJoinInputs[0]))
                 .map(ColumnSource::getChunkType).toArray(ChunkType[]::new);
 
-        final MultiJoinInput[] useDescriptors = Arrays.copyOf(joinDescriptors, joinDescriptors.length);
+        final MultiJoinInput[] useDescriptors = Arrays.copyOf(multiJoinInputs, multiJoinInputs.length);
 
-        for (int jj = 0; jj < joinDescriptors.length; ++jj) {
+        for (int jj = 0; jj < multiJoinInputs.length; ++jj) {
             MultiJoinInput joinDescriptor = useDescriptors[jj];
 
             final List<String> currentLeftMatches =
@@ -155,7 +122,7 @@ public class MultiJoinTableImpl implements MultiJoinTable {
         final MultiJoinStateManager stateManager;
 
         // If any tables are refreshing, we must use a refreshing JoinManager.
-        final boolean refreshing = Arrays.stream(joinDescriptors).anyMatch(jd -> jd.inputTable().isRefreshing());
+        final boolean refreshing = Arrays.stream(multiJoinInputs).anyMatch(jd -> jd.inputTable().isRefreshing());
         if (refreshing) {
             ExecutionContext.getContext().getUpdateGraph().checkInitiateSerialTableOperation();
             stateManager = TypedHasherFactory.make(IncrementalMultiJoinStateManagerTypedBase.class,

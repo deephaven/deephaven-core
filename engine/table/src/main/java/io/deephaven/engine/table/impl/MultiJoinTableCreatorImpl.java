@@ -17,11 +17,11 @@ public enum MultiJoinTableCreatorImpl implements MultiJoinFactory.Creator {
     INSTANCE;
 
     @Override
-    public MultiJoinTable of(@NotNull MultiJoinInput... joinDescriptors) {
-        if (joinDescriptors.length == 0) {
+    public MultiJoinTable of(@NotNull MultiJoinInput... multiJoinInputs) {
+        if (multiJoinInputs.length == 0) {
             throw new IllegalArgumentException("At least one table must be included in MultiJoinTable.");
         }
-        return MultiJoinTableImpl.of(joinDescriptors);
+        return MultiJoinTableImpl.of(multiJoinInputs);
     }
 
     @SuppressWarnings("unused")

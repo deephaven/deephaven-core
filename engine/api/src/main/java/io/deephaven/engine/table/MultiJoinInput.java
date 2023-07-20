@@ -19,7 +19,7 @@ import java.util.Collections;
 @SimpleStyle
 public abstract class MultiJoinInput {
     /**
-     * Create a multi-join table descriptor.
+     * Create a multiJoin table descriptor.
      *
      * @param inputTable The table to include in a multiJoin
      * @param columnsToMatch An array of {@link JoinMatch} specifying match conditions
@@ -34,7 +34,7 @@ public abstract class MultiJoinInput {
 
 
     /**
-     * Create a multi-join table descriptor.
+     * Create a multiJoin table descriptor.
      *
      * @param inputTable The table to include in a multiJoin
      * @param columnsToMatch A collection of {@link JoinMatch} specifying the key columns
@@ -48,7 +48,7 @@ public abstract class MultiJoinInput {
     }
 
     /**
-     * Create a multi-join table descriptor.
+     * Create a multiJoin table descriptor.
      *
      * @param inputTable The table to include in a multiJoin
      * @param columnsToMatch The key columns, in string format (e.g. "ResultKey=SourceKey" or "KeyInBoth").
@@ -62,7 +62,7 @@ public abstract class MultiJoinInput {
     }
 
     /**
-     * Create a multi-join table descriptor.
+     * Create a multiJoin table descriptor.
      * <p>
      *
      * @param inputTable the table to include in a multiJoin
@@ -73,7 +73,7 @@ public abstract class MultiJoinInput {
     }
 
     /**
-     * Create a multi-join table descriptor.
+     * Create a multiJoin table descriptor.
      *
      * @param inputTable the table to include in a multiJoin
      * @param columnsToMatch A comma separated list of match conditions ("leftColumn=rightColumn" or
