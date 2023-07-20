@@ -220,6 +220,7 @@ public class ParquetTools {
         if (definition.numColumns() == 0) {
             throw new TableDataException("Cannot write a parquet table with zero columns");
         }
+        final File firstCreated = prepareDestinationFileLocation(destFile);
         final File backupFile = getBackupFilePath(destFile);
         if (destFile.exists()) {
             if (!destFile.renameTo(backupFile)) {
@@ -227,7 +228,6 @@ public class ParquetTools {
                         destFile.getAbsolutePath() + " to " + backupFile.getAbsolutePath());
             }
         }
-        final File firstCreated = prepareDestinationFileLocation(destFile);
         try {
             writeParquetTableImpl(
                     sourceTable, definition, writeInstructions, destFile, definition.getGroupingColumnNamesArray());
