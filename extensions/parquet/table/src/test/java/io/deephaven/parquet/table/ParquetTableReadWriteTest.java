@@ -376,8 +376,8 @@ public class ParquetTableReadWriteTest {
     }
 
     /*
-     * These are tests for writing to a location and making sure there are no temporary files left in the directory
-     * after we finish writing.
+     * These are tests for writing a table to a parquet file and making sure there are no unnecessary files left in the
+     * directory after we finish writing.
      */
     @Test
     public void basicWriteTests() {
@@ -417,6 +417,10 @@ public class ParquetTableReadWriteTest {
         TstUtils.assertTableEquals(fromDisk, newTableToSave);
     }
 
+    /*
+     * These are tests for writing to a table with grouping columns to a parquet file and making sure there are no
+     * unnecessary files left in the directory after we finish writing.
+     */
     @Test
     public void groupingColumnsBasicWriteTests() {
         // Create an empty parent directory
