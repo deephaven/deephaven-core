@@ -373,4 +373,90 @@ public class ParquetTableReadWriteTest {
                 .updateView("bdColE = __codec.encode(bdColumn)", "bdColumn=__codec.decode(bdColE, 0, bdColE.length)")
                 .dropColumns("bdColE");
     }
+
+    /*
+     * These are tests for writing to a location and making sure there are no temporary files left in the directory
+     * after we finish writing.
+     */
+    @Test
+    public void basicWriteTests() {
+        // Create an empty parent directory
+        final File parentDir = new File(rootFile, "tempDir");
+        parentDir.mkdir();
+        assertTrue(parentDir.exists() && parentDir.isDirectory() && parentDir.list().length==0);
+
+        // There should be just one file in the directory on a successful write and no temporary files
+        final Table tableToSave = TableTools.emptyTable(5).update("A=(int)i", "B=(long)i", "C=(double)i");
+        final String filename = "basicWriteTests.parquet";
+        final File destFile = new File(parentDir, filename);
+        ParquetTools.writeTable(tableToSave, destFile);
+        String[] filesInDir = parentDir.list();
+        assertTrue(filesInDir.length==1 && filesInDir[0].equals(filename));
+
+        // This write should fail
+        final Table badTable = TableTools.emptyTable(5).updateView("InputString = ii % 2 == 0 ? Long.toString(ii) : null", "A=InputString.charAt(0)");
+        try {
+            ParquetTools.writeTable(badTable, destFile);
+            Assert.fail("Exception expected for invalid formula");
+        } catch (RuntimeException expected) {
+        }
+        // Make sure that original file is preserved and no temporary files
+        filesInDir = parentDir.list();
+        assertTrue(filesInDir.length==1 && filesInDir[0].equals(filename));
+        Table fromDisk = ParquetTools.readTable(destFile);
+        TstUtils.assertTableEquals(fromDisk, tableToSave);
+
+        // Write a new table successfully at the same position
+        final Table newTableToSave = TableTools.emptyTable(5).update("A=(int)i");
+        ParquetTools.writeTable(newTableToSave, destFile);
+        filesInDir = parentDir.list();
+        assertTrue(filesInDir.length==1 && filesInDir[0].equals(filename));
+        fromDisk = ParquetTools.readTable(destFile);
+        TstUtils.assertTableEquals(fromDisk, newTableToSave);
+    }
+
+    @Test
+    public void groupingColumnsBasicWriteTests() {
+        // Create an empty parent directory
+        final File parentDir = new File(rootFile, "tempDir");
+        parentDir.mkdir();
+        assertTrue(parentDir.exists() && parentDir.isDirectory() && parentDir.list().length==0);
+
+        Integer data[] = new Integer[500 * 4];
+        for (int i = 0; i < data.length; i++) {
+            data[i] = i / 4;
+        }
+        final TableDefinition tableDefinition = TableDefinition.of(ColumnDefinition.ofInt("v").withGrouping());
+        final Table tableToSave = TableTools.newTable(tableDefinition, TableTools.col("v", data));
+
+        // For a completed write, there should be two parquet files in the directory, the table data and the grouping data
+        final String filename = "groupingColumnsWriteTests.parquet";
+        final File destFile = new File(parentDir, filename);
+        ParquetTools.writeTable(tableToSave, destFile);
+        final String[] filesInDir = parentDir.list();
+        final String groupingFilename = ParquetTableWriter.defaultGroupingFileName(filename).apply("v");
+        assertTrue(filesInDir.length==2 && Arrays.asList(filesInDir).contains(filename)
+                && Arrays.asList(filesInDir).contains(groupingFilename));
+
+        // This write should fail
+//        final Table badTable = TableTools.emptyTable(5).updateView("InputString = ii % 2 == 0 ? Long.toString(ii) : null", "A=InputString.charAt(0)");
+//        try {
+//            ParquetTools.writeTable(badTable, destFile);
+//            Assert.fail("Exception expected for invalid formula");
+//        } catch (RuntimeException expected) {
+//        }
+//        // Make sure that original file is preserved and no temporary files
+//        filesInDir = parentDir.list();
+//        assertTrue(filesInDir.length==1 && filesInDir[0].equals(filename));
+//        Table fromDisk = ParquetTools.readTable(destFile);
+//        TstUtils.assertTableEquals(fromDisk, tableToSave);
+//
+//        // Write a new table successfully at the same position
+//        final Table newTableToSave = TableTools.emptyTable(5).update("A=(int)i");
+//        ParquetTools.writeTable(newTableToSave, destFile);
+//        filesInDir = parentDir.list();
+//        assertTrue(filesInDir.length==1 && filesInDir[0].equals(filename));
+//        fromDisk = ParquetTools.readTable(destFile);
+//        TstUtils.assertTableEquals(fromDisk, newTableToSave);
+    }
 }
