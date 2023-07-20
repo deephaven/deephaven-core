@@ -8,6 +8,7 @@
 #include "deephaven/client/columns.h"
 #include "deephaven/client/client_options.h"
 #include "deephaven/client/expressions.h"
+#include "deephaven/dhcore/clienttable/schema.h"
 #include "deephaven/dhcore/ticking/ticking.h"
 #include "deephaven/dhcore/utility/callbacks.h"
 
@@ -29,6 +30,7 @@ class AggregateImpl;
 class ClientImpl;
 class TableHandleImpl;
 class TableHandleManagerImpl;
+class UpdateByOperationImpl;
 }  // namespace deephaven::client::impl
 
 /**
@@ -52,6 +54,7 @@ namespace deephaven::client {
 class Client;
 class TableHandle;
 class TableHandleManager;
+class UpdateByOperation;
 namespace internal {
 class TableHandleStreamAdaptor;
 }  // namespace internal
@@ -616,6 +619,7 @@ struct StringHolder {
  * server resource is destructed, the resource will be released.
  */
 class TableHandle {
+  typedef deephaven::dhcore::clienttable::Schema Schema;
   typedef deephaven::dhcore::ticking::TickingCallback TickingCallback;
   typedef deephaven::dhcore::ticking::TickingUpdate TickingUpdate;
   typedef deephaven::client::BooleanExpression BooleanExpression;
@@ -1244,6 +1248,8 @@ public:
   TableHandle exactJoin(const TableHandle &rightSide, std::vector<MatchWithColumn> columnsToMatch,
       std::vector<SelectColumn> columnsToAdd) const;
 
+  TableHandle updateBy(std::vector<UpdateByOperation> ops, std::vector<std::string> by) const;
+
   /**
    * Binds this table to a variable name in the QueryScope.
    * @param variable The QueryScope variable to bind to.
@@ -1337,12 +1343,17 @@ public:
   /**
    * Number of rows in the table at the time this TableHandle was created.
    */
-  int64_t numRows();
+  int64_t numRows() const;
 
   /**
    * Whether the table was static at the time this TableHandle was created.
    */
-  bool isStatic();
+  bool isStatic() const;
+
+  /**
+   * Returns the table's Schema.
+   */
+  std::shared_ptr<Schema> schema() const;
 
   /**
    * Used internally. Returns the underlying impl object.
@@ -1751,4 +1762,576 @@ TableHandle TableHandle::ungroup(bool nullFill, Args &&... columnSpecs) const {
   };
   return ungroup(nullFill, std::move(groupByColumns));
 }
+
+/**
+ * A UpdateByOperation represents an operator for the Table update-by operation.
+ */
+class UpdateByOperation {
+public:
+  /*
+   * Default constructor. Creates a (useless) empty client object.
+   */
+  UpdateByOperation();
+  /**
+   * Constructor. Used internally.
+   */
+  explicit UpdateByOperation(std::shared_ptr<impl::UpdateByOperationImpl> impl);
+  /**
+   * Copy constructor.
+   */
+  UpdateByOperation(const UpdateByOperation &other);
+  /**
+   * Copy assignment.
+   */
+  UpdateByOperation &operator=(const UpdateByOperation &other);
+  /**
+   * Move constructor
+   */
+  UpdateByOperation(UpdateByOperation &&other) noexcept;
+  /**
+   * Move assigment operator.
+   */
+  UpdateByOperation &operator=(UpdateByOperation &&other) noexcept;
+  /**
+   * Destructor
+   */
+  ~UpdateByOperation();
+
+private:
+  std::shared_ptr<impl::UpdateByOperationImpl> impl_;
+
+  friend class TableHandle;
+};
+
+namespace update_by {
+enum class MathContext {
+  UNLIMITED, DECIMAL32, DECIMAL64, DECIMAL128
+};
+
+enum class BadDataBehavior {
+  RESET, SKIP, THROW, POISON
+};
+
+enum class DeltaControl {
+  NULL_DOMINATES, VALUE_DOMINATES, ZERO_DOMINATES
+};
+
+struct OperationControl {
+  explicit OperationControl(BadDataBehavior onNull = BadDataBehavior::SKIP,
+      BadDataBehavior onNaN = BadDataBehavior::SKIP,
+      MathContext bigValueContext = MathContext::DECIMAL128) : onNull(onNull),
+        onNaN(onNaN), bigValueContext(bigValueContext) {}
+
+  BadDataBehavior onNull;
+  BadDataBehavior onNaN;
+  MathContext bigValueContext;
+};
+
+/**
+ * Allows the caller to specify durations either as any of the std::chrono::durations (which will
+ * be auto-converted to nanoseconds) or as an ISO 8601 duration string.
+ */
+typedef std::variant<std::chrono::nanoseconds, std::string> durationSpecifier_t;
+
+/**
+ * Creates a cumulative sum UpdateByOperation for the supplied column names.
+ * @param cols the column(s) to be operated on, can include expressions to rename the output,
+ *  i.e. "new_col = col"; when empty, update_by performs the operation on all applicable columns.
+ */
+UpdateByOperation cumSum(std::vector<std::string> cols);
+/**
+ * Creates a cumulative product UpdateByOperation for the supplied column names.
+ * @param cols the column(s) to be operated on, can include expressions to rename the output,
+ *  i.e. "new_col = col"; when empty, update_by performs the operation on all applicable columns.
+ */
+UpdateByOperation cumProd(std::vector<std::string> cols);
+/**
+ * Creates a cumulative minimum UpdateByOperation for the supplied column names.
+ * @param cols the column(s) to be operated on, can include expressions to rename the output,
+ *  i.e. "new_col = col"; when empty, update_by performs the operation on all applicable columns.
+ */
+UpdateByOperation cumMin(std::vector<std::string> cols);
+/**
+ * Creates a cumulative maximum UpdateByOperation for the supplied column names.
+ * @param cols the column(s) to be operated on, can include expressions to rename the output,
+ *  i.e. "new_col = col"; when empty, update_by performs the operation on all applicable columns.
+ */
+UpdateByOperation cumMax(std::vector<std::string> cols);
+/**
+ * Creates a forward fill UpdateByOperation for the supplied column names.
+ * @param cols the column(s) to be operated on, can include expressions to rename the output,
+ *  i.e. "new_col = col"; when empty, update_by performs the operation on all applicable columns.
+ */
+UpdateByOperation forwardFill(std::vector<std::string> cols);
+/**
+ * Creates a delta UpdateByOperation for the supplied column names. The Delta operation produces values by computing
+ * the difference between the current value and the prev1G/ious value. When the current value is null, this operation
+ * will output null. When the current value is valid, the output will depend on the DeltaControl provided.
+ * @param cols the column(s) to be operated on, can include expressions to rename the output,
+ *   i.e. "new_col = col"; when empty, update_by performs the operation on all applicable columns.
+ * @param deltaControl
+ *   When not provided or set to NULL_DOMINATES, a value following a null value returns null.
+ *   When set to VALUE_DOMINATES, a value following a null value returns the value.
+ *   When set to ZERO_DOMINATES, a value following a null value returns zero.
+ */
+UpdateByOperation delta(std::vector<std::string> cols, DeltaControl deltaControl = DeltaControl::NULL_DOMINATES);
+/**
+ * Creates an EMA (exponential moving average) UpdateByOperation for the supplied column names,
+ * using ticks as the decay unit.
+ * The formula used is
+ *   a = e^(-1 / decay_ticks)
+ *   ema_next = a * ema_last + (1 - a) * value
+ * @param decayTicks the decay rate in ticks
+ * @param cols the column(s) to be operated on, can include expressions to rename the output,
+ *   i.e. "new_col = col"; when empty, update_by performs the operation on all applicable columns.
+ * @param opControl defines how special cases should behave
+ */
+UpdateByOperation emaTick(double decayTicks, std::vector<std::string> cols,
+    const OperationControl &opControl = OperationControl());
+/**
+ * Creates an EMA (exponential moving average) UpdateByOperation for the supplied column names,
+ * using time as the decay unit.
+ * The formula used is
+ *   a = e^(-dt / decay_time)
+ *   ema_next = a * ema_last + (1 - a) * value
+ *
+ * @param timestampCol the column in the source table to use for timestamps
+ * @param decayTime the decay rate, specified as a std::chrono::duration or as an ISO 8601 duration
+ *   string
+ * @param cols the column(s) to be operated on, can include expressions to rename the output,
+ *   i.e. "new_col = col"; when empty, update_by performs the operation on all applicable columns.
+ * @param opControl defines how special cases should behave
+ */
+UpdateByOperation emaTime(std::string timestampCol, durationSpecifier_t decayTime,
+    std::vector<std::string> cols, const OperationControl &opControl = OperationControl());
+/**
+ * Creates an EMS (exponential moving sum) UpdateByOperation for the supplied column names, using
+ * ticks as the decay unit.
+ * The formula used is
+ *   a = e^(-1 / decay_ticks)
+ *   ems_next = a * ems_last + value
+ * @param decayTicks the decay rate in ticks
+ * @param cols the column(s) to be operated on, can include expressions to rename the output,
+ *   i.e. "new_col = col"; when empty, update_by performs the operation on all applicable columns.
+ * @param opControl defines how special cases should behave
+ */
+UpdateByOperation emsTick(double decayTicks, std::vector<std::string> cols,
+    const OperationControl &opControl = OperationControl());
+/**
+ * Creates an EMS (exponential moving sum) UpdateByOperation for the supplied column names, using
+ * time as the decay unit.
+ * The formula used is
+ *   a = e^(-dt / decay_time)
+ *   eems_next = a * ems_last + value
+ *
+ * @param timestampCol the column in the source table to use for timestamps
+ * @param decayTime the decay rate, specified as a std::chrono::duration or as an ISO 8601 duration
+ *   string
+ * @param cols the column(s) to be operated on, can include expressions to rename the output,
+ *   i.e. "new_col = col"; when empty, update_by performs the operation on all applicable columns.
+ * @param opControl defines how special cases should behave
+ */
+UpdateByOperation emsTime(std::string timestampCol, durationSpecifier_t decayTime,
+    std::vector<std::string> cols, const OperationControl &opControl = OperationControl());
+/**
+ * Creates an EM Min (exponential moving minimum) UpdateByOperation for the supplied column names,
+ * using ticks as the decay unit.
+ * The formula used is
+ *   a = e^(-1 / decay_ticks)
+ *   em_val_next = min(a * em_val_last, value)
+ * @param decayTicks the decay rate in ticks
+ * @param cols the column(s) to be operated on, can include expressions to rename the output,
+ *   i.e. "new_col = col"; when empty, update_by performs the operation on all applicable columns.
+ * @param opControl defines how special cases should behave
+ */
+UpdateByOperation emminTick(double decayTicks, std::vector<std::string> cols,
+    const OperationControl &opControl = OperationControl());
+/**
+ * Creates an EM Min (exponential moving minimum) UpdateByOperation for the supplied column names,
+ * using time as the decay unit.
+ * The formula used is
+ *   a = e^(-dt / decay_time)
+ *   em_val_next = min(a * em_val_last, value)
+ * @param timestampCol the column in the source table to use for timestamps
+ * @param decayTime the decay rate, specified as a std::chrono::duration or as an ISO 8601 duration
+ *   string
+ * @param cols the column(s) to be operated on, can include expressions to rename the output,
+ *   i.e. "new_col = col"; when empty, update_by performs the operation on all applicable columns.
+ * @param opControl defines how special cases should behave
+ */
+UpdateByOperation emminTime(std::string timestampCol, durationSpecifier_t decayTime,
+    std::vector<std::string> cols, const OperationControl &opControl = OperationControl());
+/**
+ * Creates an EM Max (exponential moving maximum) UpdateByOperation for the supplied column names,
+ * using ticks as the decay unit.
+ * The formula used is
+ *   a = e^(-1 / decay_ticks)
+ *   em_val_next = max(a * em_val_last, value)
+ * @param decayTicks the decay rate in ticks
+ * @param cols the column(s) to be operated on, can include expressions to rename the output,
+ *   i.e. "new_col = col"; when empty, update_by performs the operation on all applicable columns.
+ * @param opControl defines how special cases should behave
+ */
+UpdateByOperation emmaxTick(double decayTicks, std::vector<std::string> cols,
+    const OperationControl &opControl = OperationControl());
+/**
+ * Creates an EM Max (exponential moving maximum) UpdateByOperation for the supplied column names,
+ * using time as the decay unit.
+ * The formula used is
+ *   a = e^(-dt / decay_time)
+ *   em_val_next = max(a * em_val_last, value)
+ * @param timestampCol the column in the source table to use for timestamps
+ * @param decayTime the decay rate, specified as a std::chrono::duration or as an ISO 8601 duration
+ *   string
+ * @param cols the column(s) to be operated on, can include expressions to rename the output,
+ *   i.e. "new_col = col"; when empty, update_by performs the operation on all applicable columns.
+ * @param opControl defines how special cases should behave
+ */
+UpdateByOperation emmaxTime(std::string timestampCol, durationSpecifier_t decayTime,
+    std::vector<std::string> cols, const OperationControl &opControl = OperationControl());
+/**
+ * Creates an EM Std (exponential moving standard deviation) UpdateByOperation for the supplied
+ * column names, using ticks as the decay unit.
+ * The formula used is
+ *   a = e^(-1 / decay_ticks)
+ *   variance = a * (prevVariance + (1 − a) * (x − prevEma)^2)
+ *   ema = a * prevEma + x
+ *   std = sqrt(variance)
+ * @param decayTicks the decay rate in ticks
+ * @param cols the column(s) to be operated on, can include expressions to rename the output,
+ *   i.e. "new_col = col"; when empty, update_by performs the operation on all applicable columns.
+ * @param opControl defines how special cases should behave
+ */
+UpdateByOperation emstdTick(double decayTicks, std::vector<std::string> cols,
+    const OperationControl &opControl = OperationControl());
+/**
+ * Creates an EM Std (exponential moving standard deviation) UpdateByOperation for the supplied
+ * column names, using time as the decay unit.
+ * The formula used is
+ *   a = e^(-dt / timeDecay)
+ *   variance = a * (prevVariance + (1 − a) * (x − prevEma)^2)
+ *   ema = a * prevEma + x
+ *   std = sqrt(variance)
+ * @param timestampCol the column in the source table to use for timestamps
+ * @param decayTime the decay rate, specified as a std::chrono::duration or as an ISO 8601 duration
+ *   string
+ * @param cols the column(s) to be operated on, can include expressions to rename the output,
+ *   i.e. "new_col = col"; when empty, update_by performs the operation on all applicable columns.
+ * @param opControl defines how special cases should behave
+ */
+UpdateByOperation emstdTime(std::string timestampCol, durationSpecifier_t decayTime,
+    std::vector<std::string> cols, const OperationControl &opControl = OperationControl());
+/**
+ * Creates a rolling sum UpdateByOperation for the supplied column names, using ticks as the
+ * windowing unit. Ticks are row counts, and you may specify the reverse and forward window in
+ * number of rows to include. The current row is considered to belong to the reverse window but
+ * not the forward window. Also, negative values are allowed and can be used to generate completely
+ * forward or completely reverse windows.
+ *
+ * Here are some examples of window values:
+ *   rev_ticks = 1, fwd_ticks = 0 - contains only the current row
+ *   rev_ticks = 10, fwd_ticks = 0 - contains 9 previous rows and the current row
+ *   rev_ticks = 0, fwd_ticks = 10 - contains the following 10 rows, excludes the current row
+ *   rev_ticks = 10, fwd_ticks = 10 - contains the previous 9 rows, the current row and the 10 rows
+ *     following
+ *   rev_ticks = 10, fwd_ticks = -5 - contains 5 rows, beginning at 9 rows before, ending at 5 rows
+ *     before the current row (inclusive)
+ *   rev_ticks = 11, fwd_ticks = -1 - contains 10 rows, beginning at 10 rows before, ending at 1 row
+ *     before the current row (inclusive)
+ *    rev_ticks = -5, fwd_ticks = 10 - contains 5 rows, beginning 5 rows following, ending at 10
+ *      rows following the current row (inclusive)
+ *
+ * @param cols the column(s) to be operated on, can include expressions to rename the output,
+ *   i.e. "new_col = col"; when empty, update_by performs the operation on all applicable columns.
+ * @param revTicks the look-behind window size (in rows/ticks)
+ * @param fwdTicks the look-forward window size (int rows/ticks), default is 0
+ */
+UpdateByOperation rollingSumTick(std::vector<std::string> cols, int revTicks, int fwdTicks = 0);
+/**
+ * Creates a rolling sum UpdateByOperation for the supplied column names, using time as the
+ * windowing unit. This function accepts nanoseconds or time strings as the reverse and forward
+ * window parameters. Negative values are allowed and can be used to generate completely forward or
+ * completely reverse windows. A row containing a null in the timestamp column belongs to no window
+ * and will not be considered in the windows of other rows; its output will be null.
+ * Here are some examples of window values:
+ *   rev_time = 0, fwd_time = 0 - contains rows that exactly match the current row timestamp
+ *   rev_time = "PT00:10:00", fwd_time = "0" - contains rows from 10m before through the current row
+ *     timestamp (inclusive)
+ *   rev_time = 0, fwd_time = 600_000_000_000 - contains rows from the current row through 10m
+ *     following the current row timestamp (inclusive)
+ *   rev_time = "PT00:10:00", fwd_time = "PT00:10:00" - contains rows from 10m before through 10m
+ *     following the current row timestamp (inclusive)
+ *   rev_time = "PT00:10:00", fwd_time = "-PT00:05:00" - contains rows from 10m before through 5m
+ *     before the current row timestamp (inclusive), this is a purely backwards looking window
+ *   rev_time = "-PT00:05:00", fwd_time = "PT00:10:00"} - contains rows from 5m following through
+ *     10m following the current row timestamp (inclusive), this is a purely forwards looking window
+ * @param timestampCol the timestamp column for determining the window
+ * @param cols the column(s) to be operated on, can include expressions to rename the output,
+ *   i.e. "new_col = col"; when empty, update_by performs the operation on all applicable columns.
+ * @param revTime the look-behind window size
+ * @param fwdTime the look-ahead window size
+ */
+UpdateByOperation rollingSumTime(std::string timestampCol, std::vector<std::string> cols,
+    durationSpecifier_t revTime, durationSpecifier_t fwdTime = std::chrono::nanoseconds(0));
+/**
+ * Creates a rolling group UpdateByOperation for the supplied column names, using ticks as the
+ * windowing unit. Ticks are row counts, and you may specify the reverse and forward window in
+ * number of rows to include. The current row is considered to belong to the reverse window but
+ * not the forward window. Also, negative values are allowed and can be used to generate completely
+ * forward or completely reverse windows.
+ *
+ * See the documentation of rollingSumTick() for examples of window values.
+ *
+ * @param cols the column(s) to be operated on, can include expressions to rename the output,
+ *   i.e. "new_col = col"; when empty, update_by performs the operation on all applicable columns.
+ * @param revTicks the look-behind window size (in rows/ticks)
+ * @param fwdTicks the look-forward window size (int rows/ticks), default is 0
+ */
+UpdateByOperation rollingGroupTick(std::vector<std::string> cols, int revTicks, int fwdTicks = 0);
+/**
+ * Creates a rolling group UpdateByOperation for the supplied column names, using time as the
+ * windowing unit. This function accepts nanoseconds or time strings as the reverse and forward
+ * window parameters. Negative values are allowed and can be used to generate completely forward or
+ * completely reverse windows. A row containing a null in the timestamp column belongs to no window
+ * and will not be considered in the windows of other rows; its output will be null.
+ *
+ * See the documentation of rollingSumTime() for examples of window values.
+ *
+ * @param timestampCol the timestamp column for determining the window
+ * @param cols the column(s) to be operated on, can include expressions to rename the output,
+ *   i.e. "new_col = col"; when empty, update_by performs the operation on all applicable columns.
+ * @param revTime the look-behind window size
+ * @param fwdTime the look-ahead window size
+ */
+UpdateByOperation rollingGroupTime(std::string timestampCol, std::vector<std::string> cols,
+    durationSpecifier_t revTime, durationSpecifier_t fwdTime = std::chrono::nanoseconds(0));
+/**
+ * Creates a rolling average UpdateByOperation for the supplied column names, using ticks as the
+ * windowing unit. Ticks are row counts, and you may specify the reverse and forward window in
+ * number of rows to include. The current row is considered to belong to the reverse window but
+ * not the forward window. Also, negative values are allowed and can be used to generate completely
+ * forward or completely reverse windows.
+ *
+ * See the documentation of rollingSumTick() for examples of window values.
+ *
+ * @param cols the column(s) to be operated on, can include expressions to rename the output,
+ *   i.e. "new_col = col"; when empty, update_by performs the operation on all applicable columns.
+ * @param revTicks the look-behind window size (in rows/ticks)
+ * @param fwdTicks the look-forward window size (int rows/ticks), default is 0
+ */
+UpdateByOperation rollingAvgTick(std::vector<std::string> cols, int revTicks, int fwdTicks = 0);
+/**
+ * Creates a rolling average UpdateByOperation for the supplied column names, using time as the
+ * windowing unit. This function accepts nanoseconds or time strings as the reverse and forward
+ * window parameters. Negative values are allowed and can be used to generate completely forward or
+ * completely reverse windows. A row containing a null in the timestamp column belongs to no window
+ * and will not be considered in the windows of other rows; its output will be null.
+ *
+ * See the documentation of rollingSumTime() for examples of window values.
+ *
+ * @param timestampCol the timestamp column for determining the window
+ * @param cols the column(s) to be operated on, can include expressions to rename the output,
+ *   i.e. "new_col = col"; when empty, update_by performs the operation on all applicable columns.
+ * @param revTime the look-behind window size
+ * @param fwdTime the look-ahead window size
+ */
+UpdateByOperation rollingAvgTime(std::string timestampCol, std::vector<std::string> cols,
+    durationSpecifier_t revTime, durationSpecifier_t fwdTime = std::chrono::nanoseconds(0));
+/**
+ * Creates a rolling min UpdateByOperation for the supplied column names, using ticks as the
+ * windowing unit. Ticks are row counts, and you may specify the reverse and forward window in
+ * number of rows to include. The current row is considered to belong to the reverse window but
+ * not the forward window. Also, negative values are allowed and can be used to generate completely
+ * forward or completely reverse windows.
+ *
+ * See the documentation of rollingSumTick() for examples of window values.
+ *
+ * @param cols the column(s) to be operated on, can include expressions to rename the output,
+ *   i.e. "new_col = col"; when empty, update_by performs the operation on all applicable columns.
+ * @param revTicks the look-behind window size (in rows/ticks)
+ * @param fwdTicks the look-forward window size (int rows/ticks), default is 0
+ */
+UpdateByOperation rollingMinTick(std::vector<std::string> cols, int revTicks, int fwdTicks = 0);
+/**
+ * Creates a rolling min UpdateByOperation for the supplied column names, using time as the
+ * windowing unit. This function accepts nanoseconds or time strings as the reverse and forward
+ * window parameters. Negative values are allowed and can be used to generate completely forward or
+ * completely reverse windows. A row containing a null in the timestamp column belongs to no window
+ * and will not be considered in the windows of other rows; its output will be null.
+ *
+ * See the documentation of rollingSumTime() for examples of window values.
+ *
+ * @param timestampCol the timestamp column for determining the window
+ * @param cols the column(s) to be operated on, can include expressions to rename the output,
+ *   i.e. "new_col = col"; when empty, update_by performs the operation on all applicable columns.
+ * @param revTime the look-behind window size
+ * @param fwdTime the look-ahead window size
+ */
+UpdateByOperation rollingMinTime(std::string timestampCol, std::vector<std::string> cols,
+    durationSpecifier_t revTime, durationSpecifier_t fwdTime = std::chrono::nanoseconds(0));
+/**
+ * Creates a rolling max UpdateByOperation for the supplied column names, using ticks as the
+ * windowing unit. Ticks are row counts, and you may specify the reverse and forward window in
+ * number of rows to include. The current row is considered to belong to the reverse window but
+ * not the forward window. Also, negative values are allowed and can be used to generate completely
+ * forward or completely reverse windows.
+ *
+ * See the documentation of rollingSumTick() for examples of window values.
+ *
+ * @param cols the column(s) to be operated on, can include expressions to rename the output,
+ *   i.e. "new_col = col"; when empty, update_by performs the operation on all applicable columns.
+ * @param revTicks the look-behind window size (in rows/ticks)
+ * @param fwdTicks the look-forward window size (int rows/ticks), default is 0
+ */
+UpdateByOperation rollingMaxTick(std::vector<std::string> cols, int revTicks, int fwdTicks = 0);
+/**
+ * Creates a rolling max UpdateByOperation for the supplied column names, using time as the
+ * windowing unit. This function accepts nanoseconds or time strings as the reverse and forward
+ * window parameters. Negative values are allowed and can be used to generate completely forward or
+ * completely reverse windows. A row containing a null in the timestamp column belongs to no window
+ * and will not be considered in the windows of other rows; its output will be null.
+ *
+ * See the documentation of rollingSumTime() for examples of window values.
+ *
+ * @param timestampCol the timestamp column for determining the window
+ * @param cols the column(s) to be operated on, can include expressions to rename the output,
+ *   i.e. "new_col = col"; when empty, update_by performs the operation on all applicable columns.
+ * @param revTime the look-behind window size
+ * @param fwdTime the look-ahead window size
+ */
+UpdateByOperation rollingMaxTime(std::string timestampCol, std::vector<std::string> cols,
+    durationSpecifier_t revTime, durationSpecifier_t fwdTime = std::chrono::nanoseconds(0));
+/**
+ * Creates a rolling product UpdateByOperation for the supplied column names, using ticks as the
+ * windowing unit. Ticks are row counts, and you may specify the reverse and forward window in
+ * number of rows to include. The current row is considered to belong to the reverse window but
+ * not the forward window. Also, negative values are allowed and can be used to generate completely
+ * forward or completely reverse windows.
+ *
+ * See the documentation of rollingSumTick() for examples of window values.
+ *
+ * @param cols the column(s) to be operated on, can include expressions to rename the output,
+ *   i.e. "new_col = col"; when empty, update_by performs the operation on all applicable columns.
+ * @param revTicks the look-behind window size (in rows/ticks)
+ * @param fwdTicks the look-forward window size (int rows/ticks), default is 0
+ */
+UpdateByOperation rollingProdTick(std::vector<std::string> cols, int revTicks, int fwdTicks = 0);
+/**
+ * Creates a rolling product UpdateByOperation for the supplied column names, using time as the
+ * windowing unit. This function accepts nanoseconds or time strings as the reverse and forward
+ * window parameters. Negative values are allowed and can be used to generate completely forward or
+ * completely reverse windows. A row containing a null in the timestamp column belongs to no window
+ * and will not be considered in the windows of other rows; its output will be null.
+ *
+ * See the documentation of rollingSumTime() for examples of window values.
+ *
+ * @param timestampCol the timestamp column for determining the window
+ * @param cols the column(s) to be operated on, can include expressions to rename the output,
+ *   i.e. "new_col = col"; when empty, update_by performs the operation on all applicable columns.
+ * @param revTime the look-behind window size
+ * @param fwdTime the look-ahead window size
+ */
+UpdateByOperation rollingProdTime(std::string timestampCol, std::vector<std::string> cols,
+    durationSpecifier_t revTime, durationSpecifier_t fwdTime = std::chrono::nanoseconds(0));
+/**
+ * Creates a rolling count UpdateByOperation for the supplied column names, using ticks as the
+ * windowing unit. Ticks are row counts, and you may specify the reverse and forward window in
+ * number of rows to include. The current row is considered to belong to the reverse window but
+ * not the forward window. Also, negative values are allowed and can be used to generate completely
+ * forward or completely reverse windows.
+ *
+ * See the documentation of rollingSumTick() for examples of window values.
+ *
+ * @param cols the column(s) to be operated on, can include expressions to rename the output,
+ *   i.e. "new_col = col"; when empty, update_by performs the operation on all applicable columns.
+ * @param revTicks the look-behind window size (in rows/ticks)
+ * @param fwdTicks the look-forward window size (int rows/ticks), default is 0
+ */
+UpdateByOperation rollingCountTick(std::vector<std::string> cols, int revTicks, int fwdTicks = 0);
+/**
+ * Creates a rolling count UpdateByOperation for the supplied column names, using time as the
+ * windowing unit. This function accepts nanoseconds or time strings as the reverse and forward
+ * window parameters. Negative values are allowed and can be used to generate completely forward or
+ * completely reverse windows. A row containing a null in the timestamp column belongs to no window
+ * and will not be considered in the windows of other rows; its output will be null.
+ *
+ * See the documentation of rollingSumTime() for examples of window values.
+ *
+ * @param timestampCol the timestamp column for determining the window
+ * @param cols the column(s) to be operated on, can include expressions to rename the output,
+ *   i.e. "new_col = col"; when empty, update_by performs the operation on all applicable columns.
+ * @param revTime the look-behind window size
+ * @param fwdTime the look-ahead window size
+ */
+UpdateByOperation rollingCountTime(std::string timestampCol, std::vector<std::string> cols,
+    durationSpecifier_t revTime, durationSpecifier_t fwdTime = std::chrono::nanoseconds(0));
+/**
+ * Creates a rolling standard deviation UpdateByOperation for the supplied column names, using ticks as the
+ * windowing unit. Ticks are row counts, and you may specify the reverse and forward window in
+ * number of rows to include. The current row is considered to belong to the reverse window but
+ * not the forward window. Also, negative values are allowed and can be used to generate completely
+ * forward or completely reverse windows.
+ *
+ * See the documentation of rollingSumTick() for examples of window values.
+ *
+ * @param cols the column(s) to be operated on, can include expressions to rename the output,
+ *   i.e. "new_col = col"; when empty, update_by performs the operation on all applicable columns.
+ * @param revTicks the look-behind window size (in rows/ticks)
+ * @param fwdTicks the look-forward window size (int rows/ticks), default is 0
+ */
+UpdateByOperation rollingStdTick(std::vector<std::string> cols, int revTicks, int fwdTicks = 0);
+/**
+ * Creates a rolling standard deviation UpdateByOperation for the supplied column names, using time as the
+ * windowing unit. This function accepts nanoseconds or time strings as the reverse and forward
+ * window parameters. Negative values are allowed and can be used to generate completely forward or
+ * completely reverse windows. A row containing a null in the timestamp column belongs to no window
+ * and will not be considered in the windows of other rows; its output will be null.
+ *
+ * See the documentation of rollingSumTime() for examples of window values.
+ *
+ * @param timestampCol the timestamp column for determining the window
+ * @param cols the column(s) to be operated on, can include expressions to rename the output,
+ *   i.e. "new_col = col"; when empty, update_by performs the operation on all applicable columns.
+ * @param revTime the look-behind window size
+ * @param fwdTime the look-ahead window size
+ */
+UpdateByOperation rollingStdTime(std::string timestampCol, std::vector<std::string> cols,
+    durationSpecifier_t revTime, durationSpecifier_t fwdTime = std::chrono::nanoseconds(0));
+/**
+ * Creates a rolling weighted average UpdateByOperation for the supplied column names, using ticks as the
+ * windowing unit. Ticks are row counts, and you may specify the reverse and forward window in
+ * number of rows to include. The current row is considered to belong to the reverse window but
+ * not the forward window. Also, negative values are allowed and can be used to generate completely
+ * forward or completely reverse windows.
+ *
+ * See the documentation of rollingSumTick() for examples of window values.
+ *
+ * @param weightCol the column containing the weight values
+ * @param cols the column(s) to be operated on, can include expressions to rename the output,
+ *   i.e. "new_col = col"; when empty, update_by performs the operation on all applicable columns.
+ * @param revTicks the look-behind window size (in rows/ticks)
+ * @param fwdTicks the look-forward window size (int rows/ticks), default is 0
+ */
+UpdateByOperation rollingWavgTick(std::string weightCol, std::vector<std::string> cols,
+    int revTicks, int fwdTicks = 0);
+/**
+ * Creates a rolling weighted average UpdateByOperation for the supplied column names, using time as the
+ * windowing unit. This function accepts nanoseconds or time strings as the reverse and forward
+ * window parameters. Negative values are allowed and can be used to generate completely forward or
+ * completely reverse windows. A row containing a null in the timestamp column belongs to no window
+ * and will not be considered in the windows of other rows; its output will be null.
+ *
+ * See the documentation of rollingSumTime() for examples of window values.
+ *
+ * @param weightCol the column containing the weight values
+ * @param timestampCol the timestamp column for determining the window
+ * @param cols the column(s) to be operated on, can include expressions to rename the output,
+ *   i.e. "new_col = col"; when empty, update_by performs the operation on all applicable columns.
+ * @param revTime the look-behind window size
+ * @param fwdTime the look-ahead window size
+ */
+UpdateByOperation rollingWavgTime(std::string timestampCol, std::string weightCol,
+    std::vector<std::string> cols, durationSpecifier_t revTime,
+    durationSpecifier_t fwdTime = std::chrono::nanoseconds(0));
+}  // namespace update_by
 }  // namespace deephaven::client

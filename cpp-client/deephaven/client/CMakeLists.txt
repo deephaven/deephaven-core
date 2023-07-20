@@ -30,6 +30,7 @@ set(ALL_FILES
     src/impl/string_expression_impl.cc
     src/impl/table_handle_impl.cc
     src/impl/table_handle_manager_impl.cc
+    src/impl/update_by_operation_impl.cc
 
     include/private/deephaven/client/impl/aggregate_impl.h
     include/private/deephaven/client/impl/boolean_expression_impl.h
@@ -42,6 +43,7 @@ set(ALL_FILES
     include/private/deephaven/client/impl/string_expression_impl.h
     include/private/deephaven/client/impl/table_handle_impl.h
     include/private/deephaven/client/impl/table_handle_manager_impl.h
+    include/private/deephaven/client/impl/update_by_operation_impl.h
     include/private/deephaven/client/impl/util.h
 
     include/private/deephaven/client/arrowutil/arrow_column_source.h
