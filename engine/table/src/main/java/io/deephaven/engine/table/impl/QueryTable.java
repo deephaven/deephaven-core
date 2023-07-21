@@ -624,6 +624,17 @@ public class QueryTable extends BaseTable<QueryTable> {
     }
 
     @Override
+    public Table slicePct(final double startPercentInclusive, final double endPercentExclusive) {
+        if (isBlink()) {
+            throw unsupportedForBlinkTables("slicePct");
+        }
+        final UpdateGraph updateGraph = getUpdateGraph();
+        try (final SafeCloseable ignored = ExecutionContext.getContext().withUpdateGraph(updateGraph).open()) {
+            return getResult(SliceLikeOperation.slicePct(this, startPercentInclusive, endPercentExclusive));
+        }
+    }
+
+    @Override
     public Table head(final long size) {
         final UpdateGraph updateGraph = getUpdateGraph();
         try (final SafeCloseable ignored = ExecutionContext.getContext().withUpdateGraph(updateGraph).open()) {
@@ -1493,11 +1504,7 @@ public class QueryTable extends BaseTable<QueryTable> {
 
                     final QueryTable resultTable;
                     final LivenessScope liveResultCapture = isRefreshing() ? new LivenessScope() : null;
-                    try (final SafeCloseable ignored1 = liveResultCapture != null ? liveResultCapture::release : null;
-                            final SafeCloseable ignored2 =
-                                    ExecutionContext.getDefaultContext().withUpdateGraph(getUpdateGraph()).open()) {
-                        // we open the default context here to ensure that the update processing happens in the default
-                        // context whether it is processed in parallel or not
+                    try (final SafeCloseable ignored1 = liveResultCapture != null ? liveResultCapture::release : null) {
                         try (final RowSet emptyRowSet = RowSetFactory.empty();
                                 final SelectAndViewAnalyzer.UpdateHelper updateHelper =
                                         new SelectAndViewAnalyzer.UpdateHelper(emptyRowSet, fakeUpdate)) {

@@ -17,8 +17,6 @@ import io.deephaven.engine.util.PythonScope;
 import io.deephaven.engine.util.ScriptFinder;
 import io.deephaven.engine.util.ScriptSession;
 import io.deephaven.integrations.python.PythonDeephavenSession.PythonSnapshot;
-import io.deephaven.engine.util.scripts.ScriptPathLoader;
-import io.deephaven.engine.util.scripts.ScriptPathLoaderState;
 import io.deephaven.internal.log.LoggerFactory;
 import io.deephaven.io.logger.Logger;
 import io.deephaven.plugin.type.ObjectTypeLookup;
@@ -304,24 +302,6 @@ public class PythonDeephavenSession extends AbstractScriptSession<PythonSnapshot
     @Override
     public String scriptType() {
         return SCRIPT_TYPE;
-    }
-
-    @Override
-    public void onApplicationInitializationBegin(Supplier<ScriptPathLoader> pathLoader,
-            ScriptPathLoaderState scriptLoaderState) {}
-
-    @Override
-    public void onApplicationInitializationEnd() {}
-
-    @Override
-    public void setScriptPathLoader(Supplier<ScriptPathLoader> scriptPathLoader, boolean caching) {}
-
-    @Override
-    public void clearScriptPathLoader() {}
-
-    @Override
-    public boolean setUseOriginalScriptLoaderState(boolean useOriginal) {
-        return true;
     }
 
     // TODO core#41 move this logic into the python console instance or scope like this - can go further and move

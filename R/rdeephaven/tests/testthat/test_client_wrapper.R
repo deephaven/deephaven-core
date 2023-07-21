@@ -162,6 +162,7 @@ test_that("client connection fails nicely with good target but bad client_option
 })
 
 test_that("import_table fails nicely with bad inputs", {
+
     library(datasets)
 
     client_options <- ClientOptions$new()

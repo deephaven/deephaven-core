@@ -5,8 +5,6 @@ package io.deephaven.engine.util;
 
 import io.deephaven.engine.context.QueryScope;
 import io.deephaven.engine.updategraph.UpdateGraph;
-import io.deephaven.engine.util.scripts.ScriptPathLoader;
-import io.deephaven.engine.util.scripts.ScriptPathLoaderState;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
@@ -110,30 +108,5 @@ public class NoLanguageDeephavenSession extends AbstractScriptSession<AbstractSc
     @Override
     public String scriptType() {
         return SCRIPT_TYPE;
-    }
-
-    @Override
-    public void onApplicationInitializationBegin(Supplier<ScriptPathLoader> pathLoader,
-            ScriptPathLoaderState scriptLoaderState) {}
-
-    @Override
-    public void onApplicationInitializationEnd() {}
-
-    @Override
-    public void setScriptPathLoader(Supplier<ScriptPathLoader> scriptPathLoader, boolean caching) {
-        throw new UnsupportedOperationException(
-                SCRIPT_TYPE + " session does not support setUseOriginalScriptLoaderState");
-    }
-
-    @Override
-    public void clearScriptPathLoader() {
-        throw new UnsupportedOperationException(
-                SCRIPT_TYPE + " session does not support setUseOriginalScriptLoaderState");
-    }
-
-    @Override
-    public boolean setUseOriginalScriptLoaderState(boolean useOriginal) {
-        throw new UnsupportedOperationException(
-                SCRIPT_TYPE + " session does not support setUseOriginalScriptLoaderState");
     }
 }

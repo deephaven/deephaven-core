@@ -198,6 +198,16 @@ public:
   ~Client();
 
   /**
+   * Shuts down the Client and all associated state (GRPC connections, subscriptions, etc).
+   * This method is used if a caller wants to shut down Client state early. If it is not called,
+   * the shutdown actions will happen when this Client is destructed. The caller must not use any
+   * associated data structures (TableHandleManager, TableHandle, etc) after close() is called or
+   * after Client's destructor is invoked. If the caller tries to do so, the behavior is
+   * unspecified.
+   */
+  void close();
+
+  /**
    * Gets a TableHandleManager which you can use to create empty tables, fetch tables, and so on.
    * You can create more than one TableHandleManager.
    * @return The TableHandleManager.

@@ -4,6 +4,7 @@
 package io.deephaven.engine.table.impl;
 
 import com.google.auto.service.AutoService;
+import io.deephaven.engine.context.ExecutionContext;
 import io.deephaven.engine.table.Table;
 import io.deephaven.engine.table.TableDefinition;
 import io.deephaven.engine.table.TableFactory;
@@ -24,7 +25,6 @@ import io.deephaven.qst.table.Clock;
 import io.deephaven.qst.table.ClockSystem;
 import io.deephaven.qst.table.TimeTable;
 
-import java.time.Instant;
 import java.util.Arrays;
 import java.util.stream.Stream;
 import java.util.stream.StreamSupport;
@@ -62,9 +62,13 @@ public enum TableCreatorImpl implements TableCreator<Table> {
 
     @Override
     public final Table of(TimeTable timeTable) {
-        final io.deephaven.base.clock.Clock clock = ClockAdapter.of(timeTable.clock());
-        final Instant firstTime = timeTable.startTime().orElse(null);
-        return TableTools.timeTable(clock, firstTime, timeTable.interval().toNanos());
+        return io.deephaven.engine.table.impl.TimeTable.newBuilder()
+                .registrar(ExecutionContext.getContext().getUpdateGraph())
+                .clock(ClockAdapter.of(timeTable.clock()))
+                .startTime(timeTable.startTime().orElse(null))
+                .period(timeTable.interval())
+                .blinkTable(timeTable.blinkTable())
+                .build();
     }
 
     @Override

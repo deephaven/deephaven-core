@@ -66,6 +66,7 @@ public:
   const std::shared_ptr<Executor> &flightExecutor() const { return flightExecutor_; }
 
 private:
+  const std::string me_;  // useful printable object name for logging
   std::optional<Ticket> consoleId_;
   std::shared_ptr<Server> server_;
   std::shared_ptr<Executor> executor_;

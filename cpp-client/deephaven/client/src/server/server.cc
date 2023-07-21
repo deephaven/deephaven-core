@@ -7,7 +7,7 @@
 #include <exception>
 #include <grpcpp/grpcpp.h>
 #include <optional>
-#include <regex>
+#include <grpc/support/log.h>
 #include <arrow/flight/client_auth.h>
 #include <arrow/flight/client.h>
 #include <arrow/flight/client_middleware.h>
@@ -16,14 +16,6 @@
 #include <arrow/array/array_primitive.h>
 
 #include "deephaven/dhcore/utility/utility.h"
-#include "deephaven/proto/config.pb.h"
-#include "deephaven/proto/config.grpc.pb.h"
-#include "deephaven/proto/console.pb.h"
-#include "deephaven/proto/console.grpc.pb.h"
-#include "deephaven/proto/session.pb.h"
-#include "deephaven/proto/session.grpc.pb.h"
-#include "deephaven/proto/table.pb.h"
-#include "deephaven/proto/table.grpc.pb.h"
 
 using namespace std;
 using arrow::flight::FlightClient;
@@ -128,6 +120,14 @@ std::shared_ptr<Server> Server::createFromTarget(
       target, 
       credentials,
       channel_args);
+  gpr_log(GPR_DEBUG,
+        "%s: "
+        "grpc::Channel[%p] created, "
+        "target=%s",
+        "Server::createFromTarget",
+        (void*) channel.get(),
+        target.c_str());
+
   auto as = ApplicationService::NewStub(channel);
   auto cs = ConsoleService::NewStub(channel);
   auto ss = SessionService::NewStub(channel);
@@ -161,6 +161,13 @@ std::shared_ptr<Server> Server::createFromTarget(
     auto message = stringf("FlightClient::Connect() failed, error = %o", rc2.ToString());
     throw std::runtime_error(message);
   }
+  gpr_log(GPR_DEBUG,
+          "%s: "
+          "FlightClient[%p] created, "
+          "target=%s",
+          "Server::createFromTarget",
+          (void*) fc.get(),
+          target.c_str());
 
   std::string sessionToken;
   std::chrono::milliseconds expirationInterval;
@@ -204,7 +211,7 @@ std::shared_ptr<Server> Server::createFromTarget(
   auto result = std::make_shared<Server>(Private(), std::move(as), std::move(cs),
       std::move(ss), std::move(ts), std::move(cfs), std::move(fc), copts.extraHeaders(),
       std::move(sessionToken), expirationInterval, nextHandshakeTime);
-  result->completionQueueThread_ = std::thread(&processCompletionQueueForever, result);
+  result->completionQueueThread_ = std::thread(&processCompletionQueueLoop, result);
   result->keepAliveThread_ = std::thread(&sendKeepaliveMessages, result);
   return result;
 }
@@ -219,6 +226,8 @@ Server::Server(Private,
     ClientOptions::extra_headers_t extraHeaders,
     std::string sessionToken, std::chrono::milliseconds expirationInterval,
     std::chrono::system_clock::time_point nextHandshakeTime) :
+    me_(deephaven::dhcore::utility::objectId(
+            "client::server::Server", this)),
     applicationStub_(std::move(applicationStub)),
     consoleStub_(std::move(consoleStub)),
     sessionStub_(std::move(sessionStub)),
@@ -230,18 +239,20 @@ Server::Server(Private,
     sessionToken_(std::move(sessionToken)),
     expirationInterval_(expirationInterval),
     nextHandshakeTime_(nextHandshakeTime) {
+  gpr_log(GPR_DEBUG, "%s: Created.", me_.c_str());
 }
 
-Server::~Server() = default;
+Server::~Server() {
+  gpr_log(GPR_DEBUG, "%s: Destroyed.", me_.c_str());
+}
 
 void Server::shutdown() {
-  // TODO(cristianferretti): change to logging framework
-  std::cerr << DEEPHAVEN_DEBUG_MSG("Server shutdown requested\n");
+  gpr_log(GPR_DEBUG, "%s: Server shutdown requested.", me_.c_str());
 
   std::unique_lock<std::mutex> guard(mutex_);
   if (cancelled_) {
     guard.unlock(); // to be nice
-    std::cerr << DEEPHAVEN_DEBUG_MSG("Already cancelled\n");
+    gpr_log(GPR_ERROR, "%s: Already cancelled.", me_.c_str());
     return;
   }
   cancelled_ = true;
@@ -519,14 +530,14 @@ void Server::releaseAsync(Ticket ticket, std::shared_ptr<SFCallback<ReleaseRespo
   sendRpc(req, std::move(callback), sessionStub(), &SessionService::Stub::AsyncRelease);
 }
 
-void Server::processCompletionQueueForever(const std::shared_ptr<Server> &self) {
+void Server::processCompletionQueueLoop(const std::shared_ptr<Server> &self) {
   while (true) {
     if (!self->processNextCompletionQueueItem()) {
       break;
     }
   }
-  // TODO(cristianferretti): change to logging framework
-  std::cerr << DEEPHAVEN_DEBUG_MSG("Process completion queue thread exiting\n");
+  gpr_log(GPR_INFO, "%s: Process completion queue thread exiting.",
+          self->me_.c_str());
 }
 
 bool Server::processNextCompletionQueueItem() {
@@ -569,10 +580,13 @@ bool Server::processNextCompletionQueueItem() {
     }
     cqcb->onSuccess();
   } catch (const std::exception &e) {
-    std::cerr << "Caught exception on callback, aborting: " << e.what() << "\n";
+    gpr_log(GPR_ERROR, "%s: Caught std exception on callback: "
+            "'%s', aborting.",
+            me_.c_str(),
+            e.what());
     return false;
   } catch (...) {
-    std::cerr << "Caught exception on callback, aborting\n";
+    gpr_log(GPR_ERROR, "%s: Caught exception on callback, aborting.", me_.c_str());
     return false;
   }
   return true;
@@ -591,8 +605,7 @@ public:
   }
 
   void onFailure(std::exception_ptr ep) final {
-    // TODO
-    std::cerr << "Keepalive failed\n";
+    gpr_log(GPR_ERROR, "%s: Keepalive failed.", server_->me().c_str());
   }
 
   std::shared_ptr<Server> server_;
@@ -606,8 +619,7 @@ void Server::sendKeepaliveMessages(const std::shared_ptr<Server> &self) {
     }
   }
 
-  // TODO(cristianferretti): change to logging framework
-  std::cerr << DEEPHAVEN_DEBUG_MSG("Keepalive thread exiting\n");
+  gpr_log(GPR_INFO, "%s: Keepalive thread exiting.", self->me_.c_str());
 }
 
 bool Server::keepaliveHelper() {

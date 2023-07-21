@@ -15,6 +15,7 @@ import jakarta.websocket.CloseReason;
 import jakarta.websocket.EndpointConfig;
 import jakarta.websocket.Session;
 
+import java.io.EOFException;
 import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.nio.channels.ClosedChannelException;
@@ -225,10 +226,9 @@ public class MultiplexedWebSocketServerStream extends AbstractWebSocketServerStr
         }
         streams.clear();
         // onClose will be called automatically
-        if (error instanceof ClosedChannelException) {
-            // ignore this for now
-            // TODO need to understand why this is happening
-        } else {
+
+        // These two IOExceptions frequently occur when clients close the connection
+        if (!(error instanceof ClosedChannelException || error instanceof EOFException)) {
             logger.log(Level.SEVERE, "Error from websocket", error);
         }
     }
