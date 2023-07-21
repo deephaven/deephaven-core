@@ -15,6 +15,7 @@ import io.deephaven.engine.rowset.*;
 import io.deephaven.engine.table.SharedContext;
 import io.deephaven.engine.table.impl.sources.ReinterpretUtils;
 import io.deephaven.engine.table.impl.util.*;
+import io.deephaven.engine.updategraph.NotificationQueue.Dependency;
 import io.deephaven.engine.updategraph.impl.PeriodicUpdateGraph;
 import io.deephaven.io.log.LogEntry;
 import io.deephaven.engine.table.ColumnDefinition;
@@ -81,22 +82,73 @@ public class ConstructSnapshot {
     public static final int SNAPSHOT_CHUNK_SIZE = Configuration.getInstance()
             .getIntegerWithDefault("ConstructSnapshot.snapshotChunkSize", 1 << 24);
 
+
+    public interface State {
+
+        /**
+         * Test that determines whether the currently-active concurrent snapshot attempt has become inconsistent. Always
+         * returns {@code false} if there is no snapshot attempt active, or if there is a locked attempt active
+         * (necessarily at lower depth than the lowest concurrent attempt).
+         *
+         * @return Whether the clock or sources have changed in such a way as to make the currently-active concurrent
+         *         snapshot attempt inconsistent
+         */
+        boolean concurrentAttemptInconsistent();
+
+        /**
+         * Check that fails if the currently-active concurrent snapshot attempt has become inconsistent. source. This is
+         * a no-op if there is no snapshot attempt active, or if there is a locked attempt active (necessarily at lower
+         * depth than the lowest concurrent attempt).
+         *
+         * @throws SnapshotInconsistentException If the currently-active concurrent snapshot attempt has become
+         *         inconsistent
+         */
+        void failIfConcurrentAttemptInconsistent();
+
+        /**
+         * Wait for a dependency to become satisfied on the current cycle if we're trying to use current values for the
+         * currently-active concurrent snapshot attempt. This is a no-op if there is no snapshot attempt active, or if
+         * there is a locked attempt active (necessarily at lower depth than the lowest concurrent attempt).
+         *
+         * @param dependency The dependency, which may be null in order to avoid redundant checks in calling code
+         * @throws SnapshotInconsistentException If we cannot wait for this dependency on the current step because the
+         *         step changed
+         */
+        void maybeWaitForSatisfaction(@Nullable NotificationQueue.Dependency dependency);
+
+        /**
+         * Return the currently-active concurrent snapshot attempt's "before" clock value, or zero if there is no
+         * concurrent attempt active.
+         *
+         * @return The concurrent snapshot attempt's "before" clock value, or zero
+         */
+        long getConcurrentAttemptClockValue();
+
+        /**
+         * Append clock info that pertains to the concurrent attempt state to {@code logOutput}.
+         *
+         * @param logOutput The {@link LogOutput}
+         * @return {@code logOutput}
+         */
+        LogOutput appendConcurrentAttemptClockInfo(@NotNull LogOutput logOutput);
+    }
+
     /**
      * Holder for thread-local state.
      */
-    private static class State {
+    private static class StateImpl implements State {
 
         /**
          * ThreadLocal to hold an instance per thread.
          */
-        private static final ThreadLocal<State> threadState = ThreadLocal.withInitial(State::new);
+        private static final ThreadLocal<StateImpl> threadState = ThreadLocal.withInitial(StateImpl::new);
 
         /**
          * Get this thread's State instance.
          *
          * @return This thread's State instance
          */
-        private static State get() {
+        private static StateImpl get() {
             return threadState.get();
         }
 
@@ -216,15 +268,8 @@ public class ConstructSnapshot {
             return concurrentSnapshotDepth > 0 && lockedSnapshotDepth == 0;
         }
 
-        /**
-         * Test that determines whether the currently-active concurrent snapshot attempt has become inconsistent. Always
-         * returns {@code false} if there is no snapshot attempt active, or if there is a locked attempt active
-         * (necessarily at lower depth than the lowest concurrent attempt).
-         *
-         * @return Whether the clock or sources have changed in such a way as to make the currently-active concurrent
-         *         snapshot attempt inconsistent
-         */
-        private boolean concurrentAttemptInconsistent() {
+        @Override
+        public boolean concurrentAttemptInconsistent() {
             if (!concurrentAttemptActive()) {
                 return false;
             }
@@ -239,30 +284,15 @@ public class ConstructSnapshot {
                     activeConcurrentAttempt.usingPreviousValues);
         }
 
-        /**
-         * Check that fails if the currently-active concurrent snapshot attempt has become inconsistent. source. This is
-         * a no-op if there is no snapshot attempt active, or if there is a locked attempt active (necessarily at lower
-         * depth than the lowest concurrent attempt).
-         *
-         * @throws SnapshotInconsistentException If the currently-active concurrent snapshot attempt has become
-         *         inconsistent
-         */
-        private void failIfConcurrentAttemptInconsistent() {
+        @Override
+        public void failIfConcurrentAttemptInconsistent() {
             if (concurrentAttemptInconsistent()) {
                 throw new SnapshotInconsistentException();
             }
         }
 
-        /**
-         * Wait for a dependency to become satisfied on the current cycle if we're trying to use current values for the
-         * currently-active concurrent snapshot attempt. This is a no-op if there is no snapshot attempt active, or if
-         * there is a locked attempt active (necessarily at lower depth than the lowest concurrent attempt).
-         *
-         * @param dependency The dependency, which may be null in order to avoid redundant checks in calling code
-         * @throws SnapshotInconsistentException If we cannot wait for this dependency on the current step because the
-         *         step changed
-         */
-        private void maybeWaitForSatisfaction(@Nullable final NotificationQueue.Dependency dependency) {
+        @Override
+        public void maybeWaitForSatisfaction(@Nullable final NotificationQueue.Dependency dependency) {
             if (!concurrentAttemptActive()
                     || dependency == null
                     || activeConcurrentAttempt.usingPreviousValues
@@ -283,23 +313,13 @@ public class ConstructSnapshot {
             }
         }
 
-        /**
-         * Return the currently-active concurrent snapshot attempt's "before" clock value, or zero if there is no
-         * concurrent attempt active.
-         *
-         * @return The concurrent snapshot attempt's "before" clock value, or zero
-         */
-        private long getConcurrentAttemptClockValue() {
+        @Override
+        public long getConcurrentAttemptClockValue() {
             return concurrentAttemptActive() ? activeConcurrentAttempt.beforeClockValue : 0;
         }
 
-        /**
-         * Append clock info that pertains to the concurrent attempt state to {@code logOutput}.
-         *
-         * @param logOutput The {@link LogOutput}
-         * @return {@code logOutput}
-         */
-        private LogOutput appendConcurrentAttemptClockInfo(@NotNull final LogOutput logOutput) {
+        @Override
+        public LogOutput appendConcurrentAttemptClockInfo(@NotNull final LogOutput logOutput) {
             logOutput.append("concurrent snapshot state: ");
             if (concurrentAttemptActive()) {
                 logOutput.append("active, beforeClockValue=").append(activeConcurrentAttempt.beforeClockValue)
@@ -367,15 +387,28 @@ public class ConstructSnapshot {
     }
 
     /**
+     * Get the currently-active snapshot state.
+     *
+     * @return the currently-active snapshot state
+     */
+    public static State state() {
+        return StateImpl.get();
+    }
+
+    /**
      * Test that determines whether the currently-active concurrent snapshot attempt has become inconsistent. Always
      * returns {@code false} if there is no snapshot attempt active, or if there is a locked attempt active (necessarily
      * at lower depth than the lowest concurrent attempt).
      *
+     * <p>
+     * Equivalent to {@code state().concurrentAttemptInconsistent()}.
+     *
      * @return Whether the clock or sources have changed in such a way as to make the currently-active concurrent
      *         snapshot attempt inconsistent
+     * @see State#concurrentAttemptInconsistent()
      */
     public static boolean concurrentAttemptInconsistent() {
-        return State.get().concurrentAttemptInconsistent();
+        return state().concurrentAttemptInconsistent();
     }
 
     /**
@@ -383,10 +416,14 @@ public class ConstructSnapshot {
      * no-op if there is no snapshot attempt active, or if there is a locked attempt active (necessarily at lower depth
      * than the lowest concurrent attempt).
      *
+     * <p>
+     * Equivalent to {@code state().failIfConcurrentAttemptInconsistent()}.
+     *
      * @throws SnapshotInconsistentException If the currently-active concurrent snapshot attempt has become inconsistent
+     * @see State#failIfConcurrentAttemptInconsistent()
      */
     public static void failIfConcurrentAttemptInconsistent() {
-        State.get().failIfConcurrentAttemptInconsistent();
+        state().failIfConcurrentAttemptInconsistent();
     }
 
     /**
@@ -394,33 +431,45 @@ public class ConstructSnapshot {
      * currently-active concurrent snapshot attempt. This is a no-op if there is no snapshot attempt active, or if there
      * is a locked attempt active (necessarily at lower depth than the lowest concurrent attempt).
      *
+     * <p>
+     * Equivalent to {@code state().maybeWaitForSatisfaction(dependency)}.
+     *
      * @param dependency The dependency, which may be null in order to avoid redundant checks in calling code
      * @throws SnapshotInconsistentException If we cannot wait for this dependency on the current step because the step
      *         changed
+     * @see State#maybeWaitForSatisfaction(Dependency)
      */
     public static void maybeWaitForSatisfaction(@Nullable final NotificationQueue.Dependency dependency) {
-        State.get().maybeWaitForSatisfaction(dependency);
+        state().maybeWaitForSatisfaction(dependency);
     }
 
     /**
      * Return the currently-active concurrent snapshot attempt's "before" clock value, or zero if there is no concurrent
      * attempt active.
      *
+     * <p>
+     * Equivalent to {@code state().getConcurrentAttemptClockValue()}.
+     *
      * @return The concurrent snapshot attempt's "before" clock value, or zero
+     * @see State#getConcurrentAttemptClockValue()
      */
     public static long getConcurrentAttemptClockValue() {
-        return State.get().getConcurrentAttemptClockValue();
+        return state().getConcurrentAttemptClockValue();
     }
 
     /**
      * Append clock info that pertains to the concurrent attempt state to {@code logOutput}.
      *
+     * <p>
+     * Equivalent to {@code state().appendConcurrentAttemptClockInfo(logOutput)}.
+     *
      * @param logOutput The {@link LogOutput}
      * @return {@code logOutput}
+     * @see State#appendConcurrentAttemptClockInfo(LogOutput)
      */
     @SuppressWarnings("UnusedReturnValue")
     public static LogOutput appendConcurrentAttemptClockInfo(@NotNull final LogOutput logOutput) {
-        return State.get().appendConcurrentAttemptClockInfo(logOutput);
+        return state().appendConcurrentAttemptClockInfo(logOutput);
     }
 
     /**
@@ -1089,7 +1138,7 @@ public class ConstructSnapshot {
             @NotNull final SnapshotControl control,
             @NotNull final SnapshotFunction function) {
         final long overallStart = System.currentTimeMillis();
-        final State state = State.get();
+        final StateImpl state = StateImpl.get();
 
         boolean snapshotSuccessful = false;
         boolean functionSuccessful = false;
