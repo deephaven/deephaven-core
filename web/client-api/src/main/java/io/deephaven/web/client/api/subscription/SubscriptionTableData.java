@@ -512,9 +512,8 @@ public class SubscriptionTableData {
             int redirectedIndex = (int) (long) redirectedIndexes.get(this.index);
 
             if (!formatDatabarColumnIndices.isEmpty()) {
-                String prefix = column.getName() + "_";
                 formatDatabarColumnIndices.entrySet().forEach(entry -> {
-                    String name = entry.getKey().split("__")[0].substring(prefix.length());
+                    String name = entry.getKey().split("__")[1];
                     int index = entry.getValue().intValue();
                     JsArray<Any> val = Js.uncheckedCast(data[index]);
                     DatabarFormatColumnType type = DatabarFormatColumnType.valueOf(name);
@@ -549,6 +548,16 @@ public class SubscriptionTableData {
                             break;
                         case OPACITY:
                             formatBuilder.setOpacity(val.getAtAsAny(redirectedIndex).asDouble());
+                            break;
+                        case MARKER:
+                            if (val.getAtAsAny(redirectedIndex) != null) {
+                                formatBuilder.setMarker(val.getAtAsAny(redirectedIndex).asDouble());
+                            }
+                            break;
+                        case MARKER_COLOR:
+                            if (val.getAtAsAny(redirectedIndex) != null) {
+                                formatBuilder.setMarkerColor(val.getAtAsAny(redirectedIndex).asString());
+                            }
                             break;
                         default:
                             break;

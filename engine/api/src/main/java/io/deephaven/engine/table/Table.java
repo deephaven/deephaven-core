@@ -303,7 +303,8 @@ public interface Table extends
 
     @ConcurrentMethod
     Table formatDataBar(String column, String valueColumn, String axis, Double min, Double max,
-            String positiveColor, String negativeColor, String valuePlacement, String direction, Double opacity);
+            String positiveColor, String negativeColor, String valuePlacement, String direction, Double opacity,
+            String markerColumn, String markerColor);
 
     /**
      * Produce a new table with the specified columns moved to the leftmost position. Columns can be renamed with the

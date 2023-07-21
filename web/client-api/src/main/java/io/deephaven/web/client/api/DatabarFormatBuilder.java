@@ -10,6 +10,8 @@ public class DatabarFormatBuilder {
     private String valuePlacement;
     private String direction;
     private Double opacity;
+    private Double marker;
+    private String markerColor;
 
     public DatabarFormatBuilder setMin(Double min) {
         this.min = min;
@@ -56,8 +58,18 @@ public class DatabarFormatBuilder {
         return this;
     }
 
+    public DatabarFormatBuilder setMarker(Double marker) {
+        this.marker = marker;
+        return this;
+    }
+
+    public DatabarFormatBuilder setMarkerColor(String markerColor) {
+        this.markerColor = markerColor;
+        return this;
+    }
+
     public DataBarFormat build() {
         return new DataBarFormat(min, max, value, axis, positiveColor, negativeColor, valuePlacement, direction,
-                opacity);
+                opacity, marker, markerColor);
     }
 }

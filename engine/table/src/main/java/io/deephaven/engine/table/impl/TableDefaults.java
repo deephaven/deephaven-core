@@ -228,7 +228,8 @@ public interface TableDefaults extends Table, TableOperationsDefaults<Table, Tab
 
     @Override
     default Table formatDataBar(String column, String valueColumn, String axis, Double min, Double max,
-            String positiveColor, String negativeColor, String valuePlacement, String direction, Double opacity) {
+            String positiveColor, String negativeColor, String valuePlacement,
+            String direction, Double opacity, String markerColumn, String markerColor) {
         if (!axis.equals("proportional") && !axis.equals("middle") && !axis.equals("directional")) {
             throw new IllegalArgumentException("invalid axis option!");
         }
@@ -275,6 +276,10 @@ public interface TableDefaults extends Table, TableOperationsDefaults<Table, Tab
                 ColumnFormatting.getDataBarFormatColumnName(column, ColumnFormatting.DataBarFormatColumnType.VALUE);
         newTable = newTable.updateView(valueOutputColumn + "=" + valueColumn);
 
+        String markerOutputColumn =
+                ColumnFormatting.getDataBarFormatColumnName(column, ColumnFormatting.DataBarFormatColumnType.MARKER);
+        newTable = newTable.updateView(markerOutputColumn + "=" + markerColumn);
+
         return newTable.naturalJoin(
                 TableTools.newTable(
                         TableTools.col(ColumnFormatting.getDataBarFormatColumnName(column,
@@ -288,7 +293,9 @@ public interface TableDefaults extends Table, TableOperationsDefaults<Table, Tab
                         TableTools.col(ColumnFormatting.getDataBarFormatColumnName(column,
                                 ColumnFormatting.DataBarFormatColumnType.DIRECTION), direction),
                         TableTools.col(ColumnFormatting.getDataBarFormatColumnName(column,
-                                ColumnFormatting.DataBarFormatColumnType.OPACITY), opacity)),
+                                ColumnFormatting.DataBarFormatColumnType.OPACITY), opacity),
+                        TableTools.col(ColumnFormatting.getDataBarFormatColumnName(column,
+                                ColumnFormatting.DataBarFormatColumnType.MARKER_COLOR), markerColor)),
                 "");
     }
 

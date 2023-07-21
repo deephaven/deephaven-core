@@ -250,7 +250,7 @@ public class ColumnDefinition {
         this.rollupAggregationInputColumn = rollupAggregationInputColumn;
     }
 
-    public void setDatabar(String key, String value) {
+    public void setDataBar(String key, String value) {
         this.dataBarColumn.put(key, value);
     }
 }

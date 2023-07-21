@@ -122,7 +122,10 @@ public class WebBarrageUtils {
             cols[i].setRollupAggregationInputColumn(fieldMetadata.get("rollupTable.aggregationInputColumnName"));
 
             for (DatabarFormatColumnType value : DatabarFormatColumnType.values()) {
-                cols[i].setDatabar(value.name(), fieldMetadata.get("dataBar." + value.name()));
+                String refColName = fieldMetadata.get("dataBar." + value.name());
+                if (refColName != null) {
+                    cols[i].setDataBar(value.name(), refColName);
+                }
             }
         }
         return cols;

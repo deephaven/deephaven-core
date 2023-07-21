@@ -84,9 +84,8 @@ public class ViewportRow implements TableData.Row {
         DatabarFormatBuilder formatBuilder = new DatabarFormatBuilder();
 
         if (!formatDatabarColumnIndices.isEmpty()) {
-            String prefix = column.getName() + "_";
             formatDatabarColumnIndices.entrySet().forEach(entry -> {
-                String name = entry.getKey().split("__")[0].substring(prefix.length());
+                String name = entry.getKey().split("__")[1];
                 int index = entry.getValue().intValue();
                 JsArray<Any> val = Js.uncheckedCast(dataColumns[index]);
                 DatabarFormatColumnType type = DatabarFormatColumnType.valueOf(name);
@@ -122,7 +121,15 @@ public class ViewportRow implements TableData.Row {
                     case OPACITY:
                         formatBuilder.setOpacity(val.getAtAsAny(offsetInSnapshot).asDouble());
                         break;
-                    default:
+                    case MARKER:
+                        if (val.getAtAsAny(offsetInSnapshot) != null) {
+                            formatBuilder.setMarker(val.getAtAsAny(offsetInSnapshot).asDouble());
+                        }
+                        break;
+                    case MARKER_COLOR:
+                        if (val.getAtAsAny(offsetInSnapshot) != null) {
+                            formatBuilder.setMarkerColor(val.getAtAsAny(offsetInSnapshot).asString());
+                        }
                         break;
                 }
             });
