@@ -124,15 +124,6 @@ TableHandle <- R6Class("TableHandle",
         },
 
         #' @description
-        #' Creates a new table from this table where the specified columns have been excluded.
-        #' @param columns The columns to exclude.
-        #' @return A TableHandle referencing the new table.
-        drop_columns = function(columns) {
-            verify_string_vector("columns", columns)
-            return(TableHandle$new(self$internal_table_handle$drop_columns(columns)))
-        },
-
-        #' @description
         #' Creates a new table from this table, but including the additional specified columns.
         #' See the Deephaven documentation for the difference between update() and updateView().
         #' @param columns The columns to add. For example, {"X = A + 5", "Y = X * 2"}.
@@ -150,6 +141,15 @@ TableHandle <- R6Class("TableHandle",
         update_view = function(columns) {
             verify_string_vector("columns", columns)
             return(TableHandle$new(self$internal_table_handle$update_view(columns)))
+        },
+
+        #' @description
+        #' Creates a new table from this table where the specified columns have been excluded.
+        #' @param columns The columns to exclude.
+        #' @return A TableHandle referencing the new table.
+        drop_columns = function(columns) {
+            verify_string_vector("columns", columns)
+            return(TableHandle$new(self$internal_table_handle$drop_columns(columns)))
         },
 
         #' @description

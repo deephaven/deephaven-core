@@ -158,16 +158,16 @@ public:
         return new TableHandleWrapper(internal_tbl_hdl.view(columnSpecs));
     };
 
-    TableHandleWrapper* dropColumns(std::vector<std::string> columnSpecs) {
-        return new TableHandleWrapper(internal_tbl_hdl.dropColumns(columnSpecs));
-    };
-
     TableHandleWrapper* update(std::vector<std::string> columnSpecs) {
         return new TableHandleWrapper(internal_tbl_hdl.update(columnSpecs));
     };
 
     TableHandleWrapper* updateView(std::vector<std::string> columnSpecs) {
         return new TableHandleWrapper(internal_tbl_hdl.updateView(columnSpecs));
+    };
+
+    TableHandleWrapper* dropColumns(std::vector<std::string> columnSpecs) {
+        return new TableHandleWrapper(internal_tbl_hdl.dropColumns(columnSpecs));
     };
 
     TableHandleWrapper* where(std::string condition) {
@@ -531,9 +531,9 @@ RCPP_MODULE(DeephavenInternalModule) {
     class_<TableHandleWrapper>("INTERNAL_TableHandle")
     .method("select", &TableHandleWrapper::select)
     .method("view", &TableHandleWrapper::view)
-    .method("drop_columns", &TableHandleWrapper::dropColumns)
     .method("update", &TableHandleWrapper::update)
     .method("update_view", &TableHandleWrapper::updateView)
+    .method("drop_columns", &TableHandleWrapper::dropColumns)
     .method("where", &TableHandleWrapper::where)
 
     .method("agg_by", &TableHandleWrapper::aggBy)
