@@ -560,7 +560,7 @@ public class SubscriptionTableData {
                             }
                             break;
                         default:
-                            break;
+                            throw new RuntimeException("Invalid data bar format column type: " + type);
                     }
                 });
             }
@@ -632,12 +632,79 @@ public class SubscriptionTableData {
         }
 
         @Override
+        public DataBarFormat getDataBarFormat(int index, Column column) {
+            return getDataBarFormat((long) index, column);
+        }
+
+        public DataBarFormat getDataBarFormat(long index, Column column) {
+            Map<String, Integer> formatDatabarColumnIndices = column.getFormatDataBarColumnIndices();
+            DatabarFormatBuilder formatBuilder = new DatabarFormatBuilder();
+            int redirectedIndex = (int) (long) redirectedIndexes.get(index);
+
+            if (!formatDatabarColumnIndices.isEmpty()) {
+                formatDatabarColumnIndices.entrySet().forEach(entry -> {
+                    String name = entry.getKey().split("__")[1];
+                    int idx = entry.getValue().intValue();
+                    JsArray<Any> val = Js.uncheckedCast(data[idx]);
+                    DatabarFormatColumnType type = DatabarFormatColumnType.valueOf(name);
+                    switch (type) {
+                        case MIN:
+                            formatBuilder.setMin(val.getAtAsAny(redirectedIndex).asDouble());
+                            break;
+                        case MAX:
+                            formatBuilder.setMax(val.getAtAsAny(redirectedIndex).asDouble());
+                            break;
+                        case VALUE:
+                            formatBuilder.setValue(val.getAtAsAny(redirectedIndex).asDouble());
+                            break;
+                        case AXIS:
+                            formatBuilder.setAxis(val.getAtAsAny(redirectedIndex).asString());
+                            break;
+                        case POSITIVE_COLOR:
+                            if (val.getAtAsAny(redirectedIndex) != null) {
+                                formatBuilder.setPositiveColor(val.getAtAsAny(redirectedIndex).asString());
+                            }
+                            break;
+                        case NEGATIVE_COLOR:
+                            if (val.getAtAsAny(redirectedIndex) != null) {
+                                formatBuilder.setNegativeColor(val.getAtAsAny(redirectedIndex).asString());
+                            }
+                            break;
+                        case VALUE_PLACEMENT:
+                            formatBuilder.setValuePlacement(val.getAtAsAny(redirectedIndex).asString());
+                            break;
+                        case DIRECTION:
+                            formatBuilder.setDirection(val.getAtAsAny(redirectedIndex).asString());
+                            break;
+                        case OPACITY:
+                            formatBuilder.setOpacity(val.getAtAsAny(redirectedIndex).asDouble());
+                            break;
+                        case MARKER:
+                            if (val.getAtAsAny(redirectedIndex) != null) {
+                                formatBuilder.setMarker(val.getAtAsAny(redirectedIndex).asDouble());
+                            }
+                            break;
+                        case MARKER_COLOR:
+                            if (val.getAtAsAny(redirectedIndex) != null) {
+                                formatBuilder.setMarkerColor(val.getAtAsAny(redirectedIndex).asString());
+                            }
+                            break;
+                        default:
+                            throw new RuntimeException("Invalid data bar format column type: " + type);
+                    }
+                });
+            }
+
+            return new DatabarFormatBuilder().build();
+        }
+
+        @Override
         public Format getFormat(long index, Column column) {
             long cellColors = 0;
             long rowColors = 0;
             String numberFormat = null;
             String formatString = null;
-            DataBarFormat formatDatabarString = null;
+            DataBarFormat formatDataBar = null;
             int redirectedIndex = (int) (long) redirectedIndexes.get(index);
             if (column.getStyleColumnIndex() != null) {
                 JsArray<Any> colors = Js.uncheckedCast(data[column.getStyleColumnIndex()]);
@@ -655,20 +722,10 @@ public class SubscriptionTableData {
                 JsArray<Any> formatStrings = Js.uncheckedCast(data[column.getFormatStringColumnIndex()]);
                 formatString = formatStrings.getAtAsAny(redirectedIndex).asString();
             }
-            // if (column.getFormatDatabarColumnIndexRange() != null) {
-            // JsArray<Any> formatDatabarStrings = Js.uncheckedCast(data[column.getFormatDatabarColumnIndexRange()]);
-            // formatDatabarString = formatDatabarStrings.getAtAsAny(redirectedIndex).asString();
-            // }
-            return new Format(cellColors, rowColors, numberFormat, formatString, formatDatabarString);
-        }
-
-        @Override
-        public DataBarFormat getDataBarFormat(int index, Column column) {
-            return getDataBarFormat((long) index, column);
-        }
-
-        public DataBarFormat getDataBarFormat(long index, Column column) {
-            return new DatabarFormatBuilder().build();
+            if (column.getFormatDataBarColumnIndices() != null) {
+                formatDataBar = getDataBarFormat(index, column);
+            }
+            return new Format(cellColors, rowColors, numberFormat, formatString, formatDataBar);
         }
 
         @Override

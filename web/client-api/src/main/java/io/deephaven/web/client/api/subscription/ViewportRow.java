@@ -72,11 +72,6 @@ public class ViewportRow implements TableData.Row {
         return new Format(cellColors, rowColors, numberFormat, formatString, formatDataBar);
     }
 
-    public static native void console(Object text)
-    /*-{
-        console.log(text, typeof text);
-    }-*/;
-
     @Override
     @JsMethod
     public DataBarFormat getDataBarFormat(Column column) {
@@ -131,6 +126,8 @@ public class ViewportRow implements TableData.Row {
                             formatBuilder.setMarkerColor(val.getAtAsAny(offsetInSnapshot).asString());
                         }
                         break;
+                    default:
+                        throw new RuntimeException("Invalid data bar format column type: " + type);
                 }
             });
         }

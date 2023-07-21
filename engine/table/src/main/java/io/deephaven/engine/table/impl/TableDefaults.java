@@ -35,6 +35,9 @@ import static io.deephaven.api.agg.Aggregation.AggMin;
 public interface TableDefaults extends Table, TableOperationsDefaults<Table, Table> {
 
     Table[] ZERO_LENGTH_TABLE_ARRAY = new Table[0];
+    Set<String> axisOptions = new HashSet<>(Arrays.asList("proportional", "middle", "directional"));
+    Set<String> valuePlacementOptions = new HashSet<>(Arrays.asList("beside", "overlap", "hide"));
+    Set<String> directionOptions = new HashSet<>(Arrays.asList("LTR", "RTL"));
 
     @Override
     default Table coalesce() {
@@ -226,33 +229,49 @@ public interface TableDefaults extends Table, TableOperationsDefaults<Table, Tab
         return updateView(selectColumns);
     }
 
+    default void validateColor(String color) throws IllegalArgumentException {
+        new Color(color); // Throws if it can't create it
+    }
+
+    default void validateDataBarOptions(String column, String valueColumn, String axis, Double min, Double max,
+            String positiveColor, String negativeColor, String valuePlacement,
+            String direction, Double opacity, String markerColumn, String markerColor) throws IllegalArgumentException {
+        if (!axisOptions.contains(axis)) {
+            throw new IllegalArgumentException("Invalid axis option: " + axis);
+        }
+        if (!valuePlacementOptions.contains(valuePlacement)) {
+            throw new IllegalArgumentException("Invalid value placement option: " + valuePlacement);
+        }
+        if (!directionOptions.contains(direction)) {
+            throw new IllegalArgumentException("Invalid direction option: " + direction);
+        }
+        if (min != null && max != null && min > max) {
+            throw new IllegalArgumentException("Min cannot be greater than max.");
+        }
+        if (positiveColor != null) {
+            for (String color : positiveColor.split(",")) {
+                validateColor(color);
+            }
+        }
+        if (negativeColor != null) {
+            for (String color : negativeColor.split(",")) {
+                validateColor(color);
+            }
+        }
+        if (markerColor != null) {
+            validateColor(markerColor);
+        }
+        if (opacity > 1 || opacity < 0) {
+            throw new IllegalArgumentException("Opacity must be between 0 and 1.");
+        }
+    }
+
     @Override
     default Table formatDataBar(String column, String valueColumn, String axis, Double min, Double max,
             String positiveColor, String negativeColor, String valuePlacement,
             String direction, Double opacity, String markerColumn, String markerColor) {
-        if (!axis.equals("proportional") && !axis.equals("middle") && !axis.equals("directional")) {
-            throw new IllegalArgumentException("invalid axis option!");
-        }
-        if (min != null && max != null && min > max) {
-            throw new IllegalArgumentException("min cannot be greater than max!");
-        }
-        if (positiveColor != null) {
-            try {
-                Color c = new Color(positiveColor);
-            } catch (IllegalArgumentException e) {
-                throw new IllegalArgumentException("invalid color format!");
-            }
-        }
-        if (negativeColor != null) {
-            try {
-                Color c = new Color(negativeColor);
-            } catch (IllegalArgumentException e) {
-                throw new IllegalArgumentException("invalid color format!");
-            }
-        }
-        if (opacity > 1 || opacity < 0) {
-            throw new IllegalArgumentException("opacity must be between 0 and 1!");
-        }
+        validateDataBarOptions(column, valueColumn, axis, min, max, positiveColor, negativeColor, valuePlacement,
+                direction, opacity, markerColumn, markerColor);
 
         Table newTable = this;
 
