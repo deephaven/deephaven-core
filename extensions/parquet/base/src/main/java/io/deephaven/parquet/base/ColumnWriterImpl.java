@@ -19,6 +19,7 @@ import org.apache.parquet.hadoop.metadata.ColumnPath;
 import org.apache.parquet.internal.column.columnindex.OffsetIndex;
 import org.apache.parquet.internal.column.columnindex.OffsetIndexBuilder;
 import org.apache.parquet.io.ParquetEncodingException;
+import org.apache.parquet.schema.LogicalTypeAnnotation;
 import org.apache.parquet.schema.PrimitiveType;
 
 import java.io.ByteArrayOutputStream;
@@ -165,6 +166,17 @@ public class ColumnWriterImpl implements ColumnWriter {
             case FIXED_LEN_BYTE_ARRAY:
                 throw new UnsupportedOperationException("No support for writing FIXED_LENGTH or INT96 types");
             case INT32:
+                LogicalTypeAnnotation annotation = primitiveType.getLogicalTypeAnnotation();
+                if (annotation != null) {
+                    // Appropriately set the null value for different type of integers
+                    if (LogicalTypeAnnotation.intType(8, true).equals(annotation)) {
+                        return new PlainIntChunkedWriter(targetPageSize, allocator, QueryConstants.NULL_BYTE);
+                    } else if (LogicalTypeAnnotation.intType(16, true).equals(annotation)) {
+                        return new PlainIntChunkedWriter(targetPageSize, allocator, QueryConstants.NULL_SHORT);
+                    } else if (LogicalTypeAnnotation.intType(16, false).equals(annotation)) {
+                        return new PlainIntChunkedWriter(targetPageSize, allocator, QueryConstants.NULL_CHAR);
+                    }
+                }
                 return new PlainIntChunkedWriter(targetPageSize, allocator);
             case INT64:
                 return new PlainLongChunkedWriter(targetPageSize, allocator);
@@ -183,26 +195,15 @@ public class ColumnWriterImpl implements ColumnWriter {
     }
 
     @Override
-    public void addPage(final Object pageData, final int valuesCount, final Class columnType) throws IOException {
+    public void addPage(final Object pageData, final int valuesCount) throws IOException {
         if (dlEncoder == null) {
             throw new IllegalStateException("Null values not supported");
         }
         initWriter();
-        setNullDef(columnType);
         // noinspection unchecked
         bulkWriter.writeBulkFilterNulls(pageData, dlEncoder, valuesCount);
         writePage(bulkWriter.getByteBufferView(), valuesCount);
         bulkWriter.reset();
-    }
-
-    private void setNullDef(final Class columnType) {
-        if (columnType == byte.class || columnType == Byte.class) {
-            bulkWriter.setNull(QueryConstants.NULL_BYTE);
-        } else if (columnType == short.class || columnType == Short.class) {
-            bulkWriter.setNull(QueryConstants.NULL_SHORT);
-        } else if (columnType == char.class || columnType == Character.class) {
-            bulkWriter.setNull(QueryConstants.NULL_CHAR);
-        }
     }
 
     public void addVectorPage(
@@ -217,7 +218,6 @@ public class ColumnWriterImpl implements ColumnWriter {
         }
         initWriter();
         // noinspection unchecked
-        // TODO Should I also change this path? I don't fully understand this path. Talk to Ryan for this.
         int valueCount =
                 bulkWriter.writeBulkVector(pageData, repeatCount, rlEncoder, dlEncoder, nonNullValueCount);
         writePage(bulkWriter.getByteBufferView(), valueCount);

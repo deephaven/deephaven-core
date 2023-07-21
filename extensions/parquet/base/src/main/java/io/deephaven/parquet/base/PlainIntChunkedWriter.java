@@ -22,16 +22,19 @@ import java.nio.IntBuffer;
 public class PlainIntChunkedWriter extends AbstractBulkValuesWriter<IntBuffer> {
     private static final int MAXIMUM_TOTAL_CAPACITY = Integer.MAX_VALUE / Integer.BYTES;
 
-    // This value will be considered as a NULL while writing. For example, if NULL_DEF is set as 65535, then 65535 will
-    // be written as NULL by this writer. By default, we use the definition from QueryConstants but can be overridden.
-    // TODO Can there be a better name for this?
-    private int NULL_DEF = QueryConstants.NULL_INT;
+    // This variable is used to provide a type-specific null representation for writing. The variable is useful for
+    // Byte, Char, and Short data types which are written as primitive ints but have a different definition of null.
+    private int nullValue = QueryConstants.NULL_INT;
 
     private final ByteBufferAllocator allocator;
 
     private IntBuffer targetBuffer;
     private ByteBuffer innerBuffer;
 
+    PlainIntChunkedWriter(final int targetPageSize, @NotNull final ByteBufferAllocator allocator, int nullValue) {
+        this(targetPageSize, allocator);
+        this.nullValue = nullValue;
+    }
 
     PlainIntChunkedWriter(final int targetPageSize, @NotNull final ByteBufferAllocator allocator) {
         this.allocator = allocator;
@@ -101,7 +104,7 @@ public class PlainIntChunkedWriter extends AbstractBulkValuesWriter<IntBuffer> {
         ensureCapacityFor(bulkValues);
         while (bulkValues.hasRemaining()) {
             final int next = bulkValues.get();
-            if (next != NULL_DEF) {
+            if (next != nullValue) {
                 writeInteger(next);
                 dlEncoder.writeInt(DL_ITEM_PRESENT);
             } else {
@@ -111,7 +114,6 @@ public class PlainIntChunkedWriter extends AbstractBulkValuesWriter<IntBuffer> {
         return new WriteResult(rowCount);
     }
 
-    // TODO Test this method
     @NotNull
     @Override
     public WriteResult writeBulkFilterNulls(@NotNull final IntBuffer bulkValues,
@@ -121,7 +123,7 @@ public class PlainIntChunkedWriter extends AbstractBulkValuesWriter<IntBuffer> {
         IntBuffer nullOffsets = IntBuffer.allocate(4);
         while (bulkValues.hasRemaining()) {
             final int next = bulkValues.get();
-            if (next != NULL_DEF) {
+            if (next != nullValue) {
                 writeInteger(next);
             } else {
                 nullOffsets = Helpers.ensureCapacity(nullOffsets);
@@ -130,17 +132,6 @@ public class PlainIntChunkedWriter extends AbstractBulkValuesWriter<IntBuffer> {
             i++;
         }
         return new WriteResult(rowCount, nullOffsets);
-    }
-
-    /**
-     * This method is used to provide a specialized definition of NULL while writing. The method is useful for Byte,
-     * Char, and Short data type which also used the int writer but have a different definition of NULL than default.
-     *
-     * @param nullDefinition The specialized value of NULL to consider while writing
-     */
-    @Override
-    public void setNull(int nullDefinition) {
-        NULL_DEF = nullDefinition;
     }
 
     private void ensureCapacityFor(@NotNull final IntBuffer valuesToAdd) {

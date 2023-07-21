@@ -42,17 +42,6 @@ public abstract class AbstractBulkValuesWriter<BUFFER_TYPE> extends ValuesWriter
     }
 
     /**
-     * This method is used to provide a specialized definition of NULL for PlainIntChunkedWriter. For other writers,
-     * this method does nothing.
-     *
-     * @param nullDefinition The value which will be interpreted as NULL for this writer
-     */
-    @Override
-    public void setNull(int nullDefinition) {
-        throw new UnsupportedOperationException("This method should not be called");
-    }
-
-    /**
      * <p>
      * Compute the definition levels and repetition levels. These are how Parquet encodes data that has a complex
      * structure. In this case, the most complex structure we encode are Deephaven Vectors.

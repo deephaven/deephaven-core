@@ -600,7 +600,7 @@ public class ParquetTableWriter {
                         columnWriter.addVectorPage(bufferToWrite, repeatCount, transferObject.rowCount());
                         repeatCount.clear();
                     } else {
-                        columnWriter.addPage(bufferToWrite, transferObject.rowCount(), columnType);
+                        columnWriter.addPage(bufferToWrite, transferObject.rowCount());
                     }
                 }
             }
@@ -697,7 +697,7 @@ public class ParquetTableWriter {
                 if (lengthSource != null) {
                     columnWriter.addVectorPage(pageBuffer, arraySizeIt.next(), pageBuffer.remaining());
                 } else if (hasNulls) {
-                    columnWriter.addPage(pageBuffer, pageBuffer.remaining(), String.class);
+                    columnWriter.addPage(pageBuffer, pageBuffer.remaining());
                 } else {
                     columnWriter.addPageNoNulls(pageBuffer, pageBuffer.remaining());
                 }
