@@ -103,15 +103,11 @@ public abstract class AbstractScriptSession<S extends AbstractScriptSession.Snap
     }
 
     @Override
-    public void observeScopeChanges() {
-        observeAndCollectScopeChanges(null);
-    }
-
-    private synchronized Changes observeAndCollectScopeChanges(@Nullable final RuntimeException evaluationError) {
+    public synchronized void observeScopeChanges() {
         final S beforeSnapshot = lastSnapshot;
         lastSnapshot = takeSnapshot();
         try (beforeSnapshot) {
-            return applyDiff(beforeSnapshot, lastSnapshot, evaluationError);
+            applyDiff(beforeSnapshot, lastSnapshot);
         }
     }
 
@@ -124,24 +120,24 @@ public abstract class AbstractScriptSession<S extends AbstractScriptSession.Snap
 
     protected abstract Changes createDiff(S from, S to, RuntimeException e);
 
-    protected Changes applyDiff(S from, S to, RuntimeException e) {
-        final Changes diff = createDiff(from, to, e);
+    private void applyDiff(S from, S to) {
         if (changeListener != null) {
+            final Changes diff = createDiff(from, to, null);
             changeListener.onScopeChanges(this, diff);
         }
-        return diff;
     }
 
     @Override
     public synchronized final Changes evaluateScript(final String script, final @Nullable String scriptName) {
-        // Observe any external changes that are not yet recorded
+        // Observe scope changes and propagate to the listener before running the script, in case it is long-running
         observeScopeChanges();
 
         RuntimeException evaluateErr = null;
         final Changes diff;
         // retain any objects which are created in the executed code, we'll release them when the script session
         // closes
-        try (final SafeCloseable ignored = LivenessScopeStack.open(this, false)) {
+        try (final S initialSnapshot = takeSnapshot();
+                final SafeCloseable ignored = LivenessScopeStack.open(this, false)) {
 
             try {
                 // Actually evaluate the script; use the enclosing auth context, since AbstractScriptSession's
@@ -153,7 +149,9 @@ public abstract class AbstractScriptSession<S extends AbstractScriptSession.Snap
             }
 
             // Observe changes during this evaluation (potentially capturing external changes from other threads)
-            diff = observeAndCollectScopeChanges(evaluateErr);
+            observeScopeChanges();
+            // Use the "last" snapshot created as a side effect of observeScopeChanges() as our "to"
+            diff = createDiff(initialSnapshot, lastSnapshot, evaluateErr);
         }
 
         return diff;
