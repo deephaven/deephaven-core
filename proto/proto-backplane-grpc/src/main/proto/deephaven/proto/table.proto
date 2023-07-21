@@ -316,7 +316,7 @@ message EmptyTableRequest {
 message TimeTableRequest {
   Ticket result_id = 1;
   oneof start_time {
-    uint64 start_time_nanos = 2 [jstype = JS_STRING];
+    sint64 start_time_nanos = 2 [jstype = JS_STRING];
     string start_time_string = 5;
   }
   oneof period {
