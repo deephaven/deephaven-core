@@ -22,23 +22,25 @@ import java.nio.IntBuffer;
 public class PlainIntChunkedWriter extends AbstractBulkValuesWriter<IntBuffer> {
     private static final int MAXIMUM_TOTAL_CAPACITY = Integer.MAX_VALUE / Integer.BYTES;
 
-    // This variable is used to provide a type-specific null representation for writing. The variable is useful for
-    // Byte, Char, and Short data types which are written as primitive ints but have a different definition of null.
-    private int nullValue = QueryConstants.NULL_INT;
+    /**
+     * This variable stores a type-specific {@code null} representation for writing. This is useful for Byte, Char, and
+     * Short data types which are written as primitive ints but have a different definition of {@code null}.
+     */
+    private final int nullValue;
 
     private final ByteBufferAllocator allocator;
 
     private IntBuffer targetBuffer;
     private ByteBuffer innerBuffer;
 
-    PlainIntChunkedWriter(final int targetPageSize, @NotNull final ByteBufferAllocator allocator, int nullValue) {
-        this(targetPageSize, allocator);
+    PlainIntChunkedWriter(final int targetPageSize, @NotNull final ByteBufferAllocator allocator, final int nullValue) {
+        this.allocator = allocator;
         this.nullValue = nullValue;
+        realloc(targetPageSize);
     }
 
     PlainIntChunkedWriter(final int targetPageSize, @NotNull final ByteBufferAllocator allocator) {
-        this.allocator = allocator;
-        realloc(targetPageSize);
+        this(targetPageSize, allocator, QueryConstants.NULL_INT);
     }
 
     @Override
