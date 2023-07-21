@@ -571,7 +571,7 @@ public class Numeric {
         // For unweighted statistics, there is a (N-1)/N = (1-1/N) Bessel correction.  
         // The analagous correction for weighted statistics is 1-count2/count/count, which yields an effective sample size of Neff = count*count/count2.
         // This yields an unbiased estimator of (sum2/count - sum*sum/count/count) * ((count*count/count2)/((count*count/count2)-1)).
-        // This can be simplifed to (count * sum2 - sum * sum) / (count * count - count2)
+        // This can be simplified to (count * sum2 - sum * sum) / (count * count - count2)
         return (count * sum2 - sum * sum) / (count * count - count2);
     }
 
