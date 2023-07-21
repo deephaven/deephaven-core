@@ -3033,7 +3033,7 @@ const char descriptor_table_protodef_deephaven_2fproto_2ftable_2eproto[] PROTOBU
   "ckplane.grpc.Ticket\022\020\n\004size\030\002 \001(\022B\0020\001\"\357\001"
   "\n\020TimeTableRequest\022<\n\tresult_id\030\001 \001(\0132)."
   "io.deephaven.proto.backplane.grpc.Ticket"
-  "\022\036\n\020start_time_nanos\030\002 \001(\004B\0020\001H\000\022\033\n\021star"
+  "\022\036\n\020start_time_nanos\030\002 \001(\022B\0020\001H\000\022\033\n\021star"
   "t_time_string\030\005 \001(\tH\000\022\032\n\014period_nanos\030\003 "
   "\001(\022B\0020\001H\001\022\027\n\rperiod_string\030\006 \001(\tH\001\022\023\n\013bl"
   "ink_table\030\004 \001(\010B\014\n\nstart_timeB\010\n\006period\""
@@ -5980,10 +5980,10 @@ const char* TimeTableRequest::_InternalParse(const char* ptr, ::_pbi::ParseConte
         } else
           goto handle_unusual;
         continue;
-      // uint64 start_time_nanos = 2 [jstype = JS_STRING];
+      // sint64 start_time_nanos = 2 [jstype = JS_STRING];
       case 2:
         if (PROTOBUF_PREDICT_TRUE(static_cast<uint8_t>(tag) == 16)) {
-          _internal_set_start_time_nanos(::PROTOBUF_NAMESPACE_ID::internal::ReadVarint64(&ptr));
+          _internal_set_start_time_nanos(::PROTOBUF_NAMESPACE_ID::internal::ReadVarintZigZag64(&ptr));
           CHK_(ptr);
         } else
           goto handle_unusual;
@@ -6060,10 +6060,10 @@ uint8_t* TimeTableRequest::_InternalSerialize(
         _Internal::result_id(this).GetCachedSize(), target, stream);
   }
 
-  // uint64 start_time_nanos = 2 [jstype = JS_STRING];
+  // sint64 start_time_nanos = 2 [jstype = JS_STRING];
   if (_internal_has_start_time_nanos()) {
     target = stream->EnsureSpace(target);
-    target = ::_pbi::WireFormatLite::WriteUInt64ToArray(2, this->_internal_start_time_nanos(), target);
+    target = ::_pbi::WireFormatLite::WriteSInt64ToArray(2, this->_internal_start_time_nanos(), target);
   }
 
   // sint64 period_nanos = 3 [jstype = JS_STRING];
@@ -6127,9 +6127,9 @@ size_t TimeTableRequest::ByteSizeLong() const {
   }
 
   switch (start_time_case()) {
-    // uint64 start_time_nanos = 2 [jstype = JS_STRING];
+    // sint64 start_time_nanos = 2 [jstype = JS_STRING];
     case kStartTimeNanos: {
-      total_size += ::_pbi::WireFormatLite::UInt64SizePlusOne(this->_internal_start_time_nanos());
+      total_size += ::_pbi::WireFormatLite::SInt64SizePlusOne(this->_internal_start_time_nanos());
       break;
     }
     // string start_time_string = 5;

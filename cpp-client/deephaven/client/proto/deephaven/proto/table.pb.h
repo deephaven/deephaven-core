@@ -2248,17 +2248,17 @@ class TimeTableRequest final :
   void _internal_set_blink_table(bool value);
   public:
 
-  // uint64 start_time_nanos = 2 [jstype = JS_STRING];
+  // sint64 start_time_nanos = 2 [jstype = JS_STRING];
   bool has_start_time_nanos() const;
   private:
   bool _internal_has_start_time_nanos() const;
   public:
   void clear_start_time_nanos();
-  uint64_t start_time_nanos() const;
-  void set_start_time_nanos(uint64_t value);
+  int64_t start_time_nanos() const;
+  void set_start_time_nanos(int64_t value);
   private:
-  uint64_t _internal_start_time_nanos() const;
-  void _internal_set_start_time_nanos(uint64_t value);
+  int64_t _internal_start_time_nanos() const;
+  void _internal_set_start_time_nanos(int64_t value);
   public:
 
   // string start_time_string = 5;
@@ -2336,7 +2336,7 @@ class TimeTableRequest final :
   union StartTimeUnion {
     constexpr StartTimeUnion() : _constinit_{} {}
       ::PROTOBUF_NAMESPACE_ID::internal::ConstantInitialized _constinit_;
-    uint64_t start_time_nanos_;
+    int64_t start_time_nanos_;
     ::PROTOBUF_NAMESPACE_ID::internal::ArenaStringPtr start_time_string_;
   } start_time_;
   union PeriodUnion {
@@ -25362,7 +25362,7 @@ inline void TimeTableRequest::set_allocated_result_id(::io::deephaven::proto::ba
   // @@protoc_insertion_point(field_set_allocated:io.deephaven.proto.backplane.grpc.TimeTableRequest.result_id)
 }
 
-// uint64 start_time_nanos = 2 [jstype = JS_STRING];
+// sint64 start_time_nanos = 2 [jstype = JS_STRING];
 inline bool TimeTableRequest::_internal_has_start_time_nanos() const {
   return start_time_case() == kStartTimeNanos;
 }
@@ -25374,28 +25374,28 @@ inline void TimeTableRequest::set_has_start_time_nanos() {
 }
 inline void TimeTableRequest::clear_start_time_nanos() {
   if (_internal_has_start_time_nanos()) {
-    start_time_.start_time_nanos_ = uint64_t{0u};
+    start_time_.start_time_nanos_ = int64_t{0};
     clear_has_start_time();
   }
 }
-inline uint64_t TimeTableRequest::_internal_start_time_nanos() const {
+inline int64_t TimeTableRequest::_internal_start_time_nanos() const {
   if (_internal_has_start_time_nanos()) {
     return start_time_.start_time_nanos_;
   }
-  return uint64_t{0u};
+  return int64_t{0};
 }
-inline void TimeTableRequest::_internal_set_start_time_nanos(uint64_t value) {
+inline void TimeTableRequest::_internal_set_start_time_nanos(int64_t value) {
   if (!_internal_has_start_time_nanos()) {
     clear_start_time();
     set_has_start_time_nanos();
   }
   start_time_.start_time_nanos_ = value;
 }
-inline uint64_t TimeTableRequest::start_time_nanos() const {
+inline int64_t TimeTableRequest::start_time_nanos() const {
   // @@protoc_insertion_point(field_get:io.deephaven.proto.backplane.grpc.TimeTableRequest.start_time_nanos)
   return _internal_start_time_nanos();
 }
-inline void TimeTableRequest::set_start_time_nanos(uint64_t value) {
+inline void TimeTableRequest::set_start_time_nanos(int64_t value) {
   _internal_set_start_time_nanos(value);
   // @@protoc_insertion_point(field_set:io.deephaven.proto.backplane.grpc.TimeTableRequest.start_time_nanos)
 }
