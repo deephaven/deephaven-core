@@ -426,6 +426,16 @@ public class ParquetTableWriter {
         LongSupplier rowStepGetter;
         LongSupplier valuesStepGetter;
 
+        // These two lists are parallel, where each element represents a single page. The rawItemCountPerPage
+        // contains the number of items (the sum of the array sizes for each containing row) contained within the
+        // page.
+        final TIntArrayList rawItemCountPerPage = new TIntArrayList();
+
+        // The originalRowsPerPage contains the number of arrays (rows) from the original table contained within
+        // the page.
+        final TIntArrayList originalRowsPerPage = new TIntArrayList();
+        boolean case1 = false;
+
         int maxValuesPerPage = 0;
         int maxOriginalRowsPerPage = 0;
         int pageCount;
@@ -441,15 +451,6 @@ public class ParquetTableWriter {
                     .view("len= ((Object)array) == null ? null : (int)array."
                             + (Vector.class.isAssignableFrom(columnSource.getType()) ? "size()" : "length"))
                     .getColumnSource("len");
-
-            // These two lists are parallel, where each element represents a single page. The rawItemCountPerPage
-            // contains the number of items (the sum of the array sizes for each containing row) contained within the
-            // page.
-            final TIntArrayList rawItemCountPerPage = new TIntArrayList();
-
-            // The originalRowsPerPage contains the number of arrays (rows) from the original table contained within
-            // the page.
-            final TIntArrayList originalRowsPerPage = new TIntArrayList();
 
             // This is the count of items contained in all arrays from the original table as we process.
             int totalItemsInPage = 0;
@@ -501,6 +502,8 @@ public class ParquetTableWriter {
             final Table ungroupedArrays = lengthsTable.ungroup("array");
             rowSet = ungroupedArrays.getRowSet();
             columnSource = ungroupedArrays.getColumnSource("array");
+
+            case1 = true;
         } else {
             final int finalTargetSize = getTargetRowsPerPage(columnSource.getType(),
                     writeInstructions.getTargetPageSize());
@@ -537,6 +540,14 @@ public class ParquetTableWriter {
                         maxValuesPerPage,
                         maxOriginalRowsPerPage,
                         pageCount);
+                if (!usedDictionary)
+                {
+                    // Need to reset the state so that all values can again be read again for plain encoding
+                    if (case1) {
+                        rowStepGetter = originalRowsPerPage.iterator()::next;
+                        valuesStepGetter = rawItemCountPerPage.iterator()::next;
+                    }
+                }
             }
 
             if (!usedDictionary) {
@@ -588,7 +599,7 @@ public class ParquetTableWriter {
 
                 final IntBuffer repeatCount = lengthSource != null ? IntBuffer.allocate(maxOriginalRowsPerPage) : null;
                 for (int step = 0; step < pageCount; ++step) {
-                    final RowSequence rs = it.getNextRowSequenceWithLength(valuesStepGetter.getAsLong());
+                    final RowSequence rs = it.getNextRowSequenceWithLength(valuesStepGetter.getAsLong());  // valuesStepGetter starts failing with index out of range
                     transferObject.fetchData(rs);
                     transferObject.propagateChunkData();
                     if (lengthIndexIt != null) {
@@ -664,7 +675,7 @@ public class ParquetTableWriter {
                             }
                             keyToPos.put(key, dictionaryPos);
                         }
-                        posInDictionary.put(dictionaryPos);
+                         posInDictionary.put(dictionaryPos);
                     }
                     pageBuffers.add(posInDictionary);
                 }
