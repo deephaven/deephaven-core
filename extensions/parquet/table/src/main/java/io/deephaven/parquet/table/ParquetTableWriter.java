@@ -540,8 +540,7 @@ public class ParquetTableWriter {
                         maxValuesPerPage,
                         maxOriginalRowsPerPage,
                         pageCount);
-                if (!usedDictionary)
-                {
+                if (!usedDictionary) {
                     // Need to reset the state so that all values can again be read again for plain encoding
                     if (case1) {
                         rowStepGetter = originalRowsPerPage.iterator()::next;
@@ -675,7 +674,7 @@ public class ParquetTableWriter {
                             }
                             keyToPos.put(key, dictionaryPos);
                         }
-                         posInDictionary.put(dictionaryPos);
+                        posInDictionary.put(dictionaryPos);
                     }
                     pageBuffers.add(posInDictionary);
                 }
