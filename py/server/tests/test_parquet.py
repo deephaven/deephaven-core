@@ -197,7 +197,7 @@ class ParquetTestCase(BaseTestCase):
         dh_table_vector_format = dh_table.group_by()
         self.round_trip_with_compression("UNCOMPRESSED", dh_table_vector_format, True)
 
-    def round_trip_with_compression(self, compression_codec_name, dh_table_vector_format, vector_table=False):
+    def round_trip_with_compression(self, compression_codec_name, dh_table, vector_columns=False):
         # dh->parquet->dataframe (via pyarrow)->dh
         write(dh_table, "data_from_dh.parquet", compression_codec_name=compression_codec_name)
 
@@ -213,7 +213,7 @@ class ParquetTestCase(BaseTestCase):
 
         # All null columns should all be stored as "null" in the parquet file, and not as NULL_INT or NULL_CHAR, etc.
         dataframe_null_columns = dataframe.iloc[:, -10:]
-        if vector_table:
+        if vector_columns:
             for column in dataframe_null_columns:
                 df = pandas.DataFrame(dataframe_null_columns.at[0, column])
                 self.assertTrue(df.isnull().values.all())
