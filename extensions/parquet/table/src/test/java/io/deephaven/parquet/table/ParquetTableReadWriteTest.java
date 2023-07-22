@@ -371,6 +371,40 @@ public class ParquetTableReadWriteTest {
         assertTableEquals(nullVectorTable, fromDisk);
     }
 
+    @Test
+    public void testArrayColumns() {
+        ArrayList<String> columns =
+                new ArrayList<>(Arrays.asList(
+                        "someStringArrayColumn = new String[] {i % 10 == 0?null:(`` + (i % 101))}",
+                        "someIntArrayColumn = new int[] {i}",
+                        "someLongArrayColumn = new long[] {ii}",
+                        "someDoubleArrayColumn = new double[] {i*1.1}",
+                        "someFloatArrayColumn = new float[] {(float)(i*1.1)}",
+                        "someBoolArrayColumn = new Boolean[] {i % 3 == 0?true:i%3 == 1?false:null}",
+                        "someShorArrayColumn = new short[] {(short)i}",
+                        "someByteArrayColumn = new byte[] {(byte)i}",
+                        "someCharArrayColumn = new char[] {(char)i}",
+                        "someTimeArrayColumn = new Instant[] {(Instant)DateTimeUtils.now() + i}",
+                        "nullStringArrayColumn = new String[] {(String)null}",
+                        "nullIntArrayColumn = new int[] {(int)null}",
+                        "nullLongArrayColumn = new long[] {(long)null}",
+                        "nullDoubleArrayColumn = new double[] {(double)null}",
+                        "nullFloatArrayColumn = new float[] {(float)null}",
+                        "nullBoolArrayColumn = new Boolean[] {(Boolean)null}",
+                        "nullShorArrayColumn = new short[] {(short)null}",
+                        "nullByteArrayColumn = new byte[] {(byte)null}",
+                        "nullCharArrayColumn = new char[] {(char)null}",
+                        "nullTimeArrayColumn = new Instant[] {(Instant)null}"
+                ));
+
+        final Table arrayTable = TableTools.emptyTable(20).select(
+                Selectable.from(columns));
+        final File dest = new File(rootFile + File.separator + "arrayTable.parquet");
+        ParquetTools.writeTable(arrayTable, dest);
+        Table fromDisk = ParquetTools.readTable(dest);
+        assertTableEquals(arrayTable, fromDisk);
+    }
+
     /**
      * Encoding bigDecimal is tricky -- the writer will try to pick the precision and scale automatically. Because of
      * that tableTools.assertTableEquals will fail because, even though the numbers are identical, the representation
