@@ -599,7 +599,7 @@ public class ParquetTableWriter {
 
                 final IntBuffer repeatCount = lengthSource != null ? IntBuffer.allocate(maxOriginalRowsPerPage) : null;
                 for (int step = 0; step < pageCount; ++step) {
-                    final RowSequence rs = it.getNextRowSequenceWithLength(valuesStepGetter.getAsLong());  // valuesStepGetter starts failing with index out of range
+                    final RowSequence rs = it.getNextRowSequenceWithLength(valuesStepGetter.getAsLong());
                     transferObject.fetchData(rs);
                     transferObject.propagateChunkData();
                     if (lengthIndexIt != null) {
