@@ -147,11 +147,7 @@ class ParquetTestCase(BaseTestCase):
         self.assertTrue(os.path.exists(file_location))
         shutil.rmtree(base_dir)
 
-    def test_round_trip_data(self):
-        """
-        Pass data between DH and pandas via pyarrow, making sure each side can read data the other side writes
-        """
-
+    def get_table_data(self):
         # create a table with columns to test different types and edge cases
         dh_table = empty_table(20).update(formulas=[
             "someStringColumn = i % 10 == 0?null:(`` + (i % 101))",
@@ -183,7 +179,40 @@ class ParquetTestCase(BaseTestCase):
             # "nullBigDecColumn = (java.math.BigDecimal)null",
             # "nullBigIntColumn = (java.math.BigInteger)null"
         ])
+        return dh_table
+
+    def get_table_with_array_data(self):
+        # create a table with columns to test different types and edge cases
+        dh_table = empty_table(20).update(formulas=[
+            "someStringArrayColumn = new String[] {i % 10 == 0?null:(`` + (i % 101))}",
+            "someIntArrayColumn = new int[] {i}",
+            "someLongArrayColumn = new long[] {ii}",
+            "someDoubleArrayColumn = new double[] {i*1.1}",
+            "someFloatArrayColumn = new float[] {(float)(i*1.1)}",
+            "someBoolArrayColumn = new Boolean[] {i % 3 == 0?true:i%3 == 1?false:null}",
+            "someShorArrayColumn = new short[] {(short)i}",
+            "someByteArrayColumn = new byte[] {(byte)i}",
+            "someCharArrayColumn = new char[] {(char)i}",
+            "someTimeArrayColumn = new Instant[] {(Instant)DateTimeUtils.now() + i}",
+            "nullStringArrayColumn = new String[] {(String)null}",
+            "nullIntArrayColumn = new int[] {(int)null}",
+            "nullLongArrayColumn = new long[] {(long)null}",
+            "nullDoubleArrayColumn = new double[] {(double)null}",
+            "nullFloatArrayColumn = new float[] {(float)null}",
+            "nullBoolArrayColumn = new Boolean[] {(Boolean)null}",
+            "nullShorArrayColumn = new short[] {(short)null}",
+            "nullByteArrayColumn = new byte[] {(byte)null}",
+            "nullCharArrayColumn = new char[] {(char)null}",
+            "nullTimeArrayColumn = new Instant[] {(Instant)null}"
+        ])
+        return dh_table
+
+    def test_round_trip_data(self):
+        """
+        Pass data between DH and pandas via pyarrow, making sure each side can read data the other side writes
+        """
         # These tests are done with each of the fully-supported compression formats
+        dh_table = self.get_table_data()
         self.round_trip_with_compression("UNCOMPRESSED", dh_table)
         self.round_trip_with_compression("SNAPPY", dh_table)
         # LZO is not fully supported in python/c++
@@ -196,6 +225,10 @@ class ParquetTestCase(BaseTestCase):
         # Perform group_by to convert columns to vector format
         dh_table_vector_format = dh_table.group_by()
         self.round_trip_with_compression("UNCOMPRESSED", dh_table_vector_format, True)
+
+        # Perform similar tests on table with array columns
+        dh_table_array_format = self.get_table_with_array_data()
+        self.round_trip_with_compression("UNCOMPRESSED", dh_table_array_format, True)
 
     def round_trip_with_compression(self, compression_codec_name, dh_table, vector_columns=False):
         # dh->parquet->dataframe (via pyarrow)->dh

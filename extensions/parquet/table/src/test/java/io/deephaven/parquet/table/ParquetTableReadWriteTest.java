@@ -394,8 +394,7 @@ public class ParquetTableReadWriteTest {
                         "nullShorArrayColumn = new short[] {(short)null}",
                         "nullByteArrayColumn = new byte[] {(byte)null}",
                         "nullCharArrayColumn = new char[] {(char)null}",
-                        "nullTimeArrayColumn = new Instant[] {(Instant)null}"
-                ));
+                        "nullTimeArrayColumn = new Instant[] {(Instant)null}"));
 
         final Table arrayTable = TableTools.emptyTable(20).select(
                 Selectable.from(columns));
