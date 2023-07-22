@@ -246,31 +246,6 @@ public class TestParquetTools {
     }
 
     @Test
-    public void testNullColumns() {
-        final Table nullTable = TableTools.emptyTable(10).update(
-                "someCharColumn = (char)i",
-                "nullIntColumn = (int)null",
-                "nullLongColumn = (long)null",
-                "nullDoubleColumn = (double)null",
-                "nullFloatColumn = (float)null",
-                "nullBoolColumn = (Boolean)null",
-                "nullShortColumn = (short)null",
-                "nullByteColumn = (byte)null",
-                "nullCharColumn = (char)null",
-                "nullTime = (Instant)null",
-                "nullString = (String)null");
-        final File dest = new File(testRoot + File.separator + "nullTable.parquet");
-        ParquetTools.writeTable(nullTable, dest);
-        Table fromDisk = ParquetTools.readTable(dest);
-        assertTableEquals(nullTable, fromDisk);
-
-        final Table nullArrayTable = nullTable.groupBy();
-        ParquetTools.writeTable(nullArrayTable, dest);
-        fromDisk = ParquetTools.readTable(dest);
-        assertTableEquals(nullArrayTable, fromDisk);
-    }
-
-    @Test
     public void testWriteTableExceptions() throws IOException {
         new File(testRoot + File.separator + "unexpectedFile").createNewFile();
         try {

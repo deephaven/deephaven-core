@@ -193,11 +193,11 @@ class ParquetTestCase(BaseTestCase):
         self.round_trip_with_compression("GZIP", dh_table)
         self.round_trip_with_compression("ZSTD", dh_table)
 
-        # Perform group_by to convert columns to array format
-        dh_table_array_format = dh_table.group_by()
-        self.round_trip_with_compression("UNCOMPRESSED", dh_table_array_format, True)
+        # Perform group_by to convert columns to vector format
+        dh_table_vector_format = dh_table.group_by()
+        self.round_trip_with_compression("UNCOMPRESSED", dh_table_vector_format, True)
 
-    def round_trip_with_compression(self, compression_codec_name, dh_table, array_table=False):
+    def round_trip_with_compression(self, compression_codec_name, dh_table_vector_format, vector_table=False):
         # dh->parquet->dataframe (via pyarrow)->dh
         write(dh_table, "data_from_dh.parquet", compression_codec_name=compression_codec_name)
 
@@ -211,9 +211,9 @@ class ParquetTestCase(BaseTestCase):
         else:
             dataframe = pandas.read_parquet("data_from_dh.parquet", dtype_backend="numpy_nullable")
 
-        # All the null columns should all be stored as "null" in the parquet file, and not as NULL_INT or NULL_CHAR, etc.
+        # All null columns should all be stored as "null" in the parquet file, and not as NULL_INT or NULL_CHAR, etc.
         dataframe_null_columns = dataframe.iloc[:, -10:]
-        if array_table:
+        if vector_table:
             for column in dataframe_null_columns:
                 df = pandas.DataFrame(dataframe_null_columns.at[0, column])
                 self.assertTrue(df.isnull().values.all())
@@ -222,7 +222,7 @@ class ParquetTestCase(BaseTestCase):
             self.assertTrue(dataframe_null_columns.isnull().values.all())
 
         # Convert the dataframe to deephaven table and compare
-        # These steps are not done for tables with array columns since we don't automatically convert python lists to
+        # These steps are not done for tables with vector columns since we don't automatically convert python lists to
         # java vectors.
         result_table = to_table(dataframe)
         self.assert_table_equals(dh_table, result_table)
