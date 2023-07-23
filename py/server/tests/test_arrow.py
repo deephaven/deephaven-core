@@ -1,6 +1,7 @@
 #
 # Copyright (c) 2016-2022 Deephaven Data Labs and Patent Pending
 #
+import os
 import unittest
 from datetime import datetime
 from typing import List, Any
@@ -8,6 +9,7 @@ from typing import List, Any
 import numpy as np
 import pandas as pd
 import pyarrow as pa
+import pyarrow.feather as feather
 import pyarrow.parquet as papq
 
 from deephaven import arrow as dharrow, new_table, time_table
@@ -42,7 +44,8 @@ class ArrowTestCase(BaseTestCase):
         del self.test_table
         super().tearDown()
 
-    def verify_type_conversion(self, pa_types: List[pa.DataType], pa_data: List[Any], cast_for_round_trip: bool = False):
+    def verify_type_conversion(self, pa_types: List[pa.DataType], pa_data: List[Any],
+                               cast_for_round_trip: bool = False):
         fields = [pa.field(f"f{i}", ty) for i, ty in enumerate(pa_types)]
         schema = pa.schema(fields)
         pa_table = pa.table(pa_data, schema=schema)
@@ -193,6 +196,16 @@ class ArrowTestCase(BaseTestCase):
         pa_table = dharrow.to_arrow(table)
         self.assertEqual(len(pa_table.columns), 3)
         self.assertGreaterEqual(pa_table.num_rows, 100)
+
+    def test_read_feather(self):
+        f_path = "tests/data/test_feather"
+        pa_table = dharrow.to_arrow(self.test_table)
+        feather.write_feather(pa_table, f_path)
+        pa_table1 = feather.read_table(f_path)
+        self.assertTrue(pa_table1.equals(pa_table))
+        t = dharrow.read_feather(f_path)
+        self.assert_table_equals(t, self.test_table)
+        os.remove(f_path)
 
 
 if __name__ == '__main__':

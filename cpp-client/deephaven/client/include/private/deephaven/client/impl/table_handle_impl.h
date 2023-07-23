@@ -10,7 +10,7 @@
 #include "deephaven/client/server/server.h"
 #include "deephaven/client/subscription/subscription_handle.h"
 #include "deephaven/client/utility/executor.h"
-#include "deephaven/dhcore/table/schema.h"
+#include "deephaven/dhcore/clienttable/schema.h"
 #include "deephaven/dhcore/ticking/ticking.h"
 #include "deephaven/dhcore/types.h"
 #include "deephaven/dhcore/utility/callbacks.h"
@@ -87,7 +87,7 @@ private:
 };
 
 class LazyState final {
-  typedef deephaven::dhcore::table::Schema Schema;
+  typedef deephaven::dhcore::clienttable::Schema Schema;
   typedef io::deephaven::proto::backplane::grpc::ExportedTableCreationResponse ExportedTableCreationResponse;
   typedef io::deephaven::proto::backplane::grpc::Ticket Ticket;
   typedef deephaven::client::server::Server Server;
@@ -219,7 +219,7 @@ public:
   std::shared_ptr<SubscriptionHandle> subscribe(std::shared_ptr<TickingCallback> callback);
   std::shared_ptr<SubscriptionHandle> subscribe(TableHandle::onTickCallback_t onTick,
       void *onTickUserData, TableHandle::onErrorCallback_t onError, void *onErrorUserData);
-  void unsubscribe(std::shared_ptr<SubscriptionHandle> handle);
+  void unsubscribe(const std::shared_ptr<SubscriptionHandle> &handle);
 
   /**
    * Used in tests.
@@ -249,7 +249,6 @@ private:
   std::shared_ptr<TableHandleManagerImpl> managerImpl_;
   Ticket ticket_;
   std::shared_ptr<internal::LazyState> lazyState_;
-  std::set<std::shared_ptr<SubscriptionHandle>> subscriptions_;
 };
 }  // namespace impl
 }  // namespace deephaven::client

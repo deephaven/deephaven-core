@@ -88,10 +88,14 @@ public class FilesystemStorageServiceGrpcImpl extends StorageServiceGrpc.Storage
 
     private final Path root = Paths.get(STORAGE_PATH).normalize();
     private final SessionService sessionService;
+    private final SessionService.ErrorTransformer errorTransformer;
 
     @Inject
-    public FilesystemStorageServiceGrpcImpl(SessionService sessionService) {
+    public FilesystemStorageServiceGrpcImpl(
+            final SessionService sessionService,
+            final SessionService.ErrorTransformer errorTransformer) {
         this.sessionService = sessionService;
+        this.errorTransformer = errorTransformer;
         try {
             Files.createDirectories(root);
             for (String path : PRE_CREATE_PATHS) {
@@ -149,7 +153,7 @@ public class FilesystemStorageServiceGrpcImpl extends StorageServiceGrpc.Storage
         } catch (NoSuchFileException noSuchFileException) {
             throw Exceptions.statusRuntimeException(Code.FAILED_PRECONDITION, "Directory does not exist");
         } catch (IOException ioe) {
-            throw GrpcUtil.securelyWrapError(log, ioe);
+            throw errorTransformer.transform(ioe);
         }
         responseObserver.onNext(builder.build());
         responseObserver.onCompleted();
@@ -196,7 +200,7 @@ public class FilesystemStorageServiceGrpcImpl extends StorageServiceGrpc.Storage
         } catch (NoSuchFileException noSuchFileException) {
             throw Exceptions.statusRuntimeException(Code.FAILED_PRECONDITION, "File does not exist");
         } catch (IOException ioe) {
-            throw GrpcUtil.securelyWrapError(log, ioe);
+            throw errorTransformer.transform(ioe);
         }
 
         final FetchFileResponse.Builder response = FetchFileResponse.newBuilder();
@@ -229,7 +233,7 @@ public class FilesystemStorageServiceGrpcImpl extends StorageServiceGrpc.Storage
         } catch (NoSuchFileException noSuchFileException) {
             throw Exceptions.statusRuntimeException(Code.FAILED_PRECONDITION, "Directory does not exist");
         } catch (IOException ioe) {
-            throw GrpcUtil.securelyWrapError(log, ioe);
+            throw errorTransformer.transform(ioe);
         }
 
         responseObserver.onNext(SaveFileResponse.newBuilder().setEtag(etag).build());
@@ -260,7 +264,7 @@ public class FilesystemStorageServiceGrpcImpl extends StorageServiceGrpc.Storage
         } catch (DirectoryNotEmptyException directoryNotEmptyException) {
             throw Exceptions.statusRuntimeException(Code.FAILED_PRECONDITION, "Cannot replace non-empty directory");
         } catch (IOException ioe) {
-            throw GrpcUtil.securelyWrapError(log, ioe);
+            throw errorTransformer.transform(ioe);
         }
         responseObserver.onNext(MoveItemResponse.getDefaultInstance());
         responseObserver.onCompleted();
@@ -284,7 +288,7 @@ public class FilesystemStorageServiceGrpcImpl extends StorageServiceGrpc.Storage
             throw Exceptions.statusRuntimeException(Code.FAILED_PRECONDITION,
                     "Can't create directory, parent directory doesn't exist");
         } catch (IOException ioe) {
-            throw GrpcUtil.securelyWrapError(log, ioe);
+            throw errorTransformer.transform(ioe);
         }
         responseObserver.onNext(CreateDirectoryResponse.getDefaultInstance());
         responseObserver.onCompleted();
@@ -306,7 +310,7 @@ public class FilesystemStorageServiceGrpcImpl extends StorageServiceGrpc.Storage
         } catch (DirectoryNotEmptyException directoryNotEmptyException) {
             throw Exceptions.statusRuntimeException(Code.FAILED_PRECONDITION, "Cannot delete non-empty directory");
         } catch (IOException ioe) {
-            throw GrpcUtil.securelyWrapError(log, ioe);
+            throw errorTransformer.transform(ioe);
         }
         responseObserver.onNext(DeleteItemResponse.getDefaultInstance());
         responseObserver.onCompleted();

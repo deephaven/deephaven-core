@@ -3,7 +3,7 @@
  */
 package io.deephaven.api.agg.spec;
 
-import io.deephaven.annotations.SimpleStyle;
+import io.deephaven.annotations.SingletonStyle;
 import io.deephaven.api.TableOperations;
 import org.immutables.value.Value.Immutable;
 
@@ -13,7 +13,7 @@ import org.immutables.value.Value.Immutable;
  * @see TableOperations#lastBy
  */
 @Immutable
-@SimpleStyle
+@SingletonStyle
 public abstract class AggSpecLast extends AggSpecEmptyBase {
 
     public static AggSpecLast of() {

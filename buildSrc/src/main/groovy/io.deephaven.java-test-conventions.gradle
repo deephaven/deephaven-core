@@ -23,7 +23,16 @@ artifacts {
     archives testJar
 }
 
-project.tasks.withType(Test).all { Test t ->
+// This only applies to the standard "test" task
+project.tasks.named('test', Test, { test ->
+    // We essentially want to set maxParallelForks for all "normal" tests. It will be capped by the number
+    // of gradle workers, org.gradle.workers.max. We aren't able to set set this property for all Test types,
+    // because testSerial needs special handling.
+    test.maxParallelForks = Runtime.runtime.availableProcessors()
+})
+
+// This applies to all test types, including the testOutOfBand, testSerial, and testParallel
+project.tasks.withType(Test).configureEach { Test t ->
     t.with {
         t.defaultCharacterEncoding = 'UTF-8'
 
@@ -43,10 +52,6 @@ project.tasks.withType(Test).all { Test t ->
         enableAssertions = true
         if (!maxHeapSize) {
             maxHeapSize = '3g'
-        }
-
-        if (!maxParallelForks) {
-            maxParallelForks = 4
         }
 
         if (findProperty('shortTests') == 'true') {

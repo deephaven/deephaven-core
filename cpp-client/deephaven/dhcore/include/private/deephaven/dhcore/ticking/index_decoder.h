@@ -12,8 +12,8 @@ class DataInput {
 public:
   explicit DataInput(const flatbuffers::Vector<int8_t> &vec) : DataInput(vec.data(), vec.size()) {}
 
-  DataInput(const void *start, size_t size) : data_(static_cast<const char *>(start)),
-      size_(size) {}
+  DataInput(const void *start, size_t size) : data_(static_cast<const char *>(start))
+    {}
 
   int64_t readValue(int command);
 
@@ -24,7 +24,6 @@ public:
 
 private:
   const char *data_ = nullptr;
-  size_t size_ = 0;
 };
 
 struct IndexDecoder {

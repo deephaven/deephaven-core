@@ -2205,6 +2205,7 @@ class TimeTableRequest final :
     kResultIdFieldNumber = 1,
     kStartTimeNanosFieldNumber = 2,
     kPeriodNanosFieldNumber = 3,
+    kBlinkTableFieldNumber = 4,
   };
   // .io.deephaven.proto.backplane.grpc.Ticket result_id = 1;
   bool has_result_id() const;
@@ -2242,6 +2243,15 @@ class TimeTableRequest final :
   void _internal_set_period_nanos(int64_t value);
   public:
 
+  // bool blink_table = 4;
+  void clear_blink_table();
+  bool blink_table() const;
+  void set_blink_table(bool value);
+  private:
+  bool _internal_blink_table() const;
+  void _internal_set_blink_table(bool value);
+  public:
+
   // @@protoc_insertion_point(class_scope:io.deephaven.proto.backplane.grpc.TimeTableRequest)
  private:
   class _Internal;
@@ -2252,6 +2262,7 @@ class TimeTableRequest final :
   ::io::deephaven::proto::backplane::grpc::Ticket* result_id_;
   int64_t start_time_nanos_;
   int64_t period_nanos_;
+  bool blink_table_;
   mutable ::PROTOBUF_NAMESPACE_ID::internal::CachedSize _cached_size_;
   friend struct ::TableStruct_deephaven_2fproto_2ftable_2eproto;
 };
@@ -2839,6 +2850,12 @@ class UpdateByWindowScale_UpdateByWindowTime final :
   static const UpdateByWindowScale_UpdateByWindowTime& default_instance() {
     return *internal_default_instance();
   }
+  enum WindowCase {
+    kNanos = 2,
+    kDurationString = 3,
+    WINDOW_NOT_SET = 0,
+  };
+
   static inline const UpdateByWindowScale_UpdateByWindowTime* internal_default_instance() {
     return reinterpret_cast<const UpdateByWindowScale_UpdateByWindowTime*>(
                &_UpdateByWindowScale_UpdateByWindowTime_default_instance_);
@@ -2916,7 +2933,8 @@ class UpdateByWindowScale_UpdateByWindowTime final :
 
   enum : int {
     kColumnFieldNumber = 1,
-    kPeriodNanosFieldNumber = 2,
+    kNanosFieldNumber = 2,
+    kDurationStringFieldNumber = 3,
   };
   // string column = 1;
   void clear_column();
@@ -2932,25 +2950,61 @@ class UpdateByWindowScale_UpdateByWindowTime final :
   std::string* _internal_mutable_column();
   public:
 
-  // sint64 period_nanos = 2 [jstype = JS_STRING];
-  void clear_period_nanos();
-  int64_t period_nanos() const;
-  void set_period_nanos(int64_t value);
+  // sint64 nanos = 2 [jstype = JS_STRING];
+  bool has_nanos() const;
   private:
-  int64_t _internal_period_nanos() const;
-  void _internal_set_period_nanos(int64_t value);
+  bool _internal_has_nanos() const;
+  public:
+  void clear_nanos();
+  int64_t nanos() const;
+  void set_nanos(int64_t value);
+  private:
+  int64_t _internal_nanos() const;
+  void _internal_set_nanos(int64_t value);
   public:
 
+  // string duration_string = 3;
+  bool has_duration_string() const;
+  private:
+  bool _internal_has_duration_string() const;
+  public:
+  void clear_duration_string();
+  const std::string& duration_string() const;
+  template <typename ArgT0 = const std::string&, typename... ArgT>
+  void set_duration_string(ArgT0&& arg0, ArgT... args);
+  std::string* mutable_duration_string();
+  PROTOBUF_NODISCARD std::string* release_duration_string();
+  void set_allocated_duration_string(std::string* duration_string);
+  private:
+  const std::string& _internal_duration_string() const;
+  inline PROTOBUF_ALWAYS_INLINE void _internal_set_duration_string(const std::string& value);
+  std::string* _internal_mutable_duration_string();
+  public:
+
+  void clear_window();
+  WindowCase window_case() const;
   // @@protoc_insertion_point(class_scope:io.deephaven.proto.backplane.grpc.UpdateByWindowScale.UpdateByWindowTime)
  private:
   class _Internal;
+  void set_has_nanos();
+  void set_has_duration_string();
+
+  inline bool has_window() const;
+  inline void clear_has_window();
 
   template <typename T> friend class ::PROTOBUF_NAMESPACE_ID::Arena::InternalHelper;
   typedef void InternalArenaConstructable_;
   typedef void DestructorSkippable_;
   ::PROTOBUF_NAMESPACE_ID::internal::ArenaStringPtr column_;
-  int64_t period_nanos_;
+  union WindowUnion {
+    constexpr WindowUnion() : _constinit_{} {}
+      ::PROTOBUF_NAMESPACE_ID::internal::ConstantInitialized _constinit_;
+    int64_t nanos_;
+    ::PROTOBUF_NAMESPACE_ID::internal::ArenaStringPtr duration_string_;
+  } window_;
   mutable ::PROTOBUF_NAMESPACE_ID::internal::CachedSize _cached_size_;
+  uint32_t _oneof_case_[1];
+
   friend struct ::TableStruct_deephaven_2fproto_2ftable_2eproto;
 };
 // -------------------------------------------------------------------
@@ -25264,6 +25318,26 @@ inline void TimeTableRequest::set_period_nanos(int64_t value) {
   // @@protoc_insertion_point(field_set:io.deephaven.proto.backplane.grpc.TimeTableRequest.period_nanos)
 }
 
+// bool blink_table = 4;
+inline void TimeTableRequest::clear_blink_table() {
+  blink_table_ = false;
+}
+inline bool TimeTableRequest::_internal_blink_table() const {
+  return blink_table_;
+}
+inline bool TimeTableRequest::blink_table() const {
+  // @@protoc_insertion_point(field_get:io.deephaven.proto.backplane.grpc.TimeTableRequest.blink_table)
+  return _internal_blink_table();
+}
+inline void TimeTableRequest::_internal_set_blink_table(bool value) {
+  
+  blink_table_ = value;
+}
+inline void TimeTableRequest::set_blink_table(bool value) {
+  _internal_set_blink_table(value);
+  // @@protoc_insertion_point(field_set:io.deephaven.proto.backplane.grpc.TimeTableRequest.blink_table)
+}
+
 // -------------------------------------------------------------------
 
 // SelectOrUpdateRequest
@@ -25640,26 +25714,130 @@ inline void UpdateByWindowScale_UpdateByWindowTime::set_allocated_column(std::st
   // @@protoc_insertion_point(field_set_allocated:io.deephaven.proto.backplane.grpc.UpdateByWindowScale.UpdateByWindowTime.column)
 }
 
-// sint64 period_nanos = 2 [jstype = JS_STRING];
-inline void UpdateByWindowScale_UpdateByWindowTime::clear_period_nanos() {
-  period_nanos_ = int64_t{0};
+// sint64 nanos = 2 [jstype = JS_STRING];
+inline bool UpdateByWindowScale_UpdateByWindowTime::_internal_has_nanos() const {
+  return window_case() == kNanos;
 }
-inline int64_t UpdateByWindowScale_UpdateByWindowTime::_internal_period_nanos() const {
-  return period_nanos_;
+inline bool UpdateByWindowScale_UpdateByWindowTime::has_nanos() const {
+  return _internal_has_nanos();
 }
-inline int64_t UpdateByWindowScale_UpdateByWindowTime::period_nanos() const {
-  // @@protoc_insertion_point(field_get:io.deephaven.proto.backplane.grpc.UpdateByWindowScale.UpdateByWindowTime.period_nanos)
-  return _internal_period_nanos();
+inline void UpdateByWindowScale_UpdateByWindowTime::set_has_nanos() {
+  _oneof_case_[0] = kNanos;
 }
-inline void UpdateByWindowScale_UpdateByWindowTime::_internal_set_period_nanos(int64_t value) {
-  
-  period_nanos_ = value;
+inline void UpdateByWindowScale_UpdateByWindowTime::clear_nanos() {
+  if (_internal_has_nanos()) {
+    window_.nanos_ = int64_t{0};
+    clear_has_window();
+  }
 }
-inline void UpdateByWindowScale_UpdateByWindowTime::set_period_nanos(int64_t value) {
-  _internal_set_period_nanos(value);
-  // @@protoc_insertion_point(field_set:io.deephaven.proto.backplane.grpc.UpdateByWindowScale.UpdateByWindowTime.period_nanos)
+inline int64_t UpdateByWindowScale_UpdateByWindowTime::_internal_nanos() const {
+  if (_internal_has_nanos()) {
+    return window_.nanos_;
+  }
+  return int64_t{0};
+}
+inline void UpdateByWindowScale_UpdateByWindowTime::_internal_set_nanos(int64_t value) {
+  if (!_internal_has_nanos()) {
+    clear_window();
+    set_has_nanos();
+  }
+  window_.nanos_ = value;
+}
+inline int64_t UpdateByWindowScale_UpdateByWindowTime::nanos() const {
+  // @@protoc_insertion_point(field_get:io.deephaven.proto.backplane.grpc.UpdateByWindowScale.UpdateByWindowTime.nanos)
+  return _internal_nanos();
+}
+inline void UpdateByWindowScale_UpdateByWindowTime::set_nanos(int64_t value) {
+  _internal_set_nanos(value);
+  // @@protoc_insertion_point(field_set:io.deephaven.proto.backplane.grpc.UpdateByWindowScale.UpdateByWindowTime.nanos)
 }
 
+// string duration_string = 3;
+inline bool UpdateByWindowScale_UpdateByWindowTime::_internal_has_duration_string() const {
+  return window_case() == kDurationString;
+}
+inline bool UpdateByWindowScale_UpdateByWindowTime::has_duration_string() const {
+  return _internal_has_duration_string();
+}
+inline void UpdateByWindowScale_UpdateByWindowTime::set_has_duration_string() {
+  _oneof_case_[0] = kDurationString;
+}
+inline void UpdateByWindowScale_UpdateByWindowTime::clear_duration_string() {
+  if (_internal_has_duration_string()) {
+    window_.duration_string_.Destroy();
+    clear_has_window();
+  }
+}
+inline const std::string& UpdateByWindowScale_UpdateByWindowTime::duration_string() const {
+  // @@protoc_insertion_point(field_get:io.deephaven.proto.backplane.grpc.UpdateByWindowScale.UpdateByWindowTime.duration_string)
+  return _internal_duration_string();
+}
+template <typename ArgT0, typename... ArgT>
+inline void UpdateByWindowScale_UpdateByWindowTime::set_duration_string(ArgT0&& arg0, ArgT... args) {
+  if (!_internal_has_duration_string()) {
+    clear_window();
+    set_has_duration_string();
+    window_.duration_string_.InitDefault();
+  }
+  window_.duration_string_.Set( static_cast<ArgT0 &&>(arg0), args..., GetArenaForAllocation());
+  // @@protoc_insertion_point(field_set:io.deephaven.proto.backplane.grpc.UpdateByWindowScale.UpdateByWindowTime.duration_string)
+}
+inline std::string* UpdateByWindowScale_UpdateByWindowTime::mutable_duration_string() {
+  std::string* _s = _internal_mutable_duration_string();
+  // @@protoc_insertion_point(field_mutable:io.deephaven.proto.backplane.grpc.UpdateByWindowScale.UpdateByWindowTime.duration_string)
+  return _s;
+}
+inline const std::string& UpdateByWindowScale_UpdateByWindowTime::_internal_duration_string() const {
+  if (_internal_has_duration_string()) {
+    return window_.duration_string_.Get();
+  }
+  return ::PROTOBUF_NAMESPACE_ID::internal::GetEmptyStringAlreadyInited();
+}
+inline void UpdateByWindowScale_UpdateByWindowTime::_internal_set_duration_string(const std::string& value) {
+  if (!_internal_has_duration_string()) {
+    clear_window();
+    set_has_duration_string();
+    window_.duration_string_.InitDefault();
+  }
+  window_.duration_string_.Set(value, GetArenaForAllocation());
+}
+inline std::string* UpdateByWindowScale_UpdateByWindowTime::_internal_mutable_duration_string() {
+  if (!_internal_has_duration_string()) {
+    clear_window();
+    set_has_duration_string();
+    window_.duration_string_.InitDefault();
+  }
+  return window_.duration_string_.Mutable(      GetArenaForAllocation());
+}
+inline std::string* UpdateByWindowScale_UpdateByWindowTime::release_duration_string() {
+  // @@protoc_insertion_point(field_release:io.deephaven.proto.backplane.grpc.UpdateByWindowScale.UpdateByWindowTime.duration_string)
+  if (_internal_has_duration_string()) {
+    clear_has_window();
+    return window_.duration_string_.Release();
+  } else {
+    return nullptr;
+  }
+}
+inline void UpdateByWindowScale_UpdateByWindowTime::set_allocated_duration_string(std::string* duration_string) {
+  if (has_window()) {
+    clear_window();
+  }
+  if (duration_string != nullptr) {
+    set_has_duration_string();
+    window_.duration_string_.InitAllocated(duration_string, GetArenaForAllocation());
+  }
+  // @@protoc_insertion_point(field_set_allocated:io.deephaven.proto.backplane.grpc.UpdateByWindowScale.UpdateByWindowTime.duration_string)
+}
+
+inline bool UpdateByWindowScale_UpdateByWindowTime::has_window() const {
+  return window_case() != WINDOW_NOT_SET;
+}
+inline void UpdateByWindowScale_UpdateByWindowTime::clear_has_window() {
+  _oneof_case_[0] = WINDOW_NOT_SET;
+}
+inline UpdateByWindowScale_UpdateByWindowTime::WindowCase UpdateByWindowScale_UpdateByWindowTime::window_case() const {
+  return UpdateByWindowScale_UpdateByWindowTime::WindowCase(_oneof_case_[0]);
+}
 // -------------------------------------------------------------------
 
 // UpdateByWindowScale

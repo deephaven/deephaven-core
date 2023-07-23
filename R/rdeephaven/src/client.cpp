@@ -21,7 +21,8 @@ class ClientWrapper;
 
 class TableHandleWrapper {
 public:
-    TableHandleWrapper(deephaven::client::TableHandle ref_table) : internal_tbl_hdl(std::move(ref_table)) {};
+    TableHandleWrapper(deephaven::client::TableHandle ref_table) :
+        internal_tbl_hdl(std::move(ref_table)) {};
 
     // TODO: DEEPHAVEN QUERY METHODS WILL GO HERE
 
@@ -57,7 +58,7 @@ public:
         std::shared_ptr<arrow::flight::FlightStreamReader> fsr = internal_tbl_hdl.getFlightStreamReader();
 
         std::vector<std::shared_ptr<arrow::RecordBatch>> empty_record_batches;
-        DEEPHAVEN_EXPR_MSG(fsr->ReadAll(&empty_record_batches)); // TODO: need to add OK or throw
+        deephaven::client::utility::okOrThrow(DEEPHAVEN_EXPR_MSG(fsr->ReadAll(&empty_record_batches)));
 
         std::shared_ptr<arrow::RecordBatchReader> record_batch_reader = arrow::RecordBatchReader::Make(empty_record_batches).ValueOrDie();
         ArrowArrayStream* stream_ptr = new ArrowArrayStream();
@@ -76,9 +77,8 @@ private:
 class ClientOptionsWrapper {
 public:
 
-    ClientOptionsWrapper() {
-        internal_options = new deephaven::client::ClientOptions();
-    }
+    ClientOptionsWrapper() :
+        internal_options(std::make_shared<deephaven::client::ClientOptions>()) {}
 
     void setDefaultAuthentication() {
         internal_options->setDefaultAuthentication();
@@ -96,16 +96,38 @@ public:
         internal_options->setSessionType(sessionType);
     }
 
-private:
+    void setUseTls(bool useTls) {
+        internal_options->setUseTls(useTls);
+    }
 
-    deephaven::client::ClientOptions* internal_options;
-    friend ClientWrapper* newClientWrapper(const std::string &target, const ClientOptionsWrapper &client_options);
+    void setTlsRootCerts(std::string tlsRootCerts) {
+        internal_options->setTlsRootCerts(tlsRootCerts);
+    }
+
+    void addIntOption(std::string opt, int val) {
+        internal_options->addIntOption(opt, val);
+    }
+
+    void addStringOption(std::string opt, std::string val) {
+        internal_options->addStringOption(opt, val);
+    }
+
+    void addExtraHeader(std::string header_name, std::string header_value) {
+        internal_options->addExtraHeader(header_name, header_value);
+    }
+
+private:
+    std::shared_ptr<deephaven::client::ClientOptions> internal_options;
+    friend ClientWrapper;
 };
 
 
 
 class ClientWrapper {
 public:
+
+    ClientWrapper(std::string target, const ClientOptionsWrapper &client_options) :
+        internal_client(deephaven::client::Client::connect(target, *client_options.internal_options)) {}
 
     /**
      * Fetches a reference to a table named tableName on the server if it exists.
@@ -153,11 +175,11 @@ public:
      * Uses a pointer to a populated ArrowArrayStream C struct to create a new table on the server from the data in the C struct.
      * @param stream_ptr Pointer to an existing and populated ArrayArrayStream, populated by a call to RecordBatchReader$export_to_c(ptr) from R.
     */
-    TableHandleWrapper* newTableFromArrowArrayStreamPtr(Rcpp::XPtr<ArrowArrayStream> stream_ptr, int64_t numRows) { // TODO: remove numRows arg when c++ api fix is merged
+    TableHandleWrapper* newTableFromArrowArrayStreamPtr(Rcpp::XPtr<ArrowArrayStream> stream_ptr) {
 
         auto wrapper = internal_tbl_hdl_mngr.createFlightWrapper();
         arrow::flight::FlightCallOptions options;
-        wrapper.addAuthHeaders(&options);
+        wrapper.addHeaders(&options);
 
         // extract RecordBatchReader from the struct pointed to by the passed stream_ptr
         std::shared_ptr<arrow::RecordBatchReader> record_batch_reader = arrow::ImportRecordBatchReader(stream_ptr.get()).ValueOrDie();
@@ -166,7 +188,10 @@ public:
         // write RecordBatchReader data to table on server with DoPut
         std::unique_ptr<arrow::flight::FlightStreamWriter> fsw;
         std::unique_ptr<arrow::flight::FlightMetadataReader> fmr;
-        auto [new_tbl_hdl, fd] = internal_tbl_hdl_mngr.newTableHandleAndFlightDescriptor(numRows, true); // TODO: remove numRows arg when c++ api fix is merged
+
+        auto ticket = internal_tbl_hdl_mngr.newTicket();
+        auto fd = deephaven::client::utility::convertTicketToFlightDescriptor(ticket);
+        
         deephaven::client::utility::okOrThrow(DEEPHAVEN_EXPR_MSG(wrapper.flightClient()->DoPut(options, fd, schema, &fsw, &fmr)));
         while(true) {
             std::shared_ptr<arrow::RecordBatch> this_batch;
@@ -178,30 +203,15 @@ public:
         }
         deephaven::client::utility::okOrThrow(DEEPHAVEN_EXPR_MSG(fsw->DoneWriting()));
         deephaven::client::utility::okOrThrow(DEEPHAVEN_EXPR_MSG(fsw->Close()));
+
+        auto new_tbl_hdl = internal_tbl_hdl_mngr.makeTableHandleFromTicket(ticket);
         return new TableHandleWrapper(new_tbl_hdl);
     }
 
 private:
-    ClientWrapper(deephaven::client::Client ref) : internal_client(std::move(ref)) {};
-
     const deephaven::client::Client internal_client;
     const deephaven::client::TableHandleManager internal_tbl_hdl_mngr = internal_client.getManager();
-
-    friend ClientWrapper* newClientWrapper(const std::string &target, const ClientOptionsWrapper &client_options);
 };
-
-// factory method for calling private constructor, Rcpp does not like <const std::string &target> in constructor
-// the current implementation of passing authentication args to C++ client is terrible and needs to be redone. Only this could make Rcpp happy in a days work
-
-/**
- * Factory method for creating a new ClientWrapper, which is responsible for maintaining a connection to the client.
- * @param target URL that the server is running on.
- * @param client_options A ClientOptionsWrapper containing the server connection information. See deephaven::client::ClientOptions for more information.
- */
-ClientWrapper* newClientWrapper(const std::string &target, const ClientOptionsWrapper &client_options) {
-    return new ClientWrapper(deephaven::client::Client::connect(target, *client_options.internal_options));
-};
-
 
 
 // ######################### RCPP GLUE #########################
@@ -227,10 +237,15 @@ RCPP_MODULE(DeephavenInternalModule) {
     .method("set_basic_authentication", &ClientOptionsWrapper::setBasicAuthentication)
     .method("set_custom_authentication", &ClientOptionsWrapper::setCustomAuthentication)
     .method("set_session_type", &ClientOptionsWrapper::setSessionType)
+    .method("set_use_tls", &ClientOptionsWrapper::setUseTls)
+    .method("set_tls_root_certs", &ClientOptionsWrapper::setTlsRootCerts)
+    .method("add_int_option", &ClientOptionsWrapper::addIntOption)
+    .method("add_string_option", &ClientOptionsWrapper::addStringOption)
+    .method("add_extra_header", &ClientOptionsWrapper::addExtraHeader)
     ;
 
     class_<ClientWrapper>("INTERNAL_Client")
-    .factory<const std::string&, const ClientOptionsWrapper&>(newClientWrapper)
+    .constructor<std::string, const ClientOptionsWrapper&>()
     .method("open_table", &ClientWrapper::openTable)
     .method("check_for_table", &ClientWrapper::checkForTable)
     .method("run_script", &ClientWrapper::runScript)

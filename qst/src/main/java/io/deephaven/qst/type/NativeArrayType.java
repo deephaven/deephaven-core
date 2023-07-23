@@ -32,11 +32,12 @@ public abstract class NativeArrayType<T, ComponentType> extends ArrayTypeBase<T,
         return ImmutableNativeArrayType.of(arrayType, componentType);
     }
 
-    public static <ComponentType> NativeArrayType<?, ComponentType> toArrayType(
+    public static <ComponentType> NativeArrayType<ComponentType[], ComponentType> toArrayType(
             GenericType<ComponentType> type) {
         // Note: in Java 12+, we can use Class#arrayType()
         final Class<?> clazz = Array.newInstance(type.clazz(), 0).getClass();
-        return NativeArrayType.of(clazz, type);
+        // noinspection unchecked
+        return (NativeArrayType<ComponentType[], ComponentType>) NativeArrayType.of(clazz, type);
     }
 
     @Parameter
@@ -46,9 +47,8 @@ public abstract class NativeArrayType<T, ComponentType> extends ArrayTypeBase<T,
     public abstract Type<ComponentType> componentType();
 
     @Override
-    public final <V extends ArrayType.Visitor> V walk(V visitor) {
-        visitor.visit(this);
-        return visitor;
+    public final <R> R walk(ArrayType.Visitor<R> visitor) {
+        return visitor.visit(this);
     }
 
     @Check

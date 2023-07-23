@@ -3,6 +3,7 @@
  */
 #include "deephaven/client/client.h"
 
+#include <grpc/support/log.h>
 #include <arrow/array.h>
 #include <arrow/scalar.h>
 #include "deephaven/client/columns.h"
@@ -48,9 +49,9 @@ void printTableData(std::ostream &s, const TableHandle &tableHandle, bool wantHe
 }  // namespace
 
 Client Client::connect(const std::string &target, const ClientOptions &options) {
-  auto executor = Executor::create();
-  auto flightExecutor = Executor::create();
   auto server = Server::createFromTarget(target, options);
+  auto executor = Executor::create("Client executor for " + server->me());
+  auto flightExecutor = Executor::create("Flight executor for " + server->me());
   auto impl = ClientImpl::create(std::move(server), executor, flightExecutor, options.sessionType_);
   return Client(std::move(impl));
 }
@@ -61,11 +62,26 @@ Client::Client(std::shared_ptr<impl::ClientImpl> impl) : impl_(std::move(impl)) 
 }
 Client::Client(Client &&other) noexcept = default;
 Client &Client::operator=(Client &&other) noexcept = default;
-Client::~Client() = default;
+
+// There is only one Client associated with the server connection. Clients can only be moved, not
+// copied. When the Client owning the state is destructed, we tear down the state via close().
+Client::~Client() {
+  close();
+}
+
+// Tear down Client state.
+void Client::close() {
+  // Move to local variable to be defensive.
+  auto temp = std::move(impl_);
+  if (temp != nullptr) {
+    temp->shutdown();
+  }
+}
 
 TableHandleManager Client::getManager() const {
   return TableHandleManager(impl_->managerImpl());
 }
+
 
 TableHandleManager::TableHandleManager() = default;
 TableHandleManager::TableHandleManager(std::shared_ptr<impl::TableHandleManagerImpl> impl) : impl_(std::move(impl)) {}

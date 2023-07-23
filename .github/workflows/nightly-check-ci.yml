@@ -18,6 +18,9 @@ jobs:
         test-jvm-version: ['11', '17', '18']
     if: ${{ github.repository_owner == 'deephaven' || github.event_name != 'schedule' }}
     runs-on: ubuntu-22.04
+    concurrency:
+      group: ${{ matrix.gradle-task }}-${{ matrix.test-jvm-version }}-${{ github.workflow }}-${{ github.ref }}
+      cancel-in-progress: true
     steps:
       - name: Checkout
         uses: actions/checkout@v3
@@ -48,9 +51,7 @@ jobs:
 
       - name: Setup gradle properties
         run: |
-          cat .github/env/${{ runner.os }}/gradle.properties >> gradle.properties
-          echo >> gradle.properties
-          echo "org.gradle.java.installations.paths=${{ steps.setup-java-11.outputs.path }},${{ steps.setup-java-17.outputs.path }},${{ steps.setup-java-18.outputs.path }}," >> gradle.properties
+          .github/scripts/gradle-properties.sh >> gradle.properties
           cat gradle.properties
 
       - name: Run gradle ${{ matrix.gradle-task }} on java ${{ matrix.test-jvm-version }}

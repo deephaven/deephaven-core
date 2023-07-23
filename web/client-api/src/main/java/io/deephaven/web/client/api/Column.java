@@ -31,6 +31,8 @@ public class Column {
 
     private final String name;
 
+    private final boolean isSortable;
+
     @Deprecated
     private final int jsIndex;
 
@@ -47,7 +49,7 @@ public class Column {
     /**
      * Format entire rows colors using the expression specified. Returns a <b>CustomColumn</b> object to apply to a
      * table using <b>applyCustomColumns</b> with the parameters specified.
-     * 
+     *
      * @param expression
      * @return {@link CustomColumn}
      */
@@ -58,7 +60,7 @@ public class Column {
 
     /**
      * a <b>CustomColumn</b> object to apply using <b>applyCustomColumns</b> with the expression specified.
-     * 
+     *
      * @param name
      * @param expression
      * @return {@link CustomColumn}
@@ -70,7 +72,7 @@ public class Column {
 
     public Column(int jsIndex, int index, Integer formatColumnIndex, Integer styleColumnIndex, String type, String name,
             boolean isPartitionColumn, Integer formatStringColumnIndex, String description,
-            boolean inputTableKeyColumn) {
+            boolean inputTableKeyColumn, boolean isSortable) {
         this.jsIndex = jsIndex;
         this.index = index;
         this.formatColumnIndex = formatColumnIndex;
@@ -81,11 +83,12 @@ public class Column {
         this.formatStringColumnIndex = formatStringColumnIndex;
         this.description = description;
         this.isInputTableKeyColumn = inputTableKeyColumn;
+        this.isSortable = isSortable;
     }
 
     /**
      * the value for this column in the given row. Type will be consistent with the type of the Column.
-     * 
+     *
      * @param row
      * @return Any
      */
@@ -115,7 +118,7 @@ public class Column {
 
     /**
      * Type of the row data that can be found in this column.
-     * 
+     *
      * @return String
      */
     @JsProperty
@@ -125,7 +128,7 @@ public class Column {
 
     /**
      * Label for this column.
-     * 
+     *
      * @return String
      */
     @JsProperty
@@ -154,7 +157,7 @@ public class Column {
     /**
      * If this column is part of a roll-up tree table, represents the type of the row data that can be found in this
      * column for leaf nodes if includeConstituents is enabled. Otherwise, it is <b>null</b>.
-     * 
+     *
      * @return String
      */
     @JsProperty
@@ -186,7 +189,7 @@ public class Column {
     /**
      * True if this column is a partition column. Partition columns are used for filtering uncoalesced tables (see
      * <b>isUncoalesced</b> property on <b>Table</b>)
-     * 
+     *
      * @return boolean
      *
      */
@@ -201,7 +204,7 @@ public class Column {
 
     /**
      * Creates a sort builder object, to be used when sorting by this column.
-     * 
+     *
      * @return {@link Sort}
      */
     @JsMethod
@@ -209,10 +212,15 @@ public class Column {
         return new Sort(this);
     }
 
+    @JsProperty
+    public boolean getIsSortable() {
+        return isSortable;
+    }
+
     /**
      * Creates a new value for use in filters based on this column. Used either as a parameter to another filter
      * operation, or as a builder to create a filter operation.
-     * 
+     *
      * @return {@link FilterValue}
      */
     @JsMethod
@@ -222,7 +230,7 @@ public class Column {
 
     /**
      * a <b>CustomColumn</b> object to apply using `applyCustomColumns` with the expression specified.
-     * 
+     *
      * @param expression
      * @return {@link CustomColumn}
      */
@@ -233,7 +241,7 @@ public class Column {
 
     /**
      * a <b>CustomColumn</b> object to apply using <b>applyCustomColumns</b> with the expression specified.
-     * 
+     *
      * @param expression
      * @return {@link CustomColumn}
      */
@@ -244,7 +252,7 @@ public class Column {
 
     /**
      * a <b>CustomColumn</b> object to apply using <b>applyCustomColumns</b> with the expression specified.
-     * 
+     *
      * @param expression
      * @return {@link CustomColumn}
      */
@@ -304,11 +312,11 @@ public class Column {
 
     public Column withFormatStringColumnIndex(int formatStringColumnIndex) {
         return new Column(jsIndex, index, formatColumnIndex, styleColumnIndex, type, name, isPartitionColumn,
-                formatStringColumnIndex, description, isInputTableKeyColumn);
+                formatStringColumnIndex, description, isInputTableKeyColumn, isSortable);
     }
 
     public Column withStyleColumnIndex(int styleColumnIndex) {
         return new Column(jsIndex, index, formatColumnIndex, styleColumnIndex, type, name, isPartitionColumn,
-                formatStringColumnIndex, description, isInputTableKeyColumn);
+                formatStringColumnIndex, description, isInputTableKeyColumn, isSortable);
     }
 }

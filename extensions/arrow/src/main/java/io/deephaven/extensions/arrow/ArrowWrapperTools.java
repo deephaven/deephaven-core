@@ -52,6 +52,7 @@ import io.deephaven.util.annotations.ReferentialIntegrity;
 import io.deephaven.util.annotations.TestUseOnly;
 import io.deephaven.util.datastructures.LongSizedDataStructure;
 import io.deephaven.util.datastructures.SizeException;
+import org.apache.arrow.compression.CommonsCompressionFactory;
 import org.apache.arrow.flatbuf.Message;
 import org.apache.arrow.flatbuf.RecordBatch;
 import org.apache.arrow.memory.BufferAllocator;
@@ -121,9 +122,8 @@ import static org.apache.arrow.vector.ipc.message.MessageSerializer.IPC_CONTINUA
  * suggested future improvements.
  */
 public class ArrowWrapperTools {
-    private static final int MAX_POOL_SIZE = Math.max(
-            ExecutionContext.getContext().getUpdateGraph().parallelismFactor(),
-            Configuration.getInstance().getIntegerWithDefault("ArrowWrapperTools.defaultMaxPooledContext", 4));
+    private static final int MAX_POOL_SIZE = Configuration.getInstance().getIntegerWithDefault(
+            "ArrowWrapperTools.defaultMaxPooledContext", Runtime.getRuntime().availableProcessors());
 
     private static final BufferAllocator rootAllocator = new RootAllocator();
 
@@ -403,7 +403,8 @@ public class ArrowWrapperTools {
             } catch (IOException e) {
                 throw new UncheckedIOException(e);
             }
-            return new Shareable(this, new ArrowFileReader(channel, rootAllocator));
+            return new Shareable(this, new ArrowFileReader(
+                    channel, rootAllocator, CommonsCompressionFactory.INSTANCE));
         }
 
         @NotNull

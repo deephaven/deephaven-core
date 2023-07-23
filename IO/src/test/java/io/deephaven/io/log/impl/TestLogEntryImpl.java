@@ -28,11 +28,11 @@ public class TestLogEntryImpl extends TestCase {
 
     public void testStartWritten() {
         final LogEntryImpl SUT = new LogEntryImpl(pool);
-        final ByteBuffer buf = ByteBuffer.allocate(100);
+        final ByteBuffer buf = ByteBuffer.allocate(LogOutputBaseImpl.START_SIZE_BYTES);
 
         context.checking(new Expectations() {
             {
-                one(pool).take();
+                oneOf(pool).take(LogOutputBaseImpl.START_SIZE_BYTES);
                 will(returnValue(buf));
             }
         });
