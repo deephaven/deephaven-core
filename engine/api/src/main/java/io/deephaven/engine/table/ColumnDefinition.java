@@ -9,6 +9,7 @@ import io.deephaven.io.log.impl.LogOutputStringImpl;
 import io.deephaven.qst.column.header.ColumnHeader;
 import io.deephaven.qst.type.ArrayType;
 import io.deephaven.qst.type.BooleanType;
+import io.deephaven.qst.type.BoxedType;
 import io.deephaven.qst.type.ByteType;
 import io.deephaven.qst.type.CharType;
 import io.deephaven.qst.type.CustomType;
@@ -302,6 +303,12 @@ public class ColumnDefinition<TYPE> implements LogOutputAppendable {
         }
 
         @Override
+        public ColumnDefinition<?> visit(BoxedType<?> boxedType) {
+            // treat the same as primitive type
+            return visit(boxedType.primitiveType());
+        }
+
+        @Override
         public ColumnDefinition<?> visit(StringType stringType) {
             return ofString(name);
         }
@@ -356,7 +363,7 @@ public class ColumnDefinition<TYPE> implements LogOutputAppendable {
             @NotNull final Class<TYPE> dataType,
             @Nullable final Class<?> componentType,
             @NotNull final ColumnType columnType) {
-        this.name = Objects.requireNonNull(name);
+        this.name = Objects.requireNonNull(name, "Column names cannot be null");
         this.dataType = Objects.requireNonNull(dataType);
         this.componentType = componentType;
         this.columnType = Objects.requireNonNull(columnType);

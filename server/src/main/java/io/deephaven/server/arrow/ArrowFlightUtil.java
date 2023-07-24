@@ -39,6 +39,7 @@ import io.deephaven.server.barrage.BarrageMessageProducer;
 import io.deephaven.extensions.barrage.BarrageStreamGeneratorImpl;
 import io.deephaven.server.hierarchicaltable.HierarchicalTableView;
 import io.deephaven.server.hierarchicaltable.HierarchicalTableViewSubscription;
+import io.deephaven.server.session.SessionService;
 import io.deephaven.server.session.SessionState;
 import io.deephaven.server.session.TicketRouter;
 import io.deephaven.util.SafeCloseable;
@@ -111,6 +112,7 @@ public class ArrowFlightUtil {
 
         private final SessionState session;
         private final TicketRouter ticketRouter;
+        private final SessionService.ErrorTransformer errorTransformer;
         private final StreamObserver<Flight.PutResult> observer;
 
         private SessionState.ExportBuilder<Table> resultExportBuilder;
@@ -119,9 +121,11 @@ public class ArrowFlightUtil {
         public DoPutObserver(
                 final SessionState session,
                 final TicketRouter ticketRouter,
+                final SessionService.ErrorTransformer errorTransformer,
                 final StreamObserver<Flight.PutResult> observer) {
             this.session = session;
             this.ticketRouter = ticketRouter;
+            this.errorTransformer = errorTransformer;
             this.observer = observer;
 
             this.session.addOnCloseCallback(this);
@@ -137,7 +141,7 @@ public class ArrowFlightUtil {
             try {
                 mi = BarrageProtoUtil.parseProtoMessage(request);
             } catch (final IOException err) {
-                throw GrpcUtil.securelyWrapError(log, err);
+                throw errorTransformer.transform(err);
             }
 
             if (mi.descriptor != null) {
@@ -149,7 +153,7 @@ public class ArrowFlightUtil {
                 } else {
                     flightDescriptor = mi.descriptor;
                     resultExportBuilder = ticketRouter
-                            .<Table>publish(session, mi.descriptor, "Flight.Descriptor")
+                            .<Table>publish(session, mi.descriptor, "Flight.Descriptor", null)
                             .onError(observer);
                 }
             }
@@ -171,7 +175,8 @@ public class ArrowFlightUtil {
 
             if (mi.header.headerType() != MessageHeader.RecordBatch) {
                 throw Exceptions.statusRuntimeException(Code.INVALID_ARGUMENT,
-                        "Only schema/record-batch messages supported");
+                        "Only schema/record-batch messages supported, instead got "
+                                + MessageHeader.name(mi.header.headerType()));
             }
 
             final int numColumns = resultTable.getColumnSources().size();
@@ -294,6 +299,7 @@ public class ArrowFlightUtil {
         private final HierarchicalTableViewSubscription.Factory htvsFactory;
         private final BarrageMessageProducer.Adapter<BarrageSubscriptionRequest, BarrageSubscriptionOptions> subscriptionOptAdapter;
         private final BarrageMessageProducer.Adapter<BarrageSnapshotRequest, BarrageSnapshotOptions> snapshotOptAdapter;
+        private final SessionService.ErrorTransformer errorTransformer;
 
         /**
          * Interface for the individual handlers for the DoExchange.
@@ -313,6 +319,7 @@ public class ArrowFlightUtil {
                 final BarrageMessageProducer.Adapter<StreamObserver<InputStream>, StreamObserver<BarrageStreamGeneratorImpl.View>> listenerAdapter,
                 final BarrageMessageProducer.Adapter<BarrageSubscriptionRequest, BarrageSubscriptionOptions> subscriptionOptAdapter,
                 final BarrageMessageProducer.Adapter<BarrageSnapshotRequest, BarrageSnapshotOptions> snapshotOptAdapter,
+                final SessionService.ErrorTransformer errorTransformer,
                 @Assisted final SessionState session,
                 @Assisted final StreamObserver<InputStream> responseObserver) {
 
@@ -325,6 +332,7 @@ public class ArrowFlightUtil {
             this.snapshotOptAdapter = snapshotOptAdapter;
             this.session = session;
             this.listener = listenerAdapter.adapt(responseObserver);
+            this.errorTransformer = errorTransformer;
 
             this.session.addOnCloseCallback(this);
             if (responseObserver instanceof ServerCallStreamObserver) {
@@ -339,7 +347,7 @@ public class ArrowFlightUtil {
             try {
                 message = BarrageProtoUtil.parseProtoMessage(request);
             } catch (final IOException err) {
-                throw GrpcUtil.securelyWrapError(log, err);
+                throw errorTransformer.transform(err);
             }
             synchronized (this) {
 
@@ -389,7 +397,7 @@ public class ArrowFlightUtil {
 
         @Override
         public void onError(final Throwable t) {
-            GrpcUtil.safelyError(listener, GrpcUtil.securelyWrapError(log, t));
+            GrpcUtil.safelyError(listener, errorTransformer.transform(t));
             tryClose();
         }
 
@@ -414,7 +422,7 @@ public class ArrowFlightUtil {
                     requestHandler.close();
                 }
             } catch (final IOException err) {
-                throw GrpcUtil.securelyWrapError(log, err);
+                throw errorTransformer.transform(err);
             }
 
             release();

@@ -3,7 +3,7 @@
  */
 package io.deephaven.api.agg.spec;
 
-import io.deephaven.annotations.SimpleStyle;
+import io.deephaven.annotations.SingletonStyle;
 import io.deephaven.api.TableOperations;
 import org.immutables.value.Value.Immutable;
 
@@ -13,7 +13,7 @@ import org.immutables.value.Value.Immutable;
  * @see TableOperations#firstBy
  */
 @Immutable
-@SimpleStyle
+@SingletonStyle
 public abstract class AggSpecFirst extends AggSpecEmptyBase {
 
     public static AggSpecFirst of() {

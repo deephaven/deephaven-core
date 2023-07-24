@@ -13,9 +13,13 @@ import io.deephaven.base.log.LogOutput;
 import io.deephaven.chunk.ChunkType;
 import io.deephaven.engine.liveness.ReferenceCountedLivenessNode;
 import io.deephaven.engine.rowset.RowSet;
+import io.deephaven.engine.rowset.RowSetFactory;
+import io.deephaven.engine.rowset.RowSetShiftData;
+import io.deephaven.engine.table.ModifiedColumnSet;
 import io.deephaven.engine.table.TableDefinition;
 import io.deephaven.engine.table.TableUpdate;
 import io.deephaven.engine.table.impl.InstrumentedTableUpdateListener;
+import io.deephaven.engine.table.impl.TableUpdateImpl;
 import io.deephaven.engine.table.impl.util.BarrageMessage;
 import io.deephaven.engine.table.impl.util.BarrageMessage.Listener;
 import io.deephaven.extensions.barrage.BarrageSubscriptionOptions;
@@ -121,14 +125,24 @@ public class BarrageSubscriptionImpl extends ReferenceCountedLivenessNode implem
                 return;
             }
             try (barrageMessage) {
-                final Listener listener = resultTable;
-                if (!connected || listener == null) {
+                final Listener localResultTable = resultTable;
+                if (!connected || localResultTable == null) {
                     return;
                 }
 
-                rowsReceived += barrageMessage.rowsIncluded.size();
+                long numRows = barrageMessage.rowsIncluded.size();
+                rowsReceived += numRows;
+                localResultTable.handleBarrageMessage(barrageMessage);
 
-                listener.handleBarrageMessage(barrageMessage);
+                // if the message was empty, then BaseTable prevents propagating the empty update, and our listener was
+                // not invoked, so let's invoke it ourselves
+                if (numRows == 0) {
+                    final TableUpdate emptyUpdate = new TableUpdateImpl(
+                            RowSetFactory.empty(), RowSetFactory.empty(), RowSetFactory.empty(), RowSetShiftData.EMPTY,
+                            ModifiedColumnSet.EMPTY);
+                    listener.onUpdate(emptyUpdate);
+                    emptyUpdate.release();
+                }
             }
         }
 

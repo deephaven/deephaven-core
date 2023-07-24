@@ -4,6 +4,10 @@ on:
   push:
     branches: [ 'main', 'build/**', 'release/v*' ]
 
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
 jobs:
   server:
     runs-on: ubuntu-22.04
@@ -30,9 +34,7 @@ jobs:
 
       - name: Setup gradle properties
         run: |
-          cat .github/env/${{ runner.os }}/gradle.properties >> gradle.properties
-          echo >> gradle.properties
-          echo "org.gradle.java.installations.paths=${{ steps.setup-java-11.outputs.path }},${{ steps.setup-java-17.outputs.path }}," >> gradle.properties
+          .github/scripts/gradle-properties.sh >> gradle.properties
           cat gradle.properties
 
       - name: Get Semver
@@ -161,9 +163,7 @@ jobs:
 
       - name: Setup gradle properties
         run: |
-          cat .github/env/${{ runner.os }}/gradle.properties >> gradle.properties
-          echo >> gradle.properties
-          echo "org.gradle.java.installations.paths=${{ steps.setup-java-11.outputs.path }}" >> gradle.properties
+          .github/scripts/gradle-properties.sh >> gradle.properties
           cat gradle.properties
 
       - name: Set up Docker Buildx

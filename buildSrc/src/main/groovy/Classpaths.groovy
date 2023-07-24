@@ -46,7 +46,7 @@ class Classpaths {
     static final String COMMONS_GROUP = 'org.apache.commons'
 
     static final String ARROW_GROUP = 'org.apache.arrow'
-    static final String ARROW_VERSION = '11.0.0'
+    static final String ARROW_VERSION = '12.0.1'
 
     static final String SLF4J_GROUP = 'org.slf4j'
     static final String SLF4J_VERSION = '2.0.6'
@@ -91,7 +91,7 @@ class Classpaths {
     static final String LOGBACK_VERSION = '1.4.5'
 
     static final String GROOVY_GROUP = 'org.codehaus.groovy'
-    static final String GROOVY_VERSION = '3.0.17'
+    static final String GROOVY_VERSION = '3.0.18'
 
     static final String GRPC_GROUP = 'io.grpc'
     static final String GRPC_NAME = 'grpc-bom'

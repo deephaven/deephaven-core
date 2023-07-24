@@ -18,6 +18,7 @@ import io.deephaven.proto.backplane.grpc.UpdateByRequest.UpdateByOperation.Updat
 import io.deephaven.proto.backplane.grpc.UpdateByRequest.UpdateByOptions;
 import io.deephaven.proto.util.Exceptions;
 import io.deephaven.server.session.SessionState;
+import io.deephaven.time.DateTimeUtils;
 import io.grpc.StatusRuntimeException;
 
 import javax.inject.Inject;
@@ -349,7 +350,10 @@ public final class UpdateByGrpcImpl extends GrpcTableOperation<UpdateByRequest> 
             case TICKS:
                 return WindowScale.ofTicks(timescale.getTicks().getTicks());
             case TIME:
-                return WindowScale.ofTime(timescale.getTime().getColumn(), timescale.getTime().getPeriodNanos());
+                return timescale.getTime().hasDurationString()
+                        ? WindowScale.ofTime(timescale.getTime().getColumn(),
+                                DateTimeUtils.parseDurationNanos(timescale.getTime().getDurationString()))
+                        : WindowScale.ofTime(timescale.getTime().getColumn(), timescale.getTime().getNanos());
             case TYPE_NOT_SET:
             default:
                 throw new IllegalArgumentException("Unexpected timescale type: " + timescale.getTypeCase());

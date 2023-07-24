@@ -13,6 +13,7 @@ from deephaven.table import Table
 
 _JArrowToTableConverter = jpy.get_type("io.deephaven.extensions.barrage.util.ArrowToTableConverter")
 _JTableToArrowConverter = jpy.get_type("io.deephaven.extensions.barrage.util.TableToArrowConverter")
+_JArrowWrapperTools = jpy.get_type("io.deephaven.extensions.arrow.ArrowWrapperTools")
 
 _ARROW_DH_DATA_TYPE_MAPPING = {
     pa.null(): '',
@@ -146,3 +147,21 @@ def to_arrow(table: Table, cols: List[str] = None) -> pa.Table:
         return pa.Table.from_batches(record_batches, schema=schema)
     except Exception as e:
         raise DHError(e, message="failed to create a pyarrow table from a Deephaven table.") from e
+
+
+def read_feather(path: str) -> Table:
+    """Reads an Arrow feather file into a Deephaven table.
+
+    Args:
+        path (str): the file path
+
+    Returns:
+         a new table
+
+    Raises:
+        DHError
+    """
+    try:
+        return Table(j_table=_JArrowWrapperTools.readFeather(path))
+    except Exception as e:
+        raise DHError(e, message=f"failed to read a feather file {path}") from e

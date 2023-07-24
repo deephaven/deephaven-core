@@ -28,6 +28,10 @@ public:
   ClientImpl(Private, std::shared_ptr<TableHandleManagerImpl> &&managerImpl);
   ~ClientImpl();
 
+  void shutdown() {
+    managerImpl_->shutdown();
+  }
+
   const std::shared_ptr<TableHandleManagerImpl> &managerImpl() const { return managerImpl_; }
 
 private:

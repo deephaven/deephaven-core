@@ -486,7 +486,7 @@ public class JsTreeTable extends HasLifecycle {
         }
 
         keyTableData = new Object[keyColumns.length + 2][0];
-        actionCol = new Column(-1, -1, null, null, "byte", "__action__", false, null, null, null, false);
+        actionCol = new Column(-1, -1, null, null, "byte", "__action__", false, null, null, null, false, false);
 
         sourceTable = JsLazy.of(() -> workerConnection
                 .newState(this, (c, newState, metadata) -> {

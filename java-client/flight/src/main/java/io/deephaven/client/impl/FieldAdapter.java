@@ -6,6 +6,7 @@ package io.deephaven.client.impl;
 import io.deephaven.qst.column.header.ColumnHeader;
 import io.deephaven.qst.type.ArrayType;
 import io.deephaven.qst.type.BooleanType;
+import io.deephaven.qst.type.BoxedType;
 import io.deephaven.qst.type.ByteType;
 import io.deephaven.qst.type.CharType;
 import io.deephaven.qst.type.CustomType;
@@ -107,6 +108,11 @@ public class FieldAdapter implements Type.Visitor<Field>, PrimitiveType.Visitor<
     @Override
     public Field visit(GenericType<?> generic) {
         return generic.walk(new Visitor<Field>() {
+            @Override
+            public Field visit(BoxedType<?> boxedType) {
+                return FieldAdapter.this.visit(boxedType.primitiveType());
+            }
+
             @Override
             public Field visit(StringType stringType) {
                 return stringField(name);

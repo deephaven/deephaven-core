@@ -19,6 +19,7 @@ import io.deephaven.server.auth.CommunityAuthorizationProvider;
 import io.deephaven.server.config.ServerConfig;
 import io.deephaven.server.console.NoConsoleSessionModule;
 import io.deephaven.server.log.LogModule;
+import io.deephaven.server.session.ObfuscatingErrorTransformerModule;
 import io.deephaven.util.SafeCloseable;
 import io.grpc.ManagedChannel;
 import io.grpc.ManagedChannelBuilder;
@@ -47,6 +48,7 @@ public abstract class DeephavenApiServerTestBase {
             ServerBuilderInProcessModule.class,
             ExecutionContextUnitTestModule.class,
             ClientDefaultsModule.class,
+            ObfuscatingErrorTransformerModule.class,
     })
     public interface TestComponent {
 

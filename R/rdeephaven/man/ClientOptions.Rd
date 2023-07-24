@@ -42,6 +42,10 @@ client <- Client$new(target="url/to/secure/server", client_options=client_option
 \item \href{#method-ClientOptions-set_basic_authentication}{\code{ClientOptions$set_basic_authentication()}}
 \item \href{#method-ClientOptions-set_custom_authentication}{\code{ClientOptions$set_custom_authentication()}}
 \item \href{#method-ClientOptions-set_session_type}{\code{ClientOptions$set_session_type()}}
+\item \href{#method-ClientOptions-use_tls}{\code{ClientOptions$use_tls()}}
+\item \href{#method-ClientOptions-add_int_option}{\code{ClientOptions$add_int_option()}}
+\item \href{#method-ClientOptions-add_string_option}{\code{ClientOptions$add_string_option()}}
+\item \href{#method-ClientOptions-add_extra_header}{\code{ClientOptions$add_extra_header()}}
 \item \href{#method-ClientOptions-clone}{\code{ClientOptions$clone()}}
 }
 }
@@ -116,6 +120,70 @@ Set the session type of the console (e.g., "python", "groovy", etc.). The sessio
 \if{html}{\out{<div class="arguments">}}
 \describe{
 \item{\code{session_type}}{Desired language of the console. "python", "groovy", etc.}
+}
+\if{html}{\out{</div>}}
+}
+}
+\if{html}{\out{<hr>}}
+\if{html}{\out{<a id="method-ClientOptions-use_tls"></a>}}
+\if{latex}{\out{\hypertarget{method-ClientOptions-use_tls}{}}}
+\subsection{Method \code{use_tls()}}{
+Use the TLS protocol in authentication and subsequent communication.
+\subsection{Usage}{
+\if{html}{\out{<div class="r">}}\preformatted{ClientOptions$use_tls(root_certs = "")}\if{html}{\out{</div>}}
+}
+
+\subsection{Arguments}{
+\if{html}{\out{<div class="arguments">}}
+\describe{
+\item{\code{root_certs}}{Optional PEM-encoded certificate root for server connections. Defaults to system defaults.}
+}
+\if{html}{\out{</div>}}
+}
+}
+\if{html}{\out{<hr>}}
+\if{html}{\out{<a id="method-ClientOptions-add_int_option"></a>}}
+\if{latex}{\out{\hypertarget{method-ClientOptions-add_int_option}{}}}
+\subsection{Method \code{add_int_option()}}{
+\subsection{Usage}{
+\if{html}{\out{<div class="r">}}\preformatted{ClientOptions$add_int_option(opt, val)}\if{html}{\out{</div>}}
+}
+
+}
+\if{html}{\out{<hr>}}
+\if{html}{\out{<a id="method-ClientOptions-add_string_option"></a>}}
+\if{latex}{\out{\hypertarget{method-ClientOptions-add_string_option}{}}}
+\subsection{Method \code{add_string_option()}}{
+Adds a string-valued option for the configuration of the underlying gRPC channels.
+\subsection{Usage}{
+\if{html}{\out{<div class="r">}}\preformatted{ClientOptions$add_string_option(opt, val)}\if{html}{\out{</div>}}
+}
+
+\subsection{Arguments}{
+\if{html}{\out{<div class="arguments">}}
+\describe{
+\item{\code{opt}}{The option key.}
+
+\item{\code{val}}{The option valiue.}
+}
+\if{html}{\out{</div>}}
+}
+}
+\if{html}{\out{<hr>}}
+\if{html}{\out{<a id="method-ClientOptions-add_extra_header"></a>}}
+\if{latex}{\out{\hypertarget{method-ClientOptions-add_extra_header}{}}}
+\subsection{Method \code{add_extra_header()}}{
+Adds an extra header with a constant name and value to be sent with every outgoing server request.
+\subsection{Usage}{
+\if{html}{\out{<div class="r">}}\preformatted{ClientOptions$add_extra_header(header_name, header_value)}\if{html}{\out{</div>}}
+}
+
+\subsection{Arguments}{
+\if{html}{\out{<div class="arguments">}}
+\describe{
+\item{\code{header_name}}{The header name}
+
+\item{\code{header_value}}{The header value}
 }
 \if{html}{\out{</div>}}
 }

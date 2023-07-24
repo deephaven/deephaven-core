@@ -15,7 +15,11 @@ import java.io.UncheckedIOException;
 
 /**
  * Base class for memory table loggers that create and initialize a {@link DynamicTableWriter}.
+ *
+ * <p>
+ * Deprecated: prefer constructions using blink tables, see {@link io.deephaven.stream.StreamToBlinkTableAdapter}.
  */
+@Deprecated(since = "0.26.0", forRemoval = true)
 public abstract class MemoryTableLogger<T extends WritableRowContainer> extends TableLoggerImpl2<T> {
     @NotNull
     public static QueryTable maybeGetQueryTable(final Object maybeMemoryTableLogger) {

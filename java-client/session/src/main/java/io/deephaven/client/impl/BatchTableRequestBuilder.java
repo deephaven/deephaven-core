@@ -4,7 +4,6 @@
 package io.deephaven.client.impl;
 
 import com.google.protobuf.ByteStringAccess;
-import io.deephaven.api.AsOfJoinRule;
 import io.deephaven.api.ColumnName;
 import io.deephaven.api.JoinAddition;
 import io.deephaven.api.JoinMatch;
@@ -136,8 +135,7 @@ class BatchTableRequestBuilder {
             final Ticket ticket =
                     exportId.isPresent() ? ExportTicketHelper.wrapExportIdInTicket(exportId.getAsInt())
                             : Ticket.getDefaultInstance();
-            final Operation operation =
-                    table.walk(new OperationAdapter(ticket, indices, lookup)).getOut();
+            final Operation operation = table.walk(new OperationAdapter(ticket, indices, lookup));
             builder.addOps(operation);
             indices.put(table, ix++);
         }
@@ -148,20 +146,15 @@ class BatchTableRequestBuilder {
         return f.apply(Operation.newBuilder(), value).build();
     }
 
-    private static class OperationAdapter implements TableSpec.Visitor {
+    private static class OperationAdapter implements TableSpec.Visitor<Operation> {
         private final Ticket ticket;
         private final Map<TableSpec, Integer> indices;
         private final ExportLookup lookup;
-        private Operation out;
 
         OperationAdapter(Ticket ticket, Map<TableSpec, Integer> indices, ExportLookup lookup) {
             this.ticket = Objects.requireNonNull(ticket);
             this.indices = Objects.requireNonNull(indices);
             this.lookup = Objects.requireNonNull(lookup);
-        }
-
-        public Operation getOut() {
-            return Objects.requireNonNull(out);
         }
 
         private TableReference ref(TableSpec table) {
@@ -178,19 +171,19 @@ class BatchTableRequestBuilder {
         }
 
         @Override
-        public void visit(EmptyTable emptyTable) {
-            out = op(Builder::setEmptyTable,
+        public Operation visit(EmptyTable emptyTable) {
+            return op(Builder::setEmptyTable,
                     EmptyTableRequest.newBuilder().setResultId(ticket).setSize(emptyTable.size()));
         }
 
         @Override
-        public void visit(NewTable newTable) {
+        public Operation visit(NewTable newTable) {
             throw new UnsupportedOperationException(
                     "TODO(deephaven-core#992): TableService implementation of NewTable, https://github.com/deephaven/deephaven-core/issues/992");
         }
 
         @Override
-        public void visit(TimeTable timeTable) {
+        public Operation visit(TimeTable timeTable) {
             // noinspection Convert2Lambda
             timeTable.clock().walk(new Visitor<Void>() {
                 @Override
@@ -202,43 +195,45 @@ class BatchTableRequestBuilder {
                 }
             });
 
-            TimeTableRequest.Builder builder = TimeTableRequest.newBuilder().setResultId(ticket)
-                    .setPeriodNanos(timeTable.interval().toNanos());
+            TimeTableRequest.Builder builder = TimeTableRequest.newBuilder()
+                    .setResultId(ticket)
+                    .setPeriodNanos(timeTable.interval().toNanos())
+                    .setBlinkTable(timeTable.blinkTable());
             if (timeTable.startTime().isPresent()) {
                 final Instant startTime = timeTable.startTime().get();
                 final long epochNanos = Math.addExact(
                         TimeUnit.SECONDS.toNanos(startTime.getEpochSecond()), startTime.getNano());
                 builder.setStartTimeNanos(epochNanos);
             }
-            out = op(Builder::setTimeTable, builder.build());
+            return op(Builder::setTimeTable, builder.build());
         }
 
         @Override
-        public void visit(MergeTable mergeTable) {
+        public Operation visit(MergeTable mergeTable) {
             MergeTablesRequest.Builder builder =
                     MergeTablesRequest.newBuilder().setResultId(ticket);
             for (TableSpec table : mergeTable.tables()) {
                 builder.addSourceIds(ref(table));
             }
-            out = op(Builder::setMerge, builder.build());
+            return op(Builder::setMerge, builder.build());
         }
 
         @Override
-        public void visit(HeadTable headTable) {
-            out = op(Builder::setHead, HeadOrTailRequest.newBuilder().setResultId(ticket)
+        public Operation visit(HeadTable headTable) {
+            return op(Builder::setHead, HeadOrTailRequest.newBuilder().setResultId(ticket)
                     .setSourceId(ref(headTable.parent())).setNumRows(headTable.size()));
         }
 
         @Override
-        public void visit(TailTable tailTable) {
-            out = op(Builder::setTail, HeadOrTailRequest.newBuilder().setResultId(ticket)
+        public Operation visit(TailTable tailTable) {
+            return op(Builder::setTail, HeadOrTailRequest.newBuilder().setResultId(ticket)
                     .setSourceId(ref(tailTable.parent())).setNumRows(tailTable.size()));
         }
 
         @Override
-        public void visit(ReverseTable reverseTable) {
+        public Operation visit(ReverseTable reverseTable) {
             // a bit hacky at the proto level, but this is how to specify a reverse
-            out = op(Builder::setSort,
+            return op(Builder::setSort,
                     SortTableRequest.newBuilder().setResultId(ticket)
                             .setSourceId(ref(reverseTable.parent()))
                             .addSorts(
@@ -247,7 +242,7 @@ class BatchTableRequestBuilder {
         }
 
         @Override
-        public void visit(SortTable sortTable) {
+        public Operation visit(SortTable sortTable) {
             SortTableRequest.Builder builder = SortTableRequest.newBuilder().setResultId(ticket)
                     .setSourceId(ref(sortTable.parent()));
             for (SortColumn column : sortTable.columns()) {
@@ -258,19 +253,19 @@ class BatchTableRequestBuilder {
                                 .build();
                 builder.addSorts(descriptor);
             }
-            out = op(Builder::setSort, builder.build());
+            return op(Builder::setSort, builder.build());
         }
 
         @Override
-        public void visit(SnapshotTable snapshotTable) {
+        public Operation visit(SnapshotTable snapshotTable) {
             final SnapshotTableRequest.Builder builder = SnapshotTableRequest.newBuilder()
                     .setResultId(ticket)
                     .setSourceId(ref(snapshotTable.parent()));
-            out = op(Builder::setSnapshot, builder.build());
+            return op(Builder::setSnapshot, builder.build());
         }
 
         @Override
-        public void visit(SnapshotWhenTable snapshotWhenTable) {
+        public Operation visit(SnapshotWhenTable snapshotWhenTable) {
             final SnapshotWhenOptions options = snapshotWhenTable.options();
             final SnapshotWhenTableRequest.Builder builder = SnapshotWhenTableRequest.newBuilder()
                     .setResultId(ticket)
@@ -282,7 +277,7 @@ class BatchTableRequestBuilder {
             for (JoinAddition stampColumn : options.stampColumns()) {
                 builder.addStampColumns(Strings.of(stampColumn));
             }
-            out = op(Builder::setSnapshotWhen, builder.build());
+            return op(Builder::setSnapshotWhen, builder.build());
         }
 
         private Operation createFilterTableRequest(WhereTable whereTable) {
@@ -305,18 +300,18 @@ class BatchTableRequestBuilder {
         }
 
         @Override
-        public void visit(WhereTable whereTable) {
+        public Operation visit(WhereTable whereTable) {
             try {
-                out = createFilterTableRequest(whereTable);
+                return createFilterTableRequest(whereTable);
             } catch (UnsupportedOperationException uoe) {
                 // gRPC structures unable to support stronger typed versions.
                 // Ignore exception, create unstructured version.
-                out = createUnstructuredFilterTableRequest(whereTable);
+                return createUnstructuredFilterTableRequest(whereTable);
             }
         }
 
         @Override
-        public void visit(WhereInTable whereInTable) {
+        public Operation visit(WhereInTable whereInTable) {
             WhereInRequest.Builder builder = WhereInRequest.newBuilder()
                     .setResultId(ticket)
                     .setLeftId(ref(whereInTable.left()))
@@ -325,11 +320,11 @@ class BatchTableRequestBuilder {
             for (JoinMatch match : whereInTable.matches()) {
                 builder.addColumnsToMatch(Strings.of(match));
             }
-            out = op(Builder::setWhereIn, builder.build());
+            return op(Builder::setWhereIn, builder.build());
         }
 
         @Override
-        public void visit(NaturalJoinTable j) {
+        public Operation visit(NaturalJoinTable j) {
             NaturalJoinTablesRequest.Builder builder = NaturalJoinTablesRequest.newBuilder()
                     .setResultId(ticket).setLeftId(ref(j.left())).setRightId(ref(j.right()));
             for (JoinMatch match : j.matches()) {
@@ -338,11 +333,11 @@ class BatchTableRequestBuilder {
             for (JoinAddition addition : j.additions()) {
                 builder.addColumnsToAdd(Strings.of(addition));
             }
-            out = op(Builder::setNaturalJoin, builder.build());
+            return op(Builder::setNaturalJoin, builder.build());
         }
 
         @Override
-        public void visit(ExactJoinTable j) {
+        public Operation visit(ExactJoinTable j) {
             ExactJoinTablesRequest.Builder builder = ExactJoinTablesRequest.newBuilder()
                     .setResultId(ticket).setLeftId(ref(j.left())).setRightId(ref(j.right()));
             for (JoinMatch match : j.matches()) {
@@ -351,11 +346,11 @@ class BatchTableRequestBuilder {
             for (JoinAddition addition : j.additions()) {
                 builder.addColumnsToAdd(Strings.of(addition));
             }
-            out = op(Builder::setExactJoin, builder.build());
+            return op(Builder::setExactJoin, builder.build());
         }
 
         @Override
-        public void visit(JoinTable j) {
+        public Operation visit(JoinTable j) {
             CrossJoinTablesRequest.Builder builder = CrossJoinTablesRequest.newBuilder()
                     .setResultId(ticket)
                     .setLeftId(ref(j.left()))
@@ -367,11 +362,11 @@ class BatchTableRequestBuilder {
             for (JoinAddition addition : j.additions()) {
                 builder.addColumnsToAdd(Strings.of(addition));
             }
-            out = op(Builder::setCrossJoin, builder.build());
+            return op(Builder::setCrossJoin, builder.build());
         }
 
         @Override
-        public void visit(AsOfJoinTable asOfJoin) {
+        public Operation visit(AsOfJoinTable asOfJoin) {
             AjRajTablesRequest.Builder builder = AjRajTablesRequest.newBuilder()
                     .setResultId(ticket)
                     .setLeftId(ref(asOfJoin.left()))
@@ -383,11 +378,11 @@ class BatchTableRequestBuilder {
             for (JoinAddition addition : asOfJoin.additions()) {
                 builder.addColumnsToAdd(Strings.of(addition));
             }
-            out = op(asOfJoin.isAj() ? Builder::setAj : Builder::setRaj, builder.build());
+            return op(asOfJoin.isAj() ? Builder::setAj : Builder::setRaj, builder.build());
         }
 
         @Override
-        public void visit(RangeJoinTable rangeJoinTable) {
+        public Operation visit(RangeJoinTable rangeJoinTable) {
             RangeJoinTablesRequest.Builder builder = RangeJoinTablesRequest.newBuilder()
                     .setResultId(ticket)
                     .setLeftId(ref(rangeJoinTable.left()))
@@ -439,36 +434,36 @@ class BatchTableRequestBuilder {
                 }
             }
 
-            out = op(Builder::setRangeJoin, builder.build());
+            return op(Builder::setRangeJoin, builder.build());
         }
 
         @Override
-        public void visit(ViewTable v) {
-            out = op(Builder::setView, selectOrUpdate(v, v.columns()));
+        public Operation visit(ViewTable v) {
+            return op(Builder::setView, selectOrUpdate(v, v.columns()));
         }
 
         @Override
-        public void visit(UpdateViewTable v) {
-            out = op(Builder::setUpdateView, selectOrUpdate(v, v.columns()));
+        public Operation visit(UpdateViewTable v) {
+            return op(Builder::setUpdateView, selectOrUpdate(v, v.columns()));
         }
 
         @Override
-        public void visit(UpdateTable v) {
-            out = op(Builder::setUpdate, selectOrUpdate(v, v.columns()));
+        public Operation visit(UpdateTable v) {
+            return op(Builder::setUpdate, selectOrUpdate(v, v.columns()));
         }
 
         @Override
-        public void visit(LazyUpdateTable v) {
-            out = op(Builder::setLazyUpdate, selectOrUpdate(v, v.columns()));
+        public Operation visit(LazyUpdateTable v) {
+            return op(Builder::setLazyUpdate, selectOrUpdate(v, v.columns()));
         }
 
         @Override
-        public void visit(SelectTable v) {
-            out = op(Builder::setSelect, selectOrUpdate(v, v.columns()));
+        public Operation visit(SelectTable v) {
+            return op(Builder::setSelect, selectOrUpdate(v, v.columns()));
         }
 
         @Override
-        public void visit(AggregateAllTable aggregateAllTable) {
+        public Operation visit(AggregateAllTable aggregateAllTable) {
             AggregateAllRequest.Builder builder = AggregateAllRequest.newBuilder()
                     .setResultId(ticket)
                     .setSourceId(ref(aggregateAllTable.parent()))
@@ -476,11 +471,11 @@ class BatchTableRequestBuilder {
             for (ColumnName column : aggregateAllTable.groupByColumns()) {
                 builder.addGroupByColumns(Strings.of(column));
             }
-            out = op(Builder::setAggregateAll, builder.build());
+            return op(Builder::setAggregateAll, builder.build());
         }
 
         @Override
-        public void visit(AggregateTable aggregateTable) {
+        public Operation visit(AggregateTable aggregateTable) {
             AggregateRequest.Builder builder = AggregateRequest.newBuilder()
                     .setResultId(ticket)
                     .setSourceId(ref(aggregateTable.parent()))
@@ -497,31 +492,33 @@ class BatchTableRequestBuilder {
             for (ColumnName column : aggregateTable.groupByColumns()) {
                 builder.addGroupByColumns(Strings.of(column));
             }
-            out = op(Builder::setAggregate, builder.build());
+            return op(Builder::setAggregate, builder.build());
         }
 
         @Override
-        public void visit(TicketTable ticketTable) {
+        public Operation visit(TicketTable ticketTable) {
             Ticket sourceTicket = Ticket.newBuilder().setTicket(ByteStringAccess.wrap(ticketTable.ticket())).build();
             TableReference sourceReference = TableReference.newBuilder().setTicket(sourceTicket).build();
             FetchTableRequest.Builder builder =
                     FetchTableRequest.newBuilder().setResultId(ticket).setSourceId(sourceReference);
-            out = op(Builder::setFetchTable, builder);
+            return op(Builder::setFetchTable, builder);
         }
 
         @Override
-        public void visit(InputTable inputTable) {
+        public Operation visit(InputTable inputTable) {
             CreateInputTableRequest.Builder builder = CreateInputTableRequest.newBuilder()
                     .setResultId(ticket);
-            inputTable.schema().walk(new TableSchema.Visitor() {
+            inputTable.schema().walk(new TableSchema.Visitor<Void>() {
                 @Override
-                public void visit(TableSpec spec) {
+                public Void visit(TableSpec spec) {
                     builder.setSourceTableId(ref(spec));
+                    return null;
                 }
 
                 @Override
-                public void visit(TableHeader header) {
+                public Void visit(TableHeader header) {
                     builder.setSchema(ByteStringAccess.wrap(SchemaBytes.of(header)));
+                    return null;
                 }
             });
             builder.setKind(inputTable.walk(new InputTable.Visitor<InputTableKind>() {
@@ -536,25 +533,25 @@ class BatchTableRequestBuilder {
                             InMemoryKeyBacked.newBuilder().addAllKeyColumns(inMemoryKeyBacked.keys())).build();
                 }
             }));
-            out = op(Builder::setCreateInputTable, builder);
+            return op(Builder::setCreateInputTable, builder);
         }
 
         @Override
-        public void visit(SelectDistinctTable selectDistinctTable) {
-            out = op(Builder::setSelectDistinct, selectDistinct(selectDistinctTable));
+        public Operation visit(SelectDistinctTable selectDistinctTable) {
+            return op(Builder::setSelectDistinct, selectDistinct(selectDistinctTable));
         }
 
         @Override
-        public void visit(UpdateByTable updateByTable) {
+        public Operation visit(UpdateByTable updateByTable) {
             final UpdateByRequest.Builder request = UpdateByBuilder
                     .adapt(updateByTable)
                     .setResultId(ticket)
                     .setSourceId(ref(updateByTable.parent()));
-            out = op(Builder::setUpdateBy, request);
+            return op(Builder::setUpdateBy, request);
         }
 
         @Override
-        public void visit(UngroupTable ungroupTable) {
+        public Operation visit(UngroupTable ungroupTable) {
             final UngroupRequest.Builder request = UngroupRequest.newBuilder()
                     .setResultId(ticket)
                     .setSourceId(ref(ungroupTable.parent()))
@@ -562,18 +559,18 @@ class BatchTableRequestBuilder {
             for (ColumnName ungroupColumn : ungroupTable.ungroupColumns()) {
                 request.addColumnsToUngroup(ungroupColumn.name());
             }
-            out = op(Builder::setUngroup, request);
+            return op(Builder::setUngroup, request);
         }
 
         @Override
-        public void visit(DropColumnsTable dropColumnsTable) {
+        public Operation visit(DropColumnsTable dropColumnsTable) {
             final DropColumnsRequest.Builder request = DropColumnsRequest.newBuilder()
                     .setResultId(ticket)
                     .setSourceId(ref(dropColumnsTable.parent()));
             for (ColumnName dropColumn : dropColumnsTable.dropColumns()) {
                 request.addColumnNames(dropColumn.name());
             }
-            out = op(Builder::setDropColumns, request);
+            return op(Builder::setDropColumns, request);
         }
 
         private SelectOrUpdateRequest selectOrUpdate(SingleParentTable x,

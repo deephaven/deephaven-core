@@ -4,6 +4,7 @@
 package io.deephaven.engine.table.impl;
 
 import com.google.auto.service.AutoService;
+import io.deephaven.engine.context.ExecutionContext;
 import io.deephaven.engine.table.Table;
 import io.deephaven.engine.table.TableDefinition;
 import io.deephaven.engine.table.TableFactory;
@@ -24,9 +25,7 @@ import io.deephaven.qst.table.Clock;
 import io.deephaven.qst.table.ClockSystem;
 import io.deephaven.qst.table.TimeTable;
 
-import java.time.Instant;
 import java.util.Arrays;
-import java.util.Objects;
 import java.util.stream.Stream;
 import java.util.stream.StreamSupport;
 
@@ -63,9 +62,13 @@ public enum TableCreatorImpl implements TableCreator<Table> {
 
     @Override
     public final Table of(TimeTable timeTable) {
-        final io.deephaven.base.clock.Clock clock = ClockAdapter.of(timeTable.clock());
-        final Instant firstTime = timeTable.startTime().orElse(null);
-        return TableTools.timeTable(clock, firstTime, timeTable.interval().toNanos());
+        return io.deephaven.engine.table.impl.TimeTable.newBuilder()
+                .registrar(ExecutionContext.getContext().getUpdateGraph())
+                .clock(ClockAdapter.of(timeTable.clock()))
+                .startTime(timeTable.startTime().orElse(null))
+                .period(timeTable.interval())
+                .blinkTable(timeTable.blinkTable())
+                .build();
     }
 
     @Override
@@ -171,26 +174,21 @@ public enum TableCreatorImpl implements TableCreator<Table> {
         }
     }
 
-    static class DefinitionAdapter implements TableSchema.Visitor {
+    enum DefinitionAdapter implements TableSchema.Visitor<TableDefinition> {
+        INSTANCE;
 
         public static TableDefinition of(TableSchema schema) {
-            return schema.walk(new DefinitionAdapter()).out();
-        }
-
-        private TableDefinition out;
-
-        public TableDefinition out() {
-            return Objects.requireNonNull(out);
+            return schema.walk(INSTANCE);
         }
 
         @Override
-        public void visit(TableSpec spec) {
-            out = create(spec).getDefinition();
+        public TableDefinition visit(TableSpec spec) {
+            return create(spec).getDefinition();
         }
 
         @Override
-        public void visit(TableHeader header) {
-            out = TableDefinition.from(header);
+        public TableDefinition visit(TableHeader header) {
+            return TableDefinition.from(header);
         }
     }
 }

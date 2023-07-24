@@ -32,6 +32,10 @@ Client <- R6Class("Client",
         #' @param client_options ClientOptions instance with the parameters needed to connect to the server.
         #' See ?ClientOptions for more information.
         initialize = function(target, client_options) {
+            .verify_string("target", target)
+            if (class(client_options)[[1]] != "ClientOptions") {
+                stop(paste("'client_options' should be a Deephaven ClientOptions object. Got an object of type", class(client_options)[[1]], "instead."))
+            }
             private$internal_client <- new(INTERNAL_Client, target=target,
                                            client_options=client_options$internal_client_options)
         },
@@ -41,7 +45,7 @@ Client <- R6Class("Client",
         #' @param name Name of the table to open from the server, passed as a string.
         #' @return TableHandle reference to the requested table.
         open_table = function(name) {
-            private$verify_string(name, "name")
+            .verify_string("name", name)
             if (!private$check_for_table(name)) {
                 stop(paste0("The table '", name, "' you're trying to pull does not exist on the server."))
             }
@@ -71,8 +75,7 @@ Client <- R6Class("Client",
                 return(TableHandle$new(private$arrow_to_dh_table(table_object)))
             }
             else {
-                stop(paste0("'table_object' must be either an R Data Frame, a dplyr Tibble, an Arrow Table, or an Arrow Record Batch Reader.
-                Got object of class ", table_object_class[[1]], " instead."))
+                stop(paste0("'table_object' must be either an R Data Frame, a dplyr Tibble, an Arrow Table, or an Arrow Record Batch Reader. Got an object of class ", table_object_class[[1]], " instead."))
             }
         },
 
@@ -80,7 +83,7 @@ Client <- R6Class("Client",
         #' Runs a script on the server. The script must be in the language that the server console was started with.
         #' @param script Code to be executed on the server, passed as a string.
         run_script = function(script) {
-            private$verify_string(script, "script")
+            .verify_string("script", script)
             private$internal_client$run_script(script)
         }
     ),
@@ -91,13 +94,7 @@ Client <- R6Class("Client",
         check_for_table = function(name) {
             return(private$internal_client$check_for_table(name))
         },
-
-        verify_string = function(string_candidate, arg_name) {
-            if (class(string_candidate) != "character") {
-                stop(paste0("'", arg_name, "' must be passed as a string. Got object of class ", class(string_candidate)[[1]], " instead."))
-            }
-        },
-
+        
         rbr_to_dh_table = function(rbr) {
             ptr = private$internal_client$new_arrow_array_stream_ptr()
             rbr$export_to_c(ptr)

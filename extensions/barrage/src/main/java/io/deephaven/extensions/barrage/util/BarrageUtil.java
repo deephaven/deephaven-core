@@ -150,8 +150,8 @@ public class BarrageUtil {
         final Map<String, String> descriptions = GridAttributes.getColumnDescriptions(attributes);
         final MutableInputTable inputTable = (MutableInputTable) attributes.get(Table.INPUT_TABLE_ATTRIBUTE);
         final List<Field> fields = columnDefinitionsToFields(
-                descriptions, inputTable, tableDefinition.getColumns(), ignored -> new HashMap<>(),
-                options.columnsAsList())
+                descriptions, inputTable, tableDefinition, tableDefinition.getColumns(), ignored -> new HashMap<>(),
+                attributes, options.columnsAsList())
                 .collect(Collectors.toList());
 
         return new Schema(fields, schemaMetadata).getSchema(builder);
@@ -181,23 +181,48 @@ public class BarrageUtil {
     public static Stream<Field> columnDefinitionsToFields(
             @NotNull final Map<String, String> columnDescriptions,
             @Nullable final MutableInputTable inputTable,
+            @NotNull final TableDefinition tableDefinition,
             @NotNull final Collection<ColumnDefinition<?>> columnDefinitions,
-            @NotNull final Function<String, Map<String, String>> fieldMetadataFactory) {
-        return columnDefinitionsToFields(columnDescriptions, inputTable, columnDefinitions, fieldMetadataFactory,
+            @NotNull final Function<String, Map<String, String>> fieldMetadataFactory,
+            @NotNull final Map<String, Object> attributes) {
+        return columnDefinitionsToFields(columnDescriptions, inputTable, tableDefinition, columnDefinitions,
+                fieldMetadataFactory,
+                attributes,
                 false);
+    }
+
+    private static boolean isDataTypeSortable(final Class<?> dataType) {
+        return dataType.isPrimitive() || Comparable.class.isAssignableFrom(dataType);
     }
 
     public static Stream<Field> columnDefinitionsToFields(
             @NotNull final Map<String, String> columnDescriptions,
             @Nullable final MutableInputTable inputTable,
+            @NotNull final TableDefinition tableDefinition,
             @NotNull final Collection<ColumnDefinition<?>> columnDefinitions,
             @NotNull final Function<String, Map<String, String>> fieldMetadataFactory,
+            @NotNull final Map<String, Object> attributes,
             final boolean columnsAsList) {
         // Find the format columns
         final Set<String> formatColumns = new HashSet<>();
         columnDefinitions.stream().map(ColumnDefinition::getName)
                 .filter(ColumnFormatting::isFormattingColumn)
                 .forEach(formatColumns::add);
+
+        // Find columns that are sortable
+        Set<String> sortableColumns;
+        if (attributes.containsKey(GridAttributes.SORTABLE_COLUMNS_ATTRIBUTE)) {
+            final String[] restrictedSortColumns =
+                    attributes.get(GridAttributes.SORTABLE_COLUMNS_ATTRIBUTE).toString().split(",");
+            sortableColumns = Arrays.stream(restrictedSortColumns)
+                    .filter(columnName -> isDataTypeSortable(tableDefinition.getColumn(columnName).getDataType()))
+                    .collect(Collectors.toSet());
+        } else {
+            sortableColumns = columnDefinitions.stream()
+                    .filter(column -> isDataTypeSortable(column.getDataType()))
+                    .map(ColumnDefinition::getName)
+                    .collect(Collectors.toSet());
+        }
 
         // Build metadata for columns and add the fields
         return columnDefinitions.stream().map((final ColumnDefinition<?> column) -> {
@@ -207,6 +232,7 @@ public class BarrageUtil {
             final Map<String, String> metadata = fieldMetadataFactory.apply(name);
 
             putMetadata(metadata, "isPartitioning", column.isPartitioning() + "");
+            putMetadata(metadata, "isSortable", String.valueOf(sortableColumns.contains(name)));
 
             // Wire up style and format column references
             final String styleFormatName = ColumnFormatting.getStyleFormatColumn(name);
@@ -326,7 +352,7 @@ public class BarrageUtil {
                 throw Exceptions.statusRuntimeException(Code.INVALID_ARGUMENT, exMsg +
                         " of intType(signed=" + intType.getIsSigned() + ", bitWidth=" + intType.getBitWidth() + ")");
             case Bool:
-                return boolean.class;
+                return Boolean.class;
             case Duration:
                 final ArrowType.Duration durationType = (ArrowType.Duration) arrowType;
                 final TimeUnit durationUnit = durationType.getUnit();
@@ -416,6 +442,10 @@ public class BarrageUtil {
                 i -> ArrowType.getTypeForField(schema.fields(i)),
                 i -> visitor -> {
                     final org.apache.arrow.flatbuf.Field field = schema.fields(i);
+                    if (field.dictionary() != null) {
+                        throw Exceptions.statusRuntimeException(Code.INVALID_ARGUMENT,
+                                "Dictionary encoding is not supported: " + field.name());
+                    }
                     for (int j = 0; j < field.customMetadataLength(); j++) {
                         final KeyValue keyValue = field.customMetadata(j);
                         visitor.accept(keyValue.key(), keyValue.value());
@@ -474,11 +504,13 @@ public class BarrageUtil {
             if (type.getValue() == null) {
                 Class<?> defaultType = getDefaultType(getArrowType.apply(i), result, i);
                 type.setValue(defaultType);
-            } else if (type.getValue() == boolean.class) {
+            } else if (type.getValue() == boolean.class || type.getValue() == Boolean.class) {
                 // check existing barrage clients that might be sending int8 instead of bool
                 // TODO (deephaven-core#3403) widen this check for better assurances
                 Class<?> defaultType = getDefaultType(getArrowType.apply(i), result, i);
-                Assert.eq(type.getValue(), "deephaven column type", defaultType, "arrow inferred type");
+                Assert.eq(Boolean.class, "deephaven column type", defaultType, "arrow inferred type");
+                // force to boxed boolean to allow nullability in the column sources
+                type.setValue(Boolean.class);
             }
             columns[i] = ColumnDefinition.fromGenericType(name, type.getValue(), componentType.getValue());
         }

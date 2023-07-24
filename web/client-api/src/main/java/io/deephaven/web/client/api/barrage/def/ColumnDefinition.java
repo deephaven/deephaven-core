@@ -14,6 +14,8 @@ public class ColumnDefinition {
     private String name;
     private String type;
 
+    private boolean isSortable;
+
     private String styleColumn;
     private String formatColumn;
     private Map<String, String> dataBarColumn = new HashMap<>();
@@ -58,6 +60,14 @@ public class ColumnDefinition {
 
     public void setType(String type) {
         this.type = type;
+    }
+
+    public boolean isSortable() {
+        return isSortable;
+    }
+
+    public void setIsSortable(boolean sortable) {
+        isSortable = sortable;
     }
 
     public boolean isStyleColumn() {
@@ -191,7 +201,7 @@ public class ColumnDefinition {
             boolean inputTableKeyColumn) {
         return new Column(jsIndex, definition.getColumnIndex(), numberFormatIndex, styleIndex, definition.getType(),
                 definition.getName(), isPartitionColumn, formatStringIndex, formatDatabarIndices, description,
-                inputTableKeyColumn);
+                inputTableKeyColumn, definition.isSortable());
     }
 
     public boolean isHierarchicalExpandByColumn() {

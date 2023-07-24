@@ -20,13 +20,13 @@ import java.math.BigInteger;
 import java.time.Instant;
 
 public class JsonNodeUtil {
-    private static final ObjectMapper objectMapper = new ObjectMapper()
+    private static final ObjectMapper DEFAULT_OBJECT_MAPPER = new ObjectMapper()
             .setNodeFactory(JsonNodeFactory.withExactBigDecimals(true))
             .configure(DeserializationFeature.USE_BIG_DECIMAL_FOR_FLOATS, true);
 
-    public static JsonNode makeJsonNode(final String json) {
+    public static JsonNode makeJsonNode(final ObjectMapper mapper, final String json) {
         try {
-            return objectMapper.readTree(json);
+            return mapper != null ? mapper.readTree(json) : DEFAULT_OBJECT_MAPPER.readTree(json);
         } catch (JsonProcessingException ex) {
             throw new UncheckedDeephavenException("Failed to parse JSON string.", ex);
         }

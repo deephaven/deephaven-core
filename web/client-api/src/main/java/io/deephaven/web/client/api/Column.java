@@ -30,6 +30,8 @@ public class Column {
 
     private final String name;
 
+    private final boolean isSortable;
+
     @Deprecated
     private final int jsIndex;
 
@@ -56,7 +58,7 @@ public class Column {
     public Column(int jsIndex, int index, Integer formatColumnIndex, Integer styleColumnIndex, String type, String name,
             boolean isPartitionColumn, Integer formatStringColumnIndex, Map<String, Integer> formatDataBarColumnIndices,
             String description,
-            boolean inputTableKeyColumn) {
+            boolean inputTableKeyColumn, boolean isSortable) {
         this.jsIndex = jsIndex;
         this.index = index;
         this.formatColumnIndex = formatColumnIndex;
@@ -68,6 +70,7 @@ public class Column {
         this.formatDataBarColumnIndices = formatDataBarColumnIndices;
         this.description = description;
         this.isInputTableKeyColumn = inputTableKeyColumn;
+        this.isSortable = isSortable;
     }
 
     @JsMethod
@@ -165,6 +168,11 @@ public class Column {
         return new Sort(this);
     }
 
+    @JsProperty
+    public boolean getIsSortable() {
+        return isSortable;
+    }
+
     @JsMethod
     public FilterValue filter() {
         return new FilterValue(this);
@@ -237,11 +245,11 @@ public class Column {
 
     public Column withFormatStringColumnIndex(int formatStringColumnIndex) {
         return new Column(jsIndex, index, formatColumnIndex, styleColumnIndex, type, name, isPartitionColumn,
-                formatStringColumnIndex, formatDataBarColumnIndices, description, isInputTableKeyColumn);
+                formatStringColumnIndex, formatDataBarColumnIndices, description, isInputTableKeyColumn, isSortable);
     }
 
     public Column withStyleColumnIndex(int styleColumnIndex) {
         return new Column(jsIndex, index, formatColumnIndex, styleColumnIndex, type, name, isPartitionColumn,
-                formatStringColumnIndex, formatDataBarColumnIndices, description, isInputTableKeyColumn);
+                formatStringColumnIndex, formatDataBarColumnIndices, description, isInputTableKeyColumn, isSortable);
     }
 }
