@@ -21,7 +21,9 @@ public abstract class ObjectTypeClassBase<T> extends ObjectTypeBase {
         this.clazz = Objects.requireNonNull(clazz);
     }
 
-    public abstract void writeToImpl(Exporter exporter, T object, OutputStream out) throws IOException;
+    public void writeToImpl(Exporter exporter, T object, OutputStream out) throws IOException {
+
+    }
 
     public final Class<T> clazz() {
         return clazz;
@@ -41,6 +43,15 @@ public abstract class ObjectTypeClassBase<T> extends ObjectTypeBase {
     public final void writeCompatibleObjectTo(Exporter exporter, Object object, OutputStream out) throws IOException {
         // noinspection unchecked
         writeToImpl(exporter, (T) object, out);
+    }
+
+    @Override
+    public final MessageStream clientConnection(Object object, MessageStream connection) {
+        return super.clientConnection(object, connection);
+    }
+
+    public MessageStream clientConnectionImpl(T object, MessageStream connection) {
+        throw new IllegalStateException();
     }
 
     @Override

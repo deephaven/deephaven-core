@@ -12,18 +12,67 @@ option go_package = "github.com/deephaven/deephaven-core/go/internal/proto/objec
 import "deephaven/proto/ticket.proto";
 
 service ObjectService {
-    rpc FetchObject(FetchObjectRequest) returns (FetchObjectResponse) {}
-    rpc MessageStream(stream MessageRequest) returns (stream MessageResponse) {}
+
+    /*
+     * Fetches a server-side object as a binary payload and assorted other tickets pointing at
+     * other server-side objects that may need to be read to properly use this payload. The binary
+     * format is implementation specific, but the implementation should be specified by the "type"
+     * identifier in the typed ticket.
+     *
+     * Deprecated in favor of MessageStream, which is able to handle the same content.
+     */
+    rpc FetchObject(FetchObjectRequest) returns (FetchObjectResponse) {
+        option deprecated = true;
+    }
+
+    /*
+     * Provides a generic stream feature for Deephaven instances to use to add arbitrary functionality.
+     * This API lets a client open a stream to a particular object on the server, to be mediated by
+     * a server side plugin. In theory this could effectively be used to "tunnel" a custom gRPC call,
+     * but in practice there are a few deliberate shortcomings that still make this possible, but not
+     * trivial.
+     *
+     * The first message sent to the server is expected to have a ConnectRequest, indicating which
+     * export ticket to connect to. It is an error for the server to not have a plugin defined for that
+     * object type.
+     *
+     * Subsequent requests to the server, and all responses to the client, will be a payload of bytes
+     * and an arbitrary number of tickets, referring to server side objects that one side wishes to
+     * reference in its payload.
+     *
+     * Presently it is required that the server respond immediately, at least to acknowledge that the
+     * object was correctly contacted (as opposed to waiting for a pending ticket, or dealing with
+     * network lag, etc). This is a small (and possibly not required, but convenient) departure from
+     * a offering a gRPC stream (a server-streaming or bidi-streaming call need not send a message
+     * right away).
+     *
+     * Presently there is no explicit "close" message to send, but plugin implementations can devise
+     * their own "half-close" protocol if they so choose. For now, if one end closes the connection,
+     * the other is expected to follow suit by closing their end too.
+     *
+     * (address stream failures?)
+     *
+     * Finally, addressing a broader point of unsuitability for general gRPC-over-gRPC tunneling:
+     * there is a lot more to gRPC than just specifying a path and sending payloads to it, such as
+     * how to specify metadata. In theory, we could handle the metadata as another field (only sent
+     * in the first/last payloads), or as a separate plugin-defined type of payload (analogous to the
+     * grpc-websockets implementations), but we still run into issues where this user-defined gRPC
+     * service needs to coexist with the rest of the Deephaven platform, supporting at least authentication,
+     * and for browsers, our custom streaming implementation. The nested gRPC implementation would
+     * need to be at some level aware that it is already stateful to take advantage of this, rather
+     * than somehow redefine it.
+     */
+    rpc MessageStream(stream StreamRequest) returns (stream StreamResponse) {}
 
     /*
      * Half of the browser-based (browser's can't do bidirectional streams without websockets)
      * implementation for MessageStream.
      */
-    rpc OpenMessageStream(MessageRequest) returns (stream MessageResponse) {}
+    rpc OpenMessageStream(StreamRequest) returns (stream StreamResponse) {}
     /*
      * Other half of the browser-based implementation for MessageStream.
      */
-    rpc NextMessageStream(MessageRequest) returns (BrowserNextResponse) {}
+    rpc NextMessageStream(StreamRequest) returns (BrowserNextResponse) {}
 }
 
 message FetchObjectRequest {
@@ -36,25 +85,41 @@ message FetchObjectResponse {
     repeated io.deephaven.proto.backplane.grpc.TypedTicket typed_export_id = 3;
 }
 
+/*
+ * First payload to send on a MessageStream, indicating the object to connect to
+ * on the server.
+ */
 message ConnectRequest {
     io.deephaven.proto.backplane.grpc.TypedTicket typed_ticket = 1;
 }
 
-message DataRequest {
+/*
+ * A generic payload that can be sent by either the server or the client, containing
+ * arbitrary binary data, and any number of typed tickets. The current convention is
+ * that the client can send tickets it was given from the server, and the server will
+ * send server-created export tickets for new objects.
+ */
+message Data {
     bytes data = 1;
     repeated io.deephaven.proto.backplane.grpc.TypedTicket typed_export_id = 2;
 }
 
-message MessageRequest {
+/*
+ * Client payload for the MessageStream.
+ */
+message StreamRequest {
     oneof payload {
         ConnectRequest source_id = 1;
-        DataRequest data = 2;
+        Data data = 2;
     }
 }
-
-message MessageResponse {
-    bytes data = 1;
-    repeated io.deephaven.proto.backplane.grpc.TypedTicket typed_export_id = 2;
+/*
+ * Server responses to the client. Currently can only be Data messages.
+ */
+message StreamResponse {
+    oneof payload {
+        Data data = 1;
+    }
 }
 
 message BrowserNextResponse {

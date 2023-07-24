@@ -9,7 +9,16 @@ import java.io.IOException;
 import java.io.OutputStream;
 
 public abstract class ObjectTypeBase extends PluginBase implements ObjectType {
-    public abstract void writeCompatibleObjectTo(Exporter exporter, Object object, OutputStream out) throws IOException;
+    public void writeCompatibleObjectTo(Exporter exporter, Object object, OutputStream out) throws IOException {
+        if (supportsBidiMessaging(object) == Kind.BIDIRECTIONAL) {
+            // internal error, shouldn't have called this
+            throw new IllegalStateException(
+                    "Do not call writeTo if supportsBidiMessaging returns true, but writeTo is not implemented");
+        } else {
+            // incorrect implementation
+            throw new IllegalStateException("ObjectType implementation returned false for supportsBidiMessaging");
+        }
+    }
 
     @Override
     public final void writeTo(Exporter exporter, Object object, OutputStream out) throws IOException {
@@ -18,33 +27,6 @@ public abstract class ObjectTypeBase extends PluginBase implements ObjectType {
         }
         writeCompatibleObjectTo(exporter, object, out);
     }
-
-    @Override
-    public boolean supportsBidiMessaging(Object obj) {
-        return false;
-    }
-
-    @Override
-    public void addMessageSender(Object object, MessageSender sender) {}
-
-    @Override
-    public void removeMessageSender() {}
-
-    /**
-     * Used by an ObjectType plugin to send a message to the client
-     *
-     * @param message The message to send to the client
-     */
-    @Override
-    public void sendMessage(byte[] message) {}
-
-    /**
-     * Used by an ObjectType plugin to handle a message from the client
-     *
-     * @param message The message from the client
-     */
-    @Override
-    public void handleMessage(byte[] message, Object object, Object[] referenceObjects) {}
 
     @Override
     public final <T, V extends Visitor<T>> T walk(V visitor) {

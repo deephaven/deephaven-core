@@ -14,7 +14,6 @@ import io.deephaven.io.logger.Logger;
 import io.deephaven.plugin.type.ObjectType;
 import io.deephaven.plugin.type.ObjectType.Exporter;
 import io.deephaven.plugin.type.ObjectType.Exporter.Reference;
-import io.deephaven.plugin.type.ObjectType.MessageSender;
 import io.deephaven.plugin.type.ObjectTypeLookup;
 import io.deephaven.proto.backplane.grpc.*;
 import io.deephaven.proto.backplane.grpc.FetchObjectResponse.Builder;
@@ -29,17 +28,16 @@ import org.jetbrains.annotations.NotNull;
 import javax.inject.Inject;
 import java.io.IOException;
 import java.lang.Object;
+import java.nio.ByteBuffer;
 import java.util.ArrayList;
+import java.util.IdentityHashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
-import java.util.HashMap;
-import java.util.LinkedHashMap;
 import java.util.stream.Collectors;
 
 public class ObjectServiceGrpcImpl extends ObjectServiceGrpc.ObjectServiceImplBase {
-    private static final Logger log = LoggerFactory.getLogger(ObjectServiceGrpcImpl.class);
-
     private final SessionService sessionService;
     private final TicketRouter ticketRouter;
     private final ObjectTypeLookup objectTypeLookup;
@@ -54,34 +52,26 @@ public class ObjectServiceGrpcImpl extends ObjectServiceGrpc.ObjectServiceImplBa
         this.typeLookup = Objects.requireNonNull(typeLookup);
     }
 
-    private final class SendMessageObserver extends SingletonLivenessManager implements StreamObserver<MessageRequest> {
+    private final class SendMessageObserver extends SingletonLivenessManager implements StreamObserver<StreamRequest> {
 
         private ExportObject<Object> object;
-        private final StreamObserver<MessageResponse> responseObserver;
+        private final StreamObserver<StreamResponse> responseObserver;
 
-        private SendMessageObserver(StreamObserver<MessageResponse> responseObserver) {
-            log.info().append("Creating observer").endl();
+        private ObjectType.MessageStream messageStream;
+
+        private SendMessageObserver(StreamObserver<StreamResponse> responseObserver) {
             this.responseObserver = responseObserver;
         }
 
-        private ObjectType getObjectType() {
-            final Optional<ObjectType> o = objectTypeLookup.findObjectType(object.get());
-            if (o.isEmpty()) {
-                throw Exceptions.statusRuntimeException(Code.NOT_FOUND,
-                        String.format("No ObjectType found for object %s", object.get()));
-            }
-            return o.get();
-        }
-
         @Override
-        public void onNext(final MessageRequest request) {
+        public void onNext(final StreamRequest request) {
             SessionState session = sessionService.getCurrentSession();
 
             if (request.hasSourceId()) {
-                // First request
+                // Should only appear in the first request
                 if (this.object != null) {
-                    // Ignore duplicate connection requests on the same stream
-                    return;
+                    throw Exceptions.statusRuntimeException(Code.FAILED_PRECONDITION,
+                            "Already sent a connect request, cannot send another");
                 }
 
                 TypedTicket typedTicket = request.getSourceId().getTypedTicket();
@@ -100,42 +90,46 @@ public class ObjectServiceGrpcImpl extends ObjectServiceGrpc.ObjectServiceImplBa
                 this.object = object;
                 manage(this.object);
                 session.nonExport().require(object).onError(responseObserver).submit(() -> {
-                    PluginMessageSender sender = new PluginMessageSender(responseObserver, session);
                     final Object o = object.get();
-                    final ObjectType objectType = getObjectType();
-                    final ExportCollector exportCollector = sender.getExporter();
-                    final MessageResponse.Builder builder = MessageResponse.newBuilder();
+                    final ObjectType objectType = getObjectTypeInstance(type, object);
 
-                    try {
-                        builder.setData(serialize(type, o, exportCollector))
-                                .addAllTypedExportId(exportCollector.refs().stream().map(ReferenceImpl::typedTicket)
-                                        .collect(Collectors.toList()));
-                    } catch (Throwable t) {
-                        exportCollector.cleanup(t);
-                        throw new RuntimeException(t);
-                    }
-                    responseObserver.onNext(builder.build());
-                    if (objectType.supportsBidiMessaging(o)) {
-                        objectType.addMessageSender(o, sender);
+                    if (objectType.supportsBidiMessaging(o) == ObjectType.Kind.BIDIRECTIONAL) {
+                        PluginMessageSender sender = new PluginMessageSender(responseObserver, session);
+
+                        messageStream = objectType.clientConnection(o, sender);
                     } else {
-                        responseObserver.onCompleted();
+                        final StreamResponse.Builder builder = StreamResponse.newBuilder();
+
+                        ExportCollector exportCollector = new ExportCollector(session);
+                        try {
+                            builder.setData(Data.newBuilder()
+                                    .setData(serialize(objectType, o, exportCollector))
+                                    .addAllTypedExportId(exportCollector.refs().stream().map(ReferenceImpl::typedTicket)
+                                            .collect(Collectors.toList())));
+                        } catch (RuntimeException | Error t) {
+                            exportCollector.cleanup(t);
+                            throw t;
+                        } catch (Throwable t) {
+                            exportCollector.cleanup(t);
+                            throw new RuntimeException(t);
+                        }
+                        GrpcUtil.safelyComplete(responseObserver, builder.build());
                         onCompleted();
                     }
                 });
             } else if (request.hasData()) {
                 // All other requests
-                DataRequest data = request.getData();
+                Data data = request.getData();
                 List<SessionState.ExportObject<Object>> referenceObjects = data.getTypedExportIdList().stream()
                         .map(typedTicket -> ticketRouter.resolve(session, typedTicket.getTicket(), "messageObjectId"))
                         .collect(Collectors.toList());
                 List<SessionState.ExportObject<Object>> requireObjects = new ArrayList<>(referenceObjects);
                 requireObjects.add(object);
                 session.nonExport().require(requireObjects).onError(responseObserver).submit(() -> {
-                    byte[] msg = data.getData().toByteArray();
                     Object[] objs = referenceObjects.stream().map(ExportObject::get).toArray();
                     // TODO: Should we try/catch this to recover/not close from plugin errors? Or make the client
                     // recover? Would be useful if the plugin is complex
-                    getObjectType().handleMessage(msg, object.get(), objs);
+                    messageStream.onMessage(data.getData().asReadOnlyByteBuffer(), objs);
                 });
             } else {
                 // Do something with unexpected message type?
@@ -152,7 +146,7 @@ public class ObjectServiceGrpcImpl extends ObjectServiceGrpc.ObjectServiceImplBa
         public void onCompleted() {
             SessionState session = sessionService.getCurrentSession();
             session.nonExport().require(object).onError(responseObserver).submit(() -> {
-                getObjectType().removeMessageSender();
+                messageStream.close();
                 responseObserver.onCompleted();
             });
             release();
@@ -179,9 +173,10 @@ public class ObjectServiceGrpcImpl extends ObjectServiceGrpc.ObjectServiceImplBa
                 .submit(() -> {
                     final Object o = object.get();
                     final ExportCollector exportCollector = new ExportCollector(session);
+                    ObjectType objectTypeInstance = getObjectTypeInstance(type, o);
                     final Builder builder = FetchObjectResponse.newBuilder()
                             .setType(type)
-                            .setData(serialize(type, o, exportCollector))
+                            .setData(serialize(objectTypeInstance, o, exportCollector))
                             .addAllTypedExportId(exportCollector.refs().stream().map(ReferenceImpl::typedTicket)
                                     .collect(Collectors.toList()));
 
@@ -191,14 +186,25 @@ public class ObjectServiceGrpcImpl extends ObjectServiceGrpc.ObjectServiceImplBa
     }
 
     @Override
-    public StreamObserver<MessageRequest> messageStream(
-            StreamObserver<MessageResponse> responseObserver) {
+    public StreamObserver<StreamRequest> messageStream(
+            StreamObserver<StreamResponse> responseObserver) {
         return new SendMessageObserver(responseObserver);
     }
 
-    private ByteString serialize(String expectedType, Object object, ExportCollector exportCollector)
+    private ByteString serialize(final ObjectType objectType, Object object, ExportCollector exportCollector)
             throws IOException {
         final ExposedByteArrayOutputStream out = new ExposedByteArrayOutputStream();
+        try {
+            objectType.writeTo(exportCollector, object, out);
+            return ByteStringAccess.wrap(out.peekBuffer(), 0, out.size());
+        } catch (Throwable t) {
+            exportCollector.cleanup(t);
+            throw t;
+        }
+    }
+
+    @NotNull
+    private ObjectType getObjectTypeInstance(String expectedType, Object object) {
         // TODO(deephaven-core#1872): Optimize ObjectTypeLookup
         final Optional<ObjectType> o = objectTypeLookup.findObjectType(object);
         if (o.isEmpty()) {
@@ -210,13 +216,7 @@ public class ObjectServiceGrpcImpl extends ObjectServiceGrpc.ObjectServiceImplBa
             throw Exceptions.statusRuntimeException(Code.FAILED_PRECONDITION, String.format(
                     "Unexpected ObjectType, expected type '%s', actual type '%s'", expectedType, objectType.name()));
         }
-        try {
-            objectType.writeTo(exportCollector, object, out);
-            return ByteStringAccess.wrap(out.peekBuffer(), 0, out.size());
-        } catch (Throwable t) {
-            exportCollector.cleanup(t);
-            throw t;
-        }
+        return objectType;
     }
 
     class ExportCollector implements Exporter {
@@ -224,14 +224,14 @@ public class ObjectServiceGrpcImpl extends ObjectServiceGrpc.ObjectServiceImplBa
         private final SessionState sessionState;
         private final Thread thread;
 
-        private final HashMap<Object, ReferenceImpl> refMap;
+        private final Map<Object, ReferenceImpl> refMap;
 
         private final ArrayList<ReferenceImpl> refQueue;
 
         public ExportCollector(SessionState sessionState) {
             this.sessionState = Objects.requireNonNull(sessionState);
             this.thread = Thread.currentThread();
-            this.refMap = new LinkedHashMap<>();
+            this.refMap = new IdentityHashMap<>();
             this.refQueue = new ArrayList<>();
         }
 
@@ -306,38 +306,42 @@ public class ObjectServiceGrpcImpl extends ObjectServiceGrpc.ObjectServiceImplBa
         }
     }
 
-    private final class PluginMessageSender extends ExportCollector implements MessageSender {
+    private final class PluginMessageSender extends ExportCollector implements ObjectType.MessageStream {
+        private final StreamObserver<StreamResponse> responseObserver;
+        private final SessionState sessionState;
 
-        private final StreamObserver<MessageResponse> responseObserver;
-
-        private final ExportCollector exportCollector;
-
-        public PluginMessageSender(StreamObserver<MessageResponse> responseObserver, SessionState sessionState) {
+        public PluginMessageSender(StreamObserver<StreamResponse> responseObserver, SessionState sessionState) {
             super(sessionState);
             this.responseObserver = responseObserver;
-            exportCollector = new ExportCollector(sessionState);
-        }
-
-        public ExportCollector getExporter() {
-            return exportCollector;
+            this.sessionState = sessionState;
         }
 
         @Override
-        public void sendMessage(byte[] msg) {
-            final MessageResponse.Builder responseBuilder =
-                    MessageResponse.newBuilder().setData(ByteString.copyFrom(msg));
+        public void onMessage(ByteBuffer message, Object[] references) {
+            ExportCollector exportCollector = new ExportCollector(sessionState);
+
+            Data.Builder payload = Data.newBuilder();
+
             try {
-                for (ReferenceImpl ref : exportCollector.refs()) {
-                    if (ref != null) {
-                        responseBuilder.addTypedExportId(ref.typedTicket());
-                    }
+                for (Object reference : references) {
+                    // allowUnknownType=true so that the caller can let the client handle complex lifecycles
+                    // forceNew=true to explicitly state that the plugin is responsible for handling dups, both
+                    // within a single payload and across the stream
+                    exportCollector.reference(reference, true, true);
                 }
-            } catch (Throwable t) {
+                for (ReferenceImpl ref : exportCollector.refs()) {
+                    payload.addTypedExportId(ref.typedTicket());
+                }
+            } catch (RuntimeException | Error t) {
                 exportCollector.cleanup(t);
                 throw t;
+            } catch (Throwable t) {
+                exportCollector.cleanup(t);
+                throw new RuntimeException(t);
             }
-
-            responseObserver.onNext(responseBuilder.build());
+            final StreamResponse.Builder responseBuilder =
+                    StreamResponse.newBuilder().setData(payload);
+            GrpcUtil.safelyOnNext(responseObserver, responseBuilder.build());
         }
 
         @Override

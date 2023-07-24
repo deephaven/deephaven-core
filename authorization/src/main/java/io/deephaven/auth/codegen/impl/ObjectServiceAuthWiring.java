@@ -10,8 +10,8 @@ package io.deephaven.auth.codegen.impl;
 import io.deephaven.auth.AuthContext;
 import io.deephaven.auth.ServiceAuthWiring;
 import io.deephaven.proto.backplane.grpc.FetchObjectRequest;
-import io.deephaven.proto.backplane.grpc.MessageRequest;
 import io.deephaven.proto.backplane.grpc.ObjectServiceGrpc;
+import io.deephaven.proto.backplane.grpc.StreamRequest;
 import io.grpc.ServerServiceDefinition;
 
 /**
@@ -65,7 +65,7 @@ public interface ObjectServiceAuthWiring extends ServiceAuthWiring<ObjectService
      * @param request the request to authorize
      * @throws io.grpc.StatusRuntimeException if the user is not authorized to invoke MessageStream
      */
-    void onMessageReceivedMessageStream(AuthContext authContext, MessageRequest request);
+    void onMessageReceivedMessageStream(AuthContext authContext, StreamRequest request);
 
     /**
      * Authorize a request to OpenMessageStream.
@@ -74,7 +74,7 @@ public interface ObjectServiceAuthWiring extends ServiceAuthWiring<ObjectService
      * @param request the request to authorize
      * @throws io.grpc.StatusRuntimeException if the user is not authorized to invoke OpenMessageStream
      */
-    void onMessageReceivedOpenMessageStream(AuthContext authContext, MessageRequest request);
+    void onMessageReceivedOpenMessageStream(AuthContext authContext, StreamRequest request);
 
     /**
      * Authorize a request to NextMessageStream.
@@ -83,20 +83,20 @@ public interface ObjectServiceAuthWiring extends ServiceAuthWiring<ObjectService
      * @param request the request to authorize
      * @throws io.grpc.StatusRuntimeException if the user is not authorized to invoke NextMessageStream
      */
-    void onMessageReceivedNextMessageStream(AuthContext authContext, MessageRequest request);
+    void onMessageReceivedNextMessageStream(AuthContext authContext, StreamRequest request);
 
     class AllowAll implements ObjectServiceAuthWiring {
         public void onMessageReceivedFetchObject(AuthContext authContext, FetchObjectRequest request) {}
 
         public void onCallStartedMessageStream(AuthContext authContext) {}
 
-        public void onMessageReceivedMessageStream(AuthContext authContext, MessageRequest request) {}
+        public void onMessageReceivedMessageStream(AuthContext authContext, StreamRequest request) {}
 
         public void onMessageReceivedOpenMessageStream(AuthContext authContext,
-                MessageRequest request) {}
+                StreamRequest request) {}
 
         public void onMessageReceivedNextMessageStream(AuthContext authContext,
-                MessageRequest request) {}
+                StreamRequest request) {}
     }
 
     class DenyAll implements ObjectServiceAuthWiring {
@@ -108,17 +108,17 @@ public interface ObjectServiceAuthWiring extends ServiceAuthWiring<ObjectService
             ServiceAuthWiring.operationNotAllowed();
         }
 
-        public void onMessageReceivedMessageStream(AuthContext authContext, MessageRequest request) {
+        public void onMessageReceivedMessageStream(AuthContext authContext, StreamRequest request) {
             ServiceAuthWiring.operationNotAllowed();
         }
 
         public void onMessageReceivedOpenMessageStream(AuthContext authContext,
-                MessageRequest request) {
+                StreamRequest request) {
             ServiceAuthWiring.operationNotAllowed();
         }
 
         public void onMessageReceivedNextMessageStream(AuthContext authContext,
-                MessageRequest request) {
+                StreamRequest request) {
             ServiceAuthWiring.operationNotAllowed();
         }
     }
@@ -138,21 +138,21 @@ public interface ObjectServiceAuthWiring extends ServiceAuthWiring<ObjectService
             }
         }
 
-        public void onMessageReceivedMessageStream(AuthContext authContext, MessageRequest request) {
+        public void onMessageReceivedMessageStream(AuthContext authContext, StreamRequest request) {
             if (delegate != null) {
                 delegate.onMessageReceivedMessageStream(authContext, request);
             }
         }
 
         public void onMessageReceivedOpenMessageStream(AuthContext authContext,
-                MessageRequest request) {
+                StreamRequest request) {
             if (delegate != null) {
                 delegate.onMessageReceivedOpenMessageStream(authContext, request);
             }
         }
 
         public void onMessageReceivedNextMessageStream(AuthContext authContext,
-                MessageRequest request) {
+                StreamRequest request) {
             if (delegate != null) {
                 delegate.onMessageReceivedNextMessageStream(authContext, request);
             }

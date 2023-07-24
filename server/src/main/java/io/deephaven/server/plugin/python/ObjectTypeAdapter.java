@@ -8,6 +8,7 @@ import org.jpy.PyObject;
 
 import java.io.IOException;
 import java.io.OutputStream;
+import java.nio.ByteBuffer;
 import java.util.Objects;
 
 final class ObjectTypeAdapter extends ObjectTypeBase implements AutoCloseable {
@@ -42,23 +43,34 @@ final class ObjectTypeAdapter extends ObjectTypeBase implements AutoCloseable {
     }
 
     @Override
-    public boolean supportsBidiMessaging(Object object) {
-        return objectTypeAdapter.call(boolean.class, "supports_bidi_messaging", PyObject.class, (PyObject) object);
+    public Kind supportsBidiMessaging(Object object) {
+        return objectTypeAdapter.hasAttribute("create_client_connection") ? Kind.BIDIRECTIONAL
+                : objectTypeAdapter.hasAttribute("to_bytes") ? Kind.FETCHABLE : null;
     }
 
     @Override
-    public void handleMessage(byte[] msg, Object object, Object[] referenceObjects) {
-        objectTypeAdapter.call("handle_message", msg, object, referenceObjects);
+    public MessageStream clientConnection(Object object, MessageStream connection) {
+        PyObject newConnection =
+                objectTypeAdapter.call(PyObject.class, "create_client_connection", PyObject.class, (PyObject) object);
+        return new PythonMessageStream(newConnection);
     }
 
-    @Override
-    public void addMessageSender(Object object, MessageSender sender) {
-        objectTypeAdapter.call("add_message_sender", object, sender);
-    }
+    private static class PythonMessageStream implements MessageStream {
+        private final PyObject instance;
 
-    @Override
-    public void removeMessageSender() {
-        objectTypeAdapter.call("remove_message_sender");
+        private PythonMessageStream(PyObject instance) {
+            this.instance = instance;
+        }
+
+        @Override
+        public void onMessage(ByteBuffer message, Object[] references) {
+            instance.call(void.class, "on_message", byte[].class, message.array(), Object[].class, references);
+        }
+
+        @Override
+        public void close() {
+            instance.call("close");
+        }
     }
 
     @Override

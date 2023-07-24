@@ -8,6 +8,7 @@ import io.deephaven.plugin.type.ObjectType.Exporter.Reference;
 
 import java.io.IOException;
 import java.io.OutputStream;
+import java.nio.ByteBuffer;
 import java.util.Optional;
 import java.util.function.BiPredicate;
 
@@ -46,7 +47,58 @@ public interface ObjectType extends Plugin {
      * @param out the output stream
      * @throws IOException if an IO exception occurs
      */
-    void writeTo(Exporter exporter, Object object, OutputStream out) throws IOException;
+    default void writeTo(Exporter exporter, Object object, OutputStream out) throws IOException {
+        if (supportsBidiMessaging(object) == Kind.BIDIRECTIONAL) {
+            // internal error, shouldn't have called this
+            throw new IllegalStateException(
+                    "Do not call writeTo if supportsBidiMessaging returns true, but writeTo is not implemented");
+        } else {
+            // incorrect implementation
+            throw new IllegalStateException("ObjectType implementation returned false for supportsBidiMessaging");
+        }
+    }
+
+    /**
+     *
+     */
+    interface MessageStream extends AutoCloseable {
+        /**
+         *
+         * @param message
+         * @param references
+         */
+        void onMessage(ByteBuffer message, Object[] references);
+
+        /**
+         *
+         */
+        void close();
+    }
+
+    /**
+     * Signals creation of a client stream to the provided object. The returned MessageStream implementation will be
+     * called with each received message from the server, and can call the provided connection instance to send messages
+     * as needed to the client.
+     * 
+     * @param object
+     * @param connection
+     * @return
+     */
+    // impl note: provide default impl? deprecate writeTo?
+    default MessageStream clientConnection(Object object, MessageStream connection) {
+        if (supportsBidiMessaging(object) == Kind.BIDIRECTIONAL) {
+            // incorrect implementation
+            throw new IllegalStateException(
+                    "ObjectType implementation returned true for supportsBidiMessaging, but has no clientConnection implementation");
+        } else {
+            // internal error, shouldn't have called this
+            throw new IllegalStateException("Do not call clientConnection if supportsBidiMessaging returns false");
+        }
+    }
+
+    enum Kind {
+        FETCHABLE, BIDIRECTIONAL,
+    }
 
     /**
      * Returns true if the {@code object} supports bidirectional communication.
@@ -54,7 +106,9 @@ public interface ObjectType extends Plugin {
      * @param object the object
      * @return true if the {@code object} supports bidirectional communication
      */
-    boolean supportsBidiMessaging(Object object);
+    default Kind supportsBidiMessaging(Object object) {
+        return Kind.FETCHABLE;
+    }
 
     /**
      * The interface for creating new references during the {@link #writeTo(Exporter, Object, OutputStream)}.
@@ -92,22 +146,5 @@ public interface ObjectType extends Plugin {
              */
             Optional<String> type();
         }
-    }
-
-    void addMessageSender(Object object, MessageSender channel);
-
-    void removeMessageSender();
-
-    void handleMessage(byte[] message, Object object, Object[] referenceObjects);
-
-    void sendMessage(byte[] message);
-
-    interface MessageSender extends Exporter {
-
-        Exporter getExporter();
-
-        void sendMessage(byte[] msg);
-
-        void close();
     }
 }
