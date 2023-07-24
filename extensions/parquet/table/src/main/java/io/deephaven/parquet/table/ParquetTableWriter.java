@@ -412,7 +412,7 @@ public class ParquetTableWriter {
     }
 
     /**
-     * This class stores all the useful data required to write column source in the parquet file
+     * This is a helper struct storing all the useful data required to write column source in the parquet file
      */
     static class ColumnWritingData {
         /**
