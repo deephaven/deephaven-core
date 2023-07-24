@@ -169,6 +169,27 @@ public class TablePublisher {
         return adapter.isAlive();
     }
 
+    /**
+     * The {@link Table#BLINK_TABLE_ATTRIBUTE blink table} with its {@link Table#getAttribute(String) attribute}
+     * {@value Table#INPUT_TABLE_ATTRIBUTE} set to an {@link io.deephaven.engine.util.input.InputTableUpdater}
+     * implementation based on {@code this}. This is primarily useful for existing code that already works with
+     * {@link io.deephaven.engine.util.input.InputTableUpdater} - new code should probably prefer to work directly with
+     * {@code this}.
+     *
+     * <p>
+     * May return {@code null} if invoked more than once and the initial caller does not enforce strong reachability of
+     * the result.
+     *
+     * @return the input-table blink table
+     */
+    public Table inputTable() {
+        final Table table = adapter.table();
+        if (table == null) {
+            return null;
+        }
+        return table.withAttributes(Map.of(Table.INPUT_TABLE_ATTRIBUTE, publisher.inputTableUpdater()));
+    }
+
     @TestUseOnly
     void runForUnitTests() {
         adapter.run();

@@ -152,20 +152,6 @@ public interface InputTableUpdater {
     }
 
     /**
-     * Return a user-readable description of this InputTable.
-     *
-     * @return a description of this input table
-     */
-    String getDescription();
-
-    /**
-     * Returns a Deephaven table that contains the current data for this InputTable.
-     *
-     * @return the current data in this InputTable.
-     */
-    Table getTable();
-
-    /**
      * Returns true if the specified column is a key.
      *
      * @param columnName the column to interrogate
@@ -184,12 +170,4 @@ public interface InputTableUpdater {
     default boolean hasColumn(String columnName) {
         return getTableDefinition().getColumnNames().contains(columnName);
     }
-
-    /**
-     * Queries whether this InputTable is editable in the current context.
-     *
-     * @return true if this InputTable may be edited, false otherwise TODO (deephaven/deephaven-core/issues/255): Add
-     *         AuthContext and whatever else is appropriate
-     */
-    boolean canEdit();
 }

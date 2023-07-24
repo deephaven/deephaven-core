@@ -17,11 +17,14 @@ import io.deephaven.engine.table.impl.remote.ConstructSnapshot;
 import io.deephaven.engine.table.impl.remote.ConstructSnapshot.SnapshotFunction;
 import io.deephaven.engine.table.impl.remote.ConstructSnapshot.State;
 import io.deephaven.engine.table.impl.sources.ReinterpretUtils;
+import io.deephaven.engine.util.input.InputTableStatusListener;
+import io.deephaven.engine.util.input.InputTableUpdater;
 import io.deephaven.util.SafeCloseable;
 import io.deephaven.util.SafeCloseableArray;
 import org.jetbrains.annotations.NotNull;
 
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 import java.util.Objects;
 import java.util.stream.Stream;
@@ -91,6 +94,32 @@ class TableStreamPublisherImpl implements StreamPublisher {
     public void shutdown() {
         if (onShutdownCallback != null) {
             onShutdownCallback.run();
+        }
+    }
+
+    public InputTableUpdater inputTableUpdater() {
+        return new InputTableAdapter();
+    }
+
+    private class InputTableAdapter implements InputTableUpdater {
+        @Override
+        public TableDefinition getTableDefinition() {
+            return definition;
+        }
+
+        @Override
+        public void add(Table newData) {
+            TableStreamPublisherImpl.this.add(newData);
+        }
+
+        @Override
+        public List<String> getKeyNames() {
+            return Collections.emptyList();
+        }
+
+        @Override
+        public void addAsync(Table newData, InputTableStatusListener listener) {
+            throw new UnsupportedOperationException("Table does not support async add");
         }
     }
 
