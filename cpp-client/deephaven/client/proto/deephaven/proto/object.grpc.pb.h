@@ -42,6 +42,13 @@ class ObjectService final {
   class StubInterface {
    public:
     virtual ~StubInterface() {}
+    //
+    // Fetches a server-side object as a binary payload and assorted other tickets pointing at
+    // other server-side objects that may need to be read to properly use this payload. The binary
+    // format is implementation specific, but the implementation should be specified by the "type"
+    // identifier in the typed ticket.
+    //
+    // Deprecated in favor of MessageStream, which is able to handle the same content.
     virtual ::grpc::Status FetchObject(::grpc::ClientContext* context, const ::io::deephaven::proto::backplane::grpc::FetchObjectRequest& request, ::io::deephaven::proto::backplane::grpc::FetchObjectResponse* response) = 0;
     std::unique_ptr< ::grpc::ClientAsyncResponseReaderInterface< ::io::deephaven::proto::backplane::grpc::FetchObjectResponse>> AsyncFetchObject(::grpc::ClientContext* context, const ::io::deephaven::proto::backplane::grpc::FetchObjectRequest& request, ::grpc::CompletionQueue* cq) {
       return std::unique_ptr< ::grpc::ClientAsyncResponseReaderInterface< ::io::deephaven::proto::backplane::grpc::FetchObjectResponse>>(AsyncFetchObjectRaw(context, request, cq));
@@ -49,50 +56,129 @@ class ObjectService final {
     std::unique_ptr< ::grpc::ClientAsyncResponseReaderInterface< ::io::deephaven::proto::backplane::grpc::FetchObjectResponse>> PrepareAsyncFetchObject(::grpc::ClientContext* context, const ::io::deephaven::proto::backplane::grpc::FetchObjectRequest& request, ::grpc::CompletionQueue* cq) {
       return std::unique_ptr< ::grpc::ClientAsyncResponseReaderInterface< ::io::deephaven::proto::backplane::grpc::FetchObjectResponse>>(PrepareAsyncFetchObjectRaw(context, request, cq));
     }
-    std::unique_ptr< ::grpc::ClientReaderWriterInterface< ::io::deephaven::proto::backplane::grpc::MessageRequest, ::io::deephaven::proto::backplane::grpc::MessageResponse>> MessageStream(::grpc::ClientContext* context) {
-      return std::unique_ptr< ::grpc::ClientReaderWriterInterface< ::io::deephaven::proto::backplane::grpc::MessageRequest, ::io::deephaven::proto::backplane::grpc::MessageResponse>>(MessageStreamRaw(context));
+    //
+    // Provides a generic stream feature for Deephaven instances to use to add arbitrary functionality.
+    // This API lets a client open a stream to a particular object on the server, to be mediated by
+    // a server side plugin. In theory this could effectively be used to "tunnel" a custom gRPC call,
+    // but in practice there are a few deliberate shortcomings that still make this possible, but not
+    // trivial.
+    //
+    // The first message sent to the server is expected to have a ConnectRequest, indicating which
+    // export ticket to connect to. It is an error for the server to not have a plugin defined for that
+    // object type.
+    //
+    // Subsequent requests to the server, and all responses to the client, will be a payload of bytes
+    // and an arbitrary number of tickets, referring to server side objects that one side wishes to
+    // reference in its payload.
+    //
+    // Presently it is required that the server respond immediately, at least to acknowledge that the
+    // object was correctly contacted (as opposed to waiting for a pending ticket, or dealing with
+    // network lag, etc). This is a small (and possibly not required, but convenient) departure from
+    // a offering a gRPC stream (a server-streaming or bidi-streaming call need not send a message
+    // right away).
+    //
+    // Presently there is no explicit "close" message to send, but plugin implementations can devise
+    // their own "half-close" protocol if they so choose. For now, if one end closes the connection,
+    // the other is expected to follow suit by closing their end too.
+    //
+    // (address stream failures?)
+    //
+    // Finally, addressing a broader point of unsuitability for general gRPC-over-gRPC tunneling:
+    // there is a lot more to gRPC than just specifying a path and sending payloads to it, such as
+    // how to specify metadata. In theory, we could handle the metadata as another field (only sent
+    // in the first/last payloads), or as a separate plugin-defined type of payload (analogous to the
+    // grpc-websockets implementations), but we still run into issues where this user-defined gRPC
+    // service needs to coexist with the rest of the Deephaven platform, supporting at least authentication,
+    // and for browsers, our custom streaming implementation. The nested gRPC implementation would
+    // need to be at some level aware that it is already stateful to take advantage of this, rather
+    // than somehow redefine it.
+    std::unique_ptr< ::grpc::ClientReaderWriterInterface< ::io::deephaven::proto::backplane::grpc::StreamRequest, ::io::deephaven::proto::backplane::grpc::StreamResponse>> MessageStream(::grpc::ClientContext* context) {
+      return std::unique_ptr< ::grpc::ClientReaderWriterInterface< ::io::deephaven::proto::backplane::grpc::StreamRequest, ::io::deephaven::proto::backplane::grpc::StreamResponse>>(MessageStreamRaw(context));
     }
-    std::unique_ptr< ::grpc::ClientAsyncReaderWriterInterface< ::io::deephaven::proto::backplane::grpc::MessageRequest, ::io::deephaven::proto::backplane::grpc::MessageResponse>> AsyncMessageStream(::grpc::ClientContext* context, ::grpc::CompletionQueue* cq, void* tag) {
-      return std::unique_ptr< ::grpc::ClientAsyncReaderWriterInterface< ::io::deephaven::proto::backplane::grpc::MessageRequest, ::io::deephaven::proto::backplane::grpc::MessageResponse>>(AsyncMessageStreamRaw(context, cq, tag));
+    std::unique_ptr< ::grpc::ClientAsyncReaderWriterInterface< ::io::deephaven::proto::backplane::grpc::StreamRequest, ::io::deephaven::proto::backplane::grpc::StreamResponse>> AsyncMessageStream(::grpc::ClientContext* context, ::grpc::CompletionQueue* cq, void* tag) {
+      return std::unique_ptr< ::grpc::ClientAsyncReaderWriterInterface< ::io::deephaven::proto::backplane::grpc::StreamRequest, ::io::deephaven::proto::backplane::grpc::StreamResponse>>(AsyncMessageStreamRaw(context, cq, tag));
     }
-    std::unique_ptr< ::grpc::ClientAsyncReaderWriterInterface< ::io::deephaven::proto::backplane::grpc::MessageRequest, ::io::deephaven::proto::backplane::grpc::MessageResponse>> PrepareAsyncMessageStream(::grpc::ClientContext* context, ::grpc::CompletionQueue* cq) {
-      return std::unique_ptr< ::grpc::ClientAsyncReaderWriterInterface< ::io::deephaven::proto::backplane::grpc::MessageRequest, ::io::deephaven::proto::backplane::grpc::MessageResponse>>(PrepareAsyncMessageStreamRaw(context, cq));
+    std::unique_ptr< ::grpc::ClientAsyncReaderWriterInterface< ::io::deephaven::proto::backplane::grpc::StreamRequest, ::io::deephaven::proto::backplane::grpc::StreamResponse>> PrepareAsyncMessageStream(::grpc::ClientContext* context, ::grpc::CompletionQueue* cq) {
+      return std::unique_ptr< ::grpc::ClientAsyncReaderWriterInterface< ::io::deephaven::proto::backplane::grpc::StreamRequest, ::io::deephaven::proto::backplane::grpc::StreamResponse>>(PrepareAsyncMessageStreamRaw(context, cq));
     }
     //
     // Half of the browser-based (browser's can't do bidirectional streams without websockets)
     // implementation for MessageStream.
-    std::unique_ptr< ::grpc::ClientReaderInterface< ::io::deephaven::proto::backplane::grpc::MessageResponse>> OpenMessageStream(::grpc::ClientContext* context, const ::io::deephaven::proto::backplane::grpc::MessageRequest& request) {
-      return std::unique_ptr< ::grpc::ClientReaderInterface< ::io::deephaven::proto::backplane::grpc::MessageResponse>>(OpenMessageStreamRaw(context, request));
+    std::unique_ptr< ::grpc::ClientReaderInterface< ::io::deephaven::proto::backplane::grpc::StreamResponse>> OpenMessageStream(::grpc::ClientContext* context, const ::io::deephaven::proto::backplane::grpc::StreamRequest& request) {
+      return std::unique_ptr< ::grpc::ClientReaderInterface< ::io::deephaven::proto::backplane::grpc::StreamResponse>>(OpenMessageStreamRaw(context, request));
     }
-    std::unique_ptr< ::grpc::ClientAsyncReaderInterface< ::io::deephaven::proto::backplane::grpc::MessageResponse>> AsyncOpenMessageStream(::grpc::ClientContext* context, const ::io::deephaven::proto::backplane::grpc::MessageRequest& request, ::grpc::CompletionQueue* cq, void* tag) {
-      return std::unique_ptr< ::grpc::ClientAsyncReaderInterface< ::io::deephaven::proto::backplane::grpc::MessageResponse>>(AsyncOpenMessageStreamRaw(context, request, cq, tag));
+    std::unique_ptr< ::grpc::ClientAsyncReaderInterface< ::io::deephaven::proto::backplane::grpc::StreamResponse>> AsyncOpenMessageStream(::grpc::ClientContext* context, const ::io::deephaven::proto::backplane::grpc::StreamRequest& request, ::grpc::CompletionQueue* cq, void* tag) {
+      return std::unique_ptr< ::grpc::ClientAsyncReaderInterface< ::io::deephaven::proto::backplane::grpc::StreamResponse>>(AsyncOpenMessageStreamRaw(context, request, cq, tag));
     }
-    std::unique_ptr< ::grpc::ClientAsyncReaderInterface< ::io::deephaven::proto::backplane::grpc::MessageResponse>> PrepareAsyncOpenMessageStream(::grpc::ClientContext* context, const ::io::deephaven::proto::backplane::grpc::MessageRequest& request, ::grpc::CompletionQueue* cq) {
-      return std::unique_ptr< ::grpc::ClientAsyncReaderInterface< ::io::deephaven::proto::backplane::grpc::MessageResponse>>(PrepareAsyncOpenMessageStreamRaw(context, request, cq));
+    std::unique_ptr< ::grpc::ClientAsyncReaderInterface< ::io::deephaven::proto::backplane::grpc::StreamResponse>> PrepareAsyncOpenMessageStream(::grpc::ClientContext* context, const ::io::deephaven::proto::backplane::grpc::StreamRequest& request, ::grpc::CompletionQueue* cq) {
+      return std::unique_ptr< ::grpc::ClientAsyncReaderInterface< ::io::deephaven::proto::backplane::grpc::StreamResponse>>(PrepareAsyncOpenMessageStreamRaw(context, request, cq));
     }
     //
     // Other half of the browser-based implementation for MessageStream.
-    virtual ::grpc::Status NextMessageStream(::grpc::ClientContext* context, const ::io::deephaven::proto::backplane::grpc::MessageRequest& request, ::io::deephaven::proto::backplane::grpc::BrowserNextResponse* response) = 0;
-    std::unique_ptr< ::grpc::ClientAsyncResponseReaderInterface< ::io::deephaven::proto::backplane::grpc::BrowserNextResponse>> AsyncNextMessageStream(::grpc::ClientContext* context, const ::io::deephaven::proto::backplane::grpc::MessageRequest& request, ::grpc::CompletionQueue* cq) {
+    virtual ::grpc::Status NextMessageStream(::grpc::ClientContext* context, const ::io::deephaven::proto::backplane::grpc::StreamRequest& request, ::io::deephaven::proto::backplane::grpc::BrowserNextResponse* response) = 0;
+    std::unique_ptr< ::grpc::ClientAsyncResponseReaderInterface< ::io::deephaven::proto::backplane::grpc::BrowserNextResponse>> AsyncNextMessageStream(::grpc::ClientContext* context, const ::io::deephaven::proto::backplane::grpc::StreamRequest& request, ::grpc::CompletionQueue* cq) {
       return std::unique_ptr< ::grpc::ClientAsyncResponseReaderInterface< ::io::deephaven::proto::backplane::grpc::BrowserNextResponse>>(AsyncNextMessageStreamRaw(context, request, cq));
     }
-    std::unique_ptr< ::grpc::ClientAsyncResponseReaderInterface< ::io::deephaven::proto::backplane::grpc::BrowserNextResponse>> PrepareAsyncNextMessageStream(::grpc::ClientContext* context, const ::io::deephaven::proto::backplane::grpc::MessageRequest& request, ::grpc::CompletionQueue* cq) {
+    std::unique_ptr< ::grpc::ClientAsyncResponseReaderInterface< ::io::deephaven::proto::backplane::grpc::BrowserNextResponse>> PrepareAsyncNextMessageStream(::grpc::ClientContext* context, const ::io::deephaven::proto::backplane::grpc::StreamRequest& request, ::grpc::CompletionQueue* cq) {
       return std::unique_ptr< ::grpc::ClientAsyncResponseReaderInterface< ::io::deephaven::proto::backplane::grpc::BrowserNextResponse>>(PrepareAsyncNextMessageStreamRaw(context, request, cq));
     }
     class async_interface {
      public:
       virtual ~async_interface() {}
+      //
+      // Fetches a server-side object as a binary payload and assorted other tickets pointing at
+      // other server-side objects that may need to be read to properly use this payload. The binary
+      // format is implementation specific, but the implementation should be specified by the "type"
+      // identifier in the typed ticket.
+      //
+      // Deprecated in favor of MessageStream, which is able to handle the same content.
       virtual void FetchObject(::grpc::ClientContext* context, const ::io::deephaven::proto::backplane::grpc::FetchObjectRequest* request, ::io::deephaven::proto::backplane::grpc::FetchObjectResponse* response, std::function<void(::grpc::Status)>) = 0;
       virtual void FetchObject(::grpc::ClientContext* context, const ::io::deephaven::proto::backplane::grpc::FetchObjectRequest* request, ::io::deephaven::proto::backplane::grpc::FetchObjectResponse* response, ::grpc::ClientUnaryReactor* reactor) = 0;
-      virtual void MessageStream(::grpc::ClientContext* context, ::grpc::ClientBidiReactor< ::io::deephaven::proto::backplane::grpc::MessageRequest,::io::deephaven::proto::backplane::grpc::MessageResponse>* reactor) = 0;
+      //
+      // Provides a generic stream feature for Deephaven instances to use to add arbitrary functionality.
+      // This API lets a client open a stream to a particular object on the server, to be mediated by
+      // a server side plugin. In theory this could effectively be used to "tunnel" a custom gRPC call,
+      // but in practice there are a few deliberate shortcomings that still make this possible, but not
+      // trivial.
+      //
+      // The first message sent to the server is expected to have a ConnectRequest, indicating which
+      // export ticket to connect to. It is an error for the server to not have a plugin defined for that
+      // object type.
+      //
+      // Subsequent requests to the server, and all responses to the client, will be a payload of bytes
+      // and an arbitrary number of tickets, referring to server side objects that one side wishes to
+      // reference in its payload.
+      //
+      // Presently it is required that the server respond immediately, at least to acknowledge that the
+      // object was correctly contacted (as opposed to waiting for a pending ticket, or dealing with
+      // network lag, etc). This is a small (and possibly not required, but convenient) departure from
+      // a offering a gRPC stream (a server-streaming or bidi-streaming call need not send a message
+      // right away).
+      //
+      // Presently there is no explicit "close" message to send, but plugin implementations can devise
+      // their own "half-close" protocol if they so choose. For now, if one end closes the connection,
+      // the other is expected to follow suit by closing their end too.
+      //
+      // (address stream failures?)
+      //
+      // Finally, addressing a broader point of unsuitability for general gRPC-over-gRPC tunneling:
+      // there is a lot more to gRPC than just specifying a path and sending payloads to it, such as
+      // how to specify metadata. In theory, we could handle the metadata as another field (only sent
+      // in the first/last payloads), or as a separate plugin-defined type of payload (analogous to the
+      // grpc-websockets implementations), but we still run into issues where this user-defined gRPC
+      // service needs to coexist with the rest of the Deephaven platform, supporting at least authentication,
+      // and for browsers, our custom streaming implementation. The nested gRPC implementation would
+      // need to be at some level aware that it is already stateful to take advantage of this, rather
+      // than somehow redefine it.
+      virtual void MessageStream(::grpc::ClientContext* context, ::grpc::ClientBidiReactor< ::io::deephaven::proto::backplane::grpc::StreamRequest,::io::deephaven::proto::backplane::grpc::StreamResponse>* reactor) = 0;
       //
       // Half of the browser-based (browser's can't do bidirectional streams without websockets)
       // implementation for MessageStream.
-      virtual void OpenMessageStream(::grpc::ClientContext* context, const ::io::deephaven::proto::backplane::grpc::MessageRequest* request, ::grpc::ClientReadReactor< ::io::deephaven::proto::backplane::grpc::MessageResponse>* reactor) = 0;
+      virtual void OpenMessageStream(::grpc::ClientContext* context, const ::io::deephaven::proto::backplane::grpc::StreamRequest* request, ::grpc::ClientReadReactor< ::io::deephaven::proto::backplane::grpc::StreamResponse>* reactor) = 0;
       //
       // Other half of the browser-based implementation for MessageStream.
-      virtual void NextMessageStream(::grpc::ClientContext* context, const ::io::deephaven::proto::backplane::grpc::MessageRequest* request, ::io::deephaven::proto::backplane::grpc::BrowserNextResponse* response, std::function<void(::grpc::Status)>) = 0;
-      virtual void NextMessageStream(::grpc::ClientContext* context, const ::io::deephaven::proto::backplane::grpc::MessageRequest* request, ::io::deephaven::proto::backplane::grpc::BrowserNextResponse* response, ::grpc::ClientUnaryReactor* reactor) = 0;
+      virtual void NextMessageStream(::grpc::ClientContext* context, const ::io::deephaven::proto::backplane::grpc::StreamRequest* request, ::io::deephaven::proto::backplane::grpc::BrowserNextResponse* response, std::function<void(::grpc::Status)>) = 0;
+      virtual void NextMessageStream(::grpc::ClientContext* context, const ::io::deephaven::proto::backplane::grpc::StreamRequest* request, ::io::deephaven::proto::backplane::grpc::BrowserNextResponse* response, ::grpc::ClientUnaryReactor* reactor) = 0;
     };
     typedef class async_interface experimental_async_interface;
     virtual class async_interface* async() { return nullptr; }
@@ -100,14 +186,14 @@ class ObjectService final {
    private:
     virtual ::grpc::ClientAsyncResponseReaderInterface< ::io::deephaven::proto::backplane::grpc::FetchObjectResponse>* AsyncFetchObjectRaw(::grpc::ClientContext* context, const ::io::deephaven::proto::backplane::grpc::FetchObjectRequest& request, ::grpc::CompletionQueue* cq) = 0;
     virtual ::grpc::ClientAsyncResponseReaderInterface< ::io::deephaven::proto::backplane::grpc::FetchObjectResponse>* PrepareAsyncFetchObjectRaw(::grpc::ClientContext* context, const ::io::deephaven::proto::backplane::grpc::FetchObjectRequest& request, ::grpc::CompletionQueue* cq) = 0;
-    virtual ::grpc::ClientReaderWriterInterface< ::io::deephaven::proto::backplane::grpc::MessageRequest, ::io::deephaven::proto::backplane::grpc::MessageResponse>* MessageStreamRaw(::grpc::ClientContext* context) = 0;
-    virtual ::grpc::ClientAsyncReaderWriterInterface< ::io::deephaven::proto::backplane::grpc::MessageRequest, ::io::deephaven::proto::backplane::grpc::MessageResponse>* AsyncMessageStreamRaw(::grpc::ClientContext* context, ::grpc::CompletionQueue* cq, void* tag) = 0;
-    virtual ::grpc::ClientAsyncReaderWriterInterface< ::io::deephaven::proto::backplane::grpc::MessageRequest, ::io::deephaven::proto::backplane::grpc::MessageResponse>* PrepareAsyncMessageStreamRaw(::grpc::ClientContext* context, ::grpc::CompletionQueue* cq) = 0;
-    virtual ::grpc::ClientReaderInterface< ::io::deephaven::proto::backplane::grpc::MessageResponse>* OpenMessageStreamRaw(::grpc::ClientContext* context, const ::io::deephaven::proto::backplane::grpc::MessageRequest& request) = 0;
-    virtual ::grpc::ClientAsyncReaderInterface< ::io::deephaven::proto::backplane::grpc::MessageResponse>* AsyncOpenMessageStreamRaw(::grpc::ClientContext* context, const ::io::deephaven::proto::backplane::grpc::MessageRequest& request, ::grpc::CompletionQueue* cq, void* tag) = 0;
-    virtual ::grpc::ClientAsyncReaderInterface< ::io::deephaven::proto::backplane::grpc::MessageResponse>* PrepareAsyncOpenMessageStreamRaw(::grpc::ClientContext* context, const ::io::deephaven::proto::backplane::grpc::MessageRequest& request, ::grpc::CompletionQueue* cq) = 0;
-    virtual ::grpc::ClientAsyncResponseReaderInterface< ::io::deephaven::proto::backplane::grpc::BrowserNextResponse>* AsyncNextMessageStreamRaw(::grpc::ClientContext* context, const ::io::deephaven::proto::backplane::grpc::MessageRequest& request, ::grpc::CompletionQueue* cq) = 0;
-    virtual ::grpc::ClientAsyncResponseReaderInterface< ::io::deephaven::proto::backplane::grpc::BrowserNextResponse>* PrepareAsyncNextMessageStreamRaw(::grpc::ClientContext* context, const ::io::deephaven::proto::backplane::grpc::MessageRequest& request, ::grpc::CompletionQueue* cq) = 0;
+    virtual ::grpc::ClientReaderWriterInterface< ::io::deephaven::proto::backplane::grpc::StreamRequest, ::io::deephaven::proto::backplane::grpc::StreamResponse>* MessageStreamRaw(::grpc::ClientContext* context) = 0;
+    virtual ::grpc::ClientAsyncReaderWriterInterface< ::io::deephaven::proto::backplane::grpc::StreamRequest, ::io::deephaven::proto::backplane::grpc::StreamResponse>* AsyncMessageStreamRaw(::grpc::ClientContext* context, ::grpc::CompletionQueue* cq, void* tag) = 0;
+    virtual ::grpc::ClientAsyncReaderWriterInterface< ::io::deephaven::proto::backplane::grpc::StreamRequest, ::io::deephaven::proto::backplane::grpc::StreamResponse>* PrepareAsyncMessageStreamRaw(::grpc::ClientContext* context, ::grpc::CompletionQueue* cq) = 0;
+    virtual ::grpc::ClientReaderInterface< ::io::deephaven::proto::backplane::grpc::StreamResponse>* OpenMessageStreamRaw(::grpc::ClientContext* context, const ::io::deephaven::proto::backplane::grpc::StreamRequest& request) = 0;
+    virtual ::grpc::ClientAsyncReaderInterface< ::io::deephaven::proto::backplane::grpc::StreamResponse>* AsyncOpenMessageStreamRaw(::grpc::ClientContext* context, const ::io::deephaven::proto::backplane::grpc::StreamRequest& request, ::grpc::CompletionQueue* cq, void* tag) = 0;
+    virtual ::grpc::ClientAsyncReaderInterface< ::io::deephaven::proto::backplane::grpc::StreamResponse>* PrepareAsyncOpenMessageStreamRaw(::grpc::ClientContext* context, const ::io::deephaven::proto::backplane::grpc::StreamRequest& request, ::grpc::CompletionQueue* cq) = 0;
+    virtual ::grpc::ClientAsyncResponseReaderInterface< ::io::deephaven::proto::backplane::grpc::BrowserNextResponse>* AsyncNextMessageStreamRaw(::grpc::ClientContext* context, const ::io::deephaven::proto::backplane::grpc::StreamRequest& request, ::grpc::CompletionQueue* cq) = 0;
+    virtual ::grpc::ClientAsyncResponseReaderInterface< ::io::deephaven::proto::backplane::grpc::BrowserNextResponse>* PrepareAsyncNextMessageStreamRaw(::grpc::ClientContext* context, const ::io::deephaven::proto::backplane::grpc::StreamRequest& request, ::grpc::CompletionQueue* cq) = 0;
   };
   class Stub final : public StubInterface {
    public:
@@ -119,29 +205,29 @@ class ObjectService final {
     std::unique_ptr< ::grpc::ClientAsyncResponseReader< ::io::deephaven::proto::backplane::grpc::FetchObjectResponse>> PrepareAsyncFetchObject(::grpc::ClientContext* context, const ::io::deephaven::proto::backplane::grpc::FetchObjectRequest& request, ::grpc::CompletionQueue* cq) {
       return std::unique_ptr< ::grpc::ClientAsyncResponseReader< ::io::deephaven::proto::backplane::grpc::FetchObjectResponse>>(PrepareAsyncFetchObjectRaw(context, request, cq));
     }
-    std::unique_ptr< ::grpc::ClientReaderWriter< ::io::deephaven::proto::backplane::grpc::MessageRequest, ::io::deephaven::proto::backplane::grpc::MessageResponse>> MessageStream(::grpc::ClientContext* context) {
-      return std::unique_ptr< ::grpc::ClientReaderWriter< ::io::deephaven::proto::backplane::grpc::MessageRequest, ::io::deephaven::proto::backplane::grpc::MessageResponse>>(MessageStreamRaw(context));
+    std::unique_ptr< ::grpc::ClientReaderWriter< ::io::deephaven::proto::backplane::grpc::StreamRequest, ::io::deephaven::proto::backplane::grpc::StreamResponse>> MessageStream(::grpc::ClientContext* context) {
+      return std::unique_ptr< ::grpc::ClientReaderWriter< ::io::deephaven::proto::backplane::grpc::StreamRequest, ::io::deephaven::proto::backplane::grpc::StreamResponse>>(MessageStreamRaw(context));
     }
-    std::unique_ptr<  ::grpc::ClientAsyncReaderWriter< ::io::deephaven::proto::backplane::grpc::MessageRequest, ::io::deephaven::proto::backplane::grpc::MessageResponse>> AsyncMessageStream(::grpc::ClientContext* context, ::grpc::CompletionQueue* cq, void* tag) {
-      return std::unique_ptr< ::grpc::ClientAsyncReaderWriter< ::io::deephaven::proto::backplane::grpc::MessageRequest, ::io::deephaven::proto::backplane::grpc::MessageResponse>>(AsyncMessageStreamRaw(context, cq, tag));
+    std::unique_ptr<  ::grpc::ClientAsyncReaderWriter< ::io::deephaven::proto::backplane::grpc::StreamRequest, ::io::deephaven::proto::backplane::grpc::StreamResponse>> AsyncMessageStream(::grpc::ClientContext* context, ::grpc::CompletionQueue* cq, void* tag) {
+      return std::unique_ptr< ::grpc::ClientAsyncReaderWriter< ::io::deephaven::proto::backplane::grpc::StreamRequest, ::io::deephaven::proto::backplane::grpc::StreamResponse>>(AsyncMessageStreamRaw(context, cq, tag));
     }
-    std::unique_ptr<  ::grpc::ClientAsyncReaderWriter< ::io::deephaven::proto::backplane::grpc::MessageRequest, ::io::deephaven::proto::backplane::grpc::MessageResponse>> PrepareAsyncMessageStream(::grpc::ClientContext* context, ::grpc::CompletionQueue* cq) {
-      return std::unique_ptr< ::grpc::ClientAsyncReaderWriter< ::io::deephaven::proto::backplane::grpc::MessageRequest, ::io::deephaven::proto::backplane::grpc::MessageResponse>>(PrepareAsyncMessageStreamRaw(context, cq));
+    std::unique_ptr<  ::grpc::ClientAsyncReaderWriter< ::io::deephaven::proto::backplane::grpc::StreamRequest, ::io::deephaven::proto::backplane::grpc::StreamResponse>> PrepareAsyncMessageStream(::grpc::ClientContext* context, ::grpc::CompletionQueue* cq) {
+      return std::unique_ptr< ::grpc::ClientAsyncReaderWriter< ::io::deephaven::proto::backplane::grpc::StreamRequest, ::io::deephaven::proto::backplane::grpc::StreamResponse>>(PrepareAsyncMessageStreamRaw(context, cq));
     }
-    std::unique_ptr< ::grpc::ClientReader< ::io::deephaven::proto::backplane::grpc::MessageResponse>> OpenMessageStream(::grpc::ClientContext* context, const ::io::deephaven::proto::backplane::grpc::MessageRequest& request) {
-      return std::unique_ptr< ::grpc::ClientReader< ::io::deephaven::proto::backplane::grpc::MessageResponse>>(OpenMessageStreamRaw(context, request));
+    std::unique_ptr< ::grpc::ClientReader< ::io::deephaven::proto::backplane::grpc::StreamResponse>> OpenMessageStream(::grpc::ClientContext* context, const ::io::deephaven::proto::backplane::grpc::StreamRequest& request) {
+      return std::unique_ptr< ::grpc::ClientReader< ::io::deephaven::proto::backplane::grpc::StreamResponse>>(OpenMessageStreamRaw(context, request));
     }
-    std::unique_ptr< ::grpc::ClientAsyncReader< ::io::deephaven::proto::backplane::grpc::MessageResponse>> AsyncOpenMessageStream(::grpc::ClientContext* context, const ::io::deephaven::proto::backplane::grpc::MessageRequest& request, ::grpc::CompletionQueue* cq, void* tag) {
-      return std::unique_ptr< ::grpc::ClientAsyncReader< ::io::deephaven::proto::backplane::grpc::MessageResponse>>(AsyncOpenMessageStreamRaw(context, request, cq, tag));
+    std::unique_ptr< ::grpc::ClientAsyncReader< ::io::deephaven::proto::backplane::grpc::StreamResponse>> AsyncOpenMessageStream(::grpc::ClientContext* context, const ::io::deephaven::proto::backplane::grpc::StreamRequest& request, ::grpc::CompletionQueue* cq, void* tag) {
+      return std::unique_ptr< ::grpc::ClientAsyncReader< ::io::deephaven::proto::backplane::grpc::StreamResponse>>(AsyncOpenMessageStreamRaw(context, request, cq, tag));
     }
-    std::unique_ptr< ::grpc::ClientAsyncReader< ::io::deephaven::proto::backplane::grpc::MessageResponse>> PrepareAsyncOpenMessageStream(::grpc::ClientContext* context, const ::io::deephaven::proto::backplane::grpc::MessageRequest& request, ::grpc::CompletionQueue* cq) {
-      return std::unique_ptr< ::grpc::ClientAsyncReader< ::io::deephaven::proto::backplane::grpc::MessageResponse>>(PrepareAsyncOpenMessageStreamRaw(context, request, cq));
+    std::unique_ptr< ::grpc::ClientAsyncReader< ::io::deephaven::proto::backplane::grpc::StreamResponse>> PrepareAsyncOpenMessageStream(::grpc::ClientContext* context, const ::io::deephaven::proto::backplane::grpc::StreamRequest& request, ::grpc::CompletionQueue* cq) {
+      return std::unique_ptr< ::grpc::ClientAsyncReader< ::io::deephaven::proto::backplane::grpc::StreamResponse>>(PrepareAsyncOpenMessageStreamRaw(context, request, cq));
     }
-    ::grpc::Status NextMessageStream(::grpc::ClientContext* context, const ::io::deephaven::proto::backplane::grpc::MessageRequest& request, ::io::deephaven::proto::backplane::grpc::BrowserNextResponse* response) override;
-    std::unique_ptr< ::grpc::ClientAsyncResponseReader< ::io::deephaven::proto::backplane::grpc::BrowserNextResponse>> AsyncNextMessageStream(::grpc::ClientContext* context, const ::io::deephaven::proto::backplane::grpc::MessageRequest& request, ::grpc::CompletionQueue* cq) {
+    ::grpc::Status NextMessageStream(::grpc::ClientContext* context, const ::io::deephaven::proto::backplane::grpc::StreamRequest& request, ::io::deephaven::proto::backplane::grpc::BrowserNextResponse* response) override;
+    std::unique_ptr< ::grpc::ClientAsyncResponseReader< ::io::deephaven::proto::backplane::grpc::BrowserNextResponse>> AsyncNextMessageStream(::grpc::ClientContext* context, const ::io::deephaven::proto::backplane::grpc::StreamRequest& request, ::grpc::CompletionQueue* cq) {
       return std::unique_ptr< ::grpc::ClientAsyncResponseReader< ::io::deephaven::proto::backplane::grpc::BrowserNextResponse>>(AsyncNextMessageStreamRaw(context, request, cq));
     }
-    std::unique_ptr< ::grpc::ClientAsyncResponseReader< ::io::deephaven::proto::backplane::grpc::BrowserNextResponse>> PrepareAsyncNextMessageStream(::grpc::ClientContext* context, const ::io::deephaven::proto::backplane::grpc::MessageRequest& request, ::grpc::CompletionQueue* cq) {
+    std::unique_ptr< ::grpc::ClientAsyncResponseReader< ::io::deephaven::proto::backplane::grpc::BrowserNextResponse>> PrepareAsyncNextMessageStream(::grpc::ClientContext* context, const ::io::deephaven::proto::backplane::grpc::StreamRequest& request, ::grpc::CompletionQueue* cq) {
       return std::unique_ptr< ::grpc::ClientAsyncResponseReader< ::io::deephaven::proto::backplane::grpc::BrowserNextResponse>>(PrepareAsyncNextMessageStreamRaw(context, request, cq));
     }
     class async final :
@@ -149,10 +235,10 @@ class ObjectService final {
      public:
       void FetchObject(::grpc::ClientContext* context, const ::io::deephaven::proto::backplane::grpc::FetchObjectRequest* request, ::io::deephaven::proto::backplane::grpc::FetchObjectResponse* response, std::function<void(::grpc::Status)>) override;
       void FetchObject(::grpc::ClientContext* context, const ::io::deephaven::proto::backplane::grpc::FetchObjectRequest* request, ::io::deephaven::proto::backplane::grpc::FetchObjectResponse* response, ::grpc::ClientUnaryReactor* reactor) override;
-      void MessageStream(::grpc::ClientContext* context, ::grpc::ClientBidiReactor< ::io::deephaven::proto::backplane::grpc::MessageRequest,::io::deephaven::proto::backplane::grpc::MessageResponse>* reactor) override;
-      void OpenMessageStream(::grpc::ClientContext* context, const ::io::deephaven::proto::backplane::grpc::MessageRequest* request, ::grpc::ClientReadReactor< ::io::deephaven::proto::backplane::grpc::MessageResponse>* reactor) override;
-      void NextMessageStream(::grpc::ClientContext* context, const ::io::deephaven::proto::backplane::grpc::MessageRequest* request, ::io::deephaven::proto::backplane::grpc::BrowserNextResponse* response, std::function<void(::grpc::Status)>) override;
-      void NextMessageStream(::grpc::ClientContext* context, const ::io::deephaven::proto::backplane::grpc::MessageRequest* request, ::io::deephaven::proto::backplane::grpc::BrowserNextResponse* response, ::grpc::ClientUnaryReactor* reactor) override;
+      void MessageStream(::grpc::ClientContext* context, ::grpc::ClientBidiReactor< ::io::deephaven::proto::backplane::grpc::StreamRequest,::io::deephaven::proto::backplane::grpc::StreamResponse>* reactor) override;
+      void OpenMessageStream(::grpc::ClientContext* context, const ::io::deephaven::proto::backplane::grpc::StreamRequest* request, ::grpc::ClientReadReactor< ::io::deephaven::proto::backplane::grpc::StreamResponse>* reactor) override;
+      void NextMessageStream(::grpc::ClientContext* context, const ::io::deephaven::proto::backplane::grpc::StreamRequest* request, ::io::deephaven::proto::backplane::grpc::BrowserNextResponse* response, std::function<void(::grpc::Status)>) override;
+      void NextMessageStream(::grpc::ClientContext* context, const ::io::deephaven::proto::backplane::grpc::StreamRequest* request, ::io::deephaven::proto::backplane::grpc::BrowserNextResponse* response, ::grpc::ClientUnaryReactor* reactor) override;
      private:
       friend class Stub;
       explicit async(Stub* stub): stub_(stub) { }
@@ -166,14 +252,14 @@ class ObjectService final {
     class async async_stub_{this};
     ::grpc::ClientAsyncResponseReader< ::io::deephaven::proto::backplane::grpc::FetchObjectResponse>* AsyncFetchObjectRaw(::grpc::ClientContext* context, const ::io::deephaven::proto::backplane::grpc::FetchObjectRequest& request, ::grpc::CompletionQueue* cq) override;
     ::grpc::ClientAsyncResponseReader< ::io::deephaven::proto::backplane::grpc::FetchObjectResponse>* PrepareAsyncFetchObjectRaw(::grpc::ClientContext* context, const ::io::deephaven::proto::backplane::grpc::FetchObjectRequest& request, ::grpc::CompletionQueue* cq) override;
-    ::grpc::ClientReaderWriter< ::io::deephaven::proto::backplane::grpc::MessageRequest, ::io::deephaven::proto::backplane::grpc::MessageResponse>* MessageStreamRaw(::grpc::ClientContext* context) override;
-    ::grpc::ClientAsyncReaderWriter< ::io::deephaven::proto::backplane::grpc::MessageRequest, ::io::deephaven::proto::backplane::grpc::MessageResponse>* AsyncMessageStreamRaw(::grpc::ClientContext* context, ::grpc::CompletionQueue* cq, void* tag) override;
-    ::grpc::ClientAsyncReaderWriter< ::io::deephaven::proto::backplane::grpc::MessageRequest, ::io::deephaven::proto::backplane::grpc::MessageResponse>* PrepareAsyncMessageStreamRaw(::grpc::ClientContext* context, ::grpc::CompletionQueue* cq) override;
-    ::grpc::ClientReader< ::io::deephaven::proto::backplane::grpc::MessageResponse>* OpenMessageStreamRaw(::grpc::ClientContext* context, const ::io::deephaven::proto::backplane::grpc::MessageRequest& request) override;
-    ::grpc::ClientAsyncReader< ::io::deephaven::proto::backplane::grpc::MessageResponse>* AsyncOpenMessageStreamRaw(::grpc::ClientContext* context, const ::io::deephaven::proto::backplane::grpc::MessageRequest& request, ::grpc::CompletionQueue* cq, void* tag) override;
-    ::grpc::ClientAsyncReader< ::io::deephaven::proto::backplane::grpc::MessageResponse>* PrepareAsyncOpenMessageStreamRaw(::grpc::ClientContext* context, const ::io::deephaven::proto::backplane::grpc::MessageRequest& request, ::grpc::CompletionQueue* cq) override;
-    ::grpc::ClientAsyncResponseReader< ::io::deephaven::proto::backplane::grpc::BrowserNextResponse>* AsyncNextMessageStreamRaw(::grpc::ClientContext* context, const ::io::deephaven::proto::backplane::grpc::MessageRequest& request, ::grpc::CompletionQueue* cq) override;
-    ::grpc::ClientAsyncResponseReader< ::io::deephaven::proto::backplane::grpc::BrowserNextResponse>* PrepareAsyncNextMessageStreamRaw(::grpc::ClientContext* context, const ::io::deephaven::proto::backplane::grpc::MessageRequest& request, ::grpc::CompletionQueue* cq) override;
+    ::grpc::ClientReaderWriter< ::io::deephaven::proto::backplane::grpc::StreamRequest, ::io::deephaven::proto::backplane::grpc::StreamResponse>* MessageStreamRaw(::grpc::ClientContext* context) override;
+    ::grpc::ClientAsyncReaderWriter< ::io::deephaven::proto::backplane::grpc::StreamRequest, ::io::deephaven::proto::backplane::grpc::StreamResponse>* AsyncMessageStreamRaw(::grpc::ClientContext* context, ::grpc::CompletionQueue* cq, void* tag) override;
+    ::grpc::ClientAsyncReaderWriter< ::io::deephaven::proto::backplane::grpc::StreamRequest, ::io::deephaven::proto::backplane::grpc::StreamResponse>* PrepareAsyncMessageStreamRaw(::grpc::ClientContext* context, ::grpc::CompletionQueue* cq) override;
+    ::grpc::ClientReader< ::io::deephaven::proto::backplane::grpc::StreamResponse>* OpenMessageStreamRaw(::grpc::ClientContext* context, const ::io::deephaven::proto::backplane::grpc::StreamRequest& request) override;
+    ::grpc::ClientAsyncReader< ::io::deephaven::proto::backplane::grpc::StreamResponse>* AsyncOpenMessageStreamRaw(::grpc::ClientContext* context, const ::io::deephaven::proto::backplane::grpc::StreamRequest& request, ::grpc::CompletionQueue* cq, void* tag) override;
+    ::grpc::ClientAsyncReader< ::io::deephaven::proto::backplane::grpc::StreamResponse>* PrepareAsyncOpenMessageStreamRaw(::grpc::ClientContext* context, const ::io::deephaven::proto::backplane::grpc::StreamRequest& request, ::grpc::CompletionQueue* cq) override;
+    ::grpc::ClientAsyncResponseReader< ::io::deephaven::proto::backplane::grpc::BrowserNextResponse>* AsyncNextMessageStreamRaw(::grpc::ClientContext* context, const ::io::deephaven::proto::backplane::grpc::StreamRequest& request, ::grpc::CompletionQueue* cq) override;
+    ::grpc::ClientAsyncResponseReader< ::io::deephaven::proto::backplane::grpc::BrowserNextResponse>* PrepareAsyncNextMessageStreamRaw(::grpc::ClientContext* context, const ::io::deephaven::proto::backplane::grpc::StreamRequest& request, ::grpc::CompletionQueue* cq) override;
     const ::grpc::internal::RpcMethod rpcmethod_FetchObject_;
     const ::grpc::internal::RpcMethod rpcmethod_MessageStream_;
     const ::grpc::internal::RpcMethod rpcmethod_OpenMessageStream_;
@@ -185,15 +271,58 @@ class ObjectService final {
    public:
     Service();
     virtual ~Service();
+    //
+    // Fetches a server-side object as a binary payload and assorted other tickets pointing at
+    // other server-side objects that may need to be read to properly use this payload. The binary
+    // format is implementation specific, but the implementation should be specified by the "type"
+    // identifier in the typed ticket.
+    //
+    // Deprecated in favor of MessageStream, which is able to handle the same content.
     virtual ::grpc::Status FetchObject(::grpc::ServerContext* context, const ::io::deephaven::proto::backplane::grpc::FetchObjectRequest* request, ::io::deephaven::proto::backplane::grpc::FetchObjectResponse* response);
-    virtual ::grpc::Status MessageStream(::grpc::ServerContext* context, ::grpc::ServerReaderWriter< ::io::deephaven::proto::backplane::grpc::MessageResponse, ::io::deephaven::proto::backplane::grpc::MessageRequest>* stream);
+    //
+    // Provides a generic stream feature for Deephaven instances to use to add arbitrary functionality.
+    // This API lets a client open a stream to a particular object on the server, to be mediated by
+    // a server side plugin. In theory this could effectively be used to "tunnel" a custom gRPC call,
+    // but in practice there are a few deliberate shortcomings that still make this possible, but not
+    // trivial.
+    //
+    // The first message sent to the server is expected to have a ConnectRequest, indicating which
+    // export ticket to connect to. It is an error for the server to not have a plugin defined for that
+    // object type.
+    //
+    // Subsequent requests to the server, and all responses to the client, will be a payload of bytes
+    // and an arbitrary number of tickets, referring to server side objects that one side wishes to
+    // reference in its payload.
+    //
+    // Presently it is required that the server respond immediately, at least to acknowledge that the
+    // object was correctly contacted (as opposed to waiting for a pending ticket, or dealing with
+    // network lag, etc). This is a small (and possibly not required, but convenient) departure from
+    // a offering a gRPC stream (a server-streaming or bidi-streaming call need not send a message
+    // right away).
+    //
+    // Presently there is no explicit "close" message to send, but plugin implementations can devise
+    // their own "half-close" protocol if they so choose. For now, if one end closes the connection,
+    // the other is expected to follow suit by closing their end too.
+    //
+    // (address stream failures?)
+    //
+    // Finally, addressing a broader point of unsuitability for general gRPC-over-gRPC tunneling:
+    // there is a lot more to gRPC than just specifying a path and sending payloads to it, such as
+    // how to specify metadata. In theory, we could handle the metadata as another field (only sent
+    // in the first/last payloads), or as a separate plugin-defined type of payload (analogous to the
+    // grpc-websockets implementations), but we still run into issues where this user-defined gRPC
+    // service needs to coexist with the rest of the Deephaven platform, supporting at least authentication,
+    // and for browsers, our custom streaming implementation. The nested gRPC implementation would
+    // need to be at some level aware that it is already stateful to take advantage of this, rather
+    // than somehow redefine it.
+    virtual ::grpc::Status MessageStream(::grpc::ServerContext* context, ::grpc::ServerReaderWriter< ::io::deephaven::proto::backplane::grpc::StreamResponse, ::io::deephaven::proto::backplane::grpc::StreamRequest>* stream);
     //
     // Half of the browser-based (browser's can't do bidirectional streams without websockets)
     // implementation for MessageStream.
-    virtual ::grpc::Status OpenMessageStream(::grpc::ServerContext* context, const ::io::deephaven::proto::backplane::grpc::MessageRequest* request, ::grpc::ServerWriter< ::io::deephaven::proto::backplane::grpc::MessageResponse>* writer);
+    virtual ::grpc::Status OpenMessageStream(::grpc::ServerContext* context, const ::io::deephaven::proto::backplane::grpc::StreamRequest* request, ::grpc::ServerWriter< ::io::deephaven::proto::backplane::grpc::StreamResponse>* writer);
     //
     // Other half of the browser-based implementation for MessageStream.
-    virtual ::grpc::Status NextMessageStream(::grpc::ServerContext* context, const ::io::deephaven::proto::backplane::grpc::MessageRequest* request, ::io::deephaven::proto::backplane::grpc::BrowserNextResponse* response);
+    virtual ::grpc::Status NextMessageStream(::grpc::ServerContext* context, const ::io::deephaven::proto::backplane::grpc::StreamRequest* request, ::io::deephaven::proto::backplane::grpc::BrowserNextResponse* response);
   };
   template <class BaseClass>
   class WithAsyncMethod_FetchObject : public BaseClass {
@@ -227,11 +356,11 @@ class ObjectService final {
       BaseClassMustBeDerivedFromService(this);
     }
     // disable synchronous version of this method
-    ::grpc::Status MessageStream(::grpc::ServerContext* /*context*/, ::grpc::ServerReaderWriter< ::io::deephaven::proto::backplane::grpc::MessageResponse, ::io::deephaven::proto::backplane::grpc::MessageRequest>* /*stream*/)  override {
+    ::grpc::Status MessageStream(::grpc::ServerContext* /*context*/, ::grpc::ServerReaderWriter< ::io::deephaven::proto::backplane::grpc::StreamResponse, ::io::deephaven::proto::backplane::grpc::StreamRequest>* /*stream*/)  override {
       abort();
       return ::grpc::Status(::grpc::StatusCode::UNIMPLEMENTED, "");
     }
-    void RequestMessageStream(::grpc::ServerContext* context, ::grpc::ServerAsyncReaderWriter< ::io::deephaven::proto::backplane::grpc::MessageResponse, ::io::deephaven::proto::backplane::grpc::MessageRequest>* stream, ::grpc::CompletionQueue* new_call_cq, ::grpc::ServerCompletionQueue* notification_cq, void *tag) {
+    void RequestMessageStream(::grpc::ServerContext* context, ::grpc::ServerAsyncReaderWriter< ::io::deephaven::proto::backplane::grpc::StreamResponse, ::io::deephaven::proto::backplane::grpc::StreamRequest>* stream, ::grpc::CompletionQueue* new_call_cq, ::grpc::ServerCompletionQueue* notification_cq, void *tag) {
       ::grpc::Service::RequestAsyncBidiStreaming(1, context, stream, new_call_cq, notification_cq, tag);
     }
   };
@@ -247,11 +376,11 @@ class ObjectService final {
       BaseClassMustBeDerivedFromService(this);
     }
     // disable synchronous version of this method
-    ::grpc::Status OpenMessageStream(::grpc::ServerContext* /*context*/, const ::io::deephaven::proto::backplane::grpc::MessageRequest* /*request*/, ::grpc::ServerWriter< ::io::deephaven::proto::backplane::grpc::MessageResponse>* /*writer*/) override {
+    ::grpc::Status OpenMessageStream(::grpc::ServerContext* /*context*/, const ::io::deephaven::proto::backplane::grpc::StreamRequest* /*request*/, ::grpc::ServerWriter< ::io::deephaven::proto::backplane::grpc::StreamResponse>* /*writer*/) override {
       abort();
       return ::grpc::Status(::grpc::StatusCode::UNIMPLEMENTED, "");
     }
-    void RequestOpenMessageStream(::grpc::ServerContext* context, ::io::deephaven::proto::backplane::grpc::MessageRequest* request, ::grpc::ServerAsyncWriter< ::io::deephaven::proto::backplane::grpc::MessageResponse>* writer, ::grpc::CompletionQueue* new_call_cq, ::grpc::ServerCompletionQueue* notification_cq, void *tag) {
+    void RequestOpenMessageStream(::grpc::ServerContext* context, ::io::deephaven::proto::backplane::grpc::StreamRequest* request, ::grpc::ServerAsyncWriter< ::io::deephaven::proto::backplane::grpc::StreamResponse>* writer, ::grpc::CompletionQueue* new_call_cq, ::grpc::ServerCompletionQueue* notification_cq, void *tag) {
       ::grpc::Service::RequestAsyncServerStreaming(2, context, request, writer, new_call_cq, notification_cq, tag);
     }
   };
@@ -267,11 +396,11 @@ class ObjectService final {
       BaseClassMustBeDerivedFromService(this);
     }
     // disable synchronous version of this method
-    ::grpc::Status NextMessageStream(::grpc::ServerContext* /*context*/, const ::io::deephaven::proto::backplane::grpc::MessageRequest* /*request*/, ::io::deephaven::proto::backplane::grpc::BrowserNextResponse* /*response*/) override {
+    ::grpc::Status NextMessageStream(::grpc::ServerContext* /*context*/, const ::io::deephaven::proto::backplane::grpc::StreamRequest* /*request*/, ::io::deephaven::proto::backplane::grpc::BrowserNextResponse* /*response*/) override {
       abort();
       return ::grpc::Status(::grpc::StatusCode::UNIMPLEMENTED, "");
     }
-    void RequestNextMessageStream(::grpc::ServerContext* context, ::io::deephaven::proto::backplane::grpc::MessageRequest* request, ::grpc::ServerAsyncResponseWriter< ::io::deephaven::proto::backplane::grpc::BrowserNextResponse>* response, ::grpc::CompletionQueue* new_call_cq, ::grpc::ServerCompletionQueue* notification_cq, void *tag) {
+    void RequestNextMessageStream(::grpc::ServerContext* context, ::io::deephaven::proto::backplane::grpc::StreamRequest* request, ::grpc::ServerAsyncResponseWriter< ::io::deephaven::proto::backplane::grpc::BrowserNextResponse>* response, ::grpc::CompletionQueue* new_call_cq, ::grpc::ServerCompletionQueue* notification_cq, void *tag) {
       ::grpc::Service::RequestAsyncUnary(3, context, request, response, new_call_cq, notification_cq, tag);
     }
   };
@@ -310,7 +439,7 @@ class ObjectService final {
    public:
     WithCallbackMethod_MessageStream() {
       ::grpc::Service::MarkMethodCallback(1,
-          new ::grpc::internal::CallbackBidiHandler< ::io::deephaven::proto::backplane::grpc::MessageRequest, ::io::deephaven::proto::backplane::grpc::MessageResponse>(
+          new ::grpc::internal::CallbackBidiHandler< ::io::deephaven::proto::backplane::grpc::StreamRequest, ::io::deephaven::proto::backplane::grpc::StreamResponse>(
             [this](
                    ::grpc::CallbackServerContext* context) { return this->MessageStream(context); }));
     }
@@ -318,11 +447,11 @@ class ObjectService final {
       BaseClassMustBeDerivedFromService(this);
     }
     // disable synchronous version of this method
-    ::grpc::Status MessageStream(::grpc::ServerContext* /*context*/, ::grpc::ServerReaderWriter< ::io::deephaven::proto::backplane::grpc::MessageResponse, ::io::deephaven::proto::backplane::grpc::MessageRequest>* /*stream*/)  override {
+    ::grpc::Status MessageStream(::grpc::ServerContext* /*context*/, ::grpc::ServerReaderWriter< ::io::deephaven::proto::backplane::grpc::StreamResponse, ::io::deephaven::proto::backplane::grpc::StreamRequest>* /*stream*/)  override {
       abort();
       return ::grpc::Status(::grpc::StatusCode::UNIMPLEMENTED, "");
     }
-    virtual ::grpc::ServerBidiReactor< ::io::deephaven::proto::backplane::grpc::MessageRequest, ::io::deephaven::proto::backplane::grpc::MessageResponse>* MessageStream(
+    virtual ::grpc::ServerBidiReactor< ::io::deephaven::proto::backplane::grpc::StreamRequest, ::io::deephaven::proto::backplane::grpc::StreamResponse>* MessageStream(
       ::grpc::CallbackServerContext* /*context*/)
       { return nullptr; }
   };
@@ -333,20 +462,20 @@ class ObjectService final {
    public:
     WithCallbackMethod_OpenMessageStream() {
       ::grpc::Service::MarkMethodCallback(2,
-          new ::grpc::internal::CallbackServerStreamingHandler< ::io::deephaven::proto::backplane::grpc::MessageRequest, ::io::deephaven::proto::backplane::grpc::MessageResponse>(
+          new ::grpc::internal::CallbackServerStreamingHandler< ::io::deephaven::proto::backplane::grpc::StreamRequest, ::io::deephaven::proto::backplane::grpc::StreamResponse>(
             [this](
-                   ::grpc::CallbackServerContext* context, const ::io::deephaven::proto::backplane::grpc::MessageRequest* request) { return this->OpenMessageStream(context, request); }));
+                   ::grpc::CallbackServerContext* context, const ::io::deephaven::proto::backplane::grpc::StreamRequest* request) { return this->OpenMessageStream(context, request); }));
     }
     ~WithCallbackMethod_OpenMessageStream() override {
       BaseClassMustBeDerivedFromService(this);
     }
     // disable synchronous version of this method
-    ::grpc::Status OpenMessageStream(::grpc::ServerContext* /*context*/, const ::io::deephaven::proto::backplane::grpc::MessageRequest* /*request*/, ::grpc::ServerWriter< ::io::deephaven::proto::backplane::grpc::MessageResponse>* /*writer*/) override {
+    ::grpc::Status OpenMessageStream(::grpc::ServerContext* /*context*/, const ::io::deephaven::proto::backplane::grpc::StreamRequest* /*request*/, ::grpc::ServerWriter< ::io::deephaven::proto::backplane::grpc::StreamResponse>* /*writer*/) override {
       abort();
       return ::grpc::Status(::grpc::StatusCode::UNIMPLEMENTED, "");
     }
-    virtual ::grpc::ServerWriteReactor< ::io::deephaven::proto::backplane::grpc::MessageResponse>* OpenMessageStream(
-      ::grpc::CallbackServerContext* /*context*/, const ::io::deephaven::proto::backplane::grpc::MessageRequest* /*request*/)  { return nullptr; }
+    virtual ::grpc::ServerWriteReactor< ::io::deephaven::proto::backplane::grpc::StreamResponse>* OpenMessageStream(
+      ::grpc::CallbackServerContext* /*context*/, const ::io::deephaven::proto::backplane::grpc::StreamRequest* /*request*/)  { return nullptr; }
   };
   template <class BaseClass>
   class WithCallbackMethod_NextMessageStream : public BaseClass {
@@ -355,25 +484,25 @@ class ObjectService final {
    public:
     WithCallbackMethod_NextMessageStream() {
       ::grpc::Service::MarkMethodCallback(3,
-          new ::grpc::internal::CallbackUnaryHandler< ::io::deephaven::proto::backplane::grpc::MessageRequest, ::io::deephaven::proto::backplane::grpc::BrowserNextResponse>(
+          new ::grpc::internal::CallbackUnaryHandler< ::io::deephaven::proto::backplane::grpc::StreamRequest, ::io::deephaven::proto::backplane::grpc::BrowserNextResponse>(
             [this](
-                   ::grpc::CallbackServerContext* context, const ::io::deephaven::proto::backplane::grpc::MessageRequest* request, ::io::deephaven::proto::backplane::grpc::BrowserNextResponse* response) { return this->NextMessageStream(context, request, response); }));}
+                   ::grpc::CallbackServerContext* context, const ::io::deephaven::proto::backplane::grpc::StreamRequest* request, ::io::deephaven::proto::backplane::grpc::BrowserNextResponse* response) { return this->NextMessageStream(context, request, response); }));}
     void SetMessageAllocatorFor_NextMessageStream(
-        ::grpc::MessageAllocator< ::io::deephaven::proto::backplane::grpc::MessageRequest, ::io::deephaven::proto::backplane::grpc::BrowserNextResponse>* allocator) {
+        ::grpc::MessageAllocator< ::io::deephaven::proto::backplane::grpc::StreamRequest, ::io::deephaven::proto::backplane::grpc::BrowserNextResponse>* allocator) {
       ::grpc::internal::MethodHandler* const handler = ::grpc::Service::GetHandler(3);
-      static_cast<::grpc::internal::CallbackUnaryHandler< ::io::deephaven::proto::backplane::grpc::MessageRequest, ::io::deephaven::proto::backplane::grpc::BrowserNextResponse>*>(handler)
+      static_cast<::grpc::internal::CallbackUnaryHandler< ::io::deephaven::proto::backplane::grpc::StreamRequest, ::io::deephaven::proto::backplane::grpc::BrowserNextResponse>*>(handler)
               ->SetMessageAllocator(allocator);
     }
     ~WithCallbackMethod_NextMessageStream() override {
       BaseClassMustBeDerivedFromService(this);
     }
     // disable synchronous version of this method
-    ::grpc::Status NextMessageStream(::grpc::ServerContext* /*context*/, const ::io::deephaven::proto::backplane::grpc::MessageRequest* /*request*/, ::io::deephaven::proto::backplane::grpc::BrowserNextResponse* /*response*/) override {
+    ::grpc::Status NextMessageStream(::grpc::ServerContext* /*context*/, const ::io::deephaven::proto::backplane::grpc::StreamRequest* /*request*/, ::io::deephaven::proto::backplane::grpc::BrowserNextResponse* /*response*/) override {
       abort();
       return ::grpc::Status(::grpc::StatusCode::UNIMPLEMENTED, "");
     }
     virtual ::grpc::ServerUnaryReactor* NextMessageStream(
-      ::grpc::CallbackServerContext* /*context*/, const ::io::deephaven::proto::backplane::grpc::MessageRequest* /*request*/, ::io::deephaven::proto::backplane::grpc::BrowserNextResponse* /*response*/)  { return nullptr; }
+      ::grpc::CallbackServerContext* /*context*/, const ::io::deephaven::proto::backplane::grpc::StreamRequest* /*request*/, ::io::deephaven::proto::backplane::grpc::BrowserNextResponse* /*response*/)  { return nullptr; }
   };
   typedef WithCallbackMethod_FetchObject<WithCallbackMethod_MessageStream<WithCallbackMethod_OpenMessageStream<WithCallbackMethod_NextMessageStream<Service > > > > CallbackService;
   typedef CallbackService ExperimentalCallbackService;
@@ -406,7 +535,7 @@ class ObjectService final {
       BaseClassMustBeDerivedFromService(this);
     }
     // disable synchronous version of this method
-    ::grpc::Status MessageStream(::grpc::ServerContext* /*context*/, ::grpc::ServerReaderWriter< ::io::deephaven::proto::backplane::grpc::MessageResponse, ::io::deephaven::proto::backplane::grpc::MessageRequest>* /*stream*/)  override {
+    ::grpc::Status MessageStream(::grpc::ServerContext* /*context*/, ::grpc::ServerReaderWriter< ::io::deephaven::proto::backplane::grpc::StreamResponse, ::io::deephaven::proto::backplane::grpc::StreamRequest>* /*stream*/)  override {
       abort();
       return ::grpc::Status(::grpc::StatusCode::UNIMPLEMENTED, "");
     }
@@ -423,7 +552,7 @@ class ObjectService final {
       BaseClassMustBeDerivedFromService(this);
     }
     // disable synchronous version of this method
-    ::grpc::Status OpenMessageStream(::grpc::ServerContext* /*context*/, const ::io::deephaven::proto::backplane::grpc::MessageRequest* /*request*/, ::grpc::ServerWriter< ::io::deephaven::proto::backplane::grpc::MessageResponse>* /*writer*/) override {
+    ::grpc::Status OpenMessageStream(::grpc::ServerContext* /*context*/, const ::io::deephaven::proto::backplane::grpc::StreamRequest* /*request*/, ::grpc::ServerWriter< ::io::deephaven::proto::backplane::grpc::StreamResponse>* /*writer*/) override {
       abort();
       return ::grpc::Status(::grpc::StatusCode::UNIMPLEMENTED, "");
     }
@@ -440,7 +569,7 @@ class ObjectService final {
       BaseClassMustBeDerivedFromService(this);
     }
     // disable synchronous version of this method
-    ::grpc::Status NextMessageStream(::grpc::ServerContext* /*context*/, const ::io::deephaven::proto::backplane::grpc::MessageRequest* /*request*/, ::io::deephaven::proto::backplane::grpc::BrowserNextResponse* /*response*/) override {
+    ::grpc::Status NextMessageStream(::grpc::ServerContext* /*context*/, const ::io::deephaven::proto::backplane::grpc::StreamRequest* /*request*/, ::io::deephaven::proto::backplane::grpc::BrowserNextResponse* /*response*/) override {
       abort();
       return ::grpc::Status(::grpc::StatusCode::UNIMPLEMENTED, "");
     }
@@ -477,7 +606,7 @@ class ObjectService final {
       BaseClassMustBeDerivedFromService(this);
     }
     // disable synchronous version of this method
-    ::grpc::Status MessageStream(::grpc::ServerContext* /*context*/, ::grpc::ServerReaderWriter< ::io::deephaven::proto::backplane::grpc::MessageResponse, ::io::deephaven::proto::backplane::grpc::MessageRequest>* /*stream*/)  override {
+    ::grpc::Status MessageStream(::grpc::ServerContext* /*context*/, ::grpc::ServerReaderWriter< ::io::deephaven::proto::backplane::grpc::StreamResponse, ::io::deephaven::proto::backplane::grpc::StreamRequest>* /*stream*/)  override {
       abort();
       return ::grpc::Status(::grpc::StatusCode::UNIMPLEMENTED, "");
     }
@@ -497,7 +626,7 @@ class ObjectService final {
       BaseClassMustBeDerivedFromService(this);
     }
     // disable synchronous version of this method
-    ::grpc::Status OpenMessageStream(::grpc::ServerContext* /*context*/, const ::io::deephaven::proto::backplane::grpc::MessageRequest* /*request*/, ::grpc::ServerWriter< ::io::deephaven::proto::backplane::grpc::MessageResponse>* /*writer*/) override {
+    ::grpc::Status OpenMessageStream(::grpc::ServerContext* /*context*/, const ::io::deephaven::proto::backplane::grpc::StreamRequest* /*request*/, ::grpc::ServerWriter< ::io::deephaven::proto::backplane::grpc::StreamResponse>* /*writer*/) override {
       abort();
       return ::grpc::Status(::grpc::StatusCode::UNIMPLEMENTED, "");
     }
@@ -517,7 +646,7 @@ class ObjectService final {
       BaseClassMustBeDerivedFromService(this);
     }
     // disable synchronous version of this method
-    ::grpc::Status NextMessageStream(::grpc::ServerContext* /*context*/, const ::io::deephaven::proto::backplane::grpc::MessageRequest* /*request*/, ::io::deephaven::proto::backplane::grpc::BrowserNextResponse* /*response*/) override {
+    ::grpc::Status NextMessageStream(::grpc::ServerContext* /*context*/, const ::io::deephaven::proto::backplane::grpc::StreamRequest* /*request*/, ::io::deephaven::proto::backplane::grpc::BrowserNextResponse* /*response*/) override {
       abort();
       return ::grpc::Status(::grpc::StatusCode::UNIMPLEMENTED, "");
     }
@@ -562,7 +691,7 @@ class ObjectService final {
       BaseClassMustBeDerivedFromService(this);
     }
     // disable synchronous version of this method
-    ::grpc::Status MessageStream(::grpc::ServerContext* /*context*/, ::grpc::ServerReaderWriter< ::io::deephaven::proto::backplane::grpc::MessageResponse, ::io::deephaven::proto::backplane::grpc::MessageRequest>* /*stream*/)  override {
+    ::grpc::Status MessageStream(::grpc::ServerContext* /*context*/, ::grpc::ServerReaderWriter< ::io::deephaven::proto::backplane::grpc::StreamResponse, ::io::deephaven::proto::backplane::grpc::StreamRequest>* /*stream*/)  override {
       abort();
       return ::grpc::Status(::grpc::StatusCode::UNIMPLEMENTED, "");
     }
@@ -585,7 +714,7 @@ class ObjectService final {
       BaseClassMustBeDerivedFromService(this);
     }
     // disable synchronous version of this method
-    ::grpc::Status OpenMessageStream(::grpc::ServerContext* /*context*/, const ::io::deephaven::proto::backplane::grpc::MessageRequest* /*request*/, ::grpc::ServerWriter< ::io::deephaven::proto::backplane::grpc::MessageResponse>* /*writer*/) override {
+    ::grpc::Status OpenMessageStream(::grpc::ServerContext* /*context*/, const ::io::deephaven::proto::backplane::grpc::StreamRequest* /*request*/, ::grpc::ServerWriter< ::io::deephaven::proto::backplane::grpc::StreamResponse>* /*writer*/) override {
       abort();
       return ::grpc::Status(::grpc::StatusCode::UNIMPLEMENTED, "");
     }
@@ -607,7 +736,7 @@ class ObjectService final {
       BaseClassMustBeDerivedFromService(this);
     }
     // disable synchronous version of this method
-    ::grpc::Status NextMessageStream(::grpc::ServerContext* /*context*/, const ::io::deephaven::proto::backplane::grpc::MessageRequest* /*request*/, ::io::deephaven::proto::backplane::grpc::BrowserNextResponse* /*response*/) override {
+    ::grpc::Status NextMessageStream(::grpc::ServerContext* /*context*/, const ::io::deephaven::proto::backplane::grpc::StreamRequest* /*request*/, ::io::deephaven::proto::backplane::grpc::BrowserNextResponse* /*response*/) override {
       abort();
       return ::grpc::Status(::grpc::StatusCode::UNIMPLEMENTED, "");
     }
@@ -649,10 +778,10 @@ class ObjectService final {
     WithStreamedUnaryMethod_NextMessageStream() {
       ::grpc::Service::MarkMethodStreamed(3,
         new ::grpc::internal::StreamedUnaryHandler<
-          ::io::deephaven::proto::backplane::grpc::MessageRequest, ::io::deephaven::proto::backplane::grpc::BrowserNextResponse>(
+          ::io::deephaven::proto::backplane::grpc::StreamRequest, ::io::deephaven::proto::backplane::grpc::BrowserNextResponse>(
             [this](::grpc::ServerContext* context,
                    ::grpc::ServerUnaryStreamer<
-                     ::io::deephaven::proto::backplane::grpc::MessageRequest, ::io::deephaven::proto::backplane::grpc::BrowserNextResponse>* streamer) {
+                     ::io::deephaven::proto::backplane::grpc::StreamRequest, ::io::deephaven::proto::backplane::grpc::BrowserNextResponse>* streamer) {
                        return this->StreamedNextMessageStream(context,
                          streamer);
                   }));
@@ -661,12 +790,12 @@ class ObjectService final {
       BaseClassMustBeDerivedFromService(this);
     }
     // disable regular version of this method
-    ::grpc::Status NextMessageStream(::grpc::ServerContext* /*context*/, const ::io::deephaven::proto::backplane::grpc::MessageRequest* /*request*/, ::io::deephaven::proto::backplane::grpc::BrowserNextResponse* /*response*/) override {
+    ::grpc::Status NextMessageStream(::grpc::ServerContext* /*context*/, const ::io::deephaven::proto::backplane::grpc::StreamRequest* /*request*/, ::io::deephaven::proto::backplane::grpc::BrowserNextResponse* /*response*/) override {
       abort();
       return ::grpc::Status(::grpc::StatusCode::UNIMPLEMENTED, "");
     }
     // replace default version of method with streamed unary
-    virtual ::grpc::Status StreamedNextMessageStream(::grpc::ServerContext* context, ::grpc::ServerUnaryStreamer< ::io::deephaven::proto::backplane::grpc::MessageRequest,::io::deephaven::proto::backplane::grpc::BrowserNextResponse>* server_unary_streamer) = 0;
+    virtual ::grpc::Status StreamedNextMessageStream(::grpc::ServerContext* context, ::grpc::ServerUnaryStreamer< ::io::deephaven::proto::backplane::grpc::StreamRequest,::io::deephaven::proto::backplane::grpc::BrowserNextResponse>* server_unary_streamer) = 0;
   };
   typedef WithStreamedUnaryMethod_FetchObject<WithStreamedUnaryMethod_NextMessageStream<Service > > StreamedUnaryService;
   template <class BaseClass>
@@ -677,10 +806,10 @@ class ObjectService final {
     WithSplitStreamingMethod_OpenMessageStream() {
       ::grpc::Service::MarkMethodStreamed(2,
         new ::grpc::internal::SplitServerStreamingHandler<
-          ::io::deephaven::proto::backplane::grpc::MessageRequest, ::io::deephaven::proto::backplane::grpc::MessageResponse>(
+          ::io::deephaven::proto::backplane::grpc::StreamRequest, ::io::deephaven::proto::backplane::grpc::StreamResponse>(
             [this](::grpc::ServerContext* context,
                    ::grpc::ServerSplitStreamer<
-                     ::io::deephaven::proto::backplane::grpc::MessageRequest, ::io::deephaven::proto::backplane::grpc::MessageResponse>* streamer) {
+                     ::io::deephaven::proto::backplane::grpc::StreamRequest, ::io::deephaven::proto::backplane::grpc::StreamResponse>* streamer) {
                        return this->StreamedOpenMessageStream(context,
                          streamer);
                   }));
@@ -689,12 +818,12 @@ class ObjectService final {
       BaseClassMustBeDerivedFromService(this);
     }
     // disable regular version of this method
-    ::grpc::Status OpenMessageStream(::grpc::ServerContext* /*context*/, const ::io::deephaven::proto::backplane::grpc::MessageRequest* /*request*/, ::grpc::ServerWriter< ::io::deephaven::proto::backplane::grpc::MessageResponse>* /*writer*/) override {
+    ::grpc::Status OpenMessageStream(::grpc::ServerContext* /*context*/, const ::io::deephaven::proto::backplane::grpc::StreamRequest* /*request*/, ::grpc::ServerWriter< ::io::deephaven::proto::backplane::grpc::StreamResponse>* /*writer*/) override {
       abort();
       return ::grpc::Status(::grpc::StatusCode::UNIMPLEMENTED, "");
     }
     // replace default version of method with split streamed
-    virtual ::grpc::Status StreamedOpenMessageStream(::grpc::ServerContext* context, ::grpc::ServerSplitStreamer< ::io::deephaven::proto::backplane::grpc::MessageRequest,::io::deephaven::proto::backplane::grpc::MessageResponse>* server_split_streamer) = 0;
+    virtual ::grpc::Status StreamedOpenMessageStream(::grpc::ServerContext* context, ::grpc::ServerSplitStreamer< ::io::deephaven::proto::backplane::grpc::StreamRequest,::io::deephaven::proto::backplane::grpc::StreamResponse>* server_split_streamer) = 0;
   };
   typedef WithSplitStreamingMethod_OpenMessageStream<Service > SplitStreamedService;
   typedef WithStreamedUnaryMethod_FetchObject<WithSplitStreamingMethod_OpenMessageStream<WithStreamedUnaryMethod_NextMessageStream<Service > > > StreamedService;

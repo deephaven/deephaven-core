@@ -21,17 +21,17 @@ class ObjectServiceStub(object):
                 )
         self.MessageStream = channel.stream_stream(
                 '/io.deephaven.proto.backplane.grpc.ObjectService/MessageStream',
-                request_serializer=deephaven_dot_proto_dot_object__pb2.MessageRequest.SerializeToString,
-                response_deserializer=deephaven_dot_proto_dot_object__pb2.MessageResponse.FromString,
+                request_serializer=deephaven_dot_proto_dot_object__pb2.StreamRequest.SerializeToString,
+                response_deserializer=deephaven_dot_proto_dot_object__pb2.StreamResponse.FromString,
                 )
         self.OpenMessageStream = channel.unary_stream(
                 '/io.deephaven.proto.backplane.grpc.ObjectService/OpenMessageStream',
-                request_serializer=deephaven_dot_proto_dot_object__pb2.MessageRequest.SerializeToString,
-                response_deserializer=deephaven_dot_proto_dot_object__pb2.MessageResponse.FromString,
+                request_serializer=deephaven_dot_proto_dot_object__pb2.StreamRequest.SerializeToString,
+                response_deserializer=deephaven_dot_proto_dot_object__pb2.StreamResponse.FromString,
                 )
         self.NextMessageStream = channel.unary_unary(
                 '/io.deephaven.proto.backplane.grpc.ObjectService/NextMessageStream',
-                request_serializer=deephaven_dot_proto_dot_object__pb2.MessageRequest.SerializeToString,
+                request_serializer=deephaven_dot_proto_dot_object__pb2.StreamRequest.SerializeToString,
                 response_deserializer=deephaven_dot_proto_dot_object__pb2.BrowserNextResponse.FromString,
                 )
 
@@ -40,13 +40,56 @@ class ObjectServiceServicer(object):
     """Missing associated documentation comment in .proto file."""
 
     def FetchObject(self, request, context):
-        """Missing associated documentation comment in .proto file."""
+        """
+        Fetches a server-side object as a binary payload and assorted other tickets pointing at
+        other server-side objects that may need to be read to properly use this payload. The binary
+        format is implementation specific, but the implementation should be specified by the "type"
+        identifier in the typed ticket.
+
+        Deprecated in favor of MessageStream, which is able to handle the same content.
+        """
         context.set_code(grpc.StatusCode.UNIMPLEMENTED)
         context.set_details('Method not implemented!')
         raise NotImplementedError('Method not implemented!')
 
     def MessageStream(self, request_iterator, context):
-        """Missing associated documentation comment in .proto file."""
+        """
+        Provides a generic stream feature for Deephaven instances to use to add arbitrary functionality.
+        This API lets a client open a stream to a particular object on the server, to be mediated by
+        a server side plugin. In theory this could effectively be used to "tunnel" a custom gRPC call,
+        but in practice there are a few deliberate shortcomings that still make this possible, but not
+        trivial.
+
+        The first message sent to the server is expected to have a ConnectRequest, indicating which
+        export ticket to connect to. It is an error for the server to not have a plugin defined for that
+        object type.
+
+        Subsequent requests to the server, and all responses to the client, will be a payload of bytes
+        and an arbitrary number of tickets, referring to server side objects that one side wishes to
+        reference in its payload.
+
+        Presently it is required that the server respond immediately, at least to acknowledge that the
+        object was correctly contacted (as opposed to waiting for a pending ticket, or dealing with
+        network lag, etc). This is a small (and possibly not required, but convenient) departure from
+        a offering a gRPC stream (a server-streaming or bidi-streaming call need not send a message
+        right away).
+
+        Presently there is no explicit "close" message to send, but plugin implementations can devise
+        their own "half-close" protocol if they so choose. For now, if one end closes the connection,
+        the other is expected to follow suit by closing their end too.
+
+        (address stream failures?)
+
+        Finally, addressing a broader point of unsuitability for general gRPC-over-gRPC tunneling:
+        there is a lot more to gRPC than just specifying a path and sending payloads to it, such as
+        how to specify metadata. In theory, we could handle the metadata as another field (only sent
+        in the first/last payloads), or as a separate plugin-defined type of payload (analogous to the
+        grpc-websockets implementations), but we still run into issues where this user-defined gRPC
+        service needs to coexist with the rest of the Deephaven platform, supporting at least authentication,
+        and for browsers, our custom streaming implementation. The nested gRPC implementation would
+        need to be at some level aware that it is already stateful to take advantage of this, rather
+        than somehow redefine it.
+        """
         context.set_code(grpc.StatusCode.UNIMPLEMENTED)
         context.set_details('Method not implemented!')
         raise NotImplementedError('Method not implemented!')
@@ -78,17 +121,17 @@ def add_ObjectServiceServicer_to_server(servicer, server):
             ),
             'MessageStream': grpc.stream_stream_rpc_method_handler(
                     servicer.MessageStream,
-                    request_deserializer=deephaven_dot_proto_dot_object__pb2.MessageRequest.FromString,
-                    response_serializer=deephaven_dot_proto_dot_object__pb2.MessageResponse.SerializeToString,
+                    request_deserializer=deephaven_dot_proto_dot_object__pb2.StreamRequest.FromString,
+                    response_serializer=deephaven_dot_proto_dot_object__pb2.StreamResponse.SerializeToString,
             ),
             'OpenMessageStream': grpc.unary_stream_rpc_method_handler(
                     servicer.OpenMessageStream,
-                    request_deserializer=deephaven_dot_proto_dot_object__pb2.MessageRequest.FromString,
-                    response_serializer=deephaven_dot_proto_dot_object__pb2.MessageResponse.SerializeToString,
+                    request_deserializer=deephaven_dot_proto_dot_object__pb2.StreamRequest.FromString,
+                    response_serializer=deephaven_dot_proto_dot_object__pb2.StreamResponse.SerializeToString,
             ),
             'NextMessageStream': grpc.unary_unary_rpc_method_handler(
                     servicer.NextMessageStream,
-                    request_deserializer=deephaven_dot_proto_dot_object__pb2.MessageRequest.FromString,
+                    request_deserializer=deephaven_dot_proto_dot_object__pb2.StreamRequest.FromString,
                     response_serializer=deephaven_dot_proto_dot_object__pb2.BrowserNextResponse.SerializeToString,
             ),
     }
@@ -130,8 +173,8 @@ class ObjectService(object):
             timeout=None,
             metadata=None):
         return grpc.experimental.stream_stream(request_iterator, target, '/io.deephaven.proto.backplane.grpc.ObjectService/MessageStream',
-            deephaven_dot_proto_dot_object__pb2.MessageRequest.SerializeToString,
-            deephaven_dot_proto_dot_object__pb2.MessageResponse.FromString,
+            deephaven_dot_proto_dot_object__pb2.StreamRequest.SerializeToString,
+            deephaven_dot_proto_dot_object__pb2.StreamResponse.FromString,
             options, channel_credentials,
             insecure, call_credentials, compression, wait_for_ready, timeout, metadata)
 
@@ -147,8 +190,8 @@ class ObjectService(object):
             timeout=None,
             metadata=None):
         return grpc.experimental.unary_stream(request, target, '/io.deephaven.proto.backplane.grpc.ObjectService/OpenMessageStream',
-            deephaven_dot_proto_dot_object__pb2.MessageRequest.SerializeToString,
-            deephaven_dot_proto_dot_object__pb2.MessageResponse.FromString,
+            deephaven_dot_proto_dot_object__pb2.StreamRequest.SerializeToString,
+            deephaven_dot_proto_dot_object__pb2.StreamResponse.FromString,
             options, channel_credentials,
             insecure, call_credentials, compression, wait_for_ready, timeout, metadata)
 
@@ -164,7 +207,7 @@ class ObjectService(object):
             timeout=None,
             metadata=None):
         return grpc.experimental.unary_unary(request, target, '/io.deephaven.proto.backplane.grpc.ObjectService/NextMessageStream',
-            deephaven_dot_proto_dot_object__pb2.MessageRequest.SerializeToString,
+            deephaven_dot_proto_dot_object__pb2.StreamRequest.SerializeToString,
             deephaven_dot_proto_dot_object__pb2.BrowserNextResponse.FromString,
             options, channel_credentials,
             insecure, call_credentials, compression, wait_for_ready, timeout, metadata)
