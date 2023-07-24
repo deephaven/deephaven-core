@@ -59,18 +59,22 @@ public interface ObjectType extends Plugin {
     }
 
     /**
-     *
+     * A stream of messages, either sent from the server to the client, or client to the server. ObjectType
+     * plugin implementations can provide an implementation of this interface for each incoming stream to
+     * invoke as messages arrive, and will likewise be given an instance of this interface to be able to
+     * send messages to the client.
      */
     interface MessageStream extends AutoCloseable {
         /**
-         *
+         * Transmits data to the remote end of the stream. This can consist of a binary payload and references
+         * to objects on the server.
          * @param message
          * @param references
          */
         void onMessage(ByteBuffer message, Object[] references);
 
         /**
-         *
+         * Closes the stream on both ends. No further messages can be sent or received.
          */
         void close();
     }
