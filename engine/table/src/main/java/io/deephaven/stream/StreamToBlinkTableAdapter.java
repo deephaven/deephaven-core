@@ -38,6 +38,7 @@ import org.jetbrains.annotations.Nullable;
 import java.lang.ref.WeakReference;
 import java.time.Instant;
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
@@ -327,6 +328,20 @@ public class StreamToBlinkTableAdapter
     @SafeVarargs
     @Override
     public final void accept(@NotNull final WritableChunk<Values>... data) {
+        accept(List.<WritableChunk<Values>[]>of(data));
+    }
+
+    /**
+     * {@inheritDoc}
+     *
+     * <p>
+     * Ensures that the blink table sees the full collection of chunks in a single cycle.
+     *
+     * @param datas a collection of per-column {@link WritableChunk chunks} of {@link Values values}. Must all have the
+     *        same {@link WritableChunk#size() size}.
+     */
+    @Override
+    public final void accept(@NotNull Collection<WritableChunk<Values>[]> datas) {
         if (!alive.get()) {
             return;
         }
@@ -334,19 +349,23 @@ public class StreamToBlinkTableAdapter
         synchronized (this) {
             if (!enqueuedFailures.isEmpty()) {
                 // If we'll never deliver these chunks, dispose of them immediately.
-                SafeCloseable.closeAll(data);
+                for (WritableChunk<Values>[] data : datas) {
+                    SafeCloseable.closeAll(data);
+                }
                 return;
             }
             if (bufferChunkSources == null) {
                 bufferChunkSources = makeChunkSources(tableDefinition);
             }
-            if (data.length != bufferChunkSources.length) {
-                throw new IllegalStateException("StreamConsumer data length = " + data.length + " chunks, expected "
-                        + bufferChunkSources.length);
-            }
-            for (int ii = 0; ii < data.length; ++ii) {
-                Assert.eq(data[0].size(), "data[0].size()", data[ii].size(), "data[ii].size()");
-                bufferChunkSources[ii].addChunk(data[ii]);
+            for (WritableChunk<Values>[] data : datas) {
+                if (data.length != bufferChunkSources.length) {
+                    throw new IllegalStateException("StreamConsumer data length = " + data.length + " chunks, expected "
+                            + bufferChunkSources.length);
+                }
+                for (int ii = 0; ii < data.length; ++ii) {
+                    Assert.eq(data[0].size(), "data[0].size()", data[ii].size(), "data[ii].size()");
+                    bufferChunkSources[ii].addChunk(data[ii]);
+                }
             }
         }
     }

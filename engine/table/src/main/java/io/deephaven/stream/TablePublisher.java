@@ -5,9 +5,13 @@ import io.deephaven.engine.table.Table;
 import io.deephaven.engine.table.TableDefinition;
 import io.deephaven.engine.table.impl.sources.ArrayBackedColumnSource;
 import io.deephaven.engine.updategraph.UpdateGraph;
+import io.deephaven.util.annotations.VisibleForTesting;
 
 import java.util.Objects;
 
+/**
+ * Produces a {@link #blinkTable blink table} from {@link #add(Table) added tables}.
+ */
 public class TablePublisher {
 
     /**
@@ -63,5 +67,10 @@ public class TablePublisher {
 
     public void acceptFailure(Throwable e) {
         publisher.acceptFailure(e);
+    }
+
+    @VisibleForTesting
+    void runForUnitTests() {
+        adapter.run();
     }
 }

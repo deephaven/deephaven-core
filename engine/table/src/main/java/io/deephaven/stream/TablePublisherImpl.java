@@ -59,13 +59,7 @@ class TablePublisherImpl implements StreamPublisher {
                     ConstructSnapshot.makeSnapshotControl(false, table.isRefreshing(), (NotificationStepSource) table),
                     fillChunks);
         }
-        // synchronize to ensure all the chunks make it to the consumer in the same cycle
-        // noinspection SynchronizeOnNonFinalField
-        synchronized (consumer) {
-            for (WritableChunk<Values>[] result : fillChunks.outstandingChunks) {
-                consumer.accept(result);
-            }
-        }
+        consumer.accept(fillChunks.outstandingChunks);
     }
 
     private class FillChunks implements SnapshotFunction {
