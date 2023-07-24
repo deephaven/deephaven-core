@@ -23,6 +23,7 @@ import io.deephaven.plot.datasets.category.CategoryDataSeriesMap;
 import io.deephaven.plot.datasets.category.CategoryTreemapDataSeriesTableMap;
 import io.deephaven.plot.datasets.category.CategoryDataSeriesPartitionedTable;
 import io.deephaven.plot.datasets.category.CategoryDataSeriesSwappablePartitionedTable;
+import io.deephaven.plot.datasets.categoryerrorbar.CategoryErrorBarDataSeriesPartitionedTable;
 import io.deephaven.plot.datasets.data.IndexableNumericData;
 import io.deephaven.plot.datasets.data.IndexableNumericDataSwappableTable;
 import io.deephaven.plot.datasets.data.IndexableNumericDataTable;
@@ -406,6 +407,21 @@ public class FigureWidgetTranslator {
                                         clientAxes.add(makeSourceDescriptor(series.getTableHandle(),
                                                 series.getHoverTextColumn(), SourceType.HOVER_TEXT, null));
                                     }
+                                } else if (s instanceof CategoryErrorBarDataSeriesPartitionedTable) {
+                                    CategoryErrorBarDataSeriesPartitionedTable series =
+                                            (CategoryErrorBarDataSeriesPartitionedTable) s;
+                                    clientAxes.add(
+                                            makeSourceDescriptor(series.getTableHandle(), series.getCategoryColumn(),
+                                                    catAxis == xAxis ? SourceType.X : SourceType.Y, catAxis));
+                                    clientAxes
+                                            .add(makeSourceDescriptor(series.getTableHandle(), series.getValueColumn(),
+                                                    numAxis == xAxis ? SourceType.X : SourceType.Y, numAxis));
+                                    clientAxes.add(
+                                            makeSourceDescriptor(series.getTableHandle(), series.getErrorBarLowColumn(),
+                                                    numAxis == xAxis ? SourceType.X_LOW : SourceType.Y_LOW, numAxis));
+                                    clientAxes.add(makeSourceDescriptor(series.getTableHandle(),
+                                            series.getErrorBarHighColumn(),
+                                            numAxis == xAxis ? SourceType.X_HIGH : SourceType.Y_HIGH, numAxis));
                                 } else if (s instanceof CategoryDataSeriesMap) {// bar and plot from constant data
                                     errorList.add("OpenAPI presently does not support series of type " + s.getClass());
                                 }

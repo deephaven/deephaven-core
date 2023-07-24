@@ -27,7 +27,7 @@ public interface ByteVector extends Vector<ByteVector>, Iterable<Byte> {
     long serialVersionUID = -1373264425081841175L;
 
     static PrimitiveVectorType<ByteVector, Byte> type() {
-        return PrimitiveVectorType.of(ByteVector.class, ByteType.instance());
+        return PrimitiveVectorType.of(ByteVector.class, ByteType.of());
     }
 
     /**

@@ -27,7 +27,7 @@ public interface ShortVector extends Vector<ShortVector>, Iterable<Short> {
     long serialVersionUID = -1373264425081841175L;
 
     static PrimitiveVectorType<ShortVector, Short> type() {
-        return PrimitiveVectorType.of(ShortVector.class, ShortType.instance());
+        return PrimitiveVectorType.of(ShortVector.class, ShortType.of());
     }
 
     /**
