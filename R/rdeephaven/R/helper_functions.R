@@ -59,3 +59,11 @@ verify_string_vector <- function(arg_name, string_vector_candidate) {
         stop(paste0("'", arg_name, "' must be passed as a string or a vector of strings. Got an object of class ", first_class(string_vector_candidate), " instead."))
     }
 }
+
+strip_r6_wrapping_from_aggregation = function(r6_aggregation) {
+    return(r6_aggregation$internal_aggregation)
+}
+
+strip_r6_wrapping_from_sorter = function(r6_sorter) {
+    return(r6_sorter$internal_sorter)
+}

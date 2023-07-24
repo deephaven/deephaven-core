@@ -1,5 +1,5 @@
 #' @export
-Aggregation <- R6Class("Aggregation",
+Aggregation <- R6Class("Aggregation", cloneable = FALSE,
     public = list(
 
         #' @description

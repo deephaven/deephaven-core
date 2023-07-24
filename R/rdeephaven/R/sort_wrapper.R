@@ -1,5 +1,5 @@
 #' @export
-Sorter <- R6Class("Sorter",
+Sorter <- R6Class("Sorter", cloneable = FALSE,
     public = list(
 
         #' @description

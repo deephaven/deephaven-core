@@ -41,9 +41,9 @@ new_table_handle2$bind_to_variable("new_table")
 \item \href{#method-TableHandle-to_data_frame}{\code{TableHandle$to_data_frame()}}
 \item \href{#method-TableHandle-select}{\code{TableHandle$select()}}
 \item \href{#method-TableHandle-view}{\code{TableHandle$view()}}
-\item \href{#method-TableHandle-drop_columns}{\code{TableHandle$drop_columns()}}
 \item \href{#method-TableHandle-update}{\code{TableHandle$update()}}
 \item \href{#method-TableHandle-update_view}{\code{TableHandle$update_view()}}
+\item \href{#method-TableHandle-drop_columns}{\code{TableHandle$drop_columns()}}
 \item \href{#method-TableHandle-where}{\code{TableHandle$where()}}
 \item \href{#method-TableHandle-agg_by}{\code{TableHandle$agg_by()}}
 \item \href{#method-TableHandle-min_by}{\code{TableHandle$min_by()}}
@@ -220,26 +220,6 @@ A TableHandle referencing the new table.
 }
 }
 \if{html}{\out{<hr>}}
-\if{html}{\out{<a id="method-TableHandle-drop_columns"></a>}}
-\if{latex}{\out{\hypertarget{method-TableHandle-drop_columns}{}}}
-\subsection{Method \code{drop_columns()}}{
-Creates a new table from this table where the specified columns have been excluded.
-\subsection{Usage}{
-\if{html}{\out{<div class="r">}}\preformatted{TableHandle$drop_columns(columns)}\if{html}{\out{</div>}}
-}
-
-\subsection{Arguments}{
-\if{html}{\out{<div class="arguments">}}
-\describe{
-\item{\code{columns}}{The columns to exclude.}
-}
-\if{html}{\out{</div>}}
-}
-\subsection{Returns}{
-A TableHandle referencing the new table.
-}
-}
-\if{html}{\out{<hr>}}
 \if{html}{\out{<a id="method-TableHandle-update"></a>}}
 \if{latex}{\out{\hypertarget{method-TableHandle-update}{}}}
 \subsection{Method \code{update()}}{
@@ -274,6 +254,26 @@ See the Deephaven documentation for the difference between update() and updateVi
 \if{html}{\out{<div class="arguments">}}
 \describe{
 \item{\code{columns}}{The columns to add. For example, {"X = A + 5", "Y = X * 2"}.}
+}
+\if{html}{\out{</div>}}
+}
+\subsection{Returns}{
+A TableHandle referencing the new table.
+}
+}
+\if{html}{\out{<hr>}}
+\if{html}{\out{<a id="method-TableHandle-drop_columns"></a>}}
+\if{latex}{\out{\hypertarget{method-TableHandle-drop_columns}{}}}
+\subsection{Method \code{drop_columns()}}{
+Creates a new table from this table where the specified columns have been excluded.
+\subsection{Usage}{
+\if{html}{\out{<div class="r">}}\preformatted{TableHandle$drop_columns(columns)}\if{html}{\out{</div>}}
+}
+
+\subsection{Arguments}{
+\if{html}{\out{<div class="arguments">}}
+\describe{
+\item{\code{columns}}{The columns to exclude.}
 }
 \if{html}{\out{</div>}}
 }

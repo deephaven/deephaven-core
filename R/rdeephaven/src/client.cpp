@@ -229,19 +229,19 @@ public:
         return new TableHandleWrapper(internal_tbl_hdl.medianBy(columnSpecs));
     };
 
-    TableHandleWrapper* percentileBy(double percentile, std::vector<std::string> columnSpecs) {
+    TableHandleWrapper* percentileBy(std::vector<std::string> columnSpecs, double percentile) {
         return new TableHandleWrapper(internal_tbl_hdl.percentileBy(percentile, columnSpecs));
     };
 
-    TableHandleWrapper* countBy(std::string countByColumn, std::vector<std::string> columnSpecs) {
+    TableHandleWrapper* countBy(std::vector<std::string> columnSpecs, std::string countByColumn) {
         return new TableHandleWrapper(internal_tbl_hdl.countBy(countByColumn, columnSpecs));
     };
 
-    TableHandleWrapper* headBy(int64_t n, std::vector<std::string> columnSpecs) {
+    TableHandleWrapper* headBy(std::vector<std::string> columnSpecs, int64_t n) {
         return new TableHandleWrapper(internal_tbl_hdl.headBy(n, columnSpecs));
     };
 
-    TableHandleWrapper* tailBy(int64_t n, std::vector<std::string> columnSpecs) {
+    TableHandleWrapper* tailBy(std::vector<std::string> columnSpecs, int64_t n) {
         return new TableHandleWrapper(internal_tbl_hdl.tailBy(n, columnSpecs));
     };
 

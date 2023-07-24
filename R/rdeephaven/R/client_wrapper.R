@@ -23,7 +23,7 @@
 #' client$run_script("print([i for i in range(10)])")
 
 #' @export
-Client <- R6Class("Client",
+Client <- R6Class("Client", cloneable = FALSE,
     public = list(
 
         #' @description
