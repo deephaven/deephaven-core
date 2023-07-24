@@ -411,6 +411,63 @@ public class ParquetTableWriter {
                 writeInstructions.getCompressionCodecName(), extraMetaData);
     }
 
+    /**
+     * This class stores all the useful data required to write column source in the parquet file
+     */
+    static class ColumnWritingData {
+        /**
+         * Following is only set when processing vector/array data and is used to store the length of arrays/vectors in
+         * the column. Such columns are written as vector pages in the parquet file.
+         */
+        public ColumnSource<?> lengthSource = null;
+
+        /**
+         * These two lists are also only used when processing vector/array data. These lists are parallel, where each
+         * element represents a single page. The rawItemCountPerPage contains the number of items (the sum of the array
+         * sizes for each containing row) contained within the page. The originalRowsPerPage contains the number of
+         * arrays (rows) from the original table contained within the page.
+         */
+        public TIntArrayList rawItemCountPerPage = null;
+        public TIntArrayList originalRowsPerPage = null;
+
+        /**
+         * Following is also only used when processing vector/array data. It stores rowset for a table containing
+         * ungrouped array/vector column data from original table.
+         */
+        public RowSet ungroupedArrayRowSet = null;
+
+        /**
+         * For vector pages, following variables are used to iterate through the above lists, else they return the
+         * target number of rows in a page.
+         */
+        public LongSupplier valuesStepGetter = null;
+        public LongSupplier rowStepGetter = null;
+
+        public void initVectorProcessing(@NotNull final ColumnSource<?> lengthSource,
+                @NotNull final RowSet ungroupedArrayRowSet) {
+            this.lengthSource = lengthSource;
+            this.ungroupedArrayRowSet = ungroupedArrayRowSet;
+            rawItemCountPerPage = new TIntArrayList();
+            originalRowsPerPage = new TIntArrayList();
+            initStepGettersForVectorPages();
+        }
+
+        public final boolean processingVectorData() {
+            return (lengthSource != null);
+        }
+
+        public void initStepGettersForVectorPages() {
+            Assert.eqTrue(processingVectorData(), "processingVectorData()");
+            rowStepGetter = originalRowsPerPage.iterator()::next;
+            valuesStepGetter = rawItemCountPerPage.iterator()::next;
+        }
+
+        public void initStepGettersForRegularPages(@NotNull final LongSupplier targetNumRowsPerPageGetter) {
+            Assert.eqTrue(!processingVectorData(), "!processingVectorData()");
+            valuesStepGetter = rowStepGetter = targetNumRowsPerPageGetter;
+        }
+    }
+
     @VisibleForTesting
     static <DATA_TYPE> void writeColumnSource(
             @NotNull final Map<String, Map<CacheTags, Object>> computedCache,
@@ -420,22 +477,8 @@ public class ParquetTableWriter {
             @NotNull final ColumnSource<DATA_TYPE> columnSourceIn,
             @NotNull final ColumnDefinition<DATA_TYPE> columnDefinition,
             @NotNull final ParquetInstructions writeInstructions) throws IllegalAccessException, IOException {
-        RowSet rowSet = tableRowSet;
+        ColumnWritingData columnWritingData = new ColumnWritingData();
         ColumnSource<DATA_TYPE> columnSource = columnSourceIn;
-        ColumnSource<?> lengthSource = null;
-        LongSupplier rowStepGetter;
-        LongSupplier valuesStepGetter;
-
-        // These two lists are parallel, where each element represents a single page. The rawItemCountPerPage
-        // contains the number of items (the sum of the array sizes for each containing row) contained within the
-        // page.
-        final TIntArrayList rawItemCountPerPage = new TIntArrayList();
-
-        // The originalRowsPerPage contains the number of arrays (rows) from the original table contained within
-        // the page.
-        final TIntArrayList originalRowsPerPage = new TIntArrayList();
-        boolean case1 = false;
-
         int maxValuesPerPage = 0;
         int maxOriginalRowsPerPage = 0;
         int pageCount;
@@ -447,21 +490,27 @@ public class ParquetTableWriter {
             final HashMap<String, ColumnSource<?>> columns = new HashMap<>();
             columns.put("array", columnSource);
             final Table lengthsTable = new QueryTable(tableRowSet, columns);
-            lengthSource = lengthsTable
+            final ColumnSource<?> lengthSource = lengthsTable
                     .view("len= ((Object)array) == null ? null : (int)array."
                             + (Vector.class.isAssignableFrom(columnSource.getType()) ? "size()" : "length"))
                     .getColumnSource("len");
+            final Table ungroupedArrays = lengthsTable.ungroup("array");
+            columnWritingData.initVectorProcessing(lengthSource, ungroupedArrays.getRowSet());
+            columnSource = ungroupedArrays.getColumnSource("array");
+            // TODO I want to mark the variables lengthsTable, lengthSource and ungroupedArrays as unusable here. How
+            // should I do that? Should I use some form of scoping?
 
             // This is the count of items contained in all arrays from the original table as we process.
             int totalItemsInPage = 0;
 
             // This is the count of rows in the original table as we process them
             int originalRowsInPage = 0;
-            try (final ChunkSource.GetContext context = lengthSource.makeGetContext(LOCAL_CHUNK_SIZE);
-                    final RowSequence.Iterator it = rowSet.getRowSequenceIterator()) {
+            try (final ChunkSource.GetContext context = columnWritingData.lengthSource.makeGetContext(LOCAL_CHUNK_SIZE);
+                    final RowSequence.Iterator it = tableRowSet.getRowSequenceIterator()) {
                 while (it.hasMore()) {
                     final RowSequence rs = it.getNextRowSequenceWithLength(LOCAL_CHUNK_SIZE);
-                    final IntChunk<? extends Values> lengthChunk = lengthSource.getChunk(context, rs).asIntChunk();
+                    final IntChunk<? extends Values> lengthChunk =
+                            columnWritingData.lengthSource.getChunk(context, rs).asIntChunk();
                     for (int chunkPos = 0; chunkPos < lengthChunk.size(); chunkPos++) {
                         final int curLength = lengthChunk.get(chunkPos);
                         if (curLength != NULL_INT) {
@@ -471,8 +520,8 @@ public class ParquetTableWriter {
                                     (originalRowsInPage + 1 > targetRowsPerPage)) &&
                                     (totalItemsInPage > 0 || originalRowsInPage > 0)) {
                                 // Record the current item count and original row count into the parallel page arrays.
-                                rawItemCountPerPage.add(totalItemsInPage);
-                                originalRowsPerPage.add(originalRowsInPage);
+                                columnWritingData.rawItemCountPerPage.add(totalItemsInPage);
+                                columnWritingData.originalRowsPerPage.add(originalRowsInPage);
                                 maxValuesPerPage = Math.max(totalItemsInPage, maxValuesPerPage);
                                 maxOriginalRowsPerPage = Math.max(originalRowsInPage, maxOriginalRowsPerPage);
 
@@ -491,25 +540,18 @@ public class ParquetTableWriter {
             if (originalRowsInPage > 0) {
                 maxValuesPerPage = Math.max(totalItemsInPage, maxValuesPerPage);
                 maxOriginalRowsPerPage = Math.max(originalRowsInPage, maxOriginalRowsPerPage);
-                rawItemCountPerPage.add(totalItemsInPage);
-                originalRowsPerPage.add(originalRowsInPage);
+                columnWritingData.rawItemCountPerPage.add(totalItemsInPage);
+                columnWritingData.originalRowsPerPage.add(originalRowsInPage);
             }
-
-            rowStepGetter = originalRowsPerPage.iterator()::next;
-            valuesStepGetter = rawItemCountPerPage.iterator()::next;
-
-            pageCount = rawItemCountPerPage.size();
-            final Table ungroupedArrays = lengthsTable.ungroup("array");
-            rowSet = ungroupedArrays.getRowSet();
-            columnSource = ungroupedArrays.getColumnSource("array");
-
-            case1 = true;
+            pageCount = columnWritingData.rawItemCountPerPage.size();
         } else {
             final int finalTargetSize = getTargetRowsPerPage(columnSource.getType(),
                     writeInstructions.getTargetPageSize());
-            rowStepGetter = valuesStepGetter = () -> finalTargetSize;
-            maxValuesPerPage = maxOriginalRowsPerPage = (int) Math.min(rowSet.size(), finalTargetSize);
-            pageCount = (int) (rowSet.size() / finalTargetSize + ((rowSet.size() % finalTargetSize) == 0 ? 0 : 1));
+
+            columnWritingData.initStepGettersForRegularPages(() -> finalTargetSize);
+            maxValuesPerPage = maxOriginalRowsPerPage = (int) Math.min(tableRowSet.size(), finalTargetSize);
+            pageCount = (int) (tableRowSet.size() / finalTargetSize
+                    + ((tableRowSet.size() % finalTargetSize) == 0 ? 0 : 1));
         }
 
         Class<DATA_TYPE> columnType = columnSource.getType();
@@ -530,36 +572,27 @@ public class ParquetTableWriter {
             if (columnSource.getType() == String.class) {
                 usedDictionary = tryEncodeDictionary(writeInstructions,
                         tableRowSet,
-                        rowSet,
                         columnDefinition,
                         columnWriter,
                         columnSource,
-                        lengthSource,
-                        rowStepGetter,
-                        valuesStepGetter,
+                        columnWritingData,
                         maxValuesPerPage,
                         maxOriginalRowsPerPage,
                         pageCount);
-                if (!usedDictionary) {
-                    // Need to reset the state so that all values can again be read again for plain encoding
-                    if (case1) {
-                        rowStepGetter = originalRowsPerPage.iterator()::next;
-                        valuesStepGetter = rawItemCountPerPage.iterator()::next;
-                    }
+                if (!usedDictionary && columnWritingData.processingVectorData()) {
+                    // Need to reset the getters so that all values can again be read again for plain encoding
+                    columnWritingData.initStepGettersForVectorPages();
                 }
             }
 
             if (!usedDictionary) {
                 encodePlain(writeInstructions,
                         tableRowSet,
-                        rowSet,
                         columnDefinition,
                         columnType,
                         columnWriter,
                         columnSource,
-                        lengthSource,
-                        rowStepGetter,
-                        valuesStepGetter,
+                        columnWritingData,
                         computedCache,
                         maxValuesPerPage,
                         maxOriginalRowsPerPage,
@@ -570,14 +603,11 @@ public class ParquetTableWriter {
 
     private static <DATA_TYPE> void encodePlain(@NotNull final ParquetInstructions writeInstructions,
             @NotNull final RowSet originalRowSet,
-            @NotNull final RowSet dataRowSet,
             @NotNull final ColumnDefinition<DATA_TYPE> columnDefinition,
             @NotNull final Class<DATA_TYPE> columnType,
             @NotNull final ColumnWriter columnWriter,
             @NotNull final ColumnSource<DATA_TYPE> dataSource,
-            @Nullable final ColumnSource<?> lengthSource,
-            @NotNull final LongSupplier rowStepGetter,
-            @NotNull final LongSupplier valuesStepGetter,
+            @NotNull final ColumnWritingData columnWritingData,
             @NotNull final Map<String, Map<CacheTags, Object>> computedCache,
             final int maxValuesPerPage,
             final int maxOriginalRowsPerPage,
@@ -591,20 +621,27 @@ public class ParquetTableWriter {
                 writeInstructions)) {
             final Object bufferToWrite = transferObject.getBuffer();
             try (final RowSequence.Iterator lengthIndexIt =
-                    lengthSource != null ? originalRowSet.getRowSequenceIterator() : null;
+                    columnWritingData.processingVectorData() ? originalRowSet.getRowSequenceIterator() : null;
                     final ChunkSource.GetContext lengthSourceContext =
-                            lengthSource != null ? lengthSource.makeGetContext(maxOriginalRowsPerPage) : null;
-                    final RowSequence.Iterator it = dataRowSet.getRowSequenceIterator()) {
+                            columnWritingData.processingVectorData()
+                                    ? columnWritingData.lengthSource.makeGetContext(maxOriginalRowsPerPage)
+                                    : null;
+                    final RowSequence.Iterator it = columnWritingData.processingVectorData()
+                            ? columnWritingData.ungroupedArrayRowSet.getRowSequenceIterator()
+                            : originalRowSet.getRowSequenceIterator()) {
 
-                final IntBuffer repeatCount = lengthSource != null ? IntBuffer.allocate(maxOriginalRowsPerPage) : null;
+                final IntBuffer repeatCount =
+                        columnWritingData.processingVectorData() ? IntBuffer.allocate(maxOriginalRowsPerPage) : null;
                 for (int step = 0; step < pageCount; ++step) {
-                    final RowSequence rs = it.getNextRowSequenceWithLength(valuesStepGetter.getAsLong());
+                    final RowSequence rs =
+                            it.getNextRowSequenceWithLength(columnWritingData.valuesStepGetter.getAsLong());
                     transferObject.fetchData(rs);
                     transferObject.propagateChunkData();
                     if (lengthIndexIt != null) {
-                        final IntChunk<? extends Values> lenChunk = lengthSource.getChunk(
+                        final IntChunk<? extends Values> lenChunk = columnWritingData.lengthSource.getChunk(
                                 lengthSourceContext,
-                                lengthIndexIt.getNextRowSequenceWithLength(rowStepGetter.getAsLong())).asIntChunk();
+                                lengthIndexIt.getNextRowSequenceWithLength(columnWritingData.rowStepGetter.getAsLong()))
+                                .asIntChunk();
                         lenChunk.copyToTypedBuffer(0, repeatCount, 0, lenChunk.size());
                         repeatCount.limit(lenChunk.size());
                         columnWriter.addVectorPage(bufferToWrite, repeatCount, transferObject.rowCount());
@@ -619,13 +656,10 @@ public class ParquetTableWriter {
 
     private static <DATA_TYPE> boolean tryEncodeDictionary(@NotNull final ParquetInstructions writeInstructions,
             @NotNull final RowSet originalRowSet,
-            @NotNull final RowSet dataRowSet,
             @NotNull final ColumnDefinition<DATA_TYPE> columnDefinition,
             @NotNull final ColumnWriter columnWriter,
             @NotNull final ColumnSource<DATA_TYPE> dataSource,
-            @Nullable final ColumnSource<?> lengthSource,
-            @NotNull final LongSupplier rowStepGetter,
-            @NotNull final LongSupplier valuesStepGetter,
+            @NotNull final ColumnWritingData columnWritingData,
             final int maxRowsPerPage,
             final int maxOriginalRowsPerPage,
             final int pageCount) throws IOException {
@@ -647,9 +681,12 @@ public class ParquetTableWriter {
             int keyCount = 0;
             boolean hasNulls = false;
             try (final ChunkSource.GetContext context = dataSource.makeGetContext(maxRowsPerPage);
-                    final RowSequence.Iterator it = dataRowSet.getRowSequenceIterator()) {
+                    final RowSequence.Iterator it = columnWritingData.processingVectorData()
+                            ? columnWritingData.ungroupedArrayRowSet.getRowSequenceIterator()
+                            : originalRowSet.getRowSequenceIterator()) {
                 for (int curPage = 0; curPage < pageCount; curPage++) {
-                    final RowSequence rs = it.getNextRowSequenceWithLength(valuesStepGetter.getAsLong());
+                    final RowSequence rs =
+                            it.getNextRowSequenceWithLength(columnWritingData.valuesStepGetter.getAsLong());
                     final ObjectChunk<String, ? extends Values> chunk =
                             dataSource.getChunk(context, rs).asObjectChunk();
                     final IntBuffer posInDictionary = IntBuffer.allocate(rs.intSize());
@@ -680,14 +717,21 @@ public class ParquetTableWriter {
                 }
             }
 
+            if (keyCount == 0 && hasNulls) {
+                return false;
+            }
+
             List<IntBuffer> arraySizeBuffers = null;
-            if (lengthSource != null) {
+            if (columnWritingData.processingVectorData()) {
                 arraySizeBuffers = new ArrayList<>();
-                try (final ChunkSource.GetContext context = lengthSource.makeGetContext(maxOriginalRowsPerPage);
+                try (final ChunkSource.GetContext context =
+                        columnWritingData.lengthSource.makeGetContext(maxOriginalRowsPerPage);
                         final RowSequence.Iterator it = originalRowSet.getRowSequenceIterator()) {
                     while (it.hasMore()) {
-                        final RowSequence rs = it.getNextRowSequenceWithLength(rowStepGetter.getAsLong());
-                        final IntChunk<? extends Values> chunk = lengthSource.getChunk(context, rs).asIntChunk();
+                        final RowSequence rs =
+                                it.getNextRowSequenceWithLength(columnWritingData.rowStepGetter.getAsLong());
+                        final IntChunk<? extends Values> chunk =
+                                columnWritingData.lengthSource.getChunk(context, rs).asIntChunk();
                         final IntBuffer newBuffer = IntBuffer.allocate(chunk.size());
                         chunk.copyToTypedBuffer(0, newBuffer, 0, chunk.size());
                         newBuffer.limit(chunk.size());
@@ -696,15 +740,11 @@ public class ParquetTableWriter {
                 }
             }
 
-            if (keyCount == 0 && hasNulls) {
-                return false;
-            }
-
             columnWriter.addDictionaryPage(encodedKeys, keyCount);
             final Iterator<IntBuffer> arraySizeIt = arraySizeBuffers == null ? null : arraySizeBuffers.iterator();
             for (final IntBuffer pageBuffer : pageBuffers) {
                 pageBuffer.flip();
-                if (lengthSource != null) {
+                if (columnWritingData.processingVectorData()) {
                     columnWriter.addVectorPage(pageBuffer, arraySizeIt.next(), pageBuffer.remaining());
                 } else if (hasNulls) {
                     columnWriter.addPage(pageBuffer, pageBuffer.remaining());
