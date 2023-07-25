@@ -207,7 +207,8 @@ public class ParquetTableWriter {
 
                     tableInfoBuilder.addGroupingColumns(GroupingColumnInfo.of(parquetColumnName,
                             destDirPath.relativize(Paths.get(metadataGroupingFilePath)).toString()));
-                    write(auxiliaryTables[gci], auxiliaryTables[gci].getDefinition(), writeInstructions, shadowGroupingFilePath,
+                    write(auxiliaryTables[gci], auxiliaryTables[gci].getDefinition(), writeInstructions,
+                            shadowGroupingFilePath,
                             Collections.emptyMap());
                 }
             }
@@ -219,12 +220,14 @@ public class ParquetTableWriter {
                     final String destPath = getNonShadowPath(shadowGroupingFilePath);
                     File destFile = new File(destPath);
                     if (destFile.exists() && !destFile.delete()) {
-                        throw new RuntimeException("Failed to write the grouping file at " + destFile.getAbsolutePath() + " because a "
-                                + "file already exists at the path which couldn't be deleted.");
+                        throw new RuntimeException(
+                                "Failed to write the grouping file at " + destFile.getAbsolutePath() + " because a "
+                                        + "file already exists at the path which couldn't be deleted.");
                     }
                     File shadowGroupingFile = new File(shadowGroupingFilePath);
                     if (!shadowGroupingFile.renameTo(destFile)) {
-                        throw new RuntimeException("Failed to write the grouping file at " + destFile.getAbsolutePath() + " because "
+                        throw new RuntimeException("Failed to write the grouping file at " + destFile.getAbsolutePath()
+                                + " because "
                                 + "couldn't rename shadow file from " + shadowGroupingFile.getAbsolutePath() + " to " +
                                 destFile.getAbsolutePath());
                     }
@@ -255,6 +258,7 @@ public class ParquetTableWriter {
     private static final String getNonShadowPath(final String shadowPath) {
         return shadowPath.replace(".SHADOW_", "");
     }
+
     /**
      * Writes a table in parquet format under a given path
      *

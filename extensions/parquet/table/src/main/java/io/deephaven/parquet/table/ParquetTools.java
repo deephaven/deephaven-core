@@ -225,7 +225,8 @@ public class ParquetTools {
         final File firstCreated = prepareDestinationFileLocation(shadowDestFile);
         try {
             writeParquetTableImpl(
-                    sourceTable, definition, writeInstructions, shadowDestFile, definition.getGroupingColumnNamesArray());
+                    sourceTable, definition, writeInstructions, shadowDestFile,
+                    definition.getGroupingColumnNamesArray());
             // Given that write was successful, place the shadow file in the destination path
             installShadowFile(destFile, shadowDestFile);
         } catch (Exception e) {
@@ -247,8 +248,7 @@ public class ParquetTools {
     /**
      * Delete the file at location destFile and rename the file at shadowDestFile to destFile
      */
-    private static void installShadowFile(@NotNull final File destFile, @NotNull final File shadowDestFile)
-    {
+    private static void installShadowFile(@NotNull final File destFile, @NotNull final File shadowDestFile) {
         final String destPath = destFile.getAbsolutePath();
         if (destFile.exists() && !destFile.delete()) {
             throw new RuntimeException("Failed to write the table at " + destFile.getAbsolutePath() + " because a "
@@ -260,6 +260,7 @@ public class ParquetTools {
                     destFile.getAbsolutePath());
         }
     }
+
     /**
      * Make any missing ancestor directories of {@code destination}.
      *
