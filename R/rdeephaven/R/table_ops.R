@@ -144,10 +144,10 @@ avg_by.TableHandle = function(th, columns) {
 }
 
 #' @export
-w_avg_by.TableHandle = function(th, weight_column, columns) {
+w_avg_by.TableHandle = function(th, columns, weight_column) {
     verify_string("weight_column", weight_column)
     verify_string_vector("columns", columns)
-    return(TableHandle$new(th$internal_table_handle$w_avg_by(weight_column, columns)))
+    return(TableHandle$new(th$internal_table_handle$w_avg_by(columns, weight_column)))
 }
 
 #' @export
@@ -191,21 +191,21 @@ percentile_by.TableHandle = function(th, columns, percentile) {
 count_by.TableHandle = function(th, columns, count_by_column) {
     verify_string("count_by_column", count_by_column)
     verify_string_vector("columns", columns)
-    return(TableHandle$new(th$internal_table_handle$count_by(count_by_column, columns)))
+    return(TableHandle$new(th$internal_table_handle$count_by(columns, count_by_column)))
 }
 
 #' @export
 head_by.TableHandle = function(th, columns, n) {
     verify_int("n", n)
     verify_string_vector("columns", columns)
-    return(TableHandle$new(th$internal_table_handle$head_by(n, columns)))
+    return(TableHandle$new(th$internal_table_handle$head_by(columns, n)))
 }
 
 #' @export
 tail_by.TableHandle = function(th, columns, n) {
     verify_int("n", n)
     verify_string_vector("columns", columns)
-    return(TableHandle$new(th$internal_table_handle$tail_by(n, columns)))
+    return(TableHandle$new(th$internal_table_handle$tail_by(columns, n)))
 }
 
 # JOIN OPERATIONS

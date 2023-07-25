@@ -31,7 +31,6 @@ client$run_script("print([i for i in range(10)])")
 \item \href{#method-Client-open_table}{\code{Client$open_table()}}
 \item \href{#method-Client-import_table}{\code{Client$import_table()}}
 \item \href{#method-Client-run_script}{\code{Client$run_script()}}
-\item \href{#method-Client-clone}{\code{Client$clone()}}
 }
 }
 \if{html}{\out{<hr>}}
@@ -109,23 +108,6 @@ Runs a script on the server. The script must be in the language that the server 
 \if{html}{\out{<div class="arguments">}}
 \describe{
 \item{\code{script}}{Code to be executed on the server, passed as a string.}
-}
-\if{html}{\out{</div>}}
-}
-}
-\if{html}{\out{<hr>}}
-\if{html}{\out{<a id="method-Client-clone"></a>}}
-\if{latex}{\out{\hypertarget{method-Client-clone}{}}}
-\subsection{Method \code{clone()}}{
-The objects of this class are cloneable with this method.
-\subsection{Usage}{
-\if{html}{\out{<div class="r">}}\preformatted{Client$clone(deep = FALSE)}\if{html}{\out{</div>}}
-}
-
-\subsection{Arguments}{
-\if{html}{\out{<div class="arguments">}}
-\describe{
-\item{\code{deep}}{Whether to make a deep clone.}
 }
 \if{html}{\out{</div>}}
 }

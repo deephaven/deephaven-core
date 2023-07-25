@@ -46,7 +46,6 @@ client <- Client$new(target="url/to/secure/server", client_options=client_option
 \item \href{#method-ClientOptions-add_int_option}{\code{ClientOptions$add_int_option()}}
 \item \href{#method-ClientOptions-add_string_option}{\code{ClientOptions$add_string_option()}}
 \item \href{#method-ClientOptions-add_extra_header}{\code{ClientOptions$add_extra_header()}}
-\item \href{#method-ClientOptions-clone}{\code{ClientOptions$clone()}}
 }
 }
 \if{html}{\out{<hr>}}
@@ -194,23 +193,6 @@ Adds an extra header with a constant name and value to be sent with every outgoi
 \item{\code{header_name}}{The header name}
 
 \item{\code{header_value}}{The header value}
-}
-\if{html}{\out{</div>}}
-}
-}
-\if{html}{\out{<hr>}}
-\if{html}{\out{<a id="method-ClientOptions-clone"></a>}}
-\if{latex}{\out{\hypertarget{method-ClientOptions-clone}{}}}
-\subsection{Method \code{clone()}}{
-The objects of this class are cloneable with this method.
-\subsection{Usage}{
-\if{html}{\out{<div class="r">}}\preformatted{ClientOptions$clone(deep = FALSE)}\if{html}{\out{</div>}}
-}
-
-\subsection{Arguments}{
-\if{html}{\out{<div class="arguments">}}
-\describe{
-\item{\code{deep}}{Whether to make a deep clone.}
 }
 \if{html}{\out{</div>}}
 }

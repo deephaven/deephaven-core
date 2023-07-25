@@ -21,6 +21,11 @@ setup <- function() {
                       Y = c("M", "N", "O", "N", "P", "M", "O", "P", "M"),
                       Number1 = c(100, -44, 49, 11, -66, 50, 29, 18, -70),
                       Number2 = c(-55, 76, 20, 130, 230, -50, 73, 137, 214))
+    
+    df6 <- data.frame(X = c("B", "C", "B", "A", "A", "C", "B", "C", "B", "A"),
+                      Y = c("N", "N", "M", "P", "O", "P", "O", "N", "O", "O"),
+                      Number1 = c(55, 72, 86, -45, 1, 0, 345, -65, 99, -5),
+                      Number2 = c(76, 4, -6, 34, 12, -76, 45, -5, 34, 6))
 
     # in order to test TableHandle, we need to have tables on the server that we know everything about.
     # thus, we have to push these created tables to the server and get TableHandles to each of them.
@@ -36,10 +41,11 @@ setup <- function() {
     th3 <- client$import_table(df3)
     th4 <- client$import_table(df4)
     th5 <- client$import_table(df5)
+    th6 <- client$import_table(df6)
 
     return(list("client" = client,
-                "df1" = df1, "df2" = df2, "df3" = df3, "df4" = df4, "df5" = df5,
-                "th1" = th1, "th2" = th2, "th3" = th3, "th4" = th4, "th5" = th5))
+                "df1" = df1, "df2" = df2, "df3" = df3, "df4" = df4, "df5" = df5, "df6" = df6,
+                "th1" = th1, "th2" = th2, "th3" = th3, "th4" = th4, "th5" = th5, "th6" = th6))
 }
 
 ##### TESTING GOOD INPUTS #####
@@ -48,26 +54,26 @@ test_that("select behaves as expected", {
     data <- setup()
     
     new_tb1 <- data$df1 %>%
-      select("string_col")
+      select(string_col)
     new_th1 <- data$th1 %>%
       select("string_col")
     expect_equal(as.data.frame(new_th1), as.data.frame(new_tb1))
     
     new_tb2 <- data$df2 %>%
-      select(c("col2", "col3"))
+      select(col2, col3)
     new_th2 <- data$th2 %>%
       select(c("col2", "col3"))
     expect_equal(as.data.frame(new_th2), as.data.frame(new_tb2))
     
     new_tb3 <- data$df3 %>%
-      select(c("X1", "X2")) %>%
+      select(X1, X2) %>%
       rename(first_col = X1)
     new_th3 <- data$th3 %>%
       select(c("first_col = X1", "X2"))
     expect_equal(as.data.frame(new_th3), as.data.frame(new_tb3))
     
     new_tb4 <- data$df4 %>%
-      select("int_col") %>%
+      select(int_col) %>%
       mutate(new_col = int_col + 1, .keep = "none")
     new_th4 <- data$th4 %>%
       select("new_col = int_col + 1")
@@ -75,7 +81,7 @@ test_that("select behaves as expected", {
     
     new_tb5 <- data$df5 %>%
       mutate(Number3 = Number1 * Number2) %>%
-      select(c("X", "Number3"))
+      select(X, Number3)
     new_th5 <- data$th5 %>%
       select(c("X", "Number3 = Number1 * Number2"))
     expect_equal(as.data.frame(new_th5), as.data.frame(new_tb5))
@@ -85,26 +91,26 @@ test_that("view behaves as expected", {
     data <- setup()
     
     new_tb1 <- data$df1 %>%
-      select("string_col")
+      select(string_col)
     new_th1 <- data$th1 %>%
       view("string_col")
     expect_equal(as.data.frame(new_th1), as.data.frame(new_tb1))
     
     new_tb2 <- data$df2 %>%
-      select(c("col2", "col3"))
+      select(col2, col3)
     new_th2 <- data$th2 %>%
       view(c("col2", "col3"))
     expect_equal(as.data.frame(new_th2), as.data.frame(new_tb2))
     
     new_tb3 <- data$df3 %>%
-      select(c("X1", "X2")) %>%
+      select(X1, X2) %>%
       rename(first_col = X1)
     new_th3 <- data$th3 %>%
       view(c("first_col = X1", "X2"))
     expect_equal(as.data.frame(new_th3), as.data.frame(new_tb3))
     
     new_tb4 <- data$df4 %>%
-      select("int_col") %>%
+      select(int_col) %>%
       mutate(new_col = int_col + 1, .keep = "none")
     new_th4 <- data$th4 %>%
       view("new_col = int_col + 1")
@@ -112,7 +118,7 @@ test_that("view behaves as expected", {
     
     new_tb5 <- data$df5 %>%
       mutate(Number3 = Number1 * Number2) %>%
-      select(c("X", "Number3"))
+      select(X, Number3)
     new_th5 <- data$th5 %>%
       view(c("X", "Number3 = Number1 * Number2"))
     expect_equal(as.data.frame(new_th5), as.data.frame(new_tb5))
@@ -190,13 +196,13 @@ test_that("drop_columns behaves as expected", {
   data <- setup()
   
   new_tb1 <- data$df1 %>%
-    select(-"string_col")
+    select(-string_col)
   new_th1 <- data$th1 %>%
     drop_columns("string_col")
   expect_equal(as.data.frame(new_th1), as.data.frame(new_tb1))
   
   new_tb2 <- data$df2 %>%
-    select(-c("col1", "col2"))
+    select(-c(col1, col2))
   new_th2 <- data$th2 %>%
     drop_columns(c("col1", "col2"))
   expect_equal(as.data.frame(new_th2), as.data.frame(new_tb2))
@@ -418,6 +424,11 @@ test_that("avg_by behaves as expected", {
     expect_equal(as.data.frame(new_th2), as.data.frame(new_tb2))
 })
 
+# I think that the current behavior of wAvgBy() is wrong and needs to be updated
+test_that("w_avg_by behaves as expected", {
+  data <- setup()
+})
+
 test_that("first_by behaves as expected", {
     data <- setup()
     
@@ -486,26 +497,87 @@ test_that("median_by behaves as expected", {
 
 test_that("percentile_by behaves as expected", {
     data <- setup()
+    
+    # There is not a clean analog to `percentile_by` in dplyr, so we construct
+    # these data frames directly. 
+    
+    new_df1 <- data.frame(X = c("A", "B", "C"),
+                          Number1 = c(50, -44, -70),
+                          Number2 = c(-50, 76, 130))
+    new_th1 <- data$th5 %>%
+      drop_columns("Y") %>%
+      percentile_by("X", 0.4)
+    expect_equal(as.data.frame(new_th1), new_df1)
+    
+    new_df2 <- data.frame(X = c("A", "B", "A", "C", "B", "B", "C"),
+                          Y = c("M", "N", "O", "N", "P", "O", "M"),
+                          Number1 = c(50, -44, 49, 11, -66, 29, -70),
+                          Number2 = c(-55, 76, 20, 130, 137, 73, 214))
+    new_th2 <- data$th5 %>%
+      percentile_by(c("X", "Y"), 0.4)
+    expect_equal(as.data.frame(new_th2), new_df2)
+
 })
 
 test_that("count_by behaves as expected", {
     data <- setup()
+    
+    new_tb1 <- data$df5 %>%
+      count(X)
+    new_th1 <- data$th5 %>%
+      count_by("X", "n")
+    expect_equal(as.data.frame(new_th1), as.data.frame(new_tb1))
+    
+    new_tb2 <- data$df5 %>%
+      count(X, Y)
+    new_th2 <- data$th5 %>%
+      count_by(c("X", "Y"), "n") %>%
+      dh_sort(c(sort_asc("X"), sort_asc("Y")))
+    expect_equal(as.data.frame(new_th2), as.data.frame(new_tb2))
 })
 
-test_that("w_avg_by behaves as expected", {
-    data <- setup()
+test_that("head_by behaves as expected", {
+  data <- setup()
+  
+  new_tb1 <- data$df5 %>%
+    group_by(X) %>%
+    slice_head(n=2)
+  new_th1 <- data$th5 %>%
+    head_by("X", 2)
+  expect_equal(as.data.frame(new_th1), as.data.frame(new_tb1))
+  
+  new_tb2 <- data$df5 %>%
+    group_by(X, Y) %>%
+    slice_head(n=2)
+  new_th2 <- data$th5 %>%
+    head_by(c("X", "Y"), 2) %>%
+    dh_sort(c(sort_asc("X"), sort_asc("Y")))
+  expect_equal(as.data.frame(new_th2), as.data.frame(new_tb2))
 })
 
 test_that("tail_by behaves as expected", {
     data <- setup()
-})
-
-test_that("head_by behaves as expected", {
-    data <- setup()
+    
+    new_tb1 <- data$df5 %>%
+      group_by(X) %>%
+      slice_tail(n=2)
+    new_th1 <- data$th5 %>%
+      tail_by("X", 2)
+    expect_equal(as.data.frame(new_th1), as.data.frame(new_tb1))
+    
+    new_tb2 <- data$df5 %>%
+      group_by(X, Y) %>%
+      slice_tail(n=2)
+    new_th2 <- data$th5 %>%
+      tail_by(c("X", "Y"), 2) %>%
+      dh_sort(c(sort_asc("X"), sort_asc("Y")))
+    expect_equal(as.data.frame(new_th2), as.data.frame(new_tb2))
 })
 
 test_that("cross_join behaves as expected", {
     data <- setup()
+    
+    
 })
 
 test_that("natural_join behaves as expected", {

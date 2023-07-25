@@ -205,7 +205,7 @@ public:
         return new TableHandleWrapper(internal_tbl_hdl.avgBy(columnSpecs));
     };
 
-    TableHandleWrapper* wAvgBy(std::string weightColumn, std::vector<std::string> columnSpecs) {
+    TableHandleWrapper* wAvgBy(std::vector<std::string> columnSpecs, std::string weightColumn) {
         return new TableHandleWrapper(internal_tbl_hdl.wAvgBy(weightColumn, columnSpecs));
     };
 
