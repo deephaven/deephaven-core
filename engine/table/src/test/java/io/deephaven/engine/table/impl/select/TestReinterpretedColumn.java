@@ -3,8 +3,8 @@
  */
 package io.deephaven.engine.table.impl.select;
 
-import io.deephaven.chunk.WritableLongChunk;
-import io.deephaven.chunk.WritableObjectChunk;
+import io.deephaven.chunk.LongChunk;
+import io.deephaven.chunk.ObjectChunk;
 import io.deephaven.chunk.attributes.Values;
 import io.deephaven.engine.rowset.RowSet;
 import io.deephaven.engine.rowset.RowSetFactory;
@@ -96,6 +96,8 @@ public class TestReinterpretedColumn extends RefreshingTableTestCase {
         cols.put("I", iSource);
         cols.put("ZDT", zdtSource);
 
+        cols.values().forEach(ColumnSource::startTrackingPrevValues);
+
         return new QueryTable(RowSetFactory.flat(ROW_COUNT).toTracking(), cols);
     }
 
@@ -118,6 +120,8 @@ public class TestReinterpretedColumn extends RefreshingTableTestCase {
         cols.put("L", longSource);
         cols.put("I", iSource);
         cols.put("ZDT", zdtSource);
+
+        cols.values().forEach(ColumnSource::startTrackingPrevValues);
 
         return new QueryTable(RowSetFactory.flat(ROW_COUNT).toTracking(), cols);
     }
@@ -170,7 +174,7 @@ public class TestReinterpretedColumn extends RefreshingTableTestCase {
             assertEquals(DateTimeUtils.epochNanos(baseZDT) + tOff, table.getColumnSource(zdtColName).getLong(key));
         }
 
-        // Repeat the same comparisons, but actuate fillChunk instead
+        // Repeat the same comparisons, but actuate getChunk instead
         reinterpLongChunkCheck(table.getColumnSource(lColName), table.getRowSet(), isSorted, baseLongTime);
         reinterpLongChunkCheck(table.getColumnSource(iColName), table.getRowSet(), isSorted,
                 DateTimeUtils.epochNanos(baseInstant));
@@ -184,13 +188,16 @@ public class TestReinterpretedColumn extends RefreshingTableTestCase {
 
     private void reinterpLongChunkCheck(final ColumnSource<Long> cs, RowSet rowSet, final boolean isSorted,
             final long baseNanos) {
-        try (final ChunkSource.FillContext fc = cs.makeFillContext(64);
-                final WritableLongChunk<Values> chunk = WritableLongChunk.makeWritableChunk(64)) {
-            cs.fillChunk(fc, chunk, rowSet);
+        try (final ChunkSource.GetContext gc = cs.makeGetContext(64)) {
+            for (final boolean usePrev : new boolean[] {false, true}) {
+                final LongChunk<? extends Values> chunk = usePrev
+                        ? cs.getPrevChunk(gc, rowSet).asLongChunk()
+                        : cs.getChunk(gc, rowSet).asLongChunk();
 
-            for (int ii = 0; ii < chunk.size(); ii++) {
-                final long tOff = computeTimeDiff(ii, isSorted);
-                assertEquals(baseNanos + tOff, chunk.get(ii));
+                for (int ii = 0; ii < chunk.size(); ii++) {
+                    final long tOff = computeTimeDiff(ii, isSorted);
+                    assertEquals(baseNanos + tOff, chunk.get(ii));
+                }
             }
         }
     }
@@ -255,7 +262,7 @@ public class TestReinterpretedColumn extends RefreshingTableTestCase {
             extraCheck.accept((T) table.getColumnSource(zdtColName).get(key));
         }
 
-        // Repeat the same comparisons, but actuate fillChunk instead
+        // Repeat the same comparisons, but actuate getChunk instead
         reinterpBasicChunkCheck(table.getColumnSource(lColName), table.getRowSet(), toNanoFunc, isSorted,
                 baseLongTime, extraCheck);
         reinterpBasicChunkCheck(table.getColumnSource(iColName), table.getRowSet(), toNanoFunc, isSorted,
@@ -272,14 +279,17 @@ public class TestReinterpretedColumn extends RefreshingTableTestCase {
     private <T> void reinterpBasicChunkCheck(final ColumnSource<T> cs, final RowSet rowSet,
             final Function<T, Long> toNanoFunc, final boolean isSorted, final long baseNanos,
             final Consumer<T> extraCheck) {
-        try (final ChunkSource.FillContext fc = cs.makeFillContext(64);
-                final WritableObjectChunk<T, Values> chunk = WritableObjectChunk.makeWritableChunk(64)) {
-            cs.fillChunk(fc, chunk, rowSet);
+        try (final ChunkSource.GetContext gc = cs.makeGetContext(64)) {
+            for (final boolean usePrev : new boolean[] {false, true}) {
+                final ObjectChunk<T, ? extends Values> chunk = usePrev
+                        ? cs.getPrevChunk(gc, rowSet).asObjectChunk()
+                        : cs.getChunk(gc, rowSet).asObjectChunk();
 
-            for (int ii = 0; ii < chunk.size(); ii++) {
-                final long tOff = computeTimeDiff(ii, isSorted);
-                assertEquals(baseNanos + tOff, (long) toNanoFunc.apply(chunk.get(ii)));
-                extraCheck.accept(chunk.get(ii));
+                for (int ii = 0; ii < chunk.size(); ii++) {
+                    final long tOff = computeTimeDiff(ii, isSorted);
+                    assertEquals(baseNanos + tOff, (long) toNanoFunc.apply(chunk.get(ii)));
+                    extraCheck.accept(chunk.get(ii));
+                }
             }
         }
     }
@@ -317,12 +327,15 @@ public class TestReinterpretedColumn extends RefreshingTableTestCase {
 
     private <T> void reinterpWrappedChunkCheck(final ColumnSource<T> cs, RowSet rowSet, final boolean isSorted,
             final BiFunction<Integer, Boolean, T> expectedSupplier) {
-        try (final ChunkSource.FillContext fc = cs.makeFillContext(64);
-                final WritableObjectChunk<T, Values> chunk = WritableObjectChunk.makeWritableChunk(64)) {
-            cs.fillChunk(fc, chunk, rowSet);
+        try (final ChunkSource.GetContext gc = cs.makeGetContext(64)) {
+            for (final boolean usePrev : new boolean[] {false, true}) {
+                final ObjectChunk<T, ? extends Values> chunk = usePrev
+                        ? cs.getPrevChunk(gc, rowSet).asObjectChunk()
+                        : cs.getChunk(gc, rowSet).asObjectChunk();
 
-            for (int ii = 0; ii < chunk.size(); ii++) {
-                assertEquals(expectedSupplier.apply(ii, isSorted), chunk.get(ii));
+                for (int ii = 0; ii < chunk.size(); ii++) {
+                    assertEquals(expectedSupplier.apply(ii, isSorted), chunk.get(ii));
+                }
             }
         }
     }
