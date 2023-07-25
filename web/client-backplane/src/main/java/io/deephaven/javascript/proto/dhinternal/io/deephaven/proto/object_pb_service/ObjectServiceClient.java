@@ -7,8 +7,8 @@ import io.deephaven.javascript.proto.dhinternal.browserheaders.BrowserHeaders;
 import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.object_pb.BrowserNextResponse;
 import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.object_pb.FetchObjectRequest;
 import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.object_pb.FetchObjectResponse;
-import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.object_pb.MessageRequest;
-import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.object_pb.MessageResponse;
+import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.object_pb.StreamRequest;
+import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.object_pb.StreamResponse;
 import jsinterop.annotations.JsFunction;
 import jsinterop.annotations.JsOverlay;
 import jsinterop.annotations.JsPackage;
@@ -264,14 +264,14 @@ public class ObjectServiceClient {
             FetchObjectRequest requestMessage,
             ObjectServiceClient.FetchObjectMetadata_or_callbackUnionType metadata_or_callback);
 
-    public native BidirectionalStream<MessageRequest, MessageResponse> messageStream();
+    public native BidirectionalStream<StreamRequest, StreamResponse> messageStream();
 
-    public native BidirectionalStream<MessageRequest, MessageResponse> messageStream(
+    public native BidirectionalStream<StreamRequest, StreamResponse> messageStream(
             BrowserHeaders metadata);
 
     @JsOverlay
     public final UnaryResponse nextMessageStream(
-            MessageRequest requestMessage,
+            StreamRequest requestMessage,
             BrowserHeaders metadata_or_callback,
             ObjectServiceClient.NextMessageStreamCallbackFn callback) {
         return nextMessageStream(
@@ -283,7 +283,7 @@ public class ObjectServiceClient {
 
     @JsOverlay
     public final UnaryResponse nextMessageStream(
-            MessageRequest requestMessage, BrowserHeaders metadata_or_callback) {
+            StreamRequest requestMessage, BrowserHeaders metadata_or_callback) {
         return nextMessageStream(
                 requestMessage,
                 Js.<ObjectServiceClient.NextMessageStreamMetadata_or_callbackUnionType>uncheckedCast(
@@ -292,7 +292,7 @@ public class ObjectServiceClient {
 
     @JsOverlay
     public final UnaryResponse nextMessageStream(
-            MessageRequest requestMessage,
+            StreamRequest requestMessage,
             ObjectServiceClient.NextMessageStreamMetadata_or_callbackFn metadata_or_callback,
             ObjectServiceClient.NextMessageStreamCallbackFn callback) {
         return nextMessageStream(
@@ -304,7 +304,7 @@ public class ObjectServiceClient {
 
     @JsOverlay
     public final UnaryResponse nextMessageStream(
-            MessageRequest requestMessage,
+            StreamRequest requestMessage,
             ObjectServiceClient.NextMessageStreamMetadata_or_callbackFn metadata_or_callback) {
         return nextMessageStream(
                 requestMessage,
@@ -313,16 +313,16 @@ public class ObjectServiceClient {
     }
 
     public native UnaryResponse nextMessageStream(
-            MessageRequest requestMessage,
+            StreamRequest requestMessage,
             ObjectServiceClient.NextMessageStreamMetadata_or_callbackUnionType metadata_or_callback,
             ObjectServiceClient.NextMessageStreamCallbackFn callback);
 
     public native UnaryResponse nextMessageStream(
-            MessageRequest requestMessage,
+            StreamRequest requestMessage,
             ObjectServiceClient.NextMessageStreamMetadata_or_callbackUnionType metadata_or_callback);
 
-    public native ResponseStream<MessageResponse> openMessageStream(
-            MessageRequest requestMessage, BrowserHeaders metadata);
+    public native ResponseStream<StreamResponse> openMessageStream(
+            StreamRequest requestMessage, BrowserHeaders metadata);
 
-    public native ResponseStream<MessageResponse> openMessageStream(MessageRequest requestMessage);
+    public native ResponseStream<StreamResponse> openMessageStream(StreamRequest requestMessage);
 }

@@ -1,3 +1,6 @@
+/**
+ * Copyright (c) 2016-2022 Deephaven Data Labs and Patent Pending
+ */
 package io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.object_pb;
 
 import elemental2.core.JsArray;
@@ -12,13 +15,13 @@ import jsinterop.base.JsPropertyMap;
 
 @JsType(
         isNative = true,
-        name = "dhinternal.io.deephaven.proto.object_pb.MessageResponse",
+        name = "dhinternal.io.deephaven.proto.object_pb.Data",
         namespace = JsPackage.GLOBAL)
-public class MessageResponse {
+public class Data {
     @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
-    public interface GetDataUnionType {
+    public interface GetPayloadUnionType {
         @JsOverlay
-        static MessageResponse.GetDataUnionType of(Object o) {
+        static Data.GetPayloadUnionType of(Object o) {
             return Js.cast(o);
         }
 
@@ -44,9 +47,9 @@ public class MessageResponse {
     }
 
     @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
-    public interface SetDataValueUnionType {
+    public interface SetPayloadValueUnionType {
         @JsOverlay
-        static MessageResponse.SetDataValueUnionType of(Object o) {
+        static Data.SetPayloadValueUnionType of(Object o) {
             return Js.cast(o);
         }
 
@@ -74,9 +77,9 @@ public class MessageResponse {
     @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
     public interface ToObjectReturnType {
         @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
-        public interface GetDataUnionType {
+        public interface GetPayloadUnionType {
             @JsOverlay
-            static MessageResponse.ToObjectReturnType.GetDataUnionType of(Object o) {
+            static Data.ToObjectReturnType.GetPayloadUnionType of(Object o) {
                 return Js.cast(o);
             }
 
@@ -102,13 +105,13 @@ public class MessageResponse {
         }
 
         @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
-        public interface TypedExportIdListFieldType {
+        public interface TypedExportIdsListFieldType {
             @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
             public interface TicketFieldType {
                 @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
                 public interface GetTicketUnionType {
                     @JsOverlay
-                    static MessageResponse.ToObjectReturnType.TypedExportIdListFieldType.TicketFieldType.GetTicketUnionType of(
+                    static Data.ToObjectReturnType.TypedExportIdsListFieldType.TicketFieldType.GetTicketUnionType of(
                             Object o) {
                         return Js.cast(o);
                     }
@@ -135,94 +138,93 @@ public class MessageResponse {
                 }
 
                 @JsOverlay
-                static MessageResponse.ToObjectReturnType.TypedExportIdListFieldType.TicketFieldType create() {
+                static Data.ToObjectReturnType.TypedExportIdsListFieldType.TicketFieldType create() {
                     return Js.uncheckedCast(JsPropertyMap.of());
                 }
 
                 @JsProperty
-                MessageResponse.ToObjectReturnType.TypedExportIdListFieldType.TicketFieldType.GetTicketUnionType getTicket();
+                Data.ToObjectReturnType.TypedExportIdsListFieldType.TicketFieldType.GetTicketUnionType getTicket();
 
                 @JsProperty
                 void setTicket(
-                        MessageResponse.ToObjectReturnType.TypedExportIdListFieldType.TicketFieldType.GetTicketUnionType ticket);
+                        Data.ToObjectReturnType.TypedExportIdsListFieldType.TicketFieldType.GetTicketUnionType ticket);
 
                 @JsOverlay
                 default void setTicket(String ticket) {
                     setTicket(
-                            Js.<MessageResponse.ToObjectReturnType.TypedExportIdListFieldType.TicketFieldType.GetTicketUnionType>uncheckedCast(
+                            Js.<Data.ToObjectReturnType.TypedExportIdsListFieldType.TicketFieldType.GetTicketUnionType>uncheckedCast(
                                     ticket));
                 }
 
                 @JsOverlay
                 default void setTicket(Uint8Array ticket) {
                     setTicket(
-                            Js.<MessageResponse.ToObjectReturnType.TypedExportIdListFieldType.TicketFieldType.GetTicketUnionType>uncheckedCast(
+                            Js.<Data.ToObjectReturnType.TypedExportIdsListFieldType.TicketFieldType.GetTicketUnionType>uncheckedCast(
                                     ticket));
                 }
             }
 
             @JsOverlay
-            static MessageResponse.ToObjectReturnType.TypedExportIdListFieldType create() {
+            static Data.ToObjectReturnType.TypedExportIdsListFieldType create() {
                 return Js.uncheckedCast(JsPropertyMap.of());
             }
 
             @JsProperty
-            MessageResponse.ToObjectReturnType.TypedExportIdListFieldType.TicketFieldType getTicket();
+            Data.ToObjectReturnType.TypedExportIdsListFieldType.TicketFieldType getTicket();
 
             @JsProperty
             String getType();
 
             @JsProperty
-            void setTicket(
-                    MessageResponse.ToObjectReturnType.TypedExportIdListFieldType.TicketFieldType ticket);
+            void setTicket(Data.ToObjectReturnType.TypedExportIdsListFieldType.TicketFieldType ticket);
 
             @JsProperty
             void setType(String type);
         }
 
         @JsOverlay
-        static MessageResponse.ToObjectReturnType create() {
+        static Data.ToObjectReturnType create() {
             return Js.uncheckedCast(JsPropertyMap.of());
         }
 
         @JsProperty
-        MessageResponse.ToObjectReturnType.GetDataUnionType getData();
+        Data.ToObjectReturnType.GetPayloadUnionType getPayload();
 
         @JsProperty
-        JsArray<MessageResponse.ToObjectReturnType.TypedExportIdListFieldType> getTypedExportIdList();
+        JsArray<Data.ToObjectReturnType.TypedExportIdsListFieldType> getTypedExportIdsList();
 
         @JsProperty
-        void setData(MessageResponse.ToObjectReturnType.GetDataUnionType data);
+        void setPayload(Data.ToObjectReturnType.GetPayloadUnionType payload);
 
         @JsOverlay
-        default void setData(String data) {
-            setData(Js.<MessageResponse.ToObjectReturnType.GetDataUnionType>uncheckedCast(data));
+        default void setPayload(String payload) {
+            setPayload(Js.<Data.ToObjectReturnType.GetPayloadUnionType>uncheckedCast(payload));
         }
 
         @JsOverlay
-        default void setData(Uint8Array data) {
-            setData(Js.<MessageResponse.ToObjectReturnType.GetDataUnionType>uncheckedCast(data));
+        default void setPayload(Uint8Array payload) {
+            setPayload(Js.<Data.ToObjectReturnType.GetPayloadUnionType>uncheckedCast(payload));
         }
 
         @JsProperty
-        void setTypedExportIdList(
-                JsArray<MessageResponse.ToObjectReturnType.TypedExportIdListFieldType> typedExportIdList);
+        void setTypedExportIdsList(
+                JsArray<Data.ToObjectReturnType.TypedExportIdsListFieldType> typedExportIdsList);
 
         @JsOverlay
-        default void setTypedExportIdList(
-                MessageResponse.ToObjectReturnType.TypedExportIdListFieldType[] typedExportIdList) {
-            setTypedExportIdList(
-                    Js.<JsArray<MessageResponse.ToObjectReturnType.TypedExportIdListFieldType>>uncheckedCast(
-                            typedExportIdList));
+        default void setTypedExportIdsList(
+                Data.ToObjectReturnType.TypedExportIdsListFieldType[] typedExportIdsList) {
+            setTypedExportIdsList(
+                    Js.<JsArray<Data.ToObjectReturnType.TypedExportIdsListFieldType>>uncheckedCast(
+                            typedExportIdsList));
         }
     }
 
     @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
     public interface ToObjectReturnType0 {
         @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
-        public interface GetDataUnionType {
+        public interface GetPayloadUnionType {
             @JsOverlay
-            static MessageResponse.ToObjectReturnType0.GetDataUnionType of(Object o) {
+            static Data.ToObjectReturnType0.GetPayloadUnionType of(Object o) {
                 return Js.cast(o);
             }
 
@@ -248,13 +250,13 @@ public class MessageResponse {
         }
 
         @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
-        public interface TypedExportIdListFieldType {
+        public interface TypedExportIdsListFieldType {
             @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
             public interface TicketFieldType {
                 @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
                 public interface GetTicketUnionType {
                     @JsOverlay
-                    static MessageResponse.ToObjectReturnType0.TypedExportIdListFieldType.TicketFieldType.GetTicketUnionType of(
+                    static Data.ToObjectReturnType0.TypedExportIdsListFieldType.TicketFieldType.GetTicketUnionType of(
                             Object o) {
                         return Js.cast(o);
                     }
@@ -281,136 +283,133 @@ public class MessageResponse {
                 }
 
                 @JsOverlay
-                static MessageResponse.ToObjectReturnType0.TypedExportIdListFieldType.TicketFieldType create() {
+                static Data.ToObjectReturnType0.TypedExportIdsListFieldType.TicketFieldType create() {
                     return Js.uncheckedCast(JsPropertyMap.of());
                 }
 
                 @JsProperty
-                MessageResponse.ToObjectReturnType0.TypedExportIdListFieldType.TicketFieldType.GetTicketUnionType getTicket();
+                Data.ToObjectReturnType0.TypedExportIdsListFieldType.TicketFieldType.GetTicketUnionType getTicket();
 
                 @JsProperty
                 void setTicket(
-                        MessageResponse.ToObjectReturnType0.TypedExportIdListFieldType.TicketFieldType.GetTicketUnionType ticket);
+                        Data.ToObjectReturnType0.TypedExportIdsListFieldType.TicketFieldType.GetTicketUnionType ticket);
 
                 @JsOverlay
                 default void setTicket(String ticket) {
                     setTicket(
-                            Js.<MessageResponse.ToObjectReturnType0.TypedExportIdListFieldType.TicketFieldType.GetTicketUnionType>uncheckedCast(
+                            Js.<Data.ToObjectReturnType0.TypedExportIdsListFieldType.TicketFieldType.GetTicketUnionType>uncheckedCast(
                                     ticket));
                 }
 
                 @JsOverlay
                 default void setTicket(Uint8Array ticket) {
                     setTicket(
-                            Js.<MessageResponse.ToObjectReturnType0.TypedExportIdListFieldType.TicketFieldType.GetTicketUnionType>uncheckedCast(
+                            Js.<Data.ToObjectReturnType0.TypedExportIdsListFieldType.TicketFieldType.GetTicketUnionType>uncheckedCast(
                                     ticket));
                 }
             }
 
             @JsOverlay
-            static MessageResponse.ToObjectReturnType0.TypedExportIdListFieldType create() {
+            static Data.ToObjectReturnType0.TypedExportIdsListFieldType create() {
                 return Js.uncheckedCast(JsPropertyMap.of());
             }
 
             @JsProperty
-            MessageResponse.ToObjectReturnType0.TypedExportIdListFieldType.TicketFieldType getTicket();
+            Data.ToObjectReturnType0.TypedExportIdsListFieldType.TicketFieldType getTicket();
 
             @JsProperty
             String getType();
 
             @JsProperty
-            void setTicket(
-                    MessageResponse.ToObjectReturnType0.TypedExportIdListFieldType.TicketFieldType ticket);
+            void setTicket(Data.ToObjectReturnType0.TypedExportIdsListFieldType.TicketFieldType ticket);
 
             @JsProperty
             void setType(String type);
         }
 
         @JsOverlay
-        static MessageResponse.ToObjectReturnType0 create() {
+        static Data.ToObjectReturnType0 create() {
             return Js.uncheckedCast(JsPropertyMap.of());
         }
 
         @JsProperty
-        MessageResponse.ToObjectReturnType0.GetDataUnionType getData();
+        Data.ToObjectReturnType0.GetPayloadUnionType getPayload();
 
         @JsProperty
-        JsArray<MessageResponse.ToObjectReturnType0.TypedExportIdListFieldType> getTypedExportIdList();
+        JsArray<Data.ToObjectReturnType0.TypedExportIdsListFieldType> getTypedExportIdsList();
 
         @JsProperty
-        void setData(MessageResponse.ToObjectReturnType0.GetDataUnionType data);
+        void setPayload(Data.ToObjectReturnType0.GetPayloadUnionType payload);
 
         @JsOverlay
-        default void setData(String data) {
-            setData(Js.<MessageResponse.ToObjectReturnType0.GetDataUnionType>uncheckedCast(data));
+        default void setPayload(String payload) {
+            setPayload(Js.<Data.ToObjectReturnType0.GetPayloadUnionType>uncheckedCast(payload));
         }
 
         @JsOverlay
-        default void setData(Uint8Array data) {
-            setData(Js.<MessageResponse.ToObjectReturnType0.GetDataUnionType>uncheckedCast(data));
+        default void setPayload(Uint8Array payload) {
+            setPayload(Js.<Data.ToObjectReturnType0.GetPayloadUnionType>uncheckedCast(payload));
         }
 
         @JsProperty
-        void setTypedExportIdList(
-                JsArray<MessageResponse.ToObjectReturnType0.TypedExportIdListFieldType> typedExportIdList);
+        void setTypedExportIdsList(
+                JsArray<Data.ToObjectReturnType0.TypedExportIdsListFieldType> typedExportIdsList);
 
         @JsOverlay
-        default void setTypedExportIdList(
-                MessageResponse.ToObjectReturnType0.TypedExportIdListFieldType[] typedExportIdList) {
-            setTypedExportIdList(
-                    Js.<JsArray<MessageResponse.ToObjectReturnType0.TypedExportIdListFieldType>>uncheckedCast(
-                            typedExportIdList));
+        default void setTypedExportIdsList(
+                Data.ToObjectReturnType0.TypedExportIdsListFieldType[] typedExportIdsList) {
+            setTypedExportIdsList(
+                    Js.<JsArray<Data.ToObjectReturnType0.TypedExportIdsListFieldType>>uncheckedCast(
+                            typedExportIdsList));
         }
     }
 
-    public static native MessageResponse deserializeBinary(Uint8Array bytes);
+    public static native Data deserializeBinary(Uint8Array bytes);
 
-    public static native MessageResponse deserializeBinaryFromReader(
-            MessageResponse message, Object reader);
+    public static native Data deserializeBinaryFromReader(Data message, Object reader);
 
-    public static native void serializeBinaryToWriter(MessageResponse message, Object writer);
+    public static native void serializeBinaryToWriter(Data message, Object writer);
 
-    public static native MessageResponse.ToObjectReturnType toObject(
-            boolean includeInstance, MessageResponse msg);
+    public static native Data.ToObjectReturnType toObject(boolean includeInstance, Data msg);
 
-    public native TypedTicket addTypedExportId();
+    public native TypedTicket addTypedExportIds();
 
-    public native TypedTicket addTypedExportId(TypedTicket value, double index);
+    public native TypedTicket addTypedExportIds(TypedTicket value, double index);
 
-    public native TypedTicket addTypedExportId(TypedTicket value);
+    public native TypedTicket addTypedExportIds(TypedTicket value);
 
-    public native void clearTypedExportIdList();
+    public native void clearTypedExportIdsList();
 
-    public native MessageResponse.GetDataUnionType getData();
+    public native Data.GetPayloadUnionType getPayload();
 
-    public native String getData_asB64();
+    public native String getPayload_asB64();
 
-    public native Uint8Array getData_asU8();
+    public native Uint8Array getPayload_asU8();
 
-    public native JsArray<TypedTicket> getTypedExportIdList();
+    public native JsArray<TypedTicket> getTypedExportIdsList();
 
     public native Uint8Array serializeBinary();
 
-    public native void setData(MessageResponse.SetDataValueUnionType value);
+    public native void setPayload(Data.SetPayloadValueUnionType value);
 
     @JsOverlay
-    public final void setData(String value) {
-        setData(Js.<MessageResponse.SetDataValueUnionType>uncheckedCast(value));
+    public final void setPayload(String value) {
+        setPayload(Js.<Data.SetPayloadValueUnionType>uncheckedCast(value));
     }
 
     @JsOverlay
-    public final void setData(Uint8Array value) {
-        setData(Js.<MessageResponse.SetDataValueUnionType>uncheckedCast(value));
+    public final void setPayload(Uint8Array value) {
+        setPayload(Js.<Data.SetPayloadValueUnionType>uncheckedCast(value));
     }
 
-    public native void setTypedExportIdList(JsArray<TypedTicket> value);
+    public native void setTypedExportIdsList(JsArray<TypedTicket> value);
 
     @JsOverlay
-    public final void setTypedExportIdList(TypedTicket[] value) {
-        setTypedExportIdList(Js.<JsArray<TypedTicket>>uncheckedCast(value));
+    public final void setTypedExportIdsList(TypedTicket[] value) {
+        setTypedExportIdsList(Js.<JsArray<TypedTicket>>uncheckedCast(value));
     }
 
-    public native MessageResponse.ToObjectReturnType0 toObject();
+    public native Data.ToObjectReturnType0 toObject();
 
-    public native MessageResponse.ToObjectReturnType0 toObject(boolean includeInstance);
+    public native Data.ToObjectReturnType0 toObject(boolean includeInstance);
 }
