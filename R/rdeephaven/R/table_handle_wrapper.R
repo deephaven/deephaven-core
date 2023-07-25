@@ -110,21 +110,16 @@ TableHandle <- R6Class("TableHandle", cloneable = FALSE,
 ### S3 METHODS
 
 #' @export
-as.arrow.record.batch.reader <- function(th) {
-    return(th$to_arrow_record_batch_reader())
+as_arrow_table.TableHandle <- function(th, ...) {
+    th$to_arrow_table()
 }
 
 #' @export
-as.arrow.table <- function(th) {
-    return(th$to_arrow_table())
+as_tibble.TableHandle <- function(th, ...) {
+    th$to_tibble()
 }
 
 #' @export
-as.tibble <- function(th) {
-    return(th$to_tibble())
-}
-
-#' @export
-as.data.frame.TableHandle <- function(x, ...) {
-    x$to_data_frame()
+as.data.frame.TableHandle <- function(th, ...) {
+    th$to_data_frame()
 }
