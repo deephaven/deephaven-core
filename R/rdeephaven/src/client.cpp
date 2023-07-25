@@ -107,40 +107,6 @@ AggregateWrapper* INTERNAL_count(std::string columnSpec) {
 }
 
 
-class SortPairWrapper {
-public:
-    SortPairWrapper();
-    SortPairWrapper(deephaven::client::SortPair sort_pair) :
-        internal_sorter(std::move(sort_pair)) {}
-private:
-    deephaven::client::SortPair internal_sorter;
-    friend TableHandleWrapper;
-    friend std::vector<deephaven::client::SortPair> convertRcppListToVectorOfTypeSortPair(Rcpp::List rcpp_list);
-};
-
-// ######################### conversion function for the above class
-std::vector<deephaven::client::SortPair> convertRcppListToVectorOfTypeSortPair(Rcpp::List rcpp_list) {
-    std::vector<deephaven::client::SortPair> converted_list;
-    converted_list.reserve(rcpp_list.size());
-
-    for(int i = 0; i < rcpp_list.size(); i++) {
-        Rcpp::Environment rcpp_list_element = rcpp_list[i];
-        Rcpp::XPtr<SortPairWrapper> xptr(rcpp_list_element.get(".pointer"));
-        deephaven::client::SortPair internal_sorter = xptr->internal_sorter;
-        converted_list.push_back(internal_sorter);
-    }
-    return converted_list;
-}
-
-SortPairWrapper* INTERNAL_sortAsc(std::string column, bool abs) {
-    return new SortPairWrapper(deephaven::client::SortPair::ascending(column, abs));
-}
-
-SortPairWrapper* INTERNAL_sortDesc(std::string column, bool abs) {
-    return new SortPairWrapper(deephaven::client::SortPair::descending(column, abs));
-}
-
-
 class TableHandleWrapper {
 public:
     TableHandleWrapper(deephaven::client::TableHandle ref_table) :
@@ -278,9 +244,29 @@ public:
         return new TableHandleWrapper(internal_tbl_hdl.merge(keyColumn, converted_sources));
     };
 
-    TableHandleWrapper* sort(Rcpp::List sortPairs) {
-        std::vector<deephaven::client::SortPair> converted_sort_pairs = convertRcppListToVectorOfTypeSortPair(sortPairs);
-        return new TableHandleWrapper(internal_tbl_hdl.sort(converted_sort_pairs));
+    TableHandleWrapper* sort(std::vector<std::string> columnSpecs, std::vector<bool> descending) {
+        std::vector<deephaven::client::SortPair> sort_pairs;
+        sort_pairs.reserve(columnSpecs.size());
+        if (descending.size() == 1) {
+            if (descending[0] == false) {
+                for(int i = 0; i < columnSpecs.size(); i++) {
+                    sort_pairs.push_back(deephaven::client::SortPair::ascending(columnSpecs[i], false));
+                }
+            } else {
+                for(int i = 0; i < columnSpecs.size(); i++) {
+                    sort_pairs.push_back(deephaven::client::SortPair::descending(columnSpecs[i], false));
+                }
+            }
+        } else {
+            for(int i = 0; i < columnSpecs.size(); i++) {
+                if (descending[i] == false) {
+                    sort_pairs.push_back(deephaven::client::SortPair::ascending(columnSpecs[i], false));
+                } else {
+                    sort_pairs.push_back(deephaven::client::SortPair::descending(columnSpecs[i], false));
+                }
+            }
+        }
+        return new TableHandleWrapper(internal_tbl_hdl.sort(sort_pairs));
     };
 
     /**

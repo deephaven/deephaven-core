@@ -11,56 +11,11 @@ drop_columns <- function(x, ...) {UseMethod("drop_columns", x)}
 #' @export
 where <- function(x, ...) {UseMethod("where", x)}
 
-#' @export
-abs_sum_by <- function(x, ...) {UseMethod("abs_sum_by", x)}
-#' @export
-agg_by <- function(x, ...) {UseMethod("agg_by", x)}
-#' @export
-avg_by <- function(x, ...) {UseMethod("avg_by", x)}
-#' @export
-count_by <- function(x, ...) {UseMethod("count_by", x)}
-#' @export
-first_by <- function(x, ...) {UseMethod("first_by", x)}
-#' @export
-head_by <- function(x, ...) {UseMethod("head_by", x)}
-#' @export
-last_by <- function(x, ...) {UseMethod("last_by", x)}
-#' @export
-max_by <- function(x, ...) {UseMethod("max_by", x)}
-#' @export
-median_by <- function(x, ...) {UseMethod("median_by", x)}
-#' @export
-min_by <- function(x, ...) {UseMethod("min_by", x)}
-#' @export
-percentile_by <- function(x, ...) {UseMethod("percentile_by", x)}
-#' @export
-std_by <- function(x, ...) {UseMethod("std_by", x)}
-#' @export
-sum_by <- function(x, ...) {UseMethod("sum_by", x)}
-#' @export
-tail_by <- function(x, ...) {UseMethod("tail_by", x)}
-#' @export
-var_by <- function(x, ...) {UseMethod("var_by", x)}
-#' @export
-w_avg_by <- function(x, ...) {UseMethod("w_avg_by", x)}
-
-#' @export
-cross_join <- function(x, ...) {UseMethod("cross_join", x)}
-#' @export
-natural_join <- function(x, ...) {UseMethod("natural_join", x)}
-#' @export
-exact_join <- function(x, ...) {UseMethod("exact_join", x)}
-
 # TODO: figure this shit out
 #' @export
 dh_ungroup <- function(x, ...) {UseMethod("dh_ungroup", x)}
 #' @export
-dh_sort <- function(x, ...) {UseMethod("dh_sort", x)}
-#' @export
 dh_merge <- function(x, ...) {UseMethod("dh_merge", x)}
-#' @export
-dh_cross_join <- function(x, ...) {UseMethod("dh_cross_join", x)}
-
 
 ### S3 METHODS (implemented generics)
 
@@ -95,7 +50,7 @@ drop_columns.TableHandle <- function(th, columns) {
 }
 
 #' @export
-where.TableHandle = function(th, condition) {
+where.TableHandle <- function(th, condition) {
     verify_string("condition", condition)
     return(TableHandle$new(th$internal_table_handle$where(condition)))
 }
@@ -103,9 +58,9 @@ where.TableHandle = function(th, condition) {
 # AGGREGATION OPERATIONS
 
 #' @export
-agg_by.TableHandle = function(th, aggregations) {
+agg_by <- function(th, aggregations) {
     verify_internal_type("Aggregation", "aggregations", aggregations)
-    if ((first_class(aggregations) != "list") && (first_class(aggregations) == "Aggregation")) {
+    if (length(aggregations) == 1) {
         aggregations = c(aggregations)
     }
     unwrapped_aggregations = lapply(aggregations, strip_r6_wrapping_from_aggregation)
@@ -114,95 +69,95 @@ agg_by.TableHandle = function(th, aggregations) {
 }
 
 #' @export
-min_by.TableHandle = function(th, columns) {
+min_by <- function(th, columns) {
     verify_string_vector("columns", columns)
     return(TableHandle$new(th$internal_table_handle$min_by(columns)))
 }
 
 #' @export
-max_by.TableHandle = function(th, columns) {
+max_by <- function(th, columns) {
     verify_string_vector("columns", columns)
     return(TableHandle$new(th$internal_table_handle$max_by(columns)))
 }
 
 #' @export
-sum_by.TableHandle = function(th, columns) {
+sum_by <- function(th, columns) {
     verify_string_vector("columns", columns)
     return(TableHandle$new(th$internal_table_handle$sum_by(columns)))
 }
 
 #' @export
-abs_sum_by.TableHandle = function(th, columns) {
+abs_sum_by <- function(th, columns) {
     verify_string_vector("columns", columns)
     return(TableHandle$new(th$internal_table_handle$abs_sum_by(columns)))
 }
 
 #' @export
-avg_by.TableHandle = function(th, columns) {
+avg_by <- function(th, columns) {
     verify_string_vector("columns", columns)
     return(TableHandle$new(th$internal_table_handle$avg_by(columns)))
 }
 
 #' @export
-w_avg_by.TableHandle = function(th, columns, weight_column) {
+w_avg_by <- function(th, columns, weight_column) {
     verify_string("weight_column", weight_column)
     verify_string_vector("columns", columns)
     return(TableHandle$new(th$internal_table_handle$w_avg_by(columns, weight_column)))
 }
 
 #' @export
-var_by.TableHandle = function(th, columns) {
+var_by <- function(th, columns) {
     verify_string_vector("columns", columns)
     return(TableHandle$new(th$internal_table_handle$var_by(columns)))
 }
 
 #' @export
-std_by.TableHandle = function(th, columns) {
+std_by <- function(th, columns) {
     verify_string_vector("columns", columns)
     return(TableHandle$new(th$internal_table_handle$std_by(columns)))
 }
 
 #' @export
-first_by.TableHandle = function(th, columns) {
+first_by <- function(th, columns) {
     verify_string_vector("columns", columns)
     return(TableHandle$new(th$internal_table_handle$first_by(columns)))
 }
 
 #' @export
-last_by.TableHandle = function(th, columns) {
+last_by <- function(th, columns) {
     verify_string_vector("columns", columns)
     return(TableHandle$new(th$internal_table_handle$last_by(columns)))
 }
 
 #' @export
-median_by.TableHandle = function(th, columns) {
+median_by <- function(th, columns) {
     verify_string_vector("columns", columns)
     return(TableHandle$new(th$internal_table_handle$median_by(columns)))
 }
 
 #' @export
-percentile_by.TableHandle = function(th, columns, percentile) {
+percentile_by <- function(th, columns, percentile) {
     verify_string_vector("columns", columns)
     verify_proportion("percentile", percentile)
     return(TableHandle$new(th$internal_table_handle$percentile_by(columns, percentile)))
 }
 
 #' @export
-count_by.TableHandle = function(th, columns, count_by_column) {
+count_by <- function(th, columns, count_by_column) {
     verify_string("count_by_column", count_by_column)
     verify_string_vector("columns", columns)
     return(TableHandle$new(th$internal_table_handle$count_by(columns, count_by_column)))
 }
 
 #' @export
-head_by.TableHandle = function(th, columns, n) {
+head_by <- function(th, columns, n) {
     verify_int("n", n)
     verify_string_vector("columns", columns)
     return(TableHandle$new(th$internal_table_handle$head_by(columns, n)))
 }
 
 #' @export
-tail_by.TableHandle = function(th, columns, n) {
+tail_by <- function(th, columns, n) {
     verify_int("n", n)
     verify_string_vector("columns", columns)
     return(TableHandle$new(th$internal_table_handle$tail_by(columns, n)))
@@ -211,7 +166,7 @@ tail_by.TableHandle = function(th, columns, n) {
 # JOIN OPERATIONS
 
 #' @export
-dh_cross_join.TableHandle = function(th, right_side, columns_to_match, columns_to_add) {
+cross_join <- function(th, right_side, columns_to_match, columns_to_add) {
     verify_string_vector("columns_to_match", columns_to_match)
     verify_string_vector("columns_to_add", columns_to_add)
     return(TableHandle$new(th$internal_table_handle$cross_join(right_side$internal_table_handle,
@@ -219,7 +174,7 @@ dh_cross_join.TableHandle = function(th, right_side, columns_to_match, columns_t
 }
 
 #' @export
-natural_join.TableHandle = function(th, right_side, columns_to_match, columns_to_add) {
+natural_join <- function(th, right_side, columns_to_match, columns_to_add) {
     verify_string_vector("columns_to_match", columns_to_match)
     verify_string_vector("columns_to_add", columns_to_add)
     return(TableHandle$new(th$internal_table_handle$natural_join(right_side$internal_table_handle,
@@ -227,7 +182,7 @@ natural_join.TableHandle = function(th, right_side, columns_to_match, columns_to
 }
 
 #' @export
-exact_join.TableHandle = function(th, right_side, columns_to_match, columns_to_add) {
+exact_join <- function(th, right_side, columns_to_match, columns_to_add) {
     verify_string_vector("columns_to_match", columns_to_match)
     verify_string_vector("columns_to_add", columns_to_add)
     return(TableHandle$new(th$internal_table_handle$exact_join(right_side$internal_table_handle,
@@ -237,35 +192,35 @@ exact_join.TableHandle = function(th, right_side, columns_to_match, columns_to_a
 # MISC OPERATIONS
 
 #' @export
-head.TableHandle = function(th, n) {
+head.TableHandle <- function(th, n) {
     verify_int("n", n)
     return(TableHandle$new(th$internal_table_handle$head(n)))
 }
 
 #' @export
-tail.TableHandle = function(th, n) {
+tail.TableHandle <- function(th, n) {
     verify_int("n", n)
     return(TableHandle$new(th$internal_table_handle$tail(n)))
 }
 
 #' @export
-dh_ungroup.TableHandle = function(th, null_fill, group_by_columns) {
-    verify_string_vector(group_by_columns, "group_by_columns")
+dh_ungroup.TableHandle <- function(th, null_fill, group_by_columns) {
+    verify_string_vector("group_by_columns", group_by_columns)
     return(TableHandle$new(th$internal_table_handle$ungroup(null_fill, group_by_columns)))
 }
 
 #' @export
-dh_sort.TableHandle = function(th, sorters) {
-    verify_internal_type("Sorter", "sorters", sorters)
-    if ((first_class(sorters) != "list") && (first_class(sorters) == "Sorter")) {
-        sorters = c(sorters)
+sort_by <- function(th, columns, descending = FALSE) {
+    verify_string_vector("columns", columns)
+    verify_bool_vector("descending", descending)
+    if ((length(descending) > 1) && length(descending) != length(columns)) {
+        stop(paste0("'descending' must be the same length as 'columns' if more than one entry is supplied. Got 'columns' with length ", length(columns), " and 'descending' with length", length(descending), " instead."))
     }
-    unwrapped_sorters = lapply(sorters, strip_r6_wrapping_from_sorter)
-    return(TableHandle$new(th$internal_table_handle$sort(unwrapped_sorters)))
+    return(TableHandle$new(th$internal_table_handle$sort(columns, descending)))
 }
 
 #' @export
-dh_merge.TableHandle = function(th, key_column, sources) {
+dh_merge.TableHandle <- function(th, key_column, sources) {
     verify_string("key_column", key_column)
     return(TableHandle$new(th$internal_table_handle$merge(key_column, sources)))
 }

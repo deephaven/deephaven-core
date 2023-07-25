@@ -1,6 +1,4 @@
-first_class = function(arg) {
-    return(class(arg)[[1]])
-}
+first_class <- function(arg) class(arg)[[1]]
 
 verify_internal_type <- function(desired_type, arg_name, candidate) {
     if ((first_class(candidate) == "list") && (any(lapply(candidate, first_class) != desired_type))) {
@@ -17,6 +15,12 @@ verify_bool <- function(arg_name, bool_candidate) {
     }
     else if (length(bool_candidate) != 1) {
         stop(paste0("'", arg_name, "' must be passed as a single boolean. Got a boolean vector of length ", length(bool_candidate), " instead."))
+    }
+}
+
+verify_bool_vector <- function(arg_name, bool_candidate) {
+    if (first_class(bool_candidate) != "logical") {
+        stop(paste0("'", arg_name, "' must be passed as a boolean or a vector of booleans. Got an object of class ", first_class(bool_candidate), " instead."))
     }
 }
 
@@ -60,10 +64,10 @@ verify_string_vector <- function(arg_name, string_vector_candidate) {
     }
 }
 
-strip_r6_wrapping_from_aggregation = function(r6_aggregation) {
+strip_r6_wrapping_from_aggregation <- function(r6_aggregation) {
     return(r6_aggregation$internal_aggregation)
 }
 
-strip_r6_wrapping_from_sorter = function(r6_sorter) {
+strip_r6_wrapping_from_sorter <- function(r6_sorter) {
     return(r6_sorter$internal_sorter)
 }

@@ -261,7 +261,7 @@ test_that("min_by behaves as expected", {
     new_th3 <- data$th3 %>%
       update(c("bool_col1 = X1 >= 0", "bool_col2 = X2 >= 0")) %>%
       min_by(c("bool_col1", "bool_col2")) %>%
-      dh_sort(c(sort_asc("bool_col1"), sort_asc("bool_col2"))) # need to sort because resulting row orders are not the same
+      sort_by(c("bool_col1", "bool_col2")) # need to sort because resulting row orders are not the same
     expect_equal(as.data.frame(new_th3), as.data.frame(new_tb3))
 
     new_tb4 <- data$df4 %>%
@@ -270,7 +270,7 @@ test_that("min_by behaves as expected", {
       arrange(bool_col)
     new_th4 <- data$th4 %>%
       min_by("bool_col") %>%
-      dh_sort(sort_asc("bool_col"))
+      sort_by("bool_col")
     expect_equal(as.data.frame(new_th4), as.data.frame(new_tb4))
 })
 
@@ -299,7 +299,7 @@ test_that("max_by behaves as expected", {
     new_th3 <- data$th3 %>%
       update(c("bool_col1 = X1 >= 0", "bool_col2 = X2 >= 0")) %>%
       max_by(c("bool_col1", "bool_col2")) %>%
-      dh_sort(c(sort_asc("bool_col1"), sort_asc("bool_col2"))) # need to sort because resulting row orders are not the same
+      max_by(c("bool_col1", "bool_col2")) # need to sort because resulting row orders are not the same
     expect_equal(as.data.frame(new_th3), as.data.frame(new_tb3))
     
     new_tb4 <- data$df4 %>%
@@ -308,7 +308,7 @@ test_that("max_by behaves as expected", {
       arrange(bool_col)
     new_th4 <- data$th4 %>%
       max_by("bool_col") %>%
-      dh_sort(sort_asc("bool_col"))
+      sort_by("bool_col")
     expect_equal(as.data.frame(new_th4), as.data.frame(new_tb4))
 })
 
@@ -330,7 +330,7 @@ test_that("sum_by behaves as expected", {
       arrange(X, Y)
     new_th2 <- data$th5 %>%
       sum_by(c("X", "Y")) %>%
-      dh_sort(c(sort_asc("X"), sort_asc("Y")))
+      sort_by(c("X", "Y"))
     expect_equal(as.data.frame(new_th2), as.data.frame(new_tb2))
 })
 
@@ -354,7 +354,7 @@ test_that("abs_sum_by behaves as expected", {
       arrange(X, Y)
     new_th2 <- data$th5 %>%
       abs_sum_by(c("X", "Y")) %>%
-      dh_sort(c(sort_asc("X"), sort_asc("Y")))
+      sort_by(c("X", "Y"))
     expect_equal(as.data.frame(new_th2), as.data.frame(new_tb2))
 })
 
@@ -376,7 +376,7 @@ test_that("var_by behaves as expected", {
       arrange(X, Y)
     new_th2 <- data$th5 %>%
       var_by(c("X", "Y")) %>%
-      dh_sort(c(sort_asc("X"), sort_asc("Y")))
+      sort_by(c("X", "Y"))
     expect_equal(as.data.frame(new_th2), as.data.frame(new_tb2))
 })
 
@@ -398,7 +398,7 @@ test_that("std_by behaves as expected", {
       arrange(X, Y)
     new_th2 <- data$th5 %>%
       std_by(c("X", "Y")) %>%
-      dh_sort(c(sort_asc("X"), sort_asc("Y")))
+      sort_by(c("X", "Y"))
     expect_equal(as.data.frame(new_th2), as.data.frame(new_tb2))
 })
 
@@ -420,11 +420,11 @@ test_that("avg_by behaves as expected", {
       arrange(X, Y)
     new_th2 <- data$th5 %>%
       avg_by(c("X", "Y")) %>%
-      dh_sort(c(sort_asc("X"), sort_asc("Y")))
+      sort_by(c("X", "Y"))
     expect_equal(as.data.frame(new_th2), as.data.frame(new_tb2))
 })
 
-# I think that the current behavior of wAvgBy() is wrong and needs to be updated
+# TODO: I think that the current behavior of wAvgBy() is wrong and needs to be updated
 test_that("w_avg_by behaves as expected", {
   data <- setup()
 })
@@ -447,7 +447,7 @@ test_that("first_by behaves as expected", {
       arrange(X, Y)
     new_th2 <- data$th5 %>%
       first_by(c("X", "Y")) %>%
-      dh_sort(c(sort_asc("X"), sort_asc("Y")))
+      sort_by(c("X", "Y"))
     expect_equal(as.data.frame(new_th2), as.data.frame(new_tb2))
 })
 
@@ -469,7 +469,7 @@ test_that("last_by behaves as expected", {
       arrange(X, Y)
     new_th2 <- data$th5 %>%
       last_by(c("X", "Y")) %>%
-      dh_sort(c(sort_asc("X"), sort_asc("Y")))
+      sort_by(c("X", "Y"))
     expect_equal(as.data.frame(new_th2), as.data.frame(new_tb2))
 })
 
@@ -491,15 +491,15 @@ test_that("median_by behaves as expected", {
       arrange(X, Y)
     new_th2 <- data$th5 %>%
       median_by(c("X", "Y")) %>%
-      dh_sort(c(sort_asc("X"), sort_asc("Y")))
+      sort_by(c("X", "Y"))
     expect_equal(as.data.frame(new_th2), as.data.frame(new_tb2))
 })
 
 test_that("percentile_by behaves as expected", {
     data <- setup()
     
-    # There is not a clean analog to `percentile_by` in dplyr, so we construct
-    # these data frames directly. 
+    # There is not a clean analog to `percentile_by` in dplyr,
+    # so we construct these data frames directly. 
     
     new_df1 <- data.frame(X = c("A", "B", "C"),
                           Number1 = c(50, -44, -70),
@@ -532,7 +532,7 @@ test_that("count_by behaves as expected", {
       count(X, Y)
     new_th2 <- data$th5 %>%
       count_by(c("X", "Y"), "n") %>%
-      dh_sort(c(sort_asc("X"), sort_asc("Y")))
+      sort_by(c("X", "Y"))
     expect_equal(as.data.frame(new_th2), as.data.frame(new_tb2))
 })
 
@@ -551,7 +551,7 @@ test_that("head_by behaves as expected", {
     slice_head(n=2)
   new_th2 <- data$th5 %>%
     head_by(c("X", "Y"), 2) %>%
-    dh_sort(c(sort_asc("X"), sort_asc("Y")))
+    sort_by(c("X", "Y"))
   expect_equal(as.data.frame(new_th2), as.data.frame(new_tb2))
 })
 
@@ -570,14 +570,13 @@ test_that("tail_by behaves as expected", {
       slice_tail(n=2)
     new_th2 <- data$th5 %>%
       tail_by(c("X", "Y"), 2) %>%
-      dh_sort(c(sort_asc("X"), sort_asc("Y")))
+      sort_by(c("X", "Y"))
     expect_equal(as.data.frame(new_th2), as.data.frame(new_tb2))
 })
 
+# TODO: Our definition of a cross join is significantly different from dplyr
 test_that("cross_join behaves as expected", {
     data <- setup()
-    
-    
 })
 
 test_that("natural_join behaves as expected", {
