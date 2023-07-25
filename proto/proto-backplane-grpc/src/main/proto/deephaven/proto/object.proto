@@ -82,7 +82,7 @@ message FetchObjectRequest {
 message FetchObjectResponse {
     string type = 1;
     bytes data = 2;
-    repeated io.deephaven.proto.backplane.grpc.TypedTicket typed_export_id = 3;
+    repeated io.deephaven.proto.backplane.grpc.TypedTicket typed_export_ids = 3;
 }
 
 /*
@@ -100,8 +100,8 @@ message ConnectRequest {
  * send server-created export tickets for new objects.
  */
 message Data {
-    bytes data = 1;
-    repeated io.deephaven.proto.backplane.grpc.TypedTicket typed_export_id = 2;
+    bytes payload = 1;
+    repeated io.deephaven.proto.backplane.grpc.TypedTicket typed_export_ids = 2;
 }
 
 /*
@@ -109,7 +109,7 @@ message Data {
  */
 message StreamRequest {
     oneof payload {
-        ConnectRequest source_id = 1;
+        ConnectRequest connect = 1;
         Data data = 2;
     }
 }

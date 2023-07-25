@@ -63,8 +63,8 @@ final class ObjectTypeAdapter extends ObjectTypeBase implements AutoCloseable {
         }
 
         @Override
-        public void onMessage(ByteBuffer message, Object[] references) {
-            instance.call(void.class, "on_message", byte[].class, message.array(), Object[].class, references);
+        public void onMessage(ByteBuffer payload, Object[] references) {
+            instance.call(void.class, "on_message", byte[].class, payload.array(), Object[].class, references);
         }
 
         @Override

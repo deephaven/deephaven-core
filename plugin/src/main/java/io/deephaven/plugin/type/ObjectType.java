@@ -59,19 +59,19 @@ public interface ObjectType extends Plugin {
     }
 
     /**
-     * A stream of messages, either sent from the server to the client, or client to the server. ObjectType
-     * plugin implementations can provide an implementation of this interface for each incoming stream to
-     * invoke as messages arrive, and will likewise be given an instance of this interface to be able to
-     * send messages to the client.
+     * A stream of messages, either sent from the server to the client, or client to the server. ObjectType plugin
+     * implementations can provide an implementation of this interface for each incoming stream to invoke as messages
+     * arrive, and will likewise be given an instance of this interface to be able to send messages to the client.
      */
     interface MessageStream extends AutoCloseable {
         /**
-         * Transmits data to the remote end of the stream. This can consist of a binary payload and references
-         * to objects on the server.
-         * @param message
-         * @param references
+         * Transmits data to the remote end of the stream. This can consist of a binary payload and references to
+         * objects on the server.
+         *
+         * @param payload the binary data sent to the remote implementation
+         * @param references server-side object references sent to the remote implementation
          */
-        void onMessage(ByteBuffer message, Object[] references);
+        void onMessage(ByteBuffer payload, Object[] references);
 
         /**
          * Closes the stream on both ends. No further messages can be sent or received.
@@ -84,9 +84,9 @@ public interface ObjectType extends Plugin {
      * called with each received message from the server, and can call the provided connection instance to send messages
      * as needed to the client.
      * 
-     * @param object
-     * @param connection
-     * @return
+     * @param object the object to create a connection for
+     * @param connection a stream to send objects to the client
+     * @return a stream to receive objects from the client
      */
     // impl note: provide default impl? deprecate writeTo?
     default MessageStream clientConnection(Object object, MessageStream connection) {
@@ -100,8 +100,19 @@ public interface ObjectType extends Plugin {
         }
     }
 
+    /**
+     * Consider renaming to API? MessageAPI?
+     */
     enum Kind {
-        FETCHABLE, BIDIRECTIONAL,
+        /**
+         * An object can be fetched, but will not continue to stream results, or receive messages from the server.
+         */
+        FETCHABLE,
+        /**
+         * An object can be connected to by a client, and continue to stream messages server to client or client to
+         * server.
+         */
+        BIDIRECTIONAL,
     }
 
     /**
@@ -110,6 +121,8 @@ public interface ObjectType extends Plugin {
      * @param object the object
      * @return true if the {@code object} supports bidirectional communication
      */
+    // TODO review: should the objecttype itself just return fetchable vs bidi? or do we actually want to decide on an
+    // object-by-object basis?
     default Kind supportsBidiMessaging(Object object) {
         return Kind.FETCHABLE;
     }
@@ -130,6 +143,20 @@ public interface ObjectType extends Plugin {
          * @return the reference
          */
         Optional<Reference> reference(Object object, boolean allowUnknownType, boolean forceNew);
+
+        /**
+         * Gets the reference for {@code object} if it has already been created and {@code forceNew} is {@code false},
+         * otherwise creates a new one. If {@code allowUnknownType} is {@code false}, and no type can be found, no
+         * reference will be created.
+         *
+         * @param object the object
+         * @param allowUnknownType if an unknown-typed reference can be created
+         * @param forceNew if a new reference should be created
+         * @param equals the equals logic
+         * @return the reference
+         */
+        Optional<Reference> reference(Object object, boolean allowUnknownType, boolean forceNew,
+                BiPredicate<Object, Object> equals);
 
         /**
          * A reference.
