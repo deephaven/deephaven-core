@@ -20,6 +20,9 @@ import jsinterop.annotations.JsType;
 import java.util.Arrays;
 import java.util.Map;
 
+/**
+ * Provides access to the data for displaying in a figure.
+ */
 @TsInterface
 @JsType(namespace = "dh.plot", name = "Series")
 public class JsSeries {
@@ -75,6 +78,7 @@ public class JsSeries {
 
     /**
      * JS doesn't support method overloads, so we just ignore this one and mark the arg as optional in the JS version.
+     * Enable updates for this Series.
      */
     @JsIgnore
     public void subscribe() {
@@ -87,6 +91,9 @@ public class JsSeries {
         jsFigure.enqueueSubscriptionCheck();
     }
 
+    /**
+     * Disable updates for this Series.
+     */
     public void unsubscribe() {
         markUnsubscribed();
         jsFigure.enqueueSubscriptionCheck();
@@ -107,12 +114,22 @@ public class JsSeries {
         return subscribed;
     }
 
+    /**
+     * The plotting style to use for this series. See <b>SeriesPlotStyle</b> enum for more details.
+     * 
+     * @return int
+     */
     @JsProperty
     @TsTypeRef(JsSeriesPlotStyle.class)
     public int getPlotStyle() {
         return descriptor.getPlotStyle();
     }
 
+    /**
+     * The name for this series.
+     * 
+     * @return String
+     */
     @JsProperty
     public String getName() {
         return descriptor.getName();
@@ -203,6 +220,13 @@ public class JsSeries {
         return descriptor.getShape();
     }
 
+    /**
+     * Contains details on how to access data within the chart for this series. keyed with the way that this series uses
+     * the axis.
+     * 
+     * @return {@link SeriesDataSource}
+     *
+     */
     @JsProperty
     public SeriesDataSource[] getSources() {
         return sources;
@@ -218,6 +242,11 @@ public class JsSeries {
         this.multiSeries = multiSeries;
     }
 
+    /**
+     * indicates that this series belongs to a MultiSeries, null otherwise
+     * 
+     * @return dh.plot.MultiSeries
+     */
     @JsProperty
     public JsMultiSeries getMultiSeries() {
         return multiSeries;

@@ -79,9 +79,36 @@ import static io.deephaven.web.client.api.subscription.ViewportData.NO_ROW_FORMA
  * operations are performed, but encourage the client code to re-set them to the desired position.
  *
  * The table size will be -1 until a viewport has been fetched.
+ *
+ * Similar to a table, a Tree Table provides access to subscribed viewport data on the current hierarchy. A different
+ * Row type is used within that viewport, showing the depth of that node within the tree and indicating details about
+ * whether or not it has children or is expanded. The Tree Table itself then provides the ability to change if a row is
+ * expanded or not. Methods used to control or check if a row should be expanded or not can be invoked on a TreeRow
+ * instance, or on the number of the row (thus allowing for expanding/collapsing rows which are not currently visible in
+ * the viewport).
+ *
+ * Events and viewports are somewhat different than tables, due to the expense of computing the expanded/collapsed rows
+ * and count of children at each level of the hierarchy, and differences in the data that is available.
+ *
+ * - There is no <b>totalSize</b> property. - The viewport is not un-set when changes are made to filter or sort, but
+ * changes will continue to be streamed in. It is suggested that the viewport be changed to the desired position
+ * (usually the first N rows) after any filter/sort change is made. Likewise, <b>getViewportData()</b> will always
+ * return the most recent data, and will not wait if a new operation is pending. - Custom columns are not directly
+ * supported. If the <b>TreeTable</b> was created client-side, the original Table can have custom columns applied, and
+ * the <b>TreeTable</b> can be recreated. - The <b>totalsTableConfig</b> property is instead a method, and returns a
+ * promise so the config can be fetched asynchronously. - Totals Tables for trees vary in behavior between hierarchical
+ * tables and roll-up tables. This behavior is based on the original flat table used to produce the Tree Table - for a
+ * hierarchical table (i.e. Table.treeTable in the query config), the totals will include non-leaf nodes (since they are
+ * themselves actual rows in the table), but in a roll-up table, the totals only include leaf nodes (as non-leaf nodes
+ * are generated through grouping the contents of the original table). Roll-ups also have the
+ * <b>isIncludeConstituents</b> property, indicating that a <b>Column</b> in the tree may have a <b>constituentType</b>
+ * property reflecting that the type of cells where <b>hasChildren</b> is false will be different from usual.
  */
 @JsType(namespace = "dh", name = "TreeTable")
 public class JsTreeTable extends HasLifecycle {
+    /**
+     * event.detail is the currently visible viewport data based on the active viewport configuration.
+     */
     public static final String EVENT_UPDATED = "updated",
             EVENT_DISCONNECT = "disconnect",
             EVENT_RECONNECT = "reconnect",
@@ -269,7 +296,8 @@ public class JsTreeTable extends HasLifecycle {
         }
 
         /**
-         * Row implementation that also provides additional read-only properties.
+         * Row implementation that also provides additional read-only properties. represents visible rows in the table,
+         * but with additional properties to reflect the tree structure.
          */
         @TsInterface
         @TsName(namespace = "dh")
@@ -278,16 +306,34 @@ public class JsTreeTable extends HasLifecycle {
                 super(offsetInSnapshot, dataColumns, rowStyleColumn);
             }
 
+            /**
+             * True if this node is currently expanded to show its children; false otherwise. Those children will be the
+             * rows below this one with a greater depth than this one
+             * 
+             * @return boolean
+             */
             @JsProperty(name = "isExpanded")
             public boolean isExpanded() {
                 return expandedColumn[offsetInSnapshot] == Boolean.TRUE;
             }
 
+            /**
+             * True if this node has children and can be expanded; false otherwise. Note that this value may change when
+             * the table updates, depending on the table's configuration
+             * 
+             * @return boolean
+             */
             @JsProperty(name = "hasChildren")
             public boolean hasChildren() {
                 return expandedColumn[offsetInSnapshot] != null;
             }
 
+            /**
+             * The number of levels above this node; zero for top level nodes. Generally used by the UI to indent the
+             * row and its expand/collapse icon
+             * 
+             * @return int
+             */
             @JsProperty(name = "depth")
             public int depth() {
                 return depthColumn[offsetInSnapshot];
@@ -795,10 +841,25 @@ public class JsTreeTable extends HasLifecycle {
         replaceKeyTable();
     }
 
+    /**
+     * Expands the given node, so that its children are visible when they are in the viewport. The parameter can be the
+     * row index, or the row object itself. The second parameter is a boolean value, false by default, specifying if the
+     * row and all descendants should be fully expanded. Equivalent to `setExpanded(row, true)` with an optional third
+     * boolean parameter.
+     *
+     * @param row
+     * @param expandDescendants
+     */
     public void expand(RowReferenceUnion row, @JsOptional Boolean expandDescendants) {
         setExpanded(row, true, expandDescendants);
     }
 
+    /**
+     * Collapses the given node, so that its children and descendants are not visible in the size or the viewport. The
+     * parameter can be the row index, or the row object itself. Equivalent to <b>setExpanded(row, false, false)</b>.
+     *
+     * @param row
+     */
     public void collapse(RowReferenceUnion row) {
         setExpanded(row, false, false);
     }
@@ -829,6 +890,15 @@ public class JsTreeTable extends HasLifecycle {
         }
     }
 
+    /**
+     * Specifies if the given node should be expanded or collapsed. If this node has children, and the value is changed,
+     * the size of the table will change. If node is to be expanded and the third parameter, <b>expandDescendants</b>,
+     * is true, then its children will also be expanded.
+     *
+     * @param row
+     * @param isExpanded
+     * @param expandDescendants
+     */
     public void setExpanded(RowReferenceUnion row, boolean isExpanded, @JsOptional Boolean expandDescendants) {
         // TODO check row number is within bounds
         final double action;
@@ -861,6 +931,13 @@ public class JsTreeTable extends HasLifecycle {
         replaceKeyTableData(ACTION_EXPAND);
     }
 
+    /**
+     * true if the given row is expanded, false otherwise. Equivalent to `TreeRow.isExpanded`, if an instance of the row
+     * is available
+     * 
+     * @param row
+     * @return boolean
+     */
     public boolean isExpanded(RowReferenceUnion row) {
         final TreeRow r;
         if (row.isNumber()) {
@@ -904,6 +981,9 @@ public class JsTreeTable extends HasLifecycle {
         return closed;
     }
 
+    /**
+     * Indicates that the table will no longer be used, and server resources can be freed.
+     */
     public void close() {
         if (closed) {
             return;
@@ -946,6 +1026,12 @@ public class JsTreeTable extends HasLifecycle {
         }
     }
 
+    /**
+     * Applies the given sort to all levels of the tree. Returns the previous sort in use.
+     *
+     * @param sort
+     * @return {@link Sort} array
+     */
     @SuppressWarnings("unusable-by-js")
     public JsArray<Sort> applySort(Sort[] sort) {
         for (int i = 0; i < sort.length; i++) {
@@ -960,6 +1046,14 @@ public class JsTreeTable extends HasLifecycle {
         return getSort();
     }
 
+    /**
+     * Applies the given filter to the contents of the tree in such a way that if any node is visible, then any parent
+     * node will be visible as well even if that parent node would not normally be visible due to the filter's
+     * condition. Returns the previous sort in use.
+     *
+     * @param filter
+     * @return {@link FilterCondition} array
+     */
     @SuppressWarnings("unusable-by-js")
     public JsArray<FilterCondition> applyFilter(FilterCondition[] filter) {
         nextFilters = Arrays.asList(filter);
@@ -975,6 +1069,13 @@ public class JsTreeTable extends HasLifecycle {
         return tableDefinition.getAttributes().getDescription();
     }
 
+    /**
+     * The current number of rows given the table's contents and the various expand/collapse states of each node. (No
+     * totalSize is provided at this time; its definition becomes unclear between roll-up and tree tables, especially
+     * when considering collapse/expand states).
+     *
+     * @return double
+     */
     @JsProperty
     public double getSize() {
         // read the size of the last tree response
@@ -984,21 +1085,42 @@ public class JsTreeTable extends HasLifecycle {
         return -1;// not ready yet
     }
 
+    /**
+     * The current sort configuration of this Tree Table
+     * 
+     * @return {@link Sort} array.
+     */
     @JsProperty
     public JsArray<Sort> getSort() {
         return JsItr.slice(sorts);
     }
 
+    /**
+     * The current filter configuration of this Tree Table.
+     * 
+     * @return {@link FilterCondition} array
+     */
     @JsProperty
     public JsArray<FilterCondition> getFilter() {
         return JsItr.slice(filters);
     }
 
+    /**
+     * The columns that can be shown in this Tree Table.
+     * 
+     * @return {@link Column} array
+     */
     @JsProperty
     public JsArray<Column> getColumns() {
         return Js.uncheckedCast(visibleColumns);
     }
 
+    /**
+     * a column with the given name, or throws an exception if it cannot be found
+     * 
+     * @param key
+     * @return {@link Column}
+     */
     public Column findColumn(String key) {
         Column c = columnsByName.get(key);
         if (c == null) {
@@ -1007,6 +1129,11 @@ public class JsTreeTable extends HasLifecycle {
         return c;
     }
 
+    /**
+     * True if this is a roll-up and will provide the original rows that make up each grouping.
+     * 
+     * @return boolean
+     */
     @JsProperty
     public boolean isIncludeConstituents() {
         return Arrays.stream(tableDefinition.getColumns()).anyMatch(ColumnDefinition::isRollupConstituentNodeColumn);
@@ -1017,6 +1144,12 @@ public class JsTreeTable extends HasLifecycle {
         return groupedColumns;
     }
 
+    /**
+     * an array with all of the named columns in order, or throws an exception if one cannot be found.
+     * 
+     * @param keys
+     * @return {@link Column} array
+     */
     public Column[] findColumns(String[] keys) {
         Column[] result = new Column[keys.length];
         for (int i = 0; i < keys.length; i++) {
@@ -1030,7 +1163,7 @@ public class JsTreeTable extends HasLifecycle {
      * values for the given columns in the source table:
      * <ul>
      * <li>Rollups may make no sense, since values are aggregated.</li>
-     * <li>Values found on orphaned (and remvoed) nodes will show up in the resulting table, even though they are not in
+     * <li>Values found on orphaned (and removed) nodes will show up in the resulting table, even though they are not in
      * the tree.</li>
      * <li>Values found on parent nodes which are only present in the tree since a child is visible will not be present
      * in the resulting table.</li>
@@ -1153,6 +1286,14 @@ public class JsTreeTable extends HasLifecycle {
     // }
     // }
 
+    /**
+     * a new copy of this treetable, so it can be sorted and filtered separately, and maintain a different viewport.
+     * Unlike Table, this will _not_ copy the filter or sort, since tree table viewport semantics differ, and without a
+     * viewport set, the treetable doesn't evaluate these settings, and they aren't readable on the properties. Expanded
+     * state is also not copied.
+     *
+     * @return Promise of dh.TreeTable
+     */
     public Promise<JsTreeTable> copy() {
         return connection.newState((c, state, metadata) -> {
             // connection.getServer().reexport(this.baseTable.getHandle(), state.getHandle(), c);

@@ -7,6 +7,9 @@ import com.vertispan.tsdefs.annotations.TsInterface;
 import com.vertispan.tsdefs.annotations.TsName;
 import jsinterop.annotations.JsProperty;
 
+/**
+ * Indicates the result of code run on the server.
+ */
 @TsInterface
 @TsName(namespace = "dh.ide", name = "CommandResult")
 public class JsCommandResult {
@@ -18,11 +21,21 @@ public class JsCommandResult {
         this.error = error;
     }
 
+    /**
+     * Describes changes made in the course of this command.
+     * 
+     * @return {@link JsVariableChanges}.
+     */
     @JsProperty
     public JsVariableChanges getChanges() {
         return changes;
     }
 
+    /**
+     * If the command failed, the error message will be provided here.
+     * 
+     * @return String
+     */
     @JsProperty
     public String getError() {
         return error;

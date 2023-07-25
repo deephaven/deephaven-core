@@ -93,6 +93,13 @@ public class IdeSession extends HasEventHandling {
                 new AutoCompleteRequest());
     }
 
+    /**
+     * Load the named table, with columns and size information already fully populated.
+     * 
+     * @param name
+     * @param applyPreviewColumns optional boolean
+     * @return {@link Promise} of {@link JsTable}
+     */
     // TODO (deephaven-core#188): improve usage of subscriptions (w.r.t. this optional param)
     public Promise<JsTable> getTable(String name, @JsOptional Boolean applyPreviewColumns) {
         return connection.getVariableDefinition(name, JsVariableType.TABLE).then(varDef -> {
@@ -104,10 +111,23 @@ public class IdeSession extends HasEventHandling {
         });
     }
 
+    /**
+     * Load the named Figure, including its tables and tablemaps as needed.
+     * 
+     * @param name
+     * @return promise of dh.plot.Figure
+     */
     public Promise<JsFigure> getFigure(String name) {
         return connection.getVariableDefinition(name, JsVariableType.FIGURE).then(connection::getFigure);
     }
 
+    /**
+     * Loads the named tree table or roll-up table, with column data populated. All nodes are collapsed by default, and
+     * size is presently not available until the viewport is first set.
+     * 
+     * @param name
+     * @return {@link Promise} of {@link JsTreeTable}
+     */
     public Promise<JsTreeTable> getTreeTable(String name) {
         return connection.getVariableDefinition(name, JsVariableType.HIERARCHICALTABLE)
                 .then(connection::getTreeTable);
@@ -132,6 +152,12 @@ public class IdeSession extends HasEventHandling {
         });
     }
 
+    /**
+     * Merges the given tables into a single table. Assumes all tables have the same structure.
+     * 
+     * @param tables
+     * @return {@link Promise} of {@link JsTable}
+     */
     public Promise<JsTable> mergeTables(JsTable[] tables) {
         return connection.mergeTables(tables, this).then(table -> {
             final CustomEventInit event = CustomEventInit.create();
@@ -436,10 +462,25 @@ public class IdeSession extends HasEventHandling {
         return textDocument;
     }
 
+    /**
+     * Creates an empty table with the specified number of rows. Optionally columns and types may be specified, but all
+     * values will be null.
+     * 
+     * @param size
+     * @return {@link Promise} of {@link JsTable}
+     */
     public Promise<JsTable> emptyTable(double size) {
         return connection.emptyTable(size);
     }
 
+    /**
+     * Creates a new table that ticks automatically every "periodNanos" nanoseconds. A start time may be provided; if so
+     * the table will be populated with the interval from the specified date until now.
+     * 
+     * @param periodNanos
+     * @param startTime
+     * @return {@link Promise} of {@link JsTable}
+     */
     public Promise<JsTable> timeTable(double periodNanos, @JsOptional DateWrapper startTime) {
         return connection.timeTable(periodNanos, startTime);
     }
