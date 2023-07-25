@@ -414,7 +414,9 @@ public class ParquetTableReadWriteTest {
         final Table newTableToSave = TableTools.emptyTable(5).update("A=(int)i");
         ParquetTools.writeTable(newTableToSave, destFile);
         filesInDir = parentDir.list();
-        assertTrue(filesInDir.length == 1 && filesInDir[0].equals(filename));
+        final File backupFile =  ParquetTools.getBackupFilePath(destFile);
+        final String backupFileName = backupFile.getName();
+        assertTrue(filesInDir.length == 2 && Arrays.asList(filesInDir).contains(filename) && Arrays.asList(filesInDir).contains(backupFileName));
         fromDisk = ParquetTools.readTable(destFile);
         TstUtils.assertTableEquals(fromDisk, newTableToSave);
     }
@@ -439,15 +441,17 @@ public class ParquetTableReadWriteTest {
 
         // For a completed write, there should be two parquet files in the directory, the table data and the grouping
         // data
-        final String filename = "groupingColumnsWriteTests.parquet";
-        final File destFile = new File(parentDir, filename);
+        final String destFilename = "groupingColumnsWriteTests.parquet";
+        final File destFile = new File(parentDir, destFilename);
         ParquetTools.writeTable(tableToSave, destFile);
         String[] filesInDir = parentDir.list();
-        String groupingFilename = ParquetTableWriter.defaultGroupingFileName(filename).apply("vvv");
-        assertTrue(filesInDir.length == 2 && Arrays.asList(filesInDir).contains(filename)
-                && Arrays.asList(filesInDir).contains(groupingFilename));
+        String vvvGroupingFilename = ParquetTableWriter.defaultGroupingFileName(destFilename).apply("vvv");
+        assertTrue(filesInDir.length == 2 && Arrays.asList(filesInDir).contains(destFilename)
+                && Arrays.asList(filesInDir).contains(vvvGroupingFilename));
         Table fromDisk = ParquetTools.readTable(destFile);
         TstUtils.assertTableEquals(fromDisk, tableToSave);
+
+        // TODO (shivam) Verify that the key-value metadata in the file has the correct name
 
         // Write another table but this write should fail
         final TableDefinition badTableDefinition = TableDefinition.of(ColumnDefinition.ofInt("www").withGrouping());
@@ -460,22 +464,41 @@ public class ParquetTableReadWriteTest {
         }
         // Make sure that original file is preserved and no temporary files
         filesInDir = parentDir.list();
-        assertTrue(filesInDir.length == 2 && Arrays.asList(filesInDir).contains(filename)
-                && Arrays.asList(filesInDir).contains(groupingFilename));
+        assertTrue(filesInDir.length == 2 && Arrays.asList(filesInDir).contains(destFilename)
+                && Arrays.asList(filesInDir).contains(vvvGroupingFilename));
         fromDisk = ParquetTools.readTable(destFile);
         TstUtils.assertTableEquals(fromDisk, tableToSave);
 
         // Write a new table successfully at the same position
         final TableDefinition anotherTableDefinition = TableDefinition.of(ColumnDefinition.ofInt("xxx").withGrouping());
-        final Table anotherTableToSave = TableTools.newTable(anotherTableDefinition, TableTools.col("xxx", data));
+        Table anotherTableToSave = TableTools.newTable(anotherTableDefinition, TableTools.col("xxx", data));
         ParquetTools.writeTable(anotherTableToSave, destFile);
         filesInDir = parentDir.list();
-        groupingFilename = ParquetTableWriter.defaultGroupingFileName(filename).apply("xxx");
-        // The directory now should contain the updated table and its grouping file, and the grouping file for vvv
-        assertTrue(filesInDir.length == 3 && Arrays.asList(filesInDir).contains(filename)
-                && Arrays.asList(filesInDir).contains(groupingFilename));
+        final String xxxGroupingFilename = ParquetTableWriter.defaultGroupingFileName(destFilename).apply("xxx");
+        final File backupDestFile =  ParquetTools.getBackupFilePath(destFile);
+        final String backupDestFileName = backupDestFile.getName();
+        // The directory now should contain the updated table, its grouping file for column xxx, backup table and its grouping file for column vvv
+        assertTrue(filesInDir.length == 4 && Arrays.asList(filesInDir).contains(destFilename) && Arrays.asList(filesInDir).contains(backupDestFileName)
+                && Arrays.asList(filesInDir).contains(vvvGroupingFilename) && Arrays.asList(filesInDir).contains(xxxGroupingFilename));
         fromDisk = ParquetTools.readTable(destFile);
         TstUtils.assertTableEquals(fromDisk, anotherTableToSave);
+
+        // Overwrite the table
+        ParquetTools.writeTable(anotherTableToSave, destFile);
+
+        // The directory should now contain all older files and one backup grouping file
+        filesInDir = parentDir.list();
+        final File xxxGroupingFile = new File(parentDir, xxxGroupingFilename);
+        final File backupXXXGroupingFile =  ParquetTools.getBackupFilePath(xxxGroupingFile);
+        final String backupXXXGroupingFileName = backupXXXGroupingFile.getName();
+        assertTrue(filesInDir.length == 5 && Arrays.asList(filesInDir).contains(destFilename) && Arrays.asList(filesInDir).contains(backupDestFileName)
+                && Arrays.asList(filesInDir).contains(vvvGroupingFilename) && Arrays.asList(filesInDir).contains(xxxGroupingFilename) && Arrays.asList(filesInDir).contains(backupXXXGroupingFileName));
+
+        // Overwrite the table again, the directory should still have 5 files
+        ParquetTools.writeTable(anotherTableToSave, destFile);
+        filesInDir = parentDir.list();
+        assertTrue(filesInDir.length == 5 && Arrays.asList(filesInDir).contains(destFilename) && Arrays.asList(filesInDir).contains(backupDestFileName)
+                && Arrays.asList(filesInDir).contains(vvvGroupingFilename) && Arrays.asList(filesInDir).contains(xxxGroupingFilename) && Arrays.asList(filesInDir).contains(backupXXXGroupingFileName));
     }
 
 

@@ -107,8 +107,8 @@ public class ParquetTableWriter {
     }
 
     private static String minusShadowSubstring(@NotNull final String s) {
-        if (s.contains(".SHADOW_")) {
-            return s.replace(".SHADOW_", "");
+        if (s.contains(".NEW_")) {
+            return s.replace(".NEW_", "");
         }
         return s;
     }
@@ -219,10 +219,16 @@ public class ParquetTableWriter {
                 for (final String shadowGroupingFilePath : shadowGroupingFilePaths) {
                     final String destPath = getNonShadowPath(shadowGroupingFilePath);
                     File destFile = new File(destPath);
-                    if (destFile.exists() && !destFile.delete()) {
-                        throw new RuntimeException(
-                                "Failed to write the grouping file at " + destFile.getAbsolutePath() + " because a "
-                                        + "file already exists at the path which couldn't be deleted.");
+                    File backupFile = getBackupFile(destFile);
+                    if (destFile.exists()) {
+                        // TODO Should I just delete the destination file here because if I make a backup (like its done
+                        //  in the code right now), I need to check if backup exists and delete that first and its seems
+                        //  unnecessary to me since we are already overwriting it in the existing code as well.
+                        if (!destFile.renameTo(backupFile)) {
+                            throw new RuntimeException(
+                                    "Failed to write the grouping file at " + destFile.getAbsolutePath() + " because a "
+                                            + "file already exists at the path which couldn't be renamed to " + backupFile);
+                        }
                     }
                     File shadowGroupingFile = new File(shadowGroupingFilePath);
                     if (!shadowGroupingFile.renameTo(destFile)) {
@@ -252,11 +258,15 @@ public class ParquetTableWriter {
         final String parent = destFilePath.getParent();
         final String filename = destFilePath.getName();
 
-        return new File(destFilePath.getParent(), ".SHADOW_" + destFilePath.getName());
+        return new File(destFilePath.getParent(), ".NEW_" + destFilePath.getName());
     }
 
     private static final String getNonShadowPath(final String shadowPath) {
-        return shadowPath.replace(".SHADOW_", "");
+        return shadowPath.replace(".NEW_", "");
+    }
+
+    public static File getBackupFile(File filePath) {
+        return new File(filePath.getParent(), ".OLD_" + filePath.getName());
     }
 
     /**

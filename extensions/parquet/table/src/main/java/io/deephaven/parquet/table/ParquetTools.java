@@ -241,22 +241,29 @@ public class ParquetTools {
         }
     }
 
-    private static File getShadowFilePath(File destFilePath) {
-        return new File(destFilePath.getParent(), ".SHADOW_" + destFilePath.getName());
+    private static File getShadowFilePath(File filePath) {
+        return new File(filePath.getParent(), ".NEW_" + filePath.getName());
     }
 
+    // TODO Need to make it public for testing
+    @VisibleForTesting
+    public static File getBackupFilePath(File filePath) {
+        return new File(filePath.getParent(), ".OLD_" + filePath.getName());
+    }
+
+
     /**
-     * Delete the file at location destFile and rename the file at shadowDestFile to destFile
+     * Backup the file at location destFile and rename the file at shadowDestFile to destFile
      */
     private static void installShadowFile(@NotNull final File destFile, @NotNull final File shadowDestFile) {
-        final String destPath = destFile.getAbsolutePath();
-        if (destFile.exists() && !destFile.delete()) {
+        final File backupDestFile = getBackupFilePath(destFile);
+        if (destFile.exists() && !destFile.renameTo(backupDestFile)) {
             throw new RuntimeException("Failed to write the table at " + destFile.getAbsolutePath() + " because a "
-                    + "file already exists at the path which couldn't be deleted.");
+                    + "file already exists at the path which couldn't be renamed to " + backupDestFile.getAbsolutePath());
         }
         if (!shadowDestFile.renameTo(destFile)) {
             throw new RuntimeException("Failed to write the table at " + destFile.getAbsolutePath() + " because "
-                    + "couldn't rename shadow file from " + shadowDestFile.getAbsolutePath() + " to " +
+                    + "couldn't rename temporary shadow file from " + shadowDestFile.getAbsolutePath() + " to " +
                     destFile.getAbsolutePath());
         }
     }
