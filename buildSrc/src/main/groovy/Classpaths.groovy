@@ -39,7 +39,7 @@ class Classpaths {
     static final String JETTY_VERSION = '9.4.44.v20210927'
 
     static final String JS_INTEROP_GROUP = 'com.google.jsinterop'
-    static final String JS_INTEROP_VERSION = '2.0.0'
+    static final String JS_INTEROP_VERSION = '2.0.2'
 
     static final String COMMONS_GROUP = 'org.apache.commons'
 
@@ -167,7 +167,7 @@ class Classpaths {
         addDependency config, JS_INTEROP_GROUP, name,
                 // google is annoying, and have different versions released for the same groupId
                 // :base: is the only one that is different, so we'll use it in the ternary.
-                name == 'base'? '1.0.0' : JS_INTEROP_VERSION
+                name == 'base'? '1.0.1' : JS_INTEROP_VERSION
     }
 
     static void inheritElemental(Project p, String name, String configName) {
