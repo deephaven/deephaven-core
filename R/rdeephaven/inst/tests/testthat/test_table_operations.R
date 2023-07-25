@@ -236,6 +236,88 @@ test_that("where behaves as expected", {
     expect_equal(as.data.frame(new_th3), as.data.frame(new_tb3))
 })
 
+test_that("first_by behaves as expected", {
+  data <- setup()
+  
+  new_tb1 <- data$df5 %>%
+    select(-Y) %>%
+    group_by(X) %>%
+    summarise(across(everything(), first))
+  new_th1 <- data$th5 %>%
+    drop_columns("Y") %>%
+    first_by("X")
+  expect_equal(as.data.frame(new_th1), as.data.frame(new_tb1))
+  
+  new_tb2 <- data$df5 %>%
+    group_by(X, Y) %>%
+    summarise(across(everything(), first)) %>%
+    arrange(X, Y)
+  new_th2 <- data$th5 %>%
+    first_by(c("X", "Y")) %>%
+    sort_by(c("X", "Y"))
+  expect_equal(as.data.frame(new_th2), as.data.frame(new_tb2))
+})
+
+test_that("last_by behaves as expected", {
+  data <- setup()
+  
+  new_tb1 <- data$df5 %>%
+    select(-Y) %>%
+    group_by(X) %>%
+    summarise(across(everything(), last))
+  new_th1 <- data$th5 %>%
+    drop_columns("Y") %>%
+    last_by("X")
+  expect_equal(as.data.frame(new_th1), as.data.frame(new_tb1))
+  
+  new_tb2 <- data$df5 %>%
+    group_by(X, Y) %>%
+    summarise(across(everything(), last)) %>%
+    arrange(X, Y)
+  new_th2 <- data$th5 %>%
+    last_by(c("X", "Y")) %>%
+    sort_by(c("X", "Y"))
+  expect_equal(as.data.frame(new_th2), as.data.frame(new_tb2))
+})
+
+test_that("head_by behaves as expected", {
+  data <- setup()
+  
+  new_tb1 <- data$df5 %>%
+    group_by(X) %>%
+    slice_head(n=2)
+  new_th1 <- data$th5 %>%
+    head_by("X", 2)
+  expect_equal(as.data.frame(new_th1), as.data.frame(new_tb1))
+  
+  new_tb2 <- data$df5 %>%
+    group_by(X, Y) %>%
+    slice_head(n=2)
+  new_th2 <- data$th5 %>%
+    head_by(c("X", "Y"), 2) %>%
+    sort_by(c("X", "Y"))
+  expect_equal(as.data.frame(new_th2), as.data.frame(new_tb2))
+})
+
+test_that("tail_by behaves as expected", {
+  data <- setup()
+  
+  new_tb1 <- data$df5 %>%
+    group_by(X) %>%
+    slice_tail(n=2)
+  new_th1 <- data$th5 %>%
+    tail_by("X", 2)
+  expect_equal(as.data.frame(new_th1), as.data.frame(new_tb1))
+  
+  new_tb2 <- data$df5 %>%
+    group_by(X, Y) %>%
+    slice_tail(n=2)
+  new_th2 <- data$th5 %>%
+    tail_by(c("X", "Y"), 2) %>%
+    sort_by(c("X", "Y"))
+  expect_equal(as.data.frame(new_th2), as.data.frame(new_tb2))
+})
+
 test_that("min_by behaves as expected", {
     data <- setup()
     
@@ -358,6 +440,55 @@ test_that("abs_sum_by behaves as expected", {
     expect_equal(as.data.frame(new_th2), as.data.frame(new_tb2))
 })
 
+test_that("avg_by behaves as expected", {
+  data <- setup()
+  
+  new_tb1 <- data$df5 %>%
+    select(-Y) %>%
+    group_by(X) %>%
+    summarise(across(everything(), mean))
+  new_th1 <- data$th5 %>%
+    drop_columns("Y") %>%
+    avg_by("X")
+  expect_equal(as.data.frame(new_th1), as.data.frame(new_tb1))
+  
+  new_tb2 <- data$df5 %>%
+    group_by(X, Y) %>%
+    summarise(across(everything(), mean)) %>%
+    arrange(X, Y)
+  new_th2 <- data$th5 %>%
+    avg_by(c("X", "Y")) %>%
+    sort_by(c("X", "Y"))
+  expect_equal(as.data.frame(new_th2), as.data.frame(new_tb2))
+})
+
+# TODO: I think that the current behavior of wAvgBy() is wrong and needs to be updated
+test_that("w_avg_by behaves as expected", {
+  data <- setup()
+})
+
+test_that("median_by behaves as expected", {
+  data <- setup()
+  
+  new_tb1 <- data$df5 %>%
+    select(-Y) %>%
+    group_by(X) %>%
+    summarise(across(everything(), median))
+  new_th1 <- data$th5 %>%
+    drop_columns("Y") %>%
+    median_by("X")
+  expect_equal(as.data.frame(new_th1), as.data.frame(new_tb1))
+  
+  new_tb2 <- data$df5 %>%
+    group_by(X, Y) %>%
+    summarise(across(everything(), median)) %>%
+    arrange(X, Y)
+  new_th2 <- data$th5 %>%
+    median_by(c("X", "Y")) %>%
+    sort_by(c("X", "Y"))
+  expect_equal(as.data.frame(new_th2), as.data.frame(new_tb2))
+})
+
 test_that("var_by behaves as expected", {
     data <- setup()
     
@@ -398,99 +529,6 @@ test_that("std_by behaves as expected", {
       arrange(X, Y)
     new_th2 <- data$th5 %>%
       std_by(c("X", "Y")) %>%
-      sort_by(c("X", "Y"))
-    expect_equal(as.data.frame(new_th2), as.data.frame(new_tb2))
-})
-
-test_that("avg_by behaves as expected", {
-    data <- setup()
-    
-    new_tb1 <- data$df5 %>%
-      select(-Y) %>%
-      group_by(X) %>%
-      summarise(across(everything(), mean))
-    new_th1 <- data$th5 %>%
-      drop_columns("Y") %>%
-      avg_by("X")
-    expect_equal(as.data.frame(new_th1), as.data.frame(new_tb1))
-    
-    new_tb2 <- data$df5 %>%
-      group_by(X, Y) %>%
-      summarise(across(everything(), mean)) %>%
-      arrange(X, Y)
-    new_th2 <- data$th5 %>%
-      avg_by(c("X", "Y")) %>%
-      sort_by(c("X", "Y"))
-    expect_equal(as.data.frame(new_th2), as.data.frame(new_tb2))
-})
-
-# TODO: I think that the current behavior of wAvgBy() is wrong and needs to be updated
-test_that("w_avg_by behaves as expected", {
-  data <- setup()
-})
-
-test_that("first_by behaves as expected", {
-    data <- setup()
-    
-    new_tb1 <- data$df5 %>%
-      select(-Y) %>%
-      group_by(X) %>%
-      summarise(across(everything(), first))
-    new_th1 <- data$th5 %>%
-      drop_columns("Y") %>%
-      first_by("X")
-    expect_equal(as.data.frame(new_th1), as.data.frame(new_tb1))
-    
-    new_tb2 <- data$df5 %>%
-      group_by(X, Y) %>%
-      summarise(across(everything(), first)) %>%
-      arrange(X, Y)
-    new_th2 <- data$th5 %>%
-      first_by(c("X", "Y")) %>%
-      sort_by(c("X", "Y"))
-    expect_equal(as.data.frame(new_th2), as.data.frame(new_tb2))
-})
-
-test_that("last_by behaves as expected", {
-    data <- setup()
-    
-    new_tb1 <- data$df5 %>%
-      select(-Y) %>%
-      group_by(X) %>%
-      summarise(across(everything(), last))
-    new_th1 <- data$th5 %>%
-      drop_columns("Y") %>%
-      last_by("X")
-    expect_equal(as.data.frame(new_th1), as.data.frame(new_tb1))
-    
-    new_tb2 <- data$df5 %>%
-      group_by(X, Y) %>%
-      summarise(across(everything(), last)) %>%
-      arrange(X, Y)
-    new_th2 <- data$th5 %>%
-      last_by(c("X", "Y")) %>%
-      sort_by(c("X", "Y"))
-    expect_equal(as.data.frame(new_th2), as.data.frame(new_tb2))
-})
-
-test_that("median_by behaves as expected", {
-    data <- setup()
-    
-    new_tb1 <- data$df5 %>%
-      select(-Y) %>%
-      group_by(X) %>%
-      summarise(across(everything(), median))
-    new_th1 <- data$th5 %>%
-      drop_columns("Y") %>%
-      median_by("X")
-    expect_equal(as.data.frame(new_th1), as.data.frame(new_tb1))
-    
-    new_tb2 <- data$df5 %>%
-      group_by(X, Y) %>%
-      summarise(across(everything(), median)) %>%
-      arrange(X, Y)
-    new_th2 <- data$th5 %>%
-      median_by(c("X", "Y")) %>%
       sort_by(c("X", "Y"))
     expect_equal(as.data.frame(new_th2), as.data.frame(new_tb2))
 })
@@ -536,42 +574,38 @@ test_that("count_by behaves as expected", {
     expect_equal(as.data.frame(new_th2), as.data.frame(new_tb2))
 })
 
-test_that("head_by behaves as expected", {
+test_that("sort_by behaves as expected", {
   data <- setup()
   
-  new_tb1 <- data$df5 %>%
-    group_by(X) %>%
-    slice_head(n=2)
-  new_th1 <- data$th5 %>%
-    head_by("X", 2)
+  new_tb1 <- data$df1 %>%
+    arrange(dbl_col)
+  new_th1 <- data$th1 %>%
+    sort_by("dbl_col")
   expect_equal(as.data.frame(new_th1), as.data.frame(new_tb1))
   
-  new_tb2 <- data$df5 %>%
-    group_by(X, Y) %>%
-    slice_head(n=2)
-  new_th2 <- data$th5 %>%
-    head_by(c("X", "Y"), 2) %>%
-    sort_by(c("X", "Y"))
+  new_tb2 <- data$df2 %>%
+    arrange(desc(col3))
+  new_th2 <- data$th2 %>%
+    sort_by("col3", descending = TRUE)
   expect_equal(as.data.frame(new_th2), as.data.frame(new_tb2))
-})
-
-test_that("tail_by behaves as expected", {
-    data <- setup()
-    
-    new_tb1 <- data$df5 %>%
-      group_by(X) %>%
-      slice_tail(n=2)
-    new_th1 <- data$th5 %>%
-      tail_by("X", 2)
-    expect_equal(as.data.frame(new_th1), as.data.frame(new_tb1))
-    
-    new_tb2 <- data$df5 %>%
-      group_by(X, Y) %>%
-      slice_tail(n=2)
-    new_th2 <- data$th5 %>%
-      tail_by(c("X", "Y"), 2) %>%
-      sort_by(c("X", "Y"))
-    expect_equal(as.data.frame(new_th2), as.data.frame(new_tb2))
+  
+  new_tb3 <- data$df3 %>%
+    arrange(X1, X2, X3, X4, X5)
+  new_th3 <- data$th3 %>%
+    sort_by(c("X1", "X2", "X3", "X4", "X5"))
+  expect_equal(as.data.frame(new_th3), as.data.frame(new_tb3))
+  
+  new_tb4 <- data$df4 %>%
+    arrange(desc(bool_col), desc(int_col))
+  new_th4 <- data$th4 %>%
+    sort_by(c("bool_col", "int_col"), descending = TRUE)
+  expect_equal(as.data.frame(new_th4), as.data.frame(new_tb4))
+  
+  new_tb5 <- data$df5 %>%
+    arrange(X, desc(Y), Number1)
+  new_th5 <- data$th5 %>%
+    sort_by(c("X", "Y", "Number1"), descending = c(FALSE, TRUE, FALSE))
+  expect_equal(as.data.frame(new_th5), as.data.frame(new_tb5))
 })
 
 # TODO: Our definition of a cross join is significantly different from dplyr

@@ -72,7 +72,7 @@ Client <- R6Class("Client", cloneable = FALSE,
             verify_int(start_time_nanos)
             verify_int(period_nanos)
             return(TableHandle$new(private$internal_client$time_table(start_time_nanos, period_nanos)))
-        }
+        },
 
         #' @description
         #' Imports a new table to the Deephaven server. Note that this new table is not automatically bound to

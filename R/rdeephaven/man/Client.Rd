@@ -29,6 +29,8 @@ client$run_script("print([i for i in range(10)])")
 \itemize{
 \item \href{#method-Client-new}{\code{Client$new()}}
 \item \href{#method-Client-open_table}{\code{Client$open_table()}}
+\item \href{#method-Client-empty_table}{\code{Client$empty_table()}}
+\item \href{#method-Client-time_table}{\code{Client$time_table()}}
 \item \href{#method-Client-import_table}{\code{Client$import_table()}}
 \item \href{#method-Client-run_script}{\code{Client$run_script()}}
 }
@@ -71,6 +73,50 @@ Opens a table named 'name' from the server if it exists.
 }
 \subsection{Returns}{
 TableHandle reference to the requested table.
+}
+}
+\if{html}{\out{<hr>}}
+\if{html}{\out{<a id="method-Client-empty_table"></a>}}
+\if{latex}{\out{\hypertarget{method-Client-empty_table}{}}}
+\subsection{Method \code{empty_table()}}{
+Creates a "zero-width" table on the server. Such a table knows its number of rows but has no columns.
+\subsection{Usage}{
+\if{html}{\out{<div class="r">}}\preformatted{Client$empty_table(size)}\if{html}{\out{</div>}}
+}
+
+\subsection{Arguments}{
+\if{html}{\out{<div class="arguments">}}
+\describe{
+\item{\code{size}}{Number of rows in the empty table.}
+}
+\if{html}{\out{</div>}}
+}
+\subsection{Returns}{
+TableHandle reference to the new table, which has not yet been named on the server.
+        See TableHandle$bind_to_variable() for naming a new table on the server.
+}
+}
+\if{html}{\out{<hr>}}
+\if{html}{\out{<a id="method-Client-time_table"></a>}}
+\if{latex}{\out{\hypertarget{method-Client-time_table}{}}}
+\subsection{Method \code{time_table()}}{
+Creates a ticking table.
+\subsection{Usage}{
+\if{html}{\out{<div class="r">}}\preformatted{Client$time_table(start_time_nanos, period_nanos)}\if{html}{\out{</div>}}
+}
+
+\subsection{Arguments}{
+\if{html}{\out{<div class="arguments">}}
+\describe{
+\item{\code{start_time_nanos}}{When the table should start ticking (in units of nanoseconds since the epoch).}
+
+\item{\code{period_nanos}}{Table ticking frequency (in nanoseconds).}
+}
+\if{html}{\out{</div>}}
+}
+\subsection{Returns}{
+TableHandle reference to the new table, which has not yet been named on the server.
+        See TableHandle$bind_to_variable() for naming a new table on the server.
 }
 }
 \if{html}{\out{<hr>}}
