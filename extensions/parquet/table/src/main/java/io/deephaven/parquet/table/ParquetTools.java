@@ -259,7 +259,8 @@ public class ParquetTools {
         final File backupDestFile = getBackupFilePath(destFile);
         if (destFile.exists() && !destFile.renameTo(backupDestFile)) {
             throw new RuntimeException("Failed to write the table at " + destFile.getAbsolutePath() + " because a "
-                    + "file already exists at the path which couldn't be renamed to " + backupDestFile.getAbsolutePath());
+                    + "file already exists at the path which couldn't be renamed to "
+                    + backupDestFile.getAbsolutePath());
         }
         if (!shadowDestFile.renameTo(destFile)) {
             throw new RuntimeException("Failed to write the table at " + destFile.getAbsolutePath() + " because "

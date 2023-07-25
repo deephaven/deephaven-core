@@ -222,12 +222,13 @@ public class ParquetTableWriter {
                     File backupFile = getBackupFile(destFile);
                     if (destFile.exists()) {
                         // TODO Should I just delete the destination file here because if I make a backup (like its done
-                        //  in the code right now), I need to check if backup exists and delete that first and its seems
-                        //  unnecessary to me since we are already overwriting it in the existing code as well.
+                        // in the code right now), I need to check if backup exists and delete that first and its seems
+                        // unnecessary to me since we are already overwriting it in the existing code as well.
                         if (!destFile.renameTo(backupFile)) {
                             throw new RuntimeException(
                                     "Failed to write the grouping file at " + destFile.getAbsolutePath() + " because a "
-                                            + "file already exists at the path which couldn't be renamed to " + backupFile);
+                                            + "file already exists at the path which couldn't be renamed to "
+                                            + backupFile);
                         }
                     }
                     File shadowGroupingFile = new File(shadowGroupingFilePath);
