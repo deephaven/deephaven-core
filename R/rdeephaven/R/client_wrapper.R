@@ -53,6 +53,28 @@ Client <- R6Class("Client", cloneable = FALSE,
         },
 
         #' @description
+        #' Creates a "zero-width" table on the server. Such a table knows its number of rows but has no columns.
+        #' @param size Number of rows in the empty table.
+        #' @return TableHandle reference to the new table, which has not yet been named on the server.
+        #'         See TableHandle$bind_to_variable() for naming a new table on the server.
+        empty_table = function(size) {
+            verify_int("size", size)
+            return(TableHandle$new(private$internal_client$empty_table(size)))
+        },
+
+        #' @description
+        #' Creates a ticking table.
+        #' @param start_time_nanos When the table should start ticking (in units of nanoseconds since the epoch).
+        #' @param period_nanos Table ticking frequency (in nanoseconds).
+        #' @return TableHandle reference to the new table, which has not yet been named on the server.
+        #'         See TableHandle$bind_to_variable() for naming a new table on the server.
+        time_table = function(start_time_nanos, period_nanos) {
+            verify_int(start_time_nanos)
+            verify_int(period_nanos)
+            return(TableHandle$new(private$internal_client$time_table(start_time_nanos, period_nanos)))
+        }
+
+        #' @description
         #' Imports a new table to the Deephaven server. Note that this new table is not automatically bound to
         #' a variable name on the server. See `?TableHandle` for more information.
         #' @param table_object An R Data Frame, a dplyr Tibble, an Arrow Table, or an Arrow RecordBatchReader

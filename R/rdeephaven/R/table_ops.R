@@ -69,6 +69,32 @@ agg_by <- function(th, aggregations) {
 }
 
 #' @export
+first_by <- function(th, columns) {
+    verify_string_vector("columns", columns)
+    return(TableHandle$new(th$internal_table_handle$first_by(columns)))
+}
+
+#' @export
+last_by <- function(th, columns) {
+    verify_string_vector("columns", columns)
+    return(TableHandle$new(th$internal_table_handle$last_by(columns)))
+}
+
+#' @export
+head_by <- function(th, columns, n) {
+    verify_int("n", n)
+    verify_string_vector("columns", columns)
+    return(TableHandle$new(th$internal_table_handle$head_by(columns, n)))
+}
+
+#' @export
+tail_by <- function(th, columns, n) {
+    verify_int("n", n)
+    verify_string_vector("columns", columns)
+    return(TableHandle$new(th$internal_table_handle$tail_by(columns, n)))
+}
+
+#' @export
 min_by <- function(th, columns) {
     verify_string_vector("columns", columns)
     return(TableHandle$new(th$internal_table_handle$min_by(columns)))
@@ -106,6 +132,12 @@ w_avg_by <- function(th, columns, weight_column) {
 }
 
 #' @export
+median_by <- function(th, columns) {
+    verify_string_vector("columns", columns)
+    return(TableHandle$new(th$internal_table_handle$median_by(columns)))
+}
+
+#' @export
 var_by <- function(th, columns) {
     verify_string_vector("columns", columns)
     return(TableHandle$new(th$internal_table_handle$var_by(columns)))
@@ -115,24 +147,6 @@ var_by <- function(th, columns) {
 std_by <- function(th, columns) {
     verify_string_vector("columns", columns)
     return(TableHandle$new(th$internal_table_handle$std_by(columns)))
-}
-
-#' @export
-first_by <- function(th, columns) {
-    verify_string_vector("columns", columns)
-    return(TableHandle$new(th$internal_table_handle$first_by(columns)))
-}
-
-#' @export
-last_by <- function(th, columns) {
-    verify_string_vector("columns", columns)
-    return(TableHandle$new(th$internal_table_handle$last_by(columns)))
-}
-
-#' @export
-median_by <- function(th, columns) {
-    verify_string_vector("columns", columns)
-    return(TableHandle$new(th$internal_table_handle$median_by(columns)))
 }
 
 #' @export
@@ -150,17 +164,13 @@ count_by <- function(th, columns, count_by_column) {
 }
 
 #' @export
-head_by <- function(th, columns, n) {
-    verify_int("n", n)
+sort_by <- function(th, columns, descending = FALSE) {
     verify_string_vector("columns", columns)
-    return(TableHandle$new(th$internal_table_handle$head_by(columns, n)))
-}
-
-#' @export
-tail_by <- function(th, columns, n) {
-    verify_int("n", n)
-    verify_string_vector("columns", columns)
-    return(TableHandle$new(th$internal_table_handle$tail_by(columns, n)))
+    verify_bool_vector("descending", descending)
+    if ((length(descending) > 1) && length(descending) != length(columns)) {
+        stop(paste0("'descending' must be the same length as 'columns' if more than one entry is supplied. Got 'columns' with length ", length(columns), " and 'descending' with length", length(descending), " instead."))
+    }
+    return(TableHandle$new(th$internal_table_handle$sort(columns, descending)))
 }
 
 # JOIN OPERATIONS
@@ -207,16 +217,6 @@ tail.TableHandle <- function(th, n) {
 dh_ungroup.TableHandle <- function(th, null_fill, group_by_columns) {
     verify_string_vector("group_by_columns", group_by_columns)
     return(TableHandle$new(th$internal_table_handle$ungroup(null_fill, group_by_columns)))
-}
-
-#' @export
-sort_by <- function(th, columns, descending = FALSE) {
-    verify_string_vector("columns", columns)
-    verify_bool_vector("descending", descending)
-    if ((length(descending) > 1) && length(descending) != length(columns)) {
-        stop(paste0("'descending' must be the same length as 'columns' if more than one entry is supplied. Got 'columns' with length ", length(columns), " and 'descending' with length", length(descending), " instead."))
-    }
-    return(TableHandle$new(th$internal_table_handle$sort(columns, descending)))
 }
 
 #' @export

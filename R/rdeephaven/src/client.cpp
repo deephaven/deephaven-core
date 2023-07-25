@@ -19,12 +19,10 @@ class AggregateWrapper;
 class TableHandleWrapper;
 class ClientOptionsWrapper;
 class ClientWrapper;
-class SortPairWrapper;
 
 // forward declaration of conversion functions
 std::vector<deephaven::client::Aggregate> convertRcppListToVectorOfTypeAggregate(Rcpp::List rcpp_list);
 std::vector<deephaven::client::TableHandle> convertRcppListToVectorOfTypeTableHandle(Rcpp::List rcpp_list);
-std::vector<deephaven::client::SortPair> convertRcppListToVectorOfTypeSortPair(Rcpp::List rcpp_list);
 
 
 // ######################### DH WRAPPERS #########################
@@ -62,6 +60,14 @@ AggregateWrapper* INTERNAL_max(std::vector<std::string> columnSpecs) {
     return new AggregateWrapper(deephaven::client::Aggregate::max(columnSpecs));
 }
 
+AggregateWrapper* INTERNAL_first(std::vector<std::string> columnSpecs) {
+    return new AggregateWrapper(deephaven::client::Aggregate::first(columnSpecs));
+}
+
+AggregateWrapper* INTERNAL_last(std::vector<std::string> columnSpecs) {
+    return new AggregateWrapper(deephaven::client::Aggregate::last(columnSpecs));
+}
+
 AggregateWrapper* INTERNAL_sum(std::vector<std::string> columnSpecs) {
     return new AggregateWrapper(deephaven::client::Aggregate::sum(columnSpecs));
 }
@@ -78,24 +84,16 @@ AggregateWrapper* INTERNAL_wAvg(std::string weightColumn, std::vector<std::strin
     return new AggregateWrapper(deephaven::client::Aggregate::wavg(weightColumn, columnSpecs));
 }
 
+AggregateWrapper* INTERNAL_median(std::vector<std::string> columnSpecs) {
+    return new AggregateWrapper(deephaven::client::Aggregate::med(columnSpecs));
+}
+
 AggregateWrapper* INTERNAL_var(std::vector<std::string> columnSpecs) {
     return new AggregateWrapper(deephaven::client::Aggregate::var(columnSpecs));
 }
 
 AggregateWrapper* INTERNAL_std(std::vector<std::string> columnSpecs) {
     return new AggregateWrapper(deephaven::client::Aggregate::std(columnSpecs));
-}
-
-AggregateWrapper* INTERNAL_first(std::vector<std::string> columnSpecs) {
-    return new AggregateWrapper(deephaven::client::Aggregate::first(columnSpecs));
-}
-
-AggregateWrapper* INTERNAL_last(std::vector<std::string> columnSpecs) {
-    return new AggregateWrapper(deephaven::client::Aggregate::last(columnSpecs));
-}
-
-AggregateWrapper* INTERNAL_median(std::vector<std::string> columnSpecs) {
-    return new AggregateWrapper(deephaven::client::Aggregate::med(columnSpecs));
 }
 
 AggregateWrapper* INTERNAL_percentile(double percentile, std::vector<std::string> columnSpecs) {
@@ -142,13 +140,29 @@ public:
 
     // AGGREGATION OPERATIONS
 
+    TableHandleWrapper* by(std::vector<std::string> columnSpecs) {
+        return new TableHandleWrapper(internal_tbl_hdl.by(columnSpecs));
+    };
+
     TableHandleWrapper* aggBy(Rcpp::List aggregations) {
         std::vector<deephaven::client::Aggregate> converted_aggregations = convertRcppListToVectorOfTypeAggregate(aggregations);
         return new TableHandleWrapper(internal_tbl_hdl.by(deephaven::client::AggregateCombo::create(converted_aggregations)));
     }
 
-    TableHandleWrapper* by(std::vector<std::string> columnSpecs) {
-        return new TableHandleWrapper(internal_tbl_hdl.by(columnSpecs));
+    TableHandleWrapper* firstBy(std::vector<std::string> columnSpecs) {
+        return new TableHandleWrapper(internal_tbl_hdl.firstBy(columnSpecs));
+    };
+
+    TableHandleWrapper* lastBy(std::vector<std::string> columnSpecs) {
+        return new TableHandleWrapper(internal_tbl_hdl.lastBy(columnSpecs));
+    };
+
+    TableHandleWrapper* headBy(std::vector<std::string> columnSpecs, int64_t n) {
+        return new TableHandleWrapper(internal_tbl_hdl.headBy(n, columnSpecs));
+    };
+
+    TableHandleWrapper* tailBy(std::vector<std::string> columnSpecs, int64_t n) {
+        return new TableHandleWrapper(internal_tbl_hdl.tailBy(n, columnSpecs));
     };
 
     TableHandleWrapper* minBy(std::vector<std::string> columnSpecs) {
@@ -175,6 +189,10 @@ public:
         return new TableHandleWrapper(internal_tbl_hdl.wAvgBy(weightColumn, columnSpecs));
     };
 
+    TableHandleWrapper* medianBy(std::vector<std::string> columnSpecs) {
+        return new TableHandleWrapper(internal_tbl_hdl.medianBy(columnSpecs));
+    };
+
     TableHandleWrapper* varBy(std::vector<std::string> columnSpecs) {
         return new TableHandleWrapper(internal_tbl_hdl.varBy(columnSpecs));
     };
@@ -183,32 +201,12 @@ public:
         return new TableHandleWrapper(internal_tbl_hdl.stdBy(columnSpecs));
     };
 
-    TableHandleWrapper* firstBy(std::vector<std::string> columnSpecs) {
-        return new TableHandleWrapper(internal_tbl_hdl.firstBy(columnSpecs));
-    };
-
-    TableHandleWrapper* lastBy(std::vector<std::string> columnSpecs) {
-        return new TableHandleWrapper(internal_tbl_hdl.lastBy(columnSpecs));
-    };
-
-    TableHandleWrapper* medianBy(std::vector<std::string> columnSpecs) {
-        return new TableHandleWrapper(internal_tbl_hdl.medianBy(columnSpecs));
-    };
-
     TableHandleWrapper* percentileBy(std::vector<std::string> columnSpecs, double percentile) {
         return new TableHandleWrapper(internal_tbl_hdl.percentileBy(percentile, columnSpecs));
     };
 
     TableHandleWrapper* countBy(std::vector<std::string> columnSpecs, std::string countByColumn) {
         return new TableHandleWrapper(internal_tbl_hdl.countBy(countByColumn, columnSpecs));
-    };
-
-    TableHandleWrapper* headBy(std::vector<std::string> columnSpecs, int64_t n) {
-        return new TableHandleWrapper(internal_tbl_hdl.headBy(n, columnSpecs));
-    };
-
-    TableHandleWrapper* tailBy(std::vector<std::string> columnSpecs, int64_t n) {
-        return new TableHandleWrapper(internal_tbl_hdl.tailBy(n, columnSpecs));
     };
 
     // JOIN OPERATIONS
@@ -493,26 +491,19 @@ RCPP_MODULE(DeephavenInternalModule) {
 
     class_<AggregateWrapper>("INTERNAL_Aggregate")
     ;
+    function("INTERNAL_first", &INTERNAL_first);
+    function("INTERNAL_last", &INTERNAL_last);
     function("INTERNAL_min", &INTERNAL_min);
     function("INTERNAL_max", &INTERNAL_max);
     function("INTERNAL_sum", &INTERNAL_sum);
     function("INTERNAL_abs_sum", &INTERNAL_absSum);
     function("INTERNAL_avg", &INTERNAL_avg);
     function("INTERNAL_w_avg", &INTERNAL_wAvg);
+    function("INTERNAL_median", &INTERNAL_median);
     function("INTERNAL_var", &INTERNAL_var);
     function("INTERNAL_std", &INTERNAL_std);
-    function("INTERNAL_first", &INTERNAL_first);
-    function("INTERNAL_last", &INTERNAL_last);
-    function("INTERNAL_median", &INTERNAL_median);
     function("INTERNAL_percentile", &INTERNAL_percentile);
     function("INTERNAL_count", &INTERNAL_count);
-
-
-    class_<SortPairWrapper>("INTERNAL_SortPair")
-    ;
-    function("INTERNAL_sort_asc", &INTERNAL_sortAsc);
-    function("INTERNAL_sort_desc", &INTERNAL_sortDesc);
-
 
     class_<TableHandleWrapper>("INTERNAL_TableHandle")
     .method("select", &TableHandleWrapper::select)
@@ -523,21 +514,21 @@ RCPP_MODULE(DeephavenInternalModule) {
     .method("where", &TableHandleWrapper::where)
 
     .method("agg_by", &TableHandleWrapper::aggBy)
+    .method("first_by", &TableHandleWrapper::firstBy)
+    .method("last_by", &TableHandleWrapper::lastBy)
+    .method("head_by", &TableHandleWrapper::headBy)
+    .method("tail_by", &TableHandleWrapper::tailBy)
     .method("min_by", &TableHandleWrapper::minBy)
     .method("max_by", &TableHandleWrapper::maxBy)
     .method("sum_by", &TableHandleWrapper::sumBy)
     .method("abs_sum_by", &TableHandleWrapper::absSumBy)
     .method("avg_by", &TableHandleWrapper::avgBy)
     .method("w_avg_by", &TableHandleWrapper::wAvgBy)
+    .method("median_by", &TableHandleWrapper::medianBy)
     .method("var_by", &TableHandleWrapper::varBy)
     .method("std_by", &TableHandleWrapper::stdBy)
-    .method("first_by", &TableHandleWrapper::firstBy)
-    .method("last_by", &TableHandleWrapper::lastBy)
-    .method("median_by", &TableHandleWrapper::medianBy)
     .method("percentile_by", &TableHandleWrapper::percentileBy)
     .method("count_by", &TableHandleWrapper::countBy)
-    .method("head_by", &TableHandleWrapper::headBy)
-    .method("tail_by", &TableHandleWrapper::tailBy)
 
     .method("cross_join", &TableHandleWrapper::crossJoin)
     .method("natural_join", &TableHandleWrapper::naturalJoin)
