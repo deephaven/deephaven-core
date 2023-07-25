@@ -18,7 +18,7 @@ public class FilterConditionTestGwt extends GWTTestCase {
     }
 
     private Column getColumn() {
-        return new Column(0, 0, -1, -1, "int", "ColumnName", false, -1, null, false, false);
+        return new Column(0, 0, -1, -1, "int", "ColumnName", false, -1, null, null, false, false);
     }
 
     private FilterValue[] arr(FilterValue filterValue) {

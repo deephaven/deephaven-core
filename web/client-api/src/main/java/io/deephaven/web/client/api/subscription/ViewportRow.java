@@ -11,7 +11,6 @@ import io.deephaven.web.client.api.barrage.DatabarFormatColumnType;
 import jsinterop.annotations.JsMethod;
 import jsinterop.base.Any;
 import jsinterop.base.Js;
-
 import java.util.Map;
 
 @TsInterface

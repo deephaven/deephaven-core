@@ -165,9 +165,9 @@ public class JsTreeTable extends HasLifecycle {
                     data[c.getFormatStringColumnIndex()] = dataColumns[c.getFormatStringColumnIndex()].getData();
                 }
 
-                 if(c.getFormatDataBarColumnIndices() != null) {
+                if (c.getFormatDataBarColumnIndices() != null) {
                     c.getFormatDataBarColumnIndices().values().forEach(idx -> data[idx] = dataColumns[idx]);
-                 }
+                }
 
                 // if there is a matching constituent column array, clean it and copy from it
                 Column sourceColumn = sourceColumns.get(c.getName());

@@ -261,7 +261,7 @@ public interface TableDefaults extends Table, TableOperationsDefaults<Table, Tab
         if (markerColor != null) {
             validateColor(markerColor);
         }
-        if (opacity > 1 || opacity < 0) {
+        if (opacity != null && opacity > 1 || opacity < 0) {
             throw new IllegalArgumentException("Opacity must be between 0 and 1.");
         }
     }
@@ -302,17 +302,19 @@ public interface TableDefaults extends Table, TableOperationsDefaults<Table, Tab
         return newTable.naturalJoin(
                 TableTools.newTable(
                         TableTools.col(ColumnFormatting.getDataBarFormatColumnName(column,
-                                ColumnFormatting.DataBarFormatColumnType.AXIS), axis),
+                                ColumnFormatting.DataBarFormatColumnType.AXIS), axis == null ? "proportional" : axis),
                         TableTools.col(ColumnFormatting.getDataBarFormatColumnName(column,
                                 ColumnFormatting.DataBarFormatColumnType.POSITIVE_COLOR), positiveColor),
                         TableTools.col(ColumnFormatting.getDataBarFormatColumnName(column,
                                 ColumnFormatting.DataBarFormatColumnType.NEGATIVE_COLOR), negativeColor),
                         TableTools.col(ColumnFormatting.getDataBarFormatColumnName(column,
-                                ColumnFormatting.DataBarFormatColumnType.VALUE_PLACEMENT), valuePlacement),
+                                ColumnFormatting.DataBarFormatColumnType.VALUE_PLACEMENT),
+                                valuePlacement == null ? "beside" : valuePlacement),
                         TableTools.col(ColumnFormatting.getDataBarFormatColumnName(column,
-                                ColumnFormatting.DataBarFormatColumnType.DIRECTION), direction),
+                                ColumnFormatting.DataBarFormatColumnType.DIRECTION),
+                                direction == null ? "LTR" : direction),
                         TableTools.col(ColumnFormatting.getDataBarFormatColumnName(column,
-                                ColumnFormatting.DataBarFormatColumnType.OPACITY), opacity),
+                                ColumnFormatting.DataBarFormatColumnType.OPACITY), opacity == null ? 1.0 : opacity),
                         TableTools.col(ColumnFormatting.getDataBarFormatColumnName(column,
                                 ColumnFormatting.DataBarFormatColumnType.MARKER_COLOR), markerColor)),
                 "");

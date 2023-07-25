@@ -42,6 +42,9 @@ _JPair = jpy.get_type("io.deephaven.api.Pair")
 _JLayoutHintBuilder = jpy.get_type("io.deephaven.engine.util.LayoutHintBuilder")
 _JSearchDisplayMode = jpy.get_type("io.deephaven.engine.util.LayoutHintBuilder$SearchDisplayModes")
 _JSnapshotWhenOptions = jpy.get_type("io.deephaven.api.snapshot.SnapshotWhenOptions")
+_JAxisOption = jpy.get_type("io.deephaven.engine.util.ColumnFormatting$AxisOptions")
+_JValuePlacementOption = jpy.get_type("io.deephaven.engine.util.ColumnFormatting$ValuePlacementOptions")
+_JDirectionOption = jpy.get_type("io.deephaven.engine.util.ColumnFormatting$DirectionOptions")
 
 # PartitionedTable
 _JPartitionedTable = jpy.get_type("io.deephaven.engine.table.PartitionedTable")
@@ -95,6 +98,34 @@ class SearchDisplayMode(Enum):
     """Permit the search bar to be displayed, regardless of user or system settings."""
     HIDE = _JSearchDisplayMode.Hide
     """Hide the search bar, regardless of user or system settings."""
+
+
+class AxisOption(Enum):
+    """An enum of axis options for data bars"""
+    PROPORTIONAL = _JAxisOption.Proportional
+    """Data bars fill the available space in the column."""
+    MIDDLE = _JAxisOption.Middle
+    """Zero line for data bars is centered in column."""
+    DIRECTIONAL = _JAxisOption.Directional
+    """Positive and negative bars face the same direction."""
+
+
+class ValuePlacementOption(Enum):
+    """An enum of value placement options for data bars"""
+    BESIDE = _JValuePlacementOption.Beside
+    """Beside the data bar."""
+    OVERLAP = _JValuePlacementOption.Overlap
+    """On top of the data bar."""
+    HIDE = _JValuePlacementOption.Hide
+    """Hide the value."""
+
+
+class DirectionOption(Enum):
+    """An enum of for horizontal axis orientation options for data bar"""
+    LTR = _JDirectionOption.LTR
+    """Left to right"""
+    RTL = _JDirectionOption.RTL
+    """Right to left"""
 
 
 class _FormatOperationsRecorder(Protocol):
@@ -1949,16 +1980,42 @@ class Table(JObjectWrapper):
         except Exception as e:
             raise DHError(e, "failed to color format rows conditionally.") from e
 
-    def format_data_bar(self, column: str, value_column: str, min: float = None, max: float = None,
-                        axis: str = 'proportional', positive_color: Union[str, List[str]] = None,
-                        negative_color: Union[str, List[str]] = None, value_placement: str = 'beside',
-                        direction: str = 'LTR', opacity: float = 1, marker_column: str = None, marker_color: str = None) -> Table:
+    def format_data_bar(self, column: str, value_column: str = None, min: float = None, max: float = None,
+                        axis: AxisOption = AxisOption.PROPORTIONAL, positive_color: Union[str, List[str]] = None,
+                        negative_color: Union[str, List[str]] = None, value_placement: ValuePlacementOption = None,
+                        direction: DirectionOption = None, opacity: float = None, marker_column: str = None,
+                        marker_color: str = None) -> Table:
+        """ Applies data bar formatting to the column specified.
+
+        Args:
+            column (str): where to place the data bars
+            value_column (str): where to get the values to form the data bars from
+            min (float): minimum value for data bar scaling
+            max (float): maximum value for data bar scaling
+            axis (AxisOption): orientation of data bar relative to cell
+            positive_color (Union[str, List[str]]): color or list of colors for positive bar
+            negative_color (Union[str, List[str]]): color or list of colors for negative bar
+            value_placement (ValuePlacementOption): orientation of values relative to data bar
+            direction (DirectionOption): orientation of data bar relative to horizontal axis
+            opacity (float): opacity of data bars
+            marker_column (str): where to get the values to form the markers from
+            marker_color (str): color for markers
+
+        Returns:
+            a new table
+
+        Raises:
+            DHError
+        """
         try:
             if isinstance(positive_color, list):
                 positive_color = ','.join(positive_color)
 
             if isinstance(negative_color, list):
                 negative_color = ','.join(negative_color)
+
+            if value_column is None:
+                value_column = column
 
             return Table(j_table=self.j_table.formatDataBar(column, value_column, axis, min, max, positive_color,
                                                             negative_color, value_placement, direction,
