@@ -548,6 +548,7 @@ public class Numeric {
         double sum = 0;
         double sum2 = 0;
         double count = 0;
+        double count2 = 0;
 
         try (
             final ${pt.vectorIterator} vi = values.iterator();
@@ -561,11 +562,17 @@ public class Numeric {
                     sum += w * c;
                     sum2 += w * c * c;
                     count += w;
+                    count2 += w * w;
                 }
             }
         }
 
-        return sum2 / count - sum * sum / count / count;
+        // For unbiased estimator derivation see https://en.wikipedia.org/wiki/Weighted_arithmetic_mean#Weighted_sample_variance
+        // For unweighted statistics, there is a (N-1)/N = (1-1/N) Bessel correction.  
+        // The analagous correction for weighted statistics is 1-count2/count/count, which yields an effective sample size of Neff = count*count/count2.
+        // This yields an unbiased estimator of (sum2/count - sum*sum/count/count) * ((count*count/count2)/((count*count/count2)-1)).
+        // This can be simplified to (count * sum2 - sum * sum) / (count * count - count2)
+        return (count * sum2 - sum * sum) / (count * count - count2);
     }
 
     </#if>

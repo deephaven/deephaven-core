@@ -29,11 +29,22 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
+/**
+ * Represents a set of Tables each corresponding to some key. The keys are available locally, but a call must be made to
+ * the server to get each Table. All tables will have the same structure.
+ */
 @JsType(namespace = "dh", name = "PartitionedTable")
 public class JsPartitionedTable extends HasLifecycle {
+
+    /**
+     * Indicates that a new key has been added to the array of keys, which can now be fetched with getTable.
+     */
     public static final String EVENT_KEYADDED = "keyadded",
             EVENT_DISCONNECT = JsTable.EVENT_DISCONNECT,
             EVENT_RECONNECT = JsTable.EVENT_RECONNECT,
+            /**
+             * Indicates that an error has occurred while communicating with the server.
+             */
             EVENT_RECONNECTFAILED = JsTable.EVENT_RECONNECTFAILED;
 
     private final WorkerConnection connection;
@@ -169,6 +180,12 @@ public class JsPartitionedTable extends HasLifecycle {
         }));
     }
 
+    /**
+     * the table with the given key.
+     * 
+     * @param key
+     * @return Promise of dh.Table
+     */
     public Promise<JsTable> getTable(Object key) {
         // Wrap non-arrays in an array so we are consistent with how we track keys
         if (!JsArray.isArray(key)) {
@@ -196,6 +213,13 @@ public class JsPartitionedTable extends HasLifecycle {
                 .then(cts -> Promise.resolve(new JsTable(cts.getConnection(), cts)));
     }
 
+    /**
+     * The set of all currently known keys. This is kept up to date, so getting the list after adding an event listener
+     * for <b>keyadded</b> will ensure no keys are missed.
+     * 
+     * @return Set of Object
+     *
+     */
     public JsSet<Object> getKeys() {
         if (subscription.getColumns().length == 1) {
             return new JsSet<>(tables.keySet().stream().map(list -> list.get(0)).toArray());
@@ -203,11 +227,20 @@ public class JsPartitionedTable extends HasLifecycle {
         return new JsSet<>(tables.keySet().stream().map(List::toArray).toArray());
     }
 
+    /**
+     * The count of known keys.
+     * 
+     * @return int
+     */
     @JsProperty(name = "size")
     public int size() {
         return tables.size();
     }
 
+    /**
+     * Indicates that this PartitionedTable will no longer be used, removing subcriptions to updated keys, etc. This
+     * will not affect tables in use.
+     */
     public void close() {
         if (keys != null) {
             keys.close();

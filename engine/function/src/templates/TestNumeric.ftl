@@ -923,9 +923,10 @@ public class TestNumeric extends BaseArrayTestCase {
 
     public void test${pt.boxed}Wvar() {
         final double w = 4.0 + 5.0 + 6.0;
+        final double w2 = 4.0*4.0 + 5.0*5.0 + 6.0*6.0;
         final double sum = 1.0*4.0+2.0*5.0+3.0*6.0;
         final double sum2 = 1.0*1.0*4.0 + 2.0*2.0*5.0 + 3.0*3.0*6.0;
-        final double target = sum2/w - sum * sum / w / w;
+        final double target = (w * sum2 - sum * sum) / (w * w - w2);
 
         <#list primitiveTypes as pt2>
         <#if pt2.valueType.isNumber >
@@ -953,6 +954,8 @@ public class TestNumeric extends BaseArrayTestCase {
             // pass
         }
 
+        assertEquals(var(new ${pt.primitive}[]{1,2,3}), wvar(new ${pt.primitive}[]{1,2,3,${pt.null},5}, new ${pt2.primitive}[]{1,1,1,7,${pt2.null}}));
+        assertEquals(var(new ${pt.primitive}[]{1,2,3}), wvar(new ${pt.primitive}[]{1,2,3,${pt.null},5}, new ${pt2.primitive}[]{2,2,2,7,${pt2.null}}));
 
         </#if>
         </#list>
@@ -960,9 +963,10 @@ public class TestNumeric extends BaseArrayTestCase {
 
     public void test${pt.boxed}Wstd() {
         final double w = 4.0 + 5.0 + 6.0;
+        final double w2 = 4.0*4.0 + 5.0*5.0 + 6.0*6.0;
         final double sum = 1.0*4.0+2.0*5.0+3.0*6.0;
         final double sum2 = 1.0*1.0*4.0 + 2.0*2.0*5.0 + 3.0*3.0*6.0;
-        final double target = Math.sqrt(sum2/w - sum * sum / w / w);
+        final double target = Math.sqrt((w * sum2 - sum * sum) / (w * w - w2));
 
         <#list primitiveTypes as pt2>
         <#if pt2.valueType.isNumber >
@@ -993,7 +997,7 @@ public class TestNumeric extends BaseArrayTestCase {
         final double w2 = 4.0*4.0 + 5.0*5.0 + 6.0*6.0;
         final double sum = 1.0*4.0+2.0*5.0+3.0*6.0;
         final double sum2 = 1.0*1.0*4.0 + 2.0*2.0*5.0 + 3.0*3.0*6.0;
-        final double std = Math.sqrt(sum2/w - sum * sum / w / w);
+        final double std = Math.sqrt((w * sum2 - sum * sum) / (w * w - w2));
         final double target = std * Math.sqrt( w2 / w / w);
 
         <#list primitiveTypes as pt2>

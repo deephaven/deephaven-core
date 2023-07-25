@@ -37,6 +37,14 @@ public class HasEventHandling {
         return "";
     }
 
+    /**
+     * Listen for events on this table.
+     *
+     * @param name
+     * @param callback
+     * @return Returns a cleanup function.
+     * @param <T>
+     */
     @JsMethod
     public <T> RemoverFn addEventListener(String name, EventFn<T> callback) {
         JsArray<EventFn<?>> listeners = map.get(name);
@@ -121,6 +129,14 @@ public class HasEventHandling {
         return hasListeners(name) && map.get(name).indexOf(fn) != -1;
     }
 
+    /**
+     * Removes an event listener added to this table.
+     *
+     * @param name
+     * @param callback
+     * @return
+     * @param <T>
+     */
     @JsMethod
     public <T> boolean removeEventListener(String name, EventFn<T> callback) {
         final JsArray<EventFn<?>> listeners = map.get(name);
