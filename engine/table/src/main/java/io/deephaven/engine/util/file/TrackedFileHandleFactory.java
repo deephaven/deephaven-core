@@ -48,7 +48,7 @@ public class TrackedFileHandleFactory implements FileHandleFactory {
     }
 
     private final static double DEFAULT_TARGET_USAGE_RATIO = 0.9;
-    private final static long DEFAULT_CLEANUP_INTERVAL_MILLIS = 100;
+    private final static long DEFAULT_CLEANUP_INTERVAL_MILLIS = 60_000;
 
     private final Scheduler scheduler;
     private final int capacity;

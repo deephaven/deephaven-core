@@ -30,7 +30,7 @@ QueryLibrary.defaultStaticImportList=default_static_imports.txt
 
 StringUtils.cacheSize=0
 
-TrackedFileHandleFactory.maxOpenFiles=2
+TrackedFileHandleFactory.maxOpenFiles=1024
 
 TableDataRefreshService.tableLocationsRefreshMillis=10000
 TableDataRefreshService.tableSizeRefreshMillis=1000
