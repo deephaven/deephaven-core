@@ -393,6 +393,8 @@ public class ParquetTableReadWriteTest {
         ParquetTools.writeTable(tableToSave, destFile);
         String[] filesInDir = parentDir.list();
         assertTrue(filesInDir.length == 1 && filesInDir[0].equals(filename));
+        Table fromDisk = ParquetTools.readTable(destFile);
+        TstUtils.assertTableEquals(fromDisk, tableToSave);
 
         // This write should fail
         final Table badTable = TableTools.emptyTable(5)
@@ -405,10 +407,10 @@ public class ParquetTableReadWriteTest {
         // Make sure that original file is preserved and no temporary files
         filesInDir = parentDir.list();
         assertTrue(filesInDir.length == 1 && filesInDir[0].equals(filename));
-        Table fromDisk = ParquetTools.readTable(destFile);
+        fromDisk = ParquetTools.readTable(destFile);
         TstUtils.assertTableEquals(fromDisk, tableToSave);
 
-        // Write a new table successfully at the same position
+        // Write a new table successfully at the same path
         final Table newTableToSave = TableTools.emptyTable(5).update("A=(int)i");
         ParquetTools.writeTable(newTableToSave, destFile);
         filesInDir = parentDir.list();
@@ -444,6 +446,8 @@ public class ParquetTableReadWriteTest {
         String groupingFilename = ParquetTableWriter.defaultGroupingFileName(filename).apply("vvv");
         assertTrue(filesInDir.length == 2 && Arrays.asList(filesInDir).contains(filename)
                 && Arrays.asList(filesInDir).contains(groupingFilename));
+        Table fromDisk = ParquetTools.readTable(destFile);
+        TstUtils.assertTableEquals(fromDisk, tableToSave);
 
         // Write another table but this write should fail
         final TableDefinition badTableDefinition = TableDefinition.of(ColumnDefinition.ofInt("www").withGrouping());
@@ -458,7 +462,7 @@ public class ParquetTableReadWriteTest {
         filesInDir = parentDir.list();
         assertTrue(filesInDir.length == 2 && Arrays.asList(filesInDir).contains(filename)
                 && Arrays.asList(filesInDir).contains(groupingFilename));
-        Table fromDisk = ParquetTools.readTable(destFile);
+        fromDisk = ParquetTools.readTable(destFile);
         TstUtils.assertTableEquals(fromDisk, tableToSave);
 
         // Write a new table successfully at the same position
