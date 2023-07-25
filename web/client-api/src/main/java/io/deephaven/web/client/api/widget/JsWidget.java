@@ -31,10 +31,10 @@ public class JsWidget extends HasEventHandling {
 
     private boolean hasFetched;
 
-    private final Supplier<BiDiStream<MessageRequest, MessageResponse>> streamFactory;
-    private BiDiStream<MessageRequest, MessageResponse> messageStream;
+    private final Supplier<BiDiStream<StreamRequest, StreamResponse>> streamFactory;
+    private BiDiStream<StreamRequest, StreamResponse> messageStream;
 
-    private MessageResponse response;
+    private StreamResponse response;
 
     private JsArray<JsWidgetExportedObject> exportedObjects;
 
@@ -42,12 +42,12 @@ public class JsWidget extends HasEventHandling {
         this.connection = connection;
         this.typedTicket = typedTicket;
         hasFetched = false;
-        BiDiStream.Factory<MessageRequest, MessageResponse> factory = connection.streamFactory();
+        BiDiStream.Factory<StreamRequest, StreamResponse> factory = connection.streamFactory();
         streamFactory = () -> factory.create(
                 connection.objectServiceClient()::messageStream,
                 (first, headers) -> connection.objectServiceClient().openMessageStream(first, headers),
                 (next, headers, c) -> connection.objectServiceClient().nextMessageStream(next, headers, c::apply),
-                new MessageRequest());
+                new StreamRequest());
         this.exportedObjects = new JsArray<>();
     }
 
@@ -67,7 +67,7 @@ public class JsWidget extends HasEventHandling {
             messageStream = streamFactory.get();
             messageStream.onData(res -> {
                 response = res;
-                appendExportedObjects(res.getTypedExportIdList());
+                appendExportedObjects(res.getData().getTypedExportIdsList());
 
                 if (!hasFetched) {
                     hasFetched = true;
@@ -90,10 +90,10 @@ public class JsWidget extends HasEventHandling {
             });
 
             // First message establishes a connection w/ the plugin object instance we're talking to
-            MessageRequest req = new MessageRequest();
+            StreamRequest req = new StreamRequest();
             ConnectRequest data = new ConnectRequest();
             data.setTypedTicket(typedTicket);
-            req.setSourceId(data);
+            req.setConnect(data);
             messageStream.send(req);
         });
     }
@@ -113,17 +113,17 @@ public class JsWidget extends HasEventHandling {
 
     @JsMethod
     public String getDataAsBase64() {
-        return response.getData_asB64();
+        return response.getData().getPayload_asB64();
     }
 
     @JsMethod
     public Uint8Array getDataAsU8() {
-        return response.getData_asU8();
+        return response.getData().getPayload_asU8();
     }
 
     @JsMethod
     public String getDataAsString() {
-        return new String(Js.<byte[]>uncheckedCast(response.getData_asU8()), StandardCharsets.UTF_8);
+        return new String(Js.<byte[]>uncheckedCast(response.getData().getPayload_asU8()), StandardCharsets.UTF_8);
     }
 
     @JsProperty
@@ -141,15 +141,15 @@ public class JsWidget extends HasEventHandling {
         if (messageStream == null) {
             return;
         }
-        MessageRequest req = new MessageRequest();
-        DataRequest data = new DataRequest();
+        StreamRequest req = new StreamRequest();
+        Data data = new Data();
         if (msg instanceof String) {
             byte[] bytes = ((String) msg).getBytes(StandardCharsets.UTF_8);
             Uint8Array payload = new Uint8Array(bytes.length);
             payload.set(Js.<double[]>uncheckedCast(bytes));
-            data.setData(payload);
+            data.setPayload(payload);
         } else if (msg instanceof ArrayBuffer) {
-            data.setData(new Uint8Array((ArrayBuffer) msg));
+            data.setPayload(new Uint8Array((ArrayBuffer) msg));
         } else {
             throw new IllegalArgumentException("Expected message to be a String or ArrayBuffer");
         }
@@ -159,28 +159,28 @@ public class JsWidget extends HasEventHandling {
     }
 
     private static class JsWidgetMessageWrapper {
-        private final MessageResponse message;
+        private final StreamResponse message;
 
         private final JsArray<JsWidgetExportedObject> exportedObjects;
 
-        public JsWidgetMessageWrapper(MessageResponse m, JsArray<JsWidgetExportedObject> e) {
+        public JsWidgetMessageWrapper(StreamResponse m, JsArray<JsWidgetExportedObject> e) {
             message = m;
             exportedObjects = e;
         }
 
         @JsMethod
         public String getDataAsBase64() {
-            return message.getData_asB64();
+            return message.getData().getPayload_asB64();
         }
 
         @JsMethod
         public Uint8Array getDataAsU8() {
-            return message.getData_asU8();
+            return message.getData().getPayload_asU8();
         }
 
         @JsMethod
         public String getDataAsString() {
-            return new String(Js.<byte[]>uncheckedCast(message.getData_asU8()), StandardCharsets.UTF_8);
+            return new String(Js.<byte[]>uncheckedCast(message.getData().getPayload_asU8()), StandardCharsets.UTF_8);
         }
 
         @JsProperty

@@ -680,16 +680,16 @@ public class JsFigure extends HasLifecycle {
         }
 
         @Override
-        public Promise fetch(JsFigure figure, FetchObjectResponse response) {
+        public Promise<FigureTableFetchData> fetch(JsFigure figure, FetchObjectResponse response) {
             JsTable[] tables = new JsTable[0];
             JsPartitionedTable[] partitionedTables = new JsPartitionedTable[0];
 
-            Promise<?>[] promises = new Promise[response.getTypedExportIdList().length];
+            Promise<?>[] promises = new Promise[response.getTypedExportIdsList().length];
 
             int nextTableIndex = 0;
             int nextPartitionedTableIndex = 0;
-            for (int i = 0; i < response.getTypedExportIdList().length; i++) {
-                TypedTicket ticket = response.getTypedExportIdList().getAt(i);
+            for (int i = 0; i < response.getTypedExportIdsList().length; i++) {
+                TypedTicket ticket = response.getTypedExportIdsList().getAt(i);
                 if (ticket.getType().equals(JsVariableType.TABLE)) {
                     // Note that creating a CTS like this means we can't actually refetch it, but that's okay, we can't
                     // reconnect in this way without refetching the entire figure anyway.
