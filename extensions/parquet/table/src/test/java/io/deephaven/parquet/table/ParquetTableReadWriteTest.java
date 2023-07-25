@@ -489,7 +489,7 @@ public class ParquetTableReadWriteTest {
         Table fromDisk = ParquetTools.readTable(destFile);
 
         TstUtils.assertTableEquals(fromDisk, tableToSave);
-//        final Table updatedTable =  fromDisk.updateView("A = A%3", "C = B*3+C");
+        // final Table updatedTable = fromDisk.updateView("A = A%3", "C = B*3+C");
 
         // Change the underlying file
         final Table stringTable = TableTools.emptyTable(5).update("InputString = Long.toString(ii)");
@@ -525,7 +525,7 @@ public class ParquetTableReadWriteTest {
         }
 
         // Write the original updated table to a file and read it back to compare
-//        ParquetTools.writeTable(updatedTable, destFile);
+        // ParquetTools.writeTable(updatedTable, destFile);
         ParquetTools.writeTable(tableToSave, destFile);
         fromDisk = ParquetTools.readTable(destFile);
         TstUtils.assertTableEquals(tableToSave, fromDisk);
