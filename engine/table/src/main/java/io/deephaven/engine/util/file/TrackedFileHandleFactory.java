@@ -152,12 +152,14 @@ public class TrackedFileHandleFactory implements FileHandleFactory {
         }
     }
 
+
     @SuppressWarnings("unused")
     public void closeAll() {
         HandleReference handleReference;
         while ((handleReference = handleReferences.poll()) != null) {
             handleReference.reclaim();
         }
+        handleReferences.clear();
     }
 
     private class CleanupJob extends TimedJob {
@@ -183,17 +185,30 @@ public class TrackedFileHandleFactory implements FileHandleFactory {
         }
     }
 
-    private class CloseRecorder implements Runnable {
+    // private class CloseRecorder implements Runnable {
+    //
+    // private final AtomicBoolean reclaimed = new AtomicBoolean(false);
+    //
+    // private CloseRecorder() {
+    // size.incrementAndGet();
+    // }
+    //
+    // @Override
+    // public void run() {
+    // if (reclaimed.compareAndSet(false, true)) {
+    // size.decrementAndGet();
+    // }
+    // }
+    // }
 
-        private final AtomicBoolean reclaimed = new AtomicBoolean(false);
-
+    private class CloseRecorder extends AtomicBoolean implements Runnable {
         private CloseRecorder() {
             size.incrementAndGet();
         }
 
         @Override
         public void run() {
-            if (reclaimed.compareAndSet(false, true)) {
+            if (compareAndSet(false, true)) {
                 size.decrementAndGet();
             }
         }

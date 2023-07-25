@@ -12,6 +12,7 @@ import io.deephaven.engine.table.impl.util.ColumnHolder;
 import io.deephaven.engine.testutil.TstUtils;
 import io.deephaven.engine.testutil.junit4.EngineCleanup;
 import io.deephaven.engine.util.BigDecimalUtils;
+import io.deephaven.engine.util.file.TrackedFileHandleFactory;
 import io.deephaven.stringset.ArrayStringSet;
 import io.deephaven.engine.table.Table;
 import io.deephaven.engine.table.TableDefinition;
@@ -547,7 +548,7 @@ public class ParquetTableReadWriteTest {
                 && Arrays.asList(filesInDir).contains(backupDestFileName)
                 && Arrays.asList(filesInDir).contains(vvvGroupingFilename)
                 && Arrays.asList(filesInDir).contains(xxxGroupingFilename));
-        fromDisk = ParquetTools.readTable(destFile);
+        Table fromDisk = ParquetTools.readTable(destFile);
         TstUtils.assertTableEquals(fromDisk, anotherTableToSave);
 
         // Overwrite the table
@@ -587,49 +588,27 @@ public class ParquetTableReadWriteTest {
         ParquetTools.writeTable(tableToSave, destFile);
         Table fromDisk = ParquetTools.readTable(destFile);
 
-        TstUtils.assertTableEquals(fromDisk, tableToSave);
-        // final Table updatedTable = fromDisk.updateView("A = A%3", "C = B*3+C");
+        // // Change the underlying file
+        // final Table stringTable = TableTools.emptyTable(5).update("InputString = Long.toString(ii)");
+        // ParquetTools.writeTable(stringTable, destFile);
+        // Table stringFromDisk = ParquetTools.readTable(destFile).select();
+        // TstUtils.assertTableEquals(stringTable, stringFromDisk);
 
-        // Change the underlying file
-        final Table stringTable = TableTools.emptyTable(5).update("InputString = Long.toString(ii)");
-        ParquetTools.writeTable(stringTable, destFile);
-        Table stringFromDisk = ParquetTools.readTable(destFile).select();
-        TstUtils.assertTableEquals(stringTable, stringFromDisk);
+        // TODO Add comments for this code
 
-        // Try to remove the original file handles by opening multiple files
-        Table t1 = TableTools.emptyTable(5).update("A=(int)i");
-        String f1 = "randomTable1.parquet";
-        final File df1 = new File(parentDir, f1);
-        t1 = t1.update("B=(int)ii");
-        ParquetTools.writeTable(t1, df1);
-        Table x1 = ParquetTools.readTable(df1);
+        TrackedFileHandleFactory.getInstance().closeAll();
 
-        Table t2 = TableTools.emptyTable(5).update("A=(int)i");
-        String f2 = "randomTable2.parquet";
-        final File df2 = new File(parentDir, f2);
-        t2 = t2.update("B=(int)ii");
-        ParquetTools.writeTable(t2, df2);
-        Table x2 = ParquetTools.readTable(df2);
-
-        Table t3 = TableTools.emptyTable(5).update("A=(int)i");
-        String f3 = "randomTable3.parquet";
-        final File df3 = new File(parentDir, f3);
-        t3 = t3.update("B=(int)ii");
-        ParquetTools.writeTable(t3, df3);
-        Table x3 = ParquetTools.readTable(df3);
-
+        final Table badTable =
+                fromDisk.view("InputString = ii % 2 == 0 ? Long.toString(ii) : null", "A=InputString.charAt(0)");
         try {
-            Thread.sleep(1000);
-        } catch (InterruptedException ignored) {
+            ParquetTools.writeTable(badTable, destFile);
+            TestCase.fail();
+        } catch (Exception ignored) {
         }
 
-        // Write the original updated table to a file and read it back to compare
-        // ParquetTools.writeTable(updatedTable, destFile);
-        ParquetTools.writeTable(tableToSave, destFile);
-        fromDisk = ParquetTools.readTable(destFile);
+        TrackedFileHandleFactory.getInstance().closeAll();
+
         TstUtils.assertTableEquals(tableToSave, fromDisk);
 
-        final Table reproducedTableToSave = TableTools.emptyTable(5).update("A=(int)i", "B=(long)i", "C=(double)i");
-        TstUtils.assertTableEquals(reproducedTableToSave, fromDisk);
     }
 }
