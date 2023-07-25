@@ -150,7 +150,7 @@ class PandasTestCase(BaseTestCase):
         # jobj_col(name="JObj", data=[j_array_list, None]),
         input_cols = [
             byte_col(name="Byte", data=(1, NULL_BYTE)),
-            char_col(name="Char", data=(1, NULL_CHAR)),
+            char_col(name="Char", data='-1'),
             short_col(name="Short", data=[1, NULL_SHORT]),
             int_col(name="Int_", data=[1, NULL_INT]),
             long_col(name="Long_", data=[1, NULL_LONG]),
