@@ -13,7 +13,7 @@ import pyarrow as pa
 from deephaven import dtypes, new_table, DHError
 from deephaven.column import byte_col, char_col, short_col, bool_col, int_col, long_col, float_col, double_col, \
     string_col, datetime_col, pyobj_col, jobj_col
-from deephaven.constants import NULL_LONG, NULL_SHORT, NULL_INT, NULL_BYTE, NULL_CHAR
+from deephaven.constants import NULL_LONG, NULL_SHORT, NULL_INT, NULL_BYTE
 from deephaven.jcompat import j_array_list
 from deephaven.pandas import to_pandas, to_table
 from deephaven.time import parse_instant, epoch_nanos_to_instant
@@ -150,7 +150,7 @@ class PandasTestCase(BaseTestCase):
         # jobj_col(name="JObj", data=[j_array_list, None]),
         input_cols = [
             byte_col(name="Byte", data=(1, NULL_BYTE)),
-            char_col(name="Char", data='-1'),
+            char_col(name="Char", data=(1, NULL_CHAR)),
             short_col(name="Short", data=[1, NULL_SHORT]),
             int_col(name="Int_", data=[1, NULL_INT]),
             long_col(name="Long_", data=[1, NULL_LONG]),
