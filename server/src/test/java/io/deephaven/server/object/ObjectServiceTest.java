@@ -83,11 +83,11 @@ public class ObjectServiceTest extends DeephavenApiServerSingleAuthenticatedBase
         final FetchObjectResponse response = channel().objectBlocking().fetchObject(request);
 
         assertThat(response.getType()).isEqualTo(MY_OBJECT_TYPE_NAME);
-        assertThat(response.getTypedExportIdCount()).isEqualTo(4);
-        assertThat(response.getTypedExportId(0).getType()).isEqualTo("Table");
-        assertThat(response.getTypedExportId(1).getType()).isEqualTo(MY_REF_OBJECT_TYPE_NAME);
-        assertThat(response.getTypedExportId(2).getType()).isEmpty();
-        assertThat(response.getTypedExportId(3).getType()).isEqualTo(MY_REF_OBJECT_TYPE_NAME);
+        assertThat(response.getTypedExportIdsCount()).isEqualTo(4);
+        assertThat(response.getTypedExportIds(0).getType()).isEqualTo("Table");
+        assertThat(response.getTypedExportIds(1).getType()).isEqualTo(MY_REF_OBJECT_TYPE_NAME);
+        assertThat(response.getTypedExportIds(2).getType()).isEmpty();
+        assertThat(response.getTypedExportIds(3).getType()).isEqualTo(MY_REF_OBJECT_TYPE_NAME);
 
         final DataInputStream dis = new DataInputStream(response.getData().newInput());
 
