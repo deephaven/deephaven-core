@@ -431,12 +431,12 @@ public class ParquetTableWriter {
             this.maxValuePageSize = maxValuePageSize;
         }
 
-        public IntSupplier valuePageSizeSupplier() {
-            return () -> maxValuePageSize;
-        }
-
         public boolean isVectorFormat() {
             return false;
+        }
+
+        public IntSupplier valuePageSizeSupplier() {
+            return () -> maxValuePageSize;
         }
     }
 
