@@ -412,9 +412,9 @@ public class ParquetTableWriter {
 
     private interface ColumnWriteHelper {
 
-        IntSupplier valuePageSizeSupplier();
-
         boolean isVectorFormat();
+
+        IntSupplier valuePageSizeSupplier();
     }
 
     /**
