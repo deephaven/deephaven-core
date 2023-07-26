@@ -484,7 +484,7 @@ public class KafkaTools {
         /**
          * Class to specify conversion of Kafka KEY or VALUE fields to table columns.
          */
-        static abstract class KeyOrValueSpec {
+        public static abstract class KeyOrValueSpec {
             /**
              * Data format for this Spec.
              *
