@@ -32,23 +32,24 @@ public interface StreamConsumer extends StreamFailureConsumer {
     void accept(@NotNull WritableChunk<Values>... data);
 
     /**
-     * Accept a collection of batch of rows splayed across per-column {@link WritableChunk chunks} of {@link Values
+     * Accept a collection of batches of rows splayed across per-column {@link WritableChunk chunks} of {@link Values
      * values}.
      *
      * <p>
-     * Ownership the {@code datas} elements passes to the consumer, which must be sure to
+     * Ownership of all the chunks contained within {@code data} passes to the consumer, which must be sure to
      * {@link io.deephaven.chunk.util.pools.PoolableChunk#close close} each chunk when it's no longer needed.
      *
      * <p>
-     * Implementations will generally have a mechanism for determining the expected number and type of input chunks, but
-     * this is not dictated at the interface level.
+     * Implementations will generally have a mechanism for determining the expected number and type of input chunks for
+     * each element, but this is not dictated at the interface level.
      *
      * <p>
      * Implementations may provide more specific semantics about this method in comparison to repeated invocations of
      * {@link #accept(WritableChunk[])}.
      *
-     * @param datas a collection of per-column {@link WritableChunk chunks} of {@link Values values}. Must all have the
-     *        same {@link WritableChunk#size() size}.
+     * @param data A collection of per-column {@link WritableChunk chunks} of {@link Values values}. All chunks in each
+     *        element must have the same {@link WritableChunk#size() size}, but different elements may have differing
+     *        chunk sizes.
      */
-    void accept(@NotNull Collection<WritableChunk<Values>[]> datas);
+    void accept(@NotNull Collection<WritableChunk<Values>[]> data);
 }

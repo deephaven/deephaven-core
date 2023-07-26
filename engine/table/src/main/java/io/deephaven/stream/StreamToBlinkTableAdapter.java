@@ -337,11 +337,12 @@ public class StreamToBlinkTableAdapter
      * <p>
      * Ensures that the blink table sees the full collection of chunks in a single cycle.
      *
-     * @param datas a collection of per-column {@link WritableChunk chunks} of {@link Values values}. Must all have the
-     *        same {@link WritableChunk#size() size}.
+     * @param data A collection of per-column {@link WritableChunk chunks} of {@link Values values}. All chunks in each
+     *        element must have the same {@link WritableChunk#size() size}, but different elements may have differing
+     *        chunk sizes.
      */
     @Override
-    public final void accept(@NotNull Collection<WritableChunk<Values>[]> datas) {
+    public final void accept(@NotNull Collection<WritableChunk<Values>[]> data) {
         if (!alive.get()) {
             return;
         }
@@ -349,22 +350,22 @@ public class StreamToBlinkTableAdapter
         synchronized (this) {
             if (!enqueuedFailures.isEmpty()) {
                 // If we'll never deliver these chunks, dispose of them immediately.
-                for (WritableChunk<Values>[] data : datas) {
-                    SafeCloseable.closeAll(data);
+                for (WritableChunk<Values>[] chunks : data) {
+                    SafeCloseable.closeAll(chunks);
                 }
                 return;
             }
             if (bufferChunkSources == null) {
                 bufferChunkSources = makeChunkSources(tableDefinition);
             }
-            for (WritableChunk<Values>[] data : datas) {
-                if (data.length != bufferChunkSources.length) {
-                    throw new IllegalStateException("StreamConsumer data length = " + data.length + " chunks, expected "
+            for (WritableChunk<Values>[] chunks : data) {
+                if (chunks.length != bufferChunkSources.length) {
+                    throw new IllegalStateException("StreamConsumer data length = " + chunks.length + " chunks, expected "
                             + bufferChunkSources.length);
                 }
-                for (int ii = 0; ii < data.length; ++ii) {
-                    Assert.eq(data[0].size(), "data[0].size()", data[ii].size(), "data[ii].size()");
-                    bufferChunkSources[ii].addChunk(data[ii]);
+                for (int ii = 0; ii < chunks.length; ++ii) {
+                    Assert.eq(chunks[0].size(), "data[0].size()", chunks[ii].size(), "data[ii].size()");
+                    bufferChunkSources[ii].addChunk(chunks[ii]);
                 }
             }
         }

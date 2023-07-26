@@ -50,7 +50,8 @@ class TablePublisherImpl implements StreamPublisher {
     }
 
     public void add(Table table) {
-        definition.checkMutualCompatibility(table.getDefinition());
+        // Note: we expect error in FillChunks if the table is incompatible
+        // definition.checkMutualCompatibility(table.getDefinition());
         final FillChunks fillChunks = new FillChunks(table);
         try (final SafeCloseable ignored =
                 ExecutionContext.getContext().withUpdateGraph(table.getUpdateGraph()).open()) {
@@ -64,15 +65,16 @@ class TablePublisherImpl implements StreamPublisher {
 
     private class FillChunks implements SnapshotFunction {
         private final Table table;
-        private final List<ColumnSource<?>> sources;
+        private final ColumnSource<?>[] sources;
         private final List<WritableChunk<Values>[]> outstandingChunks;
 
         public FillChunks(Table table) {
             this.table = Objects.requireNonNull(table);
-            this.sources = new ArrayList<>(table.numColumns());
+            this.sources = new ColumnSource[definition.numColumns()];
             // sources is in the same order as definition columns
+            int i = 0;
             for (ColumnDefinition<?> column : definition.getColumns()) {
-                sources.add(ReinterpretUtils.maybeConvertToPrimitive(table.getColumnSource(column.getName())));
+                sources[i++] = ReinterpretUtils.maybeConvertToPrimitive(table.getColumnSource(column.getName()));
             }
             this.outstandingChunks = new ArrayList<>();
         }
@@ -93,26 +95,28 @@ class TablePublisherImpl implements StreamPublisher {
                     ? table.getRowSet().prev()
                     : table.getRowSet();
             final long initialSize = rowSet.size();
-            final int numColumns = sources.size();
+            final int numColumns = sources.length;
             final FillContext[] fillContexts = new FillContext[numColumns];
             try (
-                    final SharedContext context = numColumns > 1 ? SharedContext.makeSharedContext() : null;
+                    final SharedContext sharedContext = numColumns > 1 ? SharedContext.makeSharedContext() : null;
                     final SafeCloseable ignored = new SafeCloseableArray<>(fillContexts);
                     final Iterator rows = rowSet.getRowSequenceIterator()) {
-                for (int i = 0; i < numColumns; i++) {
-                    fillContexts[i] = sources.get(i).makeFillContext((int) Math.min(chunkSize, initialSize), context);
+                {
+                    final int fillContextSize = (int) Math.min(chunkSize, initialSize);
+                    for (int i = 0; i < numColumns; i++) {
+                        fillContexts[i] = sources[i].makeFillContext(fillContextSize, sharedContext);
+                    }
                 }
                 long remaining = initialSize;
                 while (rows.hasMore()) {
-                    if (context != null) {
-                        context.reset();
+                    if (sharedContext != null) {
+                        sharedContext.reset();
                     }
                     assertTrue(state, remaining > 0, "remaining > 0");
-                    final RowSequence rowSeq = rows.getNextRowSequenceWithLength(Math.min(chunkSize, remaining));
+                    final RowSequence rowSeq = rows.getNextRowSequenceWithLength(chunkSize);
                     final int rowSeqSize = rowSeq.intSize();
-                    assertTrue(state, rowSeqSize > 0, "rowSeqSize > 0");
-                    assertTrue(state, rowSeqSize <= Math.min(chunkSize, remaining),
-                            "rowSeqSize <= Math.min(chunkSize, remaining)");
+                    assertTrue(state, rowSeqSize == Math.min(chunkSize, remaining),
+                            "rowSeqSize == Math.min(chunkSize, remaining)");
                     remaining -= rowSeqSize;
                     final WritableChunk<Values>[] sinks =
                             StreamChunkUtils.makeChunksForDefinition(definition, rowSeqSize);
@@ -121,9 +125,9 @@ class TablePublisherImpl implements StreamPublisher {
                     outstandingChunks.add(sinks);
                     for (int i = 0; i < numColumns; ++i) {
                         if (usePrev) {
-                            sources.get(i).fillPrevChunk(fillContexts[i], sinks[i], rowSeq);
+                            sources[i].fillPrevChunk(fillContexts[i], sinks[i], rowSeq);
                         } else {
-                            sources.get(i).fillChunk(fillContexts[i], sinks[i], rowSeq);
+                            sources[i].fillChunk(fillContexts[i], sinks[i], rowSeq);
                         }
                         if (state.concurrentAttemptInconsistent()) {
                             reset();
@@ -148,6 +152,7 @@ class TablePublisherImpl implements StreamPublisher {
 
         private void reset() {
             for (WritableChunk<Values>[] result : outstandingChunks) {
+                SafeCloseableArray.close(result);
                 for (WritableChunk<Values> chunk : result) {
                     chunk.close();
                 }

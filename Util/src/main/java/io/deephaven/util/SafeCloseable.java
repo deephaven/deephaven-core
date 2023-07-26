@@ -8,6 +8,8 @@ import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
 import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Iterator;
 import java.util.List;
 
 /**
@@ -21,15 +23,23 @@ public interface SafeCloseable extends AutoCloseable {
      * @param safeCloseables SafeCloseables to {@link #close() close}
      */
     static void closeAll(@NotNull final SafeCloseable... safeCloseables) {
+        closeAll(Arrays.asList(safeCloseables).iterator());
+    }
+
+    static void closeAll(@NotNull final Iterator<SafeCloseable> it) {
         List<Exception> exceptions = null;
-        for (final SafeCloseable safeCloseable : safeCloseables) {
+        while (it.hasNext()) {
+            final SafeCloseable safeCloseable = it.next();
             if (safeCloseable == null) {
                 continue;
             }
             try {
                 safeCloseable.close();
             } catch (Exception e) {
-                (exceptions = new ArrayList<>()).add(e);
+                if (exceptions == null) {
+                    exceptions = new ArrayList<>();
+                }
+                exceptions.add(e);
             }
         }
         // noinspection ConstantConditions
