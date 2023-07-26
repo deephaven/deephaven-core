@@ -2550,37 +2550,6 @@ public class QueryTable extends BaseTable<QueryTable> {
         throw new RuntimeException("Column name conflicts: " + IterableUtils.makeCommaSeparatedList(conflicts));
     }
 
-    /**
-     * If we have a column source that is a complex type, but can be reinterpreted or transformed into a simpler type,
-     * do the transformation, otherwise return the original column source.
-     *
-     * @param columnSource the column source to possibly reinterpret
-     * @return the transformed column source, or the original column source if there is not a relevant transformation
-     */
-    static ColumnSource<?> maybeTransformToPrimitive(final ColumnSource<?> columnSource) {
-        if (Instant.class.isAssignableFrom(columnSource.getType())) {
-            if (columnSource.allowsReinterpret(long.class)) {
-                return columnSource.reinterpret(long.class);
-            } else {
-                // noinspection unchecked
-                final ColumnSource<Instant> columnSourceAsInstant = (ColumnSource<Instant>) columnSource;
-                return new InstantAsLongColumnSource(columnSourceAsInstant);
-            }
-        }
-
-        if (Boolean.class.isAssignableFrom(columnSource.getType())) {
-            if (columnSource.allowsReinterpret(byte.class)) {
-                return columnSource.reinterpret(byte.class);
-            } else {
-                // noinspection unchecked
-                final ColumnSource<Boolean> columnSourceAsBoolean = (ColumnSource<Boolean>) columnSource;
-                return new BooleanAsByteColumnSource(columnSourceAsBoolean);
-            }
-        }
-
-        return columnSource;
-    }
-
     @Override
     public Table sort(Collection<SortColumn> columnsToSortBy) {
         final UpdateGraph updateGraph = getUpdateGraph();

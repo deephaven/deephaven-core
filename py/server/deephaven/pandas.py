@@ -13,7 +13,7 @@ import pyarrow as pa
 from deephaven import DHError, new_table, dtypes, arrow
 from deephaven.arrow import SUPPORTED_ARROW_TYPES
 from deephaven.column import Column
-from deephaven.constants import NULL_BYTE, NULL_SHORT, NULL_INT, NULL_LONG, NULL_FLOAT, NULL_DOUBLE
+from deephaven.constants import NULL_BYTE, NULL_SHORT, NULL_CHAR, NULL_INT, NULL_LONG, NULL_FLOAT, NULL_DOUBLE
 from deephaven.numpy import column_to_numpy_array, _make_input_column
 from deephaven.table import Table
 
@@ -66,6 +66,7 @@ _DTYPE_MAPPING_PYARROW = {
 _DTYPE_MAPPING_NUMPY_NULLABLE = {
     pa.int8(): pd.Int8Dtype(),
     pa.int16(): pd.Int16Dtype(),
+    pa.uint16(): pd.UInt16Dtype(),
     pa.int32(): pd.Int32Dtype(),
     pa.int64(): pd.Int64Dtype(),
     pa.bool_(): pd.BooleanDtype(),
@@ -155,6 +156,7 @@ _EX_DTYPE_NULL_MAP = {
     pd.BooleanDtype: NULL_BYTE,
     pd.Int8Dtype: NULL_BYTE,
     pd.Int16Dtype: NULL_SHORT,
+    pd.UInt16Dtype: NULL_CHAR,
     pd.Int32Dtype: NULL_INT,
     pd.Int64Dtype: NULL_LONG,
     pd.Float32Dtype: NULL_FLOAT,

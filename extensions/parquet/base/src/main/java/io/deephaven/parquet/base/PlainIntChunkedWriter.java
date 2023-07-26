@@ -21,15 +21,26 @@ import java.nio.IntBuffer;
  */
 public class PlainIntChunkedWriter extends AbstractBulkValuesWriter<IntBuffer> {
     private static final int MAXIMUM_TOTAL_CAPACITY = Integer.MAX_VALUE / Integer.BYTES;
+
+    /**
+     * This variable stores a type-specific {@code null} representation for writing. This is useful for Byte, Char, and
+     * Short data types which are written as primitive ints but have a different definition of {@code null}.
+     */
+    private final int nullValue;
+
     private final ByteBufferAllocator allocator;
 
     private IntBuffer targetBuffer;
     private ByteBuffer innerBuffer;
 
+    PlainIntChunkedWriter(final int targetPageSize, @NotNull final ByteBufferAllocator allocator, final int nullValue) {
+        this.allocator = allocator;
+        this.nullValue = nullValue;
+        realloc(targetPageSize);
+    }
 
     PlainIntChunkedWriter(final int targetPageSize, @NotNull final ByteBufferAllocator allocator) {
-        this.allocator = allocator;
-        realloc(targetPageSize);
+        this(targetPageSize, allocator, QueryConstants.NULL_INT);
     }
 
     @Override
@@ -95,7 +106,7 @@ public class PlainIntChunkedWriter extends AbstractBulkValuesWriter<IntBuffer> {
         ensureCapacityFor(bulkValues);
         while (bulkValues.hasRemaining()) {
             final int next = bulkValues.get();
-            if (next != QueryConstants.NULL_INT) {
+            if (next != nullValue) {
                 writeInteger(next);
                 dlEncoder.writeInt(DL_ITEM_PRESENT);
             } else {
@@ -114,7 +125,7 @@ public class PlainIntChunkedWriter extends AbstractBulkValuesWriter<IntBuffer> {
         IntBuffer nullOffsets = IntBuffer.allocate(4);
         while (bulkValues.hasRemaining()) {
             final int next = bulkValues.get();
-            if (next != QueryConstants.NULL_INT) {
+            if (next != nullValue) {
                 writeInteger(next);
             } else {
                 nullOffsets = Helpers.ensureCapacity(nullOffsets);

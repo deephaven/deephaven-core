@@ -31,6 +31,7 @@ public final class SwapListenerEx extends SwapListener {
     @Override
     public ConstructSnapshot.SnapshotControl makeSnapshotControl() {
         return ConstructSnapshot.makeSnapshotControl(
+                sourceTable.getUpdateGraph(),
                 this::startWithExtra,
                 (final long currentClockValue, final boolean usingPreviousValues) -> isInInitialNotificationWindow()
                         && extra.getLastNotificationStep() == extraLastNotificationStep,

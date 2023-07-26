@@ -13,6 +13,10 @@ import jsinterop.base.Any;
 import java.util.stream.IntStream;
 import java.util.stream.IntStream.Builder;
 
+/**
+ * Describes the structure of the column, and if desired can be used to get access to the data to be rendered in this
+ * column.
+ */
 @TsName(namespace = "dh")
 public class Column {
     private final int index;
@@ -42,11 +46,25 @@ public class Column {
     private String description;
     private final boolean isInputTableKeyColumn;
 
+    /**
+     * Format entire rows colors using the expression specified. Returns a <b>CustomColumn</b> object to apply to a
+     * table using <b>applyCustomColumns</b> with the parameters specified.
+     *
+     * @param expression
+     * @return {@link CustomColumn}
+     */
     @JsMethod(namespace = "dh.Column")
     public static CustomColumn formatRowColor(String expression) {
         return new CustomColumn(CustomColumn.ROW_FORMAT_NAME, CustomColumn.TYPE_FORMAT_COLOR, expression);
     }
 
+    /**
+     * a <b>CustomColumn</b> object to apply using <b>applyCustomColumns</b> with the expression specified.
+     *
+     * @param name
+     * @param expression
+     * @return {@link CustomColumn}
+     */
     @JsMethod(namespace = "dh.Column")
     public static CustomColumn createCustomColumn(String name, String expression) {
         return new CustomColumn(name, CustomColumn.TYPE_NEW, expression);
@@ -68,6 +86,12 @@ public class Column {
         this.isSortable = isSortable;
     }
 
+    /**
+     * the value for this column in the given row. Type will be consistent with the type of the Column.
+     *
+     * @param row
+     * @return Any
+     */
     @JsMethod
     public Any get(TableData.Row row) {
         return row.get(this);
@@ -78,6 +102,10 @@ public class Column {
         return row.getFormat(this);
     }
 
+    /**
+     * @deprecated do not use. Internal index of the column in the table, to be used as a key on the Row.
+     * @return int
+     */
     @Deprecated
     @JsProperty(name = "index")
     public int getJsIndex() {
@@ -88,11 +116,21 @@ public class Column {
         return index;
     }
 
+    /**
+     * Type of the row data that can be found in this column.
+     *
+     * @return String
+     */
     @JsProperty
     public String getType() {
         return type;
     }
 
+    /**
+     * Label for this column.
+     *
+     * @return String
+     */
     @JsProperty
     public String getName() {
         return name;
@@ -116,6 +154,12 @@ public class Column {
         return builder.build();
     }
 
+    /**
+     * If this column is part of a roll-up tree table, represents the type of the row data that can be found in this
+     * column for leaf nodes if includeConstituents is enabled. Otherwise, it is <b>null</b>.
+     *
+     * @return String
+     */
     @JsProperty
     @JsNullable
     public String getConstituentType() {
@@ -142,6 +186,13 @@ public class Column {
         return styleColumnIndex;
     }
 
+    /**
+     * True if this column is a partition column. Partition columns are used for filtering uncoalesced tables (see
+     * <b>isUncoalesced</b> property on <b>Table</b>)
+     *
+     * @return boolean
+     *
+     */
     @JsProperty
     public boolean getIsPartitionColumn() {
         return isPartitionColumn;
@@ -151,6 +202,11 @@ public class Column {
         return isInputTableKeyColumn;
     }
 
+    /**
+     * Creates a sort builder object, to be used when sorting by this column.
+     *
+     * @return {@link Sort}
+     */
     @JsMethod
     public Sort sort() {
         return new Sort(this);
@@ -161,21 +217,45 @@ public class Column {
         return isSortable;
     }
 
+    /**
+     * Creates a new value for use in filters based on this column. Used either as a parameter to another filter
+     * operation, or as a builder to create a filter operation.
+     *
+     * @return {@link FilterValue}
+     */
     @JsMethod
     public FilterValue filter() {
         return new FilterValue(this);
     }
 
+    /**
+     * a <b>CustomColumn</b> object to apply using `applyCustomColumns` with the expression specified.
+     *
+     * @param expression
+     * @return {@link CustomColumn}
+     */
     @JsMethod
     public CustomColumn formatColor(String expression) {
         return new CustomColumn(name, CustomColumn.TYPE_FORMAT_COLOR, expression);
     }
 
+    /**
+     * a <b>CustomColumn</b> object to apply using <b>applyCustomColumns</b> with the expression specified.
+     *
+     * @param expression
+     * @return {@link CustomColumn}
+     */
     @JsMethod
     public CustomColumn formatNumber(String expression) {
         return new CustomColumn(name, CustomColumn.TYPE_FORMAT_NUMBER, expression);
     }
 
+    /**
+     * a <b>CustomColumn</b> object to apply using <b>applyCustomColumns</b> with the expression specified.
+     *
+     * @param expression
+     * @return {@link CustomColumn}
+     */
     @JsMethod
     public CustomColumn formatDate(String expression) {
         return new CustomColumn(name, CustomColumn.TYPE_FORMAT_DATE, expression);
