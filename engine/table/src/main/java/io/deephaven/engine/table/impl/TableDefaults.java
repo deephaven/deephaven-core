@@ -236,13 +236,13 @@ public interface TableDefaults extends Table, TableOperationsDefaults<Table, Tab
     default void validateDataBarOptions(String column, String valueColumn, String axis, Double min, Double max,
             String positiveColor, String negativeColor, String valuePlacement,
             String direction, Double opacity, String markerColumn, String markerColor) throws IllegalArgumentException {
-        if (!axisOptions.contains(axis)) {
+        if (axis != null && !axisOptions.contains(axis)) {
             throw new IllegalArgumentException("Invalid axis option: " + axis);
         }
-        if (!valuePlacementOptions.contains(valuePlacement)) {
+        if (valuePlacement != null && !valuePlacementOptions.contains(valuePlacement)) {
             throw new IllegalArgumentException("Invalid value placement option: " + valuePlacement);
         }
-        if (!directionOptions.contains(direction)) {
+        if (direction != null && !directionOptions.contains(direction)) {
             throw new IllegalArgumentException("Invalid direction option: " + direction);
         }
         if (min != null && max != null && min > max) {
@@ -261,7 +261,7 @@ public interface TableDefaults extends Table, TableOperationsDefaults<Table, Tab
         if (markerColor != null) {
             validateColor(markerColor);
         }
-        if (opacity != null && opacity > 1 || opacity < 0) {
+        if (opacity != null && (opacity > 1 || opacity < 0)) {
             throw new IllegalArgumentException("Opacity must be between 0 and 1.");
         }
     }

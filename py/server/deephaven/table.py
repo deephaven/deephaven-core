@@ -1981,7 +1981,7 @@ class Table(JObjectWrapper):
             raise DHError(e, "failed to color format rows conditionally.") from e
 
     def format_data_bar(self, column: str, value_column: str = None, min: float = None, max: float = None,
-                        axis: AxisOption = AxisOption.PROPORTIONAL, positive_color: Union[str, List[str]] = None,
+                        axis: AxisOption = None, positive_color: Union[str, List[str]] = None,
                         negative_color: Union[str, List[str]] = None, value_placement: ValuePlacementOption = None,
                         direction: DirectionOption = None, opacity: float = None, marker_column: str = None,
                         marker_color: str = None) -> Table:
@@ -2018,8 +2018,8 @@ class Table(JObjectWrapper):
                 value_column = column
 
             return Table(j_table=self.j_table.formatDataBar(column, value_column, axis, min, max, positive_color,
-                                                            negative_color, value_placement, direction,
-                                                            opacity, marker_column, marker_color))
+                                                            negative_color, value_placement, direction, opacity,
+                                                            marker_column, marker_color))
         except Exception as e:
             raise DHError(e, "failed to format data bar.") from e
 
