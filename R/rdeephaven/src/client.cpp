@@ -138,11 +138,15 @@ public:
         return new TableHandleWrapper(internal_tbl_hdl.where(condition));
     };
 
-    // AGGREGATION OPERATIONS
-
-    TableHandleWrapper* by(std::vector<std::string> columnSpecs) {
+    TableHandleWrapper* groupBy(std::vector<std::string> columnSpecs) {
         return new TableHandleWrapper(internal_tbl_hdl.by(columnSpecs));
     };
+
+    TableHandleWrapper* ungroup(std::vector<std::string> groupByColumns) {
+        return new TableHandleWrapper(internal_tbl_hdl.ungroup(false, groupByColumns));
+    };
+
+    // AGGREGATION OPERATIONS
 
     TableHandleWrapper* aggBy(Rcpp::List aggregations) {
         std::vector<deephaven::client::Aggregate> converted_aggregations = convertRcppListToVectorOfTypeAggregate(aggregations);
@@ -157,11 +161,11 @@ public:
         return new TableHandleWrapper(internal_tbl_hdl.lastBy(columnSpecs));
     };
 
-    TableHandleWrapper* headBy(std::vector<std::string> columnSpecs, int64_t n) {
+    TableHandleWrapper* headBy(int64_t n, std::vector<std::string> columnSpecs) {
         return new TableHandleWrapper(internal_tbl_hdl.headBy(n, columnSpecs));
     };
 
-    TableHandleWrapper* tailBy(std::vector<std::string> columnSpecs, int64_t n) {
+    TableHandleWrapper* tailBy(int64_t n, std::vector<std::string> columnSpecs) {
         return new TableHandleWrapper(internal_tbl_hdl.tailBy(n, columnSpecs));
     };
 
@@ -185,7 +189,7 @@ public:
         return new TableHandleWrapper(internal_tbl_hdl.avgBy(columnSpecs));
     };
 
-    TableHandleWrapper* wAvgBy(std::vector<std::string> columnSpecs, std::string weightColumn) {
+    TableHandleWrapper* wAvgBy(std::string weightColumn, std::vector<std::string> columnSpecs) {
         return new TableHandleWrapper(internal_tbl_hdl.wAvgBy(weightColumn, columnSpecs));
     };
 
@@ -201,11 +205,11 @@ public:
         return new TableHandleWrapper(internal_tbl_hdl.stdBy(columnSpecs));
     };
 
-    TableHandleWrapper* percentileBy(std::vector<std::string> columnSpecs, double percentile) {
+    TableHandleWrapper* percentileBy(double percentile, std::vector<std::string> columnSpecs) {
         return new TableHandleWrapper(internal_tbl_hdl.percentileBy(percentile, columnSpecs));
     };
 
-    TableHandleWrapper* countBy(std::vector<std::string> columnSpecs, std::string countByColumn) {
+    TableHandleWrapper* countBy(std::string countByColumn, std::vector<std::string> columnSpecs) {
         return new TableHandleWrapper(internal_tbl_hdl.countBy(countByColumn, columnSpecs));
     };
 
@@ -231,10 +235,6 @@ public:
 
     TableHandleWrapper* tail(int64_t n) {
         return new TableHandleWrapper(internal_tbl_hdl.tail(n));
-    };
-
-    TableHandleWrapper* ungroup(bool nullFill, std::vector<std::string> groupByColumns) {
-        return new TableHandleWrapper(internal_tbl_hdl.ungroup(nullFill, groupByColumns));
     };
 
     TableHandleWrapper* merge(std::string keyColumn, Rcpp::List sources) {
@@ -513,6 +513,9 @@ RCPP_MODULE(DeephavenInternalModule) {
     .method("drop_columns", &TableHandleWrapper::dropColumns)
     .method("where", &TableHandleWrapper::where)
 
+    .method("group_by", &TableHandleWrapper::groupBy)
+    .method("ungroup", &TableHandleWrapper::ungroup)
+
     .method("agg_by", &TableHandleWrapper::aggBy)
     .method("first_by", &TableHandleWrapper::firstBy)
     .method("last_by", &TableHandleWrapper::lastBy)
@@ -536,7 +539,6 @@ RCPP_MODULE(DeephavenInternalModule) {
 
     .method("head", &TableHandleWrapper::head)
     .method("tail", &TableHandleWrapper::tail)
-    .method("ungroup", &TableHandleWrapper::ungroup)
     .method("merge", &TableHandleWrapper::merge)
     .method("sort", &TableHandleWrapper::sort)
 

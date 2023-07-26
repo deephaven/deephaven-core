@@ -18,74 +18,74 @@ Aggregation <- R6Class("Aggregation", cloneable = FALSE,
 ### All of the functions below return an instance of the above class
 
 #' @export
-agg_first = function(columns) {
+agg_first = function(columns = character()) {
     verify_string_vector("columns", columns)
     return(Aggregation$new(INTERNAL_first(columns)))
 }
 
 #' @export
-agg_last = function(columns) {
+agg_last = function(columns = character()) {
     verify_string_vector("columns", columns)
     return(Aggregation$new(INTERNAL_last(columns)))
 }
 
 #' @export
-agg_min = function(columns) {
+agg_min = function(columns = character()) {
     verify_string_vector("columns", columns)
     return(Aggregation$new(INTERNAL_min(columns)))
 }
 
 #' @export
-agg_max = function(columns) {
+agg_max = function(columns = character()) {
     verify_string_vector("columns", columns)
     return(Aggregation$new(INTERNAL_max(columns)))
 }
 
 #' @export
-agg_sum = function(columns) {
+agg_sum = function(columns = character()) {
     verify_string_vector("columns", columns)
     return(Aggregation$new(INTERNAL_sum(columns)))
 }
 
 #' @export
-agg_abs_sum = function(columns) {
+agg_abs_sum = function(columns = character()) {
     verify_string_vector("columns", columns)
     return(Aggregation$new(INTERNAL_abs_sum(columns)))
 }
 
 #' @export
-agg_avg = function(columns) {
+agg_avg = function(columns = character()) {
     verify_string_vector("columns", columns)
     return(Aggregation$new(INTERNAL_avg(columns)))
 }
 
 #' @export
-agg_w_avg = function(weight_column, columns) {
+agg_w_avg = function(weight_column, columns = character()) {
     verify_string("weight_column", weight_column)
     verify_string_vector("columns", columns)
     return(Aggregation$new(INTERNAL_w_avg(weight_column, columns)))
 }
 
 #' @export
-agg_median = function(columns) {
+agg_median = function(columns = character()) {
     verify_string_vector("columns", columns)
     return(Aggregation$new(INTERNAL_median(columns)))
 }
 
 #' @export
-agg_var = function(columns) {
+agg_var = function(columns = character()) {
     verify_string_vector("columns", columns)
     return(Aggregation$new(INTERNAL_var(columns)))
 }
 
 #' @export
-agg_std = function(columns) {
+agg_std = function(columns = character()) {
     verify_string_vector("columns", columns)
     return(Aggregation$new(INTERNAL_std(columns)))
 }
 
 #' @export
-agg_percentile = function(percentile, columns) {
+agg_percentile = function(percentile, columns = character()) {
     verify_proportion("percentile", percentile)
     verify_string_vector("columns", columns)
     return(Aggregation$new(INTERNAL_percentile(percentile, columns)))

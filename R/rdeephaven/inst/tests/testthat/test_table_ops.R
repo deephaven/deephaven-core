@@ -236,12 +236,20 @@ test_that("where behaves as expected", {
     expect_equal(as.data.frame(new_th3), as.data.frame(new_tb3))
 })
 
+test_that("group_by behaves as expected", {
+    data <- setup()
+})
+
+test_that("ungroup behaves as expected", {
+    data <- setup()
+})
+
 test_that("first_by behaves as expected", {
   data <- setup()
   
   new_tb1 <- data$df5 %>%
     select(-Y) %>%
-    group_by(X) %>%
+    dplyr::group_by(X) %>%
     summarise(across(everything(), first))
   new_th1 <- data$th5 %>%
     drop_columns("Y") %>%
@@ -249,7 +257,7 @@ test_that("first_by behaves as expected", {
   expect_equal(as.data.frame(new_th1), as.data.frame(new_tb1))
   
   new_tb2 <- data$df5 %>%
-    group_by(X, Y) %>%
+    dplyr::group_by(X, Y) %>%
     summarise(across(everything(), first)) %>%
     arrange(X, Y)
   new_th2 <- data$th5 %>%
@@ -263,7 +271,7 @@ test_that("last_by behaves as expected", {
   
   new_tb1 <- data$df5 %>%
     select(-Y) %>%
-    group_by(X) %>%
+    dplyr::group_by(X) %>%
     summarise(across(everything(), last))
   new_th1 <- data$th5 %>%
     drop_columns("Y") %>%
@@ -271,7 +279,7 @@ test_that("last_by behaves as expected", {
   expect_equal(as.data.frame(new_th1), as.data.frame(new_tb1))
   
   new_tb2 <- data$df5 %>%
-    group_by(X, Y) %>%
+    dplyr::group_by(X, Y) %>%
     summarise(across(everything(), last)) %>%
     arrange(X, Y)
   new_th2 <- data$th5 %>%
@@ -284,17 +292,17 @@ test_that("head_by behaves as expected", {
   data <- setup()
   
   new_tb1 <- data$df5 %>%
-    group_by(X) %>%
+    dplyr::group_by(X) %>%
     slice_head(n=2)
   new_th1 <- data$th5 %>%
-    head_by("X", 2)
+    head_by(2, "X")
   expect_equal(as.data.frame(new_th1), as.data.frame(new_tb1))
   
   new_tb2 <- data$df5 %>%
-    group_by(X, Y) %>%
+    dplyr::group_by(X, Y) %>%
     slice_head(n=2)
   new_th2 <- data$th5 %>%
-    head_by(c("X", "Y"), 2) %>%
+    head_by(2, c("X", "Y")) %>%
     sort_by(c("X", "Y"))
   expect_equal(as.data.frame(new_th2), as.data.frame(new_tb2))
 })
@@ -303,17 +311,17 @@ test_that("tail_by behaves as expected", {
   data <- setup()
   
   new_tb1 <- data$df5 %>%
-    group_by(X) %>%
+    dplyr::group_by(X) %>%
     slice_tail(n=2)
   new_th1 <- data$th5 %>%
-    tail_by("X", 2)
+    tail_by(2, "X")
   expect_equal(as.data.frame(new_th1), as.data.frame(new_tb1))
   
   new_tb2 <- data$df5 %>%
-    group_by(X, Y) %>%
+    dplyr::group_by(X, Y) %>%
     slice_tail(n=2)
   new_th2 <- data$th5 %>%
-    tail_by(c("X", "Y"), 2) %>%
+    tail_by(2, c("X", "Y")) %>%
     sort_by(c("X", "Y"))
   expect_equal(as.data.frame(new_th2), as.data.frame(new_tb2))
 })
@@ -322,14 +330,14 @@ test_that("min_by behaves as expected", {
     data <- setup()
     
     new_tb1 <- data$df1 %>%
-      group_by(int_col) %>%
+      dplyr::group_by(int_col) %>%
       summarise(across(everything(), min))
     new_th1 <- data$th1 %>%
       min_by("int_col")
     expect_equal(as.data.frame(new_th1), as.data.frame(new_tb1))
     
     new_tb2 <- data$df2 %>%
-      group_by(col2) %>%
+      dplyr::group_by(col2) %>%
       summarise(across(everything(), min))
     new_th2 <- data$th2 %>%
       min_by("col2")
@@ -337,7 +345,7 @@ test_that("min_by behaves as expected", {
     
     new_tb3 <- data$df3 %>%
       mutate(bool_col1 = X1 >= 0, bool_col2 = X2 >= 0) %>%
-      group_by(bool_col1, bool_col2) %>%
+      dplyr::group_by(bool_col1, bool_col2) %>%
       summarise(across(everything(), min)) %>%
       arrange(bool_col1, bool_col2) # need to sort because resulting row orders are not the same
     new_th3 <- data$th3 %>%
@@ -347,7 +355,7 @@ test_that("min_by behaves as expected", {
     expect_equal(as.data.frame(new_th3), as.data.frame(new_tb3))
 
     new_tb4 <- data$df4 %>%
-      group_by(bool_col) %>%
+      dplyr::group_by(bool_col) %>%
       summarise(across(everything(), min)) %>%
       arrange(bool_col)
     new_th4 <- data$th4 %>%
@@ -360,14 +368,14 @@ test_that("max_by behaves as expected", {
     data <- setup()
     
     new_tb1 <- data$df1 %>%
-      group_by(int_col) %>%
+      dplyr::group_by(int_col) %>%
       summarise(across(everything(), max))
     new_th1 <- data$th1 %>%
       max_by("int_col")
     expect_equal(as.data.frame(new_th1), as.data.frame(new_tb1))
     
     new_tb2 <- data$df2 %>%
-      group_by(col2) %>%
+      dplyr::group_by(col2) %>%
       summarise(across(everything(), max))
     new_th2 <- data$th2 %>%
       max_by("col2")
@@ -375,17 +383,17 @@ test_that("max_by behaves as expected", {
     
     new_tb3 <- data$df3 %>%
       mutate(bool_col1 = X1 >= 0, bool_col2 = X2 >= 0) %>%
-      group_by(bool_col1, bool_col2) %>%
+      dplyr::group_by(bool_col1, bool_col2) %>%
       summarise(across(everything(), max)) %>%
       arrange(bool_col1, bool_col2) # need to sort because resulting row orders are not the same
     new_th3 <- data$th3 %>%
       update(c("bool_col1 = X1 >= 0", "bool_col2 = X2 >= 0")) %>%
       max_by(c("bool_col1", "bool_col2")) %>%
-      max_by(c("bool_col1", "bool_col2")) # need to sort because resulting row orders are not the same
+      sort_by(c("bool_col1", "bool_col2")) # need to sort because resulting row orders are not the same
     expect_equal(as.data.frame(new_th3), as.data.frame(new_tb3))
     
     new_tb4 <- data$df4 %>%
-      group_by(bool_col) %>%
+      dplyr::group_by(bool_col) %>%
       summarise(across(everything(), max)) %>%
       arrange(bool_col)
     new_th4 <- data$th4 %>%
@@ -399,7 +407,7 @@ test_that("sum_by behaves as expected", {
     
     new_tb1 <- data$df5 %>%
       select(-Y) %>%
-      group_by(X) %>%
+      dplyr::group_by(X) %>%
       summarise(across(everything(), sum))
     new_th1 <- data$th5 %>%
       drop_columns("Y") %>%
@@ -407,7 +415,7 @@ test_that("sum_by behaves as expected", {
     expect_equal(as.data.frame(new_th1), as.data.frame(new_tb1))
     
     new_tb2 <- data$df5 %>%
-      group_by(X, Y) %>%
+      dplyr::group_by(X, Y) %>%
       summarise(across(everything(), sum)) %>%
       arrange(X, Y)
     new_th2 <- data$th5 %>%
@@ -422,7 +430,7 @@ test_that("abs_sum_by behaves as expected", {
     new_tb1 <- data$df5 %>%
       select(-Y) %>%
       mutate(Number1 = abs(Number1), Number2 = abs(Number2)) %>%
-      group_by(X) %>%
+      dplyr::group_by(X) %>%
       summarise(across(everything(), sum))
     new_th1 <- data$th5 %>%
       drop_columns("Y") %>%
@@ -431,7 +439,7 @@ test_that("abs_sum_by behaves as expected", {
     
     new_tb2 <- data$df5 %>%
       mutate(Number1 = abs(Number1), Number2 = abs(Number2)) %>%
-      group_by(X, Y) %>%
+      dplyr::group_by(X, Y) %>%
       summarise(across(everything(), sum)) %>%
       arrange(X, Y)
     new_th2 <- data$th5 %>%
@@ -445,7 +453,7 @@ test_that("avg_by behaves as expected", {
   
   new_tb1 <- data$df5 %>%
     select(-Y) %>%
-    group_by(X) %>%
+    dplyr::group_by(X) %>%
     summarise(across(everything(), mean))
   new_th1 <- data$th5 %>%
     drop_columns("Y") %>%
@@ -453,7 +461,7 @@ test_that("avg_by behaves as expected", {
   expect_equal(as.data.frame(new_th1), as.data.frame(new_tb1))
   
   new_tb2 <- data$df5 %>%
-    group_by(X, Y) %>%
+    dplyr::group_by(X, Y) %>%
     summarise(across(everything(), mean)) %>%
     arrange(X, Y)
   new_th2 <- data$th5 %>%
@@ -472,7 +480,7 @@ test_that("median_by behaves as expected", {
   
   new_tb1 <- data$df5 %>%
     select(-Y) %>%
-    group_by(X) %>%
+    dplyr::group_by(X) %>%
     summarise(across(everything(), median))
   new_th1 <- data$th5 %>%
     drop_columns("Y") %>%
@@ -480,7 +488,7 @@ test_that("median_by behaves as expected", {
   expect_equal(as.data.frame(new_th1), as.data.frame(new_tb1))
   
   new_tb2 <- data$df5 %>%
-    group_by(X, Y) %>%
+    dplyr::group_by(X, Y) %>%
     summarise(across(everything(), median)) %>%
     arrange(X, Y)
   new_th2 <- data$th5 %>%
@@ -494,7 +502,7 @@ test_that("var_by behaves as expected", {
     
     new_tb1 <- data$df5 %>%
       select(-Y) %>%
-      group_by(X) %>%
+      dplyr::group_by(X) %>%
       summarise(across(everything(), var))
     new_th1 <- data$th5 %>%
       drop_columns("Y") %>%
@@ -502,7 +510,7 @@ test_that("var_by behaves as expected", {
     expect_equal(as.data.frame(new_th1), as.data.frame(new_tb1))
     
     new_tb2 <- data$df5 %>%
-      group_by(X, Y) %>%
+      dplyr::group_by(X, Y) %>%
       summarise(across(everything(), var)) %>%
       arrange(X, Y)
     new_th2 <- data$th5 %>%
@@ -516,7 +524,7 @@ test_that("std_by behaves as expected", {
     
     new_tb1 <- data$df5 %>%
       select(-Y) %>%
-      group_by(X) %>%
+      dplyr::group_by(X) %>%
       summarise(across(everything(), sd))
     new_th1 <- data$th5 %>%
       drop_columns("Y") %>%
@@ -524,7 +532,7 @@ test_that("std_by behaves as expected", {
     expect_equal(as.data.frame(new_th1), as.data.frame(new_tb1))
     
     new_tb2 <- data$df5 %>%
-      group_by(X, Y) %>%
+      dplyr::group_by(X, Y) %>%
       summarise(across(everything(), sd)) %>%
       arrange(X, Y)
     new_th2 <- data$th5 %>%
@@ -544,7 +552,7 @@ test_that("percentile_by behaves as expected", {
                           Number2 = c(-50, 76, 130))
     new_th1 <- data$th5 %>%
       drop_columns("Y") %>%
-      percentile_by("X", 0.4)
+      percentile_by(0.4, "X")
     expect_equal(as.data.frame(new_th1), new_df1)
     
     new_df2 <- data.frame(X = c("A", "B", "A", "C", "B", "B", "C"),
@@ -552,7 +560,7 @@ test_that("percentile_by behaves as expected", {
                           Number1 = c(50, -44, 49, 11, -66, 29, -70),
                           Number2 = c(-55, 76, 20, 130, 137, 73, 214))
     new_th2 <- data$th5 %>%
-      percentile_by(c("X", "Y"), 0.4)
+      percentile_by(0.4, c("X", "Y"))
     expect_equal(as.data.frame(new_th2), new_df2)
 
 })
@@ -563,13 +571,13 @@ test_that("count_by behaves as expected", {
     new_tb1 <- data$df5 %>%
       count(X)
     new_th1 <- data$th5 %>%
-      count_by("X", "n")
+      count_by("n", "X")
     expect_equal(as.data.frame(new_th1), as.data.frame(new_tb1))
     
     new_tb2 <- data$df5 %>%
       count(X, Y)
     new_th2 <- data$th5 %>%
-      count_by(c("X", "Y"), "n") %>%
+      count_by("n", c("X", "Y")) %>%
       sort_by(c("X", "Y"))
     expect_equal(as.data.frame(new_th2), as.data.frame(new_tb2))
 })
