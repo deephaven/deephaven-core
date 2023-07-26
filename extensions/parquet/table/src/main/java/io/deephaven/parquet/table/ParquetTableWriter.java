@@ -475,16 +475,16 @@ public class ParquetTableWriter {
             lengthPageSizes = new TIntArrayList();
         }
 
+        public boolean isVectorFormat() {
+            return true;
+        }
+
         public IntSupplier lengthPageSizeSupplier() {
             return lengthPageSizes.iterator()::next;
         }
 
         public IntSupplier valuePageSizeSupplier() {
             return valuePageSizes.iterator()::next;
-        }
-
-        public boolean isVectorFormat() {
-            return true;
         }
     }
 
