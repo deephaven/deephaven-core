@@ -243,6 +243,19 @@ public interface Table extends
      */
     <T> ColumnSource<T> getColumnSource(String sourceName, Class<? extends T> clazz);
 
+    /**
+     * Retrieves a {@code ColumnSource} and {@link ColumnSource#cast casts} it to the target class {@code clazz}.
+     * Additionally, this checks that {@code componentType} is equal to the returned
+     * {@link ColumnSource#getComponentType()}, or both are null.
+     *
+     * @param sourceName The name of the column
+     * @param clazz The target type
+     * @param componentType The target component type
+     * @param <T> The target type, as a type parameter. Intended to be inferred from {@code clazz}.
+     * @return The column source for {@code sourceName}, parameterized by {@code T}
+     */
+    <T> ColumnSource<T> getColumnSource(String sourceName, Class<? extends T> clazz, Class<?> componentType);
+
     Map<String, ? extends ColumnSource<?>> getColumnSourceMap();
 
     Collection<? extends ColumnSource<?>> getColumnSources();

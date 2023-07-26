@@ -44,6 +44,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.stream.Stream;
 
 /**
  * Adapter for converting streams of data into columnar Deephaven {@link Table tables} that conform to
@@ -213,6 +214,20 @@ public class StreamToBlinkTableAdapter
         return localTable;
     }
 
+    /**
+     * Checks whether {@code this} is alive; if {@code false}, the publisher should stop publishing new data and release
+     * any related resources as soon as practicable since publishing won't have any downstream effects.
+     *
+     * <p>
+     * Once this is {@code false}, it will always remain {@code false}. For more prompt notifications, publishers may
+     * prefer to respond to {@link StreamPublisher#shutdown()}.
+     *
+     * @return if this is alive
+     */
+    public boolean isAlive() {
+        return alive.get();
+    }
+
     @Override
     public void close() {
         if (alive.compareAndSet(true, false)) {
@@ -344,15 +359,15 @@ public class StreamToBlinkTableAdapter
     @Override
     public final void accept(@NotNull Collection<WritableChunk<Values>[]> data) {
         if (!alive.get()) {
+            // If we'll never deliver these chunks, dispose of them immediately.
+            SafeCloseable.closeAll(data.stream().flatMap(Stream::of));
             return;
         }
         // Accumulate data into buffered column sources
         synchronized (this) {
             if (!enqueuedFailures.isEmpty()) {
                 // If we'll never deliver these chunks, dispose of them immediately.
-                for (WritableChunk<Values>[] chunks : data) {
-                    SafeCloseable.closeAll(chunks);
-                }
+                SafeCloseable.closeAll(data.stream().flatMap(Stream::of));
                 return;
             }
             if (bufferChunkSources == null) {
@@ -360,8 +375,9 @@ public class StreamToBlinkTableAdapter
             }
             for (WritableChunk<Values>[] chunks : data) {
                 if (chunks.length != bufferChunkSources.length) {
-                    throw new IllegalStateException("StreamConsumer data length = " + chunks.length + " chunks, expected "
-                            + bufferChunkSources.length);
+                    throw new IllegalStateException(
+                            "StreamConsumer data length = " + chunks.length + " chunks, expected "
+                                    + bufferChunkSources.length);
                 }
                 for (int ii = 0; ii < chunks.length; ++ii) {
                     Assert.eq(chunks[0].size(), "data[0].size()", chunks[ii].size(), "data[ii].size()");

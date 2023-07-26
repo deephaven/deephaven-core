@@ -1213,7 +1213,7 @@ public class ConstructSnapshot {
         int numConcurrentAttempts = 0;
 
         final LivenessManager initialLivenessManager = LivenessScopeStack.peek();
-        while (numConcurrentAttempts < MAX_CONCURRENT_ATTEMPTS && !State.locked(updateGraph)) {
+        while (numConcurrentAttempts < MAX_CONCURRENT_ATTEMPTS && !StateImpl.locked(updateGraph)) {
             ++numConcurrentAttempts;
             final long beforeClockValue = updateGraph.clock().currentValue();
             final long attemptStart = System.currentTimeMillis();

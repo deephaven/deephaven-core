@@ -20,47 +20,78 @@ import io.deephaven.engine.table.impl.sources.ReinterpretUtils;
 import io.deephaven.util.SafeCloseable;
 import io.deephaven.util.SafeCloseableArray;
 import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.VisibleForTesting;
 
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
+import java.util.stream.Stream;
 
-class TablePublisherImpl implements StreamPublisher {
+class TableStreamPublisherImpl implements StreamPublisher {
 
     private final String name;
     private final TableDefinition definition;
+    private final Runnable onShutdownCallback;
     private final int chunkSize;
-    private StreamConsumer consumer;
+    private StreamToBlinkTableAdapter adapter;
 
-    TablePublisherImpl(String name, TableDefinition definition, int chunkSize) {
+    TableStreamPublisherImpl(String name, TableDefinition definition, Runnable onShutdownCallback, int chunkSize) {
         if (chunkSize <= 0) {
             throw new IllegalArgumentException("chunkSize must be positive");
         }
         this.name = Objects.requireNonNull(name);
         this.definition = Objects.requireNonNull(definition);
+        this.onShutdownCallback = Objects.requireNonNull(onShutdownCallback);
         this.chunkSize = chunkSize;
     }
 
     @Override
     public void register(@NotNull StreamConsumer consumer) {
-        if (this.consumer != null) {
+        if (this.adapter != null) {
             throw new IllegalStateException("Can not register multiple StreamConsumers.");
         }
-        this.consumer = Objects.requireNonNull(consumer);
+        if (!(consumer instanceof StreamToBlinkTableAdapter)) {
+            throw new IllegalStateException("TableStreamPublisher semantics only work with StreamToBlinkTableAdapter");
+        }
+        this.adapter = (StreamToBlinkTableAdapter) Objects.requireNonNull(consumer);
+    }
+
+    public TableDefinition definition() {
+        return definition;
+    }
+
+    public Table table() {
+        return adapter.table();
     }
 
     public void add(Table table) {
-        // Note: we expect error in FillChunks if the table is incompatible
-        // definition.checkMutualCompatibility(table.getDefinition());
+        // Note: we expect an exception in FillChunks / io.deephaven.engine.table.Table#getColumnSource if the table is
+        // incompatible instead of a heavier-weight
+        // io.deephaven.engine.table.TableDefinition checkCompatibility / checkMutualCompatibility
+        // we could do here.
         final FillChunks fillChunks = new FillChunks(table);
         try (final SafeCloseable ignored =
                 ExecutionContext.getContext().withUpdateGraph(table.getUpdateGraph()).open()) {
             ConstructSnapshot.callDataSnapshotFunction(
-                    TablePublisherImpl.class.getSimpleName() + "-" + name,
+                    TableStreamPublisherImpl.class.getSimpleName() + "-" + name,
                     ConstructSnapshot.makeSnapshotControl(false, table.isRefreshing(), (NotificationStepSource) table),
                     fillChunks);
         }
-        consumer.accept(fillChunks.outstandingChunks);
+        adapter.accept(fillChunks.outstandingChunks);
+    }
+
+    public void publishFailure(Throwable e) {
+        adapter.acceptFailure(e);
+    }
+
+    public boolean isAlive() {
+        return adapter.isAlive();
+    }
+
+    @Override
+    public void shutdown() {
+        // #adds will not have any downstream effect, notify publisher
+        onShutdownCallback.run();
     }
 
     private class FillChunks implements SnapshotFunction {
@@ -74,14 +105,14 @@ class TablePublisherImpl implements StreamPublisher {
             // sources is in the same order as definition columns
             int i = 0;
             for (ColumnDefinition<?> column : definition.getColumns()) {
-                sources[i++] = ReinterpretUtils.maybeConvertToPrimitive(table.getColumnSource(column.getName()));
+                sources[i++] = ReinterpretUtils.maybeConvertToPrimitive(
+                        table.getColumnSource(column.getName(), column.getDataType(), column.getComponentType()));
             }
             this.outstandingChunks = new ArrayList<>();
         }
 
         @Override
         public boolean call(boolean usePrev, long beforeClockValue) {
-            // Should we add State to #call interface?
             final State state = ConstructSnapshot.state();
             // We are calling reset() before returning false, even though it is not technically necessary with our
             // call to reset() here. That said, the reset() before returning false saves a little bit of time during the
@@ -151,12 +182,7 @@ class TablePublisherImpl implements StreamPublisher {
         }
 
         private void reset() {
-            for (WritableChunk<Values>[] result : outstandingChunks) {
-                SafeCloseableArray.close(result);
-                for (WritableChunk<Values> chunk : result) {
-                    chunk.close();
-                }
-            }
+            SafeCloseable.closeAll(outstandingChunks.stream().flatMap(Stream::of));
             outstandingChunks.clear();
         }
     }
@@ -166,12 +192,8 @@ class TablePublisherImpl implements StreamPublisher {
         // no need for flushing, we always pass off chunks to consumer in #add(Table)
     }
 
-    public void acceptFailure(Throwable e) {
-        consumer.acceptFailure(e);
-    }
-
-    @Override
-    public void shutdown() {
-
+    @VisibleForTesting
+    void runForUnitTests() {
+        adapter.run();
     }
 }

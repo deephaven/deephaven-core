@@ -3,11 +3,7 @@
  */
 package io.deephaven.util;
 
-import io.deephaven.UncheckedDeephavenException;
 import org.jetbrains.annotations.NotNull;
-
-import java.util.ArrayList;
-import java.util.List;
 
 /**
  * {@link SafeCloseable} that will close non-null values inside of an array.
@@ -36,22 +32,6 @@ public class SafeCloseableArray<SCT extends SafeCloseable> implements SafeClosea
      * @param array The array to operate one
      */
     public static <SCT extends SafeCloseable> void close(@NotNull final SCT[] array) {
-        final int length = array.length;
-        List<Exception> exceptions = null;
-        for (int ii = 0; ii < length; ii++) {
-            try (final SafeCloseable ignored = array[ii]) {
-                array[ii] = null;
-            } catch (Exception e) {
-                if (exceptions == null) {
-                    exceptions = new ArrayList<>();
-                }
-                exceptions.add(e);
-            }
-        }
-        // noinspection ConstantConditions
-        if (exceptions != null) {
-            throw new UncheckedDeephavenException("Exception while closing resources",
-                    MultiException.maybeWrapInMultiException("Close exceptions for multiple resources", exceptions));
-        }
+        SafeCloseable.closeAll(array);
     }
 }

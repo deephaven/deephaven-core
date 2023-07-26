@@ -11,6 +11,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Iterator;
 import java.util.List;
+import java.util.stream.Stream;
 
 /**
  * {@link AutoCloseable} sub-interface that does not throw a checked exception.
@@ -26,10 +27,26 @@ public interface SafeCloseable extends AutoCloseable {
         closeAll(Arrays.asList(safeCloseables).iterator());
     }
 
-    static void closeAll(@NotNull final Iterator<SafeCloseable> it) {
+    /**
+     * {@link #close() Close} all non-{@code null} SafeCloseable elements. Terminates the {@code stream}.
+     *
+     * @param stream the stream of SafeCloseables to {@link #close() close}
+     * @param <SCT> the safe closable type
+     */
+    static <SCT extends SafeCloseable> void closeAll(@NotNull final Stream<SCT> stream) {
+        closeAll(stream.iterator());
+    }
+
+    /**
+     * {@link #close() Close} all non-{@code null} SafeCloseable elements. Consumes the {@code iterator}.
+     *
+     * @param iterator the iterator of SafeCloseables to {@link #close() close}
+     * @param <SCT> the safe closable type
+     */
+    static <SCT extends SafeCloseable> void closeAll(@NotNull final Iterator<SCT> iterator) {
         List<Exception> exceptions = null;
-        while (it.hasNext()) {
-            final SafeCloseable safeCloseable = it.next();
+        while (iterator.hasNext()) {
+            final SafeCloseable safeCloseable = iterator.next();
             if (safeCloseable == null) {
                 continue;
             }

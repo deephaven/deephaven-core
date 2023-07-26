@@ -13,6 +13,7 @@ import org.jetbrains.annotations.NotNull;
 
 import javax.annotation.OverridingMethodsMustInvokeSuper;
 import java.util.Map;
+import java.util.Objects;
 
 /**
  * A "source" for column data - allows cell values to be looked up by (long) keys.
@@ -159,6 +160,7 @@ public interface ColumnSource<T>
      * @param <TYPE> The target type, as a type parameter. Intended to be inferred from {@code clazz}.
      * @return A {@code ColumnSource} parameterized by {@code TYPE}.
      */
+    @FinalDefault
     default <TYPE> ColumnSource<TYPE> cast(Class<? extends TYPE> clazz) {
         Require.neqNull(clazz, "clazz");
         final Class<?> columnSourceType = getType();
@@ -169,6 +171,39 @@ public interface ColumnSource<T>
         }
         // noinspection unchecked
         return (ColumnSource<TYPE>) this;
+    }
+
+    /**
+     * Returns this {@code ColumnSource}, parameterized by {@code <TYPE>}, if the data type of this column (as given by
+     * {@link #getType()}) can be cast to {@code clazz}. This is analogous to casting the objects provided by this
+     * column source to {@code clazz}. Additionally, this checks that {@code componentType} is equal to
+     * {@link ColumnSource#getComponentType()}, or both are {@code null}.
+     *
+     * <p>
+     * For example, the following code will throw an exception if the "MyString" column does not actually contain
+     * {@code String} data:
+     *
+     * <pre>
+     *     ColumnSource&lt;String&gt; colSource = table.getColumnSource("MyString", null).getParameterized(String.class)
+     * </pre>
+     * <p>
+     * Due to the nature of type erasure, the JVM will still insert an additional cast to {@code TYPE} when elements are
+     * retrieved from the column source, such as with {@code String myStr = colSource.get(0)}.
+     *
+     * @param clazz The target type.
+     * @param componentType The target component type
+     * @param <TYPE> The target type, as a type parameter. Intended to be inferred from {@code clazz}.
+     * @return A {@code ColumnSource} parameterized by {@code TYPE}.
+     */
+    @FinalDefault
+    default <TYPE> ColumnSource<TYPE> cast(Class<? extends TYPE> clazz, Class<?> componentType) {
+        final ColumnSource<TYPE> casted = cast(clazz);
+        if (!Objects.equals(componentType, casted.getComponentType())) {
+            throw new RuntimeException(String.format(
+                    "Expected componentTypes to be equal for cast with clazz=%s, componentType=%s, getComponentType()=%s",
+                    clazz, componentType, casted.getComponentType()));
+        }
+        return casted;
     }
 
     /**

@@ -1,6 +1,7 @@
 package io.deephaven.stream;
 
 import io.deephaven.base.verify.Assert;
+import io.deephaven.csv.util.MutableBoolean;
 import io.deephaven.engine.context.ExecutionContext;
 import io.deephaven.engine.table.ColumnDefinition;
 import io.deephaven.engine.table.Table;
@@ -19,13 +20,14 @@ import java.time.Instant;
 import java.util.Arrays;
 
 import static io.deephaven.engine.util.TableTools.merge;
+import static org.assertj.core.api.Assertions.assertThat;
 
 public class TablePublisherTest {
     @Rule
     public final EngineCleanup framework = new EngineCleanup();
 
     @Test
-    public void publisherAdd() {
+    public void add() {
         final ControlledUpdateGraph updateGraph = ExecutionContext.getContext().getUpdateGraph().cast();
 
         final TableDefinition definition = TableDefinition.of(
@@ -68,8 +70,10 @@ public class TablePublisherTest {
         // +37 just to have the last chunk not be the full BLOCK_SIZE
         final Table bigFooBarNull = repeat(fooBarNull, ArrayBackedColumnSource.BLOCK_SIZE * 5 + 37);
 
-        final TablePublisher publisher = TablePublisher.of("publisherAdd", definition);
-        final Table blinkTable = publisher.blinkTable();
+        final MutableBoolean onShutdown = new MutableBoolean();
+        final TablePublisher publisher =
+                TablePublisher.of("publisher.add", definition, () -> onShutdown.setValue(true));
+        final Table blinkTable = publisher.table();
         TstUtils.assertTableEquals(emptyTable, blinkTable);
 
         publisher.add(fooRow);
@@ -94,18 +98,23 @@ public class TablePublisherTest {
 
         updateGraph.runWithinUnitTestCycle(publisher::runForUnitTests);
         TstUtils.assertTableEquals(emptyTable, blinkTable);
+
+        assertThat(onShutdown.booleanValue()).isFalse();
+        assertThat(publisher.isAlive()).isTrue();
     }
 
     @Test
-    public void publisherAcceptFailure() {
+    public void publishFailure() {
         final ControlledUpdateGraph updateGraph = ExecutionContext.getContext().getUpdateGraph().cast();
 
         final TableDefinition definition = TableDefinition.of(ColumnDefinition.ofInt("I"));
 
         final Table emptyTable = TableTools.newTable(definition);
 
-        final TablePublisher publisher = TablePublisher.of("publisherAdd", definition);
-        final Table blinkTable = publisher.blinkTable();
+        final MutableBoolean onShutdown = new MutableBoolean();
+        final TablePublisher publisher =
+                TablePublisher.of("pubhlisher.publishFailure", definition, () -> onShutdown.setValue(true));
+        final Table blinkTable = publisher.table();
         TstUtils.assertTableEquals(emptyTable, blinkTable);
 
         final Throwable[] exceptions = new Throwable[1];
@@ -118,10 +127,12 @@ public class TablePublisherTest {
         blinkTable.addUpdateListener(listener);
 
         final RuntimeException e = new RuntimeException("Some sort of failure");
-        publisher.acceptFailure(e);
+        publisher.publishFailure(e);
         updateGraph.runWithinUnitTestCycle(publisher::runForUnitTests);
         TstUtils.assertTableEquals(emptyTable, blinkTable);
         Assert.eq(e, "e", exceptions[0]);
+        assertThat(onShutdown.booleanValue()).isTrue();
+        assertThat(publisher.isAlive()).isFalse();
     }
 
     private static Table repeat(Table x, int times) {
