@@ -66,6 +66,7 @@ _DTYPE_MAPPING_PYARROW = {
 _DTYPE_MAPPING_NUMPY_NULLABLE = {
     pa.int8(): pd.Int8Dtype(),
     pa.int16(): pd.Int16Dtype(),
+    pa.uint16(): pd.UInt16Dtype(),
     pa.int32(): pd.Int32Dtype(),
     pa.int64(): pd.Int64Dtype(),
     pa.bool_(): pd.BooleanDtype(),

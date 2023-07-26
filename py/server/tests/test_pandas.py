@@ -264,7 +264,7 @@ class PandasTestCase(BaseTestCase):
         input_cols = [
             bool_col(name="Boolean", data=(True, False)),
             byte_col(name="Byte", data=(1, NULL_BYTE)),
-            char_col(name="Char", data='-1'),
+            char_col(name="Char", data=(1, NULL_CHAR)),
             short_col(name="Short", data=[1, NULL_SHORT]),
             int_col(name="Int_", data=[1, NULL_INT]),
             long_col(name="Long_", data=[1, NULL_LONG]),
