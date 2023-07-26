@@ -8,6 +8,7 @@ import io.deephaven.engine.context.ExecutionContext;
 import io.deephaven.engine.testutil.ControlledUpdateGraph;
 import io.deephaven.engine.testutil.testcase.RefreshingTableTestCase;
 import io.deephaven.engine.updategraph.LogicalClock;
+import io.deephaven.engine.updategraph.UpdateGraph;
 import io.deephaven.util.SafeCloseable;
 import org.apache.commons.lang3.mutable.MutableLong;
 
@@ -16,6 +17,7 @@ public class TestConstructSnapshot extends RefreshingTableTestCase {
     public void testClockChange() throws InterruptedException {
         final MutableLong changed = new MutableLong(0);
         final ConstructSnapshot.SnapshotControl control = new ConstructSnapshot.SnapshotControl() {
+
             @Override
             public Boolean usePreviousValues(long beforeClockValue) {
                 // noinspection AutoBoxing
@@ -25,6 +27,11 @@ public class TestConstructSnapshot extends RefreshingTableTestCase {
             @Override
             public boolean snapshotConsistent(final long currentClockValue, final boolean usingPreviousValues) {
                 return true;
+            }
+
+            @Override
+            public UpdateGraph getUpdateGraph() {
+                return ExecutionContext.getContext().getUpdateGraph();
             }
         };
         final ExecutionContext executionContext = ExecutionContext.getContext();
