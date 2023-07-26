@@ -18,6 +18,18 @@ Aggregation <- R6Class("Aggregation", cloneable = FALSE,
 ### All of the functions below return an instance of the above class
 
 #' @export
+agg_first = function(columns) {
+    verify_string_vector("columns", columns)
+    return(Aggregation$new(INTERNAL_first(columns)))
+}
+
+#' @export
+agg_last = function(columns) {
+    verify_string_vector("columns", columns)
+    return(Aggregation$new(INTERNAL_last(columns)))
+}
+
+#' @export
 agg_min = function(columns) {
     verify_string_vector("columns", columns)
     return(Aggregation$new(INTERNAL_min(columns)))
@@ -55,6 +67,12 @@ agg_w_avg = function(weight_column, columns) {
 }
 
 #' @export
+agg_median = function(columns) {
+    verify_string_vector("columns", columns)
+    return(Aggregation$new(INTERNAL_median(columns)))
+}
+
+#' @export
 agg_var = function(columns) {
     verify_string_vector("columns", columns)
     return(Aggregation$new(INTERNAL_var(columns)))
@@ -64,24 +82,6 @@ agg_var = function(columns) {
 agg_std = function(columns) {
     verify_string_vector("columns", columns)
     return(Aggregation$new(INTERNAL_std(columns)))
-}
-
-#' @export
-agg_first = function(columns) {
-    verify_string_vector("columns", columns)
-    return(Aggregation$new(INTERNAL_first(columns)))
-}
-
-#' @export
-agg_last = function(columns) {
-    verify_string_vector("columns", columns)
-    return(Aggregation$new(INTERNAL_last(columns)))
-}
-
-#' @export
-agg_median = function(columns) {
-    verify_string_vector("columns", columns)
-    return(Aggregation$new(INTERNAL_median(columns)))
 }
 
 #' @export
