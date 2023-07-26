@@ -70,16 +70,17 @@ ungroup <- function(th, group_by_columns = character()) {
 }
 
 #' @export
-agg_by <- function(th, aggregations) {
+agg_by <- function(th, aggregations, group_by_columns = character()) {
     verify_internal_type("Aggregation", "aggregations", aggregations)
+    verify_string_vector("group_by_columns", group_by_columns)
     aggregations = c(aggregations)
     unwrapped_aggregations = lapply(aggregations, strip_r6_wrapping_from_aggregation)
-    return(TableHandle$new(th$internal_table_handle$agg_by(unwrapped_aggregations)))
+    return(TableHandle$new(th$internal_table_handle$agg_by(unwrapped_aggregations, group_by_columns)))
 }
 
 #' @export
 first_by <- function(th, columns = character()) {
-    #verify_string_vector("columns", columns)
+    verify_string_vector("columns", columns)
     return(TableHandle$new(th$internal_table_handle$first_by(columns)))
 }
 

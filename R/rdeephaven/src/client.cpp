@@ -148,9 +148,9 @@ public:
 
     // AGGREGATION OPERATIONS
 
-    TableHandleWrapper* aggBy(Rcpp::List aggregations) {
+    TableHandleWrapper* aggBy(Rcpp::List aggregations, std::vector<std::string> groupByColumns) {
         std::vector<deephaven::client::Aggregate> converted_aggregations = convertRcppListToVectorOfTypeAggregate(aggregations);
-        return new TableHandleWrapper(internal_tbl_hdl.by(deephaven::client::AggregateCombo::create(converted_aggregations)));
+        return new TableHandleWrapper(internal_tbl_hdl.by(deephaven::client::AggregateCombo::create(converted_aggregations), groupByColumns));
     }
 
     TableHandleWrapper* firstBy(std::vector<std::string> columnSpecs) {

@@ -50,6 +50,8 @@ setup <- function() {
 
 ##### TESTING GOOD INPUTS #####
 
+# TODO: Test all of the following with default inputs
+
 test_that("select behaves as expected", {
     data <- setup()
     
@@ -236,6 +238,7 @@ test_that("where behaves as expected", {
     expect_equal(as.data.frame(new_th3), as.data.frame(new_tb3))
 })
 
+# TODO: Test group_by and ungroup
 test_that("group_by behaves as expected", {
     data <- setup()
 })

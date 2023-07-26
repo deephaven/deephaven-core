@@ -49,36 +49,526 @@ setup <- function() {
 }
 
 test_that("agg_first behaves as expected", {
+  data <- setup()
+  
+  new_tb1 <- data$df1 %>%
+    dplyr::group_by(string_col) %>%
+    summarise(int_col = first(int_col))
+  new_th1 <- data$th1 %>%
+    agg_by(agg_first("int_col"), "string_col") %>%
+    sort_by("string_col")
+  expect_equal(as.data.frame(new_th1), as.data.frame(new_tb1))
+  
+  new_tb2 <- data$df2 %>%
+    dplyr::group_by(col1, col2) %>%
+    summarise(col3 = first(col3))
+  new_th2 <- data$th2 %>%
+    agg_by(agg_first("col3"), c("col1", "col2")) %>%
+    sort_by(c("col1", "col2"))
+  expect_equal(as.data.frame(new_th2), as.data.frame(new_tb2))
+  
+  new_tb3 <- data$df3 %>%
+    dplyr::group_by(X1, X2, X3, X4) %>%
+    summarise(X5 = first(X5), X6 = first(X6), X7 = first(X7), X8 = first(X8))
+  new_th3 <- data$th3 %>%
+    agg_by(agg_first(c("X5", "X6", "X7", "X8")), c("X1", "X2", "X3", "X4")) %>%
+    sort_by(c("X1", "X2", "X3", "X4"))
+  expect_equal(as.data.frame(new_th3), as.data.frame(new_tb3))
+  
+  new_tb4 <- data$df4 %>%
+    dplyr::group_by(bool_col) %>%
+    summarise(time_col = first(time_col), int_col = first(int_col))
+  new_th4 <- data$th4 %>%
+    agg_by(c(agg_first("time_col"), agg_first("int_col")), "bool_col") %>%
+    sort_by("bool_col")
+  expect_equal(as.data.frame(new_th4), as.data.frame(new_tb4))
+  
+  new_tb5 <- data$df5 %>%
+    dplyr::group_by(X) %>%
+    summarise(Number1 = first(Number1), Number2 = first(Number2))
+  new_th5 <- data$th5 %>%
+    agg_by(agg_first(c("Number1", "Number2")), "X") %>%
+    sort_by("X")
+  expect_equal(as.data.frame(new_th5), as.data.frame(new_tb5))
+  
+  new_tb6 <- data$df6 %>%
+    dplyr::group_by(X, Y) %>%
+    summarise(Number1 = first(Number1), Number2 = first(Number2))
+  new_th6 <- data$th6 %>%
+    agg_by(agg_first(c("Number1", "Number2")), c("X", "Y")) %>%
+    sort_by(c("X", "Y"))
+  expect_equal(as.data.frame(new_th6), as.data.frame(new_tb6))
 })
 
 test_that("agg_last behaves as expected", {
+  data <- setup()
+  
+  new_tb1 <- data$df1 %>%
+    dplyr::group_by(string_col) %>%
+    summarise(int_col = last(int_col))
+  new_th1 <- data$th1 %>%
+    agg_by(agg_last("int_col"), "string_col") %>%
+    sort_by("string_col")
+  expect_equal(as.data.frame(new_th1), as.data.frame(new_tb1))
+  
+  new_tb2 <- data$df2 %>%
+    dplyr::group_by(col1, col2) %>%
+    summarise(col3 = last(col3))
+  new_th2 <- data$th2 %>%
+    agg_by(agg_last("col3"), c("col1", "col2")) %>%
+    sort_by(c("col1", "col2"))
+  expect_equal(as.data.frame(new_th2), as.data.frame(new_tb2))
+  
+  new_tb3 <- data$df3 %>%
+    dplyr::group_by(X1, X2, X3, X4) %>%
+    summarise(X5 = last(X5), X6 = last(X6), X7 = last(X7), X8 = last(X8))
+  new_th3 <- data$th3 %>%
+    agg_by(agg_last(c("X5", "X6", "X7", "X8")), c("X1", "X2", "X3", "X4")) %>%
+    sort_by(c("X1", "X2", "X3", "X4"))
+  expect_equal(as.data.frame(new_th3), as.data.frame(new_tb3))
+  
+  new_tb4 <- data$df4 %>%
+    dplyr::group_by(bool_col) %>%
+    summarise(time_col = last(time_col), int_col = last(int_col))
+  new_th4 <- data$th4 %>%
+    agg_by(c(agg_last("time_col"), agg_last("int_col")), "bool_col") %>%
+    sort_by("bool_col")
+  expect_equal(as.data.frame(new_th4), as.data.frame(new_tb4))
+  
+  new_tb5 <- data$df5 %>%
+    dplyr::group_by(X) %>%
+    summarise(Number1 = last(Number1), Number2 = last(Number2))
+  new_th5 <- data$th5 %>%
+    agg_by(agg_last(c("Number1", "Number2")), "X") %>%
+    sort_by("X")
+  expect_equal(as.data.frame(new_th5), as.data.frame(new_tb5))
+  
+  new_tb6 <- data$df6 %>%
+    dplyr::group_by(X, Y) %>%
+    summarise(Number1 = last(Number1), Number2 = last(Number2))
+  new_th6 <- data$th6 %>%
+    agg_by(agg_last(c("Number1", "Number2")), c("X", "Y")) %>%
+    sort_by(c("X", "Y"))
+  expect_equal(as.data.frame(new_th6), as.data.frame(new_tb6))
 })
 
 test_that("agg_min behaves as expected", {
+  data <- setup()
+  
+  new_tb1 <- data$df1 %>%
+    dplyr::group_by(string_col) %>%
+    summarise(int_col = min(int_col))
+  new_th1 <- data$th1 %>%
+    agg_by(agg_min("int_col"), "string_col") %>%
+    sort_by("string_col")
+  expect_equal(as.data.frame(new_th1), as.data.frame(new_tb1))
+  
+  new_tb2 <- data$df2 %>%
+    dplyr::group_by(col1, col2) %>%
+    summarise(col3 = min(col3))
+  new_th2 <- data$th2 %>%
+    agg_by(agg_min("col3"), c("col1", "col2")) %>%
+    sort_by(c("col1", "col2"))
+  expect_equal(as.data.frame(new_th2), as.data.frame(new_tb2))
+  
+  new_tb3 <- data$df3 %>%
+    dplyr::group_by(X1, X2, X3, X4) %>%
+    summarise(X5 = min(X5), X6 = min(X6), X7 = min(X7), X8 = min(X8))
+  new_th3 <- data$th3 %>%
+    agg_by(agg_min(c("X5", "X6", "X7", "X8")), c("X1", "X2", "X3", "X4")) %>%
+    sort_by(c("X1", "X2", "X3", "X4"))
+  expect_equal(as.data.frame(new_th3), as.data.frame(new_tb3))
+  
+  new_tb4 <- data$df4 %>%
+    dplyr::group_by(bool_col) %>%
+    summarise(time_col = min(time_col), int_col = min(int_col))
+  new_th4 <- data$th4 %>%
+    agg_by(c(agg_min("time_col"), agg_min("int_col")), "bool_col") %>%
+    sort_by("bool_col")
+  expect_equal(as.data.frame(new_th4), as.data.frame(new_tb4))
+  
+  new_tb5 <- data$df5 %>%
+    dplyr::group_by(X) %>%
+    summarise(Number1 = min(Number1), Number2 = min(Number2))
+  new_th5 <- data$th5 %>%
+    agg_by(agg_min(c("Number1", "Number2")), "X") %>%
+    sort_by("X")
+  expect_equal(as.data.frame(new_th5), as.data.frame(new_tb5))
+  
+  new_tb6 <- data$df6 %>%
+    dplyr::group_by(X, Y) %>%
+    summarise(Number1 = min(Number1), Number2 = min(Number2))
+  new_th6 <- data$th6 %>%
+    agg_by(agg_min(c("Number1", "Number2")), c("X", "Y")) %>%
+    sort_by(c("X", "Y"))
+  expect_equal(as.data.frame(new_th6), as.data.frame(new_tb6))
 })
 
 test_that("agg_max behaves as expected", {
+  data <- setup()
+  
+  new_tb1 <- data$df1 %>%
+    dplyr::group_by(string_col) %>%
+    summarise(int_col = max(int_col))
+  new_th1 <- data$th1 %>%
+    agg_by(agg_max("int_col"), "string_col") %>%
+    sort_by("string_col")
+  expect_equal(as.data.frame(new_th1), as.data.frame(new_tb1))
+  
+  new_tb2 <- data$df2 %>%
+    dplyr::group_by(col1, col2) %>%
+    summarise(col3 = max(col3))
+  new_th2 <- data$th2 %>%
+    agg_by(agg_max("col3"), c("col1", "col2")) %>%
+    sort_by(c("col1", "col2"))
+  expect_equal(as.data.frame(new_th2), as.data.frame(new_tb2))
+  
+  new_tb3 <- data$df3 %>%
+    dplyr::group_by(X1, X2, X3, X4) %>%
+    summarise(X5 = max(X5), X6 = max(X6), X7 = max(X7), X8 = max(X8))
+  new_th3 <- data$th3 %>%
+    agg_by(agg_max(c("X5", "X6", "X7", "X8")), c("X1", "X2", "X3", "X4")) %>%
+    sort_by(c("X1", "X2", "X3", "X4"))
+  expect_equal(as.data.frame(new_th3), as.data.frame(new_tb3))
+  
+  new_tb4 <- data$df4 %>%
+    dplyr::group_by(bool_col) %>%
+    summarise(time_col = max(time_col), int_col = max(int_col))
+  new_th4 <- data$th4 %>%
+    agg_by(c(agg_max("time_col"), agg_max("int_col")), "bool_col") %>%
+    sort_by("bool_col")
+  expect_equal(as.data.frame(new_th4), as.data.frame(new_tb4))
+  
+  new_tb5 <- data$df5 %>%
+    dplyr::group_by(X) %>%
+    summarise(Number1 = max(Number1), Number2 = max(Number2))
+  new_th5 <- data$th5 %>%
+    agg_by(agg_max(c("Number1", "Number2")), "X") %>%
+    sort_by("X")
+  expect_equal(as.data.frame(new_th5), as.data.frame(new_tb5))
+  
+  new_tb6 <- data$df6 %>%
+    dplyr::group_by(X, Y) %>%
+    summarise(Number1 = max(Number1), Number2 = max(Number2))
+  new_th6 <- data$th6 %>%
+    agg_by(agg_max(c("Number1", "Number2")), c("X", "Y")) %>%
+    sort_by(c("X", "Y"))
+  expect_equal(as.data.frame(new_th6), as.data.frame(new_tb6))
 })
 
 test_that("agg_sum behaves as expected", {
+  data <- setup()
+  
+  new_tb1 <- data$df1 %>%
+    dplyr::group_by(string_col) %>%
+    summarise(int_col = sum(int_col))
+  new_th1 <- data$th1 %>%
+    agg_by(agg_sum("int_col"), "string_col") %>%
+    sort_by("string_col")
+  expect_equal(as.data.frame(new_th1), as.data.frame(new_tb1))
+  
+  new_tb2 <- data$df2 %>%
+    dplyr::group_by(col1, col2) %>%
+    summarise(col3 = sum(col3))
+  new_th2 <- data$th2 %>%
+    agg_by(agg_sum("col3"), c("col1", "col2")) %>%
+    sort_by(c("col1", "col2"))
+  expect_equal(as.data.frame(new_th2), as.data.frame(new_tb2))
+  
+  new_tb3 <- data$df3 %>%
+    dplyr::group_by(X1, X2, X3, X4) %>%
+    summarise(X5 = sum(X5), X6 = sum(X6), X7 = sum(X7), X8 = sum(X8))
+  new_th3 <- data$th3 %>%
+    agg_by(agg_sum(c("X5", "X6", "X7", "X8")), c("X1", "X2", "X3", "X4")) %>%
+    sort_by(c("X1", "X2", "X3", "X4"))
+  expect_equal(as.data.frame(new_th3), as.data.frame(new_tb3))
+  
+  new_tb4 <- data$df4 %>%
+    dplyr::group_by(bool_col) %>%
+    summarise(int_col = sum(int_col))
+  new_th4 <- data$th4 %>%
+    agg_by(agg_sum("int_col"), "bool_col") %>%
+    sort_by("bool_col")
+  expect_equal(as.data.frame(new_th4), as.data.frame(new_tb4))
+  
+  new_tb5 <- data$df5 %>%
+    dplyr::group_by(X) %>%
+    summarise(Number1 = sum(Number1), Number2 = sum(Number2))
+  new_th5 <- data$th5 %>%
+    agg_by(agg_sum(c("Number1", "Number2")), "X") %>%
+    sort_by("X")
+  expect_equal(as.data.frame(new_th5), as.data.frame(new_tb5))
+  
+  new_tb6 <- data$df6 %>%
+    dplyr::group_by(X, Y) %>%
+    summarise(Number1 = sum(Number1), Number2 = sum(Number2))
+  new_th6 <- data$th6 %>%
+    agg_by(agg_sum(c("Number1", "Number2")), c("X", "Y")) %>%
+    sort_by(c("X", "Y"))
+  expect_equal(as.data.frame(new_th6), as.data.frame(new_tb6))
 })
 
 test_that("agg_abs_sum behaves as expected", {
+  data <- setup()
+  
+  new_tb1 <- data$df1 %>%
+    dplyr::group_by(string_col) %>%
+    summarise(int_col = sum(abs(int_col)))
+  new_th1 <- data$th1 %>%
+    agg_by(agg_abs_sum("int_col"), "string_col") %>%
+    sort_by("string_col")
+  expect_equal(as.data.frame(new_th1), as.data.frame(new_tb1))
+  
+  new_tb2 <- data$df2 %>%
+    dplyr::group_by(col1, col2) %>%
+    summarise(col3 = sum(abs(col3)))
+  new_th2 <- data$th2 %>%
+    agg_by(agg_abs_sum("col3"), c("col1", "col2")) %>%
+    sort_by(c("col1", "col2"))
+  expect_equal(as.data.frame(new_th2), as.data.frame(new_tb2))
+  
+  new_tb3 <- data$df3 %>%
+    dplyr::group_by(X1, X2, X3, X4) %>%
+    summarise(X5 = sum(abs(X5)), X6 = sum(abs(X6)), X7 = sum(abs(X7)), X8 = sum(abs(X8)))
+  new_th3 <- data$th3 %>%
+    agg_by(agg_abs_sum(c("X5", "X6", "X7", "X8")), c("X1", "X2", "X3", "X4")) %>%
+    sort_by(c("X1", "X2", "X3", "X4"))
+  expect_equal(as.data.frame(new_th3), as.data.frame(new_tb3))
+  
+  new_tb4 <- data$df4 %>%
+    dplyr::group_by(bool_col) %>%
+    summarise(int_col = sum(abs(int_col)))
+  new_th4 <- data$th4 %>%
+    agg_by(agg_abs_sum("int_col"), "bool_col") %>%
+    sort_by("bool_col")
+  expect_equal(as.data.frame(new_th4), as.data.frame(new_tb4))
+  
+  new_tb5 <- data$df5 %>%
+    dplyr::group_by(X) %>%
+    summarise(Number1 = sum(abs(Number1)), Number2 = sum(abs(Number2)))
+  new_th5 <- data$th5 %>%
+    agg_by(agg_abs_sum(c("Number1", "Number2")), "X") %>%
+    sort_by("X")
+  expect_equal(as.data.frame(new_th5), as.data.frame(new_tb5))
+  
+  new_tb6 <- data$df6 %>%
+    dplyr::group_by(X, Y) %>%
+    summarise(Number1 = sum(abs(Number1)), Number2 = sum(abs(Number2)))
+  new_th6 <- data$th6 %>%
+    agg_by(agg_abs_sum(c("Number1", "Number2")), c("X", "Y")) %>%
+    sort_by(c("X", "Y"))
+  expect_equal(as.data.frame(new_th6), as.data.frame(new_tb6))
 })
 
 test_that("agg_avg behaves as expected", {
+  data <- setup()
+  
+  new_tb1 <- data$df1 %>%
+    dplyr::group_by(string_col) %>%
+    summarise(int_col = mean(int_col))
+  new_th1 <- data$th1 %>%
+    agg_by(agg_avg("int_col"), "string_col") %>%
+    sort_by("string_col")
+  expect_equal(as.data.frame(new_th1), as.data.frame(new_tb1))
+  
+  new_tb2 <- data$df2 %>%
+    dplyr::group_by(col1, col2) %>%
+    summarise(col3 = mean(col3))
+  new_th2 <- data$th2 %>%
+    agg_by(agg_avg("col3"), c("col1", "col2")) %>%
+    sort_by(c("col1", "col2"))
+  expect_equal(as.data.frame(new_th2), as.data.frame(new_tb2))
+  
+  new_tb3 <- data$df3 %>%
+    dplyr::group_by(X1, X2, X3, X4) %>%
+    summarise(X5 = mean(X5), X6 = mean(X6), X7 = mean(X7), X8 = mean(X8))
+  new_th3 <- data$th3 %>%
+    agg_by(agg_avg(c("X5", "X6", "X7", "X8")), c("X1", "X2", "X3", "X4")) %>%
+    sort_by(c("X1", "X2", "X3", "X4"))
+  expect_equal(as.data.frame(new_th3), as.data.frame(new_tb3))
+  
+  new_tb4 <- data$df4 %>%
+    dplyr::group_by(bool_col) %>%
+    summarise(int_col = mean(int_col))
+  new_th4 <- data$th4 %>%
+    agg_by(agg_avg("int_col"), "bool_col") %>%
+    sort_by("bool_col")
+  expect_equal(as.data.frame(new_th4), as.data.frame(new_tb4))
+  
+  new_tb5 <- data$df5 %>%
+    dplyr::group_by(X) %>%
+    summarise(Number1 = mean(Number1), Number2 = mean(Number2))
+  new_th5 <- data$th5 %>%
+    agg_by(agg_avg(c("Number1", "Number2")), "X") %>%
+    sort_by("X")
+  expect_equal(as.data.frame(new_th5), as.data.frame(new_tb5))
+  
+  new_tb6 <- data$df6 %>%
+    dplyr::group_by(X, Y) %>%
+    summarise(Number1 = mean(Number1), Number2 = mean(Number2))
+  new_th6 <- data$th6 %>%
+    agg_by(agg_avg(c("Number1", "Number2")), c("X", "Y")) %>%
+    sort_by(c("X", "Y"))
+  expect_equal(as.data.frame(new_th6), as.data.frame(new_tb6))
 })
 
 test_that("agg_w_avg behaves as expected", {
 })
 
 test_that("agg_median behaves as expected", {
+  data <- setup()
+  
+  new_tb1 <- data$df1 %>%
+    dplyr::group_by(string_col) %>%
+    summarise(int_col = median(int_col))
+  new_th1 <- data$th1 %>%
+    agg_by(agg_median("int_col"), "string_col") %>%
+    sort_by("string_col")
+  expect_equal(as.data.frame(new_th1), as.data.frame(new_tb1))
+  
+  new_tb2 <- data$df2 %>%
+    dplyr::group_by(col1, col2) %>%
+    summarise(col3 = median(col3))
+  new_th2 <- data$th2 %>%
+    agg_by(agg_median("col3"), c("col1", "col2")) %>%
+    sort_by(c("col1", "col2"))
+  expect_equal(as.data.frame(new_th2), as.data.frame(new_tb2))
+  
+  new_tb3 <- data$df3 %>%
+    dplyr::group_by(X1, X2, X3, X4) %>%
+    summarise(X5 = median(X5), X6 = median(X6), X7 = median(X7), X8 = median(X8))
+  new_th3 <- data$th3 %>%
+    agg_by(agg_median(c("X5", "X6", "X7", "X8")), c("X1", "X2", "X3", "X4")) %>%
+    sort_by(c("X1", "X2", "X3", "X4"))
+  expect_equal(as.data.frame(new_th3), as.data.frame(new_tb3))
+  
+  new_tb4 <- data$df4 %>%
+    dplyr::group_by(bool_col) %>%
+    summarise(int_col = median(int_col))
+  new_th4 <- data$th4 %>%
+    agg_by(agg_median("int_col"), "bool_col") %>%
+    sort_by("bool_col")
+  expect_equal(as.data.frame(new_th4), as.data.frame(new_tb4))
+  
+  new_tb5 <- data$df5 %>%
+    dplyr::group_by(X) %>%
+    summarise(Number1 = median(Number1), Number2 = median(Number2))
+  new_th5 <- data$th5 %>%
+    agg_by(agg_median(c("Number1", "Number2")), "X") %>%
+    sort_by("X")
+  expect_equal(as.data.frame(new_th5), as.data.frame(new_tb5))
+  
+  new_tb6 <- data$df6 %>%
+    dplyr::group_by(X, Y) %>%
+    summarise(Number1 = median(Number1), Number2 = median(Number2))
+  new_th6 <- data$th6 %>%
+    agg_by(agg_median(c("Number1", "Number2")), c("X", "Y")) %>%
+    sort_by(c("X", "Y"))
+  expect_equal(as.data.frame(new_th6), as.data.frame(new_tb6))
 })
 
 test_that("agg_var behaves as expected", {
+  data <- setup()
+  
+  new_tb1 <- data$df1 %>%
+    dplyr::group_by(string_col) %>%
+    summarise(int_col = var(int_col))
+  new_th1 <- data$th1 %>%
+    agg_by(agg_var("int_col"), "string_col") %>%
+    sort_by("string_col")
+  expect_equal(as.data.frame(new_th1), as.data.frame(new_tb1))
+  
+  new_tb2 <- data$df2 %>%
+    dplyr::group_by(col1, col2) %>%
+    summarise(col3 = var(col3))
+  new_th2 <- data$th2 %>%
+    agg_by(agg_var("col3"), c("col1", "col2")) %>%
+    sort_by(c("col1", "col2"))
+  expect_equal(as.data.frame(new_th2), as.data.frame(new_tb2))
+  
+  new_tb3 <- data$df3 %>%
+    dplyr::group_by(X1, X2, X3, X4) %>%
+    summarise(X5 = var(X5), X6 = var(X6), X7 = var(X7), X8 = var(X8))
+  new_th3 <- data$th3 %>%
+    agg_by(agg_var(c("X5", "X6", "X7", "X8")), c("X1", "X2", "X3", "X4")) %>%
+    sort_by(c("X1", "X2", "X3", "X4"))
+  expect_equal(as.data.frame(new_th3), as.data.frame(new_tb3))
+  
+  new_tb4 <- data$df4 %>%
+    dplyr::group_by(bool_col) %>%
+    summarise(int_col = var(int_col))
+  new_th4 <- data$th4 %>%
+    agg_by(agg_var("int_col"), "bool_col") %>%
+    sort_by("bool_col")
+  expect_equal(as.data.frame(new_th4), as.data.frame(new_tb4))
+  
+  new_tb5 <- data$df5 %>%
+    dplyr::group_by(X) %>%
+    summarise(Number1 = var(Number1), Number2 = var(Number2))
+  new_th5 <- data$th5 %>%
+    agg_by(agg_var(c("Number1", "Number2")), "X") %>%
+    sort_by("X")
+  expect_equal(as.data.frame(new_th5), as.data.frame(new_tb5))
+  
+  new_tb6 <- data$df6 %>%
+    dplyr::group_by(X, Y) %>%
+    summarise(Number1 = var(Number1), Number2 = var(Number2))
+  new_th6 <- data$th6 %>%
+    agg_by(agg_var(c("Number1", "Number2")), c("X", "Y")) %>%
+    sort_by(c("X", "Y"))
+  expect_equal(as.data.frame(new_th6), as.data.frame(new_tb6))
 })
 
 test_that("agg_std behaves as expected", {
+  data <- setup()
+  
+  new_tb1 <- data$df1 %>%
+    dplyr::group_by(string_col) %>%
+    summarise(int_col = sd(int_col))
+  new_th1 <- data$th1 %>%
+    agg_by(agg_std("int_col"), "string_col") %>%
+    sort_by("string_col")
+  expect_equal(as.data.frame(new_th1), as.data.frame(new_tb1))
+  
+  new_tb2 <- data$df2 %>%
+    dplyr::group_by(col1, col2) %>%
+    summarise(col3 = sd(col3))
+  new_th2 <- data$th2 %>%
+    agg_by(agg_std("col3"), c("col1", "col2")) %>%
+    sort_by(c("col1", "col2"))
+  expect_equal(as.data.frame(new_th2), as.data.frame(new_tb2))
+  
+  new_tb3 <- data$df3 %>%
+    dplyr::group_by(X1, X2, X3, X4) %>%
+    summarise(X5 = sd(X5), X6 = sd(X6), X7 = sd(X7), X8 = sd(X8))
+  new_th3 <- data$th3 %>%
+    agg_by(agg_std(c("X5", "X6", "X7", "X8")), c("X1", "X2", "X3", "X4")) %>%
+    sort_by(c("X1", "X2", "X3", "X4"))
+  expect_equal(as.data.frame(new_th3), as.data.frame(new_tb3))
+  
+  new_tb4 <- data$df4 %>%
+    dplyr::group_by(bool_col) %>%
+    summarise(int_col = sd(int_col))
+  new_th4 <- data$th4 %>%
+    agg_by(agg_std("int_col"), "bool_col") %>%
+    sort_by("bool_col")
+  expect_equal(as.data.frame(new_th4), as.data.frame(new_tb4))
+  
+  new_tb5 <- data$df5 %>%
+    dplyr::group_by(X) %>%
+    summarise(Number1 = sd(Number1), Number2 = sd(Number2))
+  new_th5 <- data$th5 %>%
+    agg_by(agg_std(c("Number1", "Number2")), "X") %>%
+    sort_by("X")
+  expect_equal(as.data.frame(new_th5), as.data.frame(new_tb5))
+  
+  new_tb6 <- data$df6 %>%
+    dplyr::group_by(X, Y) %>%
+    summarise(Number1 = sd(Number1), Number2 = sd(Number2))
+  new_th6 <- data$th6 %>%
+    agg_by(agg_std(c("Number1", "Number2")), c("X", "Y")) %>%
+    sort_by(c("X", "Y"))
+  expect_equal(as.data.frame(new_th6), as.data.frame(new_tb6))
 })
 
 test_that("agg_percentile behaves as expected", {

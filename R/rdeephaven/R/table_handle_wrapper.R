@@ -110,6 +110,12 @@ TableHandle <- R6Class("TableHandle", cloneable = FALSE,
 ### S3 METHODS
 
 #' @export
+print.TableHandle <- function(th, ...) {
+    cat("A Deephaven TableHandle:\n")
+    print(th$to_data_frame())
+}
+
+#' @export
 as_arrow_table.TableHandle <- function(th, ...) {
     th$to_arrow_table()
 }
