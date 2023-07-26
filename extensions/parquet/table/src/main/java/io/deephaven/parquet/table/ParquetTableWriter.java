@@ -571,7 +571,8 @@ public class ParquetTableWriter {
             final long tableSize = tableRowSet.size();
             final int targetPageSize = getTargetRowsPerPage(
                     valueSource.getType(), writeInstructions.getTargetPageSize());
-            helper = new FlatColumnWriterHelper((int) Math.min(tableSize, targetPageSize));
+            helper = new FlatColumnWriterHelper(targetPageSize);
+            maxValuesPerPage = maxRowsPerPage = (int) Math.min(tableSize, targetPageSize);
             pageCount = Math.toIntExact((tableSize + targetPageSize - 1) / targetPageSize);
         }
 
