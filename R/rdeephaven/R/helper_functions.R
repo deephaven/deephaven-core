@@ -24,16 +24,26 @@ verify_bool_vector <- function(arg_name, bool_candidate) {
     }
 }
 
-verify_int <- function(arg_name, int_candidate) {
+verify_int <- function(arg_name, int_candidate, type = "any") {
+    if (type == "any") {
+        message = " an "
+    } else if (type == "nonnegative") {
+        message = " a non-negative "
+    } else if (type == "positive") {
+        message = " a positive "
+    }
     if (class(int_candidate)[[1]] != "numeric") {
-        stop(paste0("'", arg_name, "' must be an integer. Got an object of class ", first_class(int_candidate), " instead."))
+        stop(paste0("'", arg_name, "' must be", message, "integer. Got an object of class ", first_class(int_candidate), " instead."))
     }
     else if (all.equal(int_candidate, as.integer(int_candidate)) != TRUE) {
         # must use != TRUE as the result of all.equal() is not strictly boolean
-        stop(paste0("'", arg_name, "' must be an integer. Got a non-integer numeric type instead."))
+        stop(paste0("'", arg_name, "' must be", message, "integer. Got a non-integer numeric type instead."))
     }
     else if (length(int_candidate) != 1) {
-        stop(paste0("'", arg_name, "' must be an integer. Got a numeric vector of length ", length(int_candidate), " instead."))
+        stop(paste0("'", arg_name, "' must be", message, "integer. Got a numeric vector of length ", length(int_candidate), " instead."))
+    }
+    if (((type == "nonnegative") && (int_candidate < 0)) || ((type == "positive") && (int_candidate <= 0))) {
+        stop(paste0("'", arg_name, "' must be", message, "integer. Got ", int_candidate, " instead."))
     }
 }
 

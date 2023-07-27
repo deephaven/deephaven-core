@@ -108,7 +108,17 @@ test_that("open_table opens the correct table from the server", {
     expect_equal(client$open_table("table4")$to_data_frame(), th4$to_data_frame())
 })
 
-# TODO: Test empty_table good inputs
+test_that("empty_table correctly creates tables on the server", {
+  
+  client_options <- ClientOptions$new()
+  client <- Client$new(target="localhost:10000", client_options=client_options)
+  
+  th1 <- client$empty_table(10) %>% update("X = i")
+  expect_equal(th1$nrow(), 10)
+  
+  th2 <- client$empty_table(1234567) %>% update("X = i")
+  expect_equal(th2$nrow(), 1234567)
+})
 
 # TODO: Test time_table good inputs
 
@@ -197,7 +207,9 @@ test_that("open_table fails nicely with bad inputs", {
     expect_error(client$open_table(c("I", "am", "string")), "'name' must be passed as a single string. Got a character vector of length 3 instead.")
 })
 
-# TODO: Test empty_table bad inputs
+test_that("empty_table fails nicely with bad inputs", {
+  
+})
 
 # TODO: Test time_table bad inputs
 

@@ -58,7 +58,7 @@ Client <- R6Class("Client", cloneable = FALSE,
         #' @return TableHandle reference to the new table, which has not yet been named on the server.
         #'         See TableHandle$bind_to_variable() for naming a new table on the server.
         empty_table = function(size) {
-            verify_int("size", size)
+            verify_int("size", size, type = "positive")
             return(TableHandle$new(private$internal_client$empty_table(size)))
         },
 
@@ -69,8 +69,8 @@ Client <- R6Class("Client", cloneable = FALSE,
         #' @return TableHandle reference to the new table, which has not yet been named on the server.
         #'         See TableHandle$bind_to_variable() for naming a new table on the server.
         time_table = function(start_time_nanos, period_nanos) {
-            verify_int(start_time_nanos)
-            verify_int(period_nanos)
+            verify_int("start_time_nanos", start_time_nanos)
+            verify_int("period_nanos", period_nanos)
             return(TableHandle$new(private$internal_client$time_table(start_time_nanos, period_nanos)))
         },
 
