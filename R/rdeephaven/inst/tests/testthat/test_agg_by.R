@@ -413,6 +413,61 @@ test_that("agg_avg behaves as expected", {
 })
 
 test_that("agg_w_avg behaves as expected", {
+  data <- setup()
+  
+  new_tb1 <- data$df1 %>%
+    dplyr::group_by(string_col) %>%
+    summarise(int_col = weighted.mean(int_col, dbl_col))
+  new_th1 <- data$th1 %>%
+    agg_by(agg_w_avg("dbl_col", "int_col"), "string_col") %>%
+    sort_by("string_col")
+  expect_equal(as.data.frame(new_th1), as.data.frame(new_tb1))
+  
+  new_tb2 <- data$df2 %>%
+    dplyr::group_by(col1, col2) %>%
+    summarise(col3 = weighted.mean(col3, col1))
+  new_th2 <- data$th2 %>%
+    agg_by(agg_w_avg("col1", "col3"), c("col1", "col2")) %>%
+    sort_by(c("col1", "col2"))
+  expect_equal(as.data.frame(new_th2), as.data.frame(new_tb2))
+  
+  new_tb3 <- data$df3 %>%
+    dplyr::group_by(X1, X2, X3, X4) %>%
+    summarise(X5 = weighted.mean(X5, X9), X6 = weighted.mean(X6, X9),
+              X7 = weighted.mean(X7, X9), X8 = weighted.mean(X8, X9))
+  new_th3 <- data$th3 %>%
+    agg_by(agg_w_avg("X9", c("X5", "X6", "X7", "X8")), c("X1", "X2", "X3", "X4")) %>%
+    sort_by(c("X1", "X2", "X3", "X4"))
+  expect_equal(as.data.frame(new_th3), as.data.frame(new_tb3))
+  
+  new_tb4 <- data$df4 %>%
+    dplyr::group_by(bool_col) %>%
+    summarise(int_col = weighted.mean(int_col, int_col))
+  new_th4 <- data$th4 %>%
+    agg_by(agg_w_avg("int_col", "int_col"), "bool_col") %>%
+    sort_by("bool_col")
+  expect_equal(as.data.frame(new_th4), as.data.frame(new_tb4))
+  
+  new_tb5 <- data$df5 %>%
+    dplyr::group_by(X) %>%
+    mutate(weights = Number1 * Number2) %>%
+    summarise(Number1 = weighted.mean(Number1, weights),
+              Number2 = weighted.mean(Number2, weights))
+  new_th5 <- data$th5 %>%
+    update("weights = Number1 * Number2") %>%
+    agg_by(agg_w_avg("weights", c("Number1", "Number2")), "X") %>%
+    sort_by("X")
+  expect_equal(as.data.frame(new_th5), as.data.frame(new_tb5))
+  
+  new_tb6 <- data$df6 %>%
+    dplyr::group_by(X, Y) %>%
+    mutate(weights = Number1 * Number2) %>%
+    summarise(Number1 = weighted.mean(Number1, weights), Number2 = weighted.mean(Number2, weights))
+  new_th6 <- data$th6 %>%
+    update("weights = Number1 * Number2") %>%
+    agg_by(agg_w_avg("weights", c("Number1", "Number2")), c("X", "Y")) %>%
+    sort_by(c("X", "Y"))
+  expect_equal(as.data.frame(new_th6), as.data.frame(new_tb6))
 })
 
 test_that("agg_median behaves as expected", {
@@ -572,7 +627,77 @@ test_that("agg_std behaves as expected", {
 })
 
 test_that("agg_percentile behaves as expected", {
+  
+  # There is not a clean analog to agg_percentile in dplyr, so we create the
+  # dataframes directly, and only make comparisons on deterministic data frames.
+  
+  data <- setup()
+  
+  new_df1 <- data.frame(int_col = 2)
+  new_th1 <- data$th1 %>%
+    agg_by(agg_percentile(0.4, "int_col"))
+  expect_equal(as.data.frame(new_th1), new_df1)
+  
+  new_df2 <- data.frame(X = c("A", "B", "C"),
+                        Number1 = c(50, 18, 11),
+                        Number2 = c(-50, 137, 214))
+  new_th2 <- data$th5 %>%
+    agg_by(agg_percentile(0.6, c("Number1", "Number2")), "X") %>%
+    sort_by("X")
+  expect_equal(as.data.frame(new_th2), new_df2)
+  
+  new_df3 <- data.frame(X = c("A", "A", "B", "B", "B", "C", "C"),
+                        Y = c("O", "P", "M", "N", "O", "N", "P" ),
+                        Number1 = c(-5, -45, 86, 55, 99, -65, 0),
+                        Number2 = c(6, 34, -6, 76, 34, -5, -76))
+  new_th3 <- data$th6 %>%
+    agg_by(agg_percentile(0.3, c("Number1", "Number2")), c("X", "Y")) %>%
+    sort_by(c("X", "Y"))
+  expect_equal(as.data.frame(new_th3), new_df3)
 })
 
 test_that("agg_count behaves as expected", {
+  data <- setup()
+  
+  new_tb1 <- data$df1 %>%
+    count(string_col)
+  new_th1 <- data$th1 %>%
+    agg_by(agg_count("n"), "string_col") %>%
+    sort_by("string_col")
+  expect_equal(as.data.frame(new_th1), as.data.frame(new_tb1))
+  
+  new_tb2 <- data$df2 %>%
+    count(col1, col2)
+  new_th2 <- data$th2 %>%
+    agg_by(agg_count("n"), c("col1", "col2")) %>%
+    sort_by(c("col1", "col2"))
+  expect_equal(as.data.frame(new_th2), as.data.frame(new_tb2))
+  
+  new_tb3 <- data$df3 %>%
+    count(X1, X2, X3, X4)
+  new_th3 <- data$th3 %>%
+    agg_by(agg_count("n"), c("X1", "X2", "X3", "X4")) %>%
+    sort_by(c("X1", "X2", "X3", "X4"))
+  expect_equal(as.data.frame(new_th3), as.data.frame(new_tb3))
+  
+  new_tb4 <- data$df4 %>%
+    count(bool_col)
+  new_th4 <- data$th4 %>%
+    agg_by(agg_count("n"), "bool_col") %>%
+    sort_by("bool_col")
+  expect_equal(as.data.frame(new_th4), as.data.frame(new_tb4))
+  
+  new_tb5 <- data$df5 %>%
+    count(X)
+  new_th5 <- data$th5 %>%
+    agg_by(agg_count("n"), "X") %>%
+    sort_by("X")
+  expect_equal(as.data.frame(new_th5), as.data.frame(new_tb5))
+  
+  new_tb6 <- data$df6 %>%
+    count(X, Y)
+  new_th6 <- data$th6 %>%
+    agg_by(agg_count("n"), c("X", "Y")) %>%
+    sort_by(c("X", "Y"))
+  expect_equal(as.data.frame(new_th6), as.data.frame(new_tb6))
 })

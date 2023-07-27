@@ -473,9 +473,32 @@ test_that("avg_by behaves as expected", {
   expect_equal(as.data.frame(new_th2), as.data.frame(new_tb2))
 })
 
-# TODO: I think that the current behavior of wAvgBy() is wrong and needs to be updated
 test_that("w_avg_by behaves as expected", {
   data <- setup()
+  
+  new_tb1 <- data$df5 %>%
+    select(-Y) %>%
+    mutate(weights = Number1 * Number2) %>%
+    dplyr::group_by(X) %>%
+    summarise(Number1 = weighted.mean(Number1, weights),
+              Number2 = weighted.mean(Number2, weights))
+  new_th1 <- data$th5 %>%
+    drop_columns("Y") %>%
+    update("weights = Number1 * Number2") %>%
+    w_avg_by("weights", "X")
+  expect_equal(as.data.frame(new_th1), as.data.frame(new_tb1))
+  
+  new_tb2 <- data$df5 %>%
+    mutate(weights = Number1 * Number2) %>%
+    dplyr::group_by(X, Y) %>%
+    summarise(Number1 = weighted.mean(Number1, weights),
+              Number2 = weighted.mean(Number2, weights)) %>%
+    arrange(X, Y)
+  new_th2 <- data$th5 %>%
+    update("weights = Number1 * Number2") %>%
+    w_avg_by("weights", c("X", "Y")) %>%
+    sort_by(c("X", "Y"))
+  expect_equal(as.data.frame(new_th2), as.data.frame(new_tb2))
 })
 
 test_that("median_by behaves as expected", {
