@@ -50,8 +50,6 @@ setup <- function() {
 
 ##### TESTING GOOD INPUTS #####
 
-# TODO: Test all of the following with default inputs
-
 test_that("select behaves as expected", {
     data <- setup()
     
@@ -238,13 +236,36 @@ test_that("where behaves as expected", {
     expect_equal(as.data.frame(new_th3), as.data.frame(new_tb3))
 })
 
-# TODO: Test group_by and ungroup
-test_that("group_by behaves as expected", {
+test_that("group_by and ungroup behaves as expected", {
     data <- setup()
-})
-
-test_that("ungroup behaves as expected", {
-    data <- setup()
+    
+    # There is not a clean analog to group_by() in dplyr, so we evaluate
+    # correctness by evaluating that these functions behave as inverses.
+    # Easiest when grouping columns are first, otherwise we must also reorder.
+    
+    new_th1 <- data$th1 %>%
+      group_by("string_col") %>%
+      ungroup() %>%
+      sort("string_col")
+    expect_equal(as.data.frame(new_th1), as.data.frame(data$th1 %>% sort("string_col")))
+    
+    new_th3 <- data$th3 %>%
+      group_by(c("X1", "X2", "X3", "X4", "X5")) %>%
+      ungroup() %>%
+      sort(c("X1", "X2", "X3", "X4", "X5"))
+    expect_equal(as.data.frame(new_th3), as.data.frame(data$th3 %>% sort(c("X1", "X2", "X3", "X4", "X5"))))
+    
+    new_th5 <- data$th5 %>%
+      group_by("X") %>%
+      ungroup() %>%
+      sort("X")
+    expect_equal(as.data.frame(new_th5), as.data.frame(data$th5 %>% sort("X")))
+    
+    new_th6 <- data$th6 %>%
+      group_by(c("X", "Y")) %>%
+      ungroup() %>%
+      sort(c("X", "Y"))
+    expect_equal(as.data.frame(new_th6), as.data.frame(data$th6 %>% sort(c("X", "Y"))))
 })
 
 test_that("first_by behaves as expected", {
@@ -642,7 +663,7 @@ test_that("sort behaves as expected", {
   expect_equal(as.data.frame(new_th5), as.data.frame(new_tb5))
 })
 
-# TODO: Our definition of a cross join is significantly different from dplyr
+# TODO: Test joins. Our join API is mildly confusing
 test_that("cross_join behaves as expected", {
     data <- setup()
 })
