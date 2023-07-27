@@ -234,25 +234,26 @@ public interface Table extends
     <T> ColumnSource<T> getColumnSource(String sourceName);
 
     /**
-     * Retrieves a {@code ColumnSource} and {@link ColumnSource#cast casts} it to the target class {@code clazz}.
+     * Retrieves a {@code ColumnSource} and {@link ColumnSource#cast(Class) casts} it to the target class {@code clazz}.
      *
      * @param sourceName The name of the column
      * @param clazz The target type
      * @param <T> The target type, as a type parameter. Intended to be inferred from {@code clazz}.
      * @return The column source for {@code sourceName}, parameterized by {@code T}
+     * @see ColumnSource#cast(Class)
      */
     <T> ColumnSource<T> getColumnSource(String sourceName, Class<? extends T> clazz);
 
     /**
-     * Retrieves a {@code ColumnSource} and {@link ColumnSource#cast casts} it to the target class {@code clazz}.
-     * Additionally, this checks that {@code componentType} is equal to the returned
-     * {@link ColumnSource#getComponentType()}, or both are null.
+     * Retrieves a {@code ColumnSource} and {@link ColumnSource#cast(Class, Class)} casts} it to the target class
+     * {@code clazz} and {@code componentType}.
      *
      * @param sourceName The name of the column
      * @param clazz The target type
-     * @param componentType The target component type
+     * @param componentType The target component type, may be null
      * @param <T> The target type, as a type parameter. Intended to be inferred from {@code clazz}.
      * @return The column source for {@code sourceName}, parameterized by {@code T}
+     * @see ColumnSource#cast(Class, Class)
      */
     <T> ColumnSource<T> getColumnSource(String sourceName, Class<? extends T> clazz, Class<?> componentType);
 

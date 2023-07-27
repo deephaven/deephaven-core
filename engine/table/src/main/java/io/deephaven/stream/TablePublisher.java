@@ -5,8 +5,9 @@ import io.deephaven.engine.table.Table;
 import io.deephaven.engine.table.TableDefinition;
 import io.deephaven.engine.table.impl.sources.ArrayBackedColumnSource;
 import io.deephaven.engine.updategraph.UpdateGraph;
-import io.deephaven.util.annotations.VisibleForTesting;
+import io.deephaven.util.annotations.TestUseOnly;
 
+import javax.annotation.Nullable;
 import java.util.Objects;
 
 /**
@@ -18,8 +19,8 @@ public class TablePublisher {
      * Constructs a table publisher.
      *
      * <p>
-     * The {@code onShutdownCallback} is called one time when the publisher should stop publishing new data and release
-     * any related resources as soon as practicable since publishing won't have any downstream effects.
+     * The {@code onShutdownCallback}, if present, is called one time when the publisher should stop publishing new data
+     * and release any related resources as soon as practicable since publishing won't have any downstream effects.
      *
      * <p>
      * Equivalent to calling {@link #of(String, TableDefinition, Runnable, UpdateGraph, int)} with the
@@ -28,10 +29,10 @@ public class TablePublisher {
      *
      * @param name the name
      * @param definition the table definition
-     * @param onShutdownCallback the on shutdown callback
+     * @param onShutdownCallback the on-shutdown callback
      * @return the table publisher
      */
-    public static TablePublisher of(String name, TableDefinition definition, Runnable onShutdownCallback) {
+    public static TablePublisher of(String name, TableDefinition definition, @Nullable Runnable onShutdownCallback) {
         return of(name, definition, onShutdownCallback, ExecutionContext.getContext().getUpdateGraph(),
                 ArrayBackedColumnSource.BLOCK_SIZE);
     }
@@ -40,8 +41,8 @@ public class TablePublisher {
      * Constructs a table publisher.
      *
      * <p>
-     * The {@code onShutdownCallback} is called one time when the publisher should stop publishing new data and release
-     * any related resources as soon as practicable since publishing won't have any downstream effects.
+     * The {@code onShutdownCallback}, if present, is called one time when the publisher should stop publishing new data
+     * and release any related resources as soon as practicable since publishing won't have any downstream effects.
      *
      * <p>
      * The {@code chunkSize} is the size at which chunks will be filled from the source table during an
@@ -49,24 +50,26 @@ public class TablePublisher {
      *
      * @param name the name
      * @param definition the table definition
-     * @param onShutdownCallback the on shutdown callback
+     * @param onShutdownCallback the on-shutdown callback
      * @param updateGraph the update graph for the blink table
      * @param chunkSize the chunk size is the maximum size
      * @return the table publisher
      */
-    public static TablePublisher of(String name, TableDefinition definition, Runnable onShutdownCallback,
+    public static TablePublisher of(String name, TableDefinition definition, @Nullable Runnable onShutdownCallback,
             UpdateGraph updateGraph, int chunkSize) {
         final TableStreamPublisherImpl publisher =
                 new TableStreamPublisherImpl(name, definition, onShutdownCallback, chunkSize);
-        // noinspection resource
-        new StreamToBlinkTableAdapter(definition, publisher, updateGraph, name);
-        return new TablePublisher(publisher);
+        final StreamToBlinkTableAdapter adapter =
+                new StreamToBlinkTableAdapter(definition, publisher, updateGraph, name);
+        return new TablePublisher(publisher, adapter);
     }
 
     private final TableStreamPublisherImpl publisher;
+    private final StreamToBlinkTableAdapter adapter;
 
-    private TablePublisher(TableStreamPublisherImpl publisher) {
+    private TablePublisher(TableStreamPublisherImpl publisher, StreamToBlinkTableAdapter adapter) {
         this.publisher = Objects.requireNonNull(publisher);
+        this.adapter = Objects.requireNonNull(adapter);
     }
 
     /**
@@ -88,7 +91,7 @@ public class TablePublisher {
      * @return the blink table
      */
     public Table table() {
-        return publisher.table();
+        return adapter.table();
     }
 
     /**
@@ -113,12 +116,12 @@ public class TablePublisher {
     /**
      * Publish a {@code failure} for notification to the {@link io.deephaven.engine.table.TableListener listeners} of
      * the {@link #table() blink table}. Future calls to {@link #add(Table)} will silently return. Will cause the on
-     * shutdown callback if it hasn't already been invoked.
+     * shutdown callback to be invoked if it hasn't already been invoked.
      *
      * @param failure the failure
      */
     public void publishFailure(Throwable failure) {
-        publisher.publishFailure(failure);
+        publisher.acceptFailure(failure);
     }
 
     /**
@@ -127,16 +130,16 @@ public class TablePublisher {
      *
      * <p>
      * Once this is {@code false}, it will always remain {@code false}. For more prompt notifications, publishers may
-     * prefer to use on shutdown callbacks.
+     * prefer to use on-shutdown callbacks.
      *
      * @return if this is alive
      */
     public boolean isAlive() {
-        return publisher.isAlive();
+        return adapter.isAlive();
     }
 
-    @VisibleForTesting
+    @TestUseOnly
     void runForUnitTests() {
-        publisher.runForUnitTests();
+        adapter.run();
     }
 }

@@ -176,8 +176,9 @@ public interface ColumnSource<T>
     /**
      * Returns this {@code ColumnSource}, parameterized by {@code <TYPE>}, if the data type of this column (as given by
      * {@link #getType()}) can be cast to {@code clazz}. This is analogous to casting the objects provided by this
-     * column source to {@code clazz}. Additionally, this checks that {@code componentType} is equal to
-     * {@link ColumnSource#getComponentType()}, or both are {@code null}.
+     * column source to {@code clazz}. Additionally, this checks that the component type of this column (as given by
+     * {@link #getComponentType()}) can be cast to {@code componentType} (both must be present and castable, or both
+     * must be {@code null}).
      *
      * <p>
      * For example, the following code will throw an exception if the "MyString" column does not actually contain
@@ -191,19 +192,21 @@ public interface ColumnSource<T>
      * retrieved from the column source, such as with {@code String myStr = colSource.get(0)}.
      *
      * @param clazz The target type.
-     * @param componentType The target component type
+     * @param componentType The target component type, may be {@code null}.
      * @param <TYPE> The target type, as a type parameter. Intended to be inferred from {@code clazz}.
      * @return A {@code ColumnSource} parameterized by {@code TYPE}.
      */
     @FinalDefault
     default <TYPE> ColumnSource<TYPE> cast(Class<? extends TYPE> clazz, Class<?> componentType) {
         final ColumnSource<TYPE> casted = cast(clazz);
-        if (!Objects.equals(componentType, casted.getComponentType())) {
-            throw new RuntimeException(String.format(
-                    "Expected componentTypes to be equal for cast with clazz=%s, componentType=%s, getComponentType()=%s",
-                    clazz, componentType, casted.getComponentType()));
+        final Class<?> columnSourceComponentType = getComponentType();
+        if ((componentType == null && columnSourceComponentType == null) || (componentType != null
+                && columnSourceComponentType != null && componentType.isAssignableFrom(columnSourceComponentType))) {
+            return casted;
         }
-        return casted;
+        throw new ClassCastException(String.format(
+                "Cannot convert column source componentType for type %s to %s (for %s)",
+                columnSourceComponentType, componentType, clazz));
     }
 
     /**

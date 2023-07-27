@@ -20,7 +20,6 @@ import io.deephaven.engine.table.impl.sources.ReinterpretUtils;
 import io.deephaven.util.SafeCloseable;
 import io.deephaven.util.SafeCloseableArray;
 import org.jetbrains.annotations.NotNull;
-import org.jetbrains.annotations.VisibleForTesting;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -33,7 +32,7 @@ class TableStreamPublisherImpl implements StreamPublisher {
     private final TableDefinition definition;
     private final Runnable onShutdownCallback;
     private final int chunkSize;
-    private StreamToBlinkTableAdapter adapter;
+    private StreamConsumer consumer;
 
     TableStreamPublisherImpl(String name, TableDefinition definition, Runnable onShutdownCallback, int chunkSize) {
         if (chunkSize <= 0) {
@@ -41,27 +40,20 @@ class TableStreamPublisherImpl implements StreamPublisher {
         }
         this.name = Objects.requireNonNull(name);
         this.definition = Objects.requireNonNull(definition);
-        this.onShutdownCallback = Objects.requireNonNull(onShutdownCallback);
+        this.onShutdownCallback = onShutdownCallback;
         this.chunkSize = chunkSize;
     }
 
     @Override
     public void register(@NotNull StreamConsumer consumer) {
-        if (this.adapter != null) {
+        if (this.consumer != null) {
             throw new IllegalStateException("Can not register multiple StreamConsumers.");
         }
-        if (!(consumer instanceof StreamToBlinkTableAdapter)) {
-            throw new IllegalStateException("TableStreamPublisher semantics only work with StreamToBlinkTableAdapter");
-        }
-        this.adapter = (StreamToBlinkTableAdapter) Objects.requireNonNull(consumer);
+        this.consumer = Objects.requireNonNull(consumer);
     }
 
     public TableDefinition definition() {
         return definition;
-    }
-
-    public Table table() {
-        return adapter.table();
     }
 
     public void add(Table table) {
@@ -77,21 +69,18 @@ class TableStreamPublisherImpl implements StreamPublisher {
                     ConstructSnapshot.makeSnapshotControl(false, table.isRefreshing(), (NotificationStepSource) table),
                     fillChunks);
         }
-        adapter.accept(fillChunks.outstandingChunks);
+        consumer.accept(fillChunks.outstandingChunks);
     }
 
-    public void publishFailure(Throwable e) {
-        adapter.acceptFailure(e);
-    }
-
-    public boolean isAlive() {
-        return adapter.isAlive();
+    public void acceptFailure(Throwable e) {
+        consumer.acceptFailure(e);
     }
 
     @Override
     public void shutdown() {
-        // #adds will not have any downstream effect, notify publisher
-        onShutdownCallback.run();
+        if (onShutdownCallback != null) {
+            onShutdownCallback.run();
+        }
     }
 
     private class FillChunks implements SnapshotFunction {
@@ -190,10 +179,5 @@ class TableStreamPublisherImpl implements StreamPublisher {
     @Override
     public void flush() {
         // no need for flushing, we always pass off chunks to consumer in #add(Table)
-    }
-
-    @VisibleForTesting
-    void runForUnitTests() {
-        adapter.run();
     }
 }
