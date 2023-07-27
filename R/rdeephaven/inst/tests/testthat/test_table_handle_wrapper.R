@@ -56,8 +56,6 @@ test_that("nrow returns the correct number of rows", {
     expect_equal(data$th2$nrow(), nrow(data$df2))
     expect_equal(data$th3$nrow(), nrow(data$df3))
     expect_equal(data$th4$nrow(), nrow(data$df4))
-
-    # TODO: test nrow(data$th) when it is implemented
 })
 
 test_that("bind_to_variable binds the table to a variable", {
