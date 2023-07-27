@@ -2195,6 +2195,11 @@ public class BarrageMessageProducer<MessageView> extends LivenessArtifact
             }
             return success;
         }
+
+        @Override
+        public UpdateGraph getUpdateGraph() {
+            return parent.getUpdateGraph();
+        }
     }
 
     @VisibleForTesting

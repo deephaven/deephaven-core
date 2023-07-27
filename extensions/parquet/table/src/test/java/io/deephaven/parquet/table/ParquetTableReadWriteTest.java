@@ -34,6 +34,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import org.junit.experimental.categories.Category;
 
+import static io.deephaven.engine.testutil.TstUtils.assertTableEquals;
 import static org.junit.Assert.*;
 
 @Category(OutOfBandTest.class)
@@ -62,7 +63,7 @@ public class ParquetTableReadWriteTest {
         FileUtils.deleteRecursively(rootFile);
     }
 
-    private static Table getTableFlat(int size, boolean includeSerializable) {
+    private static Table getTableFlat(int size, boolean includeSerializable, boolean includeBigDecimal) {
         ExecutionContext.getContext().getQueryLibrary().importClass(SomeSillyTest.class);
         ArrayList<String> columns =
                 new ArrayList<>(Arrays.asList("someStringColumn = i % 10 == 0?null:(`` + (i % 101))",
@@ -80,9 +81,6 @@ public class ParquetTableReadWriteTest {
                         "someTime = DateTimeUtils.now() + i",
                         "someKey = `` + (int)(i /100)",
                         "nullKey = i < -1?`123`:null",
-                        "bdColumn = java.math.BigDecimal.valueOf(ii).stripTrailingZeros()",
-                        "biColumn = java.math.BigInteger.valueOf(ii)",
-                        "nullKey = i < -1?`123`:null",
                         "nullIntColumn = (int)null",
                         "nullLongColumn = (long)null",
                         "nullDoubleColumn = (double)null",
@@ -93,6 +91,10 @@ public class ParquetTableReadWriteTest {
                         "nullCharColumn = (char)null",
                         "nullTime = (Instant)null",
                         "nullString = (String)null"));
+        if (includeBigDecimal) {
+            columns.add("bdColumn = java.math.BigDecimal.valueOf(ii).stripTrailingZeros()");
+            columns.add("biColumn = java.math.BigInteger.valueOf(ii)");
+        }
         if (includeSerializable) {
             columns.add("someSerializable = new SomeSillyTest(i)");
         }
@@ -154,7 +156,7 @@ public class ParquetTableReadWriteTest {
     }
 
     private static Table getGroupedTable(int size, boolean includeSerializable) {
-        Table t = getTableFlat(size, includeSerializable);
+        Table t = getTableFlat(size, includeSerializable, true);
         ExecutionContext.getContext().getQueryLibrary().importClass(ArrayStringSet.class);
         ExecutionContext.getContext().getQueryLibrary().importClass(StringSet.class);
         Table result = t.updateView("groupKey = i % 100 + (int)(i/10)").groupBy("groupKey");
@@ -179,7 +181,7 @@ public class ParquetTableReadWriteTest {
     }
 
     private void flatTable(String tableName, int size, boolean includeSerializable) {
-        final Table tableToSave = getTableFlat(size, includeSerializable);
+        final Table tableToSave = getTableFlat(size, includeSerializable, true);
         final File dest = new File(rootFile, "ParquetTest_" + tableName + "_test.parquet");
         ParquetTools.writeTable(tableToSave, dest);
         final Table fromDisk = ParquetTools.readTable(dest);
@@ -291,7 +293,7 @@ public class ParquetTableReadWriteTest {
         try {
             ParquetInstructions.setDefaultCompressionCodecName(codec);
             String path = rootFile + File.separator + "Table1.parquet";
-            final Table table1 = getTableFlat(10000, false);
+            final Table table1 = getTableFlat(10000, false, true);
             ParquetTools.writeTable(table1, path);
             assertTrue(new File(path).length() > 0);
             final Table table2 = ParquetTools.readTable(path);
@@ -351,6 +353,55 @@ public class ParquetTableReadWriteTest {
             assertFalse(it.hasNext());
             assertEquals(myBigDecimal, item);
         }
+    }
+
+    @Test
+    public void testNullVectorColumns() {
+        final Table nullTable = getTableFlat(10, true, false);
+
+        final File dest = new File(rootFile + File.separator + "nullTable.parquet");
+        ParquetTools.writeTable(nullTable, dest);
+        Table fromDisk = ParquetTools.readTable(dest);
+        assertTableEquals(nullTable, fromDisk);
+
+        // Take a groupBy to create vector columns containing null values
+        final Table nullVectorTable = nullTable.groupBy();
+        ParquetTools.writeTable(nullVectorTable, dest);
+        fromDisk = ParquetTools.readTable(dest);
+        assertTableEquals(nullVectorTable, fromDisk);
+    }
+
+    @Test
+    public void testArrayColumns() {
+        ArrayList<String> columns =
+                new ArrayList<>(Arrays.asList(
+                        "someStringArrayColumn = new String[] {i % 10 == 0?null:(`` + (i % 101))}",
+                        "someIntArrayColumn = new int[] {i}",
+                        "someLongArrayColumn = new long[] {ii}",
+                        "someDoubleArrayColumn = new double[] {i*1.1}",
+                        "someFloatArrayColumn = new float[] {(float)(i*1.1)}",
+                        "someBoolArrayColumn = new Boolean[] {i % 3 == 0?true:i%3 == 1?false:null}",
+                        "someShorArrayColumn = new short[] {(short)i}",
+                        "someByteArrayColumn = new byte[] {(byte)i}",
+                        "someCharArrayColumn = new char[] {(char)i}",
+                        "someTimeArrayColumn = new Instant[] {(Instant)DateTimeUtils.now() + i}",
+                        "nullStringArrayColumn = new String[] {(String)null}",
+                        "nullIntArrayColumn = new int[] {(int)null}",
+                        "nullLongArrayColumn = new long[] {(long)null}",
+                        "nullDoubleArrayColumn = new double[] {(double)null}",
+                        "nullFloatArrayColumn = new float[] {(float)null}",
+                        "nullBoolArrayColumn = new Boolean[] {(Boolean)null}",
+                        "nullShorArrayColumn = new short[] {(short)null}",
+                        "nullByteArrayColumn = new byte[] {(byte)null}",
+                        "nullCharArrayColumn = new char[] {(char)null}",
+                        "nullTimeArrayColumn = new Instant[] {(Instant)null}"));
+
+        final Table arrayTable = TableTools.emptyTable(20).select(
+                Selectable.from(columns));
+        final File dest = new File(rootFile + File.separator + "arrayTable.parquet");
+        ParquetTools.writeTable(arrayTable, dest);
+        Table fromDisk = ParquetTools.readTable(dest);
+        assertTableEquals(arrayTable, fromDisk);
     }
 
     /**
