@@ -31,9 +31,12 @@ setup <- function() {
     th3 <- client$import_table(df3)
     th4 <- client$import_table(df4)
 
+    # time table to test is_static()
+    th5 <- client$time_table(0, 1000000000) %>% update("X = ii")
+
     return(list("client" = client,
                 "df1" = df1, "df2" = df2, "df3" = df3, "df4" = df4,
-                "th1" = th1, "th2" = th2, "th3" = th3, "th4" = th4))
+                "th1" = th1, "th2" = th2, "th3" = th3, "th4" = th4, "th5" = th5))
 }
 
 ##### TESTING GOOD INPUTS #####
@@ -45,8 +48,7 @@ test_that("is_static returns the correct value", {
     expect_true(data$th2$is_static())
     expect_true(data$th3$is_static())
     expect_true(data$th4$is_static())
-
-    # TODO: test ticking tables when they can be created from R
+    expect_false(data$th5$is_static())
 })
 
 test_that("nrow returns the correct number of rows", {
