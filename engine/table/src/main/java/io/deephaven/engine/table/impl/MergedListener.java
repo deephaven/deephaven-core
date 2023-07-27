@@ -69,19 +69,25 @@ public abstract class MergedListener extends LivenessArtifact implements Notific
     private Runnable delayedErrorReference;
 
     protected MergedListener(
-            Iterable<? extends ListenerRecorder> recorders,
-            Iterable<NotificationQueue.Dependency> dependencies,
-            String listenerDescription,
-            @Nullable QueryTable result) {
-        this.updateGraph = result != null
-                ? result.getUpdateGraph()
-                : ExecutionContext.getContext().getUpdateGraph();
+            final Iterable<? extends ListenerRecorder> recorders,
+            final Iterable<NotificationQueue.Dependency> dependencies,
+            final String listenerDescription,
+            final UpdateGraph updateGraph,
+            final @Nullable QueryTable result) {
+        this.updateGraph = updateGraph;
+        if (result != null && result.isRefreshing()) {
+            if (result.getUpdateGraph() != updateGraph) {
+                throw new IllegalArgumentException("result.getUpdateGraph() != updateGraph: "
+                        + result.getUpdateGraph() + " != " + updateGraph);
+            }
+        }
+
         this.recorders = recorders;
         recorders.forEach(this::manage);
         this.dependencies = dependencies;
         this.listenerDescription = listenerDescription;
         this.result = result;
-        this.entry = PeriodicUpdateGraph.createUpdatePerformanceEntry(updateGraph, listenerDescription);
+        this.entry = PeriodicUpdateGraph.createUpdatePerformanceEntry(this.updateGraph, listenerDescription);
         this.logPrefix = System.identityHashCode(this) + " " + listenerDescription + " Merged Listener: ";
     }
 

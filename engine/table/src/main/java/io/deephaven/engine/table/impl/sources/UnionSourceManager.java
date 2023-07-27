@@ -220,7 +220,8 @@ public class UnionSourceManager {
         private MergedUnionListener(
                 @NotNull final Iterable<? extends ListenerRecorder> listenerRecorders,
                 @NotNull final QueryTable resultTable) {
-            super(listenerRecorders, List.of(), "PartitionedTable.merge()", resultTable);
+            super(listenerRecorders, List.of(), "PartitionedTable.merge()", resultTable.getUpdateGraph(),
+                    resultTable);
         }
 
         @Override

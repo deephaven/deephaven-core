@@ -175,6 +175,7 @@ public class WouldMatchOperation implements QueryTable.MemoizableOperation<Query
             super(Collections.singletonList(recorder),
                     dependencies,
                     "merge(" + makeDescription() + ")",
+                    parent.getUpdateGraph(dependencies),
                     resultTable);
             this.recorder = recorder;
         }
@@ -221,6 +222,7 @@ public class WouldMatchOperation implements QueryTable.MemoizableOperation<Query
             super(Collections.emptyList(),
                     dependencies,
                     "wouldMatch(" + makeDescription() + ")",
+                    parent.getUpdateGraph(dependencies),
                     resultTable);
         }
 

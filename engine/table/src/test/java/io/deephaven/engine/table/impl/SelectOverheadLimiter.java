@@ -122,7 +122,8 @@ public class SelectOverheadLimiter {
         recorders.add(inputRecorder.getValue());
 
         final MergedListener mergedListener = new MergedListener(recorders,
-                Collections.singletonList((NotificationQueue.Dependency) input), "clampSelectOverhead", result) {
+                Collections.singletonList(input), "clampSelectOverhead",
+                input.getUpdateGraph(), result) {
             Table flatResult = null;
             ListenerRecorder flatRecorder;
             ModifiedColumnSet.Transformer flatTransformer;

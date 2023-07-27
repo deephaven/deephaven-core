@@ -17,6 +17,7 @@ import io.deephaven.engine.table.TableUpdate;
 import io.deephaven.engine.table.impl.perf.PerformanceEntry;
 import io.deephaven.engine.updategraph.*;
 import io.deephaven.engine.updategraph.impl.PeriodicUpdateGraph;
+import io.deephaven.engine.util.string.StringUtils;
 import io.deephaven.time.DateTimeUtils;
 import io.deephaven.io.log.LogEntry;
 import io.deephaven.io.log.impl.LogOutputStringImpl;
@@ -61,7 +62,7 @@ public abstract class InstrumentedTableListenerBase extends LivenessArtifact
 
     InstrumentedTableListenerBase(@Nullable String description, boolean terminalListener) {
         this.updateGraph = ExecutionContext.getContext().getUpdateGraph();
-        this.description = (description == null || description.length() == 0)
+        this.description = StringUtils.isNullOrEmpty(description)
                 ? QueryPerformanceRecorder.UNINSTRUMENTED_CODE_DESCRIPTION
                 : description;
         this.entry = PeriodicUpdateGraph.createUpdatePerformanceEntry(updateGraph, description);

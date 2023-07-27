@@ -76,7 +76,8 @@ public class ZeroKeyChunkedAjMergedListener extends MergedListener {
             SegmentedSortedArray rightSsa,
             WritableRowRedirection rowRedirection,
             JoinControl joinControl) {
-        super(Arrays.asList(leftRecorder, rightRecorder), Collections.emptyList(), listenerDescription, result);
+        super(Arrays.asList(leftRecorder, rightRecorder), Collections.emptyList(), listenerDescription,
+                leftTable.getUpdateGraph(rightTable), result);
         this.leftRecorder = leftRecorder;
         this.rightRecorder = rightRecorder;
         this.leftTable = leftTable;

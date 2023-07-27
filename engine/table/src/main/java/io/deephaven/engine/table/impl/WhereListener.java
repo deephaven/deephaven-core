@@ -51,7 +51,8 @@ class WhereListener extends MergedListener {
             final QueryTable.FilteredTable result,
             final WhereFilter[] filters) {
         super(recorder == null ? Collections.emptyList() : Collections.singleton(recorder), dependencies,
-                "where(" + Arrays.toString(filters) + ")", result);
+                "where(" + Arrays.toString(filters) + ")", sourceTable.getUpdateGraph(dependencies),
+                result);
         this.sourceTable = sourceTable;
         this.recorder = recorder;
         this.result = result;

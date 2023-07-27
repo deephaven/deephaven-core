@@ -11,14 +11,13 @@ import io.deephaven.chunk.ChunkType;
 import io.deephaven.chunk.util.pools.ChunkPoolConstants;
 import io.deephaven.configuration.Configuration;
 import io.deephaven.engine.context.ExecutionContext;
+import io.deephaven.engine.table.impl.InstrumentedUpdateSource;
 import io.deephaven.engine.updategraph.LogicalClock;
 import io.deephaven.engine.updategraph.NotificationQueue;
 import io.deephaven.engine.updategraph.UpdateSourceRegistrar;
 import io.deephaven.engine.rowset.*;
 import io.deephaven.engine.table.*;
 import io.deephaven.engine.table.impl.QueryTable;
-import io.deephaven.engine.table.impl.perf.PerformanceEntry;
-import io.deephaven.engine.table.impl.perf.UpdatePerformanceTracker;
 import io.deephaven.engine.table.impl.sources.ArrayBackedColumnSource;
 import io.deephaven.engine.table.impl.sources.LongSparseArraySource;
 import io.deephaven.engine.table.impl.sources.ReinterpretUtils;
@@ -27,7 +26,6 @@ import io.deephaven.engine.table.impl.util.BarrageMessage;
 import io.deephaven.engine.table.impl.util.LongColumnSourceWritableRowRedirection;
 import io.deephaven.engine.table.impl.util.WritableRowRedirection;
 import io.deephaven.engine.updategraph.*;
-import io.deephaven.engine.updategraph.impl.PeriodicUpdateGraph;
 import io.deephaven.extensions.barrage.BarragePerformanceLog;
 import io.deephaven.extensions.barrage.BarrageSubscriptionPerformanceLogger;
 import io.deephaven.internal.log.LoggerFactory;
@@ -55,7 +53,7 @@ import java.util.function.LongConsumer;
  * <p>
  * Note that <b>viewport</b>s are defined in row positions of the upstream table.
  */
-public abstract class BarrageTable extends QueryTable implements BarrageMessage.Listener, Runnable {
+public abstract class BarrageTable extends QueryTable implements BarrageMessage.Listener {
 
     public static final boolean DEBUG_ENABLED =
             Configuration.getInstance().getBooleanWithDefault("BarrageTable.debug", false);
@@ -67,9 +65,6 @@ public abstract class BarrageTable extends QueryTable implements BarrageMessage.
     private final UpdateSourceRegistrar registrar;
     private final NotificationQueue notificationQueue;
     private final ScheduledExecutorService executorService;
-
-    @Nullable
-    private final PerformanceEntry refreshEntry;
 
     protected final Stats stats;
 
@@ -105,7 +100,7 @@ public abstract class BarrageTable extends QueryTable implements BarrageMessage.
     /** synchronize access to pendingUpdates */
     private final Object pendingUpdatesLock = new Object();
 
-    /** accumulate pending updates until we're refreshed in {@link #run()} */
+    /** accumulate pending updates until we're refreshed in {@link SourceRefresher#run()} */
     private ArrayDeque<BarrageMessage> pendingUpdates = new ArrayDeque<>();
 
     /** alternative pendingUpdates container to avoid allocating, and resizing, a new instance */
@@ -121,6 +116,8 @@ public abstract class BarrageTable extends QueryTable implements BarrageMessage.
 
     private final List<Object> processedData;
     private final TLongList processedStep;
+
+    private final SourceRefresher refresher;
 
     protected BarrageTable(final UpdateSourceRegistrar registrar,
             final NotificationQueue notificationQueue,
@@ -144,9 +141,6 @@ public abstract class BarrageTable extends QueryTable implements BarrageMessage.
         } else {
             stats = new Stats(tableKey);
         }
-
-        this.refreshEntry = PeriodicUpdateGraph.createUpdatePerformanceEntry(updateGraph,
-                "BarrageTable(" + System.identityHashCode(this) + (stats != null ? ") " + stats.tableKey : ")"));
 
         if (initialViewPortRows == -1) {
             serverViewport = null;
@@ -172,6 +166,8 @@ public abstract class BarrageTable extends QueryTable implements BarrageMessage.
             processedData = null;
             processedStep = null;
         }
+
+        this.refresher = new SourceRefresher();
     }
 
     /**
@@ -180,7 +176,7 @@ public abstract class BarrageTable extends QueryTable implements BarrageMessage.
      * @implNote this cannot be performed in the constructor as the class is subclassed.
      */
     public void addSourceToRegistrar() {
-        registrar.addSource(this);
+        registrar.addSource(refresher);
     }
 
     abstract protected TableUpdate applyUpdates(ArrayDeque<BarrageMessage> localPendingUpdates);
@@ -250,21 +246,22 @@ public abstract class BarrageTable extends QueryTable implements BarrageMessage.
         enqueueError(t);
     }
 
-    @Override
-    public void run() {
-        if (refreshEntry != null) {
-            refreshEntry.onUpdateStart();
+    private class SourceRefresher extends InstrumentedUpdateSource {
+
+        SourceRefresher() {
+            super(updateGraph, "BarrageTable(" + System.identityHashCode(BarrageTable.this)
+                    + (stats != null ? ") " + stats.tableKey : ")"));
         }
-        try {
-            final long startTm = System.nanoTime();
-            realRefresh();
-            recordMetric(stats -> stats.refresh, System.nanoTime() - startTm);
-        } catch (Exception e) {
-            beginLog(LogLevel.ERROR).append(": Failure during BarrageTable run: ").append(e).endl();
-            notifyListenersOnError(e, null);
-        } finally {
-            if (refreshEntry != null) {
-                refreshEntry.onUpdateEnd();
+
+        @Override
+        protected void instrumentedRefresh() {
+            try {
+                final long startTm = System.nanoTime();
+                realRefresh();
+                recordMetric(stats -> stats.refresh, System.nanoTime() - startTm);
+            } catch (Exception e) {
+                beginLog(LogLevel.ERROR).append(": Failure during BarrageTable run: ").append(e).endl();
+                notifyListenersOnError(e, null);
             }
         }
     }
@@ -326,7 +323,7 @@ public abstract class BarrageTable extends QueryTable implements BarrageMessage.
 
     private void cleanup() {
         unsubscribed = true;
-        registrar.removeSource(this);
+        registrar.removeSource(refresher);
         synchronized (pendingUpdatesLock) {
             // release any pending snapshots, as we will never process them
             pendingUpdates.clear();

@@ -318,7 +318,8 @@ public class CrossJoinHelper {
                 // - Generate downstream MCS.
                 // - Propagate and Profit.
                 final MergedListener mergedListener = new MergedListener(Arrays.asList(leftRecorder, rightRecorder),
-                        Collections.emptyList(), bucketingContext.listenerDescription, resultTable) {
+                        Collections.emptyList(), bucketingContext.listenerDescription,
+                        leftTable.getUpdateGraph(rightTable), resultTable) {
                     private final CrossJoinModifiedSlotTracker tracker = new CrossJoinModifiedSlotTracker(jsm);
 
                     @Override
@@ -1331,7 +1332,7 @@ public class CrossJoinHelper {
                     new JoinListenerRecorder(false, listenerDescription, rightTable, result);
 
             final MergedListener mergedListener = new MergedListener(Arrays.asList(leftRecorder, rightRecorder),
-                    Collections.emptyList(), listenerDescription, result) {
+                    Collections.emptyList(), listenerDescription, leftTable.getUpdateGraph(rightTable), result) {
                 @Override
                 protected void process() {
                     onUpdate.accept(leftRecorder.getUpdate(), rightRecorder.getUpdate());

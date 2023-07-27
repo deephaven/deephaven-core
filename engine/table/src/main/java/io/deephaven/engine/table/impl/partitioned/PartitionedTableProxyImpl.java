@@ -278,7 +278,8 @@ class PartitionedTableProxyImpl extends LivenessArtifact implements PartitionedT
             return validationRecorder;
         }).toArray(ListenerRecorder[]::new);
 
-        final MergedListener validationMergeListener = new MergedListener(recorders, List.of(), "Validation", child) {
+        final MergedListener validationMergeListener = new MergedListener(recorders, List.of(), "Validation",
+                parent.getUpdateGraph(), child) {
             @Override
             protected void process() {
                 final int numValidations = dependentValidations.length;

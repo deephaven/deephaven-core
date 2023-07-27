@@ -97,7 +97,8 @@ public class BucketedChunkedAjMergedListener extends MergedListener {
             SsaSsaStamp ssaSsaStamp,
             JoinControl control, RightIncrementalHashedAsOfJoinStateManager asOfJoinStateManager,
             WritableRowRedirection rowRedirection) {
-        super(Arrays.asList(leftRecorder, rightRecorder), Collections.emptyList(), listenerDescription, result);
+        super(Arrays.asList(leftRecorder, rightRecorder), Collections.emptyList(), listenerDescription,
+                leftTable.getUpdateGraph(rightTable), result);
         this.leftRecorder = leftRecorder;
         this.rightRecorder = rightRecorder;
         this.leftTable = leftTable;

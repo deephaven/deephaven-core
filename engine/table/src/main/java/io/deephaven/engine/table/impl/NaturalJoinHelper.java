@@ -324,7 +324,7 @@ class NaturalJoinHelper {
                         new JoinListenerRecorder(false, listenerDescription, rightTable, result);
 
                 final MergedListener mergedListener = new MergedListener(Arrays.asList(leftRecorder, rightRecorder),
-                        Collections.emptyList(), listenerDescription, result) {
+                        Collections.emptyList(), listenerDescription, leftTable.getUpdateGraph(rightTable), result) {
                     @Override
                     protected void process() {
                         final ModifiedColumnSet modifiedColumnSet = result.getModifiedColumnSetForUpdates();
@@ -755,7 +755,8 @@ class NaturalJoinHelper {
                 BothIncrementalNaturalJoinStateManager jsm,
                 boolean exactMatch,
                 String listenerDescription) {
-            super(Arrays.asList(leftRecorder, rightRecorder), Collections.emptyList(), listenerDescription, result);
+            super(Arrays.asList(leftRecorder, rightRecorder), Collections.emptyList(), listenerDescription,
+                    leftTable.getUpdateGraph(rightTable), result);
             this.leftSources = leftSources;
             this.rightSources = rightSources;
             this.leftRecorder = leftRecorder;
