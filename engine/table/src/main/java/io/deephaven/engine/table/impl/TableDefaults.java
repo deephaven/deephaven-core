@@ -22,6 +22,7 @@ import io.deephaven.engine.util.ColumnFormatting;
 import io.deephaven.engine.liveness.LivenessScopeStack;
 import io.deephaven.util.annotations.FinalDefault;
 
+import javax.annotation.Nullable;
 import java.util.*;
 import java.util.function.UnaryOperator;
 import java.util.stream.Collectors;
@@ -124,6 +125,16 @@ public interface TableDefaults extends Table, TableOperationsDefaults<Table, Tab
         ColumnSource rawColumnSource = getColumnSource(sourceName);
         // noinspection unchecked
         return rawColumnSource.cast(clazz);
+    }
+
+    @Override
+    @FinalDefault
+    default <T> ColumnSource<T> getColumnSource(String sourceName, Class<? extends T> clazz,
+            @Nullable Class<?> componentType) {
+        @SuppressWarnings("rawtypes")
+        ColumnSource rawColumnSource = getColumnSource(sourceName);
+        // noinspection unchecked
+        return rawColumnSource.cast(clazz, componentType);
     }
 
     // -----------------------------------------------------------------------------------------------------------------
