@@ -108,6 +108,10 @@ test_that("open_table opens the correct table from the server", {
     expect_equal(client$open_table("table4")$to_data_frame(), th4$to_data_frame())
 })
 
+# TODO: Test empty_table good inputs
+
+# TODO: Test time_table good inputs
+
 test_that("run_script correctly runs a python script", {
 
     client_options <- ClientOptions$new()
@@ -192,6 +196,10 @@ test_that("open_table fails nicely with bad inputs", {
     expect_error(client$open_table(client_options), "'name' must be passed as a single string. Got an object of class ClientOptions instead.")
     expect_error(client$open_table(c("I", "am", "string")), "'name' must be passed as a single string. Got a character vector of length 3 instead.")
 })
+
+# TODO: Test empty_table bad inputs
+
+# TODO: Test time_table bad inputs
 
 test_that("run_script fails nicely with bad input types", {
 

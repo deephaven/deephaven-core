@@ -107,7 +107,7 @@ TableHandle <- R6Class("TableHandle", cloneable = FALSE,
     )
 )
 
-### S3 METHODS
+# EXISTING GENERICS THAT WE CAN SUPPORT
 
 #' @export
 print.TableHandle <- function(th, ...) {
@@ -128,4 +128,21 @@ as_tibble.TableHandle <- function(th, ...) {
 #' @export
 as.data.frame.TableHandle <- function(th, ...) {
     th$to_data_frame()
+}
+
+#' @export
+head.TableHandle <- function(th, n) {
+    verify_int("n", n)
+    return(TableHandle$new(th$internal_table_handle$head(n)))
+}
+
+#' @export
+tail.TableHandle <- function(th, n) {
+    verify_int("n", n)
+    return(TableHandle$new(th$internal_table_handle$tail(n)))
+}
+
+#' @export
+rbind.TableHandle <- function(th, sources) {
+    return(TableHandle$new(th$internal_table_handle$merge(sources)))
 }

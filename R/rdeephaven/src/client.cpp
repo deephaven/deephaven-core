@@ -237,9 +237,9 @@ public:
         return new TableHandleWrapper(internal_tbl_hdl.tail(n));
     };
 
-    TableHandleWrapper* merge(std::string keyColumn, Rcpp::List sources) {
+    TableHandleWrapper* merge(Rcpp::List sources) {
         std::vector<deephaven::client::TableHandle> converted_sources = convertRcppListToVectorOfTypeTableHandle(sources);
-        return new TableHandleWrapper(internal_tbl_hdl.merge(keyColumn, converted_sources));
+        return new TableHandleWrapper(internal_tbl_hdl.merge(converted_sources));
     };
 
     TableHandleWrapper* sort(std::vector<std::string> columnSpecs, std::vector<bool> descending) {
@@ -393,10 +393,20 @@ public:
         return new TableHandleWrapper(internal_tbl_hdl_mngr.fetchTable(tableName));
     }
 
+    /**
+    * Creates a "zero-width" table on the server. Such a table knows its number of rows but has no columns.
+    * @param size Number of rows in the empty table.
+    */
     TableHandleWrapper* emptyTable(int64_t size) {
         return new TableHandleWrapper(internal_tbl_hdl_mngr.emptyTable(size));
     }
 
+    /**
+    * Creates a ticking table.
+    * @param startTimeNanos When the table should start ticking (in units of nanoseconds since the epoch).
+    * @param periodNanos Table ticking frequency (in nanoseconds).
+    * @return The TableHandle of the new table.
+    */
     TableHandleWrapper* timeTable(int64_t startTimeNanos, int64_t periodNanos) {
         return new TableHandleWrapper(internal_tbl_hdl_mngr.timeTable(startTimeNanos, periodNanos));
     };
