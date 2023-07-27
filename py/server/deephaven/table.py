@@ -42,9 +42,9 @@ _JPair = jpy.get_type("io.deephaven.api.Pair")
 _JLayoutHintBuilder = jpy.get_type("io.deephaven.engine.util.LayoutHintBuilder")
 _JSearchDisplayMode = jpy.get_type("io.deephaven.engine.util.LayoutHintBuilder$SearchDisplayModes")
 _JSnapshotWhenOptions = jpy.get_type("io.deephaven.api.snapshot.SnapshotWhenOptions")
-_JAxisOption = jpy.get_type("io.deephaven.engine.util.ColumnFormatting$AxisOptions")
-_JValuePlacementOption = jpy.get_type("io.deephaven.engine.util.ColumnFormatting$ValuePlacementOptions")
-_JDirectionOption = jpy.get_type("io.deephaven.engine.util.ColumnFormatting$DirectionOptions")
+_JAxisOption = jpy.get_type("io.deephaven.engine.table.Table$AxisOptions")
+_JValuePlacementOption = jpy.get_type("io.deephaven.engine.table.Table$ValuePlacementOptions")
+_JDirectionOption = jpy.get_type("io.deephaven.engine.table.Table$DirectionOptions")
 
 # PartitionedTable
 _JPartitionedTable = jpy.get_type("io.deephaven.engine.table.PartitionedTable")
@@ -2017,11 +2017,12 @@ class Table(JObjectWrapper):
             if value_column is None:
                 value_column = column
 
+            print(_JAxisOption, AxisOption.value, SearchDisplayMode.SHOW)
             return Table(j_table=self.j_table.formatDataBar(column, value_column, axis, min, max, positive_color,
                                                             negative_color, value_placement, direction, opacity,
                                                             marker_column, marker_color))
         except Exception as e:
-            raise DHError(e, "failed to format data bar.") from e
+            raise DHError(e, "failed to format data b.") from e
 
     def layout_hints(self, front: Union[str, List[str]] = None, back: Union[str, List[str]] = None,
                      freeze: Union[str, List[str]] = None, hide: Union[str, List[str]] = None,

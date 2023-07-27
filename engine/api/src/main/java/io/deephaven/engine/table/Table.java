@@ -308,9 +308,48 @@ public interface Table extends
     @ConcurrentMethod
     Table formatColumnWhere(String columnName, String condition, String formula);
 
+    enum AxisOptions {
+        /**
+         * Data bars fill the available space in the column
+         */
+        Proportional,
+        /**
+         * Zero line for data bars is centered in column
+         */
+        Middle,
+        /**
+         * Positive and negative bars face the same direction
+         */
+        Directional
+    }
+
+    enum ValuePlacementOptions {
+        /**
+         * Beside the data bar
+         */
+        Beside,
+        /**
+         * On top of the data bar
+         */
+        Overlap,
+        /**
+         * Hide the value
+         */
+        Hide
+    }
+    enum DirectionOptions {
+        /**
+         * Left to right
+         */
+        LTR,
+        /**
+         * Right to left
+         */
+        RTL
+    }
     @ConcurrentMethod
-    Table formatDataBar(String column, String valueColumn, String axis, Double min, Double max,
-            String positiveColor, String negativeColor, String valuePlacement, String direction, Double opacity,
+    Table formatDataBar(String column, String valueColumn, AxisOptions axis, Double min, Double max,
+            String positiveColor, String negativeColor, ValuePlacementOptions valuePlacement, DirectionOptions direction, Double opacity,
             String markerColumn, String markerColor);
 
     /**

@@ -233,9 +233,9 @@ public interface TableDefaults extends Table, TableOperationsDefaults<Table, Tab
         new Color(color); // Throws if it can't create it
     }
 
-    default void validateDataBarOptions(String column, String valueColumn, String axis, Double min, Double max,
-            String positiveColor, String negativeColor, String valuePlacement,
-            String direction, Double opacity, String markerColumn, String markerColor) throws IllegalArgumentException {
+    default void validateDataBarOptions(String column, String valueColumn, AxisOptions axis, Double min, Double max,
+            String positiveColor, String negativeColor, ValuePlacementOptions valuePlacement,
+            DirectionOptions direction, Double opacity, String markerColumn, String markerColor) throws IllegalArgumentException {
         if (axis != null && !axisOptions.contains(axis)) {
             throw new IllegalArgumentException("Invalid axis option: " + axis);
         }
@@ -267,9 +267,9 @@ public interface TableDefaults extends Table, TableOperationsDefaults<Table, Tab
     }
 
     @Override
-    default Table formatDataBar(String column, String valueColumn, String axis, Double min, Double max,
-            String positiveColor, String negativeColor, String valuePlacement,
-            String direction, Double opacity, String markerColumn, String markerColor) {
+    default Table formatDataBar(String column, String valueColumn, AxisOptions axis, Double min, Double max,
+            String positiveColor, String negativeColor, ValuePlacementOptions valuePlacement,
+            DirectionOptions direction, Double opacity, String markerColumn, String markerColor) {
         validateDataBarOptions(column, valueColumn, axis, min, max, positiveColor, negativeColor, valuePlacement,
                 direction, opacity, markerColumn, markerColor);
 
