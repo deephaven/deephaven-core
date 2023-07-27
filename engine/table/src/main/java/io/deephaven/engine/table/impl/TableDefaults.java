@@ -129,7 +129,8 @@ public interface TableDefaults extends Table, TableOperationsDefaults<Table, Tab
 
     @Override
     @FinalDefault
-    default <T> ColumnSource<T> getColumnSource(String sourceName, Class<? extends T> clazz, @Nullable Class<?> componentType) {
+    default <T> ColumnSource<T> getColumnSource(String sourceName, Class<? extends T> clazz,
+            @Nullable Class<?> componentType) {
         @SuppressWarnings("rawtypes")
         ColumnSource rawColumnSource = getColumnSource(sourceName);
         // noinspection unchecked
