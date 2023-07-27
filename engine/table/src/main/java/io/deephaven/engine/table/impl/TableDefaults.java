@@ -235,16 +235,8 @@ public interface TableDefaults extends Table, TableOperationsDefaults<Table, Tab
 
     default void validateDataBarOptions(String column, String valueColumn, AxisOptions axis, Double min, Double max,
             String positiveColor, String negativeColor, ValuePlacementOptions valuePlacement,
-            DirectionOptions direction, Double opacity, String markerColumn, String markerColor) throws IllegalArgumentException {
-        if (axis != null && !axisOptions.contains(axis)) {
-            throw new IllegalArgumentException("Invalid axis option: " + axis);
-        }
-        if (valuePlacement != null && !valuePlacementOptions.contains(valuePlacement)) {
-            throw new IllegalArgumentException("Invalid value placement option: " + valuePlacement);
-        }
-        if (direction != null && !directionOptions.contains(direction)) {
-            throw new IllegalArgumentException("Invalid direction option: " + direction);
-        }
+            DirectionOptions direction, Double opacity, String markerColumn, String markerColor)
+            throws IllegalArgumentException {
         if (min != null && max != null && min > max) {
             throw new IllegalArgumentException("Min cannot be greater than max.");
         }

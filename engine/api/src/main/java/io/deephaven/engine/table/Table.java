@@ -347,9 +347,11 @@ public interface Table extends
          */
         RTL
     }
+
     @ConcurrentMethod
     Table formatDataBar(String column, String valueColumn, AxisOptions axis, Double min, Double max,
-            String positiveColor, String negativeColor, ValuePlacementOptions valuePlacement, DirectionOptions direction, Double opacity,
+            String positiveColor, String negativeColor, ValuePlacementOptions valuePlacement,
+            DirectionOptions direction, Double opacity,
             String markerColumn, String markerColor);
 
     /**

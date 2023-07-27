@@ -1981,9 +1981,9 @@ class Table(JObjectWrapper):
             raise DHError(e, "failed to color format rows conditionally.") from e
 
     def format_data_bar(self, column: str, value_column: str = None, min: float = None, max: float = None,
-                        axis: AxisOption = None, positive_color: Union[str, List[str]] = None,
-                        negative_color: Union[str, List[str]] = None, value_placement: ValuePlacementOption = None,
-                        direction: DirectionOption = None, opacity: float = None, marker_column: str = None,
+                        axis: Union[AxisOption, str] = None, positive_color: Union[str, List[str]] = None,
+                        negative_color: Union[str, List[str]] = None, value_placement: Union[ValuePlacementOption, str] = None,
+                        direction: Union[DirectionOption, str] = None, opacity: float = None, marker_column: str = None,
                         marker_color: str = None) -> Table:
         """ Applies data bar formatting to the column specified.
 
@@ -2017,12 +2017,32 @@ class Table(JObjectWrapper):
             if value_column is None:
                 value_column = column
 
-            print(_JAxisOption, AxisOption.value, SearchDisplayMode.SHOW)
-            return Table(j_table=self.j_table.formatDataBar(column, value_column, axis, min, max, positive_color,
-                                                            negative_color, value_placement, direction, opacity,
+            axis_value = None
+            if axis is not None:
+                if isinstance(axis, str):
+                    axis_value = AxisOption[axis.upper()].value
+                elif isinstance(axis, AxisOption):
+                    axis_value = axis.value
+
+            direction_value = None
+            if direction is not None:
+                if isinstance(direction, str):
+                    direction_value = DirectionOption[direction.upper()].value
+                elif isinstance(direction, DirectionOption):
+                    direction_value = direction.value
+
+            value_placement_value = None
+            if value_placement is not None:
+                if isinstance(value_placement, str):
+                    value_placement_value = ValuePlacementOption[value_placement.upper()].value
+                elif isinstance(value_placement, ValuePlacementOption):
+                    value_placement_value = value_placement.value
+
+            return Table(j_table=self.j_table.formatDataBar(column, value_column, axis_value, min, max, positive_color,
+                                                            negative_color, value_placement_value, direction_value, opacity,
                                                             marker_column, marker_color))
         except Exception as e:
-            raise DHError(e, "failed to format data b.") from e
+            raise DHError(e, "failed to format data bar.") from e
 
     def layout_hints(self, front: Union[str, List[str]] = None, back: Union[str, List[str]] = None,
                      freeze: Union[str, List[str]] = None, hide: Union[str, List[str]] = None,
