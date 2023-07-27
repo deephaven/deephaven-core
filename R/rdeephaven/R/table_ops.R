@@ -11,7 +11,7 @@ NULL
 
 #' @description
 #' Creates a new in-memory table that includes one column for each argument.
-#' @param columns A string or list of strings specifying the columns to view.
+#' @param by A string or list of strings specifying the columns to view.
 #' @export
 select <- function(th, columns = character()) {
     verify_string_vector("columns", columns)
@@ -20,7 +20,7 @@ select <- function(th, columns = character()) {
 
 #' @description
 #' Creates a new formula table that includes one column for each argument.
-#' @param columns A string or list of strings specifying the columns to view.
+#' @param by A string or list of strings specifying the columns to view.
 #' @return TableHandle reference to the new table.
 #' @export
 view <- function(th, columns = character()) {
@@ -30,7 +30,7 @@ view <- function(th, columns = character()) {
 
 #' @description
 #' Creates a new table containing a new in-memory column for each argument.
-#' @param columns A string or list of strings specifying the formulas to create new columns.
+#' @param by A string or list of strings specifying the formulas to create new columns.
 #' @return TableHandle reference to the new table.
 #' @export
 update <- function(th, columns = character()) {
@@ -40,7 +40,7 @@ update <- function(th, columns = character()) {
 
 #' @description
 #' Creates a new formula table containing a new formula for each argument.
-#' @param columns A string or list of strings specifying the formulas to create new columns.
+#' @param by A string or list of strings specifying the formulas to create new columns.
 #' @return TableHandle reference to the new table.
 #' @export
 update_view <- function(th, columns = character()) {
@@ -50,7 +50,7 @@ update_view <- function(th, columns = character()) {
 
 #' @description
 #' Creates a new table with the same size as this table, but omits any of the specified columns.
-#' @param columns A string or list of strings specifying the column names to drop.
+#' @param by A string or list of strings specifying the column names to drop.
 #' @return TableHandle reference to the new table.
 #' @export
 drop_columns <- function(th, columns = character()) {
@@ -75,9 +75,9 @@ where <- function(th, condition) {
 #' @param group_by_columns A string or list of strings specifying the columns to group by.
 #' @return TableHandle reference to the new table.
 #' @export
-group_by <- function(th, group_by_columns = character()) {
-    verify_string_vector("group_by_columns", group_by_columns)
-    return(TableHandle$new(th$internal_table_handle$group_by(group_by_columns)))
+group_by <- function(th, columns = character()) {
+    verify_string_vector("columns", columns)
+    return(TableHandle$new(th$internal_table_handle$group_by(columns)))
 }
 
 #' @description
@@ -86,9 +86,9 @@ group_by <- function(th, group_by_columns = character()) {
 #' @param group_by_columns A string or list of strings specifying the columns to ungroup by.
 #' @return TableHandle reference to the new table.
 #' @export
-ungroup <- function(th, group_by_columns = character()) {
-    verify_string_vector("group_by_columns", group_by_columns)
-    return(TableHandle$new(th$internal_table_handle$ungroup(group_by_columns)))
+ungroup <- function(th, columns = character()) {
+    verify_string_vector("columns", columns)
+    return(TableHandle$new(th$internal_table_handle$ungroup(columns)))
 }
 
 #' @description
@@ -98,17 +98,17 @@ ungroup <- function(th, group_by_columns = character()) {
 #' @param group_by_columns #' @param group_by_columns A string or list of strings specifying the columns to group by.
 #' @return TableHandle reference to the new table.
 #' @export
-agg_by <- function(th, aggregations, group_by_columns = character()) {
+agg_by <- function(th, aggregations, columns = character()) {
     verify_internal_type("Aggregation", "aggregations", aggregations)
-    verify_string_vector("group_by_columns", group_by_columns)
+    verify_string_vector("columns", columns)
     aggregations = c(aggregations)
     unwrapped_aggregations = lapply(aggregations, strip_r6_wrapping_from_aggregation)
-    return(TableHandle$new(th$internal_table_handle$agg_by(unwrapped_aggregations, group_by_columns)))
+    return(TableHandle$new(th$internal_table_handle$agg_by(unwrapped_aggregations, columns)))
 }
 
 #' @description
 #' Creates a new table which contains the first row of each distinct group.
-#' @param columns A string or list of strings specifying the column names to group by.
+#' @param by A string or list of strings specifying the column names to group by.
 #' @return TableHandle reference to the new table.
 #' @export
 first_by <- function(th, columns = character()) {
@@ -118,7 +118,7 @@ first_by <- function(th, columns = character()) {
 
 #' @description
 #' Creates a new table which contains the last row of each distinct group.
-#' @param columns A string or list of strings specifying the column names to group by.
+#' @param by A string or list of strings specifying the column names to group by.
 #' @return TableHandle reference to the new table.
 #' @export
 last_by <- function(th, columns = character()) {
@@ -129,7 +129,7 @@ last_by <- function(th, columns = character()) {
 #' @description
 #' Creates a new table which contains the first n rows of each distinct group.
 #' @param n An integer specifying the number of rows to include for each group.
-#' @param columns A string or list of strings specifying the column names to group by.
+#' @param by A string or list of strings specifying the column names to group by.
 #' @return TableHandle reference to the new table.
 #' @export
 head_by <- function(th, n, columns = character()) {
@@ -141,7 +141,7 @@ head_by <- function(th, n, columns = character()) {
 #' @description
 #' Creates a new table which contains the last n rows of each distinct group.
 #' @param n An integer specifying the number of rows to include for each group.
-#' @param columns A string or list of strings specifying the column names to group by.
+#' @param by A string or list of strings specifying the column names to group by.
 #' @return TableHandle reference to the new table.
 #' @export
 tail_by <- function(th, n, columns = character()) {
@@ -152,7 +152,7 @@ tail_by <- function(th, n, columns = character()) {
 
 #' @description
 #' Creates a new table which contains the columnwise minimum of each distinct group, only defined for numeric columns.
-#' @param columns A string or list of strings specifying the column names to group by.
+#' @param by A string or list of strings specifying the column names to group by.
 #' @return TableHandle reference to the new table.
 #' @export
 min_by <- function(th, columns = character()) {
@@ -162,7 +162,7 @@ min_by <- function(th, columns = character()) {
 
 #' @description
 #' Creates a new table which contains the columnwise maximum of each distinct group, only defined for numeric columns.
-#' @param columns A string or list of strings specifying the column names to group by.
+#' @param by A string or list of strings specifying the column names to group by.
 #' @return TableHandle reference to the new table.
 #' @export
 max_by <- function(th, columns = character()) {
@@ -172,7 +172,7 @@ max_by <- function(th, columns = character()) {
 
 #' @description
 #' Creates a new table which contains the columnwise sum of each distinct group, only defined for numeric columns.
-#' @param columns A string or list of strings specifying the column names to group by.
+#' @param by A string or list of strings specifying the column names to group by.
 #' @return TableHandle reference to the new table.
 #' @export
 sum_by <- function(th, columns = character()) {
@@ -182,7 +182,7 @@ sum_by <- function(th, columns = character()) {
 
 #' @description
 #' Creates a new table which contains the columnwise sum of absolute values of each distinct group, only defined for numeric columns.
-#' @param columns A string or list of strings specifying the column names to group by.
+#' @param by A string or list of strings specifying the column names to group by.
 #' @return TableHandle reference to the new table.
 #' @export
 abs_sum_by <- function(th, columns = character()) {
@@ -192,7 +192,7 @@ abs_sum_by <- function(th, columns = character()) {
 
 #' @description
 #' Creates a new table which contains the columnwise average of each distinct group, only defined for numeric columns.
-#' @param columns A string or list of strings specifying the column names to group by.
+#' @param by A string or list of strings specifying the column names to group by.
 #' @return TableHandle reference to the new table.
 #' @export
 avg_by <- function(th, columns = character()) {
@@ -203,7 +203,7 @@ avg_by <- function(th, columns = character()) {
 #' @description
 #' Creates a new table which contains the columnwise weighted average of each distinct group, only defined for numeric columns.
 #' @param weight_column A numeric column to use for the weights.
-#' @param columns A string or list of strings specifying the column names to group by.
+#' @param by A string or list of strings specifying the column names to group by.
 #' @return TableHandle reference to the new table.
 #' @export
 w_avg_by <- function(th, weight_column, columns = character()) {
@@ -214,7 +214,7 @@ w_avg_by <- function(th, weight_column, columns = character()) {
 
 #' @description
 #' Creates a new table which contains the columnwise median of each distinct group, only defined for numeric columns.
-#' @param columns A string or list of strings specifying the column names to group by.
+#' @param by A string or list of strings specifying the column names to group by.
 #' @return TableHandle reference to the new table.
 #' @export
 median_by <- function(th, columns = character()) {
@@ -224,7 +224,7 @@ median_by <- function(th, columns = character()) {
 
 #' @description
 #' Creates a new table which contains the columnwise variance of each distinct group, only defined for numeric columns.
-#' @param columns A string or list of strings specifying the column names to group by.
+#' @param by A string or list of strings specifying the column names to group by.
 #' @return TableHandle reference to the new table.
 #' @export
 var_by <- function(th, columns = character()) {
@@ -234,7 +234,7 @@ var_by <- function(th, columns = character()) {
 
 #' @description
 #' Creates a new table which contains the columnwise standard deviation of each distinct group, only defined for numeric columns.
-#' @param columns A string or list of strings specifying the column names to group by.
+#' @param by A string or list of strings specifying the column names to group by.
 #' @return TableHandle reference to the new table.
 #' @export
 std_by <- function(th, columns = character()) {
@@ -246,7 +246,7 @@ std_by <- function(th, columns = character()) {
 #' Creates a new table which contains the columnwise pth percentile of each distinct group, only defined for numeric columns.
 #' @param percentile A float in [0, 1] specifying the percentile. The results will be the values in the source table
 #' nearest to the pth percentile, and no interpolation or estimation will be performed.
-#' @param columns A string or list of strings specifying the column names to group by.
+#' @param by A string or list of strings specifying the column names to group by.
 #' @return TableHandle reference to the new table.
 #' @export
 percentile_by <- function(th, percentile, columns = character()) {
@@ -258,7 +258,7 @@ percentile_by <- function(th, percentile, columns = character()) {
 #' @description
 #' Creates a new table which contains the number of rows in each distinct group.
 #' @param count_by_column A string specifying the name of the new count column.
-#' @param columns A string or list of strings specifying the column names to group by.
+#' @param by A string or list of strings specifying the column names to group by.
 #' @return TableHandle reference to the new table.
 #' @export
 count_by <- function(th, count_by_column = "n", columns = character()) {
@@ -300,7 +300,7 @@ exact_join <- function(th, right_side, columns_to_match, columns_to_add) {
 
 #' @description
 #' Creates a new table with rows sorted by the values in each distinct group.
-#' @param columns A string or list of strings specifying the column names to group by.
+#' @param by A string or list of strings specifying the column names to group by.
 #' @param descending A boolean or list of booleans the same size as columns, specifying
 #' whether the sort should be descending or not. Defaults to ascending sort.
 #' @return TableHandle reference to the new table.
