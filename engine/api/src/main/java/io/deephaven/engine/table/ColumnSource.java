@@ -11,9 +11,9 @@ import io.deephaven.engine.rowset.RowSet;
 import io.deephaven.util.annotations.FinalDefault;
 import org.jetbrains.annotations.NotNull;
 
+import javax.annotation.Nullable;
 import javax.annotation.OverridingMethodsMustInvokeSuper;
 import java.util.Map;
-import java.util.Objects;
 
 /**
  * A "source" for column data - allows cell values to be looked up by (long) keys.
@@ -165,9 +165,8 @@ public interface ColumnSource<T>
         Require.neqNull(clazz, "clazz");
         final Class<?> columnSourceType = getType();
         if (!clazz.isAssignableFrom(columnSourceType)) {
-            throw new ClassCastException(
-                    "Cannot convert column source for type " + columnSourceType.getName() + " to " +
-                            "type " + clazz.getName());
+            throw new ClassCastException(String.format("Cannot convert column source for type %s to type %s",
+                    columnSourceType.getName(), clazz.getName()));
         }
         // noinspection unchecked
         return (ColumnSource<TYPE>) this;
@@ -197,16 +196,20 @@ public interface ColumnSource<T>
      * @return A {@code ColumnSource} parameterized by {@code TYPE}.
      */
     @FinalDefault
-    default <TYPE> ColumnSource<TYPE> cast(Class<? extends TYPE> clazz, Class<?> componentType) {
+    default <TYPE> ColumnSource<TYPE> cast(Class<? extends TYPE> clazz, @Nullable Class<?> componentType) {
         final ColumnSource<TYPE> casted = cast(clazz);
         final Class<?> columnSourceComponentType = getComponentType();
         if ((componentType == null && columnSourceComponentType == null) || (componentType != null
                 && columnSourceComponentType != null && componentType.isAssignableFrom(columnSourceComponentType))) {
             return casted;
         }
+        final Class<?> columnSourceType = getType();
         throw new ClassCastException(String.format(
-                "Cannot convert column source componentType for type %s to %s (for %s)",
-                columnSourceComponentType, componentType, clazz));
+                "Cannot convert column source componentType for type %s to %s (for %s / %s)",
+                columnSourceComponentType == null ? null : columnSourceComponentType.getName(),
+                componentType == null ? null : componentType.getName(),
+                columnSourceType.getName(),
+                clazz.getName()));
     }
 
     /**

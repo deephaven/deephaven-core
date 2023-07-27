@@ -72,7 +72,7 @@ class TableStreamPublisherImpl implements StreamPublisher {
         consumer.accept(fillChunks.outstandingChunks);
     }
 
-    public void acceptFailure(Throwable e) {
+    public void publishFailure(Throwable e) {
         consumer.acceptFailure(e);
     }
 

@@ -18,6 +18,7 @@ import io.deephaven.engine.util.systemicmarking.SystemicObject;
 import io.deephaven.util.datastructures.LongSizedDataStructure;
 import org.jetbrains.annotations.NotNull;
 
+import javax.annotation.Nullable;
 import java.util.*;
 import java.util.function.Function;
 import java.util.function.UnaryOperator;
@@ -255,7 +256,7 @@ public interface Table extends
      * @return The column source for {@code sourceName}, parameterized by {@code T}
      * @see ColumnSource#cast(Class, Class)
      */
-    <T> ColumnSource<T> getColumnSource(String sourceName, Class<? extends T> clazz, Class<?> componentType);
+    <T> ColumnSource<T> getColumnSource(String sourceName, Class<? extends T> clazz, @Nullable Class<?> componentType);
 
     Map<String, ? extends ColumnSource<?>> getColumnSourceMap();
 

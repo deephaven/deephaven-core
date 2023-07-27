@@ -115,13 +115,13 @@ public class TablePublisher {
 
     /**
      * Publish a {@code failure} for notification to the {@link io.deephaven.engine.table.TableListener listeners} of
-     * the {@link #table() blink table}. Future calls to {@link #add(Table)} will silently return. Will cause the on
-     * shutdown callback to be invoked if it hasn't already been invoked.
+     * the {@link #table() blink table}. Future calls to {@link #add(Table)} will silently return. Will cause the
+     * on-shutdown callback to be invoked if it hasn't already been invoked.
      *
      * @param failure the failure
      */
     public void publishFailure(Throwable failure) {
-        publisher.acceptFailure(failure);
+        publisher.publishFailure(failure);
     }
 
     /**
