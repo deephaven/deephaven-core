@@ -92,47 +92,47 @@ public class TestConstructSnapshot extends RefreshingTableTestCase {
                 new FunctionalColumn<>("I", Integer.class, "S2", String.class, (Integer i) -> Integer.toString(i + 1));
         final QueryTable functionalTable = (QueryTable) table.updateView(List.of(plusOneColumn));
 
-        TableTools.show(functionalTable);
-
         final BitSet oneBit = new BitSet();
         oneBit.set(0);
         final BitSet twoBits = new BitSet();
-        twoBits.set(0);
-        twoBits.set(1);
-        final InitialSnapshot initialSnapshot = ConstructSnapshot.constructInitialSnapshotInPositionSpace(table, table,
-                oneBit, RowSetFactory.fromRange(0, 10));
-        final InitialSnapshot funcSnapshot = ConstructSnapshot.constructInitialSnapshotInPositionSpace(functionalTable,
-                functionalTable, twoBits, RowSetFactory.fromRange(0, 10));
+        twoBits.set(0, 2);
+
+        final InitialSnapshot initialSnapshot = ConstructSnapshot.constructInitialSnapshotInPositionSpace(
+                "table", table, oneBit, RowSetFactory.fromRange(0, 10));
+        final InitialSnapshot funcSnapshot = ConstructSnapshot.constructInitialSnapshotInPositionSpace(
+                "functionalTable", functionalTable, twoBits, RowSetFactory.fromRange(0, 10));
 
         final InitialSnapshotTable initialSnapshotTable =
                 InitialSnapshotTable.setupInitialSnapshotTable(table.getDefinition(), initialSnapshot);
-        TableTools.showWithRowSet(initialSnapshotTable);
-
         final InitialSnapshotTable funcSnapshotTable =
                 InitialSnapshotTable.setupInitialSnapshotTable(functionalTable.getDefinition(), funcSnapshot);
-        TableTools.showWithRowSet(funcSnapshotTable);
 
         assertTableEquals(TableTools.newTable(intCol("I", 10)), initialSnapshotTable);
         assertTableEquals(TableTools.newTable(intCol("I", 10), stringCol("S2", "11")), funcSnapshotTable);
 
-        ExecutionContext.getContext().getUpdateGraph().<ControlledUpdateGraph>cast().startCycleForUnitTests();
+        final ControlledUpdateGraph ug = ExecutionContext.getContext().getUpdateGraph().cast();
+
+        ug.startCycleForUnitTests(false);
         addToTable(table, i(1000), intCol("I", 20));
-        final InitialSnapshot initialSnapshot2 = executor.submit(() -> ConstructSnapshot
-                .constructInitialSnapshotInPositionSpace(table, table, oneBit, RowSetFactory.fromRange(0, 10))).get();
+        final InitialSnapshot initialSnapshot2 =
+                executor.submit(() -> ConstructSnapshot.constructInitialSnapshotInPositionSpace(
+                        "table", table, oneBit, RowSetFactory.fromRange(0, 10))).get();
         final InitialSnapshot funcSnapshot2 =
-                executor.submit(() -> ConstructSnapshot.constructInitialSnapshotInPositionSpace(functionalTable,
-                        functionalTable, twoBits, RowSetFactory.fromRange(0, 10))).get();
+                executor.submit(() -> ConstructSnapshot.constructInitialSnapshotInPositionSpace(
+                        "functionalTable", functionalTable, twoBits, RowSetFactory.fromRange(0, 10))).get();
         table.notifyListeners(i(), i(), i(1000));
+        ug.markSourcesRefreshedForUnitTests();
 
-        while (ExecutionContext.getContext().getUpdateGraph().<ControlledUpdateGraph>cast()
-                .flushOneNotificationForUnitTests());
+        // noinspection StatementWithEmptyBody
+        while (ug.flushOneNotificationForUnitTests());
 
-        final InitialSnapshot initialSnapshot3 = executor.submit(() -> ConstructSnapshot
-                .constructInitialSnapshotInPositionSpace(table, table, oneBit, RowSetFactory.fromRange(0, 10))).get();
+        final InitialSnapshot initialSnapshot3 =
+                executor.submit(() -> ConstructSnapshot.constructInitialSnapshotInPositionSpace(
+                        "table", table, oneBit, RowSetFactory.fromRange(0, 10))).get();
         final InitialSnapshot funcSnapshot3 =
-                executor.submit(() -> ConstructSnapshot.constructInitialSnapshotInPositionSpace(functionalTable,
-                        functionalTable, twoBits, RowSetFactory.fromRange(0, 10))).get();
-        ExecutionContext.getContext().getUpdateGraph().<ControlledUpdateGraph>cast().completeCycleForUnitTests();
+                executor.submit(() -> ConstructSnapshot.constructInitialSnapshotInPositionSpace(
+                        "functionalTable", functionalTable, twoBits, RowSetFactory.fromRange(0, 10))).get();
+        ug.completeCycleForUnitTests();
 
         final InitialSnapshotTable initialSnapshotTable2 =
                 InitialSnapshotTable.setupInitialSnapshotTable(table.getDefinition(), initialSnapshot2);
