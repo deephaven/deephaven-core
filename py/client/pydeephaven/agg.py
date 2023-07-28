@@ -314,7 +314,7 @@ def std(cols: Union[str, List[str]] = None) -> Aggregation:
 
 
 def unique(cols: Union[str, List[str]] = None, include_nulls: bool = False,
-           non_unique_sentinel: Any = None) -> Aggregation:
+           non_unique_sentinel: Union[np.number, str, bool] = None) -> Aggregation:
     """Creates a Unique aggregation which computes the single unique value within an aggregation group for each of
     the given columns. If all values in a column are null, or if there is more than one distinct value in a column, the
     result is the specified non_unique_sentinel value (defaults to null).
@@ -324,35 +324,38 @@ def unique(cols: Union[str, List[str]] = None, include_nulls: bool = False,
             default is None, only valid when used in Table agg_all_by operation
         include_nulls (bool): whether null is treated as a value for the purpose of determining if the values in the
             aggregation group are unique, default is False.
-        non_unique_sentinel (Any): the non-null sentinel value when no unique value exists, default is None. Must be
-            a non-None value when include_nulls is True.
+        non_unique_sentinel (Union[np.number, str, bool]): the non-null sentinel value when no unique value exists,
+            default is None. Must be a non-None value when include_nulls is True. When passed in as a numpy scalar
+            number value, it must be of one of these types: np.int8, np.int16, np.uint16, np.int32, np.int64, np.float32
+            , np.float64.
+
+    Raises:
+        TypeError
 
     Returns:
         an aggregation
     """
     if non_unique_sentinel is not None:
-        if isinstance(non_unique_sentinel, float):
-            if np.finfo(np.float32).min <= non_unique_sentinel <= np.finfo(np.float32).max:
-                agg_spec_non_unique_sentinel = _GrpcAggSpec.AggSpecNonUniqueSentinel(float_value=non_unique_sentinel)
-            else:
-                agg_spec_non_unique_sentinel = _GrpcAggSpec.AggSpecNonUniqueSentinel(double_value=non_unique_sentinel)
-        elif isinstance(non_unique_sentinel, int):
-            if np.iinfo(np.int8).min <= non_unique_sentinel <= np.iinfo(np.int8).max:
-                agg_spec_non_unique_sentinel = _GrpcAggSpec.AggSpecNonUniqueSentinel(byte_value=non_unique_sentinel)
-            elif np.iinfo(np.int16).min <= non_unique_sentinel <= np.iinfo(np.int16).max:
-                agg_spec_non_unique_sentinel = _GrpcAggSpec.AggSpecNonUniqueSentinel(short_value=non_unique_sentinel)
-            elif np.iinfo(np.int32).min <= non_unique_sentinel <= np.iinfo(np.int32).max:
-                agg_spec_non_unique_sentinel = _GrpcAggSpec.AggSpecNonUniqueSentinel(int_value=non_unique_sentinel)
-            else:
-                agg_spec_non_unique_sentinel = _GrpcAggSpec.AggSpecNonUniqueSentinel(long_value=non_unique_sentinel)
+        if isinstance(non_unique_sentinel, np.byte):
+            agg_spec_non_unique_sentinel = _GrpcAggSpec.AggSpecNonUniqueSentinel(byte_value=non_unique_sentinel)
+        elif isinstance(non_unique_sentinel, np.short):
+            agg_spec_non_unique_sentinel = _GrpcAggSpec.AggSpecNonUniqueSentinel(short_value=non_unique_sentinel)
+        elif isinstance(non_unique_sentinel, np.int32):
+            agg_spec_non_unique_sentinel = _GrpcAggSpec.AggSpecNonUniqueSentinel(int_value=non_unique_sentinel)
+        elif isinstance(non_unique_sentinel, np.int64):
+            agg_spec_non_unique_sentinel = _GrpcAggSpec.AggSpecNonUniqueSentinel(long_value=non_unique_sentinel)
+        elif isinstance(non_unique_sentinel, np.float32):
+            agg_spec_non_unique_sentinel = _GrpcAggSpec.AggSpecNonUniqueSentinel(float_value=non_unique_sentinel)
+        elif isinstance(non_unique_sentinel, np.float64):
+            agg_spec_non_unique_sentinel = _GrpcAggSpec.AggSpecNonUniqueSentinel(double_value=non_unique_sentinel)
+        elif isinstance(non_unique_sentinel, np.uint16):
+            agg_spec_non_unique_sentinel = _GrpcAggSpec.AggSpecNonUniqueSentinel(char_value=non_unique_sentinel)
         elif isinstance(non_unique_sentinel, str):
-            if len(non_unique_sentinel) == 1:
-                agg_spec_non_unique_sentinel = _GrpcAggSpec.AggSpecNonUniqueSentinel(
-                    char_value=ord(non_unique_sentinel))
-            else:
-                agg_spec_non_unique_sentinel = _GrpcAggSpec.AggSpecNonUniqueSentinel(string_value=non_unique_sentinel)
+            agg_spec_non_unique_sentinel = _GrpcAggSpec.AggSpecNonUniqueSentinel(string_value=non_unique_sentinel)
         elif isinstance(non_unique_sentinel, bool):
             agg_spec_non_unique_sentinel = _GrpcAggSpec.AggSpecNonUniqueSentinel(bool_value=non_unique_sentinel)
+        else:
+            raise TypeError(f"invalid non-unique-sentinel value type {type(non_unique_sentinel)}")
     else:
         agg_spec_non_unique_sentinel = _GrpcAggSpec.AggSpecNonUniqueSentinel(null_value=_GrpcNullValue.NULL_VALUE)
 

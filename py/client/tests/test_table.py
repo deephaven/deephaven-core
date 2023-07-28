@@ -5,6 +5,7 @@
 import time
 import unittest
 
+import numpy as np
 from pyarrow import csv
 
 from pydeephaven import DHError
@@ -296,16 +297,22 @@ class TableTestCase(BaseTestCase):
 
     def test_agg_with_options(self):
         pa_table = csv.read_csv(self.csv_file)
-        test_table = self.session.import_table(pa_table).update(["b = a % 10 > 5 ? null : b", "c = c % 10"])
+        test_table = self.session.import_table(pa_table).update(["b = a % 10 > 5 ? null : b", "c = c % 10",
+                                                                 "d = (char)i"])
+
         aggs = [
             median(cols=["ma = a", "mb = b"], average_evenly_divided=False),
             pct(0.20, cols=["pa = a", "pb = b"], average_evenly_divided=True),
-            unique(cols=["ua = a", "ub = b"], include_nulls=True, non_unique_sentinel=-1),
+            unique(cols=["ua = a", "ub = b"], include_nulls=True, non_unique_sentinel=np.int16(-1)),
+            unique(cols=["ud = d"], include_nulls=True, non_unique_sentinel=np.uint16(128)),
             count_distinct(cols=["csa = a", "csb = b"], count_nulls=True),
             distinct(cols=["da = a", "db = b"], include_nulls=True),
             ]
         rt = test_table.agg_by(aggs=aggs, by=["c"])
         self.assertEqual(rt.size, test_table.select_distinct(["c"]).size)
+
+        with self.assertRaises(TypeError):
+            aggs = [unique(cols=["ua = a", "ub = b"], include_nulls=True, non_unique_sentinel=-1)]
 
         aggs_default = [
             median(cols=["ma = a", "mb = b"]),
