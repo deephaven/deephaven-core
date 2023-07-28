@@ -10,7 +10,7 @@
 #'
 #' # connect to the Deephaven server running on "localhost:10000" using anonymous 'default' authentication
 #' client_options <- ClientOptions$new()
-#' client <- Client$new(target="localhost:10000", client_options=client_options)
+#' client <- Client$new(target = "localhost:10000", client_options = client_options)
 #'
 #' # open a table that already exists on the server
 #' new_table_handle1 <- client$open_table("table_on_the_server")
@@ -27,122 +27,120 @@
 #' new_table_handle2$bind_to_variable("new_table")
 
 #' @export
-TableHandle <- R6Class("TableHandle", cloneable = FALSE,
-    public = list(
+TableHandle <- R6Class("TableHandle",
+  cloneable = FALSE,
+  public = list(
+    initialize = function(table_handle) {
+      if (first_class(table_handle) != "Rcpp_INTERNAL_TableHandle") {
+        stop("'table_handle' should be an internal Deephaven TableHandle. If you're seeing this, you are trying to call the constructor of TableHandle directly, which is not advised.")
+      }
+      self$internal_table_handle <- table_handle
+      private$is_static_field <- self$internal_table_handle$is_static()
+    },
 
-        initialize = function(table_handle) {
-            if (first_class(table_handle) != "Rcpp_INTERNAL_TableHandle") {
-                stop("'table_handle' should be an internal Deephaven TableHandle. If you're seeing this, you are trying to call the constructor of TableHandle directly, which is not advised.")
-            }
-            self$internal_table_handle <- table_handle
-            private$is_static_field <- self$internal_table_handle$is_static()
-        },
+    #' @description
+    #' Whether the table referenced by this TableHandle is static or not.
+    #' @return TRUE if the table is static, or FALSE if the table is ticking.
+    is_static = function() {
+      return(private$is_static_field)
+    },
 
-        #' @description
-        #' Whether the table referenced by this TableHandle is static or not.
-        #' @return TRUE if the table is static, or FALSE if the table is ticking.
-        is_static = function() {
-            return(private$is_static_field)
-        },
+    #' @description
+    #' Number of rows in the table referenced by this TableHandle, currently only implemented for static tables.
+    #' @return The number of rows in the table.
+    nrow = function() {
+      if (!private$is_static_field) {
+        stop("The number of rows is not yet supported for dynamic tables.")
+      }
+      return(self$internal_table_handle$num_rows())
+    },
 
-        #' @description
-        #' Number of rows in the table referenced by this TableHandle, currently only implemented for static tables.
-        #' @return The number of rows in the table.
-        nrow = function() {
-            if(!private$is_static_field) {
-                stop("The number of rows is not yet supported for dynamic tables.")
-            }
-            return(self$internal_table_handle$num_rows())
-        },
+    #' @description
+    #' Binds the table referenced by this TableHandle to a variable on the server,
+    #' enabling it to be accessed by that name from any Deephaven API.
+    #' @param name Name for this table on the server.
+    bind_to_variable = function(name) {
+      verify_string("name", name)
+      self$internal_table_handle$bind_to_variable(name)
+    },
 
-        #' @description
-        #' Binds the table referenced by this TableHandle to a variable on the server,
-        #' enabling it to be accessed by that name from any Deephaven API.
-        #' @param name Name for this table on the server.
-        bind_to_variable = function(name) {
-            verify_string("name", name)
-            self$internal_table_handle$bind_to_variable(name)
-        },
+    #' @description
+    #' Imports the table referenced by this TableHandle into an Arrow RecordBatchStreamReader.
+    #' @return A RecordBatchStreamReader containing the data from the table referenced by this TableHandle.
+    to_arrow_record_batch_stream_reader = function() {
+      ptr <- self$internal_table_handle$get_arrow_array_stream_ptr()
+      rbsr <- RecordBatchStreamReader$import_from_c(ptr)
+      return(rbsr)
+    },
 
-        #' @description
-        #' Imports the table referenced by this TableHandle into an Arrow RecordBatchStreamReader.
-        #' @return A RecordBatchStreamReader containing the data from the table referenced by this TableHandle.
-        to_arrow_record_batch_stream_reader = function() {
-            ptr = self$internal_table_handle$get_arrow_array_stream_ptr()
-            rbsr = RecordBatchStreamReader$import_from_c(ptr)
-            return(rbsr)
-        },
+    #' @description
+    #' Imports the table referenced by this TableHandle into an Arrow Table.
+    #' @return A Table containing the data from the table referenced by this TableHandle.
+    to_arrow_table = function() {
+      rbsr <- self$to_arrow_record_batch_stream_reader()
+      arrow_tbl <- rbsr$read_table()
+      return(arrow_tbl)
+    },
 
-        #' @description
-        #' Imports the table referenced by this TableHandle into an Arrow Table.
-        #' @return A Table containing the data from the table referenced by this TableHandle.
-        to_arrow_table = function() {
-            rbsr = self$to_arrow_record_batch_stream_reader()
-            arrow_tbl = rbsr$read_table()
-            return(arrow_tbl)
-        },
+    #' @description
+    #' Imports the table referenced by this TableHandle into a dplyr Tibble.
+    #' @return A Tibble containing the data from the table referenced by this TableHandle.
+    to_tibble = function() {
+      rbsr <- self$to_arrow_record_batch_stream_reader()
+      arrow_tbl <- rbsr$read_table()
+      return(as_tibble(arrow_tbl))
+    },
 
-        #' @description
-        #' Imports the table referenced by this TableHandle into a dplyr Tibble.
-        #' @return A Tibble containing the data from the table referenced by this TableHandle.
-        to_tibble = function() {
-            rbsr = self$to_arrow_record_batch_stream_reader()
-            arrow_tbl = rbsr$read_table()
-            return(as_tibble(arrow_tbl))
-        },
-
-        #' @description
-        #' Imports the table referenced by this TableHandle into an R Data Frame.
-        #' @return A Data Frame containing the data from the table referenced by this TableHandle.
-        to_data_frame = function() {
-            arrow_tbl = self$to_arrow_table()
-            return(as.data.frame(as.data.frame(arrow_tbl))) # TODO: for some reason as.data.frame on arrow table returns a tibble, not a data frame
-        },
-        
-        internal_table_handle = NULL
-    ),
-    private = list(
-
-        is_static_field = NULL
-    )
+    #' @description
+    #' Imports the table referenced by this TableHandle into an R Data Frame.
+    #' @return A Data Frame containing the data from the table referenced by this TableHandle.
+    to_data_frame = function() {
+      arrow_tbl <- self$to_arrow_table()
+      return(as.data.frame(as.data.frame(arrow_tbl))) # TODO: for some reason as.data.frame on arrow table returns a tibble, not a data frame
+    },
+    internal_table_handle = NULL
+  ),
+  private = list(
+    is_static_field = NULL
+  )
 )
 
 # EXISTING GENERICS THAT WE CAN SUPPORT
 
 #' @export
 print.TableHandle <- function(th, ...) {
-    cat("A Deephaven TableHandle:\n")
-    print(th$to_data_frame())
+  cat("A Deephaven TableHandle:\n")
+  print(th$to_data_frame())
 }
 
 #' @export
 as_arrow_table.TableHandle <- function(th, ...) {
-    th$to_arrow_table()
+  th$to_arrow_table()
 }
 
 #' @export
 as_tibble.TableHandle <- function(th, ...) {
-    th$to_tibble()
+  th$to_tibble()
 }
 
 #' @export
 as.data.frame.TableHandle <- function(th, ...) {
-    th$to_data_frame()
+  th$to_data_frame()
 }
 
 #' @export
 head.TableHandle <- function(th, n) {
-    verify_int("n", n)
-    return(TableHandle$new(th$internal_table_handle$head(n)))
+  verify_int("n", n)
+  return(TableHandle$new(th$internal_table_handle$head(n)))
 }
 
 #' @export
 tail.TableHandle <- function(th, n) {
-    verify_int("n", n)
-    return(TableHandle$new(th$internal_table_handle$tail(n)))
+  verify_int("n", n)
+  return(TableHandle$new(th$internal_table_handle$tail(n)))
 }
 
 #' @export
 rbind.TableHandle <- function(th, sources) {
-    return(TableHandle$new(th$internal_table_handle$merge(sources)))
+  return(TableHandle$new(th$internal_table_handle$merge(sources)))
 }
