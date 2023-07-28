@@ -42,7 +42,10 @@ public class SafeCloseableArray<SCT extends SafeCloseable> implements SafeClosea
             try (final SafeCloseable ignored = array[ii]) {
                 array[ii] = null;
             } catch (Exception e) {
-                (exceptions = new ArrayList<>()).add(e);
+                if (exceptions == null) {
+                    exceptions = new ArrayList<>();
+                }
+                exceptions.add(e);
             }
         }
         // noinspection ConstantConditions
