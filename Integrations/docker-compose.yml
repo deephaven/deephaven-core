@@ -9,11 +9,3 @@ services:
       service: redpanda
     expose:
       - 29092
-      - 8081
-
-  postgres:
-    extends:
-      file: ../postgres/docker-compose.yml
-      service: postgres
-    expose:
-      - 5432

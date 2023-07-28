@@ -15,6 +15,7 @@ from test_helper import py_dh_session
 
 _JTableTools = jpy.get_type("io.deephaven.engine.util.TableTools")
 
+
 def table_equals(table_a: Table, table_b: Table) -> bool:
     try:
         return False if _JTableTools.diff(table_a.j_table, table_b.j_table, 1) else True

@@ -148,15 +148,14 @@ public class DeephavenApiServer {
 
         EngineMetrics.maybeStartStatsCollection();
 
+        log.info().append("Starting Update Graph...").endl();
+        getUpdateGraph().<PeriodicUpdateGraph>cast().start();
+
         log.info().append("Starting Performance Trackers...").endl();
         QueryPerformanceRecorder.installPoolAllocationRecorder();
         QueryPerformanceRecorder.installUpdateGraphLockInstrumentation();
-        UpdatePerformanceTracker.start(getUpdateGraph());
         ServerStateTracker.start();
         AsyncErrorLogger.init();
-
-        log.info().append("Starting Update Graph...").endl();
-        getUpdateGraph().<PeriodicUpdateGraph>cast().start();
 
         for (UriResolver resolver : uriResolvers.resolvers()) {
             log.debug().append("Found table resolver ").append(resolver.getClass().toString()).endl();

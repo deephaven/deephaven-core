@@ -87,10 +87,11 @@ public class PeriodicUpdateGraph implements UpdateGraph {
             final String description) {
         if (updateGraph instanceof PeriodicUpdateGraph) {
             final PeriodicUpdateGraph pug = (PeriodicUpdateGraph) updateGraph;
-            // if the pug has not been started, then we can't get the performance tracker
             if (pug.updatePerformanceTracker != null) {
                 return pug.updatePerformanceTracker.getEntry(description);
             }
+            throw new IllegalStateException("Cannot create a performance entry for a PeriodicUpdateGraph that has "
+                    + "not been completely constructed.");
         }
         return null;
     }
@@ -159,6 +160,9 @@ public class PeriodicUpdateGraph implements UpdateGraph {
     private final long defaultTargetCycleDurationMillis;
     private volatile long targetCycleDurationMillis;
     private final long minimumCycleDurationToLogNanos;
+
+    /** when to next flush the performance tracker; initializes to zero to force a flush on start */
+    private long nextUpdatePerformanceTrackerFlushTime = 0;
 
     /**
      * How many cycles we have not logged, but were non-zero.
@@ -295,7 +299,7 @@ public class PeriodicUpdateGraph implements UpdateGraph {
 
     private final String name;
 
-    private final UpdatePerformanceTracker.Driver updatePerformanceTracker;
+    private final UpdatePerformanceTracker updatePerformanceTracker;
 
     public PeriodicUpdateGraph(
             final String name,
@@ -328,7 +332,7 @@ public class PeriodicUpdateGraph implements UpdateGraph {
         }), "PeriodicUpdateGraph." + name + ".refreshThread");
         refreshThread.setDaemon(true);
 
-        updatePerformanceTracker = UpdatePerformanceTracker.createDriverFor(this);
+        updatePerformanceTracker = new UpdatePerformanceTracker(this);
     }
 
     public String getName() {
@@ -608,7 +612,6 @@ public class PeriodicUpdateGraph implements UpdateGraph {
         Assert.eqFalse(unitTestMode, "unitTestMode");
         Assert.eqFalse(allowUnitTestMode, "allowUnitTestMode");
         synchronized (refreshThread) {
-            updatePerformanceTracker.start();
             if (notificationProcessor instanceof PoisonedNotificationProcessor) {
                 notificationProcessor = makeNotificationProcessor();
             }
@@ -1754,9 +1757,14 @@ public class PeriodicUpdateGraph implements UpdateGraph {
      * @param timeSource The source of time that startTime was based on
      */
     private void waitForNextCycle(final long startTime, final Scheduler timeSource) {
+        final long now = timeSource.currentTimeMillis();
+        if (now >= nextUpdatePerformanceTrackerFlushTime) {
+            nextUpdatePerformanceTrackerFlushTime = now + UpdatePerformanceTracker.REPORT_INTERVAL_MILLIS;
+            updatePerformanceTracker.flush();
+        }
         long expectedEndTime = startTime + targetCycleDurationMillis;
         if (minimumInterCycleSleep > 0) {
-            expectedEndTime = Math.max(expectedEndTime, timeSource.currentTimeMillis() + minimumInterCycleSleep);
+            expectedEndTime = Math.max(expectedEndTime, now + minimumInterCycleSleep);
         }
         waitForEndTime(expectedEndTime, timeSource);
     }
@@ -1970,6 +1978,12 @@ public class PeriodicUpdateGraph implements UpdateGraph {
 
     public void takeAccumulatedCycleStats(AccumulatedCycleStats updateGraphAccumCycleStats) {
         accumulatedCycleStats.take(updateGraphAccumCycleStats);
+    }
+
+    public static PeriodicUpdateGraph getInstance(final String name) {
+        synchronized (INSTANCES) {
+            return INSTANCES.get(name);
+        }
     }
 
     public static final class Builder {

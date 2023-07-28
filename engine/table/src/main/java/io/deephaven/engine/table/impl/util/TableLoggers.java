@@ -18,7 +18,7 @@ public class TableLoggers {
      */
     @ScriptApi
     public static QueryTable updatePerformanceLog() {
-        return UpdatePerformanceTracker.getInstance().getQueryTable();
+        return UpdatePerformanceTracker.getQueryTable();
     }
 
     /**
