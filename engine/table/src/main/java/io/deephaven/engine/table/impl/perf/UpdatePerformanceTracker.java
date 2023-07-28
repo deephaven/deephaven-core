@@ -18,6 +18,7 @@ import io.deephaven.engine.tablelogger.UpdatePerformanceLogLogger;
 import io.deephaven.engine.updategraph.UpdateGraph;
 import io.deephaven.engine.updategraph.UpdateSourceRegistrar;
 import io.deephaven.engine.updategraph.impl.PeriodicUpdateGraph;
+import io.deephaven.engine.util.string.StringUtils;
 import io.deephaven.internal.log.LoggerFactory;
 import io.deephaven.io.logger.Logger;
 import io.deephaven.stream.StreamToBlinkTableAdapter;
@@ -162,7 +163,7 @@ public class UpdatePerformanceTracker {
         final MutableObject<PerformanceEntry> entryMu = new MutableObject<>();
         qpr.setQueryData((evaluationNumber, operationNumber, uninstrumented) -> {
             final String effectiveDescription;
-            if ((description == null || description.length() == 0) && uninstrumented) {
+            if (StringUtils.isNullOrEmpty(description) && uninstrumented) {
                 effectiveDescription = QueryPerformanceRecorder.UNINSTRUMENTED_CODE_DESCRIPTION;
             } else {
                 effectiveDescription = description;
