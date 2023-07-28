@@ -146,10 +146,10 @@ public class DeephavenApiServer {
         log.info().append("Starting Operation Initialization Thread Pool...").endl();
         OperationInitializationThreadPool.start();
 
-        EngineMetrics.maybeStartStatsCollection();
-
         log.info().append("Starting Update Graph...").endl();
         getUpdateGraph().<PeriodicUpdateGraph>cast().start();
+
+        EngineMetrics.maybeStartStatsCollection();
 
         log.info().append("Starting Performance Trackers...").endl();
         QueryPerformanceRecorder.installPoolAllocationRecorder();

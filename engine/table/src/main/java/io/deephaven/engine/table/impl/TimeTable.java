@@ -123,10 +123,7 @@ public final class TimeTable extends QueryTable implements Runnable {
         super(RowSetFactory.empty().toTracking(), initColumn(startTime, period));
         this.registrar = registrar;
         this.isBlinkTable = isBlinkTable;
-
-        String name = isBlinkTable ? "TimeTableBlink" : "TimeTable";
-        name += "(" + startTime + "," + period + ")";
-        this.name = name;
+        this.name = (isBlinkTable ? "TimeTableBlink" : "TimeTable") + "(" + startTime + "," + period + ")";
 
         columnSource = (SyntheticInstantSource) getColumnSourceMap().get(TIMESTAMP);
         this.clock = clock;

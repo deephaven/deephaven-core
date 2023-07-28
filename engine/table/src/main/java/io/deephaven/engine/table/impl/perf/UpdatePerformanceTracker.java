@@ -61,19 +61,18 @@ public class UpdatePerformanceTracker {
     static final QueryPerformanceLogThreshold LOG_THRESHOLD =
             new QueryPerformanceLogThreshold("Update", 500_000L);
 
-    private static InternalState internalState;
+    private static InternalState INSTANCE;
 
     private static InternalState getInternalState() {
-        InternalState localState = internalState;
-        if (localState == null) {
+        InternalState local;
+        if ((local = INSTANCE) == null) {
             synchronized (UpdatePerformanceTracker.class) {
-                localState = internalState;
-                if (localState == null) {
-                    localState = internalState = new InternalState();
+                if ((local = INSTANCE) == null) {
+                    INSTANCE = local = new InternalState();
                 }
             }
         }
-        return localState;
+        return local;
     }
 
     private static class InternalState {
