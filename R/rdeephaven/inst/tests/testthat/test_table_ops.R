@@ -663,15 +663,57 @@ test_that("sort behaves as expected", {
   expect_equal(as.data.frame(new_th5), as.data.frame(new_tb5))
 })
 
-# TODO: Test joins. Our join API is mildly confusing
 test_that("cross_join behaves as expected", {
     data <- setup()
+    
+    new_th1 <- data$th5 %>%
+      cross_join(data$th6, columns_to_match = character(),
+                           columns_to_add = c("X_y = X", "Y_y = Y", "Number1_y = Number1", "Number2_y = Number2"))
+    new_tb1 <- data$df5 %>%
+      dplyr::cross_join(data$df6) %>%
+      rename(X = X.x, Y = Y.x, Number1 = Number1.x, Number2 = Number2.x,
+             X_y = X.y, Y_y = Y.y, Number1_y = Number1.y, Number2_y = Number2.y)
+    expect_equal(as.data.frame(new_th1), as.data.frame(new_tb1))
 })
 
 test_that("natural_join behaves as expected", {
     data <- setup()
+    
+    new_th2 <- data$th6 %>%
+      drop_columns("Y") %>%
+      avg_by("X")
+    new_th1 <- data$th5 %>%
+      natural_join(new_th2, columns_to_match = "X",
+                   columns_to_add = c("Number3 = Number1", "Number4 = Number2"))
+    
+    new_tb2 <- data$df6 %>%
+      dplyr::select(-Y) %>%
+      dplyr::group_by(X) %>%
+      summarise(across(everything(), mean))
+    new_tb1 <- data$df5 %>%
+      left_join(new_tb2, by = "X") %>%
+      rename(Number1 = Number1.x, Number2 = Number2.x,
+             Number3 = Number1.y, Number4 = Number2.y)
+    expect_equal(as.data.frame(new_th1), as.data.frame(new_tb1))
 })
 
+# TODO: Verify that inner_join is the analog of exact_join
 test_that("exact_join behaves as expected", {
     data <- setup()
+    
+    new_th2 <- data$th6 %>%
+      drop_columns("Y") %>%
+      avg_by("X")
+    new_th1 <- data$th5 %>%
+      exact_join(new_th2, columns_to_match = "X",
+                 columns_to_add = c("Number3 = Number1", "Number4 = Number2"))
+    
+    new_tb2 <- data$df6 %>%
+      dplyr::select(-Y) %>%
+      dplyr::group_by(X) %>%
+      summarise(across(everything(), mean))
+    new_tb1 <- data$df5 %>%
+      inner_join(new_tb2, by = "X") %>%
+      rename(Number1 = Number1.x, Number2 = Number2.x, Number3 = Number1.y, Number4 = Number2.y)
+    expect_equal(as.data.frame(new_th1), as.data.frame(new_tb1))
 })
