@@ -88,7 +88,7 @@ public class ObjectServiceGrpcImpl extends ObjectServiceGrpc.ObjectServiceImplBa
                 manage(this.object);
                 session.nonExport().require(object).onError(responseObserver).submit(() -> {
                     final Object o = object.get();
-                    final ObjectType objectType = getObjectTypeInstance(type, object);
+                    final ObjectType objectType = getObjectTypeInstance(type, o);
 
                     if (objectType.supportsBidiMessaging(o) == ObjectType.Kind.BIDIRECTIONAL) {
                         PluginMessageSender sender = new PluginMessageSender(responseObserver, session);
@@ -323,7 +323,7 @@ public class ObjectServiceGrpcImpl extends ObjectServiceGrpc.ObjectServiceImplBa
         public void onMessage(ByteBuffer message, Object[] references) {
             ExportCollector exportCollector = new ExportCollector(sessionState);
 
-            Data.Builder payload = Data.newBuilder();
+            Data.Builder payload = Data.newBuilder().setPayload(ByteString.copyFrom(message));
 
             try {
                 for (Object reference : references) {

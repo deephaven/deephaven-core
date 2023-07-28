@@ -5,6 +5,7 @@ package io.deephaven.web.client.api.widget;
 
 import com.vertispan.tsdefs.annotations.TsName;
 import elemental2.core.ArrayBuffer;
+import elemental2.core.DataView;
 import elemental2.core.JsArray;
 import elemental2.core.Uint8Array;
 import elemental2.dom.CustomEventInit;
@@ -66,8 +67,9 @@ public class JsWidget extends HasEventHandling {
 
             messageStream = streamFactory.get();
             messageStream.onData(res -> {
+                //TODO only assign to fields for the first one
                 response = res;
-                appendExportedObjects(res.getData().getTypedExportIdsList());
+                exportedObjects = res.getData().getTypedExportIdsList().map((p0, p1, p2) -> new JsWidgetExportedObject(connection, p0));
 
                 if (!hasFetched) {
                     hasFetched = true;
@@ -96,10 +98,6 @@ public class JsWidget extends HasEventHandling {
             req.setConnect(data);
             messageStream.send(req);
         });
-    }
-
-    private void appendExportedObjects(JsArray<TypedTicket> objs) {
-        objs.asList().forEach(t -> exportedObjects.push(new JsWidgetExportedObject(connection, t)));
     }
 
     public Ticket getTicket() {
@@ -150,6 +148,10 @@ public class JsWidget extends HasEventHandling {
             data.setPayload(payload);
         } else if (msg instanceof ArrayBuffer) {
             data.setPayload(new Uint8Array((ArrayBuffer) msg));
+        } else if (ArrayBuffer.isView(msg)) {
+            // can cast (unsafely) to any typed array or to DataView to read offset/length/buffer to make a new view
+            DataView view = Js.uncheckedCast(msg);
+            data.setPayload(new Uint8Array(view.buffer, view.byteOffset, view.byteLength));
         } else {
             throw new IllegalArgumentException("Expected message to be a String or ArrayBuffer");
         }

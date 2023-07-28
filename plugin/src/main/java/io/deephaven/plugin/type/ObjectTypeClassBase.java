@@ -47,7 +47,7 @@ public abstract class ObjectTypeClassBase<T> extends ObjectTypeBase {
 
     @Override
     public final MessageStream clientConnection(Object object, MessageStream connection) {
-        return super.clientConnection(object, connection);
+        return clientConnectionImpl((T) object, connection);
     }
 
     public MessageStream clientConnectionImpl(T object, MessageStream connection) {
