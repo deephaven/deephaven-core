@@ -229,7 +229,7 @@ public class QueryTableMultiJoinTest extends QueryTableTestBase {
             }
         }
 
-        final Table result = MultiJoinTableImpl.of(joinControl, MultiJoinFactory.createSimpleJoinInput(keys,
+        final Table result = MultiJoinTableImpl.of(joinControl, MultiJoinInput.from(keys,
                 inputTables.toArray(TableDefaults.ZERO_LENGTH_TABLE_ARRAY))).table();
         final Table expected = doIterativeMultiJoin(keys, inputTables);
 
@@ -400,8 +400,9 @@ public class QueryTableMultiJoinTest extends QueryTableTestBase {
 
         final Table expected = doIterativeMultiJoin(keys, lastByInputs);
         final Table result = updateGraph.sharedLock()
-                .computeLocked(() -> MultiJoinTableImpl.of(joinControl, MultiJoinFactory
-                        .createSimpleJoinInput(keys, lastByInputs.toArray(TableDefaults.ZERO_LENGTH_TABLE_ARRAY)))
+                .computeLocked(() -> MultiJoinTableImpl
+                        .of(joinControl,
+                                MultiJoinInput.from(keys, lastByInputs.toArray(TableDefaults.ZERO_LENGTH_TABLE_ARRAY)))
                         .table());
 
         if (printTableUpdates()) {
@@ -737,7 +738,7 @@ public class QueryTableMultiJoinTest extends QueryTableTestBase {
             Assert.fail("expected exception");
         } catch (IllegalArgumentException iae) {
             Assert.assertEquals(
-                    "Key column type mismatch for table 1, first key columns types=[Int] table has [Double]",
+                    "Key column type mismatch for table 1, first key columns types=[int] table has [double]",
                     iae.getMessage());
         }
 

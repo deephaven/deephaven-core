@@ -37,6 +37,7 @@ import org.apache.commons.lang3.mutable.MutableInt;
 import org.jetbrains.annotations.NotNull;
 
 import java.util.Arrays;
+import java.util.function.LongConsumer;
 
 import static io.deephaven.util.QueryConstants.NULL_LONG;
 import static io.deephaven.util.type.TypeUtils.box;
@@ -357,7 +358,8 @@ public class LongArraySource extends ArraySourceHelper<Long, long[]>
                 destination.fillWithNullValue(destOffset.intValue(), sz);
                 destOffset.add(sz);
                 return;
-            } else if (to > maxIndex) {
+            }
+            if (to > maxIndex) {
                 // only part of the region is beyond us
                 valuesAtEnd = LongSizedDataStructure.intSize("int cast", to - maxIndex);
                 to = maxIndex;
@@ -421,7 +423,8 @@ public class LongArraySource extends ArraySourceHelper<Long, long[]>
                 destination.fillWithNullValue(destOffset.intValue(), sz);
                 destOffset.add(sz);
                 return;
-            } else if (to > maxIndex) {
+            }
+            if (to > maxIndex) {
                 // only part of the region is beyond us
                 valuesAtEnd = LongSizedDataStructure.intSize("int cast", to - maxIndex);
                 to = maxIndex;
@@ -688,12 +691,8 @@ public class LongArraySource extends ArraySourceHelper<Long, long[]>
         final WritableLongChunk<? super Values> chunk = destGeneric.asWritableLongChunk();
         // endregion chunkDecl
         final FillSparseChunkContext<long[]> ctx = new FillSparseChunkContext<>();
-        rows.forAllRowKeys((final long v) -> {
+        final LongConsumer normalFiller = (final long v) -> {
             if (v >= ctx.capForCurrentBlock) {
-                if (v > maxIndex) {
-                    chunk.set(ctx.offset++, NULL_LONG);
-                    return;
-                }
                 ctx.currentBlockNo = getBlockNo(v);
                 ctx.capForCurrentBlock = (ctx.currentBlockNo + 1L) << LOG_BLOCK_SIZE;
                 ctx.currentBlock = blocks[ctx.currentBlockNo];
@@ -701,7 +700,20 @@ public class LongArraySource extends ArraySourceHelper<Long, long[]>
             // region conversion
             chunk.set(ctx.offset++, ctx.currentBlock[(int) (v & INDEX_MASK)]);
             // endregion conversion
-        });
+        };
+        if (rows.lastRowKey() > maxIndex) {
+            final long initialPosition, firstNullPosition;
+            try (final RowSequence.Iterator rowsIter = rows.getRowSequenceIterator()) {
+                initialPosition = rowsIter.getRelativePosition();
+                rowsIter.getNextRowSequenceThrough(maxIndex).forAllRowKeys(normalFiller);
+                firstNullPosition = rowsIter.getRelativePosition();
+            }
+            final int trailingNullCount = Math.toIntExact(rows.size() - (firstNullPosition - initialPosition));
+            chunk.fillWithNullValue(ctx.offset, trailingNullCount);
+            ctx.offset += trailingNullCount;
+        } else {
+            rows.forAllRowKeys(normalFiller);
+        }
         chunk.setSize(ctx.offset);
     }
     
@@ -717,12 +729,8 @@ public class LongArraySource extends ArraySourceHelper<Long, long[]>
         final WritableObjectChunk<R, ? super Values> chunk = destGeneric.asWritableObjectChunk();
         // endregion chunkDecl
         final FillSparseChunkContext<long[]> ctx = new FillSparseChunkContext<>();
-        rows.forAllRowKeys((final long v) -> {
+        final LongConsumer normalFiller = (final long v) -> {
             if (v >= ctx.capForCurrentBlock) {
-                if (v > maxIndex) {
-                    chunk.set(ctx.offset++, null);
-                    return;
-                }
                 ctx.currentBlockNo = getBlockNo(v);
                 ctx.capForCurrentBlock = (ctx.currentBlockNo + 1L) << LOG_BLOCK_SIZE;
                 ctx.currentBlock = blocks[ctx.currentBlockNo];
@@ -730,7 +738,20 @@ public class LongArraySource extends ArraySourceHelper<Long, long[]>
             // region conversion
             chunk.set(ctx.offset++,converter.apply( ctx.currentBlock[(int) (v & INDEX_MASK)]));
             // endregion conversion
-        });
+        };
+        if (rows.lastRowKey() > maxIndex) {
+            final long initialPosition, firstNullPosition;
+            try (final RowSequence.Iterator rowsIter = rows.getRowSequenceIterator()) {
+                initialPosition = rowsIter.getRelativePosition();
+                rowsIter.getNextRowSequenceThrough(maxIndex).forAllRowKeys(normalFiller);
+                firstNullPosition = rowsIter.getRelativePosition();
+            }
+            final int trailingNullCount = Math.toIntExact(rows.size() - (firstNullPosition - initialPosition));
+            chunk.fillWithNullValue(ctx.offset, trailingNullCount);
+            ctx.offset += trailingNullCount;
+        } else {
+            rows.forAllRowKeys(normalFiller);
+        }
         chunk.setSize(ctx.offset);
     }
     // endregion fillSparseChunk
@@ -756,19 +777,14 @@ public class LongArraySource extends ArraySourceHelper<Long, long[]>
         final WritableLongChunk<? super Values> chunk = destGeneric.asWritableLongChunk();
         // endregion chunkDecl
         final FillSparseChunkContext<long[]> ctx = new FillSparseChunkContext<>();
-        rows.forAllRowKeys((final long v) -> {
+        final LongConsumer normalFiller = (final long v) -> {
             if (v >= ctx.capForCurrentBlock) {
-                if (v > maxIndex) {
-                    chunk.set(ctx.offset++, NULL_LONG);
-                    return;
-                }
                 ctx.currentBlockNo = getBlockNo(v);
                 ctx.capForCurrentBlock = (ctx.currentBlockNo + 1L) << LOG_BLOCK_SIZE;
                 ctx.currentBlock = blocks[ctx.currentBlockNo];
                 ctx.currentPrevBlock = prevBlocks[ctx.currentBlockNo];
                 ctx.prevInUseBlock = prevInUse[ctx.currentBlockNo];
             }
-
             final int indexWithinBlock = (int) (v & INDEX_MASK);
             final int indexWithinInUse = indexWithinBlock >> LOG_INUSE_BITSET_SIZE;
             final long maskWithinInUse = 1L << (indexWithinBlock & IN_USE_MASK);
@@ -776,7 +792,20 @@ public class LongArraySource extends ArraySourceHelper<Long, long[]>
             // region conversion
             chunk.set(ctx.offset++, usePrev ? ctx.currentPrevBlock[indexWithinBlock] : ctx.currentBlock[indexWithinBlock]);
             // endregion conversion
-        });
+        };
+        if (rows.lastRowKey() > maxIndex) {
+            final long initialPosition, firstNullPosition;
+            try (final RowSequence.Iterator rowsIter = rows.getRowSequenceIterator()) {
+                initialPosition = rowsIter.getRelativePosition();
+                rowsIter.getNextRowSequenceThrough(maxIndex).forAllRowKeys(normalFiller);
+                firstNullPosition = rowsIter.getRelativePosition();
+            }
+            final int trailingNullCount = Math.toIntExact(rows.size() - (firstNullPosition - initialPosition));
+            chunk.fillWithNullValue(ctx.offset, trailingNullCount);
+            ctx.offset += trailingNullCount;
+        } else {
+            rows.forAllRowKeys(normalFiller);
+        }
         chunk.setSize(ctx.offset);
     }
     
@@ -799,19 +828,14 @@ public class LongArraySource extends ArraySourceHelper<Long, long[]>
         final WritableObjectChunk<R, ? super Values> chunk = destGeneric.asWritableObjectChunk();
         // endregion chunkDecl
         final FillSparseChunkContext<long[]> ctx = new FillSparseChunkContext<>();
-        rows.forAllRowKeys((final long v) -> {
+        final LongConsumer normalFiller = (final long v) -> {
             if (v >= ctx.capForCurrentBlock) {
-                if (v > maxIndex) {
-                    chunk.set(ctx.offset++, null);
-                    return;
-                }
                 ctx.currentBlockNo = getBlockNo(v);
                 ctx.capForCurrentBlock = (ctx.currentBlockNo + 1L) << LOG_BLOCK_SIZE;
                 ctx.currentBlock = blocks[ctx.currentBlockNo];
                 ctx.currentPrevBlock = prevBlocks[ctx.currentBlockNo];
                 ctx.prevInUseBlock = prevInUse[ctx.currentBlockNo];
             }
-
             final int indexWithinBlock = (int) (v & INDEX_MASK);
             final int indexWithinInUse = indexWithinBlock >> LOG_INUSE_BITSET_SIZE;
             final long maskWithinInUse = 1L << (indexWithinBlock & IN_USE_MASK);
@@ -819,7 +843,20 @@ public class LongArraySource extends ArraySourceHelper<Long, long[]>
             // region conversion
             chunk.set(ctx.offset++,converter.apply( usePrev ? ctx.currentPrevBlock[indexWithinBlock] : ctx.currentBlock[indexWithinBlock]));
             // endregion conversion
-        });
+        };
+        if (rows.lastRowKey() > maxIndex) {
+            final long initialPosition, firstNullPosition;
+            try (final RowSequence.Iterator rowsIter = rows.getRowSequenceIterator()) {
+                initialPosition = rowsIter.getRelativePosition();
+                rowsIter.getNextRowSequenceThrough(maxIndex).forAllRowKeys(normalFiller);
+                firstNullPosition = rowsIter.getRelativePosition();
+            }
+            final int trailingNullCount = Math.toIntExact(rows.size() - (firstNullPosition - initialPosition));
+            chunk.fillWithNullValue(ctx.offset, trailingNullCount);
+            ctx.offset += trailingNullCount;
+        } else {
+            rows.forAllRowKeys(normalFiller);
+        }
         chunk.setSize(ctx.offset);
     }
     // endregion fillSparsePrevChunk

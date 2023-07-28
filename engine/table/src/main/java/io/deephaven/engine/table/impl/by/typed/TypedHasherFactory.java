@@ -611,9 +611,6 @@ public class TypedHasherFactory {
                 TypeSpec.classBuilder(className).addModifiers(Modifier.FINAL).superclass(hasherConfig.baseClass);
         visibility.ifPresent(hasherBuilder::addModifiers);
 
-        // Store these for use by code generators.
-        hasherConfig.chunkTypes = chunkTypes;
-
         hasherBuilder.addMethod(createConstructor(hasherConfig, chunkTypes, hasherBuilder));
 
         if (hasherConfig.openAddressed) {
@@ -1222,7 +1219,7 @@ public class TypedHasherFactory {
             for (int ii = 0; ii < chunkTypes.length; ++ii) {
                 builder.addStatement("mainKeySource$L.set($L, k$L)", ii, tableLocationName, ii);
             }
-            buildSpec.insert.accept(hasherConfig, builder);
+            buildSpec.insert.accept(hasherConfig, chunkTypes, builder);
         }
         builder.addStatement("break");
         builder.nextControlFlow("else if ("

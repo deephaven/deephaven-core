@@ -7,6 +7,7 @@ import org.immutables.value.Value.Immutable;
 import org.immutables.value.Value.Parameter;
 import org.jetbrains.annotations.NotNull;
 
+import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
 
@@ -23,10 +24,10 @@ public abstract class MultiJoinInput {
      *
      * @param inputTable The table to include in a multiJoin
      * @param columnsToMatch An array of {@link JoinMatch} specifying match conditions
-     * @param columnsToAdd An array of {@link JoinAddition} specifying the columns from the right side that need to be
-     *        added to the table as a result of the match.
+     * @param columnsToAdd An array of {@link JoinAddition} specifying the columns to add
      */
-    public static MultiJoinInput of(@NotNull final Table inputTable,
+    public static MultiJoinInput of(
+            @NotNull final Table inputTable,
             @NotNull JoinMatch[] columnsToMatch,
             @NotNull JoinAddition[] columnsToAdd) {
         return ImmutableMultiJoinInput.of(inputTable, columnsToMatch, columnsToAdd);
@@ -38,10 +39,10 @@ public abstract class MultiJoinInput {
      *
      * @param inputTable The table to include in a multiJoin
      * @param columnsToMatch A collection of {@link JoinMatch} specifying the key columns
-     * @param columnsToAdd A collection of {@link JoinAddition} specifying the columns from the right side that need to
-     *        be added to the table as a result of the match.
+     * @param columnsToAdd A collection of {@link JoinAddition} specifying the columns to add
      */
-    public static MultiJoinInput of(@NotNull final Table inputTable,
+    public static MultiJoinInput of(
+            @NotNull final Table inputTable,
             @NotNull final Collection<? extends JoinMatch> columnsToMatch,
             @NotNull final Collection<? extends JoinAddition> columnsToAdd) {
         return of(inputTable, columnsToMatch.toArray(JoinMatch[]::new), columnsToAdd.toArray(JoinAddition[]::new));
@@ -52,10 +53,11 @@ public abstract class MultiJoinInput {
      *
      * @param inputTable The table to include in a multiJoin
      * @param columnsToMatch The key columns, in string format (e.g. "ResultKey=SourceKey" or "KeyInBoth").
-     * @param columnsToAdd The columns to add, in string format (e.g. "ResultColumn=SourceColumn" or "ColumnInBoth"),
-     *        empty for all columns
+     * @param columnsToAdd The columns to add, in string format (e.g. "ResultColumn=SourceColumn" or
+     *        "SourceColumnToAddWithSameName"); empty for all columns
      */
-    public static MultiJoinInput of(@NotNull final Table inputTable,
+    public static MultiJoinInput of(
+            @NotNull final Table inputTable,
             @NotNull final String[] columnsToMatch,
             @NotNull final String[] columnsToAdd) {
         return of(inputTable, JoinMatch.from(columnsToMatch), JoinAddition.from(columnsToAdd));
@@ -65,8 +67,8 @@ public abstract class MultiJoinInput {
      * Create a multiJoin table descriptor.
      * <p>
      *
-     * @param inputTable the table to include in a multiJoin
-     * @param columnsToMatch The match conditions ("leftColumn=rightColumn" or "columnFoundInBoth")
+     * @param inputTable The table to include in a multiJoin
+     * @param columnsToMatch The key columns, in string format (e.g. "ResultKey=SourceKey" or "KeyInBoth").
      */
     public static MultiJoinInput of(@NotNull final Table inputTable, @NotNull final String... columnsToMatch) {
         return of(inputTable, JoinMatch.from(columnsToMatch), Collections.emptyList());
@@ -75,11 +77,11 @@ public abstract class MultiJoinInput {
     /**
      * Create a multiJoin table descriptor.
      *
-     * @param inputTable the table to include in a multiJoin
-     * @param columnsToMatch A comma separated list of match conditions ("leftColumn=rightColumn" or
-     *        "columnFoundInBoth")
-     * @param columnsToAdd A comma separated list with the columns from the right side that need to be added to the left
-     *        side as a result of the match.
+     * @param inputTable The table to include in a multiJoin
+     * @param columnsToMatch A comma separated list of key columns, in string format (e.g. "ResultKey=SourceKey" or
+     *        "KeyInBoth").
+     * @param columnsToAdd A comma separated list of columns to add, in string format (e.g. "ResultColumn=SourceColumn"
+     *        or "SourceColumnToAddWithSameName"); empty for all columns
      */
     public static MultiJoinInput of(@NotNull final Table inputTable, String columnsToMatch, String columnsToAdd) {
         return of(inputTable,
@@ -89,6 +91,19 @@ public abstract class MultiJoinInput {
                 columnsToAdd == null || columnsToAdd.isEmpty()
                         ? Collections.emptyList()
                         : JoinAddition.from(columnsToAdd));
+    }
+
+    /**
+     * Create an array of multiJoin table descriptors with common keys; includes all non-key columns as output columns.
+     *
+     * @param keys The key columns, common to all tables
+     * @param inputTables An array of tables to include in the output
+     */
+    @NotNull
+    public static MultiJoinInput[] from(@NotNull final String[] keys, @NotNull final Table[] inputTables) {
+        return Arrays.stream(inputTables)
+                .map(t -> MultiJoinInput.of(t, keys))
+                .toArray(MultiJoinInput[]::new);
     }
 
     @Parameter

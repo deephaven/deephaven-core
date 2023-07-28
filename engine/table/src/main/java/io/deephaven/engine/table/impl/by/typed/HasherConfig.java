@@ -38,8 +38,6 @@ public class HasherConfig<T> {
     final List<ProbeSpec> probes;
     final List<BuildSpec> builds;
 
-    public ChunkType[] chunkTypes = null;
-
     HasherConfig(Class<T> baseClass, String classPrefix, String packageGroup, String packageMiddle,
             boolean openAddressed,
             boolean openAddressedAlternate, boolean alwaysMoveMain,
@@ -103,17 +101,30 @@ public class HasherConfig<T> {
     }
 
     static class BuildSpec {
+        @FunctionalInterface
+        public interface TriConsumer<T, U, V> {
+            void accept(T t, U u, V v);
+        }
+
         final String name;
         final String stateValueName;
         final boolean requiresRowKeyChunk;
         final boolean allowAlternates;
         final FoundMethodBuilder found;
-        final BiConsumer<HasherConfig<?>, CodeBlock.Builder> insert;
+        final TriConsumer<HasherConfig<?>, ChunkType[], CodeBlock.Builder> insert;
         final ParameterSpec[] params;
 
         public BuildSpec(String name, String stateValueName, boolean requiresRowKeyChunk,
                 boolean allowAlternates, FoundMethodBuilder found,
                 BiConsumer<HasherConfig<?>, CodeBlock.Builder> insert, ParameterSpec... params) {
+            // Convert the BiConsumer to our TriConsumer.
+            this(name, stateValueName, requiresRowKeyChunk, allowAlternates, found, (t, u, v) -> insert.accept(t, v),
+                    params);
+        }
+
+        public BuildSpec(String name, String stateValueName, boolean requiresRowKeyChunk,
+                boolean allowAlternates, FoundMethodBuilder found,
+                TriConsumer<HasherConfig<?>, ChunkType[], CodeBlock.Builder> insert, ParameterSpec... params) {
             this.name = name;
             this.stateValueName = stateValueName;
             this.requiresRowKeyChunk = requiresRowKeyChunk;

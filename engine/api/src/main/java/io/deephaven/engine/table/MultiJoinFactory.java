@@ -1,10 +1,8 @@
 package io.deephaven.engine.table;
 
 import io.deephaven.api.JoinMatch;
-import io.deephaven.util.annotations.TestUseOnly;
 import org.jetbrains.annotations.NotNull;
 
-import java.util.Arrays;
 import java.util.ServiceLoader;
 
 /**
@@ -13,16 +11,17 @@ import java.util.ServiceLoader;
  * </p>
  *
  * <p>
- * The multiJoin operation collects the set of distinct keys from the input tables, then joins one row from each of the
- * input tables onto the result. Input tables need not have a matching row for each key, but they may not have multiple
- * matching rows for a given key.
+ * The multiJoin operation collects the set of distinct keys from the input tables, then joins at most one row per key
+ * from each of the input tables onto the result. Input tables need not have a matching row for each key, but they may
+ * not have multiple matching rows for a given key.
  * </p>
  *
  * <p>
- * Input tables with distinct key column names must use the {@link JoinMatch} format to map keys to the common output
- * table key column names (e.g. "OutputKey=UniqueRHSKey"). Also, individual columns to include from input tables may be
- * specified and optionally renamed using {@link io.deephaven.api.JoinAddition} format (e.g. "NewCol=OldColName"). If no
- * output columns are specified then every column from the input table will be included in the multi-join output table.
+ * Input tables with non-matching key column names must use the {@link JoinMatch} format to map keys to the common
+ * output table key column names (e.g. "OutputKey=SourceKey"). Also, individual columns to include from input tables may
+ * be specified and optionally renamed using {@link io.deephaven.api.JoinAddition} format (e.g. "NewCol=OldColName"). If
+ * no output columns are specified then every non-key column from the input table will be included in the multi-join
+ * output table.
  * </p>
  *
  * <p>
@@ -82,7 +81,7 @@ public class MultiJoinFactory {
      * @return a MultiJoinTable with one row for each key and the corresponding row in each input table
      */
     public static MultiJoinTable of(@NotNull final String[] keys, @NotNull final Table... inputTables) {
-        return multiJoinTableCreator().of(createSimpleJoinInput(keys, inputTables));
+        return multiJoinTableCreator().of(MultiJoinInput.from(keys, inputTables));
     }
 
     /**
@@ -94,14 +93,5 @@ public class MultiJoinFactory {
      */
     public static MultiJoinTable of(@NotNull final MultiJoinInput... multiJoinInputs) {
         return multiJoinTableCreator().of(multiJoinInputs);
-    }
-
-    @TestUseOnly
-    @NotNull
-    public static MultiJoinInput[] createSimpleJoinInput(@NotNull final String[] keys,
-            @NotNull final Table[] inputTables) {
-        return Arrays.stream(inputTables)
-                .map(t -> MultiJoinInput.of(t, keys))
-                .toArray(MultiJoinInput[]::new);
     }
 }

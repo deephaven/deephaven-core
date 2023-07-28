@@ -4,14 +4,16 @@
 package io.deephaven.engine.table.impl.multijoin;
 
 import com.squareup.javapoet.CodeBlock;
+import io.deephaven.chunk.ChunkType;
 import io.deephaven.engine.table.impl.by.typed.HasherConfig;
 
 public class TypedMultiJoinFactory {
-    public static void staticBuildLeftInsert(HasherConfig<?> hasherConfig, CodeBlock.Builder builder) {
+    public static void staticBuildLeftInsert(HasherConfig<?> hasherConfig, ChunkType[] chunkTypes,
+            CodeBlock.Builder builder) {
         builder.addStatement("final long outputKey = numEntries - 1");
         builder.addStatement("slotToOutputRow.set(tableLocation, outputKey)");
         builder.addStatement("tableRedirSource.set(outputKey, rowKeyChunk.get(chunkPosition))");
-        for (int ii = 0; ii < hasherConfig.chunkTypes.length; ii++) {
+        for (int ii = 0; ii < chunkTypes.length; ii++) {
             builder.addStatement("outputKeySources[" + ii + "].set(outputKey, k" + ii + ")");
         }
     }
@@ -67,11 +69,12 @@ public class TypedMultiJoinFactory {
         builder.endControlFlow();
     }
 
-    public static void incrementalBuildLeftInsert(HasherConfig<?> hasherConfig, CodeBlock.Builder builder) {
+    public static void incrementalBuildLeftInsert(HasherConfig<?> hasherConfig, ChunkType[] chunkTypes,
+            CodeBlock.Builder builder) {
         builder.addStatement("final long outputKey = numEntries - 1");
         builder.addStatement("slotToOutputRow.set(tableLocation, outputKey)");
         builder.addStatement("tableRedirSource.set(outputKey, rowKeyChunk.get(chunkPosition))");
-        for (int ii = 0; ii < hasherConfig.chunkTypes.length; ii++) {
+        for (int ii = 0; ii < chunkTypes.length; ii++) {
             builder.addStatement("outputKeySources[" + ii + "].set(outputKey, k" + ii + ")");
         }
         builder.addStatement("mainModifiedTrackerCookieSource.set(tableLocation, -1L)");
