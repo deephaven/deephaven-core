@@ -208,10 +208,29 @@ test_that("open_table fails nicely with bad inputs", {
 })
 
 test_that("empty_table fails nicely with bad inputs", {
-  
+
+    client_options <- ClientOptions$new()
+    client <- Client$new(target="localhost:10000", client_options=client_options)
+
+    expect_error(client$empty_table(0), "'size' must be a positive integer. Got 0 instead.")
+    expect_error(client$empty_table(-3), "'size' must be a positive integer. Got -3 instead.")
+    expect_error(client$empty_table(1.2345), "'size' must be a positive integer. Got a non-integer numeric type instead.")
+    expect_error(client$empty_table("hello!"), "'size' must be a positive integer. Got an object of class character instead.")
+    expect_error(client$empty_table(c(1, 2, 3, 4)), "'size' must be a positive integer. Got a numeric vector of length 4 instead.")
 })
 
-# TODO: Test time_table bad inputs
+test_that("time_table fails nicely with bad inputs", {
+  
+    client_options <- ClientOptions$new()
+    client <- Client$new(target="localhost:10000", client_options=client_options)
+    
+    expect_error(client$time_table(1.23, 1000), "'start_time_nanos' must be an integer. Got a non-integer numeric type instead.")
+    expect_error(client$time_table(1000, 1.23), "'period_nanos' must be an integer. Got a non-integer numeric type instead.")
+    expect_error(client$time_table(c(1, 2, 3), 1000), "'start_time_nanos' must be an integer. Got a numeric vector of length 3 instead.")
+    expect_error(client$time_table(1000, c(1, 2, 3)), "'period_nanos' must be an integer. Got a numeric vector of length 3 instead.")
+    expect_error(client$time_table("hello!", 1000), "'start_time_nanos' must be an integer. Got an object of class character instead.")
+    expect_error(client$time_table(1000, "hello!"), "'period_nanos' must be an integer. Got an object of class character instead.")
+})
 
 test_that("run_script fails nicely with bad input types", {
 
