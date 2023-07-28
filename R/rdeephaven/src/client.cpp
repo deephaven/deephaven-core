@@ -481,8 +481,20 @@ public:
         return new TableHandleWrapper(new_tbl_hdl);
     }
 
+    /**
+    * Shuts down the Client and all associated state (GRPC connections, subscriptions, etc).
+    * This method is used if a caller wants to shut down Client state early. If it is not called,
+    * the shutdown actions will happen when this Client is destructed. The caller must not use any
+    * associated data structures (TableHandleManager, TableHandle, etc) after close() is called or
+    * after Client's destructor is invoked. If the caller tries to do so, the behavior is
+    * unspecified.
+    */
+    void close() {
+        internal_client.close();
+    }
+
 private:
-    const deephaven::client::Client internal_client;
+    deephaven::client::Client internal_client;
     const deephaven::client::TableHandleManager internal_tbl_hdl_mngr = internal_client.getManager();
 };
 
@@ -582,6 +594,7 @@ RCPP_MODULE(DeephavenInternalModule) {
     .method("run_script", &ClientWrapper::runScript)
     .method("new_arrow_array_stream_ptr", &ClientWrapper::newArrowArrayStreamPtr)
     .method("new_table_from_arrow_array_stream_ptr", &ClientWrapper::newTableFromArrowArrayStreamPtr)
+    .method("close", &ClientWrapper::close)
     ;
 
 }

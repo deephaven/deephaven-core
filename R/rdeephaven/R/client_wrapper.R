@@ -107,6 +107,13 @@ Client <- R6Class("Client", cloneable = FALSE,
         run_script = function(script) {
             verify_string("script", script)
             private$internal_client$run_script(script)
+        },
+
+        #' @description
+        #' Closes the client connection and all associated state. Once this is called, no TableHandles pulled from
+        #' this client connection will remain valid.
+        close = function() {
+            private$internal_client$close()
         }
     ),
     private = list(
