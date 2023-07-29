@@ -432,6 +432,13 @@ public class KafkaIngester {
     }
 
     /**
+     * Retrieve the underlying KafkaConsumer used for this ingester.
+     */
+    public KafkaConsumer<?,?> getKafkaConsumer() {
+        return kafkaConsumer;
+    }
+
+    /**
      * Add a callback for the consumer loop.
      * 
      * @param callback a callback that allows subscribers to inject logic into the consumer loop.

@@ -1389,7 +1389,7 @@ public class KafkaTools {
                 };
 
         consume(kafkaProperties, topic, partitionFilter, partitionToInitialOffset, keySpec, valueSpec,
-                StreamConsumerRegistrarProvider.single(registrar));
+                StreamConsumerRegistrarProvider.single(registrar)).start();
         return resultHolder.getValue();
     }
 
@@ -1450,7 +1450,7 @@ public class KafkaTools {
                 };
 
         consume(kafkaProperties, topic, partitionFilter, partitionToInitialOffset, keySpec, valueSpec,
-                StreamConsumerRegistrarProvider.perPartition(registrar));
+                StreamConsumerRegistrarProvider.perPartition(registrar)).start();
         return resultHolder.get();
     }
 
@@ -1603,7 +1603,7 @@ public class KafkaTools {
      *        {@link TableDefinition}. See {@link StreamConsumerRegistrarProvider#single(SingleConsumerRegistrar)
      *        single} and {@link StreamConsumerRegistrarProvider#perPartition(PerPartitionConsumerRegistrar)
      *        per-partition}.
-     * @return the newly created KafkaIngester
+     * @return the newly created KafkaIngester, the caller must call start on the returned object to begin processing messages
      */
     public static KafkaIngester consume(
             @NotNull final Properties kafkaProperties,
@@ -1690,7 +1690,6 @@ public class KafkaTools {
                 kafkaRecordConsumerFactory,
                 partitionToInitialOffset);
         kafkaIngesterHolder.setValue(ingester);
-        ingester.start();
 
         return ingester;
     }
