@@ -433,6 +433,7 @@ public class KafkaIngester {
 
     /**
      * Add a callback for the consumer loop.
+     * 
      * @param callback a callback that allows subscribers to inject logic into the consumer loop.
      */
     public void addConsumerLoopCallback(@NotNull final ConsumerLoopCallback callback) {
@@ -441,6 +442,7 @@ public class KafkaIngester {
 
     /**
      * Remove a callback from the consumer loop.
+     * 
      * @param callback a previously added callback.
      */
     public void removeConsumerLoopCallback(@NotNull final ConsumerLoopCallback callback) {
