@@ -1603,8 +1603,9 @@ public class KafkaTools {
      *        {@link TableDefinition}. See {@link StreamConsumerRegistrarProvider#single(SingleConsumerRegistrar)
      *        single} and {@link StreamConsumerRegistrarProvider#perPartition(PerPartitionConsumerRegistrar)
      *        per-partition}.
+     * @return the newly created KafkaIngester
      */
-    public static void consume(
+    public static KafkaIngester consume(
             @NotNull final Properties kafkaProperties,
             @NotNull final String topic,
             @NotNull final IntPredicate partitionFilter,
@@ -1690,6 +1691,8 @@ public class KafkaTools {
                 partitionToInitialOffset);
         kafkaIngesterHolder.setValue(ingester);
         ingester.start();
+
+        return ingester;
     }
 
     private static KeyOrValueSerializer<?> getAvroSerializer(

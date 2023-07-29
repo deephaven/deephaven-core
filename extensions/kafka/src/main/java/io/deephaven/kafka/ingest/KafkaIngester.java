@@ -18,9 +18,11 @@ import org.jetbrains.annotations.NotNull;
 
 import java.text.DecimalFormat;
 import java.time.Duration;
+import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
 import java.util.Properties;
+import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.function.Function;
 import java.util.function.IntPredicate;
 import java.util.function.IntToLongFunction;
@@ -50,6 +52,8 @@ public class KafkaIngester {
                 }
             });
 
+    private final Collection<ConsumerLoopCallback> consumerLoopCallbacks = new CopyOnWriteArrayList<>();
+
     private long messagesProcessed = 0;
     private long bytesProcessed = 0;
     private long pollCalls = 0;
@@ -60,6 +64,26 @@ public class KafkaIngester {
 
     private volatile boolean needsAssignment;
     private volatile boolean done;
+
+    /**
+     * A callback which is invoked from the consumer loop, enabling clients to inject logic on the Kafka consumer.
+     */
+    public interface ConsumerLoopCallback {
+        /**
+         * Called before the consumer is polled for records.
+         *
+         * @param consumer the KafkaConsumer that will be polled for records
+         */
+        void beforePoll(KafkaConsumer<?, ?> consumer);
+
+        /**
+         * Called after the consumer is polled for records and they have been published to the StreamConsumer.
+         *
+         * @param consumer the KafkaConsumer that has been polled for records
+         * @param more true if more records should be read, false if the consumer will be shut down due to error
+         */
+        void afterPoll(KafkaConsumer<?, ?> consumer, boolean more);
+    }
 
     /**
      * Constant predicate that returns true for all partitions. This is the default, each and every partition that
@@ -281,7 +305,9 @@ public class KafkaIngester {
             }
             final long beforePoll = System.nanoTime();
             final long remainingNanos = beforePoll > nextReport ? 0 : (nextReport - beforePoll);
-            boolean more = pollOnce(Duration.ofNanos(remainingNanos));
+            consumerLoopCallbacks.forEach(x -> x.beforePoll(kafkaConsumer));
+            final boolean more = pollOnce(Duration.ofNanos(remainingNanos));
+            consumerLoopCallbacks.forEach(x -> x.afterPoll(kafkaConsumer, more));
             if (!more) {
                 log.error().append(logPrefix)
                         .append("Stopping due to errors (").append(messagesWithErr)
@@ -403,5 +429,21 @@ public class KafkaIngester {
             needsAssignment = true;
         }
         kafkaConsumer.wakeup();
+    }
+
+    /**
+     * Add a callback for the consumer loop.
+     * @param callback a callback that allows subscribers to inject logic into the consumer loop.
+     */
+    public void addConsumerLoopCallback(@NotNull final ConsumerLoopCallback callback) {
+        consumerLoopCallbacks.add(callback);
+    }
+
+    /**
+     * Remove a callback from the consumer loop.
+     * @param callback a previously added callback.
+     */
+    public void removeConsumerLoopCallback(@NotNull final ConsumerLoopCallback callback) {
+        consumerLoopCallbacks.remove(callback);
     }
 }
