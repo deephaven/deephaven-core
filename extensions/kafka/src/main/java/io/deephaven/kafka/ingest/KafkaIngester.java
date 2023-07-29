@@ -200,6 +200,55 @@ public class KafkaIngester {
         this(log, props, topic, ALL_PARTITIONS, partitionToStreamConsumer, partitionToInitialSeekOffset);
     }
 
+    /**
+     * Creates a Kafka ingester for the given topic.
+     *
+     * @param log A log for output
+     * @param props The properties used to create the {@link KafkaConsumer}
+     * @param topic The topic to replicate
+     * @param partitionFilter A predicate indicating which partitions we should replicate
+     * @param partitionToStreamConsumer A function implementing a mapping from partition to its consumer of records. The
+     *        function will be invoked once per partition at construction; implementations should internally defer
+     *        resource allocation until first call to {@link KafkaRecordConsumer#consume(List)} or
+     *        {@link KafkaRecordConsumer#acceptFailure(Throwable)} if appropriate.
+     * @param partitionToInitialSeekOffset A function implementing a mapping from partition to its initial seek offset,
+     *        or -1 if seek to beginning is intended.
+     */
+    public KafkaIngester(
+            @NotNull final Logger log,
+            @NotNull final Properties props,
+            @NotNull final String topic,
+            @NotNull final IntPredicate partitionFilter,
+            @NotNull final Function<TopicPartition, KafkaRecordConsumer> partitionToStreamConsumer,
+            @NotNull final IntToLongFunction partitionToInitialSeekOffset) {
+        this(log, props, topic, partitionFilter, partitionToStreamConsumer,
+                new IntToLongFunctionAdapter(partitionToInitialSeekOffset));
+    }
+
+    /**
+     * Determines the initial offset to seek to for a given TopicPartition.
+     */
+    @FunctionalInterface
+    public interface PartitionToInitialOffsetFunction {
+        long partitionToInitialOffset(KafkaConsumer<?, ?> consumer, TopicPartition topicPartition);
+    }
+
+    /**
+     * Adapts an IntToLongFunction to a PartitionToInitialOffsetFunction by ignoring the topic and consumer parameters.
+     */
+    public static class IntToLongFunctionAdapter implements PartitionToInitialOffsetFunction {
+        final IntToLongFunction function;
+
+        public IntToLongFunctionAdapter(IntToLongFunction function) {
+            this.function = function;
+        }
+
+        @Override
+        public long partitionToInitialOffset(final KafkaConsumer<?, ?> consumer, final TopicPartition topicPartition) {
+            return function.applyAsLong(topicPartition.partition());
+        }
+    }
+
     public static long SEEK_TO_BEGINNING = -1;
     public static long DONT_SEEK = -2;
     public static long SEEK_TO_END = -3;
@@ -228,7 +277,7 @@ public class KafkaIngester {
             @NotNull final String topic,
             @NotNull final IntPredicate partitionFilter,
             @NotNull final Function<TopicPartition, KafkaRecordConsumer> partitionToStreamConsumer,
-            @NotNull final IntToLongFunction partitionToInitialSeekOffset) {
+            @NotNull final PartitionToInitialOffsetFunction partitionToInitialSeekOffset) {
         this.log = log;
         this.topic = topic;
         partitionDescription = partitionFilter.toString();
@@ -244,7 +293,8 @@ public class KafkaIngester {
         assign();
 
         for (final TopicPartition topicPartition : assignedPartitions) {
-            final long seekOffset = partitionToInitialSeekOffset.applyAsLong(topicPartition.partition());
+            final long seekOffset =
+                    partitionToInitialSeekOffset.partitionToInitialOffset(kafkaConsumer, topicPartition);
             if (seekOffset == SEEK_TO_BEGINNING) {
                 log.info().append(logPrefix).append(topicPartition.toString()).append(" seeking to beginning.")
                         .append(seekOffset).endl();
@@ -429,13 +479,6 @@ public class KafkaIngester {
             needsAssignment = true;
         }
         kafkaConsumer.wakeup();
-    }
-
-    /**
-     * Retrieve the underlying KafkaConsumer used for this ingester.
-     */
-    public KafkaConsumer<?,?> getKafkaConsumer() {
-        return kafkaConsumer;
     }
 
     /**
