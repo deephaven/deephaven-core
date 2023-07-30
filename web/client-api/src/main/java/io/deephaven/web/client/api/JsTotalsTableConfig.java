@@ -44,6 +44,17 @@ import java.util.Set;
 import java.util.stream.Collector;
 import java.util.stream.Collectors;
 
+/**
+ * Describes how a Totals Table will be generated from its parent table. Each table has a default (which may be null)
+ * indicating how that table was configured when it was declared, and each Totals Table has a similar property
+ * describing how it was created. Both the <b>Table.getTotalsTable</b> and <b>Table.getGrandTotalsTable</b> methods take
+ * this config as an optional parameter - without it, the table's default will be used, or if null, a default instance
+ * of <b>TotalsTableConfig</b> will be supplied.
+ *
+ * This class has a no-arg constructor, allowing an instance to be made with the default values provided. However, any
+ * JS object can be passed in to the methods which accept instances of this type, provided their values adhere to the
+ * expected formats.
+ */
 @JsType(name = "TotalsTableConfig", namespace = "dh")
 public class JsTotalsTableConfig {
     @Deprecated // Use JsAggregationOperation instead
@@ -74,13 +85,30 @@ public class JsTotalsTableConfig {
             JsAggregationOperation.DISTINCT,
             JsAggregationOperation.UNIQUE);
 
+    /**
+     * Specifies if a Totals Table should be expanded by default in the UI. Defaults to false.
+     */
     public boolean showTotalsByDefault = false;
+    /**
+     * Specifies if a Grand Totals Table should be expanded by default in the UI. Defaults to false.
+     */
     public boolean showGrandTotalsByDefault = false;
+    /**
+     * Specifies the default operation for columns that do not have a specific operation applied; defaults to "Sum".
+     */
     @TsTypeRef(JsAggregationOperation.class)
     public String defaultOperation = JsAggregationOperation.SUM;
+    /**
+     * Mapping from each column name to the aggregation(s) that should be applied to that column in the resulting Totals
+     * Table. If a column is omitted, the defaultOperation is used.
+     */
     public JsPropertyMap<JsArray<@TsTypeRef(JsAggregationOperation.class) String>> operationMap =
             Js.cast(JsObject.create(null));
 
+    /**
+     * Groupings to use when generating the Totals Table. One row will exist for each unique set of values observed in
+     * these columns. See also `Table.selectDistinct`.
+     */
     public JsArray<String> groupBy = new JsArray<>();
 
     private AggregateRequest grpcRequest;

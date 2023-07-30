@@ -82,6 +82,7 @@ public class SwapListener extends LivenessArtifact implements TableUpdateListene
     public ConstructSnapshot.SnapshotControl makeSnapshotControl() {
         // noinspection AutoBoxing
         return ConstructSnapshot.makeSnapshotControl(
+                sourceTable.getUpdateGraph(),
                 this::start,
                 (final long currentClockValue, final boolean usingPreviousValues) -> isInInitialNotificationWindow(),
                 (final long afterClockValue, final boolean usedPreviousValues) -> end(afterClockValue));

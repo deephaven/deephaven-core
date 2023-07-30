@@ -38,11 +38,13 @@ import org.jetbrains.annotations.Nullable;
 import java.lang.ref.WeakReference;
 import java.time.Instant;
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.stream.Stream;
 
 /**
  * Adapter for converting streams of data into columnar Deephaven {@link Table tables} that conform to
@@ -212,6 +214,20 @@ public class StreamToBlinkTableAdapter
         return localTable;
     }
 
+    /**
+     * Checks whether {@code this} is alive; if {@code false}, the publisher should stop publishing new data and release
+     * any related resources as soon as practicable since publishing won't have any downstream effects.
+     *
+     * <p>
+     * Once this is {@code false}, it will always remain {@code false}. For more prompt notifications, publishers may
+     * prefer to respond to {@link StreamPublisher#shutdown()}.
+     *
+     * @return if this is alive
+     */
+    public boolean isAlive() {
+        return alive.get();
+    }
+
     @Override
     public void close() {
         if (alive.compareAndSet(true, false)) {
@@ -327,26 +343,46 @@ public class StreamToBlinkTableAdapter
     @SafeVarargs
     @Override
     public final void accept(@NotNull final WritableChunk<Values>... data) {
+        accept(List.<WritableChunk<Values>[]>of(data));
+    }
+
+    /**
+     * {@inheritDoc}
+     *
+     * <p>
+     * Ensures that the blink table sees the full collection of chunks in a single cycle.
+     *
+     * @param data A collection of per-column {@link WritableChunk chunks} of {@link Values values}. All chunks in each
+     *        element must have the same {@link WritableChunk#size() size}, but different elements may have differing
+     *        chunk sizes.
+     */
+    @Override
+    public final void accept(@NotNull Collection<WritableChunk<Values>[]> data) {
         if (!alive.get()) {
+            // If we'll never deliver these chunks, dispose of them immediately.
+            SafeCloseable.closeAll(data.stream().flatMap(Stream::of));
             return;
         }
         // Accumulate data into buffered column sources
         synchronized (this) {
             if (!enqueuedFailures.isEmpty()) {
                 // If we'll never deliver these chunks, dispose of them immediately.
-                SafeCloseable.closeAll(data);
+                SafeCloseable.closeAll(data.stream().flatMap(Stream::of));
                 return;
             }
             if (bufferChunkSources == null) {
                 bufferChunkSources = makeChunkSources(tableDefinition);
             }
-            if (data.length != bufferChunkSources.length) {
-                throw new IllegalStateException("StreamConsumer data length = " + data.length + " chunks, expected "
-                        + bufferChunkSources.length);
-            }
-            for (int ii = 0; ii < data.length; ++ii) {
-                Assert.eq(data[0].size(), "data[0].size()", data[ii].size(), "data[ii].size()");
-                bufferChunkSources[ii].addChunk(data[ii]);
+            for (WritableChunk<Values>[] chunks : data) {
+                if (chunks.length != bufferChunkSources.length) {
+                    throw new IllegalStateException(
+                            "StreamConsumer data length = " + chunks.length + " chunks, expected "
+                                    + bufferChunkSources.length);
+                }
+                for (int ii = 0; ii < chunks.length; ++ii) {
+                    Assert.eq(chunks[0].size(), "data[0].size()", chunks[ii].size(), "data[ii].size()");
+                    bufferChunkSources[ii].addChunk(chunks[ii]);
+                }
             }
         }
     }

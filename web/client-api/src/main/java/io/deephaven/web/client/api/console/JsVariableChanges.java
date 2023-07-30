@@ -13,6 +13,12 @@ import jsinterop.annotations.JsProperty;
 import jsinterop.base.Js;
 
 
+/**
+ * Describes changes in the current set of variables in the script session. Note that variables that changed value
+ * without changing type will be included as <b>updated</b>, but if a new value with one type replaces an old value with
+ * a different type, this will be included as an entry in both <b>removed</b> and <b>created</b> to indicate the old and
+ * new types.
+ */
 @TsInterface
 @TsName(namespace = "dh.ide", name = "VariableChanges")
 public class JsVariableChanges {
@@ -43,16 +49,26 @@ public class JsVariableChanges {
         this.removed = JsObject.freeze(removed);
     }
 
+    /**
+     * @return The variables that were created by this operation, or have a new type.
+     */
     @JsProperty
     public JsArray<JsVariableDefinition> getCreated() {
         return Js.uncheckedCast(created);
     }
 
+    /**
+     * @return The variables that changed value during this operation.
+     */
     @JsProperty
     public JsArray<JsVariableDefinition> getUpdated() {
         return Js.uncheckedCast(updated);
     }
 
+    /**
+     * @return The variables that no longer exist after this operation, or were replaced by some variable with a
+     *         different type.
+     */
     @JsProperty
     public JsArray<JsVariableDefinition> getRemoved() {
         return Js.uncheckedCast(removed);
