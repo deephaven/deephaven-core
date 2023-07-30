@@ -8,8 +8,8 @@ import jsinterop.annotations.JsType;
 
 @JsType(
         isNative = true,
-        name = "dhinternal.io.deephaven.proto.object_pb.StreamRequest.PayloadCase",
+        name = "dhinternal.io.deephaven.proto.object_pb.StreamRequest.MessageCase",
         namespace = JsPackage.GLOBAL)
-public class PayloadCase {
-    public static int CONNECT, DATA, PAYLOAD_NOT_SET;
+public class MessageCase {
+    public static int CONNECT, DATA, MESSAGE_NOT_SET;
 }

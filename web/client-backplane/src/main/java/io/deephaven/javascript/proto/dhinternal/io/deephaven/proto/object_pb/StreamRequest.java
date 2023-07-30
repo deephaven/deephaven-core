@@ -5,7 +5,6 @@ package io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.object_pb;
 
 import elemental2.core.JsArray;
 import elemental2.core.Uint8Array;
-import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.object_pb.streamrequest.PayloadCase;
 import jsinterop.annotations.JsOverlay;
 import jsinterop.annotations.JsPackage;
 import jsinterop.annotations.JsProperty;
@@ -398,7 +397,7 @@ public class StreamRequest {
 
     public native Data getData();
 
-    public native PayloadCase getPayloadCase();
+    public native int getMessageCase();
 
     public native boolean hasConnect();
 
