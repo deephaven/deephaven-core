@@ -108,7 +108,7 @@ message Data {
  * Client payload for the MessageStream.
  */
 message StreamRequest {
-    oneof payload {
+    oneof message {
         ConnectRequest connect = 1;
         Data data = 2;
     }
@@ -117,7 +117,7 @@ message StreamRequest {
  * Server responses to the client. Currently can only be Data messages.
  */
 message StreamResponse {
-    oneof payload {
+    oneof message {
         Data data = 1;
     }
 }
