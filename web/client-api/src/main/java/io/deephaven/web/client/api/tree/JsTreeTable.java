@@ -34,6 +34,7 @@ import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.hierarchicalt
 import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.hierarchicaltable_pb.HierarchicalTableViewRequest;
 import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.table_pb.Condition;
 import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.ticket_pb.Ticket;
+import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.ticket_pb.TypedTicket;
 import io.deephaven.web.client.api.*;
 import io.deephaven.web.client.api.barrage.WebBarrageUtils;
 import io.deephaven.web.client.api.barrage.def.ColumnDefinition;
@@ -81,7 +82,7 @@ import static io.deephaven.web.client.api.subscription.ViewportData.NO_ROW_FORMA
  * The table size will be -1 until a viewport has been fetched.
  */
 @JsType(namespace = "dh", name = "TreeTable")
-public class JsTreeTable extends HasLifecycle {
+public class JsTreeTable extends HasLifecycle implements ServerObject {
     public static final String EVENT_UPDATED = "updated",
             EVENT_DISCONNECT = "disconnect",
             EVENT_RECONNECT = "reconnect",
@@ -944,6 +945,11 @@ public class JsTreeTable extends HasLifecycle {
                 return null;
             });
         }
+    }
+
+    @Override
+    public TypedTicket typedTicket() {
+        return widget.typedTicket();
     }
 
     @SuppressWarnings("unusable-by-js")

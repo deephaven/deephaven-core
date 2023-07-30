@@ -93,7 +93,7 @@ import static io.deephaven.web.client.fu.LazyPromise.logError;
  * handle/viewport.
  */
 @TsName(namespace = "dh", name = "Table")
-public class JsTable extends HasLifecycle implements HasTableBinding, JoinableTable {
+public class JsTable extends HasLifecycle implements HasTableBinding, JoinableTable, ServerObject {
     @JsProperty(namespace = "dh.Table")
     public static final String EVENT_SIZECHANGED = "sizechanged",
             EVENT_UPDATED = "updated",
@@ -187,6 +187,14 @@ public class JsTable extends HasLifecycle implements HasTableBinding, JoinableTa
     public Promise<JsTable> refetch() {
         // TODO(deephaven-core#3604) consider supporting this method when new session reconnects are supported
         return Promise.reject("Cannot reconnect a Table with refetch(), see deephaven-core#3604");
+    }
+
+    @Override
+    public TypedTicket typedTicket() {
+        TypedTicket typedTicket = new TypedTicket();
+        typedTicket.setTicket(state().getHandle().makeTicket());
+        typedTicket.setType(JsVariableType.TABLE);
+        return typedTicket;
     }
 
     @JsMethod

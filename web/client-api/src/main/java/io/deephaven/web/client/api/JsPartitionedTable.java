@@ -9,6 +9,7 @@ import elemental2.promise.Promise;
 import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.partitionedtable_pb.GetTableRequest;
 import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.partitionedtable_pb.MergeRequest;
 import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.partitionedtable_pb.PartitionedTableDescriptor;
+import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.ticket_pb.TypedTicket;
 import io.deephaven.web.client.api.barrage.WebBarrageUtils;
 import io.deephaven.web.client.api.barrage.def.ColumnDefinition;
 import io.deephaven.web.client.api.lifecycle.HasLifecycle;
@@ -30,7 +31,7 @@ import java.util.List;
 import java.util.Map;
 
 @JsType(namespace = "dh", name = "PartitionedTable")
-public class JsPartitionedTable extends HasLifecycle {
+public class JsPartitionedTable extends HasLifecycle implements ServerObject {
     public static final String EVENT_KEYADDED = "keyadded",
             EVENT_DISCONNECT = JsTable.EVENT_DISCONNECT,
             EVENT_RECONNECT = JsTable.EVENT_RECONNECT,
@@ -101,6 +102,11 @@ public class JsPartitionedTable extends HasLifecycle {
             });
             return subscribeToKeys();
         });
+    }
+
+    @Override
+    public TypedTicket typedTicket() {
+        return widget.typedTicket();
     }
 
     private Promise<JsPartitionedTable> subscribeToKeys() {

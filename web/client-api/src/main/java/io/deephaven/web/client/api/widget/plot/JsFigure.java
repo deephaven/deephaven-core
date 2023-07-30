@@ -41,6 +41,10 @@ import java.util.Set;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
+/**
+ * At this time, not marked as a ServerObject, due to internal implementation issues which leave the door open to
+ * client-created figures.
+ */
 @JsType(name = "Figure", namespace = "dh.plot")
 public class JsFigure extends HasLifecycle {
 
