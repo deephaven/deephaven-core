@@ -53,8 +53,12 @@ class NoneOp(TableOp):
 
 
 class TimeTableOp(TableOp):
-    def __init__(self, start_time: Union[int, str] = 0, period: Union[int, str] = 1000000000):
-        self.start_time = start_time
+    def __init__(self, start_time: Union[int, str] = None, period: Union[int, str] = 1000000000):
+        if start_time is None:
+            # coerce this to java's Long.MIN_VALUE if not provided.
+            self.start_time = -9223372036854775808
+        else:
+            self.start_time = start_time
         self.period = period
 
     @classmethod
