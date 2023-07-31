@@ -1518,13 +1518,11 @@ public class KafkaTools {
         final Map<String, ?> config = asStringMap(kafkaProperties);
         final SchemaRegistryClient schemaRegistryClient = schemaRegistryClient(keySpec, valueSpec, config).orElse(null);
 
-        // noinspection resource
-        final Serializer<?> keySerializer2 = keySpec.serializer(schemaRegistryClient, table.getDefinition());
-        keySerializer2.configure(config, true);
+        final Serializer<?> keySpecSerializer = keySpec.serializer(schemaRegistryClient, table.getDefinition());
+        keySpecSerializer.configure(config, true);
 
-        // noinspection resource
-        final Serializer<?> valueSerializer2 = valueSpec.serializer(schemaRegistryClient, table.getDefinition());
-        valueSerializer2.configure(config, false);
+        final Serializer<?> valueSpecSerializer = valueSpec.serializer(schemaRegistryClient, table.getDefinition());
+        valueSpecSerializer.configure(config, false);
 
         final String[] keyColumns = keySpec.getColumnNames(table, schemaRegistryClient);
         final String[] valueColumns = valueSpec.getColumnNames(table, schemaRegistryClient);
@@ -1534,15 +1532,19 @@ public class KafkaTools {
             final Table effectiveTable = (!keySpec.isIgnore() && lastByKeyColumns)
                     ? table.lastBy(keyColumns)
                     : table.coalesce();
-
             final KeyOrValueSerializer<?> keySerializer = keySpec.keyOrValueSerializer(effectiveTable, keyColumns);
             final KeyOrValueSerializer<?> valueSerializer =
                     valueSpec.keyOrValueSerializer(effectiveTable, valueColumns);
-
             final PublishToKafka producer = new PublishToKafka(
-                    kafkaProperties, effectiveTable, topic,
-                    keyColumns, keySerializer,
-                    valueColumns, valueSerializer);
+                    kafkaProperties,
+                    effectiveTable,
+                    topic,
+                    keyColumns,
+                    keySpecSerializer,
+                    keySerializer,
+                    valueColumns,
+                    valueSpecSerializer,
+                    valueSerializer);
         }
         return publisherScope::release;
     }
