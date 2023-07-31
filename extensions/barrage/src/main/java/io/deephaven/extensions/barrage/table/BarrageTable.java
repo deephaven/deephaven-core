@@ -176,6 +176,7 @@ public abstract class BarrageTable extends QueryTable implements BarrageMessage.
      * @implNote this cannot be performed in the constructor as the class is subclassed.
      */
     public void addSourceToRegistrar() {
+        setRefreshing(true);
         registrar.addSource(refresher);
     }
 

@@ -138,6 +138,7 @@ public final class TimeTable extends QueryTable implements Runnable {
         if (startTime != null) {
             refresh(false);
         }
+        setRefreshing(true);
         registrar.addSource(refresher);
     }
 
