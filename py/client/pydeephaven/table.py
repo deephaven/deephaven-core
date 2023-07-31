@@ -221,7 +221,7 @@ class Table(TableInterface):
         return super().sort(order_by, order)
 
     def sort_descending(self, order_by: Union[str, List[str]]) -> Table:
-        """The sort_descending method creates a new table where rows in a table are sorted in a largest to smallest
+        """The sort_descending method creates a new table where rows in a table are sorted in descending
         order based on the order_by column(s).
 
         Args:
@@ -234,7 +234,7 @@ class Table(TableInterface):
             DHError
         """
         order_by = to_list(order_by)
-        order = [SortDirection.DESCENDING] * len(order_by)
+        order = SortDirection.DESCENDING
         return super().sort(order_by, order)
 
     def where(self, filters: Union[str, List[str]]) -> Table:
