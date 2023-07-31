@@ -70,3 +70,7 @@ verify_string_vector <- function(arg_name, string_vector_candidate) {
 strip_r6_wrapping_from_aggregation <- function(r6_aggregation) {
   return(r6_aggregation$internal_aggregation)
 }
+
+strip_r6_wrapping_from_table_handle <- function(r6_table_handle) {
+  return(r6_table_handle$internal_table_handle)
+}

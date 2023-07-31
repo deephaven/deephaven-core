@@ -142,5 +142,8 @@ tail.TableHandle <- function(th, n) {
 
 #' @export
 rbind.TableHandle <- function(th, sources) {
-  return(TableHandle$new(th$internal_table_handle$merge(sources)))
+  verify_internal_type("TableHandle", "sources", sources)
+  sources <- c(sources)
+  unwrapped_sources <- lapply(sources, strip_r6_wrapping_from_table_handle)
+  return(TableHandle$new(th$internal_table_handle$merge(unwrapped_sources)))
 }
