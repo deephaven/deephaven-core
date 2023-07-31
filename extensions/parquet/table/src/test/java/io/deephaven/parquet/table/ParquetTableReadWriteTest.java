@@ -3,12 +3,14 @@
  */
 package io.deephaven.parquet.table;
 
+import io.deephaven.UncheckedDeephavenException;
 import io.deephaven.api.Selectable;
 import io.deephaven.base.FileUtils;
 import io.deephaven.engine.context.ExecutionContext;
 import io.deephaven.engine.primitive.iterator.CloseableIterator;
 import io.deephaven.engine.table.ColumnDefinition;
 import io.deephaven.engine.table.impl.util.ColumnHolder;
+import io.deephaven.engine.table.impl.select.FormulaEvaluationException;
 import io.deephaven.engine.testutil.TstUtils;
 import io.deephaven.engine.testutil.junit4.EngineCleanup;
 import io.deephaven.engine.util.BigDecimalUtils;
@@ -421,6 +423,7 @@ public class ParquetTableReadWriteTest {
                 && Arrays.asList(filesInDir).contains(backupFileName));
         fromDisk = ParquetTools.readTable(destFile);
         TstUtils.assertTableEquals(fromDisk, newTableToSave);
+        FileUtils.deleteRecursively(parentDir);
     }
 
     /**
@@ -510,6 +513,7 @@ public class ParquetTableReadWriteTest {
                 && Arrays.asList(filesInDir).contains(vvvGroupingFilename)
                 && Arrays.asList(filesInDir).contains(xxxGroupingFilename)
                 && Arrays.asList(filesInDir).contains(backupXXXGroupingFileName));
+        FileUtils.deleteRecursively(parentDir);
     }
 
     @Test
@@ -573,42 +577,66 @@ public class ParquetTableReadWriteTest {
                 && Arrays.asList(filesInDir).contains(vvvGroupingFilename)
                 && Arrays.asList(filesInDir).contains(xxxGroupingFilename)
                 && Arrays.asList(filesInDir).contains(backupXXXGroupingFileName));
+        FileUtils.deleteRecursively(parentDir);
+    }
+
+    @Test
+    public void readChangedUnderlyingFileTests() {
+        // Write a table to parquet file and read it back
+        final Table tableToSave = TableTools.emptyTable(5).update("A=(int)i", "B=(long)i", "C=(double)i");
+        final String filename = "readChangedUnderlyingFileTests.parquet";
+        final File destFile = new File(rootFile, filename);
+        ParquetTools.writeTable(tableToSave, destFile);
+        Table fromDisk = ParquetTools.readTable(destFile);
+        // At this point, fromDisk is not fully materialized in the memory and would be read from the file on demand
+
+        // Change the underlying file
+        final Table stringTable = TableTools.emptyTable(5).update("InputString = Long.toString(ii)");
+        ParquetTools.writeTable(stringTable, destFile);
+        Table stringFromDisk = ParquetTools.readTable(destFile).select();
+        TstUtils.assertTableEquals(stringTable, stringFromDisk);
+
+        // Close all the file handles so that next time when fromDisk is accessed, we need to reopen the file handle
+        TrackedFileHandleFactory.getInstance().closeAll();
+
+        // Read back fromDisk and compare it with original table. Since the underlying file has changed,
+        // assertTableEquals
+        // will try to read the file and would crash
+        TstUtils.assertTableEquals(tableToSave, fromDisk);
+        try {
+            TstUtils.assertTableEquals(tableToSave, fromDisk);
+            TestCase.fail();
+        } catch (Exception ignored) {
+        }
     }
 
     @Test
     public void readModifyWriteTests() {
-        // Create an empty parent directory
-        final File parentDir = new File(rootFile, "tempDir");
-        parentDir.mkdir();
-
         // Write a table to parquet file and read it back
         final Table tableToSave = TableTools.emptyTable(5).update("A=(int)i", "B=(long)i", "C=(double)i");
         final String filename = "readModifyWriteTests.parquet";
-        final File destFile = new File(parentDir, filename);
+        final File destFile = new File(rootFile, filename);
         ParquetTools.writeTable(tableToSave, destFile);
         Table fromDisk = ParquetTools.readTable(destFile);
+        // At this point, fromDisk is not fully materialized in the memory and would be read from the file on demand
 
-        // // Change the underlying file
-        // final Table stringTable = TableTools.emptyTable(5).update("InputString = Long.toString(ii)");
-        // ParquetTools.writeTable(stringTable, destFile);
-        // Table stringFromDisk = ParquetTools.readTable(destFile).select();
-        // TstUtils.assertTableEquals(stringTable, stringFromDisk);
-
-        // TODO Add comments for this code
-
-        TrackedFileHandleFactory.getInstance().closeAll();
-
+        // Create a view table on fromDisk which should fail on writing, and try to write at the same location
+        // Since we are doing a view() operation and adding a new column and overwriting an existing column, the table
+        // won't be materialized in memory or cache.
         final Table badTable =
                 fromDisk.view("InputString = ii % 2 == 0 ? Long.toString(ii) : null", "A=InputString.charAt(0)");
         try {
             ParquetTools.writeTable(badTable, destFile);
             TestCase.fail();
-        } catch (Exception ignored) {
+        } catch (UncheckedDeephavenException e) {
+            assertTrue(e.getCause() instanceof FormulaEvaluationException);
         }
 
+        // Close all old file handles so that we read the file path fresh instead of using any old handles
         TrackedFileHandleFactory.getInstance().closeAll();
 
+        // Read back fromDisk and compare it with original table. If the underlying file has not been corrupted or
+        // swapped out, then we would not be able to read from the file
         TstUtils.assertTableEquals(tableToSave, fromDisk);
-
     }
 }
