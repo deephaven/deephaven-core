@@ -6,6 +6,8 @@ package io.deephaven.engine.table.impl.sources;
 import io.deephaven.engine.table.impl.DefaultGetContext;
 import io.deephaven.engine.table.WritableColumnSource;
 import io.deephaven.engine.rowset.chunkattributes.RowKeys;
+import io.deephaven.qst.type.BoxedType;
+import io.deephaven.qst.type.GenericType;
 import io.deephaven.util.type.ArrayTypeUtils;
 import io.deephaven.chunk.*;
 import io.deephaven.chunk.attributes.Values;
@@ -614,15 +616,18 @@ public abstract class ArrayBackedColumnSource<T>
         public WritableColumnSource<?> visit(GenericArray<?> generic) {
             return generic.componentType().walk(new Visitor<>() {
                 @Override
+                public WritableColumnSource<?> visit(BoxedType<?> boxedType) {
+                    return simple(boxedType);
+                }
+
+                @Override
                 public WritableColumnSource<?> visit(StringType stringType) {
-                    return ArrayBackedColumnSource.getMemoryColumnSource(
-                            generic.cast(stringType).values(), String.class, null);
+                    return simple(stringType);
                 }
 
                 @Override
                 public WritableColumnSource<?> visit(InstantType instantType) {
-                    return ArrayBackedColumnSource.getMemoryColumnSource(
-                            generic.cast(instantType).values(), Instant.class, null);
+                    return simple(instantType);
                 }
 
                 @Override
@@ -635,10 +640,12 @@ public abstract class ArrayBackedColumnSource<T>
 
                 @Override
                 public WritableColumnSource<?> visit(CustomType<?> customType) {
-                    // noinspection unchecked
-                    CustomType<T> tType = (CustomType<T>) customType;
-                    return ArrayBackedColumnSource.getMemoryColumnSource(
-                            generic.cast(tType).values(), tType.clazz(), null);
+                    return simple(customType);
+                }
+
+                private <X> WritableColumnSource<X> simple(GenericType<X> type) {
+                    return ArrayBackedColumnSource.getMemoryColumnSource(generic.cast(type).values(), type.clazz(),
+                            null);
                 }
             });
         }

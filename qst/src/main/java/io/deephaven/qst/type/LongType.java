@@ -3,17 +3,17 @@
  */
 package io.deephaven.qst.type;
 
-import io.deephaven.annotations.SimpleStyle;
+import io.deephaven.annotations.SingletonStyle;
 import org.immutables.value.Value.Immutable;
 
 /**
- * The {@link Long} type.
+ * The primitive {@link long} type.
  */
 @Immutable
-@SimpleStyle
+@SingletonStyle
 public abstract class LongType extends PrimitiveTypeBase<Long> {
 
-    public static LongType instance() {
+    public static LongType of() {
         return ImmutableLongType.of();
     }
 
@@ -23,8 +23,8 @@ public abstract class LongType extends PrimitiveTypeBase<Long> {
     }
 
     @Override
-    public final Class<Long> boxedClass() {
-        return Long.class;
+    public final BoxedLongType boxedType() {
+        return BoxedLongType.of();
     }
 
     @Override

@@ -11,6 +11,7 @@ import io.deephaven.engine.rowset.RowSet;
 import io.deephaven.util.annotations.FinalDefault;
 import org.jetbrains.annotations.NotNull;
 
+import javax.annotation.Nullable;
 import javax.annotation.OverridingMethodsMustInvokeSuper;
 import java.util.Map;
 
@@ -159,16 +160,56 @@ public interface ColumnSource<T>
      * @param <TYPE> The target type, as a type parameter. Intended to be inferred from {@code clazz}.
      * @return A {@code ColumnSource} parameterized by {@code TYPE}.
      */
+    @FinalDefault
     default <TYPE> ColumnSource<TYPE> cast(Class<? extends TYPE> clazz) {
         Require.neqNull(clazz, "clazz");
         final Class<?> columnSourceType = getType();
         if (!clazz.isAssignableFrom(columnSourceType)) {
-            throw new ClassCastException(
-                    "Cannot convert column source for type " + columnSourceType.getName() + " to " +
-                            "type " + clazz.getName());
+            throw new ClassCastException(String.format("Cannot convert column source for type %s to type %s",
+                    columnSourceType.getName(), clazz.getName()));
         }
         // noinspection unchecked
         return (ColumnSource<TYPE>) this;
+    }
+
+    /**
+     * Returns this {@code ColumnSource}, parameterized by {@code <TYPE>}, if the data type of this column (as given by
+     * {@link #getType()}) can be cast to {@code clazz}. This is analogous to casting the objects provided by this
+     * column source to {@code clazz}. Additionally, this checks that the component type of this column (as given by
+     * {@link #getComponentType()}) can be cast to {@code componentType} (both must be present and castable, or both
+     * must be {@code null}).
+     *
+     * <p>
+     * For example, the following code will throw an exception if the "MyString" column does not actually contain
+     * {@code String} data:
+     *
+     * <pre>
+     *     ColumnSource&lt;String&gt; colSource = table.getColumnSource("MyString", null).getParameterized(String.class)
+     * </pre>
+     * <p>
+     * Due to the nature of type erasure, the JVM will still insert an additional cast to {@code TYPE} when elements are
+     * retrieved from the column source, such as with {@code String myStr = colSource.get(0)}.
+     *
+     * @param clazz The target type.
+     * @param componentType The target component type, may be {@code null}.
+     * @param <TYPE> The target type, as a type parameter. Intended to be inferred from {@code clazz}.
+     * @return A {@code ColumnSource} parameterized by {@code TYPE}.
+     */
+    @FinalDefault
+    default <TYPE> ColumnSource<TYPE> cast(Class<? extends TYPE> clazz, @Nullable Class<?> componentType) {
+        final ColumnSource<TYPE> casted = cast(clazz);
+        final Class<?> columnSourceComponentType = getComponentType();
+        if ((componentType == null && columnSourceComponentType == null) || (componentType != null
+                && columnSourceComponentType != null && componentType.isAssignableFrom(columnSourceComponentType))) {
+            return casted;
+        }
+        final Class<?> columnSourceType = getType();
+        throw new ClassCastException(String.format(
+                "Cannot convert column source componentType for type %s to %s (for %s / %s)",
+                columnSourceComponentType == null ? null : columnSourceComponentType.getName(),
+                componentType == null ? null : componentType.getName(),
+                columnSourceType.getName(),
+                clazz.getName()));
     }
 
     /**

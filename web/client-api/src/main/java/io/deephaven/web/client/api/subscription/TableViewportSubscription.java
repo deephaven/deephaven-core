@@ -68,6 +68,12 @@ import static io.deephaven.web.client.api.subscription.ViewportData.NO_ROW_FORMA
  * <p>
  * Note that if the caller does close an instance, this shuts down the JsTable's use of this (while the converse is not
  * true), providing a way to stop the server from streaming updates to the client.
+ *
+ * This object serves as a "handle" to a subscription, allowing it to be acted on directly or canceled outright. If you
+ * retain an instance of this, you have two choices - either only use it to call `close()` on it to stop the table's
+ * viewport without creating a new one, or listen directly to this object instead of the table for data events, and
+ * always call `close()` when finished. Calling any method on this object other than close() will result in it
+ * continuing to live on after `setViewport` is called on the original table, or after the table is modified.
  */
 @TsInterface
 @TsName(namespace = "dh")
@@ -186,6 +192,14 @@ public class TableViewportSubscription extends HasEventHandling {
         retained = true;
     }
 
+    /**
+     * Changes the rows and columns set on this viewport. This cannot be used to change the update interval.
+     * 
+     * @param firstRow
+     * @param lastRow
+     * @param columns
+     * @param updateIntervalMs
+     */
     @JsMethod
     public void setViewport(double firstRow, double lastRow, @JsOptional @JsNullable Column[] columns,
             @JsOptional @JsNullable Double updateIntervalMs) {
@@ -207,6 +221,9 @@ public class TableViewportSubscription extends HasEventHandling {
         });
     }
 
+    /**
+     * Stops this viewport from running, stopping all events on itself and on the table that created it.
+     */
     @JsMethod
     public void close() {
         if (status == Status.DONE) {
@@ -241,6 +258,11 @@ public class TableViewportSubscription extends HasEventHandling {
         });
     }
 
+    /**
+     * Gets the data currently visible in this viewport
+     * 
+     * @return Promise of {@link TableData}.
+     */
     @JsMethod
     public Promise<TableData> getViewportData() {
         retainForExternalUse();

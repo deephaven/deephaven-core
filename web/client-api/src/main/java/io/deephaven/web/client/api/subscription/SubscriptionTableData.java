@@ -509,6 +509,16 @@ public class SubscriptionTableData {
     /**
      * Event data, describing the indexes that were added/removed/updated, and providing access to Rows (and thus data
      * in columns) either by index, or scanning the complete present index.
+     *
+     * This class supports two ways of reading the table - checking the changes made since the last update, and reading
+     * all data currently in the table. While it is more expensive to always iterate over every single row in the table,
+     * it may in some cases actually be cheaper than maintaining state separately and updating only the changes, though
+     * both options should be considered.
+     *
+     * The RangeSet objects allow iterating over the LongWrapper indexes in the table. Note that these "indexes" are not
+     * necessarily contiguous and may be negative, and represent some internal state on the server, allowing it to keep
+     * track of data efficiently. Those LongWrapper objects can be passed to the various methods on this instance to
+     * read specific rows or cells out of the table.
      */
     @TsInterface
     @TsName(name = "SubscriptionTableData", namespace = "dh")
@@ -526,6 +536,11 @@ public class SubscriptionTableData {
             this.modified = new JsRangeSet(modified);
         }
 
+        /**
+         * A lazily computed array of all rows in the entire table
+         * 
+         * @return {@link SubscriptionRow} array.
+         */
         @Override
         public JsArray<SubscriptionRow> getRows() {
             if (allRows == null) {
@@ -545,6 +560,12 @@ public class SubscriptionTableData {
             return this.get((long) index);
         }
 
+        /**
+         * Reads a row object from the table, from which any subscribed column can be read
+         * 
+         * @param index
+         * @return {@link SubscriptionRow}
+         */
         @Override
         public SubscriptionRow get(long index) {
             return new SubscriptionRow(index);
@@ -555,6 +576,13 @@ public class SubscriptionTableData {
             return getData((long) index, column);
         }
 
+        /**
+         * a specific cell from the table, from the specified row and column
+         * 
+         * @param index
+         * @param column
+         * @return Any
+         */
         @Override
         public Any getData(long index, Column column) {
             int redirectedIndex = (int) (long) redirectedIndexes.get(index);
@@ -562,6 +590,13 @@ public class SubscriptionTableData {
             return columnData.getAtAsAny(redirectedIndex);
         }
 
+        /**
+         * the Format to use for a cell from the specified row and column
+         * 
+         * @param index
+         * @param column
+         * @return {@link Format}
+         */
         @Override
         public Format getFormat(int index, Column column) {
             return getFormat((long) index, column);
@@ -598,16 +633,31 @@ public class SubscriptionTableData {
             return columns;
         }
 
+        /**
+         * The ordered set of row indexes added since the last update
+         * 
+         * @return dh.RangeSet
+         */
         @JsProperty
         public JsRangeSet getAdded() {
             return added;
         }
 
+        /**
+         * The ordered set of row indexes removed since the last update
+         * 
+         * @return dh.RangeSet
+         */
         @JsProperty
         public JsRangeSet getRemoved() {
             return removed;
         }
 
+        /**
+         * The ordered set of row indexes updated since the last update
+         * 
+         * @return dh.RangeSet
+         */
         @JsProperty
         public JsRangeSet getModified() {
             return modified;
