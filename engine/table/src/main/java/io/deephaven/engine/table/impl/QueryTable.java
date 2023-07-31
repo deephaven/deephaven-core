@@ -240,7 +240,7 @@ public class QueryTable extends BaseTable<QueryTable> {
      * Minimum select "chunk" size, defaults to 4 million.
      */
     public static long MINIMUM_PARALLEL_SELECT_ROWS =
-            Configuration.getInstance().getLongWithDefault("QueryTable.minimumParallelSelectRows", 1L << 22);
+            Configuration.getInstance().getLongWithDefault("QueryTable.minimumParallelSelectRows", 1L);
 
     /**
      * For unit tests, we do want to force the column parallel select and update at times.

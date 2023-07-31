@@ -56,10 +56,10 @@ import java.util.stream.IntStream;
 public abstract class UpdateBy {
     /** When caching a column source, how many rows should we process in each parallel batch? (1M default) */
     private static final int PARALLEL_CACHE_BATCH_SIZE =
-            Configuration.getInstance().getIntegerWithDefault("UpdateBy.parallelCacheBatchSize", 1 << 20);
+            Configuration.getInstance().getIntegerWithDefault("UpdateBy.parallelCacheBatchSize", 1 << 1);
     /** When caching a column source, what size chunks should be used to move data to the cache? (64K default) */
     private static final int PARALLEL_CACHE_CHUNK_SIZE =
-            Configuration.getInstance().getIntegerWithDefault("UpdateBy.parallelCacheChunkSize", 1 << 16);
+            Configuration.getInstance().getIntegerWithDefault("UpdateBy.parallelCacheChunkSize", 1 << 1);
 
     /** When extracting keys from the redirection, what size chunks to use? (2K default) */
     private static final int REDIRECTION_CHUNK_SIZE = 1 << 11;
