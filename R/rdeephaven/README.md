@@ -150,6 +150,16 @@ The C++ component of the Deephaven R client uses the C++ implementation of gRPC 
 gRPC has an internal logging component that can be configured to log to stderr detail information about connection state and messages
 exchanged between client and server; the Deephaven R client also uses the same logging component to show client state information.
 This can be useful for debugging purposes.  To enable detailed logging, set the environment variable `GRPC_VERVOSITY=DEBUG`
+
+## Code Styling
+
+The Deephaven R client uses the [Tidyverse styleguide](https://style.tidyverse.org) for code formatting, and implements this style with the `styler` package. For contributions, ensure that code is properly styled according to Tidyverse standards by running the following code in your R console, where `/path/to/rdeephaven` is the path to the root directory of this package.
+```
+setwd("/path/to/rdeephaven")
+install.packages("styler")
+library(styler)
+style_pkg()
+```
    
 ## High-level design overview
 

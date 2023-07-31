@@ -44,6 +44,12 @@ TableHandle <- R6Class("TableHandle",
     is_static = function() {
       return(private$is_static_field)
     },
+    #' @description
+    #' Whether the table referenced by this TableHandle is static or not.
+    #' @return TRUE if the table is static, or FALSE if the table is ticking.
+    is_static = function() {
+      return(private$is_static_field)
+    },
 
     #' @description
     #' Number of rows in the table referenced by this TableHandle, currently only implemented for static tables.
@@ -81,7 +87,23 @@ TableHandle <- R6Class("TableHandle",
       arrow_tbl <- rbsr$read_table()
       return(arrow_tbl)
     },
+    #' @description
+    #' Imports the table referenced by this TableHandle into an Arrow Table.
+    #' @return A Table containing the data from the table referenced by this TableHandle.
+    to_arrow_table = function() {
+      rbsr <- self$to_arrow_record_batch_stream_reader()
+      arrow_tbl <- rbsr$read_table()
+      return(arrow_tbl)
+    },
 
+    #' @description
+    #' Imports the table referenced by this TableHandle into a dplyr Tibble.
+    #' @return A Tibble containing the data from the table referenced by this TableHandle.
+    to_tibble = function() {
+      rbsr <- self$to_arrow_record_batch_stream_reader()
+      arrow_tbl <- rbsr$read_table()
+      return(as_tibble(arrow_tbl))
+    },
     #' @description
     #' Imports the table referenced by this TableHandle into a dplyr Tibble.
     #' @return A Tibble containing the data from the table referenced by this TableHandle.
