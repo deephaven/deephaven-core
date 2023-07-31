@@ -91,6 +91,14 @@ class TableTestCase(BaseTestCase):
 
         self.assertTrue(df.iloc[:, 0].is_monotonic_decreasing)
 
+    def test_sort_desc(self):
+        pa_table = csv.read_csv(self.csv_file)
+        test_table = self.session.import_table(pa_table)
+        sorted_table = test_table.sort_descending(order_by=["a", "b"])
+        df = sorted_table.to_arrow().to_pandas()
+
+        self.assertTrue(df.iloc[:, 0].is_monotonic_decreasing)
+
     def test_head_tail(self):
         ops = [Table.head,
                Table.tail]
