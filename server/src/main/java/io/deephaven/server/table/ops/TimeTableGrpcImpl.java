@@ -63,9 +63,8 @@ public class TimeTableGrpcImpl extends GrpcTableOperation<TimeTableRequest> {
         if (request.hasStartTimeString()) {
             return DateTimeUtils.parseInstant(request.getStartTimeString());
         }
-        // Return null if start time nanos is Long.MIN_VALUE.
-        return request.getStartTimeNanos() == Long.MIN_VALUE ? null
-                : DateTimeUtils.epochNanosToInstant(request.getStartTimeNanos());
+        // Return null if start time nanos is zero or negative.
+        return request.getStartTimeNanos() <= 0 ? null : DateTimeUtils.epochNanosToInstant(request.getStartTimeNanos());
     }
 
     private static long adaptPeriod(@SuppressWarnings("unused") final TimeTableRequest request) {
