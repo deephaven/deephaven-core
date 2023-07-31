@@ -5,14 +5,11 @@ package io.deephaven.kafka;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import gnu.trove.map.hash.TIntLongHashMap;
-import io.confluent.kafka.schemaregistry.avro.AvroSchemaProvider;
-import io.confluent.kafka.schemaregistry.client.CachedSchemaRegistryClient;
-import io.confluent.kafka.schemaregistry.client.SchemaMetadata;
+import io.confluent.kafka.schemaregistry.SchemaProvider;
 import io.confluent.kafka.schemaregistry.client.SchemaRegistryClient;
-import io.confluent.kafka.schemaregistry.client.rest.exceptions.RestClientException;
+import io.confluent.kafka.schemaregistry.client.SchemaRegistryClientFactory;
 import io.confluent.kafka.serializers.AbstractKafkaSchemaSerDeConfig;
 import io.confluent.kafka.serializers.KafkaAvroDeserializer;
-import io.confluent.kafka.serializers.KafkaAvroDeserializerConfig;
 import io.confluent.kafka.serializers.KafkaAvroSerializer;
 import io.deephaven.UncheckedDeephavenException;
 import io.deephaven.annotations.SimpleStyle;
@@ -20,49 +17,64 @@ import io.deephaven.annotations.SingletonStyle;
 import io.deephaven.chunk.ChunkType;
 import io.deephaven.engine.context.ExecutionContext;
 import io.deephaven.engine.liveness.LivenessManager;
+import io.deephaven.engine.liveness.LivenessScope;
+import io.deephaven.engine.liveness.LivenessScopeStack;
 import io.deephaven.engine.rowset.RowSet;
 import io.deephaven.engine.rowset.RowSetFactory;
 import io.deephaven.engine.rowset.RowSetShiftData;
 import io.deephaven.engine.rowset.WritableRowSet;
-import io.deephaven.engine.table.*;
-import io.deephaven.engine.table.impl.*;
+import io.deephaven.engine.table.ColumnDefinition;
+import io.deephaven.engine.table.ColumnSource;
+import io.deephaven.engine.table.ModifiedColumnSet;
+import io.deephaven.engine.table.PartitionedTable;
+import io.deephaven.engine.table.Table;
+import io.deephaven.engine.table.TableDefinition;
+import io.deephaven.engine.table.WritableColumnSource;
+import io.deephaven.engine.table.impl.BaseTable;
+import io.deephaven.engine.table.impl.BlinkTableTools;
+import io.deephaven.engine.table.impl.QueryTable;
+import io.deephaven.engine.table.impl.TableUpdateImpl;
 import io.deephaven.engine.table.impl.partitioned.PartitionedTableImpl;
 import io.deephaven.engine.table.impl.sources.ArrayBackedColumnSource;
 import io.deephaven.engine.table.impl.sources.ring.RingTableTools;
 import io.deephaven.engine.updategraph.UpdateGraph;
 import io.deephaven.engine.updategraph.UpdateSourceCombiner;
+import io.deephaven.engine.util.BigDecimalUtils;
+import io.deephaven.internal.log.LoggerFactory;
+import io.deephaven.io.logger.Logger;
 import io.deephaven.kafka.AvroImpl.AvroConsume;
-import io.deephaven.kafka.SimpleImpl.SimpleConsume;
-import io.deephaven.kafka.IgnoreImpl.IgnoreConsume;
-import io.deephaven.kafka.JsonImpl.JsonConsume;
-import io.deephaven.kafka.RawImpl.RawConsume;
 import io.deephaven.kafka.AvroImpl.AvroProduce;
+import io.deephaven.kafka.IgnoreImpl.IgnoreConsume;
 import io.deephaven.kafka.IgnoreImpl.IgnoreProduce;
+import io.deephaven.kafka.JsonImpl.JsonConsume;
 import io.deephaven.kafka.JsonImpl.JsonProduce;
-import io.deephaven.kafka.RawImpl.RawProduce;
-import io.deephaven.kafka.SimpleImpl.SimpleProduce;
 import io.deephaven.kafka.KafkaTools.StreamConsumerRegistrarProvider.PerPartition;
 import io.deephaven.kafka.KafkaTools.StreamConsumerRegistrarProvider.Single;
 import io.deephaven.kafka.KafkaTools.TableType.Append;
 import io.deephaven.kafka.KafkaTools.TableType.Blink;
 import io.deephaven.kafka.KafkaTools.TableType.Ring;
 import io.deephaven.kafka.KafkaTools.TableType.Visitor;
+import io.deephaven.kafka.RawImpl.RawConsume;
+import io.deephaven.kafka.RawImpl.RawProduce;
+import io.deephaven.kafka.SimpleImpl.SimpleConsume;
+import io.deephaven.kafka.SimpleImpl.SimpleProduce;
+import io.deephaven.kafka.ingest.ConsumerRecordToStreamPublisherAdapter;
+import io.deephaven.kafka.ingest.KafkaIngester;
+import io.deephaven.kafka.ingest.KafkaRecordConsumer;
+import io.deephaven.kafka.ingest.KafkaStreamPublisher;
+import io.deephaven.kafka.ingest.KeyOrValueProcessor;
+import io.deephaven.kafka.publish.KafkaPublisherException;
+import io.deephaven.kafka.publish.KeyOrValueSerializer;
+import io.deephaven.kafka.publish.PublishToKafka;
+import io.deephaven.qst.column.header.ColumnHeader;
 import io.deephaven.stream.StreamChunkUtils;
 import io.deephaven.stream.StreamConsumer;
 import io.deephaven.stream.StreamPublisher;
-import io.deephaven.qst.column.header.ColumnHeader;
 import io.deephaven.stream.StreamToBlinkTableAdapter;
-import io.deephaven.engine.liveness.LivenessScope;
-import io.deephaven.engine.liveness.LivenessScopeStack;
-import io.deephaven.engine.util.BigDecimalUtils;
-import io.deephaven.internal.log.LoggerFactory;
-import io.deephaven.io.logger.Logger;
-import io.deephaven.kafka.ingest.*;
-import io.deephaven.kafka.publish.*;
 import io.deephaven.util.SafeCloseable;
 import io.deephaven.util.annotations.ReferentialIntegrity;
 import io.deephaven.util.annotations.ScriptApi;
-import io.deephaven.vector.*;
+import io.deephaven.vector.ByteVector;
 import org.apache.avro.LogicalType;
 import org.apache.avro.LogicalTypes;
 import org.apache.avro.Schema;
@@ -73,26 +85,50 @@ import org.apache.commons.lang3.mutable.MutableInt;
 import org.apache.commons.lang3.mutable.MutableObject;
 import org.apache.kafka.clients.admin.Admin;
 import org.apache.kafka.clients.admin.ListTopicsResult;
-import org.apache.kafka.clients.consumer.ConsumerConfig;
 import org.apache.kafka.clients.consumer.ConsumerRecord;
-import org.apache.kafka.clients.producer.ProducerConfig;
 import org.apache.kafka.common.TopicPartition;
-import org.apache.kafka.common.serialization.*;
-import org.apache.kafka.common.utils.Utils;
+import org.apache.kafka.common.serialization.ByteArrayDeserializer;
+import org.apache.kafka.common.serialization.ByteArraySerializer;
+import org.apache.kafka.common.serialization.ByteBufferDeserializer;
+import org.apache.kafka.common.serialization.ByteBufferSerializer;
+import org.apache.kafka.common.serialization.Deserializer;
+import org.apache.kafka.common.serialization.DoubleDeserializer;
+import org.apache.kafka.common.serialization.DoubleSerializer;
+import org.apache.kafka.common.serialization.FloatDeserializer;
+import org.apache.kafka.common.serialization.FloatSerializer;
+import org.apache.kafka.common.serialization.IntegerDeserializer;
+import org.apache.kafka.common.serialization.IntegerSerializer;
+import org.apache.kafka.common.serialization.LongDeserializer;
+import org.apache.kafka.common.serialization.LongSerializer;
+import org.apache.kafka.common.serialization.Serializer;
+import org.apache.kafka.common.serialization.ShortDeserializer;
+import org.apache.kafka.common.serialization.ShortSerializer;
+import org.apache.kafka.common.serialization.StringDeserializer;
+import org.apache.kafka.common.serialization.StringSerializer;
 import org.immutables.value.Value.Immutable;
 import org.immutables.value.Value.Parameter;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
-import java.io.IOException;
-import java.io.Serializable;
 import java.math.BigDecimal;
 import java.time.Instant;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.HashMap;
+import java.util.LinkedHashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.Objects;
+import java.util.Optional;
+import java.util.Properties;
+import java.util.Set;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.atomic.AtomicReference;
-import java.util.function.*;
-import java.util.regex.Pattern;
+import java.util.function.Function;
+import java.util.function.IntPredicate;
+import java.util.function.IntToLongFunction;
+import java.util.function.Predicate;
+import java.util.function.Supplier;
 
 import static io.deephaven.kafka.ingest.KafkaStreamPublisher.NULL_COLUMN_INDEX;
 
@@ -132,8 +168,6 @@ public class KafkaTools {
     public static final String AVRO_SERIALIZER = KafkaAvroSerializer.class.getName();
     public static final String SERIALIZER_FOR_IGNORE = BYTE_BUFFER_SERIALIZER;
     public static final String NESTED_FIELD_NAME_SEPARATOR = ".";
-    private static final Pattern NESTED_FIELD_NAME_SEPARATOR_PATTERN =
-            Pattern.compile(Pattern.quote(NESTED_FIELD_NAME_SEPARATOR));
     public static final String NESTED_FIELD_COLUMN_NAME_SEPARATOR = "__";
     public static final String AVRO_LATEST_VERSION = "latest";
 
@@ -482,9 +516,16 @@ public class KafkaTools {
 
     /**
      * Enum to specify the expected processing (format) for Kafka KEY or VALUE fields.
+     *
+     * @deprecated Use {@link Consume.KeyOrValueSpec} or {@link Produce.KeyOrValueSpec}.
      */
+    @Deprecated(since = "0.27.0", forRemoval = true)
     public enum DataFormat {
         IGNORE, SIMPLE, AVRO, JSON, RAW
+    }
+
+    private interface GetSchemaProvider {
+        Optional<SchemaProvider> schemaProvider();
     }
 
     public static class Consume {
@@ -492,25 +533,36 @@ public class KafkaTools {
         /**
          * Class to specify conversion of Kafka KEY or VALUE fields to table columns.
          */
-        public static abstract class KeyOrValueSpec {
-            /**
-             * Data format for this Spec.
-             *
-             * @return Data format for this Spec
-             */
-            abstract DataFormat dataFormat();
+        public static abstract class KeyOrValueSpec implements GetSchemaProvider {
 
-            /**
-             * The names for the key or value columns can be provided in the properties as "key.column.name" or
-             * "value.column.name", and otherwise default to "key" or "value". The types for key or value are either
-             * specified in the properties as "key.type" or "value.type", or deduced from the serializer classes for key
-             * or value in the provided Properties object.
-             */
-            private static final SimpleConsume FROM_PROPERTIES = new SimpleConsume(null, null);
+            abstract boolean isIgnore();
 
+            abstract Deserializer<?> deserializer(
+                    KeyOrValue keyOrValue,
+                    SchemaRegistryClient schemaRegistryClient,
+                    Map<String, ?> configs);
+
+            abstract KeyOrValueIngestData ingestData(
+                    KeyOrValue keyOrValue,
+                    List<ColumnDefinition<?>> columnDefinitionsOut,
+                    MutableInt nextColumnIndexMut,
+                    SchemaRegistryClient schemaRegistryClient,
+                    Map<String, ?> configs);
+
+            abstract KeyOrValueProcessor getProcessor(
+                    final TableDefinition tableDef,
+                    final KeyOrValueIngestData data);
         }
 
-        public static final IgnoreConsume IGNORE = new IgnoreConsume();
+        /**
+         * The names for the key or value columns can be provided in the properties as "key.column.name" or
+         * "value.column.name", and otherwise default to "key" or "value". The types for key or value are either
+         * specified in the properties as "key.type" or "value.type", or deduced from the serializer classes for key or
+         * value in the provided Properties object.
+         */
+        private static final KeyOrValueSpec FROM_PROPERTIES = new SimpleConsume(null, null);
+
+        public static final KeyOrValueSpec IGNORE = new IgnoreConsume();
 
         /**
          * Spec to explicitly ask one of the "consume" methods to ignore either key or value.
@@ -698,16 +750,18 @@ public class KafkaTools {
         /**
          * Class to specify conversion of table columns to Kafka KEY or VALUE fields.
          */
-        public static abstract class KeyOrValueSpec {
-            /**
-             * Data format for this Spec.
-             *
-             * @return Data format for this Spec
-             */
-            abstract DataFormat dataFormat();
+        public static abstract class KeyOrValueSpec implements GetSchemaProvider {
+
+            abstract boolean isIgnore();
+
+            abstract Serializer<?> serializer(SchemaRegistryClient schemaRegistryClient, TableDefinition definition);
+
+            abstract String[] getColumnNames(@NotNull Table t, SchemaRegistryClient schemaRegistryClient);
+
+            abstract KeyOrValueSerializer<?> keyOrValueSerializer(@NotNull Table t, @NotNull String[] columnNames);
         }
 
-        public static final IgnoreProduce IGNORE = new IgnoreProduce();
+        public static final KeyOrValueSpec IGNORE = new IgnoreProduce();
 
         /**
          * Spec to explicitly ask one of the "consume" methods to ignore either key or value.
@@ -1274,18 +1328,20 @@ public class KafkaTools {
             @NotNull final Consume.KeyOrValueSpec keySpec,
             @NotNull final Consume.KeyOrValueSpec valueSpec,
             @NotNull final KafkaTools.StreamConsumerRegistrarProvider streamConsumerRegistrarProvider) {
-        final boolean ignoreKey = keySpec.dataFormat() == DataFormat.IGNORE;
-        final boolean ignoreValue = valueSpec.dataFormat() == DataFormat.IGNORE;
-        if (ignoreKey && ignoreValue) {
+        if (keySpec.isIgnore() && valueSpec.isIgnore()) {
             throw new IllegalArgumentException(
                     "can't ignore both key and value: keySpec and valueSpec can't both be ignore specs");
         }
-        if (ignoreKey) {
-            setDeserIfNotSet(kafkaProperties, KeyOrValue.KEY, DESERIALIZER_FOR_IGNORE);
-        }
-        if (ignoreValue) {
-            setDeserIfNotSet(kafkaProperties, KeyOrValue.VALUE, DESERIALIZER_FOR_IGNORE);
-        }
+
+        final Map<String, ?> configs = asStringMap(kafkaProperties);
+        final SchemaRegistryClient schemaRegistryClient =
+                schemaRegistryClient(keySpec, valueSpec, configs).orElse(null);
+
+        final Deserializer<?> keyDeser = keySpec.deserializer(KeyOrValue.KEY, schemaRegistryClient, configs);
+        keyDeser.configure(configs, true);
+
+        final Deserializer<?> valueDeser = valueSpec.deserializer(KeyOrValue.VALUE, schemaRegistryClient, configs);
+        valueDeser.configure(configs, false);
 
         final KafkaStreamPublisher.Parameters.Builder publisherParametersBuilder =
                 KafkaStreamPublisher.Parameters.builder();
@@ -1315,23 +1371,23 @@ public class KafkaTools {
                     }
                 });
 
-        final KeyOrValueIngestData keyIngestData =
-                getIngestData(KeyOrValue.KEY, kafkaProperties, columnDefinitions, nextColumnIndex, keySpec);
-        final KeyOrValueIngestData valueIngestData =
-                getIngestData(KeyOrValue.VALUE, kafkaProperties, columnDefinitions, nextColumnIndex, valueSpec);
+        final KeyOrValueIngestData keyIngestData = keySpec.ingestData(KeyOrValue.KEY,
+                columnDefinitions, nextColumnIndex, schemaRegistryClient, configs);
+        final KeyOrValueIngestData valueIngestData = valueSpec.ingestData(KeyOrValue.VALUE,
+                columnDefinitions, nextColumnIndex, schemaRegistryClient, configs);
 
         final TableDefinition tableDefinition = TableDefinition.of(columnDefinitions);
         publisherParametersBuilder.setTableDefinition(tableDefinition);
 
         if (keyIngestData != null) {
             publisherParametersBuilder
-                    .setKeyProcessor(getProcessor(keySpec, tableDefinition, keyIngestData))
+                    .setKeyProcessor(keySpec.getProcessor(tableDefinition, keyIngestData))
                     .setSimpleKeyColumnIndex(keyIngestData.simpleColumnIndex)
                     .setKeyToChunkObjectMapper(keyIngestData.toObjectChunkMapper);
         }
         if (valueIngestData != null) {
             publisherParametersBuilder
-                    .setValueProcessor(getProcessor(valueSpec, tableDefinition, valueIngestData))
+                    .setValueProcessor(valueSpec.getProcessor(tableDefinition, valueIngestData))
                     .setSimpleValueColumnIndex(valueIngestData.simpleColumnIndex)
                     .setValueToChunkObjectMapper(valueIngestData.toObjectChunkMapper);
         }
@@ -1349,27 +1405,38 @@ public class KafkaTools {
                 topic,
                 partitionFilter,
                 kafkaRecordConsumerFactory,
-                partitionToInitialOffset);
+                partitionToInitialOffset,
+                keyDeser,
+                valueDeser);
         kafkaIngesterHolder.setValue(ingester);
         ingester.start();
     }
 
-    private static KeyOrValueSerializer<?> getAvroSerializer(
-            @NotNull final Table t,
-            @NotNull final AvroImpl.AvroProduce avroSpec,
-            @NotNull final String[] columnNames) {
-        return new GenericRecordKeyOrValueSerializer(
-                t, avroSpec.schema, columnNames, avroSpec.timestampFieldName, avroSpec.columnProperties.getValue());
+    private static Optional<SchemaRegistryClient> schemaRegistryClient(GetSchemaProvider key, GetSchemaProvider value,
+            Map<String, ?> configs) {
+        final Map<String, SchemaProvider> providers = new HashMap<>();
+        key.schemaProvider().ifPresent(p -> providers.put(p.schemaType(), p));
+        value.schemaProvider().ifPresent(p -> providers.putIfAbsent(p.schemaType(), p));
+        if (providers.isEmpty()) {
+            return Optional.empty();
+        }
+        for (SchemaProvider schemaProvider : providers.values()) {
+            schemaProvider.configure(configs);
+        }
+        return Optional.of(newSchemaRegistryClient(configs, List.copyOf(providers.values())));
     }
 
-    private static KeyOrValueSerializer<?> getJsonSerializer(
-            @NotNull final Table t,
-            @NotNull final JsonImpl.JsonProduce jsonSpec,
-            @NotNull final String[] columnNames) {
-        final String[] fieldNames = jsonSpec.getFieldNames(columnNames);
-        return new JsonKeyOrValueSerializer(
-                t, columnNames, fieldNames,
-                jsonSpec.timestampFieldName, jsonSpec.nestedObjectDelimiter, jsonSpec.outputNulls);
+    static SchemaRegistryClient newSchemaRegistryClient(Map<String, ?> configs, List<SchemaProvider> providers) {
+        final AbstractKafkaSchemaSerDeConfig config = new AbstractKafkaSchemaSerDeConfig(
+                AbstractKafkaSchemaSerDeConfig.baseConfigDef(),
+                configs,
+                false);
+        return SchemaRegistryClientFactory.newClient(
+                config.getSchemaRegistryUrls(),
+                config.getMaxSchemasPerSubject(),
+                List.copyOf(providers),
+                config.originalsWithPrefix(""),
+                config.requestHeaders());
     }
 
     private static class BlinkTableOperation implements Visitor<Table> {
@@ -1392,54 +1459,6 @@ public class KafkaTools {
         @Override
         public Table visit(Ring ring) {
             return RingTableTools.of(blinkTable, ring.capacity());
-        }
-    }
-
-    private static KeyOrValueSerializer<?> getSerializer(
-            @NotNull final Table t,
-            @NotNull final Produce.KeyOrValueSpec spec,
-            @NotNull final String[] columnNames) {
-        switch (spec.dataFormat()) {
-            case AVRO:
-                final AvroProduce avroSpec = (AvroProduce) spec;
-                return getAvroSerializer(t, avroSpec, columnNames);
-            case JSON:
-                final JsonProduce jsonSpec = (JsonProduce) spec;
-                return getJsonSerializer(t, jsonSpec, columnNames);
-            case IGNORE:
-                return null;
-            case SIMPLE:
-                final SimpleProduce simpleSpec = (SimpleProduce) spec;
-                return new SimpleKeyOrValueSerializer<>(t, simpleSpec.columnName);
-            case RAW:
-                final RawProduce rawSpec = (RawProduce) spec;
-                return new SimpleKeyOrValueSerializer<>(t, rawSpec.columnName);
-            default:
-                throw new IllegalStateException("Unrecognized spec type");
-        }
-    }
-
-    private static String[] getColumnNames(
-            @NotNull final Properties kafkaProperties,
-            @NotNull final Table t,
-            @NotNull final Produce.KeyOrValueSpec spec) {
-        switch (spec.dataFormat()) {
-            case AVRO:
-                final AvroProduce avroSpec = (AvroProduce) spec;
-                return avroSpec.getColumnNames(t, kafkaProperties);
-            case JSON:
-                final JsonProduce jsonSpec = (JsonProduce) spec;
-                return jsonSpec.getColumnNames(t);
-            case IGNORE:
-                return null;
-            case SIMPLE:
-                final SimpleProduce simpleSpec = (SimpleProduce) spec;
-                return new String[] {simpleSpec.columnName};
-            case RAW:
-                final RawProduce rawSpec = (RawProduce) spec;
-                return new String[] {rawSpec.columnName};
-            default:
-                throw new IllegalStateException("Unrecognized spec type");
         }
     }
 
@@ -1468,9 +1487,7 @@ public class KafkaTools {
      * @param table The table used as a source of data to be sent to Kafka.
      * @param kafkaProperties Properties to be passed to create the associated KafkaProducer.
      * @param topic Kafka topic name
-     * @param keySpec Conversion specification for Kafka record keys from table column data. If not
-     *        {@link DataFormat#IGNORE Ignore}, must specify a key serializer that maps each input tuple to a unique
-     *        output key.
+     * @param keySpec Conversion specification for Kafka record keys from table column data.
      * @param valueSpec Conversion specification for Kafka record values from table column data.
      * @param lastByKeyColumns Whether to publish only the last record for each unique key. Ignored when {@code keySpec}
      *        is {@code IGNORE}. Otherwise, if {@code lastByKeycolumns == true} this method will internally perform a
@@ -1493,27 +1510,34 @@ public class KafkaTools {
             throw new KafkaPublisherException(
                     "Calling thread must hold an exclusive or shared UpdateGraph lock to publish live sources");
         }
-
-        final boolean ignoreKey = keySpec.dataFormat() == DataFormat.IGNORE;
-        final boolean ignoreValue = valueSpec.dataFormat() == DataFormat.IGNORE;
-        if (ignoreKey && ignoreValue) {
+        if (keySpec.isIgnore() && valueSpec.isIgnore()) {
             throw new IllegalArgumentException(
                     "can't ignore both key and value: keySpec and valueSpec can't both be ignore specs");
         }
-        setSerIfNotSet(kafkaProperties, KeyOrValue.KEY, keySpec, table);
-        setSerIfNotSet(kafkaProperties, KeyOrValue.VALUE, valueSpec, table);
 
-        final String[] keyColumns = getColumnNames(kafkaProperties, table, keySpec);
-        final String[] valueColumns = getColumnNames(kafkaProperties, table, valueSpec);
+        final Map<String, ?> config = asStringMap(kafkaProperties);
+        final SchemaRegistryClient schemaRegistryClient = schemaRegistryClient(keySpec, valueSpec, config).orElse(null);
+
+        // noinspection resource
+        final Serializer<?> keySerializer2 = keySpec.serializer(schemaRegistryClient, table.getDefinition());
+        keySerializer2.configure(config, true);
+
+        // noinspection resource
+        final Serializer<?> valueSerializer2 = valueSpec.serializer(schemaRegistryClient, table.getDefinition());
+        valueSerializer2.configure(config, false);
+
+        final String[] keyColumns = keySpec.getColumnNames(table, schemaRegistryClient);
+        final String[] valueColumns = valueSpec.getColumnNames(table, schemaRegistryClient);
 
         final LivenessScope publisherScope = new LivenessScope(true);
         try (final SafeCloseable ignored = LivenessScopeStack.open(publisherScope, false)) {
-            final Table effectiveTable = (!ignoreKey && lastByKeyColumns)
+            final Table effectiveTable = (!keySpec.isIgnore() && lastByKeyColumns)
                     ? table.lastBy(keyColumns)
                     : table.coalesce();
 
-            final KeyOrValueSerializer<?> keySerializer = getSerializer(effectiveTable, keySpec, keyColumns);
-            final KeyOrValueSerializer<?> valueSerializer = getSerializer(effectiveTable, valueSpec, valueColumns);
+            final KeyOrValueSerializer<?> keySerializer = keySpec.keyOrValueSerializer(effectiveTable, keyColumns);
+            final KeyOrValueSerializer<?> valueSerializer =
+                    valueSpec.keyOrValueSerializer(effectiveTable, valueColumns);
 
             final PublishToKafka producer = new PublishToKafka(
                     kafkaProperties, effectiveTable, topic,
@@ -1521,68 +1545,6 @@ public class KafkaTools {
                     valueColumns, valueSerializer);
         }
         return publisherScope::release;
-    }
-
-    private static void setSerIfNotSet(
-            @NotNull final Properties prop,
-            @NotNull final KeyOrValue keyOrValue,
-            @NotNull final Produce.KeyOrValueSpec spec,
-            @NotNull final Table table) {
-        final String propKey = (keyOrValue == KeyOrValue.KEY)
-                ? ProducerConfig.KEY_SERIALIZER_CLASS_CONFIG
-                : ProducerConfig.VALUE_SERIALIZER_CLASS_CONFIG;
-        if (prop.containsKey(propKey)) {
-            return;
-        }
-        final String value;
-        switch (spec.dataFormat()) {
-            case IGNORE:
-                value = SERIALIZER_FOR_IGNORE;
-                break;
-            case SIMPLE:
-                value = getSerializerNameForSimpleSpec(keyOrValue, (SimpleProduce) spec, table);
-                break;
-            case JSON:
-                value = STRING_SERIALIZER;
-                break;
-            case AVRO:
-                value = AVRO_SERIALIZER;
-                break;
-            case RAW:
-                value = ((RawProduce) spec).serializer.getName();
-                break;
-            default:
-                throw new IllegalStateException("Unknown dataFormat=" + spec.dataFormat());
-        }
-        prop.setProperty(propKey, value);
-    }
-
-    private static String getSerializerNameForSimpleSpec(
-            @NotNull final KeyOrValue keyOrValue,
-            @NotNull final SimpleImpl.SimpleProduce simpleSpec,
-            @NotNull final Table table) {
-        final Class<?> dataType = table.getDefinition().getColumn(simpleSpec.columnName).getDataType();
-        if (dataType == short.class) {
-            return SHORT_SERIALIZER;
-        }
-        if (dataType == int.class) {
-            return INT_SERIALIZER;
-        }
-        if (dataType == long.class) {
-            return LONG_SERIALIZER;
-        }
-        if (dataType == float.class) {
-            return FLOAT_SERIALIZER;
-        }
-        if (dataType == double.class) {
-            return DOUBLE_SERIALIZER;
-        }
-        if (dataType == String.class) {
-            return STRING_SERIALIZER;
-        }
-        throw new UncheckedDeephavenException(
-                "Serializer for " + keyOrValue + " not set in kafka consumer properties " +
-                        "and can't automatically set it for type " + dataType);
     }
 
     /**
@@ -1667,196 +1629,12 @@ public class KafkaTools {
         }
     }
 
-    private static KeyOrValueProcessor getProcessor(
-            final Consume.KeyOrValueSpec spec,
-            final TableDefinition tableDef,
-            final KeyOrValueIngestData data) {
-        switch (spec.dataFormat()) {
-            case IGNORE:
-            case SIMPLE:
-            case RAW:
-                return null;
-            case AVRO:
-                return GenericRecordChunkAdapter.make(
-                        tableDef,
-                        ci -> StreamChunkUtils.chunkTypeForColumnIndex(tableDef, ci),
-                        data.fieldPathToColumnName,
-                        NESTED_FIELD_NAME_SEPARATOR_PATTERN,
-                        (Schema) data.extra,
-                        true);
-            case JSON:
-                return JsonNodeChunkAdapter.make(
-                        tableDef,
-                        ci -> StreamChunkUtils.chunkTypeForColumnIndex(tableDef, ci),
-                        data.fieldPathToColumnName,
-                        true);
-            default:
-                throw new IllegalStateException("Unknown KeyOrvalueSpec value" + spec.dataFormat());
-        }
-    }
-
-    private static class KeyOrValueIngestData {
+    static class KeyOrValueIngestData {
         public Map<String, String> fieldPathToColumnName;
         public int simpleColumnIndex = NULL_COLUMN_INDEX;
         public Function<Object, Object> toObjectChunkMapper = Function.identity();
         public Object extra;
     }
-
-    private static void setIfNotSet(final Properties prop, final String key, final String value) {
-        if (prop.containsKey(key)) {
-            return;
-        }
-        prop.setProperty(key, value);
-    }
-
-    private static void setDeserIfNotSet(final Properties prop, final KeyOrValue keyOrValue, final String value) {
-        final String propKey = (keyOrValue == KeyOrValue.KEY)
-                ? ConsumerConfig.KEY_DESERIALIZER_CLASS_CONFIG
-                : ConsumerConfig.VALUE_DESERIALIZER_CLASS_CONFIG;
-        setIfNotSet(prop, propKey, value);
-    }
-
-    static Schema getAvroSchema(final Properties kafkaProperties, final String schemaName, final String schemaVersion) {
-        try {
-            final SchemaRegistryClient registryClient = createSchemaRegistryClient(kafkaProperties);
-            final SchemaMetadata schemaMetadata;
-            if (AVRO_LATEST_VERSION.equals(schemaVersion)) {
-                schemaMetadata = registryClient.getLatestSchemaMetadata(schemaName);
-            } else {
-                schemaMetadata = registryClient.getSchemaMetadata(schemaName, Integer.parseInt(schemaVersion));
-            }
-            return (Schema) registryClient.getSchemaById(schemaMetadata.getId()).rawSchema();
-        } catch (RestClientException | IOException e) {
-            throw new UncheckedDeephavenException(e);
-        }
-    }
-
-    static SchemaRegistryClient createSchemaRegistryClient(Properties kafkaProperties) {
-        // This logic is how the SchemaRegistryClient is built internally.
-        // io.confluent.kafka.serializers.AbstractKafkaSchemaSerDe#configureClientProperties
-        final KafkaAvroDeserializerConfig config = new KafkaAvroDeserializerConfig(Utils.propsToMap(kafkaProperties));
-        return new CachedSchemaRegistryClient(
-                config.getSchemaRegistryUrls(),
-                config.getMaxSchemasPerSubject(),
-                Collections.singletonList(new AvroSchemaProvider()),
-                config.originalsWithPrefix(""),
-                config.requestHeaders());
-    }
-
-    private static KeyOrValueIngestData getIngestData(
-            final KeyOrValue keyOrValue,
-            final Properties kafkaConsumerProperties,
-            final List<ColumnDefinition<?>> columnDefinitions,
-            final MutableInt nextColumnIndexMut,
-            final Consume.KeyOrValueSpec keyOrValueSpec) {
-        if (keyOrValueSpec.dataFormat() == DataFormat.IGNORE) {
-            return null;
-        }
-        final KeyOrValueIngestData data = new KeyOrValueIngestData();
-        switch (keyOrValueSpec.dataFormat()) {
-            case AVRO: {
-                setDeserIfNotSet(kafkaConsumerProperties, keyOrValue, AVRO_DESERIALIZER);
-                final AvroConsume avroSpec = (AvroConsume) keyOrValueSpec;
-                data.fieldPathToColumnName = new HashMap<>();
-                final Schema schema;
-                if (avroSpec.schema != null) {
-                    schema = avroSpec.schema;
-                } else {
-                    schema = getAvroSchema(kafkaConsumerProperties, avroSpec.schemaName, avroSpec.schemaVersion);
-                }
-                avroSchemaToColumnDefinitions(
-                        columnDefinitions, data.fieldPathToColumnName, schema, avroSpec.fieldPathToColumnName);
-                data.extra = schema;
-                break;
-            }
-            case JSON: {
-                setDeserIfNotSet(kafkaConsumerProperties, keyOrValue, STRING_DESERIALIZER);
-                final JsonConsume jsonSpec = (JsonConsume) keyOrValueSpec;
-                data.toObjectChunkMapper = jsonToObjectChunkMapper(jsonSpec.objectMapper);
-                columnDefinitions.addAll(Arrays.asList(jsonSpec.columnDefinitions));
-                // Populate out field to column name mapping from two potential sources.
-                data.fieldPathToColumnName = new HashMap<>(jsonSpec.columnDefinitions.length);
-                final Set<String> coveredColumns = new HashSet<>(jsonSpec.columnDefinitions.length);
-                if (jsonSpec.fieldToColumnName != null) {
-                    for (final Map.Entry<String, String> entry : jsonSpec.fieldToColumnName.entrySet()) {
-                        final String colName = entry.getValue();
-                        data.fieldPathToColumnName.put(entry.getKey(), colName);
-                        coveredColumns.add(colName);
-                    }
-                }
-                for (final ColumnDefinition<?> colDef : jsonSpec.columnDefinitions) {
-                    final String colName = colDef.getName();
-                    if (!coveredColumns.contains(colName)) {
-                        final String jsonPtrStr =
-                                JsonImpl.JsonConsume.mapFieldNameToJsonPointerStr(colName);
-                        data.fieldPathToColumnName.put(jsonPtrStr, colName);
-                    }
-                }
-                break;
-            }
-            case SIMPLE: {
-                data.simpleColumnIndex = nextColumnIndexMut.getAndAdd(1);
-                final SimpleConsume simpleSpec = (SimpleConsume) keyOrValueSpec;
-                final ColumnDefinition<?> colDef;
-                if (simpleSpec.dataType == null) {
-                    colDef = getKeyOrValueCol(keyOrValue, kafkaConsumerProperties, simpleSpec.columnName, false);
-                } else {
-                    colDef = ColumnDefinition.fromGenericType(simpleSpec.columnName, simpleSpec.dataType);
-                }
-                final String propKey = (keyOrValue == KeyOrValue.KEY)
-                        ? ConsumerConfig.KEY_DESERIALIZER_CLASS_CONFIG
-                        : ConsumerConfig.VALUE_DESERIALIZER_CLASS_CONFIG;
-                if (!kafkaConsumerProperties.containsKey(propKey)) {
-                    final Class<?> dataType = colDef.getDataType();
-                    if (dataType == short.class) {
-                        kafkaConsumerProperties.setProperty(propKey, SHORT_DESERIALIZER);
-                    } else if (dataType == int.class) {
-                        kafkaConsumerProperties.setProperty(propKey, INT_DESERIALIZER);
-                    } else if (dataType == long.class) {
-                        kafkaConsumerProperties.setProperty(propKey, LONG_DESERIALIZER);
-                    } else if (dataType == float.class) {
-                        kafkaConsumerProperties.setProperty(propKey, FLOAT_DESERIALIZER);
-                    } else if (dataType == double.class) {
-                        kafkaConsumerProperties.setProperty(propKey, DOUBLE_DESERIALIZER);
-                    } else if (dataType == String.class) {
-                        kafkaConsumerProperties.setProperty(propKey, STRING_DESERIALIZER);
-                    } else {
-                        throw new UncheckedDeephavenException(
-                                "Deserializer for " + keyOrValue + " not set in kafka consumer properties " +
-                                        "and can't automatically set it for type " + dataType);
-                    }
-                }
-                setDeserIfNotSet(kafkaConsumerProperties, keyOrValue, STRING_DESERIALIZER);
-                columnDefinitions.add(colDef);
-                break;
-            }
-            case RAW: {
-                data.simpleColumnIndex = nextColumnIndexMut.getAndAdd(1);
-                final RawConsume rawSpec = (RawConsume) keyOrValueSpec;
-                final String propKey = (keyOrValue == KeyOrValue.KEY)
-                        ? ConsumerConfig.KEY_DESERIALIZER_CLASS_CONFIG
-                        : ConsumerConfig.VALUE_DESERIALIZER_CLASS_CONFIG;
-                kafkaConsumerProperties.setProperty(propKey, rawSpec.deserializer.getName());
-                columnDefinitions.add(rawSpec.cd);
-                break;
-            }
-            default:
-                throw new IllegalStateException("Unhandled spec type:" + keyOrValueSpec.dataFormat());
-        }
-        return data;
-    }
-
-    private static Function<Object, Object> jsonToObjectChunkMapper(@Nullable final ObjectMapper mapper) {
-        return (final Object in) -> {
-            final String json;
-            try {
-                json = (String) in;
-            } catch (ClassCastException ex) {
-                throw new UncheckedDeephavenException("Could not convert input to json string", ex);
-            }
-            return JsonNodeUtil.makeJsonNode(mapper, json);
-        };
-    };
 
     private enum CommonColumn {
         // @formatter:off
@@ -1903,106 +1681,6 @@ public class KafkaTools {
         }
     }
 
-    private static ColumnDefinition<?> getKeyOrValueCol(
-            @NotNull final KeyOrValue keyOrValue,
-            @NotNull final Properties properties,
-            final String columnNameArg,
-            final boolean allowEmpty) {
-        final String typeProperty;
-        final String deserializerProperty;
-        final String nameProperty;
-        final String nameDefault;
-        switch (keyOrValue) {
-            case KEY:
-                typeProperty = KEY_COLUMN_TYPE_PROPERTY;
-                deserializerProperty = ConsumerConfig.KEY_DESERIALIZER_CLASS_CONFIG;
-                nameProperty = KEY_COLUMN_NAME_PROPERTY;
-                nameDefault = KEY_COLUMN_NAME_DEFAULT;
-                break;
-            case VALUE:
-                typeProperty = VALUE_COLUMN_TYPE_PROPERTY;
-                deserializerProperty = ConsumerConfig.VALUE_DESERIALIZER_CLASS_CONFIG;
-                nameProperty = VALUE_COLUMN_NAME_PROPERTY;
-                nameDefault = VALUE_COLUMN_NAME_DEFAULT;
-                break;
-            default:
-                throw new IllegalStateException("Unrecognized KeyOrValue value " + keyOrValue);
-        }
-
-        final String columnName;
-        if (columnNameArg != null) {
-            columnName = columnNameArg;
-        } else if (properties.containsKey(nameProperty)) {
-            columnName = properties.getProperty(nameProperty);
-            if (columnName == null || columnName.equals("")) {
-                if (allowEmpty) {
-                    return null;
-                }
-                throw new IllegalArgumentException("Property for " + nameDefault + " can't be empty.");
-            }
-        } else {
-            columnName = nameDefault;
-        }
-
-        if (properties.containsKey(typeProperty)) {
-            final String typeAsString = properties.getProperty(typeProperty);
-            switch (typeAsString) {
-                case "short":
-                    properties.setProperty(deserializerProperty, SHORT_DESERIALIZER);
-                    return ColumnDefinition.ofShort(columnName);
-                case "int":
-                    properties.setProperty(deserializerProperty, INT_DESERIALIZER);
-                    return ColumnDefinition.ofInt(columnName);
-                case "long":
-                    properties.setProperty(deserializerProperty, LONG_DESERIALIZER);
-                    return ColumnDefinition.ofLong(columnName);
-                case "float":
-                    properties.setProperty(deserializerProperty, FLOAT_DESERIALIZER);
-                    return ColumnDefinition.ofDouble(columnName);
-                case "double":
-                    properties.setProperty(deserializerProperty, DOUBLE_DESERIALIZER);
-                    return ColumnDefinition.ofDouble(columnName);
-                case "byte[]":
-                    properties.setProperty(deserializerProperty, BYTE_ARRAY_DESERIALIZER);
-                    return ColumnDefinition.fromGenericType(columnName, byte[].class, byte.class);
-                case "String":
-                case "string":
-                    properties.setProperty(deserializerProperty, STRING_DESERIALIZER);
-                    return ColumnDefinition.ofString(columnName);
-                default:
-                    throw new IllegalArgumentException(
-                            "Property " + typeProperty + " value " + typeAsString + " not supported");
-            }
-        } else if (!properties.containsKey(deserializerProperty)) {
-            properties.setProperty(deserializerProperty, STRING_DESERIALIZER);
-            return ColumnDefinition.ofString(columnName);
-        }
-        return columnDefinitionFromDeserializer(properties, deserializerProperty, columnName);
-    }
-
-    @NotNull
-    private static ColumnDefinition<? extends Serializable> columnDefinitionFromDeserializer(
-            @NotNull Properties properties, @NotNull String deserializerProperty, String columnName) {
-        final String deserializer = properties.getProperty(deserializerProperty);
-        if (INT_DESERIALIZER.equals(deserializer)) {
-            return ColumnDefinition.ofInt(columnName);
-        }
-        if (LONG_DESERIALIZER.equals(deserializer)) {
-            return ColumnDefinition.ofLong(columnName);
-        }
-        if (DOUBLE_DESERIALIZER.equals(deserializer)) {
-            return ColumnDefinition.ofDouble(columnName);
-        }
-        if (BYTE_ARRAY_DESERIALIZER.equals(deserializer)) {
-            return ColumnDefinition.fromGenericType(columnName, byte[].class, byte.class);
-        }
-        if (STRING_DESERIALIZER.equals(deserializer)) {
-            return ColumnDefinition.ofString(columnName);
-        }
-        throw new IllegalArgumentException(
-                "Deserializer type " + deserializer + " for " + deserializerProperty + " not supported.");
-    }
-
     @SuppressWarnings("unused")
     public static final long SEEK_TO_BEGINNING = KafkaIngester.SEEK_TO_BEGINNING;
     @SuppressWarnings("unused")
@@ -2022,7 +1700,7 @@ public class KafkaTools {
     public static final Function<String, String> DIRECT_MAPPING =
             fieldName -> fieldName.replace(NESTED_FIELD_NAME_SEPARATOR, NESTED_FIELD_COLUMN_NAME_SEPARATOR);
     @SuppressWarnings("unused")
-    public static final Consume.KeyOrValueSpec FROM_PROPERTIES = Consume.KeyOrValueSpec.FROM_PROPERTIES;
+    public static final Consume.KeyOrValueSpec FROM_PROPERTIES = Consume.FROM_PROPERTIES;
 
     //
     // For the benefit of our python integration
@@ -2089,5 +1767,15 @@ public class KafkaTools {
         final Set<String> topics = topics(kafkaProperties);
         final String[] r = new String[topics.size()];
         return topics.toArray(r);
+    }
+
+    static Map<String, ?> asStringMap(Map<?, ?> map) {
+        for (Map.Entry<?, ?> entry : map.entrySet()) {
+            if (!(entry.getKey() instanceof String)) {
+                throw new UncheckedDeephavenException("Key must be a string.");
+            }
+        }
+        // noinspection unchecked
+        return (Map<String, ?>) map;
     }
 }

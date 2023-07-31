@@ -14,6 +14,7 @@ import org.apache.kafka.clients.consumer.ConsumerRecords;
 import org.apache.kafka.clients.consumer.KafkaConsumer;
 import org.apache.kafka.common.TopicPartition;
 import org.apache.kafka.common.errors.WakeupException;
+import org.apache.kafka.common.serialization.Deserializer;
 import org.jetbrains.annotations.NotNull;
 
 import java.text.DecimalFormat;
@@ -205,11 +206,23 @@ public class KafkaIngester {
             @NotNull final IntPredicate partitionFilter,
             @NotNull final Function<TopicPartition, KafkaRecordConsumer> partitionToStreamConsumer,
             @NotNull final IntToLongFunction partitionToInitialSeekOffset) {
+        this(log, props, topic, partitionFilter, partitionToStreamConsumer, partitionToInitialSeekOffset, null, null);
+    }
+
+    public KafkaIngester(
+            @NotNull final Logger log,
+            @NotNull final Properties props,
+            @NotNull final String topic,
+            @NotNull final IntPredicate partitionFilter,
+            @NotNull final Function<TopicPartition, KafkaRecordConsumer> partitionToStreamConsumer,
+            @NotNull final IntToLongFunction partitionToInitialSeekOffset,
+            final Deserializer<?> keyDeserializer,
+            final Deserializer<?> valueDeserializer) {
         this.log = log;
         this.topic = topic;
         partitionDescription = partitionFilter.toString();
         logPrefix = KafkaIngester.class.getSimpleName() + "(" + topic + ", " + partitionDescription + "): ";
-        kafkaConsumer = new KafkaConsumer(props);
+        kafkaConsumer = new KafkaConsumer<>(props, keyDeserializer, valueDeserializer);
 
         kafkaConsumer.partitionsFor(topic).stream().filter(pi -> partitionFilter.test(pi.partition()))
                 .map(pi -> new TopicPartition(topic, pi.partition()))
