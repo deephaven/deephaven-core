@@ -1050,7 +1050,8 @@ public class KafkaTools {
                     }
                 };
 
-        consume(kafkaProperties, topic, partitionFilter, partitionToInitialOffset, keySpec, valueSpec,
+        consume(kafkaProperties, topic, partitionFilter,
+                new KafkaIngester.IntToLongLookupAdapter(partitionToInitialOffset), keySpec, valueSpec,
                 StreamConsumerRegistrarProvider.single(registrar), null);
         return resultHolder.getValue();
     }
@@ -1111,7 +1112,8 @@ public class KafkaTools {
                     }
                 };
 
-        consume(kafkaProperties, topic, partitionFilter, partitionToInitialOffset, keySpec, valueSpec,
+        consume(kafkaProperties, topic, partitionFilter,
+                new KafkaIngester.IntToLongLookupAdapter(partitionToInitialOffset), keySpec, valueSpec,
                 StreamConsumerRegistrarProvider.perPartition(registrar), null);
         return resultHolder.get();
     }
