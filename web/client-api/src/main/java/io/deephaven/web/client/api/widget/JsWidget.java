@@ -102,10 +102,11 @@ public class JsWidget extends HasEventHandling implements ServerObject, WidgetMe
             messageStream = streamFactory.get();
             messageStream.onData(res -> {
 
+                JsArray<JsWidgetExportedObject> responseObjects = res.getData().getTypedExportIdsList()
+                        .map((p0, p1, p2) -> new JsWidgetExportedObject(connection, p0));
                 if (!hasFetched) {
                     response = res;
-                    exportedObjects = res.getData().getTypedExportIdsList()
-                            .map((p0, p1, p2) -> new JsWidgetExportedObject(connection, p0));
+                    exportedObjects = responseObjects;
 
                     hasFetched = true;
                     resolve.onInvoke(this);
@@ -113,7 +114,7 @@ public class JsWidget extends HasEventHandling implements ServerObject, WidgetMe
                 }
 
                 CustomEventInit<EventDetails> messageEvent = CustomEventInit.create();
-                messageEvent.setDetail(new EventDetails(res.getData(), exportedObjects));
+                messageEvent.setDetail(new EventDetails(res.getData(), responseObjects));
                 fireEvent(EVENT_MESSAGE, messageEvent);
             });
             messageStream.onStatus(status -> {

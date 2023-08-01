@@ -90,30 +90,7 @@ public class ObjectServiceGrpcImpl extends ObjectServiceGrpc.ObjectServiceImplBa
                     final Object o = object.get();
                     final ObjectType objectType = getObjectTypeInstance(type, o);
 
-                    if (objectType.supportsBidiMessaging(o) == ObjectType.Kind.BIDIRECTIONAL) {
-                        PluginMessageSender sender = new PluginMessageSender(responseObserver, session);
-
-                        messageStream = objectType.clientConnection(o, sender);
-                    } else {
-                        final StreamResponse.Builder builder = StreamResponse.newBuilder();
-
-                        ExportCollector exportCollector = new ExportCollector(session);
-                        try {
-                            builder.setData(Data.newBuilder()
-                                    .setPayload(serialize(objectType, o, exportCollector))
-                                    .addAllTypedExportIds(
-                                            exportCollector.refs().stream().map(ReferenceImpl::typedTicket)
-                                                    .collect(Collectors.toList())));
-                        } catch (RuntimeException | Error t) {
-                            exportCollector.cleanup(t);
-                            throw t;
-                        } catch (Throwable t) {
-                            exportCollector.cleanup(t);
-                            throw new RuntimeException(t);
-                        }
-                        GrpcUtil.safelyComplete(responseObserver, builder.build());
-                        onCompleted();
-                    }
+                    messageStream = objectType.clientConnection(o, new PluginMessageSender(responseObserver, session));
                 });
             } else if (request.hasData()) {
                 // All other requests
@@ -221,7 +198,7 @@ public class ObjectServiceGrpcImpl extends ObjectServiceGrpc.ObjectServiceImplBa
         return t == u;
     }
 
-    final class ExportCollector implements Exporter {
+    final class ExportCollector {
 
         private final SessionState sessionState;
         private final Thread thread;
@@ -237,12 +214,15 @@ public class ObjectServiceGrpcImpl extends ObjectServiceGrpc.ObjectServiceImplBa
             return references;
         }
 
-        @Override
+        public Reference reference(Object object) {
+            // noinspection OptionalGetWithoutIsPresent
+            return reference(object, true, true).get();
+        }
+
         public Optional<Reference> reference(Object object, boolean allowUnknownType, boolean forceNew) {
             return reference(object, allowUnknownType, forceNew, ObjectServiceGrpcImpl::referenceEquality);
         }
 
-        @Override
         public Optional<Reference> reference(Object object, boolean allowUnknownType, boolean forceNew,
                 BiPredicate<Object, Object> equals) {
             if (thread != Thread.currentThread()) {
@@ -330,7 +310,8 @@ public class ObjectServiceGrpcImpl extends ObjectServiceGrpc.ObjectServiceImplBa
                     // allowUnknownType=true so that the caller can let the client handle complex lifecycles
                     // forceNew=true to explicitly state that the plugin is responsible for handling dups, both
                     // within a single payload and across the stream
-                    exportCollector.reference(reference, true, true);
+                    // noinspection OptionalGetWithoutIsPresent
+                    exportCollector.reference(reference, true, true).get();
                 }
                 for (ReferenceImpl ref : exportCollector.refs()) {
                     payload.addTypedExportIds(ref.typedTicket());
