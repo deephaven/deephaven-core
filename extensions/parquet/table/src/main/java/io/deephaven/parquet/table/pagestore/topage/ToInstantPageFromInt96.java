@@ -93,15 +93,15 @@ public class ToInstantPageFromInt96<ATTR extends Any> implements ToPage<ATTR, lo
         final long[] resultLongs = new long[resultLength];
 
         for (int ri = 0; ri < resultLength; ++ri) {
-            if (results[ri] != null) {
-                final ByteBuffer resultBuffer = ByteBuffer.wrap(results[ri].getBytesUnsafe());
-                resultBuffer.order(java.nio.ByteOrder.LITTLE_ENDIAN);
-                final long nanos = resultBuffer.getLong();
-                final int julianDate = resultBuffer.getInt();
-                resultLongs[ri] = (julianDate - JULIAN_OFFSET_TO_UNIX_EPOCH_DAYS) * (NANOS_PER_DAY) + nanos + offset;
-            } else {
+            if (results[ri] == null) {
                 resultLongs[ri] = NULL_LONG;
+                continue;
             }
+            final ByteBuffer resultBuffer = ByteBuffer.wrap(results[ri].getBytesUnsafe());
+            resultBuffer.order(java.nio.ByteOrder.LITTLE_ENDIAN);
+            final long nanos = resultBuffer.getLong();
+            final int julianDate = resultBuffer.getInt();
+            resultLongs[ri] = (julianDate - JULIAN_OFFSET_TO_UNIX_EPOCH_DAYS) * (NANOS_PER_DAY) + nanos + offset;
         }
         return resultLongs;
     }
