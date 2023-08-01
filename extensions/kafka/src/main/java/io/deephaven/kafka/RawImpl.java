@@ -49,11 +49,6 @@ class RawImpl {
         }
 
         @Override
-        boolean isIgnore() {
-            return false;
-        }
-
-        @Override
         public Optional<SchemaProvider> schemaProvider() {
             return Optional.empty();
         }
@@ -98,11 +93,6 @@ class RawImpl {
         public RawProduce(String columnName, Supplier<Serializer<?>> supplier) {
             this.columnName = Objects.requireNonNull(columnName);
             this.supplier = Objects.requireNonNull(supplier);
-        }
-
-        @Override
-        boolean isIgnore() {
-            return false;
         }
 
         @Override

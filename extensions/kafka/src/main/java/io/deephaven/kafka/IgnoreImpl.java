@@ -29,11 +29,6 @@ class IgnoreImpl {
     static final class IgnoreConsume extends Consume.KeyOrValueSpec {
 
         @Override
-        boolean isIgnore() {
-            return true;
-        }
-
-        @Override
         public Optional<SchemaProvider> schemaProvider() {
             return Optional.empty();
         }
@@ -58,11 +53,6 @@ class IgnoreImpl {
     }
 
     static final class IgnoreProduce extends Produce.KeyOrValueSpec {
-
-        @Override
-        boolean isIgnore() {
-            return true;
-        }
 
         @Override
         public Optional<SchemaProvider> schemaProvider() {

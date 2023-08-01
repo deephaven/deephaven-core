@@ -88,11 +88,6 @@ class SimpleImpl {
         }
 
         @Override
-        boolean isIgnore() {
-            return false;
-        }
-
-        @Override
         public Optional<SchemaProvider> schemaProvider() {
             return Optional.empty();
         }
@@ -228,11 +223,6 @@ class SimpleImpl {
 
         SimpleProduce(final String columnName) {
             this.columnName = columnName;
-        }
-
-        @Override
-        boolean isIgnore() {
-            return false;
         }
 
         @Override

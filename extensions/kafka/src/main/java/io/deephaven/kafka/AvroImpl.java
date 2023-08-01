@@ -85,11 +85,6 @@ class AvroImpl {
         }
 
         @Override
-        boolean isIgnore() {
-            return false;
-        }
-
-        @Override
         public Optional<SchemaProvider> schemaProvider() {
             return Optional.of(new AvroSchemaProvider());
         }
@@ -166,11 +161,6 @@ class AvroImpl {
                                     AVRO_LATEST_VERSION));
                 }
             }
-        }
-
-        @Override
-        boolean isIgnore() {
-            return false;
         }
 
         @Override

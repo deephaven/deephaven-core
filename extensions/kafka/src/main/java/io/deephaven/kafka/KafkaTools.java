@@ -47,6 +47,7 @@ import io.deephaven.kafka.IgnoreImpl.IgnoreConsume;
 import io.deephaven.kafka.IgnoreImpl.IgnoreProduce;
 import io.deephaven.kafka.JsonImpl.JsonConsume;
 import io.deephaven.kafka.JsonImpl.JsonProduce;
+import io.deephaven.kafka.KafkaTools.Produce.KeyOrValueSpec;
 import io.deephaven.kafka.KafkaTools.StreamConsumerRegistrarProvider.PerPartition;
 import io.deephaven.kafka.KafkaTools.StreamConsumerRegistrarProvider.Single;
 import io.deephaven.kafka.KafkaTools.TableType.Append;
@@ -250,8 +251,6 @@ public class KafkaTools {
          */
         public static abstract class KeyOrValueSpec implements GetSchemaProvider {
 
-            abstract boolean isIgnore();
-
             abstract Deserializer<?> deserializer(
                     KeyOrValue keyOrValue,
                     SchemaRegistryClient schemaRegistryClient,
@@ -285,6 +284,10 @@ public class KafkaTools {
         @SuppressWarnings("unused")
         public static KeyOrValueSpec ignoreSpec() {
             return IGNORE;
+        }
+
+        private static boolean isIgnore(KeyOrValueSpec keyOrValueSpec) {
+            return keyOrValueSpec == IGNORE;
         }
 
         /**
@@ -467,8 +470,6 @@ public class KafkaTools {
          */
         public static abstract class KeyOrValueSpec implements GetSchemaProvider {
 
-            abstract boolean isIgnore();
-
             abstract Serializer<?> serializer(SchemaRegistryClient schemaRegistryClient, TableDefinition definition);
 
             abstract String[] getColumnNames(@NotNull Table t, SchemaRegistryClient schemaRegistryClient);
@@ -486,6 +487,9 @@ public class KafkaTools {
             return IGNORE;
         }
 
+        private static boolean isIgnore(KeyOrValueSpec keyOrValueSpec) {
+            return keyOrValueSpec == IGNORE;
+        }
 
         /**
          * A simple spec for sending one column as either key or value in a Kafka message.
@@ -1043,7 +1047,7 @@ public class KafkaTools {
             @NotNull final Consume.KeyOrValueSpec keySpec,
             @NotNull final Consume.KeyOrValueSpec valueSpec,
             @NotNull final KafkaTools.StreamConsumerRegistrarProvider streamConsumerRegistrarProvider) {
-        if (keySpec.isIgnore() && valueSpec.isIgnore()) {
+        if (Consume.isIgnore(keySpec) && Consume.isIgnore(valueSpec)) {
             throw new IllegalArgumentException(
                     "can't ignore both key and value: keySpec and valueSpec can't both be ignore specs");
         }
@@ -1225,7 +1229,7 @@ public class KafkaTools {
             throw new KafkaPublisherException(
                     "Calling thread must hold an exclusive or shared UpdateGraph lock to publish live sources");
         }
-        if (keySpec.isIgnore() && valueSpec.isIgnore()) {
+        if (Produce.isIgnore(keySpec) && Produce.isIgnore(valueSpec)) {
             throw new IllegalArgumentException(
                     "can't ignore both key and value: keySpec and valueSpec can't both be ignore specs");
         }
@@ -1244,7 +1248,7 @@ public class KafkaTools {
 
         final LivenessScope publisherScope = new LivenessScope(true);
         try (final SafeCloseable ignored = LivenessScopeStack.open(publisherScope, false)) {
-            final Table effectiveTable = (!keySpec.isIgnore() && lastByKeyColumns)
+            final Table effectiveTable = (!Produce.isIgnore(keySpec) && lastByKeyColumns)
                     ? table.lastBy(keyColumns)
                     : table.coalesce();
             final KeyOrValueSerializer<?> keySerializer = keySpec.keyOrValueSerializer(effectiveTable, keyColumns);

@@ -59,11 +59,6 @@ class JsonImpl {
         }
 
         @Override
-        boolean isIgnore() {
-            return false;
-        }
-
-        @Override
         public Optional<SchemaProvider> schemaProvider() {
             return Optional.empty();
         }
@@ -169,11 +164,6 @@ class JsonImpl {
             this.nestedObjectDelimiter = nestedObjectDelimiter;
             this.outputNulls = outputNulls;
             this.timestampFieldName = timestampFieldName;
-        }
-
-        @Override
-        boolean isIgnore() {
-            return false;
         }
 
         @Override
