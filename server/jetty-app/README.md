@@ -1,69 +1,28 @@
 # server-jetty-app
 
-## Native development
-
 This document is oriented towards getting a server up for local development.
-If you are interested in running a native production release, please see
+If you are interested in running a native production release or to see other options for starting the server, please see
 [https://deephaven.io/core/docs/how-to-guides/configuration/native-application/](https://deephaven.io/core/docs/how-to-guides/configuration/native-application/).
 
-### Groovy Quickstart
+If using Python, see [Python development guide](../../py/README.md) for setting up the Python environment.
+
+## Local Development
+
+`server-jetty-app:run` will incorporate local Java changes on each start. If you are not frequently changing Java code, see the next section.
 
 ```shell
-./gradlew server-jetty-app:run -Pgroovy 
+./gradlew server-jetty-app:run # Python enigne by default
+./gradlew server-jetty-app:run -Pgroovy # Groovy engine
 ```
 
-### Python Quickstart
+## Development with Infrequent Changes
 
-1. Setup virtual environment:
-
-   ```shell
-   python -m venv /tmp/my-dh-venv
-   source /tmp/my-dh-venv/bin/activate
-   ```
-
-1. Build and install wheel
-
-   ```shell
-   ./gradlew py-server:assemble
-
-   # replace with the appropriate <version>
-   pip install "py/server/build/wheel/deephaven_core-<version>-py3-none-any.whl[autocomplete]"
-
-   # To install without the optional `autocomplete` feature, run:
-   # pip install "py/server/build/wheel/deephaven_core-<version>-py3-none-any.whl"
-   ```
-
-1. Run
-
-   ```shell
-   ./gradlew server-jetty-app:run
-   ```
-
-**Note:**
-
-* This is not an exhaustive guide to managing python environments
-* Depending on your OS and how your PATH is setup, you may need to use `python3`, or a path to the explicit python version you want to use
-* You may choose to setup a "permanent" virtual environment location
-* You'll need to re-install the wheel anytime you are making python code changes that affect the wheel
-* `pip` can be a pain if you are trying to (re-)install a wheel with the same version number as before
-  * A `pip install --force-reinstall --no-deps "py/server/build/wheel/deephaven_core-<version>-py3-none-any.whl[autocomplete]"` may do the trick
-* You can install other python packages in your venv using `pip install <some-other-package>`
-* You can setup multiple virtual environments, and switch between them as necessary using `source /path/to/other-venv/bin/activate`
-* You can de-activate the virtual environment by running `deactivate`
-* You can use the `VIRTUAL_ENV` environment variable instead of sourcing / activating virtual environments: `VIRTUAL_ENV=/my/venv ./gradlew server-jetty-app:run`
-
-### Start script
-
-To create a more production-like environment, you can create and invoke the start script instead of running via gradle:
+To create a more production-like environment, you can create and invoke the start script instead of running via gradle. This is faster if you need to often restart the server without making any changes to Java code (such as Python server development).
 
 ```shell
-./gradlew server-jetty-app:installDist
+./gradlew server-jetty-app:installDist # Run after any Java changes
 ./server/jetty-app/build/install/server-jetty/bin/start
 ```
-
-
-See [https://deephaven.io/core/docs/how-to-guides/configuration/native-application/](https://deephaven.io/core/docs/how-to-guides/configuration/native-application/)
-for options when invoking the start script.
 
 ### Configuration
 
@@ -88,6 +47,7 @@ By default, the server starts up on all interfaces with plaintext port 10000 (po
 expiration duration of 5 minutes, a scheduler pool size of 4, and a max inbound message size of 100 MiB.
 
 To bring up a SSL-enabled server on port 8443 with a development key and certificate, you can run:
+
 ```shell
 ./gradlew server-jetty-app:run -Pgroovy -PdevCerts
 ```
