@@ -189,9 +189,11 @@ public class KafkaIngester {
      *        {@link KafkaRecordConsumer#acceptFailure(Throwable)} if appropriate.
      * @param partitionToInitialSeekOffset A function implementing a mapping from partition to its initial seek offset,
      *        or -1 if seek to beginning is intended.
-     * @param keyDeserializer
-     * @param valueDeserializer
-     * @param consumerLoopCallback
+     * @param keyDeserializer, the key deserializer, see
+     *        {@link KafkaConsumer#KafkaConsumer(Properties, Deserializer, Deserializer)}
+     * @param valueDeserializer, the value deserializer, see
+     *        {@link KafkaConsumer#KafkaConsumer(Properties, Deserializer, Deserializer)}
+     * @param consumerLoopCallback the consumer loop callback
      */
     public KafkaIngester(
             @NotNull final Logger log,

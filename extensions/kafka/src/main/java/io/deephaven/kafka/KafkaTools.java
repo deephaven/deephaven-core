@@ -226,18 +226,8 @@ public class KafkaTools {
     /**
      * Enum to specify operations that may apply to either of Kafka KEY or VALUE fields.
      */
-    public enum KeyOrValue {
+    enum KeyOrValue {
         KEY, VALUE
-    }
-
-    /**
-     * Enum to specify the expected processing (format) for Kafka KEY or VALUE fields.
-     *
-     * @deprecated Use {@link Consume.KeyOrValueSpec} or {@link Produce.KeyOrValueSpec}.
-     */
-    @Deprecated(since = "0.27.0", forRemoval = true)
-    public enum DataFormat {
-        IGNORE, SIMPLE, AVRO, JSON, RAW
     }
 
     private interface SchemaProviderProvider {
@@ -261,10 +251,11 @@ public class KafkaTools {
          * Returns the initial offset that the {@code consumer} should start from for a given {@code topicPartition}.
          *
          * <ul>
-         *     <li>{@value SEEK_TO_BEGINNING}, seek to the beginning</li>
-         *     <li>{@value DONT_SEEK}, don't seek</li>
-         *     <li>{@value SEEK_TO_END}, seek to the end</li>
+         * <li>{@value SEEK_TO_BEGINNING}, seek to the beginning</li>
+         * <li>{@value DONT_SEEK}, don't seek</li>
+         * <li>{@value SEEK_TO_END}, seek to the end</li>
          * </ul>
+         * 
          * @param consumer the consumer
          * @param topicPartition the topic partition
          * @return the initial

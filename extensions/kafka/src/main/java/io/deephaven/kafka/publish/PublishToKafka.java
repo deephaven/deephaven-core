@@ -26,6 +26,7 @@ import org.apache.kafka.clients.producer.RecordMetadata;
 import org.apache.kafka.common.serialization.Serializer;
 import org.jetbrains.annotations.NotNull;
 
+import java.util.Objects;
 import java.util.Properties;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.AtomicReference;
@@ -79,28 +80,31 @@ public class PublishToKafka<K, V> extends LivenessArtifact {
      * @param topic The destination topic
      * @param keyColumns Optional array of string column names from table for the columns corresponding to Kafka's Key
      *        field.
-     * @param keySpecSerializer Optional {@link Serializer} to use for keys
-     * @param keySerializer Optional {@link KeyOrValueSerializer} to produce Kafka record keys
+     * @param keySerializer Optional {@link Serializer} to use for keys
+     * @param keyChunkSerializer Optional {@link KeyOrValueSerializer} to produce Kafka record keys
      * @param valueColumns Optional array of string column names from table for the columns corresponding to Kafka's
      *        Value field.
-     * @param valueSpecSerializer Optional {@link Serializer} to use for values
-     * @param valueSerializer Optional {@link KeyOrValueSerializer} to produce Kafka record values
+     * @param valueSerializer Optional {@link Serializer} to use for values
+     * @param valueChunkSerializer Optional {@link KeyOrValueSerializer} to produce Kafka record values
      */
     public PublishToKafka(
             final Properties props,
             final Table table,
             final String topic,
             final String[] keyColumns,
-            final Serializer<K> keySpecSerializer,
-            final KeyOrValueSerializer<K> keySerializer,
+            final Serializer<K> keySerializer,
+            final KeyOrValueSerializer<K> keyChunkSerializer,
             final String[] valueColumns,
-            final Serializer<V> valueSpecSerializer,
-            final KeyOrValueSerializer<V> valueSerializer) {
+            final Serializer<V> valueSerializer,
+            final KeyOrValueSerializer<V> valueChunkSerializer) {
         this.table = table;
-        this.producer = new KafkaProducer<>(props, keySpecSerializer, valueSpecSerializer);
+        this.producer = new KafkaProducer<>(
+                props,
+                Objects.requireNonNull(keySerializer),
+                Objects.requireNonNull(valueSerializer));
         this.topic = topic;
-        this.keySerializer = keySerializer;
-        this.valueSerializer = valueSerializer;
+        this.keySerializer = keyChunkSerializer;
+        this.valueSerializer = valueChunkSerializer;
 
         // Publish the initial table state
         try (final PublicationGuard guard = new PublicationGuard()) {

@@ -197,7 +197,7 @@ class AvroImpl {
             final List<String> columnNames = new ArrayList<>();
             for (final Field field : fields) {
                 final String fieldName = field.name();
-                if (timestampFieldName != null && fieldName.equals(timestampFieldName)) {
+                if (fieldName.equals(timestampFieldName)) {
                     continue;
                 }
                 final String candidateColumnName;

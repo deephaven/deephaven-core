@@ -75,18 +75,18 @@ class JsonImpl {
                 List<ColumnDefinition<?>> columnDefinitionsOut) {
             final KeyOrValueIngestData data = new KeyOrValueIngestData();
             data.toObjectChunkMapper = jsonToObjectChunkMapper(objectMapper);
-            columnDefinitionsOut.addAll(Arrays.asList(this.columnDefinitions));
+            columnDefinitionsOut.addAll(Arrays.asList(columnDefinitions));
             // Populate out field to column name mapping from two potential sources.
-            data.fieldPathToColumnName = new HashMap<>(this.columnDefinitions.length);
-            final Set<String> coveredColumns = new HashSet<>(this.columnDefinitions.length);
-            if (this.fieldToColumnName != null) {
-                for (final Map.Entry<String, String> entry : this.fieldToColumnName.entrySet()) {
+            data.fieldPathToColumnName = new HashMap<>(columnDefinitions.length);
+            final Set<String> coveredColumns = new HashSet<>(columnDefinitions.length);
+            if (fieldToColumnName != null) {
+                for (final Map.Entry<String, String> entry : fieldToColumnName.entrySet()) {
                     final String colName = entry.getValue();
                     data.fieldPathToColumnName.put(entry.getKey(), colName);
                     coveredColumns.add(colName);
                 }
             }
-            for (final ColumnDefinition<?> colDef : this.columnDefinitions) {
+            for (final ColumnDefinition<?> colDef : columnDefinitions) {
                 final String colName = colDef.getName();
                 if (!coveredColumns.contains(colName)) {
                     final String jsonPtrStr =
