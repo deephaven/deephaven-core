@@ -18,6 +18,15 @@ public interface ColumnRegion<ATTR extends Any> extends Page<ATTR>, Releasable {
         return 0;
     }
 
+
+    /**
+     * Do the fill contexts produced by this region support unbounded fill?
+     * @return true if the contexts support unbounded fill; false otherwise
+     */
+    default boolean supportsUnboundedFill() {
+        return true;
+    }
+
     abstract class Null<ATTR extends Any>
             extends GenericColumnRegionBase<ATTR>
             implements ColumnRegion<ATTR>, WithDefaultsForRepeatingValues<ATTR> {

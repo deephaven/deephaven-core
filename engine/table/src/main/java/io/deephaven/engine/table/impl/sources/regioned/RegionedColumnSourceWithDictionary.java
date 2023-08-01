@@ -100,6 +100,11 @@ class RegionedColumnSourceWithDictionary<DATA_TYPE>
         }
 
         @Override
+        public boolean supportsUnboundedFill() {
+            return RegionedColumnSourceWithDictionary.this.supportsUnboundedFill();
+        }
+
+        @Override
         public ColumnRegionLong<DictionaryKeys> getRegion(final int regionIndex) {
             final ColumnRegionObject<DATA_TYPE, Values> sourceRegion =
                     RegionedColumnSourceWithDictionary.this.getRegion(regionIndex);
@@ -124,6 +129,8 @@ class RegionedColumnSourceWithDictionary<DATA_TYPE>
                 return localWrappers[regionIndex] =
                         ColumnRegionObject.DictionaryKeysWrapper.create(parameters(), regionIndex, sourceRegion);
             }
+
+
         }
 
         @Override
@@ -194,6 +201,11 @@ class RegionedColumnSourceWithDictionary<DATA_TYPE>
             // ColumnRegionObject implementations are expected to cache the result of getDictionaryValuesRegion(),
             // so it's fine to call more than once and avoid extra backing storage in the column source.
             return RegionedColumnSourceWithDictionary.this.getRegion(regionIndex).getDictionaryValuesRegion();
+        }
+
+        @Override
+        public boolean supportsUnboundedFill() {
+            return RegionedColumnSourceWithDictionary.this.supportsUnboundedFill();
         }
     }
 

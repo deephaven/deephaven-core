@@ -33,6 +33,8 @@ abstract class RegionedColumnSourceArray<DATA_TYPE, ATTR extends Values, REGION_
     private volatile int regionCount = 0;
     private volatile REGION_TYPE[] regions;
 
+    private volatile boolean allRegionsSupportUnbounded = true;
+
     @SuppressWarnings("rawtypes")
     private static final ColumnRegion[] EMPTY = new ColumnRegion[0];
 
@@ -136,7 +138,11 @@ abstract class RegionedColumnSourceArray<DATA_TYPE, ATTR extends Values, REGION_
      */
     @NotNull
     private synchronized REGION_TYPE updateRegion(final int regionIndex, final REGION_TYPE region) {
-        return regions[regionIndex] = region == null ? nullRegion : region;
+        if (region == null) {
+            return regions[regionIndex] = nullRegion;
+        }
+        allRegionsSupportUnbounded &= region.supportsUnboundedFill();
+        return regions[regionIndex] = region;
     }
 
     @Override
@@ -161,5 +167,10 @@ abstract class RegionedColumnSourceArray<DATA_TYPE, ATTR extends Values, REGION_
     @NotNull
     public final REGION_TYPE getNullRegion() {
         return nullRegion;
+    }
+
+    @Override
+    public boolean supportsUnboundedFill() {
+        return allRegionsSupportUnbounded;
     }
 }

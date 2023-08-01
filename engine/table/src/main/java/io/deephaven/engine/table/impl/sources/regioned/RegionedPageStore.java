@@ -13,6 +13,8 @@ import io.deephaven.engine.rowset.RowSequence;
 import io.deephaven.util.annotations.FinalDefault;
 import org.jetbrains.annotations.NotNull;
 
+import java.util.Arrays;
+
 public interface RegionedPageStore<ATTR extends Any, INNER_ATTR extends ATTR, REGION_TYPE extends Page<INNER_ATTR>>
         extends PageStore<ATTR, INNER_ATTR, REGION_TYPE> {
 
@@ -73,6 +75,14 @@ public interface RegionedPageStore<ATTR extends Any, INNER_ATTR extends ATTR, RE
     REGION_TYPE getRegion(int regionIndex);
 
     /**
+     *  Whether this page store supports an unbounded fill operation.
+     *
+     * @return true if unbounded fill is supported.
+     */
+    boolean supportsUnboundedFill();
+
+
+    /**
      * Perform region lookup for an element row key.
      *
      * @param elementRowKey The element row key to get the region for
@@ -92,7 +102,7 @@ public interface RegionedPageStore<ATTR extends Any, INNER_ATTR extends ATTR, RE
 
     @Override
     default FillContext makeFillContext(final int chunkCapacity, final SharedContext sharedContext) {
-        return new RegionContextHolder(chunkCapacity, sharedContext);
+        return new RegionContextHolder(chunkCapacity, sharedContext, supportsUnboundedFill());
     }
 
     /**
@@ -133,11 +143,12 @@ public interface RegionedPageStore<ATTR extends Any, INNER_ATTR extends ATTR, RE
     /**
      * A regioned page store for use when the full set of regions and their sizes are known.
      */
-    abstract class Static<ATTR extends Any, INNER_ATTR extends ATTR, REGION_TYPE extends Page<INNER_ATTR>>
+    abstract class Static<ATTR extends Any, INNER_ATTR extends ATTR, REGION_TYPE extends ColumnRegion<INNER_ATTR>>
             implements RegionedPageStore<ATTR, INNER_ATTR, REGION_TYPE> {
 
         private final Parameters parameters;
         private final REGION_TYPE[] regions;
+        private final boolean supportsUnboundedFill;
 
         /**
          * @param parameters Mask and shift parameters
@@ -152,6 +163,7 @@ public interface RegionedPageStore<ATTR extends Any, INNER_ATTR extends ATTR, RE
             for (final REGION_TYPE region : regions) {
                 Require.eq(region.mask(), "region.mask()", parameters.regionMask, "parameters.regionMask");
             }
+            supportsUnboundedFill = Arrays.stream(regions).allMatch(ColumnRegion::supportsUnboundedFill);
         }
 
         @Override
@@ -167,6 +179,11 @@ public interface RegionedPageStore<ATTR extends Any, INNER_ATTR extends ATTR, RE
         @Override
         public final REGION_TYPE getRegion(final int regionIndex) {
             return regions[regionIndex];
+        }
+
+        @Override
+        public boolean supportsUnboundedFill() {
+            return supportsUnboundedFill;
         }
     }
 }

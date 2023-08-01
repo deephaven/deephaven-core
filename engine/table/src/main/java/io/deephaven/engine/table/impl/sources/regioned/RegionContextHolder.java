@@ -11,17 +11,18 @@ import org.jetbrains.annotations.Nullable;
 public class RegionContextHolder implements ChunkSource.FillContext {
     private final int chunkCapacity;
     private final SharedContext sharedContext;
+    private final boolean supportsUnboundedFill;
     private Context innerContext;
 
-    public RegionContextHolder(final int chunkCapacity, @Nullable final SharedContext sharedContext) {
-
+    public RegionContextHolder(final int chunkCapacity, @Nullable final SharedContext sharedContext, boolean supportsUnboundedFill) {
         this.chunkCapacity = chunkCapacity;
         this.sharedContext = sharedContext;
+        this.supportsUnboundedFill = supportsUnboundedFill;
     }
 
     @Override
     public boolean supportsUnboundedFill() {
-        return true;
+        return supportsUnboundedFill;
     }
 
     /**
