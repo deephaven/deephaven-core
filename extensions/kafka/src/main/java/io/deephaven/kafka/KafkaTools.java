@@ -1265,38 +1265,7 @@ public class KafkaTools {
      *        {@link TableDefinition}. See {@link StreamConsumerRegistrarProvider#single(SingleConsumerRegistrar)
      *        single} and {@link StreamConsumerRegistrarProvider#perPartition(PerPartitionConsumerRegistrar)
      *        per-partition}.
-     */
-    public static void consume(
-            @NotNull final Properties kafkaProperties,
-            @NotNull final String topic,
-            @NotNull final IntPredicate partitionFilter,
-            @NotNull final IntToLongFunction partitionToInitialOffset,
-            @NotNull final Consume.KeyOrValueSpec keySpec,
-            @NotNull final Consume.KeyOrValueSpec valueSpec,
-            @NotNull final KafkaTools.StreamConsumerRegistrarProvider streamConsumerRegistrarProvider,
-            @Nullable final KafkaIngester.ConsumerLoopCallback consumerLoopCallback) {
-        consume(kafkaProperties, topic, partitionFilter,
-                new KafkaIngester.IntToLongLookupAdapter(partitionToInitialOffset), keySpec, valueSpec,
-                streamConsumerRegistrarProvider, consumerLoopCallback);
-    }
-
-    /**
-     * Consume from Kafka to {@link StreamConsumer stream consumers} supplied by {@code streamConsumerRegistrar}.
-     *
-     * @param kafkaProperties Properties to configure this table and also to be passed to create the KafkaConsumer
-     * @param topic Kafka topic name
-     * @param partitionFilter A predicate returning true for the partitions to consume. The convenience constant
-     *        {@code ALL_PARTITIONS} is defined to facilitate requesting all partitions.
-     * @param partitionToInitialOffset A function specifying the desired initial offset for each partition consumed
-     * @param keySpec Conversion specification for Kafka record keys
-     * @param valueSpec Conversion specification for Kafka record values
-     * @param streamConsumerRegistrarProvider A provider for a function to
-     *        {@link StreamPublisher#register(StreamConsumer) register} {@link StreamConsumer} instances. The registered
-     *        stream consumers must accept {@link ChunkType chunk types} that correspond to
-     *        {@link StreamChunkUtils#chunkTypeForColumnIndex(TableDefinition, int)} for the supplied
-     *        {@link TableDefinition}. See {@link StreamConsumerRegistrarProvider#single(SingleConsumerRegistrar)
-     *        single} and {@link StreamConsumerRegistrarProvider#perPartition(PerPartitionConsumerRegistrar)
-     *        per-partition}.
+     * @param consumerLoopCallback callback to inject logic into the ingester's consumer loop
      */
     public static void consume(
             @NotNull final Properties kafkaProperties,
