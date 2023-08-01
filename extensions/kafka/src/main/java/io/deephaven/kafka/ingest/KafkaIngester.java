@@ -9,6 +9,8 @@ import io.deephaven.configuration.Configuration;
 import io.deephaven.hash.KeyedIntObjectHashMap;
 import io.deephaven.hash.KeyedIntObjectKey;
 import io.deephaven.io.logger.Logger;
+import io.deephaven.kafka.KafkaTools.ConsumerLoopCallback;
+import io.deephaven.kafka.KafkaTools.InitialOffsetLookup;
 import io.deephaven.util.annotations.InternalUseOnly;
 import org.apache.kafka.clients.consumer.ConsumerRecord;
 import org.apache.kafka.clients.consumer.ConsumerRecords;
@@ -72,28 +74,6 @@ public class KafkaIngester {
 
     private volatile boolean needsAssignment;
     private volatile boolean done;
-
-    /**
-     * A callback which is invoked from the consumer loop, enabling clients to inject logic to be invoked by the Kafka
-     * consumer thread.
-     */
-    public interface ConsumerLoopCallback {
-        /**
-         * Called before the consumer is polled for records.
-         *
-         * @param consumer the KafkaConsumer that will be polled for records
-         */
-        void beforePoll(KafkaConsumer<?, ?> consumer);
-
-        /**
-         * Called after the consumer is polled for records and they have been published to the downstream
-         * KafkaRecordConsumer.
-         *
-         * @param consumer the KafkaConsumer that has been polled for records
-         * @param more true if more records should be read, false if the consumer should be shut down due to error
-         */
-        void afterPoll(KafkaConsumer<?, ?> consumer, boolean more);
-    }
 
     /**
      * Constant predicate that returns true for all partitions. This is the default, each and every partition that
@@ -189,31 +169,6 @@ public class KafkaIngester {
     }
 
 
-    /**
-     * Determines the initial offset to seek to for a given KafkaConsumer and TopicPartition.
-     */
-    @FunctionalInterface
-    public interface InitialOffsetLookup {
-        long getInitialOffset(KafkaConsumer<?, ?> consumer, TopicPartition topicPartition);
-    }
-
-    /**
-     * Adapts an IntToLongFunction to a PartitionToInitialOffsetFunction by ignoring the topic and consumer parameters.
-     */
-
-    public static class IntToLongLookupAdapter implements InitialOffsetLookup {
-        private final IntToLongFunction function;
-
-        public IntToLongLookupAdapter(IntToLongFunction function) {
-            this.function = function;
-        }
-
-        @Override
-        public long getInitialOffset(final KafkaConsumer<?, ?> consumer, final TopicPartition topicPartition) {
-            return function.applyAsLong(topicPartition.partition());
-        }
-    }
-
     public static final long SEEK_TO_BEGINNING = -1;
     public static final long DONT_SEEK = -2;
     public static final long SEEK_TO_END = -3;
@@ -244,7 +199,7 @@ public class KafkaIngester {
             @NotNull final String topic,
             @NotNull final IntPredicate partitionFilter,
             @NotNull final Function<TopicPartition, KafkaRecordConsumer> partitionToStreamConsumer,
-            @NotNull final KafkaIngester.InitialOffsetLookup partitionToInitialSeekOffset,
+            @NotNull final InitialOffsetLookup partitionToInitialSeekOffset,
             @NotNull final Deserializer<?> keyDeserializer,
             @NotNull final Deserializer<?> valueDeserializer,
             @Nullable final ConsumerLoopCallback consumerLoopCallback) {
@@ -252,7 +207,8 @@ public class KafkaIngester {
         this.topic = topic;
         partitionDescription = partitionFilter.toString();
         logPrefix = KafkaIngester.class.getSimpleName() + "(" + topic + ", " + partitionDescription + "): ";
-        kafkaConsumer = new KafkaConsumer<>(props, Objects.requireNonNull(keyDeserializer),
+        kafkaConsumer = new KafkaConsumer<>(props,
+                Objects.requireNonNull(keyDeserializer),
                 Objects.requireNonNull(valueDeserializer));
         this.consumerLoopCallback = consumerLoopCallback;
 

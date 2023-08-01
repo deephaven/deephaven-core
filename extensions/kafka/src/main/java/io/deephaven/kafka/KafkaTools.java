@@ -79,6 +79,7 @@ import org.apache.commons.lang3.mutable.MutableObject;
 import org.apache.kafka.clients.admin.Admin;
 import org.apache.kafka.clients.admin.ListTopicsResult;
 import org.apache.kafka.clients.consumer.ConsumerRecord;
+import org.apache.kafka.clients.consumer.KafkaConsumer;
 import org.apache.kafka.common.TopicPartition;
 import org.apache.kafka.common.serialization.ByteArrayDeserializer;
 import org.apache.kafka.common.serialization.ByteArraySerializer;
@@ -241,6 +242,59 @@ public class KafkaTools {
 
     private interface SchemaProviderProvider {
         Optional<SchemaProvider> getSchemaProvider();
+    }
+
+    /**
+     * Determines the initial offset to seek to for a given KafkaConsumer and TopicPartition.
+     */
+    @FunctionalInterface
+    public interface InitialOffsetLookup {
+
+        /**
+         * Creates a implementation based solely on the {@link TopicPartition#partition() topic partition}.
+         */
+        static InitialOffsetLookup adapt(IntToLongFunction intToLongFunction) {
+            return new IntToLongLookupAdapter(intToLongFunction);
+        }
+
+        /**
+         * Returns the initial offset that the {@code consumer} should start from for a given {@code topicPartition}.
+         *
+         * <ul>
+         *     <li>{@value SEEK_TO_BEGINNING}, seek to the beginning</li>
+         *     <li>{@value DONT_SEEK}, don't seek</li>
+         *     <li>{@value SEEK_TO_END}, seek to the end</li>
+         * </ul>
+         * @param consumer the consumer
+         * @param topicPartition the topic partition
+         * @return the initial
+         * @see #SEEK_TO_BEGINNING
+         * @see #DONT_SEEK
+         * @see #SEEK_TO_END
+         */
+        long getInitialOffset(KafkaConsumer<?, ?> consumer, TopicPartition topicPartition);
+    }
+
+    /**
+     * A callback which is invoked from the consumer loop, enabling clients to inject logic to be invoked by the Kafka
+     * consumer thread.
+     */
+    public interface ConsumerLoopCallback {
+        /**
+         * Called before the consumer is polled for records.
+         *
+         * @param consumer the KafkaConsumer that will be polled for records
+         */
+        void beforePoll(KafkaConsumer<?, ?> consumer);
+
+        /**
+         * Called after the consumer is polled for records and they have been published to the downstream
+         * KafkaRecordConsumer.
+         *
+         * @param consumer the KafkaConsumer that has been polled for records
+         * @param more true if more records should be read, false if the consumer should be shut down due to error
+         */
+        void afterPoll(KafkaConsumer<?, ?> consumer, boolean more);
     }
 
     public static class Consume {
@@ -823,7 +877,7 @@ public class KafkaTools {
                 };
 
         consume(kafkaProperties, topic, partitionFilter,
-                new KafkaIngester.IntToLongLookupAdapter(partitionToInitialOffset), keySpec, valueSpec,
+                InitialOffsetLookup.adapt(partitionToInitialOffset), keySpec, valueSpec,
                 StreamConsumerRegistrarProvider.single(registrar), null);
         return resultHolder.getValue();
     }
@@ -885,7 +939,7 @@ public class KafkaTools {
                 };
 
         consume(kafkaProperties, topic, partitionFilter,
-                new KafkaIngester.IntToLongLookupAdapter(partitionToInitialOffset), keySpec, valueSpec,
+                InitialOffsetLookup.adapt(partitionToInitialOffset), keySpec, valueSpec,
                 StreamConsumerRegistrarProvider.perPartition(registrar), null);
         return resultHolder.get();
     }
@@ -1045,11 +1099,11 @@ public class KafkaTools {
             @NotNull final Properties kafkaProperties,
             @NotNull final String topic,
             @NotNull final IntPredicate partitionFilter,
-            @NotNull final KafkaIngester.InitialOffsetLookup partitionToInitialOffset,
+            @NotNull final InitialOffsetLookup partitionToInitialOffset,
             @NotNull final Consume.KeyOrValueSpec keySpec,
             @NotNull final Consume.KeyOrValueSpec valueSpec,
-            @NotNull final KafkaTools.StreamConsumerRegistrarProvider streamConsumerRegistrarProvider,
-            @Nullable final KafkaIngester.ConsumerLoopCallback consumerLoopCallback) {
+            @NotNull final StreamConsumerRegistrarProvider streamConsumerRegistrarProvider,
+            @Nullable final ConsumerLoopCallback consumerLoopCallback) {
         if (Consume.isIgnore(keySpec) && Consume.isIgnore(valueSpec)) {
             throw new IllegalArgumentException(
                     "can't ignore both key and value: keySpec and valueSpec can't both be ignore specs");
@@ -1507,5 +1561,18 @@ public class KafkaTools {
         }
         // noinspection unchecked
         return (Map<String, ?>) map;
+    }
+
+    private static class IntToLongLookupAdapter implements InitialOffsetLookup {
+        private final IntToLongFunction function;
+
+        IntToLongLookupAdapter(IntToLongFunction function) {
+            this.function = Objects.requireNonNull(function);
+        }
+
+        @Override
+        public long getInitialOffset(final KafkaConsumer<?, ?> consumer, final TopicPartition topicPartition) {
+            return function.applyAsLong(topicPartition.partition());
+        }
     }
 }
