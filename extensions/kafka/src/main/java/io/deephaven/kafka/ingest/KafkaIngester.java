@@ -66,7 +66,7 @@ public class KafkaIngester {
     private volatile boolean done;
 
     /**
-     * A callback which is invoked from the consumer loop, enabling clients to inject logic on the Kafka consumer.
+     * A callback which is invoked from the consumer loop, enabling clients to inject logic to be invoked by the Kafka consumer thread.
      */
     public interface ConsumerLoopCallback {
         /**
@@ -77,10 +77,10 @@ public class KafkaIngester {
         void beforePoll(KafkaConsumer<?, ?> consumer);
 
         /**
-         * Called after the consumer is polled for records and they have been published to the StreamConsumer.
+         * Called after the consumer is polled for records and they have been published to the downstream KafkaRecordConsumer.
          *
          * @param consumer the KafkaConsumer that has been polled for records
-         * @param more true if more records should be read, false if the consumer will be shut down due to error
+         * @param more true if more records should be read, false if the consumer should be shut down due to error
          */
         void afterPoll(KafkaConsumer<?, ?> consumer, boolean more);
     }
@@ -226,7 +226,7 @@ public class KafkaIngester {
     }
 
     /**
-     * Determines the initial offset to seek to for a given TopicPartition.
+     * Determines the initial offset to seek to for a given KafkaConsumer and TopicPartition.
      */
     @FunctionalInterface
     public interface PartitionToInitialOffsetFunction {
@@ -237,7 +237,8 @@ public class KafkaIngester {
      * Adapts an IntToLongFunction to a PartitionToInitialOffsetFunction by ignoring the topic and consumer parameters.
      */
     public static class IntToLongFunctionAdapter implements PartitionToInitialOffsetFunction {
-        final IntToLongFunction function;
+
+        private final IntToLongFunction function;
 
         public IntToLongFunctionAdapter(IntToLongFunction function) {
             this.function = function;

@@ -1603,7 +1603,7 @@ public class KafkaTools {
      *        {@link TableDefinition}. See {@link StreamConsumerRegistrarProvider#single(SingleConsumerRegistrar)
      *        single} and {@link StreamConsumerRegistrarProvider#perPartition(PerPartitionConsumerRegistrar)
      *        per-partition}.
-     * @return the newly created KafkaIngester, the caller must call start on the returned object to begin processing
+     * @return the newly created KafkaIngester; the caller must call {@link KafkaIngester#start() start} on the returned object to begin processing
      *         messages
      */
     public static KafkaIngester consume(
@@ -1620,7 +1620,7 @@ public class KafkaTools {
     }
 
     /**
-     * Consume from Kafka to a {@link StreamConsumer} supplied by {@code streamConsumerRegistrar}.
+     * Consume from Kafka to {@link StreamConsumer stream consumers} supplied by {@code streamConsumerRegistrar}.
      *
      * @param kafkaProperties Properties to configure this table and also to be passed to create the KafkaConsumer
      * @param topic Kafka topic name
