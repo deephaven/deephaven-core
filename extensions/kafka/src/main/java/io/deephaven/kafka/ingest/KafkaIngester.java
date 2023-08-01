@@ -368,6 +368,7 @@ public class KafkaIngester {
                 } catch (Exception e) {
                     log.error().append(logPrefix).append("Exception while executing beforePoll callback:").append(e)
                             .append(", aborting.").endl();
+                    notifyAllConsumersOnFailure(e);
                     more = false;
                 }
             }
@@ -379,6 +380,7 @@ public class KafkaIngester {
                     } catch (Exception e) {
                         log.error().append(logPrefix).append("Exception while executing afterPoll callback:").append(e)
                                 .append(", aborting.").endl();
+                        notifyAllConsumersOnFailure(e);
                         more = false;
                     }
                 }
@@ -432,13 +434,7 @@ public class KafkaIngester {
         } catch (Exception ex) {
             log.error().append(logPrefix).append("Exception while polling for Kafka messages:").append(ex)
                     .append(", aborting.").endl();
-            final KafkaRecordConsumer[] allConsumers;
-            synchronized (streamConsumers) {
-                allConsumers = streamConsumers.valueCollection().toArray(KafkaRecordConsumer[]::new);
-            }
-            for (final KafkaRecordConsumer streamConsumer : allConsumers) {
-                streamConsumer.acceptFailure(ex);
-            }
+            notifyAllConsumersOnFailure(ex);
             return false;
         }
 
@@ -480,6 +476,16 @@ public class KafkaIngester {
             messagesProcessed += partitionRecords.size();
         }
         return true;
+    }
+
+    private void notifyAllConsumersOnFailure(Exception ex) {
+        final KafkaRecordConsumer[] allConsumers;
+        synchronized (streamConsumers) {
+            allConsumers = streamConsumers.valueCollection().toArray(KafkaRecordConsumer[]::new);
+        }
+        for (final KafkaRecordConsumer streamConsumer : allConsumers) {
+            streamConsumer.acceptFailure(ex);
+        }
     }
 
     public void shutdown() {
