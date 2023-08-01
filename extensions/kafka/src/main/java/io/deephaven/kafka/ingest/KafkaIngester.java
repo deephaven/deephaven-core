@@ -51,6 +51,7 @@ public class KafkaIngester {
                 }
             });
 
+    @Nullable
     private final ConsumerLoopCallback consumerLoopCallback;
 
     private long messagesProcessed = 0;
@@ -65,7 +66,8 @@ public class KafkaIngester {
     private volatile boolean done;
 
     /**
-     * A callback which is invoked from the consumer loop, enabling clients to inject logic to be invoked by the Kafka consumer thread.
+     * A callback which is invoked from the consumer loop, enabling clients to inject logic to be invoked by the Kafka
+     * consumer thread.
      */
     public interface ConsumerLoopCallback {
         /**
@@ -76,7 +78,8 @@ public class KafkaIngester {
         void beforePoll(KafkaConsumer<?, ?> consumer);
 
         /**
-         * Called after the consumer is polled for records and they have been published to the downstream KafkaRecordConsumer.
+         * Called after the consumer is polled for records and they have been published to the downstream
+         * KafkaRecordConsumer.
          *
          * @param consumer the KafkaConsumer that has been polled for records
          * @param more true if more records should be read, false if the consumer should be shut down due to error
@@ -220,7 +223,8 @@ public class KafkaIngester {
             @NotNull final IntPredicate partitionFilter,
             @NotNull final Function<TopicPartition, KafkaRecordConsumer> partitionToStreamConsumer,
             @NotNull final IntToLongFunction partitionToInitialSeekOffset) {
-        this(log, props, topic, partitionFilter, partitionToStreamConsumer, new IntToLongLookupAdapter(partitionToInitialSeekOffset), null);
+        this(log, props, topic, partitionFilter, partitionToStreamConsumer,
+                new IntToLongLookupAdapter(partitionToInitialSeekOffset), null);
     }
 
     /**
@@ -356,9 +360,29 @@ public class KafkaIngester {
             }
             final long beforePoll = System.nanoTime();
             final long remainingNanos = beforePoll > nextReport ? 0 : (nextReport - beforePoll);
-            consumerLoopCallback.beforePoll(kafkaConsumer);
-            final boolean more = pollOnce(Duration.ofNanos(remainingNanos));
-            consumerLoopCallback.afterPoll(kafkaConsumer, more);
+
+            boolean more = true;
+            if (consumerLoopCallback != null) {
+                try {
+                    consumerLoopCallback.beforePoll(kafkaConsumer);
+                } catch (Exception e) {
+                    log.error().append(logPrefix).append("Exception while executing beforePoll callback:").append(e)
+                            .append(", aborting.").endl();
+                    more = false;
+                }
+            }
+            if (more) {
+                more = pollOnce(Duration.ofNanos(remainingNanos));
+                if (consumerLoopCallback != null) {
+                    try {
+                        consumerLoopCallback.afterPoll(kafkaConsumer, more);
+                    } catch (Exception e) {
+                        log.error().append(logPrefix).append("Exception while executing afterPoll callback:").append(e)
+                                .append(", aborting.").endl();
+                        more = false;
+                    }
+                }
+            }
             if (!more) {
                 log.error().append(logPrefix)
                         .append("Stopping due to errors (").append(messagesWithErr)

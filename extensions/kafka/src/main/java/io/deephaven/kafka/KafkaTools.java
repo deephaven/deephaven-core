@@ -1603,8 +1603,8 @@ public class KafkaTools {
      *        {@link TableDefinition}. See {@link StreamConsumerRegistrarProvider#single(SingleConsumerRegistrar)
      *        single} and {@link StreamConsumerRegistrarProvider#perPartition(PerPartitionConsumerRegistrar)
      *        per-partition}.
-     * @return the newly created KafkaIngester; the caller must call {@link KafkaIngester#start() start} on the returned object to begin processing
-     *         messages
+     * @return the newly created KafkaIngester; the caller must call {@link KafkaIngester#start() start} on the returned
+     *         object to begin processing messages
      */
     public static void consume(
             @NotNull final Properties kafkaProperties,
