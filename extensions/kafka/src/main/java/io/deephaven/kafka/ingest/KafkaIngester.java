@@ -261,7 +261,7 @@ public class KafkaIngester {
 
     /**
      * Creates a Kafka ingester for the given topic.
-     * 
+     *
      * @param log A log for output
      * @param props The properties used to create the {@link KafkaConsumer}
      * @param topic The topic to replicate
@@ -432,6 +432,13 @@ public class KafkaIngester {
         } catch (Exception ex) {
             log.error().append(logPrefix).append("Exception while polling for Kafka messages:").append(ex)
                     .append(", aborting.").endl();
+            final KafkaRecordConsumer[] allConsumers;
+            synchronized (streamConsumers) {
+                allConsumers = streamConsumers.valueCollection().toArray(KafkaRecordConsumer[]::new);
+            }
+            for (final KafkaRecordConsumer streamConsumer : allConsumers) {
+                streamConsumer.acceptFailure(ex);
+            }
             return false;
         }
 

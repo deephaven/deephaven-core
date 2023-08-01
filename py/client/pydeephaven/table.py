@@ -9,6 +9,7 @@ from __future__ import annotations
 from typing import List, Union
 
 import pyarrow as pa
+from pydeephaven._utils import to_list
 
 from pydeephaven._table_ops import MetaTableOp, SortDirection
 from pydeephaven.agg import Aggregation
@@ -217,6 +218,23 @@ class Table(TableInterface):
         Raises:
             DHError
         """
+        return super().sort(order_by, order)
+
+    def sort_descending(self, order_by: Union[str, List[str]]) -> Table:
+        """The sort_descending method creates a new table where rows in a table are sorted in descending
+        order based on the order_by column(s).
+
+        Args:
+            order_by (Union[str, List[str]]): the column name(s)
+
+        Returns:
+            a Table object
+
+        Raises:
+            DHError
+        """
+        order_by = to_list(order_by)
+        order = SortDirection.DESCENDING
         return super().sort(order_by, order)
 
     def where(self, filters: Union[str, List[str]]) -> Table:
@@ -729,7 +747,7 @@ class Table(TableInterface):
         Raises:
             DHError
         """
-        return  super(Table, self).where_not_in(filter_table, cols)
+        return super(Table, self).where_not_in(filter_table, cols)
 
 
 class InputTable(Table):

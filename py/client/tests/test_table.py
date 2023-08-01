@@ -24,6 +24,19 @@ class TableTestCase(BaseTestCase):
         table.close()
         self.assertTrue(table.is_closed)
 
+    def test_time_table(self):
+        SEC_TO_NS = 1_000_000_000
+        periods = [10 * SEC_TO_NS, 300 * SEC_TO_NS, "PT10S", "PT00:05:00.000"]
+        start_times = [None, "2023-01-01T11:00 ET", "2023-02-01T11:00:34.001 PT"]
+
+        for p in periods:
+            for st in start_times:
+                t = self.session.time_table(period=p, start_time=st)
+                column_specs = ["Col1 = i", "Col2 = i * 2"]
+                t2 = t.update(formulas=column_specs)
+                # time table has a default timestamp column
+                self.assertEqual(len(column_specs) + 1, len(t2.schema))
+
     def test_update(self):
         t = self.session.time_table(period=10000000)
         column_specs = ["Col1 = i", "Col2 = i * 2"]
@@ -87,6 +100,14 @@ class TableTestCase(BaseTestCase):
         pa_table = csv.read_csv(self.csv_file)
         test_table = self.session.import_table(pa_table)
         sorted_table = test_table.sort(order_by=["a", "b"], order=[SortDirection.DESCENDING])
+        df = sorted_table.to_arrow().to_pandas()
+
+        self.assertTrue(df.iloc[:, 0].is_monotonic_decreasing)
+
+    def test_sort_desc(self):
+        pa_table = csv.read_csv(self.csv_file)
+        test_table = self.session.import_table(pa_table)
+        sorted_table = test_table.sort_descending(order_by=["a", "b"])
         df = sorted_table.to_arrow().to_pandas()
 
         self.assertTrue(df.iloc[:, 0].is_monotonic_decreasing)
