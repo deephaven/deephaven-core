@@ -71,8 +71,8 @@ class JsonImpl {
 
         @Override
         KeyOrValueIngestData getIngestData(KeyOrValue keyOrValue,
-                List<ColumnDefinition<?>> columnDefinitionsOut, MutableInt nextColumnIndexMut,
-                SchemaRegistryClient schemaRegistryClient, Map<String, ?> configs) {
+                SchemaRegistryClient schemaRegistryClient, Map<String, ?> configs, MutableInt nextColumnIndexMut,
+                List<ColumnDefinition<?>> columnDefinitionsOut) {
             final KeyOrValueIngestData data = new KeyOrValueIngestData();
             data.toObjectChunkMapper = jsonToObjectChunkMapper(objectMapper);
             columnDefinitionsOut.addAll(Arrays.asList(this.columnDefinitions));
@@ -191,7 +191,7 @@ class JsonImpl {
                 // Validate includes
                 final List<String> missing = Arrays.stream(includeColumns)
                         .filter(cn -> !tableColumnsSet.contains(cn)).collect(Collectors.toList());
-                if (missing.size() > 0) {
+                if (!missing.isEmpty()) {
                     throw new IllegalArgumentException(
                             "includeColumns contains names not found in table columns: " + missing);
                 }

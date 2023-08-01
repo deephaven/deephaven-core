@@ -17,6 +17,7 @@ import io.deephaven.chunk.ObjectChunk;
 import io.deephaven.engine.rowset.RowSequence;
 import io.deephaven.engine.rowset.RowSet;
 import io.deephaven.util.SafeCloseable;
+import io.deephaven.util.annotations.InternalUseOnly;
 import io.deephaven.util.annotations.ReferentialIntegrity;
 import org.apache.kafka.clients.producer.Callback;
 import org.apache.kafka.clients.producer.KafkaProducer;
@@ -32,8 +33,8 @@ import java.util.concurrent.atomic.AtomicReference;
 /**
  * This class is an internal implementation detail for io.deephaven.kafka; is not intended to be used directly by client
  * code. It lives in a separate package as a means of code organization.
- *
  */
+@InternalUseOnly
 public class PublishToKafka<K, V> extends LivenessArtifact {
 
     public static final int CHUNK_SIZE =
@@ -47,52 +48,6 @@ public class PublishToKafka<K, V> extends LivenessArtifact {
 
     @ReferentialIntegrity
     private final PublishListener publishListener;
-
-    /**
-     * <p>
-     * Construct a publisher for {@code table} according the to Kafka {@code props} for the supplied {@code topic}.
-     * <p>
-     * The new publisher will produce records for existing {@code table} data at construction.
-     * <p>
-     * If {@code table} is a dynamic, refreshing table ({@link Table#isRefreshing()}), the calling thread must block the
-     * {@link UpdateGraph update graph} by holding either its {@link UpdateGraph#exclusiveLock() exclusive lock} or its
-     * {@link UpdateGraph#sharedLock() shared lock}. The publisher will install a listener in order to produce new
-     * records as updates become available. Callers must be sure to maintain a reference to the publisher and ensure
-     * that it remains {@link io.deephaven.engine.liveness.LivenessReferent live}. The easiest way to do this may be to
-     * construct the publisher enclosed by a {@link io.deephaven.engine.liveness.LivenessScope liveness scope} with
-     * {@code enforceStrongReachability} specified as {@code true}, and {@link LivenessScope#release() release} the
-     * scope when publication is no longer needed. For example:
-     * 
-     * <pre>
-     *     // To initiate publication:
-     *     final LivenessScope publisherScope = new LivenessScope(true);
-     *     try (final SafeCloseable ignored = LivenessScopeStack.open(publisherScope, false)) {
-     *         new PublishToKafka(...);
-     *     }
-     *     // To cease publication:
-     *     publisherScope.release();
-     * </pre>
-     *
-     * @param props The Kafka {@link Properties}
-     * @param table The source {@link Table}
-     * @param topic The destination topic
-     * @param keyColumns Optional array of string column names from table for the columns corresponding to Kafka's Key
-     *        field.
-     * @param keySerializer Optional {@link KeyOrValueSerializer} to produce Kafka record keys
-     * @param valueColumns Optional array of string column names from table for the columns corresponding to Kafka's
-     *        Value field.
-     * @param valueSerializer Optional {@link KeyOrValueSerializer} to produce Kafka record values
-     */
-    public PublishToKafka(
-            final Properties props,
-            final Table table,
-            final String topic,
-            final String[] keyColumns,
-            final KeyOrValueSerializer<K> keySerializer,
-            final String[] valueColumns,
-            final KeyOrValueSerializer<V> valueSerializer) {
-        this(props, table, topic, keyColumns, null, keySerializer, valueColumns, null, valueSerializer);
-    }
 
     /**
      * <p>

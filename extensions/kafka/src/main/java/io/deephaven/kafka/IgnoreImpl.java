@@ -15,8 +15,8 @@ import io.deephaven.kafka.KafkaTools.Produce;
 import io.deephaven.kafka.ingest.KeyOrValueProcessor;
 import io.deephaven.kafka.publish.KeyOrValueSerializer;
 import org.apache.commons.lang3.mutable.MutableInt;
-import org.apache.kafka.common.serialization.ByteBufferDeserializer;
-import org.apache.kafka.common.serialization.ByteBufferSerializer;
+import org.apache.kafka.common.serialization.ByteArrayDeserializer;
+import org.apache.kafka.common.serialization.ByteArraySerializer;
 import org.apache.kafka.common.serialization.Deserializer;
 import org.apache.kafka.common.serialization.Serializer;
 import org.jetbrains.annotations.NotNull;
@@ -36,13 +36,13 @@ class IgnoreImpl {
         @Override
         Deserializer<?> getDeserializer(KeyOrValue keyOrValue, SchemaRegistryClient schemaRegistryClient,
                 Map<String, ?> configs) {
-            return new ByteBufferDeserializer();
+            return new ByteArrayDeserializer();
         }
 
         @Override
         KeyOrValueIngestData getIngestData(KeyOrValue keyOrValue,
-                List<ColumnDefinition<?>> columnDefinitionsOut, MutableInt nextColumnIndexMut,
-                SchemaRegistryClient schemaRegistryClient, Map<String, ?> configs) {
+                SchemaRegistryClient schemaRegistryClient, Map<String, ?> configs, MutableInt nextColumnIndexMut,
+                List<ColumnDefinition<?>> columnDefinitionsOut) {
             return null;
         }
 
@@ -61,7 +61,7 @@ class IgnoreImpl {
 
         @Override
         Serializer<?> getSerializer(SchemaRegistryClient schemaRegistryClient, TableDefinition definition) {
-            return new ByteBufferSerializer();
+            return new ByteArraySerializer();
         }
 
         @Override

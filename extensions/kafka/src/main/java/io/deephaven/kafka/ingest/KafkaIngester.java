@@ -9,6 +9,7 @@ import io.deephaven.configuration.Configuration;
 import io.deephaven.hash.KeyedIntObjectHashMap;
 import io.deephaven.hash.KeyedIntObjectKey;
 import io.deephaven.io.logger.Logger;
+import io.deephaven.util.annotations.InternalUseOnly;
 import org.apache.kafka.clients.consumer.ConsumerRecord;
 import org.apache.kafka.clients.consumer.ConsumerRecords;
 import org.apache.kafka.clients.consumer.KafkaConsumer;
@@ -29,7 +30,12 @@ import java.util.function.IntToLongFunction;
 /**
  * An ingester that consumes an Apache Kafka topic and a subset of its partitions via one or more
  * {@link KafkaRecordConsumer stream consumers}.
+ *
+ * <p>
+ * This class is an internal implementation detail for io.deephaven.kafka; is not intended to be used directly by client
+ * code. It lives in a separate package as a means of code organization.
  */
+@InternalUseOnly
 public class KafkaIngester {
     private static final int REPORT_INTERVAL_MS = Configuration.getInstance().getIntegerForClassWithDefault(
             KafkaIngester.class, "reportIntervalMs", 60_000);
@@ -155,38 +161,16 @@ public class KafkaIngester {
         }
     }
 
-    /**
-     * Creates a Kafka ingester for all partitions of a given topic.
-     *
-     * @param log A log for output
-     * @param props The properties used to create the {@link KafkaConsumer}
-     * @param topic The topic to replicate
-     * @param partitionToStreamConsumer A function implementing a mapping from partition to its consumer of records. The
-     *        function will be invoked once per partition at construction; implementations should internally defer
-     *        resource allocation until first call to {@link KafkaRecordConsumer#consume(List)} or
-     *        {@link KafkaRecordConsumer#acceptFailure(Throwable)} if appropriate.
-     * @param partitionToInitialSeekOffset A function implementing a mapping from partition to its initial seek offset,
-     *        or -1 if seek to beginning is intended.
-     */
-    public KafkaIngester(
-            @NotNull final Logger log,
-            @NotNull final Properties props,
-            @NotNull final String topic,
-            @NotNull final Function<TopicPartition, KafkaRecordConsumer> partitionToStreamConsumer,
-            @NotNull final IntToLongFunction partitionToInitialSeekOffset) {
-        this(log, props, topic, ALL_PARTITIONS, partitionToStreamConsumer, partitionToInitialSeekOffset);
-    }
-
-    public static long SEEK_TO_BEGINNING = -1;
-    public static long DONT_SEEK = -2;
-    public static long SEEK_TO_END = -3;
-    public static IntToLongFunction ALL_PARTITIONS_SEEK_TO_BEGINNING = (int p) -> SEEK_TO_BEGINNING;
-    public static IntToLongFunction ALL_PARTITIONS_DONT_SEEK = (int p) -> DONT_SEEK;
-    public static IntToLongFunction ALL_PARTITIONS_SEEK_TO_END = (int p) -> SEEK_TO_END;
+    public static final long SEEK_TO_BEGINNING = -1;
+    public static final long DONT_SEEK = -2;
+    public static final long SEEK_TO_END = -3;
+    public static final IntToLongFunction ALL_PARTITIONS_SEEK_TO_BEGINNING = (int p) -> SEEK_TO_BEGINNING;
+    public static final IntToLongFunction ALL_PARTITIONS_DONT_SEEK = (int p) -> DONT_SEEK;
+    public static final IntToLongFunction ALL_PARTITIONS_SEEK_TO_END = (int p) -> SEEK_TO_END;
 
     /**
      * Creates a Kafka ingester for the given topic.
-     * 
+     *
      * @param log A log for output
      * @param props The properties used to create the {@link KafkaConsumer}
      * @param topic The topic to replicate
@@ -197,18 +181,9 @@ public class KafkaIngester {
      *        {@link KafkaRecordConsumer#acceptFailure(Throwable)} if appropriate.
      * @param partitionToInitialSeekOffset A function implementing a mapping from partition to its initial seek offset,
      *        or -1 if seek to beginning is intended.
+     * @param keyDeserializer
+     * @param valueDeserializer
      */
-    @SuppressWarnings("rawtypes")
-    public KafkaIngester(
-            @NotNull final Logger log,
-            @NotNull final Properties props,
-            @NotNull final String topic,
-            @NotNull final IntPredicate partitionFilter,
-            @NotNull final Function<TopicPartition, KafkaRecordConsumer> partitionToStreamConsumer,
-            @NotNull final IntToLongFunction partitionToInitialSeekOffset) {
-        this(log, props, topic, partitionFilter, partitionToStreamConsumer, partitionToInitialSeekOffset, null, null);
-    }
-
     public KafkaIngester(
             @NotNull final Logger log,
             @NotNull final Properties props,

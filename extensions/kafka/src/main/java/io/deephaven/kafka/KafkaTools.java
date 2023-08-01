@@ -257,14 +257,14 @@ public class KafkaTools {
 
             abstract KeyOrValueIngestData getIngestData(
                     KeyOrValue keyOrValue,
-                    List<ColumnDefinition<?>> columnDefinitionsOut,
-                    MutableInt nextColumnIndexMut,
                     SchemaRegistryClient schemaRegistryClient,
-                    Map<String, ?> configs);
+                    Map<String, ?> configs,
+                    MutableInt nextColumnIndexMut,
+                    List<ColumnDefinition<?>> columnDefinitionsOut);
 
             abstract KeyOrValueProcessor getProcessor(
-                    final TableDefinition tableDef,
-                    final KeyOrValueIngestData data);
+                    TableDefinition tableDef,
+                    KeyOrValueIngestData data);
         }
 
         /**
@@ -1090,9 +1090,9 @@ public class KafkaTools {
                 });
 
         final KeyOrValueIngestData keyIngestData = keySpec.getIngestData(KeyOrValue.KEY,
-                columnDefinitions, nextColumnIndex, schemaRegistryClient, configs);
+                schemaRegistryClient, configs, nextColumnIndex, columnDefinitions);
         final KeyOrValueIngestData valueIngestData = valueSpec.getIngestData(KeyOrValue.VALUE,
-                columnDefinitions, nextColumnIndex, schemaRegistryClient, configs);
+                schemaRegistryClient, configs, nextColumnIndex, columnDefinitions);
 
         final TableDefinition tableDefinition = TableDefinition.of(columnDefinitions);
         publisherParametersBuilder.setTableDefinition(tableDefinition);
@@ -1492,8 +1492,12 @@ public class KafkaTools {
 
     static Map<String, ?> asStringMap(Map<?, ?> map) {
         for (Map.Entry<?, ?> entry : map.entrySet()) {
-            if (!(entry.getKey() instanceof String)) {
-                throw new UncheckedDeephavenException("Key must be a string.");
+            final Object key = entry.getKey();
+            if (!(key instanceof String)) {
+                throw new UncheckedDeephavenException(String.format(
+                        "key must be a string, is key.getClass().getName()=%s, key.toString()=%s",
+                        key.getClass().getName(),
+                        key));
             }
         }
         // noinspection unchecked

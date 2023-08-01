@@ -97,8 +97,8 @@ class AvroImpl {
 
         @Override
         KeyOrValueIngestData getIngestData(KeyOrValue keyOrValue,
-                List<ColumnDefinition<?>> columnDefinitionsOut, MutableInt nextColumnIndexMut,
-                SchemaRegistryClient schemaRegistryClient, Map<String, ?> configs) {
+                SchemaRegistryClient schemaRegistryClient, Map<String, ?> configs, MutableInt nextColumnIndexMut,
+                List<ColumnDefinition<?>> columnDefinitionsOut) {
             KeyOrValueIngestData data = new KeyOrValueIngestData();
             data.fieldPathToColumnName = new HashMap<>();
             final Schema localSchema = schema != null

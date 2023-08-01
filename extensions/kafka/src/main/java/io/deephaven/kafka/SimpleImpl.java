@@ -32,6 +32,7 @@ import io.deephaven.qst.type.PrimitiveType;
 import io.deephaven.qst.type.ShortType;
 import io.deephaven.qst.type.StringType;
 import io.deephaven.qst.type.Type;
+import io.deephaven.util.annotations.VisibleForTesting;
 import org.apache.commons.lang3.mutable.MutableInt;
 import org.apache.kafka.clients.consumer.ConsumerConfig;
 import org.apache.kafka.common.serialization.ByteArrayDeserializer;
@@ -98,7 +99,7 @@ class SimpleImpl {
                 SchemaRegistryClient schemaRegistryClient,
                 Map<String, ?> configs) {
             final Type<?> type = getType(keyOrValue, configs);
-            final Deserializer<?> deserializer = SerDeserVisitor.deserializer(type).orElse(null);
+            final Deserializer<?> deserializer = deserializer(type).orElse(null);
             if (deserializer != null) {
                 return deserializer;
             }
@@ -110,12 +111,10 @@ class SimpleImpl {
         @Override
         KeyOrValueIngestData getIngestData(
                 KeyOrValue keyOrValue,
-                List<ColumnDefinition<?>> columnDefinitionsOut,
-                MutableInt nextColumnIndexMut,
-                SchemaRegistryClient schemaRegistryClient,
-                Map<String, ?> configs) {
+                SchemaRegistryClient schemaRegistryClient, Map<String, ?> configs, MutableInt nextColumnIndexMut,
+                List<ColumnDefinition<?>> columnDefinitionsOut) {
             final KeyOrValueIngestData data = new KeyOrValueIngestData();
-            data.simpleColumnIndex = nextColumnIndexMut.getAndAdd(1);
+            data.simpleColumnIndex = nextColumnIndexMut.getAndIncrement();
             final ColumnDefinition<?> colDef = ColumnDefinition.of(
                     getColumnName(keyOrValue, configs),
                     getType(keyOrValue, configs));
@@ -151,7 +150,7 @@ class SimpleImpl {
                 return Type.find(dataType);
             }
             {
-                final Type<?> typeFromProperty = getTypeFromProperty(keyOrValue, configs);
+                final Type<?> typeFromProperty = getTypeFromDhProperty(keyOrValue, configs);
                 if (typeFromProperty != null) {
                     return typeFromProperty;
                 }
@@ -165,8 +164,7 @@ class SimpleImpl {
             throw new UncheckedDeephavenException("Unable to find type for " + this);
         }
 
-        private Type<?> getTypeFromProperty(KeyOrValue keyOrValue, Map<String, ?> configs) {
-            // this is a crappy way about configuring DH kafka - does anybody actually use it this way?
+        private Type<?> getTypeFromDhProperty(KeyOrValue keyOrValue, Map<String, ?> configs) {
             final String typeProperty = keyOrValue == KeyOrValue.KEY
                     ? KEY_COLUMN_TYPE_PROPERTY
                     : VALUE_COLUMN_TYPE_PROPERTY;
@@ -198,7 +196,6 @@ class SimpleImpl {
         }
 
         private Type<?> getTypeFromDeserializerProperty(KeyOrValue keyOrValue, Map<String, ?> configs) {
-            // this is a crappy way about configuring DH kafka - does anybody actually use it this way?
             final String deserializerProperty = keyOrValue == KeyOrValue.KEY
                     ? ConsumerConfig.KEY_DESERIALIZER_CLASS_CONFIG
                     : ConsumerConfig.VALUE_DESERIALIZER_CLASS_CONFIG;
@@ -206,7 +203,7 @@ class SimpleImpl {
             if (deserializer == null) {
                 return null;
             }
-            final Type<?> type = SerDeserVisitor.DESER_NAME_TO_TYPE.get(deserializer);
+            final Type<?> type = DESER_NAME_TO_TYPE.get(deserializer);
             if (type != null) {
                 return type;
             }
@@ -233,7 +230,7 @@ class SimpleImpl {
         @Override
         Serializer<?> getSerializer(SchemaRegistryClient schemaRegistryClient, TableDefinition definition) {
             final Class<?> dataType = definition.getColumn(columnName).getDataType();
-            final Serializer<?> serializer = SerDeserVisitor.serializer(Type.find(dataType)).orElse(null);
+            final Serializer<?> serializer = serializer(Type.find(dataType)).orElse(null);
             if (serializer != null) {
                 return serializer;
             }
@@ -270,6 +267,28 @@ class SimpleImpl {
         }
     }
 
+    @VisibleForTesting
+    static final Map<String, Type<?>> DESER_NAME_TO_TYPE = Map.of(
+            ShortDeserializer.class.getName(), Type.shortType(),
+            IntegerDeserializer.class.getName(), Type.intType(),
+            LongDeserializer.class.getName(), Type.longType(),
+            FloatDeserializer.class.getName(), Type.floatType(),
+            DoubleDeserializer.class.getName(), Type.doubleType(),
+            ByteArrayDeserializer.class.getName(), Type.byteType().arrayType(),
+            UUIDDeserializer.class.getName(), Type.ofCustom(UUID.class),
+            ByteBufferDeserializer.class.getName(), Type.ofCustom(ByteBuffer.class),
+            BytesDeserializer.class.getName(), Type.ofCustom(Bytes.class));
+
+    @VisibleForTesting
+    static Optional<Serializer<?>> serializer(Type<?> type) {
+        return Optional.ofNullable(type.walk(SerDeserVisitor.INSTANCE)).map(SerDeser::serializer);
+    }
+
+    @VisibleForTesting
+    static Optional<Deserializer<?>> deserializer(Type<?> type) {
+        return Optional.ofNullable(type.walk(SerDeserVisitor.INSTANCE)).map(SerDeser::deserializer);
+    }
+
     /**
      * The visitor pattern with SerDeser ensures that whenever a new type is added, it is added both for serialization
      * and deserialization at the same time.
@@ -279,25 +298,6 @@ class SimpleImpl {
             PrimitiveType.Visitor<SerDeser<?>>,
             GenericType.Visitor<SerDeser<?>> {
         INSTANCE;
-
-        private static final Map<String, Type<?>> DESER_NAME_TO_TYPE = Map.of(
-                ShortDeserializer.class.getName(), Type.shortType(),
-                IntegerDeserializer.class.getName(), Type.intType(),
-                LongDeserializer.class.getName(), Type.longType(),
-                FloatDeserializer.class.getName(), Type.floatType(),
-                DoubleDeserializer.class.getName(), Type.doubleType(),
-                ByteArrayDeserializer.class.getName(), Type.byteType().arrayType(),
-                UUIDDeserializer.class.getName(), Type.ofCustom(UUID.class),
-                ByteBufferDeserializer.class.getName(), Type.ofCustom(ByteBuffer.class),
-                BytesDeserializer.class.getName(), Type.ofCustom(Bytes.class));
-
-        public static Optional<Serializer<?>> serializer(Type<?> type) {
-            return Optional.ofNullable(type.walk(INSTANCE)).map(SerDeser::serializer);
-        }
-
-        public static Optional<Deserializer<?>> deserializer(Type<?> type) {
-            return Optional.ofNullable(type.walk(INSTANCE)).map(SerDeser::deserializer);
-        }
 
         @Override
         public SerDeser<?> visit(PrimitiveType<?> primitiveType) {

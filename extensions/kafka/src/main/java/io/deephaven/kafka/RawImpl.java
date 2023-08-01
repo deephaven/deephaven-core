@@ -5,6 +5,7 @@ package io.deephaven.kafka;
 
 import io.confluent.kafka.schemaregistry.SchemaProvider;
 import io.confluent.kafka.schemaregistry.client.SchemaRegistryClient;
+import io.deephaven.UncheckedDeephavenException;
 import io.deephaven.engine.table.ColumnDefinition;
 import io.deephaven.engine.table.Table;
 import io.deephaven.engine.table.TableDefinition;
@@ -38,7 +39,7 @@ class RawImpl {
                     return deserializerClass.getDeclaredConstructor().newInstance();
                 } catch (InstantiationException | IllegalAccessException | InvocationTargetException
                         | NoSuchMethodException e) {
-                    throw new RuntimeException(e);
+                    throw new UncheckedDeephavenException(e);
                 }
             });
         }
@@ -61,10 +62,10 @@ class RawImpl {
 
         @Override
         KeyOrValueIngestData getIngestData(KeyOrValue keyOrValue,
-                List<ColumnDefinition<?>> columnDefinitionsOut, MutableInt nextColumnIndexMut,
-                SchemaRegistryClient schemaRegistryClient, Map<String, ?> configs) {
+                SchemaRegistryClient schemaRegistryClient, Map<String, ?> configs, MutableInt nextColumnIndexMut,
+                List<ColumnDefinition<?>> columnDefinitionsOut) {
             final KeyOrValueIngestData data = new KeyOrValueIngestData();
-            data.simpleColumnIndex = nextColumnIndexMut.getAndAdd(1);
+            data.simpleColumnIndex = nextColumnIndexMut.getAndIncrement();
             columnDefinitionsOut.add(cd);
             return data;
         }
@@ -85,7 +86,7 @@ class RawImpl {
                     return serializer.getDeclaredConstructor().newInstance();
                 } catch (InstantiationException | IllegalAccessException | InvocationTargetException
                         | NoSuchMethodException e) {
-                    throw new RuntimeException(e);
+                    throw new UncheckedDeephavenException(e);
                 }
             });
         }
