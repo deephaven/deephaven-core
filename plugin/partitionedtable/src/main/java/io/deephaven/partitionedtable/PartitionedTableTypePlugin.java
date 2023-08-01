@@ -17,7 +17,7 @@ import java.util.Collections;
  * a ticket to the underlying table that tracks the keys and the actual table objects.
  */
 @AutoService(ObjectType.class)
-public class PartitionedTableTypePlugin extends ObjectTypeBase {
+public class PartitionedTableTypePlugin extends ObjectTypeBase.FetchOnly {
 
     @Override
     public String name() {

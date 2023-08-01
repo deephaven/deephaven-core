@@ -21,7 +21,7 @@ import java.io.OutputStream;
  * An object type named {@value #NAME} of java class type {@link HierarchicalTable}.
  */
 @AutoService(ObjectType.class)
-public class HierarchicalTableTypePlugin extends ObjectTypeBase {
+public class HierarchicalTableTypePlugin extends ObjectTypeBase.FetchOnly {
 
     private static final String NAME = "HierarchicalTable";
 

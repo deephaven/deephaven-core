@@ -4,10 +4,9 @@
 package io.deephaven.server.plugin.python;
 
 import io.deephaven.plugin.type.ObjectTypeBase;
+import io.deephaven.plugin.type.StreamExporterImpl;
 import org.jpy.PyObject;
 
-import java.io.IOException;
-import java.io.OutputStream;
 import java.nio.ByteBuffer;
 import java.util.Objects;
 
@@ -35,24 +34,28 @@ final class ObjectTypeAdapter extends ObjectTypeBase implements AutoCloseable {
     }
 
     @Override
-    public void writeCompatibleObjectTo(Exporter exporter, Object object, OutputStream out) throws IOException {
-        final byte[] bytes = objectTypeAdapter.call(byte[].class, "to_bytes",
-                ExporterAdapter.class, new ExporterAdapter(exporter),
-                PyObject.class, (PyObject) object);
-        out.write(bytes);
-    }
+    public MessageStream compatibleClientConnection(Object object, MessageStream connection) {
+        if (objectTypeAdapter.hasAttribute("create_client_connection")) {
+            PyObject newConnection =
+                    objectTypeAdapter.call(PyObject.class, "create_client_connection", PyObject.class,
+                            (PyObject) object, MessageStream.class, connection);
+            return new PythonMessageStream(newConnection);
+        } else {
+            // Fall back and attempt to use old api:
+            // Using this simple implementation, even though the python code won't write to this, but instead will
+            // return a byte array directly
+            StreamExporterImpl exporter = new StreamExporterImpl();
 
-    @Override
-    public Kind supportsBidiMessaging(Object object) {
-        return objectTypeAdapter.hasAttribute("create_client_connection") ? Kind.BIDIRECTIONAL
-                : objectTypeAdapter.hasAttribute("to_bytes") ? Kind.FETCHABLE : null;
-    }
+            final byte[] bytes = objectTypeAdapter.call(byte[].class, "to_bytes",
+                    ExporterAdapter.class, new ExporterAdapter(exporter),
+                    PyObject.class, (PyObject) object);
 
-    @Override
-    public MessageStream clientConnection(Object object, MessageStream connection) {
-        PyObject newConnection =
-                objectTypeAdapter.call(PyObject.class, "create_client_connection", PyObject.class, (PyObject) object);
-        return new PythonMessageStream(newConnection);
+            // Send the message and close the stream
+            connection.onMessage(ByteBuffer.wrap(bytes), exporter.references());
+            connection.close();
+
+            return MessageStream.NOOP;
+        }
     }
 
     private static class PythonMessageStream implements MessageStream {

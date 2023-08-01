@@ -8,28 +8,45 @@ import io.deephaven.plugin.PluginBase;
 import java.io.IOException;
 import java.io.OutputStream;
 
+/**
+ * Abstract base class for object type plugins, providing some simple implementation details.
+ */
 public abstract class ObjectTypeBase extends PluginBase implements ObjectType {
-    public void writeCompatibleObjectTo(Exporter exporter, Object object, OutputStream out) throws IOException {
-        if (supportsBidiMessaging(object) == Kind.BIDIRECTIONAL) {
-            // internal error, shouldn't have called this
-            throw new IllegalStateException(
-                    "Do not call writeTo if supportsBidiMessaging returns true, but writeTo is not implemented");
-        } else {
-            // incorrect implementation
-            throw new IllegalStateException("ObjectType implementation returned false for supportsBidiMessaging");
+
+    public abstract static class FetchOnly extends ObjectTypeBase {
+
+        public abstract void writeCompatibleObjectTo(Exporter exporter, Object object, OutputStream out)
+                throws IOException;
+
+        @Override
+        public MessageStream compatibleClientConnection(Object object, MessageStream connection) {
+            StreamExporterImpl exporter = new StreamExporterImpl();
+
+            try {
+                writeCompatibleObjectTo(exporter, object, exporter.outputStream());
+            } catch (IOException e) {
+                e.printStackTrace();
+            }
+
+            connection.onMessage(exporter.payload(), exporter.references());
+            connection.close();
+            return MessageStream.NOOP;
         }
     }
 
     @Override
-    public final void writeTo(Exporter exporter, Object object, OutputStream out) throws IOException {
+    public final MessageStream clientConnection(Object object, MessageStream connection) {
         if (!isType(object)) {
             throw new IllegalArgumentException("Can't serialize object, wrong type: " + this + " / " + object);
         }
-        writeCompatibleObjectTo(exporter, object, out);
+        return compatibleClientConnection(object, connection);
     }
+
+    public abstract MessageStream compatibleClientConnection(Object object, MessageStream connection);
 
     @Override
     public final <T, V extends Visitor<T>> T walk(V visitor) {
         return visitor.visit(this);
     }
+
 }

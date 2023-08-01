@@ -8,7 +8,11 @@ import java.util.List;
 import java.util.Optional;
 import java.util.function.BiPredicate;
 
-class ExporterImpl implements ObjectType.Exporter {
+/**
+ * Generic implementation of Exporter for the purposes of providing the old single-message API while still transmitting
+ * data over the new streaming implementation.
+ */
+public class StreamExporterImpl implements ObjectType.Exporter {
     private final List<Object> references = new ArrayList<>();
     private final ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
 
@@ -19,7 +23,7 @@ class ExporterImpl implements ObjectType.Exporter {
 
     @Override
     public Optional<Reference> reference(Object object, boolean allowUnknownType, boolean forceNew,
-                                         BiPredicate<Object, Object> equals) {
+            BiPredicate<Object, Object> equals) {
         if (!allowUnknownType) {
             throw new IllegalArgumentException("allowUnknownType must be true");
         }
@@ -29,17 +33,7 @@ class ExporterImpl implements ObjectType.Exporter {
         int index = references.size();
         references.add(object);
 
-        return Optional.of(new Reference() {
-            @Override
-            public int index() {
-                return index;
-            }
-
-            @Override
-            public Optional<String> type() {
-                return Optional.empty();
-            }
-        });
+        return Optional.of(() -> index);
     }
 
     public OutputStream outputStream() {

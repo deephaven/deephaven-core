@@ -82,7 +82,7 @@ public class PluginModuleTest {
     }
 
     @AutoService(ObjectType.class)
-    public static class AutoObjectType extends ObjectTypeBase {
+    public static class AutoObjectType extends ObjectTypeBase.FetchOnly {
 
         public AutoObjectType() {}
 
@@ -122,7 +122,7 @@ public class PluginModuleTest {
         }
     }
 
-    public static class BoundObjectType extends ObjectTypeBase {
+    public static class BoundObjectType extends ObjectTypeBase.FetchOnly {
         @Inject
         public BoundObjectType() {}
 
@@ -152,7 +152,7 @@ public class PluginModuleTest {
         }
     }
 
-    public static class BadObjectType extends ObjectTypeBase {
+    public static class BadObjectType extends ObjectTypeBase.FetchOnly {
         @Inject
         public BadObjectType() {}
 

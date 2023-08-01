@@ -13,16 +13,37 @@ import java.util.Objects;
  * @param <T> the class type
  */
 public abstract class ObjectTypeClassBase<T> extends ObjectTypeBase {
+    public abstract static class FetchOnly<T> extends ObjectTypeClassBase<T> {
+
+        public FetchOnly(String name, Class<T> clazz) {
+            super(name, clazz);
+        }
+
+        @Override
+        public final MessageStream clientConnectionImpl(T object, MessageStream connection) {
+            StreamExporterImpl exporter = new StreamExporterImpl();
+
+            try {
+                writeToImpl(exporter, object, exporter.outputStream());
+            } catch (IOException e) {
+                e.printStackTrace();
+            }
+
+            connection.onMessage(exporter.payload(), exporter.references());
+            connection.close();
+
+            return MessageStream.NOOP;
+        }
+
+        public abstract void writeToImpl(Exporter exporter, T object, OutputStream out) throws IOException;
+    }
+
     private final String name;
     private final Class<T> clazz;
 
     public ObjectTypeClassBase(String name, Class<T> clazz) {
         this.name = Objects.requireNonNull(name);
         this.clazz = Objects.requireNonNull(clazz);
-    }
-
-    public void writeToImpl(Exporter exporter, T object, OutputStream out) throws IOException {
-
     }
 
     public final Class<T> clazz() {
@@ -40,19 +61,11 @@ public abstract class ObjectTypeClassBase<T> extends ObjectTypeBase {
     }
 
     @Override
-    public final void writeCompatibleObjectTo(Exporter exporter, Object object, OutputStream out) throws IOException {
-        // noinspection unchecked
-        writeToImpl(exporter, (T) object, out);
-    }
-
-    @Override
-    public final MessageStream clientConnection(Object object, MessageStream connection) {
+    public final MessageStream compatibleClientConnection(Object object, MessageStream connection) {
         return clientConnectionImpl((T) object, connection);
     }
 
-    public MessageStream clientConnectionImpl(T object, MessageStream connection) {
-        throw new IllegalStateException();
-    }
+    public abstract MessageStream clientConnectionImpl(T object, MessageStream connection);
 
     @Override
     public String toString() {

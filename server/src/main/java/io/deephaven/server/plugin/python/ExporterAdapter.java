@@ -17,6 +17,10 @@ final class ExporterAdapter {
         this.exporter = Objects.requireNonNull(exporter);
     }
 
+    public Reference reference(Object object) {
+        return exporter.reference(object, true, true).get();
+    }
+
     public Reference reference(Object object, boolean allowUnknownType, boolean forceNew) {
         return exporter.reference(object, allowUnknownType, forceNew).orElse(null);
     }
