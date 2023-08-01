@@ -6,18 +6,16 @@ import os
 import shutil
 import unittest
 import tempfile
-
 import pandas
+import pyarrow.parquet
+
 from deephaven.pandas import to_pandas, to_table
 
 from deephaven import empty_table, dtypes, new_table
 from deephaven.column import InputColumn
 from deephaven.parquet import write, batch_write, read, delete, ColumnInstruction
-from deephaven.table import Table
-from deephaven.time import epoch_nanos_to_instant
 
 from tests.testbase import BaseTestCase
-
 
 class ParquetTestCase(BaseTestCase):
     """ Test cases for the deephaven.ParquetTools module (performed locally) """
@@ -147,9 +145,28 @@ class ParquetTestCase(BaseTestCase):
         self.assertTrue(os.path.exists(file_location))
         shutil.rmtree(base_dir)
 
-    # def test_int96_timestamps(self):
-        # TODO Write a test for writing null and non-null int96 timestamp values and verifying the values
-        # Also, compare it with regular int64 timestamp values and make sure both are similar
+    def test_int96_timestamps(self):
+        """ Tests for int96 timestamp values """
+        dh_table = empty_table(5).update(formulas=[
+            "nullInstantColumn = (Instant)null",
+            "someInstantColumn = DateTimeUtils.now() + i",
+        ])
+        # Writing Int96 based timestamps are not supported in deephaven parquet code, therefore we use pyarrow to do that
+        dataframe = to_pandas(dh_table)
+        table = pyarrow.Table.from_pandas(dataframe)
+        pyarrow.parquet.write_table(table, 'data_from_pa.parquet', use_deprecated_int96_timestamps=True)
+        from_disk_int96 = read('data_from_pa.parquet')
+        self.assert_table_equals(dh_table, from_disk_int96)
+
+        # Read the parquet file as a pandas dataframe, and ensure all values are written as null
+        dataframe = pandas.read_parquet("data_from_pa.parquet")
+        dataframe_null_columns = dataframe[["nullInstantColumn"]]
+        self.assertTrue(dataframe_null_columns.isnull().values.all())
+
+        # Write the timestamps as int64 using deephaven writing code and compare with int96 table
+        write(dh_table, "data_from_dh.parquet")
+        from_disk_int64 = read('data_from_dh.parquet')
+        self.assert_table_equals(from_disk_int64, from_disk_int96)
 
     def get_table_data(self):
         # create a table with columns to test different types and edge cases
