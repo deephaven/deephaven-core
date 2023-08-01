@@ -111,11 +111,13 @@ class CombinedDockerRunTask extends AbstractDockerRemoteApiTask {
                     throw new GradleException("${failedMessage}, check logs for details")
                 }
             }
-
+        } finally {
+            if (containerId == null) {
+                return;
+            }
             // Copy output to internal output directory
             CopyArchiveFromContainerCmd copyCommand = dockerClient.copyArchiveFromContainerCmd(containerId, remotePath.get())
             logger.quiet "Copying '${remotePath.get()}' from container with ID '${containerId}' to '${outputDir.get()}'."
-
             InputStream tarStream
             try {
                 tarStream = copyCommand.exec()
@@ -127,10 +129,7 @@ class CombinedDockerRunTask extends AbstractDockerRemoteApiTask {
             } finally {
                 tarStream?.close()
             }
-        } finally {
-            if (containerId == null) {
-                return;
-            }
+
             RemoveContainerCmd removeCommand = dockerClient.removeContainerCmd(containerId)
             removeCommand.withRemoveVolumes(true)
             removeCommand.withForce(true)
