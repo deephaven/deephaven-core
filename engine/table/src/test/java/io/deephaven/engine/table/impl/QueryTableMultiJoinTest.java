@@ -670,7 +670,8 @@ public class QueryTableMultiJoinTest extends QueryTableTestBase {
             final RowSetShiftData.Builder builder = new RowSetShiftData.Builder();
             builder.shiftRange(0, 0, 1);
             final RowSetShiftData shift = builder.build();
-            t3.notifyListeners(new TableUpdateImpl(i(), i(), i(), shift, ModifiedColumnSet.EMPTY));
+            final ModifiedColumnSet modifiedColumnSet = t3.newModifiedColumnSet("S1");
+            t3.notifyListeners(new TableUpdateImpl(i(), i(), i(), shift, modifiedColumnSet));
         });
         assertTableEquals(TableTools.newTable(intCol("S1", 1)), j3);
 
@@ -680,7 +681,8 @@ public class QueryTableMultiJoinTest extends QueryTableTestBase {
             final RowSetShiftData.Builder builder = new RowSetShiftData.Builder();
             builder.shiftRange(1, 1, 1);
             final RowSetShiftData shift = builder.build();
-            t3.notifyListeners(new TableUpdateImpl(i(), i(), i(2), shift, ModifiedColumnSet.EMPTY));
+            final ModifiedColumnSet modifiedColumnSet = t3.newModifiedColumnSet("S1");
+            t3.notifyListeners(new TableUpdateImpl(i(), i(), i(2), shift, modifiedColumnSet));
         });
         assertTableEquals(TableTools.newTable(intCol("S1", 2)), j3);
 
@@ -710,7 +712,7 @@ public class QueryTableMultiJoinTest extends QueryTableTestBase {
             Assert.fail("expected exception");
         } catch (IllegalArgumentException iae) {
             Assert.assertEquals(iae.getMessage(),
-                    "Key column mismatch for table 1, first key columns=[Key] table has [KeyNotTheSame]");
+                    "Key column mismatch for table 1, first table has key columns=[Key], this table has [KeyNotTheSame]");
         }
 
         try {
@@ -738,7 +740,7 @@ public class QueryTableMultiJoinTest extends QueryTableTestBase {
             Assert.fail("expected exception");
         } catch (IllegalArgumentException iae) {
             Assert.assertEquals(
-                    "Key column type mismatch for table 1, first key columns types=[int] table has [double]",
+                    "Key column type mismatch for table 1, first table has key column types=[int], this table has [double]",
                     iae.getMessage());
         }
 
@@ -749,7 +751,7 @@ public class QueryTableMultiJoinTest extends QueryTableTestBase {
             Assert.fail("expected exception");
         } catch (IllegalArgumentException iae) {
             Assert.assertEquals(
-                    "Key column mismatch for table 1, first table had no key columns this table has [Key=C]",
+                    "Key column mismatch for table 1, first table has key columns=[], this table has [Key]",
                     iae.getMessage());
         }
 

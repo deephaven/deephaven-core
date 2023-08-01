@@ -42,7 +42,7 @@ final class IncrementalMultiJoinHasherShort extends IncrementalMultiJoinStateMan
         return (tableLocation + 1) & (alternateTableSize - 1);
     }
 
-    protected void buildFromLeftSide(RowSequence rowSequence, Chunk[] sourceKeyChunks,
+    protected void buildFromTable(RowSequence rowSequence, Chunk[] sourceKeyChunks,
             LongArraySource tableRedirSource, int tableNumber,
             MultiJoinModifiedSlotTracker modifiedSlotTracker, byte trackerFlag) {
         final ShortChunk<Values> keyChunk0 = sourceKeyChunks[0].asShortChunk();

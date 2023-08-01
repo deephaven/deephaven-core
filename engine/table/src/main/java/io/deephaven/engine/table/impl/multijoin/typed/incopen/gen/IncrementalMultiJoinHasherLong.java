@@ -41,7 +41,7 @@ final class IncrementalMultiJoinHasherLong extends IncrementalMultiJoinStateMana
         return (tableLocation + 1) & (alternateTableSize - 1);
     }
 
-    protected void buildFromLeftSide(RowSequence rowSequence, Chunk[] sourceKeyChunks,
+    protected void buildFromTable(RowSequence rowSequence, Chunk[] sourceKeyChunks,
             LongArraySource tableRedirSource, int tableNumber,
             MultiJoinModifiedSlotTracker modifiedSlotTracker, byte trackerFlag) {
         final LongChunk<Values> keyChunk0 = sourceKeyChunks[0].asLongChunk();

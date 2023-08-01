@@ -350,7 +350,7 @@ public class TypedHasherFactory {
                     .rehashFullSetup(TypedMultiJoinFactory::staticRehashSetup);
 
 
-            builder.addBuild(new HasherConfig.BuildSpec("buildFromLeftSide", "sentinel",
+            builder.addBuild(new HasherConfig.BuildSpec("buildFromTable", "sentinel",
                     true, true, TypedMultiJoinFactory::staticBuildLeftFound,
                     TypedMultiJoinFactory::staticBuildLeftInsert,
                     ParameterSpec.builder(TypeName.get(LongArraySource.class), "tableRedirSource").build(),
@@ -379,7 +379,7 @@ public class TypedHasherFactory {
                     .alwaysMoveMain(true)
                     .rehashFullSetup(TypedMultiJoinFactory::incrementalRehashSetup);
 
-            builder.addBuild(new HasherConfig.BuildSpec("buildFromLeftSide", "slotValue",
+            builder.addBuild(new HasherConfig.BuildSpec("buildFromTable", "slotValue",
                     true, true,
                     TypedMultiJoinFactory::incrementalBuildLeftFound,
                     TypedMultiJoinFactory::incrementalBuildLeftInsert,

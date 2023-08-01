@@ -21,10 +21,7 @@ import io.deephaven.engine.table.impl.sources.ArrayBackedColumnSource;
 import io.deephaven.engine.table.impl.sources.InMemoryColumnSource;
 import io.deephaven.engine.table.impl.sources.LongArraySource;
 import io.deephaven.engine.table.impl.sources.immutable.ImmutableLongArraySource;
-import io.deephaven.engine.table.impl.util.ChunkUtils;
-import io.deephaven.engine.table.impl.util.LongColumnSourceWritableRowRedirection;
-import io.deephaven.engine.table.impl.util.TypedHasherUtil;
-import io.deephaven.engine.table.impl.util.WritableRowRedirection;
+import io.deephaven.engine.table.impl.util.*;
 import io.deephaven.util.QueryConstants;
 import org.apache.commons.lang3.mutable.MutableInt;
 import org.jetbrains.annotations.NotNull;
@@ -48,35 +45,39 @@ public abstract class IncrementalMultiJoinStateManagerTypedBase implements Multi
     public static final long EMPTY_RIGHT_STATE = QueryConstants.NULL_LONG;
     public static final long DUPLICATE_RIGHT_STATE = -2;
 
-    // The number of slots in our hash table.
+    /** The number of slots in our hash table. */
     protected int tableSize;
-    // The number of slots in our alternate table, to start with "1" is a lie, but rehashPointer is zero; so our
-    // location value is positive and can be compared against rehashPointer safely.
+    /**
+     * The number of slots in our alternate table, to start with "1" is a lie, but rehashPointer is zero; so our
+     * location value is positive and can be compared against rehashPointer safely.
+     */
     protected int alternateTableSize = 1;
 
-    // The number of entries in our hash table in use.
+    /** The number of entries in our hash table in use. */
     protected long numEntries = 0;
 
-    // The table will be rehashed to a load factor of targetLoadFactor if our loadFactor exceeds maximumLoadFactor
-    // or if it falls below minimum load factor we will instead contract the table.
+    /**
+     * The table will be rehashed to a load factor of targetLoadFactor if our loadFactor exceeds maximumLoadFactor or if
+     * it falls below minimum load factor we will instead contract the table.
+     */
     private final double maximumLoadFactor;
 
-    // The keys for our hash entries.
+    /** The keys for our hash entries. */
     protected final ChunkType[] chunkTypes;
     protected final WritableColumnSource[] mainKeySources;
     protected final WritableColumnSource[] alternateKeySources;
 
-    // The output sources representing the keys of our joined table.
+    /** The output sources representing the keys of our joined table. */
     protected final WritableColumnSource[] outputKeySources;
 
-    // Store sentinel information and maps hash slots to output row keys.
+    /** Store sentinel information and maps hash slots to output row keys. */
     protected ImmutableLongArraySource slotToOutputRow = new ImmutableLongArraySource();
     protected ImmutableLongArraySource alternateSlotToOutputRow;
 
     protected ImmutableLongArraySource mainModifiedTrackerCookieSource = new ImmutableLongArraySource();
     protected ImmutableLongArraySource alternateModifiedTrackerCookieSource;
 
-    // how much of the alternate sources are necessary to rehash?
+    /** how much of the alternate sources are necessary to rehash? */
     protected int rehashPointer = 0;
 
     protected IncrementalMultiJoinStateManagerTypedBase(ColumnSource<?>[] tableKeySources,
@@ -165,13 +166,13 @@ public abstract class IncrementalMultiJoinStateManagerTypedBase implements Multi
         }
 
         @Override
-        public void doBuild(RowSequence chunkOk, Chunk<Values>[] sourceKeyChunks) {
-            final long maxSize = numEntries + chunkOk.intSize();
+        public void doBuild(RowSequence rows, Chunk<Values>[] sourceKeyChunks) {
+            final long maxSize = numEntries + rows.intSize();
             tableRedirSource.ensureCapacity(maxSize);
             for (WritableColumnSource src : outputKeySources) {
                 src.ensureCapacity(maxSize);
             }
-            buildFromLeftSide(chunkOk, sourceKeyChunks, tableRedirSource, tableNumber, modifiedSlotTracker,
+            buildFromTable(rows, sourceKeyChunks, tableRedirSource, tableNumber, modifiedSlotTracker,
                     trackerFlag);
         }
     }
@@ -199,8 +200,8 @@ public abstract class IncrementalMultiJoinStateManagerTypedBase implements Multi
         }
 
         @Override
-        public void doProbe(RowSequence chunkOk, Chunk<Values>[] sourceKeyChunks) {
-            remove(chunkOk, sourceKeyChunks, tableRedirSource, tableNumber, modifiedSlotTracker, trackerFlag);
+        public void doProbe(RowSequence rows, Chunk<Values>[] sourceKeyChunks) {
+            remove(rows, sourceKeyChunks, tableRedirSource, tableNumber, modifiedSlotTracker, trackerFlag);
         }
     }
 
@@ -214,8 +215,8 @@ public abstract class IncrementalMultiJoinStateManagerTypedBase implements Multi
         }
 
         @Override
-        public void doProbe(RowSequence chunkOk, Chunk<Values>[] sourceKeyChunks) {
-            shift(chunkOk, sourceKeyChunks, tableRedirSource, tableNumber, modifiedSlotTracker, trackerFlag,
+        public void doProbe(RowSequence rows, Chunk<Values>[] sourceKeyChunks) {
+            shift(rows, sourceKeyChunks, tableRedirSource, tableNumber, modifiedSlotTracker, trackerFlag,
                     shiftDelta);
         }
     }
@@ -227,8 +228,8 @@ public abstract class IncrementalMultiJoinStateManagerTypedBase implements Multi
         }
 
         @Override
-        public void doProbe(RowSequence chunkOk, Chunk<Values>[] sourceKeyChunks) {
-            modify(chunkOk, sourceKeyChunks, tableRedirSource, tableNumber, modifiedSlotTracker, trackerFlag);
+        public void doProbe(RowSequence rows, Chunk<Values>[] sourceKeyChunks) {
+            modify(rows, sourceKeyChunks, tableRedirSource, tableNumber, modifiedSlotTracker, trackerFlag);
         }
     }
 
@@ -312,7 +313,7 @@ public abstract class IncrementalMultiJoinStateManagerTypedBase implements Multi
         }
     }
 
-    protected abstract void buildFromLeftSide(RowSequence rowSequence, Chunk[] sourceKeyChunks,
+    protected abstract void buildFromTable(RowSequence rowSequence, Chunk[] sourceKeyChunks,
             LongArraySource tableRedirSource, int tableNumber,
             MultiJoinModifiedSlotTracker modifiedSlotTracker, byte trackerFlag);
 
@@ -342,16 +343,16 @@ public abstract class IncrementalMultiJoinStateManagerTypedBase implements Multi
             final Chunk<Values>[] sourceKeyChunks = new Chunk[buildSources.length];
 
             while (rsIt.hasMore()) {
-                final RowSequence chunkOk = rsIt.getNextRowSequenceWithLength(bc.chunkSize);
-                final int nextChunkSize = chunkOk.intSize();
+                final RowSequence rows = rsIt.getNextRowSequenceWithLength(bc.chunkSize);
+                final int nextChunkSize = rows.intSize();
                 while (doRehash(initialBuild, bc.rehashCredits, nextChunkSize, modifiedSlotTracker)) {
                     migrateFront(modifiedSlotTracker);
                 }
 
-                getKeyChunks(buildSources, bc.getContexts, sourceKeyChunks, chunkOk);
+                getKeyChunks(buildSources, bc.getContexts, sourceKeyChunks, rows);
 
                 final long oldEntries = numEntries;
-                buildHandler.doBuild(chunkOk, sourceKeyChunks);
+                buildHandler.doBuild(rows, sourceKeyChunks);
                 final long entriesAdded = numEntries - oldEntries;
                 // if we actually added anything, then take away from the "equity" we've built up rehashing, otherwise
                 // don't penalize this build call with additional rehashing
@@ -373,15 +374,15 @@ public abstract class IncrementalMultiJoinStateManagerTypedBase implements Multi
             final Chunk<Values>[] sourceKeyChunks = new Chunk[probeSources.length];
 
             while (rsIt.hasMore()) {
-                final RowSequence chunkOk = rsIt.getNextRowSequenceWithLength(pc.chunkSize);
+                final RowSequence rows = rsIt.getNextRowSequenceWithLength(pc.chunkSize);
 
                 if (usePrev) {
-                    getPrevKeyChunks(probeSources, pc.getContexts, sourceKeyChunks, chunkOk);
+                    getPrevKeyChunks(probeSources, pc.getContexts, sourceKeyChunks, rows);
                 } else {
-                    getKeyChunks(probeSources, pc.getContexts, sourceKeyChunks, chunkOk);
+                    getKeyChunks(probeSources, pc.getContexts, sourceKeyChunks, rows);
                 }
 
-                handler.doProbe(chunkOk, sourceKeyChunks);
+                handler.doProbe(rows, sourceKeyChunks);
 
                 pc.resetSharedContexts();
             }

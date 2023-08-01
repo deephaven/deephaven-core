@@ -16,15 +16,13 @@ import io.deephaven.engine.table.impl.multijoin.StaticMultiJoinStateManagerTyped
 import io.deephaven.engine.table.impl.perf.QueryPerformanceRecorder;
 import io.deephaven.engine.table.impl.sources.RedirectedColumnSource;
 import io.deephaven.engine.table.impl.sources.ReinterpretUtils;
+import io.deephaven.engine.table.impl.util.RowRedirection;
 import io.deephaven.engine.table.impl.util.SingleValueRowRedirection;
-import io.deephaven.engine.table.impl.util.WritableRowRedirection;
 import io.deephaven.engine.table.impl.util.WritableSingleValueRowRedirection;
 import io.deephaven.engine.updategraph.NotificationQueue;
 import io.deephaven.engine.updategraph.UpdateGraph;
-import io.deephaven.internal.log.LoggerFactory;
-import io.deephaven.io.logger.Logger;
 import io.deephaven.util.SafeCloseable;
-import io.deephaven.util.annotations.TestUseOnly;
+import io.deephaven.util.annotations.VisibleForTesting;
 import org.jetbrains.annotations.NotNull;
 
 import java.util.*;
@@ -38,9 +36,120 @@ public class MultiJoinTableImpl implements MultiJoinTable {
     private static final int KEY_COLUMN_SENTINEL = -2;
     private final Table table;
 
-    private final Collection<String> keyColumns;
+    private final List<String> keyColumns;
 
-    @TestUseOnly
+    private class JoinInputHelper {
+        Table table;
+
+        /** The output column keys in in order provided by the MutiJoinInput */
+        final String[] keyColumnNames;
+        /** The input column keys in in order provided by the MutiJoinInput */
+        final String[] originalKeyColumnNames;
+        /** The output non-key columns in in order provided by the MutiJoinInput */
+        final String[] addColumnNames;
+        /** The input non-key columns in in order provided by the MutiJoinInput */
+        final String[] originalAddColumnNames;
+
+        final Map<String, ColumnSource<?>> keySourceMap;
+        final Map<String, ColumnSource<?>> originalKeySourceMap;
+
+        final JoinAddition[] columnsToAdd;
+
+        JoinInputHelper(@NotNull MultiJoinInput input) {
+            table = input.inputTable();
+
+            final int matchCount = input.columnsToMatch().length;
+
+            // Create the ordered list of input as well as the deterministic order from the hashmap.
+            keyColumnNames = new String[matchCount];
+            originalKeyColumnNames = new String[matchCount];
+
+            keySourceMap = new HashMap<>(input.columnsToMatch().length);
+            originalKeySourceMap = new HashMap<>(input.columnsToMatch().length);
+
+            for (int ii = 0; ii < matchCount; ii++) {
+                final JoinMatch jm = input.columnsToMatch()[ii];
+                final String left = jm.left().name();
+                final String right = jm.right().name();
+
+                keyColumnNames[ii] = left;
+                originalKeyColumnNames[ii] = right;
+
+                keySourceMap.put(left, ReinterpretUtils.maybeConvertToPrimitive(table.getColumnSource(right)));
+                originalKeySourceMap.put(left, table.getColumnSource(right));
+            }
+
+            // Create the lists of addition columns (or use every non-key column if unspecified).
+            if (input.columnsToAdd().length == 0) {
+                // Compare against the input table key column names (not output).
+                final Set<String> keys = new HashSet<>(Arrays.asList(originalKeyColumnNames));
+                // create them on the fly from the table
+                columnsToAdd = input.inputTable().getDefinition().getColumnNames().stream()
+                        .filter(cn -> !keys.contains(cn)).map(ColumnName::of)
+                        .toArray(JoinAddition[]::new);
+            } else {
+                columnsToAdd = input.columnsToAdd();
+            }
+
+            addColumnNames = new String[columnsToAdd.length];
+            originalAddColumnNames = new String[columnsToAdd.length];
+            for (int ii = 0; ii < columnsToAdd.length; ii++) {
+                final JoinAddition ja = columnsToAdd[ii];
+                addColumnNames[ii] = ja.newColumn().name();
+                originalAddColumnNames[ii] = ja.existingColumn().name();
+            }
+        }
+
+        void assertCompatible(@NotNull JoinInputHelper helper, int tableNumber) {
+            // Verify the key column names.
+            if (!keySourceMap.keySet().equals(helper.keySourceMap.keySet())) {
+                throw new IllegalArgumentException(
+                        String.format(
+                                "Key column mismatch for table %d, first table has key columns=%s, this table has %s",
+                                tableNumber, helper.keySourceMap.keySet(), keySourceMap.keySet()));
+            }
+            // Verify matching column types (using key order from hashmaps).
+            final Collection<Class<?>> currentColumnTypes =
+                    keySourceMap.values().stream().map(ColumnSource::getType).collect(Collectors.toSet());
+            final Collection<Class<?>> expectedColumnTypes =
+                    helper.keySourceMap.values().stream().map(ColumnSource::getType).collect(Collectors.toSet());
+            if (!currentColumnTypes.equals(expectedColumnTypes)) {
+                throw new IllegalArgumentException(
+                        String.format(
+                                "Key column type mismatch for table %d, first table has key column types=%s, this table has %s",
+                                tableNumber, expectedColumnTypes, currentColumnTypes));
+            }
+            // Verify matching column component types (using key order from hashmaps).
+            final Collection<Class<?>> currentComponentTypes =
+                    keySourceMap.values().stream().map(ColumnSource::getComponentType).collect(Collectors.toSet());
+            final Collection<Class<?>> expectedComponentTypes =
+                    helper.keySourceMap.values().stream().map(ColumnSource::getComponentType)
+                            .collect(Collectors.toSet());
+            if (!currentComponentTypes.equals(expectedComponentTypes)) {
+                throw new IllegalArgumentException(String.format(
+                        "Key column component type mismatch for table %d, first table has key column component types=%s, this table has %s",
+                        tableNumber, expectedComponentTypes, currentComponentTypes));
+            }
+        }
+
+        ColumnSource<?>[] keySources(final String[] columns) {
+            return Arrays.stream(columns).map(keySourceMap::get).toArray(ColumnSource<?>[]::new);
+        }
+
+        ColumnSource<?>[] keySources() {
+            return keySources(keyColumnNames);
+        }
+
+        ColumnSource<?>[] originalKeySources(final String[] columns) {
+            return Arrays.stream(columns).map(originalKeySourceMap::get).toArray(ColumnSource<?>[]::new);
+        }
+
+        ColumnSource<?>[] originalKeySources() {
+            return originalKeySources(keyColumnNames);
+        }
+    }
+
+    @VisibleForTesting
     static MultiJoinTableImpl of(@NotNull final JoinControl joinControl,
             @NotNull final MultiJoinInput... multiJoinInputs) {
 
@@ -76,68 +185,28 @@ public class MultiJoinTableImpl implements MultiJoinTable {
     private MultiJoinTableImpl(@NotNull final JoinControl joinControl,
             @NotNull final MultiJoinInput... multiJoinInputs) {
         keyColumns = new ArrayList<>();
-        if (multiJoinInputs[0].columnsToMatch().length == 0) {
-            table = doMultiJoinZeroKey(multiJoinInputs);
-            return;
-        }
-        table = multiJoin(joinControl, multiJoinInputs);
-    }
 
-    private Table multiJoin(@NotNull final JoinControl joinControl,
-            @NotNull final MultiJoinInput... multiJoinInputs) {
+        // Create the join input helpers we'll use during the join creation phase.
+        final JoinInputHelper[] joinInputHelpers =
+                Arrays.stream(multiJoinInputs).map(JoinInputHelper::new).toArray(JoinInputHelper[]::new);
         final TObjectIntHashMap<String> usedColumns =
-                new TObjectIntHashMap<>(multiJoinInputs[0].columnsToAdd().length, 0.5f, -1);
+                new TObjectIntHashMap<>(joinInputHelpers[0].columnsToAdd.length, 0.5f, -1);
 
-        final ColumnSource<?>[] firstKeySources = getKeySources(multiJoinInputs[0]);
-        final ColumnSource<?>[] originalColumns = getOriginalKeyColumns(multiJoinInputs[0]);
-
-        // Gather and verify the key columns
-        final List<String> expectedLeftMatches =
-                ColumnName.names(JoinMatch.lefts(Arrays.asList(multiJoinInputs[0].columnsToMatch())));
-        keyColumns.addAll(expectedLeftMatches);
-        for (final String keyColumn : expectedLeftMatches) {
-            usedColumns.put(keyColumn, KEY_COLUMN_SENTINEL);
+        for (String keyColName : joinInputHelpers[0].keyColumnNames) {
+            keyColumns.add(keyColName);
+            usedColumns.put(keyColName, KEY_COLUMN_SENTINEL);
         }
 
-        final Class<?>[] expectedColumnTypes = Arrays.stream(firstKeySources)
-                .map(ColumnSource::getType).toArray(Class<?>[]::new);
-        final Class<?>[] expectedComponentTypes = Arrays.stream(firstKeySources)
-                .map(ColumnSource::getComponentType).toArray(Class<?>[]::new);
-
-        for (int ii = 1; ii < multiJoinInputs.length; ++ii) {
-            ColumnSource[] currentKeySources = getKeySources(multiJoinInputs[ii]);
-            // Verify matching column names.
-            final List<String> currentLeftMatches =
-                    ColumnName.names(JoinMatch.lefts(Arrays.asList(multiJoinInputs[ii].columnsToMatch())));
-            if (!currentLeftMatches.equals(expectedLeftMatches)) {
-                throw new IllegalArgumentException(
-                        String.format("Key column mismatch for table %d, first key columns=%s table has %s", ii,
-                                expectedLeftMatches, currentLeftMatches));
-            }
-            // Verify matching column and component types
-            final Class<?>[] currentColumnTypes = Arrays.stream(currentKeySources)
-                    .map(ColumnSource::getType).toArray(Class<?>[]::new);
-            final Class<?>[] currentComponentTypes = Arrays.stream(currentKeySources)
-                    .map(ColumnSource::getComponentType).toArray(Class<?>[]::new);
-            if (!Arrays.equals(currentColumnTypes, expectedColumnTypes)) {
-                throw new IllegalArgumentException(
-                        String.format("Key column type mismatch for table %d, first key columns types=%s table has %s",
-                                ii, Arrays.toString(expectedColumnTypes), Arrays.toString(currentColumnTypes)));
-            }
-            if (!Arrays.equals(currentComponentTypes, expectedComponentTypes)) {
-                throw new IllegalArgumentException(String.format(
-                        "Key column component type mismatch for table %d, first key columns component types=%s table has %s",
-                        ii, Arrays.toString(expectedComponentTypes), Arrays.toString(currentComponentTypes)));
-            }
+        for (int ii = 1; ii < joinInputHelpers.length; ++ii) {
+            // Verify this input table is compatible with the first table.
+            joinInputHelpers[ii].assertCompatible(joinInputHelpers[0], ii);
         }
 
         // Gather and verify the non-key output columns
-        final MultiJoinInput[] useJoinInputs = Arrays.copyOf(multiJoinInputs, multiJoinInputs.length);
-        for (int ii = 0; ii < multiJoinInputs.length; ++ii) {
-            final MultiJoinInput joinInput = maybePopulateColumnsToAdd(keyColumns, useJoinInputs, ii);
-            for (int cc = 0; cc < joinInput.columnsToAdd().length; ++cc) {
+        for (int ii = 0; ii < joinInputHelpers.length; ++ii) {
+            JoinInputHelper helper = joinInputHelpers[ii];
+            for (String columnName : helper.addColumnNames) {
                 // Verify unique output column names.
-                final String columnName = joinInput.columnsToAdd()[cc].newColumn().name();
                 final int previouslyUsed = usedColumns.put(columnName, ii);
                 if (previouslyUsed != usedColumns.getNoEntryValue()) {
                     throw new IllegalArgumentException(String.format("Column %s defined in table %s and table %d",
@@ -148,56 +217,70 @@ public class MultiJoinTableImpl implements MultiJoinTable {
             }
         }
 
+        if (multiJoinInputs[0].columnsToMatch().length == 0) {
+            table = doMultiJoinZeroKey(joinInputHelpers, usedColumns);
+            return;
+        }
+        table = bucketedMultiJoin(joinControl, joinInputHelpers, usedColumns);
+    }
+
+    private Table bucketedMultiJoin(@NotNull final JoinControl joinControl,
+            @NotNull final JoinInputHelper[] joinInputHelpers,
+            @NotNull final TObjectIntHashMap<String> usedColumns) {
 
         final MultiJoinStateManager stateManager;
+        final String[] firstKeyColumnNames = joinInputHelpers[0].keyColumnNames;
 
         // If any tables are refreshing, we must use a refreshing JoinManager.
-        final boolean refreshing = Arrays.stream(multiJoinInputs).anyMatch(jd -> jd.inputTable().isRefreshing());
+        final boolean refreshing = Arrays.stream(joinInputHelpers).anyMatch(ih -> ih.table.isRefreshing());
         if (refreshing) {
             stateManager = TypedHasherFactory.make(IncrementalMultiJoinStateManagerTypedBase.class,
-                    firstKeySources, originalColumns,
+                    joinInputHelpers[0].keySources(),
+                    joinInputHelpers[0].originalKeySources(),
                     joinControl.initialBuildSize(), joinControl.getMaximumLoadFactor(),
                     joinControl.getTargetLoadFactor());
-
         } else {
             stateManager = TypedHasherFactory.make(StaticMultiJoinStateManagerTypedBase.class,
-                    firstKeySources, originalColumns,
+                    joinInputHelpers[0].keySources(),
+                    joinInputHelpers[0].originalKeySources(),
                     joinControl.initialBuildSize(), joinControl.getMaximumLoadFactor(),
                     joinControl.getTargetLoadFactor());
         }
         stateManager.setMaximumLoadFactor(joinControl.getMaximumLoadFactor());
         stateManager.setTargetLoadFactor(joinControl.getTargetLoadFactor());
-        stateManager.ensureTableCapacity(useJoinInputs.length);
+        stateManager.ensureTableCapacity(joinInputHelpers.length);
 
-        for (int tableNumber = 0; tableNumber < useJoinInputs.length; ++tableNumber) {
-            final MultiJoinInput joinInput = useJoinInputs[tableNumber];
-            final ColumnSource<?>[] keySources = getKeySources(joinInput);
-            stateManager.build(joinInput.inputTable(), keySources, tableNumber);
+        for (int tableNumber = 0; tableNumber < joinInputHelpers.length; ++tableNumber) {
+            stateManager.build(
+                    joinInputHelpers[tableNumber].table,
+                    joinInputHelpers[tableNumber].keySources(firstKeyColumnNames),
+                    tableNumber);
         }
 
         final Map<String, ColumnSource<?>> resultSources = new LinkedHashMap<>();
+
         final ColumnSource[] keyHashTableSources = stateManager.getKeyHashTableSources();
-        for (int cc = 0; cc < expectedLeftMatches.size(); ++cc) {
+        final ColumnSource[] originalColumns = joinInputHelpers[0].originalKeySources();
+
+        // We are careful to add the output columns in the order from the first table input.
+        for (int cc = 0; cc < keyColumns.size(); ++cc) {
             if (originalColumns[cc].getType() != keyHashTableSources[cc].getType()) {
-                resultSources.put(expectedLeftMatches.get(cc),
+                resultSources.put(keyColumns.get(cc),
                         ReinterpretUtils.convertToOriginalType(originalColumns[cc], keyHashTableSources[cc]));
             } else {
-                resultSources.put(expectedLeftMatches.get(cc), keyHashTableSources[cc]);
+                resultSources.put(keyColumns.get(cc), keyHashTableSources[cc]);
             }
         }
 
-        for (int tableNumber = 0; tableNumber < useJoinInputs.length; ++tableNumber) {
-            final MultiJoinInput joinInput = useJoinInputs[tableNumber];
-
-            final WritableRowRedirection rowRedirection = stateManager.getRowRedirectionForTable(tableNumber);
+        for (int tableNumber = 0; tableNumber < joinInputHelpers.length; ++tableNumber) {
+            final RowRedirection rowRedirection = stateManager.getRowRedirectionForTable(tableNumber);
             if (refreshing) {
-                rowRedirection.startTrackingPrevValues();
+                rowRedirection.writableCast().startTrackingPrevValues();
             }
-            final Table inputTable = joinInput.inputTable();
-
-            for (final JoinAddition ja : joinInput.columnsToAdd()) {
+            final JoinInputHelper helper = joinInputHelpers[tableNumber];
+            for (final JoinAddition ja : helper.columnsToAdd) {
                 resultSources.put(ja.newColumn().name(), RedirectedColumnSource.alwaysRedirect(rowRedirection,
-                        inputTable.getColumnSource(ja.existingColumn().name())));
+                        helper.table.getColumnSource(ja.existingColumn().name())));
             }
         }
 
@@ -205,10 +288,8 @@ public class MultiJoinTableImpl implements MultiJoinTable {
                 new QueryTable(RowSetFactory.flat(stateManager.getResultSize()).toTracking(), resultSources);
 
         if (refreshing) {
-            final ModifiedColumnSet[] resultModifiedColumnSet = new ModifiedColumnSet[useJoinInputs.length];
-            final List<MultiJoinListenerRecorder> listenerRecorders = Collections.synchronizedList(new ArrayList<>());
-
-            final Logger log = LoggerFactory.getLogger(MultiJoinTableImpl.class);
+            final ModifiedColumnSet[] resultModifiedColumnSet = new ModifiedColumnSet[joinInputHelpers.length];
+            final List<MultiJoinListenerRecorder> listenerRecorders = new ArrayList<>();
 
             final MergedListener mergedListener = new MultiJoinMergedListener(
                     (IncrementalMultiJoinStateManagerTypedBase) stateManager,
@@ -218,94 +299,47 @@ public class MultiJoinTableImpl implements MultiJoinTable {
                     result,
                     resultModifiedColumnSet);
 
-            for (int ii = 0; ii < useJoinInputs.length; ++ii) {
-                final MultiJoinInput jd = useJoinInputs[ii];
-                if (jd.inputTable().isRefreshing()) {
-                    final QueryTable input = (QueryTable) jd.inputTable();
-                    final ColumnSource<?>[] keySources = getKeySources(jd);
+            for (int ii = 0; ii < joinInputHelpers.length; ++ii) {
+                final JoinInputHelper joinInput = joinInputHelpers[ii];
+                if (joinInput.table.isRefreshing()) {
+                    final QueryTable input = (QueryTable) joinInput.table;
+                    final ColumnSource<?>[] keySources = joinInput.keySources(firstKeyColumnNames);
 
-
-                    final String[] matchNames =
-                            Arrays.stream(jd.columnsToMatch()).map(v -> v.right().name()).toArray(String[]::new);
                     final ModifiedColumnSet sourceKeyModifiedColumnSet =
-                            input.newModifiedColumnSet(matchNames);
+                            input.newModifiedColumnSet(joinInput.originalKeyColumnNames);
+                    final ModifiedColumnSet sourceAdditionModifiedColumnSet =
+                            input.newModifiedColumnSet(joinInput.originalAddColumnNames);
 
-                    final String[] addNames =
-                            Arrays.stream(jd.columnsToAdd()).map(v -> v.newColumn().name()).toArray(String[]::new);
                     resultModifiedColumnSet[ii] =
-                            result.newModifiedColumnSet(addNames);
+                            result.newModifiedColumnSet(joinInput.addColumnNames);
+                    final MatchPair[] pairs = MatchPair.fromAddition(Arrays.asList(joinInput.columnsToAdd));
                     final ModifiedColumnSet.Transformer transformer =
-                            input.newModifiedColumnSetTransformer(result, addNames);
+                            input.newModifiedColumnSetTransformer(result, pairs);
 
                     final MultiJoinListenerRecorder listenerRecorder =
-                            new MultiJoinListenerRecorder("multiJoin(" + ii + ")", input, result, keySources,
-                                    sourceKeyModifiedColumnSet, transformer, ii);
+                            new MultiJoinListenerRecorder("multiJoin(" + ii + ")", input, mergedListener, keySources,
+                                    sourceKeyModifiedColumnSet, sourceAdditionModifiedColumnSet, transformer, ii);
                     listenerRecorder.setMergedListener(mergedListener);
                     input.addUpdateListener(listenerRecorder);
                     listenerRecorders.add(listenerRecorder);
                 }
             }
-
             result.addParentReference(mergedListener);
         }
 
         return result;
     }
 
-    @NotNull
-    private static MultiJoinInput maybePopulateColumnsToAdd(
-            @NotNull final Collection<String> keyColumnNames,
-            @NotNull final MultiJoinInput[] multiJoinInputs, final int tableNumber) {
-        MultiJoinInput joinInput = multiJoinInputs[tableNumber];
-        JoinAddition[] columnsToAdd = joinInput.columnsToAdd();
-        if (columnsToAdd.length == 0) {
-            // create them on the fly from the table
-            final JoinAddition[] newColumnsToAdd = joinInput.inputTable().getDefinition().getColumnNames().stream()
-                    .filter(cn -> !keyColumnNames.contains(cn)).map(JoinAddition::parse)
-                    .toArray(JoinAddition[]::new);
-            joinInput = multiJoinInputs[tableNumber] =
-                    MultiJoinInput.of(joinInput.inputTable(),
-                            joinInput.columnsToMatch(),
-                            newColumnsToAdd);
-        }
-        return joinInput;
-    }
-
-    private static Table doMultiJoinZeroKey(@NotNull final MultiJoinInput... multiJoinInputs) {
-        final MultiJoinInput[] useJoinInputs = Arrays.copyOf(multiJoinInputs, multiJoinInputs.length);
-        final TObjectIntHashMap<String> usedColumns =
-                new TObjectIntHashMap<>(multiJoinInputs[0].columnsToAdd().length, 0.5f, -1);
-
-        for (int jj = 0; jj < multiJoinInputs.length; ++jj) {
-            MultiJoinInput joinInput = useJoinInputs[jj];
-
-            if (joinInput.columnsToMatch().length != 0) {
-                Collection<String> matches = Arrays.stream(joinInput.columnsToMatch())
-                        .map(v -> v.left().name() + "=" + v.right().name()).collect(Collectors.toList());
-                throw new IllegalArgumentException(
-                        "Key column mismatch for table " + jj + ", first table had no key columns this table has "
-                                + matches);
-            }
-
-            joinInput = maybePopulateColumnsToAdd(Collections.emptySet(), useJoinInputs, jj);
-            for (int cc = 0; cc < joinInput.columnsToAdd().length; ++cc) {
-                final String columnName = joinInput.columnsToAdd()[cc].newColumn().name();
-                final int previouslyUsed = usedColumns.put(columnName, jj);
-                if (previouslyUsed != usedColumns.getNoEntryValue()) {
-                    throw new IllegalArgumentException(
-                            "Column " + columnName + " defined in table " + previouslyUsed + " and table " + jj);
-                }
-            }
-        }
-
-        final SingleValueRowRedirection[] redirections = new SingleValueRowRedirection[multiJoinInputs.length];
-        final boolean refreshing = Arrays.stream(multiJoinInputs).anyMatch(jd -> jd.inputTable().isRefreshing());
+    private static Table doMultiJoinZeroKey(@NotNull final JoinInputHelper[] joinInputHelpers,
+            @NotNull final TObjectIntHashMap<String> usedColumns) {
+        final SingleValueRowRedirection[] redirections = new SingleValueRowRedirection[joinInputHelpers.length];
+        final boolean refreshing = Arrays.stream(joinInputHelpers).anyMatch(ih -> ih.table.isRefreshing());
 
         final Map<String, ColumnSource<?>> resultSources = new LinkedHashMap<>();
         boolean hasResults = false;
-        for (int tableNumber = 0; tableNumber < useJoinInputs.length; ++tableNumber) {
-            final MultiJoinInput joinInput = useJoinInputs[tableNumber];
-            final Table inputTable = joinInput.inputTable();
+        for (int tableNumber = 0; tableNumber < joinInputHelpers.length; ++tableNumber) {
+            final JoinInputHelper joinInput = joinInputHelpers[tableNumber];
+            final Table inputTable = joinInput.table;
 
             final long key;
             if (inputTable.size() == 0) {
@@ -317,14 +351,16 @@ public class MultiJoinTableImpl implements MultiJoinTable {
                 throw new IllegalStateException("Duplicate rows for table " + tableNumber + " on zero-key multiJoin.");
             }
 
-            final SingleValueRowRedirection rowRedirection =
-                    refreshing ? new WritableSingleValueRowRedirection(key) : new SingleValueRowRedirection(key);
+            final SingleValueRowRedirection rowRedirection;
             if (refreshing) {
+                rowRedirection = new WritableSingleValueRowRedirection(key);
                 rowRedirection.writableSingleValueCast().startTrackingPrevValues();
+            } else {
+                rowRedirection = new SingleValueRowRedirection(key);
             }
             redirections[tableNumber] = rowRedirection;
 
-            for (final JoinAddition ja : joinInput.columnsToAdd()) {
+            for (final JoinAddition ja : joinInput.columnsToAdd) {
                 resultSources.put(ja.newColumn().name(), RedirectedColumnSource.alwaysRedirect(rowRedirection,
                         inputTable.getColumnSource(ja.existingColumn().name())));
             }
@@ -333,10 +369,8 @@ public class MultiJoinTableImpl implements MultiJoinTable {
         final QueryTable result = new QueryTable(RowSetFactory.flat(hasResults ? 1 : 0).toTracking(), resultSources);
 
         if (refreshing) {
-            final ModifiedColumnSet[] resultModifiedColumnSet = new ModifiedColumnSet[useJoinInputs.length];
-            final List<MultiJoinListenerRecorder> listenerRecorders = Collections.synchronizedList(new ArrayList<>());
-
-            final Logger log = LoggerFactory.getLogger(MultiJoinTableImpl.class);
+            final ModifiedColumnSet[] resultModifiedColumnSet = new ModifiedColumnSet[joinInputHelpers.length];
+            final List<MultiJoinListenerRecorder> listenerRecorders = new ArrayList<>();
 
             final MergedListener mergedListener = new MultiJoinZeroKeyMergedListener(
                     listenerRecorders,
@@ -346,66 +380,53 @@ public class MultiJoinTableImpl implements MultiJoinTable {
                     resultModifiedColumnSet,
                     redirections);
 
-            for (int ii = 0; ii < useJoinInputs.length; ++ii) {
-                final MultiJoinInput jd = useJoinInputs[ii];
-                if (jd.inputTable().isRefreshing()) {
-                    final QueryTable input = (QueryTable) jd.inputTable();
+            for (int ii = 0; ii < joinInputHelpers.length; ++ii) {
+                final JoinInputHelper joinInput = joinInputHelpers[ii];
+                if (joinInput.table.isRefreshing()) {
+                    final QueryTable input = (QueryTable) joinInput.table;
 
-                    final String[] addNames =
-                            Arrays.stream(jd.columnsToAdd()).map(v -> v.newColumn().name()).toArray(String[]::new);
+                    final ModifiedColumnSet sourceAdditionModifiedColumnSet =
+                            input.newModifiedColumnSet(joinInput.originalAddColumnNames);
+
                     resultModifiedColumnSet[ii] =
-                            result.newModifiedColumnSet(addNames);
+                            result.newModifiedColumnSet(joinInput.addColumnNames);
+                    final MatchPair[] pairs = MatchPair.fromAddition(Arrays.asList(joinInput.columnsToAdd));
                     final ModifiedColumnSet.Transformer transformer =
-                            input.newModifiedColumnSetTransformer(result, addNames);
+                            input.newModifiedColumnSetTransformer(result, pairs);
 
                     final MultiJoinListenerRecorder listenerRecorder = new MultiJoinListenerRecorder(
-                            "multiJoin(" + ii + ")", input, result, null, null, transformer, ii);
+                            "multiJoin(" + ii + ")", input, mergedListener, null, null, sourceAdditionModifiedColumnSet,
+                            transformer, ii);
                     listenerRecorder.setMergedListener(mergedListener);
                     input.addUpdateListener(listenerRecorder);
                     listenerRecorders.add(listenerRecorder);
                 }
             }
-
             result.addParentReference(mergedListener);
-
         }
 
         return result;
     }
 
-    @NotNull
-    private static ColumnSource[] getKeySources(@NotNull final MultiJoinInput joinInputs) {
-        return Arrays.stream(joinInputs.columnsToMatch())
-                .map(jm -> ReinterpretUtils
-                        .maybeConvertToPrimitive(joinInputs.inputTable().getColumnSource(jm.right().name())))
-                .toArray(ColumnSource[]::new);
-    }
-
-    @NotNull
-
-    private static ColumnSource<?>[] getOriginalKeyColumns(
-            @NotNull final MultiJoinInput joinInput) {
-        return Arrays.stream(joinInput.columnsToMatch())
-                .map(jm -> joinInput.inputTable().getColumnSource(jm.right().name()))
-                .toArray(ColumnSource<?>[]::new);
-    }
-
     private static class MultiJoinListenerRecorder extends ListenerRecorder {
         private final ColumnSource<?>[] keyColumns;
         private final ModifiedColumnSet sourceKeyModifiedColumnSet;
+        private final ModifiedColumnSet sourceAdditionModifiedColumnSet;
         private final ModifiedColumnSet.Transformer transformer;
         private final int tableNumber;
 
         public MultiJoinListenerRecorder(@NotNull final String description,
                 @NotNull final QueryTable parent,
-                @NotNull final QueryTable dependent,
+                @NotNull final MergedListener dependent,
                 final ColumnSource<?>[] keyColumns,
                 final ModifiedColumnSet sourceKeyModifiedColumnSet,
+                final ModifiedColumnSet sourceAdditionModifiedColumnSet,
                 @NotNull final ModifiedColumnSet.Transformer transformer,
                 final int tableNumber) {
             super(description, parent, dependent);
             this.keyColumns = keyColumns;
             this.sourceKeyModifiedColumnSet = sourceKeyModifiedColumnSet;
+            this.sourceAdditionModifiedColumnSet = sourceAdditionModifiedColumnSet;
             this.transformer = transformer;
             this.tableNumber = tableNumber;
         }
@@ -436,8 +457,10 @@ public class MultiJoinTableImpl implements MultiJoinTable {
 
         @Override
         protected void process() {
+            final int tableCount = stateManager.getTableCount();
+
             slotTracker.clear();
-            slotTracker.ensureTableCapacity(stateManager.getTableCount());
+            slotTracker.ensureTableCapacity(tableCount);
 
             final long originalSize = stateManager.getResultSize();
 
@@ -468,17 +491,22 @@ public class MultiJoinTableImpl implements MultiJoinTable {
                     }
 
                     if (!keysModified && recorder.getModified().isNonempty()) {
-                        stateManager.processModified(recorder.getModified(), recorder.keyColumns, recorder.tableNumber,
+                        // If none of our input columns changed, we have no modifications to pass downstream.
+                        if (recorder.getModifiedColumnSet().containsAny(recorder.sourceAdditionModifiedColumnSet)) {
+                            stateManager.processModified(recorder.getModified(), recorder.keyColumns,
+                                    recorder.tableNumber,
+                                    slotTracker, FLAG_MODIFY);
+                        }
+                    }
+
+                    if (keysModified) {
+                        stateManager.processAdded(recorder.getModified(), recorder.keyColumns, recorder.tableNumber,
                                 slotTracker, FLAG_MODIFY);
                     }
 
                     if (recorder.getAdded().isNonempty()) {
                         stateManager.processAdded(recorder.getAdded(), recorder.keyColumns, recorder.tableNumber,
                                 slotTracker, FLAG_ADD);
-                    }
-                    if (keysModified) {
-                        stateManager.processAdded(recorder.getModified(), recorder.keyColumns, recorder.tableNumber,
-                                slotTracker, FLAG_MODIFY);
                     }
                 }
             }
@@ -494,13 +522,13 @@ public class MultiJoinTableImpl implements MultiJoinTable {
                 downstream.added = RowSetFactory.empty();
             }
 
-            final long[] currentRedirections = new long[stateManager.getTableCount()];
-            final boolean[] modifiedTables = new boolean[stateManager.getTableCount()];
-            final boolean[] modifiedTablesOnThisRow = new boolean[stateManager.getTableCount()];
+            final long[] currentRedirections = new long[tableCount];
+            final boolean[] modifiedTables = new boolean[tableCount];
+            final boolean[] modifiedTablesOnThisRow = new boolean[tableCount];
 
             final RowSetBuilderRandom modifiedBuilder = RowSetFactory.builderRandom();
-            final RowSetBuilderRandom removedBuilder = RowSetFactory.builderRandom();
-            final RowSetBuilderRandom addedBuilder = RowSetFactory.builderRandom();
+            final RowSetBuilderRandom emptiedBuilder = RowSetFactory.builderRandom();
+            final RowSetBuilderRandom reincarnatedBuilder = RowSetFactory.builderRandom();
 
             downstream.modifiedColumnSet = result.getModifiedColumnSetForUpdates();
             downstream.modifiedColumnSet.clear();
@@ -508,7 +536,7 @@ public class MultiJoinTableImpl implements MultiJoinTable {
             final byte notShift = (FLAG_ADD | FLAG_REMOVE | FLAG_MODIFY);
             final byte addOrRemove = (FLAG_ADD | FLAG_REMOVE);
 
-            slotTracker.forAllModifiedSlots((slot, originalValues, flagValues) -> {
+            slotTracker.forAllModifiedSlots((slot, previousRedirections, flagValues) -> {
                 if (slot >= originalSize) {
                     return;
                 }
@@ -517,33 +545,35 @@ public class MultiJoinTableImpl implements MultiJoinTable {
                 boolean rowModified = false;
                 int numberOfOriginalNulls = 0;
                 Arrays.fill(modifiedTablesOnThisRow, false);
-                for (int ii = 0; ii < currentRedirections.length; ++ii) {
-                    if (currentRedirections[ii] != NULL_ROW_KEY) {
+                for (int tableNumber = 0; tableNumber < tableCount; ++tableNumber) {
+                    if (currentRedirections[tableNumber] != NULL_ROW_KEY) {
                         allNull = false;
                     }
-                    if (originalValues[ii] == NULL_ROW_KEY) {
+                    if (previousRedirections[tableNumber] == NULL_ROW_KEY) {
                         numberOfOriginalNulls++;
                     }
-                    if (originalValues[ii] == MultiJoinModifiedSlotTracker.SENTINEL_UNINITIALIZED_KEY) {
-                        if (currentRedirections[ii] == NULL_ROW_KEY) {
+                    if (previousRedirections[tableNumber] == MultiJoinModifiedSlotTracker.SENTINEL_UNINITIALIZED_KEY) {
+                        if (currentRedirections[tableNumber] == NULL_ROW_KEY) {
                             numberOfOriginalNulls++;
                         }
-                        rowModified |= (flagValues[ii] & notShift) != 0;
+                        rowModified |= (flagValues[tableNumber] & notShift) != 0;
                     } else {
                         // If the redirection has changed and we have done anything other than a shift, we must light
                         // up all the columns for the table as a modification. Similarly, if the row was added and
                         // deleted from the original table, then we must also light up all the columns as modified.
-                        if ((flagValues[ii] & addOrRemove) != 0 || currentRedirections[ii] != originalValues[ii]) {
-                            rowModified |= (modifiedTablesOnThisRow[ii] = (flagValues[ii] & notShift) != 0);
+                        if ((flagValues[tableNumber] & addOrRemove) != 0
+                                || currentRedirections[tableNumber] != previousRedirections[tableNumber]) {
+                            rowModified |=
+                                    (modifiedTablesOnThisRow[tableNumber] = (flagValues[tableNumber] & notShift) != 0);
                         } else {
-                            rowModified |= (flagValues[ii] & notShift) != 0;
+                            rowModified |= (flagValues[tableNumber] & notShift) != 0;
                         }
                     }
                 }
                 if (allNull) {
-                    removedBuilder.addKey(slot);
+                    emptiedBuilder.addKey(slot);
                 } else if (numberOfOriginalNulls == currentRedirections.length) {
-                    addedBuilder.addKey(slot);
+                    reincarnatedBuilder.addKey(slot);
                 } else if (rowModified) {
                     modifiedBuilder.addKey(slot);
 
@@ -561,36 +591,34 @@ public class MultiJoinTableImpl implements MultiJoinTable {
             } else {
                 int listenerIndex = 0;
                 for (int ii = 0; ii < modifiedTables.length; ++ii) {
-                    MultiJoinListenerRecorder recorder =
-                            listenerIndex >= recorders.size() ? null : recorders.get(listenerIndex);
-                    if (modifiedTables[ii]) {
-                        downstream.modifiedColumnSet.setAll(modifiedColumnSets[ii]);
-                        if (recorder != null && recorder.tableNumber == ii) {
-                            listenerIndex++;
-                        }
-                    } else {
-                        // If we have not had any cells which are remapped, but we did have any modified rows then we
-                        // need to light up all the result columns, because we know that the modified row in the input
-                        // table must map to a row in the output table.
-                        if (recorder != null && recorder.tableNumber == ii) {
-                            if (recorder.getModified().isNonempty()) {
-                                recorder.transformer.transform(recorder.getModifiedColumnSet(),
-                                        downstream.modifiedColumnSet);
-                            }
-                            listenerIndex++;
-                        }
+                    MultiJoinListenerRecorder recorder = listenerIndex >= recorders.size()
+                            ? null
+                            : recorders.get(listenerIndex);
+                    if (recorder == null || recorder.tableNumber != ii) {
+                        // We have a static table, ignore it because it cannot modify anything.
+                        continue;
                     }
+                    if (modifiedTables[ii]) {
+                        // If this table had any rows that moved slots, or any removed/added slots, _all_ its columns
+                        // are modified.
+                        downstream.modifiedColumnSet.setAll(modifiedColumnSets[ii]);
+                    } else if (recorder.getModified().isNonempty()) {
+                        // If we have "in-place" modifications (same row, in the same slot), we need only mark the
+                        // _modified_ columns from this table modified in the downstream.
+                        recorder.transformer.transform(recorder.getModifiedColumnSet(), downstream.modifiedColumnSet);
+                    }
+                    listenerIndex++;
                 }
             }
-            downstream.removed = removedBuilder.build();
-            downstream.added.writableCast().insert(addedBuilder.build());
+            downstream.removed = emptiedBuilder.build();
+            downstream.added.writableCast().insert(reincarnatedBuilder.build());
 
             downstream.shifted = RowSetShiftData.EMPTY;
 
-            result.getRowSet().writableCast().remove(downstream.removed);
-            result.getRowSet().writableCast().insert(downstream.added);
-
-            result.notifyListeners(downstream);
+            if (!downstream.empty()) {
+                result.getRowSet().writableCast().update(downstream.added, downstream.removed);
+                result.notifyListeners(downstream);
+            }
         }
     }
 
@@ -631,8 +659,12 @@ public class MultiJoinTableImpl implements MultiJoinTable {
                                 .setValue(recorder.getParent().getRowSet().firstRowKey());
                         downstream.modifiedColumnSet.setAll(modifiedColumnSets[recorder.tableNumber]);
                     } else if (recorder.getModified().isNonempty()) {
-                        resultModified = true;
-                        recorder.transformer.transform(recorder.getModifiedColumnSet(), downstream.modifiedColumnSet);
+                        // If none of our input columns changed, we have no modifications to pass downstream.
+                        if (recorder.getModifiedColumnSet().containsAny(recorder.sourceAdditionModifiedColumnSet)) {
+                            resultModified = true;
+                            recorder.transformer.transform(recorder.getModifiedColumnSet(),
+                                    downstream.modifiedColumnSet);
+                        }
                         redirections[recorder.tableNumber].writableSingleValueCast()
                                 .setValue(recorder.getParent().getRowSet().firstRowKey());
                     } else if (recorder.getShifted().nonempty()) {
@@ -645,27 +677,30 @@ public class MultiJoinTableImpl implements MultiJoinTable {
             final boolean hasResults = Arrays.stream(redirections).anyMatch(rd -> rd.getValue() != NULL_ROW_KEY);
             if (hasResults && result.size() == 0) {
                 result.getRowSet().writableCast().insert(0);
-                downstream.added = RowSetFactory.fromKeys(0);
+                downstream.added = RowSetFactory.flat(1);
                 downstream.removed = RowSetFactory.empty();
                 downstream.modified = RowSetFactory.empty();
                 downstream.modifiedColumnSet = ModifiedColumnSet.EMPTY;
             } else if (!hasResults && result.size() == 1) {
                 result.getRowSet().writableCast().remove(0);
                 downstream.added = RowSetFactory.empty();
-                downstream.removed = RowSetFactory.fromKeys(0);
+                downstream.removed = RowSetFactory.flat(1);
                 downstream.modified = RowSetFactory.empty();
                 downstream.modifiedColumnSet = ModifiedColumnSet.EMPTY;
             } else {
                 downstream.added = RowSetFactory.empty();
                 downstream.removed = RowSetFactory.empty();
                 if (resultModified) {
-                    downstream.modified = RowSetFactory.fromKeys(0);
+                    downstream.modified = RowSetFactory.flat(1);
                 } else {
                     // this would be a useless update
                     return;
                 }
             }
-            result.notifyListeners(downstream);
+
+            if (!downstream.empty()) {
+                result.notifyListeners(downstream);
+            }
         }
     }
 }

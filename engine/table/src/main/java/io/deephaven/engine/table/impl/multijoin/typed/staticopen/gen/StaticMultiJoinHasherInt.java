@@ -35,7 +35,7 @@ final class StaticMultiJoinHasherInt extends StaticMultiJoinStateManagerTypedBas
         return (tableLocation + 1) & (tableSize - 1);
     }
 
-    protected void buildFromLeftSide(RowSequence rowSequence, Chunk[] sourceKeyChunks,
+    protected void buildFromTable(RowSequence rowSequence, Chunk[] sourceKeyChunks,
             LongArraySource tableRedirSource, long tableNumber) {
         final IntChunk<Values> keyChunk0 = sourceKeyChunks[0].asIntChunk();
         final int chunkSize = keyChunk0.size();

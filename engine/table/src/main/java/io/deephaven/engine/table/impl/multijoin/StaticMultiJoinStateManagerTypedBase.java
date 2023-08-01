@@ -17,11 +17,8 @@ import io.deephaven.engine.table.impl.sources.ArrayBackedColumnSource;
 import io.deephaven.engine.table.impl.sources.InMemoryColumnSource;
 import io.deephaven.engine.table.impl.sources.LongArraySource;
 import io.deephaven.engine.table.impl.sources.immutable.ImmutableLongArraySource;
-import io.deephaven.engine.table.impl.util.ChunkUtils;
-import io.deephaven.engine.table.impl.util.LongColumnSourceWritableRowRedirection;
-import io.deephaven.engine.table.impl.util.TypedHasherUtil;
+import io.deephaven.engine.table.impl.util.*;
 import io.deephaven.engine.table.impl.util.TypedHasherUtil.BuildOrProbeContext.BuildContext;
-import io.deephaven.engine.table.impl.util.WritableRowRedirection;
 import io.deephaven.util.QueryConstants;
 
 import java.util.ArrayList;
@@ -33,30 +30,32 @@ import static io.deephaven.engine.table.impl.util.TypedHasherUtil.getKeyChunks;
 
 public abstract class StaticMultiJoinStateManagerTypedBase implements MultiJoinStateManager {
     protected final ColumnSource<?>[] keySourcesForErrorMessages;
-    private final List<LongArraySource> indexSources = new ArrayList<>();
+    private final List<LongArraySource> redirectionSources = new ArrayList<>();
 
     public static final long NO_RIGHT_STATE_VALUE = RowSet.NULL_ROW_KEY;
     public static final long EMPTY_RIGHT_STATE = QueryConstants.NULL_LONG;
     public static final long DUPLICATE_RIGHT_STATE = -2;
 
-    // The number of slots in our hash table.
+    /** The number of slots in our hash table. */
     protected int tableSize;
 
-    // The number of entries in our hash table in use.
+    /** The number of entries in our hash table in use. */
     protected long numEntries = 0;
 
-    // The table will be rehashed to a load factor of targetLoadFactor if our loadFactor exceeds maximumLoadFactor
-    // or if it falls below minimum load factor we will instead contract the table.
+    /**
+     * The table will be rehashed to a load factor of targetLoadFactor if our loadFactor exceeds maximumLoadFactor or if
+     * it falls below minimum load factor we will instead contract the table.
+     */
     private final double maximumLoadFactor;
 
-    // The keys for our hash entries.
+    /** The keys for our hash entries. */
     protected final ChunkType[] chunkTypes;
     protected final WritableColumnSource[] mainKeySources;
 
-    // The output sources representing the keys of our joined table.
+    /** The output sources representing the keys of our joined table. */
     protected final WritableColumnSource[] outputKeySources;
 
-    // Store sentinel information and maps hash slots to output row keys.
+    /** Store sentinel information and maps hash slots to output row keys. */
     protected ImmutableLongArraySource slotToOutputRow = new ImmutableLongArraySource();
 
     protected StaticMultiJoinStateManagerTypedBase(ColumnSource<?>[] tableKeySources,
@@ -86,6 +85,7 @@ public abstract class StaticMultiJoinStateManagerTypedBase implements MultiJoinS
 
         this.maximumLoadFactor = maximumLoadFactor;
 
+        // Called only once, here in the constructor.
         ensureCapacity(tableSize);
     }
 
@@ -105,34 +105,33 @@ public abstract class StaticMultiJoinStateManagerTypedBase implements MultiJoinS
         if (table.isEmpty()) {
             return;
         }
-        final LongArraySource tableRedirSource = indexSources.get(tableNumber);
+        final LongArraySource tableRedirSource = redirectionSources.get(tableNumber);
         try (final BuildContext bc = makeBuildContext(keySources, table.size())) {
-            buildTable(bc, table.getRowSet(), keySources, new LeftBuildHandler(tableRedirSource, tableNumber));
+            buildTable(bc, table.getRowSet(), keySources, new BuildHandler(tableRedirSource, tableNumber));
         }
     }
 
-    private class LeftBuildHandler implements TypedHasherUtil.BuildHandler {
+    private class BuildHandler implements TypedHasherUtil.BuildHandler {
         final LongArraySource tableRedirSource;
         final long tableNumber;
 
-        private LeftBuildHandler(LongArraySource tableRedirSource, long tableNumber) {
+        private BuildHandler(LongArraySource tableRedirSource, long tableNumber) {
             this.tableRedirSource = tableRedirSource;
             this.tableNumber = tableNumber;
         }
 
         @Override
-        public void doBuild(RowSequence chunkOk, Chunk<Values>[] sourceKeyChunks) {
-            final long maxSize = numEntries + chunkOk.intSize();
-            slotToOutputRow.ensureCapacity(maxSize);
+        public void doBuild(RowSequence rows, Chunk<Values>[] sourceKeyChunks) {
+            final long maxSize = numEntries + rows.intSize();
             tableRedirSource.ensureCapacity(maxSize);
             for (WritableColumnSource src : outputKeySources) {
                 src.ensureCapacity(maxSize);
             }
-            buildFromLeftSide(chunkOk, sourceKeyChunks, tableRedirSource, tableNumber);
+            buildFromTable(rows, sourceKeyChunks, tableRedirSource, tableNumber);
         }
     }
 
-    protected abstract void buildFromLeftSide(RowSequence rowSequence, Chunk[] sourceKeyChunks,
+    protected abstract void buildFromTable(RowSequence rowSequence, Chunk[] sourceKeyChunks,
             LongArraySource tableRedirSource, long tableNumber);
 
     protected void buildTable(
@@ -145,13 +144,13 @@ public abstract class StaticMultiJoinStateManagerTypedBase implements MultiJoinS
             final Chunk<Values>[] sourceKeyChunks = new Chunk[buildSources.length];
 
             while (rsIt.hasMore()) {
-                final RowSequence chunkOk = rsIt.getNextRowSequenceWithLength(bc.chunkSize);
+                final RowSequence rows = rsIt.getNextRowSequenceWithLength(bc.chunkSize);
 
-                doRehash(chunkOk.intSize());
+                doRehash(rows.intSize());
 
-                getKeyChunks(buildSources, bc.getContexts, sourceKeyChunks, chunkOk);
+                getKeyChunks(buildSources, bc.getContexts, sourceKeyChunks, rows);
 
-                buildHandler.doBuild(chunkOk, sourceKeyChunks);
+                buildHandler.doBuild(rows, sourceKeyChunks);
 
                 bc.resetSharedContexts();
             }
@@ -181,7 +180,7 @@ public abstract class StaticMultiJoinStateManagerTypedBase implements MultiJoinS
         return hash & (tableSize - 1);
     }
 
-    // produce a pretty key for error messages
+    /** produce a pretty key for error messages. */
     protected String keyString(Chunk[] sourceKeyChunks, int chunkPosition) {
         return ChunkUtils.extractKeyStringFromChunks(chunkTypes, sourceKeyChunks, chunkPosition);
     }
@@ -198,15 +197,15 @@ public abstract class StaticMultiJoinStateManagerTypedBase implements MultiJoinS
 
     @Override
     public WritableRowRedirection getRowRedirectionForTable(int tableNumber) {
-        return new LongColumnSourceWritableRowRedirection(indexSources.get(tableNumber));
+        return new LongColumnSourceWritableRowRedirection(redirectionSources.get(tableNumber));
     }
 
     @Override
     public void ensureTableCapacity(int tables) {
-        while (indexSources.size() < tables) {
+        while (redirectionSources.size() < tables) {
             final LongArraySource newRedirection = new LongArraySource();
             newRedirection.ensureCapacity(numEntries);
-            indexSources.add(newRedirection);
+            redirectionSources.add(newRedirection);
         }
     }
 

@@ -35,7 +35,7 @@ final class StaticMultiJoinHasherDouble extends StaticMultiJoinStateManagerTyped
         return (tableLocation + 1) & (tableSize - 1);
     }
 
-    protected void buildFromLeftSide(RowSequence rowSequence, Chunk[] sourceKeyChunks,
+    protected void buildFromTable(RowSequence rowSequence, Chunk[] sourceKeyChunks,
             LongArraySource tableRedirSource, long tableNumber) {
         final DoubleChunk<Values> keyChunk0 = sourceKeyChunks[0].asDoubleChunk();
         final int chunkSize = keyChunk0.size();

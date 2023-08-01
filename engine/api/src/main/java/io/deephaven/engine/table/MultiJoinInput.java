@@ -12,7 +12,7 @@ import java.util.Collection;
 import java.util.Collections;
 
 /**
- * A descriptor of an input to a multiJoin.
+ * An input to a multiJoin.
  * <p>
  * The table, key columns, and columns to add are encapsulated in the join descriptor.
  */
@@ -20,7 +20,7 @@ import java.util.Collections;
 @SimpleStyle
 public abstract class MultiJoinInput {
     /**
-     * Create a multiJoin table descriptor.
+     * Create a multiJoin table input.
      *
      * @param inputTable The table to include in a multiJoin
      * @param columnsToMatch An array of {@link JoinMatch} specifying match conditions
@@ -33,9 +33,8 @@ public abstract class MultiJoinInput {
         return ImmutableMultiJoinInput.of(inputTable, columnsToMatch, columnsToAdd);
     }
 
-
     /**
-     * Create a multiJoin table descriptor.
+     * Create a multiJoin table input.
      *
      * @param inputTable The table to include in a multiJoin
      * @param columnsToMatch A collection of {@link JoinMatch} specifying the key columns
@@ -49,7 +48,7 @@ public abstract class MultiJoinInput {
     }
 
     /**
-     * Create a multiJoin table descriptor.
+     * Create a multiJoin table input.
      *
      * @param inputTable The table to include in a multiJoin
      * @param columnsToMatch The key columns, in string format (e.g. "ResultKey=SourceKey" or "KeyInBoth").
@@ -64,7 +63,7 @@ public abstract class MultiJoinInput {
     }
 
     /**
-     * Create a multiJoin table descriptor.
+     * Create a multiJoin table input.
      * <p>
      *
      * @param inputTable The table to include in a multiJoin
@@ -75,7 +74,7 @@ public abstract class MultiJoinInput {
     }
 
     /**
-     * Create a multiJoin table descriptor.
+     * Create a multiJoin table input.
      *
      * @param inputTable The table to include in a multiJoin
      * @param columnsToMatch A comma separated list of key columns, in string format (e.g. "ResultKey=SourceKey" or
@@ -94,7 +93,7 @@ public abstract class MultiJoinInput {
     }
 
     /**
-     * Create an array of multiJoin table descriptors with common keys; includes all non-key columns as output columns.
+     * Create an array of {@link MultiJoinInput} with common keys; includes all non-key columns as output columns.
      *
      * @param keys The key columns, common to all tables
      * @param inputTables An array of tables to include in the output

@@ -234,7 +234,7 @@ public class MultiJoinModifiedSlotTracker {
     }
 
     public interface ModifiedSlotConsumer {
-        void accept(long slot, long[] originalValues, byte[] flags);
+        void accept(long slot, long[] previousRedirections, byte[] flags);
     }
 
     void forAllModifiedSlots(ModifiedSlotConsumer slotConsumer) {
