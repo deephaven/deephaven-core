@@ -16,7 +16,7 @@ import java.nio.ByteBuffer;
 import java.time.Instant;
 import java.time.ZoneId;
 
-import static io.deephaven.util.QueryConstants.NULL_LONG_BOXED;
+import static io.deephaven.util.QueryConstants.NULL_LONG;
 
 /**
  * Parquet {@link ToPage} implementation for {@link Instant}s stored as Int96s representing an Impala
@@ -101,9 +101,7 @@ public class ToInstantPageFromInt96<ATTR extends Any> implements ToPage<ATTR, lo
                 resultLongs[ri] = (julianDate - JULIAN_OFFSET_TO_UNIX_EPOCH_DAYS) * (NANOS_PER_DAY) + nanos + offset;
             }
             else {
-                // TODO What is the difference between NULL_LONG and BOXED?
-                // BOXED version is used for int64 instants, so using the same here
-                resultLongs[ri] = NULL_LONG_BOXED;
+                resultLongs[ri] = NULL_LONG;
             }
         }
         return resultLongs;
