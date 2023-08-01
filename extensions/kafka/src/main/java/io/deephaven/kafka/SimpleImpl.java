@@ -88,12 +88,12 @@ class SimpleImpl {
         }
 
         @Override
-        public Optional<SchemaProvider> schemaProvider() {
+        public Optional<SchemaProvider> getSchemaProvider() {
             return Optional.empty();
         }
 
         @Override
-        Deserializer<?> deserializer(
+        Deserializer<?> getDeserializer(
                 KeyOrValue keyOrValue,
                 SchemaRegistryClient schemaRegistryClient,
                 Map<String, ?> configs) {
@@ -108,7 +108,7 @@ class SimpleImpl {
         }
 
         @Override
-        KeyOrValueIngestData ingestData(
+        KeyOrValueIngestData getIngestData(
                 KeyOrValue keyOrValue,
                 List<ColumnDefinition<?>> columnDefinitionsOut,
                 MutableInt nextColumnIndexMut,
@@ -226,12 +226,12 @@ class SimpleImpl {
         }
 
         @Override
-        public Optional<SchemaProvider> schemaProvider() {
+        public Optional<SchemaProvider> getSchemaProvider() {
             return Optional.empty();
         }
 
         @Override
-        Serializer<?> serializer(SchemaRegistryClient schemaRegistryClient, TableDefinition definition) {
+        Serializer<?> getSerializer(SchemaRegistryClient schemaRegistryClient, TableDefinition definition) {
             final Class<?> dataType = definition.getColumn(columnName).getDataType();
             final Serializer<?> serializer = SerDeserVisitor.serializer(Type.find(dataType)).orElse(null);
             if (serializer != null) {
@@ -247,7 +247,7 @@ class SimpleImpl {
         }
 
         @Override
-        KeyOrValueSerializer<?> keyOrValueSerializer(@NotNull Table t, @NotNull String[] columnNames) {
+        KeyOrValueSerializer<?> getKeyOrValueSerializer(@NotNull Table t, @NotNull String[] columnNames) {
             return new SimpleKeyOrValueSerializer<>(t, columnName);
         }
     }

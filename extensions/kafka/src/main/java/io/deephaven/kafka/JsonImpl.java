@@ -59,18 +59,18 @@ class JsonImpl {
         }
 
         @Override
-        public Optional<SchemaProvider> schemaProvider() {
+        public Optional<SchemaProvider> getSchemaProvider() {
             return Optional.empty();
         }
 
         @Override
-        Deserializer<?> deserializer(KeyOrValue keyOrValue, SchemaRegistryClient schemaRegistryClient,
+        Deserializer<?> getDeserializer(KeyOrValue keyOrValue, SchemaRegistryClient schemaRegistryClient,
                 Map<String, ?> configs) {
             return new StringDeserializer();
         }
 
         @Override
-        KeyOrValueIngestData ingestData(KeyOrValue keyOrValue,
+        KeyOrValueIngestData getIngestData(KeyOrValue keyOrValue,
                 List<ColumnDefinition<?>> columnDefinitionsOut, MutableInt nextColumnIndexMut,
                 SchemaRegistryClient schemaRegistryClient, Map<String, ?> configs) {
             final KeyOrValueIngestData data = new KeyOrValueIngestData();
@@ -167,12 +167,12 @@ class JsonImpl {
         }
 
         @Override
-        public Optional<SchemaProvider> schemaProvider() {
+        public Optional<SchemaProvider> getSchemaProvider() {
             return Optional.empty();
         }
 
         @Override
-        Serializer<?> serializer(SchemaRegistryClient schemaRegistryClient, TableDefinition definition) {
+        Serializer<?> getSerializer(SchemaRegistryClient schemaRegistryClient, TableDefinition definition) {
             return new StringSerializer();
         }
 
@@ -202,7 +202,7 @@ class JsonImpl {
         }
 
         @Override
-        KeyOrValueSerializer<?> keyOrValueSerializer(@NotNull Table t, @NotNull String[] columnNames) {
+        KeyOrValueSerializer<?> getKeyOrValueSerializer(@NotNull Table t, @NotNull String[] columnNames) {
             final String[] fieldNames = getFieldNames(columnNames);
             return new JsonKeyOrValueSerializer(
                     t, columnNames, fieldNames,

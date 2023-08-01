@@ -47,7 +47,6 @@ import io.deephaven.kafka.IgnoreImpl.IgnoreConsume;
 import io.deephaven.kafka.IgnoreImpl.IgnoreProduce;
 import io.deephaven.kafka.JsonImpl.JsonConsume;
 import io.deephaven.kafka.JsonImpl.JsonProduce;
-import io.deephaven.kafka.KafkaTools.Produce.KeyOrValueSpec;
 import io.deephaven.kafka.KafkaTools.StreamConsumerRegistrarProvider.PerPartition;
 import io.deephaven.kafka.KafkaTools.StreamConsumerRegistrarProvider.Single;
 import io.deephaven.kafka.KafkaTools.TableType.Append;
@@ -240,8 +239,8 @@ public class KafkaTools {
         IGNORE, SIMPLE, AVRO, JSON, RAW
     }
 
-    private interface GetSchemaProvider {
-        Optional<SchemaProvider> schemaProvider();
+    private interface SchemaProviderProvider {
+        Optional<SchemaProvider> getSchemaProvider();
     }
 
     public static class Consume {
@@ -249,14 +248,14 @@ public class KafkaTools {
         /**
          * Class to specify conversion of Kafka KEY or VALUE fields to table columns.
          */
-        public static abstract class KeyOrValueSpec implements GetSchemaProvider {
+        public static abstract class KeyOrValueSpec implements SchemaProviderProvider {
 
-            abstract Deserializer<?> deserializer(
+            abstract Deserializer<?> getDeserializer(
                     KeyOrValue keyOrValue,
                     SchemaRegistryClient schemaRegistryClient,
                     Map<String, ?> configs);
 
-            abstract KeyOrValueIngestData ingestData(
+            abstract KeyOrValueIngestData getIngestData(
                     KeyOrValue keyOrValue,
                     List<ColumnDefinition<?>> columnDefinitionsOut,
                     MutableInt nextColumnIndexMut,
@@ -468,13 +467,13 @@ public class KafkaTools {
         /**
          * Class to specify conversion of table columns to Kafka KEY or VALUE fields.
          */
-        public static abstract class KeyOrValueSpec implements GetSchemaProvider {
+        public static abstract class KeyOrValueSpec implements SchemaProviderProvider {
 
-            abstract Serializer<?> serializer(SchemaRegistryClient schemaRegistryClient, TableDefinition definition);
+            abstract Serializer<?> getSerializer(SchemaRegistryClient schemaRegistryClient, TableDefinition definition);
 
             abstract String[] getColumnNames(@NotNull Table t, SchemaRegistryClient schemaRegistryClient);
 
-            abstract KeyOrValueSerializer<?> keyOrValueSerializer(@NotNull Table t, @NotNull String[] columnNames);
+            abstract KeyOrValueSerializer<?> getKeyOrValueSerializer(@NotNull Table t, @NotNull String[] columnNames);
         }
 
         public static final KeyOrValueSpec IGNORE = new IgnoreProduce();
@@ -1056,10 +1055,10 @@ public class KafkaTools {
         final SchemaRegistryClient schemaRegistryClient =
                 schemaRegistryClient(keySpec, valueSpec, configs).orElse(null);
 
-        final Deserializer<?> keyDeser = keySpec.deserializer(KeyOrValue.KEY, schemaRegistryClient, configs);
+        final Deserializer<?> keyDeser = keySpec.getDeserializer(KeyOrValue.KEY, schemaRegistryClient, configs);
         keyDeser.configure(configs, true);
 
-        final Deserializer<?> valueDeser = valueSpec.deserializer(KeyOrValue.VALUE, schemaRegistryClient, configs);
+        final Deserializer<?> valueDeser = valueSpec.getDeserializer(KeyOrValue.VALUE, schemaRegistryClient, configs);
         valueDeser.configure(configs, false);
 
         final KafkaStreamPublisher.Parameters.Builder publisherParametersBuilder =
@@ -1090,9 +1089,9 @@ public class KafkaTools {
                     }
                 });
 
-        final KeyOrValueIngestData keyIngestData = keySpec.ingestData(KeyOrValue.KEY,
+        final KeyOrValueIngestData keyIngestData = keySpec.getIngestData(KeyOrValue.KEY,
                 columnDefinitions, nextColumnIndex, schemaRegistryClient, configs);
-        final KeyOrValueIngestData valueIngestData = valueSpec.ingestData(KeyOrValue.VALUE,
+        final KeyOrValueIngestData valueIngestData = valueSpec.getIngestData(KeyOrValue.VALUE,
                 columnDefinitions, nextColumnIndex, schemaRegistryClient, configs);
 
         final TableDefinition tableDefinition = TableDefinition.of(columnDefinitions);
@@ -1131,11 +1130,12 @@ public class KafkaTools {
         ingester.start();
     }
 
-    private static Optional<SchemaRegistryClient> schemaRegistryClient(GetSchemaProvider key, GetSchemaProvider value,
+    private static Optional<SchemaRegistryClient> schemaRegistryClient(SchemaProviderProvider key,
+            SchemaProviderProvider value,
             Map<String, ?> configs) {
         final Map<String, SchemaProvider> providers = new HashMap<>();
-        key.schemaProvider().ifPresent(p -> providers.put(p.schemaType(), p));
-        value.schemaProvider().ifPresent(p -> providers.putIfAbsent(p.schemaType(), p));
+        key.getSchemaProvider().ifPresent(p -> providers.put(p.schemaType(), p));
+        value.getSchemaProvider().ifPresent(p -> providers.putIfAbsent(p.schemaType(), p));
         if (providers.isEmpty()) {
             return Optional.empty();
         }
@@ -1237,10 +1237,10 @@ public class KafkaTools {
         final Map<String, ?> config = asStringMap(kafkaProperties);
         final SchemaRegistryClient schemaRegistryClient = schemaRegistryClient(keySpec, valueSpec, config).orElse(null);
 
-        final Serializer<?> keySpecSerializer = keySpec.serializer(schemaRegistryClient, table.getDefinition());
+        final Serializer<?> keySpecSerializer = keySpec.getSerializer(schemaRegistryClient, table.getDefinition());
         keySpecSerializer.configure(config, true);
 
-        final Serializer<?> valueSpecSerializer = valueSpec.serializer(schemaRegistryClient, table.getDefinition());
+        final Serializer<?> valueSpecSerializer = valueSpec.getSerializer(schemaRegistryClient, table.getDefinition());
         valueSpecSerializer.configure(config, false);
 
         final String[] keyColumns = keySpec.getColumnNames(table, schemaRegistryClient);
@@ -1251,9 +1251,9 @@ public class KafkaTools {
             final Table effectiveTable = (!Produce.isIgnore(keySpec) && lastByKeyColumns)
                     ? table.lastBy(keyColumns)
                     : table.coalesce();
-            final KeyOrValueSerializer<?> keySerializer = keySpec.keyOrValueSerializer(effectiveTable, keyColumns);
+            final KeyOrValueSerializer<?> keySerializer = keySpec.getKeyOrValueSerializer(effectiveTable, keyColumns);
             final KeyOrValueSerializer<?> valueSerializer =
-                    valueSpec.keyOrValueSerializer(effectiveTable, valueColumns);
+                    valueSpec.getKeyOrValueSerializer(effectiveTable, valueColumns);
             final PublishToKafka producer = new PublishToKafka(
                     kafkaProperties,
                     effectiveTable,

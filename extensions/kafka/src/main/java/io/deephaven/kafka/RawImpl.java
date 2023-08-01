@@ -49,18 +49,18 @@ class RawImpl {
         }
 
         @Override
-        public Optional<SchemaProvider> schemaProvider() {
+        public Optional<SchemaProvider> getSchemaProvider() {
             return Optional.empty();
         }
 
         @Override
-        Deserializer<?> deserializer(KeyOrValue keyOrValue, SchemaRegistryClient schemaRegistryClient,
+        Deserializer<?> getDeserializer(KeyOrValue keyOrValue, SchemaRegistryClient schemaRegistryClient,
                 Map<String, ?> configs) {
             return supplier.get();
         }
 
         @Override
-        KeyOrValueIngestData ingestData(KeyOrValue keyOrValue,
+        KeyOrValueIngestData getIngestData(KeyOrValue keyOrValue,
                 List<ColumnDefinition<?>> columnDefinitionsOut, MutableInt nextColumnIndexMut,
                 SchemaRegistryClient schemaRegistryClient, Map<String, ?> configs) {
             final KeyOrValueIngestData data = new KeyOrValueIngestData();
@@ -96,12 +96,12 @@ class RawImpl {
         }
 
         @Override
-        public Optional<SchemaProvider> schemaProvider() {
+        public Optional<SchemaProvider> getSchemaProvider() {
             return Optional.empty();
         }
 
         @Override
-        Serializer<?> serializer(SchemaRegistryClient schemaRegistryClient, TableDefinition definition) {
+        Serializer<?> getSerializer(SchemaRegistryClient schemaRegistryClient, TableDefinition definition) {
             return supplier.get();
         }
 
@@ -111,7 +111,7 @@ class RawImpl {
         }
 
         @Override
-        KeyOrValueSerializer<?> keyOrValueSerializer(@NotNull Table t, @NotNull String[] columnNames) {
+        KeyOrValueSerializer<?> getKeyOrValueSerializer(@NotNull Table t, @NotNull String[] columnNames) {
             return new SimpleKeyOrValueSerializer<>(t, columnName);
         }
     }

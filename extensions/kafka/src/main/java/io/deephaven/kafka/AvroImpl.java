@@ -85,18 +85,18 @@ class AvroImpl {
         }
 
         @Override
-        public Optional<SchemaProvider> schemaProvider() {
+        public Optional<SchemaProvider> getSchemaProvider() {
             return Optional.of(new AvroSchemaProvider());
         }
 
         @Override
-        Deserializer<?> deserializer(KeyOrValue keyOrValue, SchemaRegistryClient schemaRegistryClient,
+        Deserializer<?> getDeserializer(KeyOrValue keyOrValue, SchemaRegistryClient schemaRegistryClient,
                 Map<String, ?> configs) {
             return new KafkaAvroDeserializer(Objects.requireNonNull(schemaRegistryClient));
         }
 
         @Override
-        KeyOrValueIngestData ingestData(KeyOrValue keyOrValue,
+        KeyOrValueIngestData getIngestData(KeyOrValue keyOrValue,
                 List<ColumnDefinition<?>> columnDefinitionsOut, MutableInt nextColumnIndexMut,
                 SchemaRegistryClient schemaRegistryClient, Map<String, ?> configs) {
             KeyOrValueIngestData data = new KeyOrValueIngestData();
@@ -164,17 +164,17 @@ class AvroImpl {
         }
 
         @Override
-        public Optional<SchemaProvider> schemaProvider() {
+        public Optional<SchemaProvider> getSchemaProvider() {
             return Optional.of(new AvroSchemaProvider());
         }
 
         @Override
-        Serializer<?> serializer(SchemaRegistryClient schemaRegistryClient, TableDefinition definition) {
+        Serializer<?> getSerializer(SchemaRegistryClient schemaRegistryClient, TableDefinition definition) {
             return new KafkaAvroSerializer(Objects.requireNonNull(schemaRegistryClient));
         }
 
         @Override
-        String[] getColumnNames(final Table t, SchemaRegistryClient schemaRegistryClient) {
+        String[] getColumnNames(final @NotNull Table t, SchemaRegistryClient schemaRegistryClient) {
             ensureSchema(t, schemaRegistryClient);
             final List<Field> fields = schema.getFields();
             // ensure we got timestampFieldName right
@@ -218,7 +218,7 @@ class AvroImpl {
         }
 
         @Override
-        KeyOrValueSerializer<?> keyOrValueSerializer(@NotNull Table t, @NotNull String[] columnNames) {
+        KeyOrValueSerializer<?> getKeyOrValueSerializer(@NotNull Table t, @NotNull String[] columnNames) {
             return new GenericRecordKeyOrValueSerializer(
                     t, schema, columnNames, timestampFieldName, columnProperties.getValue());
         }
