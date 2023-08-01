@@ -15,14 +15,13 @@ import org.apache.kafka.clients.consumer.KafkaConsumer;
 import org.apache.kafka.common.TopicPartition;
 import org.apache.kafka.common.errors.WakeupException;
 import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
 
 import java.text.DecimalFormat;
 import java.time.Duration;
-import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
 import java.util.Properties;
-import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.function.Function;
 import java.util.function.IntPredicate;
 import java.util.function.IntToLongFunction;
@@ -52,7 +51,7 @@ public class KafkaIngester {
                 }
             });
 
-    private final Collection<ConsumerLoopCallback> consumerLoopCallbacks = new CopyOnWriteArrayList<>();
+    private final ConsumerLoopCallback consumerLoopCallback;
 
     private long messagesProcessed = 0;
     private long bytesProcessed = 0;
@@ -221,31 +220,30 @@ public class KafkaIngester {
             @NotNull final IntPredicate partitionFilter,
             @NotNull final Function<TopicPartition, KafkaRecordConsumer> partitionToStreamConsumer,
             @NotNull final IntToLongFunction partitionToInitialSeekOffset) {
-        this(log, props, topic, partitionFilter, partitionToStreamConsumer,
-                new IntToLongFunctionAdapter(partitionToInitialSeekOffset));
+        this(log, props, topic, partitionFilter, partitionToStreamConsumer, new IntToLongLookupAdapter(partitionToInitialSeekOffset), null);
     }
 
     /**
      * Determines the initial offset to seek to for a given KafkaConsumer and TopicPartition.
      */
     @FunctionalInterface
-    public interface PartitionToInitialOffsetFunction {
-        long partitionToInitialOffset(KafkaConsumer<?, ?> consumer, TopicPartition topicPartition);
+    public interface InitialOffsetLookup {
+        long getInitialOffset(KafkaConsumer<?, ?> consumer, TopicPartition topicPartition);
     }
 
     /**
      * Adapts an IntToLongFunction to a PartitionToInitialOffsetFunction by ignoring the topic and consumer parameters.
      */
-    public static class IntToLongFunctionAdapter implements PartitionToInitialOffsetFunction {
 
+    public static class IntToLongLookupAdapter implements InitialOffsetLookup {
         private final IntToLongFunction function;
 
-        public IntToLongFunctionAdapter(IntToLongFunction function) {
+        public IntToLongLookupAdapter(IntToLongFunction function) {
             this.function = function;
         }
 
         @Override
-        public long partitionToInitialOffset(final KafkaConsumer<?, ?> consumer, final TopicPartition topicPartition) {
+        public long getInitialOffset(final KafkaConsumer<?, ?> consumer, final TopicPartition topicPartition) {
             return function.applyAsLong(topicPartition.partition());
         }
     }
@@ -278,12 +276,14 @@ public class KafkaIngester {
             @NotNull final String topic,
             @NotNull final IntPredicate partitionFilter,
             @NotNull final Function<TopicPartition, KafkaRecordConsumer> partitionToStreamConsumer,
-            @NotNull final PartitionToInitialOffsetFunction partitionToInitialSeekOffset) {
+            @NotNull final KafkaIngester.InitialOffsetLookup partitionToInitialSeekOffset,
+            @Nullable final ConsumerLoopCallback consumerLoopCallback) {
         this.log = log;
         this.topic = topic;
         partitionDescription = partitionFilter.toString();
         logPrefix = KafkaIngester.class.getSimpleName() + "(" + topic + ", " + partitionDescription + "): ";
         kafkaConsumer = new KafkaConsumer(props);
+        this.consumerLoopCallback = consumerLoopCallback;
 
         kafkaConsumer.partitionsFor(topic).stream().filter(pi -> partitionFilter.test(pi.partition()))
                 .map(pi -> new TopicPartition(topic, pi.partition()))
@@ -295,7 +295,7 @@ public class KafkaIngester {
 
         for (final TopicPartition topicPartition : assignedPartitions) {
             final long seekOffset =
-                    partitionToInitialSeekOffset.partitionToInitialOffset(kafkaConsumer, topicPartition);
+                    partitionToInitialSeekOffset.getInitialOffset(kafkaConsumer, topicPartition);
             if (seekOffset == SEEK_TO_BEGINNING) {
                 log.info().append(logPrefix).append(topicPartition.toString()).append(" seeking to beginning.")
                         .append(seekOffset).endl();
@@ -356,9 +356,9 @@ public class KafkaIngester {
             }
             final long beforePoll = System.nanoTime();
             final long remainingNanos = beforePoll > nextReport ? 0 : (nextReport - beforePoll);
-            consumerLoopCallbacks.forEach(x -> x.beforePoll(kafkaConsumer));
+            consumerLoopCallback.beforePoll(kafkaConsumer);
             final boolean more = pollOnce(Duration.ofNanos(remainingNanos));
-            consumerLoopCallbacks.forEach(x -> x.afterPoll(kafkaConsumer, more));
+            consumerLoopCallback.afterPoll(kafkaConsumer, more);
             if (!more) {
                 log.error().append(logPrefix)
                         .append("Stopping due to errors (").append(messagesWithErr)
@@ -480,23 +480,5 @@ public class KafkaIngester {
             needsAssignment = true;
         }
         kafkaConsumer.wakeup();
-    }
-
-    /**
-     * Add a callback for the consumer loop.
-     * 
-     * @param callback a callback that allows subscribers to inject logic into the consumer loop.
-     */
-    public void addConsumerLoopCallback(@NotNull final ConsumerLoopCallback callback) {
-        consumerLoopCallbacks.add(callback);
-    }
-
-    /**
-     * Remove a callback from the consumer loop.
-     * 
-     * @param callback a previously added callback.
-     */
-    public void removeConsumerLoopCallback(@NotNull final ConsumerLoopCallback callback) {
-        consumerLoopCallbacks.remove(callback);
     }
 }
