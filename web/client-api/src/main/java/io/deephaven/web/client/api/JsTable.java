@@ -89,9 +89,6 @@ import static io.deephaven.web.client.api.subscription.ViewportData.NO_ROW_FORMA
 import static io.deephaven.web.client.fu.LazyPromise.logError;
 
 /**
- * TODO provide hooks into the event handlers so we can see if no one is listening any more and release the table
- * handle/viewport.
- *
  * Provides access to data in a table. Note that several methods present their response through Promises. This allows
  * the client to both avoid actually connecting to the server until necessary, and also will permit some changes not to
  * inform the UI right away that they have taken place.

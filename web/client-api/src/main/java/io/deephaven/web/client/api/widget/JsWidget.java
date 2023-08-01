@@ -4,6 +4,7 @@
 package io.deephaven.web.client.api.widget;
 
 import com.vertispan.tsdefs.annotations.TsName;
+import com.vertispan.tsdefs.annotations.TsTypeRef;
 import com.vertispan.tsdefs.annotations.TsUnion;
 import com.vertispan.tsdefs.annotations.TsUnionMember;
 import elemental2.core.ArrayBuffer;
@@ -31,12 +32,26 @@ import java.nio.charset.StandardCharsets;
 import java.util.function.Supplier;
 
 /**
+ * A Widget represents a server side object that sends one or more responses to the client. The client can then
+ * interpret these responses to see what to render, or how to respond.
  *
+ * Most custom object types result in a single response being sent to the client, often with other exported objects, but
+ * some will have streamed responses, and allow the client to send follow-up requests of its own. This class's API is
+ * backwards compatible, but as such does not offer a way to tell the difference between a streaming or non-streaming
+ * object type, the client code that handles the payloads is expected to know what to expect. See
+ * dh.WidgetMessageDetails for more information.
+ *
+ * When the promise that returns this object resolves, it will have the first response assigned to its fields. Later
+ * responses from the server will be emitted as "message" events. When the connection with the server ends
  */
+// TODO consider reconnect support? This is somewhat tricky without understanding the semantics of the widget
 @TsName(namespace = "dh", name = "Widget")
-public class JsWidget extends HasEventHandling implements ServerObject {
+public class JsWidget extends HasEventHandling implements ServerObject, WidgetMessageDetails {
     @JsProperty(namespace = "dh.Widget")
     public static final String EVENT_MESSAGE = "message";
+    @JsProperty(namespace = "dh.Widget")
+    public static final String EVENT_CLOSE = "close";
+
     private final WorkerConnection connection;
     private final TypedTicket typedTicket;
 
@@ -70,6 +85,15 @@ public class JsWidget extends HasEventHandling implements ServerObject {
         hasFetched = false;
     }
 
+    /**
+     * Ends the client connection to the server.
+     */
+    @JsMethod
+    public void close() {
+        suppressEvents();
+        closeStream();
+    }
+
     public Promise<JsWidget> refetch() {
         closeStream();
         return new Promise<>((resolve, reject) -> {
@@ -77,24 +101,25 @@ public class JsWidget extends HasEventHandling implements ServerObject {
 
             messageStream = streamFactory.get();
             messageStream.onData(res -> {
-                // TODO only assign to fields for the first one
-                response = res;
-                exportedObjects = res.getData().getTypedExportIdsList()
-                        .map((p0, p1, p2) -> new JsWidgetExportedObject(connection, p0));
 
                 if (!hasFetched) {
+                    response = res;
+                    exportedObjects = res.getData().getTypedExportIdsList()
+                            .map((p0, p1, p2) -> new JsWidgetExportedObject(connection, p0));
+
                     hasFetched = true;
                     resolve.onInvoke(this);
                     return;
                 }
 
-                CustomEventInit<JsWidgetMessageWrapper> messageEvent = CustomEventInit.create();
-                messageEvent.setDetail(new JsWidgetMessageWrapper(res, exportedObjects));
+                CustomEventInit<EventDetails> messageEvent = CustomEventInit.create();
+                messageEvent.setDetail(new EventDetails(res.getData(), exportedObjects));
                 fireEvent(EVENT_MESSAGE, messageEvent);
             });
             messageStream.onStatus(status -> {
                 if (!status.isOk()) {
                     reject.onInvoke(status.getDetails());
+                    fireEvent(EVENT_CLOSE);
                     closeStream();
                 }
             });
@@ -148,11 +173,6 @@ public class JsWidget extends HasEventHandling implements ServerObject {
         return Js.<JsWidgetExportedObject[]>uncheckedCast(exportedObjects);
     }
 
-    @JsMethod
-    public JsWidgetExportedObject getExportedObject(int index) {
-        return exportedObjects.getAt(index);
-    }
-
     @TsUnion
     @JsType(name = "?", namespace = JsPackage.GLOBAL, isNative = true)
     public interface MessageUnion {
@@ -198,7 +218,8 @@ public class JsWidget extends HasEventHandling implements ServerObject {
      * @param references an array of objects that can be safely sent to the server
      */
     @JsMethod
-    public void sendMessage(MessageUnion msg, @JsOptional JsArray<ServerObject> references) {
+    public void sendMessage(MessageUnion msg,
+            @JsOptional JsArray<@TsTypeRef(ServerObject.Union.class) ServerObject> references) {
         if (messageStream == null) {
             return;
         }
@@ -228,39 +249,37 @@ public class JsWidget extends HasEventHandling implements ServerObject {
         messageStream.send(req);
     }
 
-    private static class JsWidgetMessageWrapper {
-        private final StreamResponse message;
-
+    /**
+     *
+     */
+    @TsName(namespace = "dh", name = "WidgetMessageDetails")
+    private static class EventDetails implements WidgetMessageDetails {
+        private final Data data;
         private final JsArray<JsWidgetExportedObject> exportedObjects;
 
-        public JsWidgetMessageWrapper(StreamResponse m, JsArray<JsWidgetExportedObject> e) {
-            message = m;
-            exportedObjects = e;
+        public EventDetails(Data data, JsArray<JsWidgetExportedObject> exports) {
+            this.data = data;
+            this.exportedObjects = exports;
         }
 
-        @JsMethod
+        @Override
         public String getDataAsBase64() {
-            return message.getData().getPayload_asB64();
+            return data.getPayload_asB64();
         }
 
-        @JsMethod
+        @Override
         public Uint8Array getDataAsU8() {
-            return message.getData().getPayload_asU8();
+            return data.getPayload_asU8();
         }
 
-        @JsMethod
+        @Override
         public String getDataAsString() {
-            return new String(Js.<byte[]>uncheckedCast(message.getData().getPayload_asU8()), StandardCharsets.UTF_8);
+            return new String(Js.<byte[]>uncheckedCast(data.getPayload_asU8()), StandardCharsets.UTF_8);
         }
 
-        @JsProperty
+        @Override
         public JsWidgetExportedObject[] getExportedObjects() {
             return Js.<JsWidgetExportedObject[]>uncheckedCast(exportedObjects);
-        }
-
-        @JsMethod
-        public JsWidgetExportedObject getExportedObject(int index) {
-            return exportedObjects.getAt(index);
         }
     }
 }
