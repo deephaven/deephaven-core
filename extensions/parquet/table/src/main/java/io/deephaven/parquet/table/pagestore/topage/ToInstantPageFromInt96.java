@@ -99,8 +99,7 @@ public class ToInstantPageFromInt96<ATTR extends Any> implements ToPage<ATTR, lo
                 final long nanos = resultBuffer.getLong();
                 final int julianDate = resultBuffer.getInt();
                 resultLongs[ri] = (julianDate - JULIAN_OFFSET_TO_UNIX_EPOCH_DAYS) * (NANOS_PER_DAY) + nanos + offset;
-            }
-            else {
+            } else {
                 resultLongs[ri] = NULL_LONG;
             }
         }
