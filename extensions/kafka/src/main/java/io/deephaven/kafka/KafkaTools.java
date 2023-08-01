@@ -1050,8 +1050,9 @@ public class KafkaTools {
                     }
                 };
 
-        consume(kafkaProperties, topic, partitionFilter, partitionToInitialOffset, keySpec, valueSpec,
-                StreamConsumerRegistrarProvider.single(registrar));
+        consume(kafkaProperties, topic, partitionFilter,
+                new KafkaIngester.IntToLongLookupAdapter(partitionToInitialOffset), keySpec, valueSpec,
+                StreamConsumerRegistrarProvider.single(registrar), null);
         return resultHolder.getValue();
     }
 
@@ -1111,8 +1112,9 @@ public class KafkaTools {
                     }
                 };
 
-        consume(kafkaProperties, topic, partitionFilter, partitionToInitialOffset, keySpec, valueSpec,
-                StreamConsumerRegistrarProvider.perPartition(registrar));
+        consume(kafkaProperties, topic, partitionFilter,
+                new KafkaIngester.IntToLongLookupAdapter(partitionToInitialOffset), keySpec, valueSpec,
+                StreamConsumerRegistrarProvider.perPartition(registrar), null);
         return resultHolder.get();
     }
 
@@ -1249,7 +1251,7 @@ public class KafkaTools {
     }
 
     /**
-     * Consume from Kafka to a {@link StreamConsumer} supplied by {@code streamConsumerRegistrar}.
+     * Consume from Kafka to {@link StreamConsumer stream consumers} supplied by {@code streamConsumerRegistrar}.
      *
      * @param kafkaProperties Properties to configure this table and also to be passed to create the KafkaConsumer
      * @param topic Kafka topic name
@@ -1265,15 +1267,17 @@ public class KafkaTools {
      *        {@link TableDefinition}. See {@link StreamConsumerRegistrarProvider#single(SingleConsumerRegistrar)
      *        single} and {@link StreamConsumerRegistrarProvider#perPartition(PerPartitionConsumerRegistrar)
      *        per-partition}.
+     * @param consumerLoopCallback callback to inject logic into the ingester's consumer loop
      */
     public static void consume(
             @NotNull final Properties kafkaProperties,
             @NotNull final String topic,
             @NotNull final IntPredicate partitionFilter,
-            @NotNull final IntToLongFunction partitionToInitialOffset,
+            @NotNull final KafkaIngester.InitialOffsetLookup partitionToInitialOffset,
             @NotNull final Consume.KeyOrValueSpec keySpec,
             @NotNull final Consume.KeyOrValueSpec valueSpec,
-            @NotNull final KafkaTools.StreamConsumerRegistrarProvider streamConsumerRegistrarProvider) {
+            @NotNull final KafkaTools.StreamConsumerRegistrarProvider streamConsumerRegistrarProvider,
+            @Nullable final KafkaIngester.ConsumerLoopCallback consumerLoopCallback) {
         final boolean ignoreKey = keySpec.dataFormat() == DataFormat.IGNORE;
         final boolean ignoreValue = valueSpec.dataFormat() == DataFormat.IGNORE;
         if (ignoreKey && ignoreValue) {
@@ -1349,7 +1353,8 @@ public class KafkaTools {
                 topic,
                 partitionFilter,
                 kafkaRecordConsumerFactory,
-                partitionToInitialOffset);
+                partitionToInitialOffset,
+                consumerLoopCallback);
         kafkaIngesterHolder.setValue(ingester);
         ingester.start();
     }
