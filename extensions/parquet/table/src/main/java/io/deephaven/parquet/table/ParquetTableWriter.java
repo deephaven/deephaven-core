@@ -118,42 +118,63 @@ public class ParquetTableWriter {
         return columnName -> prefix + "_" + columnName + "_grouping.parquet";
     }
 
-    /**
-     * Writes a table in parquet format under a given path
-     *
-     * @param t The table to write
-     * @param path The destination path
-     * @param incomingMeta A map of metadata values to be stores in the file footer
-     * @param groupingPathFactory a factory to construct paths for grouping tables.
-     * @param groupingColumns List of columns the tables are grouped by (the write operation will store the grouping
-     *        info)
-     * @throws SchemaMappingException Error creating a parquet table schema for the given table (likely due to
-     *         unsupported types)
-     * @throws IOException For file writing related errors
-     */
-    public static void write(
-            @NotNull final Table t,
-            @NotNull final String path,
-            @NotNull final Map<String, String> incomingMeta,
-            @NotNull final Function<String, String> groupingPathFactory,
-            @NotNull final String... groupingColumns) throws SchemaMappingException, IOException {
-        write(t, t.getDefinition(), ParquetInstructions.EMPTY, path, incomingMeta, groupingPathFactory,
-                groupingColumns);
-    }
+    // TODO Is this code used anywhere?
+    // /**
+    // * Writes a table in parquet format under a given path
+    // *
+    // * @param t The table to write
+    // * @param path The destination path
+    // * @param incomingMeta A map of metadata values to be stores in the file footer
+    // * @param groupingPathFactory a factory to construct paths for grouping tables.
+    // * @param groupingColumns List of columns the tables are grouped by (the write operation will store the grouping
+    // * info)
+    // * @throws SchemaMappingException Error creating a parquet table schema for the given table (likely due to
+    // * unsupported types)
+    // * @throws IOException For file writing related errors
+    // */
+    // public static void write(
+    // @NotNull final Table t,
+    // @NotNull final String path,
+    // @NotNull final Map<String, String> incomingMeta,
+    // @NotNull final Function<String, String> groupingPathFactory,
+    // @NotNull final String... groupingColumns) throws SchemaMappingException, IOException {
+    // write(t, t.getDefinition(), ParquetInstructions.EMPTY, path, incomingMeta, groupingPathFactory,
+    // groupingColumns);
+    // }
+    //
+    // /**
+    // * Writes a table in parquet format under a given path
+    // *
+    // * @param t the table to write
+    // * @param path the destination path
+    // * @param incomingMeta any metadata to include in the parquet metadata
+    // * @param groupingColumns the grouping columns (if any)
+    // */
+    // public static void write(@NotNull final Table t,
+    // @NotNull final String path,
+    // @NotNull final Map<String, String> incomingMeta,
+    // @NotNull final String... groupingColumns) throws SchemaMappingException, IOException {
+    // write(t, path, incomingMeta, defaultGroupingFileName(path), groupingColumns);
+    // }
 
     /**
-     * Writes a table in parquet format under a given path
-     *
-     * @param t the table to write
-     * @param path the destination path
-     * @param incomingMeta any metadata to include in the parquet metadata
-     * @param groupingColumns the grouping columns (if any)
+     * Helper struct used to pass information about where to write the grouping files for each grouping column
      */
-    public static void write(@NotNull final Table t,
-            @NotNull final String path,
-            @NotNull final Map<String, String> incomingMeta,
-            @NotNull final String... groupingColumns) throws SchemaMappingException, IOException {
-        write(t, path, incomingMeta, defaultGroupingFileName(path), groupingColumns);
+    public static final class GroupingFileInfo {
+        /**
+         * Grouping file path to be added in the metadata of main parquet file
+         */
+        public final String metadataFileName;
+
+        /**
+         * Destination path for the grouping file
+         */
+        public final File destPath;
+
+        public GroupingFileInfo(final String metadataFileName, final File destPath) {
+            this.metadataFileName = metadataFileName;
+            this.destPath = destPath;
+        }
     }
 
     /**
@@ -224,7 +245,7 @@ public class ParquetTableWriter {
                         // in the code right now), I need to check if backup exists and delete that first and its seems
                         // unnecessary to me since we are already overwriting it in the existing code as well.
                         if (!destFile.renameTo(backupFile)) {
-                            throw new RuntimeException(
+                            throw new UncheckedDeephavenException(
                                     "Failed to write the grouping file at " + destFile.getAbsolutePath() + " because a "
                                             + "file already exists at the path which couldn't be renamed to "
                                             + backupFile);
@@ -232,10 +253,11 @@ public class ParquetTableWriter {
                     }
                     File shadowGroupingFile = new File(shadowGroupingFilePath);
                     if (!shadowGroupingFile.renameTo(destFile)) {
-                        throw new RuntimeException("Failed to write the grouping file at " + destFile.getAbsolutePath()
-                                + " because "
-                                + "couldn't rename shadow file from " + shadowGroupingFile.getAbsolutePath() + " to " +
-                                destFile.getAbsolutePath());
+                        throw new UncheckedDeephavenException(
+                                "Failed to write the grouping file at " + destFile.getAbsolutePath()
+                                        + " because couldn't rename shadow file from "
+                                        + shadowGroupingFile.getAbsolutePath() + " to " +
+                                        destFile.getAbsolutePath());
                     }
                 }
             }

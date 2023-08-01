@@ -223,6 +223,26 @@ public class ParquetTools {
         // Write to a temporary shadow file in the same directory to prevent overwriting any existing files
         final File shadowDestFile = getShadowFilePath(destFile);
         final File firstCreated = prepareDestinationFileLocation(shadowDestFile);
+        final String[] groupingColumnNames = definition.getGroupingColumnNamesArray();
+
+        ArrayList<String> shadowFilePaths = new ArrayList();
+
+        Map<String, ParquetTableWriter.GroupingFileInfo> groupingColumnsWritingInfo;
+        for (int gci = 0; gci < groupingColumnNames.length; ++gci) {
+            // Write the grouping files at a shadow path but the metadata should have the correct file name
+            final String parquetColumnName =
+                    writeInstructions.getParquetColumnNameFromColumnNameOrDefault(groupingColumnNames[gci]);
+            final String metadataGroupingFilePath =
+                    ParquetTableWriter.defaultGroupingFileName(destFile.getPath()).apply(parquetColumnName);
+            final File groupingFile = new File(metadataGroupingFilePath);
+            deleteBackupFiles(groupingFile);
+
+            final File shadowGroupingFile = getShadowFilePath(groupingFile);
+            final String shadowGroupingFilePath = shadowGroupingFile.getAbsolutePath();
+            shadowFilePaths.add(shadowGroupingFilePath);
+        }
+
+        // deleteBackupFiles(destFile);
         try {
             writeParquetTableImpl(
                     sourceTable, definition, writeInstructions, shadowDestFile,
@@ -245,12 +265,21 @@ public class ParquetTools {
         return new File(filePath.getParent(), ".NEW_" + filePath.getName());
     }
 
-    // TODO Need to make it public for testing
     @VisibleForTesting
-    public static File getBackupFilePath(File filePath) {
+    static File getBackupFilePath(File filePath) {
         return new File(filePath.getParent(), ".OLD_" + filePath.getName());
     }
 
+    /**
+     * Delete any old backup files created for this destination
+     */
+    private static void deleteBackupFiles(@NotNull final File destFile) {
+        final File backupDestFile = getBackupFilePath(destFile);
+        if (backupDestFile.exists() && !backupDestFile.delete()) {
+            throw new UncheckedDeephavenException(
+                    "Failed to delete backup file at " + backupDestFile.getAbsolutePath());
+        }
+    }
 
     /**
      * Backup the file at location destFile and rename the file at shadowDestFile to destFile
@@ -258,16 +287,19 @@ public class ParquetTools {
     private static void installShadowFile(@NotNull final File destFile, @NotNull final File shadowDestFile) {
         final File backupDestFile = getBackupFilePath(destFile);
         if (destFile.exists() && !destFile.renameTo(backupDestFile)) {
-            throw new RuntimeException("Failed to write the table at " + destFile.getAbsolutePath() + " because a "
-                    + "file already exists at the path which couldn't be renamed to "
-                    + backupDestFile.getAbsolutePath());
+            throw new UncheckedDeephavenException(
+                    "Failed to install shadow file at " + destFile.getAbsolutePath() + " because a "
+                            + "file already exists at the path which couldn't be renamed to "
+                            + backupDestFile.getAbsolutePath());
         }
         if (!shadowDestFile.renameTo(destFile)) {
-            throw new RuntimeException("Failed to write the table at " + destFile.getAbsolutePath() + " because "
+            throw new UncheckedDeephavenException("Failed to install shadow file at " + destFile.getAbsolutePath()
+                    + " because "
                     + "couldn't rename temporary shadow file from " + shadowDestFile.getAbsolutePath() + " to " +
                     destFile.getAbsolutePath());
         }
     }
+
 
     /**
      * Make any missing ancestor directories of {@code destination}.
