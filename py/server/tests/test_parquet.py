@@ -147,6 +147,10 @@ class ParquetTestCase(BaseTestCase):
         self.assertTrue(os.path.exists(file_location))
         shutil.rmtree(base_dir)
 
+    # def test_int96_timestamps(self):
+        # TODO Write a test for writing null and non-null int96 timestamp values and verifying the values
+        # Also, compare it with regular int64 timestamp values and make sure both are similar
+
     def get_table_data(self):
         # create a table with columns to test different types and edge cases
         dh_table = empty_table(20).update(formulas=[
@@ -271,6 +275,8 @@ class ParquetTestCase(BaseTestCase):
         # dataframe.to_parquet('data_from_pandas.parquet', compression=None if compression_codec_name is 'UNCOMPRESSED' else compression_codec_name)
         # result_table = read('data_from_pandas.parquet')
         # self.assert_table_equals(dh_table, result_table)
+
+
 
 if __name__ == '__main__':
     unittest.main()
