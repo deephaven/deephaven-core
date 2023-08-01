@@ -302,6 +302,17 @@ class Docker {
             // Single task with explicit inputs and outputs, to let gradle detect if it is up to date, and let docker
             // cache what it can.
 
+            // Sync outputs to the desired location
+            def syncAfterBuildAndRun = project.tasks.register("${taskName}Sync", Sync) { sync ->
+                sync.with {
+                    // run the provided closure first
+                    cfg.copyOut.execute(sync)
+
+                    // then set the from location
+                    from dockerCopyLocation
+                }
+            }
+
             // Note that if "showLogsOnSuccess" is true, we don't run this way, since that would omit logs when cached.
             def buildAndRun = project.tasks.register("${taskName}Run", CombinedDockerRunTask) { cacheableDockerTask ->
                 cacheableDockerTask.with {
@@ -334,18 +345,14 @@ class Docker {
 
                     remotePath.set(cfg.containerOutPath)
                     outputDir.set(project.file(dockerCopyLocation))
+                    finalizedBy syncAfterBuildAndRun
                 }
             }
-            // Sync outputs to the desired location
-            return project.tasks.register(taskName, Sync) { sync ->
-                sync.with {
+
+            return project.tasks.register(taskName) { task ->
+                task.with {
                     dependsOn buildAndRun
-
-                    // run the provided closure first
-                    cfg.copyOut.execute(sync)
-
-                    // then set the from location
-                    from dockerCopyLocation
+                    outputs.files syncAfterBuildAndRun.get().outputs.files
                 }
             }
         }
