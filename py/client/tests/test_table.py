@@ -312,7 +312,7 @@ class TableTestCase(BaseTestCase):
         self.assertEqual(rt.size, test_table.select_distinct(["c"]).size)
 
         with self.assertRaises(TypeError):
-            aggs = [unique(cols=["ua = a", "ub = b"], include_nulls=True, non_unique_sentinel=-1)]
+            aggs = [unique(cols=["ua = a", "ub = b"], include_nulls=True, non_unique_sentinel=np.uint32(-1))]
 
         aggs_default = [
             median(cols=["ma = a", "mb = b"]),
