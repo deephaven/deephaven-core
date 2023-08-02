@@ -114,11 +114,11 @@ test_that("add_int_option with bad types fails nicely", {
   )
   expect_error(
     client_options$add_int_option("option_key", 12345.6789),
-    "'val' must be an integer. Got a non-integer numeric type instead."
+    "'val' must be an integer. Got 'val' = 12345.6789 instead."
   )
   expect_error(
     client_options$add_int_option("option_key", c(1, 2, 3, 4, 5)),
-    "'val' must be an integer. Got 'val' = 12345.6789 instead."
+    "'val' must be passed as a single numeric. Got a numeric vector of length 5 instead."
   )
 })
 

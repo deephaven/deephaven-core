@@ -157,11 +157,11 @@ test_that("agg_percentile fails nicely when 'percentile' is bad", {
   )
   expect_error(
     agg_percentile(5, "string"),
-    "'percentile' must be in the interval [0, 1]. Got 'percentile' = 5 instead."
+    "'percentile' must be between 0 and 1 inclusive. Got 'percentile' = 5 instead."
   )
   expect_error(
     agg_percentile(c(5, 6, 7, 8), "string"),
-    "'percentile' must be a numeric type between 0 and 1 inclusive. Got a numeric vector of length 4 instead."
+    "'percentile' must be passed as a single numeric. Got a numeric vector of length 4 instead."
   )
 })
 

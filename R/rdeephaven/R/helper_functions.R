@@ -24,19 +24,16 @@ verify_type <- function(arg_name, candidate, required_type, message_type_name, i
 }
 
 # does not attempt to verify that candidate is numeric
-verify_in_range <- function(arg_name, candidate, a = NULL, b = NULL, a_open = TRUE, b_open = TRUE) {
-
-  printed_interval = paste0(ifelse(a_open, "(", "["), ifelse(is.null(a), "-inf", as.character(a)),
-                            ", ", ifelse(is.null(b), "inf", as.character(b)), ifelse(b_open, ")", "]"))
+verify_in_range <- function(arg_name, candidate, message, a = NULL, b = NULL, a_open = TRUE, b_open = TRUE) {
 
   if(((!is.null(a)) && ((any(candidate <= a) && (a_open)) || (any(candidate < a) && (!a_open)))) ||
      ((!is.null(b)) && ((any(candidate >= b) && (b_open)) || (any(candidate > b) && (!b_open))))) {
 
     if(length(candidate) == 1) {
-      stop(paste0("'", arg_name, "' must be in the interval ", printed_interval, ". Got '", arg_name, "' = ", candidate, " instead."))
+      stop(paste0("'", arg_name, "' must be ", message, ". Got '", arg_name, "' = ", candidate, " instead."))
     }
     else {
-      stop(paste0("Every element of '", arg_name, "' must be in the interval ", printed_interval, ". Got at least one element outside of this interval instead."))
+      stop(paste0("Every element of '", arg_name, "' must be ", message, ". Got at least one element that is not ", message, " instead."))
     }
   }
 }
@@ -67,7 +64,7 @@ verify_numeric <- function(arg_name, candidate, is_scalar) {
 
 verify_in_unit_interval <- function(arg_name, candidate, is_scalar) {
   verify_numeric(arg_name, candidate, is_scalar)
-  verify_in_range(arg_name, candidate, a = 0, b = 1, a_open = FALSE, b_open = FALSE)
+  verify_in_range(arg_name, candidate, message = "between 0 and 1 inclusive", a = 0, b = 1, a_open = FALSE, b_open = FALSE)
 }
 
 verify_any_int <- function(arg_name, candidate, is_scalar) {
@@ -78,13 +75,13 @@ verify_any_int <- function(arg_name, candidate, is_scalar) {
 verify_nonnegative_int <- function(arg_name, candidate, is_scalar) {
   verify_numeric(arg_name, candidate, is_scalar)
   verify_int(arg_name, candidate)
-  verify_in_range(arg_name, candidate, a = 0, a_open = FALSE)
+  verify_in_range(arg_name, candidate, message = "a nonnegative integer", a = 0, a_open = FALSE)
 }
 
 verify_positive_int <- function(arg_name, candidate, is_scalar) {
   verify_numeric(arg_name, candidate, is_scalar)
   verify_int(arg_name, candidate)
-  verify_in_range(arg_name, candidate, a = 0)
+  verify_in_range(arg_name, candidate, message = "a positive integer", a = 0)
 }
 
 strip_r6_wrapping_from_aggregation <- function(r6_aggregation) {
