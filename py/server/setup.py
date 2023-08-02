@@ -53,7 +53,7 @@ setup(
     keywords='Deephaven Development',
     python_requires='>=3.8',
     install_requires=[
-        'jpy>=0.13.0',
+        'jpy>=0.14.0',
         'deephaven-plugin',
         'numpy',
         'pandas>=1.5.0',
