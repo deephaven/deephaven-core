@@ -4,13 +4,13 @@
 
 import jpy
 
-from typing import Optional, Union
-from deephaven.plugin.object import Exporter, ObjectType, Reference, MessageSender
+from typing import Optional, List, Any
+from deephaven.plugin.object import Exporter, ObjectType, Reference, MessageStream, FetchOnlyObjectType
 from deephaven._wrapper import JObjectWrapper
 
 _JReference = jpy.get_type('io.deephaven.plugin.type.ObjectType$Exporter$Reference')
 _JExporterAdapter = jpy.get_type('io.deephaven.server.plugin.python.ExporterAdapter')
-_JMessageSender= jpy.get_type('io.deephaven.plugin.type.ObjectType$MessageSender')
+_JMessageStream = jpy.get_type('io.deephaven.plugin.type.ObjectType$MessageStream')
 
 
 def _adapt_reference(ref: _JReference) -> Reference:
@@ -28,26 +28,27 @@ class ExporterAdapter(Exporter):
     def __init__(self, exporter: _JExporterAdapter):
         self._exporter = exporter
 
-    def reference(self, object, allow_unknown_type: bool = False, force_new: bool = False) -> Optional[Reference]:
-        object = _unwrap(object)
-        if isinstance(object, jpy.JType):
-            ref = self._exporter.reference(object, allow_unknown_type, force_new)
+    def reference(self, obj: Any, allow_unknown_type: bool = True, force_new: bool = True) -> Optional[Reference]:
+        obj = _unwrap(obj)
+        if isinstance(obj, jpy.JType):
+            ref = self._exporter.reference(obj, allow_unknown_type, force_new)
         else:
-            ref = self._exporter.referencePyObject(object, allow_unknown_type, force_new)
+            ref = self._exporter.referencePyObject(obj, allow_unknown_type, force_new)
         return _adapt_reference(ref) if ref else None
 
     def __str__(self):
         return str(self._exporter)
 
 
-class MessageSenderAdapter(MessageSender, ExporterAdapter):
+class MessageStreamAdapter(MessageStream):
+    def __init__(self, wrapped: _JMessageStream):
+        self._wrapped = wrapped
 
-    def __init__(self, sender: _JMessageSender):
-        ExporterAdapter.__init__(self, _JExporterAdapter(sender.getExporter()))
-        self._sender = sender
+    def on_data(self, payload: bytes, references: List[Any]):
+        self._wrapped.on_data(payload, [_unwrap(ref) for ref in references])
 
-    def send_message(self, message: bytes):
-        self._sender.sendMessage(message)
+    def on_close(self):
+        self._wrapped.on_close()
 
 
 # see io.deephaven.server.plugin.python.ObjectTypeAdapter for calling details
@@ -55,23 +56,17 @@ class ObjectTypeAdapter:
     def __init__(self, user_object_type: ObjectType):
         self._user_object_type = user_object_type
 
-    def is_type(self, object):
-        return self._user_object_type.is_type(object)
+    def is_type(self, obj):
+        return self._user_object_type.is_type(obj)
 
-    def to_bytes(self, exporter: _JExporterAdapter, object):
-        return self._user_object_type.to_bytes(ExporterAdapter(exporter), object)
+    def is_fetch_only(self):
+        return isinstance(self._user_object_type, FetchOnlyObjectType)
 
-    def supports_bidi_messaging(self, object):
-        return self._user_object_type.supports_bidi_messaging(object)
+    def to_bytes(self, exporter: _JExporterAdapter, obj: Any):
+        return self._user_object_type.to_bytes(ExporterAdapter(exporter), obj)
 
-    def handle_message(self, message, object, objects):
-        self._user_object_type.handle_message(bytes(message), object, objects)
-
-    def add_message_sender(self, object, sender):
-        self._user_object_type.add_message_sender(object, MessageSenderAdapter(sender))
-
-    def remove_message_sender(self):
-        self._user_object_type.remove_message_sender()
+    def create_client_connection(self, obj: Any, connection: _JMessageStream):
+        return self._user_object_type.create_client_connection(obj, MessageStreamAdapter(connection))
 
     def __str__(self):
         return str(self._user_object_type)

@@ -35,12 +35,7 @@ final class ObjectTypeAdapter extends ObjectTypeBase implements AutoCloseable {
 
     @Override
     public MessageStream compatibleClientConnection(Object object, MessageStream connection) {
-        if (objectTypeAdapter.hasAttribute("create_client_connection")) {
-            PyObject newConnection =
-                    objectTypeAdapter.call(PyObject.class, "create_client_connection", PyObject.class,
-                            (PyObject) object, MessageStream.class, connection);
-            return new PythonMessageStream(newConnection);
-        } else {
+        if (objectTypeAdapter.call("is_fetch_only").getBooleanValue()) {
             // Fall back and attempt to use old api:
             // Using this simple implementation, even though the python code won't write to this, but instead will
             // return a byte array directly
@@ -55,6 +50,11 @@ final class ObjectTypeAdapter extends ObjectTypeBase implements AutoCloseable {
             connection.onClose();
 
             return MessageStream.NOOP;
+        } else {
+            PyObject newConnection =
+                    objectTypeAdapter.call(PyObject.class, "create_client_connection", PyObject.class,
+                            (PyObject) object, MessageStream.class, connection);
+            return new PythonMessageStream(newConnection);
         }
     }
 
