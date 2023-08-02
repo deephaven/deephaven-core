@@ -112,6 +112,10 @@ class CombinedDockerRunTask extends AbstractDockerRemoteApiTask {
                 }
             }
 
+        } finally {
+            if (containerId == null) {
+                return;
+            }
             // Copy output to internal output directory
             CopyArchiveFromContainerCmd copyCommand = dockerClient.copyArchiveFromContainerCmd(containerId, remotePath.get())
             logger.quiet "Copying '${remotePath.get()}' from container with ID '${containerId}' to '${outputDir.get()}'."
@@ -126,10 +130,6 @@ class CombinedDockerRunTask extends AbstractDockerRemoteApiTask {
                 copyFile(tarStream, hostDestination)
             } finally {
                 tarStream?.close()
-            }
-        } finally {
-            if (containerId == null) {
-                return;
             }
             RemoveContainerCmd removeCommand = dockerClient.removeContainerCmd(containerId)
             removeCommand.withRemoveVolumes(true)
