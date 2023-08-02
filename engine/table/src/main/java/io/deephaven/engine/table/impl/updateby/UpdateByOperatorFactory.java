@@ -1284,7 +1284,7 @@ public class UpdateByOperatorFactory {
             final Class<?> weightCsType = weightColumnSource.getType();
 
             if (!rs.weightColumnApplicableTo(weightCsType)) {
-                throw new IllegalArgumentException("Can not perform RollingWAvg on weight column type " + csType);
+                throw new IllegalArgumentException("Can not perform RollingWAvg on weight column type " + weightCsType);
             }
 
             final String[] affectingColumns;
