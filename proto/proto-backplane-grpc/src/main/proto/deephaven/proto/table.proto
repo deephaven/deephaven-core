@@ -315,8 +315,14 @@ message EmptyTableRequest {
 
 message TimeTableRequest {
   Ticket result_id = 1;
-  sint64 start_time_nanos = 2 [jstype=JS_STRING];
-  sint64 period_nanos = 3 [jstype=JS_STRING];
+  oneof start_time {
+    sint64 start_time_nanos = 2 [jstype = JS_STRING];
+    string start_time_string = 5;
+  }
+  oneof period {
+    sint64 period_nanos = 3 [jstype = JS_STRING];
+    string period_string = 6;
+  }
   bool blink_table = 4;
 }
 

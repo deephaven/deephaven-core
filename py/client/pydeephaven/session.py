@@ -414,12 +414,14 @@ class Session:
         with self._r_lock:
             self.console_service.bind_table(table=table, variable_name=name)
 
-    def time_table(self, period: int, start_time: int = None) -> Table:
+    def time_table(self, period: Union[int, str], start_time: Union[int, str] = None) -> Table:
         """Creates a time table on the server.
 
         Args:
-            period (int): the interval (in nano seconds) at which the time table ticks (adds a row)
-            start_time (int): the start time for the time table in nano seconds, default is None (meaning now)
+            period (Union[int, str]): the interval at which the time table ticks (adds a row); units are nanoseconds
+                or a time interval string, e.g. "PT00:00:.001" or "PT1S"
+            start_time (Union[int, str]): the start time for the time table in nanoseconds or as a date time
+                formatted string; default is None (meaning now)
 
         Returns:
             a Table object
