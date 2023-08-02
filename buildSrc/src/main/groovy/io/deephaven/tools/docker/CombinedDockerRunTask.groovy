@@ -111,6 +111,7 @@ class CombinedDockerRunTask extends AbstractDockerRemoteApiTask {
                     throw new GradleException("${failedMessage}, check logs for details")
                 }
             }
+
         } finally {
             if (containerId == null) {
                 return;

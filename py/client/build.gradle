@@ -81,7 +81,7 @@ deephavenDocker {
     networkName.set "pydeephaven-network-${randomSuffix}"
 }
 
-tasks.getByName('check').dependsOn(Docker.registerDockerTask(project, 'testPyClient') {
+def testPyClient = Docker.registerDockerTask(project, 'testPyClient') {
     copyIn {
         from('pydeephaven') {
             into 'project/pydeephaven'
@@ -112,5 +112,7 @@ tasks.getByName('check').dependsOn(Docker.registerDockerTask(project, 'testPyCli
     copyOut {
         into layout.buildDirectory.dir('test-results')
     }
-})
-deephavenDocker.shouldLogIfTaskFails tasks.named('testPyClientRun')
+}
+
+tasks.getByName('check').dependsOn(testPyClient)
+deephavenDocker.shouldLogIfTaskFails testPyClient
