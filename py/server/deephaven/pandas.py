@@ -22,10 +22,9 @@ _JPrimitiveArrayConversionUtility = jpy.get_type("io.deephaven.integrations.comm
 _JDataAccessHelpers = jpy.get_type("io.deephaven.engine.table.impl.DataAccessHelpers")
 _is_dtype_backend_supported = pd.__version__ >= "2.0.0"
 
-
 _DTYPE_NULL_MAPPING: Dict[DType, Tuple] = {
     dtypes.bool_: (_NULL_BOOLEAN_AS_BYTE, pd.BooleanDtype),
-    dtypes.byte:  (NULL_BYTE, pd.Int8Dtype),
+    dtypes.byte: (NULL_BYTE, pd.Int8Dtype),
     dtypes.short: (NULL_SHORT, pd.Int16Dtype),
     dtypes.char: (NULL_CHAR, pd.UInt16Dtype),
     dtypes.int32: (NULL_INT, pd.Int32Dtype),
@@ -113,7 +112,7 @@ _PYARROW_TO_PANDAS_TYPE_MAPPERS = {
 }
 
 
-def to_pandas(table: Table, cols: List[str] = None, dtype_backend: str = None, conv_null: bool = False) -> \
+def to_pandas(table: Table, cols: List[str] = None, dtype_backend: str = None, conv_null: bool = True) -> \
         pd.DataFrame:
     """Produces a pandas DataFrame from a table.
 
@@ -129,7 +128,7 @@ def to_pandas(table: Table, cols: List[str] = None, dtype_backend: str = None, c
             pyarrow is used for all dtypes if “pyarrow” is set. default is None, meaning Numpy backed DataFrames with
             no nullable dtypes.
         conv_null (bool): When dtype_backend is not set, whether to check for Deephaven nulls in the data and
-            automatically replace them with pd.NA. default is False.
+            automatically replace them with pd.NA. default is True.
 
     Returns:
         a pandas DataFrame
@@ -142,12 +141,12 @@ def to_pandas(table: Table, cols: List[str] = None, dtype_backend: str = None, c
             raise DHError(message=f"the dtype_backend ({dtype_backend}) option is only available for pandas 2.0.0 and "
                                   f"above. {pd.__version__} is being used.")
 
-        if dtype_backend is not None and conv_null:
-            raise DHError(message=f"conv_null doesn't apply when dtype_backend is either numpy_nullable or pyarrow")
+        if dtype_backend is not None and not conv_null:
+            raise DHError(message="conv_null can't be turned off when dtype_backend is either numpy_nullable or "
+                                  "pyarrow")
 
-        type_mapper = _PYARROW_TO_PANDAS_TYPE_MAPPERS.get(dtype_backend)
         # if nullable dtypes (pandas or pyarrow) is requested
-        if type_mapper:
+        if type_mapper := _PYARROW_TO_PANDAS_TYPE_MAPPERS.get(dtype_backend):
             pa_table = arrow.to_arrow(table=table, cols=cols)
             df = pa_table.to_pandas(types_mapper=type_mapper)
             del pa_table
