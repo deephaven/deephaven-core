@@ -44,8 +44,8 @@ public class PublishToKafka<K, V> extends LivenessArtifact {
     private final Table table;
     private final KafkaProducer<K, V> producer;
     private final String topic;
-    private final KeyOrValueSerializer<K> keySerializer;
-    private final KeyOrValueSerializer<V> valueSerializer;
+    private final KeyOrValueSerializer<K> keyChunkSerializer;
+    private final KeyOrValueSerializer<V> valueChunkSerializer;
 
     @ReferentialIntegrity
     private final PublishListener publishListener;
@@ -80,31 +80,33 @@ public class PublishToKafka<K, V> extends LivenessArtifact {
      * @param topic The destination topic
      * @param keyColumns Optional array of string column names from table for the columns corresponding to Kafka's Key
      *        field.
-     * @param keySerializer Optional {@link Serializer} to use for keys
-     * @param keyChunkSerializer Optional {@link KeyOrValueSerializer} to produce Kafka record keys
+     * @param kafkaKeySerializer The kafka {@link Serializer} to use for keys
+     * @param keyChunkSerializer Optional {@link KeyOrValueSerializer} to consume table data and produce Kafka record
+     *        keys in chunk-oriented fashion
      * @param valueColumns Optional array of string column names from table for the columns corresponding to Kafka's
      *        Value field.
-     * @param valueSerializer Optional {@link Serializer} to use for values
-     * @param valueChunkSerializer Optional {@link KeyOrValueSerializer} to produce Kafka record values
+     * @param kafkaValueSerializer The kafka {@link Serializer} to use for values
+     * @param valueChunkSerializer Optional {@link KeyOrValueSerializer} to consume table data and produce Kafka record
+     *        values in chunk-oriented fashion
      */
     public PublishToKafka(
             final Properties props,
             final Table table,
             final String topic,
             final String[] keyColumns,
-            final Serializer<K> keySerializer,
+            final Serializer<K> kafkaKeySerializer,
             final KeyOrValueSerializer<K> keyChunkSerializer,
             final String[] valueColumns,
-            final Serializer<V> valueSerializer,
+            final Serializer<V> kafkaValueSerializer,
             final KeyOrValueSerializer<V> valueChunkSerializer) {
         this.table = table;
         this.producer = new KafkaProducer<>(
                 props,
-                Objects.requireNonNull(keySerializer),
-                Objects.requireNonNull(valueSerializer));
+                Objects.requireNonNull(kafkaKeySerializer),
+                Objects.requireNonNull(kafkaValueSerializer));
         this.topic = topic;
-        this.keySerializer = keyChunkSerializer;
-        this.valueSerializer = valueChunkSerializer;
+        this.keyChunkSerializer = keyChunkSerializer;
+        this.valueChunkSerializer = valueChunkSerializer;
 
         // Publish the initial table state
         try (final PublicationGuard guard = new PublicationGuard()) {
@@ -139,22 +141,23 @@ public class PublishToKafka<K, V> extends LivenessArtifact {
         final int chunkSize = (int) Math.min(CHUNK_SIZE, rowsToPublish.size());
         try (final RowSequence.Iterator rowsIterator = rowsToPublish.getRowSequenceIterator();
                 final KeyOrValueSerializer.Context keyContext =
-                        keySerializer != null ? keySerializer.makeContext(chunkSize) : null;
+                        keyChunkSerializer != null ? keyChunkSerializer.makeContext(chunkSize) : null;
                 final KeyOrValueSerializer.Context valueContext =
-                        publishValues && valueSerializer != null ? valueSerializer.makeContext(chunkSize) : null) {
+                        publishValues && valueChunkSerializer != null ? valueChunkSerializer.makeContext(chunkSize)
+                                : null) {
             while (rowsIterator.hasMore()) {
                 final RowSequence chunkRowKeys = rowsIterator.getNextRowSequenceWithLength(chunkSize);
 
                 final ObjectChunk<K, Values> keyChunk;
                 if (keyContext != null) {
-                    keyChunk = keySerializer.handleChunk(keyContext, chunkRowKeys, usePrevious);
+                    keyChunk = keyChunkSerializer.handleChunk(keyContext, chunkRowKeys, usePrevious);
                 } else {
                     keyChunk = null;
                 }
 
                 final ObjectChunk<V, Values> valueChunk;
                 if (valueContext != null) {
-                    valueChunk = valueSerializer.handleChunk(valueContext, chunkRowKeys, usePrevious);
+                    valueChunk = valueChunkSerializer.handleChunk(valueContext, chunkRowKeys, usePrevious);
                 } else {
                     valueChunk = null;
                 }

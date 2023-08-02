@@ -174,7 +174,7 @@ class AvroImpl {
         }
 
         @Override
-        String[] getColumnNames(final @NotNull Table t, SchemaRegistryClient schemaRegistryClient) {
+        String[] getColumnNames(@NotNull final Table t, SchemaRegistryClient schemaRegistryClient) {
             ensureSchema(t, schemaRegistryClient);
             final List<Field> fields = schema.getFields();
             // ensure we got timestampFieldName right

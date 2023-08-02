@@ -172,7 +172,6 @@ class SimpleImpl {
                 return null;
             }
             final String typeAsString = (String) configs.get(typeProperty);
-            // this is ugly.
             switch (typeAsString) {
                 case "short":
                     return Type.shortType();
