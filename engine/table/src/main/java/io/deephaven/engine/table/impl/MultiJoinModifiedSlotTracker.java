@@ -11,21 +11,22 @@ public class MultiJoinModifiedSlotTracker {
     /** The slot that was modified. */
     private final IntegerArraySource modifiedSlots = new IntegerArraySource();
     /**
-     * We store flags, one per byte; 16 per location in flags, contiguous for multiple tables when we have more than 16.
+     * We store flags, one per nibble; 16 per location in flags, contiguous for multiple tables when we have more than
+     * 16.
      */
     private final LongArraySource flagSource = new LongArraySource();
-    /** the original right values, parallel to modifiedSlots. */
+    /** The original right values, parallel to modifiedSlots. */
     private final List<LongArraySource> originalRedirection = new ArrayList<>();
 
     int numTables = 0;
     int flagLocationsPerSlot = 0;
 
     /**
-     * the location that we must write to in modified slots; also if we have a pointer that falls outside the range [0,
+     * The location that we must write to in modified slots; also if we have a pointer that falls outside the range [0,
      * pointer); then we know it is invalid
      */
     private int pointer;
-    /** how many slots we have allocated */
+    /** Tow many slots we have allocated */
     private int allocated;
     /** Each time we clear, we add an offset to our cookies, this prevents us from reading old values */
     private int cookieGeneration;
@@ -66,7 +67,7 @@ public class MultiJoinModifiedSlotTracker {
      * Is this cookie within our valid range (greater than or equal to our generation, but less than the pointer after
      * adjustment?
      *
-     * @param cookie the cookie to check for validity
+     * @param cookie The cookie to check for validity
      *
      * @return true if the cookie is from the current generation, and references a valid slot in our table
      */
@@ -77,8 +78,8 @@ public class MultiJoinModifiedSlotTracker {
     /**
      * Get a cookie to return to the user, given a pointer value.
      *
-     * @param pointer the pointer to convert to a cookie
-     * @return the cookie to return to the user
+     * @param pointer The pointer to convert to a cookie
+     * @return The cookie to return to the user
      */
     private int getCookieFromPointer(int pointer) {
         return cookieGeneration + pointer;
@@ -87,8 +88,8 @@ public class MultiJoinModifiedSlotTracker {
     /**
      * Given a valid user's cookie, return the corresponding pointer.
      *
-     * @param cookie the valid cookie
-     * @return the pointer into modifiedSlots
+     * @param cookie The valid cookie
+     * @return The pointer into modifiedSlots
      */
     private int getPointerFromCookie(int cookie) {
         return cookie - cookieGeneration;
@@ -97,12 +98,12 @@ public class MultiJoinModifiedSlotTracker {
     /**
      * Add a slot in the main table.
      *
-     * @param slot the slot to add to the tracker.
-     * @param originalRedirection if we are the addition of the slot, what the right value was before our modification
+     * @param slot The slot to add to the tracker
+     * @param originalRedirection If we are the addition of the slot, what the right value was before our modification
      *        (otherwise ignored)
-     * @param flags the flags to or into our state
+     * @param flags The flags to or into our state
      *
-     * @return the cookie for future access
+     * @return The cookie for future access
      */
     public int addSlot(final int cookie, final int slot, final int tableNumber, final long originalRedirection,
             final byte flags) {
@@ -138,10 +139,10 @@ public class MultiJoinModifiedSlotTracker {
     /**
      * Modify an existing slot in the main table.
      *
-     * @param slot the slot to add to the tracker.
-     * @param flags the flags to or into our state
+     * @param slot The slot to add to the tracker.
+     * @param flags The flags to or into our state
      *
-     * @return the cookie for future access
+     * @return The cookie for future access
      */
     public int modifySlot(final int cookie, final int slot, final int tableNumber, final byte flags) {
         if (!isValidCookie(cookie)) {

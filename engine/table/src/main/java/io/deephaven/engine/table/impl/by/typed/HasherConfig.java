@@ -121,7 +121,7 @@ public class HasherConfig<T> {
         public BuildSpec(String name, String stateValueName, boolean requiresRowKeyChunk,
                 boolean allowAlternates, FoundMethodBuilder found,
                 MethodBuilder insert, ParameterSpec... params) {
-            // Convert the BiConsumer to our MethodBuilderWithChunkTypes.
+            // Convert the MethodBuilder to MethodBuilderWithChunkTypes.
             this(name,
                     stateValueName,
                     requiresRowKeyChunk,
