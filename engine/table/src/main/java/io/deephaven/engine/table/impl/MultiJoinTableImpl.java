@@ -554,9 +554,13 @@ public class MultiJoinTableImpl implements MultiJoinTable {
                     }
                     if (previousRedirections[tableNumber] == MultiJoinModifiedSlotTracker.SENTINEL_UNINITIALIZED_KEY) {
                         if (currentRedirections[tableNumber] == NULL_ROW_KEY) {
+                            // This slot was previously deleted and may need to be reincarnated. This redirection
+                            // previously and currently points to no row and should be considered previously null
+                            // for this purpose.
                             numberOfOriginalNulls++;
+                        } else {
+                            rowModified |= (flagValues[tableNumber] & notShift) != 0;
                         }
-                        rowModified |= (flagValues[tableNumber] & notShift) != 0;
                     } else {
                         // If the redirection has changed and we have done anything other than a shift, we must light
                         // up all the columns for the table as a modification. Similarly, if the row was added and
