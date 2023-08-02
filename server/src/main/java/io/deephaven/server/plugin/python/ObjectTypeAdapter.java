@@ -51,8 +51,8 @@ final class ObjectTypeAdapter extends ObjectTypeBase implements AutoCloseable {
                     PyObject.class, (PyObject) object);
 
             // Send the message and close the stream
-            connection.onMessage(ByteBuffer.wrap(bytes), exporter.references());
-            connection.close();
+            connection.onData(ByteBuffer.wrap(bytes), exporter.references());
+            connection.onClose();
 
             return MessageStream.NOOP;
         }
@@ -66,12 +66,12 @@ final class ObjectTypeAdapter extends ObjectTypeBase implements AutoCloseable {
         }
 
         @Override
-        public void onMessage(ByteBuffer payload, Object[] references) {
+        public void onData(ByteBuffer payload, Object[] references) {
             instance.call(void.class, "on_message", byte[].class, payload.array(), Object[].class, references);
         }
 
         @Override
-        public void close() {
+        public void onClose() {
             instance.call("close");
         }
     }

@@ -28,8 +28,8 @@ public abstract class ObjectTypeBase extends PluginBase implements ObjectType {
                 e.printStackTrace();
             }
 
-            connection.onMessage(exporter.payload(), exporter.references());
-            connection.close();
+            connection.onData(exporter.payload(), exporter.references());
+            connection.onClose();
             return MessageStream.NOOP;
         }
     }

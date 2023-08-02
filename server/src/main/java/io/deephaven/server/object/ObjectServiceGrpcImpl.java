@@ -98,7 +98,7 @@ public class ObjectServiceGrpcImpl extends ObjectServiceGrpc.ObjectServiceImplBa
                     Object[] objs = referenceObjects.stream().map(ExportObject::get).toArray();
                     // TODO: Should we try/catch this to recover/not close from plugin errors? Or make the client
                     // recover? Would be useful if the plugin is complex
-                    messageStream.onMessage(data.getPayload().asReadOnlyByteBuffer(), objs);
+                    messageStream.onData(data.getPayload().asReadOnlyByteBuffer(), objs);
                 });
             } else {
                 // Do something with unexpected message type?
@@ -115,7 +115,7 @@ public class ObjectServiceGrpcImpl extends ObjectServiceGrpc.ObjectServiceImplBa
         public void onCompleted() {
             SessionState session = sessionService.getCurrentSession();
             session.nonExport().require(object).onError(responseObserver).submit(() -> {
-                messageStream.close();
+                messageStream.onClose();
                 responseObserver.onCompleted();
             });
             release();
@@ -169,7 +169,7 @@ public class ObjectServiceGrpcImpl extends ObjectServiceGrpc.ObjectServiceImplBa
                     objectTypeInstance.clientConnection(o, connection);
 
                     if (!connection.isClosed()) {
-                        connection.close();
+                        connection.onClose();
                         throw Exceptions.statusRuntimeException(Code.INVALID_ARGUMENT,
                                 "Plugin didn't close response, use MessageStream instead for this object");
                     }
@@ -222,7 +222,7 @@ public class ObjectServiceGrpcImpl extends ObjectServiceGrpc.ObjectServiceImplBa
         }
 
         @Override
-        public void onMessage(ByteBuffer message, Object[] references) {
+        public void onData(ByteBuffer message, Object[] references) {
 
             Data.Builder payload = Data.newBuilder().setPayload(ByteString.copyFrom(message));
 
@@ -256,7 +256,7 @@ public class ObjectServiceGrpcImpl extends ObjectServiceGrpc.ObjectServiceImplBa
         }
 
         @Override
-        public void close() {
+        public void onClose() {
             closed = true;
             responseObserver.onCompleted();
         }

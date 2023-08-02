@@ -31,19 +31,19 @@ public interface ObjectType extends Plugin {
 
     /**
      * A stream of messages, either sent from the server to the client, or client to the server. ObjectType plugin
-     * implementations can provide an implementation of this interface for each incoming stream to invoke as messages
+     * implementations provide an instance of this interface for each incoming stream to invoke as messages
      * arrive, and will likewise be given an instance of this interface to be able to send messages to the client.
      */
-    interface MessageStream extends AutoCloseable {
+    interface MessageStream {
         /**
          * Simple stream that does no handling on data or close.
          */
         MessageStream NOOP = new MessageStream() {
             @Override
-            public void onMessage(ByteBuffer payload, Object[] references) {}
+            public void onData(ByteBuffer payload, Object[] references) {}
 
             @Override
-            public void close() {}
+            public void onClose() {}
         };
 
         /**
@@ -53,17 +53,17 @@ public interface ObjectType extends Plugin {
          * @param payload the binary data sent to the remote implementation
          * @param references server-side object references sent to the remote implementation
          */
-        void onMessage(ByteBuffer payload, Object[] references);
+        void onData(ByteBuffer payload, Object[] references);
 
         /**
          * Closes the stream on both ends. No further messages can be sent or received.
          */
-        void close();
+        void onClose();
     }
 
     /**
      * Signals creation of a client stream to the provided object. The returned MessageStream implementation will be
-     * called with each received message from the server, and can call the provided connection instance to send messages
+     * called with each received message from the client, and can call the provided connection instance to send messages
      * as needed to the client.
      * 
      * @param object the object to create a connection for

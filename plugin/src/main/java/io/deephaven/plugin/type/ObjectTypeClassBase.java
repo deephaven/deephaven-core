@@ -29,8 +29,8 @@ public abstract class ObjectTypeClassBase<T> extends ObjectTypeBase {
                 e.printStackTrace();
             }
 
-            connection.onMessage(exporter.payload(), exporter.references());
-            connection.close();
+            connection.onData(exporter.payload(), exporter.references());
+            connection.onClose();
 
             return MessageStream.NOOP;
         }
