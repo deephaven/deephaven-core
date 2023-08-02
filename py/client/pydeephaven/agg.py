@@ -326,8 +326,8 @@ def unique(cols: Union[str, List[str]] = None, include_nulls: bool = False,
             aggregation group are unique, default is False.
         non_unique_sentinel (Union[np.number, str, bool]): the non-null sentinel value when no unique value exists,
             default is None. Must be a non-None value when include_nulls is True. When passed in as a numpy scalar
-            number value, it must be of one of these types: np.int8, np.int16, np.uint16, np.int32, np.int64, np.float32
-            , np.float64.
+            number value, it must be of one of these types: np.int8, np.int16, np.uint16, np.int32, np.int64(int),
+            np.float32, np.float64(float). Please note that np.uint16 is interpreted as a Deephaven/Java char.
 
     Raises:
         TypeError
@@ -342,17 +342,17 @@ def unique(cols: Union[str, List[str]] = None, include_nulls: bool = False,
             agg_spec_non_unique_sentinel = _GrpcAggSpec.AggSpecNonUniqueSentinel(short_value=non_unique_sentinel)
         elif isinstance(non_unique_sentinel, np.int32):
             agg_spec_non_unique_sentinel = _GrpcAggSpec.AggSpecNonUniqueSentinel(int_value=non_unique_sentinel)
-        elif isinstance(non_unique_sentinel, np.int64):
+        elif isinstance(non_unique_sentinel, (np.int64, int)):
             agg_spec_non_unique_sentinel = _GrpcAggSpec.AggSpecNonUniqueSentinel(long_value=non_unique_sentinel)
         elif isinstance(non_unique_sentinel, np.float32):
             agg_spec_non_unique_sentinel = _GrpcAggSpec.AggSpecNonUniqueSentinel(float_value=non_unique_sentinel)
-        elif isinstance(non_unique_sentinel, np.float64):
+        elif isinstance(non_unique_sentinel, (np.float64, float)):
             agg_spec_non_unique_sentinel = _GrpcAggSpec.AggSpecNonUniqueSentinel(double_value=non_unique_sentinel)
         elif isinstance(non_unique_sentinel, np.uint16):
             agg_spec_non_unique_sentinel = _GrpcAggSpec.AggSpecNonUniqueSentinel(char_value=non_unique_sentinel)
         elif isinstance(non_unique_sentinel, str):
             agg_spec_non_unique_sentinel = _GrpcAggSpec.AggSpecNonUniqueSentinel(string_value=non_unique_sentinel)
-        elif isinstance(non_unique_sentinel, bool):
+        elif isinstance(non_unique_sentinel, (bool, np.bool_)):
             agg_spec_non_unique_sentinel = _GrpcAggSpec.AggSpecNonUniqueSentinel(bool_value=non_unique_sentinel)
         else:
             raise TypeError(f"invalid non-unique-sentinel value type {type(non_unique_sentinel)}")
