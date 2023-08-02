@@ -427,7 +427,6 @@ public class ParquetTools {
         try {
             ArrayList<Map<String, ParquetTableWriter.GroupingColumnWritingInfo>> groupingColumnWritingInfoMaps = null;
             if (groupingColumns.length == 0) {
-                // TODO test that length is 0 for non grouping tables
                 // Write the tables without any grouping info
                 for (int tableIdx = 0; tableIdx < sources.length; tableIdx++) {
                     final Table source = sources[tableIdx];
@@ -445,8 +444,6 @@ public class ParquetTools {
 
                 for (int tableIdx = 0; tableIdx < sources.length; tableIdx++) {
                     final File tableDestination = destinations[tableIdx];
-                    // TODO Test the above
-
                     final Map<String, ParquetTableWriter.GroupingColumnWritingInfo> groupingColumnWritingInfoMap =
                             groupingColumnInfoBuilderHelper(groupingColumns, parquetColumnNames, tableDestination);
                     groupingColumnWritingInfoMaps.add(groupingColumnWritingInfoMap);
@@ -833,21 +830,6 @@ public class ParquetTools {
                 (final String colName, final Set<String> takenNames) -> NameValidator.legalizeColumnName(colName,
                         s -> s.replace(" ", "_"), takenNames)));
     }
-
-    // private static void writeParquetTableImpl(
-    // final Table sourceTable,
-    // final TableDefinition definition,
-    // final ParquetInstructions writeInstructions,
-    // final File destFile,
-    // final Map<String, ParquetTableWriter.GroupingColumnWritingInfo> groupingColumnsWritingInfo) {
-    // final String path = destFile.getPath();
-    // try {
-    // ParquetTableWriter.write(
-    // sourceTable, definition, writeInstructions, path, Collections.emptyMap(), groupingColumnsWritingInfo);
-    // } catch (Exception e) {
-    // throw new UncheckedDeephavenException("Error writing table to " + destFile, e);
-    // }
-    // }
 
     public static final ParquetInstructions LZ4 = ParquetInstructions.builder().setCompressionCodecName("LZ4").build();
     public static final ParquetInstructions LZO = ParquetInstructions.builder().setCompressionCodecName("LZO").build();
