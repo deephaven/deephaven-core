@@ -1,4 +1,6 @@
-/*** Copyright(c)2016-2022 Deephaven Data Labs and Patent Pending */
+/**
+ * Copyright (c) 2016-2022 Deephaven Data Labs and Patent Pending
+ */
 package io.deephaven.engine.table.impl.locations.impl;
 
 import io.deephaven.base.FileUtils;
@@ -29,8 +31,8 @@ import java.util.stream.IntStream;
 
 import static io.deephaven.parquet.table.layout.DeephavenNestedPartitionLayout.PARQUET_FILE_NAME;
 
-/***
- * Unit tests for{@link ParallelDeferredGroupingProvider}.
+/**
+ * Unit tests for {@link ParallelDeferredGroupingProvider}.
  */
 public class TestGroupingProviders {
 

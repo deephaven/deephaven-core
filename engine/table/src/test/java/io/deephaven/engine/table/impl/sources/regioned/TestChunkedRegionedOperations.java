@@ -1,4 +1,6 @@
-/*** Copyright(c)2016-2022 Deephaven Data Labs and Patent Pending */
+/**
+ * Copyright (c) 2016-2022 Deephaven Data Labs and Patent Pending
+ */
 package io.deephaven.engine.table.impl.sources.regioned;
 
 import io.deephaven.base.FileUtils;
@@ -48,8 +50,8 @@ import static io.deephaven.parquet.table.layout.DeephavenNestedPartitionLayout.P
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 
-/***
- * High-level unit tests for{@link RegionedColumnSource} implementations of
+/**
+ * High-level unit tests for {@link RegionedColumnSource} implementations of
  * {@link ColumnSource#fillChunk(ColumnSource.FillContext, WritableChunk, RowSequence)}.
  */
 @Category(OutOfBandTest.class)
@@ -171,49 +173,49 @@ public class TestChunkedRegionedOperations {
 
         final Table inputData = ((QueryTable) TableTools.emptyTable(TABLE_SIZE)
                 .update(
-                        "II = ii")
+                        "II   = ii")
                 .updateView(
-                        "PC = Long.toString((long) (II / stripeSize))",
-                        "B = II % 1000 == 0 ? NULL_BYTE : (byte) II",
-                        "C = II % 27 == 26 ? NULL_CHAR : (char) ('A' + II % 27)",
-                        "S = II % 30000 == 0 ? NULL_SHORT : (short) II",
-                        "I = II % 512 == 0 ? NULL_INT : (int) II",
-                        "L = II % 1024 == 0 ? NULL_LONG : II",
-                        "F = II % 2048 == 0 ? NULL_FLOAT : (float) (II * 0.25)",
-                        "D = II % 4096 == 0 ? NULL_DOUBLE : II * 1.25",
-                        "Bl = II % 8192 == 0 ? null : II % 2 == 0",
-                        "Sym = II % 64 == 0 ? null : Long.toString(II % 1000)",
-                        "Str = II % 128 == 0 ? null : Long.toString(II)",
-                        "DT = II % 256 == 0 ? null : DateTimeUtils.epochNanosToInstant(nowNanos + II)",
+                        "PC   = Long.toString((long) (II / stripeSize))",
+                        "B    = II % 1000  == 0  ? NULL_BYTE   : (byte)  II",
+                        "C    = II % 27    == 26 ? NULL_CHAR   : (char)  ('A' + II % 27)",
+                        "S    = II % 30000 == 0  ? NULL_SHORT  : (short) II",
+                        "I    = II % 512   == 0  ? NULL_INT    : (int)   II",
+                        "L    = II % 1024  == 0  ? NULL_LONG   :         II",
+                        "F    = II % 2048  == 0  ? NULL_FLOAT  : (float) (II * 0.25)",
+                        "D    = II % 4096  == 0  ? NULL_DOUBLE :         II * 1.25",
+                        "Bl   = II % 8192  == 0  ? null        :         II % 2 == 0",
+                        "Sym  = II % 64    == 0  ? null        :         Long.toString(II % 1000)",
+                        "Str  = II % 128   == 0  ? null        :         Long.toString(II)",
+                        "DT   = II % 256   == 0  ? null        :         DateTimeUtils.epochNanosToInstant(nowNanos + II)",
                         "SymS = (StringSet) new ArrayStringSet(letters[((int) II) % 64], letters[(((int) II) + 7) % 64])",
-                        "Ser = II % 1024 == 0 ? null : new SimpleSerializable(II)",
-                        "Ext = II % 1024 == 0 ? null : new SimpleExternalizable(II)",
-                        "Fix = Sym == null ? null : new BigInteger(Sym, 10)",
-                        "Var = Str == null ? null : new BigInteger(Str, 10)"))
+                        "Ser  = II % 1024  == 0  ? null        : new SimpleSerializable(II)",
+                        "Ext  = II % 1024  == 0  ? null        : new SimpleExternalizable(II)",
+                        "Fix  = Sym == null      ? null        : new BigInteger(Sym, 10)",
+                        "Var  = Str == null      ? null        : new BigInteger(Str, 10)"))
                 .withDefinitionUnsafe(definition);
         // TODO: Add (Fixed|Variable)WidthObjectCodec columns
 
         final Table inputMissingData = ((QueryTable) TableTools.emptyTable(TABLE_SIZE)
                 .update(
-                        "II = ii")
+                        "II   = ii")
                 .updateView(
-                        "PC = `N` + Long.toString((long) (II / stripeSize))",
-                        "B = NULL_BYTE",
-                        "C = NULL_CHAR",
-                        "S = NULL_SHORT",
-                        "I = NULL_INT",
-                        "L = NULL_LONG",
-                        "F = NULL_FLOAT",
-                        "D = NULL_DOUBLE",
-                        "Bl = (Boolean) null",
-                        "Sym = (String) null",
-                        "Str = (String) null",
-                        "DT = (Instant) null",
+                        "PC   = `N` + Long.toString((long) (II / stripeSize))",
+                        "B    = NULL_BYTE",
+                        "C    = NULL_CHAR",
+                        "S    = NULL_SHORT",
+                        "I    = NULL_INT",
+                        "L    = NULL_LONG",
+                        "F    = NULL_FLOAT",
+                        "D    = NULL_DOUBLE",
+                        "Bl   = (Boolean) null",
+                        "Sym  = (String) null",
+                        "Str  = (String) null",
+                        "DT   = (Instant) null",
                         "SymS = (StringSet) null",
-                        "Ser = (SimpleSerializable) null",
-                        "Ext = (SimpleExternalizable) null",
-                        "Fix = (BigInteger) null",
-                        "Var = (BigInteger) null"))
+                        "Ser  = (SimpleSerializable) null",
+                        "Ext  = (SimpleExternalizable) null",
+                        "Fix  = (BigInteger) null",
+                        "Var  = (BigInteger) null"))
                 .withDefinitionUnsafe(definition);
 
         dataDirectory = Files.createTempDirectory(Paths.get(""), "TestChunkedRegionedOperations-").toFile();

@@ -432,12 +432,12 @@ public class ParquetTableReadWriteTest {
 
 
     // Following is used for testing both writing APIs for parquet tables
-    private interface ParquetTableWriter {
+    private interface TestParquetTableWriter {
         void writeTable(final Table table, final File destFile);
     }
 
-    ParquetTableWriter singleWriter = (table, destFile) -> ParquetTools.writeTable(table, destFile);
-    ParquetTableWriter multiWriter = (table, destFile) -> ParquetTools.writeTables(new Table[] {table},
+    TestParquetTableWriter singleWriter = (table, destFile) -> ParquetTools.writeTable(table, destFile);
+    TestParquetTableWriter multiWriter = (table, destFile) -> ParquetTools.writeTables(new Table[] {table},
             table.getDefinition(), new File[] {destFile});
 
     /**
@@ -450,7 +450,7 @@ public class ParquetTableReadWriteTest {
         basicWriteTestsImpl(multiWriter);
     }
 
-    private void basicWriteTestsImpl(ParquetTableWriter writer) {
+    private void basicWriteTestsImpl(TestParquetTableWriter writer) {
         // Create an empty parent directory
         final File parentDir = new File(rootFile, "tempDir");
         parentDir.mkdir();
@@ -503,7 +503,7 @@ public class ParquetTableReadWriteTest {
         groupingColumnsBasicWriteTestsImpl(multiWriter);
     }
 
-    public void groupingColumnsBasicWriteTestsImpl(ParquetTableWriter writer) {
+    public void groupingColumnsBasicWriteTestsImpl(TestParquetTableWriter writer) {
         // Create an empty parent directory
         final File parentDir = new File(rootFile, "tempDir");
         parentDir.mkdir();
@@ -558,7 +558,7 @@ public class ParquetTableReadWriteTest {
         groupingColumnsOverwritingTestsImpl(multiWriter);
     }
 
-    public void groupingColumnsOverwritingTestsImpl(ParquetTableWriter writer) {
+    public void groupingColumnsOverwritingTestsImpl(TestParquetTableWriter writer) {
         // Create an empty parent directory
         final File parentDir = new File(rootFile, "tempDir");
         parentDir.mkdir();
@@ -638,7 +638,7 @@ public class ParquetTableReadWriteTest {
         readChangedUnderlyingFileTestsImpl(multiWriter);
     }
 
-    public void readChangedUnderlyingFileTestsImpl(ParquetTableWriter writer) {
+    public void readChangedUnderlyingFileTestsImpl(TestParquetTableWriter writer) {
         // Write a table to parquet file and read it back
         final Table tableToSave = TableTools.emptyTable(5).update("A=(int)i", "B=(long)i", "C=(double)i");
         final String filename = "readChangedUnderlyingFileTests.parquet";
@@ -671,7 +671,7 @@ public class ParquetTableReadWriteTest {
         readModifyWriteTestsImpl(multiWriter);
     }
 
-    public void readModifyWriteTestsImpl(ParquetTableWriter writer) {
+    public void readModifyWriteTestsImpl(TestParquetTableWriter writer) {
         // Write a table to parquet file and read it back
         final Table tableToSave = TableTools.emptyTable(5).update("A=(int)i", "B=(long)i", "C=(double)i");
         final String filename = "readModifyWriteTests.parquet";
