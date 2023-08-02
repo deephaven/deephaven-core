@@ -69,7 +69,7 @@ using deephaven::dhcore::utility::SFCallback;
 using deephaven::dhcore::utility::streamf;
 using deephaven::dhcore::utility::stringf;
 
-typedef io::deephaven::proto::backplane::grpc::UpdateByRequest::UpdateByOperation GrpcUpdateByOperation;
+typedef io::deephaven::proto::backplane::grpc::UpdateByRequest::UpdateByOperation UpdateByOperationProto;
 
 namespace deephaven::client {
 namespace impl {
@@ -378,14 +378,14 @@ std::shared_ptr<TableHandleImpl> TableHandleImpl::asOfJoin(AsOfJoinTablesRequest
 std::shared_ptr<TableHandleImpl>
 TableHandleImpl::updateBy(std::vector<std::shared_ptr<UpdateByOperationImpl>> ops,
     std::vector<std::string> by) {
-  auto grpcOps = makeReservedVector<GrpcUpdateByOperation>(ops.size());
+  auto protos = makeReservedVector<UpdateByOperationProto>(ops.size());
   for (const auto &op : ops) {
-    grpcOps.push_back(op->grpcOp());
+    protos.push_back(op->updateByProto());
   }
   auto *server = managerImpl_->server().get();
   auto resultTicket = server->newTicket();
   auto [cb, ls] = TableHandleImpl::createEtcCallback(shared_from_this(), managerImpl_.get(), resultTicket);
-  server->updateByAsync(ticket_, std::move(grpcOps), std::move(by), std::move(cb), resultTicket);
+  server->updateByAsync(ticket_, std::move(protos), std::move(by), std::move(cb), resultTicket);
   return TableHandleImpl::create(managerImpl_, std::move(resultTicket), std::move(ls));
 }
 

@@ -8,16 +8,16 @@
 
 namespace deephaven::client::impl {
 class UpdateByOperationImpl {
-  typedef io::deephaven::proto::backplane::grpc::UpdateByRequest::UpdateByOperation GrpcUpdateByOperation;
+  typedef io::deephaven::proto::backplane::grpc::UpdateByRequest::UpdateByOperation UpdateByOperationProto;
 public:
-  explicit UpdateByOperationImpl(GrpcUpdateByOperation grpcOp);
+  explicit UpdateByOperationImpl(UpdateByOperationProto grpcOp);
   UpdateByOperationImpl(UpdateByOperationImpl &&other) noexcept;
   UpdateByOperationImpl &operator=(UpdateByOperationImpl &&other) noexcept;
   ~UpdateByOperationImpl();
 
-  const GrpcUpdateByOperation &grpcOp() const { return grpcOp_; }
+  [[nodiscard]] const UpdateByOperationProto &updateByProto() const { return updateByProto_; }
 
 private:
-  GrpcUpdateByOperation grpcOp_;
+  UpdateByOperationProto updateByProto_;
 };
 }  // namespace deephaven::client::impl

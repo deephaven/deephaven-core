@@ -55,15 +55,18 @@ set(ALL_FILES
     src/client_options.cc
     src/client.cc
     src/flight.cc
+    src/update_by.cc
 
     include/public/deephaven/client/columns.h
     include/public/deephaven/client/expressions.h
     include/public/deephaven/client/client.h
     include/public/deephaven/client/client_options.h
     include/public/deephaven/client/flight.h
+    include/public/deephaven/client/update_by.h
     include/public/deephaven/client/utility/arrow_util.h
 
     src/subscription/subscribe_thread.cc
+
     include/private/deephaven/client/subscription/subscribe_thread.h
     include/private/deephaven/client/subscription/subscription_handle.h
 

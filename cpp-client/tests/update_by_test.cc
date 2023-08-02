@@ -4,6 +4,7 @@
 #include "tests/third_party/catch.hpp"
 #include "tests/test_util.h"
 #include "deephaven/dhcore/utility/utility.h"
+#include "deephaven/client/update_by.h"
 
 using deephaven::client::update_by::BadDataBehavior;
 using deephaven::client::update_by::cumMax;

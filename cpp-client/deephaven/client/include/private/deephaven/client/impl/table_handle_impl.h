@@ -9,6 +9,7 @@
 #include "deephaven/client/client.h"
 #include "deephaven/client/server/server.h"
 #include "deephaven/client/subscription/subscription_handle.h"
+#include "deephaven/client/update_by.h"
 #include "deephaven/client/utility/executor.h"
 #include "deephaven/dhcore/clienttable/schema.h"
 #include "deephaven/dhcore/ticking/ticking.h"
