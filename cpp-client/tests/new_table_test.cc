@@ -12,32 +12,32 @@ using deephaven::client::TableHandle;
 using deephaven::client::SortPair;
 using deephaven::client::utility::TableMaker;
 using deephaven::dhcore::DeephavenConstants;
-using deephaven::dhcore::utility::streamf;
-using deephaven::dhcore::utility::stringf;
+using deephaven::dhcore::utility::Streamf;
+using deephaven::dhcore::utility::Stringf;
 
 namespace deephaven::client::tests {
 TEST_CASE("New Table", "[newtable]") {
-  auto tm = TableMakerForTests::create();
+  auto tm = TableMakerForTests::Create();
 
   // std::vector<std::optional<bool>> boolData = { {}, false, true, false, false, true };
-  std::vector<std::optional<int8_t>> byteData = { {}, 0, 1, -1, DeephavenConstants::MIN_BYTE, DeephavenConstants::MAX_BYTE };
-  std::vector<std::optional<int16_t>> shortData = { {}, 0, 1, -1, DeephavenConstants::MIN_SHORT, DeephavenConstants::MAX_SHORT };
-  std::vector<std::optional<int32_t>> intData = { {}, 0, 1, -1, DeephavenConstants::MIN_INT, DeephavenConstants::MAX_INT };
-  std::vector<std::optional<int64_t>> longData = { {}, 0L, 1L, -1L, DeephavenConstants::MIN_LONG, DeephavenConstants::MAX_LONG };
-  std::vector<std::optional<float>> floatData = { {}, 0.0f, 1.0f, -1.0f, -3.4e+38f, std::numeric_limits<float>::max() };
-  std::vector<std::optional<double>> doubleData = { {}, 0.0, 1.0, -1.0, -1.79e+308, std::numeric_limits<double>::max() };
-  std::vector<std::optional<std::string>> stringData = { {}, "", "A string", "Also a string", "AAAAAA", "ZZZZZZ" };
+  std::vector<std::optional<int8_t>> byte_data = { {}, 0, 1, -1, DeephavenConstants::kMinByte, DeephavenConstants::kMaxByte };
+  std::vector<std::optional<int16_t>> short_data = { {}, 0, 1, -1, DeephavenConstants::kMinShort, DeephavenConstants::kMaxShort };
+  std::vector<std::optional<int32_t>> int_data = { {}, 0, 1, -1, DeephavenConstants::kMinInt, DeephavenConstants::kMaxInt };
+  std::vector<std::optional<int64_t>> long_data = { {}, 0L, 1L, -1L, DeephavenConstants::kMinLong, DeephavenConstants::kMaxLong };
+  std::vector<std::optional<float>> float_data = { {}, 0.0F, 1.0F, -1.0F, -3.4e+38F, std::numeric_limits<float>::max() };
+  std::vector<std::optional<double>> double_data = { {}, 0.0, 1.0, -1.0, -1.79e+308, std::numeric_limits<double>::max() };
+  std::vector<std::optional<std::string>> string_data = { {}, "", "A string", "Also a string", "AAAAAA", "ZZZZZZ" };
 
   TableMaker maker;
   // maker.addColumn("BoolValue", boolData);
-  maker.addColumn("ByteValue", byteData);
-  maker.addColumn("ShortValue", shortData);
-  maker.addColumn("IntValue", intData);
-  maker.addColumn("LongValue", longData);
-  maker.addColumn("FloatValue", floatData);
-  maker.addColumn("DoubleValue", doubleData);
-  maker.addColumn("StringValue", stringData);
-  auto temp = maker.makeTable(tm.client().getManager());
-  std::cout << temp.stream(true) << '\n';
+  maker.AddColumn("ByteValue", byte_data);
+  maker.AddColumn("ShortValue", short_data);
+  maker.AddColumn("IntValue", int_data);
+  maker.AddColumn("LongValue", long_data);
+  maker.AddColumn("FloatValue", float_data);
+  maker.AddColumn("DoubleValue", double_data);
+  maker.AddColumn("StringValue", string_data);
+  auto temp = maker.MakeTable(tm.Client().GetManager());
+  std::cout << temp.Stream(true) << '\n';
 }
 }  // namespace deephaven::client::tests

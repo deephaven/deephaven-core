@@ -10,6 +10,6 @@ public:
   /**
    * Cancels the subscription and waits for the corresponding thread to die.
    */
-  virtual void cancel() = 0;
+  virtual void Cancel() = 0;
 };
 }  // namespace deephaven::client::subscription

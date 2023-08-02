@@ -5,24 +5,24 @@
 
 #include "deephaven/dhcore/utility/utility.h"
 
-using deephaven::dhcore::utility::stringf;
+using deephaven::dhcore::utility::Stringf;
 
 namespace deephaven::dhcore::utility::internal {
-bool PromiseStateBase::valid() {
+bool PromiseStateBase::Valid() {
   std::unique_lock guard(mutex_);
-  return validLocked(guard);
+  return ValidLocked(guard);
 }
 
-void PromiseStateBase::checkValidLocked(const std::unique_lock<std::mutex> &guard, bool expected) {
-  bool actual = validLocked(guard);
+void PromiseStateBase::CheckValidLocked(const std::unique_lock<std::mutex> &guard, bool expected) {
+  bool actual = ValidLocked(guard);
   if (expected != actual) {
-    auto message = stringf("Expected lock state %o, actual lock state %o", expected, actual);
+    auto message = Stringf("Expected lock state %o, actual lock state %o", expected, actual);
     throw std::runtime_error(message);
   }
 }
 
-void PromiseStateBase::waitValidLocked(std::unique_lock<std::mutex> *guard) {
-  while (!validLocked(*guard)) {
+void PromiseStateBase::WaitValidLocked(std::unique_lock<std::mutex> *guard) {
+  while (!ValidLocked(*guard)) {
     condVar_.wait(*guard);
   }
   if (eptr_ != nullptr) {

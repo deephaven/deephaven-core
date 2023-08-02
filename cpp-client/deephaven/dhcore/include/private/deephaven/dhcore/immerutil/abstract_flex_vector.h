@@ -15,28 +15,29 @@
 namespace deephaven::dhcore::immerutil {
 namespace internal {
 class FlexVectorAppender {
-  typedef deephaven::dhcore::chunk::AnyChunk AnyChunk;
-  typedef deephaven::dhcore::column::ColumnSource ColumnSource;
+  using AnyChunk = deephaven::dhcore::chunk::AnyChunk;
+  using ColumnSource = deephaven::dhcore::column::ColumnSource;
 
 public:
-  template<typename COLUMN_SOURCE, typename T>
-  static void append(const COLUMN_SOURCE &src, size_t begin, size_t end,
-      immer::flex_vector<T> *destData, immer::flex_vector<bool> *optionalDestNulls) {
-    auto chunkData = appendHelper(src, begin, end, optionalDestNulls);
+  template<typename ColumnSource, typename T>
+  static void Append(const ColumnSource &src, size_t begin, size_t end,
+      immer::flex_vector<T> *dest_data, immer::flex_vector<bool> *optional_dest_nulls) {
+    auto chunk_data = AppendHelper(src, begin, end, optional_dest_nulls);
 
     typedef typename deephaven::dhcore::chunk::TypeToChunk<T>::type_t chunkType_t;
-    auto *typedChunkData = deephaven::dhcore::utility::verboseCast<const chunkType_t*>(
-        DEEPHAVEN_EXPR_MSG(&chunkData.unwrap()));
-    auto transientData = destData->transient();
-    for (auto v : *typedChunkData) {
-      transientData.push_back(v);
+    auto *typed_chunk_data = deephaven::dhcore::utility::VerboseCast<const chunkType_t *>(
+        DEEPHAVEN_EXPR_MSG(&chunk_data.Unwrap()));
+    auto transient_data = dest_data->transient();
+    for (auto v : *typed_chunk_data) {
+      transient_data.push_back(v);
     }
-    *destData = transientData.persistent();
+    *dest_data = transient_data.persistent();
   }
 
+
 private:
-  static AnyChunk appendHelper(const ColumnSource &src, size_t begin, size_t end,
-      immer::flex_vector<bool> *optionalDestNulls);
+  static AnyChunk AppendHelper(const ColumnSource &src, size_t begin, size_t end,
+      immer::flex_vector<bool> *optional_dest_nulls);
 };
 }  // namespace internal
 
@@ -46,17 +47,17 @@ private:
  */
 class AbstractFlexVectorBase {
 protected:
-  typedef deephaven::dhcore::column::ColumnSource ColumnSource;
-  typedef deephaven::dhcore::chunk::Chunk Chunk;
+  using Chunk = deephaven::dhcore::chunk::Chunk;
+  using ColumnSource = deephaven::dhcore::column::ColumnSource;
 public:
   virtual ~AbstractFlexVectorBase();
 
-  virtual std::unique_ptr<AbstractFlexVectorBase> take(size_t n) = 0;
-  virtual void inPlaceDrop(size_t n) = 0;
-  virtual void inPlaceAppend(std::unique_ptr<AbstractFlexVectorBase> other) = 0;
-  virtual void inPlaceAppendSource(const ColumnSource &source, size_t begin, size_t end) = 0;
+  [[nodiscard]] virtual std::unique_ptr<AbstractFlexVectorBase> Take(size_t n) = 0;
+  virtual void InPlaceDrop(size_t n) = 0;
+  virtual void InPlaceAppend(std::unique_ptr<AbstractFlexVectorBase> other) = 0;
+  virtual void InPlaceAppendSource(const ColumnSource &source, size_t begin, size_t end) = 0;
 
-  virtual std::shared_ptr<ColumnSource> makeColumnSource() const = 0;
+  [[nodiscard]] virtual std::shared_ptr<ColumnSource> MakeColumnSource() const = 0;
 };
 
 template<typename T>
@@ -68,28 +69,30 @@ public:
 
   ~NumericAbstractFlexVector() final = default;
 
-  std::unique_ptr<AbstractFlexVectorBase> take(size_t n) final {
+  [[nodiscard]]
+  std::unique_ptr<AbstractFlexVectorBase> Take(size_t n) final {
     return std::make_unique<NumericAbstractFlexVector>(vec_.take(n));
   }
 
-  void inPlaceDrop(size_t n) final {
+  void InPlaceDrop(size_t n) final {
     auto temp = std::move(vec_).drop(n);
     vec_ = std::move(temp);
   }
 
-  void inPlaceAppend(std::unique_ptr<AbstractFlexVectorBase> other) final {
-    auto *otherVec = deephaven::dhcore::utility::verboseCast<NumericAbstractFlexVector*>(
+  void InPlaceAppend(std::unique_ptr<AbstractFlexVectorBase> other) final {
+    auto *other_vec = deephaven::dhcore::utility::VerboseCast<NumericAbstractFlexVector *>(
         DEEPHAVEN_EXPR_MSG(other.get()));
-    auto temp = std::move(vec_) + std::move(otherVec->vec_);
+    auto temp = std::move(vec_) + std::move(other_vec->vec_);
     vec_ = std::move(temp);
   }
 
-  void inPlaceAppendSource(const ColumnSource &source, size_t begin, size_t end) final {
-    internal::FlexVectorAppender::append(source, begin, end, &vec_, nullptr);
+  void InPlaceAppendSource(const ColumnSource &source, size_t begin, size_t end) final {
+    internal::FlexVectorAppender::Append(source, begin, end, &vec_, nullptr);
   }
 
-  std::shared_ptr<ColumnSource> makeColumnSource() const final {
-    return deephaven::client::immerutil::NumericImmerColumnSource<T>::create(vec_);
+  [[nodiscard]]
+  std::shared_ptr<ColumnSource> MakeColumnSource() const final {
+    return deephaven::client::immerutil::NumericImmerColumnSource<T>::Create(vec_);
   }
 
 private:
@@ -106,34 +109,36 @@ public:
 
   ~GenericAbstractFlexVector() final = default;
 
-  std::unique_ptr<AbstractFlexVectorBase> take(size_t n) final {
+  [[nodiscard]]
+  std::unique_ptr<AbstractFlexVectorBase> Take(size_t n) final {
     return std::make_unique<GenericAbstractFlexVector>(data_.take(n), nulls_.take(n));
   }
 
-  void inPlaceDrop(size_t n) final {
-    auto tempData = std::move(data_).drop(n);
-    data_ = std::move(tempData);
+  void InPlaceDrop(size_t n) final {
+    auto temp_data = std::move(data_).drop(n);
+    data_ = std::move(temp_data);
 
-    auto tempNulls = std::move(nulls_).drop(n);
-    nulls_ = std::move(tempNulls);
+    auto temp_nulls = std::move(nulls_).drop(n);
+    nulls_ = std::move(temp_nulls);
   }
 
-  void inPlaceAppend(std::unique_ptr<AbstractFlexVectorBase> other) final {
-    auto *otherVec = deephaven::dhcore::utility::verboseCast<GenericAbstractFlexVector*>(
+  void InPlaceAppend(std::unique_ptr<AbstractFlexVectorBase> other) final {
+    auto *other_vec = deephaven::dhcore::utility::VerboseCast<GenericAbstractFlexVector *>(
         DEEPHAVEN_EXPR_MSG(other.get()));
-    auto tempData = std::move(data_) + std::move(otherVec->data_);
-    data_ = std::move(tempData);
+    auto temp_data = std::move(data_) + std::move(other_vec->data_);
+    data_ = std::move(temp_data);
 
-    auto tempNulls = std::move(nulls_) + std::move(otherVec->nulls_);
-    nulls_ = std::move(tempNulls);
+    auto temp_nulls = std::move(nulls_) + std::move(other_vec->nulls_);
+    nulls_ = std::move(temp_nulls);
   }
 
-  void inPlaceAppendSource(  const ColumnSource &source, size_t begin, size_t end) final {
-    internal::FlexVectorAppender::append(source, begin, end, &data_, &nulls_);
+  void InPlaceAppendSource(const ColumnSource &source, size_t begin, size_t end) final {
+    internal::FlexVectorAppender::Append(source, begin, end, &data_, &nulls_);
   }
 
-  std::shared_ptr<ColumnSource> makeColumnSource() const final {
-    return deephaven::client::immerutil::GenericImmerColumnSource<T>::create(data_, nulls_);
+  [[nodiscard]]
+  std::shared_ptr<ColumnSource> MakeColumnSource() const final {
+    return deephaven::client::immerutil::GenericImmerColumnSource<T>::Create(data_, nulls_);
   }
 
 private:

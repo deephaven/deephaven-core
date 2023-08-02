@@ -9,38 +9,38 @@ using deephaven::client::TableHandle;
 
 namespace deephaven::client::tests {
 TEST_CASE("Head and Tail", "[headtail]") {
-  auto tm = TableMakerForTests::create();
-  auto table = tm.table();
+  auto tm = TableMakerForTests::Create();
+  auto table = tm.Table();
 
-  auto importDate = table.getStrCol("ImportDate");
-  auto ticker = table.getStrCol("Ticker");
-  auto volume = table.getNumCol("Volume");
+  auto import_date = table.GetStrCol("ImportDate");
+  auto ticker = table.GetStrCol("Ticker");
+  auto volume = table.GetNumCol("Volume");
 
-  table = table.where(importDate == "2017-11-01");
+  table = table.Where(import_date == "2017-11-01");
 
-  auto th = table.head(2).select(ticker, volume);
-  auto tt = table.tail(2).select(ticker, volume);
+  auto th = table.Head(2).Select(ticker, volume);
+  auto tt = table.Tail(2).Select(ticker, volume);
 
   std::cout << "==== Head(2) ====\n";
-  std::cout << th.stream(true) << '\n';
-  std::cout << tt.stream(true) << '\n';
+  std::cout << th.Stream(true) << '\n';
+  std::cout << tt.Stream(true) << '\n';
 
-  std::vector<std::string> headTickerData = {"XRX", "XRX"};
-  std::vector<std::int64_t> headVolumeData = {345000, 87000};
+  std::vector<std::string> head_ticker_data = {"XRX", "XRX"};
+  std::vector<std::int64_t> head_volume_data = {345000, 87000};
 
-  std::vector<std::string> tailTickerData = {"ZNGA", "ZNGA"};
-  std::vector<std::int64_t> tailVolumeData = {46123, 48300};
+  std::vector<std::string> tail_ticker_data = {"ZNGA", "ZNGA"};
+  std::vector<std::int64_t> tail_volume_data = {46123, 48300};
 
-  compareTable(
+  CompareTable(
       th,
-      "Ticker", headTickerData,
-      "Volume", headVolumeData
-      );
+      "Ticker", head_ticker_data,
+      "Volume", head_volume_data
+  );
 
-  compareTable(
+  CompareTable(
       tt,
-      "Ticker", tailTickerData,
-      "Volume", tailVolumeData
-      );
+      "Ticker", tail_ticker_data,
+      "Volume", tail_volume_data
+  );
 }
 }  // namespace deephaven::client::tests

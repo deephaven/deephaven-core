@@ -7,11 +7,11 @@
 #include <cstdlib>
 
 using deephaven::client::TableHandle;
-using deephaven::client::utility::okOrThrow;
+using deephaven::client::utility::OkOrThrow;
 using deephaven::client::utility::TableMaker;
-using deephaven::client::utility::valueOrThrow;
-using deephaven::dhcore::utility::streamf;
-using deephaven::dhcore::utility::stringf;
+using deephaven::client::utility::ValueOrThrow;
+using deephaven::dhcore::utility::Streamf;
+using deephaven::dhcore::utility::Stringf;
 
 namespace deephaven::client::tests {
 ColumnNamesForTests::ColumnNamesForTests() : importDate_("ImportDate"), ticker_("Ticker"),
@@ -96,34 +96,40 @@ ColumnDataForTests::ColumnDataForTests(ColumnDataForTests &&other) noexcept = de
 ColumnDataForTests &ColumnDataForTests::operator=(ColumnDataForTests &&other) noexcept = default;
 ColumnDataForTests::~ColumnDataForTests() = default;
 
-TableMakerForTests TableMakerForTests::create() {
-  auto client = createClient();
-  auto manager = client.getManager();
+TableMakerForTests TableMakerForTests::Create() {
+  auto client = CreateClient();
+  auto manager = client.GetManager();
 
   ColumnNamesForTests cn;
   ColumnDataForTests cd;
 
   TableMaker maker;
-  maker.addColumn(cn.importDate(), cd.importDate());
-  maker.addColumn(cn.ticker(), cd.ticker());
-  maker.addColumn(cn.open(), cd.open());
-  maker.addColumn(cn.close(), cd.close());
-  maker.addColumn(cn.volume(), cd.volume());
+  maker.AddColumn(cn.ImportDate(), cd.ImportDate());
+  maker.AddColumn(cn.Ticker(), cd.Ticker());
+  maker.AddColumn(cn.Open(), cd.Open());
+  maker.AddColumn(cn.Close(), cd.Close());
+  maker.AddColumn(cn.Volume(), cd.Volume());
 
-  auto testTable = maker.makeTable(manager);
-  return TableMakerForTests(std::move(client), std::move(testTable), std::move(cn), std::move(cd));
+  auto test_table = maker.MakeTable(manager);
+  return TableMakerForTests(std::move(client), std::move(test_table), std::move(cn), std::move(cd));
 }
 
-Client TableMakerForTests::createClient(const ClientOptions &options) {
+Client TableMakerForTests::CreateClient(const ClientOptions &options) {
   const char *hostptr = std::getenv("DH_HOST");
   const char *portptr = std::getenv("DH_PORT");
   std::string host = (hostptr == nullptr) ? "localhost" : hostptr;
   std::string port = (portptr == nullptr) ? "10000" : portptr;
-  std::string connectionString(host + ":" + port);
-  streamf(std::cerr, "Connecting to %o\n", connectionString);
-  auto client = Client::connect(connectionString, options);
+  std::string connection_string(host + ":" + port);
+  Streamf(std::cerr, "Connecting to %o\n", connection_string);
+  auto client = Client::Connect(connection_string, options);
   return client;
 }
+
+TableMakerForTests::TableMakerForTests(TableMakerForTests::ClientType &&client,
+    TableHandle &&test_table, ColumnNamesForTests &&column_names, ColumnDataForTests &&columnData) :
+    client_(std::move(client)),
+    testTable_(std::move(test_table)), columnNames_(std::move(column_names)),
+    columnData_(std::move(columnData)) {}
 
 TableMakerForTests::TableMakerForTests(TableMakerForTests &&) noexcept = default;
 TableMakerForTests &TableMakerForTests::operator=(TableMakerForTests &&) noexcept = default;
@@ -131,87 +137,87 @@ TableMakerForTests::~TableMakerForTests() = default;
 
 
 namespace internal {
-void compareTableHelper(int depth, const std::shared_ptr<arrow::Table> &table,
-    const std::string &columnName, const std::shared_ptr<arrow::Array> &data) {
+void CompareTableHelper(int depth, const std::shared_ptr<arrow::Table> &table,
+    const std::string &column_name, const std::shared_ptr<arrow::Array> &data) {
   auto field = table->field(depth);
   auto column = table->column(depth);
 
-  if (field->name() != columnName) {
-    auto message = stringf("Column %o: Expected column name %o, have %o", depth, columnName,
+  if (field->name() != column_name) {
+    auto message = Stringf("Column %o: Expected column name %o, have %o", depth, column_name,
         field->name());
     throw std::runtime_error(DEEPHAVEN_DEBUG_MSG(message));
   }
 
-  arrow::ChunkedArray chunkedData(data);
-  if (column->Equals(chunkedData)) {
+  arrow::ChunkedArray chunked_data(data);
+  if (column->Equals(chunked_data)) {
     return;
   }
 
-  if (column->length() != chunkedData.length()) {
-    auto message = stringf("Column %o: Expected length %o, got %o", depth, chunkedData.length(),
+  if (column->length() != chunked_data.length()) {
+    auto message = Stringf("Column %o: Expected length %o, got %o", depth, chunked_data.length(),
         column->length());
     throw std::runtime_error(DEEPHAVEN_DEBUG_MSG(message));
   }
 
-  if (!column->type()->Equals(chunkedData.type())) {
-    auto message = stringf("Column %o: Expected type %o, got %o", depth,
-        chunkedData.type()->ToString(), column->type()->ToString());
+  if (!column->type()->Equals(chunked_data.type())) {
+    auto message = Stringf("Column %o: Expected type %o, got %o", depth,
+        chunked_data.type()->ToString(), column->type()->ToString());
     throw std::runtime_error(DEEPHAVEN_DEBUG_MSG(message));
   }
 
-  int64_t elementIndex = 0;
-  int lChunkNum = 0;
-  int rChunkNum = 0;
-  int lChunkIndex = 0;
-  int rChunkIndex = 0;
-  while (elementIndex < column->length()) {
-    if (lChunkNum >= column->num_chunks() || rChunkNum >= chunkedData.num_chunks()) {
+  int64_t element_index = 0;
+  int l_chunk_num = 0;
+  int r_chunk_num = 0;
+  int l_chunk_index = 0;
+  int r_chunk_index = 0;
+  while (element_index < column->length()) {
+    if (l_chunk_num >= column->num_chunks() || r_chunk_num >= chunked_data.num_chunks()) {
       throw std::runtime_error(DEEPHAVEN_DEBUG_MSG("Logic error"));
     }
-    const auto &lChunk = column->chunk(lChunkNum);
-    if (lChunkIndex == lChunk->length()) {
-      lChunkIndex = 0;
-      ++lChunkNum;
+    const auto &l_chunk = column->chunk(l_chunk_num);
+    if (l_chunk_index == l_chunk->length()) {
+      l_chunk_index = 0;
+      ++l_chunk_num;
       continue;
     }
 
-    const auto &rChunk = chunkedData.chunk(rChunkNum);
-    if (rChunkIndex == rChunk->length()) {
-      rChunkIndex = 0;
-      ++rChunkNum;
+    const auto &r_chunk = chunked_data.chunk(r_chunk_num);
+    if (r_chunk_index == r_chunk->length()) {
+      r_chunk_index = 0;
+      ++r_chunk_num;
       continue;
     }
 
-    const auto lItem = valueOrThrow(DEEPHAVEN_EXPR_MSG(lChunk->GetScalar(lChunkIndex)));
-    const auto rItem = valueOrThrow(DEEPHAVEN_EXPR_MSG(rChunk->GetScalar(rChunkIndex)));
+    const auto l_item = ValueOrThrow(DEEPHAVEN_EXPR_MSG(l_chunk->GetScalar(l_chunk_index)));
+    const auto r_item = ValueOrThrow(DEEPHAVEN_EXPR_MSG(r_chunk->GetScalar(r_chunk_index)));
 
-    if (!lItem->Equals(rItem)) {
-      auto message = stringf("Column %o: Columns differ at element %o: %o vs %o",
-          depth, elementIndex, lItem->ToString(), rItem->ToString());
+    if (!l_item->Equals(r_item)) {
+      auto message = Stringf("Column %o: Columns differ at element %o: %o vs %o",
+          depth, element_index, l_item->ToString(), r_item->ToString());
       throw std::runtime_error(DEEPHAVEN_DEBUG_MSG(message));
     }
 
-    ++elementIndex;
-    ++lChunkIndex;
-    ++rChunkIndex;
+    ++element_index;
+    ++l_chunk_index;
+    ++r_chunk_index;
   }
 
   // TODO(kosak): describe difference
   throw std::runtime_error(DEEPHAVEN_DEBUG_MSG("Some other difference"));
 }
 
-std::shared_ptr<arrow::Table> basicValidate(const TableHandle &table, int expectedColumns) {
-  auto fsr = table.getFlightStreamReader();
-  std::shared_ptr<arrow::Table> arrowTable;
-  okOrThrow(DEEPHAVEN_EXPR_MSG(fsr->ReadAll(&arrowTable)));
+std::shared_ptr<arrow::Table> BasicValidate(const deephaven::client::TableHandle &table, int expected_columns) {
+  auto fsr = table.GetFlightStreamReader();
+  std::shared_ptr<arrow::Table> arrow_table;
+  OkOrThrow(DEEPHAVEN_EXPR_MSG(fsr->ReadAll(&arrow_table)));
 
-  if (expectedColumns != arrowTable->num_columns()) {
-    auto message = stringf("Expected %o columns, but table actually has %o columns",
-        expectedColumns, arrowTable->num_columns());
+  if (expected_columns != arrow_table->num_columns()) {
+    auto message = Stringf("Expected %o columns, but Table actually has %o columns",
+        expected_columns, arrow_table->num_columns());
     throw std::runtime_error(DEEPHAVEN_DEBUG_MSG(message));
   }
 
-  return arrowTable;
+  return arrow_table;
 }
 }  // namespace internal
 }  // namespace deephaven::client::tests

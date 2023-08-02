@@ -23,11 +23,11 @@ using deephaven::dhcore::clienttable::Schema;
 using deephaven::dhcore::ticking::BarrageProcessor;
 using deephaven::dhcore::ticking::TickingCallback;
 using deephaven::dhcore::utility::Callback;
-using deephaven::dhcore::utility::makeReservedVector;
+using deephaven::dhcore::utility::MakeReservedVector;
 using deephaven::dhcore::utility::separatedList;
-using deephaven::dhcore::utility::streamf;
-using deephaven::dhcore::utility::stringf;
-using deephaven::dhcore::utility::verboseCast;
+using deephaven::dhcore::utility::Streamf;
+using deephaven::dhcore::utility::Stringf;
+using deephaven::dhcore::utility::VerboseCast;
 using deephaven::client::arrowutil::ArrowInt8ColumnSource;
 using deephaven::client::arrowutil::ArrowInt16ColumnSource;
 using deephaven::client::arrowutil::ArrowInt32ColumnSource;
@@ -36,7 +36,7 @@ using deephaven::client::arrowutil::ArrowBooleanColumnSource;
 using deephaven::client::arrowutil::ArrowDateTimeColumnSource;
 using deephaven::client::arrowutil::ArrowStringColumnSource;
 using deephaven::client::utility::Executor;
-using deephaven::client::utility::okOrThrow;
+using deephaven::client::utility::OkOrThrow;
 using deephaven::client::server::Server;
 using io::deephaven::proto::backplane::grpc::Ticket;
 using arrow::flight::FlightStreamReader;
@@ -46,16 +46,17 @@ namespace deephaven::client::subscription {
 namespace {
 // This class manages just enough state to serve as a Callback to the ... [TODO: finish this comment]
 class SubscribeState final : public Callback<> {
-  typedef deephaven::client::server::Server Server;
+  using Server = deephaven::client::server::Server;
 
 public:
-  SubscribeState(std::shared_ptr<Server> server, std::vector<int8_t> ticketBytes,
+  SubscribeState(std::shared_ptr<Server> server, std::vector<int8_t> ticket_bytes,
       std::shared_ptr<Schema> schema, std::promise<std::shared_ptr<SubscriptionHandle>> promise,
       std::shared_ptr <TickingCallback> callback);
-  void invoke() final;
+  void Invoke() final;
 
 private:
-  std::shared_ptr<SubscriptionHandle> invokeHelper();
+  [[nodiscard]]
+  std::shared_ptr<SubscriptionHandle> InvokeHelper();
 
   std::shared_ptr<Server> server_;
   std::vector<int8_t> ticketBytes_;
@@ -68,6 +69,7 @@ private:
 // can cancel us if they want to.
 class UpdateProcessor final : public SubscriptionHandle {
 public:
+  [[nodiscard]]
   static std::shared_ptr<UpdateProcessor> startThread(std::unique_ptr<FlightStreamReader> fsr,
       std::shared_ptr<Schema> schema, std::shared_ptr<TickingCallback> callback);
 
@@ -75,10 +77,10 @@ public:
       std::shared_ptr<Schema> schema, std::shared_ptr<TickingCallback> callback);
   ~UpdateProcessor() final;
 
-  void cancel() final;
+  void Cancel() final;
 
-  static void runUntilCancelled(std::shared_ptr<UpdateProcessor> self);
-  void runForeverHelper();
+  static void RunUntilCancelled(std::shared_ptr<UpdateProcessor> self);
+  void RunForeverHelper();
 
 private:
   std::unique_ptr<FlightStreamReader> fsr_;
@@ -103,63 +105,64 @@ struct ColumnSourceAndSize {
   size_t size_ = 0;
 };
 
-ColumnSourceAndSize arrayToColumnSource(const arrow::Array &array);
+ColumnSourceAndSize ArrayToColumnSource(const arrow::Array &array);
 }  // namespace
 
-std::shared_ptr<SubscriptionHandle> SubscriptionThread::start(std::shared_ptr<Server> server,
-    Executor *flightExecutor, std::shared_ptr<Schema> schema, const Ticket &ticket,
+std::shared_ptr<SubscriptionHandle> SubscriptionThread::Start(std::shared_ptr<Server> server,
+    Executor *flight_executor, std::shared_ptr<Schema> schema, const Ticket &ticket,
     std::shared_ptr<TickingCallback> callback) {
   std::promise<std::shared_ptr<SubscriptionHandle>> promise;
   auto future = promise.get_future();
-  std::vector<int8_t> ticketBytes(ticket.ticket().begin(), ticket.ticket().end());
-  auto ss = std::make_shared<SubscribeState>(std::move(server), std::move(ticketBytes),
+  std::vector<int8_t> ticket_bytes(ticket.ticket().begin(), ticket.ticket().end());
+  auto ss = std::make_shared<SubscribeState>(std::move(server), std::move(ticket_bytes),
       std::move(schema), std::move(promise), std::move(callback));
-  flightExecutor->invoke(std::move(ss));
+  flight_executor->Invoke(std::move(ss));
   return future.get();
 }
 
 namespace {
-SubscribeState::SubscribeState(std::shared_ptr<Server> server, std::vector<int8_t> ticketBytes,
+SubscribeState::SubscribeState(std::shared_ptr<Server> server, std::vector<int8_t> ticket_bytes,
     std::shared_ptr<Schema> schema,
     std::promise<std::shared_ptr<SubscriptionHandle>> promise,
     std::shared_ptr<TickingCallback> callback) :
-    server_(std::move(server)), ticketBytes_(std::move(ticketBytes)), schema_(std::move(schema)),
+    server_(std::move(server)), ticketBytes_(std::move(ticket_bytes)), schema_(std::move(schema)),
     promise_(std::move(promise)), callback_(std::move(callback)) {}
 
-void SubscribeState::invoke() {
+void SubscribeState::Invoke() {
   try {
-    auto subscriptionHandle = invokeHelper();
+    auto subscription_handle = InvokeHelper();
     // If you made it this far, then you have been successful!
-    promise_.set_value(std::move(subscriptionHandle));
+    promise_.set_value(std::move(subscription_handle));
   } catch (const std::exception &e) {
     promise_.set_exception(std::make_exception_ptr(e));
   }
 }
 
-std::shared_ptr<SubscriptionHandle> SubscribeState::invokeHelper() {
+std::shared_ptr<SubscriptionHandle> SubscribeState::InvokeHelper() {
   arrow::flight::FlightCallOptions fco;
-  server_->forEachHeaderNameAndValue(
-    [&fco](const std::string &name, const std::string &value) {
-      fco.headers.emplace_back(name, value);
-    }
+  server_->ForEachHeaderNameAndValue(
+      [&fco](const std::string &name, const std::string &value) {
+        fco.headers.emplace_back(name, value);
+      }
   );
-  auto *client = server_->flightClient();
+  auto *client = server_->FlightClient();
 
   arrow::flight::FlightDescriptor descriptor;
-  char magicData[4];
-  auto src = BarrageProcessor::deephavenMagicNumber;
-  static_assert(sizeof(src) == sizeof(magicData));
-  memcpy(magicData, &src, sizeof(magicData));
+  char magic_data[4];
+  auto src = BarrageProcessor::kDeephavenMagicNumber;
+  static_assert(sizeof(src) == sizeof(magic_data));
+  memcpy(magic_data, &src, sizeof(magic_data));
 
   descriptor.type = arrow::flight::FlightDescriptor::DescriptorType::CMD;
-  descriptor.cmd = std::string(magicData, 4);
+  descriptor.cmd = std::string(magic_data, 4);
   std::unique_ptr<FlightStreamWriter> fsw;
   std::unique_ptr<FlightStreamReader> fsr;
-  okOrThrow(DEEPHAVEN_EXPR_MSG(client->DoExchange(fco, descriptor, &fsw, &fsr)));
+  OkOrThrow(DEEPHAVEN_EXPR_MSG(client->DoExchange(fco, descriptor, &fsw, &fsr)));
 
-  auto subReqRaw = BarrageProcessor::createSubscriptionRequest(ticketBytes_.data(), ticketBytes_.size());
-  auto buffer = std::make_shared<OwningBuffer>(std::move(subReqRaw));
-  okOrThrow(DEEPHAVEN_EXPR_MSG(fsw->WriteMetadata(std::move(buffer))));
+  auto sub_req_raw = BarrageProcessor::CreateSubscriptionRequest(ticketBytes_.data(),
+      ticketBytes_.size());
+  auto buffer = std::make_shared<OwningBuffer>(std::move(sub_req_raw));
+  OkOrThrow(DEEPHAVEN_EXPR_MSG(fsw->WriteMetadata(std::move(buffer))));
 
   // Run forever (until error or cancellation)
   auto processor = UpdateProcessor::startThread(std::move(fsr), std::move(schema_),
@@ -172,7 +175,7 @@ std::shared_ptr<UpdateProcessor> UpdateProcessor::startThread(
     std::shared_ptr<TickingCallback> callback) {
   auto result = std::make_shared<UpdateProcessor>(std::move(fsr), std::move(schema),
       std::move(callback));
-  result->thread_ = std::thread(&runUntilCancelled, result);
+  result->thread_ = std::thread(&RunUntilCancelled, result);
   return result;
 }
 
@@ -182,12 +185,12 @@ UpdateProcessor::UpdateProcessor(std::unique_ptr<FlightStreamReader> fsr,
     cancelled_(false) {}
 
 UpdateProcessor::~UpdateProcessor() {
-  cancel();
+  Cancel();
 }
 
-void UpdateProcessor::cancel() {
-  static const char *const me = "UpdateProcessor::cancel";
-  gpr_log(GPR_INFO, "%s: Subscription shutdown requested.", me);
+void UpdateProcessor::Cancel() {
+  static const char *const me = "UpdateProcessor::Cancel";
+  gpr_log(GPR_INFO, "%s: Subscription Shutdown requested.", me);
   std::unique_lock guard(mutex_);
   if (cancelled_) {
     guard.unlock(); // to be nice
@@ -201,86 +204,86 @@ void UpdateProcessor::cancel() {
   thread_.join();
 }
 
-void UpdateProcessor::runUntilCancelled(std::shared_ptr<UpdateProcessor> self) {
+void UpdateProcessor::RunUntilCancelled(std::shared_ptr<UpdateProcessor> self) {
   try {
-    self->runForeverHelper();
+    self->RunForeverHelper();
   } catch (...) {
     // If the thread was been cancelled via explicit user action, then swallow all errors.
     if (!self->cancelled_) {
-      self->callback_->onFailure(std::current_exception());
+      self->callback_->OnFailure(std::current_exception());
     }
   }
 }
 
-void UpdateProcessor::runForeverHelper() {
+void UpdateProcessor::RunForeverHelper() {
   // Reuse the chunk for efficiency.
-  arrow::flight::FlightStreamChunk flightStreamChunk;
+  arrow::flight::FlightStreamChunk flight_stream_chunk;
   BarrageProcessor bp(schema_);
   // Process Arrow Flight messages until error or cancellation.
   while (true) {
-    okOrThrow(DEEPHAVEN_EXPR_MSG(fsr_->Next(&flightStreamChunk)));
-    const auto &cols = flightStreamChunk.data->columns();
-    auto columnSources = makeReservedVector<std::shared_ptr<ColumnSource>>(cols.size());
-    auto sizes = makeReservedVector<size_t>(cols.size());
+    OkOrThrow(DEEPHAVEN_EXPR_MSG(fsr_->Next(&flight_stream_chunk)));
+    const auto &cols = flight_stream_chunk.data->columns();
+    auto column_sources = MakeReservedVector<std::shared_ptr<ColumnSource>>(cols.size());
+    auto sizes = MakeReservedVector<size_t>(cols.size());
     for (const auto &col : cols) {
-      auto css = arrayToColumnSource(*col);
-      columnSources.push_back(std::move(css.columnSource_));
+      auto css = ArrayToColumnSource(*col);
+      column_sources.push_back(std::move(css.columnSource_));
       sizes.push_back(css.size_);
     }
 
     const void *metadata = nullptr;
-    size_t metadataSize = 0;
-    if (flightStreamChunk.app_metadata != nullptr) {
-      metadata = flightStreamChunk.app_metadata->data();
-      metadataSize = flightStreamChunk.app_metadata->size();
+    size_t metadata_size = 0;
+    if (flight_stream_chunk.app_metadata != nullptr) {
+      metadata = flight_stream_chunk.app_metadata->data();
+      metadata_size = flight_stream_chunk.app_metadata->size();
     }
-    auto result = bp.processNextChunk(columnSources, sizes, metadata, metadataSize);
+    auto result = bp.ProcessNextChunk(column_sources, sizes, metadata, metadata_size);
 
     if (result.has_value()) {
-      callback_->onTick(std::move(*result));
+      callback_->OnTick(std::move(*result));
     }
   }
 }
 
 OwningBuffer::OwningBuffer(std::vector<uint8_t> data) :
-    arrow::Buffer(data.data(), (int64_t)data.size()), data_(std::move(data)) {}
+    arrow::Buffer(data.data(), static_cast<int64_t>(data.size())), data_(std::move(data)) {}
 OwningBuffer::~OwningBuffer() = default;
 
 struct ArrayToColumnSourceVisitor final : public arrow::ArrayVisitor {
   explicit ArrayToColumnSourceVisitor(std::shared_ptr<arrow::Array> storage) : storage_(std::move(storage)) {}
 
   arrow::Status Visit(const arrow::Int8Array &array) final {
-    result_ = ArrowInt8ColumnSource::create(std::move(storage_), &array);
+    result_ = ArrowInt8ColumnSource::Create(std::move(storage_), &array);
     return arrow::Status::OK();
   }
 
   arrow::Status Visit(const arrow::Int16Array &array) final {
-    result_ = ArrowInt16ColumnSource::create(std::move(storage_), &array);
+    result_ = ArrowInt16ColumnSource::Create(std::move(storage_), &array);
     return arrow::Status::OK();
   }
 
   arrow::Status Visit(const arrow::Int32Array &array) final {
-    result_ = ArrowInt32ColumnSource::create(std::move(storage_), &array);
+    result_ = ArrowInt32ColumnSource::Create(std::move(storage_), &array);
     return arrow::Status::OK();
   }
 
   arrow::Status Visit(const arrow::Int64Array &array) final {
-    result_ = ArrowInt64ColumnSource::create(std::move(storage_), &array);
+    result_ = ArrowInt64ColumnSource::Create(std::move(storage_), &array);
     return arrow::Status::OK();
   }
 
   arrow::Status Visit(const arrow::BooleanArray &array) final {
-    result_ = ArrowBooleanColumnSource::create(std::move(storage_), &array);
+    result_ = ArrowBooleanColumnSource::Create(std::move(storage_), &array);
     return arrow::Status::OK();
   }
 
   arrow::Status Visit(const arrow::StringArray &array) final {
-    result_ = ArrowStringColumnSource::create(std::move(storage_), &array);
+    result_ = ArrowStringColumnSource::Create(std::move(storage_), &array);
     return arrow::Status::OK();
   }
 
   arrow::Status Visit(const arrow::TimestampArray &array) final {
-    result_ = ArrowDateTimeColumnSource::create(std::move(storage_), &array);
+    result_ = ArrowDateTimeColumnSource::Create(std::move(storage_), &array);
     return arrow::Status::OK();
   }
 
@@ -290,21 +293,22 @@ struct ArrayToColumnSourceVisitor final : public arrow::ArrayVisitor {
 };
 
 // Creates a non-owning chunk of the right type that points to the corresponding array data.
-ColumnSourceAndSize arrayToColumnSource(const arrow::Array &array) {
-  const auto *listArray = verboseCast<const arrow::ListArray*>(DEEPHAVEN_EXPR_MSG(&array));
+ColumnSourceAndSize ArrayToColumnSource(const arrow::Array &array) {
+  const auto *list_array = VerboseCast<const arrow::ListArray *>(DEEPHAVEN_EXPR_MSG(&array));
 
-  if (listArray->length() != 1) {
-    auto message = stringf("Expected array of length 1, got %o", array.length());
+  if (list_array->length() != 1) {
+    auto message = Stringf("Expected array of length 1, got %o", array.length());
     throw std::runtime_error(DEEPHAVEN_DEBUG_MSG(message));
   }
 
-  const auto listElement = listArray->GetScalar(0).ValueOrDie();
-  const auto *listScalar = verboseCast<const arrow::ListScalar*>(DEEPHAVEN_EXPR_MSG(listElement.get()));
-  const auto &listScalarValue = listScalar->value;
+  const auto listElement = list_array->GetScalar(0).ValueOrDie();
+  const auto *list_scalar = VerboseCast<const arrow::ListScalar *>(
+      DEEPHAVEN_EXPR_MSG(listElement.get()));
+  const auto &list_scalar_value = list_scalar->value;
 
-  ArrayToColumnSourceVisitor v(listScalarValue);
-  okOrThrow(DEEPHAVEN_EXPR_MSG(listScalarValue->Accept(&v)));
-  return {std::move(v.result_), size_t(listScalarValue->length())};
+  ArrayToColumnSourceVisitor v(list_scalar_value);
+  OkOrThrow(DEEPHAVEN_EXPR_MSG(list_scalar_value->Accept(&v)));
+  return {std::move(v.result_), static_cast<size_t>(list_scalar_value->length())};
 }
 }  // namespace
 }  // namespace deephaven::client::subscription

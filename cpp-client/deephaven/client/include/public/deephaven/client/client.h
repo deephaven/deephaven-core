@@ -14,7 +14,7 @@
 
 /**
  * Arrow-related classes, used by TableHandleManager::newTableHandleAndFlightDescriptor() and
- * TableHandleManager::createFlightWrapper. Callers that use those methods need to include
+ * TableHandleManager::CreateFlightWrapper. Callers that use those methods need to include
  * deephaven/client/flight.h
  */
 namespace deephaven::client {
@@ -61,8 +61,8 @@ class TableHandleStreamAdaptor;
 
 namespace deephaven::client {
 /**
- * This class is the main way to get access to new TableHandle objects, via methods like emptyTable()
- * and fetchTable(). A TableHandleManager is created by Client::getManager(). You can have more than
+ * This class is the main way to get access to new TableHandle objects, via methods like EmptyTable()
+ * and FetchTable(). A TableHandleManager is created by Client::GetManager(). You can have more than
  * one TableHandleManager for a given client. The reason you'd want more than one is that (in the
  * future) you will be able to set parameters here that will apply to all TableHandles created
  * by this class, such as flags that control asynchronous behavior.
@@ -97,55 +97,61 @@ public:
    * Creates a "zero-width" table on the server. Such a table knows its number of rows but has no columns.
    * @param size Number of rows in the empty table.
    */
-  TableHandle emptyTable(int64_t size) const;
+  [[nodiscard]]
+  TableHandle EmptyTable(int64_t size) const;
   /**
    * Looks up an existing table by name.
    * @param tableName The name of the table.
    */
-  TableHandle fetchTable(std::string tableName) const;
+  [[nodiscard]]
+  TableHandle FetchTable(std::string table_name) const;
   /**
    * Creates a ticking table.
    * @param startTimeNanos When the table should start ticking (in units of nanoseconds since the epoch).
    * @param periodNanos Table ticking frequency (in nanoseconds).
    * @return The TableHandle of the new table.
    */
-  TableHandle timeTable(int64_t startTimeNanos, int64_t periodNanos) const;
+  [[nodiscard]]
+  TableHandle TimeTable(int64_t start_time_nanos, int64_t period_nanos) const;
   /**
-   * Creates a ticking table. This is an overload of timeTable(int64_t, int64_t) const that takes
+   * Creates a ticking table. This is an overload of TimeTable(int64_t, int64_t) const that takes
    * different parameter types.
    * @param startTime When the table should start ticking.
    * @param periodNanos Table ticking frequency.
    * @return The TableHandle of the new table.
    */
-  TableHandle timeTable(std::chrono::system_clock::time_point startTime,
+  [[nodiscard]]
+  TableHandle TimeTable(std::chrono::system_clock::time_point start_time,
       std::chrono::system_clock::duration period) const;
   /**
    * Allocate a fresh client ticket. This is a low level operation, typically used when the caller wants to do an Arrow
    * doPut operation.
    * @example
-   * auto ticket = manager.newTicket();
-   * auto flightDescriptor = convertTicketToFlightDescriptor(ticket);
+   * auto ticket = manager.NewTicket();
+   * auto flightDescriptor = ConvertTicketToFlightDescriptor(ticket);
    * // [do arrow operations here to put your table to the server]
    * // Once that is done, you can bind the ticket to a TableHandle
-   * auto tableHandle = manager.makeTableHandleFromTicket(ticket);
+   * auto tableHandle = manager.MakeTableHandleFromTicket(ticket);
    */
-  std::string newTicket() const;
+  [[nodiscard]]
+  std::string NewTicket() const;
   /**
    * Creates a TableHandle that owns the underlying ticket and its resources. The ticket argument is typically
-   * created with newTicket() and then populated e.g. with Arrow operations.
+   * created with NewTicket() and then populated e.g. with Arrow operations.
    */
-  TableHandle makeTableHandleFromTicket(std::string ticket) const;
+  [[nodiscard]]
+  TableHandle MakeTableHandleFromTicket(std::string ticket) const;
   /**
    * Execute a script on the server. This assumes that the Client was created with a sessionType corresponding to
    * the language of the script (typically either "python" or "groovy") and that the code matches that language.
    */
-  void runScript(std::string code) const;
+  void RunScript(std::string code) const;
   /**
-   * The async version of runScript(std::string variable) code.
+   * The async version of RunScript(std::string variable) code.
    * @param code The script to run on the server.
    * @param callback The asynchronous callback.
    */
-  void runScriptAsync(std::string code, std::shared_ptr<SFCallback<>> callback) const;
+  void RunScriptAsync(std::string code, std::shared_ptr<SFCallback<>> callback) const;
 
   /**
    * Creates a FlightWrapper that is used for Arrow Flight integration. Arrow Flight is the primary
@@ -154,7 +160,8 @@ public:
    * deephaven/client/flight.h.
    * @return A FlightWrapper object.
    */
-  FlightWrapper createFlightWrapper() const;
+  [[nodiscard]]
+  FlightWrapper CreateFlightWrapper() const;
 
 private:
   std::shared_ptr<impl::TableHandleManagerImpl> impl_;
@@ -162,30 +169,27 @@ private:
 
 
 /**
- * The main class for interacting with Deephaven. Start here to connect with
+ * The main class for interacting with Deephaven. Start here to Connect with
  * the server and to get a TableHandleManager.
  */
 class Client {
   template<typename... Args>
   using SFCallback = deephaven::dhcore::utility::SFCallback<Args...>;
 
-  typedef deephaven::dhcore::ticking::TickingUpdate TickingUpdate;
-
 public:
-  typedef void (*CCallback)(TickingUpdate, void *);
-
   /*
    * Default constructor. Creates a (useless) empty client object.
    */
   Client();
 
   /**
-   * Factory method to connect to a Deephaven server using the specified options.
+   * Factory method to Connect to a Deephaven server using the specified options.
    * @param target A connection string in the format host:port. For example "localhost:10000".
    * @param options An options object for setting options like authentication and script language.
    * @return A Client object conneted to the Deephaven server.
    */
-  static Client connect(const std::string &target, const ClientOptions &options = {});
+  [[nodiscard]]
+  static Client Connect(const std::string &target, const ClientOptions &options = {});
   /**
    * Move constructor
    */
@@ -203,18 +207,19 @@ public:
    * Shuts down the Client and all associated state (GRPC connections, subscriptions, etc).
    * This method is used if a caller wants to shut down Client state early. If it is not called,
    * the shutdown actions will happen when this Client is destructed. The caller must not use any
-   * associated data structures (TableHandleManager, TableHandle, etc) after close() is called or
+   * associated data structures (TableHandleManager, TableHandle, etc) after Close() is called or
    * after Client's destructor is invoked. If the caller tries to do so, the behavior is
    * unspecified.
    */
-  void close();
+  void Close();
 
   /**
    * Gets a TableHandleManager which you can use to create empty tables, fetch tables, and so on.
    * You can create more than one TableHandleManager.
    * @return The TableHandleManager.
    */
-  TableHandleManager getManager() const;
+  [[nodiscard]]
+  TableHandleManager GetManager() const;
 
 private:
   explicit Client(std::shared_ptr<impl::ClientImpl> impl);
@@ -231,178 +236,206 @@ public:
    * for each input column.
    */
   template<typename ...Args>
-  static Aggregate absSum(Args &&... args);
+  [[nodiscard]]
+  static Aggregate AbsSum(Args &&... args);
   /**
    * Returns an aggregator that computes the total sum of values, within an aggregation group,
    * for each input column.
    */
-  static Aggregate absSum(std::vector<std::string> columnSpecs);
+  [[nodiscard]]
+  static Aggregate AbsSum(std::vector<std::string> column_specs);
 
   /**
    * Returns an aggregator that computes an array of all values within an aggregation group,
    * for each input column.
    */
   template<typename ...Args>
-  static Aggregate group(Args &&... args);
+  [[nodiscard]]
+  static Aggregate Group(Args &&... args);
 
   /**
    * Returns an aggregator that computes an array of all values within an aggregation group,
    * for each input column.
    */
-  static Aggregate group(std::vector<std::string> columnSpecs);
+  [[nodiscard]]
+  static Aggregate Group(std::vector<std::string> column_specs);
 
   /**
    * Returns an aggregator that computes the average (mean) of values, within an aggregation group,
    * for each input column.
    */
   template<typename ...Args>
-  static Aggregate avg(Args &&... args);
+  [[nodiscard]]
+  static Aggregate Avg(Args &&... args);
 
   /**
    * Returns an aggregator that computes the average (mean) of values, within an aggregation group,
    * for each input column.
    */
-  static Aggregate avg(std::vector<std::string> columnSpecs);
+  [[nodiscard]]
+  static Aggregate Avg(std::vector<std::string> column_specs);
 
   /**
    * Returns an aggregator that computes the number of elements within an aggregation group.
    */
   template<typename ColArg>
-  static Aggregate count(ColArg &&arg);
+  [[nodiscard]]
+  static Aggregate Count(ColArg &&arg);
 
   /**
    * Returns an aggregator that computes the number of elements within an aggregation group.
    */
-  static Aggregate count(std::string columnSpec);
+  [[nodiscard]]
+  static Aggregate Count(std::string column_spec);
 
   /**
    * Returns an aggregator that computes the first value, within an aggregation group,
    * for each input column.
    */
   template<typename ...Args>
-  static Aggregate first(Args &&... args);
+  [[nodiscard]]
+  static Aggregate First(Args &&... args);
 
   /**
    * Returns an aggregator that computes the first value, within an aggregation group,
    * for each input column.
    */
-  static Aggregate first(std::vector<std::string> columnSpecs);
+  [[nodiscard]]
+  static Aggregate First(std::vector<std::string> column_specs);
 
   /**
    * Returns an aggregator that computes the last value, within an aggregation group,
    * for each input column.
    */
   template<typename ...Args>
-  static Aggregate last(Args &&... args);
+  [[nodiscard]]
+  static Aggregate Last(Args &&... args);
 
   /**
    * Returns an aggregator that computes the last value, within an aggregation group,
    * for each input column.
    */
-  static Aggregate last(std::vector<std::string> columnSpecs);
+  [[nodiscard]]
+  static Aggregate Last(std::vector<std::string> column_specs);
 
   /**
    * Returns an aggregator that computes the maximum value, within an aggregation group,
    * for each input column.
    */
   template<typename ...Args>
-  static Aggregate max(Args &&... args);
+  [[nodiscard]]
+  static Aggregate Max(Args &&... args);
 
   /**
    * Returns an aggregator that computes the maximum value, within an aggregation group,
    * for each input column.
    */
-  static Aggregate max(std::vector<std::string> columnSpecs);
+  [[nodiscard]]
+  static Aggregate Max(std::vector<std::string> column_specs);
 
   /**
    * Returns an aggregator that computes the median value, within an aggregation group,
    * for each input column.
    */
   template<typename ...Args>
-  static Aggregate med(Args &&... args);
+  [[nodiscard]]
+  static Aggregate Med(Args &&... args);
 
   /**
    * Returns an aggregator that computes the median value, within an aggregation group,
    * for each input column.
    */
-  static Aggregate med(std::vector<std::string> columnSpecs);
+  [[nodiscard]]
+  static Aggregate Med(std::vector<std::string> column_specs);
 
   /**
    * Returns an aggregator that computes the minimum value, within an aggregation group,
    * for each input column.
    */
   template<typename ...Args>
-  static Aggregate min(Args &&... args);
+  [[nodiscard]]
+  static Aggregate Min(Args &&... args);
 
   /**
    * Returns an aggregator that computes the minimum value, within an aggregation group,
    * for each input column.
    */
-  static Aggregate min(std::vector<std::string> columnSpecs);
+  [[nodiscard]]
+  static Aggregate Min(std::vector<std::string> column_specs);
 
   /**
    * Returns an aggregator that computes the designated percentile of values, within an aggregation
    * group, for each input column.
    */
   template<typename ...Args>
-  static Aggregate pct(double percentile, bool avgMedian, Args &&... args);
+  [[nodiscard]]
+  static Aggregate Pct(double percentile, bool avg_median, Args &&... args);
 
   /**
    * Returns an aggregator that computes the designated percentile of values, within an aggregation
    * group, for each input column.
    */
-  static Aggregate pct(double percentile, bool avgMedian, std::vector<std::string> columnSpecs);
+  [[nodiscard]]
+  static Aggregate pct(double percentile, bool avg_median, std::vector<std::string> column_specs);
 
   /**
    * Returns an aggregator that computes the standard deviation of values, within an aggregation
    * group, for each input column.
    */
   template<typename ...Args>
-  static Aggregate std(Args &&... args);
+  [[nodiscard]]
+  static Aggregate Std(Args &&... args);
 
   /**
    * Returns an aggregator that computes the standard deviation of values, within an aggregation
    * group, for each input column.
    */
-  static Aggregate std(std::vector<std::string> columnSpecs);
+  [[nodiscard]]
+  static Aggregate Std(std::vector<std::string> column_specs);
 
   /**
    * Returns an aggregator that computes the total sum of values, within an aggregation group,
    * for each input column.
    */
   template<typename ...Args>
-  static Aggregate sum(Args &&... args);
+  [[nodiscard]]
+  static Aggregate Sum(Args &&... args);
 
   /**
    * Returns an aggregator that computes the total sum of values, within an aggregation group,
    * for each input column.
    */
-  static Aggregate sum(std::vector<std::string> columnSpecs);
+  [[nodiscard]]
+  static Aggregate Sum(std::vector<std::string> column_specs);
 
   /**
    * Returns an aggregator that computes the variance of values, within an aggregation group,
    * for each input column.
    */
   template<typename ...Args>
-  static Aggregate var(Args &&... args);
+  [[nodiscard]]
+  static Aggregate Var(Args &&... args);
 
   /**
    * Returns an aggregator that computes the variance of values, within an aggregation group,
    * for each input column.
    */
-  static Aggregate var(std::vector<std::string> columnSpecs);
+  [[nodiscard]]
+  static Aggregate Var(std::vector<std::string> column_specs);
 
   /**
    * Returns an aggregator that computes the weighted average of values, within an aggregation
    * group, for each input column.
    */
   template<typename ColArg, typename ...Args>
-  static Aggregate wavg(ColArg &&weightColumn, Args &&... args);
+  [[nodiscard]]
+  static Aggregate WAvg(ColArg &&weight_column, Args &&... args);
   /**
    * Returns an aggregator that computes the weighted average of values, within an aggregation
    * group, for each input column.
    */
-  static Aggregate wavg(std::string weightColumn, std::vector<std::string> columnSpecs);
+  [[nodiscard]]
+  static Aggregate WAvg(std::string weight_column, std::vector<std::string> column_specs);
 
   /**
    * Constructor.
@@ -412,7 +445,8 @@ public:
   /**
    * Returns the underlying "impl" object. Used internally.
    */
-  const std::shared_ptr<impl::AggregateImpl> &impl() const { return impl_; }
+  [[nodiscard]]
+  const std::shared_ptr<impl::AggregateImpl> &Impl() const { return impl_; }
 
 private:
   std::shared_ptr<impl::AggregateImpl> impl_;
@@ -426,11 +460,13 @@ public:
   /**
    * Create an AggregateCombo from an initializer list.
    */
-  static AggregateCombo create(std::initializer_list<Aggregate> list);
+  [[nodiscard]]
+  static AggregateCombo Create(std::initializer_list<Aggregate> list);
   /**
    * Create an AggregateCombo from a vector.
    */
-  static AggregateCombo create(std::vector<Aggregate> vec);
+  [[nodiscard]]
+  static AggregateCombo Create(std::vector<Aggregate> vec);
 
   /**
    * Move constructor.
@@ -446,7 +482,8 @@ public:
   /**
    * Returns the underlying "impl" object. Used internally.
    */
-  const std::shared_ptr<impl::AggregateComboImpl> &impl() const { return impl_; }
+  [[nodiscard]]
+  const std::shared_ptr<impl::AggregateComboImpl> &Impl() const { return impl_; }
 
 private:
   explicit AggregateCombo(std::shared_ptr<impl::AggregateComboImpl> impl);
@@ -459,8 +496,9 @@ private:
  * for each input column.
  */
 template<typename ...Args>
-Aggregate aggAbsSum(Args &&... args) {
-  return Aggregate::absSum(std::forward<Args>(args)...);
+[[nodiscard]]
+Aggregate AggAbsSum(Args &&... args) {
+  return Aggregate::AbsSum(std::forward<Args>(args)...);
 }
 
 /**
@@ -468,8 +506,9 @@ Aggregate aggAbsSum(Args &&... args) {
  * for each input column.
  */
 template<typename ...Args>
-Aggregate aggGroup(Args &&... args) {
-  return Aggregate::group(std::forward<Args>(args)...);
+[[nodiscard]]
+Aggregate AggGroup(Args &&... args) {
+  return Aggregate::Group(std::forward<Args>(args)...);
 }
 
 /**
@@ -477,16 +516,18 @@ Aggregate aggGroup(Args &&... args) {
  * for each input column.
  */
 template<typename ...Args>
-Aggregate aggAvg(Args &&... args) {
-  return Aggregate::avg(std::forward<Args>(args)...);
+[[nodiscard]]
+Aggregate AggAvg(Args &&... args) {
+  return Aggregate::Avg(std::forward<Args>(args)...);
 }
 
 /**
  * Returns an aggregator that computes the number of elements within an aggregation group.
  */
 template<typename ...Args>
+[[nodiscard]]
 Aggregate aggCount(Args &&... args) {
-  return Aggregate::count(std::forward<Args>(args)...);
+  return Aggregate::Count(std::forward<Args>(args)...);
 }
 
 /**
@@ -494,8 +535,9 @@ Aggregate aggCount(Args &&... args) {
  * for each input column.
  */
 template<typename ...Args>
-Aggregate aggFirst(Args &&... args) {
-  return Aggregate::first(std::forward<Args>(args)...);
+[[nodiscard]]
+Aggregate AggFirst(Args &&... args) {
+  return Aggregate::First(std::forward<Args>(args)...);
 }
 
 /**
@@ -503,8 +545,9 @@ Aggregate aggFirst(Args &&... args) {
  * for each input column.
  */
 template<typename ...Args>
-Aggregate aggLast(Args &&... args) {
-  return Aggregate::last(std::forward<Args>(args)...);
+[[nodiscard]]
+Aggregate AggLast(Args &&... args) {
+  return Aggregate::Last(std::forward<Args>(args)...);
 }
 
 /**
@@ -512,8 +555,9 @@ Aggregate aggLast(Args &&... args) {
  * for each input column.
  */
 template<typename ...Args>
+[[nodiscard]]
 Aggregate aggMax(Args &&... args) {
-  return Aggregate::max(std::forward<Args>(args)...);
+  return Aggregate::Max(std::forward<Args>(args)...);
 }
 
 /**
@@ -521,8 +565,9 @@ Aggregate aggMax(Args &&... args) {
  * for each input column.
  */
 template<typename ...Args>
-Aggregate aggMed(Args &&... args) {
-  return Aggregate::med(std::forward<Args>(args)...);
+[[nodiscard]]
+Aggregate AggMed(Args &&... args) {
+  return Aggregate::Med(std::forward<Args>(args)...);
 }
 
 /**
@@ -530,8 +575,9 @@ Aggregate aggMed(Args &&... args) {
  * for each input column.
  */
 template<typename ...Args>
+[[nodiscard]]
 Aggregate aggMin(Args &&... args) {
-  return Aggregate::min(std::forward<Args>(args)...);
+  return Aggregate::Min(std::forward<Args>(args)...);
 }
 
 /**
@@ -539,8 +585,9 @@ Aggregate aggMin(Args &&... args) {
  * group, for each input column.
  */
 template<typename ...Args>
-Aggregate aggPct(double percentile, Args &&... args) {
-  return Aggregate::pct(percentile, std::forward<Args>(args)...);
+[[nodiscard]]
+Aggregate AggPct(double percentile, Args &&... args) {
+  return Aggregate::Pct(percentile, std::forward<Args>(args)...);
 }
 
 /**
@@ -548,8 +595,9 @@ Aggregate aggPct(double percentile, Args &&... args) {
  * group, for each input column.
  */
 template<typename ...Args>
-Aggregate aggStd(Args &&... args) {
-  return Aggregate::std(std::forward<Args>(args)...);
+[[nodiscard]]
+Aggregate AggStd(Args &&... args) {
+  return Aggregate::Std(std::forward<Args>(args)...);
 }
 
 /**
@@ -557,8 +605,9 @@ Aggregate aggStd(Args &&... args) {
  * for each input column.
  */
 template<typename ...Args>
+[[nodiscard]]
 Aggregate aggSum(Args &&... args) {
-  return Aggregate::sum(std::forward<Args>(args)...);
+  return Aggregate::Sum(std::forward<Args>(args)...);
 }
 
 /**
@@ -566,8 +615,9 @@ Aggregate aggSum(Args &&... args) {
  * for each input column.
  */
 template<typename ...Args>
-Aggregate aggVar(Args &&... args) {
-  return Aggregate::var(std::forward<Args>(args)...);
+[[nodiscard]]
+Aggregate AggVar(Args &&... args) {
+  return Aggregate::Var(std::forward<Args>(args)...);
 }
 
 /**
@@ -575,15 +625,17 @@ Aggregate aggVar(Args &&... args) {
  * group, for each input column.
  */
 template<typename ...Args>
-Aggregate aggWavg(Args &&... args) {
-  return Aggregate::wavg(std::forward<Args>(args)...);
+[[nodiscard]]
+Aggregate AggWavg(Args &&... args) {
+  return Aggregate::WAvg(std::forward<Args>(args)...);
 }
 
 /**
  * Returns an AggregateCombo object, which represents a collection of aggregators.
  */
+[[nodiscard]]
 inline AggregateCombo aggCombo(std::initializer_list<Aggregate> args) {
-  return AggregateCombo::create(args);
+  return AggregateCombo::Create(args);
 }
 
 namespace internal {
@@ -618,21 +670,18 @@ struct StringHolder {
  * server resource is destructed, the resource will be released.
  */
 class TableHandle {
-  typedef deephaven::dhcore::clienttable::Schema Schema;
-  typedef deephaven::dhcore::ticking::TickingCallback TickingCallback;
-  typedef deephaven::dhcore::ticking::TickingUpdate TickingUpdate;
-  typedef deephaven::client::BooleanExpression BooleanExpression;
-  typedef deephaven::client::Column Column;
-  typedef deephaven::client::DateTimeCol DateTimeCol;
-  typedef deephaven::client::MatchWithColumn MatchWithColumn;
-  typedef deephaven::client::NumCol NumCol;
-  typedef deephaven::client::SelectColumn SelectColumn;
-  typedef deephaven::client::SortPair SortPair;
-  typedef deephaven::client::StrCol StrCol;
-  typedef deephaven::client::subscription::SubscriptionHandle SubscriptionHandle;
-
-  template<typename... Args>
-  using Callback = deephaven::dhcore::utility::Callback<Args...>;
+  using SchemaType = deephaven::dhcore::clienttable::Schema;
+  using TickingCallback = deephaven::dhcore::ticking::TickingCallback;
+  using TickingUpdate = deephaven::dhcore::ticking::TickingUpdate;
+  using BooleanExpression = deephaven::client::BooleanExpression;
+  using Column = deephaven::client::Column;
+  using DateTimeCol = deephaven::client::DateTimeCol;
+  using MatchWithColumn = deephaven::client::MatchWithColumn;
+  using NumCol = deephaven::client::NumCol;
+  using SelectColumn = deephaven::client::SelectColumn;
+  using SortPair = deephaven::client::SortPair;
+  using StrCol = deephaven::client::StrCol;
+  using SubscriptionHandle = deephaven::client::subscription::SubscriptionHandle;
 
   template<typename... Args>
   using SFCallback = deephaven::dhcore::utility::SFCallback<Args...>;
@@ -668,319 +717,357 @@ public:
    * Get the TableHandlerManager that is managing this TableHandle.
    * @return the TableHandleManager.
    */
-  TableHandleManager getManager() const;
+  [[nodiscard]]
+  TableHandleManager GetManager() const;
 
   /**
-   * A variadic form of select(std::vector<std::string>) const that takes a combination of
+   * A variadic form of Select(std::vector<std::string>) const that takes a combination of
    * argument types.
    * @tparam Args Any combination of `std::string`, `std::string_view`, `const char *`, or `SelectColumn`.
-   * @param args The arguments to select
+   * @param args The arguments to Select
    * @return A TableHandle referencing the new table
    */
   template<typename ...Args>
-  TableHandle select(Args &&...args) const;
+  [[nodiscard]]
+  TableHandle Select(Args &&...args) const;
   /**
    * Select columnSpecs from a table. The columnSpecs can be column names or formulas like
-   * "NewCol = A + 12". See the Deephaven documentation for the difference between "select" and
-   * "view".
+   * "NewCol = A + 12". See the Deephaven documentation for the difference between "Select" and
+   * "View".
    * @param columnSpecs The columnSpecs
    * @return A TableHandle referencing the new table
    */
-  TableHandle select(std::vector<std::string> columnSpecs) const;
+  [[nodiscard]]
+  TableHandle Select(std::vector<std::string> column_specs) const;
 
   /**
-   * A variadic form of view(std::vector<std::string>) const that takes a combination of
+   * A variadic form of View(std::vector<std::string>) const that takes a combination of
    * argument types.
    * @tparam Args Any combination of `std::string`, `std::string_view`, `const char *`, or `SelectColumn`.
-   * @param args The arguments to view
+   * @param args The arguments to View
    * @return A TableHandle referencing the new table
    */
   template<typename ...Args>
-  TableHandle view(Args &&... args) const;
+  [[nodiscard]]
+  TableHandle View(Args &&... args) const;
   /**
    * View columnSpecs from a table. The columnSpecs can be column names or formulas like
-   * "NewCol = A + 12". See the Deephaven documentation for the difference between select() and
-   * view().
-   * @param columnSpecs The columnSpecs to view
+   * "NewCol = A + 12". See the Deephaven documentation for the difference between Select() and
+   * View().
+   * @param columnSpecs The columnSpecs to View
    * @return A TableHandle referencing the new table
    */
-  TableHandle view(std::vector<std::string> columnSpecs) const;
+  [[nodiscard]]
+  TableHandle View(std::vector<std::string> column_specs) const;
 
   /**
-   * A variadic form of dropColumns(std::vector<std::string>) const that takes a combination of
+   * A variadic form of DropColumns(std::vector<std::string>) const that takes a combination of
    * argument types.
    * @tparam Args Any combination of `std::string`, `std::string_view`, `const char *`, or `SelectColumn`.
    * @param args The columns to drop
    * @return A TableHandle referencing the new table
    */
   template<typename ...Args>
-  TableHandle dropColumns(Args &&... args) const;
+  [[nodiscard]]
+  TableHandle DropColumns(Args &&... args) const;
   /**
-   * Creates a new table from this table where the specified columns have been excluded.
+   * Creates a new table from this table Where the specified columns have been excluded.
    * @param columnSpecs The columns to exclude.
    * @return
    */
-  TableHandle dropColumns(std::vector<std::string> columnSpecs) const;
+  [[nodiscard]]
+  TableHandle DropColumns(std::vector<std::string> column_specs) const;
 
   /**
-   * A variadic form of update(std::vector<std::string>) const that takes a combination of
+   * A variadic form of Update(std::vector<std::string>) const that takes a combination of
    * argument types.
    * @tparam Args Any combination of `std::string`, `std::string_view`, `const char *`, or `SelectColumn`.
-   * @param args The columns to update
+   * @param args The columns to Update
    * @return A TableHandle referencing the new table
    */
   template<typename ...Args>
-  TableHandle update(Args &&... args) const;
+  [[nodiscard]]
+  TableHandle Update(Args &&... args) const;
   /**
    * Creates a new table from this table, but including the additional specified columns.
    * @param columnSpecs The columnSpecs to add. For exampe, {"X = A + 5", "Y = X * 2"}.
-   * See the Deephaven documentation for the difference between update() and updateView().
+   * See the Deephaven documentation for the difference between Update() and UpdateView().
    * @return A TableHandle referencing the new table
    */
-  TableHandle update(std::vector<std::string> columnSpecs) const;
+  [[nodiscard]]
+  TableHandle Update(std::vector<std::string> column_specs) const;
 
   /**
-   * A variadic form of updateView(std::vector<std::string>) const that takes a combination of
+   * A variadic form of UpdateView(std::vector<std::string>) const that takes a combination of
    * argument types.
    * @tparam Args Any combination of `std::string`, `std::string_view`, `const char *`, or `SelectColumn`.
-   * @param args The columns to updateView
+   * @param args The columns to UpdateView
    * @return A TableHandle referencing the new table
    */
   template<typename ...Args>
-  TableHandle updateView(Args &&... args) const;
+  [[nodiscard]]
+  TableHandle UpdateView(Args &&... args) const;
   /**
-   * Creates a new view from this table, but including the additional specified columns.
+   * Creates a new View from this table, but including the additional specified columns.
    * @param columnSpecs The columnSpecs to add. For exampe, {"X = A + 5", "Y = X * 2"}.
-   * See the Deephaven documentation for the difference between update() and updateView().
+   * See the Deephaven documentation for the difference between Update() and UpdateView().
    * @return A TableHandle referencing the new table
    */
-  TableHandle updateView(std::vector<std::string> columnSpecs) const;
+  [[nodiscard]]
+  TableHandle UpdateView(std::vector<std::string> column_specs) const;
 
   /**
-   * A structured form of where(std::string) const, but which takes the Fluent syntax.
+   * A structured form of Where(std::string) const, but which takes the Fluent syntax.
    * @param condition A Deephaven fluent BooleanExpression such as `Price > 100` or `Col3 == Col1 * Col2`
    * @return A TableHandle referencing the new table
    */
-  TableHandle where(const BooleanExpression &condition) const;
+  [[nodiscard]]
+  TableHandle Where(const BooleanExpression &condition) const;
   /**
    * Creates a new table from this table, filtered by condition. Consult the Deephaven
    * documentation for more information about valid conditions.
    * @param condition A Deephaven boolean expression such as "Price > 100" or "Col3 == Col1 * Col2".
    * @return A TableHandle referencing the new table
    */
-  TableHandle where(std::string condition) const;
+  [[nodiscard]]
+  TableHandle Where(std::string condition) const;
 
   /**
-   * Creates a new table from this table, sorted by sortPairs.
+   * Creates a new table from this table, sorted By sortPairs.
    * @param sortPairs A vector of SortPair objects describing the sort. Each SortPair refers to
    *   a column, a sort direction, and whether the sort should consider to the value's regular or
    *   absolute value when doing comparisons.
    * @return A TableHandle referencing the new table
    */
-  TableHandle sort(std::vector<SortPair> sortPairs) const;
+  [[nodiscard]]
+  TableHandle Sort(std::vector<SortPair> sort_pairs) const;
 
   /**
-   * A variadic form of by(std::vector<std::string>) const that takes a combination of
+   * A variadic form of By(std::vector<std::string>) const that takes a combination of
    * argument types.
    * @tparam Args Any combination of `std::string`, `std::string_view`, `const char *`, or `SelectColumn`.
    * @param args The columns to group by
    * @return A TableHandle referencing the new table
    */
   template<typename ...Args>
-  TableHandle by(Args &&... args) const;
+  [[nodiscard]]
+  TableHandle By(Args &&... args) const;
   /**
    * Creates a new table from this table, grouped by columnSpecs with the column content grouped
    * into arrays.
    * @param columnSpecs Columns to group by.
    * @return A TableHandle referencing the new table
    */
-  TableHandle by(std::vector<std::string> columnSpecs) const;
+  [[nodiscard]]
+  TableHandle By(std::vector<std::string> column_specs) const;
   // TODO(kosak): document
-  TableHandle by(AggregateCombo combo, std::vector<std::string> groupByColumns) const;
+  [[nodiscard]]
+  TableHandle By(AggregateCombo combo, std::vector<std::string> group_by_columns) const;
 
   // TODO(kosak): document
   template<typename ...Args>
-  TableHandle by(AggregateCombo combo, Args &&... args) const;
+  [[nodiscard]]
+  TableHandle By(AggregateCombo combo, Args &&... args) const;
 
   /**
-   * A variadic form of minBy(std::vector<std::string>) const that takes a combination of
+   * A variadic form of MinBy(std::vector<std::string>) const that takes a combination of
    * argument types.
    * @tparam Args Any combination of `std::string`, `std::string_view`, `const char *`, or `SelectColumn`.
    * @param columnSpecs The columns to group by
    * @return A TableHandle referencing the new table
    */
   template<typename ...Args>
-  TableHandle minBy(Args &&... columnSpecs) const;
+  [[nodiscard]]
+  TableHandle MinBy(Args &&... column_specs) const;
   /**
-   * Creates a new table from this table, grouped by columnSpecs, with the "min" aggregate operation
+   * Creates a new table from this table, grouped by columnSpecs, with the "Min" aggregate operation
    * applied to the remaining columns.
    * @param columnSpecs Columns to group by.
    * @return A TableHandle referencing the new table
    */
-  TableHandle minBy(std::vector<std::string> columnSpecs) const;
+  [[nodiscard]]
+  TableHandle MinBy(std::vector<std::string> column_specs) const;
 
   /**
-   * A variadic form of maxBy(std::vector<std::string>) const that takes a combination of
+   * A variadic form of MaxBy(std::vector<std::string>) const that takes a combination of
    * argument types.
    * @tparam Args Any combination of `std::string`, `std::string_view`, `const char *`, or `SelectColumn`.
    * @param columnSpecs The columns to group by
    * @return A TableHandle referencing the new table
    */
   template<typename ...Args>
-  TableHandle maxBy(Args &&... columnSpecs) const;
+  [[nodiscard]]
+  TableHandle MaxBy(Args &&... column_specs) const;
   /**
-   * Creates a new table from this table, grouped by columnSpecs, with the "max" aggregate operation
+   * Creates a new table from this table, grouped by columnSpecs, with the "Max" aggregate operation
    * applied to the remaining columns.
    * @param columnSpecs Columns to group by.
    * @return A TableHandle referencing the new table
    */
-  TableHandle maxBy(std::vector<std::string> columnSpecs) const;
+  [[nodiscard]]
+  TableHandle MaxBy(std::vector<std::string> column_specs) const;
 
   /**
-   * A variadic form of sumBy(std::vector<std::string>) const that takes a combination of
+   * A variadic form of SumBy(std::vector<std::string>) const that takes a combination of
    * argument types.
    * @tparam Args Any combination of `std::string`, `std::string_view`, `const char *`, or `SelectColumn`.
    * @param columnSpecs The columns to group by
    * @return A TableHandle referencing the new table
    */
   template<typename ...Args>
-  TableHandle sumBy(Args &&... columnSpecs) const;
+  [[nodiscard]]
+  TableHandle SumBy(Args &&... column_specs) const;
   /**
-   * Creates a new table from this table, grouped by columnSpecs, with the "sum" aggregate operation
+   * Creates a new table from this table, grouped by columnSpecs, with the "Sum" aggregate operation
    * applied to the remaining columns.
    * @param columnSpecs Columns to group by.
    * @return A TableHandle referencing the new table
    */
-  TableHandle sumBy(std::vector<std::string> columnSpecs) const;
+  [[nodiscard]]
+  TableHandle SumBy(std::vector<std::string> column_specs) const;
 
   /**
-   * A variadic form of absSumBy(std::vector<std::string>) const that takes a combination of
+   * A variadic form of AbsSumBy(std::vector<std::string>) const that takes a combination of
    * argument types.
    * @tparam Args Any combination of `std::string`, `std::string_view`, `const char *`, or `SelectColumn`.
    * @param columnSpecs The columns to group by
    * @return A TableHandle referencing the new table
    */
   template<typename ...Args>
-  TableHandle absSumBy(Args &&... columnSpecs) const;
+  TableHandle AbsSumBy(Args &&... column_specs) const;
   /**
-   * Creates a new table from this table, grouped by columnSpecs, with the "absSum" aggregate operation
+   * Creates a new table from this table, grouped by columnSpecs, with the "AbsSum" aggregate operation
    * applied to the remaining columns.
    * @param columnSpecs Columns to group by.
    * @return A TableHandle referencing the new table
    */
-  TableHandle absSumBy(std::vector<std::string> columnSpecs) const;
+  [[nodiscard]]
+  TableHandle AbsSumBy(std::vector<std::string> column_specs) const;
 
   /**
-   * A variadic form of varBy(std::vector<std::string>) const that takes a combination of
+   * A variadic form of VarBy(std::vector<std::string>) const that takes a combination of
    * argument types.
    * @tparam Args Any combination of `std::string`, `std::string_view`, `const char *`, or `SelectColumn`.
    * @param columnSpecs Columns to group by.
    * @return A TableHandle referencing the new table
    */
   template<typename ...Args>
-  TableHandle varBy(Args &&... columnSpecs) const;
+  [[nodiscard]]
+  TableHandle VarBy(Args &&... column_specs) const;
   /**
-   * Creates a new table from this table, grouped by columnSpecs, with the "var" aggregate operation
+   * Creates a new table from this table, grouped by columnSpecs, with the "Var" aggregate operation
    * applied to the remaining columns.
    * @param columnSpecs Columns to group by.
    * @return A TableHandle referencing the new table
    */
-  TableHandle varBy(std::vector<std::string> columnSpecs) const;
+  [[nodiscard]]
+  TableHandle VarBy(std::vector<std::string> column_specs) const;
 
   /**
-   * A variadic form of stdBy(std::vector<std::string>) const that takes a combination of
+   * A variadic form of StdBy(std::vector<std::string>) const that takes a combination of
    * argument types.
    * @tparam Args Any combination of `std::string`, `std::string_view`, `const char *`, or `SelectColumn`.
    * @param columnSpecs Columns to group by.
    * @return A TableHandle referencing the new table
    */
   template<typename ...Args>
-  TableHandle stdBy(Args &&... columnSpecs) const;
+  [[nodiscard]]
+  TableHandle StdBy(Args &&... column_specs) const;
   /**
    * Creates a new table from this table, grouped by columnSpecs, with the "std" aggregate operation
    * applied to the remaining columns.
    * @param columnSpecs Columns to group by.
    * @return A TableHandle referencing the new table
    */
-  TableHandle stdBy(std::vector<std::string> columnSpecs) const;
+  [[nodiscard]]
+  TableHandle StdBy(std::vector<std::string> column_specs) const;
 
   /**
-   * A variadic form of avgBy(std::vector<std::string>) const that takes a combination of
+   * A variadic form of AvgBy(std::vector<std::string>) const that takes a combination of
    * argument types.
    * @tparam Args Any combination of `std::string`, `std::string_view`, `const char *`, or `SelectColumn`.
    * @param columnSpecs Columns to group by.
    * @return A TableHandle referencing the new table
    */
   template<typename ...Args>
-  TableHandle avgBy(Args &&... columnSpecs) const;
+  [[nodiscard]]
+  TableHandle AvgBy(Args &&... column_specs) const;
   /**
-   * Creates a new table from this table, grouped by columnSpecs, with the "avg" aggregate operation
+   * Creates a new table from this table, grouped by columnSpecs, with the "Avg" aggregate operation
    * applied to the remaining columns.
    * @param columnSpecs Columns to group by.
    * @return A TableHandle referencing the new table
    */
-  TableHandle avgBy(std::vector<std::string> columnSpecs) const;
+  [[nodiscard]]
+  TableHandle AvgBy(std::vector<std::string> column_specs) const;
 
   /**
-   * A variadic form of firstBy(std::vector<std::string>) const that takes a combination of
+   * A variadic form of FirstBy(std::vector<std::string>) const that takes a combination of
    * argument types.
    * @tparam Args Any combination of `std::string`, `std::string_view`, `const char *`, or `SelectColumn`.
    * @param columnSpecs Columns to group by.
    * @return A TableHandle referencing the new table
    */
   template<typename ...Args>
-  TableHandle firstBy(Args &&... columnSpecs) const;
+  [[nodiscard]]
+  TableHandle FirstBy(Args &&... column_specs) const;
   /**
-   * Creates a new table from this table, grouped by columnSpecs, with the "first" aggregate operation
+   * Creates a new table from this table, grouped by columnSpecs, with the "First" aggregate operation
    * applied to the remaining columns.
    * @param columnSpecs Columns to group by.
    * @return A TableHandle referencing the new table
    */
-  TableHandle firstBy(std::vector<std::string> columnSpecs) const;
+  [[nodiscard]]
+  TableHandle FirstBy(std::vector<std::string> column_specs) const;
 
   /**
-   * A variadic form of lastBy(std::vector<std::string>) const that takes a combination of
+   * A variadic form of LastBy(std::vector<std::string>) const that takes a combination of
    * argument types.
    * @tparam Args Any combination of `std::string`, `std::string_view`, `const char *`, or `SelectColumn`.
    * @param columnSpecs Columns to group by.
    * @return A TableHandle referencing the new table
    */
   template<typename ...Args>
-  TableHandle lastBy(Args &&... columnSpecs) const;
+  [[nodiscard]]
+  TableHandle LastBy(Args &&... column_specs) const;
   /**
-   * Creates a new table from this table, grouped by columnSpecs, with the "last" aggregate operation
+   * Creates a new table from this table, grouped by columnSpecs, with the "Last" aggregate operation
    * applied to the remaining columns.
    * @param columnSpecs Columns to group by.
    * @return A TableHandle referencing the new table
    */
-  TableHandle lastBy(std::vector<std::string> columnSpecs) const;
+  [[nodiscard]]
+  TableHandle LastBy(std::vector<std::string> column_specs) const;
 
   /**
-   * A variadic form of medianBy(std::vector<std::string>) const that takes a combination of
+   * A variadic form of MedianBy(std::vector<std::string>) const that takes a combination of
    * argument types.
    * @tparam Args Any combination of `std::string`, `std::string_view`, `const char *`, or `SelectColumn`.
    * @param columnSpecs Columns to group by.
    * @return A TableHandle referencing the new table
    */
   template<typename ...Args>
-  TableHandle medianBy(Args &&... columnSpecs) const;
+  [[nodiscard]]
+  TableHandle MedianBy(Args &&... column_specs) const;
   /**
    * Creates a new table from this table, grouped by columnSpecs, with the "median" aggregate operation
    * applied to the remaining columns.
    * @param columnSpecs Columns to group by.
    * @return A TableHandle referencing the new table
    */
-  TableHandle medianBy(std::vector<std::string> columnSpecs) const;
+  [[nodiscard]]
+  TableHandle MedianBy(std::vector<std::string> column_specs) const;
 
   /**
-   * A variadic form of percentileBy(double, bool, std::vector<std::string>) const that takes a combination of
+   * A variadic form of PercentileBy(double, bool, std::vector<std::string>) const that takes a combination of
    * argument types.
    * @tparam Args Any combination of `std::string`, `std::string_view`, `const char *`, or `SelectColumn`.
    * @param columnSpecs Columns to group by.
    * @return A TableHandle referencing the new table
    */
   template<typename ...Args>
-  TableHandle percentileBy(double percentile, bool avgMedian, Args &&... columnSpecs) const;
+  [[nodiscard]]
+  TableHandle PercentileBy(double percentile, bool avg_median, Args &&... column_specs) const;
   // TODO(kosak): document avgMedian
   /**
    * Creates a new table from this table, grouped by columnSpecs, with the "percentile" aggregate operation
@@ -989,18 +1076,20 @@ public:
    * @param columnSpecs Columns to group by.
    * @return A TableHandle referencing the new table
    */
+  [[nodiscard]]
   TableHandle
-  percentileBy(double percentile, bool avgMedian, std::vector<std::string> columnSpecs) const;
+  PercentileBy(double percentile, bool avg_median, std::vector<std::string> column_specs) const;
 
   /**
-   * A variadic form of percentileBy(double, std::vector<std::string>) const that takes a combination of
+   * A variadic form of PercentileBy(double, std::vector<std::string>) const that takes a combination of
    * argument types.
    * @tparam Args Any combination of `std::string`, `std::string_view`, `const char *`, or `SelectColumn`.
    * @param columnSpecs Columns to group by.
    * @return A TableHandle referencing the new table
    */
   template<typename ...Args>
-  TableHandle percentileBy(double percentile, Args &&... columnSpecs) const;
+  [[nodiscard]]
+  TableHandle PercentileBy(double percentile, Args &&... column_specs) const;
   /**
    * Creates a new table from this table, grouped by columnSpecs, with the "percentile" aggregate operation
    * applied to the remaining columns.
@@ -1008,11 +1097,12 @@ public:
    * @param columnSpecs Columns to group by.
    * @return A TableHandle referencing the new table
    */
-  TableHandle percentileBy(double percentile, std::vector<std::string> columnSpecs) const;
+  [[nodiscard]]
+  TableHandle PercentileBy(double percentile, std::vector<std::string> column_specs) const;
 
   // TODO(kosak): I wonder if these are all MatchWithColumns, not SelectColumns
   /**
-   * A variadic form of countBy(std::string, std::vector<std::string>) const that takes a combination of
+   * A variadic form of CountBy(std::string, std::vector<std::string>) const that takes a combination of
    * argument types.
    * @tparam CCol Any of `std::string`, `std::string_view`, `const char *`, or `SelectColumn`.
    * @tparam Args Any combination of `std::string`, `std::string_view`, `const char *`, or `SelectColumn`.
@@ -1021,18 +1111,20 @@ public:
    * @return A TableHandle referencing the new table
    */
   template<typename CCol, typename ...Args>
-  TableHandle countBy(CCol &&countByColumn, Args &&... columnSpecs) const;
+  [[nodiscard]]
+  TableHandle CountBy(CCol &&count_by_column, Args &&... columnSpecs) const;
   /**
-   * Creates a new table from this table, grouped by columnSpecs, having a new column named by
+   * Creates a new table from this table, grouped by columnSpecs, having a new column named By
    * `countByColumn` containing the size of each group.
    * @param countByColumn Name of the output column.
    * @param columnSpecs Columns to group by.
    * @return A TableHandle referencing the new table
    */
-  TableHandle countBy(std::string countByColumn, std::vector<std::string> columnSpecs) const;
+  [[nodiscard]]
+  TableHandle CountBy(std::string count_by_column, std::vector<std::string> columnSpecs) const;
 
   /**
-   * A variadic form of wAvgBy(std::string, std::vector<std::string>) const that takes a combination of
+   * A variadic form of WavgBy(std::string, std::vector<std::string>) const that takes a combination of
    * argument types.
    * @tparam CCol Any of `std::string`, `std::string_view`, `const char *`, or `SelectColumn`.
    * @tparam Args Any combination of `std::string`, `std::string_view`, `const char *`, or `SelectColumn`.
@@ -1041,18 +1133,20 @@ public:
    * @return A TableHandle referencing the new table
    */
   template<typename WCol, typename ...Args>
-  TableHandle wAvgBy(WCol &&weightColumn, Args &&... columnSpecs) const;
+  [[nodiscard]]
+  TableHandle WAvgBy(WCol &&weight_column, Args &&... column_specs) const;
   /**
-   * Creates a new table from this table, grouped by columnSpecs, having a new column named by
+   * Creates a new table from this table, grouped by columnSpecs, having a new column named By
    * `weightColumn` containing the weighted average of each group.
    * @param countByColumn Name of the output column.
    * @param columnSpecs Columns to group by.
    * @return A TableHandle referencing the new table
    */
-  TableHandle wAvgBy(std::string weightColumn, std::vector<std::string> columnSpecs) const;
+  [[nodiscard]]
+  TableHandle WAvgBy(std::string weight_column, std::vector<std::string> columnSpecs) const;
 
   /**
-   * A variadic form of tailBy(int64_t, std::vector<std::string>) const that takes a combination of
+   * A variadic form of TailBy(int64_t, std::vector<std::string>) const that takes a combination of
    * argument types.
    * @tparam Args Any combination of `std::string`, `std::string_view`, `const char *`, or `SelectColumn`.
    * @param n Number of rows
@@ -1060,18 +1154,20 @@ public:
    * @return A TableHandle referencing the new table
    */
   template<typename ...Args>
-  TableHandle tailBy(int64_t n, Args &&... columnSpecs) const;
+  [[nodiscard]]
+  TableHandle TailBy(int64_t n, Args &&... column_specs) const;
   /**
-   * Creates a new table from this table, grouped by columnSpecs, containing the last `n` rows of
+   * Creates a new table from this table, grouped by columnSpecs, containing the Last `n` rows of
    * each group.
    * @param n Number of rows
    * @param columnSpecs Columns to group by.
    * @return A TableHandle referencing the new table
    */
-  TableHandle tailBy(int64_t n, std::vector<std::string> columnSpecs) const;
+  [[nodiscard]]
+  TableHandle TailBy(int64_t n, std::vector<std::string> column_specs) const;
 
   /**
-   * A variadic form of headBy(int64_t, std::vector<std::string>) const that takes a combination of
+   * A variadic form of HeadBy(int64_t, std::vector<std::string>) const that takes a combination of
    * argument types.
    * @tparam Args Any combination of `std::string`, `std::string_view`, `const char *`, or `SelectColumn`.
    * @param n Number of rows
@@ -1079,108 +1175,149 @@ public:
    * @return A TableHandle referencing the new table
    */
   template<typename ...Args>
-  TableHandle headBy(int64_t n, Args &&... columnSpecs) const;
+  [[nodiscard]]
+  TableHandle HeadBy(int64_t n, Args &&... column_specs) const;
   /**
-   * Creates a new table from this table, grouped by columnSpecs, containing the first `n` rows of
+   * Creates a new table from this table, grouped by columnSpecs, containing the First `n` rows of
    * each group.
    * @param n Number of rows
    * @param columnSpecs Columns to group by.
    * @return A TableHandle referencing the new table
    */
-  TableHandle headBy(int64_t n, std::vector<std::string> columnSpecs) const;
+  [[nodiscard]]
+  TableHandle HeadBy(int64_t n, std::vector<std::string> column_specs) const;
 
   /**
-   * Creates a new table from this table containing the first `n` rows of this table.
+   * Creates a new table from this table containing the First `n` rows of this table.
    * @param n Number of rows
    * @return A TableHandle referencing the new table
    */
-  TableHandle head(int64_t n) const;
+  [[nodiscard]]
+  TableHandle Head(int64_t n) const;
   /**
-   * Creates a new table from this table containing the last `n` rows of this table.
+   * Creates a new table from this table containing the Last `n` rows of this table.
    * @param n Number of rows
    * @return A TableHandle referencing the new table
    */
-  TableHandle tail(int64_t n) const;
+  [[nodiscard]]
+  TableHandle Tail(int64_t n) const;
 
   //TODO(kosak): document nullFill
   /**
-   * A variadic form of ungroup(bool, std::vector<std::string>) const that takes a combination of
+   * A variadic form of Ungroup(bool, std::vector<std::string>) const that takes a combination of
    * argument types.
    * @tparam Args Any combination of `std::string`, `std::string_view`, `const char *`, or `SelectColumn`.
    * @param columnSpecs Columns to group by.
    * @return A TableHandle referencing the new table
    */
   template<typename ...Args>
-  TableHandle ungroup(bool nullFill, Args &&... columnSpecs) const;
+  [[nodiscard]]
+  TableHandle Ungroup(bool null_fill, Args &&... column_specs) const;
   //TODO(kosak): document nullFill
   /**
    * Creates a new table from this table with the column array data ungrouped. This is the inverse
-   * of the by(std::vector<std::string>) const operation.
-   * @param groupByColumns Columns to ungroup.
+   * of the By(std::vector<std::string>) const operation.
+   * @param groupByColumns Columns to Ungroup.
    * @return A TableHandle referencing the new table
    */
-  TableHandle ungroup(bool nullFill, std::vector<std::string> groupByColumns) const;
+  [[nodiscard]]
+  TableHandle Ungroup(bool null_fill, std::vector<std::string> groupByColumns) const;
 
   /**
-   * A variadic form of ungroup(std::vector<std::string>) const that takes a combination of
+   * A variadic form of Ungroup(std::vector<std::string>) const that takes a combination of
    * argument types.
    * @tparam Args Any combination of `std::string`, `std::string_view`, `const char *`, or `SelectColumn`.
    * @param columnSpecs Columns to group by.
    * @return A TableHandle referencing the new table
    */
   template<typename ...Args>
-  TableHandle ungroup(Args &&... columnSpecs) const {
-    return ungroup(false, std::forward<Args>(columnSpecs)...);
+  [[nodiscard]]
+  TableHandle Ungroup(Args &&... column_specs) const {
+    return Ungroup(false, std::forward<Args>(column_specs)...);
   }
 
   /**
    * Creates a new table from this table with the column array data ungrouped. This is the inverse
-   * of the by(std::vector<std::string>) const operation.
-   * @param groupByColumns Columns to ungroup.
+   * of the By(std::vector<std::string>) const operation.
+   * @param groupByColumns Columns to Ungroup.
    * @return A TableHandle referencing the new table
    */
-  TableHandle ungroup(std::vector<std::string> groupByColumns) const {
-    return ungroup(false, std::move(groupByColumns));
+  [[nodiscard]]
+  TableHandle Ungroup(std::vector<std::string> group_by_columns) const {
+    return Ungroup(false, std::move(group_by_columns));
   }
 
   //TODO(kosak): document keyColumn
   /**
-   * Creates a new table by merging `sources` together. The tables are essentially stacked on top
+   * Creates a new table By merging `sources` together. The tables are essentially stacked on top
    * of each other.
-   * @param sources The tables to merge.
+   * @param sources The tables to Merge.
    * @return A TableHandle referencing the new table
    */
-  TableHandle merge(std::string keyColumn, std::vector<TableHandle> sources) const;
+  [[nodiscard]]
+  TableHandle Merge(std::string key_column, std::vector<TableHandle> sources) const;
 
   /**
-   * Creates a new table by merging `sources` together. The tables are essentially stacked on top
+   * Creates a new table By merging `sources` together. The tables are essentially stacked on top
    * of each other.
-   * @param sources The tables to merge.
+   * @param sources The tables to Merge.
    * @return A TableHandle referencing the new table
    */
-  TableHandle merge(std::vector<TableHandle> sources) const {
+  [[nodiscard]]
+  TableHandle Merge(std::vector<TableHandle> sources) const {
     // TODO(kosak): may need to support null
-    return merge("", std::move(sources));
+    return Merge("", std::move(sources));
   }
 
   /**
-   * Creates a new table by cross joining this table with `rightSide`. The tables are joined by
+   * Creates a new table By cross joining this table with `rightSide`. The tables are joined By
    * the columns in `columnsToMatch`, and columns from `rightSide` are brought in and optionally
-   * renamed by `columnsToAdd`. Example:
+   * renamed By `columnsToAdd`. Example:
    * @code
-   * t1.crossJoin({"Col1", "Col2"}, {"Col3", "NewCol=Col4"})
+   * t1.CrossJoin({"Col1", "Col2"}, {"Col3", "NewCol=Col4"})
    * @endcode
    * @param rightSide The table to join with this table
    * @param columnsToMatch The columns to join on
    * @param columnsToAdd The columns from the right side to add, and possibly rename.
    * @return A TableHandle referencing the new table
    */
-  TableHandle crossJoin(const TableHandle &rightSide, std::vector<std::string> columnsToMatch,
-      std::vector<std::string> columnsToAdd) const;
+  [[nodiscard]]
+  TableHandle CrossJoin(const TableHandle &right_side, std::vector<std::string> columnsToMatch,
+      std::vector<std::string> columns_to_add) const;
   /**
-   * The fluent version of crossJoin(const TableHandle &, std::vector<std::string>, std::vector<std::string>) const.
+   * The fluent version of CrossJoin(const TableHandle &, std::vector<std::string>, std::vector<std::string>) const.
    * @code
-   * t1.crossJoin(col1, col2}, {col3, col4.as("NewCol"})
+   * t1.CrossJoin(col1, col2}, {col3, col4.as("NewCol"})
+   * @endcode
+
+   * @param right_side The table to join with this table
+   * @param columns_to_match The columns to join on
+   * @param columnsToAdd The columns from the right side to add, and possibly rename.
+   * @return
+   */
+  [[nodiscard]]
+  TableHandle CrossJoin(const TableHandle &right_side, std::vector<MatchWithColumn> columns_to_match,
+      std::vector<SelectColumn> columns_to_add) const;
+
+  /**
+   * Creates a new table By natural joining this table with `rightSide`. The tables are joined By
+   * the columns in `columnsToMatch`, and columns from `rightSide` are brought in and optionally
+   * renamed By `columnsToAdd`. Example:
+   * @code
+   * t1.NaturalJoin({"Col1", "Col2"}, {"Col3", "NewCol=Col4"})
+   * @endcode
+   * @param rightSide The table to join with this table
+   * @param columnsToMatch The columns to join on
+   * @param columnsToAdd The columns from the right side to add, and possibly rename.
+   * @return A TableHandle referencing the new table
+   */
+  [[nodiscard]]
+  TableHandle NaturalJoin(const TableHandle &right_side, std::vector<std::string> columnsToMatch,
+      std::vector<std::string> columns_to_add) const;
+  /**
+   * The fluent version of NaturalJoin(const TableHandle &, std::vector<std::string>, std::vector<std::string>) const.
+   * @code
+   * t1.NaturalJoin(col1, col2}, {col3, col4.as("NewCol"})
    * @endcode
 
    * @param rightSide The table to join with this table
@@ -1188,27 +1325,29 @@ public:
    * @param columnsToAdd The columns from the right side to add, and possibly rename.
    * @return
    */
-  TableHandle crossJoin(const TableHandle &rightSide, std::vector<MatchWithColumn> columnsToMatch,
-      std::vector<SelectColumn> columnsToAdd) const;
+  [[nodiscard]]
+  TableHandle NaturalJoin(const TableHandle &right_side, std::vector<MatchWithColumn> columnsToMatch,
+      std::vector<SelectColumn> columns_to_add) const;
 
   /**
-   * Creates a new table by natural joining this table with `rightSide`. The tables are joined by
+   * Creates a new table By exact joining this table with `rightSide`. The tables are joined By
    * the columns in `columnsToMatch`, and columns from `rightSide` are brought in and optionally
-   * renamed by `columnsToAdd`. Example:
+   * renamed By `columnsToAdd`. Example:
    * @code
-   * t1.naturalJoin({"Col1", "Col2"}, {"Col3", "NewCol=Col4"})
+   * t1.ExactJoin({"Col1", "Col2"}, {"Col3", "NewCol=Col4"})
    * @endcode
    * @param rightSide The table to join with this table
    * @param columnsToMatch The columns to join on
    * @param columnsToAdd The columns from the right side to add, and possibly rename.
    * @return A TableHandle referencing the new table
    */
-  TableHandle naturalJoin(const TableHandle &rightSide, std::vector<std::string> columnsToMatch,
-      std::vector<std::string> columnsToAdd) const;
+  [[nodiscard]]
+  TableHandle ExactJoin(const TableHandle &right_side, std::vector<std::string> columnsToMatch,
+      std::vector<std::string> columns_to_add) const;
   /**
-   * The fluent version of naturalJoin(const TableHandle &, std::vector<std::string>, std::vector<std::string>) const.
+   * The fluent version of ExactJoin(const TableHandle &, std::vector<std::string>, std::vector<std::string>) const.
    * @code
-   * t1.naturalJoin(col1, col2}, {col3, col4.as("NewCol"})
+   * t1.ExactJoin(col1, col2}, {col3, col4.as("NewCol"})
    * @endcode
 
    * @param rightSide The table to join with this table
@@ -1216,177 +1355,166 @@ public:
    * @param columnsToAdd The columns from the right side to add, and possibly rename.
    * @return
    */
-  TableHandle naturalJoin(const TableHandle &rightSide, std::vector<MatchWithColumn> columnsToMatch,
-      std::vector<SelectColumn> columnsToAdd) const;
+  [[nodiscard]]
+  TableHandle ExactJoin(const TableHandle &right_side, std::vector<MatchWithColumn> columnsToMatch,
+      std::vector<SelectColumn> columns_to_add) const;
 
-  /**
-   * Creates a new table by exact joining this table with `rightSide`. The tables are joined by
-   * the columns in `columnsToMatch`, and columns from `rightSide` are brought in and optionally
-   * renamed by `columnsToAdd`. Example:
-   * @code
-   * t1.exactJoin({"Col1", "Col2"}, {"Col3", "NewCol=Col4"})
-   * @endcode
-   * @param rightSide The table to join with this table
-   * @param columnsToMatch The columns to join on
-   * @param columnsToAdd The columns from the right side to add, and possibly rename.
-   * @return A TableHandle referencing the new table
-   */
-  TableHandle exactJoin(const TableHandle &rightSide, std::vector<std::string> columnsToMatch,
-      std::vector<std::string> columnsToAdd) const;
-  /**
-   * The fluent version of exactJoin(const TableHandle &, std::vector<std::string>, std::vector<std::string>) const.
-   * @code
-   * t1.exactJoin(col1, col2}, {col3, col4.as("NewCol"})
-   * @endcode
-
-   * @param rightSide The table to join with this table
-   * @param columnsToMatch The columns to join on
-   * @param columnsToAdd The columns from the right side to add, and possibly rename.
-   * @return
-   */
-  TableHandle exactJoin(const TableHandle &rightSide, std::vector<MatchWithColumn> columnsToMatch,
-      std::vector<SelectColumn> columnsToAdd) const;
-
-  TableHandle updateBy(std::vector<UpdateByOperation> ops, std::vector<std::string> by) const;
+  [[nodiscard]]
+  TableHandle UpdateBy(std::vector<UpdateByOperation> ops, std::vector<std::string> by) const;
 
   /**
    * Binds this table to a variable name in the QueryScope.
    * @param variable The QueryScope variable to bind to.
    */
-  void bindToVariable(std::string variable) const;
+  void BindToVariable(std::string variable) const;
   /**
-   * The async version of bindToVariable(std::string variable) const.
+   * The async version of BindToVariable(std::string variable) const.
    * @param variable The QueryScope variable to bind to.
    * @param callback The asynchronous callback.
    */
-  void bindToVariableAsync(std::string variable, std::shared_ptr<SFCallback<>> callback) const;
+  void BindToVariableAsync(std::string variable, std::shared_ptr<SFCallback<>> callback) const;
 
   /**
    * Get all the table's columns.
    * @return A vector of the table's columns.
    */
-  std::vector<Column> getAllCols() const;
+  [[nodiscard]]
+  std::vector<Column> GetAllCols() const;
 
   /**
    * Get a column that is of string type. Used in the fluent interface. Example:
    * @code
-   * auto symbol = table.getStrCol("Symbol")
-   * auto t2 = table.where(symbol == "IBM");
+   * auto symbol = table.GetStrCol("Symbol")
+   * auto t2 = table.Where(symbol == "IBM");
    * @endcode
    * @param columnName The name of the column
    * @return The specified StrCol.
    */
-  StrCol getStrCol(std::string columnName) const;
+  [[nodiscard]]
+  StrCol GetStrCol(std::string column_name) const;
   /**
    * Get a column that is of numeric type. Used in the fluent interface. Example:
    * @code
-   * auto volume = table.getNumCol("Volume")
-   * auto t2 = table.where(volume < 1000);
+   * auto volume = table.GetNumCol("Volume")
+   * auto t2 = table.Where(volume < 1000);
    * @endcode
    * @param columnName The name of the column
    * @return The specified NumCol.
    */
-  NumCol getNumCol(std::string columnName) const;
+  [[nodiscard]]
+  NumCol GetNumCol(std::string column_name) const;
   /**
    * Get a column that is of DateTime type. Used in the fluent interface.
    * @param columnName The name of the column
    * @return The specified DateTimeCol.
    */
-  DateTimeCol getDateTimeCol(std::string columnName) const;
+  [[nodiscard]]
+  DateTimeCol GetDateTimeCol(std::string column_name) const;
 
   // internal::StringHolder is a trick to make sure we are passed as many strings as there are
   // template arguments.
   /**
     * Convenience function to get several columns at once. Example:
     * @code
-    * auto [symbol, volume] = table.getCols<StrCol, NumCol>("Symbol", "Volume");
+    * auto [symbol, volume] = table.GetCols<StrCol, NumCol>("Symbol", "Volume");
     * @endcode
     * @tparam Cols Column types
     * @param names Column names
     * @return A tuple of columns.
     */
   template<typename... Cols>
-  std::tuple<Cols...> getCols(internal::StringHolder<Cols>... names);
+  [[nodiscard]]
+  std::tuple<Cols...> GetCols(internal::StringHolder<Cols>... names);
 
   /**
    * Create an ostream adpator that prints a human-readable representation of the table to a
    * C++ stream. Example:
    * @code
-   * std::cout << table.stream(true) << std::endl;
+   * std::cout << table.Stream(true) << std::endl;
    * @endcode
    * @param wantHeaders Include column headers.
    * @return
    */
-  internal::TableHandleStreamAdaptor stream(bool wantHeaders) const;
+  [[nodiscard]]
+  internal::TableHandleStreamAdaptor Stream(bool want_headers) const;
 
   /**
    * Used internally, for demo purposes.
    */
-  std::string toString(bool wantHeaders) const;
+  [[nodiscard]]
+  std::string ToString(bool want_headers) const;
 
   /**
    * Used internally, for debugging.
    */
-  void observe() const;
+  void Observe() const;
 
   /**
-   * A specialized operation to release the state of this TableHandle. This operation is normally done by the
+   * A specialized operation to Release the state of this TableHandle. This operation is normally done By the
    * destructor, so most programs will never need to call this method.. If there are no other copies of this
    * TableHandle, and if there are no "child" TableHandles dependent on this TableHandle, then the corresponding server
    * resources will be released.
    */
-  void release() {
+  void Release() {
     impl_.reset();
   }
 
   /**
    * Number of rows in the table at the time this TableHandle was created.
    */
-  int64_t numRows() const;
+  [[nodiscard]]
+  int64_t NumRows() const;
 
   /**
    * Whether the table was static at the time this TableHandle was created.
    */
-  bool isStatic() const;
+  [[nodiscard]]
+  bool IsStatic() const;
 
   /**
    * Returns the table's Schema.
    */
-  std::shared_ptr<Schema> schema() const;
+  [[nodiscard]]
+  std::shared_ptr<SchemaType> Schema() const;
 
   /**
-   * Used internally. Returns the underlying impl object.
+   * Used internally. Returns the underlying Impl object.
    */
-  const std::shared_ptr<impl::TableHandleImpl> &impl() const { return impl_; }
+  [[nodiscard]]
+  const std::shared_ptr<impl::TableHandleImpl> &Impl() const { return impl_; }
 
   /**
    * Construct an arrow FlightStreamReader bound to this table
    * @return the Arrow FlightStreamReader.
    */
-  std::shared_ptr<arrow::flight::FlightStreamReader> getFlightStreamReader() const;
+  [[nodiscard]]
+  std::shared_ptr<arrow::flight::FlightStreamReader> GetFlightStreamReader() const;
 
   /**
    * Subscribe to a ticking table.
    */
-  std::shared_ptr<SubscriptionHandle> subscribe(std::shared_ptr<TickingCallback> callback);
+  [[nodiscard]]
+  std::shared_ptr<SubscriptionHandle> Subscribe(std::shared_ptr<TickingCallback> callback);
 
-  typedef void (*onTickCallback_t)(TickingUpdate update, void *userData);
-  typedef void (*onErrorCallback_t)(std::string errorMessage, void *userData);
+  using onTickCallback_t = void (*)(TickingUpdate, void *);
+  using onErrorCallback_t = void (*)(std::string, void *);
   /**
    * Subscribe to a ticking table (C-style).
    */
-  std::shared_ptr<SubscriptionHandle> subscribe(onTickCallback_t onTick, void *onTickUserData,
-      onErrorCallback_t onError, void *onErrorUserData);
+  [[nodiscard]]
+  std::shared_ptr<SubscriptionHandle> Subscribe(onTickCallback_t onTick, void *onTickUserData,
+      onErrorCallback_t on_error, void *onErrorUserData);
   /**
    * Unsubscribe from the table.
    */
-  void unsubscribe(std::shared_ptr<SubscriptionHandle> callback);
+  void Unsubscribe(std::shared_ptr<SubscriptionHandle> callback);
 
   /**
    * Get access to the bytes of the Deephaven "Ticket" type (without having to reference the
    * protobuf data structure, which we would prefer not to have a dependency on here)
    */
-  const std::string &getTicketAsString() const;
+  [[nodiscard]]
+  const std::string &GetTicketAsString() const;
 
 private:
   std::shared_ptr<impl::TableHandleImpl> impl_;
@@ -1400,37 +1528,41 @@ struct ColGetter {
 
 template<>
 struct ColGetter<NumCol> {
-  static NumCol getCol(const TableHandle &table, std::string name) {
-    return table.getNumCol(std::move(name));
+  [[nodiscard]]
+  static NumCol GetCol(const TableHandle &table, std::string name) {
+    return table.GetNumCol(std::move(name));
   }
 };
 
 template<>
 struct ColGetter<StrCol> {
-  static StrCol getCol(const TableHandle &table, std::string name) {
-    return table.getStrCol(std::move(name));
+  [[nodiscard]]
+  static StrCol GetCol(const TableHandle &table, std::string name) {
+    return table.GetStrCol(std::move(name));
   }
 };
 
 template<>
 struct ColGetter<DateTimeCol> {
-  static DateTimeCol getCol(const TableHandle &table, std::string name) {
-    return table.getDateTimeCol(std::move(name));
+  [[nodiscard]]
+  static DateTimeCol GetCol(const TableHandle &table, std::string name) {
+    return table.GetDateTimeCol(std::move(name));
   }
 };
 }  // namespace internal
 
 template<typename... Cols>
-std::tuple<Cols...> TableHandle::getCols(internal::StringHolder<Cols>... names) {
+[[nodiscard]]
+std::tuple<Cols...> TableHandle::GetCols(internal::StringHolder<Cols>... names) {
   return std::make_tuple(
-      internal::ColGetter<Cols>::getCol(*this, std::move(names.s_))...
+      internal::ColGetter<Cols>::GetCol(*this, std::move(names.s_))...
   );
 }
 
 namespace internal {
 class TableHandleStreamAdaptor {
 public:
-  TableHandleStreamAdaptor(TableHandle table, bool wantHeaders);
+  TableHandleStreamAdaptor(TableHandle table, bool want_headers);
   TableHandleStreamAdaptor(const TableHandleStreamAdaptor &) = delete;
   TableHandleStreamAdaptor &operator=(const TableHandleStreamAdaptor &) = delete;
   ~TableHandleStreamAdaptor();
@@ -1443,322 +1575,364 @@ private:
 };
 
 struct ConvertToString {
-  static std::string toString(const char *s) {
+  [[nodiscard]]
+  static std::string ToString(const char *s) {
     return s;
   }
 
-  static std::string toString(std::string_view sv) {
+  [[nodiscard]]
+  static std::string ToString(std::string_view sv) {
     return {sv.data(), sv.size()};
   }
 
-  static std::string toString(std::string s) {
+  [[nodiscard]]
+  static std::string ToString(std::string s) {
     return s;
   }
 
-  static std::string toString(const deephaven::client::SelectColumn &selectColumn);
+  [[nodiscard]]
+  static std::string ToString(const deephaven::client::SelectColumn &selectColumn);
 };
 }  // namespace internal
 
 template<typename ...Args>
-Aggregate Aggregate::absSum(Args &&... args) {
-  std::vector<std::string> columnSpecs = {
-      internal::ConvertToString::toString(std::forward<Args>(args))...
+[[nodiscard]]
+Aggregate Aggregate::AbsSum(Args &&... args) {
+  std::vector<std::string> column_specs = {
+      internal::ConvertToString::ToString(std::forward<Args>(args))...
   };
-  return absSum(std::move(columnSpecs));
+  return AbsSum(std::move(column_specs));
 }
 
 template<typename ...Args>
-Aggregate Aggregate::group(Args &&... args) {
-  std::vector<std::string> columnSpecs = {
-      internal::ConvertToString::toString(std::forward<Args>(args))...
+[[nodiscard]]
+Aggregate Aggregate::Group(Args &&... args) {
+  std::vector<std::string> column_specs = {
+      internal::ConvertToString::ToString(std::forward<Args>(args))...
   };
-  return group(std::move(columnSpecs));
+  return Group(std::move(column_specs));
 }
 
 template<typename ...Args>
-Aggregate Aggregate::avg(Args &&... args) {
-  std::vector<std::string> columnSpecs = {
-      internal::ConvertToString::toString(std::forward<Args>(args))...
+[[nodiscard]]
+Aggregate Aggregate::Avg(Args &&... args) {
+  std::vector<std::string> column_specs = {
+      internal::ConvertToString::ToString(std::forward<Args>(args))...
   };
-  return avg(std::move(columnSpecs));
+  return Avg(std::move(column_specs));
 }
 
 template<typename ColArg>
-Aggregate Aggregate::count(ColArg &&arg) {
-  auto columnSpec = internal::ConvertToString::toString(std::forward<ColArg>(arg));
-  return count(std::move(columnSpec));
+[[nodiscard]]
+Aggregate Aggregate::Count(ColArg &&arg) {
+  auto columnSpec = internal::ConvertToString::ToString(std::forward<ColArg>(arg));
+  return Count(std::move(columnSpec));
 }
 
 template<typename ...Args>
-Aggregate Aggregate::first(Args &&... args) {
-  std::vector<std::string> columnSpecs = {
-      internal::ConvertToString::toString(std::forward<Args>(args))...
+[[nodiscard]]
+Aggregate Aggregate::First(Args &&... args) {
+  std::vector<std::string> column_specs = {
+      internal::ConvertToString::ToString(std::forward<Args>(args))...
   };
-  return first(std::move(columnSpecs));
+  return First(std::move(column_specs));
 }
 
 template<typename ...Args>
-Aggregate Aggregate::last(Args &&... args) {
-  std::vector<std::string> columnSpecs = {
-      internal::ConvertToString::toString(std::forward<Args>(args))...
+[[nodiscard]]
+Aggregate Aggregate::Last(Args &&... args) {
+  std::vector<std::string> column_specs = {
+      internal::ConvertToString::ToString(std::forward<Args>(args))...
   };
-  return last(std::move(columnSpecs));
+  return Last(std::move(column_specs));
 }
 
 template<typename ...Args>
-Aggregate Aggregate::max(Args &&... args) {
-  std::vector<std::string> columnSpecs = {
-      internal::ConvertToString::toString(std::forward<Args>(args))...
+[[nodiscard]]
+Aggregate Aggregate::Max(Args &&... args) {
+  std::vector<std::string> column_specs = {
+      internal::ConvertToString::ToString(std::forward<Args>(args))...
   };
-  return max(std::move(columnSpecs));
+  return Max(std::move(column_specs));
 }
 
 template<typename ...Args>
-Aggregate Aggregate::med(Args &&... args) {
+[[nodiscard]]
+Aggregate Aggregate::Med(Args &&... args) {
   std::vector<std::string> columnSpecs = {
-      internal::ConvertToString::toString(std::forward<Args>(args))...
+      internal::ConvertToString::ToString(std::forward<Args>(args))...
   };
-  return max(std::move(columnSpecs));
+  return Max(std::move(columnSpecs));
 }
 
 template<typename ...Args>
-Aggregate Aggregate::min(Args &&... args) {
-  std::vector<std::string> columnSpecs = {
-      internal::ConvertToString::toString(std::forward<Args>(args))...
+[[nodiscard]]
+Aggregate Aggregate::Min(Args &&... args) {
+  std::vector<std::string> column_specs = {
+      internal::ConvertToString::ToString(std::forward<Args>(args))...
   };
-  return min(std::move(columnSpecs));
+  return Min(std::move(column_specs));
 }
 
 template<typename ...Args>
-Aggregate Aggregate::pct(double percentile, bool avgMedian, Args &&... args) {
-  std::vector<std::string> columnSpecs = {
-      internal::ConvertToString::toString(std::forward<Args>(args))...
+[[nodiscard]]
+Aggregate Aggregate::Pct(double percentile, bool avg_median, Args &&... args) {
+  std::vector<std::string> column_specs = {
+      internal::ConvertToString::ToString(std::forward<Args>(args))...
   };
-  return pct(percentile, avgMedian, std::move(columnSpecs));
+  return pct(percentile, avg_median, std::move(column_specs));
 }
 
 template<typename ...Args>
-Aggregate Aggregate::std(Args &&... args) {
-  std::vector<std::string> columnSpecs = {
-      internal::ConvertToString::toString(std::forward<Args>(args))...
+[[nodiscard]]
+Aggregate Aggregate::Std(Args &&... args) {
+  std::vector<std::string> column_specs = {
+      internal::ConvertToString::ToString(std::forward<Args>(args))...
   };
-  return std(std::move(columnSpecs));
+  return Std(std::move(column_specs));
 }
 
 template<typename ...Args>
-Aggregate Aggregate::sum(Args &&... args) {
+[[nodiscard]]
+Aggregate Aggregate::Sum(Args &&... args) {
   std::vector<std::string> columnSpecs = {
-      internal::ConvertToString::toString(std::forward<Args>(args))...
+      internal::ConvertToString::ToString(std::forward<Args>(args))...
   };
-  return sum(std::move(columnSpecs));
+  return Sum(std::move(columnSpecs));
 }
 
 template<typename ...Args>
-Aggregate Aggregate::var(Args &&... args) {
+[[nodiscard]]
+Aggregate Aggregate::Var(Args &&... args) {
   std::vector<std::string> columnSpecs = {
-      internal::ConvertToString::toString(std::forward<Args>(args))...
+      internal::ConvertToString::ToString(std::forward<Args>(args))...
   };
-  return var(std::move(columnSpecs));
+  return Var(std::move(columnSpecs));
 }
 
 template<typename ColArg, typename ...Args>
-Aggregate Aggregate::wavg(ColArg &&weightColumn, Args &&... args) {
-  auto weightCol = internal::ConvertToString::toString(std::forward<ColArg>(weightColumn));
+[[nodiscard]]
+Aggregate Aggregate::WAvg(ColArg &&weight_column, Args &&... args) {
+  auto weightCol = internal::ConvertToString::ToString(std::forward<ColArg>(weight_column));
   std::vector<std::string> columnSpecs = {
-      internal::ConvertToString::toString(std::forward<Args>(args))...
+      internal::ConvertToString::ToString(std::forward<Args>(args))...
   };
-  return wavg(std::move(weightCol), std::move(columnSpecs));
+  return WAvg(std::move(weightCol), std::move(columnSpecs));
 }
 
 template<typename ...Args>
-TableHandle TableHandle::select(Args &&... args) const {
+[[nodiscard]]
+TableHandle TableHandle::Select(Args &&... args) const {
   std::vector<std::string> selectColumns = {
-      internal::ConvertToString::toString(std::forward<Args>(args))...
+      internal::ConvertToString::ToString(std::forward<Args>(args))...
   };
-  return select(std::move(selectColumns));
+  return Select(std::move(selectColumns));
 }
 
 template<typename ...Args>
-TableHandle TableHandle::view(Args &&... args) const {
+[[nodiscard]]
+TableHandle TableHandle::View(Args &&... args) const {
   std::vector<std::string> viewColumns = {
-      internal::ConvertToString::toString(std::forward<Args>(args))...
+      internal::ConvertToString::ToString(std::forward<Args>(args))...
   };
-  return view(std::move(viewColumns));
+  return View(std::move(viewColumns));
 }
 
 template<typename ...Args>
-TableHandle TableHandle::dropColumns(Args &&... args) const {
+[[nodiscard]]
+TableHandle TableHandle::DropColumns(Args &&... args) const {
   std::vector<std::string> columns = {
-      internal::ConvertToString::toString(std::forward<Args>(args))...
+      internal::ConvertToString::ToString(std::forward<Args>(args))...
   };
-  return dropColumns(std::move(columns));
+  return DropColumns(std::move(columns));
 }
 
 template<typename ...Args>
-TableHandle TableHandle::update(Args &&... args) const {
+[[nodiscard]]
+TableHandle TableHandle::Update(Args &&... args) const {
   std::vector<std::string> updateColumns = {
-      internal::ConvertToString::toString(std::forward<Args>(args))...
+      internal::ConvertToString::ToString(std::forward<Args>(args))...
   };
-  return update(std::move(updateColumns));
+  return Update(std::move(updateColumns));
 }
 
 template<typename ...Args>
-TableHandle TableHandle::updateView(Args &&... args) const {
+[[nodiscard]]
+TableHandle TableHandle::UpdateView(Args &&... args) const {
   std::vector<std::string> updateColumns = {
-      internal::ConvertToString::toString(std::forward<Args>(args))...
+      internal::ConvertToString::ToString(std::forward<Args>(args))...
   };
-  return updateView(std::move(updateColumns));
+  return UpdateView(std::move(updateColumns));
 }
 
 template<typename ...Args>
-TableHandle TableHandle::by(Args &&... args) const {
+[[nodiscard]]
+TableHandle TableHandle::By(Args &&... args) const {
   std::vector<std::string> columns = {
-      internal::ConvertToString::toString(std::forward<Args>(args))...
+      internal::ConvertToString::ToString(std::forward<Args>(args))...
   };
-  return by(std::move(columns));
+  return By(std::move(columns));
 }
 
 template<typename ...Args>
-TableHandle TableHandle::by(AggregateCombo combo, Args &&... columnSpecs) const {
+[[nodiscard]]
+TableHandle TableHandle::By(AggregateCombo combo, Args &&... args) const {
   std::vector<std::string> columns = {
-      internal::ConvertToString::toString(std::forward<Args>(columnSpecs))...
+      internal::ConvertToString::ToString(std::forward<Args>(args))...
   };
-  return by(std::move(combo), std::move(columns));
+  return By(std::move(combo), std::move(columns));
 }
 
 template<typename ...Args>
-TableHandle TableHandle::minBy(Args &&... columnSpecs) const {
+[[nodiscard]]
+TableHandle TableHandle::MinBy(Args &&... column_specs) const {
   std::vector<std::string> columns = {
-      internal::ConvertToString::toString(std::forward<Args>(columnSpecs))...
+      internal::ConvertToString::ToString(std::forward<Args>(column_specs))...
   };
-  return minBy(std::move(columns));
+  return MinBy(std::move(columns));
 }
 
 template<typename ...Args>
-TableHandle TableHandle::maxBy(Args &&... columnSpecs) const {
+[[nodiscard]]
+TableHandle TableHandle::MaxBy(Args &&... column_specs) const {
   std::vector<std::string> columns = {
-      internal::ConvertToString::toString(std::forward<Args>(columnSpecs))...
+      internal::ConvertToString::ToString(std::forward<Args>(column_specs))...
   };
-  return maxBy(std::move(columns));
+  return MaxBy(std::move(columns));
 }
 
 template<typename ...Args>
-TableHandle TableHandle::sumBy(Args &&... columnSpecs) const {
+[[nodiscard]]
+TableHandle TableHandle::SumBy(Args &&... column_specs) const {
   std::vector<std::string> columns = {
-      internal::ConvertToString::toString(std::forward<Args>(columnSpecs))...
+      internal::ConvertToString::ToString(std::forward<Args>(column_specs))...
   };
-  return sumBy(std::move(columns));
+  return SumBy(std::move(columns));
 }
 
 template<typename ...Args>
-TableHandle TableHandle::absSumBy(Args &&... columnSpecs) const {
+[[nodiscard]]
+TableHandle TableHandle::AbsSumBy(Args &&... column_specs) const {
   std::vector<std::string> columns = {
-      internal::ConvertToString::toString(std::forward<Args>(columnSpecs))...
+      internal::ConvertToString::ToString(std::forward<Args>(column_specs))...
   };
-  return absSumBy(std::move(columns));
+  return AbsSumBy(std::move(columns));
 }
 
 template<typename ...Args>
-TableHandle TableHandle::varBy(Args &&... columnSpecs) const {
+[[nodiscard]]
+TableHandle TableHandle::VarBy(Args &&... column_specs) const {
   std::vector<std::string> columns = {
-      internal::ConvertToString::toString(std::forward<Args>(columnSpecs))...
+      internal::ConvertToString::ToString(std::forward<Args>(column_specs))...
   };
-  return varBy(std::move(columns));
+  return VarBy(std::move(columns));
 }
 
 template<typename ...Args>
-TableHandle TableHandle::stdBy(Args &&... columnSpecs) const {
+[[nodiscard]]
+TableHandle TableHandle::StdBy(Args &&... column_specs) const {
   std::vector<std::string> columns = {
-      internal::ConvertToString::toString(std::forward<Args>(columnSpecs))...
+      internal::ConvertToString::ToString(std::forward<Args>(column_specs))...
   };
-  return stdBy(std::move(columns));
+  return StdBy(std::move(columns));
 }
 
 template<typename ...Args>
-TableHandle TableHandle::avgBy(Args &&... columnSpecs) const {
+[[nodiscard]]
+TableHandle TableHandle::AvgBy(Args &&... column_specs) const {
   std::vector<std::string> columns = {
-      internal::ConvertToString::toString(std::forward<Args>(columnSpecs))...
+      internal::ConvertToString::ToString(std::forward<Args>(column_specs))...
   };
-  return avgBy(std::move(columns));
+  return AvgBy(std::move(columns));
 }
 
 template<typename ...Args>
-TableHandle TableHandle::firstBy(Args &&... columnSpecs) const {
+[[nodiscard]]
+TableHandle TableHandle::FirstBy(Args &&... column_specs) const {
   std::vector<std::string> columns = {
-      internal::ConvertToString::toString(std::forward<Args>(columnSpecs))...
+      internal::ConvertToString::ToString(std::forward<Args>(column_specs))...
   };
-  return firstBy(std::move(columns));
+  return FirstBy(std::move(columns));
 }
 
 template<typename ...Args>
-TableHandle TableHandle::lastBy(Args &&... columnSpecs) const {
+[[nodiscard]]
+TableHandle TableHandle::LastBy(Args &&... column_specs) const {
   std::vector<std::string> columns = {
-      internal::ConvertToString::toString(std::forward<Args>(columnSpecs))...
+      internal::ConvertToString::ToString(std::forward<Args>(column_specs))...
   };
-  return lastBy(std::move(columns));
+  return LastBy(std::move(columns));
 }
 
 template<typename ...Args>
-TableHandle TableHandle::medianBy(Args &&... columnSpecs) const {
+[[nodiscard]]
+TableHandle TableHandle::MedianBy(Args &&... column_specs) const {
   std::vector<std::string> columns = {
-      internal::ConvertToString::toString(std::forward<Args>(columnSpecs))...
+      internal::ConvertToString::ToString(std::forward<Args>(column_specs))...
   };
-  return medianBy(std::move(columns));
+  return MedianBy(std::move(columns));
 }
 
 template<typename ...Args>
-TableHandle TableHandle::percentileBy(double percentile, bool avgMedian, Args &&... columnSpecs) const {
+[[nodiscard]]
+TableHandle TableHandle::PercentileBy(double percentile, bool avg_median, Args &&... column_specs) const {
   std::vector<std::string> columns = {
-      internal::ConvertToString::toString(std::forward<Args>(columnSpecs))...
+      internal::ConvertToString::ToString(std::forward<Args>(column_specs))...
   };
-  return percentileBy(percentile, avgMedian, std::move(columns));
+  return PercentileBy(percentile, avg_median, std::move(columns));
 }
 
 template<typename ...Args>
-TableHandle TableHandle::percentileBy(double percentile, Args &&... columnSpecs) const {
+[[nodiscard]]
+TableHandle TableHandle::PercentileBy(double percentile, Args &&... column_specs) const {
   std::vector<std::string> columns = {
-      internal::ConvertToString::toString(std::forward<Args>(columnSpecs))...
+      internal::ConvertToString::ToString(std::forward<Args>(column_specs))...
   };
-  return percentileBy(percentile, std::move(columns));
+  return PercentileBy(percentile, std::move(columns));
 }
 
 template<typename CCol, typename ...Args>
-TableHandle TableHandle::countBy(CCol &&countByColumn, Args &&... columnSpecs) const {
+[[nodiscard]]
+TableHandle TableHandle::CountBy(CCol &&count_by_column, Args &&... column_specs) const {
   std::vector<std::string> columns = {
-      internal::ConvertToString::toString(std::forward<Args>(columnSpecs))...
+      internal::ConvertToString::ToString(std::forward<Args>(column_specs))...
   };
-  return countBy(internal::ConvertToString::toString(countByColumn), std::move(columns));
+  return CountBy(internal::ConvertToString::ToString(count_by_column), std::move(columns));
 }
 
 template<typename WCol, typename ...Args>
-TableHandle TableHandle::wAvgBy(WCol &&weightColumn, Args &&... columnSpecs) const {
+[[nodiscard]]
+TableHandle TableHandle::WAvgBy(WCol &&weight_column, Args &&... column_specs) const {
   std::vector<std::string> columns = {
-      internal::ConvertToString::toString(std::forward<Args>(columnSpecs))...
+      internal::ConvertToString::ToString(std::forward<Args>(column_specs))...
   };
-  return wAvgBy(internal::ConvertToString::toString(weightColumn), std::move(columns));
+  return WAvgBy(internal::ConvertToString::ToString(weight_column), std::move(columns));
 }
 
 template<typename ...Args>
-TableHandle TableHandle::tailBy(int64_t n, Args &&... columnSpecs) const {
-  std::vector<std::string> lastByColumns = {
-      internal::ConvertToString::toString(std::forward<Args>(columnSpecs))...
+[[nodiscard]]
+TableHandle TableHandle::TailBy(int64_t n, Args &&... column_specs) const {
+  std::vector<std::string> last_by_columns = {
+      internal::ConvertToString::ToString(std::forward<Args>(column_specs))...
   };
-  return tailBy(n, std::move(lastByColumns));
+  return TailBy(n, std::move(last_by_columns));
 }
 
 template<typename ...Args>
-TableHandle TableHandle::headBy(int64_t n, Args &&... columnSpecs) const {
-  std::vector<std::string> lastByColumns = {
-      internal::ConvertToString::toString(std::forward<Args>(columnSpecs))...
+[[nodiscard]]
+TableHandle TableHandle::HeadBy(int64_t n, Args &&... column_specs) const {
+  std::vector<std::string> last_by_columns = {
+      internal::ConvertToString::ToString(std::forward<Args>(column_specs))...
   };
-  return headBy(n, std::move(lastByColumns));
+  return HeadBy(n, std::move(last_by_columns));
 }
 
 template<typename ...Args>
-TableHandle TableHandle::ungroup(bool nullFill, Args &&... columnSpecs) const {
-  std::vector<std::string> groupByColumns = {
-      internal::ConvertToString::toString(std::forward<Args>(columnSpecs))...
+[[nodiscard]]
+TableHandle TableHandle::Ungroup(bool null_fill, Args &&... column_specs) const {
+  std::vector<std::string> group_by_columns = {
+      internal::ConvertToString::ToString(std::forward<Args>(column_specs))...
   };
-  return ungroup(nullFill, std::move(groupByColumns));
+  return Ungroup(null_fill, std::move(group_by_columns));
 }
 }  // namespace deephaven::client

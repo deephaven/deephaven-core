@@ -14,61 +14,62 @@ struct ElementTypeId {
   // We don't use "enum class" here because we can't figure out how to get it to work right with Cython.
   // TODO(kosak): we are going to have to expand LIST to be a true nested type.
   enum Enum {
-    CHAR,
-    INT8, INT16, INT32, INT64,
-    FLOAT, DOUBLE,
-    BOOL, STRING, TIMESTAMP,
-    LIST
+    kChar,
+    kInt8, kInt16, kInt32, kInt64,
+    kFloat, kDouble,
+    kBool, kString, kTimestamp,
+    kList
   };
 };
 
 class DateTime;
 
 template<typename T>
-void visitElementTypeId(ElementTypeId::Enum typeId, T *visitor) {
-  switch (typeId) {
-    case ElementTypeId::CHAR: {
+void VisitElementTypeId(ElementTypeId::Enum type_id, T *visitor) {
+  switch (type_id) {
+    case ElementTypeId::kChar: {
       visitor->template operator()<char16_t>();
       break;
     }
-    case ElementTypeId::INT8: {
+    case ElementTypeId::kInt8: {
       visitor->template operator()<int8_t>();
       break;
     }
-    case ElementTypeId::INT16: {
+    case ElementTypeId::kInt16: {
       visitor->template operator()<int16_t>();
       break;
     }
-    case ElementTypeId::INT32: {
+    case ElementTypeId::kInt32: {
       visitor->template operator()<int32_t>();
       break;
     }
-    case ElementTypeId::INT64: {
+    case ElementTypeId::kInt64: {
       visitor->template operator()<int64_t>();
       break;
     }
-    case ElementTypeId::FLOAT: {
+    case ElementTypeId::kFloat: {
       visitor->template operator()<float>();
       break;
     }
-    case ElementTypeId::DOUBLE: {
+    case ElementTypeId::kDouble: {
       visitor->template operator()<double>();
       break;
     }
-    case ElementTypeId::BOOL: {
+    case ElementTypeId::kBool: {
       visitor->template operator()<bool>();
       break;
     }
-    case ElementTypeId::STRING: {
+    case ElementTypeId::kString: {
       visitor->template operator()<std::string>();
       break;
     }
-    case ElementTypeId::TIMESTAMP: {
+    case ElementTypeId::kTimestamp: {
       visitor->template operator()<deephaven::dhcore::DateTime>();
       break;
     }
     default: {
-      auto message = deephaven::dhcore::utility::stringf("Unrecognized ElementTypeId %o", (int)typeId);
+      auto message = deephaven::dhcore::utility::Stringf("Unrecognized ElementTypeId %o",
+          static_cast<int>(type_id));
       throw std::runtime_error(message);
     }
   }
@@ -78,157 +79,157 @@ class DeephavenConstants {
 public:
   /**
    * The special reserved null value constant for the Deephaven char type
-   * (which is represented as a signed 16 bit value).
+   * (which is represented as a signed 16 bit Value).
    */
-  static constexpr const char16_t NULL_CHAR = std::numeric_limits<char16_t>::max();
+  static constexpr const char16_t kNullChar = std::numeric_limits<char16_t>::max();
   /**
    * The minimum valid value for the Deephaven char type
-   * (which is represented as a signed 16 bit value).
+   * (which is represented as a signed 16 bit Value).
    */
-  static constexpr const char16_t MIN_CHAR = std::numeric_limits<char16_t>::min();
+  static constexpr const char16_t kMinChar = std::numeric_limits<char16_t>::min();
   /**
    * The maximum valid value for the Deephaven char type
-   * (which is represented as a signed 16 bit value).
+   * (which is represented as a signed 16 bit Value).
    */
-  static constexpr const char16_t MAX_CHAR = std::numeric_limits<char16_t>::max() - 1;
+  static constexpr const char16_t kMaxChar = std::numeric_limits<char16_t>::max() - 1;
 
   /**
    * The special reserved null value constant for the Deephaven float type.
    */
-  static constexpr const float NULL_FLOAT = -std::numeric_limits<float>::max();
+  static constexpr const float kNullFloat = -std::numeric_limits<float>::max();
   /**
-   * The NaN value for the Deephaven float type.
+   * The NaN Value for the Deephaven float type.
    */
-  static constexpr const float NAN_FLOAT = std::numeric_limits<float>::quiet_NaN();
+  static constexpr const float kNanFloat = std::numeric_limits<float>::quiet_NaN();
   /**
-   * The negative infinity value for the Deephaven float type.
+   * The negative infinity Value for the Deephaven float type.
    */
-  static constexpr const float NEG_INFINITY_FLOAT = -std::numeric_limits<float>::infinity();
+  static constexpr const float kNegInfinityFloat = -std::numeric_limits<float>::infinity();
   /**
-   * The positive infinity value for the Deephaven float type.
+   * The positive infinity Value for the Deephaven float type.
    */
-  static constexpr const float POS_INFINITY_FLOAT = std::numeric_limits<float>::infinity();
+  static constexpr const float kPosInfinityFloat = std::numeric_limits<float>::infinity();
   /**
    * The minimum valid value for the Deephaven float type.
    */
-  static constexpr const float MIN_FLOAT = -std::numeric_limits<float>::infinity();
+  static constexpr const float kMinFloat = -std::numeric_limits<float>::infinity();
   /**
    * The maximum valid value for the Deephaven float type.
    */
-  static constexpr const float MAX_FLOAT = std::numeric_limits<float>::infinity();
+  static constexpr const float kMaxFloat = std::numeric_limits<float>::infinity();
   /**
-   * The minimum finite value for the Deephaven float type.
+   * The minimum finite Value for the Deephaven float type.
    */
-  static /* constexpr clang dislikes */ const float MIN_FINITE_FLOAT;
+  static /* constexpr clang dislikes */ const float kMinFiniteFloat;
   /**
-   * The maximum finite value for the Deephaven float type.
+   * The maximum finite Value for the Deephaven float type.
    */
-  static constexpr const float MAX_FINITE_FLOAT = std::numeric_limits<float>::max();
+  static constexpr const float kMaxFiniteFloat = std::numeric_limits<float>::max();
   /**
-   * The smallest positive value for the Deephaven float type.
+   * The smallest positive Value for the Deephaven float type.
    */
-  static constexpr const float MIN_POS_FLOAT = std::numeric_limits<float>::min();
+  static constexpr const float kMinPosFloat = std::numeric_limits<float>::min();
 
   /**
    * The special reserved null value constant for the Deephaven double type.
    */
-  static constexpr const double NULL_DOUBLE = -std::numeric_limits<double>::max();
+  static constexpr const double kNullDouble = -std::numeric_limits<double>::max();
   /**
-   * The NaN value for the Deephaven double type.
+   * The NaN Value for the Deephaven double type.
    */
-  static constexpr const double NAN_DOUBLE = std::numeric_limits<double>::quiet_NaN();
+  static constexpr const double kNanDouble = std::numeric_limits<double>::quiet_NaN();
   /**
-   * The negative infinity value for the Deephaven double type.
+   * The negative infinity Value for the Deephaven double type.
    */
-  static constexpr const double NEG_INFINITY_DOUBLE = -std::numeric_limits<double>::infinity();
+  static constexpr const double kNegInfinityDouble = -std::numeric_limits<double>::infinity();
   /**
-   * The positive infinity value for the Deephaven double type.
+   * The positive infinity Value for the Deephaven double type.
    */
-  static constexpr const double POS_INFINITY_DOUBLE = std::numeric_limits<double>::infinity();
+  static constexpr const double kPosInfinityDouble = std::numeric_limits<double>::infinity();
   /**
    * The minimum valid value for the Deephaven double type.
    */
-  static constexpr const double MIN_DOUBLE = -std::numeric_limits<double>::infinity();
+  static constexpr const double kMinDouble = -std::numeric_limits<double>::infinity();
   /**
    * The maximum valid value for the Deephaven double type.
    */
-  static constexpr const double MAX_DOUBLE = std::numeric_limits<double>::infinity();
+  static constexpr const double kMaxDouble = std::numeric_limits<double>::infinity();
   /**
-   * The minimum finite value for the Deephaven double type.
+   * The minimum finite Value for the Deephaven double type.
    */
-  static /* constexpr clang dislikes */ const double MIN_FINITE_DOUBLE;
+  static /* constexpr clang dislikes */ const double kMinFiniteDouble;
   /**
-   * The maximum finite value for the Deephaven double type.
+   * The maximum finite Value for the Deephaven double type.
    */
-  static constexpr const double MAX_FINITE_DOUBLE = std::numeric_limits<double>::max();
+  static constexpr const double kMaxFiniteDouble = std::numeric_limits<double>::max();
   /**
-   * The smallest positive value for the Deephaven double type.
+   * The smallest positive Value for the Deephaven double type.
    */
-  static constexpr const double MIN_POS_DOUBLE = std::numeric_limits<double>::min();
+  static constexpr const double kMinPosDouble = std::numeric_limits<double>::min();
 
   /**
    * The special reserved null value constant for the Deephaven byte type
    * (which is represented as a signed 8 bit integer).
    */
-  static constexpr const int8_t NULL_BYTE = std::numeric_limits<int8_t>::min();
+  static constexpr const int8_t kNullByte = std::numeric_limits<int8_t>::min();
   /**
    * The minimum valid value for the Deephaven byte type
    * (which is represented as a signed 8 bit integer).
    */
-  static constexpr const int8_t MIN_BYTE = std::numeric_limits<int8_t>::min() + 1;
+  static constexpr const int8_t kMinByte = std::numeric_limits<int8_t>::min() + 1;
   /**
    * The maximum valid value for the Deephaven byte type
    * (which is represented as a signed 8 bit integer).
    */
-  static constexpr const int8_t MAX_BYTE = std::numeric_limits<int8_t>::max();
+  static constexpr const int8_t kMaxByte = std::numeric_limits<int8_t>::max();
 
   /**
    * The special reserved null value constant for the Deephaven short type
    * (which is represented as a signed 16 bit integer).
    */
-  static constexpr const int16_t NULL_SHORT = std::numeric_limits<int16_t>::min();
+  static constexpr const int16_t kNullShort = std::numeric_limits<int16_t>::min();
   /**
    * The minimum valid value for the Deephaven short type
    * (which is represented as a signed 16 bit integer).
    */
-  static constexpr const int16_t MIN_SHORT = std::numeric_limits<int16_t>::min() + 1;
+  static constexpr const int16_t kMinShort = std::numeric_limits<int16_t>::min() + 1;
   /**
    * The maximum valid value for the Deephaven short type
    * (which is represented as a signed 16 bit integer).
    */
-  static constexpr const int16_t MAX_SHORT = std::numeric_limits<int16_t>::max();
+  static constexpr const int16_t kMaxShort = std::numeric_limits<int16_t>::max();
 
   /**
    * The special reserved null value constant for the Deephaven int type
    * (which is represented as a signed 32 bit integer).
    */
-  static constexpr const int32_t NULL_INT = std::numeric_limits<int32_t>::min();
+  static constexpr const int32_t kNulLInt = std::numeric_limits<int32_t>::min();
   /**
    * The minimum valid value for the Deephaven int type
    * (which is represented as a signed 32 bit integer).
    */
-  static constexpr const int32_t MIN_INT = std::numeric_limits<int32_t>::min() + 1;
+  static constexpr const int32_t kMinInt = std::numeric_limits<int32_t>::min() + 1;
   /**
    * The maximum valid value for the Deephaven int type
    * (which is represented as a signed 32 bit integer).
    */
-  static constexpr const int32_t MAX_INT = std::numeric_limits<int32_t>::max();
+  static constexpr const int32_t kMaxInt = std::numeric_limits<int32_t>::max();
 
   /**
    * The special reserved null value constant for the Deephaven long type
    * (which is represented as a signed 64 bit integer).
    */
-  static constexpr const int64_t NULL_LONG = std::numeric_limits<int64_t>::min();
+  static constexpr const int64_t kNullLong = std::numeric_limits<int64_t>::min();
   /**
    * The minimum valid value for the Deephaven long type
    * (which is represented as a signed 64 bit integer).
    */
-  static constexpr const int64_t MIN_LONG = std::numeric_limits<int64_t>::min() + 1;
+  static constexpr const int64_t kMinLong = std::numeric_limits<int64_t>::min() + 1;
   /**
    * The maximum valid value for the Deephaven long type
    * (which is represented as a signed 64 bit integer).
    */
-  static constexpr const int64_t MAX_LONG = std::numeric_limits<int64_t>::max();
+  static constexpr const int64_t kMaxLong = std::numeric_limits<int64_t>::max();
 };
 
 template<typename T>
@@ -236,7 +237,7 @@ struct DeephavenTraits {};
 
 template<>
 struct DeephavenTraits<bool> {
-  static constexpr bool isNumeric = false;
+  static constexpr bool kIsNumeric = false;
 };
 
 template<>
@@ -244,8 +245,8 @@ struct DeephavenTraits<char16_t> {
   /**
    * The Deephaven reserved null value constant for this type.
    */
-  static constexpr const char16_t NULL_VALUE = DeephavenConstants::NULL_CHAR;
-  static constexpr bool isNumeric = true;
+  static constexpr const char16_t kNullValue = DeephavenConstants::kNullChar;
+  static constexpr bool kIsNumeric = true;
 };
 
 template<>
@@ -253,8 +254,8 @@ struct DeephavenTraits<int8_t> {
   /**
    * The Deephaven reserved null value constant for this type.
    */
-  static constexpr const int8_t NULL_VALUE = DeephavenConstants::NULL_BYTE;
-  static constexpr bool isNumeric = true;
+  static constexpr const int8_t kNullValue = DeephavenConstants::kNullByte;
+  static constexpr bool kIsNumeric = true;
 };
 
 template<>
@@ -262,8 +263,8 @@ struct DeephavenTraits<int16_t> {
   /**
    * The Deephaven reserved null value constant for this type.
    */
-  static constexpr const int16_t NULL_VALUE = DeephavenConstants::NULL_SHORT;
-  static constexpr bool isNumeric = true;
+  static constexpr const int16_t kNullValue = DeephavenConstants::kNullShort;
+  static constexpr bool kIsNumeric = true;
 };
 
 template<>
@@ -271,8 +272,8 @@ struct DeephavenTraits<int32_t> {
   /**
    * The Deephaven reserved null value constant for this type.
    */
-  static constexpr const int32_t NULL_VALUE = DeephavenConstants::NULL_INT;
-  static constexpr bool isNumeric = true;
+  static constexpr const int32_t kNullValue = DeephavenConstants::kNulLInt;
+  static constexpr bool kIsNumeric = true;
 };
 
 template<>
@@ -280,8 +281,8 @@ struct DeephavenTraits<int64_t> {
   /**
    * The Deephaven reserved null value constant for this type.
    */
-  static constexpr const int64_t NULL_VALUE = DeephavenConstants::NULL_LONG;
-  static constexpr bool isNumeric = true;
+  static constexpr const int64_t kNullValue = DeephavenConstants::kNullLong;
+  static constexpr bool kIsNumeric = true;
 };
 
 template<>
@@ -289,8 +290,8 @@ struct DeephavenTraits<float> {
   /**
    * The Deephaven reserved null value constant for this type.
    */
-  static constexpr const float NULL_VALUE = DeephavenConstants::NULL_FLOAT;
-  static constexpr bool isNumeric = true;
+  static constexpr const float kNullValue = DeephavenConstants::kNullFloat;
+  static constexpr bool kIsNumeric = true;
 };
 
 template<>
@@ -298,18 +299,18 @@ struct DeephavenTraits<double> {
   /**
    * The Deephaven reserved null value constant for this type.
    */
-  static constexpr const double NULL_VALUE = DeephavenConstants::NULL_DOUBLE;
-  static constexpr bool isNumeric = true;
+  static constexpr const double kNullValue = DeephavenConstants::kNullDouble;
+  static constexpr bool kIsNumeric = true;
 };
 
 template<>
 struct DeephavenTraits<std::string> {
-  static constexpr bool isNumeric = false;
+  static constexpr bool kIsNumeric = false;
 };
 
 template<>
 struct DeephavenTraits<DateTime> {
-  static constexpr bool isNumeric = false;
+  static constexpr bool kIsNumeric = false;
 };
 
 /**
@@ -324,8 +325,8 @@ public:
    * @param nanos Nanoseconds since the epoch (January 1, 1970 UTC).
    * @return The corresponding DateTime.
    */
-  static DateTime fromNanos(long nanos) {
-    if (nanos == DeephavenConstants::NULL_LONG) {
+  static DateTime FromNanos(int64_t nanos) {
+    if (nanos == DeephavenConstants::kNullLong) {
       return DateTime(0);
     }
     return DateTime(nanos);
@@ -375,20 +376,20 @@ public:
   /**
    * The DateTime as expressed in nanoseconds since the epoch. Can be negative.
    */
-  int64_t nanos() const { return nanos_; }
+  [[nodiscard]]
+  int64_t Nanos() const { return nanos_; }
 
   /**
    * Used internally to serialize this object to Deephaven.
    */
-  void streamIrisRepresentation(std::ostream &result) const;
+  void StreamIrisRepresentation(std::ostream &result) const;
 
 private:
   int64_t nanos_ = 0;
 
   friend std::ostream &operator<<(std::ostream &s, const DateTime &o) {
-    o.streamIrisRepresentation(s);
+    o.StreamIrisRepresentation(s);
     return s;
   }
 };
 }  // namespace deephaven::dhcore
-

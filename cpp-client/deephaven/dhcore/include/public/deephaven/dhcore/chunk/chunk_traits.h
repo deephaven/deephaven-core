@@ -12,56 +12,56 @@ struct TypeToChunk {};
 
 template<>
 struct TypeToChunk<char16_t> {
-  typedef deephaven::dhcore::chunk::CharChunk type_t;
+  using type_t = deephaven::dhcore::chunk::CharChunk;
 };
 
 template<>
 struct TypeToChunk<int8_t> {
-  typedef deephaven::dhcore::chunk::Int8Chunk type_t;
+  using type_t = deephaven::dhcore::chunk::Int8Chunk;
 };
 
 template<>
 struct TypeToChunk<int16_t> {
-  typedef deephaven::dhcore::chunk::Int16Chunk type_t;
+  using type_t = deephaven::dhcore::chunk::Int16Chunk;
 };
 
 template<>
 struct TypeToChunk<int32_t> {
-  typedef deephaven::dhcore::chunk::Int32Chunk type_t;
+  using type_t = deephaven::dhcore::chunk::Int32Chunk;
 };
 
 template<>
 struct TypeToChunk<int64_t> {
-  typedef deephaven::dhcore::chunk::Int64Chunk type_t;
+  using type_t = deephaven::dhcore::chunk::Int64Chunk;
 };
 
 template<>
 struct TypeToChunk<uint64_t> {
-  typedef deephaven::dhcore::chunk::UInt64Chunk type_t;
+  using type_t = deephaven::dhcore::chunk::UInt64Chunk;
 };
 
 template<>
 struct TypeToChunk<float> {
-  typedef deephaven::dhcore::chunk::FloatChunk type_t;
+  using type_t = deephaven::dhcore::chunk::FloatChunk;
 };
 
 template<>
 struct TypeToChunk<double> {
-  typedef deephaven::dhcore::chunk::DoubleChunk type_t;
+  using type_t = deephaven::dhcore::chunk::DoubleChunk;
 };
 
 template<>
 struct TypeToChunk<bool> {
-  typedef deephaven::dhcore::chunk::BooleanChunk type_t;
+  using type_t = deephaven::dhcore::chunk::BooleanChunk;
 };
 
 template<>
 struct TypeToChunk<std::string> {
-  typedef deephaven::dhcore::chunk::StringChunk type_t;
+  using type_t = deephaven::dhcore::chunk::StringChunk;
 };
 
 template<>
 struct TypeToChunk<deephaven::dhcore::DateTime> {
-  typedef deephaven::dhcore::chunk::DateTimeChunk type_t;
+  using type_t = deephaven::dhcore::chunk::DateTimeChunk;
 };
 }  // namespace deephaven::client::chunk

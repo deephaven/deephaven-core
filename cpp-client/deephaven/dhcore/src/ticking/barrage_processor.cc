@@ -27,10 +27,10 @@ using deephaven::dhcore::container::RowSequenceBuilder;
 using deephaven::dhcore::immerutil::AbstractFlexVectorBase;
 using deephaven::dhcore::clienttable::Schema;
 using deephaven::dhcore::clienttable::ClientTable;
-using deephaven::dhcore::utility::makeReservedVector;
+using deephaven::dhcore::utility::MakeReservedVector;
 using deephaven::dhcore::utility::separatedList;
-using deephaven::dhcore::utility::streamf;
-using deephaven::dhcore::utility::stringf;
+using deephaven::dhcore::utility::Streamf;
+using deephaven::dhcore::utility::Stringf;
 
 using io::deephaven::barrage::flatbuf::BarrageMessageType;
 using io::deephaven::barrage::flatbuf::BarrageMessageWrapper;
@@ -47,22 +47,25 @@ namespace internal {
 class BarrageProcessorImpl;
 
 namespace {
-enum class State { AwaitingMetadata, AwaitingAdds, AwaitingModifies, BuildingResult };
+enum class State { kAwaitingMetadata, kAwaitingAdds, kAwaitingModifies, kBuildingResult };
 
 class AwaitingMetadata final {
 public:
   explicit AwaitingMetadata(std::shared_ptr<Schema> schema);
   ~AwaitingMetadata();
 
-  std::optional<TickingUpdate> processNextChunk(BarrageProcessorImpl *owner,
+  [[nodiscard]]
+  std::optional<TickingUpdate> ProcessNextChunk(BarrageProcessorImpl *owner,
       const std::vector<std::shared_ptr<ColumnSource>> &sources,
-      std::vector<size_t> *begins, const std::vector<size_t> &ends, const void *metadata, size_t metadataSize);
+      std::vector<size_t> *begins, const std::vector<size_t> &ends, const void *metadata,
+      size_t metadata_size);
 
-  std::tuple<std::shared_ptr<ClientTable>, std::shared_ptr<RowSequence>, std::shared_ptr<ClientTable>> processRemoves(
-      const RowSequence &removedRows);
+  [[nodiscard]]
+  std::tuple<std::shared_ptr<ClientTable>, std::shared_ptr<RowSequence>, std::shared_ptr<ClientTable>>
+  ProcessRemoves(const RowSequence &removed_rows);
 
-  size_t numCols_ = 0;
-  ImmerTableState tableState_;
+  size_t num_cols_ = 0;
+  ImmerTableState table_state_;
 };
 
 class AwaitingAdds final {
@@ -70,27 +73,29 @@ public:
   AwaitingAdds();
   ~AwaitingAdds();
 
-  void init(std::vector<std::shared_ptr<RowSequence>> perColumnModifies,
+  void Init(std::vector<std::shared_ptr<RowSequence>> per_column_modifies,
       std::shared_ptr<ClientTable> prev,
-      std::shared_ptr<RowSequence> removedRowsIndexSpace,
-      std::shared_ptr<ClientTable> afterRemoves,
-      std::shared_ptr<RowSequence> addedRowsIndexSpace);
+      std::shared_ptr<RowSequence> removed_rows_index_space,
+      std::shared_ptr<ClientTable> after_removes,
+      std::shared_ptr<RowSequence> added_rows_index_space);
 
-  std::optional<TickingUpdate> processNextChunk(BarrageProcessorImpl *owner,
+  [[nodiscard]]
+  std::optional<TickingUpdate> ProcessNextChunk(BarrageProcessorImpl *owner,
       const std::vector<std::shared_ptr<ColumnSource>> &sources,
-      std::vector<size_t> *begins, const std::vector<size_t> &ends, const void *metadata, size_t metadataSize);
+      std::vector<size_t> *begins, const std::vector<size_t> &ends, const void *metadata,
+      size_t metadata_size);
 
-  void reset();
+  void Reset();
 
-  bool firstTime_ = true;
+  bool first_time_ = true;
 
-  std::vector<std::shared_ptr<RowSequence>> perColumnModifies_;
+  std::vector<std::shared_ptr<RowSequence>> per_column_modifies_;
   std::shared_ptr<ClientTable> prev_;
-  std::shared_ptr<RowSequence> removedRowsIndexSpace_;
-  std::shared_ptr<ClientTable> afterRemoves_;
-  std::shared_ptr<RowSequence> addedRowsIndexSpace_;
+  std::shared_ptr<RowSequence> removed_rows_index_space_;
+  std::shared_ptr<ClientTable> after_removes_;
+  std::shared_ptr<RowSequence> added_rows_index_space_;
 
-  std::shared_ptr<RowSequence> addedRowsRemaining_;
+  std::shared_ptr<RowSequence> added_rows_remaining_;
 };
 
 class AwaitingModifies final {
@@ -98,19 +103,21 @@ public:
   AwaitingModifies();
   ~AwaitingModifies();
 
-  void init(std::shared_ptr<ClientTable> afterAdds);
+  void Init(std::shared_ptr<ClientTable> after_adds);
 
-  std::optional<TickingUpdate> processNextChunk(BarrageProcessorImpl *owner,
+  [[nodiscard]]
+  std::optional<TickingUpdate> ProcessNextChunk(BarrageProcessorImpl *owner,
       const std::vector<std::shared_ptr<ColumnSource>> &sources,
-      std::vector<size_t> *begins, const std::vector<size_t> &ends, const void *metadata, size_t metadataSize);
+      std::vector<size_t> *begins, const std::vector<size_t> &ends, const void *metadata,
+      size_t metadata_size);
 
-  void reset();
+  void Reset();
 
-  bool firstTime_ = true;
+  bool first_time_ = true;
 
-  std::shared_ptr<ClientTable> afterAdds_;
-  std::vector<std::shared_ptr<RowSequence>> modifiedRowsRemaining_;
-  std::vector<std::shared_ptr<RowSequence>> modifiedRowsIndexSpace_;
+  std::shared_ptr<ClientTable> after_adds_;
+  std::vector<std::shared_ptr<RowSequence>> modified_rows_remaining_;
+  std::vector<std::shared_ptr<RowSequence>> modified_rows_index_space_;
 };
 
 class BuildingResult final {
@@ -118,34 +125,38 @@ public:
   BuildingResult();
   ~BuildingResult();
 
-  void init(std::shared_ptr<ClientTable> afterModifies);
+  void Init(std::shared_ptr<ClientTable> after_modifies);
 
-    std::optional<TickingUpdate> processNextChunk(BarrageProcessorImpl *owner,
+  [[nodiscard]]
+  std::optional<TickingUpdate> ProcessNextChunk(BarrageProcessorImpl *owner,
       const std::vector<std::shared_ptr<ColumnSource>> &sources,
-      std::vector<size_t> *begins, const std::vector<size_t> &ends, const void *metadata, size_t metadataSize);
+      std::vector<size_t> *begins, const std::vector<size_t> &ends, const void *metadata,
+      size_t metadata_size);
 
-  void reset();
+  void Reset();
 
   std::shared_ptr<ClientTable> afterModifies_;
 };
 
-bool allEmpty(const std::vector<std::shared_ptr<RowSequence>> &rowSequences);
-void assertAllSame(size_t val0, size_t val1, size_t val2);
+bool AllEmpty(const std::vector<std::shared_ptr<RowSequence>> &row_sequences);
+void AssertAllSame(size_t val0, size_t val1, size_t val2);
 }  // namespace
 
 class BarrageProcessorImpl final {
 public:
-  BarrageProcessorImpl(std::shared_ptr<Schema> schema);
+  explicit BarrageProcessorImpl(std::shared_ptr<Schema> schema);
   ~BarrageProcessorImpl();
 
-  State state_ = State::AwaitingMetadata;
+  State state_ = State::kAwaitingMetadata;
   AwaitingMetadata awaitingMetadata_;
   AwaitingAdds awaitingAdds_;
   AwaitingModifies awaitingModifies_;
   BuildingResult buildingResult_;
 
-  std::optional<TickingUpdate> processNextChunk(const std::vector<std::shared_ptr<ColumnSource>> &sources,
-      std::vector<size_t> *begins, const std::vector<size_t> &ends, const void *metadata, size_t metadataSize);
+  [[nodiscard]]
+  std::optional<TickingUpdate> ProcessNextChunk(const std::vector<std::shared_ptr<ColumnSource>> &sources,
+      std::vector<size_t> *begins, const std::vector<size_t> &ends, const void *metadata,
+      size_t metadata_size);
 };
 }  // namespace internal
 
@@ -157,132 +168,133 @@ BarrageProcessor::BarrageProcessor(std::shared_ptr<Schema> schema) {
 }
 BarrageProcessor::~BarrageProcessor() = default;
 
-std::vector<uint8_t> BarrageProcessor::createSubscriptionRequest(const void *ticketBytes, size_t size) {
+std::vector<uint8_t> BarrageProcessor::CreateSubscriptionRequest(const void *ticket_bytes, size_t size) {
   // Make a BarrageMessageWrapper
   // ...Whose payload is a BarrageSubscriptionRequest
   // ......which has BarrageSubscriptionOptions
-  flatbuffers::FlatBufferBuilder payloadBuilder(4096);
+  flatbuffers::FlatBufferBuilder payload_builder(4096);
 
-  auto subOptions = CreateBarrageSubscriptionOptions(payloadBuilder,
+  auto sub_options = CreateBarrageSubscriptionOptions(payload_builder,
       ColumnConversionMode::ColumnConversionMode_Stringify, true, 0, 4096, 0, true);
 
-  auto ticket = payloadBuilder.CreateVector(static_cast<const int8_t*>(ticketBytes), size);
-  auto subreq = CreateBarrageSubscriptionRequest(payloadBuilder, ticket, {}, {}, subOptions);
-  payloadBuilder.Finish(subreq);
+  auto ticket = payload_builder.CreateVector(static_cast<const int8_t*>(ticket_bytes), size);
+  auto subreq = CreateBarrageSubscriptionRequest(payload_builder, ticket, {}, {}, sub_options);
+  payload_builder.Finish(subreq);
   // TODO(kosak): fix sad cast
-  const auto *payloadp = (int8_t*)payloadBuilder.GetBufferPointer();
-  const auto payloadSize = payloadBuilder.GetSize();
+  const auto *payloadp = static_cast<int8_t*>(static_cast<void*>(payload_builder.GetBufferPointer()));
+  const auto payload_size = payload_builder.GetSize();
 
   // TODO: I'd really like to just point this buffer backwards to the thing I just created, rather
   // then copying it. But, eh, version 2.
-  flatbuffers::FlatBufferBuilder wrapperBuilder(4096);
-  auto payload = wrapperBuilder.CreateVector(payloadp, payloadSize);
-  auto messageWrapper = CreateBarrageMessageWrapper(wrapperBuilder, deephavenMagicNumber,
+  flatbuffers::FlatBufferBuilder wrapper_builder(4096);
+  auto payload = wrapper_builder.CreateVector(payloadp, payload_size);
+  auto message_wrapper = CreateBarrageMessageWrapper(wrapper_builder, kDeephavenMagicNumber,
       BarrageMessageType::BarrageMessageType_BarrageSubscriptionRequest, payload);
-  wrapperBuilder.Finish(messageWrapper);
-  auto wrapperBuffer = wrapperBuilder.Release();
+  wrapper_builder.Finish(message_wrapper);
+  auto wrapper_buffer = wrapper_builder.Release();
 
   std::vector<uint8_t> result;
-  result.resize(wrapperBuffer.size());
-  memcpy(result.data(), wrapperBuffer.data(), wrapperBuffer.size());
+  result.resize(wrapper_buffer.size());
+  memcpy(result.data(), wrapper_buffer.data(), wrapper_buffer.size());
   return result;
 }
 
-std::string BarrageProcessor::createSubscriptionRequestCython(const void *ticketBytes, size_t size) {
-  auto vec = createSubscriptionRequest(ticketBytes, size);
+std::string BarrageProcessor::CreateSubscriptionRequestCython(const void *ticket_bytes, size_t size) {
+  auto vec = CreateSubscriptionRequest(ticket_bytes, size);
   std::string result;
   result.reserve(vec.size());
   for (auto ch : vec) {
-    result.push_back((char)ch);
+    result.push_back(static_cast<char>(ch));
   }
   return result;
 }
 
-std::optional<TickingUpdate> BarrageProcessor::processNextChunk(
+std::optional<TickingUpdate> BarrageProcessor::ProcessNextChunk(
     const std::vector<std::shared_ptr<ColumnSource>> &sources,
-    const std::vector<size_t> &sizes, const void *metadata, size_t metadataSize) {
+    const std::vector<size_t> &sizes, const void *metadata, size_t metadata_size) {
   std::vector<size_t> begins(sizes.size());  // init to zeroes.
-  return impl_->processNextChunk(sources, &begins, sizes, metadata, metadataSize);
+  return impl_->ProcessNextChunk(sources, &begins, sizes, metadata, metadata_size);
 }
 
 namespace internal {
-BarrageProcessorImpl::BarrageProcessorImpl(std::shared_ptr<Schema> schema) : state_(State::AwaitingMetadata),
+BarrageProcessorImpl::BarrageProcessorImpl(std::shared_ptr<Schema> schema) : state_(State::kAwaitingMetadata),
     awaitingMetadata_(std::move(schema)) {}
 BarrageProcessorImpl::~BarrageProcessorImpl() = default;
 
 std::optional<TickingUpdate>
-BarrageProcessorImpl::processNextChunk(const std::vector<std::shared_ptr<ColumnSource>> &sources,
-    std::vector<size_t> *begins, const std::vector<size_t> &ends, const void *metadata, size_t metadataSize) {
+BarrageProcessorImpl::ProcessNextChunk(const std::vector<std::shared_ptr<ColumnSource>> &sources,
+    std::vector<size_t> *begins, const std::vector<size_t> &ends, const void *metadata, size_t metadata_size) {
   switch (state_) {
-    case State::AwaitingMetadata:
-      return awaitingMetadata_.processNextChunk(this, sources, begins, ends, metadata, metadataSize);
-    case State::AwaitingAdds:
-      return awaitingAdds_.processNextChunk(this, sources, begins, ends, metadata, metadataSize);
-    case State::AwaitingModifies:
-      return awaitingModifies_.processNextChunk(this, sources, begins, ends, metadata, metadataSize);
-    case State::BuildingResult:
-      return buildingResult_.processNextChunk(this, sources, begins, ends, metadata, metadataSize);
+    case State::kAwaitingMetadata:
+      return awaitingMetadata_.ProcessNextChunk(this, sources, begins, ends, metadata, metadata_size);
+    case State::kAwaitingAdds:
+      return awaitingAdds_.ProcessNextChunk(this, sources, begins, ends, metadata, metadata_size);
+    case State::kAwaitingModifies:
+      return awaitingModifies_.ProcessNextChunk(this, sources, begins, ends, metadata, metadata_size);
+    case State::kBuildingResult:
+      return buildingResult_.ProcessNextChunk(this, sources, begins, ends, metadata, metadata_size);
     default: {
-      auto message = stringf("Unknown state %o", (int)state_);
+      auto message = Stringf("Unknown state %o", static_cast<int>(state_));
       throw std::runtime_error(DEEPHAVEN_DEBUG_MSG(message));
     }
   }
 }
 
 namespace {
-AwaitingMetadata::AwaitingMetadata(std::shared_ptr<Schema> schema) : numCols_(schema->numCols()),
-    tableState_(std::move(schema)) {
+AwaitingMetadata::AwaitingMetadata(std::shared_ptr<Schema> schema) : num_cols_(schema->NumCols()),
+    table_state_(std::move(schema)) {
 }
 AwaitingMetadata::~AwaitingMetadata() = default;
 
-std::optional<TickingUpdate> AwaitingMetadata::processNextChunk(BarrageProcessorImpl *owner,
+std::optional<TickingUpdate> AwaitingMetadata::ProcessNextChunk(BarrageProcessorImpl *owner,
     const std::vector<std::shared_ptr<ColumnSource>> &sources, std::vector<size_t> *begins,
-    const std::vector<size_t> &ends, const void *metadata, size_t/*metadataSize*/) {
+    const std::vector<size_t> &ends, const void *metadata, size_t /*metadata_size*/) {
   if (metadata == nullptr) {
     const char *message = "Metadata was required here, but none was received";
     throw std::runtime_error(DEEPHAVEN_DEBUG_MSG(message));
   }
   // This metadata buffer comes from code like flightStreamChunk_->app_metadata->data()
-  const auto *barrageWrapper = flatbuffers::GetRoot<BarrageMessageWrapper>(metadata);
+  const auto *barrage_wrapper = flatbuffers::GetRoot<BarrageMessageWrapper>(metadata);
 
-  if (barrageWrapper->magic() != BarrageProcessor::deephavenMagicNumber) {
-    auto message = stringf("Expected magic number %o, got %o", BarrageProcessor::deephavenMagicNumber,
-        barrageWrapper->magic());
+  if (barrage_wrapper->magic() != BarrageProcessor::kDeephavenMagicNumber) {
+    auto message = Stringf("Expected magic number %o, got %o",
+        BarrageProcessor::kDeephavenMagicNumber,
+        barrage_wrapper->magic());
     throw std::runtime_error(DEEPHAVEN_DEBUG_MSG(message));
   }
 
-  if (barrageWrapper->msg_type() !=
+  if (barrage_wrapper->msg_type() !=
       BarrageMessageType::BarrageMessageType_BarrageUpdateMetadata) {
-    auto message = stringf("Expected Barrage Message Type %o, got %o",
-        BarrageMessageType::BarrageMessageType_BarrageUpdateMetadata, barrageWrapper->msg_type());
+    auto message = Stringf("Expected Barrage Message Type %o, got %o",
+        BarrageMessageType::BarrageMessageType_BarrageUpdateMetadata, barrage_wrapper->msg_type());
     throw std::runtime_error(DEEPHAVEN_DEBUG_MSG(message));
   }
 
-  const auto *bmdRaw = barrageWrapper->msg_payload()->data();
-  const auto *bmd = flatbuffers::GetRoot<BarrageUpdateMetadata>(bmdRaw);
+  const auto *bmw_raw = barrage_wrapper->msg_payload()->data();
+  const auto *bmd = flatbuffers::GetRoot<BarrageUpdateMetadata>(bmw_raw);
 
-  DataInput diRemoved(*bmd->removed_rows());
-  DataInput diThreeShiftIndexes(*bmd->shift_data());
-  DataInput diAdded(*bmd->added_rows());
+  DataInput di_removed(*bmd->removed_rows());
+  DataInput di_three_shift_indices(*bmd->shift_data());
+  DataInput di_added(*bmd->added_rows());
 
-  auto removedRows = IndexDecoder::readExternalCompressedDelta(&diRemoved);
-  auto shiftStartIndex = IndexDecoder::readExternalCompressedDelta(&diThreeShiftIndexes);
-  auto shiftEndIndex = IndexDecoder::readExternalCompressedDelta(&diThreeShiftIndexes);
-  auto shiftDestIndex = IndexDecoder::readExternalCompressedDelta(&diThreeShiftIndexes);
-  auto addedRows = IndexDecoder::readExternalCompressedDelta(&diAdded);
+  auto removed_rows = IndexDecoder::ReadExternalCompressedDelta(&di_removed);
+  auto shift_start_index = IndexDecoder::ReadExternalCompressedDelta(&di_three_shift_indices);
+  auto shift_end_index = IndexDecoder::ReadExternalCompressedDelta(&di_three_shift_indices);
+  auto shift_dest_index = IndexDecoder::ReadExternalCompressedDelta(&di_three_shift_indices);
+  auto added_rows = IndexDecoder::ReadExternalCompressedDelta(&di_added);
 
 //  streamf(std::cout, "adds=%o, removes=%o, ss=%o, %se=%o, sd=%o\n", *addedRows, *removedRows,
 //      *shiftStartIndex, *shiftEndIndex, *shiftDestIndex);
 
-  const auto &modColumnNodes = *bmd->mod_column_nodes();
+  const auto &mod_column_nodes = *bmd->mod_column_nodes();
 
-  std::vector<std::shared_ptr<RowSequence>> perColumnModifies;
-  perColumnModifies.reserve(modColumnNodes.size());
-  for (size_t i = 0; i < modColumnNodes.size(); ++i) {
-    const auto &elt = modColumnNodes.Get(i);
-    DataInput diModified(*elt->modified_rows());
-    auto modRows = IndexDecoder::readExternalCompressedDelta(&diModified);
-    perColumnModifies.push_back(std::move(modRows));
+  std::vector<std::shared_ptr<RowSequence>> per_column_modifies;
+  per_column_modifies.reserve(mod_column_nodes.size());
+  for (size_t i = 0; i < mod_column_nodes.size(); ++i) {
+    const auto &elt = mod_column_nodes.Get(i);
+    DataInput di_modified(*elt->modified_rows());
+    auto mod_rows = IndexDecoder::ReadExternalCompressedDelta(&di_modified);
+    per_column_modifies.push_back(std::move(mod_rows));
   }
 
   // Correct order to process Barrage info is:
@@ -292,82 +304,83 @@ std::optional<TickingUpdate> AwaitingMetadata::processNextChunk(BarrageProcessor
   // 4. modifies
   // We have not called with add or modify data yet, but we can do removes and shifts now
   // (steps 1 and 2).
-  auto [prev, removedRowsIndexSpace, afterRemoves] = processRemoves(*removedRows);
-  tableState_.applyShifts(*shiftStartIndex, *shiftEndIndex, *shiftDestIndex);
+  auto [prev, removedRowsIndexSpace, afterRemoves] = ProcessRemoves(*removed_rows);
+  table_state_.ApplyShifts(*shift_start_index, *shift_end_index, *shift_dest_index);
 
-  auto addedRowsIndexSpace = tableState_.addKeys(*addedRows);
+  auto added_rows_index_space = table_state_.AddKeys(*added_rows);
 
-  owner->state_ = State::AwaitingAdds;
-  owner->awaitingAdds_.init(std::move(perColumnModifies), std::move(prev), std::move(removedRowsIndexSpace),
-      std::move(afterRemoves), std::move(addedRowsIndexSpace));
-  return owner->awaitingAdds_.processNextChunk(owner, sources, begins, ends, nullptr, 0);
+  owner->state_ = State::kAwaitingAdds;
+  owner->awaitingAdds_.Init(std::move(per_column_modifies), std::move(prev),
+      std::move(removedRowsIndexSpace),
+      std::move(afterRemoves), std::move(added_rows_index_space));
+  return owner->awaitingAdds_.ProcessNextChunk(owner, sources, begins, ends, nullptr, 0);
 }
 
 std::tuple<std::shared_ptr<ClientTable>, std::shared_ptr<RowSequence>, std::shared_ptr<ClientTable>>
-AwaitingMetadata::processRemoves(const RowSequence &removedRows) {
-  auto prev = tableState_.snapshot();
+AwaitingMetadata::ProcessRemoves(const RowSequence &removed_rows) {
+  auto prev = table_state_.Snapshot();
   // The reason we special-case "empty" is because when the tables are unchanged, we prefer
   // to indicate this via pointer equality (e.g. beforeRemoves == afterRemoves).
-  std::shared_ptr<RowSequence> removedRowsIndexSpace;
-  std::shared_ptr<ClientTable> afterRemoves;
-  if (removedRows.empty()) {
-    removedRowsIndexSpace = RowSequence::createEmpty();
-    afterRemoves = prev;
+  std::shared_ptr<RowSequence> removed_rows_index_space;
+  std::shared_ptr<ClientTable> after_removes;
+  if (removed_rows.Empty()) {
+    removed_rows_index_space = RowSequence::CreateEmpty();
+      after_removes = prev;
   } else {
-    removedRowsIndexSpace = tableState_.erase(removedRows);
-    afterRemoves = tableState_.snapshot();
+    removed_rows_index_space = table_state_.Erase(removed_rows);
+      after_removes = table_state_.Snapshot();
   }
-  return {std::move(prev), std::move(removedRowsIndexSpace), std::move(afterRemoves)};
+  return {std::move(prev), std::move(removed_rows_index_space), std::move(after_removes)};
 }
 
 AwaitingAdds::AwaitingAdds() = default;
 AwaitingAdds::~AwaitingAdds() = default;
 
-void AwaitingAdds::reset() {
+void AwaitingAdds::Reset() {
   *this = AwaitingAdds();
 }
 
-void AwaitingAdds::init(std::vector<std::shared_ptr<RowSequence>> perColumnModifies, std::shared_ptr<ClientTable> prev,
-    std::shared_ptr<RowSequence> removedRowsIndexSpace, std::shared_ptr<ClientTable> afterRemoves,
-    std::shared_ptr<RowSequence> addedRowsIndexSpace) {
+void AwaitingAdds::Init(std::vector<std::shared_ptr<RowSequence>> per_column_modifies, std::shared_ptr<ClientTable> prev,
+    std::shared_ptr<RowSequence> removed_rows_index_space, std::shared_ptr<ClientTable> after_removes,
+    std::shared_ptr<RowSequence> added_rows_index_space) {
 
   auto result = std::make_shared<AwaitingAdds>();
-  perColumnModifies_ = std::move(perColumnModifies);
+  per_column_modifies_ = std::move(per_column_modifies);
   prev_ = std::move(prev);
-  removedRowsIndexSpace_ = std::move(removedRowsIndexSpace);
-  afterRemoves_  = std::move(afterRemoves);
-  addedRowsIndexSpace_ = std::move(addedRowsIndexSpace);
+  removed_rows_index_space_ = std::move(removed_rows_index_space);
+  after_removes_  = std::move(after_removes);
+  added_rows_index_space_ = std::move(added_rows_index_space);
 }
 
-std::optional<TickingUpdate> AwaitingAdds::processNextChunk(BarrageProcessorImpl *owner,
+std::optional<TickingUpdate> AwaitingAdds::ProcessNextChunk(BarrageProcessorImpl *owner,
     const std::vector<std::shared_ptr<ColumnSource>> &sources,
     std::vector<size_t> *beginsp, const std::vector<size_t> &ends, const void */*metadata*/, size_t /*metadataSize*/) {
-  if (firstTime_) {
-    firstTime_ = false;
+  if (first_time_) {
+    first_time_ = false;
 
-    if (addedRowsIndexSpace_->empty()) {
-      addedRowsRemaining_ = RowSequence::createEmpty();
+    if (added_rows_index_space_->Empty()) {
+      added_rows_remaining_ = RowSequence::CreateEmpty();
 
-      auto afterAdds = afterRemoves_;
-      owner->state_ = State::AwaitingModifies;
-      owner->awaitingModifies_.init(std::move(afterAdds));
-      return owner->awaitingModifies_.processNextChunk(owner, sources, beginsp, ends, nullptr, 0);
+      auto after_adds = after_removes_;
+      owner->state_ = State::kAwaitingModifies;
+      owner->awaitingModifies_.Init(std::move(after_adds));
+      return owner->awaitingModifies_.ProcessNextChunk(owner, sources, beginsp, ends, nullptr, 0);
     }
 
-    if (owner->awaitingMetadata_.numCols_ == 0) {
-      throw std::runtime_error(DEEPHAVEN_DEBUG_MSG("!addedRows.empty() but numCols == 0"));
+    if (owner->awaitingMetadata_.num_cols_ == 0) {
+      throw std::runtime_error(DEEPHAVEN_DEBUG_MSG("!AddedRows.Empty() but numCols == 0"));
     }
 
     // Working copy that is consumed in the iterations of the loop.
-    addedRowsRemaining_ = addedRowsIndexSpace_->drop(0);
+    added_rows_remaining_ = added_rows_index_space_->Drop(0);
   }
 
   auto &begins = *beginsp;
-  assertAllSame(sources.size(), begins.size(), ends.size());
-  auto numSources = sources.size();
+  AssertAllSame(sources.size(), begins.size(), ends.size());
+  auto num_sources = sources.size();
 
-  if (addedRowsRemaining_->empty()) {
-    throw std::runtime_error(DEEPHAVEN_DEBUG_MSG("Impossible: addedRowsRemaining is empty"));
+  if (added_rows_remaining_->Empty()) {
+    throw std::runtime_error(DEEPHAVEN_DEBUG_MSG("Impossible: addedRowsRemaining is Empty"));
   }
 
   if (begins == ends) {
@@ -375,80 +388,82 @@ std::optional<TickingUpdate> AwaitingAdds::processNextChunk(BarrageProcessorImpl
     return {};
   }
 
-  auto chunkSize = ends[0] - begins[0];
-  for (size_t i = 1; i != numSources; ++i) {
-    auto thisSize = ends[i] - begins[i];
-    if (thisSize != chunkSize) {
-      auto message = stringf("Chunks have inconsistent sizes: %o vs %o", thisSize, chunkSize);
+  auto chunk_size = ends[0] - begins[0];
+  for (size_t i = 1; i != num_sources; ++i) {
+    auto this_size = ends[i] - begins[i];
+    if (this_size != chunk_size) {
+      auto message = Stringf("Chunks have inconsistent sizes: %o vs %o", this_size, chunk_size);
       throw std::runtime_error(DEEPHAVEN_DEBUG_MSG(message));
     }
   }
 
-  if (addedRowsRemaining_->size() < chunkSize) {
+  if (added_rows_remaining_->Size() < chunk_size) {
     const char *message = "There is excess data in the chunk";
     throw std::runtime_error(DEEPHAVEN_DEBUG_MSG(message));
   }
 
-  auto indexRowsThisTime = addedRowsRemaining_->take(chunkSize);
-  addedRowsRemaining_ = addedRowsRemaining_->drop(chunkSize);
-  owner->awaitingMetadata_.tableState_.addData(sources, begins, ends, *indexRowsThisTime);
+  auto index_rows_this_time = added_rows_remaining_->Take(chunk_size);
+  added_rows_remaining_ = added_rows_remaining_->Drop(chunk_size);
+  owner->awaitingMetadata_.table_state_.AddData(sources, begins, ends, *index_rows_this_time);
 
   // To indicate to the caller that we've consumed the data here (so it can't e.g. be passed on to modify)
-  for (size_t i = 0; i != numSources; ++i) {
+  for (size_t i = 0; i != num_sources; ++i) {
     begins[i] = ends[i];
   }
 
-  if (!addedRowsRemaining_->empty()) {
+  if (!added_rows_remaining_->Empty()) {
     // Need more data from caller.
     return {};
   }
 
   // No more data remaining. Add phase is done.
-  auto afterAdds = owner->awaitingMetadata_.tableState_.snapshot();
+  auto after_adds = owner->awaitingMetadata_.table_state_.Snapshot();
 
-  owner->state_ = State::AwaitingModifies;
-  owner->awaitingModifies_.init(std::move(afterAdds));
-  return owner->awaitingModifies_.processNextChunk(owner, sources, beginsp, ends, nullptr, 0);
+  owner->state_ = State::kAwaitingModifies;
+  owner->awaitingModifies_.Init(std::move(after_adds));
+  return owner->awaitingModifies_.ProcessNextChunk(owner, sources, beginsp, ends, nullptr, 0);
 }
 
-void AwaitingModifies::reset() {
+void AwaitingModifies::Reset() {
   *this = AwaitingModifies();
 }
 
-void AwaitingModifies::init(std::shared_ptr<ClientTable> afterAdds) {
-  afterAdds_ = std::move(afterAdds);
+void AwaitingModifies::Init(std::shared_ptr<ClientTable> after_adds) {
+  after_adds_ = std::move(after_adds);
 }
 
 AwaitingModifies::AwaitingModifies() = default;
 AwaitingModifies::~AwaitingModifies() = default;
 
-std::optional<TickingUpdate> AwaitingModifies::processNextChunk(BarrageProcessorImpl *owner,
+std::optional<TickingUpdate> AwaitingModifies::ProcessNextChunk(BarrageProcessorImpl *owner,
     const std::vector<std::shared_ptr<ColumnSource>> &sources, std::vector<size_t> *beginsp,
-    const std::vector<size_t> &ends, const void *metadata, size_t metadataSize) {
+    const std::vector<size_t> &ends, const void *metadata, size_t metadata_size) {
 
-  if (firstTime_) {
-    firstTime_ = false;
+  if (first_time_) {
+    first_time_ = false;
 
-    if (allEmpty(owner->awaitingAdds_.perColumnModifies_)) {
-      modifiedRowsIndexSpace_ = {};
-      modifiedRowsRemaining_ = {};
-      auto afterModifies = afterAdds_;
-      owner->state_ = State::BuildingResult;
-      owner->buildingResult_.init(std::move(afterModifies));
-      return owner->buildingResult_.processNextChunk(owner, sources, beginsp, ends, metadata, metadataSize);
+    if (AllEmpty(owner->awaitingAdds_.per_column_modifies_)) {
+      modified_rows_index_space_ = {};
+      modified_rows_remaining_ = {};
+      auto after_modifies = after_adds_;
+      owner->state_ = State::kBuildingResult;
+      owner->buildingResult_.Init(std::move(after_modifies));
+      return owner->buildingResult_.ProcessNextChunk(owner, sources, beginsp, ends, metadata,
+          metadata_size);
     }
 
-    auto ncols = owner->awaitingMetadata_.numCols_;
-    modifiedRowsIndexSpace_ = makeReservedVector<std::shared_ptr<RowSequence>>(ncols);
-    modifiedRowsRemaining_ = makeReservedVector<std::shared_ptr<RowSequence>>(ncols);
+    auto ncols = owner->awaitingMetadata_.num_cols_;
+    modified_rows_index_space_ = MakeReservedVector<std::shared_ptr<RowSequence>>(ncols);
+    modified_rows_remaining_ = MakeReservedVector<std::shared_ptr<RowSequence>>(ncols);
     for (size_t i = 0; i < ncols; ++i) {
-      auto rs = owner->awaitingMetadata_.tableState_.convertKeysToIndices(*owner->awaitingAdds_.perColumnModifies_[i]);
-      modifiedRowsIndexSpace_.push_back(rs->drop(0));  // make copy
-      modifiedRowsRemaining_.push_back(std::move(rs));
+      auto rs = owner->awaitingMetadata_.table_state_.ConvertKeysToIndices(
+          *owner->awaitingAdds_.per_column_modifies_[i]);
+      modified_rows_index_space_.push_back(rs->Drop(0));  // make copy
+      modified_rows_remaining_.push_back(std::move(rs));
     }
   }
 
-  if (allEmpty(modifiedRowsRemaining_)) {
+  if (AllEmpty(modified_rows_remaining_)) {
     throw std::runtime_error(DEEPHAVEN_DEBUG_MSG("Impossible: modifiedRowsRemaining is empty"));
   }
   auto &begins = *beginsp;
@@ -458,90 +473,92 @@ std::optional<TickingUpdate> AwaitingModifies::processNextChunk(BarrageProcessor
     return {};
   }
 
-  auto numSources = sources.size();
-  if (numSources > modifiedRowsRemaining_.size()) {
-    auto message = stringf("Number of sources (%o) greater than expected (%o)", numSources,
-        modifiedRowsRemaining_.size());
+  auto num_sources = sources.size();
+  if (num_sources > modified_rows_remaining_.size()) {
+    auto message = Stringf("Number of sources (%o) greater than expected (%o)", num_sources,
+                           modified_rows_remaining_.size());
     throw std::runtime_error(message);
   }
 
-  for (size_t i = 0; i < numSources; ++i) {
-    auto numRowsRemaining = modifiedRowsRemaining_[i]->size();
-    auto numRowsAvailable = ends[i] - begins[i];
+  for (size_t i = 0; i < num_sources; ++i) {
+    auto num_rows_remaining = modified_rows_remaining_[i]->Size();
+    auto num_rows_available = ends[i] - begins[i];
 
-    if (numRowsAvailable > numRowsRemaining) {
-      auto message = stringf("col %o: numRowsAvailable > numRowsRemaining (%o > %o)",
-          i, numRowsAvailable, numRowsRemaining);
+    if (num_rows_available > num_rows_remaining) {
+      auto message = Stringf("col %o: numRowsAvailable > numRowsRemaining (%o > %o)",
+                             i, num_rows_available, num_rows_remaining);
       throw std::runtime_error(DEEPHAVEN_DEBUG_MSG(message));
     }
 
-    if (numRowsAvailable == 0) {
+    if (num_rows_available == 0) {
       // Nothing available for this column. Advance to next column.
       continue;
     }
 
-    auto &mr = modifiedRowsRemaining_[i];
-    auto rowsAvailable = mr->take(numRowsAvailable);
-    mr = mr->drop(numRowsAvailable);
+    auto &mr = modified_rows_remaining_[i];
+    auto rows_available = mr->Take(num_rows_available);
+    mr = mr->Drop(num_rows_available);
 
-    owner->awaitingMetadata_.tableState_.modifyData(i, *sources[i], begins[i], ends[i], *rowsAvailable);
+    owner->awaitingMetadata_.table_state_.ModifyData(i, *sources[i], begins[i], ends[i],
+        *rows_available);
     begins[i] = ends[i];
   }
 
-  for (const auto &mr : modifiedRowsRemaining_) {
-    if (!mr->empty()) {
+  for (const auto &mr : modified_rows_remaining_) {
+    if (!mr->Empty()) {
       // Need more data from caller.
       return {};
     }
   }
 
   // No more data. Modify phase is done.
-  auto afterModifies = owner->awaitingMetadata_.tableState_.snapshot();
+  auto after_modifies = owner->awaitingMetadata_.table_state_.Snapshot();
 
-  owner->state_ = State::BuildingResult;
-  owner->buildingResult_.init(std::move(afterModifies));
-  return owner->buildingResult_.processNextChunk(owner, sources, beginsp, ends, nullptr, 0);
+  owner->state_ = State::kBuildingResult;
+  owner->buildingResult_.Init(std::move(after_modifies));
+  return owner->buildingResult_.ProcessNextChunk(owner, sources, beginsp, ends, nullptr, 0);
 }
 
 BuildingResult::BuildingResult() = default;
 BuildingResult::~BuildingResult() = default;
 
-void BuildingResult::reset() {
+void BuildingResult::Reset() {
   *this = BuildingResult();
 }
 
-void BuildingResult::init(std::shared_ptr<ClientTable> afterModifies) {
-  afterModifies_ = std::move(afterModifies);
+void BuildingResult::Init(std::shared_ptr<ClientTable> after_modifies) {
+  afterModifies_ = std::move(after_modifies);
 }
 
-std::optional<TickingUpdate> BuildingResult::processNextChunk(BarrageProcessorImpl *owner,
+std::optional<TickingUpdate> BuildingResult::ProcessNextChunk(BarrageProcessorImpl *owner,
     const std::vector<std::shared_ptr<ColumnSource>> &/*sources*/,
-    std::vector<size_t> *begins, const std::vector<size_t> &ends, const void */*metadata*/, size_t /*metadataSize*/) {
-  if (*begins != ends) {
-    auto message = stringf("Barrage logic is done processing but there is leftover caller-provided data. begins = [%o]. ends=[%o]",
-        separatedList(begins->begin(), begins->end()), separatedList(ends.begin(), ends.end()));
+    std::vector<size_t> *beginsp, const std::vector<size_t> &ends, const void */*metadata*/, size_t /*metadataSize*/) {
+  if (*beginsp != ends) {
+    auto message = Stringf(
+        "Barrage logic is done processing but there is leftover caller-provided data. begins = [%o]. ends=[%o]",
+        separatedList(beginsp->begin(), beginsp->end()), separatedList(ends.begin(), ends.end()));
     throw std::runtime_error(DEEPHAVEN_DEBUG_MSG(message));
   }
   auto *aa = &owner->awaitingAdds_;
   auto *am = &owner->awaitingModifies_;
   auto result = TickingUpdate(std::move(aa->prev_),
-      std::move(aa->removedRowsIndexSpace_), std::move(aa->afterRemoves_),
-      std::move(aa->addedRowsIndexSpace_), std::move(am->afterAdds_),
-      std::move(am->modifiedRowsIndexSpace_), std::move(afterModifies_));
-  aa->reset();
-  am->reset();
-  this->reset();
-  owner->state_ = State::AwaitingMetadata;
+      std::move(aa->removed_rows_index_space_), std::move(aa->after_removes_),
+      std::move(aa->added_rows_index_space_), std::move(am->after_adds_),
+      std::move(am->modified_rows_index_space_), std::move(afterModifies_));
+  aa->Reset();
+  am->Reset();
+  this->Reset();
+  owner->state_ = State::kAwaitingMetadata;
   return result;
 }
 
-bool allEmpty(const std::vector<std::shared_ptr<RowSequence>> &rowSequences) {
-  return std::all_of(rowSequences.begin(), rowSequences.end(), [](const auto &rs) { return rs->empty(); });
+bool AllEmpty(const std::vector<std::shared_ptr<RowSequence>> &row_sequences) {
+  return std::all_of(row_sequences.begin(), row_sequences.end(), [](const auto &rs) { return rs->Empty(); });
 }
 
-void assertAllSame(size_t val0, size_t val1, size_t val2) {
+void AssertAllSame(size_t val0, size_t val1, size_t val2) {
   if (val0 != val1 || val0 != val2) {
-    auto message = stringf("Sizes differ: %o vs %o vs %o", val0, val1, val2);
+    auto message = Stringf("Sizes differ: %o vs %o vs %o", val0, val1, val2);
     throw std::runtime_error(DEEPHAVEN_DEBUG_MSG(message));
   }
 }

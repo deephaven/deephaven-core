@@ -16,117 +16,121 @@ using deephaven::dhcore::column::StringArrayColumnSource;
 
 namespace deephaven::dhcore::utility {
 namespace {
-void populateArrayFromPackedData(const uint8_t *src, bool *dest, size_t numElements, bool invert);
+void populateArrayFromPackedData(const uint8_t *src, bool *dest, size_t num_elements, bool invert);
 }  // namespace
 
 std::shared_ptr<ColumnSource>
-CythonSupport::createBooleanColumnSource(const uint8_t *dataBegin, const uint8_t *dataEnd, const uint8_t *validityBegin,
-    const uint8_t *validityEnd, size_t numElements) {
-  auto elements = std::make_unique<bool[]>(numElements);
-  auto nulls = std::make_unique<bool[]>(numElements);
+CythonSupport::CreateBooleanColumnSource(const uint8_t *data_begin, const uint8_t *data_end,
+    const uint8_t *validity_begin, const uint8_t *validity_end, size_t num_elements) {
+  auto elements = std::make_unique<bool[]>(num_elements);
+  auto nulls = std::make_unique<bool[]>(num_elements);
 
-  populateArrayFromPackedData(dataBegin, elements.get(), numElements, false);
-  populateArrayFromPackedData(validityBegin, nulls.get(), numElements, true);
-  return BooleanArrayColumnSource::createFromArrays(std::move(elements), std::move(nulls), numElements);
+  populateArrayFromPackedData(data_begin, elements.get(), num_elements, false);
+  populateArrayFromPackedData(validity_begin, nulls.get(), num_elements, true);
+  return BooleanArrayColumnSource::CreateFromArrays(std::move(elements), std::move(nulls),
+      num_elements);
 }
 
 std::shared_ptr<ColumnSource>
-CythonSupport::createStringColumnSource(const char *textBegin, const char *textEnd, const uint32_t *offsetsBegin,
-    const uint32_t *offsetsEnd, const uint8_t *validityBegin, const uint8_t *validityEnd, size_t numElements) {
-  auto elements = std::make_unique<std::string[]>(numElements);
-  auto nulls = std::make_unique<bool[]>(numElements);
+CythonSupport::CreateStringColumnSource(const char *text_begin, const char *text_end,
+    const uint32_t *offsets_begin, const uint32_t *offsets_end, const uint8_t *validity_begin,
+    const uint8_t *validity_end, size_t num_elements) {
+  auto elements = std::make_unique<std::string[]>(num_elements);
+  auto nulls = std::make_unique<bool[]>(num_elements);
 
-  const auto *current = textBegin;
-  for (size_t i = 0; i != numElements; ++i) {
-    auto elementSize = offsetsBegin[i + 1] - offsetsBegin[i];
-    elements[i] = std::string(current, current + elementSize);
-    current += elementSize;
+  const auto *current = text_begin;
+  for (size_t i = 0; i != num_elements; ++i) {
+    auto element_size = offsets_begin[i + 1] - offsets_begin[i];
+    elements[i] = std::string(current, current + element_size);
+    current += element_size;
   }
-  populateArrayFromPackedData(validityBegin, nulls.get(), numElements, true);
-  return StringArrayColumnSource::createFromArrays(std::move(elements), std::move(nulls), numElements);
+  populateArrayFromPackedData(validity_begin, nulls.get(), num_elements, true);
+  return StringArrayColumnSource::CreateFromArrays(std::move(elements), std::move(nulls),
+      num_elements);
 }
 
 std::shared_ptr<ColumnSource>
-CythonSupport::createDateTimeColumnSource(const int64_t *dataBegin, const int64_t *dataEnd,
-    const uint8_t *validityBegin, const uint8_t *validityEnd, size_t numElements) {
-  auto elements = std::make_unique<DateTime[]>(numElements);
-  auto nulls = std::make_unique<bool[]>(numElements);
+CythonSupport::CreateDateTimeColumnSource(const int64_t *data_begin, const int64_t *data_end,
+    const uint8_t *validity_begin, const uint8_t *validity_end, size_t num_elements) {
+  auto elements = std::make_unique<DateTime[]>(num_elements);
+  auto nulls = std::make_unique<bool[]>(num_elements);
 
-  for (size_t i = 0; i != numElements; ++i) {
-    elements[i] = DateTime(dataBegin[i]);
+  for (size_t i = 0; i != num_elements; ++i) {
+    elements[i] = DateTime(data_begin[i]);
   }
-  populateArrayFromPackedData(validityBegin, nulls.get(), numElements, true);
-  return DateTimeArrayColumnSource::createFromArrays(std::move(elements), std::move(nulls), numElements);
+  populateArrayFromPackedData(validity_begin, nulls.get(), num_elements, true);
+  return DateTimeArrayColumnSource::CreateFromArrays(std::move(elements), std::move(nulls),
+      num_elements);
 }
 
 namespace {
 struct ElementTypeIdVisitor final : ColumnSourceVisitor {
-  void visit(const column::CharColumnSource &source) final {
-    elementTypeId_ = ElementTypeId::CHAR;
+  void Visit(const column::CharColumnSource &/*source*/) final {
+    elementTypeId_ = ElementTypeId::kChar;
   }
 
-  void visit(const column::Int8ColumnSource &source) final {
-    elementTypeId_ = ElementTypeId::INT8;
+  void Visit(const column::Int8ColumnSource &/*source*/) final {
+    elementTypeId_ = ElementTypeId::kInt8;
   }
 
-  void visit(const column::Int16ColumnSource &source) final {
-    elementTypeId_ = ElementTypeId::INT16;
+  void Visit(const column::Int16ColumnSource &/*source*/) final {
+    elementTypeId_ = ElementTypeId::kInt16;
   }
 
-  void visit(const column::Int32ColumnSource &source) final {
-    elementTypeId_ = ElementTypeId::INT32;
+  void Visit(const column::Int32ColumnSource &/*source*/) final {
+    elementTypeId_ = ElementTypeId::kInt32;
   }
 
-  void visit(const column::Int64ColumnSource &source) final {
-    elementTypeId_ = ElementTypeId::INT64;
+  void Visit(const column::Int64ColumnSource &/*source*/) final {
+    elementTypeId_ = ElementTypeId::kInt64;
   }
 
-  void visit(const column::FloatColumnSource &source) final {
-    elementTypeId_ = ElementTypeId::FLOAT;
+  void Visit(const column::FloatColumnSource &/*source*/) final {
+    elementTypeId_ = ElementTypeId::kFloat;
   }
 
-  void visit(const column::DoubleColumnSource &source) final {
-    elementTypeId_ = ElementTypeId::DOUBLE;
+  void Visit(const column::DoubleColumnSource &/*source*/) final {
+    elementTypeId_ = ElementTypeId::kDouble;
   }
 
-  void visit(const column::BooleanColumnSource &source) final {
-    elementTypeId_ = ElementTypeId::BOOL;
+  void Visit(const column::BooleanColumnSource &/*source*/) final {
+    elementTypeId_ = ElementTypeId::kBool;
   }
 
-  void visit(const column::StringColumnSource &source) final {
-    elementTypeId_ = ElementTypeId::STRING;
+  void Visit(const column::StringColumnSource &/*source*/) final {
+    elementTypeId_ = ElementTypeId::kString;
   }
 
-  void visit(const column::DateTimeColumnSource &source) final {
-    elementTypeId_ = ElementTypeId::TIMESTAMP;
+  void Visit(const column::DateTimeColumnSource &/*source*/) final {
+    elementTypeId_ = ElementTypeId::kTimestamp;
   }
 
-  ElementTypeId::Enum elementTypeId_ = ElementTypeId::CHAR;
+  ElementTypeId::Enum elementTypeId_ = ElementTypeId::kChar;
 };
 }  // namespace
 
-ElementTypeId::Enum CythonSupport::getElementTypeId(const ColumnSource &columnSource) {
+ElementTypeId::Enum CythonSupport::GetElementTypeId(const ColumnSource &column_source) {
   ElementTypeIdVisitor v;
-  columnSource.acceptVisitor(&v);
+  column_source.AcceptVisitor(&v);
   return v.elementTypeId_;
 }
 
 namespace {
-void populateArrayFromPackedData(const uint8_t *src, bool *dest, size_t numElements, bool invert) {
+void populateArrayFromPackedData(const uint8_t *src, bool *dest, size_t num_elements, bool invert) {
   if (src == nullptr) {
-    std::fill(dest, dest + numElements, false);
+    std::fill(dest, dest + num_elements, false);
     return;
   }
-  uint32_t srcMask = 1;
-  while (numElements != 0) {
-    auto value = bool(*src & srcMask) ^ invert;
-    *dest++ = value;
-    srcMask <<= 1;
-    if (srcMask == 0x100) {
-      srcMask = 1;
+  uint32_t src_mask = 1;
+  while (num_elements != 0) {
+    auto value = static_cast<bool>(*src & src_mask) ^ invert;
+    *dest++ = static_cast<bool>(value);
+    src_mask <<= 1;
+    if (src_mask == 0x100) {
+      src_mask = 1;
       ++src;
     }
-    --numElements;
+    --num_elements;
   }
 }
 }  // namespace

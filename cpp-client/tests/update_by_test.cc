@@ -45,89 +45,94 @@ using deephaven::client::update_by::rollingSumTick;
 using deephaven::client::update_by::rollingSumTime;
 using deephaven::client::update_by::rollingWavgTick;
 using deephaven::client::update_by::rollingWavgTime;
-using deephaven::dhcore::utility::makeReservedVector;
+using deephaven::dhcore::utility::MakeReservedVector;
 using deephaven::client::utility::TableMaker;
 
 namespace deephaven::client::tests {
 namespace {
-constexpr size_t numCols = 5;
-constexpr size_t numRows = 1000;
+constexpr size_t kNumCols = 5;
+constexpr size_t kNumRows = 1000;
 
-std::vector<TableHandle> makeTables(const Client &client);
-std::vector<UpdateByOperation> makeSimpleOps();
-std::vector<UpdateByOperation> makeEmOps();
-std::vector<UpdateByOperation> makeRollingOps();
-TableHandle makeRandomTable(const Client &client);
+[[nodiscard]]
+std::vector<TableHandle> MakeTables(const Client &client);
+[[nodiscard]]
+std::vector<UpdateByOperation> MakeSimpleOps();
+[[nodiscard]]
+std::vector<UpdateByOperation> MakeEmOps();
+[[nodiscard]]
+std::vector<UpdateByOperation> MakeRollingOps();
+[[nodiscard]]
+TableHandle MakeRandomTable(const Client &client);
 }
 TEST_CASE("UpdateBy: SimpleCumSum", "[update_by]") {
-  auto client = TableMakerForTests::createClient();
-  auto tm = client.getManager();
-  auto source = tm.emptyTable(10).update("Letter = (i % 2 == 0) ? `A` : `B`", "X = i");
-  auto result = source.updateBy({cumSum({"SumX = X"})}, {"Letter"});
-  auto filtered = result.select("SumX");
-  compareTable(filtered, "SumX", std::vector<int64_t>{0, 1, 2, 4, 6, 9, 12, 16, 20, 25});
+  auto client = TableMakerForTests::CreateClient();
+  auto tm = client.GetManager();
+  auto source = tm.EmptyTable(10).Update("Letter = (i % 2 == 0) ? `A` : `B`", "X = i");
+  auto result = source.UpdateBy({cumSum({"SumX = X"})}, {"Letter"});
+  auto filtered = result.Select("SumX");
+  CompareTable(filtered, "SumX", std::vector<int64_t>{0, 1, 2, 4, 6, 9, 12, 16, 20, 25});
 }
 
 TEST_CASE("UpdateBy: SimpleOps", "[update_by]") {
-  auto client = TableMakerForTests::createClient();
-  auto tables = makeTables(client);
-  auto simpleOps = makeSimpleOps();
+  auto client = TableMakerForTests::CreateClient();
+  auto tables = MakeTables(client);
+  auto simple_ops = MakeSimpleOps();
 
-  for (size_t opIndex = 0; opIndex != simpleOps.size(); ++opIndex) {
-    const auto &op = simpleOps[opIndex];
-    for (size_t tableIndex = 0; tableIndex != tables.size(); ++tableIndex) {
-      const auto &table = tables[tableIndex];
-      INFO("Processing op " << opIndex << " on table " << tableIndex);
-      auto result = table.updateBy({op}, {"e"});
-      CHECK(result.isStatic() == table.isStatic());
-      CHECK(result.schema()->numCols() == 2 + table.schema()->numCols());
-      CHECK(result.numRows() >= table.numRows());
+  for (size_t op_index = 0; op_index != simple_ops.size(); ++op_index) {
+    const auto &op = simple_ops[op_index];
+    for (size_t table_index = 0; table_index != tables.size(); ++table_index) {
+      const auto &table = tables[table_index];
+      INFO("Processing op " << op_index << " on Table " << table_index);
+      auto result = table.UpdateBy({op}, {"e"});
+      CHECK(result.IsStatic() == table.IsStatic());
+      CHECK(result.Schema()->NumCols() == 2 + table.Schema()->NumCols());
+      CHECK(result.NumRows() >= table.NumRows());
     }
   }
 }
 
 TEST_CASE("UpdateBy: EmOps", "[update_by]") {
-  auto client = TableMakerForTests::createClient();
-  auto tables = makeTables(client);
-  auto emOps = makeEmOps();
+  auto client = TableMakerForTests::CreateClient();
+  auto tables = MakeTables(client);
+  auto em_ops = MakeEmOps();
 
-  for (size_t opIndex = 0; opIndex != emOps.size(); ++opIndex) {
-    const auto &op = emOps[opIndex];
-    for (size_t tableIndex = 0; tableIndex != tables.size(); ++tableIndex) {
-      const auto &table = tables[tableIndex];
-      INFO("Processing op " << opIndex << " on table " << tableIndex);
-      auto result = table.updateBy({op}, {"b"});
-      CHECK(result.isStatic() == table.isStatic());
-      CHECK(result.schema()->numCols() == 1 + table.schema()->numCols());
-      if (result.isStatic()) {
-        CHECK(result.numRows() == table.numRows());
+  for (size_t op_index = 0; op_index != em_ops.size(); ++op_index) {
+    const auto &op = em_ops[op_index];
+    for (size_t table_index = 0; table_index != tables.size(); ++table_index) {
+      const auto &table = tables[table_index];
+      INFO("Processing op " << op_index << " on Table " << table_index);
+      auto result = table.UpdateBy({op}, {"b"});
+      CHECK(result.IsStatic() == table.IsStatic());
+      CHECK(result.Schema()->NumCols() == 1 + table.Schema()->NumCols());
+      if (result.IsStatic()) {
+        CHECK(result.NumRows() == table.NumRows());
       }
     }
   }
 }
 
 TEST_CASE("UpdateBy: RollingOps", "[update_by]") {
-  auto client = TableMakerForTests::createClient();
-  auto tables = makeTables(client);
-  auto rollingOps = makeRollingOps();
+  auto client = TableMakerForTests::CreateClient();
+  auto tables = MakeTables(client);
+  auto rolling_ops = MakeRollingOps();
 
-  for (size_t opIndex = 0; opIndex != rollingOps.size(); ++opIndex) {
-    const auto &op = rollingOps[opIndex];
-    for (size_t tableIndex = 0; tableIndex != tables.size(); ++tableIndex) {
-      const auto &table = tables[tableIndex];
-      INFO("Processing op " << opIndex << " on table " << tableIndex);
-      auto result = table.updateBy({op}, {"c"});
-      CHECK(result.isStatic() == table.isStatic());
-      CHECK(result.schema()->numCols() == 2 + table.schema()->numCols());
-      CHECK(result.numRows() >= table.numRows());
+  for (size_t op_index = 0; op_index != rolling_ops.size(); ++op_index) {
+    const auto &op = rolling_ops[op_index];
+    for (size_t table_index = 0; table_index != tables.size(); ++table_index) {
+      const auto &table = tables[table_index];
+      INFO("Processing op " << op_index << " on Table " << table_index);
+      auto result = table.UpdateBy({op}, {"c"});
+      CHECK(result.IsStatic() == table.IsStatic());
+      CHECK(result.Schema()->NumCols() == 2 + table.Schema()->NumCols());
+      CHECK(result.NumRows() >= table.NumRows());
     }
   }
 }
 
 TEST_CASE("UpdateBy: Multiple Ops", "[update_by]") {
-  auto client = TableMakerForTests::createClient();
-  auto tables = makeTables(client);
-  std::vector<UpdateByOperation> multipleOps = {
+  auto client = TableMakerForTests::CreateClient();
+  auto tables = MakeTables(client);
+  std::vector<UpdateByOperation> multiple_ops = {
       cumSum({"sum_a=a", "sum_b=b"}),
       cumSum({"max_a=a", "max_d=d"}),
       emaTick(10, {"ema_d=d", "ema_e=e"}),
@@ -135,112 +140,109 @@ TEST_CASE("UpdateBy: Multiple Ops", "[update_by]") {
       rollingWavgTick("b", {"rwavg_a = a", "rwavg_d = d"}, 10)
   };
 
-  for (size_t tableIndex = 0; tableIndex != tables.size(); ++tableIndex) {
-    const auto &table = tables[tableIndex];
-    INFO("Processing table " << tableIndex);
-    auto result = table.updateBy(multipleOps, {"c"});
-    CHECK(result.isStatic() == table.isStatic());
-    CHECK(result.schema()->numCols() == 10 + table.schema()->numCols());
-    if (result.isStatic()) {
-      CHECK(result.numRows() == table.numRows());
+  for (size_t table_index = 0; table_index != tables.size(); ++table_index) {
+    const auto &table = tables[table_index];
+    INFO("Processing Table " << table_index);
+    auto result = table.UpdateBy(multiple_ops, {"c"});
+    CHECK(result.IsStatic() == table.IsStatic());
+    CHECK(result.Schema()->NumCols() == 10 + table.Schema()->NumCols());
+    if (result.IsStatic()) {
+      CHECK(result.NumRows() == table.NumRows());
     }
   }
 }
 
 namespace {
-std::vector<TableHandle> makeTables(const Client &client) {
+std::vector<TableHandle> MakeTables(const Client &client) {
   std::vector<TableHandle> result;
-  auto tm = client.getManager();
-  auto staticTable = makeRandomTable(client).update("Timestamp=now()");
-  auto tickingTable = tm.timeTable(std::chrono::system_clock::now(), std::chrono::seconds(1))
-      .update("a = i", "b = i*i % 13", "c = i * 13 % 23", "d = a + b", "e = a - b");
-  return {staticTable, tickingTable};
+  auto tm = client.GetManager();
+  auto static_table = MakeRandomTable(client).Update("Timestamp=now()");
+  auto ticking_table = tm.TimeTable(std::chrono::system_clock::now(), std::chrono::seconds(1))
+      .Update("a = i", "b = i*i % 13", "c = i * 13 % 23", "d = a + b", "e = a - b");
+  return {static_table, ticking_table};
 }
 
-TableHandle makeRandomTable(const Client &client) {
+TableHandle MakeRandomTable(const Client &client) {
   std::random_device rd;
   std::default_random_engine engine(rd());
   std::uniform_int_distribution<int32_t> uniform_dist(0, 999);
 
   TableMaker tm;
-  static_assert(numCols <= 26);
-  for (size_t col = 0; col != numCols; ++col) {
-    char name[2] = {char('a' + col), 0};
-    auto values = makeReservedVector<int32_t>(numRows);
-    for (size_t i = 0; i != numRows; ++i) {
+  static_assert(kNumCols <= 26);
+  for (size_t col = 0; col != kNumCols; ++col) {
+    char name[2] = {static_cast<char>('a' + col), 0};
+    auto values = MakeReservedVector<int32_t>(kNumRows);
+    for (size_t i = 0; i != kNumRows; ++i) {
       values.push_back(uniform_dist(engine));
     }
-    tm.addColumn(name, values);
+    tm.AddColumn(name, values);
   }
-  return tm.makeTable(client.getManager());
+  return tm.MakeTable(client.GetManager());
 }
 
-std::vector<UpdateByOperation> makeSimpleOps() {
-  std::vector<std::string> simpleOpPairs = {"UA=a", "UB=b"};
+std::vector<UpdateByOperation> MakeSimpleOps() {
+  std::vector<std::string> simple_op_pairs = {"UA=a", "UB=b"};
   std::vector<UpdateByOperation> result = {
-      cumSum(simpleOpPairs),
-      cumProd(simpleOpPairs),
-      cumMin(simpleOpPairs),
-      cumMax(simpleOpPairs),
-      forwardFill(simpleOpPairs),
-      delta(simpleOpPairs),
-      delta(simpleOpPairs, DeltaControl::NULL_DOMINATES),
-      delta(simpleOpPairs, DeltaControl::VALUE_DOMINATES),
-      delta(simpleOpPairs, DeltaControl::ZERO_DOMINATES)
+      cumSum(simple_op_pairs),
+      cumProd(simple_op_pairs),
+      cumMin(simple_op_pairs),
+      cumMax(simple_op_pairs),
+      forwardFill(simple_op_pairs),
+      delta(simple_op_pairs),
+      delta(simple_op_pairs, DeltaControl::kNullDominates),
+      delta(simple_op_pairs, DeltaControl::kValueDominates),
+      delta(simple_op_pairs, DeltaControl::kZeroDominates)
   };
   return result;
 }
 
-std::vector<UpdateByOperation> makeEmOps() {
-  OperationControl emOpControl(BadDataBehavior::THROW, BadDataBehavior::RESET,
-      MathContext::UNLIMITED);
+std::vector<UpdateByOperation> MakeEmOps() {
+  OperationControl em_op_control(BadDataBehavior::kThrow, BadDataBehavior::kReset,
+      MathContext::kUnlimited);
 
   using nanos = std::chrono::nanoseconds;
 
   std::vector<UpdateByOperation> result = {
       // exponential moving average
       emaTick(100, {"ema_a = a"}),
-      emaTick(100, {"ema_a = a"}, emOpControl),
+      emaTick(100, {"ema_a = a"}, em_op_control),
       emaTime("Timestamp", nanos(10), {"ema_a = a"}),
-      emaTime("Timestamp", "PT00:00:00.001", {"ema_c = c"}, emOpControl),
+      emaTime("Timestamp", "PT00:00:00.001", {"ema_c = c"}, em_op_control),
       emaTime("Timestamp", "PT1M", {"ema_c = c"}),
-      emaTime("Timestamp", "PT1M", {"ema_c = c"}, emOpControl),
+      emaTime("Timestamp", "PT1M", {"ema_c = c"}, em_op_control),
       // exponential moving sum
       emsTick(100, {"ems_a = a"}),
-      emsTick(100, {"ems_a = a"}, emOpControl),
+      emsTick(100, {"ems_a = a"}, em_op_control),
       emsTime("Timestamp", nanos(10), {"ems_a = a"}),
-      emsTime("Timestamp", "PT00:00:00.001", {"ems_c = c"}, emOpControl),
+      emsTime("Timestamp", "PT00:00:00.001", {"ems_c = c"}, em_op_control),
       emsTime("Timestamp", "PT1M", {"ema_c = c"}),
-      emsTime("Timestamp", "PT1M", {"ema_c = c"}, emOpControl),
+      emsTime("Timestamp", "PT1M", {"ema_c = c"}, em_op_control),
       // exponential moving minimum
       emminTick(100, {"emmin_a = a"}),
-      emminTick(100, {"emmin_a = a"}, emOpControl),
+      emminTick(100, {"emmin_a = a"}, em_op_control),
       emminTime("Timestamp", nanos(10), {"emmin_a = a"}),
-      emminTime("Timestamp", "PT00:00:00.001", {"emmin_c = c"}, emOpControl),
+      emminTime("Timestamp", "PT00:00:00.001", {"emmin_c = c"}, em_op_control),
       emminTime("Timestamp", "PT1M", {"ema_c = c"}),
-      emminTime("Timestamp", "PT1M", {"ema_c = c"}, emOpControl),
+      emminTime("Timestamp", "PT1M", {"ema_c = c"}, em_op_control),
       // exponential moving maximum
       emmaxTick(100, {"emmax_a = a"}),
-      emmaxTick(100, {"emmax_a = a"}, emOpControl),
+      emmaxTick(100, {"emmax_a = a"}, em_op_control),
       emmaxTime("Timestamp", nanos(10), {"emmax_a = a"}),
-      emmaxTime("Timestamp", "PT00:00:00.001", {"emmax_c = c"}, emOpControl),
+      emmaxTime("Timestamp", "PT00:00:00.001", {"emmax_c = c"}, em_op_control),
       emmaxTime("Timestamp", "PT1M", {"ema_c = c"}),
-      emmaxTime("Timestamp", "PT1M", {"ema_c = c"}, emOpControl),
+      emmaxTime("Timestamp", "PT1M", {"ema_c = c"}, em_op_control),
       // exponential moving standard deviation
       emstdTick(100, {"emstd_a = a"}),
-      emstdTick(100, {"emstd_a = a"}, emOpControl),
+      emstdTick(100, {"emstd_a = a"}, em_op_control),
       emstdTime("Timestamp", nanos(10), {"emstd_a = a"}),
-      emstdTime("Timestamp", "PT00:00:00.001", {"emtd_c = c"}, emOpControl),
+      emstdTime("Timestamp", "PT00:00:00.001", {"emtd_c = c"}, em_op_control),
       emstdTime("Timestamp", "PT1M", {"ema_c = c"}),
-      emstdTime("Timestamp", "PT1M", {"ema_c = c"}, emOpControl)
+      emstdTime("Timestamp", "PT1M", {"ema_c = c"}, em_op_control)
   };
   return result;
 }
 
-std::vector<UpdateByOperation> makeRollingOps() {
-  OperationControl emOpControl(BadDataBehavior::THROW, BadDataBehavior::RESET,
-      MathContext::UNLIMITED);
-
+std::vector<UpdateByOperation> MakeRollingOps() {
   using secs = std::chrono::seconds;
 
   // exponential moving average

@@ -9,7 +9,8 @@
 namespace deephaven::client::impl {
 class EscapeUtils {
 public:
-  static std::string escapeJava(std::string_view s);
-  static void appendEscapedJava(std::string_view s, std::string *dest);
+  [[nodiscard]]
+  static std::string EscapeJava(std::string_view s);
+  static void AppendEscapedJava(std::string_view s, std::string *dest);
 };
 }  // namespace deephaven::client::impl
