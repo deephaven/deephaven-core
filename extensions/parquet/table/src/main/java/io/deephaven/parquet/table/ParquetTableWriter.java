@@ -98,26 +98,6 @@ public class ParquetTableWriter {
         void fetchData(RowSequence rs);
     }
 
-    private static String minusParquetSuffix(@NotNull final String s) {
-        if (s.endsWith(PARQUET_FILE_EXTENSION)) {
-            return s.substring(0, s.length() - PARQUET_FILE_EXTENSION.length());
-        }
-        return s;
-    }
-
-    private static String minusShadowSubstring(@NotNull final String s) {
-        if (s.contains(".NEW_")) {
-            return s.replace(".NEW_", "");
-        }
-        return s;
-    }
-
-    public static Function<String, String> defaultGroupingFileName(@NotNull final String path) {
-        final String nonShadowFilePath = minusShadowSubstring(path);
-        final String prefix = minusParquetSuffix(nonShadowFilePath);
-        return columnName -> prefix + "_" + columnName + "_grouping.parquet";
-    }
-
     // TODO Is this code used anywhere?
     // /**
     // * Writes a table in parquet format under a given path

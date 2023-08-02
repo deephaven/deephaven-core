@@ -51,6 +51,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.attribute.BasicFileAttributes;
 import java.util.*;
+import java.util.function.Function;
 
 import static io.deephaven.parquet.table.ParquetTableWriter.PARQUET_FILE_EXTENSION;
 import static io.deephaven.util.type.TypeUtils.getUnboxedTypeIfBoxed;
@@ -236,7 +237,7 @@ public class ParquetTools {
                 final String parquetColumnName =
                         writeInstructions.getParquetColumnNameFromColumnNameOrDefault(groupingColumnName);
                 final String groupingFilePath =
-                        ParquetTableWriter.defaultGroupingFileName(destFile.getPath()).apply(parquetColumnName);
+                        defaultGroupingFileName(destFile.getPath()).apply(parquetColumnName);
                 final File groupingFile = new File(groupingFilePath);
                 deleteBackupFile(groupingFile);
                 final File shadowGroupingFile = getShadowFile(groupingFile);
@@ -278,6 +279,18 @@ public class ParquetTools {
     @VisibleForTesting
     static File getBackupFile(File destFile) {
         return new File(destFile.getParent(), ".OLD_" + destFile.getName());
+    }
+
+    private static String minusParquetSuffix(@NotNull final String s) {
+        if (s.endsWith(PARQUET_FILE_EXTENSION)) {
+            return s.substring(0, s.length() - PARQUET_FILE_EXTENSION.length());
+        }
+        return s;
+    }
+
+    public static Function<String, String> defaultGroupingFileName(@NotNull final String path) {
+        final String prefix = minusParquetSuffix(path);
+        return columnName -> prefix + "_" + columnName + "_grouping.parquet";
     }
 
     /**

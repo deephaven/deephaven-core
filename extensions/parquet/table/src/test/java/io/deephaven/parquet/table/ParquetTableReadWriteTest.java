@@ -455,7 +455,7 @@ public class ParquetTableReadWriteTest {
                 .updateView("InputString = ii % 2 == 0 ? Long.toString(ii) : null", "A=InputString.charAt(0)");
         try {
             ParquetTools.writeTable(badTable, destFile);
-            Testcase.fail("Exception expected for invalid formula");
+            TestCase.fail("Exception expected for invalid formula");
         } catch (RuntimeException expected) {
         }
         // Make sure that original file is preserved and no temporary files
@@ -501,7 +501,7 @@ public class ParquetTableReadWriteTest {
         final File destFile = new File(parentDir, destFilename);
         ParquetTools.writeTable(tableToSave, destFile);
         String[] filesInDir = parentDir.list();
-        String vvvGroupingFilename = ParquetTableWriter.defaultGroupingFileName(destFilename).apply("vvv");
+        String vvvGroupingFilename = ParquetTools.defaultGroupingFileName(destFilename).apply("vvv");
         assertTrue(filesInDir.length == 2 && Arrays.asList(filesInDir).contains(destFilename)
                 && Arrays.asList(filesInDir).contains(vvvGroupingFilename));
         Table fromDisk = ParquetTools.readTable(destFile);
@@ -549,14 +549,14 @@ public class ParquetTableReadWriteTest {
         final File destFile = new File(parentDir, destFilename);
         ParquetTools.writeTable(tableToSave, destFile);
         String[] filesInDir = parentDir.list();
-        String vvvGroupingFilename = ParquetTableWriter.defaultGroupingFileName(destFilename).apply("vvv");
+        String vvvGroupingFilename = ParquetTools.defaultGroupingFileName(destFilename).apply("vvv");
 
         // Write a new table successfully at the same position with different grouping columns
         final TableDefinition anotherTableDefinition = TableDefinition.of(ColumnDefinition.ofInt("xxx").withGrouping());
         Table anotherTableToSave = TableTools.newTable(anotherTableDefinition, TableTools.col("xxx", data));
         ParquetTools.writeTable(anotherTableToSave, destFile);
         filesInDir = parentDir.list();
-        final String xxxGroupingFilename = ParquetTableWriter.defaultGroupingFileName(destFilename).apply("xxx");
+        final String xxxGroupingFilename = ParquetTools.defaultGroupingFileName(destFilename).apply("xxx");
         final File backupDestFile = ParquetTools.getBackupFile(destFile);
         final String backupDestFileName = backupDestFile.getName();
         // The directory now should contain the updated table, its grouping file for column xxx, backup table and its
