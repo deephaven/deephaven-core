@@ -141,6 +141,9 @@ public class JsWidget extends HasEventHandling implements ServerObject, WidgetMe
         return typedTicket.getTicket();
     }
 
+    /**
+     * @return the type of this widget
+     */
     @JsProperty
     public String getType() {
         return typedTicket.getType();
@@ -154,24 +157,28 @@ public class JsWidget extends HasEventHandling implements ServerObject, WidgetMe
         return typedTicket;
     }
 
+    @Override
     @JsMethod
     public String getDataAsBase64() {
         return response.getData().getPayload_asB64();
     }
 
+    @Override
     @JsMethod
     public Uint8Array getDataAsU8() {
         return response.getData().getPayload_asU8();
     }
 
+    @Override
     @JsMethod
     public String getDataAsString() {
-        return new String(Js.<byte[]>uncheckedCast(response.getData().getPayload_asU8()), StandardCharsets.UTF_8);
+        return new String(Js.uncheckedCast(response.getData().getPayload_asU8()), StandardCharsets.UTF_8);
     }
 
+    @Override
     @JsProperty
     public JsWidgetExportedObject[] getExportedObjects() {
-        return Js.<JsWidgetExportedObject[]>uncheckedCast(exportedObjects);
+        return Js.uncheckedCast(exportedObjects);
     }
 
     @TsUnion
@@ -251,7 +258,7 @@ public class JsWidget extends HasEventHandling implements ServerObject, WidgetMe
     }
 
     /**
-     *
+     * Event details to convey a response from the server.
      */
     @TsName(namespace = "dh", name = "WidgetMessageDetails")
     private static class EventDetails implements WidgetMessageDetails {
@@ -275,12 +282,12 @@ public class JsWidget extends HasEventHandling implements ServerObject, WidgetMe
 
         @Override
         public String getDataAsString() {
-            return new String(Js.<byte[]>uncheckedCast(data.getPayload_asU8()), StandardCharsets.UTF_8);
+            return new String(Js.uncheckedCast(data.getPayload_asU8()), StandardCharsets.UTF_8);
         }
 
         @Override
         public JsWidgetExportedObject[] getExportedObjects() {
-            return Js.<JsWidgetExportedObject[]>uncheckedCast(exportedObjects);
+            return Js.uncheckedCast(exportedObjects);
         }
     }
 }
