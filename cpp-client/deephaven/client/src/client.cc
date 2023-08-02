@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2016-2022 Deephaven Data Labs and Patent Pending
+ * Copyright (c) 2016-2023 Deephaven Data Labs and Patent Pending
  */
 #include "deephaven/client/client.h"
 
@@ -14,9 +14,14 @@
 #include "deephaven/client/impl/client_impl.h"
 #include "deephaven/client/impl/table_handle_impl.h"
 #include "deephaven/client/impl/table_handle_manager_impl.h"
+#include "deephaven/client/impl/update_by_operation_impl.h"
+#include "deephaven/client/impl/util.h"
 #include "deephaven/client/subscription/subscription_handle.h"
 #include "deephaven/client/utility/arrow_util.h"
+#include "deephaven/dhcore/clienttable/schema.h"
 #include "deephaven/dhcore/utility/utility.h"
+#include "deephaven/proto/table.pb.h"
+#include "deephaven/proto/table.grpc.pb.h"
 
 using grpc::Channel;
 using grpc::ClientContext;
@@ -34,14 +39,19 @@ using deephaven::client::impl::StrColImpl;
 using deephaven::client::impl::AggregateComboImpl;
 using deephaven::client::impl::AggregateImpl;
 using deephaven::client::impl::ClientImpl;
+using deephaven::client::impl::moveVectorData;
+using deephaven::client::impl::UpdateByOperationImpl;
 using deephaven::client::subscription::SubscriptionHandle;
 using deephaven::client::utility::Executor;
 using deephaven::client::utility::okOrThrow;
+using deephaven::dhcore::clienttable::Schema;
 using deephaven::dhcore::utility::base64Encode;
+using deephaven::dhcore::utility::makeReservedVector;
 using deephaven::dhcore::utility::separatedList;
 using deephaven::dhcore::utility::SFCallback;
 using deephaven::dhcore::utility::SimpleOstringstream;
 using deephaven::dhcore::utility::stringf;
+
 
 namespace deephaven::client {
 namespace {
@@ -502,6 +512,15 @@ TableHandle TableHandle::exactJoin(const TableHandle &rightSide,
   return exactJoin(rightSide, std::move(ctmStrings), std::move(ctaStrings));
 }
 
+TableHandle TableHandle::updateBy(std::vector<UpdateByOperation> ops, std::vector<std::string> by) const {
+  auto opImpls = makeReservedVector<std::shared_ptr<UpdateByOperationImpl>>(ops.size());
+  for (const auto &op : ops) {
+    opImpls.push_back(op.impl_);
+  }
+  auto thImpl = impl_->updateBy(std::move(opImpls), std::move(by));
+  return TableHandle(std::move(thImpl));
+}
+
 void TableHandle::bindToVariable(std::string variable) const {
   auto res = SFCallback<>::createForFuture();
   bindToVariableAsync(std::move(variable), std::move(res.first));
@@ -521,12 +540,16 @@ void TableHandle::observe() const {
   impl_->observe();
 }
 
-int64_t TableHandle::numRows() {
+int64_t TableHandle::numRows() const {
   return impl_->numRows();
 }
 
-bool TableHandle::isStatic() {
+bool TableHandle::isStatic() const {
   return impl_->isStatic();
+}
+
+std::shared_ptr<Schema> TableHandle::schema() const {
+  return impl_->schema();
 }
 
 std::shared_ptr<arrow::flight::FlightStreamReader> TableHandle::getFlightStreamReader() const {

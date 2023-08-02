@@ -9,6 +9,7 @@
 #include "deephaven/client/client.h"
 #include "deephaven/client/server/server.h"
 #include "deephaven/client/subscription/subscription_handle.h"
+#include "deephaven/client/update_by.h"
 #include "deephaven/client/utility/executor.h"
 #include "deephaven/dhcore/clienttable/schema.h"
 #include "deephaven/dhcore/ticking/ticking.h"
@@ -115,7 +116,7 @@ public:
    */
   void waitUntilReady();
 
-  const LazyStateInfo &info();
+  const LazyStateInfo &info() const;
 
 private:
   std::shared_ptr<Server> server_;
@@ -140,6 +141,7 @@ class TableHandleImpl : public std::enable_shared_from_this<TableHandleImpl> {
   typedef deephaven::client::impl::BooleanExpressionImpl BooleanExpressionImpl;
   typedef deephaven::client::subscription::SubscriptionHandle SubscriptionHandle;
   typedef deephaven::client::utility::Executor Executor;
+  typedef deephaven::dhcore::clienttable::Schema Schema;
   typedef deephaven::dhcore::ticking::TickingCallback TickingCallback;
   typedef deephaven::dhcore::ElementTypeId ElementTypeId;
   typedef io::deephaven::proto::backplane::grpc::AsOfJoinTablesRequest AsOfJoinTablesRequest;
@@ -209,6 +211,9 @@ public:
       const TableHandleImpl &rightSide, std::vector<std::string> columnsToMatch,
       std::vector<std::string> columnsToAdd);
 
+  std::shared_ptr<TableHandleImpl> updateBy(std::vector<std::shared_ptr<UpdateByOperationImpl>> ops,
+      std::vector<std::string> by);
+
   std::vector<std::shared_ptr<ColumnImpl>> getColumnImpls();
   std::shared_ptr<StrColImpl> getStrColImpl(std::string columnName);
   std::shared_ptr<NumColImpl> getNumColImpl(std::string columnName);
@@ -226,8 +231,9 @@ public:
    */
   void observe();
 
-  int64_t numRows();
-  bool isStatic();
+  int64_t numRows() const;
+  bool isStatic() const;
+  std::shared_ptr<Schema> schema() const;
 
   const std::shared_ptr<TableHandleManagerImpl> &managerImpl() const { return managerImpl_; }
 

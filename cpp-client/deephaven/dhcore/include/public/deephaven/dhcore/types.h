@@ -12,11 +12,13 @@
 namespace deephaven::dhcore {
 struct ElementTypeId {
   // We don't use "enum class" here because we can't figure out how to get it to work right with Cython.
+  // TODO(kosak): we are going to have to expand LIST to be a true nested type.
   enum Enum {
     CHAR,
     INT8, INT16, INT32, INT64,
     FLOAT, DOUBLE,
-    BOOL, STRING, TIMESTAMP
+    BOOL, STRING, TIMESTAMP,
+    LIST
   };
 };
 
