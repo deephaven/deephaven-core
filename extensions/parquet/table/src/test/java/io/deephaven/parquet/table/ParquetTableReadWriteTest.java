@@ -24,7 +24,6 @@ import io.deephaven.engine.util.TableTools;
 import io.deephaven.engine.table.impl.QueryTable;
 import io.deephaven.test.types.OutOfBandTest;
 import junit.framework.TestCase;
-import junit.framework.Assert;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Ignore;
@@ -456,7 +455,7 @@ public class ParquetTableReadWriteTest {
                 .updateView("InputString = ii % 2 == 0 ? Long.toString(ii) : null", "A=InputString.charAt(0)");
         try {
             ParquetTools.writeTable(badTable, destFile);
-            Assert.fail("Exception expected for invalid formula");
+            Testcase.fail("Exception expected for invalid formula");
         } catch (RuntimeException expected) {
         }
         // Make sure that original file is preserved and no temporary files
@@ -519,7 +518,7 @@ public class ParquetTableReadWriteTest {
                 .updateView("InputString = ii % 2 == 0 ? Long.toString(ii) : null", "A=InputString.charAt(0)");
         try {
             ParquetTools.writeTable(badTable, destFile);
-            Assert.fail("Exception expected for invalid formula");
+            TestCase.fail("Exception expected for invalid formula");
         } catch (RuntimeException expected) {
         }
 
