@@ -141,7 +141,7 @@ public class ParquetTableWriter {
     // write(t, t.getDefinition(), ParquetInstructions.EMPTY, path, incomingMeta, groupingPathFactory,
     // groupingColumns);
     // }
-    //
+
     // /**
     // * Writes a table in parquet format under a given path
     // *
@@ -160,20 +160,25 @@ public class ParquetTableWriter {
     /**
      * Helper struct used to pass information about where to write the grouping files for each grouping column
      */
-    public static final class GroupingFileInfo {
+    static final class GroupingColumnWritingInfo {
         /**
-         * Grouping file path to be added in the metadata of main parquet file
+         * Parquet name of this grouping column
          */
-        public final String metadataFileName;
+        final String parquetColumnName;
+        /**
+         * File path to be added in the grouping metadata of main parquet file
+         */
+        final File metadataFilePath;
 
         /**
-         * Destination path for the grouping file
+         * Destination path for writing the grouping file
          */
-        public final File destPath;
+        final File destFile;
 
-        public GroupingFileInfo(final String metadataFileName, final File destPath) {
-            this.metadataFileName = metadataFileName;
-            this.destPath = destPath;
+        GroupingColumnWritingInfo(final String parquetColumnName, final File metadataFilePath, final File destFile) {
+            this.parquetColumnName = parquetColumnName;
+            this.metadataFilePath = metadataFilePath;
+            this.destFile = destFile;
         }
     }
 
@@ -185,9 +190,6 @@ public class ParquetTableWriter {
      * @param writeInstructions Write instructions for customizations while writing
      * @param destPathName The destination path
      * @param incomingMeta A map of metadata values to be stores in the file footer
-     * @param groupingPathFactory a factory for constructing paths for grouping tables
-     * @param groupingColumns List of columns the tables are grouped by (the write operation will store the grouping
-     *        info)
      * @throws SchemaMappingException Error creating a parquet table schema for the given table (likely due to
      *         unsupported types)
      * @throws IOException For file writing related errors
@@ -198,117 +200,41 @@ public class ParquetTableWriter {
             @NotNull final ParquetInstructions writeInstructions,
             @NotNull final String destPathName,
             @NotNull final Map<String, String> incomingMeta,
-            @NotNull final Function<String, String> groupingPathFactory,
-            @NotNull final String... groupingColumns) throws SchemaMappingException, IOException {
+            final Map<String, GroupingColumnWritingInfo> groupingColumnsWritingInfoMap)
+            throws SchemaMappingException, IOException {
         final TableInfo.Builder tableInfoBuilder = TableInfo.builder();
-        ArrayList<String> shadowGroupingFilePaths = null;
+        ArrayList<File> cleanupFiles = null;
         try {
-            if (groupingColumns.length > 0) {
-                // Write the grouping files first
-                shadowGroupingFilePaths = new ArrayList<>(groupingColumns.length);
-                final Table[] auxiliaryTables = Arrays.stream(groupingColumns)
-                        .map(columnName -> groupingAsTable(t, columnName))
-                        .toArray(Table[]::new);
-
+            if (groupingColumnsWritingInfoMap != null) {
+                cleanupFiles = new ArrayList<>(groupingColumnsWritingInfoMap.size());
                 final Path destDirPath = Paths.get(destPathName).getParent();
-                for (int gci = 0; gci < auxiliaryTables.length; ++gci) {
-                    final String parquetColumnName =
-                            writeInstructions.getParquetColumnNameFromColumnNameOrDefault(groupingColumns[gci]);
-
-                    // Write the grouping files at a shadow path but the metadata for original file should have the
-                    // correct name
-                    final String metadataGroupingFilePath = groupingPathFactory.apply(parquetColumnName);
-
-                    // TODO make the code more clean
-                    File groupingFile = new File(metadataGroupingFilePath);
-                    final File shadowGroupingFile = getShadowGroupingPath(groupingFile);
-                    final String shadowGroupingFilePath = shadowGroupingFile.getAbsolutePath();
-                    shadowGroupingFilePaths.add(shadowGroupingFilePath);
-
+                for (Map.Entry<String, GroupingColumnWritingInfo> entry : groupingColumnsWritingInfoMap.entrySet()) {
+                    final String groupingColumnName = entry.getKey();
+                    final Table auxiliaryTable = groupingAsTable(t, groupingColumnName);
+                    final String parquetColumnName = entry.getValue().parquetColumnName;
+                    final File metadataFilePath = entry.getValue().metadataFilePath;
+                    final File groupingDestFile = entry.getValue().destFile;
+                    cleanupFiles.add(groupingDestFile);
                     tableInfoBuilder.addGroupingColumns(GroupingColumnInfo.of(parquetColumnName,
-                            destDirPath.relativize(Paths.get(metadataGroupingFilePath)).toString()));
-                    write(auxiliaryTables[gci], auxiliaryTables[gci].getDefinition(), writeInstructions,
-                            shadowGroupingFilePath,
-                            Collections.emptyMap());
+                            destDirPath.relativize(metadataFilePath.toPath()).toString()));
+                    write(auxiliaryTable, auxiliaryTable.getDefinition(), writeInstructions,
+                            groupingDestFile.getAbsolutePath(),
+                            Collections.emptyMap(), (Map<String, GroupingColumnWritingInfo>) null);
                 }
             }
             write(t, definition, writeInstructions, destPathName, incomingMeta, tableInfoBuilder);
-
-            // Write completed successfully, rename the grouping files to actual name
-            if (shadowGroupingFilePaths != null) {
-                for (final String shadowGroupingFilePath : shadowGroupingFilePaths) {
-                    final String destPath = getNonShadowPath(shadowGroupingFilePath);
-                    File destFile = new File(destPath);
-                    File backupFile = getBackupFile(destFile);
-                    if (destFile.exists()) {
-                        // TODO Should I just delete the destination file here because if I make a backup (like its done
-                        // in the code right now), I need to check if backup exists and delete that first and its seems
-                        // unnecessary to me since we are already overwriting it in the existing code as well.
-                        if (!destFile.renameTo(backupFile)) {
-                            throw new UncheckedDeephavenException(
-                                    "Failed to write the grouping file at " + destFile.getAbsolutePath() + " because a "
-                                            + "file already exists at the path which couldn't be renamed to "
-                                            + backupFile);
-                        }
-                    }
-                    File shadowGroupingFile = new File(shadowGroupingFilePath);
-                    if (!shadowGroupingFile.renameTo(destFile)) {
-                        throw new UncheckedDeephavenException(
-                                "Failed to write the grouping file at " + destFile.getAbsolutePath()
-                                        + " because couldn't rename shadow file from "
-                                        + shadowGroupingFile.getAbsolutePath() + " to " +
-                                        destFile.getAbsolutePath());
-                    }
-                }
-            }
-
         } catch (Exception e) {
-            if (shadowGroupingFilePaths != null) {
-                for (final String shadowGroupingFilePath : shadowGroupingFilePaths) {
+            if (cleanupFiles != null) {
+                for (final File cleanupFile : cleanupFiles) {
                     try {
                         // noinspection ResultOfMethodCallIgnored
-                        new File(shadowGroupingFilePath).delete();
+                        cleanupFile.delete();
                     } catch (Exception ignored) {
                     }
                 }
             }
             throw e;
         }
-    }
-
-    private static File getShadowGroupingPath(File destFilePath) {
-        final String parent = destFilePath.getParent();
-        final String filename = destFilePath.getName();
-
-        return new File(destFilePath.getParent(), ".NEW_" + destFilePath.getName());
-    }
-
-    private static final String getNonShadowPath(final String shadowPath) {
-        return shadowPath.replace(".NEW_", "");
-    }
-
-    public static File getBackupFile(File filePath) {
-        return new File(filePath.getParent(), ".OLD_" + filePath.getName());
-    }
-
-    /**
-     * Writes a table in parquet format under a given path
-     *
-     * @param t the table to write
-     * @param definition the writable table definition
-     * @param writeInstructions the parquet instructions for writing
-     * @param path the path to write to
-     * @param incomingMeta any metadata to include ih the parquet metadata
-     * @param groupingColumns the grouping columns (if any)
-     */
-    public static void write(
-            @NotNull final Table t,
-            @NotNull final TableDefinition definition,
-            @NotNull final ParquetInstructions writeInstructions,
-            @NotNull final String path,
-            @NotNull final Map<String, String> incomingMeta,
-            @NotNull final String... groupingColumns) throws SchemaMappingException, IOException {
-        write(t, definition, writeInstructions, path, incomingMeta, defaultGroupingFileName(path), groupingColumns);
     }
 
     /**
