@@ -33,7 +33,7 @@ Client <- R6Class("Client",
     #' @param client_options ClientOptions instance with the parameters needed to connect to the server.
     #' See ?ClientOptions for more information.
     initialize = function(target, client_options) {
-      verify_string("target", target)
+      verify_string("target", target, TRUE)
       if (first_class(client_options) != "ClientOptions") {
         stop(paste("'client_options' should be a Deephaven ClientOptions object. Got an object of type", first_class(client_options), "instead."))
       }
@@ -48,7 +48,7 @@ Client <- R6Class("Client",
     #' @param name Name of the table to open from the server, passed as a string.
     #' @return TableHandle reference to the requested table.
     open_table = function(name) {
-      verify_string("name", name)
+      verify_string("name", name, TRUE)
       if (!private$check_for_table(name)) {
         stop(paste0("The table '", name, "' you're trying to pull does not exist on the server."))
       }
@@ -61,7 +61,7 @@ Client <- R6Class("Client",
     #' @return TableHandle reference to the new table, which has not yet been named on the server.
     #'         See TableHandle$bind_to_variable() for naming a new table on the server.
     empty_table = function(size) {
-      verify_int("size", size, type = "positive")
+      verify_positive_int("size", size, TRUE)
       return(TableHandle$new(private$internal_client$empty_table(size)))
     },
 
@@ -71,9 +71,9 @@ Client <- R6Class("Client",
     #' @param period_nanos Table ticking frequency (in nanoseconds).
     #' @return TableHandle reference to the new table, which has not yet been named on the server.
     #'         See TableHandle$bind_to_variable() for naming a new table on the server.
-    time_table = function(start_time_nanos, period_nanos) {
-      verify_int("start_time_nanos", start_time_nanos)
-      verify_int("period_nanos", period_nanos)
+    time_table = function(period_nanos, start_time_nanos = 0) {
+      verify_any_int("period_nanos", period_nanos, TRUE)
+      verify_any_int("start_time_nanos", start_time_nanos, TRUE)
       return(TableHandle$new(private$internal_client$time_table(start_time_nanos, period_nanos)))
     },
 
@@ -105,7 +105,7 @@ Client <- R6Class("Client",
     #' Runs a script on the server. The script must be in the language that the server console was started with.
     #' @param script Code to be executed on the server, passed as a string.
     run_script = function(script) {
-      verify_string("script", script)
+      verify_string("script", script, TRUE)
       private$internal_client$run_script(script)
     },
 

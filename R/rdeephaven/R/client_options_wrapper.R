@@ -54,8 +54,8 @@ ClientOptions <- R6Class("ClientOptions",
     #' @param username Username of the account to use for authentication, supplied as a string.
     #' @param password Password of the account, supplied as a string.
     set_basic_authentication = function(username, password) {
-      verify_string("username", username)
-      verify_string("password", password)
+      verify_string("username", username, TRUE)
+      verify_string("password", password, TRUE)
       self$internal_client_options$set_basic_authentication(username, password)
     },
 
@@ -64,8 +64,8 @@ ClientOptions <- R6Class("ClientOptions",
     #' @param auth_key Key to use for authentication, supplied as a string.
     #' @param auth_value Value to use for authentication, supplied as a string.
     set_custom_authentication = function(auth_key, auth_value) {
-      verify_string("auth_key", auth_key)
-      verify_string("auth_value", auth_value)
+      verify_string("auth_key", auth_key, TRUE)
+      verify_string("auth_value", auth_value, TRUE)
       self$internal_client_options$set_custom_authentication(auth_key, auth_value)
     },
 
@@ -73,7 +73,7 @@ ClientOptions <- R6Class("ClientOptions",
     #' Set the session type of the console (e.g., "python", "groovy", etc.). The session type must be supported on the server.
     #' @param session_type Desired language of the console. "python", "groovy", etc.
     set_session_type = function(session_type) {
-      verify_string("session_type", session_type)
+      verify_string("session_type", session_type, TRUE)
       self$internal_client_options$set_session_type(session_type)
     },
 
@@ -81,7 +81,7 @@ ClientOptions <- R6Class("ClientOptions",
     #' Use the TLS protocol in authentication and subsequent communication.
     #' @param root_certs Optional PEM-encoded certificate root for server connections. Defaults to system defaults.
     use_tls = function(root_certs = "") {
-      verify_string("root_certs", root_certs)
+      verify_string("root_certs", root_certs, TRUE)
       self$internal_client_options$set_use_tls(TRUE)
       self$internal_client_options$set_tls_root_certs(root_certs)
     },
@@ -89,10 +89,10 @@ ClientOptions <- R6Class("ClientOptions",
 
     #' Adds an int-valued option for the configuration of the underlying gRPC channels.
     #' @param opt The option key.
-    #' @param val The option value.
+    #' @param val The option value, assumed to be a scalar integer.
     add_int_option = function(opt, val) {
-      verify_string("opt", opt)
-      verify_int("val", val)
+      verify_string("opt", opt, TRUE)
+      verify_any_int("val", val, TRUE)
       self$internal_client_options$add_int_option(opt, val)
     },
 
@@ -101,8 +101,8 @@ ClientOptions <- R6Class("ClientOptions",
     #' @param opt The option key.
     #' @param val The option valiue.
     add_string_option = function(opt, val) {
-      verify_string("opt", opt)
-      verify_string("val", val)
+      verify_string("opt", opt, TRUE)
+      verify_string("val", val, TRUE)
       self$internal_client_options$add_string_option(opt, val)
     },
 
@@ -111,8 +111,8 @@ ClientOptions <- R6Class("ClientOptions",
     #' @param header_name The header name
     #' @param header_value The header value
     add_extra_header = function(header_name, header_value) {
-      verify_string("header_name", header_name)
-      verify_string("header_value", header_value)
+      verify_string("header_name", header_name, TRUE)
+      verify_string("header_value", header_value, TRUE)
       self$internal_client_options$add_extra_header(header_name, header_value)
     },
     internal_client_options = NULL

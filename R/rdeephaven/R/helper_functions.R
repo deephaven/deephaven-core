@@ -1,70 +1,90 @@
-first_class <- function(arg) class(arg)[[1]]
+first_class <- function(arg) { return(class(arg)[[1]]) }
 
-verify_internal_type <- function(desired_type, arg_name, candidate) {
-  if ((first_class(candidate) == "list") && (any(lapply(candidate, first_class) != desired_type))) {
-    stop(paste0("'", arg_name, "' must be a Deephaven ", desired_type, ", or a vector of ", desired_type, "s. Got a vector with at least one element that is not a Deephaven ", desired_type, " instead."))
-  } else if ((first_class(candidate) != "list") && (first_class(candidate) != desired_type)) {
-    stop(paste0("'", arg_name, "' must be a Deephaven ", desired_type, ", or a vector of ", desired_type, "s. Got an object of class ", first_class(candidate), " instead."))
+verify_type <- function(arg_name, candidate, required_type, message_type_name, is_scalar) {
+  if(first_class(candidate) == "list") {
+    if(any(lapply(candidate, first_class) != required_type)) {
+      stop(paste0("'", arg_name, "' must be a ", message_type_name, ", or a vector of ", message_type_name, "s. Got a vector with at least one element that is not a ", message_type_name, " instead."))
+    }
+  }
+  else {
+    if(first_class(candidate) != required_type) {
+      if(is_scalar) {
+        stop(paste0("'", arg_name, "' must be passed as a single ", message_type_name, ". Got an object of class ", first_class(candidate), " instead."))
+      }
+      else {
+        stop(paste0("'", arg_name, "' must be passed as a ", message_type_name, " or a vector of ", message_type_name, "s. Got an object of class ", first_class(candidate), " instead."))
+      }
+    }
+  }
+  if(is_scalar) {
+    if(length(candidate) != 1) {
+      stop(paste0("'", arg_name, "' must be passed as a single ", message_type_name, ". Got a ", message_type_name, " vector of length ", length(candidate), " instead."))
+    }
   }
 }
 
-verify_bool <- function(arg_name, bool_candidate) {
-  if (first_class(bool_candidate) != "logical") {
-    stop(paste0("'", arg_name, "' must be passed as a single boolean. Got an object of class ", first_class(bool_candidate), " instead."))
-  } else if (length(bool_candidate) != 1) {
-    stop(paste0("'", arg_name, "' must be passed as a single boolean. Got a boolean vector of length ", length(bool_candidate), " instead."))
+# does not attempt to verify that candidate is numeric
+verify_in_range <- function(arg_name, candidate, a = NULL, b = NULL, a_open = TRUE, b_open = TRUE) {
+
+  printed_interval = paste0(ifelse(a_open, "(", "["), ifelse(is.null(a), "-inf", as.character(a)),
+                            ", ", ifelse(is.null(b), "inf", as.character(b)), ifelse(b_open, ")", "]"))
+
+  if(((!is.null(a)) && ((any(candidate <= a) && (a_open)) || (any(candidate < a) && (!a_open)))) ||
+     ((!is.null(b)) && ((any(candidate >= b) && (b_open)) || (any(candidate > b) && (!b_open))))) {
+
+    if(length(candidate) == 1) {
+      stop(paste0("'", arg_name, "' must be in the interval ", printed_interval, ". Got '", arg_name, "' = ", candidate, " instead."))
+    }
+    else {
+      stop(paste0("Every element of '", arg_name, "' must be in the interval ", printed_interval, ". Got at least one element outside of this interval instead."))
+    }
   }
 }
 
-verify_bool_vector <- function(arg_name, bool_candidate) {
-  if (first_class(bool_candidate) != "logical") {
-    stop(paste0("'", arg_name, "' must be passed as a boolean or a vector of booleans. Got an object of class ", first_class(bool_candidate), " instead."))
+# does not attempt to verify that candidate is numeric
+verify_int <- function(arg_name, candidate) {
+  if(candidate != as.integer(candidate)) {
+    if(length(candidate == 1)) {
+      stop(paste0("'", arg_name, "' must be an integer. Got '", arg_name, "' = ", candidate, " instead."))
+    }
+    else {
+      stop(paste0("Every element of '", arg_name, "' must be an integer. Got at least one non-integer element instead."))
+    }
   }
 }
 
-verify_int <- function(arg_name, int_candidate, type = "any") {
-  if (type == "any") {
-    message <- " an "
-  } else if (type == "nonnegative") {
-    message <- " a non-negative "
-  } else if (type == "positive") {
-    message <- " a positive "
-  }
-  if (class(int_candidate)[[1]] != "numeric") {
-    stop(paste0("'", arg_name, "' must be", message, "integer. Got an object of class ", first_class(int_candidate), " instead."))
-  } else if (all.equal(int_candidate, as.integer(int_candidate)) != TRUE) {
-    # must use != TRUE as the result of all.equal() is not strictly boolean
-    stop(paste0("'", arg_name, "' must be", message, "integer. Got a non-integer numeric type instead."))
-  } else if (length(int_candidate) != 1) {
-    stop(paste0("'", arg_name, "' must be", message, "integer. Got a numeric vector of length ", length(int_candidate), " instead."))
-  }
-  if (((type == "nonnegative") && (int_candidate < 0)) || ((type == "positive") && (int_candidate <= 0))) {
-    stop(paste0("'", arg_name, "' must be", message, "integer. Got ", int_candidate, " instead."))
-  }
+verify_string <- function(arg_name, candidate, is_scalar) {
+  verify_type(arg_name, candidate, "character", "string", is_scalar)
 }
 
-verify_proportion <- function(arg_name, prop_candidate) {
-  if (first_class(prop_candidate) != "numeric") {
-    stop(paste0("'", arg_name, "' must be a numeric type between 0 and 1 inclusive. Got an object of class ", first_class(prop_candidate), " instead."))
-  } else if (length(prop_candidate) != 1) {
-    stop(paste0("'", arg_name, "' must be a numeric type between 0 and 1 inclusive. Got a numeric vector of length ", length(prop_candidate), " instead."))
-  } else if ((prop_candidate < 0.0) || (prop_candidate > 1.0)) {
-    stop(paste0("'", arg_name, "' must be a numeric type between 0 and 1 inclusive. Got a value of ", prop_candidate, " instead."))
-  }
+verify_bool <- function(arg_name, candidate, is_scalar) {
+  verify_type(arg_name, candidate, "logical", "boolean", is_scalar)
 }
 
-verify_string <- function(arg_name, string_candidate) {
-  if (first_class(string_candidate) != "character") {
-    stop(paste0("'", arg_name, "' must be passed as a single string. Got an object of class ", first_class(string_candidate), " instead."))
-  } else if (length(string_candidate) != 1) {
-    stop(paste0("'", arg_name, "' must be passed as a single string. Got a character vector of length ", length(string_candidate), " instead."))
-  }
+verify_numeric <- function(arg_name, candidate, is_scalar) {
+  verify_type(arg_name, candidate, "numeric", "numeric", is_scalar)
 }
 
-verify_string_vector <- function(arg_name, string_vector_candidate) {
-  if (first_class(string_vector_candidate) != "character") {
-    stop(paste0("'", arg_name, "' must be passed as a string or a vector of strings. Got an object of class ", first_class(string_vector_candidate), " instead."))
-  }
+verify_in_unit_interval <- function(arg_name, candidate, is_scalar) {
+  verify_numeric(arg_name, candidate, is_scalar)
+  verify_in_range(arg_name, candidate, a = 0, b = 1, a_open = FALSE, b_open = FALSE)
+}
+
+verify_any_int <- function(arg_name, candidate, is_scalar) {
+  verify_numeric(arg_name, candidate, is_scalar)
+  verify_int(arg_name, candidate)
+}
+
+verify_nonnegative_int <- function(arg_name, candidate, is_scalar) {
+  verify_numeric(arg_name, candidate, is_scalar)
+  verify_int(arg_name, candidate)
+  verify_in_range(arg_name, candidate, a = 0, a_open = FALSE)
+}
+
+verify_positive_int <- function(arg_name, candidate, is_scalar) {
+  verify_numeric(arg_name, candidate, is_scalar)
+  verify_int(arg_name, candidate)
+  verify_in_range(arg_name, candidate, a = 0)
 }
 
 strip_r6_wrapping_from_aggregation <- function(r6_aggregation) {

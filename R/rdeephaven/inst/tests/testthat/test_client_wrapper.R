@@ -174,7 +174,7 @@ test_that("client connection fails nicely with bad target but good client_option
   )
   expect_error(
     client <- Client$new(target = c("hello", "my", "name", "is"), client_options = client_options),
-    "'target' must be passed as a single string. Got a character vector of length 4 instead."
+    "'target' must be passed as a single string. Got a string vector of length 4 instead."
   )
 })
 
@@ -234,7 +234,7 @@ test_that("open_table fails nicely with bad inputs", {
   expect_error(client$open_table(""), "The table '' you're trying to pull does not exist on the server.")
   expect_error(client$open_table(12345), "'name' must be passed as a single string. Got an object of class numeric instead.")
   expect_error(client$open_table(client_options), "'name' must be passed as a single string. Got an object of class ClientOptions instead.")
-  expect_error(client$open_table(c("I", "am", "string")), "'name' must be passed as a single string. Got a character vector of length 3 instead.")
+  expect_error(client$open_table(c("I", "am", "string")), "'name' must be passed as a single string. Got a string vector of length 3 instead.")
 
   client$close()
 })
@@ -271,7 +271,7 @@ test_that("run_script fails nicely with bad input types", {
   client <- Client$new(target = "localhost:10000", client_options = client_options)
 
   expect_error(client$run_script(12345), "'script' must be passed as a single string. Got an object of class numeric instead.")
-  expect_error(client$run_script(c("I", "am", "a", "string")), "'script' must be passed as a single string. Got a character vector of length 4 instead.")
+  expect_error(client$run_script(c("I", "am", "a", "string")), "'script' must be passed as a single string. Got a string vector of length 4 instead.")
 
   client$close()
 })

@@ -76,7 +76,7 @@ test_that("agg_w_avg fails nicely when 'weight_column' is a bad type", {
   )
   expect_error(
     agg_w_avg(c("Multiple", "strings", "bad"), "string"),
-    "'weight_column' must be passed as a single string. Got a character vector of length 3 instead."
+    "'weight_column' must be passed as a single string. Got a string vector of length 3 instead."
   )
 })
 
@@ -149,15 +149,15 @@ test_that("agg_median fails nicely when 'columns' is a bad type", {
 test_that("agg_percentile fails nicely when 'percentile' is bad", {
   expect_error(
     agg_percentile("string", "string"),
-    "'percentile' must be a numeric type between 0 and 1 inclusive. Got an object of class character instead."
+    "'percentile' must be passed as a single numeric. Got an object of class character instead."
   )
   expect_error(
     agg_percentile(TRUE, "string"),
-    "'percentile' must be a numeric type between 0 and 1 inclusive. Got an object of class logical instead."
+    "'percentile' must be passed as a single numeric. Got an object of class logical instead."
   )
   expect_error(
     agg_percentile(5, "string"),
-    "'percentile' must be a numeric type between 0 and 1 inclusive. Got a value of 5 instead."
+    "'percentile' must be in the interval [0, 1]. Got 'percentile' = 5 instead."
   )
   expect_error(
     agg_percentile(c(5, 6, 7, 8), "string"),
@@ -187,6 +187,6 @@ test_that("agg_count fails nicely when 'count_column' is a bad type", {
   )
   expect_error(
     agg_count(c("Many", "strings")),
-    "'count_column' must be passed as a single string. Got a character vector of length 2 instead."
+    "'count_column' must be passed as a single string. Got a string vector of length 2 instead."
   )
 })

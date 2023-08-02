@@ -14,7 +14,7 @@ NULL
 #' @param by A string or list of strings specifying the columns to view.
 #' @export
 select <- function(th, columns = character()) {
-  verify_string_vector("columns", columns)
+  verify_string("columns", columns, FALSE)
   TableHandle$new(th$internal_table_handle$select(columns))
 }
 
@@ -24,7 +24,7 @@ select <- function(th, columns = character()) {
 #' @return TableHandle reference to the new table.
 #' @export
 view <- function(th, columns = character()) {
-  verify_string_vector("columns", columns)
+  verify_string("columns", columns, FALSE)
   return(TableHandle$new(th$internal_table_handle$view(columns)))
 }
 
@@ -34,7 +34,7 @@ view <- function(th, columns = character()) {
 #' @return TableHandle reference to the new table.
 #' @export
 update <- function(th, columns = character()) {
-  verify_string_vector("columns", columns)
+  verify_string("columns", columns, FALSE)
   return(TableHandle$new(th$internal_table_handle$update(columns)))
 }
 
@@ -44,7 +44,7 @@ update <- function(th, columns = character()) {
 #' @return TableHandle reference to the new table.
 #' @export
 update_view <- function(th, columns = character()) {
-  verify_string_vector("columns", columns)
+  verify_string("columns", columns, FALSE)
   return(TableHandle$new(th$internal_table_handle$update_view(columns)))
 }
 
@@ -54,7 +54,7 @@ update_view <- function(th, columns = character()) {
 #' @return TableHandle reference to the new table.
 #' @export
 drop_columns <- function(th, columns = character()) {
-  verify_string_vector("columns", columns)
+  verify_string("columns", columns, FALSE)
   return(TableHandle$new(th$internal_table_handle$drop_columns(columns)))
 }
 
@@ -64,7 +64,7 @@ drop_columns <- function(th, columns = character()) {
 #' @return TableHandle reference to the new table.
 #' @export
 where <- function(th, condition) {
-  verify_string("condition", condition)
+  verify_string("condition", condition, TRUE)
   return(TableHandle$new(th$internal_table_handle$where(condition)))
 }
 
@@ -76,7 +76,7 @@ where <- function(th, condition) {
 #' @return TableHandle reference to the new table.
 #' @export
 group_by <- function(th, columns = character()) {
-  verify_string_vector("columns", columns)
+  verify_string("columns", columns, FALSE)
   return(TableHandle$new(th$internal_table_handle$group_by(columns)))
 }
 
@@ -87,7 +87,7 @@ group_by <- function(th, columns = character()) {
 #' @return TableHandle reference to the new table.
 #' @export
 ungroup <- function(th, columns = character()) {
-  verify_string_vector("columns", columns)
+  verify_string("columns", columns, FALSE)
   return(TableHandle$new(th$internal_table_handle$ungroup(columns)))
 }
 
@@ -99,8 +99,8 @@ ungroup <- function(th, columns = character()) {
 #' @return TableHandle reference to the new table.
 #' @export
 agg_by <- function(th, aggregations, columns = character()) {
-  verify_internal_type("Aggregation", "aggregations", aggregations)
-  verify_string_vector("columns", columns)
+  verify_type("aggregations", aggregations, "Aggregation", "Deephaven Aggregation", FALSE)
+  verify_string("columns", columns, FALSE)
   aggregations <- c(aggregations)
   unwrapped_aggregations <- lapply(aggregations, strip_r6_wrapping_from_aggregation)
   return(TableHandle$new(th$internal_table_handle$agg_by(unwrapped_aggregations, columns)))
@@ -112,7 +112,7 @@ agg_by <- function(th, aggregations, columns = character()) {
 #' @return TableHandle reference to the new table.
 #' @export
 first_by <- function(th, columns = character()) {
-  verify_string_vector("columns", columns)
+  verify_string("columns", columns, FALSE)
   return(TableHandle$new(th$internal_table_handle$first_by(columns)))
 }
 
@@ -122,7 +122,7 @@ first_by <- function(th, columns = character()) {
 #' @return TableHandle reference to the new table.
 #' @export
 last_by <- function(th, columns = character()) {
-  verify_string_vector("columns", columns)
+  verify_string("columns", columns, FALSE)
   return(TableHandle$new(th$internal_table_handle$last_by(columns)))
 }
 
@@ -133,8 +133,8 @@ last_by <- function(th, columns = character()) {
 #' @return TableHandle reference to the new table.
 #' @export
 head_by <- function(th, n, columns = character()) {
-  verify_int("n", n)
-  verify_string_vector("columns", columns)
+  verify_positive_int("n", n, TRUE)
+  verify_string("columns", columns, FALSE)
   return(TableHandle$new(th$internal_table_handle$head_by(n, columns)))
 }
 
@@ -145,8 +145,8 @@ head_by <- function(th, n, columns = character()) {
 #' @return TableHandle reference to the new table.
 #' @export
 tail_by <- function(th, n, columns = character()) {
-  verify_int("n", n)
-  verify_string_vector("columns", columns)
+  verify_positive_int("n", n, TRUE)
+  verify_string("columns", columns, FALSE)
   return(TableHandle$new(th$internal_table_handle$tail_by(n, columns)))
 }
 
@@ -156,7 +156,7 @@ tail_by <- function(th, n, columns = character()) {
 #' @return TableHandle reference to the new table.
 #' @export
 min_by <- function(th, columns = character()) {
-  verify_string_vector("columns", columns)
+  verify_string("columns", columns, FALSE)
   return(TableHandle$new(th$internal_table_handle$min_by(columns)))
 }
 
@@ -166,7 +166,7 @@ min_by <- function(th, columns = character()) {
 #' @return TableHandle reference to the new table.
 #' @export
 max_by <- function(th, columns = character()) {
-  verify_string_vector("columns", columns)
+  verify_string("columns", columns, FALSE)
   return(TableHandle$new(th$internal_table_handle$max_by(columns)))
 }
 
@@ -176,7 +176,7 @@ max_by <- function(th, columns = character()) {
 #' @return TableHandle reference to the new table.
 #' @export
 sum_by <- function(th, columns = character()) {
-  verify_string_vector("columns", columns)
+  verify_string("columns", columns, FALSE)
   return(TableHandle$new(th$internal_table_handle$sum_by(columns)))
 }
 
@@ -186,7 +186,7 @@ sum_by <- function(th, columns = character()) {
 #' @return TableHandle reference to the new table.
 #' @export
 abs_sum_by <- function(th, columns = character()) {
-  verify_string_vector("columns", columns)
+  verify_string("columns", columns, FALSE)
   return(TableHandle$new(th$internal_table_handle$abs_sum_by(columns)))
 }
 
@@ -196,7 +196,7 @@ abs_sum_by <- function(th, columns = character()) {
 #' @return TableHandle reference to the new table.
 #' @export
 avg_by <- function(th, columns = character()) {
-  verify_string_vector("columns", columns)
+  verify_string("columns", columns, FALSE)
   return(TableHandle$new(th$internal_table_handle$avg_by(columns)))
 }
 
@@ -207,8 +207,8 @@ avg_by <- function(th, columns = character()) {
 #' @return TableHandle reference to the new table.
 #' @export
 w_avg_by <- function(th, weight_column, columns = character()) {
-  verify_string("weight_column", weight_column)
-  verify_string_vector("columns", columns)
+  verify_string("weight_column", weight_column, TRUE)
+  verify_string("columns", columns, FALSE)
   return(TableHandle$new(th$internal_table_handle$w_avg_by(weight_column, columns)))
 }
 
@@ -218,7 +218,7 @@ w_avg_by <- function(th, weight_column, columns = character()) {
 #' @return TableHandle reference to the new table.
 #' @export
 median_by <- function(th, columns = character()) {
-  verify_string_vector("columns", columns)
+  verify_string("columns", columns, FALSE)
   return(TableHandle$new(th$internal_table_handle$median_by(columns)))
 }
 
@@ -228,7 +228,7 @@ median_by <- function(th, columns = character()) {
 #' @return TableHandle reference to the new table.
 #' @export
 var_by <- function(th, columns = character()) {
-  verify_string_vector("columns", columns)
+  verify_string("columns", columns, FALSE)
   return(TableHandle$new(th$internal_table_handle$var_by(columns)))
 }
 
@@ -238,7 +238,7 @@ var_by <- function(th, columns = character()) {
 #' @return TableHandle reference to the new table.
 #' @export
 std_by <- function(th, columns = character()) {
-  verify_string_vector("columns", columns)
+  verify_string("columns", columns, FALSE)
   return(TableHandle$new(th$internal_table_handle$std_by(columns)))
 }
 
@@ -250,8 +250,8 @@ std_by <- function(th, columns = character()) {
 #' @return TableHandle reference to the new table.
 #' @export
 percentile_by <- function(th, percentile, columns = character()) {
-  verify_proportion("percentile", percentile)
-  verify_string_vector("columns", columns)
+  verify_in_unit_interval("percentile", percentile, TRUE)
+  verify_string("columns", columns, FALSE)
   return(TableHandle$new(th$internal_table_handle$percentile_by(percentile, columns)))
 }
 
@@ -262,8 +262,8 @@ percentile_by <- function(th, percentile, columns = character()) {
 #' @return TableHandle reference to the new table.
 #' @export
 count_by <- function(th, count_by_column = "n", columns = character()) {
-  verify_string("count_by_column", count_by_column)
-  verify_string_vector("columns", columns)
+  verify_string("count_by_column", count_by_column, TRUE)
+  verify_string("columns", columns, FALSE)
   return(TableHandle$new(th$internal_table_handle$count_by(count_by_column, columns)))
 }
 
@@ -272,8 +272,8 @@ count_by <- function(th, count_by_column = "n", columns = character()) {
 # TODO: Figure out the right defaults here to make interpretation simple
 #' @export
 cross_join <- function(th, right_side, columns_to_match, columns_to_add) {
-  verify_string_vector("columns_to_match", columns_to_match)
-  verify_string_vector("columns_to_add", columns_to_add)
+  verify_string("columns_to_match", columns_to_match, FALSE)
+  verify_string("columns_to_add", columns_to_add, FALSE)
   return(TableHandle$new(th$internal_table_handle$cross_join(
     right_side$internal_table_handle,
     columns_to_match, columns_to_add
@@ -283,8 +283,8 @@ cross_join <- function(th, right_side, columns_to_match, columns_to_add) {
 # TODO: Document this well
 #' @export
 natural_join <- function(th, right_side, columns_to_match, columns_to_add) {
-  verify_string_vector("columns_to_match", columns_to_match)
-  verify_string_vector("columns_to_add", columns_to_add)
+  verify_string("columns_to_match", columns_to_match, FALSE)
+  verify_string("columns_to_add", columns_to_add, FALSE)
   return(TableHandle$new(th$internal_table_handle$natural_join(
     right_side$internal_table_handle,
     columns_to_match, columns_to_add
@@ -294,8 +294,8 @@ natural_join <- function(th, right_side, columns_to_match, columns_to_add) {
 # TODO: Document this well
 #' @export
 exact_join <- function(th, right_side, columns_to_match, columns_to_add) {
-  verify_string_vector("columns_to_match", columns_to_match)
-  verify_string_vector("columns_to_add", columns_to_add)
+  verify_string("columns_to_match", columns_to_match, FALSE)
+  verify_string("columns_to_add", columns_to_add, FALSE)
   return(TableHandle$new(th$internal_table_handle$exact_join(
     right_side$internal_table_handle,
     columns_to_match, columns_to_add
@@ -312,8 +312,8 @@ exact_join <- function(th, right_side, columns_to_match, columns_to_add) {
 #' @return TableHandle reference to the new table.
 #' @export
 sort <- function(th, columns, descending = FALSE) {
-  verify_string_vector("columns", columns)
-  verify_bool_vector("descending", descending)
+  verify_string("columns", columns, FALSE)
+  verify_bool("descending", descending, FALSE)
   if ((length(descending) > 1) && length(descending) != length(columns)) {
     stop(paste0("'descending' must be the same length as 'columns' if more than one entry is supplied. Got 'columns' with length ", length(columns), " and 'descending' with length", length(descending), " instead."))
   }

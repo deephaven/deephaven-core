@@ -60,7 +60,7 @@ TableHandle <- R6Class("TableHandle",
     #' enabling it to be accessed by that name from any Deephaven API.
     #' @param name Name for this table on the server.
     bind_to_variable = function(name) {
-      verify_string("name", name)
+      verify_string("name", name, TRUE)
       self$internal_table_handle$bind_to_variable(name)
     },
 
@@ -130,19 +130,19 @@ as.data.frame.TableHandle <- function(th, ...) {
 
 #' @export
 head.TableHandle <- function(th, n) {
-  verify_int("n", n)
+  verify_positive_int("n", n, TRUE)
   return(TableHandle$new(th$internal_table_handle$head(n)))
 }
 
 #' @export
 tail.TableHandle <- function(th, n) {
-  verify_int("n", n)
+  verify_positive_int("n", n, TRUE)
   return(TableHandle$new(th$internal_table_handle$tail(n)))
 }
 
 #' @export
 rbind.TableHandle <- function(th, sources) {
-  verify_internal_type("TableHandle", "sources", sources)
+  verify_type("sources", sources, "TableHandle", "Deephaven TableHandle", FALSE)
   sources <- c(sources)
   unwrapped_sources <- lapply(sources, strip_r6_wrapping_from_table_handle)
   return(TableHandle$new(th$internal_table_handle$merge(unwrapped_sources)))

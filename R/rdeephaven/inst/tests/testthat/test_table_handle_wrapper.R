@@ -37,7 +37,7 @@ setup <- function() {
   th4 <- client$import_table(df4)
 
   # time table to test is_static()
-  th5 <- client$time_table(0, 1000000000) %>% update("X = ii")
+  th5 <- client$time_table(1000000000) %>% update("X = ii")
 
   return(list(
     "client" = client,
@@ -188,7 +188,7 @@ test_that("bind_to_variable fails nicely on bad inputs", {
 
   expect_error(
     data$th1$bind_to_variable(c("multiple", "strings")),
-    "'name' must be passed as a single string. Got a character vector of length 2 instead."
+    "'name' must be passed as a single string. Got a string vector of length 2 instead."
   )
 
   expect_error(
@@ -198,7 +198,7 @@ test_that("bind_to_variable fails nicely on bad inputs", {
 
   expect_error(
     data$th1$bind_to_variable(list("list", "of", "strings")),
-    "'name' must be passed as a single string. Got an object of class list instead."
+    "'name' must be passed as a single string. Got a string vector of length 3 instead."
   )
 
   data$client$close()
