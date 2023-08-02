@@ -14,7 +14,7 @@ public class TypedMultiJoinFactory {
         builder.addStatement("slotToOutputRow.set(tableLocation, outputKey)");
         builder.addStatement("tableRedirSource.set(outputKey, rowKeyChunk.get(chunkPosition))");
         for (int ii = 0; ii < chunkTypes.length; ii++) {
-            builder.addStatement("outputKeySources[" + ii + "].set(outputKey, k" + ii + ")");
+            builder.addStatement("outputKeySources[" + ii + "].set((long)outputKey, k" + ii + ")");
         }
     }
 
@@ -75,7 +75,7 @@ public class TypedMultiJoinFactory {
         builder.addStatement("slotToOutputRow.set(tableLocation, outputKey)");
         builder.addStatement("tableRedirSource.set(outputKey, rowKeyChunk.get(chunkPosition))");
         for (int ii = 0; ii < chunkTypes.length; ii++) {
-            builder.addStatement("outputKeySources[" + ii + "].set(outputKey, k" + ii + ")");
+            builder.addStatement("outputKeySources[" + ii + "].set((long)outputKey, k" + ii + ")");
         }
         builder.addStatement("mainModifiedTrackerCookieSource.set(tableLocation, EMPTY_COOKIE_SLOT)");
     }

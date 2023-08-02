@@ -53,7 +53,7 @@ final class StaticMultiJoinHasherShort extends StaticMultiJoinStateManagerTypedB
                     final int outputKey = numEntries - 1;
                     slotToOutputRow.set(tableLocation, outputKey);
                     tableRedirSource.set(outputKey, rowKeyChunk.get(chunkPosition));
-                    outputKeySources[0].set(outputKey, k0);
+                    outputKeySources[0].set((long)outputKey, k0);
                     break;
                 } else if (eq(mainKeySource0.getUnsafe(tableLocation), k0)) {
                     if (tableRedirSource.getLong(slotValue) != NO_RIGHT_STATE_VALUE) {

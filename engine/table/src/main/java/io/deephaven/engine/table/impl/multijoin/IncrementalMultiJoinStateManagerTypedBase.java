@@ -68,7 +68,7 @@ public abstract class IncrementalMultiJoinStateManagerTypedBase implements Multi
     protected final WritableColumnSource<?>[] alternateKeySources;
 
     /** The output sources representing the keys of our joined table. */
-    protected final WritableColumnSource<?>[] outputKeySources;
+    protected final WritableColumnSource[] outputKeySources;
 
     /** Store sentinel information and maps hash slots to output row keys. */
     protected ImmutableIntArraySource slotToOutputRow = new ImmutableIntArraySource();
