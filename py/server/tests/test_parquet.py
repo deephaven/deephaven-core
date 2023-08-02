@@ -4,18 +4,18 @@
 
 import os
 import shutil
-import unittest
 import tempfile
+import unittest
+
 import pandas
 import pyarrow.parquet
 
-from deephaven.pandas import to_pandas, to_table
-
 from deephaven import empty_table, dtypes, new_table
 from deephaven.column import InputColumn
+from deephaven.pandas import to_pandas, to_table
 from deephaven.parquet import write, batch_write, read, delete, ColumnInstruction
-
 from tests.testbase import BaseTestCase
+
 
 class ParquetTestCase(BaseTestCase):
     """ Test cases for the deephaven.ParquetTools module (performed locally) """
@@ -282,7 +282,8 @@ class ParquetTestCase(BaseTestCase):
         self.assert_table_equals(dh_table, result_table)
 
         # Write the pandas dataframe back to parquet (via pyarraow) and read it back using deephaven.parquet to compare
-        dataframe.to_parquet('data_from_pandas.parquet', compression=None if compression_codec_name is 'UNCOMPRESSED' else compression_codec_name)
+        dataframe.to_parquet('data_from_pandas.parquet',
+                             compression=None if compression_codec_name is 'UNCOMPRESSED' else compression_codec_name)
         result_table = read('data_from_pandas.parquet')
         self.assert_table_equals(dh_table, result_table)
 
@@ -292,7 +293,6 @@ class ParquetTestCase(BaseTestCase):
         # dataframe.to_parquet('data_from_pandas.parquet', compression=None if compression_codec_name is 'UNCOMPRESSED' else compression_codec_name)
         # result_table = read('data_from_pandas.parquet')
         # self.assert_table_equals(dh_table, result_table)
-
 
 
 if __name__ == '__main__':
