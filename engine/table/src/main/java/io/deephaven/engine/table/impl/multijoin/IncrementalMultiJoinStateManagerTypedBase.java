@@ -21,10 +21,7 @@ import io.deephaven.engine.table.impl.sources.ArrayBackedColumnSource;
 import io.deephaven.engine.table.impl.sources.InMemoryColumnSource;
 import io.deephaven.engine.table.impl.sources.LongArraySource;
 import io.deephaven.engine.table.impl.sources.immutable.ImmutableIntArraySource;
-import io.deephaven.engine.table.impl.util.ChunkUtils;
-import io.deephaven.engine.table.impl.util.LongColumnSourceWritableRowRedirection;
-import io.deephaven.engine.table.impl.util.TypedHasherUtil;
-import io.deephaven.engine.table.impl.util.WritableRowRedirection;
+import io.deephaven.engine.table.impl.util.*;
 import io.deephaven.util.QueryConstants;
 import org.apache.commons.lang3.mutable.MutableInt;
 import org.jetbrains.annotations.NotNull;
@@ -67,11 +64,11 @@ public abstract class IncrementalMultiJoinStateManagerTypedBase implements Multi
 
     /** The keys for our hash entries. */
     protected final ChunkType[] chunkTypes;
-    protected final WritableColumnSource[] mainKeySources;
-    protected final WritableColumnSource[] alternateKeySources;
+    protected final WritableColumnSource<?>[] mainKeySources;
+    protected final WritableColumnSource<?>[] alternateKeySources;
 
     /** The output sources representing the keys of our joined table. */
-    protected final WritableColumnSource[] outputKeySources;
+    protected final WritableColumnSource<?>[] outputKeySources;
 
     /** Store sentinel information and maps hash slots to output row keys. */
     protected ImmutableIntArraySource slotToOutputRow = new ImmutableIntArraySource();
@@ -172,7 +169,7 @@ public abstract class IncrementalMultiJoinStateManagerTypedBase implements Multi
         public void doBuild(RowSequence rows, Chunk<Values>[] sourceKeyChunks) {
             final long maxSize = numEntries + rows.intSize();
             tableRedirSource.ensureCapacity(maxSize);
-            for (WritableColumnSource src : outputKeySources) {
+            for (WritableColumnSource<?> src : outputKeySources) {
                 src.ensureCapacity(maxSize);
             }
             buildFromTable(rows, sourceKeyChunks, tableRedirSource, tableNumber, modifiedSlotTracker,
@@ -181,7 +178,7 @@ public abstract class IncrementalMultiJoinStateManagerTypedBase implements Multi
     }
 
 
-    private abstract class ProbeHandler implements TypedHasherUtil.ProbeHandler {
+    private static abstract class ProbeHandler implements TypedHasherUtil.ProbeHandler {
         final LongArraySource tableRedirSource;
         final int tableNumber;
         final MultiJoinModifiedSlotTracker modifiedSlotTracker;
@@ -316,19 +313,19 @@ public abstract class IncrementalMultiJoinStateManagerTypedBase implements Multi
         }
     }
 
-    protected abstract void buildFromTable(RowSequence rowSequence, Chunk[] sourceKeyChunks,
+    protected abstract void buildFromTable(RowSequence rowSequence, Chunk<Values>[] sourceKeyChunks,
             LongArraySource tableRedirSource, int tableNumber,
             MultiJoinModifiedSlotTracker modifiedSlotTracker, byte trackerFlag);
 
-    protected abstract void remove(RowSequence rowSequence, Chunk[] sourceKeyChunks,
+    protected abstract void remove(RowSequence rowSequence, Chunk<Values>[] sourceKeyChunks,
             LongArraySource tableRedirSource, int tableNumber,
             MultiJoinModifiedSlotTracker modifiedSlotTracker, byte trackerFlag);
 
-    protected abstract void shift(RowSequence rowSequence, Chunk[] sourceKeyChunks,
+    protected abstract void shift(RowSequence rowSequence, Chunk<Values>[] sourceKeyChunks,
             LongArraySource tableRedirSource, int tableNumber,
             MultiJoinModifiedSlotTracker modifiedSlotTracker, byte trackerFlag, long shiftDelta);
 
-    protected abstract void modify(RowSequence rowSequence, Chunk[] sourceKeyChunks,
+    protected abstract void modify(RowSequence rowSequence, Chunk<Values>[] sourceKeyChunks,
             LongArraySource tableRedirSource, int tableNumber,
             MultiJoinModifiedSlotTracker modifiedSlotTracker, byte trackerFlag);
 
@@ -434,7 +431,7 @@ public abstract class IncrementalMultiJoinStateManagerTypedBase implements Multi
         if (fullRehash) {
             // if we are doing a full rehash, we need to ditch the alternate
             if (rehashPointer > 0) {
-                rehashInternalPartial((int) numEntries, modifiedSlotTracker);
+                rehashInternalPartial(numEntries, modifiedSlotTracker);
                 clearAlternate();
             }
 
@@ -501,7 +498,7 @@ public abstract class IncrementalMultiJoinStateManagerTypedBase implements Multi
     }
 
     // produce a pretty key for error messages
-    protected String keyString(Chunk[] sourceKeyChunks, int chunkPosition) {
+    protected String keyString(Chunk<Values>[] sourceKeyChunks, int chunkPosition) {
         return ChunkUtils.extractKeyStringFromChunks(chunkTypes, sourceKeyChunks, chunkPosition);
     }
 
@@ -510,6 +507,10 @@ public abstract class IncrementalMultiJoinStateManagerTypedBase implements Multi
             final long redirection = redirectionSources.get(tt).getLong(slot);
             redirections[tt] = redirection == QueryConstants.NULL_LONG ? NULL_ROW_KEY : redirection;
         }
+    }
+
+    public void startTrackingPrevRedirectionValues(int tableNumber) {
+        redirectionSources.get(tableNumber).startTrackingPrevValues();
     }
 
     @Override
@@ -523,8 +524,8 @@ public abstract class IncrementalMultiJoinStateManagerTypedBase implements Multi
     }
 
     @Override
-    public WritableRowRedirection getRowRedirectionForTable(int tableNumber) {
-        return new LongColumnSourceWritableRowRedirection(redirectionSources.get(tableNumber));
+    public RowRedirection getRowRedirectionForTable(int tableNumber) {
+        return new LongColumnSourceRowRedirection<>(redirectionSources.get(tableNumber));
     }
 
     @Override

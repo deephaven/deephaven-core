@@ -10,6 +10,7 @@ import io.deephaven.engine.rowset.RowSetFactory;
 import io.deephaven.engine.rowset.RowSetShiftData;
 import io.deephaven.engine.rowset.WritableRowSet;
 import io.deephaven.engine.table.*;
+import io.deephaven.engine.table.impl.by.BitmapRandomBuilder;
 import io.deephaven.engine.table.impl.by.typed.TypedHasherFactory;
 import io.deephaven.engine.table.impl.multijoin.IncrementalMultiJoinStateManagerTypedBase;
 import io.deephaven.engine.table.impl.multijoin.StaticMultiJoinStateManagerTypedBase;
@@ -38,7 +39,7 @@ public class MultiJoinTableImpl implements MultiJoinTable {
 
     private final List<String> keyColumns;
 
-    private class JoinInputHelper {
+    private static class JoinInputHelper {
         Table table;
 
         /** The output column keys in in order provided by the MutiJoinInput */
@@ -202,7 +203,7 @@ public class MultiJoinTableImpl implements MultiJoinTable {
             joinInputHelpers[ii].assertCompatible(joinInputHelpers[0], ii);
         }
 
-        // Gather and verify the non-key output columns
+        // Verify the non-key output columns do not conflict.
         for (int ii = 0; ii < joinInputHelpers.length; ++ii) {
             JoinInputHelper helper = joinInputHelpers[ii];
             for (String columnName : helper.addColumnNames) {
@@ -218,15 +219,14 @@ public class MultiJoinTableImpl implements MultiJoinTable {
         }
 
         if (multiJoinInputs[0].columnsToMatch().length == 0) {
-            table = doMultiJoinZeroKey(joinInputHelpers, usedColumns);
+            table = doMultiJoinZeroKey(joinInputHelpers);
             return;
         }
-        table = bucketedMultiJoin(joinControl, joinInputHelpers, usedColumns);
+        table = bucketedMultiJoin(joinControl, joinInputHelpers);
     }
 
     private Table bucketedMultiJoin(@NotNull final JoinControl joinControl,
-            @NotNull final JoinInputHelper[] joinInputHelpers,
-            @NotNull final TObjectIntHashMap<String> usedColumns) {
+            @NotNull final JoinInputHelper[] joinInputHelpers) {
 
         final MultiJoinStateManager stateManager;
         final String[] firstKeyColumnNames = joinInputHelpers[0].keyColumnNames;
@@ -259,10 +259,10 @@ public class MultiJoinTableImpl implements MultiJoinTable {
 
         final Map<String, ColumnSource<?>> resultSources = new LinkedHashMap<>();
 
-        final ColumnSource[] keyHashTableSources = stateManager.getKeyHashTableSources();
-        final ColumnSource[] originalColumns = joinInputHelpers[0].originalKeySources();
+        final ColumnSource<?>[] keyHashTableSources = stateManager.getKeyHashTableSources();
+        final ColumnSource<?>[] originalColumns = joinInputHelpers[0].originalKeySources();
 
-        // We are careful to add the output columns in the order from the first table input.
+        // We are careful to add the output key columns in the order of the first table input.
         for (int cc = 0; cc < keyColumns.size(); ++cc) {
             if (originalColumns[cc].getType() != keyHashTableSources[cc].getType()) {
                 resultSources.put(keyColumns.get(cc),
@@ -275,7 +275,8 @@ public class MultiJoinTableImpl implements MultiJoinTable {
         for (int tableNumber = 0; tableNumber < joinInputHelpers.length; ++tableNumber) {
             final RowRedirection rowRedirection = stateManager.getRowRedirectionForTable(tableNumber);
             if (refreshing) {
-                rowRedirection.writableCast().startTrackingPrevValues();
+                ((IncrementalMultiJoinStateManagerTypedBase) stateManager)
+                        .startTrackingPrevRedirectionValues(tableNumber);
             }
             final JoinInputHelper helper = joinInputHelpers[tableNumber];
             for (final JoinAddition ja : helper.columnsToAdd) {
@@ -330,8 +331,7 @@ public class MultiJoinTableImpl implements MultiJoinTable {
         return result;
     }
 
-    private static Table doMultiJoinZeroKey(@NotNull final JoinInputHelper[] joinInputHelpers,
-            @NotNull final TObjectIntHashMap<String> usedColumns) {
+    private static Table doMultiJoinZeroKey(@NotNull final JoinInputHelper[] joinInputHelpers) {
         final SingleValueRowRedirection[] redirections = new SingleValueRowRedirection[joinInputHelpers.length];
         final boolean refreshing = Arrays.stream(joinInputHelpers).anyMatch(ih -> ih.table.isRefreshing());
 
@@ -526,9 +526,9 @@ public class MultiJoinTableImpl implements MultiJoinTable {
             final boolean[] modifiedTables = new boolean[tableCount];
             final boolean[] modifiedTablesOnThisRow = new boolean[tableCount];
 
-            final RowSetBuilderRandom modifiedBuilder = RowSetFactory.builderRandom();
-            final RowSetBuilderRandom emptiedBuilder = RowSetFactory.builderRandom();
-            final RowSetBuilderRandom reincarnatedBuilder = RowSetFactory.builderRandom();
+            final RowSetBuilderRandom modifiedBuilder = new BitmapRandomBuilder((int) newSize);
+            final RowSetBuilderRandom emptiedBuilder = new BitmapRandomBuilder((int) newSize);
+            final RowSetBuilderRandom reincarnatedBuilder = new BitmapRandomBuilder((int) newSize);
 
             downstream.modifiedColumnSet = result.getModifiedColumnSetForUpdates();
             downstream.modifiedColumnSet.clear();

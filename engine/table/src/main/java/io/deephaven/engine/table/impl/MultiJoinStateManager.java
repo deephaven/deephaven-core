@@ -2,7 +2,7 @@ package io.deephaven.engine.table.impl;
 
 import io.deephaven.engine.table.ColumnSource;
 import io.deephaven.engine.table.Table;
-import io.deephaven.engine.table.impl.util.WritableRowRedirection;
+import io.deephaven.engine.table.impl.util.RowRedirection;
 
 /**
  * This is a common interface for the static and incremental state manager so that our bucketed MultiJoinTable system is
@@ -31,12 +31,12 @@ public interface MultiJoinStateManager {
     ColumnSource<?>[] getKeyHashTableSources();
 
     /**
-     * Get the result {@link WritableRowRedirection row redirection} for a given table
+     * Get the result {@link RowRedirection row redirection} for a given table
      *
      * @param tableNumber the table to fetch
      * @return the row redirection for the table
      */
-    WritableRowRedirection getRowRedirectionForTable(int tableNumber);
+    RowRedirection getRowRedirectionForTable(int tableNumber);
 
     /**
      * Ensure that this state manager can handle {@code numTables} tables as constituents of the multiJoin.

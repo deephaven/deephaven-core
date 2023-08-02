@@ -119,8 +119,8 @@ public class HasherConfig<T> {
         final ParameterSpec[] params;
 
         public BuildSpec(String name, String stateValueName, boolean requiresRowKeyChunk,
-                         boolean allowAlternates, FoundMethodBuilder found,
-                         MethodBuilder insert, ParameterSpec... params) {
+                boolean allowAlternates, FoundMethodBuilder found,
+                MethodBuilder insert, ParameterSpec... params) {
             // Convert the BiConsumer to our MethodBuilderWithChunkTypes.
             this(name,
                     stateValueName,
@@ -132,8 +132,8 @@ public class HasherConfig<T> {
         }
 
         public BuildSpec(String name, String stateValueName, boolean requiresRowKeyChunk,
-                         boolean allowAlternates, FoundMethodBuilder found,
-                         MethodBuilderWithChunkTypes insert, ParameterSpec... params) {
+                boolean allowAlternates, FoundMethodBuilder found,
+                MethodBuilderWithChunkTypes insert, ParameterSpec... params) {
             this.name = name;
             this.stateValueName = stateValueName;
             this.requiresRowKeyChunk = requiresRowKeyChunk;
