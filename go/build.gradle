@@ -86,5 +86,5 @@ def testGoClient = Docker.registerDockerTask(project, 'testGoClient') {
     parentContainers = [ Docker.registryTask(project, 'go') ]
     entrypoint = ['./go-test-to-junit.sh', '/out/go-test.xml', '/out/go.log']
 }
-deephavenDocker.shouldLogIfTaskFails tasks.named('testGoClientRun')
+deephavenDocker.shouldLogIfTaskFails testGoClient
 tasks.check.dependsOn(testGoClient)

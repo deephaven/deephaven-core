@@ -314,7 +314,7 @@ class Docker {
             }
 
             // Note that if "showLogsOnSuccess" is true, we don't run this way, since that would omit logs when cached.
-            def buildAndRun = project.tasks.register("${taskName}Run", CombinedDockerRunTask) { cacheableDockerTask ->
+            def buildAndRun = project.tasks.register(taskName, CombinedDockerRunTask) { cacheableDockerTask ->
                 cacheableDockerTask.with {
                     // mark inputs, depend on dockerfile task and input sync task
                     inputs.files(makeImage.get().outputs.files)
@@ -349,12 +349,7 @@ class Docker {
                 }
             }
 
-            return project.tasks.register(taskName) { task ->
-                task.with {
-                    dependsOn buildAndRun
-                    outputs.files syncAfterBuildAndRun.get().outputs.files
-                }
-            }
+            return buildAndRun
         }
         // With no outputs, we can use the standard individual containers, and gradle will have to re-run each time
         // the task is invoked, can never be marked as up to date.
