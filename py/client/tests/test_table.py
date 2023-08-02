@@ -5,11 +5,12 @@
 import time
 import unittest
 
+import numpy as np
 from pyarrow import csv
 
 from pydeephaven import DHError
 from pydeephaven import SortDirection
-from pydeephaven.agg import sum_, avg, pct, weighted_avg, count_, partition
+from pydeephaven.agg import sum_, avg, pct, weighted_avg, count_, partition, median, unique, count_distinct, distinct
 from pydeephaven.table import Table
 from tests.testbase import BaseTestCase
 
@@ -23,6 +24,19 @@ class TableTestCase(BaseTestCase):
         table = self.session.empty_table(10)
         table.close()
         self.assertTrue(table.is_closed)
+
+    def test_time_table(self):
+        SEC_TO_NS = 1_000_000_000
+        periods = [10 * SEC_TO_NS, 300 * SEC_TO_NS, "PT10S", "PT00:05:00.000"]
+        start_times = [None, "2023-01-01T11:00 ET", "2023-02-01T11:00:34.001 PT"]
+
+        for p in periods:
+            for st in start_times:
+                t = self.session.time_table(period=p, start_time=st)
+                column_specs = ["Col1 = i", "Col2 = i * 2"]
+                t2 = t.update(formulas=column_specs)
+                # time table has a default timestamp column
+                self.assertEqual(len(column_specs) + 1, len(t2.schema))
 
     def test_update(self):
         t = self.session.time_table(period=10000000)
@@ -87,6 +101,14 @@ class TableTestCase(BaseTestCase):
         pa_table = csv.read_csv(self.csv_file)
         test_table = self.session.import_table(pa_table)
         sorted_table = test_table.sort(order_by=["a", "b"], order=[SortDirection.DESCENDING])
+        df = sorted_table.to_arrow().to_pandas()
+
+        self.assertTrue(df.iloc[:, 0].is_monotonic_decreasing)
+
+    def test_sort_desc(self):
+        pa_table = csv.read_csv(self.csv_file)
+        test_table = self.session.import_table(pa_table)
+        sorted_table = test_table.sort_descending(order_by=["a", "b"])
         df = sorted_table.to_arrow().to_pandas()
 
         self.assertTrue(df.iloc[:, 0].is_monotonic_decreasing)
@@ -293,6 +315,41 @@ class TableTestCase(BaseTestCase):
         pa_table = csv.read_csv(self.csv_file)
         test_table = self.session.import_table(pa_table).drop_columns(["e"])
         self.assertEqual(len(test_table.schema), len(test_table.meta_table.to_arrow()))
+
+    def test_agg_with_options(self):
+        pa_table = csv.read_csv(self.csv_file)
+        test_table = self.session.import_table(pa_table).update(["b = a % 10 > 5 ? null : b", "c = c % 10",
+                                                                 "d = (char)i"])
+
+        aggs = [
+            median(cols=["ma = a", "mb = b"], average_evenly_divided=False),
+            pct(0.20, cols=["pa = a", "pb = b"], average_evenly_divided=True),
+            unique(cols=["ua = a", "ub = b"], include_nulls=True, non_unique_sentinel=np.int16(-1)),
+            unique(cols=["ud = d"], include_nulls=True, non_unique_sentinel=np.uint16(128)),
+            count_distinct(cols=["csa = a", "csb = b"], count_nulls=True),
+            distinct(cols=["da = a", "db = b"], include_nulls=True),
+            ]
+        rt = test_table.agg_by(aggs=aggs, by=["c"])
+        self.assertEqual(rt.size, test_table.select_distinct(["c"]).size)
+
+        with self.assertRaises(TypeError):
+            aggs = [unique(cols=["ua = a", "ub = b"], include_nulls=True, non_unique_sentinel=np.uint32(-1))]
+
+        aggs_default = [
+            median(cols=["ma = a", "mb = b"]),
+            pct(0.20, cols=["pa = a", "pb = b"]),
+            unique(cols=["ua = a", "ub = b"]),
+            count_distinct(cols=["csa = a", "csb = b"]),
+            distinct(cols=["da = a", "db = b"]),
+        ]
+
+        for agg_option, agg_default in zip(aggs, aggs_default):
+            with self.subTest(agg_option):
+                rt_option = test_table.agg_by(aggs=agg_option, by=["c"])
+                rt_default = test_table.agg_by(aggs=agg_default, by=["c"])
+                pa_table1 = rt_option.to_arrow()
+                pa_table2 = rt_default.to_arrow()
+                self.assertNotEqual(pa_table2, pa_table1)
 
 
 if __name__ == '__main__':

@@ -1078,8 +1078,8 @@ class Table(JObjectWrapper):
             raise DHError(e, "table restrict_sort_to operation failed.") from e
 
     def sort_descending(self, order_by: Union[str, Sequence[str]]) -> Table:
-        """The sort_descending method creates a new table where rows in a table are sorted in a largest to smallest
-        order based on the order_by column(s).
+        """The sort_descending method creates a new table where rows in a table are sorted in descending order based on
+        the order_by column(s).
 
         Args:
             order_by (Union[str, Sequence[str]], optional): the column name(s)
@@ -2445,17 +2445,17 @@ class PartitionedTable(JObjectWrapper):
         """The sort method creates a new partitioned table where the rows are ordered based on values in a specified
         set of columns. Sort can not use the constituent column.
 
-         Args:
-             order_by (Union[str, Sequence[str]]): the column(s) to be sorted on.  Can't include the constituent column.
-             order (Union[SortDirection, Sequence[SortDirection], optional): the corresponding sort directions for
+        Args:
+            order_by (Union[str, Sequence[str]]): the column(s) to be sorted on.  Can't include the constituent column.
+            order (Union[SortDirection, Sequence[SortDirection], optional): the corresponding sort directions for
                 each sort column, default is None, meaning ascending order for all the sort columns.
 
-         Returns:
-             a new PartitionedTable
+        Returns:
+            a new PartitionedTable
 
-         Raises:
-             DHError
-         """
+        Raises:
+            DHError
+        """
 
         try:
             order_by = to_sequence(order_by)

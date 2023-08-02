@@ -9,17 +9,23 @@ import io.deephaven.configuration.Configuration;
 import io.deephaven.hash.KeyedIntObjectHashMap;
 import io.deephaven.hash.KeyedIntObjectKey;
 import io.deephaven.io.logger.Logger;
+import io.deephaven.kafka.KafkaTools.ConsumerLoopCallback;
+import io.deephaven.kafka.KafkaTools.InitialOffsetLookup;
+import io.deephaven.util.annotations.InternalUseOnly;
 import org.apache.kafka.clients.consumer.ConsumerRecord;
 import org.apache.kafka.clients.consumer.ConsumerRecords;
 import org.apache.kafka.clients.consumer.KafkaConsumer;
 import org.apache.kafka.common.TopicPartition;
 import org.apache.kafka.common.errors.WakeupException;
+import org.apache.kafka.common.serialization.Deserializer;
 import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
 
 import java.text.DecimalFormat;
 import java.time.Duration;
 import java.util.Collections;
 import java.util.List;
+import java.util.Objects;
 import java.util.Properties;
 import java.util.function.Function;
 import java.util.function.IntPredicate;
@@ -28,7 +34,12 @@ import java.util.function.IntToLongFunction;
 /**
  * An ingester that consumes an Apache Kafka topic and a subset of its partitions via one or more
  * {@link KafkaRecordConsumer stream consumers}.
+ *
+ * <p>
+ * This class is an internal implementation detail for io.deephaven.kafka; is not intended to be used directly by client
+ * code. It lives in a separate package as a means of code organization.
  */
+@InternalUseOnly
 public class KafkaIngester {
     private static final int REPORT_INTERVAL_MS = Configuration.getInstance().getIntegerForClassWithDefault(
             KafkaIngester.class, "reportIntervalMs", 60_000);
@@ -49,6 +60,9 @@ public class KafkaIngester {
                     return topicPartition.partition();
                 }
             });
+
+    @Nullable
+    private final ConsumerLoopCallback consumerLoopCallback;
 
     private long messagesProcessed = 0;
     private long bytesProcessed = 0;
@@ -154,38 +168,17 @@ public class KafkaIngester {
         }
     }
 
-    /**
-     * Creates a Kafka ingester for all partitions of a given topic.
-     *
-     * @param log A log for output
-     * @param props The properties used to create the {@link KafkaConsumer}
-     * @param topic The topic to replicate
-     * @param partitionToStreamConsumer A function implementing a mapping from partition to its consumer of records. The
-     *        function will be invoked once per partition at construction; implementations should internally defer
-     *        resource allocation until first call to {@link KafkaRecordConsumer#consume(List)} or
-     *        {@link KafkaRecordConsumer#acceptFailure(Throwable)} if appropriate.
-     * @param partitionToInitialSeekOffset A function implementing a mapping from partition to its initial seek offset,
-     *        or -1 if seek to beginning is intended.
-     */
-    public KafkaIngester(
-            @NotNull final Logger log,
-            @NotNull final Properties props,
-            @NotNull final String topic,
-            @NotNull final Function<TopicPartition, KafkaRecordConsumer> partitionToStreamConsumer,
-            @NotNull final IntToLongFunction partitionToInitialSeekOffset) {
-        this(log, props, topic, ALL_PARTITIONS, partitionToStreamConsumer, partitionToInitialSeekOffset);
-    }
 
-    public static long SEEK_TO_BEGINNING = -1;
-    public static long DONT_SEEK = -2;
-    public static long SEEK_TO_END = -3;
-    public static IntToLongFunction ALL_PARTITIONS_SEEK_TO_BEGINNING = (int p) -> SEEK_TO_BEGINNING;
-    public static IntToLongFunction ALL_PARTITIONS_DONT_SEEK = (int p) -> DONT_SEEK;
-    public static IntToLongFunction ALL_PARTITIONS_SEEK_TO_END = (int p) -> SEEK_TO_END;
+    public static final long SEEK_TO_BEGINNING = -1;
+    public static final long DONT_SEEK = -2;
+    public static final long SEEK_TO_END = -3;
+    public static final IntToLongFunction ALL_PARTITIONS_SEEK_TO_BEGINNING = (int p) -> SEEK_TO_BEGINNING;
+    public static final IntToLongFunction ALL_PARTITIONS_DONT_SEEK = (int p) -> DONT_SEEK;
+    public static final IntToLongFunction ALL_PARTITIONS_SEEK_TO_END = (int p) -> SEEK_TO_END;
 
     /**
      * Creates a Kafka ingester for the given topic.
-     * 
+     *
      * @param log A log for output
      * @param props The properties used to create the {@link KafkaConsumer}
      * @param topic The topic to replicate
@@ -196,20 +189,30 @@ public class KafkaIngester {
      *        {@link KafkaRecordConsumer#acceptFailure(Throwable)} if appropriate.
      * @param partitionToInitialSeekOffset A function implementing a mapping from partition to its initial seek offset,
      *        or -1 if seek to beginning is intended.
+     * @param keyDeserializer, the key deserializer, see
+     *        {@link KafkaConsumer#KafkaConsumer(Properties, Deserializer, Deserializer)}
+     * @param valueDeserializer, the value deserializer, see
+     *        {@link KafkaConsumer#KafkaConsumer(Properties, Deserializer, Deserializer)}
+     * @param consumerLoopCallback the consumer loop callback
      */
-    @SuppressWarnings("rawtypes")
     public KafkaIngester(
             @NotNull final Logger log,
             @NotNull final Properties props,
             @NotNull final String topic,
             @NotNull final IntPredicate partitionFilter,
             @NotNull final Function<TopicPartition, KafkaRecordConsumer> partitionToStreamConsumer,
-            @NotNull final IntToLongFunction partitionToInitialSeekOffset) {
+            @NotNull final InitialOffsetLookup partitionToInitialSeekOffset,
+            @NotNull final Deserializer<?> keyDeserializer,
+            @NotNull final Deserializer<?> valueDeserializer,
+            @Nullable final ConsumerLoopCallback consumerLoopCallback) {
         this.log = log;
         this.topic = topic;
         partitionDescription = partitionFilter.toString();
         logPrefix = KafkaIngester.class.getSimpleName() + "(" + topic + ", " + partitionDescription + "): ";
-        kafkaConsumer = new KafkaConsumer(props);
+        kafkaConsumer = new KafkaConsumer<>(props,
+                Objects.requireNonNull(keyDeserializer),
+                Objects.requireNonNull(valueDeserializer));
+        this.consumerLoopCallback = consumerLoopCallback;
 
         kafkaConsumer.partitionsFor(topic).stream().filter(pi -> partitionFilter.test(pi.partition()))
                 .map(pi -> new TopicPartition(topic, pi.partition()))
@@ -220,7 +223,8 @@ public class KafkaIngester {
         assign();
 
         for (final TopicPartition topicPartition : assignedPartitions) {
-            final long seekOffset = partitionToInitialSeekOffset.applyAsLong(topicPartition.partition());
+            final long seekOffset =
+                    partitionToInitialSeekOffset.getInitialOffset(kafkaConsumer, topicPartition);
             if (seekOffset == SEEK_TO_BEGINNING) {
                 log.info().append(logPrefix).append(topicPartition.toString()).append(" seeking to beginning.")
                         .append(seekOffset).endl();
@@ -281,7 +285,31 @@ public class KafkaIngester {
             }
             final long beforePoll = System.nanoTime();
             final long remainingNanos = beforePoll > nextReport ? 0 : (nextReport - beforePoll);
-            boolean more = pollOnce(Duration.ofNanos(remainingNanos));
+
+            boolean more = true;
+            if (consumerLoopCallback != null) {
+                try {
+                    consumerLoopCallback.beforePoll(kafkaConsumer);
+                } catch (Exception e) {
+                    log.error().append(logPrefix).append("Exception while executing beforePoll callback:").append(e)
+                            .append(", aborting.").endl();
+                    notifyAllConsumersOnFailure(e);
+                    more = false;
+                }
+            }
+            if (more) {
+                more = pollOnce(Duration.ofNanos(remainingNanos));
+                if (consumerLoopCallback != null) {
+                    try {
+                        consumerLoopCallback.afterPoll(kafkaConsumer, more);
+                    } catch (Exception e) {
+                        log.error().append(logPrefix).append("Exception while executing afterPoll callback:").append(e)
+                                .append(", aborting.").endl();
+                        notifyAllConsumersOnFailure(e);
+                        more = false;
+                    }
+                }
+            }
             if (!more) {
                 log.error().append(logPrefix)
                         .append("Stopping due to errors (").append(messagesWithErr)
@@ -331,6 +359,7 @@ public class KafkaIngester {
         } catch (Exception ex) {
             log.error().append(logPrefix).append("Exception while polling for Kafka messages:").append(ex)
                     .append(", aborting.").endl();
+            notifyAllConsumersOnFailure(ex);
             return false;
         }
 
@@ -372,6 +401,16 @@ public class KafkaIngester {
             messagesProcessed += partitionRecords.size();
         }
         return true;
+    }
+
+    private void notifyAllConsumersOnFailure(Exception ex) {
+        final KafkaRecordConsumer[] allConsumers;
+        synchronized (streamConsumers) {
+            allConsumers = streamConsumers.valueCollection().toArray(KafkaRecordConsumer[]::new);
+        }
+        for (final KafkaRecordConsumer streamConsumer : allConsumers) {
+            streamConsumer.acceptFailure(ex);
+        }
     }
 
     public void shutdown() {
