@@ -74,6 +74,14 @@ public interface ObjectType extends Plugin {
 
     interface Exporter {
 
+        /**
+         * Creates a new reference for the provided object. A reference will be created and the object exported even if
+         * the object has no corresponding plugin provided, granting the client the ability to reference the object on
+         * later calls, and requiring that they release it when no longer needed.
+         *
+         * @param object the object
+         * @return the reference
+         */
         default Reference reference(Object object) {
             // noinspection OptionalGetWithoutIsPresent
             return reference(object, true, true).get();
@@ -84,12 +92,15 @@ public interface ObjectType extends Plugin {
          * otherwise creates a new one. If {@code allowUnknownType} is {@code false}, and no type can be found, no
          * reference will be created. Uses reference-based equality.
          *
+         * @deprecated Please use {@link #reference(Object)} instead - as of 0.27.0, the parameters allowUnknownType and
+         *             forceNew can only be set to true going forward.
+         *
          * @param object the object
          * @param allowUnknownType if an unknown-typed reference can be created
          * @param forceNew if a new reference should be created
          * @return the reference
          */
-        @Deprecated
+        @Deprecated(since = "0.27.0")
         Optional<Reference> reference(Object object, boolean allowUnknownType, boolean forceNew);
 
         /**
@@ -97,13 +108,16 @@ public interface ObjectType extends Plugin {
          * otherwise creates a new one. If {@code allowUnknownType} is {@code false}, and no type can be found, no
          * reference will be created.
          *
+         * @deprecated Please use {@link #reference(Object)} instead - as of 0.27.0, the parameters allowUnknownType and
+         *             forceNew can only be set to true going forward.
+         *
          * @param object the object
          * @param allowUnknownType if an unknown-typed reference can be created
          * @param forceNew if a new reference should be created
          * @param equals the equals logic
          * @return the reference
          */
-        @Deprecated
+        @Deprecated(since = "0.27.0")
         Optional<Reference> reference(Object object, boolean allowUnknownType, boolean forceNew,
                 BiPredicate<Object, Object> equals);
 
@@ -125,7 +139,7 @@ public interface ObjectType extends Plugin {
              * @deprecated As of 0.27.0, this will always return empty.
              * @return the type, if present
              */
-            @Deprecated
+            @Deprecated(since = "0.27.0")
             default Optional<String> type() {
                 return Optional.empty();
             }

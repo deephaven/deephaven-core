@@ -11,6 +11,7 @@ import io.deephaven.plugin.type.ObjectType;
 import io.deephaven.plugin.type.ObjectTypeLookup;
 import io.deephaven.proto.backplane.grpc.*;
 import io.deephaven.proto.util.Exceptions;
+import io.deephaven.server.grpc.GrpcErrorHelper;
 import io.deephaven.server.session.SessionService;
 import io.deephaven.server.session.SessionState;
 import io.deephaven.server.session.SessionState.ExportObject;
@@ -58,6 +59,7 @@ public class ObjectServiceGrpcImpl extends ObjectServiceGrpc.ObjectServiceImplBa
 
         @Override
         public void onNext(final StreamRequest request) {
+            GrpcErrorHelper.checkHasOneOf(request, "connect");
             if (request.hasConnect()) {
                 // Should only appear in the first request
                 if (this.object != null) {
@@ -108,8 +110,6 @@ public class ObjectServiceGrpcImpl extends ObjectServiceGrpc.ObjectServiceImplBa
                             // recover? Would be useful if the plugin is complex
                             messageStream.onData(data.getPayload().asReadOnlyByteBuffer(), objs);
                         });
-            } else {
-                // Do something with unexpected message type?
             }
         }
 
@@ -231,7 +231,6 @@ public class ObjectServiceGrpcImpl extends ObjectServiceGrpc.ObjectServiceImplBa
 
         @Override
         public void onData(ByteBuffer message, Object[] references) {
-
             Data.Builder payload = Data.newBuilder().setPayload(ByteString.copyFrom(message));
 
             List<ExportObject<?>> exports = new ArrayList<>();
