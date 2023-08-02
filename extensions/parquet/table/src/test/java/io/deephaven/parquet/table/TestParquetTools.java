@@ -216,34 +216,34 @@ public class TestParquetTools {
             TestCase.fail("Expected exception");
         } catch (TableDataException expected) {
         }
-        // try {
-        // ParquetTools.writeTables(new Table[] {source}, source.getDefinition(), new File[] {dest});
-        // TestCase.fail("Expected exception");
-        // } catch (TableDataException expected) {
-        // }
+        try {
+            ParquetTools.writeTables(new Table[] {source}, source.getDefinition(), new File[] {dest});
+            TestCase.fail("Expected exception");
+        } catch (TableDataException expected) {
+        }
     }
 
-    // @Test
-    // public void testWriteTableMissingColumns() {
-    // // TODO (deephaven/deephaven-core/issues/321): Fix the apparent bug in the parquet table writer.
-    // final Table nullTable = TableTools.emptyTable(10_000L).updateView(
-    // "B = NULL_BYTE",
-    // "C = NULL_CHAR",
-    // "S = NULL_SHORT",
-    // "I = NULL_INT",
-    // "L = NULL_LONG",
-    // "F = NULL_FLOAT",
-    // "D = NULL_DOUBLE",
-    // "Bl = (Boolean) null",
-    // "Str = (String) null",
-    // "DT = (Instant) null");
-    // final File dest = new File(testRoot + File.separator + "Null.parquet");
-    // ParquetTools.writeTables(new Table[] {TableTools.emptyTable(10_000L)}, nullTable.getDefinition(),
-    // new File[] {dest});
-    // final Table result = ParquetTools.readTable(dest);
-    // assertTableEquals(nullTable, result);
-    // result.close();
-    // }
+    @Test
+    public void testWriteTableMissingColumns() {
+        // TODO (deephaven/deephaven-core/issues/321): Fix the apparent bug in the parquet table writer.
+        final Table nullTable = TableTools.emptyTable(10_000L).updateView(
+                "B = NULL_BYTE",
+                "C = NULL_CHAR",
+                "S = NULL_SHORT",
+                "I = NULL_INT",
+                "L = NULL_LONG",
+                "F = NULL_FLOAT",
+                "D = NULL_DOUBLE",
+                "Bl = (Boolean) null",
+                "Str = (String) null",
+                "DT = (Instant) null");
+        final File dest = new File(testRoot + File.separator + "Null.parquet");
+        ParquetTools.writeTables(new Table[] {TableTools.emptyTable(10_000L)}, nullTable.getDefinition(),
+                new File[] {dest});
+        final Table result = ParquetTools.readTable(dest);
+        assertTableEquals(nullTable, result);
+        result.close();
+    }
 
     @Test
     public void testWriteTableExceptions() throws IOException {

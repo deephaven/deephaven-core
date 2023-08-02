@@ -6,6 +6,7 @@ package io.deephaven.parquet.table;
 import io.deephaven.UncheckedDeephavenException;
 import io.deephaven.api.Selectable;
 import io.deephaven.base.FileUtils;
+import io.deephaven.chunk.WritableShortChunk;
 import io.deephaven.engine.context.ExecutionContext;
 import io.deephaven.engine.primitive.iterator.CloseableIterator;
 import io.deephaven.engine.table.ColumnDefinition;
@@ -429,12 +430,27 @@ public class ParquetTableReadWriteTest {
                 .dropColumns("bdColE");
     }
 
+
+    // Following is used for testing both writing APIs for parquet tables
+    private interface ParquetTableWriter {
+        void writeTable(final Table table, final File destFile);
+    }
+
+    ParquetTableWriter singleWriter = (table, destFile) -> ParquetTools.writeTable(table, destFile);
+    ParquetTableWriter multiWriter = (table, destFile) -> ParquetTools.writeTables(new Table[] {table},
+            table.getDefinition(), new File[] {destFile});
+
     /**
      * These are tests for writing a table to a parquet file and making sure there are no unnecessary files left in the
      * directory after we finish writing.
      */
     @Test
     public void basicWriteTests() {
+        basicWriteTestsImpl(singleWriter);
+        basicWriteTestsImpl(multiWriter);
+    }
+
+    private void basicWriteTestsImpl(ParquetTableWriter writer) {
         // Create an empty parent directory
         final File parentDir = new File(rootFile, "tempDir");
         parentDir.mkdir();
@@ -444,7 +460,7 @@ public class ParquetTableReadWriteTest {
         final Table tableToSave = TableTools.emptyTable(5).update("A=(int)i", "B=(long)i", "C=(double)i");
         final String filename = "basicWriteTests.parquet";
         final File destFile = new File(parentDir, filename);
-        ParquetTools.writeTable(tableToSave, destFile);
+        writer.writeTable(tableToSave, destFile);
         String[] filesInDir = parentDir.list();
         assertTrue(filesInDir.length == 1 && filesInDir[0].equals(filename));
         Table fromDisk = ParquetTools.readTable(destFile);
@@ -454,7 +470,7 @@ public class ParquetTableReadWriteTest {
         final Table badTable = TableTools.emptyTable(5)
                 .updateView("InputString = ii % 2 == 0 ? Long.toString(ii) : null", "A=InputString.charAt(0)");
         try {
-            ParquetTools.writeTable(badTable, destFile);
+            writer.writeTable(badTable, destFile);
             TestCase.fail("Exception expected for invalid formula");
         } catch (RuntimeException expected) {
         }
@@ -466,7 +482,7 @@ public class ParquetTableReadWriteTest {
 
         // Write a new table successfully at the same path
         final Table newTableToSave = TableTools.emptyTable(5).update("A=(int)i");
-        ParquetTools.writeTable(newTableToSave, destFile);
+        writer.writeTable(newTableToSave, destFile);
         filesInDir = parentDir.list();
         final File backupFile = ParquetTools.getBackupFile(destFile);
         final String backupFileName = backupFile.getName();
@@ -483,6 +499,11 @@ public class ParquetTableReadWriteTest {
      */
     @Test
     public void groupingColumnsBasicWriteTests() {
+        groupingColumnsBasicWriteTestsImpl(singleWriter);
+        groupingColumnsBasicWriteTestsImpl(multiWriter);
+    }
+
+    public void groupingColumnsBasicWriteTestsImpl(ParquetTableWriter writer) {
         // Create an empty parent directory
         final File parentDir = new File(rootFile, "tempDir");
         parentDir.mkdir();
@@ -499,7 +520,7 @@ public class ParquetTableReadWriteTest {
         // data
         final String destFilename = "groupingColumnsWriteTests.parquet";
         final File destFile = new File(parentDir, destFilename);
-        ParquetTools.writeTable(tableToSave, destFile);
+        writer.writeTable(tableToSave, destFile);
         String[] filesInDir = parentDir.list();
         String vvvGroupingFilename = ParquetTools.defaultGroupingFileName(destFilename).apply("vvv");
         assertTrue(filesInDir.length == 2 && Arrays.asList(filesInDir).contains(destFilename)
@@ -517,7 +538,7 @@ public class ParquetTableReadWriteTest {
         final Table badTable = TableTools.newTable(badTableDefinition, TableTools.col("www", data))
                 .updateView("InputString = ii % 2 == 0 ? Long.toString(ii) : null", "A=InputString.charAt(0)");
         try {
-            ParquetTools.writeTable(badTable, destFile);
+            writer.writeTable(badTable, destFile);
             TestCase.fail("Exception expected for invalid formula");
         } catch (RuntimeException expected) {
         }
@@ -533,6 +554,11 @@ public class ParquetTableReadWriteTest {
 
     @Test
     public void groupingColumnsOverwritingTests() {
+        groupingColumnsOverwritingTestsImpl(singleWriter);
+        groupingColumnsOverwritingTestsImpl(multiWriter);
+    }
+
+    public void groupingColumnsOverwritingTestsImpl(ParquetTableWriter writer) {
         // Create an empty parent directory
         final File parentDir = new File(rootFile, "tempDir");
         parentDir.mkdir();
@@ -547,14 +573,14 @@ public class ParquetTableReadWriteTest {
 
         final String destFilename = "groupingColumnsWriteTests.parquet";
         final File destFile = new File(parentDir, destFilename);
-        ParquetTools.writeTable(tableToSave, destFile);
+        writer.writeTable(tableToSave, destFile);
         String[] filesInDir = parentDir.list();
         String vvvGroupingFilename = ParquetTools.defaultGroupingFileName(destFilename).apply("vvv");
 
         // Write a new table successfully at the same position with different grouping columns
         final TableDefinition anotherTableDefinition = TableDefinition.of(ColumnDefinition.ofInt("xxx").withGrouping());
         Table anotherTableToSave = TableTools.newTable(anotherTableDefinition, TableTools.col("xxx", data));
-        ParquetTools.writeTable(anotherTableToSave, destFile);
+        writer.writeTable(anotherTableToSave, destFile);
         filesInDir = parentDir.list();
         final String xxxGroupingFilename = ParquetTools.defaultGroupingFileName(destFilename).apply("xxx");
         final File backupDestFile = ParquetTools.getBackupFile(destFile);
@@ -577,7 +603,7 @@ public class ParquetTableReadWriteTest {
         assertTrue(metadataString.contains(vvvGroupingFilename) && !metadataString.contains(xxxGroupingFilename));
 
         // Overwrite the table
-        ParquetTools.writeTable(anotherTableToSave, destFile);
+        writer.writeTable(anotherTableToSave, destFile);
 
         // The directory should now contain all older files and one backup grouping file
         filesInDir = parentDir.list();
@@ -596,7 +622,7 @@ public class ParquetTableReadWriteTest {
                 && !metadataString.contains(backupXXXGroupingFileName));
 
         // Overwrite the table again, the directory should still have 5 files
-        ParquetTools.writeTable(anotherTableToSave, destFile);
+        writer.writeTable(anotherTableToSave, destFile);
         filesInDir = parentDir.list();
         assertTrue(filesInDir.length == 5 && Arrays.asList(filesInDir).contains(destFilename)
                 && Arrays.asList(filesInDir).contains(backupDestFileName)
@@ -608,17 +634,22 @@ public class ParquetTableReadWriteTest {
 
     @Test
     public void readChangedUnderlyingFileTests() {
+        readChangedUnderlyingFileTestsImpl(singleWriter);
+        readChangedUnderlyingFileTestsImpl(multiWriter);
+    }
+
+    public void readChangedUnderlyingFileTestsImpl(ParquetTableWriter writer) {
         // Write a table to parquet file and read it back
         final Table tableToSave = TableTools.emptyTable(5).update("A=(int)i", "B=(long)i", "C=(double)i");
         final String filename = "readChangedUnderlyingFileTests.parquet";
         final File destFile = new File(rootFile, filename);
-        ParquetTools.writeTable(tableToSave, destFile);
+        writer.writeTable(tableToSave, destFile);
         Table fromDisk = ParquetTools.readTable(destFile);
         // At this point, fromDisk is not fully materialized in the memory and would be read from the file on demand
 
         // Change the underlying file
         final Table stringTable = TableTools.emptyTable(5).update("InputString = Long.toString(ii)");
-        ParquetTools.writeTable(stringTable, destFile);
+        writer.writeTable(stringTable, destFile);
         Table stringFromDisk = ParquetTools.readTable(destFile).select();
         TstUtils.assertTableEquals(stringTable, stringFromDisk);
 
@@ -636,11 +667,16 @@ public class ParquetTableReadWriteTest {
 
     @Test
     public void readModifyWriteTests() {
+        readModifyWriteTestsImpl(singleWriter);
+        readModifyWriteTestsImpl(multiWriter);
+    }
+
+    public void readModifyWriteTestsImpl(ParquetTableWriter writer) {
         // Write a table to parquet file and read it back
         final Table tableToSave = TableTools.emptyTable(5).update("A=(int)i", "B=(long)i", "C=(double)i");
         final String filename = "readModifyWriteTests.parquet";
         final File destFile = new File(rootFile, filename);
-        ParquetTools.writeTable(tableToSave, destFile);
+        writer.writeTable(tableToSave, destFile);
         Table fromDisk = ParquetTools.readTable(destFile);
         // At this point, fromDisk is not fully materialized in the memory and would be read from the file on demand
 
@@ -650,7 +686,7 @@ public class ParquetTableReadWriteTest {
         final Table badTable =
                 fromDisk.view("InputString = ii % 2 == 0 ? Long.toString(ii) : null", "A=InputString.charAt(0)");
         try {
-            ParquetTools.writeTable(badTable, destFile);
+            writer.writeTable(badTable, destFile);
             TestCase.fail();
         } catch (UncheckedDeephavenException e) {
             assertTrue(e.getCause() instanceof FormulaEvaluationException);

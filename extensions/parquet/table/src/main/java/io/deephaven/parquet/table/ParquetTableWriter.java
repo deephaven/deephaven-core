@@ -151,7 +151,9 @@ public class ParquetTableWriter {
         final File metadataFilePath;
 
         /**
-         * Destination path for writing the grouping file
+         * Destination path for writing the grouping file. The two filenames can differ because we write grouping files
+         * to shadow file paths first and then place them at the final path once the write is complete. But the metadata
+         * should always hold the accurate path.
          */
         final File destFile;
 
