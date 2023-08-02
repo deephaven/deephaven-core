@@ -46,18 +46,18 @@ public class ObjectServiceGrpcImpl extends ObjectServiceGrpc.ObjectServiceImplBa
     private final class SendMessageObserver extends SingletonLivenessManager implements StreamObserver<StreamRequest> {
 
         private ExportObject<Object> object;
+        private final SessionState session;
         private final StreamObserver<StreamResponse> responseObserver;
 
         private ObjectType.MessageStream messageStream;
 
-        private SendMessageObserver(StreamObserver<StreamResponse> responseObserver) {
+        private SendMessageObserver(SessionState session, StreamObserver<StreamResponse> responseObserver) {
+            this.session = session;
             this.responseObserver = responseObserver;
         }
 
         @Override
         public void onNext(final StreamRequest request) {
-            SessionState session = sessionService.getCurrentSession();
-
             if (request.hasConnect()) {
                 // Should only appear in the first request
                 if (this.object != null) {
@@ -80,12 +80,16 @@ public class ObjectServiceGrpcImpl extends ObjectServiceGrpc.ObjectServiceImplBa
 
                 this.object = object;
                 manage(this.object);
-                session.nonExport().require(object).onError(responseObserver).submit(() -> {
-                    final Object o = object.get();
-                    final ObjectType objectType = getObjectTypeInstance(type, o);
+                session.nonExport()
+                        .require(object)
+                        .onError(responseObserver)
+                        .submit(() -> {
+                            final Object o = object.get();
+                            final ObjectType objectType = getObjectTypeInstance(type, o);
 
-                    messageStream = objectType.clientConnection(o, new PluginMessageSender(responseObserver, session));
-                });
+                            messageStream =
+                                    objectType.clientConnection(o, new PluginMessageSender(responseObserver, session));
+                        });
             } else if (request.hasData()) {
                 // All other requests
                 Data data = request.getData();
@@ -94,12 +98,16 @@ public class ObjectServiceGrpcImpl extends ObjectServiceGrpc.ObjectServiceImplBa
                         .collect(Collectors.toList());
                 List<SessionState.ExportObject<Object>> requireObjects = new ArrayList<>(referenceObjects);
                 requireObjects.add(object);
-                session.nonExport().require(requireObjects).onError(responseObserver).submit(() -> {
-                    Object[] objs = referenceObjects.stream().map(ExportObject::get).toArray();
-                    // TODO: Should we try/catch this to recover/not close from plugin errors? Or make the client
-                    // recover? Would be useful if the plugin is complex
-                    messageStream.onData(data.getPayload().asReadOnlyByteBuffer(), objs);
-                });
+                session.nonExport()
+                        .require(requireObjects)
+                        .onError(responseObserver)
+                        .submit(() -> {
+                            Object[] objs = referenceObjects.stream().map(ExportObject::get).toArray();
+                            // TODO: Should we try/catch this to recover/not close from plugin errors? Or make the
+                            // client
+                            // recover? Would be useful if the plugin is complex
+                            messageStream.onData(data.getPayload().asReadOnlyByteBuffer(), objs);
+                        });
             } else {
                 // Do something with unexpected message type?
             }
@@ -179,9 +187,9 @@ public class ObjectServiceGrpcImpl extends ObjectServiceGrpc.ObjectServiceImplBa
     }
 
     @Override
-    public StreamObserver<StreamRequest> messageStream(
-            StreamObserver<StreamResponse> responseObserver) {
-        return new SendMessageObserver(responseObserver);
+    public StreamObserver<StreamRequest> messageStream(StreamObserver<StreamResponse> responseObserver) {
+        SessionState session = sessionService.getCurrentSession();
+        return new SendMessageObserver(session, responseObserver);
     }
 
     @NotNull

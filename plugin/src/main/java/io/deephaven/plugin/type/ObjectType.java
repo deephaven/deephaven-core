@@ -31,8 +31,8 @@ public interface ObjectType extends Plugin {
 
     /**
      * A stream of messages, either sent from the server to the client, or client to the server. ObjectType plugin
-     * implementations provide an instance of this interface for each incoming stream to invoke as messages
-     * arrive, and will likewise be given an instance of this interface to be able to send messages to the client.
+     * implementations provide an instance of this interface for each incoming stream to invoke as messages arrive, and
+     * will likewise be given an instance of this interface to be able to send messages to the client.
      */
     interface MessageStream {
         /**
