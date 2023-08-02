@@ -225,7 +225,8 @@ public class ParquetTools {
         deleteBackupFile(destFile);
         final File shadowDestFile = getShadowFile(destFile);
         final File firstCreated = prepareDestinationFileLocation(shadowDestFile);
-
+        ArrayList<File> cleanupFiles = new ArrayList<>();
+        ArrayList<File> rollbackFiles = new ArrayList<>();
         try {
             Map<String, ParquetTableWriter.GroupingColumnWritingInfo> groupingColumnWritingInfoMap = null;
             final String[] groupingColumnNames = definition.getGroupingColumnNamesArray();
@@ -238,25 +239,38 @@ public class ParquetTools {
                 groupingColumnWritingInfoMap =
                         groupingColumnInfoBuilderHelper(groupingColumnNames, parquetColumnNames, destFile);
             }
+
+            // Store all the files for cleanup in case of exception
+            cleanupFiles.add(shadowDestFile);
+            if (groupingColumnWritingInfoMap != null) {
+                for (final ParquetTableWriter.GroupingColumnWritingInfo gcwi : groupingColumnWritingInfoMap.values()) {
+                    cleanupFiles.add(gcwi.destFile);
+                }
+            }
+
             ParquetTableWriter.write(sourceTable, definition, writeInstructions, shadowDestFile.getPath(),
                     Collections.emptyMap(), groupingColumnWritingInfoMap);
 
-            // Given that write was successful, replace all shadow files in the destination path
+            // Write to shadow files was successful
             installShadowFile(destFile, shadowDestFile);
+            rollbackFiles.add(destFile);
             if (groupingColumnWritingInfoMap != null) {
                 for (final ParquetTableWriter.GroupingColumnWritingInfo gfi : groupingColumnWritingInfoMap.values()) {
                     final File groupingDestFile = gfi.metadataFilePath;
                     final File shadowGroupingFile = gfi.destFile;
                     installShadowFile(groupingDestFile, shadowGroupingFile);
+                    rollbackFiles.add(groupingDestFile);
                 }
             }
         } catch (Exception e) {
-            // Delete the shadow file
+            for (final File file : rollbackFiles) {
+                rollbackFile(file);
+            }
+            for (final File file : cleanupFiles) {
+                file.delete();
+            }
             if (firstCreated != null) {
                 FileUtils.deleteRecursivelyOnNFS(firstCreated);
-            } else {
-                // noinspection ResultOfMethodCallIgnored
-                shadowDestFile.delete();
             }
             throw new UncheckedDeephavenException("Error writing table to " + destFile.getPath(), e);
         }
@@ -311,6 +325,16 @@ public class ParquetTools {
                     +
                     destFile.getAbsolutePath());
         }
+    }
+
+    /**
+     * Roll back any changes made in the {@link #installShadowFile} in a best effort manner
+     */
+    private static void rollbackFile(@NotNull final File destFile) {
+        final File backupDestFile = getBackupFile(destFile);
+        final File shadowDestFile = getShadowFile(destFile);
+        destFile.renameTo(shadowDestFile);
+        backupDestFile.renameTo(destFile);
     }
 
     /**
@@ -424,11 +448,14 @@ public class ParquetTools {
                 Arrays.stream(shadowDestFiles)
                         .map(ParquetTools::prepareDestinationFileLocation)
                         .toArray(File[]::new);
+        ArrayList<File> cleanupFiles = new ArrayList<>();
+        ArrayList<File> rollbackFiles = new ArrayList<>();
         try {
             ArrayList<Map<String, ParquetTableWriter.GroupingColumnWritingInfo>> groupingColumnWritingInfoMaps = null;
             if (groupingColumns.length == 0) {
                 // Write the tables without any grouping info
                 for (int tableIdx = 0; tableIdx < sources.length; tableIdx++) {
+                    cleanupFiles.add(shadowDestFiles[tableIdx]);
                     final Table source = sources[tableIdx];
                     ParquetTableWriter.write(source, definition, writeInstructions, shadowDestFiles[tableIdx].getPath(),
                             Collections.emptyMap(), (Map<String, ParquetTableWriter.GroupingColumnWritingInfo>) null);
@@ -448,17 +475,24 @@ public class ParquetTools {
                             groupingColumnInfoBuilderHelper(groupingColumns, parquetColumnNames, tableDestination);
                     groupingColumnWritingInfoMaps.add(groupingColumnWritingInfoMap);
 
+                    // Store all the files for cleanup in case of exception
+                    cleanupFiles.add(shadowDestFiles[tableIdx]);
+                    for (final ParquetTableWriter.GroupingColumnWritingInfo gcwi : groupingColumnWritingInfoMap
+                            .values()) {
+                        cleanupFiles.add(gcwi.destFile);
+                    }
+
                     final Table sourceTable = sources[tableIdx];
                     ParquetTableWriter.write(sourceTable, definition, writeInstructions,
                             shadowDestFiles[tableIdx].getPath(),
                             Collections.emptyMap(), groupingColumnWritingInfoMap);
-
                 }
             }
 
-            // Given that write was successful, replace all shadow files in the destination path
+            // Write to shadow files was successful
             for (int tableIdx = 0; tableIdx < sources.length; tableIdx++) {
                 installShadowFile(destinations[tableIdx], shadowDestFiles[tableIdx]);
+                rollbackFiles.add(destinations[tableIdx]);
                 if (groupingColumnWritingInfoMaps != null) {
                     // TODO This if check in loop is run multiple times
                     final Map<String, ParquetTableWriter.GroupingColumnWritingInfo> gcwim =
@@ -467,14 +501,16 @@ public class ParquetTools {
                         final File groupingDestFile = gfwi.metadataFilePath;
                         final File shadowGroupingFile = gfwi.destFile;
                         installShadowFile(groupingDestFile, shadowGroupingFile);
+                        rollbackFiles.add(groupingDestFile);
                     }
                 }
             }
         } catch (Exception e) {
-            // TODO Write rollback logic
-            for (final File shadowDest : shadowDestFiles) {
-                // noinspection ResultOfMethodCallIgnored
-                shadowDest.delete();
+            for (final File file : rollbackFiles) {
+                rollbackFile(file);
+            }
+            for (final File file : cleanupFiles) {
+                file.delete();
             }
             for (final File firstCreatedDir : firstCreatedDirs) {
                 if (firstCreatedDir == null) {
