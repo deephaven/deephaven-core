@@ -8,12 +8,12 @@ from typing import Optional, List, Any
 from deephaven.plugin.object import Exporter, ObjectType, Reference, MessageStream, FetchOnlyObjectType
 from deephaven._wrapper import JObjectWrapper
 
-_JReference = jpy.get_type('io.deephaven.plugin.type.ObjectType$Exporter$Reference')
-_JExporterAdapter = jpy.get_type('io.deephaven.server.plugin.python.ExporterAdapter')
-_JMessageStream = jpy.get_type('io.deephaven.plugin.type.ObjectType$MessageStream')
+JReference = jpy.get_type('io.deephaven.plugin.type.ObjectType$Exporter$Reference')
+JExporterAdapter = jpy.get_type('io.deephaven.server.plugin.python.ExporterAdapter')
+JMessageStream = jpy.get_type('io.deephaven.plugin.type.ObjectType$MessageStream')
 
 
-def _adapt_reference(ref: _JReference) -> Reference:
+def _adapt_reference(ref: JReference) -> Reference:
     return Reference(ref.index(), ref.type().orElse(None))
 
 
@@ -25,7 +25,8 @@ def _unwrap(object):
 
 
 class ExporterAdapter(Exporter):
-    def __init__(self, exporter: _JExporterAdapter):
+    """Python implementation of Exporter that delegates to its Java counterpart."""
+    def __init__(self, exporter: JExporterAdapter):
         self._exporter = exporter
 
     def reference(self, obj: Any, allow_unknown_type: bool = True, force_new: bool = True) -> Optional[Reference]:
@@ -41,7 +42,8 @@ class ExporterAdapter(Exporter):
 
 
 class MessageStreamAdapter(MessageStream):
-    def __init__(self, wrapped: _JMessageStream):
+    """Python implementation of MessageStream that delegates to its Java counterpart"""
+    def __init__(self, wrapped: JMessageStream):
         self._wrapped = wrapped
 
     def on_data(self, payload: bytes, references: List[Any]):
@@ -51,8 +53,8 @@ class MessageStreamAdapter(MessageStream):
         self._wrapped.on_close()
 
 
-# see io.deephaven.server.plugin.python.ObjectTypeAdapter for calling details
 class ObjectTypeAdapter:
+    """Python type that Java's ObjectTypeAdapter will call in order to communicate with a Python ObjectType instance."""
     def __init__(self, user_object_type: ObjectType):
         self._user_object_type = user_object_type
 
@@ -62,10 +64,10 @@ class ObjectTypeAdapter:
     def is_fetch_only(self):
         return isinstance(self._user_object_type, FetchOnlyObjectType)
 
-    def to_bytes(self, exporter: _JExporterAdapter, obj: Any):
+    def to_bytes(self, exporter: JExporterAdapter, obj: Any):
         return self._user_object_type.to_bytes(ExporterAdapter(exporter), obj)
 
-    def create_client_connection(self, obj: Any, connection: _JMessageStream):
+    def create_client_connection(self, obj: Any, connection: JMessageStream):
         return self._user_object_type.create_client_connection(obj, MessageStreamAdapter(connection))
 
     def __str__(self):
