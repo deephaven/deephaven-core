@@ -214,7 +214,7 @@ def _map_na(array: [np.ndarray, pd.api.extensions.ExtensionArray]):
 
     dh_null = _EX_DTYPE_NULL_MAP.get(type(pd_dtype)) or _EX_DTYPE_NULL_MAP.get(pd_dtype)
     # To preserve NaNs in floating point arrays, Pandas doesn't distinguish NaN/Null as far as NA testing is
-    # concerted, thus its fillna() method will replace both NaN/Null in the data.
+    # concerned, thus its fillna() method will replace both NaN/Null in the data.
     if isinstance(pd_dtype, (pd.Float32Dtype, pd.Float64Dtype)) and isinstance(getattr(array, "_data"), np.ndarray):
         np_array = array._data
         null_mask = np.logical_and(array._mask, np.logical_not(np.isnan(np_array)))
