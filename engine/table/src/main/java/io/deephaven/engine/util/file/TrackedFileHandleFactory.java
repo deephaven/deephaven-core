@@ -152,7 +152,6 @@ public class TrackedFileHandleFactory implements FileHandleFactory {
         }
     }
 
-
     @SuppressWarnings("unused")
     public void closeAll() {
         HandleReference handleReference;
