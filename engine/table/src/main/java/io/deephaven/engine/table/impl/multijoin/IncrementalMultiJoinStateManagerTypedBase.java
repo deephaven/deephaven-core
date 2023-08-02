@@ -20,8 +20,11 @@ import io.deephaven.engine.table.impl.MultiJoinStateManager;
 import io.deephaven.engine.table.impl.sources.ArrayBackedColumnSource;
 import io.deephaven.engine.table.impl.sources.InMemoryColumnSource;
 import io.deephaven.engine.table.impl.sources.LongArraySource;
-import io.deephaven.engine.table.impl.sources.immutable.ImmutableLongArraySource;
-import io.deephaven.engine.table.impl.util.*;
+import io.deephaven.engine.table.impl.sources.immutable.ImmutableIntArraySource;
+import io.deephaven.engine.table.impl.util.ChunkUtils;
+import io.deephaven.engine.table.impl.util.LongColumnSourceWritableRowRedirection;
+import io.deephaven.engine.table.impl.util.TypedHasherUtil;
+import io.deephaven.engine.table.impl.util.WritableRowRedirection;
 import io.deephaven.util.QueryConstants;
 import org.apache.commons.lang3.mutable.MutableInt;
 import org.jetbrains.annotations.NotNull;
@@ -41,9 +44,9 @@ public abstract class IncrementalMultiJoinStateManagerTypedBase implements Multi
     protected final ColumnSource<?>[] keySourcesForErrorMessages;
     private final List<LongArraySource> redirectionSources = new ArrayList<>();
 
-    public static final long NO_RIGHT_STATE_VALUE = RowSet.NULL_ROW_KEY;
-    public static final long EMPTY_RIGHT_STATE = QueryConstants.NULL_LONG;
-    public static final long DUPLICATE_RIGHT_STATE = -2;
+    public static final long NO_RIGHT_STATE_VALUE = QueryConstants.NULL_LONG;
+    public static final int EMPTY_OUTPUT_ROW = QueryConstants.NULL_INT;
+    public static final int EMPTY_COOKIE_SLOT = -1;
 
     /** The number of slots in our hash table. */
     protected int tableSize;
@@ -54,7 +57,7 @@ public abstract class IncrementalMultiJoinStateManagerTypedBase implements Multi
     protected int alternateTableSize = 1;
 
     /** The number of entries in our hash table in use. */
-    protected long numEntries = 0;
+    protected int numEntries = 0;
 
     /**
      * The table will be rehashed to a load factor of targetLoadFactor if our loadFactor exceeds maximumLoadFactor or if
@@ -71,11 +74,11 @@ public abstract class IncrementalMultiJoinStateManagerTypedBase implements Multi
     protected final WritableColumnSource[] outputKeySources;
 
     /** Store sentinel information and maps hash slots to output row keys. */
-    protected ImmutableLongArraySource slotToOutputRow = new ImmutableLongArraySource();
-    protected ImmutableLongArraySource alternateSlotToOutputRow;
+    protected ImmutableIntArraySource slotToOutputRow = new ImmutableIntArraySource();
+    protected ImmutableIntArraySource alternateSlotToOutputRow;
 
-    protected ImmutableLongArraySource mainModifiedTrackerCookieSource = new ImmutableLongArraySource();
-    protected ImmutableLongArraySource alternateModifiedTrackerCookieSource;
+    protected ImmutableIntArraySource mainModifiedTrackerCookieSource = new ImmutableIntArraySource();
+    protected ImmutableIntArraySource alternateModifiedTrackerCookieSource;
 
     /** how much of the alternate sources are necessary to rehash? */
     protected int rehashPointer = 0;
@@ -460,11 +463,11 @@ public abstract class IncrementalMultiJoinStateManagerTypedBase implements Multi
 
     protected void newAlternate() {
         alternateSlotToOutputRow = slotToOutputRow;
-        slotToOutputRow = new ImmutableLongArraySource();
+        slotToOutputRow = new ImmutableIntArraySource();
         slotToOutputRow.ensureCapacity(tableSize);
 
         alternateModifiedTrackerCookieSource = mainModifiedTrackerCookieSource;
-        mainModifiedTrackerCookieSource = new ImmutableLongArraySource();
+        mainModifiedTrackerCookieSource = new ImmutableIntArraySource();
         mainModifiedTrackerCookieSource.ensureCapacity(tableSize);
     }
 

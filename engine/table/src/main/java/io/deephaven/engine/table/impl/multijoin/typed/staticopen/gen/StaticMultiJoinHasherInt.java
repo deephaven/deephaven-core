@@ -46,20 +46,20 @@ final class StaticMultiJoinHasherInt extends StaticMultiJoinStateManagerTypedBas
             final int firstTableLocation = hashToTableLocation(hash);
             int tableLocation = firstTableLocation;
             while (true) {
-                long sentinel = slotToOutputRow.getUnsafe(tableLocation);
-                if (sentinel == EMPTY_RIGHT_STATE) {
+                int slotValue = slotToOutputRow.getUnsafe(tableLocation);
+                if (slotValue == EMPTY_OUTPUT_ROW) {
                     numEntries++;
                     mainKeySource0.set(tableLocation, k0);
-                    final long outputKey = numEntries - 1;
+                    final int outputKey = numEntries - 1;
                     slotToOutputRow.set(tableLocation, outputKey);
                     tableRedirSource.set(outputKey, rowKeyChunk.get(chunkPosition));
                     outputKeySources[0].set(outputKey, k0);
                     break;
                 } else if (eq(mainKeySource0.getUnsafe(tableLocation), k0)) {
-                    if (tableRedirSource.getLong(sentinel) != EMPTY_RIGHT_STATE) {
+                    if (tableRedirSource.getLong(slotValue) != NO_RIGHT_STATE_VALUE) {
                         throw new IllegalStateException("Duplicate key found for " + keyString(sourceKeyChunks, chunkPosition) + " in table " + tableNumber + ".");
                     }
-                    tableRedirSource.set(sentinel, rowKeyChunk.get(chunkPosition));
+                    tableRedirSource.set(slotValue, rowKeyChunk.get(chunkPosition));
                     break;
                 } else {
                     tableLocation = nextTableLocation(tableLocation);
@@ -77,15 +77,15 @@ final class StaticMultiJoinHasherInt extends StaticMultiJoinStateManagerTypedBas
     @Override
     protected void rehashInternalFull(final int oldSize) {
         final int[] destKeyArray0 = new int[tableSize];
-        final long[] destState = new long[tableSize];
-        Arrays.fill(destState, EMPTY_RIGHT_STATE);
+        final int[] destState = new int[tableSize];
+        Arrays.fill(destState, EMPTY_OUTPUT_ROW);
         final int [] originalKeyArray0 = mainKeySource0.getArray();
         mainKeySource0.setArray(destKeyArray0);
-        final long [] originalStateArray = slotToOutputRow.getArray();
+        final int [] originalStateArray = slotToOutputRow.getArray();
         slotToOutputRow.setArray(destState);
         for (int sourceBucket = 0; sourceBucket < oldSize; ++sourceBucket) {
-            final long currentStateValue = originalStateArray[sourceBucket];
-            if (currentStateValue == EMPTY_RIGHT_STATE) {
+            final int currentStateValue = originalStateArray[sourceBucket];
+            if (currentStateValue == EMPTY_OUTPUT_ROW) {
                 continue;
             }
             final int k0 = originalKeyArray0[sourceBucket];
@@ -93,7 +93,7 @@ final class StaticMultiJoinHasherInt extends StaticMultiJoinStateManagerTypedBas
             final int firstDestinationTableLocation = hashToTableLocation(hash);
             int destinationTableLocation = firstDestinationTableLocation;
             while (true) {
-                if (destState[destinationTableLocation] == EMPTY_RIGHT_STATE) {
+                if (destState[destinationTableLocation] == EMPTY_OUTPUT_ROW) {
                     destKeyArray0[destinationTableLocation] = k0;
                     destState[destinationTableLocation] = originalStateArray[sourceBucket];
                     break;

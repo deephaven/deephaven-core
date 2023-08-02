@@ -12,7 +12,6 @@ import io.deephaven.chunk.ChunkType;
 
 import java.util.ArrayList;
 import java.util.List;
-import java.util.function.BiConsumer;
 import java.util.function.BiFunction;
 import java.util.function.Consumer;
 
@@ -102,8 +101,13 @@ public class HasherConfig<T> {
 
     static class BuildSpec {
         @FunctionalInterface
-        public interface TriConsumer<T, U, V> {
-            void accept(T t, U u, V v);
+        public interface MethodBuilder {
+            void accept(HasherConfig<?> config, CodeBlock.Builder builder);
+        }
+
+        @FunctionalInterface
+        public interface MethodBuilderWithChunkTypes {
+            void accept(HasherConfig<?> config, ChunkType[] chunkTypes, CodeBlock.Builder builder);
         }
 
         final String name;
@@ -111,20 +115,25 @@ public class HasherConfig<T> {
         final boolean requiresRowKeyChunk;
         final boolean allowAlternates;
         final FoundMethodBuilder found;
-        final TriConsumer<HasherConfig<?>, ChunkType[], CodeBlock.Builder> insert;
+        final MethodBuilderWithChunkTypes insert;
         final ParameterSpec[] params;
 
         public BuildSpec(String name, String stateValueName, boolean requiresRowKeyChunk,
-                boolean allowAlternates, FoundMethodBuilder found,
-                BiConsumer<HasherConfig<?>, CodeBlock.Builder> insert, ParameterSpec... params) {
-            // Convert the BiConsumer to our TriConsumer.
-            this(name, stateValueName, requiresRowKeyChunk, allowAlternates, found, (t, u, v) -> insert.accept(t, v),
+                         boolean allowAlternates, FoundMethodBuilder found,
+                         MethodBuilder insert, ParameterSpec... params) {
+            // Convert the BiConsumer to our MethodBuilderWithChunkTypes.
+            this(name,
+                    stateValueName,
+                    requiresRowKeyChunk,
+                    allowAlternates,
+                    found,
+                    (config, chunkTypes, builder) -> insert.accept(config, builder),
                     params);
         }
 
         public BuildSpec(String name, String stateValueName, boolean requiresRowKeyChunk,
-                boolean allowAlternates, FoundMethodBuilder found,
-                TriConsumer<HasherConfig<?>, ChunkType[], CodeBlock.Builder> insert, ParameterSpec... params) {
+                         boolean allowAlternates, FoundMethodBuilder found,
+                         MethodBuilderWithChunkTypes insert, ParameterSpec... params) {
             this.name = name;
             this.stateValueName = stateValueName;
             this.requiresRowKeyChunk = requiresRowKeyChunk;

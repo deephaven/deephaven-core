@@ -8,7 +8,6 @@ import io.deephaven.chunk.Chunk;
 import io.deephaven.chunk.ChunkType;
 import io.deephaven.chunk.attributes.Values;
 import io.deephaven.engine.rowset.RowSequence;
-import io.deephaven.engine.rowset.RowSet;
 import io.deephaven.engine.table.ColumnSource;
 import io.deephaven.engine.table.Table;
 import io.deephaven.engine.table.WritableColumnSource;
@@ -16,9 +15,12 @@ import io.deephaven.engine.table.impl.MultiJoinStateManager;
 import io.deephaven.engine.table.impl.sources.ArrayBackedColumnSource;
 import io.deephaven.engine.table.impl.sources.InMemoryColumnSource;
 import io.deephaven.engine.table.impl.sources.LongArraySource;
-import io.deephaven.engine.table.impl.sources.immutable.ImmutableLongArraySource;
-import io.deephaven.engine.table.impl.util.*;
+import io.deephaven.engine.table.impl.sources.immutable.ImmutableIntArraySource;
+import io.deephaven.engine.table.impl.util.ChunkUtils;
+import io.deephaven.engine.table.impl.util.LongColumnSourceWritableRowRedirection;
+import io.deephaven.engine.table.impl.util.TypedHasherUtil;
 import io.deephaven.engine.table.impl.util.TypedHasherUtil.BuildOrProbeContext.BuildContext;
+import io.deephaven.engine.table.impl.util.WritableRowRedirection;
 import io.deephaven.util.QueryConstants;
 
 import java.util.ArrayList;
@@ -32,15 +34,14 @@ public abstract class StaticMultiJoinStateManagerTypedBase implements MultiJoinS
     protected final ColumnSource<?>[] keySourcesForErrorMessages;
     private final List<LongArraySource> redirectionSources = new ArrayList<>();
 
-    public static final long NO_RIGHT_STATE_VALUE = RowSet.NULL_ROW_KEY;
-    public static final long EMPTY_RIGHT_STATE = QueryConstants.NULL_LONG;
-    public static final long DUPLICATE_RIGHT_STATE = -2;
+    public static final long NO_RIGHT_STATE_VALUE = QueryConstants.NULL_LONG;
+    public static final int EMPTY_OUTPUT_ROW = QueryConstants.NULL_INT;
 
     /** The number of slots in our hash table. */
     protected int tableSize;
 
     /** The number of entries in our hash table in use. */
-    protected long numEntries = 0;
+    protected int numEntries = 0;
 
     /**
      * The table will be rehashed to a load factor of targetLoadFactor if our loadFactor exceeds maximumLoadFactor or if
@@ -56,7 +57,7 @@ public abstract class StaticMultiJoinStateManagerTypedBase implements MultiJoinS
     protected final WritableColumnSource[] outputKeySources;
 
     /** Store sentinel information and maps hash slots to output row keys. */
-    protected ImmutableLongArraySource slotToOutputRow = new ImmutableLongArraySource();
+    protected ImmutableIntArraySource slotToOutputRow = new ImmutableIntArraySource();
 
     protected StaticMultiJoinStateManagerTypedBase(ColumnSource<?>[] tableKeySources,
             ColumnSource<?>[] keySourcesForErrorMessages,

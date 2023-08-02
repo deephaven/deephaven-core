@@ -341,8 +341,8 @@ public class TypedHasherFactory {
         } else if (baseClass.equals(StaticMultiJoinStateManagerTypedBase.class)) {
             builder.classPrefix("StaticMultiJoinHasher").packageGroup("multijoin").packageMiddle("staticopen")
                     .openAddressedAlternate(false)
-                    .stateType(long.class).mainStateName("slotToOutputRow")
-                    .emptyStateName("EMPTY_RIGHT_STATE")
+                    .stateType(int.class).mainStateName("slotToOutputRow")
+                    .emptyStateName("EMPTY_OUTPUT_ROW")
                     .includeOriginalSources(true)
                     .supportRehash(true)
                     .moveMainFull(TypedMultiJoinFactory::staticMoveMainFull)
@@ -350,7 +350,7 @@ public class TypedHasherFactory {
                     .rehashFullSetup(TypedMultiJoinFactory::staticRehashSetup);
 
 
-            builder.addBuild(new HasherConfig.BuildSpec("buildFromTable", "sentinel",
+            builder.addBuild(new HasherConfig.BuildSpec("buildFromTable", "slotValue",
                     true, true, TypedMultiJoinFactory::staticBuildLeftFound,
                     TypedMultiJoinFactory::staticBuildLeftInsert,
                     ParameterSpec.builder(TypeName.get(LongArraySource.class), "tableRedirSource").build(),
@@ -368,9 +368,9 @@ public class TypedHasherFactory {
             builder.classPrefix("IncrementalMultiJoinHasher").packageGroup("multijoin")
                     .packageMiddle("incopen")
                     .openAddressedAlternate(true)
-                    .stateType(long.class).mainStateName("slotToOutputRow")
+                    .stateType(int.class).mainStateName("slotToOutputRow")
                     .overflowOrAlternateStateName("alternateSlotToOutputRow")
-                    .emptyStateName("EMPTY_RIGHT_STATE")
+                    .emptyStateName("EMPTY_OUTPUT_ROW")
                     .includeOriginalSources(true)
                     .supportRehash(true)
                     .addExtraPartialRehashParameter(modifiedSlotTrackerParam)
