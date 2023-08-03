@@ -549,25 +549,25 @@ class ConnectRequest final :
   // accessors -------------------------------------------------------
 
   enum : int {
-    kTypedTicketFieldNumber = 1,
+    kSourceIdFieldNumber = 1,
   };
-  // .io.deephaven.proto.backplane.grpc.TypedTicket typed_ticket = 1;
-  bool has_typed_ticket() const;
+  // .io.deephaven.proto.backplane.grpc.TypedTicket source_id = 1;
+  bool has_source_id() const;
   private:
-  bool _internal_has_typed_ticket() const;
+  bool _internal_has_source_id() const;
   public:
-  void clear_typed_ticket();
-  const ::io::deephaven::proto::backplane::grpc::TypedTicket& typed_ticket() const;
-  PROTOBUF_NODISCARD ::io::deephaven::proto::backplane::grpc::TypedTicket* release_typed_ticket();
-  ::io::deephaven::proto::backplane::grpc::TypedTicket* mutable_typed_ticket();
-  void set_allocated_typed_ticket(::io::deephaven::proto::backplane::grpc::TypedTicket* typed_ticket);
+  void clear_source_id();
+  const ::io::deephaven::proto::backplane::grpc::TypedTicket& source_id() const;
+  PROTOBUF_NODISCARD ::io::deephaven::proto::backplane::grpc::TypedTicket* release_source_id();
+  ::io::deephaven::proto::backplane::grpc::TypedTicket* mutable_source_id();
+  void set_allocated_source_id(::io::deephaven::proto::backplane::grpc::TypedTicket* source_id);
   private:
-  const ::io::deephaven::proto::backplane::grpc::TypedTicket& _internal_typed_ticket() const;
-  ::io::deephaven::proto::backplane::grpc::TypedTicket* _internal_mutable_typed_ticket();
+  const ::io::deephaven::proto::backplane::grpc::TypedTicket& _internal_source_id() const;
+  ::io::deephaven::proto::backplane::grpc::TypedTicket* _internal_mutable_source_id();
   public:
-  void unsafe_arena_set_allocated_typed_ticket(
-      ::io::deephaven::proto::backplane::grpc::TypedTicket* typed_ticket);
-  ::io::deephaven::proto::backplane::grpc::TypedTicket* unsafe_arena_release_typed_ticket();
+  void unsafe_arena_set_allocated_source_id(
+      ::io::deephaven::proto::backplane::grpc::TypedTicket* source_id);
+  ::io::deephaven::proto::backplane::grpc::TypedTicket* unsafe_arena_release_source_id();
 
   // @@protoc_insertion_point(class_scope:io.deephaven.proto.backplane.grpc.ConnectRequest)
  private:
@@ -576,7 +576,7 @@ class ConnectRequest final :
   template <typename T> friend class ::PROTOBUF_NAMESPACE_ID::Arena::InternalHelper;
   typedef void InternalArenaConstructable_;
   typedef void DestructorSkippable_;
-  ::io::deephaven::proto::backplane::grpc::TypedTicket* typed_ticket_;
+  ::io::deephaven::proto::backplane::grpc::TypedTicket* source_id_;
   mutable ::PROTOBUF_NAMESPACE_ID::internal::CachedSize _cached_size_;
   friend struct ::TableStruct_deephaven_2fproto_2fobject_2eproto;
 };
@@ -701,26 +701,26 @@ class Data final :
   // accessors -------------------------------------------------------
 
   enum : int {
-    kTypedExportIdsFieldNumber = 2,
+    kExportedReferencesFieldNumber = 2,
     kPayloadFieldNumber = 1,
   };
-  // repeated .io.deephaven.proto.backplane.grpc.TypedTicket typed_export_ids = 2;
-  int typed_export_ids_size() const;
+  // repeated .io.deephaven.proto.backplane.grpc.TypedTicket exported_references = 2;
+  int exported_references_size() const;
   private:
-  int _internal_typed_export_ids_size() const;
+  int _internal_exported_references_size() const;
   public:
-  void clear_typed_export_ids();
-  ::io::deephaven::proto::backplane::grpc::TypedTicket* mutable_typed_export_ids(int index);
+  void clear_exported_references();
+  ::io::deephaven::proto::backplane::grpc::TypedTicket* mutable_exported_references(int index);
   ::PROTOBUF_NAMESPACE_ID::RepeatedPtrField< ::io::deephaven::proto::backplane::grpc::TypedTicket >*
-      mutable_typed_export_ids();
+      mutable_exported_references();
   private:
-  const ::io::deephaven::proto::backplane::grpc::TypedTicket& _internal_typed_export_ids(int index) const;
-  ::io::deephaven::proto::backplane::grpc::TypedTicket* _internal_add_typed_export_ids();
+  const ::io::deephaven::proto::backplane::grpc::TypedTicket& _internal_exported_references(int index) const;
+  ::io::deephaven::proto::backplane::grpc::TypedTicket* _internal_add_exported_references();
   public:
-  const ::io::deephaven::proto::backplane::grpc::TypedTicket& typed_export_ids(int index) const;
-  ::io::deephaven::proto::backplane::grpc::TypedTicket* add_typed_export_ids();
+  const ::io::deephaven::proto::backplane::grpc::TypedTicket& exported_references(int index) const;
+  ::io::deephaven::proto::backplane::grpc::TypedTicket* add_exported_references();
   const ::PROTOBUF_NAMESPACE_ID::RepeatedPtrField< ::io::deephaven::proto::backplane::grpc::TypedTicket >&
-      typed_export_ids() const;
+      exported_references() const;
 
   // bytes payload = 1;
   void clear_payload();
@@ -743,7 +743,7 @@ class Data final :
   template <typename T> friend class ::PROTOBUF_NAMESPACE_ID::Arena::InternalHelper;
   typedef void InternalArenaConstructable_;
   typedef void DestructorSkippable_;
-  ::PROTOBUF_NAMESPACE_ID::RepeatedPtrField< ::io::deephaven::proto::backplane::grpc::TypedTicket > typed_export_ids_;
+  ::PROTOBUF_NAMESPACE_ID::RepeatedPtrField< ::io::deephaven::proto::backplane::grpc::TypedTicket > exported_references_;
   ::PROTOBUF_NAMESPACE_ID::internal::ArenaStringPtr payload_;
   mutable ::PROTOBUF_NAMESPACE_ID::internal::CachedSize _cached_size_;
   friend struct ::TableStruct_deephaven_2fproto_2fobject_2eproto;
@@ -1465,39 +1465,39 @@ FetchObjectResponse::typed_export_ids() const {
 
 // ConnectRequest
 
-// .io.deephaven.proto.backplane.grpc.TypedTicket typed_ticket = 1;
-inline bool ConnectRequest::_internal_has_typed_ticket() const {
-  return this != internal_default_instance() && typed_ticket_ != nullptr;
+// .io.deephaven.proto.backplane.grpc.TypedTicket source_id = 1;
+inline bool ConnectRequest::_internal_has_source_id() const {
+  return this != internal_default_instance() && source_id_ != nullptr;
 }
-inline bool ConnectRequest::has_typed_ticket() const {
-  return _internal_has_typed_ticket();
+inline bool ConnectRequest::has_source_id() const {
+  return _internal_has_source_id();
 }
-inline const ::io::deephaven::proto::backplane::grpc::TypedTicket& ConnectRequest::_internal_typed_ticket() const {
-  const ::io::deephaven::proto::backplane::grpc::TypedTicket* p = typed_ticket_;
+inline const ::io::deephaven::proto::backplane::grpc::TypedTicket& ConnectRequest::_internal_source_id() const {
+  const ::io::deephaven::proto::backplane::grpc::TypedTicket* p = source_id_;
   return p != nullptr ? *p : reinterpret_cast<const ::io::deephaven::proto::backplane::grpc::TypedTicket&>(
       ::io::deephaven::proto::backplane::grpc::_TypedTicket_default_instance_);
 }
-inline const ::io::deephaven::proto::backplane::grpc::TypedTicket& ConnectRequest::typed_ticket() const {
-  // @@protoc_insertion_point(field_get:io.deephaven.proto.backplane.grpc.ConnectRequest.typed_ticket)
-  return _internal_typed_ticket();
+inline const ::io::deephaven::proto::backplane::grpc::TypedTicket& ConnectRequest::source_id() const {
+  // @@protoc_insertion_point(field_get:io.deephaven.proto.backplane.grpc.ConnectRequest.source_id)
+  return _internal_source_id();
 }
-inline void ConnectRequest::unsafe_arena_set_allocated_typed_ticket(
-    ::io::deephaven::proto::backplane::grpc::TypedTicket* typed_ticket) {
+inline void ConnectRequest::unsafe_arena_set_allocated_source_id(
+    ::io::deephaven::proto::backplane::grpc::TypedTicket* source_id) {
   if (GetArenaForAllocation() == nullptr) {
-    delete reinterpret_cast<::PROTOBUF_NAMESPACE_ID::MessageLite*>(typed_ticket_);
+    delete reinterpret_cast<::PROTOBUF_NAMESPACE_ID::MessageLite*>(source_id_);
   }
-  typed_ticket_ = typed_ticket;
-  if (typed_ticket) {
+  source_id_ = source_id;
+  if (source_id) {
     
   } else {
     
   }
-  // @@protoc_insertion_point(field_unsafe_arena_set_allocated:io.deephaven.proto.backplane.grpc.ConnectRequest.typed_ticket)
+  // @@protoc_insertion_point(field_unsafe_arena_set_allocated:io.deephaven.proto.backplane.grpc.ConnectRequest.source_id)
 }
-inline ::io::deephaven::proto::backplane::grpc::TypedTicket* ConnectRequest::release_typed_ticket() {
+inline ::io::deephaven::proto::backplane::grpc::TypedTicket* ConnectRequest::release_source_id() {
   
-  ::io::deephaven::proto::backplane::grpc::TypedTicket* temp = typed_ticket_;
-  typed_ticket_ = nullptr;
+  ::io::deephaven::proto::backplane::grpc::TypedTicket* temp = source_id_;
+  source_id_ = nullptr;
 #ifdef PROTOBUF_FORCE_COPY_IN_RELEASE
   auto* old =  reinterpret_cast<::PROTOBUF_NAMESPACE_ID::MessageLite*>(temp);
   temp = ::PROTOBUF_NAMESPACE_ID::internal::DuplicateIfNonNull(temp);
@@ -1509,45 +1509,45 @@ inline ::io::deephaven::proto::backplane::grpc::TypedTicket* ConnectRequest::rel
 #endif  // !PROTOBUF_FORCE_COPY_IN_RELEASE
   return temp;
 }
-inline ::io::deephaven::proto::backplane::grpc::TypedTicket* ConnectRequest::unsafe_arena_release_typed_ticket() {
-  // @@protoc_insertion_point(field_release:io.deephaven.proto.backplane.grpc.ConnectRequest.typed_ticket)
+inline ::io::deephaven::proto::backplane::grpc::TypedTicket* ConnectRequest::unsafe_arena_release_source_id() {
+  // @@protoc_insertion_point(field_release:io.deephaven.proto.backplane.grpc.ConnectRequest.source_id)
   
-  ::io::deephaven::proto::backplane::grpc::TypedTicket* temp = typed_ticket_;
-  typed_ticket_ = nullptr;
+  ::io::deephaven::proto::backplane::grpc::TypedTicket* temp = source_id_;
+  source_id_ = nullptr;
   return temp;
 }
-inline ::io::deephaven::proto::backplane::grpc::TypedTicket* ConnectRequest::_internal_mutable_typed_ticket() {
+inline ::io::deephaven::proto::backplane::grpc::TypedTicket* ConnectRequest::_internal_mutable_source_id() {
   
-  if (typed_ticket_ == nullptr) {
+  if (source_id_ == nullptr) {
     auto* p = CreateMaybeMessage<::io::deephaven::proto::backplane::grpc::TypedTicket>(GetArenaForAllocation());
-    typed_ticket_ = p;
+    source_id_ = p;
   }
-  return typed_ticket_;
+  return source_id_;
 }
-inline ::io::deephaven::proto::backplane::grpc::TypedTicket* ConnectRequest::mutable_typed_ticket() {
-  ::io::deephaven::proto::backplane::grpc::TypedTicket* _msg = _internal_mutable_typed_ticket();
-  // @@protoc_insertion_point(field_mutable:io.deephaven.proto.backplane.grpc.ConnectRequest.typed_ticket)
+inline ::io::deephaven::proto::backplane::grpc::TypedTicket* ConnectRequest::mutable_source_id() {
+  ::io::deephaven::proto::backplane::grpc::TypedTicket* _msg = _internal_mutable_source_id();
+  // @@protoc_insertion_point(field_mutable:io.deephaven.proto.backplane.grpc.ConnectRequest.source_id)
   return _msg;
 }
-inline void ConnectRequest::set_allocated_typed_ticket(::io::deephaven::proto::backplane::grpc::TypedTicket* typed_ticket) {
+inline void ConnectRequest::set_allocated_source_id(::io::deephaven::proto::backplane::grpc::TypedTicket* source_id) {
   ::PROTOBUF_NAMESPACE_ID::Arena* message_arena = GetArenaForAllocation();
   if (message_arena == nullptr) {
-    delete reinterpret_cast< ::PROTOBUF_NAMESPACE_ID::MessageLite*>(typed_ticket_);
+    delete reinterpret_cast< ::PROTOBUF_NAMESPACE_ID::MessageLite*>(source_id_);
   }
-  if (typed_ticket) {
+  if (source_id) {
     ::PROTOBUF_NAMESPACE_ID::Arena* submessage_arena =
         ::PROTOBUF_NAMESPACE_ID::Arena::InternalGetOwningArena(
-                reinterpret_cast<::PROTOBUF_NAMESPACE_ID::MessageLite*>(typed_ticket));
+                reinterpret_cast<::PROTOBUF_NAMESPACE_ID::MessageLite*>(source_id));
     if (message_arena != submessage_arena) {
-      typed_ticket = ::PROTOBUF_NAMESPACE_ID::internal::GetOwnedMessage(
-          message_arena, typed_ticket, submessage_arena);
+      source_id = ::PROTOBUF_NAMESPACE_ID::internal::GetOwnedMessage(
+          message_arena, source_id, submessage_arena);
     }
     
   } else {
     
   }
-  typed_ticket_ = typed_ticket;
-  // @@protoc_insertion_point(field_set_allocated:io.deephaven.proto.backplane.grpc.ConnectRequest.typed_ticket)
+  source_id_ = source_id;
+  // @@protoc_insertion_point(field_set_allocated:io.deephaven.proto.backplane.grpc.ConnectRequest.source_id)
 }
 
 // -------------------------------------------------------------------
@@ -1604,41 +1604,41 @@ inline void Data::set_allocated_payload(std::string* payload) {
   // @@protoc_insertion_point(field_set_allocated:io.deephaven.proto.backplane.grpc.Data.payload)
 }
 
-// repeated .io.deephaven.proto.backplane.grpc.TypedTicket typed_export_ids = 2;
-inline int Data::_internal_typed_export_ids_size() const {
-  return typed_export_ids_.size();
+// repeated .io.deephaven.proto.backplane.grpc.TypedTicket exported_references = 2;
+inline int Data::_internal_exported_references_size() const {
+  return exported_references_.size();
 }
-inline int Data::typed_export_ids_size() const {
-  return _internal_typed_export_ids_size();
+inline int Data::exported_references_size() const {
+  return _internal_exported_references_size();
 }
-inline ::io::deephaven::proto::backplane::grpc::TypedTicket* Data::mutable_typed_export_ids(int index) {
-  // @@protoc_insertion_point(field_mutable:io.deephaven.proto.backplane.grpc.Data.typed_export_ids)
-  return typed_export_ids_.Mutable(index);
+inline ::io::deephaven::proto::backplane::grpc::TypedTicket* Data::mutable_exported_references(int index) {
+  // @@protoc_insertion_point(field_mutable:io.deephaven.proto.backplane.grpc.Data.exported_references)
+  return exported_references_.Mutable(index);
 }
 inline ::PROTOBUF_NAMESPACE_ID::RepeatedPtrField< ::io::deephaven::proto::backplane::grpc::TypedTicket >*
-Data::mutable_typed_export_ids() {
-  // @@protoc_insertion_point(field_mutable_list:io.deephaven.proto.backplane.grpc.Data.typed_export_ids)
-  return &typed_export_ids_;
+Data::mutable_exported_references() {
+  // @@protoc_insertion_point(field_mutable_list:io.deephaven.proto.backplane.grpc.Data.exported_references)
+  return &exported_references_;
 }
-inline const ::io::deephaven::proto::backplane::grpc::TypedTicket& Data::_internal_typed_export_ids(int index) const {
-  return typed_export_ids_.Get(index);
+inline const ::io::deephaven::proto::backplane::grpc::TypedTicket& Data::_internal_exported_references(int index) const {
+  return exported_references_.Get(index);
 }
-inline const ::io::deephaven::proto::backplane::grpc::TypedTicket& Data::typed_export_ids(int index) const {
-  // @@protoc_insertion_point(field_get:io.deephaven.proto.backplane.grpc.Data.typed_export_ids)
-  return _internal_typed_export_ids(index);
+inline const ::io::deephaven::proto::backplane::grpc::TypedTicket& Data::exported_references(int index) const {
+  // @@protoc_insertion_point(field_get:io.deephaven.proto.backplane.grpc.Data.exported_references)
+  return _internal_exported_references(index);
 }
-inline ::io::deephaven::proto::backplane::grpc::TypedTicket* Data::_internal_add_typed_export_ids() {
-  return typed_export_ids_.Add();
+inline ::io::deephaven::proto::backplane::grpc::TypedTicket* Data::_internal_add_exported_references() {
+  return exported_references_.Add();
 }
-inline ::io::deephaven::proto::backplane::grpc::TypedTicket* Data::add_typed_export_ids() {
-  ::io::deephaven::proto::backplane::grpc::TypedTicket* _add = _internal_add_typed_export_ids();
-  // @@protoc_insertion_point(field_add:io.deephaven.proto.backplane.grpc.Data.typed_export_ids)
+inline ::io::deephaven::proto::backplane::grpc::TypedTicket* Data::add_exported_references() {
+  ::io::deephaven::proto::backplane::grpc::TypedTicket* _add = _internal_add_exported_references();
+  // @@protoc_insertion_point(field_add:io.deephaven.proto.backplane.grpc.Data.exported_references)
   return _add;
 }
 inline const ::PROTOBUF_NAMESPACE_ID::RepeatedPtrField< ::io::deephaven::proto::backplane::grpc::TypedTicket >&
-Data::typed_export_ids() const {
-  // @@protoc_insertion_point(field_list:io.deephaven.proto.backplane.grpc.Data.typed_export_ids)
-  return typed_export_ids_;
+Data::exported_references() const {
+  // @@protoc_insertion_point(field_list:io.deephaven.proto.backplane.grpc.Data.exported_references)
+  return exported_references_;
 }
 
 // -------------------------------------------------------------------
