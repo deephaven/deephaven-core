@@ -126,9 +126,13 @@ public class UpdatePerformanceTracker {
     private final UpdateGraph updateGraph;
     private final ExecutionContext context;
     private final PerformanceEntry aggregatedSmallUpdatesEntry;
+    private final PerformanceEntry flushEntry;
     private final Queue<WeakReference<PerformanceEntry>> entries = new LinkedBlockingDeque<>();
 
     private boolean unitTestMode = false;
+
+    private long intervalStartTimeMillis = QueryConstants.NULL_LONG;
+    private long intervalStartTimeNanos = QueryConstants.NULL_LONG;
 
     public UpdatePerformanceTracker(final UpdateGraph updateGraph) {
         this.updateGraph = updateGraph;
@@ -137,17 +141,40 @@ public class UpdatePerformanceTracker {
         this.aggregatedSmallUpdatesEntry = new PerformanceEntry(
                 QueryConstants.NULL_INT, QueryConstants.NULL_INT, QueryConstants.NULL_INT,
                 "Aggregated Small Updates", null, updateGraph.getName());
+        this.flushEntry = new PerformanceEntry(
+                QueryConstants.NULL_INT, QueryConstants.NULL_INT, QueryConstants.NULL_INT,
+                "UpdatePerformanceTracker Flush", null, updateGraph.getName());
     }
 
+    /**
+     * Start this UpdatePerformanceTracker, by beginning its first interval.
+     */
+    public void start() {
+        if (intervalStartTimeMillis != QueryConstants.NULL_LONG) {
+            intervalStartTimeMillis = System.currentTimeMillis();
+            intervalStartTimeNanos = System.nanoTime();
+        }
+    }
+
+    /**
+     * Flush this UpdatePerformanceTracker to the downstream publisher and logger, and begin its next interval.
+     */
     public void flush() {
-        final long intervalStartTimeNanos = System.nanoTime();
-        final long intervalStartTimeMillis = System.currentTimeMillis();
+        if (intervalStartTimeMillis == QueryConstants.NULL_LONG || intervalStartTimeNanos == QueryConstants.NULL_LONG) {
+            throw new IllegalStateException(String.format("UpdatePerformanceTracker %s was never started",
+                    updateGraph.getName()));
+        }
+        final long intervalEndTimeMillis = System.currentTimeMillis();
+        final long intervalEndTimeNanos = System.nanoTime();
         try (final SafeCloseable ignored1 = context.open()) {
             finishInterval(
                     getInternalState(),
                     intervalStartTimeMillis,
-                    System.currentTimeMillis(),
-                    System.nanoTime() - intervalStartTimeNanos);
+                    intervalEndTimeMillis,
+                    intervalEndTimeNanos - intervalStartTimeNanos);
+        } finally {
+            intervalStartTimeMillis = intervalEndTimeMillis;
+            intervalStartTimeNanos = intervalEndTimeNanos;
         }
     }
 
@@ -211,6 +238,11 @@ public class UpdatePerformanceTracker {
          */
         final IntervalLevelDetails intervalLevelDetails =
                 new IntervalLevelDetails(intervalStartTimeMillis, intervalEndTimeMillis, intervalDurationNanos);
+        if (flushEntry.getIntervalInvocationCount() > 0) {
+            internalState.publish(intervalLevelDetails, flushEntry);
+        }
+        flushEntry.reset();
+        flushEntry.onUpdateStart();
 
         for (final Iterator<WeakReference<PerformanceEntry>> it = entries.iterator(); it.hasNext();) {
             final WeakReference<PerformanceEntry> entryReference = it.next();
@@ -230,8 +262,9 @@ public class UpdatePerformanceTracker {
 
         if (aggregatedSmallUpdatesEntry.getIntervalInvocationCount() > 0) {
             internalState.publish(intervalLevelDetails, aggregatedSmallUpdatesEntry);
-            aggregatedSmallUpdatesEntry.reset();
         }
+        aggregatedSmallUpdatesEntry.reset();
+        flushEntry.onUpdateEnd();
     }
 
     /**

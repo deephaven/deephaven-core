@@ -618,6 +618,7 @@ public class PeriodicUpdateGraph implements UpdateGraph {
             if (!refreshThread.isAlive()) {
                 log.info().append("PeriodicUpdateGraph starting with ").append(updateThreads)
                         .append(" notification processing threads").endl();
+                updatePerformanceTracker.start();
                 refreshThread.start();
             }
         }

@@ -60,7 +60,6 @@ public class PerformanceEntry extends BasePerformanceEntry implements TableListe
     }
 
     public final void onUpdateStart() {
-        ++intervalInvocationCount;
         RuntimeMemory.getInstance().read(startSample);
         super.onBaseEntryStart();
     }
@@ -91,6 +90,7 @@ public class PerformanceEntry extends BasePerformanceEntry implements TableListe
         minFreeMemory = Math.min(minFreeMemory, Math.min(startSample.freeMemory, endSample.freeMemory));
         collections += endSample.totalCollections - startSample.totalCollections;
         collectionTimeMs += endSample.totalCollectionTimeMs - startSample.totalCollectionTimeMs;
+        ++intervalInvocationCount;
     }
 
     void reset() {
