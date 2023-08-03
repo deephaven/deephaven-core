@@ -117,8 +117,7 @@ public class TrackedFileHandleFactory implements FileHandleFactory {
 
     @Override
     @NotNull
-    public final FileHandle makeHandle(@NotNull final File file, @NotNull final OpenOption[] openOptions)
-            throws IOException {
+    public FileHandle makeHandle(@NotNull final File file, @NotNull final OpenOption[] openOptions) throws IOException {
         if (size.get() >= capacity) {
             // Synchronous cleanup at full capacity.
             cleanup();
@@ -130,7 +129,7 @@ public class TrackedFileHandleFactory implements FileHandleFactory {
         return handle;
     }
 
-    private void cleanup() {
+    protected void cleanup() {
         for (final Iterator<HandleReference> handleReferenceIterator =
                 handleReferences.iterator(); handleReferenceIterator.hasNext();) {
             final HandleReference handleReference = handleReferenceIterator.next();

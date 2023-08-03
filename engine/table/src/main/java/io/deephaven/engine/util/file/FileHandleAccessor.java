@@ -41,13 +41,16 @@ public abstract class FileHandleAccessor {
     }
 
     /**
-     * Replace the file handle with a new one if the closed handle passed in is still current, and return the (possibly
-     * changed) current value.
+     * Replace the file handle with a new one if the closed handle passed in is still current and the handle is not
+     * marked to fail on refresh, and return the (possibly changed) current value.
      *
      * @param previousLocalHandle The closed handle that calling code would like to replace
      * @return The current file handle, possibly newly created
      */
     protected final FileHandle refreshFileHandle(final FileHandle previousLocalHandle) {
+        if (previousLocalHandle.shouldFailOnRefresh()) {
+            throw new IllegalStateException("Could not refresh file handle to " + file.getAbsolutePath());
+        }
         if (previousLocalHandle == fileHandle) {
             synchronized (this) {
                 if (previousLocalHandle == fileHandle) {

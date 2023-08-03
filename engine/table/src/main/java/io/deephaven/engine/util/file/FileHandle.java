@@ -61,6 +61,12 @@ public final class FileHandle implements SeekableByteChannel {
     private final Runnable postCloseProcedure;
 
     /**
+     * If set, fileHandle will fail when refreshing through {@link FileHandleAccessor#refreshFileHandle}. Used to
+     * prevent reopening a file which have been moved or overwritten.
+     */
+    private boolean failOnRefresh = false;
+
+    /**
      * <p>
      * Wrap the supplied {@link FileChannel}.
      * <p>
@@ -213,7 +219,7 @@ public final class FileHandle implements SeekableByteChannel {
      * @return The number of bytes written
      */
     public final int write(@NotNull final ByteBuffer source, final long position) throws IOException {
-        try {
+        try { // This is where write happens
             final long startTimeNanos = System.nanoTime();
             final int sizeBytes = source.remaining();
             try {
@@ -331,5 +337,13 @@ public final class FileHandle implements SeekableByteChannel {
         } finally {
             postCloseProcedure.run();
         }
+    }
+
+    public final void setFailOnRefresh(boolean val) {
+        failOnRefresh = val;
+    }
+
+    public final boolean shouldFailOnRefresh() {
+        return failOnRefresh;
     }
 }
