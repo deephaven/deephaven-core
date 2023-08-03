@@ -5,6 +5,7 @@ package io.deephaven.configuration;
 
 import java.nio.file.Path;
 import java.util.Optional;
+import java.util.function.Supplier;
 
 /**
  * The cache directory is a directory that the application may use for storing data with "cache-like" semantics.
@@ -38,17 +39,30 @@ public final class CacheDir {
 
     /**
      * Gets the cache directory if the system property {@value #PROPERTY} or environment variable {@value #ENV_VAR} is
-     * present, otherwise sets the system property {@value #PROPERTY} to {@code defaultValue} and returns
+     * present, otherwise sets the system property {@value #PROPERTY} to {@code defaultValue} and returns the path for
      * {@code defaultValue}.
      *
      * @param defaultValue the value to set if none is present
      * @return the cache directory
      */
     public static Path getOrSet(String defaultValue) {
+        return getOrSet(() -> defaultValue);
+    }
+
+    /**
+     * Gets the cache directory if the system property {@value #PROPERTY} or environment variable {@value #ENV_VAR} is
+     * present, otherwise sets the system property {@value #PROPERTY} to the value from {@code defaultValueSupplier} and
+     * returns the path for the value.
+     *
+     * @param defaultValueSupplier the value supplier to set if none is present
+     * @return the cache directory
+     */
+    public static Path getOrSet(Supplier<String> defaultValueSupplier) {
         final String existing = viaProperty().or(CacheDir::viaEnvVar).orElse(null);
         if (existing != null) {
             return Path.of(existing);
         }
+        final String defaultValue = defaultValueSupplier.get();
         System.setProperty(PROPERTY, defaultValue);
         return Path.of(defaultValue);
     }

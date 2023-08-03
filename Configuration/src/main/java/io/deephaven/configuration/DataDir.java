@@ -2,6 +2,7 @@ package io.deephaven.configuration;
 
 import java.nio.file.Path;
 import java.util.Optional;
+import java.util.function.Supplier;
 
 public class DataDir {
     public static final String PROPERTY = "deephaven.dataDir";
@@ -34,6 +35,18 @@ public class DataDir {
      * @return the data directory
      */
     public static Path getOrSet(String defaultValue) {
+        return getOrSet(() -> defaultValue);
+    }
+
+    /**
+     * Gets the data directory if the system property {@value #PROPERTY} or {@value WORKSPACE_PROPERTY} is present, or
+     * if the environment variable {@value #ENV_VAR} is present, otherwise sets the system property {@value #PROPERTY}
+     * to the value from {@code defaultValueSupplier} and returns the path for the value.
+     *
+     * @param defaultValueSupplier the value supplier to set if none is present
+     * @return the data directory
+     */
+    public static Path getOrSet(Supplier<String> defaultValueSupplier) {
         final String existing = viaProperty()
                 .or(DataDir::viaWorkspace)
                 .or(DataDir::viaEnvironmentVariable)
@@ -41,6 +54,7 @@ public class DataDir {
         if (existing != null) {
             return Path.of(existing);
         }
+        final String defaultValue = defaultValueSupplier.get();
         System.setProperty(PROPERTY, defaultValue);
         return Path.of(defaultValue);
     }
