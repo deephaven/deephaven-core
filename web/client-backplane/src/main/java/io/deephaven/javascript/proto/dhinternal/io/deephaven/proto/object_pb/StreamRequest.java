@@ -22,13 +22,13 @@ public class StreamRequest {
         @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
         public interface ConnectFieldType {
             @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
-            public interface TypedTicketFieldType {
+            public interface SourceIdFieldType {
                 @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
                 public interface TicketFieldType {
                     @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
                     public interface GetTicketUnionType {
                         @JsOverlay
-                        static StreamRequest.ToObjectReturnType.ConnectFieldType.TypedTicketFieldType.TicketFieldType.GetTicketUnionType of(
+                        static StreamRequest.ToObjectReturnType.ConnectFieldType.SourceIdFieldType.TicketFieldType.GetTicketUnionType of(
                                 Object o) {
                             return Js.cast(o);
                         }
@@ -55,46 +55,46 @@ public class StreamRequest {
                     }
 
                     @JsOverlay
-                    static StreamRequest.ToObjectReturnType.ConnectFieldType.TypedTicketFieldType.TicketFieldType create() {
+                    static StreamRequest.ToObjectReturnType.ConnectFieldType.SourceIdFieldType.TicketFieldType create() {
                         return Js.uncheckedCast(JsPropertyMap.of());
                     }
 
                     @JsProperty
-                    StreamRequest.ToObjectReturnType.ConnectFieldType.TypedTicketFieldType.TicketFieldType.GetTicketUnionType getTicket();
+                    StreamRequest.ToObjectReturnType.ConnectFieldType.SourceIdFieldType.TicketFieldType.GetTicketUnionType getTicket();
 
                     @JsProperty
                     void setTicket(
-                            StreamRequest.ToObjectReturnType.ConnectFieldType.TypedTicketFieldType.TicketFieldType.GetTicketUnionType ticket);
+                            StreamRequest.ToObjectReturnType.ConnectFieldType.SourceIdFieldType.TicketFieldType.GetTicketUnionType ticket);
 
                     @JsOverlay
                     default void setTicket(String ticket) {
                         setTicket(
-                                Js.<StreamRequest.ToObjectReturnType.ConnectFieldType.TypedTicketFieldType.TicketFieldType.GetTicketUnionType>uncheckedCast(
+                                Js.<StreamRequest.ToObjectReturnType.ConnectFieldType.SourceIdFieldType.TicketFieldType.GetTicketUnionType>uncheckedCast(
                                         ticket));
                     }
 
                     @JsOverlay
                     default void setTicket(Uint8Array ticket) {
                         setTicket(
-                                Js.<StreamRequest.ToObjectReturnType.ConnectFieldType.TypedTicketFieldType.TicketFieldType.GetTicketUnionType>uncheckedCast(
+                                Js.<StreamRequest.ToObjectReturnType.ConnectFieldType.SourceIdFieldType.TicketFieldType.GetTicketUnionType>uncheckedCast(
                                         ticket));
                     }
                 }
 
                 @JsOverlay
-                static StreamRequest.ToObjectReturnType.ConnectFieldType.TypedTicketFieldType create() {
+                static StreamRequest.ToObjectReturnType.ConnectFieldType.SourceIdFieldType create() {
                     return Js.uncheckedCast(JsPropertyMap.of());
                 }
 
                 @JsProperty
-                StreamRequest.ToObjectReturnType.ConnectFieldType.TypedTicketFieldType.TicketFieldType getTicket();
+                StreamRequest.ToObjectReturnType.ConnectFieldType.SourceIdFieldType.TicketFieldType getTicket();
 
                 @JsProperty
                 String getType();
 
                 @JsProperty
                 void setTicket(
-                        StreamRequest.ToObjectReturnType.ConnectFieldType.TypedTicketFieldType.TicketFieldType ticket);
+                        StreamRequest.ToObjectReturnType.ConnectFieldType.SourceIdFieldType.TicketFieldType ticket);
 
                 @JsProperty
                 void setType(String type);
@@ -106,11 +106,11 @@ public class StreamRequest {
             }
 
             @JsProperty
-            StreamRequest.ToObjectReturnType.ConnectFieldType.TypedTicketFieldType getTypedTicket();
+            StreamRequest.ToObjectReturnType.ConnectFieldType.SourceIdFieldType getSourceId();
 
             @JsProperty
-            void setTypedTicket(
-                    StreamRequest.ToObjectReturnType.ConnectFieldType.TypedTicketFieldType typedTicket);
+            void setSourceId(
+                    StreamRequest.ToObjectReturnType.ConnectFieldType.SourceIdFieldType sourceId);
         }
 
         @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
@@ -149,10 +149,18 @@ public class StreamRequest {
             }
 
             @JsProperty
+            JsArray<Object> getExportedReferencesList();
+
+            @JsProperty
             StreamRequest.ToObjectReturnType.DataFieldType.GetPayloadUnionType getPayload();
 
             @JsProperty
-            JsArray<Object> getTypedExportIdsList();
+            void setExportedReferencesList(JsArray<Object> exportedReferencesList);
+
+            @JsOverlay
+            default void setExportedReferencesList(Object[] exportedReferencesList) {
+                setExportedReferencesList(Js.<JsArray<Object>>uncheckedCast(exportedReferencesList));
+            }
 
             @JsProperty
             void setPayload(StreamRequest.ToObjectReturnType.DataFieldType.GetPayloadUnionType payload);
@@ -169,14 +177,6 @@ public class StreamRequest {
                 setPayload(
                         Js.<StreamRequest.ToObjectReturnType.DataFieldType.GetPayloadUnionType>uncheckedCast(
                                 payload));
-            }
-
-            @JsProperty
-            void setTypedExportIdsList(JsArray<Object> typedExportIdsList);
-
-            @JsOverlay
-            default void setTypedExportIdsList(Object[] typedExportIdsList) {
-                setTypedExportIdsList(Js.<JsArray<Object>>uncheckedCast(typedExportIdsList));
             }
         }
 
@@ -203,13 +203,13 @@ public class StreamRequest {
         @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
         public interface ConnectFieldType {
             @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
-            public interface TypedTicketFieldType {
+            public interface SourceIdFieldType {
                 @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
                 public interface TicketFieldType {
                     @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
                     public interface GetTicketUnionType {
                         @JsOverlay
-                        static StreamRequest.ToObjectReturnType0.ConnectFieldType.TypedTicketFieldType.TicketFieldType.GetTicketUnionType of(
+                        static StreamRequest.ToObjectReturnType0.ConnectFieldType.SourceIdFieldType.TicketFieldType.GetTicketUnionType of(
                                 Object o) {
                             return Js.cast(o);
                         }
@@ -236,46 +236,46 @@ public class StreamRequest {
                     }
 
                     @JsOverlay
-                    static StreamRequest.ToObjectReturnType0.ConnectFieldType.TypedTicketFieldType.TicketFieldType create() {
+                    static StreamRequest.ToObjectReturnType0.ConnectFieldType.SourceIdFieldType.TicketFieldType create() {
                         return Js.uncheckedCast(JsPropertyMap.of());
                     }
 
                     @JsProperty
-                    StreamRequest.ToObjectReturnType0.ConnectFieldType.TypedTicketFieldType.TicketFieldType.GetTicketUnionType getTicket();
+                    StreamRequest.ToObjectReturnType0.ConnectFieldType.SourceIdFieldType.TicketFieldType.GetTicketUnionType getTicket();
 
                     @JsProperty
                     void setTicket(
-                            StreamRequest.ToObjectReturnType0.ConnectFieldType.TypedTicketFieldType.TicketFieldType.GetTicketUnionType ticket);
+                            StreamRequest.ToObjectReturnType0.ConnectFieldType.SourceIdFieldType.TicketFieldType.GetTicketUnionType ticket);
 
                     @JsOverlay
                     default void setTicket(String ticket) {
                         setTicket(
-                                Js.<StreamRequest.ToObjectReturnType0.ConnectFieldType.TypedTicketFieldType.TicketFieldType.GetTicketUnionType>uncheckedCast(
+                                Js.<StreamRequest.ToObjectReturnType0.ConnectFieldType.SourceIdFieldType.TicketFieldType.GetTicketUnionType>uncheckedCast(
                                         ticket));
                     }
 
                     @JsOverlay
                     default void setTicket(Uint8Array ticket) {
                         setTicket(
-                                Js.<StreamRequest.ToObjectReturnType0.ConnectFieldType.TypedTicketFieldType.TicketFieldType.GetTicketUnionType>uncheckedCast(
+                                Js.<StreamRequest.ToObjectReturnType0.ConnectFieldType.SourceIdFieldType.TicketFieldType.GetTicketUnionType>uncheckedCast(
                                         ticket));
                     }
                 }
 
                 @JsOverlay
-                static StreamRequest.ToObjectReturnType0.ConnectFieldType.TypedTicketFieldType create() {
+                static StreamRequest.ToObjectReturnType0.ConnectFieldType.SourceIdFieldType create() {
                     return Js.uncheckedCast(JsPropertyMap.of());
                 }
 
                 @JsProperty
-                StreamRequest.ToObjectReturnType0.ConnectFieldType.TypedTicketFieldType.TicketFieldType getTicket();
+                StreamRequest.ToObjectReturnType0.ConnectFieldType.SourceIdFieldType.TicketFieldType getTicket();
 
                 @JsProperty
                 String getType();
 
                 @JsProperty
                 void setTicket(
-                        StreamRequest.ToObjectReturnType0.ConnectFieldType.TypedTicketFieldType.TicketFieldType ticket);
+                        StreamRequest.ToObjectReturnType0.ConnectFieldType.SourceIdFieldType.TicketFieldType ticket);
 
                 @JsProperty
                 void setType(String type);
@@ -287,11 +287,11 @@ public class StreamRequest {
             }
 
             @JsProperty
-            StreamRequest.ToObjectReturnType0.ConnectFieldType.TypedTicketFieldType getTypedTicket();
+            StreamRequest.ToObjectReturnType0.ConnectFieldType.SourceIdFieldType getSourceId();
 
             @JsProperty
-            void setTypedTicket(
-                    StreamRequest.ToObjectReturnType0.ConnectFieldType.TypedTicketFieldType typedTicket);
+            void setSourceId(
+                    StreamRequest.ToObjectReturnType0.ConnectFieldType.SourceIdFieldType sourceId);
         }
 
         @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
@@ -330,10 +330,18 @@ public class StreamRequest {
             }
 
             @JsProperty
+            JsArray<Object> getExportedReferencesList();
+
+            @JsProperty
             StreamRequest.ToObjectReturnType0.DataFieldType.GetPayloadUnionType getPayload();
 
             @JsProperty
-            JsArray<Object> getTypedExportIdsList();
+            void setExportedReferencesList(JsArray<Object> exportedReferencesList);
+
+            @JsOverlay
+            default void setExportedReferencesList(Object[] exportedReferencesList) {
+                setExportedReferencesList(Js.<JsArray<Object>>uncheckedCast(exportedReferencesList));
+            }
 
             @JsProperty
             void setPayload(StreamRequest.ToObjectReturnType0.DataFieldType.GetPayloadUnionType payload);
@@ -350,14 +358,6 @@ public class StreamRequest {
                 setPayload(
                         Js.<StreamRequest.ToObjectReturnType0.DataFieldType.GetPayloadUnionType>uncheckedCast(
                                 payload));
-            }
-
-            @JsProperty
-            void setTypedExportIdsList(JsArray<Object> typedExportIdsList);
-
-            @JsOverlay
-            default void setTypedExportIdsList(Object[] typedExportIdsList) {
-                setTypedExportIdsList(Js.<JsArray<Object>>uncheckedCast(typedExportIdsList));
             }
         }
 

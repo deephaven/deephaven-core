@@ -20,13 +20,13 @@ public class ConnectRequest {
     @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
     public interface ToObjectReturnType {
         @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
-        public interface TypedTicketFieldType {
+        public interface SourceIdFieldType {
             @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
             public interface TicketFieldType {
                 @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
                 public interface GetTicketUnionType {
                     @JsOverlay
-                    static ConnectRequest.ToObjectReturnType.TypedTicketFieldType.TicketFieldType.GetTicketUnionType of(
+                    static ConnectRequest.ToObjectReturnType.SourceIdFieldType.TicketFieldType.GetTicketUnionType of(
                             Object o) {
                         return Js.cast(o);
                     }
@@ -53,45 +53,45 @@ public class ConnectRequest {
                 }
 
                 @JsOverlay
-                static ConnectRequest.ToObjectReturnType.TypedTicketFieldType.TicketFieldType create() {
+                static ConnectRequest.ToObjectReturnType.SourceIdFieldType.TicketFieldType create() {
                     return Js.uncheckedCast(JsPropertyMap.of());
                 }
 
                 @JsProperty
-                ConnectRequest.ToObjectReturnType.TypedTicketFieldType.TicketFieldType.GetTicketUnionType getTicket();
+                ConnectRequest.ToObjectReturnType.SourceIdFieldType.TicketFieldType.GetTicketUnionType getTicket();
 
                 @JsProperty
                 void setTicket(
-                        ConnectRequest.ToObjectReturnType.TypedTicketFieldType.TicketFieldType.GetTicketUnionType ticket);
+                        ConnectRequest.ToObjectReturnType.SourceIdFieldType.TicketFieldType.GetTicketUnionType ticket);
 
                 @JsOverlay
                 default void setTicket(String ticket) {
                     setTicket(
-                            Js.<ConnectRequest.ToObjectReturnType.TypedTicketFieldType.TicketFieldType.GetTicketUnionType>uncheckedCast(
+                            Js.<ConnectRequest.ToObjectReturnType.SourceIdFieldType.TicketFieldType.GetTicketUnionType>uncheckedCast(
                                     ticket));
                 }
 
                 @JsOverlay
                 default void setTicket(Uint8Array ticket) {
                     setTicket(
-                            Js.<ConnectRequest.ToObjectReturnType.TypedTicketFieldType.TicketFieldType.GetTicketUnionType>uncheckedCast(
+                            Js.<ConnectRequest.ToObjectReturnType.SourceIdFieldType.TicketFieldType.GetTicketUnionType>uncheckedCast(
                                     ticket));
                 }
             }
 
             @JsOverlay
-            static ConnectRequest.ToObjectReturnType.TypedTicketFieldType create() {
+            static ConnectRequest.ToObjectReturnType.SourceIdFieldType create() {
                 return Js.uncheckedCast(JsPropertyMap.of());
             }
 
             @JsProperty
-            ConnectRequest.ToObjectReturnType.TypedTicketFieldType.TicketFieldType getTicket();
+            ConnectRequest.ToObjectReturnType.SourceIdFieldType.TicketFieldType getTicket();
 
             @JsProperty
             String getType();
 
             @JsProperty
-            void setTicket(ConnectRequest.ToObjectReturnType.TypedTicketFieldType.TicketFieldType ticket);
+            void setTicket(ConnectRequest.ToObjectReturnType.SourceIdFieldType.TicketFieldType ticket);
 
             @JsProperty
             void setType(String type);
@@ -103,22 +103,22 @@ public class ConnectRequest {
         }
 
         @JsProperty
-        ConnectRequest.ToObjectReturnType.TypedTicketFieldType getTypedTicket();
+        ConnectRequest.ToObjectReturnType.SourceIdFieldType getSourceId();
 
         @JsProperty
-        void setTypedTicket(ConnectRequest.ToObjectReturnType.TypedTicketFieldType typedTicket);
+        void setSourceId(ConnectRequest.ToObjectReturnType.SourceIdFieldType sourceId);
     }
 
     @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
     public interface ToObjectReturnType0 {
         @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
-        public interface TypedTicketFieldType {
+        public interface SourceIdFieldType {
             @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
             public interface TicketFieldType {
                 @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
                 public interface GetTicketUnionType {
                     @JsOverlay
-                    static ConnectRequest.ToObjectReturnType0.TypedTicketFieldType.TicketFieldType.GetTicketUnionType of(
+                    static ConnectRequest.ToObjectReturnType0.SourceIdFieldType.TicketFieldType.GetTicketUnionType of(
                             Object o) {
                         return Js.cast(o);
                     }
@@ -145,46 +145,45 @@ public class ConnectRequest {
                 }
 
                 @JsOverlay
-                static ConnectRequest.ToObjectReturnType0.TypedTicketFieldType.TicketFieldType create() {
+                static ConnectRequest.ToObjectReturnType0.SourceIdFieldType.TicketFieldType create() {
                     return Js.uncheckedCast(JsPropertyMap.of());
                 }
 
                 @JsProperty
-                ConnectRequest.ToObjectReturnType0.TypedTicketFieldType.TicketFieldType.GetTicketUnionType getTicket();
+                ConnectRequest.ToObjectReturnType0.SourceIdFieldType.TicketFieldType.GetTicketUnionType getTicket();
 
                 @JsProperty
                 void setTicket(
-                        ConnectRequest.ToObjectReturnType0.TypedTicketFieldType.TicketFieldType.GetTicketUnionType ticket);
+                        ConnectRequest.ToObjectReturnType0.SourceIdFieldType.TicketFieldType.GetTicketUnionType ticket);
 
                 @JsOverlay
                 default void setTicket(String ticket) {
                     setTicket(
-                            Js.<ConnectRequest.ToObjectReturnType0.TypedTicketFieldType.TicketFieldType.GetTicketUnionType>uncheckedCast(
+                            Js.<ConnectRequest.ToObjectReturnType0.SourceIdFieldType.TicketFieldType.GetTicketUnionType>uncheckedCast(
                                     ticket));
                 }
 
                 @JsOverlay
                 default void setTicket(Uint8Array ticket) {
                     setTicket(
-                            Js.<ConnectRequest.ToObjectReturnType0.TypedTicketFieldType.TicketFieldType.GetTicketUnionType>uncheckedCast(
+                            Js.<ConnectRequest.ToObjectReturnType0.SourceIdFieldType.TicketFieldType.GetTicketUnionType>uncheckedCast(
                                     ticket));
                 }
             }
 
             @JsOverlay
-            static ConnectRequest.ToObjectReturnType0.TypedTicketFieldType create() {
+            static ConnectRequest.ToObjectReturnType0.SourceIdFieldType create() {
                 return Js.uncheckedCast(JsPropertyMap.of());
             }
 
             @JsProperty
-            ConnectRequest.ToObjectReturnType0.TypedTicketFieldType.TicketFieldType getTicket();
+            ConnectRequest.ToObjectReturnType0.SourceIdFieldType.TicketFieldType getTicket();
 
             @JsProperty
             String getType();
 
             @JsProperty
-            void setTicket(
-                    ConnectRequest.ToObjectReturnType0.TypedTicketFieldType.TicketFieldType ticket);
+            void setTicket(ConnectRequest.ToObjectReturnType0.SourceIdFieldType.TicketFieldType ticket);
 
             @JsProperty
             void setType(String type);
@@ -196,10 +195,10 @@ public class ConnectRequest {
         }
 
         @JsProperty
-        ConnectRequest.ToObjectReturnType0.TypedTicketFieldType getTypedTicket();
+        ConnectRequest.ToObjectReturnType0.SourceIdFieldType getSourceId();
 
         @JsProperty
-        void setTypedTicket(ConnectRequest.ToObjectReturnType0.TypedTicketFieldType typedTicket);
+        void setSourceId(ConnectRequest.ToObjectReturnType0.SourceIdFieldType sourceId);
     }
 
     public static native ConnectRequest deserializeBinary(Uint8Array bytes);
@@ -212,17 +211,17 @@ public class ConnectRequest {
     public static native ConnectRequest.ToObjectReturnType toObject(
             boolean includeInstance, ConnectRequest msg);
 
-    public native void clearTypedTicket();
+    public native void clearSourceId();
 
-    public native TypedTicket getTypedTicket();
+    public native TypedTicket getSourceId();
 
-    public native boolean hasTypedTicket();
+    public native boolean hasSourceId();
 
     public native Uint8Array serializeBinary();
 
-    public native void setTypedTicket();
+    public native void setSourceId();
 
-    public native void setTypedTicket(TypedTicket value);
+    public native void setSourceId(TypedTicket value);
 
     public native ConnectRequest.ToObjectReturnType0 toObject();
 
