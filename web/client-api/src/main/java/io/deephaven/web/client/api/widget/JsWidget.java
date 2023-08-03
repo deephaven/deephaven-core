@@ -102,7 +102,7 @@ public class JsWidget extends HasEventHandling implements ServerObject, WidgetMe
             messageStream = streamFactory.get();
             messageStream.onData(res -> {
 
-                JsArray<JsWidgetExportedObject> responseObjects = res.getData().getTypedExportIdsList()
+                JsArray<JsWidgetExportedObject> responseObjects = res.getData().getExportedReferencesList()
                         .map((p0, p1, p2) -> new JsWidgetExportedObject(connection, p0));
                 if (!hasFetched) {
                     response = res;
@@ -130,7 +130,7 @@ public class JsWidget extends HasEventHandling implements ServerObject, WidgetMe
             // First message establishes a connection w/ the plugin object instance we're talking to
             StreamRequest req = new StreamRequest();
             ConnectRequest data = new ConnectRequest();
-            data.setTypedTicket(typedTicket);
+            data.setSourceId(typedTicket);
             req.setConnect(data);
             messageStream.send(req);
         });
@@ -249,7 +249,7 @@ public class JsWidget extends HasEventHandling implements ServerObject, WidgetMe
 
         for (int i = 0; references != null && i < references.length; i++) {
             ServerObject reference = references.getAt(i);
-            data.addTypedExportIds(reference.typedTicket());
+            data.addExportedReferences(reference.typedTicket());
         }
 
         req.setData(data);
