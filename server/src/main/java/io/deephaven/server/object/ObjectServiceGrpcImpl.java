@@ -67,7 +67,7 @@ public class ObjectServiceGrpcImpl extends ObjectServiceGrpc.ObjectServiceImplBa
                             "Already sent a connect request, cannot send another");
                 }
 
-                TypedTicket typedTicket = request.getConnect().getTypedTicket();
+                TypedTicket typedTicket = request.getConnect().getSourceId();
 
                 final String type = typedTicket.getType();
                 if (type.isEmpty()) {
@@ -95,8 +95,8 @@ public class ObjectServiceGrpcImpl extends ObjectServiceGrpc.ObjectServiceImplBa
             } else if (request.hasData()) {
                 // All other requests
                 Data data = request.getData();
-                List<SessionState.ExportObject<Object>> referenceObjects = data.getTypedExportIdsList().stream()
-                        .map(typedTicket -> ticketRouter.resolve(session, typedTicket.getTicket(), "messageObjectId"))
+                List<SessionState.ExportObject<Object>> referenceObjects = data.getExportedReferencesList().stream()
+                        .map(typedTicket -> ticketRouter.resolve(session, typedTicket.getTicket(), "ticket"))
                         .collect(Collectors.toList());
                 List<SessionState.ExportObject<Object>> requireObjects = new ArrayList<>(referenceObjects);
                 requireObjects.add(object);
@@ -159,7 +159,7 @@ public class ObjectServiceGrpcImpl extends ObjectServiceGrpc.ObjectServiceImplBa
                             responseObserver.onNext(FetchObjectResponse.newBuilder()
                                     .setType(type)
                                     .setData(value.getData().getPayload())
-                                    .addAllTypedExportIds(value.getData().getTypedExportIdsList())
+                                    .addAllTypedExportIds(value.getData().getExportedReferencesList())
                                     .build());
                         }
 
@@ -240,7 +240,7 @@ public class ObjectServiceGrpcImpl extends ObjectServiceGrpc.ObjectServiceImplBa
                     final ExportObject<?> exportObject = sessionState.newServerSideExport(reference);
                     exports.add(exportObject);
                     TypedTicket typedTicket = ticketForExport(exportObject, type);
-                    payload.addTypedExportIds(typedTicket);
+                    payload.addExportedReferences(typedTicket);
                 }
             } catch (RuntimeException | Error t) {
                 cleanup(exports, t);

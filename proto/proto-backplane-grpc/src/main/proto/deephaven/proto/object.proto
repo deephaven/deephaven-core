@@ -90,7 +90,7 @@ message FetchObjectResponse {
  * on the server.
  */
 message ConnectRequest {
-    io.deephaven.proto.backplane.grpc.TypedTicket typed_ticket = 1;
+    io.deephaven.proto.backplane.grpc.TypedTicket source_id = 1;
 }
 
 /*
@@ -101,7 +101,7 @@ message ConnectRequest {
  */
 message Data {
     bytes payload = 1;
-    repeated io.deephaven.proto.backplane.grpc.TypedTicket typed_export_ids = 2;
+    repeated io.deephaven.proto.backplane.grpc.TypedTicket exported_references = 2;
 }
 
 /*
