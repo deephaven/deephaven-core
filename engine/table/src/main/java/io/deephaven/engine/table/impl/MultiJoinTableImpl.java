@@ -10,6 +10,7 @@ import io.deephaven.engine.rowset.RowSetFactory;
 import io.deephaven.engine.rowset.RowSetShiftData;
 import io.deephaven.engine.rowset.WritableRowSet;
 import io.deephaven.engine.table.*;
+import io.deephaven.engine.table.impl.by.BitmapRandomBuilder;
 import io.deephaven.engine.table.impl.by.typed.TypedHasherFactory;
 import io.deephaven.engine.table.impl.multijoin.IncrementalMultiJoinStateManagerTypedBase;
 import io.deephaven.engine.table.impl.multijoin.StaticMultiJoinStateManagerTypedBase;
@@ -524,7 +525,7 @@ public class MultiJoinTableImpl implements MultiJoinTable {
             final boolean[] modifiedTables = new boolean[tableCount];
             final boolean[] modifiedTablesOnThisRow = new boolean[tableCount];
 
-            final RowSetBuilderRandom modifiedBuilder = RowSetFactory.builderRandom();
+            final RowSetBuilderRandom modifiedBuilder = new BitmapRandomBuilder((int) newSize);
             final RowSetBuilderRandom emptiedBuilder = RowSetFactory.builderRandom();
             final RowSetBuilderRandom reincarnatedBuilder = RowSetFactory.builderRandom();
 

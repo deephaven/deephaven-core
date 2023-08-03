@@ -439,14 +439,12 @@ public abstract class IncrementalMultiJoinStateManagerTypedBase implements Multi
 
         Assert.eqZero(rehashPointer, "rehashPointer");
 
-        alternateTableSize = oldTableSize;
         if (numEntries == 0) {
-            rehashPointer = 0;
             return false;
         }
-
-        rehashPointer = alternateTableSize;
         newAlternate();
+        alternateTableSize = oldTableSize;
+        rehashPointer = alternateTableSize;
         return true;
     }
 
@@ -473,6 +471,7 @@ public abstract class IncrementalMultiJoinStateManagerTypedBase implements Multi
         for (int ii = 0; ii < mainKeySources.length; ++ii) {
             alternateKeySources[ii] = null;
         }
+        alternateTableSize = 1;
     }
 
     public boolean rehashRequired(int nextChunkSize) {

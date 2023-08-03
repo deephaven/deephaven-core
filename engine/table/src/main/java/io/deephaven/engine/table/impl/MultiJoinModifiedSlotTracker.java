@@ -8,7 +8,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 public class MultiJoinModifiedSlotTracker {
-    /** The main table row that was modified. */
+    /** The output row that was modified. */
     private final IntegerArraySource modifiedOutputRows = new IntegerArraySource();
     /**
      * We store flags, one per nibble; 16 per location in flags, contiguous for multiple tables when we have more than
@@ -63,7 +63,7 @@ public class MultiJoinModifiedSlotTracker {
         }
         this.numTables = numTables;
         this.flagLocationsPerSlot = (numTables + FLAGS_PER_LOCATION - 1) / FLAGS_PER_LOCATION;
-        this.flagSource.ensureCapacity(flagLocationsPerSlot * allocated);
+        this.flagSource.ensureCapacity((long) allocated * flagLocationsPerSlot);
     }
 
     /**
@@ -99,9 +99,9 @@ public class MultiJoinModifiedSlotTracker {
     }
 
     /**
-     * Add a slot in the tracker to mark an add/remove/shift of a row in the main table.
+     * Add a slot in the tracker to mark an add/remove/shift of an output row.
      *
-     * @param outputRow The main table row to mark for modifications
+     * @param outputRow The row to mark for modifications
      * @param originalRedirection The redirection value before our modification
      * @param flags The flags to or into our state
      *
@@ -139,7 +139,7 @@ public class MultiJoinModifiedSlotTracker {
     }
 
     /**
-     * Add a slot in the tracker to mark a modification to a row in the main table.
+     * Add a slot in the tracker to mark a modification to an output row.
      *
      * @param outputRow The slot to add to the tracker.
      * @param flags The flags to or into our state
@@ -183,7 +183,7 @@ public class MultiJoinModifiedSlotTracker {
         if (pointer == allocated) {
             allocated += JoinControl.CHUNK_SIZE;
             modifiedOutputRows.ensureCapacity(allocated);
-            flagSource.ensureCapacity(allocated * flagLocationsPerSlot);
+            flagSource.ensureCapacity((long) allocated * flagLocationsPerSlot);
             this.originalRedirection.forEach(las -> las.ensureCapacity(allocated));
         }
     }

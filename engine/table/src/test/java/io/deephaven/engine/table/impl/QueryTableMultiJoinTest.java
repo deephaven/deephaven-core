@@ -198,9 +198,9 @@ public class QueryTableMultiJoinTest extends QueryTableTestBase {
     @Test
     public void testStaticOverflowAndRehash() {
         for (int size = 1000; size <= 100_000; size *= 10) {
-            testStatic(HIGH_LOAD_JOIN_CONTROL, 1000, 0, new String[] {"Key", "Key2"},
+            testStatic(HIGH_LOAD_JOIN_CONTROL, size, 0, new String[] {"Key", "Key2"},
                     CollectionUtil.ZERO_LENGTH_STRING_ARRAY);
-            testStatic(REHASH_JOIN_CONTROL, 1000, 0, new String[] {"Key", "Key2"},
+            testStatic(REHASH_JOIN_CONTROL, size, 0, new String[] {"Key", "Key2"},
                     CollectionUtil.ZERO_LENGTH_STRING_ARRAY);
         }
     }
@@ -208,7 +208,6 @@ public class QueryTableMultiJoinTest extends QueryTableTestBase {
     private void testStatic(JoinControl joinControl, int size, int seed, String[] keys, String[] drops) {
         final Random random = new Random(seed);
         final int tableCount = random.nextInt(10) + 1;
-
 
         final List<Table> inputTables = new ArrayList<>();
 
@@ -249,7 +248,6 @@ public class QueryTableMultiJoinTest extends QueryTableTestBase {
             seedCountForSize.put(10_000, 1);
             seedCountForSize.put(1_000, 10);
         }
-
 
         @Override
         public int applyAsInt(int size) {
@@ -297,7 +295,7 @@ public class QueryTableMultiJoinTest extends QueryTableTestBase {
         final int seedInitial = 0;
         final int maxSteps = 20;
 
-        for (int size = 1_000; size <= 1_000; size *= 10) {
+        for (int size = 1_000; size <= 100_000; size *= 10) {
             System.out.println("Size = " + size + ", seed = " + seedInitial);
             try (final SafeCloseable ignored = LivenessScopeStack.open()) {
                 testIncremental(HIGH_LOAD_JOIN_CONTROL, size, seedInitial, maxSteps, new String[] {"Key"},
