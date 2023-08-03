@@ -150,7 +150,7 @@ public class UpdatePerformanceTracker {
      * Start this UpdatePerformanceTracker, by beginning its first interval.
      */
     public void start() {
-        if (intervalStartTimeMillis != QueryConstants.NULL_LONG) {
+        if (intervalStartTimeMillis == QueryConstants.NULL_LONG) {
             intervalStartTimeMillis = System.currentTimeMillis();
             intervalStartTimeNanos = System.nanoTime();
         }
