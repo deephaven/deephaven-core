@@ -83,7 +83,14 @@ T = TypeVar("T")
 R = TypeVar("R")
 
 def j_runnable(callable: Callable[[], None]) -> jpy.JType:
-    """Todo"""
+    """Constructs a Java 'Runnable' implementation from a Python callable.
+
+    Args:
+        callable (Callable[[], None]): a Python callable that doesn't take any arguments and returns None
+
+    Returns:
+        io.deephaven.integrations.python.PythonRunnable instance
+    """
     return jpy.get_type("io.deephaven.integrations.python.PythonRunnable")(callable)
 
 
