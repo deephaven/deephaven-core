@@ -1,21 +1,24 @@
 # server-jetty-app
 
-This document is oriented towards getting a server up for local development.
-If you are interested in running a native production release or to see other options for starting the server, please see
-[https://deephaven.io/core/docs/how-to-guides/configuration/native-application/](https://deephaven.io/core/docs/how-to-guides/configuration/native-application/).
+This README is oriented towards getting a server up for local development in a development environment. From a development environment, users can modify source code towards contributing to the project, creating custom capabilities, and more.
 
-If using Python, see [Python development guide](../../py/README.md) for setting up the Python environment.
+If you wish to use Deephaven from a production environment, which is simpler but source code cannot be modified, see one of the following documents:
 
-## Local Development
+- [Quickstart for Docker](https://deephaven.io/core/docs/tutorials/quickstart/)
+- [How to configure the Deephaven native application](https://deephaven.io/core/docs/how-to-guides/configuration/native-application/)
 
-`server-jetty-app:run` will incorporate local Java changes on each start. If you are not frequently changing Java code, see the next section.
+This README deals with general development for either the Python or Groovy server-side API. For Python-specific development instructions, see the [Python development README](../../py/README.md).
+
+## Local development
+
+`./gradlew server-jetty-app:run` will incorporate local Java changes on each start. If you are not frequently changing Java code, see the next section.
 
 ```shell
-./gradlew server-jetty-app:run # Python enigne by default
-./gradlew server-jetty-app:run -Pgroovy # Groovy engine
+./gradlew server-jetty-app:run # Python session (default)
+./gradlew server-jetty-app:run -Pgroovy # Groovy session
 ```
 
-## Development with Infrequent Changes
+## Development with infrequent changes
 
 To create a more production-like environment, you can create and invoke the start script instead of running via gradle. This is faster if you need to often restart the server without making any changes to Java code (such as Python server development).
 
@@ -29,7 +32,7 @@ To create a more production-like environment, you can create and invoke the star
 The `START_OPTS` environment variable is used to set JVM arguments. For example:
 
 ```shell
-START_OPTS="-Xmx12g" ./gradlew server-jetty-app:run
+START_OPTS="-Xmx12g" ./gradlew server-jetty-app:run # Starts Deephaven with 12gb of heap memory
 ```
 
 While configuration properties can be inherited via JVM system properties (`-Dmy.property=my.value`), you may prefer to
@@ -40,6 +43,14 @@ On Mac OS, this file is `~/Library/Application Support/io.Deephaven-Data-Labs.de
 See [config-dir](https://deephaven.io/core/docs/how-to-guides/configuration/native-application/#config-directory) for more information on `<configDir>`.
 
 See [config-file](https://deephaven.io/core/docs/how-to-guides/configuration/config-file/) for more information on the configuration file format.
+
+### Shutdown
+
+There are multiple ways to shut down the Deephaven server. The easiest it to `ctrl+C` the process. If it's being run in background mode, you can kill it with a `SIGINT`.
+
+```sh
+kill -3 <pid>
+```
 
 ### SSL
 
