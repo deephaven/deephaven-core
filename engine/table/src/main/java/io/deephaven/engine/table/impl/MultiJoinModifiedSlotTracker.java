@@ -8,8 +8,8 @@ import java.util.ArrayList;
 import java.util.List;
 
 public class MultiJoinModifiedSlotTracker {
-    /** The slot that was modified. */
-    private final IntegerArraySource modifiedSlots = new IntegerArraySource();
+    /** The main table row that was modified. */
+    private final IntegerArraySource modifiedOutputRows = new IntegerArraySource();
     /**
      * We store flags, one per nibble; 16 per location in flags, contiguous for multiple tables when we have more than
      * 16.
@@ -25,11 +25,14 @@ public class MultiJoinModifiedSlotTracker {
      * The location that we must write to in modified slots; also if we have a pointer that falls outside the range [0,
      * pointer); then we know it is invalid
      */
-    private int pointer;
-    /** Tow many slots we have allocated */
+    private long pointer;
+    /** How many slots we have allocated */
     private int allocated;
-    /** Each time we clear, we add an offset to our cookies, this prevents us from reading old values */
-    private int cookieGeneration;
+    /**
+     * Each time we clear, we add an offset to our cookies, this prevents us from reading old values. Initialize to one
+     * to ensure newly allocated arrays cannot be interpreted as valid cookies.
+     */
+    private long cookieGeneration = 1;
 
     static final long SENTINEL_UNINITIALIZED_KEY = -2;
 
@@ -46,8 +49,8 @@ public class MultiJoinModifiedSlotTracker {
      */
     void clear() {
         cookieGeneration += pointer;
-        if (cookieGeneration > Integer.MAX_VALUE / 2) {
-            cookieGeneration = 0;
+        if (cookieGeneration > Long.MAX_VALUE / 2) {
+            cookieGeneration = 1;
         }
         pointer = 0;
     }
@@ -69,9 +72,9 @@ public class MultiJoinModifiedSlotTracker {
      *
      * @param cookie The cookie to check for validity
      *
-     * @return true if the cookie is from the current generation, and references a valid slot in our table
+     * @return true if the cookie is from the current generation, and references a valid row in our table
      */
-    private boolean isValidCookie(int cookie) {
+    private boolean isValidCookie(long cookie) {
         return cookie >= cookieGeneration && getPointerFromCookie(cookie) < pointer;
     }
 
@@ -81,7 +84,7 @@ public class MultiJoinModifiedSlotTracker {
      * @param pointer The pointer to convert to a cookie
      * @return The cookie to return to the user
      */
-    private int getCookieFromPointer(int pointer) {
+    private long getCookieFromPointer(long pointer) {
         return cookieGeneration + pointer;
     }
 
@@ -91,26 +94,25 @@ public class MultiJoinModifiedSlotTracker {
      * @param cookie The valid cookie
      * @return The pointer into modifiedSlots
      */
-    private int getPointerFromCookie(int cookie) {
+    private long getPointerFromCookie(long cookie) {
         return cookie - cookieGeneration;
     }
 
     /**
-     * Add a slot in the main table.
+     * Add a slot in the tracker to mark an add/remove/shift of a row in the main table.
      *
-     * @param slot The slot to add to the tracker
-     * @param originalRedirection If we are the addition of the slot, what the right value was before our modification
-     *        (otherwise ignored)
+     * @param outputRow The main table row to mark for modifications
+     * @param originalRedirection The redirection value before our modification
      * @param flags The flags to or into our state
      *
      * @return The cookie for future access
      */
-    public int addSlot(final int cookie, final int slot, final int tableNumber, final long originalRedirection,
+    public long addSlot(final long cookie, final int outputRow, final int tableNumber, final long originalRedirection,
             final byte flags) {
         if (!isValidCookie(cookie)) {
             // Create a new slot in the tracker and reset the flags and redirection.
             maybeAllocateChunk();
-            initializeNextTrackerSlot(slot, tableNumber, flags);
+            initializeNextTrackerSlot(outputRow, tableNumber, flags);
 
             for (int ii = 0; ii < this.originalRedirection.size(); ++ii) {
                 final LongArraySource originalRedirectionForTable = this.originalRedirection.get(ii);
@@ -123,8 +125,8 @@ public class MultiJoinModifiedSlotTracker {
             }
             return getCookieFromPointer(pointer++);
         } else {
-            // This tracker slot exists, update the flags and set the redirection for this table.
-            final int pointer = getPointerFromCookie(cookie);
+            // This tracker slot exists, update the flags and set the redirection for this row.
+            final long pointer = getPointerFromCookie(cookie);
 
             doFlagUpdate(tableNumber, flags, pointer);
 
@@ -137,31 +139,31 @@ public class MultiJoinModifiedSlotTracker {
     }
 
     /**
-     * Modify an existing slot in the main table.
+     * Add a slot in the tracker to mark a modification to a row in the main table.
      *
-     * @param slot The slot to add to the tracker.
+     * @param outputRow The slot to add to the tracker.
      * @param flags The flags to or into our state
      *
      * @return The cookie for future access
      */
-    public int modifySlot(final int cookie, final int slot, final int tableNumber, final byte flags) {
+    public long modifySlot(final long cookie, final int outputRow, final int tableNumber, final byte flags) {
         if (!isValidCookie(cookie)) {
-            // Create a new slot in the tracker and reset the flags and redirection for all tables.
+            // Create a new slot in the tracker and reset the flags and redirection for this row in all tables.
             maybeAllocateChunk();
-            initializeNextTrackerSlot(slot, tableNumber, flags);
+            initializeNextTrackerSlot(outputRow, tableNumber, flags);
             for (final LongArraySource originalRedirectionForTable : this.originalRedirection) {
                 originalRedirectionForTable.set(pointer, SENTINEL_UNINITIALIZED_KEY);
             }
             return getCookieFromPointer(pointer++);
         } else {
             // This tracker slot exists, update the flags only.
-            final int pointer = getPointerFromCookie(cookie);
+            final long pointer = getPointerFromCookie(cookie);
             doFlagUpdate(tableNumber, flags, pointer);
             return cookie;
         }
     }
 
-    private long flagLocationForSlotAndTable(final int pointer, final int tableNumber) {
+    private long flagLocationForSlotAndTable(final long pointer, final int tableNumber) {
         return pointer * flagLocationsPerSlot + (tableNumber / FLAGS_PER_LOCATION);
     }
 
@@ -180,21 +182,21 @@ public class MultiJoinModifiedSlotTracker {
     private void maybeAllocateChunk() {
         if (pointer == allocated) {
             allocated += JoinControl.CHUNK_SIZE;
-            modifiedSlots.ensureCapacity(allocated);
+            modifiedOutputRows.ensureCapacity(allocated);
             flagSource.ensureCapacity(allocated * flagLocationsPerSlot);
             this.originalRedirection.forEach(las -> las.ensureCapacity(allocated));
         }
     }
 
-    private void initializeNextTrackerSlot(final int slot, final int tableNumber, final byte flags) {
-        modifiedSlots.set(pointer, slot);
+    private void initializeNextTrackerSlot(final int outputRow, final int tableNumber, final byte flags) {
+        modifiedOutputRows.set(pointer, outputRow);
         for (int ii = 0; ii < flagLocationsPerSlot; ++ii) {
             flagSource.set(pointer * flagLocationsPerSlot + ii, 0L);
         }
         flagSource.set(flagLocationForSlotAndTable(pointer, tableNumber), setFlagInLong(tableNumber, flags));
     }
 
-    private void doFlagUpdate(int tableNumber, byte flags, int pointer) {
+    private void doFlagUpdate(int tableNumber, byte flags, long pointer) {
         final long flagLocation = flagLocationForSlotAndTable(pointer, tableNumber);
         final long existingFlagLong = flagSource.getUnsafe(flagLocation);
         final long updatedFlagLong = setFlagInLong(existingFlagLong, tableNumber, flags);
@@ -202,22 +204,24 @@ public class MultiJoinModifiedSlotTracker {
     }
 
     public interface ModifiedSlotConsumer {
-        void accept(int slot, long[] previousRedirections, byte[] flags);
+        void accept(int outputRow, long[] previousRedirections, byte[] flags);
     }
 
     void forAllModifiedSlots(ModifiedSlotConsumer slotConsumer) {
         final long[] previousRedirections = new long[numTables];
         final byte[] flagValues = new byte[numTables];
         for (long ii = 0; ii < pointer; ++ii) {
-            final int slot = modifiedSlots.getInt(ii);
+            final int outputRow = modifiedOutputRows.getInt(ii);
 
             int tt = 0;
+            // Processes fully populated longs.
             for (int ff = 0; ff < flagLocationsPerSlot - 1; ++ff) {
                 final long flagLong = flagSource.getUnsafe((ii * flagLocationsPerSlot) + ff);
                 for (int jj = 0; jj < FLAGS_PER_LOCATION; ++jj) {
                     flagValues[tt++] = (byte) ((flagLong >> (FLAG_BITS * jj)) & ((1L << FLAG_BITS) - 1));
                 }
             }
+            // Processes the final long containing <= 16 flags.
             final long flagLong = flagSource.getUnsafe((ii * flagLocationsPerSlot) + flagLocationsPerSlot - 1);
             for (int jj = 0; tt < numTables; ++jj) {
                 flagValues[tt++] = (byte) ((flagLong >> (FLAG_BITS * jj)) & ((1L << FLAG_BITS) - 1));
@@ -226,7 +230,7 @@ public class MultiJoinModifiedSlotTracker {
             for (tt = 0; tt < previousRedirections.length; ++tt) {
                 previousRedirections[tt] = originalRedirection.get(tt).getUnsafe(ii);
             }
-            slotConsumer.accept(slot, previousRedirections, flagValues);
+            slotConsumer.accept(outputRow, previousRedirections, flagValues);
         }
     }
 }

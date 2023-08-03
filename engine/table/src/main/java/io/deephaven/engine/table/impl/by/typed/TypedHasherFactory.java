@@ -373,7 +373,6 @@ public class TypedHasherFactory {
                     .emptyStateName("EMPTY_OUTPUT_ROW")
                     .includeOriginalSources(true)
                     .supportRehash(true)
-                    .addExtraPartialRehashParameter(modifiedSlotTrackerParam)
                     .moveMainFull(TypedMultiJoinFactory::incrementalMoveMainFull)
                     .moveMainAlternate(TypedMultiJoinFactory::incrementalMoveMainAlternate)
                     .alwaysMoveMain(true)

@@ -20,7 +20,7 @@ public class TypedMultiJoinFactory {
 
     public static void staticBuildLeftFound(HasherConfig<?> hasherConfig, boolean alternate,
             CodeBlock.Builder builder) {
-        builder.beginControlFlow("if (tableRedirSource.getLong(slotValue) != NO_RIGHT_STATE_VALUE)");
+        builder.beginControlFlow("if (tableRedirSource.getLong(slotValue) != NO_REDIRECTION)");
         builder.addStatement(
                 "throw new IllegalStateException(\"Duplicate key found for \" + keyString(sourceKeyChunks, chunkPosition) + \" in table \" + tableNumber + \".\")");
         builder.endControlFlow();
@@ -32,8 +32,8 @@ public class TypedMultiJoinFactory {
     public static void staticMoveMainFull(CodeBlock.Builder builder) {}
 
     public static void incrementalRehashSetup(CodeBlock.Builder builder) {
-        builder.addStatement("final int [] oldModifiedCookie = mainModifiedTrackerCookieSource.getArray()");
-        builder.addStatement("final int [] destModifiedCookie = new int[tableSize]");
+        builder.addStatement("final long [] oldModifiedCookie = mainModifiedTrackerCookieSource.getArray()");
+        builder.addStatement("final long [] destModifiedCookie = new long[tableSize]");
         builder.addStatement("mainModifiedTrackerCookieSource.setArray(destModifiedCookie)");
     }
 
@@ -42,14 +42,14 @@ public class TypedMultiJoinFactory {
     }
 
     public static void incrementalMoveMainAlternate(CodeBlock.Builder builder) {
-        builder.addStatement("final int cookie  = alternateModifiedTrackerCookieSource.getUnsafe(locationToMigrate)");
+        builder.addStatement("final long cookie  = alternateModifiedTrackerCookieSource.getUnsafe(locationToMigrate)");
         builder.addStatement("mainModifiedTrackerCookieSource.set(destinationTableLocation, cookie)");
         builder.addStatement("alternateModifiedTrackerCookieSource.set(locationToMigrate, EMPTY_COOKIE_SLOT)");
     }
 
     public static void incrementalBuildLeftFound(HasherConfig<?> hasherConfig, boolean alternate,
             CodeBlock.Builder builder) {
-        builder.beginControlFlow("if (tableRedirSource.getLong(slotValue) != NO_RIGHT_STATE_VALUE)");
+        builder.beginControlFlow("if (tableRedirSource.getLong(slotValue) != NO_REDIRECTION)");
         builder.addStatement(
                 "throw new IllegalStateException(\"Duplicate key found for \" + keyString(sourceKeyChunks, chunkPosition) + \" in table \" + tableNumber + \".\")");
         builder.endControlFlow();
@@ -57,12 +57,12 @@ public class TypedMultiJoinFactory {
 
         builder.beginControlFlow("if (modifiedSlotTracker != null)");
         if (!alternate) {
-            builder.addStatement("final int cookie = mainModifiedTrackerCookieSource.getUnsafe(tableLocation)");
+            builder.addStatement("final long cookie = mainModifiedTrackerCookieSource.getUnsafe(tableLocation)");
             builder.addStatement(
                     "mainModifiedTrackerCookieSource.set(tableLocation, modifiedSlotTracker.addSlot(cookie, slotValue, tableNumber, RowSequence.NULL_ROW_KEY, trackerFlag))");
         } else {
             builder.addStatement(
-                    "final int cookie = alternateModifiedTrackerCookieSource.getUnsafe(alternateTableLocation)");
+                    "final long cookie = alternateModifiedTrackerCookieSource.getUnsafe(alternateTableLocation)");
             builder.addStatement(
                     "alternateModifiedTrackerCookieSource.set(alternateTableLocation, modifiedSlotTracker.addSlot(cookie, slotValue, tableNumber, RowSequence.NULL_ROW_KEY, trackerFlag))");
         }
@@ -77,18 +77,22 @@ public class TypedMultiJoinFactory {
         for (int ii = 0; ii < chunkTypes.length; ii++) {
             builder.addStatement("outputKeySources[" + ii + "].set((long)outputKey, k" + ii + ")");
         }
+        builder.add("// NOTE: if there are other tables adding this row this cycle, we will add these into the slot\n");
+        builder.add(
+                "// tracker. However, when the modified slots are processed we will identify the output row as new\n");
+        builder.add("// for this cycle and ignore the incomplete tracker data.\n");
         builder.addStatement("mainModifiedTrackerCookieSource.set(tableLocation, EMPTY_COOKIE_SLOT)");
     }
 
     public static void incrementalModifyLeftFound(HasherConfig<?> hasherConfig, boolean alternate,
             CodeBlock.Builder builder) {
         if (!alternate) {
-            builder.addStatement("final int cookie = mainModifiedTrackerCookieSource.getUnsafe(tableLocation)");
+            builder.addStatement("final long cookie = mainModifiedTrackerCookieSource.getUnsafe(tableLocation)");
             builder.addStatement(
                     "mainModifiedTrackerCookieSource.set(tableLocation, modifiedSlotTracker.modifySlot(cookie, slotValue, tableNumber, trackerFlag))");
         } else {
             builder.addStatement(
-                    "final int cookie = alternateModifiedTrackerCookieSource.getUnsafe(alternateTableLocation)");
+                    "final long cookie = alternateModifiedTrackerCookieSource.getUnsafe(alternateTableLocation)");
             builder.addStatement(
                     "alternateModifiedTrackerCookieSource.set(alternateTableLocation, modifiedSlotTracker.modifySlot(cookie, slotValue, tableNumber, trackerFlag))");
         }
@@ -102,16 +106,16 @@ public class TypedMultiJoinFactory {
     public static void incrementalRemoveLeftFound(HasherConfig<?> hasherConfig, boolean alternate,
             CodeBlock.Builder builder) {
         builder.addStatement("final long mappedRowKey = tableRedirSource.getUnsafe(slotValue)");
-        builder.addStatement("tableRedirSource.set(slotValue, NO_RIGHT_STATE_VALUE)");
+        builder.addStatement("tableRedirSource.set(slotValue, NO_REDIRECTION)");
         builder.addStatement(
                 "Assert.eq(rowKeyChunk.get(chunkPosition), \"rowKey\", mappedRowKey, \"mappedRowKey\")");
         if (!alternate) {
-            builder.addStatement("final int cookie = mainModifiedTrackerCookieSource.getUnsafe(tableLocation)");
+            builder.addStatement("final long cookie = mainModifiedTrackerCookieSource.getUnsafe(tableLocation)");
             builder.addStatement(
                     "mainModifiedTrackerCookieSource.set(tableLocation, modifiedSlotTracker.addSlot(cookie, slotValue, tableNumber, mappedRowKey, trackerFlag))");
         } else {
             builder.addStatement(
-                    "final int cookie = alternateModifiedTrackerCookieSource.getUnsafe(alternateTableLocation)");
+                    "final long cookie = alternateModifiedTrackerCookieSource.getUnsafe(alternateTableLocation)");
             builder.addStatement(
                     "alternateModifiedTrackerCookieSource.set(alternateTableLocation, modifiedSlotTracker.addSlot(cookie, slotValue, tableNumber, mappedRowKey, trackerFlag))");
         }
@@ -129,11 +133,12 @@ public class TypedMultiJoinFactory {
                 "Assert.eq(rowKeyChunk.get(chunkPosition), \"rowKey\", mappedRowKey, \"mappedRowKey\")");
         builder.addStatement("tableRedirSource.set(slotValue, mappedRowKey + shiftDelta)");
         if (!alternate) {
-            builder.addStatement("final int cookie = mainModifiedTrackerCookieSource.getUnsafe(tableLocation)");
+            builder.addStatement("final long cookie = mainModifiedTrackerCookieSource.getUnsafe(tableLocation)");
             builder.addStatement(
                     "mainModifiedTrackerCookieSource.set(tableLocation, modifiedSlotTracker.addSlot(cookie, slotValue, tableNumber, mappedRowKey, trackerFlag))");
         } else {
-            builder.addStatement("final int cookie = mainModifiedTrackerCookieSource.getUnsafe(tableLocation)");
+            builder.addStatement(
+                    "final long cookie = alternateModifiedTrackerCookieSource.getUnsafe(alternateTableLocation)");
             builder.addStatement(
                     "alternateModifiedTrackerCookieSource.set(alternateTableLocation, modifiedSlotTracker.addSlot(cookie, slotValue, tableNumber, mappedRowKey, trackerFlag))");
         }

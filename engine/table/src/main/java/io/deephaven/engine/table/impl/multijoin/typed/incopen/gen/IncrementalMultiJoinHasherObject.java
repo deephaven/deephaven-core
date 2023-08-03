@@ -64,12 +64,12 @@ final class IncrementalMultiJoinHasherObject extends IncrementalMultiJoinStateMa
                         if (slotValue == EMPTY_OUTPUT_ROW) {
                             break;
                         } else if (eq(alternateKeySource0.getUnsafe(alternateTableLocation), k0)) {
-                            if (tableRedirSource.getLong(slotValue) != NO_RIGHT_STATE_VALUE) {
+                            if (tableRedirSource.getLong(slotValue) != NO_REDIRECTION) {
                                 throw new IllegalStateException("Duplicate key found for " + keyString(sourceKeyChunks, chunkPosition) + " in table " + tableNumber + ".");
                             }
                             tableRedirSource.set(slotValue, rowKeyChunk.get(chunkPosition));
                             if (modifiedSlotTracker != null) {
-                                final int cookie = alternateModifiedTrackerCookieSource.getUnsafe(alternateTableLocation);
+                                final long cookie = alternateModifiedTrackerCookieSource.getUnsafe(alternateTableLocation);
                                 alternateModifiedTrackerCookieSource.set(alternateTableLocation, modifiedSlotTracker.addSlot(cookie, slotValue, tableNumber, RowSequence.NULL_ROW_KEY, trackerFlag));
                             }
                             break MAIN_SEARCH;
@@ -84,15 +84,18 @@ final class IncrementalMultiJoinHasherObject extends IncrementalMultiJoinStateMa
                     slotToOutputRow.set(tableLocation, outputKey);
                     tableRedirSource.set(outputKey, rowKeyChunk.get(chunkPosition));
                     outputKeySources[0].set((long)outputKey, k0);
+                    // NOTE: if there are other tables adding this row this cycle, we will add these into the slot
+                    // tracker. However, when the modified slots are processed we will identify the output row as new
+                    // for this cycle and ignore the incomplete tracker data.
                     mainModifiedTrackerCookieSource.set(tableLocation, EMPTY_COOKIE_SLOT);
                     break;
                 } else if (eq(mainKeySource0.getUnsafe(tableLocation), k0)) {
-                    if (tableRedirSource.getLong(slotValue) != NO_RIGHT_STATE_VALUE) {
+                    if (tableRedirSource.getLong(slotValue) != NO_REDIRECTION) {
                         throw new IllegalStateException("Duplicate key found for " + keyString(sourceKeyChunks, chunkPosition) + " in table " + tableNumber + ".");
                     }
                     tableRedirSource.set(slotValue, rowKeyChunk.get(chunkPosition));
                     if (modifiedSlotTracker != null) {
-                        final int cookie = mainModifiedTrackerCookieSource.getUnsafe(tableLocation);
+                        final long cookie = mainModifiedTrackerCookieSource.getUnsafe(tableLocation);
                         mainModifiedTrackerCookieSource.set(tableLocation, modifiedSlotTracker.addSlot(cookie, slotValue, tableNumber, RowSequence.NULL_ROW_KEY, trackerFlag));
                     }
                     break;
@@ -120,9 +123,9 @@ final class IncrementalMultiJoinHasherObject extends IncrementalMultiJoinStateMa
             while ((slotValue = slotToOutputRow.getUnsafe(tableLocation)) != EMPTY_OUTPUT_ROW) {
                 if (eq(mainKeySource0.getUnsafe(tableLocation), k0)) {
                     final long mappedRowKey = tableRedirSource.getUnsafe(slotValue);
-                    tableRedirSource.set(slotValue, NO_RIGHT_STATE_VALUE);
+                    tableRedirSource.set(slotValue, NO_REDIRECTION);
                     Assert.eq(rowKeyChunk.get(chunkPosition), "rowKey", mappedRowKey, "mappedRowKey");
-                    final int cookie = mainModifiedTrackerCookieSource.getUnsafe(tableLocation);
+                    final long cookie = mainModifiedTrackerCookieSource.getUnsafe(tableLocation);
                     mainModifiedTrackerCookieSource.set(tableLocation, modifiedSlotTracker.addSlot(cookie, slotValue, tableNumber, mappedRowKey, trackerFlag));
                     found = true;
                     break;
@@ -138,9 +141,9 @@ final class IncrementalMultiJoinHasherObject extends IncrementalMultiJoinStateMa
                     while ((slotValue = alternateSlotToOutputRow.getUnsafe(alternateTableLocation)) != EMPTY_OUTPUT_ROW) {
                         if (eq(alternateKeySource0.getUnsafe(alternateTableLocation), k0)) {
                             final long mappedRowKey = tableRedirSource.getUnsafe(slotValue);
-                            tableRedirSource.set(slotValue, NO_RIGHT_STATE_VALUE);
+                            tableRedirSource.set(slotValue, NO_REDIRECTION);
                             Assert.eq(rowKeyChunk.get(chunkPosition), "rowKey", mappedRowKey, "mappedRowKey");
-                            final int cookie = alternateModifiedTrackerCookieSource.getUnsafe(alternateTableLocation);
+                            final long cookie = alternateModifiedTrackerCookieSource.getUnsafe(alternateTableLocation);
                             alternateModifiedTrackerCookieSource.set(alternateTableLocation, modifiedSlotTracker.addSlot(cookie, slotValue, tableNumber, mappedRowKey, trackerFlag));
                             alternateFound = true;
                             break;
@@ -174,7 +177,7 @@ final class IncrementalMultiJoinHasherObject extends IncrementalMultiJoinStateMa
                     final long mappedRowKey = tableRedirSource.getUnsafe(slotValue);
                     Assert.eq(rowKeyChunk.get(chunkPosition), "rowKey", mappedRowKey, "mappedRowKey");
                     tableRedirSource.set(slotValue, mappedRowKey + shiftDelta);
-                    final int cookie = mainModifiedTrackerCookieSource.getUnsafe(tableLocation);
+                    final long cookie = mainModifiedTrackerCookieSource.getUnsafe(tableLocation);
                     mainModifiedTrackerCookieSource.set(tableLocation, modifiedSlotTracker.addSlot(cookie, slotValue, tableNumber, mappedRowKey, trackerFlag));
                     found = true;
                     break;
@@ -192,7 +195,7 @@ final class IncrementalMultiJoinHasherObject extends IncrementalMultiJoinStateMa
                             final long mappedRowKey = tableRedirSource.getUnsafe(slotValue);
                             Assert.eq(rowKeyChunk.get(chunkPosition), "rowKey", mappedRowKey, "mappedRowKey");
                             tableRedirSource.set(slotValue, mappedRowKey + shiftDelta);
-                            final int cookie = mainModifiedTrackerCookieSource.getUnsafe(tableLocation);
+                            final long cookie = alternateModifiedTrackerCookieSource.getUnsafe(alternateTableLocation);
                             alternateModifiedTrackerCookieSource.set(alternateTableLocation, modifiedSlotTracker.addSlot(cookie, slotValue, tableNumber, mappedRowKey, trackerFlag));
                             alternateFound = true;
                             break;
@@ -222,7 +225,7 @@ final class IncrementalMultiJoinHasherObject extends IncrementalMultiJoinStateMa
             int slotValue;
             while ((slotValue = slotToOutputRow.getUnsafe(tableLocation)) != EMPTY_OUTPUT_ROW) {
                 if (eq(mainKeySource0.getUnsafe(tableLocation), k0)) {
-                    final int cookie = mainModifiedTrackerCookieSource.getUnsafe(tableLocation);
+                    final long cookie = mainModifiedTrackerCookieSource.getUnsafe(tableLocation);
                     mainModifiedTrackerCookieSource.set(tableLocation, modifiedSlotTracker.modifySlot(cookie, slotValue, tableNumber, trackerFlag));
                     found = true;
                     break;
@@ -237,7 +240,7 @@ final class IncrementalMultiJoinHasherObject extends IncrementalMultiJoinStateMa
                     int alternateTableLocation = firstAlternateTableLocation;
                     while ((slotValue = alternateSlotToOutputRow.getUnsafe(alternateTableLocation)) != EMPTY_OUTPUT_ROW) {
                         if (eq(alternateKeySource0.getUnsafe(alternateTableLocation), k0)) {
-                            final int cookie = alternateModifiedTrackerCookieSource.getUnsafe(alternateTableLocation);
+                            final long cookie = alternateModifiedTrackerCookieSource.getUnsafe(alternateTableLocation);
                             alternateModifiedTrackerCookieSource.set(alternateTableLocation, modifiedSlotTracker.modifySlot(cookie, slotValue, tableNumber, trackerFlag));
                             alternateFound = true;
                             break;
@@ -258,8 +261,7 @@ final class IncrementalMultiJoinHasherObject extends IncrementalMultiJoinStateMa
         return hash;
     }
 
-    private boolean migrateOneLocation(int locationToMigrate,
-            MultiJoinModifiedSlotTracker modifiedSlotTracker) {
+    private boolean migrateOneLocation(int locationToMigrate) {
         final int currentStateValue = alternateSlotToOutputRow.getUnsafe(locationToMigrate);
         if (currentStateValue == EMPTY_OUTPUT_ROW) {
             return false;
@@ -273,7 +275,7 @@ final class IncrementalMultiJoinHasherObject extends IncrementalMultiJoinStateMa
         mainKeySource0.set(destinationTableLocation, k0);
         alternateKeySource0.set(locationToMigrate, null);
         slotToOutputRow.set(destinationTableLocation, currentStateValue);
-        final int cookie  = alternateModifiedTrackerCookieSource.getUnsafe(locationToMigrate);
+        final long cookie  = alternateModifiedTrackerCookieSource.getUnsafe(locationToMigrate);
         mainModifiedTrackerCookieSource.set(destinationTableLocation, cookie);
         alternateModifiedTrackerCookieSource.set(locationToMigrate, EMPTY_COOKIE_SLOT);
         alternateSlotToOutputRow.set(locationToMigrate, EMPTY_OUTPUT_ROW);
@@ -281,11 +283,10 @@ final class IncrementalMultiJoinHasherObject extends IncrementalMultiJoinStateMa
     }
 
     @Override
-    protected int rehashInternalPartial(int entriesToRehash,
-            MultiJoinModifiedSlotTracker modifiedSlotTracker) {
+    protected int rehashInternalPartial(int entriesToRehash) {
         int rehashedEntries = 0;
         while (rehashPointer > 0 && rehashedEntries < entriesToRehash) {
-            if (migrateOneLocation(--rehashPointer, modifiedSlotTracker)) {
+            if (migrateOneLocation(--rehashPointer)) {
                 rehashedEntries++;
             }
         }
@@ -306,9 +307,9 @@ final class IncrementalMultiJoinHasherObject extends IncrementalMultiJoinStateMa
     }
 
     @Override
-    protected void migrateFront(MultiJoinModifiedSlotTracker modifiedSlotTracker) {
+    protected void migrateFront() {
         int location = 0;
-        while (migrateOneLocation(location++, modifiedSlotTracker));
+        while (migrateOneLocation(location++));
     }
 
     @Override
@@ -320,8 +321,8 @@ final class IncrementalMultiJoinHasherObject extends IncrementalMultiJoinStateMa
         mainKeySource0.setArray(destKeyArray0);
         final int [] originalStateArray = slotToOutputRow.getArray();
         slotToOutputRow.setArray(destState);
-        final int [] oldModifiedCookie = mainModifiedTrackerCookieSource.getArray();
-        final int [] destModifiedCookie = new int[tableSize];
+        final long [] oldModifiedCookie = mainModifiedTrackerCookieSource.getArray();
+        final long [] destModifiedCookie = new long[tableSize];
         mainModifiedTrackerCookieSource.setArray(destModifiedCookie);
         for (int sourceBucket = 0; sourceBucket < oldSize; ++sourceBucket) {
             final int currentStateValue = originalStateArray[sourceBucket];

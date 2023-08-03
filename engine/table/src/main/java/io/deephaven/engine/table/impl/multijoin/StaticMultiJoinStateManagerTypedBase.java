@@ -31,7 +31,7 @@ public abstract class StaticMultiJoinStateManagerTypedBase implements MultiJoinS
     protected final ColumnSource<?>[] keySourcesForErrorMessages;
     private final List<LongArraySource> redirectionSources = new ArrayList<>();
 
-    public static final long NO_RIGHT_STATE_VALUE = QueryConstants.NULL_LONG;
+    public static final long NO_REDIRECTION = QueryConstants.NULL_LONG;
     public static final int EMPTY_OUTPUT_ROW = QueryConstants.NULL_INT;
 
     /** The number of slots in our hash table. */
@@ -41,8 +41,7 @@ public abstract class StaticMultiJoinStateManagerTypedBase implements MultiJoinS
     protected int numEntries = 0;
 
     /**
-     * The table will be rehashed to a load factor of targetLoadFactor if our loadFactor exceeds maximumLoadFactor or if
-     * it falls below minimum load factor we will instead contract the table.
+     * The table will be rehashed to a load factor of targetLoadFactor if our loadFactor exceeds maximumLoadFactor.
      */
     private final double maximumLoadFactor;
 

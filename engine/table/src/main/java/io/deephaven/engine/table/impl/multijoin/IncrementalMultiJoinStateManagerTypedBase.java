@@ -21,6 +21,7 @@ import io.deephaven.engine.table.impl.sources.ArrayBackedColumnSource;
 import io.deephaven.engine.table.impl.sources.InMemoryColumnSource;
 import io.deephaven.engine.table.impl.sources.LongArraySource;
 import io.deephaven.engine.table.impl.sources.immutable.ImmutableIntArraySource;
+import io.deephaven.engine.table.impl.sources.immutable.ImmutableLongArraySource;
 import io.deephaven.engine.table.impl.util.*;
 import io.deephaven.util.QueryConstants;
 import org.apache.commons.lang3.mutable.MutableInt;
@@ -41,9 +42,9 @@ public abstract class IncrementalMultiJoinStateManagerTypedBase implements Multi
     protected final ColumnSource<?>[] keySourcesForErrorMessages;
     private final List<LongArraySource> redirectionSources = new ArrayList<>();
 
-    public static final long NO_RIGHT_STATE_VALUE = QueryConstants.NULL_LONG;
+    public static final long NO_REDIRECTION = QueryConstants.NULL_LONG;
     public static final int EMPTY_OUTPUT_ROW = QueryConstants.NULL_INT;
-    public static final int EMPTY_COOKIE_SLOT = -1;
+    public static final long EMPTY_COOKIE_SLOT = -1;
 
     /** The number of slots in our hash table. */
     protected int tableSize;
@@ -57,8 +58,7 @@ public abstract class IncrementalMultiJoinStateManagerTypedBase implements Multi
     protected int numEntries = 0;
 
     /**
-     * The table will be rehashed to a load factor of targetLoadFactor if our loadFactor exceeds maximumLoadFactor or if
-     * it falls below minimum load factor we will instead contract the table.
+     * The table will be rehashed to a load factor of targetLoadFactor if our loadFactor exceeds maximumLoadFactor.
      */
     private final double maximumLoadFactor;
 
@@ -74,8 +74,8 @@ public abstract class IncrementalMultiJoinStateManagerTypedBase implements Multi
     protected ImmutableIntArraySource slotToOutputRow = new ImmutableIntArraySource();
     protected ImmutableIntArraySource alternateSlotToOutputRow;
 
-    protected ImmutableIntArraySource mainModifiedTrackerCookieSource = new ImmutableIntArraySource();
-    protected ImmutableIntArraySource alternateModifiedTrackerCookieSource;
+    protected ImmutableLongArraySource mainModifiedTrackerCookieSource = new ImmutableLongArraySource();
+    protected ImmutableLongArraySource alternateModifiedTrackerCookieSource;
 
     /** how much of the alternate sources are necessary to rehash? */
     protected int rehashPointer = 0;
@@ -107,6 +107,7 @@ public abstract class IncrementalMultiJoinStateManagerTypedBase implements Multi
 
         this.maximumLoadFactor = maximumLoadFactor;
 
+        // This is called only once.
         ensureCapacity(tableSize);
     }
 
@@ -131,8 +132,8 @@ public abstract class IncrementalMultiJoinStateManagerTypedBase implements Multi
     }
 
     public static class ProbeContext extends TypedHasherUtil.BuildOrProbeContext {
-        private ProbeContext(ColumnSource<?>[] buildSources, int chunkSize) {
-            super(buildSources, chunkSize);
+        private ProbeContext(ColumnSource<?>[] probeSources, int chunkSize) {
+            super(probeSources, chunkSize);
         }
     }
 
@@ -140,8 +141,8 @@ public abstract class IncrementalMultiJoinStateManagerTypedBase implements Multi
         return new BuildContext(buildSources, (int) Math.min(CHUNK_SIZE, maxSize));
     }
 
-    public ProbeContext makeProbeContext(ColumnSource<?>[] buildSources, long maxSize) {
-        return new ProbeContext(buildSources, (int) Math.min(CHUNK_SIZE, maxSize));
+    public ProbeContext makeProbeContext(ColumnSource<?>[] probeSources, long maxSize) {
+        return new ProbeContext(probeSources, (int) Math.min(CHUNK_SIZE, maxSize));
     }
 
     private class BuildHandler implements TypedHasherUtil.BuildHandler {
@@ -176,7 +177,6 @@ public abstract class IncrementalMultiJoinStateManagerTypedBase implements Multi
                     trackerFlag);
         }
     }
-
 
     private static abstract class ProbeHandler implements TypedHasherUtil.ProbeHandler {
         final LongArraySource tableRedirSource;
@@ -240,8 +240,7 @@ public abstract class IncrementalMultiJoinStateManagerTypedBase implements Multi
         }
         final LongArraySource tableRedirSource = redirectionSources.get(tableNumber);
         try (final BuildContext bc = makeBuildContext(keySources, table.size())) {
-            buildTable(true, bc, table.getRowSet(), keySources, new BuildHandler(tableRedirSource, tableNumber),
-                    null);
+            buildTable(true, bc, table.getRowSet(), keySources, new BuildHandler(tableRedirSource, tableNumber));
         }
     }
 
@@ -309,7 +308,7 @@ public abstract class IncrementalMultiJoinStateManagerTypedBase implements Multi
 
         try (final BuildContext bc = makeBuildContext(sources, rowSet.size())) {
             buildTable(false, bc, rowSet, sources,
-                    new BuildHandler(tableRedirSource, tableNumber, slotTracker, trackerFlag), slotTracker);
+                    new BuildHandler(tableRedirSource, tableNumber, slotTracker, trackerFlag));
         }
     }
 
@@ -329,15 +328,14 @@ public abstract class IncrementalMultiJoinStateManagerTypedBase implements Multi
             LongArraySource tableRedirSource, int tableNumber,
             MultiJoinModifiedSlotTracker modifiedSlotTracker, byte trackerFlag);
 
-    abstract protected void migrateFront(MultiJoinModifiedSlotTracker modifiedSlotTracker);
+    abstract protected void migrateFront();
 
-    protected void buildTable(
+    private void buildTable(
             final boolean initialBuild,
             final BuildContext bc,
             final RowSequence buildRows,
             final ColumnSource<?>[] buildSources,
-            final BuildHandler buildHandler,
-            MultiJoinModifiedSlotTracker modifiedSlotTracker) {
+            final BuildHandler buildHandler) {
         try (final RowSequence.Iterator rsIt = buildRows.getRowSequenceIterator()) {
             // noinspection unchecked
             final Chunk<Values>[] sourceKeyChunks = new Chunk[buildSources.length];
@@ -345,8 +343,8 @@ public abstract class IncrementalMultiJoinStateManagerTypedBase implements Multi
             while (rsIt.hasMore()) {
                 final RowSequence rows = rsIt.getNextRowSequenceWithLength(bc.chunkSize);
                 final int nextChunkSize = rows.intSize();
-                while (doRehash(initialBuild, bc.rehashCredits, nextChunkSize, modifiedSlotTracker)) {
-                    migrateFront(modifiedSlotTracker);
+                while (doRehash(initialBuild, bc.rehashCredits, nextChunkSize)) {
+                    migrateFront();
                 }
 
                 getKeyChunks(buildSources, bc.getContexts, sourceKeyChunks, rows);
@@ -363,7 +361,7 @@ public abstract class IncrementalMultiJoinStateManagerTypedBase implements Multi
         }
     }
 
-    protected void probeTable(
+    private void probeTable(
             final ProbeContext pc,
             final RowSequence probeRows,
             final boolean usePrev,
@@ -395,8 +393,7 @@ public abstract class IncrementalMultiJoinStateManagerTypedBase implements Multi
      * @param nextChunkSize the size of the chunk we are processing
      * @return true if a front migration is required
      */
-    public boolean doRehash(boolean fullRehash, MutableInt rehashCredits, int nextChunkSize,
-            MultiJoinModifiedSlotTracker modifiedSlotTracker) {
+    public boolean doRehash(boolean fullRehash, MutableInt rehashCredits, int nextChunkSize) {
         if (rehashPointer > 0) {
             final int requiredRehash = nextChunkSize - rehashCredits.intValue();
             if (requiredRehash <= 0) {
@@ -404,7 +401,7 @@ public abstract class IncrementalMultiJoinStateManagerTypedBase implements Multi
             }
 
             // before building, we need to do at least as much rehash work as we would do build work
-            rehashCredits.add(rehashInternalPartial(requiredRehash, modifiedSlotTracker));
+            rehashCredits.add(rehashInternalPartial(requiredRehash));
             if (rehashPointer == 0) {
                 clearAlternate();
             }
@@ -431,7 +428,7 @@ public abstract class IncrementalMultiJoinStateManagerTypedBase implements Multi
         if (fullRehash) {
             // if we are doing a full rehash, we need to ditch the alternate
             if (rehashPointer > 0) {
-                rehashInternalPartial(numEntries, modifiedSlotTracker);
+                rehashInternalPartial(numEntries);
                 clearAlternate();
             }
 
@@ -442,19 +439,14 @@ public abstract class IncrementalMultiJoinStateManagerTypedBase implements Multi
 
         Assert.eqZero(rehashPointer, "rehashPointer");
 
-        for (int ii = 0; ii < mainKeySources.length; ++ii) {
-            alternateKeySources[ii] = mainKeySources[ii];
-            mainKeySources[ii] = InMemoryColumnSource.getImmutableMemoryColumnSource(tableSize,
-                    alternateKeySources[ii].getType(), alternateKeySources[ii].getComponentType());
-            mainKeySources[ii].ensureCapacity(tableSize);
-        }
         alternateTableSize = oldTableSize;
-        if (numEntries > 0) {
-            rehashPointer = alternateTableSize;
+        if (numEntries == 0) {
+            rehashPointer = 0;
+            return false;
         }
 
+        rehashPointer = alternateTableSize;
         newAlternate();
-
         return true;
     }
 
@@ -464,11 +456,20 @@ public abstract class IncrementalMultiJoinStateManagerTypedBase implements Multi
         slotToOutputRow.ensureCapacity(tableSize);
 
         alternateModifiedTrackerCookieSource = mainModifiedTrackerCookieSource;
-        mainModifiedTrackerCookieSource = new ImmutableIntArraySource();
+        mainModifiedTrackerCookieSource = new ImmutableLongArraySource();
         mainModifiedTrackerCookieSource.ensureCapacity(tableSize);
+
+        for (int ii = 0; ii < mainKeySources.length; ++ii) {
+            alternateKeySources[ii] = mainKeySources[ii];
+            mainKeySources[ii] = InMemoryColumnSource.getImmutableMemoryColumnSource(tableSize,
+                    alternateKeySources[ii].getType(), alternateKeySources[ii].getComponentType());
+            mainKeySources[ii].ensureCapacity(tableSize);
+        }
     }
 
     protected void clearAlternate() {
+        alternateSlotToOutputRow = null;
+        alternateModifiedTrackerCookieSource = null;
         for (int ii = 0; ii < mainKeySources.length; ++ii) {
             alternateKeySources[ii] = null;
         }
@@ -480,14 +481,11 @@ public abstract class IncrementalMultiJoinStateManagerTypedBase implements Multi
 
     abstract protected void rehashInternalFull(final int oldSize);
 
-    // abstract protected void migrateFront(MultiJoinModifiedSlotTracker modifiedSlotTracker);
-
     /**
      * @param numEntriesToRehash number of entries to rehash into main table
      * @return actual number of entries rehashed
      */
-    protected abstract int rehashInternalPartial(int numEntriesToRehash,
-            MultiJoinModifiedSlotTracker modifiedSlotTracker);
+    protected abstract int rehashInternalPartial(int numEntriesToRehash);
 
     protected int hashToTableLocation(int hash) {
         return hash & (tableSize - 1);
@@ -497,7 +495,7 @@ public abstract class IncrementalMultiJoinStateManagerTypedBase implements Multi
         return hash & (alternateTableSize - 1);
     }
 
-    // produce a pretty key for error messages
+    /** produce a pretty key for error messages. */
     protected String keyString(Chunk<Values>[] sourceKeyChunks, int chunkPosition) {
         return ChunkUtils.extractKeyStringFromChunks(chunkTypes, sourceKeyChunks, chunkPosition);
     }

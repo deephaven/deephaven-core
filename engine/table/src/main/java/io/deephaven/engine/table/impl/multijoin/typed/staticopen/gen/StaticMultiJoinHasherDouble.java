@@ -56,7 +56,7 @@ final class StaticMultiJoinHasherDouble extends StaticMultiJoinStateManagerTyped
                     outputKeySources[0].set((long)outputKey, k0);
                     break;
                 } else if (eq(mainKeySource0.getUnsafe(tableLocation), k0)) {
-                    if (tableRedirSource.getLong(slotValue) != NO_RIGHT_STATE_VALUE) {
+                    if (tableRedirSource.getLong(slotValue) != NO_REDIRECTION) {
                         throw new IllegalStateException("Duplicate key found for " + keyString(sourceKeyChunks, chunkPosition) + " in table " + tableNumber + ".");
                     }
                     tableRedirSource.set(slotValue, rowKeyChunk.get(chunkPosition));
