@@ -37,11 +37,11 @@ public abstract class ObjectTypeClassBase<T> extends ObjectTypeBase {
     }
 
     @Override
-    public final MessageStream compatibleClientConnection(Object object, MessageStream connection) {
+    public final MessageStream compatibleClientConnection(Object object, MessageStream connection) throws ObjectCommunicationException {
         return clientConnectionImpl((T) object, connection);
     }
 
-    public abstract MessageStream clientConnectionImpl(T object, MessageStream connection);
+    public abstract MessageStream clientConnectionImpl(T object, MessageStream connection) throws ObjectCommunicationException;
 
     @Override
     public String toString() {
@@ -61,7 +61,7 @@ public abstract class ObjectTypeClassBase<T> extends ObjectTypeBase {
         }
 
         @Override
-        public final MessageStream clientConnectionImpl(T object, MessageStream connection) {
+        public final MessageStream clientConnectionImpl(T object, MessageStream connection) throws ObjectCommunicationException {
             StreamExporterImpl exporter = new StreamExporterImpl();
 
             try {

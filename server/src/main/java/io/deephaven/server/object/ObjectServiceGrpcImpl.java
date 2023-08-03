@@ -5,6 +5,7 @@ package io.deephaven.server.object;
 
 import com.google.protobuf.ByteString;
 import com.google.rpc.Code;
+import io.deephaven.base.verify.Assert;
 import io.deephaven.engine.liveness.SingletonLivenessManager;
 import io.deephaven.extensions.barrage.util.GrpcUtil;
 import io.deephaven.plugin.type.ObjectType;
@@ -24,9 +25,13 @@ import java.lang.Object;
 import java.nio.ByteBuffer;
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.List;
 import java.util.Objects;
 import java.util.Optional;
+import java.util.Queue;
+import java.util.concurrent.ConcurrentLinkedQueue;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.stream.Collectors;
 
 public class ObjectServiceGrpcImpl extends ObjectServiceGrpc.ObjectServiceImplBase {
@@ -34,14 +39,21 @@ public class ObjectServiceGrpcImpl extends ObjectServiceGrpc.ObjectServiceImplBa
     private final TicketRouter ticketRouter;
     private final ObjectTypeLookup objectTypeLookup;
     private final TypeLookup typeLookup;
+    private final SessionService.ErrorTransformer errorTransformer;
+
+    interface StreamOperation {
+        void run() throws ObjectType.ObjectCommunicationException;
+    }
 
     @Inject
     public ObjectServiceGrpcImpl(SessionService sessionService, TicketRouter ticketRouter,
-            ObjectTypeLookup objectTypeLookup, TypeLookup typeLookup) {
+            ObjectTypeLookup objectTypeLookup, TypeLookup typeLookup,
+            SessionService.ErrorTransformer errorTransformer) {
         this.sessionService = Objects.requireNonNull(sessionService);
         this.ticketRouter = Objects.requireNonNull(ticketRouter);
         this.objectTypeLookup = Objects.requireNonNull(objectTypeLookup);
         this.typeLookup = Objects.requireNonNull(typeLookup);
+        this.errorTransformer = Objects.requireNonNull(errorTransformer);
     }
 
     private final class SendMessageObserver extends SingletonLivenessManager implements StreamObserver<StreamRequest> {
@@ -61,7 +73,6 @@ public class ObjectServiceGrpcImpl extends ObjectServiceGrpc.ObjectServiceImplBa
         public void onNext(final StreamRequest request) {
             GrpcErrorHelper.checkHasOneOf(request, "message");
             if (request.hasConnect()) {
-                // Should only appear in the first request
                 if (this.object != null) {
                     throw Exceptions.statusRuntimeException(Code.FAILED_PRECONDITION,
                             "Already sent a connect request, cannot send another");
@@ -82,51 +93,128 @@ public class ObjectServiceGrpcImpl extends ObjectServiceGrpc.ObjectServiceImplBa
 
                 this.object = object;
                 manage(this.object);
-                session.nonExport()
-                        .require(object)
-                        .onError(responseObserver)
-                        .submit(() -> {
-                            final Object o = object.get();
-                            final ObjectType objectType = getObjectTypeInstance(type, o);
+                runOrEnqueue(() -> {
+                    final Object o = object.get();
+                    final ObjectType objectType = getObjectTypeInstance(type, o);
 
-                            messageStream =
-                                    objectType.clientConnection(o, new PluginMessageSender(responseObserver, session));
-                        });
+                    PluginMessageSender clientConnection = new PluginMessageSender(responseObserver, session);
+                    messageStream = objectType.clientConnection(o, clientConnection);
+                });
             } else if (request.hasData()) {
-                // All other requests
+                if (object == null) {
+                    throw Exceptions.statusRuntimeException(Code.INVALID_ARGUMENT,
+                            "Data message sent before Connect message");
+                }
                 Data data = request.getData();
                 List<SessionState.ExportObject<Object>> referenceObjects = data.getExportedReferencesList().stream()
                         .map(typedTicket -> ticketRouter.resolve(session, typedTicket.getTicket(), "ticket"))
                         .collect(Collectors.toList());
                 List<SessionState.ExportObject<Object>> requireObjects = new ArrayList<>(referenceObjects);
                 requireObjects.add(object);
-                session.nonExport()
-                        .require(requireObjects)
-                        .onError(responseObserver)
-                        .submit(() -> {
-                            Object[] objs = referenceObjects.stream().map(ExportObject::get).toArray();
-                            // TODO: Should we try/catch this to recover/not close from plugin errors? Or make the
-                            // client
-                            // recover? Would be useful if the plugin is complex
-                            messageStream.onData(data.getPayload().asReadOnlyByteBuffer(), objs);
-                        });
+                runOrEnqueue(requireObjects, () -> {
+                    Object[] objs = referenceObjects.stream().map(ExportObject::get).toArray();
+                    messageStream.onData(data.getPayload().asReadOnlyByteBuffer(), objs);
+                });
             }
+        }
+
+        private final Queue<StreamOperation> operations = new ConcurrentLinkedQueue<>();
+        private final AtomicBoolean running = new AtomicBoolean(false);
+
+        // These methods are intended to roughly behave like SerializingExecutor(directExecutor()) in that only one can
+        // be running at a time, and will be started on the current thread, with the distinction that submitted work
+        // will continue off-thread and will signal when it is finished
+        private void runOrEnqueue(StreamOperation runnable) {
+            runOrEnqueue(Collections.emptyList(), runnable);
+        }
+
+        private void runOrEnqueue(Collection<? extends ExportObject<?>> additExports, StreamOperation operation) {
+            List<ExportObject<?>> requirements = new ArrayList<>(additExports);
+            requirements.add(object);
+
+            StreamOperation runnable = () -> {
+                session.nonExport()
+                        .onErrorHandler(this::onError)
+                        .require(requirements)
+                        .submit(() -> {
+                            // Run the specified work. Note that we're not concerned about exceptions, the stream will
+                            // be dead (via onError) and won't be used again.
+                            try {
+                                operation.run();
+                            } catch (ObjectType.ObjectCommunicationException e) {
+                                throw new IllegalStateException("Error occurred communicating with client", e);
+                            }
+
+                            // Set running to false (it must be true at this time) so that any new work can race being
+                            // added
+                            running.set(false);
+                            doWork();
+                        });
+            };
+            // gRPC guarantees we can't race in this method
+            operations.add(runnable);
+            if (running.compareAndSet(false, true)) {
+                // no other thread is actually working, we can race to start work on this thread
+                doWork();
+            }
+        }
+
+        private void doWork() {
+            // More than one thread can arrive here at the same time, but only one will pass the compareAndSet
+            StreamOperation next = operations.peek();
+
+            // If we fail the null check, no work to do, leave running false (though if work was added right after
+            // peek(), that thread will make it into here and start). If we fail the running check, something else has
+            // already started work
+            if (next != null && running.compareAndSet(false, true)) {
+                // We have the running lock again, and should remove the item we just peeked at
+                StreamOperation actualNext = operations.poll();
+                Assert.eq(next, "next", actualNext, "actualNext");
+
+                // Run the new item
+                try {
+                    next.run();
+                } catch (ObjectType.ObjectCommunicationException e) {
+                    // Can only be called from within a context where exceptions will end the stream, so wrap and throw
+                    throw new IllegalStateException("Error occurred communicating with client", e);
+                }
+            }
+        }
+
+        private void fail() {
+            // close the message stream if non null
+            // clear the queue
+            // throw sre
         }
 
         @Override
         public void onError(final Throwable t) {
-            // Do we need to clean up export collector here and onCompleted too?
+            // Safely inform the client that an error happened
+            GrpcUtil.safelyError(responseObserver, errorTransformer.transform(t));
+
+            // If the objecttype connection was opened, close it and refuse later calls from it
+            if (messageStream != null) {
+                try {
+                    messageStream.onClose();
+                } catch (Exception ignored) {
+                    // ignore errors from closing the plugin
+                }
+            }
+
+            // Don't attempt to run additional work
+            operations.clear();
+
+            // Release the object itself
             release();
         }
 
         @Override
         public void onCompleted() {
-            SessionState session = sessionService.getCurrentSession();
-            session.nonExport().require(object).onError(responseObserver).submit(() -> {
+            runOrEnqueue(() -> {
+                GrpcUtil.safelyComplete(responseObserver);
                 messageStream.onClose();
-                responseObserver.onCompleted();
+                release();
             });
-            release();
         }
     }
 
@@ -230,11 +318,11 @@ public class ObjectServiceGrpcImpl extends ObjectServiceGrpc.ObjectServiceImplBa
         }
 
         @Override
-        public void onData(ByteBuffer message, Object[] references) {
-            Data.Builder payload = Data.newBuilder().setPayload(ByteString.copyFrom(message));
-
+        public void onData(ByteBuffer message, Object[] references) throws ObjectType.ObjectCommunicationException {
             List<ExportObject<?>> exports = new ArrayList<>();
             try {
+                Data.Builder payload = Data.newBuilder().setPayload(ByteString.copyFrom(message));
+
                 for (Object reference : references) {
                     final String type = typeLookup.type(reference).orElse(null);
                     final ExportObject<?> exportObject = sessionState.newServerSideExport(reference);
@@ -242,16 +330,16 @@ public class ObjectServiceGrpcImpl extends ObjectServiceGrpc.ObjectServiceImplBa
                     TypedTicket typedTicket = ticketForExport(exportObject, type);
                     payload.addExportedReferences(typedTicket);
                 }
-            } catch (RuntimeException | Error t) {
-                cleanup(exports, t);
-                throw t;
+                final StreamResponse.Builder responseBuilder =
+                        StreamResponse.newBuilder().setData(payload);
+
+                // Explicitly running this unsafely, we want the exception to clean up
+                responseObserver.onNext(responseBuilder.build());
             } catch (Throwable t) {
+                // Release any exports we failed to send, and report this as a checked exception
                 cleanup(exports, t);
-                throw new RuntimeException(t);
+                throw new ObjectType.ObjectCommunicationException(t);
             }
-            final StreamResponse.Builder responseBuilder =
-                    StreamResponse.newBuilder().setData(payload);
-            GrpcUtil.safelyOnNext(responseObserver, responseBuilder.build());
         }
 
         private TypedTicket ticketForExport(ExportObject<?> exportObject, String type) {

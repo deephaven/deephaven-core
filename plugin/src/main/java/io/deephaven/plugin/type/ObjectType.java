@@ -40,7 +40,7 @@ public interface ObjectType extends Plugin {
          */
         MessageStream NOOP = new MessageStream() {
             @Override
-            public void onData(ByteBuffer payload, Object[] references) {}
+            public void onData(ByteBuffer payload, Object... references) {}
 
             @Override
             public void onClose() {}
@@ -49,16 +49,40 @@ public interface ObjectType extends Plugin {
         /**
          * Transmits data to the remote end of the stream. This can consist of a binary payload and references to
          * objects on the server.
+         * <p>
+         * Note that sending a message can cause an exception if there is an error in serializing, and for that reason this method
+         * throws a checked exception. It is safe to let that propagate up through either an incoming {@link #onData onData call from a client},
+         * or the {@link ObjectType#clientConnection(Object, MessageStream) call to create the stream}, but it is usually
+         * unsafe to let this propagate to other engine threads.
          *
          * @param payload the binary data sent to the remote implementation
          * @param references server-side object references sent to the remote implementation
+         * @throws ObjectCommunicationException a checked exception for any errors that may occur, to ensure that the error is handled without propagating.
          */
-        void onData(ByteBuffer payload, Object[] references);
+        void onData(ByteBuffer payload, Object... references) throws ObjectCommunicationException;
 
         /**
          * Closes the stream on both ends. No further messages can be sent or received.
          */
         void onClose();
+    }
+
+    public static class ObjectCommunicationException extends Exception {
+        public ObjectCommunicationException() {
+            super();
+        }
+
+        public ObjectCommunicationException(String message) {
+            super(message);
+        }
+
+        public ObjectCommunicationException(String message, Throwable cause) {
+            super(message, cause);
+        }
+
+        public ObjectCommunicationException(Throwable cause) {
+            super(cause);
+        }
     }
 
     /**
@@ -68,9 +92,10 @@ public interface ObjectType extends Plugin {
      * 
      * @param object the object to create a connection for
      * @param connection a stream to send objects to the client
+     * @throws ObjectCommunicationException may throw an exception received from {@link MessageStream#onData(ByteBuffer, Object...)} calls
      * @return a stream to receive objects from the client
      */
-    MessageStream clientConnection(Object object, MessageStream connection);
+    MessageStream clientConnection(Object object, MessageStream connection) throws ObjectCommunicationException;
 
     interface Exporter {
 
