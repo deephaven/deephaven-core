@@ -110,12 +110,11 @@ public class JsWidget extends HasEventHandling implements ServerObject, WidgetMe
 
                     hasFetched = true;
                     resolve.onInvoke(this);
-                    return;
+                } else {
+                    CustomEventInit<EventDetails> messageEvent = CustomEventInit.create();
+                    messageEvent.setDetail(new EventDetails(res.getData(), responseObjects));
+                    fireEvent(EVENT_MESSAGE, messageEvent);
                 }
-
-                CustomEventInit<EventDetails> messageEvent = CustomEventInit.create();
-                messageEvent.setDetail(new EventDetails(res.getData(), responseObjects));
-                fireEvent(EVENT_MESSAGE, messageEvent);
             });
             messageStream.onStatus(status -> {
                 if (!status.isOk()) {
