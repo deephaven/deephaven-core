@@ -1,5 +1,6 @@
-library(testthat)
+library(dplyr)
 library(rdeephaven)
+library(testthat)
 
 setup <- function() {
   df1 <- data.frame(
@@ -38,19 +39,18 @@ setup <- function() {
 
   # in order to test TableHandle, we need to have tables on the server that we know everything about.
   # thus, we have to push these created tables to the server and get TableHandles to each of them.
-  # thus, we depend on the correctness of client$import_table(), ClientOptions$new(), and Client$new()
 
   # set up client
-  client_options <- ClientOptions$new()
-  client <- Client$new(target = "localhost:10000", client_options = client_options)
+  client_options <- new("S4ClientOptions")
+  client <- connect(target = "localhost:10000", client_options = client_options)
 
   # move dataframes to server and get TableHandles for testing
-  th1 <- client$import_table(df1)
-  th2 <- client$import_table(df2)
-  th3 <- client$import_table(df3)
-  th4 <- client$import_table(df4)
-  th5 <- client$import_table(df5)
-  th6 <- client$import_table(df6)
+  th1 <- import_table(client, df1)
+  th2 <- import_table(client, df2)
+  th3 <- import_table(client, df3)
+  th4 <- import_table(client, df4)
+  th5 <- import_table(client, df5)
+  th6 <- import_table(client, df6)
 
   return(list(
     "client" = client,
@@ -97,7 +97,7 @@ test_that("select behaves as expected", {
     select(c("X", "Number3 = Number1 * Number2"))
   expect_equal(as.data.frame(new_th5), as.data.frame(new_tb5))
 
-  data$client$close()
+  close(data$client)
 })
 
 test_that("view behaves as expected", {
@@ -136,7 +136,7 @@ test_that("view behaves as expected", {
     view(c("X", "Number3 = Number1 * Number2"))
   expect_equal(as.data.frame(new_th5), as.data.frame(new_tb5))
 
-  data$client$close()
+  close(data$client)
 })
 
 test_that("update behaves as expected", {
@@ -172,7 +172,7 @@ test_that("update behaves as expected", {
     update("Number3 = Number1 + Number2")
   expect_equal(as.data.frame(new_tb5), as.data.frame(new_th5))
 
-  data$client$close()
+  close(data$client)
 })
 
 test_that("update_view behaves as expected", {
@@ -208,7 +208,7 @@ test_that("update_view behaves as expected", {
     update_view("Number3 = Number1 + Number2")
   expect_equal(as.data.frame(new_th5), as.data.frame(new_tb5))
 
-  data$client$close()
+  close(data$client)
 })
 
 test_that("drop_columns behaves as expected", {
@@ -232,7 +232,7 @@ test_that("drop_columns behaves as expected", {
     drop_columns(paste0("X", seq(2, 1000)))
   expect_equal(as.data.frame(new_th3), as.data.frame(new_tb3))
 
-  data$client$close()
+  close(data$client)
 })
 
 test_that("where behaves as expected", {
@@ -256,7 +256,7 @@ test_that("where behaves as expected", {
     where("X1 - X4 + X8 + X32 - 2*X5 >= 0")
   expect_equal(as.data.frame(new_th3), as.data.frame(new_tb3))
 
-  data$client$close()
+  close(data$client)
 })
 
 test_that("group_by and ungroup behaves as expected", {
@@ -290,7 +290,7 @@ test_that("group_by and ungroup behaves as expected", {
     sort(c("X", "Y"))
   expect_equal(as.data.frame(new_th6), as.data.frame(data$th6 %>% sort(c("X", "Y"))))
 
-  data$client$close()
+  close(data$client)
 })
 
 test_that("first_by behaves as expected", {
@@ -314,7 +314,7 @@ test_that("first_by behaves as expected", {
     sort(c("X", "Y"))
   expect_equal(as.data.frame(new_th2), as.data.frame(new_tb2))
 
-  data$client$close()
+  close(data$client)
 })
 
 test_that("last_by behaves as expected", {
@@ -338,7 +338,7 @@ test_that("last_by behaves as expected", {
     sort(c("X", "Y"))
   expect_equal(as.data.frame(new_th2), as.data.frame(new_tb2))
 
-  data$client$close()
+  close(data$client)
 })
 
 test_that("head_by behaves as expected", {
@@ -359,7 +359,7 @@ test_that("head_by behaves as expected", {
     sort(c("X", "Y"))
   expect_equal(as.data.frame(new_th2), as.data.frame(new_tb2))
 
-  data$client$close()
+  close(data$client)
 })
 
 test_that("tail_by behaves as expected", {
@@ -380,7 +380,7 @@ test_that("tail_by behaves as expected", {
     sort(c("X", "Y"))
   expect_equal(as.data.frame(new_th2), as.data.frame(new_tb2))
 
-  data$client$close()
+  close(data$client)
 })
 
 test_that("min_by behaves as expected", {
@@ -420,7 +420,7 @@ test_that("min_by behaves as expected", {
     sort("bool_col")
   expect_equal(as.data.frame(new_th4), as.data.frame(new_tb4))
 
-  data$client$close()
+  close(data$client)
 })
 
 test_that("max_by behaves as expected", {
@@ -460,7 +460,7 @@ test_that("max_by behaves as expected", {
     sort("bool_col")
   expect_equal(as.data.frame(new_th4), as.data.frame(new_tb4))
 
-  data$client$close()
+  close(data$client)
 })
 
 test_that("sum_by behaves as expected", {
@@ -484,7 +484,7 @@ test_that("sum_by behaves as expected", {
     sort(c("X", "Y"))
   expect_equal(as.data.frame(new_th2), as.data.frame(new_tb2))
 
-  data$client$close()
+  close(data$client)
 })
 
 test_that("abs_sum_by behaves as expected", {
@@ -510,7 +510,7 @@ test_that("abs_sum_by behaves as expected", {
     sort(c("X", "Y"))
   expect_equal(as.data.frame(new_th2), as.data.frame(new_tb2))
 
-  data$client$close()
+  close(data$client)
 })
 
 test_that("avg_by behaves as expected", {
@@ -534,7 +534,7 @@ test_that("avg_by behaves as expected", {
     sort(c("X", "Y"))
   expect_equal(as.data.frame(new_th2), as.data.frame(new_tb2))
 
-  data$client$close()
+  close(data$client)
 })
 
 test_that("w_avg_by behaves as expected", {
@@ -568,7 +568,7 @@ test_that("w_avg_by behaves as expected", {
     sort(c("X", "Y"))
   expect_equal(as.data.frame(new_th2), as.data.frame(new_tb2))
 
-  data$client$close()
+  close(data$client)
 })
 
 test_that("median_by behaves as expected", {
@@ -592,7 +592,7 @@ test_that("median_by behaves as expected", {
     sort(c("X", "Y"))
   expect_equal(as.data.frame(new_th2), as.data.frame(new_tb2))
 
-  data$client$close()
+  close(data$client)
 })
 
 test_that("var_by behaves as expected", {
@@ -616,7 +616,7 @@ test_that("var_by behaves as expected", {
     sort(c("X", "Y"))
   expect_equal(as.data.frame(new_th2), as.data.frame(new_tb2))
 
-  data$client$close()
+  close(data$client)
 })
 
 test_that("std_by behaves as expected", {
@@ -640,7 +640,7 @@ test_that("std_by behaves as expected", {
     sort(c("X", "Y"))
   expect_equal(as.data.frame(new_th2), as.data.frame(new_tb2))
 
-  data$client$close()
+  close(data$client)
 })
 
 test_that("percentile_by behaves as expected", {
@@ -670,7 +670,7 @@ test_that("percentile_by behaves as expected", {
   expect_equal(as.data.frame(new_th2), new_df2)
 
 
-  data$client$close()
+  close(data$client)
 })
 
 test_that("count_by behaves as expected", {
@@ -689,7 +689,7 @@ test_that("count_by behaves as expected", {
     sort(c("X", "Y"))
   expect_equal(as.data.frame(new_th2), as.data.frame(new_tb2))
 
-  data$client$close()
+  close(data$client)
 })
 
 test_that("sort behaves as expected", {
@@ -725,7 +725,7 @@ test_that("sort behaves as expected", {
     sort(c("X", "Y", "Number1"), descending = c(FALSE, TRUE, FALSE))
   expect_equal(as.data.frame(new_th5), as.data.frame(new_tb5))
 
-  data$client$close()
+  close(data$client)
 })
 
 test_that("cross_join behaves as expected", {
@@ -744,7 +744,7 @@ test_that("cross_join behaves as expected", {
     )
   expect_equal(as.data.frame(new_th1), as.data.frame(new_tb1))
 
-  data$client$close()
+  close(data$client)
 })
 
 test_that("natural_join behaves as expected", {
@@ -771,7 +771,7 @@ test_that("natural_join behaves as expected", {
     )
   expect_equal(as.data.frame(new_th1), as.data.frame(new_tb1))
 
-  data$client$close()
+  close(data$client)
 })
 
 # TODO: Verify that inner_join is the analog of exact_join
@@ -796,5 +796,5 @@ test_that("exact_join behaves as expected", {
     rename(Number1 = Number1.x, Number2 = Number2.x, Number3 = Number1.y, Number4 = Number2.y)
   expect_equal(as.data.frame(new_th1), as.data.frame(new_tb1))
 
-  data$client$close()
+  close(data$client)
 })

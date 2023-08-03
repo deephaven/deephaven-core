@@ -91,3 +91,7 @@ strip_r6_wrapping_from_aggregation <- function(r6_aggregation) {
 strip_r6_wrapping_from_table_handle <- function(r6_table_handle) {
   return(r6_table_handle$internal_table_handle)
 }
+
+strip_s4_wrapping <- function(s4_object) {
+  return(s4_object@.internal_rcpp_object)
+}

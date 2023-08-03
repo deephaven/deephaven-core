@@ -9,10 +9,10 @@ setClass(
 #' @export
 setMethod(
   "initialize", "S4ClientOptions",
-  function(.Object, ...) {
-    # callNextMethod calls the parent constructor, ensuring proper creation
-    .Object <- callNextMethod(.Object, ...)
-    .Object@.internal_rcpp_object <- new(INTERNAL_ClientOptions)
+  function(.Object) {
+    internal_client_options <- new(INTERNAL_ClientOptions)
+    .Object <- callNextMethod(.Object,
+      .internal_rcpp_object = internal_client_options)
     return(.Object)
   }
 )
@@ -23,12 +23,14 @@ setGeneric(
   "set_default_authentication",
   function(client_options_instance) {
     return(standardGeneric("set_default_authentication"))
-  }
+  },
+  signature = c("client_options_instance")
 )
 
 #' @export
 setMethod(
-  "set_default_authentication", "S4ClientOptions",
+  "set_default_authentication",
+  signature = c(client_options_instance = "S4ClientOptions"),
   function(client_options_instance) {
     return(client_options_instance@.internal_rcpp_object$set_default_authentication())
   }
@@ -36,10 +38,10 @@ setMethod(
 
 setGeneric(
   "set_basic_authentication",
-  function(client_options_instance, ...) {
+  function(client_options_instance, username, password) {
     return(standardGeneric("set_basic_authentication"))
   },
-  signature = "client_options_instance"
+  signature = c("client_options_instance", "username", "password")
 )
 
 #' @export
@@ -55,10 +57,10 @@ setMethod(
 
 setGeneric(
   "set_custom_authentication",
-  function(client_options_instance, ...) {
+  function(client_options_instance, auth_key, auth_value) {
     return(standardGeneric("set_custom_authentication"))
   },
-  signature = "client_options_instance"
+  signature = c("client_options_instance", "auth_key", "auth_value")
 )
 
 #' @export
@@ -74,10 +76,10 @@ setMethod(
 
 setGeneric(
   "set_session_type",
-  function(client_options_instance, ...) {
+  function(client_options_instance, session_type) {
     return(standardGeneric("set_session_type"))
   },
-  signature = "client_options_instance"
+  signature = c("client_options_instance", "session_type")
 )
 
 #' @export
@@ -110,10 +112,10 @@ setMethod(
 
 setGeneric(
   "add_int_option",
-  function(client_options_instance, ...) {
+  function(client_options_instance, opt, val) {
     return(standardGeneric("add_int_option"))
   },
-  signature = "client_options_instance"
+  signature = c("client_options_instance", "opt", "val")
 )
 
 #' @export
@@ -129,10 +131,10 @@ setMethod(
 
 setGeneric(
   "add_string_option",
-  function(client_options_instance, ...) {
+  function(client_options_instance, opt, val) {
     return(standardGeneric("add_string_option"))
   },
-  signature = "client_options_instance"
+  signature = c("client_options_instance", "opt", "val")
 )
 
 #' @export
@@ -148,17 +150,17 @@ setMethod(
 
 setGeneric(
   "add_extra_header",
-  function(client_options_instance, ...) {
+  function(client_options_instance, header_name, header_val) {
     return(standardGeneric("add_extra_header"))
   },
-  signature = "client_options_instance"
+  signature = c("client_options_instance", "header_name", "header_val")
 )
 
 #' @export
 setMethod(
   "add_extra_header",
   signature = c(client_options_instance = "S4ClientOptions"),
-  function(client_options_instance, opt, val) {
+  function(client_options_instance, header_name, header_val) {
     verify_string("header_name", header_name, TRUE)
     verify_string("header_value", header_value, TRUE)
     return(client_options_instance@.internal_rcpp_object$add_extra_header(opt, val))
