@@ -13,6 +13,20 @@ import java.io.UncheckedIOException;
  * Abstract base class for object type plugins, providing some simple implementation details.
  */
 public abstract class ObjectTypeBase extends PluginBase implements ObjectType {
+    @Override
+    public final MessageStream clientConnection(Object object, MessageStream connection) {
+        if (!isType(object)) {
+            throw new IllegalArgumentException("Can't serialize object, wrong type: " + this + " / " + object);
+        }
+        return compatibleClientConnection(object, connection);
+    }
+
+    public abstract MessageStream compatibleClientConnection(Object object, MessageStream connection);
+
+    @Override
+    public final <T, V extends Visitor<T>> T walk(V visitor) {
+        return visitor.visit(this);
+    }
 
     /**
      * Abstract base class for object type plugins that can only be fetched (and will not have later responses or accept
@@ -53,20 +67,4 @@ public abstract class ObjectTypeBase extends PluginBase implements ObjectType {
             return MessageStream.NOOP;
         }
     }
-
-    @Override
-    public final MessageStream clientConnection(Object object, MessageStream connection) {
-        if (!isType(object)) {
-            throw new IllegalArgumentException("Can't serialize object, wrong type: " + this + " / " + object);
-        }
-        return compatibleClientConnection(object, connection);
-    }
-
-    public abstract MessageStream compatibleClientConnection(Object object, MessageStream connection);
-
-    @Override
-    public final <T, V extends Visitor<T>> T walk(V visitor) {
-        return visitor.visit(this);
-    }
-
 }

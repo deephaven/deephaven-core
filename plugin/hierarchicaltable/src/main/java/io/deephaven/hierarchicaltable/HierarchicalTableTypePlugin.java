@@ -5,8 +5,6 @@ package io.deephaven.hierarchicaltable;
 
 import com.google.auto.service.AutoService;
 import io.deephaven.engine.table.hierarchical.HierarchicalTable;
-import io.deephaven.engine.table.hierarchical.RollupTable;
-import io.deephaven.engine.table.hierarchical.TreeTable;
 import io.deephaven.extensions.barrage.util.BarrageUtil;
 import io.deephaven.extensions.barrage.util.HierarchicalTableSchemaUtil;
 import io.deephaven.plugin.type.ObjectType;

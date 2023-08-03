@@ -14,6 +14,39 @@ import java.util.Objects;
  * @param <T> the class type
  */
 public abstract class ObjectTypeClassBase<T> extends ObjectTypeBase {
+    private final String name;
+    private final Class<T> clazz;
+
+    public ObjectTypeClassBase(String name, Class<T> clazz) {
+        this.name = Objects.requireNonNull(name);
+        this.clazz = Objects.requireNonNull(clazz);
+    }
+
+    public final Class<T> clazz() {
+        return clazz;
+    }
+
+    @Override
+    public final String name() {
+        return name;
+    }
+
+    @Override
+    public final boolean isType(Object object) {
+        return clazz.equals(object.getClass());
+    }
+
+    @Override
+    public final MessageStream compatibleClientConnection(Object object, MessageStream connection) {
+        return clientConnectionImpl((T) object, connection);
+    }
+
+    public abstract MessageStream clientConnectionImpl(T object, MessageStream connection);
+
+    @Override
+    public String toString() {
+        return name + ":" + clazz.getName();
+    }
 
     /**
      * Abstract base class for object type plugins that can only be fetched (and will not have later responses or accept
@@ -62,37 +95,4 @@ public abstract class ObjectTypeClassBase<T> extends ObjectTypeBase {
         public abstract void writeToImpl(Exporter exporter, T object, OutputStream out) throws IOException;
     }
 
-    private final String name;
-    private final Class<T> clazz;
-
-    public ObjectTypeClassBase(String name, Class<T> clazz) {
-        this.name = Objects.requireNonNull(name);
-        this.clazz = Objects.requireNonNull(clazz);
-    }
-
-    public final Class<T> clazz() {
-        return clazz;
-    }
-
-    @Override
-    public final String name() {
-        return name;
-    }
-
-    @Override
-    public final boolean isType(Object object) {
-        return clazz.equals(object.getClass());
-    }
-
-    @Override
-    public final MessageStream compatibleClientConnection(Object object, MessageStream connection) {
-        return clientConnectionImpl((T) object, connection);
-    }
-
-    public abstract MessageStream clientConnectionImpl(T object, MessageStream connection);
-
-    @Override
-    public String toString() {
-        return name + ":" + clazz.getName();
-    }
 }
