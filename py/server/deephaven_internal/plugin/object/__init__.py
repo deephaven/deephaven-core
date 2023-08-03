@@ -5,7 +5,7 @@
 import jpy
 
 from typing import Optional, List, Any
-from deephaven.plugin.object import Exporter, ObjectType, Reference, MessageStream, FetchOnlyObjectType
+from deephaven.plugin.object_type import Exporter, ObjectType, Reference, MessageStream, FetchOnlyObjectType
 from deephaven._wrapper import JObjectWrapper
 
 JReference = jpy.get_type('io.deephaven.plugin.type.ObjectType$Exporter$Reference')

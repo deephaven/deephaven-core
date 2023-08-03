@@ -109,7 +109,7 @@ public class FigureWidgetTranslator {
             i++;
 
             // noinspection unused
-            final Reference reference = exporter.reference(table, false, true).orElseThrow();
+            final Reference reference = exporter.reference(table);
             // relying on FetchObjectResponse.export_id for communicating exported tables to the client
         }
 
@@ -129,7 +129,7 @@ public class FigureWidgetTranslator {
             }
             i++;
 
-            exporter.reference(partitionedTable, false, true).orElseThrow();
+            exporter.reference(partitionedTable);
         }
 
         assignOptionalField(figure.getTitle(), clientFigure::setTitle, clientFigure::clearTitle);

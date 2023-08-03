@@ -7,7 +7,7 @@ import deephaven.plugin
 
 from typing import Union, Type
 from deephaven.plugin import Plugin, Registration
-from deephaven.plugin.object import ObjectType
+from deephaven.plugin.object_type import ObjectType
 from .object import ObjectTypeAdapter
 
 _JCallbackAdapter = jpy.get_type('io.deephaven.server.plugin.python.CallbackAdapter')

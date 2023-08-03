@@ -3,7 +3,7 @@
 #
 
 from deephaven.pandas import to_table
-from deephaven.plugin.object import Exporter, ObjectType
+from deephaven.plugin.object_type import Exporter, ObjectType
 from pandas import DataFrame
 
 NAME = "pandas.DataFrame"

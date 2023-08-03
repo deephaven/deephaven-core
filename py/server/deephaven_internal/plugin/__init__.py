@@ -4,9 +4,9 @@
 
 import jpy
 
-_JCallbackAdapter = jpy.get_type('io.deephaven.server.plugin.python.CallbackAdapter')
+JCallbackAdapter = jpy.get_type('io.deephaven.server.plugin.python.CallbackAdapter')
 
-def initialize_all_and_register_into(callback: _JCallbackAdapter):
+def initialize_all_and_register_into(callback: JCallbackAdapter):
     try:
         from . import register
     except ModuleNotFoundError as e:

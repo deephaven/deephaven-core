@@ -59,7 +59,7 @@ public class ObjectServiceGrpcImpl extends ObjectServiceGrpc.ObjectServiceImplBa
 
         @Override
         public void onNext(final StreamRequest request) {
-            GrpcErrorHelper.checkHasOneOf(request, "connect");
+            GrpcErrorHelper.checkHasOneOf(request, "message");
             if (request.hasConnect()) {
                 // Should only appear in the first request
                 if (this.object != null) {

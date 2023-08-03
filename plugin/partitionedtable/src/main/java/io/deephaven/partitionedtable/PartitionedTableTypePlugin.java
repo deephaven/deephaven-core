@@ -32,7 +32,7 @@ public class PartitionedTableTypePlugin extends ObjectTypeBase.FetchOnly {
     @Override
     public void writeCompatibleObjectTo(Exporter exporter, Object object, OutputStream out) throws IOException {
         PartitionedTable partitionedTable = (PartitionedTable) object;
-        exporter.reference(partitionedTable.table(), false, true);
+        exporter.reference(partitionedTable.table());
 
         // Send Schema wrapped in Message
         ByteString schemaWrappedInMessage = BarrageUtil.schemaBytesFromTableDefinition(
