@@ -9,7 +9,6 @@ import io.deephaven.util.datastructures.linked.IntrusiveDoublyLinkedNode;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
-import java.util.Arrays;
 import java.util.Collection;
 
 /**
@@ -78,10 +77,6 @@ public interface NotificationQueue {
             return NotificationQueue.Dependency.getUpdateGraph(this, dependencies);
         }
 
-        default UpdateGraph getUpdateGraph(Collection<Dependency> dependencies) {
-            return NotificationQueue.Dependency.getUpdateGraph(this, dependencies);
-        }
-
         /**
          * Examine all {@code dependencies} excluding non-refreshing {@link DynamicNode dynamic nodes}, and verify that
          * they are using the same {@link UpdateGraph}.
@@ -97,24 +92,6 @@ public interface NotificationQueue {
          * @throws UpdateGraphConflictException if multiple update graphs were found in the dependencies
          */
         static UpdateGraph getUpdateGraph(@Nullable Dependency first, Dependency... dependencies) {
-            return getUpdateGraph(first, Arrays.asList(dependencies));
-        }
-
-        /**
-         * Examine all {@code dependencies} excluding non-refreshing {@link DynamicNode dynamic nodes}, and verify that
-         * they are using the same {@link UpdateGraph}.
-         * <p>
-         * If a singular update graph was found in this process, return it.
-         * <p>
-         * Otherwise, if all dependencies are non-refreshing {@link DynamicNode dynamic nodes}, return null.
-         *
-         * @param first at least one dependency is helpful
-         * @param dependencies the dependencies to examine
-         * @return the singular {@link UpdateGraph} used by all {@code dependencies}, or null if all
-         *         {@code dependencies} are non-refreshing {@link DynamicNode dynamic nodes}
-         * @throws UpdateGraphConflictException if multiple update graphs were found in the dependencies
-         */
-        static UpdateGraph getUpdateGraph(@Nullable Dependency first, Collection<Dependency> dependencies) {
             UpdateGraph graph = null;
             UpdateGraph firstNonNullGraph = null;
 

@@ -124,7 +124,7 @@ public class SyncTableFilter {
         this.recorders = new ArrayList<>(tableCount);
 
         ColumnSource<?>[] keySourcePrototype = null;
-        final MergedListener mergedListener = new MergedSyncListener(updateGraph, null);
+        final MergedListener mergedListener = new MergedSyncListener(null);
 
         for (int ii = 0; ii < tableCount; ++ii) {
             final SyncTableDescription std = tables.get(ii);
@@ -179,7 +179,7 @@ public class SyncTableFilter {
     }
 
     class MergedSyncListener extends io.deephaven.engine.table.impl.MergedListener {
-        MergedSyncListener(final UpdateGraph updateGraph, final QueryTable dummyResult) {
+        MergedSyncListener(final QueryTable dummyResult) {
             super(recorders, Collections.emptyList(), "SyncTableListener", dummyResult);
         }
 
