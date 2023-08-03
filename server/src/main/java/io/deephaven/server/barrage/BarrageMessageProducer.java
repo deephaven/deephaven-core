@@ -1981,7 +1981,7 @@ public class BarrageMessageProducer<MessageView> extends LivenessArtifact
         return result;
     }
 
-    // Updates provided mapping so that mapping[i] returns values.get(i) for all i in keys.
+    // Updates provided mapping so that mapping[i] returns values.getch(i) for all i in keys.
     private static void applyRedirMapping(final RowSet keys, final RowSet values, final long[][] mapping) {
         Assert.eq(keys.size(), "keys.size()", values.size(), "values.size()");
 
