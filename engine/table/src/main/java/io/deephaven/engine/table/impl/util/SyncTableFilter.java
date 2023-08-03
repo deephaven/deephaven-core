@@ -180,7 +180,7 @@ public class SyncTableFilter {
 
     class MergedSyncListener extends io.deephaven.engine.table.impl.MergedListener {
         MergedSyncListener(final UpdateGraph updateGraph, final QueryTable dummyResult) {
-            super(recorders, Collections.emptyList(), "SyncTableListener", updateGraph, dummyResult);
+            super(recorders, Collections.emptyList(), "SyncTableListener", dummyResult);
         }
 
         @Override

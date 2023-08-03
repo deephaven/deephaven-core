@@ -1758,13 +1758,17 @@ public class PeriodicUpdateGraph implements UpdateGraph {
      */
     private void waitForNextCycle(final long startTime, final Scheduler timeSource) {
         final long now = timeSource.currentTimeMillis();
-        if (now >= nextUpdatePerformanceTrackerFlushTime) {
-            nextUpdatePerformanceTrackerFlushTime = now + UpdatePerformanceTracker.REPORT_INTERVAL_MILLIS;
-            updatePerformanceTracker.flush();
-        }
         long expectedEndTime = startTime + targetCycleDurationMillis;
         if (minimumInterCycleSleep > 0) {
             expectedEndTime = Math.max(expectedEndTime, now + minimumInterCycleSleep);
+        }
+        if (expectedEndTime >= nextUpdatePerformanceTrackerFlushTime) {
+            nextUpdatePerformanceTrackerFlushTime = now + UpdatePerformanceTracker.REPORT_INTERVAL_MILLIS;
+            try {
+                updatePerformanceTracker.flush();
+            } catch (Exception err) {
+                log.error().append("Error flushing UpdatePerformanceTracker: ").append(err).endl();
+            }
         }
         waitForEndTime(expectedEndTime, timeSource);
     }
@@ -1981,9 +1985,7 @@ public class PeriodicUpdateGraph implements UpdateGraph {
     }
 
     public static PeriodicUpdateGraph getInstance(final String name) {
-        synchronized (INSTANCES) {
-            return INSTANCES.get(name);
-        }
+        return INSTANCES.get(name);
     }
 
     public static final class Builder {

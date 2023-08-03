@@ -42,7 +42,7 @@ public class SnapshotIncrementalListener extends MergedListener {
             QueryTable baseTable,
             Map<String, ? extends ColumnSource<?>> triggerColumns) {
         super(Arrays.asList(baseListener, triggerListener), Collections.emptyList(), "snapshotIncremental",
-                baseTable.getUpdateGraph(triggerTable), resultTable);
+                resultTable);
         this.triggerTable = triggerTable;
         this.resultTable = resultTable;
         this.resultColumns = resultColumns;

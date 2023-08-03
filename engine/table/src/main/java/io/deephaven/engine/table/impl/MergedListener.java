@@ -72,16 +72,8 @@ public abstract class MergedListener extends LivenessArtifact implements Notific
             final Iterable<? extends ListenerRecorder> recorders,
             final Iterable<NotificationQueue.Dependency> dependencies,
             final String listenerDescription,
-            final UpdateGraph updateGraph,
-            final @Nullable QueryTable result) {
-        this.updateGraph = updateGraph;
-        if (result != null && result.isRefreshing()) {
-            if (result.getUpdateGraph() != updateGraph) {
-                throw new IllegalArgumentException("result.getUpdateGraph() != updateGraph: "
-                        + result.getUpdateGraph() + " != " + updateGraph);
-            }
-        }
-
+            @Nullable final QueryTable result) {
+        this.updateGraph = ExecutionContext.getContext().getUpdateGraph();
         this.recorders = recorders;
         recorders.forEach(this::manage);
         this.dependencies = dependencies;

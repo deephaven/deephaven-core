@@ -3409,7 +3409,7 @@ public class QueryTableTest extends QueryTableTestBase {
         // Merged listener should properly combine the two upstream notifications
         final AtomicLong processedStep = new AtomicLong();
         final MergedListener mergedListener = new MergedListener(
-                List.of(listenerRecorder1, listenerRecorder2), List.of(), "MERGED", updateGraph, result) {
+                List.of(listenerRecorder1, listenerRecorder2), List.of(), "MERGED", result) {
             @Override
             protected void process() {
                 processedStep.set(getUpdateGraph().clock().currentStep());

@@ -9,6 +9,7 @@ import io.deephaven.util.datastructures.linked.IntrusiveDoublyLinkedNode;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
+import java.util.Arrays;
 import java.util.Collection;
 
 /**
@@ -96,7 +97,7 @@ public interface NotificationQueue {
          * @throws UpdateGraphConflictException if multiple update graphs were found in the dependencies
          */
         static UpdateGraph getUpdateGraph(@Nullable Dependency first, Dependency... dependencies) {
-            return getUpdateGraph(first, java.util.Arrays.asList(dependencies));
+            return getUpdateGraph(first, Arrays.asList(dependencies));
         }
 
         /**

@@ -168,8 +168,7 @@ public class WindowCheck {
          */
         private TimeWindowListener(final String inWindowColumnName, final InWindowColumnSource inWindowColumnSource,
                 final ListenerRecorder recorder, final QueryTable source, final QueryTable result) {
-            super(Collections.singleton(recorder), Collections.singleton(source), "WindowCheck",
-                    source.getUpdateGraph(), result);
+            super(Collections.singleton(recorder), Collections.singleton(source), "WindowCheck", result);
             this.source = source;
             this.recorder = recorder;
             this.inWindowColumnSource = inWindowColumnSource;
