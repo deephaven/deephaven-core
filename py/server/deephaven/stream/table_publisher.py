@@ -22,6 +22,8 @@ _JRuntimeException = jpy.get_type("java.lang.RuntimeException")
 
 
 class TablePublisher(JObjectWrapper):
+    """Supports publishing Table data."""
+
     j_object_type = _JTablePublisher
 
     def __init__(self, j_table_publisher: jpy.JType):
@@ -73,7 +75,7 @@ class TablePublisher(JObjectWrapper):
 
 def table_publisher(
     name: str,
-    column_definitions: Dict[str, DType],
+    col_defs: Dict[str, DType],
     on_shutdown_callback: Optional[Callable[[], None]] = None,
     update_graph: Optional[UpdateGraph] = None,
     chunk_size: int = 2048,
@@ -92,7 +94,7 @@ def table_publisher(
 
     Args:
         name (str): the name, used for logging
-        column_definitions (Dict[str, DType]): the column definitions
+        col_defs (Dict[str, DType]): the column definitions
         on_shutdown_callback (Optional[Callable[[], None]]): the on-shutdown callback
         update_graph (Optional[UpdateGraph]): the update graph
         chunk_size (int): the chunk size, defaults to 2048
@@ -105,7 +107,7 @@ def table_publisher(
         _JTableDefinition.of(
             [
                 Column(name=name, data_type=dtype).j_column_definition
-                for name, dtype in column_definitions.items()
+                for name, dtype in col_defs.items()
             ]
         ),
         j_runnable(on_shutdown_callback) if on_shutdown_callback else None,
