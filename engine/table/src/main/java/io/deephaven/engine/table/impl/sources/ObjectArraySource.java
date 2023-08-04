@@ -5,16 +5,19 @@ package io.deephaven.engine.table.impl.sources;
 
 import gnu.trove.list.array.TIntArrayList;
 import io.deephaven.base.verify.Assert;
-import io.deephaven.engine.context.ExecutionContext;
+import io.deephaven.engine.table.ChunkSource;
+import io.deephaven.engine.table.ColumnSource;
 import io.deephaven.engine.table.impl.MutableColumnSourceGetDefaults;
 import io.deephaven.engine.rowset.chunkattributes.OrderedRowKeyRanges;
 import io.deephaven.engine.rowset.chunkattributes.OrderedRowKeys;
+import io.deephaven.util.datastructures.LongSizedDataStructure;
 import io.deephaven.vector.Vector;
 import io.deephaven.chunk.*;
 import io.deephaven.engine.rowset.chunkattributes.RowKeys;
 import io.deephaven.chunk.attributes.Values;
 import io.deephaven.engine.rowset.RowSequence;
 import io.deephaven.util.SoftRecycler;
+import org.apache.commons.lang3.mutable.MutableInt;
 import org.jetbrains.annotations.NotNull;
 
 import java.util.Arrays;
@@ -236,6 +239,132 @@ public class ObjectArraySource<T> extends ArraySourceHelper<T, T[]> implements M
         return capacity;
     }
 
+    @Override
+    public void fillChunk(
+            @NotNull final ChunkSource.FillContext context,
+            @NotNull final WritableChunk<? super Values> destination,
+            @NotNull final RowSequence rowSequence) {
+        if (rowSequence.getAverageRunLengthEstimate() < USE_RANGES_AVERAGE_RUN_LENGTH) {
+            fillSparseChunk(destination, rowSequence);
+            return;
+        }
+        MutableInt destOffset = new MutableInt(0);
+        rowSequence.forAllRowKeyRanges((final long from, long to) -> {
+            int valuesAtEnd = 0;
+
+            if (from > maxIndex) {
+                // the whole region is beyond us
+                final int sz = LongSizedDataStructure.intSize("int cast", to - from + 1);
+                destination.fillWithNullValue(destOffset.intValue(), sz);
+                destOffset.add(sz);
+                return;
+            }
+            if (to > maxIndex) {
+                // only part of the region is beyond us
+                valuesAtEnd = LongSizedDataStructure.intSize("int cast", to - maxIndex);
+                to = maxIndex;
+            }
+
+            final int fromBlock = getBlockNo(from);
+            final int toBlock = getBlockNo(to);
+            final int fromOffsetInBlock = (int) (from & INDEX_MASK);
+            if (fromBlock == toBlock) {
+                final int sz = LongSizedDataStructure.intSize("int cast", to - from + 1);
+                destination.copyFromArray(getBlock(fromBlock), fromOffsetInBlock, destOffset.intValue(), sz);
+                destOffset.add(sz);
+            } else {
+                final int sz = BLOCK_SIZE - fromOffsetInBlock;
+                destination.copyFromArray(getBlock(fromBlock), fromOffsetInBlock, destOffset.intValue(), sz);
+                destOffset.add(sz);
+                for (int blockNo = fromBlock + 1; blockNo < toBlock; ++blockNo) {
+                    destination.copyFromArray(getBlock(blockNo), 0, destOffset.intValue(), BLOCK_SIZE);
+                    destOffset.add(BLOCK_SIZE);
+                }
+                int restSz = (int) (to & INDEX_MASK) + 1;
+                destination.copyFromArray(getBlock(toBlock), 0, destOffset.intValue(), restSz);
+                destOffset.add(restSz);
+            }
+
+            if (valuesAtEnd > 0) {
+                destination.fillWithNullValue(destOffset.intValue(), valuesAtEnd);
+                destOffset.add(valuesAtEnd);
+            }
+        });
+        destination.setSize(destOffset.intValue());
+    }
+
+    private interface CopyFromBlockFunctor {
+        void copy(int blockNo, int srcOffset, int length);
+    }
+
+    @Override
+    public void fillPrevChunk(
+            @NotNull final ColumnSource.FillContext context,
+            @NotNull final WritableChunk<? super Values> destination,
+            @NotNull final RowSequence rowSequence) {
+        if (prevFlusher == null) {
+            fillChunk(context, destination, rowSequence);
+            return;
+        }
+
+        if (rowSequence.getAverageRunLengthEstimate() < USE_RANGES_AVERAGE_RUN_LENGTH) {
+            fillSparsePrevChunk(destination, rowSequence);
+            return;
+        }
+
+        final ArraySourceHelper.FillContext effectiveContext = (ArraySourceHelper.FillContext) context;
+        final MutableInt destOffset = new MutableInt(0);
+
+        CopyFromBlockFunctor lambda = (blockNo, srcOffset, length) -> {
+            final long[] inUse = prevInUse[blockNo];
+            if (inUse != null) {
+                effectiveContext.copyKernel.conditionalCopy(destination, getBlock(blockNo), getPrevBlock(blockNo),
+                        inUse, srcOffset, destOffset.intValue(), length);
+            } else {
+                destination.copyFromArray(getBlock(blockNo), srcOffset, destOffset.intValue(), length);
+            }
+            destOffset.add(length);
+        };
+
+        rowSequence.forAllRowKeyRanges((final long from, long to) -> {
+            int valuesAtEnd = 0;
+            if (from > maxIndex) {
+                // the whole region is beyond us
+                final int sz = LongSizedDataStructure.intSize("int cast", to - from + 1);
+                destination.fillWithNullValue(destOffset.intValue(), sz);
+                destOffset.add(sz);
+                return;
+            } else if (to > maxIndex) {
+                // only part of the region is beyond us
+                valuesAtEnd = LongSizedDataStructure.intSize("int cast", to - maxIndex);
+                to = maxIndex;
+            }
+
+            final int fromBlock = getBlockNo(from);
+            final int toBlock = getBlockNo(to);
+            final int fromOffsetInBlock = (int) (from & INDEX_MASK);
+            if (fromBlock == toBlock) {
+                final int sz = LongSizedDataStructure.intSize("int cast", to - from + 1);
+                lambda.copy(fromBlock, fromOffsetInBlock, sz);
+            } else {
+                final int sz = BLOCK_SIZE - fromOffsetInBlock;
+                lambda.copy(fromBlock, fromOffsetInBlock, sz);
+
+                for (int blockNo = fromBlock + 1; blockNo < toBlock; ++blockNo) {
+                    lambda.copy(blockNo, 0, BLOCK_SIZE);
+                }
+
+                int restSz = (int) (to & INDEX_MASK) + 1;
+                lambda.copy(toBlock, 0, restSz);
+            }
+
+            if (valuesAtEnd > 0) {
+                destination.fillWithNullValue(destOffset.intValue(), valuesAtEnd);
+                destOffset.add(valuesAtEnd);
+            }
+        });
+        destination.setSize(destOffset.intValue());
+    }
 
     @Override
     protected void fillSparseChunk(@NotNull final WritableChunk<? super Values> destGeneric, @NotNull final RowSequence indices) {
@@ -248,6 +377,10 @@ public class ObjectArraySource<T> extends ArraySourceHelper<T, T[]> implements M
         final FillSparseChunkContext<T[]> ctx = new FillSparseChunkContext<>();
         indices.forEachRowKey((final long v) -> {
             if (v >= ctx.capForCurrentBlock) {
+                if (v > maxIndex) {
+                    dest.set(ctx.offset++, null);
+                    return true;
+                }
                 ctx.currentBlockNo = getBlockNo(v);
                 ctx.capForCurrentBlock = (ctx.currentBlockNo + 1L) << LOG_BLOCK_SIZE;
                 ctx.currentBlock = blocks[ctx.currentBlockNo];
@@ -275,6 +408,10 @@ public class ObjectArraySource<T> extends ArraySourceHelper<T, T[]> implements M
         final FillSparseChunkContext<T[]> ctx = new FillSparseChunkContext<>();
         indices.forEachRowKey((final long v) -> {
             if (v >= ctx.capForCurrentBlock) {
+                if (v > maxIndex) {
+                    dest.set(ctx.offset++, null);
+                    return true;
+                }
                 ctx.currentBlockNo = getBlockNo(v);
                 ctx.capForCurrentBlock = (ctx.currentBlockNo + 1L) << LOG_BLOCK_SIZE;
                 ctx.currentBlock = blocks[ctx.currentBlockNo];
@@ -496,10 +633,10 @@ public class ObjectArraySource<T> extends ArraySourceHelper<T, T[]> implements M
         if (source == dest) {
             return;
         }
-        if ((source - dest) % BLOCK_SIZE == 0) {
-            // TODO: we can move full blocks!
+        if (((source - dest) & INDEX_MASK) == 0 && (source & INDEX_MASK) == 0) {
+            // TODO (#3359): we can move full blocks!
         }
-        if (source < dest) {
+        if (source < dest && source + length >= dest) {
             for (long ii = length - 1; ii >= 0; ) {
                 final long sourceKey = source + ii;
                 final long destKey = dest + ii;
@@ -509,11 +646,11 @@ public class ObjectArraySource<T> extends ArraySourceHelper<T, T[]> implements M
                 final int destBlock = (int) (destKey >> LOG_BLOCK_SIZE);
                 final int destIndexWithinBlock = (int) (destKey & INDEX_MASK);
 
-                blocks[destBlock][destIndexWithinBlock] = blocks[sourceBlock][sourceIndexWithinBlock];
+                final int valuesInBothBlocks = Math.min(destIndexWithinBlock + 1, sourceIndexWithinBlock + 1);
+                final int toMove = (ii + 1) < valuesInBothBlocks ? (int)(ii + 1): valuesInBothBlocks;
 
-                // TODO: figure out the first key in both blocks, and do an array copy
-
-                ii -= 1;
+                System.arraycopy(blocks[sourceBlock], sourceIndexWithinBlock - toMove + 1, blocks[destBlock], destIndexWithinBlock - toMove + 1, toMove);
+                ii -= toMove;
             }
         } else {
             for (long ii = 0; ii < length;) {
@@ -525,11 +662,11 @@ public class ObjectArraySource<T> extends ArraySourceHelper<T, T[]> implements M
                 final int destBlock = (int) (destKey >> LOG_BLOCK_SIZE);
                 final int destIndexWithinBlock = (int) (destKey & INDEX_MASK);
 
-                blocks[destBlock][destIndexWithinBlock] = blocks[sourceBlock][sourceIndexWithinBlock];
+                final int valuesInBothBlocks = BLOCK_SIZE - Math.max(destIndexWithinBlock, sourceIndexWithinBlock);
+                final int toMove = (length - ii < valuesInBothBlocks) ? (int)(length - ii): valuesInBothBlocks;
 
-                // TODO: figure out the last key in both blocks, and do an array copy
-
-                ii += 1;
+                System.arraycopy(blocks[sourceBlock], sourceIndexWithinBlock, blocks[destBlock], destIndexWithinBlock, toMove);
+                ii += toMove;
             }
         }
     }
