@@ -294,6 +294,13 @@ class ParquetTestCase(BaseTestCase):
         # result_table = read('data_from_pandas.parquet')
         # self.assert_table_equals(dh_table, result_table)
 
+    def test_writing_via_pyarrow(self):
+        # This function tests that we can write tables with list types to parquet files via pyarrow and read them back
+        # through deephaven's parquet reader code with no exceptions
+        pa_table = pyarrow.table({'numList': [[2, 2, 4]],
+                                  'stringList': [["Flamingo", "Parrot", "Dog"]]})
+        pyarrow.parquet.write_table(pa_table, 'data_from_pa.parquet')
+        from_disk = read('data_from_pa.parquet').select()
 
 if __name__ == '__main__':
     unittest.main()
