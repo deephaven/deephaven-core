@@ -142,7 +142,7 @@ public class ObjectServiceGrpcImpl extends ObjectServiceGrpc.ObjectServiceImplBa
                             try {
                                 operation.run();
                             } catch (ObjectType.ObjectCommunicationException e) {
-                                throw new IllegalStateException("Error occurred communicating with client", e);
+                                throw Exceptions.statusRuntimeException(Code.INVALID_ARGUMENT, "Error performing MessageStream operation");
                             }
 
                             // Set running to false (it must be true at this time) so that any new work can race being
@@ -151,16 +151,14 @@ public class ObjectServiceGrpcImpl extends ObjectServiceGrpc.ObjectServiceImplBa
                             doWork();
                         });
             };
-            // gRPC guarantees we can't race in this method
+
+            // gRPC guarantees we can't race enqueuing
             operations.add(runnable);
-            if (running.compareAndSet(false, true)) {
-                // no other thread is actually working, we can race to start work on this thread
-                doWork();
-            }
+            doWork();
         }
 
         private void doWork() {
-            // More than one thread can arrive here at the same time, but only one will pass the compareAndSet
+            // More than one thread (at most two) can arrive here at the same time, but only one will pass the compareAndSet
             StreamOperation next = operations.peek();
 
             // If we fail the null check, no work to do, leave running false (though if work was added right after
@@ -181,12 +179,6 @@ public class ObjectServiceGrpcImpl extends ObjectServiceGrpc.ObjectServiceImplBa
             }
         }
 
-        private void fail() {
-            // close the message stream if non null
-            // clear the queue
-            // throw sre
-        }
-
         @Override
         public void onError(final Throwable t) {
             // Safely inform the client that an error happened
@@ -194,11 +186,7 @@ public class ObjectServiceGrpcImpl extends ObjectServiceGrpc.ObjectServiceImplBa
 
             // If the objecttype connection was opened, close it and refuse later calls from it
             if (messageStream != null) {
-                try {
-                    messageStream.onClose();
-                } catch (Exception ignored) {
-                    // ignore errors from closing the plugin
-                }
+                closeMessageStream();
             }
 
             // Don't attempt to run additional work
@@ -208,11 +196,26 @@ public class ObjectServiceGrpcImpl extends ObjectServiceGrpc.ObjectServiceImplBa
             release();
         }
 
+        private void closeMessageStream() {
+            try {
+                messageStream.onClose();
+            } catch (Exception ignored) {
+                // ignore errors from closing the plugin
+            }
+        }
+
         @Override
         public void onCompleted() {
+            // Don't finalize until we've processed earlier messages
             runOrEnqueue(() -> {
+                // Respond by closing the stream - note that closing here allows the server plugin to respond to earlier
+                // messages without error, but those responses will be ignored by the client.
                 GrpcUtil.safelyComplete(responseObserver);
-                messageStream.onClose();
+
+                // Let the server plugin know that the remote end has closed
+                closeMessageStream();
+
+                // Release the exported object that this stream is communicating with
                 release();
             });
         }
