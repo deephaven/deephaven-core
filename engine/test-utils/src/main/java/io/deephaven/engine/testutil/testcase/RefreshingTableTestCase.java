@@ -69,7 +69,6 @@ abstract public class RefreshingTableTestCase extends BaseArrayTestCase implemen
 
         oldLogEnabled = QueryCompiler.setLogEnabled(ENABLE_QUERY_COMPILER_LOGGING);
         oldSerialSafe = updateGraph.setSerialTableOperationsSafe(true);
-        UpdatePerformanceTracker.getInstance().enableUnitTestMode();
         AsyncErrorLogger.init();
         ChunkPoolReleaseTracking.enableStrict();
     }

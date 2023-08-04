@@ -3,6 +3,7 @@
  */
 package io.deephaven.engine.table.impl.perf;
 
+import io.deephaven.base.verify.Assert;
 import io.deephaven.configuration.Configuration;
 import io.deephaven.engine.context.ExecutionContext;
 import io.deephaven.engine.table.ShiftObliviousListener;
@@ -15,7 +16,9 @@ import io.deephaven.engine.table.impl.ShiftObliviousInstrumentedListener;
 import io.deephaven.engine.tablelogger.EngineTableLoggers;
 import io.deephaven.engine.tablelogger.UpdatePerformanceLogLogger;
 import io.deephaven.engine.updategraph.UpdateGraph;
+import io.deephaven.engine.updategraph.UpdateSourceRegistrar;
 import io.deephaven.engine.updategraph.impl.PeriodicUpdateGraph;
+import io.deephaven.engine.util.string.StringUtils;
 import io.deephaven.internal.log.LoggerFactory;
 import io.deephaven.io.logger.Logger;
 import io.deephaven.stream.StreamToBlinkTableAdapter;
@@ -49,7 +52,7 @@ import java.util.concurrent.atomic.AtomicInteger;
  */
 public class UpdatePerformanceTracker {
 
-    private static final long REPORT_INTERVAL_MILLIS = Configuration.getInstance().getLongForClassWithDefault(
+    public static final long REPORT_INTERVAL_MILLIS = Configuration.getInstance().getLongForClassWithDefault(
             UpdatePerformanceTracker.class, "reportIntervalMillis", 60 * 1000L);
 
     private static final Logger log = LoggerFactory.getLogger(UpdatePerformanceTracker.class);
@@ -58,89 +61,120 @@ public class UpdatePerformanceTracker {
     static final QueryPerformanceLogThreshold LOG_THRESHOLD =
             new QueryPerformanceLogThreshold("Update", 500_000L);
 
-    private static volatile UpdatePerformanceTracker INSTANCE;
-    private static boolean started = false;
-    private boolean unitTestMode = false;
-    private final PerformanceEntry aggregatedSmallUpdatesEntry =
-            new PerformanceEntry(QueryConstants.NULL_INT, QueryConstants.NULL_INT, QueryConstants.NULL_INT,
-                    "Aggregated Small Updates", null);
+    private static InternalState INSTANCE;
 
-    public static UpdatePerformanceTracker getInstance() {
-        UpdatePerformanceTracker local;
+    private static InternalState getInternalState() {
+        InternalState local;
         if ((local = INSTANCE) == null) {
             synchronized (UpdatePerformanceTracker.class) {
                 if ((local = INSTANCE) == null) {
-                    INSTANCE = local = new UpdatePerformanceTracker(ExecutionContext.getContext().getUpdateGraph());
+                    INSTANCE = local = new InternalState();
                 }
             }
         }
         return local;
     }
 
-    private final UpdateGraph updateGraph;
-    private final UpdatePerformanceLogLogger tableLogger;
-    private final UpdatePerformanceStreamPublisher publisher;
-    // Eventually, we can close the StreamToBlinkTableAdapter
-    @SuppressWarnings("FieldCanBeLocal")
-    private final StreamToBlinkTableAdapter adapter;
-    private final Table blink;
-    private final AtomicInteger entryIdCounter = new AtomicInteger(1);
-    private final Queue<WeakReference<PerformanceEntry>> entries = new LinkedBlockingDeque<>();
+    private static class InternalState {
+        private final UpdatePerformanceLogLogger tableLogger;
+        private final UpdatePerformanceStreamPublisher publisher;
 
-    private UpdatePerformanceTracker(UpdateGraph updateGraph) {
-        this.updateGraph = Objects.requireNonNull(updateGraph);
-        this.tableLogger = EngineTableLoggers.get().updatePerformanceLogLogger();
-        this.publisher = new UpdatePerformanceStreamPublisher();
-        this.adapter = new StreamToBlinkTableAdapter(
-                UpdatePerformanceStreamPublisher.definition(),
-                publisher,
-                updateGraph,
-                UpdatePerformanceTracker.class.getName());
-        this.blink = adapter.table();
-    }
+        // Eventually, we can close the StreamToBlinkTableAdapter
+        @SuppressWarnings("FieldCanBeLocal")
+        private final StreamToBlinkTableAdapter adapter;
+        private final Table blink;
 
-    private void startThread() {
-        final ExecutionContext context = ExecutionContext.getContext().withUpdateGraph(updateGraph);
-        Thread driverThread = new Thread(new Driver(context), "UpdatePerformanceTracker.Driver");
-        driverThread.setDaemon(true);
-        driverThread.start();
-    }
+        private boolean encounteredError = false;
 
-    public static synchronized void start() {
-        if (started) {
-            return;
-        }
-        started = true;
-        getInstance().startThread();
-    }
-
-    private class Driver implements Runnable {
-
-        private final ExecutionContext context;
-
-        public Driver(ExecutionContext context) {
-            this.context = Objects.requireNonNull(context);
+        private InternalState() {
+            final UpdateSourceRegistrar registrar =
+                    PeriodicUpdateGraph.getInstance(PeriodicUpdateGraph.DEFAULT_UPDATE_GRAPH_NAME);
+            Assert.neqNull(registrar, "The " + PeriodicUpdateGraph.DEFAULT_UPDATE_GRAPH_NAME + " UpdateGraph "
+                    + "must be created before UpdatePerformanceTracker can be initialized.");
+            tableLogger = EngineTableLoggers.get().updatePerformanceLogLogger();
+            publisher = new UpdatePerformanceStreamPublisher();
+            adapter = new StreamToBlinkTableAdapter(
+                    UpdatePerformanceStreamPublisher.definition(),
+                    publisher,
+                    registrar,
+                    UpdatePerformanceTracker.class.getName());
+            blink = adapter.table();
         }
 
-        @Override
-        public void run() {
-            try (final SafeCloseable ignored1 = context.open()) {
-                // noinspection InfiniteLoopStatement
-                while (true) {
-                    final long intervalStartTimeNanos = System.nanoTime();
-                    final long intervalStartTimeMillis = System.currentTimeMillis();
-                    try {
-                        Thread.sleep(REPORT_INTERVAL_MILLIS);
-                    } catch (InterruptedException ignore) {
-                        // should log, but no logger handy
-                        // ignore
-                    }
-                    try (final SafeCloseable ignored2 = context.getUpdateGraph().sharedLock().lockCloseable()) {
-                        finishInterval(intervalStartTimeMillis, System.currentTimeMillis(),
-                                System.nanoTime() - intervalStartTimeNanos);
-                    }
+        /**
+         * @implNote this method is synchronized to guarantee identical ordering of entries between publisher and
+         *           tableLogger; doing so also relieves the requirement that the table logger be thread safe
+         */
+        private synchronized void publish(
+                final IntervalLevelDetails intervalLevelDetails,
+                final PerformanceEntry entry) {
+            if (!encounteredError) {
+                try {
+                    publisher.add(intervalLevelDetails, entry);
+                    tableLogger.log(intervalLevelDetails, entry);
+                } catch (final IOException e) {
+                    // Don't want to log this more than once in a report
+                    log.error().append("Error publishing ").append(entry).append(" caused by: ").append(e).endl();
+                    encounteredError = true;
                 }
             }
+        }
+    }
+
+    private static final AtomicInteger entryIdCounter = new AtomicInteger(1);
+
+    private final UpdateGraph updateGraph;
+    private final ExecutionContext context;
+    private final PerformanceEntry aggregatedSmallUpdatesEntry;
+    private final PerformanceEntry flushEntry;
+    private final Queue<WeakReference<PerformanceEntry>> entries = new LinkedBlockingDeque<>();
+
+    private boolean unitTestMode = false;
+
+    private long intervalStartTimeMillis = QueryConstants.NULL_LONG;
+    private long intervalStartTimeNanos = QueryConstants.NULL_LONG;
+
+    public UpdatePerformanceTracker(final UpdateGraph updateGraph) {
+        this.updateGraph = updateGraph;
+        this.context = ExecutionContext.getContext()
+                .withUpdateGraph(Objects.requireNonNull(updateGraph));
+        this.aggregatedSmallUpdatesEntry = new PerformanceEntry(
+                QueryConstants.NULL_INT, QueryConstants.NULL_INT, QueryConstants.NULL_INT,
+                "Aggregated Small Updates", null, updateGraph.getName());
+        this.flushEntry = new PerformanceEntry(
+                QueryConstants.NULL_INT, QueryConstants.NULL_INT, QueryConstants.NULL_INT,
+                "UpdatePerformanceTracker Flush", null, updateGraph.getName());
+    }
+
+    /**
+     * Start this UpdatePerformanceTracker, by beginning its first interval.
+     */
+    public void start() {
+        if (intervalStartTimeMillis == QueryConstants.NULL_LONG) {
+            intervalStartTimeMillis = System.currentTimeMillis();
+            intervalStartTimeNanos = System.nanoTime();
+        }
+    }
+
+    /**
+     * Flush this UpdatePerformanceTracker to the downstream publisher and logger, and begin its next interval.
+     */
+    public void flush() {
+        if (intervalStartTimeMillis == QueryConstants.NULL_LONG || intervalStartTimeNanos == QueryConstants.NULL_LONG) {
+            throw new IllegalStateException(String.format("UpdatePerformanceTracker %s was never started",
+                    updateGraph.getName()));
+        }
+        final long intervalEndTimeMillis = System.currentTimeMillis();
+        final long intervalEndTimeNanos = System.nanoTime();
+        try (final SafeCloseable ignored1 = context.open()) {
+            finishInterval(
+                    getInternalState(),
+                    intervalStartTimeMillis,
+                    intervalEndTimeMillis,
+                    intervalEndTimeNanos - intervalStartTimeNanos);
+        } finally {
+            intervalStartTimeMillis = intervalEndTimeMillis;
+            intervalStartTimeNanos = intervalEndTimeNanos;
         }
     }
 
@@ -160,7 +194,7 @@ public class UpdatePerformanceTracker {
         final MutableObject<PerformanceEntry> entryMu = new MutableObject<>();
         qpr.setQueryData((evaluationNumber, operationNumber, uninstrumented) -> {
             final String effectiveDescription;
-            if ((description == null || description.length() == 0) && uninstrumented) {
+            if (StringUtils.isNullOrEmpty(description) && uninstrumented) {
                 effectiveDescription = QueryPerformanceRecorder.UNINSTRUMENTED_CODE_DESCRIPTION;
             } else {
                 effectiveDescription = description;
@@ -170,7 +204,8 @@ public class UpdatePerformanceTracker {
                     evaluationNumber,
                     operationNumber,
                     effectiveDescription,
-                    QueryPerformanceRecorder.getCallerLine()));
+                    QueryPerformanceRecorder.getCallerLine(),
+                    updateGraph.getName()));
         });
         final PerformanceEntry entry = entryMu.getValue();
         if (!unitTestMode) {
@@ -185,12 +220,16 @@ public class UpdatePerformanceTracker {
      * next interval. <b>Note:</b> This method is only called under the PeriodicUpdateGraph instance's shared lock. This
      * ensures that no other thread using the same update graph will mutate individual entries. Concurrent additions to
      * {@link #entries} are supported by the underlying data structure.
-     * 
+     *
+     * @param internalState internal publishing state
      * @param intervalStartTimeMillis interval start time in millis
      * @param intervalEndTimeMillis interval end time in millis
      * @param intervalDurationNanos interval duration in nanos
      */
-    private void finishInterval(final long intervalStartTimeMillis, final long intervalEndTimeMillis,
+    private void finishInterval(
+            final InternalState internalState,
+            final long intervalStartTimeMillis,
+            final long intervalEndTimeMillis,
             final long intervalDurationNanos) {
         /*
          * Visit all entry references. For entries that no longer exist: Remove by index from the entry list. For
@@ -199,8 +238,11 @@ public class UpdatePerformanceTracker {
          */
         final IntervalLevelDetails intervalLevelDetails =
                 new IntervalLevelDetails(intervalStartTimeMillis, intervalEndTimeMillis, intervalDurationNanos);
-
-        boolean encounteredErrorLoggingToMemory = false;
+        if (flushEntry.getIntervalInvocationCount() > 0) {
+            internalState.publish(intervalLevelDetails, flushEntry);
+        }
+        flushEntry.reset();
+        flushEntry.onUpdateStart();
 
         for (final Iterator<WeakReference<PerformanceEntry>> it = entries.iterator(); it.hasNext();) {
             final WeakReference<PerformanceEntry> entryReference = it.next();
@@ -211,7 +253,7 @@ public class UpdatePerformanceTracker {
             }
 
             if (entry.shouldLogEntryInterval()) {
-                encounteredErrorLoggingToMemory = publish(intervalLevelDetails, entry, encounteredErrorLoggingToMemory);
+                internalState.publish(intervalLevelDetails, entry);
             } else if (entry.getIntervalInvocationCount() > 0) {
                 aggregatedSmallUpdatesEntry.accumulate(entry);
             }
@@ -219,26 +261,10 @@ public class UpdatePerformanceTracker {
         }
 
         if (aggregatedSmallUpdatesEntry.getIntervalInvocationCount() > 0) {
-            publish(intervalLevelDetails, aggregatedSmallUpdatesEntry, encounteredErrorLoggingToMemory);
-            aggregatedSmallUpdatesEntry.reset();
+            internalState.publish(intervalLevelDetails, aggregatedSmallUpdatesEntry);
         }
-    }
-
-    private boolean publish(
-            final IntervalLevelDetails intervalLevelDetails,
-            final PerformanceEntry entry,
-            final boolean encounteredErrorLoggingToMemory) {
-        if (!encounteredErrorLoggingToMemory) {
-            publisher.add(intervalLevelDetails, entry);
-            try {
-                tableLogger.log(intervalLevelDetails, entry);
-            } catch (IOException e) {
-                // Don't want to log this more than once in a report
-                log.error().append("Error sending UpdatePerformanceLog data to memory").append(e).endl();
-                return true;
-            }
-        }
-        return false;
+        aggregatedSmallUpdatesEntry.reset();
+        flushEntry.onUpdateEnd();
     }
 
     /**
@@ -270,7 +296,7 @@ public class UpdatePerformanceTracker {
     }
 
     @NotNull
-    public QueryTable getQueryTable() {
-        return (QueryTable) BlinkTableTools.blinkToAppendOnly(blink);
+    public static QueryTable getQueryTable() {
+        return (QueryTable) BlinkTableTools.blinkToAppendOnly(getInternalState().blink);
     }
 }
