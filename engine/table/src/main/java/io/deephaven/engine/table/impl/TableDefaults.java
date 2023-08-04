@@ -6,6 +6,7 @@ package io.deephaven.engine.table.impl;
 import io.deephaven.api.*;
 import io.deephaven.api.agg.Aggregation;
 import io.deephaven.api.Pair;
+import io.deephaven.api.agg.Aggregations;
 import io.deephaven.api.agg.spec.AggSpec;
 import io.deephaven.api.snapshot.SnapshotWhenOptions;
 import io.deephaven.api.snapshot.SnapshotWhenOptions.Flag;
@@ -20,6 +21,7 @@ import io.deephaven.api.util.ConcurrentMethod;
 import io.deephaven.engine.util.ColumnFormatting;
 import io.deephaven.engine.liveness.LivenessScopeStack;
 import io.deephaven.gui.color.Color;
+import io.deephaven.util.QueryConstants;
 import io.deephaven.util.annotations.FinalDefault;
 
 import java.util.*;
@@ -35,9 +37,6 @@ import static io.deephaven.api.agg.Aggregation.AggMin;
 public interface TableDefaults extends Table, TableOperationsDefaults<Table, Table> {
 
     Table[] ZERO_LENGTH_TABLE_ARRAY = new Table[0];
-    Set<String> axisOptions = new HashSet<>(Arrays.asList("proportional", "middle", "directional"));
-    Set<String> valuePlacementOptions = new HashSet<>(Arrays.asList("beside", "overlap", "hide"));
-    Set<String> directionOptions = new HashSet<>(Arrays.asList("LTR", "RTL"));
 
     @Override
     default Table coalesce() {
@@ -233,12 +232,12 @@ public interface TableDefaults extends Table, TableOperationsDefaults<Table, Tab
         new Color(color); // Throws if it can't create it
     }
 
-    default void validateDataBarOptions(String column, String valueColumn, AxisOptions axis, Double min, Double max,
-            String positiveColor, String negativeColor, ValuePlacementOptions valuePlacement,
-            DirectionOptions direction, Double opacity, String markerColumn, String markerColor)
+    default void validateDataBarOptions(String column, String valueColumn, DataBarAxisOptions axis, double min,
+            double max, String positiveColor, String negativeColor, DataBarValuePlacementOptions valuePlacement,
+            DataBarDirectionOptions direction, double opacity, String markerColumn, String markerColor)
             throws IllegalArgumentException {
-        if (min != null && max != null && min > max) {
-            throw new IllegalArgumentException("Min cannot be greater than max.");
+        if (min != QueryConstants.NULL_DOUBLE && max != QueryConstants.NULL_DOUBLE && min > max) {
+            throw new IllegalArgumentException("Min cannot be greater than max. Min: " + min + "Max: " + max);
         }
         if (positiveColor != null) {
             for (String color : positiveColor.split(",")) {
@@ -253,15 +252,15 @@ public interface TableDefaults extends Table, TableOperationsDefaults<Table, Tab
         if (markerColor != null) {
             validateColor(markerColor);
         }
-        if (opacity != null && (opacity > 1 || opacity < 0)) {
-            throw new IllegalArgumentException("Opacity must be between 0 and 1.");
+        if (opacity != QueryConstants.NULL_DOUBLE && (opacity > 1 || opacity < 0)) {
+            throw new IllegalArgumentException("Opacity: " + opacity + ", must be between 0 and 1.");
         }
     }
 
     @Override
-    default Table formatDataBar(String column, String valueColumn, AxisOptions axis, Double min, Double max,
-            String positiveColor, String negativeColor, ValuePlacementOptions valuePlacement,
-            DirectionOptions direction, Double opacity, String markerColumn, String markerColor) {
+    default Table formatDataBar(String column, String valueColumn, DataBarAxisOptions axis, double min, double max,
+            String positiveColor, String negativeColor, DataBarValuePlacementOptions valuePlacement,
+            DataBarDirectionOptions direction, double opacity, String markerColumn, String markerColor) {
         validateDataBarOptions(column, valueColumn, axis, min, max, positiveColor, negativeColor, valuePlacement,
                 direction, opacity, markerColumn, markerColor);
 
@@ -269,7 +268,7 @@ public interface TableDefaults extends Table, TableOperationsDefaults<Table, Tab
 
         String minColumn =
                 ColumnFormatting.getDataBarFormatColumnName(column, ColumnFormatting.DataBarFormatColumnType.MIN);
-        if (min == null) {
+        if (min == QueryConstants.NULL_DOUBLE) {
             newTable = newTable.naturalJoin(this.aggBy(AggMin(minColumn + "=" + valueColumn)), "");
         } else {
             newTable = newTable.naturalJoin(TableTools.newTable(TableTools.col(minColumn, min)), "");
@@ -277,7 +276,7 @@ public interface TableDefaults extends Table, TableOperationsDefaults<Table, Tab
 
         String maxColumn =
                 ColumnFormatting.getDataBarFormatColumnName(column, ColumnFormatting.DataBarFormatColumnType.MAX);
-        if (max == null) {
+        if (max == QueryConstants.NULL_DOUBLE) {
             newTable = newTable.naturalJoin(this.aggBy(AggMax(maxColumn + "=" + valueColumn)), "");
         } else {
             newTable = newTable.naturalJoin(TableTools.newTable(TableTools.col(maxColumn, max)), "");
@@ -306,7 +305,8 @@ public interface TableDefaults extends Table, TableOperationsDefaults<Table, Tab
                                 ColumnFormatting.DataBarFormatColumnType.DIRECTION),
                                 direction == null ? "LTR" : direction),
                         TableTools.col(ColumnFormatting.getDataBarFormatColumnName(column,
-                                ColumnFormatting.DataBarFormatColumnType.OPACITY), opacity == null ? 1.0 : opacity),
+                                ColumnFormatting.DataBarFormatColumnType.OPACITY),
+                                opacity == QueryConstants.NULL_DOUBLE ? 1.0 : opacity),
                         TableTools.col(ColumnFormatting.getDataBarFormatColumnName(column,
                                 ColumnFormatting.DataBarFormatColumnType.MARKER_COLOR), markerColor)),
                 "");

@@ -308,7 +308,10 @@ public interface Table extends
     @ConcurrentMethod
     Table formatColumnWhere(String columnName, String condition, String formula);
 
-    enum AxisOptions {
+    /**
+     * An enum of axis options for data bars
+     */
+    enum DataBarAxisOptions {
         /**
          * Data bars fill the available space in the column
          */
@@ -323,7 +326,10 @@ public interface Table extends
         Directional
     }
 
-    enum ValuePlacementOptions {
+    /**
+     * An enum of value placement options for data bars
+     */
+    enum DataBarValuePlacementOptions {
         /**
          * Beside the data bar
          */
@@ -337,7 +343,11 @@ public interface Table extends
          */
         Hide
     }
-    enum DirectionOptions {
+
+    /**
+     * An enum of direction options for data bars
+     */
+    enum DataBarDirectionOptions {
         /**
          * Left to right
          */
@@ -348,10 +358,27 @@ public interface Table extends
         RTL
     }
 
+    /**
+     * Produce a new table with data bars generated at the specified column
+     * 
+     * @param column Column to generate data bars in
+     * @param valueColumn Column obtaining the values to generate data bars from
+     * @param axis Orientation of data bar relative to the cell
+     * @param min Minimum value for data bar scaling
+     * @param max Maximum value for data bar scaling
+     * @param positiveColor Color or list of colors for positive bars
+     * @param negativeColor Color or list of colors for negative bar
+     * @param valuePlacement Orientation of values relative to the data bar
+     * @param direction Orientation of values relative to the horizontal axis
+     * @param opacity Opacity of data. Accepts values from 0 to 1
+     * @param markerColumn Column obtaining the values to generate markers from
+     * @param markerColor Color for markers
+     * @return The new table with data bars generated at the specified column
+     */
     @ConcurrentMethod
-    Table formatDataBar(String column, String valueColumn, AxisOptions axis, Double min, Double max,
-            String positiveColor, String negativeColor, ValuePlacementOptions valuePlacement,
-            DirectionOptions direction, Double opacity,
+    Table formatDataBar(String column, String valueColumn, DataBarAxisOptions axis, double min, double max,
+            String positiveColor, String negativeColor, DataBarValuePlacementOptions valuePlacement,
+            DataBarDirectionOptions direction, double opacity,
             String markerColumn, String markerColor);
 
     /**

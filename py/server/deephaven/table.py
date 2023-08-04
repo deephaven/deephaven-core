@@ -24,6 +24,7 @@ from deephaven._wrapper import JObjectWrapper
 from deephaven._wrapper import unwrap
 from deephaven.agg import Aggregation
 from deephaven.column import Column, ColumnType
+from deephaven.constants import NULL_DOUBLE
 from deephaven.filters import Filter, and_, or_
 from deephaven.jcompat import j_unary_operator, j_binary_operator, j_map_to_dict, j_hashmap
 from deephaven.jcompat import to_sequence, j_array_list
@@ -42,9 +43,9 @@ _JPair = jpy.get_type("io.deephaven.api.Pair")
 _JLayoutHintBuilder = jpy.get_type("io.deephaven.engine.util.LayoutHintBuilder")
 _JSearchDisplayMode = jpy.get_type("io.deephaven.engine.util.LayoutHintBuilder$SearchDisplayModes")
 _JSnapshotWhenOptions = jpy.get_type("io.deephaven.api.snapshot.SnapshotWhenOptions")
-_JAxisOption = jpy.get_type("io.deephaven.engine.table.Table$AxisOptions")
-_JValuePlacementOption = jpy.get_type("io.deephaven.engine.table.Table$ValuePlacementOptions")
-_JDirectionOption = jpy.get_type("io.deephaven.engine.table.Table$DirectionOptions")
+_JAxisOption = jpy.get_type("io.deephaven.engine.table.Table$DataBarAxisOptions")
+_JValuePlacementOption = jpy.get_type("io.deephaven.engine.table.Table$DataBarValuePlacementOptions")
+_JDirectionOption = jpy.get_type("io.deephaven.engine.table.Table$DataBarDirectionOptions")
 
 # PartitionedTable
 _JPartitionedTable = jpy.get_type("io.deephaven.engine.table.PartitionedTable")
@@ -100,7 +101,7 @@ class SearchDisplayMode(Enum):
     """Hide the search bar, regardless of user or system settings."""
 
 
-class AxisOption(Enum):
+class DataBarAxisOption(Enum):
     """An enum of axis options for data bars"""
     PROPORTIONAL = _JAxisOption.Proportional
     """Data bars fill the available space in the column."""
@@ -110,7 +111,7 @@ class AxisOption(Enum):
     """Positive and negative bars face the same direction."""
 
 
-class ValuePlacementOption(Enum):
+class DataBarValuePlacementOption(Enum):
     """An enum of value placement options for data bars"""
     BESIDE = _JValuePlacementOption.Beside
     """Beside the data bar."""
@@ -120,7 +121,7 @@ class ValuePlacementOption(Enum):
     """Hide the value."""
 
 
-class DirectionOption(Enum):
+class DataBarDirectionOption(Enum):
     """An enum of for horizontal axis orientation options for data bar"""
     LTR = _JDirectionOption.LTR
     """Left to right"""
@@ -1980,23 +1981,23 @@ class Table(JObjectWrapper):
         except Exception as e:
             raise DHError(e, "failed to color format rows conditionally.") from e
 
-    def format_data_bar(self, column: str, value_column: str = None, min: float = None, max: float = None,
-                        axis: Union[AxisOption, str] = None, positive_color: Union[str, List[str]] = None,
-                        negative_color: Union[str, List[str]] = None, value_placement: Union[ValuePlacementOption, str] = None,
-                        direction: Union[DirectionOption, str] = None, opacity: float = None, marker_column: str = None,
+    def format_data_bar(self, column: str, value_column: str = None, min: float = NULL_DOUBLE, max: float = NULL_DOUBLE,
+                        axis: Union[DataBarAxisOption, str] = None, positive_color: Union[str, List[str]] = None,
+                        negative_color: Union[str, List[str]] = None, value_placement: Union[DataBarValuePlacementOption, str] = None,
+                        direction: Union[DataBarDirectionOption, str] = None, opacity: float = NULL_DOUBLE, marker_column: str = None,
                         marker_color: str = None) -> Table:
-        """ Applies data bar formatting to the column specified.
+        """ Applies data bar formatting to the specified column.
 
         Args:
             column (str): where to place the data bars
             value_column (str): where to get the values to form the data bars from
             min (float): minimum value for data bar scaling
             max (float): maximum value for data bar scaling
-            axis (AxisOption): orientation of data bar relative to cell
+            axis (DataBarAxisOption): orientation of data bar relative to cell
             positive_color (Union[str, List[str]]): color or list of colors for positive bar
             negative_color (Union[str, List[str]]): color or list of colors for negative bar
-            value_placement (ValuePlacementOption): orientation of values relative to data bar
-            direction (DirectionOption): orientation of data bar relative to horizontal axis
+            value_placement (DataBarValuePlacementOption): orientation of values relative to data bar
+            direction (DataBarDirectionOption): orientation of data bar relative to horizontal axis
             opacity (float): opacity of data bars
             marker_column (str): where to get the values to form the markers from
             marker_color (str): color for markers
@@ -2020,22 +2021,22 @@ class Table(JObjectWrapper):
             axis_value = None
             if axis is not None:
                 if isinstance(axis, str):
-                    axis_value = AxisOption[axis.upper()].value
-                elif isinstance(axis, AxisOption):
+                    axis_value = DataBarAxisOption[axis.upper()].value
+                elif isinstance(axis, DataBarAxisOption):
                     axis_value = axis.value
 
             direction_value = None
             if direction is not None:
                 if isinstance(direction, str):
-                    direction_value = DirectionOption[direction.upper()].value
-                elif isinstance(direction, DirectionOption):
+                    direction_value = DataBarDirectionOption[direction.upper()].value
+                elif isinstance(direction, DataBarDirectionOption):
                     direction_value = direction.value
 
             value_placement_value = None
             if value_placement is not None:
                 if isinstance(value_placement, str):
-                    value_placement_value = ValuePlacementOption[value_placement.upper()].value
-                elif isinstance(value_placement, ValuePlacementOption):
+                    value_placement_value = DataBarValuePlacementOption[value_placement.upper()].value
+                elif isinstance(value_placement, DataBarValuePlacementOption):
                     value_placement_value = value_placement.value
 
             return Table(j_table=self.j_table.formatDataBar(column, value_column, axis_value, min, max, positive_color,

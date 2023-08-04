@@ -17,11 +17,11 @@ public class DataBarFormat {
     private final String valuePlacement;
     private final String direction;
     private final double opacity;
-    private final Optional<Double> marker;
+    private final double marker;
     private final String markerColor;
 
-    public DataBarFormat(Double min, Double max, Double value, String axis, String positiveColor, String negativeColor,
-            String valuePlacement, String direction, Double opacity, Double marker, String markerColor) {
+    public DataBarFormat(double min, double max, double value, String axis, String positiveColor, String negativeColor,
+            String valuePlacement, String direction, double opacity, double marker, String markerColor) {
         this.min = min;
         this.max = max;
         this.value = value;
@@ -31,7 +31,7 @@ public class DataBarFormat {
         this.valuePlacement = valuePlacement;
         this.direction = direction;
         this.opacity = opacity;
-        this.marker = Optional.ofNullable(marker);
+        this.marker = marker;
         this.markerColor = markerColor;
     }
 
@@ -81,8 +81,8 @@ public class DataBarFormat {
     }
 
     @JsProperty
-    public Double getMarker() {
-        return marker.orElse(Double.NaN);
+    public double getMarker() {
+        return marker;
     }
 
     @JsProperty

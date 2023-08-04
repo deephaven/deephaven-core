@@ -1,29 +1,29 @@
 package io.deephaven.web.client.api;
 
 public class DatabarFormatBuilder {
-    private Double min;
-    private Double max;
-    private Double value;
+    private double min;
+    private double max;
+    private double value;
     private String axis;
     private String positiveColor;
     private String negativeColor;
     private String valuePlacement;
     private String direction;
-    private Double opacity;
-    private Double marker;
+    private double opacity;
+    private double marker;
     private String markerColor;
 
-    public DatabarFormatBuilder setMin(Double min) {
+    public DatabarFormatBuilder setMin(double min) {
         this.min = min;
         return this;
     }
 
-    public DatabarFormatBuilder setMax(Double max) {
+    public DatabarFormatBuilder setMax(double max) {
         this.max = max;
         return this;
     }
 
-    public DatabarFormatBuilder setValue(Double value) {
+    public DatabarFormatBuilder setValue(double value) {
         this.value = value;
         return this;
     }
@@ -53,12 +53,12 @@ public class DatabarFormatBuilder {
         return this;
     }
 
-    public DatabarFormatBuilder setOpacity(Double opacity) {
+    public DatabarFormatBuilder setOpacity(double opacity) {
         this.opacity = opacity;
         return this;
     }
 
-    public DatabarFormatBuilder setMarker(Double marker) {
+    public DatabarFormatBuilder setMarker(double marker) {
         this.marker = marker;
         return this;
     }
