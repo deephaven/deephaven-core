@@ -12,6 +12,7 @@ import io.deephaven.engine.table.impl.util.ColumnHolder;
 import io.deephaven.engine.testutil.TstUtils;
 import io.deephaven.engine.testutil.junit4.EngineCleanup;
 import io.deephaven.engine.util.BigDecimalUtils;
+import io.deephaven.engine.util.file.TrackedFileHandleFactoryWithLookup;
 import io.deephaven.stringset.ArrayStringSet;
 import io.deephaven.engine.table.Table;
 import io.deephaven.engine.table.TableDefinition;
@@ -423,5 +424,29 @@ public class ParquetTableReadWriteTest {
         return toFix
                 .updateView("bdColE = __codec.encode(bdColumn)", "bdColumn=__codec.decode(bdColE, 0, bdColE.length)")
                 .dropColumns("bdColE");
+    }
+
+    @Test
+    public void multiHandleTest() {
+        // There should be just one file in the directory on a successful write and no temporary files
+        final Table table1 = TableTools.emptyTable(5).update("A=(int)i");
+        final File destFile = new File(rootFile, "table1.parquet");
+        ParquetTools.writeTable(table1, destFile);
+        Table fromDisk = ParquetTools.readTable(destFile);
+
+        // Overwrite the same file. This should invalidate the old handles
+        final Table table2 = TableTools.emptyTable(5).update("B=(int)i*5");
+        ParquetTools.writeTable(table2, destFile);
+
+        // Close all old file handles so that we read the file fresh instead of using any old handles
+        TrackedFileHandleFactoryWithLookup.getInstance().closeAll();
+
+        // This will attempt to read the file using old handle and should fail
+        try {
+            TstUtils.assertTableEquals(fromDisk, table1);
+            TestCase.fail();
+        } catch (RuntimeException expected) {
+            assertTrue(expected.getCause() instanceof IllegalStateException);
+        }
     }
 }

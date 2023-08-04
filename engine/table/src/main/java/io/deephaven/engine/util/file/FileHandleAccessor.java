@@ -49,6 +49,7 @@ public abstract class FileHandleAccessor {
      */
     protected final FileHandle refreshFileHandle(final FileHandle previousLocalHandle) {
         if (previousLocalHandle.shouldFailOnRefresh()) {
+            // TODO What should be the behavior here
             throw new IllegalStateException("Could not refresh file handle to " + file.getAbsolutePath());
         }
         if (previousLocalHandle == fileHandle) {

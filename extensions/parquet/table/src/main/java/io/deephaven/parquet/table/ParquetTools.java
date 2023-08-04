@@ -14,9 +14,9 @@ import io.deephaven.engine.table.Table;
 import io.deephaven.engine.table.TableDefinition;
 import io.deephaven.engine.table.impl.locations.util.TableDataRefreshService;
 import io.deephaven.engine.util.TableTools;
+import io.deephaven.engine.util.file.TrackedFileHandleFactoryWithLookup;
 import io.deephaven.vector.*;
 import io.deephaven.stringset.StringSet;
-import io.deephaven.engine.util.file.TrackedFileHandleFactory;
 import io.deephaven.engine.table.impl.PartitionAwareSourceTable;
 import io.deephaven.engine.table.impl.SimpleSourceTable;
 import io.deephaven.engine.table.impl.locations.TableDataException;
@@ -636,7 +636,7 @@ public class ParquetTools {
         return new ParquetFileReader(
                 parquetFile.getAbsolutePath(),
                 new CachedChannelProvider(
-                        new TrackedSeekableChannelsProvider(TrackedFileHandleFactory.getInstance()), 1 << 7));
+                        new TrackedSeekableChannelsProvider(TrackedFileHandleFactoryWithLookup.getInstance()), 1 << 7));
     }
 
     @VisibleForTesting

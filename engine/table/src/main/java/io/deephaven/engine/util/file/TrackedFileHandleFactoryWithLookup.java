@@ -13,12 +13,13 @@ import org.jetbrains.annotations.NotNull;
 import java.io.File;
 import java.io.IOException;
 import java.lang.ref.WeakReference;
-import java.nio.channels.FileChannel;
 import java.nio.file.OpenOption;
-import java.util.HashMap;
 import java.util.Iterator;
+import java.util.List;
 import java.util.LinkedList;
 import java.util.Map;
+import java.util.HashMap;
+
 
 /**
  * An extension of {@link TrackedFileHandleFactory} class with ability to lookup file handles based on file path and
@@ -27,15 +28,31 @@ import java.util.Map;
  */
 public class TrackedFileHandleFactoryWithLookup extends TrackedFileHandleFactory {
 
+    private static volatile TrackedFileHandleFactoryWithLookup instance;
+
     /**
      * Mapping from absolute file path to list of handles
      */
     private final Map<String, LinkedList<WeakReference<FileHandle>>> fileToHandleMap = new HashMap<>();
 
+    public static TrackedFileHandleFactoryWithLookup getInstance() {
+        if (instance == null) {
+            synchronized (TrackedFileHandleFactoryWithLookup.class) {
+                if (instance == null) {
+                    instance = new TrackedFileHandleFactoryWithLookup(
+                            CommBase.singleThreadedScheduler("TrackedFileHandleFactory.CleanupScheduler", Logger.NULL)
+                                    .start(),
+                            Configuration.getInstance().getInteger("TrackedFileHandleFactory.maxOpenFiles"));
+                }
+            }
+        }
+        return instance;
+    }
+
     /**
      * Pass through constructors for the parent class {@link TrackedFileHandleFactory}
      */
-    public TrackedFileHandleFactoryWithLookup(@NotNull final Scheduler scheduler, final int capacity) {
+    private TrackedFileHandleFactoryWithLookup(@NotNull final Scheduler scheduler, final int capacity) {
         super(scheduler, capacity);
     }
 
@@ -51,7 +68,6 @@ public class TrackedFileHandleFactoryWithLookup extends TrackedFileHandleFactory
             fileToHandleMap.put(filePath, handleList);
         }
         handleList.add(new WeakReference<>(handle));
-
         return handle;
     }
 
@@ -62,7 +78,7 @@ public class TrackedFileHandleFactoryWithLookup extends TrackedFileHandleFactory
                 fileToHandleMap.entrySet().iterator();
         while (mapIter.hasNext()) {
             final Map.Entry<String, LinkedList<WeakReference<FileHandle>>> mapEntry = mapIter.next();
-            final LinkedList<WeakReference<FileHandle>> handleList = mapEntry.getValue();
+            final List<WeakReference<FileHandle>> handleList = mapEntry.getValue();
             final Iterator<WeakReference<FileHandle>> handleWeakRefIterator = handleList.iterator();
             while (handleWeakRefIterator.hasNext()) {
                 final WeakReference<FileHandle> handleWeakRef = handleWeakRefIterator.next();
@@ -77,15 +93,23 @@ public class TrackedFileHandleFactoryWithLookup extends TrackedFileHandleFactory
         }
     }
 
+    /**
+     * Close all existing file channels and handles
+     */
     @Override
     public void closeAll() {
         super.closeAll();
         fileToHandleMap.clear();
     }
 
-    public void invalidateHandles(File file) {
+    /**
+     * Invalidate any handles associated with the {@code file} so that the handle fail on refresh.
+     *
+     * @param file File path
+     */
+    public void invalidateHandles(final File file) {
         final String filePath = file.getAbsolutePath();
-        LinkedList<WeakReference<FileHandle>> handleList = fileToHandleMap.get(filePath);
+        List<WeakReference<FileHandle>> handleList = fileToHandleMap.get(filePath);
         if (handleList == null) {
             return;
         }
@@ -93,11 +117,11 @@ public class TrackedFileHandleFactoryWithLookup extends TrackedFileHandleFactory
         while (handleWeakRefIterator.hasNext()) {
             final WeakReference<FileHandle> handleWeakRef = handleWeakRefIterator.next();
             final FileHandle handle = handleWeakRef.get();
-            if (handle == null) {
-                handleWeakRefIterator.remove();
-                continue;
+            if (handle != null) {
+                handle.setFailOnRefresh(true);
             }
-            handle.setFailOnRefresh(true);
+            // TODO I am not doing anything for null, not removing them too since cleanup will be doing that, is that
+            // okay?
         }
     }
 }

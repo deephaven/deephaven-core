@@ -27,6 +27,7 @@ import io.deephaven.engine.table.impl.select.SelectColumn;
 import io.deephaven.engine.table.impl.select.SourceColumn;
 import io.deephaven.engine.table.impl.sources.ReinterpretUtils;
 import io.deephaven.engine.util.BigDecimalUtils;
+import io.deephaven.engine.util.file.TrackedFileHandleFactoryWithLookup;
 import io.deephaven.parquet.base.ColumnWriter;
 import io.deephaven.parquet.base.ParquetFileWriter;
 import io.deephaven.parquet.base.RowGroupWriter;
@@ -172,10 +173,10 @@ public class ParquetTableWriter {
             @NotNull final Function<String, String> groupingPathFactory,
             @NotNull final String... groupingColumns) throws SchemaMappingException, IOException {
         final TableInfo.Builder tableInfoBuilder = TableInfo.builder();
-        ArrayList<String> cleanupPaths = null;
+        ArrayList<String> groupingPaths = null;
         try {
             if (groupingColumns.length > 0) {
-                cleanupPaths = new ArrayList<>(groupingColumns.length);
+                groupingPaths = new ArrayList<>(groupingColumns.length);
                 final Table[] auxiliaryTables = Arrays.stream(groupingColumns)
                         .map(columnName -> groupingAsTable(t, columnName))
                         .toArray(Table[]::new);
@@ -185,7 +186,7 @@ public class ParquetTableWriter {
                     final String parquetColumnName =
                             writeInstructions.getParquetColumnNameFromColumnNameOrDefault(groupingColumns[gci]);
                     final String groupingPath = groupingPathFactory.apply(parquetColumnName);
-                    cleanupPaths.add(groupingPath);
+                    groupingPaths.add(groupingPath);
                     tableInfoBuilder.addGroupingColumns(GroupingColumnInfo.of(parquetColumnName,
                             destDirPath.relativize(Paths.get(groupingPath)).toString()));
                     write(auxiliaryTables[gci], auxiliaryTables[gci].getDefinition(), writeInstructions, groupingPath,
@@ -193,12 +194,20 @@ public class ParquetTableWriter {
                 }
             }
             write(t, definition, writeInstructions, destPathName, incomingMeta, tableInfoBuilder);
+
+            // Invalidate old file handles so that we don't read from files which have been updated
+            TrackedFileHandleFactoryWithLookup.getInstance().invalidateHandles(new File(destPathName));
+            if (groupingPaths != null) {
+                for (final String groupingPath : groupingPaths) {
+                    TrackedFileHandleFactoryWithLookup.getInstance().invalidateHandles(new File(groupingPath));
+                }
+            }
         } catch (Exception e) {
-            if (cleanupPaths != null) {
-                for (final String cleanupPath : cleanupPaths) {
+            if (groupingPaths != null) {
+                for (final String groupingPath : groupingPaths) {
                     try {
                         // noinspection ResultOfMethodCallIgnored
-                        new File(cleanupPath).delete();
+                        new File(groupingPath).delete();
                     } catch (Exception ignored) {
                     }
                 }
@@ -350,7 +359,6 @@ public class ParquetTableWriter {
      * @param writeInstructions write instructions for the file
      * @param tableMeta metadata to include in the parquet metadata
      * @param tableInfoBuilder a builder for accumulating per-column information to construct the deephaven metadata
-     *
      * @return a new file writer
      */
     @NotNull
@@ -404,7 +412,8 @@ public class ParquetTableWriter {
 
         final Map<String, String> extraMetaData = new HashMap<>(tableMeta);
         extraMetaData.put(METADATA_KEY, tableInfoBuilder.build().serializeToJSON());
-        return new ParquetFileWriter(path, TrackedSeekableChannelsProvider.getInstance(),
+        return new ParquetFileWriter(path,
+                new TrackedSeekableChannelsProvider(TrackedFileHandleFactoryWithLookup.getInstance()),
                 writeInstructions.getTargetPageSize(),
                 new HeapByteBufferAllocator(), mappedSchema.getParquetSchema(),
                 writeInstructions.getCompressionCodecName(), extraMetaData);
