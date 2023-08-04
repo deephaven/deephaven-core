@@ -413,7 +413,7 @@ public class ParquetTableWriter {
         final Map<String, String> extraMetaData = new HashMap<>(tableMeta);
         extraMetaData.put(METADATA_KEY, tableInfoBuilder.build().serializeToJSON());
         return new ParquetFileWriter(path,
-                new TrackedSeekableChannelsProvider(TrackedFileHandleFactoryWithLookup.getInstance()),
+                TrackedSeekableChannelsProvider.getInstance(TrackedFileHandleFactoryWithLookup.getInstance()),
                 writeInstructions.getTargetPageSize(),
                 new HeapByteBufferAllocator(), mappedSchema.getParquetSchema(),
                 writeInstructions.getCompressionCodecName(), extraMetaData);

@@ -23,6 +23,7 @@ public class TrackedSeekableChannelsProvider implements SeekableChannelsProvider
 
     private static volatile SeekableChannelsProvider instance;
 
+    // TODO Can we remove this method?
     public static SeekableChannelsProvider getInstance() {
         if (instance == null) {
             synchronized (TrackedSeekableChannelsProvider.class) {
@@ -34,9 +35,20 @@ public class TrackedSeekableChannelsProvider implements SeekableChannelsProvider
         return instance;
     }
 
+    public static SeekableChannelsProvider getInstance(@NotNull final TrackedFileHandleFactory fileHandleFactory) {
+        if (instance == null) {
+            synchronized (TrackedSeekableChannelsProvider.class) {
+                if (instance == null) {
+                    return instance = new TrackedSeekableChannelsProvider(fileHandleFactory);
+                }
+            }
+        }
+        return instance;
+    }
+
     private final TrackedFileHandleFactory fileHandleFactory;
 
-    public TrackedSeekableChannelsProvider(@NotNull final TrackedFileHandleFactory fileHandleFactory) {
+    private TrackedSeekableChannelsProvider(@NotNull final TrackedFileHandleFactory fileHandleFactory) {
         this.fileHandleFactory = fileHandleFactory;
     }
 

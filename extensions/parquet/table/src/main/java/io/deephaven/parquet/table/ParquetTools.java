@@ -636,7 +636,8 @@ public class ParquetTools {
         return new ParquetFileReader(
                 parquetFile.getAbsolutePath(),
                 new CachedChannelProvider(
-                        new TrackedSeekableChannelsProvider(TrackedFileHandleFactoryWithLookup.getInstance()), 1 << 7));
+                        TrackedSeekableChannelsProvider.getInstance(TrackedFileHandleFactoryWithLookup.getInstance()),
+                        1 << 7));
     }
 
     @VisibleForTesting
