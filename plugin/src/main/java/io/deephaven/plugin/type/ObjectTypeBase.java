@@ -15,7 +15,8 @@ import java.nio.ByteBuffer;
  */
 public abstract class ObjectTypeBase extends PluginBase implements ObjectType {
     @Override
-    public final MessageStream clientConnection(Object object, MessageStream connection) throws ObjectCommunicationException {
+    public final MessageStream clientConnection(Object object, MessageStream connection)
+            throws ObjectCommunicationException {
         if (!isType(object)) {
             throw new IllegalArgumentException("Can't serialize object, wrong type: " + this + " / " + object);
         }
@@ -29,10 +30,12 @@ public abstract class ObjectTypeBase extends PluginBase implements ObjectType {
      *
      * @param object the object to create a connection for
      * @param connection a stream to send objects to the client
-     * @throws ObjectCommunicationException may throw an exception received from {@link MessageStream#onData(ByteBuffer, Object...)} calls
+     * @throws ObjectCommunicationException may throw an exception received from
+     *         {@link MessageStream#onData(ByteBuffer, Object...)} calls
      * @return a stream to receive objects from the client
      */
-    public abstract MessageStream compatibleClientConnection(Object object, MessageStream connection) throws ObjectCommunicationException;
+    public abstract MessageStream compatibleClientConnection(Object object, MessageStream connection)
+            throws ObjectCommunicationException;
 
     @Override
     public final <T, V extends Visitor<T>> T walk(V visitor) {
@@ -64,7 +67,8 @@ public abstract class ObjectTypeBase extends PluginBase implements ObjectType {
                 throws IOException;
 
         @Override
-        public MessageStream compatibleClientConnection(Object object, MessageStream connection) throws ObjectCommunicationException {
+        public MessageStream compatibleClientConnection(Object object, MessageStream connection)
+                throws ObjectCommunicationException {
             StreamExporterImpl exporter = new StreamExporterImpl();
 
             try {

@@ -142,7 +142,8 @@ public class ObjectServiceGrpcImpl extends ObjectServiceGrpc.ObjectServiceImplBa
                             try {
                                 operation.run();
                             } catch (ObjectType.ObjectCommunicationException e) {
-                                throw Exceptions.statusRuntimeException(Code.INVALID_ARGUMENT, "Error performing MessageStream operation");
+                                throw Exceptions.statusRuntimeException(Code.INVALID_ARGUMENT,
+                                        "Error performing MessageStream operation");
                             }
 
                             // Set running to false (it must be true at this time) so that any new work can race being
@@ -158,7 +159,8 @@ public class ObjectServiceGrpcImpl extends ObjectServiceGrpc.ObjectServiceImplBa
         }
 
         private void doWork() {
-            // More than one thread (at most two) can arrive here at the same time, but only one will pass the compareAndSet
+            // More than one thread (at most two) can arrive here at the same time, but only one will pass the
+            // compareAndSet
             StreamOperation next = operations.peek();
 
             // If we fail the null check, no work to do, leave running false (though if work was added right after

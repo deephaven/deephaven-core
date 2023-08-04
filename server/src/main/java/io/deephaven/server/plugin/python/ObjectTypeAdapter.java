@@ -34,7 +34,8 @@ final class ObjectTypeAdapter extends ObjectTypeBase implements AutoCloseable {
     }
 
     @Override
-    public MessageStream compatibleClientConnection(Object object, MessageStream connection) throws ObjectCommunicationException {
+    public MessageStream compatibleClientConnection(Object object, MessageStream connection)
+            throws ObjectCommunicationException {
         if (objectTypeAdapter.call("is_fetch_only").getBooleanValue()) {
             // Fall back and attempt to use old api:
             // Using this simple implementation, even though the python code won't write to this, but instead will
