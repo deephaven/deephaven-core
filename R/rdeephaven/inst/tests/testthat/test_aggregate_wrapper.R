@@ -3,13 +3,6 @@ library(rdeephaven)
 
 ##### TESTING BAD INPUTS #####
 
-test_that("trying to instantiate an Aggregation fails nicely", {
-  expect_error(
-    Aggregation$new("hello"),
-    "'aggregation' should be an internal Deephaven Aggregation. If you're seeing this,\n  you are trying to call the constructor of an Aggregation directly, which is not advised.\n  Please use one of the provided aggregation functions instead."
-  )
-})
-
 test_that("agg_min fails nicely when 'columns' is a bad type", {
   expect_error(
     agg_min(5),

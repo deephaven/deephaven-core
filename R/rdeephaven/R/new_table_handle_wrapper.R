@@ -1,9 +1,6 @@
-#' @importFrom arrow as_arrow_table RecordBatchStreamReader
-#' @importFrom dplyr as_tibble
-
 #' @export
 setClass(
-  "S4TableHandle",
+  "TableHandle",
   representation(
     .internal_rcpp_object = "Rcpp_INTERNAL_TableHandle"
   )
@@ -22,7 +19,7 @@ setGeneric(
 #' @export
 setMethod(
   "is_static",
-  signature = c(table_handle_instance = "S4TableHandle"),
+  signature = c(table_handle_instance = "TableHandle"),
   function(table_handle_instance) {
     return(table_handle_instance@.internal_rcpp_object$is_static())
   }
@@ -31,21 +28,29 @@ setMethod(
 #' @export
 setMethod(
   "head",
-  signature = c(x = "S4TableHandle"),
+  signature = c(x = "TableHandle"),
   function(x, n, ...) {
     verify_positive_int("n", n, TRUE)
-    return(new("S4TableHandle", .internal_rcpp_object = x@.internal_rcpp_object$head(n)))
+    return(new("TableHandle", .internal_rcpp_object = x@.internal_rcpp_object$head(n)))
   }
 )
 
 #' @export
 setMethod(
   "tail",
-  signature = c(x = "S4TableHandle"),
+  signature = c(x = "TableHandle"),
   function(x, n, ...) {
-    print("I'm here!")
     verify_positive_int("n", n, TRUE)
-    return(new("S4TableHandle", .internal_rcpp_object = x@.internal_rcpp_object$tail(n)))
+    return(new("TableHandle", .internal_rcpp_object = x@.internal_rcpp_object$tail(n)))
+  }
+)
+
+#' @export
+setMethod(
+  "nrow",
+  signature = c(x = "TableHandle"),
+  function(x) {
+    return(x@.internal_rcpp_object$num_rows())
   }
 )
 
@@ -53,19 +58,10 @@ setMethod(
 
 ### TABLEHANDLE CONVERSIONS ###
 
-# could potentially be implemented by other packages
-setGeneric(
-  "as_arrow_record_batch_stream_reader",
-  function(x, ...) {
-    return(standardGeneric("as_arrow_record_batch_stream_reader"))
-  },
-  signature = c("x")
-)
-
 #' @export
 setMethod(
-  "as_arrow_record_batch_stream_reader",
-  signature = c(x = "S4TableHandle"),
+  "as_record_batch_reader",
+  signature = c(x = "TableHandle"),
   function(x, ...) {
     ptr <- x@.internal_rcpp_object$get_arrow_array_stream_ptr()
     rbsr <- RecordBatchStreamReader$import_from_c(ptr)
@@ -76,9 +72,9 @@ setMethod(
 #' @export
 setMethod(
   "as_arrow_table",
-  signature = c(x = "S4TableHandle"),
+  signature = c(x = "TableHandle"),
   function(x, ...) {
-    rbsr <- as_arrow_record_batch_stream_reader(x)
+    rbsr <- as_record_batch_reader(x)
     arrow_tbl <- rbsr$read_table()
     return(arrow_tbl)
   }
@@ -87,9 +83,9 @@ setMethod(
 #' @export
 setMethod(
   "as_tibble",
-  signature = c(x = "S4TableHandle"),
+  signature = c(x = "TableHandle"),
   function(x, ...) {
-    rbsr <- as_arrow_record_batch_stream_reader(x)
+    rbsr <- as_record_batch_reader(x)
     arrow_tbl <- rbsr$read_table()
     return(as_tibble(arrow_tbl))
   }
@@ -98,7 +94,7 @@ setMethod(
 #' @export
 setMethod(
   "as.data.frame",
-  signature = c(x = "S4TableHandle"),
+  signature = c(x = "TableHandle"),
   function(x, ...) {
     arrow_tbl <- as_arrow_table(x)
     return(as.data.frame(as.data.frame(arrow_tbl)))
@@ -118,7 +114,7 @@ setGeneric(
 #' @export
 setMethod(
   "bind_to_variable",
-  signature = c(table_handle_instance = "S4TableHandle"),
+  signature = c(table_handle_instance = "TableHandle"),
   function(table_handle_instance, name) {
     verify_string("name", name, TRUE)
     table_handle_instance@.internal_rcpp_object$bind_to_variable(name)

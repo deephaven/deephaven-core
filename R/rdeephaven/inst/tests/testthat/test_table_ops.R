@@ -1,6 +1,6 @@
+library(testthat)
 library(dplyr)
 library(rdeephaven)
-library(testthat)
 
 setup <- function() {
   df1 <- data.frame(
@@ -41,8 +41,7 @@ setup <- function() {
   # thus, we have to push these created tables to the server and get TableHandles to each of them.
 
   # set up client
-  client_options <- new("S4ClientOptions")
-  client <- connect(target = "localhost:10000", client_options = client_options)
+  client <- connect(target = "localhost:10000")
 
   # move dataframes to server and get TableHandles for testing
   th1 <- import_table(client, df1)

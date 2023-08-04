@@ -1,4 +1,5 @@
 library(testthat)
+library(dplyr)
 library(rdeephaven)
 
 setup <- function() {
@@ -41,16 +42,15 @@ setup <- function() {
   # thus, we depend on the correctness of client$import_table(), ClientOptions$new(), and Client$new()
 
   # set up client
-  client_options <- ClientOptions$new()
-  client <- Client$new(target = "localhost:10000", client_options = client_options)
+  client <- connect(target = "localhost:10000")
 
   # move dataframes to server and get TableHandles for testing
-  th1 <- client$import_table(df1)
-  th2 <- client$import_table(df2)
-  th3 <- client$import_table(df3)
-  th4 <- client$import_table(df4)
-  th5 <- client$import_table(df5)
-  th6 <- client$import_table(df6)
+  th1 <- import_table(client, df1)
+  th2 <- import_table(client, df2)
+  th3 <- import_table(client, df3)
+  th4 <- import_table(client, df4)
+  th5 <- import_table(client, df5)
+  th6 <- import_table(client, df6)
 
   return(list(
     "client" = client,
@@ -110,7 +110,7 @@ test_that("agg_first behaves as expected", {
     sort(c("X", "Y"))
   expect_equal(as.data.frame(new_th6), as.data.frame(new_tb6))
 
-  data$client$close()
+  close(data$client)
 })
 
 test_that("agg_last behaves as expected", {
@@ -164,7 +164,7 @@ test_that("agg_last behaves as expected", {
     sort(c("X", "Y"))
   expect_equal(as.data.frame(new_th6), as.data.frame(new_tb6))
 
-  data$client$close()
+  close(data$client)
 })
 
 test_that("agg_min behaves as expected", {
@@ -218,7 +218,7 @@ test_that("agg_min behaves as expected", {
     sort(c("X", "Y"))
   expect_equal(as.data.frame(new_th6), as.data.frame(new_tb6))
 
-  data$client$close()
+  close(data$client)
 })
 
 test_that("agg_max behaves as expected", {
@@ -272,7 +272,7 @@ test_that("agg_max behaves as expected", {
     sort(c("X", "Y"))
   expect_equal(as.data.frame(new_th6), as.data.frame(new_tb6))
 
-  data$client$close()
+  close(data$client)
 })
 
 test_that("agg_sum behaves as expected", {
@@ -326,7 +326,7 @@ test_that("agg_sum behaves as expected", {
     sort(c("X", "Y"))
   expect_equal(as.data.frame(new_th6), as.data.frame(new_tb6))
 
-  data$client$close()
+  close(data$client)
 })
 
 test_that("agg_abs_sum behaves as expected", {
@@ -380,7 +380,7 @@ test_that("agg_abs_sum behaves as expected", {
     sort(c("X", "Y"))
   expect_equal(as.data.frame(new_th6), as.data.frame(new_tb6))
 
-  data$client$close()
+  close(data$client)
 })
 
 test_that("agg_avg behaves as expected", {
@@ -434,7 +434,7 @@ test_that("agg_avg behaves as expected", {
     sort(c("X", "Y"))
   expect_equal(as.data.frame(new_th6), as.data.frame(new_tb6))
 
-  data$client$close()
+  close(data$client)
 })
 
 test_that("agg_w_avg behaves as expected", {
@@ -498,7 +498,7 @@ test_that("agg_w_avg behaves as expected", {
     sort(c("X", "Y"))
   expect_equal(as.data.frame(new_th6), as.data.frame(new_tb6))
 
-  data$client$close()
+  close(data$client)
 })
 
 test_that("agg_median behaves as expected", {
@@ -552,7 +552,7 @@ test_that("agg_median behaves as expected", {
     sort(c("X", "Y"))
   expect_equal(as.data.frame(new_th6), as.data.frame(new_tb6))
 
-  data$client$close()
+  close(data$client)
 })
 
 test_that("agg_var behaves as expected", {
@@ -606,7 +606,7 @@ test_that("agg_var behaves as expected", {
     sort(c("X", "Y"))
   expect_equal(as.data.frame(new_th6), as.data.frame(new_tb6))
 
-  data$client$close()
+  close(data$client)
 })
 
 test_that("agg_std behaves as expected", {
@@ -660,7 +660,7 @@ test_that("agg_std behaves as expected", {
     sort(c("X", "Y"))
   expect_equal(as.data.frame(new_th6), as.data.frame(new_tb6))
 
-  data$client$close()
+  close(data$client)
 })
 
 test_that("agg_percentile behaves as expected", {
@@ -695,7 +695,7 @@ test_that("agg_percentile behaves as expected", {
     sort(c("X", "Y"))
   expect_equal(as.data.frame(new_th3), new_df3)
 
-  data$client$close()
+  close(data$client)
 })
 
 test_that("agg_count behaves as expected", {
@@ -743,5 +743,5 @@ test_that("agg_count behaves as expected", {
     sort(c("X", "Y"))
   expect_equal(as.data.frame(new_th6), as.data.frame(new_tb6))
 
-  data$client$close()
+  close(data$client)
 })

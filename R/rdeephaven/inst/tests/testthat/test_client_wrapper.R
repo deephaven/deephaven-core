@@ -28,122 +28,110 @@ setup <- function() {
 ##### TESTING GOOD INPUTS #####
 
 test_that("client connection works in the simple case of anonymous authentication", {
-  # assumes correctness of client options
-  client_options <- ClientOptions$new()
 
   # TODO: assumes server is actually running on localhost:10000, this is probably bad for CI
-  expect_no_error(client <- Client$new(target = "localhost:10000", client_options = client_options))
-
-  client$close()
+  expect_no_error(client <- connect(target = "localhost:10000"))
+  
 })
 
-# All of the following tests assume the correctness of Client$new(...) to make the connection.
+# All of the following tests assume the correctness of new(...) to make the connection.
 
 test_that("import_table does not fail with data frame inputs of simple column types", {
   data <- setup()
 
-  client_options <- ClientOptions$new()
-  client <- Client$new(target = "localhost:10000", client_options = client_options)
+  client <- connect(target = "localhost:10000")
 
-  expect_no_error(client$import_table(data$df1))
-  expect_no_error(client$import_table(data$df2))
-  expect_no_error(client$import_table(data$df3))
-  expect_no_error(client$import_table(data$df4))
+  expect_no_error(import_table(client, data$df1))
+  expect_no_error(import_table(client, data$df2))
+  expect_no_error(import_table(client, data$df3))
+  expect_no_error(import_table(client, data$df4))
 
-  client$close()
+  close(client)
 })
 
 test_that("import_table does not fail with tibble inputs of simple column types", {
   data <- setup()
 
-  client_options <- ClientOptions$new()
-  client <- Client$new(target = "localhost:10000", client_options = client_options)
+  client <- connect(target = "localhost:10000")
 
-  expect_no_error(client$import_table(as_tibble(data$df1)))
-  expect_no_error(client$import_table(as_tibble(data$df2)))
-  expect_no_error(client$import_table(as_tibble(data$df3)))
-  expect_no_error(client$import_table(as_tibble(data$df4)))
+  expect_no_error(import_table(client, as_tibble(data$df1)))
+  expect_no_error(import_table(client, as_tibble(data$df2)))
+  expect_no_error(import_table(client, as_tibble(data$df3)))
+  expect_no_error(import_table(client, as_tibble(data$df4)))
 
-  client$close()
+  close(client)
 })
 
 test_that("import_table does not fail with arrow table inputs of simple column types", {
   data <- setup()
 
-  client_options <- ClientOptions$new()
-  client <- Client$new(target = "localhost:10000", client_options = client_options)
+  client <- connect(target = "localhost:10000")
 
-  expect_no_error(client$import_table(arrow_table(data$df1)))
-  expect_no_error(client$import_table(arrow_table(data$df2)))
-  expect_no_error(client$import_table(arrow_table(data$df3)))
-  expect_no_error(client$import_table(arrow_table(data$df4)))
+  expect_no_error(import_table(client, as_arrow_table(data$df1)))
+  expect_no_error(import_table(client, as_arrow_table(data$df2)))
+  expect_no_error(import_table(client, as_arrow_table(data$df3)))
+  expect_no_error(import_table(client, as_arrow_table(data$df4)))
 
-  client$close()
+  close(client)
 })
 
 test_that("import_table does not fail with record batch reader inputs of simple column types", {
   data <- setup()
 
-  client_options <- ClientOptions$new()
-  client <- Client$new(target = "localhost:10000", client_options = client_options)
+  client <- connect(target = "localhost:10000")
 
-  expect_no_error(client$import_table(as_record_batch_reader(arrow_table(data$df1))))
-  expect_no_error(client$import_table(as_record_batch_reader(arrow_table(data$df2))))
-  expect_no_error(client$import_table(as_record_batch_reader(arrow_table(data$df3))))
-  expect_no_error(client$import_table(as_record_batch_reader(arrow_table(data$df4))))
+  expect_no_error(import_table(client, as_record_batch_reader(data$df1)))
+  expect_no_error(import_table(client, as_record_batch_reader(data$df2)))
+  expect_no_error(import_table(client, as_record_batch_reader(data$df3)))
+  expect_no_error(import_table(client, as_record_batch_reader(data$df4)))
 
-  client$close()
+  close(client)
 })
 
-# The following tests additionally assume the correctness of client$import_table(...) AND table_handle$bind_to_variable(),
-# as we have to create data, push it to the server, and name it in order to test client$open_table().
+# The following tests additionally assume the correctness of import_table(...) AND table_handle$bind_to_variable(),
+# as we have to create data, push it to the server, and name it in order to test open_table().
 # Additionally, we assume the correctness of table_handle$to_data_frame() to make concrete comparisons.
 
 test_that("open_table opens the correct table from the server", {
   data <- setup()
 
-  client_options <- ClientOptions$new()
-  client <- Client$new(target = "localhost:10000", client_options = client_options)
+  client <- connect(target = "localhost:10000")
 
-  th1 <- client$import_table(data$df1)
-  th1$bind_to_variable("table1")
-  expect_equal(client$open_table("table1")$to_data_frame(), th1$to_data_frame())
+  th1 <- import_table(client, data$df1)
+  th1 %>% bind_to_variable("table1")
+  expect_equal(as.data.frame(open_table(client, "table1")), as.data.frame(th1))
 
-  th2 <- client$import_table(data$df2)
-  th2$bind_to_variable("table2")
-  expect_equal(client$open_table("table2")$to_data_frame(), th2$to_data_frame())
+  th2 <- import_table(client, data$df2)
+  th2 %>% bind_to_variable("table2")
+  expect_equal(as.data.frame(open_table(client, "table2")), as.data.frame(th2))
 
-  th3 <- client$import_table(data$df3)
-  th3$bind_to_variable("table3")
-  expect_equal(client$open_table("table3")$to_data_frame(), th3$to_data_frame())
+  th3 <- import_table(client, data$df3)
+  th3 %>% bind_to_variable("table3")
+  expect_equal(as.data.frame(open_table(client, "table3")), as.data.frame(th3))
 
-  th4 <- client$import_table(data$df4)
-  th4$bind_to_variable("table4")
-  expect_equal(client$open_table("table4")$to_data_frame(), th4$to_data_frame())
+  th4 <- import_table(client, data$df4)
+  th4 %>% bind_to_variable("table4")
+  expect_equal(as.data.frame(open_table(client, "table4")), as.data.frame(th4))
 
-  client$close()
+  close(client)
 })
 
 test_that("empty_table correctly creates tables on the server", {
-  client_options <- ClientOptions$new()
-  client <- Client$new(target = "localhost:10000", client_options = client_options)
+  client <- connect(target = "localhost:10000")
 
-  th1 <- client$empty_table(10) %>% update("X = i")
-  expect_equal(th1$nrow(), 10)
+  th1 <- empty_table(client, 10) %>% update("X = i")
+  df1 <- data.frame(X = c(0, 1, 2, 3, 4, 5, 6, 7, 8, 9))
+  expect_equal(as.data.frame(th1), df1)
 
-  th2 <- client$empty_table(1234567) %>% update("X = i")
-  expect_equal(th2$nrow(), 1234567)
-
-  client$close()
+  close(client)
 })
 
 # TODO: Test time_table good inputs
 
 test_that("run_script correctly runs a python script", {
-  client_options <- ClientOptions$new()
-  client <- Client$new(target = "localhost:10000", client_options = client_options)
+  client <- connect(target = "localhost:10000")
 
-  expect_no_error(client$run_script(
+  expect_no_error(run_script(client, 
     '
 from deephaven import new_table
 from deephaven.column import string_col, int_col
@@ -155,123 +143,83 @@ int_col("Name_Int_Col", [44, 55, 66])
 '
   ))
 
-  expect_no_error(client$open_table("static_table_from_python_script"))
+  expect_no_error(open_table(client, "static_table_from_python_script"))
 
-  client$close()
+  close(client)
 })
 
 ##### TESTING BAD INPUTS #####
 
-test_that("client connection fails nicely with bad target but good client_options", {
-  # assumes correctness of client options
-  client_options <- ClientOptions$new()
-
-  # TODO: Bad address needs better error handling from the R side
-  expect_error(client <- Client$new(target = "bad address", client_options = client_options))
-  expect_error(
-    client <- Client$new(target = 12345, client_options = client_options),
-    "'target' must be passed as a single string. Got an object of class numeric instead."
-  )
-  expect_error(
-    client <- Client$new(target = c("hello", "my", "name", "is"), client_options = client_options),
-    "'target' must be passed as a single string. Got a string vector of length 4 instead."
-  )
-})
-
-test_that("client connection fails nicely with good target but bad client_options", {
-  # TODO: these all assume that the server is actually running on localhost:10000, probably bad for CI
-  expect_error(
-    client <- Client$new(target = "localhost:10000", client_options = "bad"),
-    "'client_options' should be a Deephaven ClientOptions object. Got an object of type character instead."
-  )
-  expect_error(
-    client <- Client$new(target = "localhost:10000", client_options = 12345),
-    "'client_options' should be a Deephaven ClientOptions object. Got an object of type numeric instead."
-  )
-
-  # TODO: Invalid auth details needs better error handling from the R side
-  bad_client_options1 <- ClientOptions$new()
-  bad_client_options1$set_basic_authentication("my_username", "my_password")
-  expect_error(client <- Client$new(target = "localhost:10000", client_options = bad_client_options1))
-
-  bad_client_options2 <- ClientOptions$new()
-  bad_client_options2$set_session_type("groovy")
-  expect_error(client <- Client$new(target = "localhost:10000", client_options = bad_client_options2))
-})
+# FAILS
+# TODO: Test all of the new client connections stuff
 
 test_that("import_table fails nicely with bad inputs", {
   library(datasets)
 
-  client_options <- ClientOptions$new()
-  client <- Client$new(target = "localhost:10000", client_options = client_options)
+  client <- connect(target = "localhost:10000")
 
   expect_error(
-    client$import_table(12345),
+    import_table(client, 12345),
     "'table_object' must be either an R Data Frame, a dplyr Tibble, an Arrow Table, or an Arrow Record Batch Reader. Got an object of class numeric instead."
   )
   expect_error(
-    client$import_table("hello!"),
+    import_table(client, "hello!"),
     "'table_object' must be either an R Data Frame, a dplyr Tibble, an Arrow Table, or an Arrow Record Batch Reader. Got an object of class character instead."
   )
 
   # TODO: this needs better error handling, but it is unclear whether that happens on the server side or the R side.
   data(iris)
-  expect_error(client$import_table(iris))
+  expect_error(import_table(client, iris))
 
   data(HairEyeColor)
   expect_error(
-    client$import_table(HairEyeColor),
+    import_table(client, HairEyeColor),
     "'table_object' must be either an R Data Frame, a dplyr Tibble, an Arrow Table, or an Arrow Record Batch Reader. Got an object of class table instead."
   )
 
-  client$close()
+  close(client)
 })
 
 test_that("open_table fails nicely with bad inputs", {
-  client_options <- ClientOptions$new()
-  client <- Client$new(target = "localhost:10000", client_options = client_options)
+  client <- connect(target = "localhost:10000")
 
-  expect_error(client$open_table(""), "The table '' you're trying to pull does not exist on the server.")
-  expect_error(client$open_table(12345), "'name' must be passed as a single string. Got an object of class numeric instead.")
-  expect_error(client$open_table(client_options), "'name' must be passed as a single string. Got an object of class ClientOptions instead.")
-  expect_error(client$open_table(c("I", "am", "string")), "'name' must be passed as a single string. Got a string vector of length 3 instead.")
+  expect_error(open_table(client, ""), "The table '' you're trying to pull does not exist on the server.")
+  expect_error(open_table(client, 12345), "'name' must be passed as a single string. Got an object of class numeric instead.")
+  expect_error(open_table(client, c("I", "am", "string")), "'name' must be passed as a single string. Got a string vector of length 3 instead.")
 
-  client$close()
+  close(client)
 })
 
 test_that("empty_table fails nicely with bad inputs", {
-  client_options <- ClientOptions$new()
-  client <- Client$new(target = "localhost:10000", client_options = client_options)
+  client <- connect(target = "localhost:10000")
 
-  expect_error(client$empty_table(0), "'size' must be a positive integer. Got 'size' = 0 instead.")
-  expect_error(client$empty_table(-3), "'size' must be a positive integer. Got 'size' = -3 instead.")
-  expect_error(client$empty_table(1.2345), "'size' must be an integer. Got 'size' = 1.2345 instead.")
-  expect_error(client$empty_table("hello!"), "'size' must be passed as a single numeric. Got an object of class character instead.")
-  expect_error(client$empty_table(c(1, 2, 3, 4)), "'size' must be passed as a single numeric. Got a numeric vector of length 4 instead.")
+  expect_error(empty_table(client, 0), "'size' must be a positive integer. Got 'size' = 0 instead.")
+  expect_error(empty_table(client, -3), "'size' must be a positive integer. Got 'size' = -3 instead.")
+  expect_error(empty_table(client, 1.2345), "'size' must be an integer. Got 'size' = 1.2345 instead.")
+  expect_error(empty_table(client, "hello!"), "'size' must be passed as a single numeric. Got an object of class character instead.")
+  expect_error(empty_table(client, c(1, 2, 3, 4)), "'size' must be passed as a single numeric. Got a numeric vector of length 4 instead.")
 
-  client$close()
+  close(client)
 })
 
 test_that("time_table fails nicely with bad inputs", {
-  client_options <- ClientOptions$new()
-  client <- Client$new(target = "localhost:10000", client_options = client_options)
+  client <- connect(target = "localhost:10000")
 
-  expect_error(client$time_table(1.23, 1000), "'period_nanos' must be an integer. Got 'period_nanos' = 1.23 instead.")
-  expect_error(client$time_table(1000, 1.23), "'start_time_nanos' must be an integer. Got 'start_time_nanos' = 1.23 instead.")
-  expect_error(client$time_table(c(1, 2, 3), 1000), "'period_nanos' must be passed as a single numeric. Got a numeric vector of length 3 instead.")
-  expect_error(client$time_table(1000, c(1, 2, 3)), "'start_time_nanos' must be passed as a single numeric. Got a numeric vector of length 3 instead.")
-  expect_error(client$time_table("hello!", 1000), "'period_nanos' must be passed as a single numeric. Got an object of class character instead.")
-  expect_error(client$time_table(1000, "hello!"), "'start_time_nanos' must be passed as a single numeric. Got an object of class character instead.")
+  expect_error(time_table(client, 1.23, 1000), "'period_nanos' must be an integer. Got 'period_nanos' = 1.23 instead.")
+  expect_error(time_table(client, 1000, 1.23), "'start_time_nanos' must be an integer. Got 'start_time_nanos' = 1.23 instead.")
+  expect_error(time_table(client, c(1, 2, 3), 1000), "'period_nanos' must be passed as a single numeric. Got a numeric vector of length 3 instead.")
+  expect_error(time_table(client, 1000, c(1, 2, 3)), "'start_time_nanos' must be passed as a single numeric. Got a numeric vector of length 3 instead.")
+  expect_error(time_table(client, "hello!", 1000), "'period_nanos' must be passed as a single numeric. Got an object of class character instead.")
+  expect_error(time_table(client, 1000, "hello!"), "'start_time_nanos' must be passed as a single numeric. Got an object of class character instead.")
 
-  client$close()
+  close(client)
 })
 
 test_that("run_script fails nicely with bad input types", {
-  client_options <- ClientOptions$new()
-  client <- Client$new(target = "localhost:10000", client_options = client_options)
+  client <- connect(target = "localhost:10000")
 
-  expect_error(client$run_script(12345), "'script' must be passed as a single string. Got an object of class numeric instead.")
-  expect_error(client$run_script(c("I", "am", "a", "string")), "'script' must be passed as a single string. Got a string vector of length 4 instead.")
+  expect_error(run_script(client, 12345), "'script' must be passed as a single string. Got an object of class numeric instead.")
+  expect_error(run_script(client, c("I", "am", "a", "string")), "'script' must be passed as a single string. Got a string vector of length 4 instead.")
 
-  client$close()
+  close(client)
 })
