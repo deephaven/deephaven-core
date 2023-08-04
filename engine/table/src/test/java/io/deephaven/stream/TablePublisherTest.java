@@ -256,7 +256,6 @@ public class TablePublisherTest {
         publisher.add(fooReversed);
         updateGraph.runWithinUnitTestCycle(publisher::runForUnitTests);
 
-        // assert table equals doesn't actually care about column ordering
         TstUtils.assertTableEquals(foo, blinkTable);
 
         updateGraph.runWithinUnitTestCycle(publisher::runForUnitTests);
