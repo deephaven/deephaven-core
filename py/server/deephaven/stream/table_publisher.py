@@ -1,5 +1,5 @@
 #
-# Copyright (c) 2016-2022 Deephaven Data Labs and Patent Pending
+# Copyright (c) 2016-2023 Deephaven Data Labs and Patent Pending
 #
 """The table_publisher module supports publishing Deephaven Tables into blink Tables."""
 
@@ -22,7 +22,7 @@ _JRuntimeException = jpy.get_type("java.lang.RuntimeException")
 
 
 class TablePublisher(JObjectWrapper):
-    """Supports publishing Table data."""
+    """The interface for publishing table data into a blink table."""
 
     j_object_type = _JTablePublisher
 
@@ -35,19 +35,21 @@ class TablePublisher(JObjectWrapper):
 
     @property
     def is_alive(self) -> bool:
-        """Checks whether this publisher is alive; if False, the publisher should stop publishing new data and release
-        any related resources as soon as practicable since publishing won't have any downstream effects.
+        """Checks whether this is alive; if False, the caller should stop adding new data and release any related
+        resources as soon as practicable since adding new data won't have any downstream effects.
 
-        Once this is False, it will always remain False. For more prompt notifications, publishers may
-        prefer to use on_shutdown_callback during construction.
+        Once this is False, it will always remain False. For more prompt notifications, callers may prefer to use
+        on_shutdown_callback during construction.
 
         Returns:
             if this publisher is alive
         """
         return self.j_table_publisher.isAlive()
 
-    def add(self, table: Table):
-        """Adds a snapshot of the data from table into the blink table according to the blink table's definition.
+    def add(self, table: Table) -> None:
+        """Adds a snapshot of the data from table into the blink table. The table must contain a superset of the columns
+        from the blink table's definition; the columns may be in any order. Columns from table that are not in the blink
+        table's definition are ignored.
 
         All of the data from table will be:
 
@@ -60,17 +62,15 @@ class TablePublisher(JObjectWrapper):
         """
         self.j_table_publisher.add(table.j_table)
 
-    def publish_failure(self, failure: Exception):
-        """Publish a failure for notification to the listeners of the blink table. Future calls to add will silently
-        return. Will cause the on-shutdown callback to be invoked if it hasn't already been invoked.
+    def publish_failure(self, failure: Exception) -> None:
+        """Indicate that data publication has failed. Blink table listeners will be notified of the failure, the
+        on-shutdown callback will be invoked if it hasn't already been, this publisher will no longer be alive, and
+        future calls to add will silently return without publishing. These effects may resolve asynchronously.
 
         Args:
             failure (Exception): the failure
         """
         self.j_table_publisher.publishFailure(_JRuntimeException(str(failure)))
-
-
-# Note: we may want to expand the column_definitions typing here and elsewhere in the future to also accept List[Column]
 
 
 def table_publisher(
@@ -80,24 +80,18 @@ def table_publisher(
     update_graph: Optional[UpdateGraph] = None,
     chunk_size: int = 2048,
 ) -> tuple[Table, TablePublisher]:
-    """Constructs a blink Table and TablePublisher.
-
-    The on_shutdown_callback, if present, is called one time when the publisher should stop publishing new data
-    and release any related resources as soon as practicable since publishing won't have any downstream effects.
-
-    The update_graph is the update graph that the resulting table will belong to. If unset, the update graph of
-    the current execution context will be used.
-
-    The chunk_size is the size at which chunks will be filled from the source table during an add.
-
-    The caller is responsible for keeping a reference to the resulting blink (or derived) Table.
+    """Constructs a blink Table and TablePublisher to populate it.
 
     Args:
         name (str): the name, used for logging
-        col_defs (Dict[str, DType]): the column definitions
-        on_shutdown_callback (Optional[Callable[[], None]]): the on-shutdown callback
-        update_graph (Optional[UpdateGraph]): the update graph
-        chunk_size (int): the chunk size, defaults to 2048
+        col_defs (Dict[str, DType]): the column definitions for the resulting blink table
+        on_shutdown_callback (Optional[Callable[[], None]]): the on-shutdown callback, if present, is called one time
+            when the caller should stop adding new data and release any related resources as soon as practicable since
+            adding data won't have any downstream effects
+        update_graph (Optional[UpdateGraph]): the update graph the resulting table will belong to. If unset, the update
+            graph of the current execution context will be used.
+        chunk_size (int): the chunk size, the size at which chunks will be filled from the source table during an add,
+            defaults to 2048
 
     Returns:
         a two-tuple, where the first item is resulting blink Table and the second item is the TablePublisher

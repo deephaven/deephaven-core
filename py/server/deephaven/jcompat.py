@@ -83,7 +83,8 @@ T = TypeVar("T")
 R = TypeVar("R")
 
 def j_runnable(callable: Callable[[], None]) -> jpy.JType:
-    """Constructs a Java 'Runnable' implementation from a Python callable.
+    """Constructs a Java 'Runnable' implementation from a Python callable that doesn't take any arguments and returns
+    None.
 
     Args:
         callable (Callable[[], None]): a Python callable that doesn't take any arguments and returns None

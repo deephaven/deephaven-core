@@ -9,7 +9,7 @@ from deephaven.table import Table
 from deephaven.column import string_col, int_col, double_col
 from deephaven.dtypes import string, int32, double
 from deephaven.table_factory import new_table, merge
-from deephaven.stream.table_publisher import table_publisher
+from deephaven.stream.table_publisher import table_publisher, TablePublisher
 from tests.testbase import BaseTestCase
 
 
@@ -47,6 +47,7 @@ class TablePublisherTestCase(BaseTestCase):
     def test_add(self):
         my_table, my_publisher = table_publisher("test_add", table_definition())
         self.assertTrue(isinstance(my_table, Table))
+        self.assertTrue(isinstance(my_publisher, TablePublisher))
         self.assert_table_equals(my_table, empty())
 
         msft_table = row("MSFT", "BUY", 200, 210.0)
@@ -61,23 +62,22 @@ class TablePublisherTestCase(BaseTestCase):
         self.wait_ticking_table_update(my_table, row_count=2, timeout=5)
         self.assert_table_equals(my_table, goog_aapl_table)
 
+    def test_publish_failure_with_on_shutdown_callback(self):
+        is_shutdown = Semaphore(value=0)
 
-def test_publish_failure_with_on_shutdown_callback(self):
-    is_shutdown = Semaphore(value=0)
+        def on_shutdown():
+            nonlocal is_shutdown
+            is_shutdown.release()
 
-    def on_shutdown():
-        nonlocal is_shutdown
-        is_shutdown.release()
-
-    my_table, my_publisher = table_publisher(
-        "test_publish_failure_with_on_shutdown_callback",
-        table_definition(),
-        on_shutdown_callback=on_shutdown,
-    )
-    self.assertTrue(my_publisher.is_alive)
-    my_publisher.publish_failure(RuntimeError("close"))
-    self.assertTrue(is_shutdown.acquire(timeout=5))
-    self.assertFalse(my_publisher.is_alive)
+        my_table, my_publisher = table_publisher(
+            "test_publish_failure_with_on_shutdown_callback",
+            table_definition(),
+            on_shutdown_callback=on_shutdown,
+        )
+        self.assertTrue(my_publisher.is_alive)
+        my_publisher.publish_failure(RuntimeError("close"))
+        self.assertTrue(is_shutdown.acquire(timeout=5))
+        self.assertFalse(my_publisher.is_alive)
 
 
 if __name__ == "__main__":
