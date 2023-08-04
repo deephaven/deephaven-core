@@ -80,6 +80,7 @@ public class ColumnPageReaderImpl implements ColumnPageReader {
         this.offset = offset;
         this.pageHeader = pageHeader;
         this.numValues = numValues;
+
     }
 
     @Override
@@ -333,7 +334,7 @@ public class ColumnPageReaderImpl implements ColumnPageReader {
         rlDecoder = new RunLengthBitPackingHybridBufferDecoder(path.getMaxRepetitionLevel(), byteBuffer);
         int rowsRead = 0;
         int totalCount = 0;
-        while (rlDecoder.hasNext() && totalCount < numValues) {
+        while (rlDecoder.hasNext() && totalCount < numValues()) {
             rlDecoder.readNextRange();
             int count = rlDecoder.currentRangeCount();
             totalCount += count;
