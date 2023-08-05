@@ -1,3 +1,9 @@
+/*
+ * Most of the methods here wrap methods defined in client.h and client_options.h to expose them to R via Rcpp.
+ * Thus, the only methods that are documented here are the ones that are unique to these classes, and not already
+ * documented in one of the header files mentioned above.
+ */
+
 #include <iostream>
 #include <utility>
 #include <memory>
@@ -38,7 +44,6 @@ private:
     friend std::vector<deephaven::client::Aggregate> convertRcppListToVectorOfTypeAggregate(Rcpp::List rcpp_list);
 };
 
-// ######################### conversion function for the above class
 std::vector<deephaven::client::Aggregate> convertRcppListToVectorOfTypeAggregate(Rcpp::List rcpp_list) {
     std::vector<deephaven::client::Aggregate> converted_list;
     converted_list.reserve(rcpp_list.size());
@@ -49,58 +54,59 @@ std::vector<deephaven::client::Aggregate> convertRcppListToVectorOfTypeAggregate
         deephaven::client::Aggregate internal_aggregation = xptr->internal_aggregation;
         converted_list.push_back(internal_aggregation);
     }
+
     return converted_list;
 }
 
-AggregateWrapper* INTERNAL_min(std::vector<std::string> columnSpecs) {
+AggregateWrapper* INTERNAL_agg_min(std::vector<std::string> columnSpecs) {
     return new AggregateWrapper(deephaven::client::Aggregate::min(columnSpecs));
 }
 
-AggregateWrapper* INTERNAL_max(std::vector<std::string> columnSpecs) {
+AggregateWrapper* INTERNAL_agg_max(std::vector<std::string> columnSpecs) {
     return new AggregateWrapper(deephaven::client::Aggregate::max(columnSpecs));
 }
 
-AggregateWrapper* INTERNAL_first(std::vector<std::string> columnSpecs) {
+AggregateWrapper* INTERNAL_agg_first(std::vector<std::string> columnSpecs) {
     return new AggregateWrapper(deephaven::client::Aggregate::first(columnSpecs));
 }
 
-AggregateWrapper* INTERNAL_last(std::vector<std::string> columnSpecs) {
+AggregateWrapper* INTERNAL_agg_last(std::vector<std::string> columnSpecs) {
     return new AggregateWrapper(deephaven::client::Aggregate::last(columnSpecs));
 }
 
-AggregateWrapper* INTERNAL_sum(std::vector<std::string> columnSpecs) {
+AggregateWrapper* INTERNAL_agg_sum(std::vector<std::string> columnSpecs) {
     return new AggregateWrapper(deephaven::client::Aggregate::sum(columnSpecs));
 }
 
-AggregateWrapper* INTERNAL_absSum(std::vector<std::string> columnSpecs) {
+AggregateWrapper* INTERNAL_agg_absSum(std::vector<std::string> columnSpecs) {
     return new AggregateWrapper(deephaven::client::Aggregate::absSum(columnSpecs));
 }
 
-AggregateWrapper* INTERNAL_avg(std::vector<std::string> columnSpecs) {
+AggregateWrapper* INTERNAL_agg_avg(std::vector<std::string> columnSpecs) {
     return new AggregateWrapper(deephaven::client::Aggregate::avg(columnSpecs));
 }
 
-AggregateWrapper* INTERNAL_wAvg(std::string weightColumn, std::vector<std::string> columnSpecs) {
+AggregateWrapper* INTERNAL_agg_wAvg(std::string weightColumn, std::vector<std::string> columnSpecs) {
     return new AggregateWrapper(deephaven::client::Aggregate::wavg(weightColumn, columnSpecs));
 }
 
-AggregateWrapper* INTERNAL_median(std::vector<std::string> columnSpecs) {
+AggregateWrapper* INTERNAL_agg_median(std::vector<std::string> columnSpecs) {
     return new AggregateWrapper(deephaven::client::Aggregate::med(columnSpecs));
 }
 
-AggregateWrapper* INTERNAL_var(std::vector<std::string> columnSpecs) {
+AggregateWrapper* INTERNAL_agg_var(std::vector<std::string> columnSpecs) {
     return new AggregateWrapper(deephaven::client::Aggregate::var(columnSpecs));
 }
 
-AggregateWrapper* INTERNAL_std(std::vector<std::string> columnSpecs) {
+AggregateWrapper* INTERNAL_agg_std(std::vector<std::string> columnSpecs) {
     return new AggregateWrapper(deephaven::client::Aggregate::std(columnSpecs));
 }
 
-AggregateWrapper* INTERNAL_percentile(double percentile, std::vector<std::string> columnSpecs) {
+AggregateWrapper* INTERNAL_agg_percentile(double percentile, std::vector<std::string> columnSpecs) {
     return new AggregateWrapper(deephaven::client::Aggregate::pct(percentile, false, columnSpecs));
 }
 
-AggregateWrapper* INTERNAL_count(std::string columnSpec) {
+AggregateWrapper* INTERNAL_agg_count(std::string columnSpec) {
     return new AggregateWrapper(deephaven::client::Aggregate::count(columnSpec));
 }
 
@@ -109,10 +115,6 @@ class TableHandleWrapper {
 public:
     TableHandleWrapper(deephaven::client::TableHandle ref_table) :
         internal_tbl_hdl(std::move(ref_table)) {};
-
-    // TABLE OPERATIONS
-
-    // FILTER OPERATIONS
 
     TableHandleWrapper* select(std::vector<std::string> columnSpecs) {
         return new TableHandleWrapper(internal_tbl_hdl.select(columnSpecs));
@@ -145,8 +147,6 @@ public:
     TableHandleWrapper* ungroup(std::vector<std::string> groupByColumns) {
         return new TableHandleWrapper(internal_tbl_hdl.ungroup(false, groupByColumns));
     };
-
-    // AGGREGATION OPERATIONS
 
     TableHandleWrapper* aggBy(Rcpp::List aggregations, std::vector<std::string> groupByColumns) {
         std::vector<deephaven::client::Aggregate> converted_aggregations = convertRcppListToVectorOfTypeAggregate(aggregations);
@@ -213,8 +213,6 @@ public:
         return new TableHandleWrapper(internal_tbl_hdl.countBy(countByColumn, columnSpecs));
     };
 
-    // JOIN OPERATIONS
-
     TableHandleWrapper* crossJoin(const TableHandleWrapper &rightSide, std::vector<std::string> columnsToMatch, std::vector<std::string> columnsToAdd) {
         return new TableHandleWrapper(internal_tbl_hdl.crossJoin(rightSide.internal_tbl_hdl, columnsToMatch, columnsToAdd));
     };
@@ -226,8 +224,6 @@ public:
     TableHandleWrapper* exactJoin(const TableHandleWrapper &rightSide, std::vector<std::string> columnsToMatch, std::vector<std::string> columnsToAdd) {
         return new TableHandleWrapper(internal_tbl_hdl.exactJoin(rightSide.internal_tbl_hdl, columnsToMatch, columnsToAdd));
     };
-
-    // MISC OPERATIONS
 
     TableHandleWrapper* head(int64_t n) {
         return new TableHandleWrapper(internal_tbl_hdl.head(n));
@@ -245,8 +241,9 @@ public:
     TableHandleWrapper* sort(std::vector<std::string> columnSpecs, std::vector<bool> descending) {
         std::vector<deephaven::client::SortPair> sort_pairs;
         sort_pairs.reserve(columnSpecs.size());
+
         if (descending.size() == 1) {
-            if (descending[0] == false) {
+            if (!descending[0]) {
                 for(int i = 0; i < columnSpecs.size(); i++) {
                     sort_pairs.push_back(deephaven::client::SortPair::ascending(columnSpecs[i], false));
                 }
@@ -255,37 +252,29 @@ public:
                     sort_pairs.push_back(deephaven::client::SortPair::descending(columnSpecs[i], false));
                 }
             }
-        } else {
+        }
+
+        else {
             for(int i = 0; i < columnSpecs.size(); i++) {
-                if (descending[i] == false) {
+                if (!descending[i]) {
                     sort_pairs.push_back(deephaven::client::SortPair::ascending(columnSpecs[i], false));
                 } else {
                     sort_pairs.push_back(deephaven::client::SortPair::descending(columnSpecs[i], false));
                 }
             }
         }
+
         return new TableHandleWrapper(internal_tbl_hdl.sort(sort_pairs));
     };
 
-    /**
-     * Whether the table was static at the time internal_tbl_hdl was created.
-    */
     bool isStatic() {
         return internal_tbl_hdl.isStatic();
     }
 
-    /**
-     * Number of rows in the table at the time internal_tbl_hdl was created.
-    */
     int64_t numRows() {
         return internal_tbl_hdl.numRows();
     }
 
-    /**
-     * Binds the table referenced by this table handle to a variable on the server called tableName.
-     * Without this call, new tables are not accessible from the client.
-     * @param tableName Name for the new table on the server.
-    */
     void bindToVariable(std::string tableName) {
         internal_tbl_hdl.bindToVariable(tableName);
     }
@@ -314,7 +303,6 @@ private:
     friend std::vector<deephaven::client::TableHandle> convertRcppListToVectorOfTypeTableHandle(Rcpp::List rcpp_list);
 };
 
-// ######################### conversion function for the above class
 std::vector<deephaven::client::TableHandle> convertRcppListToVectorOfTypeTableHandle(Rcpp::List rcpp_list) {
     std::vector<deephaven::client::TableHandle> converted_list;
     converted_list.reserve(rcpp_list.size());
@@ -325,11 +313,11 @@ std::vector<deephaven::client::TableHandle> convertRcppListToVectorOfTypeTableHa
         deephaven::client::TableHandle internal_tbl_hdl = xptr->internal_tbl_hdl;
         converted_list.push_back(internal_tbl_hdl);
     }
+
     return converted_list;
 }
 
 
-// TODO: Document this guy
 class ClientOptionsWrapper {
 public:
 
@@ -384,37 +372,18 @@ public:
     ClientWrapper(std::string target, const ClientOptionsWrapper &client_options) :
         internal_client(deephaven::client::Client::connect(target, *client_options.internal_options)) {}
 
-    /**
-     * Fetches a reference to a table named tableName on the server if it exists.
-     * @param tableName Name of the table to search for.
-     * @return TableHandle reference to the fetched table.
-    */
     TableHandleWrapper* openTable(std::string tableName) {
         return new TableHandleWrapper(internal_tbl_hdl_mngr.fetchTable(tableName));
     }
 
-    /**
-    * Creates a "zero-width" table on the server. Such a table knows its number of rows but has no columns.
-    * @param size Number of rows in the empty table.
-    */
     TableHandleWrapper* emptyTable(int64_t size) {
         return new TableHandleWrapper(internal_tbl_hdl_mngr.emptyTable(size));
     }
 
-    /**
-    * Creates a ticking table.
-    * @param startTimeNanos When the table should start ticking (in units of nanoseconds since the epoch).
-    * @param periodNanos Table ticking frequency (in nanoseconds).
-    * @return The TableHandle of the new table.
-    */
     TableHandleWrapper* timeTable(int64_t startTimeNanos, int64_t periodNanos) {
         return new TableHandleWrapper(internal_tbl_hdl_mngr.timeTable(startTimeNanos, periodNanos));
     };
 
-    /**
-     * Runs a script on the server in the console language if a console was created.
-     * @param code String of the code to be executed on the server.
-    */
     void runScript(std::string code) {
         internal_tbl_hdl_mngr.runScript(code);
     }
@@ -481,14 +450,6 @@ public:
         return new TableHandleWrapper(new_tbl_hdl);
     }
 
-    /**
-    * Shuts down the Client and all associated state (GRPC connections, subscriptions, etc).
-    * This method is used if a caller wants to shut down Client state early. If it is not called,
-    * the shutdown actions will happen when this Client is destructed. The caller must not use any
-    * associated data structures (TableHandleManager, TableHandle, etc) after close() is called or
-    * after Client's destructor is invoked. If the caller tries to do so, the behavior is
-    * unspecified.
-    */
     void close() {
         internal_client.close();
     }
@@ -513,19 +474,19 @@ RCPP_MODULE(DeephavenInternalModule) {
 
     class_<AggregateWrapper>("INTERNAL_Aggregate")
     ;
-    function("INTERNAL_first", &INTERNAL_first);
-    function("INTERNAL_last", &INTERNAL_last);
-    function("INTERNAL_min", &INTERNAL_min);
-    function("INTERNAL_max", &INTERNAL_max);
-    function("INTERNAL_sum", &INTERNAL_sum);
-    function("INTERNAL_abs_sum", &INTERNAL_absSum);
-    function("INTERNAL_avg", &INTERNAL_avg);
-    function("INTERNAL_w_avg", &INTERNAL_wAvg);
-    function("INTERNAL_median", &INTERNAL_median);
-    function("INTERNAL_var", &INTERNAL_var);
-    function("INTERNAL_std", &INTERNAL_std);
-    function("INTERNAL_percentile", &INTERNAL_percentile);
-    function("INTERNAL_count", &INTERNAL_count);
+    function("INTERNAL_agg_first", &INTERNAL_agg_first);
+    function("INTERNAL_agg_last", &INTERNAL_agg_last);
+    function("INTERNAL_agg_min", &INTERNAL_agg_min);
+    function("INTERNAL_agg_max", &INTERNAL_agg_max);
+    function("INTERNAL_agg_sum", &INTERNAL_agg_sum);
+    function("INTERNAL_agg_abs_sum", &INTERNAL_agg_absSum);
+    function("INTERNAL_agg_avg", &INTERNAL_agg_avg);
+    function("INTERNAL_agg_w_avg", &INTERNAL_agg_wAvg);
+    function("INTERNAL_agg_median", &INTERNAL_agg_median);
+    function("INTERNAL_agg_var", &INTERNAL_agg_var);
+    function("INTERNAL_agg_std", &INTERNAL_agg_std);
+    function("INTERNAL_agg_percentile", &INTERNAL_agg_percentile);
+    function("INTERNAL_agg_count", &INTERNAL_agg_count);
 
     class_<TableHandleWrapper>("INTERNAL_TableHandle")
     .method("select", &TableHandleWrapper::select)

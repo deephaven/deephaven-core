@@ -22,10 +22,6 @@ setup <- function() {
     int_col = sample(0:10000, 250000, TRUE)
   )
 
-  # in order to test TableHandle, we need to have tables on the server that we know everything about.
-  # thus, we have to push these created tables to the server and get TableHandles to each of them.
-  # thus, we depend on the correctness of client$import_table(), ClientOptions$new(), and Client$new()
-
   # set up client
   client <- connect(target = "localhost:10000")
 

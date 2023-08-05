@@ -37,10 +37,6 @@ setup <- function() {
     Number2 = c(76, 4, -6, 34, 12, -76, 45, -5, 34, 6)
   )
 
-  # in order to test TableHandle, we need to have tables on the server that we know everything about.
-  # thus, we have to push these created tables to the server and get TableHandles to each of them.
-  # thus, we depend on the correctness of client$import_table(), ClientOptions$new(), and Client$new()
-
   # set up client
   client <- connect(target = "localhost:10000")
 

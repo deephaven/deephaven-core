@@ -37,9 +37,6 @@ setup <- function() {
     Number2 = c(76, 4, -6, 34, 12, -76, 45, -5, 34, 6)
   )
 
-  # in order to test TableHandle, we need to have tables on the server that we know everything about.
-  # thus, we have to push these created tables to the server and get TableHandles to each of them.
-
   # set up client
   client <- connect(target = "localhost:10000")
 
@@ -258,7 +255,7 @@ test_that("where behaves as expected", {
   close(data$client)
 })
 
-test_that("group_by and ungroup behaves as expected", {
+test_that("group_by and ungroup behave as expected", {
   data <- setup()
 
   # There is not a clean analog to group_by() in dplyr, so we evaluate
