@@ -7,7 +7,7 @@ server."""
 import base64
 import os
 import threading
-from typing import Dict, List, Union, Tuple
+from typing import Dict, List, Union, Tuple, Any
 
 import grpc
 import pyarrow as pa
@@ -20,11 +20,13 @@ from pydeephaven._arrow_flight_service import ArrowFlightService
 from pydeephaven._config_service import ConfigService
 from pydeephaven._console_service import ConsoleService
 from pydeephaven._input_table_service import InputTableService
+from pydeephaven._plugin_obj_service import PluginObjService
 from pydeephaven._session_service import SessionService
 from pydeephaven._table_ops import TimeTableOp, EmptyTableOp, MergeTablesOp, FetchTableOp, CreateInputTableOp
 from pydeephaven._table_service import TableService
 from pydeephaven._utils import to_list
 from pydeephaven.dherror import DHError
+from pydeephaven.experimental.plugin_client import PluginClient
 from pydeephaven.proto import ticket_pb2
 from pydeephaven.query import Query
 from pydeephaven.table import Table, InputTable
@@ -172,6 +174,7 @@ class Session:
         self._flight_service = None
         self._app_service = None
         self._input_table_service = None
+        self._plugin_obj_service = None
         self._never_timeout = never_timeout
         self._keep_alive_timer = None
         self._session_type = session_type
@@ -195,6 +198,13 @@ class Session:
             fields = self._fetch_fields()
             return [field.field_name for field in fields if
                     field.application_id == 'scope' and field.typed_ticket.type == 'Table']
+
+    @property
+    def exportable_objects(self):
+        with self._r_lock:
+            fields = self._fetch_fields()
+            return {field.field_name: field for field in fields if
+                    field.application_id == 'scope' and field.typed_ticket.type != 'Table'}
 
     @property
     def grpc_metadata(self):
@@ -248,6 +258,13 @@ class Session:
             self._input_table_service = InputTableService(self)
 
         return self._input_table_service
+
+    @property
+    def plugin_object_service(self) -> PluginObjService:
+        if not self._plugin_obj_service:
+            self._plugin_obj_service = PluginObjService(self)
+
+        return self._plugin_obj_service
 
     def make_ticket(self, ticket_no=None):
         if not ticket_no:
@@ -519,3 +536,6 @@ class Session:
         input_table = self.table_service.grpc_table_op(None, table_op, table_class=InputTable)
         input_table.key_cols = key_cols
         return input_table
+
+    def plugin_client(self, exportable: Any) -> PluginClient:
+        return PluginClient(self, exportable)
