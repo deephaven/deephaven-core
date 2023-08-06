@@ -140,24 +140,25 @@ public class ParquetTableWriter {
     /**
      * Helper struct used to pass information about where to write the grouping files for each grouping column
      */
-    static final class GroupingColumnWritingInfo {
+    public static class GroupingColumnWritingInfo {
         /**
          * Parquet name of this grouping column
          */
-        final String parquetColumnName;
+        public final String parquetColumnName;
         /**
          * File path to be added in the grouping metadata of main parquet file
          */
-        final File metadataFilePath;
+        public final File metadataFilePath;
 
         /**
          * Destination path for writing the grouping file. The two filenames can differ because we write grouping files
          * to shadow file paths first and then place them at the final path once the write is complete. But the metadata
          * should always hold the accurate path.
          */
-        final File destFile;
+        public final File destFile;
 
-        GroupingColumnWritingInfo(final String parquetColumnName, final File metadataFilePath, final File destFile) {
+        public GroupingColumnWritingInfo(final String parquetColumnName, final File metadataFilePath,
+                final File destFile) {
             this.parquetColumnName = parquetColumnName;
             this.metadataFilePath = metadataFilePath;
             this.destFile = destFile;
@@ -185,7 +186,7 @@ public class ParquetTableWriter {
             final Map<String, GroupingColumnWritingInfo> groupingColumnsWritingInfoMap)
             throws SchemaMappingException, IOException {
         final TableInfo.Builder tableInfoBuilder = TableInfo.builder();
-        ArrayList<File> cleanupFiles = null;
+        List<File> cleanupFiles = null;
         try {
             if (groupingColumnsWritingInfoMap != null) {
                 cleanupFiles = new ArrayList<>(groupingColumnsWritingInfoMap.size());
@@ -200,8 +201,7 @@ public class ParquetTableWriter {
                     tableInfoBuilder.addGroupingColumns(GroupingColumnInfo.of(parquetColumnName,
                             destDirPath.relativize(metadataFilePath.toPath()).toString()));
                     write(auxiliaryTable, auxiliaryTable.getDefinition(), writeInstructions,
-                            groupingDestFile.getAbsolutePath(),
-                            Collections.emptyMap(), (Map<String, GroupingColumnWritingInfo>) null);
+                            groupingDestFile.getAbsolutePath(), Collections.emptyMap(), TableInfo.builder());
                 }
             }
             write(t, definition, writeInstructions, destPathName, incomingMeta, tableInfoBuilder);
