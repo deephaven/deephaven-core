@@ -32,7 +32,7 @@ Docker.registerDockerTask(project, 'typedoc') {
 
         runCommand('''set -eux; \\
                       cd /project/; \\
-                      ../node_modules/.bin/typedoc src/types.d.ts src/types.d.ts --out /documentation
+                      ../node_modules/.bin/typedoc src/types.d.ts --out /documentation --skipErrorChecking
                       ''')
     }
     parentContainers = [ Docker.registryTask(project, 'node') ] // deephaven/node
