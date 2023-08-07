@@ -766,12 +766,10 @@ public class QueryTableMultiJoinTest extends QueryTableTestBase {
 
         MultiJoinInput mji = MultiJoinInput.of(dummyTable, "Key1=A,Key2=B", "C1=C,D1=D");
         Assert.assertEquals(mji.inputTable(), dummyTable);
-
         Assert.assertEquals(mji.columnsToMatch()[0].left().name(), "Key1");
         Assert.assertEquals(mji.columnsToMatch()[0].right().name(), "A");
         Assert.assertEquals(mji.columnsToMatch()[1].left().name(), "Key2");
         Assert.assertEquals(mji.columnsToMatch()[1].right().name(), "B");
-
         Assert.assertEquals(mji.columnsToAdd()[0].newColumn().name(), "C1");
         Assert.assertEquals(mji.columnsToAdd()[0].existingColumn().name(), "C");
         Assert.assertEquals(mji.columnsToAdd()[1].newColumn().name(), "D1");
