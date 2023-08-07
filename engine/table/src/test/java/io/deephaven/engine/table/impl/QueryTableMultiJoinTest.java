@@ -8,10 +8,7 @@ import io.deephaven.engine.liveness.LivenessScopeStack;
 import io.deephaven.engine.rowset.RowSet;
 import io.deephaven.engine.rowset.RowSetFactory;
 import io.deephaven.engine.rowset.RowSetShiftData;
-import io.deephaven.engine.table.ModifiedColumnSet;
-import io.deephaven.engine.table.MultiJoinFactory;
-import io.deephaven.engine.table.MultiJoinInput;
-import io.deephaven.engine.table.Table;
+import io.deephaven.engine.table.*;
 import io.deephaven.engine.testutil.*;
 import io.deephaven.engine.testutil.generator.*;
 import io.deephaven.engine.util.PrintListener;
@@ -762,6 +759,31 @@ public class QueryTableMultiJoinTest extends QueryTableTestBase {
             Assert.assertEquals("Column A defined in table 0 and table 1", iae.getMessage());
         }
     }
+
+    @Test
+    public void testRenamingAndMultiColumn() {
+        final Table t1 = TableTools.newTable(col("A", "a", "b"), intCol("B", 1, 2), doubleCol("C", 3.0, 4.0),
+                doubleCol("D", 10.0, 20.0));
+        final Table t2 = TableTools.newTable(col("A", "a", "b"), intCol("B", 1, 3), doubleCol("C", 5.0, 6.0),
+                doubleCol("D", 30.0, 40.0));
+
+        MultiJoinTable mj = MultiJoinTableImpl.of(
+                MultiJoinInput.of(t1, "Key1=A,Key2=B", "C1=C,D1=D"),
+                MultiJoinInput.of(t2, "Key1=A,Key2=B", "C2=C,D2=D"));
+
+        TableTools.show(mj.table());
+
+        final Table expected = TableTools.newTable(
+                col("Key1", "a", "b", "b"),
+                intCol("Key2", 1, 2, 3),
+                doubleCol("C1", 3.0, 4.0, NULL_DOUBLE),
+                doubleCol("D1", 10.0, 20.0, NULL_DOUBLE),
+                doubleCol("C2", 5.0, NULL_DOUBLE, 6.0),
+                doubleCol("D2", 30.0, NULL_DOUBLE, 40));
+
+        assertTableEquals(mj.table(), expected);
+    }
+
 
     private Table doIterativeMultiJoin(String[] keyColumns, List<? extends Table> inputTables) {
         final List<Table> keyTables = inputTables.stream()
