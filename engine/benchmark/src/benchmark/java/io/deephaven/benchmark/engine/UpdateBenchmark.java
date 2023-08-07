@@ -3,11 +3,12 @@
  */
 package io.deephaven.benchmark.engine;
 
+import io.deephaven.benchmarking.generator.ColumnGenerator;
+import io.deephaven.benchmarking.generator.EnumStringGenerator;
 import io.deephaven.engine.table.Table;
 import io.deephaven.benchmarking.BenchmarkTable;
 import io.deephaven.benchmarking.BenchmarkTools;
 import io.deephaven.benchmarking.BenchmarkTableBuilder;
-import io.deephaven.benchmarking.generator.EnumStringColumnGenerator;
 import io.deephaven.benchmarking.runner.TableBenchmarkState;
 import io.deephaven.engine.table.impl.select.WhereFilterFactory;
 import org.openjdk.jmh.annotations.*;
@@ -195,8 +196,9 @@ public class UpdateBenchmark {
 
     @Setup(Level.Trial)
     public void setupEnv(BenchmarkParams params) {
-        final EnumStringColumnGenerator enumStringyCol =
-                (EnumStringColumnGenerator) BenchmarkTools.stringCol("Thingy", 30, 6, 6, 0xB00FB00F);
+        final EnumStringGenerator generator = new EnumStringGenerator(
+                30, 0xB00FB00FL, EnumStringGenerator.Mode.Random, 6, 6);
+        final ColumnGenerator<String> enumStringyCol = BenchmarkTools.stringCol("Thingy", generator);
 
         final BenchmarkTableBuilder builder;
         switch (tableType) {
@@ -274,7 +276,7 @@ public class UpdateBenchmark {
 
         state = new TableBenchmarkState(BenchmarkTools.stripName(params.getBenchmark()), params.getWarmup().getCount());
 
-        final List<String> uniqueThingyVals = Arrays.asList(enumStringyCol.getEnumVals());
+        final List<String> uniqueThingyVals = Arrays.asList(generator.getEnumVals());
         final String updateString;
 
         // filterString (where clause) is unused in the current version of this benchmark, but is included
