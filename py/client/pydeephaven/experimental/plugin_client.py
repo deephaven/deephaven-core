@@ -32,7 +32,7 @@ class PluginRequestStream:
         self.req_queue.put(stream_req)
 
     def write(self, payload, data):
-        data_message = object_pb2.Data(payload=payload, data=data)
+        data_message = object_pb2.Data(payload=payload, exported_references=data)
         stream_req = object_pb2.StreamRequest(data=data_message)
         self.req_queue.put(stream_req)
 
