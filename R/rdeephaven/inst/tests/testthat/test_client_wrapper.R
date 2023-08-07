@@ -150,8 +150,50 @@ int_col("Name_Int_Col", [44, 55, 66])
 
 ##### TESTING BAD INPUTS #####
 
-# FAILS
-# TODO: Test all of the new client connections stuff
+test_that("connect fails nicely with bad inputs", {
+  
+  expect_error(
+    connect(target = "localhost:10000", auth_type = "basic"),
+    "Basic authentication was requested, but no 'auth_token_pair' was provided."
+  )
+  expect_error(
+    connect(target = "localhost:10000", auth_type = "custom"),
+    "Custom authentication was requested, but no 'auth_token_pair' was provided."
+  )
+  expect_error(
+    connect(target = "localhost:10000", auth_type = "blahblah"),
+    "'auth_type' must be 'anonymous', 'basic', or 'custom', but got blahblah instead."
+  )
+  expect_error(
+    connect(target = "localhost:10000", auth_type = "basic", auth_token_pair = 1234),
+    "'auth_token_pair' must be passed as a single string. Got an object of class numeric instead."
+  )
+  expect_error(
+    connect(target = "localhost:10000", session_type = "blahblah"),
+    "'session_type' must be 'python' or 'groovy', but got blahblah instead."
+  )
+  expect_error(
+    connect(target = "localhost:10000", session_type = 1234),
+    "'session_type' must be 'python' or 'groovy', but got 1234 instead."
+  )
+  expect_error(
+    connect(target = "localhost:10000", use_tls = "banana"),
+    "'use_tls' must be TRUE or FALSE, but got banana instead."
+  )
+  expect_error(
+    connect(target = "localhost:10000", int_option = 1234),
+    "'int_option' must be passed as a single string. Got an object of class numeric instead."
+  )
+  expect_error(
+    connect(target = "localhost:10000", string_option = 1234),
+    "'string_option' must be passed as a single string. Got an object of class numeric instead."
+  )
+  expect_error(
+    connect(target = "localhost:10000", extra_header = 1234),
+    "'extra_header' must be passed as a single string. Got an object of class numeric instead."
+  )
+  
+})
 
 test_that("import_table fails nicely with bad inputs", {
   library(datasets)

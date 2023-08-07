@@ -54,7 +54,7 @@ setMethod(
   }
 )
 
-# TODO: Implement nrow, ncol, dim
+# TODO: Implement ncol, dim
 
 ### TABLEHANDLE CONVERSIONS ###
 

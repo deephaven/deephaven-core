@@ -1,4 +1,118 @@
 setGeneric(
+  "merge",
+  function(x, y = NULL, ...) {
+    standardGeneric("merge")
+  }
+)
+
+# We need many implementations of 'merge' because of the kind of args it should support
+
+base_merge <- function(x, y, ...) {
+  arg_list <- c(unlist(x), unlist(y), unlist(c(...)))
+  if (length(arg_list) == 1) {
+    return(arg_list[[1]])
+  }
+  unwrapped_arg_list <- lapply(arg_list, strip_s4_wrapping)
+  return(new("TableHandle", .internal_rcpp_object = unwrapped_arg_list[[1]]$merge(unwrapped_arg_list[2:length(unwrapped_arg_list)])))
+}
+
+#' @export
+setMethod(
+  "merge",
+  signature = c(x = "TableHandle"),
+  function(x, y = NULL, ...) {
+    return(base_merge(x, y, c(...)))
+  }
+)
+
+#' @export
+setMethod(
+  "merge",
+  signature = c(x = "list"),
+  function(x, y = NULL, ...) {
+    return(base_merge(x, y, c(...)))
+  }
+)
+
+#' @export
+setMethod(
+  "merge",
+  signature = c(x = "TableHandle", y = "list"),
+  function(x, y, ...) {
+    verify_type("y", y, "TableHandle", "Deephaven TableHandle", FALSE)
+    return(base_merge(x, y, c(...)))
+  }
+)
+
+#' @export
+setMethod(
+  "merge",
+  signature = c(x = "list", y = "TableHandle"),
+  function(x, y, ...) {
+    verify_type("x", x, "TableHandle", "Deephaven TableHandle", FALSE)
+    return(base_merge(x, y, c(...)))
+  }
+)
+
+#' @export
+setMethod(
+  "merge",
+  signature = c(x = "TableHandle", y = "TableHandle"),
+  function(x, y, ...) {
+    return(base_merge(x, y, c(...)))
+  }
+)
+
+#' @export
+setMethod(
+  "merge",
+  signature = c(x = "list", y = "list"),
+  function(x, y, ...) {
+    verify_type("x", x, "TableHandle", "Deephaven TableHandle", FALSE)
+    verify_type("y", y, "TableHandle", "Deephaven TableHandle", FALSE)
+    return(base_merge(x, y, c(...)))
+  }
+)
+
+#' @export
+setMethod(
+  "merge",
+  signature = c(x = "NULL", y = "TableHandle"),
+  function(x, y, ...) {
+    return(base_merge(x, y, c(...)))
+  }
+)
+
+#' @export
+setMethod(
+  "merge",
+  signature = c(x = "NULL", y = "list"),
+  function(x, y, ...) {
+    verify_type("y", y, "TableHandle", "Deephaven TableHandle", FALSE)
+    return(base_merge(x, y, c(...)))
+  }
+)
+
+#' @export
+setMethod(
+  "merge",
+  signature = c(x = "TableHandle", y = "NULL"),
+  function(x, y, ...) {
+    return(base_merge(x, y, c(...)))
+  }
+)
+
+#' @export
+setMethod(
+  "merge",
+  signature = c(x = "list", y = "NULL"),
+  function(x, y, ...) {
+    verify_type("x", x, "TableHandle", "Deephaven TableHandle", FALSE)
+    return(base_merge(x, y, c(...)))
+  }
+)
+
+setGeneric(
   "select",
   function(table_handle, columns = character(), ...) {
     return(standardGeneric("select"))
@@ -526,4 +640,3 @@ setMethod(
     return(new("TableHandle", .internal_rcpp_object = table_handle@.internal_rcpp_object$sort(columns, descending)))
   }
 )
-
