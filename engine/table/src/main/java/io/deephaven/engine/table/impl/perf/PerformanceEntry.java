@@ -25,6 +25,7 @@ public class PerformanceEntry extends BasePerformanceEntry implements TableListe
     private final String callerLine;
 
     private final AuthContext authContext;
+    private final String updateGraphName;
 
     private long intervalInvocationCount;
 
@@ -42,13 +43,14 @@ public class PerformanceEntry extends BasePerformanceEntry implements TableListe
     private final RuntimeMemory.Sample endSample;
 
     PerformanceEntry(final int id, final int evaluationNumber, final int operationNumber,
-            final String description, final String callerLine) {
+            final String description, final String callerLine, final String updateGraphName) {
         this.id = id;
         this.evaluationNumber = evaluationNumber;
         this.operationNumber = operationNumber;
         this.description = description;
         this.callerLine = callerLine;
         authContext = id == QueryConstants.NULL_INT ? null : ExecutionContext.getContext().getAuthContext();
+        this.updateGraphName = updateGraphName;
         startSample = new RuntimeMemory.Sample();
         endSample = new RuntimeMemory.Sample();
         maxTotalMemory = 0;
@@ -58,7 +60,6 @@ public class PerformanceEntry extends BasePerformanceEntry implements TableListe
     }
 
     public final void onUpdateStart() {
-        ++intervalInvocationCount;
         RuntimeMemory.getInstance().read(startSample);
         super.onBaseEntryStart();
     }
@@ -89,6 +90,7 @@ public class PerformanceEntry extends BasePerformanceEntry implements TableListe
         minFreeMemory = Math.min(minFreeMemory, Math.min(startSample.freeMemory, endSample.freeMemory));
         collections += endSample.totalCollections - startSample.totalCollections;
         collectionTimeMs += endSample.totalCollectionTimeMs - startSample.totalCollectionTimeMs;
+        ++intervalInvocationCount;
     }
 
     void reset() {
@@ -163,6 +165,13 @@ public class PerformanceEntry extends BasePerformanceEntry implements TableListe
      */
     public AuthContext getAuthContext() {
         return authContext;
+    }
+
+    /**
+     * @return The name of the update graph that this PerformanceEntry is associated with
+     */
+    public String getUpdateGraphName() {
+        return updateGraphName;
     }
 
     public long getIntervalAdded() {

@@ -8,6 +8,7 @@ import io.deephaven.base.log.LogOutputAppendable;
 import io.deephaven.base.verify.Assert;
 import io.deephaven.configuration.Configuration;
 import io.deephaven.engine.context.ExecutionContext;
+import io.deephaven.engine.table.impl.perf.QueryPerformanceRecorder;
 import io.deephaven.engine.table.impl.util.StepUpdater;
 import io.deephaven.engine.updategraph.NotificationQueue;
 import io.deephaven.engine.exceptions.UncheckedTableException;
@@ -15,6 +16,8 @@ import io.deephaven.engine.table.TableListener;
 import io.deephaven.engine.table.TableUpdate;
 import io.deephaven.engine.table.impl.perf.PerformanceEntry;
 import io.deephaven.engine.updategraph.*;
+import io.deephaven.engine.updategraph.impl.PeriodicUpdateGraph;
+import io.deephaven.engine.util.string.StringUtils;
 import io.deephaven.time.DateTimeUtils;
 import io.deephaven.io.log.LogEntry;
 import io.deephaven.io.log.impl.LogOutputStringImpl;
@@ -23,7 +26,6 @@ import io.deephaven.engine.util.systemicmarking.SystemicObjectTracker;
 import io.deephaven.engine.liveness.LivenessArtifact;
 import io.deephaven.engine.table.impl.util.AsyncClientErrorNotifier;
 import io.deephaven.engine.table.impl.util.AsyncErrorLogger;
-import io.deephaven.engine.table.impl.perf.UpdatePerformanceTracker;
 import io.deephaven.util.Utils;
 import io.deephaven.internal.log.LoggerFactory;
 import org.jetbrains.annotations.NotNull;
@@ -43,6 +45,8 @@ public abstract class InstrumentedTableListenerBase extends LivenessArtifact
     private static final Logger log = LoggerFactory.getLogger(InstrumentedTableListenerBase.class);
 
     private final UpdateGraph updateGraph;
+    private final String description;
+    @Nullable
     private final PerformanceEntry entry;
     private final boolean terminalListener;
 
@@ -58,7 +62,10 @@ public abstract class InstrumentedTableListenerBase extends LivenessArtifact
 
     InstrumentedTableListenerBase(@Nullable String description, boolean terminalListener) {
         this.updateGraph = ExecutionContext.getContext().getUpdateGraph();
-        this.entry = UpdatePerformanceTracker.getInstance().getEntry(description);
+        this.description = StringUtils.isNullOrEmpty(description)
+                ? QueryPerformanceRecorder.UNINSTRUMENTED_CODE_DESCRIPTION
+                : description;
+        this.entry = PeriodicUpdateGraph.createUpdatePerformanceEntry(updateGraph, description);
         this.terminalListener = terminalListener;
     }
 
@@ -69,7 +76,7 @@ public abstract class InstrumentedTableListenerBase extends LivenessArtifact
 
     @Override
     public String toString() {
-        return Utils.getSimpleNameFor(this) + '-' + entry.getDescription();
+        return Utils.getSimpleNameFor(this) + '-' + description;
     }
 
     public static boolean setVerboseLogging(boolean enableVerboseLogging) {
@@ -78,6 +85,7 @@ public abstract class InstrumentedTableListenerBase extends LivenessArtifact
         return original;
     }
 
+    @Nullable
     public PerformanceEntry getEntry() {
         return entry;
     }
@@ -159,12 +167,12 @@ public abstract class InstrumentedTableListenerBase extends LivenessArtifact
     }
 
     @Override
-    public void onFailure(Throwable originalException, Entry sourceEntry) {
+    public void onFailure(Throwable originalException, @Nullable Entry sourceEntry) {
         forceReferenceCountToZero();
         onFailureInternal(originalException, sourceEntry == null ? entry : sourceEntry);
     }
 
-    protected abstract void onFailureInternal(Throwable originalException, Entry sourceEntry);
+    protected abstract void onFailureInternal(Throwable originalException, @Nullable Entry sourceEntry);
 
     protected final void onFailureInternalWithDependent(
             final BaseTable<?> dependent,
@@ -316,7 +324,9 @@ public abstract class InstrumentedTableListenerBase extends LivenessArtifact
                 return;
             }
 
-            entry.onUpdateStart(update.added(), update.removed(), update.modified(), update.shifted());
+            if (entry != null) {
+                entry.onUpdateStart(update.added(), update.removed(), update.modified(), update.shifted());
+            }
 
             final long currentStep = getUpdateGraph().clock().currentStep();
             try {
@@ -329,7 +339,7 @@ public abstract class InstrumentedTableListenerBase extends LivenessArtifact
                 if (useVerboseLogging) {
                     en.append(entry);
                 } else {
-                    en.append(entry.getDescription());
+                    en.append(description);
                 }
 
                 en.append(", added.size()=").append(update.added().size())
@@ -354,7 +364,9 @@ public abstract class InstrumentedTableListenerBase extends LivenessArtifact
                 onFailure(e, entry);
             } finally {
                 afterRunNotification(currentStep);
-                entry.onUpdateEnd();
+                if (entry != null) {
+                    entry.onUpdateEnd();
+                }
             }
         }
     }

@@ -25,6 +25,7 @@ add_executable(tests
     test_util.h
     ticking_test.cc
     ungroup_test.cc
+    update_by_test.cc
     utility_test.cc
     validation_test.cc
     view_test.cc

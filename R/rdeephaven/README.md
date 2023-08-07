@@ -71,8 +71,10 @@ Currently, the R client is only supported on Ubuntu 20.04 or 22.04 and must be b
    git pull origin main
    ```
 
-3. Start an R console with this command:
+3. Start an R console, using some environment variable definitions to speed up compilation.  Use these commands:
    ```bash
+   export NCPUS=`getconf _NPROCESSORS_ONLN`
+   export MAKEFLAGS="-j$NCPUS"
    R
    ```
    In that console, install the dephaven client dependencies (since we are building from source

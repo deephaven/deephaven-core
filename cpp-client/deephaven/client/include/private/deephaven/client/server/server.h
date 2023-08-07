@@ -89,6 +89,7 @@ class Server : public std::enable_shared_from_this<Server> {
   typedef io::deephaven::proto::backplane::grpc::SortDescriptor SortDescriptor;
   typedef io::deephaven::proto::backplane::grpc::Ticket Ticket;
   typedef io::deephaven::proto::backplane::grpc::TableService TableService;
+  typedef io::deephaven::proto::backplane::grpc::UpdateByRequest::UpdateByOperation UpdateByOperation;
   typedef io::deephaven::proto::backplane::script::grpc::BindTableToVariableResponse BindTableToVariableResponse;
   typedef io::deephaven::proto::backplane::script::grpc::ConsoleService ConsoleService;
   typedef io::deephaven::proto::backplane::script::grpc::StartConsoleResponse StartConsoleResponse;
@@ -222,6 +223,10 @@ public:
   void asOfJoinAsync(AsOfJoinTablesRequest::MatchRule matchRule, Ticket leftTableTicket,
       Ticket rightTableTicket, std::vector<std::string> columnsToMatch,
       std::vector<std::string> columnsToAdd, std::shared_ptr<EtcCallback> etcCallback, Ticket result);
+
+  void updateByAsync(Ticket source, std::vector<UpdateByOperation> operations,
+      std::vector<std::string> groupByColumns,
+      std::shared_ptr<EtcCallback> etcCallback, Ticket result);
 
   void bindToVariableAsync(const Ticket &consoleId, const Ticket &tableId, std::string variable,
       std::shared_ptr<SFCallback<BindTableToVariableResponse>> callback);

@@ -3543,6 +3543,11 @@ public class QueryTableTest extends QueryTableTestBase {
         }
 
         @Override
+        public String getName() {
+            return name;
+        }
+
+        @Override
         public LogOutput append(LogOutput logOutput) {
             return logOutput.append(getClass().getName());
         }

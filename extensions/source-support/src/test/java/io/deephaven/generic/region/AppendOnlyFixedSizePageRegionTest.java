@@ -17,10 +17,7 @@ import io.deephaven.engine.table.impl.sources.regioned.*;
 import io.deephaven.engine.testutil.ControlledUpdateGraph;
 import io.deephaven.engine.testutil.TstUtils;
 import io.deephaven.engine.testutil.junit4.EngineCleanup;
-import io.deephaven.engine.updategraph.AbstractNotification;
-import io.deephaven.engine.updategraph.NotificationQueue;
-import io.deephaven.engine.updategraph.UpdateGraph;
-import io.deephaven.engine.updategraph.UpdateSourceRegistrar;
+import io.deephaven.engine.updategraph.*;
 import io.deephaven.engine.util.TableTools;
 import io.deephaven.io.log.impl.LogOutputStringImpl;
 import io.deephaven.test.types.OutOfBandTest;
@@ -52,10 +49,11 @@ public class AppendOnlyFixedSizePageRegionTest {
         final Instant endTime = DateTimeUtils.plus(startTime, 1_000_000_000L);
         final SimulationClock clock = new SimulationClock(startTime, endTime, 100_000_000L);
         final ControlledUpdateGraph updateGraph = ExecutionContext.getContext().getUpdateGraph().cast();
+        final UpdateSourceCombiner updateSources = new UpdateSourceCombiner(updateGraph);
         final TimeTable[] timeTables = new TimeTable[] {
-                new TimeTable(updateGraph, clock, startTime, 1000, false),
-                new TimeTable(updateGraph, clock, startTime, 10000, false),
-                new TimeTable(updateGraph, clock, startTime, 100000, false)
+                new TimeTable(updateSources, clock, startTime, 1000, false),
+                new TimeTable(updateSources, clock, startTime, 10000, false),
+                new TimeTable(updateSources, clock, startTime, 100000, false)
         };
         final Table[] withTypes = addTypes(timeTables);
         final DependentRegistrar dependentRegistrar = new DependentRegistrar(withTypes);
@@ -67,9 +65,7 @@ public class AppendOnlyFixedSizePageRegionTest {
         while (!clock.done()) {
             updateGraph.runWithinUnitTestCycle(() -> {
                 clock.advance();
-                for (final TimeTable timeTable : timeTables) {
-                    timeTable.run();
-                }
+                updateSources.run();
                 dependentRegistrar.run();
             });
             System.out.println("Cycle start time: " + clock.instantNanos());

@@ -1,5 +1,5 @@
 /**
- * Copyright (c) 2016-2022 Deephaven Data Labs and Patent Pending
+ * Copyright (c) 2016-2023 Deephaven Data Labs and Patent Pending
  */
 #pragma once
 
@@ -8,6 +8,7 @@
 #include "deephaven/client/columns.h"
 #include "deephaven/client/client_options.h"
 #include "deephaven/client/expressions.h"
+#include "deephaven/dhcore/clienttable/schema.h"
 #include "deephaven/dhcore/ticking/ticking.h"
 #include "deephaven/dhcore/utility/callbacks.h"
 
@@ -52,6 +53,7 @@ namespace deephaven::client {
 class Client;
 class TableHandle;
 class TableHandleManager;
+class UpdateByOperation;
 namespace internal {
 class TableHandleStreamAdaptor;
 }  // namespace internal
@@ -616,6 +618,7 @@ struct StringHolder {
  * server resource is destructed, the resource will be released.
  */
 class TableHandle {
+  typedef deephaven::dhcore::clienttable::Schema Schema;
   typedef deephaven::dhcore::ticking::TickingCallback TickingCallback;
   typedef deephaven::dhcore::ticking::TickingUpdate TickingUpdate;
   typedef deephaven::client::BooleanExpression BooleanExpression;
@@ -1244,6 +1247,8 @@ public:
   TableHandle exactJoin(const TableHandle &rightSide, std::vector<MatchWithColumn> columnsToMatch,
       std::vector<SelectColumn> columnsToAdd) const;
 
+  TableHandle updateBy(std::vector<UpdateByOperation> ops, std::vector<std::string> by) const;
+
   /**
    * Binds this table to a variable name in the QueryScope.
    * @param variable The QueryScope variable to bind to.
@@ -1337,12 +1342,17 @@ public:
   /**
    * Number of rows in the table at the time this TableHandle was created.
    */
-  int64_t numRows();
+  int64_t numRows() const;
 
   /**
    * Whether the table was static at the time this TableHandle was created.
    */
-  bool isStatic();
+  bool isStatic() const;
+
+  /**
+   * Returns the table's Schema.
+   */
+  std::shared_ptr<Schema> schema() const;
 
   /**
    * Used internally. Returns the underlying impl object.
