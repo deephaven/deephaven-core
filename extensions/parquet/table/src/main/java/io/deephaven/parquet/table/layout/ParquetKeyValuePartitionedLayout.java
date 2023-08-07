@@ -13,7 +13,8 @@ import java.io.File;
  */
 public class ParquetKeyValuePartitionedLayout extends KeyValuePartitionLayout<ParquetTableLocationKey> {
 
-    public ParquetKeyValuePartitionedLayout(@NotNull final File tableRootDirectory,
+    public ParquetKeyValuePartitionedLayout(
+            @NotNull final File tableRootDirectory,
             final int maxPartitioningLevels) {
         super(tableRootDirectory,
                 ParquetFileHelper::fileNameMatches,
