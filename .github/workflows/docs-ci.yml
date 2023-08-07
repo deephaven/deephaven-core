@@ -39,11 +39,11 @@ jobs:
           .github/scripts/gradle-properties.sh >> gradle.properties
           cat gradle.properties
 
-      - name: All Javadoc
+      - name: All Javadoc, ts/js docs
         uses: burrunan/gradle-cache-action@v1
         with:
           job-id: allJavadoc
-          arguments: --scan combined-javadoc:allJavadoc
+          arguments: --scan combined-javadoc:allJavadoc :web-client-api:docs:typedoc
           gradle-version: wrapper
 
       - name: Upload Javadocs
@@ -52,6 +52,12 @@ jobs:
         with:
           name: javadocs
           path: 'combined-javadoc/build/docs/javadoc/'
+      - name: Upload JavaScript/TypeScript docs
+        if: ${{ github.ref == 'refs/heads/main' }}
+        uses: actions/upload-artifact@v3
+        with:
+          name: javadocs
+          path: 'web/client-api/docs/build/documentation/'
 
       - name: Deploy Javadoc
         if: ${{ github.ref == 'refs/heads/main' }}
@@ -64,6 +70,17 @@ jobs:
           remote_port: ${{ secrets.DOCS_PORT }}
           remote_user: ${{ secrets.DOCS_USER }}
           remote_key: ${{ secrets.DEEPHAVEN_CORE_SSH_KEY }}
+      - name: Deploy JavaScript/TypeScript docs
+        if: ${{ github.ref == 'refs/heads/main' }}
+          uses: burnett01/rsync-deployments@5.2
+          with:
+            switches: -avzr --delete
+            path: web/client-api/docs/build/documentation/
+            remote_path: deephaven-core/javascript/
+            remote_host: ${{ secrets.DOCS_HOST }}
+            remote_port: ${{ secrets.DOCS_PORT }}
+            remote_user: ${{ secrets.DOCS_USER }}
+            remote_key: ${{ secrets.DEEPHAVEN_CORE_SSH_KEY }}
 
   pydoc:
     runs-on: ubuntu-22.04
