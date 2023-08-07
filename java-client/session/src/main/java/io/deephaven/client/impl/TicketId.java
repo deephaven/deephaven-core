@@ -29,15 +29,19 @@ public final class TicketId implements HasTicketId {
         return this;
     }
 
-    byte[] bytes() {
-        return ticket;
-    }
-
-    Ticket ticket() {
-        return Ticket.newBuilder().setTicket(ByteStringAccess.wrap(ticket)).build();
+    public TypedTicket toTypedTicket(String type) {
+        return new TypedTicket(type, ticket);
     }
 
     public TicketTable table() {
         return TicketTable.of(ticket);
+    }
+
+    byte[] bytes() {
+        return ticket;
+    }
+
+    Ticket proto() {
+        return Ticket.newBuilder().setTicket(ByteStringAccess.wrap(ticket)).build();
     }
 }

@@ -5,28 +5,35 @@ package io.deephaven.client.impl;
 
 import com.google.protobuf.ByteString;
 
+import java.io.Closeable;
 import java.io.IOException;
 import java.io.OutputStream;
 import java.util.Collections;
 import java.util.List;
 import java.util.Objects;
+import java.util.stream.Collectors;
 
-public final class FetchedObject {
+/**
+ * The results from fetching an object.
+ *
+ * @see Session#fetchObject(HasTypedTicket)
+ */
+public final class FetchedObject implements Closeable {
     private final String type;
     private final ByteString bytes;
-    private final List<ExportId> exportIds;
+    private final List<ServerObject> exports;
 
     /**
-     * Constructs a new instance. Callers should not modify {@code exportIds} after construction.
+     * Constructs a new instance. Callers should not modify {@code exports} after construction.
      *
      * @param type the type
      * @param bytes the bytes
-     * @param exportIds the export ids
+     * @param exports the exports
      */
-    FetchedObject(String type, ByteString bytes, List<ExportId> exportIds) {
+    FetchedObject(String type, ByteString bytes, List<ServerObject> exports) {
         this.type = Objects.requireNonNull(type);
         this.bytes = Objects.requireNonNull(bytes);
-        this.exportIds = Collections.unmodifiableList(exportIds);
+        this.exports = Collections.unmodifiableList(exports);
     }
 
     public String type() {
@@ -45,8 +52,24 @@ public final class FetchedObject {
         bytes.writeTo(out);
     }
 
+    /**
+     * The export ids.
+     *
+     * @return the export ids
+     * @deprecated use {@link #exports()}
+     */
+    @Deprecated
     public List<ExportId> exportIds() {
-        return exportIds;
+        return exports.stream().map(HasExportId::exportId).collect(Collectors.toList());
+    }
+
+    /**
+     * The exported server objects.
+     *
+     * @return the exported server objects
+     */
+    public List<ServerObject> exports() {
+        return exports;
     }
 
     @Override
@@ -54,7 +77,17 @@ public final class FetchedObject {
         return "FetchedObject{" +
                 "type='" + type + '\'' +
                 ", bytes=" + bytes +
-                ", exportIds=" + exportIds +
+                ", exports=" + exports +
                 '}';
+    }
+
+    /**
+     * Closes all of {@link #exports}.
+     */
+    @Override
+    public void close() {
+        for (ServerObject export : exports) {
+            export.close();
+        }
     }
 }

@@ -35,6 +35,11 @@ public final class Export implements AutoCloseable, HasExportId {
     }
 
     @Override
+    public TypedTicket typedTicket() {
+        return exportId().typedTicket();
+    }
+
+    @Override
     public PathId pathId() {
         return exportId().pathId();
     }

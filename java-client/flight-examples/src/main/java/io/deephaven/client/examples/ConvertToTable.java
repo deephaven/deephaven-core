@@ -3,10 +3,11 @@
  */
 package io.deephaven.client.examples;
 
-import io.deephaven.client.impl.ExportId;
 import io.deephaven.client.impl.FetchedObject;
 import io.deephaven.client.impl.FlightSession;
 import io.deephaven.client.impl.HasTicketId;
+import io.deephaven.client.impl.ServerObject;
+import io.deephaven.client.impl.TableObject;
 import org.apache.arrow.flight.FlightStream;
 import picocli.CommandLine;
 import picocli.CommandLine.ArgGroup;
@@ -30,8 +31,9 @@ class ConvertToTable extends FlightExampleBase {
         if ("Table".equals(type)) {
             showTable(flight, ticket);
         } else {
-            final ExportId exportId = fetchObject(flight);
-            showTable(flight, exportId);
+            try (final TableObject tableExport = fetchTableExport(flight)) {
+                showTable(flight, tableExport);
+            }
         }
     }
 
@@ -43,19 +45,19 @@ class ConvertToTable extends FlightExampleBase {
         }
     }
 
-    private ExportId fetchObject(FlightSession flight) throws InterruptedException, ExecutionException {
+    private TableObject fetchTableExport(FlightSession flight) throws InterruptedException, ExecutionException {
         final FetchedObject fetchedObject = flight.session().fetchObject(type, ticket).get();
-        if (fetchedObject.exportIds().size() != 1) {
+        if (fetchedObject.exports().size() != 1) {
             throw new IllegalStateException("Expected fetched object to have exactly one export");
         }
-        final ExportId exportId = fetchedObject.exportIds().get(0);
-        if (!"Table".equals(exportId.type().orElse(null))) {
+        final ServerObject serverObject = fetchedObject.exports().get(0);
+        if (!(serverObject instanceof TableObject)) {
             throw new IllegalStateException("Expected fetched object to export a Table");
         }
         if (fetchedObject.size() != 0) {
             throw new IllegalStateException("Expected fetched object to not have any bytes");
         }
-        return exportId;
+        return (TableObject) serverObject;
     }
 
     public static void main(String[] args) {
