@@ -487,6 +487,7 @@ RCPP_MODULE(DeephavenInternalModule) {
     function("INTERNAL_agg_percentile", &INTERNAL_agg_percentile);
     function("INTERNAL_agg_count", &INTERNAL_agg_count);
 
+
     class_<TableHandleWrapper>("INTERNAL_TableHandle")
     .method("select", &TableHandleWrapper::select)
     .method("view", &TableHandleWrapper::view)
