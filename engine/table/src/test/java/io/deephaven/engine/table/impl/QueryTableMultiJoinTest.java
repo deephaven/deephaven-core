@@ -8,10 +8,7 @@ import io.deephaven.engine.liveness.LivenessScopeStack;
 import io.deephaven.engine.rowset.RowSet;
 import io.deephaven.engine.rowset.RowSetFactory;
 import io.deephaven.engine.rowset.RowSetShiftData;
-import io.deephaven.engine.table.ModifiedColumnSet;
-import io.deephaven.engine.table.MultiJoinFactory;
-import io.deephaven.engine.table.MultiJoinInput;
-import io.deephaven.engine.table.Table;
+import io.deephaven.engine.table.*;
 import io.deephaven.engine.testutil.*;
 import io.deephaven.engine.testutil.generator.*;
 import io.deephaven.engine.util.PrintListener;
@@ -762,6 +759,35 @@ public class QueryTableMultiJoinTest extends QueryTableTestBase {
             Assert.assertEquals("Column A defined in table 0 and table 1", iae.getMessage());
         }
     }
+
+    @Test
+    public void testMultiJoinInputColumnParsing() {
+        final Table dummyTable = emptyTable(0);
+
+        MultiJoinInput mji = MultiJoinInput.of(dummyTable, "Key1=A,Key2=B", "C1=C,D1=D");
+        Assert.assertEquals(mji.inputTable(), dummyTable);
+        Assert.assertEquals(mji.columnsToMatch()[0].left().name(), "Key1");
+        Assert.assertEquals(mji.columnsToMatch()[0].right().name(), "A");
+        Assert.assertEquals(mji.columnsToMatch()[1].left().name(), "Key2");
+        Assert.assertEquals(mji.columnsToMatch()[1].right().name(), "B");
+        Assert.assertEquals(mji.columnsToAdd()[0].newColumn().name(), "C1");
+        Assert.assertEquals(mji.columnsToAdd()[0].existingColumn().name(), "C");
+        Assert.assertEquals(mji.columnsToAdd()[1].newColumn().name(), "D1");
+        Assert.assertEquals(mji.columnsToAdd()[1].existingColumn().name(), "D");
+
+        // Assert whitespace and '==' is handled properly.
+        mji = MultiJoinInput.of(dummyTable, "\tKey1 = A,     \tKey2  ==B ", "C1 =C,  D1=D");
+        Assert.assertEquals(mji.inputTable(), dummyTable);
+        Assert.assertEquals(mji.columnsToMatch()[0].left().name(), "Key1");
+        Assert.assertEquals(mji.columnsToMatch()[0].right().name(), "A");
+        Assert.assertEquals(mji.columnsToMatch()[1].left().name(), "Key2");
+        Assert.assertEquals(mji.columnsToMatch()[1].right().name(), "B");
+        Assert.assertEquals(mji.columnsToAdd()[0].newColumn().name(), "C1");
+        Assert.assertEquals(mji.columnsToAdd()[0].existingColumn().name(), "C");
+        Assert.assertEquals(mji.columnsToAdd()[1].newColumn().name(), "D1");
+        Assert.assertEquals(mji.columnsToAdd()[1].existingColumn().name(), "D");
+    }
+
 
     private Table doIterativeMultiJoin(String[] keyColumns, List<? extends Table> inputTables) {
         final List<Table> keyTables = inputTables.stream()
