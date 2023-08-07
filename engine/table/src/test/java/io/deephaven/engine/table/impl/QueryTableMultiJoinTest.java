@@ -761,27 +761,33 @@ public class QueryTableMultiJoinTest extends QueryTableTestBase {
     }
 
     @Test
-    public void testRenamingAndMultiColumnStrings() {
-        final Table t1 = TableTools.newTable(col("A", "a", "b"), intCol("B", 1, 2), doubleCol("C", 3.0, 4.0),
-                doubleCol("D", 10.0, 20.0));
-        final Table t2 = TableTools.newTable(col("A", "a", "b"), intCol("B", 1, 3), doubleCol("C", 5.0, 6.0),
-                doubleCol("D", 30.0, 40.0));
+    public void testMultiJoinInputColumnParsing() {
+        final Table dummyTable = emptyTable(0);
 
-        MultiJoinTable mj = MultiJoinTableImpl.of(
-                MultiJoinInput.of(t1, "Key1=A,Key2=B", "C1=C,D1=D"),
-                MultiJoinInput.of(t2, "Key1=A,Key2=B", "C2=C,D2=D"));
+        MultiJoinInput mji = MultiJoinInput.of(dummyTable, "Key1=A,Key2=B", "C1=C,D1=D");
+        Assert.assertEquals(mji.inputTable(), dummyTable);
 
-        TableTools.show(mj.table());
+        Assert.assertEquals(mji.columnsToMatch()[0].left().name(), "Key1");
+        Assert.assertEquals(mji.columnsToMatch()[0].right().name(), "A");
+        Assert.assertEquals(mji.columnsToMatch()[1].left().name(), "Key2");
+        Assert.assertEquals(mji.columnsToMatch()[1].right().name(), "B");
 
-        final Table expected = TableTools.newTable(
-                col("Key1", "a", "b", "b"),
-                intCol("Key2", 1, 2, 3),
-                doubleCol("C1", 3.0, 4.0, NULL_DOUBLE),
-                doubleCol("D1", 10.0, 20.0, NULL_DOUBLE),
-                doubleCol("C2", 5.0, NULL_DOUBLE, 6.0),
-                doubleCol("D2", 30.0, NULL_DOUBLE, 40));
+        Assert.assertEquals(mji.columnsToAdd()[0].newColumn().name(), "C1");
+        Assert.assertEquals(mji.columnsToAdd()[0].existingColumn().name(), "C");
+        Assert.assertEquals(mji.columnsToAdd()[1].newColumn().name(), "D1");
+        Assert.assertEquals(mji.columnsToAdd()[1].existingColumn().name(), "D");
 
-        assertTableEquals(mj.table(), expected);
+        // Assert whitespace is handled properly.
+        mji = MultiJoinInput.of(dummyTable, "\tKey1 = A,     \tKey2  =B ", "C1 =C,  D1=D");
+        Assert.assertEquals(mji.inputTable(), dummyTable);
+        Assert.assertEquals(mji.columnsToMatch()[0].left().name(), "Key1");
+        Assert.assertEquals(mji.columnsToMatch()[0].right().name(), "A");
+        Assert.assertEquals(mji.columnsToMatch()[1].left().name(), "Key2");
+        Assert.assertEquals(mji.columnsToMatch()[1].right().name(), "B");
+        Assert.assertEquals(mji.columnsToAdd()[0].newColumn().name(), "C1");
+        Assert.assertEquals(mji.columnsToAdd()[0].existingColumn().name(), "C");
+        Assert.assertEquals(mji.columnsToAdd()[1].newColumn().name(), "D1");
+        Assert.assertEquals(mji.columnsToAdd()[1].existingColumn().name(), "D");
     }
 
 
