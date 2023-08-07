@@ -471,7 +471,6 @@ RCPP_EXPOSED_CLASS(SortPairWrapper)
 RCPP_EXPOSED_CLASS(ArrowArrayStream)
 
 RCPP_MODULE(DeephavenInternalModule) {
-
     class_<AggregateWrapper>("INTERNAL_Aggregate")
     ;
     function("INTERNAL_agg_first", &INTERNAL_agg_first);
