@@ -3,6 +3,8 @@
  */
 package io.deephaven.parquet.table.layout;
 
+import io.deephaven.csv.CsvTools;
+import io.deephaven.engine.table.impl.locations.local.KeyValuePartitionLayout;
 import io.deephaven.parquet.table.location.ParquetTableLocationKey;
 import org.jetbrains.annotations.NotNull;
 
@@ -10,6 +12,9 @@ import java.io.File;
 
 /**
  * {@link KeyValuePartitionLayout} for Parquet data.
+ * 
+ * @implNote Type inference uses {@link CsvTools#readCsv(java.io.InputStream)} as a conversion tool, and hence follows
+ *           the same rules.
  */
 public class ParquetKeyValuePartitionedLayout extends KeyValuePartitionLayout<ParquetTableLocationKey> {
 
@@ -18,6 +23,7 @@ public class ParquetKeyValuePartitionedLayout extends KeyValuePartitionLayout<Pa
             final int maxPartitioningLevels) {
         super(tableRootDirectory,
                 ParquetFileHelper::fileNameMatches,
+                new LocationTableBuilderCsv(tableRootDirectory),
                 (path, partitions) -> new ParquetTableLocationKey(path.toFile(), 0, partitions),
                 maxPartitioningLevels);
     }
