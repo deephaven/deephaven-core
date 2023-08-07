@@ -11,6 +11,7 @@ import io.deephaven.engine.table.ChunkSource;
 import io.deephaven.chunk.ObjectChunk;
 import io.deephaven.engine.table.impl.chunkboxer.ChunkBoxer;
 import io.deephaven.engine.rowset.RowSequence;
+import org.jetbrains.annotations.NotNull;
 
 public class SimpleKeyOrValueSerializer<SERIALIZED_TYPE> implements KeyOrValueSerializer<SERIALIZED_TYPE> {
 
@@ -24,10 +25,17 @@ public class SimpleKeyOrValueSerializer<SERIALIZED_TYPE> implements KeyOrValueSe
 
     @SuppressWarnings({"unchecked", "rawtypes"})
     @Override
-    public ObjectChunk<SERIALIZED_TYPE, Values> handleChunk(Context context, RowSequence rowSequence,
-            boolean previous) {
+    public ObjectChunk<SERIALIZED_TYPE, Values> handleChunk(
+            @NotNull final Context context,
+            @NotNull final RowSequence rowSequence,
+            final boolean previous) {
         final SimpleContext simpleContext = (SimpleContext) context;
-        final Chunk chunk = source.getChunk(simpleContext.sourceGetContext, rowSequence);
+        final Chunk chunk;
+        if (previous) {
+            chunk = source.getPrevChunk(simpleContext.sourceGetContext, rowSequence);
+        } else {
+            chunk = source.getChunk(simpleContext.sourceGetContext, rowSequence);
+        }
         return boxer.box(chunk);
     }
 

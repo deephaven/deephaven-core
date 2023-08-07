@@ -27,8 +27,7 @@ public abstract class SnapshotTable extends TableBase implements SingleParentTab
     }
 
     @Override
-    public final <V extends Visitor> V walk(V visitor) {
-        visitor.visit(this);
-        return visitor;
+    public final <T> T walk(Visitor<T> visitor) {
+        return visitor.visit(this);
     }
 }

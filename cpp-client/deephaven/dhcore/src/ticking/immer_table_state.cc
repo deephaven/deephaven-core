@@ -7,11 +7,11 @@
 #include <utility>
 
 #include "deephaven/dhcore/chunk/chunk.h"
+#include "deephaven/dhcore/clienttable/schema.h"
 #include "deephaven/dhcore/column/column_source.h"
 #include "deephaven/dhcore/container/row_sequence.h"
 #include "deephaven/dhcore/immerutil/abstract_flex_vector.h"
 #include "deephaven/dhcore/ticking/shift_processor.h"
-#include "deephaven/dhcore/table/schema.h"
 #include "deephaven/dhcore/types.h"
 #include "deephaven/dhcore/utility/utility.h"
 
@@ -30,15 +30,15 @@ using deephaven::dhcore::subscription::ShiftProcessor;
 using deephaven::dhcore::immerutil::AbstractFlexVectorBase;
 using deephaven::dhcore::immerutil::GenericAbstractFlexVector;
 using deephaven::dhcore::immerutil::NumericAbstractFlexVector;
-using deephaven::dhcore::table::Schema;
-using deephaven::dhcore::table::Table;
+using deephaven::dhcore::clienttable::Schema;
+using deephaven::dhcore::clienttable::ClientTable;
 using deephaven::dhcore::utility::makeReservedVector;
 using deephaven::dhcore::utility::streamf;
 using deephaven::dhcore::utility::stringf;
 
 namespace deephaven::dhcore::ticking {
 namespace {
-class MyTable final : public Table {
+class MyTable final : public ClientTable {
 public:
   explicit MyTable(std::shared_ptr<Schema> schema,
       std::vector<std::shared_ptr<ColumnSource>> sources, size_t numRows);
@@ -183,7 +183,7 @@ void ImmerTableState::applyShifts(const RowSequence &firstIndex, const RowSequen
   ShiftProcessor::applyShiftData(firstIndex, lastIndex, destIndex, processShift);
 }
 
-std::shared_ptr<Table> ImmerTableState::snapshot() const {
+std::shared_ptr<ClientTable> ImmerTableState::snapshot() const {
   auto columnSources = makeReservedVector<std::shared_ptr<ColumnSource>>(flexVectors_.size());
   for (const auto &fv : flexVectors_) {
     columnSources.push_back(fv->makeColumnSource());

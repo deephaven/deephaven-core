@@ -3,15 +3,19 @@
  */
 package io.deephaven.plot.axistransformations;
 
-import io.deephaven.base.testing.BaseArrayTestCase;
 import io.deephaven.time.calendar.BusinessCalendar;
 import io.deephaven.time.calendar.Calendars;
+import org.junit.Test;
 
 import java.util.Arrays;
 import java.util.HashSet;
 import java.util.Set;
 
-public class TestAxisTransforms extends BaseArrayTestCase {
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertTrue;
+
+public class TestAxisTransforms {
 
     final double d1 = 3.5;
     final double d2 = 4.2;
@@ -24,6 +28,7 @@ public class TestAxisTransforms extends BaseArrayTestCase {
     final double d9 = -d4;
     private final double delta = 0.00001;
 
+    @Test
     public void testLog() {
         final AxisTransform transform = AxisTransforms.LOG;
 
@@ -36,12 +41,13 @@ public class TestAxisTransforms extends BaseArrayTestCase {
         assertEquals(d3, transform.inverseTransform(transform.transform(d3)), delta);
         assertEquals(d4, transform.inverseTransform(transform.transform(d4)), delta);
         assertEquals(d5, transform.inverseTransform(transform.transform(d5)), delta);
-        assertEquals(Double.NaN, transform.inverseTransform(transform.transform(d6)));
-        assertEquals(Double.NaN, transform.inverseTransform(transform.transform(d7)));
-        assertEquals(Double.NaN, transform.inverseTransform(transform.transform(d8)));
-        assertEquals(Double.NaN, transform.inverseTransform(transform.transform(d9)));
+        assertEquals(Double.NaN, transform.inverseTransform(transform.transform(d6)), delta);
+        assertEquals(Double.NaN, transform.inverseTransform(transform.transform(d7)), delta);
+        assertEquals(Double.NaN, transform.inverseTransform(transform.transform(d8)), delta);
+        assertEquals(Double.NaN, transform.inverseTransform(transform.transform(d9)), delta);
     }
 
+    @Test
     public void testSQRT() {
         final AxisTransform transform = AxisTransforms.SQRT;
 
@@ -54,12 +60,13 @@ public class TestAxisTransforms extends BaseArrayTestCase {
         assertEquals(d3, transform.inverseTransform(transform.transform(d3)), delta);
         assertEquals(d4, transform.inverseTransform(transform.transform(d4)), delta);
         assertEquals(d5, transform.inverseTransform(transform.transform(d5)), delta);
-        assertEquals(Double.NaN, transform.inverseTransform(transform.transform(d6)));
-        assertEquals(Double.NaN, transform.inverseTransform(transform.transform(d7)));
-        assertEquals(Double.NaN, transform.inverseTransform(transform.transform(d8)));
-        assertEquals(Double.NaN, transform.inverseTransform(transform.transform(d9)));
+        assertEquals(Double.NaN, transform.inverseTransform(transform.transform(d6)), delta);
+        assertEquals(Double.NaN, transform.inverseTransform(transform.transform(d7)), delta);
+        assertEquals(Double.NaN, transform.inverseTransform(transform.transform(d8)), delta);
+        assertEquals(Double.NaN, transform.inverseTransform(transform.transform(d9)), delta);
     }
 
+    @Test
     public void testAxisTransformNames() {
         final String[] names = AxisTransforms.axisTransformNames();
         final Set<String> nameSet = new HashSet<>(Arrays.asList(names));
@@ -69,6 +76,7 @@ public class TestAxisTransforms extends BaseArrayTestCase {
         assertTrue(nameSet.contains("USNYSE"));
     }
 
+    @Test
     public void testAxisTransform() {
         assertEquals(AxisTransforms.LOG, AxisTransforms.axisTransform("log"));
         assertEquals(AxisTransforms.LOG, AxisTransforms.axisTransform("LOG"));

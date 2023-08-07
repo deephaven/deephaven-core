@@ -62,8 +62,8 @@ public class ColumnHeadersTest {
             Column.of("Long", LongArray.ofUnsafe(31337L)),
             Column.of("Float", FloatArray.ofUnsafe(3.14f)),
             Column.of("Double", DoubleArray.ofUnsafe(99.99)),
-            Column.of("String", GenericArray.of(StringType.instance(), "foobar")),
-            Column.of("Instant", GenericArray.of(InstantType.instance(), Instant.ofEpochMilli(0))),
+            Column.of("String", GenericArray.of(StringType.of(), "foobar")),
+            Column.of("Instant", GenericArray.of(InstantType.of(), Instant.ofEpochMilli(0))),
             Column.of("Custom", GenericArray.of(CustomType.of(Custom.class), Custom.A)));
         // @formatter:on
 

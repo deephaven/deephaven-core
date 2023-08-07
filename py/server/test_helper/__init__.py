@@ -14,8 +14,7 @@ from deephaven_internal import jvm
 
 py_dh_session = None
 
-
-def start_jvm(jvm_props: Dict[str, str] = None):
+def start_jvm_for_tests(jvm_props: Dict[str, str] = None):
     jvm.preload_jvm_dll()
     import jpy
 
@@ -35,6 +34,9 @@ def start_jvm(jvm_props: Dict[str, str] = None):
             'Configuration.rootFile': propfile,
             'deephaven.dataDir': '/data',
             'deephaven.cacheDir': '/cache',
+
+            'Calendar.default': 'USNYSE',
+            'Calendar.importPath': '/test_calendar_imports.txt',
         }
 
         if jvm_props:
@@ -52,10 +54,13 @@ def start_jvm(jvm_props: Dict[str, str] = None):
         }
         jvm_classpath = os.environ.get('DEEPHAVEN_CLASSPATH', '')
 
+        # Intentionally small by default - callers should set as appropriate
+        jvm_maxmem = os.environ.get('DEEPHAVEN_MAXMEM', '256m')
+
         # Start up the JVM
         jpy.VerboseExceptions.enabled = True
         jvm.init_jvm(
-            jvm_maxmem='1G',
+            jvm_maxmem=jvm_maxmem,
             jvm_classpath=_expand_wildcards_in_list(jvm_classpath.split(os.path.pathsep)),
             jvm_properties=jvm_properties,
             jvm_options=jvm_options
@@ -65,7 +70,7 @@ def start_jvm(jvm_props: Dict[str, str] = None):
         py_scope_jpy = jpy.get_type("io.deephaven.engine.util.PythonScopeJpyImpl").ofMainGlobals()
         global py_dh_session
         _JPeriodicUpdateGraph = jpy.get_type("io.deephaven.engine.updategraph.impl.PeriodicUpdateGraph")
-        _j_test_update_graph = _JPeriodicUpdateGraph.newBuilder("PYTHON_TEST").existingOrBuild()
+        _j_test_update_graph = _JPeriodicUpdateGraph.newBuilder(_JPeriodicUpdateGraph.DEFAULT_UPDATE_GRAPH_NAME).existingOrBuild()
         _JPythonScriptSession = jpy.get_type("io.deephaven.integrations.python.PythonDeephavenSession")
         py_dh_session = _JPythonScriptSession(_j_test_update_graph, py_scope_jpy)
 

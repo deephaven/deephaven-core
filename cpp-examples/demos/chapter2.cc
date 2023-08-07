@@ -16,7 +16,7 @@ using deephaven::client::TableHandleManager;
 using deephaven::dhcore::chunk::Int64Chunk;
 using deephaven::dhcore::column::Int64ColumnSource;
 using deephaven::dhcore::container::RowSequence;
-using deephaven::dhcore::table::Table;
+using deephaven::dhcore::clienttable::ClientTable;
 using deephaven::dhcore::utility::verboseCast;
 
 namespace {
@@ -250,7 +250,7 @@ public:
   }
 
 private:
-  void processDeltas(const Table &table, std::shared_ptr<RowSequence> rows, int64_t parity) {
+  void processDeltas(const ClientTable &table, std::shared_ptr<RowSequence> rows, int64_t parity) {
     auto int64ColGeneric = table.getColumn("IntValue", true);
 
     const auto *typedInt64Col =

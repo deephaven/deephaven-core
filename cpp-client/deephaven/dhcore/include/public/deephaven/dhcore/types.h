@@ -12,11 +12,13 @@
 namespace deephaven::dhcore {
 struct ElementTypeId {
   // We don't use "enum class" here because we can't figure out how to get it to work right with Cython.
+  // TODO(kosak): we are going to have to expand LIST to be a true nested type.
   enum Enum {
     CHAR,
     INT8, INT16, INT32, INT64,
     FLOAT, DOUBLE,
-    BOOL, STRING, TIMESTAMP
+    BOOL, STRING, TIMESTAMP,
+    LIST
   };
 };
 
@@ -117,8 +119,7 @@ public:
   /**
    * The minimum finite value for the Deephaven float type.
    */
-  static constexpr const float MIN_FINITE_FLOAT = std::nextafter(-std::numeric_limits<float>::max(),
-      0.0f);
+  static /* constexpr clang dislikes */ const float MIN_FINITE_FLOAT;
   /**
    * The maximum finite value for the Deephaven float type.
    */
@@ -155,8 +156,7 @@ public:
   /**
    * The minimum finite value for the Deephaven double type.
    */
-  static constexpr const double MIN_FINITE_DOUBLE = std::nextafter(
-      -std::numeric_limits<double>::max(), 0.0f);
+  static /* constexpr clang dislikes */ const double MIN_FINITE_DOUBLE;
   /**
    * The maximum finite value for the Deephaven double type.
    */

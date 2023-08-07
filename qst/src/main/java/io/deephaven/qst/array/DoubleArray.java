@@ -79,13 +79,12 @@ public final class DoubleArray extends PrimitiveArrayBase<Double> {
 
     @Override
     public final DoubleType componentType() {
-        return DoubleType.instance();
+        return DoubleType.of();
     }
 
     @Override
-    public <V extends PrimitiveArray.Visitor> V walk(V visitor) {
-        visitor.visit(this);
-        return visitor;
+    public final <R> R walk(PrimitiveArray.Visitor<R> visitor) {
+        return visitor.visit(this);
     }
 
     @Override

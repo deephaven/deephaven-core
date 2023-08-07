@@ -79,13 +79,12 @@ public final class ShortArray extends PrimitiveArrayBase<Short> {
 
     @Override
     public final ShortType componentType() {
-        return ShortType.instance();
+        return ShortType.of();
     }
 
     @Override
-    public final <V extends PrimitiveArray.Visitor> V walk(V visitor) {
-        visitor.visit(this);
-        return visitor;
+    public final <R> R walk(PrimitiveArray.Visitor<R> visitor) {
+        return visitor.visit(this);
     }
 
     @Override

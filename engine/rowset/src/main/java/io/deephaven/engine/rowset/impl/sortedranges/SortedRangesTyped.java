@@ -120,10 +120,13 @@ public abstract class SortedRangesTyped<ArrayType> extends SortedRanges {
     @Override
     protected final SortedRanges ensureCanAppend(final int newLastPos, final long unpackedNewLastKey,
             final boolean writeCheck) {
+        final long absUnpackedLastKey = Math.abs(unpackedNewLastKey);
+        if (!fitsForAppend(absUnpackedLastKey)) {
+            return null;
+        }
         if (newLastPos < dataLength()) {
             return writeCheck ? getWriteRef() : this;
         }
-        final long absUnpackedLastKey = Math.abs(unpackedNewLastKey);
         boolean isDense = true; // try smaller allocation for dense first.
         int newCapacity = capacityForLastIndex(newLastPos, isDense);
         if (newCapacity == 0) {

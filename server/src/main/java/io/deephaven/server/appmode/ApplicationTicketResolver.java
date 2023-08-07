@@ -82,7 +82,7 @@ public class ApplicationTicketResolver extends TicketResolverBase implements App
             throw Exceptions.statusRuntimeException(Code.NOT_FOUND,
                     "Could not resolve '" + logId + "': field '" + getLogNameFor(id) + "' not found");
         }
-        Object value = authTransformation.transform(field.value());
+        Object value = authorization.transform(field.value());
         // noinspection unchecked
         return SessionState.wrapAsExport((T) value);
     }
@@ -105,7 +105,7 @@ public class ApplicationTicketResolver extends TicketResolverBase implements App
             }
             Object value = field.value();
             if (value instanceof Table) {
-                value = authTransformation.transform(value);
+                value = authorization.transform(value);
                 info = TicketRouter.getFlightInfo((Table) value, descriptor, flightTicketForName(id.app, id.fieldName));
             } else {
                 throw Exceptions.statusRuntimeException(Code.NOT_FOUND,
@@ -118,14 +118,20 @@ public class ApplicationTicketResolver extends TicketResolverBase implements App
 
     @Override
     public <T> SessionState.ExportBuilder<T> publish(
-            SessionState session, ByteBuffer ticket, final String logId) {
+            final SessionState session,
+            final ByteBuffer ticket,
+            final String logId,
+            final Runnable onPublish) {
         throw Exceptions.statusRuntimeException(Code.FAILED_PRECONDITION,
                 "Could not publish '" + logId + "': application tickets cannot be published to");
     }
 
     @Override
     public <T> SessionState.ExportBuilder<T> publish(
-            final SessionState session, final Flight.FlightDescriptor descriptor, final String logId) {
+            final SessionState session,
+            final Flight.FlightDescriptor descriptor,
+            final String logId,
+            final Runnable onPublish) {
         throw Exceptions.statusRuntimeException(Code.FAILED_PRECONDITION,
                 "Could not publish '" + logId + "': application flight descriptors cannot be published to");
     }
@@ -145,7 +151,7 @@ public class ApplicationTicketResolver extends TicketResolverBase implements App
             app.listFields().forEach(field -> {
                 Object value = field.value();
                 if (value instanceof Table) {
-                    value = authTransformation.transform(value);
+                    value = authorization.transform(value);
                     final Flight.FlightInfo info = TicketRouter.getFlightInfo((Table) value,
                             descriptorForName(app, field.name()), flightTicketForName(app, field.name()));
                     visitor.accept(info);

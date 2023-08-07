@@ -55,6 +55,18 @@ public interface Session
     // ----------------------------------------------------------
 
     /**
+     * Makes a copy from a source ticket and publishes to a result ticket. Neither the source ticket, nor the
+     * destination ticket, need to be a client managed ticket.
+     *
+     * @param resultId the result id
+     * @param sourceId the source id
+     * @return the future
+     */
+    CompletableFuture<Void> publish(HasTicketId resultId, HasTicketId sourceId);
+
+    // ----------------------------------------------------------
+
+    /**
      * The authenticated channel.
      *
      * @return the authenticated channel

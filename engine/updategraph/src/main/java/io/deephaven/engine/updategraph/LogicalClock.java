@@ -11,6 +11,12 @@ import io.deephaven.util.annotations.FinalDefault;
 public interface LogicalClock {
 
     /**
+     * The "null" value, which encodes {step=-1, state=Idle}. Used as a marker when no clock value is appropriate, e.g.
+     * for snapshots of static data.
+     */
+    long NULL_CLOCK_VALUE = -1L;
+
+    /**
      * The state component of a logical timestamp.
      */
     enum State {

@@ -60,6 +60,9 @@ public interface NotificationQueue {
          *
          * @param step The step for which we are testing satisfaction
          * @return Whether the dependency is satisfied on {@code step} (and will not fire subsequent notifications)
+         * @throws ClockInconsistencyException if step is observed to be before the highest step known to this
+         *         Dependency; this is a best effort validation, in order to allow concurrent snapshots to fail fast or
+         *         improper update processing to be detected
          * @implNote For all practical purposes, all implementations should consider whether the {@link UpdateGraph}
          *           itself is satisfied if they have no other dependencies.
          */
@@ -131,7 +134,6 @@ public interface NotificationQueue {
      * Enqueue a collection of notifications to be flushed.
      *
      * @param notifications The notification to enqueue
-     *
      * @see #addNotification(Notification)
      */
     void addNotifications(@NotNull final Collection<? extends Notification> notifications);

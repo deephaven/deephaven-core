@@ -3,7 +3,7 @@
 #
 
 """ This module supports the conversion between Deephaven tables and pandas DataFrames. """
-from typing import List
+from typing import List, Dict, Tuple
 
 import jpy
 import numpy as np
@@ -11,23 +11,37 @@ import pandas as pd
 import pyarrow as pa
 
 from deephaven import DHError, new_table, dtypes, arrow
-from deephaven.arrow import SUPPORTED_ARROW_TYPES
 from deephaven.column import Column
-from deephaven.constants import NULL_BYTE, NULL_SHORT, NULL_INT, NULL_LONG, NULL_FLOAT, NULL_DOUBLE
+from deephaven.constants import NULL_BYTE, NULL_SHORT, NULL_INT, NULL_LONG, NULL_FLOAT, NULL_DOUBLE, NULL_CHAR
+from deephaven.dtypes import DType
 from deephaven.numpy import column_to_numpy_array, _make_input_column
 from deephaven.table import Table
 
+_NULL_BOOLEAN_AS_BYTE = jpy.get_type("io.deephaven.util.BooleanUtils").NULL_BOOLEAN_AS_BYTE
 _JPrimitiveArrayConversionUtility = jpy.get_type("io.deephaven.integrations.common.PrimitiveArrayConversionUtility")
 _JDataAccessHelpers = jpy.get_type("io.deephaven.engine.table.impl.DataAccessHelpers")
 _is_dtype_backend_supported = pd.__version__ >= "2.0.0"
 
+_DTYPE_NULL_MAPPING: Dict[DType, Tuple] = {
+    dtypes.bool_: (_NULL_BOOLEAN_AS_BYTE, pd.BooleanDtype),
+    dtypes.byte: (NULL_BYTE, pd.Int8Dtype),
+    dtypes.short: (NULL_SHORT, pd.Int16Dtype),
+    dtypes.char: (NULL_CHAR, pd.UInt16Dtype),
+    dtypes.int32: (NULL_INT, pd.Int32Dtype),
+    dtypes.int64: (NULL_LONG, pd.Int64Dtype),
+    dtypes.float32: (NULL_FLOAT, pd.Float32Dtype),
+    dtypes.float64: (NULL_DOUBLE, pd.Float64Dtype),
+}
 
-def _column_to_series(table: Table, col_def: Column) -> pd.Series:
+
+def _column_to_series(table: Table, col_def: Column, conv_null: bool) -> pd.Series:
     """Produce a copy of the specified column as a pandas.Series object.
 
     Args:
         table (Table): the table
         col_def (Column):  the column definition
+        conv_null (bool): whether to check for Deephaven nulls in the data and automatically replace them with
+            pd.NA.
 
     Returns:
         a pandas Series
@@ -37,9 +51,22 @@ def _column_to_series(table: Table, col_def: Column) -> pd.Series:
     """
     try:
         data_col = _JDataAccessHelpers.getColumn(table.j_table, col_def.name)
-        np_array = column_to_numpy_array(col_def, data_col.getDirect())
+        if conv_null and col_def.data_type == dtypes.bool_:
+            j_array = _JPrimitiveArrayConversionUtility.translateArrayBooleanToByte(data_col.getDirect())
+            np_array = np.frombuffer(j_array, dtype=np.byte)
+            s = pd.Series(data=np_array, dtype=pd.Int8Dtype(), copy=False)
+            s.mask(s == _NULL_BOOLEAN_AS_BYTE, inplace=True)
+            return s.astype(pd.BooleanDtype(), copy=False)
 
-        return pd.Series(data=np_array, copy=False)
+        np_array = column_to_numpy_array(col_def, data_col.getDirect())
+        if conv_null and (null_pair := _DTYPE_NULL_MAPPING.get(col_def.data_type)) is not None:
+            nv = null_pair[0]
+            pd_ex_dtype = null_pair[1]
+            s = pd.Series(data=np_array, dtype=pd_ex_dtype(), copy=False)
+            s.mask(s == nv, inplace=True)
+        else:
+            s = pd.Series(data=np_array, copy=False)
+        return s
     except DHError:
         raise
     except Exception as e:
@@ -66,6 +93,7 @@ _DTYPE_MAPPING_PYARROW = {
 _DTYPE_MAPPING_NUMPY_NULLABLE = {
     pa.int8(): pd.Int8Dtype(),
     pa.int16(): pd.Int16Dtype(),
+    pa.uint16(): pd.UInt16Dtype(),
     pa.int32(): pd.Int32Dtype(),
     pa.int64(): pd.Int64Dtype(),
     pa.bool_(): pd.BooleanDtype(),
@@ -84,7 +112,8 @@ _PYARROW_TO_PANDAS_TYPE_MAPPERS = {
 }
 
 
-def to_pandas(table: Table, cols: List[str] = None, dtype_backend: str = None) -> pd.DataFrame:
+def to_pandas(table: Table, cols: List[str] = None, dtype_backend: str = None, conv_null: bool = True) -> \
+        pd.DataFrame:
     """Produces a pandas DataFrame from a table.
 
     Note that the **entire table** is going to be cloned into memory, so the total number of entries in the table
@@ -98,6 +127,8 @@ def to_pandas(table: Table, cols: List[str] = None, dtype_backend: str = None) -
             nullable dtypes are used for all dtypes that have a nullable implementation when “numpy_nullable” is set,
             pyarrow is used for all dtypes if “pyarrow” is set. default is None, meaning Numpy backed DataFrames with
             no nullable dtypes.
+        conv_null (bool): When dtype_backend is not set, whether to check for Deephaven nulls in the data and
+            automatically replace them with pd.NA. default is True.
 
     Returns:
         a pandas DataFrame
@@ -110,9 +141,12 @@ def to_pandas(table: Table, cols: List[str] = None, dtype_backend: str = None) -
             raise DHError(message=f"the dtype_backend ({dtype_backend}) option is only available for pandas 2.0.0 and "
                                   f"above. {pd.__version__} is being used.")
 
-        type_mapper = _PYARROW_TO_PANDAS_TYPE_MAPPERS.get(dtype_backend)
+        if dtype_backend is not None and not conv_null:
+            raise DHError(message="conv_null can't be turned off when dtype_backend is either numpy_nullable or "
+                                  "pyarrow")
+
         # if nullable dtypes (pandas or pyarrow) is requested
-        if type_mapper:
+        if type_mapper := _PYARROW_TO_PANDAS_TYPE_MAPPERS.get(dtype_backend):
             pa_table = arrow.to_arrow(table=table, cols=cols)
             df = pa_table.to_pandas(types_mapper=type_mapper)
             del pa_table
@@ -133,7 +167,7 @@ def to_pandas(table: Table, cols: List[str] = None, dtype_backend: str = None) -
 
         data = {}
         for col in cols:
-            series = _column_to_series(table, col_def_dict[col])
+            series = _column_to_series(table, col_def_dict[col], conv_null)
             data[col] = series
 
         dtype_set = set([v.dtype for k, v in data.items()])
@@ -152,9 +186,10 @@ def to_pandas(table: Table, cols: List[str] = None, dtype_backend: str = None) -
 _EX_DTYPE_NULL_MAP = {
     # This reflects the fact that in the server we use NULL_BOOLEAN_AS_BYTE - the byte encoding of null boolean to
     # translate boxed Boolean to/from primitive bytes
-    pd.BooleanDtype: NULL_BYTE,
+    pd.BooleanDtype: _NULL_BOOLEAN_AS_BYTE,
     pd.Int8Dtype: NULL_BYTE,
     pd.Int16Dtype: NULL_SHORT,
+    pd.UInt16Dtype: NULL_CHAR,
     pd.Int32Dtype: NULL_INT,
     pd.Int64Dtype: NULL_LONG,
     pd.Float32Dtype: NULL_FLOAT,
@@ -171,20 +206,27 @@ _EX_DTYPE_NULL_MAP = {
 }
 
 
-def _map_na(np_array: np.ndarray):
+def _map_na(array: [np.ndarray, pd.api.extensions.ExtensionArray]):
     """Replaces the pd.NA values in the array if it is of pandas ExtensionDtype(nullable)."""
-    pd_dtype = np_array.dtype
+    pd_dtype = array.dtype
     if not isinstance(pd_dtype, pd.api.extensions.ExtensionDtype):
-        return np_array
+        return array
 
     dh_null = _EX_DTYPE_NULL_MAP.get(type(pd_dtype)) or _EX_DTYPE_NULL_MAP.get(pd_dtype)
-    if isinstance(pd_dtype, pd.StringDtype) or isinstance(pd_dtype, pd.BooleanDtype) or pd_dtype == pd.ArrowDtype(
-            pa.bool_()):
-        np_array = np.array(list(map(lambda v: dh_null if v is pd.NA else v, np_array)))
-    elif dh_null is not None:
-        np_array = np_array.fillna(dh_null)
+    # To preserve NaNs in floating point arrays, Pandas doesn't distinguish NaN/Null as far as NA testing is
+    # concerned, thus its fillna() method will replace both NaN/Null in the data.
+    if isinstance(pd_dtype, (pd.Float32Dtype, pd.Float64Dtype)) and isinstance(getattr(array, "_data"), np.ndarray):
+        np_array = array._data
+        null_mask = np.logical_and(array._mask, np.logical_not(np.isnan(np_array)))
+        np_array[null_mask] = dh_null
+        return np_array
 
-    return np_array
+    if isinstance(pd_dtype, (pd.StringDtype, pd.BooleanDtype)) or pd_dtype == pd.ArrowDtype(pa.bool_()):
+        array = np.array(list(map(lambda v: dh_null if v is pd.NA else v, array)))
+    elif dh_null is not None:
+        array = array.fillna(dh_null)
+
+    return array
 
 
 def to_table(df: pd.DataFrame, cols: List[str] = None) -> Table:

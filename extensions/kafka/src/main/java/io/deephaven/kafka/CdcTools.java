@@ -3,6 +3,8 @@
  */
 package io.deephaven.kafka;
 
+import io.confluent.kafka.schemaregistry.avro.AvroSchemaProvider;
+import io.confluent.kafka.schemaregistry.client.SchemaRegistryClient;
 import io.deephaven.engine.table.ColumnDefinition;
 import io.deephaven.engine.table.Table;
 import io.deephaven.util.annotations.ScriptApi;
@@ -17,6 +19,9 @@ import java.util.List;
 import java.util.Properties;
 import java.util.Set;
 import java.util.function.IntPredicate;
+
+import static io.deephaven.kafka.KafkaTools.asStringMap;
+import static io.deephaven.kafka.KafkaTools.newSchemaRegistryClient;
 
 /**
  * Utility class with methods to support consuming from a Change Data Capture (CDC) Kafka stream (as, eg, produced by
@@ -295,10 +300,12 @@ public class CdcTools {
             @NotNull final IntPredicate partitionFilter,
             final boolean asBlinkTable,
             Collection<String> dropColumns) {
-        final Schema valueSchema = KafkaTools.getAvroSchema(
-                kafkaProperties, cdcSpec.valueSchemaName(), cdcSpec.valueSchemaVersion());
-        final Schema keySchema = KafkaTools.getAvroSchema(
-                kafkaProperties, cdcSpec.keySchemaName(), cdcSpec.keySchemaVersion());
+        final SchemaRegistryClient schemaRegistryClient = newSchemaRegistryClient(
+                asStringMap(kafkaProperties), List.of(new AvroSchemaProvider()));
+        final Schema valueSchema = AvroImpl.getAvroSchema(
+                schemaRegistryClient, cdcSpec.valueSchemaName(), cdcSpec.valueSchemaVersion());
+        final Schema keySchema = AvroImpl.getAvroSchema(
+                schemaRegistryClient, cdcSpec.keySchemaName(), cdcSpec.keySchemaVersion());
         final Table streamingIn = KafkaTools.consumeToTable(
                 kafkaProperties,
                 cdcSpec.topic(),
@@ -309,7 +316,7 @@ public class CdcTools {
                 KafkaTools.TableType.blink());
         final List<String> dbTableColumnNames = dbTableColumnNames(streamingIn);
         List<String> allDroppedColumns = null;
-        if (dropColumns != null && dropColumns.size() > 0) {
+        if (dropColumns != null && !dropColumns.isEmpty()) {
             allDroppedColumns = new ArrayList<>(dropColumns);
         }
         if (!asBlinkTable) {

@@ -176,7 +176,7 @@ public class FunctionalColumn<S, D> implements SelectColumn {
                     @NotNull final WritableChunk<? super Values> destination,
                     @NotNull final RowSequence rowSequence) {
                 final FunctionalColumnFillContext ctx = (FunctionalColumnFillContext) fillContext;
-                ctx.chunkFiller.fillByIndices(this, rowSequence, destination);
+                ctx.chunkFiller.fillPrevByIndices(this, rowSequence, destination);
             }
         }, false);
     }

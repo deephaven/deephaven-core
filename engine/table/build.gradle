@@ -130,8 +130,6 @@ spotless {
 }
 
 test {
-    maxParallelForks = Integer.parseInt(findProperty('maxParallelForks') as String ?: '1')
-    forkEvery = Integer.parseInt(findProperty('forkEvery') as String ?: '1')
     //  For now, if you apply @Category(ParallelTest.class) to tests which are not huge CPU/RAM hogs, you can get parallelism
     //  If you have CPU/RAM-heavy tasks that you don't want gumming up :engine-table:test runs, apply @Category(SerialTest.class) instead
     //  (note that the above only works for junit 4 tests; see the documentation on SerialTest class and others for porting instructions)
@@ -149,6 +147,7 @@ TestTools.addEngineParallelTest(project)
 TestTools.addEngineSerialTest(project)
 TestTools.addEngineOutOfBandTest(project)
 
+// If changing, be sure to update .github/scripts/print-gradle-workers-max.sh
 def maxHeapSize = findProperty('maxHeapSize') as String ?: '6g'
 
 tasks.testParallel.maxHeapSize = maxHeapSize

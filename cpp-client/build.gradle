@@ -51,7 +51,7 @@ project.tasks.getByName('quick').dependsOn project.tasks.getByName('license')
 String randomSuffix = UUID.randomUUID().toString();
 deephavenDocker {
     envVars.set([
-            'START_OPTS':'-Xmx512m'
+            'START_OPTS':'-Xmx512m -DAuthHandlers=io.deephaven.auth.AnonymousAuthenticationHandler'
     ])
     containerName.set "dh-server-for-cpp-${randomSuffix}"
     networkName.set "cpp-test-network-${randomSuffix}"
@@ -124,5 +124,5 @@ def testCppClient = Docker.registerDockerTask(project, 'testCppClient') {
     parentContainers = [ Docker.registryTask(project, 'cpp-client-base') ]
     entrypoint = ['/cpp-client/install/bin/cpp-tests-to-junit.sh', '/out/cpp-test.xml', '/out/cpp-test.log']
 }
-deephavenDocker.shouldLogIfTaskFails tasks.named('testCppClientRun')
+deephavenDocker.shouldLogIfTaskFails testCppClient
 tasks.check.dependsOn(testCppClient)

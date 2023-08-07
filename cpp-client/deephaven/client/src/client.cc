@@ -1,8 +1,9 @@
 /*
- * Copyright (c) 2016-2022 Deephaven Data Labs and Patent Pending
+ * Copyright (c) 2016-2023 Deephaven Data Labs and Patent Pending
  */
 #include "deephaven/client/client.h"
 
+#include <grpc/support/log.h>
 #include <arrow/array.h>
 #include <arrow/scalar.h>
 #include "deephaven/client/columns.h"
@@ -13,9 +14,14 @@
 #include "deephaven/client/impl/client_impl.h"
 #include "deephaven/client/impl/table_handle_impl.h"
 #include "deephaven/client/impl/table_handle_manager_impl.h"
+#include "deephaven/client/impl/update_by_operation_impl.h"
+#include "deephaven/client/impl/util.h"
 #include "deephaven/client/subscription/subscription_handle.h"
 #include "deephaven/client/utility/arrow_util.h"
+#include "deephaven/dhcore/clienttable/schema.h"
 #include "deephaven/dhcore/utility/utility.h"
+#include "deephaven/proto/table.pb.h"
+#include "deephaven/proto/table.grpc.pb.h"
 
 using grpc::Channel;
 using grpc::ClientContext;
@@ -33,14 +39,19 @@ using deephaven::client::impl::StrColImpl;
 using deephaven::client::impl::AggregateComboImpl;
 using deephaven::client::impl::AggregateImpl;
 using deephaven::client::impl::ClientImpl;
+using deephaven::client::impl::moveVectorData;
+using deephaven::client::impl::UpdateByOperationImpl;
 using deephaven::client::subscription::SubscriptionHandle;
 using deephaven::client::utility::Executor;
 using deephaven::client::utility::okOrThrow;
+using deephaven::dhcore::clienttable::Schema;
 using deephaven::dhcore::utility::base64Encode;
+using deephaven::dhcore::utility::makeReservedVector;
 using deephaven::dhcore::utility::separatedList;
 using deephaven::dhcore::utility::SFCallback;
 using deephaven::dhcore::utility::SimpleOstringstream;
 using deephaven::dhcore::utility::stringf;
+
 
 namespace deephaven::client {
 namespace {
@@ -48,9 +59,9 @@ void printTableData(std::ostream &s, const TableHandle &tableHandle, bool wantHe
 }  // namespace
 
 Client Client::connect(const std::string &target, const ClientOptions &options) {
-  auto executor = Executor::create();
-  auto flightExecutor = Executor::create();
   auto server = Server::createFromTarget(target, options);
+  auto executor = Executor::create("Client executor for " + server->me());
+  auto flightExecutor = Executor::create("Flight executor for " + server->me());
   auto impl = ClientImpl::create(std::move(server), executor, flightExecutor, options.sessionType_);
   return Client(std::move(impl));
 }
@@ -61,11 +72,26 @@ Client::Client(std::shared_ptr<impl::ClientImpl> impl) : impl_(std::move(impl)) 
 }
 Client::Client(Client &&other) noexcept = default;
 Client &Client::operator=(Client &&other) noexcept = default;
-Client::~Client() = default;
+
+// There is only one Client associated with the server connection. Clients can only be moved, not
+// copied. When the Client owning the state is destructed, we tear down the state via close().
+Client::~Client() {
+  close();
+}
+
+// Tear down Client state.
+void Client::close() {
+  // Move to local variable to be defensive.
+  auto temp = std::move(impl_);
+  if (temp != nullptr) {
+    temp->shutdown();
+  }
+}
 
 TableHandleManager Client::getManager() const {
   return TableHandleManager(impl_->managerImpl());
 }
+
 
 TableHandleManager::TableHandleManager() = default;
 TableHandleManager::TableHandleManager(std::shared_ptr<impl::TableHandleManagerImpl> impl) : impl_(std::move(impl)) {}
@@ -88,18 +114,20 @@ TableHandle TableHandleManager::timeTable(int64_t startTimeNanos, int64_t period
   return TableHandle(std::move(qsImpl));
 }
 
-TableHandleAndFlightDescriptor TableHandleManager::newTableHandleAndFlightDescriptor(int64_t numRows,
-    bool isStatic) const {
-  auto [thImpl, fd] = impl_->newTicket(numRows, isStatic);
-  TableHandle th(std::move(thImpl));
-  return {std::move(th), std::move(fd)};
-}
-
 TableHandle TableHandleManager::timeTable(std::chrono::system_clock::time_point startTime,
     std::chrono::system_clock::duration period) const {
   auto stNanos = std::chrono::duration_cast<std::chrono::nanoseconds>(startTime.time_since_epoch()).count();
   auto dNanos = std::chrono::duration_cast<std::chrono::nanoseconds>(period).count();
   return timeTable(stNanos, dNanos);
+}
+
+std::string TableHandleManager::newTicket() const {
+  return impl_->newTicket();
+}
+
+TableHandle TableHandleManager::makeTableHandleFromTicket(std::string ticket) const {
+  auto handleImpl = impl_->makeTableHandleFromTicket(std::move(ticket));
+  return TableHandle(std::move(handleImpl));
 }
 
 void TableHandleManager::runScript(std::string code) const {
@@ -484,6 +512,15 @@ TableHandle TableHandle::exactJoin(const TableHandle &rightSide,
   return exactJoin(rightSide, std::move(ctmStrings), std::move(ctaStrings));
 }
 
+TableHandle TableHandle::updateBy(std::vector<UpdateByOperation> ops, std::vector<std::string> by) const {
+  auto opImpls = makeReservedVector<std::shared_ptr<UpdateByOperationImpl>>(ops.size());
+  for (const auto &op : ops) {
+    opImpls.push_back(op.impl_);
+  }
+  auto thImpl = impl_->updateBy(std::move(opImpls), std::move(by));
+  return TableHandle(std::move(thImpl));
+}
+
 void TableHandle::bindToVariable(std::string variable) const {
   auto res = SFCallback<>::createForFuture();
   bindToVariableAsync(std::move(variable), std::move(res.first));
@@ -503,12 +540,16 @@ void TableHandle::observe() const {
   impl_->observe();
 }
 
-int64_t TableHandle::numRows() {
+int64_t TableHandle::numRows() const {
   return impl_->numRows();
 }
 
-bool TableHandle::isStatic() {
+bool TableHandle::isStatic() const {
   return impl_->isStatic();
+}
+
+std::shared_ptr<Schema> TableHandle::schema() const {
+  return impl_->schema();
 }
 
 std::shared_ptr<arrow::flight::FlightStreamReader> TableHandle::getFlightStreamReader() const {

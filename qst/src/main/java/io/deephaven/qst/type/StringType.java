@@ -3,17 +3,17 @@
  */
 package io.deephaven.qst.type;
 
-import io.deephaven.annotations.SimpleStyle;
+import io.deephaven.annotations.SingletonStyle;
 import org.immutables.value.Value.Immutable;
 
 /**
  * The {@link String} type.
  */
 @Immutable
-@SimpleStyle
+@SingletonStyle
 public abstract class StringType extends GenericTypeBase<String> {
 
-    public static StringType instance() {
+    public static StringType of() {
         return ImmutableStringType.of();
     }
 
@@ -23,9 +23,8 @@ public abstract class StringType extends GenericTypeBase<String> {
     }
 
     @Override
-    public final <V extends GenericType.Visitor> V walk(V visitor) {
-        visitor.visit(this);
-        return visitor;
+    public final <R> R walk(GenericType.Visitor<R> visitor) {
+        return visitor.visit(this);
     }
 
     @Override

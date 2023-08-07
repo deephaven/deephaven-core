@@ -9,6 +9,10 @@ on:
 jobs:
   javadoc:
     runs-on: ubuntu-22.04
+    concurrency:
+      group: javadoc-${{ github.workflow }}-${{ github.ref }}
+      # We don't want to cancel in-progress jobs against main because that might leave the upload in a bad state.
+      cancel-in-progress: ${{ github.ref != 'refs/heads/main' }}
     steps:
       - name: Checkout
         uses: actions/checkout@v3
@@ -32,9 +36,7 @@ jobs:
 
       - name: Setup gradle properties
         run: |
-          cat .github/env/${{ runner.os }}/gradle.properties >> gradle.properties
-          echo >> gradle.properties
-          echo "org.gradle.java.installations.paths=${{ steps.setup-java-11.outputs.path }},${{ steps.setup-java-17.outputs.path }}" >> gradle.properties
+          .github/scripts/gradle-properties.sh >> gradle.properties
           cat gradle.properties
 
       - name: All Javadoc
@@ -65,6 +67,10 @@ jobs:
 
   pydoc:
     runs-on: ubuntu-22.04
+    concurrency:
+      group: pydoc-${{ github.workflow }}-${{ github.ref }}
+      # We don't want to cancel in-progress jobs against main because that might leave the upload in a bad state.
+      cancel-in-progress: ${{ github.ref != 'refs/heads/main' }}
     steps:
       - name: Checkout
         uses: actions/checkout@v3
@@ -88,9 +94,7 @@ jobs:
 
       - name: Setup gradle properties
         run: |
-          cat .github/env/${{ runner.os }}/gradle.properties >> gradle.properties
-          echo >> gradle.properties
-          echo "org.gradle.java.installations.paths=${{ steps.setup-java-11.outputs.path }},${{ steps.setup-java-17.outputs.path }}" >> gradle.properties
+          .github/scripts/gradle-properties.sh >> gradle.properties
           cat gradle.properties
 
       - name: Generate Python Docs
@@ -134,6 +138,10 @@ jobs:
 
   cppdoc:
     runs-on: ubuntu-22.04
+    concurrency:
+      group: cppdoc-${{ github.workflow }}-${{ github.ref }}
+      # We don't want to cancel in-progress jobs against main because that might leave the upload in a bad state.
+      cancel-in-progress: ${{ github.ref != 'refs/heads/main' }}
     steps:
       - name: Checkout
         uses: actions/checkout@v3
@@ -150,9 +158,7 @@ jobs:
 
       - name: Setup gradle properties
         run: |
-          cat .github/env/${{ runner.os }}/gradle.properties >> gradle.properties
-          echo >> gradle.properties
-          echo "org.gradle.java.installations.paths=${{ steps.setup-java-11.outputs.path }}" >> gradle.properties
+          .github/scripts/gradle-properties.sh >> gradle.properties
           cat gradle.properties
 
       - name: Generate C++ Docs

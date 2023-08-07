@@ -5,7 +5,6 @@
 
 #include <string>
 #include <vector>
-#include "deephaven/dhcore/table/table.h"
 #include "deephaven/dhcore/types.h"
 #include "deephaven/dhcore/column/buffer_column_source.h"
 

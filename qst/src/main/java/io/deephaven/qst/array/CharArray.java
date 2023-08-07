@@ -79,13 +79,12 @@ public final class CharArray extends PrimitiveArrayBase<Character> {
 
     @Override
     public final CharType componentType() {
-        return CharType.instance();
+        return CharType.of();
     }
 
     @Override
-    public final <V extends PrimitiveArray.Visitor> V walk(V visitor) {
-        visitor.visit(this);
-        return visitor;
+    public final <R> R walk(PrimitiveArray.Visitor<R> visitor) {
+        return visitor.visit(this);
     }
 
     @Override

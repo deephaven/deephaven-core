@@ -55,9 +55,11 @@ class _DhClientAuthMiddleware(ClientMiddleware):
                 self._session._auth_token = auth_token
 
     def sending_headers(self):
-        return {**{
-            "authorization": self._session._auth_token
-        }, **self._session._extra_headers}
+        return {
+            **{
+                "authorization": self._session._auth_token
+            }, **self._session._extra_headers
+        }
 
 
 class _DhClientAuthHandler(ClientAuthHandler):
@@ -97,7 +99,7 @@ class Session:
                  tls_root_certs: bytes = None,
                  client_cert_chain: bytes = None,
                  client_private_key: bytes = None,
-                 client_opts: List[Tuple[str,Union[int,str]]] = None,
+                 client_opts: List[Tuple[str, Union[int, str]]] = None,
                  extra_headers: Dict[bytes, bytes] = None):
         """Initializes a Session object that connects to the Deephaven server
 
@@ -196,7 +198,7 @@ class Session:
 
     @property
     def grpc_metadata(self):
-        l =[(b'authorization', self._auth_token)]
+        l = [(b'authorization', self._auth_token)]
         if self._extra_headers:
             l.extend(list(self._extra_headers.items()))
         return l
@@ -281,10 +283,10 @@ class Session:
                 self._flight_client = paflight.FlightClient(
                     location=f"{scheme}://{self.host}:{self.port}",
                     middleware=[_DhClientAuthMiddlewareFactory(self)],
-                    tls_root_certs = self._tls_root_certs,
-                    cert_chain = self._client_cert_chain,
-                    private_key = self._client_private_key,
-                    generic_options = self._client_opts
+                    tls_root_certs=self._tls_root_certs,
+                    cert_chain=self._client_cert_chain,
+                    private_key=self._client_private_key,
+                    generic_options=self._client_opts
                 )
                 self._auth_handler = _DhClientAuthHandler(self)
                 self._flight_client.authenticate(self._auth_handler)
@@ -298,18 +300,19 @@ class Session:
             if not session_duration:
                 raise DHError("server configuration is missing http.session.durationMs")
 
+            self.is_connected = True
+
             self._timeout = int(session_duration.string_value)
             if self._never_timeout:
                 self._keep_alive()
 
-            self.is_connected = True
-
     def _keep_alive(self):
-        if self._keep_alive_timer:
-            self._refresh_token()
-        self._keep_alive_timer = threading.Timer(self._timeout / 2 / 1000, self._keep_alive)
-        self._keep_alive_timer.daemon = True
-        self._keep_alive_timer.start()
+        if self.is_connected:
+            if self._keep_alive_timer:
+                self._refresh_token()
+            self._keep_alive_timer = threading.Timer(self._timeout / 2 / 1000, self._keep_alive)
+            self._keep_alive_timer.daemon = True
+            self._keep_alive_timer.start()
 
     def _refresh_token(self):
         with self._r_lock:
@@ -330,7 +333,7 @@ class Session:
                 return True
 
             try:
-                self.session_service.refresh_token()
+                self._flight_client.authenticate(self._auth_handler)
                 return True
             except DHError as e:
                 self.is_connected = False
@@ -411,12 +414,14 @@ class Session:
         with self._r_lock:
             self.console_service.bind_table(table=table, variable_name=name)
 
-    def time_table(self, period: int, start_time: int = None) -> Table:
+    def time_table(self, period: Union[int, str], start_time: Union[int, str] = None) -> Table:
         """Creates a time table on the server.
 
         Args:
-            period (int): the interval (in nano seconds) at which the time table ticks (adds a row)
-            start_time (int): the start time for the time table in nano seconds, default is None (meaning now)
+            period (Union[int, str]): the interval at which the time table ticks (adds a row); units are nanoseconds
+                or a time interval string, e.g. "PT00:00:.001" or "PT1S"
+            start_time (Union[int, str]): the start time for the time table in nanoseconds or as a date time
+                formatted string; default is None (meaning now)
 
         Returns:
             a Table object

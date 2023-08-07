@@ -1,5 +1,5 @@
 /**
- * Copyright (c) 2016-2022 Deephaven Data Labs and Patent Pending
+ * Copyright (c) 2016-2023 Deephaven Data Labs and Patent Pending
  */
 #pragma once
 
@@ -8,6 +8,7 @@
 #include "deephaven/client/columns.h"
 #include "deephaven/client/client_options.h"
 #include "deephaven/client/expressions.h"
+#include "deephaven/dhcore/clienttable/schema.h"
 #include "deephaven/dhcore/ticking/ticking.h"
 #include "deephaven/dhcore/utility/callbacks.h"
 
@@ -18,7 +19,6 @@
  */
 namespace deephaven::client {
 class FlightWrapper;
-class TableHandleAndFlightDescriptor;
 }  // namespace deephaven::client
 
 /**
@@ -53,6 +53,7 @@ namespace deephaven::client {
 class Client;
 class TableHandle;
 class TableHandleManager;
+class UpdateByOperation;
 namespace internal {
 class TableHandleStreamAdaptor;
 }  // namespace internal
@@ -119,15 +120,21 @@ public:
   TableHandle timeTable(std::chrono::system_clock::time_point startTime,
       std::chrono::system_clock::duration period) const;
   /**
-   * Allocate a fresh TableHandle and return both it and its corresponding Arrow FlightDescriptor.
-   * This is used when the caller wants to do an Arrow DoPut operation.
-   * The object returned is only forward-referenced in this file. If you want to use it, you will
-   * also need to include deephaven/client/flight.h.
-   * @param numRows The number of table rows (reflected back when you call TableHandle::numRows())
-   * @param isStatic Whether the table is static (reflected back when youcall TableHandle::isStatic())
-   * @return A TableHandle and Arrow FlightDescriptor referring to the new table.
+   * Allocate a fresh client ticket. This is a low level operation, typically used when the caller wants to do an Arrow
+   * doPut operation.
+   * @example
+   * auto ticket = manager.newTicket();
+   * auto flightDescriptor = convertTicketToFlightDescriptor(ticket);
+   * // [do arrow operations here to put your table to the server]
+   * // Once that is done, you can bind the ticket to a TableHandle
+   * auto tableHandle = manager.makeTableHandleFromTicket(ticket);
    */
-  TableHandleAndFlightDescriptor newTableHandleAndFlightDescriptor(int64_t numRows, bool isStatic) const;
+  std::string newTicket() const;
+  /**
+   * Creates a TableHandle that owns the underlying ticket and its resources. The ticket argument is typically
+   * created with newTicket() and then populated e.g. with Arrow operations.
+   */
+  TableHandle makeTableHandleFromTicket(std::string ticket) const;
   /**
    * Execute a script on the server. This assumes that the Client was created with a sessionType corresponding to
    * the language of the script (typically either "python" or "groovy") and that the code matches that language.
@@ -191,6 +198,16 @@ public:
    * Destructor
    */
   ~Client();
+
+  /**
+   * Shuts down the Client and all associated state (GRPC connections, subscriptions, etc).
+   * This method is used if a caller wants to shut down Client state early. If it is not called,
+   * the shutdown actions will happen when this Client is destructed. The caller must not use any
+   * associated data structures (TableHandleManager, TableHandle, etc) after close() is called or
+   * after Client's destructor is invoked. If the caller tries to do so, the behavior is
+   * unspecified.
+   */
+  void close();
 
   /**
    * Gets a TableHandleManager which you can use to create empty tables, fetch tables, and so on.
@@ -601,6 +618,7 @@ struct StringHolder {
  * server resource is destructed, the resource will be released.
  */
 class TableHandle {
+  typedef deephaven::dhcore::clienttable::Schema Schema;
   typedef deephaven::dhcore::ticking::TickingCallback TickingCallback;
   typedef deephaven::dhcore::ticking::TickingUpdate TickingUpdate;
   typedef deephaven::client::BooleanExpression BooleanExpression;
@@ -1229,6 +1247,8 @@ public:
   TableHandle exactJoin(const TableHandle &rightSide, std::vector<MatchWithColumn> columnsToMatch,
       std::vector<SelectColumn> columnsToAdd) const;
 
+  TableHandle updateBy(std::vector<UpdateByOperation> ops, std::vector<std::string> by) const;
+
   /**
    * Binds this table to a variable name in the QueryScope.
    * @param variable The QueryScope variable to bind to.
@@ -1322,12 +1342,17 @@ public:
   /**
    * Number of rows in the table at the time this TableHandle was created.
    */
-  int64_t numRows();
+  int64_t numRows() const;
 
   /**
    * Whether the table was static at the time this TableHandle was created.
    */
-  bool isStatic();
+  bool isStatic() const;
+
+  /**
+   * Returns the table's Schema.
+   */
+  std::shared_ptr<Schema> schema() const;
 
   /**
    * Used internally. Returns the underlying impl object.

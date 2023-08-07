@@ -426,7 +426,8 @@ struct BarrageSubscriptionOptions FLATBUFFERS_FINAL_CLASS : private flatbuffers:
     VT_USE_DEEPHAVEN_NULLS = 6,
     VT_MIN_UPDATE_INTERVAL_MS = 8,
     VT_BATCH_SIZE = 10,
-    VT_MAX_MESSAGE_SIZE = 12
+    VT_MAX_MESSAGE_SIZE = 12,
+    VT_COLUMNS_AS_LIST = 14
   };
   /// see enum for details
   io::deephaven::barrage::flatbuf::ColumnConversionMode column_conversion_mode() const {
@@ -447,6 +448,8 @@ struct BarrageSubscriptionOptions FLATBUFFERS_FINAL_CLASS : private flatbuffers:
   /// Specify a preferred batch size. Server is allowed to be configured to restrict possible values. Too small of a
   /// batch size may be dominated with header costs as each batch is wrapped into a separate RecordBatch. Too large of
   /// a payload and it may not fit within the maximum payload size. A good default might be 4096.
+  ///
+  /// a batch_size of -1 indicates that the server should avoid batching a single logical message
   int32_t batch_size() const {
     return GetField<int32_t>(VT_BATCH_SIZE, 0);
   }
@@ -456,6 +459,11 @@ struct BarrageSubscriptionOptions FLATBUFFERS_FINAL_CLASS : private flatbuffers:
   int32_t max_message_size() const {
     return GetField<int32_t>(VT_MAX_MESSAGE_SIZE, 0);
   }
+  /// If true, the server will wrap columns with a list. This is useful for clients that do not support modified batches
+  /// with columns of differing lengths.
+  bool columns_as_list() const {
+    return GetField<uint8_t>(VT_COLUMNS_AS_LIST, 0) != 0;
+  }
   bool Verify(flatbuffers::Verifier &verifier) const {
     return VerifyTableStart(verifier) &&
            VerifyField<int8_t>(verifier, VT_COLUMN_CONVERSION_MODE, 1) &&
@@ -463,6 +471,7 @@ struct BarrageSubscriptionOptions FLATBUFFERS_FINAL_CLASS : private flatbuffers:
            VerifyField<int32_t>(verifier, VT_MIN_UPDATE_INTERVAL_MS, 4) &&
            VerifyField<int32_t>(verifier, VT_BATCH_SIZE, 4) &&
            VerifyField<int32_t>(verifier, VT_MAX_MESSAGE_SIZE, 4) &&
+           VerifyField<uint8_t>(verifier, VT_COLUMNS_AS_LIST, 1) &&
            verifier.EndTable();
   }
 };
@@ -486,6 +495,9 @@ struct BarrageSubscriptionOptionsBuilder {
   void add_max_message_size(int32_t max_message_size) {
     fbb_.AddElement<int32_t>(BarrageSubscriptionOptions::VT_MAX_MESSAGE_SIZE, max_message_size, 0);
   }
+  void add_columns_as_list(bool columns_as_list) {
+    fbb_.AddElement<uint8_t>(BarrageSubscriptionOptions::VT_COLUMNS_AS_LIST, static_cast<uint8_t>(columns_as_list), 0);
+  }
   explicit BarrageSubscriptionOptionsBuilder(flatbuffers::FlatBufferBuilder &_fbb)
         : fbb_(_fbb) {
     start_ = fbb_.StartTable();
@@ -503,11 +515,13 @@ inline flatbuffers::Offset<BarrageSubscriptionOptions> CreateBarrageSubscription
     bool use_deephaven_nulls = false,
     int32_t min_update_interval_ms = 0,
     int32_t batch_size = 0,
-    int32_t max_message_size = 0) {
+    int32_t max_message_size = 0,
+    bool columns_as_list = false) {
   BarrageSubscriptionOptionsBuilder builder_(_fbb);
   builder_.add_max_message_size(max_message_size);
   builder_.add_batch_size(batch_size);
   builder_.add_min_update_interval_ms(min_update_interval_ms);
+  builder_.add_columns_as_list(columns_as_list);
   builder_.add_use_deephaven_nulls(use_deephaven_nulls);
   builder_.add_column_conversion_mode(column_conversion_mode);
   return builder_.Finish();
@@ -1183,6 +1197,36 @@ inline flatbuffers::Offset<BarrageUpdateMetadata> CreateBarrageUpdateMetadataDir
       shift_data__,
       added_rows_included__,
       mod_column_nodes__);
+}
+
+inline const io::deephaven::barrage::flatbuf::BarrageMessageWrapper *GetBarrageMessageWrapper(const void *buf) {
+  return flatbuffers::GetRoot<io::deephaven::barrage::flatbuf::BarrageMessageWrapper>(buf);
+}
+
+inline const io::deephaven::barrage::flatbuf::BarrageMessageWrapper *GetSizePrefixedBarrageMessageWrapper(const void *buf) {
+  return flatbuffers::GetSizePrefixedRoot<io::deephaven::barrage::flatbuf::BarrageMessageWrapper>(buf);
+}
+
+inline bool VerifyBarrageMessageWrapperBuffer(
+    flatbuffers::Verifier &verifier) {
+  return verifier.VerifyBuffer<io::deephaven::barrage::flatbuf::BarrageMessageWrapper>(nullptr);
+}
+
+inline bool VerifySizePrefixedBarrageMessageWrapperBuffer(
+    flatbuffers::Verifier &verifier) {
+  return verifier.VerifySizePrefixedBuffer<io::deephaven::barrage::flatbuf::BarrageMessageWrapper>(nullptr);
+}
+
+inline void FinishBarrageMessageWrapperBuffer(
+    flatbuffers::FlatBufferBuilder &fbb,
+    flatbuffers::Offset<io::deephaven::barrage::flatbuf::BarrageMessageWrapper> root) {
+  fbb.Finish(root);
+}
+
+inline void FinishSizePrefixedBarrageMessageWrapperBuffer(
+    flatbuffers::FlatBufferBuilder &fbb,
+    flatbuffers::Offset<io::deephaven::barrage::flatbuf::BarrageMessageWrapper> root) {
+  fbb.FinishSizePrefixed(root);
 }
 
 }  // namespace flatbuf

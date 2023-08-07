@@ -1,6 +1,4 @@
-import org.gradle.api.JavaVersion
 import org.gradle.api.Project
-import org.gradle.api.Task
 import org.gradle.api.artifacts.Dependency
 import org.gradle.api.plugins.JavaPluginConvention
 import org.gradle.api.reporting.Report
@@ -26,37 +24,24 @@ class TestTools {
 
     static final String TEST_GROUP = "~Deephaven Test"
 
-    static boolean allowParallel(Project project) {
-        return Boolean.parseBoolean(project.findProperty('allowParallel') as String ?: 'false')
-    }
-
     static Test addEngineSerialTest(Project project) {
-        def allowParallel = allowParallel(project)
-        // testSerial: non-parallel, not a engine test, isolated
-        return TestTools.addEngineTest(project, 'Serial', allowParallel, false, true)
+        return addEngineTest(project, 'Serial', false, true)
     }
 
     static Test addEngineParallelTest(Project project) {
-        def allowParallel = allowParallel(project)
         // Add @Category(ParallelTest.class) to have your tests run in parallel
         // Note: Supports JUnit4 or greater only (you use @Test annotations to mark test methods).
-
-        // The Parallel tests are now by default functionally equivalent to the Serial test logic
-        // TODO (deephaven-core#643): Fix "leaking" parallel tests
-        return TestTools.addEngineTest(project, 'Parallel', allowParallel, false, !allowParallel)
+        return addEngineTest(project, 'Parallel', true, false)
     }
 
     static Test addEngineOutOfBandTest(Project project) {
-        def allowParallel = allowParallel(project)
-        // testOutOfBand: non-parallel, not a engine test, not isolated
-        return TestTools.addEngineTest(project, 'OutOfBand', allowParallel, false, false)
+        return addEngineTest(project, 'OutOfBand', true, false)
     }
 
-    static Test addEngineTest(
+    private static Test addEngineTest(
         Project project,
         String type,
         boolean parallel = false,
-        boolean passwordEnabled = false,
         boolean isolated = false
     ) {
         Test mainTest = project.tasks.getByName('test') as Test
@@ -84,11 +69,10 @@ By default only runs in CI; to run locally:
             dependsOn project.tasks.findByName('testClasses')
 
             if (parallel) {
-                if (project.hasProperty('maxParallelForks')) {
-                    maxParallelForks = project.property('maxParallelForks') as int
-                } else {
-                    maxParallelForks = 12
-                }
+                // We essentially want to set maxParallelForks for all "normal" tests. It will be capped by the number
+                // of gradle workers, org.gradle.workers.max. We aren't able to set set this property for all Test types,
+                // because testSerial needs special handling.
+                maxParallelForks = Runtime.runtime.availableProcessors()
                 if (project.hasProperty('forkEvery')) {
                     forkEvery = project.property('forkEvery') as int
                 }
@@ -123,24 +107,6 @@ By default only runs in CI; to run locally:
             // but we already use custom layouts which make "use separate sourcesets per module" in IntelliJ...troublesome).
             SourceSetContainer sources = project.convention.getPlugin(JavaPluginConvention).sourceSets
             setClasspath project.files(sources.getByName('test').output, sources.getByName('main').output, project.configurations.getByName(TEST_RUNTIME_CLASSPATH_CONFIGURATION_NAME))
-
-            if (passwordEnabled) {
-                def host = project.findProperty("${type.toLowerCase()}.test.host") ?: '0.0.0.0'
-                def password = project.findProperty("${type.toLowerCase()}.test.password")
-                t.systemProperty("${type.toLowerCase()}.test.host", host)
-                t.systemProperty("${type.toLowerCase()}.test.password", password)
-
-                if (password) {
-                    // When running with a valid password, make sure task `check` (and, by dependence, `build`) depends on us.
-                    project.tasks.getByName('check').dependsOn(t)
-                } else {
-                    // no password?  skip these tasks.
-                    t.onlyIf { false }
-                }
-                // This is necessary for the mysql/sqlserver tests, which must all be run in a suite.
-                // Do not cargo-cult this when extending @Category support for other test types.
-                t.include("**/*Suite.class")
-            }
 
             // we also need to adjust the reporting output directory of the alt task,
             // so we don't stomp over top of previous reports.

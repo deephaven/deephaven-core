@@ -5,13 +5,14 @@ package io.deephaven.server.runner;
 
 import dagger.Module;
 import io.deephaven.client.ClientDefaultsModule;
-import io.deephaven.server.console.SessionToExecutionStateModule;
+import io.deephaven.server.console.ExecutionContextModule;
 import io.deephaven.server.console.groovy.GroovyConsoleSessionModule;
 import io.deephaven.server.console.python.PythonConsoleSessionModule;
 import io.deephaven.server.console.python.PythonGlobalScopeCopyModule;
 import io.deephaven.server.healthcheck.HealthCheckModule;
 import io.deephaven.server.log.LogModule;
 import io.deephaven.server.plugin.python.PythonPluginsRegistration;
+import io.deephaven.server.session.ObfuscatingErrorTransformerModule;
 
 /**
  * Includes some of the common modules necessary for creating a {@link DeephavenApiServerComponent} /
@@ -32,8 +33,9 @@ import io.deephaven.server.plugin.python.PythonPluginsRegistration;
  * @see PythonPluginsRegistration.Module
  * @see PythonConsoleSessionModule
  * @see GroovyConsoleSessionModule
- * @see SessionToExecutionStateModule
+ * @see ExecutionContextModule
  * @see ClientDefaultsModule
+ * @see ObfuscatingErrorTransformerModule
  */
 @Module(includes = {
         DeephavenApiServerModule.class,
@@ -44,8 +46,9 @@ import io.deephaven.server.plugin.python.PythonPluginsRegistration;
         PythonPluginsRegistration.Module.class,
         PythonConsoleSessionModule.class,
         GroovyConsoleSessionModule.class,
-        SessionToExecutionStateModule.class,
+        ExecutionContextModule.class,
         ClientDefaultsModule.class,
+        ObfuscatingErrorTransformerModule.class,
 })
 public interface CommunityDefaultsModule {
 }

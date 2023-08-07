@@ -6,7 +6,9 @@ package io.deephaven.jpy.integration;
 import io.deephaven.jpy.PythonTest;
 import java.util.AbstractMap.SimpleImmutableEntry;
 import java.util.Iterator;
+import java.util.List;
 import java.util.Map.Entry;
+import java.util.Set;
 import java.util.stream.Collectors;
 import org.jpy.PyDictWrapper;
 import org.jpy.PyInputMode;
@@ -59,6 +61,11 @@ public class PyDictTest extends PythonTest {
         Assert.assertEquals(3, count(dict.entrySet().iterator()));
         Assert.assertEquals(3, count(dict.keySet().stream().iterator()));
         Assert.assertEquals(3, count(dict.entrySet().stream().iterator()));
+
+        Assert.assertTrue(!dict.values().isEmpty());
+        for (PyObject v : dict.values()) {
+            Assert.assertEquals("yeah", v.toString());
+        }
     }
 
     @Test

@@ -26,9 +26,10 @@ public class PskAuthenticationHandler implements AuthenticationRequestHandler {
     private static final String PSK;
     static {
         String pskFromConfig = Configuration.getInstance().getStringWithDefault("authentication.psk", null);
-        // If this feature is enabled by not value give, generate a 64bit number and encode as
+        // If this feature is enabled but no value is given, generate a 64-bit number and encode as
         // base-36 (lower case and numbers).
-        PSK = Objects.requireNonNullElseGet(pskFromConfig, () -> Long.toString(Math.abs(new Random().nextLong()), 36));
+        PSK = Optional.ofNullable(pskFromConfig).map(String::trim).filter(s -> !s.isEmpty())
+                .orElseGet(() -> Long.toString(Math.abs(new Random().nextLong()), 36));
 
         // limit to ascii for better log and url support
         if (!StandardCharsets.US_ASCII.newEncoder().canEncode(PSK)) {
@@ -65,14 +66,14 @@ public class PskAuthenticationHandler implements AuthenticationRequestHandler {
     @Override
     public void initialize(String targetUrl) {
         // Noisily log this, so the user can find the link to click easily
-        logger.warn().endl().endl().endl().endl().endl();
+        logger.warn().nl().nl().nl().nl().endl();
         logger.warn().append("================================================================================").endl();
         logger.warn().append("Superuser access through pre-shared key is enabled - use ").append(PSK)
                 .append(" to connect").endl();
-        logger.warn().append("Connect automatically to Web UI with ").append(targetUrl).append("/jsapi?psk=")
+        logger.warn().append("Connect automatically to Web UI with ").append(targetUrl).append("/?psk=")
                 .append(PSK)
                 .endl();
         logger.warn().append("================================================================================").endl();
-        logger.warn().endl().endl().endl().endl().endl();
+        logger.warn().nl().nl().nl().nl().endl();
     }
 }

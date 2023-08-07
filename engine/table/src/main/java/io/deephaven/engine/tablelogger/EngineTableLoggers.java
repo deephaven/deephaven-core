@@ -1,14 +1,12 @@
 package io.deephaven.engine.tablelogger;
 
-import io.deephaven.engine.tablelogger.impl.memory.EngineTableLoggersFactoryMemoryImpl;
-
 /**
  * Provides the factory for providing engine table loggers.
  */
 public class EngineTableLoggers {
     private EngineTableLoggers() {}
 
-    private static Factory factory = new EngineTableLoggersFactoryMemoryImpl();
+    private static Factory factory = Factory.Noop.INSTANCE;
 
     public static Factory get() {
         return factory;
@@ -30,5 +28,39 @@ public class EngineTableLoggers {
         ServerStateLogLogger serverStateLogLogger();
 
         UpdatePerformanceLogLogger updatePerformanceLogLogger();
+
+        enum Noop implements Factory {
+            INSTANCE;
+
+            @Override
+            public ProcessInfoLogLogger processInfoLogLogger() {
+                return ProcessInfoLogLogger.Noop.INSTANCE;
+            }
+
+            @Override
+            public ProcessMetricsLogLogger processMetricsLogLogger() {
+                return ProcessMetricsLogLogger.Noop.INSTANCE;
+            }
+
+            @Override
+            public QueryOperationPerformanceLogLogger queryOperationPerformanceLogLogger() {
+                return QueryOperationPerformanceLogLogger.Noop.INSTANCE;
+            }
+
+            @Override
+            public QueryPerformanceLogLogger queryPerformanceLogLogger() {
+                return QueryPerformanceLogLogger.Noop.INSTANCE;
+            }
+
+            @Override
+            public ServerStateLogLogger serverStateLogLogger() {
+                return ServerStateLogLogger.Noop.INSTANCE;
+            }
+
+            @Override
+            public UpdatePerformanceLogLogger updatePerformanceLogLogger() {
+                return UpdatePerformanceLogLogger.Noop.INSTANCE;
+            }
+        }
     }
 }

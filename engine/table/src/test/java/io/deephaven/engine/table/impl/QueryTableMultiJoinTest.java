@@ -761,7 +761,7 @@ public class QueryTableMultiJoinTest extends QueryTableTestBase {
     }
 
     @Test
-    public void testRenamingAndMultiColumn() {
+    public void testRenamingAndMultiColumnStrings() {
         final Table t1 = TableTools.newTable(col("A", "a", "b"), intCol("B", 1, 2), doubleCol("C", 3.0, 4.0),
                 doubleCol("D", 10.0, 20.0));
         final Table t2 = TableTools.newTable(col("A", "a", "b"), intCol("B", 1, 3), doubleCol("C", 5.0, 6.0),

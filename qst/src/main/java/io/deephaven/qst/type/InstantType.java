@@ -3,7 +3,7 @@
  */
 package io.deephaven.qst.type;
 
-import io.deephaven.annotations.SimpleStyle;
+import io.deephaven.annotations.SingletonStyle;
 import org.immutables.value.Value.Immutable;
 
 import java.time.Instant;
@@ -12,10 +12,10 @@ import java.time.Instant;
  * The {@link Instant} type.
  */
 @Immutable
-@SimpleStyle
+@SingletonStyle
 public abstract class InstantType extends GenericTypeBase<Instant> {
 
-    public static InstantType instance() {
+    public static InstantType of() {
         return ImmutableInstantType.of();
     }
 
@@ -25,9 +25,8 @@ public abstract class InstantType extends GenericTypeBase<Instant> {
     }
 
     @Override
-    public final <V extends GenericType.Visitor> V walk(V visitor) {
-        visitor.visit(this);
-        return visitor;
+    public final <R> R walk(GenericType.Visitor<R> visitor) {
+        return visitor.visit(this);
     }
 
     @Override
