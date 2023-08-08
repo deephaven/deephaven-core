@@ -54,26 +54,44 @@ final class ObjectTypeAdapter extends ObjectTypeBase implements AutoCloseable {
         } else {
             PyObject newConnection =
                     objectTypeAdapter.call(PyObject.class, "create_client_connection", PyObject.class,
-                            (PyObject) object, MessageStream.class, connection);
-            return new PythonMessageStream(newConnection);
+                            (PyObject) object, PythonClientMessageStream.class, new PythonClientMessageStream(connection));
+            return new PythonServerMessageStream(newConnection);
         }
     }
 
-    private static class PythonMessageStream implements MessageStream {
+    private static class PythonClientMessageStream {
+        private final MessageStream delegate;
+
+        private PythonClientMessageStream(MessageStream delegate) {
+            this.delegate = delegate;
+        }
+
+        public void onData(byte[] payload, Object... references) throws ObjectCommunicationException {
+            delegate.onData(ByteBuffer.wrap(payload), references);
+        }
+
+        public void onClose() {
+            delegate.onClose();
+        }
+    }
+
+    private static class PythonServerMessageStream implements MessageStream {
         private final PyObject instance;
 
-        private PythonMessageStream(PyObject instance) {
+        private PythonServerMessageStream(PyObject instance) {
             this.instance = instance;
         }
 
         @Override
         public void onData(ByteBuffer payload, Object[] references) {
-            instance.call(void.class, "on_message", byte[].class, payload.array(), Object[].class, references);
+            byte[] bytes = new byte[payload.limit()];
+            payload.get(bytes);
+            instance.call(void.class, "on_data", byte[].class, bytes, Object[].class, references);
         }
 
         @Override
         public void onClose() {
-            instance.call("close");
+            instance.call("on_close");
         }
     }
 

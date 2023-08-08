@@ -6,7 +6,7 @@ import jpy
 
 from typing import Optional, List, Any
 from deephaven.plugin.object_type import Exporter, ObjectType, Reference, MessageStream, FetchOnlyObjectType
-from deephaven._wrapper import JObjectWrapper
+from deephaven._wrapper import JObjectWrapper, wrap_j_object
 
 JReference = jpy.get_type('io.deephaven.plugin.type.ObjectType$Exporter$Reference')
 JExporterAdapter = jpy.get_type('io.deephaven.server.plugin.python.ExporterAdapter')
@@ -41,13 +41,26 @@ class ExporterAdapter(Exporter):
         return str(self._exporter)
 
 
-class MessageStreamAdapter(MessageStream):
+class ClientResponseStreamAdapter(MessageStream):
     """Python implementation of MessageStream that delegates to its Java counterpart"""
     def __init__(self, wrapped: JMessageStream):
         self._wrapped = wrapped
 
     def on_data(self, payload: bytes, references: List[Any]):
-        self._wrapped.on_data(payload, [_unwrap(ref) for ref in references])
+        self._wrapped.onData(payload, [_unwrap(ref) for ref in references])
+
+    def on_close(self):
+        self._wrapped.onClose()
+
+
+class ServerRequestStreamAdapter(MessageStream):
+    """Wraps Python server MessageStream implementations to correctly adapt objects coming from the client
+    """
+    def __init__(self, wrapped: MessageStream):
+        self._wrapped = wrapped
+
+    def on_data(self, payload:bytes, references: List[Any]):
+        self._wrapped.on_data(payload, [wrap_j_object(ref) for ref in references])
 
     def on_close(self):
         self._wrapped.on_close()
@@ -68,7 +81,9 @@ class ObjectTypeAdapter:
         return self._user_object_type.to_bytes(ExporterAdapter(exporter), obj)
 
     def create_client_connection(self, obj: Any, connection: JMessageStream):
-        return self._user_object_type.create_client_connection(obj, MessageStreamAdapter(connection))
+        return ServerRequestStreamAdapter(
+            self._user_object_type.create_client_connection(obj, ClientResponseStreamAdapter(connection))
+        )
 
     def __str__(self):
         return str(self._user_object_type)
