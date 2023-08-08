@@ -57,12 +57,46 @@ public class ObjectServiceGrpcImpl extends ObjectServiceGrpc.ObjectServiceImplBa
     }
 
     private final class SendMessageObserver extends SingletonLivenessManager implements StreamObserver<StreamRequest> {
-
         private ExportObject<Object> object;
         private final SessionState session;
         private final StreamObserver<StreamResponse> responseObserver;
 
         private ObjectType.MessageStream messageStream;
+
+        private final Queue<EnqueuedStreamOperation> operations = new ConcurrentLinkedQueue<>();
+        private final AtomicBoolean running = new AtomicBoolean(false);
+
+        class EnqueuedStreamOperation {
+            private final StreamOperation wrapped;
+            private final List<ExportObject<?>> requirements;
+
+            EnqueuedStreamOperation(ExportObject<Object> object, Collection<? extends ExportObject<?>> additExports, StreamOperation wrapped) {
+                this.wrapped = wrapped;
+                this.requirements = new ArrayList<>(additExports);
+                this.requirements.add(object);
+            }
+
+            public void run() {
+                session.nonExport()
+                        .onErrorHandler(SendMessageObserver.this::onError)
+                        .require(requirements)
+                        .submit(() -> {
+                            // Run the specified work. Note that we're not concerned about exceptions, the stream will
+                            // be dead (via onError) and won't be used again.
+                            try {
+                                wrapped.run();
+                            } catch (ObjectType.ObjectCommunicationException e) {
+                                throw Exceptions.statusRuntimeException(Code.INVALID_ARGUMENT,
+                                        "Error performing MessageStream operation");
+                            }
+
+                            // Set running to false (it must be true at this time) so that any new work can race being
+                            // added
+                            running.set(false);
+                            doWork();
+                        });
+            }
+        }
 
         private SendMessageObserver(SessionState session, StreamObserver<StreamResponse> responseObserver) {
             this.session = session;
@@ -109,17 +143,12 @@ public class ObjectServiceGrpcImpl extends ObjectServiceGrpc.ObjectServiceImplBa
                 List<SessionState.ExportObject<Object>> referenceObjects = data.getExportedReferencesList().stream()
                         .map(typedTicket -> ticketRouter.resolve(session, typedTicket.getTicket(), "ticket"))
                         .collect(Collectors.toList());
-                List<SessionState.ExportObject<Object>> requireObjects = new ArrayList<>(referenceObjects);
-                requireObjects.add(object);
-                runOrEnqueue(requireObjects, () -> {
+                runOrEnqueue(referenceObjects, () -> {
                     Object[] objs = referenceObjects.stream().map(ExportObject::get).toArray();
                     messageStream.onData(data.getPayload().asReadOnlyByteBuffer(), objs);
                 });
             }
         }
-
-        private final Queue<Runnable> operations = new ConcurrentLinkedQueue<>();
-        private final AtomicBoolean running = new AtomicBoolean(false);
 
         // These methods are intended to roughly behave like SerializingExecutor(directExecutor()) in that only one can
         // be running at a time, and will be started on the current thread, with the distinction that submitted work
@@ -129,46 +158,22 @@ public class ObjectServiceGrpcImpl extends ObjectServiceGrpc.ObjectServiceImplBa
         }
 
         private void runOrEnqueue(Collection<? extends ExportObject<?>> additExports, StreamOperation operation) {
-            List<ExportObject<?>> requirements = new ArrayList<>(additExports);
-            requirements.add(object);
-
-            Runnable runnable = () -> {
-                session.nonExport()
-                        .onErrorHandler(this::onError)
-                        .require(requirements)
-                        .submit(() -> {
-                            // Run the specified work. Note that we're not concerned about exceptions, the stream will
-                            // be dead (via onError) and won't be used again.
-                            try {
-                                operation.run();
-                            } catch (ObjectType.ObjectCommunicationException e) {
-                                throw Exceptions.statusRuntimeException(Code.INVALID_ARGUMENT,
-                                        "Error performing MessageStream operation");
-                            }
-
-                            // Set running to false (it must be true at this time) so that any new work can race being
-                            // added
-                            running.set(false);
-                            doWork();
-                        });
-            };
-
             // gRPC guarantees we can't race enqueuing
-            operations.add(runnable);
+            operations.add(new EnqueuedStreamOperation(object, additExports, operation));
             doWork();
         }
 
         private void doWork() {
             // More than one thread (at most two) can arrive here at the same time, but only one will pass the
             // compareAndSet
-            Runnable next = operations.peek();
+            EnqueuedStreamOperation next = operations.peek();
 
             // If we fail the null check, no work to do, leave running false (though if work was added right after
             // peek(), that thread will make it into here and start). If we fail the running check, something else has
             // already started work
             if (next != null && running.compareAndSet(false, true)) {
                 // We have the running lock again, and should remove the item we just peeked at
-                Runnable actualNext = operations.poll();
+                EnqueuedStreamOperation actualNext = operations.poll();
                 Assert.eq(next, "next", actualNext, "actualNext");
 
                 // Run the new item
