@@ -102,7 +102,7 @@ public class StreamToBlinkTableAdapter
         this(tableDefinition, streamPublisher, updateSourceRegistrar, name, extraAttributes, true);
     }
 
-    public StreamToBlinkTableAdapter(
+    StreamToBlinkTableAdapter(
             @NotNull final TableDefinition tableDefinition,
             @NotNull final StreamPublisher streamPublisher,
             @NotNull final UpdateSourceRegistrar updateSourceRegistrar,
@@ -143,7 +143,7 @@ public class StreamToBlinkTableAdapter
         }
     }
 
-    public void initialize() {
+    void initialize() {
         log.info().append("Registering ").append(StreamToBlinkTableAdapter.class.getSimpleName()).append('-')
                 .append(name)
                 .endl();
