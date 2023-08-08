@@ -537,5 +537,10 @@ class Session:
         return input_table
 
     def plugin_client(self, exportable_obj: ticket_pb2.TypedTicket) -> PluginClient:
-        """Part of the experimental plugin API."""
+        """Wraps a ticket as a PluginClient. Capabilities here vary based on the server implementation of the ObjectType,
+        but most will at least send a response payload to the client, possibly including references to other objects.
+        In some cases, depending on the server implementation, the client will also be able to send the same sort of
+        messages back to the server.
+
+        Part of the experimental plugin API."""
         return PluginClient(self, exportable_obj)
