@@ -635,7 +635,7 @@ setMethod(
     verify_string("by", by, FALSE)
     verify_bool("descending", descending, FALSE)
     if ((length(descending) > 1) && length(descending) != length(by)) {
-      stop(paste0("'descending' must be the same length as 'by' if more than one entry is supplied. Got 'by' with length ", length(by), " and 'descending' with length", length(descending), " instead."))
+      stop(paste0("'descending' must be the same length as 'by' if more than one entry is supplied. Got 'by' with length ", length(by), " and 'descending' with length", length(descending), "."))
     }
     return(new("TableHandle", .internal_rcpp_object = table_handle@.internal_rcpp_object$sort(by, descending)))
   }

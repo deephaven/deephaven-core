@@ -196,35 +196,35 @@ test_that("connect fails nicely with bad inputs", {
   )
   expect_error(
     connect(target = "localhost:10000", auth_type = "blahblah"),
-    "'auth_type' must be 'anonymous', 'basic', or 'custom', but got blahblah instead."
+    "'auth_type' must be 'anonymous', 'basic', or 'custom', but got blahblah."
   )
   expect_error(
     connect(target = "localhost:10000", auth_type = "basic", auth_token_pair = 1234),
-    "'auth_token_pair' must be passed as a single string. Got an object of class numeric instead."
+    "'auth_token_pair' must be a single string. Got an object of class numeric."
   )
   expect_error(
     connect(target = "localhost:10000", session_type = "blahblah"),
-    "'session_type' must be 'python' or 'groovy', but got blahblah instead."
+    "'session_type' must be 'python' or 'groovy', but got blahblah."
   )
   expect_error(
     connect(target = "localhost:10000", session_type = 1234),
-    "'session_type' must be 'python' or 'groovy', but got 1234 instead."
+    "'session_type' must be 'python' or 'groovy', but got 1234."
   )
   expect_error(
     connect(target = "localhost:10000", use_tls = "banana"),
-    "'use_tls' must be TRUE or FALSE, but got banana instead."
+    "'use_tls' must be a single boolean. Got an object of class character."
   )
   expect_error(
     connect(target = "localhost:10000", int_option = 1234),
-    "'int_option' must be passed as a single string. Got an object of class numeric instead."
+    "'int_option' must be a single string. Got an object of class numeric."
   )
   expect_error(
     connect(target = "localhost:10000", string_option = 1234),
-    "'string_option' must be passed as a single string. Got an object of class numeric instead."
+    "'string_option' must be a single string. Got an object of class numeric."
   )
   expect_error(
     connect(target = "localhost:10000", extra_header = 1234),
-    "'extra_header' must be passed as a single string. Got an object of class numeric instead."
+    "'extra_header' must be a single string. Got an object of class numeric."
   )
   
 })
@@ -236,11 +236,11 @@ test_that("import_table fails nicely with bad inputs", {
 
   expect_error(
     import_table(client, 12345),
-    "'table_object' must be either an R Data Frame, a dplyr Tibble, an Arrow Table, or an Arrow Record Batch Reader. Got an object of class numeric instead."
+    "'table_object' must be either an R Data Frame, a dplyr Tibble, an Arrow Table, or an Arrow Record Batch Reader. Got an object of class numeric."
   )
   expect_error(
     import_table(client, "hello!"),
-    "'table_object' must be either an R Data Frame, a dplyr Tibble, an Arrow Table, or an Arrow Record Batch Reader. Got an object of class character instead."
+    "'table_object' must be either an R Data Frame, a dplyr Tibble, an Arrow Table, or an Arrow Record Batch Reader. Got an object of class character."
   )
 
   # TODO: this needs better error handling, but it is unclear whether that happens on the server side or the R side.
@@ -250,7 +250,7 @@ test_that("import_table fails nicely with bad inputs", {
   data(HairEyeColor)
   expect_error(
     import_table(client, HairEyeColor),
-    "'table_object' must be either an R Data Frame, a dplyr Tibble, an Arrow Table, or an Arrow Record Batch Reader. Got an object of class table instead."
+    "'table_object' must be either an R Data Frame, a dplyr Tibble, an Arrow Table, or an Arrow Record Batch Reader. Got an object of class table."
   )
 
   close(client)
@@ -259,9 +259,9 @@ test_that("import_table fails nicely with bad inputs", {
 test_that("open_table fails nicely with bad inputs", {
   client <- connect(target = "localhost:10000")
 
-  expect_error(open_table(client, ""), "The table '' you're trying to pull does not exist on the server.")
-  expect_error(open_table(client, 12345), "'name' must be passed as a single string. Got an object of class numeric instead.")
-  expect_error(open_table(client, c("I", "am", "string")), "'name' must be passed as a single string. Got a string vector of length 3 instead.")
+  expect_error(open_table(client, ""), "The table '' does not exist on the server.")
+  expect_error(open_table(client, 12345), "'name' must be a single string. Got an object of class numeric.")
+  expect_error(open_table(client, c("I", "am", "string")), "'name' must be a single string. Got a vector of length 3.")
 
   close(client)
 })
@@ -269,11 +269,11 @@ test_that("open_table fails nicely with bad inputs", {
 test_that("empty_table fails nicely with bad inputs", {
   client <- connect(target = "localhost:10000")
 
-  expect_error(empty_table(client, 0), "'size' must be a positive integer. Got 'size' = 0 instead.")
-  expect_error(empty_table(client, -3), "'size' must be a positive integer. Got 'size' = -3 instead.")
-  expect_error(empty_table(client, 1.2345), "'size' must be an integer. Got 'size' = 1.2345 instead.")
-  expect_error(empty_table(client, "hello!"), "'size' must be passed as a single numeric. Got an object of class character instead.")
-  expect_error(empty_table(client, c(1, 2, 3, 4)), "'size' must be passed as a single numeric. Got a numeric vector of length 4 instead.")
+  expect_error(empty_table(client, 0), "'size' must be a positive integer. Got 'size' = 0.")
+  expect_error(empty_table(client, -3), "'size' must be a positive integer. Got 'size' = -3.")
+  expect_error(empty_table(client, 1.2345), "'size' must be an integer. Got 'size' = 1.2345.")
+  expect_error(empty_table(client, "hello!"), "'size' must be a single numeric. Got an object of class character.")
+  expect_error(empty_table(client, c(1, 2, 3, 4)), "'size' must be a single numeric. Got a vector of length 4.")
 
   close(client)
 })
@@ -281,12 +281,12 @@ test_that("empty_table fails nicely with bad inputs", {
 test_that("time_table fails nicely with bad inputs", {
   client <- connect(target = "localhost:10000")
 
-  expect_error(time_table(client, 1.23, 1000), "'period' must be an integer. Got 'period' = 1.23 instead.")
-  expect_error(time_table(client, 1000, 1.23), "'start_time' must be an integer. Got 'start_time' = 1.23 instead.")
-  expect_error(time_table(client, c(1, 2, 3), 1000), "'period' must be passed as a single numeric. Got a numeric vector of length 3 instead.")
-  expect_error(time_table(client, 1000, c(1, 2, 3)), "'start_time' must be passed as a single numeric. Got a numeric vector of length 3 instead.")
-  expect_error(time_table(client, "hello!", 1000), "'period' must be passed as a single numeric. Got an object of class character instead.")
-  expect_error(time_table(client, 1000, "hello!"), "'start_time' must be passed as a single numeric. Got an object of class character instead.")
+  expect_error(time_table(client, 1.23, 1000), "'period' must be an integer. Got 'period' = 1.23.")
+  expect_error(time_table(client, 1000, 1.23), "'start_time' must be an integer. Got 'start_time' = 1.23.")
+  expect_error(time_table(client, c(1, 2, 3), 1000), "'period' must be a single numeric. Got a vector of length 3.")
+  expect_error(time_table(client, 1000, c(1, 2, 3)), "'start_time' must be a single numeric. Got a vector of length 3.")
+  expect_error(time_table(client, "hello!", 1000), "'period' must be a single numeric. Got an object of class character.")
+  expect_error(time_table(client, 1000, "hello!"), "'start_time' must be a single numeric. Got an object of class character.")
 
   close(client)
 })
@@ -294,8 +294,8 @@ test_that("time_table fails nicely with bad inputs", {
 test_that("run_script fails nicely with bad input types", {
   client <- connect(target = "localhost:10000")
 
-  expect_error(run_script(client, 12345), "'script' must be passed as a single string. Got an object of class numeric instead.")
-  expect_error(run_script(client, c("I", "am", "a", "string")), "'script' must be passed as a single string. Got a string vector of length 4 instead.")
+  expect_error(run_script(client, 12345), "'script' must be a single string. Got an object of class numeric.")
+  expect_error(run_script(client, c("I", "am", "a", "string")), "'script' must be a single string. Got a vector of length 4.")
 
   close(client)
 })

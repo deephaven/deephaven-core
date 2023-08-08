@@ -55,7 +55,6 @@ test_that("is_static returns the correct value", {
   close(data$client)
 })
 
-# TODO: Implement so this doesn't fail
 test_that("nrow returns the correct number of rows", {
   data <- setup()
 
@@ -172,22 +171,22 @@ test_that("bind_to_variable fails nicely on bad inputs", {
 
   expect_error(
     data$th1 %>% bind_to_variable(12345),
-    "'name' must be passed as a single string. Got an object of class numeric instead."
+    "'name' must be a single string. Got an object of class numeric."
   )
 
   expect_error(
     data$th1 %>% bind_to_variable(c("multiple", "strings")),
-    "'name' must be passed as a single string. Got a string vector of length 2 instead."
+    "'name' must be a single string. Got a vector of length 2."
   )
 
   expect_error(
     data$th1 %>% bind_to_variable(data$df1),
-    "'name' must be passed as a single string. Got an object of class data.frame instead."
+    "'name' must be a single string. Got a vector of length 3."
   )
 
   expect_error(
     data$th1 %>% bind_to_variable(list("list", "of", "strings")),
-    "'name' must be passed as a single string. Got a string vector of length 3 instead."
+    "'name' must be a single string. Got a vector of length 3."
   )
 
   close(data$client)
