@@ -73,9 +73,11 @@ public abstract class DeferredColumnRegionBase<ATTR extends Any, REGION_TYPE ext
     }
 
     @Override
-    public void fillChunkAppend(@NotNull FillContext context, @NotNull WritableChunk<? super ATTR> destination,
-            @NotNull RowSequence.Iterator RowSequenceIterator) {
-        getResultRegion().fillChunkAppend(context, destination, RowSequenceIterator);
+    public void fillChunkAppend(
+            @NotNull final FillContext context,
+            @NotNull final WritableChunk<? super ATTR> destination,
+            @NotNull final RowSequence.Iterator rowSequenceIterator) {
+        getResultRegion().fillChunkAppend(context, destination, rowSequenceIterator);
     }
 
     @Override
