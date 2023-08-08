@@ -15,10 +15,12 @@
 #include <arrow/array.h>
 #include <arrow/array/array_primitive.h>
 
+#include "deephaven/client/impl/util.h"
 #include "deephaven/dhcore/utility/utility.h"
 
 using namespace std;
 using arrow::flight::FlightClient;
+using deephaven::client::impl::moveVectorData;
 using deephaven::dhcore::utility::SFCallback;
 using deephaven::dhcore::utility::bit_cast;
 using deephaven::dhcore::utility::streamf;
@@ -42,6 +44,7 @@ using io::deephaven::proto::backplane::grpc::ReleaseResponse;
 using io::deephaven::proto::backplane::grpc::SelectOrUpdateRequest;
 using io::deephaven::proto::backplane::grpc::SortTableRequest;
 using io::deephaven::proto::backplane::grpc::TimeTableRequest;
+using io::deephaven::proto::backplane::grpc::UpdateByRequest;
 using io::deephaven::proto::backplane::grpc::UnstructuredFilterTableRequest;
 using io::deephaven::proto::backplane::grpc::UngroupRequest;
 using io::deephaven::proto::backplane::grpc::Ticket;
@@ -50,14 +53,14 @@ using io::deephaven::proto::backplane::script::grpc::ExecuteCommandRequest;
 using io::deephaven::proto::backplane::script::grpc::ExecuteCommandResponse;
 using io::deephaven::proto::backplane::script::grpc::StartConsoleRequest;
 
+typedef io::deephaven::proto::backplane::grpc::UpdateByRequest::UpdateByOperation UpdateByOperation;
+
 namespace deephaven::client::server {
 
 const char *const Server::authorizationKey = "authorization";
 
 namespace {
 Ticket makeScopeReference(std::string_view tableName);
-void moveVectorData(std::vector<std::string> src,
-    google::protobuf::RepeatedPtrField<std::string> *dest);
 
 std::optional<std::chrono::milliseconds> extractExpirationInterval(
     const ConfigurationConstantsResponse &ccResp);
@@ -513,6 +516,17 @@ void Server::asOfJoinAsync(AsOfJoinTablesRequest::MatchRule matchRule, Ticket le
   sendRpc(req, std::move(etcCallback), tableStub(), &TableService::Stub::AsyncAsOfJoinTables);
 }
 
+void Server::updateByAsync(Ticket source, std::vector<UpdateByOperation> operations,
+    std::vector<std::string> groupByColumns,
+    std::shared_ptr<EtcCallback> etcCallback, Ticket result) {
+  UpdateByRequest req;
+  *req.mutable_result_id() = std::move(result);
+  *req.mutable_source_id()->mutable_ticket() = std::move(source);
+  moveVectorData(std::move(operations), req.mutable_operations());
+  moveVectorData(std::move(groupByColumns), req.mutable_group_by_columns());
+  sendRpc(req, std::move(etcCallback), tableStub(), &TableService::Stub::AsyncUpdateBy);
+}
+
 void
 Server::bindToVariableAsync(const Ticket &consoleId, const Ticket &tableId, std::string variable,
     std::shared_ptr<SFCallback<BindTableToVariableResponse>> callback) {
@@ -689,13 +703,6 @@ Ticket makeScopeReference(std::string_view tableName) {
   result.mutable_ticket()->append("s/");
   result.mutable_ticket()->append(tableName);
   return result;
-}
-
-void moveVectorData(std::vector<std::string> src,
-    google::protobuf::RepeatedPtrField<std::string> *dest) {
-  for (auto &s: src) {
-    dest->Add(std::move(s));
-  }
 }
 
 std::optional<std::chrono::milliseconds> extractExpirationInterval(

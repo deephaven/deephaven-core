@@ -5,6 +5,7 @@ package io.deephaven.engine.table.impl;
 
 import io.deephaven.api.ColumnName;
 import io.deephaven.api.SortColumn;
+import io.deephaven.benchmarking.generator.ColumnGenerator;
 import io.deephaven.engine.table.Table;
 import io.deephaven.engine.testutil.generator.*;
 import io.deephaven.engine.testutil.junit4.EngineCleanup;
@@ -12,7 +13,6 @@ import io.deephaven.test.types.SerialTest;
 import io.deephaven.benchmarking.BenchmarkTable;
 import io.deephaven.benchmarking.BenchmarkTableBuilder;
 import io.deephaven.benchmarking.BenchmarkTools;
-import io.deephaven.benchmarking.generator.EnumStringColumnGenerator;
 import junit.framework.TestCase;
 import org.junit.Rule;
 import org.junit.Test;
@@ -175,10 +175,10 @@ public class MultiColumnSortTest {
     @Test
     public void benchmarkTest() {
         {
-            final EnumStringColumnGenerator enumStringCol1 =
-                    (EnumStringColumnGenerator) BenchmarkTools.stringCol("Enum1", 10000, 6, 6, 0xB00FB00F);
-            final EnumStringColumnGenerator enumStringCol2 =
-                    (EnumStringColumnGenerator) BenchmarkTools.stringCol("Enum2", 1000, 6, 6, 0xF00DF00D);
+            final ColumnGenerator<String> enumStringCol1 = BenchmarkTools.stringCol(
+                    "Enum1", 10000, 6, 6, 0xB00FB00FL);
+            final ColumnGenerator<String> enumStringCol2 = BenchmarkTools.stringCol(
+                    "Enum2", 1000, 6, 6, 0xF00DF00DL);
 
             final BenchmarkTableBuilder builder;
             final int actualSize = BenchmarkTools.sizeWithSparsity(25000000, 90);

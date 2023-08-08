@@ -122,7 +122,7 @@ public:
 
   bool valid() { return state_->valid(); }
 
-  const T &value() { return state_->value(); }
+  const T &value() const { return state_->value(); }
 
   void invoke(std::shared_ptr<SFCallback<T>> cb) {
     state_->invoke(std::move(cb));

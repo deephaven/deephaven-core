@@ -15,6 +15,7 @@
 #include "deephaven/client/impl/boolean_expression_impl.h"
 #include "deephaven/client/impl/columns_impl.h"
 #include "deephaven/client/impl/table_handle_manager_impl.h"
+#include "deephaven/client/impl/update_by_operation_impl.h"
 #include "deephaven/client/client.h"
 #include "deephaven/client/columns.h"
 #include "deephaven/client/subscription/subscribe_thread.h"
@@ -26,6 +27,8 @@
 #include "deephaven/dhcore/ticking/ticking.h"
 #include "deephaven/dhcore/utility/callbacks.h"
 #include "deephaven/dhcore/utility/utility.h"
+#include "deephaven/proto/table.pb.h"
+#include "deephaven/proto/table.grpc.pb.h"
 
 using io::deephaven::proto::backplane::grpc::ComboAggregateRequest;
 using io::deephaven::proto::backplane::grpc::ReleaseResponse;
@@ -65,6 +68,8 @@ using deephaven::dhcore::utility::separatedList;
 using deephaven::dhcore::utility::SFCallback;
 using deephaven::dhcore::utility::streamf;
 using deephaven::dhcore::utility::stringf;
+
+typedef io::deephaven::proto::backplane::grpc::UpdateByRequest::UpdateByOperation UpdateByOperationProto;
 
 namespace deephaven::client {
 namespace impl {
@@ -370,6 +375,20 @@ std::shared_ptr<TableHandleImpl> TableHandleImpl::asOfJoin(AsOfJoinTablesRequest
   return TableHandleImpl::create(managerImpl_, std::move(resultTicket), std::move(ls));
 }
 
+std::shared_ptr<TableHandleImpl>
+TableHandleImpl::updateBy(std::vector<std::shared_ptr<UpdateByOperationImpl>> ops,
+    std::vector<std::string> by) {
+  auto protos = makeReservedVector<UpdateByOperationProto>(ops.size());
+  for (const auto &op : ops) {
+    protos.push_back(op->updateByProto());
+  }
+  auto *server = managerImpl_->server().get();
+  auto resultTicket = server->newTicket();
+  auto [cb, ls] = TableHandleImpl::createEtcCallback(shared_from_this(), managerImpl_.get(), resultTicket);
+  server->updateByAsync(ticket_, std::move(protos), std::move(by), std::move(cb), resultTicket);
+  return TableHandleImpl::create(managerImpl_, std::move(resultTicket), std::move(ls));
+}
+
 namespace {
 class CStyleTickingCallback final : public TickingCallback {
 public:
@@ -501,12 +520,16 @@ void TableHandleImpl::observe() {
   lazyState_->waitUntilReady();
 }
 
-int64_t TableHandleImpl::numRows() {
+int64_t TableHandleImpl::numRows() const {
   return lazyState_->info().numRows();
 }
 
-bool TableHandleImpl::isStatic() {
+bool TableHandleImpl::isStatic() const {
   return lazyState_->info().isStatic();
+}
+
+std::shared_ptr<Schema> TableHandleImpl::schema() const {
+  return lazyState_->getSchema();
 }
 
 namespace internal {
@@ -549,7 +572,7 @@ void LazyState::waitUntilReady() {
   (void)infoFuture_.value();
 }
 
-const LazyStateInfo &LazyState::info() {
+const LazyStateInfo &LazyState::info() const {
   return infoFuture_.value();
 }
 
@@ -605,6 +628,10 @@ struct ArrowToElementTypeId final : public arrow::TypeVisitor {
     return arrow::Status::OK();
   }
 
+  arrow::Status Visit(const arrow::ListType &type) final {
+    typeId_ = ElementTypeId::LIST;
+    return arrow::Status::OK();
+  }
 
   ElementTypeId::Enum typeId_ = ElementTypeId::INT8;  // arbitrary initializer
 };

@@ -13,8 +13,8 @@
 
 namespace deephaven::dhcore::clienttable {
 /**
- * The clienttable schema that goes along with a Table class. This Schema object tells you about
- * the names and data types of the clienttable columns.
+ * The table schema that goes along with a Table class. This Schema object tells you about
+ * the names and data types of the table columns.
  */
 class Schema {
   struct Private {};

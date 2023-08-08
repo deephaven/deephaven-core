@@ -15,6 +15,11 @@ public interface UpdateGraph extends UpdateSourceRegistrar, NotificationQueue, N
     // region general accessors
 
     /**
+     * @return The name of this UpdateGraph
+     */
+    String getName();
+
+    /**
      * @return The shared {@link AwareFunctionalLock} to use with this update graph
      */
     AwareFunctionalLock sharedLock();

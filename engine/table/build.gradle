@@ -120,6 +120,8 @@ spotless {
                 '**/asofjoin/typed/rightincopen/gen/*.java',
                 '**/asofjoin/typed/staticopen/gen/*.java',
                 '**/updateby/hashing/typed/open/gen/*.java',
+                '**/multijoin/typed/staticopen/gen/*.java',
+                '**/multijoin/typed/incopen/gen/*.java',
                 'src/main/java/io/deephaven/engine/table/impl/SymbolTableCombiner.java',
                 'src/main/java/io/deephaven/libs/GroovyStaticImports.java',
                 'src/test/java/**/*Sample.java'

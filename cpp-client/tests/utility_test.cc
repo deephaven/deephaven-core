@@ -9,14 +9,14 @@ using deephaven::dhcore::utility::epochMillisToStr;
 using deephaven::dhcore::utility::objectId;
 
 namespace deephaven::client::tests {
-TEST_CASE("base64encode", "[utility]") {
+TEST_CASE("Base64encode", "[utility]") {
   // https://en.wikipedia.org/wiki/Base64
   CHECK(base64Encode("light work.") == "bGlnaHQgd29yay4=");
   CHECK(base64Encode("light work") == "bGlnaHQgd29yaw==");
   CHECK(base64Encode("light wor") == "bGlnaHQgd29y");
 }
 
-TEST_CASE("epochMillisToStr", "[utility]") {
+TEST_CASE("EpochMillisToStr", "[utility]") {
   const char *tzKey = "TZ";
   const char *originalTz = getenv(tzKey);
   setenv(tzKey, "America/Denver", 1);
@@ -33,7 +33,7 @@ TEST_CASE("epochMillisToStr", "[utility]") {
   tzset();
 }
 
-TEST_CASE("objectId", "[utility]") {
+TEST_CASE("ObjectId", "[utility]") {
   uintptr_t p = 0xdeadbeef;
   auto id = objectId("hello", (void*)p);
   CHECK(id == "hello[0xdeadbeef]");

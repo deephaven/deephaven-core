@@ -6,6 +6,7 @@ package io.deephaven.engine.table.impl.util;
 import io.deephaven.engine.table.Table;
 import io.deephaven.engine.table.TableListener;
 import io.deephaven.engine.table.impl.BlinkTableTools;
+import org.jetbrains.annotations.Nullable;
 
 import java.time.Instant;
 
@@ -32,7 +33,10 @@ public class AsyncErrorLogger {
         return BlinkTableTools.blinkToAppendOnly(getInstance().blink());
     }
 
-    public static void log(Instant time, TableListener.Entry entry, TableListener.Entry sourceEntry,
+    public static void log(
+            Instant time,
+            @Nullable TableListener.Entry entry,
+            @Nullable TableListener.Entry sourceEntry,
             Throwable originalException) {
         getInstance().add(time, entry, sourceEntry, originalException);
     }

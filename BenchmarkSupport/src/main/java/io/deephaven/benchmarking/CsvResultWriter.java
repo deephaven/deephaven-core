@@ -44,6 +44,9 @@ public class CsvResultWriter {
         for (final RunResult runResult : results) {
             final BenchmarkParams runParams = runResult.getParams();
             headers.addAll(runParams.getParamsKeys());
+            runResult.getSecondaryResults().keySet().stream()
+                    .map(s -> s.replaceAll("\\s+", "_"))
+                    .forEach(headers::add);
         }
 
         writer.writeHeaders(headers);
@@ -67,6 +70,10 @@ public class CsvResultWriter {
                     values.put("Score", decimalFormat.format(itResult.getPrimaryResult().getScore()));
                     values.put("Run", Integer.toString(runNo));
                     values.put("Iteration", Integer.toString(itNo));
+
+                    itResult.getSecondaryResults().forEach((res, val) -> {
+                        values.put(res.replaceAll("\\s+", "_"), decimalFormat.format(val.getScore()));
+                    });
 
                     writer.writeRow(headers.stream().map(values::get).collect(Collectors.toList()));
                 }
