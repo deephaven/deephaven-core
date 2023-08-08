@@ -200,7 +200,7 @@ class Session:
                     field.application_id == 'scope' and field.typed_ticket.type == 'Table']
 
     @property
-    def exportable_objects(self):
+    def exportable_objects(self) -> List[ticket_pb2.TypedTicket]:
         with self._r_lock:
             fields = self._fetch_fields()
             return {field.field_name: field.typed_ticket for field in fields if
@@ -537,6 +537,6 @@ class Session:
         input_table.key_cols = key_cols
         return input_table
 
-    def plugin_client(self, exportable: Any) -> PluginClient:
+    def plugin_client(self, exportable_obj: ticket_pb2.TypedTicket) -> PluginClient:
         """Part of the experimental plugin API."""
-        return PluginClient(self, exportable)
+        return PluginClient(self, exportable_obj)
