@@ -16,7 +16,7 @@ import jsinterop.annotations.JsType;
  * Indicates that this object is a local representation of an object that exists on the server. Similar to HasLifecycle,
  * but not quite the same - whereas HasLifecycle is entirely internal and provides and provides hooks for reconnect
  * logic, this exists to get a typed ticket reference to an object on the server, to pass that same ticket back to the
- * server agian.
+ * server again.
  */
 public interface ServerObject {
     @JsIgnore
