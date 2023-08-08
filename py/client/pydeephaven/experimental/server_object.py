@@ -6,6 +6,7 @@ import dataclasses
 from pydeephaven.proto import ticket_pb2
 from typing import Optional
 
+
 @dataclasses.dataclass
 class ServerObject:
     """

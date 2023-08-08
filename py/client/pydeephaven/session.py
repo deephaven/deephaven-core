@@ -200,11 +200,10 @@ class Session:
                     field.application_id == 'scope' and field.typed_ticket.type == 'Table']
 
     @property
-    def exportable_objects(self) -> List[ticket_pb2.TypedTicket]:
+    def exportable_objects(self) -> Dict[str, ticket_pb2.TypedTicket]:
         with self._r_lock:
             fields = self._fetch_fields()
-            return {field.field_name: field.typed_ticket for field in fields if
-                    field.application_id == 'scope' and field.typed_ticket.type != 'Table'}
+            return {field.field_name: field.typed_ticket for field in fields if field.application_id == 'scope'}
 
     @property
     def grpc_metadata(self):
