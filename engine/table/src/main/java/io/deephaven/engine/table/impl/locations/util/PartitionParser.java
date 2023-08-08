@@ -177,7 +177,7 @@ public enum PartitionParser {
      * Parse {@code stringValueTrimmed} into an instance of {@link #resultType
      * 
      * @param stringValue The (non-{@link String#isEmpty() empty}) input
-     * @return The psrsed result partition value as an {@code Object}
+     * @return The parsed result partition value as an {@code Object}
      */
     abstract Comparable<?> parseToType(@NotNull final String stringValue);
 

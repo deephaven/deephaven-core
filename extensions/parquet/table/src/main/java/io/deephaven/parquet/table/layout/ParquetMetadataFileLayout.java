@@ -92,7 +92,7 @@ public class ParquetMetadataFileLayout implements TableLocationKeyFinder<Parquet
         this.metadataFile = metadataFile;
         this.commonMetadataFile = commonMetadataFile;
         if (!metadataFile.exists()) {
-            throw new TableDataException("Parquet metadata file " + metadataFile + " does not exist");
+            throw new TableDataException(String.format("Parquet metadata file %s does not exist", metadataFile));
         }
         final ParquetFileReader metadataFileReader = ParquetTools.getParquetFileReader(metadataFile);
 
@@ -153,8 +153,9 @@ public class ParquetMetadataFileLayout implements TableLocationKeyFinder<Parquet
             final int[] rowGroupIndices = entry.getValue().toArray();
 
             if (filePathString == null || filePathString.isEmpty()) {
-                throw new TableDataException("Missing parquet file name for row groups "
-                        + Arrays.toString(rowGroupIndices) + " in " + metadataFile);
+                throw new TableDataException(String.format(
+                        "Missing parquet file name for row groups %s in %s",
+                        Arrays.toString(rowGroupIndices), metadataFile));
             }
             final LinkedHashMap<String, Comparable<?>> partitions =
                     partitioningColumns.isEmpty() ? null : new LinkedHashMap<>();
@@ -162,8 +163,9 @@ public class ParquetMetadataFileLayout implements TableLocationKeyFinder<Parquet
                 final Path filePath = Paths.get(filePathString);
                 final int numPartitions = filePath.getNameCount() - 1;
                 if (numPartitions != partitioningColumns.size()) {
-                    throw new TableDataException("Unexpected number of path elements in " + filePathString
-                            + " for partitions " + partitions.keySet());
+                    throw new TableDataException(String.format(
+                            "Unexpected number of path elements in %s for partitions %s",
+                            filePathString, partitions.keySet()));
                 }
                 final boolean useHiveStyle = filePath.getName(0).toString().contains("=");
                 for (int pi = 0; pi < numPartitions; ++pi) {
@@ -173,9 +175,9 @@ public class ParquetMetadataFileLayout implements TableLocationKeyFinder<Parquet
                     if (useHiveStyle) {
                         final String[] pathComponents = pathElement.split("=", 2);
                         if (pathComponents.length != 2) {
-                            throw new TableDataException(
-                                    "Unexpected path format found for hive-style partitioning from " + filePathString
-                                            + " for " + metadataFile);
+                            throw new TableDataException(String.format(
+                                    "Unexpected path format found for hive-style partitioning from %s for %s",
+                                    filePathString, metadataFile));
                         }
                         partitionKey = instructions.getColumnNameFromParquetColumnNameOrDefault(pathComponents[0]);
                         partitionValueRaw = pathComponents[1];
@@ -186,8 +188,9 @@ public class ParquetMetadataFileLayout implements TableLocationKeyFinder<Parquet
                     final Comparable<?> partitionValue =
                             partitionKeyToParser.get(partitionKey).parse(partitionValueRaw);
                     if (partitions.containsKey(partitionKey)) {
-                        throw new TableDataException("Unexpected duplicate partition key " + partitionKey
-                                + " when parsing " + filePathString + " for " + metadataFile);
+                        throw new TableDataException(String.format(
+                                "Unexpected duplicate partition key %s when parsing %s for %s",
+                                partitionKey, filePathString, metadataFile));
                     }
                     partitions.put(partitionKey, partitionValue);
                 }
