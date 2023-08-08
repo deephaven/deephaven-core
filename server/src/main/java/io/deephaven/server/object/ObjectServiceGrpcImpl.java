@@ -8,6 +8,7 @@ import com.google.rpc.Code;
 import io.deephaven.base.verify.Assert;
 import io.deephaven.engine.liveness.SingletonLivenessManager;
 import io.deephaven.extensions.barrage.util.GrpcUtil;
+import io.deephaven.plugin.type.ObjectCommunicationException;
 import io.deephaven.plugin.type.ObjectType;
 import io.deephaven.plugin.type.ObjectTypeLookup;
 import io.deephaven.proto.backplane.grpc.*;
@@ -42,7 +43,7 @@ public class ObjectServiceGrpcImpl extends ObjectServiceGrpc.ObjectServiceImplBa
     private final SessionService.ErrorTransformer errorTransformer;
 
     interface StreamOperation {
-        void run() throws ObjectType.ObjectCommunicationException;
+        void run() throws ObjectCommunicationException;
     }
 
     @Inject
@@ -70,9 +71,10 @@ public class ObjectServiceGrpcImpl extends ObjectServiceGrpc.ObjectServiceImplBa
             private final StreamOperation wrapped;
             private final List<ExportObject<?>> requirements;
 
-            EnqueuedStreamOperation(ExportObject<Object> object, Collection<? extends ExportObject<?>> additExports, StreamOperation wrapped) {
+            EnqueuedStreamOperation(ExportObject<Object> object, Collection<? extends ExportObject<?>> dependencies,
+                    StreamOperation wrapped) {
                 this.wrapped = wrapped;
-                this.requirements = new ArrayList<>(additExports);
+                this.requirements = new ArrayList<>(dependencies);
                 this.requirements.add(object);
             }
 
@@ -85,7 +87,7 @@ public class ObjectServiceGrpcImpl extends ObjectServiceGrpc.ObjectServiceImplBa
                             // be dead (via onError) and won't be used again.
                             try {
                                 wrapped.run();
-                            } catch (ObjectType.ObjectCommunicationException e) {
+                            } catch (ObjectCommunicationException e) {
                                 throw Exceptions.statusRuntimeException(Code.INVALID_ARGUMENT,
                                         "Error performing MessageStream operation");
                             }
@@ -157,9 +159,9 @@ public class ObjectServiceGrpcImpl extends ObjectServiceGrpc.ObjectServiceImplBa
             runOrEnqueue(Collections.emptyList(), runnable);
         }
 
-        private void runOrEnqueue(Collection<? extends ExportObject<?>> additExports, StreamOperation operation) {
+        private void runOrEnqueue(Collection<? extends ExportObject<?>> dependencies, StreamOperation operation) {
             // gRPC guarantees we can't race enqueuing
-            operations.add(new EnqueuedStreamOperation(object, additExports, operation));
+            operations.add(new EnqueuedStreamOperation(object, dependencies, operation));
             doWork();
         }
 
@@ -323,8 +325,8 @@ public class ObjectServiceGrpcImpl extends ObjectServiceGrpc.ObjectServiceImplBa
         }
 
         @Override
-        public void onData(ByteBuffer message, Object[] references) throws ObjectType.ObjectCommunicationException {
-            List<ExportObject<?>> exports = new ArrayList<>();
+        public void onData(ByteBuffer message, Object[] references) throws ObjectCommunicationException {
+            List<ExportObject<?>> exports = new ArrayList<>(references.length);
             try {
                 Data.Builder payload = Data.newBuilder().setPayload(ByteString.copyFrom(message));
 
@@ -338,12 +340,16 @@ public class ObjectServiceGrpcImpl extends ObjectServiceGrpc.ObjectServiceImplBa
                 final StreamResponse.Builder responseBuilder =
                         StreamResponse.newBuilder().setData(payload);
 
-                // Explicitly running this unsafely, we want the exception to clean up
-                responseObserver.onNext(responseBuilder.build());
+                // Explicitly running this unsafely, we want the exception to clean up, but we still need to synchronize
+                // as it would do
+                StreamResponse response = responseBuilder.build();
+                synchronized (responseObserver) {
+                    responseObserver.onNext(response);
+                }
             } catch (Throwable t) {
                 // Release any exports we failed to send, and report this as a checked exception
                 cleanup(exports, t);
-                throw new ObjectType.ObjectCommunicationException(t);
+                throw new ObjectCommunicationException(t);
             }
         }
 
@@ -358,7 +364,7 @@ public class ObjectServiceGrpcImpl extends ObjectServiceGrpc.ObjectServiceImplBa
         @Override
         public void onClose() {
             closed = true;
-            responseObserver.onCompleted();
+            GrpcUtil.safelyComplete(responseObserver);
         }
 
         public boolean isClosed() {

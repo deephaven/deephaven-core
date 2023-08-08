@@ -3,8 +3,9 @@
  */
 package io.deephaven.server.plugin.python;
 
+import io.deephaven.plugin.type.ObjectCommunicationException;
 import io.deephaven.plugin.type.ObjectTypeBase;
-import io.deephaven.plugin.type.StreamExporterImpl;
+import io.deephaven.plugin.type.Exporter;
 import org.jpy.PyObject;
 
 import java.nio.ByteBuffer;
@@ -40,7 +41,7 @@ final class ObjectTypeAdapter extends ObjectTypeBase implements AutoCloseable {
             // Fall back and attempt to use old api:
             // Using this simple implementation, even though the python code won't write to this, but instead will
             // return a byte array directly
-            StreamExporterImpl exporter = new StreamExporterImpl();
+            Exporter exporter = new Exporter();
 
             final byte[] bytes = objectTypeAdapter.call(byte[].class, "to_bytes",
                     ExporterAdapter.class, new ExporterAdapter(exporter),
@@ -54,7 +55,8 @@ final class ObjectTypeAdapter extends ObjectTypeBase implements AutoCloseable {
         } else {
             PyObject newConnection =
                     objectTypeAdapter.call(PyObject.class, "create_client_connection", PyObject.class,
-                            (PyObject) object, PythonClientMessageStream.class, new PythonClientMessageStream(connection));
+                            (PyObject) object, PythonClientMessageStream.class,
+                            new PythonClientMessageStream(connection));
             return new PythonServerMessageStream(newConnection);
         }
     }

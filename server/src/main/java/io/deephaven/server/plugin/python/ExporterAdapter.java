@@ -4,7 +4,7 @@
 package io.deephaven.server.plugin.python;
 
 import io.deephaven.plugin.type.ObjectType.Exporter;
-import io.deephaven.plugin.type.ObjectType.Exporter.Reference;
+import io.deephaven.plugin.type.Exporter.Reference;
 import org.jpy.PyObject;
 
 import java.util.Objects;

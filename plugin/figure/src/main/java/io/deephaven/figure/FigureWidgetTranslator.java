@@ -40,7 +40,7 @@ import io.deephaven.plot.util.PlotUtils;
 import io.deephaven.plot.util.tables.*;
 import io.deephaven.plot.util.tables.PartitionedTableHandle;
 import io.deephaven.plugin.type.ObjectType.Exporter;
-import io.deephaven.plugin.type.ObjectType.Exporter.Reference;
+import io.deephaven.plugin.type.Exporter.Reference;
 import io.deephaven.proto.backplane.script.grpc.FigureDescriptor;
 import io.deephaven.proto.backplane.script.grpc.FigureDescriptor.AxisDescriptor;
 import io.deephaven.proto.backplane.script.grpc.FigureDescriptor.BoolMapWithDefault;

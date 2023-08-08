@@ -6,8 +6,6 @@ package io.deephaven.plugin.type;
 import io.deephaven.plugin.Plugin;
 
 import java.nio.ByteBuffer;
-import java.util.Optional;
-import java.util.function.BiPredicate;
 
 /**
  * An "object type" plugin. Useful for serializing custom objects between the server / client.
@@ -47,9 +45,14 @@ public interface ObjectType extends Plugin {
         };
 
         /**
-         * Transmits data to the remote end of the stream. This can consist of a binary payload and references to
-         * objects on the server.
+         * Transmits/receives data to/from the remote end of the stream. This can consist of a binary payload and
+         * references to objects on the server.
          * <p>
+         * </p>
+         * When implementing this interface for a plugin, this method will be invoked when a request arrives from the
+         * client. When invoking this method from in a plugin, it will send a response to the client.
+         * <p>
+         * </p>
          * Note that sending a message can cause an exception if there is an error in serializing, and for that reason
          * this method throws a checked exception. It is safe to let that propagate up through either an incoming
          * {@link #onData onData call from a client}, or the {@link ObjectType#clientConnection(Object, MessageStream)
@@ -68,24 +71,6 @@ public interface ObjectType extends Plugin {
         void onClose();
     }
 
-    public static class ObjectCommunicationException extends Exception {
-        public ObjectCommunicationException() {
-            super();
-        }
-
-        public ObjectCommunicationException(String message) {
-            super(message);
-        }
-
-        public ObjectCommunicationException(String message, Throwable cause) {
-            super(message, cause);
-        }
-
-        public ObjectCommunicationException(Throwable cause) {
-            super(cause);
-        }
-    }
-
     /**
      * Signals creation of a client stream to the provided object. The returned MessageStream implementation will be
      * called with each received message from the client, and can call the provided connection instance to send messages
@@ -98,78 +83,4 @@ public interface ObjectType extends Plugin {
      * @return a stream to receive objects from the client
      */
     MessageStream clientConnection(Object object, MessageStream connection) throws ObjectCommunicationException;
-
-    interface Exporter {
-
-        /**
-         * Creates a new reference for the provided object. A reference will be created and the object exported even if
-         * the object has no corresponding plugin provided, granting the client the ability to reference the object on
-         * later calls, and requiring that they release it when no longer needed.
-         *
-         * @param object the object
-         * @return the reference
-         */
-        default Reference reference(Object object) {
-            // noinspection OptionalGetWithoutIsPresent
-            return reference(object, true, true).get();
-        }
-
-        /**
-         * Gets the reference for {@code object} if it has already been created and {@code forceNew} is {@code false},
-         * otherwise creates a new one. If {@code allowUnknownType} is {@code false}, and no type can be found, no
-         * reference will be created. Uses reference-based equality.
-         *
-         * @deprecated Please use {@link #reference(Object)} instead - as of 0.27.0, the parameters allowUnknownType and
-         *             forceNew can only be set to true going forward.
-         *
-         * @param object the object
-         * @param allowUnknownType if an unknown-typed reference can be created
-         * @param forceNew if a new reference should be created
-         * @return the reference
-         */
-        @Deprecated(since = "0.27.0")
-        Optional<Reference> reference(Object object, boolean allowUnknownType, boolean forceNew);
-
-        /**
-         * Gets the reference for {@code object} if it has already been created and {@code forceNew} is {@code false},
-         * otherwise creates a new one. If {@code allowUnknownType} is {@code false}, and no type can be found, no
-         * reference will be created.
-         *
-         * @deprecated Please use {@link #reference(Object)} instead - as of 0.27.0, the parameters allowUnknownType and
-         *             forceNew can only be set to true going forward.
-         *
-         * @param object the object
-         * @param allowUnknownType if an unknown-typed reference can be created
-         * @param forceNew if a new reference should be created
-         * @param equals the equals logic
-         * @return the reference
-         */
-        @Deprecated(since = "0.27.0")
-        Optional<Reference> reference(Object object, boolean allowUnknownType, boolean forceNew,
-                BiPredicate<Object, Object> equals);
-
-        /**
-         * A reference.
-         */
-        interface Reference {
-            /**
-             * The index, which is defined by the order in which references are created. May be used in the output
-             * stream to refer to the reference from the client.
-             *
-             * @return the index
-             */
-            int index();
-
-            /**
-             * The type.
-             *
-             * @deprecated As of 0.27.0, this will always return empty.
-             * @return the type, if present
-             */
-            @Deprecated(since = "0.27.0")
-            default Optional<String> type() {
-                return Optional.empty();
-            }
-        }
-    }
 }

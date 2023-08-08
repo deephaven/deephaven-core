@@ -7,7 +7,7 @@ import com.google.auto.service.AutoService;
 import io.deephaven.engine.table.Table;
 import io.deephaven.engine.util.TableTools;
 import io.deephaven.plugin.type.ObjectType;
-import io.deephaven.plugin.type.ObjectType.Exporter.Reference;
+import io.deephaven.plugin.type.Exporter.Reference;
 import io.deephaven.plugin.type.ObjectTypeClassBase;
 import io.deephaven.proto.backplane.grpc.FetchObjectRequest;
 import io.deephaven.proto.backplane.grpc.FetchObjectResponse;
@@ -27,7 +27,6 @@ import java.io.IOException;
 import java.io.OutputStream;
 import java.util.Arrays;
 import java.util.Objects;
-import java.util.Optional;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.failBecauseExceptionWasNotThrown;

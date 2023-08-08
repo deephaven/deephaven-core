@@ -65,7 +65,7 @@ public abstract class ObjectTypeClassBase<T> extends ObjectTypeBase {
         @Override
         public final MessageStream clientConnectionImpl(T object, MessageStream connection)
                 throws ObjectCommunicationException {
-            StreamExporterImpl exporter = new StreamExporterImpl();
+            Exporter exporter = new Exporter();
 
             try {
                 writeToImpl(exporter, object, exporter.outputStream());
@@ -84,9 +84,8 @@ public abstract class ObjectTypeClassBase<T> extends ObjectTypeBase {
          * compatible object}.
          *
          * Server-side objects that should be sent as references to the client (but not themselves serialized in this
-         * payload) can be exported using the {@code exporter} - each returned
-         * {@link io.deephaven.plugin.type.ObjectType.Exporter.Reference} will have an {@code index}, denoting its
-         * position on the array of exported objects to be received by the client.
+         * payload) can be exported using the {@code exporter} - each returned {@link Exporter.Reference} will have an
+         * {@code index}, denoting its position on the array of exported objects to be received by the client.
          *
          * @param exporter the exporter
          * @param object the compatible object
