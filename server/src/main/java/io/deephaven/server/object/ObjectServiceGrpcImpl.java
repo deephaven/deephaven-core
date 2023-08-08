@@ -118,7 +118,7 @@ public class ObjectServiceGrpcImpl extends ObjectServiceGrpc.ObjectServiceImplBa
             }
         }
 
-        private final Queue<StreamOperation> operations = new ConcurrentLinkedQueue<>();
+        private final Queue<Runnable> operations = new ConcurrentLinkedQueue<>();
         private final AtomicBoolean running = new AtomicBoolean(false);
 
         // These methods are intended to roughly behave like SerializingExecutor(directExecutor()) in that only one can
@@ -132,7 +132,7 @@ public class ObjectServiceGrpcImpl extends ObjectServiceGrpc.ObjectServiceImplBa
             List<ExportObject<?>> requirements = new ArrayList<>(additExports);
             requirements.add(object);
 
-            StreamOperation runnable = () -> {
+            Runnable runnable = () -> {
                 session.nonExport()
                         .onErrorHandler(this::onError)
                         .require(requirements)
@@ -161,23 +161,18 @@ public class ObjectServiceGrpcImpl extends ObjectServiceGrpc.ObjectServiceImplBa
         private void doWork() {
             // More than one thread (at most two) can arrive here at the same time, but only one will pass the
             // compareAndSet
-            StreamOperation next = operations.peek();
+            Runnable next = operations.peek();
 
             // If we fail the null check, no work to do, leave running false (though if work was added right after
             // peek(), that thread will make it into here and start). If we fail the running check, something else has
             // already started work
             if (next != null && running.compareAndSet(false, true)) {
                 // We have the running lock again, and should remove the item we just peeked at
-                StreamOperation actualNext = operations.poll();
+                Runnable actualNext = operations.poll();
                 Assert.eq(next, "next", actualNext, "actualNext");
 
                 // Run the new item
-                try {
-                    next.run();
-                } catch (ObjectType.ObjectCommunicationException e) {
-                    // Can only be called from within a context where exceptions will end the stream, so wrap and throw
-                    throw new IllegalStateException("Error occurred communicating with client", e);
-                }
+                next.run();
             }
         }
 
