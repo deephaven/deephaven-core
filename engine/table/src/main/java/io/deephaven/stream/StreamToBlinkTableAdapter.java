@@ -99,6 +99,16 @@ public class StreamToBlinkTableAdapter
             @NotNull final UpdateSourceRegistrar updateSourceRegistrar,
             @NotNull final String name,
             @NotNull final Map<String, Object> extraAttributes) {
+        this(tableDefinition, streamPublisher, updateSourceRegistrar, name, extraAttributes, true);
+    }
+
+    public StreamToBlinkTableAdapter(
+            @NotNull final TableDefinition tableDefinition,
+            @NotNull final StreamPublisher streamPublisher,
+            @NotNull final UpdateSourceRegistrar updateSourceRegistrar,
+            @NotNull final String name,
+            @NotNull final Map<String, Object> extraAttributes,
+            boolean initialize) {
         this.tableDefinition = tableDefinition;
         this.streamPublisher = streamPublisher;
         this.updateSourceRegistrar = updateSourceRegistrar;
@@ -128,7 +138,12 @@ public class StreamToBlinkTableAdapter
             }
         };
         tableRef = new WeakReference<>(table);
+        if (initialize) {
+            initialize();
+        }
+    }
 
+    public void initialize() {
         log.info().append("Registering ").append(StreamToBlinkTableAdapter.class.getSimpleName()).append('-')
                 .append(name)
                 .endl();
@@ -241,15 +256,8 @@ public class StreamToBlinkTableAdapter
 
     @Override
     public void run() {
-        synchronized (this) {
-            // If we have an enqueued failure we want to process it first, before we allow the streamPublisher to flush
-            // itself.
-            if (!enqueuedFailures.isEmpty()) {
-                deliverFailure(MultiException.maybeWrapInMultiException(
-                        "Multiple errors encountered while ingesting stream",
-                        enqueuedFailures));
-                return;
-            }
+        if (deliverFailures()) {
+            return;
         }
         final TableUpdate downstream;
         try {
@@ -260,7 +268,22 @@ public class StreamToBlinkTableAdapter
             deliverFailure(e);
             return;
         }
+        if (downstream == null) {
+            return;
+        }
         deliverUpdate(downstream);
+    }
+
+    private synchronized boolean deliverFailures() {
+        // If we have an enqueued failure we want to process it first, before we allow the streamPublisher to flush
+        // itself.
+        if (enqueuedFailures.isEmpty()) {
+            return false;
+        }
+        deliverFailure(MultiException.maybeWrapInMultiException(
+                "Multiple errors encountered while ingesting stream",
+                enqueuedFailures));
+        return true;
     }
 
     private void deliverUpdate(@Nullable final TableUpdate downstream) {
@@ -300,6 +323,10 @@ public class StreamToBlinkTableAdapter
 
         final ChunkColumnSource<?>[] capturedBufferSources;
         synchronized (this) {
+            // streamPublisher.flush() may have called acceptFailure
+            if (deliverFailures()) {
+                return null;
+            }
             newSize = bufferChunkSources == null ? 0 : bufferChunkSources[0].getSize();
 
             if (oldSize == 0 && newSize == 0) {
