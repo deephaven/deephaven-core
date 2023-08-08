@@ -908,6 +908,10 @@ class TableTestCase(BaseTestCase):
         self.assertEqual(attrs, rt_attrs)
         self.assertTrue(rt.j_table is not self.test_table.j_table)
 
+        rt = rt.without_attributes(list(attrs.keys()))
+        rt_attrs = rt.attributes()
+        self.assertEqual(rt_attrs, {})
+
     def test_grouped_column_as_arg(self):
         t1 = empty_table(100).update(
             ["id = i % 10", "Person = random() > 0.5 ? true : random() > 0.5 ? false : true"]).sort(

@@ -598,6 +598,25 @@ class Table(JObjectWrapper):
         except Exception as e:
             raise DHError(e, "failed to create a table with attributes.") from e
 
+    def without_attributes(self, attrs: Union[str, Sequence[str]]) -> Table:
+        """Returns a new Table that shares the underlying data and schema with this table but with the specified
+        attributes removed.
+
+        Args:
+            attrs (Union[str, Sequence[str]]): the attribute name(s) to be removed
+
+        Returns:
+            a new Table
+
+        Raises:
+            DHError
+        """
+        try:
+            attrs = j_array_list(to_sequence(attrs))
+            return Table(j_table=jpy.cast(self.j_table, _JLiveAttributeMap).withoutAttributes(attrs))
+        except Exception as e:
+            raise DHError(e, "failed to create a table without attributes.") from e
+
     def to_string(self, num_rows: int = 10, cols: Union[str, Sequence[str]] = None) -> str:
         """Returns the first few rows of a table as a pipe-delimited string.
 
