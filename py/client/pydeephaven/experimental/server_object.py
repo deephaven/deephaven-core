@@ -1,8 +1,10 @@
-import abc
-from abc import ABC
+#
+#     Copyright (c) 2016-2023 Deephaven Data Labs and Patent Pending
+#
+
 import dataclasses
 from pydeephaven.proto import ticket_pb2
-
+from typing import Optional
 
 @dataclasses.dataclass
 class ServerObject:
@@ -12,7 +14,15 @@ class ServerObject:
 
     Marked as "experimental" for now, as we work to improve the client plugin experience.
     """
-    type_: str
-    ticket: bytes
+    type_: Optional[str]
+    """The type of the object. May be None, indicating that the instance cannot be connected to or otherwise directly
+    used from the client."""
+
+    ticket: ticket_pb2.Ticket
+    """The ticket that points to the object on the server."""
+
     def typed_ticket(self) -> ticket_pb2.TypedTicket:
+        """
+        Returns a typed ticket, suitable for use in communicating with an ObjectType plugin on the server.
+        """
         return ticket_pb2.TypedTicket(type=self.type_, ticket=self.ticket)

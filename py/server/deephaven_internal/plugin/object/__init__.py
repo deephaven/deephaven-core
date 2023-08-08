@@ -26,6 +26,7 @@ def _unwrap(object):
 
 class ExporterAdapter(Exporter):
     """Python implementation of Exporter that delegates to its Java counterpart."""
+
     def __init__(self, exporter: JExporterAdapter):
         self._exporter = exporter
 
@@ -46,10 +47,10 @@ class ClientResponseStreamAdapter(MessageStream):
     def __init__(self, wrapped: JMessageStream):
         self._wrapped = wrapped
 
-    def on_data(self, payload: bytes, references: List[Any]):
+    def on_data(self, payload: bytes, references: List[Any]) -> None:
         self._wrapped.onData(payload, [_unwrap(ref) for ref in references])
 
-    def on_close(self):
+    def on_close(self) -> None:
         self._wrapped.onClose()
 
 
@@ -59,28 +60,29 @@ class ServerRequestStreamAdapter(MessageStream):
     def __init__(self, wrapped: MessageStream):
         self._wrapped = wrapped
 
-    def on_data(self, payload:bytes, references: List[Any]):
+    def on_data(self, payload:bytes, references: List[Any]) -> None:
         self._wrapped.on_data(payload, [wrap_j_object(ref) for ref in references])
 
-    def on_close(self):
+    def on_close(self) -> None:
         self._wrapped.on_close()
 
 
 class ObjectTypeAdapter:
     """Python type that Java's ObjectTypeAdapter will call in order to communicate with a Python ObjectType instance."""
+
     def __init__(self, user_object_type: ObjectType):
         self._user_object_type = user_object_type
 
-    def is_type(self, obj):
+    def is_type(self, obj) -> bool:
         return self._user_object_type.is_type(obj)
 
-    def is_fetch_only(self):
+    def is_fetch_only(self) -> bool:
         return isinstance(self._user_object_type, FetchOnlyObjectType)
 
-    def to_bytes(self, exporter: JExporterAdapter, obj: Any):
+    def to_bytes(self, exporter: JExporterAdapter, obj: Any) -> bytes:
         return self._user_object_type.to_bytes(ExporterAdapter(exporter), obj)
 
-    def create_client_connection(self, obj: Any, connection: JMessageStream):
+    def create_client_connection(self, obj: Any, connection: JMessageStream) -> MessageStream:
         return ServerRequestStreamAdapter(
             self._user_object_type.create_client_connection(obj, ClientResponseStreamAdapter(connection))
         )
