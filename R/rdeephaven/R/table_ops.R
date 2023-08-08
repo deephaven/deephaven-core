@@ -114,441 +114,441 @@ setMethod(
 
 setGeneric(
   "select",
-  function(table_handle, columns = character(), ...) {
+  function(table_handle, by = character(), ...) {
     return(standardGeneric("select"))
   },
-  signature = c("table_handle", "columns")
+  signature = c("table_handle", "by")
 )
 
 #' @export
 setMethod(
   "select",
   signature = c(table_handle = "TableHandle"),
-  function(table_handle, columns = character()) {
-    verify_string("columns", columns, FALSE)
-    return(new("TableHandle", .internal_rcpp_object = table_handle@.internal_rcpp_object$select(columns)))
+  function(table_handle, by = character()) {
+    verify_string("by", by, FALSE)
+    return(new("TableHandle", .internal_rcpp_object = table_handle@.internal_rcpp_object$select(by)))
   }
 )
 
 setGeneric(
   "view",
-  function(table_handle, columns = character(), ...) {
+  function(table_handle, by = character(), ...) {
     return(standardGeneric("view"))
   },
-  signature = c("table_handle", "columns")
+  signature = c("table_handle", "by")
 )
 
 #' @export
 setMethod(
   "view",
   signature = c(table_handle = "TableHandle"),
-  function(table_handle, columns = character()) {
-    verify_string("columns", columns, FALSE)
-    return(new("TableHandle", .internal_rcpp_object = table_handle@.internal_rcpp_object$view(columns)))
+  function(table_handle, by = character()) {
+    verify_string("by", by, FALSE)
+    return(new("TableHandle", .internal_rcpp_object = table_handle@.internal_rcpp_object$view(by)))
   }
 )
 
 setGeneric(
   "update",
-  function(table_handle, columns = character(), ...) {
+  function(table_handle, by = character(), ...) {
     standardGeneric("update")
   },
-  signature = c("table_handle", "columns")
+  signature = c("table_handle", "by")
 )
 
 #' @export
 setMethod(
   "update",
   signature = c(table_handle = "TableHandle"),
-  function(table_handle, columns = character()) {
-    verify_string("columns", columns, FALSE)
-    return(new("TableHandle", .internal_rcpp_object = table_handle@.internal_rcpp_object$update(columns)))
+  function(table_handle, by = character()) {
+    verify_string("by", by, FALSE)
+    return(new("TableHandle", .internal_rcpp_object = table_handle@.internal_rcpp_object$update(by)))
   }
 )
 
 setGeneric(
   "update_view",
-  function(table_handle, columns = character(), ...) {
+  function(table_handle, by = character(), ...) {
     standardGeneric("update_view")
   },
-  signature = c("table_handle", "columns")
+  signature = c("table_handle", "by")
 )
 
 #' @export
 setMethod(
   "update_view",
   signature = c(table_handle = "TableHandle"),
-  function(table_handle, columns = character()) {
-    verify_string("columns", columns, FALSE)
-    return(new("TableHandle", .internal_rcpp_object = table_handle@.internal_rcpp_object$update_view(columns)))
+  function(table_handle, by = character()) {
+    verify_string("by", by, FALSE)
+    return(new("TableHandle", .internal_rcpp_object = table_handle@.internal_rcpp_object$update_view(by)))
   }
 )
 
 setGeneric(
   "drop_columns",
-  function(table_handle, columns = character(), ...) {
+  function(table_handle, by = character(), ...) {
     standardGeneric("drop_columns")
   },
-  signature = c("table_handle", "columns")
+  signature = c("table_handle", "by")
 )
 
 #' @export
 setMethod(
   "drop_columns",
   signature = c(table_handle = "TableHandle"),
-  function(table_handle, columns = character()) {
-    verify_string("columns", columns, FALSE)
-    return(new("TableHandle", .internal_rcpp_object = table_handle@.internal_rcpp_object$drop_columns(columns)))
+  function(table_handle, by = character()) {
+    verify_string("by", by, FALSE)
+    return(new("TableHandle", .internal_rcpp_object = table_handle@.internal_rcpp_object$drop_columns(by)))
   }
 )
 
 setGeneric(
   "where",
-  function(table_handle, condition, ...) {
+  function(table_handle, filter, ...) {
     standardGeneric("where")
   },
-  signature = c("table_handle", "condition")
+  signature = c("table_handle", "filter")
 )
 
 #' @export
 setMethod(
   "where",
   signature = c(table_handle = "TableHandle"),
-  function(table_handle, condition) {
-    verify_string("condition", condition, TRUE)
-    return(new("TableHandle", .internal_rcpp_object = table_handle@.internal_rcpp_object$where(condition)))
+  function(table_handle, filter) {
+    verify_string("filter", filter, TRUE)
+    return(new("TableHandle", .internal_rcpp_object = table_handle@.internal_rcpp_object$where(filter)))
   }
 )
 
 setGeneric(
   "group_by",
-  function(table_handle, columns = character(), ...) {
+  function(table_handle, by = character(), ...) {
     standardGeneric("group_by")
   },
-  signature = c("table_handle", "columns")
+  signature = c("table_handle", "by")
 )
 
 #' @export
 setMethod(
   "group_by",
   signature = c(table_handle = "TableHandle"),
-  function(table_handle, columns = character()) {
-    verify_string("columns", columns, FALSE)
-    return(new("TableHandle", .internal_rcpp_object = table_handle@.internal_rcpp_object$group_by(columns)))
+  function(table_handle, by = character()) {
+    verify_string("by", by, FALSE)
+    return(new("TableHandle", .internal_rcpp_object = table_handle@.internal_rcpp_object$group_by(by)))
   }
 )
 
 setGeneric(
   "ungroup",
-  function(table_handle, columns = character(), ...) {
+  function(table_handle, by = character(), ...) {
     standardGeneric("ungroup")
   },
-  signature = c("table_handle", "columns")
+  signature = c("table_handle", "by")
 )
 
 #' @export
 setMethod(
   "ungroup",
   signature = c(table_handle = "TableHandle"),
-  function(table_handle, columns = character()) {
-    verify_string("columns", columns, FALSE)
-    return(new("TableHandle", .internal_rcpp_object = table_handle@.internal_rcpp_object$ungroup(columns)))
+  function(table_handle, by = character()) {
+    verify_string("by", by, FALSE)
+    return(new("TableHandle", .internal_rcpp_object = table_handle@.internal_rcpp_object$ungroup(by)))
   }
 )
 
 setGeneric(
   "agg_by",
-  function(table_handle, aggregations, columns = character(), ...) {
+  function(table_handle, aggs, by = character(), ...) {
     standardGeneric("agg_by")
   },
-  signature = c("table_handle", "aggregations", "columns")
+  signature = c("table_handle", "aggs", "by")
 )
 
 #' @export
 setMethod(
   "agg_by",
   signature = c(table_handle = "TableHandle"),
-  function(table_handle, aggregations, columns = character()) {
-    verify_type("aggregations", aggregations, "Aggregation", "Deephaven Aggregation", FALSE)
-    verify_string("columns", columns, FALSE)
-    aggregations <- c(aggregations)
-    unwrapped_aggregations <- lapply(aggregations, strip_s4_wrapping)
-    return(new("TableHandle", .internal_rcpp_object = table_handle@.internal_rcpp_object$agg_by(unwrapped_aggregations, columns)))
+  function(table_handle, aggs, by = character()) {
+    verify_type("aggs", aggs, "Aggregation", "Deephaven Aggregation", FALSE)
+    verify_string("by", by, FALSE)
+    aggs <- c(aggs)
+    unwrapped_aggs <- lapply(aggs, strip_s4_wrapping)
+    return(new("TableHandle", .internal_rcpp_object = table_handle@.internal_rcpp_object$agg_by(unwrapped_aggs, by)))
   }
 )
 
 setGeneric(
   "first_by",
-  function(table_handle, columns = character(), ...) {
+  function(table_handle, by = character(), ...) {
     standardGeneric("first_by")
   },
-  signature = c("table_handle", "columns")
+  signature = c("table_handle", "by")
 )
 
 #' @export
 setMethod(
   "first_by",
   signature = c(table_handle = "TableHandle"),
-  function(table_handle, columns = character()) {
-    verify_string("columns", columns, FALSE)
-    return(new("TableHandle", .internal_rcpp_object = table_handle@.internal_rcpp_object$first_by(columns)))
+  function(table_handle, by = character()) {
+    verify_string("by", by, FALSE)
+    return(new("TableHandle", .internal_rcpp_object = table_handle@.internal_rcpp_object$first_by(by)))
   }
 )
 
 setGeneric(
   "last_by",
-  function(table_handle, columns = character(), ...) {
+  function(table_handle, by = character(), ...) {
     standardGeneric("last_by")
   },
-  signature = c("table_handle", "columns")
+  signature = c("table_handle", "by")
 )
 
 #' @export
 setMethod(
   "last_by",
   signature = c(table_handle = "TableHandle"),
-  function(table_handle, columns = character()) {
-    verify_string("columns", columns, FALSE)
-    return(new("TableHandle", .internal_rcpp_object = table_handle@.internal_rcpp_object$last_by(columns)))
+  function(table_handle, by = character()) {
+    verify_string("by", by, FALSE)
+    return(new("TableHandle", .internal_rcpp_object = table_handle@.internal_rcpp_object$last_by(by)))
   }
 )
 
 setGeneric(
   "head_by",
-  function(table_handle, n, columns = character(), ...) {
+  function(table_handle, num_rows, by = character(), ...) {
     standardGeneric("head_by")
   },
-  signature = c("table_handle", "n", "columns")
+  signature = c("table_handle", "num_rows", "by")
 )
 
 #' @export
 setMethod(
   "head_by",
   signature = c(table_handle = "TableHandle"),
-  function(table_handle, n, columns = character()) {
-    verify_positive_int("n", n, TRUE)
-    verify_string("columns", columns, FALSE)
-    return(new("TableHandle", .internal_rcpp_object = table_handle@.internal_rcpp_object$head_by(n, columns)))
+  function(table_handle, num_rows, by = character()) {
+    verify_positive_int("num_rows", num_rows, TRUE)
+    verify_string("by", by, FALSE)
+    return(new("TableHandle", .internal_rcpp_object = table_handle@.internal_rcpp_object$head_by(num_rows, by)))
   }
 )
 
 setGeneric(
   "tail_by",
-  function(table_handle, n, columns = character(), ...) {
+  function(table_handle, num_rows, by = character(), ...) {
     standardGeneric("tail_by")
   },
-  signature = c("table_handle", "n", "columns")
+  signature = c("table_handle", "num_rows", "by")
 )
 
 #' @export
 setMethod(
   "tail_by",
   signature = c(table_handle = "TableHandle"),
-  function(table_handle, n, columns = character()) {
-    verify_positive_int("n", n, TRUE)
-    verify_string("columns", columns, FALSE)
-    return(new("TableHandle", .internal_rcpp_object = table_handle@.internal_rcpp_object$tail_by(n, columns)))
+  function(table_handle, num_rows, by = character()) {
+    verify_positive_int("num_rows", num_rows, TRUE)
+    verify_string("by", by, FALSE)
+    return(new("TableHandle", .internal_rcpp_object = table_handle@.internal_rcpp_object$tail_by(num_rows, by)))
   }
 )
 
 setGeneric(
   "min_by",
-  function(table_handle, columns = character(), ...) {
+  function(table_handle, by = character(), ...) {
     standardGeneric("min_by")
   },
-  signature = c("table_handle", "columns")
+  signature = c("table_handle", "by")
 )
 
 #' @export
 setMethod(
   "min_by",
   signature = c(table_handle = "TableHandle"),
-  function(table_handle, columns = character()) {
-    verify_string("columns", columns, FALSE)
-    return(new("TableHandle", .internal_rcpp_object = table_handle@.internal_rcpp_object$min_by(columns)))
+  function(table_handle, by = character()) {
+    verify_string("by", by, FALSE)
+    return(new("TableHandle", .internal_rcpp_object = table_handle@.internal_rcpp_object$min_by(by)))
   }
 )
 
 setGeneric(
   "max_by",
-  function(table_handle, columns = character(), ...) {
+  function(table_handle, by = character(), ...) {
     standardGeneric("max_by")
   },
-  signature = c("table_handle", "columns")
+  signature = c("table_handle", "by")
 )
 
 #' @export
 setMethod(
   "max_by",
   signature = c(table_handle = "TableHandle"),
-  function(table_handle, columns = character()) {
-    verify_string("columns", columns, FALSE)
-    return(new("TableHandle", .internal_rcpp_object = table_handle@.internal_rcpp_object$max_by(columns)))
+  function(table_handle, by = character()) {
+    verify_string("by", by, FALSE)
+    return(new("TableHandle", .internal_rcpp_object = table_handle@.internal_rcpp_object$max_by(by)))
   }
 )
 
 setGeneric(
   "sum_by",
-  function(table_handle, columns = character(), ...) {
+  function(table_handle, by = character(), ...) {
     standardGeneric("sum_by")
   },
-  signature = c("table_handle", "columns")
+  signature = c("table_handle", "by")
 )
 
 #' @export
 setMethod(
   "sum_by",
   signature = c(table_handle = "TableHandle"),
-  function(table_handle, columns = character()) {
-    verify_string("columns", columns, FALSE)
-    return(new("TableHandle", .internal_rcpp_object = table_handle@.internal_rcpp_object$sum_by(columns)))
+  function(table_handle, by = character()) {
+    verify_string("by", by, FALSE)
+    return(new("TableHandle", .internal_rcpp_object = table_handle@.internal_rcpp_object$sum_by(by)))
   }
 )
 
 setGeneric(
   "abs_sum_by",
-  function(table_handle, columns = character(), ...) {
+  function(table_handle, by = character(), ...) {
     standardGeneric("abs_sum_by")
   },
-  signature = c("table_handle", "columns")
+  signature = c("table_handle", "by")
 )
 
 #' @export
 setMethod(
   "abs_sum_by",
   signature = c(table_handle = "TableHandle"),
-  function(table_handle, columns = character()) {
-    verify_string("columns", columns, FALSE)
-    return(new("TableHandle", .internal_rcpp_object = table_handle@.internal_rcpp_object$abs_sum_by(columns)))
+  function(table_handle, by = character()) {
+    verify_string("by", by, FALSE)
+    return(new("TableHandle", .internal_rcpp_object = table_handle@.internal_rcpp_object$abs_sum_by(by)))
   }
 )
 
 setGeneric(
   "avg_by",
-  function(table_handle, columns = character(), ...) {
+  function(table_handle, by = character(), ...) {
     standardGeneric("avg_by")
   },
-  signature = c("table_handle", "columns")
+  signature = c("table_handle", "by")
 )
 
 #' @export
 setMethod(
   "avg_by",
   signature = c(table_handle = "TableHandle"),
-  function(table_handle, columns = character()) {
-    verify_string("columns", columns, FALSE)
-    return(new("TableHandle", .internal_rcpp_object = table_handle@.internal_rcpp_object$avg_by(columns)))
+  function(table_handle, by = character()) {
+    verify_string("by", by, FALSE)
+    return(new("TableHandle", .internal_rcpp_object = table_handle@.internal_rcpp_object$avg_by(by)))
   }
 )
 
 setGeneric(
   "w_avg_by",
-  function(table_handle, weight_column, columns = character(), ...) {
+  function(table_handle, wcol, by = character(), ...) {
     standardGeneric("w_avg_by")
   },
-  signature = c("table_handle", "weight_column", "columns")
+  signature = c("table_handle", "wcol", "by")
 )
 
 #' @export
 setMethod(
   "w_avg_by",
   signature = c(table_handle = "TableHandle"),
-  function(table_handle, weight_column, columns = character()) {
-    verify_string("weight_column", weight_column, TRUE)
-    verify_string("columns", columns, FALSE)
-    return(new("TableHandle", .internal_rcpp_object = table_handle@.internal_rcpp_object$w_avg_by(weight_column, columns)))
+  function(table_handle, wcol, by = character()) {
+    verify_string("wcol", wcol, TRUE)
+    verify_string("by", by, FALSE)
+    return(new("TableHandle", .internal_rcpp_object = table_handle@.internal_rcpp_object$w_avg_by(wcol, by)))
   }
 )
 
 setGeneric(
   "median_by",
-  function(table_handle, columns = character(), ...) {
+  function(table_handle, by = character(), ...) {
     standardGeneric("median_by")
   },
-  signature = c("table_handle", "columns")
+  signature = c("table_handle", "by")
 )
 
 #' @export
 setMethod(
   "median_by",
   signature = c(table_handle = "TableHandle"),
-  function(table_handle, columns = character()) {
-    verify_string("columns", columns, FALSE)
-    return(new("TableHandle", .internal_rcpp_object = table_handle@.internal_rcpp_object$median_by(columns)))
+  function(table_handle, by = character()) {
+    verify_string("by", by, FALSE)
+    return(new("TableHandle", .internal_rcpp_object = table_handle@.internal_rcpp_object$median_by(by)))
   }
 )
 
 setGeneric(
   "var_by",
-  function(table_handle, columns = character(), ...) {
+  function(table_handle, by = character(), ...) {
     standardGeneric("var_by")
   },
-  signature = c("table_handle", "columns")
+  signature = c("table_handle", "by")
 )
 
 #' @export
 setMethod(
   "var_by",
   signature = c(table_handle = "TableHandle"),
-  function(table_handle, columns = character()) {
-    verify_string("columns", columns, FALSE)
-    return(new("TableHandle", .internal_rcpp_object = table_handle@.internal_rcpp_object$var_by(columns)))
+  function(table_handle, by = character()) {
+    verify_string("by", by, FALSE)
+    return(new("TableHandle", .internal_rcpp_object = table_handle@.internal_rcpp_object$var_by(by)))
   }
 )
 
 setGeneric(
   "std_by",
-  function(table_handle, columns = character(), ...) {
+  function(table_handle, by = character(), ...) {
     standardGeneric("std_by")
   },
-  signature = c("table_handle", "columns")
+  signature = c("table_handle", "by")
 )
 
 #' @export
 setMethod(
   "std_by",
   signature = c(table_handle = "TableHandle"),
-  function(table_handle, columns = character()) {
-    verify_string("columns", columns, FALSE)
-    return(new("TableHandle", .internal_rcpp_object = table_handle@.internal_rcpp_object$std_by(columns)))
+  function(table_handle, by = character()) {
+    verify_string("by", by, FALSE)
+    return(new("TableHandle", .internal_rcpp_object = table_handle@.internal_rcpp_object$std_by(by)))
   }
 )
 
 setGeneric(
   "percentile_by",
-  function(table_handle, percentile, columns = character(), ...) {
+  function(table_handle, percentile, by = character(), ...) {
     standardGeneric("percentile_by")
   },
-  signature = c("table_handle", "percentile", "columns")
+  signature = c("table_handle", "percentile", "by")
 )
 
 #' @export
 setMethod(
   "percentile_by",
   signature = c(table_handle = "TableHandle"),
-  function(table_handle, percentile, columns = character()) {
+  function(table_handle, percentile, by = character()) {
     verify_in_unit_interval("percentile", percentile, TRUE)
-    verify_string("columns", columns, FALSE)
-    return(new("TableHandle", .internal_rcpp_object = table_handle@.internal_rcpp_object$percentile_by(percentile, columns)))
+    verify_string("by", by, FALSE)
+    return(new("TableHandle", .internal_rcpp_object = table_handle@.internal_rcpp_object$percentile_by(percentile, by)))
   }
 )
 
 setGeneric(
   "count_by",
-  function(table_handle, count_by_column, columns = character(), ...) {
+  function(table_handle, col, by = character(), ...) {
     standardGeneric("count_by")
   },
-  signature = c("table_handle", "count_by_column", "columns")
+  signature = c("table_handle", "col", "by")
 )
 
 #' @export
 setMethod(
   "count_by",
   signature = c(table_handle = "TableHandle"),
-  function(table_handle, count_by_column = "n", columns = character()) {
-    verify_string("count_by_column", count_by_column, TRUE)
-    verify_string("columns", columns, FALSE)
-    return(new("TableHandle", .internal_rcpp_object = table_handle@.internal_rcpp_object$count_by(count_by_column, columns)))
+  function(table_handle, col = "n", by = character()) {
+    verify_string("col", col, TRUE)
+    verify_string("by", by, FALSE)
+    return(new("TableHandle", .internal_rcpp_object = table_handle@.internal_rcpp_object$count_by(col, by)))
   }
 )
 
@@ -621,22 +621,22 @@ setMethod(
 #' @export
 setGeneric(
   "sort",
-  function(table_handle, columns = character(), descending = FALSE, ...) {
+  function(table_handle, by = character(), descending = FALSE, ...) {
     standardGeneric("sort")
   },
-  signature = c("table_handle", "columns", "descending")
+  signature = c("table_handle", "by", "descending")
 )
 
 #' @export
 setMethod(
   "sort",
   signature = c(table_handle = "TableHandle"),
-  function(table_handle, columns, descending = FALSE) {
-    verify_string("columns", columns, FALSE)
+  function(table_handle, by, descending = FALSE) {
+    verify_string("by", by, FALSE)
     verify_bool("descending", descending, FALSE)
-    if ((length(descending) > 1) && length(descending) != length(columns)) {
-      stop(paste0("'descending' must be the same length as 'columns' if more than one entry is supplied. Got 'columns' with length ", length(columns), " and 'descending' with length", length(descending), " instead."))
+    if ((length(descending) > 1) && length(descending) != length(by)) {
+      stop(paste0("'descending' must be the same length as 'by' if more than one entry is supplied. Got 'by' with length ", length(by), " and 'descending' with length", length(descending), " instead."))
     }
-    return(new("TableHandle", .internal_rcpp_object = table_handle@.internal_rcpp_object$sort(columns, descending)))
+    return(new("TableHandle", .internal_rcpp_object = table_handle@.internal_rcpp_object$sort(by, descending)))
   }
 )

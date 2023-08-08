@@ -92,7 +92,7 @@ test_that("import_table does not fail with record batch reader inputs of simple 
 # as we have to create data, push it to the server, and name it in order to test open_table().
 # Additionally, we assume the correctness of table_handle$to_data_frame() to make concrete comparisons.
 
-test_that("open_table opens the correct table from the server", {
+test_that("open_table opens the correct table from the server using %>%", {
   data <- setup()
 
   client <- connect(target = "localhost:10000")
@@ -116,10 +116,44 @@ test_that("open_table opens the correct table from the server", {
   close(client)
 })
 
-test_that("empty_table correctly creates tables on the server", {
+test_that("open_table opens the correct table from the server using |>", {
+  data <- setup()
+
+  client <- connect(target = "localhost:10000")
+
+  th1 <- import_table(client, data$df1)
+  th1 |> bind_to_variable("table1")
+  expect_equal(as.data.frame(open_table(client, "table1")), as.data.frame(th1))
+
+  th2 <- import_table(client, data$df2)
+  th2 |> bind_to_variable("table2")
+  expect_equal(as.data.frame(open_table(client, "table2")), as.data.frame(th2))
+
+  th3 <- import_table(client, data$df3)
+  th3 |> bind_to_variable("table3")
+  expect_equal(as.data.frame(open_table(client, "table3")), as.data.frame(th3))
+
+  th4 <- import_table(client, data$df4)
+  th4 |> bind_to_variable("table4")
+  expect_equal(as.data.frame(open_table(client, "table4")), as.data.frame(th4))
+
+  close(client)
+})
+
+test_that("empty_table correctly creates tables on the server using %>%", {
   client <- connect(target = "localhost:10000")
 
   th1 <- empty_table(client, 10) %>% update("X = i")
+  df1 <- data.frame(X = c(0, 1, 2, 3, 4, 5, 6, 7, 8, 9))
+  expect_equal(as.data.frame(th1), df1)
+
+  close(client)
+})
+
+test_that("empty_table correctly creates tables on the server using |>", {
+  client <- connect(target = "localhost:10000")
+
+  th1 <- empty_table(client, 10) |> update("X = i")
   df1 <- data.frame(X = c(0, 1, 2, 3, 4, 5, 6, 7, 8, 9))
   expect_equal(as.data.frame(th1), df1)
 
@@ -247,12 +281,12 @@ test_that("empty_table fails nicely with bad inputs", {
 test_that("time_table fails nicely with bad inputs", {
   client <- connect(target = "localhost:10000")
 
-  expect_error(time_table(client, 1.23, 1000), "'period_nanos' must be an integer. Got 'period_nanos' = 1.23 instead.")
-  expect_error(time_table(client, 1000, 1.23), "'start_time_nanos' must be an integer. Got 'start_time_nanos' = 1.23 instead.")
-  expect_error(time_table(client, c(1, 2, 3), 1000), "'period_nanos' must be passed as a single numeric. Got a numeric vector of length 3 instead.")
-  expect_error(time_table(client, 1000, c(1, 2, 3)), "'start_time_nanos' must be passed as a single numeric. Got a numeric vector of length 3 instead.")
-  expect_error(time_table(client, "hello!", 1000), "'period_nanos' must be passed as a single numeric. Got an object of class character instead.")
-  expect_error(time_table(client, 1000, "hello!"), "'start_time_nanos' must be passed as a single numeric. Got an object of class character instead.")
+  expect_error(time_table(client, 1.23, 1000), "'period' must be an integer. Got 'period' = 1.23 instead.")
+  expect_error(time_table(client, 1000, 1.23), "'start_time' must be an integer. Got 'start_time' = 1.23 instead.")
+  expect_error(time_table(client, c(1, 2, 3), 1000), "'period' must be passed as a single numeric. Got a numeric vector of length 3 instead.")
+  expect_error(time_table(client, 1000, c(1, 2, 3)), "'start_time' must be passed as a single numeric. Got a numeric vector of length 3 instead.")
+  expect_error(time_table(client, "hello!", 1000), "'period' must be passed as a single numeric. Got an object of class character instead.")
+  expect_error(time_table(client, 1000, "hello!"), "'start_time' must be passed as a single numeric. Got an object of class character instead.")
 
   close(client)
 })

@@ -179,10 +179,10 @@ setGeneric(
 setMethod(
   "time_table",
   signature = c(client_instance = "Client"),
-  function(client_instance, period_nanos, start_time_nanos = 0) {
-    verify_any_int("period_nanos", period_nanos, TRUE)
-    verify_any_int("start_time_nanos", start_time_nanos, TRUE)
-    return(new("TableHandle", .internal_rcpp_object = client_instance@.internal_rcpp_object$time_table(start_time_nanos, period_nanos)))
+  function(client_instance, period, start_time = 0) {
+    verify_any_int("period", period, TRUE)
+    verify_any_int("start_time", start_time, TRUE)
+    return(new("TableHandle", .internal_rcpp_object = client_instance@.internal_rcpp_object$time_table(start_time, period)))
   }
 )
 
