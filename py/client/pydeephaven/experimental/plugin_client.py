@@ -9,20 +9,18 @@ from typing import Any, List
 
 from pydeephaven.proto import object_pb2
 from pydeephaven.proto import ticket_pb2
-from pydeephaven import Session
 from .server_object import ServerObject
 
 
 class Fetchable(ServerObject):
-    def __init__(self, session: Session, typed_ticket: ticket_pb2.TypedTicket):
+    def __init__(self, session, typed_ticket: ticket_pb2.TypedTicket):
         super().__init__(type_=typed_ticket.type, ticket=typed_ticket.ticket)
         self.session = session
         self.typed_ticket = typed_ticket
 
     def fetch(self):
-        if (self.typed_ticket.type == 'Table'):
-            # TODO we need to call TableService.ExportedTableCreationResponse
-            return self.session.table_service #blah blah colin figure it out later
+        if self.typed_ticket.type == 'Table':
+            return self.session.table_service.fetch_etcr(self.typed_ticket.ticket)
         return PluginClient(self.session, self.typed_ticket)
 
     def close(self):
@@ -52,7 +50,7 @@ class PluginRequestStream:
         self.req_queue.put(stream_req)
 
     def write(self, payload, references: List[ServerObject]):
-        data_message = object_pb2.Data(payload=payload, exported_references=[obj.typed_ticket for obj in references])
+        data_message = object_pb2.Data(payload=payload, exported_references=[obj.typed_ticket() for obj in references])
         stream_req = object_pb2.StreamRequest(data=data_message)
         self.req_queue.put(stream_req)
 
@@ -64,7 +62,7 @@ class PluginRequestStream:
 
 
 class PluginResponseStream:
-    def __init__(self, stream_resp, session:Session):
+    def __init__(self, stream_resp, session):
         self.stream_resp = stream_resp
         self.session = session
 
