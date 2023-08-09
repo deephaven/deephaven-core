@@ -121,7 +121,7 @@ setGeneric(
 #' @export
 setMethod(
   "open_table",
-  signature = c(client_instance = "Client"),
+  signature = c(client_instance = "Client", name = "character"),
   function(client_instance, name) {
     verify_string("name", name, TRUE)
     if (!check_for_table(client_instance, name)) {
@@ -142,7 +142,7 @@ setGeneric(
 #' @export
 setMethod(
   "empty_table",
-  signature = c(client_instance = "Client"),
+  signature = c(client_instance = "Client", size = "numeric"),
   function(client_instance, size) {
     verify_positive_int("size", size, TRUE)
     return(new("TableHandle", .internal_rcpp_object = client_instance@.internal_rcpp_object$empty_table(size)))
@@ -151,16 +151,16 @@ setMethod(
 
 setGeneric(
   "time_table",
-  function(client_instance, ...) {
+  function(client_instance, period, ...) {
     return(standardGeneric("time_table"))
   },
-  signature = "client_instance"
+  signature = c("client_instance", "period")
 )
 
 #' @export
 setMethod(
   "time_table",
-  signature = c(client_instance = "Client"),
+  signature = c(client_instance = "Client", period = "numeric"),
   function(client_instance, period, start_time = 0) {
     verify_any_int("period", period, TRUE)
     verify_any_int("start_time", start_time, TRUE)
@@ -190,7 +190,6 @@ setMethod(
   }
 )
 
-# TODO: This may not be correct
 #' @export
 setMethod(
   "as_dh_table",
@@ -229,7 +228,7 @@ setGeneric(
 #' @export
 setMethod(
   "run_script",
-  signature = c(client_instance = "Client"),
+  signature = c(client_instance = "Client", script = "character"),
   function(client_instance, script) {
     verify_string("script", script, TRUE)
     client_instance@.internal_rcpp_object$run_script(script)
