@@ -318,7 +318,7 @@ public class ObjectServiceGrpcImpl extends ObjectServiceGrpc.ObjectServiceImplBa
         return objectType;
     }
 
-    private void cleanup(Collection<ExportObject<?>> exports, Throwable t) {
+    private static void cleanup(Collection<ExportObject<?>> exports, Throwable t) {
         for (ExportObject<?> export : exports) {
             try {
                 export.release();
