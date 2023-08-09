@@ -903,10 +903,16 @@ class TableTestCase(BaseTestCase):
         attrs["PluginType"] = "@deephaven/auth-plugin"
         attrs["PluginPrivate"] = True
         attrs["PluginAttrs"] = j_hashmap({1: 2, 3: 4})
+        attrs["BlinkTable"] = True
         rt = self.test_table.with_attributes(attrs)
         rt_attrs = rt.attributes()
         self.assertEqual(attrs, rt_attrs)
         self.assertTrue(rt.j_table is not self.test_table.j_table)
+
+        rt = rt.without_attributes("BlinkTable")
+        rt_attrs = rt.attributes()
+        self.assertEqual(len(attrs), len(rt_attrs) + 1)
+        self.assertIn("BlinkTable", set(attrs.keys()) - set(rt_attrs.keys()))
 
     def test_grouped_column_as_arg(self):
         t1 = empty_table(100).update(
