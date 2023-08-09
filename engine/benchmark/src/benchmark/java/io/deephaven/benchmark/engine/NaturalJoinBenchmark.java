@@ -10,8 +10,8 @@ import io.deephaven.engine.testutil.ControlledUpdateGraph;
 import io.deephaven.util.metrics.MetricsManager;
 import io.deephaven.benchmarking.*;
 import io.deephaven.benchmarking.generator.ColumnGenerator;
-import io.deephaven.benchmarking.generator.EnumStringColumnGenerator;
-import io.deephaven.benchmarking.generator.SequentialNumColumnGenerator;
+import io.deephaven.benchmarking.generator.EnumStringGenerator;
+import io.deephaven.benchmarking.generator.SequentialNumberGenerator;
 import io.deephaven.benchmarking.impl.PersistentBenchmarkTableBuilder;
 import io.deephaven.benchmarking.runner.TableBenchmarkState;
 import org.openjdk.jmh.annotations.*;
@@ -82,10 +82,10 @@ public class NaturalJoinBenchmark {
         rightBuilder.setSeed(0xDEADBEEF).addColumn(BenchmarkTools.stringCol("PartCol", 1, 5, 7, 0xFEEDBEEF));
         leftBuilder.setSeed(0xDEADBEEF).addColumn(BenchmarkTools.stringCol("PartCol", 1, 5, 7, 0xFEEDBEEF));
 
-        final EnumStringColumnGenerator stringJoinKey = (EnumStringColumnGenerator) BenchmarkTools.stringCol("JString",
-                rightSize, 6, 6, 0xB00FB00F, EnumStringColumnGenerator.Mode.Rotate);
-        final ColumnGenerator intJoinKey = BenchmarkTools.seqNumberCol("JInt", int.class, 0, 1, rightSize,
-                SequentialNumColumnGenerator.Mode.RollAtLimit);
+        final ColumnGenerator<String> stringJoinKey = BenchmarkTools.stringCol(
+                "JString", rightSize, 6, 6, 0xB00FB00FL, EnumStringGenerator.Mode.Rotate);
+        final ColumnGenerator<Integer> intJoinKey = BenchmarkTools.seqNumberCol(
+                "JInt", int.class, 0, 1, rightSize, SequentialNumberGenerator.Mode.RollAtLimit);
 
         System.out.println("Join key type: " + joinKeyType);
         switch (joinKeyType) {

@@ -4,6 +4,7 @@
 package io.deephaven.benchmark.engine;
 
 import io.deephaven.base.verify.Assert;
+import io.deephaven.benchmarking.generator.ColumnGenerator;
 import io.deephaven.engine.context.ExecutionContext;
 import io.deephaven.engine.context.TestExecutionContext;
 import io.deephaven.engine.rowset.TrackingWritableRowSet;
@@ -17,7 +18,6 @@ import io.deephaven.engine.table.impl.select.RollingReleaseFilter;
 import io.deephaven.engine.rowset.RowSetFactory;
 import io.deephaven.engine.rowset.RowSetShiftData;
 import io.deephaven.benchmarking.*;
-import io.deephaven.benchmarking.generator.EnumStringColumnGenerator;
 import io.deephaven.engine.testutil.ControlledUpdateGraph;
 import org.apache.commons.lang3.mutable.MutableInt;
 import org.openjdk.jmh.annotations.*;
@@ -85,8 +85,8 @@ public class SortBenchmark {
 
         final int nVals = (int) (enumSize < 1 ? enumSize * tableSize : enumSize);
         System.out.println("String Values: " + nVals);
-        final EnumStringColumnGenerator enumStringyCol =
-                (EnumStringColumnGenerator) BenchmarkTools.stringCol("Thingy", nVals, 6, 6, 0xB00FB00F);
+        final ColumnGenerator<String> enumStringyCol = BenchmarkTools.stringCol(
+                "Thingy", nVals, 6, 6, 0xB00FB00FL);
 
         final BenchmarkTableBuilder builder;
         final int actualSize = BenchmarkTools.sizeWithSparsity(tableSize, sparsity);

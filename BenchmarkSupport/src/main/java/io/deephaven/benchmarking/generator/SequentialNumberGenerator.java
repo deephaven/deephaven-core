@@ -1,20 +1,16 @@
 /**
- * Copyright (c) 2016-2022 Deephaven Data Labs and Patent Pending
+ * Copyright (c) 2016-2023 Deephaven Data Labs and Patent Pending
  */
 package io.deephaven.benchmarking.generator;
 
 import io.deephaven.benchmarking.generator.random.ExtendedRandom;
+import org.jetbrains.annotations.NotNull;
 
 /**
  * A {@link ColumnGenerator} that generates numbers sequentially with specialized rollover behavior.
- * 
- * @param <T>
  */
-public class SequentialNumColumnGenerator<T extends Number> extends AbstractNumColumnGenerator<T> {
+public class SequentialNumberGenerator implements NumberGenerator {
     public enum Mode {
-        /** No limits, count up forever */
-        NoLimit,
-
         /** When the max is reached, reset to the starting value */
         RollAtLimit,
 
@@ -29,12 +25,11 @@ public class SequentialNumColumnGenerator<T extends Number> extends AbstractNumC
     private double current;
     private int direction = 1;
 
-    public SequentialNumColumnGenerator(Class<T> type, String name, double start, double step) {
-        this(type, name, start, step, 0, Mode.NoLimit);
-    }
-
-    public SequentialNumColumnGenerator(Class<T> type, String name, double start, double step, double max, Mode mode) {
-        super(type, name);
+    public SequentialNumberGenerator(
+            final double start,
+            final double step,
+            final double max,
+            final @NotNull Mode mode) {
         this.start = start;
         this.current = start;
         this.step = step;
@@ -43,7 +38,7 @@ public class SequentialNumColumnGenerator<T extends Number> extends AbstractNumC
     }
 
     @Override
-    public void init(ExtendedRandom random) {
+    public void init(final @NotNull ExtendedRandom random) {
         current = start;
         direction = 1;
     }
@@ -51,6 +46,11 @@ public class SequentialNumColumnGenerator<T extends Number> extends AbstractNumC
     @Override
     public byte getByte() {
         return (byte) getDouble();
+    }
+
+    @Override
+    public char getChar() {
+        return (char) getShort();
     }
 
     @Override
@@ -79,8 +79,6 @@ public class SequentialNumColumnGenerator<T extends Number> extends AbstractNumC
         current += (direction * step);
 
         switch (mode) {
-            case NoLimit:
-                break;
             case RollAtLimit:
                 if (current >= max) {
                     current = start;

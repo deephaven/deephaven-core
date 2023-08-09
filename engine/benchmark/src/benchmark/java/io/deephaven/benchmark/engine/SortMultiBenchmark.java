@@ -3,9 +3,9 @@
  */
 package io.deephaven.benchmark.engine;
 
+import io.deephaven.benchmarking.generator.ColumnGenerator;
 import io.deephaven.engine.table.Table;
 import io.deephaven.benchmarking.*;
-import io.deephaven.benchmarking.generator.EnumStringColumnGenerator;
 import io.deephaven.benchmarking.runner.TableBenchmarkState;
 import org.openjdk.jmh.annotations.*;
 import org.openjdk.jmh.infra.BenchmarkParams;
@@ -45,10 +45,10 @@ public class SortMultiBenchmark {
 
     @Setup(Level.Trial)
     public void setupEnv(BenchmarkParams params) {
-        final EnumStringColumnGenerator enumStringCol1 =
-                (EnumStringColumnGenerator) BenchmarkTools.stringCol("Enum1", 10000, 6, 6, 0xB00FB00F);
-        final EnumStringColumnGenerator enumStringCol2 =
-                (EnumStringColumnGenerator) BenchmarkTools.stringCol("Enum2", 1000, 6, 6, 0xF00DF00D);
+        final ColumnGenerator<String> enumStringCol1 = BenchmarkTools.stringCol(
+                "Enum1", 10000, 6, 6, 0xB00FB00FL);
+        final ColumnGenerator<String> enumStringCol2 = BenchmarkTools.stringCol(
+                "Enum2", 1000, 6, 6, 0xF00DF00DL);
 
         final BenchmarkTableBuilder builder;
         final int actualSize = BenchmarkTools.sizeWithSparsity(tableSize, sparsity);

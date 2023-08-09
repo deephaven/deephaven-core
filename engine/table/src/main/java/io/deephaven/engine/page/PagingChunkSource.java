@@ -66,22 +66,24 @@ public interface PagingChunkSource<ATTR extends Any> extends ChunkSource<ATTR> {
      * </p>
      *
      * <p>
-     * The values to fill into {@code destination} are specified by {@code RowSequenceIterator}, whose
+     * The values to fill into {@code destination} are specified by {@code rowSequenceIterator}, whose
      * {@link RowSequence#firstRowKey()} must exist, and must be represented by this {@code PagingChunkSource} (modulo
      * {#link @mask}), otherwise results are undefined.
      * </p>
      *
      * <p>
-     * No more than the elements in {@code RowSequenceIterator}, which are on the same page as
+     * No more than the elements in {@code rowSequenceIterator}, which are on the same page as
      * {@link RowSequence#firstRowKey()}, have their values appended to {@code destination}, and consumed from
-     * {@code RowSequenceIterator}. Indices are on the same page when the bits outside of {@link #mask()} are identical.
+     * {@code rowSequenceIterator}. Indices are on the same page when the bits outside of {@link #mask()} are identical.
      *
      * @param context A context containing all mutable/state related data used in retrieving the Chunk. In particular,
      *        the Context may be used to provide a Chunk data pool
      * @param destination The chunk to append the results to.
-     * @param RowSequenceIterator The iterator to the ordered keys, which contain at least the keys to extract from this
+     * @param rowSequenceIterator The iterator to the ordered keys, which contain at least the keys to extract from this
      *        {@code ChunkSource}. The keys to extract will be at the beginning of iteration order.
      */
-    void fillChunkAppend(@NotNull FillContext context, @NotNull WritableChunk<? super ATTR> destination,
-            @NotNull RowSequence.Iterator RowSequenceIterator);
+    void fillChunkAppend(
+            @NotNull FillContext context,
+            @NotNull WritableChunk<? super ATTR> destination,
+            @NotNull RowSequence.Iterator rowSequenceIterator);
 }

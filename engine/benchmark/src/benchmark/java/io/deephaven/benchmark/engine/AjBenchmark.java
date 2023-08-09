@@ -11,8 +11,8 @@ import io.deephaven.engine.util.TableTools;
 import io.deephaven.util.metrics.MetricsManager;
 import io.deephaven.benchmarking.*;
 import io.deephaven.benchmarking.generator.ColumnGenerator;
-import io.deephaven.benchmarking.generator.FuzzyNumColumnGenerator;
-import io.deephaven.benchmarking.generator.SequentialNumColumnGenerator;
+import io.deephaven.benchmarking.generator.FuzzyNumberGenerator;
+import io.deephaven.benchmarking.generator.SequentialNumberGenerator;
 import io.deephaven.benchmarking.impl.PersistentBenchmarkTableBuilder;
 import io.deephaven.benchmarking.runner.TableBenchmarkState;
 import org.openjdk.jmh.annotations.*;
@@ -106,9 +106,9 @@ public class AjBenchmark {
         final ColumnGenerator rightStampColumn = BenchmarkTools.seqNumberCol("RightStamp", int.class, 0, 10);
         final ColumnGenerator leftStampColumn;
         if (tableType.equals("HistoricalOrdered")) {
-            leftStampColumn =
-                    new FuzzyNumColumnGenerator<>(int.class, "LeftStamp", 0, (rightSize * 10) / (double) leftSize,
-                            rightSize * 10, 0.01, SequentialNumColumnGenerator.Mode.NoLimit);
+            leftStampColumn = BenchmarkTools.numberCol("LeftStamp", int.class,
+                    new FuzzyNumberGenerator(0, (rightSize * 10) / (double) leftSize,
+                            rightSize * 10, 0.01, SequentialNumberGenerator.Mode.RollAtLimit));
         } else {
             leftStampColumn = BenchmarkTools.numberCol("LeftStamp", int.class, 0, rightSize * 10);
         }

@@ -1,40 +1,20 @@
 /**
- * Copyright (c) 2016-2022 Deephaven Data Labs and Patent Pending
+ * Copyright (c) 2016-2023 Deephaven Data Labs and Patent Pending
  */
 package io.deephaven.benchmarking.generator;
 
 
 import io.deephaven.benchmarking.generator.random.ExtendedRandom;
-import io.deephaven.benchmarking.generator.random.NormalExtendedRandom;
-import io.deephaven.benchmarking.generator.random.ThreadLocalExtendedRandom;
+import org.jetbrains.annotations.NotNull;
 
-import java.util.Random;
-import java.util.stream.Stream;
-
-public class StringGenerator implements DataGenerator<String> {
+public class RandomStringGenerator implements ObjectGenerator<String> {
     private final int minLen;
     private final int maxLen;
 
-    private final ExtendedRandom random;
     private final StringBuilder builder = new StringBuilder();
+    private ExtendedRandom random;
 
-    public StringGenerator() {
-        this(16);
-    }
-
-    public StringGenerator(int maxLen) {
-        this(1, maxLen);
-    }
-
-    public StringGenerator(int minLen, int maxLen) {
-        this(minLen, maxLen, ThreadLocalExtendedRandom.getInstance());
-    }
-
-    public StringGenerator(int minLen, int maxLen, long seed) {
-        this(minLen, maxLen, new NormalExtendedRandom(new Random(seed)));
-    }
-
-    public StringGenerator(int minLen, int maxLen, ExtendedRandom random) {
+    public RandomStringGenerator(int minLen, int maxLen) {
         if (minLen <= 0 || maxLen <= 0) {
             throw new IllegalArgumentException(
                     "minLen and maxLen must be positive! (minLen=" + minLen + ", maxLen-" + maxLen + ')');
@@ -49,9 +29,14 @@ public class StringGenerator implements DataGenerator<String> {
 
         this.minLen = minLen;
         this.maxLen = maxLen;
+    }
+
+    @Override
+    public void init(@NotNull final ExtendedRandom random) {
         this.random = random;
     }
 
+    @Override
     public String get() {
         final int len = minLen + random.nextInt(maxLen - minLen + 1);
 
@@ -61,13 +46,5 @@ public class StringGenerator implements DataGenerator<String> {
         }
 
         return builder.toString();
-    }
-
-    public Stream<String> stream() {
-        final Stream<String> generate = Stream.generate(this::get);
-        if (random == null)
-            return generate.parallel();
-        else
-            return generate;
     }
 }

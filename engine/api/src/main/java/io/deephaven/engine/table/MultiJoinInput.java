@@ -83,13 +83,14 @@ public abstract class MultiJoinInput {
      *        or "SourceColumnToAddWithSameName"); empty for all columns
      */
     public static MultiJoinInput of(@NotNull final Table inputTable, String columnsToMatch, String columnsToAdd) {
+        // Need to split the columnsToMatch and columnsToAdd by commas.
         return of(inputTable,
                 columnsToMatch == null || columnsToMatch.isEmpty()
                         ? Collections.emptyList()
-                        : JoinMatch.from(columnsToMatch),
+                        : JoinMatch.from(columnsToMatch.split(",")),
                 columnsToAdd == null || columnsToAdd.isEmpty()
                         ? Collections.emptyList()
-                        : JoinAddition.from(columnsToAdd));
+                        : JoinAddition.from(columnsToAdd.split(",")));
     }
 
     /**
