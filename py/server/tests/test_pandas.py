@@ -10,7 +10,7 @@ import pandas
 import pandas as pd
 import pyarrow as pa
 
-from deephaven import dtypes, new_table, DHError, empty_table
+from deephaven import dtypes, new_table, DHError
 from deephaven.column import byte_col, char_col, short_col, bool_col, int_col, long_col, float_col, double_col, \
     string_col, datetime_col, pyobj_col, jobj_col
 from deephaven.constants import NULL_LONG, NULL_SHORT, NULL_INT, NULL_BYTE, NULL_CHAR, NULL_FLOAT, NULL_DOUBLE, \
@@ -18,7 +18,7 @@ from deephaven.constants import NULL_LONG, NULL_SHORT, NULL_INT, NULL_BYTE, NULL
 from deephaven.jcompat import j_array_list
 from deephaven.pandas import to_pandas, to_table
 from deephaven.time import parse_instant, epoch_nanos_to_instant
-from tests.testbase import BaseTestCase, table_equals
+from tests.testbase import BaseTestCase
 
 
 @dataclass
@@ -334,6 +334,16 @@ class PandasTestCase(BaseTestCase):
                 df = to_pandas(t, dtype_backend=dbe)
                 dh_table = to_table(df)
                 self.assert_table_equals(t, dh_table)
+
+    def test_to_table_readonly(self):
+        source = new_table(cols=[
+            int_col("Ints", [4, 5, 6]),
+            float_col("Floats", [9.9, 8.8, 7.7]),
+            double_col("Doubles", [0.1, 0.2, 0.3])
+        ])
+        df = to_pandas(source)
+        t = to_table(df)
+        self.assert_table_equals(source, t)
 
 
 if __name__ == '__main__':
