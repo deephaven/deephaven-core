@@ -21,8 +21,9 @@ public class TablePublisher {
      * Constructs a table publisher.
      *
      * <p>
-     * The {@code onFlushCallback}, if present, is called once before each update graph cycle to allow the publisher to
-     * flush any outstanding data. This is a useful pattern to allow publishers to be efficient with batched data.
+     * The {@code onFlushCallback}, if present, is called once at the beginning of each update graph cycle. This is a
+     * pattern that allows publishers to add any data they may have been batching. Do note though, this blocks the
+     * update cycle from proceeding, so implementations should take care to not do extraneous work.
      *
      * <p>
      * The {@code onShutdownCallback}, if present, is called one time when the publisher should stop publishing new data
@@ -52,8 +53,9 @@ public class TablePublisher {
      * Constructs a table publisher.
      *
      * <p>
-     * The {@code onFlushCallback}, if present, is called once before each update graph cycle to allow the publisher to
-     * flush any outstanding data. This is a useful pattern to allow publishers to be efficient with batched data.
+     * The {@code onFlushCallback}, if present, is called once at the beginning of each update graph cycle. This is a
+     * pattern that allows publishers to add any data they may have been batching. Do note though, this blocks the
+     * update cycle from proceeding, so implementations should take care to not do extraneous work.
      *
      * <p>
      * The {@code onShutdownCallback}, if present, is called one time when the publisher should stop publishing new data

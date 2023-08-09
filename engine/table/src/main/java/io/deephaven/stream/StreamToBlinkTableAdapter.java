@@ -85,14 +85,39 @@ public class StreamToBlinkTableAdapter
 
     private final AtomicBoolean alive = new AtomicBoolean(true);
 
+    /**
+     * Construct the adapter with {@code initialize == true} and without extra attributes.
+     *
+     * <p>
+     * Equivalent to
+     * {@code new StreamToBlinkTableAdapter(tableDefinition, streamPublisher, updateSourceRegistrar, name, Map.of(), true)}.
+     *
+     * @param tableDefinition the table definition
+     * @param streamPublisher the stream publisher
+     * @param updateSourceRegistrar the update source registrar
+     * @param name the name
+     */
     public StreamToBlinkTableAdapter(
             @NotNull final TableDefinition tableDefinition,
             @NotNull final StreamPublisher streamPublisher,
             @NotNull final UpdateSourceRegistrar updateSourceRegistrar,
             @NotNull final String name) {
-        this(tableDefinition, streamPublisher, updateSourceRegistrar, name, Map.of());
+        this(tableDefinition, streamPublisher, updateSourceRegistrar, name, Map.of(), true);
     }
 
+    /**
+     * Construct the adapter with {@code initialize == true}.
+     *
+     * <p>
+     * Equivalent to
+     * {@code new StreamToBlinkTableAdapter(tableDefinition, streamPublisher, updateSourceRegistrar, name, extraAttributes, true)}.
+     *
+     * @param tableDefinition the table definition
+     * @param streamPublisher the stream publisher
+     * @param updateSourceRegistrar the update source registrar
+     * @param name the name
+     * @param extraAttributes the extra attributes to set on the resulting table
+     */
     public StreamToBlinkTableAdapter(
             @NotNull final TableDefinition tableDefinition,
             @NotNull final StreamPublisher streamPublisher,
@@ -102,7 +127,18 @@ public class StreamToBlinkTableAdapter
         this(tableDefinition, streamPublisher, updateSourceRegistrar, name, extraAttributes, true);
     }
 
-    StreamToBlinkTableAdapter(
+    /**
+     * Construct the adapter.
+     *
+     * @param tableDefinition the table definition
+     * @param streamPublisher the stream publisher
+     * @param updateSourceRegistrar the update source registrar
+     * @param name the name
+     * @param extraAttributes the extra attributes to set on the resulting table
+     * @param initialize if the constructor should invoke {@link #initialize()}; if {@code false}, the caller is
+     *        responsible for invoking {@link #initialize()}.
+     */
+    public StreamToBlinkTableAdapter(
             @NotNull final TableDefinition tableDefinition,
             @NotNull final StreamPublisher streamPublisher,
             @NotNull final UpdateSourceRegistrar updateSourceRegistrar,
@@ -143,7 +179,14 @@ public class StreamToBlinkTableAdapter
         }
     }
 
-    void initialize() {
+    /**
+     * Initialize this adapter by invoking {@link StreamPublisher#register(StreamConsumer)} and
+     * {@link UpdateSourceRegistrar#addSource(Runnable)} with {@code this}. Must be called once <b>if and only if</b>
+     * {@code this} was constructed with {@code initialize == false}.
+     *
+     * @see #StreamToBlinkTableAdapter(TableDefinition, StreamPublisher, UpdateSourceRegistrar, String, Map, boolean)
+     */
+    public void initialize() {
         log.info().append("Registering ").append(StreamToBlinkTableAdapter.class.getSimpleName()).append('-')
                 .append(name)
                 .endl();
@@ -256,6 +299,8 @@ public class StreamToBlinkTableAdapter
 
     @Override
     public void run() {
+        // If we have an enqueued failure we want to process it first, before we allow the streamPublisher to flush
+        // itself.
         if (deliverFailures()) {
             return;
         }
@@ -275,8 +320,6 @@ public class StreamToBlinkTableAdapter
     }
 
     private synchronized boolean deliverFailures() {
-        // If we have an enqueued failure we want to process it first, before we allow the streamPublisher to flush
-        // itself.
         if (enqueuedFailures.isEmpty()) {
             return false;
         }

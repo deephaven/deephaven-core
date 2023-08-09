@@ -88,8 +88,9 @@ def table_publisher(
         name (str): the name, used for logging
         col_defs (Dict[str, DType]): the column definitions for the resulting blink table
         on_flush_callback (Optional[Callable[[TablePublisher], None]]): the on-flush callback, if present, is called
-            once before each update graph cycle to allow the publisher to flush any outstanding data. This is a useful
-            pattern to allow publishers to be efficient with batched data.
+            once at the beginning of each update graph cycle. This is a pattern that allows publishers to add any data
+            they may have been batching. Do note though, this blocks the update cycle from proceeding, so
+            implementations should take care to not do extraneous work.
         on_shutdown_callback (Optional[Callable[[], None]]): the on-shutdown callback, if present, is called one time
             when the caller should stop adding new data and release any related resources as soon as practicable since
             adding data won't have any downstream effects

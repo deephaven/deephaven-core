@@ -76,56 +76,56 @@ public class TablePublisherTest {
         // +37 just to have the last chunk not be the full BLOCK_SIZE
         final Table bigFooBarNull = repeat(fooBarNull, ArrayBackedColumnSource.BLOCK_SIZE * 5 + 37);
 
-        final AtomicInteger cycleCount = new AtomicInteger();
+        final AtomicInteger flushCount = new AtomicInteger();
         final MutableBoolean onShutdown = new MutableBoolean();
-        final TablePublisher publisher = TablePublisher.of("add", definition, tp -> cycleCount.getAndIncrement(),
+        final TablePublisher publisher = TablePublisher.of("add", definition, tp -> flushCount.getAndIncrement(),
                 () -> onShutdown.setValue(true));
         final Table blinkTable = publisher.table();
         TstUtils.assertTableEquals(emptyTable, blinkTable);
-        assertThat(cycleCount.get()).isEqualTo(0);
+        assertThat(flushCount.get()).isEqualTo(0);
 
         publisher.add(fooRow);
         updateGraph.runWithinUnitTestCycle(publisher::runForUnitTests);
         TstUtils.assertTableEquals(fooRow, blinkTable);
-        assertThat(cycleCount.get()).isEqualTo(1);
+        assertThat(flushCount.get()).isEqualTo(1);
 
         publisher.add(barRow);
         updateGraph.runWithinUnitTestCycle(publisher::runForUnitTests);
         TstUtils.assertTableEquals(barRow, blinkTable);
-        assertThat(cycleCount.get()).isEqualTo(2);
+        assertThat(flushCount.get()).isEqualTo(2);
 
         publisher.add(nullRow);
         updateGraph.runWithinUnitTestCycle(publisher::runForUnitTests);
         TstUtils.assertTableEquals(nullRow, blinkTable);
-        assertThat(cycleCount.get()).isEqualTo(3);
+        assertThat(flushCount.get()).isEqualTo(3);
 
         publisher.add(fooBarNull);
         updateGraph.runWithinUnitTestCycle(publisher::runForUnitTests);
         TstUtils.assertTableEquals(fooBarNull, blinkTable);
-        assertThat(cycleCount.get()).isEqualTo(4);
+        assertThat(flushCount.get()).isEqualTo(4);
 
         publisher.add(fooRow);
         publisher.add(barRow);
         publisher.add(nullRow);
         updateGraph.runWithinUnitTestCycle(publisher::runForUnitTests);
         TstUtils.assertTableEquals(fooBarNull, blinkTable);
-        assertThat(cycleCount.get()).isEqualTo(5);
+        assertThat(flushCount.get()).isEqualTo(5);
 
         publisher.add(bigFooBarNull);
         updateGraph.runWithinUnitTestCycle(publisher::runForUnitTests);
         TstUtils.assertTableEquals(bigFooBarNull, blinkTable);
-        assertThat(cycleCount.get()).isEqualTo(6);
+        assertThat(flushCount.get()).isEqualTo(6);
 
         updateGraph.runWithinUnitTestCycle(publisher::runForUnitTests);
         TstUtils.assertTableEquals(emptyTable, blinkTable);
-        assertThat(cycleCount.get()).isEqualTo(7);
+        assertThat(flushCount.get()).isEqualTo(7);
 
         assertThat(onShutdown.booleanValue()).isFalse();
         assertThat(publisher.isAlive()).isTrue();
     }
 
     @Test
-    public void addOnCycle() {
+    public void addOnFlush() {
         final ControlledUpdateGraph updateGraph = ExecutionContext.getContext().getUpdateGraph().cast();
 
         final TableDefinition definition = TableDefinition.of(
@@ -168,46 +168,46 @@ public class TablePublisherTest {
         // +37 just to have the last chunk not be the full BLOCK_SIZE
         final Table bigFooBarNull = repeat(fooBarNull, ArrayBackedColumnSource.BLOCK_SIZE * 5 + 37);
 
-        final List<Table> onCycleTables = new ArrayList<>();
-        final Consumer<TablePublisher> onCycleCallback = tp -> {
+        final List<Table> onFlushTables = new ArrayList<>();
+        final Consumer<TablePublisher> onFlushCallback = tp -> {
             try {
-                for (Table table : onCycleTables) {
+                for (Table table : onFlushTables) {
                     tp.add(table);
                 }
             } finally {
-                onCycleTables.clear();
+                onFlushTables.clear();
             }
         };
 
         final MutableBoolean onShutdown = new MutableBoolean();
         final TablePublisher publisher =
-                TablePublisher.of("addOnCycle", definition, onCycleCallback, () -> onShutdown.setValue(true));
+                TablePublisher.of("addOnFlush", definition, onFlushCallback, () -> onShutdown.setValue(true));
         final Table blinkTable = publisher.table();
         TstUtils.assertTableEquals(emptyTable, blinkTable);
 
-        onCycleTables.add(fooRow);
+        onFlushTables.add(fooRow);
         updateGraph.runWithinUnitTestCycle(publisher::runForUnitTests);
         TstUtils.assertTableEquals(fooRow, blinkTable);
 
-        onCycleTables.add(barRow);
+        onFlushTables.add(barRow);
         updateGraph.runWithinUnitTestCycle(publisher::runForUnitTests);
         TstUtils.assertTableEquals(barRow, blinkTable);
 
-        onCycleTables.add(nullRow);
+        onFlushTables.add(nullRow);
         updateGraph.runWithinUnitTestCycle(publisher::runForUnitTests);
         TstUtils.assertTableEquals(nullRow, blinkTable);
 
-        onCycleTables.add(fooBarNull);
+        onFlushTables.add(fooBarNull);
         updateGraph.runWithinUnitTestCycle(publisher::runForUnitTests);
         TstUtils.assertTableEquals(fooBarNull, blinkTable);
 
-        onCycleTables.add(fooRow);
-        onCycleTables.add(barRow);
-        onCycleTables.add(nullRow);
+        onFlushTables.add(fooRow);
+        onFlushTables.add(barRow);
+        onFlushTables.add(nullRow);
         updateGraph.runWithinUnitTestCycle(publisher::runForUnitTests);
         TstUtils.assertTableEquals(fooBarNull, blinkTable);
 
-        onCycleTables.add(bigFooBarNull);
+        onFlushTables.add(bigFooBarNull);
         updateGraph.runWithinUnitTestCycle(publisher::runForUnitTests);
         TstUtils.assertTableEquals(bigFooBarNull, blinkTable);
 
@@ -251,7 +251,7 @@ public class TablePublisherTest {
     }
 
     @Test
-    public void publishFailureOnCycle() {
+    public void publishFailureOnFlush() {
         final ControlledUpdateGraph updateGraph = ExecutionContext.getContext().getUpdateGraph().cast();
 
         final TableDefinition definition = TableDefinition.of(ColumnDefinition.ofInt("I"));
@@ -260,7 +260,7 @@ public class TablePublisherTest {
 
         final MutableBoolean onShutdown = new MutableBoolean();
         final RuntimeException e = new RuntimeException("Some sort of failure");
-        final TablePublisher publisher = TablePublisher.of("publishFailureOnCycle", definition,
+        final TablePublisher publisher = TablePublisher.of("publishFailureOnFlush", definition,
                 tp -> tp.publishFailure(e), () -> onShutdown.setValue(true));
         final Table blinkTable = publisher.table();
         TstUtils.assertTableEquals(emptyTable, blinkTable);
