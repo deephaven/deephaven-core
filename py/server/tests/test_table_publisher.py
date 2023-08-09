@@ -4,6 +4,7 @@
 
 import unittest
 from threading import Semaphore
+from typing import List
 
 from deephaven.table import Table
 from deephaven.column import string_col, int_col, double_col
@@ -59,6 +60,35 @@ class TablePublisherTestCase(BaseTestCase):
             [row("GOOG", "SELL", 42, 3.14), row("AAPL", "BUY", 99, 12.12)]
         )
         my_publisher.add(goog_aapl_table)
+        self.wait_ticking_table_update(my_table, row_count=2, timeout=5)
+        self.assert_table_equals(my_table, goog_aapl_table)
+
+    def test_add_on_flush(self):
+        my_tables: List[Table] = []
+
+        def on_flush(tp: TablePublisher):
+            nonlocal my_tables
+            self.assertTrue(isinstance(tp, TablePublisher))
+            for table in my_tables:
+                tp.add(table)
+            my_tables.clear()
+
+        my_table, my_publisher = table_publisher(
+            "test_add_on_flush", table_definition(), on_flush_callback=on_flush
+        )
+        self.assertTrue(isinstance(my_table, Table))
+        self.assertTrue(isinstance(my_publisher, TablePublisher))
+        self.assert_table_equals(my_table, empty())
+
+        msft_table = row("MSFT", "BUY", 200, 210.0)
+        my_tables.append(msft_table)
+        self.wait_ticking_table_update(my_table, row_count=1, timeout=5)
+        self.assert_table_equals(my_table, msft_table)
+
+        goog_aapl_table = merge(
+            [row("GOOG", "SELL", 42, 3.14), row("AAPL", "BUY", 99, 12.12)]
+        )
+        my_tables.append(goog_aapl_table)
         self.wait_ticking_table_update(my_table, row_count=2, timeout=5)
         self.assert_table_equals(my_table, goog_aapl_table)
 

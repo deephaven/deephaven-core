@@ -30,16 +30,19 @@ class TableStreamPublisherImpl implements StreamPublisher {
 
     private final String name;
     private final TableDefinition definition;
+    private final Runnable onFlushCallback;
     private final Runnable onShutdownCallback;
     private final int chunkSize;
     private StreamConsumer consumer;
 
-    TableStreamPublisherImpl(String name, TableDefinition definition, Runnable onShutdownCallback, int chunkSize) {
+    TableStreamPublisherImpl(String name, TableDefinition definition, Runnable onFlushCallback,
+            Runnable onShutdownCallback, int chunkSize) {
         if (chunkSize <= 0) {
             throw new IllegalArgumentException("chunkSize must be positive");
         }
         this.name = Objects.requireNonNull(name);
         this.definition = Objects.requireNonNull(definition);
+        this.onFlushCallback = onFlushCallback;
         this.onShutdownCallback = onShutdownCallback;
         this.chunkSize = chunkSize;
     }
@@ -74,6 +77,14 @@ class TableStreamPublisherImpl implements StreamPublisher {
 
     public void publishFailure(Throwable e) {
         consumer.acceptFailure(e);
+    }
+
+    @Override
+    public void flush() {
+        // even though this impl itself doesn't hold onto any data, the publisher may be batching and want to call #add
+        if (onFlushCallback != null) {
+            onFlushCallback.run();
+        }
     }
 
     @Override
@@ -174,10 +185,5 @@ class TableStreamPublisherImpl implements StreamPublisher {
             SafeCloseable.closeAll(outstandingChunks.stream().flatMap(Stream::of));
             outstandingChunks.clear();
         }
-    }
-
-    @Override
-    public void flush() {
-        // no need for flushing, we always pass off chunks to consumer in #add(Table)
     }
 }
