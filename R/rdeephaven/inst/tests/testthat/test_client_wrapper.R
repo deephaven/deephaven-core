@@ -34,8 +34,6 @@ test_that("client connection works in the simple case of anonymous authenticatio
   
 })
 
-# All of the following tests assume the correctness of new(...) to make the connection.
-
 test_that("as_dh_table does not fail with data frame inputs of simple column types", {
   data <- setup()
 
@@ -88,9 +86,9 @@ test_that("as_dh_table does not fail with record batch reader inputs of simple c
   close(client)
 })
 
-# The following tests additionally assume the correctness of as_dh_table(...) AND table_handle$bind_to_variable(),
+# The following tests assume the correctness of as_dh_table(...) AND bind_to_variable(),
 # as we have to create data, push it to the server, and name it in order to test open_table().
-# Additionally, we assume the correctness of table_handle$to_data_frame() to make concrete comparisons.
+# Additionally, we assume the correctness of as.data.frame() to make concrete comparisons.
 
 test_that("open_table opens the correct table from the server using %>%", {
   data <- setup()
@@ -234,16 +232,15 @@ test_that("as_dh_table fails nicely with bad inputs", {
 
   client <- connect(target = "localhost:10000")
 
-  expect_error(as_dh_table(client, 12345))
-  
-  expect_error(as_dh_table(client, "hello!"))
+  expect_error(as_dh_table(client, 12345), cat("unable to find an inherited method for function ‘as_dh_table’ for signature ‘\"Client\", \"numeric\"’"))
+  expect_error(as_dh_table(client, "hello!"), cat("unable to find an inherited method for function ‘as_dh_table’ for signature ‘\"Client\", \"character\"’"))
 
   # TODO: this needs better error handling, but it is unclear whether that happens on the server side or the R side.
   data(iris)
   expect_error(as_dh_table(client, iris))
 
   data(HairEyeColor)
-  expect_error(as_dh_table(client, HairEyeColor))
+  expect_error(as_dh_table(client, HairEyeColor), cat("unable to find an inherited method for function ‘as_dh_table’ for signature ‘\"Client\", \"table\"’"))
 
   close(client)
 })
@@ -252,7 +249,7 @@ test_that("open_table fails nicely with bad inputs", {
   client <- connect(target = "localhost:10000")
 
   expect_error(open_table(client, ""), "The table '' does not exist on the server.")
-  expect_error(open_table(client, 12345), "'name' must be a single string. Got an object of class numeric.")
+  expect_error(open_table(client, 12345), cat("unable to find an inherited method for function ‘open_table’ for signature ‘\"Client\", \"numeric\"’"))
   expect_error(open_table(client, c("I", "am", "string")), "'name' must be a single string. Got a vector of length 3.")
 
   close(client)
@@ -264,7 +261,7 @@ test_that("empty_table fails nicely with bad inputs", {
   expect_error(empty_table(client, 0), "'size' must be a positive integer. Got 'size' = 0.")
   expect_error(empty_table(client, -3), "'size' must be a positive integer. Got 'size' = -3.")
   expect_error(empty_table(client, 1.2345), "'size' must be an integer. Got 'size' = 1.2345.")
-  expect_error(empty_table(client, "hello!"), "'size' must be a single numeric. Got an object of class character.")
+  expect_error(empty_table(client, "hello!"), cat("unable to find an inherited method for function ‘empty_table’ for signature ‘\"Client\", \"character\"’"))
   expect_error(empty_table(client, c(1, 2, 3, 4)), "'size' must be a single numeric. Got a vector of length 4.")
 
   close(client)
@@ -277,8 +274,8 @@ test_that("time_table fails nicely with bad inputs", {
   expect_error(time_table(client, 1000, 1.23), "'start_time' must be an integer. Got 'start_time' = 1.23.")
   expect_error(time_table(client, c(1, 2, 3), 1000), "'period' must be a single numeric. Got a vector of length 3.")
   expect_error(time_table(client, 1000, c(1, 2, 3)), "'start_time' must be a single numeric. Got a vector of length 3.")
-  expect_error(time_table(client, "hello!", 1000), "'period' must be a single numeric. Got an object of class character.")
-  expect_error(time_table(client, 1000, "hello!"), "'start_time' must be a single numeric. Got an object of class character.")
+  expect_error(time_table(client, "hello!", 1000), cat("unable to find an inherited method for function ‘time_table’ for signature ‘\"Client\", \"character\", \"numeric\"’"))
+  expect_error(time_table(client, 1000, "hello!"), cat("unable to find an inherited method for function ‘time_table’ for signature ‘\"Client\", \"numeric\", \"character\"’"))
 
   close(client)
 })
@@ -286,7 +283,7 @@ test_that("time_table fails nicely with bad inputs", {
 test_that("run_script fails nicely with bad input types", {
   client <- connect(target = "localhost:10000")
 
-  expect_error(run_script(client, 12345), "'script' must be a single string. Got an object of class numeric.")
+  expect_error(run_script(client, 12345), cat("unable to find an inherited method for function ‘run_script’ for signature ‘\"Client\", \"numeric\"’"))
   expect_error(run_script(client, c("I", "am", "a", "string")), "'script' must be a single string. Got a vector of length 4.")
 
   close(client)

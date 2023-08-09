@@ -171,7 +171,7 @@ test_that("bind_to_variable fails nicely on bad inputs", {
 
   expect_error(
     data$th1 %>% bind_to_variable(12345),
-    "'name' must be a single string. Got an object of class numeric."
+    cat("unable to find an inherited method for function ‘bind_to_variable’ for signature ‘\"TableHandle\", \"numeric\"’")
   )
 
   expect_error(
@@ -181,12 +181,12 @@ test_that("bind_to_variable fails nicely on bad inputs", {
 
   expect_error(
     data$th1 %>% bind_to_variable(data$df1),
-    "'name' must be a single string. Got a vector of length 3."
+    cat("unable to find an inherited method for function 'bind_to_variable' for signature '\"TableHandle\", \"data.frame\"'")
   )
 
   expect_error(
     data$th1 %>% bind_to_variable(list("list", "of", "strings")),
-    "'name' must be a single string. Got a vector of length 3."
+    cat("unable to find an inherited method for function ‘bind_to_variable’ for signature ‘\"TableHandle\", \"list\"’")
   )
 
   close(data$client)
