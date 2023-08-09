@@ -16,12 +16,12 @@
 
 using deephaven::client::TableHandleManager;
 using deephaven::client::Client;
-using deephaven::client::utility::convertTicketToFlightDescriptor;
-using deephaven::client::utility::okOrThrow;
-using deephaven::client::utility::valueOrThrow;
+using deephaven::client::utility::ConvertTicketToFlightDescriptor;
+using deephaven::client::utility::OkOrThrow;
+using deephaven::client::utility::ValueOrThrow;
 
 namespace {
-arrow::Status doit(const TableHandleManager &manager, const std::string &csvfn);
+arrow::Status Doit(const TableHandleManager &manager, const std::string &csvfn);
 }  // namespace
 
 int main(int argc, char* argv[]) {
@@ -37,9 +37,9 @@ int main(int argc, char* argv[]) {
   const char *filename = argv[c++];
 
   try {
-    auto client = Client::connect(server);
-    auto manager = client.getManager();
-    auto st = doit(manager, filename);
+    auto client = Client::Connect(server);
+    auto manager = client.GetManager();
+    auto st = Doit(manager, filename);
     if (!st.ok()) {
       std::cerr << "Failed with status " << st << std::endl;
     }
@@ -51,10 +51,10 @@ int main(int argc, char* argv[]) {
 }
 
 namespace {
-arrow::Status doit(const TableHandleManager &manager, const std::string &csvfn) {
-  auto input_file = valueOrThrow(
+arrow::Status Doit(const TableHandleManager &manager, const std::string &csvfn) {
+  auto input_file = ValueOrThrow(
       DEEPHAVEN_EXPR_MSG(arrow::io::ReadableFile::Open(csvfn)));
-  auto csv_reader = valueOrThrow(DEEPHAVEN_EXPR_MSG(
+  auto csv_reader = ValueOrThrow(DEEPHAVEN_EXPR_MSG(
      arrow::csv::TableReader::Make(
        arrow::io::default_io_context(),
        input_file,
@@ -64,20 +64,20 @@ arrow::Status doit(const TableHandleManager &manager, const std::string &csvfn) 
     )
   ));
     
-  auto arrow_table = valueOrThrow(DEEPHAVEN_EXPR_MSG(csv_reader->Read()));
+  auto arrow_table = ValueOrThrow(DEEPHAVEN_EXPR_MSG(csv_reader->Read()));
 
-  auto wrapper = manager.createFlightWrapper();
+  auto wrapper = manager.CreateFlightWrapper();
 
-  auto ticket = manager.newTicket();
+  auto ticket = manager.NewTicket();
 
   arrow::flight::FlightCallOptions options;
-  wrapper.addHeaders(&options);
+  wrapper.AddHeaders(&options);
 
-  auto fd = convertTicketToFlightDescriptor(ticket);
+  auto fd = ConvertTicketToFlightDescriptor(ticket);
   std::unique_ptr<arrow::flight::FlightStreamWriter> fsw;
   std::unique_ptr<arrow::flight::FlightMetadataReader> fmr;
-  okOrThrow(DEEPHAVEN_EXPR_MSG(
-      wrapper.flightClient()->DoPut(options, fd, arrow_table->schema(), &fsw, &fmr)));
+  OkOrThrow(DEEPHAVEN_EXPR_MSG(
+      wrapper.FlightClient()->DoPut(options, fd, arrow_table->schema(), &fsw, &fmr)));
 
   const auto &srcColumns = arrow_table->columns();
   const size_t ncols = srcColumns.size();
@@ -88,18 +88,18 @@ arrow::Status doit(const TableHandleManager &manager, const std::string &csvfn) 
       destColumns[colIndex] = srcColumns[colIndex]->chunk(chunkIndex);
     }
     auto batch = arrow::RecordBatch::Make(arrow_table->schema(), destColumns[0]->length(), destColumns);
-    okOrThrow(DEEPHAVEN_EXPR_MSG(fsw->WriteRecordBatch(*batch)));
+    OkOrThrow(DEEPHAVEN_EXPR_MSG(fsw->WriteRecordBatch(*batch)));
   }
 
-  okOrThrow(DEEPHAVEN_EXPR_MSG(fsw->DoneWriting()));
+  OkOrThrow(DEEPHAVEN_EXPR_MSG(fsw->DoneWriting()));
 
   std::shared_ptr<arrow::Buffer> buf;
-  okOrThrow(DEEPHAVEN_EXPR_MSG(fmr->ReadMetadata(&buf)));
-  okOrThrow(DEEPHAVEN_EXPR_MSG(fsw->Close()));
+  OkOrThrow(DEEPHAVEN_EXPR_MSG(fmr->ReadMetadata(&buf)));
+  OkOrThrow(DEEPHAVEN_EXPR_MSG(fsw->Close()));
 
-  auto table_handle = manager.makeTableHandleFromTicket(ticket);
-  std::cout << "table is:\n" << table_handle.stream(true) << std::endl;
-  table_handle.bindToVariable("showme");
+  auto table_handle = manager.MakeTableHandleFromTicket(ticket);
+  std::cout << "table is:\n" << table_handle.Stream(true) << std::endl;
+  table_handle.BindToVariable("showme");
   return arrow::Status::OK();
 }
 }  // namespace

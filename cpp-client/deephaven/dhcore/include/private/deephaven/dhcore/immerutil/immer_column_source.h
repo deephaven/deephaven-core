@@ -13,10 +13,10 @@
 namespace deephaven::client::immerutil {
 namespace internal {
 struct ImmerColumnSourceImpls {
-  typedef deephaven::dhcore::chunk::BooleanChunk BooleanChunk;
-  typedef deephaven::dhcore::chunk::Chunk Chunk;
-  typedef deephaven::dhcore::chunk::UInt64Chunk UInt64Chunk;
-  typedef deephaven::dhcore::container::RowSequence RowSequence;
+  using BooleanChunk = deephaven::dhcore::chunk::BooleanChunk;
+  using Chunk = deephaven::dhcore::chunk::Chunk;
+  using UInt64Chunk = deephaven::dhcore::chunk::UInt64Chunk;
+  using RowSequence = deephaven::dhcore::container::RowSequence;
 
   /**
    * This helper function has two dimensions of optionality: the first (controlled by whether the
@@ -30,104 +30,104 @@ struct ImmerColumnSourceImpls {
    */
 
   template<typename T>
-  static void fillChunk(const immer::flex_vector<T> &srcData,
-      const immer::flex_vector<bool> *srcNullFlags,
-      const RowSequence &rows, Chunk *destData, BooleanChunk *optionalDestNullFlags) {
+  static void FillChunk(const immer::flex_vector<T> &src_data,
+      const immer::flex_vector<bool> *src_null_flags,
+      const RowSequence &rows, Chunk *dest_data, BooleanChunk *optional_dest_null_flags) {
     using deephaven::dhcore::chunk::TypeToChunk;
-    using deephaven::dhcore::utility::trueOrThrow;
-    using deephaven::dhcore::utility::verboseCast;
+    using deephaven::dhcore::utility::TrueOrThrow;
+    using deephaven::dhcore::utility::VerboseCast;
     typedef typename TypeToChunk<T>::type_t chunkType_t;
-    auto *typedDest = verboseCast<chunkType_t*>(DEEPHAVEN_EXPR_MSG(destData));
+    auto *typed_dest = VerboseCast<chunkType_t *>(DEEPHAVEN_EXPR_MSG(dest_data));
 
-    constexpr bool typeIsNumeric = deephaven::dhcore::DeephavenTraits<T>::isNumeric;
+    constexpr bool kTypeIsNumeric = deephaven::dhcore::DeephavenTraits<T>::kIsNumeric;
 
-    trueOrThrow(DEEPHAVEN_EXPR_MSG(rows.size() <= typedDest->size()));
-    trueOrThrow(DEEPHAVEN_EXPR_MSG(optionalDestNullFlags == nullptr ||
-       rows.size() <= optionalDestNullFlags->size()));
-    if (!typeIsNumeric) {
-      trueOrThrow(DEEPHAVEN_EXPR_MSG(srcNullFlags != nullptr));
+    TrueOrThrow(DEEPHAVEN_EXPR_MSG(rows.Size() <= typed_dest->Size()));
+    TrueOrThrow(DEEPHAVEN_EXPR_MSG(optional_dest_null_flags == nullptr ||
+        rows.Size() <= optional_dest_null_flags->Size()));
+    if (!kTypeIsNumeric) {
+      TrueOrThrow(DEEPHAVEN_EXPR_MSG(src_null_flags != nullptr));
     } else {
       // avoid CLion warning about unused variable.
-      (void)srcNullFlags;
+      (void)src_null_flags;
     }
-    auto *destDatap = typedDest->data();
-    auto *destNullp = optionalDestNullFlags != nullptr ? optionalDestNullFlags->data() : nullptr;
+    auto *dest_datap = typed_dest->data();
+    auto *dest_nullp = optional_dest_null_flags != nullptr ? optional_dest_null_flags->data() : nullptr;
 
-    auto copyDataInner = [&destDatap, &destNullp](const T *dataBegin, const T *dataEnd) {
-      for (const T *current = dataBegin; current != dataEnd; ++current) {
+    auto copy_data_inner = [&dest_datap, &dest_nullp](const T *data_begin, const T *data_end) {
+      for (const T *current = data_begin; current != data_end; ++current) {
         auto value = *current;
-        *destDatap++ = value;
-        if constexpr(typeIsNumeric) {
-          if (destNullp != nullptr) {
-            *destNullp++ = value == deephaven::dhcore::DeephavenTraits<T>::NULL_VALUE;
+        *dest_datap++ = value;
+        if constexpr(kTypeIsNumeric) {
+          if (dest_nullp != nullptr) {
+            *dest_nullp++ = value == deephaven::dhcore::DeephavenTraits<T>::kNullValue;
           }
         } else {
           // avoid clang complaining about unused variables
-          (void)destNullp;
+          (void)dest_nullp;
         }
       }
     };
 
-    auto copyNullsInner = [&destNullp](const bool *nullBegin, const bool *nullEnd) {
-      for (const bool *current = nullBegin; current != nullEnd; ++current) {
-        *destNullp++ = *current;
+    auto copy_nulls_inner = [&dest_nullp](const bool *null_begin, const bool *null_end) {
+      for (const bool *current = null_begin; current != null_end; ++current) {
+        *dest_nullp++ = *current;
       }
     };
 
-    auto copyOuter = [&srcData, srcNullFlags, destNullp, &copyDataInner,
-        &copyNullsInner](uint64_t srcBegin, uint64_t srcEnd) {
-      auto srcBeginp = srcData.begin() + srcBegin;
-      auto srcEndp = srcData.begin() + srcEnd;
-      immer::for_each_chunk(srcBeginp, srcEndp, copyDataInner);
+    auto copyOuter = [&src_data, src_null_flags, dest_nullp, &copy_data_inner,
+        &copy_nulls_inner](uint64_t srcBegin, uint64_t srcEnd) {
+      auto src_beginp = src_data.begin() + srcBegin;
+      auto src_endp = src_data.begin() + srcEnd;
+      immer::for_each_chunk(src_beginp, src_endp, copy_data_inner);
 
-      if constexpr(!typeIsNumeric) {
-        if (destNullp != nullptr) {
-          auto nullsBeginp = srcNullFlags->begin() + srcBegin;
-          auto nullsEndp = srcNullFlags->begin() + srcEnd;
-          immer::for_each_chunk(nullsBeginp, nullsEndp, copyNullsInner);
+      if constexpr(!kTypeIsNumeric) {
+        if (dest_nullp != nullptr) {
+          auto nulls_begin = src_null_flags->begin() + srcBegin;
+          auto nulls_end = src_null_flags->begin() + srcEnd;
+          immer::for_each_chunk(nulls_begin, nulls_end, copy_nulls_inner);
         }
       } else {
         // avoid clang complaining about unused variables.
-        (void)srcNullFlags;
-        (void)destNullp;
-        (void)copyNullsInner;
+        (void)src_null_flags;
+        (void)dest_nullp;
+        (void)copy_nulls_inner;
       }
     };
-    rows.forEachInterval(copyOuter);
+    rows.ForEachInterval(copyOuter);
   }
 
   template<typename T>
-  static void fillChunkUnordered(const immer::flex_vector<T> &srcData,
-      const immer::flex_vector<bool> *srcNullFlags,
-      const UInt64Chunk &rows, Chunk *destData, BooleanChunk *optionalDestNullFlags) {
+  static void FillChunkUnordered(const immer::flex_vector<T> &src_data,
+      const immer::flex_vector<bool> *src_null_flags,
+      const UInt64Chunk &rows, Chunk *dest_data, BooleanChunk *optional_dest_null_flags) {
     using deephaven::dhcore::chunk::TypeToChunk;
-    using deephaven::dhcore::utility::trueOrThrow;
-    using deephaven::dhcore::utility::verboseCast;
+    using deephaven::dhcore::utility::TrueOrThrow;
+    using deephaven::dhcore::utility::VerboseCast;
 
     typedef typename TypeToChunk<T>::type_t chunkType_t;
 
-    constexpr bool typeIsNumeric = deephaven::dhcore::DeephavenTraits<T>::isNumeric;
+    constexpr bool kTypeIsNumeric = deephaven::dhcore::DeephavenTraits<T>::kIsNumeric;
 
-    auto *typedDest = verboseCast<chunkType_t*>(DEEPHAVEN_EXPR_MSG(destData));
-    trueOrThrow(DEEPHAVEN_EXPR_MSG(rows.size() <= typedDest->size()));
-    trueOrThrow(DEEPHAVEN_EXPR_MSG(optionalDestNullFlags == nullptr ||
-        rows.size() <= optionalDestNullFlags->size()));
-    if (!typeIsNumeric) {
-      trueOrThrow(DEEPHAVEN_EXPR_MSG(srcNullFlags != nullptr));
+    auto *typed_dest = VerboseCast<chunkType_t *>(DEEPHAVEN_EXPR_MSG(dest_data));
+    TrueOrThrow(DEEPHAVEN_EXPR_MSG(rows.Size() <= typed_dest->Size()));
+    TrueOrThrow(DEEPHAVEN_EXPR_MSG(optional_dest_null_flags == nullptr ||
+        rows.Size() <= optional_dest_null_flags->Size()));
+    if (!kTypeIsNumeric) {
+      TrueOrThrow(DEEPHAVEN_EXPR_MSG(src_null_flags != nullptr));
     }
-    auto *destp = typedDest->data();
-    auto *destNullp = optionalDestNullFlags != nullptr ? optionalDestNullFlags->data() : nullptr;
+    auto *destp = typed_dest->data();
+    auto *dest_nullp = optional_dest_null_flags != nullptr ? optional_dest_null_flags->data() : nullptr;
 
     // Note: Uses random access with Immer, which is significantly more expensive than iterating
     // over contiguous Immer ranges.
     for (auto key : rows) {
-      auto value = srcData[key];
+      auto value = src_data[key];
       *destp++ = value;
-      if (destNullp != nullptr) {
-        if constexpr(typeIsNumeric) {
-          *destNullp++ = value == deephaven::dhcore::DeephavenTraits<T>::NULL_VALUE;
+      if (dest_nullp != nullptr) {
+        if constexpr(kTypeIsNumeric) {
+          *dest_nullp++ = value == deephaven::dhcore::DeephavenTraits<T>::kNullValue;
         } else {
-          *destNullp++ = (*srcNullFlags)[key];
+          *dest_nullp++ = (*src_null_flags)[key];
         }
       }
     }
@@ -144,13 +144,13 @@ class NumericImmerColumnSource final : public ImmerColumnSource,
     std::enable_shared_from_this<NumericImmerColumnSource<T>> {
   struct Private {};
 
-  typedef deephaven::dhcore::chunk::Chunk Chunk;
-  typedef deephaven::dhcore::chunk::UInt64Chunk UInt64Chunk;
-  typedef deephaven::dhcore::column::ColumnSourceVisitor ColumnSourceVisitor;
-  typedef deephaven::dhcore::container::RowSequence RowSequence;
+  using Chunk = deephaven::dhcore::chunk::Chunk;
+  using UInt64Chunk = deephaven::dhcore::chunk::UInt64Chunk;
+  using ColumnSourceVisitor = deephaven::dhcore::column::ColumnSourceVisitor;
+  using RowSequence = deephaven::dhcore::container::RowSequence;
 
 public:
-  static std::shared_ptr<NumericImmerColumnSource> create(immer::flex_vector<T> data) {
+  static std::shared_ptr<NumericImmerColumnSource> Create(immer::flex_vector<T> data) {
     return std::make_shared<NumericImmerColumnSource>(Private(), std::move(data));
   }
 
@@ -158,19 +158,19 @@ public:
 
   ~NumericImmerColumnSource() final = default;
 
-  void fillChunk(const RowSequence &rows, Chunk *destData, BooleanChunk *optionalDestNullFlags) const final {
-    internal::ImmerColumnSourceImpls::fillChunk(data_, nullptr, rows, destData,
-        optionalDestNullFlags);
+  void FillChunk(const RowSequence &rows, Chunk *dest_data, BooleanChunk *optional_dest_null_flags) const final {
+    internal::ImmerColumnSourceImpls::FillChunk(data_, nullptr, rows, dest_data,
+        optional_dest_null_flags);
   }
 
-  void fillChunkUnordered(const UInt64Chunk &rows, Chunk *destData,
-      BooleanChunk *optionalDestNullFlags) const final {
-    internal::ImmerColumnSourceImpls::fillChunkUnordered(data_, nullptr, rows, destData,
-        optionalDestNullFlags);
+  void FillChunkUnordered(const UInt64Chunk &rows, Chunk *dest_data,
+      BooleanChunk *optional_dest_null_flags) const final {
+    internal::ImmerColumnSourceImpls::FillChunkUnordered(data_, nullptr, rows, dest_data,
+        optional_dest_null_flags);
   }
 
-  void acceptVisitor(ColumnSourceVisitor *visitor) const final {
-    visitor->visit(*this);
+  void AcceptVisitor(ColumnSourceVisitor *visitor) const final {
+    visitor->Visit(*this);
   }
 
 private:
@@ -182,34 +182,34 @@ class GenericImmerColumnSource final : public ImmerColumnSource,
     public deephaven::dhcore::column::GenericColumnSource<T>,
     std::enable_shared_from_this<GenericImmerColumnSource<T>> {
   struct Private {};
-  typedef deephaven::dhcore::column::ColumnSourceVisitor ColumnSourceVisitor;
+  using ColumnSourceVisitor = deephaven::dhcore::column::ColumnSourceVisitor;
 public:
-  static std::shared_ptr<GenericImmerColumnSource> create(immer::flex_vector<T> data,
-      immer::flex_vector<bool> nullFlags) {
-    return std::make_shared<GenericImmerColumnSource>(Private(), std::move(data), std::move(nullFlags));
+  static std::shared_ptr<GenericImmerColumnSource> Create(immer::flex_vector<T> data,
+      immer::flex_vector<bool> null_flags) {
+    return std::make_shared<GenericImmerColumnSource>(Private(), std::move(data), std::move(null_flags));
   }
 
-  GenericImmerColumnSource(Private, immer::flex_vector<T> &&data, immer::flex_vector<bool> &&nullFlags) :
-      data_(std::move(data)), nullFlags_(std::move(nullFlags)) {}
+  GenericImmerColumnSource(Private, immer::flex_vector<T> &&data, immer::flex_vector<bool> &&null_flags) :
+      data_(std::move(data)), null_flags_(std::move(null_flags)) {}
   ~GenericImmerColumnSource() final = default;
 
-  void fillChunk(const RowSequence &rows, Chunk *dest, BooleanChunk *optionalDestNullFlags) const final {
-    internal::ImmerColumnSourceImpls::fillChunk(data_, &nullFlags_, rows, dest,
-        optionalDestNullFlags);
+  void FillChunk(const RowSequence &rows, Chunk *dest, BooleanChunk *optional_dest_null_flags) const final {
+    internal::ImmerColumnSourceImpls::FillChunk(data_, &null_flags_, rows, dest,
+        optional_dest_null_flags);
   }
 
-  void fillChunkUnordered(const UInt64Chunk &rows, Chunk *dest,
-      BooleanChunk *optionalDestNullFlags) const final {
-    internal::ImmerColumnSourceImpls::fillChunkUnordered(data_, &nullFlags_, rows, dest,
-        optionalDestNullFlags);
+  void FillChunkUnordered(const UInt64Chunk &rows, Chunk *dest,
+      BooleanChunk *optional_dest_null_flags) const final {
+    internal::ImmerColumnSourceImpls::FillChunkUnordered(data_, &null_flags_, rows, dest,
+        optional_dest_null_flags);
   }
 
-  void acceptVisitor(ColumnSourceVisitor *visitor) const final {
-    visitor->visit(*this);
+  void AcceptVisitor(ColumnSourceVisitor *visitor) const final {
+    visitor->Visit(*this);
   }
 
 private:
   immer::flex_vector<T> data_;
-  immer::flex_vector<bool> nullFlags_;
+  immer::flex_vector<bool> null_flags_;
 };
 }  // namespace deephaven::dhcore::immerutil

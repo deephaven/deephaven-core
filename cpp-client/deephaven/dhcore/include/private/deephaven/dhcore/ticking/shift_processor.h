@@ -8,12 +8,12 @@
 
 namespace deephaven::dhcore::subscription {
 class ShiftProcessor {
-  typedef deephaven::dhcore::container::RowSequence RowSequence;
+  using RowSequence = deephaven::dhcore::container::RowSequence;
 public:
   ShiftProcessor() = delete;  // static-only class
 
-  static void applyShiftData(const RowSequence &firstIndex, const RowSequence &lastIndex,
-      const RowSequence &destIndex,
-      const std::function<void(uint64_t, uint64_t, uint64_t)> &processShift);
+  static void ApplyShiftData(const RowSequence &first_index, const RowSequence &last_index,
+      const RowSequence &dest_index,
+      const std::function<void(uint64_t, uint64_t, uint64_t)> &process_shift);
 };
 }  // namespace deephaven::dhcore::subscription

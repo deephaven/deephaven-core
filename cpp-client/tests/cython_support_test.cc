@@ -18,30 +18,30 @@ namespace deephaven::client::tests {
 TEST_CASE("CreateStringColumnsSource", "[cython]") {
   // hello, NULL, Deephaven, abc
   // We do these as constexpr so our test won't even compile unless we get the basics right
-  constexpr const char *text = "helloDeephavenabc";
-  constexpr size_t textSize = std::char_traits<char>::length(text);
-  constexpr std::array<uint32_t, 5> offsets = {0, 5, 5, 14, 17};
-  constexpr std::array<uint8_t, 1> validity = {0b1101};
+  constexpr const char *kText = "helloDeephavenabc";
+  constexpr size_t kTextSize = std::char_traits<char>::length(kText);
+  constexpr std::array<uint32_t, 5> kOffsets = {0, 5, 5, 14, 17};
+  constexpr std::array<uint8_t, 1> kValidity = {0b1101};
 
-  static_assert(textSize == *(offsets.end() - 1));
-  constexpr auto numElements = offsets.size() - 1;
-  static_assert((numElements + 7) / 8 == validity.size());
+  static_assert(kTextSize == *(kOffsets.end() - 1));
+  constexpr auto kNumElements = kOffsets.size() - 1;
+  static_assert((kNumElements + 7) / 8 == kValidity.size());
 
-  auto result = CythonSupport::createStringColumnSource(text, text + textSize,
-      offsets.begin(), offsets.end(), validity.begin(), validity.end(), numElements);
+  auto result = CythonSupport::CreateStringColumnSource(kText, kText + kTextSize,
+      kOffsets.begin(), kOffsets.end(), kValidity.begin(), kValidity.end(), kNumElements);
 
-  auto rs = RowSequence::createSequential(0, numElements);
-  auto data = dhcore::chunk::StringChunk::create(numElements);
-  auto nullFlags = dhcore::chunk::BooleanChunk::create(numElements);
-  result->fillChunk(*rs, &data, &nullFlags);
+  auto rs = RowSequence::CreateSequential(0, kNumElements);
+  auto data = dhcore::chunk::StringChunk::Create(kNumElements);
+  auto null_flags = dhcore::chunk::BooleanChunk::Create(kNumElements);
+  result->FillChunk(*rs, &data, &null_flags);
 
-  std::vector<std::string> expectedData = {"hello", "", "Deephaven", "abc"};
-  std::vector<bool> expectedNulls = {false, true, false, false};
+  std::vector<std::string> expected_data = {"hello", "", "Deephaven", "abc"};
+  std::vector<bool> expected_nulls = {false, true, false, false};
 
-  std::vector<std::string> actualData(data.begin(), data.end());
-  std::vector<bool> actualNulls(nullFlags.begin(), nullFlags.end());
+  std::vector<std::string> actual_data(data.begin(), data.end());
+  std::vector<bool> actual_nulls(null_flags.begin(), null_flags.end());
 
-  CHECK(expectedData == actualData);
-  CHECK(expectedNulls == actualNulls);
+  CHECK(expected_data == actual_data);
+  CHECK(expected_nulls == actual_nulls);
 }
 }  // namespace deephaven::client::tests

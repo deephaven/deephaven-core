@@ -9,39 +9,39 @@
 
 namespace deephaven::client {
 namespace impl {
-std::string EscapeUtils::escapeJava(std::string_view s) {
+std::string EscapeUtils::EscapeJava(std::string_view s) {
   std::string result;
-  appendEscapedJava(s, &result);
+  AppendEscapedJava(s, &result);
   return result;
 }
 
-void EscapeUtils::appendEscapedJava(std::string_view s, std::string *result) {
+void EscapeUtils::AppendEscapedJava(std::string_view s, std::string *dest) {
   typedef std::wstring_convert<std::codecvt_utf8_utf16<char16_t>, char16_t> converter_t;
   std::u16string u16s = converter_t().from_bytes(s.begin(), s.end());
 
   for (auto u16ch: u16s) {
     switch (u16ch) {
       case '\b':
-        result->append("\\b");
+        dest->append("\\b");
         continue;
       case '\f':
-        result->append("\\f");
+        dest->append("\\f");
         continue;
       case '\n':
-        result->append("\\n");
+        dest->append("\\n");
         continue;
       case '\r':
-        result->append("\\r");
+        dest->append("\\r");
         continue;
       case '\t':
-        result->append("\\t");
+        dest->append("\\t");
         continue;
       case '"':
       case '\'':
       case '\\':
-        result->push_back('\\');
+        dest->push_back('\\');
         // The cast is to silence Clang-Tidy.
-        result->push_back(static_cast<char>(u16ch));
+        dest->push_back(static_cast<char>(u16ch));
         continue;
       default:
         break;
@@ -50,11 +50,11 @@ void EscapeUtils::appendEscapedJava(std::string_view s, std::string *result) {
     if (u16ch < 32 || u16ch > 0x7f) {
       char buffer[16];  // plenty
       snprintf(buffer, sizeof(buffer), "\\u%04x", u16ch);
-      result->append(buffer);
+      dest->append(buffer);
       continue;
     }
     // The cast is to silence Clang-Tidy.
-    result->push_back(static_cast<char>(u16ch));
+    dest->push_back(static_cast<char>(u16ch));
   }
 }
 }  // namespace impl

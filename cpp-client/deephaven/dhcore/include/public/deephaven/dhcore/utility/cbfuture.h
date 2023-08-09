@@ -13,12 +13,13 @@ namespace deephaven::dhcore::utility {
 namespace internal {
 class PromiseStateBase {
 public:
-  bool valid();
+  bool Valid();
 
 protected:
-  void checkValidLocked(const std::unique_lock<std::mutex> &guard, bool expected);
-  void waitValidLocked(std::unique_lock<std::mutex> *guard);
-  virtual bool validLocked(const std::unique_lock<std::mutex> &/*guard*/) = 0;
+  void CheckValidLocked(const std::unique_lock<std::mutex> &guard, bool expected);
+  void WaitValidLocked(std::unique_lock<std::mutex> *guard);
+  [[nodiscard]]
+  virtual bool ValidLocked(const std::unique_lock<std::mutex> &/*guard*/) = 0;
 
   std::mutex mutex_;
   std::condition_variable condVar_;
@@ -30,16 +31,17 @@ class PromiseState final : public PromiseStateBase {
 public:
   // valid means promise fulfilled with either value or error
 
-  const T &value() {
+  [[nodiscard]]
+  const T &Value() {
     std::unique_lock<std::mutex> guard(mutex_);
-    waitValidLocked(&guard);
+    WaitValidLocked(&guard);
     return *value_;
   }
 
-  void setValue(T value) {
+  void SetValue(T value) {
     // Need to invoke all the waiters.
     std::unique_lock guard(mutex_);
-    checkValidLocked(guard, false);
+    CheckValidLocked(guard, false);
     value_ = std::move(value);
 
     std::vector<std::shared_ptr<SFCallback<T>>> cbs;
@@ -48,15 +50,14 @@ public:
 
     condVar_.notify_all();
     for (auto &cb : cbs) {
-      cb->onSuccess(*value_);
+      cb->OnSuccess(*value_);
     }
   }
 
-  // oops. need to invoke all the waiters
-  void setError(std::exception_ptr ep) {
+  void SetError(std::exception_ptr ep) {
     // Need to invoke all the waiters.
     std::unique_lock guard(mutex_);
-    checkValidLocked(guard, false);
+    CheckValidLocked(guard, false);
     eptr_ = std::move(ep);
 
     std::vector<std::shared_ptr<SFCallback<T>>> cbs;
@@ -64,27 +65,27 @@ public:
     guard.unlock();
     condVar_.notify_all();
     for (auto &cb : cbs) {
-      cb->onFailure(eptr_);
+      cb->OnFailure(eptr_);
     }
   }
 
-  void invoke(std::shared_ptr<SFCallback<T>> cb) {
+  void Invoke(std::shared_ptr<SFCallback<T>> cb) {
     std::unique_lock<std::mutex> guard(mutex_);
-    if (!validLocked(guard)) {
+    if (!ValidLocked(guard)) {
       callbacks_.push_back(std::move(cb));
       return;
     }
     guard.unlock();
 
     if (value_.has_value()) {
-      cb->onSuccess(value_.value());
+      cb->OnSuccess(value_.value());
     } else {
-      cb->onFailure(eptr_);
+      cb->OnFailure(eptr_);
     }
   }
 
 private:
-  bool validLocked(const std::unique_lock<std::mutex> &/*guard*/) final {
+  bool ValidLocked(const std::unique_lock<std::mutex> &/*guard*/) final {
     return value_.has_value() || eptr_ != nullptr;
   }
 
@@ -101,14 +102,14 @@ class CBPromise {
 public:
   CBPromise() : state_(std::make_shared<internal::PromiseState<T>>()) {}
 
-  CBFuture<T> makeFuture();
+  CBFuture<T> MakeFuture();
 
-  void setValue(T value) {
-    state_->setValue(std::move(value));
+  void SetValue(T value) {
+    state_->SetValue(std::move(value));
   }
 
-  void setError(std::exception_ptr ep) {
-    state_->setError(std::move(ep));
+  void SetError(std::exception_ptr ep) {
+    state_->SetError(std::move(ep));
   }
 
 private:
@@ -120,12 +121,14 @@ class CBFuture {
 public:
   CBFuture(CBFuture &&other) noexcept = default;
 
-  bool valid() { return state_->valid(); }
+  [[nodiscard]]
+  bool Valid() { return state_->Valid(); }
 
-  const T &value() const { return state_->value(); }
+  [[nodiscard]]
+  const T &Value() const { return state_->Value(); }
 
-  void invoke(std::shared_ptr<SFCallback<T>> cb) {
-    state_->invoke(std::move(cb));
+  void Invoke(std::shared_ptr<SFCallback<T>> cb) {
+    state_->Invoke(std::move(cb));
   }
 
 private:
@@ -138,7 +141,7 @@ private:
 };
 
 template<typename T>
-CBFuture<T> CBPromise<T>::makeFuture() {
+CBFuture<T> CBPromise<T>::MakeFuture() {
   return CBFuture<T>(state_);
 }
 }  // namespace deephaven::dhcore::utility

@@ -22,11 +22,13 @@ public:
   /**
    * Create an empty RowSequence.
    */
-  static std::shared_ptr<RowSequence> createEmpty();
+  [[nodiscard]]
+  static std::shared_ptr<RowSequence> CreateEmpty();
   /**
    * Create a dense RowSequence providing values from the half open interval [begin, end).
    */
-  static std::shared_ptr<RowSequence> createSequential(uint64_t begin, uint64_t end);
+  [[nodiscard]]
+  static std::shared_ptr<RowSequence> CreateSequential(uint64_t begin, uint64_t end);
 
   /**
    * Destructor.
@@ -36,37 +38,42 @@ public:
   /**
    * Create a RowSequenceIterator.
    */
-  RowSequenceIterator getRowSequenceIterator() const;
+  [[nodiscard]]
+  RowSequenceIterator GetRowSequenceIterator() const;
 
   /**
-   * Return a RowSequence consisting of the first 'size' elements of this RowSequence.
-   * If size >= this->size(), the method may return this RowSequence.
+   * Return a RowSequence consisting of the first 'Size' elements of this RowSequence.
+   * If Size >= this->Size(), the method may return this RowSequence.
    */
-  virtual std::shared_ptr<RowSequence> take(size_t size) const = 0;
+  [[nodiscard]]
+  virtual std::shared_ptr<RowSequence> Take(size_t size) const = 0;
   /**
    * Return a RowSequence consisting of the remaining elements of this RowSequence after dropping
-   * 'size' elements. If size >= this->size(), returns the empty RowSequence.
+   * 'size' elements. If Size >= this->Size(), returns the empty RowSequence.
    */
-  virtual std::shared_ptr<RowSequence> drop(size_t size) const = 0;
+  [[nodiscard]]
+  virtual std::shared_ptr<RowSequence> Drop(size_t size) const = 0;
 
   /**
    * Iterates over the RowSequence and invokes the callback on each of the contiguous intervals
    * that it contains. The intervals passed to the callback will be represented as half-open
    * intervals [begin, end).
    */
-  virtual void forEachInterval(
-      const std::function<void(uint64_t beginKey, uint64_t endKey)> &callback) const = 0;
+  virtual void ForEachInterval(
+      const std::function<void(uint64_t begin_key, uint64_t end_key)> &callback) const = 0;
 
   /**
    * The number of elements in this RowSequence.
    */
-  virtual size_t size() const = 0;
+  [[nodiscard]]
+  virtual size_t Size() const = 0;
 
   /**
-   * Whether this RowSquence is empty (i.e. whether size() == 0).
+   * Whether this RowSquence is empty (i.e. whether Size() == 0).
    */
-  bool empty() const {
-    return size() == 0;
+  [[nodiscard]]
+  bool Empty() const {
+    return Size() == 0;
   }
 
   /**
@@ -80,13 +87,13 @@ public:
  * heavyweight object that supports forward iteration one step at a time.
  */
 class RowSequenceIterator {
-  static constexpr size_t chunkSize = 8192;
+  static constexpr size_t kChunkSize = 8192;
 
 public:
   /**
    * Constructor. Used internally.
    */
-  explicit RowSequenceIterator(std::shared_ptr<RowSequence> rowSequence);
+  explicit RowSequenceIterator(std::shared_ptr<RowSequence> row_sequence);
   /**
    * Move constructor.
    */
@@ -100,10 +107,11 @@ public:
    * @param result A pointer to caller-managed storage to store the next value.
    * @return True if the next value was stored in *result. False if there are no more values.
    */
-  bool tryGetNext(uint64_t *result);
+  [[nodiscard]]
+  bool TryGetNext(uint64_t *result);
 
 private:
-  void refillRanges();
+  void RefillRanges();
 
   std::shared_ptr<RowSequence> residual_;
   std::vector<std::pair<uint64_t, uint64_t>> ranges_;
@@ -130,19 +138,20 @@ public:
    * Adds the half-open interval [begin, end) to the RowSequence. The added interval need not be
    * disjoint.
    */
-  void addInterval(uint64_t begin, uint64_t end);
+  void AddInterval(uint64_t begin, uint64_t end);
 
   /**
    * Adds 'key' to the RowSequence. If the key is already present, does nothing.
    */
-  void add(uint64_t key) {
-    addInterval(key, key + 1);
+  void Add(uint64_t key) {
+    AddInterval(key, key + 1);
   }
 
   /**
    * Builds the RowSequence.
    */
-  std::shared_ptr<RowSequence> build();
+  [[nodiscard]]
+  std::shared_ptr<RowSequence> Build();
 
 private:
   /**
@@ -150,7 +159,7 @@ private:
    * Our code maintains the invariants that map entries do not contain overlapping ranges,
    * and if two adjacent ranges are contiguous, they will get merged into one.
    */
-  typedef std::map<uint64_t, uint64_t> ranges_t;
+  using ranges_t = std::map<uint64_t, uint64_t>;
   ranges_t ranges_;
   size_t size_ = 0;
 };

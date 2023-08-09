@@ -13,186 +13,188 @@
 
 namespace deephaven::client::arrowutil {
 namespace internal {
-template<typename ARRAY_TYPE, typename ELEMENT_TYPE>
+template<typename ArrayType, typename ElementType>
 class NumericBackingStore {
-  typedef deephaven::dhcore::column::ColumnSourceImpls ColumnSourceImpls;
+  using ColumnSourceImpls = deephaven::dhcore::column::ColumnSourceImpls;
 
 public:
-  explicit NumericBackingStore(const ARRAY_TYPE *arrowArray) : array_(arrowArray) {}
+  explicit NumericBackingStore(const ArrayType *arrow_array) : array_(arrow_array) {}
 
-  void get(size_t beginIndex, size_t endIndex, ELEMENT_TYPE *dest, bool *optionalNullFlags) const {
-    ColumnSourceImpls::assertRangeValid(beginIndex, endIndex, array_->length());
-    for (auto i = beginIndex; i != endIndex; ++i) {
+  void Get(size_t begin_index, size_t end_index, ElementType *dest, bool *optional_null_flags) const {
+    ColumnSourceImpls::AssertRangeValid(begin_index, end_index, array_->length());
+    for (auto i = begin_index; i != end_index; ++i) {
       auto element = (*array_)[i];
-      ELEMENT_TYPE value;
-      bool isNull;
+      ElementType value;
+      bool is_null;
       if (element.has_value()) {
         value = *element;
-        isNull = false;
+          is_null = false;
       } else {
-        value = deephaven::dhcore::DeephavenTraits<ELEMENT_TYPE>::NULL_VALUE;
-        isNull = true;
+        value = deephaven::dhcore::DeephavenTraits<ElementType>::kNullValue;
+          is_null = true;
       }
       *dest++ = value;
-      if (optionalNullFlags != nullptr) {
-        *optionalNullFlags++ = isNull;
+      if (optional_null_flags != nullptr) {
+        *optional_null_flags++ = is_null;
       }
     }
   }
 
 private:
-  const ARRAY_TYPE *array_ = nullptr;
+  const ArrayType *array_ = nullptr;
 };
 
-template<typename ARRAY_TYPE, typename ELEMENT_TYPE>
+template<typename ArrayType, typename ElementType>
 class GenericBackingStore {
-  typedef deephaven::dhcore::column::ColumnSourceImpls ColumnSourceImpls;
-  typedef deephaven::dhcore::DateTime DateTime;
+  using ColumnSourceImpls = deephaven::dhcore::column::ColumnSourceImpls;
+  using DateTime = deephaven::dhcore::DateTime;
 public:
-  explicit GenericBackingStore(const ARRAY_TYPE *arrowArray) : array_(arrowArray) {}
+  explicit GenericBackingStore(const ArrayType *arrow_array) : array_(arrow_array) {}
 
-  void get(size_t beginIndex, size_t endIndex, ELEMENT_TYPE *dest, bool *optionalNullFlags) const {
-    ColumnSourceImpls::assertRangeValid(beginIndex, endIndex, array_->length());
-    for (auto i = beginIndex; i != endIndex; ++i) {
+  void Get(size_t begin_index, size_t end_index, ElementType *dest, bool *optional_null_flags) const {
+    ColumnSourceImpls::AssertRangeValid(begin_index, end_index, array_->length());
+    for (auto i = begin_index; i != end_index; ++i) {
       auto element = (*array_)[i];
-      bool isNull;
+      bool is_null;
       if (element.has_value()) {
-        ArrowValueConverter::convert(*element, dest);
-        isNull = false;
+        ArrowValueConverter::Convert(*element, dest);
+        is_null = false;
       } else {
         // placeholder
-        *dest = ELEMENT_TYPE();
-        isNull = true;
+        *dest = ElementType();
+        is_null = true;
       }
-      if (optionalNullFlags != nullptr) {
-        *optionalNullFlags++ = isNull;
+      if (optional_null_flags != nullptr) {
+        *optional_null_flags++ = is_null;
       }
     }
   }
 
 private:
-  const ARRAY_TYPE *array_ = nullptr;
+  const ArrayType *array_ = nullptr;
 };
 }  // namespace internal
 
-template<typename ARRAY_TYPE, typename ELEMENT_TYPE>
-class NumericArrowColumnSource final : public deephaven::dhcore::column::NumericColumnSource<ELEMENT_TYPE> {
+template<typename ArrayType, typename ElementType>
+class NumericArrowColumnSource final : public deephaven::dhcore::column::NumericColumnSource<ElementType> {
   struct Private {};
   /**
    * Alias.
    */
-  typedef deephaven::dhcore::chunk::BooleanChunk BooleanChunk;
+  using BooleanChunk = deephaven::dhcore::chunk::BooleanChunk;
   /**
    * Alias.
    */
-  typedef deephaven::dhcore::chunk::Chunk Chunk;
+  using Chunk = deephaven::dhcore::chunk::Chunk;
   /**
    * Alias.
    */
-  typedef deephaven::dhcore::chunk::UInt64Chunk UInt64Chunk;
+  using UInt64Chunk = deephaven::dhcore::chunk::UInt64Chunk;
   /**
    * Alias.
    */
-  typedef deephaven::dhcore::column::ColumnSourceImpls ColumnSourceImpls;
+  using ColumnSourceImpls = deephaven::dhcore::column::ColumnSourceImpls;
   /**
    * Alias.
    */
-  typedef deephaven::dhcore::container::RowSequence RowSequence;
+  using RowSequence = deephaven::dhcore::container::RowSequence;
   /**
    * Alias.
    */
-  typedef deephaven::dhcore::column::ColumnSourceVisitor ColumnSourceVisitor;
+  using ColumnSourceVisitor = deephaven::dhcore::column::ColumnSourceVisitor;
 
 public:
-  static std::shared_ptr<NumericArrowColumnSource> create(std::shared_ptr<arrow::Array> storage,
-      const ARRAY_TYPE *arrowArray) {
-    return std::make_shared<NumericArrowColumnSource>(Private(), std::move(storage), arrowArray);
+  static std::shared_ptr<NumericArrowColumnSource> Create(std::shared_ptr<arrow::Array> storage,
+      const ArrayType *arrow_array) {
+    return std::make_shared<NumericArrowColumnSource>(Private(), std::move(storage), arrow_array);
   }
 
-  explicit NumericArrowColumnSource(Private, std::shared_ptr<arrow::Array> storage, const ARRAY_TYPE *arrowArray) :
-      storage_(std::move(storage)), backingStore_(arrowArray) {}
+  explicit NumericArrowColumnSource(Private, std::shared_ptr<arrow::Array> storage, const ArrayType *arrow_array) :
+      storage_(std::move(storage)), backingStore_(arrow_array) {}
 
-  void fillChunk(const RowSequence &rows, Chunk *destData, BooleanChunk *optionalDestNullFlags) const final {
-    typedef typename deephaven::dhcore::chunk::TypeToChunk<ELEMENT_TYPE>::type_t chunkType_t;
-    ColumnSourceImpls::fillChunk<chunkType_t>(rows, destData, optionalDestNullFlags, backingStore_);
+  void FillChunk(const RowSequence &rows, Chunk *dest_data, BooleanChunk *optional_dest_null_flags) const final {
+    typedef typename deephaven::dhcore::chunk::TypeToChunk<ElementType>::type_t chunkType_t;
+    ColumnSourceImpls::FillChunk<chunkType_t>(rows, dest_data, optional_dest_null_flags, backingStore_);
   }
 
-  void fillChunkUnordered(const UInt64Chunk &rows, Chunk *destData, BooleanChunk *optionalDestNullFlags) const final {
-    typedef typename deephaven::dhcore::chunk::TypeToChunk<ELEMENT_TYPE>::type_t chunkType_t;
-    ColumnSourceImpls::fillChunkUnordered<chunkType_t>(rows, destData, optionalDestNullFlags, backingStore_);
+  void FillChunkUnordered(const UInt64Chunk &rows, Chunk *dest_data, BooleanChunk *optional_dest_null_flags) const final {
+    typedef typename deephaven::dhcore::chunk::TypeToChunk<ElementType>::type_t chunkType_t;
+    ColumnSourceImpls::FillChunkUnordered<chunkType_t>(rows, dest_data, optional_dest_null_flags,
+                                                       backingStore_);
   }
 
-  void acceptVisitor(ColumnSourceVisitor *visitor) const final {
-    visitor->visit(*this);
+  void AcceptVisitor(ColumnSourceVisitor *visitor) const final {
+    visitor->Visit(*this);
   }
 
 private:
   std::shared_ptr<arrow::Array> storage_;
-  internal::NumericBackingStore<ARRAY_TYPE, ELEMENT_TYPE> backingStore_;
+  internal::NumericBackingStore<ArrayType, ElementType> backingStore_;
 };
 
-template<typename ARRAY_TYPE, typename ELEMENT_TYPE>
-class GenericArrowColumnSource final : public deephaven::dhcore::column::GenericColumnSource<ELEMENT_TYPE> {
+template<typename ArrayType, typename ElementType>
+class GenericArrowColumnSource final : public deephaven::dhcore::column::GenericColumnSource<ElementType> {
   struct Private {};
   /**
    * Alias.
    */
-  typedef deephaven::dhcore::chunk::BooleanChunk BooleanChunk;
+  using BooleanChunk = deephaven::dhcore::chunk::BooleanChunk;
   /**
    * Alias.
    */
-  typedef deephaven::dhcore::chunk::Chunk Chunk;
+  using Chunk = deephaven::dhcore::chunk::Chunk;
   /**
    * Alias.
    */
-  typedef deephaven::dhcore::chunk::UInt64Chunk UInt64Chunk;
+  using UInt64Chunk = deephaven::dhcore::chunk::UInt64Chunk;
   /**
    * Alias.
    */
-  typedef deephaven::dhcore::container::RowSequence RowSequence;
+  using RowSequence = deephaven::dhcore::container::RowSequence;
   /**
    * Alias.
    */
-  typedef deephaven::dhcore::column::ColumnSourceImpls ColumnSourceImpls;
+  using ColumnSourceImpls = deephaven::dhcore::column::ColumnSourceImpls;
   /**
    * Alias.
    */
-  typedef deephaven::dhcore::column::ColumnSourceVisitor ColumnSourceVisitor;
+  using ColumnSourceVisitor = deephaven::dhcore::column::ColumnSourceVisitor;
 
 public:
-  static std::shared_ptr<GenericArrowColumnSource> create(std::shared_ptr<arrow::Array> storage,
-      const ARRAY_TYPE *arrowArray) {
-    return std::make_shared<GenericArrowColumnSource>(Private(), std::move(storage), arrowArray);
+  static std::shared_ptr<GenericArrowColumnSource> Create(std::shared_ptr<arrow::Array> storage,
+      const ArrayType *arrow_array) {
+    return std::make_shared<GenericArrowColumnSource>(Private(), std::move(storage), arrow_array);
   }
 
-  explicit GenericArrowColumnSource(Private, std::shared_ptr<arrow::Array> storage, const ARRAY_TYPE *arrowArray) :
-      storage_(std::move(storage)), backingStore_(arrowArray) {}
+  explicit GenericArrowColumnSource(Private, std::shared_ptr<arrow::Array> storage, const ArrayType *arrow_array) :
+      storage_(std::move(storage)), backingStore_(arrow_array) {}
 
-  void fillChunk(const RowSequence &rows, Chunk *destData, BooleanChunk *optionalDestNullFlags) const final {
-    typedef typename deephaven::dhcore::chunk::TypeToChunk<ELEMENT_TYPE>::type_t chunkType_t;
-    ColumnSourceImpls::fillChunk<chunkType_t>(rows, destData, optionalDestNullFlags, backingStore_);
+  void FillChunk(const RowSequence &rows, Chunk *dest_data, BooleanChunk *optional_dest_null_flags) const final {
+    typedef typename deephaven::dhcore::chunk::TypeToChunk<ElementType>::type_t chunkType_t;
+    ColumnSourceImpls::FillChunk<chunkType_t>(rows, dest_data, optional_dest_null_flags, backingStore_);
   }
-  void fillChunkUnordered(const UInt64Chunk &rows, Chunk *destData, BooleanChunk *optionalDestNullFlags) const final {
-    typedef typename deephaven::dhcore::chunk::TypeToChunk<ELEMENT_TYPE>::type_t chunkType_t;
-    ColumnSourceImpls::fillChunkUnordered<chunkType_t>(rows, destData, optionalDestNullFlags, backingStore_);
+  void FillChunkUnordered(const UInt64Chunk &rows, Chunk *dest_data, BooleanChunk *optional_dest_null_flags) const final {
+    typedef typename deephaven::dhcore::chunk::TypeToChunk<ElementType>::type_t chunkType_t;
+    ColumnSourceImpls::FillChunkUnordered<chunkType_t>(rows, dest_data, optional_dest_null_flags,
+                                                       backingStore_);
   }
-  void acceptVisitor(ColumnSourceVisitor *visitor) const final {
-    visitor->visit(*this);
+  void AcceptVisitor(ColumnSourceVisitor *visitor) const final {
+    visitor->Visit(*this);
   }
 
 private:
   std::shared_ptr<arrow::Array> storage_;
-  internal::GenericBackingStore<ARRAY_TYPE, ELEMENT_TYPE> backingStore_;
+  internal::GenericBackingStore<ArrayType, ElementType> backingStore_;
 };
 
-typedef NumericArrowColumnSource<arrow::Int8Array, int8_t> ArrowInt8ColumnSource;
-typedef NumericArrowColumnSource<arrow::Int16Array, int16_t> ArrowInt16ColumnSource;
-typedef NumericArrowColumnSource<arrow::Int32Array, int32_t> ArrowInt32ColumnSource;
-typedef NumericArrowColumnSource<arrow::Int64Array, int64_t> ArrowInt64ColumnSource;
-typedef NumericArrowColumnSource<arrow::FloatArray, float> ArrowFloatColumnSource;
-typedef NumericArrowColumnSource<arrow::DoubleArray, double> ArrowDoubleColumnSource;
+using ArrowInt8ColumnSource = NumericArrowColumnSource<arrow::Int8Array, int8_t>;
+using ArrowInt16ColumnSource = NumericArrowColumnSource<arrow::Int16Array, int16_t>;
+using ArrowInt32ColumnSource = NumericArrowColumnSource<arrow::Int32Array, int32_t>;
+using ArrowInt64ColumnSource = NumericArrowColumnSource<arrow::Int64Array, int64_t>;
+using ArrowFloatColumnSource = NumericArrowColumnSource<arrow::FloatArray, float>;
+using ArrowDoubleColumnSource = NumericArrowColumnSource<arrow::DoubleArray, double>;
 
-typedef GenericArrowColumnSource<arrow::BooleanArray, bool> ArrowBooleanColumnSource;
-typedef GenericArrowColumnSource<arrow::StringArray, std::string> ArrowStringColumnSource;
-typedef GenericArrowColumnSource<arrow::TimestampArray, deephaven::dhcore::DateTime> ArrowDateTimeColumnSource;
+using ArrowBooleanColumnSource = GenericArrowColumnSource<arrow::BooleanArray, bool>;
+using ArrowStringColumnSource = GenericArrowColumnSource<arrow::StringArray, std::string>;
+using ArrowDateTimeColumnSource = GenericArrowColumnSource<arrow::TimestampArray, deephaven::dhcore::DateTime>;
 }  // namespace deephaven::client::arrowutil

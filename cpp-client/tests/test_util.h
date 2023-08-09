@@ -30,11 +30,16 @@ public:
   ColumnNamesForTests &operator=(ColumnNamesForTests &&other) noexcept;
   ~ColumnNamesForTests();
 
-  const std::string &importDate() const { return importDate_; }
-  const std::string &ticker() const { return ticker_; }
-  const std::string &open() const { return open_; }
-  const std::string &close() const { return close_; }
-  const std::string &volume() const { return volume_; }
+  [[nodiscard]]
+  const std::string &ImportDate() const { return importDate_; }
+  [[nodiscard]]
+  const std::string &Ticker() const { return ticker_; }
+  [[nodiscard]]
+  const std::string &Open() const { return open_; }
+  [[nodiscard]]
+  const std::string &Close() const { return close_; }
+  [[nodiscard]]
+  const std::string &Volume() const { return volume_; }
 
 private:
   std::string importDate_;
@@ -50,11 +55,16 @@ public:
   ColumnDataForTests(ColumnDataForTests &&other) noexcept;
   ColumnDataForTests &operator=(ColumnDataForTests &&other) noexcept;
   ~ColumnDataForTests();
-  const std::vector<std::string> &importDate() const { return importDate_; }
-  const std::vector<std::string> &ticker() const { return ticker_; }
-  const std::vector<double> &open() const { return open_; }
-  const std::vector<double> &close() const { return close_; }
-  const std::vector<int64_t> &volume() const { return volume_; }
+  [[nodiscard]]
+  const std::vector<std::string> &ImportDate() const { return importDate_; }
+  [[nodiscard]]
+  const std::vector<std::string> &Ticker() const { return ticker_; }
+  [[nodiscard]]
+  const std::vector<double> &Open() const { return open_; }
+  [[nodiscard]]
+  const std::vector<double> &Close() const { return close_; }
+  [[nodiscard]]
+  const std::vector<int64_t> &Volume() const { return volume_; }
 
 private:
   std::vector<std::string> importDate_;
@@ -65,64 +75,68 @@ private:
 };
 
 class TableMakerForTests {
-  typedef deephaven::client::Client Client;
-  typedef deephaven::client::TableHandleManager TableHandleManager;
-  typedef deephaven::client::TableHandle TableHandle;
+  using ClientType = deephaven::client::Client;
+  using TableHandleManager = deephaven::client::TableHandleManager;
+  using TableHandle = deephaven::client::TableHandle;
 public:
-  static TableMakerForTests create();
+  [[nodiscard]]
+  static TableMakerForTests Create();
   /**
    * If you just want the Client.
    */
-  static Client createClient(const ClientOptions &options = {});
+  [[nodiscard]]
+  static ClientType CreateClient(const ClientOptions &options = {});
 
   TableMakerForTests(TableMakerForTests &&) noexcept;
   TableMakerForTests &operator=(TableMakerForTests &&) noexcept;
   ~TableMakerForTests();
 
-  TableHandle table() const { return testTable_; }
-  const ColumnNamesForTests &columnNames() { return columnNames_; }
-  const ColumnDataForTests &columnData() { return columnData_; }
-
-public:
-  TableMakerForTests(Client &&client, TableHandle &&testTable, ColumnNamesForTests &&columnNames,
-      ColumnDataForTests &&columnData) : client_(std::move(client)),
-      testTable_(std::move(testTable)), columnNames_(std::move(columnNames)),
-      columnData_(std::move(columnData)) {}
-
-  Client &client() { return client_; }
-  const Client &client() const { return client_; }
+  [[nodiscard]]
+  TableHandle Table() const { return testTable_; }
+  [[nodiscard]]
+  const ColumnNamesForTests &ColumnNames() { return columnNames_; }
+  [[nodiscard]]
+  const ColumnDataForTests &ColumnData() { return columnData_; }
+  [[nodiscard]]
+  ClientType &Client() { return client_; }
+  [[nodiscard]]
+  const ClientType &Client() const { return client_; }
 
 private:
-  Client client_;
+  TableMakerForTests(ClientType &&client, TableHandle &&test_table,
+      ColumnNamesForTests &&column_names, ColumnDataForTests &&column_data);
+
+  ClientType client_;
   TableHandle testTable_;
   ColumnNamesForTests columnNames_;
   ColumnDataForTests columnData_;
 };
 
 namespace internal {
-void compareTableHelper(int depth, const std::shared_ptr<arrow::Table> &table,
-    const std::string &columnName, const std::shared_ptr<arrow::Array> &data);
+void CompareTableHelper(int depth, const std::shared_ptr<arrow::Table> &table,
+    const std::string &column_name, const std::shared_ptr<arrow::Array> &data);
 
 // base case
-inline void compareTableRecurse(int /*depth*/, const std::shared_ptr<arrow::Table> &/*table*/) {
+inline void CompareTableRecurse(int /*depth*/, const std::shared_ptr<arrow::Table> &/*table*/) {
 }
 
 template<typename T, typename... Args>
-void compareTableRecurse(int depth, const std::shared_ptr<arrow::Table> &table,
-    const std::string &columnName, const std::vector<T> &data, Args &&... rest) {
-  auto zi = deephaven::client::utility::internal::TypeConverter::createNew(data);
-  const auto &dataAsArrow = zi.column();
-  compareTableHelper(depth, table, columnName, dataAsArrow);
-  compareTableRecurse(depth + 1, table, std::forward<Args>(rest)...);
+void CompareTableRecurse(int depth, const std::shared_ptr<arrow::Table> &table,
+    const std::string &column_name, const std::vector<T> &data, Args &&... rest) {
+  auto zi = deephaven::client::utility::internal::TypeConverter::CreateNew(data);
+  const auto &data_as_arrow = zi.Column();
+  CompareTableHelper(depth, table, column_name, data_as_arrow);
+  CompareTableRecurse(depth + 1, table, std::forward<Args>(rest)...);
 }
 
-std::shared_ptr<arrow::Table> basicValidate(const deephaven::client::TableHandle &table,
-    int expectedColumns);
+[[nodiscard]]
+std::shared_ptr<arrow::Table> BasicValidate(const deephaven::client::TableHandle &table,
+    int expected_columns);
 }  // namespace internal
 
 template<typename... Args>
-void compareTable(const deephaven::client::TableHandle &table, Args &&... args) {
-  auto arrowTable = internal::basicValidate(table, sizeof...(Args) / 2);
-  internal::compareTableRecurse(0, arrowTable, std::forward<Args>(args)...);
+void CompareTable(const deephaven::client::TableHandle &table, Args &&... args) {
+  auto arrow_table = internal::BasicValidate(table, sizeof...(Args) / 2);
+  internal::CompareTableRecurse(0, arrow_table, std::forward<Args>(args)...);
 }
 }  // namespace deephaven::client::tests

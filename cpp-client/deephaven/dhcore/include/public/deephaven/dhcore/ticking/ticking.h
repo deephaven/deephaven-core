@@ -20,13 +20,13 @@ class OnDemandState {
   /**
    * Alias.
    */
-  typedef deephaven::dhcore::container::RowSequence RowSequence;
+  using RowSequence = deephaven::dhcore::container::RowSequence;
 public:
   OnDemandState();
   ~OnDemandState();
 
-  const std::shared_ptr<RowSequence> &allModifiedRows(
-      const std::vector<std::shared_ptr<RowSequence>> &modifiedRows);
+  const std::shared_ptr<RowSequence> &AllModifiedRows(
+      const std::vector<std::shared_ptr<RowSequence>> &modified_rows);
 
 private:
   std::mutex mutex_;
@@ -36,7 +36,7 @@ private:
 
 /**
  * Abstract base class used to define the caller's ticking callback object. This object is passed
- * to the TableHandle::subscribe() method.
+ * to the TableHandle::Subscribe() method.
  */
 
 class TickingCallback {
@@ -46,16 +46,16 @@ public:
   /**
    * Invoked on each update to the subscription.
    */
-  virtual void onTick(TickingUpdate update) = 0;
+  virtual void OnTick(TickingUpdate update) = 0;
 
   /**
    * Invoked if there is an error involving the subscription.
    */
-  virtual void onFailure(std::exception_ptr eptr) = 0;
+  virtual void OnFailure(std::exception_ptr eptr) = 0;
 };
 
 /**
- * An update message (passed to client code via TickingCallback::onTick()) which describes the
+ * An update message (passed to client code via TickingCallback::OnTick()) which describes the
  * changes (removes, adds, modifies) that transform the previous version of the table to the new
  * version. This class is threadsafe and can be kept around for an arbitrary amount of time, though
  * this will consume some memory. The underlying snapshots share a common substructure, so the
@@ -67,11 +67,11 @@ public:
   /**
    * Alias.
    */
-  typedef deephaven::dhcore::container::RowSequence RowSequence;
+  using RowSequence = deephaven::dhcore::container::RowSequence;
   /**
    * Alias.
    */
-  typedef deephaven::dhcore::clienttable::ClientTable Table;
+  using Table = deephaven::dhcore::clienttable::ClientTable;
 
   /**
    * Default constructor.
@@ -82,9 +82,9 @@ public:
    * Constructor. Used internally.
    */
   TickingUpdate(std::shared_ptr<Table> prev,
-      std::shared_ptr<RowSequence> removedRows, std::shared_ptr<Table> afterRemoves,
-      std::shared_ptr<RowSequence> addedRows, std::shared_ptr<Table> afterAdds,
-      std::vector<std::shared_ptr<RowSequence>> modifiedRows, std::shared_ptr<Table> afterModifies);
+      std::shared_ptr<RowSequence> removed_rows, std::shared_ptr<Table> after_removes,
+      std::shared_ptr<RowSequence> added_rows, std::shared_ptr<Table> after_adds,
+      std::vector<std::shared_ptr<RowSequence>> modified_rows, std::shared_ptr<Table> after_modifies);
   /**
    * Copy constructor.
    */
@@ -109,46 +109,54 @@ public:
   /**
    * A snapshot of the table before any of the changes in this cycle were applied.
    */
-  const std::shared_ptr<Table> &prev() const { return prev_; }
+  [[nodiscard]]
+  const std::shared_ptr<Table> &Prev() const { return prev_; }
 
   /**
    * A snapshot of the table before any rows were removed in this cycle.
    */
-  const std::shared_ptr<Table> &beforeRemoves() const {
+  [[nodiscard]]
+  const std::shared_ptr<Table> &BeforeRemoves() const {
     // Implementation detail: 'beforeRemoves' and 'prev' happen to refer to the same snapshot.
     return prev_;
   }
   /**
    * A RowSequence indicating the indexes of the rows (if any) that were removed in this cycle.
    */
-  const std::shared_ptr<RowSequence> &removedRows() const { return removedRows_; }
+  [[nodiscard]]
+  const std::shared_ptr<RowSequence> &RemovedRows() const { return removedRows_; }
   /**
    * A snapshot of the table after the rows (if any) were removed in this cycle.
-   * If no rows were removed, then this pointer will compare equal to beforeRemoves().
+   * If no rows were removed, then this pointer will compare equal to BeforeRemoves().
    */
-  const std::shared_ptr<Table> &afterRemoves() const { return afterRemoves_; }
+  [[nodiscard]]
+  const std::shared_ptr<Table> &AfterRemoves() const { return afterRemoves_; }
 
   /**
    * A snapshot of the table before any rows were added in this cycle.
    */
-  const std::shared_ptr<Table> &beforeAdds() const {
+  [[nodiscard]]
+  const std::shared_ptr<Table> &BeforeAdds() const {
     // Implementation detail: 'afterRemoves' and 'beforeAdds' happen to refer to the same snapshot.
     return afterRemoves_;
   }
   /**
    * A RowSequence indicating the indexes of the rows (if any) that were added in this cycle.
    */
-  const std::shared_ptr<RowSequence> &addedRows() const { return addedRows_; }
+  [[nodiscard]]
+  const std::shared_ptr<RowSequence> &AddedRows() const { return addedRows_; }
   /**
    * A snapshot of the table after rows (if any) were added in this cycle.
-   * If no rows were added, then this pointer will compare equal to beforeAdds().
+   * If no rows were added, then this pointer will compare equal to BeforeAdds().
    */
-  const std::shared_ptr<Table> &afterAdds() const { return afterAdds_; }
+  [[nodiscard]]
+  const std::shared_ptr<Table> &AfterAdds() const { return afterAdds_; }
 
   /**
    * A snapshot of the table before cells were modified in this cycle.
    */
-  const std::shared_ptr<Table> &beforeModifies() const {
+  [[nodiscard]]
+  const std::shared_ptr<Table> &BeforeModifies() const {
     // Implementation detail: 'afterAdds' and 'beforeModifies' happen to refer to the same snapshot.
     return afterAdds_;
   }
@@ -156,22 +164,26 @@ public:
    * A vector of RowSequences which represents, for each column in the table, the indexes of the
    * rows (if any) of the given column that were modified in this cycle.
    */
-  const std::vector<std::shared_ptr<RowSequence>> &modifiedRows() const { return modifiedRows_; }
+  [[nodiscard]]
+  const std::vector<std::shared_ptr<RowSequence>> &ModifiedRows() const { return modifiedRows_; }
   /**
-   * A RowSequence which represents the union of the RowSequences returned by modifiedRows().
+   * A RowSequence which represents the union of the RowSequences returned By ModifiedRows().
    */
-  const std::shared_ptr<RowSequence> &allModifiedRows() const {
-    return onDemandState_->allModifiedRows(modifiedRows_);
+  [[nodiscard]]
+  const std::shared_ptr<RowSequence> &AllModifiedRows() const {
+    return onDemandState_->AllModifiedRows(modifiedRows_);
   }
   /**
    * A snapshot of the table after cells (if any) were modified in this cycle.
    */
-  const std::shared_ptr<Table> &afterModifies() const { return afterModifies_; }
+  [[nodiscard]]
+  const std::shared_ptr<Table> &AfterModifies() const { return afterModifies_; }
 
   /**
    * A snapshot of the table after all of the changes in this cycle were applied.
    */
-  const std::shared_ptr<Table> &current() const {
+  [[nodiscard]]
+  const std::shared_ptr<Table> &Current() const {
     // Implementation detail: 'afterModifies' and 'current' happen to refer to the same snapshot.
     return afterModifies_;
   }

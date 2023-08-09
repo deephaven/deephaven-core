@@ -1,29 +1,13 @@
 /*
- * Copyright (c) 2016-2022 Deephaven Data Labs and Patent Pending
+ * Copyright (c) 2016-2023 Deephaven Data Labs and Patent Pending
  */
 #include <condition_variable>
 #include <iostream>
 #include <mutex>
-#include <arrow/flight/client.h>
-#include <arrow/flight/client_auth.h>
 #include "tests/third_party/catch.hpp"
 #include "tests/test_util.h"
 #include "deephaven/client/client.h"
 #include "deephaven/dhcore/utility/utility.h"
-
-#include <iostream>
-#include <arrow/flight/client.h>
-#include <arrow/flight/types.h>
-#include <arrow/array.h>
-#include <arrow/array/array_primitive.h>
-#include <arrow/array/builder_binary.h>
-#include <arrow/array/builder_primitive.h>
-#include <arrow/compare.h>
-#include <arrow/record_batch.h>
-#include <arrow/scalar.h>
-#include <arrow/type.h>
-#include <arrow/table.h>
-#include <arrow/util/key_value_metadata.h>
 
 using deephaven::client::Client;
 using deephaven::client::NumCol;
@@ -31,71 +15,71 @@ using deephaven::client::StrCol;
 using deephaven::client::TableHandle;
 using deephaven::client::utility::TableMaker;
 using deephaven::dhcore::chunk::Int64Chunk;
-using deephaven::dhcore::utility::streamf;
-using deephaven::dhcore::utility::stringf;
+using deephaven::dhcore::utility::Streamf;
+using deephaven::dhcore::utility::Stringf;
 
 namespace deephaven::client::tests {
 class CommonBase : public deephaven::dhcore::ticking::TickingCallback {
 public:
-  void onFailure(std::exception_ptr ep) final {
+  void OnFailure(std::exception_ptr ep) final {
     std::unique_lock guard(mutex_);
-    exceptionPtr_ = std::move(ep);
-    condVar_.notify_all();
+    exception_ptr_ = std::move(ep);
+    cond_var_.notify_all();
   }
 
-  std::pair<bool, std::exception_ptr> waitForUpdate() {
+  std::pair<bool, std::exception_ptr> WaitForUpdate() {
     std::unique_lock guard(mutex_);
     while (true) {
-      if (done_ || exceptionPtr_ != nullptr) {
-        return std::make_pair(done_, exceptionPtr_);
+      if (done_ || exception_ptr_ != nullptr) {
+        return std::make_pair(done_, exception_ptr_);
       }
-      condVar_.wait(guard);
+      cond_var_.wait(guard);
     }
   }
 
 protected:
-  void notifyDone() {
+  void NotifyDone() {
     std::unique_lock guard(mutex_);
     done_ = true;
-    condVar_.notify_all();
+    cond_var_.notify_all();
   }
 
   std::mutex mutex_;
-  std::condition_variable condVar_;
+  std::condition_variable cond_var_;
   bool done_ = false;
-  std::exception_ptr exceptionPtr_;
+  std::exception_ptr exception_ptr_;
 
 };
 
 class ReachesNRowsCallback final : public CommonBase {
 public:
-  explicit ReachesNRowsCallback(size_t targetRows) : targetRows_(targetRows) {}
+  explicit ReachesNRowsCallback(size_t target_rows) : target_rows_(target_rows) {}
 
-  void onTick(deephaven::dhcore::ticking::TickingUpdate update) final {
+  void OnTick(deephaven::dhcore::ticking::TickingUpdate update) final {
     std::cout << "=== The Full Table ===\n"
-              << update.current()->stream(true, true)
+              << update.Current()->Stream(true, true)
               << '\n';
-    if (update.current()->numRows() >= targetRows_) {
-      notifyDone();
+    if (update.Current()->NumRows() >= target_rows_) {
+      NotifyDone();
     }
   }
 
 private:
-  size_t targetRows_ = 0;
+  size_t target_rows_ = 0;
 };
 
-TEST_CASE("Ticking table eventually reaches 10 rows", "[ticking]") {
-  const auto maxRows = 10;
-  auto client = TableMakerForTests::createClient();
-  auto tm = client.getManager();
+TEST_CASE("Ticking Table eventually reaches 10 rows", "[ticking]") {
+  const auto max_rows = 10;
+  auto client = TableMakerForTests::CreateClient();
+  auto tm = client.GetManager();
 
-  auto table = tm.timeTable(0, 500'000'000).update("II = ii");
-  table.bindToVariable("ticking");
-  auto callback = std::make_shared<ReachesNRowsCallback>(maxRows);
-  auto cookie = table.subscribe(callback);
+  auto table = tm.TimeTable(0, 500'000'000).Update("II = ii");
+  table.BindToVariable("ticking");
+  auto callback = std::make_shared<ReachesNRowsCallback>(max_rows);
+  auto cookie = table.Subscribe(callback);
 
   while (true) {
-    auto [done, eptr] = callback->waitForUpdate();
+    auto [done, eptr] = callback->WaitForUpdate();
     if (done) {
       break;
     }
@@ -104,34 +88,34 @@ TEST_CASE("Ticking table eventually reaches 10 rows", "[ticking]") {
     }
   }
 
-  table.unsubscribe(std::move(cookie));
+  table.Unsubscribe(std::move(cookie));
 }
 
 class AllValuesGreaterThanNCallback final : public CommonBase {
 public:
   explicit AllValuesGreaterThanNCallback(int64_t target) : target_(target) {}
 
-  void onTick(deephaven::dhcore::ticking::TickingUpdate update) final {
-    const auto &current = update.current();
+  void OnTick(deephaven::dhcore::ticking::TickingUpdate update) final {
+    const auto &current = update.Current();
     std::cout << "=== The Full Table ===\n"
-              << current->stream(true, true)
+              << current->Stream(true, true)
               << '\n';
-    if (current->numRows() == 0) {
+    if (current->NumRows() == 0) {
       return;
     }
-    auto col = current->getColumn("Value", true);
-    auto rs = current->getRowSequence();
-    auto data = Int64Chunk::create(rs->size());
-    col->fillChunk(*rs, &data, nullptr);
-    auto allGreater = true;
+    auto col = current->GetColumn("Value", true);
+    auto rs = current->GetRowSequence();
+    auto data = Int64Chunk::Create(rs->Size());
+    col->FillChunk(*rs, &data, nullptr);
+    auto all_greater = true;
     for (auto element : data) {
       if (element < target_) {
-        allGreater = false;
+        all_greater = false;
         break;
       }
     }
-    if (allGreater) {
-      notifyDone();
+    if (all_greater) {
+      NotifyDone();
     }
   }
 
@@ -139,20 +123,20 @@ private:
   int64_t target_ = 0;
 };
 
-TEST_CASE("Ticking table modified rows are eventually all greater than 10", "[ticking]") {
+TEST_CASE("Ticking Table modified rows are eventually all greater than 10", "[ticking]") {
   const int64_t target = 10;
-  auto client = TableMakerForTests::createClient();
-  auto tm = client.getManager();
+  auto client = TableMakerForTests::CreateClient();
+  auto tm = client.GetManager();
 
-  auto table = tm.timeTable(0, 500'000'000)
-      .view({"Key = (long)(ii % 10)", "Value = ii"})
-      .lastBy("Key");
-  table.bindToVariable("ticking");
+  auto table = tm.TimeTable(0, 500'000'000)
+      .View({"Key = (long)(ii % 10)", "Value = ii"})
+      .LastBy("Key");
+  table.BindToVariable("ticking");
   auto callback = std::make_shared<AllValuesGreaterThanNCallback>(target);
-  auto cookie = table.subscribe(callback);
+  auto cookie = table.Subscribe(callback);
 
   while (true) {
-    auto [done, eptr] = callback->waitForUpdate();
+    auto [done, eptr] = callback->WaitForUpdate();
     if (done) {
       break;
     }
@@ -161,6 +145,6 @@ TEST_CASE("Ticking table modified rows are eventually all greater than 10", "[ti
     }
   }
 
-  table.unsubscribe(std::move(cookie));
+  table.Unsubscribe(std::move(cookie));
 }
 }  // namespace deephaven::client::tests

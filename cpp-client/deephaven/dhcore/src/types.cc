@@ -6,45 +6,45 @@
 #include <limits>
 
 namespace deephaven::dhcore {
-const char16_t DeephavenConstants::NULL_CHAR;
+const char16_t DeephavenConstants::kNullChar;
 
-const float DeephavenConstants::NULL_FLOAT;
-const float DeephavenConstants::NAN_FLOAT;
-const float DeephavenConstants::NEG_INFINITY_FLOAT;
-const float DeephavenConstants::POS_INFINITY_FLOAT;
-const float DeephavenConstants::MIN_FLOAT;
-const float DeephavenConstants::MAX_FLOAT;
-const float DeephavenConstants::MIN_FINITE_FLOAT =
-  std::nextafter(-std::numeric_limits<float>::max(), 0.0f);
-const float DeephavenConstants::MAX_FINITE_FLOAT;
-const float DeephavenConstants::MIN_POS_FLOAT;
+const float DeephavenConstants::kNullFloat;
+const float DeephavenConstants::kNanFloat;
+const float DeephavenConstants::kNegInfinityFloat;
+const float DeephavenConstants::kPosInfinityFloat;
+const float DeephavenConstants::kMinFloat;
+const float DeephavenConstants::kMaxFloat;
+const float DeephavenConstants::kMinFiniteFloat =
+  std::nextafter(-std::numeric_limits<float>::max(), 0.0F);
+const float DeephavenConstants::kMaxFiniteFloat;
+const float DeephavenConstants::kMinPosFloat;
 
-const double DeephavenConstants::NULL_DOUBLE;
-const double DeephavenConstants::NAN_DOUBLE;
-const double DeephavenConstants::NEG_INFINITY_DOUBLE;
-const double DeephavenConstants::POS_INFINITY_DOUBLE;
-const double DeephavenConstants::MIN_DOUBLE;
-const double DeephavenConstants::MAX_DOUBLE;
-const double DeephavenConstants::MIN_FINITE_DOUBLE =
+const double DeephavenConstants::kNullDouble;
+const double DeephavenConstants::kNanDouble;
+const double DeephavenConstants::kNegInfinityDouble;
+const double DeephavenConstants::kPosInfinityDouble;
+const double DeephavenConstants::kMinDouble;
+const double DeephavenConstants::kMaxDouble;
+const double DeephavenConstants::kMinFiniteDouble =
   std::nextafter(-std::numeric_limits<double>::max(), 0.0);
-const double DeephavenConstants::MAX_FINITE_DOUBLE;
-const double DeephavenConstants::MIN_POS_DOUBLE;
+const double DeephavenConstants::kMaxFiniteDouble;
+const double DeephavenConstants::kMinPosDouble;
 
-const int8_t DeephavenConstants::NULL_BYTE;
-const int8_t DeephavenConstants::MIN_BYTE;
-const int8_t DeephavenConstants::MAX_BYTE;
+const int8_t DeephavenConstants::kNullByte;
+const int8_t DeephavenConstants::kMinByte;
+const int8_t DeephavenConstants::kMaxByte;
 
-const int16_t DeephavenConstants::NULL_SHORT;
-const int16_t DeephavenConstants::MIN_SHORT;
-const int16_t DeephavenConstants::MAX_SHORT;
+const int16_t DeephavenConstants::kNullShort;
+const int16_t DeephavenConstants::kMinShort;
+const int16_t DeephavenConstants::kMaxShort;
 
-const int32_t DeephavenConstants::NULL_INT;
-const int32_t DeephavenConstants::MIN_INT;
-const int32_t DeephavenConstants::MAX_INT;
+const int32_t DeephavenConstants::kNulLInt;
+const int32_t DeephavenConstants::kMinInt;
+const int32_t DeephavenConstants::kMaxInt;
 
-const int64_t DeephavenConstants::NULL_LONG;
-const int64_t DeephavenConstants::MIN_LONG;
-const int64_t DeephavenConstants::MAX_LONG;
+const int64_t DeephavenConstants::kNullLong;
+const int64_t DeephavenConstants::kMinLong;
+const int64_t DeephavenConstants::kMaxLong;
 
 DateTime::DateTime(int year, int month, int day) : DateTime(year, month, day, 0, 0, 0, 0) {}
 
@@ -65,7 +65,7 @@ DateTime::DateTime(int year, int month, int day, int hour, int minute, int secon
   nanos_ = static_cast<long>(time) + nanos;
 }
 
-void DateTime::streamIrisRepresentation(std::ostream &s) const {
+void DateTime::StreamIrisRepresentation(std::ostream &s) const {
   size_t oneBillion = 1000000000;
   time_t timeSecs = nanos_ / oneBillion;
   auto nanos = nanos_ % oneBillion;

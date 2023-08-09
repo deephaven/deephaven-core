@@ -10,20 +10,20 @@
 #include "deephaven/client/update_by.h"
 #include "deephaven/dhcore/utility/utility.h"
 
-using deephaven::client::impl::moveVectorData;
+using deephaven::client::impl::MoveVectorData;
 using deephaven::client::impl::UpdateByOperationImpl;
-using deephaven::dhcore::utility::stringf;
+using deephaven::dhcore::utility::Stringf;
 // typedef io::deephaven::proto::backplane::grpc::UpdateByDelta UpdateByDelta;
 using io::deephaven::proto::backplane::grpc::UpdateByEmOptions;
 
-typedef io::deephaven::proto::backplane::grpc::BadDataBehavior BadDataBehaviorProtoEnum;
-typedef io::deephaven::proto::backplane::grpc::MathContext MathContextProto;
-typedef io::deephaven::proto::backplane::grpc::MathContext::RoundingMode RoundingModeProtoEnum;
-typedef io::deephaven::proto::backplane::grpc::UpdateByNullBehavior UpdateByNullBehavior;
+using BadDataBehaviorProtoEnum = io::deephaven::proto::backplane::grpc::BadDataBehavior;
+using MathContextProto = io::deephaven::proto::backplane::grpc::MathContext;
+using RoundingModeProtoEnum = io::deephaven::proto::backplane::grpc::MathContext::RoundingMode;
+using UpdateByNullBehavior = io::deephaven::proto::backplane::grpc::UpdateByNullBehavior;
 //typedef io::deephaven::proto::backplane::grpc::UpdateByRequest::UpdateByOperation::UpdateByColumn UpdateByColumn;
-typedef io::deephaven::proto::backplane::grpc::UpdateByRequest::UpdateByOperation::UpdateByColumn::UpdateBySpec UpdateBySpec;
-typedef io::deephaven::proto::backplane::grpc::UpdateByRequest::UpdateByOperation UpdateByOperationProto;
-typedef io::deephaven::proto::backplane::grpc::UpdateByWindowScale::UpdateByWindowTime UpdateByWindowTime;
+using UpdateBySpec = io::deephaven::proto::backplane::grpc::UpdateByRequest::UpdateByOperation::UpdateByColumn::UpdateBySpec;
+using UpdateByOperationProto = io::deephaven::proto::backplane::grpc::UpdateByRequest::UpdateByOperation;
+using UpdateByWindowTime = io::deephaven::proto::backplane::grpc::UpdateByWindowScale::UpdateByWindowTime;
 
 namespace deephaven::client {
 UpdateByOperation::UpdateByOperation() = default;
@@ -40,11 +40,11 @@ namespace deephaven::client::update_by {
 namespace {
 UpdateByNullBehavior convertDeltaControl(DeltaControl dc) {
   switch (dc) {
-    case DeltaControl::NULL_DOMINATES: return UpdateByNullBehavior::NULL_DOMINATES;
-    case DeltaControl::VALUE_DOMINATES: return UpdateByNullBehavior::VALUE_DOMINATES;
-    case DeltaControl::ZERO_DOMINATES: return UpdateByNullBehavior::ZERO_DOMINATES;
+    case DeltaControl::kNullDominates: return UpdateByNullBehavior::NULL_DOMINATES;
+    case DeltaControl::kValueDominates: return UpdateByNullBehavior::VALUE_DOMINATES;
+    case DeltaControl::kZeroDominates: return UpdateByNullBehavior::ZERO_DOMINATES;
     default: {
-      auto message = stringf("Unexpected DeltaControl %o", (int)dc);
+      auto message = Stringf("Unexpected DeltaControl %o", static_cast<int>(dc));
       throw std::runtime_error(DEEPHAVEN_DEBUG_MSG(message));
     }
   }
@@ -52,12 +52,12 @@ UpdateByNullBehavior convertDeltaControl(DeltaControl dc) {
 
 BadDataBehaviorProtoEnum convertBadDataBehavior(BadDataBehavior bdb) {
   switch (bdb) {
-    case BadDataBehavior::RESET: return BadDataBehaviorProtoEnum::RESET;
-    case BadDataBehavior::SKIP: return BadDataBehaviorProtoEnum::SKIP;
-    case BadDataBehavior::THROW: return BadDataBehaviorProtoEnum::THROW;
-    case BadDataBehavior::POISON: return BadDataBehaviorProtoEnum::POISON;
+    case BadDataBehavior::kReset: return BadDataBehaviorProtoEnum::RESET;
+    case BadDataBehavior::kSkip: return BadDataBehaviorProtoEnum::SKIP;
+    case BadDataBehavior::kThrow: return BadDataBehaviorProtoEnum::THROW;
+    case BadDataBehavior::kPoison: return BadDataBehaviorProtoEnum::POISON;
     default: {
-      auto message = stringf("Unexpected BadDataBehavior %o", (int)bdb);
+      auto message = Stringf("Unexpected BadDataBehavior %o", static_cast<int>(bdb));
       throw std::runtime_error(DEEPHAVEN_DEBUG_MSG(message));
     }
   }
@@ -65,64 +65,64 @@ BadDataBehaviorProtoEnum convertBadDataBehavior(BadDataBehavior bdb) {
 
 MathContextProto convertMathContext(MathContext mctx) {
   int32_t precision;
-  RoundingModeProtoEnum roundingMode;
+  RoundingModeProtoEnum rounding_mode;
   switch (mctx) {
     // For the values used here, please see the documentation for java.math.MathContext:
     // https://docs.oracle.com/javase/8/docs/api/java/math/MathContext.html
-    case MathContext::UNLIMITED: {
+    case MathContext::kUnlimited: {
       // "A MathContext object whose settings have the values required for unlimited precision arithmetic."
       precision = 0;
-      roundingMode = RoundingModeProtoEnum::MathContext_RoundingMode_HALF_UP;
+      rounding_mode = RoundingModeProtoEnum::MathContext_RoundingMode_HALF_UP;
       break;
     }
-    case MathContext::DECIMAL32: {
+    case MathContext::kDecimal32: {
       // "A MathContext object with a precision setting matching the IEEE 754R Decimal32 format, 7 digits, and a rounding mode of HALF_EVEN, the IEEE 754R default."
       precision = 7;
-      roundingMode = RoundingModeProtoEnum::MathContext_RoundingMode_HALF_EVEN;
+      rounding_mode = RoundingModeProtoEnum::MathContext_RoundingMode_HALF_EVEN;
       break;
     }
-    case MathContext::DECIMAL64: {
+    case MathContext::kDecimal64: {
       // "A MathContext object with a precision setting matching the IEEE 754R Decimal64 format, 16 digits, and a rounding mode of HALF_EVEN, the IEEE 754R default."
       precision = 16;
-      roundingMode = RoundingModeProtoEnum::MathContext_RoundingMode_HALF_EVEN;
+      rounding_mode = RoundingModeProtoEnum::MathContext_RoundingMode_HALF_EVEN;
       break;
     }
-    case MathContext::DECIMAL128: {
+    case MathContext::kDecimal128: {
       // "A MathContext object with a precision setting matching the IEEE 754R Decimal128 format, 34 digits, and a rounding mode of HALF_EVEN, the IEEE 754R default."
       precision = 34;
-      roundingMode = RoundingModeProtoEnum::MathContext_RoundingMode_HALF_EVEN;
+      rounding_mode = RoundingModeProtoEnum::MathContext_RoundingMode_HALF_EVEN;
       break;
     }
     default: {
-      auto message = stringf("Unexpected MathContext %o", (int)mctx);
+      auto message = Stringf("Unexpected MathContext %o", static_cast<int>(mctx));
       throw std::runtime_error(DEEPHAVEN_DEBUG_MSG(message));
     }
   }
   MathContextProto result;
   result.set_precision(precision);
-  result.set_rounding_mode(roundingMode);
+  result.set_rounding_mode(rounding_mode);
   return result;
 }
 
 UpdateByEmOptions convertOperationControl(const OperationControl &oc) {
-  auto onNull = convertBadDataBehavior(oc.onNull);
-  auto onNan = convertBadDataBehavior(oc.onNaN);
-  auto bigValueContext = convertMathContext(oc.bigValueContext);
+  auto on_null = convertBadDataBehavior(oc.on_null);
+  auto on_nan = convertBadDataBehavior(oc.on_nan);
+  auto big_value_context = convertMathContext(oc.big_value_context);
 
   UpdateByEmOptions result;
-  result.set_on_null_value(onNull);
-  result.set_on_nan_value(onNan);
-  *result.mutable_big_value_context() = std::move(bigValueContext);
+  result.set_on_null_value(on_null);
+  result.set_on_nan_value(on_nan);
+  *result.mutable_big_value_context() = std::move(big_value_context);
   return result;
-};
+}
 
 /**
  * decayTime will be specified as either std::chrono::nanoseconds, or as a string.
  * If it is nanoseconds, we set the nanos field of the UpdateByWindowTime proto. Otherwise (if it is
  * a string), then we set the duration_string field.
  */
-UpdateByWindowTime convertDecayTime(std::string timestampCol, durationSpecifier_t decayTime) {
-  struct visitor_t {
+UpdateByWindowTime convertDecayTime(std::string timestamp_col, durationSpecifier_t decay_time) {
+  struct Visitor {
     void operator()(std::chrono::nanoseconds nanos) {
       result.set_nanos(nanos.count());
     }
@@ -131,84 +131,84 @@ UpdateByWindowTime convertDecayTime(std::string timestampCol, durationSpecifier_
     }
     UpdateByWindowTime result;
   };
-  visitor_t v;
+  Visitor v;
   // Unconditionally set the column field with the value from timestampCol
-  *v.result.mutable_column() = std::move(timestampCol);
+  *v.result.mutable_column() = std::move(timestamp_col);
 
   // Conditionally set either the nanos field or the duration_string with the nanoseconds or string
   // part of the variant.
-  std::visit(v, std::move(decayTime));
+  std::visit(v, std::move(decay_time));
   return std::move(v.result);
 }
 
 class UpdateByBuilder {
 public:
   explicit UpdateByBuilder(std::vector<std::string> cols) {
-    moveVectorData(std::move(cols), gup_.mutable_column()->mutable_match_pairs());
+    MoveVectorData(std::move(cols), gup_.mutable_column()->mutable_match_pairs());
   }
 
-  template<typename MEMBER>
-  void touchEmpty(MEMBER mutableMember) {
-    (void)(gup_.mutable_column()->mutable_spec()->*mutableMember)();
+  template<typename Member>
+  void TouchEmpty(Member mutable_member) {
+    (void)(gup_.mutable_column()->mutable_spec()->*mutable_member)();
   }
 
-  template<typename MEMBER>
-  void setNullBehavior(MEMBER mutableMember, const DeltaControl deltaControl) {
-    auto *which = (gup_.mutable_column()->mutable_spec()->*mutableMember)();
-    auto nb = convertDeltaControl(deltaControl);
+  template<typename Member>
+  void SetNullBehavior(Member mutable_member, const DeltaControl delta_control) {
+    auto *which = (gup_.mutable_column()->mutable_spec()->*mutable_member)();
+    auto nb = convertDeltaControl(delta_control);
     which->mutable_options()->set_null_behavior(nb);
   }
 
-  template<typename MEMBER>
-  void setTicks(MEMBER mutableMember, const double decayTicks, const OperationControl &opControl) {
-    auto *which = (gup_.mutable_column()->mutable_spec()->*mutableMember)();
-    *which->mutable_options() = convertOperationControl(opControl);
-    which->mutable_window_scale()->mutable_ticks()->set_ticks(decayTicks);
+  template<typename Member>
+  void SetTicks(Member mutable_member, double decay_ticks, const OperationControl &op_control) {
+    auto *which = (gup_.mutable_column()->mutable_spec()->*mutable_member)();
+    *which->mutable_options() = convertOperationControl(op_control);
+    which->mutable_window_scale()->mutable_ticks()->set_ticks(decay_ticks);
   }
 
-  template<typename MEMBER>
-  void setTime(MEMBER mutableMember, std::string timestampCol, durationSpecifier_t decayTime,
-      const OperationControl &opControl) {
-    auto *which = (gup_.mutable_column()->mutable_spec()->*mutableMember)();
-    *which->mutable_options() = convertOperationControl(opControl);
+  template<typename Member>
+  void SetTime(Member mutable_member, std::string timestamp_col, durationSpecifier_t decay_time,
+      const OperationControl &op_control) {
+    auto *which = (gup_.mutable_column()->mutable_spec()->*mutable_member)();
+    *which->mutable_options() = convertOperationControl(op_control);
     *which->mutable_window_scale()->mutable_time() =
-        convertDecayTime(std::move(timestampCol), std::move(decayTime));
+        convertDecayTime(std::move(timestamp_col), std::move(decay_time));
   }
 
-  template<typename MEMBER>
-  void setRevAndFwdTicks(MEMBER mutableMember, const int revTicks, const int fwdTicks) {
-    auto *which = (gup_.mutable_column()->mutable_spec()->*mutableMember)();
-    which->mutable_reverse_window_scale()->mutable_ticks()->set_ticks(revTicks);
-    which->mutable_forward_window_scale()->mutable_ticks()->set_ticks(fwdTicks);
+  template<typename Member>
+  void SetRevAndFwdTicks(Member mutable_member, int rev_ticks, int fwd_ticks) {
+    auto *which = (gup_.mutable_column()->mutable_spec()->*mutable_member)();
+    which->mutable_reverse_window_scale()->mutable_ticks()->set_ticks(rev_ticks);
+    which->mutable_forward_window_scale()->mutable_ticks()->set_ticks(fwd_ticks);
   }
 
-  template<typename MEMBER>
-  void setRevAndFwdTime(MEMBER mutableMember, std::string timestampCol,
-      durationSpecifier_t revTime, durationSpecifier_t fwdTime) {
-    auto *which = (gup_.mutable_column()->mutable_spec()->*mutableMember)();
+  template<typename Member>
+  void SetRevAndFwdTime(Member mutable_member, std::string timestamp_col,
+      durationSpecifier_t rev_time, durationSpecifier_t fwd_time) {
+    auto *which = (gup_.mutable_column()->mutable_spec()->*mutable_member)();
     *which->mutable_reverse_window_scale()->mutable_time() =
-        convertDecayTime(timestampCol, std::move(revTime));
+        convertDecayTime(timestamp_col, std::move(rev_time));
     *which->mutable_forward_window_scale()->mutable_time() =
-        convertDecayTime(std::move(timestampCol), std::move(fwdTime));
+        convertDecayTime(std::move(timestamp_col), std::move(fwd_time));
   }
 
-  template<typename MEMBER>
-  void setWeightedRevAndFwdTicks(MEMBER mutableMember, std::string weightCol, const int revTicks,
-      const int fwdTicks) {
-    auto *which = (gup_.mutable_column()->mutable_spec()->*mutableMember)();
-    *which->mutable_weight_column() = std::move(weightCol);
-    setRevAndFwdTicks(mutableMember, revTicks, fwdTicks);
+  template<typename Member>
+  void SetWeightedRevAndFwdTicks(Member mutable_member, std::string weight_col, const int rev_ticks,
+      const int fwd_ticks) {
+    auto *which = (gup_.mutable_column()->mutable_spec()->*mutable_member)();
+    *which->mutable_weight_column() = std::move(weight_col);
+    SetRevAndFwdTicks(mutable_member, rev_ticks, fwd_ticks);
   }
 
-  template<typename MEMBER>
-  void setWeightedRevAndFwdTime(MEMBER mutableMember, std::string timestampCol,
-      std::string weightCol, durationSpecifier_t revTime, durationSpecifier_t fwdTime) {
-    auto *which = (gup_.mutable_column()->mutable_spec()->*mutableMember)();
-    *which->mutable_weight_column() = std::move(weightCol);
-    setRevAndFwdTime(mutableMember, std::move(timestampCol), std::move(revTime), std::move(fwdTime));
+  template<typename Member>
+  void SetWeightedRevAndFwdTime(Member mutable_member, std::string timestamp_col,
+      std::string weight_col, durationSpecifier_t rev_time, durationSpecifier_t fwd_time) {
+    auto *which = (gup_.mutable_column()->mutable_spec()->*mutable_member)();
+    *which->mutable_weight_column() = std::move(weight_col);
+    SetRevAndFwdTime(mutable_member, std::move(timestamp_col), std::move(rev_time), std::move(fwd_time));
   }
 
-  UpdateByOperation build() {
+  UpdateByOperation Build() {
     auto impl = std::make_shared<UpdateByOperationImpl>(std::move(gup_));
     return UpdateByOperation(std::move(impl));
   }
@@ -219,235 +219,235 @@ public:
 
 UpdateByOperation cumSum(std::vector<std::string> cols) {
   UpdateByBuilder ubb(std::move(cols));
-  ubb.touchEmpty(&UpdateBySpec::mutable_sum);
-  return ubb.build();
+  ubb.TouchEmpty(&UpdateBySpec::mutable_sum);
+  return ubb.Build();
 }
 
 UpdateByOperation cumProd(std::vector<std::string> cols) {
   UpdateByBuilder ubb(std::move(cols));
-  ubb.touchEmpty(&UpdateBySpec::mutable_product);
-  return ubb.build();
+  ubb.TouchEmpty(&UpdateBySpec::mutable_product);
+  return ubb.Build();
 }
 
 UpdateByOperation cumMin(std::vector<std::string> cols) {
   UpdateByBuilder ubb(std::move(cols));
-  ubb.touchEmpty(&UpdateBySpec::mutable_min);
-  return ubb.build();
+  ubb.TouchEmpty(&UpdateBySpec::mutable_min);
+  return ubb.Build();
 }
 
 UpdateByOperation cumMax(std::vector<std::string> cols) {
   UpdateByBuilder ubb(std::move(cols));
-  ubb.touchEmpty(&UpdateBySpec::mutable_max);
-  return ubb.build();
+  ubb.TouchEmpty(&UpdateBySpec::mutable_max);
+  return ubb.Build();
 }
 
 UpdateByOperation forwardFill(std::vector<std::string> cols) {
   UpdateByBuilder ubb(std::move(cols));
-  ubb.touchEmpty(&UpdateBySpec::mutable_fill);
-  return ubb.build();
+  ubb.TouchEmpty(&UpdateBySpec::mutable_fill);
+  return ubb.Build();
 }
 
-UpdateByOperation delta(std::vector<std::string> cols, DeltaControl deltaControl) {
+UpdateByOperation delta(std::vector<std::string> cols, DeltaControl delta_control) {
   UpdateByBuilder ubb(std::move(cols));
-  ubb.setNullBehavior(&UpdateBySpec::mutable_delta, deltaControl);
-  return ubb.build();
+  ubb.SetNullBehavior(&UpdateBySpec::mutable_delta, delta_control);
+  return ubb.Build();
 }
 
-UpdateByOperation emaTick(double decayTicks, std::vector<std::string> cols,
-    const OperationControl &opControl) {
+UpdateByOperation emaTick(double decay_ticks, std::vector<std::string> cols,
+    const OperationControl &op_control) {
   UpdateByBuilder ubb(std::move(cols));
-  ubb.setTicks(&UpdateBySpec::mutable_ema, decayTicks, opControl);
-  return ubb.build();
+  ubb.SetTicks(&UpdateBySpec::mutable_ema, decay_ticks, op_control);
+  return ubb.Build();
 }
 
-UpdateByOperation emaTime(std::string timestampCol, durationSpecifier_t decayTime,
-    std::vector<std::string> cols, const OperationControl &opControl) {
+UpdateByOperation emaTime(std::string timestamp_col, durationSpecifier_t decay_time,
+    std::vector<std::string> cols, const OperationControl &op_control) {
   UpdateByBuilder ubb(std::move(cols));
-  ubb.setTime(&UpdateBySpec::mutable_ema, std::move(timestampCol), std::move(decayTime), opControl);
-  return ubb.build();
+  ubb.SetTime(&UpdateBySpec::mutable_ema, std::move(timestamp_col), std::move(decay_time), op_control);
+  return ubb.Build();
 }
 
-UpdateByOperation emsTick(double decayTicks, std::vector<std::string> cols,
-    const OperationControl &opControl) {
+UpdateByOperation emsTick(double decay_ticks, std::vector<std::string> cols,
+    const OperationControl &op_control) {
   UpdateByBuilder ubb(std::move(cols));
-  ubb.setTicks(&UpdateBySpec::mutable_ems, decayTicks, opControl);
-  return ubb.build();
+  ubb.SetTicks(&UpdateBySpec::mutable_ems, decay_ticks, op_control);
+  return ubb.Build();
 }
 
-UpdateByOperation emsTime(std::string timestampCol, durationSpecifier_t decayTime,
-    std::vector<std::string> cols, const OperationControl &opControl) {
+UpdateByOperation emsTime(std::string timestamp_col, durationSpecifier_t decay_time,
+    std::vector<std::string> cols, const OperationControl &op_control) {
   UpdateByBuilder ubb(std::move(cols));
-  ubb.setTime(&UpdateBySpec::mutable_ems, std::move(timestampCol), std::move(decayTime), opControl);
-  return ubb.build();
+  ubb.SetTime(&UpdateBySpec::mutable_ems, std::move(timestamp_col), std::move(decay_time), op_control);
+  return ubb.Build();
 }
 
-UpdateByOperation emminTick(double decayTicks, std::vector<std::string> cols,
-    const OperationControl &opControl) {
+UpdateByOperation emminTick(double decay_ticks, std::vector<std::string> cols,
+    const OperationControl &op_control) {
   UpdateByBuilder ubb(std::move(cols));
-  ubb.setTicks(&UpdateBySpec::mutable_em_min, decayTicks, opControl);
-  return ubb.build();
+  ubb.SetTicks(&UpdateBySpec::mutable_em_min, decay_ticks, op_control);
+  return ubb.Build();
 }
 
-UpdateByOperation emminTime(std::string timestampCol, durationSpecifier_t decayTime,
-    std::vector<std::string> cols, const OperationControl &opControl) {
+UpdateByOperation emminTime(std::string timestamp_col, durationSpecifier_t decay_time,
+    std::vector<std::string> cols, const OperationControl &op_control) {
   UpdateByBuilder ubb(std::move(cols));
-  ubb.setTime(&UpdateBySpec::mutable_em_min, std::move(timestampCol), std::move(decayTime), opControl);
-  return ubb.build();
+  ubb.SetTime(&UpdateBySpec::mutable_em_min, std::move(timestamp_col), std::move(decay_time), op_control);
+  return ubb.Build();
 }
 
-UpdateByOperation emmaxTick(double decayTicks, std::vector<std::string> cols,
-    const OperationControl &opControl) {
+UpdateByOperation emmaxTick(double decay_ticks, std::vector<std::string> cols,
+    const OperationControl &op_control) {
   UpdateByBuilder ubb(std::move(cols));
-  ubb.setTicks(&UpdateBySpec::mutable_em_max, decayTicks, opControl);
-  return ubb.build();
+  ubb.SetTicks(&UpdateBySpec::mutable_em_max, decay_ticks, op_control);
+  return ubb.Build();
 }
 
-UpdateByOperation emmaxTime(std::string timestampCol, durationSpecifier_t decayTime,
-    std::vector<std::string> cols, const OperationControl &opControl) {
+UpdateByOperation emmaxTime(std::string timestamp_col, durationSpecifier_t decay_time,
+    std::vector<std::string> cols, const OperationControl &op_control) {
   UpdateByBuilder ubb(std::move(cols));
-  ubb.setTime(&UpdateBySpec::mutable_em_max, std::move(timestampCol), std::move(decayTime), opControl);
-  return ubb.build();
+  ubb.SetTime(&UpdateBySpec::mutable_em_max, std::move(timestamp_col), std::move(decay_time), op_control);
+  return ubb.Build();
 }
 
-UpdateByOperation emstdTick(double decayTicks, std::vector<std::string> cols,
-    const OperationControl &opControl) {
+UpdateByOperation emstdTick(double decay_ticks, std::vector<std::string> cols,
+    const OperationControl &op_control) {
   UpdateByBuilder ubb(std::move(cols));
-  ubb.setTicks(&UpdateBySpec::mutable_em_std, decayTicks, opControl);
-  return ubb.build();
+  ubb.SetTicks(&UpdateBySpec::mutable_em_std, decay_ticks, op_control);
+  return ubb.Build();
 }
 
-UpdateByOperation emstdTime(std::string timestampCol, durationSpecifier_t decayTime,
-    std::vector<std::string> cols, const OperationControl &opControl) {
+UpdateByOperation emstdTime(std::string timestamp_col, durationSpecifier_t decay_time,
+    std::vector<std::string> cols, const OperationControl &op_control) {
   UpdateByBuilder ubb(std::move(cols));
-  ubb.setTime(&UpdateBySpec::mutable_em_std, std::move(timestampCol), std::move(decayTime), opControl);
-  return ubb.build();
+  ubb.SetTime(&UpdateBySpec::mutable_em_std, std::move(timestamp_col), std::move(decay_time), op_control);
+  return ubb.Build();
 }
 
-UpdateByOperation rollingSumTick(std::vector<std::string> cols, int revTicks, int fwdTicks) {
+UpdateByOperation rollingSumTick(std::vector<std::string> cols, int rev_ticks, int fwd_ticks) {
   UpdateByBuilder ubb(std::move(cols));
-  ubb.setRevAndFwdTicks(&UpdateBySpec::mutable_rolling_sum, revTicks, fwdTicks);
-  return ubb.build();
+  ubb.SetRevAndFwdTicks(&UpdateBySpec::mutable_rolling_sum, rev_ticks, fwd_ticks);
+  return ubb.Build();
 }
 
-UpdateByOperation rollingSumTime(std::string timestampCol, std::vector<std::string> cols,
-    durationSpecifier_t revTime, durationSpecifier_t fwdTime) {
+UpdateByOperation rollingSumTime(std::string timestamp_col, std::vector<std::string> cols,
+    durationSpecifier_t rev_time, durationSpecifier_t fwd_time) {
   UpdateByBuilder ubb(std::move(cols));
-  ubb.setRevAndFwdTime(&UpdateBySpec::mutable_rolling_sum, std::move(timestampCol),
-      std::move(revTime), std::move(fwdTime));
-  return ubb.build();
+  ubb.SetRevAndFwdTime(&UpdateBySpec::mutable_rolling_sum, std::move(timestamp_col),
+      std::move(rev_time), std::move(fwd_time));
+  return ubb.Build();
 }
 
-UpdateByOperation rollingGroupTick(std::vector<std::string> cols, int revTicks, int fwdTicks) {
+UpdateByOperation rollingGroupTick(std::vector<std::string> cols, int rev_ticks, int fwd_ticks) {
   UpdateByBuilder ubb(std::move(cols));
-  ubb.setRevAndFwdTicks(&UpdateBySpec::mutable_rolling_group, revTicks, fwdTicks);
-  return ubb.build();
+  ubb.SetRevAndFwdTicks(&UpdateBySpec::mutable_rolling_group, rev_ticks, fwd_ticks);
+  return ubb.Build();
 }
 
-UpdateByOperation rollingGroupTime(std::string timestampCol, std::vector<std::string> cols,
-    durationSpecifier_t revTime, durationSpecifier_t fwdTime) {
+UpdateByOperation rollingGroupTime(std::string timestamp_col, std::vector<std::string> cols,
+    durationSpecifier_t rev_time, durationSpecifier_t fwd_time) {
   UpdateByBuilder ubb(std::move(cols));
-  ubb.setRevAndFwdTime(&UpdateBySpec::mutable_rolling_group, std::move(timestampCol),
-      std::move(revTime), std::move(fwdTime));
-  return ubb.build();
+  ubb.SetRevAndFwdTime(&UpdateBySpec::mutable_rolling_group, std::move(timestamp_col),
+      std::move(rev_time), std::move(fwd_time));
+  return ubb.Build();
 }
 
-UpdateByOperation rollingAvgTick(std::vector<std::string> cols, int revTicks, int fwdTicks) {
+UpdateByOperation rollingAvgTick(std::vector<std::string> cols, int rev_ticks, int fwd_ticks) {
   UpdateByBuilder ubb(std::move(cols));
-  ubb.setRevAndFwdTicks(&UpdateBySpec::mutable_rolling_avg, revTicks, fwdTicks);
-  return ubb.build();
+  ubb.SetRevAndFwdTicks(&UpdateBySpec::mutable_rolling_avg, rev_ticks, fwd_ticks);
+  return ubb.Build();
 }
 
-UpdateByOperation rollingAvgTime(std::string timestampCol, std::vector<std::string> cols,
-    durationSpecifier_t revTime, durationSpecifier_t fwdTime) {
+UpdateByOperation rollingAvgTime(std::string timestamp_col, std::vector<std::string> cols,
+    durationSpecifier_t rev_time, durationSpecifier_t fwd_time) {
   UpdateByBuilder ubb(std::move(cols));
-  ubb.setRevAndFwdTime(&UpdateBySpec::mutable_rolling_avg, std::move(timestampCol),
-      std::move(revTime), std::move(fwdTime));
-  return ubb.build();
+  ubb.SetRevAndFwdTime(&UpdateBySpec::mutable_rolling_avg, std::move(timestamp_col),
+      std::move(rev_time), std::move(fwd_time));
+  return ubb.Build();
 }
 
-UpdateByOperation rollingMinTick(std::vector<std::string> cols, int revTicks, int fwdTicks) {
+UpdateByOperation rollingMinTick(std::vector<std::string> cols, int rev_ticks, int fwd_ticks) {
   UpdateByBuilder ubb(std::move(cols));
-  ubb.setRevAndFwdTicks(&UpdateBySpec::mutable_rolling_min, revTicks, fwdTicks);
-  return ubb.build();
+  ubb.SetRevAndFwdTicks(&UpdateBySpec::mutable_rolling_min, rev_ticks, fwd_ticks);
+  return ubb.Build();
 }
 
-UpdateByOperation rollingMinTime(std::string timestampCol, std::vector<std::string> cols,
-    durationSpecifier_t revTime, durationSpecifier_t fwdTime) {
+UpdateByOperation rollingMinTime(std::string timestamp_col, std::vector<std::string> cols,
+    durationSpecifier_t rev_time, durationSpecifier_t fwd_time) {
   UpdateByBuilder ubb(std::move(cols));
-  ubb.setRevAndFwdTime(&UpdateBySpec::mutable_rolling_min, std::move(timestampCol),
-      std::move(revTime), std::move(fwdTime));
-  return ubb.build();
+  ubb.SetRevAndFwdTime(&UpdateBySpec::mutable_rolling_min, std::move(timestamp_col),
+      std::move(rev_time), std::move(fwd_time));
+  return ubb.Build();
 }
 
-UpdateByOperation rollingMaxTick(std::vector<std::string> cols, int revTicks, int fwdTicks) {
+UpdateByOperation rollingMaxTick(std::vector<std::string> cols, int rev_ticks, int fwd_ticks) {
   UpdateByBuilder ubb(std::move(cols));
-  ubb.setRevAndFwdTicks(&UpdateBySpec::mutable_rolling_max, revTicks, fwdTicks);
-  return ubb.build();
+  ubb.SetRevAndFwdTicks(&UpdateBySpec::mutable_rolling_max, rev_ticks, fwd_ticks);
+  return ubb.Build();
 }
 
-UpdateByOperation rollingMaxTime(std::string timestampCol, std::vector<std::string> cols,
-    durationSpecifier_t revTime, durationSpecifier_t fwdTime) {
+UpdateByOperation rollingMaxTime(std::string timestamp_col, std::vector<std::string> cols,
+    durationSpecifier_t rev_time, durationSpecifier_t fwd_time) {
   UpdateByBuilder ubb(std::move(cols));
-  ubb.setRevAndFwdTime(&UpdateBySpec::mutable_rolling_max, std::move(timestampCol),
-      std::move(revTime), std::move(fwdTime));
-  return ubb.build();
+  ubb.SetRevAndFwdTime(&UpdateBySpec::mutable_rolling_max, std::move(timestamp_col),
+      std::move(rev_time), std::move(fwd_time));
+  return ubb.Build();
 }
 
-UpdateByOperation rollingProdTick(std::vector<std::string> cols, int revTicks, int fwdTicks) {
+UpdateByOperation rollingProdTick(std::vector<std::string> cols, int rev_ticks, int fwd_ticks) {
   UpdateByBuilder ubb(std::move(cols));
-  ubb.setRevAndFwdTicks(&UpdateBySpec::mutable_rolling_product, revTicks, fwdTicks);
-  return ubb.build();
+  ubb.SetRevAndFwdTicks(&UpdateBySpec::mutable_rolling_product, rev_ticks, fwd_ticks);
+  return ubb.Build();
 }
 
-UpdateByOperation rollingProdTime(std::string timestampCol, std::vector<std::string> cols,
-    durationSpecifier_t revTime, durationSpecifier_t fwdTime) {
+UpdateByOperation rollingProdTime(std::string timestamp_col, std::vector<std::string> cols,
+    durationSpecifier_t rev_time, durationSpecifier_t fwd_time) {
   UpdateByBuilder ubb(std::move(cols));
-  ubb.setRevAndFwdTime(&UpdateBySpec::mutable_rolling_product, std::move(timestampCol),
-      std::move(revTime), std::move(fwdTime));
-  return ubb.build();
+  ubb.SetRevAndFwdTime(&UpdateBySpec::mutable_rolling_product, std::move(timestamp_col),
+      std::move(rev_time), std::move(fwd_time));
+  return ubb.Build();
 }
 
-UpdateByOperation rollingCountTick(std::vector<std::string> cols, int revTicks, int fwdTicks) {
+UpdateByOperation rollingCountTick(std::vector<std::string> cols, int rev_ticks, int fwd_ticks) {
   UpdateByBuilder ubb(std::move(cols));
-  ubb.setRevAndFwdTicks(&UpdateBySpec::mutable_rolling_count, revTicks, fwdTicks);
-  return ubb.build();
+  ubb.SetRevAndFwdTicks(&UpdateBySpec::mutable_rolling_count, rev_ticks, fwd_ticks);
+  return ubb.Build();
 }
 
-UpdateByOperation rollingCountTime(std::string timestampCol, std::vector<std::string> cols,
-    durationSpecifier_t revTime, durationSpecifier_t fwdTime) {
+UpdateByOperation rollingCountTime(std::string timestamp_col, std::vector<std::string> cols,
+    durationSpecifier_t rev_time, durationSpecifier_t fwd_time) {
   UpdateByBuilder ubb(std::move(cols));
-  ubb.setRevAndFwdTime(&UpdateBySpec::mutable_rolling_count, std::move(timestampCol),
-      std::move(revTime), std::move(fwdTime));
-  return ubb.build();
+  ubb.SetRevAndFwdTime(&UpdateBySpec::mutable_rolling_count, std::move(timestamp_col),
+      std::move(rev_time), std::move(fwd_time));
+  return ubb.Build();
 }
 
-UpdateByOperation rollingStdTick(std::vector<std::string> cols, int revTicks, int fwdTicks) {
+UpdateByOperation rollingStdTick(std::vector<std::string> cols, int rev_ticks, int fwd_ticks) {
   UpdateByBuilder ubb(std::move(cols));
-  ubb.setRevAndFwdTicks(&UpdateBySpec::mutable_rolling_std, revTicks, fwdTicks);
-  return ubb.build();
+  ubb.SetRevAndFwdTicks(&UpdateBySpec::mutable_rolling_std, rev_ticks, fwd_ticks);
+  return ubb.Build();
 }
 
-UpdateByOperation rollingStdTime(std::string timestampCol, std::vector<std::string> cols,
-    durationSpecifier_t revTime, durationSpecifier_t fwdTime) {
+UpdateByOperation rollingStdTime(std::string timestamp_col, std::vector<std::string> cols,
+    durationSpecifier_t rev_time, durationSpecifier_t fwd_time) {
   UpdateByBuilder ubb(std::move(cols));
-  ubb.setRevAndFwdTime(&UpdateBySpec::mutable_rolling_std, std::move(timestampCol),
-      std::move(revTime), std::move(fwdTime));
-  return ubb.build();
+  ubb.SetRevAndFwdTime(&UpdateBySpec::mutable_rolling_std, std::move(timestamp_col),
+      std::move(rev_time), std::move(fwd_time));
+  return ubb.Build();
 }
 
-UpdateByOperation rollingWavgTick(std::string weightCol, std::vector<std::string> cols,
-    int revTicks, int fwdTicks) {
+UpdateByOperation rollingWavgTick(std::string weight_col, std::vector<std::string> cols,
+    int rev_ticks, int fwd_ticks) {
   UpdateByBuilder ubb(std::move(cols));
-  ubb.setWeightedRevAndFwdTicks(&UpdateBySpec::mutable_rolling_wavg, std::move(weightCol), revTicks,
-      fwdTicks);
-  return ubb.build();
+  ubb.SetWeightedRevAndFwdTicks(&UpdateBySpec::mutable_rolling_wavg, std::move(weight_col), rev_ticks,
+      fwd_ticks);
+  return ubb.Build();
 }
 
-UpdateByOperation rollingWavgTime(std::string timestampCol, std::string weightCol,
-    std::vector<std::string> cols, durationSpecifier_t revTime, durationSpecifier_t fwdTime) {
+UpdateByOperation rollingWavgTime(std::string timestamp_col, std::string weight_col,
+    std::vector<std::string> cols, durationSpecifier_t rev_time, durationSpecifier_t fwd_time) {
   UpdateByBuilder ubb(std::move(cols));
-  ubb.setWeightedRevAndFwdTime(&UpdateBySpec::mutable_rolling_wavg, std::move(timestampCol),
-      std::move(weightCol), std::move(revTime), std::move(fwdTime));
-  return ubb.build();
+  ubb.SetWeightedRevAndFwdTime(&UpdateBySpec::mutable_rolling_wavg, std::move(timestamp_col),
+      std::move(weight_col), std::move(rev_time), std::move(fwd_time));
+  return ubb.Build();
 }
 }  // namespace deephaven::client::update_by

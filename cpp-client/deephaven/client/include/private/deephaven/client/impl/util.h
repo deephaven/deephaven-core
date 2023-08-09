@@ -9,7 +9,7 @@
 
 namespace deephaven::client::impl {
 template<typename T>
-void moveVectorData(std::vector<T> src, google::protobuf::RepeatedPtrField<T> *dest) {
+void MoveVectorData(std::vector<T> src, google::protobuf::RepeatedPtrField<T> *dest) {
   for (auto &s: src) {
     dest->Add(std::move(s));
   }

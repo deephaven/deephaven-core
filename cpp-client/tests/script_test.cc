@@ -7,46 +7,43 @@
 #include "deephaven/client/client.h"
 #include "deephaven/dhcore/utility/utility.h"
 
-#include <iostream>
-using deephaven::client::utility::TableMaker;
-
 namespace deephaven::client::tests {
 TEST_CASE("Script session error", "[script]") {
-  auto client = TableMakerForTests::createClient(ClientOptions().setSessionType(""));
+  auto client = TableMakerForTests::CreateClient(ClientOptions().SetSessionType(""));
 
-  auto thm = client.getManager();
+  auto thm = client.GetManager();
   const char *script = "from deephaven import empty_table";
-  CHECK_THROWS_WITH(thm.runScript(script), Catch::Contains("Client was created without specifying a script language"));
+  CHECK_THROWS_WITH(thm.RunScript(script), Catch::Contains("Client was created without specifying a script language"));
 }
 
 TEST_CASE("Script execution", "[script]") {
-  std::vector<int32_t> intData;
-  std::vector<int64_t> longData;
+  std::vector<int32_t> int_data;
+  std::vector<int64_t> long_data;
 
-  const int startValue = -8;
-  const int endValue = 8;
-  for (auto i = startValue; i != endValue; ++i) {
-    intData.push_back(i);
-    longData.push_back(i * 100);
+  const int start_value = -8;
+  const int end_value = 8;
+  for (auto i = start_value; i != end_value; ++i) {
+    int_data.push_back(i);
+    long_data.push_back(i * 100);
   }
 
-  auto client = TableMakerForTests::createClient();
-  auto thm = client.getManager();
+  auto client = TableMakerForTests::CreateClient();
+  auto thm = client.GetManager();
 
   const char *script = R"xxx(
 from deephaven import empty_table
 mytable = empty_table(16).update(["intData = (int)(ii - 8)", "longData = (long)((ii - 8) * 100)"])
 )xxx";
 
-  thm.runScript(script);
-  auto t = thm.fetchTable("mytable");
+  thm.RunScript(script);
+  auto t = thm.FetchTable("mytable");
 
-  std::cout << t.stream(true) << '\n';
+  std::cout << t.Stream(true) << '\n';
 
-  compareTable(
+  CompareTable(
       t,
-      "intData", intData,
-      "longData", longData
+      "intData", int_data,
+      "longData", long_data
   );
 }
 }  // namespace deephaven::client::tests
