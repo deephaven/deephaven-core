@@ -103,31 +103,9 @@ setMethod(
 )
 
 ### HELPER FUNCTIONS ###
-# These functions return RC objects returned by Rcpp without wrapping them in S4
 
 check_for_table <- function(client, name) {
   return(client@.internal_rcpp_object$check_for_table(name))
-}
-
-rbr_to_dh_table <- function(client, rbr) {
-  ptr <- client@.internal_rcpp_object$new_arrow_array_stream_ptr()
-  rbr$export_to_c(ptr)
-  return(client@.internal_rcpp_object$new_table_from_arrow_array_stream_ptr(ptr))
-}
-
-arrow_to_dh_table <- function(client, arrow_tbl) {
-  rbr <- as_record_batch_reader(arrow_tbl)
-  return(rbr_to_dh_table(client, rbr))
-}
-
-tibble_to_dh_table <- function(client, tibbl) {
-  arrow_tbl <- arrow_table(tibbl)
-  return(arrow_to_dh_table(client, arrow_tbl))
-}
-
-df_to_dh_table <- function(client, data_frame) {
-  arrow_tbl <- arrow_table(data_frame)
-  return(arrow_to_dh_table(client, arrow_tbl))
 }
 
 ### USER-FACING METHODS ###
@@ -191,34 +169,52 @@ setMethod(
 )
 
 setGeneric(
-  "import_table",
+  "as_dh_table",
   function(client_instance, table_object) {
-    return(standardGeneric("import_table"))
+    return(standardGeneric("as_dh_table"))
   },
   signature = c("client_instance", "table_object")
 )
 
 #' @export
 setMethod(
-  "import_table",
-  signature = c(client_instance = "Client"),
+  "as_dh_table",
+  signature = c(client_instance = "Client", table_object = "RecordBatchReader"),
   function(client_instance, table_object) {
-    table_object_class <- class(table_object)
+    ptr <- client_instance@.internal_rcpp_object$new_arrow_array_stream_ptr()
+    table_object$export_to_c(ptr)
+    return(
+      new("TableHandle",
+          .internal_rcpp_object = client_instance@.internal_rcpp_object$new_table_from_arrow_array_stream_ptr(ptr))
+    )
+  }
+)
 
-    if (table_object_class[[1]] == "data.frame") {
-      rcpp_dh_table <- df_to_dh_table(client_instance, table_object)
-    } else if (table_object_class[[1]] == "tbl_df") {
-      rcpp_dh_table <- tibble_to_dh_table(client_instance, table_object)
-    } else if (table_object_class[[1]] == "RecordBatchReader") {
-      rcpp_dh_table <- rbr_to_dh_table(client_instance, table_object)
-    } else if ((length(table_object_class) == 4 &&
-      table_object_class[[1]] == "Table" &&
-      table_object_class[[3]] == "ArrowObject")) {
-      rcpp_dh_table <- arrow_to_dh_table(client_instance, table_object)
-    } else {
-      stop(paste0("'table_object' must be either an R Data Frame, a dplyr Tibble, an Arrow Table, or an Arrow Record Batch Reader. Got an object of class ", table_object_class[[1]], "."))
-    }
-    return(new("TableHandle", .internal_rcpp_object = rcpp_dh_table))
+# TODO: This may not be correct
+#' @export
+setMethod(
+  "as_dh_table",
+  signature = c(client_instance = "Client", table_object = "Table"),
+  function(client_instance, table_object) {
+    return(as_dh_table(client_instance, as_record_batch_reader(table_object)))
+  }
+)
+
+#' @export
+setMethod(
+  "as_dh_table",
+  signature = c(client_instance = "Client", table_object = "tbl_df"),
+  function(client_instance, table_object) {
+    return(as_dh_table(client_instance, arrow_table(table_object)))
+  }
+)
+
+#' @export
+setMethod(
+  "as_dh_table",
+  signature = c(client_instance = "Client", table_object = "data.frame"),
+  function(client_instance, table_object) {
+    return(as_dh_table(client_instance, arrow_table(table_object)))
   }
 )
 

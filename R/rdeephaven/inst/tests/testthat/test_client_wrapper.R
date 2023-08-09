@@ -36,59 +36,59 @@ test_that("client connection works in the simple case of anonymous authenticatio
 
 # All of the following tests assume the correctness of new(...) to make the connection.
 
-test_that("import_table does not fail with data frame inputs of simple column types", {
+test_that("as_dh_table does not fail with data frame inputs of simple column types", {
   data <- setup()
 
   client <- connect(target = "localhost:10000")
 
-  expect_no_error(import_table(client, data$df1))
-  expect_no_error(import_table(client, data$df2))
-  expect_no_error(import_table(client, data$df3))
-  expect_no_error(import_table(client, data$df4))
+  expect_no_error(as_dh_table(client, data$df1))
+  expect_no_error(as_dh_table(client, data$df2))
+  expect_no_error(as_dh_table(client, data$df3))
+  expect_no_error(as_dh_table(client, data$df4))
 
   close(client)
 })
 
-test_that("import_table does not fail with tibble inputs of simple column types", {
+test_that("as_dh_table does not fail with tibble inputs of simple column types", {
   data <- setup()
 
   client <- connect(target = "localhost:10000")
 
-  expect_no_error(import_table(client, as_tibble(data$df1)))
-  expect_no_error(import_table(client, as_tibble(data$df2)))
-  expect_no_error(import_table(client, as_tibble(data$df3)))
-  expect_no_error(import_table(client, as_tibble(data$df4)))
+  expect_no_error(as_dh_table(client, as_tibble(data$df1)))
+  expect_no_error(as_dh_table(client, as_tibble(data$df2)))
+  expect_no_error(as_dh_table(client, as_tibble(data$df3)))
+  expect_no_error(as_dh_table(client, as_tibble(data$df4)))
 
   close(client)
 })
 
-test_that("import_table does not fail with arrow table inputs of simple column types", {
+test_that("as_dh_table does not fail with arrow table inputs of simple column types", {
   data <- setup()
 
   client <- connect(target = "localhost:10000")
 
-  expect_no_error(import_table(client, as_arrow_table(data$df1)))
-  expect_no_error(import_table(client, as_arrow_table(data$df2)))
-  expect_no_error(import_table(client, as_arrow_table(data$df3)))
-  expect_no_error(import_table(client, as_arrow_table(data$df4)))
+  expect_no_error(as_dh_table(client, as_arrow_table(data$df1)))
+  expect_no_error(as_dh_table(client, as_arrow_table(data$df2)))
+  expect_no_error(as_dh_table(client, as_arrow_table(data$df3)))
+  expect_no_error(as_dh_table(client, as_arrow_table(data$df4)))
 
   close(client)
 })
 
-test_that("import_table does not fail with record batch reader inputs of simple column types", {
+test_that("as_dh_table does not fail with record batch reader inputs of simple column types", {
   data <- setup()
 
   client <- connect(target = "localhost:10000")
 
-  expect_no_error(import_table(client, as_record_batch_reader(data$df1)))
-  expect_no_error(import_table(client, as_record_batch_reader(data$df2)))
-  expect_no_error(import_table(client, as_record_batch_reader(data$df3)))
-  expect_no_error(import_table(client, as_record_batch_reader(data$df4)))
+  expect_no_error(as_dh_table(client, as_record_batch_reader(data$df1)))
+  expect_no_error(as_dh_table(client, as_record_batch_reader(data$df2)))
+  expect_no_error(as_dh_table(client, as_record_batch_reader(data$df3)))
+  expect_no_error(as_dh_table(client, as_record_batch_reader(data$df4)))
 
   close(client)
 })
 
-# The following tests additionally assume the correctness of import_table(...) AND table_handle$bind_to_variable(),
+# The following tests additionally assume the correctness of as_dh_table(...) AND table_handle$bind_to_variable(),
 # as we have to create data, push it to the server, and name it in order to test open_table().
 # Additionally, we assume the correctness of table_handle$to_data_frame() to make concrete comparisons.
 
@@ -97,19 +97,19 @@ test_that("open_table opens the correct table from the server using %>%", {
 
   client <- connect(target = "localhost:10000")
 
-  th1 <- import_table(client, data$df1)
+  th1 <- as_dh_table(client, data$df1)
   th1 %>% bind_to_variable("table1")
   expect_equal(as.data.frame(open_table(client, "table1")), as.data.frame(th1))
 
-  th2 <- import_table(client, data$df2)
+  th2 <- as_dh_table(client, data$df2)
   th2 %>% bind_to_variable("table2")
   expect_equal(as.data.frame(open_table(client, "table2")), as.data.frame(th2))
 
-  th3 <- import_table(client, data$df3)
+  th3 <- as_dh_table(client, data$df3)
   th3 %>% bind_to_variable("table3")
   expect_equal(as.data.frame(open_table(client, "table3")), as.data.frame(th3))
 
-  th4 <- import_table(client, data$df4)
+  th4 <- as_dh_table(client, data$df4)
   th4 %>% bind_to_variable("table4")
   expect_equal(as.data.frame(open_table(client, "table4")), as.data.frame(th4))
 
@@ -121,19 +121,19 @@ test_that("open_table opens the correct table from the server using |>", {
 
   client <- connect(target = "localhost:10000")
 
-  th1 <- import_table(client, data$df1)
+  th1 <- as_dh_table(client, data$df1)
   th1 |> bind_to_variable("table1")
   expect_equal(as.data.frame(open_table(client, "table1")), as.data.frame(th1))
 
-  th2 <- import_table(client, data$df2)
+  th2 <- as_dh_table(client, data$df2)
   th2 |> bind_to_variable("table2")
   expect_equal(as.data.frame(open_table(client, "table2")), as.data.frame(th2))
 
-  th3 <- import_table(client, data$df3)
+  th3 <- as_dh_table(client, data$df3)
   th3 |> bind_to_variable("table3")
   expect_equal(as.data.frame(open_table(client, "table3")), as.data.frame(th3))
 
-  th4 <- import_table(client, data$df4)
+  th4 <- as_dh_table(client, data$df4)
   th4 |> bind_to_variable("table4")
   expect_equal(as.data.frame(open_table(client, "table4")), as.data.frame(th4))
 
@@ -229,29 +229,21 @@ test_that("connect fails nicely with bad inputs", {
   
 })
 
-test_that("import_table fails nicely with bad inputs", {
+test_that("as_dh_table fails nicely with bad inputs", {
   library(datasets)
 
   client <- connect(target = "localhost:10000")
 
-  expect_error(
-    import_table(client, 12345),
-    "'table_object' must be either an R Data Frame, a dplyr Tibble, an Arrow Table, or an Arrow Record Batch Reader. Got an object of class numeric."
-  )
-  expect_error(
-    import_table(client, "hello!"),
-    "'table_object' must be either an R Data Frame, a dplyr Tibble, an Arrow Table, or an Arrow Record Batch Reader. Got an object of class character."
-  )
+  expect_error(as_dh_table(client, 12345))
+  
+  expect_error(as_dh_table(client, "hello!"))
 
   # TODO: this needs better error handling, but it is unclear whether that happens on the server side or the R side.
   data(iris)
-  expect_error(import_table(client, iris))
+  expect_error(as_dh_table(client, iris))
 
   data(HairEyeColor)
-  expect_error(
-    import_table(client, HairEyeColor),
-    "'table_object' must be either an R Data Frame, a dplyr Tibble, an Arrow Table, or an Arrow Record Batch Reader. Got an object of class table."
-  )
+  expect_error(as_dh_table(client, HairEyeColor))
 
   close(client)
 })

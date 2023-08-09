@@ -26,10 +26,10 @@ setup <- function() {
   client <- connect(target = "localhost:10000")
 
   # move dataframes to server and get TableHandles for testing
-  th1 <- import_table(client, df1)
-  th2 <- import_table(client, df2)
-  th3 <- import_table(client, df3)
-  th4 <- import_table(client, df4)
+  th1 <- as_dh_table(client, df1)
+  th2 <- as_dh_table(client, df2)
+  th3 <- as_dh_table(client, df3)
+  th4 <- as_dh_table(client, df4)
 
   # time table to test is_static()
   th5 <- time_table(client, 1000000000) %>% update("X = ii")
