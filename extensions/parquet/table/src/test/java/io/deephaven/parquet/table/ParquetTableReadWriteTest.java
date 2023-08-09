@@ -492,7 +492,7 @@ public class ParquetTableReadWriteTest {
     }
 
     /**
-     * These are tests for writing multiple parquet tables such that there is an exception in the second write.
+     * These are tests for writing multiple parquet tables in a single call.
      */
     @Test
     public void writeMultiTableBasicTest() {
@@ -524,7 +524,7 @@ public class ParquetTableReadWriteTest {
     }
 
     /**
-     * These are tests for writing multiple parquet tables in a single call.
+     * These are tests for writing multiple parquet tables such that there is an exception in the second write.
      */
     @Test
     public void writeMultiTableExceptionTest() {
