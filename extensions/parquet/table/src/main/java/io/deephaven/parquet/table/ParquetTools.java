@@ -253,6 +253,9 @@ public class ParquetTools {
         }
     }
 
+    /**
+     * Delete any old backup files created for this destination with no exception in case of failure
+     */
     private static void deleteBackupFileNoExcept(@NotNull final File destFile) {
         final File backupDestFile = getBackupFile(destFile);
         if (backupDestFile.exists() && !backupDestFile.delete()) {
@@ -401,15 +404,18 @@ public class ParquetTools {
                 Arrays.stream(shadowDestFiles)
                         .map(ParquetTools::prepareDestinationFileLocation)
                         .toArray(File[]::new);
-        final List<File> cleanupFiles = new ArrayList<>();
-        final List<File> rollbackFiles = new ArrayList<>();
+
+        // List of shadow files, to clean up in case of exceptions
+        final List<File> shadowFiles = new ArrayList<>();
+        // List of all destination files (including grouping files), to roll back in case of exceptions
+        final List<File> destFiles = new ArrayList<>();
         try {
             final List<Map<String, ParquetTableWriter.GroupingColumnWritingInfo>> groupingColumnWritingInfoMaps;
             if (groupingColumns.length == 0) {
                 // Write the tables without any grouping info
                 groupingColumnWritingInfoMaps = null;
                 for (int tableIdx = 0; tableIdx < sources.length; tableIdx++) {
-                    cleanupFiles.add(shadowDestFiles[tableIdx]);
+                    shadowFiles.add(shadowDestFiles[tableIdx]);
                     final Table source = sources[tableIdx];
                     ParquetTableWriter.write(source, definition, writeInstructions, shadowDestFiles[tableIdx].getPath(),
                             Collections.emptyMap(), (Map<String, ParquetTableWriter.GroupingColumnWritingInfo>) null);
@@ -429,9 +435,8 @@ public class ParquetTools {
                             groupingColumnInfoBuilderHelper(groupingColumns, parquetColumnNames, tableDestination);
                     groupingColumnWritingInfoMaps.add(groupingColumnWritingInfoMap);
 
-                    // Store all the shadow files for cleanup in case of exception
-                    cleanupFiles.add(shadowDestFiles[tableIdx]);
-                    groupingColumnWritingInfoMap.values().forEach(gcwi -> cleanupFiles.add(gcwi.destFile));
+                    shadowFiles.add(shadowDestFiles[tableIdx]);
+                    groupingColumnWritingInfoMap.values().forEach(gcwi -> shadowFiles.add(gcwi.destFile));
 
                     final Table sourceTable = sources[tableIdx];
                     ParquetTableWriter.write(sourceTable, definition, writeInstructions,
@@ -442,7 +447,7 @@ public class ParquetTools {
 
             // Write to shadow files was successful
             for (int tableIdx = 0; tableIdx < sources.length; tableIdx++) {
-                rollbackFiles.add(destinations[tableIdx]);
+                destFiles.add(destinations[tableIdx]);
                 installShadowFile(destinations[tableIdx], shadowDestFiles[tableIdx]);
                 if (groupingColumnWritingInfoMaps != null) {
                     final Map<String, ParquetTableWriter.GroupingColumnWritingInfo> gcwim =
@@ -450,18 +455,17 @@ public class ParquetTools {
                     for (final ParquetTableWriter.GroupingColumnWritingInfo gfwi : gcwim.values()) {
                         final File groupingDestFile = gfwi.metadataFilePath;
                         final File shadowGroupingFile = gfwi.destFile;
-                        rollbackFiles.add(groupingDestFile);
+                        destFiles.add(groupingDestFile);
                         installShadowFile(groupingDestFile, shadowGroupingFile);
                     }
                 }
             }
-            // Delete the backup files, without no exceptions in case of failure
-            Arrays.stream(destinations).forEach(ParquetTools::deleteBackupFileNoExcept);
+            destFiles.stream().forEach(ParquetTools::deleteBackupFileNoExcept);
         } catch (Exception e) {
-            for (final File file : rollbackFiles) {
+            for (final File file : destFiles) {
                 rollbackFile(file);
             }
-            for (final File file : cleanupFiles) {
+            for (final File file : shadowFiles) {
                 file.delete();
             }
             for (final File firstCreatedDir : firstCreatedDirs) {
