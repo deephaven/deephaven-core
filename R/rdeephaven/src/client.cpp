@@ -37,7 +37,7 @@ class AggregateWrapper {
 public:
     AggregateWrapper();
     AggregateWrapper(deephaven::client::Aggregate aggregate) :
-        internal_aggregation(std::move(aggregate)) {}
+            internal_aggregation(std::move(aggregate)) {}
 private:
     deephaven::client::Aggregate internal_aggregation;
     friend TableHandleWrapper;
@@ -59,197 +59,197 @@ std::vector<deephaven::client::Aggregate> convertRcppListToVectorOfTypeAggregate
 }
 
 AggregateWrapper* INTERNAL_agg_min(std::vector<std::string> columnSpecs) {
-    return new AggregateWrapper(deephaven::client::Aggregate::min(columnSpecs));
+    return new AggregateWrapper(deephaven::client::Aggregate::Min(columnSpecs));
 }
 
 AggregateWrapper* INTERNAL_agg_max(std::vector<std::string> columnSpecs) {
-    return new AggregateWrapper(deephaven::client::Aggregate::max(columnSpecs));
+    return new AggregateWrapper(deephaven::client::Aggregate::Max(columnSpecs));
 }
 
 AggregateWrapper* INTERNAL_agg_first(std::vector<std::string> columnSpecs) {
-    return new AggregateWrapper(deephaven::client::Aggregate::first(columnSpecs));
+    return new AggregateWrapper(deephaven::client::Aggregate::First(columnSpecs));
 }
 
 AggregateWrapper* INTERNAL_agg_last(std::vector<std::string> columnSpecs) {
-    return new AggregateWrapper(deephaven::client::Aggregate::last(columnSpecs));
+    return new AggregateWrapper(deephaven::client::Aggregate::Last(columnSpecs));
 }
 
 AggregateWrapper* INTERNAL_agg_sum(std::vector<std::string> columnSpecs) {
-    return new AggregateWrapper(deephaven::client::Aggregate::sum(columnSpecs));
+    return new AggregateWrapper(deephaven::client::Aggregate::Sum(columnSpecs));
 }
 
 AggregateWrapper* INTERNAL_agg_absSum(std::vector<std::string> columnSpecs) {
-    return new AggregateWrapper(deephaven::client::Aggregate::absSum(columnSpecs));
+    return new AggregateWrapper(deephaven::client::Aggregate::AbsSum(columnSpecs));
 }
 
 AggregateWrapper* INTERNAL_agg_avg(std::vector<std::string> columnSpecs) {
-    return new AggregateWrapper(deephaven::client::Aggregate::avg(columnSpecs));
+    return new AggregateWrapper(deephaven::client::Aggregate::Avg(columnSpecs));
 }
 
 AggregateWrapper* INTERNAL_agg_wAvg(std::string weightColumn, std::vector<std::string> columnSpecs) {
-    return new AggregateWrapper(deephaven::client::Aggregate::wavg(weightColumn, columnSpecs));
+    return new AggregateWrapper(deephaven::client::Aggregate::WAvg(weightColumn, columnSpecs));
 }
 
 AggregateWrapper* INTERNAL_agg_median(std::vector<std::string> columnSpecs) {
-    return new AggregateWrapper(deephaven::client::Aggregate::med(columnSpecs));
+    return new AggregateWrapper(deephaven::client::Aggregate::Med(columnSpecs));
 }
 
 AggregateWrapper* INTERNAL_agg_var(std::vector<std::string> columnSpecs) {
-    return new AggregateWrapper(deephaven::client::Aggregate::var(columnSpecs));
+    return new AggregateWrapper(deephaven::client::Aggregate::Var(columnSpecs));
 }
 
 AggregateWrapper* INTERNAL_agg_std(std::vector<std::string> columnSpecs) {
-    return new AggregateWrapper(deephaven::client::Aggregate::std(columnSpecs));
+    return new AggregateWrapper(deephaven::client::Aggregate::Std(columnSpecs));
 }
 
-AggregateWrapper* INTERNAL_agg_percentile(double percentile, std::vector<std::string> columnSpecs) {
-    return new AggregateWrapper(deephaven::client::Aggregate::pct(percentile, false, columnSpecs));
-}
+//AggregateWrapper* INTERNAL_agg_percentile(double percentile, std::vector<std::string> columnSpecs) {
+//    return new AggregateWrapper(deephaven::client::Aggregate::Pct(percentile, false, columnSpecs));
+//}
 
 AggregateWrapper* INTERNAL_agg_count(std::string columnSpec) {
-    return new AggregateWrapper(deephaven::client::Aggregate::count(columnSpec));
+    return new AggregateWrapper(deephaven::client::Aggregate::Count(columnSpec));
 }
 
 
 class TableHandleWrapper {
 public:
     TableHandleWrapper(deephaven::client::TableHandle ref_table) :
-        internal_tbl_hdl(std::move(ref_table)) {};
+            internal_tbl_hdl(std::move(ref_table)) {};
 
-    TableHandleWrapper* select(std::vector<std::string> columnSpecs) {
-        return new TableHandleWrapper(internal_tbl_hdl.select(columnSpecs));
+    TableHandleWrapper* Select(std::vector<std::string> columnSpecs) {
+        return new TableHandleWrapper(internal_tbl_hdl.Select(columnSpecs));
     };
 
-    TableHandleWrapper* view(std::vector<std::string> columnSpecs) {
-        return new TableHandleWrapper(internal_tbl_hdl.view(columnSpecs));
+    TableHandleWrapper* View(std::vector<std::string> columnSpecs) {
+        return new TableHandleWrapper(internal_tbl_hdl.View(columnSpecs));
     };
 
-    TableHandleWrapper* update(std::vector<std::string> columnSpecs) {
-        return new TableHandleWrapper(internal_tbl_hdl.update(columnSpecs));
+    TableHandleWrapper* Update(std::vector<std::string> columnSpecs) {
+        return new TableHandleWrapper(internal_tbl_hdl.Update(columnSpecs));
     };
 
-    TableHandleWrapper* updateView(std::vector<std::string> columnSpecs) {
-        return new TableHandleWrapper(internal_tbl_hdl.updateView(columnSpecs));
+    TableHandleWrapper* UpdateView(std::vector<std::string> columnSpecs) {
+        return new TableHandleWrapper(internal_tbl_hdl.UpdateView(columnSpecs));
     };
 
-    TableHandleWrapper* dropColumns(std::vector<std::string> columnSpecs) {
-        return new TableHandleWrapper(internal_tbl_hdl.dropColumns(columnSpecs));
+    TableHandleWrapper* DropColumns(std::vector<std::string> columnSpecs) {
+        return new TableHandleWrapper(internal_tbl_hdl.DropColumns(columnSpecs));
     };
 
-    TableHandleWrapper* where(std::string condition) {
-        return new TableHandleWrapper(internal_tbl_hdl.where(condition));
+    TableHandleWrapper* Where(std::string condition) {
+        return new TableHandleWrapper(internal_tbl_hdl.Where(condition));
     };
 
-    TableHandleWrapper* groupBy(std::vector<std::string> columnSpecs) {
-        return new TableHandleWrapper(internal_tbl_hdl.by(columnSpecs));
+    TableHandleWrapper* GroupBy(std::vector<std::string> columnSpecs) {
+        return new TableHandleWrapper(internal_tbl_hdl.By(columnSpecs));
     };
 
-    TableHandleWrapper* ungroup(std::vector<std::string> groupByColumns) {
-        return new TableHandleWrapper(internal_tbl_hdl.ungroup(false, groupByColumns));
+    TableHandleWrapper* Ungroup(std::vector<std::string> groupByColumns) {
+        return new TableHandleWrapper(internal_tbl_hdl.Ungroup(false, groupByColumns));
     };
 
-    TableHandleWrapper* aggBy(Rcpp::List aggregations, std::vector<std::string> groupByColumns) {
+    TableHandleWrapper* AggBy(Rcpp::List aggregations, std::vector<std::string> groupByColumns) {
         std::vector<deephaven::client::Aggregate> converted_aggregations = convertRcppListToVectorOfTypeAggregate(aggregations);
-        return new TableHandleWrapper(internal_tbl_hdl.by(deephaven::client::AggregateCombo::create(converted_aggregations), groupByColumns));
+        return new TableHandleWrapper(internal_tbl_hdl.By(deephaven::client::AggregateCombo::Create(converted_aggregations), groupByColumns));
     }
 
-    TableHandleWrapper* firstBy(std::vector<std::string> columnSpecs) {
-        return new TableHandleWrapper(internal_tbl_hdl.firstBy(columnSpecs));
+    TableHandleWrapper* FirstBy(std::vector<std::string> columnSpecs) {
+        return new TableHandleWrapper(internal_tbl_hdl.FirstBy(columnSpecs));
     };
 
-    TableHandleWrapper* lastBy(std::vector<std::string> columnSpecs) {
-        return new TableHandleWrapper(internal_tbl_hdl.lastBy(columnSpecs));
+    TableHandleWrapper* LastBy(std::vector<std::string> columnSpecs) {
+        return new TableHandleWrapper(internal_tbl_hdl.LastBy(columnSpecs));
     };
 
-    TableHandleWrapper* headBy(int64_t n, std::vector<std::string> columnSpecs) {
-        return new TableHandleWrapper(internal_tbl_hdl.headBy(n, columnSpecs));
+    TableHandleWrapper* HeadBy(int64_t n, std::vector<std::string> columnSpecs) {
+        return new TableHandleWrapper(internal_tbl_hdl.HeadBy(n, columnSpecs));
     };
 
-    TableHandleWrapper* tailBy(int64_t n, std::vector<std::string> columnSpecs) {
-        return new TableHandleWrapper(internal_tbl_hdl.tailBy(n, columnSpecs));
+    TableHandleWrapper* TailBy(int64_t n, std::vector<std::string> columnSpecs) {
+        return new TableHandleWrapper(internal_tbl_hdl.TailBy(n, columnSpecs));
     };
 
-    TableHandleWrapper* minBy(std::vector<std::string> columnSpecs) {
-        return new TableHandleWrapper(internal_tbl_hdl.minBy(columnSpecs));
+    TableHandleWrapper* MinBy(std::vector<std::string> columnSpecs) {
+        return new TableHandleWrapper(internal_tbl_hdl.MinBy(columnSpecs));
     };
 
-    TableHandleWrapper* maxBy(std::vector<std::string> columnSpecs) {
-        return new TableHandleWrapper(internal_tbl_hdl.maxBy(columnSpecs));
+    TableHandleWrapper* MaxBy(std::vector<std::string> columnSpecs) {
+        return new TableHandleWrapper(internal_tbl_hdl.MaxBy(columnSpecs));
     };
 
-    TableHandleWrapper* sumBy(std::vector<std::string> columnSpecs) {
-        return new TableHandleWrapper(internal_tbl_hdl.sumBy(columnSpecs));
+    TableHandleWrapper* SumBy(std::vector<std::string> columnSpecs) {
+        return new TableHandleWrapper(internal_tbl_hdl.SumBy(columnSpecs));
     };
 
-    TableHandleWrapper* absSumBy(std::vector<std::string> columnSpecs) {
-        return new TableHandleWrapper(internal_tbl_hdl.absSumBy(columnSpecs));
+    TableHandleWrapper* AbsSumBy(std::vector<std::string> columnSpecs) {
+        return new TableHandleWrapper(internal_tbl_hdl.AbsSumBy(columnSpecs));
     };
 
-    TableHandleWrapper* avgBy(std::vector<std::string> columnSpecs) {
-        return new TableHandleWrapper(internal_tbl_hdl.avgBy(columnSpecs));
+    TableHandleWrapper* AvgBy(std::vector<std::string> columnSpecs) {
+        return new TableHandleWrapper(internal_tbl_hdl.AvgBy(columnSpecs));
     };
 
-    TableHandleWrapper* wAvgBy(std::string weightColumn, std::vector<std::string> columnSpecs) {
-        return new TableHandleWrapper(internal_tbl_hdl.wAvgBy(weightColumn, columnSpecs));
+    TableHandleWrapper* WAvgBy(std::string weightColumn, std::vector<std::string> columnSpecs) {
+        return new TableHandleWrapper(internal_tbl_hdl.WAvgBy(weightColumn, columnSpecs));
     };
 
-    TableHandleWrapper* medianBy(std::vector<std::string> columnSpecs) {
-        return new TableHandleWrapper(internal_tbl_hdl.medianBy(columnSpecs));
+    TableHandleWrapper* MedianBy(std::vector<std::string> columnSpecs) {
+        return new TableHandleWrapper(internal_tbl_hdl.MedianBy(columnSpecs));
     };
 
-    TableHandleWrapper* varBy(std::vector<std::string> columnSpecs) {
-        return new TableHandleWrapper(internal_tbl_hdl.varBy(columnSpecs));
+    TableHandleWrapper* VarBy(std::vector<std::string> columnSpecs) {
+        return new TableHandleWrapper(internal_tbl_hdl.VarBy(columnSpecs));
     };
 
-    TableHandleWrapper* stdBy(std::vector<std::string> columnSpecs) {
-        return new TableHandleWrapper(internal_tbl_hdl.stdBy(columnSpecs));
+    TableHandleWrapper* StdBy(std::vector<std::string> columnSpecs) {
+        return new TableHandleWrapper(internal_tbl_hdl.StdBy(columnSpecs));
     };
 
-    TableHandleWrapper* percentileBy(double percentile, std::vector<std::string> columnSpecs) {
-        return new TableHandleWrapper(internal_tbl_hdl.percentileBy(percentile, columnSpecs));
+    TableHandleWrapper* PercentileBy(double percentile, std::vector<std::string> columnSpecs) {
+        return new TableHandleWrapper(internal_tbl_hdl.PercentileBy(percentile, columnSpecs));
     };
 
-    TableHandleWrapper* countBy(std::string countByColumn, std::vector<std::string> columnSpecs) {
-        return new TableHandleWrapper(internal_tbl_hdl.countBy(countByColumn, columnSpecs));
+    TableHandleWrapper* CountBy(std::string countByColumn, std::vector<std::string> columnSpecs) {
+        return new TableHandleWrapper(internal_tbl_hdl.CountBy(countByColumn, columnSpecs));
     };
 
-    TableHandleWrapper* crossJoin(const TableHandleWrapper &rightSide, std::vector<std::string> columnsToMatch, std::vector<std::string> columnsToAdd) {
-        return new TableHandleWrapper(internal_tbl_hdl.crossJoin(rightSide.internal_tbl_hdl, columnsToMatch, columnsToAdd));
+    TableHandleWrapper* CrossJoin(const TableHandleWrapper &rightSide, std::vector<std::string> columnsToMatch, std::vector<std::string> columnsToAdd) {
+        return new TableHandleWrapper(internal_tbl_hdl.CrossJoin(rightSide.internal_tbl_hdl, columnsToMatch, columnsToAdd));
     };
 
-    TableHandleWrapper* naturalJoin(const TableHandleWrapper &rightSide, std::vector<std::string> columnsToMatch, std::vector<std::string> columnsToAdd) {
-        return new TableHandleWrapper(internal_tbl_hdl.naturalJoin(rightSide.internal_tbl_hdl, columnsToMatch, columnsToAdd));
+    TableHandleWrapper* NaturalJoin(const TableHandleWrapper &rightSide, std::vector<std::string> columnsToMatch, std::vector<std::string> columnsToAdd) {
+        return new TableHandleWrapper(internal_tbl_hdl.NaturalJoin(rightSide.internal_tbl_hdl, columnsToMatch, columnsToAdd));
     };
 
-    TableHandleWrapper* exactJoin(const TableHandleWrapper &rightSide, std::vector<std::string> columnsToMatch, std::vector<std::string> columnsToAdd) {
-        return new TableHandleWrapper(internal_tbl_hdl.exactJoin(rightSide.internal_tbl_hdl, columnsToMatch, columnsToAdd));
+    TableHandleWrapper* ExactJoin(const TableHandleWrapper &rightSide, std::vector<std::string> columnsToMatch, std::vector<std::string> columnsToAdd) {
+        return new TableHandleWrapper(internal_tbl_hdl.ExactJoin(rightSide.internal_tbl_hdl, columnsToMatch, columnsToAdd));
     };
 
-    TableHandleWrapper* head(int64_t n) {
-        return new TableHandleWrapper(internal_tbl_hdl.head(n));
+    TableHandleWrapper* Head(int64_t n) {
+        return new TableHandleWrapper(internal_tbl_hdl.Head(n));
     };
 
-    TableHandleWrapper* tail(int64_t n) {
-        return new TableHandleWrapper(internal_tbl_hdl.tail(n));
+    TableHandleWrapper* Tail(int64_t n) {
+        return new TableHandleWrapper(internal_tbl_hdl.Tail(n));
     };
 
-    TableHandleWrapper* merge(Rcpp::List sources) {
+    TableHandleWrapper* Merge(Rcpp::List sources) {
         std::vector<deephaven::client::TableHandle> converted_sources = convertRcppListToVectorOfTypeTableHandle(sources);
-        return new TableHandleWrapper(internal_tbl_hdl.merge(converted_sources));
+        return new TableHandleWrapper(internal_tbl_hdl.Merge(converted_sources));
     };
 
-    TableHandleWrapper* sort(std::vector<std::string> columnSpecs, std::vector<bool> descending) {
+    TableHandleWrapper* Sort(std::vector<std::string> columnSpecs, std::vector<bool> descending) {
         std::vector<deephaven::client::SortPair> sort_pairs;
         sort_pairs.reserve(columnSpecs.size());
 
         if (descending.size() == 1) {
             if (!descending[0]) {
                 for(int i = 0; i < columnSpecs.size(); i++) {
-                    sort_pairs.push_back(deephaven::client::SortPair::ascending(columnSpecs[i], false));
+                    sort_pairs.push_back(deephaven::client::SortPair::Ascending(columnSpecs[i], false));
                 }
             } else {
                 for(int i = 0; i < columnSpecs.size(); i++) {
-                    sort_pairs.push_back(deephaven::client::SortPair::descending(columnSpecs[i], false));
+                    sort_pairs.push_back(deephaven::client::SortPair::Descending(columnSpecs[i], false));
                 }
             }
         }
@@ -257,38 +257,38 @@ public:
         else {
             for(int i = 0; i < columnSpecs.size(); i++) {
                 if (!descending[i]) {
-                    sort_pairs.push_back(deephaven::client::SortPair::ascending(columnSpecs[i], false));
+                    sort_pairs.push_back(deephaven::client::SortPair::Ascending(columnSpecs[i], false));
                 } else {
-                    sort_pairs.push_back(deephaven::client::SortPair::descending(columnSpecs[i], false));
+                    sort_pairs.push_back(deephaven::client::SortPair::Descending(columnSpecs[i], false));
                 }
             }
         }
 
-        return new TableHandleWrapper(internal_tbl_hdl.sort(sort_pairs));
+        return new TableHandleWrapper(internal_tbl_hdl.Sort(sort_pairs));
     };
 
-    bool isStatic() {
-        return internal_tbl_hdl.isStatic();
+    bool IsStatic() {
+        return internal_tbl_hdl.IsStatic();
     }
 
-    int64_t numRows() {
-        return internal_tbl_hdl.numRows();
+    int64_t NumRows() {
+        return internal_tbl_hdl.NumRows();
     }
 
-    void bindToVariable(std::string tableName) {
-        internal_tbl_hdl.bindToVariable(tableName);
+    void BindToVariable(std::string tableName) {
+        internal_tbl_hdl.BindToVariable(tableName);
     }
 
     /**
      * Creates and returns a pointer to an ArrowArrayStream C struct containing the data from the table referenced by internal_tbl_hdl.
      * Intended to be used for creating an Arrow RecordBatchReader in R via RecordBatchReader$import_from_c(ptr).
     */
-    SEXP getArrowArrayStreamPtr() {
+    SEXP GetArrowArrayStreamPtr() {
 
-        std::shared_ptr<arrow::flight::FlightStreamReader> fsr = internal_tbl_hdl.getFlightStreamReader();
+        std::shared_ptr<arrow::flight::FlightStreamReader> fsr = internal_tbl_hdl.GetFlightStreamReader();
 
         std::vector<std::shared_ptr<arrow::RecordBatch>> empty_record_batches;
-        deephaven::client::utility::okOrThrow(DEEPHAVEN_EXPR_MSG(fsr->ReadAll(&empty_record_batches)));
+        deephaven::client::utility::OkOrThrow(DEEPHAVEN_EXPR_MSG(fsr->ReadAll(&empty_record_batches)));
 
         std::shared_ptr<arrow::RecordBatchReader> record_batch_reader = arrow::RecordBatchReader::Make(empty_record_batches).ValueOrDie();
         ArrowArrayStream* stream_ptr = new ArrowArrayStream();
@@ -322,42 +322,42 @@ class ClientOptionsWrapper {
 public:
 
     ClientOptionsWrapper() :
-        internal_options(std::make_shared<deephaven::client::ClientOptions>()) {}
+            internal_options(std::make_shared<deephaven::client::ClientOptions>()) {}
 
-    void setDefaultAuthentication() {
-        internal_options->setDefaultAuthentication();
+    void SetDefaultAuthentication() {
+        internal_options->SetDefaultAuthentication();
     }
 
-    void setBasicAuthentication(const std::string &username, const std::string &password) {
-        internal_options->setBasicAuthentication(username, password);
+    void SetBasicAuthentication(const std::string &username, const std::string &password) {
+        internal_options->SetBasicAuthentication(username, password);
     }
 
-    void setCustomAuthentication(const std::string &authenticationKey, const std::string &authenticationValue) {
-        internal_options->setCustomAuthentication(authenticationKey, authenticationValue);
+    void SetCustomAuthentication(const std::string &authenticationKey, const std::string &authenticationValue) {
+        internal_options->SetCustomAuthentication(authenticationKey, authenticationValue);
     }
 
-    void setSessionType(const std::string &sessionType) {
-        internal_options->setSessionType(sessionType);
+    void SetSessionType(const std::string &sessionType) {
+        internal_options->SetSessionType(sessionType);
     }
 
-    void setUseTls(bool useTls) {
-        internal_options->setUseTls(useTls);
+    void SetUseTls(bool useTls) {
+        internal_options->SetUseTls(useTls);
     }
 
-    void setTlsRootCerts(std::string tlsRootCerts) {
-        internal_options->setTlsRootCerts(tlsRootCerts);
+    void SetTlsRootCerts(std::string tlsRootCerts) {
+        internal_options->SetTlsRootCerts(tlsRootCerts);
     }
 
-    void addIntOption(std::string opt, int val) {
-        internal_options->addIntOption(opt, val);
+    void AddIntOption(std::string opt, int val) {
+        internal_options->AddIntOption(opt, val);
     }
 
-    void addStringOption(std::string opt, std::string val) {
-        internal_options->addStringOption(opt, val);
+    void AddStringOption(std::string opt, std::string val) {
+        internal_options->AddStringOption(opt, val);
     }
 
-    void addExtraHeader(std::string header_name, std::string header_value) {
-        internal_options->addExtraHeader(header_name, header_value);
+    void AddExtraHeader(std::string header_name, std::string header_value) {
+        internal_options->AddExtraHeader(header_name, header_value);
     }
 
 private:
@@ -370,22 +370,22 @@ class ClientWrapper {
 public:
 
     ClientWrapper(std::string target, const ClientOptionsWrapper &client_options) :
-        internal_client(deephaven::client::Client::connect(target, *client_options.internal_options)) {}
+            internal_client(deephaven::client::Client::Connect(target, *client_options.internal_options)) {}
 
-    TableHandleWrapper* openTable(std::string tableName) {
-        return new TableHandleWrapper(internal_tbl_hdl_mngr.fetchTable(tableName));
+    TableHandleWrapper* OpenTable(std::string tableName) {
+        return new TableHandleWrapper(internal_tbl_hdl_mngr.FetchTable(tableName));
     }
 
-    TableHandleWrapper* emptyTable(int64_t size) {
-        return new TableHandleWrapper(internal_tbl_hdl_mngr.emptyTable(size));
+    TableHandleWrapper* EmptyTable(int64_t size) {
+        return new TableHandleWrapper(internal_tbl_hdl_mngr.EmptyTable(size));
     }
 
-    TableHandleWrapper* timeTable(int64_t startTimeNanos, int64_t periodNanos) {
-        return new TableHandleWrapper(internal_tbl_hdl_mngr.timeTable(startTimeNanos, periodNanos));
+    TableHandleWrapper* TimeTable(int64_t startTimeNanos, int64_t periodNanos) {
+        return new TableHandleWrapper(internal_tbl_hdl_mngr.TimeTable(startTimeNanos, periodNanos));
     };
 
-    void runScript(std::string code) {
-        internal_tbl_hdl_mngr.runScript(code);
+    void RunScript(std::string code) {
+        internal_tbl_hdl_mngr.RunScript(code);
     }
 
     /**
@@ -393,11 +393,11 @@ public:
      * @param tableName Name of the table to search for.
      * @return Boolean indicating whether tableName exists on the server or not.
     */
-    bool checkForTable(std::string tableName) {
+    bool CheckForTable(std::string tableName) {
         // we have to first fetchTable to check existence, fetchTable does not fail on its own, but .observe() will fail if table doesn't exist
-        deephaven::client::TableHandle table_handle = internal_tbl_hdl_mngr.fetchTable(tableName);
+        deephaven::client::TableHandle table_handle = internal_tbl_hdl_mngr.FetchTable(tableName);
         try {
-            table_handle.observe();
+            table_handle.Observe();
         } catch(...) {
             return false;
         }
@@ -408,7 +408,7 @@ public:
      * Allocates memory for an ArrowArrayStream C struct and returns a pointer to the new chunk of memory.
      * Intended to be used to get a pointer to pass to Arrow's R library RecordBatchReader$export_to_c(ptr).
     */
-    SEXP newArrowArrayStreamPtr() {
+    SEXP NewArrowArrayStreamPtr() {
         ArrowArrayStream* stream_ptr = new ArrowArrayStream();
         return Rcpp::XPtr<ArrowArrayStream>(stream_ptr, true);
     }
@@ -417,11 +417,11 @@ public:
      * Uses a pointer to a populated ArrowArrayStream C struct to create a new table on the server from the data in the C struct.
      * @param stream_ptr Pointer to an existing and populated ArrayArrayStream, populated by a call to RecordBatchReader$export_to_c(ptr) from R.
     */
-    TableHandleWrapper* newTableFromArrowArrayStreamPtr(Rcpp::XPtr<ArrowArrayStream> stream_ptr) {
+    TableHandleWrapper* NewTableFromArrowArrayStreamPtr(Rcpp::XPtr<ArrowArrayStream> stream_ptr) {
 
-        auto wrapper = internal_tbl_hdl_mngr.createFlightWrapper();
+        auto wrapper = internal_tbl_hdl_mngr.CreateFlightWrapper();
         arrow::flight::FlightCallOptions options;
-        wrapper.addHeaders(&options);
+        wrapper.AddHeaders(&options);
 
         // extract RecordBatchReader from the struct pointed to by the passed stream_ptr
         std::shared_ptr<arrow::RecordBatchReader> record_batch_reader = arrow::ImportRecordBatchReader(stream_ptr.get()).ValueOrDie();
@@ -431,32 +431,32 @@ public:
         std::unique_ptr<arrow::flight::FlightStreamWriter> fsw;
         std::unique_ptr<arrow::flight::FlightMetadataReader> fmr;
 
-        auto ticket = internal_tbl_hdl_mngr.newTicket();
-        auto fd = deephaven::client::utility::convertTicketToFlightDescriptor(ticket);
-        
-        deephaven::client::utility::okOrThrow(DEEPHAVEN_EXPR_MSG(wrapper.flightClient()->DoPut(options, fd, schema, &fsw, &fmr)));
+        auto ticket = internal_tbl_hdl_mngr.NewTicket();
+        auto fd = deephaven::client::utility::ConvertTicketToFlightDescriptor(ticket);
+
+        deephaven::client::utility::OkOrThrow(DEEPHAVEN_EXPR_MSG(wrapper.FlightClient()->DoPut(options, fd, schema, &fsw, &fmr)));
         while(true) {
             std::shared_ptr<arrow::RecordBatch> this_batch;
-            deephaven::client::utility::okOrThrow(DEEPHAVEN_EXPR_MSG(record_batch_reader->ReadNext(&this_batch)));
+            deephaven::client::utility::OkOrThrow(DEEPHAVEN_EXPR_MSG(record_batch_reader->ReadNext(&this_batch)));
             if (this_batch == nullptr) {
                 break;
             }
-            deephaven::client::utility::okOrThrow(DEEPHAVEN_EXPR_MSG(fsw->WriteRecordBatch(*this_batch)));
+            deephaven::client::utility::OkOrThrow(DEEPHAVEN_EXPR_MSG(fsw->WriteRecordBatch(*this_batch)));
         }
-        deephaven::client::utility::okOrThrow(DEEPHAVEN_EXPR_MSG(fsw->DoneWriting()));
-        deephaven::client::utility::okOrThrow(DEEPHAVEN_EXPR_MSG(fsw->Close()));
+        deephaven::client::utility::OkOrThrow(DEEPHAVEN_EXPR_MSG(fsw->DoneWriting()));
+        deephaven::client::utility::OkOrThrow(DEEPHAVEN_EXPR_MSG(fsw->Close()));
 
-        auto new_tbl_hdl = internal_tbl_hdl_mngr.makeTableHandleFromTicket(ticket);
+        auto new_tbl_hdl = internal_tbl_hdl_mngr.MakeTableHandleFromTicket(ticket);
         return new TableHandleWrapper(new_tbl_hdl);
     }
 
-    void close() {
-        internal_client.close();
+    void Close() {
+        internal_client.Close();
     }
 
 private:
     deephaven::client::Client internal_client;
-    const deephaven::client::TableHandleManager internal_tbl_hdl_mngr = internal_client.getManager();
+    const deephaven::client::TableHandleManager internal_tbl_hdl_mngr = internal_client.GetManager();
 };
 
 
@@ -484,78 +484,78 @@ RCPP_MODULE(DeephavenInternalModule) {
     function("INTERNAL_agg_median", &INTERNAL_agg_median);
     function("INTERNAL_agg_var", &INTERNAL_agg_var);
     function("INTERNAL_agg_std", &INTERNAL_agg_std);
-    function("INTERNAL_agg_percentile", &INTERNAL_agg_percentile);
+    //function("INTERNAL_agg_percentile", &INTERNAL_agg_percentile);
     function("INTERNAL_agg_count", &INTERNAL_agg_count);
 
 
     class_<TableHandleWrapper>("INTERNAL_TableHandle")
-    .method("select", &TableHandleWrapper::select)
-    .method("view", &TableHandleWrapper::view)
-    .method("update", &TableHandleWrapper::update)
-    .method("update_view", &TableHandleWrapper::updateView)
-    .method("drop_columns", &TableHandleWrapper::dropColumns)
-    .method("where", &TableHandleWrapper::where)
+    .method("select", &TableHandleWrapper::Select)
+    .method("view", &TableHandleWrapper::View)
+    .method("update", &TableHandleWrapper::Update)
+    .method("update_view", &TableHandleWrapper::UpdateView)
+    .method("drop_columns", &TableHandleWrapper::DropColumns)
+    .method("where", &TableHandleWrapper::Where)
 
-    .method("group_by", &TableHandleWrapper::groupBy)
-    .method("ungroup", &TableHandleWrapper::ungroup)
+    .method("group_by", &TableHandleWrapper::GroupBy)
+    .method("ungroup", &TableHandleWrapper::Ungroup)
 
-    .method("agg_by", &TableHandleWrapper::aggBy)
-    .method("first_by", &TableHandleWrapper::firstBy)
-    .method("last_by", &TableHandleWrapper::lastBy)
-    .method("head_by", &TableHandleWrapper::headBy)
-    .method("tail_by", &TableHandleWrapper::tailBy)
-    .method("min_by", &TableHandleWrapper::minBy)
-    .method("max_by", &TableHandleWrapper::maxBy)
-    .method("sum_by", &TableHandleWrapper::sumBy)
-    .method("abs_sum_by", &TableHandleWrapper::absSumBy)
-    .method("avg_by", &TableHandleWrapper::avgBy)
-    .method("w_avg_by", &TableHandleWrapper::wAvgBy)
-    .method("median_by", &TableHandleWrapper::medianBy)
-    .method("var_by", &TableHandleWrapper::varBy)
-    .method("std_by", &TableHandleWrapper::stdBy)
-    .method("percentile_by", &TableHandleWrapper::percentileBy)
-    .method("count_by", &TableHandleWrapper::countBy)
+    .method("agg_by", &TableHandleWrapper::AggBy)
+    .method("first_by", &TableHandleWrapper::FirstBy)
+    .method("last_by", &TableHandleWrapper::LastBy)
+    .method("head_by", &TableHandleWrapper::HeadBy)
+    .method("tail_by", &TableHandleWrapper::TailBy)
+    .method("min_by", &TableHandleWrapper::MinBy)
+    .method("max_by", &TableHandleWrapper::MaxBy)
+    .method("sum_by", &TableHandleWrapper::SumBy)
+    .method("abs_sum_by", &TableHandleWrapper::AbsSumBy)
+    .method("avg_by", &TableHandleWrapper::AvgBy)
+    .method("w_avg_by", &TableHandleWrapper::WAvgBy)
+    .method("median_by", &TableHandleWrapper::MedianBy)
+    .method("var_by", &TableHandleWrapper::VarBy)
+    .method("std_by", &TableHandleWrapper::StdBy)
+    .method("percentile_by", &TableHandleWrapper::PercentileBy)
+    .method("count_by", &TableHandleWrapper::CountBy)
 
-    .method("cross_join", &TableHandleWrapper::crossJoin)
-    .method("natural_join", &TableHandleWrapper::naturalJoin)
-    .method("exact_join", &TableHandleWrapper::exactJoin)
+    .method("cross_join", &TableHandleWrapper::CrossJoin)
+    .method("natural_join", &TableHandleWrapper::NaturalJoin)
+    .method("exact_join", &TableHandleWrapper::ExactJoin)
 
-    .method("head", &TableHandleWrapper::head)
-    .method("tail", &TableHandleWrapper::tail)
-    .method("merge", &TableHandleWrapper::merge)
-    .method("sort", &TableHandleWrapper::sort)
+    .method("head", &TableHandleWrapper::Head)
+    .method("tail", &TableHandleWrapper::Tail)
+    .method("merge", &TableHandleWrapper::Merge)
+    .method("sort", &TableHandleWrapper::Sort)
 
-    .method("is_static", &TableHandleWrapper::isStatic)
-    .method("num_rows", &TableHandleWrapper::numRows)
-    .method("bind_to_variable", &TableHandleWrapper::bindToVariable)
-    .method("get_arrow_array_stream_ptr", &TableHandleWrapper::getArrowArrayStreamPtr)
+    .method("is_static", &TableHandleWrapper::IsStatic)
+    .method("num_rows", &TableHandleWrapper::NumRows)
+    .method("bind_to_variable", &TableHandleWrapper::BindToVariable)
+    .method("get_arrow_array_stream_ptr", &TableHandleWrapper::GetArrowArrayStreamPtr)
     ;
 
 
     class_<ClientOptionsWrapper>("INTERNAL_ClientOptions")
     .constructor()
-    .method("set_default_authentication", &ClientOptionsWrapper::setDefaultAuthentication)
-    .method("set_basic_authentication", &ClientOptionsWrapper::setBasicAuthentication)
-    .method("set_custom_authentication", &ClientOptionsWrapper::setCustomAuthentication)
-    .method("set_session_type", &ClientOptionsWrapper::setSessionType)
-    .method("set_use_tls", &ClientOptionsWrapper::setUseTls)
-    .method("set_tls_root_certs", &ClientOptionsWrapper::setTlsRootCerts)
-    .method("add_int_option", &ClientOptionsWrapper::addIntOption)
-    .method("add_string_option", &ClientOptionsWrapper::addStringOption)
-    .method("add_extra_header", &ClientOptionsWrapper::addExtraHeader)
+    .method("set_default_authentication", &ClientOptionsWrapper::SetDefaultAuthentication)
+    .method("set_basic_authentication", &ClientOptionsWrapper::SetBasicAuthentication)
+    .method("set_custom_authentication", &ClientOptionsWrapper::SetCustomAuthentication)
+    .method("set_session_type", &ClientOptionsWrapper::SetSessionType)
+    .method("set_use_tls", &ClientOptionsWrapper::SetUseTls)
+    .method("set_tls_root_certs", &ClientOptionsWrapper::SetTlsRootCerts)
+    .method("add_int_option", &ClientOptionsWrapper::AddIntOption)
+    .method("add_string_option", &ClientOptionsWrapper::AddStringOption)
+    .method("add_extra_header", &ClientOptionsWrapper::AddExtraHeader)
     ;
 
 
     class_<ClientWrapper>("INTERNAL_Client")
     .constructor<std::string, const ClientOptionsWrapper&>()
-    .method("open_table", &ClientWrapper::openTable)
-    .method("empty_table", &ClientWrapper::emptyTable)
-    .method("time_table", &ClientWrapper::timeTable)
-    .method("check_for_table", &ClientWrapper::checkForTable)
-    .method("run_script", &ClientWrapper::runScript)
-    .method("new_arrow_array_stream_ptr", &ClientWrapper::newArrowArrayStreamPtr)
-    .method("new_table_from_arrow_array_stream_ptr", &ClientWrapper::newTableFromArrowArrayStreamPtr)
-    .method("close", &ClientWrapper::close)
+    .method("open_table", &ClientWrapper::OpenTable)
+    .method("empty_table", &ClientWrapper::EmptyTable)
+    .method("time_table", &ClientWrapper::TimeTable)
+    .method("check_for_table", &ClientWrapper::CheckForTable)
+    .method("run_script", &ClientWrapper::RunScript)
+    .method("new_arrow_array_stream_ptr", &ClientWrapper::NewArrowArrayStreamPtr)
+    .method("new_table_from_arrow_array_stream_ptr", &ClientWrapper::NewTableFromArrowArrayStreamPtr)
+    .method("close", &ClientWrapper::Close)
     ;
 
 }
