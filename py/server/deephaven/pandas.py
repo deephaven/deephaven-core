@@ -218,7 +218,9 @@ def _map_na(array: [np.ndarray, pd.api.extensions.ExtensionArray]):
     if isinstance(pd_dtype, (pd.Float32Dtype, pd.Float64Dtype)) and isinstance(getattr(array, "_data"), np.ndarray):
         np_array = array._data
         null_mask = np.logical_and(array._mask, np.logical_not(np.isnan(np_array)))
-        np_array[null_mask] = dh_null
+        if any(null_mask):
+            np_array = np.copy(np_array)
+            np_array[null_mask] = dh_null
         return np_array
 
     if isinstance(pd_dtype, (pd.StringDtype, pd.BooleanDtype)) or pd_dtype == pd.ArrowDtype(pa.bool_()):
