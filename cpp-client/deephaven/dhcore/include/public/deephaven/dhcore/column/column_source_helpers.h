@@ -8,57 +8,57 @@ namespace deephaven::dhcore::column {
 namespace internal {
 class HumanReadableTypeNames {
 public:
-  static const char charName[];
-  static const char int8Name[];
-  static const char int16Name[];
-  static const char int32Name[];
-  static const char int64Name[];
-  static const char floatName[];
-  static const char doubleName[];
-  static const char boolName[];
-  static const char stringName[];
-  static const char dateTimeName[];
+  static const char kCharName[];
+  static const char kInt8Name[];
+  static const char kInt16Name[];
+  static const char kInt32Name[];
+  static const char kInt64Name[];
+  static const char kFloatName[];
+  static const char kDoubleName[];
+  static const char kBoolName[];
+  static const char kStringName[];
+  static const char kDateTimeName[];
 };
 
 struct ElementTypeVisitor : public ColumnSourceVisitor {
-  void visit(const CharColumnSource &source) final {
-    value_ = HumanReadableTypeNames::charName;
+  void Visit(const CharColumnSource & /*source*/) final {
+    value_ = HumanReadableTypeNames::kCharName;
   }
 
-  void visit(const Int8ColumnSource &source) final {
-    value_ = HumanReadableTypeNames::int8Name;
+  void Visit(const Int8ColumnSource & /*source*/) final {
+    value_ = HumanReadableTypeNames::kInt8Name;
   }
 
-  void visit(const Int16ColumnSource &source) final {
-    value_ = HumanReadableTypeNames::int16Name;
+  void Visit(const Int16ColumnSource & /*source*/) final {
+    value_ = HumanReadableTypeNames::kInt16Name;
   }
 
-  void visit(const Int32ColumnSource &source) final {
-    value_ = HumanReadableTypeNames::int32Name;
+  void Visit(const Int32ColumnSource & /*source*/) final {
+    value_ = HumanReadableTypeNames::kInt32Name;
   }
 
-  void visit(const Int64ColumnSource &source) final {
-    value_ = HumanReadableTypeNames::int64Name;
+  void Visit(const Int64ColumnSource & /*source*/) final {
+    value_ = HumanReadableTypeNames::kInt64Name;
   }
 
-  void visit(const FloatColumnSource &source) final {
-    value_ = HumanReadableTypeNames::floatName;
+  void Visit(const FloatColumnSource & /*source*/) final {
+    value_ = HumanReadableTypeNames::kFloatName;
   }
 
-  void visit(const DoubleColumnSource &source) final {
-    value_ = HumanReadableTypeNames::doubleName;
+  void Visit(const DoubleColumnSource & /*source*/) final {
+    value_ = HumanReadableTypeNames::kDoubleName;
   }
 
-  void visit(const BooleanColumnSource &source) final {
-    value_ = HumanReadableTypeNames::boolName;
+  void Visit(const BooleanColumnSource & /*source*/) final {
+    value_ = HumanReadableTypeNames::kBoolName;
   }
 
-  void visit(const StringColumnSource &source) final {
-    value_ = HumanReadableTypeNames::stringName;
+  void Visit(const StringColumnSource & /*source*/) final {
+    value_ = HumanReadableTypeNames::kStringName;
   }
 
-  void visit(const DateTimeColumnSource &source) final {
-    value_ = HumanReadableTypeNames::dateTimeName;
+  void Visit(const DateTimeColumnSource & /*source*/) final {
+    value_ = HumanReadableTypeNames::kDateTimeName;
   }
   
   const char *value_ = nullptr;
@@ -67,9 +67,9 @@ struct ElementTypeVisitor : public ColumnSourceVisitor {
 
 class HumanReadableElementTypeName {
 public:
-  static const char *getName(const ColumnSource &cs) {
+  static const char *GetName(const ColumnSource &cs) {
     internal::ElementTypeVisitor v;
-    cs.acceptVisitor(&v);
+    cs.AcceptVisitor(&v);
     return v.value_;
   }
 };
@@ -79,46 +79,46 @@ struct HumanReadableStaticTypeName;
 
 template<>
 struct HumanReadableStaticTypeName<int8_t> {
-  static const char *getName() { return internal::HumanReadableTypeNames::int8Name; }
+  static const char *GetName() { return internal::HumanReadableTypeNames::kInt8Name; }
 };
 
 template<>
 struct HumanReadableStaticTypeName<int16_t> {
-  static const char *getName() { return internal::HumanReadableTypeNames::int16Name; }
+  static const char *GetName() { return internal::HumanReadableTypeNames::kInt16Name; }
 };
 
 template<>
 struct HumanReadableStaticTypeName<int32_t> {
-  static const char *getName() { return internal::HumanReadableTypeNames::int32Name; }
+  static const char *GetName() { return internal::HumanReadableTypeNames::kInt32Name; }
 };
 
 template<>
 struct HumanReadableStaticTypeName<int64_t> {
-  static const char *getName() { return internal::HumanReadableTypeNames::int64Name; }
+  static const char *GetName() { return internal::HumanReadableTypeNames::kInt64Name; }
 };
 
 template<>
 struct HumanReadableStaticTypeName<float> {
-  static const char *getName() { return internal::HumanReadableTypeNames::floatName; }
+  static const char *GetName() { return internal::HumanReadableTypeNames::kFloatName; }
 };
 
 template<>
 struct HumanReadableStaticTypeName<double> {
-  static const char *getName() { return internal::HumanReadableTypeNames::doubleName; }
+  static const char *GetName() { return internal::HumanReadableTypeNames::kDoubleName; }
 };
 
 template<>
 struct HumanReadableStaticTypeName<uint16_t> {
-  static const char *getName() { return internal::HumanReadableTypeNames::charName; }
+  static const char *GetName() { return internal::HumanReadableTypeNames::kCharName; }
 };
 
 template<>
 struct HumanReadableStaticTypeName<bool> {
-  static const char *getName() { return internal::HumanReadableTypeNames::boolName; }
+  static const char *GetName() { return internal::HumanReadableTypeNames::kBoolName; }
 };
 
 template<>
 struct HumanReadableStaticTypeName<std::string> {
-  static const char *getName() { return internal::HumanReadableTypeNames::stringName; }
+  static const char *GetName() { return internal::HumanReadableTypeNames::kStringName; }
 };
 }  // namespace deephaven::client::column

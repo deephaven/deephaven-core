@@ -9,7 +9,7 @@ using deephaven::client::NumCol;
 using deephaven::client::Client;
 using deephaven::client::TableHandle;
 using deephaven::client::TableHandleManager;
-using deephaven::client::utility::okOrThrow;
+using deephaven::client::utility::OkOrThrow;
 using deephaven::client::utility::TableMaker;
 
 namespace {
@@ -28,8 +28,8 @@ int main(int argc, char *argv[]) {
   }
 
   try {
-    auto client = Client::connect(server);
-    auto manager = client.getManager();
+    auto client = Client::Connect(server);
+    auto manager = client.GetManager();
     auto table = makeTable(manager);
     dumpSymbolColumn(table);
   } catch (const std::exception &e) {
@@ -42,16 +42,16 @@ TableHandle makeTable(const TableHandleManager &manager) {
   TableMaker tm;
   std::vector<std::string> symbols{"FB", "AAPL", "NFLX", "GOOG"};
   std::vector<double> prices{101.1, 102.2, 103.3, 104.4};
-  tm.addColumn("Symbol", symbols);
-  tm.addColumn("Price", prices);
-  return tm.makeTable(manager);
+  tm.AddColumn("Symbol", symbols);
+  tm.AddColumn("Price", prices);
+  return tm.MakeTable(manager);
 }
 
 void dumpSymbolColumn(const TableHandle &tableHandle) {
-  auto fsr = tableHandle.getFlightStreamReader();
+  auto fsr = tableHandle.GetFlightStreamReader();
   while (true) {
     arrow::flight::FlightStreamChunk chunk;
-    okOrThrow(DEEPHAVEN_EXPR_MSG(fsr->Next(&chunk)));
+    OkOrThrow(DEEPHAVEN_EXPR_MSG(fsr->Next(&chunk)));
     if (chunk.data == nullptr) {
       break;
     }

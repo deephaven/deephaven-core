@@ -14,63 +14,73 @@ class TableHandleImpl;
 
 class TableHandleManagerImpl final : public std::enable_shared_from_this<TableHandleManagerImpl> {
   struct Private {};
-  typedef deephaven::client::server::Server Server;
-  typedef deephaven::client::subscription::SubscriptionHandle SubscriptionHandle;
-  typedef deephaven::client::utility::Executor Executor;
-  typedef io::deephaven::proto::backplane::grpc::AsOfJoinTablesRequest AsOfJoinTablesRequest;
-  typedef io::deephaven::proto::backplane::grpc::ComboAggregateRequest ComboAggregateRequest;
-  typedef io::deephaven::proto::backplane::grpc::ExportedTableCreationResponse ExportedTableCreationResponse;
-  typedef io::deephaven::proto::backplane::grpc::SortDescriptor SortDescriptor;
-  typedef io::deephaven::proto::backplane::grpc::Ticket Ticket;
-  typedef io::deephaven::proto::backplane::script::grpc::BindTableToVariableResponse BindTableToVariableResponse;
+  using ServerType = deephaven::client::server::Server;
+  using SubscriptionHandle = deephaven::client::subscription::SubscriptionHandle;
+  using ExecutorType = deephaven::client::utility::Executor;
+  using AsOfJoinTablesRequest = io::deephaven::proto::backplane::grpc::AsOfJoinTablesRequest;
+  using ComboAggregateRequest = io::deephaven::proto::backplane::grpc::ComboAggregateRequest;
+  using ExportedTableCreationResponse = io::deephaven::proto::backplane::grpc::ExportedTableCreationResponse;
+  using SortDescriptor = io::deephaven::proto::backplane::grpc::SortDescriptor;
+  using Ticket = io::deephaven::proto::backplane::grpc::Ticket;
+  using BindTableToVariableResponse = io::deephaven::proto::backplane::script::grpc::BindTableToVariableResponse;
 
   template<typename ...Args>
   using SFCallback = deephaven::dhcore::utility::SFCallback<Args...>;
 
 public:
-  static std::shared_ptr<TableHandleManagerImpl> create(std::optional<Ticket> consoleId,
-      std::shared_ptr<Server> server, std::shared_ptr<Executor> executor,
-      std::shared_ptr<Executor> flightExecutor);
+  [[nodiscard]]
+  static std::shared_ptr<TableHandleManagerImpl> Create(std::optional<Ticket> console_id,
+      std::shared_ptr<ServerType> server, std::shared_ptr<ExecutorType> executor,
+      std::shared_ptr<ExecutorType> flight_executor);
 
-  TableHandleManagerImpl(Private, std::optional<Ticket> &&consoleId,
-      std::shared_ptr<Server> &&server, std::shared_ptr<Executor> &&executor,
-      std::shared_ptr<Executor> &&flightExecutor);
+  TableHandleManagerImpl(Private, std::optional<Ticket> &&console_id,
+      std::shared_ptr<ServerType> &&server, std::shared_ptr<ExecutorType> &&executor,
+      std::shared_ptr<ExecutorType> &&flight_executor);
   TableHandleManagerImpl(const TableHandleManagerImpl &other) = delete;
   TableHandleManagerImpl &operator=(const TableHandleManagerImpl &other) = delete;
   ~TableHandleManagerImpl();
 
-  void shutdown();
+  void Shutdown();
 
-  std::shared_ptr<TableHandleImpl> emptyTable(int64_t size);
-  std::shared_ptr<TableHandleImpl> fetchTable(std::string tableName);
-  std::shared_ptr<TableHandleImpl> timeTable(int64_t startTimeNanos, int64_t periodNanos);
-  void runScriptAsync(std::string code, std::shared_ptr<SFCallback<>> callback);
+  [[nodiscard]]
+  std::shared_ptr<TableHandleImpl> EmptyTable(int64_t size);
+  [[nodiscard]]
+  std::shared_ptr<TableHandleImpl> FetchTable(std::string table_name);
+  [[nodiscard]]
+  std::shared_ptr<TableHandleImpl> TimeTable(int64_t start_time_nanos, int64_t period_nanos);
+  void RunScriptAsync(std::string code, std::shared_ptr<SFCallback<>> callback);
 
   /**
-   * See the documentation for Server::newTicket().
+   * See the documentation for Server::NewTicket().
    */
-  std::string newTicket() {
-    auto ticket = server_->newTicket();
+  [[nodiscard]]
+  std::string NewTicket() {
+    auto ticket = server_->NewTicket();
     // our API only wants the internal string part.
     return std::move(*ticket.mutable_ticket());
   }
 
-  std::shared_ptr<TableHandleImpl> makeTableHandleFromTicket(std::string ticket);
+  [[nodiscard]]
+  std::shared_ptr<TableHandleImpl> MakeTableHandleFromTicket(std::string ticket);
 
-  void addSubscriptionHandle(std::shared_ptr<SubscriptionHandle> handle);
-  void removeSubscriptionHandle(const std::shared_ptr<SubscriptionHandle> &handle);
+  void AddSubscriptionHandle(std::shared_ptr<SubscriptionHandle> handle);
+  void RemoveSubscriptionHandle(const std::shared_ptr<SubscriptionHandle> &handle);
 
-  const std::optional<Ticket> &consoleId() const { return consoleId_; }
-  const std::shared_ptr<Server> &server() const { return server_; }
-  const std::shared_ptr<Executor> &executor() const { return executor_; }
-  const std::shared_ptr<Executor> &flightExecutor() const { return flightExecutor_; }
+  [[nodiscard]]
+  const std::optional<Ticket> &ConsoleId() const { return consoleId_; }
+  [[nodiscard]]
+  const std::shared_ptr<ServerType> &Server() const { return server_; }
+  [[nodiscard]]
+  const std::shared_ptr<ExecutorType> &Executor() const { return executor_; }
+  [[nodiscard]]
+  const std::shared_ptr<ExecutorType> &FlightExecutor() const { return flightExecutor_; }
 
 private:
   const std::string me_;  // useful printable object name for logging
   std::optional<Ticket> consoleId_;
-  std::shared_ptr<Server> server_;
-  std::shared_ptr<Executor> executor_;
-  std::shared_ptr<Executor> flightExecutor_;
+  std::shared_ptr<ServerType> server_;
+  std::shared_ptr<ExecutorType> executor_;
+  std::shared_ptr<ExecutorType> flightExecutor_;
   // Protects the below for concurrent access.
   std::mutex mutex_;
   // The SubscriptionHandles for the tables we have subscribed to. We keep these at the TableHandleManagerImpl level

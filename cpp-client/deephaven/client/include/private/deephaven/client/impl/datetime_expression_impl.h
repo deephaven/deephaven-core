@@ -12,13 +12,16 @@
 namespace deephaven::client::impl {
 class DateTimeExpressionImpl : public ExpressionImpl {
 protected:
-  typedef deephaven::dhcore::DateTime DateTime;
+  using DateTime = deephaven::dhcore::DateTime;
 
 public:
-  static std::shared_ptr<DateTimeExpressionImpl> createFromLiteral(std::string value);
-  static std::shared_ptr<DateTimeExpressionImpl> createFromDateTime(const DateTime &value);
+  [[nodiscard]]
+  static std::shared_ptr<DateTimeExpressionImpl> CreateFromLiteral(std::string value);
+  [[nodiscard]]
+  static std::shared_ptr<DateTimeExpressionImpl> CreateFromDateTime(const DateTime &value);
 
-  static std::shared_ptr<BooleanExpressionImpl> createComparison(
+  [[nodiscard]]
+  static std::shared_ptr<BooleanExpressionImpl> CreateComparison(
       std::shared_ptr<DateTimeExpressionImpl> lhs, const char *op,
       std::shared_ptr<DateTimeExpressionImpl> rhs);
 

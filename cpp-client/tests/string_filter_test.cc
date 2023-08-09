@@ -7,60 +7,60 @@
 using deephaven::client::TableHandle;
 namespace deephaven::client::tests {
 namespace {
-void testFilter(const char *description, const TableHandle &filteredTable,
-    const std::vector<std::string> &tickerData,
-    const std::vector<double> &closeData);
+void TestFilter(const char *description, const TableHandle &filtered_table,
+    const std::vector<std::string> &ticker_data,
+    const std::vector<double> &close_data);
 }  // namespace
 
 TEST_CASE("String Filter", "[strfilter]") {
-  auto tm = TableMakerForTests::create();
-  auto table = tm.table();
+  auto tm = TableMakerForTests::Create();
+  auto table = tm.Table();
 
-  auto importDate = table.getStrCol("ImportDate");
-  auto ticker = table.getStrCol("Ticker");
-  auto close = table.getNumCol("Close");
+  auto import_date = table.GetStrCol("ImportDate");
+  auto ticker = table.GetStrCol("Ticker");
+  auto close = table.GetNumCol("Close");
 
-  auto t2 = table.where(importDate == "2017-11-01").select(ticker, close);
+  auto t2 = table.Where(import_date == "2017-11-01").Select(ticker, close);
 
   {
-    std::vector<std::string> tickerData = {"AAPL", "AAPL", "AAPL", "ZNGA", "ZNGA"};
-    std::vector<double> closeData = {23.5, 24.2, 26.7, 538.2, 544.9};
-    testFilter("Contains A", t2.where(ticker.contains("A")),
-      tickerData, closeData);
+    std::vector<std::string> ticker_data = {"AAPL", "AAPL", "AAPL", "ZNGA", "ZNGA"};
+    std::vector<double> close_data = {23.5, 24.2, 26.7, 538.2, 544.9};
+    TestFilter("Contains A", t2.Where(ticker.contains("A")),
+        ticker_data, close_data);
   }
 
   {
-    std::vector<std::string> tickerData = {};
-    std::vector<double> closeData = {};
-    testFilter("Starts with BL", t2.where(ticker.startsWith("BL")),
-      tickerData, closeData);
+    std::vector<std::string> ticker_data = {};
+    std::vector<double> close_data = {};
+    TestFilter("Starts with BL", t2.Where(ticker.startsWith("BL")),
+        ticker_data, close_data);
   }
 
   {
-    std::vector<std::string> tickerData = {"XRX", "XRX"};
-    std::vector<double> closeData = {88.2, 53.8};
-    testFilter("Ends with X", t2.where(ticker.endsWith("X")),
-        tickerData, closeData);
+    std::vector<std::string> ticker_data = {"XRX", "XRX"};
+    std::vector<double> close_data = {88.2, 53.8};
+    TestFilter("Ends with X", t2.Where(ticker.endsWith("X")),
+        ticker_data, close_data);
   }
 
   {
-    std::vector<std::string> tickerData = {"IBM"};
-    std::vector<double> closeData = {38.7};
-    testFilter("Matches ^I.*M$", t2.where(ticker.matches("^I.*M$")),
-        tickerData, closeData);
+    std::vector<std::string> ticker_data = {"IBM"};
+    std::vector<double> close_data = {38.7};
+    TestFilter("Matches ^I.*M$", t2.Where(ticker.matches("^I.*M$")),
+        ticker_data, close_data);
   }
 }
 
 namespace {
-void testFilter(const char *description, const TableHandle &filteredTable,
-    const std::vector<std::string> &tickerData,
-    const std::vector<double> &closeData) {
+void TestFilter(const char *description, const TableHandle &filtered_table,
+    const std::vector<std::string> &ticker_data,
+    const std::vector<double> &close_data) {
   INFO(description);
-  INFO(filteredTable.stream(true));
-  compareTable(
-      filteredTable,
-      "Ticker", tickerData,
-      "Close", closeData
+  INFO(filtered_table.Stream(true));
+  CompareTable(
+      filtered_table,
+      "Ticker", ticker_data,
+      "Close", close_data
   );
 }
 }  // namespace

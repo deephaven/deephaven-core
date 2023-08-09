@@ -18,17 +18,19 @@ class BarrageProcessorImpl;
 
 class BarrageProcessor final {
 protected:
-  typedef deephaven::dhcore::clienttable::Schema Schema;
-  typedef deephaven::dhcore::column::ColumnSource ColumnSource;
+  using Schema = deephaven::dhcore::clienttable::Schema;
+  using ColumnSource = deephaven::dhcore::column::ColumnSource;
 
 public:
-  static constexpr const uint32_t deephavenMagicNumber = 0x6E687064U;
+  static constexpr const uint32_t kDeephavenMagicNumber = 0x6E687064U;
 
-  static std::vector<uint8_t> createSubscriptionRequest(const void *ticketBytes, size_t size);
+  [[nodiscard]]
+  static std::vector<uint8_t> CreateSubscriptionRequest(const void *ticket_bytes, size_t size);
   /**
    * Returning a 'string' type makes life in Cython slightly easier.
    */
-  static std::string createSubscriptionRequestCython(const void *ticketBytes, size_t size);
+  [[nodiscard]]
+  static std::string CreateSubscriptionRequestCython(const void *ticket_bytes, size_t size);
 
   BarrageProcessor();
   explicit BarrageProcessor(std::shared_ptr<Schema> schema);
@@ -36,8 +38,9 @@ public:
   BarrageProcessor &operator=(BarrageProcessor &&other) noexcept;
   ~BarrageProcessor();
 
-  std::optional<TickingUpdate> processNextChunk(const std::vector<std::shared_ptr<ColumnSource>> &sources,
-      const std::vector<size_t> &sizes, const void *metadata, size_t metadataSize);
+  [[nodiscard]]
+  std::optional<TickingUpdate> ProcessNextChunk(const std::vector<std::shared_ptr<ColumnSource>> &sources,
+      const std::vector<size_t> &sizes, const void *metadata, size_t metadata_size);
 
 private:
   std::unique_ptr<internal::BarrageProcessorImpl> impl_;

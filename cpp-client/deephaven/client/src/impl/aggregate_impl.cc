@@ -5,7 +5,7 @@
 
 namespace deephaven::client {
 namespace impl {
-std::shared_ptr<AggregateImpl> AggregateImpl::create(
+std::shared_ptr<AggregateImpl> AggregateImpl::Create(
     ComboAggregateRequest::Aggregate descriptor) {
   return std::make_shared<AggregateImpl>(Private(), std::move(descriptor));
 }
@@ -13,7 +13,7 @@ std::shared_ptr<AggregateImpl> AggregateImpl::create(
 AggregateImpl::AggregateImpl(Private, ComboAggregateRequest::Aggregate descriptor) :
     descriptor_(std::move(descriptor)) {}
 
-std::shared_ptr<AggregateComboImpl> AggregateComboImpl::create(
+std::shared_ptr<AggregateComboImpl> AggregateComboImpl::Create(
     std::vector<ComboAggregateRequest::Aggregate> aggregates) {
   return std::make_shared<AggregateComboImpl>(Private(), std::move(aggregates));
 }

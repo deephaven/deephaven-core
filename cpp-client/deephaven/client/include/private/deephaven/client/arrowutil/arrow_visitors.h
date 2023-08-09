@@ -8,11 +8,11 @@
 
 namespace deephaven::client::arrowutil {
 
-template<typename Inner>
+template<typename InnerType>
 class ArrowTypeVisitor final : public arrow::TypeVisitor {
 public:
   ArrowTypeVisitor() = default;
-  explicit ArrowTypeVisitor(Inner inner) : inner_(std::move(inner)) {}
+  explicit ArrowTypeVisitor(InnerType inner) : inner_(std::move(inner)) {}
 
   arrow::Status Visit(const arrow::Int8Type &) final {
     inner_.template operator()<int8_t>();
@@ -59,18 +59,18 @@ public:
     return arrow::Status::OK();
   }
 
-  Inner &inner() { return inner_; }
-  const Inner &inner() const { return inner_; }
+  InnerType &Inner() { return inner_; }
+  const InnerType &Inner() const { return inner_; }
 
 private:
-  Inner inner_;
+  InnerType inner_;
 };
 
-template<typename Inner>
+template<typename InnerType>
 class ArrowArrayTypeVisitor : public arrow::ArrayVisitor {
 public:
   ArrowArrayTypeVisitor() = default;
-  explicit ArrowArrayTypeVisitor(Inner inner) : inner_(std::move(inner)) {}
+  explicit ArrowArrayTypeVisitor(InnerType inner) : inner_(std::move(inner)) {}
 
   arrow::Status Visit(const arrow::Int8Array &) final {
     inner_.template operator()<int8_t>();
@@ -117,10 +117,10 @@ public:
     return arrow::Status::OK();
   }
 
-  Inner &inner() { return inner_; }
-  const Inner &inner() const { return inner_; }
+  InnerType &Inner() { return inner_; }
+  const InnerType &Inner() const { return inner_; }
 
 private:
-  Inner inner_;
+  InnerType inner_;
 };
 }  // namespace deephaven::client::arrowutil
