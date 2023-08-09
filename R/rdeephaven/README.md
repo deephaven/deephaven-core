@@ -39,10 +39,12 @@ Currently, the R client is only supported on Ubuntu 20.04 or 22.04 and must be b
 
    ```
    # Download the key and install it
-   $ wget -qO- https://cloud.r-project.org/bin/linux/ubuntu/marutter_pubkey.asc | sudo gpg --dearmor -o /usr/share/keyrings/r-proj
+   $ wget -qO- https://cloud.r-project.org/bin/linux/ubuntu/marutter_pubkey.asc | \
+       sudo gpg --dearmor -o /usr/share/keyrings/r-project.gpg
 
    # Add the R source list to apt's sources list
-   $ echo "deb [signed-by=/usr/share/keyrings/r-project.gpg] https://cloud.r-project.org/bin/linux/ubuntu jammy-cran40/" | sudo tee -a /etc/apt/sources.list.d/r-project.l
+   $ echo "deb [signed-by=/usr/share/keyrings/r-project.gpg] https://cloud.r-project.org/bin/linux/ubuntu jammy-cran40/" | \
+       sudo tee -a /etc/apt/sources.list.d/r-project.list
 
    # update the apt package list
    $ apt update
