@@ -462,7 +462,6 @@ public class ParquetTools {
                     }
                 }
             }
-            destFiles.stream().forEach(ParquetTools::deleteBackupFileNoExcept);
         } catch (Exception e) {
             for (final File file : destFiles) {
                 rollbackFile(file);
@@ -481,6 +480,7 @@ public class ParquetTools {
             }
             throw new UncheckedDeephavenException("Error writing parquet tables", e);
         }
+        destFiles.stream().forEach(ParquetTools::deleteBackupFileNoExcept);
     }
 
     /**
