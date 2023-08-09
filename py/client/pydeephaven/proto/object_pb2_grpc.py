@@ -55,40 +55,43 @@ class ObjectServiceServicer(object):
     def MessageStream(self, request_iterator, context):
         """
         Provides a generic stream feature for Deephaven instances to use to add arbitrary functionality.
-        This API lets a client open a stream to a particular object on the server, to be mediated by
-        a server side plugin. In theory this could effectively be used to "tunnel" a custom gRPC call,
-        but in practice there are a few deliberate shortcomings that still make this possible, but not
-        trivial.
+        Presently these take the form of "object type plugins", where server-side code can specify how
+        an object could be serialized and/or communicate with a client. This gRPC stream is somewhat lower level
+        than the plugin API, giving the server and client APIs features to correctly establish and
+        control the stream. At this time, this is limited to a "ConnectRequest" to start the call.
 
         The first message sent to the server is expected to have a ConnectRequest, indicating which
-        export ticket to connect to. It is an error for the server to not have a plugin defined for that
-        object type.
+        export ticket to connect to. It is an error for the client to attempt to connect to an object
+        that has no plugin for its object type installed.
 
-        Subsequent requests to the server, and all responses to the client, will be a payload of bytes
-        and an arbitrary number of tickets, referring to server side objects that one side wishes to
-        reference in its payload.
+        The first request sent by the client should be a ConnectRequest. No other client message should
+        be sent until the server responds. The server will respond with Data as soon as it is able (i.e.
+        once the object in question has been resolved and the plugin has responded), indicating that the
+        request was successful. After that point, the client may send Data requests.
 
-        Presently it is required that the server respond immediately, at least to acknowledge that the
-        object was correctly contacted (as opposed to waiting for a pending ticket, or dealing with
-        network lag, etc). This is a small (and possibly not required, but convenient) departure from
-        a offering a gRPC stream (a server-streaming or bidi-streaming call need not send a message
-        right away).
+        All replies from the server to the client contain Data instances. When sent from the server to
+        the client, Data contains a bytes payload created by the server implementation of the plugin,
+        and server-created export tickets containing any object references specified to be sent by the
+        server-side plugin. As server-created exports, they are already resolved, and can be fetched or
+        otherwise referenced right away. The client API is expected to wrap those tickets in appropriate
+        objects, and the client is expected to release those tickets as appropriate, according to the
+        plugin's use case. Note that it is possible for the "type" field to be null, indicating that
+        there is no corresponding ObjectType plugin for these exported objects. This limits the client
+        to specifying those tickets in a subsequent request, or releasing the ticket to let the object
+        be garbage collected on the server.
+
+        All Data instances sent from the client likewise contain a bytes payload, and may contain
+        references to objects that already exist or may soon exist on the server, not just tickets sent
+        by this same plugin. Note however that if those tickets are not yet resolved, neither the current
+        Data nor subsequent requests can be processed by the plugin, as the required references can't be
+        resolved.
 
         Presently there is no explicit "close" message to send, but plugin implementations can devise
         their own "half-close" protocol if they so choose. For now, if one end closes the connection,
-        the other is expected to follow suit by closing their end too.
+        the other is expected to follow suit by closing their end too. At present, if there is an error
+        with the stream, it is conveyed to the client in the usual gRPC fashion, but the server plugin
+        will only be informed that the stream closed.
 
-        (address stream failures?)
-
-        Finally, addressing a broader point of unsuitability for general gRPC-over-gRPC tunneling:
-        there is a lot more to gRPC than just specifying a path and sending payloads to it, such as
-        how to specify metadata. In theory, we could handle the metadata as another field (only sent
-        in the first/last payloads), or as a separate plugin-defined type of payload (analogous to the
-        grpc-websockets implementations), but we still run into issues where this user-defined gRPC
-        service needs to coexist with the rest of the Deephaven platform, supporting at least authentication,
-        and for browsers, our custom streaming implementation. The nested gRPC implementation would
-        need to be at some level aware that it is already stateful to take advantage of this, rather
-        than somehow redefine it.
         """
         context.set_code(grpc.StatusCode.UNIMPLEMENTED)
         context.set_details('Method not implemented!')
