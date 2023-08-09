@@ -6,6 +6,7 @@ package io.deephaven.server.object;
 import com.google.auto.service.AutoService;
 import io.deephaven.engine.table.Table;
 import io.deephaven.engine.util.TableTools;
+import io.deephaven.plugin.type.Exporter;
 import io.deephaven.plugin.type.ObjectType;
 import io.deephaven.plugin.type.Exporter.Reference;
 import io.deephaven.plugin.type.ObjectTypeClassBase;

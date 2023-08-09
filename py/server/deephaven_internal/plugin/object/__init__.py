@@ -8,7 +8,7 @@ from typing import Optional, List, Any
 from deephaven.plugin.object_type import Exporter, ObjectType, Reference, MessageStream, FetchOnlyObjectType
 from deephaven._wrapper import JObjectWrapper, wrap_j_object
 
-JReference = jpy.get_type('io.deephaven.plugin.type.ObjectType$Exporter$Reference')
+JReference = jpy.get_type('io.deephaven.plugin.type.Exporter$Reference')
 JExporterAdapter = jpy.get_type('io.deephaven.server.plugin.python.ExporterAdapter')
 JMessageStream = jpy.get_type('io.deephaven.plugin.type.ObjectType$MessageStream')
 

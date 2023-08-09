@@ -5,6 +5,7 @@ package io.deephaven.figure;
 
 import com.google.auto.service.AutoService;
 import io.deephaven.plot.FigureWidget;
+import io.deephaven.plugin.type.Exporter;
 import io.deephaven.plugin.type.ObjectType;
 import io.deephaven.plugin.type.ObjectTypeClassBase;
 

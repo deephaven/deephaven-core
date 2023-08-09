@@ -4,6 +4,7 @@ import com.google.auto.service.AutoService;
 import com.google.protobuf.ByteString;
 import io.deephaven.engine.table.PartitionedTable;
 import io.deephaven.extensions.barrage.util.BarrageUtil;
+import io.deephaven.plugin.type.Exporter;
 import io.deephaven.plugin.type.ObjectType;
 import io.deephaven.plugin.type.ObjectTypeBase;
 import io.deephaven.proto.backplane.grpc.PartitionedTableDescriptor;

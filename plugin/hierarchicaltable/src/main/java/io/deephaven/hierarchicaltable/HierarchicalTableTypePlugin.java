@@ -7,6 +7,7 @@ import com.google.auto.service.AutoService;
 import io.deephaven.engine.table.hierarchical.HierarchicalTable;
 import io.deephaven.extensions.barrage.util.BarrageUtil;
 import io.deephaven.extensions.barrage.util.HierarchicalTableSchemaUtil;
+import io.deephaven.plugin.type.Exporter;
 import io.deephaven.plugin.type.ObjectType;
 import io.deephaven.plugin.type.ObjectTypeBase;
 import io.deephaven.proto.backplane.grpc.HierarchicalTableDescriptor;

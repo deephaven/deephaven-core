@@ -39,7 +39,7 @@ import io.deephaven.plot.datasets.xyerrorbar.XYErrorBarDataSeriesArray;
 import io.deephaven.plot.util.PlotUtils;
 import io.deephaven.plot.util.tables.*;
 import io.deephaven.plot.util.tables.PartitionedTableHandle;
-import io.deephaven.plugin.type.ObjectType.Exporter;
+import io.deephaven.plugin.type.Exporter;
 import io.deephaven.plugin.type.Exporter.Reference;
 import io.deephaven.proto.backplane.script.grpc.FigureDescriptor;
 import io.deephaven.proto.backplane.script.grpc.FigureDescriptor.AxisDescriptor;
