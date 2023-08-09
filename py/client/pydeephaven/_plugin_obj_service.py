@@ -5,13 +5,12 @@ import io
 from typing import Any
 
 from pydeephaven.dherror import DHError
-from pydeephaven.proto import object_pb2_grpc, object_pb2
-from pydeephaven.session import Session
+from pydeephaven.proto import object_pb2_grpc
 from pydeephaven.experimental.plugin_client import PluginRequestStream
 
 
 class PluginObjService:
-    def __init__(self, session: Session):
+    def __init__(self, session: 'pydeephaven.session.Session'):
         self.session = session
         self._grpc_app_stub = object_pb2_grpc.ObjectServiceStub(session.grpc_channel)
 

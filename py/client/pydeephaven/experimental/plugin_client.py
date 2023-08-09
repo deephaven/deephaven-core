@@ -23,7 +23,7 @@ class PluginClient(ServerObject):
     supported.
     """
 
-    def __init__(self, session, exportable_obj: ticket_pb2.Ticket):
+    def __init__(self, session: 'pydeephaven.session.Session', exportable_obj: ticket_pb2.Ticket):
         super().__init__(type_=exportable_obj.type, ticket=exportable_obj.ticket)
         self.session = session
         self.exportable_obj = exportable_obj
@@ -107,7 +107,7 @@ class PluginResponseStream:
     to, depending on the server implementation.
     """
 
-    def __init__(self, stream_resp, session):
+    def __init__(self, stream_resp, session: 'pydeephaven.session.Session'):
         self.stream_resp = stream_resp
         self.session = session
         self._rlock = threading.RLock()
