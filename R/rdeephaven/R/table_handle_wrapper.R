@@ -114,7 +114,7 @@ setGeneric(
 #' @export
 setMethod(
   "bind_to_variable",
-  signature = c(table_handle_instance = "TableHandle"),
+  signature = c(table_handle_instance = "TableHandle", name = "character"),
   function(table_handle_instance, name) {
     verify_string("name", name, TRUE)
     table_handle_instance@.internal_rcpp_object$bind_to_variable(name)
