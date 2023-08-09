@@ -154,13 +154,26 @@ public class ObjectServiceGrpcImpl extends ObjectServiceGrpc.ObjectServiceImplBa
             }
         }
 
-        // These methods are intended to roughly behave like SerializingExecutor(directExecutor()) in that only one can
-        // be running at a time, and will be started on the current thread, with the distinction that submitted work
-        // will continue off-thread and will signal when it is finished
-        private void runOrEnqueue(StreamOperation runnable) {
-            runOrEnqueue(Collections.emptyList(), runnable);
+        /**
+         * Helper to serialize incoming ObjectType messages. These methods are intended to roughly behave like SerializingExecutor(directExecutor()) in that only one can
+         * be running at a time, and will be started on the current thread, with the distinction that submitted work
+         * will continue off-thread and will signal when it is finished.
+         *
+         * @param operation the lambda to execute when it is our turn to run
+         */
+
+        private void runOrEnqueue(StreamOperation operation) {
+            runOrEnqueue(Collections.emptyList(), operation);
         }
 
+        /**
+         * Helper to serialize incoming ObjectType messages. These methods are intended to roughly behave like SerializingExecutor(directExecutor()) in that only one can
+         * be running at a time, and will be started on the current thread, with the distinction that submitted work
+         * will continue off-thread and will signal when it is finished.
+         *
+         * @param dependencies other ExportObjects that must be resolve to perform the operation
+         * @param operation the lambda to execute when it is our turn to run
+         */
         private void runOrEnqueue(Collection<? extends ExportObject<?>> dependencies, StreamOperation operation) {
             // gRPC guarantees we can't race enqueuing
             operations.add(new EnqueuedStreamOperation(object, dependencies, operation));
