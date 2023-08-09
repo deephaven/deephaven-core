@@ -84,6 +84,7 @@ public class StreamToBlinkTableAdapter
     private volatile QueryTable table;
 
     private final AtomicBoolean alive = new AtomicBoolean(true);
+    private final AtomicBoolean initialized = new AtomicBoolean(false);
 
     /**
      * Construct the adapter with {@code initialize == true} and without extra attributes.
@@ -187,6 +188,9 @@ public class StreamToBlinkTableAdapter
      * @see #StreamToBlinkTableAdapter(TableDefinition, StreamPublisher, UpdateSourceRegistrar, String, Map, boolean)
      */
     public void initialize() {
+        if (!initialized.compareAndSet(false, true)) {
+            throw new IllegalStateException("Must not call StreamToBlinkTableAdapter#initialize more than once");
+        }
         log.info().append("Registering ").append(StreamToBlinkTableAdapter.class.getSimpleName()).append('-')
                 .append(name)
                 .endl();
