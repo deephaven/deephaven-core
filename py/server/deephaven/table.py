@@ -32,7 +32,7 @@ from deephaven.updateby import UpdateByOperation
 
 # Table
 _J_Table = jpy.get_type("io.deephaven.engine.table.Table")
-_JLiveAttributeMap = jpy.get_type("io.deephaven.engine.table.impl.LiveAttributeMap")
+_JAttributeMap = jpy.get_type("io.deephaven.engine.table.AttributeMap")
 _JTableTools = jpy.get_type("io.deephaven.engine.util.TableTools")
 _JColumnName = jpy.get_type("io.deephaven.api.ColumnName")
 _JSortColumn = jpy.get_type("io.deephaven.api.SortColumn")
@@ -572,7 +572,7 @@ class Table(JObjectWrapper):
 
     def attributes(self) -> Dict[str, Any]:
         """Returns all the attributes defined on the table."""
-        j_map = jpy.cast(self.j_table, _JLiveAttributeMap).getAttributes()
+        j_map = jpy.cast(self.j_table, _JAttributeMap).getAttributes()
         return j_map_to_dict(j_map)
 
     def with_attributes(self, attrs: Dict[str, Any]) -> Table:
@@ -594,7 +594,7 @@ class Table(JObjectWrapper):
         """
         try:
             j_map = j_hashmap(attrs)
-            return Table(j_table=jpy.cast(self.j_table, _JLiveAttributeMap).withAttributes(j_map))
+            return Table(j_table=jpy.cast(self.j_table, _JAttributeMap).withAttributes(j_map))
         except Exception as e:
             raise DHError(e, "failed to create a table with attributes.") from e
 
@@ -613,7 +613,7 @@ class Table(JObjectWrapper):
         """
         try:
             attrs = j_array_list(to_sequence(attrs))
-            return Table(j_table=jpy.cast(self.j_table, _JLiveAttributeMap).withoutAttributes(attrs))
+            return Table(j_table=jpy.cast(self.j_table, _JAttributeMap).withoutAttributes(attrs))
         except Exception as e:
             raise DHError(e, "failed to create a table without attributes.") from e
 
