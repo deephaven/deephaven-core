@@ -18,6 +18,7 @@ import io.deephaven.server.session.SessionService;
 import io.deephaven.server.session.SessionState;
 import io.deephaven.server.session.SessionState.ExportObject;
 import io.deephaven.server.session.TicketRouter;
+import io.deephaven.util.function.ThrowingRunnable;
 import io.grpc.stub.StreamObserver;
 import org.jetbrains.annotations.NotNull;
 
@@ -33,6 +34,7 @@ import java.util.Optional;
 import java.util.Queue;
 import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicReference;
 import java.util.stream.Collectors;
 
 public class ObjectServiceGrpcImpl extends ObjectServiceGrpc.ObjectServiceImplBase {
@@ -42,8 +44,8 @@ public class ObjectServiceGrpcImpl extends ObjectServiceGrpc.ObjectServiceImplBa
     private final TypeLookup typeLookup;
     private final SessionService.ErrorTransformer errorTransformer;
 
-    interface StreamOperation {
-        void run() throws ObjectCommunicationException;
+    @FunctionalInterface
+    interface StreamOperation extends ThrowingRunnable<ObjectCommunicationException> {
     }
 
     @Inject
@@ -246,12 +248,11 @@ public class ObjectServiceGrpcImpl extends ObjectServiceGrpc.ObjectServiceImplBa
                     final Object o = object.get();
                     ObjectType objectTypeInstance = getObjectTypeInstance(type, o);
 
+                    AtomicReference<FetchObjectResponse> singleResponse = new AtomicReference<>();
                     StreamObserver<StreamResponse> wrappedResponseObserver = new StreamObserver<>() {
                         @Override
                         public void onNext(StreamResponse value) {
-                            // TODO Do we send a message here, _then_ error if the plugin didn't close? Or do we close
-                            // with an error without sending anything (and release exports)?
-                            responseObserver.onNext(FetchObjectResponse.newBuilder()
+                            singleResponse.set(FetchObjectResponse.newBuilder()
                                     .setType(type)
                                     .setData(value.getData().getPayload())
                                     .addAllTypedExportIds(value.getData().getExportedReferencesList())
@@ -276,6 +277,7 @@ public class ObjectServiceGrpcImpl extends ObjectServiceGrpc.ObjectServiceImplBa
                         throw Exceptions.statusRuntimeException(Code.INVALID_ARGUMENT,
                                 "Plugin didn't close response, use MessageStream instead for this object");
                     }
+                    GrpcUtil.safelyComplete(responseObserver, singleResponse.get());
 
                     return null;
                 });
