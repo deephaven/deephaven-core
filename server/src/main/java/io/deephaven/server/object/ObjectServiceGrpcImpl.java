@@ -59,6 +59,9 @@ public class ObjectServiceGrpcImpl extends ObjectServiceGrpc.ObjectServiceImplBa
         this.errorTransformer = Objects.requireNonNull(errorTransformer);
     }
 
+    private enum EnqueuedState {
+        WAITING, RUNNING, CLOSED;
+    }
     private final class SendMessageObserver extends SingletonLivenessManager implements StreamObserver<StreamRequest> {
         private ExportObject<Object> object;
         private final SessionState session;
@@ -67,7 +70,7 @@ public class ObjectServiceGrpcImpl extends ObjectServiceGrpc.ObjectServiceImplBa
         private ObjectType.MessageStream messageStream;
 
         private final Queue<EnqueuedStreamOperation> operations = new ConcurrentLinkedQueue<>();
-        private final AtomicBoolean running = new AtomicBoolean(false);
+        private final AtomicReference<EnqueuedState> runState = new AtomicReference<>(EnqueuedState.WAITING);
 
         class EnqueuedStreamOperation {
             private final StreamOperation wrapped;
@@ -85,6 +88,9 @@ public class ObjectServiceGrpcImpl extends ObjectServiceGrpc.ObjectServiceImplBa
                         .onErrorHandler(SendMessageObserver.this::onError)
                         .require(requirements)
                         .submit(() -> {
+                            if (runState.get() == EnqueuedState.CLOSED) {
+                                return;
+                            }
                             // Run the specified work. Note that we're not concerned about exceptions, the stream will
                             // be dead (via onError) and won't be used again.
                             try {
@@ -94,10 +100,10 @@ public class ObjectServiceGrpcImpl extends ObjectServiceGrpc.ObjectServiceImplBa
                                         "Error performing MessageStream operation");
                             }
 
-                            // Set running to false (it must be true at this time) so that any new work can race being
-                            // added
-                            running.set(false);
-                            doWork();
+                            // Set state to WAITING if it is RUNNING so that any new work can race being added
+                            if (runState.compareAndSet(EnqueuedState.RUNNING, EnqueuedState.WAITING)) {
+                                doWork();
+                            } // else the stream should be ended and no more work done
                         });
             }
         }
@@ -185,11 +191,11 @@ public class ObjectServiceGrpcImpl extends ObjectServiceGrpc.ObjectServiceImplBa
             // compareAndSet
             EnqueuedStreamOperation next = operations.peek();
 
-            // If we fail the null check, no work to do, leave running false (though if work was added right after
-            // peek(), that thread will make it into here and start). If we fail the running check, something else has
+            // If we fail the null check, no work to do, leave state as WAITING (though if work was added right after
+            // peek(), that thread will make it into here and start). If we fail the state check, something else has
             // already started work
-            if (next != null && running.compareAndSet(false, true)) {
-                // We have the running lock again, and should remove the item we just peeked at
+            if (next != null && runState.compareAndSet(EnqueuedState.WAITING, EnqueuedState.RUNNING)) {
+                // We successfully set state to running, and should remove the item we just peeked at
                 EnqueuedStreamOperation actualNext = operations.poll();
                 Assert.eq(next, "next", actualNext, "actualNext");
 
@@ -200,6 +206,9 @@ public class ObjectServiceGrpcImpl extends ObjectServiceGrpc.ObjectServiceImplBa
 
         @Override
         public void onError(final Throwable t) {
+            // Avoid starting more work
+            runState.set(EnqueuedState.CLOSED);
+
             // Safely inform the client that an error happened
             GrpcUtil.safelyError(responseObserver, errorTransformer.transform(t));
 
@@ -227,6 +236,7 @@ public class ObjectServiceGrpcImpl extends ObjectServiceGrpc.ObjectServiceImplBa
         public void onCompleted() {
             // Don't finalize until we've processed earlier messages
             runOrEnqueue(() -> {
+                runState.set(EnqueuedState.CLOSED);
                 // Respond by closing the stream - note that closing here allows the server plugin to respond to earlier
                 // messages without error, but those responses will be ignored by the client.
                 GrpcUtil.safelyComplete(responseObserver);
@@ -262,6 +272,7 @@ public class ObjectServiceGrpcImpl extends ObjectServiceGrpc.ObjectServiceImplBa
                     ObjectType objectTypeInstance = getObjectTypeInstance(type, o);
 
                     AtomicReference<FetchObjectResponse> singleResponse = new AtomicReference<>();
+                    AtomicBoolean isClosed = new AtomicBoolean(false);
                     StreamObserver<StreamResponse> wrappedResponseObserver = new StreamObserver<>() {
                         @Override
                         public void onNext(StreamResponse value) {
@@ -279,18 +290,24 @@ public class ObjectServiceGrpcImpl extends ObjectServiceGrpc.ObjectServiceImplBa
 
                         @Override
                         public void onCompleted() {
-                            responseObserver.onCompleted();
+                            isClosed.set(true);
                         }
                     };
                     PluginMessageSender connection = new PluginMessageSender(wrappedResponseObserver, session);
                     objectTypeInstance.clientConnection(o, connection);
 
-                    if (!connection.isClosed()) {
+                    FetchObjectResponse message = singleResponse.get();
+                    if (message == null) {
+                        connection.onClose();
+                        throw Exceptions.statusRuntimeException(Code.INVALID_ARGUMENT,
+                                "Plugin didn't send a response before returning from clientConnection()");
+                    }
+                    if (!isClosed.get()) {
                         connection.onClose();
                         throw Exceptions.statusRuntimeException(Code.INVALID_ARGUMENT,
                                 "Plugin didn't close response, use MessageStream instead for this object");
                     }
-                    GrpcUtil.safelyComplete(responseObserver, singleResponse.get());
+                    GrpcUtil.safelyComplete(responseObserver, message);
 
                     return null;
                 });
@@ -332,8 +349,6 @@ public class ObjectServiceGrpcImpl extends ObjectServiceGrpc.ObjectServiceImplBa
         private final StreamObserver<StreamResponse> responseObserver;
         private final SessionState sessionState;
 
-        private boolean closed;
-
         public PluginMessageSender(StreamObserver<StreamResponse> responseObserver, SessionState sessionState) {
             this.responseObserver = responseObserver;
             this.sessionState = sessionState;
@@ -356,7 +371,7 @@ public class ObjectServiceGrpcImpl extends ObjectServiceGrpc.ObjectServiceImplBa
                         StreamResponse.newBuilder().setData(payload);
 
                 // Explicitly running this unsafely, we want the exception to clean up, but we still need to synchronize
-                // as it would do
+                // as would normally be done in safelyOnNext
                 StreamResponse response = responseBuilder.build();
                 synchronized (responseObserver) {
                     responseObserver.onNext(response);
@@ -378,12 +393,7 @@ public class ObjectServiceGrpcImpl extends ObjectServiceGrpc.ObjectServiceImplBa
 
         @Override
         public void onClose() {
-            closed = true;
             GrpcUtil.safelyComplete(responseObserver);
-        }
-
-        public boolean isClosed() {
-            return closed;
         }
     }
 }
