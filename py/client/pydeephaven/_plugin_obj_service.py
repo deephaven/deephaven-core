@@ -9,7 +9,13 @@ from pydeephaven.proto import object_pb2_grpc
 from pydeephaven.experimental.plugin_client import PluginRequestStream
 
 
+"""This module provides internal tools to communicate with plugins on the server."""
+
+
 class PluginObjService:
+    """
+    PluginObjectService defines utility methods to make gRPC calls to the ObjectService.
+    """
     def __init__(self, session: 'pydeephaven.session.Session'):
         self.session = session
         self._grpc_app_stub = object_pb2_grpc.ObjectServiceStub(session.grpc_channel)

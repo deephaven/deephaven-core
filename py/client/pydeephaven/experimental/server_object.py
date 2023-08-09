@@ -7,6 +7,11 @@ from pydeephaven.proto import ticket_pb2
 from typing import Optional
 
 
+"""
+A simple supertype to use when defining objects that exist on the server which can be referenced by the client.
+"""
+
+
 @dataclasses.dataclass
 class ServerObject:
     """
@@ -15,6 +20,7 @@ class ServerObject:
 
     Marked as "experimental" for now, as we work to improve the client plugin experience.
     """
+
     type_: Optional[str]
     """The type of the object. May be None, indicating that the instance cannot be connected to or otherwise directly
     used from the client."""
