@@ -98,45 +98,6 @@ public class ParquetTableWriter {
         void fetchData(RowSequence rs);
     }
 
-    // TODO Is this code used anywhere?
-    // /**
-    // * Writes a table in parquet format under a given path
-    // *
-    // * @param t The table to write
-    // * @param path The destination path
-    // * @param incomingMeta A map of metadata values to be stores in the file footer
-    // * @param groupingPathFactory a factory to construct paths for grouping tables.
-    // * @param groupingColumns List of columns the tables are grouped by (the write operation will store the grouping
-    // * info)
-    // * @throws SchemaMappingException Error creating a parquet table schema for the given table (likely due to
-    // * unsupported types)
-    // * @throws IOException For file writing related errors
-    // */
-    // public static void write(
-    // @NotNull final Table t,
-    // @NotNull final String path,
-    // @NotNull final Map<String, String> incomingMeta,
-    // @NotNull final Function<String, String> groupingPathFactory,
-    // @NotNull final String... groupingColumns) throws SchemaMappingException, IOException {
-    // write(t, t.getDefinition(), ParquetInstructions.EMPTY, path, incomingMeta, groupingPathFactory,
-    // groupingColumns);
-    // }
-
-    // /**
-    // * Writes a table in parquet format under a given path
-    // *
-    // * @param t the table to write
-    // * @param path the destination path
-    // * @param incomingMeta any metadata to include in the parquet metadata
-    // * @param groupingColumns the grouping columns (if any)
-    // */
-    // public static void write(@NotNull final Table t,
-    // @NotNull final String path,
-    // @NotNull final Map<String, String> incomingMeta,
-    // @NotNull final String... groupingColumns) throws SchemaMappingException, IOException {
-    // write(t, path, incomingMeta, defaultGroupingFileName(path), groupingColumns);
-    // }
-
     /**
      * Helper struct used to pass information about where to write the grouping files for each grouping column
      */
