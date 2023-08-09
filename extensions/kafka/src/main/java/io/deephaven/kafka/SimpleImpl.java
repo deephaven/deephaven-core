@@ -135,7 +135,8 @@ class SimpleImpl {
         }
 
 
-        private Type<?> getType(KeyOrValue keyOrValue, Map<String, ?> configs) {
+        @VisibleForTesting
+        Type<?> getType(KeyOrValue keyOrValue, Map<String, ?> configs) {
             if (dataType != null) {
                 return Type.find(dataType);
             }
@@ -151,13 +152,17 @@ class SimpleImpl {
                     return typeFromDeserializer;
                 }
             }
-            throw new UncheckedDeephavenException("Unable to find type for " + this);
+            final String columnName = getColumnName(keyOrValue, configs);
+            final String specName = keyOrValue == KeyOrValue.KEY ? "key_spec" : "value_spec";
+            final String dhProperty = dhProperty(keyOrValue);
+            final String kafkaDeserializerProperty = kafkaDeserializerProperty(keyOrValue);
+            throw new UncheckedDeephavenException(String.format(
+                    "Unable to find the type for column '%s' (%s). Please explicitly set the data type in the constructor, or through the kafka configuration '%s' or '%s'.",
+                    columnName, specName, dhProperty, kafkaDeserializerProperty));
         }
 
         private Type<?> getTypeFromDhProperty(KeyOrValue keyOrValue, Map<String, ?> configs) {
-            final String typeProperty = keyOrValue == KeyOrValue.KEY
-                    ? KEY_COLUMN_TYPE_PROPERTY
-                    : VALUE_COLUMN_TYPE_PROPERTY;
+            final String typeProperty = dhProperty(keyOrValue);
             if (!configs.containsKey(typeProperty)) {
                 return null;
             }
@@ -185,9 +190,7 @@ class SimpleImpl {
         }
 
         private Type<?> getTypeFromDeserializerProperty(KeyOrValue keyOrValue, Map<String, ?> configs) {
-            final String deserializerProperty = keyOrValue == KeyOrValue.KEY
-                    ? ConsumerConfig.KEY_DESERIALIZER_CLASS_CONFIG
-                    : ConsumerConfig.VALUE_DESERIALIZER_CLASS_CONFIG;
+            final String deserializerProperty = kafkaDeserializerProperty(keyOrValue);
             final String deserializer = (String) configs.get(deserializerProperty);
             if (deserializer == null) {
                 return null;
@@ -198,6 +201,18 @@ class SimpleImpl {
             }
             throw new IllegalArgumentException(String.format(
                     "Deserializer type %s for %s not supported.", deserializer, deserializerProperty));
+        }
+
+        private static String dhProperty(KeyOrValue keyOrValue) {
+            return keyOrValue == KeyOrValue.KEY
+                    ? KEY_COLUMN_TYPE_PROPERTY
+                    : VALUE_COLUMN_TYPE_PROPERTY;
+        }
+
+        private static String kafkaDeserializerProperty(KeyOrValue keyOrValue) {
+            return keyOrValue == KeyOrValue.KEY
+                    ? ConsumerConfig.KEY_DESERIALIZER_CLASS_CONFIG
+                    : ConsumerConfig.VALUE_DESERIALIZER_CLASS_CONFIG;
         }
     }
 
