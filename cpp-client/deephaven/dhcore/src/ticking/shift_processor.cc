@@ -5,46 +5,48 @@
 #include "deephaven/dhcore/utility/utility.h"
 
 namespace deephaven::dhcore::subscription {
-void ShiftProcessor::applyShiftData(const RowSequence &firstIndex, const RowSequence &lastIndex,
-    const RowSequence &destIndex,
-    const std::function<void(uint64_t, uint64_t, uint64_t)> &processShift) {
-  if (firstIndex.empty()) {
+void ShiftProcessor::ApplyShiftData(const RowSequence &first_index, const RowSequence &last_index,
+    const RowSequence &dest_index,
+    const std::function<void(uint64_t, uint64_t, uint64_t)> &process_shift) {
+  if (first_index.Empty()) {
     return;
   }
 
   // Loop twice: once in the forward direction (applying negative shifts), and once in the reverse
   // direction (applying positive shifts). Because we don't have a reverse iterator at the moment,
   // we save up the reverse tuples for processing in a separate step.
-  std::vector <std::tuple<size_t, size_t, size_t>> positiveShifts;
-  auto startIter = firstIndex.getRowSequenceIterator();
-  auto endIter = lastIndex.getRowSequenceIterator();
-  auto destIter = destIndex.getRowSequenceIterator();
-  auto showMessage = [](size_t first, size_t last, size_t dest) {
+  std::vector <std::tuple<size_t, size_t, size_t>> positive_shifts;
+  auto start_iter = first_index.GetRowSequenceIterator();
+  auto end_iter = last_index.GetRowSequenceIterator();
+  auto dest_iter = dest_index.GetRowSequenceIterator();
+  auto show_message = [](size_t first, size_t last, size_t dest) {
 //    const char *which = dest >= last ? "positive" : "negative";
 //    streamf(std::cerr, "Processing %o shift src [%o..%o] dest %o\n", which, first, last, dest);
   };
   {
-    uint64_t first, last, dest;
-    while (startIter.tryGetNext(&first)) {
-      if (!endIter.tryGetNext(&last) || !destIter.tryGetNext(&dest)) {
-        const char *message = "Sequences not of same size";
+    uint64_t first;
+    uint64_t last;
+    uint64_t dest;
+    while (start_iter.TryGetNext(&first)) {
+      if (!end_iter.TryGetNext(&last) || !dest_iter.TryGetNext(&dest)) {
+        const char *message = "Sequences not of same Size";
         throw std::runtime_error(DEEPHAVEN_DEBUG_MSG(message));
       }
       if (dest >= first) {
-        positiveShifts.emplace_back(first, last, dest);
+        positive_shifts.emplace_back(first, last, dest);
         continue;
       }
-      showMessage(first, last, dest);
-      processShift(first, last, dest);
+      show_message(first, last, dest);
+      process_shift(first, last, dest);
     }
   }
 
-  for (auto ip = positiveShifts.rbegin(); ip != positiveShifts.rend(); ++ip) {
+  for (auto ip = positive_shifts.rbegin(); ip != positive_shifts.rend(); ++ip) {
     auto first = std::get<0>(*ip);
     auto last = std::get<1>(*ip);
     auto dest = std::get<2>(*ip);
-    showMessage(first, last, dest);
-    processShift(first, last, dest);
+    show_message(first, last, dest);
+    process_shift(first, last, dest);
   }
 }
 }  // namespace deephaven::dhcore::subscription

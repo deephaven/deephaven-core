@@ -16,7 +16,7 @@
 #include "deephaven/dhcore/utility/utility.h"
 
 using deephaven::dhcore::ElementTypeId;
-using deephaven::dhcore::visitElementTypeId;
+using deephaven::dhcore::VisitElementTypeId;
 using deephaven::dhcore::chunk::AnyChunk;
 using deephaven::dhcore::chunk::Chunk;
 using deephaven::dhcore::chunk::ChunkVisitor;
@@ -32,181 +32,189 @@ using deephaven::dhcore::immerutil::GenericAbstractFlexVector;
 using deephaven::dhcore::immerutil::NumericAbstractFlexVector;
 using deephaven::dhcore::clienttable::Schema;
 using deephaven::dhcore::clienttable::ClientTable;
-using deephaven::dhcore::utility::makeReservedVector;
-using deephaven::dhcore::utility::streamf;
-using deephaven::dhcore::utility::stringf;
+using deephaven::dhcore::utility::MakeReservedVector;
+using deephaven::dhcore::utility::Streamf;
+using deephaven::dhcore::utility::Stringf;
 
 namespace deephaven::dhcore::ticking {
 namespace {
 class MyTable final : public ClientTable {
+  // Because we have a name clash with a member function called Schema()
+  using SchemaType = deephaven::dhcore::clienttable::Schema;
+
 public:
-  explicit MyTable(std::shared_ptr<Schema> schema,
-      std::vector<std::shared_ptr<ColumnSource>> sources, size_t numRows);
+  explicit MyTable(std::shared_ptr<SchemaType> schema,
+      std::vector<std::shared_ptr<ColumnSource>> sources, size_t num_rows);
   ~MyTable() final;
 
-  std::shared_ptr<RowSequence> getRowSequence() const final;
+  [[nodiscard]]
+  std::shared_ptr<RowSequence> GetRowSequence() const final;
 
-  std::shared_ptr<ColumnSource> getColumn(size_t columnIndex) const final {
-    return sources_[columnIndex];
+  [[nodiscard]]
+  std::shared_ptr<ColumnSource> GetColumn(size_t column_index) const final {
+    return sources_[column_index];
   }
 
-  size_t numRows() const final {
+  [[nodiscard]]
+  size_t NumRows() const final {
     return numRows_;
   }
 
-  size_t numColumns() const final {
+  [[nodiscard]]
+  size_t NumColumns() const final {
     return sources_.size();
   }
 
-  std::shared_ptr<Schema> schema() const final {
+  [[nodiscard]]
+  std::shared_ptr<SchemaType> Schema() const final {
     return schema_;
   }
 
 private:
-  std::shared_ptr<Schema> schema_;
+  std::shared_ptr<SchemaType> schema_;
   std::vector<std::shared_ptr<ColumnSource>> sources_;
   size_t numRows_ = 0;
 };
 
-std::vector<std::unique_ptr<AbstractFlexVectorBase>> makeEmptyFlexVectorsFromSchema(const Schema &schema);
-std::unique_ptr<AbstractFlexVectorBase> makeFlexVectorFromColumnSource(const ColumnSource &source, size_t begin,
+std::vector<std::unique_ptr<AbstractFlexVectorBase>> MakeEmptyFlexVectorsFromSchema(const Schema &schema);
+std::unique_ptr<AbstractFlexVectorBase> MakeFlexVectorFromColumnSource(const ColumnSource &source, size_t begin,
     size_t end);
-void assertAllSame(size_t val0, size_t val1, size_t val2);
-void assertLeq(size_t lhs, size_t rhs, const char *format);
+void AssertAllSame(size_t val0, size_t val1, size_t val2);
+void AssertLeq(size_t lhs, size_t rhs, const char *format);
 }  // namespace
 
 ImmerTableState::ImmerTableState(std::shared_ptr<Schema> schema) : schema_(std::move(schema)) {
-  flexVectors_ = makeEmptyFlexVectorsFromSchema(*schema_);
+  flexVectors_ = MakeEmptyFlexVectorsFromSchema(*schema_);
 }
 
 ImmerTableState::~ImmerTableState() = default;
 
-std::shared_ptr<RowSequence> ImmerTableState::addKeys(const RowSequence &rowsToAddKeySpace) {
-  return spaceMapper_.addKeys(rowsToAddKeySpace);
+std::shared_ptr<RowSequence> ImmerTableState::AddKeys(const RowSequence &rows_to_add_key_space) {
+  return spaceMapper_.AddKeys(rows_to_add_key_space);
 }
 
-void ImmerTableState::addData(const std::vector<std::shared_ptr<ColumnSource>> &sources,
-    const std::vector<size_t> &begins, const std::vector<size_t> &ends, const RowSequence &rowsToAddIndexSpace) {
-  auto ncols = sources.size();
-  auto nrows = rowsToAddIndexSpace.size();
-  assertAllSame(sources.size(), begins.size(), ends.size());
-  assertLeq(ncols, flexVectors_.size(), "More columns provided than was expected (%o vs %o)");
+void ImmerTableState::AddData(const std::vector<std::shared_ptr<ColumnSource>> &src,
+    const std::vector<size_t> &begins, const std::vector<size_t> &ends, const RowSequence &rows_to_add_index_space) {
+  auto ncols = src.size();
+  auto nrows = rows_to_add_index_space.Size();
+    AssertAllSame(src.size(), begins.size(), ends.size());
+    AssertLeq(ncols, flexVectors_.size(), "More columns provided than was expected (%o vs %o)");
   for (size_t i = 0; i != ncols; ++i) {
-    assertLeq(nrows, ends[i] - begins[i], "Sources contain insufficient data (%o vs %o)");
+      AssertLeq(nrows, ends[i] - begins[i], "Sources contain insufficient data (%o vs %o)");
   }
-  auto addedData = makeReservedVector<std::unique_ptr<AbstractFlexVectorBase>>(ncols);
+  auto added_data = MakeReservedVector<std::unique_ptr<AbstractFlexVectorBase>>(ncols);
   for (size_t i = 0; i != ncols; ++i) {
-    addedData.push_back(makeFlexVectorFromColumnSource(*sources[i], begins[i], begins[i] + nrows));
+    added_data.push_back(MakeFlexVectorFromColumnSource(*src[i], begins[i], begins[i] + nrows));
   }
 
-  auto addChunk = [this, &addedData](uint64_t beginIndex, uint64_t endIndex) {
-    auto size = endIndex - beginIndex;
+  auto add_chunk = [this, &added_data](uint64_t begin_index, uint64_t end_index) {
+    auto size = end_index - begin_index;
 
     for (size_t i = 0; i < flexVectors_.size(); ++i) {
       auto &fv = flexVectors_[i];
-      auto &ad = addedData[i];
+      auto &ad = added_data[i];
 
-      auto fvTemp = std::move(fv);
+      auto fv_temp = std::move(fv);
       // Give "fv" its original values up to 'beginIndex'; leave fvTemp with the rest.
-      fv = fvTemp->take(beginIndex);
-      fvTemp->inPlaceDrop(beginIndex);
+      fv = fv_temp->Take(begin_index);
+      fv_temp->InPlaceDrop(begin_index);
 
       // Append the next 'size' values from 'addedData' to 'fv' and drop them from 'addedData'.
-      fv->inPlaceAppend(ad->take(size));
-      ad->inPlaceDrop(size);
+      fv->InPlaceAppend(ad->Take(size));
+      ad->InPlaceDrop(size);
 
       // Append the residual items back from 'fvTemp'.
-      fv->inPlaceAppend(std::move(fvTemp));
+      fv->InPlaceAppend(std::move(fv_temp));
     }
   };
-  rowsToAddIndexSpace.forEachInterval(addChunk);
+  rows_to_add_index_space.ForEachInterval(add_chunk);
 }
 
-std::shared_ptr<RowSequence> ImmerTableState::erase(const RowSequence &rowsToRemoveKeySpace) {
-  auto result = spaceMapper_.convertKeysToIndices(rowsToRemoveKeySpace);
+std::shared_ptr<RowSequence> ImmerTableState::Erase(const RowSequence &rows_to_remove_key_space) {
+  auto result = spaceMapper_.ConvertKeysToIndices(rows_to_remove_key_space);
 
-  auto eraseChunk = [this](uint64_t beginKey, uint64_t endKey) {
-    auto size = endKey - beginKey;
-    auto beginIndex = spaceMapper_.eraseRange(beginKey, endKey);
-    auto endIndex = beginIndex + size;
+  auto erase_chunk = [this](uint64_t begin_key, uint64_t end_key) {
+    auto size = end_key - begin_key;
+    auto begin_index = spaceMapper_.EraseRange(begin_key, end_key);
+    auto end_index = begin_index + size;
 
     for (auto &fv : flexVectors_) {
-      auto fvTemp = std::move(fv);
-      fv = fvTemp->take(beginIndex);
-      fvTemp->inPlaceDrop(endIndex);
-      fv->inPlaceAppend(std::move(fvTemp));
+      auto fv_temp = std::move(fv);
+      fv = fv_temp->Take(begin_index);
+      fv_temp->InPlaceDrop(end_index);
+      fv->InPlaceAppend(std::move(fv_temp));
     }
   };
-  rowsToRemoveKeySpace.forEachInterval(eraseChunk);
+  rows_to_remove_key_space.ForEachInterval(erase_chunk);
   return result;
 }
 
-std::shared_ptr<RowSequence> ImmerTableState::convertKeysToIndices(
-    const RowSequence &rowsToModifyKeySpace) const {
-  return spaceMapper_.convertKeysToIndices(rowsToModifyKeySpace);
+std::shared_ptr<RowSequence> ImmerTableState::ConvertKeysToIndices(
+    const RowSequence &keys_row_space) const {
+  return spaceMapper_.ConvertKeysToIndices(keys_row_space);
 }
 
-void ImmerTableState::modifyData(size_t colNum, const ColumnSource &src, size_t begin, size_t end,
-    const RowSequence &rowsToModifyIndexSpace) {
-  auto nrows = rowsToModifyIndexSpace.size();
-  auto sourceSize = end - begin;
-  assertLeq(nrows, sourceSize, "Insufficient data in source");
-  auto modifiedData = makeFlexVectorFromColumnSource(src, begin, begin + nrows);
+void ImmerTableState::ModifyData(size_t col_num, const ColumnSource &src, size_t begin, size_t end,
+    const RowSequence &rows_to_modify) {
+  auto nrows = rows_to_modify.Size();
+  auto source_size = end - begin;
+    AssertLeq(nrows, source_size, "Insufficient data in source");
+  auto modified_data = MakeFlexVectorFromColumnSource(src, begin, begin + nrows);
 
-  auto &fv = flexVectors_[colNum];
-  auto modifyChunk = [&fv, &modifiedData](uint64_t beginIndex, uint64_t endIndex) {
-    auto size = endIndex - beginIndex;
-    auto fvTemp = std::move(fv);
+  auto &fv = flexVectors_[col_num];
+  auto modify_chunk = [&fv, &modified_data](uint64_t begin_index, uint64_t end_index) {
+    auto size = end_index - begin_index;
+    auto fv_temp = std::move(fv);
 
     // Give 'fv' its original values up to 'beginIndex'; but drop values up to 'endIndex'
-    fv = fvTemp->take(beginIndex);
-    fvTemp->inPlaceDrop(endIndex);
+    fv = fv_temp->Take(begin_index);
+    fv_temp->InPlaceDrop(end_index);
 
     // Take 'size' values from 'modifiedData' and drop them from 'modifiedData'
-    fv->inPlaceAppend(modifiedData->take(size));
-    modifiedData->inPlaceDrop(size);
+    fv->InPlaceAppend(modified_data->Take(size));
+    modified_data->InPlaceDrop(size);
 
     // Append the residual items back from 'fvTemp'.
-    fv->inPlaceAppend(std::move(fvTemp));
+    fv->InPlaceAppend(std::move(fv_temp));
   };
-  rowsToModifyIndexSpace.forEachInterval(modifyChunk);
+  rows_to_modify.ForEachInterval(modify_chunk);
 }
 
-void ImmerTableState::applyShifts(const RowSequence &firstIndex, const RowSequence &lastIndex,
-    const RowSequence &destIndex) {
-  auto processShift = [this](int64_t first, int64_t last, int64_t dest) {
+void ImmerTableState::ApplyShifts(const RowSequence &start_index, const RowSequence &end_index,
+    const RowSequence &dest_index) {
+  auto process_shift = [this](int64_t first, int64_t last, int64_t dest) {
     uint64_t begin = first;
-    uint64_t end = ((uint64_t)last) + 1;
-    uint64_t destBegin = dest;
-    spaceMapper_.applyShift(begin, end, destBegin);
+    uint64_t end = static_cast<uint64_t>(last) + 1;
+    uint64_t dest_begin = dest;
+    spaceMapper_.ApplyShift(begin, end, dest_begin);
   };
-  ShiftProcessor::applyShiftData(firstIndex, lastIndex, destIndex, processShift);
+  ShiftProcessor::ApplyShiftData(start_index, end_index, dest_index, process_shift);
 }
 
-std::shared_ptr<ClientTable> ImmerTableState::snapshot() const {
-  auto columnSources = makeReservedVector<std::shared_ptr<ColumnSource>>(flexVectors_.size());
+std::shared_ptr<ClientTable> ImmerTableState::Snapshot() const {
+  auto column_sources = MakeReservedVector<std::shared_ptr<ColumnSource>>(flexVectors_.size());
   for (const auto &fv : flexVectors_) {
-    columnSources.push_back(fv->makeColumnSource());
+    column_sources.push_back(fv->MakeColumnSource());
   }
-  return std::make_shared<MyTable>(schema_, std::move(columnSources), spaceMapper_.cardinality());
+  return std::make_shared<MyTable>(schema_, std::move(column_sources), spaceMapper_.Cardinality());
 }
 
 namespace {
-MyTable::MyTable(std::shared_ptr<Schema> schema, std::vector<std::shared_ptr<ColumnSource>> sources,
-    size_t numRows) : schema_(std::move(schema)), sources_(std::move(sources)), numRows_(numRows) {}
+MyTable::MyTable(std::shared_ptr<SchemaType> schema, std::vector<std::shared_ptr<ColumnSource>> sources,
+    size_t num_rows) : schema_(std::move(schema)), sources_(std::move(sources)), numRows_(num_rows) {}
 MyTable::~MyTable() = default;
 
-std::shared_ptr<RowSequence> MyTable::getRowSequence() const {
+std::shared_ptr<RowSequence> MyTable::GetRowSequence() const {
   // Need a utility for this
   RowSequenceBuilder rb;
-  rb.addInterval(0, numRows_);
-  return rb.build();
+  rb.AddInterval(0, numRows_);
+  return rb.Build();
 }
 
 struct FlexVectorFromTypeMaker final {
   template<typename T>
   void operator()() {
-    if constexpr(DeephavenTraits<T>::isNumeric) {
+    if constexpr(DeephavenTraits<T>::kIsNumeric) {
       result_ = std::make_unique<NumericAbstractFlexVector<T>>();
     } else {
       result_ = std::make_unique<GenericAbstractFlexVector<T>>();
@@ -216,81 +224,81 @@ struct FlexVectorFromTypeMaker final {
   std::unique_ptr<AbstractFlexVectorBase> result_;
 };
 
-std::vector<std::unique_ptr<AbstractFlexVectorBase>> makeEmptyFlexVectorsFromSchema(const Schema &schema) {
-  auto ncols = schema.numCols();
-  auto result = makeReservedVector<std::unique_ptr<AbstractFlexVectorBase>>(ncols);
-  for (auto typeId : schema.types()) {
+std::vector<std::unique_ptr<AbstractFlexVectorBase>> MakeEmptyFlexVectorsFromSchema(const Schema &schema) {
+  auto ncols = schema.NumCols();
+  auto result = MakeReservedVector<std::unique_ptr<AbstractFlexVectorBase>>(ncols);
+  for (auto type_id : schema.Types()) {
     FlexVectorFromTypeMaker fvm;
-    visitElementTypeId(typeId, &fvm);
+    VisitElementTypeId(type_id, &fvm);
     result.push_back(std::move(fvm.result_));
   }
   return result;
 }
 
 struct FlexVectorFromSourceMaker final : public ColumnSourceVisitor {
-  void visit(const column::CharColumnSource &source) final {
+  void Visit(const column::CharColumnSource &/*source*/) final {
     result_ = std::make_unique<NumericAbstractFlexVector<char16_t>>();
   }
 
-  void visit(const column::Int8ColumnSource &source) final {
+  void Visit(const column::Int8ColumnSource &/*source*/) final {
     result_ = std::make_unique<NumericAbstractFlexVector<int8_t>>();
   }
 
-  void visit(const column::Int16ColumnSource &source) final {
+  void Visit(const column::Int16ColumnSource &/*source*/) final {
     result_ = std::make_unique<NumericAbstractFlexVector<int16_t>>();
   }
 
-  void visit(const column::Int32ColumnSource &source) final {
+  void Visit(const column::Int32ColumnSource &/*source*/) final {
     result_ = std::make_unique<NumericAbstractFlexVector<int32_t>>();
   }
 
-  void visit(const column::Int64ColumnSource &source) final {
+  void Visit(const column::Int64ColumnSource &/*source*/) final {
     result_ = std::make_unique<NumericAbstractFlexVector<int64_t>>();
   }
 
-  void visit(const column::FloatColumnSource &source) final {
+  void Visit(const column::FloatColumnSource &/*source*/) final {
     result_ = std::make_unique<NumericAbstractFlexVector<float>>();
   }
 
-  void visit(const column::DoubleColumnSource &source) final {
+  void Visit(const column::DoubleColumnSource &/*source*/) final {
     result_ = std::make_unique<NumericAbstractFlexVector<double>>();
   }
 
-  void visit(const column::BooleanColumnSource &source) final {
+  void Visit(const column::BooleanColumnSource &/*source*/) final {
     result_ = std::make_unique<GenericAbstractFlexVector<bool>>();
   }
 
-  void visit(const column::StringColumnSource &source) final {
+  void Visit(const column::StringColumnSource &/*source*/) final {
     result_ = std::make_unique<GenericAbstractFlexVector<std::string>>();
   }
 
-  void visit(const column::DateTimeColumnSource &source) final {
+  void Visit(const column::DateTimeColumnSource &/*source*/) final {
     result_ = std::make_unique<GenericAbstractFlexVector<DateTime>>();
   }
 
   std::unique_ptr<AbstractFlexVectorBase> result_;
 };
 
-std::unique_ptr<AbstractFlexVectorBase> makeFlexVectorFromColumnSource(const ColumnSource &source, size_t begin,
-    size_t end) {
+std::unique_ptr<AbstractFlexVectorBase> MakeFlexVectorFromColumnSource(const ColumnSource &source, size_t begin,
+                                                                       size_t end) {
   FlexVectorFromSourceMaker v;
-  source.acceptVisitor(&v);
-  v.result_->inPlaceAppendSource(source, begin, end);
+  source.AcceptVisitor(&v);
+  v.result_->InPlaceAppendSource(source, begin, end);
   return std::move(v.result_);
 }
 
-void assertAllSame(size_t val0, size_t val1, size_t val2) {
+void AssertAllSame(size_t val0, size_t val1, size_t val2) {
   if (val0 != val1 || val0 != val2) {
-    auto message = stringf("Sizes differ: %o vs %o vs %o", val0, val1, val2);
+    auto message = Stringf("Sizes differ: %o vs %o vs %o", val0, val1, val2);
     throw std::runtime_error(DEEPHAVEN_DEBUG_MSG(message));
   }
 }
 
-void assertLeq(size_t lhs, size_t rhs, const char *format) {
+void AssertLeq(size_t lhs, size_t rhs, const char *format) {
   if (lhs <= rhs) {
     return;
   }
-  auto message = stringf(format, lhs, rhs);
+  auto message = Stringf(format, lhs, rhs);
   throw std::runtime_error(message);
 }
 }  // namespace

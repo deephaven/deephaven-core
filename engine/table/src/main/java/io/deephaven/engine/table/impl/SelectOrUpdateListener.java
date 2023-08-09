@@ -8,6 +8,7 @@ import io.deephaven.engine.rowset.WritableRowSet;
 import io.deephaven.engine.table.ModifiedColumnSet;
 import io.deephaven.engine.table.TableUpdate;
 import io.deephaven.engine.table.impl.perf.BasePerformanceEntry;
+import io.deephaven.engine.table.impl.perf.PerformanceEntry;
 import io.deephaven.engine.table.impl.select.analyzers.SelectAndViewAnalyzer;
 import io.deephaven.engine.updategraph.TerminalNotification;
 import io.deephaven.engine.table.impl.util.ImmediateJobScheduler;
@@ -134,7 +135,10 @@ class SelectOrUpdateListener extends BaseTable.ListenerImpl {
                     @Override
                     public void run() {
                         synchronized (accumulated) {
-                            getEntry().accumulate(accumulated);
+                            final PerformanceEntry entry = getEntry();
+                            if (entry != null) {
+                                entry.accumulate(accumulated);
+                            }
                         }
                     }
                 });

@@ -18,25 +18,26 @@ class Executor {
   };
 
 public:
-  static std::shared_ptr<Executor> create(std::string id);
+  [[nodiscard]]
+  static std::shared_ptr<Executor> Create(std::string id);
 
   explicit Executor(Private, std::string id);
   ~Executor();
 
-  void shutdown();
+  void Shutdown();
 
-  typedef deephaven::dhcore::utility::Callback<> callback_t;
+  using callback_t = deephaven::dhcore::utility::Callback<>;
 
-  void invoke(std::shared_ptr<callback_t> f);
+  void Invoke(std::shared_ptr<callback_t> f);
 
   template<typename Callable>
-  void invokeCallable(Callable &&callable) {
-    invoke(callback_t::createFromCallable(std::forward<Callable>(callable)));
+  void InvokeCallable(Callable &&callable) {
+    Invoke(callback_t::CreateFromCallable(std::forward<Callable>(callable)));
   }
 
 private:
-  static void threadStart(std::shared_ptr<Executor> self);
-  void runUntilCancelled();
+  static void ThreadStart(std::shared_ptr<Executor> self);
+  void RunUntilCancelled();
 
   // For debugging.
   std::string id_;

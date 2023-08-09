@@ -12,14 +12,15 @@ class BooleanExpressionImpl;
 class IrisRepresentableImpl {
 public:
   virtual ~IrisRepresentableImpl();
-  virtual void streamIrisRepresentation(std::ostream &s) const = 0;
+  virtual void StreamIrisRepresentation(std::ostream &s) const = 0;
 };
 
-void streamIris(std::ostream &s, const std::shared_ptr<IrisRepresentableImpl> &o);
+void StreamIris(std::ostream &s, const std::shared_ptr<IrisRepresentableImpl> &o);
 
 class ExpressionImpl : public virtual IrisRepresentableImpl {
 public:
-  static std::shared_ptr<BooleanExpressionImpl> createIsNull(std::shared_ptr<ExpressionImpl> impl);
+  [[nodiscard]]
+  static std::shared_ptr<BooleanExpressionImpl> CreateIsNull(std::shared_ptr<ExpressionImpl> impl);
   ~ExpressionImpl() override;
 };
 }  // namespace deephaven::client::impl

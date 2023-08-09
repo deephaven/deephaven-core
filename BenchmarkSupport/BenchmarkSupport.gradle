@@ -27,6 +27,7 @@ sourceSets {
 }
 
 dependencies {
+    implementation project(':Base')
     implementation project(':engine-table')
     implementation project(':extensions-parquet-table')
     implementation project(':Configuration')

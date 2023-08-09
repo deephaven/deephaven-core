@@ -22,19 +22,19 @@ public:
   /**
    * Alias.
    */
-  typedef deephaven::dhcore::chunk::BooleanChunk BooleanChunk;
+  using BooleanChunk = deephaven::dhcore::chunk::BooleanChunk;
   /**
    * Alias.
    */
-  typedef deephaven::dhcore::chunk::Chunk Chunk;
+  using Chunk = deephaven::dhcore::chunk::Chunk;
   /**
    * Alias.
    */
-  typedef deephaven::dhcore::chunk::UInt64Chunk UInt64Chunk;
+  using UInt64Chunk = deephaven::dhcore::chunk::UInt64Chunk;
   /**
    * Alias.
    */
-  typedef deephaven::dhcore::container::RowSequence RowSequence;
+  using RowSequence = deephaven::dhcore::container::RowSequence;
 
   /**
    * Destructor.
@@ -47,34 +47,34 @@ public:
    * store a true/false value in the corresponding element of *optionalDestNullFlags according to
    * whether the element represent a Deephaven Null or not.
    * @param rows Specifies the elements (in position space) to be read from this ColumnSource.
-   * @param destData A Chunk to which the elements wil be copied. This Chunk must be of the correct
+   * @param dest_data A Chunk to which the elements wil be copied. This Chunk must be of the correct
    * concrete type. For example if this is an Int32ColumnSource, the Chunk needs to be an Int32Chunk.
-   * @param optionalDestNullFlags If this parameter is not null, then this BooleanChunk will be
+   * @param optional_dest_null_flags If this parameter is not null, then this BooleanChunk will be
    * populated with true/false values according to whether the source element was null or not.
    */
-  virtual void fillChunk(const RowSequence &rows, Chunk *destData,
-      BooleanChunk *optionalDestNullFlags) const = 0;
+  virtual void FillChunk(const RowSequence &rows, Chunk *dest_data,
+      BooleanChunk *optional_dest_null_flags) const = 0;
 
   /**
    * Read the elements specified by 'rows' from this ColumnSource and store them sequentially
    * in the Chunk specified by 'destData'. Optionally (if 'optionalDestNullFlags' != nullptr),
    * store a true/false value in the corresponding element of *optionalDestNullFlags according to
    * whether the element represents a Deephaven Null. The difference between this method and
-   * fillChunk() is that in this method, the elements of 'rows' may be in arbitary order (that is,
+   * FillChunk() is that in this method, the elements of 'rows' may be in arbitary order (that is,
    * they are not assumed to be in increasing order).
    * @param rows Specifies the elements (in position space) to be read from this ColumnSource.
-   * @param destData A Chunk to which the elements wil be copied. This Chunk must be of the correct
+   * @param dest_data A Chunk to which the elements wil be copied. This Chunk must be of the correct
    * concrete type. For example if this is an Int32ColumnSource, the Chunk needs to be an Int32Chunk.
-   * @param optionalDestNullFlags If this parameter is not null, then this BooleanChunk will be
+   * @param optional_dest_null_flags If this parameter is not null, then this BooleanChunk will be
    * populated with true/false values according to whether the source element was null or not.
    */
-  virtual void fillChunkUnordered(const UInt64Chunk &rows, Chunk *destData,
-      BooleanChunk *optionalDestNullFlags) const = 0;
+  virtual void FillChunkUnordered(const UInt64Chunk &rows, Chunk *dest_data,
+      BooleanChunk *optional_dest_null_flags) const = 0;
 
   /**
    * Implement the Visitor pattern.
    */
-  virtual void acceptVisitor(ColumnSourceVisitor *visitor) const = 0;
+  virtual void AcceptVisitor(ColumnSourceVisitor *visitor) const = 0;
 };
 
 /**
@@ -89,35 +89,35 @@ public:
    * specified by 'rows'. Optionally (if 'optionalSrcNullFlags' != nullptr),
    * read a true/false value in the corresponding element of *optionalSrcNullFlags which will
    * indicate whether the src element represents a Deephaven Null value.
-   * @param srcData A Chunk from which the elements wil be copied. This Chunk must be of the correct
+   * @param src_data A Chunk from which the elements wil be copied. This Chunk must be of the correct
    * concrete type. For example if this is an MutableInt32ColumnSource, the Chunk needs to be an
    * Int32Chunk.
-   * @param optionalSrcNullFlags If this parameter is not null, then the nullness of the
+   * @param optional_src_null_flags If this parameter is not null, then the nullness of the
    * corresponding source element will be controlled by whether the corresponding value in this
    * BooleanChunk is true or false.
    * @param rows Specifies the elements (in position space) where the data will be written to
    * this ColumnSource.
    */
-  virtual void fillFromChunk(const Chunk &srcData, const BooleanChunk *optionalSrcNullFlags,
+  virtual void FillFromChunk(const Chunk &src_data, const BooleanChunk *optional_src_null_flags,
       const RowSequence &rows) = 0;
   /**
    * Read the elements sequentially from 'srcData' and store them in this ColumnSource in positions
    * specified by 'rows'. Optionally (if 'optionalSrcNullFlags' != nullptr),
    * read a true/false value in the corresponding element of *optionalSrcNullFlags which will
    * indicate whether the src element represents a Deephaven Null value. The difference between this
-   * method and fillFromChunk() is that in this method, the elements of 'rows' may be in arbitary
+   * method and FillFromChunk() is that in this method, the elements of 'rows' may be in arbitary
    * order (that is, they are not assumed to be in increasing order).
-   * @param srcData A Chunk from which the elements wil be copied. This Chunk must be of the correct
+   * @param src_data A Chunk from which the elements wil be copied. This Chunk must be of the correct
    * concrete type. For example if this is an MutableInt32ColumnSource, the Chunk needs to be an
    * Int32Chunk.
-   * @param optionalSrcNullFlags If this parameter is not null, then the nullness of the
+   * @param optional_src_null_flags If this parameter is not null, then the nullness of the
    * corresponding source element will be controlled by whether the corresponding value in this
    * BooleanChunk is true or false.
    * @param rows Specifies the elements (in position space) where the data will be written to
    * this ColumnSource.
    */
-  virtual void fillFromChunkUnordered(const Chunk &srcData,
-      const BooleanChunk *optionalSrcNullFlags, const UInt64Chunk &rowKeys) = 0;
+  virtual void FillFromChunkUnordered(const Chunk &src_data,
+      const BooleanChunk *optional_src_null_flags, const UInt64Chunk &row_keys) = 0;
 };
 
 /**
@@ -135,37 +135,45 @@ class GenericColumnSource : public virtual ColumnSource {
 };
 
 /**
- * Convenience typedef.
+ * Convenience using.
  */
-typedef NumericColumnSource<char16_t> CharColumnSource;
+using CharColumnSource = NumericColumnSource<char16_t>;
 /**
- * Convenience typedef.
+ * Convenience using.
  */
-typedef NumericColumnSource<int8_t> Int8ColumnSource;
+using Int8ColumnSource = NumericColumnSource<int8_t>;
 /**
- * Convenience typedef.
+ * Convenience using.
  */
-typedef NumericColumnSource<int16_t> Int16ColumnSource;
+using Int16ColumnSource = NumericColumnSource<int16_t>;
 /**
- * Convenience typedef.
+ * Convenience using.
  */
-typedef NumericColumnSource<int32_t> Int32ColumnSource;
+using Int32ColumnSource = NumericColumnSource<int32_t>;
 /**
- * Convenience typedef.
+ * Convenience using.
  */
-typedef NumericColumnSource<int64_t> Int64ColumnSource;
+using Int64ColumnSource = NumericColumnSource<int64_t>;
 /**
- * Convenience typedef.
+ * Convenience using.
  */
-typedef NumericColumnSource<float> FloatColumnSource;
+using FloatColumnSource = NumericColumnSource<float>;
 /**
- * Convenience typedef.
+ * Convenience using.
  */
-typedef NumericColumnSource<double> DoubleColumnSource;
-
-typedef GenericColumnSource<bool> BooleanColumnSource;
-typedef GenericColumnSource<std::string> StringColumnSource;
-typedef GenericColumnSource<deephaven::dhcore::DateTime> DateTimeColumnSource;
+using DoubleColumnSource = NumericColumnSource<double>;
+/**
+ * Convenience using.
+ */
+using BooleanColumnSource = GenericColumnSource<bool>;
+/**
+ * Convenience using.
+ */
+using StringColumnSource = GenericColumnSource<std::string>;
+/**
+ * Convenience using.
+ */
+using DateTimeColumnSource = GenericColumnSource<deephaven::dhcore::DateTime>;
 
 // the mutable per-type interfaces
 template<typename T>
@@ -184,42 +192,42 @@ public:
   /**
    * Implements the visitor pattern.
    */
-  virtual void visit(const CharColumnSource &) = 0;
+  virtual void Visit(const CharColumnSource &) = 0;
   /**
    * Implements the visitor pattern.
    */
-  virtual void visit(const Int8ColumnSource &) = 0;
+  virtual void Visit(const Int8ColumnSource &) = 0;
   /**
    * Implements the visitor pattern.
    */
-  virtual void visit(const Int16ColumnSource &) = 0;
+  virtual void Visit(const Int16ColumnSource &) = 0;
   /**
    * Implements the visitor pattern.
    */
-  virtual void visit(const Int32ColumnSource &) = 0;
+  virtual void Visit(const Int32ColumnSource &) = 0;
   /**
    * Implements the visitor pattern.
    */
-  virtual void visit(const Int64ColumnSource &) = 0;
+  virtual void Visit(const Int64ColumnSource &) = 0;
   /**
    * Implements the visitor pattern.
    */
-  virtual void visit(const FloatColumnSource &) = 0;
+  virtual void Visit(const FloatColumnSource &) = 0;
   /**
    * Implements the visitor pattern.
    */
-  virtual void visit(const DoubleColumnSource &) = 0;
+  virtual void Visit(const DoubleColumnSource &) = 0;
   /**
    * Implements the visitor pattern.
    */
-  virtual void visit(const BooleanColumnSource &) = 0;
+  virtual void Visit(const BooleanColumnSource &) = 0;
   /**
    * Implements the visitor pattern.
    */
-  virtual void visit(const StringColumnSource &) = 0;
+  virtual void Visit(const StringColumnSource &) = 0;
   /**
    * Implements the visitor pattern.
    */
-  virtual void visit(const DateTimeColumnSource &) = 0;
+  virtual void Visit(const DateTimeColumnSource &) = 0;
 };
 }  // namespace deephaven::dhcore::column

@@ -95,8 +95,9 @@ public class TablePublisher {
     }
 
     /**
-     * Adds a snapshot of the data from {@code table} into the {@link #table blink table} according to the blink table's
-     * {@link #definition() definition}.
+     * Adds a snapshot of the data from {@code table} into the {@link #table blink table}. The added {@code table} must
+     * contain a superset of the columns from the {@link #definition() definition}; the columns may be in any order.
+     * Columns from {@code table} that are not in the {@link #definition() definition} are ignored.
      *
      * <p>
      * All of the data from {@code table} will be:
@@ -114,9 +115,11 @@ public class TablePublisher {
     }
 
     /**
-     * Publish a {@code failure} for notification to the {@link io.deephaven.engine.table.TableListener listeners} of
-     * the {@link #table() blink table}. Future calls to {@link #add(Table)} will silently return. Will cause the
-     * on-shutdown callback to be invoked if it hasn't already been invoked.
+     * Indicate that data publication has failed. {@link #table() Blink table}
+     * {@link io.deephaven.engine.table.TableListener listeners} will be notified of the failure, the on-shutdown
+     * callback will be invoked if it hasn't already been, {@code this} publisher will no longer be {@link #isAlive()
+     * alive}, and future calls to {@link #add(Table) add} will silently return without publishing. These effects may
+     * resolve asynchronously.
      *
      * @param failure the failure
      */
@@ -125,11 +128,11 @@ public class TablePublisher {
     }
 
     /**
-     * Checks whether {@code this} is alive; if {@code false}, the publisher should stop publishing new data and release
-     * any related resources as soon as practicable since publishing won't have any downstream effects.
+     * Checks whether {@code this} is alive; if {@code false}, the caller should stop adding new data and release any
+     * related resources as soon as practicable since adding data won't have any downstream effects.
      *
      * <p>
-     * Once this is {@code false}, it will always remain {@code false}. For more prompt notifications, publishers may
+     * Once this is {@code false}, it will always remain {@code false}. For more prompt notifications, callers may
      * prefer to use on-shutdown callbacks.
      *
      * @return if this is alive

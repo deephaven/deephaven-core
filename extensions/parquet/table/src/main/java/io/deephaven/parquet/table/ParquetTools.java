@@ -372,7 +372,8 @@ public class ParquetTools {
      * @param instructions Instructions for reading
      * @return A {@link Table}
      */
-    private static Table readTableInternal(@NotNull final File source,
+    private static Table readTableInternal(
+            @NotNull final File source,
             @NotNull final ParquetInstructions instructions) {
         final Path sourcePath = source.toPath();
         if (!Files.exists(sourcePath)) {

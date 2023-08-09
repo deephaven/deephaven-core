@@ -11,6 +11,7 @@ import pandas
 import pyarrow.parquet
 
 from deephaven import empty_table, dtypes, new_table
+from deephaven import arrow as dharrow
 from deephaven.column import InputColumn
 from deephaven.pandas import to_pandas, to_table
 from deephaven.parquet import write, batch_write, read, delete, ColumnInstruction
@@ -293,6 +294,16 @@ class ParquetTestCase(BaseTestCase):
         # dataframe.to_parquet('data_from_pandas.parquet', compression=None if compression_codec_name is 'UNCOMPRESSED' else compression_codec_name)
         # result_table = read('data_from_pandas.parquet')
         # self.assert_table_equals(dh_table, result_table)
+
+    def test_writing_via_pyarrow(self):
+        # This function tests that we can write tables with list types to parquet files via pyarrow and read them back
+        # through deephaven's parquet reader code with no exceptions
+        pa_table = pyarrow.table({'numList': [[2, 2, 4]],
+                                  'stringList': [["Flamingo", "Parrot", "Dog"]]})
+        pyarrow.parquet.write_table(pa_table, 'data_from_pa.parquet')
+        from_disk = read('data_from_pa.parquet').select()
+        pa_table_from_disk = dharrow.to_arrow(from_disk)
+        self.assertTrue(pa_table.equals(pa_table_from_disk))
 
 
 if __name__ == '__main__':

@@ -6,6 +6,7 @@ package io.deephaven.engine.table;
 import io.deephaven.base.log.LogOutputAppendable;
 import io.deephaven.engine.updategraph.NotificationQueue;
 import io.deephaven.engine.liveness.LivenessNode;
+import org.jetbrains.annotations.Nullable;
 
 /**
  * Listener implementation for {@link Table} changes.
@@ -18,7 +19,7 @@ public interface TableListener extends LivenessNode {
      * @param originalException exception
      * @param sourceEntry performance tracking
      */
-    void onFailure(Throwable originalException, Entry sourceEntry);
+    void onFailure(Throwable originalException, @Nullable Entry sourceEntry);
 
     /**
      * Creates a notification for the exception.
@@ -27,7 +28,7 @@ public interface TableListener extends LivenessNode {
      * @param sourceEntry performance tracking
      * @return exception notification
      */
-    NotificationQueue.ErrorNotification getErrorNotification(Throwable originalException, Entry sourceEntry);
+    NotificationQueue.ErrorNotification getErrorNotification(Throwable originalException, @Nullable Entry sourceEntry);
 
     /**
      * Interface for instrumentation entries used by update graph nodes.

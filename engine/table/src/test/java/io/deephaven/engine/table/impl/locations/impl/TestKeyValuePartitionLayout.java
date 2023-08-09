@@ -4,10 +4,15 @@
 package io.deephaven.engine.table.impl.locations.impl;
 
 import io.deephaven.base.FileUtils;
+import io.deephaven.engine.table.ColumnDefinition;
+import io.deephaven.engine.table.TableDefinition;
 import io.deephaven.engine.table.impl.locations.TableDataException;
 import io.deephaven.engine.table.impl.locations.local.FileTableLocationKey;
+import io.deephaven.engine.table.impl.locations.local.KeyValuePartitionLayout.LocationTableBuilder;
+import io.deephaven.engine.table.impl.locations.local.LocationTableBuilderDefinition;
 import io.deephaven.engine.testutil.junit4.EngineCleanup;
-import io.deephaven.parquet.table.layout.KeyValuePartitionLayout;
+import io.deephaven.engine.table.impl.locations.local.KeyValuePartitionLayout;
+import io.deephaven.parquet.table.layout.LocationTableBuilderCsv;
 import junit.framework.TestCase;
 import org.junit.After;
 import org.junit.Before;
@@ -51,7 +56,7 @@ public class TestKeyValuePartitionLayout {
         Files.write(file2.toPath(), "Goodbye cruel world!".getBytes());
 
         final RecordingLocationKeyFinder<FileTableLocationKey> recorder = new RecordingLocationKeyFinder<>();
-        new KeyValuePartitionLayout<>(dataDirectory, path -> true,
+        new KeyValuePartitionLayout<>(dataDirectory, path -> true, new LocationTableBuilderCsv(dataDirectory),
                 (path, partitions) -> new FileTableLocationKey(path.toFile(), 0, partitions), 0).findKeys(recorder);
         final List<FileTableLocationKey> results =
                 recorder.getRecordedKeys().stream().sorted().collect(Collectors.toList());
@@ -75,7 +80,7 @@ public class TestKeyValuePartitionLayout {
         Files.write(file2.toPath(), "Goodbye cruel world!".getBytes());
 
         final RecordingLocationKeyFinder<FileTableLocationKey> recorder = new RecordingLocationKeyFinder<>();
-        new KeyValuePartitionLayout<>(dataDirectory, path -> true,
+        new KeyValuePartitionLayout<>(dataDirectory, path -> true, new LocationTableBuilderCsv(dataDirectory),
                 (path, partitions) -> new FileTableLocationKey(path.toFile(), 0, partitions), 1).findKeys(recorder);
         final List<FileTableLocationKey> results =
                 recorder.getRecordedKeys().stream().sorted().collect(Collectors.toList());
@@ -108,7 +113,7 @@ public class TestKeyValuePartitionLayout {
         Files.write(file3.toPath(), "Oui!".getBytes());
 
         final RecordingLocationKeyFinder<FileTableLocationKey> recorder = new RecordingLocationKeyFinder<>();
-        new KeyValuePartitionLayout<>(dataDirectory, path -> true,
+        new KeyValuePartitionLayout<>(dataDirectory, path -> true, new LocationTableBuilderCsv(dataDirectory),
                 (path, partitions) -> new FileTableLocationKey(path.toFile(), 0, partitions), 3).findKeys(recorder);
         final List<FileTableLocationKey> results =
                 recorder.getRecordedKeys().stream().sorted().collect(Collectors.toList());
@@ -151,33 +156,43 @@ public class TestKeyValuePartitionLayout {
         Files.write(file2.toPath(), "Goodbye cruel world!".getBytes());
         Files.write(file3.toPath(), "Oui!".getBytes());
 
-        final RecordingLocationKeyFinder<FileTableLocationKey> recorder = new RecordingLocationKeyFinder<>();
-        new KeyValuePartitionLayout<>(dataDirectory, path -> true,
-                (path, partitions) -> new FileTableLocationKey(path.toFile(), 0, partitions), 3).findKeys(recorder);
-        final List<FileTableLocationKey> results =
-                recorder.getRecordedKeys().stream().sorted().collect(Collectors.toList());
+        final LocationTableBuilder[] locationTableBuilders = new LocationTableBuilder[] {
+                new LocationTableBuilderCsv(dataDirectory),
+                new LocationTableBuilderDefinition(TableDefinition.of(
+                        ColumnDefinition.ofInt("A").withPartitioning(),
+                        ColumnDefinition.ofBoolean("C").withPartitioning(),
+                        ColumnDefinition.ofDouble("B1").withPartitioning()))
+        };
+        for (final LocationTableBuilder locationTableBuilder : locationTableBuilders) {
 
-        TestCase.assertEquals(3, results.size());
+            final RecordingLocationKeyFinder<FileTableLocationKey> recorder = new RecordingLocationKeyFinder<>();
+            new KeyValuePartitionLayout<>(dataDirectory, path -> true, locationTableBuilder,
+                    (path, partitions) -> new FileTableLocationKey(path.toFile(), 0, partitions), 3).findKeys(recorder);
+            final List<FileTableLocationKey> results =
+                    recorder.getRecordedKeys().stream().sorted().collect(Collectors.toList());
 
-        TestCase.assertEquals(file2.getAbsoluteFile(), results.get(0).getFile());
-        TestCase.assertEquals(file3.getAbsoluteFile(), results.get(1).getFile());
-        TestCase.assertEquals(file1.getAbsoluteFile(), results.get(2).getFile());
+            TestCase.assertEquals(3, results.size());
 
-        TestCase.assertEquals(3, results.get(0).getPartitionKeys().size());
-        TestCase.assertEquals(3, results.get(1).getPartitionKeys().size());
-        TestCase.assertEquals(3, results.get(2).getPartitionKeys().size());
+            TestCase.assertEquals(file2.getAbsoluteFile(), results.get(0).getFile());
+            TestCase.assertEquals(file3.getAbsoluteFile(), results.get(1).getFile());
+            TestCase.assertEquals(file1.getAbsoluteFile(), results.get(2).getFile());
 
-        TestCase.assertEquals(Integer.valueOf(1), results.get(0).getPartitionValue("A"));
-        TestCase.assertEquals(Integer.valueOf(1), results.get(1).getPartitionValue("A"));
-        TestCase.assertEquals(Integer.valueOf(2), results.get(2).getPartitionValue("A"));
+            TestCase.assertEquals(3, results.get(0).getPartitionKeys().size());
+            TestCase.assertEquals(3, results.get(1).getPartitionKeys().size());
+            TestCase.assertEquals(3, results.get(2).getPartitionKeys().size());
 
-        TestCase.assertEquals(7.0, results.get(0).getPartitionValue("B1"));
-        TestCase.assertEquals(100.0, results.get(1).getPartitionValue("B1"));
-        TestCase.assertEquals(3.14, results.get(2).getPartitionValue("B1"));
+            TestCase.assertEquals(Integer.valueOf(1), results.get(0).getPartitionValue("A"));
+            TestCase.assertEquals(Integer.valueOf(1), results.get(1).getPartitionValue("A"));
+            TestCase.assertEquals(Integer.valueOf(2), results.get(2).getPartitionValue("A"));
 
-        TestCase.assertEquals(Boolean.FALSE, results.get(0).getPartitionValue("C"));
-        TestCase.assertEquals(Boolean.FALSE, results.get(1).getPartitionValue("C"));
-        TestCase.assertEquals(Boolean.TRUE, results.get(2).getPartitionValue("C"));
+            TestCase.assertEquals(7.0, results.get(0).getPartitionValue("B1"));
+            TestCase.assertEquals(100.0, results.get(1).getPartitionValue("B1"));
+            TestCase.assertEquals(3.14, results.get(2).getPartitionValue("B1"));
+
+            TestCase.assertEquals(Boolean.FALSE, results.get(0).getPartitionValue("C"));
+            TestCase.assertEquals(Boolean.FALSE, results.get(1).getPartitionValue("C"));
+            TestCase.assertEquals(Boolean.TRUE, results.get(2).getPartitionValue("C"));
+        }
     }
 
     @Test
@@ -196,7 +211,7 @@ public class TestKeyValuePartitionLayout {
         Files.write(file3.toPath(), "Oui!".getBytes());
 
         final RecordingLocationKeyFinder<FileTableLocationKey> recorder = new RecordingLocationKeyFinder<>();
-        new KeyValuePartitionLayout<>(dataDirectory, path -> true,
+        new KeyValuePartitionLayout<>(dataDirectory, path -> true, new LocationTableBuilderCsv(dataDirectory),
                 (path, partitions) -> new FileTableLocationKey(path.toFile(), 0, partitions), 3).findKeys(recorder);
         final List<FileTableLocationKey> results =
                 recorder.getRecordedKeys().stream().sorted().collect(Collectors.toList());
@@ -224,7 +239,7 @@ public class TestKeyValuePartitionLayout {
         Files.write(file4.toPath(), "Non!".getBytes());
 
         final RecordingLocationKeyFinder<FileTableLocationKey> recorder = new RecordingLocationKeyFinder<>();
-        new KeyValuePartitionLayout<>(dataDirectory, path -> true,
+        new KeyValuePartitionLayout<>(dataDirectory, path -> true, new LocationTableBuilderCsv(dataDirectory),
                 (path, partitions) -> new FileTableLocationKey(path.toFile(), 0, partitions), 3).findKeys(recorder);
         final List<FileTableLocationKey> results =
                 recorder.getRecordedKeys().stream().sorted().collect(Collectors.toList());
@@ -252,7 +267,7 @@ public class TestKeyValuePartitionLayout {
         Files.write(file3.toPath(), "Oui!".getBytes());
 
         try {
-            new KeyValuePartitionLayout<>(dataDirectory, path -> true,
+            new KeyValuePartitionLayout<>(dataDirectory, path -> true, new LocationTableBuilderCsv(dataDirectory),
                     (path, partitions) -> new FileTableLocationKey(path.toFile(), 0, partitions), 3).findKeys(ftlk -> {
                     });
             TestCase.fail("Expected exception");

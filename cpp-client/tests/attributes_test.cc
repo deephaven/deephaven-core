@@ -2,50 +2,32 @@
  * Copyright (c) 2016-2022 Deephaven Data Labs and Patent Pending
  */
 #include <iostream>
-#include <arrow/flight/client.h>
-#include <arrow/flight/client_auth.h>
 #include "tests/third_party/catch.hpp"
 #include "tests/test_util.h"
-#include "deephaven/client/client.h"
-#include "deephaven/dhcore/utility/utility.h"
-
-#include <iostream>
-#include <arrow/flight/client.h>
-#include <arrow/flight/types.h>
-#include <arrow/array.h>
-#include <arrow/array/array_primitive.h>
-#include <arrow/array/builder_binary.h>
-#include <arrow/array/builder_primitive.h>
-#include <arrow/compare.h>
-#include <arrow/record_batch.h>
-#include <arrow/scalar.h>
-#include <arrow/type.h>
-#include <arrow/table.h>
-#include <arrow/util/key_value_metadata.h>
 
 namespace deephaven::client::tests {
 TEST_CASE("TableHandle Attributes", "[attributes]") {
-  auto client = TableMakerForTests::createClient();
-  auto thm = client.getManager();
-  int64_t numRows = 37;
-  auto t = thm.emptyTable(numRows).update("II = ii");
-  CHECK(t.numRows() == numRows);
-  CHECK(t.isStatic());
+  auto client = TableMakerForTests::CreateClient();
+  auto thm = client.GetManager();
+  int64_t num_rows = 37;
+  auto t = thm.EmptyTable(num_rows).Update("II = ii");
+  CHECK(t.NumRows() == num_rows);
+  CHECK(t.IsStatic());
 }
 
 TEST_CASE("TableHandle Dynamic Attributes", "[attributes]") {
-  auto client = TableMakerForTests::createClient();
-  auto thm = client.getManager();
-  auto t = thm.timeTable(0, 1'000'000'000).update("II = ii");
-  CHECK(!t.isStatic());
+  auto client = TableMakerForTests::CreateClient();
+  auto thm = client.GetManager();
+  auto t = thm.TimeTable(0, 1'000'000'000).Update("II = ii");
+  CHECK(!t.IsStatic());
 }
 
-TEST_CASE("TableHandle Created by DoPut", "[attributes]") {
-  auto tm = TableMakerForTests::create();
-  auto table = tm.table();
-  CHECK(table.isStatic());
+TEST_CASE("TableHandle Created By DoPut", "[attributes]") {
+  auto tm = TableMakerForTests::Create();
+  auto table = tm.Table();
+  CHECK(table.IsStatic());
   // The columns all have the same size, so look at the source data for any one of them and get its size
-  auto expectedSize = int64_t(tm.columnData().importDate().size());
-  CHECK(table.numRows() == expectedSize);
+  auto expected_size = static_cast<int64_t>(tm.ColumnData().ImportDate().size());
+  CHECK(table.NumRows() == expected_size);
 }
 }  // namespace deephaven::client::tests

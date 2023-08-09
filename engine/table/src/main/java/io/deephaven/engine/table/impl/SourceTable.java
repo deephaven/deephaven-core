@@ -195,7 +195,7 @@ public abstract class SourceTable<IMPL_TYPE extends SourceTable<IMPL_TYPE>> exte
         private final TableLocationSubscriptionBuffer locationBuffer;
 
         private LocationChangePoller(@NotNull final TableLocationSubscriptionBuffer locationBuffer) {
-            super(description + ".rowSetUpdateSource");
+            super(updateGraph, description + ".rowSetUpdateSource");
             this.locationBuffer = locationBuffer;
         }
 

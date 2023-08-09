@@ -39,9 +39,10 @@ public:
   virtual ~IrisRepresentable();
 
   /**
-   * Gets underlying "impl" member. Used internally.
+   * Gets underlying "Impl" member. Used internally.
    */
-  impl::IrisRepresentableImpl *getIrisRepresentableImpl() const {
+  [[nodiscard]]
+  impl::IrisRepresentableImpl *GetIrisRepresentableImpl() const {
     return impl_.get();
   }
 
@@ -54,7 +55,7 @@ protected:
 
 /**
  * A base class for representing columns in the fluent interface. Objects inheriting from
- * SelectColumn are suitable for use in methods like TableHandle::select() const
+ * SelectColumn are suitable for use in methods like TableHandle::Select() const
  * Some common leaf classes are StrCol, NumCol, and DateTimeCol.
  */
 class SelectColumn : public virtual IrisRepresentable {
@@ -73,7 +74,7 @@ public:
 
 /**
  * A base class used for representing columns that can be used for matching, in methods like
- * TableHandle::exactJoin(const TableHandle &, std::vector<MatchWithColumn> columnsToMatch, std::vector<SelectColumn> columnsToAdd) const
+ * TableHandle::ExactJoin(const TableHandle &, std::vector<MatchWithColumn> columnsToMatch, std::vector<SelectColumn> columnsToAdd) const
  */
 class MatchWithColumn : public virtual IrisRepresentable {
 public:
@@ -109,61 +110,67 @@ public:
    * Create a SortPair from this column, with direction_ set to ascending and abs_ set to the
    * incoming parameter.
    */
-  SortPair ascending(bool abs = false) const;
+  [[nodiscard]]
+  SortPair Ascending(bool abs = false) const;
 
   /**
    * Create a SortPair from this column, with direction_ set to descending and abs_ set to the
    * incoming parameter.
    */
-  SortPair descending(bool abs = false) const;
+  [[nodiscard]]
+  SortPair Descending(bool abs = false) const;
 
   /**
    * Gets the name of this column.
    */
-  const std::string &name() const;
+  [[nodiscard]]
+  const std::string &Name() const;
 };
 
 /**
  * Describes a sort direction
  */
 enum class SortDirection {
-  Ascending, Descending
+  kAscending, kDescending
 };
 
 /**
  * A tuple (not really a "pair", despite the name) representing a column to sort, the SortDirection,
- * and whether the sort should consider the value's regular or absolute value when doing comparisons.
+ * and whether the Sort should consider the value's regular or absolute value when doing comparisons.
  */
 class SortPair {
+  using ColumnType = deephaven::client::Column;
 public:
   /**
    * Create a SortPair with direction set to ascending.
-   * @param columnName The name of the column to sort.
+   * @param column_name The name of the column to sort.
    * @param abs If true, the data should be sorted by absolute value.
    * @return The SortPair tuple.
    */
-  static SortPair ascending(std::string columnName, bool abs = false);
+  [[nodiscard]]
+  static SortPair Ascending(std::string column_name, bool abs = false);
   /**
    * Create a SortPair with direction set to ascending.
    * @param column The column to sort.
    * @param abs If true, the data should be sorted by absolute value.
    * @return The SortPair tuple.
    */
-  static SortPair ascending(const Column &column, bool abs = false);
+  [[nodiscard]]
+  static SortPair Ascending(const ColumnType &column, bool abs = false);
   /**
    * Create a SortPair with direction set to descending.
-   * @param columnName The name of the column to sort.
+   * @param column_name The name of the column to sort.
    * @param abs If true, the data should be sorted by absolute value.
    * @return The SortPair tuple.
    */
-  static SortPair descending(std::string columnName, bool abs = false);
+  static SortPair Descending(std::string column_name, bool abs = false);
   /**
    * Create a SortPair with direction set to descending.
    * @param column The column to sort.
    * @param abs If true, the data should be sorted by absolute value.
    * @return The SortPair tuple.
    */
-  static SortPair descending(const Column &column, bool abs = false);
+  static SortPair Descending(const ColumnType &column, bool abs = false);
 
   /**
    * Constructor.
@@ -178,48 +185,53 @@ public:
    * Get the column name
    * @return The column name
    */
-  std::string &column() { return column_; }
+  [[nodiscard]]
+  std::string &Column() { return column_; }
 
   /**
    * Get the column name
    * @return The column name
    */
-  const std::string &column() const { return column_; }
+  [[nodiscard]]
+  const std::string &Column() const { return column_; }
 
   /**
    * Get the SortDirection
    * @return The SortDirection
    */
-  SortDirection direction() const { return direction_; }
+  [[nodiscard]]
+  SortDirection Direction() const { return direction_; }
 
   /**
-   * Get the "sort by absolute value" flag
+   * Get the "Sort by absolute value" flag
    * @return
    */
-  bool abs() const { return abs_; }
+  [[nodiscard]]
+  bool Abs() const { return abs_; }
 
 private:
   std::string column_;
-  SortDirection direction_ = SortDirection::Ascending;
+  SortDirection direction_ = SortDirection::kAscending;
   bool abs_ = false;
 };
 
 /**
- * Represents a numeric column in the fluent interface. Typically created by TableHandle::getNumCol()
- * or TableHandle::getCols().
+ * Represents a numeric column in the fluent interface. Typically created by TableHandle::GetNumCol()
+ * or TableHandle::GetCols().
  * @code
- * auto col2 = table.getNumCol("name2");
+ * auto col2 = table.GetNumCol("name2");
  * or
- * auto [col1, col2, col3] = table.getCols<StrCol, NumCol, DateTimeCol>("name1", "name2", "name3")
+ * auto [col1, col2, col3] = table.GetCols<StrCol, NumCol, DateTimeCol>("name1", "name2", "name3")
  * @endcode
  */
 class NumCol final : public NumericExpression, public Column {
 public:
   /**
-   * Create the NumCol. Used internally. Typically client code will call TableHandle::getNumCol()
-   * or TableHandle::getCols<>().
+   * Create the NumCol. Used internally. Typically client code will call TableHandle::GetNumCol()
+   * or TableHandle::GetCols<>().
    */
-  static NumCol create(std::string name);
+  [[nodiscard]]
+  static NumCol Create(std::string name);
   /**
    * Used internally.
    */
@@ -239,19 +251,20 @@ public:
 };
 
 /**
- * Represents a string column in the fluent interface. Typically created by
+ * Represents a string column in the fluent interface. Typically created By
  * @code
- * auto col1 = table.getStrCol("name1");
+ * auto col1 = table.GetStrCol("name1");
  * or
- * auto [col1, col2, col3] = table.getCols<StrCol, NumCol, DateTimeCol>("name1", "name2", "name3")
+ * auto [col1, col2, col3] = table.GetCols<StrCol, NumCol, DateTimeCol>("name1", "name2", "name3")
  * @endcode
  */
 class StrCol final : public StringExpression, public Column {
 public:
   /**
-   * Create the StrCol. Used internally. Typically client code will call TableHandle::getStrCol()
-   * or TableHandle::getCols<>().
+   * Create the StrCol. Used internally. Typically client code will call TableHandle::GetStrCol()
+   * or TableHandle::GetCols<>().
    */
+  [[nodiscard]]
   static StrCol create(std::string name);
   /**
    * Used internally.
@@ -272,20 +285,21 @@ public:
 };
 
 /**
- * Represents a DateTime column in the fluent interface. Typically created by
+ * Represents a DateTime column in the fluent interface. Typically created By
  * @code
- * auto col3 = table.getDateTimeCol("name3");
+ * auto col3 = table.GetDateTimeCol("name3");
  * or
- * auto [col1, col2, col3] = table.getCols<StrCol, NumCol, DateTimeCol>("name1", "name2", "name3")
+ * auto [col1, col2, col3] = table.GetCols<StrCol, NumCol, DateTimeCol>("name1", "name2", "name3")
  * @endcode
  */
 class DateTimeCol final : public DateTimeExpression, public Column {
 public:
   /**
-   * Create the DateTimeCol. Used internally. Typically client code will call TableHandle::getDateTimeCol()
-   * or TableHandle::getCols<>().
+   * Create the DateTimeCol. Used internally. Typically client code will call TableHandle::GetDateTimeCol()
+   * or TableHandle::GetCols<>().
    */
-  static DateTimeCol create(std::string name);
+  [[nodiscard]]
+  static DateTimeCol Create(std::string name);
   /**
    * Used internally.
    */
@@ -306,9 +320,9 @@ public:
 
 /**
  * Represents an expression that has been assigned to a new column name. Used for example in the
- * TableHandle::select() method. Example:
+ * TableHandle::Select() method. Example:
  * @code
- * auto newTable = tableHandle.select(A, B, (C + 5).as("NewCol"));
+ * auto newTable = tableHandle.Select(A, B, (C + 5).as("NewCol"));
  * @endcode
  */
 class AssignedColumn final : public SelectColumn {
@@ -316,7 +330,8 @@ public:
   /**
    * Create a new AssignedColumn. Used internally.
    */
-  static AssignedColumn create(std::string name, std::shared_ptr<impl::ExpressionImpl> expression);
+  [[nodiscard]]
+  static AssignedColumn Create(std::string name, std::shared_ptr<impl::ExpressionImpl> expression);
   /**
    * Constructor. Used internally.
    */

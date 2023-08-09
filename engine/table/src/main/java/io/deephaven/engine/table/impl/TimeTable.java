@@ -18,8 +18,6 @@ import io.deephaven.engine.rowset.WritableRowSet;
 import io.deephaven.engine.rowset.chunkattributes.RowKeys;
 import io.deephaven.engine.table.ColumnSource;
 import io.deephaven.engine.table.Table;
-import io.deephaven.engine.table.impl.perf.PerformanceEntry;
-import io.deephaven.engine.table.impl.perf.UpdatePerformanceTracker;
 import io.deephaven.engine.table.impl.sources.FillUnordered;
 import io.deephaven.engine.updategraph.UpdateSourceRegistrar;
 import io.deephaven.engine.util.TableTools;
@@ -115,9 +113,10 @@ public final class TimeTable extends QueryTable implements Runnable {
     private long lastIndex = -1;
     private final SyntheticInstantSource columnSource;
     private final Clock clock;
-    private final PerformanceEntry entry;
+    private final String name;
     private final boolean isBlinkTable;
     private final UpdateSourceRegistrar registrar;
+    private final SourceRefresher refresher;
 
     public TimeTable(
             UpdateSourceRegistrar registrar,
@@ -128,8 +127,8 @@ public final class TimeTable extends QueryTable implements Runnable {
         super(RowSetFactory.empty().toTracking(), initColumn(startTime, period));
         this.registrar = registrar;
         this.isBlinkTable = isBlinkTable;
-        final String name = isBlinkTable ? "TimeTableBlink" : "TimeTable";
-        this.entry = UpdatePerformanceTracker.getInstance().getEntry(name + "(" + startTime + "," + period + ")");
+        this.name = (isBlinkTable ? "TimeTableBlink" : "TimeTable") + "(" + startTime + "," + period + ")";
+
         columnSource = (SyntheticInstantSource) getColumnSourceMap().get(TIMESTAMP);
         this.clock = clock;
         if (isBlinkTable) {
@@ -139,10 +138,12 @@ public final class TimeTable extends QueryTable implements Runnable {
             setAttribute(Table.APPEND_ONLY_TABLE_ATTRIBUTE, Boolean.TRUE);
             setFlat();
         }
+        refresher = new SourceRefresher();
         if (startTime != null) {
             refresh(false);
         }
-        registrar.addSource(this);
+        setRefreshing(true);
+        registrar.addSource(refresher);
     }
 
     private static Map<String, ColumnSource<?>> initColumn(Instant firstTime, long period) {
@@ -157,48 +158,55 @@ public final class TimeTable extends QueryTable implements Runnable {
         refresh(true);
     }
 
-    private void refresh(final boolean notifyListeners) {
-        entry.onUpdateStart();
-        try {
-            final Instant now = clock.instantNanos();
-            long rangeStart = lastIndex + 1;
-            if (columnSource.startTime == null) {
-                lastIndex = 0;
-                columnSource.startTime = epochNanosToInstant(
-                        Numeric.lowerBin(epochNanos(now), columnSource.period));
-            } else if (now.compareTo(columnSource.startTime) >= 0) {
-                lastIndex = Math.max(lastIndex,
-                        minus(now, columnSource.startTime) / columnSource.period);
-            }
+    private class SourceRefresher extends InstrumentedUpdateSource {
 
-            final boolean rowsAdded = rangeStart <= lastIndex;
-            final boolean rowsRemoved = isBlinkTable && getRowSet().isNonempty();
-            if (rowsAdded || rowsRemoved) {
-                final RowSet addedRange = rowsAdded
-                        ? RowSetFactory.fromRange(rangeStart, lastIndex)
-                        : RowSetFactory.empty();
-                final RowSet removedRange = rowsRemoved
-                        ? RowSetFactory.fromRange(getRowSet().firstRowKey(), rangeStart - 1)
-                        : RowSetFactory.empty();
-                if (rowsAdded) {
-                    getRowSet().writableCast().insertRange(rangeStart, lastIndex);
-                }
-                if (rowsRemoved) {
-                    getRowSet().writableCast().removeRange(0, rangeStart - 1);
-                }
-                if (notifyListeners) {
-                    notifyListeners(addedRange, removedRange, RowSetFactory.empty());
-                }
+        public SourceRefresher() {
+            super(updateGraph, name);
+        }
+
+        @Override
+        protected void instrumentedRefresh() {
+            refresh(true);
+        }
+    }
+
+    private void refresh(final boolean notifyListeners) {
+        final Instant now = clock.instantNanos();
+        long rangeStart = lastIndex + 1;
+        if (columnSource.startTime == null) {
+            lastIndex = 0;
+            columnSource.startTime = epochNanosToInstant(
+                    Numeric.lowerBin(epochNanos(now), columnSource.period));
+        } else if (now.compareTo(columnSource.startTime) >= 0) {
+            lastIndex = Math.max(lastIndex,
+                    minus(now, columnSource.startTime) / columnSource.period);
+        }
+
+        final boolean rowsAdded = rangeStart <= lastIndex;
+        final boolean rowsRemoved = isBlinkTable && getRowSet().isNonempty();
+        if (rowsAdded || rowsRemoved) {
+            final RowSet addedRange = rowsAdded
+                    ? RowSetFactory.fromRange(rangeStart, lastIndex)
+                    : RowSetFactory.empty();
+            final RowSet removedRange = rowsRemoved
+                    ? RowSetFactory.fromRange(getRowSet().firstRowKey(), rangeStart - 1)
+                    : RowSetFactory.empty();
+            if (rowsAdded) {
+                getRowSet().writableCast().insertRange(rangeStart, lastIndex);
             }
-        } finally {
-            entry.onUpdateEnd();
+            if (rowsRemoved) {
+                getRowSet().writableCast().removeRange(0, rangeStart - 1);
+            }
+            if (notifyListeners) {
+                notifyListeners(addedRange, removedRange, RowSetFactory.empty());
+            }
         }
     }
 
     @Override
     protected void destroy() {
         super.destroy();
-        registrar.removeSource(this);
+        registrar.removeSource(refresher);
     }
 
     private static final class SyntheticInstantSource extends AbstractColumnSource<Instant> implements

@@ -13,17 +13,17 @@
 using namespace std;
 
 namespace deephaven::client::utility {
-void okOrThrow(const deephaven::dhcore::utility::DebugInfo &debugInfo,
+void OkOrThrow(const deephaven::dhcore::utility::DebugInfo &debug_info,
     const arrow::Status &status) {
   if (status.ok()) {
     return;
   }
 
-  auto msg = stringf("Status: %o. Caller: %o", status, debugInfo);
+  auto msg = Stringf("Status: %o. Caller: %o", status, debug_info);
   throw std::runtime_error(msg);
 }
 
-arrow::flight::FlightDescriptor convertTicketToFlightDescriptor(const std::string &ticket) {
+arrow::flight::FlightDescriptor ConvertTicketToFlightDescriptor(const std::string &ticket) {
   if (ticket.length() != 5 || ticket[0] != 'e') {
     const char *message = "Ticket is not in correct format for export";
     throw std::runtime_error(DEEPHAVEN_DEBUG_MSG(message));

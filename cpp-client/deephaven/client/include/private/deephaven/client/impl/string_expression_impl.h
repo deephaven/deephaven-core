@@ -7,18 +7,19 @@
 #include <vector>
 #include "expression_impl.h"
 
-namespace deephaven::client {
-namespace impl {
+namespace deephaven::client::impl {
 class StringExpressionImpl : public ExpressionImpl {
 public:
-  static std::shared_ptr<StringExpressionImpl> createLiteral(std::string value);
-  static std::shared_ptr<StringExpressionImpl> createAppend(
+  [[nodiscard]]
+  static std::shared_ptr<StringExpressionImpl> CreateLiteral(std::string value);
+  [[nodiscard]]
+  static std::shared_ptr<StringExpressionImpl> CreateAppend(
       std::shared_ptr<StringExpressionImpl> lhs, std::shared_ptr<StringExpressionImpl> rhs);
-  static std::shared_ptr<BooleanExpressionImpl> createComparison(
+  [[nodiscard]]
+  static std::shared_ptr<BooleanExpressionImpl> CreateComparison(
       std::shared_ptr<StringExpressionImpl> lhs, const char *op,
       std::shared_ptr<StringExpressionImpl> rhs);
 
   ~StringExpressionImpl() override;
 };
-}  // namespace impl
-}  // namespace deephaven::client
+}  // namespace deephaven::client::impl
