@@ -243,25 +243,27 @@ public class ParquetTools {
     }
 
     /**
-     * Delete any old backup files created for this destination
+     * Delete any old backup files created for this destination, and throw an exception on failure
      */
     private static void deleteBackupFile(@NotNull final File destFile) {
-        final File backupDestFile = getBackupFile(destFile);
-        if (backupDestFile.exists() && !backupDestFile.delete()) {
+        if (!deleteBackupFileNoExcept(destFile)) {
             throw new UncheckedDeephavenException(
-                    String.format("Failed to delete backup file at %s", backupDestFile.getAbsolutePath()));
+                    String.format("Failed to delete backup file at %s", getBackupFile(destFile).getAbsolutePath()));
         }
     }
 
     /**
      * Delete any old backup files created for this destination with no exception in case of failure
      */
-    private static void deleteBackupFileNoExcept(@NotNull final File destFile) {
+    private static boolean deleteBackupFileNoExcept(@NotNull final File destFile) {
         final File backupDestFile = getBackupFile(destFile);
         if (backupDestFile.exists() && !backupDestFile.delete()) {
-            log.error().append("Error in deleting backup file at path ").append(backupDestFile.getAbsolutePath())
+            log.error().append("Error in deleting backup file at path ")
+                    .append(backupDestFile.getAbsolutePath())
                     .endl();
+            return false;
         }
+        return true;
     }
 
     /**
