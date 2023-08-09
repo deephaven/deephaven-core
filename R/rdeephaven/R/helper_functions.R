@@ -3,35 +3,37 @@ first_class <- function(arg) {
 }
 
 verify_type <- function(arg_name, candidate, required_type, message_type_name, is_scalar) {
-  if (first_class(candidate) == "list") {
-    if (any(lapply(candidate, first_class) != required_type)) {
-      stop(paste0("'", arg_name, "' must be a ", message_type_name, ", or a vector of ", message_type_name, "s. Got a vector with at least one element that is not a ", message_type_name, " instead."))
-    }
-  } else {
-    if (first_class(candidate) != required_type) {
-      if (is_scalar) {
-        stop(paste0("'", arg_name, "' must be passed as a single ", message_type_name, ". Got an object of class ", first_class(candidate), " instead."))
-      } else {
-        stop(paste0("'", arg_name, "' must be passed as a ", message_type_name, " or a vector of ", message_type_name, "s. Got an object of class ", first_class(candidate), " instead."))
-      }
-    }
-  }
 
   if (is_scalar) {
     if (length(candidate) != 1) {
-      stop(paste0("'", arg_name, "' must be passed as a single ", message_type_name, ". Got a ", message_type_name, " vector of length ", length(candidate), " instead."))
+      stop(paste0("'", arg_name, "' must be a single ", message_type_name, ". Got a vector of length ", length(candidate), "."))
+    }
+  }
+
+  if (first_class(candidate) == "list") {
+    if (any(lapply(candidate, first_class) != required_type)) {
+      stop(paste0("'", arg_name, "' must be a ", message_type_name, ", or a vector of ", message_type_name, "s. Got a vector with at least one element that is not a ", message_type_name, "."))
+    }
+  }
+  else {
+    if (first_class(candidate) != required_type) {
+      if (is_scalar) {
+        stop(paste0("'", arg_name, "' must be a single ", message_type_name, ". Got an object of class ", first_class(candidate), "."))
+      } else {
+        stop(paste0("'", arg_name, "' must be a ", message_type_name, " or a vector of ", message_type_name, "s. Got an object of class ", first_class(candidate), "."))
+      }
     }
   }
 }
 
 # does not attempt to verify that candidate is numeric
-verify_in_range <- function(arg_name, candidate, message, a = NULL, b = NULL, a_open = TRUE, b_open = TRUE) {
-  if (((!is.null(a)) && ((any(candidate <= a) && (a_open)) || (any(candidate < a) && (!a_open)))) ||
-    ((!is.null(b)) && ((any(candidate >= b) && (b_open)) || (any(candidate > b) && (!b_open))))) {
+verify_in_range <- function(arg_name, candidate, message, lb, ub, lb_open, ub_open) {
+  if (((!is.null(lb)) && ((any(candidate <= lb) && (lb_open)) || (any(candidate < lb) && (!lb_open)))) ||
+    ((!is.null(ub)) && ((any(candidate >= ub) && (ub_open)) || (any(candidate > ub) && (!ub_open))))) {
     if (length(candidate) == 1) {
-      stop(paste0("'", arg_name, "' must be ", message, ". Got '", arg_name, "' = ", candidate, " instead."))
+      stop(paste0("'", arg_name, "' must be ", message, ". Got '", arg_name, "' = ", candidate, "."))
     } else {
-      stop(paste0("Every element of '", arg_name, "' must be ", message, ". Got at least one element that is not ", message, " instead."))
+      stop(paste0("Every element of '", arg_name, "' must be ", message, ". Got at least one element that is not ", message, "."))
     }
   }
 }
@@ -40,9 +42,9 @@ verify_in_range <- function(arg_name, candidate, message, a = NULL, b = NULL, a_
 verify_int <- function(arg_name, candidate) {
   if (candidate != as.integer(candidate)) {
     if (length(candidate == 1)) {
-      stop(paste0("'", arg_name, "' must be an integer. Got '", arg_name, "' = ", candidate, " instead."))
+      stop(paste0("'", arg_name, "' must be an integer. Got '", arg_name, "' = ", candidate, "."))
     } else {
-      stop(paste0("Every element of '", arg_name, "' must be an integer. Got at least one non-integer element instead."))
+      stop(paste0("Every element of '", arg_name, "' must be an integer. Got at least one non-integer element."))
     }
   }
 }
@@ -61,7 +63,7 @@ verify_numeric <- function(arg_name, candidate, is_scalar) {
 
 verify_in_unit_interval <- function(arg_name, candidate, is_scalar) {
   verify_numeric(arg_name, candidate, is_scalar)
-  verify_in_range(arg_name, candidate, message = "between 0 and 1 inclusive", a = 0, b = 1, a_open = FALSE, b_open = FALSE)
+  verify_in_range(arg_name, candidate, message = "between 0 and 1 inclusive", lb = 0, ub = 1, lb_open = FALSE, ub_open = FALSE)
 }
 
 verify_any_int <- function(arg_name, candidate, is_scalar) {
@@ -72,13 +74,13 @@ verify_any_int <- function(arg_name, candidate, is_scalar) {
 verify_nonnegative_int <- function(arg_name, candidate, is_scalar) {
   verify_numeric(arg_name, candidate, is_scalar)
   verify_int(arg_name, candidate)
-  verify_in_range(arg_name, candidate, message = "a nonnegative integer", a = 0, a_open = FALSE)
+  verify_in_range(arg_name, candidate, message = "a nonnegative integer", lb = 0, ub = NULL, lb_open = FALSE, ub_open = TRUE)
 }
 
 verify_positive_int <- function(arg_name, candidate, is_scalar) {
   verify_numeric(arg_name, candidate, is_scalar)
   verify_int(arg_name, candidate)
-  verify_in_range(arg_name, candidate, message = "a positive integer", a = 0)
+  verify_in_range(arg_name, candidate, message = "a positive integer", lb = 0, ub = NULL, lb_open = TRUE, ub_open = TRUE)
 }
 
 strip_s4_wrapping <- function(s4_object) {

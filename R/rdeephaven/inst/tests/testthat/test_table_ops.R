@@ -41,12 +41,12 @@ setup <- function() {
   client <- connect(target = "localhost:10000")
 
   # move dataframes to server and get TableHandles for testing
-  th1 <- import_table(client, df1)
-  th2 <- import_table(client, df2)
-  th3 <- import_table(client, df3)
-  th4 <- import_table(client, df4)
-  th5 <- import_table(client, df5)
-  th6 <- import_table(client, df6)
+  th1 <- as_dh_table(client, df1)
+  th2 <- as_dh_table(client, df2)
+  th3 <- as_dh_table(client, df3)
+  th4 <- as_dh_table(client, df4)
+  th5 <- as_dh_table(client, df5)
+  th6 <- as_dh_table(client, df6)
 
   return(list(
     "client" = client,
@@ -137,6 +137,45 @@ test_that("select behaves as expected", {
     select(c("X", "Number3 = Number1 * Number2"))
   expect_equal(as.data.frame(new_th5), as.data.frame(new_tb5))
 
+  close(data$client)
+})
+
+test_that("select with base pipe behaves as expected", {
+  data <- setup()
+  
+  new_tb1 <- data$df1 |>
+    dplyr::select(string_col)
+  new_th1 <- data$th1 |>
+    select("string_col")
+  expect_equal(as.data.frame(new_th1), as.data.frame(new_tb1))
+  
+  new_tb2 <- data$df2 |>
+    dplyr::select(col2, col3)
+  new_th2 <- data$th2 |>
+    select(c("col2", "col3"))
+  expect_equal(as.data.frame(new_th2), as.data.frame(new_tb2))
+  
+  new_tb3 <- data$df3 |>
+    dplyr::select(X1, X2) |>
+    rename(first_col = X1)
+  new_th3 <- data$th3 |>
+    select(c("first_col = X1", "X2"))
+  expect_equal(as.data.frame(new_th3), as.data.frame(new_tb3))
+  
+  new_tb4 <- data$df4 |>
+    dplyr::select(int_col) |>
+    mutate(new_col = int_col + 1, .keep = "none")
+  new_th4 <- data$th4 |>
+    select("new_col = int_col + 1")
+  expect_equal(as.data.frame(new_th4), as.data.frame(new_tb4))
+  
+  new_tb5 <- data$df5 |>
+    mutate(Number3 = Number1 * Number2) |>
+    dplyr::select(X, Number3)
+  new_th5 <- data$th5 |>
+    select(c("X", "Number3 = Number1 * Number2"))
+  expect_equal(as.data.frame(new_th5), as.data.frame(new_tb5))
+  
   close(data$client)
 })
 
