@@ -6,7 +6,7 @@ import jpy
 import deephaven.plugin
 
 from typing import Union, Type
-from deephaven.plugin import Plugin, Registration
+from deephaven.plugin import Plugin, Registration, Callback
 from deephaven.plugin.object_type import ObjectType
 from .object import ObjectTypeAdapter
 
@@ -18,8 +18,8 @@ def initialize_all_and_register_into(callback: _JCallbackAdapter):
     deephaven.plugin.register_all_into(RegistrationAdapter(callback))
 
 
-class RegistrationAdapter(Registration.Callback):
-    """Python implementation of Registration.Callback that delegates to its Java counterpart."""
+class RegistrationAdapter(Callback):
+    """Python implementation of Callback that delegates to its Java counterpart."""
     def __init__(self, callback: _JCallbackAdapter):
         self._callback = callback
 
