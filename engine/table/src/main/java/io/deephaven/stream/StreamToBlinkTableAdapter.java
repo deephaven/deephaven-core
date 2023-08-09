@@ -84,21 +84,68 @@ public class StreamToBlinkTableAdapter
     private volatile QueryTable table;
 
     private final AtomicBoolean alive = new AtomicBoolean(true);
+    private final AtomicBoolean initialized = new AtomicBoolean(false);
 
+    /**
+     * Construct the adapter with {@code initialize == true} and without extra attributes.
+     *
+     * <p>
+     * Equivalent to
+     * {@code new StreamToBlinkTableAdapter(tableDefinition, streamPublisher, updateSourceRegistrar, name, Map.of(), true)}.
+     *
+     * @param tableDefinition the table definition
+     * @param streamPublisher the stream publisher
+     * @param updateSourceRegistrar the update source registrar
+     * @param name the name
+     */
     public StreamToBlinkTableAdapter(
             @NotNull final TableDefinition tableDefinition,
             @NotNull final StreamPublisher streamPublisher,
             @NotNull final UpdateSourceRegistrar updateSourceRegistrar,
             @NotNull final String name) {
-        this(tableDefinition, streamPublisher, updateSourceRegistrar, name, Map.of());
+        this(tableDefinition, streamPublisher, updateSourceRegistrar, name, Map.of(), true);
     }
 
+    /**
+     * Construct the adapter with {@code initialize == true}.
+     *
+     * <p>
+     * Equivalent to
+     * {@code new StreamToBlinkTableAdapter(tableDefinition, streamPublisher, updateSourceRegistrar, name, extraAttributes, true)}.
+     *
+     * @param tableDefinition the table definition
+     * @param streamPublisher the stream publisher
+     * @param updateSourceRegistrar the update source registrar
+     * @param name the name
+     * @param extraAttributes the extra attributes to set on the resulting table
+     */
     public StreamToBlinkTableAdapter(
             @NotNull final TableDefinition tableDefinition,
             @NotNull final StreamPublisher streamPublisher,
             @NotNull final UpdateSourceRegistrar updateSourceRegistrar,
             @NotNull final String name,
             @NotNull final Map<String, Object> extraAttributes) {
+        this(tableDefinition, streamPublisher, updateSourceRegistrar, name, extraAttributes, true);
+    }
+
+    /**
+     * Construct the adapter.
+     *
+     * @param tableDefinition the table definition
+     * @param streamPublisher the stream publisher
+     * @param updateSourceRegistrar the update source registrar
+     * @param name the name
+     * @param extraAttributes the extra attributes to set on the resulting table
+     * @param initialize if the constructor should invoke {@link #initialize()}; if {@code false}, the caller is
+     *        responsible for invoking {@link #initialize()}.
+     */
+    public StreamToBlinkTableAdapter(
+            @NotNull final TableDefinition tableDefinition,
+            @NotNull final StreamPublisher streamPublisher,
+            @NotNull final UpdateSourceRegistrar updateSourceRegistrar,
+            @NotNull final String name,
+            @NotNull final Map<String, Object> extraAttributes,
+            boolean initialize) {
         this.tableDefinition = tableDefinition;
         this.streamPublisher = streamPublisher;
         this.updateSourceRegistrar = updateSourceRegistrar;
@@ -128,7 +175,22 @@ public class StreamToBlinkTableAdapter
             }
         };
         tableRef = new WeakReference<>(table);
+        if (initialize) {
+            initialize();
+        }
+    }
 
+    /**
+     * Initialize this adapter by invoking {@link StreamPublisher#register(StreamConsumer)} and
+     * {@link UpdateSourceRegistrar#addSource(Runnable)} with {@code this}. Must be called once <b>if and only if</b>
+     * {@code this} was constructed with {@code initialize == false}.
+     *
+     * @see #StreamToBlinkTableAdapter(TableDefinition, StreamPublisher, UpdateSourceRegistrar, String, Map, boolean)
+     */
+    public void initialize() {
+        if (!initialized.compareAndSet(false, true)) {
+            throw new IllegalStateException("Must not call StreamToBlinkTableAdapter#initialize more than once");
+        }
         log.info().append("Registering ").append(StreamToBlinkTableAdapter.class.getSimpleName()).append('-')
                 .append(name)
                 .endl();
@@ -241,15 +303,10 @@ public class StreamToBlinkTableAdapter
 
     @Override
     public void run() {
-        synchronized (this) {
-            // If we have an enqueued failure we want to process it first, before we allow the streamPublisher to flush
-            // itself.
-            if (!enqueuedFailures.isEmpty()) {
-                deliverFailure(MultiException.maybeWrapInMultiException(
-                        "Multiple errors encountered while ingesting stream",
-                        enqueuedFailures));
-                return;
-            }
+        // If we have an enqueued failure we want to process it first, before we allow the streamPublisher to flush
+        // itself.
+        if (deliverFailures()) {
+            return;
         }
         final TableUpdate downstream;
         try {
@@ -260,7 +317,20 @@ public class StreamToBlinkTableAdapter
             deliverFailure(e);
             return;
         }
+        if (downstream == null) {
+            return;
+        }
         deliverUpdate(downstream);
+    }
+
+    private synchronized boolean deliverFailures() {
+        if (enqueuedFailures.isEmpty()) {
+            return false;
+        }
+        deliverFailure(MultiException.maybeWrapInMultiException(
+                "Multiple errors encountered while ingesting stream",
+                enqueuedFailures));
+        return true;
     }
 
     private void deliverUpdate(@Nullable final TableUpdate downstream) {
@@ -300,6 +370,10 @@ public class StreamToBlinkTableAdapter
 
         final ChunkColumnSource<?>[] capturedBufferSources;
         synchronized (this) {
+            // streamPublisher.flush() may have called acceptFailure
+            if (deliverFailures()) {
+                return null;
+            }
             newSize = bufferChunkSources == null ? 0 : bufferChunkSources[0].getSize();
 
             if (oldSize == 0 && newSize == 0) {

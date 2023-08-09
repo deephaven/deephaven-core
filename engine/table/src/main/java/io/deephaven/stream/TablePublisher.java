@@ -8,7 +8,9 @@ import io.deephaven.engine.updategraph.UpdateGraph;
 import io.deephaven.util.annotations.TestUseOnly;
 
 import javax.annotation.Nullable;
+import java.util.Map;
 import java.util.Objects;
+import java.util.function.Consumer;
 
 /**
  * Produces a {@link Table#BLINK_TABLE_ATTRIBUTE blink table} from {@link #add(Table) added tables}.
@@ -19,26 +21,41 @@ public class TablePublisher {
      * Constructs a table publisher.
      *
      * <p>
+     * The {@code onFlushCallback}, if present, is called once at the beginning of each update graph cycle. This is a
+     * pattern that allows publishers to add any data they may have been batching. Do note though, this blocks the
+     * update cycle from proceeding, so implementations should take care to not do extraneous work.
+     *
+     * <p>
      * The {@code onShutdownCallback}, if present, is called one time when the publisher should stop publishing new data
      * and release any related resources as soon as practicable since publishing won't have any downstream effects.
      *
      * <p>
-     * Equivalent to calling {@link #of(String, TableDefinition, Runnable, UpdateGraph, int)} with the
+     * Equivalent to calling {@link #of(String, TableDefinition, Consumer, Runnable, UpdateGraph, int)} with the
      * {@code updateGraph} from {@link ExecutionContext#getContext()} and {@code chunkSize}
      * {@value ArrayBackedColumnSource#BLOCK_SIZE}.
      *
      * @param name the name
      * @param definition the table definition
+     * @param onFlushCallback the on-flush callback
      * @param onShutdownCallback the on-shutdown callback
      * @return the table publisher
      */
-    public static TablePublisher of(String name, TableDefinition definition, @Nullable Runnable onShutdownCallback) {
-        return of(name, definition, onShutdownCallback, ExecutionContext.getContext().getUpdateGraph(),
+    public static TablePublisher of(
+            String name,
+            TableDefinition definition,
+            @Nullable Consumer<TablePublisher> onFlushCallback,
+            @Nullable Runnable onShutdownCallback) {
+        return of(name, definition, onFlushCallback, onShutdownCallback, ExecutionContext.getContext().getUpdateGraph(),
                 ArrayBackedColumnSource.BLOCK_SIZE);
     }
 
     /**
      * Constructs a table publisher.
+     *
+     * <p>
+     * The {@code onFlushCallback}, if present, is called once at the beginning of each update graph cycle. This is a
+     * pattern that allows publishers to add any data they may have been batching. Do note though, this blocks the
+     * update cycle from proceeding, so implementations should take care to not do extraneous work.
      *
      * <p>
      * The {@code onShutdownCallback}, if present, is called one time when the publisher should stop publishing new data
@@ -50,18 +67,29 @@ public class TablePublisher {
      *
      * @param name the name
      * @param definition the table definition
+     * @param onFlushCallback the on-flush callback
      * @param onShutdownCallback the on-shutdown callback
      * @param updateGraph the update graph for the blink table
      * @param chunkSize the chunk size is the maximum size
      * @return the table publisher
      */
-    public static TablePublisher of(String name, TableDefinition definition, @Nullable Runnable onShutdownCallback,
-            UpdateGraph updateGraph, int chunkSize) {
-        final TableStreamPublisherImpl publisher =
-                new TableStreamPublisherImpl(name, definition, onShutdownCallback, chunkSize);
+    public static TablePublisher of(
+            String name,
+            TableDefinition definition,
+            @Nullable Consumer<TablePublisher> onFlushCallback,
+            @Nullable Runnable onShutdownCallback,
+            UpdateGraph updateGraph,
+            int chunkSize) {
+        final TablePublisher[] publisher = new TablePublisher[1];
+        final TableStreamPublisherImpl impl =
+                new TableStreamPublisherImpl(name, definition,
+                        onFlushCallback == null ? null : () -> onFlushCallback.accept(publisher[0]), onShutdownCallback,
+                        chunkSize);
         final StreamToBlinkTableAdapter adapter =
-                new StreamToBlinkTableAdapter(definition, publisher, updateGraph, name);
-        return new TablePublisher(publisher, adapter);
+                new StreamToBlinkTableAdapter(definition, impl, updateGraph, name, Map.of(), false);
+        publisher[0] = new TablePublisher(impl, adapter);
+        adapter.initialize();
+        return publisher[0];
     }
 
     private final TableStreamPublisherImpl publisher;
