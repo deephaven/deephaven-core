@@ -570,6 +570,19 @@ class Table(JObjectWrapper):
     def j_object(self) -> jpy.JType:
         return self.j_table
 
+    def has_columns(self, cols: Union[str, Sequence[str]]):
+        """Whether this table contains a column for each of the provided names, return False if any of the columns is
+        not in the table.
+
+        Args:
+            cols (Union[str, Sequence[str]]): the column name(s)
+
+        Returns:
+            bool
+        """
+        cols = to_sequence(cols)
+        return self.j_table.hasColumns(cols)
+
     def attributes(self) -> Dict[str, Any]:
         """Returns all the attributes defined on the table."""
         j_map = jpy.cast(self.j_table, _JLiveAttributeMap).getAttributes()
