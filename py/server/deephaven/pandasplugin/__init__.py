@@ -5,6 +5,7 @@
 from deephaven.plugin import Registration, Callback
 from . import pandas_as_table
 
+
 class PandasPluginRegistration(Registration):
     @classmethod
     def register_into(clscls, callback: Callback) -> None:
