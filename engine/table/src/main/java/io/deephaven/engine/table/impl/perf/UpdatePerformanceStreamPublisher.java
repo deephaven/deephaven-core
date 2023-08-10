@@ -43,7 +43,8 @@ class UpdatePerformanceStreamPublisher implements StreamPublisher {
             ColumnDefinition.ofLong("CollectionTimeNanos"),
             ColumnDefinition.ofLong("EntryIntervalAllocatedBytes"),
             ColumnDefinition.ofLong("EntryIntervalPoolAllocatedBytes"),
-            ColumnDefinition.ofString("AuthContext"));
+            ColumnDefinition.ofString("AuthContext"),
+            ColumnDefinition.ofString("UpdateGraph"));
 
     public static TableDefinition definition() {
         return DEFINITION;
@@ -93,6 +94,7 @@ class UpdatePerformanceStreamPublisher implements StreamPublisher {
         chunks[21].asWritableLongChunk().add(performanceEntry.getIntervalAllocatedBytes());
         chunks[22].asWritableLongChunk().add(performanceEntry.getIntervalPoolAllocatedBytes());
         chunks[23].<String>asWritableObjectChunk().add(Objects.toString(performanceEntry.getAuthContext()));
+        chunks[24].<String>asWritableObjectChunk().add(Objects.toString(performanceEntry.getUpdateGraphName()));
         if (chunks[0].size() == CHUNK_SIZE) {
             flushInternal();
         }

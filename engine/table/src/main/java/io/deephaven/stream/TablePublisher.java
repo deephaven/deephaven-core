@@ -8,7 +8,9 @@ import io.deephaven.engine.updategraph.UpdateGraph;
 import io.deephaven.util.annotations.TestUseOnly;
 
 import javax.annotation.Nullable;
+import java.util.Map;
 import java.util.Objects;
+import java.util.function.Consumer;
 
 /**
  * Produces a {@link Table#BLINK_TABLE_ATTRIBUTE blink table} from {@link #add(Table) added tables}.
@@ -19,26 +21,41 @@ public class TablePublisher {
      * Constructs a table publisher.
      *
      * <p>
+     * The {@code onFlushCallback}, if present, is called once at the beginning of each update graph cycle. This is a
+     * pattern that allows publishers to add any data they may have been batching. Do note though, this blocks the
+     * update cycle from proceeding, so implementations should take care to not do extraneous work.
+     *
+     * <p>
      * The {@code onShutdownCallback}, if present, is called one time when the publisher should stop publishing new data
      * and release any related resources as soon as practicable since publishing won't have any downstream effects.
      *
      * <p>
-     * Equivalent to calling {@link #of(String, TableDefinition, Runnable, UpdateGraph, int)} with the
+     * Equivalent to calling {@link #of(String, TableDefinition, Consumer, Runnable, UpdateGraph, int)} with the
      * {@code updateGraph} from {@link ExecutionContext#getContext()} and {@code chunkSize}
      * {@value ArrayBackedColumnSource#BLOCK_SIZE}.
      *
      * @param name the name
      * @param definition the table definition
+     * @param onFlushCallback the on-flush callback
      * @param onShutdownCallback the on-shutdown callback
      * @return the table publisher
      */
-    public static TablePublisher of(String name, TableDefinition definition, @Nullable Runnable onShutdownCallback) {
-        return of(name, definition, onShutdownCallback, ExecutionContext.getContext().getUpdateGraph(),
+    public static TablePublisher of(
+            String name,
+            TableDefinition definition,
+            @Nullable Consumer<TablePublisher> onFlushCallback,
+            @Nullable Runnable onShutdownCallback) {
+        return of(name, definition, onFlushCallback, onShutdownCallback, ExecutionContext.getContext().getUpdateGraph(),
                 ArrayBackedColumnSource.BLOCK_SIZE);
     }
 
     /**
      * Constructs a table publisher.
+     *
+     * <p>
+     * The {@code onFlushCallback}, if present, is called once at the beginning of each update graph cycle. This is a
+     * pattern that allows publishers to add any data they may have been batching. Do note though, this blocks the
+     * update cycle from proceeding, so implementations should take care to not do extraneous work.
      *
      * <p>
      * The {@code onShutdownCallback}, if present, is called one time when the publisher should stop publishing new data
@@ -50,18 +67,29 @@ public class TablePublisher {
      *
      * @param name the name
      * @param definition the table definition
+     * @param onFlushCallback the on-flush callback
      * @param onShutdownCallback the on-shutdown callback
      * @param updateGraph the update graph for the blink table
      * @param chunkSize the chunk size is the maximum size
      * @return the table publisher
      */
-    public static TablePublisher of(String name, TableDefinition definition, @Nullable Runnable onShutdownCallback,
-            UpdateGraph updateGraph, int chunkSize) {
-        final TableStreamPublisherImpl publisher =
-                new TableStreamPublisherImpl(name, definition, onShutdownCallback, chunkSize);
+    public static TablePublisher of(
+            String name,
+            TableDefinition definition,
+            @Nullable Consumer<TablePublisher> onFlushCallback,
+            @Nullable Runnable onShutdownCallback,
+            UpdateGraph updateGraph,
+            int chunkSize) {
+        final TablePublisher[] publisher = new TablePublisher[1];
+        final TableStreamPublisherImpl impl =
+                new TableStreamPublisherImpl(name, definition,
+                        onFlushCallback == null ? null : () -> onFlushCallback.accept(publisher[0]), onShutdownCallback,
+                        chunkSize);
         final StreamToBlinkTableAdapter adapter =
-                new StreamToBlinkTableAdapter(definition, publisher, updateGraph, name);
-        return new TablePublisher(publisher, adapter);
+                new StreamToBlinkTableAdapter(definition, impl, updateGraph, name, Map.of(), false);
+        publisher[0] = new TablePublisher(impl, adapter);
+        adapter.initialize();
+        return publisher[0];
     }
 
     private final TableStreamPublisherImpl publisher;
@@ -95,8 +123,9 @@ public class TablePublisher {
     }
 
     /**
-     * Adds a snapshot of the data from {@code table} into the {@link #table blink table} according to the blink table's
-     * {@link #definition() definition}.
+     * Adds a snapshot of the data from {@code table} into the {@link #table blink table}. The added {@code table} must
+     * contain a superset of the columns from the {@link #definition() definition}; the columns may be in any order.
+     * Columns from {@code table} that are not in the {@link #definition() definition} are ignored.
      *
      * <p>
      * All of the data from {@code table} will be:
@@ -114,9 +143,11 @@ public class TablePublisher {
     }
 
     /**
-     * Publish a {@code failure} for notification to the {@link io.deephaven.engine.table.TableListener listeners} of
-     * the {@link #table() blink table}. Future calls to {@link #add(Table)} will silently return. Will cause the
-     * on-shutdown callback to be invoked if it hasn't already been invoked.
+     * Indicate that data publication has failed. {@link #table() Blink table}
+     * {@link io.deephaven.engine.table.TableListener listeners} will be notified of the failure, the on-shutdown
+     * callback will be invoked if it hasn't already been, {@code this} publisher will no longer be {@link #isAlive()
+     * alive}, and future calls to {@link #add(Table) add} will silently return without publishing. These effects may
+     * resolve asynchronously.
      *
      * @param failure the failure
      */
@@ -125,11 +156,11 @@ public class TablePublisher {
     }
 
     /**
-     * Checks whether {@code this} is alive; if {@code false}, the publisher should stop publishing new data and release
-     * any related resources as soon as practicable since publishing won't have any downstream effects.
+     * Checks whether {@code this} is alive; if {@code false}, the caller should stop adding new data and release any
+     * related resources as soon as practicable since adding data won't have any downstream effects.
      *
      * <p>
-     * Once this is {@code false}, it will always remain {@code false}. For more prompt notifications, publishers may
+     * Once this is {@code false}, it will always remain {@code false}. For more prompt notifications, callers may
      * prefer to use on-shutdown callbacks.
      *
      * @return if this is alive

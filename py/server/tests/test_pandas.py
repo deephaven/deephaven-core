@@ -13,7 +13,8 @@ import pyarrow as pa
 from deephaven import dtypes, new_table, DHError
 from deephaven.column import byte_col, char_col, short_col, bool_col, int_col, long_col, float_col, double_col, \
     string_col, datetime_col, pyobj_col, jobj_col
-from deephaven.constants import NULL_LONG, NULL_SHORT, NULL_INT, NULL_BYTE, NULL_CHAR
+from deephaven.constants import NULL_LONG, NULL_SHORT, NULL_INT, NULL_BYTE, NULL_CHAR, NULL_FLOAT, NULL_DOUBLE, \
+    NULL_BOOLEAN
 from deephaven.jcompat import j_array_list
 from deephaven.pandas import to_pandas, to_table
 from deephaven.time import parse_instant, epoch_nanos_to_instant
@@ -54,8 +55,8 @@ class PandasTestCase(BaseTestCase):
         self.test_table = None
         super().tearDown()
 
-    def test_to_pandas(self):
-        df = to_pandas(self.test_table)
+    def test_to_pandas_no_conv_null(self):
+        df = to_pandas(self.test_table, conv_null=False)
         self.assertEqual(len(df.columns), len(self.test_table.columns))
         self.assertEqual(df.size, 2 * len(self.test_table.columns))
         df_series = [df[col] for col in list(df.columns)]
@@ -71,7 +72,7 @@ class PandasTestCase(BaseTestCase):
         prepared_table = self.test_table.update(
             formulas=["Long = isNull(Long_) ? Double.NaN : Long_"])
 
-        df = to_pandas(prepared_table, cols=["Boolean", "Long"])
+        df = to_pandas(prepared_table, cols=["Boolean", "Long"], conv_null=False)
         self.assertEqual(df['Long'].dtype, np.float64)
         self.assertEqual(df['Boolean'].values.dtype, np.bool_)
 
@@ -115,7 +116,7 @@ class PandasTestCase(BaseTestCase):
             double_col(name="Double", data=[1.01, -1.01]),
         ]
         test_table = new_table(cols=input_cols)
-        df = to_pandas(test_table)
+        df = to_pandas(test_table, conv_null=False)
         table_from_df = to_table(df)
         self.assert_table_equals(table_from_df, test_table)
 
@@ -124,7 +125,7 @@ class PandasTestCase(BaseTestCase):
         table_with_null_bool = new_table(cols=input_cols)
         prepared_table = table_with_null_bool.update(
             formulas=["Boolean = isNull(Boolean) ? (byte)NULL_BYTE : (Boolean == true ? 1: 0)"])
-        df = to_pandas(prepared_table)
+        df = to_pandas(prepared_table, conv_null=False)
         table_from_df = to_table(df)
         self.assert_table_equals(table_from_df, prepared_table)
 
@@ -212,7 +213,8 @@ class PandasTestCase(BaseTestCase):
 
         self.assertEqual(table.size, 3)
         table_string = table.to_string()
-        self.assertEqual(10, table_string.count("null"))
+        self.assertEqual(8, table_string.count("null"))
+        self.assertEqual(2, table_string.count("NaN"))
 
     def test_arrow_backend(self):
         with self.subTest("pyarrow-backend"):
@@ -296,18 +298,52 @@ class PandasTestCase(BaseTestCase):
 
     def test_pandas_category_type(self):
         df = pd.DataFrame({
-                              'zipcode': {17384: 98125, 2680: 98107, 722: 98005, 18754: 98109, 14554: 98155},
-                              'bathrooms': {17384: 1.5, 2680: 0.75, 722: 3.25, 18754: 1.0, 14554: 2.5},
-                              'sqft_lot': {17384: 1650, 2680: 3700, 722: 51836, 18754: 2640, 14554: 9603},
-                              'bedrooms': {17384: 2, 2680: 2, 722: 4, 18754: 2, 14554: 4},
-                              'sqft_living': {17384: 1430, 2680: 1440, 722: 4670, 18754: 1130, 14554: 3180},
-                              'floors': {17384: 3.0, 2680: 1.0, 722: 2.0, 18754: 1.0, 14554: 2.0}
-                          })
+            'zipcode': {17384: 98125, 2680: 98107, 722: 98005, 18754: 98109, 14554: 98155},
+            'bathrooms': {17384: 1.5, 2680: 0.75, 722: 3.25, 18754: 1.0, 14554: 2.5},
+            'sqft_lot': {17384: 1650, 2680: 3700, 722: 51836, 18754: 2640, 14554: 9603},
+            'bedrooms': {17384: 2, 2680: 2, 722: 4, 18754: 2, 14554: 4},
+            'sqft_living': {17384: 1430, 2680: 1440, 722: 4670, 18754: 1130, 14554: 3180},
+            'floors': {17384: 3.0, 2680: 1.0, 722: 2.0, 18754: 1.0, 14554: 2.0}
+        })
         df['zipcode'] = df.zipcode.astype('category')
         df['bathrooms'] = df.bathrooms.astype('category')
         t = to_table(df)
         self.assertEqual(t.columns[0].data_type, dtypes.int64)
         self.assertEqual(t.columns[1].data_type, dtypes.double)
+
+    def test_conv_null(self):
+        input_cols = [
+            bool_col(name="Boolean", data=(True, NULL_BOOLEAN)),
+            byte_col(name="Byte", data=(1, NULL_BYTE)),
+            char_col(name="Char", data=(1, NULL_CHAR)),
+            short_col(name="Short", data=[1, NULL_SHORT]),
+            int_col(name="Int_", data=[1, NULL_INT]),
+            long_col(name="Long_", data=[1, NULL_LONG]),
+            float_col(name="Float_", data=[np.nan, NULL_FLOAT]),
+            double_col(name="Double_", data=[np.nan, NULL_DOUBLE]),
+            datetime_col(name="Datetime", data=[epoch_nanos_to_instant(1), None]),
+        ]
+        t = new_table(cols=input_cols)
+        df = to_pandas(t, conv_null=True)
+        dh_table = to_table(df)
+        self.assert_table_equals(t, dh_table)
+
+        dtype_backends = ["numpy_nullable", "pyarrow"]
+        for dbe in dtype_backends:
+            with self.subTest(dbe):
+                df = to_pandas(t, dtype_backend=dbe)
+                dh_table = to_table(df)
+                self.assert_table_equals(t, dh_table)
+
+    def test_to_table_readonly(self):
+        source = new_table(cols=[
+            int_col("Ints", [4, 5, 6]),
+            float_col("Floats", [9.9, 8.8, 7.7]),
+            double_col("Doubles", [0.1, 0.2, 0.3])
+        ])
+        df = to_pandas(source)
+        t = to_table(df)
+        self.assert_table_equals(source, t)
 
 
 if __name__ == '__main__':

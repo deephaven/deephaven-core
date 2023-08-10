@@ -65,11 +65,12 @@ public interface Page<ATTR extends Any> extends PagingChunkSource<ATTR> {
 
         @Override
         @FinalDefault
-        default void fillChunkAppend(@NotNull final FillContext context,
+        default void fillChunkAppend(
+                @NotNull final FillContext context,
                 @NotNull final WritableChunk<? super ATTR> destination,
-                @NotNull final RowSequence.Iterator RowSequenceIterator) {
+                @NotNull final RowSequence.Iterator rowSequenceIterator) {
             fillChunkAppend(context, destination,
-                    RowSequenceIterator.getNextRowSequenceThrough(maxRow(RowSequenceIterator.peekNextKey())));
+                    rowSequenceIterator.getNextRowSequenceThrough(maxRow(rowSequenceIterator.peekNextKey())));
         }
 
         @Override
@@ -95,11 +96,12 @@ public interface Page<ATTR extends Any> extends PagingChunkSource<ATTR> {
 
         @Override
         @FinalDefault
-        default void fillChunkAppend(@NotNull final FillContext context,
+        default void fillChunkAppend(
+                @NotNull final FillContext context,
                 @NotNull final WritableChunk<? super ATTR> destination,
-                @NotNull final RowSequence.Iterator RowSequenceIterator) {
+                @NotNull final RowSequence.Iterator rowSequenceIterator) {
             fillChunkAppend(context, destination, LongSizedDataStructure.intSize("fillChunkAppend",
-                    RowSequenceIterator.advanceAndGetPositionDistance(maxRow(RowSequenceIterator.peekNextKey()) + 1)));
+                    rowSequenceIterator.advanceAndGetPositionDistance(maxRow(rowSequenceIterator.peekNextKey()) + 1)));
         }
 
         @Override
@@ -118,25 +120,25 @@ public interface Page<ATTR extends Any> extends PagingChunkSource<ATTR> {
     }
 
     /**
-     * Assuming {@code RowSequenceIterator} is position at its first row key on this page, consume all keys on this
+     * Assuming {@code rowSequenceIterator} is position at its first row key on this page, consume all keys on this
      * page.
      *
-     * @param RowSequenceIterator The iterator to advance
+     * @param rowSequenceIterator The iterator to advance
      */
     @FinalDefault
-    default void advanceToNextPage(@NotNull final RowSequence.Iterator RowSequenceIterator) {
-        RowSequenceIterator.advance(maxRow(RowSequenceIterator.peekNextKey()) + 1);
+    default void advanceToNextPage(@NotNull final RowSequence.Iterator rowSequenceIterator) {
+        rowSequenceIterator.advance(maxRow(rowSequenceIterator.peekNextKey()) + 1);
     }
 
     /**
-     * Assuming {@code RowSequenceIterator} is position at its first row key on this page, consume all keys on this page
+     * Assuming {@code rowSequenceIterator} is position at its first row key on this page, consume all keys on this page
      * and return the number of keys consumed.
      *
-     * @param RowSequenceIterator The iterator to advance
+     * @param rowSequenceIterator The iterator to advance
      */
     @FinalDefault
-    default long advanceToNextPageAndGetPositionDistance(@NotNull final RowSequence.Iterator RowSequenceIterator) {
-        return RowSequenceIterator.advanceAndGetPositionDistance(maxRow(RowSequenceIterator.peekNextKey()) + 1);
+    default long advanceToNextPageAndGetPositionDistance(@NotNull final RowSequence.Iterator rowSequenceIterator) {
+        return rowSequenceIterator.advanceAndGetPositionDistance(maxRow(rowSequenceIterator.peekNextKey()) + 1);
     }
 
     /**

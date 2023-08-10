@@ -4,7 +4,6 @@
 package io.deephaven.engine.table.impl.sources;
 
 import gnu.trove.list.array.TIntArrayList;
-import io.deephaven.engine.context.ExecutionContext;
 import io.deephaven.engine.table.ColumnSource;
 import io.deephaven.engine.table.WritableColumnSource;
 import io.deephaven.engine.table.WritableSourceWithPrepareForParallelPopulation;
@@ -256,7 +255,10 @@ public class BooleanArraySource extends ArraySourceHelper<Boolean, byte[]> imple
         final FillSparseChunkContext<byte[]> ctx = new FillSparseChunkContext<>();
         indices.forAllRowKeys((final long v) -> {
             if (v >= ctx.capForCurrentBlock) {
-                ctx.currentBlockNo = getBlockNo(v);
+                if (v > maxIndex) {
+                    dest.set(ctx.offset++, null);
+                    return;
+                }                ctx.currentBlockNo = getBlockNo(v);
                 ctx.capForCurrentBlock = (ctx.currentBlockNo + 1L) << LOG_BLOCK_SIZE;
                 ctx.currentBlock = blocks[ctx.currentBlockNo];
             }
@@ -282,6 +284,10 @@ public class BooleanArraySource extends ArraySourceHelper<Boolean, byte[]> imple
         final FillSparseChunkContext<byte[]> ctx = new FillSparseChunkContext<>();
         indices.forAllRowKeys((final long v) -> {
             if (v >= ctx.capForCurrentBlock) {
+                if (v > maxIndex) {
+                    dest.set(ctx.offset++, null);
+                    return;
+                }
                 ctx.currentBlockNo = getBlockNo(v);
                 ctx.capForCurrentBlock = (ctx.currentBlockNo + 1L) << LOG_BLOCK_SIZE;
                 ctx.currentBlock = blocks[ctx.currentBlockNo];
@@ -579,6 +585,10 @@ public class BooleanArraySource extends ArraySourceHelper<Boolean, byte[]> imple
             final FillSparseChunkContext<byte[]> ctx = new FillSparseChunkContext<>();
             indices.forAllRowKeys((final long v) -> {
                 if (v >= ctx.capForCurrentBlock) {
+                    if (v > maxIndex) {
+                        dest.set(ctx.offset++, NULL_BOOLEAN_AS_BYTE);
+                        return;
+                    }
                     ctx.currentBlockNo = getBlockNo(v);
                     ctx.capForCurrentBlock = (ctx.currentBlockNo + 1L) << LOG_BLOCK_SIZE;
                     ctx.currentBlock = blocks[ctx.currentBlockNo];
@@ -604,6 +614,10 @@ public class BooleanArraySource extends ArraySourceHelper<Boolean, byte[]> imple
             final FillSparseChunkContext<byte[]> ctx = new FillSparseChunkContext<>();
             indices.forAllRowKeys((final long v) -> {
                 if (v >= ctx.capForCurrentBlock) {
+                    if (v > maxIndex) {
+                        dest.set(ctx.offset++, NULL_BOOLEAN_AS_BYTE);
+                        return;
+                    }
                     ctx.currentBlockNo = getBlockNo(v);
                     ctx.capForCurrentBlock = (ctx.currentBlockNo + 1L) << LOG_BLOCK_SIZE;
                     ctx.currentBlock = blocks[ctx.currentBlockNo];

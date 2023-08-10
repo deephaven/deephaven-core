@@ -16,32 +16,32 @@ Column::Column(std::shared_ptr<impl::ColumnImpl> impl) :
 
 Column::~Column() = default;
 
-const std::string &Column::name() const {
-  return dynamic_cast<const impl::ColumnImpl *>(impl_.get())->name();
+const std::string &Column::Name() const {
+  return dynamic_cast<const impl::ColumnImpl *>(impl_.get())->Name();
 }
 
-SortPair Column::ascending(bool abs) const {
-  return SortPair(name(), SortDirection::Ascending, abs);
+SortPair Column::Ascending(bool abs) const {
+  return SortPair(Name(), SortDirection::kAscending, abs);
 }
 
-SortPair Column::descending(bool abs) const {
-  return SortPair(name(), SortDirection::Descending, abs);
+SortPair Column::Descending(bool abs) const {
+  return SortPair(Name(), SortDirection::kDescending, abs);
 }
 
-SortPair SortPair::ascending(std::string columnName, bool abs) {
-  return SortPair(std::move(columnName), SortDirection::Ascending, abs);
+SortPair SortPair::Ascending(std::string column_name, bool abs) {
+  return SortPair(std::move(column_name), SortDirection::kAscending, abs);
 }
 
-SortPair SortPair::ascending(const Column &column, bool abs) {
-  return SortPair(column.name(), SortDirection::Ascending, abs);
+SortPair SortPair::Ascending(const ColumnType &column, bool abs) {
+  return SortPair(column.Name(), SortDirection::kAscending, abs);
 }
 
-SortPair SortPair::descending(std::string columnName, bool abs) {
-  return SortPair(std::move(columnName), SortDirection::Descending, abs);
+SortPair SortPair::Descending(std::string columnName, bool abs) {
+  return SortPair(std::move(columnName), SortDirection::kDescending, abs);
 }
 
-SortPair SortPair::descending(const Column &column, bool abs) {
-  return SortPair(column.name(), SortDirection::Descending, abs);
+SortPair SortPair::Descending(const ColumnType &column, bool abs) {
+  return SortPair(column.Name(), SortDirection::kDescending, abs);
 }
 
 SortPair::SortPair(std::string column, SortDirection direction, bool abs) :
@@ -49,8 +49,8 @@ SortPair::SortPair(std::string column, SortDirection direction, bool abs) :
 
 SortPair::~SortPair() = default;
 
-NumCol NumCol::create(std::string name) {
-  auto impl = impl::NumColImpl::create(std::move(name));
+NumCol NumCol::Create(std::string name) {
+  auto impl = impl::NumColImpl::Create(std::move(name));
   return NumCol(std::move(impl));
 }
 
@@ -60,7 +60,7 @@ NumCol::NumCol(std::shared_ptr<impl::NumColImpl> impl) : IrisRepresentable(impl)
 NumCol::~NumCol() = default;
 
 StrCol StrCol::create(std::string name) {
-  auto impl = impl::StrColImpl::create(std::move(name));
+  auto impl = impl::StrColImpl::Create(std::move(name));
   return StrCol(std::move(impl));
 }
 
@@ -69,8 +69,8 @@ StrCol::StrCol(std::shared_ptr<impl::StrColImpl> impl) : IrisRepresentable(impl)
 
 StrCol::~StrCol() = default;
 
-DateTimeCol DateTimeCol::create(std::string name) {
-  auto impl = impl::DateTimeColImpl::create(std::move(name));
+DateTimeCol DateTimeCol::Create(std::string name) {
+  auto impl = impl::DateTimeColImpl::Create(std::move(name));
   return DateTimeCol(std::move(impl));
 }
 
@@ -79,9 +79,9 @@ DateTimeCol::DateTimeCol(std::shared_ptr<impl::DateTimeColImpl> impl) : IrisRepr
 
 DateTimeCol::~DateTimeCol() = default;
 
-AssignedColumn AssignedColumn::create(std::string name,
+AssignedColumn AssignedColumn::Create(std::string name,
     std::shared_ptr<impl::ExpressionImpl> expression) {
-  auto impl = impl::AssignedColumnImpl::create(std::move(name), std::move(expression));
+  auto impl = impl::AssignedColumnImpl::Create(std::move(name), std::move(expression));
   return AssignedColumn(std::move(impl));
 }
 

@@ -9,13 +9,13 @@
 
 #include <grpc/support/log.h>
 
-using deephaven::dhcore::utility::streamf;
-using deephaven::dhcore::utility::stringf;
+using deephaven::dhcore::utility::Streamf;
+using deephaven::dhcore::utility::Stringf;
 
 namespace deephaven::client::utility {
-std::shared_ptr<Executor> Executor::create(std::string id) {
+std::shared_ptr<Executor> Executor::Create(std::string id) {
   auto result = std::make_shared<Executor>(Private(), std::move(id));
-  result->executorThread_ = std::thread(&threadStart, result);
+  result->executorThread_ = std::thread(&ThreadStart, result);
   gpr_log(GPR_DEBUG, "%s: Created.", id.c_str());
   return result;
 }
@@ -26,7 +26,7 @@ Executor::~Executor() {
   gpr_log(GPR_DEBUG, "%s: Destroyed.", id_.c_str());
 }
 
-void Executor::shutdown() {
+void Executor::Shutdown() {
   gpr_log(GPR_DEBUG, "%s: Shutdown requested.", id_.c_str());
   std::unique_lock<std::mutex> guard(mutex_);
   if (cancelled_) {
@@ -40,14 +40,14 @@ void Executor::shutdown() {
   executorThread_.join();
 }
 
-void Executor::invoke(std::shared_ptr<callback_t> cb) {
+void Executor::Invoke(std::shared_ptr<callback_t> f) {
   std::unique_lock guard(mutex_);
   auto needsNotify = todo_.empty();
   if (cancelled_) {
-    auto message = stringf("Executor '%o' is cancelled: ignoring invoke()\n", id_);
+    auto message = Stringf("Executor '%o' is cancelled: ignoring Invoke()\n", id_);
     throw std::runtime_error(DEEPHAVEN_DEBUG_MSG(message));
   } else {
-    todo_.push_back(std::move(cb));
+    todo_.push_back(std::move(f));
   }
   guard.unlock();
 
@@ -56,13 +56,13 @@ void Executor::invoke(std::shared_ptr<callback_t> cb) {
   }
 }
 
-void Executor::threadStart(std::shared_ptr<Executor> self) {
+void Executor::ThreadStart(std::shared_ptr<Executor> self) {
   gpr_log(GPR_DEBUG, "%s: thread starting.", self->id_.c_str());
-  self->runUntilCancelled();
+  self->RunUntilCancelled();
   gpr_log(GPR_DEBUG, "%s: thread exiting.", self->id_.c_str());
 }
 
-void Executor::runUntilCancelled() {
+void Executor::RunUntilCancelled() {
   std::unique_lock<std::mutex> lock(mutex_);
   while (true) {
     while (true) {
@@ -82,7 +82,7 @@ void Executor::runUntilCancelled() {
     // invoke callback while not under lock
     for (const auto &cb: localCallbacks) {
       try {
-        cb->invoke();
+        cb->Invoke();
       } catch (const std::exception &e) {
         gpr_log(GPR_ERROR, "%s: Executor ignored exception: %s.", id_.c_str(), e.what());
       } catch (...) {

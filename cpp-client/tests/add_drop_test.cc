@@ -5,26 +5,26 @@
 #include "tests/test_util.h"
 
 using deephaven::client::NumericExpression;
-using deephaven::dhcore::utility::streamf;
+using deephaven::dhcore::utility::Streamf;
 
 namespace deephaven::client::tests {
 
 TEST_CASE("Drop all columns", "[adddrop]") {
-  auto tm = TableMakerForTests::create();
-  auto table = tm.table();
-  auto ticker = table.getStrCol("Ticker");
-  auto t = table.update("II = ii").where(ticker == "AAPL");
-  const auto &cn = tm.columnNames();
-  auto t2 = t.dropColumns(cn.importDate(), cn.ticker(), cn.open(), cn.close());
-  std::cout << t2.stream(true) << '\n';
+  auto tm = TableMakerForTests::Create();
+  auto table = tm.Table();
+  auto ticker = table.GetStrCol("Ticker");
+  auto t = table.Update("II = ii").Where(ticker == "AAPL");
+  const auto &cn = tm.ColumnNames();
+  auto t2 = t.DropColumns(cn.ImportDate(), cn.Ticker(), cn.Open(), cn.Close());
+  std::cout << t2.Stream(true) << '\n';
 
-  std::vector<int64_t> volData = {100000, 250000, 19000};
-  std::vector<int64_t> iiData = {5, 6, 7};
+  std::vector<int64_t> vol_data = {100000, 250000, 19000};
+  std::vector<int64_t> ii_data = {5, 6, 7};
 
-  compareTable(
+  CompareTable(
       t2,
-      "Volume", volData,
-      "II", iiData
+      "Volume", vol_data,
+      "II", ii_data
   );
 }
 }  // namespace deephaven::client::tests

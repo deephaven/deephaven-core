@@ -29,37 +29,39 @@ public:
    * @param table The table to read from.
    * @return An Arrow FlightStreamReader
    */
-  std::shared_ptr<arrow::flight::FlightStreamReader> getFlightStreamReader(
+  [[nodiscard]]
+  std::shared_ptr<arrow::flight::FlightStreamReader> GetFlightStreamReader(
       const TableHandle &table) const;
 
   /**
    * Add Deephaven authentication headers, and any other extra headers
    * request at session creation, to Arrow FlightCallOptions.
    *
-   * This is a bit of a hack, and is used in the scenario where the caller is rolling
+   * This is a bit of a hack, and is used in the scenario Where the caller is rolling
    * their own Arrow Flight `DoPut` operation. Example code might look like this:
    * @code
    *   // Get a FlightWrapper
-   *   auto wrapper = manager.createFlightWrapper();
+   *   auto wrapper = manager.CreateFlightWrapper();
    *   // Get a
    *   auto [result, fd] = manager.newTableHandleAndFlightDescriptor();
    *   // Empty FlightCallOptions
    *   arrow::flight::FlightCallOptions options;
    *   // add Deephaven auth headers to the FlightCallOptions
-   *   wrapper.addHeaders(&options);
+   *   wrapper.AddHeaders(&options);
    *   std::unique_ptr<arrow::flight::FlightStreamWriter> fsw;
    *   std::unique_ptr<arrow::flight::FlightMetadataReader> fmr;
-   *   auto status = wrapper.flightClient()->DoPut(options, fd, schema, &fsw, &fmr);
+   *   auto status = wrapper.FlightClient()->DoPut(options, fd, Schema, &fsw, &fmr);
    * @endcode
-   * @param options Destination object where the authentication headers should be written.
+   * @param options Destination object Where the authentication headers should be written.
    */
-  void addHeaders(arrow::flight::FlightCallOptions *options) const;
+  void AddHeaders(arrow::flight::FlightCallOptions *options) const;
 
   /**
    * Gets the underlying FlightClient
    * @return A pointer to the FlightClient.
    */
-  arrow::flight::FlightClient *flightClient() const;
+  [[nodiscard]]
+  arrow::flight::FlightClient *FlightClient() const;
 
 private:
   std::shared_ptr<impl::TableHandleManagerImpl> impl_;

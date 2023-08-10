@@ -1,65 +1,29 @@
 /**
- * Copyright (c) 2016-2022 Deephaven Data Labs and Patent Pending
+ * Copyright (c) 2016-2023 Deephaven Data Labs and Patent Pending
  */
 package io.deephaven.benchmarking.generator;
 
 import io.deephaven.benchmarking.generator.random.ExtendedRandom;
+import org.jetbrains.annotations.NotNull;
 
-/**
- * A {@link ColumnGenerator} That generates a typed number value randomly.
- * 
- * @param <T>
- */
-public class RandomNumColumnGenerator<T extends Number> extends AbstractNumColumnGenerator<T> {
-    protected ExtendedRandom generator = null;
-    private final double min, max;
+public interface NumberGenerator {
+    void init(@NotNull ExtendedRandom random);
 
-    public RandomNumColumnGenerator(Class<T> type, String name) {
-        this(type, name, getLowerBoundForType(type), getUpperBoundForType(type));
-    }
+    byte getByte();
 
-    public RandomNumColumnGenerator(Class<T> type, String name, double min, double max) {
-        super(type, name);
-        this.min = min;
-        this.max = max;
-    }
+    short getShort();
 
-    @Override
-    public void init(ExtendedRandom random) {
-        generator = random;
-    }
+    int getInt();
 
-    @Override
-    public byte getByte() {
-        return (byte) getInt();
-    }
+    long getLong();
 
-    @Override
-    public short getShort() {
-        return (short) getInt();
-    }
+    float getFloat();
 
-    @Override
-    public int getInt() {
-        return generator.nextInt((int) min, (int) max);
-    }
+    double getDouble();
 
-    @Override
-    public long getLong() {
-        return generator.nextLong((long) min, (long) max);
-    }
+    char getChar();
 
-    @Override
-    public float getFloat() {
-        return (float) getDouble();
-    }
-
-    @Override
-    public double getDouble() {
-        return generator.nextDouble(min, max);
-    }
-
-    private static <T extends Number> double getUpperBoundForType(Class<T> type) {
+    static <T extends Number> double getUpperBoundForType(@NotNull final Class<T> type) {
         if (type == byte.class || type == Byte.class) {
             return Byte.MAX_VALUE;
         } else if (type == short.class || type == Short.class) {
@@ -73,11 +37,10 @@ public class RandomNumColumnGenerator<T extends Number> extends AbstractNumColum
         } else if (type == double.class || type == Double.class) {
             return Double.MAX_VALUE;
         }
-
         throw new IllegalStateException("Unsupported Number type: " + type.toGenericString());
     }
 
-    private static <T extends Number> double getLowerBoundForType(Class<T> type) {
+    static <T extends Number> double getLowerBoundForType(@NotNull final Class<T> type) {
         if (type == byte.class || type == Byte.class) {
             return Byte.MIN_VALUE;
         } else if (type == short.class || type == Short.class) {
@@ -94,5 +57,4 @@ public class RandomNumColumnGenerator<T extends Number> extends AbstractNumColum
 
         throw new IllegalStateException("Unsupported Number type: " + type.toGenericString());
     }
-
 }

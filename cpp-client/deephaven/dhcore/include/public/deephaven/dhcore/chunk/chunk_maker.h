@@ -15,15 +15,16 @@ namespace deephaven::dhcore::chunk {
  * Factory class for creating Chunk objects.
  */
 class ChunkMaker {
-  typedef deephaven::dhcore::column::ColumnSource ColumnSource;
+  using ColumnSource = deephaven::dhcore::column::ColumnSource;
 public:
   /**
    * Create a Chunk compatible with the specified ColumnSource. For example if the underlying
-   * element type of the ColumnSource is int32_t, this method will create an Int32Chunk.
-   * @param columnSource The column source whose underlying element type will be inspected.
-   * @param chunkSize The requested size of the chunk.
+   * element type of the ColumnSource is int32_t, this method will Create an Int32Chunk.
+   * @param column_source The column source whose underlying element type will be inspected.
+   * @param chunk_size The requested size of the chunk.
    * @return An AnyChunk, which is a variant value containing the requested chunk.
    */
-  static AnyChunk createChunkFor(const ColumnSource &columnSource, size_t chunkSize);
+  [[nodiscard]]
+  static AnyChunk CreateChunkFor(const ColumnSource &column_source, size_t chunk_size);
 };
 }  // namespace deephaven::client::chunk

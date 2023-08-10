@@ -7,7 +7,6 @@ import gnu.trove.list.array.TIntArrayList;
 import io.deephaven.base.verify.Assert;
 import io.deephaven.chunk.*;
 import io.deephaven.chunk.attributes.Values;
-import io.deephaven.engine.context.ExecutionContext;
 import io.deephaven.engine.rowset.RowSequence;
 import io.deephaven.engine.rowset.chunkattributes.OrderedRowKeyRanges;
 import io.deephaven.engine.rowset.chunkattributes.OrderedRowKeys;
@@ -22,6 +21,7 @@ import org.apache.commons.lang3.mutable.MutableInt;
 import org.jetbrains.annotations.NotNull;
 
 import java.util.Arrays;
+import java.util.function.LongConsumer;
 
 import static io.deephaven.util.QueryConstants.NULL_CHAR;
 import static io.deephaven.util.type.TypeUtils.box;
@@ -32,7 +32,7 @@ import static io.deephaven.util.type.TypeUtils.unbox;
  * <p>
  * The C-haracterArraySource is replicated to all other types with
  * io.deephaven.engine.table.impl.sources.Replicate.
- *
+ * <p>
  * (C-haracter is deliberately spelled that way in order to prevent Replicate from altering this very comment).
  */
 public class CharacterArraySource extends ArraySourceHelper<Character, char[]>
@@ -321,7 +321,22 @@ public class CharacterArraySource extends ArraySourceHelper<Character, char[]>
         final WritableCharChunk<? super Values> chunk = destination.asWritableCharChunk();
         // endregion chunkDecl
         MutableInt destOffset = new MutableInt(0);
-        rowSequence.forAllRowKeyRanges((final long from, final long to) -> {
+        rowSequence.forAllRowKeyRanges((final long from, long to) -> {
+            int valuesAtEnd = 0;
+
+            if (from > maxIndex) {
+                // the whole region is beyond us
+                final int sz = LongSizedDataStructure.intSize("int cast", to - from + 1);
+                destination.fillWithNullValue(destOffset.intValue(), sz);
+                destOffset.add(sz);
+                return;
+            }
+            if (to > maxIndex) {
+                // only part of the region is beyond us
+                valuesAtEnd = LongSizedDataStructure.intSize("int cast", to - maxIndex);
+                to = maxIndex;
+            }
+
             final int fromBlock = getBlockNo(from);
             final int toBlock = getBlockNo(to);
             final int fromOffsetInBlock = (int) (from & INDEX_MASK);
@@ -348,6 +363,11 @@ public class CharacterArraySource extends ArraySourceHelper<Character, char[]>
                 destination.copyFromArray(getBlock(toBlock), 0, destOffset.intValue(), restSz);
                 // endregion copyFromArray
                 destOffset.add(restSz);
+            }
+
+            if (valuesAtEnd > 0) {
+                destination.fillWithNullValue(destOffset.intValue(), valuesAtEnd);
+                destOffset.add(valuesAtEnd);
             }
         });
         destination.setSize(destOffset.intValue());
@@ -397,7 +417,20 @@ public class CharacterArraySource extends ArraySourceHelper<Character, char[]>
             destOffset.add(length);
         };
 
-        rowSequence.forAllRowKeyRanges((final long from, final long to) -> {
+        rowSequence.forAllRowKeyRanges((final long from, long to) -> {
+            int valuesAtEnd = 0;
+            if (from > maxIndex) {
+                // the whole region is beyond us
+                final int sz = LongSizedDataStructure.intSize("int cast", to - from + 1);
+                destination.fillWithNullValue(destOffset.intValue(), sz);
+                destOffset.add(sz);
+                return;
+            } else if (to > maxIndex) {
+                // only part of the region is beyond us
+                valuesAtEnd = LongSizedDataStructure.intSize("int cast", to - maxIndex);
+                to = maxIndex;
+            }
+
             final int fromBlock = getBlockNo(from);
             final int toBlock = getBlockNo(to);
             final int fromOffsetInBlock = (int) (from & INDEX_MASK);
@@ -414,6 +447,11 @@ public class CharacterArraySource extends ArraySourceHelper<Character, char[]>
 
                 int restSz = (int) (to & INDEX_MASK) + 1;
                 lambda.copy(toBlock, 0, restSz);
+            }
+
+            if (valuesAtEnd > 0) {
+                destination.fillWithNullValue(destOffset.intValue(), valuesAtEnd);
+                destOffset.add(valuesAtEnd);
             }
         });
         destination.setSize(destOffset.intValue());
@@ -434,7 +472,7 @@ public class CharacterArraySource extends ArraySourceHelper<Character, char[]>
         final WritableCharChunk<? super Values> chunk = destGeneric.asWritableCharChunk();
         // endregion chunkDecl
         final FillSparseChunkContext<char[]> ctx = new FillSparseChunkContext<>();
-        rows.forAllRowKeys((final long v) -> {
+        final LongConsumer normalFiller = (final long v) -> {
             if (v >= ctx.capForCurrentBlock) {
                 ctx.currentBlockNo = getBlockNo(v);
                 ctx.capForCurrentBlock = (ctx.currentBlockNo + 1L) << LOG_BLOCK_SIZE;
@@ -443,7 +481,20 @@ public class CharacterArraySource extends ArraySourceHelper<Character, char[]>
             // region conversion
             chunk.set(ctx.offset++, ctx.currentBlock[(int) (v & INDEX_MASK)]);
             // endregion conversion
-        });
+        };
+        if (rows.lastRowKey() > maxIndex) {
+            final long initialPosition, firstNullPosition;
+            try (final RowSequence.Iterator rowsIter = rows.getRowSequenceIterator()) {
+                initialPosition = rowsIter.getRelativePosition();
+                rowsIter.getNextRowSequenceThrough(maxIndex).forAllRowKeys(normalFiller);
+                firstNullPosition = rowsIter.getRelativePosition();
+            }
+            final int trailingNullCount = Math.toIntExact(rows.size() - (firstNullPosition - initialPosition));
+            chunk.fillWithNullValue(ctx.offset, trailingNullCount);
+            ctx.offset += trailingNullCount;
+        } else {
+            rows.forAllRowKeys(normalFiller);
+        }
         chunk.setSize(ctx.offset);
     }
     // endregion fillSparseChunk
@@ -469,7 +520,7 @@ public class CharacterArraySource extends ArraySourceHelper<Character, char[]>
         final WritableCharChunk<? super Values> chunk = destGeneric.asWritableCharChunk();
         // endregion chunkDecl
         final FillSparseChunkContext<char[]> ctx = new FillSparseChunkContext<>();
-        rows.forAllRowKeys((final long v) -> {
+        final LongConsumer normalFiller = (final long v) -> {
             if (v >= ctx.capForCurrentBlock) {
                 ctx.currentBlockNo = getBlockNo(v);
                 ctx.capForCurrentBlock = (ctx.currentBlockNo + 1L) << LOG_BLOCK_SIZE;
@@ -477,7 +528,6 @@ public class CharacterArraySource extends ArraySourceHelper<Character, char[]>
                 ctx.currentPrevBlock = prevBlocks[ctx.currentBlockNo];
                 ctx.prevInUseBlock = prevInUse[ctx.currentBlockNo];
             }
-
             final int indexWithinBlock = (int) (v & INDEX_MASK);
             final int indexWithinInUse = indexWithinBlock >> LOG_INUSE_BITSET_SIZE;
             final long maskWithinInUse = 1L << (indexWithinBlock & IN_USE_MASK);
@@ -485,7 +535,20 @@ public class CharacterArraySource extends ArraySourceHelper<Character, char[]>
             // region conversion
             chunk.set(ctx.offset++, usePrev ? ctx.currentPrevBlock[indexWithinBlock] : ctx.currentBlock[indexWithinBlock]);
             // endregion conversion
-        });
+        };
+        if (rows.lastRowKey() > maxIndex) {
+            final long initialPosition, firstNullPosition;
+            try (final RowSequence.Iterator rowsIter = rows.getRowSequenceIterator()) {
+                initialPosition = rowsIter.getRelativePosition();
+                rowsIter.getNextRowSequenceThrough(maxIndex).forAllRowKeys(normalFiller);
+                firstNullPosition = rowsIter.getRelativePosition();
+            }
+            final int trailingNullCount = Math.toIntExact(rows.size() - (firstNullPosition - initialPosition));
+            chunk.fillWithNullValue(ctx.offset, trailingNullCount);
+            ctx.offset += trailingNullCount;
+        } else {
+            rows.forAllRowKeys(normalFiller);
+        }
         chunk.setSize(ctx.offset);
     }
     // endregion fillSparsePrevChunk
