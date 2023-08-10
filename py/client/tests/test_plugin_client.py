@@ -30,7 +30,7 @@ plot2 = Figure().plot_xy(series_name="Random numbers", t=source2, x="X", y="Y", 
         self.assertGreater(len(payload), 0)
         self.assertGreater(len(refs), 0)
         ref = refs[0]
-        self.assertEqual(ref.type, "Table")
+        self.assertEqual(ref.type_, "Table")
 
 
 if __name__ == "__main__":
