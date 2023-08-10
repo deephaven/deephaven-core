@@ -37,21 +37,21 @@ class StrColImpl;
 class TableHandleManagerImpl;
 
 namespace internal {
-class GetColumnDefsCallback;
-
 class LazyStateInfo final {
-  typedef io::deephaven::proto::backplane::grpc::Ticket Ticket;
+  using Ticket = io::deephaven::proto::backplane::grpc::Ticket;
 
 public:
-  LazyStateInfo(int64_t numRows, bool isStatic);
+  LazyStateInfo(int64_t num_rows, bool is_static);
   LazyStateInfo(const LazyStateInfo &other);
   LazyStateInfo &operator=(const LazyStateInfo &other);
   LazyStateInfo(LazyStateInfo &&other) noexcept;
   LazyStateInfo &operator=(LazyStateInfo &&other) noexcept;
   ~LazyStateInfo();
 
-  int64_t numRows() const { return numRows_; }
-  bool isStatic() const { return isStatic_; }
+  [[nodiscard]]
+  int64_t NumRows() const { return numRows_; }
+  [[nodiscard]]
+  bool IsStatic() const { return isStatic_; }
 
 private:
   int64_t numRows_ = 0;
@@ -60,10 +60,10 @@ private:
 
 class ExportedTableCreationCallback final
     : public deephaven::dhcore::utility::SFCallback<io::deephaven::proto::backplane::grpc::ExportedTableCreationResponse> {
-  typedef io::deephaven::proto::backplane::grpc::ExportedTableCreationResponse ExportedTableCreationResponse;
-  typedef io::deephaven::proto::backplane::grpc::Ticket Ticket;
-  typedef deephaven::client::server::Server Server;
-  typedef deephaven::client::utility::Executor Executor;
+  using ExportedTableCreationResponse = io::deephaven::proto::backplane::grpc::ExportedTableCreationResponse;
+  using Ticket = io::deephaven::proto::backplane::grpc::Ticket;
+  using Server = deephaven::client::server::Server;
+  using Executor = deephaven::client::utility::Executor;
 
   template<typename T>
   using SFCallback = deephaven::dhcore::utility::SFCallback<T>;
@@ -73,12 +73,12 @@ class ExportedTableCreationCallback final
   using CBFuture = deephaven::dhcore::utility::CBFuture<T>;
 
 public:
-  ExportedTableCreationCallback(std::shared_ptr<TableHandleImpl> dependency, Ticket expectedTicket,
-      CBPromise<LazyStateInfo> infoPromise);
+  ExportedTableCreationCallback(std::shared_ptr<TableHandleImpl> dependency, Ticket expected_ticket,
+      CBPromise<LazyStateInfo> info_promise);
   ~ExportedTableCreationCallback() final;
 
-  void onSuccess(ExportedTableCreationResponse item) final;
-  void onFailure(std::exception_ptr ep) final;
+  void OnSuccess(ExportedTableCreationResponse item) final;
+  void OnFailure(std::exception_ptr ep) final;
 
 private:
   // Hold a dependency on the parent until this callback is done.
@@ -88,11 +88,11 @@ private:
 };
 
 class LazyState final {
-  typedef deephaven::dhcore::clienttable::Schema Schema;
-  typedef io::deephaven::proto::backplane::grpc::ExportedTableCreationResponse ExportedTableCreationResponse;
-  typedef io::deephaven::proto::backplane::grpc::Ticket Ticket;
-  typedef deephaven::client::server::Server Server;
-  typedef deephaven::client::utility::Executor Executor;
+  using Schema = deephaven::dhcore::clienttable::Schema;
+  using ExportedTableCreationResponse = io::deephaven::proto::backplane::grpc::ExportedTableCreationResponse;
+  using Ticket = io::deephaven::proto::backplane::grpc::Ticket;
+  using Server = deephaven::client::server::Server;
+  using Executor = deephaven::client::utility::Executor;
 
   template<typename T>
   using SFCallback = deephaven::dhcore::utility::SFCallback<T>;
@@ -102,21 +102,23 @@ class LazyState final {
   using CBFuture = deephaven::dhcore::utility::CBFuture<T>;
 
 public:
-  LazyState(std::shared_ptr<Server> server, std::shared_ptr<Executor> flightExecutor,
-      CBFuture<LazyStateInfo> infoFuture, Ticket ticket);
+  LazyState(std::shared_ptr<Server> server, std::shared_ptr<Executor> flight_executor,
+      CBFuture<LazyStateInfo> info_future, Ticket ticket);
   ~LazyState();
 
-  std::shared_ptr<Schema> getSchema();
-  void getSchemaAsync(std::shared_ptr<SFCallback<std::shared_ptr<Schema>>> cb);
+  [[nodiscard]]
+  std::shared_ptr<Schema> GetSchema();
+  void GetSchemaAsync(std::shared_ptr<SFCallback<std::shared_ptr<Schema>>> cb);
 
-  void releaseAsync();
+  void ReleaseAsync();
 
   /**
    * Used in tests.
    */
-  void waitUntilReady();
+  void WaitUntilReady();
 
-  const LazyStateInfo &info() const;
+  [[nodiscard]]
+  const LazyStateInfo &Info() const;
 
 private:
   std::shared_ptr<Server> server_;
@@ -133,127 +135,177 @@ private:
 class TableHandleImpl : public std::enable_shared_from_this<TableHandleImpl> {
   struct Private {
   };
-  typedef deephaven::client::SortPair SortPair;
-  typedef deephaven::client::impl::ColumnImpl ColumnImpl;
-  typedef deephaven::client::impl::DateTimeColImpl DateTimeColImpl;
-  typedef deephaven::client::impl::NumColImpl NumColImpl;
-  typedef deephaven::client::impl::StrColImpl StrColImpl;
-  typedef deephaven::client::impl::BooleanExpressionImpl BooleanExpressionImpl;
-  typedef deephaven::client::subscription::SubscriptionHandle SubscriptionHandle;
-  typedef deephaven::client::utility::Executor Executor;
-  typedef deephaven::dhcore::clienttable::Schema Schema;
-  typedef deephaven::dhcore::ticking::TickingCallback TickingCallback;
-  typedef deephaven::dhcore::ElementTypeId ElementTypeId;
-  typedef io::deephaven::proto::backplane::grpc::AsOfJoinTablesRequest AsOfJoinTablesRequest;
-  typedef io::deephaven::proto::backplane::grpc::ComboAggregateRequest ComboAggregateRequest;
-  typedef io::deephaven::proto::backplane::grpc::Ticket Ticket;
+  using SortPair = deephaven::client::SortPair;
+  using ColumnImpl = deephaven::client::impl::ColumnImpl;
+  using DateTimeColImpl = deephaven::client::impl::DateTimeColImpl;
+  using NumColImpl = deephaven::client::impl::NumColImpl;
+  using StrColImpl = deephaven::client::impl::StrColImpl;
+  using BooleanExpressionImpl = deephaven::client::impl::BooleanExpressionImpl;
+  using SubscriptionHandle = deephaven::client::subscription::SubscriptionHandle;
+  using Executor = deephaven::client::utility::Executor;
+  using SchemaType = deephaven::dhcore::clienttable::Schema;
+  using TickingCallback = deephaven::dhcore::ticking::TickingCallback;
+  using ElementTypeId = deephaven::dhcore::ElementTypeId;
+  using AsOfJoinTablesRequest = io::deephaven::proto::backplane::grpc::AsOfJoinTablesRequest;
+  using ComboAggregateRequest = io::deephaven::proto::backplane::grpc::ComboAggregateRequest;
+  using TicketType = io::deephaven::proto::backplane::grpc::Ticket;
 
   template<typename ...Args>
   using SFCallback = deephaven::dhcore::utility::SFCallback<Args...>;
 public:
+  [[nodiscard]]
   static std::pair<std::shared_ptr<internal::ExportedTableCreationCallback>, std::shared_ptr<internal::LazyState>>
-  createEtcCallback(std::shared_ptr<TableHandleImpl> dependency, const TableHandleManagerImpl *thm, Ticket resultTicket);
+  CreateEtcCallback(std::shared_ptr<TableHandleImpl> dependency, const TableHandleManagerImpl *thm, TicketType result_ticket);
 
-  static std::shared_ptr<TableHandleImpl> create(std::shared_ptr<TableHandleManagerImpl> thm, Ticket ticket,
-      std::shared_ptr<internal::LazyState> lazyState);
-  TableHandleImpl(Private, std::shared_ptr<TableHandleManagerImpl> &&thm, Ticket &&ticket,
-      std::shared_ptr<internal::LazyState> &&lazyState);
+  [[nodiscard]]
+  static std::shared_ptr<TableHandleImpl> Create(std::shared_ptr<TableHandleManagerImpl> thm, TicketType ticket,
+      std::shared_ptr<internal::LazyState> lazy_state);
+  TableHandleImpl(Private, std::shared_ptr<TableHandleManagerImpl> &&thm, TicketType &&ticket,
+      std::shared_ptr<internal::LazyState> &&lazy_state);
   ~TableHandleImpl();
 
-  std::shared_ptr<TableHandleImpl> select(std::vector<std::string> columnSpecs);
-  std::shared_ptr<TableHandleImpl> update(std::vector<std::string> columnSpecs);
-  std::shared_ptr<TableHandleImpl> view(std::vector<std::string> columnSpecs);
-  std::shared_ptr<TableHandleImpl> dropColumns(std::vector<std::string> columnSpecs);
-  std::shared_ptr<TableHandleImpl> updateView(std::vector<std::string> columnSpecs);
-  std::shared_ptr<TableHandleImpl> where(std::string condition);
-  std::shared_ptr<TableHandleImpl> sort(std::vector<SortPair> sortPairs);
-  std::shared_ptr<TableHandleImpl> preemptive(int32_t sampleIntervalMs);
+  [[nodiscard]]
+  std::shared_ptr<TableHandleImpl> Select(std::vector<std::string> column_specs);
+  [[nodiscard]]
+  std::shared_ptr<TableHandleImpl> Update(std::vector<std::string> column_specs);
+  [[nodiscard]]
+  std::shared_ptr<TableHandleImpl> View(std::vector<std::string> column_specs);
+  [[nodiscard]]
+  std::shared_ptr<TableHandleImpl> DropColumns(std::vector<std::string> column_specs);
+  [[nodiscard]]
+  std::shared_ptr<TableHandleImpl> UpdateView(std::vector<std::string> column_specs);
+  [[nodiscard]]
+  std::shared_ptr<TableHandleImpl> Where(std::string condition);
+  [[nodiscard]]
+  std::shared_ptr<TableHandleImpl> Sort(std::vector<SortPair> sort_pairs);
+  [[nodiscard]]
+  std::shared_ptr<TableHandleImpl> Preemptive(int32_t sample_interval_ms);
 
-  std::shared_ptr<TableHandleImpl> by(std::vector<std::string> columnSpecs);
-  std::shared_ptr<TableHandleImpl> by(std::vector<ComboAggregateRequest::Aggregate> descriptors,
-      std::vector<std::string> groupByColumns);
-  std::shared_ptr<TableHandleImpl> minBy(std::vector<std::string> columnSpecs);
-  std::shared_ptr<TableHandleImpl> maxBy(std::vector<std::string> columnSpecs);
-  std::shared_ptr<TableHandleImpl> sumBy(std::vector<std::string> columnSpecs);
-  std::shared_ptr<TableHandleImpl> absSumBy(std::vector<std::string> columnSpecs);
-  std::shared_ptr<TableHandleImpl> varBy(std::vector<std::string> columnSpecs);
-  std::shared_ptr<TableHandleImpl> stdBy(std::vector<std::string> columnSpecs);
-  std::shared_ptr<TableHandleImpl> avgBy(std::vector<std::string> columnSpecs);
-  std::shared_ptr<TableHandleImpl> lastBy(std::vector<std::string> columnSpecs);
-  std::shared_ptr<TableHandleImpl> firstBy(std::vector<std::string> columnSpecs);
-  std::shared_ptr<TableHandleImpl> medianBy(std::vector<std::string> columnSpecs);
-  std::shared_ptr<TableHandleImpl> percentileBy(double percentile, bool avgMedian,
-      std::vector<std::string> columnSpecs);
+  [[nodiscard]]
+  std::shared_ptr<TableHandleImpl> By(std::vector<std::string> column_specs);
+  [[nodiscard]]
+  std::shared_ptr<TableHandleImpl> By(std::vector<ComboAggregateRequest::Aggregate> descriptors,
+      std::vector<std::string> group_by_columns);
+  [[nodiscard]]
+  std::shared_ptr<TableHandleImpl> MinBy(std::vector<std::string> column_specs);
+  [[nodiscard]]
+  std::shared_ptr<TableHandleImpl> MaxBy(std::vector<std::string> column_specs);
+  [[nodiscard]]
+  std::shared_ptr<TableHandleImpl> SumBy(std::vector<std::string> column_specs);
+  [[nodiscard]]
+  std::shared_ptr<TableHandleImpl> AbsSumBy(std::vector<std::string> column_specs);
+  [[nodiscard]]
+  std::shared_ptr<TableHandleImpl> VarBy(std::vector<std::string> column_specs);
+  [[nodiscard]]
+  std::shared_ptr<TableHandleImpl> StdBy(std::vector<std::string> column_specs);
+  [[nodiscard]]
+  std::shared_ptr<TableHandleImpl> AvgBy(std::vector<std::string> column_specs);
+  [[nodiscard]]
+  std::shared_ptr<TableHandleImpl> LastBy(std::vector<std::string> column_specs);
+  [[nodiscard]]
+  std::shared_ptr<TableHandleImpl> FirstBy(std::vector<std::string> column_specs);
+  [[nodiscard]]
+  std::shared_ptr<TableHandleImpl> MedianBy(std::vector<std::string> column_specs);
+  [[nodiscard]]
+  std::shared_ptr<TableHandleImpl> PercentileBy(double percentile, bool avg_median,
+      std::vector<std::string> column_specs);
+  [[nodiscard]]
   std::shared_ptr<TableHandleImpl>
-  percentileBy(double percentile, std::vector<std::string> columnSpecs);
+  PercentileBy(double percentile, std::vector<std::string> column_specs);
+  [[nodiscard]]
   std::shared_ptr<TableHandleImpl>
-  countBy(std::string countByColumn, std::vector<std::string> columnSpecs);
+  CountBy(std::string count_by_column, std::vector<std::string> column_specs);
+  [[nodiscard]]
   std::shared_ptr<TableHandleImpl>
-  wAvgBy(std::string weightColumn, std::vector<std::string> columnSpecs);
-  std::shared_ptr<TableHandleImpl> tailBy(int64_t n, std::vector<std::string> columnSpecs);
-  std::shared_ptr<TableHandleImpl> headBy(int64_t n, std::vector<std::string> columnSpecs);
+  WavgBy(std::string weight_column, std::vector<std::string> column_specs);
+  [[nodiscard]]
+  std::shared_ptr<TableHandleImpl> TailBy(int64_t n, std::vector<std::string> column_specs);
+  [[nodiscard]]
+  std::shared_ptr<TableHandleImpl> HeadBy(int64_t n, std::vector<std::string> column_specs);
 
-  std::shared_ptr<TableHandleImpl> tail(int64_t n);
-  std::shared_ptr<TableHandleImpl> head(int64_t n);
-  std::shared_ptr<TableHandleImpl> ungroup(bool nullFill, std::vector<std::string> groupByColumns);
-  std::shared_ptr<TableHandleImpl> merge(std::string keyColumn, std::vector<Ticket> sourceTickets);
+  [[nodiscard]]
+  std::shared_ptr<TableHandleImpl> Tail(int64_t n);
+  [[nodiscard]]
+  std::shared_ptr<TableHandleImpl> Head(int64_t n);
+  [[nodiscard]]
+  std::shared_ptr<TableHandleImpl> Ungroup(bool null_fill, std::vector<std::string> group_by_columns);
+  [[nodiscard]]
+  std::shared_ptr<TableHandleImpl> Merge(std::string key_column, std::vector<TicketType> source_tickets);
 
-  std::shared_ptr<TableHandleImpl> crossJoin(const TableHandleImpl &rightSide,
-      std::vector<std::string> columnsToMatch, std::vector<std::string> columnsToAdd);
+  [[nodiscard]]
+  std::shared_ptr<TableHandleImpl> CrossJoin(const TableHandleImpl &right_side,
+      std::vector<std::string> columns_to_match, std::vector<std::string> columns_to_add);
 
-  std::shared_ptr<TableHandleImpl> naturalJoin(const TableHandleImpl &rightSide,
-      std::vector<std::string> columnsToMatch, std::vector<std::string> columnsToAdd);
+  [[nodiscard]]
+  std::shared_ptr<TableHandleImpl> NaturalJoin(const TableHandleImpl &right_side,
+      std::vector<std::string> columns_to_match, std::vector<std::string> columns_to_add);
 
-  std::shared_ptr<TableHandleImpl> exactJoin(const TableHandleImpl &rightSide,
-      std::vector<std::string> columnsToMatch, std::vector<std::string> columnsToAdd);
+  [[nodiscard]]
+  std::shared_ptr<TableHandleImpl> ExactJoin(const TableHandleImpl &right_side,
+      std::vector<std::string> columns_to_match, std::vector<std::string> columns_to_add);
 
-  std::shared_ptr<TableHandleImpl> asOfJoin(AsOfJoinTablesRequest::MatchRule matchRule,
-      const TableHandleImpl &rightSide, std::vector<std::string> columnsToMatch,
-      std::vector<std::string> columnsToAdd);
+  [[nodiscard]]
+  std::shared_ptr<TableHandleImpl> AsOfJoin(AsOfJoinTablesRequest::MatchRule match_rule,
+      const TableHandleImpl &right_side, std::vector<std::string> columns_to_match,
+      std::vector<std::string> columns_to_add);
 
-  std::shared_ptr<TableHandleImpl> updateBy(std::vector<std::shared_ptr<UpdateByOperationImpl>> ops,
+  [[nodiscard]]
+  std::shared_ptr<TableHandleImpl> UpdateBy(std::vector<std::shared_ptr<UpdateByOperationImpl>> ops,
       std::vector<std::string> by);
 
-  std::vector<std::shared_ptr<ColumnImpl>> getColumnImpls();
-  std::shared_ptr<StrColImpl> getStrColImpl(std::string columnName);
-  std::shared_ptr<NumColImpl> getNumColImpl(std::string columnName);
-  std::shared_ptr<DateTimeColImpl> getDateTimeColImpl(std::string columnName);
+  [[nodiscard]]
+  std::vector<std::shared_ptr<ColumnImpl>> GetColumnImpls();
+  [[nodiscard]]
+  std::shared_ptr<StrColImpl> GetStrColImpl(std::string column_name);
+  [[nodiscard]]
+  std::shared_ptr<NumColImpl> GetNumColImpl(std::string column_name);
+  [[nodiscard]]
+  std::shared_ptr<DateTimeColImpl> GetDateTimeColImpl(std::string column_name);
 
-  void bindToVariableAsync(std::string variable, std::shared_ptr<SFCallback<>> callback);
+  void BindToVariableAsync(std::string variable, std::shared_ptr<SFCallback<>> callback);
 
-  std::shared_ptr<SubscriptionHandle> subscribe(std::shared_ptr<TickingCallback> callback);
-  std::shared_ptr<SubscriptionHandle> subscribe(TableHandle::onTickCallback_t onTick,
-      void *onTickUserData, TableHandle::onErrorCallback_t onError, void *onErrorUserData);
-  void unsubscribe(const std::shared_ptr<SubscriptionHandle> &handle);
+  [[nodiscard]]
+  std::shared_ptr<SubscriptionHandle> Subscribe(std::shared_ptr<TickingCallback> callback);
+  [[nodiscard]]
+  std::shared_ptr<SubscriptionHandle> Subscribe(TableHandle::onTickCallback_t on_tick,
+      void *on_tick_user_data, TableHandle::onErrorCallback_t on_error, void *on_error_user_data);
+  void Unsubscribe(const std::shared_ptr<SubscriptionHandle> &handle);
 
   /**
    * Used in tests.
    */
-  void observe();
+  void Observe();
 
-  int64_t numRows() const;
-  bool isStatic() const;
-  std::shared_ptr<Schema> schema() const;
+  [[nodiscard]]
+  int64_t NumRows() const;
+  [[nodiscard]]
+  bool IsStatic() const;
+  [[nodiscard]]
+  std::shared_ptr<SchemaType> Schema() const;
 
-  const std::shared_ptr<TableHandleManagerImpl> &managerImpl() const { return managerImpl_; }
+  const std::shared_ptr<TableHandleManagerImpl> &ManagerImpl() const { return managerImpl_; }
 
-  const Ticket &ticket() const { return ticket_; }
+  const TicketType &Ticket() const { return ticket_; }
 
 private:
-  void lookupHelper(const std::string &columnName, std::initializer_list<ElementTypeId::Enum> validTypes);
+  void LookupHelper(const std::string &column_name, std::initializer_list<ElementTypeId::Enum> valid_types);
 
-  std::shared_ptr<TableHandleImpl> defaultAggregateByDescriptor(
-      ComboAggregateRequest::Aggregate descriptor, std::vector<std::string> groupByColumns);
+  [[nodiscard]]
+  std::shared_ptr<TableHandleImpl> DefaultAggregateByDescriptor(
+      ComboAggregateRequest::Aggregate descriptor, std::vector<std::string> group_by_columns);
+  [[nodiscard]]
   std::shared_ptr<TableHandleImpl>
-  defaultAggregateByType(ComboAggregateRequest::AggType aggregateType,
-      std::vector<std::string> groupByColumns);
+  DefaultAggregateByType(ComboAggregateRequest::AggType aggregate_type,
+      std::vector<std::string> group_by_columns);
 
-  std::shared_ptr<TableHandleImpl> headOrTailHelper(bool head, int64_t n);
-  std::shared_ptr<TableHandleImpl> headOrTailByHelper(int64_t n, bool head,
-      std::vector<std::string> columnSpecs);
+  [[nodiscard]]
+  std::shared_ptr<TableHandleImpl> HeadOrTailHelper(bool head, int64_t n);
+  [[nodiscard]]
+  std::shared_ptr<TableHandleImpl> HeadOrTailByHelper(int64_t n, bool head,
+      std::vector<std::string> column_specs);
 
   std::shared_ptr<TableHandleManagerImpl> managerImpl_;
-  Ticket ticket_;
+  TicketType ticket_;
   std::shared_ptr<internal::LazyState> lazyState_;
 };
 }  // namespace impl

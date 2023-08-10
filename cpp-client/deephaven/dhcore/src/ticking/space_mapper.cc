@@ -4,14 +4,13 @@
 #include "deephaven/dhcore/container/row_sequence.h"
 #include "deephaven/dhcore/ticking/space_mapper.h"
 
-#include <optional>
 #include "deephaven/dhcore/utility/utility.h"
 
 using deephaven::dhcore::container::RowSequence;
 using deephaven::dhcore::container::RowSequenceBuilder;
 using deephaven::dhcore::utility::separatedList;
-using deephaven::dhcore::utility::streamf;
-using deephaven::dhcore::utility::stringf;
+using deephaven::dhcore::utility::Streamf;
+using deephaven::dhcore::utility::Stringf;
 
 namespace deephaven::dhcore::ticking {
 namespace {
@@ -34,72 +33,72 @@ struct SimpleRangeIterator {
 SpaceMapper::SpaceMapper() = default;
 SpaceMapper::~SpaceMapper() = default;
 
-uint64_t SpaceMapper::addRange(uint64_t beginKey, uint64_t endKey) {
+uint64_t SpaceMapper::AddRange(uint64_t begin_key, uint64_t end_key) {
   roaring::Roaring64Map x;
-  auto size = endKey - beginKey;
-  auto initialSize = set_.cardinality();
-  set_.addRange(beginKey, endKey);
-  if (set_.cardinality() != initialSize + size) {
-    auto message = stringf("Some elements of [%o,%o) were already in the set", beginKey,
-        endKey);
+  auto size = end_key - begin_key;
+  auto initial_size = set_.cardinality();
+  set_.addRange(begin_key, end_key);
+  if (set_.cardinality() != initial_size + size) {
+    auto message = Stringf("Some elements of [%o,%o) were already in the set", begin_key,
+        end_key);
     throw std::runtime_error(DEEPHAVEN_DEBUG_MSG(message));
   }
-  return zeroBasedRank(beginKey);
+  return ZeroBasedRank(begin_key);
 }
 
-uint64_t SpaceMapper::eraseRange(uint64_t beginKey, uint64_t endKey) {
-  auto result = zeroBasedRank(beginKey);
-  set_.removeRange(beginKey, endKey);
+uint64_t SpaceMapper::EraseRange(uint64_t begin_key, uint64_t end_key) {
+  auto result = ZeroBasedRank(begin_key);
+  set_.removeRange(begin_key, end_key);
   return result;
 }
 
-void SpaceMapper::applyShift(uint64_t beginKey, uint64_t endKey, uint64_t destKey) {
-  auto size = endKey - beginKey;
-  set_.removeRange(beginKey, endKey);
-  set_.addRange(destKey, destKey + size);
+void SpaceMapper::ApplyShift(uint64_t begin_key, uint64_t end_key, uint64_t dest_key) {
+  auto size = end_key - begin_key;
+  set_.removeRange(begin_key, end_key);
+  set_.addRange(dest_key, dest_key + size);
 }
 
-std::shared_ptr<RowSequence> SpaceMapper::addKeys(const RowSequence &keys) {
+std::shared_ptr<RowSequence> SpaceMapper::AddKeys(const RowSequence &keys) {
   RowSequenceBuilder builder;
-  auto addInterval = [this, &builder](uint64_t beginKey, uint64_t endKey) {
-    auto size = endKey - beginKey;
-    auto beginIndex = addRange(beginKey, endKey);
-    builder.addInterval(beginIndex, beginIndex + size);
+  auto add_interval = [this, &builder](uint64_t begin_key, uint64_t end_key) {
+    auto size = end_key - begin_key;
+    auto begin_index = AddRange(begin_key, end_key);
+    builder.AddInterval(begin_index, begin_index + size);
   };
-  keys.forEachInterval(addInterval);
-  return builder.build();
+  keys.ForEachInterval(add_interval);
+  return builder.Build();
 }
 
-std::shared_ptr<RowSequence> SpaceMapper::convertKeysToIndices(const RowSequence &keys) const {
-  if (keys.empty()) {
-    return RowSequence::createEmpty();
+std::shared_ptr<RowSequence> SpaceMapper::ConvertKeysToIndices(const RowSequence &keys) const {
+  if (keys.Empty()) {
+    return RowSequence::CreateEmpty();
   }
 
   RowSequenceBuilder builder;
-  auto convertInterval = [this, &builder](uint64_t beginKey, uint64_t endKey) {
+  auto convert_interval = [this, &builder](uint64_t begin_key, uint64_t end_key) {
     auto beginp = set_.begin();
-    if (!beginp.move(beginKey)) {
-      auto message = stringf("begin key %o is not in the src map", beginKey);
+    if (!beginp.move(begin_key)) {
+      auto message = Stringf("begin key %o is not in the src map", begin_key);
       throw std::runtime_error(DEEPHAVEN_DEBUG_MSG(message));
     }
-    auto nextRank = zeroBasedRank(beginKey);
+    auto next_rank = ZeroBasedRank(begin_key);
     // Confirm we have entries for everything in the range.
     auto currentp = beginp;
-    for (auto currentKey = beginKey; currentKey != endKey; ++currentKey) {
-      if (currentKey != *currentp) {
-        auto message = stringf("current key %o is in not the src map", currentKey);
+    for (auto current_key = begin_key; current_key != end_key; ++current_key) {
+      if (current_key != *currentp) {
+        auto message = Stringf("Current key %o is in not the src map", current_key);
         throw std::runtime_error(DEEPHAVEN_DEBUG_MSG(message));
       }
       ++currentp;
     }
-    auto size = endKey - beginKey;
-    builder.addInterval(nextRank, nextRank + size);
+    auto size = end_key - begin_key;
+    builder.AddInterval(next_rank, next_rank + size);
   };
-  keys.forEachInterval(convertInterval);
-  return builder.build();
+  keys.ForEachInterval(convert_interval);
+  return builder.Build();
 }
 
-uint64_t SpaceMapper::zeroBasedRank(uint64_t value) const {
+uint64_t SpaceMapper::ZeroBasedRank(uint64_t value) const {
   // Roaring's convention for rank is to "Return the number of integers that are smaller or equal to x".
   // But we would rather know the number of values that are strictly smaller than x.
   auto result = set_.rank(value);

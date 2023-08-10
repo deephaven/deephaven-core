@@ -12,13 +12,14 @@ from deephaven._wrapper import JObjectWrapper
 from deephaven.column import Column
 from deephaven.dtypes import DType
 from deephaven.execution_context import get_exec_ctx
-from deephaven.jcompat import j_runnable
+from deephaven.jcompat import j_lambda, j_runnable
 from deephaven.table import Table
 from deephaven.update_graph import UpdateGraph
 
 _JTableDefinition = jpy.get_type("io.deephaven.engine.table.TableDefinition")
 _JTablePublisher = jpy.get_type("io.deephaven.stream.TablePublisher")
 _JRuntimeException = jpy.get_type("java.lang.RuntimeException")
+_JConsumer = jpy.get_type("java.util.function.Consumer")
 
 
 class TablePublisher(JObjectWrapper):
@@ -76,6 +77,7 @@ class TablePublisher(JObjectWrapper):
 def table_publisher(
     name: str,
     col_defs: Dict[str, DType],
+    on_flush_callback: Optional[Callable[[TablePublisher], None]] = None,
     on_shutdown_callback: Optional[Callable[[], None]] = None,
     update_graph: Optional[UpdateGraph] = None,
     chunk_size: int = 2048,
@@ -85,6 +87,10 @@ def table_publisher(
     Args:
         name (str): the name, used for logging
         col_defs (Dict[str, DType]): the column definitions for the resulting blink table
+        on_flush_callback (Optional[Callable[[TablePublisher], None]]): the on-flush callback, if present, is called
+            once at the beginning of each update graph cycle. This is a pattern that allows publishers to add any data
+            they may have been batching. Do note though, this blocks the update cycle from proceeding, so
+            implementations should take care to not do extraneous work.
         on_shutdown_callback (Optional[Callable[[], None]]): the on-shutdown callback, if present, is called one time
             when the caller should stop adding new data and release any related resources as soon as practicable since
             adding data won't have any downstream effects
@@ -96,6 +102,10 @@ def table_publisher(
     Returns:
         a two-tuple, where the first item is resulting blink Table and the second item is the TablePublisher
     """
+
+    def adapt_callback(_table_publisher: jpy.JType):
+        on_flush_callback(TablePublisher(j_table_publisher=_table_publisher))
+
     j_table_publisher = _JTablePublisher.of(
         name,
         _JTableDefinition.of(
@@ -104,6 +114,7 @@ def table_publisher(
                 for name, dtype in col_defs.items()
             ]
         ),
+        j_lambda(adapt_callback, _JConsumer, None) if on_flush_callback else None,
         j_runnable(on_shutdown_callback) if on_shutdown_callback else None,
         (update_graph or get_exec_ctx().update_graph).j_update_graph,
         chunk_size,

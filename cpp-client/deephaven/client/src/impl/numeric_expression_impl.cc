@@ -18,7 +18,7 @@ public:
       child_(std::move(child)) {}
   ~NumericUnaryOperatorImpl() final;
 
-  void streamIrisRepresentation(std::ostream &s) const final;
+  void StreamIrisRepresentation(std::ostream &s) const final;
 
   char op() const { return op_; }
   const std::shared_ptr<NumericExpressionImpl> &child() const { return child_; }
@@ -34,7 +34,7 @@ public:
       std::shared_ptr<NumericExpressionImpl> &&rhs) : lhs_(std::move(lhs)), op_(op), rhs_(std::move(rhs)) {}
   ~NumericBinaryOperatorImpl() final;
 
-  void streamIrisRepresentation(std::ostream &s) const final;
+  void StreamIrisRepresentation(std::ostream &s) const final;
 
 private:
   std::shared_ptr<NumericExpressionImpl> lhs_;
@@ -48,7 +48,7 @@ public:
       std::shared_ptr<NumericExpressionImpl> &&rhs) : lhs_(std::move(lhs)), op_(op), rhs_(std::move(rhs)) {}
   ~NumericComparisonOperatorImpl() final;
 
-  void streamIrisRepresentation(std::ostream &s) const final;
+  void StreamIrisRepresentation(std::ostream &s) const final;
 
 private:
   std::shared_ptr<NumericExpressionImpl> lhs_;
@@ -61,7 +61,7 @@ public:
   Int64LiteralImpl(int64_t value) : value_(value) {}
   ~Int64LiteralImpl() final;
 
-  void streamIrisRepresentation(std::ostream &s) const final;
+  void StreamIrisRepresentation(std::ostream &s) const final;
 
 private:
   int64_t value_ = 0;
@@ -72,14 +72,14 @@ public:
   DoubleLiteralImpl(double value) : value_(value) {}
   ~DoubleLiteralImpl() final;
 
-  void streamIrisRepresentation(std::ostream &s) const final;
+  void StreamIrisRepresentation(std::ostream &s) const final;
 
 private:
   double value_ = 0;
 };
 }  // namespace
 
-std::shared_ptr<NumericExpressionImpl> NumericExpressionImpl::createUnaryOperator(char op,
+std::shared_ptr<NumericExpressionImpl> NumericExpressionImpl::CreateUnaryOperator(char op,
     std::shared_ptr<NumericExpressionImpl> child) {
   if (op == '+') {
     // Strip leading unary +
@@ -96,21 +96,21 @@ std::shared_ptr<NumericExpressionImpl> NumericExpressionImpl::createUnaryOperato
   return std::make_shared<NumericUnaryOperatorImpl>(op, std::move(child));
 }
 
-std::shared_ptr<NumericExpressionImpl> NumericExpressionImpl::createBinaryOperator(
+std::shared_ptr<NumericExpressionImpl> NumericExpressionImpl::CreateBinaryOperator(
     std::shared_ptr<NumericExpressionImpl> lhs, char op, std::shared_ptr<NumericExpressionImpl> rhs) {
   return std::make_shared<NumericBinaryOperatorImpl>(std::move(lhs), op, std::move(rhs));
 }
 
-std::shared_ptr<BooleanExpressionImpl> NumericExpressionImpl::createComparisonOperator(
+std::shared_ptr<BooleanExpressionImpl> NumericExpressionImpl::CreateComparisonOperator(
     std::shared_ptr<NumericExpressionImpl> lhs, const char *op, std::shared_ptr<NumericExpressionImpl> rhs) {
   return std::make_shared<NumericComparisonOperatorImpl>(std::move(lhs), op, std::move(rhs));
 }
 
-std::shared_ptr<NumericExpressionImpl> NumericExpressionImpl::createInt64Literal(int64_t value) {
+std::shared_ptr<NumericExpressionImpl> NumericExpressionImpl::CreateInt64Literal(int64_t value) {
   return std::make_shared<Int64LiteralImpl>(value);
 }
 
-std::shared_ptr<NumericExpressionImpl> NumericExpressionImpl::createDoubleLiteral(double value) {
+std::shared_ptr<NumericExpressionImpl> NumericExpressionImpl::CreateDoubleLiteral(double value) {
   return std::make_shared<DoubleLiteralImpl>(value);
 }
 
@@ -118,32 +118,32 @@ NumericExpressionImpl::~NumericExpressionImpl() = default;
 
 namespace {
 NumericUnaryOperatorImpl::~NumericUnaryOperatorImpl() = default;
-void NumericUnaryOperatorImpl::streamIrisRepresentation(std::ostream &s) const {
+void NumericUnaryOperatorImpl::StreamIrisRepresentation(std::ostream &s) const {
   s << op_;
-  child_->streamIrisRepresentation(s);
+  child_->StreamIrisRepresentation(s);
 }
 
 NumericBinaryOperatorImpl::~NumericBinaryOperatorImpl() = default;
-void NumericBinaryOperatorImpl::streamIrisRepresentation(std::ostream &s) const {
-  lhs_->streamIrisRepresentation(s);
+void NumericBinaryOperatorImpl::StreamIrisRepresentation(std::ostream &s) const {
+  lhs_->StreamIrisRepresentation(s);
   s << op_;
-  rhs_->streamIrisRepresentation(s);
+  rhs_->StreamIrisRepresentation(s);
 }
 
 NumericComparisonOperatorImpl::~NumericComparisonOperatorImpl() = default;
-void NumericComparisonOperatorImpl::streamIrisRepresentation(std::ostream &s) const {
-  lhs_->streamIrisRepresentation(s);
+void NumericComparisonOperatorImpl::StreamIrisRepresentation(std::ostream &s) const {
+  lhs_->StreamIrisRepresentation(s);
   s << op_;
-  rhs_->streamIrisRepresentation(s);
+  rhs_->StreamIrisRepresentation(s);
 }
 
 Int64LiteralImpl::~Int64LiteralImpl() = default;
-void Int64LiteralImpl::streamIrisRepresentation(std::ostream &s) const {
+void Int64LiteralImpl::StreamIrisRepresentation(std::ostream &s) const {
   s << value_;
 }
 
 DoubleLiteralImpl::~DoubleLiteralImpl() = default;
-void DoubleLiteralImpl::streamIrisRepresentation(std::ostream &s) const {
+void DoubleLiteralImpl::StreamIrisRepresentation(std::ostream &s) const {
   // To avoid messing with the state flags of 's'
   SimpleOstringstream oss;
   oss << std::setprecision(std::numeric_limits<double>::max_digits10) << value_;

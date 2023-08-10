@@ -18,13 +18,15 @@ namespace deephaven::dhcore::clienttable {
  */
 class Schema {
   struct Private {};
-  typedef deephaven::dhcore::ElementTypeId ElementTypeId;
+  using ElementTypeId = deephaven::dhcore::ElementTypeId;
 
 public:
   /**
    * Factory method
    */
-  static std::shared_ptr<Schema> create(std::vector<std::string> names, std::vector<ElementTypeId::Enum> types);
+  [[nodiscard]]
+  static std::shared_ptr<Schema> Create(std::vector<std::string> names,
+      std::vector<ElementTypeId::Enum> types);
   /**
    * Constructor.
    */
@@ -35,17 +37,21 @@ public:
    */
   ~Schema();
 
-  std::optional<size_t> getColumnIndex(std::string_view name, bool strict) const;
+  [[nodiscard]]
+  std::optional<size_t> GetColumnIndex(std::string_view name, bool strict) const;
 
-  const std::vector<std::string> &names() const {
+  [[nodiscard]]
+  const std::vector<std::string> &Names() const {
     return names_;
   }
 
-  const std::vector<ElementTypeId::Enum> &types() const {
+  [[nodiscard]]
+  const std::vector<ElementTypeId::Enum> &Types() const {
     return types_;
   }
 
-  size_t numCols() const {
+  [[nodiscard]]
+  size_t NumCols() const {
     return names_.size();
   }
 

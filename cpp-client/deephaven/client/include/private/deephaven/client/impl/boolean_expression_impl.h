@@ -10,13 +10,17 @@
 namespace deephaven::client::impl {
 class BooleanExpressionImpl : public ExpressionImpl {
 public:
-  static std::shared_ptr<BooleanExpressionImpl> createNot(std::shared_ptr<BooleanExpressionImpl> item);
-  static std::shared_ptr<BooleanExpressionImpl> createAnd(std::shared_ptr<BooleanExpressionImpl> lhs,
+  [[nodiscard]]
+  static std::shared_ptr<BooleanExpressionImpl> CreateNot(std::shared_ptr<BooleanExpressionImpl> item);
+  [[nodiscard]]
+  static std::shared_ptr<BooleanExpressionImpl> CreateAnd(std::shared_ptr<BooleanExpressionImpl> lhs,
       std::shared_ptr<BooleanExpressionImpl> rhs);
-  static std::shared_ptr<BooleanExpressionImpl> createOr(std::shared_ptr<BooleanExpressionImpl> lhs,
+  [[nodiscard]]
+  static std::shared_ptr<BooleanExpressionImpl> CreateOr(std::shared_ptr<BooleanExpressionImpl> lhs,
       std::shared_ptr<BooleanExpressionImpl> rhs);
 
-  static std::shared_ptr<BooleanExpressionImpl> createBooleanValuedInstanceMethod(
+  [[nodiscard]]
+  static std::shared_ptr<BooleanExpressionImpl> CreateBooleanValuedInstanceMethod(
       std::shared_ptr<ExpressionImpl> lhs, std::string method, std::shared_ptr<ExpressionImpl> rhs);
 
   ~BooleanExpressionImpl() override;

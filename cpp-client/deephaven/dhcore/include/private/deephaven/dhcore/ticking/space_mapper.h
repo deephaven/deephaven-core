@@ -9,43 +9,49 @@
 
 namespace deephaven::dhcore::ticking {
 class SpaceMapper {
-  typedef deephaven::dhcore::container::RowSequence RowSequence;
+  using RowSequence = deephaven::dhcore::container::RowSequence;
 
 public:
   SpaceMapper();
   ~SpaceMapper();
 
-  uint64_t addRange(uint64_t beginKey, uint64_t endKey);
-  uint64_t eraseRange(uint64_t beginKey, uint64_t endKey);
-  void applyShift(uint64_t beginKey, uint64_t endKey, uint64_t destKey);
+  [[nodiscard]]
+  uint64_t AddRange(uint64_t begin_key, uint64_t end_key);
+  [[nodiscard]]
+  uint64_t EraseRange(uint64_t begin_key, uint64_t end_key);
+  void ApplyShift(uint64_t begin_key, uint64_t end_key, uint64_t dest_key);
 
   /**
    * Adds 'keys' (specified in key space) to the map, and returns the positions (in position
    * space) of those keys after insertion. 'keys' are required to not already been in the map.
    * The algorithm behaves as though all the keys are inserted in the map and then
-   * 'convertKeysToIndices' is called.
+   * 'ConvertKeysToIndices' is called.
    *
    * Example:
    *   SpaceMapper currently holds [100 300]
-   *   addKeys called with [1, 2, 200, 201, 400, 401]
+   *   AddKeys called with [1, 2, 200, 201, 400, 401]
    *   SpaceMapper final state is [1, 2, 100, 200, 201, 300, 400, 401]
    *   The returned result is [0, 1, 3, 4, 6, 7]
    */
-  std::shared_ptr<RowSequence> addKeys(const RowSequence &keys);
+  [[nodiscard]]
+  std::shared_ptr<RowSequence> AddKeys(const RowSequence &begin_key);
   /**
    * Looks up 'keys' (specified in key space) in the map, and returns the positions (in position
    * space) of those keys.
    */
-  std::shared_ptr<RowSequence> convertKeysToIndices(const RowSequence &keys) const;
+  [[nodiscard]]
+  std::shared_ptr<RowSequence> ConvertKeysToIndices(const RowSequence &begin_key) const;
 
   /**
    * Note: this call iterates over the Roaring64Map and is not constant-time.
    */
-  size_t cardinality() const {
+  [[nodiscard]]
+  size_t Cardinality() const {
     return set_.cardinality();
   }
 
-  uint64_t zeroBasedRank(uint64_t value) const;
+  [[nodiscard]]
+  uint64_t ZeroBasedRank(uint64_t value) const;
 
 private:
   roaring::Roaring64Map set_;

@@ -12,6 +12,6 @@ public:
    * @param wait If true, waits for the internal subcription thread to be torn down. Use 'true'
    * if you want to be sure that your callback will not be invoked after this call returns.
    */
-  virtual void cancel() = 0;
+  virtual void Cancel() = 0;
 };
 }  // namespace deephaven::client::subscription

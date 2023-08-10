@@ -4,72 +4,72 @@
 #include "deephaven/client/client_options.h"
 #include "deephaven/dhcore/utility/utility.h"
 
-using deephaven::dhcore::utility::base64Encode;
+using deephaven::dhcore::utility::Base64Encode;
 
 namespace deephaven::client {
 
 ClientOptions::ClientOptions() {
-  setDefaultAuthentication();
-  setSessionType("python");
+  SetDefaultAuthentication();
+  SetSessionType("python");
 }
 
 ClientOptions::ClientOptions(ClientOptions &&other) noexcept = default;
 ClientOptions &ClientOptions::operator=(ClientOptions &&other) noexcept = default;
 ClientOptions::~ClientOptions() = default;
 
-ClientOptions &ClientOptions::setDefaultAuthentication() {
+ClientOptions &ClientOptions::SetDefaultAuthentication() {
   authorizationValue_ = "Anonymous";
   return *this;
 }
 
-ClientOptions &ClientOptions::setBasicAuthentication(const std::string &username, const std::string &password) {
+ClientOptions &ClientOptions::SetBasicAuthentication(const std::string &username, const std::string &password) {
   auto token = username + ':' + password;
-  authorizationValue_ = "Basic " + base64Encode(token);
+  authorizationValue_ = "Basic " + Base64Encode(token);
   return *this;
 }
 
-ClientOptions &ClientOptions::setCustomAuthentication(const std::string &authenticationType,
-    const std::string &authenticationToken) {
-  authorizationValue_ = authenticationType + " " + authenticationToken;
+ClientOptions &ClientOptions::SetCustomAuthentication(const std::string &authenticationKey,
+    const std::string &authenticationValue) {
+  authorizationValue_ = authenticationKey + " " + authenticationValue;
   return *this;
 }
 
-ClientOptions &ClientOptions::setSessionType(std::string sessionType) {
+ClientOptions &ClientOptions::SetSessionType(std::string sessionType) {
   this->sessionType_ = std::move(sessionType);
   return *this;
 }
 
-ClientOptions &ClientOptions::setUseTls(const bool useTls) {
-  useTls_ = useTls;
+ClientOptions &ClientOptions::SetUseTls(const bool use_tls) {
+  useTls_ = use_tls;
   return *this;
 }
 
-ClientOptions &ClientOptions::setTlsRootCerts(std::string tlsRootCerts) {
+ClientOptions &ClientOptions::SetTlsRootCerts(std::string tlsRootCerts) {
   tlsRootCerts_ = std::move(tlsRootCerts);
   return *this;
 }
 
-ClientOptions &ClientOptions::setClientCertChain(std::string clientCertChain) {
-  clientCertChain_ = std::move(clientCertChain);
+ClientOptions &ClientOptions::SetClientCertChain(std::string client_cert_chain) {
+  clientCertChain_ = std::move(client_cert_chain);
   return *this;
 }
 
-ClientOptions &ClientOptions::setClientPrivateKey(std::string clientPrivateKey) {
-  clientPrivateKey_ = std::move(clientPrivateKey);
+ClientOptions &ClientOptions::SetClientPrivateKey(std::string clientCertChain) {
+  clientPrivateKey_ = std::move(clientCertChain);
   return *this;
 }
 
-ClientOptions &ClientOptions::addIntOption(std::string opt, const int val) {
+ClientOptions &ClientOptions::AddIntOption(std::string opt, int val) {
   intOptions_.emplace_back(std::move(opt), val);
   return *this;
 }
 
-ClientOptions &ClientOptions::addStringOption(std::string opt, const std::string val) {
+ClientOptions &ClientOptions::AddStringOption(std::string opt, std::string val) {
   stringOptions_.emplace_back(std::move(opt), std::move(val));
   return *this;
 }
 
-ClientOptions &ClientOptions::addExtraHeader(std::string header_name, std::string header_value) {
+ClientOptions &ClientOptions::AddExtraHeader(std::string header_name, std::string header_value) {
   extraHeaders_.emplace_back(std::move(header_name), std::move(header_value));
   return *this;
 }

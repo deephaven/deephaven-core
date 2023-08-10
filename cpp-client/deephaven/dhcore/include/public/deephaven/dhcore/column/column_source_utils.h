@@ -8,102 +8,102 @@ namespace deephaven::dhcore::column {
 // A central place to put the implementations for the similar-but-not-identical
 // fill{,From}Chunk{,Unordered} implementations for the various column source types.
 struct ColumnSourceImpls {
-  typedef deephaven::dhcore::chunk::BooleanChunk BooleanChunk;
-  typedef deephaven::dhcore::chunk::Chunk Chunk;
-  typedef deephaven::dhcore::container::RowSequence RowSequence;
-  typedef deephaven::dhcore::chunk::UInt64Chunk UInt64Chunk;
+  using BooleanChunk = deephaven::dhcore::chunk::BooleanChunk;
+  using Chunk = deephaven::dhcore::chunk::Chunk;
+  using RowSequence = deephaven::dhcore::container::RowSequence;
+  using UInt64Chunk = deephaven::dhcore::chunk::UInt64Chunk;
 
-  static void assertRangeValid(size_t begin, size_t end, size_t size);
+  static void AssertRangeValid(size_t begin, size_t end, size_t size);
 
-  template<typename CHUNK_TYPE, typename BACKING_STORE>
-  static void fillChunk(const RowSequence &rows, Chunk *dest, BooleanChunk *optionalNullFlags,
-      const BACKING_STORE &backingStore) {
-    using deephaven::dhcore::utility::trueOrThrow;
-    using deephaven::dhcore::utility::verboseCast;
+  template<typename ChunkType, typename BackingStore>
+  static void FillChunk(const RowSequence &rows, Chunk *dest, BooleanChunk *optional_null_flags,
+      const BackingStore &backing_store) {
+    using deephaven::dhcore::utility::TrueOrThrow;
+    using deephaven::dhcore::utility::VerboseCast;
 
-    auto *typedDest = verboseCast<CHUNK_TYPE *>(DEEPHAVEN_EXPR_MSG(dest));
-    trueOrThrow(DEEPHAVEN_EXPR_MSG(rows.size() <= typedDest->size()));
-    auto *destData = typedDest->data();
-    auto *destNull = optionalNullFlags != nullptr ? optionalNullFlags->data() : nullptr;
-    auto applyChunk = [&destData, &destNull, &backingStore](uint64_t begin, uint64_t end) {
-      backingStore.get(begin, end, destData, destNull);
+    auto *typed_dest = VerboseCast<ChunkType *>(DEEPHAVEN_EXPR_MSG(dest));
+    TrueOrThrow(DEEPHAVEN_EXPR_MSG(rows.Size() <= typed_dest->Size()));
+    auto *dest_data = typed_dest->data();
+    auto *dest_null = optional_null_flags != nullptr ? optional_null_flags->data() : nullptr;
+    auto apply_chunk = [&dest_data, &dest_null, &backing_store](uint64_t begin, uint64_t end) {
+      backing_store.Get(begin, end, dest_data, dest_null);
       auto size = end - begin;
-      destData += size;
-      if (destNull != nullptr) {
-        destNull += size;
+      dest_data += size;
+      if (dest_null != nullptr) {
+        dest_null += size;
       }
     };
-    rows.forEachInterval(applyChunk);
+    rows.ForEachInterval(apply_chunk);
   }
 
-  template<typename CHUNK_TYPE, typename BACKING_STORE>
-  static void fillChunkUnordered(const UInt64Chunk &rowKeys, Chunk *dest, BooleanChunk *optionalNullFlags,
-      const BACKING_STORE &backingStore) {
-    using deephaven::dhcore::utility::trueOrThrow;
-    using deephaven::dhcore::utility::verboseCast;
+  template<typename ChunkType, typename BackingStore>
+  static void FillChunkUnordered(const UInt64Chunk &row_keys, Chunk *dest,
+      BooleanChunk *optional_null_flags, const BackingStore &backing_store) {
+    using deephaven::dhcore::utility::TrueOrThrow;
+    using deephaven::dhcore::utility::VerboseCast;
 
-    auto *typedDest = verboseCast<CHUNK_TYPE *>(DEEPHAVEN_EXPR_MSG(dest));
-    trueOrThrow(DEEPHAVEN_EXPR_MSG(rowKeys.size() <= typedDest->size()));
-    const uint64_t *keys = rowKeys.data();
-    auto *destData = typedDest->data();
-    auto *destNull = optionalNullFlags != nullptr ? optionalNullFlags->data() : nullptr;
+    auto *typed_dest = VerboseCast<ChunkType *>(DEEPHAVEN_EXPR_MSG(dest));
+    TrueOrThrow(DEEPHAVEN_EXPR_MSG(row_keys.Size() <= typed_dest->Size()));
+    const uint64_t *keys = row_keys.data();
+    auto *dest_data = typed_dest->data();
+    auto *dest_null = optional_null_flags != nullptr ? optional_null_flags->data() : nullptr;
 
-    for (size_t destIndex = 0; destIndex < rowKeys.size(); ++destIndex) {
+    for (size_t dest_index = 0; dest_index < row_keys.Size(); ++dest_index) {
       // This is terrible. For now.
-      auto srcIndex = keys[destIndex];
-      backingStore.get(srcIndex, srcIndex + 1, destData, destNull);
-      ++destData;
-      if (destNull != nullptr) {
-        ++destNull;
+      auto src_index = keys[dest_index];
+      backing_store.Get(src_index, src_index + 1, dest_data, dest_null);
+      ++dest_data;
+      if (dest_null != nullptr) {
+        ++dest_null;
       }
     }
   }
 
-  template<typename CHUNK_TYPE, typename BACKING_STORE>
-  static void fillFromChunk(const Chunk &src, const BooleanChunk *optionalSrcNullFlags,
-      const RowSequence &rows, BACKING_STORE *backingStore) {
-    using deephaven::dhcore::utility::trueOrThrow;
-    using deephaven::dhcore::utility::verboseCast;
+  template<typename ChunkType, typename BackingStore>
+  static void FillFromChunk(const Chunk &src, const BooleanChunk *optional_src_null_flags,
+      const RowSequence &rows, BackingStore *backing_store) {
+    using deephaven::dhcore::utility::TrueOrThrow;
+    using deephaven::dhcore::utility::VerboseCast;
 
-    const auto *typedSrc = verboseCast<const CHUNK_TYPE *>(DEEPHAVEN_EXPR_MSG(&src));
-    trueOrThrow(DEEPHAVEN_EXPR_MSG(rows.size() <= typedSrc->size()));
+    const auto *typed_src = VerboseCast<const ChunkType *>(DEEPHAVEN_EXPR_MSG(&src));
+    TrueOrThrow(DEEPHAVEN_EXPR_MSG(rows.Size() <= typed_src->Size()));
 
-    const auto *srcData = typedSrc->data();
-    const auto *nullData = optionalSrcNullFlags != nullptr ? optionalSrcNullFlags->data() : nullptr;
-    auto applyChunk = [&srcData, &nullData, backingStore](uint64_t begin, uint64_t end) {
-      backingStore->ensureCapacity(end);
-      backingStore->set(begin, end, srcData, nullData);
+    const auto *src_data = typed_src->data();
+    const auto *null_data = optional_src_null_flags != nullptr ? optional_src_null_flags->data() : nullptr;
+    auto apply_chunk = [&src_data, &null_data, backing_store](uint64_t begin, uint64_t end) {
+      backing_store->EnsureCapacity(end);
+      backing_store->Set(begin, end, src_data, null_data);
       auto size = end - begin;
-      srcData += size;
-      if (nullData != nullptr) {
-        nullData += size;
+      src_data += size;
+      if (null_data != nullptr) {
+        null_data += size;
       }
     };
-    rows.forEachInterval(applyChunk);
+    rows.ForEachInterval(apply_chunk);
   }
 
-  template<typename CHUNK_TYPE, typename BACKING_STORE>
-  static void fillFromChunkUnordered(const Chunk &src, const BooleanChunk *optionalSrcNullFlags,
-      const UInt64Chunk &rowKeys, BACKING_STORE *backingStore) {
-    using deephaven::dhcore::utility::trueOrThrow;
-    using deephaven::dhcore::utility::verboseCast;
+  template<typename ChunkType, typename BackingStore>
+  static void FillFromChunkUnordered(const Chunk &src, const BooleanChunk *optional_src_null_flags,
+      const UInt64Chunk &row_keys, BackingStore *backing_store) {
+    using deephaven::dhcore::utility::TrueOrThrow;
+    using deephaven::dhcore::utility::VerboseCast;
 
-    const auto *typedSrc = verboseCast<const CHUNK_TYPE *>(DEEPHAVEN_EXPR_MSG(&src));
-    trueOrThrow(DEEPHAVEN_EXPR_MSG(rowKeys.size() <= typedSrc->size()));
-    trueOrThrow(DEEPHAVEN_EXPR_MSG(optionalSrcNullFlags == nullptr ||
-        rowKeys.size() <= optionalSrcNullFlags->size()));
+    const auto *typed_src = VerboseCast<const ChunkType *>(DEEPHAVEN_EXPR_MSG(&src));
+    TrueOrThrow(DEEPHAVEN_EXPR_MSG(row_keys.Size() <= typed_src->Size()));
+    TrueOrThrow(DEEPHAVEN_EXPR_MSG(optional_src_null_flags == nullptr ||
+        row_keys.Size() <= optional_src_null_flags->Size()));
 
-    const auto *keyData = rowKeys.data();
-    const auto *srcData = typedSrc->data();
-    const auto *nullData = optionalSrcNullFlags != nullptr ? optionalSrcNullFlags->data() : nullptr;
-    for (size_t srcIndex = 0; srcIndex < typedSrc->size(); ++srcIndex) {
+    const auto *key_data = row_keys.data();
+    const auto *src_data = typed_src->data();
+    const auto *null_data = optional_src_null_flags != nullptr ? optional_src_null_flags->data() : nullptr;
+    for (size_t src_index = 0; src_index < typed_src->Size(); ++src_index) {
       // This is terrible. For now.
-      auto destIndex = keyData[srcIndex];
-      backingStore->ensureCapacity(destIndex + 1);
-      backingStore->set(destIndex, destIndex + 1, srcData, nullData);
-      ++srcData;
-      if (nullData != nullptr) {
-        ++nullData;
+      auto dest_index = key_data[src_index];
+      backing_store->EnsureCapacity(dest_index + 1);
+      backing_store->Set(dest_index, dest_index + 1, src_data, null_data);
+      ++src_data;
+      if (null_data != nullptr) {
+        ++null_data;
       }
     }
   }

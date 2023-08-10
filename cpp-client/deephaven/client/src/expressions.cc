@@ -15,8 +15,8 @@ Expression::Expression(std::shared_ptr<impl::ExpressionImpl> impl) : impl_(std::
 
 Expression::~Expression() = default;
 
-AssignedColumn Expression::as(std::string columnName) const {
-  return AssignedColumn::create(std::move(columnName), implAsExpressionImpl());
+AssignedColumn Expression::as(std::string column_name) const {
+  return AssignedColumn::Create(std::move(column_name), implAsExpressionImpl());
 }
 
 BooleanExpression::BooleanExpression(std::shared_ptr<impl::BooleanExpressionImpl> impl) :
@@ -25,8 +25,8 @@ BooleanExpression::BooleanExpression(std::shared_ptr<impl::BooleanExpressionImpl
 BooleanExpression::~BooleanExpression() = default;
 
 BooleanExpression Expression::isNull() const {
-  auto resultImpl = impl::ExpressionImpl::createIsNull(implAsExpressionImpl());
-  return BooleanExpression(std::move(resultImpl));
+  auto result_impl = impl::ExpressionImpl::CreateIsNull(implAsExpressionImpl());
+  return BooleanExpression(std::move(result_impl));
 }
 
 std::shared_ptr<impl::BooleanExpressionImpl>
@@ -35,39 +35,39 @@ BooleanExpression::implAsBooleanExpressionImpl() const {
 }
 
 BooleanExpression operator!(const BooleanExpression &expr) {
-  auto resultImpl = impl::BooleanExpressionImpl::createNot(expr.implAsBooleanExpressionImpl());
-  return BooleanExpression(std::move(resultImpl));
+  auto result_impl = impl::BooleanExpressionImpl::CreateNot(expr.implAsBooleanExpressionImpl());
+  return BooleanExpression(std::move(result_impl));
 }
 
 BooleanExpression operator&(const BooleanExpression &lhs, const BooleanExpression &rhs) {
-  auto resultImpl = impl::BooleanExpressionImpl::createAnd(lhs.implAsBooleanExpressionImpl(),
+  auto result_impl = impl::BooleanExpressionImpl::CreateAnd(lhs.implAsBooleanExpressionImpl(),
       rhs.implAsBooleanExpressionImpl());
-  return BooleanExpression(std::move(resultImpl));
+  return BooleanExpression(std::move(result_impl));
 }
 
 BooleanExpression operator|(const BooleanExpression &lhs, const BooleanExpression &rhs) {
-  auto resultImpl = impl::BooleanExpressionImpl::createOr(lhs.implAsBooleanExpressionImpl(),
+  auto result_impl = impl::BooleanExpressionImpl::CreateOr(lhs.implAsBooleanExpressionImpl(),
       rhs.implAsBooleanExpressionImpl());
-  return BooleanExpression(std::move(resultImpl));
+  return BooleanExpression(std::move(result_impl));
 }
 
 NumericExpression::NumericExpression(std::shared_ptr<impl::NumericExpressionImpl> impl) :
     Expression(std::move(impl)) {}
 
 NumericExpression::NumericExpression(int32_t value) :
-    Expression(impl::NumericExpressionImpl::createInt64Literal(value)) {
+    Expression(impl::NumericExpressionImpl::CreateInt64Literal(value)) {
 }
 
 NumericExpression::NumericExpression(int64_t value) :
-    Expression(impl::NumericExpressionImpl::createInt64Literal(value)) {
+    Expression(impl::NumericExpressionImpl::CreateInt64Literal(value)) {
 }
 
 NumericExpression::NumericExpression(float value) :
-    Expression(impl::NumericExpressionImpl::createDoubleLiteral(value)) {
+    Expression(impl::NumericExpressionImpl::CreateDoubleLiteral(value)) {
 }
 
 NumericExpression::NumericExpression(double value) :
-    Expression(impl::NumericExpressionImpl::createDoubleLiteral(value)) {
+    Expression(impl::NumericExpressionImpl::CreateDoubleLiteral(value)) {
 }
 
 NumericExpression::~NumericExpression() = default;
@@ -78,116 +78,116 @@ NumericExpression::implAsNumericExpressionImpl() const {
 }
 
 NumericExpression operator+(const NumericExpression &item) {
-  auto resultImpl = impl::NumericExpressionImpl::createUnaryOperator('+',
+  auto result_impl = impl::NumericExpressionImpl::CreateUnaryOperator('+',
       item.implAsNumericExpressionImpl());
-  return NumericExpression(std::move(resultImpl));
+  return NumericExpression(std::move(result_impl));
 }
 
 NumericExpression operator-(const NumericExpression &item) {
-  auto resultImpl = impl::NumericExpressionImpl::createUnaryOperator('-',
+  auto result_impl = impl::NumericExpressionImpl::CreateUnaryOperator('-',
       item.implAsNumericExpressionImpl());
-  return NumericExpression(std::move(resultImpl));
+  return NumericExpression(std::move(result_impl));
 }
 
 NumericExpression operator~(const NumericExpression &item) {
-  auto resultImpl = impl::NumericExpressionImpl::createUnaryOperator('~',
+  auto result_impl = impl::NumericExpressionImpl::CreateUnaryOperator('~',
       item.implAsNumericExpressionImpl());
-  return NumericExpression(std::move(resultImpl));
+  return NumericExpression(std::move(result_impl));
 }
 
 NumericExpression operator+(const NumericExpression &lhs, const NumericExpression &rhs) {
-  auto resultImpl = impl::NumericExpressionImpl::createBinaryOperator(
+  auto result_impl = impl::NumericExpressionImpl::CreateBinaryOperator(
       lhs.implAsNumericExpressionImpl(), '+', rhs.implAsNumericExpressionImpl());
-  return NumericExpression(std::move(resultImpl));
+  return NumericExpression(std::move(result_impl));
 }
 
 NumericExpression operator-(const NumericExpression &lhs, const NumericExpression &rhs) {
-  auto resultImpl = impl::NumericExpressionImpl::createBinaryOperator(
+  auto result_impl = impl::NumericExpressionImpl::CreateBinaryOperator(
       lhs.implAsNumericExpressionImpl(), '-', rhs.implAsNumericExpressionImpl());
-  return NumericExpression(std::move(resultImpl));
+  return NumericExpression(std::move(result_impl));
 }
 
 NumericExpression operator*(const NumericExpression &lhs, const NumericExpression &rhs) {
-  auto resultImpl = impl::NumericExpressionImpl::createBinaryOperator(
+  auto result_impl = impl::NumericExpressionImpl::CreateBinaryOperator(
       lhs.implAsNumericExpressionImpl(), '*', rhs.implAsNumericExpressionImpl());
-  return NumericExpression(std::move(resultImpl));
+  return NumericExpression(std::move(result_impl));
 }
 
 NumericExpression operator/(const NumericExpression &lhs, const NumericExpression &rhs) {
-  auto resultImpl = impl::NumericExpressionImpl::createBinaryOperator(
+  auto result_impl = impl::NumericExpressionImpl::CreateBinaryOperator(
       lhs.implAsNumericExpressionImpl(), '/', rhs.implAsNumericExpressionImpl());
-  return NumericExpression(std::move(resultImpl));
+  return NumericExpression(std::move(result_impl));
 }
 
 NumericExpression operator%(const NumericExpression &lhs, const NumericExpression &rhs) {
-  auto resultImpl = impl::NumericExpressionImpl::createBinaryOperator(
+  auto result_impl = impl::NumericExpressionImpl::CreateBinaryOperator(
       lhs.implAsNumericExpressionImpl(), '%', rhs.implAsNumericExpressionImpl());
-  return NumericExpression(std::move(resultImpl));
+  return NumericExpression(std::move(result_impl));
 }
 
 NumericExpression operator^(const NumericExpression &lhs, const NumericExpression &rhs) {
-  auto resultImpl = impl::NumericExpressionImpl::createBinaryOperator(
+  auto result_impl = impl::NumericExpressionImpl::CreateBinaryOperator(
       lhs.implAsNumericExpressionImpl(), '^', rhs.implAsNumericExpressionImpl());
-  return NumericExpression(std::move(resultImpl));
+  return NumericExpression(std::move(result_impl));
 }
 
 NumericExpression operator&(const NumericExpression &lhs, const NumericExpression &rhs) {
-  auto resultImpl = impl::NumericExpressionImpl::createBinaryOperator(
+  auto result_impl = impl::NumericExpressionImpl::CreateBinaryOperator(
       lhs.implAsNumericExpressionImpl(), '&', rhs.implAsNumericExpressionImpl());
-  return NumericExpression(std::move(resultImpl));
+  return NumericExpression(std::move(result_impl));
 }
 
 NumericExpression operator|(const NumericExpression &lhs, const NumericExpression &rhs) {
-  auto resultImpl = impl::NumericExpressionImpl::createBinaryOperator(
+  auto result_impl = impl::NumericExpressionImpl::CreateBinaryOperator(
       lhs.implAsNumericExpressionImpl(), '|', rhs.implAsNumericExpressionImpl());
-  return NumericExpression(std::move(resultImpl));
+  return NumericExpression(std::move(result_impl));
 }
 
 BooleanExpression operator<(const NumericExpression &lhs, const NumericExpression &rhs) {
-  auto resultImpl = impl::NumericExpressionImpl::createComparisonOperator(
+  auto result_impl = impl::NumericExpressionImpl::CreateComparisonOperator(
       lhs.implAsNumericExpressionImpl(), "<", rhs.implAsNumericExpressionImpl());
-  return BooleanExpression(std::move(resultImpl));
+  return BooleanExpression(std::move(result_impl));
 }
 
 BooleanExpression operator<=(const NumericExpression &lhs, const NumericExpression &rhs) {
-  auto resultImpl = impl::NumericExpressionImpl::createComparisonOperator(
+  auto result_impl = impl::NumericExpressionImpl::CreateComparisonOperator(
       lhs.implAsNumericExpressionImpl(), "<=", rhs.implAsNumericExpressionImpl());
-  return BooleanExpression(std::move(resultImpl));
+  return BooleanExpression(std::move(result_impl));
 }
 
 BooleanExpression operator==(const NumericExpression &lhs, const NumericExpression &rhs) {
-  auto resultImpl = impl::NumericExpressionImpl::createComparisonOperator(
+  auto result_impl = impl::NumericExpressionImpl::CreateComparisonOperator(
       lhs.implAsNumericExpressionImpl(), "==", rhs.implAsNumericExpressionImpl());
-  return BooleanExpression(std::move(resultImpl));
+  return BooleanExpression(std::move(result_impl));
 }
 
 BooleanExpression operator!=(const NumericExpression &lhs, const NumericExpression &rhs) {
-  auto resultImpl = impl::NumericExpressionImpl::createComparisonOperator(
+  auto result_impl = impl::NumericExpressionImpl::CreateComparisonOperator(
       lhs.implAsNumericExpressionImpl(), "!=", rhs.implAsNumericExpressionImpl());
-  return BooleanExpression(std::move(resultImpl));
+  return BooleanExpression(std::move(result_impl));
 }
 
 BooleanExpression operator>=(const NumericExpression &lhs, const NumericExpression &rhs) {
-  auto resultImpl = impl::NumericExpressionImpl::createComparisonOperator(
+  auto result_impl = impl::NumericExpressionImpl::CreateComparisonOperator(
       lhs.implAsNumericExpressionImpl(), ">=", rhs.implAsNumericExpressionImpl());
-  return BooleanExpression(std::move(resultImpl));
+  return BooleanExpression(std::move(result_impl));
 }
 
 BooleanExpression operator>(const NumericExpression &lhs, const NumericExpression &rhs) {
-  auto resultImpl = impl::NumericExpressionImpl::createComparisonOperator(
+  auto result_impl = impl::NumericExpressionImpl::CreateComparisonOperator(
       lhs.implAsNumericExpressionImpl(), ">", rhs.implAsNumericExpressionImpl());
-  return BooleanExpression(std::move(resultImpl));
+  return BooleanExpression(std::move(result_impl));
 }
 
 StringExpression::StringExpression(const char *value) :
-    StringExpression(impl::StringExpressionImpl::createLiteral(value)) {}
+    StringExpression(impl::StringExpressionImpl::CreateLiteral(value)) {}
 
 StringExpression::StringExpression(std::string_view value) :
     StringExpression(
-        impl::StringExpressionImpl::createLiteral(std::string(value.data(), value.size()))) {}
+        impl::StringExpressionImpl::CreateLiteral(std::string(value.data(), value.size()))) {}
 
 StringExpression::StringExpression(std::string value) :
-    StringExpression(impl::StringExpressionImpl::createLiteral(std::move(value))) {}
+    StringExpression(impl::StringExpressionImpl::CreateLiteral(std::move(value))) {}
 
 StringExpression::StringExpression(std::shared_ptr<impl::StringExpressionImpl> impl) :
     Expression(std::move(impl)) {}
@@ -201,7 +201,7 @@ std::shared_ptr<impl::StringExpressionImpl> StringExpression::implAsStringExpres
 namespace {
 BooleanExpression stringMethodHelper(const StringExpression &lhs, const char *method,
     const StringExpression &rhs) {
-  auto impl = impl::BooleanExpressionImpl::createBooleanValuedInstanceMethod(
+  auto impl = impl::BooleanExpressionImpl::CreateBooleanValuedInstanceMethod(
       lhs.implAsStringExpressionImpl(),
       method, rhs.implAsExpressionImpl());
   return BooleanExpression(std::move(impl));
@@ -225,59 +225,59 @@ BooleanExpression StringExpression::matches(const StringExpression &other) const
 }
 
 StringExpression operator+(const StringExpression &lhs, const StringExpression &rhs) {
-  auto resultImpl = impl::StringExpressionImpl::createAppend(
+  auto result_impl = impl::StringExpressionImpl::CreateAppend(
       lhs.implAsStringExpressionImpl(), rhs.implAsStringExpressionImpl());
-  return StringExpression(std::move(resultImpl));
+  return StringExpression(std::move(result_impl));
 }
 
 BooleanExpression operator<(const StringExpression &lhs, const StringExpression &rhs) {
-  auto resultImpl = impl::StringExpressionImpl::createComparison(lhs.implAsStringExpressionImpl(),
+  auto result_impl = impl::StringExpressionImpl::CreateComparison(lhs.implAsStringExpressionImpl(),
       "<", rhs.implAsStringExpressionImpl());
-  return BooleanExpression(std::move(resultImpl));
+  return BooleanExpression(std::move(result_impl));
 }
 
 BooleanExpression operator<=(const StringExpression &lhs, const StringExpression &rhs) {
-  auto resultImpl = impl::StringExpressionImpl::createComparison(
+  auto result_impl = impl::StringExpressionImpl::CreateComparison(
       lhs.implAsStringExpressionImpl(), "<=", rhs.implAsStringExpressionImpl());
-  return BooleanExpression(std::move(resultImpl));
+  return BooleanExpression(std::move(result_impl));
 }
 
 BooleanExpression operator==(const StringExpression &lhs, const StringExpression &rhs) {
-  auto resultImpl = impl::StringExpressionImpl::createComparison(
+  auto result_impl = impl::StringExpressionImpl::CreateComparison(
       lhs.implAsStringExpressionImpl(), "==", rhs.implAsStringExpressionImpl());
-  return BooleanExpression(std::move(resultImpl));
+  return BooleanExpression(std::move(result_impl));
 }
 
 BooleanExpression operator!=(const StringExpression &lhs, const StringExpression &rhs) {
-  auto resultImpl = impl::StringExpressionImpl::createComparison(
+  auto result_impl = impl::StringExpressionImpl::CreateComparison(
       lhs.implAsStringExpressionImpl(), "!=", rhs.implAsStringExpressionImpl());
-  return BooleanExpression(std::move(resultImpl));
+  return BooleanExpression(std::move(result_impl));
 }
 
 BooleanExpression operator>=(const StringExpression &lhs, const StringExpression &rhs) {
-  auto resultImpl = impl::StringExpressionImpl::createComparison(
+  auto result_impl = impl::StringExpressionImpl::CreateComparison(
       lhs.implAsStringExpressionImpl(), ">=", rhs.implAsStringExpressionImpl());
-  return BooleanExpression(std::move(resultImpl));
+  return BooleanExpression(std::move(result_impl));
 }
 
 BooleanExpression operator>(const StringExpression &lhs, const StringExpression &rhs) {
-  auto resultImpl = impl::StringExpressionImpl::createComparison(
+  auto result_impl = impl::StringExpressionImpl::CreateComparison(
       lhs.implAsStringExpressionImpl(), ">", rhs.implAsStringExpressionImpl());
-  return BooleanExpression(std::move(resultImpl));
+  return BooleanExpression(std::move(result_impl));
 }
 
 DateTimeExpression::DateTimeExpression(const char *value) :
-    DateTimeExpression(impl::DateTimeExpressionImpl::createFromLiteral(value)) {}
+    DateTimeExpression(impl::DateTimeExpressionImpl::CreateFromLiteral(value)) {}
 
 DateTimeExpression::DateTimeExpression(std::string_view value) :
     DateTimeExpression(
-        impl::DateTimeExpressionImpl::createFromLiteral(std::string(value.data(), value.size()))) {}
+            impl::DateTimeExpressionImpl::CreateFromLiteral(std::string(value.data(), value.size()))) {}
 
 DateTimeExpression::DateTimeExpression(std::string value) :
-    DateTimeExpression(impl::DateTimeExpressionImpl::createFromLiteral(std::move(value))) {}
+    DateTimeExpression(impl::DateTimeExpressionImpl::CreateFromLiteral(std::move(value))) {}
 
 DateTimeExpression::DateTimeExpression(const DateTime &value) :
-    DateTimeExpression(impl::DateTimeExpressionImpl::createFromDateTime(value)) {}
+    DateTimeExpression(impl::DateTimeExpressionImpl::CreateFromDateTime(value)) {}
 
 DateTimeExpression::DateTimeExpression(std::shared_ptr<impl::DateTimeExpressionImpl> impl) :
     Expression(std::move(impl)) {}
@@ -290,39 +290,39 @@ DateTimeExpression::implAsDateTimeExpressionImpl() const {
 }
 
 BooleanExpression operator<(const DateTimeExpression &lhs, const DateTimeExpression &rhs) {
-  auto resultImpl = impl::DateTimeExpressionImpl::createComparison(
+  auto result_impl = impl::DateTimeExpressionImpl::CreateComparison(
       lhs.implAsDateTimeExpressionImpl(),
       "<", rhs.implAsDateTimeExpressionImpl());
-  return BooleanExpression(std::move(resultImpl));
+  return BooleanExpression(std::move(result_impl));
 }
 
 BooleanExpression operator<=(const DateTimeExpression &lhs, const DateTimeExpression &rhs) {
-  auto resultImpl = impl::DateTimeExpressionImpl::createComparison(
+  auto result_impl = impl::DateTimeExpressionImpl::CreateComparison(
       lhs.implAsDateTimeExpressionImpl(), "<=", rhs.implAsDateTimeExpressionImpl());
-  return BooleanExpression(std::move(resultImpl));
+  return BooleanExpression(std::move(result_impl));
 }
 
 BooleanExpression operator==(const DateTimeExpression &lhs, const DateTimeExpression &rhs) {
-  auto resultImpl = impl::DateTimeExpressionImpl::createComparison(
+  auto result_impl = impl::DateTimeExpressionImpl::CreateComparison(
       lhs.implAsDateTimeExpressionImpl(), "==", rhs.implAsDateTimeExpressionImpl());
-  return BooleanExpression(std::move(resultImpl));
+  return BooleanExpression(std::move(result_impl));
 }
 
 BooleanExpression operator!=(const DateTimeExpression &lhs, const DateTimeExpression &rhs) {
-  auto resultImpl = impl::DateTimeExpressionImpl::createComparison(
+  auto result_impl = impl::DateTimeExpressionImpl::CreateComparison(
       lhs.implAsDateTimeExpressionImpl(), "!=", rhs.implAsDateTimeExpressionImpl());
-  return BooleanExpression(std::move(resultImpl));
+  return BooleanExpression(std::move(result_impl));
 }
 
 BooleanExpression operator>=(const DateTimeExpression &lhs, const DateTimeExpression &rhs) {
-  auto resultImpl = impl::DateTimeExpressionImpl::createComparison(
+  auto result_impl = impl::DateTimeExpressionImpl::CreateComparison(
       lhs.implAsDateTimeExpressionImpl(), ">=", rhs.implAsDateTimeExpressionImpl());
-  return BooleanExpression(std::move(resultImpl));
+  return BooleanExpression(std::move(result_impl));
 }
 
 BooleanExpression operator>(const DateTimeExpression &lhs, const DateTimeExpression &rhs) {
-  auto resultImpl = impl::DateTimeExpressionImpl::createComparison(
+  auto result_impl = impl::DateTimeExpressionImpl::CreateComparison(
       lhs.implAsDateTimeExpressionImpl(), ">", rhs.implAsDateTimeExpressionImpl());
-  return BooleanExpression(std::move(resultImpl));
+  return BooleanExpression(std::move(result_impl));
 }
 }  // namespace deephaven::client

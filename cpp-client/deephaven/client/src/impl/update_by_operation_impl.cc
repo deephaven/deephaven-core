@@ -4,8 +4,8 @@
 #include "deephaven/client/impl/update_by_operation_impl.h"
 
 namespace deephaven::client::impl {
-UpdateByOperationImpl::UpdateByOperationImpl(UpdateByOperationProto updateByProto) :
-    updateByProto_(std::move(updateByProto)) {}
+UpdateByOperationImpl::UpdateByOperationImpl(UpdateByOperationProto grpc_op) :
+    updateByProto_(std::move(grpc_op)) {}
 UpdateByOperationImpl::UpdateByOperationImpl(UpdateByOperationImpl &&other) noexcept = default;
 UpdateByOperationImpl &UpdateByOperationImpl::operator=(UpdateByOperationImpl &&other) noexcept = default;
 UpdateByOperationImpl::~UpdateByOperationImpl() = default;

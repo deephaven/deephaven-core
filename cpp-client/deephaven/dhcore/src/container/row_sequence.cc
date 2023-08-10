@@ -6,21 +6,24 @@
 #include <optional>
 #include "deephaven/dhcore/utility/utility.h"
 
-using deephaven::dhcore::utility::stringf;
+using deephaven::dhcore::utility::Stringf;
 
 namespace deephaven::dhcore::container {
 namespace {
 class SequentialRowSequence final : public RowSequence {
 public:
-  static std::shared_ptr<SequentialRowSequence> create(uint64_t begin, uint64_t end);
+  static std::shared_ptr<SequentialRowSequence> Create(uint64_t begin, uint64_t end);
 
   SequentialRowSequence(uint64_t begin, uint64_t end) : begin_(begin), end_(end) {}
 
-  std::shared_ptr<RowSequence> take(size_t size) const final;
-  std::shared_ptr<RowSequence> drop(size_t size) const final;
-  void forEachInterval(const std::function<void(uint64_t, uint64_t)> &f) const final;
+  [[nodiscard]]
+  std::shared_ptr<RowSequence> Take(size_t size) const final;
+  [[nodiscard]]
+  std::shared_ptr<RowSequence> Drop(size_t size) const final;
+  void ForEachInterval(const std::function<void(uint64_t, uint64_t)> &f) const final;
 
-  size_t size() const final {
+  [[nodiscard]]
+  size_t Size() const final {
     return end_ - begin_;
   }
 
@@ -30,26 +33,26 @@ private:
 };
 }  // namespace
 
-std::shared_ptr<RowSequence> RowSequence::createEmpty() {
-  return SequentialRowSequence::create(0, 0);
+std::shared_ptr<RowSequence> RowSequence::CreateEmpty() {
+  return SequentialRowSequence::Create(0, 0);
 }
 
-std::shared_ptr<RowSequence> RowSequence::createSequential(uint64_t begin, uint64_t end) {
-  return SequentialRowSequence::create(begin, end);
+std::shared_ptr<RowSequence> RowSequence::CreateSequential(uint64_t begin, uint64_t end) {
+  return SequentialRowSequence::Create(begin, end);
 }
 
 RowSequence::~RowSequence() = default;
 
-RowSequenceIterator RowSequence::getRowSequenceIterator() const {
-  return RowSequenceIterator(drop(0));
+RowSequenceIterator RowSequence::GetRowSequenceIterator() const {
+  return RowSequenceIterator(Drop(0));
 }
 
 std::ostream &operator<<(std::ostream &s, const RowSequence &o) {
   s << '[';
-  auto iter = o.getRowSequenceIterator();
+  auto iter = o.GetRowSequenceIterator();
   const char *sep = "";
   uint64_t item;
-  while (iter.tryGetNext(&item)) {
+  while (iter.TryGetNext(&item)) {
     s << sep << item;
     sep = ", ";
   }
@@ -57,16 +60,16 @@ std::ostream &operator<<(std::ostream &s, const RowSequence &o) {
   return s;
 }
 
-RowSequenceIterator::RowSequenceIterator(std::shared_ptr<RowSequence> rowSequence) :
-  residual_(std::move(rowSequence)) {}
+RowSequenceIterator::RowSequenceIterator(std::shared_ptr<RowSequence> row_sequence) :
+  residual_(std::move(row_sequence)) {}
 RowSequenceIterator::RowSequenceIterator(RowSequenceIterator &&other) noexcept = default;
 RowSequenceIterator::~RowSequenceIterator() = default;
 
-bool RowSequenceIterator::tryGetNext(uint64_t *result) {
+bool RowSequenceIterator::TryGetNext(uint64_t *result) {
   while (true) {
     if (rangeIndex_ == ranges_.size()) {
       rangeIndex_ = 0;
-      refillRanges();
+      RefillRanges();
       if (ranges_.empty()) {
         return false;
       }
@@ -74,8 +77,8 @@ bool RowSequenceIterator::tryGetNext(uint64_t *result) {
     }
 
     const auto &range = ranges_[rangeIndex_];
-    auto rangeSize = range.second - range.first;
-    if (offset_ == rangeSize) {
+    auto range_size = range.second - range.first;
+    if (offset_ == range_size) {
       ++rangeIndex_;
       offset_ = 0;
       continue;
@@ -87,31 +90,34 @@ bool RowSequenceIterator::tryGetNext(uint64_t *result) {
   }
 }
 
-void RowSequenceIterator::refillRanges() {
-  auto thisChunk = residual_->take(chunkSize);
-  residual_ = residual_->drop(chunkSize);
+void RowSequenceIterator::RefillRanges() {
+  auto this_chunk = residual_->Take(kChunkSize);
+  residual_ = residual_->Drop(kChunkSize);
   ranges_.clear();
-  auto addRange = [this](uint64_t beginKey, uint64_t endKey) {
-    ranges_.emplace_back(beginKey, endKey);
+  auto add_range = [this](uint64_t begin_key, uint64_t end_key) {
+    ranges_.emplace_back(begin_key, end_key);
   };
-  thisChunk->forEachInterval(addRange);
+  this_chunk->ForEachInterval(add_range);
 }
 
 namespace {
 class MyRowSequence final : public RowSequence {
   // begin->end
-  typedef std::map<uint64_t, uint64_t> ranges_t;
+  using ranges_t = std::map<uint64_t, uint64_t>;
 public:
   MyRowSequence(std::shared_ptr<ranges_t> ranges, ranges_t::const_iterator beginp,
-      size_t entryOffset, size_t size);
+      size_t entry_offset, size_t size);
   ~MyRowSequence() final = default;
 
-  std::shared_ptr<RowSequence> take(size_t size) const final;
-  std::shared_ptr<RowSequence> drop(size_t size) const final;
+  [[nodiscard]]
+  std::shared_ptr<RowSequence> Take(size_t size) const final;
+  [[nodiscard]]
+  std::shared_ptr<RowSequence> Drop(size_t size) const final;
 
-  void forEachInterval(const std::function<void(uint64_t beginKey, uint64_t endKey)> &f) const final;
+  void ForEachInterval(const std::function<void(uint64_t begin_key, uint64_t end_key)> &f) const final;
 
-  size_t size() const final {
+  [[nodiscard]]
+  size_t Size() const final {
     return size_;
   }
 
@@ -126,9 +132,9 @@ private:
 RowSequenceBuilder::RowSequenceBuilder() = default;
 RowSequenceBuilder::~RowSequenceBuilder() = default;
 
-void RowSequenceBuilder::addInterval(uint64_t begin, uint64_t end) {
+void RowSequenceBuilder::AddInterval(uint64_t begin, uint64_t end) {
   if (begin > end) {
-    auto message = stringf("Malformed range [%o,%o)", begin, end);
+    auto message = Stringf("Malformed range [%o,%o)", begin, end);
     throw std::runtime_error(DEEPHAVEN_DEBUG_MSG(message));
   }
 
@@ -145,13 +151,13 @@ void RowSequenceBuilder::addInterval(uint64_t begin, uint64_t end) {
   // The start point `begin` might fall inside an existing interval, or it might be outside all
   // intervals. If it's inside any interval, it will be the one just prior to ip.
   if (ip != ranges_.begin()) {
-    auto prevIp = std::prev(ip);
-    if (begin <= prevIp->second) {
+    auto prev_ip = std::prev(ip);
+    if (begin <= prev_ip->second) {
       // Remove that interval from the map (but, reuse its storage later) and extend the range
       // we are inserting to include the start of the interval.
-      begin = prevIp->first;
-      size_ -= prevIp->second - prevIp->first;
-      node = ranges_.extract(prevIp);
+      begin = prev_ip->first;
+      size_ -= prev_ip->second - prev_ip->first;
+      node = ranges_.extract(prev_ip);
     }
   }
 
@@ -181,7 +187,7 @@ void RowSequenceBuilder::addInterval(uint64_t begin, uint64_t end) {
   size_ += end - begin;
 }
 
-std::shared_ptr<RowSequence> RowSequenceBuilder::build() {
+std::shared_ptr<RowSequence> RowSequenceBuilder::Build() {
   auto sp = std::make_shared<ranges_t>(std::move(ranges_));
   auto begin = sp->begin();
   return std::make_shared<MyRowSequence>(std::move(sp), begin, 0, size_);
@@ -189,72 +195,72 @@ std::shared_ptr<RowSequence> RowSequenceBuilder::build() {
 
 namespace {
 MyRowSequence::MyRowSequence(std::shared_ptr<ranges_t> ranges, ranges_t::const_iterator beginp,
-    size_t entryOffset, size_t size) : ranges_(std::move(ranges)), beginp_(beginp),
-    entryOffset_(entryOffset), size_(size) {}
+    size_t entry_offset, size_t size) : ranges_(std::move(ranges)), beginp_(beginp),
+    entryOffset_(entry_offset), size_(size) {}
 
-std::shared_ptr<RowSequence> MyRowSequence::take(size_t size) const {
-  auto newSize = std::min(size, size_);
-  return std::make_shared<MyRowSequence>(ranges_, beginp_, entryOffset_, newSize);
+std::shared_ptr<RowSequence> MyRowSequence::Take(size_t size) const {
+  auto new_size = std::min(size, size_);
+  return std::make_shared<MyRowSequence>(ranges_, beginp_, entryOffset_, new_size);
 }
 
-std::shared_ptr<RowSequence> MyRowSequence::drop(size_t size) const {
+std::shared_ptr<RowSequence> MyRowSequence::Drop(size_t size) const {
   auto current = beginp_;
-  auto currentOffset = entryOffset_;
-  auto sizeToDrop = std::min(size, size_);
-  auto newSize = size_ - sizeToDrop;
-  while (sizeToDrop != 0) {
-    auto entrySize = current->second - current->first;
-    if (currentOffset == entrySize) {
+  auto current_offset = entryOffset_;
+  auto size_to_drop = std::min(size, size_);
+  auto new_size = size_ - size_to_drop;
+  while (size_to_drop != 0) {
+    auto entry_size = current->second - current->first;
+    if (current_offset == entry_size) {
       ++current;
-      currentOffset = 0;
+      current_offset = 0;
       continue;
     }
-    auto entryRemaining = entrySize - currentOffset;
-    auto amountToConsume = std::min(entryRemaining, sizeToDrop);
-    currentOffset += amountToConsume;
-    sizeToDrop -= amountToConsume;
+    auto entry_remaining = entry_size - current_offset;
+    auto amount_to_consume = std::min(entry_remaining, size_to_drop);
+    current_offset += amount_to_consume;
+    size_to_drop -= amount_to_consume;
   }
-  return std::make_shared<MyRowSequence>(ranges_, current, currentOffset, newSize);
+  return std::make_shared<MyRowSequence>(ranges_, current, current_offset, new_size);
 }
 
-void MyRowSequence::forEachInterval(const std::function<void(uint64_t beginKey, uint64_t endKey)> &f)
+void MyRowSequence::ForEachInterval(const std::function<void(uint64_t begin_key, uint64_t end_key)> &f)
     const {
   // The code is similar to "drop"
   auto current = beginp_;
-  auto currentOffset = entryOffset_;
+  auto current_offset = entryOffset_;
   auto remaining = size_;
   while (remaining != 0) {
-    auto entrySize = current->second - current->first;
-    if (currentOffset == entrySize) {
+    auto entry_size = current->second - current->first;
+    if (current_offset == entry_size) {
       ++current;
-      currentOffset = 0;
+      current_offset = 0;
       continue;
     }
-    auto entryRemaining = entrySize - currentOffset;
-    auto amountToConsume = std::min(entryRemaining, remaining);
-    auto begin = current->first + currentOffset;
-    auto end = begin + amountToConsume;
-    currentOffset += amountToConsume;
-    remaining -= amountToConsume;
+    auto entry_remaining = entry_size - current_offset;
+    auto amount_to_consume = std::min(entry_remaining, remaining);
+    auto begin = current->first + current_offset;
+    auto end = begin + amount_to_consume;
+    current_offset += amount_to_consume;
+    remaining -= amount_to_consume;
     f(begin, end);
   }
 }
 
-std::shared_ptr<SequentialRowSequence> SequentialRowSequence::create(uint64_t begin, uint64_t end) {
+std::shared_ptr<SequentialRowSequence> SequentialRowSequence::Create(uint64_t begin, uint64_t end) {
   return std::make_shared<SequentialRowSequence>(begin, end);
 }
 
-std::shared_ptr<RowSequence> SequentialRowSequence::take(size_t size) const {
-  auto sizeToUse = std::min(size, this->size());
-  return create(begin_, begin_ + sizeToUse);
+std::shared_ptr<RowSequence> SequentialRowSequence::Take(size_t size) const {
+  auto size_to_use = std::min(size, this->Size());
+  return Create(begin_, begin_ + size_to_use);
 }
 
-std::shared_ptr<RowSequence> SequentialRowSequence::drop(size_t size) const {
-  auto sizeToUse = std::min(size, this->size());
-  return create(begin_ + sizeToUse, end_);
+std::shared_ptr<RowSequence> SequentialRowSequence::Drop(size_t size) const {
+  auto size_to_use = std::min(size, this->Size());
+  return Create(begin_ + size_to_use, end_);
 }
 
-void SequentialRowSequence::forEachInterval(const std::function<void(uint64_t, uint64_t)> &f) const {
+void SequentialRowSequence::ForEachInterval(const std::function<void(uint64_t, uint64_t)> &f) const {
   if (begin_ == end_) {
     return;
   }

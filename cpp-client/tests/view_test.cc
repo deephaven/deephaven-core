@@ -7,36 +7,35 @@
 
 using deephaven::client::TableHandleManager;
 using deephaven::client::TableHandle;
-using deephaven::dhcore::utility::streamf;
 
 namespace deephaven::client::tests {
-TEST_CASE("View", "[view]") {
-  auto tm = TableMakerForTests::create();
-  auto table = tm.table();
+TEST_CASE("View", "[View]") {
+  auto tm = TableMakerForTests::Create();
+  auto table = tm.Table();
 
   // literal strings
-  auto t1 = table.lastBy("Ticker").view("Ticker", "Close", "Volume");
-  std::cout << t1.stream(true) << '\n';
+  auto t1 = table.LastBy("Ticker").View("Ticker", "Close", "Volume");
+  std::cout << t1.Stream(true) << '\n';
 
   // Symbolically
-  auto ticker = table.getStrCol("Ticker");
-  auto close = table.getNumCol("Close");
-  auto volume = table.getNumCol("Volume");
-  auto t2 = table.lastBy(ticker).view(ticker, close, volume);
-  std::cout << t2.stream(true) << '\n';
+  auto ticker = table.GetStrCol("Ticker");
+  auto close = table.GetNumCol("Close");
+  auto volume = table.GetNumCol("Volume");
+  auto t2 = table.LastBy(ticker).View(ticker, close, volume);
+  std::cout << t2.Stream(true) << '\n';
 
-  std::vector<std::string> tickerData = {"XRX", "XYZZY", "IBM", "GME", "AAPL", "ZNGA", "T"};
-  std::vector<double> closeData = {53.8, 88.5, 38.7, 453, 26.7, 544.9, 13.4};
-  std::vector<int64_t> volData = {87000, 6060842, 138000, 138000000, 19000, 48300, 1500};
+  std::vector<std::string> ticker_data = {"XRX", "XYZZY", "IBM", "GME", "AAPL", "ZNGA", "T"};
+  std::vector<double> close_data = {53.8, 88.5, 38.7, 453, 26.7, 544.9, 13.4};
+  std::vector<int64_t> vol_data = {87000, 6060842, 138000, 138000000, 19000, 48300, 1500};
 
   const TableHandle *tables[] = {&t1, &t2};
   for (const auto *t : tables) {
-    compareTable(
+    CompareTable(
         *t,
-        "Ticker", tickerData,
-        "Close", closeData,
-        "Volume", volData
-        );
+        "Ticker", ticker_data,
+        "Close", close_data,
+        "Volume", vol_data
+    );
   }
 }
 }  // namespace deephaven::client::tests

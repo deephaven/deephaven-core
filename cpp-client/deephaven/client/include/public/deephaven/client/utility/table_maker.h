@@ -26,30 +26,39 @@ namespace internal {
 class TypeConverter {
 public:
   template<typename T>
-  static TypeConverter createNew(const std::vector<T> &values);
+  [[nodiscard]]
+  static TypeConverter CreateNew(const std::vector<T> &values);
 
-  TypeConverter(std::shared_ptr<arrow::DataType> dataType, std::string deephavenType,
+  TypeConverter(std::shared_ptr<arrow::DataType> data_type, std::string deephaven_type,
       std::shared_ptr<arrow::Array> column);
   ~TypeConverter();
 
-  const std::shared_ptr<arrow::DataType> &dataType() const { return dataType_; }
-  std::shared_ptr<arrow::DataType> &dataType() { return dataType_; }
+  [[nodiscard]]
+  const std::shared_ptr<arrow::DataType> &DataType() const { return dataType_; }
+  [[nodiscard]]
+  std::shared_ptr<arrow::DataType> &DataType() { return dataType_; }
 
-  const std::string &deephavenType() const { return deephavenType_; }
-  std::string &deephavenType() { return deephavenType_; }
+  [[nodiscard]]
+  const std::string &DeephavenType() const { return deephavenType_; }
+  [[nodiscard]]
+  std::string &DeephavenType() { return deephavenType_; }
 
-  const std::shared_ptr<arrow::Array> &column() const { return column_; }
-  std::shared_ptr<arrow::Array> &column() { return column_; }
+  [[nodiscard]]
+  const std::shared_ptr<arrow::Array> &Column() const { return column_; }
+  [[nodiscard]]
+  std::shared_ptr<arrow::Array> &Column() { return column_; }
 
 private:
   template<typename T>
-  static const T *tryGetContainedValue(const T *value, bool *valid) {
+  [[nodiscard]]
+  static const T *TryGetContainedValue(const T *value, bool *valid) {
     *valid = true;
     return value;
   }
 
   template<typename T>
-  static const T *tryGetContainedValue(const std::optional<T> *value, bool *valid) {
+  [[nodiscard]]
+  static const T *TryGetContainedValue(const std::optional<T> *value, bool *valid) {
     if (!value->has_value()) {
       *valid = false;
       return nullptr;
@@ -71,14 +80,14 @@ private:
  * TableMaker tm;
  * std::vector<T1> data1 = { ... };
  * std::vector<T2> data2 = { ... };
- * tm.addColumn("col1", data1);
- * tm.addColumn("col2", data2);
- * auto tableHandle = tm.makeTable();
+ * tm.AddColumn("col1", data1);
+ * tm.AddColumn("col2", data2);
+ * auto tableHandle = tm.MakeTable();
  * @endcode
  */
 class TableMaker {
-  typedef deephaven::client::TableHandleManager TableHandleManager;
-  typedef deephaven::client::TableHandle TableHandle;
+  using TableHandleManager = deephaven::client::TableHandleManager;
+  using TableHandle = deephaven::client::TableHandle;
 public:
   /**
    * Constructor
@@ -95,17 +104,18 @@ public:
    * to this method, the sizes of the `values` arrays must be consistent.
    */
   template<typename T>
-  void addColumn(std::string name, const std::vector<T> &values);
+  void AddColumn(std::string name, const std::vector<T> &values);
 
   /**
-   * Make the table. Call this after all your calls to addColumn().
+   * Make the table. Call this after all your calls to AddColumn().
    * @param manager The TableHandleManager
    * @return The TableHandle referencing the newly-created table.
    */
-  TableHandle makeTable(const TableHandleManager &manager);
+  [[nodiscard]]
+  TableHandle MakeTable(const TableHandleManager &manager);
 
 private:
-  void finishAddColumn(std::string name, internal::TypeConverter info);
+  void FinishAddColumn(std::string name, internal::TypeConverter info);
 
   arrow::SchemaBuilder schemaBuilder_;
   int64_t numRows_ = 0;
@@ -123,111 +133,111 @@ struct TypeConverterTraits {
 
 template<>
 struct TypeConverterTraits<char16_t> {
-  typedef arrow::UInt16Type arrowType_t;
-  typedef arrow::UInt16Builder arrowBuilder_t;
-  static const char * const deephavenTypeName;
+  using arrowType_t = arrow::UInt16Type;
+  using arrowBuilder_t = arrow::UInt16Builder;
+  static const char * const kDeephavenTypeName;
 };
 
 template<>
 struct TypeConverterTraits<bool> {
-  typedef arrow::BooleanType arrowType_t;
-  typedef arrow::BooleanBuilder arrowBuilder_t;
-  static const char * const deephavenTypeName;
+  using arrowType_t = arrow::BooleanType;
+  using arrowBuilder_t = arrow::BooleanBuilder;
+  static const char * const kDeephavenTypeName;
 };
 
 template<>
 struct TypeConverterTraits<int8_t> {
-  typedef arrow::Int8Type arrowType_t;
-  typedef arrow::Int8Builder arrowBuilder_t;
-  static const char * const deephavenTypeName;
+  using arrowType_t = arrow::Int8Type;
+  using arrowBuilder_t = arrow::Int8Builder;
+  static const char * const kDeephavenTypeName;
 };
 
 template<>
 struct TypeConverterTraits<int16_t> {
-  typedef arrow::Int16Type arrowType_t;
-  typedef arrow::Int16Builder arrowBuilder_t;
-  static const char * const deephavenTypeName;
+  using arrowType_t = arrow::Int16Type;
+  using arrowBuilder_t = arrow::Int16Builder;
+  static const char * const kDeephavenTypeName;
 };
 
 template<>
 struct TypeConverterTraits<int32_t> {
-  typedef arrow::Int32Type arrowType_t;
-  typedef arrow::Int32Builder arrowBuilder_t;
-  static const char * const deephavenTypeName;
+  using arrowType_t = arrow::Int32Type;
+  using arrowBuilder_t = arrow::Int32Builder;
+  static const char * const kDeephavenTypeName;
 };
 
 template<>
 struct TypeConverterTraits<int64_t> {
-  typedef arrow::Int64Type arrowType_t;
-  typedef arrow::Int64Builder arrowBuilder_t;
-  static const char * const deephavenTypeName;
+  using arrowType_t = arrow::Int64Type;
+  using arrowBuilder_t = arrow::Int64Builder;
+  static const char * const kDeephavenTypeName;
 };
 
 template<>
 struct TypeConverterTraits<float> {
-  typedef arrow::FloatType arrowType_t;
-  typedef arrow::FloatBuilder arrowBuilder_t;
-  static const char * const deephavenTypeName;
+  using arrowType_t = arrow::FloatType;
+  using arrowBuilder_t = arrow::FloatBuilder;
+  static const char * const kDeephavenTypeName;
 };
 
 template<>
 struct TypeConverterTraits<double> {
-  typedef arrow::DoubleType arrowType_t;
-  typedef arrow::DoubleBuilder arrowBuilder_t;
-  static const char * const deephavenTypeName;
+  using arrowType_t = arrow::DoubleType;
+  using arrowBuilder_t = arrow::DoubleBuilder;
+  static const char * const kDeephavenTypeName;
 };
 
 template<>
 struct TypeConverterTraits<std::string> {
-  typedef arrow::StringType arrowType_t;
-  typedef arrow::StringBuilder arrowBuilder_t;
-  static const char * const deephavenTypeName;
+  using arrowType_t = arrow::StringType;
+  using arrowBuilder_t = arrow::StringBuilder;
+  static const char * const kDeephavenTypeName;
 };
 
 template<typename T>
 struct TypeConverterTraits<std::optional<T>> {
-  typedef TypeConverterTraits<T> inner_t;
-  typedef typename inner_t::arrowType_t arrowType_t;
-  typedef typename inner_t::arrowBuilder_t arrowBuilder_t;
-  static const char * const deephavenTypeName;
+  using inner_t = TypeConverterTraits<T>;
+  using arrowType_t = typename inner_t::arrowType_t;
+  using arrowBuilder_t = typename inner_t::arrowBuilder_t;
+  static const char * const kDeephavenTypeName;
 };
 
 template<typename T>
-const char * const TypeConverterTraits<std::optional<T>>::deephavenTypeName =
-    TypeConverterTraits<T>::deephavenTypeName;
+const char * const TypeConverterTraits<std::optional<T>>::kDeephavenTypeName =
+    TypeConverterTraits<T>::kDeephavenTypeName;
 
 template<typename T>
-TypeConverter TypeConverter::createNew(const std::vector<T> &values) {
-  using deephaven::client::utility::okOrThrow;
-  using deephaven::dhcore::utility::stringf;
+TypeConverter TypeConverter::CreateNew(const std::vector<T> &values) {
+  using deephaven::client::utility::OkOrThrow;
+  using deephaven::dhcore::utility::Stringf;
 
   typedef TypeConverterTraits<T> traits_t;
 
-  auto dataType = std::make_shared<typename traits_t::arrowType_t>();
+  auto data_type = std::make_shared<typename traits_t::arrowType_t>();
 
   typename traits_t::arrowBuilder_t builder;
   for (const auto &value : values) {
     bool valid;
-    const auto *containedValue = tryGetContainedValue(&value, &valid);
+    const auto *contained_value = TryGetContainedValue(&value, &valid);
     if (valid) {
-      okOrThrow(DEEPHAVEN_EXPR_MSG(builder.Append(*containedValue)));
+      OkOrThrow(DEEPHAVEN_EXPR_MSG(builder.Append(*contained_value)));
     } else {
-      okOrThrow(DEEPHAVEN_EXPR_MSG(builder.AppendNull()));
+      OkOrThrow(DEEPHAVEN_EXPR_MSG(builder.AppendNull()));
     }
   }
-  auto builderRes = builder.Finish();
-  if (!builderRes.ok()) {
-    auto message = stringf("Error building array of type %o: %o", traits_t::deephavenTypeName,
-        builderRes.status().ToString());
+  auto builder_res = builder.Finish();
+  if (!builder_res.ok()) {
+    auto message = Stringf("Error building array of type %o: %o", traits_t::kDeephavenTypeName,
+        builder_res.status().ToString());
   }
-  auto array = builderRes.ValueUnsafe();
-  return TypeConverter(std::move(dataType), traits_t::deephavenTypeName, std::move(array));
+  auto array = builder_res.ValueUnsafe();
+  return TypeConverter(std::move(data_type), traits_t::kDeephavenTypeName, std::move(array));
 }
 }  // namespace internal
 
 template<typename T>
-void TableMaker::addColumn(std::string name, const std::vector<T> &values) {
-  auto info = internal::TypeConverter::createNew(values);
-  finishAddColumn(std::move(name), std::move(info));
+void TableMaker::AddColumn(std::string name, const std::vector<T> &values) {
+  auto info = internal::TypeConverter::CreateNew(values);
+  FinishAddColumn(std::move(name), std::move(info));
 }
 }  // namespace deephaven::client::utility
