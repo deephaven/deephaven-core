@@ -450,6 +450,8 @@ public class ParquetTools {
             // Write to shadow files was successful
             for (int tableIdx = 0; tableIdx < sources.length; tableIdx++) {
                 destFiles.add(destinations[tableIdx]);
+                // Invalidate old file handles so that we don't read from files which have been updated
+                TrackedFileHandleFactoryWithLookup.getInstance().invalidateHandles(destinations[tableIdx]);
                 installShadowFile(destinations[tableIdx], shadowDestFiles[tableIdx]);
                 if (groupingColumnWritingInfoMaps != null) {
                     final Map<String, ParquetTableWriter.GroupingColumnWritingInfo> gcwim =
@@ -458,6 +460,7 @@ public class ParquetTools {
                         final File groupingDestFile = gfwi.metadataFilePath;
                         final File shadowGroupingFile = gfwi.destFile;
                         destFiles.add(groupingDestFile);
+                        TrackedFileHandleFactoryWithLookup.getInstance().invalidateHandles(groupingDestFile);
                         installShadowFile(groupingDestFile, shadowGroupingFile);
                     }
                 }

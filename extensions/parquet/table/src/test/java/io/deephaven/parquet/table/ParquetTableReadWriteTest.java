@@ -14,6 +14,7 @@ import io.deephaven.engine.table.impl.select.FormulaEvaluationException;
 import io.deephaven.engine.testutil.TstUtils;
 import io.deephaven.engine.testutil.junit4.EngineCleanup;
 import io.deephaven.engine.util.BigDecimalUtils;
+import io.deephaven.engine.util.file.InvalidFileHandleException;
 import io.deephaven.engine.util.file.TrackedFileHandleFactoryWithLookup;
 import io.deephaven.engine.util.file.TrackedFileHandleFactory;
 import io.deephaven.parquet.table.location.ParquetTableLocationKey;
@@ -751,7 +752,7 @@ public class ParquetTableReadWriteTest {
         TstUtils.assertTableEquals(stringTable, stringFromDisk);
 
         // Close all the file handles so that next time when fromDisk is accessed, we need to reopen the file handle
-        TrackedFileHandleFactory.getInstance().closeAll();
+        TrackedFileHandleFactoryWithLookup.getInstance().closeAll();
 
         // Read back fromDisk and compare it with original table. Since the underlying file has changed,
         // assertTableEquals will try to read the file and would crash
@@ -817,7 +818,7 @@ public class ParquetTableReadWriteTest {
             TstUtils.assertTableEquals(fromDisk, table1);
             TestCase.fail();
         } catch (RuntimeException expected) {
-            assertTrue(expected.getCause() instanceof IllegalStateException);
+            assertTrue(expected.getCause() instanceof InvalidFileHandleException);
         }
     }
 }

@@ -99,7 +99,7 @@ public class TrackedFileHandleFactoryWithLookup extends TrackedFileHandleFactory
     }
 
     /**
-     * Invalidate any handles associated with the {@code file} so that the handle fail on refresh.
+     * Invalidate any handles associated with the {@code file} to prevent reading overwritten files.
      *
      * @param file File path
      */

@@ -58,7 +58,6 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.time.Instant;
 import java.util.*;
-import java.util.function.Function;
 import java.util.function.IntSupplier;
 
 import static io.deephaven.util.QueryConstants.NULL_INT;
@@ -167,14 +166,6 @@ public class ParquetTableWriter {
                 }
             }
             write(t, definition, writeInstructions, destPathName, incomingMeta, tableInfoBuilder);
-
-            // Invalidate old file handles so that we don't read from files which have been updated
-            TrackedFileHandleFactoryWithLookup.getInstance().invalidateHandles(new File(destPathName));
-            if (groupingFiles != null) {
-                for (final File grouingFile : groupingFiles) {
-                    TrackedFileHandleFactoryWithLookup.getInstance().invalidateHandles(grouingFile);
-                }
-            }
         } catch (Exception e) {
             if (groupingFiles != null) {
                 for (final File cleanupFile : groupingFiles) {
