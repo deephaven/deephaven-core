@@ -10,6 +10,8 @@ import elemental2.core.JsString;
 import elemental2.dom.CustomEvent;
 import elemental2.dom.Event;
 import elemental2.promise.Promise;
+import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.ticket_pb.TypedTicket;
+import io.deephaven.web.client.api.console.JsVariableType;
 import io.deephaven.web.client.api.filter.FilterCondition;
 import io.deephaven.web.client.state.ClientTableState;
 import io.deephaven.web.shared.fu.RemoverFn;
@@ -38,7 +40,7 @@ import jsinterop.base.Js;
  */
 @TsInterface
 @TsName(namespace = "dh", name = "TotalsTable")
-public class JsTotalsTable implements JoinableTable {
+public class JsTotalsTable implements JoinableTable, ServerObject {
     private final JsTable wrappedTable;
     private final String directive;
     private final JsArray<JsString> groupBy;
@@ -76,6 +78,14 @@ public class JsTotalsTable implements JoinableTable {
     @Override
     public ClientTableState state() {
         return wrappedTable.state();
+    }
+
+    @Override
+    public TypedTicket typedTicket() {
+        TypedTicket typedTicket = new TypedTicket();
+        typedTicket.setTicket(state().getHandle().makeTicket());
+        typedTicket.setType(JsVariableType.TABLE);
+        return typedTicket;
     }
 
     @JsProperty

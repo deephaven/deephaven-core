@@ -58,3 +58,14 @@ class TableService:
                 raise DHError(f"Server error received for {op.__class__.__name__}: {response.error_info}")
         except Exception as e:
             raise DHError(f"failed to finish {op.__class__.__name__} operation") from e
+
+    def fetch_etcr(self, ticket) -> Table:
+        """Given a ticket, constructs a table around it, by fetching metadata from the server."""
+        response = self._grpc_table_stub.GetExportedTableCreationResponse(ticket, metadata=self.session.grpc_metadata)
+        if response.success:
+            return Table(self.session, ticket=response.result_id.ticket,
+                               schema_header=response.schema_header,
+                               size=response.size,
+                               is_static=response.is_static)
+        else:
+            raise DHError(f"Server error received for ExportedTableCreationResponse: {response.error_info}")

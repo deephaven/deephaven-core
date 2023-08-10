@@ -10,17 +10,21 @@ import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.table_pb.Expo
 import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.ticket_pb.TypedTicket;
 import io.deephaven.web.client.api.Callbacks;
 import io.deephaven.web.client.api.JsTable;
+import io.deephaven.web.client.api.ServerObject;
 import io.deephaven.web.client.api.WorkerConnection;
-import io.deephaven.web.client.api.console.JsVariableChanges;
 import io.deephaven.web.client.api.console.JsVariableDefinition;
 import io.deephaven.web.client.api.console.JsVariableType;
 import io.deephaven.web.client.state.ClientTableState;
 import jsinterop.annotations.JsMethod;
 import jsinterop.annotations.JsProperty;
 
+/**
+ * Represents a server-side object that may not yet have been fetched by the client. Does not memoize its result, so
+ * fetch() should only be called once, and calling close() on this object will also close the result of the fetch.
+ */
 @TsInterface
 @TsName(namespace = "dh", name = "WidgetExportedObject")
-public class JsWidgetExportedObject {
+public class JsWidgetExportedObject implements ServerObject {
     private final WorkerConnection connection;
 
     private final TypedTicket ticket;
@@ -33,6 +37,14 @@ public class JsWidgetExportedObject {
     @JsProperty
     public String getType() {
         return ticket.getType();
+    }
+
+    @Override
+    public TypedTicket typedTicket() {
+        TypedTicket typedTicket = new TypedTicket();
+        typedTicket.setTicket(ticket.getTicket());
+        typedTicket.setType(getType());
+        return typedTicket;
     }
 
     @JsMethod
@@ -53,5 +65,14 @@ public class JsWidgetExportedObject {
             return this.connection.getObject(
                     new JsVariableDefinition(ticket.getType(), null, ticket.getTicket().getTicket_asB64(), null));
         }
+    }
+
+    /**
+     * Releases the server-side resources associated with this object, regardless of whether or not other client-side
+     * objects exist that also use that object.
+     */
+    @JsMethod
+    public void close() {
+        connection.releaseTicket(ticket.getTicket());
     }
 }

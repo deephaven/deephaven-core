@@ -6,18 +6,20 @@ import jpy
 import deephaven.plugin
 
 from typing import Union, Type
-from deephaven.plugin import Plugin, Registration
-from deephaven.plugin.object import ObjectType
+from deephaven.plugin import Plugin, Registration, Callback
+from deephaven.plugin.object_type import ObjectType
 from .object import ObjectTypeAdapter
 
 _JCallbackAdapter = jpy.get_type('io.deephaven.server.plugin.python.CallbackAdapter')
 
 
 def initialize_all_and_register_into(callback: _JCallbackAdapter):
+    """Python method that Java can call to create plugin instances on startup."""
     deephaven.plugin.register_all_into(RegistrationAdapter(callback))
 
 
-class RegistrationAdapter(Registration.Callback):
+class RegistrationAdapter(Callback):
+    """Python implementation of Callback that delegates to its Java counterpart."""
     def __init__(self, callback: _JCallbackAdapter):
         self._callback = callback
 

@@ -34,6 +34,7 @@ import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.hierarchicalt
 import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.hierarchicaltable_pb.HierarchicalTableViewRequest;
 import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.table_pb.Condition;
 import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.ticket_pb.Ticket;
+import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.ticket_pb.TypedTicket;
 import io.deephaven.web.client.api.*;
 import io.deephaven.web.client.api.barrage.WebBarrageUtils;
 import io.deephaven.web.client.api.barrage.def.ColumnDefinition;
@@ -105,7 +106,7 @@ import static io.deephaven.web.client.api.subscription.ViewportData.NO_ROW_FORMA
  * property reflecting that the type of cells where <b>hasChildren</b> is false will be different from usual.
  */
 @JsType(namespace = "dh", name = "TreeTable")
-public class JsTreeTable extends HasLifecycle {
+public class JsTreeTable extends HasLifecycle implements ServerObject {
     /**
      * event.detail is the currently visible viewport data based on the active viewport configuration.
      */
@@ -1024,6 +1025,11 @@ public class JsTreeTable extends HasLifecycle {
                 return null;
             });
         }
+    }
+
+    @Override
+    public TypedTicket typedTicket() {
+        return widget.typedTicket();
     }
 
     /**

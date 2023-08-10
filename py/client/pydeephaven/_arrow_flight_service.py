@@ -53,10 +53,10 @@ class ArrowFlightService:
         """Starts an Arrow do_exchange operation.
 
         Returns:
-            The corresonding Arrow FlightStreamWriter and FlightStreamReader.
+            The corresponding Arrow FlightStreamWriter and FlightStreamReader.
         """    
         try:
-            desc =  pa.flight.FlightDescriptor.for_command(b"dphn")
+            desc = pa.flight.FlightDescriptor.for_command(b"dphn")
             options = paflight.FlightCallOptions(headers=self.session.grpc_metadata)
             writer, reader = self._flight_client.do_exchange(desc, options)
             return writer, reader
