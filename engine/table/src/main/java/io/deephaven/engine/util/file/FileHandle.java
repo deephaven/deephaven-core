@@ -64,7 +64,7 @@ public final class FileHandle implements SeekableByteChannel {
      * If set, fileHandle will fail when refreshing through {@link FileHandleAccessor#refreshFileHandle}. Used to
      * prevent reopening a file which has been moved or overwritten.
      */
-    private boolean failOnRefresh = false;
+    private boolean invalid;
 
     /**
      * <p>
@@ -80,6 +80,7 @@ public final class FileHandle implements SeekableByteChannel {
     public FileHandle(@NotNull final FileChannel fileChannel, @NotNull final Runnable postCloseProcedure) {
         this.fileChannel = Require.neqNull(fileChannel, "fileChannel");
         this.postCloseProcedure = Require.neqNull(postCloseProcedure, "postCloseProcedure");
+        this.invalid = false;
     }
 
     /**
@@ -91,7 +92,7 @@ public final class FileHandle implements SeekableByteChannel {
      * @return The current size of the file
      */
     @Override
-    public final long size() throws IOException {
+    public long size() throws IOException {
         try {
             final long startTimeNanos = System.nanoTime();
             try {
@@ -114,7 +115,7 @@ public final class FileHandle implements SeekableByteChannel {
      * @return This file handle's position
      */
     @Override
-    public final long position() throws IOException {
+    public long position() throws IOException {
         try {
             final long startTimeNanos = System.nanoTime();
             try {
@@ -138,7 +139,7 @@ public final class FileHandle implements SeekableByteChannel {
      * @return This file handle
      */
     @Override
-    public final FileHandle position(long newPosition) throws IOException {
+    public FileHandle position(long newPosition) throws IOException {
         try {
             final long startTimeNanos = System.nanoTime();
             try {
@@ -164,7 +165,7 @@ public final class FileHandle implements SeekableByteChannel {
      * @param position The position in the file to start reading from
      * @return The number of bytes read, or -1 if end of file is reached
      */
-    public final int read(@NotNull final ByteBuffer destination, final long position) throws IOException {
+    public int read(@NotNull final ByteBuffer destination, final long position) throws IOException {
         try {
             final long startTimeNanos = System.nanoTime();
             final int sizeBytes = destination.remaining();
@@ -191,7 +192,7 @@ public final class FileHandle implements SeekableByteChannel {
      * @return The number of bytes read, or -1 of end of file is reached
      */
     @Override
-    public final int read(@NotNull final ByteBuffer destination) throws IOException {
+    public int read(@NotNull final ByteBuffer destination) throws IOException {
         try {
             final long startTimeNanos = System.nanoTime();
             final int sizeBytes = destination.remaining();
@@ -218,7 +219,7 @@ public final class FileHandle implements SeekableByteChannel {
      * @param position The position in the file to start writing at
      * @return The number of bytes written
      */
-    public final int write(@NotNull final ByteBuffer source, final long position) throws IOException {
+    public int write(@NotNull final ByteBuffer source, final long position) throws IOException {
         try {
             final long startTimeNanos = System.nanoTime();
             final int sizeBytes = source.remaining();
@@ -246,7 +247,7 @@ public final class FileHandle implements SeekableByteChannel {
      * @return The number of bytes written
      */
     @Override
-    public final int write(@NotNull final ByteBuffer source) throws IOException {
+    public int write(@NotNull final ByteBuffer source) throws IOException {
         try {
             final long startTimeNanos = System.nanoTime();
             final int sizeBytes = source.remaining();
@@ -272,7 +273,7 @@ public final class FileHandle implements SeekableByteChannel {
      * @return This handle
      */
     @Override
-    public final FileHandle truncate(final long size) throws IOException {
+    public FileHandle truncate(final long size) throws IOException {
         try {
             final long startTimeNanos = System.nanoTime();
             try {
@@ -293,7 +294,7 @@ public final class FileHandle implements SeekableByteChannel {
      * <p>
      * See {@link FileChannel#force(boolean)}.
      */
-    public final void force() throws IOException {
+    public void force() throws IOException {
         try {
             final long startTimeNanos = System.nanoTime();
             try {
@@ -316,7 +317,7 @@ public final class FileHandle implements SeekableByteChannel {
      * @return If the file handle is open
      */
     @Override
-    public final boolean isOpen() {
+    public boolean isOpen() {
         final boolean isOpen = fileChannel.isOpen();
         if (!isOpen) {
             postCloseProcedure.run();
@@ -331,7 +332,7 @@ public final class FileHandle implements SeekableByteChannel {
      * See {@link FileChannel#close()}.
      */
     @Override
-    public final void close() throws IOException {
+    public void close() throws IOException {
         try {
             fileChannel.close();
         } finally {
@@ -339,11 +340,11 @@ public final class FileHandle implements SeekableByteChannel {
         }
     }
 
-    public final void setFailOnRefresh(boolean val) {
-        failOnRefresh = val;
+    public void invalidate() {
+        invalid = true;
     }
 
-    public final boolean shouldFailOnRefresh() {
-        return failOnRefresh;
+    public boolean invalid() {
+        return invalid;
     }
 }

@@ -48,9 +48,9 @@ public abstract class FileHandleAccessor {
      * @return The current file handle, possibly newly created
      */
     protected final FileHandle refreshFileHandle(final FileHandle previousLocalHandle) {
-        if (previousLocalHandle.shouldFailOnRefresh()) {
-            // TODO What should be the behavior here
-            throw new IllegalStateException("Could not refresh file handle to " + file.getAbsolutePath());
+        if (previousLocalHandle.invalid()) {
+            throw new InvalidFileHandleException(
+                    String.format("File handle to %s is no longer valid due to overwrite", file.getAbsolutePath()));
         }
         if (previousLocalHandle == fileHandle) {
             synchronized (this) {

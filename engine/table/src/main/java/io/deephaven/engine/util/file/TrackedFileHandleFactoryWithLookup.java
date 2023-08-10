@@ -23,8 +23,8 @@ import java.util.HashMap;
 
 /**
  * An extension of {@link TrackedFileHandleFactory} class with ability to lookup file handles based on file path and
- * invalidate them in case the underlying file has been modified. This class is used for Parquet files where we
- * invalidate old file handles when overwriting an existing file.
+ * invalidate them in case the underlying file has been modified. This class is used for cases where we invalidate old
+ * file handles when overwriting an existing file.
  */
 public class TrackedFileHandleFactoryWithLookup extends TrackedFileHandleFactory {
 
@@ -33,7 +33,7 @@ public class TrackedFileHandleFactoryWithLookup extends TrackedFileHandleFactory
     /**
      * Mapping from absolute file path to list of handles
      */
-    private final Map<String, LinkedList<WeakReference<FileHandle>>> fileToHandleMap = new HashMap<>();
+    private final Map<String, List<WeakReference<FileHandle>>> fileToHandleMap = new HashMap<>();
 
     public static TrackedFileHandleFactoryWithLookup getInstance() {
         if (instance == null) {
@@ -62,11 +62,7 @@ public class TrackedFileHandleFactoryWithLookup extends TrackedFileHandleFactory
             throws IOException {
         final FileHandle handle = super.makeHandle(file, openOptions);
         final String filePath = file.getAbsolutePath();
-        LinkedList<WeakReference<FileHandle>> handleList = fileToHandleMap.get(filePath);
-        if (handleList == null) {
-            handleList = new LinkedList<WeakReference<FileHandle>>();
-            fileToHandleMap.put(filePath, handleList);
-        }
+        List<WeakReference<FileHandle>> handleList = fileToHandleMap.computeIfAbsent(filePath, k -> new LinkedList<>());
         handleList.add(new WeakReference<>(handle));
         return handle;
     }
@@ -74,10 +70,10 @@ public class TrackedFileHandleFactoryWithLookup extends TrackedFileHandleFactory
     @Override
     protected void cleanup() {
         super.cleanup();
-        final Iterator<Map.Entry<String, LinkedList<WeakReference<FileHandle>>>> mapIter =
+        final Iterator<Map.Entry<String, List<WeakReference<FileHandle>>>> mapIter =
                 fileToHandleMap.entrySet().iterator();
         while (mapIter.hasNext()) {
-            final Map.Entry<String, LinkedList<WeakReference<FileHandle>>> mapEntry = mapIter.next();
+            final Map.Entry<String, List<WeakReference<FileHandle>>> mapEntry = mapIter.next();
             final List<WeakReference<FileHandle>> handleList = mapEntry.getValue();
             final Iterator<WeakReference<FileHandle>> handleWeakRefIterator = handleList.iterator();
             while (handleWeakRefIterator.hasNext()) {
@@ -87,7 +83,7 @@ public class TrackedFileHandleFactoryWithLookup extends TrackedFileHandleFactory
                     handleWeakRefIterator.remove();
                 }
             }
-            if (handleList.size() == 0) {
+            if (handleList.isEmpty()) {
                 mapIter.remove();
             }
         }
@@ -109,19 +105,15 @@ public class TrackedFileHandleFactoryWithLookup extends TrackedFileHandleFactory
      */
     public void invalidateHandles(final File file) {
         final String filePath = file.getAbsolutePath();
-        List<WeakReference<FileHandle>> handleList = fileToHandleMap.get(filePath);
+        List<WeakReference<FileHandle>> handleList = fileToHandleMap.remove(filePath);
         if (handleList == null) {
             return;
         }
-        final Iterator<WeakReference<FileHandle>> handleWeakRefIterator = handleList.iterator();
-        while (handleWeakRefIterator.hasNext()) {
-            final WeakReference<FileHandle> handleWeakRef = handleWeakRefIterator.next();
+        for (WeakReference<FileHandle> handleWeakRef : handleList) {
             final FileHandle handle = handleWeakRef.get();
             if (handle != null) {
-                handle.setFailOnRefresh(true);
+                handle.invalidate();
             }
-            // TODO I am not doing anything for null, not removing them too since cleanup will be doing that, is that
-            // okay?
         }
     }
 }
