@@ -244,7 +244,9 @@ public class ObjectServiceGrpcImpl extends ObjectServiceGrpc.ObjectServiceImplBa
                 GrpcUtil.safelyComplete(responseObserver);
 
                 // Let the server plugin know that the remote end has closed
-                closeMessageStream();
+                if (messageStream != null) {
+                    closeMessageStream();
+                }
 
                 // Release the exported object that this stream is communicating with
                 release();
