@@ -46,7 +46,6 @@ import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.console_pb.Lo
 import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.console_pb_service.ConsoleServiceClient;
 import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.hierarchicaltable_pb_service.HierarchicalTableServiceClient;
 import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.inputtable_pb_service.InputTableServiceClient;
-import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.object_pb.FetchObjectRequest;
 import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.object_pb.FetchObjectResponse;
 import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.object_pb_service.ObjectServiceClient;
 import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.partitionedtable_pb_service.PartitionedTableServiceClient;
@@ -83,6 +82,7 @@ import io.deephaven.web.client.api.parse.JsDataHandler;
 import io.deephaven.web.client.api.state.StateCache;
 import io.deephaven.web.client.api.tree.JsTreeTable;
 import io.deephaven.web.client.api.widget.JsWidget;
+import io.deephaven.web.client.api.widget.JsWidgetExportedObject;
 import io.deephaven.web.client.api.widget.plot.JsFigure;
 import io.deephaven.web.client.fu.JsItr;
 import io.deephaven.web.client.fu.JsLog;
@@ -94,7 +94,6 @@ import io.deephaven.web.shared.data.DeltaUpdates;
 import io.deephaven.web.shared.data.RangeSet;
 import io.deephaven.web.shared.data.TableSnapshot;
 import io.deephaven.web.shared.data.TableSubscriptionRequest;
-import io.deephaven.web.shared.fu.JsBiConsumer;
 import io.deephaven.web.shared.fu.JsConsumer;
 import io.deephaven.web.shared.fu.JsRunnable;
 import jsinterop.annotations.JsMethod;
@@ -882,7 +881,20 @@ public class WorkerConnection {
         }
         return whenServerReady("get a figure")
                 .then(server -> new JsFigure(this,
-                        c -> fetchObject(varDef, c)).refetch());
+                        c -> {
+                            getWidget(varDef).then(widget -> {
+                                FetchObjectResponse legacyResponse = new FetchObjectResponse();
+                                legacyResponse.setData(widget.getDataAsU8());
+                                legacyResponse.setType(widget.getType());
+                                legacyResponse.setTypedExportIdsList(Arrays.stream(widget.getExportedObjects())
+                                        .map(JsWidgetExportedObject::typedTicket).toArray(TypedTicket[]::new));
+                                c.apply(null, legacyResponse);
+                                return null;
+                            }, error -> {
+                                c.apply(error, null);
+                                return null;
+                            });
+                        }).refetch());
     }
 
     private TypedTicket createTypedTicket(JsVariableDefinition varDef) {
@@ -892,16 +904,13 @@ public class WorkerConnection {
         return typedTicket;
     }
 
-    private void fetchObject(JsVariableDefinition varDef, JsBiConsumer<Object, FetchObjectResponse> c) {
-        FetchObjectRequest request = new FetchObjectRequest();
-        TypedTicket typedTicket = createTypedTicket(varDef);
-        request.setSourceId(typedTicket);
-        objectServiceClient().fetchObject(request, metadata(), c::apply);
+    public Promise<JsWidget> getWidget(JsVariableDefinition varDef) {
+        return getWidget(createTypedTicket(varDef));
     }
 
-    public Promise<JsWidget> getWidget(JsVariableDefinition varDef) {
+    public Promise<JsWidget> getWidget(TypedTicket typedTicket) {
         return whenServerReady("get a widget")
-                .then(response -> new JsWidget(this, createTypedTicket(varDef)).refetch());
+                .then(response -> new JsWidget(this, typedTicket).refetch());
     }
 
     public void registerSimpleReconnectable(HasLifecycle figure) {
