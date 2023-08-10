@@ -183,17 +183,14 @@ public class TrackedFileHandleFactory implements FileHandleFactory {
         }
     }
 
-    private class CloseRecorder implements Runnable {
-
-        private final AtomicBoolean reclaimed = new AtomicBoolean(false);
-
+    private class CloseRecorder extends AtomicBoolean implements Runnable {
         private CloseRecorder() {
             size.incrementAndGet();
         }
 
         @Override
         public void run() {
-            if (reclaimed.compareAndSet(false, true)) {
+            if (compareAndSet(false, true)) {
                 size.decrementAndGet();
             }
         }
