@@ -1,3 +1,7 @@
 {
-  "files": ["src/types.d.ts"]
+  "files": ["src/types.d.ts"],
+  "compilerOptions": {
+    "target": "es5",
+    "lib": ["es5","es2015", "DOM"]
+  }
 }
