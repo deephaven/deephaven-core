@@ -27,17 +27,17 @@ setup <- function() {
 
 ##### TESTING GOOD INPUTS #####
 
-test_that("client connection works in the simple case of anonymous authentication", {
+test_that("client dhConnection works in the simple case of anonymous authentication", {
 
   # TODO: assumes server is actually running on localhost:10000, this is probably bad for CI
-  expect_no_error(client <- connect(target = "localhost:10000"))
+  expect_no_error(client <- dhConnect(target = "localhost:10000"))
   
 })
 
 test_that("as_dh_table does not fail with data frame inputs of simple column types", {
   data <- setup()
 
-  client <- connect(target = "localhost:10000")
+  client <- dhConnect(target = "localhost:10000")
 
   expect_no_error(as_dh_table(client, data$df1))
   expect_no_error(as_dh_table(client, data$df2))
@@ -50,7 +50,7 @@ test_that("as_dh_table does not fail with data frame inputs of simple column typ
 test_that("as_dh_table does not fail with tibble inputs of simple column types", {
   data <- setup()
 
-  client <- connect(target = "localhost:10000")
+  client <- dhConnect(target = "localhost:10000")
 
   expect_no_error(as_dh_table(client, as_tibble(data$df1)))
   expect_no_error(as_dh_table(client, as_tibble(data$df2)))
@@ -63,7 +63,7 @@ test_that("as_dh_table does not fail with tibble inputs of simple column types",
 test_that("as_dh_table does not fail with arrow table inputs of simple column types", {
   data <- setup()
 
-  client <- connect(target = "localhost:10000")
+  client <- dhConnect(target = "localhost:10000")
 
   expect_no_error(as_dh_table(client, as_arrow_table(data$df1)))
   expect_no_error(as_dh_table(client, as_arrow_table(data$df2)))
@@ -76,7 +76,7 @@ test_that("as_dh_table does not fail with arrow table inputs of simple column ty
 test_that("as_dh_table does not fail with record batch reader inputs of simple column types", {
   data <- setup()
 
-  client <- connect(target = "localhost:10000")
+  client <- dhConnect(target = "localhost:10000")
 
   expect_no_error(as_dh_table(client, as_record_batch_reader(data$df1)))
   expect_no_error(as_dh_table(client, as_record_batch_reader(data$df2)))
@@ -93,7 +93,7 @@ test_that("as_dh_table does not fail with record batch reader inputs of simple c
 test_that("open_table opens the correct table from the server using %>%", {
   data <- setup()
 
-  client <- connect(target = "localhost:10000")
+  client <- dhConnect(target = "localhost:10000")
 
   th1 <- as_dh_table(client, data$df1)
   th1 %>% bind_to_variable("table1")
@@ -117,7 +117,7 @@ test_that("open_table opens the correct table from the server using %>%", {
 test_that("open_table opens the correct table from the server using |>", {
   data <- setup()
 
-  client <- connect(target = "localhost:10000")
+  client <- dhConnect(target = "localhost:10000")
 
   th1 <- as_dh_table(client, data$df1)
   th1 |> bind_to_variable("table1")
@@ -139,7 +139,7 @@ test_that("open_table opens the correct table from the server using |>", {
 })
 
 test_that("empty_table correctly creates tables on the server using %>%", {
-  client <- connect(target = "localhost:10000")
+  client <- dhConnect(target = "localhost:10000")
 
   th1 <- empty_table(client, 10) %>% update("X = i")
   df1 <- data.frame(X = c(0, 1, 2, 3, 4, 5, 6, 7, 8, 9))
@@ -149,7 +149,7 @@ test_that("empty_table correctly creates tables on the server using %>%", {
 })
 
 test_that("empty_table correctly creates tables on the server using |>", {
-  client <- connect(target = "localhost:10000")
+  client <- dhConnect(target = "localhost:10000")
 
   th1 <- empty_table(client, 10) |> update("X = i")
   df1 <- data.frame(X = c(0, 1, 2, 3, 4, 5, 6, 7, 8, 9))
@@ -161,7 +161,7 @@ test_that("empty_table correctly creates tables on the server using |>", {
 # TODO: Test time_table good inputs
 
 test_that("run_script correctly runs a python script", {
-  client <- connect(target = "localhost:10000")
+  client <- dhConnect(target = "localhost:10000")
 
   expect_no_error(run_script(client, 
     '
@@ -182,46 +182,46 @@ int_col("Name_Int_Col", [44, 55, 66])
 
 ##### TESTING BAD INPUTS #####
 
-test_that("connect fails nicely with bad inputs", {
+test_that("dhConnect fails nicely with bad inputs", {
   
   expect_error(
-    connect(target = "localhost:10000", auth_type = "basic"),
+    dhConnect(target = "localhost:10000", auth_type = "basic"),
     "Basic authentication was requested, but no 'auth_token' was provided."
   )
   expect_error(
-    connect(target = "localhost:10000", auth_type = "custom"),
+    dhConnect(target = "localhost:10000", auth_type = "custom"),
     "Custom authentication was requested, but no 'auth_token' was provided."
   )
   expect_error(
-    connect(target = "localhost:10000", auth_type = ""),
+    dhConnect(target = "localhost:10000", auth_type = ""),
     "'auth_type' should be a non-empty string."
   )
   expect_error(
-    connect(target = "localhost:10000", auth_type = "basic", auth_token = 1234),
+    dhConnect(target = "localhost:10000", auth_type = "basic", auth_token = 1234),
     "'auth_token' must be a single string. Got an object of class numeric."
   )
   expect_error(
-    connect(target = "localhost:10000", session_type = "blahblah"),
+    dhConnect(target = "localhost:10000", session_type = "blahblah"),
     "'session_type' must be 'python' or 'groovy', but got blahblah."
   )
   expect_error(
-    connect(target = "localhost:10000", session_type = 1234),
+    dhConnect(target = "localhost:10000", session_type = 1234),
     "'session_type' must be 'python' or 'groovy', but got 1234."
   )
   expect_error(
-    connect(target = "localhost:10000", use_tls = "banana"),
+    dhConnect(target = "localhost:10000", use_tls = "banana"),
     "'use_tls' must be a single boolean. Got an object of class character."
   )
   expect_error(
-    connect(target = "localhost:10000", int_options = 1234),
+    dhConnect(target = "localhost:10000", int_options = 1234),
     "'int_options' must be a single list. Got an object of class numeric."
   )
   expect_error(
-    connect(target = "localhost:10000", string_options = 1234),
+    dhConnect(target = "localhost:10000", string_options = 1234),
     "'string_options' must be a single list. Got an object of class numeric."
   )
   expect_error(
-    connect(target = "localhost:10000", extra_headers = 1234),
+    dhConnect(target = "localhost:10000", extra_headers = 1234),
     "'extra_headers' must be a single list. Got an object of class numeric."
   )
   
@@ -230,7 +230,7 @@ test_that("connect fails nicely with bad inputs", {
 test_that("as_dh_table fails nicely with bad inputs", {
   library(datasets)
 
-  client <- connect(target = "localhost:10000")
+  client <- dhConnect(target = "localhost:10000")
 
   expect_error(as_dh_table(client, 12345), cat("unable to find an inherited method for function ‘as_dh_table’ for signature ‘\"Client\", \"numeric\"’"))
   expect_error(as_dh_table(client, "hello!"), cat("unable to find an inherited method for function ‘as_dh_table’ for signature ‘\"Client\", \"character\"’"))
@@ -246,7 +246,7 @@ test_that("as_dh_table fails nicely with bad inputs", {
 })
 
 test_that("open_table fails nicely with bad inputs", {
-  client <- connect(target = "localhost:10000")
+  client <- dhConnect(target = "localhost:10000")
 
   expect_error(open_table(client, ""), "The table '' does not exist on the server.")
   expect_error(open_table(client, 12345), cat("unable to find an inherited method for function ‘open_table’ for signature ‘\"Client\", \"numeric\"’"))
@@ -256,7 +256,7 @@ test_that("open_table fails nicely with bad inputs", {
 })
 
 test_that("empty_table fails nicely with bad inputs", {
-  client <- connect(target = "localhost:10000")
+  client <- dhConnect(target = "localhost:10000")
 
   expect_error(empty_table(client, 0), "'size' must be a positive integer. Got 'size' = 0.")
   expect_error(empty_table(client, -3), "'size' must be a positive integer. Got 'size' = -3.")
@@ -268,7 +268,7 @@ test_that("empty_table fails nicely with bad inputs", {
 })
 
 test_that("time_table fails nicely with bad inputs", {
-  client <- connect(target = "localhost:10000")
+  client <- dhConnect(target = "localhost:10000")
 
   expect_error(time_table(client, 1.23, 1000), "'period' must be an integer. Got 'period' = 1.23.")
   expect_error(time_table(client, 1000, 1.23), "'start_time' must be an integer. Got 'start_time' = 1.23.")
@@ -281,7 +281,7 @@ test_that("time_table fails nicely with bad inputs", {
 })
 
 test_that("run_script fails nicely with bad input types", {
-  client <- connect(target = "localhost:10000")
+  client <- dhConnect(target = "localhost:10000")
 
   expect_error(run_script(client, 12345), cat("unable to find an inherited method for function ‘run_script’ for signature ‘\"Client\", \"numeric\"’"))
   expect_error(run_script(client, c("I", "am", "a", "string")), "'script' must be a single string. Got a vector of length 4.")

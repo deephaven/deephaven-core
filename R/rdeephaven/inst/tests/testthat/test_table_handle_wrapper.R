@@ -23,7 +23,7 @@ setup <- function() {
   )
 
   # set up client
-  client <- connect(target = "localhost:10000")
+  client <- dhConnect(target = "localhost:10000")
 
   # move dataframes to server and get TableHandles for testing
   th1 <- as_dh_table(client, df1)

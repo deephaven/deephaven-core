@@ -7,16 +7,16 @@ setClass(
 )
 
 setGeneric(
-  "connect",
+  "dhConnect",
   function(target, ...) {
-    return(standardGeneric("connect"))
+    return(standardGeneric("dhConnect"))
   },
   signature = c("target")
 )
 
 #' @export
 setMethod(
-  "connect",
+  "dhConnect",
   signature = c(target = "character"),
   function(target,
            auth_type = "anonymous",
