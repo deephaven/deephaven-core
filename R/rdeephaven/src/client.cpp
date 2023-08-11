@@ -102,9 +102,10 @@ AggregateWrapper* INTERNAL_agg_std(std::vector<std::string> columnSpecs) {
     return new AggregateWrapper(deephaven::client::Aggregate::Std(columnSpecs));
 }
 
-//AggregateWrapper* INTERNAL_agg_percentile(double percentile, std::vector<std::string> columnSpecs) {
-//    return new AggregateWrapper(deephaven::client::Aggregate::Pct(percentile, false, columnSpecs));
-//}
+// TODO: capitalize the pct method when a fix is merged
+AggregateWrapper* INTERNAL_agg_percentile(double percentile, std::vector<std::string> columnSpecs) {
+    return new AggregateWrapper(deephaven::client::Aggregate::pct(percentile, false, columnSpecs));
+}
 
 AggregateWrapper* INTERNAL_agg_count(std::string columnSpec) {
     return new AggregateWrapper(deephaven::client::Aggregate::Count(columnSpec));
@@ -484,7 +485,7 @@ RCPP_MODULE(DeephavenInternalModule) {
     function("INTERNAL_agg_median", &INTERNAL_agg_median);
     function("INTERNAL_agg_var", &INTERNAL_agg_var);
     function("INTERNAL_agg_std", &INTERNAL_agg_std);
-    //function("INTERNAL_agg_percentile", &INTERNAL_agg_percentile);
+    function("INTERNAL_agg_percentile", &INTERNAL_agg_percentile);
     function("INTERNAL_agg_count", &INTERNAL_agg_count);
 
 
