@@ -20,6 +20,8 @@
 
 #include <Rcpp.h>
 
+using deephaven::dhcore::utility::Base64Encode;
+
 // forward declaration of classes
 class AggregateWrapper;
 class TableHandleWrapper;
@@ -329,12 +331,13 @@ public:
         internal_options->SetDefaultAuthentication();
     }
 
-    void SetBasicAuthentication(const std::string &username, const std::string &password) {
-        internal_options->SetBasicAuthentication(username, password);
+    void SetBasicAuthentication(const std::string &authentication_token) {
+        const std::string authentication_token_base64 = Base64Encode(authentication_token);
+        internal_options->SetCustomAuthentication("Basic", authentication_token_base64);
     }
 
-    void SetCustomAuthentication(const std::string &authenticationKey, const std::string &authenticationValue) {
-        internal_options->SetCustomAuthentication(authenticationKey, authenticationValue);
+    void SetCustomAuthentication(const std::string &authentication_type, const std::string &authentication_token) {
+        internal_options->SetCustomAuthentication(authentication_type, authentication_token);
     }
 
     void SetSessionType(const std::string &sessionType) {

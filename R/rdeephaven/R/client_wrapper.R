@@ -20,7 +20,7 @@ setMethod(
   signature = c(target = "character"),
   function(target,
            auth_type = "anonymous",
-           auth_token_pair = "",
+           auth_token = "",
            session_type = "python",
            use_tls = FALSE,
            tls_root_certs = "",
@@ -30,6 +30,10 @@ setMethod(
     options <- new(INTERNAL_ClientOptions)
     
     verify_string("target", target, TRUE)
+    verify_string("auth_type", auth_type, TRUE)
+    if (auth_type == "") {
+      stop("'auth_type' should be a non-empty string.")
+    }
     verify_bool("use_tls", use_tls, TRUE)
 
     # check if auth_type needs to be changed and set credentials accordingly
@@ -37,25 +41,20 @@ setMethod(
       options$set_default_authentication()
     }
     else if (auth_type == "basic") {
-      if (auth_token_pair != "") {
-        verify_string("auth_token_pair", auth_token_pair, TRUE)
-        username_password <- strsplit(auth_token_pair, ":", fixed = TRUE)
-        options$set_basic_authentication(username_password[1], username_password[2])
+      if (auth_token != "") {
+        verify_string("auth_token", auth_token, TRUE)
+        options$set_basic_authentication(auth_token)
       } else {
-        stop("Basic authentication was requested, but no 'auth_token_pair' was provided.")
-      }
-    }
-    else if (auth_type == "custom") {
-      if (auth_token_pair != "") {
-        verify_string("auth_token_pair", auth_token_pair, TRUE)
-        key_value <- strsplit(auth_token_pair, ":", fixed = TRUE)
-        options$set_custom_authentication(key_value[1], key_value[2])
-      } else {
-        stop("Custom authentication was requested, but no 'auth_token_pair' was provided.")
+        stop("Basic authentication was requested, but no 'auth_token' was provided.")
       }
     }
     else {
-      stop(paste0("'auth_type' must be 'anonymous', 'basic', or 'custom', but got ", auth_type, "."))
+      if (auth_token != "") {
+        verify_string("auth_token", auth_token, TRUE)
+        options$set_custom_authentication(auth_type, auth_token)
+      } else {
+        stop("Custom authentication was requested, but no 'auth_token' was provided.")
+      }
     }
 
     # set session type if a valid session type is provided

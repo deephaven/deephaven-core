@@ -186,19 +186,19 @@ test_that("connect fails nicely with bad inputs", {
   
   expect_error(
     connect(target = "localhost:10000", auth_type = "basic"),
-    "Basic authentication was requested, but no 'auth_token_pair' was provided."
+    "Basic authentication was requested, but no 'auth_token' was provided."
   )
   expect_error(
     connect(target = "localhost:10000", auth_type = "custom"),
-    "Custom authentication was requested, but no 'auth_token_pair' was provided."
+    "Custom authentication was requested, but no 'auth_token' was provided."
   )
   expect_error(
-    connect(target = "localhost:10000", auth_type = "blahblah"),
-    "'auth_type' must be 'anonymous', 'basic', or 'custom', but got blahblah."
+    connect(target = "localhost:10000", auth_type = ""),
+    "'auth_type' should be a non-empty string."
   )
   expect_error(
-    connect(target = "localhost:10000", auth_type = "basic", auth_token_pair = 1234),
-    "'auth_token_pair' must be a single string. Got an object of class numeric."
+    connect(target = "localhost:10000", auth_type = "basic", auth_token = 1234),
+    "'auth_token' must be a single string. Got an object of class numeric."
   )
   expect_error(
     connect(target = "localhost:10000", session_type = "blahblah"),
