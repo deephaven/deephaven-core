@@ -1,7 +1,7 @@
 adbc-driver-manager==0.5.1
 adbc-driver-postgresql==0.5.1
 connectorx==0.3.1; platform.machine == 'x86_64'
-deephaven-plugin==0.3.0
+deephaven-plugin==0.5.0
 java-utilities==0.2.0
 jedi==0.18.2
 jpy==0.14.0

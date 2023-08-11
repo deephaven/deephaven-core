@@ -89,15 +89,12 @@ import static io.deephaven.web.client.api.subscription.ViewportData.NO_ROW_FORMA
 import static io.deephaven.web.client.fu.LazyPromise.logError;
 
 /**
- * TODO provide hooks into the event handlers so we can see if no one is listening any more and release the table
- * handle/viewport.
- *
  * Provides access to data in a table. Note that several methods present their response through Promises. This allows
  * the client to both avoid actually connecting to the server until necessary, and also will permit some changes not to
  * inform the UI right away that they have taken place.
  */
 @TsName(namespace = "dh", name = "Table")
-public class JsTable extends HasLifecycle implements HasTableBinding, JoinableTable {
+public class JsTable extends HasLifecycle implements HasTableBinding, JoinableTable, ServerObject {
     @JsProperty(namespace = "dh.Table")
     /**
      * The table size has updated, so live scrollbars and the like can be updated accordingly.
@@ -230,6 +227,14 @@ public class JsTable extends HasLifecycle implements HasTableBinding, JoinableTa
     public Promise<JsTable> refetch() {
         // TODO(deephaven-core#3604) consider supporting this method when new session reconnects are supported
         return Promise.reject("Cannot reconnect a Table with refetch(), see deephaven-core#3604");
+    }
+
+    @Override
+    public TypedTicket typedTicket() {
+        TypedTicket typedTicket = new TypedTicket();
+        typedTicket.setTicket(state().getHandle().makeTicket());
+        typedTicket.setType(JsVariableType.TABLE);
+        return typedTicket;
     }
 
     @JsMethod
@@ -1085,16 +1090,11 @@ public class JsTable extends HasLifecycle implements HasTableBinding, JoinableTa
             workerConnection.hierarchicalTableServiceClient().rollup(request, workerConnection.metadata(), c::apply);
         });
 
-        JsWidget widget = new JsWidget(workerConnection, c -> {
-            FetchObjectRequest partitionedTableRequest = new FetchObjectRequest();
-            partitionedTableRequest.setSourceId(new TypedTicket());
-            partitionedTableRequest.getSourceId().setType(JsVariableType.HIERARCHICALTABLE);
-            partitionedTableRequest.getSourceId().setTicket(rollupTicket);
-            workerConnection.objectServiceClient().fetchObject(partitionedTableRequest,
-                    workerConnection.metadata(), (fail, success) -> {
-                        c.handleResponse(fail, success, rollupTicket);
-                    });
-        });
+        TypedTicket typedTicket = new TypedTicket();
+        typedTicket.setType(JsVariableType.HIERARCHICALTABLE);
+        typedTicket.setTicket(rollupTicket);
+
+        JsWidget widget = new JsWidget(workerConnection, typedTicket);
 
         return Promise.all(widget.refetch(), rollupPromise)
                 .then(ignore -> Promise.resolve(new JsTreeTable(workerConnection, widget)));
@@ -1131,16 +1131,11 @@ public class JsTable extends HasLifecycle implements HasTableBinding, JoinableTa
                     c::apply);
         });
 
-        JsWidget widget = new JsWidget(workerConnection, c -> {
-            FetchObjectRequest partitionedTableRequest = new FetchObjectRequest();
-            partitionedTableRequest.setSourceId(new TypedTicket());
-            partitionedTableRequest.getSourceId().setType(JsVariableType.HIERARCHICALTABLE);
-            partitionedTableRequest.getSourceId().setTicket(treeTicket);
-            workerConnection.objectServiceClient().fetchObject(partitionedTableRequest,
-                    workerConnection.metadata(), (fail, success) -> {
-                        c.handleResponse(fail, success, treeTicket);
-                    });
-        });
+        TypedTicket typedTicket = new TypedTicket();
+        typedTicket.setType(JsVariableType.HIERARCHICALTABLE);
+        typedTicket.setTicket(treeTicket);
+
+        JsWidget widget = new JsWidget(workerConnection, typedTicket);
 
         return Promise.all(widget.refetch(), treePromise)
                 .then(ignore -> Promise.resolve(new JsTreeTable(workerConnection, widget)));
@@ -1420,17 +1415,11 @@ public class JsTable extends HasLifecycle implements HasTableBinding, JoinableTa
                     c::apply);
         });
         // construct the partitioned table around the ticket created above
+        TypedTicket typedTicket = new TypedTicket();
+        typedTicket.setType(JsVariableType.PARTITIONEDTABLE);
+        typedTicket.setTicket(partitionedTableTicket);
         Promise<JsPartitionedTable> fetchPromise =
-                new JsPartitionedTable(workerConnection, new JsWidget(workerConnection, c -> {
-                    FetchObjectRequest partitionedTableRequest = new FetchObjectRequest();
-                    partitionedTableRequest.setSourceId(new TypedTicket());
-                    partitionedTableRequest.getSourceId().setType(JsVariableType.PARTITIONEDTABLE);
-                    partitionedTableRequest.getSourceId().setTicket(partitionedTableTicket);
-                    workerConnection.objectServiceClient().fetchObject(partitionedTableRequest,
-                            workerConnection.metadata(), (fail, success) -> {
-                                c.handleResponse(fail, success, partitionedTableTicket);
-                            });
-                })).refetch();
+                new JsPartitionedTable(workerConnection, new JsWidget(workerConnection, typedTicket)).refetch();
 
         // Ensure that the partition failure propagates first, but the result of the fetch will be returned - both
         // are running concurrently.

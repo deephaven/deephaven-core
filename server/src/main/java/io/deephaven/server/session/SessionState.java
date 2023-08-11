@@ -1266,7 +1266,7 @@ public class SessionState {
          * @return this builder
          */
         public ExportBuilder<T> require(final ExportObject<?>... dependencies) {
-            export.setDependencies(Arrays.asList(dependencies));
+            export.setDependencies(List.of(dependencies));
             return this;
         }
 
@@ -1277,8 +1277,8 @@ public class SessionState {
          * @param dependencies the parent dependencies
          * @return this builder
          */
-        public <S> ExportBuilder<T> require(final List<ExportObject<S>> dependencies) {
-            export.setDependencies(Collections.unmodifiableList(dependencies));
+        public ExportBuilder<T> require(final List<? extends ExportObject<?>> dependencies) {
+            export.setDependencies(List.copyOf(dependencies));
             return this;
         }
 

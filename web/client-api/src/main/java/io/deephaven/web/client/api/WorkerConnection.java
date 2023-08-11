@@ -46,7 +46,7 @@ import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.console_pb.Lo
 import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.console_pb_service.ConsoleServiceClient;
 import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.hierarchicaltable_pb_service.HierarchicalTableServiceClient;
 import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.inputtable_pb_service.InputTableServiceClient;
-import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.object_pb.FetchObjectRequest;
+import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.object_pb.FetchObjectResponse;
 import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.object_pb_service.ObjectServiceClient;
 import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.partitionedtable_pb_service.PartitionedTableServiceClient;
 import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.session_pb.ReleaseRequest;
@@ -82,6 +82,7 @@ import io.deephaven.web.client.api.parse.JsDataHandler;
 import io.deephaven.web.client.api.state.StateCache;
 import io.deephaven.web.client.api.tree.JsTreeTable;
 import io.deephaven.web.client.api.widget.JsWidget;
+import io.deephaven.web.client.api.widget.JsWidgetExportedObject;
 import io.deephaven.web.client.api.widget.plot.JsFigure;
 import io.deephaven.web.client.fu.JsItr;
 import io.deephaven.web.client.fu.JsLog;
@@ -862,7 +863,7 @@ public class WorkerConnection {
 
     public Promise<JsPartitionedTable> getPartitionedTable(JsVariableDefinition varDef) {
         return whenServerReady("get a partitioned table")
-                .then(server -> new JsPartitionedTable(this, new JsWidget(this, c -> fetchObject(varDef, c)))
+                .then(server -> new JsPartitionedTable(this, new JsWidget(this, createTypedTicket(varDef)))
                         .refetch());
     }
 
@@ -880,22 +881,36 @@ public class WorkerConnection {
         }
         return whenServerReady("get a figure")
                 .then(server -> new JsFigure(this,
-                        c -> fetchObject(varDef, (fail, success, ignore) -> c.apply(fail, success))).refetch());
+                        c -> {
+                            getWidget(varDef).then(widget -> {
+                                FetchObjectResponse legacyResponse = new FetchObjectResponse();
+                                legacyResponse.setData(widget.getDataAsU8());
+                                legacyResponse.setType(widget.getType());
+                                legacyResponse.setTypedExportIdsList(Arrays.stream(widget.getExportedObjects())
+                                        .map(JsWidgetExportedObject::typedTicket).toArray(TypedTicket[]::new));
+                                c.apply(null, legacyResponse);
+                                return null;
+                            }, error -> {
+                                c.apply(error, null);
+                                return null;
+                            });
+                        }).refetch());
     }
 
-    private void fetchObject(JsVariableDefinition varDef, JsWidget.WidgetFetchCallback c) {
-        FetchObjectRequest request = new FetchObjectRequest();
+    private TypedTicket createTypedTicket(JsVariableDefinition varDef) {
         TypedTicket typedTicket = new TypedTicket();
         typedTicket.setTicket(TableTicket.createTicket(varDef));
         typedTicket.setType(varDef.getType());
-        request.setSourceId(typedTicket);
-        objectServiceClient().fetchObject(request, metadata(),
-                (fail, success) -> c.handleResponse(fail, success, typedTicket.getTicket()));
+        return typedTicket;
     }
 
     public Promise<JsWidget> getWidget(JsVariableDefinition varDef) {
+        return getWidget(createTypedTicket(varDef));
+    }
+
+    public Promise<JsWidget> getWidget(TypedTicket typedTicket) {
         return whenServerReady("get a widget")
-                .then(response -> new JsWidget(this, c -> fetchObject(varDef, c)).refetch());
+                .then(response -> new JsWidget(this, typedTicket).refetch());
     }
 
     public void registerSimpleReconnectable(HasLifecycle figure) {
