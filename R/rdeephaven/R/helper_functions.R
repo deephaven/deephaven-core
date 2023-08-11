@@ -3,32 +3,23 @@ first_class <- function(arg) {
 }
 
 verify_type <- function(arg_name, candidate, required_type, message_type_name, is_scalar) {
-  
   if (!is_scalar && (first_class(candidate) == "list")) {
     if (any(lapply(candidate, first_class) != required_type)) {
       stop(paste0("'", arg_name, "' must be a ", message_type_name, ", or a vector of ", message_type_name, "s. Got a vector with at least one element that is not a ", message_type_name, "."))
     }
-  }
-  
-  else if (is_scalar && (first_class(candidate) == "list")) {
+  } else if (is_scalar && (first_class(candidate) == "list")) {
     if (first_class(candidate[[1]]) != required_type) {
       stop(paste0("'", arg_name, "' must be a single ", message_type_name, ". Got an object of class ", first_class(candidate), "."))
-    }
-    else if (length(candidate) != 1) {
+    } else if (length(candidate) != 1) {
       stop(paste0("'", arg_name, "' must be a single ", message_type_name, ". Got a vector of length ", length(candidate), "."))
     }
-  }
-  
-  else if (first_class(candidate) != required_type) {
+  } else if (first_class(candidate) != required_type) {
     if (!is_scalar) {
       stop(paste0("'", arg_name, "' must be a ", message_type_name, " or a vector of ", message_type_name, "s. Got an object of class ", first_class(candidate), "."))
-    }
-    else {
+    } else {
       stop(paste0("'", arg_name, "' must be a single ", message_type_name, ". Got an object of class ", first_class(candidate), "."))
     }
-  }
-  
-  else if (is_scalar && (length(candidate) != 1)) {
+  } else if (is_scalar && (length(candidate) != 1)) {
     stop(paste0("'", arg_name, "' must be a single ", message_type_name, ". Got a vector of length ", length(candidate), "."))
   }
 }

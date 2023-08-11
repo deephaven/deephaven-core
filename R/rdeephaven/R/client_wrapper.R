@@ -28,7 +28,7 @@ setMethod(
            string_options = list(),
            extra_headers = list()) {
     options <- new(INTERNAL_ClientOptions)
-    
+
     verify_string("target", target, TRUE)
     verify_string("auth_type", auth_type, TRUE)
     if (auth_type == "") {
@@ -39,16 +39,14 @@ setMethod(
     # check if auth_type needs to be changed and set credentials accordingly
     if (auth_type == "anonymous") {
       options$set_default_authentication()
-    }
-    else if (auth_type == "basic") {
+    } else if (auth_type == "basic") {
       if (auth_token != "") {
         verify_string("auth_token", auth_token, TRUE)
         options$set_basic_authentication(auth_token)
       } else {
         stop("Basic authentication was requested, but no 'auth_token' was provided.")
       }
-    }
-    else {
+    } else {
       if (auth_token != "") {
         verify_string("auth_token", auth_token, TRUE)
         options$set_custom_authentication(auth_type, auth_token)
@@ -60,8 +58,7 @@ setMethod(
     # set session type if a valid session type is provided
     if ((session_type == "python") || (session_type == "groovy")) {
       options$set_session_type(session_type)
-    }
-    else {
+    } else {
       stop(paste0("'session_type' must be 'python' or 'groovy', but got ", session_type, "."))
     }
 
@@ -77,23 +74,31 @@ setMethod(
     # set extra header options if they are provided
     if (length(int_options) != 0) {
       verify_list("int_options", int_options, TRUE)
-      for(key in names(int_options)) {
+      for (key in names(int_options)) {
         options$add_int_options(key, int_options[[key]])
       }
     }
 
     if (length(string_options) != 0) {
       verify_list("string_options", string_options, TRUE)
-      for(key in names(string_options)) {
+      for (key in names(string_options)) {
         options$add_string_options(key, string_options[[key]])
       }
     }
 
     if (length(extra_headers) != 0) {
       verify_list("extra_headers", extra_headers, TRUE)
-      for(key in names(extra_headers)) {
+      for (key in names(extra_headers)) {
         options$add_extra_headers(key, extra_headers[[key]])
       }
+    }
+
+    if ((auth_token != "") && (auth_type == "anonymous")) {
+      warning("'auth_token' was set but it will not be used, as 'auth_type' is 'anonymous'.")
+    }
+
+    if ((tls_root_certs != "") && (use_tls == FALSE)) {
+      warning("'tls_root_certs' was set but it will not be used, as 'use_tls is FALSE.")
     }
 
     internal_client <- new(INTERNAL_Client,
@@ -187,7 +192,8 @@ setMethod(
     table_object$export_to_c(ptr)
     return(
       new("TableHandle",
-          .internal_rcpp_object = client_instance@.internal_rcpp_object$new_table_from_arrow_array_stream_ptr(ptr))
+        .internal_rcpp_object = client_instance@.internal_rcpp_object$new_table_from_arrow_array_stream_ptr(ptr)
+      )
     )
   }
 )
