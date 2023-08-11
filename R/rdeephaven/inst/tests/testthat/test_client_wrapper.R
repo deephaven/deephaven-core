@@ -213,16 +213,16 @@ test_that("connect fails nicely with bad inputs", {
     "'use_tls' must be a single boolean. Got an object of class character."
   )
   expect_error(
-    connect(target = "localhost:10000", int_option = 1234),
-    "'int_option' must be a single string. Got an object of class numeric."
+    connect(target = "localhost:10000", int_options = 1234),
+    "'int_options' must be a single list. Got an object of class numeric."
   )
   expect_error(
-    connect(target = "localhost:10000", string_option = 1234),
-    "'string_option' must be a single string. Got an object of class numeric."
+    connect(target = "localhost:10000", string_options = 1234),
+    "'string_options' must be a single list. Got an object of class numeric."
   )
   expect_error(
-    connect(target = "localhost:10000", extra_header = 1234),
-    "'extra_header' must be a single string. Got an object of class numeric."
+    connect(target = "localhost:10000", extra_headers = 1234),
+    "'extra_headers' must be a single list. Got an object of class numeric."
   )
   
 })

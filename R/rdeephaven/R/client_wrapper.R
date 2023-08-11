@@ -24,9 +24,9 @@ setMethod(
            session_type = "python",
            use_tls = FALSE,
            tls_root_certs = "",
-           int_option = "",
-           string_option = "",
-           extra_header = "") {
+           int_options = list(),
+           string_options = list(),
+           extra_headers = list()) {
     options <- new(INTERNAL_ClientOptions)
     
     verify_string("target", target, TRUE)
@@ -75,22 +75,25 @@ setMethod(
     }
 
     # set extra header options if they are provided
-    if (int_option != "") {
-      verify_string("int_option", int_option, TRUE)
-      new_int_option <- strsplit(int_option, ":", fixed = TRUE)
-      options$add_int_option(new_int_option[1], as.numeric(new_int_option[2]))
+    if (length(int_options) != 0) {
+      verify_list("int_options", int_options, TRUE)
+      for(key in names(int_options)) {
+        options$add_int_options(key, int_options[[key]])
+      }
     }
 
-    if (string_option != "") {
-      verify_string("string_option", string_option, TRUE)
-      new_string_option <- strsplit(string_option, ":", fixed = TRUE)
-      options$add_string_option(new_string_option[1], new_string_option[2])
+    if (length(string_options) != 0) {
+      verify_list("string_options", string_options, TRUE)
+      for(key in names(string_options)) {
+        options$add_string_options(key, string_options[[key]])
+      }
     }
 
-    if (extra_header != "") {
-      verify_string("extra_header", extra_header, TRUE)
-      new_extra_header <- strsplit(extra_header, ":", fixed = TRUE)
-      options$add_extra_header(new_extra_header[1], new_extra_header[2])
+    if (length(extra_headers) != 0) {
+      verify_list("extra_headers", extra_headers, TRUE)
+      for(key in names(extra_headers)) {
+        options$add_extra_headers(key, extra_headers[[key]])
+      }
     }
 
     internal_client <- new(INTERNAL_Client,

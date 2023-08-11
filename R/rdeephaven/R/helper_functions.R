@@ -61,6 +61,10 @@ verify_numeric <- function(arg_name, candidate, is_scalar) {
   verify_type(arg_name, candidate, "numeric", "numeric", is_scalar)
 }
 
+verify_list <- function(arg_name, candidate, is_scalar) {
+  verify_type(arg_name, candidate, "list", "list", is_scalar)
+}
+
 verify_in_unit_interval <- function(arg_name, candidate, is_scalar) {
   verify_numeric(arg_name, candidate, is_scalar)
   verify_in_range(arg_name, candidate, message = "between 0 and 1 inclusive", lb = 0, ub = 1, lb_open = FALSE, ub_open = FALSE)
