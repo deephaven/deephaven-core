@@ -39,10 +39,12 @@ Currently, the R client is only supported on Ubuntu 20.04 or 22.04 and must be b
 
    ```
    # Download the key and install it
-   $ wget -qO- https://cloud.r-project.org/bin/linux/ubuntu/marutter_pubkey.asc | sudo gpg --dearmor -o /usr/share/keyrings/r-proj
+   $ wget -qO- https://cloud.r-project.org/bin/linux/ubuntu/marutter_pubkey.asc | \
+       sudo gpg --dearmor -o /usr/share/keyrings/r-project.gpg
 
    # Add the R source list to apt's sources list
-   $ echo "deb [signed-by=/usr/share/keyrings/r-project.gpg] https://cloud.r-project.org/bin/linux/ubuntu jammy-cran40/" | sudo tee -a /etc/apt/sources.list.d/r-project.l
+   $ echo "deb [signed-by=/usr/share/keyrings/r-project.gpg] https://cloud.r-project.org/bin/linux/ubuntu jammy-cran40/" | \
+       sudo tee -a /etc/apt/sources.list.d/r-project.list
 
    # update the apt package list
    $ apt update
@@ -71,8 +73,10 @@ Currently, the R client is only supported on Ubuntu 20.04 or 22.04 and must be b
    git pull origin main
    ```
 
-3. Start an R console with this command:
+3. Start an R console, using some environment variable definitions to speed up compilation.  Use these commands:
    ```bash
+   export NCPUS=`getconf _NPROCESSORS_ONLN`
+   export MAKEFLAGS="-j$NCPUS"
    R
    ```
    In that console, install the dephaven client dependencies (since we are building from source
@@ -150,6 +154,16 @@ The C++ component of the Deephaven R client uses the C++ implementation of gRPC 
 gRPC has an internal logging component that can be configured to log to stderr detail information about connection state and messages
 exchanged between client and server; the Deephaven R client also uses the same logging component to show client state information.
 This can be useful for debugging purposes.  To enable detailed logging, set the environment variable `GRPC_VERVOSITY=DEBUG`
+
+## Code Styling
+
+The Deephaven R client uses the [Tidyverse styleguide](https://style.tidyverse.org) for code formatting, and implements this style with the `styler` package. For contributions, ensure that code is properly styled according to Tidyverse standards by running the following code in your R console, where `/path/to/rdeephaven` is the path to the root directory of this package.
+```
+setwd("/path/to/rdeephaven")
+install.packages("styler")
+library(styler)
+style_pkg()
+```
    
 ## High-level design overview
 

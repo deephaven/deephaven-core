@@ -155,7 +155,7 @@ final class ParquetColumnLocation<ATTR extends Values> extends AbstractColumnLoc
         }
 
         final Function<String, String> defaultGroupingFilenameByColumnName =
-                ParquetTableWriter.defaultGroupingFileName(tl().getParquetFile().getAbsolutePath());
+                ParquetTools.defaultGroupingFileName(tl().getParquetFile().getAbsolutePath());
         try {
             final GroupingColumnInfo groupingColumnInfo =
                     tl().getGroupingColumns().get(parquetColumnName);

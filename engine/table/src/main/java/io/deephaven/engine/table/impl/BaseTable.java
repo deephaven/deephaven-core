@@ -1258,7 +1258,7 @@ public abstract class BaseTable<IMPL_TYPE extends BaseTable<IMPL_TYPE>> extends 
     public static void initializeWithSnapshot(
             String logPrefix, SwapListener swapListener, ConstructSnapshot.SnapshotFunction snapshotFunction) {
         if (swapListener == null) {
-            snapshotFunction.call(false, ExecutionContext.getContext().getUpdateGraph().clock().currentValue());
+            snapshotFunction.call(false, LogicalClock.NULL_CLOCK_VALUE);
             return;
         }
         ConstructSnapshot.callDataSnapshotFunction(logPrefix, swapListener.makeSnapshotControl(), snapshotFunction);

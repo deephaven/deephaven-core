@@ -9,33 +9,32 @@
 #include "deephaven/client/utility/executor.h"
 #include "deephaven/dhcore/utility/callbacks.h"
 
-namespace deephaven::client {
-namespace impl {
-
+namespace deephaven::client::impl {
 class ClientImpl {
   struct Private {
   };
-  typedef deephaven::client::server::Server Server;
-  typedef deephaven::client::utility::Executor Executor;
+  using Server = deephaven::client::server::Server;
+  using Executor = deephaven::client::utility::Executor;
 
   template<typename... Args>
   using SFCallback = deephaven::dhcore::utility::SFCallback<Args...>;
 
 public:
-  static std::shared_ptr<ClientImpl> create(std::shared_ptr<Server> server,
-      std::shared_ptr<Executor> executor, std::shared_ptr<Executor> flightExecutor, const std::string &sessionType);
+  [[nodiscard]]
+  static std::shared_ptr<ClientImpl> Create(std::shared_ptr<Server> server,
+      std::shared_ptr<Executor> executor, std::shared_ptr<Executor> flight_executor, const std::string &session_type);
 
-  ClientImpl(Private, std::shared_ptr<TableHandleManagerImpl> &&managerImpl);
+  ClientImpl(Private, std::shared_ptr<TableHandleManagerImpl> &&manager_impl);
   ~ClientImpl();
 
-  void shutdown() {
-    managerImpl_->shutdown();
+  void Shutdown() {
+    managerImpl_->Shutdown();
   }
 
-  const std::shared_ptr<TableHandleManagerImpl> &managerImpl() const { return managerImpl_; }
+  [[nodiscard]]
+  const std::shared_ptr<TableHandleManagerImpl> &ManagerImpl() const { return managerImpl_; }
 
 private:
   std::shared_ptr<TableHandleManagerImpl> managerImpl_;
 };
-}  // namespace impl
-}  // namespace deephaven::client
+}  // namespace deephaven::client::impl

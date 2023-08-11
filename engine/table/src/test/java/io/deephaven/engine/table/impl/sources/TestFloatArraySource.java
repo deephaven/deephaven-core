@@ -34,7 +34,7 @@ import java.util.Random;
 import java.util.stream.LongStream;
 
 import static io.deephaven.chunk.ArrayGenerator.indexDataGenerator;
-import static io.deephaven.util.QueryConstants.NULL_FLOAT;
+import static io.deephaven.util.QueryConstants.*;
 import static junit.framework.TestCase.*;
 
 public class TestFloatArraySource {
@@ -284,6 +284,7 @@ public class TestFloatArraySource {
         }
     }
 
+    // region validate with fill
     private void validateValuesWithFill(int chunkSize, float[] values, RowSet rowSet, FloatArraySource source) {
         try (final RowSequence.Iterator rsIterator = rowSet.getRowSequenceIterator();
              final RowSet.Iterator it = rowSet.iterator();
@@ -298,7 +299,7 @@ public class TestFloatArraySource {
                     assertTrue(it.hasNext());
                     final long idx = it.nextLong();
                     checkFromSource(source.getFloat(idx), chunk.get(i));
-                    checkFromValues(values[(int) idx], chunk.get(i));
+                    checkFromValues(idx < values.length ? values[(int) idx] : NULL_FLOAT, chunk.get(i));
                     pos++;
                 }
             }
@@ -320,13 +321,14 @@ public class TestFloatArraySource {
                     assertTrue(it.hasNext());
                     final long idx = it.nextLong();
                     checkFromSource(source.getPrevFloat(idx), chunk.get(i));
-                    checkFromValues(values[(int) idx], chunk.get(i));
+                    checkFromValues(idx < values.length ? values[(int) idx] : NULL_FLOAT, chunk.get(i));
                     pos++;
                 }
             }
             assertEquals(pos, rowSet.size());
         }
     }
+    // endregion validate with fill
 
     @Test
     public void testFillChunk() {
@@ -345,6 +347,10 @@ public class TestFloatArraySource {
         testFillChunkGeneric(ArrayGenerator.randomFloats(random, 16), ArrayGenerator.randomFloats(random, 16), 5, RowSetFactory.fromKeys(4, 5, 6, 7, 8));
         testFillChunkGeneric(ArrayGenerator.randomFloats(random, 512), ArrayGenerator.randomFloats(random, 512), 4, RowSetFactory.fromKeys(254, 255, 256, 257));
         testFillChunkGeneric(ArrayGenerator.randomFloats(random, 512), ArrayGenerator.randomFloats(random, 512), 5, RowSetFactory.fromKeys(254, 255, 256, 257, 258));
+
+        // Test the fill with null behavior when requesting keys outside of source.
+        testFillChunkGeneric(ArrayGenerator.randomFloats(random, 512), ArrayGenerator.randomFloats(random, 4096), 4096, RowSetFactory.fromRange(4096, 8192));
+        testFillChunkGeneric(ArrayGenerator.randomFloats(random, 512), ArrayGenerator.randomFloats(random, 4096), 4096, RowSetFactory.flat(4096));
 
         for (int sourceSize = 32; sourceSize < 8192; sourceSize *= 4) {
             for (int v = -4; v < 5; v += 2) {

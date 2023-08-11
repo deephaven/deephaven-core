@@ -17,31 +17,31 @@ using deephaven::dhcore::chunk::Int64Chunk;
 using deephaven::dhcore::column::Int64ColumnSource;
 using deephaven::dhcore::container::RowSequence;
 using deephaven::dhcore::clienttable::ClientTable;
-using deephaven::dhcore::utility::verboseCast;
+using deephaven::dhcore::utility::VerboseCast;
 
 namespace {
-void mainMenu(const TableHandleManager &manager);
+void MainMenu(const TableHandleManager &manager);
 
 // demo options
-void printDynamicTableFull(const TableHandleManager &manager);
-void printDiffs(const TableHandleManager &manager);
-void sumColumnsFull(const TableHandleManager &manager);
-void sumColumnsDiff(const TableHandleManager &manager);
+void PrintDynamicTableFull(const TableHandleManager &manager);
+void PrintDiffs(const TableHandleManager &manager);
+void SumColumnsFull(const TableHandleManager &manager);
+void SumColumnsDiff(const TableHandleManager &manager);
 
 // utilities
-void printTable(const TableHandle &table, bool nullAware);
-void checkNotNull(const void *p, std::string_view where);
-int64_t readNumber(std::string_view prompt);
-std::string readString(std::string_view prompt);
+void PrintTable(const TableHandle &table, bool null_aware);
+void CheckNotNull(const void *p, std::string_view where);
+int64_t ReadNumber(std::string_view prompt);
+std::string ReadString(std::string_view prompt);
 
 // a bunch of work to create an ostream adaptor
-template<typename ARROW_OPTIONAL>
+template<typename ArrowOptional>
 class OptionalAdaptor {
 public:
-  explicit OptionalAdaptor(const ARROW_OPTIONAL &optional) : optional_(optional) {}
+  explicit OptionalAdaptor(const ArrowOptional &optional) : optional_(optional) {}
 
 private:
-  const ARROW_OPTIONAL &optional_;
+  const ArrowOptional &optional_;
 
   friend std::ostream &operator<<(std::ostream &s, const OptionalAdaptor &self) {
     if (!self.optional_.has_value()) {
@@ -51,9 +51,9 @@ private:
   }
 };
 
-template<typename ARROW_OPTIONAL>
-inline OptionalAdaptor<ARROW_OPTIONAL> adaptOptional(const ARROW_OPTIONAL &optional) {
-  return OptionalAdaptor<ARROW_OPTIONAL>(optional);
+template<typename ArrowOptional>
+inline OptionalAdaptor<ArrowOptional> AdaptOptional(const ArrowOptional &optional) {
+  return OptionalAdaptor<ArrowOptional>(optional);
 }
 }  // namespace
 
@@ -62,16 +62,16 @@ int main(int argc, char *argv[]) {
     const char *server = "localhost:10000";
     if (argc > 1) {
       if (argc != 2 || std::strcmp("-h", argv[1]) == 0) {
-        std::cerr << "Usage: " << argv[0] << " [host:port]" << std::endl;
+        std::cerr << "Usage: " << argv[0] << " [host:port]\n";
         std::exit(1);
       }
       server = argv[1];
     }
-    auto client = Client::connect(server);
-    auto manager = client.getManager();
+    auto client = Client::Connect(server);
+    auto manager = client.GetManager();
 
     while (true) {
-      mainMenu(manager);
+      MainMenu(manager);
     }
   } catch (const std::exception &e) {
     std::cerr << "Caught exception: " << e.what() << '\n';
@@ -79,8 +79,8 @@ int main(int argc, char *argv[]) {
 }
 
 namespace {
-void mainMenu(const TableHandleManager &manager) {
-  auto selection = readNumber(
+void MainMenu(const TableHandleManager &manager) {
+  auto selection = ReadNumber(
       "*** CHAPTER 2: MAIN MENU ***\n"
       "1 - print full table\n"
       "2 - print diffs\n"
@@ -92,19 +92,19 @@ void mainMenu(const TableHandleManager &manager) {
 
   switch (selection) {
     case 1:
-      printDynamicTableFull(manager);
+      PrintDynamicTableFull(manager);
       break;
 
     case 2:
-      printDiffs(manager);
+      PrintDiffs(manager);
       break;
 
     case 3:
-      sumColumnsFull(manager);
+      SumColumnsFull(manager);
       break;
 
     case 4:
-      sumColumnsDiff(manager);
+      SumColumnsDiff(manager);
       break;
 
     default:
@@ -114,13 +114,13 @@ void mainMenu(const TableHandleManager &manager) {
 
 class CallbackPrintFull final : public deephaven::dhcore::ticking::TickingCallback {
 public:
-  void onTick(deephaven::dhcore::ticking::TickingUpdate update) final {
+  void OnTick(deephaven::dhcore::ticking::TickingUpdate update) final {
     std::cout << "=== The Full Table ===\n"
-      << update.current()->stream(true, true)
+      << update.Current()->Stream(true, true)
       << '\n';
   }
 
-  void onFailure(std::exception_ptr ep) final {
+  void OnFailure(std::exception_ptr ep) final {
     try {
       std::rethrow_exception(ep);
     } catch (const std::runtime_error &e) {
@@ -129,40 +129,40 @@ public:
   }
 };
 
-void printDynamicTableFull(const TableHandleManager &manager) {
-  auto tableName = readString("Please enter the table name: ");
+void PrintDynamicTableFull(const TableHandleManager &manager) {
+  auto table_name = ReadString("Please enter the table name: ");
 
-  auto table = manager.fetchTable(tableName);
+  auto table = manager.FetchTable(table_name);
   auto callback = std::make_shared<CallbackPrintFull>();
-  auto cookie = table.subscribe(std::move(callback));
-  auto dummy = readString("Press enter to unsubscribe: ");
-  table.unsubscribe(std::move(cookie));
+  auto cookie = table.Subscribe(std::move(callback));
+  auto dummy = ReadString("Press enter to unsubscribe: ");
+  table.Unsubscribe(std::move(cookie));
 }
 
 class CallbackPrintDiff final : public deephaven::dhcore::ticking::TickingCallback {
 public:
-  void onTick(deephaven::dhcore::ticking::TickingUpdate update) final {
-    if (update.beforeRemoves() != update.afterRemoves()) {
+  void OnTick(deephaven::dhcore::ticking::TickingUpdate update) final {
+    if (update.BeforeRemoves() != update.AfterRemoves()) {
       std::cout << "=== REMOVES ===\n"
-                << update.beforeRemoves()->stream(true, true, update.removedRows())
+                << update.BeforeRemoves()->Stream(true, true, update.RemovedRows())
                 << '\n';
     }
-    if (update.beforeAdds() != update.afterAdds()) {
+    if (update.BeforeAdds() != update.AfterAdds()) {
       std::cout << "=== ADDS ===\n"
-                << update.afterAdds()->stream(true, true, update.addedRows())
+                << update.AfterAdds()->Stream(true, true, update.AddedRows())
                 << '\n';
     }
-    if (update.beforeModifies() != update.afterModifies()) {
+    if (update.BeforeModifies() != update.AfterModifies()) {
       std::cout << "=== MODIFIES (BEFORE) ===\n"
-                << update.beforeModifies()->stream(true, true, update.modifiedRows())
+                << update.BeforeModifies()->Stream(true, true, update.ModifiedRows())
                 << '\n';
       std::cout << "=== MODIFIES (AFTER) ===\n"
-                << update.afterModifies()->stream(true, true, update.modifiedRows())
+                << update.AfterModifies()->Stream(true, true, update.ModifiedRows())
                 << '\n';
     }
   }
 
-  void onFailure(std::exception_ptr ep) final {
+  void OnFailure(std::exception_ptr ep) final {
     try {
       std::rethrow_exception(ep);
     } catch (const std::runtime_error &e) {
@@ -171,47 +171,47 @@ public:
   }
 };
 
-void printDiffs(const TableHandleManager &manager) {
-  auto tableName = readString("Please enter the table name: ");
+void PrintDiffs(const TableHandleManager &manager) {
+  auto table_name = ReadString("Please enter the table name: ");
 
-  auto table = manager.fetchTable(tableName);
+  auto table = manager.FetchTable(table_name);
   auto callback = std::make_shared<CallbackPrintDiff>();
-  auto cookie = table.subscribe(std::move(callback));
-  auto dummy = readString("Press enter to unsubscribe: ");
-  table.unsubscribe(std::move(cookie));
+  auto cookie = table.Subscribe(std::move(callback));
+  auto dummy = ReadString("Press enter to unsubscribe: ");
+  table.Unsubscribe(std::move(cookie));
 }
 
 class CallbackSumFull final : public deephaven::dhcore::ticking::TickingCallback {
 public:
-  void onTick(deephaven::dhcore::ticking::TickingUpdate update) final {
-    const auto &current = update.current();
-    auto int64ColGeneric = current->getColumn("IntValue", true);
+  void OnTick(deephaven::dhcore::ticking::TickingUpdate update) final {
+    const auto &current = update.Current();
+    auto int64_col_generic = current->GetColumn("IntValue", true);
 
-    const auto *typedInt64Col =
-        verboseCast<const Int64ColumnSource*>(DEEPHAVEN_EXPR_MSG(int64ColGeneric.get()));
+    const auto *typed_int64_col =
+        VerboseCast<const Int64ColumnSource*>(DEEPHAVEN_EXPR_MSG(int64_col_generic.get()));
 
-    auto rows = current->getRowSequence();
+    auto rows = current->GetRowSequence();
 
-    size_t chunkSize = 8192;
-    auto dataChunk = Int64Chunk::create(chunkSize);
+    constexpr const size_t kChunkSize = 8192;
+    auto data_chunk = Int64Chunk::Create(kChunkSize);
 
-    int64_t int64Sum = 0;
-    while (!rows->empty()) {
-      auto theseRows = rows->take(chunkSize);
-      auto theseRowsSize = theseRows->size();
-      rows = rows->drop(chunkSize);
+    int64_t int64_sum = 0;
+    while (!rows->Empty()) {
+      auto these_rows = rows->Take(kChunkSize);
+      auto these_rows_size = these_rows->Size();
+      rows = rows->Drop(kChunkSize);
 
-      typedInt64Col->fillChunk(*theseRows, &dataChunk, nullptr);
+      typed_int64_col->FillChunk(*these_rows, &data_chunk, nullptr);
 
-      for (size_t i = 0; i < theseRowsSize; ++i) {
-        int64Sum += dataChunk.data()[i];
+      for (size_t i = 0; i < these_rows_size; ++i) {
+        int64_sum += data_chunk.data()[i];
         ++numOps_;
       }
     }
-    std::cout << "int64Sum is " << int64Sum << ", cumulative number of ops is " << numOps_ << '\n';
+    std::cout << "int64Sum is " << int64_sum << ", cumulative number of ops is " << numOps_ << '\n';
   }
 
-  void onFailure(std::exception_ptr ep) final {
+  void OnFailure(std::exception_ptr ep) final {
     try {
       std::rethrow_exception(ep);
     } catch (const std::runtime_error &e) {
@@ -223,25 +223,25 @@ private:
   size_t numOps_ = 0;
 };
 
-void sumColumnsFull(const TableHandleManager &manager) {
-  auto tableName = readString("Please enter the table name: ");
+void SumColumnsFull(const TableHandleManager &manager) {
+  auto table_name = ReadString("Please enter the table name: ");
 
-  auto table = manager.fetchTable(tableName);
+  auto table = manager.FetchTable(table_name);
   auto callback = std::make_shared<CallbackSumFull>();
-  auto cookie = table.subscribe(std::move(callback));
-  auto dummy = readString("Press enter to unsubscribe: ");
-  table.unsubscribe(std::move(cookie));
+  auto cookie = table.Subscribe(std::move(callback));
+  auto dummy = ReadString("Press enter to unsubscribe: ");
+  table.Unsubscribe(std::move(cookie));
 }
 
 class CallbackSumDiff final : public deephaven::dhcore::ticking::TickingCallback {
 public:
-  void onTick(deephaven::dhcore::ticking::TickingUpdate update) final {
-    processDeltas(*update.beforeRemoves(), update.removedRows(), -1);
-    processDeltas(*update.afterAdds(), update.addedRows(), 1);
-    std::cout << "int64Sum is " << int64Sum_ << ", cumulative number of ops is " << numOps_ << '\n';
+  void OnTick(deephaven::dhcore::ticking::TickingUpdate update) final {
+    ProcessDeltas(*update.BeforeRemoves(), update.RemovedRows(), -1);
+    ProcessDeltas(*update.AfterAdds(), update.AddedRows(), 1);
+    std::cout << "int64Sum is " << int64_sum_ << ", cumulative number of ops is " << num_ops_ << '\n';
   }
 
-  void onFailure(std::exception_ptr ep) final {
+  void OnFailure(std::exception_ptr ep) final {
     try {
       std::rethrow_exception(ep);
     } catch (const std::runtime_error &e) {
@@ -250,54 +250,53 @@ public:
   }
 
 private:
-  void processDeltas(const ClientTable &table, std::shared_ptr<RowSequence> rows, int64_t parity) {
-    auto int64ColGeneric = table.getColumn("IntValue", true);
+  void ProcessDeltas(const ClientTable &table, std::shared_ptr<RowSequence> rows, int64_t parity) {
+    auto int64_col_generic = table.GetColumn("IntValue", true);
 
-    const auto *typedInt64Col =
-        verboseCast<const Int64ColumnSource*>(DEEPHAVEN_EXPR_MSG(int64ColGeneric.get()));
+    const auto *typed_int64_col =
+        VerboseCast<const Int64ColumnSource*>(DEEPHAVEN_EXPR_MSG(int64_col_generic.get()));
 
-    size_t chunkSize = 8192;
-    auto dataChunk = Int64Chunk::create(chunkSize);
+    size_t chunk_size = 8192;
+    auto data_chunk = Int64Chunk::Create(chunk_size);
 
-    while (!rows->empty()) {
-      auto theseRows = rows->take(chunkSize);
-      auto theseRowsSize = theseRows->size();
-      rows = rows->drop(chunkSize);
+    while (!rows->Empty()) {
+      auto these_rows = rows->Take(chunk_size);
+      auto these_rows_size = these_rows->Size();
+      rows = rows->Drop(chunk_size);
 
-      typedInt64Col->fillChunk(*theseRows, &dataChunk, nullptr);
+      typed_int64_col->FillChunk(*these_rows, &data_chunk, nullptr);
 
-      for (size_t i = 0; i < theseRowsSize; ++i) {
-        int64Sum_ += dataChunk.data()[i] * parity;
-        ++numOps_;
+      for (size_t i = 0; i < these_rows_size; ++i) {
+        int64_sum_ += data_chunk.data()[i] * parity;
+        ++num_ops_;
       }
     }
   }
 
-private:
-  int64_t int64Sum_ = 0;
-  size_t numOps_ = 0;
+  int64_t int64_sum_ = 0;
+  size_t num_ops_ = 0;
 };
 
-void sumColumnsDiff(const TableHandleManager &manager) {
-  auto tableName = readString("Please enter the table name: ");
+void SumColumnsDiff(const TableHandleManager &manager) {
+  auto table_name = ReadString("Please enter the table name: ");
 
-  auto table = manager.fetchTable(tableName);
+  auto table = manager.FetchTable(table_name);
   auto callback = std::make_shared<CallbackSumDiff>();
-  auto cookie = table.subscribe(std::move(callback));
-  auto dummy = readString("Press enter to unsubscribe: ");
-  table.unsubscribe(std::move(cookie));
+  auto cookie = table.Subscribe(std::move(callback));
+  auto dummy = ReadString("Press enter to unsubscribe: ");
+  table.Unsubscribe(std::move(cookie));
 }
 
-std::string readString(std::string_view prompt) {
+std::string ReadString(std::string_view prompt) {
   std::cout << prompt;
   std::string line;
   std::getline(std::cin, line);
   return line;
 }
 
-int64_t readNumber(std::string_view prompt) {
+int64_t ReadNumber(std::string_view prompt) {
   while (true) {
-    auto line = readString(prompt);
+    auto line = ReadString(prompt);
     if (line.empty()) {
       continue;
     }

@@ -9,35 +9,35 @@ using deephaven::client::TableHandle;
 
 namespace deephaven::client::tests {
 TEST_CASE("Join", "[join]") {
-  auto tm = TableMakerForTests::create();
-  auto table = tm.table();
+  auto tm = TableMakerForTests::Create();
+  auto table = tm.Table();
 
-  auto importDate = table.getStrCol("ImportDate");
-  auto ticker = table.getStrCol("Ticker");
-  auto volume = table.getNumCol("Volume");
-  auto close = table.getNumCol("Close");
+  auto import_date = table.GetStrCol("ImportDate");
+  auto ticker = table.GetStrCol("Ticker");
+  auto volume = table.GetNumCol("Volume");
+  auto close = table.GetNumCol("Close");
 
-  table = table.where(importDate == "2017-11-01");
-  auto lastClose = table.lastBy(ticker);
-  auto avgView = table.view(ticker, volume).avgBy(ticker);
+  table = table.Where(import_date == "2017-11-01");
+  auto last_close = table.LastBy(ticker);
+  auto avg_view = table.View(ticker, volume).AvgBy(ticker);
 
-  auto joined = lastClose.naturalJoin(avgView,
-      { ticker },
-      { volume.as("ADV") });
+  auto joined = last_close.NaturalJoin(avg_view,
+      {ticker},
+      {volume.as("ADV")});
 
-  auto adv = joined.getNumCol("ADV");
-  auto filtered = joined.select(ticker, close, adv);
-  std::cout << filtered.stream(true) << '\n';
+  auto adv = joined.GetNumCol("ADV");
+  auto filtered = joined.Select(ticker, close, adv);
+  std::cout << filtered.Stream(true) << '\n';
 
-  std::vector<std::string> tickerData = {"XRX", "XYZZY", "IBM", "GME", "AAPL", "ZNGA"};
-  std::vector<double> closeData = {53.8, 88.5, 38.7, 453, 26.7, 544.9};
-  std::vector<double> advData = {216000, 6060842, 138000, 138000000, 123000, 47211.50};
+  std::vector<std::string> ticker_data = {"XRX", "XYZZY", "IBM", "GME", "AAPL", "ZNGA"};
+  std::vector<double> close_data = {53.8, 88.5, 38.7, 453, 26.7, 544.9};
+  std::vector<double> adv_data = {216000, 6060842, 138000, 138000000, 123000, 47211.50};
 
-  compareTable(
+  CompareTable(
       filtered,
-      "Ticker", tickerData,
-      "Close", closeData,
-      "ADV", advData
-      );
+      "Ticker", ticker_data,
+      "Close", close_data,
+      "ADV", adv_data
+  );
 }
 }  // namespace deephaven::client::tests

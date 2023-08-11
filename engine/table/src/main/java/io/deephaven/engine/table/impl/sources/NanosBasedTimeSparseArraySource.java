@@ -12,6 +12,7 @@ import io.deephaven.engine.rowset.RowSequence;
 import io.deephaven.engine.rowset.RowSet;
 import io.deephaven.engine.rowset.chunkattributes.RowKeys;
 import io.deephaven.engine.table.ColumnSource;
+import io.deephaven.engine.table.SharedContext;
 import io.deephaven.engine.table.WritableColumnSource;
 import io.deephaven.engine.table.WritableSourceWithPrepareForParallelPopulation;
 import io.deephaven.engine.table.impl.util.ShiftData;
@@ -114,14 +115,23 @@ public abstract class NanosBasedTimeSparseArraySource<TIME_TYPE> extends Abstrac
 
     // region Chunking
     @Override
-    public Chunk<Values> getChunk(@NotNull GetContext context, @NotNull RowSequence rowSequence) {
-        return getChunkByFilling(context, rowSequence);
+    public FillContext makeFillContext(final int chunkCapacity, final SharedContext sharedContext) {
+        return nanoSource.makeFillContext(chunkCapacity, sharedContext);
     }
 
     @Override
-    public Chunk<Values> getPrevChunk(@NotNull GetContext context, @NotNull RowSequence rowSequence) {
-        return getPrevChunkByFilling(context, rowSequence);
+    public void fillChunk(
+            @NotNull FillContext context,
+            @NotNull WritableChunk<? super Values> destination,
+            @NotNull RowSequence rowSequence) {
+        if (rowSequence.getAverageRunLengthEstimate() < USE_RANGES_AVERAGE_RUN_LENGTH) {
+            nanoSource.fillByKeys(destination, rowSequence, this::makeValue);
+        } else {
+            nanoSource.fillByRanges(destination, rowSequence, this::makeValue);
+        }
     }
+
+    // TODO (https://github.com/deephaven/deephaven-core/issues/4224): Override fillPrevChunk when suitable
 
     @Override
     public boolean providesFillUnordered() {
@@ -144,7 +154,14 @@ public abstract class NanosBasedTimeSparseArraySource<TIME_TYPE> extends Abstrac
         nanoSource.fillPrevByUnRowSequence(dest, keys, this::makeValue);
     }
 
-    public void fillFromChunk(@NotNull FillFromContext context, @NotNull Chunk<? extends Values> src,
+    @Override
+    public FillFromContext makeFillFromContext(final int chunkCapacity) {
+        return nanoSource.makeFillFromContext(chunkCapacity);
+    }
+
+    public void fillFromChunk(
+            @NotNull FillFromContext context,
+            @NotNull Chunk<? extends Values> src,
             @NotNull RowSequence rowSequence) {
         if (rowSequence.getAverageRunLengthEstimate() < USE_RANGES_AVERAGE_RUN_LENGTH) {
             nanoSource.fillFromChunkByKeys(rowSequence, src, this::toNanos);
@@ -154,19 +171,11 @@ public abstract class NanosBasedTimeSparseArraySource<TIME_TYPE> extends Abstrac
     }
 
     @Override
-    public void fillFromChunkUnordered(@NotNull FillFromContext context, @NotNull Chunk<? extends Values> src,
+    public void fillFromChunkUnordered(
+            @NotNull FillFromContext context,
+            @NotNull Chunk<? extends Values> src,
             @NotNull LongChunk<RowKeys> keys) {
         nanoSource.fillFromChunkUnordered(context, src, keys, this::toNanos);
-    }
-
-    @Override
-    public void fillChunk(@NotNull FillContext context, @NotNull WritableChunk<? super Values> dest,
-            @NotNull RowSequence rowSequence) {
-        if (rowSequence.getAverageRunLengthEstimate() < USE_RANGES_AVERAGE_RUN_LENGTH) {
-            nanoSource.fillByKeys(dest, rowSequence, this::makeValue);
-        } else {
-            nanoSource.fillByRanges(dest, rowSequence, this::makeValue);
-        }
     }
 
     @Override

@@ -9,6 +9,7 @@ from __future__ import annotations
 from typing import List, Union
 
 import pyarrow as pa
+from pydeephaven._utils import to_list
 
 from pydeephaven._table_ops import MetaTableOp, SortDirection
 from pydeephaven.agg import Aggregation
@@ -16,8 +17,10 @@ from pydeephaven.dherror import DHError
 from pydeephaven._table_interface import TableInterface
 from pydeephaven.updateby import UpdateByOperation
 
+from pydeephaven.experimental.server_object import ServerObject
 
-class Table(TableInterface):
+
+class Table(TableInterface, ServerObject):
     """A Table object represents a reference to a table on the server. It is the core data structure of
     Deephaven and supports a rich set of operations such as filtering, sorting, aggregating, joining, snapshotting etc.
 
@@ -33,6 +36,7 @@ class Table(TableInterface):
         return self.session.table_service.grpc_table_op(self, table_op)
 
     def __init__(self, session, ticket, schema_header=b'', size=None, is_static=None, schema=None):
+        ServerObject.__init__(self, type_="Table", ticket=ticket)
         if not session or not session.is_alive:
             raise DHError("Must be associated with a active session")
         self.session = session
@@ -217,6 +221,23 @@ class Table(TableInterface):
         Raises:
             DHError
         """
+        return super().sort(order_by, order)
+
+    def sort_descending(self, order_by: Union[str, List[str]]) -> Table:
+        """The sort_descending method creates a new table where rows in a table are sorted in descending
+        order based on the order_by column(s).
+
+        Args:
+            order_by (Union[str, List[str]]): the column name(s)
+
+        Returns:
+            a Table object
+
+        Raises:
+            DHError
+        """
+        order_by = to_list(order_by)
+        order = SortDirection.DESCENDING
         return super().sort(order_by, order)
 
     def where(self, filters: Union[str, List[str]]) -> Table:
@@ -729,7 +750,7 @@ class Table(TableInterface):
         Raises:
             DHError
         """
-        return  super(Table, self).where_not_in(filter_table, cols)
+        return super(Table, self).where_not_in(filter_table, cols)
 
 
 class InputTable(Table):

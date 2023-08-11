@@ -5,6 +5,7 @@ package io.deephaven.parquet.base;
 
 import io.deephaven.parquet.base.tempfix.ParquetMetadataConverter;
 import io.deephaven.parquet.compress.CompressorAdapter;
+import io.deephaven.util.QueryConstants;
 import org.apache.parquet.bytes.ByteBufferAllocator;
 import org.apache.parquet.bytes.BytesInput;
 import org.apache.parquet.column.ColumnDescriptor;
@@ -18,6 +19,7 @@ import org.apache.parquet.hadoop.metadata.ColumnPath;
 import org.apache.parquet.internal.column.columnindex.OffsetIndex;
 import org.apache.parquet.internal.column.columnindex.OffsetIndexBuilder;
 import org.apache.parquet.io.ParquetEncodingException;
+import org.apache.parquet.schema.LogicalTypeAnnotation;
 import org.apache.parquet.schema.PrimitiveType;
 
 import java.io.ByteArrayOutputStream;
@@ -164,6 +166,17 @@ public class ColumnWriterImpl implements ColumnWriter {
             case FIXED_LEN_BYTE_ARRAY:
                 throw new UnsupportedOperationException("No support for writing FIXED_LENGTH or INT96 types");
             case INT32:
+                LogicalTypeAnnotation annotation = primitiveType.getLogicalTypeAnnotation();
+                if (annotation != null) {
+                    // Appropriately set the null value for different type of integers
+                    if (LogicalTypeAnnotation.intType(8, true).equals(annotation)) {
+                        return new PlainIntChunkedWriter(targetPageSize, allocator, QueryConstants.NULL_BYTE);
+                    } else if (LogicalTypeAnnotation.intType(16, true).equals(annotation)) {
+                        return new PlainIntChunkedWriter(targetPageSize, allocator, QueryConstants.NULL_SHORT);
+                    } else if (LogicalTypeAnnotation.intType(16, false).equals(annotation)) {
+                        return new PlainIntChunkedWriter(targetPageSize, allocator, QueryConstants.NULL_CHAR);
+                    }
+                }
                 return new PlainIntChunkedWriter(targetPageSize, allocator);
             case INT64:
                 return new PlainLongChunkedWriter(targetPageSize, allocator);

@@ -59,7 +59,7 @@ CFLAGS="-I${DHCPP}/local/deephaven/include" LDFLAGS="-L${DHCPP}/local/deephaven/
 Install the package with a command like
 
 ```
-pip install --force --no-deps dist/pydeephaven_ticking-0.27.0-cp310-cp310-linux_x86_64.whl 
+pip install --force --no-deps dist/pydeephaven_ticking-0.28.0-cp310-cp310-linux_x86_64.whl 
 ```
 
 The reason for the "--force" flag is to overwrite any previously-built version of the package that

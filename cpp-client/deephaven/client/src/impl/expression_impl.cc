@@ -15,7 +15,7 @@ public:
   IsNullExpressionImpl &operator=(const IsNullExpressionImpl &) = delete;
   ~IsNullExpressionImpl() final;
 
-  void streamIrisRepresentation(std::ostream &s) const final;
+  void StreamIrisRepresentation(std::ostream &s) const final;
 
 private:
   std::shared_ptr<impl::ExpressionImpl> impl_;
@@ -29,7 +29,7 @@ IrisRepresentableImpl::~IrisRepresentableImpl() = default;
 //  return result;
 //}
 
-std::shared_ptr<BooleanExpressionImpl> ExpressionImpl::createIsNull(
+std::shared_ptr<BooleanExpressionImpl> ExpressionImpl::CreateIsNull(
     std::shared_ptr<ExpressionImpl> impl) {
   return std::make_shared<IsNullExpressionImpl>(std::move(impl));
 }
@@ -38,14 +38,14 @@ ExpressionImpl::~ExpressionImpl() = default;
 
 namespace {
 IsNullExpressionImpl::~IsNullExpressionImpl() = default;
-void IsNullExpressionImpl::streamIrisRepresentation(std::ostream &s) const {
+void IsNullExpressionImpl::StreamIrisRepresentation(std::ostream &s) const {
   s << "isNull(";
-  impl_->streamIrisRepresentation(s);
+  impl_->StreamIrisRepresentation(s);
   s << ')';
 }
 }  // namespace
 
-void streamIris(std::ostream &s, const std::shared_ptr<IrisRepresentableImpl> &o) {
-  o->streamIrisRepresentation(s);
+void StreamIris(std::ostream &s, const std::shared_ptr<IrisRepresentableImpl> &o) {
+  o->StreamIrisRepresentation(s);
 }
 }  // namespace deephaven::client::impl

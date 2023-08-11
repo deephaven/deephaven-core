@@ -14,28 +14,28 @@ using deephaven::dhcore::utility::Callback;
 using deephaven::dhcore::utility::CBPromise;
 using deephaven::client::utility::Executor;
 using deephaven::dhcore::utility::SFCallback;
-using deephaven::dhcore::utility::streamf;
-using deephaven::dhcore::utility::stringf;
-using deephaven::dhcore::utility::objectId;
+using deephaven::dhcore::utility::Streamf;
+using deephaven::dhcore::utility::Stringf;
+using deephaven::dhcore::utility::ObjectId;
 using io::deephaven::proto::backplane::script::grpc::ExecuteCommandResponse;
 
 
 namespace deephaven::client::impl {
-std::shared_ptr<TableHandleManagerImpl> TableHandleManagerImpl::create(std::optional<Ticket> consoleId,
-    std::shared_ptr<Server> server, std::shared_ptr<Executor> executor,
-    std::shared_ptr<Executor> flightExecutor) {
-  return std::make_shared<TableHandleManagerImpl>(Private(), std::move(consoleId),
-      std::move(server), std::move(executor), std::move(flightExecutor));
+std::shared_ptr<TableHandleManagerImpl> TableHandleManagerImpl::Create(std::optional<Ticket> console_id,
+    std::shared_ptr<ServerType> server, std::shared_ptr<ExecutorType> executor,
+    std::shared_ptr<ExecutorType> flight_executor) {
+  return std::make_shared<TableHandleManagerImpl>(Private(), std::move(console_id),
+      std::move(server), std::move(executor), std::move(flight_executor));
 }
 
-TableHandleManagerImpl::TableHandleManagerImpl(Private, std::optional<Ticket> &&consoleId,
-    std::shared_ptr<Server> &&server, std::shared_ptr<Executor> &&executor,
-    std::shared_ptr<Executor> &&flightExecutor) :
-    me_(deephaven::dhcore::utility::objectId("TableHandleManagerImpl", this)),
-    consoleId_(std::move(consoleId)),
+TableHandleManagerImpl::TableHandleManagerImpl(Private, std::optional<Ticket> &&console_id,
+    std::shared_ptr<ServerType> &&server, std::shared_ptr<ExecutorType> &&executor,
+    std::shared_ptr<ExecutorType> &&flight_executor) :
+    me_(deephaven::dhcore::utility::ObjectId("TableHandleManagerImpl", this)),
+    consoleId_(std::move(console_id)),
     server_(std::move(server)),
     executor_(std::move(executor)),
-    flightExecutor_(std::move(flightExecutor)) {
+    flightExecutor_(std::move(flight_executor)) {
   gpr_log(GPR_DEBUG, "%s: Created.", me_.c_str());
 }
 
@@ -43,47 +43,47 @@ TableHandleManagerImpl::~TableHandleManagerImpl() {
   gpr_log(GPR_DEBUG,"%s: Destroyed.", me_.c_str());
 }
 
-void TableHandleManagerImpl::shutdown() {
+void TableHandleManagerImpl::Shutdown() {
   for (const auto &sub : subscriptions_) {
-    sub->cancel();
+    sub->Cancel();
   }
-  executor_->shutdown();
-  flightExecutor_->shutdown();
-  server_->shutdown();
+  executor_->Shutdown();
+  flightExecutor_->Shutdown();
+  server_->Shutdown();
 }
 
-std::shared_ptr<TableHandleImpl> TableHandleManagerImpl::emptyTable(int64_t size) {
-  auto resultTicket = server_->newTicket();
-  auto [cb, ls] = TableHandleImpl::createEtcCallback(nullptr, this, resultTicket);
-  server_->emptyTableAsync(size, cb, resultTicket);
-  return TableHandleImpl::create(shared_from_this(), std::move(resultTicket), std::move(ls));
+std::shared_ptr<TableHandleImpl> TableHandleManagerImpl::EmptyTable(int64_t size) {
+  auto result_ticket = server_->NewTicket();
+  auto [cb, ls] = TableHandleImpl::CreateEtcCallback(nullptr, this, result_ticket);
+  server_->EmptyTableAsync(size, cb, result_ticket);
+  return TableHandleImpl::Create(shared_from_this(), std::move(result_ticket), std::move(ls));
 }
 
-std::shared_ptr<TableHandleImpl> TableHandleManagerImpl::fetchTable(std::string tableName) {
-  auto resultTicket = server_->newTicket();
-  auto [cb, ls] = TableHandleImpl::createEtcCallback(nullptr, this, resultTicket);
-  server_->fetchTableAsync(std::move(tableName), cb, resultTicket);
-  return TableHandleImpl::create(shared_from_this(), std::move(resultTicket), std::move(ls));
+std::shared_ptr<TableHandleImpl> TableHandleManagerImpl::FetchTable(std::string table_name) {
+  auto result_ticket = server_->NewTicket();
+  auto [cb, ls] = TableHandleImpl::CreateEtcCallback(nullptr, this, result_ticket);
+  server_->FetchTableAsync(std::move(table_name), cb, result_ticket);
+  return TableHandleImpl::Create(shared_from_this(), std::move(result_ticket), std::move(ls));
 }
 
-std::shared_ptr<TableHandleImpl> TableHandleManagerImpl::timeTable(int64_t startTimeNanos,
-    int64_t periodNanos) {
-  auto resultTicket = server_->newTicket();
-  auto [cb, ls] = TableHandleImpl::createEtcCallback(nullptr, this, resultTicket);
-  server_->timeTableAsync(startTimeNanos, periodNanos, std::move(cb), resultTicket);
-  return TableHandleImpl::create(shared_from_this(), std::move(resultTicket), std::move(ls));
+std::shared_ptr<TableHandleImpl> TableHandleManagerImpl::TimeTable(int64_t start_time_nanos,
+    int64_t period_nanos) {
+  auto result_ticket = server_->NewTicket();
+  auto [cb, ls] = TableHandleImpl::CreateEtcCallback(nullptr, this, result_ticket);
+  server_->TimeTableAsync(start_time_nanos, period_nanos, std::move(cb), result_ticket);
+  return TableHandleImpl::Create(shared_from_this(), std::move(result_ticket), std::move(ls));
 }
 
-void TableHandleManagerImpl::runScriptAsync(std::string code, std::shared_ptr<SFCallback<>> callback) {
+void TableHandleManagerImpl::RunScriptAsync(std::string code, std::shared_ptr<SFCallback<>> callback) {
   struct cb_t final : public SFCallback<ExecuteCommandResponse> {
-    explicit cb_t(std::shared_ptr<SFCallback<>> outerCb) : outerCb_(std::move(outerCb)) {}
+    explicit cb_t(std::shared_ptr<SFCallback<>> outer_cb) : outerCb_(std::move(outer_cb)) {}
 
-    void onSuccess(ExecuteCommandResponse /*item*/) final {
-      outerCb_->onSuccess();
+    void OnSuccess(ExecuteCommandResponse /*item*/) final {
+      outerCb_->OnSuccess();
     }
 
-    void onFailure(std::exception_ptr ep) final {
-      outerCb_->onFailure(std::move(ep));
+    void OnFailure(std::exception_ptr ep) final {
+      outerCb_->OnFailure(std::move(ep));
     }
 
     std::shared_ptr<SFCallback<>> outerCb_;
@@ -91,27 +91,27 @@ void TableHandleManagerImpl::runScriptAsync(std::string code, std::shared_ptr<SF
   if (!consoleId_.has_value()) {
     auto eptr = std::make_exception_ptr(std::runtime_error(DEEPHAVEN_DEBUG_MSG(
         "Client was created without specifying a script language")));
-    callback->onFailure(std::move(eptr));
+    callback->OnFailure(std::move(eptr));
     return;
   }
   auto cb = std::make_shared<cb_t>(std::move(callback));
-  server_->executeCommandAsync(*consoleId_, std::move(code), std::move(cb));
+  server_->ExecuteCommandAsync(*consoleId_, std::move(code), std::move(cb));
 }
 
-std::shared_ptr<TableHandleImpl> TableHandleManagerImpl::makeTableHandleFromTicket(std::string ticket) {
-  Ticket resultTicket;
-  *resultTicket.mutable_ticket() = std::move(ticket);
-  auto [cb, ls] = TableHandleImpl::createEtcCallback(nullptr, this, resultTicket);
-  server_->getExportedTableCreationResponseAsync(resultTicket, std::move(cb));
-  return TableHandleImpl::create(shared_from_this(), std::move(resultTicket), std::move(ls));
+std::shared_ptr<TableHandleImpl> TableHandleManagerImpl::MakeTableHandleFromTicket(std::string ticket) {
+  Ticket result_ticket;
+  *result_ticket.mutable_ticket() = std::move(ticket);
+  auto [cb, ls] = TableHandleImpl::CreateEtcCallback(nullptr, this, result_ticket);
+  server_->GetExportedTableCreationResponseAsync(result_ticket, std::move(cb));
+  return TableHandleImpl::Create(shared_from_this(), std::move(result_ticket), std::move(ls));
 }
 
-void TableHandleManagerImpl::addSubscriptionHandle(std::shared_ptr<SubscriptionHandle> handle) {
+void TableHandleManagerImpl::AddSubscriptionHandle(std::shared_ptr<SubscriptionHandle> handle) {
   std::unique_lock guard(mutex_);
   subscriptions_.insert(std::move(handle));
 }
 
-void TableHandleManagerImpl::removeSubscriptionHandle(const std::shared_ptr<SubscriptionHandle> &handle) {
+void TableHandleManagerImpl::RemoveSubscriptionHandle(const std::shared_ptr<SubscriptionHandle> &handle) {
   std::unique_lock guard(mutex_);
   subscriptions_.erase(handle);
 }

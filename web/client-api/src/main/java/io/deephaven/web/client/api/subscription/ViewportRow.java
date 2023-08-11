@@ -13,6 +13,10 @@ import jsinterop.base.Any;
 import jsinterop.base.Js;
 import java.util.Map;
 
+/**
+ * This object may be pooled internally or discarded and not updated. Do not retain references to it. Instead, request
+ * the viewport again.
+ */
 @TsInterface
 @TsName(namespace = "dh")
 public class ViewportRow implements TableData.Row {
@@ -31,6 +35,12 @@ public class ViewportRow implements TableData.Row {
         throw new UnsupportedOperationException("Viewports don't currently represent their position with an index");
     }
 
+    /**
+     * the data for the given column's cell
+     * 
+     * @param column
+     * @return Any
+     */
     @Override
     @JsMethod
     public Any get(Column column) {
@@ -42,6 +52,12 @@ public class ViewportRow implements TableData.Row {
         return uncheckedData.getAtAsAny(offsetInSnapshot);
     }
 
+    /**
+     * the format object for the given columns' cell
+     * 
+     * @param column
+     * @return {@link Format}.
+     */
     @Override
     @JsMethod
     public Format getFormat(Column column) {

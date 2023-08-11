@@ -21,7 +21,7 @@ public:
   explicit StringLiteralImpl(std::string value) : value_(std::move(value)) {}
   ~StringLiteralImpl() final = default;
 
-  void streamIrisRepresentation(std::ostream &s) const final;
+  void StreamIrisRepresentation(std::ostream &s) const final;
 
 private:
   std::string value_;
@@ -36,7 +36,7 @@ public:
       children_(std::move(children)) {}
   ~StringConcatImpl() final = default;
 
-  void streamIrisRepresentation(std::ostream &s) const final;
+  void StreamIrisRepresentation(std::ostream &s) const final;
 
 private:
   std::vector<std::shared_ptr<StringExpressionImpl>> children_;
@@ -49,7 +49,7 @@ public:
       rhs_(std::move(rhs)) {}
   ~StringComparisonImpl() final = default;
 
-  void streamIrisRepresentation(std::ostream &s) const final;
+  void StreamIrisRepresentation(std::ostream &s) const final;
 
 private:
   std::shared_ptr<StringExpressionImpl> lhs_;
@@ -58,16 +58,16 @@ private:
 };
 }  // namespace
 
-std::shared_ptr<StringExpressionImpl> StringExpressionImpl::createLiteral(std::string value) {
+std::shared_ptr<StringExpressionImpl> StringExpressionImpl::CreateLiteral(std::string value) {
   return std::make_shared<StringLiteralImpl>(std::move(value));
 }
 
-std::shared_ptr<StringExpressionImpl> StringExpressionImpl::createAppend(
+std::shared_ptr<StringExpressionImpl> StringExpressionImpl::CreateAppend(
     std::shared_ptr<StringExpressionImpl> lhs, std::shared_ptr<StringExpressionImpl> rhs) {
   return StringConcatImpl::create(std::move(lhs), std::move(rhs));
 }
 
-std::shared_ptr<BooleanExpressionImpl> StringExpressionImpl::createComparison(
+std::shared_ptr<BooleanExpressionImpl> StringExpressionImpl::CreateComparison(
     std::shared_ptr<StringExpressionImpl> lhs, const char *op,
      std::shared_ptr<StringExpressionImpl> rhs) {
   return std::make_shared<StringComparisonImpl>(std::move(lhs), op, std::move(rhs));
@@ -76,9 +76,9 @@ std::shared_ptr<BooleanExpressionImpl> StringExpressionImpl::createComparison(
 StringExpressionImpl::~StringExpressionImpl() = default;
 
 namespace {
-void StringLiteralImpl::streamIrisRepresentation(std::ostream &s) const {
+void StringLiteralImpl::StreamIrisRepresentation(std::ostream &s) const {
   s << '`';
-  s << EscapeUtils::escapeJava(value_);
+  s << EscapeUtils::EscapeJava(value_);
   s << '`';
 }
 
@@ -102,17 +102,17 @@ std::shared_ptr<StringExpressionImpl> StringConcatImpl::create(
   return std::make_shared<StringConcatImpl>(std::move(children));
 }
 
-void StringConcatImpl::streamIrisRepresentation(std::ostream &s) const {
-  s << separatedList(children_.begin(), children_.end(), " + ", &streamIris);
+void StringConcatImpl::StreamIrisRepresentation(std::ostream &s) const {
+  s << separatedList(children_.begin(), children_.end(), " + ", &StreamIris);
 }
 
-void StringComparisonImpl::streamIrisRepresentation(std::ostream &s) const {
+void StringComparisonImpl::StreamIrisRepresentation(std::ostream &s) const {
   s << '(';
-  lhs_->streamIrisRepresentation(s);
+  lhs_->StreamIrisRepresentation(s);
   s << ' ';
   s << compareOp_;
   s << ' ';
-  rhs_->streamIrisRepresentation(s);
+  rhs_->StreamIrisRepresentation(s);
   s << ')';
 }
 }  // namespace

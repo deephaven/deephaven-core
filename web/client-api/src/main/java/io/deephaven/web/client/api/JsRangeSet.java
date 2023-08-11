@@ -15,7 +15,9 @@ import java.util.Spliterators;
 import java.util.stream.StreamSupport;
 
 /**
- * Simple wrapper to emulate RangeSet/Index in JS, with the caveat that LongWrappers may make poor keys in plain JS.
+ * This class allows iteration over non-contiguous indexes. In the future, this will support the EcmaScript 2015
+ * Iteration protocol, but for now has one method which returns an iterator, and also supports querying the size.
+ * Additionally, we may add support for creating RangeSet objects to better serve some use cases.
  */
 @JsType(namespace = "dh", name = "RangeSet")
 public class JsRangeSet {
@@ -54,6 +56,11 @@ public class JsRangeSet {
         this.range = range;
     }
 
+    /**
+     * a new iterator over all indexes in this collection.
+     * 
+     * @return Iterator of {@link LongWrapper}
+     */
     public JsIterator<LongWrapper> iterator() {
         return new JsIterator<>(
                 StreamSupport.longStream(Spliterators.spliterator(range.indexIterator(), Long.MAX_VALUE, 0), false)
@@ -61,6 +68,13 @@ public class JsRangeSet {
                         .iterator());
     }
 
+    /**
+     * The total count of items contained in this collection. In some cases this can be expensive to compute, and
+     * generally should not be needed except for debugging purposes, or preallocating space (i.e., do not call this
+     * property each time through a loop).
+     * 
+     * @return double
+     */
     @JsProperty
     public double getSize() {
         return range.size();

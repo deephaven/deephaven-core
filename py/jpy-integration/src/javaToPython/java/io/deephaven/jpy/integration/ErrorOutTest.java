@@ -71,7 +71,6 @@ public class ErrorOutTest extends PythonTest {
     }
 
     @Test(expected = RuntimeException.class)
-    @Ignore("Need to wait for the next JPY release to fix https://github.com/jpy-consortium/jpy/issues/98")
     public void errorDoubleOutFromNone() {
         String expr = "[None, []]";
         PyObject in = PyObject.executeCode(expr, PyInputMode.EXPRESSION);

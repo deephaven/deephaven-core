@@ -10,6 +10,12 @@ import jsinterop.annotations.JsType;
 @JsType(name = "AxisFormatType", namespace = "dh.plot")
 @TsTypeDef(tsType = "number")
 public class JsAxisFormatType {
+    /**
+     * Indicates that this axis will have discrete values rather than be on a continuous numeric axis.
+     */
     public static final int CATEGORY = AxisDescriptor.AxisFormatType.getCATEGORY();
+    /**
+     * Indicates that the values are numeric, and should be plotted on a continuous axis.
+     */
     public static final int NUMBER = AxisDescriptor.AxisFormatType.getNUMBER();
 }

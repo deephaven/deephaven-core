@@ -16,8 +16,8 @@ class ChunkVisitor;
 
 /**
  * Abstract base class for Deephaven chunks. A Chunk represents a simple typed data buffer.
- * It is used as an argument to methods like ColumnSource::fillChunk() and
- * MutableColumnSource::fillFromChunk.
+ * It is used as an argument to methods like ColumnSource::FillChunk() and
+ * MutableColumnSource::FillFromChunk.
  */
 class Chunk {
 protected:
@@ -31,15 +31,16 @@ public:
   /**
    * Implementation of the visitor pattern.
    */
-  virtual void acceptVisitor(ChunkVisitor *visitor) const = 0;
+  virtual void AcceptVisitor(ChunkVisitor *visitor) const = 0;
 
   /**
    * The size of the Chunk.
    */
-  size_t size() const { return size_; }
+  [[nodiscard]]
+  size_t Size() const { return size_; }
 
 protected:
-  void checkSize(size_t proposedSize, std::string_view what) const;
+  void CheckSize(size_t proposed_size, std::string_view what) const;
 
   size_t size_ = 0;
 };
@@ -53,13 +54,15 @@ public:
   /**
    * Factory method. Create a Chunk having the specified size, with a privately allocated buffer.
    */
-  static GenericChunk<T> create(size_t size);
+  [[nodiscard]]
+  static GenericChunk<T> Create(size_t size);
 
   /**
    * Factory method. Create a Chunk on a buffer owned by the caller. The buffer must outlive this
    * Chunk and all Chunks derived from this chunk (e.g. via take/drop).
    */
-  static GenericChunk<T> createView(T *data, size_t size);
+  [[nodiscard]]
+  static GenericChunk<T> CreateView(T *data, size_t size);
 
   /**
    * Constructor.
@@ -83,32 +86,38 @@ public:
    * the same underlying buffer, but has new size 'size'. 'size' is required to be less than or
    * equal to the size of this object.
    */
-  GenericChunk take(size_t size) const;
+  [[nodiscard]]
+  GenericChunk Take(size_t size) const;
   /**
    * Create a new GenericChunk that is a suffix of the current GenericChunk. The new object shares
    * the same underlying buffer, but has new size (this->size() - size).
    * 'size' is required to be less than or equal to the size of this object.
    */
-  GenericChunk drop(size_t size) const;
+  [[nodiscard]]
+  GenericChunk Drop(size_t size) const;
 
-  void acceptVisitor(ChunkVisitor *visitor) const final;
+  void AcceptVisitor(ChunkVisitor *visitor) const final;
 
   /**
    * Returns a pointer to the start of the data represented by this GenericChunk.
    */
+  [[nodiscard]]
   T *data() { return data_.get(); }
   /**
    * Returns a pointer to the start of the data represented by this GenericChunk.
    */
+  [[nodiscard]]
   const T *data() const { return data_.get(); }
 
   /**
    * Returns a pointer to the start of the data represented by this GenericChunk.
    */
+  [[nodiscard]]
   T *begin() { return data_.get(); }
   /**
    * Returns a pointer to the start of the data represented by this GenericChunk.
    */
+  [[nodiscard]]
   const T *begin() const { return data_.get(); }
 
   /**
@@ -118,11 +127,13 @@ public:
   /**
    * Returns a pointer to the (exlusive) end of the data represented by this GenericChunk.
    */
+  [[nodiscard]]
   const T *end() const { return data_.get() + size_; }
 
   /**
    * Indexing operator.
    */
+  [[nodiscard]]
   T& operator[](size_t index) {
     return data_.get()[index];
   }
@@ -130,6 +141,7 @@ public:
   /**
    * Indexing operator.
    */
+  [[nodiscard]]
   const T& operator[](size_t index) const {
     return data_.get()[index];
   }
@@ -146,61 +158,61 @@ private:
 };
 
 /**
- * Convenience typedef.
+ * For convenience.
  */
-typedef GenericChunk<char16_t> CharChunk;
+using CharChunk = GenericChunk<char16_t>;
 /**
  * Convenience typedef.
  */
-typedef GenericChunk<int8_t> Int8Chunk;
+using Int8Chunk = GenericChunk<int8_t>;
 /**
  * Convenience typedef.
  */
-typedef GenericChunk<uint8_t> UInt8Chunk;
+using UInt8Chunk = GenericChunk<uint8_t>;
 /**
  * Convenience typedef.
  */
-typedef GenericChunk<int16_t> Int16Chunk;
+using Int16Chunk = GenericChunk<int16_t>;
 /**
  * Convenience typedef.
  */
-typedef GenericChunk<uint16_t> UInt16Chunk;
+using UInt16Chunk = GenericChunk<uint16_t>;
 /**
  * Convenience typedef.
  */
-typedef GenericChunk<int32_t> Int32Chunk;
+using Int32Chunk = GenericChunk<int32_t>;
 /**
  * Convenience typedef.
  */
-typedef GenericChunk<uint32_t> UInt32Chunk;
+using UInt32Chunk = GenericChunk<uint32_t>;
 /**
  * Convenience typedef.
  */
-typedef GenericChunk<int64_t> Int64Chunk;
+using Int64Chunk = GenericChunk<int64_t>;
 /**
  * Convenience typedef.
  */
-typedef GenericChunk<uint64_t> UInt64Chunk;
+using UInt64Chunk = GenericChunk<uint64_t>;
 /**
  * Convenience typedef.
  */
-typedef GenericChunk<float> FloatChunk;
+using FloatChunk = GenericChunk<float>;
 /**
  * Convenience typedef.
  */
-typedef GenericChunk<double> DoubleChunk;
+using DoubleChunk = GenericChunk<double>;
 /**
  * Convenience typedef.
  */
-typedef GenericChunk<bool> BooleanChunk;
+using BooleanChunk = GenericChunk<bool>;
 /**
  * Convenience typedef.
  */
-typedef GenericChunk<std::string> StringChunk;
+using StringChunk = GenericChunk<std::string>;
 /**
  * Convenience typedef.
  */
-typedef GenericChunk<deephaven::dhcore::DateTime> DateTimeChunk;
+using DateTimeChunk = GenericChunk<deephaven::dhcore::DateTime>;
 
 /**
  * Abstract base class that implements the visitor pattern for Chunk.
@@ -210,59 +222,59 @@ public:
   /**
    * Implements the visitor pattern.
    */
-  virtual void visit(const CharChunk &) = 0;
+  virtual void Visit(const CharChunk &) = 0;
   /**
    * Implements the visitor pattern.
    */
-  virtual void visit(const Int8Chunk &) = 0;
+  virtual void Visit(const Int8Chunk &) = 0;
   /**
    * Implements the visitor pattern.
    */
-  virtual void visit(const Int16Chunk &) = 0;
+  virtual void Visit(const Int16Chunk &) = 0;
   /**
    * Implements the visitor pattern.
    */
-  virtual void visit(const Int32Chunk &) = 0;
+  virtual void Visit(const Int32Chunk &) = 0;
   /**
    * Implements the visitor pattern.
    */
-  virtual void visit(const Int64Chunk &) = 0;
+  virtual void Visit(const Int64Chunk &) = 0;
   /**
    * Implements the visitor pattern.
    */
-  virtual void visit(const UInt16Chunk &) = 0;
+  virtual void Visit(const UInt16Chunk &) = 0;
   /**
    * Implements the visitor pattern.
    */
-  virtual void visit(const UInt64Chunk &) = 0;
+  virtual void Visit(const UInt64Chunk &) = 0;
   /**
    * Implements the visitor pattern.
    */
-  virtual void visit(const FloatChunk &) = 0;
+  virtual void Visit(const FloatChunk &) = 0;
   /**
    * Implements the visitor pattern.
    */
-  virtual void visit(const DoubleChunk &) = 0;
+  virtual void Visit(const DoubleChunk &) = 0;
   /**
    * Implements the visitor pattern.
    */
-  virtual void visit(const BooleanChunk &) = 0;
+  virtual void Visit(const BooleanChunk &) = 0;
   /**
    * Implements the visitor pattern.
    */
-  virtual void visit(const StringChunk &) = 0;
+  virtual void Visit(const StringChunk &) = 0;
   /**
    * Implements the visitor pattern.
    */
-  virtual void visit(const DateTimeChunk &) = 0;
+  virtual void Visit(const DateTimeChunk &) = 0;
   /**
    * Implements the visitor pattern.
    */
 };
 
 template<typename T>
-void GenericChunk<T>::acceptVisitor(ChunkVisitor *visitor) const {
-  visitor->visit(*this);
+void GenericChunk<T>::AcceptVisitor(ChunkVisitor *visitor) const {
+  visitor->Visit(*this);
 }
 
 /**
@@ -271,8 +283,8 @@ void GenericChunk<T>::acceptVisitor(ChunkVisitor *visitor) const {
  * Chunk objects.
  */
 class AnyChunk {
-  typedef std::variant<CharChunk, Int8Chunk, Int16Chunk, Int32Chunk, Int64Chunk, UInt64Chunk, FloatChunk,
-    DoubleChunk, BooleanChunk, StringChunk, DateTimeChunk> variant_t;
+  using variant_t = std::variant<CharChunk, Int8Chunk, Int16Chunk, Int32Chunk, Int64Chunk,
+     UInt64Chunk, FloatChunk, DoubleChunk, BooleanChunk, StringChunk, DateTimeChunk>;
 
 public:
   /**
@@ -288,25 +300,28 @@ public:
    * Implementation of the visitor pattern.
    */
   template<typename Visitor>
-  void visit(Visitor &&visitor) const {
+  void Visit(Visitor &&visitor) const {
     std::visit(std::forward<Visitor>(visitor), variant_);
   }
 
   /**
    * Gets the abstract base type of the contained Chunk.
    */
-  const Chunk &unwrap() const;
+  [[nodiscard]]
+  const Chunk &Unwrap() const;
   /**
    * Gets the abstract base type of the contained Chunk.
    */
-  Chunk &unwrap();
+  [[nodiscard]]
+  Chunk &Unwrap();
 
   /**
    * Gets the contained Chunk as specified by T, or throws an exception if the contained Chunk
    * is not of type T.
    */
   template<typename T>
-  const T &get() const {
+  [[nodiscard]]
+  const T &Get() const {
     return std::get<T>(variant_);
   }
 
@@ -315,7 +330,8 @@ public:
    * is not of type T.
    */
   template<typename T>
-  T &get() {
+  [[nodiscard]]
+  T &Get() {
     return std::get<T>(variant_);
   }
 
@@ -324,7 +340,7 @@ private:
 };
 
 template<typename T>
-GenericChunk<T> GenericChunk<T>::create(size_t size) {
+GenericChunk<T> GenericChunk<T>::Create(size_t size) {
   // Note: wanted to use make_shared, but std::make_shared<T[]>(size) doesn't do what I want
   // until C++20.
   auto data = std::shared_ptr<T[]>(new T[size]);
@@ -332,7 +348,7 @@ GenericChunk<T> GenericChunk<T>::create(size_t size) {
 }
 
 template<typename T>
-GenericChunk<T> GenericChunk<T>::createView(T *data, size_t size) {
+GenericChunk<T> GenericChunk<T>::CreateView(T *data, size_t size) {
   // GenericChunks allocated by create() point to an underlying heap-allocated buffer. On the other
   // hand, GenericChunks created by createView() point to the caller's buffer. In the former case
   // we own the buffer and need to delete it when there are no more shared_ptrs pointing to it. In
@@ -357,19 +373,19 @@ GenericChunk<T>::GenericChunk(std::shared_ptr<T[]> data, size_t size) : Chunk(si
   data_(std::move(data)) {}
 
 template<typename T>
-GenericChunk<T> GenericChunk<T>::take(size_t size) const {
-  checkSize(size, DEEPHAVEN_PRETTY_FUNCTION);
+GenericChunk<T> GenericChunk<T>::Take(size_t size) const {
+  CheckSize(size, DEEPHAVEN_PRETTY_FUNCTION);
   // Share ownership of data_.
   return GenericChunk<T>(data_, size);
 }
 
 template<typename T>
-GenericChunk<T> GenericChunk<T>::drop(size_t size) const {
-  checkSize(size, DEEPHAVEN_PRETTY_FUNCTION);
+GenericChunk<T> GenericChunk<T>::Drop(size_t size) const {
+  CheckSize(size, DEEPHAVEN_PRETTY_FUNCTION);
   // Make a shared_ptr which manages ownership of the same underlying buffer as data_, but which
   // actually points to the interior of that buffer, namely data_.get() + size.
-  std::shared_ptr<T[]> newBegin(data_, data_.get() + size);
-  auto newSize = size_ - size;
-  return GenericChunk<T>(std::move(newBegin), newSize);
+  std::shared_ptr<T[]> new_begin(data_, data_.get() + size);
+  auto new_size = size_ - size;
+  return GenericChunk<T>(std::move(new_begin), new_size);
 }
 }  // namespace deephaven::dhcore::chunk

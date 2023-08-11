@@ -12,15 +12,16 @@
 
 namespace deephaven::client::subscription {
 class SubscriptionThread {
-  typedef deephaven::client::server::Server Server;
-  typedef deephaven::client::utility::Executor Executor;
-  typedef deephaven::dhcore::clienttable::Schema Schema;
-  typedef io::deephaven::proto::backplane::grpc::Ticket Ticket;
-  typedef deephaven::dhcore::ticking::TickingCallback TickingCallback;
+  using Server = deephaven::client::server::Server;
+  using Executor = deephaven::client::utility::Executor;
+  using Schema = deephaven::dhcore::clienttable::Schema;
+  using Ticket = io::deephaven::proto::backplane::grpc::Ticket;
+  using TickingCallback = deephaven::dhcore::ticking::TickingCallback;
 
 public:
-  static std::shared_ptr<SubscriptionHandle> start(std::shared_ptr<Server> server,
-      Executor *flightExecutor, std::shared_ptr<Schema> schema,
+  [[nodiscard]]
+  static std::shared_ptr<SubscriptionHandle> Start(std::shared_ptr<Server> server,
+      Executor *flight_executor, std::shared_ptr<Schema> schema,
       const Ticket &ticket, std::shared_ptr<TickingCallback> callback);
 };
 }  // namespace deephaven::client::subscription

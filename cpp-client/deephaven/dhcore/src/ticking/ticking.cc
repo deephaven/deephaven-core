@@ -11,13 +11,13 @@ using deephaven::dhcore::container::RowSequenceBuilder;
 TickingCallback::~TickingCallback() = default;
 
 TickingUpdate::TickingUpdate() = default;
-TickingUpdate::TickingUpdate(std::shared_ptr<Table> prev, std::shared_ptr<RowSequence> removedRows,
-    std::shared_ptr<Table> afterRemoves, std::shared_ptr<RowSequence> addedRows,
-    std::shared_ptr<Table> afterAdds, std::vector<std::shared_ptr<RowSequence>> modifiedRows,
-    std::shared_ptr<Table> afterModifies) : prev_(std::move(prev)),
-    removedRows_(std::move(removedRows)), afterRemoves_(std::move(afterRemoves)),
-    addedRows_(std::move(addedRows)), afterAdds_(std::move(afterAdds)),
-    modifiedRows_(std::move(modifiedRows)), afterModifies_(std::move(afterModifies)),
+TickingUpdate::TickingUpdate(std::shared_ptr<Table> prev, std::shared_ptr<RowSequence> removed_rows,
+    std::shared_ptr<Table> after_removes, std::shared_ptr<RowSequence> added_rows,
+    std::shared_ptr<Table> after_adds, std::vector<std::shared_ptr<RowSequence>> modified_rows,
+    std::shared_ptr<Table> after_modifies) : prev_(std::move(prev)),
+    removedRows_(std::move(removed_rows)), afterRemoves_(std::move(after_removes)),
+    addedRows_(std::move(added_rows)), afterAdds_(std::move(after_adds)),
+    modifiedRows_(std::move(modified_rows)), afterModifies_(std::move(after_modifies)),
     onDemandState_(std::make_shared<internal::OnDemandState>()) {}
 TickingUpdate::TickingUpdate(const TickingUpdate &other) = default;
 TickingUpdate &TickingUpdate::operator=(const TickingUpdate &other) = default;
@@ -29,8 +29,8 @@ namespace internal {
 OnDemandState::OnDemandState() = default;
 OnDemandState::~OnDemandState() = default;
 
-const std::shared_ptr<RowSequence> &OnDemandState::allModifiedRows(
-    const std::vector<std::shared_ptr<RowSequence>> &modifiedRows) {
+const std::shared_ptr<RowSequence> &OnDemandState::AllModifiedRows(
+    const std::vector<std::shared_ptr<RowSequence>> &modified_rows) {
   std::unique_lock guard(mutex_);
   if (allModifiedRows_ != nullptr) {
     return allModifiedRows_;
@@ -38,12 +38,12 @@ const std::shared_ptr<RowSequence> &OnDemandState::allModifiedRows(
 
   RowSequenceBuilder builder;
   auto cb = [&builder](uint64_t begin, uint64_t end) {
-    builder.addInterval(begin, end);
+    builder.AddInterval(begin, end);
   };
-  for (const auto &rs : modifiedRows) {
-    rs->forEachInterval(cb);
+  for (const auto &rs : modified_rows) {
+    rs->ForEachInterval(cb);
   }
-  allModifiedRows_ = builder.build();
+  allModifiedRows_ = builder.Build();
   return allModifiedRows_;
 }
 }  // namespace internal

@@ -22,6 +22,11 @@ import java.util.Iterator;
 import java.util.PrimitiveIterator.OfLong;
 import java.util.Set;
 
+/**
+ * Contains data in the current viewport. Also contains the offset to this data, so that the actual row number may be
+ * determined. Do not assume that the first row in `rows` is the first visible row, because extra rows may be provided
+ * for easier scrolling without going to the server.
+ */
 @TsInterface
 @TsName(namespace = "dh")
 public class ViewportData implements TableData {
@@ -269,6 +274,11 @@ public class ViewportData implements TableData {
         }
     }
 
+    /**
+     * The index of the first returned row
+     * 
+     * @return double
+     */
     @JsProperty
     public double getOffset() {
         return offset;
@@ -305,6 +315,11 @@ public class ViewportData implements TableData {
         return getRows().getAt((int) index).getFormat(column);
     }
 
+    /**
+     * An array of rows of data
+     * 
+     * @return {@link ViewportRow} array.
+     */
     @Override
     public DataBarFormat getDataBarFormat(int index, Column column) {
         return getRows().getAt(index).getDataBarFormat(column);
@@ -328,6 +343,11 @@ public class ViewportData implements TableData {
         return rows;
     }
 
+    /**
+     * A list of columns describing the data types in each row
+     * 
+     * @return {@link Column} array.
+     */
     @Override
     @JsProperty
     public JsArray<Column> getColumns() {
