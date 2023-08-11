@@ -92,6 +92,12 @@ def testPyClient = Docker.registerDockerTask(project, 'testPyClient') {
         from ('requirements-dev.txt') {
             into 'project/'
         }
+        from ('setup.py') {
+            into 'project/'
+        }
+        from ('README.md') {
+            into 'project/'
+        }
     }
     containerDependencies.dependsOn = [deephavenDocker.healthyTask]
     containerDependencies.finalizedBy = deephavenDocker.endTask
@@ -104,6 +110,8 @@ def testPyClient = Docker.registerDockerTask(project, 'testPyClient') {
                       mkdir -p /out/report; \\
                       pip3 install --upgrade pip; \\
                       pip3 install -r requirements-dev.txt'''
+
+        runCommand 'pip install .'
         environmentVariable 'DH_HOST', deephavenDocker.containerName.get()
         environmentVariable 'DH_PORT', '10000'
     }

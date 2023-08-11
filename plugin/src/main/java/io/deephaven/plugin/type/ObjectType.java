@@ -4,12 +4,8 @@
 package io.deephaven.plugin.type;
 
 import io.deephaven.plugin.Plugin;
-import io.deephaven.plugin.type.ObjectType.Exporter.Reference;
 
-import java.io.IOException;
-import java.io.OutputStream;
-import java.util.Optional;
-import java.util.function.BiPredicate;
+import java.nio.ByteBuffer;
 
 /**
  * An "object type" plugin. Useful for serializing custom objects between the server / client.
@@ -32,71 +28,59 @@ public interface ObjectType extends Plugin {
     boolean isType(Object object);
 
     /**
-     * Serializes {@code object} into {@code out}. Must only be called with a compatible object, see
-     * {@link #isType(Object)}.
-     *
-     * <p>
-     * Objects that {@code object} references may be serialized as {@link Reference}.
-     *
-     * <p>
-     * Note: the implementation should not hold onto references nor create references outside the calling thread.
-     *
-     * @param exporter the exporter
-     * @param object the (compatible) object
-     * @param out the output stream
-     * @throws IOException if an IO exception occurs
+     * A stream of messages, either sent from the server to the client, or client to the server. ObjectType plugin
+     * implementations provide an instance of this interface for each incoming stream to invoke as messages arrive, and
+     * will likewise be given an instance of this interface to be able to send messages to the client.
      */
-    void writeTo(Exporter exporter, Object object, OutputStream out) throws IOException;
+    interface MessageStream {
+        /**
+         * Simple stream that does no handling on data or close.
+         */
+        MessageStream NOOP = new MessageStream() {
+            @Override
+            public void onData(ByteBuffer payload, Object... references) {}
+
+            @Override
+            public void onClose() {}
+        };
+
+        /**
+         * Transmits/receives data to/from the remote end of the stream. This can consist of a binary payload and
+         * references to objects on the server.
+         * <p>
+         * </p>
+         * When implementing this interface for a plugin, this method will be invoked when a request arrives from the
+         * client. When invoking this method from in a plugin, it will send a response to the client.
+         * <p>
+         * </p>
+         * Note that sending a message can cause an exception if there is an error in serializing, and for that reason
+         * this method throws a checked exception. It is safe to let that propagate up through either an incoming
+         * {@link #onData onData call from a client}, or the {@link ObjectType#clientConnection(Object, MessageStream)
+         * call to create the stream}, but it is usually unsafe to let this propagate to other engine threads.
+         *
+         * @param payload the binary data sent to the remote implementation
+         * @param references server-side object references sent to the remote implementation
+         * @throws ObjectCommunicationException a checked exception for any errors that may occur, to ensure that the
+         *         error is handled without propagating.
+         */
+        void onData(ByteBuffer payload, Object... references) throws ObjectCommunicationException;
+
+        /**
+         * Closes the stream on both ends. No further messages can be sent or received.
+         */
+        void onClose();
+    }
 
     /**
-     * The interface for creating new references during the {@link #writeTo(Exporter, Object, OutputStream)}.
+     * Signals creation of a client stream to the provided object. The returned MessageStream implementation will be
+     * called with each received message from the client, and can call the provided connection instance to send messages
+     * as needed to the client.
+     * 
+     * @param object the object to create a connection for
+     * @param connection a stream to send objects to the client
+     * @throws ObjectCommunicationException may throw an exception received from
+     *         {@link MessageStream#onData(ByteBuffer, Object...)} calls
+     * @return a stream to receive objects from the client
      */
-    interface Exporter {
-
-        /**
-         * Gets the reference for {@code object} if it has already been created and {@code forceNew} is {@code false},
-         * otherwise creates a new one. If {@code allowUnknownType} is {@code false}, and no type can be found, no
-         * reference will be created. Uses reference-based equality.
-         *
-         * @param object the object
-         * @param allowUnknownType if an unknown-typed reference can be created
-         * @param forceNew if a new reference should be created
-         * @return the reference
-         */
-        Optional<Reference> reference(Object object, boolean allowUnknownType, boolean forceNew);
-
-        /**
-         * Gets the reference for {@code object} if it has already been created and {@code forceNew} is {@code false},
-         * otherwise creates a new one. If {@code allowUnknownType} is {@code false}, and no type can be found, no
-         * reference will be created.
-         *
-         * @param object the object
-         * @param allowUnknownType if an unknown-typed reference can be created
-         * @param forceNew if a new reference should be created
-         * @param equals the equals logic
-         * @return the reference
-         */
-        Optional<Reference> reference(Object object, boolean allowUnknownType, boolean forceNew,
-                BiPredicate<Object, Object> equals);
-
-        /**
-         * A reference.
-         */
-        interface Reference {
-            /**
-             * The index, which is defined by the order in which references are created. May be used in the output
-             * stream to refer to the reference from the client.
-             *
-             * @return the index
-             */
-            int index();
-
-            /**
-             * The type.
-             *
-             * @return the type, if present
-             */
-            Optional<String> type();
-        }
-    }
+    MessageStream clientConnection(Object object, MessageStream connection) throws ObjectCommunicationException;
 }

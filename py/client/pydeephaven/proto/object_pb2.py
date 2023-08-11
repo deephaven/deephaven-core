@@ -14,7 +14,7 @@ _sym_db = _symbol_database.Default()
 from pydeephaven.proto import ticket_pb2 as deephaven_dot_proto_dot_ticket__pb2
 
 
-DESCRIPTOR = _descriptor_pool.Default().AddSerializedFile(b'\n\x1c\x64\x65\x65phaven/proto/object.proto\x12!io.deephaven.proto.backplane.grpc\x1a\x1c\x64\x65\x65phaven/proto/ticket.proto\"W\n\x12\x46\x65tchObjectRequest\x12\x41\n\tsource_id\x18\x01 \x01(\x0b\x32..io.deephaven.proto.backplane.grpc.TypedTicket\"z\n\x13\x46\x65tchObjectResponse\x12\x0c\n\x04type\x18\x01 \x01(\t\x12\x0c\n\x04\x64\x61ta\x18\x02 \x01(\x0c\x12G\n\x0ftyped_export_id\x18\x03 \x03(\x0b\x32..io.deephaven.proto.backplane.grpc.TypedTicket2\x8f\x01\n\rObjectService\x12~\n\x0b\x46\x65tchObject\x12\x35.io.deephaven.proto.backplane.grpc.FetchObjectRequest\x1a\x36.io.deephaven.proto.backplane.grpc.FetchObjectResponse\"\x00\x42\x42H\x01P\x01Z<github.com/deephaven/deephaven-core/go/internal/proto/objectb\x06proto3')
+DESCRIPTOR = _descriptor_pool.Default().AddSerializedFile(b'\n\x1c\x64\x65\x65phaven/proto/object.proto\x12!io.deephaven.proto.backplane.grpc\x1a\x1c\x64\x65\x65phaven/proto/ticket.proto\"W\n\x12\x46\x65tchObjectRequest\x12\x41\n\tsource_id\x18\x01 \x01(\x0b\x32..io.deephaven.proto.backplane.grpc.TypedTicket\"{\n\x13\x46\x65tchObjectResponse\x12\x0c\n\x04type\x18\x01 \x01(\t\x12\x0c\n\x04\x64\x61ta\x18\x02 \x01(\x0c\x12H\n\x10typed_export_ids\x18\x03 \x03(\x0b\x32..io.deephaven.proto.backplane.grpc.TypedTicket\"S\n\x0e\x43onnectRequest\x12\x41\n\tsource_id\x18\x01 \x01(\x0b\x32..io.deephaven.proto.backplane.grpc.TypedTicket\"d\n\x04\x44\x61ta\x12\x0f\n\x07payload\x18\x01 \x01(\x0c\x12K\n\x13\x65xported_references\x18\x02 \x03(\x0b\x32..io.deephaven.proto.backplane.grpc.TypedTicket\"\x99\x01\n\rStreamRequest\x12\x44\n\x07\x63onnect\x18\x01 \x01(\x0b\x32\x31.io.deephaven.proto.backplane.grpc.ConnectRequestH\x00\x12\x37\n\x04\x64\x61ta\x18\x02 \x01(\x0b\x32\'.io.deephaven.proto.backplane.grpc.DataH\x00\x42\t\n\x07message\"T\n\x0eStreamResponse\x12\x37\n\x04\x64\x61ta\x18\x01 \x01(\x0b\x32\'.io.deephaven.proto.backplane.grpc.DataH\x00\x42\t\n\x07message\"\x15\n\x13\x42rowserNextResponse2\x8e\x04\n\rObjectService\x12\x81\x01\n\x0b\x46\x65tchObject\x12\x35.io.deephaven.proto.backplane.grpc.FetchObjectRequest\x1a\x36.io.deephaven.proto.backplane.grpc.FetchObjectResponse\"\x03\x88\x02\x01\x12z\n\rMessageStream\x12\x30.io.deephaven.proto.backplane.grpc.StreamRequest\x1a\x31.io.deephaven.proto.backplane.grpc.StreamResponse\"\x00(\x01\x30\x01\x12|\n\x11OpenMessageStream\x12\x30.io.deephaven.proto.backplane.grpc.StreamRequest\x1a\x31.io.deephaven.proto.backplane.grpc.StreamResponse\"\x00\x30\x01\x12\x7f\n\x11NextMessageStream\x12\x30.io.deephaven.proto.backplane.grpc.StreamRequest\x1a\x36.io.deephaven.proto.backplane.grpc.BrowserNextResponse\"\x00\x42\x42H\x01P\x01Z<github.com/deephaven/deephaven-core/go/internal/proto/objectb\x06proto3')
 
 _builder.BuildMessageAndEnumDescriptors(DESCRIPTOR, globals())
 _builder.BuildTopDescriptorsAndMessages(DESCRIPTOR, 'deephaven.proto.object_pb2', globals())
@@ -22,10 +22,22 @@ if _descriptor._USE_C_DESCRIPTORS == False:
 
   DESCRIPTOR._options = None
   DESCRIPTOR._serialized_options = b'H\001P\001Z<github.com/deephaven/deephaven-core/go/internal/proto/object'
+  _OBJECTSERVICE.methods_by_name['FetchObject']._options = None
+  _OBJECTSERVICE.methods_by_name['FetchObject']._serialized_options = b'\210\002\001'
   _FETCHOBJECTREQUEST._serialized_start=97
   _FETCHOBJECTREQUEST._serialized_end=184
   _FETCHOBJECTRESPONSE._serialized_start=186
-  _FETCHOBJECTRESPONSE._serialized_end=308
-  _OBJECTSERVICE._serialized_start=311
-  _OBJECTSERVICE._serialized_end=454
+  _FETCHOBJECTRESPONSE._serialized_end=309
+  _CONNECTREQUEST._serialized_start=311
+  _CONNECTREQUEST._serialized_end=394
+  _DATA._serialized_start=396
+  _DATA._serialized_end=496
+  _STREAMREQUEST._serialized_start=499
+  _STREAMREQUEST._serialized_end=652
+  _STREAMRESPONSE._serialized_start=654
+  _STREAMRESPONSE._serialized_end=738
+  _BROWSERNEXTRESPONSE._serialized_start=740
+  _BROWSERNEXTRESPONSE._serialized_end=761
+  _OBJECTSERVICE._serialized_start=764
+  _OBJECTSERVICE._serialized_end=1290
 # @@protoc_insertion_point(module_scope)

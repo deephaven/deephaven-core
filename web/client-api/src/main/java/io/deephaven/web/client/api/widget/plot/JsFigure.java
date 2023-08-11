@@ -9,7 +9,6 @@ import elemental2.dom.CustomEventInit;
 import elemental2.promise.Promise;
 import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.console_pb.FigureDescriptor;
 import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.console_pb.figuredescriptor.AxisDescriptor;
-import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.object_pb.FetchObjectRequest;
 import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.object_pb.FetchObjectResponse;
 import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.table_pb.ExportedTableCreationResponse;
 import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.ticket_pb.TypedTicket;
@@ -71,6 +70,9 @@ import java.util.stream.Stream;
  * <b>downsamplefinished</b> will be fired. These events will repeat when the range changes, such as when zooming,
  * panning, or resizing the figure. Finally, <b>downsamplefailed</b> indicates that something when wrong when
  * downsampling, or possibly that downsampling cannot be disabled due to the number of rows in the table.
+ *
+ * At this time, not marked as a ServerObject, due to internal implementation issues which leave the door open to
+ * client-created figures.
  */
 @JsType(name = "Figure", namespace = "dh.plot")
 public class JsFigure extends HasLifecycle {
@@ -756,16 +758,16 @@ public class JsFigure extends HasLifecycle {
         }
 
         @Override
-        public Promise fetch(JsFigure figure, FetchObjectResponse response) {
+        public Promise<FigureTableFetchData> fetch(JsFigure figure, FetchObjectResponse response) {
             JsTable[] tables = new JsTable[0];
             JsPartitionedTable[] partitionedTables = new JsPartitionedTable[0];
 
-            Promise<?>[] promises = new Promise[response.getTypedExportIdList().length];
+            Promise<?>[] promises = new Promise[response.getTypedExportIdsList().length];
 
             int nextTableIndex = 0;
             int nextPartitionedTableIndex = 0;
-            for (int i = 0; i < response.getTypedExportIdList().length; i++) {
-                TypedTicket ticket = response.getTypedExportIdList().getAt(i);
+            for (int i = 0; i < response.getTypedExportIdsList().length; i++) {
+                TypedTicket ticket = response.getTypedExportIdsList().getAt(i);
                 if (ticket.getType().equals(JsVariableType.TABLE)) {
                     // Note that creating a CTS like this means we can't actually refetch it, but that's okay, we can't
                     // reconnect in this way without refetching the entire figure anyway.
@@ -785,22 +787,14 @@ public class JsFigure extends HasLifecycle {
                     });
                 } else if (ticket.getType().equals(JsVariableType.PARTITIONEDTABLE)) {
                     int partitionedTableIndex = nextPartitionedTableIndex++;
-                    promises[i] = Callbacks.<FetchObjectResponse, Object>grpcUnaryPromise(c -> {
-                        FetchObjectRequest partitionedTableRequest = new FetchObjectRequest();
-                        partitionedTableRequest.setSourceId(ticket);
-                        connection.objectServiceClient().fetchObject(partitionedTableRequest, connection.metadata(),
-                                c::apply);
-                    }).then(object -> {
-                        JsPartitionedTable partitionedTable =
-                                new JsPartitionedTable(connection, new JsWidget(connection,
-                                        callback -> callback.handleResponse(null, object, ticket.getTicket())));
-                        // TODO(deephaven-core#3604) if using a new session don't attempt a reconnect, since we might
-                        // have a different figure schema entirely
-                        // partitionedTable.addEventListener(JsPartitionedTable.EVENT_DISCONNECT, ignore ->
-                        // partitionedTable.close());
-                        partitionedTables[partitionedTableIndex] = partitionedTable;
-                        return partitionedTable.refetch();
-                    });
+                    JsPartitionedTable partitionedTable =
+                            new JsPartitionedTable(connection, new JsWidget(connection, ticket));
+                    // TODO(deephaven-core#3604) if using a new session don't attempt a reconnect, since we might
+                    // have a different figure schema entirely
+                    // partitionedTable.addEventListener(JsPartitionedTable.EVENT_DISCONNECT, ignore ->
+                    // partitionedTable.close());
+                    partitionedTables[partitionedTableIndex] = partitionedTable;
+                    promises[i] = partitionedTable.refetch();
                 } else {
                     throw new IllegalStateException("Ticket type not recognized in a Figure: " + ticket.getType());
                 }

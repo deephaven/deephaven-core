@@ -35,56 +35,56 @@ cdef class TickingUpdate:
 
     @property
     def prev(self) -> ClientTable:
-        return ClientTable.create(self.ticking_update.prev())
+        return ClientTable.create(self.ticking_update.Prev())
 
     @property
     def before_removes(self) -> ClientTable:
-        return ClientTable.create(self.ticking_update.beforeRemoves())
+        return ClientTable.create(self.ticking_update.BeforeRemoves())
 
     @property
     def removed_rows(self) -> RowSequence:
-        return RowSequence.create(self.ticking_update.removedRows())
+        return RowSequence.create(self.ticking_update.RemovedRows())
 
     @property
     def after_removes(self) -> ClientTable:
-        return ClientTable.create(self.ticking_update.afterRemoves())
+        return ClientTable.create(self.ticking_update.AfterRemoves())
 
     @property
     def before_adds(self) -> ClientTable:
-        return ClientTable.create(self.ticking_update.beforeAdds())
+        return ClientTable.create(self.ticking_update.BeforeAdds())
 
     @property
     def added_rows(self) -> RowSequence:
-        return RowSequence.create(self.ticking_update.addedRows())
+        return RowSequence.create(self.ticking_update.AddedRows())
 
     @property
     def after_adds(self) -> ClientTable:
-        return ClientTable.create(self.ticking_update.afterAdds())
+        return ClientTable.create(self.ticking_update.AfterAdds())
 
     @property
     def before_modifies(self) -> ClientTable:
-        return ClientTable.create(self.ticking_update.beforeModifies())
+        return ClientTable.create(self.ticking_update.BeforeModifies())
 
     @property
     def after_modifies(self) -> ClientTable:
-        return ClientTable.create(self.ticking_update.afterModifies())
+        return ClientTable.create(self.ticking_update.AfterModifies())
 
     @property
     def modified_rows(self) -> [RowSequence]:
         result = []
-        mod_rows = self.ticking_update.modifiedRows()
+        mod_rows = self.ticking_update.ModifiedRows()
         for i in range(mod_rows.size()):
             result.append(RowSequence.create(mod_rows[i]))
         return result
 
     @property
     def all_modified_rows(self) -> RowSequence:
-        rs = self.ticking_update.allModifiedRows()
+        rs = self.ticking_update.AllModifiedRows()
         return RowSequence.create(rs)
 
     @property
     def current(self) -> ClientTable:
-        return ClientTable.create(self.ticking_update.current())
+        return ClientTable.create(self.ticking_update.Current())
 
 # Simple wrapper of the corresponding C++ ClientTable class.
 cdef class ClientTable:
@@ -97,55 +97,55 @@ cdef class ClientTable:
         return result
 
     def get_column(self, columnIndex: size_t) -> ColumnSource:
-        cs = deref(self._table).getColumn(columnIndex)
+        cs = deref(self._table).GetColumn(columnIndex)
         return ColumnSource.create(move(cs))
 
     def get_column_by_name(self, name: str, strict: bool) -> ColumnSource | None:
         name_bytes = name.encode()
-        result = deref(self._table).getColumn(name_bytes, strict)
+        result = deref(self._table).GetColumn(name_bytes, strict)
         if result == NULL:
             return None
         return ColumnSource.create(move(result))
 
     @property
     def columns(self) -> [ColumnSource]:
-        ncols = deref(self._table).numColumns()
-        return [ColumnSource.create(deref(self._table).getColumn(i)) for i in range(ncols)]
+        ncols = deref(self._table).NumColumns()
+        return [ColumnSource.create(deref(self._table).GetColumn(i)) for i in range(ncols)]
 
     def get_column_index(self, name: unicode, strict: bool) -> int | None:
         name_as_string = <string>name.encode()
-        res = deref(self._table).getColumnIndex(name_as_string, strict)
+        res = deref(self._table).GetColumnIndex(name_as_string, strict)
         if not res.has_value():
             return None
         return deref(res)
 
     def get_row_sequence(self) -> RowSequence:
-        result = deref(self._table).getRowSequence()
+        result = deref(self._table).GetRowSequence()
         return RowSequence.create(move(result))
 
     @property
     def num_rows(self) -> size_t:
-        return deref(self._table).numRows()
+        return deref(self._table).NumRows()
 
     @property
     def num_columns(self) -> size_t:
-        return deref(self._table).numColumns()
+        return deref(self._table).NumColumns()
 
     @property
     def schema(self) -> Schema:
-        c_schema = deref(self._table).schema()
+        c_schema = deref(self._table).Schema()
         return Schema.create_from_c_schema(move(c_schema))
 
     def to_string(self, want_headers: bool, want_row_numbers: bool, row_sequence = None) -> str:
         cdef vector[shared_ptr[CRowSequence]] row_sequences
         if row_sequence is None:
-            result = deref(self._table).toString(want_headers, want_row_numbers)
+            result = deref(self._table).ToString(want_headers, want_row_numbers)
         elif isinstance(row_sequence, list):
             for rs in row_sequence:
                 row_sequences.push_back((<RowSequence>rs).row_sequence)
-            result = deref(self._table).toString(want_headers, want_row_numbers, move(row_sequences))
+            result = deref(self._table).ToString(want_headers, want_row_numbers, move(row_sequences))
         elif isinstance(row_sequence, RowSequence):
-            result = deref(self._table).toString(want_headers, want_row_numbers, (<RowSequence>row_sequence).row_sequence)
+            result = deref(self._table).ToString(want_headers, want_row_numbers, (<RowSequence>row_sequence).row_sequence)
         else:
             raise RuntimeError("Don't know how to handle", row_sequence)
         return result.decode()
@@ -160,8 +160,8 @@ cdef class Schema:
 
     @staticmethod
     cdef Schema create_from_c_schema(shared_ptr[CSchema] schema):
-        c_names = deref(schema).names()
-        c_types = deref(schema).types()
+        c_names = deref(schema).Names()
+        c_types = deref(schema).Types()
         names: [str] = []
         types: [pa.DataType] = []
         cdef size_t i
@@ -200,21 +200,21 @@ cdef class RowSequence:
         result.row_sequence = move(row_sequence)
         return result
 
-    def take(self, size: size_t) -> RowSequence:
-        row_sequence = deref(self.row_sequence).take(size)
+    def Take(self, size: size_t) -> RowSequence:
+        row_sequence = deref(self.row_sequence).Take(size)
         return RowSequence.create(move(row_sequence))
 
-    def drop(self, size: size_t) -> RowSequence:
-        row_sequence = deref(self.row_sequence).drop(size)
+    def Drop(self, size: size_t) -> RowSequence:
+        row_sequence = deref(self.row_sequence).Drop(size)
         return RowSequence.create(move(row_sequence))
 
     @property
     def size(self) -> size_t:
-        return deref(self.row_sequence).size()
+        return deref(self.row_sequence).Size()
 
     @property
     def empty(self) -> bool:
-        return deref(self.row_sequence).empty()
+        return deref(self.row_sequence).Empty()
 
 # The "primitive" set of types, used for the method _fill_primitive_chunk.
 ctypedef fused nparray_primitive_dtype_t:
@@ -246,48 +246,48 @@ cdef class ColumnSource:
 
         null_flags = np.zeros(size, dtype=np.bool_)
         cdef bool[::1] null_flags_view = null_flags
-        boolean_chunk = CGenericChunk[bool].createView(&null_flags_view[0], size)
+        boolean_chunk = CGenericChunk[bool].CreateView(&null_flags_view[0], size)
         cdef CGenericChunk[bool] *null_flags_ptr = &boolean_chunk
         arrow_type: pa.DataType
 
-        element_type_id = CCythonSupport.getElementTypeId(deref(self.column_source))
-        if element_type_id == ElementTypeId.CHAR:
+        element_type_id = CCythonSupport.GetElementTypeId(deref(self.column_source))
+        if element_type_id == ElementTypeId.kChar:
             dest_data = np.zeros(size, np.uint16)
             self._fill_char_chunk(rows, dest_data, null_flags_ptr)
             arrow_type = pa.uint16()
-        elif element_type_id == ElementTypeId.INT8:
+        elif element_type_id == ElementTypeId.kInt8:
             dest_data = np.zeros(size, np.int8)
             self._fill_primitive_chunk[int8_t](rows, dest_data, null_flags_ptr)
             arrow_type = pa.int8()
-        elif element_type_id == ElementTypeId.INT16:
+        elif element_type_id == ElementTypeId.kInt16:
             dest_data = np.zeros(size, np.int16)
             self._fill_primitive_chunk[int16_t](rows, dest_data, null_flags_ptr)
             arrow_type = pa.int16()
-        elif element_type_id == ElementTypeId.INT32:
+        elif element_type_id == ElementTypeId.kInt32:
             dest_data = np.zeros(size, np.int32)
             self._fill_primitive_chunk[int32_t](rows, dest_data, null_flags_ptr)
             arrow_type = pa.int32()
-        elif element_type_id == ElementTypeId.INT64:
+        elif element_type_id == ElementTypeId.kInt64:
             dest_data = np.zeros(size, np.int64)
             self._fill_primitive_chunk[int64_t](rows, dest_data, null_flags_ptr)
             arrow_type = pa.int64()
-        elif element_type_id == ElementTypeId.FLOAT:
+        elif element_type_id == ElementTypeId.kFloat:
             dest_data = np.zeros(size, np.float32)
             self._fill_primitive_chunk[float](rows, dest_data, null_flags_ptr)
             arrow_type = pa.float32()
-        elif element_type_id == ElementTypeId.DOUBLE:
+        elif element_type_id == ElementTypeId.kDouble:
             dest_data = np.zeros(size, np.float64)
             self._fill_primitive_chunk[double](rows, dest_data, null_flags_ptr)
             arrow_type = pa.float64()
-        elif element_type_id == ElementTypeId.BOOL:
+        elif element_type_id == ElementTypeId.kBool:
             dest_data = np.zeros(size, np.bool_)
             self._fill_primitive_chunk[bool](rows, dest_data, null_flags_ptr)
             arrow_type = pa.bool_()
-        elif element_type_id == ElementTypeId.STRING:
+        elif element_type_id == ElementTypeId.kString:
             dest_data = np.zeros(size, object)
             self._fill_string_chunk(rows, dest_data, null_flags_ptr)
             arrow_type = pa.string()
-        elif element_type_id == ElementTypeId.TIMESTAMP:
+        elif element_type_id == ElementTypeId.kTimestamp:
             dest_data = np.zeros(size, dtype="datetime64[ns]")
             dest_data_as_int64 = dest_data.view(dtype=np.int64)
             self._fill_timestamp_chunk(rows, dest_data_as_int64, null_flags_ptr)
@@ -301,8 +301,8 @@ cdef class ColumnSource:
     cdef _fill_primitive_chunk(self, rows: RowSequence, nparray_primitive_dtype_t[::1] dest_data,
         CGenericChunk[bool] *null_flags_ptr):
         rsSize = rows.size
-        data_chunk = CGenericChunk[nparray_primitive_dtype_t].createView(&dest_data[0], rsSize)
-        deref(self.column_source).fillChunk(deref(rows.row_sequence), &data_chunk, null_flags_ptr)
+        data_chunk = CGenericChunk[nparray_primitive_dtype_t].CreateView(&dest_data[0], rsSize)
+        deref(self.column_source).FillChunk(deref(rows.row_sequence), &data_chunk, null_flags_ptr)
 
     # fill_chunk helper method for Deephaven element type char (mapped to uint16_t).
     # In this case we use a column source type of char16_t and we do shameless type aliasing.
@@ -313,17 +313,17 @@ cdef class ColumnSource:
             """
         rsSize = rows.size
         # hacky cast
-        data_chunk = CGenericChunk[char16_t].createView(<char16_t*>&dest_data[0], rsSize)
-        deref(self.column_source).fillChunk(deref(rows.row_sequence), &data_chunk, null_flags_ptr)
+        data_chunk = CGenericChunk[char16_t].CreateView(<char16_t*>&dest_data[0], rsSize)
+        deref(self.column_source).FillChunk(deref(rows.row_sequence), &data_chunk, null_flags_ptr)
 
     # fill_chunk helper method for Deephaven element type string (mapped to object).
     # In this case we have to allocate a temporary chunk of strings, fill it, and then copy the data out of it to
     # Python strings. TODO(kosak): This is too many copies and should be improved.
     cdef _fill_string_chunk(self, rows: RowSequence, object[::1] dest_data, CGenericChunk[bool] *null_flags_ptr):
         rsSize = rows.size
-        dest_chunk = CGenericChunk[string].create(rsSize)
-        deref(self.column_source).fillChunk(deref(rows.row_sequence), &dest_chunk, null_flags_ptr)
-        i: ssize_t = 0
+        dest_chunk = CGenericChunk[string].Create(rsSize)
+        deref(self.column_source).FillChunk(deref(rows.row_sequence), &dest_chunk, null_flags_ptr)
+        cdef ssize_t i
         for i in range(rsSize):
             dest_data[i] = dest_chunk.data()[i]
 
@@ -334,8 +334,8 @@ cdef class ColumnSource:
         static_assert(sizeof(int64_t) == sizeof(CDateTime));
         """
         rsSize = rows.size
-        dest_chunk = CGenericChunk[CDateTime].createView(<CDateTime*>&dest_data[0], rsSize)
-        deref(self.column_source).fillChunk(deref(rows.row_sequence), &dest_chunk, null_flags_ptr)
+        dest_chunk = CGenericChunk[CDateTime].CreateView(<CDateTime*>&dest_data[0], rsSize)
+        deref(self.column_source).FillChunk(deref(rows.row_sequence), &dest_chunk, null_flags_ptr)
 
 # Converts an Arrow array to a C++ ColumnSource of the right type. The created column source does not own the
 # memory used, so it is only valid as long as the original Arrow array is valid.
@@ -359,19 +359,19 @@ cdef shared_ptr[CColumnSource] _convert_arrow_array_to_column_source(array: pa.A
     # not sure I'm supposed to look inside pa.lib, but that's the only place I can find DoubleArray
     cdef shared_ptr[CColumnSource] result
     if isinstance(array, pa.lib.UInt16Array):
-        assign_shared_ptr(result, CNumericBufferColumnSource[char16_t].createUntyped(address, total_size // 2))
+        assign_shared_ptr(result, CNumericBufferColumnSource[char16_t].CreateUntyped(address, total_size // 2))
     elif isinstance(array, pa.lib.Int8Array):
-        assign_shared_ptr(result, CNumericBufferColumnSource[int8_t].createUntyped(address, total_size))
+        assign_shared_ptr(result, CNumericBufferColumnSource[int8_t].CreateUntyped(address, total_size))
     elif isinstance(array, pa.lib.Int16Array):
-        assign_shared_ptr(result, CNumericBufferColumnSource[int16_t].createUntyped(address, total_size // 2))
+        assign_shared_ptr(result, CNumericBufferColumnSource[int16_t].CreateUntyped(address, total_size // 2))
     elif isinstance(array, pa.lib.Int32Array):
-        assign_shared_ptr(result, CNumericBufferColumnSource[int32_t].createUntyped(address, total_size // 4))
+        assign_shared_ptr(result, CNumericBufferColumnSource[int32_t].CreateUntyped(address, total_size // 4))
     elif isinstance(array, pa.lib.Int64Array):
-        assign_shared_ptr(result, CNumericBufferColumnSource[int64_t].createUntyped(address, total_size // 8))
+        assign_shared_ptr(result, CNumericBufferColumnSource[int64_t].CreateUntyped(address, total_size // 8))
     elif isinstance(array, pa.lib.FloatArray):
-        assign_shared_ptr(result, CNumericBufferColumnSource[float].createUntyped(address, total_size // 4))
+        assign_shared_ptr(result, CNumericBufferColumnSource[float].CreateUntyped(address, total_size // 4))
     elif isinstance(array, pa.lib.DoubleArray):
-        assign_shared_ptr(result, CNumericBufferColumnSource[double].createUntyped(address, total_size // 8))
+        assign_shared_ptr(result, CNumericBufferColumnSource[double].CreateUntyped(address, total_size // 8))
     else:
         raise RuntimeError(f"Can't find a column source type for {type(array)}")
 
@@ -396,7 +396,7 @@ cdef shared_ptr[CColumnSource] _convert_arrow_boolean_array_to_column_source(arr
     cdef const uint8_t *data_begin = <const uint8_t *><intptr_t>data.address
     cdef const uint8_t *data_end = <const uint8_t *><intptr_t>(data.address + data.size)
 
-    return CCythonSupport.createBooleanColumnSource(data_begin, data_end, validity_begin, validity_end,
+    return CCythonSupport.CreateBooleanColumnSource(data_begin, data_end, validity_begin, validity_end,
         num_elements)
 
 # Converts an Arrow StringArray to a C++ StringColumnSource. The created column source does not own the
@@ -422,7 +422,7 @@ cdef shared_ptr[CColumnSource] _convert_arrow_string_array_to_column_source(arra
     cdef const char *text_begin = <const char*><intptr_t>text.address
     cdef const char *text_end = <const char*><intptr_t>(text.address + text.size)
 
-    return CCythonSupport.createStringColumnSource(text_begin, text_end, starts_begin, starts_end,
+    return CCythonSupport.CreateStringColumnSource(text_begin, text_end, starts_begin, starts_end,
         validity_begin, validity_end, num_elements)
 
 # Converts an Arrow TimestampArray to a C++ DateTimeColumnSource. The created column source does not own the
@@ -444,7 +444,7 @@ cdef shared_ptr[CColumnSource] _convert_arrow_timestamp_array_to_column_source(a
     cdef const int64_t *data_begin = <const int64_t *> <intptr_t> data.address
     cdef const int64_t *data_end = <const int64_t *> <intptr_t> (data.address + data.size)
 
-    return CCythonSupport.createDateTimeColumnSource(data_begin, data_end, validity_begin, validity_end,
+    return CCythonSupport.CreateDateTimeColumnSource(data_begin, data_end, validity_begin, validity_end,
                                                      num_elements)
 
 # This method converts a PyArrow Schema object to a C++ Schema object.
@@ -461,7 +461,7 @@ cdef shared_ptr[CSchema] _pyarrow_schema_to_deephaven_schema(src: pa.Schema) exc
         names.push_back(name)
         types.push_back(dh_type)
 
-    return CSchema.create(names, types)
+    return CSchema.Create(names, types)
 
 # Code to support processing of Barrage messages. The reason this is somewhat complicated is because there is a
 # sharp division of responsibilities: the Python side does all the Arrow interactions and knows Arrow data types;
@@ -478,7 +478,7 @@ cdef class BarrageProcessor:
     # give it to the Python code so that it can send it to the server over Arrow.
     @staticmethod
     def create_subscription_request(const unsigned char [::1] ticket_bytes) -> bytearray:
-        res = CBarrageProcessor.createSubscriptionRequestCython(&ticket_bytes[0],
+        res = CBarrageProcessor.CreateSubscriptionRequestCython(&ticket_bytes[0],
             ticket_bytes.shape[0])
         return res
 
@@ -513,7 +513,7 @@ cdef class BarrageProcessor:
             column_sources.push_back(cs)
             sizes.push_back(len(source))
 
-        result = self._barrage_processor.processNextChunk(column_sources, sizes, &raw_metadata[0],
+        result = self._barrage_processor.ProcessNextChunk(column_sources, sizes, &raw_metadata[0],
             raw_metadata.shape[0])
         if result.has_value():
             return TickingUpdate.create(deref(result))
@@ -532,16 +532,16 @@ cdef class _EquivalentTypes:
         return result
 
 cdef _equivalentTypes = [
-    _EquivalentTypes.create(ElementTypeId.INT8, pa.int8()),
-    _EquivalentTypes.create(ElementTypeId.INT16, pa.int16()),
-    _EquivalentTypes.create(ElementTypeId.INT32, pa.int32()),
-    _EquivalentTypes.create(ElementTypeId.INT64, pa.int64()),
-    _EquivalentTypes.create(ElementTypeId.FLOAT, pa.float32()),
-    _EquivalentTypes.create(ElementTypeId.DOUBLE, pa.float64()),
-    _EquivalentTypes.create(ElementTypeId.BOOL, pa.bool_()),
-    _EquivalentTypes.create(ElementTypeId.CHAR, pa.uint16()),
-    _EquivalentTypes.create(ElementTypeId.STRING, pa.string()),
-    _EquivalentTypes.create(ElementTypeId.TIMESTAMP, pa.timestamp("ns", "UTC"))
+    _EquivalentTypes.create(ElementTypeId.kChar, pa.uint16()),
+    _EquivalentTypes.create(ElementTypeId.kInt8, pa.int8()),
+    _EquivalentTypes.create(ElementTypeId.kInt16, pa.int16()),
+    _EquivalentTypes.create(ElementTypeId.kInt32, pa.int32()),
+    _EquivalentTypes.create(ElementTypeId.kInt64, pa.int64()),
+    _EquivalentTypes.create(ElementTypeId.kFloat, pa.float32()),
+    _EquivalentTypes.create(ElementTypeId.kDouble, pa.float64()),
+    _EquivalentTypes.create(ElementTypeId.kBool, pa.bool_()),
+    _EquivalentTypes.create(ElementTypeId.kString, pa.string()),
+    _EquivalentTypes.create(ElementTypeId.kTimestamp, pa.timestamp("ns", "UTC"))
 ]
 
 # Converts a Deephaven type (an enum) into the corresponding PyArrow type.
