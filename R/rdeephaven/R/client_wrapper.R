@@ -75,6 +75,8 @@ setMethod(
     if (length(int_options) != 0) {
       verify_list("int_options", int_options, TRUE)
       for (key in names(int_options)) {
+        verify_string("key", key, TRUE)
+        verify_int("value", int_options[[key]], TRUE)
         options$add_int_options(key, int_options[[key]])
       }
     }
@@ -82,6 +84,8 @@ setMethod(
     if (length(string_options) != 0) {
       verify_list("string_options", string_options, TRUE)
       for (key in names(string_options)) {
+        verify_string("key", key, TRUE)
+        verify_string("value", string_options[[key]], TRUE)
         options$add_string_options(key, string_options[[key]])
       }
     }
@@ -89,6 +93,8 @@ setMethod(
     if (length(extra_headers) != 0) {
       verify_list("extra_headers", extra_headers, TRUE)
       for (key in names(extra_headers)) {
+        verify_string("key", key, TRUE)
+        verify_string("value", extra_headers[[key]], TRUE)
         options$add_extra_headers(key, extra_headers[[key]])
       }
     }
