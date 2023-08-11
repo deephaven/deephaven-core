@@ -151,8 +151,8 @@ def j_lambda(func: Callable, lambda_jtype: jpy.JType, return_dtype: DType = None
     Java lambda types must contain a single abstract method.
     
     Args:
-        func (Callable): Any Python Callable or object with an 'apply' method that accepts the same arguments (
-            number and type) the target Java lambda type
+        func (Callable): Any Python Callable or object with an 'apply' method that accepts the same arguments 
+            (number and type) the target Java lambda type
         lambda_jtype (jpy.JType): The Java lambda interface to wrap the provided callable in
         return_dtype (DType): The expected return type if conversion should be applied.  None (the default) does not
             attempt to convert the return value and returns a Java Object.
