@@ -21,6 +21,7 @@ import java.util.*;
 import java.util.function.BiFunction;
 import java.util.function.Consumer;
 import java.util.function.Predicate;
+import java.util.function.Supplier;
 
 /**
  * {@link TableLocationKeyFinder Location finder} that will traverse a directory hierarchy and infer partitions from
@@ -74,13 +75,16 @@ public class KeyValuePartitionLayout<TLK extends TableLocationKey> implements Ta
 
     private final File tableRootDirectory;
     private final Predicate<Path> pathFilter;
-    private final LocationTableBuilder locationTableBuilder;
+    private final Supplier<LocationTableBuilder> locationTableBuilderFactory;
     private final BiFunction<Path, Map<String, Comparable<?>>, TLK> keyFactory;
     private final int maxPartitioningLevels;
 
     /**
      * @param tableRootDirectory The directory to traverse from
      * @param pathFilter Filter to determine whether a regular file should be used to create a key
+     * @param locationTableBuilderFactory Factory for {@link LocationTableBuilder builders} used to organize partition
+     *        information; as builders are typically stateful, a new builder is created each time this
+     *        KeyValuePartitionLayout is used to {@link #findKeys(Consumer) find keys}
      * @param keyFactory Key factory function
      * @param maxPartitioningLevels Maximum partitioning levels to traverse. Must be {@code >= 0}. {@code 0} means only
      *        look at files in {@code tableRootDirectory} and find no partitions.
@@ -88,12 +92,12 @@ public class KeyValuePartitionLayout<TLK extends TableLocationKey> implements Ta
     public KeyValuePartitionLayout(
             @NotNull final File tableRootDirectory,
             @NotNull final Predicate<Path> pathFilter,
-            @NotNull final LocationTableBuilder locationTableBuilder,
+            @NotNull final Supplier<LocationTableBuilder> locationTableBuilderFactory,
             @NotNull final BiFunction<Path, Map<String, Comparable<?>>, TLK> keyFactory,
             final int maxPartitioningLevels) {
         this.tableRootDirectory = tableRootDirectory;
         this.pathFilter = pathFilter;
-        this.locationTableBuilder = locationTableBuilder;
+        this.locationTableBuilderFactory = locationTableBuilderFactory;
         this.keyFactory = keyFactory;
         this.maxPartitioningLevels = Require.geqZero(maxPartitioningLevels, "maxPartitioningLevels");
     }
@@ -105,8 +109,7 @@ public class KeyValuePartitionLayout<TLK extends TableLocationKey> implements Ta
     @Override
     public void findKeys(@NotNull final Consumer<TLK> locationKeyObserver) {
         final Deque<Path> targetFiles = new ArrayDeque<>();
-
-
+        final LocationTableBuilder locationTableBuilder = locationTableBuilderFactory.get();
         try {
             Files.walkFileTree(tableRootDirectory.toPath(), EnumSet.of(FileVisitOption.FOLLOW_LINKS),
                     maxPartitioningLevels + 1, new SimpleFileVisitor<>() {
