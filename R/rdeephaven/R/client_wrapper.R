@@ -151,7 +151,7 @@ setMethod(
   "empty_table",
   signature = c(client_instance = "Client", size = "numeric"),
   function(client_instance, size) {
-    verify_positive_int("size", size, TRUE)
+    verify_nonnegative_int("size", size, TRUE)
     return(new("TableHandle", .internal_rcpp_object = client_instance@.internal_rcpp_object$empty_table(size)))
   }
 )

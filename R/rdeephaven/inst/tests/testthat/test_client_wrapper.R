@@ -258,7 +258,6 @@ test_that("open_table fails nicely with bad inputs", {
 test_that("empty_table fails nicely with bad inputs", {
   client <- dhConnect(target = "localhost:10000")
 
-  expect_error(empty_table(client, 0), "'size' must be a positive integer. Got 'size' = 0.")
   expect_error(empty_table(client, -3), "'size' must be a positive integer. Got 'size' = -3.")
   expect_error(empty_table(client, 1.2345), "'size' must be an integer. Got 'size' = 1.2345.")
   expect_error(empty_table(client, "hello!"), cat("unable to find an inherited method for function ‘empty_table’ for signature ‘\"Client\", \"character\"’"))
