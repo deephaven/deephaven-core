@@ -3,32 +3,41 @@
  */
 package io.deephaven.engine.table.impl.lang;
 
+import groovy.lang.Closure;
 import io.deephaven.base.Pair;
+import io.deephaven.base.testing.BaseArrayTestCase;
 import io.deephaven.base.verify.Assert;
 import io.deephaven.base.verify.Require;
-import io.deephaven.base.testing.BaseArrayTestCase;
+import io.deephaven.engine.context.ExecutionContext;
+import io.deephaven.engine.context.TestExecutionContext;
 import io.deephaven.engine.table.Table;
-import io.deephaven.engine.util.PyCallableWrapper;
-import io.deephaven.time.DateTime;
-import io.deephaven.vector.*;
 import io.deephaven.engine.table.impl.lang.QueryLanguageParser.QueryLanguageParseException;
-import io.deephaven.vector.Vector;
-import io.deephaven.utils.test.PropertySaver;
+import io.deephaven.engine.testutil.ControlledUpdateGraph;
+import io.deephaven.engine.util.PyCallableWrapper;
 import io.deephaven.util.QueryConstants;
+import io.deephaven.util.SafeCloseable;
 import io.deephaven.util.type.TypeUtils;
-import groovy.lang.Closure;
-import org.apache.commons.text.StringEscapeUtils;
+import io.deephaven.utils.test.PropertySaver;
+import io.deephaven.vector.Vector;
+import io.deephaven.vector.*;
 import org.apache.commons.lang3.exception.ExceptionUtils;
+import org.apache.commons.lang3.mutable.MutableBoolean;
+import org.apache.commons.text.StringEscapeUtils;
+import org.hamcrest.Description;
 import org.jetbrains.annotations.NotNull;
+import org.jmock.api.Invocation;
+import org.jmock.internal.*;
+import org.jmock.lib.action.CustomAction;
+import org.jmock.lib.action.ReturnValueAction;
 import org.jpy.PyObject;
 import org.junit.Before;
 
 import java.awt.*;
 import java.time.Instant;
-import java.util.*;
 import java.util.List;
+import java.util.*;
 
-import static io.deephaven.engine.table.ColumnDefinition.*;
+import static io.deephaven.engine.table.ColumnDefinition.ColumnType;
 import static io.deephaven.engine.table.impl.lang.QueryLanguageParser.isWideningPrimitiveConversion;
 
 @SuppressWarnings("InstantiatingObjectToGetClassObject")
@@ -127,13 +136,12 @@ public class TestQueryLanguageParser extends BaseArrayTestCase {
         variables.put("myDummyInnerClass", LanguageParserDummyClass.InnerClass.class);
         variables.put("myDummyStaticNestedClass", LanguageParserDummyClass.StaticNestedClass.class);
         variables.put("myClosure", Closure.class);
-        variables.put("myPyCallable", PyCallableWrapper.class);
-        variables.put("myDateTime", DateTime.class);
-        variables.put("myEnumValue", LanguageParserDummyEnum.class);
         variables.put("myInstant", Instant.class);
+        variables.put("myEnumValue", LanguageParserDummyEnum.class);
 
         variables.put("myTable", Table.class);
         variables.put("myPyObject", PyObject.class);
+        variables.put("myPyCallable", PyCallableWrapper.class);
 
         variables.put("ExampleQuantity", int.class);
         variables.put("ExampleQuantity2", double.class);
@@ -1685,47 +1693,105 @@ public class TestQueryLanguageParser extends BaseArrayTestCase {
         check(expression, resultExpression, boolean.class, new String[] {"myPyObject"});
     }
 
-    // /**
-    // * Test converting implicit python calls into explicit ones.
-    // */
-    // public void testImplicitPythonCall() throws Exception {
-    // String expression = "myPyCallable()";
-    // String resultExpression = "myPyCallable.call()";
-    //
-    // // TODO: #3267 need to figure out how to mock PyCallableWrapper (or some new parent interface?)
-    // // PyCallableWrapper's static init tries to load python modules, which fails in normal tests.
-    // final PyCallableWrapper mockPyCallable = mock(PyCallableWrapper.class);
-    // final ExecutionContext executionContext = ExecutionContext.createForUnitTests();
-    // executionContext.getQueryScope().putParam(
-    // "myPyCallable",
-    // mockPyCallable);
-    // try (SafeCloseable ignored = executionContext.open()) {
-    // check(expression, resultExpression, Object.class, new String[] {"myPyCallable"});
-    // }
-    //
-    // expression = "myPyCallable(1)";
-    // resultExpression = "myPyCallable.call(1)";
-    // check(expression, resultExpression, Object.class, new String[] {"myPyCallable"});
-    //
-    // expression = "myPyCallable(1, 2, 3)";
-    // resultExpression = "myPyCallable.call(1, 2, 3)";
-    // check(expression, resultExpression, Object.class, new String[] {"myPyCallable"});
-    //
-    // expression = "myPyObject.myPyMethod()";
-    // resultExpression =
-    // "(new io.deephaven.engine.util.PyCallableWrapper(myPyObject.getAttribute(\"myPyMethod\"))).call()";
-    // check(expression, resultExpression, Object.class, new String[] {"myPyObject"});
-    //
-    // expression = "myPyObject.myPyMethod(1)";
-    // resultExpression =
-    // "(new io.deephaven.engine.util.PyCallableWrapper(myPyObject.getAttribute(\"myPyMethod\"))).call(1)";
-    // check(expression, resultExpression, Object.class, new String[] {"myPyObject"});
-    //
-    // expression = "myPyObject.myPyMethod(1, 2, 3)";
-    // resultExpression =
-    // "(new io.deephaven.engine.util.PyCallableWrapper(myPyObject.getAttribute(\"myPyMethod\"))).call(1, 2, 3)";
-    // check(expression, resultExpression, Object.class, new String[] {"myPyObject"});
-    // }
+    public void testPyCallable() throws Exception {
+        String expression = "myPyCallable.FIELD";
+        String resultExpression = "myPyCallable.getAttribute(\"FIELD\")";
+        check(expression, resultExpression, PyObject.class, new String[] {"myPyCallable"});
+
+        //@formatter:off
+        /*
+         * This is based on a test case test_callable_attrs_in_query():
+         *
+         * foo = Foo() # This 'foo' instance is a PyCallableWrapper, not a PyObject
+         * rt = empty_table(1).update("Col = (int)foo.do_something_instance()")
+         * self.assertTrue(rt.columns[0].data_type == dtypes.int32)
+         */
+        //@formatter:on
+        expression = "myPyCallable.pyMethod()";
+        resultExpression =
+                "(new io.deephaven.engine.table.impl.lang.PyCallableWrapperDummyImpl(myPyCallable.getAttribute(\"pyMethod\"))).call()";
+        // the result is an Object, not a PyObject -- Object is the return type of PyCallableWrapper.getAttribute().
+        check(expression, resultExpression, Object.class, new String[] {"myPyCallable"});
+
+        expression = "(int)myPyCallable.FIELD";
+        resultExpression = "intPyCast(myPyCallable.getAttribute(\"FIELD\"))";
+        check(expression, resultExpression, int.class, new String[] {"myPyCallable"});
+
+        expression = "myPyCallable.getAttribute(\"FIELD\")";
+        resultExpression = "myPyCallable.getAttribute(\"FIELD\")";
+        check(expression, resultExpression, PyObject.class, new String[] {"myPyCallable"});
+    }
+
+    /**
+     * Test converting implicit python calls into explicit ones.
+     */
+    public void testImplicitPythonCallNoScope() throws Exception {
+        final PyCallableWrapper mockPyCallable0 = getMockPyCallable();
+        final PyCallableWrapper mockPyCallable1 = getMockPyCallable(int.class);
+        final PyCallableWrapper mockPyCallable3 = getMockPyCallable(int.class, int.class, int.class);
+
+        variables.put("myIntConstant", int.class);
+        variables.put("myIntCol", int.class);
+        variables.put("myPyCallable0", PyCallableWrapper.class);
+        variables.put("myPyCallable1", PyCallableWrapper.class);
+        variables.put("myPyCallable3", PyCallableWrapper.class);
+
+        try (SafeCloseable ignored = TestExecutionContext.createForUnitTests().open()) {
+            ExecutionContext.getContext().getUpdateGraph().<ControlledUpdateGraph>cast().enableUnitTestMode();
+            ExecutionContext.getContext().getQueryScope().putParam("myPyCallable0", mockPyCallable0);
+            ExecutionContext.getContext().getQueryScope().putParam("myPyCallable1", mockPyCallable1);
+            ExecutionContext.getContext().getQueryScope().putParam("myPyCallable3", mockPyCallable3);
+
+            ExecutionContext.getContext().getQueryScope().putParam("myInt", 42);
+
+            String expression = "myPyCallable0()";
+            String resultExpression = "myPyCallable0.call()";
+            check(expression, resultExpression, Object.class, new String[] {"myPyCallable0"});
+
+            expression = "myPyCallable1(1)";
+            resultExpression = "myPyCallable1.call(1)";
+            check(expression, resultExpression, Object.class, new String[] {"myPyCallable1"});
+
+            expression = "myPyCallable3(1, 2, 3)";
+            resultExpression = "myPyCallable3.call(1, 2, 3)";
+            check(expression, resultExpression, Object.class, new String[] {"myPyCallable3"});
+
+            expression = "myPyCallable3(myIntConstant, 2, 3)";
+            resultExpression = "myPyCallable3.call(myIntConstant, 2, 3)";
+            check(expression, resultExpression, Object.class, new String[] {"myPyCallable3", "myIntConstant"});
+
+            // prepareVectorizationArgs
+            expression = "myPyCallable3(myIntCol, 2, 3)";
+            resultExpression = "myPyCallable3.call(myIntCol, 2, 3)";
+            check(expression, resultExpression, Object.class, new String[] {"myPyCallable3", "myIntCol"});
+        }
+    }
+
+    private PyCallableWrapper getMockPyCallable(Class<?>... parameterTypes) {
+        return new PyCallableWrapperDummyImpl(List.of(parameterTypes));
+    }
+
+    /**
+     * Test converting implicit python calls into explicit ones.
+     */
+    public void testImplicitPythonCallWithScope() throws Exception {
+        try (SafeCloseable ignored = TestExecutionContext.createForUnitTests().open()) {
+            String expression = "myPyObject.myPyMethod()";
+            String resultExpression =
+                    "(new io.deephaven.engine.table.impl.lang.PyCallableWrapperDummyImpl(myPyObject.getAttribute(\"myPyMethod\"))).call()";
+            check(expression, resultExpression, Object.class, new String[] {"myPyObject"});
+
+            expression = "myPyObject.myPyMethod(1)";
+            resultExpression =
+                    "(new io.deephaven.engine.table.impl.lang.PyCallableWrapperDummyImpl(myPyObject.getAttribute(\"myPyMethod\"))).call(1)";
+            check(expression, resultExpression, Object.class, new String[] {"myPyObject"});
+
+            expression = "myPyObject.myPyMethod(1, 2, 3)";
+            resultExpression =
+                    "(new io.deephaven.engine.table.impl.lang.PyCallableWrapperDummyImpl(myPyObject.getAttribute(\"myPyMethod\"))).call(1, 2, 3)";
+            check(expression, resultExpression, Object.class, new String[] {"myPyObject"});
+        }
+    }
 
     /**
      * Test calling the default methods from {@link Object}. (In the past, these were not recognized on interfaces.)
@@ -3089,7 +3155,8 @@ public class TestQueryLanguageParser extends BaseArrayTestCase {
                         testOverrideClassLookups,
                         variables, variableParameterizedTypes,
                         true,
-                        verifyIdempotence).getResult();
+                        verifyIdempotence,
+                        PyCallableWrapperDummyImpl.class.getName()).getResult();
 
         assertEquals(resultType, result.getType());
         assertEquals(resultExpression, result.getConvertedExpression());

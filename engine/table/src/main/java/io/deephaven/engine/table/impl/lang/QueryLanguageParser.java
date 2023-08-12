@@ -88,9 +88,9 @@ import com.github.javaparser.ast.visitor.GenericVisitorAdapter;
 import com.github.javaparser.ast.visitor.GenericVisitor;
 import com.github.javaparser.ast.visitor.VoidVisitor;
 import com.github.javaparser.printer.lexicalpreservation.LexicalPreservingPrinter;
+import groovy.lang.Closure;
 import io.deephaven.base.Pair;
 import io.deephaven.base.verify.Assert;
-import io.deephaven.base.verify.Require;
 import io.deephaven.configuration.Configuration;
 import io.deephaven.engine.context.ExecutionContext;
 import io.deephaven.engine.context.QueryScope;
@@ -99,6 +99,7 @@ import io.deephaven.engine.table.impl.ShiftedColumnsFactory;
 import io.deephaven.engine.util.PyCallableWrapper;
 import io.deephaven.engine.util.PyCallableWrapper.ColumnChunkArgument;
 import io.deephaven.engine.util.PyCallableWrapper.ConstantChunkArgument;
+import io.deephaven.engine.util.PyCallableWrapperJpyImpl;
 import io.deephaven.internal.log.LoggerFactory;
 import io.deephaven.io.logger.Logger;
 import io.deephaven.util.type.TypeUtils;
@@ -141,6 +142,7 @@ public final class QueryLanguageParser extends GenericVisitorAdapter<Class<?>, Q
     private static final boolean VERIFY_AST_CHANGES = true;
 
     private static final Logger log = LoggerFactory.getLogger(QueryLanguageParser.class);
+    private static final String GET_ATTRIBUTE_METHOD_NAME = "getAttribute";
     private final Collection<Package> packageImports;
     private final Collection<Class<?>> classImports;
     private final Collection<Class<?>> staticImports;
@@ -165,6 +167,19 @@ public final class QueryLanguageParser extends GenericVisitorAdapter<Class<?>, Q
 
     private final HashMap<Node, Class<?>> cachedTypes = new HashMap<>();
     private final boolean unboxArguments;
+    private static final Method PY_CALLABLE_WRAPPER_CALL_METHOD;
+
+    static {
+        try {
+            PY_CALLABLE_WRAPPER_CALL_METHOD = PyCallableWrapper.class.getMethod("call", Object[].class);
+        } catch (NoSuchMethodException e) {
+            throw new RuntimeException("Could not locate PyCallableWrapper.call() method", e);
+        }
+    }
+
+
+    @NotNull
+    private final String pyCallableWrapperImplName;
 
     /**
      * Create a QueryLanguageParser and parse the given {@code expression}. After construction, the
@@ -221,7 +236,8 @@ public final class QueryLanguageParser extends GenericVisitorAdapter<Class<?>, Q
                 variables,
                 variableTypeArguments,
                 unboxArguments,
-                false);
+                false,
+                PyCallableWrapperJpyImpl.class.getName());
     }
 
     QueryLanguageParser(
@@ -233,8 +249,8 @@ public final class QueryLanguageParser extends GenericVisitorAdapter<Class<?>, Q
             final Map<String, Class<?>> variables,
             final Map<String, Class<?>[]> variableTypeArguments,
             final boolean unboxArguments,
-            final boolean verifyIdempotence)
-            throws QueryLanguageParseException {
+            final boolean verifyIdempotence,
+            final @NotNull String pyCallableWrapperImplName) throws QueryLanguageParseException {
         this.packageImports = packageImports == null ? Collections.emptySet() : Set.copyOf(packageImports);
         this.classImports = classImports == null ? Collections.emptySet() : Set.copyOf(classImports);
         this.staticImports = staticImports == null ? Collections.emptySet() : Set.copyOf(staticImports);
@@ -243,6 +259,9 @@ public final class QueryLanguageParser extends GenericVisitorAdapter<Class<?>, Q
         this.variableTypeArguments =
                 variableTypeArguments == null ? Collections.emptyMap() : Map.copyOf(variableTypeArguments);
         this.unboxArguments = unboxArguments;
+
+        Assert.nonempty(pyCallableWrapperImplName, "pyCallableWrapperImplName");
+        this.pyCallableWrapperImplName = pyCallableWrapperImplName;
 
         // Convert backticks *before* converting single equals!
         // Backticks must be converted first in order to properly identify single-equals signs within
@@ -291,7 +310,7 @@ public final class QueryLanguageParser extends GenericVisitorAdapter<Class<?>, Q
                     // make sure the parser has no problem reparsing its own output and makes no changes to it.
                     final QueryLanguageParser validationQueryLanguageParser = new QueryLanguageParser(printedSource,
                             packageImports, classImports, staticImports, testOverrideClassLookups, variables,
-                            variableTypeArguments, false, false);
+                            variableTypeArguments, false, false, pyCallableWrapperImplName);
 
                     final String reparsedSource = validationQueryLanguageParser.result.source;
                     Assert.equals(
@@ -303,7 +322,8 @@ public final class QueryLanguageParser extends GenericVisitorAdapter<Class<?>, Q
                             validationQueryLanguageParser.result.type,
                             "validationQueryLanguageParser.result.type");
                 } catch (Exception ex) {
-                    throw new ParserVerificationFailure("Expression result failed reparse check", ex);
+                    throw new ParserVerificationFailure(
+                            "Failed idempotence check: expression result modified on reparse", ex);
                 }
             }
 
@@ -586,7 +606,7 @@ public final class QueryLanguageParser extends GenericVisitorAdapter<Class<?>, Q
                 // is something that could be potentially implicitly call()ed (e.g. PyCallableWrapper/Closure),
                 // then try to add its call() method to the acceptableMethods list.
                 final Class<?> methodClass = variables.get(methodName);
-                if (methodClass != null && isPotentialImplicitCall(methodClass)) {
+                if (methodClass != null && isPotentialImplicitCall(methodName, methodClass)) {
                     for (Method method : methodClass.getMethods()) {
                         possiblyAddExecutable(acceptableMethods, method, "call", paramTypes, typeArguments);
                     }
@@ -601,11 +621,11 @@ public final class QueryLanguageParser extends GenericVisitorAdapter<Class<?>, Q
                 possiblyAddExecutable(acceptableMethods, method, methodName, paramTypes, typeArguments);
             }
 
-            if (acceptableMethods.isEmpty() && scope.equals(org.jpy.PyObject.class)) {
-                // This is a Python method call; just assume it exists and wrap in PythonScopeJpyImpl.CallableWrapper
-                for (Method method : PyCallableWrapper.class.getDeclaredMethods()) {
-                    possiblyAddExecutable(acceptableMethods, method, "call", paramTypes, typeArguments);
-                }
+            if (acceptableMethods.isEmpty()
+                    && (scope.equals(org.jpy.PyObject.class) || PyCallableWrapper.class.isAssignableFrom(scope))) {
+                // This is a Python method call; just assume it exists and wrap in a PyCallableWrapper
+                possiblyAddExecutable(acceptableMethods, PY_CALLABLE_WRAPPER_CALL_METHOD, "call", paramTypes,
+                        typeArguments);
             } else {
                 // If 'scope' is an interface, we must explicitly consider the methods in Object
                 if (scope.isInterface()) {
@@ -631,8 +651,11 @@ public final class QueryLanguageParser extends GenericVisitorAdapter<Class<?>, Q
         return bestMethod;
     }
 
-    private static boolean isPotentialImplicitCall(Class<?> methodClass) {
-        return PyCallableWrapper.class.isAssignableFrom(methodClass) || methodClass == groovy.lang.Closure.class;
+    private static boolean isPotentialImplicitCall(final String methodName, final Class<?> methodClass) {
+        final boolean isPotentialPythonImplicitCall =
+                PyCallableWrapper.class.isAssignableFrom(methodClass) && !GET_ATTRIBUTE_METHOD_NAME.equals(methodName);
+        final boolean isPotentialGroovyImplicitCall = methodClass == Closure.class && !"call".equals(methodName);
+        return isPotentialPythonImplicitCall || isPotentialGroovyImplicitCall;
     }
 
     private Class<?> getMethodReturnType(Class<?> scope, String methodName, Class<?>[] paramTypes,
@@ -1182,7 +1205,7 @@ public final class QueryLanguageParser extends GenericVisitorAdapter<Class<?>, Q
             final Class<?>[] argumentTypes, final Class<?>[] expressionTypes,
             final Class<?>[][] typeArguments, Expression[] expressions) {
         // For Python callables, all Vector columns should be converted into arrays
-        if (executable.getDeclaringClass() == PyCallableWrapper.class) {
+        if (PyCallableWrapper.class.isAssignableFrom(executable.getDeclaringClass())) {
             for (int ei = 0; ei < expressionTypes.length; ei++) {
                 if (isTypedVector(expressionTypes[ei])) {
                     // replace node in its parent, otherwise setArguments() will clear the parent of 'expressions[ei]'
@@ -2111,7 +2134,7 @@ public final class QueryLanguageParser extends GenericVisitorAdapter<Class<?>, Q
                 try {
                     // For Python object, the type of the field is PyObject by default, the actual data type if
                     // primitive will only be known at runtime
-                    if (scopeType == PyObject.class || scopeType == PyCallableWrapper.class) {
+                    if (scopeType == PyObject.class || PyCallableWrapper.class.isAssignableFrom(scopeType)) {
                         ret = PyObject.class;
                     } else {
                         ret = scopeType.getField(fieldName).getType();
@@ -2152,7 +2175,7 @@ public final class QueryLanguageParser extends GenericVisitorAdapter<Class<?>, Q
             // replace the field access with the getAttribute() call
             // we do not need to visit() (since we already visited the scope)
             final MethodCallExpr pyGetAttributeMethodCall =
-                    new MethodCallExpr(n.getScope(), "getAttribute", getAttributeArgs);
+                    new MethodCallExpr(n.getScope(), GET_ATTRIBUTE_METHOD_NAME, getAttributeArgs);
             replaceChildExpression(
                     n.getParentNode().orElseThrow(),
                     n,
@@ -2302,7 +2325,7 @@ public final class QueryLanguageParser extends GenericVisitorAdapter<Class<?>, Q
         }
         n.setArguments(NodeList.nodeList(convertedArgExpressions));
 
-        if (isPotentialImplicitCall(method.getDeclaringClass())) {
+        if (isPotentialImplicitCall(methodName, method.getDeclaringClass())) {
             if (scopeType == null) { // python func call or Groovy closure call
                 /*
                  * @formatter:off
@@ -2315,6 +2338,8 @@ public final class QueryLanguageParser extends GenericVisitorAdapter<Class<?>, Q
 
                 final MethodCallExpr callMethodCall =
                         new MethodCallExpr(n.getNameAsExpression(), "call", n.getArguments());
+
+                callMethodCall.setComment(new PyCallableDetailsComment(null, methodName));
 
                 replaceChildExpression(
                         n.getParentNode().orElseThrow(),
@@ -2340,26 +2365,31 @@ public final class QueryLanguageParser extends GenericVisitorAdapter<Class<?>, Q
 
 
                 final boolean isExplicitCall = methodName.equals("call")
-                        || PyObject.class.isAssignableFrom(scopeType) && methodName.equals("getAttribute");
+                        || PyObject.class.isAssignableFrom(scopeType) && methodName.equals(GET_ATTRIBUTE_METHOD_NAME);
+
+                final Expression scopeExpr = n.getScope().orElseThrow();
                 if (isExplicitCall) {
                     printer.append(scopePrinter);
                     printer.append(methodName);
                 } else {
                     final MethodCallExpr getAttributeCall = new MethodCallExpr(
-                            n.getScope().orElseThrow(),
-                            "getAttribute",
+                            scopeExpr,
+                            GET_ATTRIBUTE_METHOD_NAME,
                             NodeList.nodeList(new StringLiteralExpr(methodName)));
 
 
                     final ObjectCreationExpr newPyCallableExpr = new ObjectCreationExpr(
                             null,
-                            new ClassOrInterfaceType(null, "io.deephaven.engine.util.PyCallableWrapper"),
+                            new ClassOrInterfaceType(null, pyCallableWrapperImplName),
                             NodeList.nodeList(getAttributeCall));
 
                     final MethodCallExpr callMethodCall = new MethodCallExpr(
                             new EnclosedExpr(newPyCallableExpr),
                             "call",
                             n.getArguments());
+
+                    callMethodCall
+                            .setComment(new PyCallableDetailsComment(scopePrinter.builder.toString(), methodName));
 
                     // Replace the original method call we were visit()ing with the new one
                     replaceChildExpression(
@@ -2378,9 +2408,9 @@ public final class QueryLanguageParser extends GenericVisitorAdapter<Class<?>, Q
 
         final Class<?>[] argTypes = printArguments(convertedArgExpressions, printer);
 
-        // Python function call vectorization
-        if (PyCallableWrapper.class.equals(scopeType)) {
-            vectorizePythonCallable(n, scopeType, convertedArgExpressions, argTypes);
+        // Attempt python function call vectorization.
+        if (scopeType != null && PyCallableWrapper.class.isAssignableFrom(scopeType)) {
+            tryVectorizePythonCallable(n, scopeType, convertedArgExpressions, argTypes);
         }
 
         return calculateMethodReturnTypeUsingGenerics(scopeType, n.getScope().orElse(null), method, expressionTypes,
@@ -2393,17 +2423,93 @@ public final class QueryLanguageParser extends GenericVisitorAdapter<Class<?>, Q
                 : exprNodeList.toArray(new Expression[0]);
     }
 
-    private void vectorizePythonCallable(MethodCallExpr n, Class<?> scopeType, Expression[] argExpressions,
-            Class<?>[] argTypes) {
+    /**
+     * Vectorizes a Python callable, if possible.
+     * 
+     * @param n The method call expression. The scope must a PyCallableWrapper (e.g.,
+     *        {@code new PyCallableWrapperDummyImpl(somePyObj).call()}).
+     * @param scopeType The scope type. Must be a {@code Class} that extends {@link PyCallableWrapper}.
+     * @param argExpressions The argument expressions
+     * @param argTypes The actual types of the {@code argExpressions} (not the types in the method signature).
+     */
+    private void tryVectorizePythonCallable(@NotNull MethodCallExpr n,
+            @NotNull Class<?> scopeType,
+            @NotNull Expression[] argExpressions,
+            @NotNull Class<?>[] argTypes) {
         final String invokedMethodName = n.getNameAsString();
 
         // assertions related to when the parser should even attempt vectorization:
-        Assert.equals(scopeType, "scopeType", PyCallableWrapper.class, "PyCallableWrapper.class");
+        Assert.neqNull(scopeType, "scopeType");
+        Assert.assertion(
+                PyCallableWrapper.class.isAssignableFrom(scopeType),
+                "PyCallableWrapper.class.isAssignableFrom(scopeType)",
+                scopeType, "scopeType");
+
+        if (GET_ATTRIBUTE_METHOD_NAME.equals(invokedMethodName)) {
+            // Only PyCallableWrapper.getAttribute()/PyCallableWrapper.call() may be invoked from the query language.
+            // Calls to getAttribute() are not currently eligible for vectorization.
+            if (log.isDebugEnabled()) {
+                log.debug().append("Python function call ")
+                        .append(n.toString())
+                        .append(" is not auto-vectorizable:")
+                        .append(" getAttribute() is not currently vectorizable.")
+                        .endl();
+            }
+            return;
+        }
         Assert.equals(invokedMethodName, "invokedMethodName", "call");
 
-        final String pyMethodName = n.getScope().orElseThrow().toString();
+        final PyCallableDetailsComment pyCallableDetailsComment;
+        {
+            final Optional<Comment> pyMethodCallableCommentOptional = n.getComment();
+            if (pyMethodCallableCommentOptional.isEmpty()) {
+                // Currently, we can only vectorize Python method calls that were not explicitly wrapped by the user.
+                // Supported: `myPythonFunc(a, b, c)`
+                // Not supported: `new PyCallableWrapperJpyImpl(myPythonFunc).call(a, b, c)`
+                // Not supported: `myPyObj.myPythonFunc(a, b, c)`
+                // Not supported: `new PyCallableWrapperJpyImpl(myPyObj.getAttribute("myPythonFunc")).call(a, b, c)`
+                //
+                // (This is because additional information is stored in a PyCallableDetailsComment when the parser
+                // handles implicit calls.)
+                if (log.isDebugEnabled()) {
+                    log.debug().append("Python function call ")
+                            .append(n.toString())
+                            .append(" is not auto-vectorizable:")
+                            .append(" PyCallableDetailsComment not found.")
+                            .endl();
+                }
+                return;
+            }
+
+            final Comment pyMethodCallComment = pyMethodCallableCommentOptional.get();
+            Assert.instanceOf(pyMethodCallComment, "pyMethodCallComment", PyCallableDetailsComment.class);
+            pyCallableDetailsComment = (PyCallableDetailsComment) pyMethodCallComment;
+        }
+
+
+        if (pyCallableDetailsComment.pythonScopeExpr != null) {
+            if (log.isDebugEnabled()) {
+                log.debug().append("Python function call ")
+                        .append(n.toString())
+                        .append(" is not auto-vectorizable:")
+                        .append(" method call is scoped. Scope expression: ")
+                        .append(pyCallableDetailsComment.pythonScopeExpr)
+                        .endl();
+            }
+            // Currently, only static Python method calls can be vectorized.
+            // Supported: `myPythonFunc(a, b, c)`
+            // Not supported: `myPyObj.myPythonFunc(a, b, c)`
+            return;
+        }
+
+        final String pyMethodName = pyCallableDetailsComment.pythonMethodName;
+        Assert.nonempty(pyMethodName, "pyMethodName");
 
         final QueryScope queryScope = ExecutionContext.getContext().getQueryScope();
+
+        // Note: "paramValueRaw" needs to be the *actual PyCallableWrapper* corresponding to the method.
+        // TODO: Support vectorization of instance methods of constant objects
+        // ^^ i.e., create a constant for `new PyCallableWrapperImpl(pyScopeObj.getAttribute("pyMethodName"))`
         final Object paramValueRaw = queryScope.readParamValue(pyMethodName, null);
         if (paramValueRaw == null) {
             throw new IllegalStateException("Resolved Python function name " + pyMethodName + " not found");
@@ -2419,7 +2525,8 @@ public final class QueryLanguageParser extends GenericVisitorAdapter<Class<?>, Q
         }
     }
 
-    private void prepareVectorization(MethodCallExpr n, Expression[] expressions, PyCallableWrapper pyCallableWrapper) {
+    private void prepareVectorization(@NotNull MethodCallExpr n, @NotNull Expression[] expressions,
+            PyCallableWrapper pyCallableWrapper) {
         try {
             checkVectorizability(n, expressions, pyCallableWrapper);
             pyCallableWrapper.setVectorizable(true);
@@ -2441,7 +2548,9 @@ public final class QueryLanguageParser extends GenericVisitorAdapter<Class<?>, Q
         }
     }
 
-    private void checkVectorizability(MethodCallExpr n, Expression[] expressions, PyCallableWrapper pyCallableWrapper) {
+    private void checkVectorizability(@NotNull final MethodCallExpr n,
+            @NotNull final Expression[] expressions,
+            @NotNull final PyCallableWrapper pyCallableWrapper) {
 
         pyCallableWrapper.parseSignature();
 
@@ -2450,13 +2559,13 @@ public final class QueryLanguageParser extends GenericVisitorAdapter<Class<?>, Q
         // functions must be used alone as the entire expression after removing the enclosing parentheses.
         Node n1 = n;
         while (n1.hasParentNode()) {
-            n1 = n1.getParentNode().get();
-            Class cls = n1.getClass();
+            n1 = n1.getParentNode().orElseThrow();
+            Class<?> cls = n1.getClass();
 
             if (cls == CastExpr.class) {
                 throw new PythonCallVectorizationFailure(
                         "The return values of Python vectorized function can't be cast: " + n1);
-            } else if (cls != EnclosedExpr.class) {
+            } else if (cls != EnclosedExpr.class && cls != WrapperNode.class) {
                 throw new PythonCallVectorizationFailure(
                         "Python vectorized function can't be used in another expression: " + n1);
             }
@@ -3089,6 +3198,27 @@ public final class QueryLanguageParser extends GenericVisitorAdapter<Class<?>, Q
 
         @Override
         public <A> void accept(VoidVisitor<A> v, A arg) {}
+    }
+
+    /**
+     * A special "comment" used to indicate the name of a Python method that has been transformed into a more complex
+     * expression. For example, {@code myPyObj.myPyMethod()} will be transformed into
+     * {@code (new io.deephaven.engine.table.impl.lang.PyCallableWrapperDummyImpl(myPyObject.getAttribute("myPyMethod"))).call()},
+     * and the EnclosedExpr used as the scope of the {@code call()} method will have a PyCallableDetailsComment with the
+     * {@code "myPyMethod"} as its {@link PyCallableDetailsComment#pythonMethodName}.
+     */
+    private static class PyCallableDetailsComment extends QueryLanguageParserComment {
+
+        @Nullable
+        final String pythonScopeExpr;
+        @NotNull
+        final String pythonMethodName;
+
+        private PyCallableDetailsComment(@Nullable String pythonScopeExpr, @NotNull String pythonMethodName) {
+            super("PY_CALLABLE_NAME[(" + pythonScopeExpr + ")." + pythonMethodName + ']');
+            this.pythonScopeExpr = pythonScopeExpr;
+            this.pythonMethodName = pythonMethodName;
+        }
     }
 
     private static class WrapperNode extends Node {

@@ -17,7 +17,7 @@ import io.deephaven.engine.table.impl.BaseTable;
 import io.deephaven.engine.table.impl.lang.QueryLanguageParser;
 import io.deephaven.engine.table.impl.select.python.ArgumentsChunked;
 import io.deephaven.engine.table.impl.select.python.DeephavenCompatibleFunction;
-import io.deephaven.engine.util.PyCallableWrapper;
+import io.deephaven.engine.util.PyCallableWrapperJpyImpl;
 import io.deephaven.internal.log.LoggerFactory;
 import io.deephaven.io.logger.Logger;
 import io.deephaven.time.TimeLiteralReplacedExpression;
@@ -247,12 +247,15 @@ public abstract class AbstractConditionFilter extends WhereFilterImpl {
     private void checkAndInitializeVectorization(QueryLanguageParser.Result result,
             List<QueryScopeParam<?>> paramsList) {
 
-        PyCallableWrapper[] cws = paramsList.stream().filter(p -> p.getValue() instanceof PyCallableWrapper)
-                .map(p -> p.getValue()).toArray(PyCallableWrapper[]::new);
+        // noinspection SuspiciousToArrayCall
+        final PyCallableWrapperJpyImpl[] cws = paramsList.stream()
+                .filter(p -> p.getValue() instanceof PyCallableWrapperJpyImpl)
+                .map(QueryScopeParam::getValue)
+                .toArray(PyCallableWrapperJpyImpl[]::new);
         if (cws.length != 1) {
             return;
         }
-        PyCallableWrapper pyCallableWrapper = cws[0];
+        final PyCallableWrapperJpyImpl pyCallableWrapper = cws[0];
 
         if (pyCallableWrapper.isVectorizable()) {
             checkReturnType(result, pyCallableWrapper.getReturnType());
