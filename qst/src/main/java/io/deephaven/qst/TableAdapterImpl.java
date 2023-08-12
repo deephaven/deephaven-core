@@ -17,7 +17,7 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.stream.Collectors;
 
-class TableAdapterImpl<TOPS extends TableOperations<TOPS, TABLE>, TABLE> implements Visitor {
+class TableAdapterImpl<TOPS extends TableOperations<TOPS, TABLE>, TABLE> implements Visitor<Void> {
 
     // Note: instead of having the visitor recursively resolve dependencies, we are explicitly walking all nodes of the
     // tree in post-order. In some sense, emulating a recursive ordering, but it explicitly solves some state management
@@ -81,117 +81,136 @@ class TableAdapterImpl<TOPS extends TableOperations<TOPS, TABLE>, TABLE> impleme
     }
 
     @Override
-    public void visit(EmptyTable emptyTable) {
+    public Void visit(EmptyTable emptyTable) {
         addTable(emptyTable, tableCreation.of(emptyTable));
+        return null;
     }
 
     @Override
-    public void visit(NewTable newTable) {
+    public Void visit(NewTable newTable) {
         addTable(newTable, tableCreation.of(newTable));
+        return null;
     }
 
     @Override
-    public void visit(TimeTable timeTable) {
+    public Void visit(TimeTable timeTable) {
         addTable(timeTable, tableCreation.of(timeTable));
+        return null;
     }
 
     @Override
-    public void visit(MergeTable mergeTable) {
+    public Void visit(MergeTable mergeTable) {
         List<TABLE> tables =
                 mergeTable.tables().stream().map(this::table).collect(Collectors.toList());
         addTable(mergeTable, tableCreation.merge(tables));
+        return null;
     }
 
     @Override
-    public void visit(HeadTable headTable) {
+    public Void visit(HeadTable headTable) {
         addOp(headTable, parentOps(headTable).head(headTable.size()));
+        return null;
     }
 
     @Override
-    public void visit(TailTable tailTable) {
+    public Void visit(TailTable tailTable) {
         addOp(tailTable, parentOps(tailTable).tail(tailTable.size()));
+        return null;
     }
 
     @Override
-    public void visit(ReverseTable reverseTable) {
+    public Void visit(ReverseTable reverseTable) {
         addOp(reverseTable, parentOps(reverseTable).reverse());
+        return null;
     }
 
     @Override
-    public void visit(SortTable sortTable) {
+    public Void visit(SortTable sortTable) {
         addOp(sortTable, parentOps(sortTable).sort(sortTable.columns()));
+        return null;
     }
 
     @Override
-    public void visit(SnapshotTable snapshotTable) {
+    public Void visit(SnapshotTable snapshotTable) {
         final TOPS base = ops(snapshotTable.base());
         addOp(snapshotTable, base.snapshot());
+        return null;
     }
 
     @Override
-    public void visit(SnapshotWhenTable snapshotWhenTable) {
+    public Void visit(SnapshotWhenTable snapshotWhenTable) {
         final TOPS base = ops(snapshotWhenTable.base());
         final TABLE trigger = table(snapshotWhenTable.trigger());
         addOp(snapshotWhenTable, base.snapshotWhen(trigger, snapshotWhenTable.options()));
+        return null;
     }
 
     @Override
-    public void visit(WhereTable whereTable) {
+    public Void visit(WhereTable whereTable) {
         addOp(whereTable, parentOps(whereTable).where(whereTable.filter()));
+        return null;
     }
 
     @Override
-    public void visit(WhereInTable whereInTable) {
+    public Void visit(WhereInTable whereInTable) {
         final TOPS left = ops(whereInTable.left());
         final TABLE right = table(whereInTable.right());
         final TOPS result = whereInTable.inverted() ? left.whereNotIn(right, whereInTable.matches())
                 : left.whereIn(right, whereInTable.matches());
         addOp(whereInTable, result);
+        return null;
     }
 
     @Override
-    public void visit(ViewTable viewTable) {
+    public Void visit(ViewTable viewTable) {
         addOp(viewTable, parentOps(viewTable).view(viewTable.columns()));
+        return null;
     }
 
     @Override
-    public void visit(SelectTable selectTable) {
+    public Void visit(SelectTable selectTable) {
         addOp(selectTable, parentOps(selectTable).select(selectTable.columns()));
+        return null;
     }
 
     @Override
-    public void visit(UpdateViewTable updateViewTable) {
+    public Void visit(UpdateViewTable updateViewTable) {
         addOp(updateViewTable, parentOps(updateViewTable).updateView(updateViewTable.columns()));
+        return null;
     }
 
     @Override
-    public void visit(UpdateTable updateTable) {
+    public Void visit(UpdateTable updateTable) {
         addOp(updateTable, parentOps(updateTable).update(updateTable.columns()));
+        return null;
     }
 
     @Override
-    public void visit(LazyUpdateTable lazyUpdateTable) {
+    public Void visit(LazyUpdateTable lazyUpdateTable) {
         addOp(lazyUpdateTable, parentOps(lazyUpdateTable).lazyUpdate(lazyUpdateTable.columns()));
+        return null;
     }
 
     @Override
-    public void visit(NaturalJoinTable naturalJoinTable) {
+    public Void visit(NaturalJoinTable naturalJoinTable) {
         final TOPS left = ops(naturalJoinTable.left());
         final TABLE right = table(naturalJoinTable.right());
         addOp(naturalJoinTable,
                 left.naturalJoin(right, naturalJoinTable.matches(), naturalJoinTable.additions()));
+        return null;
     }
 
     @Override
-    public void visit(ExactJoinTable exactJoinTable) {
+    public Void visit(ExactJoinTable exactJoinTable) {
         final TOPS left = ops(exactJoinTable.left());
         final TABLE right = table(exactJoinTable.right());
         addOp(exactJoinTable,
                 left.exactJoin(right, exactJoinTable.matches(), exactJoinTable.additions()));
+        return null;
     }
 
     @Override
-    public void visit(JoinTable joinTable) {
+    public Void visit(JoinTable joinTable) {
         final TOPS left = ops(joinTable.left());
         final TABLE right = table(joinTable.right());
         if (joinTable.reserveBits().isPresent()) {
@@ -201,32 +220,28 @@ class TableAdapterImpl<TOPS extends TableOperations<TOPS, TABLE>, TABLE> impleme
             addOp(joinTable,
                     left.join(right, joinTable.matches(), joinTable.additions()));
         }
+        return null;
     }
 
     @Override
-    public void visit(AsOfJoinTable aj) {
+    public Void visit(AsOfJoinTable aj) {
         final TOPS left = ops(aj.left());
         final TABLE right = table(aj.right());
-        addOp(aj, left.aj(right, aj.matches(), aj.additions(), aj.rule()));
+        addOp(aj, left.asOfJoin(right, aj.matches(), aj.joinMatch(), aj.additions()));
+        return null;
     }
 
     @Override
-    public void visit(ReverseAsOfJoinTable raj) {
-        final TOPS left = ops(raj.left());
-        final TABLE right = table(raj.right());
-        addOp(raj, left.raj(right, raj.matches(), raj.additions(), raj.rule()));
-    }
-
-    @Override
-    public void visit(RangeJoinTable rangeJoinTable) {
+    public Void visit(RangeJoinTable rangeJoinTable) {
         final TOPS left = ops(rangeJoinTable.left());
         final TABLE right = table(rangeJoinTable.right());
         addOp(rangeJoinTable, left.rangeJoin(
                 right, rangeJoinTable.exactMatches(), rangeJoinTable.rangeMatch(), rangeJoinTable.aggregations()));
+        return null;
     }
 
     @Override
-    public void visit(AggregateAllTable aggregateAllTable) {
+    public Void visit(AggregateAllTable aggregateAllTable) {
         final AggSpec spec = aggregateAllTable.spec();
         if (aggregateAllTable.groupByColumns().isEmpty()) {
             addOp(aggregateAllTable, parentOps(aggregateAllTable).aggAllBy(spec));
@@ -234,10 +249,11 @@ class TableAdapterImpl<TOPS extends TableOperations<TOPS, TABLE>, TABLE> impleme
             final ColumnName[] groupByColumns = aggregateAllTable.groupByColumns().toArray(new ColumnName[0]);
             addOp(aggregateAllTable, parentOps(aggregateAllTable).aggAllBy(spec, groupByColumns));
         }
+        return null;
     }
 
     @Override
-    public void visit(AggregateTable aggregateTable) {
+    public Void visit(AggregateTable aggregateTable) {
         if (aggregateTable.groupByColumns().isEmpty()) {
             addOp(aggregateTable, ops(aggregateTable.parent()).aggBy(
                     aggregateTable.aggregations(),
@@ -249,30 +265,34 @@ class TableAdapterImpl<TOPS extends TableOperations<TOPS, TABLE>, TABLE> impleme
                     aggregateTable.initialGroups().map(this::table).orElse(null),
                     aggregateTable.groupByColumns()));
         }
+        return null;
     }
 
     @Override
-    public void visit(TicketTable ticketTable) {
+    public Void visit(TicketTable ticketTable) {
         addTable(ticketTable, tableCreation.of(ticketTable));
+        return null;
     }
 
     @Override
-    public void visit(InputTable inputTable) {
+    public Void visit(InputTable inputTable) {
         addTable(inputTable, tableCreation.of(inputTable));
+        return null;
     }
 
     @Override
-    public void visit(SelectDistinctTable selectDistinctTable) {
+    public Void visit(SelectDistinctTable selectDistinctTable) {
         if (selectDistinctTable.columns().isEmpty()) {
             addOp(selectDistinctTable, parentOps(selectDistinctTable).selectDistinct());
         } else {
             addOp(selectDistinctTable,
                     parentOps(selectDistinctTable).selectDistinct(selectDistinctTable.columns()));
         }
+        return null;
     }
 
     @Override
-    public void visit(UpdateByTable updateByTable) {
+    public Void visit(UpdateByTable updateByTable) {
         if (updateByTable.control().isPresent()) {
             addOp(updateByTable, parentOps(updateByTable).updateBy(
                     updateByTable.control().get(),
@@ -283,18 +303,21 @@ class TableAdapterImpl<TOPS extends TableOperations<TOPS, TABLE>, TABLE> impleme
                     updateByTable.operations(),
                     updateByTable.groupByColumns()));
         }
+        return null;
     }
 
     @Override
-    public void visit(UngroupTable ungroupTable) {
+    public Void visit(UngroupTable ungroupTable) {
         addOp(ungroupTable, parentOps(ungroupTable)
                 .ungroup(ungroupTable.nullFill(), ungroupTable.ungroupColumns()));
+        return null;
     }
 
     @Override
-    public void visit(DropColumnsTable dropColumnsTable) {
+    public Void visit(DropColumnsTable dropColumnsTable) {
         addOp(dropColumnsTable,
                 parentOps(dropColumnsTable).dropColumns(dropColumnsTable.dropColumns().toArray(new ColumnName[0])));
+        return null;
     }
 
     private final class OutputTable implements Output<TOPS, TABLE> {

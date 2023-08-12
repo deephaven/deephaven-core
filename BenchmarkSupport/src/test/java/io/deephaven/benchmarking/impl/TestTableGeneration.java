@@ -4,7 +4,6 @@
 package io.deephaven.benchmarking.impl;
 
 import io.deephaven.engine.table.Table;
-import io.deephaven.engine.util.TableTools;
 import io.deephaven.engine.testutil.QueryTableTestBase;
 import io.deephaven.benchmarking.BenchmarkTable;
 import io.deephaven.benchmarking.BenchmarkTableBuilder;

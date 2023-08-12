@@ -10,7 +10,6 @@ import io.deephaven.engine.context.QueryScope;
 import io.deephaven.engine.liveness.LivenessReferent;
 import io.deephaven.engine.table.Table;
 import io.deephaven.engine.updategraph.DynamicNode;
-import io.deephaven.engine.updategraph.UpdateGraphProcessor;
 import io.deephaven.engine.util.ScriptSession;
 import io.deephaven.proto.backplane.grpc.Ticket;
 import io.deephaven.proto.flight.util.TicketRouterHelper;
@@ -59,21 +58,22 @@ public class ScopeTicketResolver extends TicketResolverBase {
         // there is no mechanism to wait for a scope variable to resolve; require that the scope variable exists now
         final String scopeName = nameForDescriptor(descriptor, logId);
 
-        final Flight.FlightInfo flightInfo = UpdateGraphProcessor.DEFAULT.sharedLock().computeLocked(() -> {
-            final ScriptSession gss = scriptSessionProvider.get();
-            Object scopeVar = gss.getVariable(scopeName, null);
-            if (scopeVar == null) {
-                throw Exceptions.statusRuntimeException(Code.NOT_FOUND,
-                        "Could not resolve '" + logId + ": no variable exists with name '" + scopeName + "'");
-            }
-            if (scopeVar instanceof Table) {
-                scopeVar = authTransformation.transform(scopeVar);
-                return TicketRouter.getFlightInfo((Table) scopeVar, descriptor, flightTicketForName(scopeName));
-            }
+        final ScriptSession gss = scriptSessionProvider.get();
+        final Flight.FlightInfo flightInfo =
+                gss.getExecutionContext().getUpdateGraph().sharedLock().computeLocked(() -> {
+                    Object scopeVar = gss.getVariable(scopeName, null);
+                    if (scopeVar == null) {
+                        throw Exceptions.statusRuntimeException(Code.NOT_FOUND,
+                                "Could not resolve '" + logId + ": no variable exists with name '" + scopeName + "'");
+                    }
+                    if (scopeVar instanceof Table) {
+                        scopeVar = authorization.transform(scopeVar);
+                        return TicketRouter.getFlightInfo((Table) scopeVar, descriptor, flightTicketForName(scopeName));
+                    }
 
-            throw Exceptions.statusRuntimeException(Code.NOT_FOUND,
-                    "Could not resolve '" + logId + "': no variable exists with name '" + scopeName + "'");
-        });
+                    throw Exceptions.statusRuntimeException(Code.NOT_FOUND,
+                            "Could not resolve '" + logId + "': no variable exists with name '" + scopeName + "'");
+                });
 
         return SessionState.wrapAsExport(flightInfo);
     }
@@ -102,9 +102,9 @@ public class ScopeTicketResolver extends TicketResolverBase {
 
     private <T> SessionState.ExportObject<T> resolve(
             @Nullable final SessionState session, final String scopeName, final String logId) {
+        final ScriptSession gss = scriptSessionProvider.get();
         // fetch the variable from the scope right now
-        T export = UpdateGraphProcessor.DEFAULT.sharedLock().computeLocked(() -> {
-            final ScriptSession gss = scriptSessionProvider.get();
+        T export = gss.getExecutionContext().getUpdateGraph().sharedLock().computeLocked(() -> {
             T scopeVar = null;
             try {
                 // noinspection unchecked
@@ -114,7 +114,7 @@ public class ScopeTicketResolver extends TicketResolverBase {
             return scopeVar;
         });
 
-        export = authTransformation.transform(export);
+        export = authorization.transform(export);
 
         if (export == null) {
             return SessionState.wrapAsFailedExport(Exceptions.statusRuntimeException(Code.FAILED_PRECONDITION,
@@ -126,18 +126,27 @@ public class ScopeTicketResolver extends TicketResolverBase {
 
     @Override
     public <T> SessionState.ExportBuilder<T> publish(
-            final SessionState session, final ByteBuffer ticket, final String logId) {
-        return publish(session, nameForTicket(ticket, logId), logId);
+            final SessionState session,
+            final ByteBuffer ticket,
+            final String logId,
+            @Nullable final Runnable onPublish) {
+        return publish(session, nameForTicket(ticket, logId), logId, onPublish);
     }
 
     @Override
     public <T> SessionState.ExportBuilder<T> publish(
-            final SessionState session, final Flight.FlightDescriptor descriptor, final String logId) {
-        return publish(session, nameForDescriptor(descriptor, logId), logId);
+            final SessionState session,
+            final Flight.FlightDescriptor descriptor,
+            final String logId,
+            @Nullable final Runnable onPublish) {
+        return publish(session, nameForDescriptor(descriptor, logId), logId, onPublish);
     }
 
     private <T> SessionState.ExportBuilder<T> publish(
-            final SessionState session, final String varName, final String logId) {
+            final SessionState session,
+            final String varName,
+            final String logId,
+            @Nullable final Runnable onPublish) {
         // We publish to the query scope after the client finishes publishing their result. We accomplish this by
         // directly depending on the result of this export builder.
         final SessionState.ExportBuilder<T> resultBuilder = session.nonExport();
@@ -154,6 +163,9 @@ public class ScopeTicketResolver extends TicketResolverBase {
                         gss.manage((LivenessReferent) value);
                     }
                     gss.setVariable(varName, value);
+                    if (onPublish != null) {
+                        onPublish.run();
+                    }
                 });
 
         return resultBuilder;

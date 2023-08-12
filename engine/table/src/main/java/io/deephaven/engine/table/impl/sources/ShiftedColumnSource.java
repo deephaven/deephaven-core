@@ -17,7 +17,6 @@ import io.deephaven.engine.table.SharedContext;
 import io.deephaven.engine.table.impl.AbstractColumnSource;
 import io.deephaven.engine.table.impl.DefaultGetContext;
 import io.deephaven.engine.table.impl.ShiftedColumnOperation;
-import io.deephaven.time.DateTime;
 import io.deephaven.util.BooleanUtils;
 import io.deephaven.util.QueryConstants;
 import io.deephaven.util.type.TypeUtils;
@@ -34,7 +33,7 @@ import java.time.*;
  * @param <T>
  */
 public class ShiftedColumnSource<T> extends AbstractColumnSource<T>
-        implements UngroupableColumnSource, ConvertableTimeSource, InMemoryColumnSource {
+        implements UngroupableColumnSource, ConvertibleTimeSource, InMemoryColumnSource {
     protected final ColumnSource<T> innerSource;
     protected final TrackingRowSet rowSet;
     protected final long shift;
@@ -374,38 +373,33 @@ public class ShiftedColumnSource<T> extends AbstractColumnSource<T>
 
     @Override
     public ColumnSource<ZonedDateTime> toZonedDateTime(ZoneId zone) {
-        return new ShiftedColumnSource<>(rowSet, ((ConvertableTimeSource) innerSource).toZonedDateTime(zone), shift);
+        return new ShiftedColumnSource<>(rowSet, ((ConvertibleTimeSource) innerSource).toZonedDateTime(zone), shift);
     }
 
     @Override
     public ColumnSource<LocalDate> toLocalDate(ZoneId zone) {
-        return new ShiftedColumnSource<>(rowSet, ((ConvertableTimeSource) innerSource).toLocalDate(zone), shift);
+        return new ShiftedColumnSource<>(rowSet, ((ConvertibleTimeSource) innerSource).toLocalDate(zone), shift);
     }
 
     @Override
     public ColumnSource<LocalTime> toLocalTime(ZoneId zone) {
-        return new ShiftedColumnSource<>(rowSet, ((ConvertableTimeSource) innerSource).toLocalTime(zone), shift);
+        return new ShiftedColumnSource<>(rowSet, ((ConvertibleTimeSource) innerSource).toLocalTime(zone), shift);
     }
 
     @Override
     public ColumnSource<Instant> toInstant() {
-        return new ShiftedColumnSource<>(rowSet, ((ConvertableTimeSource) innerSource).toInstant(), shift);
-    }
-
-    @Override
-    public ColumnSource<DateTime> toDateTime() {
-        return new ShiftedColumnSource<>(rowSet, ((ConvertableTimeSource) innerSource).toDateTime(), shift);
+        return new ShiftedColumnSource<>(rowSet, ((ConvertibleTimeSource) innerSource).toInstant(), shift);
     }
 
     @Override
     public ColumnSource<Long> toEpochNano() {
-        return new ShiftedColumnSource<>(rowSet, ((ConvertableTimeSource) innerSource).toEpochNano(), shift);
+        return new ShiftedColumnSource<>(rowSet, ((ConvertibleTimeSource) innerSource).toEpochNano(), shift);
     }
 
     @Override
     public boolean supportsTimeConversion() {
-        return innerSource instanceof ConvertableTimeSource
-                && ((ConvertableTimeSource) innerSource).supportsTimeConversion();
+        return innerSource instanceof ConvertibleTimeSource
+                && ((ConvertibleTimeSource) innerSource).supportsTimeConversion();
     }
 
     @SuppressWarnings("unchecked")
@@ -416,12 +410,10 @@ public class ShiftedColumnSource<T> extends AbstractColumnSource<T>
             return new ReinterpretToOriginalForBoolean<>(alternateDataType);
         }
 
-        if (innerSource instanceof ConvertableTimeSource
-                && ((ConvertableTimeSource) innerSource).supportsTimeConversion()) {
+        if (innerSource instanceof ConvertibleTimeSource
+                && ((ConvertibleTimeSource) innerSource).supportsTimeConversion()) {
             if (alternateDataType == long.class || alternateDataType == Long.class) {
                 return (ColumnSource<ALTERNATE_DATA_TYPE>) toEpochNano();
-            } else if (alternateDataType == DateTime.class) {
-                return (ColumnSource<ALTERNATE_DATA_TYPE>) toDateTime();
             } else if (alternateDataType == Instant.class) {
                 return (ColumnSource<ALTERNATE_DATA_TYPE>) toInstant();
             }

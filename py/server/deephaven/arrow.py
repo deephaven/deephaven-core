@@ -13,6 +13,7 @@ from deephaven.table import Table
 
 _JArrowToTableConverter = jpy.get_type("io.deephaven.extensions.barrage.util.ArrowToTableConverter")
 _JTableToArrowConverter = jpy.get_type("io.deephaven.extensions.barrage.util.TableToArrowConverter")
+_JArrowWrapperTools = jpy.get_type("io.deephaven.extensions.arrow.ArrowWrapperTools")
 
 _ARROW_DH_DATA_TYPE_MAPPING = {
     pa.null(): '',
@@ -35,7 +36,7 @@ _ARROW_DH_DATA_TYPE_MAPPING = {
     pa.timestamp('s'): '',
     pa.timestamp('ms'): '',
     pa.timestamp('us'): '',
-    pa.timestamp('ns'): 'io.deephaven.time.DateTime',
+    pa.timestamp('ns'): 'java.time.Instant',
     pa.date32(): '',
     pa.date64(): '',
     pa.duration('s'): '',
@@ -66,7 +67,7 @@ def _map_arrow_type(arrow_type) -> Dict[str, str]:
     if not dh_type:
         # if this is a case of timestamp with tz specified
         if isinstance(arrow_type, pa.TimestampType):
-            dh_type = "io.deephaven.time.DateTime"
+            dh_type = "java.time.Instant"
 
     if not dh_type:
         raise DHError(message=f'unsupported arrow data type : {arrow_type}, refer to '
@@ -146,3 +147,21 @@ def to_arrow(table: Table, cols: List[str] = None) -> pa.Table:
         return pa.Table.from_batches(record_batches, schema=schema)
     except Exception as e:
         raise DHError(e, message="failed to create a pyarrow table from a Deephaven table.") from e
+
+
+def read_feather(path: str) -> Table:
+    """Reads an Arrow feather file into a Deephaven table.
+
+    Args:
+        path (str): the file path
+
+    Returns:
+         a new table
+
+    Raises:
+        DHError
+    """
+    try:
+        return Table(j_table=_JArrowWrapperTools.readFeather(path))
+    except Exception as e:
+        raise DHError(e, message=f"failed to read a feather file {path}") from e

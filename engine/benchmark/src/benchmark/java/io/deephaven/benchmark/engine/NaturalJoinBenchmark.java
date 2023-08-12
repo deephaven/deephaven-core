@@ -3,13 +3,15 @@
  */
 package io.deephaven.benchmark.engine;
 
+import io.deephaven.engine.context.ExecutionContext;
+import io.deephaven.engine.context.TestExecutionContext;
 import io.deephaven.engine.table.Table;
-import io.deephaven.engine.updategraph.UpdateGraphProcessor;
+import io.deephaven.engine.testutil.ControlledUpdateGraph;
 import io.deephaven.util.metrics.MetricsManager;
 import io.deephaven.benchmarking.*;
 import io.deephaven.benchmarking.generator.ColumnGenerator;
-import io.deephaven.benchmarking.generator.EnumStringColumnGenerator;
-import io.deephaven.benchmarking.generator.SequentialNumColumnGenerator;
+import io.deephaven.benchmarking.generator.EnumStringGenerator;
+import io.deephaven.benchmarking.generator.SequentialNumberGenerator;
 import io.deephaven.benchmarking.impl.PersistentBenchmarkTableBuilder;
 import io.deephaven.benchmarking.runner.TableBenchmarkState;
 import org.openjdk.jmh.annotations.*;
@@ -50,7 +52,8 @@ public class NaturalJoinBenchmark {
 
     @Setup(Level.Trial)
     public void setupEnv(BenchmarkParams params) {
-        UpdateGraphProcessor.DEFAULT.enableUnitTestMode();
+        TestExecutionContext.createForUnitTests().open();
+        ExecutionContext.getContext().getUpdateGraph().<ControlledUpdateGraph>cast().enableUnitTestMode();
 
         final BenchmarkTableBuilder rightBuilder;
         final BenchmarkTableBuilder leftBuilder;
@@ -79,10 +82,10 @@ public class NaturalJoinBenchmark {
         rightBuilder.setSeed(0xDEADBEEF).addColumn(BenchmarkTools.stringCol("PartCol", 1, 5, 7, 0xFEEDBEEF));
         leftBuilder.setSeed(0xDEADBEEF).addColumn(BenchmarkTools.stringCol("PartCol", 1, 5, 7, 0xFEEDBEEF));
 
-        final EnumStringColumnGenerator stringJoinKey = (EnumStringColumnGenerator) BenchmarkTools.stringCol("JString",
-                rightSize, 6, 6, 0xB00FB00F, EnumStringColumnGenerator.Mode.Rotate);
-        final ColumnGenerator intJoinKey = BenchmarkTools.seqNumberCol("JInt", int.class, 0, 1, rightSize,
-                SequentialNumColumnGenerator.Mode.RollAtLimit);
+        final ColumnGenerator<String> stringJoinKey = BenchmarkTools.stringCol(
+                "JString", rightSize, 6, 6, 0xB00FB00FL, EnumStringGenerator.Mode.Rotate);
+        final ColumnGenerator<Integer> intJoinKey = BenchmarkTools.seqNumberCol(
+                "JInt", int.class, 0, 1, rightSize, SequentialNumberGenerator.Mode.RollAtLimit);
 
         System.out.println("Join key type: " + joinKeyType);
         switch (joinKeyType) {
@@ -159,16 +162,17 @@ public class NaturalJoinBenchmark {
 
     @Benchmark
     public Table naturalJoinStatic() {
-        final Table result = UpdateGraphProcessor.DEFAULT.sharedLock()
-                .computeLocked(() -> leftTable.naturalJoin(rightTable, joinKeyName));
+        final Table result = ExecutionContext.getContext().getUpdateGraph().sharedLock().computeLocked(
+                () -> leftTable.naturalJoin(rightTable, joinKeyName));
         return state.setResult(result);
     }
 
     @Benchmark
     public Table naturalJoinIncremental() {
-        final Table result = IncrementalBenchmark.incrementalBenchmark(
-                (lt, rt) -> UpdateGraphProcessor.DEFAULT.sharedLock()
-                        .computeLocked(() -> lt.naturalJoin(rt, joinKeyName)),
+        final Table result = IncrementalBenchmark.incrementalBenchmark((lt, rt) -> {
+            return ExecutionContext.getContext().getUpdateGraph().sharedLock()
+                    .computeLocked(() -> lt.naturalJoin(rt, joinKeyName));
+        },
                 leftTable, rightTable);
         return state.setResult(result);
     }

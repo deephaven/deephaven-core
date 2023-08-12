@@ -19,7 +19,6 @@ import io.deephaven.engine.rowset.chunkattributes.RowKeys;
 import io.deephaven.engine.table.ChunkSource;
 import io.deephaven.engine.table.ColumnSource;
 import io.deephaven.engine.table.impl.MutableColumnSourceGetDefaults;
-import io.deephaven.engine.updategraph.LogicalClock;
 import io.deephaven.util.SoftRecycler;
 import io.deephaven.util.compare.DoubleComparisons;
 import io.deephaven.util.datastructures.LongSizedDataStructure;
@@ -27,6 +26,7 @@ import org.apache.commons.lang3.mutable.MutableInt;
 import org.jetbrains.annotations.NotNull;
 
 import java.util.Arrays;
+import java.util.function.LongConsumer;
 
 import static io.deephaven.util.QueryConstants.NULL_DOUBLE;
 import static io.deephaven.util.type.TypeUtils.box;
@@ -37,7 +37,7 @@ import static io.deephaven.util.type.TypeUtils.unbox;
  * <p>
  * The C-haracterArraySource is replicated to all other types with
  * io.deephaven.engine.table.impl.sources.Replicate.
- *
+ * <p>
  * (C-haracter is deliberately spelled that way in order to prevent Replicate from altering this very comment).
  */
 public class DoubleArraySource extends ArraySourceHelper<Double, double[]>
@@ -73,7 +73,7 @@ public class DoubleArraySource extends ArraySourceHelper<Double, double[]>
      */
     @Override
     public void prepareForParallelPopulation(RowSequence changedRows) {
-        final long currentStep = LogicalClock.DEFAULT.currentStep();
+        final long currentStep = updateGraph.clock().currentStep();
         if (ensurePreviousClockCycle == currentStep) {
             throw new IllegalStateException("May not call ensurePrevious twice on one clock cycle!");
         }
@@ -326,7 +326,22 @@ public class DoubleArraySource extends ArraySourceHelper<Double, double[]>
         final WritableDoubleChunk<? super Values> chunk = destination.asWritableDoubleChunk();
         // endregion chunkDecl
         MutableInt destOffset = new MutableInt(0);
-        rowSequence.forAllRowKeyRanges((final long from, final long to) -> {
+        rowSequence.forAllRowKeyRanges((final long from, long to) -> {
+            int valuesAtEnd = 0;
+
+            if (from > maxIndex) {
+                // the whole region is beyond us
+                final int sz = LongSizedDataStructure.intSize("int cast", to - from + 1);
+                destination.fillWithNullValue(destOffset.intValue(), sz);
+                destOffset.add(sz);
+                return;
+            }
+            if (to > maxIndex) {
+                // only part of the region is beyond us
+                valuesAtEnd = LongSizedDataStructure.intSize("int cast", to - maxIndex);
+                to = maxIndex;
+            }
+
             final int fromBlock = getBlockNo(from);
             final int toBlock = getBlockNo(to);
             final int fromOffsetInBlock = (int) (from & INDEX_MASK);
@@ -353,6 +368,11 @@ public class DoubleArraySource extends ArraySourceHelper<Double, double[]>
                 destination.copyFromArray(getBlock(toBlock), 0, destOffset.intValue(), restSz);
                 // endregion copyFromArray
                 destOffset.add(restSz);
+            }
+
+            if (valuesAtEnd > 0) {
+                destination.fillWithNullValue(destOffset.intValue(), valuesAtEnd);
+                destOffset.add(valuesAtEnd);
             }
         });
         destination.setSize(destOffset.intValue());
@@ -402,7 +422,20 @@ public class DoubleArraySource extends ArraySourceHelper<Double, double[]>
             destOffset.add(length);
         };
 
-        rowSequence.forAllRowKeyRanges((final long from, final long to) -> {
+        rowSequence.forAllRowKeyRanges((final long from, long to) -> {
+            int valuesAtEnd = 0;
+            if (from > maxIndex) {
+                // the whole region is beyond us
+                final int sz = LongSizedDataStructure.intSize("int cast", to - from + 1);
+                destination.fillWithNullValue(destOffset.intValue(), sz);
+                destOffset.add(sz);
+                return;
+            } else if (to > maxIndex) {
+                // only part of the region is beyond us
+                valuesAtEnd = LongSizedDataStructure.intSize("int cast", to - maxIndex);
+                to = maxIndex;
+            }
+
             final int fromBlock = getBlockNo(from);
             final int toBlock = getBlockNo(to);
             final int fromOffsetInBlock = (int) (from & INDEX_MASK);
@@ -419,6 +452,11 @@ public class DoubleArraySource extends ArraySourceHelper<Double, double[]>
 
                 int restSz = (int) (to & INDEX_MASK) + 1;
                 lambda.copy(toBlock, 0, restSz);
+            }
+
+            if (valuesAtEnd > 0) {
+                destination.fillWithNullValue(destOffset.intValue(), valuesAtEnd);
+                destOffset.add(valuesAtEnd);
             }
         });
         destination.setSize(destOffset.intValue());
@@ -439,7 +477,7 @@ public class DoubleArraySource extends ArraySourceHelper<Double, double[]>
         final WritableDoubleChunk<? super Values> chunk = destGeneric.asWritableDoubleChunk();
         // endregion chunkDecl
         final FillSparseChunkContext<double[]> ctx = new FillSparseChunkContext<>();
-        rows.forAllRowKeys((final long v) -> {
+        final LongConsumer normalFiller = (final long v) -> {
             if (v >= ctx.capForCurrentBlock) {
                 ctx.currentBlockNo = getBlockNo(v);
                 ctx.capForCurrentBlock = (ctx.currentBlockNo + 1L) << LOG_BLOCK_SIZE;
@@ -448,7 +486,20 @@ public class DoubleArraySource extends ArraySourceHelper<Double, double[]>
             // region conversion
             chunk.set(ctx.offset++, ctx.currentBlock[(int) (v & INDEX_MASK)]);
             // endregion conversion
-        });
+        };
+        if (rows.lastRowKey() > maxIndex) {
+            final long initialPosition, firstNullPosition;
+            try (final RowSequence.Iterator rowsIter = rows.getRowSequenceIterator()) {
+                initialPosition = rowsIter.getRelativePosition();
+                rowsIter.getNextRowSequenceThrough(maxIndex).forAllRowKeys(normalFiller);
+                firstNullPosition = rowsIter.getRelativePosition();
+            }
+            final int trailingNullCount = Math.toIntExact(rows.size() - (firstNullPosition - initialPosition));
+            chunk.fillWithNullValue(ctx.offset, trailingNullCount);
+            ctx.offset += trailingNullCount;
+        } else {
+            rows.forAllRowKeys(normalFiller);
+        }
         chunk.setSize(ctx.offset);
     }
     // endregion fillSparseChunk
@@ -474,7 +525,7 @@ public class DoubleArraySource extends ArraySourceHelper<Double, double[]>
         final WritableDoubleChunk<? super Values> chunk = destGeneric.asWritableDoubleChunk();
         // endregion chunkDecl
         final FillSparseChunkContext<double[]> ctx = new FillSparseChunkContext<>();
-        rows.forAllRowKeys((final long v) -> {
+        final LongConsumer normalFiller = (final long v) -> {
             if (v >= ctx.capForCurrentBlock) {
                 ctx.currentBlockNo = getBlockNo(v);
                 ctx.capForCurrentBlock = (ctx.currentBlockNo + 1L) << LOG_BLOCK_SIZE;
@@ -482,7 +533,6 @@ public class DoubleArraySource extends ArraySourceHelper<Double, double[]>
                 ctx.currentPrevBlock = prevBlocks[ctx.currentBlockNo];
                 ctx.prevInUseBlock = prevInUse[ctx.currentBlockNo];
             }
-
             final int indexWithinBlock = (int) (v & INDEX_MASK);
             final int indexWithinInUse = indexWithinBlock >> LOG_INUSE_BITSET_SIZE;
             final long maskWithinInUse = 1L << (indexWithinBlock & IN_USE_MASK);
@@ -490,7 +540,20 @@ public class DoubleArraySource extends ArraySourceHelper<Double, double[]>
             // region conversion
             chunk.set(ctx.offset++, usePrev ? ctx.currentPrevBlock[indexWithinBlock] : ctx.currentBlock[indexWithinBlock]);
             // endregion conversion
-        });
+        };
+        if (rows.lastRowKey() > maxIndex) {
+            final long initialPosition, firstNullPosition;
+            try (final RowSequence.Iterator rowsIter = rows.getRowSequenceIterator()) {
+                initialPosition = rowsIter.getRelativePosition();
+                rowsIter.getNextRowSequenceThrough(maxIndex).forAllRowKeys(normalFiller);
+                firstNullPosition = rowsIter.getRelativePosition();
+            }
+            final int trailingNullCount = Math.toIntExact(rows.size() - (firstNullPosition - initialPosition));
+            chunk.fillWithNullValue(ctx.offset, trailingNullCount);
+            ctx.offset += trailingNullCount;
+        } else {
+            rows.forAllRowKeys(normalFiller);
+        }
         chunk.setSize(ctx.offset);
     }
     // endregion fillSparsePrevChunk
@@ -569,7 +632,8 @@ public class DoubleArraySource extends ArraySourceHelper<Double, double[]>
         // endregion chunkDecl
         final LongChunk<OrderedRowKeyRanges> ranges = rowSequence.asRowKeyRangesChunk();
 
-        final boolean trackPrevious = prevFlusher != null && ensurePreviousClockCycle != LogicalClock.DEFAULT.currentStep();
+        final boolean trackPrevious = prevFlusher != null &&
+                ensurePreviousClockCycle != updateGraph.clock().currentStep();
 
         if (trackPrevious) {
             prevFlusher.maybeActivate();
@@ -653,7 +717,8 @@ public class DoubleArraySource extends ArraySourceHelper<Double, double[]>
         // endregion chunkDecl
         final LongChunk<OrderedRowKeys> keys = rowSequence.asRowKeyChunk();
 
-        final boolean trackPrevious = prevFlusher != null && ensurePreviousClockCycle != LogicalClock.DEFAULT.currentStep();
+        final boolean trackPrevious = prevFlusher != null &&
+                ensurePreviousClockCycle != updateGraph.clock().currentStep();
 
         if (trackPrevious) {
             prevFlusher.maybeActivate();
@@ -706,7 +771,8 @@ public class DoubleArraySource extends ArraySourceHelper<Double, double[]>
         final DoubleChunk<? extends Values> chunk = src.asDoubleChunk();
         // endregion chunkDecl
 
-        final boolean trackPrevious = prevFlusher != null && ensurePreviousClockCycle != LogicalClock.DEFAULT.currentStep();
+        final boolean trackPrevious = prevFlusher != null &&
+                ensurePreviousClockCycle != updateGraph.clock().currentStep();
 
         if (trackPrevious) {
             prevFlusher.maybeActivate();

@@ -18,6 +18,7 @@ import io.deephaven.engine.util.systemicmarking.SystemicObject;
 import io.deephaven.util.datastructures.LongSizedDataStructure;
 import org.jetbrains.annotations.NotNull;
 
+import javax.annotation.Nullable;
 import java.util.*;
 import java.util.function.Function;
 import java.util.function.UnaryOperator;
@@ -49,7 +50,7 @@ public interface Table extends
      * @return A Table of metadata about this Table's columns.
      */
     @ConcurrentMethod
-    Table getMeta();
+    Table meta();
 
     @ConcurrentMethod
     String getDescription();
@@ -122,7 +123,14 @@ public interface Table extends
     String UNIQUE_KEYS_ATTRIBUTE = "uniqueKeys";
     String FILTERABLE_COLUMNS_ATTRIBUTE = "FilterableColumns";
     String TOTALS_TABLE_ATTRIBUTE = "TotalsTable";
+    /**
+     * If this attribute is set, we can only add new row keys, we can never shift them, modify them, or remove them.
+     */
     String ADD_ONLY_TABLE_ATTRIBUTE = "AddOnly";
+    /**
+     * If this attribute is set, we can only append new row keys to the end of the table. We can never shift them,
+     * modify them, or remove them.
+     */
     String APPEND_ONLY_TABLE_ATTRIBUTE = "AppendOnly";
     String TEST_SOURCE_TABLE_ATTRIBUTE = "TestSource";
     /**
@@ -216,9 +224,9 @@ public interface Table extends
     // -----------------------------------------------------------------------------------------------------------------
 
     /**
-     * Retrieves a {@code ColumnSource}. It is conveniently cast to @{code ColumnSource<T>} using the type that caller
-     * expects. This differs from {@link #getColumnSource(String, Class)} which uses the provided {@link Class} object
-     * to verify that the data type is a subclass of the expected class.
+     * Retrieves a {@code ColumnSource}. It is conveniently cast to {@code ColumnSource<Object>} using the type that
+     * caller expects. This differs from {@link #getColumnSource(String, Class)} which uses the provided {@link Class}
+     * object to verify that the data type is a subclass of the expected class.
      *
      * @param sourceName The name of the column
      * @param <T> The target type, as a type parameter. Inferred from context.
@@ -227,28 +235,32 @@ public interface Table extends
     <T> ColumnSource<T> getColumnSource(String sourceName);
 
     /**
-     * Retrieves a {@code ColumnSource} and {@link ColumnSource#cast casts} it to the target class {@code clazz}.
+     * Retrieves a {@code ColumnSource} and {@link ColumnSource#cast(Class) casts} it to the target class {@code clazz}.
      *
      * @param sourceName The name of the column
      * @param clazz The target type
      * @param <T> The target type, as a type parameter. Intended to be inferred from {@code clazz}.
      * @return The column source for {@code sourceName}, parameterized by {@code T}
+     * @see ColumnSource#cast(Class)
      */
     <T> ColumnSource<T> getColumnSource(String sourceName, Class<? extends T> clazz);
+
+    /**
+     * Retrieves a {@code ColumnSource} and {@link ColumnSource#cast(Class, Class)} casts} it to the target class
+     * {@code clazz} and {@code componentType}.
+     *
+     * @param sourceName The name of the column
+     * @param clazz The target type
+     * @param componentType The target component type, may be null
+     * @param <T> The target type, as a type parameter. Intended to be inferred from {@code clazz}.
+     * @return The column source for {@code sourceName}, parameterized by {@code T}
+     * @see ColumnSource#cast(Class, Class)
+     */
+    <T> ColumnSource<T> getColumnSource(String sourceName, Class<? extends T> clazz, @Nullable Class<?> componentType);
 
     Map<String, ? extends ColumnSource<?>> getColumnSourceMap();
 
     Collection<? extends ColumnSource<?>> getColumnSources();
-
-    // -----------------------------------------------------------------------------------------------------------------
-    // DataColumns for fetching data by row position; generally much less efficient than ColumnSource
-    // -----------------------------------------------------------------------------------------------------------------
-
-    DataColumn[] getColumns();
-
-    DataColumn getColumn(int columnIndex);
-
-    DataColumn getColumn(String columnName);
 
     // -----------------------------------------------------------------------------------------------------------------
     // Column Iterators
@@ -271,12 +283,6 @@ public interface Table extends
     CloseablePrimitiveIteratorOfDouble doubleColumnIterator(@NotNull String columnName);
 
     <DATA_TYPE> CloseableIterator<DATA_TYPE> objectColumnIterator(@NotNull String columnName);
-
-    // -----------------------------------------------------------------------------------------------------------------
-    // Convenience data fetching; highly inefficient
-    // -----------------------------------------------------------------------------------------------------------------
-
-    Object[] getRecord(long rowNo, String... columnNames);
 
     // -----------------------------------------------------------------------------------------------------------------
     // Filter Operations
@@ -351,28 +357,6 @@ public interface Table extends
     @ConcurrentMethod
     Table moveColumns(int index, boolean moveToEnd, String... columnsToMove);
 
-    /**
-     * Produce a new table with the same columns as this table, but with a new column presenting the specified DateTime
-     * column as a Long column (with each DateTime represented instead as the corresponding number of nanos since the
-     * epoch).
-     * <p>
-     * NOTE: This is a really just an updateView(), and behaves accordingly for column ordering and (re)placement. This
-     * doesn't work on data that has been brought fully into memory (e.g. via select()). Use a view instead.
-     *
-     * @param dateTimeColumnName Name of date time column
-     * @param nanosColumnName Name of nanos column
-     * @return The new table, constructed as explained above.
-     */
-    @ConcurrentMethod
-    Table dateTimeColumnAsNanos(String dateTimeColumnName, String nanosColumnName);
-
-    /**
-     * @param columnName name of column to convert from DateTime to nanos
-     * @return The result of dateTimeColumnAsNanos(columnName, columnName).
-     */
-    @ConcurrentMethod
-    Table dateTimeColumnAsNanos(String columnName);
-
     // -----------------------------------------------------------------------------------------------------------------
     // Slice Operations
     // -----------------------------------------------------------------------------------------------------------------
@@ -393,6 +377,11 @@ public interface Table extends
      * <p>
      * If the firstPosition is negative and the lastPosition is negative, they are both counted from the end of the
      * table. For example, slice(-2, -1) returns the second to last row of the table.
+     * <p>
+     * If firstPosition is negative and lastPosition is positive, then firstPosition is counted from the end of the
+     * table, inclusively. The lastPosition is counted from the beginning of the table, exclusively. For example,
+     * slice(-3, 5) returns all rows starting from the third-last row to the fifth row of the table. If there are no
+     * rows between these positions, the function will return an empty table.
      *
      * @param firstPositionInclusive the first position to include in the result
      * @param lastPositionExclusive the last position to include in the result
@@ -402,14 +391,37 @@ public interface Table extends
     Table slice(long firstPositionInclusive, long lastPositionExclusive);
 
     /**
+     * Extracts a subset of a table by row percentages.
+     * <p>
+     * Returns a subset of table in the range [floor(startPercentInclusive * sizeOfTable), floor(endPercentExclusive *
+     * sizeOfTable)). For example, for a table of size 10, slicePct(0.1, 0.7) will return a subset from the second row
+     * to the seventh row. Similarly, slicePct(0, 1) would return the entire table (because row positions run from 0 to
+     * size-1). The percentage arguments must be in range [0,1], otherwise the function returns an error.
+     *
+     * @param startPercentInclusive the starting percentage point for rows to include in the result, range [0, 1]
+     * @param endPercentExclusive the ending percentage point for rows to include in the result, range [0, 1]
+     * @return a new Table, which is the requested subset of rows from the original table
+     */
+    @ConcurrentMethod
+    Table slicePct(double startPercentInclusive, double endPercentExclusive);
+
+    /**
      * Provides a head that selects a dynamic number of rows based on a percent.
      *
-     * @param percent the fraction of the table to return (0..1), the number of rows will be rounded up. For example if
-     *        there are 3 rows, headPct(50) returns the first two rows.
+     * @param percent the fraction of the table to return between [0, 1]. The number of rows will be rounded up. For
+     *        example if there are 3 rows, headPct(50) returns the first two rows. For percent values outside [0, 1],
+     *        the function will throw an exception.
      */
     @ConcurrentMethod
     Table headPct(double percent);
 
+    /**
+     * Provides a tail that selects a dynamic number of rows based on a percent.
+     *
+     * @param percent the fraction of the table to return between [0, 1]. The number of rows will be rounded up. For
+     *        example if there are 3 rows, tailPct(50) returns the last two rows. For percent values outside [0, 1], the
+     *        function will throw an exception.
+     */
     @ConcurrentMethod
     Table tailPct(double percent);
 
@@ -467,12 +479,6 @@ public interface Table extends
      */
     @ConcurrentMethod
     Table removeBlink();
-
-    // -----------------------------------------------------------------------------------------------------------------
-    // Disaggregation Operations
-    // -----------------------------------------------------------------------------------------------------------------
-
-    Table ungroupAllBut(String... columnsNotToUngroup);
 
     // -----------------------------------------------------------------------------------------------------------------
     // PartitionBy Operations
@@ -636,36 +642,6 @@ public interface Table extends
     TreeTable tree(String idColumn, String parentColumn);
 
     // -----------------------------------------------------------------------------------------------------------------
-    // Merge Operations
-    // -----------------------------------------------------------------------------------------------------------------
-
-    /**
-     * Merge this Table with {@code others}. All rows in this Table will appear before all rows in {@code others}. If
-     * Tables in {@code others} are the result of a prior merge operation, they <em>may</em> be expanded in an attempt
-     * to avoid deeply nested structures.
-     *
-     * @apiNote It's best to avoid many chained calls to {@link #mergeBefore(Table...)} and
-     *          {@link #mergeAfter(Table...)}, as this may result in deeply-nested data structures. See
-     *          TableTools.merge(Table...).
-     * @param others The Tables to merge with
-     * @return The merged Table
-     */
-    Table mergeBefore(Table... others);
-
-    /**
-     * Merge this Table with {@code others}. All rows in this Table will appear after all rows in {@code others}. If
-     * Tables in {@code others} are the result of a prior merge operation, they <em>may</em> be expanded in an attempt
-     * to avoid deeply nested structures.
-     *
-     * @apiNote It's best to avoid many chained calls to {@link #mergeBefore(Table...)} and
-     *          {@link #mergeAfter(Table...)}, as this may result in deeply-nested data structures. See
-     *          TableTools.merge(Table...).
-     * @param others The Tables to merge with
-     * @return The merged Table
-     */
-    Table mergeAfter(Table... others);
-
-    // -----------------------------------------------------------------------------------------------------------------
     // Miscellaneous Operations
     // -----------------------------------------------------------------------------------------------------------------
 
@@ -760,25 +736,31 @@ public interface Table extends
 
     /**
      * <p>
-     * Wait for updates to this Table.
+     * Wait for updates to this Table. Should not be invoked from a {@link TableListener} or other
+     * {@link io.deephaven.engine.updategraph.NotificationQueue.Notification notification} on this Table's
+     * {@link #getUpdateGraph() update graph}. It may be suitable to wait from another update graph if doing so does not
+     * introduce any cycles.
      * <p>
-     * In some implementations, this call may also terminate in case of interrupt or spurious wakeup (see
-     * java.util.concurrent.locks.Condition#await()).
+     * In some implementations, this call may also terminate in case of interrupt or spurious wakeup.
      *
      * @throws InterruptedException In the event this thread is interrupted
+     * @see java.util.concurrent.locks.Condition#await()
      */
     void awaitUpdate() throws InterruptedException;
 
     /**
      * <p>
-     * Wait for updates to this Table.
+     * Wait for updates to this Table. Should not be invoked from a {@link TableListener} or other
+     * {@link io.deephaven.engine.updategraph.NotificationQueue.Notification notification} on this Table's
+     * {@link #getUpdateGraph() update graph}. It may be suitable to wait from another update graph if doing so does not
+     * introduce any cycles.
      * <p>
-     * In some implementations, this call may also terminate in case of interrupt or spurious wakeup (see
-     * java.util.concurrent.locks.Condition#await()).
+     * In some implementations, this call may also terminate in case of interrupt or spurious wakeup.
      *
      * @param timeout The maximum time to wait in milliseconds.
      * @return false if the timeout elapses without notification, true otherwise.
      * @throws InterruptedException In the event this thread is interrupted
+     * @see java.util.concurrent.locks.Condition#await()
      */
     boolean awaitUpdate(long timeout) throws InterruptedException;
 

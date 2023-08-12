@@ -21,8 +21,9 @@ import io.deephaven.engine.table.Table;
 import io.deephaven.engine.table.TableDefinition;
 import io.deephaven.engine.table.impl.BaseTable;
 import io.deephaven.engine.table.impl.remote.ConstructSnapshot;
+import io.deephaven.engine.table.impl.sources.ReinterpretUtils;
 import io.deephaven.engine.table.impl.util.BarrageMessage;
-import io.deephaven.engine.updategraph.UpdateGraphProcessor;
+import io.deephaven.engine.updategraph.impl.PeriodicUpdateGraph;
 import io.deephaven.extensions.barrage.BarragePerformanceLog;
 import io.deephaven.extensions.barrage.BarrageSnapshotOptions;
 import io.deephaven.extensions.barrage.BarrageStreamGenerator;
@@ -33,7 +34,6 @@ import io.deephaven.io.logger.Logger;
 import io.deephaven.proto.flight.util.MessageHelper;
 import io.deephaven.proto.flight.util.SchemaHelper;
 import io.deephaven.proto.util.Exceptions;
-import io.deephaven.time.DateTime;
 import io.deephaven.api.util.NameValidator;
 import io.deephaven.engine.util.ColumnFormatting;
 import io.deephaven.engine.util.config.MutableInputTable;
@@ -54,6 +54,7 @@ import org.apache.commons.lang3.mutable.MutableObject;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
+import java.lang.reflect.Array;
 import java.math.BigDecimal;
 import java.math.BigInteger;
 import java.time.Instant;
@@ -112,7 +113,7 @@ public class BarrageUtil {
             BigDecimal.class,
             BigInteger.class,
             String.class,
-            DateTime.class,
+            Instant.class,
             Boolean.class));
 
     public static ByteString schemaBytesFromTable(@NotNull final Table table) {
@@ -122,7 +123,8 @@ public class BarrageUtil {
     public static ByteString schemaBytesFromTableDefinition(
             @NotNull final TableDefinition tableDefinition,
             @NotNull final Map<String, Object> attributes) {
-        return schemaBytes(fbb -> makeTableSchemaPayload(fbb, tableDefinition, attributes));
+        return schemaBytes(fbb -> makeTableSchemaPayload(
+                fbb, DEFAULT_SNAPSHOT_DESER_OPTIONS, tableDefinition, attributes));
     }
 
     public static ByteString schemaBytes(@NotNull final ToIntFunction<FlatBufferBuilder> schemaPayloadWriter) {
@@ -140,6 +142,7 @@ public class BarrageUtil {
 
     public static int makeTableSchemaPayload(
             @NotNull final FlatBufferBuilder builder,
+            @NotNull final StreamReaderOptions options,
             @NotNull final TableDefinition tableDefinition,
             @NotNull final Map<String, Object> attributes) {
         final Map<String, String> schemaMetadata = attributesToMetadata(attributes);
@@ -147,7 +150,8 @@ public class BarrageUtil {
         final Map<String, String> descriptions = GridAttributes.getColumnDescriptions(attributes);
         final MutableInputTable inputTable = (MutableInputTable) attributes.get(Table.INPUT_TABLE_ATTRIBUTE);
         final List<Field> fields = columnDefinitionsToFields(
-                descriptions, inputTable, tableDefinition.getColumns(), ignored -> new HashMap<>())
+                descriptions, inputTable, tableDefinition, tableDefinition.getColumns(), ignored -> new HashMap<>(),
+                attributes, options.columnsAsList())
                 .collect(Collectors.toList());
 
         return new Schema(fields, schemaMetadata).getSchema(builder);
@@ -177,22 +181,58 @@ public class BarrageUtil {
     public static Stream<Field> columnDefinitionsToFields(
             @NotNull final Map<String, String> columnDescriptions,
             @Nullable final MutableInputTable inputTable,
+            @NotNull final TableDefinition tableDefinition,
             @NotNull final Collection<ColumnDefinition<?>> columnDefinitions,
-            @NotNull final Function<String, Map<String, String>> fieldMetadataFactory) {
+            @NotNull final Function<String, Map<String, String>> fieldMetadataFactory,
+            @NotNull final Map<String, Object> attributes) {
+        return columnDefinitionsToFields(columnDescriptions, inputTable, tableDefinition, columnDefinitions,
+                fieldMetadataFactory,
+                attributes,
+                false);
+    }
+
+    private static boolean isDataTypeSortable(final Class<?> dataType) {
+        return dataType.isPrimitive() || Comparable.class.isAssignableFrom(dataType);
+    }
+
+    public static Stream<Field> columnDefinitionsToFields(
+            @NotNull final Map<String, String> columnDescriptions,
+            @Nullable final MutableInputTable inputTable,
+            @NotNull final TableDefinition tableDefinition,
+            @NotNull final Collection<ColumnDefinition<?>> columnDefinitions,
+            @NotNull final Function<String, Map<String, String>> fieldMetadataFactory,
+            @NotNull final Map<String, Object> attributes,
+            final boolean columnsAsList) {
         // Find the format columns
         final Set<String> formatColumns = new HashSet<>();
         columnDefinitions.stream().map(ColumnDefinition::getName)
                 .filter(ColumnFormatting::isFormattingColumn)
                 .forEach(formatColumns::add);
 
+        // Find columns that are sortable
+        Set<String> sortableColumns;
+        if (attributes.containsKey(GridAttributes.SORTABLE_COLUMNS_ATTRIBUTE)) {
+            final String[] restrictedSortColumns =
+                    attributes.get(GridAttributes.SORTABLE_COLUMNS_ATTRIBUTE).toString().split(",");
+            sortableColumns = Arrays.stream(restrictedSortColumns)
+                    .filter(columnName -> isDataTypeSortable(tableDefinition.getColumn(columnName).getDataType()))
+                    .collect(Collectors.toSet());
+        } else {
+            sortableColumns = columnDefinitions.stream()
+                    .filter(column -> isDataTypeSortable(column.getDataType()))
+                    .map(ColumnDefinition::getName)
+                    .collect(Collectors.toSet());
+        }
+
         // Build metadata for columns and add the fields
         return columnDefinitions.stream().map((final ColumnDefinition<?> column) -> {
             final String name = column.getName();
-            final Class<?> dataType = column.getDataType();
-            final Class<?> componentType = column.getComponentType();
+            Class<?> dataType = column.getDataType();
+            Class<?> componentType = column.getComponentType();
             final Map<String, String> metadata = fieldMetadataFactory.apply(name);
 
             putMetadata(metadata, "isPartitioning", column.isPartitioning() + "");
+            putMetadata(metadata, "isSortable", String.valueOf(sortableColumns.contains(name)));
 
             // Wire up style and format column references
             final String styleFormatName = ColumnFormatting.getStyleFormatColumn(name);
@@ -236,6 +276,11 @@ public class BarrageUtil {
             }
             if (inputTable != null) {
                 putMetadata(metadata, "inputtable.isKey", inputTable.getKeyNames().contains(name) + "");
+            }
+
+            if (columnsAsList) {
+                componentType = dataType;
+                dataType = Array.newInstance(dataType, 0).getClass();
             }
 
             if (Vector.class.isAssignableFrom(dataType)) {
@@ -299,7 +344,7 @@ public class BarrageUtil {
                 throw Exceptions.statusRuntimeException(Code.INVALID_ARGUMENT, exMsg +
                         " of intType(signed=" + intType.getIsSigned() + ", bitWidth=" + intType.getBitWidth() + ")");
             case Bool:
-                return boolean.class;
+                return Boolean.class;
             case Duration:
                 final ArrowType.Duration durationType = (ArrowType.Duration) arrowType;
                 final TimeUnit durationUnit = durationType.getUnit();
@@ -314,7 +359,7 @@ public class BarrageUtil {
                 final TimeUnit timestampUnit = timestampType.getUnit();
                 if (tz == null || "UTC".equals(tz)) {
                     if (maybeConvertForTimeUnit(timestampUnit, result, i)) {
-                        return DateTime.class;
+                        return Instant.class;
                     }
                 }
                 throw Exceptions.statusRuntimeException(Code.INVALID_ARGUMENT, exMsg +
@@ -344,12 +389,28 @@ public class BarrageUtil {
         public final int nCols;
         public TableDefinition tableDef;
         // a multiplicative factor to apply when reading; useful for eg converting arrow timestamp time units
-        // to the expected nanos value for DateTime.
+        // to the expected nanos value for Instant.
         public int[] conversionFactors;
         public Map<String, Object> attributes;
 
         public ConvertedArrowSchema(final int nCols) {
             this.nCols = nCols;
+        }
+
+        public ChunkType[] computeWireChunkTypes() {
+            return tableDef.getColumnStream()
+                    .map(ColumnDefinition::getDataType)
+                    .map(ReinterpretUtils::maybeConvertToWritablePrimitiveChunkType)
+                    .toArray(ChunkType[]::new);
+        }
+
+        public Class<?>[] computeWireTypes() {
+            return tableDef.getColumnStream().map(ColumnDefinition::getDataType).toArray(Class[]::new);
+        }
+
+        public Class<?>[] computeWireComponentTypes() {
+            return tableDef.getColumnStream()
+                    .map(ColumnDefinition::getComponentType).toArray(Class[]::new);
         }
     }
 
@@ -373,6 +434,10 @@ public class BarrageUtil {
                 i -> ArrowType.getTypeForField(schema.fields(i)),
                 i -> visitor -> {
                     final org.apache.arrow.flatbuf.Field field = schema.fields(i);
+                    if (field.dictionary() != null) {
+                        throw Exceptions.statusRuntimeException(Code.INVALID_ARGUMENT,
+                                "Dictionary encoding is not supported: " + field.name());
+                    }
                     for (int j = 0; j < field.customMetadataLength(); j++) {
                         final KeyValue keyValue = field.customMetadata(j);
                         visitor.accept(keyValue.key(), keyValue.value());
@@ -431,11 +496,13 @@ public class BarrageUtil {
             if (type.getValue() == null) {
                 Class<?> defaultType = getDefaultType(getArrowType.apply(i), result, i);
                 type.setValue(defaultType);
-            } else if (type.getValue() == boolean.class) {
+            } else if (type.getValue() == boolean.class || type.getValue() == Boolean.class) {
                 // check existing barrage clients that might be sending int8 instead of bool
                 // TODO (deephaven-core#3403) widen this check for better assurances
                 Class<?> defaultType = getDefaultType(getArrowType.apply(i), result, i);
-                Assert.eq(type.getValue(), "deephaven column type", defaultType, "arrow inferred type");
+                Assert.eq(Boolean.class, "deephaven column type", defaultType, "arrow inferred type");
+                // force to boxed boolean to allow nullability in the column sources
+                type.setValue(Boolean.class);
             }
             columns[i] = ColumnDefinition.fromGenericType(name, type.getValue(), componentType.getValue());
         }
@@ -575,7 +642,7 @@ public class BarrageUtil {
                         || type == BigInteger.class) {
                     return Types.MinorType.VARBINARY.getType();
                 }
-                if (type == DateTime.class || type == Instant.class || type == ZonedDateTime.class) {
+                if (type == Instant.class || type == ZonedDateTime.class) {
                     return NANO_SINCE_EPOCH_TYPE;
                 }
 
@@ -600,7 +667,7 @@ public class BarrageUtil {
 
     public static void createAndSendStaticSnapshot(
             BarrageStreamGenerator.Factory<BarrageStreamGeneratorImpl.View> streamGeneratorFactory,
-            BaseTable table,
+            BaseTable<?> table,
             BitSet columns,
             RowSet viewport,
             boolean reverseViewport,
@@ -673,8 +740,9 @@ public class BarrageUtil {
                         // very simplistic logic to take the last snapshot and extrapolate max
                         // number of rows that will not exceed the target UGP processing time
                         // percentage
+                        PeriodicUpdateGraph updateGraph = table.getUpdateGraph().cast();
                         long targetNanos = (long) (TARGET_SNAPSHOT_PERCENTAGE
-                                * UpdateGraphProcessor.DEFAULT.getTargetCycleDurationMillis()
+                                * updateGraph.getTargetCycleDurationMillis()
                                 * 1000000);
 
                         long nanosPerCell = elapsed / (msg.rowsIncluded.size() * columnCount);
@@ -698,7 +766,7 @@ public class BarrageUtil {
 
     public static void createAndSendSnapshot(
             BarrageStreamGenerator.Factory<BarrageStreamGeneratorImpl.View> streamGeneratorFactory,
-            BaseTable table,
+            BaseTable<?> table,
             BitSet columns, RowSet viewport, boolean reverseViewport,
             BarrageSnapshotOptions snapshotRequestOptions,
             StreamObserver<BarrageStreamGeneratorImpl.View> listener,

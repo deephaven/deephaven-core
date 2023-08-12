@@ -6,12 +6,12 @@
 
 using deephaven::dhcore::chunk::Chunk;
 using deephaven::dhcore::utility::separatedList;
-using deephaven::dhcore::utility::stringf;
+using deephaven::dhcore::utility::Stringf;
 
 namespace deephaven::dhcore::chunk {
-void Chunk::checkSize(size_t proposedSize, std::string_view what) const {
-  if (proposedSize > size_) {
-    auto message = stringf("%o: new size > size (%o > %o)", what, proposedSize, size_);
+void Chunk::CheckSize(size_t proposed_size, std::string_view what) const {
+  if (proposed_size > size_) {
+    auto message = Stringf("%o: new size > size (%o > %o)", what, proposed_size, size_);
     throw std::runtime_error(message);
   }
 }
@@ -32,12 +32,12 @@ struct MyConstVisitor {
 };
 }  // namespace
 
-Chunk &AnyChunk::unwrap() {
+Chunk &AnyChunk::Unwrap() {
   MyVisitor v;
   return std::visit(v, variant_);
 }
 
-const Chunk &AnyChunk::unwrap() const {
+const Chunk &AnyChunk::Unwrap() const {
   MyConstVisitor v;
   return std::visit(v, variant_);
 }

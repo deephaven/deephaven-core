@@ -79,9 +79,8 @@ public abstract class InstrumentedTableUpdateListenerAdapter extends Instrumente
      */
     @Override
     public void onFailureInternal(Throwable originalException, Entry sourceEntry) {
+        AsyncErrorLogger.log(DateTimeUtils.nowMillisResolution(), sourceEntry, sourceEntry, originalException);
         try {
-            AsyncErrorLogger.log(DateTimeUtils.currentTimeMillis(), sourceEntry, sourceEntry,
-                    originalException);
             AsyncClientErrorNotifier.reportError(originalException);
         } catch (IOException e) {
             throw new UncheckedTableException("Exception in " + sourceEntry.toString(), originalException);

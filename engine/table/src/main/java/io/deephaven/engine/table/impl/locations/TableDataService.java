@@ -46,7 +46,7 @@ public interface TableDataService {
      * Get a detailed description string.
      *
      * @return A description string
-     * @implNote Defaults to {@link #toString()}
+     * @implNote Defaults to {@link Object#toString()}
      */
     default String describe() {
         return toString();

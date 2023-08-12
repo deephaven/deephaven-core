@@ -33,81 +33,10 @@
 <script type="module">
   import dh from './dh-core.js';
 
-  const {Client} = dh;
-  var url = new URL('/socket', window.location);
-  if (url.protocol === 'http:') {
-    url.protocol = 'ws:';
-  } else {
-    url.protocol = 'wss:';
-  }
+  const {CoreClient, Table} = dh;
 
-  window.c = new Client(url.href);
-  c.addEventListener(dh.Client.EVENT_CONNECT, () => {
-    connected();
-    c.login({username:'dh',token:'dh',type:'password'}).then(result => {
-      console.log("login successful");
-    });
-  });
-
-  var queries = document.getElementById('queries');
-  var configs = Object.create(null);
-
-  function connected() {
-    c.addEventListener(dh.Client.EVENT_CONFIG_REMOVED, event => {
-      removeQuery(event.detail);
-    });
-    c.addEventListener(dh.Client.EVENT_CONFIG_UPDATED, event => {
-      removeQuery(event.detail);
-      addQuery(event.detail);
-    });
-    c.addEventListener(dh.Client.EVENT_CONFIG_ADDED, event => {
-      addQuery(event.detail);
-    });
-    function removeQuery(queryInfo) {
-      var old = configs[queryInfo.serial];
-      if (old) {
-        var queryElt = old.elt;
-        queryElt.parentNode.removeChild(queryElt);
-        delete configs[queryInfo.serial];
-      }
-    }
-    function addQuery(queryInfo) {
-      console.log("config added: " + queryInfo.name);
-
-      var queryElt = document.createElement('li');
-      configs[queryInfo.serial] = {info:queryInfo, elt:queryElt};
-      queryElt.innerText = queryInfo.name + ' [' + queryInfo.status + ']';
-      queryElt.classList.add('closed');
-      var open = false;
-      queryElt.onclick = () => {
-        open = !open;
-        queryElt.className = open ? 'open' : 'closed';
-        queryInfo.addEventListener(dh.QueryInfo.EVENT_TABLE_METRICS, event => {
-          if (event.detail.nanos === -1) {
-            console.log(event.detail.type);
-          } else {
-            console.log(`Metrics: ${event.detail.type} in ${event.detail.formatted}`);
-          }
-        });
-      };
-      var tables = document.createElement('ul');
-      queryElt.appendChild(tables);
-      queryInfo.tables.forEach(t => {
-        var tableElt = document.createElement('li');
-        tableElt.innerText = t;
-        tables.appendChild(tableElt);
-        tableElt.onclick = e => {
-          e.stopPropagation();
-          queryInfo.getTable(t).then(table => openTable(table));
-          document.querySelectorAll('.selected').forEach(elt => {
-            elt.classList.remove('selected');
-          });
-          e.target.classList.add('selected');
-        };
-      });
-      queries.appendChild(queryElt);
-    }
-  }
+  var connection;
+  var ide;
   var currentTable;
   var oldTableHandlerCleanup;
   var currentOffset;
@@ -115,6 +44,27 @@
 
   var totalsTable, grandTotalsTable;
   var stashedTotals = null, stashedGrandTotals = null;
+
+  (async () => {
+      var client = new CoreClient(window.location.protocol + "//" + window.location.host);
+      await client.login({type:CoreClient.LOGIN_TYPE_ANONYMOUS});
+      connection = await client.getAsIdeConnection();
+
+      var types = await connection.getConsoleTypes();
+
+      if (types.indexOf("python") !== -1) {
+          ide = await connection.startSession("python");
+          await ide.runCode(`
+from deephaven import time_table
+remoteTable = time_table("PT00:00:01").update_view(["I=i", "J=I*I", "K=I%100"]).last_by(by = ["K"])
+`)
+      } else if (types.indexOf("groovy") !== -1) {
+          ide = await connection.startSession("groovy");
+          await ide.runCode('remoteTable = timeTable("PT00:00:01").updateView("I=i", "J=I*I", "K=I%100").lastBy("K")')
+      }
+
+      openTable(await ide.getTable('remoteTable'));
+  })();
 
   function openTable(table) {
     // correctly disconnect from the old table, if any

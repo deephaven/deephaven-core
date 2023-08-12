@@ -6,8 +6,8 @@ package io.deephaven.engine.table.impl.select;
 import io.deephaven.engine.table.Table;
 import io.deephaven.engine.table.TableDefinition;
 import io.deephaven.engine.context.QueryScope;
+import io.deephaven.engine.table.impl.DataAccessHelpers;
 import io.deephaven.engine.testutil.testcase.RefreshingTableTestCase;
-import io.deephaven.time.DateTime;
 import io.deephaven.time.DateTimeUtils;
 import io.deephaven.engine.util.TableTools;
 import io.deephaven.engine.testutil.TstUtils;
@@ -16,7 +16,7 @@ import io.deephaven.engine.rowset.RowSetFactory;
 
 import java.math.BigDecimal;
 import java.math.BigInteger;
-import java.time.ZoneId;
+import java.time.Instant;
 import java.time.ZonedDateTime;
 import java.time.temporal.ChronoUnit;
 import java.util.Arrays;
@@ -200,28 +200,27 @@ public class WhereFilterFactoryTest extends RefreshingTableTestCase {
     }
 
 
-    public void testInDateTimes() {
-        DateTime wed = DateTimeUtils.convertDateTime("2018-05-02T10:00:00 NY");// not in the table
+    public void testInInstants() {
+        Instant wed = DateTimeUtils.parseInstant("2018-05-02T10:00:00 NY");// not in the table
 
-        DateTime mon = DateTimeUtils.convertDateTime("2018-04-30T10:00:00 NY");
-        DateTime tues = DateTimeUtils.convertDateTime("2018-05-01T10:00:00 NY");
-        DateTime thurs = DateTimeUtils.convertDateTime("2018-05-03T10:00:00 NY");
-        Table t = TableTools.newTable(TableTools.col("Timestamp", new DateTime(mon.getNanos()),
-                new DateTime(tues.getNanos()), new DateTime(thurs.getNanos())));
+        Instant mon = DateTimeUtils.parseInstant("2018-04-30T10:00:00 NY");
+        Instant tues = DateTimeUtils.parseInstant("2018-05-01T10:00:00 NY");
+        Instant thurs = DateTimeUtils.parseInstant("2018-05-03T10:00:00 NY");
+        Table t = TableTools.newTable(TableTools.col("Timestamp", mon, tues, thurs));
         // match one item
         WhereFilter f = WhereFilterFactory.getExpression("Timestamp in '" + mon + "'");
         f.init(t.getDefinition());
         assertEquals(MatchFilter.class, f.getClass());
         RowSet idx = f.filter(t.getRowSet().copy(), t.getRowSet(), t, false);
         assertEquals(1, idx.size());
-        assertEquals(mon, t.getColumn(0).get(idx.firstRowKey()));
+        assertEquals(mon, DataAccessHelpers.getColumn(t, 0).get(idx.firstRowKey()));
         // match one of two items
         f = WhereFilterFactory.getExpression("Timestamp in '" + tues + "', '" + wed + "'");
         f.init(t.getDefinition());
         assertEquals(MatchFilter.class, f.getClass());
         idx = f.filter(t.getRowSet().copy(), t.getRowSet(), t, false);
         assertEquals(1, idx.size());
-        assertEquals(tues, t.getColumn(0).get(idx.firstRowKey()));
+        assertEquals(tues, DataAccessHelpers.getColumn(t, 0).get(idx.firstRowKey()));
 
         // match two of two items
         f = WhereFilterFactory.getExpression("Timestamp in '" + tues + "', '" + thurs + "'");
@@ -229,8 +228,8 @@ public class WhereFilterFactoryTest extends RefreshingTableTestCase {
         assertEquals(MatchFilter.class, f.getClass());
         idx = f.filter(t.getRowSet().copy(), t.getRowSet(), t, false);
         assertEquals(2, idx.size());
-        assertEquals(tues, t.getColumn(0).get(idx.firstRowKey()));
-        assertEquals(thurs, t.getColumn(0).get(idx.lastRowKey()));
+        assertEquals(tues, DataAccessHelpers.getColumn(t, 0).get(idx.firstRowKey()));
+        assertEquals(thurs, DataAccessHelpers.getColumn(t, 0).get(idx.lastRowKey()));
 
         // match zero of one item
         f = WhereFilterFactory.getExpression("Timestamp in '" + wed + "'");
@@ -287,25 +286,24 @@ public class WhereFilterFactoryTest extends RefreshingTableTestCase {
                 null, 0, null, '0');
         checkResult("FALS3", false, false, false, false, false, false, false, false, false, (byte) 0, (short) 0, 0, 0,
                 null, 0, null, '0');
-
-        checkDateRange("18:43", makeDateTime("18:43"), makeDateTime("18:44"));
-        checkDateRange("18:43:40", makeDateTime("18:43:40"), makeDateTime("18:43:41"));
-        checkDateRange("18:43:40.100", makeDateTime("18:43:40.100"), makeDateTime("18:43:40.101"));
-        checkDateRange("2018-03-25 NY", DateTimeUtils.convertDateTime("2018-03-25 NY"),
-                DateTimeUtils.convertDateTime("2018-03-26 NY"));
-        checkDateRange("2018-03-25T18:00 NY", DateTimeUtils.convertDateTime("2018-03-25T18:00 NY"),
-                DateTimeUtils.convertDateTime("2018-03-25T18:01 NY"));
-        checkDateRange("2018-03-25T18:00:00 NY", DateTimeUtils.convertDateTime("2018-03-25T18:00:00 NY"),
-                DateTimeUtils.convertDateTime("2018-03-25T18:00:01 NY"));
+        checkDateRange("PT18:43", makeInstant("PT18:43"), makeInstant("PT18:44"));
+        checkDateRange("PT18:43:40", makeInstant("PT18:43:40"), makeInstant("PT18:43:41"));
+        checkDateRange("PT18:43:40.100", makeInstant("PT18:43:40.100"), makeInstant("PT18:43:40.101"));
+        checkDateRange("2018-03-25 NY", DateTimeUtils.parseInstant("2018-03-25 NY"),
+                DateTimeUtils.parseInstant("2018-03-26 NY"));
+        checkDateRange("2018-03-25T18:00 NY", DateTimeUtils.parseInstant("2018-03-25T18:00 NY"),
+                DateTimeUtils.parseInstant("2018-03-25T18:01 NY"));
+        checkDateRange("2018-03-25T18:00:00 NY", DateTimeUtils.parseInstant("2018-03-25T18:00:00 NY"),
+                DateTimeUtils.parseInstant("2018-03-25T18:00:01 NY"));
     }
 
-    private DateTime makeDateTime(String timeStr) {
-        ZonedDateTime zdt = ZonedDateTime.now(ZoneId.of("America/New_York")).truncatedTo(ChronoUnit.DAYS)
-                .plus(DateTimeUtils.convertTime(timeStr), ChronoUnit.NANOS);
-        return DateTimeUtils.millisToTime(zdt.toInstant().toEpochMilli());
+    private Instant makeInstant(String timeStr) {
+        ZonedDateTime zdt = ZonedDateTime.now(DateTimeUtils.timeZone()).truncatedTo(ChronoUnit.DAYS)
+                .plus(DateTimeUtils.parseDurationNanos(timeStr), ChronoUnit.NANOS);
+        return zdt.toInstant();
     }
 
-    private void checkDateRange(String input, DateTime lowerDate, DateTime upperDate) {
+    private void checkDateRange(String input, Instant lowerDate, Instant upperDate) {
         WhereFilterFactory.InferenceResult inf = new WhereFilterFactory.InferenceResult(input);
         assertEquals(false, inf.isByte);
         assertEquals(false, inf.isShort);
@@ -316,8 +314,8 @@ public class WhereFilterFactoryTest extends RefreshingTableTestCase {
         assertEquals(false, inf.isBool);
         assertEquals(false, inf.isChar);
 
-        assertEquals(lowerDate.getNanos(), inf.dateLower.getNanos());
-        assertEquals(upperDate.getNanos(), inf.dateUpper.getNanos());
+        assertEquals(DateTimeUtils.epochNanos(lowerDate), DateTimeUtils.epochNanos(inf.dateLower));
+        assertEquals(DateTimeUtils.epochNanos(upperDate), DateTimeUtils.epochNanos(inf.dateUpper));
     }
 
     private void checkResult(String input, boolean isByte, boolean isShort, boolean isInt, boolean isLong,

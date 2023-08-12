@@ -12,7 +12,6 @@ import io.deephaven.engine.rowset.TrackingWritableRowSet;
 import io.deephaven.engine.table.ModifiedColumnSet;
 import io.deephaven.engine.table.Table;
 import io.deephaven.engine.table.TableUpdate;
-import io.deephaven.engine.updategraph.UpdateGraphProcessor;
 import io.deephaven.engine.updategraph.NotificationQueue;
 import io.deephaven.engine.table.impl.sources.SwitchColumnSource;
 import io.deephaven.engine.table.impl.sources.sparse.SparseConstants;
@@ -98,7 +97,7 @@ public class SelectOverheadLimiter {
             return input.flatten();
         }
 
-        UpdateGraphProcessor.DEFAULT.checkInitiateTableOperation();
+        input.getUpdateGraph().checkInitiateSerialTableOperation();
 
         // now we know we are refreshing, so should update our overhead structure
         final OverheadTracker overheadTracker = new OverheadTracker();
@@ -123,7 +122,7 @@ public class SelectOverheadLimiter {
         recorders.add(inputRecorder.getValue());
 
         final MergedListener mergedListener = new MergedListener(recorders,
-                Collections.singletonList((NotificationQueue.Dependency) input), "clampSelectOverhead", result) {
+                Collections.singletonList(input), "clampSelectOverhead", result) {
             Table flatResult = null;
             ListenerRecorder flatRecorder;
             ModifiedColumnSet.Transformer flatTransformer;

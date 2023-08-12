@@ -23,6 +23,7 @@ import io.deephaven.plot.datasets.category.CategoryDataSeriesMap;
 import io.deephaven.plot.datasets.category.CategoryTreemapDataSeriesTableMap;
 import io.deephaven.plot.datasets.category.CategoryDataSeriesPartitionedTable;
 import io.deephaven.plot.datasets.category.CategoryDataSeriesSwappablePartitionedTable;
+import io.deephaven.plot.datasets.categoryerrorbar.CategoryErrorBarDataSeriesPartitionedTable;
 import io.deephaven.plot.datasets.data.IndexableNumericData;
 import io.deephaven.plot.datasets.data.IndexableNumericDataSwappableTable;
 import io.deephaven.plot.datasets.data.IndexableNumericDataTable;
@@ -38,8 +39,8 @@ import io.deephaven.plot.datasets.xyerrorbar.XYErrorBarDataSeriesArray;
 import io.deephaven.plot.util.PlotUtils;
 import io.deephaven.plot.util.tables.*;
 import io.deephaven.plot.util.tables.PartitionedTableHandle;
-import io.deephaven.plugin.type.ObjectType.Exporter;
-import io.deephaven.plugin.type.ObjectType.Exporter.Reference;
+import io.deephaven.plugin.type.Exporter;
+import io.deephaven.plugin.type.Exporter.Reference;
 import io.deephaven.proto.backplane.script.grpc.FigureDescriptor;
 import io.deephaven.proto.backplane.script.grpc.FigureDescriptor.AxisDescriptor;
 import io.deephaven.proto.backplane.script.grpc.FigureDescriptor.BoolMapWithDefault;
@@ -58,8 +59,7 @@ import io.deephaven.proto.backplane.script.grpc.FigureDescriptor.SourceType;
 import io.deephaven.proto.backplane.script.grpc.FigureDescriptor.StringMapWithDefault;
 import io.deephaven.time.calendar.BusinessCalendar;
 import org.jetbrains.annotations.NotNull;
-import org.joda.time.format.DateTimeFormat;
-import org.joda.time.format.DateTimeFormatter;
+import java.time.format.DateTimeFormatter;
 
 import java.awt.*;
 import java.time.DayOfWeek;
@@ -79,7 +79,7 @@ import java.util.stream.DoubleStream;
 import java.util.stream.Stream;
 
 public class FigureWidgetTranslator {
-    private static final DateTimeFormatter HOLIDAY_TIME_FORMAT = DateTimeFormat.forPattern("HH:mm");
+    private static final DateTimeFormatter HOLIDAY_TIME_FORMAT = DateTimeFormatter.ofPattern("HH:mm");
 
     private final List<String> errorList = new ArrayList<>();
     private final Map<TableHandle, Integer> tablePositionMap = new HashMap<>();
@@ -109,7 +109,7 @@ public class FigureWidgetTranslator {
             i++;
 
             // noinspection unused
-            final Reference reference = exporter.reference(table, false, true).orElseThrow();
+            final Reference reference = exporter.reference(table);
             // relying on FetchObjectResponse.export_id for communicating exported tables to the client
         }
 
@@ -129,7 +129,7 @@ public class FigureWidgetTranslator {
             }
             i++;
 
-            exporter.reference(partitionedTable, false, true).orElseThrow();
+            exporter.reference(partitionedTable);
         }
 
         assignOptionalField(figure.getTitle(), clientFigure::setTitle, clientFigure::clearTitle);
@@ -407,6 +407,21 @@ public class FigureWidgetTranslator {
                                         clientAxes.add(makeSourceDescriptor(series.getTableHandle(),
                                                 series.getHoverTextColumn(), SourceType.HOVER_TEXT, null));
                                     }
+                                } else if (s instanceof CategoryErrorBarDataSeriesPartitionedTable) {
+                                    CategoryErrorBarDataSeriesPartitionedTable series =
+                                            (CategoryErrorBarDataSeriesPartitionedTable) s;
+                                    clientAxes.add(
+                                            makeSourceDescriptor(series.getTableHandle(), series.getCategoryColumn(),
+                                                    catAxis == xAxis ? SourceType.X : SourceType.Y, catAxis));
+                                    clientAxes
+                                            .add(makeSourceDescriptor(series.getTableHandle(), series.getValueColumn(),
+                                                    numAxis == xAxis ? SourceType.X : SourceType.Y, numAxis));
+                                    clientAxes.add(
+                                            makeSourceDescriptor(series.getTableHandle(), series.getErrorBarLowColumn(),
+                                                    numAxis == xAxis ? SourceType.X_LOW : SourceType.Y_LOW, numAxis));
+                                    clientAxes.add(makeSourceDescriptor(series.getTableHandle(),
+                                            series.getErrorBarHighColumn(),
+                                            numAxis == xAxis ? SourceType.X_HIGH : SourceType.Y_HIGH, numAxis));
                                 } else if (s instanceof CategoryDataSeriesMap) {// bar and plot from constant data
                                     errorList.add("OpenAPI presently does not support series of type " + s.getClass());
                                 }
@@ -544,7 +559,7 @@ public class FigureWidgetTranslator {
         final BusinessCalendar businessCalendar = axisTransform.getBusinessCalendar();
         final BusinessCalendarDescriptor.Builder businessCalendarDescriptor = BusinessCalendarDescriptor.newBuilder();
         businessCalendarDescriptor.setName(businessCalendar.name());
-        businessCalendarDescriptor.setTimeZone(businessCalendar.timeZone().getTimeZone().getID());
+        businessCalendarDescriptor.setTimeZone(businessCalendar.timeZone().getId());
         Arrays.stream(BusinessCalendarDescriptor.DayOfWeek.values()).filter(dayOfWeek -> {
             if (dayOfWeek == BusinessCalendarDescriptor.DayOfWeek.UNRECOGNIZED) {
                 return false;
@@ -568,10 +583,12 @@ public class FigureWidgetTranslator {
                     localDate.setDay(entry.getKey().getDayOfMonth());
                     final Holiday.Builder holiday = Holiday.newBuilder();
                     Arrays.stream(entry.getValue().getBusinessPeriods()).map(bp -> {
-                        final String open = HOLIDAY_TIME_FORMAT.withZone(businessCalendar.timeZone().getTimeZone())
-                                .print(bp.getStartTime().getMillis());
-                        final String close = HOLIDAY_TIME_FORMAT.withZone(businessCalendar.timeZone().getTimeZone())
-                                .print(bp.getEndTime().getMillis());
+                        // noinspection ConstantConditions
+                        final String open = HOLIDAY_TIME_FORMAT.withZone(businessCalendar.timeZone())
+                                .format(bp.getStartTime());
+                        // noinspection ConstantConditions
+                        final String close = HOLIDAY_TIME_FORMAT.withZone(businessCalendar.timeZone())
+                                .format(bp.getEndTime());
                         final BusinessPeriod.Builder businessPeriod = BusinessPeriod.newBuilder();
                         businessPeriod.setOpen(open);
                         businessPeriod.setClose(close);

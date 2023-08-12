@@ -10,11 +10,14 @@ import io.deephaven.base.verify.Assert;
 import io.deephaven.chunk.ChunkType;
 import io.deephaven.chunk.util.pools.ChunkPoolConstants;
 import io.deephaven.configuration.Configuration;
+import io.deephaven.engine.context.ExecutionContext;
+import io.deephaven.engine.table.impl.InstrumentedUpdateSource;
+import io.deephaven.engine.updategraph.LogicalClock;
+import io.deephaven.engine.updategraph.NotificationQueue;
+import io.deephaven.engine.updategraph.UpdateSourceRegistrar;
 import io.deephaven.engine.rowset.*;
 import io.deephaven.engine.table.*;
 import io.deephaven.engine.table.impl.QueryTable;
-import io.deephaven.engine.table.impl.perf.PerformanceEntry;
-import io.deephaven.engine.table.impl.perf.UpdatePerformanceTracker;
 import io.deephaven.engine.table.impl.sources.ArrayBackedColumnSource;
 import io.deephaven.engine.table.impl.sources.LongSparseArraySource;
 import io.deephaven.engine.table.impl.sources.ReinterpretUtils;
@@ -22,23 +25,20 @@ import io.deephaven.engine.table.impl.sources.WritableRedirectedColumnSource;
 import io.deephaven.engine.table.impl.util.BarrageMessage;
 import io.deephaven.engine.table.impl.util.LongColumnSourceWritableRowRedirection;
 import io.deephaven.engine.table.impl.util.WritableRowRedirection;
-import io.deephaven.engine.updategraph.LogicalClock;
-import io.deephaven.engine.updategraph.NotificationQueue;
-import io.deephaven.engine.updategraph.UpdateGraphProcessor;
-import io.deephaven.engine.updategraph.UpdateSourceRegistrar;
+import io.deephaven.engine.updategraph.*;
 import io.deephaven.extensions.barrage.BarragePerformanceLog;
 import io.deephaven.extensions.barrage.BarrageSubscriptionPerformanceLogger;
 import io.deephaven.internal.log.LoggerFactory;
 import io.deephaven.io.log.LogEntry;
 import io.deephaven.io.log.LogLevel;
 import io.deephaven.io.logger.Logger;
-import io.deephaven.time.DateTime;
+import io.deephaven.time.DateTimeUtils;
 import io.deephaven.util.annotations.InternalUseOnly;
 import org.HdrHistogram.Histogram;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
-import java.io.IOException;
+import java.time.Instant;
 import java.util.*;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.ScheduledFuture;
@@ -50,9 +50,10 @@ import java.util.function.LongConsumer;
 /**
  * A client side {@link Table} that mirrors an upstream/server side {@code Table}.
  *
+ * <p>
  * Note that <b>viewport</b>s are defined in row positions of the upstream table.
  */
-public abstract class BarrageTable extends QueryTable implements BarrageMessage.Listener, Runnable {
+public abstract class BarrageTable extends QueryTable implements BarrageMessage.Listener {
 
     public static final boolean DEBUG_ENABLED =
             Configuration.getInstance().getBooleanWithDefault("BarrageTable.debug", false);
@@ -64,8 +65,6 @@ public abstract class BarrageTable extends QueryTable implements BarrageMessage.
     private final UpdateSourceRegistrar registrar;
     private final NotificationQueue notificationQueue;
     private final ScheduledExecutorService executorService;
-
-    private final PerformanceEntry refreshEntry;
 
     protected final Stats stats;
 
@@ -101,7 +100,7 @@ public abstract class BarrageTable extends QueryTable implements BarrageMessage.
     /** synchronize access to pendingUpdates */
     private final Object pendingUpdatesLock = new Object();
 
-    /** accumulate pending updates until we're refreshed in {@link #run()} */
+    /** accumulate pending updates until we're refreshed in {@link SourceRefresher#run()} */
     private ArrayDeque<BarrageMessage> pendingUpdates = new ArrayDeque<>();
 
     /** alternative pendingUpdates container to avoid allocating, and resizing, a new instance */
@@ -117,6 +116,8 @@ public abstract class BarrageTable extends QueryTable implements BarrageMessage.
 
     private final List<Object> processedData;
     private final TLongList processedStep;
+
+    private final SourceRefresher refresher;
 
     protected BarrageTable(final UpdateSourceRegistrar registrar,
             final NotificationQueue notificationQueue,
@@ -141,9 +142,6 @@ public abstract class BarrageTable extends QueryTable implements BarrageMessage.
             stats = new Stats(tableKey);
         }
 
-        this.refreshEntry = UpdatePerformanceTracker.getInstance().getEntry(
-                "BarrageTable(" + System.identityHashCode(this) + (stats != null ? ") " + stats.tableKey : ")"));
-
         if (initialViewPortRows == -1) {
             serverViewport = null;
         } else {
@@ -156,7 +154,7 @@ public abstract class BarrageTable extends QueryTable implements BarrageMessage.
         }
 
         // we always start empty, and can be notified this cycle if we are refreshed
-        final long currentClockValue = LogicalClock.DEFAULT.currentValue();
+        final long currentClockValue = getUpdateGraph().clock().currentValue();
         setLastNotificationStep(LogicalClock.getState(currentClockValue) == LogicalClock.State.Updating
                 ? LogicalClock.getStep(currentClockValue) - 1
                 : LogicalClock.getStep(currentClockValue));
@@ -168,6 +166,8 @@ public abstract class BarrageTable extends QueryTable implements BarrageMessage.
             processedData = null;
             processedStep = null;
         }
+
+        this.refresher = new SourceRefresher();
     }
 
     /**
@@ -176,7 +176,8 @@ public abstract class BarrageTable extends QueryTable implements BarrageMessage.
      * @implNote this cannot be performed in the constructor as the class is subclassed.
      */
     public void addSourceToRegistrar() {
-        registrar.addSource(this);
+        setRefreshing(true);
+        registrar.addSource(refresher);
     }
 
     abstract protected TableUpdate applyUpdates(ArrayDeque<BarrageMessage> localPendingUpdates);
@@ -246,18 +247,23 @@ public abstract class BarrageTable extends QueryTable implements BarrageMessage.
         enqueueError(t);
     }
 
-    @Override
-    public void run() {
-        refreshEntry.onUpdateStart();
-        try {
-            final long startTm = System.nanoTime();
-            realRefresh();
-            recordMetric(stats -> stats.refresh, System.nanoTime() - startTm);
-        } catch (Exception e) {
-            beginLog(LogLevel.ERROR).append(": Failure during BarrageTable run: ").append(e).endl();
-            notifyListenersOnError(e, null);
-        } finally {
-            refreshEntry.onUpdateEnd();
+    private class SourceRefresher extends InstrumentedUpdateSource {
+
+        SourceRefresher() {
+            super(updateGraph, "BarrageTable(" + System.identityHashCode(BarrageTable.this)
+                    + (stats != null ? ") " + stats.tableKey : ")"));
+        }
+
+        @Override
+        protected void instrumentedRefresh() {
+            try {
+                final long startTm = System.nanoTime();
+                realRefresh();
+                recordMetric(stats -> stats.refresh, System.nanoTime() - startTm);
+            } catch (Exception e) {
+                beginLog(LogLevel.ERROR).append(": Failure during BarrageTable run: ").append(e).endl();
+                notifyListenersOnError(e, null);
+            }
         }
     }
 
@@ -318,7 +324,7 @@ public abstract class BarrageTable extends QueryTable implements BarrageMessage.
 
     private void cleanup() {
         unsubscribed = true;
-        registrar.removeSource(this);
+        registrar.removeSource(refresher);
         synchronized (pendingUpdatesLock) {
             // release any pending snapshots, as we will never process them
             pendingUpdates.clear();
@@ -367,8 +373,8 @@ public abstract class BarrageTable extends QueryTable implements BarrageMessage.
             final TableDefinition tableDefinition,
             final Map<String, Object> attributes,
             final long initialViewPortRows) {
-        return make(UpdateGraphProcessor.DEFAULT, UpdateGraphProcessor.DEFAULT, executorService, tableDefinition,
-                attributes, initialViewPortRows);
+        final UpdateGraph ug = ExecutionContext.getContext().getUpdateGraph();
+        return make(ug, ug, executorService, tableDefinition, attributes, initialViewPortRows);
     }
 
     @VisibleForTesting
@@ -458,7 +464,7 @@ public abstract class BarrageTable extends QueryTable implements BarrageMessage.
             processedStep.remove(0);
         }
         processedData.add(snapshotOrDelta.clone());
-        processedStep.add(LogicalClock.DEFAULT.currentStep());
+        processedStep.add(getUpdateGraph().clock().currentStep());
     }
 
     protected boolean maybeEnablePrevTracking() {
@@ -547,36 +553,23 @@ public abstract class BarrageTable extends QueryTable implements BarrageMessage.
 
         @Override
         public void run() {
-            final DateTime now = DateTime.now();
-
+            final Instant now = DateTimeUtils.now();
             final BarrageSubscriptionPerformanceLogger logger =
                     BarragePerformanceLog.getInstance().getSubscriptionLogger();
-            try {
-                // noinspection SynchronizationOnLocalVariableOrMethodParameter
-                synchronized (logger) {
-                    flush(now, logger, deserialize, "DeserializationMillis");
-                    flush(now, logger, processUpdate, "ProcessUpdateMillis");
-                    flush(now, logger, refresh, "RefreshMillis");
-                }
-            } catch (IOException ioe) {
-                beginLog(LogLevel.ERROR).append("Unexpected exception while flushing barrage stats: ")
-                        .append(ioe).endl();
+            // noinspection SynchronizationOnLocalVariableOrMethodParameter
+            synchronized (logger) {
+                flush(now, logger, deserialize, "DeserializationMillis");
+                flush(now, logger, processUpdate, "ProcessUpdateMillis");
+                flush(now, logger, refresh, "RefreshMillis");
             }
         }
 
-        private void flush(final DateTime now, final BarrageSubscriptionPerformanceLogger logger, final Histogram hist,
-                final String statType) throws IOException {
+        private void flush(final Instant now, final BarrageSubscriptionPerformanceLogger logger, final Histogram hist,
+                final String statType) {
             if (hist.getTotalCount() == 0) {
                 return;
             }
-            logger.log(tableId, tableKey, statType, now,
-                    hist.getTotalCount(),
-                    hist.getValueAtPercentile(50) / 1e6,
-                    hist.getValueAtPercentile(75) / 1e6,
-                    hist.getValueAtPercentile(90) / 1e6,
-                    hist.getValueAtPercentile(95) / 1e6,
-                    hist.getValueAtPercentile(99) / 1e6,
-                    hist.getMaxValue() / 1e6);
+            logger.log(tableId, tableKey, statType, now, hist);
             hist.reset();
         }
     }

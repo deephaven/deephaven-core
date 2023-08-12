@@ -3,17 +3,17 @@
  */
 package io.deephaven.qst.type;
 
-import io.deephaven.annotations.SimpleStyle;
+import io.deephaven.annotations.SingletonStyle;
 import org.immutables.value.Value.Immutable;
 
 /**
- * The {@link Integer} type.
+ * The primitive {@link int} type.
  */
 @Immutable
-@SimpleStyle
+@SingletonStyle
 public abstract class IntType extends PrimitiveTypeBase<Integer> {
 
-    public static IntType instance() {
+    public static IntType of() {
         return ImmutableIntType.of();
     }
 
@@ -23,14 +23,18 @@ public abstract class IntType extends PrimitiveTypeBase<Integer> {
     }
 
     @Override
+    public final BoxedIntType boxedType() {
+        return BoxedIntType.of();
+    }
+
+    @Override
     public final NativeArrayType<int[], Integer> arrayType() {
         return NativeArrayType.of(int[].class, this);
     }
 
     @Override
-    public final <V extends PrimitiveType.Visitor> V walk(V visitor) {
-        visitor.visit(this);
-        return visitor;
+    public final <R> R walk(PrimitiveType.Visitor<R> visitor) {
+        return visitor.visit(this);
     }
 
     @Override

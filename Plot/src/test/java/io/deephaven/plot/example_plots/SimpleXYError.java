@@ -6,8 +6,8 @@ package io.deephaven.plot.example_plots;
 import io.deephaven.time.DateTimeUtils;
 import io.deephaven.plot.Figure;
 import io.deephaven.plot.FigureFactory;
-import io.deephaven.time.DateTime;
 
+import java.time.Instant;
 
 /**
  * Sample errorBar plot.
@@ -25,11 +25,11 @@ public class SimpleXYError {
         final double[] yHigh = {5.9, 2.8, 5.9, 4.9};
 
         final long time = 1491946585000000000L;
-        DateTime[] date = {
-                new DateTime(time + DateTimeUtils.DAY * 1),
-                new DateTime(time + DateTimeUtils.DAY * 2),
-                new DateTime(time + DateTimeUtils.DAY * 3),
-                new DateTime(time + DateTimeUtils.DAY * 4)};
+        Instant[] instants = {
+                DateTimeUtils.epochNanosToInstant(time + DateTimeUtils.DAY * 1),
+                DateTimeUtils.epochNanosToInstant(time + DateTimeUtils.DAY * 2),
+                DateTimeUtils.epochNanosToInstant(time + DateTimeUtils.DAY * 3),
+                DateTimeUtils.epochNanosToInstant(time + DateTimeUtils.DAY * 4)};
 
         final Number[] open = {3, 4, 3, 5};
         final Number[] high = {5, 6, 5, 7};
@@ -40,9 +40,9 @@ public class SimpleXYError {
 
         if (testOHLC) {
             fig = FigureFactory.figure()
-                    .plot("S1", date, y1).plotStyle("Line")
+                    .plot("S1", instants, y1).plotStyle("Line")
                     .twin()
-                    .ohlcPlot("S2", date, open, high, low, close).plotStyle("OHLC");
+                    .ohlcPlot("S2", instants, open, high, low, close).plotStyle("OHLC");
         } else {
             fig = FigureFactory.figure()
                     .errorBarXY("S1", x1, xLow, xHigh, y1, yLow, yHigh).plotStyle("bar").pointsVisible(true);

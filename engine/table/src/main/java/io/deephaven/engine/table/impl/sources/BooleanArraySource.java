@@ -11,7 +11,6 @@ import io.deephaven.engine.table.impl.AbstractColumnSource;
 import io.deephaven.engine.table.impl.MutableColumnSourceGetDefaults;
 import io.deephaven.engine.rowset.chunkattributes.OrderedRowKeyRanges;
 import io.deephaven.engine.rowset.chunkattributes.OrderedRowKeys;
-import io.deephaven.engine.updategraph.LogicalClock;
 import io.deephaven.util.BooleanUtils;
 import io.deephaven.chunk.*;
 import io.deephaven.engine.rowset.chunkattributes.RowKeys;
@@ -58,7 +57,7 @@ public class BooleanArraySource extends ArraySourceHelper<Boolean, byte[]> imple
      */
     @Override
     public void prepareForParallelPopulation(RowSequence changedIndices) {
-        final long currentStep = LogicalClock.DEFAULT.currentStep();
+        final long currentStep = updateGraph.clock().currentStep();
         if (ensurePreviousClockCycle == currentStep) {
             throw new IllegalStateException("May not call ensurePrevious twice on one clock cycle!");
         }
@@ -256,7 +255,10 @@ public class BooleanArraySource extends ArraySourceHelper<Boolean, byte[]> imple
         final FillSparseChunkContext<byte[]> ctx = new FillSparseChunkContext<>();
         indices.forAllRowKeys((final long v) -> {
             if (v >= ctx.capForCurrentBlock) {
-                ctx.currentBlockNo = getBlockNo(v);
+                if (v > maxIndex) {
+                    dest.set(ctx.offset++, null);
+                    return;
+                }                ctx.currentBlockNo = getBlockNo(v);
                 ctx.capForCurrentBlock = (ctx.currentBlockNo + 1L) << LOG_BLOCK_SIZE;
                 ctx.currentBlock = blocks[ctx.currentBlockNo];
             }
@@ -282,6 +284,10 @@ public class BooleanArraySource extends ArraySourceHelper<Boolean, byte[]> imple
         final FillSparseChunkContext<byte[]> ctx = new FillSparseChunkContext<>();
         indices.forAllRowKeys((final long v) -> {
             if (v >= ctx.capForCurrentBlock) {
+                if (v > maxIndex) {
+                    dest.set(ctx.offset++, null);
+                    return;
+                }
                 ctx.currentBlockNo = getBlockNo(v);
                 ctx.capForCurrentBlock = (ctx.currentBlockNo + 1L) << LOG_BLOCK_SIZE;
                 ctx.currentBlock = blocks[ctx.currentBlockNo];
@@ -408,7 +414,8 @@ public class BooleanArraySource extends ArraySourceHelper<Boolean, byte[]> imple
     private void fillFromChunkByRanges(@NotNull RowSequence rowSequence, Chunk<? extends Values> src, Reader reader) {
         final LongChunk<OrderedRowKeyRanges> ranges = rowSequence.asRowKeyRangesChunk();
 
-        final boolean trackPrevious = prevFlusher != null && ensurePreviousClockCycle != LogicalClock.DEFAULT.currentStep();
+        final boolean trackPrevious = prevFlusher != null &&
+                ensurePreviousClockCycle != updateGraph.clock().currentStep();
 
         if (trackPrevious) {
             prevFlusher.maybeActivate();
@@ -458,7 +465,8 @@ public class BooleanArraySource extends ArraySourceHelper<Boolean, byte[]> imple
     private void fillFromChunkByKeys(@NotNull RowSequence rowSequence, Chunk<? extends Values> src, Reader reader) {
         final LongChunk<OrderedRowKeys> keys = rowSequence.asRowKeyChunk();
 
-        final boolean trackPrevious = prevFlusher != null && ensurePreviousClockCycle != LogicalClock.DEFAULT.currentStep();
+        final boolean trackPrevious = prevFlusher != null &&
+                ensurePreviousClockCycle != updateGraph.clock().currentStep();
 
         if (trackPrevious) {
             prevFlusher.maybeActivate();
@@ -504,7 +512,7 @@ public class BooleanArraySource extends ArraySourceHelper<Boolean, byte[]> imple
         if (keys.size() == 0) {
             return;
         }
-        final boolean trackPrevious = prevFlusher != null && ensurePreviousClockCycle != LogicalClock.DEFAULT.currentStep();
+        final boolean trackPrevious = prevFlusher != null && ensurePreviousClockCycle != updateGraph.clock().currentStep();
 
         if (trackPrevious) {
             prevFlusher.maybeActivate();
@@ -577,6 +585,10 @@ public class BooleanArraySource extends ArraySourceHelper<Boolean, byte[]> imple
             final FillSparseChunkContext<byte[]> ctx = new FillSparseChunkContext<>();
             indices.forAllRowKeys((final long v) -> {
                 if (v >= ctx.capForCurrentBlock) {
+                    if (v > maxIndex) {
+                        dest.set(ctx.offset++, NULL_BOOLEAN_AS_BYTE);
+                        return;
+                    }
                     ctx.currentBlockNo = getBlockNo(v);
                     ctx.capForCurrentBlock = (ctx.currentBlockNo + 1L) << LOG_BLOCK_SIZE;
                     ctx.currentBlock = blocks[ctx.currentBlockNo];
@@ -602,6 +614,10 @@ public class BooleanArraySource extends ArraySourceHelper<Boolean, byte[]> imple
             final FillSparseChunkContext<byte[]> ctx = new FillSparseChunkContext<>();
             indices.forAllRowKeys((final long v) -> {
                 if (v >= ctx.capForCurrentBlock) {
+                    if (v > maxIndex) {
+                        dest.set(ctx.offset++, NULL_BOOLEAN_AS_BYTE);
+                        return;
+                    }
                     ctx.currentBlockNo = getBlockNo(v);
                     ctx.capForCurrentBlock = (ctx.currentBlockNo + 1L) << LOG_BLOCK_SIZE;
                     ctx.currentBlock = blocks[ctx.currentBlockNo];

@@ -53,10 +53,10 @@ setup(
     keywords='Deephaven Development',
     python_requires='>=3.8',
     install_requires=[
-        'jpy>=0.13.0',
-        'deephaven-plugin',
+        'jpy>=0.14.0',
+        'deephaven-plugin==0.5.0',
         'numpy',
-        'pandas',
+        'pandas>=1.5.0',
         'pyarrow',
         # TODO(deephaven-core#3082): Remove numba dependency workarounds
         # It took 6 months for numba to support 3.11 after it was released, we want to make sure deephaven-core will be

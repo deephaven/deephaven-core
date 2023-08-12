@@ -3,6 +3,7 @@
  */
 package io.deephaven.engine.rowset.impl;
 
+import io.deephaven.engine.context.ExecutionContext;
 import io.deephaven.engine.rowset.RowSet;
 import io.deephaven.engine.rowset.TrackingRowSet;
 import io.deephaven.engine.rowset.TrackingWritableRowSet;
@@ -16,13 +17,13 @@ import java.util.function.Function;
 
 public class TrackingWritableRowSetImpl extends WritableRowSetImpl implements TrackingWritableRowSet {
 
+    private final LogicalClock clock;
+    private final WritableRowSetImpl prev;
+
     private transient OrderedLongSet prevInnerSet;
 
-    private final WritableRowSetImpl prev = new UnmodifiableRowSetImpl();
-
     /**
-     * Protects prevImpl. Only updated in checkPrev() and initializePreviousValue() (this later supposed to be used only
-     * right after the constructor, in special cases).
+     * Protects {@link #prevInnerSet}. Only updated in checkAndGetPrev() and initializePreviousValue().
      */
     private transient volatile long changeTimeStep;
 
@@ -34,16 +35,18 @@ public class TrackingWritableRowSetImpl extends WritableRowSetImpl implements Tr
 
     public TrackingWritableRowSetImpl(final OrderedLongSet innerSet) {
         super(innerSet);
-        this.prevInnerSet = OrderedLongSet.EMPTY;
+        clock = ExecutionContext.getContext().getUpdateGraph().clock();
+        prev = new UnmodifiableRowSetImpl();
+        prevInnerSet = OrderedLongSet.EMPTY;
         changeTimeStep = -1;
     }
 
     private OrderedLongSet checkAndGetPrev() {
-        if (LogicalClock.DEFAULT.currentStep() == changeTimeStep) {
+        if (clock.currentStep() == changeTimeStep) {
             return prevInnerSet;
         }
         synchronized (this) {
-            final long currentClockStep = LogicalClock.DEFAULT.currentStep();
+            final long currentClockStep = clock.currentStep();
             if (currentClockStep == changeTimeStep) {
                 return prevInnerSet;
             }

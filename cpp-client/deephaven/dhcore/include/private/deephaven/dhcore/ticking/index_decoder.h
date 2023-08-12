@@ -13,23 +13,23 @@ public:
   explicit DataInput(const flatbuffers::Vector<int8_t> &vec) : DataInput(vec.data(), vec.size()) {}
 
   DataInput(const void *start, size_t size) : data_(static_cast<const char *>(start)),
-      size_(size) {}
+      end_(data_ + size) {}
 
-  int64_t readValue(int command);
+  [[nodiscard]] int64_t ReadValue(int command);
 
-  int64_t readLong();
-  int32_t readInt();
-  int16_t readShort();
-  int8_t readByte();
+  [[nodiscard]] int64_t ReadLong();
+  [[nodiscard]] int32_t ReadInt();
+  [[nodiscard]] int16_t ReadShort();
+  [[nodiscard]] int8_t ReadByte();
 
 private:
   const char *data_ = nullptr;
-  size_t size_ = 0;
+  const char *end_ = nullptr;
 };
 
 struct IndexDecoder {
-  typedef deephaven::dhcore::container::RowSequence RowSequence;
+  using RowSequence = deephaven::dhcore::container::RowSequence;
 
-  static std::shared_ptr<RowSequence> readExternalCompressedDelta(DataInput *in);
+  [[nodiscard]] static std::shared_ptr<RowSequence> ReadExternalCompressedDelta(DataInput *in);
 };
 }  // namespace deephaven::dhcore::ticking

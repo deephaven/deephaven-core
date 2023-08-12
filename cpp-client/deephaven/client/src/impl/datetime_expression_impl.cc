@@ -21,7 +21,7 @@ public:
 
   ~DateTimeLiteralImpl() final = default;
 
-  void streamIrisRepresentation(std::ostream &s) const final;
+  void StreamIrisRepresentation(std::ostream &s) const final;
 
 private:
   std::string value_;
@@ -33,7 +33,7 @@ public:
 
   ~DateTimeDateTimeImpl() final = default;
 
-  void streamIrisRepresentation(std::ostream &s) const final;
+  void StreamIrisRepresentation(std::ostream &s) const final;
 
 private:
   DateTime value_;
@@ -47,7 +47,7 @@ public:
 
   ~DateTimeComparisonImpl() final = default;
 
-  void streamIrisRepresentation(std::ostream &s) const final;
+  void StreamIrisRepresentation(std::ostream &s) const final;
 
 private:
   std::shared_ptr<DateTimeExpressionImpl> lhs_;
@@ -57,16 +57,16 @@ private:
 }  // namespace
 
 std::shared_ptr<DateTimeExpressionImpl>
-DateTimeExpressionImpl::createFromLiteral(std::string value) {
+DateTimeExpressionImpl::CreateFromLiteral(std::string value) {
   return std::make_shared<DateTimeLiteralImpl>(std::move(value));
 }
 
 std::shared_ptr<DateTimeExpressionImpl>
-DateTimeExpressionImpl::createFromDateTime(const DateTime &value) {
+DateTimeExpressionImpl::CreateFromDateTime(const DateTime &value) {
   return std::make_shared<DateTimeDateTimeImpl>(value);
 }
 
-std::shared_ptr<BooleanExpressionImpl> DateTimeExpressionImpl::createComparison(
+std::shared_ptr<BooleanExpressionImpl> DateTimeExpressionImpl::CreateComparison(
     std::shared_ptr<DateTimeExpressionImpl> lhs, const char *op,
     std::shared_ptr<DateTimeExpressionImpl> rhs) {
   return std::make_shared<DateTimeComparisonImpl>(std::move(lhs), op, std::move(rhs));
@@ -75,25 +75,25 @@ std::shared_ptr<BooleanExpressionImpl> DateTimeExpressionImpl::createComparison(
 DateTimeExpressionImpl::~DateTimeExpressionImpl() = default;
 
 namespace {
-void DateTimeLiteralImpl::streamIrisRepresentation(std::ostream &s) const {
+void DateTimeLiteralImpl::StreamIrisRepresentation(std::ostream &s) const {
   s << '`';
-  s << EscapeUtils::escapeJava(value_);
-  s << '`';
-}
-
-void DateTimeDateTimeImpl::streamIrisRepresentation(std::ostream &s) const {
-  s << '`';
-  value_.streamIrisRepresentation(s);
+  s << EscapeUtils::EscapeJava(value_);
   s << '`';
 }
 
-void DateTimeComparisonImpl::streamIrisRepresentation(std::ostream &s) const {
+void DateTimeDateTimeImpl::StreamIrisRepresentation(std::ostream &s) const {
+  s << '`';
+  value_.StreamIrisRepresentation(s);
+  s << '`';
+}
+
+void DateTimeComparisonImpl::StreamIrisRepresentation(std::ostream &s) const {
   s << '(';
-  lhs_->streamIrisRepresentation(s);
+  lhs_->StreamIrisRepresentation(s);
   s << ' ';
   s << compareOp_;
   s << ' ';
-  rhs_->streamIrisRepresentation(s);
+  rhs_->StreamIrisRepresentation(s);
   s << ')';
 }
 }  // namespace

@@ -3,10 +3,10 @@
  */
 package io.deephaven.engine.table.impl.util;
 
+import io.deephaven.engine.context.ExecutionContext;
 import io.deephaven.engine.table.Table;
+import io.deephaven.engine.testutil.ControlledUpdateGraph;
 import io.deephaven.time.DateTimeUtils;
-import io.deephaven.engine.updategraph.UpdateGraphProcessor;
-import io.deephaven.time.DateTime;
 import io.deephaven.engine.util.TableTools;
 import io.deephaven.engine.table.impl.UpdateSourceQueryTable;
 import io.deephaven.engine.testutil.TstUtils;
@@ -18,6 +18,7 @@ import org.junit.Test;
 
 import java.io.IOException;
 import java.math.BigInteger;
+import java.time.Instant;
 
 import static io.deephaven.engine.util.TableTools.*;
 
@@ -29,7 +30,7 @@ public class TestDynamicTableWriter {
     public void testTypes() throws IOException {
         final String[] names = new String[] {"BC", "CC", "SC", "IC", "LC", "FC", "DC", "StrC", "BLC", "DTC", "BIC"};
         final Class[] types = new Class[] {byte.class, char.class, short.class, int.class, long.class, float.class,
-                double.class, String.class, Boolean.class, DateTime.class, BigInteger.class};
+                double.class, String.class, Boolean.class, Instant.class, BigInteger.class};
         final DynamicTableWriter writer = new DynamicTableWriter(names, types);
         final UpdateSourceQueryTable result = writer.getTable();
 
@@ -42,10 +43,11 @@ public class TestDynamicTableWriter {
         writer.getSetter("DC").setDouble(6.6);
         writer.getSetter("StrC", String.class).set("Seven");
         writer.getSetter("BLC", Boolean.class).setBoolean(true);
-        writer.getSetter("DTC", DateTime.class).set(DateTimeUtils.convertDateTime("2020-09-16T07:55:00 NY"));
+        writer.getSetter("DTC", Instant.class).set(DateTimeUtils.parseInstant("2020-09-16T07:55:00 NY"));
         writer.getSetter("BIC", BigInteger.class).set(BigInteger.valueOf(8));
         writer.writeRow();
-        UpdateGraphProcessor.DEFAULT.runWithinUnitTestCycle(result::run);
+        final ControlledUpdateGraph updateGraph = ExecutionContext.getContext().getUpdateGraph().cast();
+        updateGraph.runWithinUnitTestCycle(result::run);
 
         final Table expected1 = newTable(byteCol("BC", (byte) 1),
                 charCol("CC", 'A'),
@@ -56,7 +58,7 @@ public class TestDynamicTableWriter {
                 doubleCol("DC", 6.6),
                 stringCol("StrC", "Seven"),
                 col("BLC", true),
-                col("DTC", DateTimeUtils.convertDateTime("2020-09-16T07:55:00 NY")),
+                col("DTC", DateTimeUtils.parseInstant("2020-09-16T07:55:00 NY")),
                 col("BIC", BigInteger.valueOf(8)));
         TstUtils.assertTableEquals(expected1, result);
 
@@ -71,7 +73,7 @@ public class TestDynamicTableWriter {
         row.getSetter("DC").setDouble(14.14);
         row.getSetter("StrC", String.class).set("Fifteen");
         row.getSetter("BLC", Boolean.class).setBoolean(true);
-        row.getSetter("DTC", DateTime.class).set(DateTimeUtils.convertDateTime("2020-09-16T08:55:00 NY"));
+        row.getSetter("DTC", Instant.class).set(DateTimeUtils.parseInstant("2020-09-16T08:55:00 NY"));
         row.getSetter("BIC", BigInteger.class).set(BigInteger.valueOf(16));
         row.setFlags(Row.Flags.StartTransaction);
         row.writeRow();
@@ -86,12 +88,12 @@ public class TestDynamicTableWriter {
         row2.getSetter("DC").setDouble(22.22);
         row2.getSetter("StrC", String.class).set("Twenty Three");
         row2.getSetter("BLC", Boolean.class).setBoolean(false);
-        row2.getSetter("DTC", DateTime.class).set(DateTimeUtils.convertDateTime("2020-09-16T09:55:00 NY"));
+        row2.getSetter("DTC", Instant.class).set(DateTimeUtils.parseInstant("2020-09-16T09:55:00 NY"));
         row2.getSetter("BIC", BigInteger.class).set(BigInteger.valueOf(24));
         row2.setFlags(Row.Flags.StartTransaction);
         row2.writeRow();
 
-        UpdateGraphProcessor.DEFAULT.runWithinUnitTestCycle(result::run);
+        updateGraph.runWithinUnitTestCycle(result::run);
         TstUtils.assertTableEquals(expected1, result);
 
         final Row row3 = writer.getRowWriter();
@@ -104,12 +106,12 @@ public class TestDynamicTableWriter {
         row3.getSetter("DC", double.class).set(30.30);
         row3.getSetter("StrC", String.class).set("Thirty One");
         row3.getSetter("BLC", Boolean.class).set(null);
-        row3.getSetter("DTC", DateTime.class).set(DateTimeUtils.convertDateTime("2020-09-16T10:55:00 NY"));
+        row3.getSetter("DTC", Instant.class).set(DateTimeUtils.parseInstant("2020-09-16T10:55:00 NY"));
         row3.getSetter("BIC", BigInteger.class).set(BigInteger.valueOf(32));
         row3.setFlags(Row.Flags.EndTransaction);
         row3.writeRow();
 
-        UpdateGraphProcessor.DEFAULT.runWithinUnitTestCycle(result::run);
+        updateGraph.runWithinUnitTestCycle(result::run);
 
         final Table expected2 = newTable(byteCol("BC", (byte) 1, (byte) 17, (byte) 25),
                 charCol("CC", 'A', 'C', 'D'),
@@ -120,9 +122,9 @@ public class TestDynamicTableWriter {
                 doubleCol("DC", 6.6, 22.22, 30.30),
                 stringCol("StrC", "Seven", "Twenty Three", "Thirty One"),
                 col("BLC", true, false, null),
-                col("DTC", DateTimeUtils.convertDateTime("2020-09-16T07:55:00 NY"),
-                        DateTimeUtils.convertDateTime("2020-09-16T09:55:00 NY"),
-                        DateTimeUtils.convertDateTime("2020-09-16T10:55:00 NY")),
+                col("DTC", DateTimeUtils.parseInstant("2020-09-16T07:55:00 NY"),
+                        DateTimeUtils.parseInstant("2020-09-16T09:55:00 NY"),
+                        DateTimeUtils.parseInstant("2020-09-16T10:55:00 NY")),
                 col("BIC", BigInteger.valueOf(8), BigInteger.valueOf(24), BigInteger.valueOf(32)));
         TstUtils.assertTableEquals(expected2, result);
 
@@ -132,7 +134,7 @@ public class TestDynamicTableWriter {
     public void testNulls() throws IOException {
         final String[] names = new String[] {"BC", "CC", "SC", "IC", "LC", "FC", "DC", "StrC", "BLC", "DTC", "BIC"};
         final Class[] types = new Class[] {byte.class, char.class, short.class, int.class, long.class, float.class,
-                double.class, String.class, Boolean.class, DateTime.class, BigInteger.class};
+                double.class, String.class, Boolean.class, Instant.class, BigInteger.class};
         final DynamicTableWriter writer = new DynamicTableWriter(names, types);
         final UpdateSourceQueryTable result = writer.getTable();
 
@@ -143,7 +145,8 @@ public class TestDynamicTableWriter {
         writer.getSetter("LC").setLong(4);
         writer.getSetter("FC").setFloat(5.5f);
         writer.writeRow();
-        UpdateGraphProcessor.DEFAULT.runWithinUnitTestCycle(result::run);
+        final ControlledUpdateGraph updateGraph = ExecutionContext.getContext().getUpdateGraph().cast();
+        updateGraph.runWithinUnitTestCycle(result::run);
 
         final Table expected1 = newTable(byteCol("BC", (byte) 1),
                 charCol("CC", 'A'),
@@ -152,7 +155,7 @@ public class TestDynamicTableWriter {
                 longCol("LC", 4),
                 floatCol("FC", 5.5f),
                 doubleCol("DC", QueryConstants.NULL_DOUBLE))
-                .updateView("StrC=(String)null", "BLC=(Boolean)null", "DTC=(DateTime)null",
+                .updateView("StrC=(String)null", "BLC=(Boolean)null", "DTC=(Instant)null",
                         "BIC=(java.math.BigInteger)null");
         TstUtils.assertTableEquals(expected1, result);
 
@@ -161,12 +164,12 @@ public class TestDynamicTableWriter {
         row.getSetter("DC").setDouble(14.14);
         row.getSetter("StrC", String.class).set("Fifteen");
         row.getSetter("BLC", Boolean.class).setBoolean(true);
-        row.getSetter("DTC", DateTime.class).set(DateTimeUtils.convertDateTime("2020-09-16T08:55:00 NY"));
+        row.getSetter("DTC", Instant.class).set(DateTimeUtils.parseInstant("2020-09-16T08:55:00 NY"));
         row.getSetter("BIC", BigInteger.class).set(BigInteger.valueOf(16));
         row.setFlags(Row.Flags.SingleRow);
         row.writeRow();
 
-        UpdateGraphProcessor.DEFAULT.runWithinUnitTestCycle(result::run);
+        updateGraph.runWithinUnitTestCycle(result::run);
 
         final Table expected2 = newTable(byteCol("BC", QueryConstants.NULL_BYTE),
                 charCol("CC", QueryConstants.NULL_CHAR),
@@ -177,7 +180,7 @@ public class TestDynamicTableWriter {
                 doubleCol("DC", 14.14),
                 stringCol("StrC", "Fifteen"),
                 col("BLC", true),
-                col("DTC", DateTimeUtils.convertDateTime("2020-09-16T08:55:00 NY")),
+                col("DTC", DateTimeUtils.parseInstant("2020-09-16T08:55:00 NY")),
                 col("BIC", BigInteger.valueOf(16)));
         TstUtils.assertTableEquals(merge(expected1, expected2), result);
 
@@ -193,7 +196,8 @@ public class TestDynamicTableWriter {
 
         addRow(writer, Row.Flags.SingleRow, "Fred", 1);
 
-        UpdateGraphProcessor.DEFAULT.runWithinUnitTestCycle(result::run);
+        final ControlledUpdateGraph updateGraph = ExecutionContext.getContext().getUpdateGraph().cast();
+        updateGraph.runWithinUnitTestCycle(result::run);
 
         final Table lonelyFred =
                 TableTools.newTable(TableTools.stringCol("A", "Fred"), TableTools.intCol("B", 1));
@@ -202,29 +206,29 @@ public class TestDynamicTableWriter {
         addRow(writer, Row.Flags.StartTransaction, "Barney", 2);
         addRow(writer, Row.Flags.None, "Betty", 3);
 
-        UpdateGraphProcessor.DEFAULT.runWithinUnitTestCycle(result::run);
+        updateGraph.runWithinUnitTestCycle(result::run);
 
         TstUtils.assertTableEquals(lonelyFred, result);
 
         addRow(writer, Row.Flags.EndTransaction, "Bam-Bam", 4);
 
         TstUtils.assertTableEquals(lonelyFred, result);
-        UpdateGraphProcessor.DEFAULT.runWithinUnitTestCycle(result::run);
+        updateGraph.runWithinUnitTestCycle(result::run);
 
         final Table withRubbles = TableTools.newTable(
                 TableTools.stringCol("A", "Fred", "Barney", "Betty", "Bam-Bam"), TableTools.intCol("B", 1, 2, 3, 4));
         TstUtils.assertTableEquals(withRubbles, result);
 
         addRow(writer, Row.Flags.StartTransaction, "Wilma", 5);
-        UpdateGraphProcessor.DEFAULT.runWithinUnitTestCycle(result::run);
+        updateGraph.runWithinUnitTestCycle(result::run);
         TstUtils.assertTableEquals(withRubbles, result);
 
         addRow(writer, Row.Flags.StartTransaction, "Pebbles", 6);
-        UpdateGraphProcessor.DEFAULT.runWithinUnitTestCycle(result::run);
+        updateGraph.runWithinUnitTestCycle(result::run);
         TstUtils.assertTableEquals(withRubbles, result);
 
         addRow(writer, Row.Flags.EndTransaction, "Wilma", 7);
-        UpdateGraphProcessor.DEFAULT.runWithinUnitTestCycle(result::run);
+        updateGraph.runWithinUnitTestCycle(result::run);
         final Table allTogether =
                 TableTools.newTable(TableTools.stringCol("A", "Fred", "Barney", "Betty", "Bam-Bam", "Pebbles", "Wilma"),
                         TableTools.intCol("B", 1, 2, 3, 4, 6, 7));

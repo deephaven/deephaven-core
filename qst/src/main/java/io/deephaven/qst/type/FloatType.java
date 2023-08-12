@@ -3,17 +3,17 @@
  */
 package io.deephaven.qst.type;
 
-import io.deephaven.annotations.SimpleStyle;
+import io.deephaven.annotations.SingletonStyle;
 import org.immutables.value.Value.Immutable;
 
 /**
- * The {@link Float} type.
+ * The primitive {@link float} type.
  */
 @Immutable
-@SimpleStyle
+@SingletonStyle
 public abstract class FloatType extends PrimitiveTypeBase<Float> {
 
-    public static FloatType instance() {
+    public static FloatType of() {
         return ImmutableFloatType.of();
     }
 
@@ -23,14 +23,18 @@ public abstract class FloatType extends PrimitiveTypeBase<Float> {
     }
 
     @Override
+    public final BoxedFloatType boxedType() {
+        return BoxedFloatType.of();
+    }
+
+    @Override
     public final NativeArrayType<float[], Float> arrayType() {
         return NativeArrayType.of(float[].class, this);
     }
 
     @Override
-    public final <V extends PrimitiveType.Visitor> V walk(V visitor) {
-        visitor.visit(this);
-        return visitor;
+    public final <R> R walk(PrimitiveType.Visitor<R> visitor) {
+        return visitor.visit(this);
     }
 
     @Override

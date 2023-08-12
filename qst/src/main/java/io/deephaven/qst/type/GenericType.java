@@ -7,6 +7,7 @@ package io.deephaven.qst.type;
  * A non-primitive object type.
  *
  * @param <T> the object type
+ * @see BoxedType
  * @see StringType
  * @see InstantType
  * @see ArrayType
@@ -14,17 +15,21 @@ package io.deephaven.qst.type;
  */
 public interface GenericType<T> extends Type<T> {
 
-    <V extends Visitor> V walk(V visitor);
+    NativeArrayType<T[], T> arrayType();
 
-    interface Visitor {
-        void visit(StringType stringType);
+    <R> R walk(Visitor<R> visitor);
 
-        void visit(InstantType instantType);
+    interface Visitor<R> {
+        R visit(BoxedType<?> boxedType);
 
-        void visit(ArrayType<?, ?> arrayType);
+        R visit(StringType stringType);
+
+        R visit(InstantType instantType);
+
+        R visit(ArrayType<?, ?> arrayType);
 
         // Implementation note: when adding new types here, add type to TypeHelper
 
-        void visit(CustomType<?> customType);
+        R visit(CustomType<?> customType);
     }
 }

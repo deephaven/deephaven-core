@@ -13,18 +13,22 @@ import io.deephaven.base.log.LogOutput;
 import io.deephaven.chunk.ChunkType;
 import io.deephaven.engine.liveness.ReferenceCountedLivenessNode;
 import io.deephaven.engine.rowset.RowSet;
+import io.deephaven.engine.rowset.RowSetFactory;
+import io.deephaven.engine.rowset.RowSetShiftData;
+import io.deephaven.engine.table.ModifiedColumnSet;
 import io.deephaven.engine.table.TableDefinition;
 import io.deephaven.engine.table.TableUpdate;
 import io.deephaven.engine.table.impl.InstrumentedTableUpdateListener;
+import io.deephaven.engine.table.impl.TableUpdateImpl;
 import io.deephaven.engine.table.impl.util.BarrageMessage;
 import io.deephaven.engine.table.impl.util.BarrageMessage.Listener;
-import io.deephaven.engine.updategraph.UpdateGraphProcessor;
 import io.deephaven.extensions.barrage.BarrageSubscriptionOptions;
 import io.deephaven.extensions.barrage.table.BarrageTable;
 import io.deephaven.extensions.barrage.util.*;
 import io.deephaven.internal.log.LoggerFactory;
 import io.deephaven.io.logger.Logger;
 import io.deephaven.util.annotations.ReferentialIntegrity;
+import io.deephaven.util.annotations.VisibleForTesting;
 import io.grpc.CallOptions;
 import io.grpc.ClientCall;
 import io.grpc.Context;
@@ -35,6 +39,7 @@ import io.grpc.stub.ClientCalls;
 import io.grpc.stub.ClientResponseObserver;
 import org.apache.arrow.flight.impl.Flight.FlightData;
 import org.apache.arrow.flight.impl.FlightServiceGrpc;
+import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
 import java.io.InputStream;
@@ -86,8 +91,8 @@ public class BarrageSubscriptionImpl extends ReferenceCountedLivenessNode implem
         resultTable.addParentReference(this);
 
         final MethodDescriptor<FlightData, BarrageMessage> subscribeDescriptor =
-                getClientDoExchangeDescriptor(options, resultTable.getWireChunkTypes(), resultTable.getWireTypes(),
-                        resultTable.getWireComponentTypes(),
+                getClientDoExchangeDescriptor(options, schema.computeWireChunkTypes(), schema.computeWireTypes(),
+                        schema.computeWireComponentTypes(),
                         new BarrageStreamReader(resultTable.getDeserializationTmConsumer()));
 
         // We need to ensure that the DoExchange RPC does not get attached to the server RPC when this is being called
@@ -120,14 +125,24 @@ public class BarrageSubscriptionImpl extends ReferenceCountedLivenessNode implem
                 return;
             }
             try (barrageMessage) {
-                final Listener listener = resultTable;
-                if (!connected || listener == null) {
+                final Listener localResultTable = resultTable;
+                if (!connected || localResultTable == null) {
                     return;
                 }
 
-                rowsReceived += barrageMessage.rowsIncluded.size();
+                long numRows = barrageMessage.rowsIncluded.size();
+                rowsReceived += numRows;
+                localResultTable.handleBarrageMessage(barrageMessage);
 
-                listener.handleBarrageMessage(barrageMessage);
+                // if the message was empty, then BaseTable prevents propagating the empty update, and our listener was
+                // not invoked, so let's invoke it ourselves
+                if (numRows == 0) {
+                    final TableUpdate emptyUpdate = new TableUpdateImpl(
+                            RowSetFactory.empty(), RowSetFactory.empty(), RowSetFactory.empty(), RowSetShiftData.EMPTY,
+                            ModifiedColumnSet.EMPTY);
+                    listener.onUpdate(emptyUpdate);
+                    emptyUpdate.release();
+                }
             }
         }
 
@@ -194,19 +209,19 @@ public class BarrageSubscriptionImpl extends ReferenceCountedLivenessNode implem
                     "BarrageSubscription objects cannot be reused.");
         } else {
             // test lock conditions
-            if (UpdateGraphProcessor.DEFAULT.sharedLock().isHeldByCurrentThread()) {
+            if (resultTable.getUpdateGraph().sharedLock().isHeldByCurrentThread()) {
                 throw new UnsupportedOperationException(
-                        "Cannot create subscription while holding the UpdateGraphProcessor shared lock");
+                        "Cannot create subscription while holding the UpdateGraph shared lock");
             }
 
-            if (UpdateGraphProcessor.DEFAULT.exclusiveLock().isHeldByCurrentThread()) {
-                completedCondition = UpdateGraphProcessor.DEFAULT.exclusiveLock().newCondition();
+            if (resultTable.getUpdateGraph().exclusiveLock().isHeldByCurrentThread()) {
+                completedCondition = resultTable.getUpdateGraph().exclusiveLock().newCondition();
             }
 
             // Send the initial subscription:
             observer.onNext(FlightData.newBuilder()
-                    .setAppMetadata(
-                            ByteStringAccess.wrap(makeRequestInternal(viewport, columns, reverseViewport, options)))
+                    .setAppMetadata(ByteStringAccess.wrap(makeRequestInternal(
+                            viewport, columns, reverseViewport, options, tableHandle.ticketId().bytes())))
                     .build());
             subscribed = true;
 
@@ -230,7 +245,7 @@ public class BarrageSubscriptionImpl extends ReferenceCountedLivenessNode implem
                 protected void onFailureInternal(final Throwable originalException, final Entry sourceEntry) {
                     exceptionWhileCompleting = originalException;
                     if (completedCondition != null) {
-                        UpdateGraphProcessor.DEFAULT.requestSignal(completedCondition);
+                        resultTable.getUpdateGraph().requestSignal(completedCondition);
                     } else {
                         synchronized (BarrageSubscriptionImpl.this) {
                             BarrageSubscriptionImpl.this.notifyAll();
@@ -294,7 +309,7 @@ public class BarrageSubscriptionImpl extends ReferenceCountedLivenessNode implem
     private void signalCompletion() {
         completed = true;
         if (completedCondition != null) {
-            UpdateGraphProcessor.DEFAULT.requestSignal(completedCondition);
+            resultTable.getUpdateGraph().requestSignal(completedCondition);
         } else {
             synchronized (BarrageSubscriptionImpl.this) {
                 BarrageSubscriptionImpl.this.notifyAll();
@@ -368,11 +383,13 @@ public class BarrageSubscriptionImpl extends ReferenceCountedLivenessNode implem
                 .append(System.identityHashCode(this)).append("/");
     }
 
-    private ByteBuffer makeRequestInternal(
+    @VisibleForTesting
+    static public ByteBuffer makeRequestInternal(
             @Nullable final RowSet viewport,
             @Nullable final BitSet columns,
             boolean reverseViewport,
-            @Nullable BarrageSubscriptionOptions options) {
+            @Nullable BarrageSubscriptionOptions options,
+            @NotNull byte[] ticketId) {
 
         final FlatBufferBuilder metadata = new FlatBufferBuilder();
 
@@ -390,7 +407,7 @@ public class BarrageSubscriptionImpl extends ReferenceCountedLivenessNode implem
             optOffset = options.appendTo(metadata);
         }
 
-        final int ticOffset = BarrageSubscriptionRequest.createTicketVector(metadata, tableHandle.ticketId().bytes());
+        final int ticOffset = BarrageSubscriptionRequest.createTicketVector(metadata, ticketId);
         BarrageSubscriptionRequest.startBarrageSubscriptionRequest(metadata);
         BarrageSubscriptionRequest.addColumns(metadata, colOffset);
         BarrageSubscriptionRequest.addViewport(metadata, vpOffset);
@@ -409,24 +426,6 @@ public class BarrageSubscriptionImpl extends ReferenceCountedLivenessNode implem
         return wrapper.dataBuffer();
     }
 
-    public static <ReqT, RespT> MethodDescriptor<ReqT, RespT> descriptorFor(
-            final MethodDescriptor.MethodType methodType,
-            final String serviceName,
-            final String methodName,
-            final MethodDescriptor.Marshaller<ReqT> requestMarshaller,
-            final MethodDescriptor.Marshaller<RespT> responseMarshaller,
-            final MethodDescriptor<?, ?> descriptor) {
-
-        return MethodDescriptor.<ReqT, RespT>newBuilder()
-                .setType(methodType)
-                .setFullMethodName(MethodDescriptor.generateFullMethodName(serviceName, methodName))
-                .setSampledToLocalTracing(false)
-                .setRequestMarshaller(requestMarshaller)
-                .setResponseMarshaller(responseMarshaller)
-                .setSchemaDescriptor(descriptor.getSchemaDescriptor())
-                .build();
-    }
-
     /**
      * Fetch the client side descriptor for a specific table schema.
      *
@@ -443,11 +442,19 @@ public class BarrageSubscriptionImpl extends ReferenceCountedLivenessNode implem
             final Class<?>[] columnTypes,
             final Class<?>[] componentTypes,
             final StreamReader streamReader) {
-        return descriptorFor(
-                MethodDescriptor.MethodType.BIDI_STREAMING, FlightServiceGrpc.SERVICE_NAME, "DoExchange",
-                ProtoUtils.marshaller(FlightData.getDefaultInstance()),
-                new BarrageDataMarshaller(options, columnChunkTypes, columnTypes, componentTypes, streamReader),
-                FlightServiceGrpc.getDoExchangeMethod());
+        final MethodDescriptor.Marshaller<FlightData> requestMarshaller =
+                ProtoUtils.marshaller(FlightData.getDefaultInstance());
+        final MethodDescriptor<?, ?> descriptor = FlightServiceGrpc.getDoExchangeMethod();
+
+        return MethodDescriptor.<FlightData, BarrageMessage>newBuilder()
+                .setType(MethodDescriptor.MethodType.BIDI_STREAMING)
+                .setFullMethodName(descriptor.getFullMethodName())
+                .setSampledToLocalTracing(false)
+                .setRequestMarshaller(requestMarshaller)
+                .setResponseMarshaller(
+                        new BarrageDataMarshaller(options, columnChunkTypes, columnTypes, componentTypes, streamReader))
+                .setSchemaDescriptor(descriptor.getSchemaDescriptor())
+                .build();
     }
 
     public static class BarrageDataMarshaller implements MethodDescriptor.Marshaller<BarrageMessage> {

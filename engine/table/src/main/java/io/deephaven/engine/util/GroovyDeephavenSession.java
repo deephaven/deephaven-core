@@ -14,13 +14,10 @@ import io.deephaven.engine.context.ExecutionContext;
 import io.deephaven.engine.context.QueryCompiler;
 import io.deephaven.configuration.Configuration;
 import io.deephaven.engine.exceptions.CancellationException;
-import io.deephaven.engine.updategraph.UpdateGraphProcessor;
 import io.deephaven.engine.context.QueryScope;
 import io.deephaven.api.util.NameValidator;
+import io.deephaven.engine.updategraph.UpdateGraph;
 import io.deephaven.engine.util.GroovyDeephavenSession.GroovySnapshot;
-import io.deephaven.engine.util.scripts.ScriptPathLoader;
-import io.deephaven.engine.util.scripts.ScriptPathLoaderState;
-import io.deephaven.engine.util.scripts.StateOverrideScriptPathLoader;
 import io.deephaven.internal.log.LoggerFactory;
 import io.deephaven.io.logger.Logger;
 import io.deephaven.plugin.type.ObjectTypeLookup;
@@ -119,21 +116,20 @@ public class GroovyDeephavenSession extends AbstractScriptSession<GroovySnapshot
         return script + "_" + (counter + 1);
     }
 
-    // the closures we have set for sourcing scripts
-    private transient SourceClosure sourceClosure;
-    private transient SourceClosure sourceOnceClosure;
-
-    public GroovyDeephavenSession(ObjectTypeLookup objectTypeLookup, final RunScripts runScripts)
-            throws IOException {
-        this(objectTypeLookup, null, runScripts);
+    public GroovyDeephavenSession(
+            final UpdateGraph updateGraph,
+            final ObjectTypeLookup objectTypeLookup,
+            final RunScripts runScripts) throws IOException {
+        this(updateGraph, objectTypeLookup, null, runScripts);
     }
 
     public GroovyDeephavenSession(
+            final UpdateGraph updateGraph,
             ObjectTypeLookup objectTypeLookup,
             @Nullable final Listener changeListener,
             final RunScripts runScripts)
             throws IOException {
-        super(objectTypeLookup, changeListener);
+        super(updateGraph, objectTypeLookup, changeListener);
 
         this.scriptFinder = new ScriptFinder(DEFAULT_SCRIPT_PATH);
 
@@ -164,7 +160,7 @@ public class GroovyDeephavenSession extends AbstractScriptSession<GroovySnapshot
         final String scriptName = script.substring(0, script.indexOf("."));
 
         log.info("Executing script: " + script);
-        evaluateScript(FileUtils.readTextFile(file), scriptName);
+        evaluateScript(FileUtils.readTextFile(file), scriptName).throwIfError();
     }
 
     private final Set<String> executedScripts = new HashSet<>();
@@ -225,7 +221,8 @@ public class GroovyDeephavenSession extends AbstractScriptSession<GroovySnapshot
             updateClassloader(lastCommand);
 
             try {
-                UpdateGraphProcessor.DEFAULT.exclusiveLock().doLockedInterruptibly(() -> evaluateCommand(lastCommand));
+                ExecutionContext.getContext().getUpdateGraph().exclusiveLock()
+                        .doLockedInterruptibly(() -> evaluateCommand(lastCommand));
             } catch (InterruptedException e) {
                 throw new CancellationException(e.getMessage() != null ? e.getMessage() : "Query interrupted",
                         maybeRewriteStackTrace(scriptName, currentScriptName, e, lastCommand, commandPrefix));
@@ -509,12 +506,14 @@ public class GroovyDeephavenSession extends AbstractScriptSession<GroovySnapshot
                 "import java.lang.reflect.Array;\n" +
                 "import io.deephaven.util.type.TypeUtils;\n" +
                 "import io.deephaven.util.type.ArrayTypeUtils;\n" +
-                "import io.deephaven.time.DateTime;\n" +
                 "import io.deephaven.time.DateTimeUtils;\n" +
                 "import io.deephaven.base.string.cache.CompressedString;\n" +
                 "import static io.deephaven.base.string.cache.CompressedString.compress;\n" +
-                "import org.joda.time.LocalTime;\n" +
-                "import io.deephaven.time.Period;\n" +
+                "import java.time.Instant;\n" +
+                "import java.time.LocalDate;\n" +
+                "import java.time.LocalTime;\n" +
+                "import java.time.ZoneId;\n" +
+                "import java.time.ZonedDateTime;\n" +
                 "import io.deephaven.engine.context.QueryScopeParam;\n" +
                 "import io.deephaven.engine.context.QueryScope;\n" +
                 "import java.util.*;\n" +
@@ -522,7 +521,6 @@ public class GroovyDeephavenSession extends AbstractScriptSession<GroovySnapshot
                 "import static io.deephaven.util.QueryConstants.*;\n" +
                 "import static io.deephaven.libs.GroovyStaticImports.*;\n" +
                 "import static io.deephaven.time.DateTimeUtils.*;\n" +
-                "import static io.deephaven.time.TimeZone.*;\n" +
                 "import static io.deephaven.engine.table.impl.lang.QueryLanguageFunctionUtils.*;\n" +
                 "import static io.deephaven.api.agg.Aggregation.*;\n" +
                 "import static io.deephaven.api.updateby.UpdateByOperation.*;\n" +
@@ -675,9 +673,11 @@ public class GroovyDeephavenSession extends AbstractScriptSession<GroovySnapshot
 
     @Override
     public void setVariable(String name, @Nullable Object newValue) {
-        final Object oldValue = getVariable(name, null);
         groovyShell.getContext().setVariable(NameValidator.validateQueryParameterName(name), newValue);
-        notifyVariableChange(name, oldValue, newValue);
+
+        // Observe changes from this "setVariable" (potentially capturing previous or concurrent external changes from
+        // other threads)
+        observeScopeChanges();
     }
 
     public Binding getBinding() {
@@ -696,76 +696,6 @@ public class GroovyDeephavenSession extends AbstractScriptSession<GroovySnapshot
     @Override
     public Throwable sanitizeThrowable(Throwable e) {
         return GroovyExceptionWrapper.maybeTranslateGroovyException(e);
-    }
-
-    @Override
-    public void onApplicationInitializationBegin(Supplier<ScriptPathLoader> pathLoaderSupplier,
-            ScriptPathLoaderState scriptLoaderState) {
-        ExecutionContext.getContext().getQueryCompiler().setParentClassLoader(getShell().getClassLoader());
-        setScriptPathLoader(pathLoaderSupplier, true);
-    }
-
-    @Override
-    public void onApplicationInitializationEnd() {
-        if (sourceClosure != null) {
-            sourceClosure.clearCache();
-        }
-        if (sourceOnceClosure != null) {
-            sourceOnceClosure.clearCache();
-        }
-    }
-
-    @Override
-    public void setScriptPathLoader(Supplier<ScriptPathLoader> pathLoaderSupplier, boolean caching) {
-        final ScriptPathLoader pathLoader = pathLoaderSupplier.get();
-        setVariable("source", sourceClosure = new SourceClosure(this, pathLoader, false, caching));
-        setVariable("sourceOnce", sourceOnceClosure = new SourceClosure(this, pathLoader, true, false));
-    }
-
-    @Override
-    public boolean setUseOriginalScriptLoaderState(boolean useOriginal) {
-        final Object sourceClosure = getVariable("source");
-
-        if (sourceClosure instanceof SourceClosure) {
-            final ScriptPathLoader loader = ((SourceClosure) sourceClosure).getPathLoader();
-
-            if (loader instanceof StateOverrideScriptPathLoader) {
-                final StateOverrideScriptPathLoader sospl = (StateOverrideScriptPathLoader) loader;
-
-                if (useOriginal) {
-                    sospl.clearOverride();
-                    final ScriptPathLoaderState scriptLoaderState = sospl.getUseState();
-                    log.info().append("Using startup script loader state: ")
-                            .append(scriptLoaderState == null ? "Latest" : scriptLoaderState.toString()).endl();
-                } else {
-                    log.info().append("Using latest script states").endl();
-                    sospl.setOverrideState(ScriptPathLoaderState.NONE);
-                }
-
-                ((SourceClosure) sourceClosure).clearCache();
-
-                return true;
-            } else {
-                log.warn().append("Incorrect loader type for query: ")
-                        .append(loader == null ? "(null)" : loader.getClass().toString()).endl();
-            }
-        } else {
-            log.warn().append("Incorrect closure type for query: ")
-                    .append(sourceClosure.getClass().toString()).endl();
-        }
-
-        return false;
-    }
-
-    @Override
-    public void clearScriptPathLoader() {
-        Object sourceClosure = getVariable("source");
-        if (sourceClosure instanceof SourceClosure) {
-            ((SourceClosure) sourceClosure).getPathLoader().close();
-        }
-
-        setVariable("source", new SourceDisabledClosure(this));
-        setVariable("sourceOnce", new SourceDisabledClosure(this));
     }
 
     private static class SourceDisabledClosure extends Closure<Object> {

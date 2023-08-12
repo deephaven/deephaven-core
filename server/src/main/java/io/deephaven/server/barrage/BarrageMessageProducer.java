@@ -29,9 +29,8 @@ import io.deephaven.engine.table.impl.sources.ReinterpretUtils;
 import io.deephaven.engine.table.impl.util.BarrageMessage;
 import io.deephaven.engine.table.impl.util.ShiftInversionHelper;
 import io.deephaven.engine.table.impl.util.UpdateCoalescer;
-import io.deephaven.engine.updategraph.DynamicNode;
-import io.deephaven.engine.updategraph.LogicalClock;
-import io.deephaven.engine.updategraph.UpdateGraphProcessor;
+import io.deephaven.engine.updategraph.*;
+import io.deephaven.engine.updategraph.impl.PeriodicUpdateGraph;
 import io.deephaven.extensions.barrage.BarragePerformanceLog;
 import io.deephaven.extensions.barrage.BarrageStreamGenerator;
 import io.deephaven.extensions.barrage.BarrageSubscriptionOptions;
@@ -41,8 +40,8 @@ import io.deephaven.extensions.barrage.util.GrpcUtil;
 import io.deephaven.extensions.barrage.util.StreamReader;
 import io.deephaven.internal.log.LoggerFactory;
 import io.deephaven.io.logger.Logger;
+import io.deephaven.server.session.SessionService;
 import io.deephaven.server.util.Scheduler;
-import io.deephaven.time.DateTime;
 import io.deephaven.util.SafeCloseable;
 import io.deephaven.util.SafeCloseableArray;
 import io.deephaven.util.datastructures.LongSizedDataStructure;
@@ -52,7 +51,7 @@ import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 import org.HdrHistogram.Histogram;
 
-import java.io.IOException;
+import java.time.Instant;
 import java.util.*;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.locks.ReentrantLock;
@@ -69,18 +68,18 @@ import static io.deephaven.extensions.barrage.util.BarrageUtil.TARGET_SNAPSHOT_P
 
 /**
  * The server-side implementation of a Barrage replication source.
- *
+ * <p>
  * When a client subscribes initially, a snapshot of the table is sent. The snapshot is obtained using either get() or
  * getPrev() based on the state of the LogicalClock. On each subsequent update, the client is given the deltas between
  * the last update propagation and the next.
- *
+ * <p>
  * When a client changes its subscription it will be sent a snapshot of only the data that the server believes it needs
  * assuming that the client has been respecting the existing subscription. Practically, this means that the server may
  * omit some data if the client's viewport change overlaps the currently recognized viewport.
- *
+ * <p>
  * It is possible to use this replication source to create subscriptions that propagate changes from one UGP to another
  * inside the same JVM.
- *
+ * <p>
  * The client-side counterpart of this is the {@link StreamReader}.
  *
  * @param <MessageView> The sub-view type that the listener expects to receive.
@@ -114,32 +113,36 @@ public class BarrageMessageProducer<MessageView> extends LivenessArtifact
 
         @AssistedFactory
         public interface Factory<MessageView> {
-            Operation<MessageView> create(BaseTable parent, long updateIntervalMs);
+            Operation<MessageView> create(BaseTable<?> parent, long updateIntervalMs);
         }
 
         private final Scheduler scheduler;
+        private final SessionService.ErrorTransformer errorTransformer;
         private final BarrageStreamGenerator.Factory<MessageView> streamGeneratorFactory;
-        private final BaseTable parent;
+        private final BaseTable<?> parent;
         private final long updateIntervalMs;
         private final Runnable onGetSnapshot;
 
         @AssistedInject
         public Operation(
                 final Scheduler scheduler,
+                final SessionService.ErrorTransformer errorTransformer,
                 final BarrageStreamGenerator.Factory<MessageView> streamGeneratorFactory,
-                @Assisted final BaseTable parent,
+                @Assisted final BaseTable<?> parent,
                 @Assisted final long updateIntervalMs) {
-            this(scheduler, streamGeneratorFactory, parent, updateIntervalMs, null);
+            this(scheduler, errorTransformer, streamGeneratorFactory, parent, updateIntervalMs, null);
         }
 
         @VisibleForTesting
         public Operation(
                 final Scheduler scheduler,
+                final SessionService.ErrorTransformer errorTransformer,
                 final BarrageStreamGenerator.Factory<MessageView> streamGeneratorFactory,
-                final BaseTable parent,
+                final BaseTable<?> parent,
                 final long updateIntervalMs,
                 @Nullable final Runnable onGetSnapshot) {
             this.scheduler = scheduler;
+            this.errorTransformer = errorTransformer;
             this.streamGeneratorFactory = streamGeneratorFactory;
             this.parent = parent;
             this.updateIntervalMs = updateIntervalMs;
@@ -165,7 +168,7 @@ public class BarrageMessageProducer<MessageView> extends LivenessArtifact
         public Result<BarrageMessageProducer<MessageView>> initialize(final boolean usePrev,
                 final long beforeClock) {
             final BarrageMessageProducer<MessageView> result = new BarrageMessageProducer<MessageView>(
-                    scheduler, streamGeneratorFactory, parent, updateIntervalMs, onGetSnapshot);
+                    scheduler, errorTransformer, streamGeneratorFactory, parent, updateIntervalMs, onGetSnapshot);
             return new Result<>(result, result.constructListener());
         }
     }
@@ -195,6 +198,7 @@ public class BarrageMessageProducer<MessageView> extends LivenessArtifact
 
     private final String logPrefix;
     private final Scheduler scheduler;
+    private final SessionService.ErrorTransformer errorTransformer;
     private final BarrageStreamGenerator.Factory<MessageView> streamGeneratorFactory;
 
     private final BaseTable<?> parent;
@@ -203,7 +207,7 @@ public class BarrageMessageProducer<MessageView> extends LivenessArtifact
     private volatile long lastScheduledUpdateTime = 0;
 
     private final boolean isBlinkTable;
-    /** if the parent is a blink table, then this records number of items seen since last propagation */
+    /** if the parent is a blink table, then this records number of items seen since last propagation or snapshot */
     private long blinkTableUpdateSize = 0;
     /** if the parent is a blink table, then this records number of items sent last propagation */
     private long lastBlinkTableUpdateSize = 0;
@@ -237,7 +241,7 @@ public class BarrageMessageProducer<MessageView> extends LivenessArtifact
     private final WritableColumnSource<?>[] deltaColumns;
 
     /**
-     * This is the last step on which the UGP-synced RowSet was updated. This is used only for consistency checking
+     * This is the last step on which the UG-synced RowSet was updated. This is used only for consistency checking
      * between our initial creation and subsequent updates.
      */
     private long lastIndexClockStep = 0;
@@ -301,14 +305,17 @@ public class BarrageMessageProducer<MessageView> extends LivenessArtifact
 
     private final boolean parentIsRefreshing;
 
-    public BarrageMessageProducer(final Scheduler scheduler,
+    public BarrageMessageProducer(
+            final Scheduler scheduler,
+            final SessionService.ErrorTransformer errorTransformer,
             final BarrageStreamGenerator.Factory<MessageView> streamGeneratorFactory,
-            final BaseTable parent,
+            final BaseTable<?> parent,
             final long updateIntervalMs,
             final Runnable onGetSnapshot) {
         this.logPrefix = "BarrageMessageProducer(" + Integer.toHexString(System.identityHashCode(this)) + "): ";
 
         this.scheduler = scheduler;
+        this.errorTransformer = errorTransformer;
         this.streamGeneratorFactory = streamGeneratorFactory;
         this.parent = parent;
         this.isBlinkTable = parent.isBlink();
@@ -587,7 +594,7 @@ public class BarrageMessageProducer<MessageView> extends LivenessArtifact
     private class DeltaListener extends InstrumentedTableUpdateListener {
 
         DeltaListener() {
-            super("BarrageMessageProducer");
+            super("BarrageMessageProducer(" + parent.getReferentDescription() + ")");
             Assert.assertion(parentIsRefreshing, "parent.isRefreshing()");
             manage(parent);
             addParentReference(this);
@@ -596,9 +603,10 @@ public class BarrageMessageProducer<MessageView> extends LivenessArtifact
         @Override
         public void onUpdate(final TableUpdate upstream) {
             synchronized (BarrageMessageProducer.this) {
-                if (lastIndexClockStep >= LogicalClock.DEFAULT.currentStep()) {
+                if (lastIndexClockStep >= parent.getUpdateGraph().clock().currentStep()) {
                     throw new IllegalStateException(logPrefix + "lastIndexClockStep=" + lastIndexClockStep
-                            + " >= notification on " + LogicalClock.DEFAULT.currentStep());
+                            + " >= notification on "
+                            + parent.getUpdateGraph().clock().currentStep());
                 }
 
                 final boolean shouldEnqueueDelta = !activeSubscriptions.isEmpty();
@@ -611,7 +619,7 @@ public class BarrageMessageProducer<MessageView> extends LivenessArtifact
                 parentTableSize = parent.size();
 
                 // mark when the last indices are from, so that terminal notifications can make use of them if required
-                lastIndexClockStep = LogicalClock.DEFAULT.currentStep();
+                lastIndexClockStep = parent.getUpdateGraph().clock().currentStep();
                 if (log.isDebugEnabled()) {
                     try (final RowSet prevRowSet = parent.getRowSet().copyPrev()) {
                         log.debug().append(logPrefix)
@@ -841,9 +849,11 @@ public class BarrageMessageProducer<MessageView> extends LivenessArtifact
         }
 
         if (log.isDebugEnabled()) {
-            log.debug().append(logPrefix).append("step=").append(LogicalClock.DEFAULT.currentStep())
-                    .append(", upstream=").append(upstream).append(", activeSubscriptions=")
-                    .append(activeSubscriptions.size())
+            log.debug().append(logPrefix)
+                    .append("updateGraph=").append(parent.getUpdateGraph())
+                    .append(", step=").append(parent.getUpdateGraph().clock().currentStep())
+                    .append(", upstream=").append(upstream)
+                    .append(", activeSubscriptions=").append(activeSubscriptions.size())
                     .append(", numFullSubscriptions=").append(numFullSubscriptions)
                     .append(", addsToRecord=").append(addsToRecord)
                     .append(", modsToRecord=").append(modsToRecord)
@@ -920,11 +930,12 @@ public class BarrageMessageProducer<MessageView> extends LivenessArtifact
 
         if (log.isDebugEnabled()) {
             log.debug().append(logPrefix).append("update accumulation complete for step=")
-                    .append(LogicalClock.DEFAULT.currentStep()).endl();
+                    .append(parent.getUpdateGraph().clock().currentStep()).endl();
         }
 
-        pendingDeltas.add(new Delta(LogicalClock.DEFAULT.currentStep(), deltaColumnOffset, upstream, addsToRecord,
-                modsToRecord, (BitSet) activeColumns.clone(), modifiedColumns));
+        pendingDeltas
+                .add(new Delta(parent.getUpdateGraph().clock().currentStep(), deltaColumnOffset,
+                        upstream, addsToRecord, modsToRecord, (BitSet) activeColumns.clone(), modifiedColumns));
     }
 
     private void schedulePropagation() {
@@ -990,7 +1001,7 @@ public class BarrageMessageProducer<MessageView> extends LivenessArtifact
                     }
                 } catch (final Exception exception) {
                     synchronized (BarrageMessageProducer.this) {
-                        final StatusRuntimeException apiError = GrpcUtil.securelyWrapError(log, exception);
+                        final StatusRuntimeException apiError = errorTransformer.transform(exception);
 
                         Stream.concat(activeSubscriptions.stream(), pendingSubscriptions.stream()).distinct()
                                 .forEach(sub -> GrpcUtil.safelyError(sub.listener, apiError));
@@ -1328,8 +1339,10 @@ public class BarrageMessageProducer<MessageView> extends LivenessArtifact
                 if (SUBSCRIPTION_GROWTH_ENABLED && snapshot.rowsIncluded.size() > 0) {
                     // very simplistic logic to take the last snapshot and extrapolate max number of rows that will
                     // not exceed the target UGP processing time percentage
+                    PeriodicUpdateGraph updateGraph = parent.getUpdateGraph().cast();
                     long targetNanos = (long) (TARGET_SNAPSHOT_PERCENTAGE
-                            * UpdateGraphProcessor.DEFAULT.getTargetCycleDurationMillis() * 1000000);
+                            * updateGraph.getTargetCycleDurationMillis()
+                            * 1000000);
 
                     long nanosPerCell = elapsed / (snapshot.rowsIncluded.size() * columnCount);
 
@@ -1409,6 +1422,7 @@ public class BarrageMessageProducer<MessageView> extends LivenessArtifact
             for (final Delta delta : pendingDeltas) {
                 delta.close();
             }
+            blinkTableUpdateSize = 0;
             pendingDeltas.clear();
         }
 
@@ -1462,7 +1476,7 @@ public class BarrageMessageProducer<MessageView> extends LivenessArtifact
 
         // propagate any error notifying listeners there are no more updates incoming
         if (pendingError != null) {
-            StatusRuntimeException ex = GrpcUtil.securelyWrapError(log, pendingError);
+            StatusRuntimeException ex = errorTransformer.transform(pendingError);
             for (final Subscription subscription : activeSubscriptions) {
                 // TODO (core#801): effective error reporting to api clients
                 GrpcUtil.safelyError(subscription.listener, ex);
@@ -1475,7 +1489,7 @@ public class BarrageMessageProducer<MessageView> extends LivenessArtifact
 
         lastUpdateTime = scheduler.currentTimeMillis();
         if (log.isDebugEnabled()) {
-            log.debug().append(logPrefix).append("Completed Propagation: " + lastUpdateTime);
+            log.debug().append(logPrefix).append("Completed Propagation: " + lastUpdateTime).endl();
         }
     }
 
@@ -1505,12 +1519,11 @@ public class BarrageMessageProducer<MessageView> extends LivenessArtifact
 
                 try (final RowSet clientView =
                         vp != null ? propRowSetForMessage.subSetForPositions(vp, isReversed) : null) {
-                    subscription.listener
-                            .onNext(generator.getSubView(subscription.options, false, vp, subscription.reverseViewport,
-                                    clientView, cols));
+                    subscription.listener.onNext(generator.getSubView(
+                            subscription.options, false, vp, subscription.reverseViewport, clientView, cols));
                 } catch (final Exception e) {
                     try {
-                        subscription.listener.onError(GrpcUtil.securelyWrapError(log, e));
+                        subscription.listener.onError(errorTransformer.transform(e));
                     } catch (final Exception ignored) {
                     }
                     removeSubscription(subscription.listener);
@@ -1568,7 +1581,7 @@ public class BarrageMessageProducer<MessageView> extends LivenessArtifact
                 if (subscription.pendingInitialSnapshot) {
                     // Send schema metadata to this new client.
                     subscription.listener.onNext(streamGeneratorFactory.getSchemaView(
-                            fbb -> BarrageUtil.makeTableSchemaPayload(fbb,
+                            fbb -> BarrageUtil.makeTableSchemaPayload(fbb, subscription.options,
                                     parent.getDefinition(), parent.getAttributes())));
                 }
 
@@ -1579,7 +1592,7 @@ public class BarrageMessageProducer<MessageView> extends LivenessArtifact
                                 subscription.subscribedColumns));
 
             } catch (final Exception e) {
-                GrpcUtil.safelyError(subscription.listener, GrpcUtil.securelyWrapError(log, e));
+                GrpcUtil.safelyError(subscription.listener, errorTransformer.transform(e));
                 removeSubscription(subscription.listener);
             }
         }
@@ -1605,26 +1618,25 @@ public class BarrageMessageProducer<MessageView> extends LivenessArtifact
         final Delta firstDelta;
 
         if (isBlinkTable) {
-
-            final TableUpdate update = new TableUpdateImpl(
-                    RowSetFactory.flat(blinkTableUpdateSize),
-                    RowSetFactory.flat(lastBlinkTableUpdateSize),
-                    RowSetFactory.empty(),
-                    RowSetShiftData.EMPTY,
-                    ModifiedColumnSet.EMPTY);
-
-            long offset = 0;
+            long size = 0;
             final RowSetBuilderSequential recordedBuilder = RowSetFactory.builderSequential();
             for (int ii = startDelta; ii < endDelta; ++ii) {
                 final Delta delta = pendingDeltas.get(ii);
 
                 try (final WritableRowSet positions = delta.update.added().invert(delta.recordedAdds)) {
-                    positions.shiftInPlace(offset);
+                    positions.shiftInPlace(size);
                     recordedBuilder.appendRowSequence(positions);
                 }
 
-                offset += delta.update.added().size();
+                size += delta.update.added().size();
             }
+
+            final TableUpdate update = new TableUpdateImpl(
+                    RowSetFactory.flat(size),
+                    RowSetFactory.flat(lastBlinkTableUpdateSize),
+                    RowSetFactory.empty(),
+                    RowSetShiftData.EMPTY,
+                    ModifiedColumnSet.EMPTY);
 
             final boolean hasDelta = startDelta < endDelta;
             final Delta origDelta = hasDelta ? pendingDeltas.get(startDelta) : null;
@@ -1639,8 +1651,7 @@ public class BarrageMessageProducer<MessageView> extends LivenessArtifact
                     new BitSet());
 
             // store our update size to remove on the next update
-            lastBlinkTableUpdateSize = blinkTableUpdateSize;
-            blinkTableUpdateSize = 0;
+            lastBlinkTableUpdateSize = size;
         } else {
             firstDelta = pendingDeltas.get(startDelta);
         }
@@ -2131,10 +2142,10 @@ public class BarrageMessageProducer<MessageView> extends LivenessArtifact
 
             capturedLastIndexClockStep = getLastIndexClockStep();
 
-            final LogicalClock.State state = LogicalClock.getState(beforeClockValue);
-            final long step = LogicalClock.getStep(beforeClockValue);
-            if (state != LogicalClock.State.Updating) {
-                this.step = step;
+            final LogicalClock.State beforeState = LogicalClock.getState(beforeClockValue);
+            final long beforeStep = LogicalClock.getStep(beforeClockValue);
+            if (beforeState == LogicalClock.State.Idle) {
+                this.step = beforeStep;
                 return false;
             }
 
@@ -2172,6 +2183,9 @@ public class BarrageMessageProducer<MessageView> extends LivenessArtifact
                     flipSnapshotStateForSubscriptions(snapshotSubscriptions);
                     finalizeSnapshotForSubscriptions(snapshotSubscriptions);
                     promoteSnapshotToActive();
+                    // the snapshot must separate blink updates (due to subscription changes); this requires that
+                    // pre/post the snapshot are independent updates w.r.t. filtering data to within the viewport
+                    blinkTableUpdateSize = 0;
                 }
             }
             if (log.isDebugEnabled()) {
@@ -2179,6 +2193,11 @@ public class BarrageMessageProducer<MessageView> extends LivenessArtifact
                         .append("success=").append(success).append(", step=").append(step).endl();
             }
             return success;
+        }
+
+        @Override
+        public UpdateGraph getUpdateGraph() {
+            return parent.getUpdateGraph();
         }
     }
 
@@ -2192,8 +2211,7 @@ public class BarrageMessageProducer<MessageView> extends LivenessArtifact
             onGetSnapshot.run();
         }
 
-        final SnapshotControl snapshotControl =
-                new SnapshotControl(snapshotSubscriptions);
+        final SnapshotControl snapshotControl = new SnapshotControl(snapshotSubscriptions);
         final BarrageMessage msg = ConstructSnapshot.constructBackplaneSnapshotInPositionSpace(
                 this, parent, columnsToSnapshot, positionsToSnapshot, reversePositionsToSnapshot,
                 snapshotControl);
@@ -2206,7 +2224,7 @@ public class BarrageMessageProducer<MessageView> extends LivenessArtifact
     }
 
     @Override
-    protected void destroy() {
+    protected synchronized void destroy() {
         super.destroy();
         if (stats != null) {
             stats.stop();
@@ -2256,42 +2274,28 @@ public class BarrageMessageProducer<MessageView> extends LivenessArtifact
             if (!running) {
                 return;
             }
-
-            final DateTime now = DateTime.ofMillis(scheduler);
+            final Instant now = scheduler.instantMillis();
             scheduler.runAfterDelay(BarragePerformanceLog.CYCLE_DURATION_MILLIS, this);
-
             final BarrageSubscriptionPerformanceLogger logger =
                     BarragePerformanceLog.getInstance().getSubscriptionLogger();
-            try {
-                // noinspection SynchronizationOnLocalVariableOrMethodParameter
-                synchronized (logger) {
-                    flush(now, logger, enqueue, "EnqueueMillis");
-                    flush(now, logger, aggregate, "AggregateMillis");
-                    flush(now, logger, propagate, "PropagateMillis");
-                    flush(now, logger, snapshot, "SnapshotMillis");
-                    flush(now, logger, updateJob, "UpdateJobMillis");
-                    flush(now, logger, writeTime, "WriteMillis");
-                    flush(now, logger, writeBits, "WriteMegabits");
-                }
-            } catch (IOException ioe) {
-                log.error().append(logPrefix).append("Unexpected exception while flushing barrage stats: ")
-                        .append(ioe).endl();
+            // noinspection SynchronizationOnLocalVariableOrMethodParameter
+            synchronized (logger) {
+                flush(now, logger, enqueue, "EnqueueMillis");
+                flush(now, logger, aggregate, "AggregateMillis");
+                flush(now, logger, propagate, "PropagateMillis");
+                flush(now, logger, snapshot, "SnapshotMillis");
+                flush(now, logger, updateJob, "UpdateJobMillis");
+                flush(now, logger, writeTime, "WriteMillis");
+                flush(now, logger, writeBits, "WriteMegabits");
             }
         }
 
-        private void flush(final DateTime now, final BarrageSubscriptionPerformanceLogger logger, final Histogram hist,
-                final String statType) throws IOException {
+        private void flush(final Instant now, final BarrageSubscriptionPerformanceLogger logger, final Histogram hist,
+                final String statType) {
             if (hist.getTotalCount() == 0) {
                 return;
             }
-            logger.log(tableId, tableKey, statType, now,
-                    hist.getTotalCount(),
-                    hist.getValueAtPercentile(50) / 1e6,
-                    hist.getValueAtPercentile(75) / 1e6,
-                    hist.getValueAtPercentile(90) / 1e6,
-                    hist.getValueAtPercentile(95) / 1e6,
-                    hist.getValueAtPercentile(99) / 1e6,
-                    hist.getMaxValue() / 1e6);
+            logger.log(tableId, tableKey, statType, now, hist);
             hist.reset();
         }
     }
@@ -2322,6 +2326,10 @@ public class BarrageMessageProducer<MessageView> extends LivenessArtifact
             parents.add(parent);
             if (parent instanceof LivenessReferent) {
                 manage((LivenessReferent) parent);
+            }
+            if (parent instanceof NotificationQueue.Dependency) {
+                // ensure that we are in the same update graph
+                this.parent.getUpdateGraph((NotificationQueue.Dependency) parent);
             }
         }
     }

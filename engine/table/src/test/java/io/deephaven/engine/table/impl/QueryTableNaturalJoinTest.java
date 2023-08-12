@@ -6,6 +6,7 @@ package io.deephaven.engine.table.impl;
 import io.deephaven.base.FileUtils;
 import io.deephaven.chunk.ObjectChunk;
 import io.deephaven.datastructures.util.CollectionUtil;
+import io.deephaven.engine.context.ExecutionContext;
 import io.deephaven.engine.rowset.RowSet;
 import io.deephaven.engine.rowset.RowSetBuilderSequential;
 import io.deephaven.engine.rowset.RowSetFactory;
@@ -22,11 +23,9 @@ import io.deephaven.engine.table.impl.util.ColumnHolder;
 import io.deephaven.engine.testutil.*;
 import io.deephaven.engine.testutil.generator.*;
 import io.deephaven.engine.testutil.testcase.RefreshingTableTestCase;
-import io.deephaven.engine.updategraph.UpdateGraphProcessor;
 import io.deephaven.engine.util.TableTools;
 import io.deephaven.parquet.table.ParquetTools;
 import io.deephaven.test.types.OutOfBandTest;
-import io.deephaven.time.DateTime;
 import io.deephaven.time.DateTimeUtils;
 import io.deephaven.util.QueryConstants;
 import junit.framework.TestCase;
@@ -37,6 +36,7 @@ import org.junit.experimental.categories.Category;
 import java.io.File;
 import java.io.IOException;
 import java.nio.file.Files;
+import java.time.Instant;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
@@ -94,7 +94,10 @@ public class QueryTableNaturalJoinTest extends QueryTableTestBase {
             fillRehashKeys(offset, leftJoinKey, leftSentinel, rightJoinKey, rightSentinel);
 
             final int foffset = offset;
-            UpdateGraphProcessor.DEFAULT.runWithinUnitTestCycle(() -> {
+            // make something that exists go away
+            // make something that did not exist come back
+            final ControlledUpdateGraph updateGraph = ExecutionContext.getContext().getUpdateGraph().cast();
+            updateGraph.runWithinUnitTestCycle(() -> {
                 final RowSet addRowSet = RowSetFactory.fromRange(foffset, foffset + leftJoinKey.length - 1);
                 addToTable(leftTable, addRowSet, stringCol("JoinKey", leftJoinKey),
                         intCol("LeftSentinel", leftSentinel));
@@ -368,12 +371,13 @@ public class QueryTableNaturalJoinTest extends QueryTableTestBase {
         final Table resultFlat = leftFlat.naturalJoin(rightTable, "I1", "LC1=C1,LC2=C2");
         assertTableEquals(noGroupingResult, resultFlat);
 
+        final ControlledUpdateGraph updateGraph = ExecutionContext.getContext().getUpdateGraph().cast();
         for (int step = 0; step < steps; ++step) {
             if (RefreshingTableTestCase.printTableUpdates) {
                 System.out.println("Step = " + step);
             }
 
-            UpdateGraphProcessor.DEFAULT.runWithinUnitTestCycle(() -> {
+            updateGraph.runWithinUnitTestCycle(() -> {
                 GenerateTableUpdates.generateShiftAwareTableUpdates(GenerateTableUpdates.DEFAULT_PROFILE, rightSize,
                         random, rightTable, rightColumnInfos);
             });
@@ -523,15 +527,15 @@ public class QueryTableNaturalJoinTest extends QueryTableTestBase {
 
     private void testNaturalJoinDuplicateRightReinterpret(boolean leftRefreshing, boolean rightRefreshing) {
         // build from right
-        final DateTime dateTimeA = DateTimeUtils.convertDateTime("2022-05-06T09:30:00 NY");
-        final DateTime dateTimeB = DateTimeUtils.convertDateTime("2022-05-06T09:31:00 NY");
-        final DateTime dateTimeC = DateTimeUtils.convertDateTime("2022-05-06T09:32:00 NY");
-        final DateTime dateTimeD = DateTimeUtils.convertDateTime("2022-05-06T09:33:00 NY");
-        final QueryTable left = testTable(col("JK1", false, null, true), col("JK2", dateTimeA, dateTimeA, dateTimeA),
+        final Instant instantA = DateTimeUtils.parseInstant("2022-05-06T09:30:00 NY");
+        final Instant instantB = DateTimeUtils.parseInstant("2022-05-06T09:31:00 NY");
+        final Instant instantC = DateTimeUtils.parseInstant("2022-05-06T09:32:00 NY");
+        final Instant instantD = DateTimeUtils.parseInstant("2022-05-06T09:33:00 NY");
+        final QueryTable left = testTable(col("JK1", false, null, true), col("JK2", instantA, instantA, instantA),
                 col("LeftSentinel", 1, 2, 3));
         left.setRefreshing(leftRefreshing);
         final QueryTable right =
-                testTable(col("JK1", true, true), col("JK2", dateTimeA, dateTimeA), col("RightSentinel", 10, 11));
+                testTable(col("JK1", true, true), col("JK2", instantA, instantA), col("RightSentinel", 10, 11));
         right.setRefreshing(rightRefreshing);
 
         try {
@@ -539,32 +543,32 @@ public class QueryTableNaturalJoinTest extends QueryTableTestBase {
             TableTools.showWithRowSet(cj);
             fail("Expected exception.");
         } catch (IllegalStateException e) {
-            assertEquals(dupMsg + "[true, " + dateTimeA + "]", e.getMessage());
+            assertEquals(dupMsg + "[true, " + instantA + "]", e.getMessage());
         }
 
         // build from left
-        final Table left2 = testTable(col("DT", dateTimeA, dateTimeB), col("LeftSentinel", 1, 2));
-        final Table right2 = newTable(col("DT", dateTimeA, dateTimeA, dateTimeB, dateTimeC, dateTimeD),
+        final Table left2 = testTable(col("DT", instantA, instantB), col("LeftSentinel", 1, 2));
+        final Table right2 = newTable(col("DT", instantA, instantA, instantB, instantC, instantD),
                 col("RightSentinel", 10, 11, 12, 13, 14));
         try {
             final Table cj2 = left2.naturalJoin(right2, "DT");
             TableTools.showWithRowSet(cj2);
             fail("Expected exception");
         } catch (IllegalStateException e) {
-            assertEquals(dupMsg + dateTimeA, e.getMessage());
+            assertEquals(dupMsg + instantA, e.getMessage());
         }
     }
 
     private final static String dupMsg = "Natural Join found duplicate right key for ";
 
-    private static DateTime makeDateTimeKey(String a) {
-        final DateTime dateTimeA = DateTimeUtils.convertDateTime("2022-05-06T09:30:00 NY");
-        final DateTime dateTimeB = DateTimeUtils.convertDateTime("2022-05-06T09:31:00 NY");
+    private static Instant makeInstantKey(String a) {
+        final Instant instantA = DateTimeUtils.parseInstant("2022-05-06T09:30:00 NY");
+        final Instant instantB = DateTimeUtils.parseInstant("2022-05-06T09:31:00 NY");
         switch (a) {
             case "A":
-                return dateTimeA;
+                return instantA;
             case "B":
-                return dateTimeB;
+                return instantB;
             default:
                 throw new IllegalStateException();
         }
@@ -576,7 +580,7 @@ public class QueryTableNaturalJoinTest extends QueryTableTestBase {
 
     public void testNaturalJoinDuplicateRightsRefreshingRight() {
         testNaturalJoinDuplicateRightsRefreshingRight(String.class, Function.identity());
-        testNaturalJoinDuplicateRightsRefreshingRight(DateTime.class, QueryTableNaturalJoinTest::makeDateTimeKey);
+        testNaturalJoinDuplicateRightsRefreshingRight(Instant.class, QueryTableNaturalJoinTest::makeInstantKey);
     }
 
     private <T> void testNaturalJoinDuplicateRightsRefreshingRight(Class<T> clazz, Function<String, T> makeKey) {
@@ -586,7 +590,7 @@ public class QueryTableNaturalJoinTest extends QueryTableTestBase {
         final Table left = castSymbol(clazz, testTable(col("Symbol", a, b), col("LeftSentinel", 1, 2)));
         final Table right = castSymbol(clazz, testRefreshingTable(col("Symbol", a, a), col("RightSentinel", 10, 11)));
 
-        TableTools.showWithRowSet(right.getMeta());
+        TableTools.showWithRowSet(right.meta());
         TableTools.showWithRowSet(right);
 
         try {
@@ -610,7 +614,8 @@ public class QueryTableNaturalJoinTest extends QueryTableTestBase {
         cj2.addUpdateListener(listener);
 
         try (final ErrorExpectation ignored = new ErrorExpectation()) {
-            UpdateGraphProcessor.DEFAULT.runWithinUnitTestCycle(() -> {
+            final ControlledUpdateGraph updateGraph = ExecutionContext.getContext().getUpdateGraph().cast();
+            updateGraph.runWithinUnitTestCycle(() -> {
                 TstUtils.addToTable(right2, i(3), col("Symbol", a), intCol("RightSentinel", 10));
                 right2.notifyListeners(i(3), i(), i());
             });
@@ -622,7 +627,7 @@ public class QueryTableNaturalJoinTest extends QueryTableTestBase {
 
     public void testNaturalJoinDuplicateRightsRefreshingBoth() {
         testNaturalJoinDuplicateRightsRefreshingBoth(String.class, Function.identity());
-        testNaturalJoinDuplicateRightsRefreshingBoth(DateTime.class, QueryTableNaturalJoinTest::makeDateTimeKey);
+        testNaturalJoinDuplicateRightsRefreshingBoth(Instant.class, QueryTableNaturalJoinTest::makeInstantKey);
     }
 
     private <T> void testNaturalJoinDuplicateRightsRefreshingBoth(Class<T> clazz, Function<String, T> makeKey) {
@@ -653,7 +658,8 @@ public class QueryTableNaturalJoinTest extends QueryTableTestBase {
         cj2.addUpdateListener(listener);
 
         try (final ErrorExpectation ignored = new ErrorExpectation()) {
-            UpdateGraphProcessor.DEFAULT.runWithinUnitTestCycle(() -> {
+            final ControlledUpdateGraph updateGraph = ExecutionContext.getContext().getUpdateGraph().cast();
+            updateGraph.runWithinUnitTestCycle(() -> {
                 TstUtils.addToTable(right2, i(3), col("Symbol", a), intCol("RightSentinel", 10));
                 right2.notifyListeners(i(3), i(), i());
             });
@@ -671,8 +677,8 @@ public class QueryTableNaturalJoinTest extends QueryTableTestBase {
         TableTools.showWithRowSet(cj);
         assertEquals(new int[] {10, 11, 12, 10}, intColumn(cj, "RightSentinel"));
 
-        final DateTime time1 = DateTimeUtils.convertDateTime("2019-05-10T09:45:00 NY");
-        final DateTime time2 = DateTimeUtils.convertDateTime("2019-05-10T21:45:00 NY");
+        final Instant time1 = DateTimeUtils.parseInstant("2019-05-10T09:45:00 NY");
+        final Instant time2 = DateTimeUtils.parseInstant("2019-05-10T21:45:00 NY");
 
         final Table left2 = testTable(col("JDate", time1, time2, null, time2), col("LeftSentinel", 1, 2, 3, 4));
         final Table right2 = newTable(col("JDate", time2, time1, null), col("RightSentinel", 10, 11, 12));
@@ -714,7 +720,8 @@ public class QueryTableNaturalJoinTest extends QueryTableTestBase {
 
         TableTools.showWithRowSet(cj);
 
-        UpdateGraphProcessor.DEFAULT.runWithinUnitTestCycle(() -> {
+        final ControlledUpdateGraph updateGraph = ExecutionContext.getContext().getUpdateGraph().cast();
+        updateGraph.runWithinUnitTestCycle(() -> {
             addToTable(c1, i(1), intCol("Right", 4));
             c1.notifyListeners(i(1), i(), i());
         });
@@ -724,7 +731,7 @@ public class QueryTableNaturalJoinTest extends QueryTableTestBase {
         final Table fourRightResult = newTable(intCol("Left", 1, 2, 3), intCol("Right", 4, 4, 4));
         assertTableEquals(fourRightResult, cj);
 
-        UpdateGraphProcessor.DEFAULT.runWithinUnitTestCycle(() -> {
+        updateGraph.runWithinUnitTestCycle(() -> {
             removeRows(c1, i(1));
             c1.notifyListeners(i(), i(1), i());
         });
@@ -733,7 +740,7 @@ public class QueryTableNaturalJoinTest extends QueryTableTestBase {
 
         assertTableEquals(emptyRightResult, cj);
 
-        UpdateGraphProcessor.DEFAULT.runWithinUnitTestCycle(() -> {
+        updateGraph.runWithinUnitTestCycle(() -> {
             addToTable(c0, i(6), intCol("Left", 6));
             addToTable(c1, i(2), intCol("Right", 5));
             c0.notifyListeners(i(6), i(), i());
@@ -756,7 +763,8 @@ public class QueryTableNaturalJoinTest extends QueryTableTestBase {
 
         final Table cj1 = c0.naturalJoin(c1, "");
         assertTableEquals(newTable(intCol("Left", 1, 2, 3), intCol("Right", NULL_INT, NULL_INT, NULL_INT)), cj1);
-        UpdateGraphProcessor.DEFAULT.runWithinUnitTestCycle(() -> {
+        final ControlledUpdateGraph updateGraph = ExecutionContext.getContext().getUpdateGraph().cast();
+        updateGraph.runWithinUnitTestCycle(() -> {
             addToTable(c0, i(6), intCol("Left", 6));
             c0.notifyListeners(i(6), i(), i());
         });
@@ -767,7 +775,7 @@ public class QueryTableNaturalJoinTest extends QueryTableTestBase {
 
         final Table cj2 = c0.naturalJoin(c2, "");
         assertTableEquals(newTable(intCol("Left", 1, 2, 3, 6), intCol("Right", 4, 4, 4, 4)), cj2);
-        UpdateGraphProcessor.DEFAULT.runWithinUnitTestCycle(() -> {
+        updateGraph.runWithinUnitTestCycle(() -> {
             addToTable(c0, i(7), intCol("Left", 7));
             c0.notifyListeners(i(7), i(), i());
         });
@@ -791,7 +799,8 @@ public class QueryTableNaturalJoinTest extends QueryTableTestBase {
 
         TableTools.showWithRowSet(cj);
 
-        UpdateGraphProcessor.DEFAULT.runWithinUnitTestCycle(() -> {
+        final ControlledUpdateGraph updateGraph = ExecutionContext.getContext().getUpdateGraph().cast();
+        updateGraph.runWithinUnitTestCycle(() -> {
             addToTable(c1, i(1), intCol("Right", 4));
             c1.notifyListeners(i(1), i(), i());
         });
@@ -801,7 +810,7 @@ public class QueryTableNaturalJoinTest extends QueryTableTestBase {
         final Table fourRightResult = newTable(intCol("Left", 1, 2, 3), intCol("Right", 4, 4, 4));
         assertTableEquals(fourRightResult, cj);
 
-        UpdateGraphProcessor.DEFAULT.runWithinUnitTestCycle(() -> {
+        updateGraph.runWithinUnitTestCycle(() -> {
             removeRows(c1, i(1));
             c1.notifyListeners(i(), i(1), i());
         });
@@ -839,9 +848,10 @@ public class QueryTableNaturalJoinTest extends QueryTableTestBase {
         assertEquals("String", result.getDefinition().getColumns().get(0).getName());
         assertEquals("Int", result.getDefinition().getColumns().get(1).getName());
         assertEquals("Int2", result.getDefinition().getColumns().get(2).getName());
-        assertEquals(Arrays.asList("a", "b", "c"), Arrays.asList(result.getColumn("String").get(0, 3)));
-        assertEquals(Arrays.asList(1, 2, 3), Arrays.asList(result.getColumn("Int").get(0, 3)));
-        assertEquals(Arrays.asList(10, 20, 30), Arrays.asList(result.getColumn("Int2").get(0, 3)));
+        assertEquals(Arrays.asList("a", "b", "c"),
+                Arrays.asList(DataAccessHelpers.getColumn(result, "String").get(0, 3)));
+        assertEquals(Arrays.asList(1, 2, 3), Arrays.asList(DataAccessHelpers.getColumn(result, "Int").get(0, 3)));
+        assertEquals(Arrays.asList(10, 20, 30), Arrays.asList(DataAccessHelpers.getColumn(result, "Int2").get(0, 3)));
 
 
         Table table1 = TstUtils.testRefreshingTable(
@@ -855,8 +865,8 @@ public class QueryTableNaturalJoinTest extends QueryTableTestBase {
         assertEquals("v", pairMatch.getDefinition().getColumns().get(1).getName());
         assertEquals(String.class, pairMatch.getDefinition().getColumns().get(0).getDataType());
         assertEquals(int.class, pairMatch.getDefinition().getColumns().get(1).getDataType());
-        assertEquals(asList("c", "e", "g"), asList((Object[]) pairMatch.getColumn(0).getDirect()));
-        assertEquals(asList(1, 2, null), asList(pairMatch.getColumn("v").get(0, 3)));
+        assertEquals(asList("c", "e", "g"), asList((Object[]) DataAccessHelpers.getColumn(pairMatch, 0).getDirect()));
+        assertEquals(asList(1, 2, null), asList(DataAccessHelpers.getColumn(pairMatch, "v").get(0, 3)));
 
 
         table2 = TstUtils.testRefreshingTable(
@@ -869,8 +879,8 @@ public class QueryTableNaturalJoinTest extends QueryTableTestBase {
         assertEquals("v", pairMatch.getDefinition().getColumns().get(1).getName());
         assertEquals(String.class, pairMatch.getDefinition().getColumns().get(0).getDataType());
         assertEquals(int.class, pairMatch.getDefinition().getColumns().get(1).getDataType());
-        assertEquals(asList("c", "e", "g"), asList((Object[]) pairMatch.getColumn(0).getDirect()));
-        assertEquals(asList(1, 2, 3), asList(pairMatch.getColumn("v").get(0, 3)));
+        assertEquals(asList("c", "e", "g"), asList((Object[]) DataAccessHelpers.getColumn(pairMatch, 0).getDirect()));
+        assertEquals(asList(1, 2, 3), asList(DataAccessHelpers.getColumn(pairMatch, "v").get(0, 3)));
 
         pairMatch = table2.naturalJoin(table1, "String", "");
         assertEquals(3, pairMatch.size());
@@ -879,8 +889,8 @@ public class QueryTableNaturalJoinTest extends QueryTableTestBase {
         assertEquals("v", pairMatch.getDefinition().getColumns().get(1).getName());
         assertEquals(String.class, pairMatch.getDefinition().getColumns().get(0).getDataType());
         assertEquals(int.class, pairMatch.getDefinition().getColumns().get(1).getDataType());
-        assertEquals(asList("c", "e", "g"), asList((Object[]) pairMatch.getColumn(0).getDirect()));
-        assertEquals(asList(1, 2, 3), asList(pairMatch.getColumn("v").get(0, 3)));
+        assertEquals(asList("c", "e", "g"), asList((Object[]) DataAccessHelpers.getColumn(pairMatch, 0).getDirect()));
+        assertEquals(asList(1, 2, 3), asList(DataAccessHelpers.getColumn(pairMatch, "v").get(0, 3)));
 
         pairMatch = table1.naturalJoin(table2, "String=String", "v");
         assertEquals(3, pairMatch.size());
@@ -889,8 +899,8 @@ public class QueryTableNaturalJoinTest extends QueryTableTestBase {
         assertEquals("v", pairMatch.getDefinition().getColumns().get(1).getName());
         assertEquals(String.class, pairMatch.getDefinition().getColumns().get(0).getDataType());
         assertEquals(int.class, pairMatch.getDefinition().getColumns().get(1).getDataType());
-        assertEquals(asList("c", "e", "g"), asList((Object[]) pairMatch.getColumn(0).getDirect()));
-        assertEquals(asList(1, 2, 3), asList(pairMatch.getColumn("v").get(0, 3)));
+        assertEquals(asList("c", "e", "g"), asList((Object[]) DataAccessHelpers.getColumn(pairMatch, 0).getDirect()));
+        assertEquals(asList(1, 2, 3), asList(DataAccessHelpers.getColumn(pairMatch, "v").get(0, 3)));
 
         pairMatch = table2.naturalJoin(table1, "String=String", "");
 
@@ -900,10 +910,10 @@ public class QueryTableNaturalJoinTest extends QueryTableTestBase {
         assertEquals("v", pairMatch.getDefinition().getColumns().get(1).getName());
         assertEquals(String.class, pairMatch.getDefinition().getColumns().get(0).getDataType());
         assertEquals(int.class, pairMatch.getDefinition().getColumns().get(1).getDataType());
-        assertEquals(asList("c", "e", "g"), asList((Object[]) pairMatch.getColumn(0).getDirect()));
-        assertEquals(1, pairMatch.getColumn("v").getInt(0));
-        assertEquals(2, pairMatch.getColumn("v").getInt(1));
-        assertEquals(3, pairMatch.getColumn("v").getInt(2));
+        assertEquals(asList("c", "e", "g"), asList((Object[]) DataAccessHelpers.getColumn(pairMatch, 0).getDirect()));
+        assertEquals(1, DataAccessHelpers.getColumn(pairMatch, "v").getInt(0));
+        assertEquals(2, DataAccessHelpers.getColumn(pairMatch, "v").getInt(1));
+        assertEquals(3, DataAccessHelpers.getColumn(pairMatch, "v").getInt(2));
 
 
         table1 = TstUtils.testRefreshingTable(
@@ -923,9 +933,9 @@ public class QueryTableNaturalJoinTest extends QueryTableTestBase {
         assertEquals(String.class, pairMatch.getDefinition().getColumns().get(0).getDataType());
         assertEquals(String.class, pairMatch.getDefinition().getColumns().get(1).getDataType());
         assertEquals(int.class, pairMatch.getDefinition().getColumns().get(2).getDataType());
-        assertEquals(asList("c", "e", "g"), asList((Object[]) pairMatch.getColumn(0).getDirect()));
-        assertEquals(asList("c", "e", "g"), asList((Object[]) pairMatch.getColumn(1).getDirect()));
-        assertEquals(asList(1, 2, 3), asList(pairMatch.getColumn(2).get(0, 3)));
+        assertEquals(asList("c", "e", "g"), asList((Object[]) DataAccessHelpers.getColumn(pairMatch, 0).getDirect()));
+        assertEquals(asList("c", "e", "g"), asList((Object[]) DataAccessHelpers.getColumn(pairMatch, 1).getDirect()));
+        assertEquals(asList(1, 2, 3), asList(DataAccessHelpers.getColumn(pairMatch, 2).get(0, 3)));
 
 
         pairMatch = table2.naturalJoin(table1, "String2=String1", "String1");
@@ -938,9 +948,11 @@ public class QueryTableNaturalJoinTest extends QueryTableTestBase {
         assertEquals(String.class, pairMatch.getDefinition().getColumn("String1").getDataType());
         assertEquals(String.class, pairMatch.getDefinition().getColumn("String2").getDataType());
         assertEquals(int.class, pairMatch.getDefinition().getColumn("v").getDataType());
-        assertEquals(asList("c", "e", "g"), asList((Object[]) pairMatch.getColumn("String1").getDirect()));
-        assertEquals(asList("c", "e", "g"), asList((Object[]) pairMatch.getColumn("String2").getDirect()));
-        assertEquals(asList(1, 2, 3), asList(pairMatch.getColumn("v").get(0, 3)));
+        assertEquals(asList("c", "e", "g"),
+                asList((Object[]) DataAccessHelpers.getColumn(pairMatch, "String1").getDirect()));
+        assertEquals(asList("c", "e", "g"),
+                asList((Object[]) DataAccessHelpers.getColumn(pairMatch, "String2").getDirect()));
+        assertEquals(asList(1, 2, 3), asList(DataAccessHelpers.getColumn(pairMatch, "v").get(0, 3)));
     }
 
     public void testNaturalJoinNull() {
@@ -951,10 +963,10 @@ public class QueryTableNaturalJoinTest extends QueryTableTestBase {
 
         TableTools.show(cj);
 
-        assertEquals(1, cj.getColumn("X").get(0));
-        assertEquals(2, cj.getColumn("X").get(1));
-        assertEquals(3, cj.getColumn("Y").get(0));
-        assertEquals(4, cj.getColumn("Y").get(1));
+        assertEquals(1, DataAccessHelpers.getColumn(cj, "X").get(0));
+        assertEquals(2, DataAccessHelpers.getColumn(cj, "X").get(1));
+        assertEquals(3, DataAccessHelpers.getColumn(cj, "Y").get(0));
+        assertEquals(4, DataAccessHelpers.getColumn(cj, "Y").get(1));
     }
 
     public void testNaturalJoinInactive() {
@@ -968,24 +980,25 @@ public class QueryTableNaturalJoinTest extends QueryTableTestBase {
         System.out.println("Result:");
         TableTools.showWithRowSet(cj);
 
-        assertEquals(1, cj.getColumn("X").get(0));
-        assertEquals(2, cj.getColumn("X").get(1));
-        assertEquals(3, cj.getColumn("Y").get(0));
-        assertNull(cj.getColumn("Y").get(1));
+        assertEquals(1, DataAccessHelpers.getColumn(cj, "X").get(0));
+        assertEquals(2, DataAccessHelpers.getColumn(cj, "X").get(1));
+        assertEquals(3, DataAccessHelpers.getColumn(cj, "Y").get(0));
+        assertNull(DataAccessHelpers.getColumn(cj, "Y").get(1));
 
-        UpdateGraphProcessor.DEFAULT.runWithinUnitTestCycle(() -> {
+        final ControlledUpdateGraph updateGraph = ExecutionContext.getContext().getUpdateGraph().cast();
+        updateGraph.runWithinUnitTestCycle(() -> {
             removeRows(c1, i(2));
             c1.notifyListeners(i(), i(2), i());
         });
         System.out.println("Right:");
         TableTools.showWithRowSet(c1);
 
-        assertEquals(1, cj.getColumn("X").get(0));
-        assertEquals(2, cj.getColumn("X").get(1));
-        assertEquals(3, cj.getColumn("Y").get(0));
-        assertNull(cj.getColumn("Y").get(1));
+        assertEquals(1, DataAccessHelpers.getColumn(cj, "X").get(0));
+        assertEquals(2, DataAccessHelpers.getColumn(cj, "X").get(1));
+        assertEquals(3, DataAccessHelpers.getColumn(cj, "Y").get(0));
+        assertNull(DataAccessHelpers.getColumn(cj, "Y").get(1));
 
-        UpdateGraphProcessor.DEFAULT.runWithinUnitTestCycle(() -> {
+        updateGraph.runWithinUnitTestCycle(() -> {
             addToTable(c0, i(2), col("USym0", "B"), col("X", 6));
             c0.notifyListeners(i(2), i(), i());
         });
@@ -996,12 +1009,12 @@ public class QueryTableNaturalJoinTest extends QueryTableTestBase {
         System.out.println("Result:");
         TableTools.showWithRowSet(cj);
 
-        assertEquals(1, cj.getColumn("X").get(0));
-        assertEquals(2, cj.getColumn("X").get(1));
-        assertEquals(6, cj.getColumn("X").get(2));
-        assertEquals(3, cj.getColumn("Y").get(0));
-        assertNull(cj.getColumn("Y").get(1));
-        assertEquals(4, cj.getColumn("Y").get(2));
+        assertEquals(1, DataAccessHelpers.getColumn(cj, "X").get(0));
+        assertEquals(2, DataAccessHelpers.getColumn(cj, "X").get(1));
+        assertEquals(6, DataAccessHelpers.getColumn(cj, "X").get(2));
+        assertEquals(3, DataAccessHelpers.getColumn(cj, "Y").get(0));
+        assertNull(DataAccessHelpers.getColumn(cj, "Y").get(1));
+        assertEquals(4, DataAccessHelpers.getColumn(cj, "Y").get(2));
     }
 
     public void testNaturalJoinLeftIncrementalRightStaticSimple() {
@@ -1021,7 +1034,8 @@ public class QueryTableNaturalJoinTest extends QueryTableTestBase {
                     }
                 }
         };
-        UpdateGraphProcessor.DEFAULT.runWithinUnitTestCycle(() -> {
+        final ControlledUpdateGraph updateGraph = ExecutionContext.getContext().getUpdateGraph().cast();
+        updateGraph.runWithinUnitTestCycle(() -> {
             addToTable(leftQueryTable, i(3, 9), col("Sym", "aa", "aa"), col("ByteCol", (byte) 20, (byte) 10),
                     col("DoubleCol", 2.1, 2.2));
             System.out.println("Left Table Updated:");
@@ -1030,8 +1044,7 @@ public class QueryTableNaturalJoinTest extends QueryTableTestBase {
         });
         TstUtils.validate(en);
 
-        UpdateGraphProcessor.DEFAULT
-                .runWithinUnitTestCycle(() -> leftQueryTable.notifyListeners(i(), i(), i(1, 2, 4, 6)));
+        updateGraph.runWithinUnitTestCycle(() -> leftQueryTable.notifyListeners(i(), i(), i(1, 2, 4, 6)));
         TstUtils.validate(en);
     }
 
@@ -1123,7 +1136,8 @@ public class QueryTableNaturalJoinTest extends QueryTableTestBase {
         System.out.println("Right Table 1:");
         TableTools.showWithRowSet(rightQueryTable1);
 
-        UpdateGraphProcessor.DEFAULT.runWithinUnitTestCycle(() -> {
+        final ControlledUpdateGraph updateGraph = ExecutionContext.getContext().getUpdateGraph().cast();
+        updateGraph.runWithinUnitTestCycle(() -> {
             addToTable(leftQueryTable, i(3, 9), col("Sym", "aa", "aa"), col("intCol", 20, 10),
                     col("doubleCol", 2.1, 2.2));
             System.out.println("Left Table Updated:");
@@ -1132,20 +1146,20 @@ public class QueryTableNaturalJoinTest extends QueryTableTestBase {
         });
         TstUtils.validate(en);
 
-        UpdateGraphProcessor.DEFAULT.runWithinUnitTestCycle(() -> {
+        updateGraph.runWithinUnitTestCycle(() -> {
             addToTable(leftQueryTable, i(1, 9), col("Sym", "bc", "aa"), col("intCol", 30, 11),
                     col("doubleCol", 2.1, 2.2));
             leftQueryTable.notifyListeners(i(), i(), i(1, 9));
         });
         TstUtils.validate(en);
 
-        UpdateGraphProcessor.DEFAULT.runWithinUnitTestCycle(() -> {
+        updateGraph.runWithinUnitTestCycle(() -> {
             addToTable(rightQueryTable1, i(3, 4), col("Sym", "ab", "ac"), col("xCol", 55, 33), col("yCol", 6.6, 7.7));
             rightQueryTable1.notifyListeners(i(4), i(), i(3));
         });
         TstUtils.validate(en);
 
-        UpdateGraphProcessor.DEFAULT.runWithinUnitTestCycle(() -> {
+        updateGraph.runWithinUnitTestCycle(() -> {
             show(rightQueryTable2);
             addToTable(rightQueryTable2, i(20, 40), col("Sym", "aa", "bc"),
                     col("xCol", 30, 50),
@@ -1156,25 +1170,25 @@ public class QueryTableNaturalJoinTest extends QueryTableTestBase {
         TstUtils.validate(en);
 
 
-        UpdateGraphProcessor.DEFAULT.runWithinUnitTestCycle(() -> {
+        updateGraph.runWithinUnitTestCycle(() -> {
             addToTable(rightQueryTable1, i(4, 6), col("Sym", "bc", "aa"), col("xCol", 66, 44), col("yCol", 7.6, 6.7));
             rightQueryTable1.notifyListeners(i(), i(), i(4, 6));
         });
         TstUtils.validate(en);
 
-        UpdateGraphProcessor.DEFAULT.runWithinUnitTestCycle(() -> {
+        updateGraph.runWithinUnitTestCycle(() -> {
             addToTable(rightQueryTable1, i(4, 6), col("Sym", "bc", "aa"), col("xCol", 66, 44), col("yCol", 7.7, 6.8));
             rightQueryTable1.notifyListeners(i(), i(), i(4, 6));
         });
         TstUtils.validate(en);
 
-        UpdateGraphProcessor.DEFAULT.runWithinUnitTestCycle(() -> {
+        updateGraph.runWithinUnitTestCycle(() -> {
             addToTable(rightQueryTable1, i(4, 31), col("Sym", "aq", "bc"), col("xCol", 66, 44), col("yCol", 7.5, 6.9));
             rightQueryTable1.notifyListeners(i(31), i(), i(4));
         });
         TstUtils.validate(en);
 
-        UpdateGraphProcessor.DEFAULT.runWithinUnitTestCycle(() -> {
+        updateGraph.runWithinUnitTestCycle(() -> {
             addToTable(rightQueryTable2, i(20, 30), col("Sym", "aa", "aa"),
                     col("xCol", 20, 30),
                     col("yCol", 3.1, 5.1));
@@ -1183,14 +1197,14 @@ public class QueryTableNaturalJoinTest extends QueryTableTestBase {
         TstUtils.validate(en);
 
 
-        UpdateGraphProcessor.DEFAULT.runWithinUnitTestCycle(() -> {
+        updateGraph.runWithinUnitTestCycle(() -> {
             TstUtils.removeRows(rightQueryTable1, i(4));
             rightQueryTable1.notifyListeners(i(), i(4), i());
         });
         TstUtils.validate(en);
 
 
-        UpdateGraphProcessor.DEFAULT.runWithinUnitTestCycle(() -> {
+        updateGraph.runWithinUnitTestCycle(() -> {
             addToTable(rightQueryTable2, i(40), col("Sym", "bc"),
                     col("xCol", 20),
                     col("yCol", 3.2));
@@ -1199,7 +1213,7 @@ public class QueryTableNaturalJoinTest extends QueryTableTestBase {
         });
         TstUtils.validate(en);
 
-        UpdateGraphProcessor.DEFAULT.runWithinUnitTestCycle(() -> {
+        updateGraph.runWithinUnitTestCycle(() -> {
             TstUtils.removeRows(leftQueryTable, i(9));
             dumpComplete(leftQueryTable, "Sym", "intCol");
             leftQueryTable.notifyListeners(i(), i(9), i());
@@ -1268,21 +1282,22 @@ public class QueryTableNaturalJoinTest extends QueryTableTestBase {
                     }
                 }
         };
-        UpdateGraphProcessor.DEFAULT.runWithinUnitTestCycle(() -> {
+        final ControlledUpdateGraph updateGraph = ExecutionContext.getContext().getUpdateGraph().cast();
+        updateGraph.runWithinUnitTestCycle(() -> {
             addToTable(leftQueryTable, i(3, 9), col("Sym", "aa", "aa"), col("intCol", 20, 10),
                     col("doubleCol", 2.1, 2.2));
             leftQueryTable.notifyListeners(i(3, 9), i(), i());
         });
         TstUtils.validate(en);
 
-        UpdateGraphProcessor.DEFAULT.runWithinUnitTestCycle(() -> {
+        updateGraph.runWithinUnitTestCycle(() -> {
             addToTable(leftQueryTable, i(1, 9), col("Sym", "bc", "aa"), col("intCol", 30, 11),
                     col("doubleCol", 2.1, 2.2));
             leftQueryTable.notifyListeners(i(), i(), i(1, 9));
         });
         TstUtils.validate(en);
 
-        UpdateGraphProcessor.DEFAULT.runWithinUnitTestCycle(() -> {
+        updateGraph.runWithinUnitTestCycle(() -> {
             show(rightQueryTable2);
             addToTable(rightQueryTable2, i(20, 40), col("Sym", "aa", "bc"),
                     col("xCol", 30, 50),
@@ -1292,7 +1307,7 @@ public class QueryTableNaturalJoinTest extends QueryTableTestBase {
         });
         TstUtils.validate(en);
 
-        UpdateGraphProcessor.DEFAULT.runWithinUnitTestCycle(() -> {
+        updateGraph.runWithinUnitTestCycle(() -> {
             addToTable(rightQueryTable2, i(20, 30), col("Sym", "aa", "aa"),
                     col("xCol", 20, 30),
                     col("yCol", 3.1, 5.1));
@@ -1300,7 +1315,7 @@ public class QueryTableNaturalJoinTest extends QueryTableTestBase {
         });
         TstUtils.validate(en);
 
-        UpdateGraphProcessor.DEFAULT.runWithinUnitTestCycle(() -> {
+        updateGraph.runWithinUnitTestCycle(() -> {
             addToTable(rightQueryTable2, i(40), col("Sym", "bc"),
                     col("xCol", 20),
                     col("yCol", 3.2));
@@ -1309,7 +1324,7 @@ public class QueryTableNaturalJoinTest extends QueryTableTestBase {
         });
         TstUtils.validate(en);
 
-        UpdateGraphProcessor.DEFAULT.runWithinUnitTestCycle(() -> {
+        updateGraph.runWithinUnitTestCycle(() -> {
             TstUtils.removeRows(leftQueryTable, i(9));
             leftQueryTable.notifyListeners(i(), i(9), i());
         });
@@ -1376,42 +1391,43 @@ public class QueryTableNaturalJoinTest extends QueryTableTestBase {
 
         TstUtils.validate(en);
 
-        UpdateGraphProcessor.DEFAULT.runWithinUnitTestCycle(() -> {
+        final ControlledUpdateGraph updateGraph = ExecutionContext.getContext().getUpdateGraph().cast();
+        updateGraph.runWithinUnitTestCycle(() -> {
             addToTable(leftTable, i(0, 1, 2),
                     col("Sym", "c", "a", "b"), col("Size", 1, 2, 3));
             leftTable.notifyListeners(i(), i(), i(0, 1, 2));
         });
         TstUtils.validate(en);
 
-        UpdateGraphProcessor.DEFAULT.runWithinUnitTestCycle(() -> {
+        updateGraph.runWithinUnitTestCycle(() -> {
             addToTable(rightTable, i(0, 1, 2),
                     col("Sym", "b", "c", "a"), col("Qty", 10, 20, 30));
             rightTable.notifyListeners(i(), i(), i(0, 1, 2));
         });
         TstUtils.validate(en);
 
-        UpdateGraphProcessor.DEFAULT.runWithinUnitTestCycle(() -> {
+        updateGraph.runWithinUnitTestCycle(() -> {
             addToTable(leftTable, i(0, 1, 2),
                     col("Sym", "a", "b", "c"), col("Size", 3, 1, 2));
             leftTable.notifyListeners(i(), i(), i(0, 1, 2));
         });
         TstUtils.validate(en);
 
-        UpdateGraphProcessor.DEFAULT.runWithinUnitTestCycle(() -> {
+        updateGraph.runWithinUnitTestCycle(() -> {
             addToTable(rightTable, i(0, 1, 2),
                     col("Sym", "a", "b", "c"), col("Qty", 30, 10, 20));
             rightTable.notifyListeners(i(), i(), i(0, 1, 2));
         });
         TstUtils.validate(en);
 
-        UpdateGraphProcessor.DEFAULT.runWithinUnitTestCycle(() -> {
+        updateGraph.runWithinUnitTestCycle(() -> {
             addToTable(leftTable, i(3, 4),
                     col("Sym", "d", "e"), col("Size", -1, 100));
             leftTable.notifyListeners(i(3, 4), i(), i());
         });
         TstUtils.validate(en);
 
-        UpdateGraphProcessor.DEFAULT.runWithinUnitTestCycle(() -> {
+        updateGraph.runWithinUnitTestCycle(() -> {
             addToTable(rightTable, i(3, 4),
                     col("Sym", "e", "d"), col("Qty", -10, 50));
             rightTable.notifyListeners(i(3, 4), i(), i());
@@ -1441,8 +1457,8 @@ public class QueryTableNaturalJoinTest extends QueryTableTestBase {
         assertEquals("v", pairMatch.getDefinition().getColumns().get(1).getName());
         assertEquals(String.class, pairMatch.getDefinition().getColumns().get(0).getDataType());
         assertEquals(int.class, pairMatch.getDefinition().getColumns().get(1).getDataType());
-        assertEquals(asList("c", "e", "g"), asList((Object[]) pairMatch.getColumn(0).getDirect()));
-        assertEquals(asList(1, 2, 3), asList(pairMatch.getColumn("v").get(0, 3)));
+        assertEquals(asList("c", "e", "g"), asList((Object[]) DataAccessHelpers.getColumn(pairMatch, 0).getDirect()));
+        assertEquals(asList(1, 2, 3), asList(DataAccessHelpers.getColumn(pairMatch, "v").get(0, 3)));
 
         pairMatch = table2.exactJoin(table1, "String");
         assertEquals(3, pairMatch.size());
@@ -1451,8 +1467,8 @@ public class QueryTableNaturalJoinTest extends QueryTableTestBase {
         assertEquals("v", pairMatch.getDefinition().getColumns().get(1).getName());
         assertEquals(String.class, pairMatch.getDefinition().getColumns().get(0).getDataType());
         assertEquals(int.class, pairMatch.getDefinition().getColumns().get(1).getDataType());
-        assertEquals(asList("c", "e", "g"), asList((Object[]) pairMatch.getColumn(0).getDirect()));
-        assertEquals(asList(1, 2, 3), asList(pairMatch.getColumn("v").get(0, 3)));
+        assertEquals(asList("c", "e", "g"), asList((Object[]) DataAccessHelpers.getColumn(pairMatch, 0).getDirect()));
+        assertEquals(asList(1, 2, 3), asList(DataAccessHelpers.getColumn(pairMatch, "v").get(0, 3)));
 
         pairMatch = table1.exactJoin(table2, "String=String");
         assertEquals(3, pairMatch.size());
@@ -1461,8 +1477,8 @@ public class QueryTableNaturalJoinTest extends QueryTableTestBase {
         assertEquals("v", pairMatch.getDefinition().getColumns().get(1).getName());
         assertEquals(String.class, pairMatch.getDefinition().getColumns().get(0).getDataType());
         assertEquals(int.class, pairMatch.getDefinition().getColumns().get(1).getDataType());
-        assertEquals(asList("c", "e", "g"), asList((Object[]) pairMatch.getColumn(0).getDirect()));
-        assertEquals(asList(1, 2, 3), asList(pairMatch.getColumn("v").get(0, 3)));
+        assertEquals(asList("c", "e", "g"), asList((Object[]) DataAccessHelpers.getColumn(pairMatch, 0).getDirect()));
+        assertEquals(asList(1, 2, 3), asList(DataAccessHelpers.getColumn(pairMatch, "v").get(0, 3)));
 
         pairMatch = table2.exactJoin(table1, "String=String");
 
@@ -1472,10 +1488,10 @@ public class QueryTableNaturalJoinTest extends QueryTableTestBase {
         assertEquals("v", pairMatch.getDefinition().getColumns().get(1).getName());
         assertEquals(String.class, pairMatch.getDefinition().getColumns().get(0).getDataType());
         assertEquals(int.class, pairMatch.getDefinition().getColumns().get(1).getDataType());
-        assertEquals(asList("c", "e", "g"), asList((Object[]) pairMatch.getColumn(0).getDirect()));
-        assertEquals(1, pairMatch.getColumn("v").getInt(0));
-        assertEquals(2, pairMatch.getColumn("v").getInt(1));
-        assertEquals(3, pairMatch.getColumn("v").getInt(2));
+        assertEquals(asList("c", "e", "g"), asList((Object[]) DataAccessHelpers.getColumn(pairMatch, 0).getDirect()));
+        assertEquals(1, DataAccessHelpers.getColumn(pairMatch, "v").getInt(0));
+        assertEquals(2, DataAccessHelpers.getColumn(pairMatch, "v").getInt(1));
+        assertEquals(3, DataAccessHelpers.getColumn(pairMatch, "v").getInt(2));
 
 
         table1 = testRefreshingTable(col("String1", "c", "e", "g"));
@@ -1491,9 +1507,9 @@ public class QueryTableNaturalJoinTest extends QueryTableTestBase {
         assertEquals(String.class, pairMatch.getDefinition().getColumns().get(0).getDataType());
         assertEquals(String.class, pairMatch.getDefinition().getColumns().get(1).getDataType());
         assertEquals(int.class, pairMatch.getDefinition().getColumns().get(2).getDataType());
-        assertEquals(asList("c", "e", "g"), asList((Object[]) pairMatch.getColumn(0).getDirect()));
-        assertEquals(asList("c", "e", "g"), asList((Object[]) pairMatch.getColumn(1).getDirect()));
-        assertEquals(asList(1, 2, 3), asList(pairMatch.getColumn(2).get(0, 3)));
+        assertEquals(asList("c", "e", "g"), asList((Object[]) DataAccessHelpers.getColumn(pairMatch, 0).getDirect()));
+        assertEquals(asList("c", "e", "g"), asList((Object[]) DataAccessHelpers.getColumn(pairMatch, 1).getDirect()));
+        assertEquals(asList(1, 2, 3), asList(DataAccessHelpers.getColumn(pairMatch, 2).get(0, 3)));
 
 
         pairMatch = table2.exactJoin(table1, "String2=String1");
@@ -1506,9 +1522,11 @@ public class QueryTableNaturalJoinTest extends QueryTableTestBase {
         assertEquals(String.class, pairMatch.getDefinition().getColumn("String1").getDataType());
         assertEquals(String.class, pairMatch.getDefinition().getColumn("String2").getDataType());
         assertEquals(int.class, pairMatch.getDefinition().getColumn("v").getDataType());
-        assertEquals(asList("c", "e", "g"), asList((Object[]) pairMatch.getColumn("String1").getDirect()));
-        assertEquals(asList("c", "e", "g"), asList((Object[]) pairMatch.getColumn("String2").getDirect()));
-        assertEquals(asList(1, 2, 3), asList(pairMatch.getColumn("v").get(0, 3)));
+        assertEquals(asList("c", "e", "g"),
+                asList((Object[]) DataAccessHelpers.getColumn(pairMatch, "String1").getDirect()));
+        assertEquals(asList("c", "e", "g"),
+                asList((Object[]) DataAccessHelpers.getColumn(pairMatch, "String2").getDirect()));
+        assertEquals(asList(1, 2, 3), asList(DataAccessHelpers.getColumn(pairMatch, "v").get(0, 3)));
     }
 
     public void testSymbolTableJoin() throws IOException {
@@ -1541,12 +1559,12 @@ public class QueryTableNaturalJoinTest extends QueryTableTestBase {
         // noinspection unused
         final Table joinTable = leftTable.naturalJoin(rightTable, "idx=idx", "RightValue");
 
+        final ControlledUpdateGraph updateGraph = ExecutionContext.getContext().getUpdateGraph().cast();
         for (int ii = 0; ii < 10; ii++) {
-            UpdateGraphProcessor.DEFAULT.runWithinUnitTestCycle(
-                    () -> {
-                        generateAppends(10_000, random, leftTable, leftColumnInfo);
-                        generateAppends(10_000, random, rightTable, rightColumnInfo);
-                    });
+            updateGraph.runWithinUnitTestCycle(() -> {
+                generateAppends(10_000, random, leftTable, leftColumnInfo);
+                generateAppends(10_000, random, rightTable, rightColumnInfo);
+            });
         }
     }
 
@@ -1570,12 +1588,12 @@ public class QueryTableNaturalJoinTest extends QueryTableTestBase {
         // noinspection unused
         final Table joinTable = leftTable.naturalJoin(rightTable, "idx=idx", "RightValue");
 
+        final ControlledUpdateGraph updateGraph = ExecutionContext.getContext().getUpdateGraph().cast();
         for (int ii = 0; ii < 10; ii++) {
-            UpdateGraphProcessor.DEFAULT.runWithinUnitTestCycle(
-                    () -> {
-                        generateAppends(100_000, random, leftTable, leftColumnInfo);
-                        generateAppends(100_000, random, rightTable, rightColumnInfo);
-                    });
+            updateGraph.runWithinUnitTestCycle(() -> {
+                generateAppends(100_000, random, leftTable, leftColumnInfo);
+                generateAppends(100_000, random, rightTable, rightColumnInfo);
+            });
         }
     }
 
@@ -1593,7 +1611,7 @@ public class QueryTableNaturalJoinTest extends QueryTableTestBase {
             assertEquals(rightValue, ck.get(1));
             assertNull(ck.get(2));
         }
-        final DataColumn<?> colRight = vanillaVanilla.getColumn("ColRight");
+        final DataColumn<?> colRight = DataAccessHelpers.getColumn(vanillaVanilla, "ColRight");
         assertEquals(rightValue, colRight.get(0));
         assertEquals(rightValue, colRight.get(1));
         assertNull(colRight.get(2));

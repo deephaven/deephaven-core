@@ -76,8 +76,16 @@ type TableServiceClient interface {
 	ExactJoinTables(ctx context.Context, in *ExactJoinTablesRequest, opts ...grpc.CallOption) (*ExportedTableCreationResponse, error)
 	// Returns the result of a left join operation.
 	LeftJoinTables(ctx context.Context, in *LeftJoinTablesRequest, opts ...grpc.CallOption) (*ExportedTableCreationResponse, error)
+	// Deprecated: Do not use.
+	//
 	// Returns the result of an as of join operation.
+	//
+	// Deprecated: Please use AjTables or RajTables.
 	AsOfJoinTables(ctx context.Context, in *AsOfJoinTablesRequest, opts ...grpc.CallOption) (*ExportedTableCreationResponse, error)
+	// Returns the result of an aj operation.
+	AjTables(ctx context.Context, in *AjRajTablesRequest, opts ...grpc.CallOption) (*ExportedTableCreationResponse, error)
+	// Returns the result of an raj operation.
+	RajTables(ctx context.Context, in *AjRajTablesRequest, opts ...grpc.CallOption) (*ExportedTableCreationResponse, error)
 	// Returns the result of a range join operation.
 	RangeJoinTables(ctx context.Context, in *RangeJoinTablesRequest, opts ...grpc.CallOption) (*ExportedTableCreationResponse, error)
 	// Deprecated: Do not use.
@@ -375,9 +383,28 @@ func (c *tableServiceClient) LeftJoinTables(ctx context.Context, in *LeftJoinTab
 	return out, nil
 }
 
+// Deprecated: Do not use.
 func (c *tableServiceClient) AsOfJoinTables(ctx context.Context, in *AsOfJoinTablesRequest, opts ...grpc.CallOption) (*ExportedTableCreationResponse, error) {
 	out := new(ExportedTableCreationResponse)
 	err := c.cc.Invoke(ctx, "/io.deephaven.proto.backplane.grpc.TableService/AsOfJoinTables", in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *tableServiceClient) AjTables(ctx context.Context, in *AjRajTablesRequest, opts ...grpc.CallOption) (*ExportedTableCreationResponse, error) {
+	out := new(ExportedTableCreationResponse)
+	err := c.cc.Invoke(ctx, "/io.deephaven.proto.backplane.grpc.TableService/AjTables", in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *tableServiceClient) RajTables(ctx context.Context, in *AjRajTablesRequest, opts ...grpc.CallOption) (*ExportedTableCreationResponse, error) {
+	out := new(ExportedTableCreationResponse)
+	err := c.cc.Invoke(ctx, "/io.deephaven.proto.backplane.grpc.TableService/RajTables", in, out, opts...)
 	if err != nil {
 		return nil, err
 	}
@@ -614,8 +641,16 @@ type TableServiceServer interface {
 	ExactJoinTables(context.Context, *ExactJoinTablesRequest) (*ExportedTableCreationResponse, error)
 	// Returns the result of a left join operation.
 	LeftJoinTables(context.Context, *LeftJoinTablesRequest) (*ExportedTableCreationResponse, error)
+	// Deprecated: Do not use.
+	//
 	// Returns the result of an as of join operation.
+	//
+	// Deprecated: Please use AjTables or RajTables.
 	AsOfJoinTables(context.Context, *AsOfJoinTablesRequest) (*ExportedTableCreationResponse, error)
+	// Returns the result of an aj operation.
+	AjTables(context.Context, *AjRajTablesRequest) (*ExportedTableCreationResponse, error)
+	// Returns the result of an raj operation.
+	RajTables(context.Context, *AjRajTablesRequest) (*ExportedTableCreationResponse, error)
 	// Returns the result of a range join operation.
 	RangeJoinTables(context.Context, *RangeJoinTablesRequest) (*ExportedTableCreationResponse, error)
 	// Deprecated: Do not use.
@@ -756,6 +791,12 @@ func (UnimplementedTableServiceServer) LeftJoinTables(context.Context, *LeftJoin
 }
 func (UnimplementedTableServiceServer) AsOfJoinTables(context.Context, *AsOfJoinTablesRequest) (*ExportedTableCreationResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method AsOfJoinTables not implemented")
+}
+func (UnimplementedTableServiceServer) AjTables(context.Context, *AjRajTablesRequest) (*ExportedTableCreationResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method AjTables not implemented")
+}
+func (UnimplementedTableServiceServer) RajTables(context.Context, *AjRajTablesRequest) (*ExportedTableCreationResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method RajTables not implemented")
 }
 func (UnimplementedTableServiceServer) RangeJoinTables(context.Context, *RangeJoinTablesRequest) (*ExportedTableCreationResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method RangeJoinTables not implemented")
@@ -1298,6 +1339,42 @@ func _TableService_AsOfJoinTables_Handler(srv interface{}, ctx context.Context, 
 	return interceptor(ctx, in, info, handler)
 }
 
+func _TableService_AjTables_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(AjRajTablesRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(TableServiceServer).AjTables(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: "/io.deephaven.proto.backplane.grpc.TableService/AjTables",
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(TableServiceServer).AjTables(ctx, req.(*AjRajTablesRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _TableService_RajTables_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(AjRajTablesRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(TableServiceServer).RajTables(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: "/io.deephaven.proto.backplane.grpc.TableService/RajTables",
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(TableServiceServer).RajTables(ctx, req.(*AjRajTablesRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
 func _TableService_RangeJoinTables_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
 	in := new(RangeJoinTablesRequest)
 	if err := dec(in); err != nil {
@@ -1670,6 +1747,14 @@ var TableService_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "AsOfJoinTables",
 			Handler:    _TableService_AsOfJoinTables_Handler,
+		},
+		{
+			MethodName: "AjTables",
+			Handler:    _TableService_AjTables_Handler,
+		},
+		{
+			MethodName: "RajTables",
+			Handler:    _TableService_RajTables_Handler,
 		},
 		{
 			MethodName: "RangeJoinTables",

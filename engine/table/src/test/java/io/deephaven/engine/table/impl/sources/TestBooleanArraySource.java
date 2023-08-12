@@ -14,6 +14,7 @@ import io.deephaven.chunk.WritableObjectChunk;
 
 import io.deephaven.util.BooleanUtils;
 
+import io.deephaven.engine.context.ExecutionContext;
 import io.deephaven.engine.rowset.RowSetFactory;
 import io.deephaven.engine.table.ChunkSink;
 import io.deephaven.engine.table.ChunkSource;
@@ -21,12 +22,12 @@ import io.deephaven.engine.table.impl.DefaultGetContext;
 import io.deephaven.engine.table.impl.TestSourceSink;
 import io.deephaven.engine.rowset.*;
 import io.deephaven.engine.table.ColumnSource;
-import io.deephaven.engine.updategraph.UpdateGraphProcessor;
 import io.deephaven.engine.table.impl.select.FormulaColumn;
 import io.deephaven.chunk.*;
 import io.deephaven.chunk.attributes.Values;
 import io.deephaven.base.testing.Shuffle;
 import io.deephaven.engine.rowset.chunkattributes.RowKeys;
+import io.deephaven.engine.testutil.ControlledUpdateGraph;
 import io.deephaven.engine.testutil.junit4.EngineCleanup;
 import junit.framework.TestCase;
 import org.junit.Rule;
@@ -38,7 +39,7 @@ import java.util.Random;
 import java.util.stream.LongStream;
 
 import static io.deephaven.chunk.ArrayGenerator.indexDataGenerator;
-import static io.deephaven.util.QueryConstants.NULL_BOOLEAN;
+import static io.deephaven.util.QueryConstants.*;
 import static junit.framework.TestCase.*;
 
 public class TestBooleanArraySource {
@@ -64,20 +65,20 @@ public class TestBooleanArraySource {
 
     private void testGetChunkGeneric(byte[] values, byte[] newValues, int chunkSize, RowSet rowSet) {
         final BooleanArraySource source;
-        UpdateGraphProcessor.DEFAULT.startCycleForUnitTests();
+        ExecutionContext.getContext().getUpdateGraph().<ControlledUpdateGraph>cast().startCycleForUnitTests();
         try {
             source = forArray(values);
             validateValues(chunkSize, values, rowSet, source);
         } finally {
-            UpdateGraphProcessor.DEFAULT.completeCycleForUnitTests();
+            ExecutionContext.getContext().getUpdateGraph().<ControlledUpdateGraph>cast().completeCycleForUnitTests();
         }
-        UpdateGraphProcessor.DEFAULT.startCycleForUnitTests();
+        ExecutionContext.getContext().getUpdateGraph().<ControlledUpdateGraph>cast().startCycleForUnitTests();
         try {
             updateFromArray(source, newValues);
             validateValues(chunkSize, newValues, rowSet, source);
             validatePrevValues(chunkSize, values, rowSet, source);
         } finally {
-            UpdateGraphProcessor.DEFAULT.completeCycleForUnitTests();
+            ExecutionContext.getContext().getUpdateGraph().<ControlledUpdateGraph>cast().completeCycleForUnitTests();
         }
     }
 
@@ -264,23 +265,24 @@ public class TestBooleanArraySource {
 
     private void testFillChunkGeneric(byte[] values, byte[] newValues, int chunkSize, RowSet rowSet) {
         final BooleanArraySource source;
-        UpdateGraphProcessor.DEFAULT.startCycleForUnitTests();
+        ExecutionContext.getContext().getUpdateGraph().<ControlledUpdateGraph>cast().startCycleForUnitTests();
         try {
             source = forArray(values);
             validateValuesWithFill(chunkSize, values, rowSet, source);
         } finally {
-            UpdateGraphProcessor.DEFAULT.completeCycleForUnitTests();
+            ExecutionContext.getContext().getUpdateGraph().<ControlledUpdateGraph>cast().completeCycleForUnitTests();
         }
-        UpdateGraphProcessor.DEFAULT.startCycleForUnitTests();
+        ExecutionContext.getContext().getUpdateGraph().<ControlledUpdateGraph>cast().startCycleForUnitTests();
         try {
             updateFromArray(source, newValues);
             validateValuesWithFill(chunkSize, newValues, rowSet, source);
             validatePrevValuesWithFill(chunkSize, values, rowSet, source);
         } finally {
-            UpdateGraphProcessor.DEFAULT.completeCycleForUnitTests();
+            ExecutionContext.getContext().getUpdateGraph().<ControlledUpdateGraph>cast().completeCycleForUnitTests();
         }
     }
 
+    // region validate with fill
     private void validateValuesWithFill(int chunkSize, byte[] values, RowSet rowSet, BooleanArraySource source) {
         try (final RowSequence.Iterator rsIterator = rowSet.getRowSequenceIterator();
              final RowSet.Iterator it = rowSet.iterator();
@@ -295,7 +297,7 @@ public class TestBooleanArraySource {
                     assertTrue(it.hasNext());
                     final long idx = it.nextLong();
                     checkFromSource(source.getBoolean(idx), chunk.get(i));
-                    checkFromValues(values[(int) idx], chunk.get(i));
+                    checkFromValues(idx < values.length ? values[(int) idx] : BooleanUtils.NULL_BOOLEAN_AS_BYTE, chunk.get(i));
                     pos++;
                 }
             }
@@ -317,13 +319,14 @@ public class TestBooleanArraySource {
                     assertTrue(it.hasNext());
                     final long idx = it.nextLong();
                     checkFromSource(source.getPrevBoolean(idx), chunk.get(i));
-                    checkFromValues(values[(int) idx], chunk.get(i));
+                    checkFromValues(idx < values.length ? values[(int) idx] : BooleanUtils.NULL_BOOLEAN_AS_BYTE, chunk.get(i));
                     pos++;
                 }
             }
             assertEquals(pos, rowSet.size());
         }
     }
+    // endregion validate with fill
 
     @Test
     public void testFillChunk() {
@@ -342,6 +345,10 @@ public class TestBooleanArraySource {
         testFillChunkGeneric(ArrayGenerator.randomBooleans(random, 16), ArrayGenerator.randomBooleans(random, 16), 5, RowSetFactory.fromKeys(4, 5, 6, 7, 8));
         testFillChunkGeneric(ArrayGenerator.randomBooleans(random, 512), ArrayGenerator.randomBooleans(random, 512), 4, RowSetFactory.fromKeys(254, 255, 256, 257));
         testFillChunkGeneric(ArrayGenerator.randomBooleans(random, 512), ArrayGenerator.randomBooleans(random, 512), 5, RowSetFactory.fromKeys(254, 255, 256, 257, 258));
+
+        // Test the fill with null behavior when requesting keys outside of source.
+        testFillChunkGeneric(ArrayGenerator.randomBooleans(random, 512), ArrayGenerator.randomBooleans(random, 4096), 4096, RowSetFactory.fromRange(4096, 8192));
+        testFillChunkGeneric(ArrayGenerator.randomBooleans(random, 512), ArrayGenerator.randomBooleans(random, 4096), 4096, RowSetFactory.flat(4096));
 
         for (int sourceSize = 32; sourceSize < 8192; sourceSize *= 4) {
             for (int v = -4; v < 5; v += 2) {
@@ -526,14 +533,14 @@ public class TestBooleanArraySource {
     public void testFillEmptyChunkWithPrev() {
         final BooleanArraySource src = new BooleanArraySource();
         src.startTrackingPrevValues();
-        UpdateGraphProcessor.DEFAULT.startCycleForUnitTests();
+        ExecutionContext.getContext().getUpdateGraph().<ControlledUpdateGraph>cast().startCycleForUnitTests();
         try (final RowSet keys = RowSetFactory.empty();
              final WritableObjectChunk<Boolean, Values> chunk = WritableObjectChunk.makeWritableChunk(0)) {
             // Fill from an empty chunk
             src.fillFromChunkByKeys(keys, chunk);
         }
         // NullPointerException in BooleanSparseArraySource.commitUpdates()
-        UpdateGraphProcessor.DEFAULT.completeCycleForUnitTests();
+        ExecutionContext.getContext().getUpdateGraph().<ControlledUpdateGraph>cast().completeCycleForUnitTests();
     }
 
     @Test

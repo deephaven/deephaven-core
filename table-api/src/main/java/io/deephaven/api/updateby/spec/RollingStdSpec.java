@@ -38,12 +38,11 @@ public abstract class RollingStdSpec extends RollingOpSpec {
                 WindowScale.ofTime(timestampCol, fwdDuration));
     }
 
-    // internal use constructors
-    private static RollingStdSpec of(WindowScale revWindowScale) {
+    public static RollingStdSpec of(WindowScale revWindowScale) {
         return ImmutableRollingStdSpec.builder().revWindowScale(revWindowScale).build();
     }
 
-    private static RollingStdSpec of(WindowScale revWindowScale, WindowScale fwdWindowScale) {
+    public static RollingStdSpec of(WindowScale revWindowScale, WindowScale fwdWindowScale) {
         return ImmutableRollingStdSpec.builder().revWindowScale(revWindowScale).fwdWindowScale(fwdWindowScale).build();
     }
 

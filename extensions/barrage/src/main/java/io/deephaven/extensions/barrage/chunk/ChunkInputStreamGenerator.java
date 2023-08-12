@@ -14,7 +14,6 @@ import io.deephaven.engine.rowset.RowSet;
 import io.deephaven.extensions.barrage.ColumnConversionMode;
 import io.deephaven.extensions.barrage.util.DefensiveDrainable;
 import io.deephaven.extensions.barrage.util.StreamReaderOptions;
-import io.deephaven.time.DateTime;
 import io.deephaven.time.DateTimeUtils;
 import io.deephaven.util.datastructures.LongSizedDataStructure;
 import io.deephaven.chunk.Chunk;
@@ -29,6 +28,7 @@ import java.io.IOException;
 import java.math.BigDecimal;
 import java.math.BigInteger;
 import java.time.Instant;
+import java.time.ZoneId;
 import java.time.ZonedDateTime;
 import java.util.Iterator;
 
@@ -91,24 +91,12 @@ public interface ChunkInputStreamGenerator extends SafeCloseable {
                                 out.write(normal.unscaledValue().toByteArray());
                             });
                 }
-                if (type == DateTime.class) {
-                    // This code path is utilized for arrays and vectors of DateTimes, which cannot be reinterpreted.
-                    ObjectChunk<DateTime, Values> objChunk = chunk.asObjectChunk();
-                    WritableLongChunk<Values> outChunk = WritableLongChunk.makeWritableChunk(objChunk.size());
-                    for (int i = 0; i < objChunk.size(); ++i) {
-                        outChunk.set(i, DateTimeUtils.nanos(objChunk.get(i)));
-                    }
-                    if (chunk instanceof PoolableChunk) {
-                        ((PoolableChunk) chunk).close();
-                    }
-                    return new LongChunkInputStreamGenerator(outChunk, Long.BYTES, rowOffset);
-                }
                 if (type == Instant.class) {
                     // This code path is utilized for arrays and vectors of Instant, which cannot be reinterpreted.
                     ObjectChunk<Instant, Values> objChunk = chunk.asObjectChunk();
                     WritableLongChunk<Values> outChunk = WritableLongChunk.makeWritableChunk(objChunk.size());
                     for (int i = 0; i < objChunk.size(); ++i) {
-                        outChunk.set(i, DateTimeUtils.toEpochNano(objChunk.get(i)));
+                        outChunk.set(i, DateTimeUtils.epochNanos(objChunk.get(i)));
                     }
                     if (chunk instanceof PoolableChunk) {
                         ((PoolableChunk) chunk).close();
@@ -120,7 +108,7 @@ public interface ChunkInputStreamGenerator extends SafeCloseable {
                     ObjectChunk<ZonedDateTime, Values> objChunk = chunk.asObjectChunk();
                     WritableLongChunk<Values> outChunk = WritableLongChunk.makeWritableChunk(objChunk.size());
                     for (int i = 0; i < objChunk.size(); ++i) {
-                        outChunk.set(i, DateTimeUtils.toEpochNano(objChunk.get(i)));
+                        outChunk.set(i, DateTimeUtils.epochNanos(objChunk.get(i)));
                     }
                     if (chunk instanceof PoolableChunk) {
                         ((PoolableChunk) chunk).close();
@@ -251,21 +239,15 @@ public interface ChunkInputStreamGenerator extends SafeCloseable {
                             outChunk, outOffset, totalRows
                     );
                 }
-                if (type == DateTime.class) {
-                    return FixedWidthChunkInputStreamGenerator.extractChunkFromInputStreamWithTypeConversion(
-                            Long.BYTES, options, io -> DateTimeUtils.nanosToTime(io.readLong()),
-                            fieldNodeIter, bufferInfoIter, is, outChunk, outOffset, totalRows
-                    );
-                }
                 if (type == Instant.class) {
                     return FixedWidthChunkInputStreamGenerator.extractChunkFromInputStreamWithTypeConversion(
-                            Long.BYTES, options, io -> DateTimeUtils.makeInstant(io.readLong()),
+                            Long.BYTES, options, io -> DateTimeUtils.epochNanosToInstant(io.readLong()),
                             fieldNodeIter, bufferInfoIter, is, outChunk, outOffset, totalRows
                     );
                 }
                 if (type == ZonedDateTime.class) {
                     return FixedWidthChunkInputStreamGenerator.extractChunkFromInputStreamWithTypeConversion(
-                            Long.BYTES, options, io -> DateTimeUtils.makeZonedDateTime(io.readLong()),
+                            Long.BYTES, options, io -> DateTimeUtils.epochNanosToZonedDateTime(io.readLong(), DateTimeUtils.timeZone()),
                             fieldNodeIter, bufferInfoIter, is, outChunk, outOffset, totalRows
                     );
                 }

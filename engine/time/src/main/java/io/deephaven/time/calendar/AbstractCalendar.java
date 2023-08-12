@@ -3,11 +3,11 @@
  */
 package io.deephaven.time.calendar;
 
-import io.deephaven.time.DateTime;
 import io.deephaven.time.DateTimeUtils;
 import io.deephaven.util.QueryConstants;
 
 import java.time.DayOfWeek;
+import java.time.Instant;
 import java.time.LocalDate;
 import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
@@ -15,16 +15,16 @@ import java.util.List;
 
 public abstract class AbstractCalendar implements Calendar {
 
-    public String previousDay(final DateTime time) {
+    public String previousDay(final Instant time) {
         return previousDay(time, 1);
     }
 
-    public String previousDay(final DateTime time, final int days) {
+    public String previousDay(final Instant time, final int days) {
         if (time == null) {
             return null;
         }
 
-        final LocalDate t = DateTimeUtils.getZonedDateTime(time, timeZone()).toLocalDate().minusDays(days);
+        final LocalDate t = DateTimeUtils.toZonedDateTime(time, timeZone()).toLocalDate().minusDays(days);
 
         return DateStringUtils.format(t);
     }
@@ -42,16 +42,16 @@ public abstract class AbstractCalendar implements Calendar {
         return DateStringUtils.format(t);
     }
 
-    public String nextDay(final DateTime time) {
+    public String nextDay(final Instant time) {
         return nextDay(time, 1);
     }
 
-    public String nextDay(final DateTime time, final int days) {
+    public String nextDay(final Instant time, final int days) {
         if (time == null) {
             return null;
         }
 
-        final LocalDate t = DateTimeUtils.getZonedDateTime(time, timeZone()).toLocalDate().plusDays(days);
+        final LocalDate t = DateTimeUtils.toZonedDateTime(time, timeZone()).toLocalDate().plusDays(days);
 
         return DateStringUtils.format(t);
     }
@@ -69,12 +69,12 @@ public abstract class AbstractCalendar implements Calendar {
         return DateStringUtils.format(t);
     }
 
-    public String[] daysInRange(DateTime start, DateTime end) {
+    public String[] daysInRange(Instant start, Instant end) {
         if (start == null || end == null) {
             return new String[0];
         }
-        LocalDate day = DateTimeUtils.getZonedDateTime(start, timeZone()).toLocalDate();
-        final LocalDate day2 = DateTimeUtils.getZonedDateTime(end, timeZone()).toLocalDate();
+        LocalDate day = DateTimeUtils.toZonedDateTime(start, timeZone()).toLocalDate();
+        final LocalDate day2 = DateTimeUtils.toZonedDateTime(end, timeZone()).toLocalDate();
 
         List<String> dateList = new ArrayList<>();
         while (!day.isAfter(day2)) {
@@ -103,13 +103,15 @@ public abstract class AbstractCalendar implements Calendar {
         return dateList.toArray(new String[dateList.size()]);
     }
 
-    public int numberOfDays(final DateTime start, final DateTime end) {
+    public int numberOfDays(final Instant start, final Instant end) {
         return numberOfDays(start, end, false);
     }
 
-    public int numberOfDays(final DateTime start, final DateTime end, final boolean endInclusive) {
-        return numberOfDays(start == null ? null : start.toDateString(timeZone()),
-                end == null ? null : end.toDateString(timeZone()), endInclusive);
+    public int numberOfDays(final Instant start, final Instant end, final boolean endInclusive) {
+        return numberOfDays(
+                start == null ? null : DateTimeUtils.formatDate(start, timeZone()),
+                end == null ? null : DateTimeUtils.formatDate(end, timeZone()),
+                endInclusive);
     }
 
     public int numberOfDays(final String start, final String end) {
@@ -133,11 +135,11 @@ public abstract class AbstractCalendar implements Calendar {
         return days;
     }
 
-    public long diffNanos(final DateTime start, final DateTime end) {
+    public long diffNanos(final Instant start, final Instant end) {
         return DateTimeUtils.minus(end, start);
     }
 
-    public double diffDay(final DateTime start, final DateTime end) {
+    public double diffDay(final Instant start, final Instant end) {
         if (start == null || end == null) {
             return QueryConstants.NULL_DOUBLE;
         }
@@ -145,15 +147,23 @@ public abstract class AbstractCalendar implements Calendar {
         return (double) diffNanos(start, end) / (double) DateTimeUtils.DAY;
     }
 
-    public double diffYear(DateTime start, DateTime end) {
+    public double diffYear365(Instant start, Instant end) {
         if (start == null || end == null) {
             return QueryConstants.NULL_DOUBLE;
         }
 
-        return (double) diffNanos(start, end) / (double) DateTimeUtils.YEAR;
+        return (double) diffNanos(start, end) / (double) DateTimeUtils.YEAR_365;
     }
 
-    public DayOfWeek dayOfWeek(final DateTime time) {
+    public double diffYearAvg(Instant start, Instant end) {
+        if (start == null || end == null) {
+            return QueryConstants.NULL_DOUBLE;
+        }
+
+        return (double) diffNanos(start, end) / (double) DateTimeUtils.YEAR_AVG;
+    }
+
+    public DayOfWeek dayOfWeek(final Instant time) {
         if (time == null) {
             return null;
         }

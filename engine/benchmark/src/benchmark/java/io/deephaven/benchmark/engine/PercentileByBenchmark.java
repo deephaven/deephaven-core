@@ -5,14 +5,16 @@ package io.deephaven.benchmark.engine;
 
 import io.deephaven.api.agg.spec.AggSpec;
 import io.deephaven.datastructures.util.CollectionUtil;
+import io.deephaven.engine.context.ExecutionContext;
+import io.deephaven.engine.context.TestExecutionContext;
 import io.deephaven.engine.table.Table;
-import io.deephaven.engine.updategraph.UpdateGraphProcessor;
+import io.deephaven.engine.testutil.ControlledUpdateGraph;
 import io.deephaven.engine.util.TableTools;
 import io.deephaven.engine.table.impl.QueryTable;
 import io.deephaven.benchmarking.*;
 import io.deephaven.benchmarking.generator.ColumnGenerator;
-import io.deephaven.benchmarking.generator.EnumStringColumnGenerator;
-import io.deephaven.benchmarking.generator.SequentialNumColumnGenerator;
+import io.deephaven.benchmarking.generator.EnumStringGenerator;
+import io.deephaven.benchmarking.generator.SequentialNumberGenerator;
 import io.deephaven.benchmarking.impl.PersistentBenchmarkTableBuilder;
 import io.deephaven.benchmarking.runner.TableBenchmarkState;
 import org.jetbrains.annotations.NotNull;
@@ -64,7 +66,8 @@ public class PercentileByBenchmark {
 
     @Setup(Level.Trial)
     public void setupEnv(BenchmarkParams params) {
-        UpdateGraphProcessor.DEFAULT.enableUnitTestMode();
+        TestExecutionContext.createForUnitTests().open();
+        ExecutionContext.getContext().getUpdateGraph().<ControlledUpdateGraph>cast().enableUnitTestMode();
         QueryTable.setMemoizeResults(false);
 
         final BenchmarkTableBuilder builder;
@@ -98,10 +101,10 @@ public class PercentileByBenchmark {
 
         builder.setSeed(0xDEADBEEF).addColumn(BenchmarkTools.stringCol("PartCol", 1, 5, 7, 0xFEEDBEEF));
 
-        final EnumStringColumnGenerator stringKey = (EnumStringColumnGenerator) BenchmarkTools.stringCol("KeyString",
-                keyCount, 6, 6, 0xB00FB00F, EnumStringColumnGenerator.Mode.Rotate);
-        final ColumnGenerator intKey = BenchmarkTools.seqNumberCol("KeyInt", int.class, 0, 1, keyCount,
-                SequentialNumColumnGenerator.Mode.RollAtLimit);
+        final ColumnGenerator<String> stringKey = BenchmarkTools.stringCol(
+                "KeyString", keyCount, 6, 6, 0xB00FB00FL, EnumStringGenerator.Mode.Rotate);
+        final ColumnGenerator<Integer> intKey = BenchmarkTools.seqNumberCol(
+                "KeyInt", int.class, 0, 1, keyCount, SequentialNumberGenerator.Mode.RollAtLimit);
 
         System.out.println("Key type: " + keyType);
         switch (keyType) {
@@ -188,7 +191,8 @@ public class PercentileByBenchmark {
     @Benchmark
     public Table percentileByStatic(@NotNull final Blackhole bh) {
         final Function<Table, Table> fut = getFunction();
-        final Table result = UpdateGraphProcessor.DEFAULT.sharedLock().computeLocked(() -> fut.apply(table));
+        final Table result =
+                ExecutionContext.getContext().getUpdateGraph().sharedLock().computeLocked(() -> fut.apply(table));
         bh.consume(result);
         return state.setResult(TableTools.emptyTable(0));
     }
@@ -210,7 +214,10 @@ public class PercentileByBenchmark {
     public Table percentileByIncremental(@NotNull final Blackhole bh) {
         final Function<Table, Table> fut = getFunction();
         final Table result = IncrementalBenchmark.incrementalBenchmark(
-                (t) -> UpdateGraphProcessor.DEFAULT.sharedLock().computeLocked(() -> fut.apply(t)), table);
+                (t) -> {
+                    return ExecutionContext.getContext().getUpdateGraph().sharedLock()
+                            .computeLocked(() -> fut.apply(t));
+                }, table);
         bh.consume(result);
         return state.setResult(TableTools.emptyTable(0));
     }

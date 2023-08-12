@@ -5,6 +5,7 @@ package io.deephaven.engine.table.impl.by;
 
 import io.deephaven.engine.table.Table;
 import io.deephaven.engine.table.ColumnSource;
+import io.deephaven.engine.table.impl.sources.regioned.SymbolTableSource;
 import io.deephaven.util.annotations.VisibleForTesting;
 import org.jetbrains.annotations.NotNull;
 
@@ -49,27 +50,19 @@ public class AggregationControl {
         return shiftSize <= numStates * 2;
     }
 
-    // boolean considerSymbolTables(@NotNull final Table inputTable, final boolean useGrouping, @NotNull final
-    // ColumnSource<?>[] sources) {
-    // return !inputTable.refreshing()
-    // && !useGrouping
-    // && sources.length == 1
-    // && sources[0] instanceof SymbolTableSource
-    // && ((SymbolTableSource) sources[0]).hasSymbolTable(inputTable.getRowSet());
-    // }
-    //
-    // boolean useSymbolTableLookupCaching() {
-    // return false;
-    // }
-    //
-    // boolean useSymbolTables(final long inputTableSize, final long symbolTableSize) {
-    // return symbolTableSize <= inputTableSize / 2;
-    // }
-    //
-    // boolean useUniqueTable(final boolean uniqueValues, final long maximumUniqueValue, final long minimumUniqueValue)
-    // {
-    // // We want to have one left over value for "no good" (Integer.MAX_VALUE), and then we need another value to
-    // // represent that (max - min + 1) is the number of slots required.
-    // return uniqueValues && (maximumUniqueValue - minimumUniqueValue) < (Integer.MAX_VALUE - 2);
-    // }
+    boolean considerSymbolTables(@NotNull final Table inputTable, final boolean useGrouping,
+            @NotNull final ColumnSource<?>[] sources) {
+        return !inputTable.isRefreshing() && !useGrouping && sources.length == 1
+                && SymbolTableSource.hasSymbolTable(sources[0], inputTable.getRowSet());
+    }
+
+    boolean useSymbolTableLookupCaching() {
+        return false;
+    }
+
+    boolean useSymbolTables(final long inputTableSize, final long symbolTableSize) {
+        // the less than vs. leq is important here, so that we do not attempt to use a symbol table for an empty table
+        // which fails later on in the SymbolTableCombiner
+        return symbolTableSize < inputTableSize / 2;
+    }
 }

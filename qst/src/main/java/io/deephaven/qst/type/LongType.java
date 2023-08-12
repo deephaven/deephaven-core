@@ -3,17 +3,17 @@
  */
 package io.deephaven.qst.type;
 
-import io.deephaven.annotations.SimpleStyle;
+import io.deephaven.annotations.SingletonStyle;
 import org.immutables.value.Value.Immutable;
 
 /**
- * The {@link Long} type.
+ * The primitive {@link long} type.
  */
 @Immutable
-@SimpleStyle
+@SingletonStyle
 public abstract class LongType extends PrimitiveTypeBase<Long> {
 
-    public static LongType instance() {
+    public static LongType of() {
         return ImmutableLongType.of();
     }
 
@@ -23,14 +23,18 @@ public abstract class LongType extends PrimitiveTypeBase<Long> {
     }
 
     @Override
+    public final BoxedLongType boxedType() {
+        return BoxedLongType.of();
+    }
+
+    @Override
     public final NativeArrayType<long[], Long> arrayType() {
         return NativeArrayType.of(long[].class, this);
     }
 
     @Override
-    public final <V extends PrimitiveType.Visitor> V walk(V visitor) {
-        visitor.visit(this);
-        return visitor;
+    public final <R> R walk(PrimitiveType.Visitor<R> visitor) {
+        return visitor.visit(this);
     }
 
     @Override

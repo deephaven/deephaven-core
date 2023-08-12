@@ -79,13 +79,12 @@ public final class ByteArray extends PrimitiveArrayBase<Byte> {
 
     @Override
     public final ByteType componentType() {
-        return ByteType.instance();
+        return ByteType.of();
     }
 
     @Override
-    public final <V extends PrimitiveArray.Visitor> V walk(V visitor) {
-        visitor.visit(this);
-        return visitor;
+    public final <R> R walk(PrimitiveArray.Visitor<R> visitor) {
+        return visitor.visit(this);
     }
 
     @Override

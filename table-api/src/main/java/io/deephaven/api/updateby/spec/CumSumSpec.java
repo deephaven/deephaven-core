@@ -1,13 +1,13 @@
 package io.deephaven.api.updateby.spec;
 
-import io.deephaven.annotations.SimpleStyle;
+import io.deephaven.annotations.SingletonStyle;
 import org.immutables.value.Value.Immutable;
 
 /**
  * A {@link UpdateBySpec} for performing a Cumulative Sum of the specified columns.
  */
 @Immutable
-@SimpleStyle
+@SingletonStyle
 public class CumSumSpec extends UpdateBySpecBase {
     public static CumSumSpec of() {
         return ImmutableCumSumSpec.of();

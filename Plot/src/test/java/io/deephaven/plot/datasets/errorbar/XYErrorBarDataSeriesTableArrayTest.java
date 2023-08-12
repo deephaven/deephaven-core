@@ -3,11 +3,12 @@
  */
 package io.deephaven.plot.datasets.errorbar;
 
-import io.deephaven.base.testing.BaseArrayTestCase;
+import io.deephaven.engine.context.ExecutionContext;
 import io.deephaven.engine.table.Table;
 import io.deephaven.engine.table.impl.QueryTable;
+import io.deephaven.engine.testutil.ControlledUpdateGraph;
 import io.deephaven.engine.testutil.TstUtils;
-import io.deephaven.engine.updategraph.UpdateGraphProcessor;
+import io.deephaven.engine.testutil.testcase.RefreshingTableTestCase;
 import io.deephaven.engine.util.TableTools;
 import io.deephaven.plot.BaseFigureImpl;
 import io.deephaven.plot.ChartImpl;
@@ -18,20 +19,7 @@ import io.deephaven.plot.util.tables.TableHandle;
 import static io.deephaven.engine.testutil.TstUtils.*;
 import static io.deephaven.engine.util.TableTools.col;
 
-public class XYErrorBarDataSeriesTableArrayTest extends BaseArrayTestCase {
-
-    @Override
-    public void setUp() throws Exception {
-        super.setUp();
-        UpdateGraphProcessor.DEFAULT.enableUnitTestMode();
-        UpdateGraphProcessor.DEFAULT.resetForUnitTests(false);
-    }
-
-    @Override
-    protected void tearDown() throws Exception {
-        super.tearDown();
-        UpdateGraphProcessor.DEFAULT.resetForUnitTests(true);
-    }
+public class XYErrorBarDataSeriesTableArrayTest extends RefreshingTableTestCase {
 
     public void testXYErrorBarDataSeriesTableArray() {
         final BaseFigureImpl figure = new BaseFigureImpl();
@@ -95,7 +83,8 @@ public class XYErrorBarDataSeriesTableArrayTest extends BaseArrayTestCase {
 
         assertEquals(series.getX(4), Double.NaN);
 
-        UpdateGraphProcessor.DEFAULT.runWithinUnitTestCycle(() -> {
+        final ControlledUpdateGraph updateGraph = ExecutionContext.getContext().getUpdateGraph().cast();
+        updateGraph.runWithinUnitTestCycle(() -> {
             addToTable(refreshingTable, i(7, 9), col("x", 4, 5), col("y", 4, 5), col("yLow", 3, 4), col("yHigh", 5, 6));
             refreshingTable.notifyListeners(i(7, 9), i(), i());
         });

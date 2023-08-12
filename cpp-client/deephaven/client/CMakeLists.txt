@@ -9,8 +9,8 @@ include(GNUInstallDirs)
 find_package(Arrow REQUIRED)
 find_package(ArrowFlight REQUIRED HINTS ${Arrow_DIR})
 find_package(Immer REQUIRED)
-find_package(Protobuf REQUIRED)
-find_package(gRPC REQUIRED)
+find_package(Protobuf CONFIG REQUIRED)
+find_package(gRPC CONFIG REQUIRED)
 find_package(Threads REQUIRED)
 
 add_subdirectory(../dhcore dhcore_dir)
@@ -30,6 +30,7 @@ set(ALL_FILES
     src/impl/string_expression_impl.cc
     src/impl/table_handle_impl.cc
     src/impl/table_handle_manager_impl.cc
+    src/impl/update_by_operation_impl.cc
 
     include/private/deephaven/client/impl/aggregate_impl.h
     include/private/deephaven/client/impl/boolean_expression_impl.h
@@ -42,28 +43,30 @@ set(ALL_FILES
     include/private/deephaven/client/impl/string_expression_impl.h
     include/private/deephaven/client/impl/table_handle_impl.h
     include/private/deephaven/client/impl/table_handle_manager_impl.h
+    include/private/deephaven/client/impl/update_by_operation_impl.h
     include/private/deephaven/client/impl/util.h
 
-    src/arrowutil/arrow_flight.cc
-
-    include/private/deephaven/client/arrowutil/arrow_traits.h
-    include/private/deephaven/client/arrowutil/arrow_flight.h
-    include/private/deephaven/client/arrowutil/arrow_visitors.h
+    include/private/deephaven/client/arrowutil/arrow_column_source.h
     include/private/deephaven/client/arrowutil/arrow_value_converter.h
+    include/private/deephaven/client/arrowutil/arrow_visitors.h
 
     src/columns.cc
     src/expressions.cc
+    src/client_options.cc
     src/client.cc
     src/flight.cc
+    src/update_by.cc
 
     include/public/deephaven/client/columns.h
     include/public/deephaven/client/expressions.h
     include/public/deephaven/client/client.h
+    include/public/deephaven/client/client_options.h
     include/public/deephaven/client/flight.h
+    include/public/deephaven/client/update_by.h
     include/public/deephaven/client/utility/arrow_util.h
-    include/public/deephaven/client/utility/cython_support.h
 
     src/subscription/subscribe_thread.cc
+
     include/private/deephaven/client/subscription/subscribe_thread.h
     include/private/deephaven/client/subscription/subscription_handle.h
 
@@ -71,9 +74,7 @@ set(ALL_FILES
     src/utility/executor.cc
     include/private/deephaven/client/utility/executor.h
 
-    src/utility/cython_support.cc
     src/utility/table_maker.cc
-    include/public/deephaven/client/utility/cython_support.h
     include/public/deephaven/client/utility/table_maker.h
 
     proto/deephaven/proto/application.grpc.pb.cc
@@ -112,7 +113,7 @@ set(ALL_FILES
     proto/deephaven/proto/ticket.grpc.pb.h
     proto/deephaven/proto/ticket.pb.cc
     proto/deephaven/proto/ticket.pb.h
-        include/private/deephaven/client/arrowutil/arrow_column_source.h)
+    )
 
 add_library(client ${ALL_FILES})
 # In order to make a shared library suitable for Cython.

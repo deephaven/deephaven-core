@@ -13,7 +13,8 @@ from deephaven.experimental import time_window
 from deephaven.jcompat import to_sequence
 from deephaven.table import Table
 from deephaven.table_listener import listen, TableListener, TableListenerHandle
-from deephaven.ugp import exclusive_lock
+from deephaven.execution_context import get_exec_ctx
+from deephaven.update_graph import exclusive_lock
 from tests.testbase import BaseTestCase
 
 
@@ -59,9 +60,9 @@ class TableListenerTestCase(BaseTestCase):
 
     def setUp(self) -> None:
         super().setUp()
-        with exclusive_lock():
-            self.test_table = time_table("00:00:00.001").update(["X=i%11"]).sort("X").tail(16)
-            source_table = time_table("00:00:00.001").update(["TS=currentTime()"])
+        with exclusive_lock(get_exec_ctx().update_graph):
+            self.test_table = time_table("PT00:00:00.001").update(["X=i%11"]).sort("X").tail(16)
+            source_table = time_table("PT00:00:00.001").update(["TS=now()"])
             self.test_table2 = time_window(source_table, ts_col="TS", window=10 ** 7, bool_col="InWindow")
 
     def tearDown(self) -> None:

@@ -8,7 +8,7 @@
  * JSON. It is meant to service the majority of server and client SSL configuration use-cases.
  *
  * <p>
- * While not exposed to the end-user, the overall configuration structure is guided by <a
- * href="https://github.com/Hakky54/sslcontext-kickstart>sslcontext-kickstart</a>.
+ * While not exposed to the end-user, the overall configuration structure is guided by
+ * <a href="https://github.com/Hakky54/sslcontext-kickstart">sslcontext-kickstart</a>.
  */
 package io.deephaven.ssl.config;

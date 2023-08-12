@@ -1,17 +1,19 @@
 package io.deephaven.engine.table.impl.updateby;
 
 import io.deephaven.api.updateby.UpdateByOperation;
+import io.deephaven.engine.context.ExecutionContext;
 import io.deephaven.engine.rowset.RowSet;
 import io.deephaven.engine.rowset.RowSetFactory;
 import io.deephaven.engine.table.PartitionedTable;
 import io.deephaven.engine.table.Table;
+import io.deephaven.engine.table.impl.DataAccessHelpers;
 import io.deephaven.engine.table.impl.*;
+import io.deephaven.engine.testutil.ControlledUpdateGraph;
 import io.deephaven.engine.testutil.EvalNugget;
 import io.deephaven.engine.testutil.EvalNuggetInterface;
 import io.deephaven.engine.testutil.TstUtils;
 import io.deephaven.engine.testutil.generator.CharGenerator;
 import io.deephaven.engine.testutil.generator.TestDataGenerator;
-import io.deephaven.engine.updategraph.UpdateGraphProcessor;
 import io.deephaven.engine.util.TableTools;
 import io.deephaven.function.Basic;
 import io.deephaven.test.types.OutOfBandTest;
@@ -44,7 +46,8 @@ public class TestForwardFill extends BaseUpdateByTest {
 
         final Table filled = t.updateBy(UpdateByOperation.Fill());
         for (String col : t.getDefinition().getColumnNamesArray()) {
-            assertWithForwardFill(t.getColumn(col).getDirect(), filled.getColumn(col).getDirect());
+            assertWithForwardFill(DataAccessHelpers.getColumn(t, col).getDirect(),
+                    DataAccessHelpers.getColumn(filled, col).getDirect());
         }
     }
 
@@ -62,7 +65,8 @@ public class TestForwardFill extends BaseUpdateByTest {
         assertEquals(8, result.intSize());
 
         for (int ii = 0; ii < 2; ii++) {
-            assertWithForwardFill(src.getColumn(ii).getDirect(), result.getColumn(ii).getDirect());
+            assertWithForwardFill(DataAccessHelpers.getColumn(src, ii).getDirect(),
+                    DataAccessHelpers.getColumn(result, ii).getDirect());
         }
 
         updateAndValidate(src, result, () -> {
@@ -120,7 +124,8 @@ public class TestForwardFill extends BaseUpdateByTest {
         assertEquals(8, result.intSize());
 
         for (int ii = 0; ii < 2; ii++) {
-            assertWithForwardFill(src.getColumn(ii).getDirect(), result.getColumn(ii).getDirect());
+            assertWithForwardFill(DataAccessHelpers.getColumn(src, ii).getDirect(),
+                    DataAccessHelpers.getColumn(result, ii).getDirect());
         }
 
         updateAndValidate(src, result, () -> {
@@ -172,7 +177,8 @@ public class TestForwardFill extends BaseUpdateByTest {
         assertEquals(8, result.intSize());
 
         for (int ii = 0; ii < 2; ii++) {
-            assertWithForwardFill(src.getColumn(ii).getDirect(), result.getColumn(ii).getDirect());
+            assertWithForwardFill(DataAccessHelpers.getColumn(src, ii).getDirect(),
+                    DataAccessHelpers.getColumn(result, ii).getDirect());
         }
 
         // Add a key at the beginning and end, but null the end so it should fill as an L
@@ -290,11 +296,12 @@ public class TestForwardFill extends BaseUpdateByTest {
 
     void updateAndValidate(QueryTable src, Table result, ThrowingRunnable<?> updateFunc)
             throws Exception {
-        UpdateGraphProcessor.DEFAULT.runWithinUnitTestCycle(updateFunc);
+        ExecutionContext.getContext().getUpdateGraph().<ControlledUpdateGraph>cast().runWithinUnitTestCycle(updateFunc);
 
         try {
             for (int ii = 0; ii < 2; ii++) {
-                assertWithForwardFill(src.getColumn(ii).getDirect(), result.getColumn(ii).getDirect());
+                assertWithForwardFill(DataAccessHelpers.getColumn(src, ii).getDirect(),
+                        DataAccessHelpers.getColumn(result, ii).getDirect());
             }
         } catch (Throwable ex) {
             System.out.println("ERROR: Source table:");
@@ -343,7 +350,8 @@ public class TestForwardFill extends BaseUpdateByTest {
 
         preOp.partitionedTransform(postOp, (source, actual) -> {
             Arrays.stream(columns).forEach(col -> {
-                assertWithForwardFill(source.getColumn(col).getDirect(), actual.getColumn(col).getDirect());
+                assertWithForwardFill(DataAccessHelpers.getColumn(source, col).getDirect(),
+                        DataAccessHelpers.getColumn(actual, col).getDirect());
             });
             return source;
         });
@@ -364,7 +372,8 @@ public class TestForwardFill extends BaseUpdateByTest {
 
         preOp.partitionedTransform(postOp, (source, actual) -> {
             Arrays.stream(columns).forEach(col -> {
-                assertWithForwardFill(source.getColumn(col).getDirect(), actual.getColumn(col).getDirect());
+                assertWithForwardFill(DataAccessHelpers.getColumn(source, col).getDirect(),
+                        DataAccessHelpers.getColumn(actual, col).getDirect());
             });
             return source;
         });
@@ -398,7 +407,8 @@ public class TestForwardFill extends BaseUpdateByTest {
 
         final Random billy = new Random(0xB177B177);
         for (int ii = 0; ii < 100; ii++) {
-            UpdateGraphProcessor.DEFAULT.runWithinUnitTestCycle(() -> generateAppends(100, billy, t, result.infos));
+            ExecutionContext.getContext().getUpdateGraph().<ControlledUpdateGraph>cast().runWithinUnitTestCycle(
+                    () -> generateAppends(100, billy, t, result.infos));
             TstUtils.validate("Table", nuggets);
         }
     }

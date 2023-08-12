@@ -13,30 +13,30 @@
 using deephaven::client::Client;
 using deephaven::client::TableHandle;
 using deephaven::client::TableHandleManager;
-using deephaven::client::utility::okOrThrow;
+using deephaven::client::utility::OkOrThrow;
 
 namespace {
-void mainMenu(const TableHandleManager &manager);
+void MainMenu(const TableHandleManager &manager);
 
 // demo options
-void printStaticTable(const TableHandleManager &manager);
-void withArrow(const TableHandleManager &manager);
-void interactiveWhereClause1(const TableHandleManager &manager);
-void interactiveWhereClause2(const TableHandleManager &manager);
+void PrintStaticTable(const TableHandleManager &manager);
+void WithArrow(const TableHandleManager &manager);
+void InteractiveWhereClause1(const TableHandleManager &manager);
+void InteractiveWhereClause2(const TableHandleManager &manager);
 
 // utilities
-void printTable(const TableHandle &table, bool nullAware);
-void checkNotNull(const void *p, std::string_view where);
-int64_t readNumber(std::istream &s);
+void PrintTable(const TableHandle &table, bool null_aware);
+void CheckNotNull(const void *p, std::string_view where);
+int64_t ReadNumber(std::istream &s);
 
 // a bunch of work to create an ostream adaptor
-template<typename ARROW_OPTIONAL>
+template<typename ArrowOptional>
 class OptionalAdaptor {
 public:
-  explicit OptionalAdaptor(const ARROW_OPTIONAL &optional) : optional_(optional) {}
+  explicit OptionalAdaptor(const ArrowOptional &optional) : optional_(optional) {}
 
 private:
-  const ARROW_OPTIONAL &optional_;
+  const ArrowOptional &optional_;
 
   friend std::ostream &operator<<(std::ostream &s, const OptionalAdaptor &self) {
     if (!self.optional_.has_value()) {
@@ -46,9 +46,9 @@ private:
   }
 };
 
-template<typename ARROW_OPTIONAL>
-inline OptionalAdaptor<ARROW_OPTIONAL> adaptOptional(const ARROW_OPTIONAL &optional) {
-  return OptionalAdaptor<ARROW_OPTIONAL>(optional);
+template<typename ArrowOptional>
+inline OptionalAdaptor<ArrowOptional> AdaptOptional(const ArrowOptional &optional) {
+  return OptionalAdaptor<ArrowOptional>(optional);
 }
 }  // namespace
 
@@ -56,18 +56,18 @@ int main(int argc, char *argv[]) {
   const char *server = "localhost:10000";
   if (argc > 1) {
     if (argc != 2 || std::strcmp("-h", argv[1]) == 0) {
-      std::cerr << "Usage: " << argv[0] << " [host:port]" << std::endl;
+      std::cerr << "Usage: " << argv[0] << " [host:port]\n";
       std::exit(1);
     }
     server = argv[1];
   }
 
-  auto client = Client::connect(server);
-  auto manager = client.getManager();
+  auto client = Client::Connect(server);
+  auto manager = client.GetManager();
 
   try {
     while (true) {
-      mainMenu(manager);
+      MainMenu(manager);
     }
   } catch (const std::exception &e) {
     std::cerr << "Caught exception: " << e.what() << '\n';
@@ -75,32 +75,32 @@ int main(int argc, char *argv[]) {
 }
 
 namespace {
-void mainMenu(const TableHandleManager &manager) {
+void MainMenu(const TableHandleManager &manager) {
   std::cout << "*** CHAPTER 1: MAIN MENU ***\n"
-               "1 - printStaticTable\n"
-               "2 - withArrow\n"
-               "3 - interactiveWhereClause1\n"
-               "4 - interactiveWhereClause2\n"
+               "1 - PrintStaticTable\n"
+               "2 - WithArrow\n"
+               "3 - InteractiveWhereClause1\n"
+               "4 - InteractiveWhereClause2\n"
                "\n"
                "Please select 1-4: ";
 
-  auto selection = readNumber(std::cin);
+  auto selection = ReadNumber(std::cin);
 
   switch (selection) {
     case 1:
-      printStaticTable(manager);
+      PrintStaticTable(manager);
       break;
 
     case 2:
-      withArrow(manager);
+      WithArrow(manager);
       break;
 
     case 3:
-      interactiveWhereClause1(manager);
+      InteractiveWhereClause1(manager);
       break;
 
     case 4:
-      interactiveWhereClause2(manager);
+      InteractiveWhereClause2(manager);
       break;
 
     default:
@@ -108,97 +108,97 @@ void mainMenu(const TableHandleManager &manager) {
   }
 }
 
-void printStaticTable(const TableHandleManager &manager) {
-  auto table = manager.fetchTable("demo1");
-  std::cout << table.stream(true) << std::endl;
+void PrintStaticTable(const TableHandleManager &manager) {
+  auto table = manager.FetchTable("demo1");
+  std::cout << table.Stream(true) << '\n';
 }
 
-void withArrow(const TableHandleManager &manager) {
-  auto table = manager.fetchTable("demo1");
+void WithArrow(const TableHandleManager &manager) {
+  auto table = manager.FetchTable("demo1");
 
   std::cout << "Do you want the null-aware version? [y/n]";
   std::string response;
   std::getline(std::cin, response);
 
-  auto nullAware = !response.empty() && response[0] == 'y';
-  printTable(table, nullAware);
+  auto null_aware = !response.empty() && response[0] == 'y';
+  PrintTable(table, null_aware);
 }
 
-void interactiveWhereClause1(const TableHandleManager &manager) {
+void InteractiveWhereClause1(const TableHandleManager &manager) {
   std::cout << "Enter limit: ";
-  auto limit = readNumber(std::cin);
+  auto limit = ReadNumber(std::cin);
 
-  std::ostringstream whereClause;
-  whereClause << "Int64Value < " << limit;
-  std::cout << "NOTE: 'where' expression is " << whereClause.str() << '\n';
+  std::ostringstream where_clause;
+  where_clause << "Int64Value < " << limit;
+  std::cout << "NOTE: 'where' expression is " << where_clause.str() << '\n';
 
-  auto table = manager.fetchTable("demo1");
-  table = table.where(whereClause.str());
-  printTable(table, true);
+  auto table = manager.FetchTable("demo1");
+  table = table.Where(where_clause.str());
+  PrintTable(table, true);
 }
 
-void interactiveWhereClause2(const TableHandleManager &manager) {
+void InteractiveWhereClause2(const TableHandleManager &manager) {
   std::cout << "Enter limit: ";
-  auto limit = readNumber(std::cin);
+  auto limit = ReadNumber(std::cin);
 
-  auto table = manager.fetchTable("demo1");
-  auto intCol = table.getNumCol("Int64Value");
-  table = table.where(intCol < limit);
-  printTable(table, true);
+  auto table = manager.FetchTable("demo1");
+  auto int_col = table.GetNumCol("Int64Value");
+  table = table.Where(int_col < limit);
+  PrintTable(table, true);
 }
 
-void printTable(const TableHandle &table, bool nullAware) {
-  auto fsr = table.getFlightStreamReader();
+void PrintTable(const TableHandle &table, bool null_aware) {
+  auto fsr = table.GetFlightStreamReader();
 
   while (true) {
     arrow::flight::FlightStreamChunk chunk;
-    okOrThrow(DEEPHAVEN_EXPR_MSG(fsr->Next(&chunk)));
+    OkOrThrow(DEEPHAVEN_EXPR_MSG(fsr->Next(&chunk)));
     if (chunk.data == nullptr) {
       break;
     }
 
-    auto int64Data = chunk.data->GetColumnByName("Int64Value");
-    checkNotNull(int64Data.get(), DEEPHAVEN_DEBUG_MSG("Int64Value column not found"));
-    auto doubleData = chunk.data->GetColumnByName("DoubleValue");
-    checkNotNull(doubleData.get(), DEEPHAVEN_DEBUG_MSG("DoubleValue column not found"));
+    auto int64_data = chunk.data->GetColumnByName("Int64Value");
+    CheckNotNull(int64_data.get(), DEEPHAVEN_DEBUG_MSG("Int64Value column not found"));
+    auto double_data = chunk.data->GetColumnByName("DoubleValue");
+    CheckNotNull(double_data.get(), DEEPHAVEN_DEBUG_MSG("DoubleValue column not found"));
 
-    auto int64Array = std::dynamic_pointer_cast<arrow::Int64Array>(int64Data);
-    checkNotNull(int64Array.get(), DEEPHAVEN_DEBUG_MSG("intData was not an arrow::Int64Array"));
-    auto doubleArray = std::dynamic_pointer_cast<arrow::DoubleArray>(doubleData);
-    checkNotNull(doubleArray.get(), DEEPHAVEN_DEBUG_MSG("doubleData was not an arrow::DoubleArray"));
+    auto int64_array = std::dynamic_pointer_cast<arrow::Int64Array>(int64_data);
+    CheckNotNull(int64_array.get(), DEEPHAVEN_DEBUG_MSG("intData was not an arrow::Int64Array"));
+    auto double_array = std::dynamic_pointer_cast<arrow::DoubleArray>(double_data);
+    CheckNotNull(double_array.get(), DEEPHAVEN_DEBUG_MSG("doubleData was not an arrow::DoubleArray"));
 
-    if (int64Array->length() != doubleArray->length()) {
+    if (int64_array->length() != double_array->length()) {
       throw std::runtime_error(DEEPHAVEN_DEBUG_MSG("Lengths differ"));
     }
 
-    if (!nullAware) {
-      for (int64_t i = 0; i < int64Array->length(); ++i) {
-        auto int64Value = int64Array->Value(i);
-        auto doubleValue = doubleArray->Value(i);
-        std::cout << int64Value << ' ' << doubleValue << '\n';
+    if (!null_aware) {
+      for (int64_t i = 0; i < int64_array->length(); ++i) {
+        auto int64_value = int64_array->Value(i);
+        auto double_value = double_array->Value(i);
+        std::cout << int64_value << ' ' << double_value << '\n';
       }
     } else {
-      for (int64_t i = 0; i < int64Array->length(); ++i) {
+      for (int64_t i = 0; i < int64_array->length(); ++i) {
         // We use the indexing operator (operator[]) which returns an arrow "optional<T>" type,
         // which is a workalike to std::optional<T>.
-        auto int64Value = (*int64Array)[i];
-        auto doubleValue = (*doubleArray)[i];
+        auto int64_value = (*int64_array)[i];
+        auto double_value = (*double_array)[i];
         // We use our own "ostream adaptor" to provide a handy way to write these arrow optionals
         // to an ostream.
-        std::cout << adaptOptional(int64Value) << ' ' << adaptOptional(doubleValue) << '\n';
+        std::cout << AdaptOptional(int64_value) << ' ' << AdaptOptional(double_value) << '\n';
       }
     }
   }
 }
 
-void checkNotNull(const void *p, std::string_view where) {
+void CheckNotNull(const void *p, std::string_view where) {
   if (p != nullptr) {
     return;
   }
   throw std::runtime_error(std::string(where));
 }
 
-int64_t readNumber(std::istream &s) {
+int64_t ReadNumber(std::istream &s) {
   while (true) {
     std::string line;
     std::getline(s, line);

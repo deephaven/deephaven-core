@@ -8,6 +8,7 @@ on:
 jobs:
   compare:
     runs-on: ubuntu-22.04
+    if: ${{ github.repository_owner == 'deephaven' }}
     steps:
       - name: Checkout
         uses: actions/checkout@v3
@@ -24,9 +25,7 @@ jobs:
 
       - name: Setup gradle properties
         run: |
-          cat .github/env/${{ runner.os }}/gradle.properties >> gradle.properties
-          echo >> gradle.properties
-          echo "org.gradle.java.installations.paths=${{ steps.setup-java-11.outputs.path }}" >> gradle.properties
+          .github/scripts/gradle-properties.sh >> gradle.properties
           cat gradle.properties
 
       - name: Run gradle
@@ -37,7 +36,7 @@ jobs:
           gradle-version: wrapper
 
       - name: Notify Slack
-        uses: slackapi/slack-github-action@v1.15.0
+        uses: slackapi/slack-github-action@v1.24.0
         id: notify-slack
         if: ${{ failure() }}
         env:

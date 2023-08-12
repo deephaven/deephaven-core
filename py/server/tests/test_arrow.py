@@ -1,6 +1,7 @@
 #
 # Copyright (c) 2016-2022 Deephaven Data Labs and Patent Pending
 #
+import os
 import unittest
 from datetime import datetime
 from typing import List, Any
@@ -8,20 +9,22 @@ from typing import List, Any
 import numpy as np
 import pandas as pd
 import pyarrow as pa
+import pyarrow.feather as feather
 import pyarrow.parquet as papq
 
-from deephaven import arrow as dharrow, dtypes, new_table, time_table
+from deephaven import arrow as dharrow, new_table, time_table
 from deephaven.column import byte_col, char_col, short_col, int_col, long_col, float_col, double_col, \
     string_col, datetime_col, bool_col
 from deephaven.table import Table
+from deephaven.time import epoch_nanos_to_instant
 from tests.testbase import BaseTestCase
 
 
 class ArrowTestCase(BaseTestCase):
     test_table: Table
 
-    @classmethod
-    def setUpClass(cls) -> None:
+    def setUp(self) -> None:
+        super().setUp()
         cols = [
             bool_col(name="Boolean", data=[True, False]),
             byte_col(name="Byte", data=(1, -1)),
@@ -33,15 +36,16 @@ class ArrowTestCase(BaseTestCase):
             float_col(name="Float", data=[1.01, -1.01]),
             double_col(name="Double", data=[1.01, -1.01]),
             string_col(name="String", data=["foo", "bar"]),
-            datetime_col(name="Datetime", data=[dtypes.DateTime(1), dtypes.DateTime(-1)]),
+            datetime_col(name="Datetime", data=[epoch_nanos_to_instant(1), epoch_nanos_to_instant(-1)]),
         ]
-        cls.test_table = new_table(cols=cols)
+        self.test_table = new_table(cols=cols)
 
-    @classmethod
-    def tearDownClass(cls) -> None:
-        del cls.test_table
+    def tearDown(self) -> None:
+        del self.test_table
+        super().tearDown()
 
-    def verify_type_conversion(self, pa_types: List[pa.DataType], pa_data: List[Any], cast_for_round_trip: bool = False):
+    def verify_type_conversion(self, pa_types: List[pa.DataType], pa_data: List[Any],
+                               cast_for_round_trip: bool = False):
         fields = [pa.field(f"f{i}", ty) for i, ty in enumerate(pa_types)]
         schema = pa.schema(fields)
         pa_table = pa.table(pa_data, schema=schema)
@@ -187,11 +191,21 @@ class ArrowTestCase(BaseTestCase):
         self.assert_table_equals(dh_table_1, dh_table)
 
     def test_ticking_table(self):
-        table = time_table("00:00:00.001").update(["X = i", "Y = String.valueOf(i)"])
+        table = time_table("PT00:00:00.001").update(["X = i", "Y = String.valueOf(i)"])
         self.wait_ticking_table_update(table, row_count=100, timeout=5)
         pa_table = dharrow.to_arrow(table)
         self.assertEqual(len(pa_table.columns), 3)
         self.assertGreaterEqual(pa_table.num_rows, 100)
+
+    def test_read_feather(self):
+        f_path = "tests/data/test_feather"
+        pa_table = dharrow.to_arrow(self.test_table)
+        feather.write_feather(pa_table, f_path)
+        pa_table1 = feather.read_table(f_path)
+        self.assertTrue(pa_table1.equals(pa_table))
+        t = dharrow.read_feather(f_path)
+        self.assert_table_equals(t, self.test_table)
+        os.remove(f_path)
 
 
 if __name__ == '__main__':

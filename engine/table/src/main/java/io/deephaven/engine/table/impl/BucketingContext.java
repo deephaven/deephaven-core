@@ -5,7 +5,6 @@ package io.deephaven.engine.table.impl;
 
 import io.deephaven.chunk.attributes.Values;
 import io.deephaven.engine.table.Table;
-import io.deephaven.time.DateTime;
 import io.deephaven.util.BooleanUtils;
 import io.deephaven.util.datastructures.LongSizedDataStructure;
 import io.deephaven.chunk.util.hashing.ToIntFunctor;
@@ -18,6 +17,7 @@ import io.deephaven.engine.table.impl.sources.regioned.SymbolTableSource;
 import io.deephaven.util.SafeCloseable;
 import io.deephaven.util.type.TypeUtils;
 
+import java.time.Instant;
 import java.util.Arrays;
 import java.util.List;
 import java.util.stream.Collectors;
@@ -57,25 +57,25 @@ class BucketingContext implements SafeCloseable {
         originalLeftSources = Arrays.copyOf(leftSources, leftSources.length);
 
         keyColumnCount = leftSources.length;
-        useLeftGrouping = control.useGrouping(leftTable, leftSources);
+        useLeftGrouping = JoinControl.useGrouping(leftTable, leftSources);
         // note that the naturalJoin operation ignores this field, because there is never any point to reading or
         // processing grouping information when we have a single row on the right side. Cross join just doesn't support
         // grouping at all (yuck).
-        useRightGrouping = control.useGrouping(rightTable, rightSources);
+        useRightGrouping = JoinControl.useGrouping(rightTable, rightSources);
 
         for (int ii = 0; ii < keyColumnCount; ++ii) {
-            final Class leftType = TypeUtils.getUnboxedTypeIfBoxed(leftSources[ii].getType());
-            final Class rightType = TypeUtils.getUnboxedTypeIfBoxed(rightSources[ii].getType());
+            final Class<?> leftType = TypeUtils.getUnboxedTypeIfBoxed(leftSources[ii].getType());
+            final Class<?> rightType = TypeUtils.getUnboxedTypeIfBoxed(rightSources[ii].getType());
             if (leftType != rightType) {
                 throw new IllegalArgumentException(
                         "Mismatched join types, " + columnsToMatch[ii] + ": " + leftType + " != " + rightType);
             }
 
-            if (leftType == DateTime.class) {
+            if (leftType == Instant.class) {
                 // noinspection unchecked
-                leftSources[ii] = ReinterpretUtils.dateTimeToLongSource((ColumnSource<DateTime>) leftSources[ii]);
+                leftSources[ii] = ReinterpretUtils.instantToLongSource((ColumnSource<Instant>) leftSources[ii]);
                 // noinspection unchecked
-                rightSources[ii] = ReinterpretUtils.dateTimeToLongSource((ColumnSource<DateTime>) rightSources[ii]);
+                rightSources[ii] = ReinterpretUtils.instantToLongSource((ColumnSource<Instant>) rightSources[ii]);
             } else if (leftType == boolean.class || leftType == Boolean.class) {
                 // noinspection unchecked
                 leftSources[ii] = ReinterpretUtils.booleanToByteSource((ColumnSource<Boolean>) leftSources[ii]);
@@ -91,8 +91,8 @@ class BucketingContext implements SafeCloseable {
             } else if (leftType == String.class) {
                 if (control.considerSymbolTables(leftTable, rightTable, useLeftGrouping, useRightGrouping,
                         leftSources[ii], rightSources[ii])) {
-                    final SymbolTableSource leftSymbolTableSource = (SymbolTableSource) leftSources[ii];
-                    final SymbolTableSource rightSymbolTableSource = (SymbolTableSource) rightSources[ii];
+                    final SymbolTableSource<?> leftSymbolTableSource = (SymbolTableSource<?>) leftSources[ii];
+                    final SymbolTableSource<?> rightSymbolTableSource = (SymbolTableSource<?>) rightSources[ii];
 
                     final Table leftSymbolTable = leftSymbolTableSource.getStaticSymbolTable(leftTable.getRowSet(),
                             control.useSymbolTableLookupCaching());
@@ -120,9 +120,9 @@ class BucketingContext implements SafeCloseable {
                         final ColumnSource<Long> rightSourceAsLong = rightSources[ii].reinterpret(long.class);
 
                         leftSources[ii] =
-                                new NaturalJoinHelper.SymbolTableToUniqueIdSource(leftSourceAsLong, leftSymbolMapper);
+                                new SymbolTableToUniqueIdSource(leftSourceAsLong, leftSymbolMapper);
                         rightSources[ii] =
-                                new NaturalJoinHelper.SymbolTableToUniqueIdSource(rightSourceAsLong, rightSymbolMapper);
+                                new SymbolTableToUniqueIdSource(rightSourceAsLong, rightSymbolMapper);
 
                         if (leftSources.length == 1) {
                             uniqueValues = true;

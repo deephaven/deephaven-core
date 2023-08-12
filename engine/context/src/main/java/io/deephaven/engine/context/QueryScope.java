@@ -3,9 +3,7 @@
  */
 package io.deephaven.engine.context;
 
-import io.deephaven.time.DateTime;
 import io.deephaven.time.DateTimeUtils;
-import io.deephaven.time.Period;
 import io.deephaven.hash.KeyedObjectHashMap;
 import io.deephaven.hash.KeyedObjectKey;
 import io.deephaven.base.log.LogOutput;
@@ -15,6 +13,9 @@ import io.deephaven.util.QueryConstants;
 import org.jetbrains.annotations.NotNull;
 
 import java.lang.reflect.Field;
+import java.time.Duration;
+import java.time.Instant;
+import java.time.Period;
 import java.util.*;
 
 /**
@@ -91,19 +92,24 @@ public abstract class QueryScope implements LogOutputAppendable {
                     && stringValue.charAt(stringValue.length() - 1) == '\'') {
                 final String datetimeString = stringValue.substring(1, stringValue.length() - 1);
 
-                final DateTime dateTime = DateTimeUtils.convertDateTimeQuiet(datetimeString);
-                if (dateTime != null) {
-                    return dateTime;
+                final Instant instant = DateTimeUtils.parseInstantQuiet(datetimeString);
+                if (instant != null) {
+                    return instant;
                 }
 
-                final long localTime = DateTimeUtils.convertTimeQuiet(datetimeString);
+                final long localTime = DateTimeUtils.parseDurationNanosQuiet(datetimeString);
                 if (localTime != QueryConstants.NULL_LONG) {
                     return localTime;
                 }
 
-                final Period period = DateTimeUtils.convertPeriodQuiet(datetimeString);
+                final Period period = DateTimeUtils.parsePeriodQuiet(datetimeString);
                 if (period != null) {
                     return period;
+                }
+
+                final Duration duration = DateTimeUtils.parseDurationQuiet(datetimeString);
+                if (duration != null) {
+                    return duration;
                 }
 
                 throw new RuntimeException("Cannot parse datetime/time/period : " + stringValue);

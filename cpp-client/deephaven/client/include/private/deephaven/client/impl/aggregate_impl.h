@@ -11,19 +11,22 @@
 
 namespace deephaven::client::impl {
 class AggregateImpl {
-  typedef io::deephaven::proto::backplane::grpc::ComboAggregateRequest ComboAggregateRequest;
+  using ComboAggregateRequest = io::deephaven::proto::backplane::grpc::ComboAggregateRequest;
   struct Private {
   };
 
 public:
-  static std::shared_ptr<AggregateImpl> create(ComboAggregateRequest::Aggregate descriptor);
+  [[nodiscard]]
+  static std::shared_ptr<AggregateImpl> Create(ComboAggregateRequest::Aggregate descriptor);
   AggregateImpl(Private, ComboAggregateRequest::Aggregate descriptor);
 
-  ComboAggregateRequest::Aggregate &descriptor() {
+  [[nodiscard]]
+  ComboAggregateRequest::Aggregate &Descriptor() {
     return descriptor_;
   }
 
-  const ComboAggregateRequest::Aggregate &descriptor() const {
+  [[nodiscard]]
+  const ComboAggregateRequest::Aggregate &Descriptor() const {
     return descriptor_;
   }
 
@@ -32,16 +35,18 @@ private:
 };
 
 class AggregateComboImpl {
-  typedef io::deephaven::proto::backplane::grpc::ComboAggregateRequest ComboAggregateRequest;
+  using ComboAggregateRequest = io::deephaven::proto::backplane::grpc::ComboAggregateRequest;
   struct Private {
   };
 
 public:
-  static std::shared_ptr<AggregateComboImpl> create(
+  [[nodiscard]]
+  static std::shared_ptr<AggregateComboImpl> Create(
       std::vector<ComboAggregateRequest::Aggregate> aggregates);
   AggregateComboImpl(Private, std::vector<ComboAggregateRequest::Aggregate> aggregates);
 
-  const std::vector<ComboAggregateRequest::Aggregate> &aggregates() const {
+  [[nodiscard]]
+  const std::vector<ComboAggregateRequest::Aggregate> &Aggregates() const {
     return aggregates_;
   }
 

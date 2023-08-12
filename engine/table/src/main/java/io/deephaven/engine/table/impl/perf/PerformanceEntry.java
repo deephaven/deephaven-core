@@ -3,7 +3,9 @@
  */
 package io.deephaven.engine.table.impl.perf;
 
+import io.deephaven.auth.AuthContext;
 import io.deephaven.base.log.LogOutput;
+import io.deephaven.engine.context.ExecutionContext;
 import io.deephaven.engine.rowset.RowSet;
 import io.deephaven.engine.rowset.RowSetShiftData;
 import io.deephaven.engine.table.TableListener;
@@ -22,6 +24,9 @@ public class PerformanceEntry extends BasePerformanceEntry implements TableListe
     private final String description;
     private final String callerLine;
 
+    private final AuthContext authContext;
+    private final String updateGraphName;
+
     private long intervalInvocationCount;
 
     private long intervalAdded;
@@ -38,12 +43,14 @@ public class PerformanceEntry extends BasePerformanceEntry implements TableListe
     private final RuntimeMemory.Sample endSample;
 
     PerformanceEntry(final int id, final int evaluationNumber, final int operationNumber,
-            final String description, final String callerLine) {
+            final String description, final String callerLine, final String updateGraphName) {
         this.id = id;
         this.evaluationNumber = evaluationNumber;
         this.operationNumber = operationNumber;
         this.description = description;
         this.callerLine = callerLine;
+        authContext = id == QueryConstants.NULL_INT ? null : ExecutionContext.getContext().getAuthContext();
+        this.updateGraphName = updateGraphName;
         startSample = new RuntimeMemory.Sample();
         endSample = new RuntimeMemory.Sample();
         maxTotalMemory = 0;
@@ -53,7 +60,6 @@ public class PerformanceEntry extends BasePerformanceEntry implements TableListe
     }
 
     public final void onUpdateStart() {
-        ++intervalInvocationCount;
         RuntimeMemory.getInstance().read(startSample);
         super.onBaseEntryStart();
     }
@@ -84,6 +90,7 @@ public class PerformanceEntry extends BasePerformanceEntry implements TableListe
         minFreeMemory = Math.min(minFreeMemory, Math.min(startSample.freeMemory, endSample.freeMemory));
         collections += endSample.totalCollections - startSample.totalCollections;
         collectionTimeMs += endSample.totalCollectionTimeMs - startSample.totalCollectionTimeMs;
+        ++intervalInvocationCount;
     }
 
     void reset() {
@@ -114,6 +121,7 @@ public class PerformanceEntry extends BasePerformanceEntry implements TableListe
                 .append(", operationNumber=").append(operationNumber)
                 .append(", description='").append(description).append('\'')
                 .append(", callerLine='").append(callerLine).append('\'')
+                .append(", authContext=").append(authContext)
                 .append(", intervalUsageNanos=").append(getIntervalUsageNanos())
                 .append(", intervalCpuNanos=").append(getIntervalCpuNanos())
                 .append(", intervalUserCpuNanos=").append(getIntervalUserCpuNanos())
@@ -150,6 +158,20 @@ public class PerformanceEntry extends BasePerformanceEntry implements TableListe
 
     public String getCallerLine() {
         return callerLine;
+    }
+
+    /**
+     * @return The {@link AuthContext} that was installed when this PerformanceEntry was constructed
+     */
+    public AuthContext getAuthContext() {
+        return authContext;
+    }
+
+    /**
+     * @return The name of the update graph that this PerformanceEntry is associated with
+     */
+    public String getUpdateGraphName() {
+        return updateGraphName;
     }
 
     public long getIntervalAdded() {

@@ -20,8 +20,8 @@ dependencies {
             TestTools.projectDependency(project, 'engine-rowset'),
             TestTools.projectDependency(project, 'engine-table')
 
-    testAnnotationProcessor 'org.openjdk.jmh:jmh-generator-annprocess:1.21'
-    testCompileOnly 'org.openjdk.jmh:jmh-generator-annprocess:1.21'
+    testAnnotationProcessor 'org.openjdk.jmh:jmh-generator-annprocess:1.35'
+    testCompileOnly 'org.openjdk.jmh:jmh-generator-annprocess:1.35'
 
     testRuntimeOnly project(path: ':configs')
     testRuntimeOnly project(path: ':test-configs')
@@ -58,7 +58,6 @@ task jmhRun(type: JavaExec)  {
             '-Dconfiguration.quiet=true',
             '-Djava.awt.headless=true',
             '-DQueryTable.memoizeResults=false',
-            '-DUpdateGraphProcessor.checkTableOperations=false',
             '-agentlib:jdwp=transport=dt_socket,server=y,suspend=y,address=9500'
 }
 
@@ -77,7 +76,6 @@ def createJmhTask = {
                 '-Dconfiguration.quiet=true',
                 '-Djava.awt.headless=true',
                 '-DQueryTable.memoizeResults=false',
-                '-DUpdateGraphProcessor.checkTableOperations=false',
                 "-Xmx$heapSize"
                 //'-agentlib:jdwp=transport=dt_socket,server=y,suspend=y,address=9501'
         ]
@@ -96,6 +94,11 @@ createJmhTask('jmhRunNaturalJoin', 'NaturalJoinBenchmark')
 createJmhTask('jmhRunSparseSelect', 'SparseSelectBenchmark')
 createJmhTask('jmhRunRCS', 'RegionedColumnSourceBenchmark')
 createJmhTask('jmhRunBy', 'ByBenchmark')
+createJmhTask('jmhRunUnion', 'UnionBenchmark', [], '12g')
+createJmhTask('jmhRunBuilder', 'RowSetBuilderBenchmark')
+createJmhTask('jmhRunMatchHistorical',
+        ['MatchFilterHistoricalBenchmark',
+         '-prof=io.deephaven.benchmark.db.ResultSizeProfiler'])
 createJmhTask('jmhRunRowSetGetFind', 'RowSetGetFindBench', ['-DMetricsManager.enabled=true'])
 
 def createDeephavenTestExecTask = {

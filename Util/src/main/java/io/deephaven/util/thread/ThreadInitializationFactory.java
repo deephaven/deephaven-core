@@ -24,7 +24,7 @@ public interface ThreadInitializationFactory {
                 } catch (ClassNotFoundException | NoSuchMethodException | InvocationTargetException
                         | InstantiationException | IllegalAccessException e) {
                     throw new IllegalArgumentException(
-                            "Error instantiating initializer " + type + ", please check configuration");
+                            "Error instantiating initializer " + type + ", please check configuration", e);
                 }
             })
             .collect(Collectors.toUnmodifiableList());

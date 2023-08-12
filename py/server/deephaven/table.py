@@ -27,12 +27,12 @@ from deephaven.column import Column, ColumnType
 from deephaven.filters import Filter, and_, or_
 from deephaven.jcompat import j_unary_operator, j_binary_operator, j_map_to_dict, j_hashmap
 from deephaven.jcompat import to_sequence, j_array_list
-from deephaven.ugp import auto_locking_ctx
+from deephaven.update_graph import auto_locking_ctx, UpdateGraph
 from deephaven.updateby import UpdateByOperation
 
 # Table
 _J_Table = jpy.get_type("io.deephaven.engine.table.Table")
-_JLiveAttributeMap = jpy.get_type("io.deephaven.engine.table.impl.LiveAttributeMap")
+_JAttributeMap = jpy.get_type("io.deephaven.engine.table.AttributeMap")
 _JTableTools = jpy.get_type("io.deephaven.engine.util.TableTools")
 _JColumnName = jpy.get_type("io.deephaven.api.ColumnName")
 _JSortColumn = jpy.get_type("io.deephaven.api.SortColumn")
@@ -51,7 +51,6 @@ _JPartitionedTableProxy = jpy.get_type("io.deephaven.engine.table.PartitionedTab
 _JJoinMatch = jpy.get_type("io.deephaven.api.JoinMatch")
 _JJoinAddition = jpy.get_type("io.deephaven.api.JoinAddition")
 _JAsOfJoinRule = jpy.get_type("io.deephaven.api.AsOfJoinRule")
-_JReverseAsOfJoinRule = jpy.get_type("io.deephaven.api.ReverseAsOfJoinRule")
 _JTableOperations = jpy.get_type("io.deephaven.api.TableOperations")
 
 # Dynamic Query Scope
@@ -454,8 +453,8 @@ def _query_scope_ctx():
     if j_py_script_session and (len(outer_frames) > i + 2 or function != "<module>"):
         scope_dict = caller_frame.f_globals.copy()
         scope_dict.update(caller_frame.f_locals)
+        j_py_script_session.pushScope(scope_dict)
         try:
-            j_py_script_session.pushScope(scope_dict)
             yield
         finally:
             j_py_script_session.popScope()
@@ -508,6 +507,7 @@ class Table(JObjectWrapper):
         self._definition = self.j_table.getDefinition()
         self._schema = None
         self._is_refreshing = None
+        self._update_graph = None
         self._is_flat = None
 
     def __repr__(self):
@@ -539,6 +539,13 @@ class Table(JObjectWrapper):
         return self._is_refreshing
 
     @property
+    def update_graph(self) -> UpdateGraph:
+        """The update graph of the table."""
+        if self._update_graph is None:
+            self._update_graph = UpdateGraph(self.j_table.getUpdateGraph())
+        return self._update_graph
+
+    @property
     def is_flat(self) -> bool:
         """Whether this table is guaranteed to be flat, i.e. its row set will be from 0 to number of rows - 1."""
         if self._is_flat is None:
@@ -557,15 +564,28 @@ class Table(JObjectWrapper):
     @property
     def meta_table(self) -> Table:
         """The column definitions of the table in a Table form. """
-        return Table(j_table=self.j_table.getMeta())
+        return Table(j_table=self.j_table.meta())
 
     @property
     def j_object(self) -> jpy.JType:
         return self.j_table
 
+    def has_columns(self, cols: Union[str, Sequence[str]]):
+        """Whether this table contains a column for each of the provided names, return False if any of the columns is
+        not in the table.
+
+        Args:
+            cols (Union[str, Sequence[str]]): the column name(s)
+
+        Returns:
+            bool
+        """
+        cols = to_sequence(cols)
+        return self.j_table.hasColumns(cols)
+
     def attributes(self) -> Dict[str, Any]:
         """Returns all the attributes defined on the table."""
-        j_map = jpy.cast(self.j_table, _JLiveAttributeMap).getAttributes()
+        j_map = jpy.cast(self.j_table, _JAttributeMap).getAttributes()
         return j_map_to_dict(j_map)
 
     def with_attributes(self, attrs: Dict[str, Any]) -> Table:
@@ -587,9 +607,28 @@ class Table(JObjectWrapper):
         """
         try:
             j_map = j_hashmap(attrs)
-            return Table(j_table=jpy.cast(self.j_table, _JLiveAttributeMap).withAttributes(j_map))
+            return Table(j_table=jpy.cast(self.j_table, _JAttributeMap).withAttributes(j_map))
         except Exception as e:
             raise DHError(e, "failed to create a table with attributes.") from e
+
+    def without_attributes(self, attrs: Union[str, Sequence[str]]) -> Table:
+        """Returns a new Table that shares the underlying data and schema with this table but with the specified
+        attributes removed.
+
+        Args:
+            attrs (Union[str, Sequence[str]]): the attribute name(s) to be removed
+
+        Returns:
+            a new Table
+
+        Raises:
+            DHError
+        """
+        try:
+            attrs = j_array_list(to_sequence(attrs))
+            return Table(j_table=jpy.cast(self.j_table, _JAttributeMap).withoutAttributes(attrs))
+        except Exception as e:
+            raise DHError(e, "failed to create a table without attributes.") from e
 
     def to_string(self, num_rows: int = 10, cols: Union[str, Sequence[str]] = None) -> str:
         """Returns the first few rows of a table as a pipe-delimited string.
@@ -1071,8 +1110,8 @@ class Table(JObjectWrapper):
             raise DHError(e, "table restrict_sort_to operation failed.") from e
 
     def sort_descending(self, order_by: Union[str, Sequence[str]]) -> Table:
-        """The sort_descending method creates a new table where rows in a table are sorted in a largest to smallest
-        order based on the order_by column(s).
+        """The sort_descending method creates a new table where rows in a table are sorted in descending order based on
+        the order_by column(s).
 
         Args:
             order_by (Union[str, Sequence[str]], optional): the column name(s)
@@ -1259,8 +1298,8 @@ class Table(JObjectWrapper):
             table (Table): the right-table of the join
             on (Union[str, Sequence[str]]): the column(s) to match, can be a common name or a match condition of two
                 columns, e.g. 'col_a = col_b'. The first 'N-1' matches are exact matches.  The final match is an inexact
-                match.  The inexact match can use either '<' or '<='.  If a common name is used for the inexact match,
-                '<=' is used for the comparison.
+                match.  The inexact match can use either '>' or '>='.  If a common name is used for the inexact match,
+                '>=' is used for the comparison.
             joins (Union[str, Sequence[str]], optional): the column(s) to be added from the right table to the result
                 table, can be renaming expressions, i.e. "new_col = col"; default is None
         Returns:
@@ -1289,8 +1328,8 @@ class Table(JObjectWrapper):
             table (Table): the right-table of the join
             on (Union[str, Sequence[str]]): the column(s) to match, can be a common name or a match condition of two
                 columns, e.g. 'col_a = col_b'. The first 'N-1' matches are exact matches.  The final match is an inexact
-                match.  The inexact match can use either '>' or '>='.  If a common name is used for the inexact match,
-                '>=' is used for the comparison.
+                match.  The inexact match can use either '<' or '<='.  If a common name is used for the inexact match,
+                '<=' is used for the comparison.
             joins (Union[str, Sequence[str]], optional): the column(s) to be added from the right table to the result
                 table, can be renaming expressions, i.e. "new_col = col"; default is None
 
@@ -1460,7 +1499,7 @@ class Table(JObjectWrapper):
 
     def group_by(self, by: Union[str, Sequence[str]] = None) -> Table:
         """The group_by method creates a new table containing grouping columns and grouped data, column content is
-        grouped into arrays.
+        grouped into vectors.
 
         Args:
             by (Union[str, Sequence[str]], optional): the group-by column name(s), default is None
@@ -2077,6 +2116,29 @@ class Table(JObjectWrapper):
         except Exception as e:
             raise DHError(e, "table slice operation failed.") from e
 
+    def slice_pct(self, start_pct: float, end_pct: float) -> Table:
+        """Extracts a subset of a table by row percentages.
+
+        Returns a subset of table in the range [floor(start_pct * size_of_table), floor(end_pct * size_of_table)).
+        For example, for a table of size 10, slice_pct(0.1, 0.7) will return a subset from the second row to the seventh
+        row. Similarly, slice_pct(0, 1) would return the entire table (because row positions run from 0 to size - 1).
+        The percentage arguments must be in range [0, 1], otherwise the function returns an error.
+
+        Args:
+            start_pct (float): the starting percentage point (inclusive) for rows to include in the result, range [0, 1]
+            end_pct (float): the ending percentage point (exclusive) for rows to include in the result, range [0, 1]
+
+        Returns:
+            a new table
+
+        Raises:
+            DHError
+        """
+        try:
+            return Table(j_table=self.j_table.slicePct(start_pct, end_pct))
+        except Exception as e:
+            raise DHError(e, "table slice_pct operation failed.") from e
+
     def rollup(self, aggs: Union[Aggregation, Sequence[Aggregation]], by: Union[str, Sequence[str]] = None,
                include_constituents: bool = False) -> RollupTable:
         """Creates a rollup table.
@@ -2300,6 +2362,11 @@ class PartitionedTable(JObjectWrapper):
         return self._table
 
     @property
+    def update_graph(self) -> UpdateGraph:
+        """The underlying partitioned table's update graph."""
+        return self.table.update_graph
+
+    @property
     def is_refreshing(self) -> bool:
         """Whether the underlying partitioned table is refreshing."""
         if self._is_refreshing is None:
@@ -2410,17 +2477,17 @@ class PartitionedTable(JObjectWrapper):
         """The sort method creates a new partitioned table where the rows are ordered based on values in a specified
         set of columns. Sort can not use the constituent column.
 
-         Args:
-             order_by (Union[str, Sequence[str]]): the column(s) to be sorted on.  Can't include the constituent column.
-             order (Union[SortDirection, Sequence[SortDirection], optional): the corresponding sort directions for
+        Args:
+            order_by (Union[str, Sequence[str]]): the column(s) to be sorted on.  Can't include the constituent column.
+            order (Union[SortDirection, Sequence[SortDirection], optional): the corresponding sort directions for
                 each sort column, default is None, meaning ascending order for all the sort columns.
 
-         Returns:
-             a new PartitionedTable
+        Returns:
+            a new PartitionedTable
 
-         Raises:
-             DHError
-         """
+        Raises:
+            DHError
+        """
 
         try:
             order_by = to_sequence(order_by)
@@ -2554,6 +2621,11 @@ class PartitionedTableProxy(JObjectWrapper):
     def is_refreshing(self) -> bool:
         """Whether this proxy represents a refreshing partitioned table."""
         return self.target.is_refreshing
+
+    @property
+    def update_graph(self) -> UpdateGraph:
+        """The underlying partitioned table proxy's update graph."""
+        return self.target.update_graph
 
     def __init__(self, j_pt_proxy):
         self.j_pt_proxy = jpy.cast(j_pt_proxy, _JPartitionedTableProxy)
@@ -3016,8 +3088,8 @@ class PartitionedTableProxy(JObjectWrapper):
             table (Union[Table, PartitionedTableProxy]): the right table or PartitionedTableProxy of the join
             on (Union[str, Sequence[str]]): the column(s) to match, can be a common name or a match condition of two
                 columns, e.g. 'col_a = col_b'. The first 'N-1' matches are exact matches.  The final match is an inexact
-                match.  The inexact match can use either '<' or '<='.  If a common name is used for the inexact match,
-                '<=' is used for the comparison.
+                match.  The inexact match can use either '>' or '>='.  If a common name is used for the inexact match,
+                '>=' is used for the comparison.
             joins (Union[str, Sequence[str]], optional): the column(s) to be added from the right table to the result
                 table, can be renaming expressions, i.e. "new_col = col"; default is None
         Returns:
@@ -3050,8 +3122,8 @@ class PartitionedTableProxy(JObjectWrapper):
             table (Union[Table, PartitionedTableProxy]): the right table or PartitionedTableProxy of the join
             on (Union[str, Sequence[str]]): the column(s) to match, can be a common name or a match condition of two
                 columns, e.g. 'col_a = col_b'. The first 'N-1' matches are exact matches.  The final match is an inexact
-                match.  The inexact match can use either '>' or '>='.  If a common name is used for the inexact match,
-                '>=' is used for the comparison.
+                match.  The inexact match can use either '<' or '<='.  If a common name is used for the inexact match,
+                '<=' is used for the comparison.
             joins (Union[str, Sequence[str]], optional): the column(s) to be added from the right table to the result
                 table, can be renaming expressions, i.e. "new_col = col"; default is None
         Returns:

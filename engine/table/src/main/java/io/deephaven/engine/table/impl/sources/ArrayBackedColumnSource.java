@@ -6,8 +6,9 @@ package io.deephaven.engine.table.impl.sources;
 import io.deephaven.engine.table.impl.DefaultGetContext;
 import io.deephaven.engine.table.WritableColumnSource;
 import io.deephaven.engine.rowset.chunkattributes.RowKeys;
+import io.deephaven.qst.type.BoxedType;
+import io.deephaven.qst.type.GenericType;
 import io.deephaven.util.type.ArrayTypeUtils;
-import io.deephaven.time.DateTime;
 import io.deephaven.chunk.*;
 import io.deephaven.chunk.attributes.Values;
 import io.deephaven.engine.rowset.RowSequence;
@@ -98,16 +99,14 @@ public abstract class ArrayBackedColumnSource<T>
             block -> Arrays.fill(block, 0));
 
     public static WritableColumnSource<?> from(Array<?> array) {
-        return array.walk(new ArrayAdapter<>()).getOut();
+        return array.walk(new ArrayAdapter<>());
     }
 
-    public static <T> ArrayBackedColumnSource<T> from(PrimitiveArray<T> array) {
-        ArrayAdapter<T> adapter = new ArrayAdapter<>();
-        array.walk((PrimitiveArray.Visitor) adapter);
+    public static <T> WritableColumnSource<T> from(PrimitiveArray<T> array) {
+        PrimitiveArray.Visitor<WritableColumnSource<?>> adapter = new ArrayAdapter<>();
         // noinspection unchecked
-        return (ArrayBackedColumnSource<T>) adapter.getOut();
+        return (WritableColumnSource<T>) array.walk(adapter);
     }
-
 
     /**
      * The highest slot that can be used without a call to {@link #ensureCapacity(long)}.
@@ -316,14 +315,14 @@ public abstract class ArrayBackedColumnSource<T>
     }
 
     /**
-     * Produces an DateTimeArraySource with the given data.
+     * Produces an InstantArraySource with the given data.
      *
      * @param data an array containing the data to insert into the ColumnSource, represented as long nanoseconds since
      *        the epoch
      * @return an in-memory column source with the requested data
      */
-    public static WritableColumnSource<DateTime> getDateTimeMemoryColumnSource(LongChunk<Values> data) {
-        final WritableColumnSource<DateTime> result = new DateTimeArraySource();
+    public static WritableColumnSource<Instant> getInstantMemoryColumnSource(LongChunk<Values> data) {
+        final WritableColumnSource<Instant> result = new InstantArraySource();
         result.ensureCapacity(data.size());
         for (int ii = 0; ii < data.size(); ++ii) {
             result.set(ii, data.get(ii));
@@ -332,14 +331,14 @@ public abstract class ArrayBackedColumnSource<T>
     }
 
     /**
-     * Produces an DateTimeArraySource with the given data.
+     * Produces an InstantArraySource with the given data.
      *
      * @param data an array containing the data to insert into the ColumnSource, represented as long nanoseconds since
      *        the epoch
      * @return an in-memory column source with the requested data
      */
-    public static WritableColumnSource<DateTime> getDateTimeMemoryColumnSource(@NotNull final long[] data) {
-        final WritableColumnSource<DateTime> result = new DateTimeArraySource();
+    public static WritableColumnSource<Instant> getInstantMemoryColumnSource(@NotNull final long[] data) {
+        final WritableColumnSource<Instant> result = new InstantArraySource();
         result.ensureCapacity(data.length);
         final WritableColumnSource<Long> asLong = (WritableColumnSource<Long>) result.reinterpret(long.class);
         try (final FillFromContext context = asLong.makeFillFromContext(data.length);
@@ -411,8 +410,6 @@ public abstract class ArrayBackedColumnSource<T>
             result = new ShortArraySource();
         } else if (dataType == boolean.class || dataType == Boolean.class) {
             result = new BooleanArraySource();
-        } else if (dataType == DateTime.class) {
-            result = new DateTimeArraySource();
         } else if (dataType == Instant.class) {
             result = new InstantArraySource();
         } else {
@@ -567,97 +564,87 @@ public abstract class ArrayBackedColumnSource<T>
         return getChunkByFilling(context, rowSequence);
     }
 
-    private static class ArrayAdapter<T> implements Array.Visitor, PrimitiveArray.Visitor {
-        private WritableColumnSource<?> out;
+    private static class ArrayAdapter<T>
+            implements Array.Visitor<WritableColumnSource<?>>, PrimitiveArray.Visitor<WritableColumnSource<?>> {
 
-        public WritableColumnSource<?> getOut() {
-            return Objects.requireNonNull(out);
+        @Override
+        public WritableColumnSource<?> visit(PrimitiveArray<?> primitive) {
+            return primitive.walk((PrimitiveArray.Visitor<WritableColumnSource<?>>) this);
         }
 
         @Override
-        public void visit(PrimitiveArray<?> primitive) {
-            primitive.walk((PrimitiveArray.Visitor) this);
+        public WritableColumnSource<?> visit(ByteArray byteArray) {
+            return ArrayBackedColumnSource.getMemoryColumnSource(byteArray.values());
         }
 
         @Override
-        public void visit(ByteArray byteArray) {
-            out = ArrayBackedColumnSource.getMemoryColumnSource(byteArray.values());
+        public WritableColumnSource<?> visit(BooleanArray booleanArray) {
+            return ArrayBackedColumnSource.getBooleanMemoryColumnSource(booleanArray.values());
         }
 
         @Override
-        public void visit(BooleanArray booleanArray) {
-            out = ArrayBackedColumnSource.getBooleanMemoryColumnSource(booleanArray.values());
+        public WritableColumnSource<?> visit(CharArray charArray) {
+            return ArrayBackedColumnSource.getMemoryColumnSource(charArray.values());
         }
 
         @Override
-        public void visit(CharArray charArray) {
-            out = ArrayBackedColumnSource.getMemoryColumnSource(charArray.values());
+        public WritableColumnSource<?> visit(ShortArray shortArray) {
+            return ArrayBackedColumnSource.getMemoryColumnSource(shortArray.values());
         }
 
         @Override
-        public void visit(ShortArray shortArray) {
-            out = ArrayBackedColumnSource.getMemoryColumnSource(shortArray.values());
+        public WritableColumnSource<?> visit(IntArray intArray) {
+            return ArrayBackedColumnSource.getMemoryColumnSource(intArray.values());
         }
 
         @Override
-        public void visit(IntArray intArray) {
-            out = ArrayBackedColumnSource.getMemoryColumnSource(intArray.values());
+        public WritableColumnSource<?> visit(LongArray longArray) {
+            return ArrayBackedColumnSource.getMemoryColumnSource(longArray.values());
         }
 
         @Override
-        public void visit(LongArray longArray) {
-            out = ArrayBackedColumnSource.getMemoryColumnSource(longArray.values());
+        public WritableColumnSource<?> visit(FloatArray floatArray) {
+            return ArrayBackedColumnSource.getMemoryColumnSource(floatArray.values());
         }
 
         @Override
-        public void visit(FloatArray floatArray) {
-            out = ArrayBackedColumnSource.getMemoryColumnSource(floatArray.values());
+        public WritableColumnSource<?> visit(DoubleArray doubleArray) {
+            return ArrayBackedColumnSource.getMemoryColumnSource(doubleArray.values());
         }
 
         @Override
-        public void visit(DoubleArray doubleArray) {
-            out = ArrayBackedColumnSource.getMemoryColumnSource(doubleArray.values());
-        }
-
-        @Override
-        public void visit(GenericArray<?> generic) {
-            generic.componentType().walk(new Visitor() {
+        public WritableColumnSource<?> visit(GenericArray<?> generic) {
+            return generic.componentType().walk(new Visitor<>() {
                 @Override
-                public void visit(StringType stringType) {
-                    out = ArrayBackedColumnSource.getMemoryColumnSource(generic.cast(stringType).values(), String.class,
-                            null);
+                public WritableColumnSource<?> visit(BoxedType<?> boxedType) {
+                    return simple(boxedType);
                 }
 
                 @Override
-                public void visit(InstantType instantType) {
-                    DateTimeArraySource source = new DateTimeArraySource();
-                    source.ensureCapacity(generic.size());
-                    int ix = 0;
-                    for (Instant value : generic.cast(instantType).values()) {
-                        if (value == null) {
-                            source.set(ix++, NULL_LONG);
-                        } else {
-                            long nanos =
-                                    Math.addExact(TimeUnit.SECONDS.toNanos(value.getEpochSecond()), value.getNano());
-                            source.set(ix++, nanos);
-                        }
-                    }
-                    out = source;
+                public WritableColumnSource<?> visit(StringType stringType) {
+                    return simple(stringType);
                 }
 
                 @Override
-                public void visit(ArrayType<?, ?> arrayType) {
+                public WritableColumnSource<?> visit(InstantType instantType) {
+                    return simple(instantType);
+                }
+
+                @Override
+                public WritableColumnSource<?> visit(ArrayType<?, ?> arrayType) {
                     // noinspection unchecked
                     ArrayType<T, ?> tType = (ArrayType<T, ?>) arrayType;
-                    out = ArrayBackedColumnSource.getMemoryColumnSource(generic.cast(tType).values(), tType.clazz(),
-                            arrayType.componentType().clazz());
+                    return ArrayBackedColumnSource.getMemoryColumnSource(
+                            generic.cast(tType).values(), tType.clazz(), arrayType.componentType().clazz());
                 }
 
                 @Override
-                public void visit(CustomType<?> customType) {
-                    // noinspection unchecked
-                    CustomType<T> tType = (CustomType<T>) customType;
-                    out = ArrayBackedColumnSource.getMemoryColumnSource(generic.cast(tType).values(), tType.clazz(),
+                public WritableColumnSource<?> visit(CustomType<?> customType) {
+                    return simple(customType);
+                }
+
+                private <X> WritableColumnSource<X> simple(GenericType<X> type) {
+                    return ArrayBackedColumnSource.getMemoryColumnSource(generic.cast(type).values(), type.clazz(),
                             null);
                 }
             });

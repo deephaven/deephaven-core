@@ -13,7 +13,7 @@ public class LogBufferPoolImpl extends ThreadSafeFixedSizePool<ByteBuffer> imple
     private final int bufferSize;
 
     public LogBufferPoolImpl(int bufferCount, final int bufferSize) {
-        super(bufferCount, () -> ByteBuffer.allocate(bufferSize), null);
+        super(bufferCount, () -> ByteBuffer.allocate(bufferSize), ByteBuffer::clear);
         this.bufferSize = bufferSize;
 
     }

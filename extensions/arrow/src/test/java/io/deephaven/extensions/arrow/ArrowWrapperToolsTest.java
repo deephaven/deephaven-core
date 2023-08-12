@@ -5,6 +5,7 @@ import io.deephaven.chunk.WritableDoubleChunk;
 import io.deephaven.chunk.WritableIntChunk;
 import io.deephaven.chunk.WritableObjectChunk;
 import io.deephaven.chunk.attributes.Values;
+import io.deephaven.engine.context.ExecutionContext;
 import io.deephaven.engine.rowset.RowSequence;
 import io.deephaven.engine.rowset.RowSet;
 import io.deephaven.engine.rowset.RowSetBuilderSequential;
@@ -19,6 +20,7 @@ import io.deephaven.engine.table.impl.remote.InitialSnapshotTable;
 import io.deephaven.engine.testutil.junit4.EngineCleanup;
 import io.deephaven.engine.util.TableTools;
 import io.deephaven.util.QueryConstants;
+import io.deephaven.util.SafeCloseable;
 import io.deephaven.util.SafeCloseableArray;
 import org.apache.arrow.memory.BufferAllocator;
 import org.apache.arrow.memory.RootAllocator;
@@ -61,7 +63,6 @@ public class ArrowWrapperToolsTest {
         String path = file.getPath();
         Table table = ArrowWrapperTools.readFeather(path);
         Collection<? extends ColumnSource<?>> columnSources = table.getColumnSources();
-        List<? extends ColumnSource<?>> list = new ArrayList<>(columnSources);
 
         final RowSetBuilderSequential builder = RowSetFactory.builderSequential();
         builder.appendRange(0, 2);
@@ -291,10 +292,11 @@ public class ArrowWrapperToolsTest {
             // Then we'll validate all the results and life will be great
             final CyclicBarrier barrier = new CyclicBarrier(10);
             final CountDownLatch latch = new CountDownLatch(10);
+            final ExecutionContext executionContext = ExecutionContext.getContext();
             for (int ii = 0; ii < 10; ii++) {
                 final int threadNo = ii;
                 threads[ii] = new Thread(() -> {
-                    try {
+                    try (final SafeCloseable ignored = executionContext.open()) {
                         barrier.await();
                         results[threadNo] =
                                 InitialSnapshotTable.setupInitialSnapshotTable(expected,

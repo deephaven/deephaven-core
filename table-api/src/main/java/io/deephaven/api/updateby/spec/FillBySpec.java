@@ -1,6 +1,6 @@
 package io.deephaven.api.updateby.spec;
 
-import io.deephaven.annotations.SimpleStyle;
+import io.deephaven.annotations.SingletonStyle;
 import org.immutables.value.Value.Immutable;
 
 /**
@@ -8,7 +8,7 @@ import org.immutables.value.Value.Immutable;
  */
 
 @Immutable
-@SimpleStyle
+@SingletonStyle
 public abstract class FillBySpec extends UpdateBySpecBase {
     public static FillBySpec of() {
         return ImmutableFillBySpec.of();

@@ -4,16 +4,20 @@
 #pragma once
 
 #include <chrono>
+#include <functional>
 #include <future>
 #include <memory>
 #include <vector>
 #include <string>
 #include <cstring>
 #include <cstdint>
+#include <grpc/support/log.h>
 #include <arrow/flight/client.h>
 
+#include "deephaven/client/client_options.h"
 #include "deephaven/client/utility/executor.h"
 #include "deephaven/dhcore/utility/callbacks.h"
+#include "deephaven/dhcore/utility/utility.h"
 #include "deephaven/proto/ticket.pb.h"
 #include "deephaven/proto/ticket.grpc.pb.h"
 #include "deephaven/proto/application.pb.h"
@@ -30,13 +34,13 @@
 namespace deephaven::client::server {
 struct CompletionQueueCallback {
 public:
-  explicit CompletionQueueCallback(std::chrono::system_clock::time_point sendTime);
+  explicit CompletionQueueCallback(std::chrono::system_clock::time_point send_time);
   CompletionQueueCallback(const CompletionQueueCallback &other) = delete;
   CompletionQueueCallback(CompletionQueueCallback &&other) = delete;
   virtual ~CompletionQueueCallback();
 
-  virtual void onSuccess() = 0;
-  virtual void onFailure(std::exception_ptr eptr) = 0;
+  virtual void OnSuccess() = 0;
+  virtual void OnFailure(std::exception_ptr eptr) = 0;
 
   std::chrono::system_clock::time_point sendTime_;
   grpc::ClientContext ctx_;
@@ -49,18 +53,18 @@ struct ServerResponseHolder final : public CompletionQueueCallback {
   using SFCallback = deephaven::dhcore::utility::SFCallback<T>;
 
 public:
-  ServerResponseHolder(std::chrono::system_clock::time_point sendTime,
-      std::shared_ptr<SFCallback<Response>> callback) : CompletionQueueCallback(sendTime),
+  ServerResponseHolder(std::chrono::system_clock::time_point send_time,
+      std::shared_ptr<SFCallback<Response>> callback) : CompletionQueueCallback(send_time),
       callback_(std::move(callback)) {}
 
   ~ServerResponseHolder() final = default;
 
-  void onSuccess() final {
-    callback_->onSuccess(std::move(response_));
+  void OnSuccess() final {
+    callback_->OnSuccess(std::move(response_));
   }
 
-  void onFailure(std::exception_ptr eptr) final {
-    callback_->onFailure(std::move(eptr));
+  void OnFailure(std::exception_ptr eptr) final {
+    callback_->OnFailure(std::move(eptr));
   }
 
   std::shared_ptr<SFCallback<Response>> callback_;
@@ -71,67 +75,91 @@ class Server : public std::enable_shared_from_this<Server> {
   struct Private {
   };
 
-  typedef io::deephaven::proto::backplane::grpc::ApplicationService ApplicationService;
-  typedef io::deephaven::proto::backplane::grpc::AsOfJoinTablesRequest AsOfJoinTablesRequest;
-  typedef io::deephaven::proto::backplane::grpc::AuthenticationConstantsResponse AuthenticationConstantsResponse;
-  typedef io::deephaven::proto::backplane::grpc::ComboAggregateRequest ComboAggregateRequest;
-  typedef io::deephaven::proto::backplane::grpc::ConfigurationConstantsResponse ConfigurationConstantsResponse;
-  typedef io::deephaven::proto::backplane::grpc::ConfigService ConfigService;
-  typedef io::deephaven::proto::backplane::grpc::ExportedTableCreationResponse ExportedTableCreationResponse;
-  typedef io::deephaven::proto::backplane::grpc::HandshakeResponse HandshakeResponse;
-  typedef io::deephaven::proto::backplane::grpc::SelectOrUpdateRequest SelectOrUpdateRequest;
-  typedef io::deephaven::proto::backplane::grpc::SessionService SessionService;
-  typedef io::deephaven::proto::backplane::grpc::SortDescriptor SortDescriptor;
-  typedef io::deephaven::proto::backplane::grpc::Ticket Ticket;
-  typedef io::deephaven::proto::backplane::grpc::TableService TableService;
-  typedef io::deephaven::proto::backplane::script::grpc::BindTableToVariableResponse BindTableToVariableResponse;
-  typedef io::deephaven::proto::backplane::script::grpc::ConsoleService ConsoleService;
-  typedef io::deephaven::proto::backplane::script::grpc::StartConsoleResponse StartConsoleResponse;
+  using ApplicationService = io::deephaven::proto::backplane::grpc::ApplicationService;
+  using AsOfJoinTablesRequest = io::deephaven::proto::backplane::grpc::AsOfJoinTablesRequest;
+  using AuthenticationConstantsResponse = io::deephaven::proto::backplane::grpc::AuthenticationConstantsResponse;
+  using ComboAggregateRequest = io::deephaven::proto::backplane::grpc::ComboAggregateRequest;
+  using ConfigurationConstantsResponse = io::deephaven::proto::backplane::grpc::ConfigurationConstantsResponse;
+  using ConfigService = io::deephaven::proto::backplane::grpc::ConfigService;
+  using ExportedTableCreationResponse = io::deephaven::proto::backplane::grpc::ExportedTableCreationResponse;
+  using HandshakeResponse = io::deephaven::proto::backplane::grpc::HandshakeResponse;
+  using ReleaseResponse = io::deephaven::proto::backplane::grpc::ReleaseResponse;
+  using SelectOrUpdateRequest = io::deephaven::proto::backplane::grpc::SelectOrUpdateRequest;
+  using SessionService = io::deephaven::proto::backplane::grpc::SessionService;
+  using SortDescriptor = io::deephaven::proto::backplane::grpc::SortDescriptor;
+  using Ticket = io::deephaven::proto::backplane::grpc::Ticket;
+  using TableService = io::deephaven::proto::backplane::grpc::TableService;
+  using UpdateByOperation = io::deephaven::proto::backplane::grpc::UpdateByRequest::UpdateByOperation;
+  using BindTableToVariableResponse = io::deephaven::proto::backplane::script::grpc::BindTableToVariableResponse;
+  using ConsoleService = io::deephaven::proto::backplane::script::grpc::ConsoleService;
+  using StartConsoleResponse = io::deephaven::proto::backplane::script::grpc::StartConsoleResponse;
+  using ExecuteCommandResponse = io::deephaven::proto::backplane::script::grpc::ExecuteCommandResponse;
 
-  typedef deephaven::client::utility::Executor Executor;
+  using ClientOptions = deephaven::client::ClientOptions;
+  using Executor = deephaven::client::utility::Executor;
 
   template<typename T>
   using SFCallback = deephaven::dhcore::utility::SFCallback<T>;
-  typedef SFCallback<ExportedTableCreationResponse> EtcCallback;
+  using EtcCallback = SFCallback<ExportedTableCreationResponse>;
 
 public:
-  static std::shared_ptr<Server> createFromTarget(const std::string &target);
+  [[nodiscard]]
+  static std::shared_ptr<Server> CreateFromTarget(
+      const std::string &target,
+      const ClientOptions &client_options);
   Server(const Server &other) = delete;
   Server &operator=(const Server &other) = delete;
   Server(Private,
-      std::unique_ptr<ApplicationService::Stub> applicationStub,
-      std::unique_ptr<ConsoleService::Stub> consoleStub,
-      std::unique_ptr<SessionService::Stub> sessionStub,
-      std::unique_ptr<TableService::Stub> tableStub,
-      std::unique_ptr<ConfigService::Stub> configStub,
-      std::unique_ptr<arrow::flight::FlightClient> flightClient,
-      std::string sessionToken,
-      std::chrono::milliseconds expirationInterval,
-      std::chrono::system_clock::time_point nextHandshakeTime);
+      std::unique_ptr<ApplicationService::Stub> application_stub,
+      std::unique_ptr<ConsoleService::Stub> console_stub,
+      std::unique_ptr<SessionService::Stub> session_stub,
+      std::unique_ptr<TableService::Stub> table_stub,
+      std::unique_ptr<ConfigService::Stub> config_stub,
+      std::unique_ptr<arrow::flight::FlightClient> flight_client,
+      ClientOptions::extra_headers_t extra_headers,
+      std::string session_token,
+      std::chrono::milliseconds expiration_interval,
+      std::chrono::system_clock::time_point next_handshake_time);
   ~Server();
 
-  ApplicationService::Stub *applicationStub() const { return applicationStub_.get(); }
+  [[nodiscard]]
+  ApplicationService::Stub *ApplicationStub() const { return applicationStub_.get(); }
 
-  ConfigService::Stub *configStub() const { return configStub_.get(); }
+  [[nodiscard]]
+  ConfigService::Stub *ConfigStub() const { return configStub_.get(); }
 
-  ConsoleService::Stub *consoleStub() const { return consoleStub_.get(); }
+  [[nodiscard]]
+  ConsoleService::Stub *ConsoleStub() const { return consoleStub_.get(); }
 
-  SessionService::Stub *sessionStub() const { return sessionStub_.get(); }
+  [[nodiscard]]
+  SessionService::Stub *SessionStub() const { return sessionStub_.get(); }
 
-  TableService::Stub *tableStub() const { return tableStub_.get(); }
+  [[nodiscard]]
+  TableService::Stub *TableStub() const { return tableStub_.get(); }
 
   // TODO(kosak): decide on the multithreaded story here
-  arrow::flight::FlightClient *flightClient() const { return flightClient_.get(); }
+  [[nodiscard]]
+  arrow::flight::FlightClient *FlightClient() const { return flightClient_.get(); }
 
-  Ticket newTicket();
-  std::tuple<Ticket, arrow::flight::FlightDescriptor> newTicketAndFlightDescriptor();
+  void Shutdown();
 
-  void getConfigurationConstantsAsync(
+  /**
+   *  Allocates a new Ticket from client-managed namespace.
+   */
+  [[nodiscard]]
+  Ticket NewTicket();
+
+  void GetConfigurationConstantsAsync(
       std::shared_ptr<SFCallback<ConfigurationConstantsResponse>> callback);
 
-  void startConsoleAsync(std::shared_ptr<SFCallback<StartConsoleResponse>> callback);
+  void StartConsoleAsync(std::string session_type, std::shared_ptr<SFCallback<StartConsoleResponse>> callback);
 
-  Ticket emptyTableAsync(int64_t size, std::shared_ptr<EtcCallback> etcCallback);
+  void ExecuteCommandAsync(Ticket console_id, std::string code,
+      std::shared_ptr<SFCallback<ExecuteCommandResponse>> callback);
+
+  void GetExportedTableCreationResponseAsync(Ticket ticket, std::shared_ptr<EtcCallback> callback);
+
+  void EmptyTableAsync(int64_t size, std::shared_ptr<EtcCallback> etc_callback, Ticket result);
 
   //  std::shared_ptr<TableHandle> historicalTableAsync(std::shared_ptr<std::string> nameSpace,
   //      std::shared_ptr<std::string> tableName, std::shared_ptr<ItdCallback> itdCallback);
@@ -139,107 +167,122 @@ public:
   //  std::shared_ptr<TableHandle> tempTableAsync(std::shared_ptr<std::vector<std::shared_ptr<ColumnHolder>>> columnHolders,
   //      std::shared_ptr<ItdCallback> itdCallback);
 
-  Ticket timeTableAsync(int64_t startTimeNanos, int64_t periodNanos,
-      std::shared_ptr<EtcCallback> etcCallback);
+  void TimeTableAsync(int64_t start_time_nanos, int64_t period_nanos, std::shared_ptr<EtcCallback> etc_callback,
+      Ticket result);
   //
   //  std::shared_ptr<TableHandle> snapshotAsync(std::shared_ptr<TableHandle> leftTableHandle,
   //      std::shared_ptr<TableHandle> rightTableHandle,
   //      bool doInitialSnapshot, std::shared_ptr<std::vector<std::shared_ptr<std::string>>> stampColumns,
   //      std::shared_ptr<ItdCallback> itdCallback);
 
-  Ticket selectAsync(Ticket parentTicket, std::vector<std::string> columnSpecs,
-      std::shared_ptr<EtcCallback> etcCallback);
+  void SelectAsync(Ticket parent_ticket, std::vector<std::string> column_specs,
+      std::shared_ptr<EtcCallback> etc_callback, Ticket result);
 
-  Ticket updateAsync(Ticket parentTicket, std::vector<std::string> columnSpecs,
-      std::shared_ptr<EtcCallback> etcCallback);
+  void UpdateAsync(Ticket parent_ticket, std::vector<std::string> column_specs,
+      std::shared_ptr<EtcCallback> etc_callback, Ticket result);
 
-  Ticket viewAsync(Ticket parentTicket, std::vector<std::string> columnSpecs,
-      std::shared_ptr<EtcCallback> etcCallback);
+  void ViewAsync(Ticket parent_ticket, std::vector<std::string> column_specs,
+      std::shared_ptr<EtcCallback> etc_callback, Ticket result);
 
-  Ticket updateViewAsync(Ticket parentTicket, std::vector<std::string> columnSpecs,
-      std::shared_ptr<EtcCallback> etcCallback);
+  void UpdateViewAsync(Ticket parent_ticket, std::vector<std::string> column_specs,
+      std::shared_ptr<EtcCallback> etc_callback, Ticket result);
 
-  Ticket dropColumnsAsync(Ticket parentTicket, std::vector<std::string> columnSpecs,
-      std::shared_ptr<EtcCallback> etcCallback);
+  void DropColumnsAsync(Ticket parent_ticket, std::vector<std::string> column_specs,
+      std::shared_ptr<EtcCallback> etc_callback, Ticket result);
 
-  Ticket whereAsync(Ticket parentTicket, std::string condition,
-      std::shared_ptr<EtcCallback> etcCallback);
+  void WhereAsync(Ticket parent_ticket, std::string condition, std::shared_ptr<EtcCallback> etc_callback,
+      Ticket result);
 
-  Ticket sortAsync(Ticket parentTicket, std::vector<SortDescriptor> sortDescriptors,
-      std::shared_ptr<EtcCallback> etcCallback);
+  void SortAsync(Ticket parent_ticket, std::vector<SortDescriptor> sort_descriptors,
+      std::shared_ptr<EtcCallback> etc_callback, Ticket result);
 
   //  std::shared_ptr<TableHandle> preemptiveAsync(std::shared_ptr<TableHandle> parentTableHandle,
   //      int32_t sampleIntervalMs, std::shared_ptr<ItdCallback> itdCallback);
 
-  Ticket comboAggregateDescriptorAsync(Ticket parentTicket,
+  void ComboAggregateDescriptorAsync(Ticket parent_ticket,
       std::vector<ComboAggregateRequest::Aggregate> aggregates,
-      std::vector<std::string> groupByColumns, bool forceCombo,
-      std::shared_ptr<EtcCallback> etcCallback);
+      std::vector<std::string> group_by_columns, bool force_combo,
+      std::shared_ptr<EtcCallback> etc_callback, Ticket result);
 
-  Ticket headOrTailByAsync(Ticket parentTicket, bool head, int64_t n,
-      std::vector<std::string> columnSpecs, std::shared_ptr<EtcCallback> etcCallback);
+  void HeadOrTailByAsync(Ticket parent_ticket, bool head, int64_t n,
+      std::vector<std::string> column_specs, std::shared_ptr<EtcCallback> etc_callback, Ticket result);
 
-  Ticket headOrTailAsync(Ticket parentTicket,
-      bool head, int64_t n, std::shared_ptr<EtcCallback> etcCallback);
+  void HeadOrTailAsync(Ticket parent_ticket, bool head, int64_t n, std::shared_ptr<EtcCallback> etc_callback,
+      Ticket result);
 
-  Ticket ungroupAsync(Ticket parentTicket, bool nullFill, std::vector<std::string> groupByColumns,
-      std::shared_ptr<EtcCallback> etcCallback);
+  void UngroupAsync(Ticket parent_ticket, bool null_fill, std::vector<std::string> group_by_columns,
+      std::shared_ptr<EtcCallback> etc_callback, Ticket result);
 
-  Ticket mergeAsync(std::vector<Ticket> sourceTickets, std::string keyColumn,
-      std::shared_ptr<EtcCallback> etcCallback);
+  void MergeAsync(std::vector<Ticket> source_tickets, std::string key_column,
+      std::shared_ptr<EtcCallback> etc_callback, Ticket result);
 
-  Ticket crossJoinAsync(Ticket leftTableTicket, Ticket rightTableTicket,
-      std::vector<std::string> columnsToMatch, std::vector<std::string> columnsToAdd,
-      std::shared_ptr<EtcCallback> etcCallback);
+  void CrossJoinAsync(Ticket left_table_ticket, Ticket right_table_ticket,
+      std::vector<std::string> columns_to_match, std::vector<std::string> columns_to_add,
+      std::shared_ptr<EtcCallback> etc_callback, Ticket result);
 
-  Ticket naturalJoinAsync(Ticket leftTableTicket, Ticket rightTableTicket,
-      std::vector<std::string> columnsToMatch, std::vector<std::string> columnsToAdd,
-      std::shared_ptr<EtcCallback> etcCallback);
+  void NaturalJoinAsync(Ticket left_table_ticket, Ticket right_table_ticket,
+      std::vector<std::string> columns_to_match, std::vector<std::string> columns_to_add,
+      std::shared_ptr<EtcCallback> etc_callback, Ticket result);
 
-  Ticket exactJoinAsync(Ticket leftTableTicket, Ticket rightTableTicket,
-      std::vector<std::string> columnsToMatch, std::vector<std::string> columnsToAdd,
-      std::shared_ptr<EtcCallback> etcCallback);
+  void ExactJoinAsync(Ticket left_table_ticket, Ticket right_table_ticket,
+      std::vector<std::string> columns_to_match, std::vector<std::string> columns_to_add,
+      std::shared_ptr<EtcCallback> etc_callback, Ticket result);
 
-  Ticket asOfJoinAsync(AsOfJoinTablesRequest::MatchRule matchRule, Ticket leftTableTicket,
-      Ticket rightTableTicket, std::vector<std::string> columnsToMatch,
-      std::vector<std::string> columnsToAdd, std::shared_ptr<EtcCallback> etcCallback);
+  void AsOfJoinAsync(AsOfJoinTablesRequest::MatchRule match_rule, Ticket left_table_ticket,
+      Ticket right_table_ticket, std::vector<std::string> columns_to_match,
+      std::vector<std::string> columns_to_add, std::shared_ptr<EtcCallback> etc_callback, Ticket result);
 
-  void bindToVariableAsync(const Ticket &consoleId, const Ticket &tableId, std::string variable,
+  void UpdateByAsync(Ticket source, std::vector<UpdateByOperation> operations,
+      std::vector<std::string> group_by_columns,
+      std::shared_ptr<EtcCallback> etc_callback, Ticket result);
+
+  void BindToVariableAsync(const Ticket &console_id, const Ticket &table_id, std::string variable,
       std::shared_ptr<SFCallback<BindTableToVariableResponse>> callback);
 
-  Ticket fetchTableAsync(std::string tableName, std::shared_ptr<EtcCallback> callback);
+  void ReleaseAsync(Ticket ticket, std::shared_ptr<SFCallback<ReleaseResponse>> callback);
+
+  void FetchTableAsync(std::string table_name, std::shared_ptr<EtcCallback> callback, Ticket result);
 
   template<typename TReq, typename TResp, typename TStub, typename TPtrToMember>
-  void sendRpc(const TReq &req, std::shared_ptr<SFCallback<TResp>> responseCallback,
+  void SendRpc(const TReq &req, std::shared_ptr<SFCallback<TResp>> response_callback,
       TStub *stub, const TPtrToMember &pm);
 
-  std::pair<std::string, std::string> getAuthHeader() const;
+  void ForEachHeaderNameAndValue(std::function<void(const std::string &, const std::string &)> fun);
 
-  // TODO: make this private
-  void setExpirationInterval(std::chrono::milliseconds interval);
+  // TODO(kosak): make this private
+  void SetExpirationInterval(std::chrono::milliseconds interval);
+
+  // Useful as a log line prefix for messages coming from this server.
+  const std::string &me() { return me_; }
 
 private:
-  typedef std::unique_ptr<::grpc::ClientAsyncResponseReader<ExportedTableCreationResponse>>
-  (TableService::Stub::*selectOrUpdateMethod_t)(::grpc::ClientContext *context,
-      const SelectOrUpdateRequest &request, ::grpc::CompletionQueue *cq);
+  static const char *const kAuthorizationKey;
+  // A pointer to member of TableService::Stub, taking (context, request, cq) and returning a
+  // unique_ptr.
+  using selectOrUpdateMethod_t =
+      std::unique_ptr<::grpc::ClientAsyncResponseReader<ExportedTableCreationResponse>>(
+          TableService::Stub::*)(::grpc::ClientContext *context,
+              const SelectOrUpdateRequest &request, ::grpc::CompletionQueue *cq);
 
-  Ticket selectOrUpdateHelper(Ticket parentTicket, std::vector<std::string> columnSpecs,
-      std::shared_ptr<EtcCallback> etcCallback, selectOrUpdateMethod_t method);
+  void SelectOrUpdateHelper(Ticket parent_ticket, std::vector<std::string> column_specs,
+      std::shared_ptr<EtcCallback> etc_callback, Ticket result, selectOrUpdateMethod_t method);
 
-  void addSessionToken(grpc::ClientContext *ctx);
+  static void ProcessCompletionQueueLoop(const std::shared_ptr<Server> &self);
+  [[nodiscard]]
+  bool ProcessNextCompletionQueueItem();
 
-  static void processCompletionQueueForever(const std::shared_ptr<Server> &self);
-  bool processNextCompletionQueueItem();
+  static void SendKeepaliveMessages(const std::shared_ptr<Server> &self);
+  [[nodiscard]]
+  bool KeepaliveHelper();
 
-  static void sendKeepaliveMessages(const std::shared_ptr<Server> &self);
-  bool keepaliveHelper();
-
+  const std::string me_;  // useful printable object name for logging
   std::unique_ptr<ApplicationService::Stub> applicationStub_;
   std::unique_ptr<ConsoleService::Stub> consoleStub_;
   std::unique_ptr<SessionService::Stub> sessionStub_;
   std::unique_ptr<TableService::Stub> tableStub_;
   std::unique_ptr<ConfigService::Stub> configStub_;
   std::unique_ptr<arrow::flight::FlightClient> flightClient_;
+  const ClientOptions::extra_headers_t extraHeaders_;
   grpc::CompletionQueue completionQueue_;
 
   std::atomic<int32_t> nextFreeTicketId_;
@@ -250,19 +293,50 @@ private:
   std::string sessionToken_;
   std::chrono::milliseconds expirationInterval_;
   std::chrono::system_clock::time_point nextHandshakeTime_;
+  std::thread completionQueueThread_;
+  std::thread keepAliveThread_;
 };
 
 template<typename TReq, typename TResp, typename TStub, typename TPtrToMember>
-void Server::sendRpc(const TReq &req, std::shared_ptr<SFCallback<TResp>> responseCallback,
+void Server::SendRpc(const TReq &req, std::shared_ptr<SFCallback<TResp>> response_callback,
     TStub *stub, const TPtrToMember &pm) {
+  using deephaven::dhcore::utility::TimePointToStr;
+  using deephaven::dhcore::utility::TypeName;
+  static const auto kTypeName = TypeName(req);
   auto now = std::chrono::system_clock::now();
-  // Keep this in a unique_ptr at first, for cleanup in case addAuthToken throws an exception.
-  auto response = std::make_unique<ServerResponseHolder<TResp>>(now, std::move(responseCallback));
-  addSessionToken(&response->ctx_);
-  auto rpc = (stub->*pm)(&response->ctx_, req, &completionQueue_);
-  // It is the responsibility of "processNextCompletionQueueItem" to deallocate the storage pointed
-  // to by 'response'.
-  auto *rp = response.release();
-  rpc->Finish(&rp->response_, &rp->status_, rp);
+  gpr_log(GPR_DEBUG,
+      "Server[%p]: "
+      "Sending RPC %s "
+      "at time %s.",
+      static_cast<void*>(this),
+      kTypeName.c_str(),
+      TimePointToStr(now).c_str());
+          
+  // Keep this in a unique_ptr at first, in case we leave early due to cancellation or exception.
+  auto response = std::make_unique<ServerResponseHolder<TResp>>(now, std::move(response_callback));
+  ForEachHeaderNameAndValue([&response](const std::string &name, const std::string &value) {
+    response->ctx_.AddMetadata(name, value);
+  });
+
+  // Per the GRPC documentation for CompletionQueue::Shutdown(), we must not add items to the CompletionQueue after
+  // it has been shut down. So we do a test and enqueue while under lock.
+  std::unique_lock guard(mutex_);
+  if (!cancelled_) {
+    auto rpc = (stub->*pm)(&response->ctx_, req, &completionQueue_);
+    // It is the responsibility of "processNextCompletionQueueItem" to deallocate the storage pointed
+    // to by 'response'.
+    auto *rp = response.release();
+    rpc->Finish(&rp->response_, &rp->status_, rp);
+    return;
+  }
+
+  // If we get here, we are cancelled. So instead of enqueuing the request, we need to signal failure to the callback.
+  // This can be done without holding the lock.
+  // TODO(kosak): a slight code savings can be achieved if this error code is moved to a non-template context,
+  // since it is not dependent on any template arguments.
+  guard.unlock();
+  const char *message = "Server cancelled. All further RPCs are being rejected";
+  auto eptr = std::make_exception_ptr(std::runtime_error(DEEPHAVEN_DEBUG_MSG(message)));
+  response->OnFailure(std::move(eptr));
 }
 }  // namespace deephaven::client::server

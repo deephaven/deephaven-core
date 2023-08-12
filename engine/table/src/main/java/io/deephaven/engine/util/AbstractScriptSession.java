@@ -18,6 +18,7 @@ import io.deephaven.engine.table.TableDefinition;
 import io.deephaven.engine.context.QueryScope;
 import io.deephaven.engine.context.QueryScopeParam;
 import io.deephaven.engine.table.hierarchical.HierarchicalTable;
+import io.deephaven.engine.updategraph.UpdateGraph;
 import io.deephaven.plugin.type.ObjectType;
 import io.deephaven.plugin.type.ObjectTypeLookup;
 import io.deephaven.util.SafeCloseable;
@@ -65,7 +66,12 @@ public abstract class AbstractScriptSession<S extends AbstractScriptSession.Snap
     private final ObjectTypeLookup objectTypeLookup;
     private final Listener changeListener;
 
-    protected AbstractScriptSession(ObjectTypeLookup objectTypeLookup, @Nullable Listener changeListener) {
+    private S lastSnapshot;
+
+    protected AbstractScriptSession(
+            UpdateGraph updateGraph,
+            ObjectTypeLookup objectTypeLookup,
+            @Nullable Listener changeListener) {
         this.objectTypeLookup = objectTypeLookup;
         this.changeListener = changeListener;
 
@@ -82,6 +88,7 @@ public abstract class AbstractScriptSession<S extends AbstractScriptSession.Snap
                 .newQueryLibrary()
                 .setQueryScope(queryScope)
                 .setQueryCompiler(compilerContext)
+                .setUpdateGraph(updateGraph)
                 .build();
     }
 
@@ -91,31 +98,21 @@ public abstract class AbstractScriptSession<S extends AbstractScriptSession.Snap
     }
 
     protected synchronized void publishInitial() {
-        try (S empty = emptySnapshot(); S snapshot = takeSnapshot()) {
-            applyDiff(empty, snapshot, null);
+        lastSnapshot = emptySnapshot();
+        observeScopeChanges();
+    }
+
+    @Override
+    public synchronized void observeScopeChanges() {
+        final S beforeSnapshot = lastSnapshot;
+        lastSnapshot = takeSnapshot();
+        try (beforeSnapshot) {
+            applyDiff(beforeSnapshot, lastSnapshot);
         }
     }
 
     protected interface Snapshot extends SafeCloseable {
-
     }
-
-    @Override
-    public synchronized SnapshotScope snapshot(@Nullable SnapshotScope previousIfPresent) {
-        // TODO deephaven-core#2453 this should be redone, along with other scope change handling
-        if (previousIfPresent != null) {
-            previousIfPresent.close();
-        }
-        S snapshot = takeSnapshot();
-        return () -> finishSnapshot(snapshot);
-    }
-
-    private synchronized void finishSnapshot(S beforeSnapshot) {
-        try (beforeSnapshot; S afterSnapshot = takeSnapshot()) {
-            applyDiff(beforeSnapshot, afterSnapshot, null);
-        }
-    }
-
 
     protected abstract S emptySnapshot();
 
@@ -123,39 +120,38 @@ public abstract class AbstractScriptSession<S extends AbstractScriptSession.Snap
 
     protected abstract Changes createDiff(S from, S to, RuntimeException e);
 
-    protected Changes applyDiff(S from, S to, RuntimeException e) {
-        final Changes diff = createDiff(from, to, e);
+    private void applyDiff(S from, S to) {
         if (changeListener != null) {
+            final Changes diff = createDiff(from, to, null);
             changeListener.onScopeChanges(this, diff);
         }
-        return diff;
     }
 
     @Override
     public synchronized final Changes evaluateScript(final String script, final @Nullable String scriptName) {
+        // Observe scope changes and propagate to the listener before running the script, in case it is long-running
+        observeScopeChanges();
+
         RuntimeException evaluateErr = null;
         final Changes diff;
         // retain any objects which are created in the executed code, we'll release them when the script session
         // closes
-        try (S fromSnapshot = takeSnapshot();
+        try (final S initialSnapshot = takeSnapshot();
                 final SafeCloseable ignored = LivenessScopeStack.open(this, false)) {
 
             try {
-                // actually evaluate the script
-                executionContext.apply(() -> evaluate(script, scriptName));
+                // Actually evaluate the script; use the enclosing auth context, since AbstractScriptSession's
+                // ExecutionContext never has a non-null AuthContext
+                executionContext.withAuthContext(ExecutionContext.getContext().getAuthContext())
+                        .apply(() -> evaluate(script, scriptName));
             } catch (final RuntimeException err) {
                 evaluateErr = err;
             }
 
-            try (S toSnapshot = takeSnapshot()) {
-                diff = applyDiff(fromSnapshot, toSnapshot, evaluateErr);
-            }
-        }
-
-        // re-throw any captured exception now that our listener knows what query scope state had changed prior
-        // to the script session execution error
-        if (evaluateErr != null) {
-            throw evaluateErr;
+            // Observe changes during this evaluation (potentially capturing external changes from other threads)
+            observeScopeChanges();
+            // Use the "last" snapshot created as a side effect of observeScopeChanges() as our "to"
+            diff = createDiff(initialSnapshot, lastSnapshot, evaluateErr);
         }
 
         return diff;
@@ -222,18 +218,6 @@ public abstract class AbstractScriptSession<S extends AbstractScriptSession.Snap
         } catch (IOException err) {
             throw new UncheckedDeephavenException(
                     String.format("could not read script file %s: ", scriptPath.toString()), err);
-        }
-    }
-
-    protected synchronized void notifyVariableChange(String name, @Nullable Object oldValue,
-            @Nullable Object newValue) {
-        if (changeListener == null) {
-            return;
-        }
-        Changes changes = new Changes();
-        applyVariableChangeToDiff(changes, name, oldValue, newValue);
-        if (!changes.isEmpty()) {
-            changeListener.onScopeChanges(this, changes);
         }
     }
 

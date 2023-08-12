@@ -2,6 +2,7 @@ package io.deephaven.engine.table.impl;
 
 import io.deephaven.base.verify.Assert;
 import io.deephaven.datastructures.util.CollectionUtil;
+import io.deephaven.engine.context.ExecutionContext;
 import io.deephaven.engine.rowset.RowSet;
 import io.deephaven.engine.rowset.RowSetFactory;
 import io.deephaven.engine.rowset.WritableRowSet;
@@ -10,9 +11,7 @@ import io.deephaven.engine.table.TableUpdate;
 import io.deephaven.engine.table.impl.perf.BasePerformanceEntry;
 import io.deephaven.engine.table.impl.select.DynamicWhereFilter;
 import io.deephaven.engine.table.impl.select.WhereFilter;
-import io.deephaven.engine.updategraph.LogicalClock;
 import io.deephaven.engine.updategraph.NotificationQueue;
-import io.deephaven.engine.updategraph.UpdateGraphProcessor;
 import io.deephaven.io.logger.Logger;
 
 import java.util.*;
@@ -30,6 +29,7 @@ import java.util.*;
  * source table, but a refreshing filter in which case our listener recorder is null.
  */
 class WhereListener extends MergedListener {
+
     private final QueryTable sourceTable;
     private final QueryTable.FilteredTable result;
     private final WritableRowSet currentMapping;
@@ -37,10 +37,11 @@ class WhereListener extends MergedListener {
     private final ModifiedColumnSet filterColumns;
     private final ListenerRecorder recorder;
     private final long minimumThreadSize;
-    private long initialNotificationStep = NotificationStepReceiver.NULL_NOTIFICATION_STEP;
-    private long finalNotificationStep = NotificationStepReceiver.NULL_NOTIFICATION_STEP;
     private final boolean permitParallelization;
     private final int segmentCount;
+
+    private volatile long initialNotificationStep = NotificationStepReceiver.NULL_NOTIFICATION_STEP;
+    private volatile long finalNotificationStep = NotificationStepReceiver.NULL_NOTIFICATION_STEP;
 
     WhereListener(
             final Logger log,
@@ -68,18 +69,21 @@ class WhereListener extends MergedListener {
                 : sourceTable.newModifiedColumnSet(
                         filterColumnNames.toArray(CollectionUtil.ZERO_LENGTH_STRING_ARRAY));
 
-        if (UpdateGraphProcessor.DEFAULT.getUpdateThreads() > 1) {
+        if (getUpdateGraph().parallelismFactor() > 1) {
             minimumThreadSize = QueryTable.PARALLEL_WHERE_ROWS_PER_SEGMENT;
         } else {
             minimumThreadSize = Long.MAX_VALUE;
         }
-        segmentCount = QueryTable.PARALLEL_WHERE_SEGMENTS <= 0 ? UpdateGraphProcessor.DEFAULT.getUpdateThreads()
-                : QueryTable.PARALLEL_WHERE_SEGMENTS;
+        if (QueryTable.PARALLEL_WHERE_SEGMENTS <= 0) {
+            segmentCount = getUpdateGraph().parallelismFactor();
+        } else {
+            segmentCount = QueryTable.PARALLEL_WHERE_SEGMENTS;
+        }
     }
 
     @Override
     public void process() {
-        initialNotificationStep = LogicalClock.DEFAULT.currentStep();
+        initialNotificationStep = getUpdateGraph().clock().currentStep();
 
         if (result.refilterRequested()) {
             final TableUpdate update = recorder != null ? recorder.getUpdate() : null;
@@ -185,7 +189,7 @@ class WhereListener extends MergedListener {
     }
 
     void setFinalExecutionStep() {
-        finalNotificationStep = LogicalClock.DEFAULT.currentStep();
+        finalNotificationStep = getUpdateGraph().clock().currentStep();
     }
 
     ListenerFilterExecution makeFilterExecution() {
@@ -241,8 +245,8 @@ class WhereListener extends MergedListener {
         @Override
         void enqueueSubFilters(List<AbstractFilterExecution> subFilters,
                 CombinationNotification combinationNotification) {
-            UpdateGraphProcessor.DEFAULT.addNotifications(subFilters);
-            UpdateGraphProcessor.DEFAULT.addNotification(combinationNotification);
+            getUpdateGraph().addNotifications(subFilters);
+            getUpdateGraph().addNotification(combinationNotification);
         }
 
         @Override

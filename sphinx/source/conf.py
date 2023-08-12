@@ -67,6 +67,7 @@ html_theme_options = {
 add_module_names = False
 # if we allow sphinx to generate type hints for signatures (default), it would make the generated doc cluttered and hard to read
 autodoc_typehints = 'none'
+autoclass_content = 'both'
 
 #########################################################################################################################################################################
 
@@ -96,6 +97,7 @@ jvm_options = {
 
 from deephaven_internal import jvm
 jvm.init_jvm(
+    jvm_maxmem='1G',
     jvm_classpath=glob(os.environ.get('DEEPHAVEN_CLASSPATH')),
     jvm_properties=jvm_properties,
     jvm_options=jvm_options,
@@ -103,7 +105,10 @@ jvm.init_jvm(
 
 import jpy
 py_scope_jpy = jpy.get_type("io.deephaven.engine.util.PythonScopeJpyImpl").ofMainGlobals()
-py_dh_session = jpy.get_type("io.deephaven.integrations.python.PythonDeephavenSession")(py_scope_jpy)
+_JUpdateGraph = jpy.get_type("io.deephaven.engine.updategraph.impl.PeriodicUpdateGraph")
+docs_update_graph = _JUpdateGraph.newBuilder("PYTHON_DOCS").build()
+_JPythonScriptSession = jpy.get_type("io.deephaven.integrations.python.PythonDeephavenSession")
+py_dh_session = _JPythonScriptSession(docs_update_graph, py_scope_jpy)
 py_dh_session.getExecutionContext().open()
 
 

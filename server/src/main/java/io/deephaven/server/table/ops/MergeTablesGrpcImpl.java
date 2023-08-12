@@ -7,12 +7,13 @@ import com.google.rpc.Code;
 import io.deephaven.auth.codegen.impl.TableServiceContextualAuthWiring;
 import io.deephaven.base.verify.Assert;
 import io.deephaven.engine.table.Table;
-import io.deephaven.engine.updategraph.UpdateGraphProcessor;
+import io.deephaven.engine.updategraph.UpdateGraph;
 import io.deephaven.engine.util.TableTools;
 import io.deephaven.proto.backplane.grpc.BatchTableRequest;
 import io.deephaven.proto.backplane.grpc.MergeTablesRequest;
 import io.deephaven.proto.util.Exceptions;
 import io.deephaven.server.session.SessionState;
+import io.deephaven.util.SafeCloseable;
 import io.grpc.StatusRuntimeException;
 
 import javax.inject.Inject;
@@ -23,15 +24,11 @@ import java.util.stream.Collectors;
 @Singleton
 public class MergeTablesGrpcImpl extends GrpcTableOperation<MergeTablesRequest> {
 
-    private final UpdateGraphProcessor updateGraphProcessor;
-
     @Inject
     public MergeTablesGrpcImpl(
-            final TableServiceContextualAuthWiring authWiring,
-            final UpdateGraphProcessor updateGraphProcessor) {
+            final TableServiceContextualAuthWiring authWiring) {
         super(authWiring::checkPermissionMergeTables, BatchTableRequest.Operation::getMerge,
                 MergeTablesRequest::getResultId, MergeTablesRequest::getSourceIdsList);
-        this.updateGraphProcessor = updateGraphProcessor;
     }
 
     @Override
@@ -51,16 +48,18 @@ public class MergeTablesGrpcImpl extends GrpcTableOperation<MergeTablesRequest> 
                 .map(SessionState.ExportObject::get)
                 .collect(Collectors.toList());
 
-        Table result;
         if (tables.stream().noneMatch(Table::isRefreshing)) {
-            result = keyColumn.isEmpty() ? TableTools.merge(tables) : TableTools.mergeSorted(keyColumn, tables);
+            return keyColumn.isEmpty() ? TableTools.merge(tables) : TableTools.mergeSorted(keyColumn, tables);
         } else {
-            result = updateGraphProcessor.sharedLock().computeLocked(() -> TableTools.merge(tables));
+            final UpdateGraph updateGraph = tables.get(0).getUpdateGraph(tables.toArray(Table[]::new));
+            Table result;
+            try (final SafeCloseable ignored = updateGraph.sharedLock().lockCloseable()) {
+                result = TableTools.merge(tables);
+            }
             if (!keyColumn.isEmpty()) {
                 result = result.sort(keyColumn);
             }
+            return result;
         }
-
-        return result;
     }
 }

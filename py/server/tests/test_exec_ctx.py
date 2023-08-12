@@ -32,8 +32,8 @@ class ExecCtxTestCase(BaseTestCase):
         main_exec_ctx = get_exec_ctx()
 
         def thread_update1(p: int, thread_results):
-            t = empty_table(1)
             with main_exec_ctx:
+                t = empty_table(1)
                 t2 = t.update("X = p*p")
             thread_results[p] = t2.to_string()
 
@@ -80,8 +80,8 @@ class ExecCtxTestCase(BaseTestCase):
         main_exec_ctx = get_exec_ctx()
 
         def thread_update1(p: int):
-            t = empty_table(1)
             with main_exec_ctx:
+                t = empty_table(1)
                 t2 = t.update("X = p*p")
             return t2.to_string()
 

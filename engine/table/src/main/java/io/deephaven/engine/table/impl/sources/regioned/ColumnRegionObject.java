@@ -68,7 +68,8 @@ public interface ColumnRegionObject<DATA_TYPE, ATTR extends Any> extends ColumnR
 
     /**
      * Optional method that should only be used on regions returned by {@link #getDictionaryValuesRegion()}.
-     * Gathers
+     * Gathers row keys representing the dictionary values for this region, excluding those already known to the caller.
+     * This is used to support {@link SymbolTableSource symbol table} access.
      *
      * @param keysToVisit       A search iterator over the enclosing table address space (which must have the same
      *                          regions at the same masks), positioned at a row key in this region. Used to

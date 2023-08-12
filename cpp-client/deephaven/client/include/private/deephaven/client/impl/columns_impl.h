@@ -16,14 +16,16 @@ protected:
   };
 
 public:
-  static std::shared_ptr<ColumnImpl> create(std::string name);
+  [[nodiscard]]
+  static std::shared_ptr<ColumnImpl> Create(std::string name);
 
   ColumnImpl(Private, std::string name);
   ~ColumnImpl() override;
 
-  const std::string &name() const { return name_; }
+  [[nodiscard]]
+  const std::string &Name() const { return name_; }
 
-  void streamIrisRepresentation(std::ostream &s) const final;
+  void StreamIrisRepresentation(std::ostream &s) const final;
 
 private:
   std::string name_;
@@ -31,7 +33,8 @@ private:
 
 class NumColImpl final : public NumericExpressionImpl, public ColumnImpl {
 public:
-  static std::shared_ptr<NumColImpl> create(std::string name);
+  [[nodiscard]]
+  static std::shared_ptr<NumColImpl> Create(std::string name);
 
   NumColImpl(Private, std::string name);
   ~NumColImpl() final;
@@ -39,7 +42,8 @@ public:
 
 class StrColImpl final : public StringExpressionImpl, public ColumnImpl {
 public:
-  static std::shared_ptr<StrColImpl> create(std::string name);
+  [[nodiscard]]
+  static std::shared_ptr<StrColImpl> Create(std::string name);
 
   StrColImpl(Private, std::string name);
   ~StrColImpl() final;
@@ -47,7 +51,8 @@ public:
 
 class DateTimeColImpl final : public DateTimeExpressionImpl, public ColumnImpl {
 public:
-  static std::shared_ptr<DateTimeColImpl> create(std::string name);
+  [[nodiscard]]
+  static std::shared_ptr<DateTimeColImpl> Create(std::string name);
 
   DateTimeColImpl(Private, std::string name);
   ~DateTimeColImpl() final;
@@ -58,12 +63,13 @@ class AssignedColumnImpl final : public IrisRepresentableImpl {
   };
 
 public:
-  static std::shared_ptr<AssignedColumnImpl> create(std::string name,
+  [[nodiscard]]
+  static std::shared_ptr<AssignedColumnImpl> Create(std::string name,
       std::shared_ptr<ExpressionImpl> expr);
 
   AssignedColumnImpl(Private, std::string name, std::shared_ptr<ExpressionImpl> expr);
   ~AssignedColumnImpl() final;
-  void streamIrisRepresentation(std::ostream &s) const final;
+  void StreamIrisRepresentation(std::ostream &s) const final;
 
 private:
   std::string name_;

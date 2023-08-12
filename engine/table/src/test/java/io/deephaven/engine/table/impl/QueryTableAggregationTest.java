@@ -8,17 +8,17 @@ import io.deephaven.api.Selectable;
 import io.deephaven.api.agg.Aggregation;
 import io.deephaven.api.agg.Count;
 import io.deephaven.api.agg.spec.AggSpec;
+import io.deephaven.base.FileUtils;
 import io.deephaven.chunk.util.pools.ChunkPoolReleaseTracking;
 import io.deephaven.datastructures.util.CollectionUtil;
+import io.deephaven.engine.context.ExecutionContext;
 import io.deephaven.engine.context.QueryScope;
-import io.deephaven.engine.liveness.LivenessScope;
 import io.deephaven.engine.liveness.LivenessScopeStack;
 import io.deephaven.engine.rowset.RowSet;
 import io.deephaven.engine.rowset.RowSetFactory;
 import io.deephaven.engine.rowset.RowSetShiftData;
 import io.deephaven.engine.rowset.TrackingWritableRowSet;
 import io.deephaven.engine.table.*;
-import io.deephaven.engine.testutil.QueryTableTestBase.TableComparator;
 import io.deephaven.engine.table.impl.by.*;
 import io.deephaven.engine.table.impl.indexer.RowSetIndexer;
 import io.deephaven.engine.table.impl.select.IncrementalReleaseFilter;
@@ -28,17 +28,20 @@ import io.deephaven.engine.table.impl.select.SourceColumn;
 import io.deephaven.engine.table.impl.sources.UnionRedirection;
 import io.deephaven.engine.table.impl.util.ColumnHolder;
 import io.deephaven.engine.testutil.*;
+import io.deephaven.engine.testutil.QueryTableTestBase.TableComparator;
 import io.deephaven.engine.testutil.generator.*;
+import io.deephaven.engine.testutil.junit4.EngineCleanup;
 import io.deephaven.engine.testutil.sources.TestColumnSource;
 import io.deephaven.engine.testutil.testcase.RefreshingTableTestCase;
-import io.deephaven.engine.updategraph.UpdateGraphProcessor;
 import io.deephaven.engine.util.TableDiff;
 import io.deephaven.engine.util.TableTools;
 import io.deephaven.engine.util.systemicmarking.SystemicObjectTracker;
-import io.deephaven.engine.testutil.junit4.EngineCleanup;
+import io.deephaven.parquet.table.ParquetInstructions;
+import io.deephaven.parquet.table.ParquetTableWriter;
+import io.deephaven.parquet.table.ParquetTools;
+import io.deephaven.parquet.table.layout.ParquetKeyValuePartitionedLayout;
 import io.deephaven.qst.table.AggregateAllTable;
 import io.deephaven.test.types.OutOfBandTest;
-import io.deephaven.time.DateTime;
 import io.deephaven.time.DateTimeUtils;
 import io.deephaven.util.QueryConstants;
 import io.deephaven.util.SafeCloseable;
@@ -46,15 +49,18 @@ import io.deephaven.vector.IntVector;
 import io.deephaven.vector.ObjectVector;
 import junit.framework.ComparisonFailure;
 import junit.framework.TestCase;
+import org.apache.commons.lang3.mutable.MutableInt;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 import org.junit.*;
 import org.junit.experimental.categories.Category;
 
+import java.io.File;
 import java.io.IOException;
 import java.lang.reflect.Array;
 import java.math.BigDecimal;
 import java.math.BigInteger;
+import java.nio.file.Files;
 import java.util.*;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.function.Consumer;
@@ -69,6 +75,7 @@ import static io.deephaven.engine.testutil.TstUtils.*;
 import static io.deephaven.engine.util.TableTools.*;
 import static io.deephaven.util.QueryConstants.*;
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.junit.Assert.assertArrayEquals;
 
 @Category(OutOfBandTest.class)
 public class QueryTableAggregationTest {
@@ -153,7 +160,7 @@ public class QueryTableAggregationTest {
     @Test
     public void testStaticReinterpretableKeyByWithChunks() {
         final String nowName = "__now_" + Thread.currentThread().hashCode() + "__";
-        QueryScope.addParam(nowName, DateTime.now());
+        QueryScope.addParam(nowName, DateTimeUtils.now());
         final Table input = emptyTable(10000).update("A=ii % 100 == 0 ? null : plus(" + nowName + ", (long) (ii / 5))",
                 "B=ii % 100 == 0 ? null : (ii & 1) == 0");
 
@@ -272,7 +279,7 @@ public class QueryTableAggregationTest {
         final long mergeChunkMultiple = UnionRedirection.ALLOCATION_UNIT_ROW_KEYS;
 
         final String nowName = "__now_" + Thread.currentThread().hashCode() + "__";
-        QueryScope.addParam(nowName, DateTime.now());
+        QueryScope.addParam(nowName, DateTimeUtils.now());
         final String tableIndexName = "__tableIndex_" + Thread.currentThread().hashCode() + "__";
 
         final QueryTable[] parents = IntStream.range(0, 20).mapToObj((final int tableIndex) -> {
@@ -321,10 +328,10 @@ public class QueryTableAggregationTest {
                 incrementalByEvalNugget(controlSize8, merged, "TimeCol"),
                 incrementalByEvalNugget(controlShiftByProbing, merged, "TimeCol"),
                 incrementalByEvalNugget(controlSize8,
-                        (QueryTable) merged.updateView("TimeCol=isNull(TimeCol) ? NULL_LONG : TimeCol.getNanos()"),
+                        (QueryTable) merged.updateView("TimeCol=isNull(TimeCol) ? NULL_LONG : epochNanos(TimeCol)"),
                         "TimeCol"),
                 incrementalByEvalNugget(
-                        (QueryTable) merged.updateView("TimeCol=isNull(TimeCol) ? NULL_LONG : TimeCol.getNanos()"),
+                        (QueryTable) merged.updateView("TimeCol=isNull(TimeCol) ? NULL_LONG : epochNanos(TimeCol)"),
                         "TimeCol"),
 
                 incrementalByEvalNugget(controlSize8, merged, "StrCol", "IntCol"),
@@ -338,41 +345,42 @@ public class QueryTableAggregationTest {
                 }
         };
 
-        UpdateGraphProcessor.DEFAULT.runWithinUnitTestCycle(() -> {
+        final ControlledUpdateGraph updateGraph = ExecutionContext.getContext().getUpdateGraph().cast();
+        updateGraph.runWithinUnitTestCycle(() -> {
             inputs[0].getRowSet().writableCast().insertRange(mergeChunkMultiple, 2 * mergeChunkMultiple - 1);
             inputs[0].notifyListeners(RowSetFactory.fromRange(mergeChunkMultiple, 2 * mergeChunkMultiple - 1), i(),
                     i());
         });
         validate(ens);
 
-        UpdateGraphProcessor.DEFAULT.runWithinUnitTestCycle(() -> {
+        updateGraph.runWithinUnitTestCycle(() -> {
             inputs[1].getRowSet().writableCast().removeRange(mergeChunkMultiple - 1_000, mergeChunkMultiple - 1);
             inputs[1].notifyListeners(i(), RowSetFactory.fromRange(mergeChunkMultiple - 1_000, mergeChunkMultiple - 1),
                     i());
         });
         validate(ens);
 
-        UpdateGraphProcessor.DEFAULT.runWithinUnitTestCycle(() -> {
+        updateGraph.runWithinUnitTestCycle(() -> {
             inputs[2].getRowSet().writableCast().insertRange(mergeChunkMultiple, 2 * mergeChunkMultiple - 1);
             inputs[2].notifyListeners(RowSetFactory.fromRange(mergeChunkMultiple, 2 * mergeChunkMultiple - 1), i(),
                     i());
         });
         validate(ens);
 
-        UpdateGraphProcessor.DEFAULT.runWithinUnitTestCycle(() -> {
+        updateGraph.runWithinUnitTestCycle(() -> {
             inputs[0].getRowSet().writableCast().removeRange(mergeChunkMultiple, 2 * mergeChunkMultiple - 1);
             inputs[0].notifyListeners(i(), RowSetFactory.fromRange(mergeChunkMultiple, 2 * mergeChunkMultiple - 1),
                     i());
         });
         validate(ens);
 
-        UpdateGraphProcessor.DEFAULT.runWithinUnitTestCycle(() -> {
+        updateGraph.runWithinUnitTestCycle(() -> {
             inputs[0].getRowSet().writableCast().removeRange(0, mergeChunkMultiple - 1);
             inputs[0].notifyListeners(i(), RowSetFactory.fromRange(0, mergeChunkMultiple - 1), i());
         });
         validate(ens);
 
-        UpdateGraphProcessor.DEFAULT.runWithinUnitTestCycle(() -> {
+        updateGraph.runWithinUnitTestCycle(() -> {
             inputs[4].getModifiedColumnSetForUpdates().clear();
             inputs[4].getModifiedColumnSetForUpdates().setAll("StrCol");
             inputs[4].notifyListeners(new TableUpdateImpl(i(), i(), RowSetFactory.fromRange(0, mergeChunkMultiple / 2),
@@ -380,7 +388,7 @@ public class QueryTableAggregationTest {
         });
         validate(ens);
 
-        UpdateGraphProcessor.DEFAULT.runWithinUnitTestCycle(() -> {
+        updateGraph.runWithinUnitTestCycle(() -> {
             inputs[4].getModifiedColumnSetForUpdates().clear();
             inputs[4].getModifiedColumnSetForUpdates().setAll("IntCol");
             inputs[4].notifyListeners(new TableUpdateImpl(i(), i(), RowSetFactory.fromRange(0, mergeChunkMultiple / 2),
@@ -388,7 +396,7 @@ public class QueryTableAggregationTest {
         });
         validate(ens);
 
-        UpdateGraphProcessor.DEFAULT.runWithinUnitTestCycle(() -> {
+        updateGraph.runWithinUnitTestCycle(() -> {
             inputs[4].getModifiedColumnSetForUpdates().clear();
             inputs[4].getModifiedColumnSetForUpdates().setAll("TimeCol");
             inputs[4].notifyListeners(new TableUpdateImpl(i(), i(), RowSetFactory.fromRange(0, mergeChunkMultiple / 2),
@@ -418,43 +426,44 @@ public class QueryTableAggregationTest {
                 }
         };
 
-        UpdateGraphProcessor.DEFAULT.runWithinUnitTestCycle(() -> {
+        final ControlledUpdateGraph updateGraph = ExecutionContext.getContext().getUpdateGraph().cast();
+        updateGraph.runWithinUnitTestCycle(() -> {
             input1.getRowSet().writableCast().removeRange(50, 99);
             input1.notifyListeners(i(), RowSetFactory.fromRange(50, 99), i());
         });
         validate(ens);
 
-        UpdateGraphProcessor.DEFAULT.runWithinUnitTestCycle(() -> {
+        updateGraph.runWithinUnitTestCycle(() -> {
             input1.getRowSet().writableCast().removeRange(0, 49);
             input1.notifyListeners(i(), RowSetFactory.fromRange(0, 49), i());
         });
         validate(ens);
 
-        UpdateGraphProcessor.DEFAULT.runWithinUnitTestCycle(() -> {
+        updateGraph.runWithinUnitTestCycle(() -> {
             input2.getRowSet().writableCast().insertRange(0, 49);
             input2.notifyListeners(RowSetFactory.fromRange(0, 49), i(), i());
         });
         validate(ens);
 
-        UpdateGraphProcessor.DEFAULT.runWithinUnitTestCycle(() -> {
+        updateGraph.runWithinUnitTestCycle(() -> {
             input2.getRowSet().writableCast().insertRange(50, 99);
             input2.notifyListeners(RowSetFactory.fromRange(50, 99), i(), i());
         });
         validate(ens);
 
-        UpdateGraphProcessor.DEFAULT.runWithinUnitTestCycle(() -> {
+        updateGraph.runWithinUnitTestCycle(() -> {
             input2.notifyListeners(new TableUpdateImpl(i(0, 1), i(0, 1), i(), RowSetShiftData.EMPTY,
                     ModifiedColumnSet.EMPTY));
         });
         validate(ens);
 
-        UpdateGraphProcessor.DEFAULT.runWithinUnitTestCycle(() -> {
+        updateGraph.runWithinUnitTestCycle(() -> {
             input2.notifyListeners(
                     new TableUpdateImpl(i(), i(), i(2, 3), RowSetShiftData.EMPTY, ModifiedColumnSet.ALL));
         });
         validate(ens);
 
-        UpdateGraphProcessor.DEFAULT.runWithinUnitTestCycle(() -> {
+        updateGraph.runWithinUnitTestCycle(() -> {
             input2.notifyListeners(
                     new TableUpdateImpl(i(), i(), i(), RowSetShiftData.EMPTY, ModifiedColumnSet.EMPTY));
         });
@@ -491,8 +500,9 @@ public class QueryTableAggregationTest {
         TestCase.assertEquals(2, table.groupBy("S").numColumns());
         TestCase.assertEquals(String.class, table.groupBy("S").getDefinition().getColumn("S").getDataType());
         TestCase.assertEquals(IntVector.class, table.groupBy("S").getDefinition().getColumn("I").getDataType());
-        TestCase.assertEquals(Arrays.asList("c", "e", "g"), Arrays.asList(table.groupBy("S").getColumn("S").get(0, 3)));
-        IntVector[] intGroups = (IntVector[]) table.groupBy("S").getColumn("I").getDirect();
+        TestCase.assertEquals(Arrays.asList("c", "e", "g"),
+                Arrays.asList(DataAccessHelpers.getColumn(table.groupBy("S"), "S").get(0, 3)));
+        IntVector[] intGroups = (IntVector[]) DataAccessHelpers.getColumn(table.groupBy("S"), "I").getDirect();
         TestCase.assertEquals(3, intGroups.length);
         TestCase.assertEquals(1, intGroups[0].size());
         TestCase.assertEquals(1, intGroups[1].size());
@@ -509,8 +519,9 @@ public class QueryTableAggregationTest {
         TestCase.assertEquals(2, table.groupBy("S").numColumns());
         TestCase.assertEquals(String.class, table.groupBy("S").getDefinition().getColumn("S").getDataType());
         TestCase.assertEquals(IntVector.class, table.groupBy("S").getDefinition().getColumn("I").getDataType());
-        TestCase.assertEquals(Arrays.asList("e", "c", "g"), Arrays.asList(table.groupBy("S").getColumn("S").get(0, 3)));
-        intGroups = (IntVector[]) table.groupBy("S").getColumn("I").getDirect();
+        TestCase.assertEquals(Arrays.asList("e", "c", "g"),
+                Arrays.asList(DataAccessHelpers.getColumn(table.groupBy("S"), "S").get(0, 3)));
+        intGroups = (IntVector[]) DataAccessHelpers.getColumn(table.groupBy("S"), "I").getDirect();
         TestCase.assertEquals(3, intGroups.length);
         TestCase.assertEquals(1, intGroups[0].size());
         TestCase.assertEquals(1, intGroups[1].size());
@@ -534,7 +545,8 @@ public class QueryTableAggregationTest {
         TestCase.assertEquals(int.class,
                 table.updateView("Z=X+Y").groupBy("Z").getDefinition().getColumn("Z").getDataType());
         ObjectVector<?>[] sValues =
-                (ObjectVector<?>[]) table.updateView("Z=X+Y").groupBy("Z").getColumn("S").getDirect();
+                (ObjectVector<?>[]) DataAccessHelpers.getColumn(table.updateView("Z=X+Y").groupBy("Z"), "S")
+                        .getDirect();
         TestCase.assertEquals(3, sValues.length);
         TestCase.assertEquals(1, sValues[0].size());
         TestCase.assertEquals(1, sValues[1].size());
@@ -543,7 +555,7 @@ public class QueryTableAggregationTest {
         TestCase.assertEquals("c", sValues[1].get(0));
         TestCase.assertEquals("g", sValues[2].get(0));
         TestCase.assertEquals(Arrays.asList(5, 4, 9),
-                Arrays.asList(table.updateView("Z=X+Y").groupBy("Z").getColumn("Z").get(0, 3)));
+                Arrays.asList(DataAccessHelpers.getColumn(table.updateView("Z=X+Y").groupBy("Z"), "Z").get(0, 3)));
 
         table = testRefreshingTable(
                 col("S", "e", "c", "g"),
@@ -559,7 +571,8 @@ public class QueryTableAggregationTest {
                 table.updateView("Z=X+Y").groupBy("Z").getDefinition().getColumn("Y").getDataType());
         TestCase.assertEquals(int.class,
                 table.updateView("Z=X+Y").groupBy("Z").getDefinition().getColumn("Z").getDataType());
-        sValues = (ObjectVector<?>[]) table.updateView("Z=X+Y").groupBy("Z").getColumn("S").getDirect();
+        sValues = (ObjectVector<?>[]) DataAccessHelpers.getColumn(table.updateView("Z=X+Y").groupBy("Z"), "S")
+                .getDirect();
         TestCase.assertEquals(2, sValues.length);
         TestCase.assertEquals(2, sValues[0].size());
         TestCase.assertEquals(1, sValues[1].size());
@@ -567,7 +580,7 @@ public class QueryTableAggregationTest {
         TestCase.assertEquals("c", sValues[1].get(0));
         TestCase.assertEquals("g", sValues[0].get(1));
         TestCase.assertEquals(Arrays.asList(8, 4),
-                Arrays.asList(table.updateView("Z=X+Y").groupBy("Z").getColumn("Z").get(0, 2)));
+                Arrays.asList(DataAccessHelpers.getColumn(table.updateView("Z=X+Y").groupBy("Z"), "Z").get(0, 2)));
 
         table = testRefreshingTable(
                 col("S", "e", "c", "g"),
@@ -583,7 +596,8 @@ public class QueryTableAggregationTest {
                 table.updateView("Z=X+Y").groupBy("Z").getDefinition().getColumn("Y").getDataType());
         TestCase.assertEquals(int.class,
                 table.updateView("Z=X+Y").groupBy("Z").getDefinition().getColumn("Z").getDataType());
-        sValues = (ObjectVector<?>[]) table.updateView("Z=X+Y").groupBy("Z").getColumn("S").getDirect();
+        sValues = (ObjectVector<?>[]) DataAccessHelpers.getColumn(table.updateView("Z=X+Y").groupBy("Z"), "S")
+                .getDirect();
         TestCase.assertEquals(2, sValues.length);
         TestCase.assertEquals(2, sValues[0].size());
         TestCase.assertEquals(1, sValues[1].size());
@@ -591,7 +605,7 @@ public class QueryTableAggregationTest {
         TestCase.assertEquals("c", sValues[1].get(0));
         TestCase.assertEquals("g", sValues[0].get(1));
         TestCase.assertEquals(Arrays.asList(8, 4),
-                Arrays.asList(table.updateView("Z=X+Y").groupBy("Z").getColumn("Z").get(0, 2)));
+                Arrays.asList(DataAccessHelpers.getColumn(table.updateView("Z=X+Y").groupBy("Z"), "Z").get(0, 2)));
 
         table = testRefreshingTable(
                 col("S", "e", "c", "g"),
@@ -607,7 +621,8 @@ public class QueryTableAggregationTest {
                 table.updateView("Z=X+Y").groupBy("Z").getDefinition().getColumn("Y").getDataType());
         TestCase.assertEquals(int.class,
                 table.updateView("Z=X+Y").groupBy("Z").getDefinition().getColumn("Z").getDataType());
-        sValues = (ObjectVector<?>[]) table.updateView("Z=X+Y").groupBy("Z").getColumn("S").getDirect();
+        sValues = (ObjectVector<?>[]) DataAccessHelpers.getColumn(table.updateView("Z=X+Y").groupBy("Z"), "S")
+                .getDirect();
         TestCase.assertEquals(2, sValues.length);
         TestCase.assertEquals(2, sValues[0].size());
         TestCase.assertEquals(1, sValues[1].size());
@@ -615,7 +630,7 @@ public class QueryTableAggregationTest {
         TestCase.assertEquals("c", sValues[1].get(0));
         TestCase.assertEquals("g", sValues[0].get(1));
         TestCase.assertEquals(Arrays.asList(8, 4),
-                Arrays.asList(table.updateView("Z=X+Y").groupBy("Z").getColumn("Z").get(0, 2)));
+                Arrays.asList(DataAccessHelpers.getColumn(table.updateView("Z=X+Y").groupBy("Z"), "Z").get(0, 2)));
 
         table = testRefreshingTable(
                 col("S", "e", "c", "g"),
@@ -631,7 +646,8 @@ public class QueryTableAggregationTest {
                 table.updateView("Z=X+Y").groupBy("Z").getDefinition().getColumn("Y").getDataType());
         TestCase.assertEquals(int.class,
                 table.updateView("Z=X+Y").groupBy("Z").getDefinition().getColumn("Z").getDataType());
-        sValues = (ObjectVector<?>[]) table.updateView("Z=X+Y").groupBy("Z").getColumn("S").getDirect();
+        sValues = (ObjectVector<?>[]) DataAccessHelpers.getColumn(table.updateView("Z=X+Y").groupBy("Z"), "S")
+                .getDirect();
         TestCase.assertEquals(2, sValues.length);
         TestCase.assertEquals(2, sValues[0].size());
         TestCase.assertEquals(1, sValues[1].size());
@@ -639,7 +655,7 @@ public class QueryTableAggregationTest {
         TestCase.assertEquals("c", sValues[1].get(0));
         TestCase.assertEquals("g", sValues[0].get(1));
         TestCase.assertEquals(Arrays.asList(8, 5),
-                Arrays.asList(table.updateView("Z=X+Y").groupBy("Z").getColumn("Z").get(0, 2)));
+                Arrays.asList(DataAccessHelpers.getColumn(table.updateView("Z=X+Y").groupBy("Z"), "Z").get(0, 2)));
 
         table = testRefreshingTable(
                 col("S", "c", null, "g"),
@@ -650,8 +666,8 @@ public class QueryTableAggregationTest {
         TestCase.assertEquals(String.class, table.groupBy("S").getDefinition().getColumn("S").getDataType());
         TestCase.assertEquals(IntVector.class, table.groupBy("S").getDefinition().getColumn("I").getDataType());
         TestCase.assertEquals(Arrays.asList("c", null, "g"),
-                Arrays.asList(table.groupBy("S").getColumn("S").get(0, 3)));
-        intGroups = (IntVector[]) table.groupBy("S").getColumn("I").getDirect();
+                Arrays.asList(DataAccessHelpers.getColumn(table.groupBy("S"), "S").get(0, 3)));
+        intGroups = (IntVector[]) DataAccessHelpers.getColumn(table.groupBy("S"), "I").getDirect();
         TestCase.assertEquals(3, intGroups.length);
         TestCase.assertEquals(1, intGroups[0].size());
         TestCase.assertEquals(1, intGroups[1].size());
@@ -726,7 +742,8 @@ public class QueryTableAggregationTest {
                         return tableGrouped.lastBy("Sym");
                     }
                 }};
-        UpdateGraphProcessor.DEFAULT.runWithinUnitTestCycle(() -> {
+        final ControlledUpdateGraph updateGraph = ExecutionContext.getContext().getUpdateGraph().cast();
+        updateGraph.runWithinUnitTestCycle(() -> {
             addToTable(queryTable, i(7, 9), col("Sym", "aa", "aa"), col("intCol", 20, 10), col("doubleCol", 2.1, 2.2));
             queryTable.notifyListeners(i(7, 9), i(), i());
         });
@@ -858,8 +875,8 @@ public class QueryTableAggregationTest {
                         new String[] {"Sym", "Date", "intCol", "doubleCol", "BooleanCol", "ByteCol", "CharCol",
                                 "ShortCol", "FloatCol", "LongCol", "BigDecimalCol", "NonKey"},
                         new SetGenerator<>("aa", "bb", "bc", "cc", "dd"),
-                        new UnsortedDateTimeLongGenerator(DateTimeUtils.convertDateTime("2018-10-15T09:30:00 NY"),
-                                DateTimeUtils.convertDateTime("2018-10-15T16:00:00 NY")),
+                        new UnsortedInstantLongGenerator(DateTimeUtils.parseInstant("2018-10-15T09:30:00 NY"),
+                                DateTimeUtils.parseInstant("2018-10-15T16:00:00 NY")),
                         new IntGenerator(0, 100),
                         new DoubleGenerator(0, 100),
                         new BooleanGenerator(),
@@ -906,7 +923,8 @@ public class QueryTableAggregationTest {
                 },
         };
         validate(en);
-        UpdateGraphProcessor.DEFAULT.runWithinUnitTestCycle(() -> {
+        final ControlledUpdateGraph updateGraph = ExecutionContext.getContext().getUpdateGraph().cast();
+        updateGraph.runWithinUnitTestCycle(() -> {
             addToTable(queryTable, i(7, 9),
                     col("Sym", "aa", "bc"),
                     col("USym", "a", "b"),
@@ -932,14 +950,14 @@ public class QueryTableAggregationTest {
         final Table expected = newTable(col("USym", "a", "b"), intCol("intCol", 40, 60));
         assertTableEquals(expected, lastBy);
 
-        UpdateGraphProcessor.DEFAULT.startCycleForUnitTests();
+        ExecutionContext.getContext().getUpdateGraph().<ControlledUpdateGraph>cast().startCycleForUnitTests();
 
         addToTable(queryTable, i(7, 9),
                 col("USym", "a", "b"),
                 col("intCol", 70, 90));
 
         queryTable.notifyListeners(i(7, 9), i(), i());
-        UpdateGraphProcessor.DEFAULT.completeCycleForUnitTests();
+        ExecutionContext.getContext().getUpdateGraph().<ControlledUpdateGraph>cast().completeCycleForUnitTests();
 
         final Table expected2 = newTable(col("USym", "a", "b"), intCol("intCol", 70, 90));
 
@@ -1037,25 +1055,26 @@ public class QueryTableAggregationTest {
                     }
                 }
         };
-        UpdateGraphProcessor.DEFAULT.runWithinUnitTestCycle(() -> {
+        final ControlledUpdateGraph updateGraph = ExecutionContext.getContext().getUpdateGraph().cast();
+        updateGraph.runWithinUnitTestCycle(() -> {
             addToTable(queryTable, i(7, 9), col("Sym", "aa", "aa"), col("intCol", 20, 10), col("doubleCol", 2.1, 2.2));
             queryTable.notifyListeners(i(7, 9), i(), i());
         });
 
         validate(en);
-        UpdateGraphProcessor.DEFAULT.runWithinUnitTestCycle(() -> {
+        updateGraph.runWithinUnitTestCycle(() -> {
             addToTable(queryTable, i(7, 9), col("Sym", "bc", "bc"), col("intCol", 21, 11), col("doubleCol", 2.2, 2.3));
             queryTable.notifyListeners(i(), i(), i(7, 9));
         });
         validate(en);
 
-        UpdateGraphProcessor.DEFAULT.runWithinUnitTestCycle(() -> {
+        updateGraph.runWithinUnitTestCycle(() -> {
             addToTable(queryTable, i(7, 9), col("Sym", "aa", "bc"), col("intCol", 20, 15), col("doubleCol", 2.1, 2.3));
             queryTable.notifyListeners(i(), i(), i(7, 9));
         });
         validate(en);
 
-        UpdateGraphProcessor.DEFAULT.runWithinUnitTestCycle(() -> {
+        updateGraph.runWithinUnitTestCycle(() -> {
             addToTable(queryTable, i(7, 9), col("Sym", "aa", "bc"), col("intCol", 20, 15),
                     col("doubleCol", Double.NEGATIVE_INFINITY,
                             Double.POSITIVE_INFINITY));
@@ -1063,20 +1082,20 @@ public class QueryTableAggregationTest {
         });
         validate(en);
 
-        UpdateGraphProcessor.DEFAULT.runWithinUnitTestCycle(() -> {
+        updateGraph.runWithinUnitTestCycle(() -> {
             addToTable(queryTable, i(7, 9), col("Sym", "aa", "bc"), col("intCol", 20, 15),
                     col("doubleCol", Double.POSITIVE_INFINITY, Double.NaN));
             queryTable.notifyListeners(i(), i(), i(7, 9));
         });
         validate(en);
 
-        UpdateGraphProcessor.DEFAULT.runWithinUnitTestCycle(() -> {
+        updateGraph.runWithinUnitTestCycle(() -> {
             addToTable(queryTable, i(7, 9), col("Sym", "aa", "bc"), col("intCol", 20, 15), col("doubleCol", 1.2, 2.2));
             queryTable.notifyListeners(i(), i(), i(7, 9));
         });
         validate(en);
 
-        UpdateGraphProcessor.DEFAULT.runWithinUnitTestCycle(() -> {
+        updateGraph.runWithinUnitTestCycle(() -> {
             removeRows(queryTable, i(2, 9));
             queryTable.notifyListeners(i(), i(2, 9), i());
         });
@@ -1185,9 +1204,12 @@ public class QueryTableAggregationTest {
         TestCase.assertEquals(result.getDefinition().getColumns().get(1).getName(), "intCol");
         TestCase.assertEquals(result.getDefinition().getColumns().get(2).getName(), "doubleCol");
         TestCase.assertEquals(result.size(), 2);
-        TestCase.assertEquals(Arrays.asList("aa", "bc"), Arrays.asList(result.getColumn("Sym").get(0, 2)));
-        TestCase.assertEquals(Arrays.asList(30.0, 20.0), Arrays.asList(result.getColumn("intCol").get(0, 2)));
-        TestCase.assertEquals(Arrays.asList(0.3, .2), Arrays.asList(result.getColumn("doubleCol").get(0, 2)));
+        TestCase.assertEquals(Arrays.asList("aa", "bc"),
+                Arrays.asList(DataAccessHelpers.getColumn(result, "Sym").get(0, 2)));
+        TestCase.assertEquals(Arrays.asList(30.0, 20.0),
+                Arrays.asList(DataAccessHelpers.getColumn(result, "intCol").get(0, 2)));
+        TestCase.assertEquals(Arrays.asList(0.3, .2),
+                Arrays.asList(DataAccessHelpers.getColumn(result, "doubleCol").get(0, 2)));
 
         result = table.sumBy("Sym");
         TestCase.assertEquals(3, result.numColumns());
@@ -1195,9 +1217,12 @@ public class QueryTableAggregationTest {
         TestCase.assertEquals(result.getDefinition().getColumns().get(1).getName(), "intCol");
         TestCase.assertEquals(result.getDefinition().getColumns().get(2).getName(), "doubleCol");
         TestCase.assertEquals(result.size(), 2);
-        TestCase.assertEquals(Arrays.asList("aa", "bc"), Arrays.asList(result.getColumn("Sym").get(0, 2)));
-        TestCase.assertEquals(Arrays.asList(90L, 20L), Arrays.asList(result.getColumn("intCol").get(0, 2)));
-        TestCase.assertEquals(Arrays.asList(0.9, 0.2), Arrays.asList(result.getColumn("doubleCol").get(0, 2)));
+        TestCase.assertEquals(Arrays.asList("aa", "bc"),
+                Arrays.asList(DataAccessHelpers.getColumn(result, "Sym").get(0, 2)));
+        TestCase.assertEquals(Arrays.asList(90L, 20L),
+                Arrays.asList(DataAccessHelpers.getColumn(result, "intCol").get(0, 2)));
+        TestCase.assertEquals(Arrays.asList(0.9, 0.2),
+                Arrays.asList(DataAccessHelpers.getColumn(result, "doubleCol").get(0, 2)));
 
         result = table.stdBy("Sym");
         TestCase.assertEquals(3, result.numColumns());
@@ -1205,82 +1230,112 @@ public class QueryTableAggregationTest {
         TestCase.assertEquals(result.getDefinition().getColumns().get(1).getName(), "intCol");
         TestCase.assertEquals(result.getDefinition().getColumns().get(2).getName(), "doubleCol");
         TestCase.assertEquals(result.size(), 2);
-        TestCase.assertEquals(Arrays.asList("aa", "bc"), Arrays.asList(result.getColumn("Sym").get(0, 2)));
-        TestCase.assertEquals(Arrays.asList(20.0, Double.NaN), Arrays.asList(result.getColumn("intCol").get(0, 2)));
+        TestCase.assertEquals(Arrays.asList("aa", "bc"),
+                Arrays.asList(DataAccessHelpers.getColumn(result, "Sym").get(0, 2)));
+        TestCase.assertEquals(Arrays.asList(20.0, Double.NaN),
+                Arrays.asList(DataAccessHelpers.getColumn(result, "intCol").get(0, 2)));
         TestCase.assertEquals(Arrays.asList(0.19999999999999996, Double.NaN),
-                Arrays.asList(result.getColumn("doubleCol").get(0, 2)));
+                Arrays.asList(DataAccessHelpers.getColumn(result, "doubleCol").get(0, 2)));
 
         result = table.minBy("Sym");
         TestCase.assertEquals(result.size(), 2);
-        TestCase.assertEquals(Arrays.asList(10, 20), Arrays.asList(result.getColumn("intCol").get(0, 2)));
-        TestCase.assertEquals(Arrays.asList(0.1, .2), Arrays.asList(result.getColumn("doubleCol").get(0, 2)));
+        TestCase.assertEquals(Arrays.asList(10, 20),
+                Arrays.asList(DataAccessHelpers.getColumn(result, "intCol").get(0, 2)));
+        TestCase.assertEquals(Arrays.asList(0.1, .2),
+                Arrays.asList(DataAccessHelpers.getColumn(result, "doubleCol").get(0, 2)));
 
         result = table.maxBy("Sym");
         TestCase.assertEquals(result.size(), 2);
-        TestCase.assertEquals(Arrays.asList(50, 20), Arrays.asList(result.getColumn("intCol").get(0, 2)));
-        TestCase.assertEquals(Arrays.asList(0.5, .2), Arrays.asList(result.getColumn("doubleCol").get(0, 2)));
+        TestCase.assertEquals(Arrays.asList(50, 20),
+                Arrays.asList(DataAccessHelpers.getColumn(result, "intCol").get(0, 2)));
+        TestCase.assertEquals(Arrays.asList(0.5, .2),
+                Arrays.asList(DataAccessHelpers.getColumn(result, "doubleCol").get(0, 2)));
 
         result = table.varBy("Sym");
         TestCase.assertEquals(result.size(), 2);
-        TestCase.assertEquals(Arrays.asList(400.0, Double.NaN), Arrays.asList(result.getColumn("intCol").get(0, 2)));
+        TestCase.assertEquals(Arrays.asList(400.0, Double.NaN),
+                Arrays.asList(DataAccessHelpers.getColumn(result, "intCol").get(0, 2)));
         TestCase.assertEquals(Arrays.asList(0.03999999999999998, Double.NaN),
-                Arrays.asList(result.getColumn("doubleCol").get(0, 2)));
+                Arrays.asList(DataAccessHelpers.getColumn(result, "doubleCol").get(0, 2)));
 
         result = table.lastBy("Sym");
         TestCase.assertEquals(result.size(), 2);
-        TestCase.assertEquals(Arrays.asList(50, 20), Arrays.asList(result.getColumn("intCol").get(0, 2)));
-        TestCase.assertEquals(Arrays.asList(.5, .2), Arrays.asList(result.getColumn("doubleCol").get(0, 2)));
-        TestCase.assertEquals(Arrays.asList("aa", "bc"), Arrays.asList(result.getColumn("Sym").get(0, 2)));
+        TestCase.assertEquals(Arrays.asList(50, 20),
+                Arrays.asList(DataAccessHelpers.getColumn(result, "intCol").get(0, 2)));
+        TestCase.assertEquals(Arrays.asList(.5, .2),
+                Arrays.asList(DataAccessHelpers.getColumn(result, "doubleCol").get(0, 2)));
+        TestCase.assertEquals(Arrays.asList("aa", "bc"),
+                Arrays.asList(DataAccessHelpers.getColumn(result, "Sym").get(0, 2)));
 
         result = table.updateView("Sym1=Sym").lastBy("Sym", "Sym1");
         TestCase.assertEquals(result.size(), 2);
-        TestCase.assertEquals(Arrays.asList(50, 20), Arrays.asList(result.getColumn("intCol").get(0, 2)));
-        TestCase.assertEquals(Arrays.asList(.5, .2), Arrays.asList(result.getColumn("doubleCol").get(0, 2)));
-        TestCase.assertEquals(Arrays.asList("aa", "bc"), Arrays.asList(result.getColumn("Sym").get(0, 2)));
+        TestCase.assertEquals(Arrays.asList(50, 20),
+                Arrays.asList(DataAccessHelpers.getColumn(result, "intCol").get(0, 2)));
+        TestCase.assertEquals(Arrays.asList(.5, .2),
+                Arrays.asList(DataAccessHelpers.getColumn(result, "doubleCol").get(0, 2)));
+        TestCase.assertEquals(Arrays.asList("aa", "bc"),
+                Arrays.asList(DataAccessHelpers.getColumn(result, "Sym").get(0, 2)));
 
         result = table.updateView("Sym1=Sym").lastBy("intCol", "Sym1");
         TestCase.assertEquals(result.size(), 4);
-        TestCase.assertEquals(Arrays.asList(10, 20, 30, 50), Arrays.asList(result.getColumn("intCol").get(0, 4)));
+        TestCase.assertEquals(Arrays.asList(10, 20, 30, 50),
+                Arrays.asList(DataAccessHelpers.getColumn(result, "intCol").get(0, 4)));
         TestCase.assertEquals(Arrays.asList(0.1, 0.2, 0.3, 0.5),
-                Arrays.asList(result.getColumn("doubleCol").get(0, 4)));
-        TestCase.assertEquals(Arrays.asList("aa", "bc", "aa", "aa"), Arrays.asList(result.getColumn("Sym").get(0, 4)));
-        TestCase.assertEquals(Arrays.asList("aa", "bc", "aa", "aa"), Arrays.asList(result.getColumn("Sym1").get(0, 4)));
+                Arrays.asList(DataAccessHelpers.getColumn(result, "doubleCol").get(0, 4)));
+        TestCase.assertEquals(Arrays.asList("aa", "bc", "aa", "aa"),
+                Arrays.asList(DataAccessHelpers.getColumn(result, "Sym").get(0, 4)));
+        TestCase.assertEquals(Arrays.asList("aa", "bc", "aa", "aa"),
+                Arrays.asList(DataAccessHelpers.getColumn(result, "Sym1").get(0, 4)));
 
         result = table.firstBy("Sym");
         TestCase.assertEquals(result.size(), 2);
-        TestCase.assertEquals(Arrays.asList(10, 20), Arrays.asList(result.getColumn("intCol").get(0, 2)));
-        TestCase.assertEquals(Arrays.asList(0.1, .2), Arrays.asList(result.getColumn("doubleCol").get(0, 2)));
+        TestCase.assertEquals(Arrays.asList(10, 20),
+                Arrays.asList(DataAccessHelpers.getColumn(result, "intCol").get(0, 2)));
+        TestCase.assertEquals(Arrays.asList(0.1, .2),
+                Arrays.asList(DataAccessHelpers.getColumn(result, "doubleCol").get(0, 2)));
 
         result = table.updateView("Sym1=Sym").firstBy("Sym", "Sym1");
         TestCase.assertEquals(result.size(), 2);
-        TestCase.assertEquals(Arrays.asList(10, 20), Arrays.asList(result.getColumn("intCol").get(0, 2)));
-        TestCase.assertEquals(Arrays.asList(0.1, .2), Arrays.asList(result.getColumn("doubleCol").get(0, 2)));
-        TestCase.assertEquals(Arrays.asList("aa", "bc"), Arrays.asList(result.getColumn("Sym").get(0, 2)));
+        TestCase.assertEquals(Arrays.asList(10, 20),
+                Arrays.asList(DataAccessHelpers.getColumn(result, "intCol").get(0, 2)));
+        TestCase.assertEquals(Arrays.asList(0.1, .2),
+                Arrays.asList(DataAccessHelpers.getColumn(result, "doubleCol").get(0, 2)));
+        TestCase.assertEquals(Arrays.asList("aa", "bc"),
+                Arrays.asList(DataAccessHelpers.getColumn(result, "Sym").get(0, 2)));
 
         result = table.updateView("Sym1=Sym").firstBy("intCol", "Sym1");
         TestCase.assertEquals(result.size(), 4);
-        TestCase.assertEquals(Arrays.asList(10, 20, 30, 50), Arrays.asList(result.getColumn("intCol").get(0, 4)));
+        TestCase.assertEquals(Arrays.asList(10, 20, 30, 50),
+                Arrays.asList(DataAccessHelpers.getColumn(result, "intCol").get(0, 4)));
         TestCase.assertEquals(Arrays.asList(0.1, 0.2, 0.3, 0.5),
-                Arrays.asList(result.getColumn("doubleCol").get(0, 4)));
-        TestCase.assertEquals(Arrays.asList("aa", "bc", "aa", "aa"), Arrays.asList(result.getColumn("Sym").get(0, 4)));
-        TestCase.assertEquals(Arrays.asList("aa", "bc", "aa", "aa"), Arrays.asList(result.getColumn("Sym1").get(0, 4)));
+                Arrays.asList(DataAccessHelpers.getColumn(result, "doubleCol").get(0, 4)));
+        TestCase.assertEquals(Arrays.asList("aa", "bc", "aa", "aa"),
+                Arrays.asList(DataAccessHelpers.getColumn(result, "Sym").get(0, 4)));
+        TestCase.assertEquals(Arrays.asList("aa", "bc", "aa", "aa"),
+                Arrays.asList(DataAccessHelpers.getColumn(result, "Sym1").get(0, 4)));
 
         result = table.view("intCol").avgBy();
         TestCase.assertEquals(result.size(), 1);
         TestCase.assertEquals(1, result.numColumns());
         TestCase.assertEquals(result.getDefinition().getColumns().get(0).getName(), "intCol");
-        TestCase.assertEquals(Collections.singletonList(27.5), Arrays.asList(result.getColumn("intCol").get(0, 1)));
+        TestCase.assertEquals(Collections.singletonList(27.5),
+                Arrays.asList(DataAccessHelpers.getColumn(result, "intCol").get(0, 1)));
 
         result = table.lastBy("Sym");
         TestCase.assertEquals(result.size(), 2);
-        TestCase.assertEquals(Arrays.asList(50, 20), Arrays.asList(result.getColumn("intCol").get(0, 2)));
-        TestCase.assertEquals(Arrays.asList(.5, .2), Arrays.asList(result.getColumn("doubleCol").get(0, 2)));
-        TestCase.assertEquals(Arrays.asList("aa", "bc"), Arrays.asList(result.getColumn("Sym").get(0, 2)));
+        TestCase.assertEquals(Arrays.asList(50, 20),
+                Arrays.asList(DataAccessHelpers.getColumn(result, "intCol").get(0, 2)));
+        TestCase.assertEquals(Arrays.asList(.5, .2),
+                Arrays.asList(DataAccessHelpers.getColumn(result, "doubleCol").get(0, 2)));
+        TestCase.assertEquals(Arrays.asList("aa", "bc"),
+                Arrays.asList(DataAccessHelpers.getColumn(result, "Sym").get(0, 2)));
 
         result = table.firstBy("Sym");
         TestCase.assertEquals(result.size(), 2);
-        TestCase.assertEquals(Arrays.asList(10, 20), Arrays.asList(result.getColumn("intCol").get(0, 2)));
-        TestCase.assertEquals(Arrays.asList(0.1, .2), Arrays.asList(result.getColumn("doubleCol").get(0, 2)));
+        TestCase.assertEquals(Arrays.asList(10, 20),
+                Arrays.asList(DataAccessHelpers.getColumn(result, "intCol").get(0, 2)));
+        TestCase.assertEquals(Arrays.asList(0.1, .2),
+                Arrays.asList(DataAccessHelpers.getColumn(result, "doubleCol").get(0, 2)));
     }
 
 
@@ -1392,8 +1447,8 @@ public class QueryTableAggregationTest {
                 new BooleanGenerator(0.5, 0.1),
                 new BigIntegerGenerator(0.1),
                 new BigDecimalGenerator(0.1),
-                new UnsortedDateTimeGenerator(DateTimeUtils.convertDateTime("2019-12-17T00:00:00 NY"),
-                        DateTimeUtils.convertDateTime("2019-12-17T23:59:59 NY"), 0.1),
+                new UnsortedInstantGenerator(DateTimeUtils.parseInstant("2019-12-17T00:00:00 NY"),
+                        DateTimeUtils.parseInstant("2019-12-17T23:59:59 NY"), 0.1),
                 new BooleanGenerator(0.4, 0.1)));
 
         if (RefreshingTableTestCase.printTableUpdates) {
@@ -1695,85 +1750,86 @@ public class QueryTableAggregationTest {
         final Table result = table.absSumBy();
         TableTools.show(result);
         TestCase.assertEquals(1, result.size());
-        BigInteger absSum = (BigInteger) result.getColumn("BigI").get(0);
-        double absSumDouble = result.getColumn("DoubleCol").getDouble(0);
+        BigInteger absSum = (BigInteger) DataAccessHelpers.getColumn(result, "BigI").get(0);
+        double absSumDouble = DataAccessHelpers.getColumn(result, "DoubleCol").getDouble(0);
         BigInteger expected = BigInteger.valueOf(6);
         TestCase.assertEquals(expected, absSum);
         TestCase.assertEquals(expected.doubleValue(), absSumDouble);
-        TestCase.assertEquals(NULL_LONG, result.getColumn("BoolCol").getLong(0));
+        TestCase.assertEquals(NULL_LONG, DataAccessHelpers.getColumn(result, "BoolCol").getLong(0));
 
-        UpdateGraphProcessor.DEFAULT.runWithinUnitTestCycle(() -> {
+        final ControlledUpdateGraph updateGraph = ExecutionContext.getContext().getUpdateGraph().cast();
+        updateGraph.runWithinUnitTestCycle(() -> {
             addToTable(table, i(8), col("BigI", BigInteger.valueOf(5)), col("DoubleCol", 5.0),
                     col("BoolCol", true));
             table.notifyListeners(i(8), i(), i());
         });
         show(result);
-        absSum = (BigInteger) result.getColumn("BigI").get(0);
-        absSumDouble = result.getColumn("DoubleCol").getDouble(0);
-        TestCase.assertEquals(1L, result.getColumn("BoolCol").get(0));
+        absSum = (BigInteger) DataAccessHelpers.getColumn(result, "BigI").get(0);
+        absSumDouble = DataAccessHelpers.getColumn(result, "DoubleCol").getDouble(0);
+        TestCase.assertEquals(1L, DataAccessHelpers.getColumn(result, "BoolCol").get(0));
 
         expected = BigInteger.valueOf(11);
         TestCase.assertEquals(expected, absSum);
         TestCase.assertEquals(expected.doubleValue(), absSumDouble);
 
-        UpdateGraphProcessor.DEFAULT.runWithinUnitTestCycle(() -> {
+        updateGraph.runWithinUnitTestCycle(() -> {
             removeRows(table, i(2));
             table.notifyListeners(i(), i(2), i());
         });
         show(result);
-        absSum = (BigInteger) result.getColumn("BigI").get(0);
-        absSumDouble = result.getColumn("DoubleCol").getDouble(0);
+        absSum = (BigInteger) DataAccessHelpers.getColumn(result, "BigI").get(0);
+        absSumDouble = DataAccessHelpers.getColumn(result, "DoubleCol").getDouble(0);
 
         expected = BigInteger.valueOf(10);
         TestCase.assertEquals(expected, absSum);
         TestCase.assertEquals(expected.doubleValue(), absSumDouble);
 
-        UpdateGraphProcessor.DEFAULT.runWithinUnitTestCycle(() -> {
+        updateGraph.runWithinUnitTestCycle(() -> {
             addToTable(table, i(8), col("BigI", BigInteger.valueOf(4)), col("DoubleCol", 4.0),
                     col("BoolCol", false));
             table.notifyListeners(i(), i(), i(8));
         });
         show(result);
-        absSum = (BigInteger) result.getColumn("BigI").get(0);
-        absSumDouble = result.getColumn("DoubleCol").getDouble(0);
-        TestCase.assertEquals(0L, result.getColumn("BoolCol").get(0));
+        absSum = (BigInteger) DataAccessHelpers.getColumn(result, "BigI").get(0);
+        absSumDouble = DataAccessHelpers.getColumn(result, "DoubleCol").getDouble(0);
+        TestCase.assertEquals(0L, DataAccessHelpers.getColumn(result, "BoolCol").get(0));
 
         expected = BigInteger.valueOf(9);
         TestCase.assertEquals(expected, absSum);
         TestCase.assertEquals(expected.doubleValue(), absSumDouble);
 
-        UpdateGraphProcessor.DEFAULT.runWithinUnitTestCycle(() -> {
+        updateGraph.runWithinUnitTestCycle(() -> {
             addToTable(table, i(10), col("BigI", BigInteger.valueOf(0)), col("DoubleCol", Double.NaN),
                     col("BoolCol", true));
             table.notifyListeners(i(10), i(), i());
         });
         show(result);
-        absSum = (BigInteger) result.getColumn("BigI").get(0);
-        absSumDouble = result.getColumn("DoubleCol").getDouble(0);
+        absSum = (BigInteger) DataAccessHelpers.getColumn(result, "BigI").get(0);
+        absSumDouble = DataAccessHelpers.getColumn(result, "DoubleCol").getDouble(0);
 
         TestCase.assertEquals(expected, absSum);
         TestCase.assertEquals(Double.NaN, absSumDouble);
-        TestCase.assertEquals(1L, result.getColumn("BoolCol").getLong(0));
+        TestCase.assertEquals(1L, DataAccessHelpers.getColumn(result, "BoolCol").getLong(0));
 
-        UpdateGraphProcessor.DEFAULT.runWithinUnitTestCycle(() -> {
+        updateGraph.runWithinUnitTestCycle(() -> {
             removeRows(table, i(10));
             table.notifyListeners(i(), i(10), i());
         });
         show(result);
-        absSum = (BigInteger) result.getColumn("BigI").get(0);
-        absSumDouble = result.getColumn("DoubleCol").getDouble(0);
+        absSum = (BigInteger) DataAccessHelpers.getColumn(result, "BigI").get(0);
+        absSumDouble = DataAccessHelpers.getColumn(result, "DoubleCol").getDouble(0);
 
         TestCase.assertEquals(expected, absSum);
         TestCase.assertEquals(expected.doubleValue(), absSumDouble);
-        TestCase.assertEquals(0L, result.getColumn("BoolCol").getLong(0));
+        TestCase.assertEquals(0L, DataAccessHelpers.getColumn(result, "BoolCol").getLong(0));
 
-        UpdateGraphProcessor.DEFAULT.runWithinUnitTestCycle(() -> {
+        updateGraph.runWithinUnitTestCycle(() -> {
             addToTable(table, i(12, 14), col("BigI", BigInteger.valueOf(0), BigInteger.valueOf(0)),
                     doubleCol("DoubleCol", 0.0, 0.0), col("BoolCol", true, true));
             table.notifyListeners(i(12, 14), i(), i());
         });
         show(result);
-        TestCase.assertEquals(2L, result.getColumn("BoolCol").getLong(0));
+        TestCase.assertEquals(2L, DataAccessHelpers.getColumn(result, "BoolCol").getLong(0));
     }
 
     @Test
@@ -1785,28 +1841,29 @@ public class QueryTableAggregationTest {
         final Table result = table.absSumBy();
         TableTools.show(result);
         TestCase.assertEquals(1, result.size());
-        long absSum = result.getColumn("IntCol").getLong(0);
+        long absSum = DataAccessHelpers.getColumn(result, "IntCol").getLong(0);
         TestCase.assertEquals(NULL_LONG, absSum);
-        float absSumF = result.getColumn("FloatCol").getFloat(0);
+        float absSumF = DataAccessHelpers.getColumn(result, "FloatCol").getFloat(0);
         TestCase.assertEquals(QueryConstants.NULL_FLOAT, absSumF);
 
-        UpdateGraphProcessor.DEFAULT.runWithinUnitTestCycle(() -> {
+        final ControlledUpdateGraph updateGraph = ExecutionContext.getContext().getUpdateGraph().cast();
+        updateGraph.runWithinUnitTestCycle(() -> {
             addToTable(table, i(8), col("IntCol", 5), floatCol("FloatCol", -5.5f));
             table.notifyListeners(i(8), i(), i());
         });
         show(result);
-        absSum = result.getColumn("IntCol").getLong(0);
-        absSumF = result.getColumn("FloatCol").getFloat(0);
+        absSum = DataAccessHelpers.getColumn(result, "IntCol").getLong(0);
+        absSumF = DataAccessHelpers.getColumn(result, "FloatCol").getFloat(0);
         TestCase.assertEquals(5L, absSum);
         TestCase.assertEquals(5.5f, absSumF);
 
-        UpdateGraphProcessor.DEFAULT.runWithinUnitTestCycle(() -> {
+        updateGraph.runWithinUnitTestCycle(() -> {
             removeRows(table, i(8));
             table.notifyListeners(i(), i(8), i());
         });
         show(result);
-        absSum = result.getColumn("IntCol").getLong(0);
-        absSumF = result.getColumn("FloatCol").getFloat(0);
+        absSum = DataAccessHelpers.getColumn(result, "IntCol").getLong(0);
+        absSumF = DataAccessHelpers.getColumn(result, "FloatCol").getFloat(0);
         TestCase.assertEquals(NULL_LONG, absSum);
         TestCase.assertEquals(QueryConstants.NULL_FLOAT, absSumF);
     }
@@ -1819,72 +1876,73 @@ public class QueryTableAggregationTest {
 
         final Table result = table.avgBy();
         TableTools.show(result);
-        TableTools.show(result.getMeta());
+        TableTools.show(result.meta());
         TestCase.assertEquals(1, result.size());
-        double avg = result.getColumn("IntCol").getDouble(0);
+        double avg = DataAccessHelpers.getColumn(result, "IntCol").getDouble(0);
         TestCase.assertEquals(Double.NaN, avg);
-        double avgF = result.getColumn("FloatCol").getDouble(0);
+        double avgF = DataAccessHelpers.getColumn(result, "FloatCol").getDouble(0);
         TestCase.assertEquals(Double.NaN, avgF);
 
-        UpdateGraphProcessor.DEFAULT.runWithinUnitTestCycle(() -> {
+        final ControlledUpdateGraph updateGraph = ExecutionContext.getContext().getUpdateGraph().cast();
+        updateGraph.runWithinUnitTestCycle(() -> {
             addToTable(table, i(8), col("IntCol", 5), floatCol("FloatCol", 5f));
             table.notifyListeners(i(8), i(), i());
         });
         show(result);
-        avg = result.getColumn("IntCol").getDouble(0);
-        avgF = result.getColumn("FloatCol").getDouble(0);
+        avg = DataAccessHelpers.getColumn(result, "IntCol").getDouble(0);
+        avgF = DataAccessHelpers.getColumn(result, "FloatCol").getDouble(0);
         TestCase.assertEquals(5.0, avg);
         TestCase.assertEquals(5.0, avgF);
 
-        UpdateGraphProcessor.DEFAULT.runWithinUnitTestCycle(() -> {
+        updateGraph.runWithinUnitTestCycle(() -> {
             addToTable(table, i(9), col("IntCol", 6), floatCol("FloatCol", Float.POSITIVE_INFINITY));
             table.notifyListeners(i(9), i(), i());
         });
         show(result);
-        avg = result.getColumn("IntCol").getDouble(0);
-        avgF = result.getColumn("FloatCol").getDouble(0);
+        avg = DataAccessHelpers.getColumn(result, "IntCol").getDouble(0);
+        avgF = DataAccessHelpers.getColumn(result, "FloatCol").getDouble(0);
         TestCase.assertEquals(5.5, avg);
         TestCase.assertEquals(Double.POSITIVE_INFINITY, avgF);
 
-        UpdateGraphProcessor.DEFAULT.runWithinUnitTestCycle(() -> {
+        updateGraph.runWithinUnitTestCycle(() -> {
             addToTable(table, i(10), col("IntCol", 7), floatCol("FloatCol", Float.NEGATIVE_INFINITY));
             table.notifyListeners(i(10), i(), i());
         });
         show(result);
-        avg = result.getColumn("IntCol").getDouble(0);
-        avgF = result.getColumn("FloatCol").getDouble(0);
+        avg = DataAccessHelpers.getColumn(result, "IntCol").getDouble(0);
+        avgF = DataAccessHelpers.getColumn(result, "FloatCol").getDouble(0);
         TestCase.assertEquals(6.0, avg);
         TestCase.assertEquals(Double.NaN, avgF);
 
-        UpdateGraphProcessor.DEFAULT.runWithinUnitTestCycle(() -> {
+        updateGraph.runWithinUnitTestCycle(() -> {
             removeRows(table, i(9));
             table.notifyListeners(i(), i(9), i());
         });
         show(result);
-        avg = result.getColumn("IntCol").getDouble(0);
-        avgF = result.getColumn("FloatCol").getDouble(0);
+        avg = DataAccessHelpers.getColumn(result, "IntCol").getDouble(0);
+        avgF = DataAccessHelpers.getColumn(result, "FloatCol").getDouble(0);
         TestCase.assertEquals(6.0, avg);
         TestCase.assertEquals(Double.NEGATIVE_INFINITY, avgF);
 
-        UpdateGraphProcessor.DEFAULT.runWithinUnitTestCycle(() -> {
+        updateGraph.runWithinUnitTestCycle(() -> {
             removeRows(table, i(10));
             addToTable(table, i(11), col("IntCol", 6), floatCol("FloatCol", Float.NaN));
             table.notifyListeners(i(11), i(10), i());
         });
         show(result);
-        avg = result.getColumn("IntCol").getDouble(0);
-        avgF = result.getColumn("FloatCol").getDouble(0);
+        avg = DataAccessHelpers.getColumn(result, "IntCol").getDouble(0);
+        avgF = DataAccessHelpers.getColumn(result, "FloatCol").getDouble(0);
         TestCase.assertEquals(5.5, avg);
         TestCase.assertEquals(Double.NaN, avgF);
 
-        UpdateGraphProcessor.DEFAULT.runWithinUnitTestCycle(() -> {
+        updateGraph.runWithinUnitTestCycle(() -> {
             removeRows(table, i(11));
             table.notifyListeners(i(), i(11), i());
         });
         show(table);
         show(result);
-        avg = result.getColumn("IntCol").getDouble(0);
-        avgF = result.getColumn("FloatCol").getDouble(0);
+        avg = DataAccessHelpers.getColumn(result, "IntCol").getDouble(0);
+        avgF = DataAccessHelpers.getColumn(result, "FloatCol").getDouble(0);
         TestCase.assertEquals(5.0, avg);
         TestCase.assertEquals(5.0, avgF);
     }
@@ -1897,72 +1955,73 @@ public class QueryTableAggregationTest {
 
         final Table result = table.varBy();
         TableTools.show(result);
-        TableTools.show(result.getMeta());
+        TableTools.show(result.meta());
         TestCase.assertEquals(1, result.size());
-        double var = result.getColumn("IntCol").getDouble(0);
+        double var = DataAccessHelpers.getColumn(result, "IntCol").getDouble(0);
         TestCase.assertEquals(Double.NaN, var);
-        double varF = result.getColumn("FloatCol").getDouble(0);
+        double varF = DataAccessHelpers.getColumn(result, "FloatCol").getDouble(0);
         TestCase.assertEquals(Double.NaN, varF);
 
-        UpdateGraphProcessor.DEFAULT.runWithinUnitTestCycle(() -> {
+        final ControlledUpdateGraph updateGraph = ExecutionContext.getContext().getUpdateGraph().cast();
+        updateGraph.runWithinUnitTestCycle(() -> {
             addToTable(table, i(7, 8), col("IntCol", 4, 5), floatCol("FloatCol", 4f, 5f));
             table.notifyListeners(i(7, 8), i(), i());
         });
         show(result);
-        var = result.getColumn("IntCol").getDouble(0);
-        varF = result.getColumn("FloatCol").getDouble(0);
+        var = DataAccessHelpers.getColumn(result, "IntCol").getDouble(0);
+        varF = DataAccessHelpers.getColumn(result, "FloatCol").getDouble(0);
         TestCase.assertEquals(0.5, var);
         TestCase.assertEquals(0.5, varF);
 
-        UpdateGraphProcessor.DEFAULT.runWithinUnitTestCycle(() -> {
+        updateGraph.runWithinUnitTestCycle(() -> {
             addToTable(table, i(9), col("IntCol", 6), floatCol("FloatCol", Float.POSITIVE_INFINITY));
             table.notifyListeners(i(9), i(), i());
         });
         show(result);
-        var = result.getColumn("IntCol").getDouble(0);
-        varF = result.getColumn("FloatCol").getDouble(0);
+        var = DataAccessHelpers.getColumn(result, "IntCol").getDouble(0);
+        varF = DataAccessHelpers.getColumn(result, "FloatCol").getDouble(0);
         TestCase.assertEquals(1.0, var);
         TestCase.assertEquals(Double.NaN, varF);
 
-        UpdateGraphProcessor.DEFAULT.runWithinUnitTestCycle(() -> {
+        updateGraph.runWithinUnitTestCycle(() -> {
             addToTable(table, i(10), col("IntCol", 7), floatCol("FloatCol", Float.NEGATIVE_INFINITY));
             table.notifyListeners(i(10), i(), i());
         });
         show(result);
-        var = result.getColumn("IntCol").getDouble(0);
-        varF = result.getColumn("FloatCol").getDouble(0);
+        var = DataAccessHelpers.getColumn(result, "IntCol").getDouble(0);
+        varF = DataAccessHelpers.getColumn(result, "FloatCol").getDouble(0);
         TestCase.assertEquals(1.0 + 2.0 / 3.0, var, 0.001);
         TestCase.assertEquals(Double.NaN, varF);
 
-        UpdateGraphProcessor.DEFAULT.runWithinUnitTestCycle(() -> {
+        updateGraph.runWithinUnitTestCycle(() -> {
             removeRows(table, i(9));
             table.notifyListeners(i(), i(9), i());
         });
         show(result);
-        var = result.getColumn("IntCol").getDouble(0);
-        varF = result.getColumn("FloatCol").getDouble(0);
+        var = DataAccessHelpers.getColumn(result, "IntCol").getDouble(0);
+        varF = DataAccessHelpers.getColumn(result, "FloatCol").getDouble(0);
         TestCase.assertEquals(2.0 + 1.0 / 3.0, var, 0.001);
         TestCase.assertEquals(Double.NaN, varF);
 
-        UpdateGraphProcessor.DEFAULT.runWithinUnitTestCycle(() -> {
+        updateGraph.runWithinUnitTestCycle(() -> {
             removeRows(table, i(10));
             addToTable(table, i(11), col("IntCol", 6), floatCol("FloatCol", Float.NaN));
             table.notifyListeners(i(11), i(10), i());
         });
         show(result);
-        var = result.getColumn("IntCol").getDouble(0);
-        varF = result.getColumn("FloatCol").getDouble(0);
+        var = DataAccessHelpers.getColumn(result, "IntCol").getDouble(0);
+        varF = DataAccessHelpers.getColumn(result, "FloatCol").getDouble(0);
         TestCase.assertEquals(1.0, var);
         TestCase.assertEquals(Double.NaN, varF);
 
-        UpdateGraphProcessor.DEFAULT.runWithinUnitTestCycle(() -> {
+        updateGraph.runWithinUnitTestCycle(() -> {
             removeRows(table, i(11));
             table.notifyListeners(i(), i(11), i());
         });
         show(table);
         show(result);
-        var = result.getColumn("IntCol").getDouble(0);
-        varF = result.getColumn("FloatCol").getDouble(0);
+        var = DataAccessHelpers.getColumn(result, "IntCol").getDouble(0);
+        varF = DataAccessHelpers.getColumn(result, "FloatCol").getDouble(0);
         TestCase.assertEquals(0.5, var);
         TestCase.assertEquals(0.5, varF);
     }
@@ -2103,18 +2162,19 @@ public class QueryTableAggregationTest {
         final Table result = table.wavgBy("Long2");
         TableTools.show(result);
         TestCase.assertEquals(1, result.size());
-        double wavg = result.getColumn("Long1").getDouble(0);
+        double wavg = DataAccessHelpers.getColumn(result, "Long1").getDouble(0);
         long wsum = 2 + 8 + 18;
         long sumw = 6;
         double expected = (double) wsum / (double) sumw;
         TestCase.assertEquals(expected, wavg);
 
-        UpdateGraphProcessor.DEFAULT.runWithinUnitTestCycle(() -> {
+        final ControlledUpdateGraph updateGraph = ExecutionContext.getContext().getUpdateGraph().cast();
+        updateGraph.runWithinUnitTestCycle(() -> {
             addToTable(table, i(8), col("Long1", (long) Integer.MAX_VALUE), col("Long2", 7L));
             table.notifyListeners(i(8), i(), i());
         });
         show(result);
-        wavg = result.getColumn("Long1").getDouble(0);
+        wavg = DataAccessHelpers.getColumn(result, "Long1").getDouble(0);
 
         wsum = wsum + (7L * (long) Integer.MAX_VALUE);
         sumw = sumw + (7L);
@@ -2307,8 +2367,8 @@ public class QueryTableAggregationTest {
                         new ShortGenerator((short) 10, (short) 100, 0.1),
                         new ByteGenerator((byte) 10, (byte) 100, 0.1),
                         new SetGenerator<>(10.1, 20.1, 30.1),
-                        new UnsortedDateTimeGenerator(DateTimeUtils.convertDateTime("2020-01-01T00:00:00 NY"),
-                                DateTimeUtils.convertDateTime("2020-01-25T00:00:00 NY")),
+                        new UnsortedInstantGenerator(DateTimeUtils.parseInstant("2020-01-01T00:00:00 NY"),
+                                DateTimeUtils.parseInstant("2020-01-25T00:00:00 NY")),
                         new BooleanGenerator(0.4, 0.2),
                         new DoubleGenerator(Double.MIN_NORMAL, Double.MIN_NORMAL, 0.05, 0.05),
                         new FloatGenerator(Float.MIN_NORMAL, Float.MIN_NORMAL, 0.05, 0.05)));
@@ -2467,8 +2527,9 @@ public class QueryTableAggregationTest {
                 new TableComparator(queryTable.minBy("Sym").sort("Sym"),
                         queryTable.applyToAllBy("min(each)", "Sym").sort("Sym")),
         };
+        final ControlledUpdateGraph updateGraph = ExecutionContext.getContext().getUpdateGraph().cast();
         for (int step = 0; step < 50; step++) {
-            UpdateGraphProcessor.DEFAULT.runWithinUnitTestCycle(() -> {
+            updateGraph.runWithinUnitTestCycle(() -> {
                 final RowSet keysToAdd =
                         newIndex(random.nextInt(size / 2 + 1), queryTable.getRowSet(), random);
                 final ColumnHolder<?>[] columnAdditions = new ColumnHolder[columnInfo.length];
@@ -2644,8 +2705,8 @@ public class QueryTableAggregationTest {
                 .update("P95=Digest.quantile(0.95)");
         TableTools.show(accumulated);
 
-        final double singleValue = aggregated.getColumn("P95").getDouble(0);
-        final double accumulatedValue = accumulated.getColumn("P95").getDouble(0);
+        final double singleValue = DataAccessHelpers.getColumn(aggregated, "P95").getDouble(0);
+        final double accumulatedValue = DataAccessHelpers.getColumn(accumulated, "P95").getDouble(0);
         final double error = Math.abs(singleValue - accumulatedValue) / singleValue;
         if (error > 0.002) {
             System.err.println("Single Value: " + singleValue);
@@ -2655,66 +2716,67 @@ public class QueryTableAggregationTest {
     }
 
     private void checkTableP99(Table queryTable, Table aggregated) {
-        final double[] dValues = (double[]) queryTable.where("!Double.isNaN(doubleCol) && !isNull(doubleCol)")
-                .getColumn("doubleCol").getDirect();
+        final double[] dValues = (double[]) DataAccessHelpers
+                .getColumn(queryTable.where("!Double.isNaN(doubleCol) && !isNull(doubleCol)"), "doubleCol").getDirect();
         Arrays.sort(dValues);
         final double dValue = dValues[(dValues.length * 99) / 100];
-        final double dtValue = aggregated.getColumn("doubleCol").getDouble(0);
+        final double dtValue = DataAccessHelpers.getColumn(aggregated, "doubleCol").getDouble(0);
         final double derror = Math.abs((dValue - dtValue) / dValue);
         System.out.println("Double: " + dValue + ", " + dtValue + ", Error: " + derror);
         checkTDigestError(derror);
 
-        final float[] fValues = (float[]) queryTable.where("!Float.isNaN(floatCol) && !isNull(floatCol)")
-                .getColumn("floatCol").getDirect();
+        final float[] fValues = (float[]) DataAccessHelpers
+                .getColumn(queryTable.where("!Float.isNaN(floatCol) && !isNull(floatCol)"), "floatCol").getDirect();
         Arrays.sort(fValues);
         final float fValue = fValues[(fValues.length * 99) / 100];
-        final double ftValue = aggregated.getColumn("floatCol").getDouble(0);
+        final double ftValue = DataAccessHelpers.getColumn(aggregated, "floatCol").getDouble(0);
         final double ferror = Math.abs((fValue - ftValue) / fValue);
         System.out.println("Float: " + fValue + ", " + ftValue + ", Error: " + ferror);
         checkTDigestError(ferror);
 
-        final int[] iValues = (int[]) queryTable.where("!isNull(intCol)").getColumn("intCol").getDirect();
+        final int[] iValues =
+                (int[]) DataAccessHelpers.getColumn(queryTable.where("!isNull(intCol)"), "intCol").getDirect();
         Arrays.sort(iValues);
         final float iValue = iValues[(iValues.length * 99) / 100];
-        final double itValue = aggregated.getColumn("intCol").getDouble(0);
+        final double itValue = DataAccessHelpers.getColumn(aggregated, "intCol").getDouble(0);
         final double ierror = Math.abs((iValue - itValue) / iValue);
         System.out.println("Int: " + iValue + ", " + itValue + ", Error: " + ierror);
         checkTDigestError(ferror);
     }
 
     private void checkTableComboPercentiles(Table queryTable, Table aggregated, RMSE rmse) {
-        final double[] dValues = (double[]) queryTable.where("!Double.isNaN(doubleCol) && !isNull(doubleCol)")
-                .getColumn("doubleCol").getDirect();
+        final double[] dValues = (double[]) DataAccessHelpers
+                .getColumn(queryTable.where("!Double.isNaN(doubleCol) && !isNull(doubleCol)"), "doubleCol").getDirect();
         Arrays.sort(dValues);
         final double dValue75 = dValues[(dValues.length * 75) / 100];
-        final double dtValue75 = aggregated.getColumn("DP75").getDouble(0);
+        final double dtValue75 = DataAccessHelpers.getColumn(aggregated, "DP75").getDouble(0);
         final double derror75 = Math.abs((dValue75 - dtValue75) / dValue75);
         System.out.println("Double 75: " + dValue75 + ", " + dtValue75 + ", Error: " + derror75);
         checkTDigestError(derror75);
 
         final double dValue99 = dValues[(dValues.length * 99) / 100];
-        final double dtValue99 = aggregated.getColumn("DP99").getDouble(0);
+        final double dtValue99 = DataAccessHelpers.getColumn(aggregated, "DP99").getDouble(0);
         final double derror99 = Math.abs((dValue99 - dtValue99) / dValue99);
         System.out.println("Double 99: " + dValue99 + ", " + dtValue99 + ", Error: " + derror99);
         checkTDigestError(derror99);
 
         final double dValue999 = dValues[(dValues.length * 999) / 1000];
-        final double dtValue999 = aggregated.getColumn("DP999").getDouble(0);
+        final double dtValue999 = DataAccessHelpers.getColumn(aggregated, "DP999").getDouble(0);
         final double derror999 = Math.abs((dValue999 - dtValue999) / dValue999);
         System.out.println("Double 99.9:  " + dValue999 + ", " + dtValue999 + ", Error: " + derror999);
         checkTDigestError(derror999);
 
-        final float[] fValues = (float[]) queryTable.where("!Float.isNaN(floatCol) && !isNull(floatCol)")
-                .getColumn("floatCol").getDirect();
+        final float[] fValues = (float[]) DataAccessHelpers
+                .getColumn(queryTable.where("!Float.isNaN(floatCol) && !isNull(floatCol)"), "floatCol").getDirect();
         Arrays.sort(fValues);
         final float fValue75 = fValues[(fValues.length * 75) / 100];
-        final double ftValue75 = aggregated.getColumn("FP75").getDouble(0);
+        final double ftValue75 = DataAccessHelpers.getColumn(aggregated, "FP75").getDouble(0);
         final double ferror75 = Math.abs((fValue75 - ftValue75) / fValue75);
         System.out.println("Float 75: " + fValue75 + ", " + ftValue75 + ", Error: " + ferror75);
         checkTDigestError(ferror75);
 
         final float fValue99 = fValues[(fValues.length * 99) / 100];
-        final double ftValue99 = aggregated.getColumn("FP99").getDouble(0);
+        final double ftValue99 = DataAccessHelpers.getColumn(aggregated, "FP99").getDouble(0);
         final double ferror99 = Math.abs((fValue99 - ftValue99) / fValue99);
         System.out.println("Float 99: " + fValue99 + ", " + ftValue99 + ", Error: " + ferror99);
         checkTDigestError(ferror99);
@@ -2822,12 +2884,14 @@ public class QueryTableAggregationTest {
                 }
         };
 
+        final ControlledUpdateGraph updateGraph = ExecutionContext.getContext().getUpdateGraph().cast();
         for (int step = 0; step < 10; ++step) {
             final int fstep = step;
 
             System.out.println("Step = " + step);
 
-            UpdateGraphProcessor.DEFAULT.runWithinUnitTestCycle(() -> {
+            // Modifies and Adds in post-shift keyspace.
+            updateGraph.runWithinUnitTestCycle(() -> {
                 final RowSet added = RowSetFactory.fromRange(size * (fstep + 1), size * (fstep + 2) - 1);
                 queryTable.getRowSet().writableCast().insert(added);
 
@@ -2864,7 +2928,7 @@ public class QueryTableAggregationTest {
                         "MyBigDecimal=java.math.BigDecimal.TEN.add(java.math.BigDecimal.valueOf(i))",
                         "MyBigInteger=java.math.BigInteger.ZERO.add(java.math.BigInteger.valueOf(i))");
 
-        TableTools.showWithRowSet(table.getMeta());
+        TableTools.showWithRowSet(table.meta());
         TableTools.showWithRowSet(table);
 
         final Table median = table.medianBy();
@@ -2876,9 +2940,10 @@ public class QueryTableAggregationTest {
 
         final Map<String, Object[]> expectedResults = new HashMap<>();
         expectedResults.put("Timestamp",
-                new Object[] {DateTimeUtils.convertDateTime("2020-03-14T00:01:00 NY"),
-                        DateTimeUtils.convertDateTime("2020-03-14T00:05:00 NY"),
-                        DateTimeUtils.convertDateTime("2020-03-14T00:08:00 NY")});
+                new Object[] {
+                        DateTimeUtils.parseInstant("2020-03-14T00:01:00 NY"),
+                        DateTimeUtils.parseInstant("2020-03-14T00:05:00 NY"),
+                        DateTimeUtils.parseInstant("2020-03-14T00:08:00 NY")});
         expectedResults.put("MyString", new Object[] {"1", "5", "8"});
         expectedResults.put("MyInt", new Object[] {1, 4.5, 8});
         expectedResults.put("MyLong", new Object[] {1L, 4.5, 8L});
@@ -2896,9 +2961,9 @@ public class QueryTableAggregationTest {
         for (final Map.Entry<String, Object[]> check : expectedResults.entrySet()) {
             final String key = check.getKey();
             final Object[] expectValues = check.getValue();
-            final Object medianValue = median.getColumn(key).get(0);
-            final Object p10Value = percentile10.getColumn(key).get(0);
-            final Object p90Value = percentile90.getColumn(key).get(0);
+            final Object medianValue = DataAccessHelpers.getColumn(median, key).get(0);
+            final Object p10Value = DataAccessHelpers.getColumn(percentile10, key).get(0);
+            final Object p90Value = DataAccessHelpers.getColumn(percentile90, key).get(0);
             TestCase.assertEquals(key + " P10", expectValues[0], p10Value);
             TestCase.assertEquals(key + " median", expectValues[1], medianValue);
             TestCase.assertEquals(key + " P90", expectValues[2], p90Value);
@@ -2912,15 +2977,16 @@ public class QueryTableAggregationTest {
         final Table refreshing = updated.medianBy();
         final Table refreshingKeys = updated.medianBy("KeyCol");
         TableTools.show(updated);
-        UpdateGraphProcessor.DEFAULT.runWithinUnitTestCycle(incrementalReleaseFilter::run);
+        final ControlledUpdateGraph updateGraph = ExecutionContext.getContext().getUpdateGraph().cast();
+        updateGraph.runWithinUnitTestCycle(incrementalReleaseFilter::run);
         TableTools.show(updated);
         TableTools.show(refreshing);
 
         for (final Map.Entry<String, Object[]> check : expectedResults.entrySet()) {
             final String key = check.getKey();
             final Object[] expectValues = check.getValue();
-            final Object medianValue = refreshing.getColumn(key).get(0);
-            final Object medianKeyValue = refreshingKeys.getColumn(key).get(0);
+            final Object medianValue = DataAccessHelpers.getColumn(refreshing, key).get(0);
+            final Object medianKeyValue = DataAccessHelpers.getColumn(refreshingKeys, key).get(0);
             TestCase.assertEquals(key + " median", expectValues[1], medianValue);
             TestCase.assertEquals(key + " median", expectValues[1], medianKeyValue);
         }
@@ -2947,20 +3013,20 @@ public class QueryTableAggregationTest {
         TestCase.assertEquals(1, table.countBy("count").numColumns());
         table = emptyTable(10);
         TestCase.assertEquals(1, table.countBy("count").size());
-        TestCase.assertEquals(10, table.countBy("count").getColumn("count").getLong(0));
+        TestCase.assertEquals(10, DataAccessHelpers.getColumn(table.countBy("count"), "count").getLong(0));
         TestCase.assertEquals(1, table.countBy("count").numColumns());
 
         table = newTable(col("x", 1, 2, 3));
         TestCase.assertEquals(1, table.countBy("count").size());
-        TestCase.assertEquals(3, table.countBy("count").getColumn("count").getLong(0));
+        TestCase.assertEquals(3, DataAccessHelpers.getColumn(table.countBy("count"), "count").getLong(0));
         TestCase.assertEquals(1, table.countBy("count").numColumns());
 
         table = newTable(col("x", 1, 2, 3));
         TestCase.assertEquals(3, table.countBy("count", "x").size());
         TestCase.assertEquals(Arrays.asList(1, 2, 3),
-                Arrays.asList(table.countBy("count", "x").getColumn("x").get(0, 3)));
+                Arrays.asList(DataAccessHelpers.getColumn(table.countBy("count", "x"), "x").get(0, 3)));
         TestCase.assertEquals(Arrays.asList(1L, 1L, 1L),
-                Arrays.asList(table.countBy("count", "x").getColumn("count").get(0, 3)));
+                Arrays.asList(DataAccessHelpers.getColumn(table.countBy("count", "x"), "count").get(0, 3)));
         TestCase.assertEquals(2, table.countBy("count", "x").numColumns());
         try {
             show(table.countBy("count", "x"));
@@ -2975,21 +3041,21 @@ public class QueryTableAggregationTest {
         }
         TestCase.assertEquals(3, table.countBy("count", "x", "y").size());
         TestCase.assertEquals(Arrays.asList(1, 2, 3),
-                Arrays.asList(table.countBy("count", "x", "y").getColumn("x").get(0, 3)));
+                Arrays.asList(DataAccessHelpers.getColumn(table.countBy("count", "x", "y"), "x").get(0, 3)));
         TestCase.assertEquals(Arrays.asList(1, 2, 3),
-                Arrays.asList(table.countBy("count", "x", "y").getColumn("y").get(0, 3)));
+                Arrays.asList(DataAccessHelpers.getColumn(table.countBy("count", "x", "y"), "y").get(0, 3)));
         TestCase.assertEquals(Arrays.asList(1L, 3L, 2L),
-                Arrays.asList(table.countBy("count", "x", "y").getColumn("count").get(0, 3)));
+                Arrays.asList(DataAccessHelpers.getColumn(table.countBy("count", "x", "y"), "count").get(0, 3)));
         TestCase.assertEquals(3, table.countBy("count", "x", "y").numColumns());
 
         table = newTable(col("x", 1, 2, 3), col("y", 1, 2, 3));
         TestCase.assertEquals(3, table.countBy("count", "x", "y").size());
         TestCase.assertEquals(Arrays.asList(1, 2, 3),
-                Arrays.asList(table.countBy("count", "x", "y").getColumn("x").get(0, 3)));
+                Arrays.asList(DataAccessHelpers.getColumn(table.countBy("count", "x", "y"), "x").get(0, 3)));
         TestCase.assertEquals(Arrays.asList(1, 2, 3),
-                Arrays.asList(table.countBy("count", "x", "y").getColumn("y").get(0, 3)));
+                Arrays.asList(DataAccessHelpers.getColumn(table.countBy("count", "x", "y"), "y").get(0, 3)));
         TestCase.assertEquals(Arrays.asList(1L, 1L, 1L),
-                Arrays.asList(table.countBy("count", "x", "y").getColumn("count").get(0, 3)));
+                Arrays.asList(DataAccessHelpers.getColumn(table.countBy("count", "x", "y"), "count").get(0, 3)));
         TestCase.assertEquals(3, table.countBy("count", "x", "y").numColumns());
         try {
             show(table.countBy("count", "x", "y"));
@@ -3010,33 +3076,38 @@ public class QueryTableAggregationTest {
 
         Table result = table.selectDistinct("x");
         TestCase.assertEquals(3, result.size());
-        TestCase.assertEquals(3, result.getColumn("x").size());
+        TestCase.assertEquals(3, DataAccessHelpers.getColumn(result, "x").size());
         TestCase.assertEquals(1, result.numColumns());
-        TestCase.assertEquals(Arrays.asList(1, 2, 3), Arrays.asList(result.getColumn("x").get(0, 3)));
+        TestCase.assertEquals(Arrays.asList(1, 2, 3),
+                Arrays.asList(DataAccessHelpers.getColumn(result, "x").get(0, 3)));
 
         table = newTable(col("x", 1, 2, 2, 2, 3, 3), col("y", 1, 2, 2, 3, 3, 3));
         System.out.println("Table:");
         show(table);
         result = table.selectDistinct("x");
         TestCase.assertEquals(3, result.size());
-        TestCase.assertEquals(3, result.getColumn("x").size());
+        TestCase.assertEquals(3, DataAccessHelpers.getColumn(result, "x").size());
         TestCase.assertEquals(1, result.numColumns());
-        TestCase.assertEquals(Arrays.asList(1, 2, 3), Arrays.asList(result.getColumn("x").get(0, 3)));
+        TestCase.assertEquals(Arrays.asList(1, 2, 3),
+                Arrays.asList(DataAccessHelpers.getColumn(result, "x").get(0, 3)));
 
         result = table.selectDistinct("y");
         TestCase.assertEquals(3, result.size());
-        TestCase.assertEquals(3, result.getColumn("y").size());
+        TestCase.assertEquals(3, DataAccessHelpers.getColumn(result, "y").size());
         TestCase.assertEquals(1, result.numColumns());
-        TestCase.assertEquals(Arrays.asList(1, 2, 3), Arrays.asList(result.getColumn("y").get(0, 3)));
+        TestCase.assertEquals(Arrays.asList(1, 2, 3),
+                Arrays.asList(DataAccessHelpers.getColumn(result, "y").get(0, 3)));
 
         result = table.selectDistinct("x", "y");
         show(result);
         TestCase.assertEquals(4, result.size());
-        TestCase.assertEquals(4, result.getColumn("x").size());
-        TestCase.assertEquals(4, result.getColumn("y").size());
+        TestCase.assertEquals(4, DataAccessHelpers.getColumn(result, "x").size());
+        TestCase.assertEquals(4, DataAccessHelpers.getColumn(result, "y").size());
         TestCase.assertEquals(2, result.numColumns());
-        TestCase.assertEquals(Arrays.asList(1, 2, 2, 3), Arrays.asList(result.getColumn("x").get(0, 4)));
-        TestCase.assertEquals(Arrays.asList(1, 2, 3, 3), Arrays.asList(result.getColumn("y").get(0, 4)));
+        TestCase.assertEquals(Arrays.asList(1, 2, 2, 3),
+                Arrays.asList(DataAccessHelpers.getColumn(result, "x").get(0, 4)));
+        TestCase.assertEquals(Arrays.asList(1, 2, 3, 3),
+                Arrays.asList(DataAccessHelpers.getColumn(result, "y").get(0, 4)));
     }
 
     private static class SelectDistinctEvalNugget implements EvalNuggetInterface {
@@ -3117,7 +3188,8 @@ public class QueryTableAggregationTest {
 
         // this should result in an new output row
         System.out.println("Adding key 4.");
-        UpdateGraphProcessor.DEFAULT.runWithinUnitTestCycle(() -> {
+        final ControlledUpdateGraph updateGraph = ExecutionContext.getContext().getUpdateGraph().cast();
+        updateGraph.runWithinUnitTestCycle(() -> {
             addToTable(table, i(7), col("x", 4));
             table.notifyListeners(i(7), i(), i());
         });
@@ -3133,7 +3205,7 @@ public class QueryTableAggregationTest {
 
         // we're going to add a duplicate key, which should result in no changes.
         System.out.println("Adding duplicate 1.");
-        UpdateGraphProcessor.DEFAULT.runWithinUnitTestCycle(() -> {
+        updateGraph.runWithinUnitTestCycle(() -> {
             listener.reset();
             addToTable(table, i(9), col("x", 1));
             table.notifyListeners(i(9), i(), i());
@@ -3146,7 +3218,7 @@ public class QueryTableAggregationTest {
 
         // now let's remove one of our rows, but not the last one with a given value, also expecting no changes
         System.out.println("Removing original 1.");
-        UpdateGraphProcessor.DEFAULT.runWithinUnitTestCycle(() -> {
+        updateGraph.runWithinUnitTestCycle(() -> {
             listener.reset();
             removeRows(table, i(2));
             table.notifyListeners(i(), i(2), i());
@@ -3159,7 +3231,7 @@ public class QueryTableAggregationTest {
 
         // remove the last instance of 1, which should remove it from the output table
         System.out.println("Removing last 1.");
-        UpdateGraphProcessor.DEFAULT.runWithinUnitTestCycle(() -> {
+        updateGraph.runWithinUnitTestCycle(() -> {
             listener.reset();
             removeRows(table, i(9));
             table.notifyListeners(i(), i(9), i());
@@ -3176,7 +3248,7 @@ public class QueryTableAggregationTest {
 
         // add it back
         System.out.println("Putting 1 back at place 9.");
-        UpdateGraphProcessor.DEFAULT.runWithinUnitTestCycle(() -> {
+        updateGraph.runWithinUnitTestCycle(() -> {
             listener.reset();
             addToTable(table, i(9), col("x", 1));
             table.notifyListeners(i(9), i(), i());
@@ -3193,7 +3265,7 @@ public class QueryTableAggregationTest {
 
         // and modify something, but keep the key the same
         System.out.println("False churn of key 1 (at 9).");
-        UpdateGraphProcessor.DEFAULT.runWithinUnitTestCycle(() -> {
+        updateGraph.runWithinUnitTestCycle(() -> {
             listener.reset();
             addToTable(table, i(9), col("x", 1));
             table.notifyListeners(i(), i(), i(9));
@@ -3208,7 +3280,7 @@ public class QueryTableAggregationTest {
         // now modify it so that we generate a new key, but don't change the existing key's existence
         // and modify something, but keep the key the same
         System.out.println("Adding a 5, but not deleting what was at rowSet.");
-        UpdateGraphProcessor.DEFAULT.runWithinUnitTestCycle(() -> {
+        updateGraph.runWithinUnitTestCycle(() -> {
             listener.reset();
             addToTable(table, i(4), col("x", 5));
             table.notifyListeners(i(), i(), i(4));
@@ -3225,7 +3297,7 @@ public class QueryTableAggregationTest {
 
         // now modify it so that we remove an existing key
         System.out.println("Adding 5 in a way that deletes 2.");
-        UpdateGraphProcessor.DEFAULT.runWithinUnitTestCycle(() -> {
+        updateGraph.runWithinUnitTestCycle(() -> {
             listener.reset();
             addToTable(table, i(8), col("x", 5));
             table.notifyListeners(i(), i(), i(8));
@@ -3246,7 +3318,7 @@ public class QueryTableAggregationTest {
         final Table randomValues = emptyTable(100)
                 .update("MyInt=(i%12==0 ? null : (int)(ids5942_scale*(Math.random()*2-1)))",
                         "MyBoolean=i%3==0 ? null : (i % 3 == 1)",
-                        "MyDateTime=new DateTime(DateTimeUtils.convertDateTime(\"2020-01-28T00:00:00 NY\").getNanos() + 1000000000L * i)",
+                        "MyInstant=epochNanosToInstant(epochNanos(parseInstant(\"2020-01-28T00:00:00 NY\")) + 1000000000L * i)",
                         "MyBigDecimal=(i%21==0 ? null : new java.math.BigDecimal(ids5942_scale*(Math.random()*2-1)))",
                         "MyBigInteger=(i%22==0 ? null : new java.math.BigInteger(Integer.toString((int)(ids5942_scale*(Math.random()*2-1)))))");
 
@@ -3293,7 +3365,8 @@ public class QueryTableAggregationTest {
         TableTools.showWithRowSet(reversedFlat);
         TableTools.showWithRowSet(last);
 
-        UpdateGraphProcessor.DEFAULT.runWithinUnitTestCycle(() -> {
+        final ControlledUpdateGraph updateGraph = ExecutionContext.getContext().getUpdateGraph().cast();
+        updateGraph.runWithinUnitTestCycle(() -> {
             addToTable(table, i(2), intCol("Sentinel", 2));
             table.notifyListeners(i(2), i(), i());
         });
@@ -3320,13 +3393,14 @@ public class QueryTableAggregationTest {
         TestCase.assertEquals(2, firstResult.size());
         TestCase.assertEquals(2, lastResult.size());
 
-        TestCase.assertEquals(1, firstResult.getColumn("Sentinel").getInt(0));
-        TestCase.assertEquals(2, firstResult.getColumn("Sentinel").getInt(1));
+        TestCase.assertEquals(1, DataAccessHelpers.getColumn(firstResult, "Sentinel").getInt(0));
+        TestCase.assertEquals(2, DataAccessHelpers.getColumn(firstResult, "Sentinel").getInt(1));
 
-        TestCase.assertEquals(4097, lastResult.getColumn("Sentinel").getInt(0));
-        TestCase.assertEquals(2, lastResult.getColumn("Sentinel").getInt(1));
+        TestCase.assertEquals(4097, DataAccessHelpers.getColumn(lastResult, "Sentinel").getInt(0));
+        TestCase.assertEquals(2, DataAccessHelpers.getColumn(lastResult, "Sentinel").getInt(1));
 
-        UpdateGraphProcessor.DEFAULT.runWithinUnitTestCycle(() -> {
+        final ControlledUpdateGraph updateGraph = ExecutionContext.getContext().getUpdateGraph().cast();
+        updateGraph.runWithinUnitTestCycle(() -> {
             addToTable(table, i(0), intCol("Sentinel", 0), col("Bucket", "C"));
             table.notifyListeners(i(0), i(), i());
         });
@@ -3335,15 +3409,15 @@ public class QueryTableAggregationTest {
         TableTools.showWithRowSet(firstResult);
         TableTools.showWithRowSet(lastResult);
 
-        TestCase.assertEquals(1, firstResult.getColumn("Sentinel").getInt(0));
-        TestCase.assertEquals(2, firstResult.getColumn("Sentinel").getInt(1));
-        TestCase.assertEquals(0, firstResult.getColumn("Sentinel").getInt(2));
+        TestCase.assertEquals(1, DataAccessHelpers.getColumn(firstResult, "Sentinel").getInt(0));
+        TestCase.assertEquals(2, DataAccessHelpers.getColumn(firstResult, "Sentinel").getInt(1));
+        TestCase.assertEquals(0, DataAccessHelpers.getColumn(firstResult, "Sentinel").getInt(2));
 
-        TestCase.assertEquals(4097, lastResult.getColumn("Sentinel").getInt(0));
-        TestCase.assertEquals(2, lastResult.getColumn("Sentinel").getInt(1));
-        TestCase.assertEquals(0, lastResult.getColumn("Sentinel").getInt(2));
+        TestCase.assertEquals(4097, DataAccessHelpers.getColumn(lastResult, "Sentinel").getInt(0));
+        TestCase.assertEquals(2, DataAccessHelpers.getColumn(lastResult, "Sentinel").getInt(1));
+        TestCase.assertEquals(0, DataAccessHelpers.getColumn(lastResult, "Sentinel").getInt(2));
 
-        UpdateGraphProcessor.DEFAULT.runWithinUnitTestCycle(() -> {
+        updateGraph.runWithinUnitTestCycle(() -> {
             for (int idx = 3; idx < 4097; ++idx) {
                 addToTable(table, i(idx), intCol("Sentinel", idx), col("Bucket", "C"));
             }
@@ -3354,15 +3428,15 @@ public class QueryTableAggregationTest {
         TableTools.showWithRowSet(firstResult);
         TableTools.showWithRowSet(lastResult);
 
-        TestCase.assertEquals(1, firstResult.getColumn("Sentinel").getInt(0));
-        TestCase.assertEquals(2, firstResult.getColumn("Sentinel").getInt(1));
-        TestCase.assertEquals(0, firstResult.getColumn("Sentinel").getInt(2));
+        TestCase.assertEquals(1, DataAccessHelpers.getColumn(firstResult, "Sentinel").getInt(0));
+        TestCase.assertEquals(2, DataAccessHelpers.getColumn(firstResult, "Sentinel").getInt(1));
+        TestCase.assertEquals(0, DataAccessHelpers.getColumn(firstResult, "Sentinel").getInt(2));
 
-        TestCase.assertEquals(4097, lastResult.getColumn("Sentinel").getInt(0));
-        TestCase.assertEquals(2, lastResult.getColumn("Sentinel").getInt(1));
-        TestCase.assertEquals(4096, lastResult.getColumn("Sentinel").getInt(2));
+        TestCase.assertEquals(4097, DataAccessHelpers.getColumn(lastResult, "Sentinel").getInt(0));
+        TestCase.assertEquals(2, DataAccessHelpers.getColumn(lastResult, "Sentinel").getInt(1));
+        TestCase.assertEquals(4096, DataAccessHelpers.getColumn(lastResult, "Sentinel").getInt(2));
 
-        UpdateGraphProcessor.DEFAULT.runWithinUnitTestCycle(() -> {
+        updateGraph.runWithinUnitTestCycle(() -> {
             ((TestColumnSource<?>) table.getColumnSource("Sentinel")).shift(0, 4097, 4096);
             ((TestColumnSource<?>) table.getColumnSource("Bucket")).shift(0, 4097, 4096);
             table.getRowSet().writableCast().removeRange(0, 4095);
@@ -3385,13 +3459,13 @@ public class QueryTableAggregationTest {
         System.out.println("Last");
         TableTools.showWithRowSet(lastResult);
 
-        TestCase.assertEquals(1, firstResult.getColumn("Sentinel").getInt(0));
-        TestCase.assertEquals(2, firstResult.getColumn("Sentinel").getInt(1));
-        TestCase.assertEquals(0, firstResult.getColumn("Sentinel").getInt(2));
+        TestCase.assertEquals(1, DataAccessHelpers.getColumn(firstResult, "Sentinel").getInt(0));
+        TestCase.assertEquals(2, DataAccessHelpers.getColumn(firstResult, "Sentinel").getInt(1));
+        TestCase.assertEquals(0, DataAccessHelpers.getColumn(firstResult, "Sentinel").getInt(2));
 
-        TestCase.assertEquals(4097, lastResult.getColumn("Sentinel").getInt(0));
-        TestCase.assertEquals(2, lastResult.getColumn("Sentinel").getInt(1));
-        TestCase.assertEquals(4096, lastResult.getColumn("Sentinel").getInt(2));
+        TestCase.assertEquals(4097, DataAccessHelpers.getColumn(lastResult, "Sentinel").getInt(0));
+        TestCase.assertEquals(2, DataAccessHelpers.getColumn(lastResult, "Sentinel").getInt(1));
+        TestCase.assertEquals(4096, DataAccessHelpers.getColumn(lastResult, "Sentinel").getInt(2));
     }
 
     @Test
@@ -3446,7 +3520,8 @@ public class QueryTableAggregationTest {
         final Table byTable = table.where(filter).groupBy("Key");
         TableTools.showWithRowSet(byTable);
 
-        UpdateGraphProcessor.DEFAULT.runWithinUnitTestCycle(filter::run);
+        final ControlledUpdateGraph updateGraph = ExecutionContext.getContext().getUpdateGraph().cast();
+        updateGraph.runWithinUnitTestCycle(filter::run);
 
         TableTools.showWithRowSet(byTable);
 
@@ -3485,19 +3560,20 @@ public class QueryTableAggregationTest {
         final String[] keys2 = new String[newSize];
         Arrays.fill(keys2, "Key");
 
-        UpdateGraphProcessor.DEFAULT.runWithinUnitTestCycle(() -> {
-            final RowSet additions = RowSetFactory.fromRange(0, newSize - 1);
-            addToTable(table, additions, col("Key", keys2), intCol("IntCol", sentinel2));
-            table.notifyListeners(additions, i(), i());
+        final ControlledUpdateGraph updateGraph = ExecutionContext.getContext().getUpdateGraph().cast();
+        updateGraph.runWithinUnitTestCycle(() -> {
+            final RowSet additions5 = RowSetFactory.fromRange(0, newSize - 1);
+            addToTable(table, additions5, col("Key", keys2), intCol("IntCol", sentinel2));
+            table.notifyListeners(additions5, i(), i());
         });
 
         assertTableEquals(table, flat);
         assertTableEquals(table, subTable);
 
-        UpdateGraphProcessor.DEFAULT.runWithinUnitTestCycle(() -> {
-            final RowSet removals = RowSetFactory.fromRange(100, 100 + newSize - 1);
-            removeRows(table, removals);
-            table.notifyListeners(i(), removals, i());
+        updateGraph.runWithinUnitTestCycle(() -> {
+            final RowSet removals6 = RowSetFactory.fromRange(100, 100 + newSize - 1);
+            removeRows(table, removals6);
+            table.notifyListeners(i(), removals6, i());
         });
         assertTableEquals(table, flat);
         assertTableEquals(table, subTable);
@@ -3507,32 +3583,32 @@ public class QueryTableAggregationTest {
         }
 
         // changed delta
-        UpdateGraphProcessor.DEFAULT.runWithinUnitTestCycle(() -> {
-            final RowSet additions = RowSetFactory.fromRange(newSize, newSize + newSize - 1);
-            final RowSet removals = RowSetFactory.fromRange(6000, 6000 + newSize - 3);
-            addToTable(table, additions, col("Key", keys2), intCol("IntCol", sentinel2));
-            removeRows(table, removals);
-            table.notifyListeners(additions, removals, i());
+        updateGraph.runWithinUnitTestCycle(() -> {
+            final RowSet additions4 = RowSetFactory.fromRange(newSize, newSize + newSize - 1);
+            final RowSet removals5 = RowSetFactory.fromRange(6000, 6000 + newSize - 3);
+            addToTable(table, additions4, col("Key", keys2), intCol("IntCol", sentinel2));
+            removeRows(table, removals5);
+            table.notifyListeners(additions4, removals5, i());
         });
         assertTableEquals(table, flat);
         assertTableEquals(table, subTable);
 
         // polarity reversal
-        UpdateGraphProcessor.DEFAULT.runWithinUnitTestCycle(() -> {
-            final RowSet additions = RowSetFactory.fromRange(newSize * 2, newSize * 3 - 1);
-            final RowSet removals = RowSetFactory.fromRange(6000 + newSize, 6000 + newSize * 3);
-            addToTable(table, additions, col("Key", keys2), intCol("IntCol", sentinel2));
-            removeRows(table, removals);
-            table.notifyListeners(additions, removals, i());
+        updateGraph.runWithinUnitTestCycle(() -> {
+            final RowSet additions3 = RowSetFactory.fromRange(newSize * 2, newSize * 3 - 1);
+            final RowSet removals4 = RowSetFactory.fromRange(6000 + newSize, 6000 + newSize * 3);
+            addToTable(table, additions3, col("Key", keys2), intCol("IntCol", sentinel2));
+            removeRows(table, removals4);
+            table.notifyListeners(additions3, removals4, i());
         });
         assertTableEquals(table, flat);
         assertTableEquals(table, subTable);
 
         // prepare a hole
-        UpdateGraphProcessor.DEFAULT.runWithinUnitTestCycle(() -> {
-            final RowSet removals = RowSetFactory.fromRange(7000, 7100);
-            removeRows(table, removals);
-            table.notifyListeners(i(), removals, i());
+        updateGraph.runWithinUnitTestCycle(() -> {
+            final RowSet removals3 = RowSetFactory.fromRange(7000, 7100);
+            removeRows(table, removals3);
+            table.notifyListeners(i(), removals3, i());
         });
         assertTableEquals(table, flat);
         assertTableEquals(table, subTable);
@@ -3542,7 +3618,7 @@ public class QueryTableAggregationTest {
         }
 
         // intervening keys
-        UpdateGraphProcessor.DEFAULT.runWithinUnitTestCycle(() -> {
+        updateGraph.runWithinUnitTestCycle(() -> {
             final RowSet additions1 = RowSetFactory.fromRange(newSize * 3, newSize * 4 - 1);
             final RowSet additions2 = RowSetFactory.fromRange(7000, 7000 + newSize - 1);
             final RowSet removals = RowSetFactory.fromRange(6000 + newSize * 4, 6000 + newSize * 5 - 1);
@@ -3559,7 +3635,7 @@ public class QueryTableAggregationTest {
         }
 
         // intervening keys without reversed polarity
-        UpdateGraphProcessor.DEFAULT.runWithinUnitTestCycle(() -> {
+        updateGraph.runWithinUnitTestCycle(() -> {
             final RowSet removals1 = RowSetFactory.fromRange(0, newSize - 1);
             final RowSet removals2 = RowSetFactory.fromRange(7000, 7000 + newSize - 1);
             final RowSet allRemovals = removals1.union(removals2);
@@ -3592,7 +3668,8 @@ public class QueryTableAggregationTest {
         System.out.println("Starting:");
         TableTools.showWithRowSet(exposedLastBy);
 
-        UpdateGraphProcessor.DEFAULT.runWithinUnitTestCycle(() -> {
+        final ControlledUpdateGraph updateGraph = ExecutionContext.getContext().getUpdateGraph().cast();
+        updateGraph.runWithinUnitTestCycle(() -> {
             addToTable(source, i(20), col("Key", "A"), col("Sentinel", 10));
             removeRows(source, i(10));
             final TableUpdateImpl update = new TableUpdateImpl();
@@ -3609,7 +3686,7 @@ public class QueryTableAggregationTest {
         System.out.println("Shifted:");
         TableTools.showWithRowSet(exposedLastBy);
 
-        UpdateGraphProcessor.DEFAULT.runWithinUnitTestCycle(() -> {
+        updateGraph.runWithinUnitTestCycle(() -> {
             addToTable(source, i(20), col("Key", "A"), intCol("Sentinel", 20));
             source.notifyListeners(i(), i(), i(20));
         });
@@ -3628,16 +3705,17 @@ public class QueryTableAggregationTest {
                         new BigInteger("100"), new BigInteger("100"), BigInteger.valueOf(200)));
         final Table percentile = source.aggAllBy(percentile(0.25));
         TableTools.show(percentile);
-        TestCase.assertEquals(BigInteger.valueOf(100), percentile.getColumn("Value").get(0));
+        TestCase.assertEquals(BigInteger.valueOf(100), DataAccessHelpers.getColumn(percentile, "Value").get(0));
 
-        UpdateGraphProcessor.DEFAULT.runWithinUnitTestCycle(() -> {
+        final ControlledUpdateGraph updateGraph = ExecutionContext.getContext().getUpdateGraph().cast();
+        updateGraph.runWithinUnitTestCycle(() -> {
             final RowSet removeRowSet = RowSetFactory.fromRange(2, 6);
             removeRows(source, removeRowSet);
             source.notifyListeners(i(), removeRowSet, i());
         });
 
         TableTools.show(percentile);
-        TestCase.assertEquals(BigInteger.valueOf(100), percentile.getColumn("Value").get(0));
+        TestCase.assertEquals(BigInteger.valueOf(100), DataAccessHelpers.getColumn(percentile, "Value").get(0));
     }
 
     @Test
@@ -3703,13 +3781,14 @@ public class QueryTableAggregationTest {
         final Table initialState = aggregated.snapshot();
         TestCase.assertEquals(5, aggregated.size());
 
-        UpdateGraphProcessor.DEFAULT.runWithinUnitTestCycle(() -> {
+        final ControlledUpdateGraph updateGraph = ExecutionContext.getContext().getUpdateGraph().cast();
+        updateGraph.runWithinUnitTestCycle(() -> {
             inputRows.insertRange(0, 8);
             input.notifyListeners(RowSetFactory.fromRange(0, 8), i(), i());
         });
         TestCase.assertEquals(5, aggregated.size());
 
-        UpdateGraphProcessor.DEFAULT.runWithinUnitTestCycle(() -> {
+        updateGraph.runWithinUnitTestCycle(() -> {
             inputRows.removeRange(0, 8);
             input.notifyListeners(i(), RowSetFactory.fromRange(0, 8), i());
         });
@@ -3741,17 +3820,131 @@ public class QueryTableAggregationTest {
         TestCase.assertEquals(1, aggregated.size());
         assertTableEquals(expectedEmpty, aggregated);
 
-        UpdateGraphProcessor.DEFAULT.runWithinUnitTestCycle(() -> {
+        final ControlledUpdateGraph updateGraph = ExecutionContext.getContext().getUpdateGraph().cast();
+        updateGraph.runWithinUnitTestCycle(() -> {
             inputRows.insertRange(0, 9);
             input.notifyListeners(RowSetFactory.fromRange(0, 9), i(), i());
         });
         TestCase.assertEquals(1, aggregated.size());
 
-        UpdateGraphProcessor.DEFAULT.runWithinUnitTestCycle(() -> {
+        updateGraph.runWithinUnitTestCycle(() -> {
             inputRows.removeRange(0, 9);
             input.notifyListeners(i(), RowSetFactory.fromRange(0, 9), i());
         });
         TestCase.assertEquals(1, aggregated.size());
         assertTableEquals(expectedEmpty, aggregated);
+    }
+
+    @Test
+    public void testMultiPartitionSymbolTableBy() throws IOException {
+        final File testRootFile = Files.createTempDirectory(QueryTableAggregationTest.class.getName()).toFile();
+        try {
+            final Table t1 = new InMemoryTable(
+                    new String[] {"StringKeys", "GroupedInts"},
+                    new Object[] {
+                            new String[] {"key1", "key1", "key2", "key2", "key3", "key2", "key4", "key2", "key1"},
+                            new short[] {1, 1, 2, 2, 3, 2, 4, 2, 1}
+                    });
+            final Table t2 = new InMemoryTable(
+                    new String[] {"StringKeys", "GroupedInts"},
+                    new Object[] {
+                            new String[] {"key4", null, "key3", null, "key1", null, null},
+                            new short[] {4, 0, 3, 0, 1, 0, 0}
+                    });
+            final Table t3 = new InMemoryTable(
+                    new String[] {"StringKeys", "GroupedInts"},
+                    new Object[] {
+                            new String[] {"key5", "key4", "key2", "key5", "key6"},
+                            new short[] {5, 4, 2, 5, 6}
+                    });
+            final Table t4 = new InMemoryTable(
+                    new String[] {"StringKeys", "GroupedInts"},
+                    new Object[] {
+                            new String[] {null, "key6", "key6", "key6", "key6", "key7", null},
+                            new short[] {0, 6, 6, 6, 6, 7, 0}
+                    });
+
+
+            ParquetTools.writeTable(t1, new File(testRootFile,
+                    "Date=2021-07-20" + File.separator + "Num=100" + File.separator + "file1.parquet"));
+            ParquetTools.writeTable(t2, new File(testRootFile,
+                    "Date=2021-07-20" + File.separator + "Num=200" + File.separator + "file2.parquet"));
+            ParquetTools.writeTable(t3, new File(testRootFile,
+                    "Date=2021-07-21" + File.separator + "Num=300" + File.separator + "file3.parquet"));
+            ParquetTools.writeTable(t4, new File(testRootFile,
+                    "Date=2021-07-21" + File.separator + "Num=400" + File.separator + "file4.parquet"));
+
+            final Table merged = TableTools.merge(
+                    t1.updateView("Date=`2021-07-20`", "Num=100"),
+                    t2.updateView("Date=`2021-07-20`", "Num=200"),
+                    t3.updateView("Date=`2021-07-21`", "Num=300"),
+                    t4.updateView("Date=`2021-07-21`", "Num=400")).moveColumnsUp("Date", "Num");
+
+            final Table loaded = ParquetTools.readPartitionedTableInferSchema(
+                    new ParquetKeyValuePartitionedLayout(testRootFile, 2), ParquetInstructions.EMPTY);
+
+            // verify the sources are identical
+            assertTableEquals(merged, loaded);
+
+            final Table merged_summed = merged.aggBy(AggSum("GroupedInts"), "StringKeys");
+            final Table loaded_summed = loaded.aggBy(AggSum("GroupedInts"), "StringKeys");
+
+            TableTools.showWithRowSet(loaded_summed);
+
+            // verify aggregations are identical
+            assertTableEquals(merged_summed, loaded_summed);
+        } finally {
+            FileUtils.deleteRecursively(testRootFile);
+        }
+    }
+
+    @Test
+    public void testSymbolTableBy() throws IOException {
+        diskBackedTestHarness((table) -> {
+            final Table result = table.aggBy(AggSum("Value"), "Symbol");
+            TableTools.showWithRowSet(result);
+
+            final long[] values = new long[result.intSize()];
+            final MutableInt pos = new MutableInt();
+            result.longColumnIterator("Value").forEachRemaining((long value) -> {
+                values[pos.getValue()] = value;
+                pos.increment();
+            });
+            assertArrayEquals(new long[] {0, 5, 17, 23}, values);
+        });
+    }
+
+    private void diskBackedTestHarness(Consumer<Table> testFunction) throws IOException {
+        final File directory = Files.createTempDirectory("QueryTableAggregationTest").toFile();
+
+        try {
+            final Table table = makeDiskTable(directory);
+
+            testFunction.accept(table);
+
+            table.close();
+        } finally {
+            FileUtils.deleteRecursively(directory);
+        }
+    }
+
+    @NotNull
+    private Table makeDiskTable(File directory) throws IOException {
+        final String[] syms = new String[] {"DragonFruit", "Apple", "Banana", "Cantaloupe",
+                "Apple", "Cantaloupe", "Cantaloupe", "Banana", "Banana", "Cantaloupe"};
+
+        final int[] values = new int[syms.length];
+        for (int ii = 0; ii < values.length; ii++) {
+            values[ii] = ii;
+        }
+
+        final TableDefaults result = testTable(stringCol("Symbol", syms),
+                intCol("Value", values));
+
+        final File outputFile = new File(directory, "disk_table" + ParquetTableWriter.PARQUET_FILE_EXTENSION);
+
+        ParquetTools.writeTable(result, outputFile, result.getDefinition());
+
+        return ParquetTools.readTable(outputFile);
     }
 }

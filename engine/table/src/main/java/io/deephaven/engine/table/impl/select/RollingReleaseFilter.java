@@ -8,7 +8,6 @@ import io.deephaven.engine.rowset.TrackingWritableRowSet;
 import io.deephaven.engine.rowset.WritableRowSet;
 import io.deephaven.engine.table.Table;
 import io.deephaven.engine.table.TableDefinition;
-import io.deephaven.engine.updategraph.UpdateGraphProcessor;
 import io.deephaven.engine.rowset.RowSet;
 
 import java.util.Collections;
@@ -79,7 +78,7 @@ public class RollingReleaseFilter extends WhereFilterLivenessArtifactImpl implem
         Assert.eqNull(this.listener, "this.listener");
         this.listener = listener;
         listener.setIsRefreshing(true);
-        UpdateGraphProcessor.DEFAULT.addSource(this);
+        updateGraph.addSource(this);
     }
 
     @Override
@@ -101,7 +100,7 @@ public class RollingReleaseFilter extends WhereFilterLivenessArtifactImpl implem
     @Override
     protected void destroy() {
         super.destroy();
-        UpdateGraphProcessor.DEFAULT.removeSource(this);
+        updateGraph.removeSource(this);
     }
 
     @Override

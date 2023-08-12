@@ -22,9 +22,9 @@ import static org.junit.jupiter.api.Assertions.assertTimeoutPreemptively;
 
 public class ParentsVisitorTest {
 
-    private static final int HEAVILY_BRANCHED_SIZE = 128;
+    static final int HEAVILY_BRANCHED_SIZE = 128;
 
-    private static final int DEEPWALK_SIZE = 8192;
+    static final int DEEPWALK_SIZE = 8192;
 
     private static final TableSpec S1 = TableSpec.empty(42);
 
@@ -229,7 +229,7 @@ public class ParentsVisitorTest {
      * This is a table that branches at every level except the leaf. Naive implementations may need to search every
      * single path through the DAG; but that is not feasible (2^64 paths).
      */
-    private static List<TableSpec> createHeavilyBranchedTable(int size) {
+    static List<TableSpec> createHeavilyBranchedTable(int size) {
         List<TableSpec> out = new ArrayList<>(size + 1);
         TableSpec current = TableSpec.empty(1);
         out.add(current);
@@ -240,7 +240,7 @@ public class ParentsVisitorTest {
         return out;
     }
 
-    private static List<TableSpec> createDeepWalk(int size) {
+    static List<TableSpec> createDeepWalk(int size) {
         List<TableSpec> expected = new ArrayList<>();
         TableSpec table = TableSpec.empty(size);
         expected.add(table);

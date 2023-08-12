@@ -21,7 +21,7 @@ public:
   NotExpressionImpl(Private, std::shared_ptr<BooleanExpressionImpl> &&child);
   ~NotExpressionImpl() final;
 
-  void streamIrisRepresentation(std::ostream &s) const final;
+  void StreamIrisRepresentation(std::ostream &s) const final;
 
 private:
   std::shared_ptr<BooleanExpressionImpl> child_;
@@ -36,7 +36,7 @@ public:
   AndExpressionImpl(Private, std::vector<std::shared_ptr<BooleanExpressionImpl>> &&children);
   ~AndExpressionImpl() final;
 
-  void streamIrisRepresentation(std::ostream &s) const final;
+  void StreamIrisRepresentation(std::ostream &s) const final;
 
 private:
   std::vector<std::shared_ptr<BooleanExpressionImpl>> children_;
@@ -51,7 +51,7 @@ public:
   OrExpressionImpl(Private, std::vector<std::shared_ptr<BooleanExpressionImpl>> &&children);
   ~OrExpressionImpl() final;
 
-  void streamIrisRepresentation(std::ostream &s) const final;
+  void StreamIrisRepresentation(std::ostream &s) const final;
 
 private:
   std::vector<std::shared_ptr<BooleanExpressionImpl>> children_;
@@ -69,7 +69,7 @@ public:
       std::string &&method, std::shared_ptr<ExpressionImpl> &&rhs);
   ~BooleanValuedInstanceMethod() final;
 
-  void streamIrisRepresentation(std::ostream &s) const final;
+  void StreamIrisRepresentation(std::ostream &s) const final;
 
 private:
   std::shared_ptr<ExpressionImpl> lhs_;
@@ -78,22 +78,22 @@ private:
 };
 }  // namespace
 
-std::shared_ptr<BooleanExpressionImpl> BooleanExpressionImpl::createNot(
+std::shared_ptr<BooleanExpressionImpl> BooleanExpressionImpl::CreateNot(
     std::shared_ptr<BooleanExpressionImpl> item) {
   return NotExpressionImpl::create(std::move(item));
 }
 
-std::shared_ptr<BooleanExpressionImpl> BooleanExpressionImpl::createAnd(
+std::shared_ptr<BooleanExpressionImpl> BooleanExpressionImpl::CreateAnd(
     std::shared_ptr<BooleanExpressionImpl> lhs, std::shared_ptr<BooleanExpressionImpl> rhs) {
   return AndExpressionImpl::create(std::move(lhs), std::move(rhs));
 }
 
-std::shared_ptr<BooleanExpressionImpl> BooleanExpressionImpl::createOr(
+std::shared_ptr<BooleanExpressionImpl> BooleanExpressionImpl::CreateOr(
     std::shared_ptr<BooleanExpressionImpl> lhs, std::shared_ptr<BooleanExpressionImpl> rhs) {
   return OrExpressionImpl::create(std::move(lhs), std::move(rhs));
 }
 
-std::shared_ptr<BooleanExpressionImpl> BooleanExpressionImpl::createBooleanValuedInstanceMethod(
+std::shared_ptr<BooleanExpressionImpl> BooleanExpressionImpl::CreateBooleanValuedInstanceMethod(
     std::shared_ptr<ExpressionImpl> lhs, std::string method, std::shared_ptr<ExpressionImpl> rhs) {
   return BooleanValuedInstanceMethod::create(std::move(lhs), std::move(method), std::move(rhs));
 }
@@ -116,9 +116,9 @@ NotExpressionImpl::NotExpressionImpl(Private, std::shared_ptr<BooleanExpressionI
 
 NotExpressionImpl::~NotExpressionImpl() = default;
 
-void NotExpressionImpl::streamIrisRepresentation(std::ostream &s) const {
+void NotExpressionImpl::StreamIrisRepresentation(std::ostream &s) const {
   s << '!';
-  child_->streamIrisRepresentation(s);
+  child_->StreamIrisRepresentation(s);
 }
 
 std::shared_ptr<BooleanExpressionImpl> AndExpressionImpl::create(
@@ -147,9 +147,9 @@ AndExpressionImpl::AndExpressionImpl(Private,
 
 AndExpressionImpl::~AndExpressionImpl() = default;
 
-void AndExpressionImpl::streamIrisRepresentation(std::ostream &s) const {
+void AndExpressionImpl::StreamIrisRepresentation(std::ostream &s) const {
   s << '(';
-  s << separatedList(children_.begin(), children_.end(), " && ", &streamIris);
+  s << separatedList(children_.begin(), children_.end(), " && ", &StreamIris);
   s << ')';
 }
 
@@ -179,9 +179,9 @@ OrExpressionImpl::OrExpressionImpl(Private,
 
 OrExpressionImpl::~OrExpressionImpl() = default;
 
-void OrExpressionImpl::streamIrisRepresentation(std::ostream &s) const {
+void OrExpressionImpl::StreamIrisRepresentation(std::ostream &s) const {
   s << '(';
-  s << separatedList(children_.begin(), children_.end(), " || ", &streamIris);
+  s << separatedList(children_.begin(), children_.end(), " || ", &StreamIris);
   s << ')';
 }
 
@@ -198,11 +198,11 @@ BooleanValuedInstanceMethod::BooleanValuedInstanceMethod(Private,
 
 BooleanValuedInstanceMethod::~BooleanValuedInstanceMethod() = default;
 
-void BooleanValuedInstanceMethod::streamIrisRepresentation(std::ostream &s) const {
+void BooleanValuedInstanceMethod::StreamIrisRepresentation(std::ostream &s) const {
   s << '(';
-  lhs_->streamIrisRepresentation(s);
+  lhs_->StreamIrisRepresentation(s);
   s << '.' << method_ << '(';
-  rhs_->streamIrisRepresentation(s);
+  rhs_->StreamIrisRepresentation(s);
   s << "))";
 }
 }  // namespace

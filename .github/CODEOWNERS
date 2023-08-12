@@ -22,3 +22,5 @@
 /docker @devinrsmith @jcferretti @rcaudy
 /engine/function/ @chipkent @kosak @rcaudy
 /py @chipkent @jmao-denver @rcaudy
+/R @chipkent @alexpeters1208 @rcaudy
+*.proto @devinrsmith @nbauernfeind @niloc132 @rcaudy

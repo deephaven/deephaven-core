@@ -3,15 +3,17 @@
  */
 package io.deephaven.benchmark.engine;
 
+import io.deephaven.engine.context.ExecutionContext;
+import io.deephaven.engine.context.TestExecutionContext;
 import io.deephaven.engine.table.PartitionedTable;
 import io.deephaven.engine.table.Table;
-import io.deephaven.engine.updategraph.UpdateGraphProcessor;
+import io.deephaven.engine.testutil.ControlledUpdateGraph;
 import io.deephaven.engine.util.TableTools;
 import io.deephaven.engine.table.impl.QueryTable;
 import io.deephaven.benchmarking.*;
 import io.deephaven.benchmarking.generator.ColumnGenerator;
-import io.deephaven.benchmarking.generator.EnumStringColumnGenerator;
-import io.deephaven.benchmarking.generator.SequentialNumColumnGenerator;
+import io.deephaven.benchmarking.generator.EnumStringGenerator;
+import io.deephaven.benchmarking.generator.SequentialNumberGenerator;
 import io.deephaven.benchmarking.impl.PersistentBenchmarkTableBuilder;
 import io.deephaven.benchmarking.runner.TableBenchmarkState;
 import org.jetbrains.annotations.NotNull;
@@ -57,7 +59,8 @@ public class GroupByBenchmark {
 
     @Setup(Level.Trial)
     public void setupEnv(BenchmarkParams params) {
-        UpdateGraphProcessor.DEFAULT.enableUnitTestMode();
+        TestExecutionContext.createForUnitTests().open();
+        ExecutionContext.getContext().getUpdateGraph().<ControlledUpdateGraph>cast().enableUnitTestMode();
         QueryTable.setMemoizeResults(false);
 
         final BenchmarkTableBuilder builder;
@@ -81,10 +84,10 @@ public class GroupByBenchmark {
 
         builder.setSeed(0xDEADBEEF).addColumn(BenchmarkTools.stringCol("PartCol", 1, 5, 7, 0xFEEDBEEF));
 
-        final EnumStringColumnGenerator stringKey = (EnumStringColumnGenerator) BenchmarkTools.stringCol("KeyString",
-                keyCount, 6, 6, 0xB00FB00F, EnumStringColumnGenerator.Mode.Rotate);
-        final ColumnGenerator intKey = BenchmarkTools.seqNumberCol("KeyInt", int.class, 0, 1, keyCount,
-                SequentialNumColumnGenerator.Mode.RollAtLimit);
+        final ColumnGenerator<String> stringKey = BenchmarkTools.stringCol(
+                "KeyString", keyCount, 6, 6, 0xB00FB00FL, EnumStringGenerator.Mode.Rotate);
+        final ColumnGenerator<Integer> intKey = BenchmarkTools.seqNumberCol(
+                "KeyInt", int.class, 0, 1, keyCount, SequentialNumberGenerator.Mode.RollAtLimit);
 
         System.out.println("Key type: " + keyType);
         switch (keyType) {
@@ -153,26 +156,26 @@ public class GroupByBenchmark {
 
     @Benchmark
     public Table byStatic(@NotNull final Blackhole bh) {
-        final Table result =
-                UpdateGraphProcessor.DEFAULT.sharedLock().computeLocked(() -> table.groupBy(keyName.split("[, ]+")));
+        final Table result = ExecutionContext.getContext().getUpdateGraph().sharedLock()
+                .computeLocked(() -> table.groupBy(keyName.split("[, ]+")));
         bh.consume(result);
         return state.setResult(TableTools.emptyTable(0));
     }
 
     @Benchmark
     public Table byIncremental(@NotNull final Blackhole bh) {
-        final Table result = IncrementalBenchmark.incrementalBenchmark(
-                (t) -> UpdateGraphProcessor.DEFAULT.sharedLock().computeLocked(() -> t.groupBy(keyName.split("[, ]+"))),
-                table);
+        final Table result = IncrementalBenchmark.incrementalBenchmark((t) -> {
+            return ExecutionContext.getContext().getUpdateGraph().sharedLock().computeLocked(
+                    () -> t.groupBy(keyName.split("[, ]+")));
+        }, table);
         bh.consume(result);
         return state.setResult(TableTools.emptyTable(0));
     }
 
     @Benchmark
     public Table partitionByStatic(@NotNull final Blackhole bh) {
-        final PartitionedTable result =
-                UpdateGraphProcessor.DEFAULT.sharedLock()
-                        .computeLocked(() -> table.partitionBy(keyName.split("[, ]+")));
+        final PartitionedTable result = ExecutionContext.getContext().getUpdateGraph().sharedLock().computeLocked(
+                () -> table.partitionBy(keyName.split("[, ]+")));
         bh.consume(result);
         return state.setResult(TableTools.emptyTable(0));
     }
@@ -180,8 +183,10 @@ public class GroupByBenchmark {
     @Benchmark
     public Table partitionByIncremental(@NotNull final Blackhole bh) {
         final PartitionedTable result = IncrementalBenchmark.incrementalBenchmark(
-                (t) -> UpdateGraphProcessor.DEFAULT.sharedLock()
-                        .computeLocked(() -> t.partitionBy(keyName.split("[, ]+"))),
+                (t) -> {
+                    return ExecutionContext.getContext().getUpdateGraph().sharedLock()
+                            .computeLocked(() -> t.partitionBy(keyName.split("[, ]+")));
+                },
                 table);
         bh.consume(result);
         return state.setResult(TableTools.emptyTable(0));

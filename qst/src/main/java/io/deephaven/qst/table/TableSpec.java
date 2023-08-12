@@ -15,7 +15,6 @@ import java.io.BufferedInputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.ObjectInputStream;
-import java.io.Serializable;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.Collection;
@@ -34,7 +33,7 @@ import java.util.Collection;
  * @see TableCreator
  * @see io.deephaven.api.TableOperations
  */
-public interface TableSpec extends TableOperationsDefaults<TableSpec, TableSpec>, TableSchema, Serializable {
+public interface TableSpec extends TableOperationsDefaults<TableSpec, TableSpec>, TableSchema {
 
     static EmptyTable empty(long size) {
         return EmptyTable.of(size);
@@ -66,25 +65,6 @@ public interface TableSpec extends TableOperationsDefaults<TableSpec, TableSpec>
         return TicketTable.of(ticket);
     }
 
-    /**
-     * Create a table via java deserialization.
-     *
-     * <p>
-     * Note: stability of the format is not guaranteed.
-     *
-     * @param path the path to the file
-     * @return the table
-     * @throws IOException if an I/O error occurs
-     * @throws ClassNotFoundException Class of a serialized object cannot be found.
-     */
-    static TableSpec file(Path path) throws IOException, ClassNotFoundException {
-        try (InputStream in = Files.newInputStream(path);
-                BufferedInputStream buf = new BufferedInputStream(in);
-                ObjectInputStream oIn = new ObjectInputStream(buf)) {
-            return (TableSpec) oIn.readObject();
-        }
-    }
-
     TableCreationLogic logic();
 
     /**
@@ -98,69 +78,67 @@ public interface TableSpec extends TableOperationsDefaults<TableSpec, TableSpec>
         return ParentsVisitor.getParents(this).mapToInt(TableSpec::depth).max().orElse(-1) + 1;
     }
 
-    <V extends Visitor> V walk(V visitor);
+    <T> T walk(Visitor<T> visitor);
 
-    interface Visitor {
-        void visit(EmptyTable emptyTable);
+    interface Visitor<T> {
+        T visit(EmptyTable emptyTable);
 
-        void visit(NewTable newTable);
+        T visit(NewTable newTable);
 
-        void visit(TimeTable timeTable);
+        T visit(TimeTable timeTable);
 
-        void visit(MergeTable mergeTable);
+        T visit(MergeTable mergeTable);
 
-        void visit(HeadTable headTable);
+        T visit(HeadTable headTable);
 
-        void visit(TailTable tailTable);
+        T visit(TailTable tailTable);
 
-        void visit(ReverseTable reverseTable);
+        T visit(ReverseTable reverseTable);
 
-        void visit(SortTable sortTable);
+        T visit(SortTable sortTable);
 
-        void visit(SnapshotTable snapshotTable);
+        T visit(SnapshotTable snapshotTable);
 
-        void visit(SnapshotWhenTable snapshotWhenTable);
+        T visit(SnapshotWhenTable snapshotWhenTable);
 
-        void visit(WhereTable whereTable);
+        T visit(WhereTable whereTable);
 
-        void visit(WhereInTable whereInTable);
+        T visit(WhereInTable whereInTable);
 
-        void visit(NaturalJoinTable naturalJoinTable);
+        T visit(NaturalJoinTable naturalJoinTable);
 
-        void visit(ExactJoinTable exactJoinTable);
+        T visit(ExactJoinTable exactJoinTable);
 
-        void visit(JoinTable joinTable);
+        T visit(JoinTable joinTable);
 
-        void visit(AsOfJoinTable aj);
+        T visit(AsOfJoinTable aj);
 
-        void visit(ReverseAsOfJoinTable raj);
+        T visit(RangeJoinTable rangeJoinTable);
 
-        void visit(RangeJoinTable rangeJoinTable);
+        T visit(ViewTable viewTable);
 
-        void visit(ViewTable viewTable);
+        T visit(SelectTable selectTable);
 
-        void visit(SelectTable selectTable);
+        T visit(UpdateViewTable updateViewTable);
 
-        void visit(UpdateViewTable updateViewTable);
+        T visit(UpdateTable updateTable);
 
-        void visit(UpdateTable updateTable);
+        T visit(LazyUpdateTable lazyUpdateTable);
 
-        void visit(LazyUpdateTable lazyUpdateTable);
+        T visit(AggregateTable aggregateTable);
 
-        void visit(AggregateTable aggregateTable);
+        T visit(AggregateAllTable aggregateAllTable);
 
-        void visit(AggregateAllTable aggregateAllTable);
+        T visit(TicketTable ticketTable);
 
-        void visit(TicketTable ticketTable);
+        T visit(InputTable inputTable);
 
-        void visit(InputTable inputTable);
+        T visit(SelectDistinctTable selectDistinctTable);
 
-        void visit(SelectDistinctTable selectDistinctTable);
+        T visit(UpdateByTable updateByTable);
 
-        void visit(UpdateByTable updateByTable);
+        T visit(UngroupTable ungroupTable);
 
-        void visit(UngroupTable ungroupTable);
-
-        void visit(DropColumnsTable dropColumnsTable);
+        T visit(DropColumnsTable dropColumnsTable);
     }
 }

@@ -22,6 +22,7 @@ import io.deephaven.engine.util.ColumnFormatting;
 import io.deephaven.engine.liveness.LivenessScopeStack;
 import io.deephaven.util.annotations.FinalDefault;
 
+import javax.annotation.Nullable;
 import java.util.*;
 import java.util.function.UnaryOperator;
 import java.util.stream.Collectors;
@@ -48,7 +49,7 @@ public interface TableDefaults extends Table, TableOperationsDefaults<Table, Tab
     @Override
     @ConcurrentMethod
     @FinalDefault
-    default Table getMeta() {
+    default Table meta() {
         List<String> columnNames = new ArrayList<>();
         List<String> columnDataTypes = new ArrayList<>();
         List<String> columnTypes = new ArrayList<>();
@@ -126,19 +127,14 @@ public interface TableDefaults extends Table, TableOperationsDefaults<Table, Tab
         return rawColumnSource.cast(clazz);
     }
 
-    // -----------------------------------------------------------------------------------------------------------------
-    // DataColumns for fetching data by row position; generally much less efficient than ColumnSource
-    // -----------------------------------------------------------------------------------------------------------------
-
-    @Override
-    default DataColumn[] getColumns() {
-        return getDefinition().getColumnStream().map(c -> getColumn(c.getName())).toArray(DataColumn[]::new);
-    }
-
     @Override
     @FinalDefault
-    default DataColumn getColumn(final int columnIndex) {
-        return getColumn(this.getDefinition().getColumns().get(columnIndex).getName());
+    default <T> ColumnSource<T> getColumnSource(String sourceName, Class<? extends T> clazz,
+            @Nullable Class<?> componentType) {
+        @SuppressWarnings("rawtypes")
+        ColumnSource rawColumnSource = getColumnSource(sourceName);
+        // noinspection unchecked
+        return rawColumnSource.cast(clazz, componentType);
     }
 
     // -----------------------------------------------------------------------------------------------------------------
@@ -259,13 +255,6 @@ public interface TableDefaults extends Table, TableOperationsDefaults<Table, Tab
         return moveColumns(index, false, columnsToMove);
     }
 
-    @Override
-    @ConcurrentMethod
-    @FinalDefault
-    default Table dateTimeColumnAsNanos(String columnName) {
-        return dateTimeColumnAsNanos(columnName, columnName);
-    }
-
     // -----------------------------------------------------------------------------------------------------------------
     // Join Operations
     // -----------------------------------------------------------------------------------------------------------------
@@ -317,20 +306,6 @@ public interface TableDefaults extends Table, TableOperationsDefaults<Table, Tab
     @FinalDefault
     default Table applyToAllBy(String formulaColumn, String... groupByColumns) {
         return applyToAllBy(formulaColumn, ColumnName.from(groupByColumns));
-    }
-
-    // -----------------------------------------------------------------------------------------------------------------
-    // Disaggregation Operations
-    // -----------------------------------------------------------------------------------------------------------------
-
-    @Override
-    @FinalDefault
-    default Table ungroupAllBut(String... columnsNotToUngroup) {
-        final Set<String> columnsNotToUnwrapSet = Arrays.stream(columnsNotToUngroup).collect(Collectors.toSet());
-        return ungroup(getDefinition().getColumnStream()
-                .filter(c -> !columnsNotToUnwrapSet.contains(c.getName())
-                        && (c.getDataType().isArray() || QueryLanguageParser.isTypedVector(c.getDataType())))
-                .map(ColumnDefinition::getName).toArray(String[]::new));
     }
 
     // -----------------------------------------------------------------------------------------------------------------
@@ -399,28 +374,6 @@ public interface TableDefaults extends Table, TableOperationsDefaults<Table, Tab
     @FinalDefault
     default Table snapshotWhen(Table trigger, Collection<Flag> features, String... stampColumns) {
         return snapshotWhen(trigger, SnapshotWhenOptions.of(features, stampColumns));
-    }
-
-    // -----------------------------------------------------------------------------------------------------------------
-    // Merge Operations
-    // -----------------------------------------------------------------------------------------------------------------
-
-    @Override
-    @FinalDefault
-    default Table mergeBefore(final Table... others) {
-        final List<Table> tables = new ArrayList<>(others.length + 1);
-        tables.add(this);
-        tables.addAll(List.of(others));
-        return TableTools.merge(tables);
-    }
-
-    @Override
-    @FinalDefault
-    default Table mergeAfter(final Table... others) {
-        final List<Table> tables = new ArrayList<>(others.length + 1);
-        tables.addAll(List.of(others));
-        tables.add(this);
-        return TableTools.merge(tables);
     }
 
     // -----------------------------------------------------------------------------------------------------------------

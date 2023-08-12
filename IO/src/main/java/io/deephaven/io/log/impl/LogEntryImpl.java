@@ -72,18 +72,16 @@ public class LogEntryImpl extends LogOutputCsvImpl implements LogEntry {
     }
 
     @Override
-    public LogEntry end() {
+    public void end() {
         close();
         sink.write(this);
         ends.getAndIncrement();
-        return this;
     }
 
     @Override
-    public LogEntry endl() {
+    public void endl() {
         nl();
         end();
-        return this;
     }
 
     // ------------------------------------------------------------------------------------------------

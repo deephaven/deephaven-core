@@ -8,7 +8,6 @@ import io.deephaven.engine.table.ColumnSource;
 import io.deephaven.engine.table.impl.sources.ObjectArraySource;
 import io.deephaven.engine.table.impl.ssms.SegmentedSortedMultiSet;
 import io.deephaven.engine.rowset.RowSet;
-import org.jetbrains.annotations.NotNull;
 
 /**
  * A {@link ColumnSource} that provides {@link Vector vectors} of type T, backed by a same typed
@@ -19,27 +18,6 @@ import org.jetbrains.annotations.NotNull;
  */
 public interface SsmBackedColumnSource<K extends SegmentedSortedMultiSet, T extends Vector>
         extends ColumnSource<T> {
-
-    /**
-     * Create an appropriate instance for the specified type
-     * 
-     * @param type
-     * @return
-     */
-    @SuppressWarnings("rawtypes")
-    static SsmBackedColumnSource create(@NotNull final Class<?> type) {
-        if (type == char.class || type == Character.class) {
-            return new CharSsmBackedSource();
-        } /*
-           * else if(type == byte.class || type == Byte.class) { return new ByteSsmBackedSource(); } else if(type ==
-           * short.class || type == Short.class) { return new ShortSsmBackedSource(); } else if(type == int.class ||
-           * type == Integer.class) { return new IntSsmBackedSource(); } else if(type == long.class || type ==
-           * Long.class || type == DateTime.class) { return new LongSsmBackedSource(); } else if(type == float.class ||
-           * type == Float.class) { return new FloatSsmBackedSource(); } else if(type == double.class || type ==
-           * Double.class) { return new DoubleSsmBackedSource(); } else { return new ObjectSsmBackedSource(type); }
-           */
-        throw new IllegalStateException("NOPE");
-    }
 
     ObjectArraySource<K> getUnderlyingSource();
 

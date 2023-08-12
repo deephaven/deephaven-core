@@ -6,9 +6,10 @@ package io.deephaven.integrations.python;
 import io.deephaven.base.FileUtils;
 import io.deephaven.base.verify.Assert;
 import io.deephaven.configuration.Configuration;
+import io.deephaven.engine.context.ExecutionContext;
 import io.deephaven.engine.exceptions.CancellationException;
 import io.deephaven.engine.context.QueryScope;
-import io.deephaven.engine.updategraph.UpdateGraphProcessor;
+import io.deephaven.engine.updategraph.UpdateGraph;
 import io.deephaven.engine.util.AbstractScriptSession;
 import io.deephaven.engine.util.PythonEvaluator;
 import io.deephaven.engine.util.PythonEvaluatorJpy;
@@ -16,13 +17,12 @@ import io.deephaven.engine.util.PythonScope;
 import io.deephaven.engine.util.ScriptFinder;
 import io.deephaven.engine.util.ScriptSession;
 import io.deephaven.integrations.python.PythonDeephavenSession.PythonSnapshot;
-import io.deephaven.engine.util.scripts.ScriptPathLoader;
-import io.deephaven.engine.util.scripts.ScriptPathLoaderState;
 import io.deephaven.internal.log.LoggerFactory;
 import io.deephaven.io.logger.Logger;
 import io.deephaven.plugin.type.ObjectTypeLookup;
 import io.deephaven.plugin.type.ObjectTypeLookup.NoOp;
 import io.deephaven.util.SafeCloseable;
+import io.deephaven.util.annotations.ScriptApi;
 import io.deephaven.util.annotations.VisibleForTesting;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
@@ -43,7 +43,6 @@ import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
-import java.util.function.Supplier;
 import java.util.stream.Collectors;
 
 /**
@@ -60,15 +59,15 @@ public class PythonDeephavenSession extends AbstractScriptSession<PythonSnapshot
 
     public static String SCRIPT_TYPE = "Python";
 
-    private final PythonScriptSessionModule module;
-
-    private final ScriptFinder scriptFinder;
     private final PythonEvaluator evaluator;
     private final PythonScope<PyObject> scope;
+    private final PythonScriptSessionModule module;
+    private final ScriptFinder scriptFinder;
 
     /**
      * Create a Python ScriptSession.
      *
+     * @param updateGraph the default update graph to install for the repl
      * @param objectTypeLookup the object type lookup
      * @param listener an optional listener that will be notified whenever the query scope changes
      * @param runInitScripts if init scripts should be executed
@@ -76,22 +75,23 @@ public class PythonDeephavenSession extends AbstractScriptSession<PythonSnapshot
      * @throws IOException if an IO error occurs running initialization scripts
      */
     public PythonDeephavenSession(
-            ObjectTypeLookup objectTypeLookup, @Nullable final Listener listener, boolean runInitScripts,
-            PythonEvaluatorJpy pythonEvaluator)
-            throws IOException {
-        super(objectTypeLookup, listener);
+            final UpdateGraph updateGraph,
+            final ObjectTypeLookup objectTypeLookup,
+            @Nullable final Listener listener,
+            final boolean runInitScripts,
+            final PythonEvaluatorJpy pythonEvaluator) throws IOException {
+        super(updateGraph, objectTypeLookup, listener);
 
         evaluator = pythonEvaluator;
         scope = pythonEvaluator.getScope();
         executionContext.getQueryLibrary().importClass(org.jpy.PyObject.class);
         try (final SafeCloseable ignored = executionContext.open()) {
-            this.module = (PythonScriptSessionModule) PyModule.importModule("deephaven.server.script_session")
+            module = (PythonScriptSessionModule) PyModule.importModule("deephaven_internal.script_session")
                     .createProxy(CallableKind.FUNCTION, PythonScriptSessionModule.class);
         }
-        this.scriptFinder = new ScriptFinder(DEFAULT_SCRIPT_PATH);
+        scriptFinder = new ScriptFinder(DEFAULT_SCRIPT_PATH);
 
         publishInitial();
-
         /*
          * And now the user-defined initialization scripts, if any.
          */
@@ -108,12 +108,19 @@ public class PythonDeephavenSession extends AbstractScriptSession<PythonSnapshot
      * Creates a Python "{@link ScriptSession}", for use where we should only be reading from the scope, such as an
      * IPython kernel session.
      */
-    public PythonDeephavenSession(PythonScope<?> scope) {
-        super(NoOp.INSTANCE, null);
+    public PythonDeephavenSession(
+            final UpdateGraph updateGraph, final PythonScope<?> scope) {
+        super(updateGraph, NoOp.INSTANCE, null);
+
+        evaluator = null;
         this.scope = (PythonScope<PyObject>) scope;
-        this.module = null;
-        this.evaluator = null;
-        this.scriptFinder = null;
+        try (final SafeCloseable ignored = executionContext.open()) {
+            module = (PythonScriptSessionModule) PyModule.importModule("deephaven_internal.script_session")
+                    .createProxy(CallableKind.FUNCTION, PythonScriptSessionModule.class);
+        }
+        scriptFinder = null;
+
+        publishInitial();
     }
 
     @Override
@@ -164,6 +171,8 @@ public class PythonDeephavenSession extends AbstractScriptSession<PythonSnapshot
                 .orElse(defaultValue);
     }
 
+    @SuppressWarnings("unused")
+    @ScriptApi
     public void pushScope(PyObject pydict) {
         if (!pydict.isDict()) {
             throw new IllegalArgumentException("Expect a Python dict but got a" + pydict.repr());
@@ -171,6 +180,8 @@ public class PythonDeephavenSession extends AbstractScriptSession<PythonSnapshot
         scope.pushScope(pydict);
     }
 
+    @SuppressWarnings("unused")
+    @ScriptApi
     public void popScope() {
         scope.popScope();
     }
@@ -179,9 +190,8 @@ public class PythonDeephavenSession extends AbstractScriptSession<PythonSnapshot
     protected void evaluate(String command, String scriptName) {
         log.info().append("Evaluating command: " + command).endl();
         try {
-            UpdateGraphProcessor.DEFAULT.exclusiveLock().doLockedInterruptibly(() -> {
-                evaluator.evalScript(command);
-            });
+            ExecutionContext.getContext().getUpdateGraph().exclusiveLock()
+                    .doLockedInterruptibly(() -> evaluator.evalScript(command));
         } catch (InterruptedException e) {
             throw new CancellationException(e.getMessage() != null ? e.getMessage() : "Query interrupted", e);
         }
@@ -269,47 +279,28 @@ public class PythonDeephavenSession extends AbstractScriptSession<PythonSnapshot
 
     @Override
     public synchronized void setVariable(String name, @Nullable Object newValue) {
-        try (PythonSnapshot fromSnapshot = takeSnapshot()) {
-            final PyDictWrapper globals = scope.mainGlobals();
-            if (newValue == null) {
-                try {
-                    globals.delItem(name);
-                } catch (KeyError key) {
-                    // ignore
-                }
-            } else {
-                if (!(newValue instanceof PyObject)) {
-                    newValue = PythonObjectWrapper.wrap(newValue);
-                }
-                globals.setItem(name, newValue);
+        final PyDictWrapper globals = scope.mainGlobals();
+        if (newValue == null) {
+            try {
+                globals.delItem(name);
+            } catch (KeyError key) {
+                // ignore
             }
-            try (PythonSnapshot toSnapshot = takeSnapshot()) {
-                applyDiff(fromSnapshot, toSnapshot, null);
+        } else {
+            if (!(newValue instanceof PyObject)) {
+                newValue = PythonObjectWrapper.wrap(newValue);
             }
+            globals.setItem(name, newValue);
         }
+
+        // Observe changes from this "setVariable" (potentially capturing previous or concurrent external changes from
+        // other threads)
+        observeScopeChanges();
     }
 
     @Override
     public String scriptType() {
         return SCRIPT_TYPE;
-    }
-
-    @Override
-    public void onApplicationInitializationBegin(Supplier<ScriptPathLoader> pathLoader,
-            ScriptPathLoaderState scriptLoaderState) {}
-
-    @Override
-    public void onApplicationInitializationEnd() {}
-
-    @Override
-    public void setScriptPathLoader(Supplier<ScriptPathLoader> scriptPathLoader, boolean caching) {}
-
-    @Override
-    public void clearScriptPathLoader() {}
-
-    @Override
-    public boolean setUseOriginalScriptLoaderState(boolean useOriginal) {
-        return true;
     }
 
     // TODO core#41 move this logic into the python console instance or scope like this - can go further and move

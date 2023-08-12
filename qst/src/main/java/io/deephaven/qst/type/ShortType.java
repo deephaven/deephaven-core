@@ -3,17 +3,17 @@
  */
 package io.deephaven.qst.type;
 
-import io.deephaven.annotations.SimpleStyle;
+import io.deephaven.annotations.SingletonStyle;
 import org.immutables.value.Value.Immutable;
 
 /**
- * The {@link Short} type.
+ * The primitive {@link short} type.
  */
 @Immutable
-@SimpleStyle
+@SingletonStyle
 public abstract class ShortType extends PrimitiveTypeBase<Short> {
 
-    public static ShortType instance() {
+    public static ShortType of() {
         return ImmutableShortType.of();
     }
 
@@ -23,14 +23,18 @@ public abstract class ShortType extends PrimitiveTypeBase<Short> {
     }
 
     @Override
+    public final BoxedShortType boxedType() {
+        return BoxedShortType.of();
+    }
+
+    @Override
     public final NativeArrayType<short[], Short> arrayType() {
         return NativeArrayType.of(short[].class, this);
     }
 
     @Override
-    public final <V extends PrimitiveType.Visitor> V walk(V visitor) {
-        visitor.visit(this);
-        return visitor;
+    public final <R> R walk(PrimitiveType.Visitor<R> visitor) {
+        return visitor.visit(this);
     }
 
     @Override

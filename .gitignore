@@ -46,7 +46,8 @@ workspaces/
 devopsLocal/
 pyclient/venv
 pyclient/dist
-pyclient/*.egg-info
+.venv/
+*.egg-info/
 
 jenkins/failures
 
@@ -55,3 +56,4 @@ node_modules
 .project
 .classpath
 .settings
+.Rproj.user

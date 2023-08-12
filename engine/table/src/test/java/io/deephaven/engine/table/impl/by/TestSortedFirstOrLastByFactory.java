@@ -5,16 +5,14 @@ package io.deephaven.engine.table.impl.by;
 
 import io.deephaven.api.agg.spec.AggSpec;
 import io.deephaven.configuration.Configuration;
+import io.deephaven.engine.context.ExecutionContext;
+import io.deephaven.engine.table.impl.DataAccessHelpers;
 import io.deephaven.engine.table.impl.TableUpdateImpl;
-import io.deephaven.engine.testutil.ColumnInfo;
-import io.deephaven.engine.testutil.TstUtils;
+import io.deephaven.engine.testutil.*;
 import io.deephaven.engine.testutil.generator.IntGenerator;
 import io.deephaven.engine.testutil.generator.SetGenerator;
 import io.deephaven.engine.testutil.generator.SortedLongGenerator;
 import io.deephaven.engine.testutil.testcase.RefreshingTableTestCase;
-import io.deephaven.engine.testutil.EvalNugget;
-import io.deephaven.engine.testutil.EvalNuggetInterface;
-import io.deephaven.engine.updategraph.UpdateGraphProcessor;
 import io.deephaven.engine.util.SortedBy;
 import io.deephaven.engine.table.impl.*;
 import io.deephaven.engine.rowset.RowSetFactory;
@@ -25,6 +23,7 @@ import junit.framework.TestCase;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Random;
+
 import org.junit.experimental.categories.Category;
 
 import static io.deephaven.api.agg.Aggregation.AggSortedLast;
@@ -120,27 +119,28 @@ public class TestSortedFirstOrLastByFactory extends RefreshingTableTestCase {
         tuvbuck.getResultTable().addUpdateListener(failureListenerBuck);
 
         showWithRowSet(sfb);
-        TestCase.assertEquals(2, sfb.getColumn("Sentinel").get(0));
-        TestCase.assertEquals(2, bucketed.getColumn("Sentinel").get(0));
+        TestCase.assertEquals(2, DataAccessHelpers.getColumn(sfb, "Sentinel").get(0));
+        TestCase.assertEquals(2, DataAccessHelpers.getColumn(bucketed, "Sentinel").get(0));
 
         // this part is the original bug, if we didn't change the actual value of the row redirection; because the
         // shift modify combination left it at the same row key; we would not notice the mdoification
-        UpdateGraphProcessor.DEFAULT.runWithinUnitTestCycle(() -> {
-            final TableUpdateImpl update = new TableUpdateImpl();
-            update.added = RowSetFactory.fromKeys(0);
-            update.removed = RowSetFactory.empty();
-            update.modified = RowSetFactory.fromKeys(2, 4);
-            update.modifiedColumnSet = source.getModifiedColumnSetForUpdates();
-            update.modifiedColumnSet().clear();
-            update.modifiedColumnSet().setAll("SFB");
+        final ControlledUpdateGraph updateGraph = ExecutionContext.getContext().getUpdateGraph().cast();
+        updateGraph.runWithinUnitTestCycle(() -> {
+            final TableUpdateImpl update5 = new TableUpdateImpl();
+            update5.added = RowSetFactory.fromKeys(0);
+            update5.removed = RowSetFactory.empty();
+            update5.modified = RowSetFactory.fromKeys(2, 4);
+            update5.modifiedColumnSet = source.getModifiedColumnSetForUpdates();
+            update5.modifiedColumnSet().clear();
+            update5.modifiedColumnSet().setAll("SFB");
 
             addToTable(source, RowSetFactory.flat(6), intCol("SFB", 3, 2, 3, 2, 3, 2),
                     intCol("Sentinel", 6, 1, 2, 3, 4, 5), col("DummyBucket", "A", "A", "A", "A", "A", "A"));
 
-            final RowSetShiftData.Builder sb = new RowSetShiftData.Builder();
-            sb.shiftRange(0, 4, 1);
-            update.shifted = sb.build();
-            source.notifyListeners(update);
+            final RowSetShiftData.Builder sb5 = new RowSetShiftData.Builder();
+            sb5.shiftRange(0, 4, 1);
+            update5.shifted = sb5.build();
+            source.notifyListeners(update5);
         });
 
         System.out.println("Updated SFB");
@@ -150,114 +150,114 @@ public class TestSortedFirstOrLastByFactory extends RefreshingTableTestCase {
 
         // i'm concerned that if we really modify a row, but we don't detect it in the shift, so here we are just
         // shifting without modifications
-        UpdateGraphProcessor.DEFAULT.runWithinUnitTestCycle(() -> {
-            final TableUpdateImpl update = new TableUpdateImpl();
-            update.added = RowSetFactory.fromKeys(0);
-            update.removed = RowSetFactory.empty();
-            update.modified = RowSetFactory.fromKeys();
-            update.modifiedColumnSet = source.getModifiedColumnSetForUpdates();
-            update.modifiedColumnSet().clear();
-            update.modifiedColumnSet().setAll("SFB");
+        updateGraph.runWithinUnitTestCycle(() -> {
+            final TableUpdateImpl update4 = new TableUpdateImpl();
+            update4.added = RowSetFactory.fromKeys(0);
+            update4.removed = RowSetFactory.empty();
+            update4.modified = RowSetFactory.fromKeys();
+            update4.modifiedColumnSet = source.getModifiedColumnSetForUpdates();
+            update4.modifiedColumnSet().clear();
+            update4.modifiedColumnSet().setAll("SFB");
 
             addToTable(source, RowSetFactory.flat(7), intCol("SFB", 4, 3, 2, 3, 2, 3, 2),
                     intCol("Sentinel", 7, 6, 1, 2, 3, 4, 5), col("DummyBucket", "A", "A", "A", "A", "A", "A", "A"));
 
-            final RowSetShiftData.Builder sb = new RowSetShiftData.Builder();
-            sb.shiftRange(0, 5, 1);
-            update.shifted = sb.build();
-            source.notifyListeners(update);
+            final RowSetShiftData.Builder sb4 = new RowSetShiftData.Builder();
+            sb4.shiftRange(0, 5, 1);
+            update4.shifted = sb4.build();
+            source.notifyListeners(update4);
         });
 
         System.out.println("Shifted SFB");
         showWithRowSet(sfb);
         tuvsfb.deepValidation();
-        TestCase.assertEquals(1, sfb.getColumn("Sentinel").get(0));
+        TestCase.assertEquals(1, DataAccessHelpers.getColumn(sfb, "Sentinel").get(0));
         tuvbuck.deepValidation();
-        TestCase.assertEquals(1, bucketed.getColumn("Sentinel").get(0));
+        TestCase.assertEquals(1, DataAccessHelpers.getColumn(bucketed, "Sentinel").get(0));
 
         // here we are shifting, but not modifying the SFB column (but are modifying sentinel)
-        UpdateGraphProcessor.DEFAULT.runWithinUnitTestCycle(() -> {
-            final TableUpdateImpl update = new TableUpdateImpl();
-            update.added = RowSetFactory.fromKeys(0);
-            update.removed = RowSetFactory.empty();
-            update.modified = RowSetFactory.fromKeys(3);
-            update.modifiedColumnSet = source.getModifiedColumnSetForUpdates();
-            update.modifiedColumnSet().clear();
-            update.modifiedColumnSet().setAll("Sentinel");
+        updateGraph.runWithinUnitTestCycle(() -> {
+            final TableUpdateImpl update3 = new TableUpdateImpl();
+            update3.added = RowSetFactory.fromKeys(0);
+            update3.removed = RowSetFactory.empty();
+            update3.modified = RowSetFactory.fromKeys(3);
+            update3.modifiedColumnSet = source.getModifiedColumnSetForUpdates();
+            update3.modifiedColumnSet().clear();
+            update3.modifiedColumnSet().setAll("Sentinel");
 
             addToTable(source, RowSetFactory.flat(8), intCol("SFB", 4, 4, 3, 2, 3, 2, 3, 2),
                     intCol("Sentinel", 8, 7, 6, 9, 2, 3, 4, 5),
                     col("DummyBucket", "A", "A", "A", "A", "A", "A", "A", "A"));
 
-            final RowSetShiftData.Builder sb = new RowSetShiftData.Builder();
-            sb.shiftRange(0, 6, 1);
-            update.shifted = sb.build();
-            source.notifyListeners(update);
+            final RowSetShiftData.Builder sb3 = new RowSetShiftData.Builder();
+            sb3.shiftRange(0, 6, 1);
+            update3.shifted = sb3.build();
+            source.notifyListeners(update3);
         });
 
         System.out.println("Shifted and Modified SFB");
         showWithRowSet(sfb);
         tuvsfb.deepValidation();
-        TestCase.assertEquals(9, sfb.getColumn("Sentinel").get(0));
+        TestCase.assertEquals(9, DataAccessHelpers.getColumn(sfb, "Sentinel").get(0));
         tuvbuck.deepValidation();
-        TestCase.assertEquals(9, bucketed.getColumn("Sentinel").get(0));
+        TestCase.assertEquals(9, DataAccessHelpers.getColumn(bucketed, "Sentinel").get(0));
 
         // we are shifting, and claiming to modify SFB but not actually doing it
-        UpdateGraphProcessor.DEFAULT.runWithinUnitTestCycle(() -> {
-            final TableUpdateImpl update = new TableUpdateImpl();
-            update.added = RowSetFactory.fromKeys(0);
-            update.removed = RowSetFactory.empty();
-            update.modified = RowSetFactory.fromKeys(4);
-            update.modifiedColumnSet = source.getModifiedColumnSetForUpdates();
-            update.modifiedColumnSet().clear();
-            update.modifiedColumnSet().setAll("SFB");
+        updateGraph.runWithinUnitTestCycle(() -> {
+            final TableUpdateImpl update2 = new TableUpdateImpl();
+            update2.added = RowSetFactory.fromKeys(0);
+            update2.removed = RowSetFactory.empty();
+            update2.modified = RowSetFactory.fromKeys(4);
+            update2.modifiedColumnSet = source.getModifiedColumnSetForUpdates();
+            update2.modifiedColumnSet().clear();
+            update2.modifiedColumnSet().setAll("SFB");
 
             addToTable(source, RowSetFactory.flat(9), intCol("SFB", 4, 4, 4, 3, 2, 3, 2, 3, 2),
                     intCol("Sentinel", 10, 8, 7, 6, 9, 2, 3, 4, 5),
                     col("DummyBucket", "A", "A", "A", "A", "A", "A", "A", "A", "A"));
 
-            final RowSetShiftData.Builder sb = new RowSetShiftData.Builder();
-            sb.shiftRange(0, 7, 1);
-            update.shifted = sb.build();
-            source.notifyListeners(update);
+            final RowSetShiftData.Builder sb2 = new RowSetShiftData.Builder();
+            sb2.shiftRange(0, 7, 1);
+            update2.shifted = sb2.build();
+            source.notifyListeners(update2);
         });
 
         System.out.println("Shifted and Modified SFB");
         showWithRowSet(sfb);
         tuvsfb.deepValidation();
-        TestCase.assertEquals(9, sfb.getColumn("Sentinel").get(0));
+        TestCase.assertEquals(9, DataAccessHelpers.getColumn(sfb, "Sentinel").get(0));
         tuvbuck.deepValidation();
-        TestCase.assertEquals(9, bucketed.getColumn("Sentinel").get(0));
+        TestCase.assertEquals(9, DataAccessHelpers.getColumn(bucketed, "Sentinel").get(0));
 
         // here we are shifting, and modifying SFB but not actually doing it
-        UpdateGraphProcessor.DEFAULT.runWithinUnitTestCycle(() -> {
-            final TableUpdateImpl update = new TableUpdateImpl();
-            update.added = RowSetFactory.fromKeys(0);
-            update.removed = RowSetFactory.empty();
-            update.modified = RowSetFactory.fromKeys(4);
-            update.modifiedColumnSet = source.getModifiedColumnSetForUpdates();
-            update.modifiedColumnSet().clear();
-            update.modifiedColumnSet().setAll("SFB");
+        updateGraph.runWithinUnitTestCycle(() -> {
+            final TableUpdateImpl update1 = new TableUpdateImpl();
+            update1.added = RowSetFactory.fromKeys(0);
+            update1.removed = RowSetFactory.empty();
+            update1.modified = RowSetFactory.fromKeys(4);
+            update1.modifiedColumnSet = source.getModifiedColumnSetForUpdates();
+            update1.modifiedColumnSet().clear();
+            update1.modifiedColumnSet().setAll("SFB");
 
             addToTable(source, RowSetFactory.flat(10), intCol("SFB", 4, 4, 4, 4, 1, 2, 3, 2, 3, 2),
                     intCol("Sentinel", 11, 10, 8, 7, 6, 9, 2, 3, 4, 5),
                     col("DummyBucket", "A", "A", "A", "A", "A", "A", "A", "A", "A", "A"));
 
-            final RowSetShiftData.Builder sb = new RowSetShiftData.Builder();
-            sb.shiftRange(0, 8, 1);
-            update.shifted = sb.build();
-            source.notifyListeners(update);
+            final RowSetShiftData.Builder sb1 = new RowSetShiftData.Builder();
+            sb1.shiftRange(0, 8, 1);
+            update1.shifted = sb1.build();
+            source.notifyListeners(update1);
         });
 
         System.out.println("Shifted and Really Really Modified SFB");
         showWithRowSet(sfb);
         tuvsfb.deepValidation();
-        TestCase.assertEquals(6, sfb.getColumn("Sentinel").get(0));
+        TestCase.assertEquals(6, DataAccessHelpers.getColumn(sfb, "Sentinel").get(0));
         tuvbuck.deepValidation();
-        TestCase.assertEquals(6, bucketed.getColumn("Sentinel").get(0));
+        TestCase.assertEquals(6, DataAccessHelpers.getColumn(bucketed, "Sentinel").get(0));
 
         // claim to modify sfb, but don't really. Actually modify sentinel.
-        UpdateGraphProcessor.DEFAULT.runWithinUnitTestCycle(() -> {
+        updateGraph.runWithinUnitTestCycle(() -> {
             final TableUpdateImpl update = new TableUpdateImpl();
             update.added = RowSetFactory.fromKeys(0);
             update.removed = RowSetFactory.empty();
@@ -279,8 +279,8 @@ public class TestSortedFirstOrLastByFactory extends RefreshingTableTestCase {
         System.out.println("Shifted and Really Really Modified SFB");
         showWithRowSet(sfb);
         tuvsfb.deepValidation();
-        TestCase.assertEquals(13, sfb.getColumn("Sentinel").get(0));
+        TestCase.assertEquals(13, DataAccessHelpers.getColumn(sfb, "Sentinel").get(0));
         tuvbuck.deepValidation();
-        TestCase.assertEquals(13, bucketed.getColumn("Sentinel").get(0));
+        TestCase.assertEquals(13, DataAccessHelpers.getColumn(bucketed, "Sentinel").get(0));
     }
 }

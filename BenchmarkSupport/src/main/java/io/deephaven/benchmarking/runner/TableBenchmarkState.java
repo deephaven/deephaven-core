@@ -29,6 +29,7 @@ public class TableBenchmarkState {
     private Table resultTable;
     private int iteration = 0;
     private int warmups = 0;
+    private String base64ResultPrint = "";
 
 
     public TableBenchmarkState(String benchmarkName, int expectedWarmups) {
@@ -51,6 +52,7 @@ public class TableBenchmarkState {
 
     public void reset() {
         resultTable = null;
+        base64ResultPrint = "";
     }
 
     public void processResult(BenchmarkParams params) throws IOException {
@@ -61,7 +63,7 @@ public class TableBenchmarkState {
 
         outputBuilder.addRow(benchmarkName, params.getMode().toString(), iteration++,
                 BenchmarkTools.buildParameterString(params),
-                TableTools.base64Fingerprint(resultTable));
+                base64ResultPrint = TableTools.base64Fingerprint(resultTable));
     }
 
     public Table setResult(Table result) {
@@ -72,7 +74,11 @@ public class TableBenchmarkState {
         return resultTable.size();
     }
 
-    static Table readBin(File location) {
+    public static Table readBin(File location) {
         return ParquetTools.readTable(location);
+    }
+
+    public String getResultHash() {
+        return base64ResultPrint;
     }
 }

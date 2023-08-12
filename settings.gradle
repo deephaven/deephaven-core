@@ -213,6 +213,9 @@ project(':engine-test-utils').projectDir = file('engine/test-utils')
 include(':engine-query-constants')
 project(':engine-query-constants').projectDir = file('engine/query-constants')
 
+include(':engine-sql')
+project(':engine-sql').projectDir = file('engine/sql')
+
 include(':extensions-csv')
 project(':extensions-csv').projectDir = file('extensions/csv')
 
@@ -268,10 +271,6 @@ project(':plugin-hierarchicaltable').projectDir = file('plugin/hierarchicaltable
 
 include(':plugin-gc-app')
 project(':plugin-gc-app').projectDir = file('plugin/gc-app')
-
-include(':envoy')
-
-include(':grpc-proxy')
 
 include(':uri')
 project(':uri').projectDir = file('java-client/uri')
@@ -346,9 +345,6 @@ project(':docker-server').projectDir = file('docker/server')
 include(':docker-server-jetty')
 project(':docker-server-jetty').projectDir = file('docker/server-jetty')
 
-include(':docker-web')
-project(':docker-web').projectDir = file('docker/web')
-
 include(':docker-web-plugin-packager')
 project(':docker-web-plugin-packager').projectDir = file('docker/web-plugin-packager')
 
@@ -373,6 +369,8 @@ include(':authentication:example-providers:oidc')
 
 include ':clock'
 include ':clock-impl'
+
+include ':sql'
 
 file("${rootDir}/docker/registry").list().each { name ->
     if (file("${rootDir}/docker/registry/${name}/build.gradle").exists()) {

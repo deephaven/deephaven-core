@@ -13,34 +13,17 @@ import io.deephaven.io.log.LogLevel;
 import io.deephaven.io.log.LogSink;
 import io.deephaven.io.log.impl.LogEntryImpl;
 import io.deephaven.io.logger.Logger;
+import org.slf4j.event.Level;
+
 import java.io.IOException;
 import java.io.UncheckedIOException;
 import java.nio.ByteBuffer;
 import java.nio.charset.StandardCharsets;
 import java.util.Objects;
-import org.slf4j.event.Level;
 
 public final class LoggerSlf4j implements Logger {
 
-    private static final Pool<ByteBuffer> buffers =
-            new ThreadSafeLenientFixedSizePool<>(2048, () -> ByteBuffer.allocate(512), null);
-
-    private static final LogBufferPool logBufferPool = new LogBufferPool() {
-        @Override
-        public ByteBuffer take(int minSize) {
-            return buffers.take();
-        }
-
-        @Override
-        public ByteBuffer take() {
-            return buffers.take();
-        }
-
-        @Override
-        public void give(ByteBuffer item) {
-            buffers.give(item);
-        }
-    };
+    private static final LogBufferPool logBufferPool = LogBufferPool.of(2048, 512);
 
     private static Level getLevelSlf4j(LogLevel level) {
         if (level == LogLevel.INFO) {
@@ -92,15 +75,14 @@ public final class LoggerSlf4j implements Logger {
         }
 
         @Override
-        public LogEntry endl() {
+        public void endl() {
             super.end();
-            return this;
         }
     }
 
     /** Static pool shared among all loggers */
     private static final Pool<Entry> entries =
-            new ThreadSafeLenientFixedSizePool<>(1024, () -> new Entry(logBufferPool), null);
+            new ThreadSafeLenientFixedSizePool<>(1024, () -> new Entry(logBufferPool), Entry::clear);
 
     /** Specialized sink for DH loggers */
     private enum Sink implements LogSink<Entry> {
@@ -172,7 +154,6 @@ public final class LoggerSlf4j implements Logger {
                 if (e.isFatal()) {
                     System.exit(1);
                 }
-                e.clear();
                 entries.give(e);
             }
         }

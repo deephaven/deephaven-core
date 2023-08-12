@@ -10,30 +10,30 @@ import io.deephaven.api.ColumnName;
 import io.deephaven.base.Pair;
 import io.deephaven.base.verify.Assert;
 import io.deephaven.base.verify.Require;
+import io.deephaven.chunk.*;
 import io.deephaven.chunk.attributes.ChunkLengths;
 import io.deephaven.chunk.attributes.ChunkPositions;
 import io.deephaven.chunk.attributes.Values;
 import io.deephaven.configuration.Configuration;
-import io.deephaven.engine.rowset.RowSetFactory;
-import io.deephaven.engine.table.*;
+import io.deephaven.engine.context.ExecutionContext;
 import io.deephaven.engine.rowset.*;
-import io.deephaven.engine.rowset.RowSequenceFactory;
-import io.deephaven.engine.table.impl.GroupingUtils;
-import io.deephaven.engine.table.impl.PrevColumnSource;
-import io.deephaven.engine.table.impl.by.typed.TypedHasherFactory;
-import io.deephaven.engine.table.impl.indexer.RowSetIndexer;
 import io.deephaven.engine.rowset.chunkattributes.OrderedRowKeys;
 import io.deephaven.engine.rowset.chunkattributes.RowKeys;
-import io.deephaven.engine.table.impl.remote.ConstructSnapshot;
+import io.deephaven.engine.table.*;
 import io.deephaven.engine.table.impl.*;
-import io.deephaven.engine.table.impl.TableUpdateImpl;
+import io.deephaven.engine.table.impl.by.typed.TypedHasherFactory;
+import io.deephaven.engine.table.impl.indexer.RowSetIndexer;
+import io.deephaven.engine.table.impl.remote.ConstructSnapshot;
 import io.deephaven.engine.table.impl.sort.findruns.IntFindRunsKernel;
 import io.deephaven.engine.table.impl.sort.permute.LongPermuteKernel;
 import io.deephaven.engine.table.impl.sort.permute.PermuteKernel;
 import io.deephaven.engine.table.impl.sort.timsort.IntIntTimsortKernel;
-import io.deephaven.engine.table.impl.sources.*;
-import io.deephaven.chunk.*;
-import io.deephaven.engine.table.impl.util.*;
+import io.deephaven.engine.table.impl.sources.ArrayBackedColumnSource;
+import io.deephaven.engine.table.impl.sources.ObjectArraySource;
+import io.deephaven.engine.table.impl.sources.ReinterpretUtils;
+import io.deephaven.engine.table.impl.sources.regioned.SymbolTableSource;
+import io.deephaven.engine.table.impl.util.ChunkUtils;
+import io.deephaven.engine.table.impl.util.UpdateSizeCalculator;
 import io.deephaven.util.SafeCloseable;
 import io.deephaven.util.SafeCloseableArray;
 import io.deephaven.util.SafeCloseableList;
@@ -45,11 +45,16 @@ import org.apache.commons.lang3.mutable.MutableObject;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
-import java.util.*;
-import java.util.function.*;
+import java.util.Arrays;
+import java.util.Collection;
+import java.util.LinkedHashMap;
+import java.util.Map;
+import java.util.function.LongFunction;
+import java.util.function.Supplier;
+import java.util.function.UnaryOperator;
 
-import static io.deephaven.engine.table.impl.by.AggregationRowLookup.EMPTY_KEY;
 import static io.deephaven.engine.table.impl.by.AggregationRowLookup.DEFAULT_UNKNOWN_ROW;
+import static io.deephaven.engine.table.impl.by.AggregationRowLookup.EMPTY_KEY;
 
 @SuppressWarnings("rawtypes")
 public class ChunkedOperatorAggregationHelper {
@@ -162,9 +167,23 @@ public class ChunkedOperatorAggregationHelper {
             useGrouping = false;
         }
 
+        final Table symbolTable;
+        final boolean useSymbolTable;
+        if (!input.isRefreshing() && control.considerSymbolTables(input, useGrouping, keySources)) {
+            Assert.eq(keySources.length, "keySources.length", 1);
+
+            symbolTable = ((SymbolTableSource<?>) keySources[0]).getStaticSymbolTable(input.getRowSet(),
+                    control.useSymbolTableLookupCaching());
+            useSymbolTable = control.useSymbolTables(input.size(), symbolTable.size());
+        } else {
+            symbolTable = null;
+            useSymbolTable = false;
+        }
+
         final MutableInt outputPosition = new MutableInt();
         final Supplier<OperatorAggregationStateManager> stateManagerSupplier =
-                () -> makeStateManager(control, input, keySources, reinterpretedKeySources, ac);
+                () -> makeStateManager(control, input, keySources, reinterpretedKeySources, ac,
+                        useSymbolTable ? symbolTable : null);
         final OperatorAggregationStateManager stateManager;
         if (initialKeys == null) {
             stateManager = stateManagerSupplier.get();
@@ -194,8 +213,7 @@ public class ChunkedOperatorAggregationHelper {
         for (int kci = 0; kci < keyHashTableSources.length; ++kci) {
             ColumnSource<?> resultKeyColumnSource = keyHashTableSources[kci];
             if (keySources[kci] != reinterpretedKeySources[kci]) {
-                resultKeyColumnSource =
-                        ReinterpretUtils.convertToOriginal(keySources[kci].getType(), resultKeyColumnSource);
+                resultKeyColumnSource = ReinterpretUtils.convertToOriginalType(keySources[kci], resultKeyColumnSource);
             }
             keyColumnsRaw[kci] = resultKeyColumnSource;
             if (input.isRefreshing()) {
@@ -287,7 +305,8 @@ public class ChunkedOperatorAggregationHelper {
     private static OperatorAggregationStateManager makeStateManager(
             @NotNull final AggregationControl control, @NotNull final QueryTable input,
             @NotNull final ColumnSource<?>[] keySources, @NotNull final ColumnSource<?>[] reinterpretedKeySources,
-            @NotNull final AggregationContext ac) {
+            @NotNull final AggregationContext ac,
+            @Nullable final Table symbolTableToUse) {
         final OperatorAggregationStateManager stateManager;
         if (input.isRefreshing()) {
             if (USE_OPEN_ADDRESSED_STATE_MANAGER) {
@@ -303,9 +322,13 @@ public class ChunkedOperatorAggregationHelper {
                         control.getTargetLoadFactor());
             }
         } else {
-            if (USE_OPEN_ADDRESSED_STATE_MANAGER) {
+            if (symbolTableToUse != null) {
+                stateManager = new StaticSymbolTableChunkedOperatorAggregationStateManager(reinterpretedKeySources[0],
+                        symbolTableToUse);
+            } else if (USE_OPEN_ADDRESSED_STATE_MANAGER) {
                 stateManager = TypedHasherFactory.make(
-                        StaticChunkedOperatorAggregationStateManagerOpenAddressedBase.class, reinterpretedKeySources,
+                        StaticChunkedOperatorAggregationStateManagerOpenAddressedBase.class,
+                        reinterpretedKeySources,
                         keySources, control.initialHashTableSize(input), control.getMaximumLoadFactor(),
                         control.getTargetLoadFactor());
             } else {
@@ -1619,6 +1642,7 @@ public class ChunkedOperatorAggregationHelper {
             @NotNull final AggregationContext ac,
             @NotNull final MutableInt outputPosition,
             @NotNull final Supplier<OperatorAggregationStateManager> stateManagerSupplier) {
+
         // This logic is duplicative of the logic in the main aggregation function, but it's hard to consolidate
         // further. A better strategy might be to do a selectDistinct first, but that would result in more hash table
         // inserts.
@@ -1635,16 +1659,20 @@ public class ChunkedOperatorAggregationHelper {
 
         final OperatorAggregationStateManager stateManager;
         if (initialKeys.isRefreshing()) {
-            final MutableObject<OperatorAggregationStateManager> stateManagerHolder = new MutableObject<>();
-            ConstructSnapshot.callDataSnapshotFunction(
-                    "InitialKeyTableSnapshot-" + System.identityHashCode(initialKeys) + ": ",
-                    ConstructSnapshot.makeSnapshotControl(false, true, (NotificationStepSource) initialKeys),
-                    (final boolean usePrev, final long beforeClockValue) -> {
-                        stateManagerHolder.setValue(makeInitializedStateManager(initialKeys, reinterpretedKeySources,
-                                ac, outputPosition, stateManagerSupplier, useGroupingAllowed, usePrev));
-                        return true;
-                    });
-            stateManager = stateManagerHolder.getValue();
+            try (final SafeCloseable ignored = ExecutionContext.getContext().withUpdateGraph(
+                    initialKeys.getUpdateGraph()).open()) {
+                final MutableObject<OperatorAggregationStateManager> stateManagerHolder = new MutableObject<>();
+                ConstructSnapshot.callDataSnapshotFunction(
+                        "InitialKeyTableSnapshot-" + System.identityHashCode(initialKeys) + ": ",
+                        ConstructSnapshot.makeSnapshotControl(false, true, (NotificationStepSource) initialKeys),
+                        (final boolean usePrev, final long beforeClockValue) -> {
+                            stateManagerHolder.setValue(makeInitializedStateManager(
+                                    initialKeys, reinterpretedKeySources, ac, outputPosition, stateManagerSupplier,
+                                    useGroupingAllowed, usePrev));
+                            return true;
+                        });
+                stateManager = stateManagerHolder.getValue();
+            }
         } else {
             stateManager = makeInitializedStateManager(initialKeys, reinterpretedKeySources,
                     ac, outputPosition, stateManagerSupplier, useGroupingAllowed, false);

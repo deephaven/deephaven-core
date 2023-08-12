@@ -86,9 +86,6 @@ public class TableToolsMergeHelper {
             if (table == null) {
                 return;
             }
-            if (table instanceof UncoalescedTable) {
-                table = table.coalesce();
-            }
 
             if (canBreakOutUnionedTable(table)) {
                 tableList.addAll(getComponentTables(table));

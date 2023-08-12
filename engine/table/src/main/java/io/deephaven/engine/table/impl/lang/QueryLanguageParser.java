@@ -889,7 +889,7 @@ public final class QueryLanguageParser extends GenericVisitorAdapter<Class<?>, Q
 
     /**
      * Checks whether {@code candidateParamType} is assignable from {@code paramType}.
-     * 
+     *
      * @see #dhqlIsAssignableFrom
      */
     private static boolean canAssignType(final Class<?> candidateParamType, final Class<?> paramType) {
@@ -932,7 +932,7 @@ public final class QueryLanguageParser extends GenericVisitorAdapter<Class<?>, Q
 
     /**
      * Check whether {@code e2} is more specific than {@code e1}.
-     * 
+     *
      * @param e1 The current best-choice executable.
      * @param e2 A possible better-matching execuable.
      * @param argExprTypes The argument types. (Used as a tiebreaker between primitive and boxed parameters.)
@@ -1383,7 +1383,7 @@ public final class QueryLanguageParser extends GenericVisitorAdapter<Class<?>, Q
 
     /**
      * Check whether {@code name} is in scope from a static import. Results are cached.
-     * 
+     *
      * @param name The name to look up.
      * @return The type of {@code name}, if {@code name} is imported by a static import.
      */
@@ -2447,17 +2447,19 @@ public final class QueryLanguageParser extends GenericVisitorAdapter<Class<?>, Q
 
         // Python vectorized functions(numba, DH) return arrays of primitive/Object types. This will break the generated
         // expression evaluation code that expects singular values. This check makes sure that numba/dh vectorized
-        // functions must be used alone as the entire expression.
-        n.getParentNode().ifPresent(parent -> {
-            if (parent.getClass() == CastExpr.class) {
+        // functions must be used alone as the entire expression after removing the enclosing parentheses.
+        Node n1 = n;
+        while (n1.hasParentNode()) {
+            n1 = n1.getParentNode().get();
+            Class cls = n1.getClass();
+
+            if (cls == CastExpr.class) {
                 throw new PythonCallVectorizationFailure(
-                        "The return values of Python vectorized function can't be cast: " + parent);
+                        "The return values of Python vectorized function can't be cast: " + n1);
+            } else if (cls != EnclosedExpr.class) {
+                throw new PythonCallVectorizationFailure("Python vectorized function can't be used in another expression: " + n1);
             }
-            if (!WrapperNode.class.equals(parent.getClass())) {
-                throw new PythonCallVectorizationFailure(
-                        "Python vectorized function can't be used in another expression: " + parent);
-            }
-        });
+        }
 
         for (int i = 0; i < expressions.length; i++) {
             if (!(expressions[i] instanceof NameExpr) && !(expressions[i] instanceof LiteralExpr)) {

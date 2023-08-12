@@ -13,7 +13,6 @@ import io.deephaven.engine.table.SharedContext;
 import io.deephaven.engine.table.WritableColumnSource;
 import io.deephaven.engine.table.WritableSourceWithPrepareForParallelPopulation;
 import io.deephaven.engine.table.impl.sources.*;
-import io.deephaven.time.DateTime;
 import org.jetbrains.annotations.NotNull;
 
 import java.time.Instant;
@@ -28,7 +27,7 @@ import java.time.ZonedDateTime;
 
 public abstract class Immutable2DNanosBasedTimeArraySource<TIME_TYPE>
         extends AbstractDeferredGroupingColumnSource<TIME_TYPE>
-        implements WritableColumnSource<TIME_TYPE>, FillUnordered<Values>, InMemoryColumnSource, ConvertableTimeSource,
+        implements WritableColumnSource<TIME_TYPE>, FillUnordered<Values>, InMemoryColumnSource, ConvertibleTimeSource,
         WritableSourceWithPrepareForParallelPopulation {
 
     protected final Immutable2DLongArraySource nanoSource;
@@ -198,8 +197,7 @@ public abstract class Immutable2DNanosBasedTimeArraySource<TIME_TYPE>
     @Override
     public <ALTERNATE_DATA_TYPE> boolean allowsReinterpret(
             @NotNull final Class<ALTERNATE_DATA_TYPE> alternateDataType) {
-        return alternateDataType == long.class || alternateDataType == Instant.class
-                || alternateDataType == DateTime.class;
+        return alternateDataType == long.class || alternateDataType == Instant.class;
     }
 
     @SuppressWarnings("unchecked")
@@ -208,8 +206,6 @@ public abstract class Immutable2DNanosBasedTimeArraySource<TIME_TYPE>
             @NotNull Class<ALTERNATE_DATA_TYPE> alternateDataType) {
         if (alternateDataType == this.getType()) {
             return (ColumnSource<ALTERNATE_DATA_TYPE>) this;
-        } else if (alternateDataType == DateTime.class) {
-            return (ColumnSource<ALTERNATE_DATA_TYPE>) toDateTime();
         } else if (alternateDataType == long.class || alternateDataType == Long.class) {
             return (ColumnSource<ALTERNATE_DATA_TYPE>) toEpochNano();
         } else if (alternateDataType == Instant.class) {
@@ -232,17 +228,12 @@ public abstract class Immutable2DNanosBasedTimeArraySource<TIME_TYPE>
 
     @Override
     public ColumnSource<LocalDate> toLocalDate(final @NotNull ZoneId zone) {
-        return new LocalDateWrapperSource(toZonedDateTime(zone), zone);
+        return new LongAsLocalDateColumnSource(nanoSource, zone);
     }
 
     @Override
     public ColumnSource<LocalTime> toLocalTime(final @NotNull ZoneId zone) {
-        return new LocalTimeWrapperSource(toZonedDateTime(zone), zone);
-    }
-
-    @Override
-    public ColumnSource<DateTime> toDateTime() {
-        return new Immutable2DDateTimeArraySource(nanoSource);
+        return new LongAsLocalTimeColumnSource(nanoSource, zone);
     }
 
     @Override

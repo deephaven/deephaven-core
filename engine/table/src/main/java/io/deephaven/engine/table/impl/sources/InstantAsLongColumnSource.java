@@ -18,6 +18,6 @@ public class InstantAsLongColumnSource extends UnboxedTimeBackedColumnSource<Ins
 
     @Override
     protected long toEpochNano(Instant val) {
-        return DateTimeUtils.toEpochNano(val);
+        return DateTimeUtils.epochNanos(val);
     }
 }

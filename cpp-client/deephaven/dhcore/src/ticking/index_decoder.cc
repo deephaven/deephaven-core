@@ -5,33 +5,32 @@
 
 #include <cstdlib>
 #include <memory>
-#include "deephaven/flatbuf/Barrage_generated.h"
 #include "deephaven/dhcore/container/row_sequence.h"
 #include "deephaven/dhcore/utility/utility.h"
 
 using deephaven::dhcore::container::RowSequence;
 using deephaven::dhcore::container::RowSequenceBuilder;
-using deephaven::dhcore::utility::stringf;
+using deephaven::dhcore::utility::Stringf;
 
 namespace deephaven::dhcore::ticking {
 namespace {
 struct Constants {
-  static constexpr const int8_t SHORT_VALUE = 1;
-  static constexpr const int8_t INT_VALUE = 2;
-  static constexpr const int8_t LONG_VALUE = 3;
-  static constexpr const int8_t BYTE_VALUE = 4;
+  static constexpr const int8_t kShortValue = 1;
+  static constexpr const int8_t kIntValue = 2;
+  static constexpr const int8_t kLongValue = 3;
+  static constexpr const int8_t kByteValue = 4;
 
-  static constexpr const int8_t VALUE_MASK = 7;
+  static constexpr const int8_t kValueMask = 7;
 
-  static constexpr const int8_t OFFSET = 8;
-  static constexpr const int8_t SHORT_ARRAY = 16;
-  static constexpr const int8_t BYTE_ARRAY = 24;
-  static constexpr const int8_t END = 32;
-  static constexpr const int8_t CMD_MASK = 0x78;
+  static constexpr const int8_t kOffset = 8;
+  static constexpr const int8_t kShortArray = 16;
+  static constexpr const int8_t kByteArray = 24;
+  static constexpr const int8_t kEnd = 32;
+  static constexpr const int8_t kCmdMask = 0x78;
 };
 }  // namespace
 
-std::shared_ptr<RowSequence> IndexDecoder::readExternalCompressedDelta(DataInput *in) {
+std::shared_ptr<RowSequence> IndexDecoder::ReadExternalCompressedDelta(DataInput *in) {
   RowSequenceBuilder builder;
 
   int64_t offset = 0;
@@ -42,109 +41,109 @@ std::shared_ptr<RowSequence> IndexDecoder::readExternalCompressedDelta(DataInput
     if (s == -1) {
       pending = v;
     } else if (v < 0) {
-      auto begin = (uint64_t)s;
-      auto end = ((uint64_t)-v) + 1;
-      builder.addInterval(begin, end);
+      auto begin = static_cast<uint64_t>(s);
+      auto end = static_cast<uint64_t>(-v) + 1;
+      builder.AddInterval(begin, end);
       pending = -1;
     } else {
-      builder.add(s);
+      builder.Add(s);
       pending = v;
     }
   };
 
   while (true) {
-    int64_t actualValue;
-    int command = in->readByte();
+    int64_t actual_value;
+    int command = in->ReadByte();
 
-    switch (command & Constants::CMD_MASK) {
-      case Constants::OFFSET: {
-        int64_t value = in->readValue(command);
-        actualValue = offset + (value < 0 ? -value : value);
-        consume(value < 0 ? -actualValue : actualValue);
-        offset = actualValue;
+    switch (command & Constants::kCmdMask) {
+      case Constants::kOffset: {
+        int64_t value = in->ReadValue(command);
+          actual_value = offset + (value < 0 ? -value : value);
+        consume(value < 0 ? -actual_value : actual_value);
+        offset = actual_value;
         break;
       }
 
-      case Constants::SHORT_ARRAY: {
-        int shortCount = (int) in->readValue(command);
-        for (int ii = 0; ii < shortCount; ++ii) {
-          int16_t shortValue = in->readShort();
-          actualValue = offset + (shortValue < 0 ? -shortValue : shortValue);
-          consume(shortValue < 0 ? -actualValue : actualValue);
-          offset = actualValue;
+      case Constants::kShortArray: {
+        int short_count = static_cast<int>(in->ReadValue(command));
+        for (int ii = 0; ii < short_count; ++ii) {
+          int16_t short_value = in->ReadShort();
+            actual_value = offset + (short_value < 0 ? -short_value : short_value);
+          consume(short_value < 0 ? -actual_value : actual_value);
+          offset = actual_value;
         }
         break;
       }
 
-      case Constants::BYTE_ARRAY: {
-        int byteCount = (int) in->readValue(command);
-        for (int ii = 0; ii < byteCount; ++ii) {
-          int8_t byteValue = in->readByte();
-          actualValue = offset + (byteValue < 0 ? -byteValue : byteValue);
-          consume(byteValue < 0 ? -actualValue : actualValue);
-          offset = actualValue;
+      case Constants::kByteArray: {
+        int byte_count = static_cast<int>(in->ReadValue(command));
+        for (int ii = 0; ii < byte_count; ++ii) {
+          int8_t byte_value = in->ReadByte();
+            actual_value = offset + (byte_value < 0 ? -byte_value : byte_value);
+          consume(byte_value < 0 ? -actual_value : actual_value);
+          offset = actual_value;
         }
         break;
       }
 
-      case Constants::END: {
+      case Constants::kEnd: {
         if (pending >= 0) {
-          builder.add(pending);
+          builder.Add(pending);
         }
-        return builder.build();
+        return builder.Build();
       }
 
       default: {
-        auto message = stringf("Bad command: %o", command);
+        auto message = Stringf("Bad command: %o", command);
         throw std::runtime_error(DEEPHAVEN_DEBUG_MSG(message));
       }
     }
   }
 }
 
-int64_t DataInput::readValue(int command) {
-  switch (command & Constants::VALUE_MASK) {
-    case Constants::LONG_VALUE: {
-      return readLong();
+int64_t DataInput::ReadValue(int command) {
+  switch (command & Constants::kValueMask) {
+    case Constants::kLongValue: {
+      return ReadLong();
     }
-    case Constants::INT_VALUE: {
-      return readInt();
+    case Constants::kIntValue: {
+      return ReadInt();
     }
-    case Constants::SHORT_VALUE: {
-      return readShort();
+    case Constants::kShortValue: {
+      return ReadShort();
     }
-    case Constants::BYTE_VALUE: {
-      return readByte();
+    case Constants::kByteValue: {
+      return ReadByte();
     }
     default: {
-      auto message = stringf("Bad command: %o", command);
+      auto message = Stringf("Bad command: %o", command);
       throw std::runtime_error(DEEPHAVEN_DEBUG_MSG(message));
     }
   }
 }
 
-int8_t DataInput::readByte() {
+int8_t DataInput::ReadByte() {
   int8_t result;
   std::memcpy(&result, data_, sizeof(result));
   data_ += sizeof(result);
   return result;
 }
 
-int16_t DataInput::readShort() {
+int16_t DataInput::ReadShort() {
   int16_t result;
   std::memcpy(&result, data_, sizeof(result));
   data_ += sizeof(result);
   return result;
 }
 
-int32_t DataInput::readInt() {
+int32_t DataInput::ReadInt() {
   int32_t result;
   std::memcpy(&result, data_, sizeof(result));
   data_ += sizeof(result);
   return result;
 }
 
-int64_t DataInput::readLong() {
+int64_t DataInput::ReadLong() {
   int64_t result;
   std::memcpy(&result, data_, sizeof(result));
   data_ += sizeof(result);

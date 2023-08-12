@@ -6,7 +6,7 @@ jpyutil.preload_jvm_dll()
 import jpy
 
 print(jpy.has_jvm())
-print(jpyutil.init_jvm())
+print(jpyutil.init_jvm(jvm_maxmem='256M'))
 print(jpy.has_jvm())
 
 System = jpy.get_type('java.lang.System')

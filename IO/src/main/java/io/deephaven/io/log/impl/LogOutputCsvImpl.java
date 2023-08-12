@@ -11,6 +11,8 @@ import io.deephaven.io.log.*;
 import io.deephaven.io.streams.ByteBufferSink;
 
 import java.io.IOException;
+import java.io.PrintWriter;
+import java.io.StringWriter;
 import java.io.UncheckedIOException;
 import java.nio.ByteBuffer;
 
@@ -177,21 +179,9 @@ public class LogOutputCsvImpl extends LogOutputBaseImpl implements LogOutput, By
 
     @Override
     public LogOutput append(Throwable t) {
-        boolean root = true;
-        do {
-            if (!root) {
-                append("caused by:").nl();
-            } else {
-                root = false;
-            }
-            append(t.getClass().getName()).append(": ").append(t.getMessage());
-            for (StackTraceElement e : t.getStackTrace()) {
-                nl().append("        at ")
-                        .append(e.getClassName()).append(".").append(e.getMethodName())
-                        .append("(").append(e.getFileName()).append(":").append(e.getLineNumber()).append(")");
-            }
-            nl();
-        } while ((t = t.getCause()) != null);
+        final StringWriter sw = new StringWriter();
+        t.printStackTrace(new PrintWriter(sw));
+        append(sw.toString());
         return this;
     }
 

@@ -11,6 +11,7 @@ dependencies {
     api depTrove3
 
     implementation project(':Container')
+    implementation project(':engine-context')
     implementation project(':engine-updategraph')
     implementation project(':Configuration')
     implementation depCommonsLang3
@@ -21,6 +22,7 @@ dependencies {
     Classpaths.inheritJUnitClassic(project, 'testImplementation')
 
     testImplementation project(':base-test-utils')
+    testImplementation project(':engine-test-utils')
     testImplementation project(':engine-rowset-test-utils')
     testRuntimeOnly project(':log-to-slf4j'),
             project(path: ':configs'),

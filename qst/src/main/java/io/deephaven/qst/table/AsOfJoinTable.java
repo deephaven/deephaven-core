@@ -3,15 +3,14 @@
  */
 package io.deephaven.qst.table;
 
-import io.deephaven.api.AsOfJoinRule;
 import io.deephaven.annotations.NodeStyle;
-import org.immutables.value.Value;
+import io.deephaven.api.AsOfJoinMatch;
 import org.immutables.value.Value.Immutable;
 
 import java.util.Collection;
 
 /**
- * @see io.deephaven.api.TableOperations#aj(Object, Collection, Collection, AsOfJoinRule)
+ * @see io.deephaven.api.TableOperations#asOfJoin(Object, Collection, AsOfJoinMatch, Collection)
  */
 @Immutable
 @NodeStyle
@@ -21,19 +20,23 @@ public abstract class AsOfJoinTable extends JoinBase {
         return ImmutableAsOfJoinTable.builder();
     }
 
-    @Value.Default
-    public AsOfJoinRule rule() {
-        return AsOfJoinRule.LESS_THAN_EQUAL;
-    }
+    public abstract AsOfJoinMatch joinMatch();
 
     @Override
-    public final <V extends Visitor> V walk(V visitor) {
-        visitor.visit(this);
-        return visitor;
+    public final <T> T walk(Visitor<T> visitor) {
+        return visitor.visit(this);
+    }
+
+    public final boolean isAj() {
+        return joinMatch().isAj();
+    }
+
+    public final boolean isRaj() {
+        return joinMatch().isRaj();
     }
 
     public interface Builder extends Join.Builder<AsOfJoinTable, Builder> {
 
-        Builder rule(AsOfJoinRule rule);
+        Builder joinMatch(AsOfJoinMatch joinMatch);
     }
 }

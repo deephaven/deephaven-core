@@ -3,21 +3,21 @@
  */
 package io.deephaven.engine.table.impl;
 
+import io.deephaven.engine.context.ExecutionContext;
 import io.deephaven.engine.context.QueryScope;
 import io.deephaven.engine.table.ShiftObliviousListener;
-import io.deephaven.engine.testutil.*;
-import io.deephaven.engine.testutil.generator.*;
-import io.deephaven.engine.updategraph.UpdateGraphProcessor;
 import io.deephaven.engine.table.WouldMatchPair;
 import io.deephaven.engine.table.impl.select.DynamicWhereFilter;
+import io.deephaven.engine.testutil.*;
+import io.deephaven.engine.testutil.generator.*;
 import junit.framework.TestCase;
 
 import java.util.Arrays;
 import java.util.Random;
 
+import static io.deephaven.engine.testutil.TstUtils.*;
 import static io.deephaven.engine.util.TableTools.col;
 import static io.deephaven.engine.util.TableTools.show;
-import static io.deephaven.engine.testutil.TstUtils.*;
 
 public class QueryTableWouldMatchTest extends QueryTableTestBase {
 
@@ -34,14 +34,15 @@ public class QueryTableWouldMatchTest extends QueryTableTestBase {
 
         show(t1Matched);
         assertEquals(Arrays.asList(true, false, true, false, false, true),
-                Arrays.asList(t1Matched.getColumn("HasAnE").get(0, 6)));
+                Arrays.asList(DataAccessHelpers.getColumn(t1Matched, "HasAnE").get(0, 6)));
         assertEquals(Arrays.asList(false, false, false, false, true, true),
-                Arrays.asList(t1Matched.getColumn("isGt3").get(0, 6)));
+                Arrays.asList(DataAccessHelpers.getColumn(t1Matched, "isGt3").get(0, 6)));
         assertEquals(Arrays.asList(true, true, true, true, true, false),
-                Arrays.asList(t1Matched.getColumn("Compound").get(0, 6)));
+                Arrays.asList(DataAccessHelpers.getColumn(t1Matched, "Compound").get(0, 6)));
 
         // Add
-        UpdateGraphProcessor.DEFAULT.runWithinUnitTestCycle(() -> {
+        final ControlledUpdateGraph updateGraph = ExecutionContext.getContext().getUpdateGraph().cast();
+        updateGraph.runWithinUnitTestCycle(() -> {
             addToTable(t1, i(7, 9), col("Text", "Cake", "Zips For Fun"),
                     col("Number", 6, 1),
                     col("Bool", false, false));
@@ -52,14 +53,14 @@ public class QueryTableWouldMatchTest extends QueryTableTestBase {
         assertEquals(modified, i());
         assertEquals(removed, i());
         assertEquals(Arrays.asList(true, false, true, false, false, true, true, false),
-                Arrays.asList(t1Matched.getColumn("HasAnE").get(0, 8)));
+                Arrays.asList(DataAccessHelpers.getColumn(t1Matched, "HasAnE").get(0, 8)));
         assertEquals(Arrays.asList(false, false, false, false, true, true, true, false),
-                Arrays.asList(t1Matched.getColumn("isGt3").get(0, 8)));
+                Arrays.asList(DataAccessHelpers.getColumn(t1Matched, "isGt3").get(0, 8)));
         assertEquals(Arrays.asList(true, true, true, true, true, false, true, false),
-                Arrays.asList(t1Matched.getColumn("Compound").get(0, 8)));
+                Arrays.asList(DataAccessHelpers.getColumn(t1Matched, "Compound").get(0, 8)));
 
         // Remove
-        UpdateGraphProcessor.DEFAULT.runWithinUnitTestCycle(() -> {
+        updateGraph.runWithinUnitTestCycle(() -> {
             removeRows(t1, i(1, 3));
             t1.notifyListeners(i(), i(1, 3), i());
         });
@@ -68,14 +69,14 @@ public class QueryTableWouldMatchTest extends QueryTableTestBase {
         assertEquals(modified, i());
         assertEquals(removed, i(1, 3));
         assertEquals(Arrays.asList(true, true, false, true, true, false),
-                Arrays.asList(t1Matched.getColumn("HasAnE").get(0, 8)));
+                Arrays.asList(DataAccessHelpers.getColumn(t1Matched, "HasAnE").get(0, 8)));
         assertEquals(Arrays.asList(false, false, true, true, true, false),
-                Arrays.asList(t1Matched.getColumn("isGt3").get(0, 8)));
+                Arrays.asList(DataAccessHelpers.getColumn(t1Matched, "isGt3").get(0, 8)));
         assertEquals(Arrays.asList(true, true, true, false, true, false),
-                Arrays.asList(t1Matched.getColumn("Compound").get(0, 8)));
+                Arrays.asList(DataAccessHelpers.getColumn(t1Matched, "Compound").get(0, 8)));
 
         // Modify
-        UpdateGraphProcessor.DEFAULT.runWithinUnitTestCycle(() -> {
+        updateGraph.runWithinUnitTestCycle(() -> {
             addToTable(t1, i(4, 5),
                     col("Text", "Kittie", "Bacon"),
                     col("Number", 2, 1),
@@ -87,14 +88,14 @@ public class QueryTableWouldMatchTest extends QueryTableTestBase {
         assertEquals(modified, i(4, 5));
         assertEquals(removed, i());
         assertEquals(Arrays.asList(true, true, true, false, true, false),
-                Arrays.asList(t1Matched.getColumn("HasAnE").get(0, 8)));
+                Arrays.asList(DataAccessHelpers.getColumn(t1Matched, "HasAnE").get(0, 8)));
         assertEquals(Arrays.asList(false, false, false, false, true, false),
-                Arrays.asList(t1Matched.getColumn("isGt3").get(0, 8)));
+                Arrays.asList(DataAccessHelpers.getColumn(t1Matched, "isGt3").get(0, 8)));
         assertEquals(Arrays.asList(true, true, true, true, true, false),
-                Arrays.asList(t1Matched.getColumn("Compound").get(0, 8)));
+                Arrays.asList(DataAccessHelpers.getColumn(t1Matched, "Compound").get(0, 8)));
 
         // All 3
-        UpdateGraphProcessor.DEFAULT.runWithinUnitTestCycle(() -> {
+        updateGraph.runWithinUnitTestCycle(() -> {
             addToTable(t1, i(0, 1, 4, 11),
                     col("Text", "Apple", "Bagel", "Boat", "YAY"),
                     col("Number", 100, -200, 300, 400),
@@ -107,11 +108,11 @@ public class QueryTableWouldMatchTest extends QueryTableTestBase {
         assertEquals(modified, i(0, 4));
         assertEquals(removed, i(9, 5));
         assertEquals(Arrays.asList(true, true, true, false, true, false),
-                Arrays.asList(t1Matched.getColumn("HasAnE").get(0, 11)));
+                Arrays.asList(DataAccessHelpers.getColumn(t1Matched, "HasAnE").get(0, 11)));
         assertEquals(Arrays.asList(true, false, false, true, true, true),
-                Arrays.asList(t1Matched.getColumn("isGt3").get(0, 11)));
+                Arrays.asList(DataAccessHelpers.getColumn(t1Matched, "isGt3").get(0, 11)));
         assertEquals(Arrays.asList(true, false, true, true, true, true),
-                Arrays.asList(t1Matched.getColumn("Compound").get(0, 11)));
+                Arrays.asList(DataAccessHelpers.getColumn(t1Matched, "Compound").get(0, 11)));
     }
 
     public void testMatchRefilter() {
@@ -138,23 +139,24 @@ public class QueryTableWouldMatchTest extends QueryTableTestBase {
         show(t1Matched);
 
         assertEquals(Arrays.asList(false, false, false, true, true, false),
-                Arrays.asList(t1Matched.getColumn("InText").get(0, 6)));
+                Arrays.asList(DataAccessHelpers.getColumn(t1Matched, "InText").get(0, 6)));
         assertEquals(Arrays.asList(true, false, false, false, false, true),
-                Arrays.asList(t1Matched.getColumn("InNum").get(0, 6)));
+                Arrays.asList(DataAccessHelpers.getColumn(t1Matched, "InNum").get(0, 6)));
 
         // Tick one filter table
-        UpdateGraphProcessor.DEFAULT.runWithinUnitTestCycle(() -> {
+        final ControlledUpdateGraph updateGraph = ExecutionContext.getContext().getUpdateGraph().cast();
+        updateGraph.runWithinUnitTestCycle(() -> {
             addToTable(textTable, i(0, 2), col("Text", "Cheese", "Yo"));
             textTable.notifyListeners(i(2), i(), i(0));
         });
 
         assertEquals(Arrays.asList(false, true, false, false, true, true),
-                Arrays.asList(t1Matched.getColumn("InText").get(0, 6)));
+                Arrays.asList(DataAccessHelpers.getColumn(t1Matched, "InText").get(0, 6)));
         assertEquals(Arrays.asList(true, false, false, false, false, true),
-                Arrays.asList(t1Matched.getColumn("InNum").get(0, 6)));
+                Arrays.asList(DataAccessHelpers.getColumn(t1Matched, "InNum").get(0, 6)));
 
         // Tick both of them
-        UpdateGraphProcessor.DEFAULT.runWithinUnitTestCycle(() -> {
+        updateGraph.runWithinUnitTestCycle(() -> {
             addToTable(textTable, i(0, 2), col("Text", "Lets go", "Hey"));
             textTable.notifyListeners(i(), i(), i(0, 2));
 
@@ -164,13 +166,13 @@ public class QueryTableWouldMatchTest extends QueryTableTestBase {
         });
 
         assertEquals(Arrays.asList(true, false, true, false, true, false),
-                Arrays.asList(t1Matched.getColumn("InText").get(0, 6)));
+                Arrays.asList(DataAccessHelpers.getColumn(t1Matched, "InText").get(0, 6)));
         assertEquals(Arrays.asList(false, false, true, false, false, true),
-                Arrays.asList(t1Matched.getColumn("InNum").get(0, 6)));
+                Arrays.asList(DataAccessHelpers.getColumn(t1Matched, "InNum").get(0, 6)));
 
         if (isRefreshing) {
             // Tick both of them, and the table itself
-            UpdateGraphProcessor.DEFAULT.runWithinUnitTestCycle(() -> {
+            updateGraph.runWithinUnitTestCycle(() -> {
                 addToTable(textTable, i(0, 2), col("Text", "Dog", "Yo"));
                 textTable.notifyListeners(i(), i(), i(0, 2));
 
@@ -190,9 +192,9 @@ public class QueryTableWouldMatchTest extends QueryTableTestBase {
             show(numberTable);
 
             assertEquals(Arrays.asList(true, false, false, false, false, true),
-                    Arrays.asList(t1Matched.getColumn("InText").get(0, 11)));
+                    Arrays.asList(DataAccessHelpers.getColumn(t1Matched, "InText").get(0, 11)));
             assertEquals(Arrays.asList(false, true, true, false, true, true),
-                    Arrays.asList(t1Matched.getColumn("InNum").get(0, 11)));
+                    Arrays.asList(DataAccessHelpers.getColumn(t1Matched, "InNum").get(0, 11)));
         }
     }
 
@@ -269,10 +271,11 @@ public class QueryTableWouldMatchTest extends QueryTableTestBase {
                 getTable(setSize, random, numSetInfo = initColumnInfos(new String[] {"intCol"},
                         new IntGenerator(0, 100)));
 
-        final QueryTable symSetTable = (QueryTable) UpdateGraphProcessor.DEFAULT.exclusiveLock()
-                .computeLocked(() -> symSetTableBase.selectDistinct("Sym"));
-        final QueryTable numSetTable = (QueryTable) UpdateGraphProcessor.DEFAULT.exclusiveLock()
-                .computeLocked(() -> numSetTableBase.selectDistinct("intCol"));
+        final ControlledUpdateGraph updateGraph = ExecutionContext.getContext().getUpdateGraph().cast();
+        final QueryTable symSetTable = (QueryTable) updateGraph.exclusiveLock().computeLocked(
+                () -> symSetTableBase.selectDistinct("Sym"));
+        final QueryTable numSetTable = (QueryTable) updateGraph.exclusiveLock().computeLocked(
+                () -> numSetTableBase.selectDistinct("intCol"));
 
         final QueryTable matchTable = getTable(filteredSize, random,
                 filteredInfo = initColumnInfos(new String[] {"Sym", "intCol", "doubleCol"},
@@ -296,7 +299,7 @@ public class QueryTableWouldMatchTest extends QueryTableTestBase {
                 final boolean modFiltered = random.nextBoolean();
 
                 final int doit = i & 0x3;
-                UpdateGraphProcessor.DEFAULT.runWithinUnitTestCycle(() -> {
+                updateGraph.runWithinUnitTestCycle(() -> {
                     if (modSet) {
                         if (doit == 0 || doit == 2) {
                             GenerateTableUpdates.generateShiftAwareTableUpdates(GenerateTableUpdates.DEFAULT_PROFILE,
@@ -311,7 +314,7 @@ public class QueryTableWouldMatchTest extends QueryTableTestBase {
                 });
                 validate(en);
 
-                UpdateGraphProcessor.DEFAULT.runWithinUnitTestCycle(() -> {
+                updateGraph.runWithinUnitTestCycle(() -> {
                     if (modFiltered) {
                         GenerateTableUpdates.generateShiftAwareTableUpdates(GenerateTableUpdates.DEFAULT_PROFILE,
                                 filteredSize, random, matchTable, filteredInfo);

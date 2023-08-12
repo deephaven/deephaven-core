@@ -8,6 +8,7 @@ import io.deephaven.base.verify.Assert;
 import io.deephaven.chunk.attributes.Values;
 import io.deephaven.chunk.Chunk;
 import io.deephaven.chunk.WritableChunk;
+import io.deephaven.engine.context.ExecutionContext;
 import io.deephaven.engine.rowset.*;
 import io.deephaven.engine.rowset.RowSetFactory;
 import io.deephaven.engine.table.ColumnSource;
@@ -15,7 +16,7 @@ import io.deephaven.engine.table.impl.chunkfillers.ChunkFiller;
 import io.deephaven.engine.table.impl.chunkfilter.ChunkFilter;
 import io.deephaven.engine.table.impl.chunkfilter.ChunkMatchFilterFactory;
 import io.deephaven.engine.table.impl.sources.UnboxedLongBackedColumnSource;
-import io.deephaven.time.DateTime;
+import io.deephaven.engine.updategraph.UpdateGraph;
 import io.deephaven.vector.*;
 import io.deephaven.hash.KeyedObjectHashSet;
 import io.deephaven.hash.KeyedObjectKey;
@@ -43,6 +44,8 @@ public abstract class AbstractColumnSource<T> implements
 
     protected final Class<T> type;
     protected final Class<?> componentType;
+
+    protected final UpdateGraph updateGraph = ExecutionContext.getContext().getUpdateGraph();
 
     protected volatile Map<T, RowSet> groupToRange;
     protected volatile List<ColumnSource<?>> rowSetIndexerKey;
@@ -286,7 +289,7 @@ public abstract class AbstractColumnSource<T> implements
      */
     protected <ALTERNATE_DATA_TYPE> ColumnSource<ALTERNATE_DATA_TYPE> doReinterpret(
             @NotNull final Class<ALTERNATE_DATA_TYPE> alternateDataType) {
-        if (getType() == DateTime.class || getType() == Instant.class || getType() == ZonedDateTime.class) {
+        if (getType() == Instant.class || getType() == ZonedDateTime.class) {
             Assert.eq(alternateDataType, "alternateDataType", long.class);
             // noinspection unchecked
             return (ColumnSource<ALTERNATE_DATA_TYPE>) new UnboxedLongBackedColumnSource<>(this);

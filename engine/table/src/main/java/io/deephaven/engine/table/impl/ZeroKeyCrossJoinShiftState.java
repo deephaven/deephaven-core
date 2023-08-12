@@ -1,7 +1,7 @@
 package io.deephaven.engine.table.impl;
 
 import io.deephaven.base.verify.Assert;
-import io.deephaven.engine.updategraph.LogicalClock;
+import io.deephaven.engine.context.ExecutionContext;
 
 public class ZeroKeyCrossJoinShiftState extends CrossJoinShiftState {
     private boolean rightEmpty;
@@ -20,7 +20,7 @@ public class ZeroKeyCrossJoinShiftState extends CrossJoinShiftState {
     void setRightEmpty(boolean rightEmpty) {
         if (isTrackingPrev) {
             this.prevRightEmpty = this.rightEmpty;
-            final long currentStep = LogicalClock.DEFAULT.currentStep();
+            final long currentStep = ExecutionContext.getContext().getUpdateGraph().clock().currentStep();
             Assert.lt(emptyChangeStep, "emptyChangeStep", currentStep, "currentStep");
             this.emptyChangeStep = currentStep;
         }
@@ -32,7 +32,8 @@ public class ZeroKeyCrossJoinShiftState extends CrossJoinShiftState {
     }
 
     public boolean rightEmptyPrev() {
-        if (emptyChangeStep != -1 && emptyChangeStep == LogicalClock.DEFAULT.currentStep()) {
+        if (emptyChangeStep != -1
+                && emptyChangeStep == ExecutionContext.getContext().getUpdateGraph().clock().currentStep()) {
             return prevRightEmpty;
         }
         return rightEmpty;

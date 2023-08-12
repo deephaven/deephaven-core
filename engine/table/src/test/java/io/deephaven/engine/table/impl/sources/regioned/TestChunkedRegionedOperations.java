@@ -11,7 +11,6 @@ import io.deephaven.stringset.ArrayStringSet;
 import io.deephaven.stringset.StringSet;
 import io.deephaven.engine.context.QueryScope;
 import io.deephaven.engine.testutil.junit4.EngineCleanup;
-import io.deephaven.time.DateTime;
 import io.deephaven.time.DateTimeUtils;
 import io.deephaven.parquet.table.ParquetTools;
 import io.deephaven.engine.util.TableTools;
@@ -39,6 +38,7 @@ import java.io.*;
 import java.math.BigInteger;
 import java.nio.file.Files;
 import java.nio.file.Paths;
+import java.time.Instant;
 import java.util.*;
 import java.util.stream.IntStream;
 import java.util.stream.Stream;
@@ -186,7 +186,7 @@ public class TestChunkedRegionedOperations {
                         "Bl   = II % 8192  == 0  ? null        :         II % 2 == 0",
                         "Sym  = II % 64    == 0  ? null        :         Long.toString(II % 1000)",
                         "Str  = II % 128   == 0  ? null        :         Long.toString(II)",
-                        "DT   = II % 256   == 0  ? null        :         new DateTime(nowNanos + II)",
+                        "DT   = II % 256   == 0  ? null        :         DateTimeUtils.epochNanosToInstant(nowNanos + II)",
                         "SymS = (StringSet) new ArrayStringSet(letters[((int) II) % 64], letters[(((int) II) + 7) % 64])",
                         "Ser  = II % 1024  == 0  ? null        : new SimpleSerializable(II)",
                         "Ext  = II % 1024  == 0  ? null        : new SimpleExternalizable(II)",
@@ -210,7 +210,7 @@ public class TestChunkedRegionedOperations {
                         "Bl   = (Boolean) null",
                         "Sym  = (String) null",
                         "Str  = (String) null",
-                        "DT   = (DateTime) null",
+                        "DT   = (Instant) null",
                         "SymS = (StringSet) null",
                         "Ser  = (SimpleSerializable) null",
                         "Ext  = (SimpleExternalizable) null",
@@ -263,7 +263,7 @@ public class TestChunkedRegionedOperations {
                         inputMissingData.updateView("PC = `P` + PC"))
                 .updateView(
                         "Bl_R = booleanAsByte(Bl)",
-                        "DT_R = nanos(DT)");
+                        "DT_R = epochNanos(DT)");
 
         actual = ParquetTools.readPartitionedTable(
                 DeephavenNestedPartitionLayout.forParquet(dataDirectory, tableName, "PC", null),
@@ -271,7 +271,7 @@ public class TestChunkedRegionedOperations {
                 partitionedDataDefinition).updateView(
                         List.of(
                                 new ReinterpretedColumn<>("Bl", Boolean.class, "Bl_R", byte.class),
-                                new ReinterpretedColumn<>("DT", DateTime.class, "DT_R", long.class)))
+                                new ReinterpretedColumn<>("DT", Instant.class, "DT_R", long.class)))
                 .coalesce();
     }
 

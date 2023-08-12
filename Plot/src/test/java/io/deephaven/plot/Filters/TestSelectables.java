@@ -3,8 +3,8 @@
  */
 package io.deephaven.plot.Filters;
 
-import io.deephaven.base.testing.BaseArrayTestCase;
 import io.deephaven.base.verify.RequirementFailure;
+import io.deephaven.engine.testutil.junit4.EngineCleanup;
 import io.deephaven.plot.BaseFigureImpl;
 import io.deephaven.plot.filters.SelectableDataSet;
 import io.deephaven.plot.filters.SelectableDataSetOneClick;
@@ -13,30 +13,44 @@ import io.deephaven.plot.util.tables.SwappableTable;
 import io.deephaven.engine.table.Table;
 import io.deephaven.engine.util.TableTools;
 import io.deephaven.engine.table.PartitionedTable;
+import junit.framework.TestCase;
+import org.junit.Before;
+import org.junit.Rule;
+import org.junit.Test;
 
 import java.util.*;
 
-public class TestSelectables extends BaseArrayTestCase {
+public class TestSelectables {
+
+    @Rule
+    final public EngineCleanup framework = new EngineCleanup();
+
     private final String[] categories = {"A", "B", "C"};
     private final double[] values = {1, 2, 3};
     private final String byColumn = "Cats";
     private final String valueColumn = "Values";
-    private final Table table =
-            TableTools.newTable(TableTools.col(byColumn, categories), TableTools.doubleCol(valueColumn, values));
     private final BaseFigureImpl figure = new BaseFigureImpl();
 
+    private Table table;
+
+    @Before
+    public void setUp() {
+        table = TableTools.newTable(TableTools.col(byColumn, categories), TableTools.doubleCol(valueColumn, values));
+    }
+
+    @Test
     public void testFilteredTableOneClick() {
         try {
             Selectables.oneClick((Table) null, byColumn);
-            fail("Expected an exception");
+            TestCase.fail("Expected an exception");
         } catch (RequirementFailure e) {
-            assertTrue(e.getMessage().contains("null"));
+            TestCase.assertTrue(e.getMessage().contains("null"));
         }
         try {
             Selectables.oneClick((Table) null);
-            fail("Expected an exception");
+            TestCase.fail("Expected an exception");
         } catch (IllegalArgumentException e) {
-            assertTrue(e.getMessage().contains("empty"));
+            TestCase.assertTrue(e.getMessage().contains("empty"));
         }
         testFilteredTable(Selectables.oneClick(table, byColumn));
         testFilteredTable(new SelectableDataSetOneClick(table.partitionBy(byColumn)));
@@ -56,10 +70,10 @@ public class TestSelectables extends BaseArrayTestCase {
     }
 
     private void testTableEquals(final Table t1, final Table t2) {
-        assertNotNull(t1);
-        assertNotNull(t2);
+        TestCase.assertNotNull(t1);
+        TestCase.assertNotNull(t2);
         final List<String> columnNames = t1.getDefinition().getColumnNames();
-        assertEquals(columnNames.size(), t2.numColumns());
+        TestCase.assertEquals(columnNames.size(), t2.numColumns());
         t2.hasColumns(columnNames);
     }
 }

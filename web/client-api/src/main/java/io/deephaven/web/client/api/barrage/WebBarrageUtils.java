@@ -86,6 +86,7 @@ public class WebBarrageUtils {
             cols[i].setName(f.name().asString());
             cols[i].setColumnIndex(i);
             cols[i].setType(fieldMetadata.get("type"));
+            cols[i].setIsSortable("true".equals(fieldMetadata.get("isSortable")));
             cols[i].setStyleColumn("true".equals(fieldMetadata.get("isStyle")));
             cols[i].setFormatColumn("true".equals(fieldMetadata.get("isDateFormat"))
                     || "true".equals(fieldMetadata.get("isNumberFormat")));
@@ -119,7 +120,6 @@ public class WebBarrageUtils {
                     "true".equals(fieldMetadata.get("rollupTable.isConstituentNodeColumn")));
             cols[i].setRollupGroupByColumn("true".equals(fieldMetadata.get("rollupTable.isGroupByColumn")));
             cols[i].setRollupAggregationInputColumn(fieldMetadata.get("rollupTable.aggregationInputColumnName"));
-
         }
         return cols;
     }
@@ -429,7 +429,6 @@ public class WebBarrageUtils {
                 return new CharArrayColumnData(Js.uncheckedCast(charArray));
             // longs are a special case despite being java primitives
             case "long":
-            case "io.deephaven.time.DateTime":
             case "java.time.Instant":
             case "java.time.ZonedDateTime":
                 assert positions.length().toFloat64() >= size * 8;

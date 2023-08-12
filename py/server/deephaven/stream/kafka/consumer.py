@@ -160,7 +160,7 @@ def consume(
             It can be the result of calling one of the functions: simple_spec(),avro_spec() or json_spec() in this
             module, or the predefined KeyValueSpec.IGNORE or KeyValueSpec.FROM_PROPERTIES. The default is None which
             works the same as KeyValueSpec.FROM_PROPERTIES, in which case, the kafka_config param should include values
-            for dictionary keys 'deephaven.key.column.name' and 'deephaven.key.column.type', for the single resulting
+            for dictionary keys 'deephaven.value.column.name' and 'deephaven.value.column.type', for the single resulting
             column name and type
         table_type (TableType): a TableType, default is TableType.blink()
 
@@ -205,7 +205,7 @@ def consume_to_partitioned_table(
             It can be the result of calling one of the functions: simple_spec(),avro_spec() or json_spec() in this
             module, or the predefined KeyValueSpec.IGNORE or KeyValueSpec.FROM_PROPERTIES. The default is None which
             works the same as KeyValueSpec.FROM_PROPERTIES, in which case, the kafka_config param should include values
-            for dictionary keys 'deephaven.key.column.name' and 'deephaven.key.column.type', for the single resulting
+            for dictionary keys 'deephaven.value.column.name' and 'deephaven.value.column.type', for the single resulting
             column name and type
         table_type (TableType): a TableType, specifying the type of the expected result's constituent tables,
             default is TableType.blink()

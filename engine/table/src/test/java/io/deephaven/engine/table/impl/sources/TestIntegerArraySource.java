@@ -8,6 +8,7 @@
  */
 package io.deephaven.engine.table.impl.sources;
 
+import io.deephaven.engine.context.ExecutionContext;
 import io.deephaven.engine.rowset.RowSetFactory;
 import io.deephaven.engine.table.ChunkSink;
 import io.deephaven.engine.table.ChunkSource;
@@ -15,13 +16,13 @@ import io.deephaven.engine.table.impl.DefaultGetContext;
 import io.deephaven.engine.table.impl.TestSourceSink;
 import io.deephaven.engine.rowset.*;
 import io.deephaven.engine.table.ColumnSource;
-import io.deephaven.engine.updategraph.UpdateGraphProcessor;
 import io.deephaven.engine.table.impl.select.FormulaColumn;
 import io.deephaven.chunk.*;
 import io.deephaven.engine.rowset.chunkattributes.OrderedRowKeyRanges;
 import io.deephaven.chunk.attributes.Values;
 import io.deephaven.base.testing.Shuffle;
 import io.deephaven.engine.rowset.chunkattributes.RowKeys;
+import io.deephaven.engine.testutil.ControlledUpdateGraph;
 import io.deephaven.engine.testutil.junit4.EngineCleanup;
 import junit.framework.TestCase;
 import org.junit.Rule;
@@ -33,7 +34,7 @@ import java.util.Random;
 import java.util.stream.LongStream;
 
 import static io.deephaven.chunk.ArrayGenerator.indexDataGenerator;
-import static io.deephaven.util.QueryConstants.NULL_INT;
+import static io.deephaven.util.QueryConstants.*;
 import static junit.framework.TestCase.*;
 
 public class TestIntegerArraySource {
@@ -59,20 +60,20 @@ public class TestIntegerArraySource {
 
     private void testGetChunkGeneric(int[] values, int[] newValues, int chunkSize, RowSet rowSet) {
         final IntegerArraySource source;
-        UpdateGraphProcessor.DEFAULT.startCycleForUnitTests();
+        ExecutionContext.getContext().getUpdateGraph().<ControlledUpdateGraph>cast().startCycleForUnitTests();
         try {
             source = forArray(values);
             validateValues(chunkSize, values, rowSet, source);
         } finally {
-            UpdateGraphProcessor.DEFAULT.completeCycleForUnitTests();
+            ExecutionContext.getContext().getUpdateGraph().<ControlledUpdateGraph>cast().completeCycleForUnitTests();
         }
-        UpdateGraphProcessor.DEFAULT.startCycleForUnitTests();
+        ExecutionContext.getContext().getUpdateGraph().<ControlledUpdateGraph>cast().startCycleForUnitTests();
         try {
             updateFromArray(source, newValues);
             validateValues(chunkSize, newValues, rowSet, source);
             validatePrevValues(chunkSize, values, rowSet, source);
         } finally {
-            UpdateGraphProcessor.DEFAULT.completeCycleForUnitTests();
+            ExecutionContext.getContext().getUpdateGraph().<ControlledUpdateGraph>cast().completeCycleForUnitTests();
         }
     }
 
@@ -266,23 +267,24 @@ public class TestIntegerArraySource {
 
     private void testFillChunkGeneric(int[] values, int[] newValues, int chunkSize, RowSet rowSet) {
         final IntegerArraySource source;
-        UpdateGraphProcessor.DEFAULT.startCycleForUnitTests();
+        ExecutionContext.getContext().getUpdateGraph().<ControlledUpdateGraph>cast().startCycleForUnitTests();
         try {
             source = forArray(values);
             validateValuesWithFill(chunkSize, values, rowSet, source);
         } finally {
-            UpdateGraphProcessor.DEFAULT.completeCycleForUnitTests();
+            ExecutionContext.getContext().getUpdateGraph().<ControlledUpdateGraph>cast().completeCycleForUnitTests();
         }
-        UpdateGraphProcessor.DEFAULT.startCycleForUnitTests();
+        ExecutionContext.getContext().getUpdateGraph().<ControlledUpdateGraph>cast().startCycleForUnitTests();
         try {
             updateFromArray(source, newValues);
             validateValuesWithFill(chunkSize, newValues, rowSet, source);
             validatePrevValuesWithFill(chunkSize, values, rowSet, source);
         } finally {
-            UpdateGraphProcessor.DEFAULT.completeCycleForUnitTests();
+            ExecutionContext.getContext().getUpdateGraph().<ControlledUpdateGraph>cast().completeCycleForUnitTests();
         }
     }
 
+    // region validate with fill
     private void validateValuesWithFill(int chunkSize, int[] values, RowSet rowSet, IntegerArraySource source) {
         try (final RowSequence.Iterator rsIterator = rowSet.getRowSequenceIterator();
              final RowSet.Iterator it = rowSet.iterator();
@@ -297,7 +299,7 @@ public class TestIntegerArraySource {
                     assertTrue(it.hasNext());
                     final long idx = it.nextLong();
                     checkFromSource(source.getInt(idx), chunk.get(i));
-                    checkFromValues(values[(int) idx], chunk.get(i));
+                    checkFromValues(idx < values.length ? values[(int) idx] : NULL_INT, chunk.get(i));
                     pos++;
                 }
             }
@@ -319,13 +321,14 @@ public class TestIntegerArraySource {
                     assertTrue(it.hasNext());
                     final long idx = it.nextLong();
                     checkFromSource(source.getPrevInt(idx), chunk.get(i));
-                    checkFromValues(values[(int) idx], chunk.get(i));
+                    checkFromValues(idx < values.length ? values[(int) idx] : NULL_INT, chunk.get(i));
                     pos++;
                 }
             }
             assertEquals(pos, rowSet.size());
         }
     }
+    // endregion validate with fill
 
     @Test
     public void testFillChunk() {
@@ -344,6 +347,10 @@ public class TestIntegerArraySource {
         testFillChunkGeneric(ArrayGenerator.randomInts(random, 16), ArrayGenerator.randomInts(random, 16), 5, RowSetFactory.fromKeys(4, 5, 6, 7, 8));
         testFillChunkGeneric(ArrayGenerator.randomInts(random, 512), ArrayGenerator.randomInts(random, 512), 4, RowSetFactory.fromKeys(254, 255, 256, 257));
         testFillChunkGeneric(ArrayGenerator.randomInts(random, 512), ArrayGenerator.randomInts(random, 512), 5, RowSetFactory.fromKeys(254, 255, 256, 257, 258));
+
+        // Test the fill with null behavior when requesting keys outside of source.
+        testFillChunkGeneric(ArrayGenerator.randomInts(random, 512), ArrayGenerator.randomInts(random, 4096), 4096, RowSetFactory.fromRange(4096, 8192));
+        testFillChunkGeneric(ArrayGenerator.randomInts(random, 512), ArrayGenerator.randomInts(random, 4096), 4096, RowSetFactory.flat(4096));
 
         for (int sourceSize = 32; sourceSize < 8192; sourceSize *= 4) {
             for (int v = -4; v < 5; v += 2) {
@@ -528,14 +535,14 @@ public class TestIntegerArraySource {
     public void testFillEmptyChunkWithPrev() {
         final IntegerArraySource src = new IntegerArraySource();
         src.startTrackingPrevValues();
-        UpdateGraphProcessor.DEFAULT.startCycleForUnitTests();
+        ExecutionContext.getContext().getUpdateGraph().<ControlledUpdateGraph>cast().startCycleForUnitTests();
         try (final RowSet keys = RowSetFactory.empty();
              final WritableIntChunk<Values> chunk = WritableIntChunk.makeWritableChunk(0)) {
             // Fill from an empty chunk
             src.fillFromChunkByKeys(keys, chunk);
         }
         // NullPointerException in IntegerSparseArraySource.commitUpdates()
-        UpdateGraphProcessor.DEFAULT.completeCycleForUnitTests();
+        ExecutionContext.getContext().getUpdateGraph().<ControlledUpdateGraph>cast().completeCycleForUnitTests();
     }
 
     @Test

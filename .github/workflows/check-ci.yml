@@ -6,6 +6,10 @@ on:
   push:
     branches: [ 'main', 'check/**', 'release/v*' ]
 
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
 jobs:
   checks:
     runs-on: ubuntu-22.04
@@ -32,9 +36,7 @@ jobs:
 
       - name: Setup gradle properties
         run: |
-          cat .github/env/${{ runner.os }}/gradle.properties >> gradle.properties
-          echo >> gradle.properties
-          echo "org.gradle.java.installations.paths=${{ steps.setup-java-11.outputs.path }},${{ steps.setup-java-17.outputs.path }}," >> gradle.properties
+          .github/scripts/gradle-properties.sh >> gradle.properties
           cat gradle.properties
 
       - name: Check
@@ -51,19 +53,14 @@ jobs:
           name: check-ci-results
           path: |
             **/build/test-results/**
-            !**/build/test-results/**/binary/**
-
-      - name: Upload Test Reports
-        uses: actions/upload-artifact@v3
-        if: always()
-        with:
-          name: check-ci-reports
-          path: '**/build/reports/tests/**'
+            **/build/reports/tests/**
 
       - name: Upload JVM Error Logs
         uses: actions/upload-artifact@v3
         if: failure()
         with:
           name: check-ci-jvm-err
-          path: '**/*_pid*.log'
+          path: |
+            **/*_pid*.log
+            **/core.*
           if-no-files-found: ignore
