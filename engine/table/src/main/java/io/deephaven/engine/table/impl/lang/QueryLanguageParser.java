@@ -2457,7 +2457,8 @@ public final class QueryLanguageParser extends GenericVisitorAdapter<Class<?>, Q
                 throw new PythonCallVectorizationFailure(
                         "The return values of Python vectorized function can't be cast: " + n1);
             } else if (cls != EnclosedExpr.class) {
-                throw new PythonCallVectorizationFailure("Python vectorized function can't be used in another expression: " + n1);
+                throw new PythonCallVectorizationFailure(
+                        "Python vectorized function can't be used in another expression: " + n1);
             }
         }
 
