@@ -21,14 +21,8 @@ import io.deephaven.utils.test.PropertySaver;
 import io.deephaven.vector.Vector;
 import io.deephaven.vector.*;
 import org.apache.commons.lang3.exception.ExceptionUtils;
-import org.apache.commons.lang3.mutable.MutableBoolean;
 import org.apache.commons.text.StringEscapeUtils;
-import org.hamcrest.Description;
 import org.jetbrains.annotations.NotNull;
-import org.jmock.api.Invocation;
-import org.jmock.internal.*;
-import org.jmock.lib.action.CustomAction;
-import org.jmock.lib.action.ReturnValueAction;
 import org.jpy.PyObject;
 import org.junit.Before;
 
@@ -46,8 +40,6 @@ public class TestQueryLanguageParser extends BaseArrayTestCase {
     private HashSet<Package> packageImports;
     private HashSet<Class<?>> classImports;
     private HashSet<Class<?>> staticImports;
-
-    private HashMap<String, Class<?>> testOverrideClassLookups;
 
     private HashMap<String, Class<?>> variables;
     private HashMap<String, Class<?>[]> variableParameterizedTypes;
@@ -155,10 +147,6 @@ public class TestQueryLanguageParser extends BaseArrayTestCase {
         variableParameterizedTypes.put("myParameterizedArrayList", new Class[] {Long.class});
         variableParameterizedTypes.put("myParameterizedHashMap", new Class[] {Integer.class, Double.class});
         variableParameterizedTypes.put("myVector", new Class[] {Double.class});
-
-        testOverrideClassLookups = new HashMap<>();
-        // This is here because in tests, QueryLanguageParser.findClass() fails trying to (re?)initialize this class
-        testOverrideClassLookups.put("io.deephaven.engine.util.PyCallableWrapper", PyCallableWrapper.class);
     }
 
     public void testSimpleCalculations() throws Exception {
@@ -3152,7 +3140,6 @@ public class TestQueryLanguageParser extends BaseArrayTestCase {
             throws Exception {
         QueryLanguageParser.Result result =
                 new QueryLanguageParser(expression, packageImports, classImports, staticImports,
-                        testOverrideClassLookups,
                         variables, variableParameterizedTypes,
                         true,
                         verifyIdempotence,

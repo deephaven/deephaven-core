@@ -146,7 +146,6 @@ public final class QueryLanguageParser extends GenericVisitorAdapter<Class<?>, Q
     private final Collection<Package> packageImports;
     private final Collection<Class<?>> classImports;
     private final Collection<Class<?>> staticImports;
-    private final Map<String, Class<?>> testOverrideClassLookups;
 
     private final Map<String, Class<?>> variables;
     private final Map<String, Class<?>[]> variableTypeArguments;
@@ -232,7 +231,6 @@ public final class QueryLanguageParser extends GenericVisitorAdapter<Class<?>, Q
                 packageImports,
                 classImports,
                 staticImports,
-                null,
                 variables,
                 variableTypeArguments,
                 unboxArguments,
@@ -245,7 +243,6 @@ public final class QueryLanguageParser extends GenericVisitorAdapter<Class<?>, Q
             final Collection<Package> packageImports,
             final Collection<Class<?>> classImports,
             final Collection<Class<?>> staticImports,
-            final Map<String, Class<?>> testOverrideClassLookups,
             final Map<String, Class<?>> variables,
             final Map<String, Class<?>[]> variableTypeArguments,
             final boolean unboxArguments,
@@ -254,7 +251,6 @@ public final class QueryLanguageParser extends GenericVisitorAdapter<Class<?>, Q
         this.packageImports = packageImports == null ? Collections.emptySet() : Set.copyOf(packageImports);
         this.classImports = classImports == null ? Collections.emptySet() : Set.copyOf(classImports);
         this.staticImports = staticImports == null ? Collections.emptySet() : Set.copyOf(staticImports);
-        this.testOverrideClassLookups = testOverrideClassLookups;
         this.variables = variables == null ? Collections.emptyMap() : Map.copyOf(variables);
         this.variableTypeArguments =
                 variableTypeArguments == null ? Collections.emptyMap() : Map.copyOf(variableTypeArguments);
@@ -309,7 +305,7 @@ public final class QueryLanguageParser extends GenericVisitorAdapter<Class<?>, Q
                 try {
                     // make sure the parser has no problem reparsing its own output and makes no changes to it.
                     final QueryLanguageParser validationQueryLanguageParser = new QueryLanguageParser(printedSource,
-                            packageImports, classImports, staticImports, testOverrideClassLookups, variables,
+                            packageImports, classImports, staticImports, variables,
                             variableTypeArguments, false, false, pyCallableWrapperImplName);
 
                     final String reparsedSource = validationQueryLanguageParser.result.source;
@@ -525,12 +521,6 @@ public final class QueryLanguageParser extends GenericVisitorAdapter<Class<?>, Q
      * @return The class, if it exists; otherwise, {@code null}.
      */
     private Class<?> findClass(String name) {
-        if (testOverrideClassLookups != null) {
-            final Class<?> testOverrideResult = testOverrideClassLookups.get(name);
-            if (testOverrideResult != null)
-                return testOverrideResult;
-        }
-
         if (name.contains(".")) { // Fully-qualified class name
             try {
                 return Class.forName(name);
