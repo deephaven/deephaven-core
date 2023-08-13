@@ -816,7 +816,7 @@ public abstract class QueryTableWhereTest {
 
         // we want to make sure we can push something through the thread pool and are not hogging it
         final CountDownLatch latch = new CountDownLatch(1);
-        OperationInitializationThreadPool.executorService.submit(latch::countDown);
+        OperationInitializationThreadPool.executorService().submit(latch::countDown);
         waitForLatch(latch);
 
         assertEquals(0, fastCounter.invokes.get());

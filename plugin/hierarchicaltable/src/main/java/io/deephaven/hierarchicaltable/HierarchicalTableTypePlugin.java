@@ -5,10 +5,9 @@ package io.deephaven.hierarchicaltable;
 
 import com.google.auto.service.AutoService;
 import io.deephaven.engine.table.hierarchical.HierarchicalTable;
-import io.deephaven.engine.table.hierarchical.RollupTable;
-import io.deephaven.engine.table.hierarchical.TreeTable;
 import io.deephaven.extensions.barrage.util.BarrageUtil;
 import io.deephaven.extensions.barrage.util.HierarchicalTableSchemaUtil;
+import io.deephaven.plugin.type.Exporter;
 import io.deephaven.plugin.type.ObjectType;
 import io.deephaven.plugin.type.ObjectTypeBase;
 import io.deephaven.proto.backplane.grpc.HierarchicalTableDescriptor;
@@ -21,7 +20,7 @@ import java.io.OutputStream;
  * An object type named {@value #NAME} of java class type {@link HierarchicalTable}.
  */
 @AutoService(ObjectType.class)
-public class HierarchicalTableTypePlugin extends ObjectTypeBase {
+public class HierarchicalTableTypePlugin extends ObjectTypeBase.FetchOnly {
 
     private static final String NAME = "HierarchicalTable";
 

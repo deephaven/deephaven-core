@@ -202,6 +202,9 @@ def array(dtype: DType, seq: Sequence, remap: Callable[[Any], Any] = None) -> jp
     Raises:
         DHError
     """
+    if not isinstance(dtype, DType):
+        raise TypeError(f"array() expects a DType for the first argument but given a {type(dtype).__name__}")
+
     try:
         if isinstance(seq, str) and dtype == char:
             # ord is the Python builtin function that takes a unicode character and returns an integer code point value

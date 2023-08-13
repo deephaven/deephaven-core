@@ -18,9 +18,6 @@ import io.deephaven.engine.context.QueryScope;
 import io.deephaven.api.util.NameValidator;
 import io.deephaven.engine.updategraph.UpdateGraph;
 import io.deephaven.engine.util.GroovyDeephavenSession.GroovySnapshot;
-import io.deephaven.engine.util.scripts.ScriptPathLoader;
-import io.deephaven.engine.util.scripts.ScriptPathLoaderState;
-import io.deephaven.engine.util.scripts.StateOverrideScriptPathLoader;
 import io.deephaven.internal.log.LoggerFactory;
 import io.deephaven.io.logger.Logger;
 import io.deephaven.plugin.type.ObjectTypeLookup;
@@ -118,10 +115,6 @@ public class GroovyDeephavenSession extends AbstractScriptSession<GroovySnapshot
     private String getNextScriptClassName() {
         return script + "_" + (counter + 1);
     }
-
-    // the closures we have set for sourcing scripts
-    private transient SourceClosure sourceClosure;
-    private transient SourceClosure sourceOnceClosure;
 
     public GroovyDeephavenSession(
             final UpdateGraph updateGraph,
@@ -680,9 +673,11 @@ public class GroovyDeephavenSession extends AbstractScriptSession<GroovySnapshot
 
     @Override
     public void setVariable(String name, @Nullable Object newValue) {
-        final Object oldValue = getVariable(name, null);
         groovyShell.getContext().setVariable(NameValidator.validateQueryParameterName(name), newValue);
-        notifyVariableChange(name, oldValue, newValue);
+
+        // Observe changes from this "setVariable" (potentially capturing previous or concurrent external changes from
+        // other threads)
+        observeScopeChanges();
     }
 
     public Binding getBinding() {
@@ -701,76 +696,6 @@ public class GroovyDeephavenSession extends AbstractScriptSession<GroovySnapshot
     @Override
     public Throwable sanitizeThrowable(Throwable e) {
         return GroovyExceptionWrapper.maybeTranslateGroovyException(e);
-    }
-
-    @Override
-    public void onApplicationInitializationBegin(Supplier<ScriptPathLoader> pathLoaderSupplier,
-            ScriptPathLoaderState scriptLoaderState) {
-        ExecutionContext.getContext().getQueryCompiler().setParentClassLoader(getShell().getClassLoader());
-        setScriptPathLoader(pathLoaderSupplier, true);
-    }
-
-    @Override
-    public void onApplicationInitializationEnd() {
-        if (sourceClosure != null) {
-            sourceClosure.clearCache();
-        }
-        if (sourceOnceClosure != null) {
-            sourceOnceClosure.clearCache();
-        }
-    }
-
-    @Override
-    public void setScriptPathLoader(Supplier<ScriptPathLoader> pathLoaderSupplier, boolean caching) {
-        final ScriptPathLoader pathLoader = pathLoaderSupplier.get();
-        setVariable("source", sourceClosure = new SourceClosure(this, pathLoader, false, caching));
-        setVariable("sourceOnce", sourceOnceClosure = new SourceClosure(this, pathLoader, true, false));
-    }
-
-    @Override
-    public boolean setUseOriginalScriptLoaderState(boolean useOriginal) {
-        final Object sourceClosure = getVariable("source");
-
-        if (sourceClosure instanceof SourceClosure) {
-            final ScriptPathLoader loader = ((SourceClosure) sourceClosure).getPathLoader();
-
-            if (loader instanceof StateOverrideScriptPathLoader) {
-                final StateOverrideScriptPathLoader sospl = (StateOverrideScriptPathLoader) loader;
-
-                if (useOriginal) {
-                    sospl.clearOverride();
-                    final ScriptPathLoaderState scriptLoaderState = sospl.getUseState();
-                    log.info().append("Using startup script loader state: ")
-                            .append(scriptLoaderState == null ? "Latest" : scriptLoaderState.toString()).endl();
-                } else {
-                    log.info().append("Using latest script states").endl();
-                    sospl.setOverrideState(ScriptPathLoaderState.NONE);
-                }
-
-                ((SourceClosure) sourceClosure).clearCache();
-
-                return true;
-            } else {
-                log.warn().append("Incorrect loader type for query: ")
-                        .append(loader == null ? "(null)" : loader.getClass().toString()).endl();
-            }
-        } else {
-            log.warn().append("Incorrect closure type for query: ")
-                    .append(sourceClosure.getClass().toString()).endl();
-        }
-
-        return false;
-    }
-
-    @Override
-    public void clearScriptPathLoader() {
-        Object sourceClosure = getVariable("source");
-        if (sourceClosure instanceof SourceClosure) {
-            ((SourceClosure) sourceClosure).getPathLoader().close();
-        }
-
-        setVariable("source", new SourceDisabledClosure(this));
-        setVariable("sourceOnce", new SourceDisabledClosure(this));
     }
 
     private static class SourceDisabledClosure extends Closure<Object> {

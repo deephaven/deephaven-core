@@ -6,9 +6,14 @@ package io.deephaven.engine.context;
 import io.deephaven.configuration.Configuration;
 import io.deephaven.engine.testutil.junit4.EngineCleanup;
 import io.deephaven.time.DateTimeUtils;
+import io.deephaven.util.SafeCloseable;
+import org.junit.After;
+import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
+import org.junit.rules.TemporaryFolder;
 
+import java.io.IOException;
 import java.lang.reflect.Method;
 import java.time.Instant;
 import java.time.LocalDateTime;
@@ -52,6 +57,27 @@ public class TestQueryCompiler {
 
     @Rule
     public final EngineCleanup framework = new EngineCleanup();
+
+    @Rule
+    public TemporaryFolder folder = new TemporaryFolder();
+
+    private SafeCloseable executionContextClosable;
+
+    @Before
+    public void setUp() throws IOException {
+        executionContextClosable = ExecutionContext.newBuilder()
+                .captureUpdateGraph()
+                .captureQueryLibrary()
+                .captureQueryScope()
+                .setQueryCompiler(QueryCompiler.create(folder.newFolder(), TestQueryCompiler.class.getClassLoader()))
+                .build()
+                .open();
+    }
+
+    @After
+    public void tearDown() {
+        executionContextClosable.close();
+    }
 
     @Test
     public void testParallelCompile() throws Throwable {

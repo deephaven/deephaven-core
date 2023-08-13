@@ -106,6 +106,14 @@ public abstract class QueryConnectable<Self extends QueryConnectable<Self>> exte
      */
     public abstract Promise<Self> running();
 
+    /**
+     * Register a callback function to handle any log messages that are emitted on the server. Returns a function ,
+     * which can be invoked to remove this log handler. Any log handler registered in this way will receive as many old
+     * log messages as are presently available.
+     * 
+     * @param callback
+     * @return {@link JsRunnable}
+     */
     @JsMethod
     public JsRunnable onLogMessage(JsConsumer<LogItem> callback) {
         final WorkerConnection connect = connection.get();

@@ -426,7 +426,8 @@ struct BarrageSubscriptionOptions FLATBUFFERS_FINAL_CLASS : private flatbuffers:
     VT_USE_DEEPHAVEN_NULLS = 6,
     VT_MIN_UPDATE_INTERVAL_MS = 8,
     VT_BATCH_SIZE = 10,
-    VT_MAX_MESSAGE_SIZE = 12
+    VT_MAX_MESSAGE_SIZE = 12,
+    VT_COLUMNS_AS_LIST = 14
   };
   /// see enum for details
   io::deephaven::barrage::flatbuf::ColumnConversionMode column_conversion_mode() const {
@@ -437,7 +438,7 @@ struct BarrageSubscriptionOptions FLATBUFFERS_FINAL_CLASS : private flatbuffers:
   bool use_deephaven_nulls() const {
     return GetField<uint8_t>(VT_USE_DEEPHAVEN_NULLS, 0) != 0;
   }
-  /// Explicitly set the update interval for this subscription. Note that subscriptions with different update intervals
+  /// Explicitly set the Update interval for this subscription. Note that subscriptions with different update intervals
   /// cannot share intermediary state with other subscriptions and greatly increases the footprint of the non-conforming subscription.
   ///
   /// Note: if not supplied (default of zero) then the server uses a consistent value to be efficient and fair to all clients
@@ -447,6 +448,8 @@ struct BarrageSubscriptionOptions FLATBUFFERS_FINAL_CLASS : private flatbuffers:
   /// Specify a preferred batch size. Server is allowed to be configured to restrict possible values. Too small of a
   /// batch size may be dominated with header costs as each batch is wrapped into a separate RecordBatch. Too large of
   /// a payload and it may not fit within the maximum payload size. A good default might be 4096.
+  ///
+  /// a batch_size of -1 indicates that the server should avoid batching a single logical message
   int32_t batch_size() const {
     return GetField<int32_t>(VT_BATCH_SIZE, 0);
   }
@@ -456,6 +459,11 @@ struct BarrageSubscriptionOptions FLATBUFFERS_FINAL_CLASS : private flatbuffers:
   int32_t max_message_size() const {
     return GetField<int32_t>(VT_MAX_MESSAGE_SIZE, 0);
   }
+  /// If true, the server will wrap columns with a list. This is useful for clients that do not support modified batches
+  /// with columns of differing lengths.
+  bool columns_as_list() const {
+    return GetField<uint8_t>(VT_COLUMNS_AS_LIST, 0) != 0;
+  }
   bool Verify(flatbuffers::Verifier &verifier) const {
     return VerifyTableStart(verifier) &&
            VerifyField<int8_t>(verifier, VT_COLUMN_CONVERSION_MODE, 1) &&
@@ -463,6 +471,7 @@ struct BarrageSubscriptionOptions FLATBUFFERS_FINAL_CLASS : private flatbuffers:
            VerifyField<int32_t>(verifier, VT_MIN_UPDATE_INTERVAL_MS, 4) &&
            VerifyField<int32_t>(verifier, VT_BATCH_SIZE, 4) &&
            VerifyField<int32_t>(verifier, VT_MAX_MESSAGE_SIZE, 4) &&
+           VerifyField<uint8_t>(verifier, VT_COLUMNS_AS_LIST, 1) &&
            verifier.EndTable();
   }
 };
@@ -486,6 +495,9 @@ struct BarrageSubscriptionOptionsBuilder {
   void add_max_message_size(int32_t max_message_size) {
     fbb_.AddElement<int32_t>(BarrageSubscriptionOptions::VT_MAX_MESSAGE_SIZE, max_message_size, 0);
   }
+  void add_columns_as_list(bool columns_as_list) {
+    fbb_.AddElement<uint8_t>(BarrageSubscriptionOptions::VT_COLUMNS_AS_LIST, static_cast<uint8_t>(columns_as_list), 0);
+  }
   explicit BarrageSubscriptionOptionsBuilder(flatbuffers::FlatBufferBuilder &_fbb)
         : fbb_(_fbb) {
     start_ = fbb_.StartTable();
@@ -503,11 +515,13 @@ inline flatbuffers::Offset<BarrageSubscriptionOptions> CreateBarrageSubscription
     bool use_deephaven_nulls = false,
     int32_t min_update_interval_ms = 0,
     int32_t batch_size = 0,
-    int32_t max_message_size = 0) {
+    int32_t max_message_size = 0,
+    bool columns_as_list = false) {
   BarrageSubscriptionOptionsBuilder builder_(_fbb);
   builder_.add_max_message_size(max_message_size);
   builder_.add_batch_size(batch_size);
   builder_.add_min_update_interval_ms(min_update_interval_ms);
+  builder_.add_columns_as_list(columns_as_list);
   builder_.add_use_deephaven_nulls(use_deephaven_nulls);
   builder_.add_column_conversion_mode(column_conversion_mode);
   return builder_.Finish();
@@ -527,11 +541,11 @@ struct BarrageSubscriptionRequest FLATBUFFERS_FINAL_CLASS : private flatbuffers:
   const flatbuffers::Vector<int8_t> *ticket() const {
     return GetPointer<const flatbuffers::Vector<int8_t> *>(VT_TICKET);
   }
-  /// The bitset of columns to subscribe. If not provided then all columns are subscribed.
+  /// The bitset of columns to Subscribe. If not provided then all columns are subscribed.
   const flatbuffers::Vector<int8_t> *columns() const {
     return GetPointer<const flatbuffers::Vector<int8_t> *>(VT_COLUMNS);
   }
-  /// This is an encoded and compressed RowSet in position-space to subscribe to. If not provided then the entire
+  /// This is an encoded and compressed RowSet in position-space to Subscribe to. If not provided then the entire
   /// table is requested.
   const flatbuffers::Vector<int8_t> *viewport() const {
     return GetPointer<const flatbuffers::Vector<int8_t> *>(VT_VIEWPORT);
@@ -723,7 +737,7 @@ struct BarrageSnapshotRequest FLATBUFFERS_FINAL_CLASS : private flatbuffers::Tab
   const flatbuffers::Vector<int8_t> *columns() const {
     return GetPointer<const flatbuffers::Vector<int8_t> *>(VT_COLUMNS);
   }
-  /// This is an encoded and compressed RowSet in position-space to subscribe to. If not provided then the entire
+  /// This is an encoded and compressed RowSet in position-space to Subscribe to. If not provided then the entire
   /// table is requested.
   const flatbuffers::Vector<int8_t> *viewport() const {
     return GetPointer<const flatbuffers::Vector<int8_t> *>(VT_VIEWPORT);
@@ -860,9 +874,9 @@ inline flatbuffers::Offset<BarragePublicationOptions> CreateBarragePublicationOp
   return builder_.Finish();
 }
 
-/// Describes the table update stream the client would like to push to. This is similar to a DoPut but the client
+/// Describes the table Update stream the client would like to push to. This is similar to a DoPut but the client
 /// will send BarrageUpdateMetadata to explicitly describe the row key space. The updates sent adhere to the table
-/// update model semantics; thus BarragePublication enables the client to upload a ticking table.
+/// Update model semantics; thus BarragePublication enables the client to upload a ticking table.
 struct BarragePublicationRequest FLATBUFFERS_FINAL_CLASS : private flatbuffers::Table {
   typedef BarragePublicationRequestBuilder Builder;
   enum FlatBuffersVTableOffset FLATBUFFERS_VTABLE_UNDERLYING_TYPE {
@@ -1001,7 +1015,7 @@ struct BarrageUpdateMetadata FLATBUFFERS_FINAL_CLASS : private flatbuffers::Tabl
     VT_MOD_COLUMN_NODES = 24
   };
   /// This batch is generated from an upstream table that ticks independently of the stream. If
-  /// multiple events are coalesced into one update, the server may communicate that here for
+  /// multiple events are coalesced into one Update, the server may communicate that here for
   /// informational purposes.
   int64_t first_seq() const {
     return GetField<int64_t>(VT_FIRST_SEQ, 0);
@@ -1027,11 +1041,11 @@ struct BarrageUpdateMetadata FLATBUFFERS_FINAL_CLASS : private flatbuffers::Tabl
   const flatbuffers::Vector<int8_t> *effective_column_set() const {
     return GetPointer<const flatbuffers::Vector<int8_t> *>(VT_EFFECTIVE_COLUMN_SET);
   }
-  /// This is an encoded and compressed RowSet that was added in this update.
+  /// This is an encoded and compressed RowSet that was added in this Update.
   const flatbuffers::Vector<int8_t> *added_rows() const {
     return GetPointer<const flatbuffers::Vector<int8_t> *>(VT_ADDED_ROWS);
   }
-  /// This is an encoded and compressed RowSet that was removed in this update.
+  /// This is an encoded and compressed RowSet that was removed in this Update.
   const flatbuffers::Vector<int8_t> *removed_rows() const {
     return GetPointer<const flatbuffers::Vector<int8_t> *>(VT_REMOVED_ROWS);
   }
@@ -1039,9 +1053,9 @@ struct BarrageUpdateMetadata FLATBUFFERS_FINAL_CLASS : private flatbuffers::Tabl
   const flatbuffers::Vector<int8_t> *shift_data() const {
     return GetPointer<const flatbuffers::Vector<int8_t> *>(VT_SHIFT_DATA);
   }
-  /// This is an encoded and compressed RowSet that was included with this update.
+  /// This is an encoded and compressed RowSet that was included with this Update.
   /// (the server may include rows not in addedRows if this is a viewport subscription to refresh
-  ///  unmodified rows that were scoped into view)
+  ///  unmodified rows that were scoped into View)
   const flatbuffers::Vector<int8_t> *added_rows_included() const {
     return GetPointer<const flatbuffers::Vector<int8_t> *>(VT_ADDED_ROWS_INCLUDED);
   }
@@ -1183,6 +1197,36 @@ inline flatbuffers::Offset<BarrageUpdateMetadata> CreateBarrageUpdateMetadataDir
       shift_data__,
       added_rows_included__,
       mod_column_nodes__);
+}
+
+inline const io::deephaven::barrage::flatbuf::BarrageMessageWrapper *GetBarrageMessageWrapper(const void *buf) {
+  return flatbuffers::GetRoot<io::deephaven::barrage::flatbuf::BarrageMessageWrapper>(buf);
+}
+
+inline const io::deephaven::barrage::flatbuf::BarrageMessageWrapper *GetSizePrefixedBarrageMessageWrapper(const void *buf) {
+  return flatbuffers::GetSizePrefixedRoot<io::deephaven::barrage::flatbuf::BarrageMessageWrapper>(buf);
+}
+
+inline bool VerifyBarrageMessageWrapperBuffer(
+    flatbuffers::Verifier &verifier) {
+  return verifier.VerifyBuffer<io::deephaven::barrage::flatbuf::BarrageMessageWrapper>(nullptr);
+}
+
+inline bool VerifySizePrefixedBarrageMessageWrapperBuffer(
+    flatbuffers::Verifier &verifier) {
+  return verifier.VerifySizePrefixedBuffer<io::deephaven::barrage::flatbuf::BarrageMessageWrapper>(nullptr);
+}
+
+inline void FinishBarrageMessageWrapperBuffer(
+    flatbuffers::FlatBufferBuilder &fbb,
+    flatbuffers::Offset<io::deephaven::barrage::flatbuf::BarrageMessageWrapper> root) {
+  fbb.Finish(root);
+}
+
+inline void FinishSizePrefixedBarrageMessageWrapperBuffer(
+    flatbuffers::FlatBufferBuilder &fbb,
+    flatbuffers::Offset<io::deephaven::barrage::flatbuf::BarrageMessageWrapper> root) {
+  fbb.FinishSizePrefixed(root);
 }
 
 }  // namespace flatbuf

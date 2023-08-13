@@ -10,16 +10,21 @@
 namespace deephaven::client::impl {
 class NumericExpressionImpl : public ExpressionImpl {
 public:
-  static std::shared_ptr<NumericExpressionImpl> createUnaryOperator(char op,
+  [[nodiscard]]
+  static std::shared_ptr<NumericExpressionImpl> CreateUnaryOperator(char op,
       std::shared_ptr<NumericExpressionImpl> child);
-  static std::shared_ptr<NumericExpressionImpl> createBinaryOperator(
+  [[nodiscard]]
+  static std::shared_ptr<NumericExpressionImpl> CreateBinaryOperator(
       std::shared_ptr<NumericExpressionImpl> lhs, char op,
       std::shared_ptr<NumericExpressionImpl> rhs);
-  static std::shared_ptr<BooleanExpressionImpl> createComparisonOperator(
+  [[nodiscard]]
+  static std::shared_ptr<BooleanExpressionImpl> CreateComparisonOperator(
       std::shared_ptr<NumericExpressionImpl> lhs, const char *op,
       std::shared_ptr<NumericExpressionImpl> rhs);
-  static std::shared_ptr<NumericExpressionImpl> createInt64Literal(int64_t value);
-  static std::shared_ptr<NumericExpressionImpl> createDoubleLiteral(double value);
+  [[nodiscard]]
+  static std::shared_ptr<NumericExpressionImpl> CreateInt64Literal(int64_t value);
+  [[nodiscard]]
+  static std::shared_ptr<NumericExpressionImpl> CreateDoubleLiteral(double value);
 
   ~NumericExpressionImpl() override;
 };

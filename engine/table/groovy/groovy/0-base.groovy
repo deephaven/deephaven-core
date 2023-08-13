@@ -1,13 +1,5 @@
 __QUERY_NAME__="core"
 
-source = {fileName ->
-    __groovySession.runScript(fileName)
-}
-
-sourceOnce = {fileName ->
-    __groovySession.runScriptOnce(fileName)
-}
-
 scriptImportClass = {c -> __groovySession.addScriptImportClass(c)}
 scriptImportStatic = {c -> __groovySession.addScriptImportStatic(c)}
 

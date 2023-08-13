@@ -667,18 +667,6 @@ class TimeTestCase(BaseTestCase):
 
     # endregion
 
-    # region: Binning
-
-    def test_lower_bin(self):
-        dt = now()
-        self.assertGreaterEqual(diff_nanos(lower_bin(dt, 1000000, MINUTE), dt), 0)
-
-    def test_upper_bin(self):
-        dt = now()
-        self.assertGreaterEqual(diff_nanos(dt, upper_bin(dt, 1000000, MINUTE)), 0)
-
-    # endregion
-    
     # region: Format
 
     def test_format_duration_nanos(self):

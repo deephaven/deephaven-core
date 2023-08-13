@@ -4,14 +4,15 @@
 package io.deephaven.stats;
 
 import io.deephaven.base.clock.Clock;
+import io.deephaven.engine.context.ExecutionContext;
 import io.deephaven.net.CommBase;
+import io.deephaven.util.SafeCloseable;
 import io.deephaven.util.formatters.ISO8601;
 import io.deephaven.base.stats.*;
 import io.deephaven.base.text.TimestampBuffer;
 import io.deephaven.configuration.Configuration;
 import io.deephaven.io.log.*;
 import io.deephaven.io.sched.TimedJob;
-import io.deephaven.io.log.impl.LogBufferPoolImpl;
 import io.deephaven.io.log.impl.LogEntryPoolImpl;
 import io.deephaven.io.log.impl.LogSinkImpl;
 
@@ -69,6 +70,7 @@ public class StatsDriver extends TimedJob {
     private final Clock clock;
     private final StatsIntradayLogger intraday;
     private final Value clockValue;
+    private final ExecutionContext executionContext;
 
     private final StatsMemoryCollector memStats;
     private final StatsCPUCollector cpuStats;
@@ -122,7 +124,7 @@ public class StatsDriver extends TimedJob {
             this.sink = null;
             this.entries = null;
         } else {
-            LogBufferPool bufferPool = new LogBufferPoolImpl(History.INTERVALS.length * 20, BUFFER_SIZE);
+            LogBufferPool bufferPool = LogBufferPool.ofStrict(History.INTERVALS.length * 20, BUFFER_SIZE);
             this.entryPool = new LogEntryPoolImpl(History.INTERVALS.length * 20, bufferPool);
             this.sink = new LogSinkImpl<>(path, 3600 * 1000, entryPool, true);
             this.entries = new LogEntry[History.INTERVALS.length];
@@ -133,7 +135,7 @@ public class StatsDriver extends TimedJob {
             this.sinkHisto = null;
             this.entriesHisto = null;
         } else {
-            LogBufferPool bufferPool = new LogBufferPoolImpl(History.INTERVALS.length * 20, BUFFER_SIZE);
+            LogBufferPool bufferPool = LogBufferPool.ofStrict(History.INTERVALS.length * 20, BUFFER_SIZE);
             this.entryPoolHisto = new LogEntryPoolImpl(History.INTERVALS.length * 20, bufferPool);
             this.sinkHisto = new LogSinkImpl<>(histoPath, 3600 * 1000, entryPoolHisto, true);
             this.entriesHisto = new LogEntry[History.INTERVALS.length];
@@ -156,6 +158,9 @@ public class StatsDriver extends TimedJob {
         if (Configuration.getInstance().getBoolean("allocation.stats.enabled")) {
             objectAllocation = new ObjectAllocationCollector();
         }
+        executionContext = ExecutionContext.getContext();
+
+        // now that the StatsDriver is completely constructed, we can schedule the first iteration
         if (Configuration.getInstance().getBoolean("statsdriver.enabled")) {
             schedule();
         }
@@ -181,7 +186,9 @@ public class StatsDriver extends TimedJob {
         }
 
         if (this.entries == null) {
-            Stats.update(LISTENER, now, appNow, REPORT_INTERVAL);
+            try (final SafeCloseable ignored = executionContext.open()) {
+                Stats.update(LISTENER, now, appNow, REPORT_INTERVAL);
+            }
         } else {
             for (int i = 0; i < History.INTERVALS.length; ++i) {
                 entries[i] = entryPool.take().start(sink, LogLevel.INFO, now * 1000);
@@ -189,7 +196,9 @@ public class StatsDriver extends TimedJob {
                     entriesHisto[i] = entryPoolHisto.take().start(sinkHisto, LogLevel.INFO, now * 1000);
                 }
             }
-            Stats.update(LISTENER, now, appNow, REPORT_INTERVAL);
+            try (final SafeCloseable ignored = executionContext.open()) {
+                Stats.update(LISTENER, now, appNow, REPORT_INTERVAL);
+            }
             for (int i = 0; i < History.INTERVALS.length; ++i) {
                 entries[i].end();
                 if (entriesHisto != null) {

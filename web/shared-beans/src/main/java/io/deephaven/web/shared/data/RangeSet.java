@@ -9,6 +9,11 @@ import java.util.Iterator;
 import java.util.PrimitiveIterator;
 import java.util.stream.LongStream;
 
+/**
+ * This class allows iteration over non-contiguous indexes. In the future, this will support the EcmaScript 2015
+ * Iteration protocol, but for now has one method which returns an iterator, and also supports querying the size.
+ * Additionally, we may add support for creating RangeSet objects to better serve some use cases.
+ */
 public class RangeSet implements Serializable {
 
     public static RangeSet empty() {
@@ -238,6 +243,11 @@ public class RangeSet implements Serializable {
         }
     }
 
+    /**
+     * a new iterator over all indexes in this collection.
+     * 
+     * @return Iterator of {@link Range}
+     */
     public Iterator<Range> rangeIterator() {
         return Arrays.asList(sortedRanges).iterator();
     }
@@ -252,6 +262,13 @@ public class RangeSet implements Serializable {
         return sortedRanges.length;
     }
 
+    /**
+     * The total count of items contained in this collection. In some cases this can be expensive to compute, and
+     * generally should not be needed except for debugging purposes, or preallocating space (i.e., do not call this
+     * property each time through a loop).
+     * 
+     * @return long
+     */
     public long size() {
         return Arrays.stream(sortedRanges).mapToLong(Range::size).sum();
     }

@@ -7,7 +7,7 @@
 #include <exception>
 #include <grpcpp/grpcpp.h>
 #include <optional>
-#include <regex>
+#include <grpc/support/log.h>
 #include <arrow/flight/client_auth.h>
 #include <arrow/flight/client.h>
 #include <arrow/flight/client_middleware.h>
@@ -15,22 +15,16 @@
 #include <arrow/array.h>
 #include <arrow/array/array_primitive.h>
 
+#include "deephaven/client/impl/util.h"
 #include "deephaven/dhcore/utility/utility.h"
-#include "deephaven/proto/config.pb.h"
-#include "deephaven/proto/config.grpc.pb.h"
-#include "deephaven/proto/console.pb.h"
-#include "deephaven/proto/console.grpc.pb.h"
-#include "deephaven/proto/session.pb.h"
-#include "deephaven/proto/session.grpc.pb.h"
-#include "deephaven/proto/table.pb.h"
-#include "deephaven/proto/table.grpc.pb.h"
 
 using namespace std;
 using arrow::flight::FlightClient;
+using deephaven::client::impl::MoveVectorData;
 using deephaven::dhcore::utility::SFCallback;
-using deephaven::dhcore::utility::bit_cast;
-using deephaven::dhcore::utility::streamf;
-using deephaven::dhcore::utility::stringf;
+using deephaven::dhcore::utility::Bit_cast;
+using deephaven::dhcore::utility::Streamf;
+using deephaven::dhcore::utility::Stringf;
 using io::deephaven::proto::backplane::grpc::AuthenticationConstantsRequest;
 using io::deephaven::proto::backplane::grpc::ConfigurationConstantsRequest;
 using io::deephaven::proto::backplane::grpc::ConfigurationConstantsResponse;
@@ -50,6 +44,7 @@ using io::deephaven::proto::backplane::grpc::ReleaseResponse;
 using io::deephaven::proto::backplane::grpc::SelectOrUpdateRequest;
 using io::deephaven::proto::backplane::grpc::SortTableRequest;
 using io::deephaven::proto::backplane::grpc::TimeTableRequest;
+using io::deephaven::proto::backplane::grpc::UpdateByRequest;
 using io::deephaven::proto::backplane::grpc::UnstructuredFilterTableRequest;
 using io::deephaven::proto::backplane::grpc::UngroupRequest;
 using io::deephaven::proto::backplane::grpc::Ticket;
@@ -58,16 +53,18 @@ using io::deephaven::proto::backplane::script::grpc::ExecuteCommandRequest;
 using io::deephaven::proto::backplane::script::grpc::ExecuteCommandResponse;
 using io::deephaven::proto::backplane::script::grpc::StartConsoleRequest;
 
+typedef io::deephaven::proto::backplane::grpc::UpdateByRequest::UpdateByOperation UpdateByOperation;
+
 namespace deephaven::client::server {
+
+const char *const Server::kAuthorizationKey = "authorization";
+
 namespace {
 Ticket makeScopeReference(std::string_view tableName);
-void moveVectorData(std::vector<std::string> src,
-    google::protobuf::RepeatedPtrField<std::string> *dest);
 
 std::optional<std::chrono::milliseconds> extractExpirationInterval(
     const ConfigurationConstantsResponse &ccResp);
 
-const char *authorizationKey = "authorization";
 const char *timeoutKey = "http.session.durationMs";
 
 // (Potentially) re-send a handshake this often *until* the server responds to the handshake.
@@ -75,8 +72,65 @@ const char *timeoutKey = "http.session.durationMs";
 const size_t handshakeResendIntervalMillis = 5 * 1000;
 }  // namespace
 
-std::shared_ptr<Server> Server::createFromTarget(const std::string &target, const std::string &authorizationValue) {
-  auto channel = grpc::CreateChannel(target, grpc::InsecureChannelCredentials());
+namespace {
+std::shared_ptr<grpc::ChannelCredentials> getCredentials(
+      const bool useTls,
+      const std::string &tlsRootCerts,
+      const std::string &clientCertChain,
+      const std::string &clientPrivateKey) {
+  if (!useTls) {
+    return grpc::InsecureChannelCredentials();
+  }
+  grpc::SslCredentialsOptions options;
+  if (!tlsRootCerts.empty()) {
+    options.pem_root_certs = tlsRootCerts;
+  }
+  if (!clientCertChain.empty()) {
+    options.pem_cert_chain = clientCertChain;
+  }
+  if (!clientPrivateKey.empty()) {
+    options.pem_private_key = clientPrivateKey;
+  }
+  return grpc::SslCredentials(options);
+}
+}  // namespace
+
+std::shared_ptr<Server> Server::CreateFromTarget(
+      const std::string &target,
+      const ClientOptions &client_options) {
+  if (!client_options.UseTls() && !client_options.TlsRootCerts().empty()) {
+    const char *message = "Server::CreateFromTarget: ClientOptions: UseTls is false but pem provided";
+    throw std::runtime_error(DEEPHAVEN_DEBUG_MSG(message));
+  }
+
+  grpc::ChannelArguments channel_args;
+  auto options = arrow::flight::FlightClientOptions::Defaults();
+  for (const auto &opt : client_options.IntOptions()) {
+    channel_args.SetInt(opt.first, opt.second);
+    options.generic_options.emplace_back(opt.first, opt.second);
+  }
+  for (const auto &opt : client_options.StringOptions()) {
+    channel_args.SetString(opt.first, opt.second);
+    options.generic_options.emplace_back(opt.first, opt.second);
+  }
+
+  auto credentials = getCredentials(
+      client_options.UseTls(),
+      client_options.TlsRootCerts(),
+      client_options.ClientCertChain(),
+      client_options.ClientPrivateKey());
+  auto channel = grpc::CreateCustomChannel(
+      target, 
+      credentials,
+      channel_args);
+  gpr_log(GPR_DEBUG,
+        "%s: "
+        "grpc::Channel[%p] created, "
+        "target=%s",
+        "Server::CreateFromTarget",
+        (void*) channel.get(),
+        target.c_str());
+
   auto as = ApplicationService::NewStub(channel);
   auto cs = ConsoleService::NewStub(channel);
   auto ss = SessionService::NewStub(channel);
@@ -84,21 +138,39 @@ std::shared_ptr<Server> Server::createFromTarget(const std::string &target, cons
   auto cfs = ConfigService::NewStub(channel);
 
   // TODO(kosak): Warn about this string conversion or do something more general.
-  auto flightTarget = "grpc://" + target;
+  auto flightTarget = ((client_options.UseTls()) ? "grpc+tls://" : "grpc://") + target;
   arrow::flight::Location location;
 
   auto rc1 = arrow::flight::Location::Parse(flightTarget, &location);
   if (!rc1.ok()) {
-    auto message = stringf("Location::Parse(%o) failed, error = %o", flightTarget, rc1.ToString());
-    throw std::runtime_error(message);
+    auto message = Stringf("Location::Parse(%o) failed, error = %o",
+        flightTarget, rc1.ToString());
+    throw std::runtime_error(DEEPHAVEN_DEBUG_MSG(message));
+  }
+
+  if (!client_options.TlsRootCerts().empty()) {
+    options.tls_root_certs = client_options.TlsRootCerts();
+  }
+  if (!client_options.ClientCertChain().empty()) {
+    options.cert_chain = client_options.ClientCertChain();
+  }
+  if (!client_options.ClientPrivateKey().empty()) {
+    options.private_key = client_options.ClientPrivateKey();
   }
 
   std::unique_ptr<arrow::flight::FlightClient> fc;
-  auto rc2 = arrow::flight::FlightClient::Connect(location, &fc);
+  auto rc2 = arrow::flight::FlightClient::Connect(location, options, &fc);
   if (!rc2.ok()) {
-    auto message = stringf("FlightClient::Connect() failed, error = %o", rc2.ToString());
+    auto message = Stringf("FlightClient::Connect() failed, error = %o", rc2.ToString());
     throw std::runtime_error(message);
   }
+  gpr_log(GPR_DEBUG,
+          "%s: "
+          "FlightClient[%p] created, "
+          "target=%s",
+          "Server::CreateFromTarget",
+          (void*) fc.get(),
+          target.c_str());
 
   std::string sessionToken;
   std::chrono::milliseconds expirationInterval;
@@ -107,17 +179,21 @@ std::shared_ptr<Server> Server::createFromTarget(const std::string &target, cons
     ConfigurationConstantsRequest ccReq;
     ConfigurationConstantsResponse ccResp;
     grpc::ClientContext ctx;
-    ctx.AddMetadata(authorizationKey, authorizationValue);
+    ctx.AddMetadata(kAuthorizationKey, client_options.AuthorizationValue());
+    for (const auto &header : client_options.ExtraHeaders()) {
+      ctx.AddMetadata(header.first, header.second);
+    }
+
     auto result = cfs->GetConfigurationConstants(&ctx, ccReq, &ccResp);
 
     if (!result.ok()) {
-      auto message = stringf("Can't get configuration constants. Error %o: %o",
+      auto message = Stringf("Can't get configuration constants. Error %o: %o",
           result.error_code(), result.error_message());
       throw std::runtime_error(DEEPHAVEN_DEBUG_MSG(message));
     }
 
     const auto &md = ctx.GetServerInitialMetadata();
-    auto ip = md.find(authorizationKey);
+    auto ip = md.find(kAuthorizationKey);
     if (ip == md.end()) {
       throw std::runtime_error(
           DEEPHAVEN_DEBUG_MSG("Configuration response didn't contain authorization token"));
@@ -136,37 +212,63 @@ std::shared_ptr<Server> Server::createFromTarget(const std::string &target, cons
   auto nextHandshakeTime = sendTime + expirationInterval;
 
   auto result = std::make_shared<Server>(Private(), std::move(as), std::move(cs),
-      std::move(ss), std::move(ts), std::move(cfs), std::move(fc), std::move(sessionToken),
-      expirationInterval, nextHandshakeTime);
-  std::thread t1(&processCompletionQueueForever, result);
-  std::thread t2(&sendKeepaliveMessages, result);
-  t1.detach();
-  t2.detach();
+      std::move(ss), std::move(ts), std::move(cfs), std::move(fc), client_options.ExtraHeaders(),
+      std::move(sessionToken), expirationInterval, nextHandshakeTime);
+  result->completionQueueThread_ = std::thread(&ProcessCompletionQueueLoop, result);
+  result->keepAliveThread_ = std::thread(&SendKeepaliveMessages, result);
   return result;
 }
 
 Server::Server(Private,
-    std::unique_ptr<ApplicationService::Stub> applicationStub,
-    std::unique_ptr<ConsoleService::Stub> consoleStub,
-    std::unique_ptr<SessionService::Stub> sessionStub,
-    std::unique_ptr<TableService::Stub> tableStub,
-    std::unique_ptr<ConfigService::Stub> configStub,
-    std::unique_ptr<arrow::flight::FlightClient> flightClient,
-    std::string sessionToken, std::chrono::milliseconds expirationInterval,
-    std::chrono::system_clock::time_point nextHandshakeTime) :
-    applicationStub_(std::move(applicationStub)),
-    consoleStub_(std::move(consoleStub)),
-    sessionStub_(std::move(sessionStub)),
-    tableStub_(std::move(tableStub)),
-    configStub_(std::move(configStub)),
-    flightClient_(std::move(flightClient)),
+    std::unique_ptr<ApplicationService::Stub> application_stub,
+    std::unique_ptr<ConsoleService::Stub> console_stub,
+    std::unique_ptr<SessionService::Stub> session_stub,
+    std::unique_ptr<TableService::Stub> table_stub,
+    std::unique_ptr<ConfigService::Stub> config_stub,
+    std::unique_ptr<arrow::flight::FlightClient> flight_client,
+    ClientOptions::extra_headers_t extra_headers,
+    std::string session_token, std::chrono::milliseconds expiration_interval,
+    std::chrono::system_clock::time_point next_handshake_time) :
+    me_(deephaven::dhcore::utility::ObjectId(
+        "client::server::Server", this)),
+    applicationStub_(std::move(application_stub)),
+    consoleStub_(std::move(console_stub)),
+    sessionStub_(std::move(session_stub)),
+    tableStub_(std::move(table_stub)),
+    configStub_(std::move(config_stub)),
+    flightClient_(std::move(flight_client)),
+    extraHeaders_(std::move(extra_headers)),
     nextFreeTicketId_(1),
-    sessionToken_(std::move(sessionToken)),
-    expirationInterval_(expirationInterval),
-    nextHandshakeTime_(nextHandshakeTime) {
+    sessionToken_(std::move(session_token)),
+    expirationInterval_(expiration_interval),
+    nextHandshakeTime_(next_handshake_time) {
+  gpr_log(GPR_DEBUG, "%s: Created.", me_.c_str());
 }
 
-Server::~Server() = default;
+Server::~Server() {
+  gpr_log(GPR_DEBUG, "%s: Destroyed.", me_.c_str());
+}
+
+void Server::Shutdown() {
+  gpr_log(GPR_DEBUG, "%s: Server Shutdown requested.", me_.c_str());
+
+  std::unique_lock<std::mutex> guard(mutex_);
+  if (cancelled_) {
+    guard.unlock(); // to be nice
+    gpr_log(GPR_ERROR, "%s: Already cancelled.", me_.c_str());
+    return;
+  }
+  cancelled_ = true;
+  guard.unlock();
+
+  // This will cause the completion queue thread to shut down.
+  completionQueue_.Shutdown();
+  // This will cause the handshake thread to shut down (because cancelled_ is true).
+  condVar_.notify_all();
+
+  completionQueueThread_.join();
+  keepAliveThread_.join();
+}
 
 namespace {
 Ticket makeNewTicket(int32_t ticketId) {
@@ -181,154 +283,133 @@ Ticket makeNewTicket(int32_t ticketId) {
 }
 }  // namespace
 
-Ticket Server::newTicket() {
+Ticket Server::NewTicket() {
   auto ticketId = nextFreeTicketId_++;
   return makeNewTicket(ticketId);
 }
 
-std::tuple<Ticket, arrow::flight::FlightDescriptor> Server::newTicketAndFlightDescriptor() {
-  auto ticketId = nextFreeTicketId_++;
-  auto ticket = makeNewTicket(ticketId);
-  auto fd = arrow::flight::FlightDescriptor::Path({"export", std::to_string(ticketId)});
-  return std::make_tuple(std::move(ticket), std::move(fd));
-}
-
-void Server::getConfigurationConstantsAsync(
+void Server::GetConfigurationConstantsAsync(
     std::shared_ptr<SFCallback<ConfigurationConstantsResponse>> callback) {
   ConfigurationConstantsRequest req;
-  sendRpc(req, std::move(callback), configStub(),
+  SendRpc(req, std::move(callback), ConfigStub(),
       &ConfigService::Stub::AsyncGetConfigurationConstants);
 }
 
-void Server::startConsoleAsync(std::string sessionType, std::shared_ptr<SFCallback<StartConsoleResponse>> callback) {
-  auto ticket = newTicket();
+void Server::StartConsoleAsync(std::string session_type, std::shared_ptr<SFCallback<StartConsoleResponse>> callback) {
+  auto ticket = NewTicket();
   StartConsoleRequest req;
   *req.mutable_result_id() = std::move(ticket);
-  *req.mutable_session_type() = std::move(sessionType);
-  sendRpc(req, std::move(callback), consoleStub(), &ConsoleService::Stub::AsyncStartConsole);
+  *req.mutable_session_type() = std::move(session_type);
+  SendRpc(req, std::move(callback), ConsoleStub(), &ConsoleService::Stub::AsyncStartConsole);
 }
 
-void Server::executeCommandAsync(Ticket consoleId, std::string code,
+void Server::ExecuteCommandAsync(Ticket console_id, std::string code,
     std::shared_ptr<SFCallback<ExecuteCommandResponse>> callback) {
   ExecuteCommandRequest req;
-  *req.mutable_console_id() = std::move(consoleId);
+  *req.mutable_console_id() = std::move(console_id);
   *req.mutable_code() = std::move(code);
-  sendRpc(req, std::move(callback), consoleStub(), &ConsoleService::Stub::AsyncExecuteCommand);
+  SendRpc(req, std::move(callback), ConsoleStub(), &ConsoleService::Stub::AsyncExecuteCommand);
 }
 
-Ticket Server::emptyTableAsync(int64_t size, std::shared_ptr<EtcCallback> etcCallback) {
-  auto result = newTicket();
+void Server::GetExportedTableCreationResponseAsync(Ticket ticket, std::shared_ptr<EtcCallback> callback) {
+  SendRpc(ticket, std::move(callback), TableStub(), &TableService::Stub::AsyncGetExportedTableCreationResponse);
+}
+
+void Server::EmptyTableAsync(int64_t size, std::shared_ptr<EtcCallback> etc_callback, Ticket result) {
   EmptyTableRequest req;
-  *req.mutable_result_id() = result;
+  *req.mutable_result_id() = std::move(result);
   req.set_size(size);
-  sendRpc(req, std::move(etcCallback), tableStub(), &TableService::Stub::AsyncEmptyTable);
-  return result;
+  SendRpc(req, std::move(etc_callback), TableStub(), &TableService::Stub::AsyncEmptyTable);
 }
 
-Ticket Server::fetchTableAsync(std::string tableName, std::shared_ptr<EtcCallback> callback) {
-  auto result = newTicket();
+void Server::FetchTableAsync(std::string tableName, std::shared_ptr<EtcCallback> callback, Ticket result) {
   FetchTableRequest req;
   *req.mutable_source_id()->mutable_ticket() = makeScopeReference(tableName);
-  *req.mutable_result_id() = result;
-  sendRpc(req, std::move(callback), tableStub(), &TableService::Stub::AsyncFetchTable);
-  return result;
+  *req.mutable_result_id() = std::move(result);
+  SendRpc(req, std::move(callback), TableStub(), &TableService::Stub::AsyncFetchTable);
 }
 
-Ticket Server::timeTableAsync(int64_t startTimeNanos, int64_t periodNanos,
-    std::shared_ptr<EtcCallback> callback) {
-  auto result = newTicket();
+void Server::TimeTableAsync(int64_t start_time_nanos, int64_t period_nanos, std::shared_ptr<EtcCallback> etc_callback,
+    Ticket result) {
   TimeTableRequest req;
-  *req.mutable_result_id() = result;
-  req.set_start_time_nanos(startTimeNanos);
-  req.set_period_nanos(periodNanos);
-  sendRpc(req, std::move(callback), tableStub(), &TableService::Stub::AsyncTimeTable);
-  return result;
+  *req.mutable_result_id() = std::move(result);
+  req.set_start_time_nanos(start_time_nanos);
+  req.set_period_nanos(period_nanos);
+  SendRpc(req, std::move(etc_callback), TableStub(), &TableService::Stub::AsyncTimeTable);
 }
 
-Ticket Server::selectAsync(Ticket parentTicket, std::vector<std::string> columnSpecs,
-    std::shared_ptr<EtcCallback> etcCallback) {
-  return selectOrUpdateHelper(std::move(parentTicket), std::move(columnSpecs),
-      std::move(etcCallback),
+void Server::SelectAsync(Ticket parent_ticket, std::vector<std::string> column_specs,
+    std::shared_ptr<EtcCallback> etc_callback, Ticket result) {
+  SelectOrUpdateHelper(std::move(parent_ticket), std::move(column_specs), std::move(etc_callback), std::move(result),
       &TableService::Stub::AsyncSelect);
 }
 
-Ticket Server::updateAsync(Ticket parentTicket,
-    std::vector<std::string> columnSpecs, std::shared_ptr<EtcCallback> etcCallback) {
-  return selectOrUpdateHelper(std::move(parentTicket), std::move(columnSpecs),
-      std::move(etcCallback),
+void Server::UpdateAsync(Ticket parent_ticket, std::vector<std::string> column_specs,
+    std::shared_ptr<EtcCallback> etc_callback, Ticket result) {
+  SelectOrUpdateHelper(std::move(parent_ticket), std::move(column_specs), std::move(etc_callback), std::move(result),
       &TableService::Stub::AsyncUpdate);
 }
 
-Ticket Server::viewAsync(Ticket parentTicket, std::vector<std::string> columnSpecs,
-    std::shared_ptr<EtcCallback> etcCallback) {
-  return selectOrUpdateHelper(std::move(parentTicket), std::move(columnSpecs),
-      std::move(etcCallback),
+void Server::ViewAsync(Ticket parent_ticket, std::vector<std::string> column_specs,
+    std::shared_ptr<EtcCallback> etc_callback, Ticket result) {
+  SelectOrUpdateHelper(std::move(parent_ticket), std::move(column_specs), std::move(etc_callback), std::move(result),
       &TableService::Stub::AsyncView);
 }
 
-Ticket Server::updateViewAsync(Ticket parentTicket,
-    std::vector<std::string> columnSpecs, std::shared_ptr<EtcCallback> etcCallback) {
-  return selectOrUpdateHelper(std::move(parentTicket), std::move(columnSpecs),
-      std::move(etcCallback),
+void Server::UpdateViewAsync(Ticket parent_ticket, std::vector<std::string> column_specs,
+    std::shared_ptr<EtcCallback> etc_callback, Ticket result) {
+  SelectOrUpdateHelper(std::move(parent_ticket), std::move(column_specs), std::move(etc_callback), std::move(result),
       &TableService::Stub::AsyncUpdateView);
 }
 
-Ticket Server::selectOrUpdateHelper(Ticket parentTicket, std::vector<std::string> columnSpecs,
-    std::shared_ptr<EtcCallback> etcCallback, selectOrUpdateMethod_t method) {
-  auto result = newTicket();
+void Server::SelectOrUpdateHelper(Ticket parent_ticket, std::vector<std::string> column_specs,
+    std::shared_ptr<EtcCallback> etcCallback, Ticket result, selectOrUpdateMethod_t method) {
   SelectOrUpdateRequest req;
-  *req.mutable_result_id() = result;
-  *req.mutable_source_id()->mutable_ticket() = std::move(parentTicket);
-  for (auto &cs: columnSpecs) {
+  *req.mutable_result_id() = std::move(result);
+  *req.mutable_source_id()->mutable_ticket() = std::move(parent_ticket);
+  for (auto &cs: column_specs) {
     *req.mutable_column_specs()->Add() = std::move(cs);
   }
-  sendRpc(req, std::move(etcCallback), tableStub(), method);
-  return result;
+  SendRpc(req, std::move(etcCallback), TableStub(), method);
 }
 
-Ticket Server::dropColumnsAsync(Ticket parentTicket, std::vector<std::string> columnSpecs,
-    std::shared_ptr<EtcCallback> etcCallback) {
-  auto result = newTicket();
+void Server::DropColumnsAsync(Ticket parentTicket, std::vector<std::string> columnSpecs,
+    std::shared_ptr<EtcCallback> etcCallback, Ticket result) {
   DropColumnsRequest req;
-  *req.mutable_result_id() = result;
+  *req.mutable_result_id() = std::move(result);
   *req.mutable_source_id()->mutable_ticket() = std::move(parentTicket);
-  moveVectorData(std::move(columnSpecs), req.mutable_column_names());
-  sendRpc(req, std::move(etcCallback), tableStub(), &TableService::Stub::AsyncDropColumns);
-  return result;
+  MoveVectorData(std::move(columnSpecs), req.mutable_column_names());
+  SendRpc(req, std::move(etcCallback), TableStub(), &TableService::Stub::AsyncDropColumns);
 }
 
-Ticket Server::whereAsync(Ticket parentTicket, std::string condition,
-    std::shared_ptr<EtcCallback> etcCallback) {
-  auto result = newTicket();
+void Server::WhereAsync(Ticket parentTicket, std::string condition,std::shared_ptr<EtcCallback> etcCallback,
+    Ticket result) {
   UnstructuredFilterTableRequest req;
-  *req.mutable_result_id() = result;
+  *req.mutable_result_id() = std::move(result);
   *req.mutable_source_id()->mutable_ticket() = std::move(parentTicket);
   *req.mutable_filters()->Add() = std::move(condition);
-  sendRpc(req, std::move(etcCallback), tableStub(), &TableService::Stub::AsyncUnstructuredFilter);
-  return result;
+  SendRpc(req, std::move(etcCallback), TableStub(), &TableService::Stub::AsyncUnstructuredFilter);
 }
 
-Ticket Server::sortAsync(Ticket parentTicket, std::vector<SortDescriptor> sortDescriptors,
-    std::shared_ptr<EtcCallback> etcCallback) {
-  auto result = newTicket();
+void Server::SortAsync(Ticket parentTicket, std::vector<SortDescriptor> sortDescriptors,
+    std::shared_ptr<EtcCallback> etcCallback, Ticket result) {
   SortTableRequest req;
-  *req.mutable_result_id() = result;
+  *req.mutable_result_id() = std::move(result);
   *req.mutable_source_id()->mutable_ticket() = std::move(parentTicket);
   for (auto &sd: sortDescriptors) {
     *req.mutable_sorts()->Add() = std::move(sd);
   }
-  sendRpc(req, std::move(etcCallback), tableStub(), &TableService::Stub::AsyncSort);
-  return result;
+  SendRpc(req, std::move(etcCallback), TableStub(), &TableService::Stub::AsyncSort);
 }
 
-Ticket Server::comboAggregateDescriptorAsync(Ticket parentTicket,
+void Server::ComboAggregateDescriptorAsync(Ticket parentTicket,
     std::vector<ComboAggregateRequest::Aggregate> aggregates,
     std::vector<std::string> groupByColumns, bool forceCombo,
-    std::shared_ptr<EtcCallback> etcCallback) {
+    std::shared_ptr<EtcCallback> etcCallback,
+    Ticket result) {
 
-  auto result = newTicket();
   ComboAggregateRequest req;
-  *req.mutable_result_id() = result;
+  *req.mutable_result_id() = std::move(result);
   *req.mutable_source_id()->mutable_ticket() = std::move(parentTicket);
   for (auto &agg: aggregates) {
     *req.mutable_aggregates()->Add() = std::move(agg);
@@ -337,154 +418,143 @@ Ticket Server::comboAggregateDescriptorAsync(Ticket parentTicket,
     *req.mutable_group_by_columns()->Add() = std::move(gbc);
   }
   req.set_force_combo(forceCombo);
-  sendRpc(req, std::move(etcCallback), tableStub(), &TableService::Stub::AsyncComboAggregate);
-  return result;
+  SendRpc(req, std::move(etcCallback), TableStub(), &TableService::Stub::AsyncComboAggregate);
 }
 
-Ticket Server::headOrTailByAsync(Ticket parentTicket, bool head,
-    int64_t n, std::vector<std::string> columnSpecs, std::shared_ptr<EtcCallback> etcCallback) {
-  auto result = newTicket();
+void Server::HeadOrTailByAsync(Ticket parentTicket, bool head,
+    int64_t n, std::vector<std::string> columnSpecs, std::shared_ptr<EtcCallback> etcCallback,
+    Ticket result) {
   HeadOrTailByRequest req;
-  *req.mutable_result_id() = result;
+  *req.mutable_result_id() = std::move(result);
   *req.mutable_source_id()->mutable_ticket() = std::move(parentTicket);
   req.set_num_rows(n);
   for (auto &cs: columnSpecs) {
     req.mutable_group_by_column_specs()->Add(std::move(cs));
   }
   const auto &which = head ? &TableService::Stub::AsyncHeadBy : &TableService::Stub::AsyncTailBy;
-  sendRpc(req, std::move(etcCallback), tableStub(), which);
-  return result;
+  SendRpc(req, std::move(etcCallback), TableStub(), which);
 }
 
-Ticket Server::headOrTailAsync(Ticket parentTicket,
-    bool head, int64_t n, std::shared_ptr<EtcCallback> etcCallback) {
-  auto result = newTicket();
+void Server::HeadOrTailAsync(Ticket parentTicket, bool head, int64_t n, std::shared_ptr<EtcCallback> etcCallback,
+    Ticket result) {
   HeadOrTailRequest req;
-  *req.mutable_result_id() = result;
+  *req.mutable_result_id() = std::move(result);
   *req.mutable_source_id()->mutable_ticket() = std::move(parentTicket);
   req.set_num_rows(n);
   const auto &which = head ? &TableService::Stub::AsyncHead : &TableService::Stub::AsyncTail;
-  sendRpc(req, std::move(etcCallback), tableStub(), which);
-  return result;
+  SendRpc(req, std::move(etcCallback), TableStub(), which);
 }
 
-Ticket Server::ungroupAsync(Ticket parentTicket, bool nullFill,
-    std::vector<std::string> groupByColumns, std::shared_ptr<EtcCallback> etcCallback) {
-  auto result = newTicket();
+void Server::UngroupAsync(Ticket parent_ticket, bool null_fill, std::vector<std::string> group_by_columns,
+    std::shared_ptr<EtcCallback> etc_callback, Ticket result) {
   UngroupRequest req;
-  *req.mutable_result_id() = result;
-  *req.mutable_source_id()->mutable_ticket() = std::move(parentTicket);
-  req.set_null_fill(nullFill);
-  moveVectorData(std::move(groupByColumns), req.mutable_columns_to_ungroup());
-  sendRpc(req, std::move(etcCallback), tableStub(), &TableService::Stub::AsyncUngroup);
-  return result;
+  *req.mutable_result_id() = std::move(result);
+  *req.mutable_source_id()->mutable_ticket() = std::move(parent_ticket);
+  req.set_null_fill(null_fill);
+  MoveVectorData(std::move(group_by_columns), req.mutable_columns_to_ungroup());
+  SendRpc(req, std::move(etc_callback), TableStub(), &TableService::Stub::AsyncUngroup);
 }
 
-Ticket Server::mergeAsync(std::vector<Ticket> sourceTickets, std::string keyColumn,
-    std::shared_ptr<EtcCallback> etcCallback) {
-  auto result = newTicket();
+void Server::MergeAsync(std::vector<Ticket> source_tickets, std::string key_column,
+    std::shared_ptr<EtcCallback> etc_callback, Ticket result) {
   MergeTablesRequest req;
-  *req.mutable_result_id() = result;
-  for (auto &t: sourceTickets) {
+  *req.mutable_result_id() = std::move(result);
+  for (auto &t: source_tickets) {
     *req.mutable_source_ids()->Add()->mutable_ticket() = std::move(t);
   }
-  req.set_key_column(std::move(keyColumn));
-  sendRpc(req, std::move(etcCallback), tableStub(), &TableService::Stub::AsyncMergeTables);
-  return result;
+  req.set_key_column(std::move(key_column));
+  SendRpc(req, std::move(etc_callback), TableStub(), &TableService::Stub::AsyncMergeTables);
 }
 
-Ticket Server::crossJoinAsync(Ticket leftTableTicket, Ticket rightTableTicket,
-    std::vector<std::string> columnsToMatch, std::vector<std::string> columnsToAdd,
-    std::shared_ptr<EtcCallback> etcCallback) {
-  auto result = newTicket();
+void Server::CrossJoinAsync(Ticket left_table_ticket, Ticket right_table_ticket,
+    std::vector<std::string> columns_to_match, std::vector<std::string> columns_to_add,
+    std::shared_ptr<EtcCallback> etc_callback, Ticket result) {
   CrossJoinTablesRequest req;
-  *req.mutable_result_id() = result;
-  *req.mutable_left_id()->mutable_ticket() = std::move(leftTableTicket);
-  *req.mutable_right_id()->mutable_ticket() = std::move(rightTableTicket);
-  moveVectorData(std::move(columnsToMatch), req.mutable_columns_to_match());
-  moveVectorData(std::move(columnsToAdd), req.mutable_columns_to_add());
-  sendRpc(req, std::move(etcCallback), tableStub(), &TableService::Stub::AsyncCrossJoinTables);
-  return result;
+  *req.mutable_result_id() = std::move(result);
+  *req.mutable_left_id()->mutable_ticket() = std::move(left_table_ticket);
+  *req.mutable_right_id()->mutable_ticket() = std::move(right_table_ticket);
+  MoveVectorData(std::move(columns_to_match), req.mutable_columns_to_match());
+  MoveVectorData(std::move(columns_to_add), req.mutable_columns_to_add());
+  SendRpc(req, std::move(etc_callback), TableStub(), &TableService::Stub::AsyncCrossJoinTables);
 }
 
-Ticket Server::naturalJoinAsync(Ticket leftTableTicket, Ticket rightTableTicket,
-    std::vector<std::string> columnsToMatch, std::vector<std::string> columnsToAdd,
-    std::shared_ptr<EtcCallback> etcCallback) {
-  auto result = newTicket();
+void Server::NaturalJoinAsync(Ticket left_table_ticket, Ticket right_table_ticket,
+    std::vector<std::string> columns_to_match, std::vector<std::string> columns_to_add,
+    std::shared_ptr<EtcCallback> etc_callback, Ticket result) {
   NaturalJoinTablesRequest req;
-  *req.mutable_result_id() = result;
-  *req.mutable_left_id()->mutable_ticket() = std::move(leftTableTicket);
-  *req.mutable_right_id()->mutable_ticket() = std::move(rightTableTicket);
-  moveVectorData(std::move(columnsToMatch), req.mutable_columns_to_match());
-  moveVectorData(std::move(columnsToAdd), req.mutable_columns_to_add());
-  sendRpc(req, std::move(etcCallback), tableStub(), &TableService::Stub::AsyncNaturalJoinTables);
-  return result;
+  *req.mutable_result_id() = std::move(result);
+  *req.mutable_left_id()->mutable_ticket() = std::move(left_table_ticket);
+  *req.mutable_right_id()->mutable_ticket() = std::move(right_table_ticket);
+  MoveVectorData(std::move(columns_to_match), req.mutable_columns_to_match());
+  MoveVectorData(std::move(columns_to_add), req.mutable_columns_to_add());
+  SendRpc(req, std::move(etc_callback), TableStub(), &TableService::Stub::AsyncNaturalJoinTables);
 }
 
-Ticket Server::exactJoinAsync(Ticket leftTableTicket, Ticket rightTableTicket,
-    std::vector<std::string> columnsToMatch, std::vector<std::string> columnsToAdd,
-    std::shared_ptr<EtcCallback> etcCallback) {
-  auto result = newTicket();
+void Server::ExactJoinAsync(Ticket left_table_ticket, Ticket right_table_ticket,
+    std::vector<std::string> columns_to_match, std::vector<std::string> columns_to_add,
+    std::shared_ptr<EtcCallback> etc_callback, Ticket result) {
   ExactJoinTablesRequest req;
-  *req.mutable_result_id() = result;
-  *req.mutable_left_id()->mutable_ticket() = std::move(leftTableTicket);
-  *req.mutable_right_id()->mutable_ticket() = std::move(rightTableTicket);
-  moveVectorData(std::move(columnsToMatch), req.mutable_columns_to_match());
-  moveVectorData(std::move(columnsToAdd), req.mutable_columns_to_add());
-  sendRpc(req, std::move(etcCallback), tableStub(), &TableService::Stub::AsyncExactJoinTables);
-  return result;
+  *req.mutable_result_id() = std::move(result);
+  *req.mutable_left_id()->mutable_ticket() = std::move(left_table_ticket);
+  *req.mutable_right_id()->mutable_ticket() = std::move(right_table_ticket);
+  MoveVectorData(std::move(columns_to_match), req.mutable_columns_to_match());
+  MoveVectorData(std::move(columns_to_add), req.mutable_columns_to_add());
+  SendRpc(req, std::move(etc_callback), TableStub(), &TableService::Stub::AsyncExactJoinTables);
 }
 
-Ticket Server::asOfJoinAsync(AsOfJoinTablesRequest::MatchRule matchRule, Ticket leftTableTicket,
-    Ticket rightTableTicket, std::vector<std::string> columnsToMatch,
-    std::vector<std::string> columnsToAdd, std::shared_ptr<EtcCallback> etcCallback) {
-  auto result = newTicket();
+void Server::AsOfJoinAsync(AsOfJoinTablesRequest::MatchRule match_rule, Ticket left_table_ticket,
+    Ticket right_table_ticket, std::vector<std::string> columns_to_match,
+    std::vector<std::string> columns_to_add, std::shared_ptr<EtcCallback> etc_callback,
+    Ticket result) {
   AsOfJoinTablesRequest req;
-  *req.mutable_result_id() = result;
-  *req.mutable_left_id()->mutable_ticket() = std::move(leftTableTicket);
-  *req.mutable_right_id()->mutable_ticket() = std::move(rightTableTicket);
-  moveVectorData(std::move(columnsToMatch), req.mutable_columns_to_match());
-  moveVectorData(std::move(columnsToAdd), req.mutable_columns_to_add());
-  req.set_as_of_match_rule(matchRule);
-  sendRpc(req, std::move(etcCallback), tableStub(), &TableService::Stub::AsyncAsOfJoinTables);
-  return result;
+  *req.mutable_result_id() = std::move(result);
+  *req.mutable_left_id()->mutable_ticket() = std::move(left_table_ticket);
+  *req.mutable_right_id()->mutable_ticket() = std::move(right_table_ticket);
+  MoveVectorData(std::move(columns_to_match), req.mutable_columns_to_match());
+  MoveVectorData(std::move(columns_to_add), req.mutable_columns_to_add());
+  req.set_as_of_match_rule(match_rule);
+  SendRpc(req, std::move(etc_callback), TableStub(), &TableService::Stub::AsyncAsOfJoinTables);
+}
+
+void Server::UpdateByAsync(Ticket source, std::vector<UpdateByOperation> operations,
+    std::vector<std::string> groupByColumns,
+    std::shared_ptr<EtcCallback> etcCallback, Ticket result) {
+  UpdateByRequest req;
+  *req.mutable_result_id() = std::move(result);
+  *req.mutable_source_id()->mutable_ticket() = std::move(source);
+  MoveVectorData(std::move(operations), req.mutable_operations());
+  MoveVectorData(std::move(groupByColumns), req.mutable_group_by_columns());
+  SendRpc(req, std::move(etcCallback), TableStub(), &TableService::Stub::AsyncUpdateBy);
 }
 
 void
-Server::bindToVariableAsync(const Ticket &consoleId, const Ticket &tableId, std::string variable,
+Server::BindToVariableAsync(const Ticket &consoleId, const Ticket &tableId, std::string variable,
     std::shared_ptr<SFCallback<BindTableToVariableResponse>> callback) {
   BindTableToVariableRequest req;
   *req.mutable_console_id() = consoleId;
   req.set_variable_name(std::move(variable));
   *req.mutable_table_id() = tableId;
 
-  sendRpc(req, std::move(callback), consoleStub(), &ConsoleService::Stub::AsyncBindTableToVariable);
+  SendRpc(req, std::move(callback), ConsoleStub(), &ConsoleService::Stub::AsyncBindTableToVariable);
 }
 
-void Server::releaseAsync(Ticket ticket, std::shared_ptr<SFCallback<ReleaseResponse>> callback) {
+void Server::ReleaseAsync(Ticket ticket, std::shared_ptr<SFCallback<ReleaseResponse>> callback) {
   ReleaseRequest req;
   *req.mutable_id() = std::move(ticket);
-  sendRpc(req, std::move(callback), sessionStub(), &SessionService::Stub::AsyncRelease);
+  SendRpc(req, std::move(callback), SessionStub(), &SessionService::Stub::AsyncRelease);
 }
 
-std::pair<std::string, std::string> Server::getAuthHeader() const {
-  return std::make_pair(authorizationKey, sessionToken_);
-}
-
-void Server::addSessionToken(grpc::ClientContext *ctx) {
-  std::lock_guard guard(mutex_);
-  ctx->AddMetadata(authorizationKey, sessionToken_);
-}
-
-void Server::processCompletionQueueForever(const std::shared_ptr<Server> &self) {
+void Server::ProcessCompletionQueueLoop(const std::shared_ptr<Server> &self) {
   while (true) {
-    if (!self->processNextCompletionQueueItem()) {
+    if (!self->ProcessNextCompletionQueueItem()) {
       break;
     }
   }
+  gpr_log(GPR_INFO, "%s: Process completion queue thread exiting.",
+          self->me_.c_str());
 }
 
-bool Server::processNextCompletionQueueItem() {
+bool Server::ProcessNextCompletionQueueItem() {
   void *tag;
   bool ok;
   auto gotEvent = completionQueue_.Next(&tag, &ok);
@@ -499,21 +569,21 @@ bool Server::processNextCompletionQueueItem() {
     if (!ok) {
       auto eptr = std::make_exception_ptr(std::runtime_error(DEEPHAVEN_DEBUG_MSG(
           "Some GRPC network or connection error")));
-      cqcb->onFailure(std::move(eptr));
+      cqcb->OnFailure(std::move(eptr));
       return true;
     }
 
     const auto &stat = cqcb->status_;
     if (!stat.ok()) {
-      auto message = stringf("Error %o. Message: %o", stat.error_code(), stat.error_message());
+      auto message = Stringf("Error %o. Message: %o", stat.error_code(), stat.error_message());
       auto eptr = std::make_exception_ptr(std::runtime_error(DEEPHAVEN_DEBUG_MSG(message)));
-      cqcb->onFailure(std::move(eptr));
+      cqcb->OnFailure(std::move(eptr));
       return true;
     }
 
     // Authorization token and timeout housekeeping
     const auto &metadata = cqcb->ctx_.GetServerInitialMetadata();
-    auto ip = metadata.find(authorizationKey);
+    auto ip = metadata.find(kAuthorizationKey);
     {
       std::unique_lock lock(mutex_);
       if (ip != metadata.end()) {
@@ -522,12 +592,15 @@ bool Server::processNextCompletionQueueItem() {
       }
       nextHandshakeTime_ = cqcb->sendTime_ + expirationInterval_;
     }
-    cqcb->onSuccess();
+    cqcb->OnSuccess();
   } catch (const std::exception &e) {
-    std::cerr << "Caught exception on callback, aborting: " << e.what() << "\n";
+    gpr_log(GPR_ERROR, "%s: Caught std exception on callback: "
+            "'%s', aborting.",
+            me_.c_str(),
+            e.what());
     return false;
   } catch (...) {
-    std::cerr << "Caught exception on callback, aborting\n";
+    gpr_log(GPR_ERROR, "%s: Caught exception on callback, aborting.", me_.c_str());
     return false;
   }
   return true;
@@ -538,31 +611,32 @@ class KeepAliveCallback final : public SFCallback<ConfigurationConstantsResponse
 public:
   explicit KeepAliveCallback(std::shared_ptr<Server> server) : server_(std::move(server)) {}
 
-  void onSuccess(ConfigurationConstantsResponse resp) final {
+  void OnSuccess(ConfigurationConstantsResponse resp) final {
     auto expInt = extractExpirationInterval(resp);
     if (expInt.has_value()) {
-      server_->setExpirationInterval(*expInt);
+      server_->SetExpirationInterval(*expInt);
     }
   }
 
-  void onFailure(std::exception_ptr ep) final {
-    // TODO
-    std::cerr << "Keepalive failed\n";
+  void OnFailure(std::exception_ptr ep) final {
+    gpr_log(GPR_ERROR, "%s: Keepalive failed.", server_->me().c_str());
   }
 
   std::shared_ptr<Server> server_;
 };
 }  // namespace
 
-void Server::sendKeepaliveMessages(const std::shared_ptr<Server> &self) {
+void Server::SendKeepaliveMessages(const std::shared_ptr<Server> &self) {
   while (true) {
-    if (!self->keepaliveHelper()) {
+    if (!self->KeepaliveHelper()) {
       break;
     }
   }
+
+  gpr_log(GPR_INFO, "%s: Keepalive thread exiting.", self->me_.c_str());
 }
 
-bool Server::keepaliveHelper() {
+bool Server::KeepaliveHelper() {
   // Wait for timeout or cancellation
   {
     std::unique_lock guard(mutex_);
@@ -590,11 +664,11 @@ bool Server::keepaliveHelper() {
   // When (if) the server responds to this, the nextHandshakeTime_ will be set to that local time
   // plus the expirationInterval_ (which will typically be an interval like 5 minutes).
   auto callback = std::make_shared<KeepAliveCallback>(shared_from_this());
-  getConfigurationConstantsAsync(std::move(callback));
+  GetConfigurationConstantsAsync(std::move(callback));
   return true;
 }
 
-void Server::setExpirationInterval(std::chrono::milliseconds interval) {
+void Server::SetExpirationInterval(std::chrono::milliseconds interval) {
   std::unique_lock guard(mutex_);
   expirationInterval_ = interval;
 
@@ -607,8 +681,18 @@ void Server::setExpirationInterval(std::chrono::milliseconds interval) {
   }
 }
 
-CompletionQueueCallback::CompletionQueueCallback(std::chrono::system_clock::time_point sendTime) :
-    sendTime_(sendTime) {}
+void Server::ForEachHeaderNameAndValue(function<void(const string &, const string &)> fun) {
+  mutex_.lock();
+  auto tokenCopy = sessionToken_;
+  mutex_.unlock();
+  fun(kAuthorizationKey, tokenCopy);
+  for (const auto &header : extraHeaders_) {
+    fun(header.first, header.second);
+  }
+}
+
+CompletionQueueCallback::CompletionQueueCallback(std::chrono::system_clock::time_point send_time) :
+    sendTime_(send_time) {}
 CompletionQueueCallback::~CompletionQueueCallback() = default;
 
 namespace {
@@ -618,13 +702,6 @@ Ticket makeScopeReference(std::string_view tableName) {
   result.mutable_ticket()->append("s/");
   result.mutable_ticket()->append(tableName);
   return result;
-}
-
-void moveVectorData(std::vector<std::string> src,
-    google::protobuf::RepeatedPtrField<std::string> *dest) {
-  for (auto &s: src) {
-    dest->Add(std::move(s));
-  }
 }
 
 std::optional<std::chrono::milliseconds> extractExpirationInterval(
@@ -639,7 +716,7 @@ std::optional<std::chrono::milliseconds> extractExpirationInterval(
   const auto *end = begin + targetValue.size();
   auto [ptr, ec] = std::from_chars(begin, end, millis);
   if (ec != std::errc() || ptr != end) {
-    auto message = stringf("Failed to parse %o as an integer", targetValue);
+    auto message = Stringf("Failed to parse %o as an integer", targetValue);
     throw std::runtime_error(DEEPHAVEN_DEBUG_MSG(message));
   }
   // As a matter of policy we use half of whatever the server tells us is the expiration time.

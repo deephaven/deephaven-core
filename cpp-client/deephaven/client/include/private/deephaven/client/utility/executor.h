@@ -8,6 +8,7 @@
 #include <functional>
 #include <memory>
 #include <mutex>
+#include <thread>
 #include "deephaven/dhcore/utility/callbacks.h"
 #include "deephaven/dhcore/utility/utility.h"
 
@@ -17,27 +18,33 @@ class Executor {
   };
 
 public:
-  static std::shared_ptr<Executor> create();
+  [[nodiscard]]
+  static std::shared_ptr<Executor> Create(std::string id);
 
-  explicit Executor(Private);
+  explicit Executor(Private, std::string id);
   ~Executor();
 
-  typedef deephaven::dhcore::utility::Callback<> callback_t;
+  void Shutdown();
 
-  void invoke(std::shared_ptr<callback_t> f);
+  using callback_t = deephaven::dhcore::utility::Callback<>;
+
+  void Invoke(std::shared_ptr<callback_t> f);
 
   template<typename Callable>
-  void invokeCallable(Callable &&callable) {
-    invoke(callback_t::createFromCallable(std::forward<Callable>(callable)));
+  void InvokeCallable(Callable &&callable) {
+    Invoke(callback_t::CreateFromCallable(std::forward<Callable>(callable)));
   }
 
 private:
-  static void threadStart(std::shared_ptr<Executor> self);
-  [[noreturn]]
-  void runForever();
+  static void ThreadStart(std::shared_ptr<Executor> self);
+  void RunUntilCancelled();
 
+  // For debugging.
+  std::string id_;
   std::mutex mutex_;
   std::condition_variable condvar_;
+  bool cancelled_ = false;
   std::deque<std::shared_ptr<callback_t>> todo_;
+  std::thread executorThread_;
 };
 }  // namespace deephaven::client::utility

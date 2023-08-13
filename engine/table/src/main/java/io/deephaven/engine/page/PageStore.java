@@ -83,17 +83,18 @@ public interface PageStore<ATTR extends Any, INNER_ATTR extends ATTR, PAGE exten
     }
 
     @Override
-    default void fillChunkAppend(@NotNull final FillContext context,
+    default void fillChunkAppend(
+            @NotNull final FillContext context,
             @NotNull final WritableChunk<? super ATTR> destination,
-            @NotNull final RowSequence.Iterator RowSequenceIterator) {
-        long firstKey = RowSequenceIterator.peekNextKey();
+            @NotNull final RowSequence.Iterator rowSequenceIterator) {
+        long firstKey = rowSequenceIterator.peekNextKey();
         final long pageStoreMaxKey = maxRow(firstKey);
 
         do {
             final PAGE page = getPageContaining(context, firstKey);
-            page.fillChunkAppend(context, destination, RowSequenceIterator);
-        } while (RowSequenceIterator.hasMore() &&
-                (firstKey = RowSequenceIterator.peekNextKey()) <= pageStoreMaxKey);
+            page.fillChunkAppend(context, destination, rowSequenceIterator);
+        } while (rowSequenceIterator.hasMore() &&
+                (firstKey = rowSequenceIterator.peekNextKey()) <= pageStoreMaxKey);
     }
 
     /**
@@ -103,13 +104,15 @@ public interface PageStore<ATTR extends Any, INNER_ATTR extends ATTR, PAGE exten
      */
     // Should be private
     @FinalDefault
-    default void doFillChunkAppend(@NotNull final FillContext context,
+    default void doFillChunkAppend(
+            @NotNull final FillContext context,
             @NotNull final WritableChunk<? super ATTR> destination,
-            @NotNull final RowSequence rowSequence, @NotNull final Page<INNER_ATTR> page) {
+            @NotNull final RowSequence rowSequence,
+            @NotNull final Page<INNER_ATTR> page) {
         destination.setSize(0);
-        try (final RowSequence.Iterator RowSequenceIterator = rowSequence.getRowSequenceIterator()) {
-            page.fillChunkAppend(context, destination, RowSequenceIterator);
-            fillChunkAppend(context, destination, RowSequenceIterator);
+        try (final RowSequence.Iterator rowSequenceIterator = rowSequence.getRowSequenceIterator()) {
+            page.fillChunkAppend(context, destination, rowSequenceIterator);
+            fillChunkAppend(context, destination, rowSequenceIterator);
         }
     }
 }

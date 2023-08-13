@@ -52,7 +52,7 @@ public class CodecLookup {
                         "Array type " + dataType + " does not match component type " + componentType);
             }
             // Arrays of primitives or basic types do not require codecs
-            return !(componentType.isPrimitive() || noCodecRequired(dataType));
+            return !(componentType.isPrimitive() || noCodecRequired(componentType));
         }
         if (Vector.class.isAssignableFrom(dataType)) {
             if (componentType == null) {
@@ -60,7 +60,7 @@ public class CodecLookup {
             }
             if (ObjectVector.class.isAssignableFrom(dataType)) {
                 // Vectors of basic types do not require codecs
-                return !noCodecRequired(dataType);
+                return !noCodecRequired(componentType);
             }
             // VectorBases of primitive types do not require codecs
             return false;

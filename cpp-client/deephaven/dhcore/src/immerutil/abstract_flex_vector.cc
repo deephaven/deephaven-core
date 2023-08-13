@@ -18,29 +18,29 @@ namespace deephaven::dhcore::immerutil {
 AbstractFlexVectorBase::~AbstractFlexVectorBase() = default;
 
 namespace internal {
-AnyChunk FlexVectorAppender::appendHelper(const ColumnSource &src, size_t begin, size_t end,
-    immer::flex_vector<bool> *optionalDestNulls) {
+AnyChunk FlexVectorAppender::AppendHelper(const ColumnSource &src, size_t begin, size_t end,
+    immer::flex_vector<bool> *optional_dest_nulls) {
   auto size = end - begin;
-  auto chunkData = ChunkMaker::createChunkFor(src, size);
-  BooleanChunk nullData;
-  BooleanChunk *optionalBooleanChunk = nullptr;
-  if (optionalDestNulls != nullptr) {
-    nullData = BooleanChunk::create(size);
-    optionalBooleanChunk = &nullData;
+  auto chunk_data = ChunkMaker::CreateChunkFor(src, size);
+  BooleanChunk null_data;
+  BooleanChunk *optional_boolean_chunk = nullptr;
+  if (optional_dest_nulls != nullptr) {
+    null_data = BooleanChunk::Create(size);
+    optional_boolean_chunk = &null_data;
   }
 
-  auto rs = RowSequence::createSequential(begin, end);
-  src.fillChunk(*rs, &chunkData.unwrap(), optionalBooleanChunk);
+  auto rs = RowSequence::CreateSequential(begin, end);
+  src.FillChunk(*rs, &chunk_data.Unwrap(), optional_boolean_chunk);
 
-  if (optionalDestNulls != nullptr) {
-    auto transientNulls = optionalDestNulls->transient();
-    for (auto nv : nullData) {
-      transientNulls.push_back(nv);
+  if (optional_dest_nulls != nullptr) {
+    auto transient_nulls = optional_dest_nulls->transient();
+    for (auto nv : null_data) {
+      transient_nulls.push_back(nv);
     }
-    *optionalDestNulls = transientNulls.persistent();
+    *optional_dest_nulls = transient_nulls.persistent();
   }
 
-  return chunkData;
+  return chunk_data;
 }
 }  // namespace internal
 }  // namespace deephaven::client::immerutil

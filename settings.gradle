@@ -275,10 +275,6 @@ project(':plugin-hierarchicaltable').projectDir = file('plugin/hierarchicaltable
 include(':plugin-gc-app')
 project(':plugin-gc-app').projectDir = file('plugin/gc-app')
 
-include(':envoy')
-
-include(':grpc-proxy')
-
 include(':uri')
 project(':uri').projectDir = file('java-client/uri')
 
@@ -351,9 +347,6 @@ project(':docker-server').projectDir = file('docker/server')
 
 include(':docker-server-jetty')
 project(':docker-server-jetty').projectDir = file('docker/server-jetty')
-
-include(':docker-web')
-project(':docker-web').projectDir = file('docker/web')
 
 include(':docker-web-plugin-packager')
 project(':docker-web-plugin-packager').projectDir = file('docker/web-plugin-packager')

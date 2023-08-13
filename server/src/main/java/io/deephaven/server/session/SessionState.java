@@ -65,23 +65,29 @@ import static io.deephaven.extensions.barrage.util.GrpcUtil.safelyError;
 /**
  * SessionState manages all exports for a single session.
  *
+ * <p>
  * It manages exported {@link LivenessReferent}. It cascades failures to child dependencies.
  *
+ * <p>
  * TODO: - cyclical dependency detection - out-of-order dependency timeout
  *
+ * <p>
  * Details Regarding Data Structure of ExportObjects:
  *
- * The exportMap map, exportListeners list, exportListenerVersion, and export object's exportListenerVersion work
+ * <ul>
+ * <li>The exportMap map, exportListeners list, exportListenerVersion, and export object's exportListenerVersion work
  * together to enable a listener to synchronize with outstanding exports in addition to sending the listener updates
- * while they continue to subscribe.
+ * while they continue to subscribe.</li>
  *
- * - SessionState::exportMap's purpose is to map from the export id to the export object -
- * SessionState::exportListeners' purpose is to keep a list of active subscribers -
- * SessionState::exportListenerVersion's purpose is to know whether or not a subscriber has already seen a status
+ * <li>SessionState::exportMap's purpose is to map from the export id to the export object</li>
+ * <li>SessionState::exportListeners' purpose is to keep a list of active subscribers</li>
+ * <li>SessionState::exportListenerVersion's purpose is to know whether or not a subscriber has already seen a
+ * status</li>
  *
- * A listener will receive an export notification for export id NON_EXPORT_ID (a zero) to indicate that the run has
+ * <li>A listener will receive an export notification for export id NON_EXPORT_ID (a zero) to indicate that the run has
  * completed. A listener may see an update for an export before receiving the "run has completed" message. A listener
- * should be prepared to receive duplicate/redundant updates.
+ * should be prepared to receive duplicate/redundant updates.</li>
+ * </ul>
  */
 public class SessionState {
     // Some work items will be dependent on other exports, but do not export anything themselves.
@@ -121,6 +127,7 @@ public class SessionState {
 
     private final String logPrefix;
     private final Scheduler scheduler;
+    private final SessionService.ErrorTransformer errorTransformer;
     private final AuthContext authContext;
 
     private final String sessionId;
@@ -149,12 +156,15 @@ public class SessionState {
     private final ExecutionContext executionContext;
 
     @AssistedInject
-    public SessionState(final Scheduler scheduler,
+    public SessionState(
+            final Scheduler scheduler,
+            final SessionService.ErrorTransformer errorTransformer,
             final Provider<ExecutionContext> executionContextProvider,
             @Assisted final AuthContext authContext) {
         this.sessionId = UuidCreator.toString(UuidCreator.getRandomBased());
         this.logPrefix = "SessionState{" + sessionId + "}: ";
         this.scheduler = scheduler;
+        this.errorTransformer = errorTransformer;
         this.authContext = authContext;
         this.executionContext = executionContextProvider.get().withAuthContext(authContext);
         log.debug().append(logPrefix).append("session initialized").endl();
@@ -501,10 +511,10 @@ public class SessionState {
     /**
      * This class represents one unit of content exported in the session.
      *
-     *
+     * <p>
      * Note: we reuse ExportObject for non-exporting tasks that have export dependencies.
      *
-     * @param <T> Is context sensitive depending on the export.
+     * @param <T> Is context-sensitive depending on the export.
      *
      * @apiNote ExportId may be 0, if this is a task that has exported dependencies, but does not export anything
      *          itself. Non-exports do not publish state changes.
@@ -512,6 +522,7 @@ public class SessionState {
     public final static class ExportObject<T> extends LivenessArtifact {
         private final int exportId;
         private final String logIdentity;
+        private final SessionService.ErrorTransformer errorTransformer;
         private final SessionState session;
 
         /** final result of export */
@@ -548,10 +559,15 @@ public class SessionState {
         private Exception caughtException;
 
         /**
+         * @param errorTransformer the error transformer to use
          * @param exportId the export id for this export
          */
-        private ExportObject(final SessionState session, final int exportId) {
+        private ExportObject(
+                final SessionService.ErrorTransformer errorTransformer,
+                final SessionState session,
+                final int exportId) {
             super(true);
+            this.errorTransformer = errorTransformer;
             this.session = session;
             this.exportId = exportId;
             this.logIdentity =
@@ -570,6 +586,7 @@ public class SessionState {
          */
         private ExportObject(final T result) {
             super(true);
+            this.errorTransformer = null;
             this.session = null;
             this.exportId = NON_EXPORT_ID;
             this.result = result;
@@ -772,7 +789,14 @@ public class SessionState {
                     assignErrorId();
                 }
                 try {
-                    errorHandler.onError(state, errorId, caughtException, dependentHandle);
+                    final Exception toReport;
+                    if (caughtException != null && errorTransformer != null) {
+                        toReport = errorTransformer.transform(caughtException);
+                    } else {
+                        toReport = caughtException;
+                    }
+
+                    errorHandler.onError(state, errorId, toReport, dependentHandle);
                 } catch (final Exception err) {
                     log.error().append("Unexpected error while reporting state failure: ").append(err).endl();
                 }
@@ -885,61 +909,63 @@ public class SessionState {
             boolean shouldLog = false;
             int evaluationNumber = -1;
             QueryProcessingResults queryProcessingResults = null;
-            try (final SafeCloseable ignored1 = LivenessScopeStack.open();
-                    final SafeCloseable ignored2 = session.executionContext.open()) {
-                queryProcessingResults = new QueryProcessingResults(
-                        QueryPerformanceRecorder.getInstance());
+            try (final SafeCloseable ignored1 = session.executionContext.open()) {
+                try (final SafeCloseable ignored2 = LivenessScopeStack.open()) {
+                    queryProcessingResults = new QueryProcessingResults(
+                            QueryPerformanceRecorder.getInstance());
 
-                evaluationNumber = QueryPerformanceRecorder.getInstance()
-                        .startQuery("session=" + session.sessionId + ",exportId=" + logIdentity);
-                try {
-                    setResult(capturedExport.call());
+                    evaluationNumber = QueryPerformanceRecorder.getInstance()
+                            .startQuery("session=" + session.sessionId + ",exportId=" + logIdentity);
+
+                    try {
+                        setResult(capturedExport.call());
+                    } finally {
+                        shouldLog = QueryPerformanceRecorder.getInstance().endQuery();
+                    }
+                } catch (final Exception err) {
+                    caughtException = err;
+                    synchronized (this) {
+                        if (!isExportStateTerminal(state)) {
+                            assignErrorId();
+                            if (!(caughtException instanceof StatusRuntimeException)) {
+                                log.error().append("Internal Error '").append(errorId).append("' ").append(err).endl();
+                            }
+                            setState(ExportNotification.State.FAILED);
+                        }
+                    }
                 } finally {
-                    shouldLog = QueryPerformanceRecorder.getInstance().endQuery();
-                }
-            } catch (final Exception err) {
-                caughtException = err;
-                synchronized (this) {
-                    if (!isExportStateTerminal(state)) {
-                        assignErrorId();
-                        if (!(caughtException instanceof StatusRuntimeException)) {
-                            log.error().append("Internal Error '").append(errorId).append("' ").append(err).endl();
-                        }
-                        setState(ExportNotification.State.FAILED);
+                    if (caughtException != null && queryProcessingResults != null) {
+                        queryProcessingResults.setException(caughtException.toString());
                     }
+                    QueryPerformanceRecorder.resetInstance();
                 }
-            } finally {
-                if (caughtException != null && queryProcessingResults != null) {
-                    queryProcessingResults.setException(caughtException.toString());
-                }
-                QueryPerformanceRecorder.resetInstance();
-            }
-            if ((shouldLog || caughtException != null) && queryProcessingResults != null) {
-                final EngineMetrics memLoggers = EngineMetrics.getInstance();
-                final QueryPerformanceLogLogger qplLogger = memLoggers.getQplLogger();
-                final QueryOperationPerformanceLogLogger qoplLogger = memLoggers.getQoplLogger();
-                try {
-                    final QueryPerformanceNugget nugget = Require.neqNull(
-                            queryProcessingResults.getRecorder().getQueryLevelPerformanceData(),
-                            "queryProcessingResults.getRecorder().getQueryLevelPerformanceData()");
+                if ((shouldLog || caughtException != null) && queryProcessingResults != null) {
+                    final EngineMetrics memLoggers = EngineMetrics.getInstance();
+                    final QueryPerformanceLogLogger qplLogger = memLoggers.getQplLogger();
+                    final QueryOperationPerformanceLogLogger qoplLogger = memLoggers.getQoplLogger();
+                    try {
+                        final QueryPerformanceNugget nugget = Require.neqNull(
+                                queryProcessingResults.getRecorder().getQueryLevelPerformanceData(),
+                                "queryProcessingResults.getRecorder().getQueryLevelPerformanceData()");
 
-                    // noinspection SynchronizationOnLocalVariableOrMethodParameter
-                    synchronized (qplLogger) {
-                        qplLogger.log(evaluationNumber,
-                                queryProcessingResults,
-                                nugget);
-                    }
-                    final List<QueryPerformanceNugget> nuggets =
-                            queryProcessingResults.getRecorder().getOperationLevelPerformanceData();
-                    // noinspection SynchronizationOnLocalVariableOrMethodParameter
-                    synchronized (qoplLogger) {
-                        int opNo = 0;
-                        for (QueryPerformanceNugget n : nuggets) {
-                            qoplLogger.log(opNo++, n);
+                        // noinspection SynchronizationOnLocalVariableOrMethodParameter
+                        synchronized (qplLogger) {
+                            qplLogger.log(evaluationNumber,
+                                    queryProcessingResults,
+                                    nugget);
                         }
+                        final List<QueryPerformanceNugget> nuggets =
+                                queryProcessingResults.getRecorder().getOperationLevelPerformanceData();
+                        // noinspection SynchronizationOnLocalVariableOrMethodParameter
+                        synchronized (qoplLogger) {
+                            int opNo = 0;
+                            for (QueryPerformanceNugget n : nuggets) {
+                                qoplLogger.log(opNo++, n);
+                            }
+                        }
+                    } catch (final Exception e) {
+                        log.error().append("Failed to log query performance data: ").append(e).endl();
                     }
-                } catch (final Exception e) {
-                    log.error().append("Failed to log query performance data: ").append(e).endl();
                 }
             }
         }
@@ -1214,7 +1240,7 @@ public class SessionState {
             this.exportId = exportId;
 
             if (exportId == NON_EXPORT_ID) {
-                this.export = new ExportObject<>(SessionState.this, NON_EXPORT_ID);
+                this.export = new ExportObject<>(SessionState.this.errorTransformer, SessionState.this, NON_EXPORT_ID);
             } else {
                 // noinspection unchecked
                 this.export = (ExportObject<T>) exportMap.putIfAbsent(exportId, EXPORT_OBJECT_VALUE_FACTORY);
@@ -1240,7 +1266,7 @@ public class SessionState {
          * @return this builder
          */
         public ExportBuilder<T> require(final ExportObject<?>... dependencies) {
-            export.setDependencies(Arrays.asList(dependencies));
+            export.setDependencies(List.of(dependencies));
             return this;
         }
 
@@ -1251,8 +1277,8 @@ public class SessionState {
          * @param dependencies the parent dependencies
          * @return this builder
          */
-        public <S> ExportBuilder<T> require(final List<ExportObject<S>> dependencies) {
-            export.setDependencies(Collections.unmodifiableList(dependencies));
+        public ExportBuilder<T> require(final List<? extends ExportObject<?>> dependencies) {
+            export.setDependencies(List.copyOf(dependencies));
             return this;
         }
 
@@ -1325,6 +1351,7 @@ public class SessionState {
          * the scheduler when all dependencies have been satisfied. Only the dependencies supplied to the builder are
          * guaranteed to be resolved when the exportMain is executing.
          *
+         * <p>
          * Warning! It is the SessionState owner's responsibility to wait to release any dependency until after this
          * exportMain callable/runnable has complete.
          *
@@ -1341,6 +1368,7 @@ public class SessionState {
          * the scheduler when all dependencies have been satisfied. Only the dependencies supplied to the builder are
          * guaranteed to be resolved when the exportMain is executing.
          *
+         * <p>
          * Warning! It is the SessionState owner's responsibility to wait to release any dependency until after this
          * exportMain callable/runnable has complete.
          *
@@ -1385,7 +1413,7 @@ public class SessionState {
                         throw Exceptions.statusRuntimeException(Code.UNAUTHENTICATED, "session has expired");
                     }
 
-                    return new ExportObject<>(SessionState.this, key);
+                    return new ExportObject<>(SessionState.this.errorTransformer, SessionState.this, key);
                 }
             };
 }

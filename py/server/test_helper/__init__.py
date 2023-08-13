@@ -14,8 +14,7 @@ from deephaven_internal import jvm
 
 py_dh_session = None
 
-
-def start_jvm(jvm_props: Dict[str, str] = None):
+def start_jvm_for_tests(jvm_props: Dict[str, str] = None):
     jvm.preload_jvm_dll()
     import jpy
 
@@ -35,16 +34,15 @@ def start_jvm(jvm_props: Dict[str, str] = None):
             'Configuration.rootFile': propfile,
             'deephaven.dataDir': '/data',
             'deephaven.cacheDir': '/cache',
+
+            'Calendar.default': 'USNYSE',
+            'Calendar.importPath': '/test_calendar_imports.txt',
         }
 
         if jvm_props:
             jvm_properties.update(jvm_props)
 
         jvm_options = {
-            '-XX:InitialRAMPercentage=25.0',
-            '-XX:MinRAMPercentage=70.0',
-            '-XX:MaxRAMPercentage=80.0',
-
             # Allow access to java.nio.Buffer fields
             '--add-opens=java.base/java.nio=ALL-UNNAMED',
 
@@ -56,10 +54,14 @@ def start_jvm(jvm_props: Dict[str, str] = None):
         }
         jvm_classpath = os.environ.get('DEEPHAVEN_CLASSPATH', '')
 
+        # Intentionally small by default - callers should set as appropriate
+        jvm_maxmem = os.environ.get('DEEPHAVEN_MAXMEM', '256m')
+
         # Start up the JVM
         jpy.VerboseExceptions.enabled = True
         jvm.init_jvm(
-            jvm_classpath=_expandWildcardsInList(jvm_classpath.split(os.path.pathsep)),
+            jvm_maxmem=jvm_maxmem,
+            jvm_classpath=_expand_wildcards_in_list(jvm_classpath.split(os.path.pathsep)),
             jvm_properties=jvm_properties,
             jvm_options=jvm_options
         )
@@ -67,13 +69,13 @@ def start_jvm(jvm_props: Dict[str, str] = None):
         # Set up a Deephaven Python session
         py_scope_jpy = jpy.get_type("io.deephaven.engine.util.PythonScopeJpyImpl").ofMainGlobals()
         global py_dh_session
-        _JUpdateGraph = jpy.get_type("io.deephaven.engine.updategraph.impl.PeriodicUpdateGraph")
-        test_update_graph = _JUpdateGraph.newBuilder("PYTHON_TEST").existingOrBuild()
+        _JPeriodicUpdateGraph = jpy.get_type("io.deephaven.engine.updategraph.impl.PeriodicUpdateGraph")
+        _j_test_update_graph = _JPeriodicUpdateGraph.newBuilder(_JPeriodicUpdateGraph.DEFAULT_UPDATE_GRAPH_NAME).existingOrBuild()
         _JPythonScriptSession = jpy.get_type("io.deephaven.integrations.python.PythonDeephavenSession")
-        py_dh_session = _JPythonScriptSession(test_update_graph, py_scope_jpy)
+        py_dh_session = _JPythonScriptSession(_j_test_update_graph, py_scope_jpy)
 
 
-def _expandWildcardsInList(elements):
+def _expand_wildcards_in_list(elements):
     """
     Takes list of strings, possibly containing wildcard characters, and returns the corresponding full list. This is
     intended for appropriately expanding classpath entries.
@@ -84,11 +86,11 @@ def _expandWildcardsInList(elements):
 
     new_list = []
     for element in elements:
-        new_list.extend(_expandWildcardsInItem(element))
+        new_list.extend(_expand_wildcards_in_item(element))
     return _flatten(new_list)
 
 
-def _expandWildcardsInItem(element):
+def _expand_wildcards_in_item(element):
     """
     Java classpaths can include wildcards (``<path>/*`` or ``<path>/*.jar``), but the way we are invoking the jvm
     directly bypasses this expansion. This will expand a classpath element into an array of elements.

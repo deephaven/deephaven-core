@@ -189,7 +189,7 @@ public abstract class ObjectVectorTest {
     @Test
     public void testType() {
         // region TestType
-        assertEquals(ObjectVector.type(io.deephaven.qst.type.StringType.instance()).clazz(), ObjectVector.class);
+        assertEquals(ObjectVector.type(io.deephaven.qst.type.StringType.of()).clazz(), ObjectVector.class);
         // endregion TestType
     }
 

@@ -51,10 +51,11 @@ public abstract class ParquetColumnRegionBase<ATTR extends Any>
     }
 
     @Override
-    public final void fillChunkAppend(@NotNull final FillContext context,
+    public final void fillChunkAppend(
+            @NotNull final FillContext context,
             @NotNull final WritableChunk<? super ATTR> destination,
-            @NotNull final RowSequence.Iterator RowSequenceIterator) {
-        columnChunkPageStore.fillChunkAppend(context, destination, RowSequenceIterator);
+            @NotNull final RowSequence.Iterator rowSequenceIterator) {
+        columnChunkPageStore.fillChunkAppend(context, destination, rowSequenceIterator);
     }
 
     @Override

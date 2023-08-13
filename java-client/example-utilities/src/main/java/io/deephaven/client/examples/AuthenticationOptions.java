@@ -19,7 +19,7 @@ public class AuthenticationOptions {
             return "io.deephaven.authentication.mtls.MTlsAuthenticationHandler";
         }
         if (psk != null) {
-            return "psk " + psk;
+            return "io.deephaven.authentication.psk.PskAuthenticationHandler " + psk;
         }
         if (explicit != null) {
             return explicit;

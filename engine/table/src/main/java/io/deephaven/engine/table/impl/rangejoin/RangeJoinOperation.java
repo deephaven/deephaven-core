@@ -253,8 +253,7 @@ public class RangeJoinOperation implements QueryTable.MemoizableOperation<QueryT
         QueryTable.checkInitiateBinaryOperation(leftTable, rightTable);
 
         final JobScheduler jobScheduler;
-        if (OperationInitializationThreadPool.NUM_THREADS > 1
-                && !OperationInitializationThreadPool.isInitializationThread()) {
+        if (OperationInitializationThreadPool.canParallelize()) {
             jobScheduler = new OperationInitializationPoolJobScheduler();
         } else {
             jobScheduler = ImmediateJobScheduler.INSTANCE;

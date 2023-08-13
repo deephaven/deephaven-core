@@ -5,36 +5,36 @@
 #include "tests/test_util.h"
 
 namespace deephaven::client::tests {
-TEST_CASE("Merge Tables", "[merge]") {
-  auto tm = TableMakerForTests::create();
-  auto table = tm.table();
+TEST_CASE("Merge Tables", "[Merge]") {
+  auto tm = TableMakerForTests::Create();
+  auto table = tm.Table();
 
-  auto importDate = table.getStrCol("ImportDate");
-  auto ticker = table.getStrCol("Ticker");
+  auto import_date = table.GetStrCol("ImportDate");
+  auto ticker = table.GetStrCol("Ticker");
 
-  table = table.where(importDate == "2017-11-01");
+  table = table.Where(import_date == "2017-11-01");
 
   // Run a merge by fetching two tables and them merging them
-  auto aaplTable = table.where(ticker == "AAPL").tail(10);
-  auto zngaTable = table.where(ticker == "ZNGA").tail(10);
+  auto aapl_table = table.Where(ticker == "AAPL").Tail(10);
+  auto znga_table = table.Where(ticker == "ZNGA").Tail(10);
 
-  auto merged = aaplTable.merge({zngaTable});
-  std::cout << merged.stream(true) << '\n';
+  auto merged = aapl_table.Merge({znga_table});
+  std::cout << merged.Stream(true) << '\n';
 
-  std::vector<std::string> importDateData = {"2017-11-01", "2017-11-01", "2017-11-01",
+  std::vector<std::string> import_date_data = {"2017-11-01", "2017-11-01", "2017-11-01",
       "2017-11-01", "2017-11-01"};
-  std::vector<std::string> tickerData = {"AAPL", "AAPL", "AAPL", "ZNGA", "ZNGA"};
-  std::vector<double> openData = {22.1, 26.8, 31.5, 541.2, 685.3};
-  std::vector<double> closeData = {23.5, 24.2, 26.7, 538.2, 544.9};
-  std::vector<int64_t> volData = {100000, 250000, 19000, 46123, 48300};
+  std::vector<std::string> ticker_data = {"AAPL", "AAPL", "AAPL", "ZNGA", "ZNGA"};
+  std::vector<double> open_data = {22.1, 26.8, 31.5, 541.2, 685.3};
+  std::vector<double> close_data = {23.5, 24.2, 26.7, 538.2, 544.9};
+  std::vector<int64_t> vol_data = {100000, 250000, 19000, 46123, 48300};
 
-  compareTable(
+  CompareTable(
       merged,
-      "ImportDate", importDateData,
-      "Ticker", tickerData,
-      "Open", openData,
-      "Close", closeData,
-      "Volume", volData
-      );
+      "ImportDate", import_date_data,
+      "Ticker", ticker_data,
+      "Open", open_data,
+      "Close", close_data,
+      "Volume", vol_data
+  );
 }
 }  // namespace deephaven::client::tests

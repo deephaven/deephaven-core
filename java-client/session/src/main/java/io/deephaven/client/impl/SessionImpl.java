@@ -17,6 +17,7 @@ import io.deephaven.proto.backplane.grpc.FetchObjectRequest;
 import io.deephaven.proto.backplane.grpc.FieldsChangeUpdate;
 import io.deephaven.proto.backplane.grpc.HandshakeRequest;
 import io.deephaven.proto.backplane.grpc.ListFieldsRequest;
+import io.deephaven.proto.backplane.grpc.PublishRequest;
 import io.deephaven.proto.backplane.grpc.ReleaseRequest;
 import io.deephaven.proto.backplane.grpc.Ticket;
 import io.deephaven.proto.backplane.grpc.TypedTicket;
@@ -159,6 +160,15 @@ public final class SessionImpl extends SessionBase {
     }
 
     @Override
+    public CompletableFuture<Void> publish(HasTicketId resultId, HasTicketId sourceId) {
+        final PublishRequest request = PublishRequest.newBuilder()
+                .setSourceId(sourceId.ticketId().ticket())
+                .setResultId(resultId.ticketId().ticket())
+                .build();
+        return UnaryGrpcFuture.ignoreResponse(request, channel().session()::publishFromTicket);
+    }
+
+    @Override
     public CompletableFuture<FetchedObject> fetchObject(String type, HasTicketId ticketId) {
         final FetchObjectRequest request = FetchObjectRequest.newBuilder()
                 .setSourceId(TypedTicket.newBuilder()
@@ -171,7 +181,7 @@ public final class SessionImpl extends SessionBase {
                 response -> {
                     final String responseType = response.getType();
                     final ByteString data = response.getData();
-                    final List<ExportId> exportIds = response.getTypedExportIdList().stream()
+                    final List<ExportId> exportIds = response.getTypedExportIdsList().stream()
                             .map(t -> {
                                 final String ticketType;
                                 if (t.getType().isEmpty()) {

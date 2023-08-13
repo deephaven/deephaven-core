@@ -7,39 +7,71 @@
 #include <thread>
 #include "deephaven/dhcore/utility/utility.h"
 
-using deephaven::dhcore::utility::streamf;
+#include <grpc/support/log.h>
+
+using deephaven::dhcore::utility::Streamf;
+using deephaven::dhcore::utility::Stringf;
 
 namespace deephaven::client::utility {
-std::shared_ptr<Executor> Executor::create() {
-  auto result = std::make_shared<Executor>(Private());
-  std::thread t(&threadStart, result);
-  t.detach();
+std::shared_ptr<Executor> Executor::Create(std::string id) {
+  auto result = std::make_shared<Executor>(Private(), std::move(id));
+  result->executorThread_ = std::thread(&ThreadStart, result);
+  gpr_log(GPR_DEBUG, "%s: Created.", id.c_str());
   return result;
 }
 
-Executor::Executor(Private) {}
+Executor::Executor(Private, std::string id) : id_(std::move(id)), cancelled_(false) {}
 
-Executor::~Executor() = default;
+Executor::~Executor() {
+  gpr_log(GPR_DEBUG, "%s: Destroyed.", id_.c_str());
+}
 
-void Executor::invoke(std::shared_ptr<callback_t> cb) {
-  mutex_.lock();
+void Executor::Shutdown() {
+  gpr_log(GPR_DEBUG, "%s: Shutdown requested.", id_.c_str());
+  std::unique_lock<std::mutex> guard(mutex_);
+  if (cancelled_) {
+    guard.unlock(); // to be nice
+    gpr_log(GPR_ERROR, "%s: Already cancelled.", id_.c_str());
+    return;
+  }
+  cancelled_ = true;
+  guard.unlock();
+  condvar_.notify_all();
+  executorThread_.join();
+}
+
+void Executor::Invoke(std::shared_ptr<callback_t> f) {
+  std::unique_lock guard(mutex_);
   auto needsNotify = todo_.empty();
-  todo_.push_back(std::move(cb));
-  mutex_.unlock();
+  if (cancelled_) {
+    auto message = Stringf("Executor '%o' is cancelled: ignoring Invoke()\n", id_);
+    throw std::runtime_error(DEEPHAVEN_DEBUG_MSG(message));
+  } else {
+    todo_.push_back(std::move(f));
+  }
+  guard.unlock();
 
   if (needsNotify) {
     condvar_.notify_all();
   }
 }
 
-void Executor::threadStart(std::shared_ptr<Executor> self) {
-  self->runForever();
+void Executor::ThreadStart(std::shared_ptr<Executor> self) {
+  gpr_log(GPR_DEBUG, "%s: thread starting.", self->id_.c_str());
+  self->RunUntilCancelled();
+  gpr_log(GPR_DEBUG, "%s: thread exiting.", self->id_.c_str());
 }
 
-void Executor::runForever() {
+void Executor::RunUntilCancelled() {
   std::unique_lock<std::mutex> lock(mutex_);
   while (true) {
-    while (todo_.empty()) {
+    while (true) {
+      if (cancelled_) {
+        return;
+      }
+      if (!todo_.empty()) {
+        break;
+      }
       condvar_.wait(lock);
     }
     std::vector<std::shared_ptr<callback_t>> localCallbacks(
@@ -50,11 +82,11 @@ void Executor::runForever() {
     // invoke callback while not under lock
     for (const auto &cb: localCallbacks) {
       try {
-        cb->invoke();
+        cb->Invoke();
       } catch (const std::exception &e) {
-        streamf(std::cerr, "Executor ignored exception: %o\n", e.what());
+        gpr_log(GPR_ERROR, "%s: Executor ignored exception: %s.", id_.c_str(), e.what());
       } catch (...) {
-        std::cerr << "Executor ignored nonstandard exception.\n";
+        gpr_log(GPR_ERROR, "%s: Executor ignored nonstandard exception.", id_.c_str());
       }
     }
 

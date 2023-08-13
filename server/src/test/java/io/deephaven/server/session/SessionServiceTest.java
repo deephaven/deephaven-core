@@ -33,7 +33,8 @@ public class SessionServiceTest {
         livenessScope = LivenessScopeStack.open();
         scheduler = new TestControlledScheduler();
         sessionService = new SessionService(scheduler,
-                authContext -> new SessionState(scheduler, TestExecutionContext::createForUnitTests, authContext),
+                authContext -> new SessionState(scheduler, new SessionService.ObfuscatingErrorTransformer(),
+                        TestExecutionContext::createForUnitTests, authContext),
                 TOKEN_EXPIRE_MS, Collections.emptyMap(), Collections.singleton(this::sessionCreatedCallback));
     }
 

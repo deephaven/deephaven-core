@@ -134,7 +134,8 @@ public class HierarchicalTableSchemaUtil {
             @NotNull final FlatBufferBuilder builder,
             @NotNull final RollupTable rollupTable) {
 
-        final Map<String, String> schemaMetadata = attributesToMetadata(rollupTable.getAttributes());
+        final Map<String, String> schemaMetadata =
+                attributesToMetadata(rollupTable.getAttributes());
 
         final Set<String> groupByColumns = rollupTable.getGroupByColumns().stream()
                 .map(ColumnName::name)
@@ -154,7 +155,8 @@ public class HierarchicalTableSchemaUtil {
             @NotNull final FlatBufferBuilder builder,
             @NotNull final TreeTable treeTable) {
 
-        final Map<String, String> schemaMetadata = attributesToMetadata(treeTable.getAttributes());
+        final Map<String, String> schemaMetadata =
+                attributesToMetadata(treeTable.getAttributes());
 
         final Stream<Field> structuralFields = getStructuralFields(treeTable);
         final Stream<Field> nodeFields = getTreeNodeFields(treeTable);
@@ -165,6 +167,7 @@ public class HierarchicalTableSchemaUtil {
 
     private static Stream<Field> getStructuralFields(@NotNull final HierarchicalTable<?> hierarchicalTable) {
         return columnDefinitionsToFields(Collections.emptyMap(), null,
+                hierarchicalTable.getRoot().getDefinition(),
                 hierarchicalTable.getStructuralColumnDefinitions(),
                 columnName -> {
                     final Map<String, String> metadata = new HashMap<>();
@@ -178,7 +181,7 @@ public class HierarchicalTableSchemaUtil {
                         putMetadata(metadata, HIERARCHICAL_TABLE_IS_ROW_EXPANDED_COLUMN, TRUE_STRING);
                     }
                     return metadata;
-                });
+                }, hierarchicalTable.getAttributes());
     }
 
     private static Stream<Field> getRollupAggregatedNodeFields(
@@ -189,6 +192,7 @@ public class HierarchicalTableSchemaUtil {
                         .collect(Collectors.toMap(cnp -> cnp.output().name(), cnp -> cnp.input().name()));
         final Map<String, String> aggregatedNodeDescriptions = getColumnDescriptions(rollupTable.getAttributes());
         return columnDefinitionsToFields(aggregatedNodeDescriptions, null,
+                rollupTable.getNodeDefinition(RollupTable.NodeType.Aggregated),
                 rollupTable.getNodeDefinition(RollupTable.NodeType.Aggregated).getColumns(),
                 columnName -> {
                     final Map<String, String> metadata = new HashMap<>();
@@ -201,7 +205,7 @@ public class HierarchicalTableSchemaUtil {
                                 aggregationColumnToInputColumnName.getOrDefault(columnName, ""));
                     }
                     return metadata;
-                });
+                }, rollupTable.getAttributes());
     }
 
     private static Stream<Field> getRollupConstituentNodeFields(
@@ -213,6 +217,7 @@ public class HierarchicalTableSchemaUtil {
         final Map<String, Object> sourceAttributes = rollupTable.getSource().getAttributes();
         final Map<String, String> constituentNodeDescriptions = getColumnDescriptions(sourceAttributes);
         return columnDefinitionsToFields(constituentNodeDescriptions, null,
+                rollupTable.getNodeDefinition(RollupTable.NodeType.Constituent),
                 rollupTable.getNodeDefinition(RollupTable.NodeType.Constituent).getColumns(),
                 columnName -> {
                     final Map<String, String> metadata = new HashMap<>();
@@ -221,12 +226,13 @@ public class HierarchicalTableSchemaUtil {
                         putMetadata(metadata, ROLLUP_TABLE_IS_GROUP_BY_COLUMN, TRUE_STRING);
                     }
                     return metadata;
-                });
+                }, rollupTable.getAttributes());
     }
 
     private static Stream<Field> getTreeNodeFields(@NotNull final TreeTable treeTable) {
         final Map<String, String> treeNodeDescriptions = getColumnDescriptions(treeTable.getAttributes());
         return columnDefinitionsToFields(treeNodeDescriptions, null,
+                treeTable.getNodeDefinition(),
                 treeTable.getNodeDefinition().getColumns(),
                 columnName -> {
                     final Map<String, String> metadata = new HashMap<>();
@@ -238,6 +244,6 @@ public class HierarchicalTableSchemaUtil {
                         putMetadata(metadata, TREE_TABLE_IS_PARENT_IDENTIFIER_COLUMN, TRUE_STRING);
                     }
                     return metadata;
-                });
+                }, treeTable.getAttributes());
     }
 }

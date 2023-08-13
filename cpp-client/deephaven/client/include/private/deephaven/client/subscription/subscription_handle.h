@@ -8,10 +8,8 @@ class SubscriptionHandle {
 public:
   virtual ~SubscriptionHandle() = default;
   /**
-   * Cancels the subscription.
-   * @param wait If true, waits for the internal subcription thread to be torn down. Use 'true'
-   * if you want to be sure that your callback will not be invoked after this call returns.
+   * Cancels the subscription and waits for the corresponding thread to die.
    */
-  virtual void cancel(bool wait) = 0;
+  virtual void Cancel() = 0;
 };
 }  // namespace deephaven::client::subscription

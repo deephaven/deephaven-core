@@ -9,43 +9,43 @@ using deephaven::client::TableHandleManager;
 using deephaven::client::TableHandle;
 using deephaven::dhcore::utility::SimpleOstringstream;
 using deephaven::dhcore::utility::separatedList;
-using deephaven::dhcore::utility::streamf;
-using deephaven::dhcore::utility::stringf;
+using deephaven::dhcore::utility::Streamf;
+using deephaven::dhcore::utility::Stringf;
 
 namespace deephaven::client::tests {
 namespace {
-void testWheres(const TableHandleManager &scope);
-void testSelects(const TableHandleManager &scope);
-void testWheresHelper(std::string_view what, const TableHandle &table,
-    const std::vector<std::string> &badWheres,
-    const std::vector<std::string> &goodWheres);
-void testSelectsHelper(std::string_view what, const TableHandle &table,
-    const std::vector<std::vector<std::string>> &badSelects,
-    const std::vector<std::vector<std::string>> &goodSelects);
+void TestWheres(const TableHandleManager &scope);
+void TestSelects(const TableHandleManager &scope);
+void TestWheresHelper(std::string_view what, const TableHandle &table,
+    const std::vector<std::string> &bad_wheres,
+    const std::vector<std::string> &good_wheres);
+void TestSelectsHelper(std::string_view what, const TableHandle &table,
+    const std::vector<std::vector<std::string>> &bad_selects,
+    const std::vector<std::vector<std::string>> &good_selects);
 }  // namespace
 
 TEST_CASE("Validate selects", "[validation]") {
-  auto tm = TableMakerForTests::create();
-  auto table = tm.table();
-  testSelects(tm.client().getManager());
+  auto tm = TableMakerForTests::Create();
+  auto table = tm.Table();
+  TestSelects(tm.Client().GetManager());
 }
 
 TEST_CASE("Validate wheres", "[validation]") {
-  auto tm = TableMakerForTests::create();
-  auto table = tm.table();
-  testWheres(tm.client().getManager());
+  auto tm = TableMakerForTests::Create();
+  auto table = tm.Table();
+  TestWheres(tm.Client().GetManager());
 }
 
 namespace {
-void testWheres(const TableHandleManager &scope) {
-  std::vector<std::string> badWheres = {
+void TestWheres(const TableHandleManager &scope) {
+  std::vector<std::string> bad_wheres = {
       "X > 3)", // syntax error
       "S = new String(`hello`)", // new not allowed
       "S = java.util.regex.Pattern.quote(S)", // Pattern.quote not on whitelist
       "X = Math.min(3, 4)" // Math.min not on whitelist
   };
 
-  std::vector<std::string> goodWheres = {
+  std::vector<std::string> good_wheres = {
       "X = 3",
       "S = `hello`",
       "S.length() = 17", // instance methods of String ok
@@ -54,69 +54,69 @@ void testWheres(const TableHandleManager &scope) {
       "X in 3, 4, 5",
   };
 
-  auto staticTable = scope.emptyTable(10)
-      .update("X = 12", "S = `hello`");
-  testWheresHelper("static table", staticTable, badWheres, goodWheres);
+  auto static_table = scope.EmptyTable(10)
+      .Update("X = 12", "S = `hello`");
+  TestWheresHelper("static Table", static_table, bad_wheres, good_wheres);
 }
 
-void testWheresHelper(std::string_view what, const TableHandle &table,
-    const std::vector<std::string> &badWheres,
-    const std::vector<std::string> &goodWheres) {
-  for (const auto &bw : badWheres) {
+void TestWheresHelper(std::string_view what, const TableHandle &table,
+    const std::vector<std::string> &bad_wheres,
+    const std::vector<std::string> &good_wheres) {
+  for (const auto &bw : bad_wheres) {
     try {
-      streamf(std::cerr, "Trying %o %o\n", what, bw);
-      auto t1 = table.where(bw);
-      t1.observe();
+      Streamf(std::cerr, "Trying %o %o\n", what, bw);
+      auto t1 = table.Where(bw);
+      t1.Observe();
     } catch (const std::exception &e) {
-      streamf(std::cerr, "%o: %o: Failed *as expected* with: %o\n", what, bw, e.what());
+      Streamf(std::cerr, "%o: %o: Failed *as expected* with: %o\n", what, bw, e.what());
       continue;
     }
 
-    throw std::runtime_error(stringf("%o: %o: Expected to fail, but succeeded", what, bw));
+    throw std::runtime_error(Stringf("%o: %o: Expected to fail, but succeeded", what, bw));
   }
 
-  for (const auto &gw : goodWheres) {
-    table.where(gw).observe();
-    streamf(std::cerr, "%o: %o: Succeeded as expected\n", what, gw);
+  for (const auto &gw : good_wheres) {
+    table.Where(gw).Observe();
+    Streamf(std::cerr, "%o: %o: Succeeded as expected\n", what, gw);
   }
 }
 
-void testSelects(const TableHandleManager &scope) {
-  std::vector<std::vector<std::string>> badSelects = {
+void TestSelects(const TableHandleManager &scope) {
+  std::vector<std::vector<std::string>> bad_selects = {
       { "X = 3)" },
       { "S = `hello`", "T = java.util.regex.Pattern.quote(S)" }, // Pattern.quote not on whitelist
       { "X = Math.min(3, 4)" } // Math.min not on whitelist
   };
-  std::vector<std::vector<std::string>> goodSelects = {
+  std::vector<std::vector<std::string>> good_selects = {
       {"X = 3"},
       {"S = `hello`", "T = S.length()"}, // instance methods of String ok
       {"X = min(3, 4)"}, // "builtin" from GroovyStaticImports
       {"X = isFinite(3)"}, // another builtin from GroovyStaticImports
   };
-  auto staticTable = scope.emptyTable(10)
-      .update("X = 12", "S = `hello`");
-  testSelectsHelper("static table", staticTable, badSelects, goodSelects);
+  auto static_table = scope.EmptyTable(10)
+      .Update("X = 12", "S = `hello`");
+  TestSelectsHelper("static Table", static_table, bad_selects, good_selects);
 }
 
-void testSelectsHelper(std::string_view what, const TableHandle &table,
-    const std::vector<std::vector<std::string>> &badSelects,
-    const std::vector<std::vector<std::string>> &goodSelects) {
-  for (const auto &bs : badSelects) {
+void TestSelectsHelper(std::string_view what, const TableHandle &table,
+    const std::vector<std::vector<std::string>> &bad_selects,
+    const std::vector<std::vector<std::string>> &good_selects) {
+  for (const auto &bs : bad_selects) {
     SimpleOstringstream selection;
     selection << separatedList(bs.begin(), bs.end());
     try {
-      table.select(bs).observe();
+      table.Select(bs).Observe();
     } catch (const std::exception &e) {
-      streamf(std::cerr, "%o: %o: Failed as expected with: %o\n", what, selection.str(), e.what());
+      Streamf(std::cerr, "%o: %o: Failed as expected with: %o\n", what, selection.str(), e.what());
       continue;
     }
-    throw std::runtime_error(stringf("%o: %o: Expected to fail, but succeeded",
+    throw std::runtime_error(Stringf("%o: %o: Expected to fail, but succeeded",
         what, selection.str()));
   }
 
-  for (const auto &gs : goodSelects) {
-    table.select(gs).observe();
-    streamf(std::cerr, "%o: %o: Succeeded as expected\n", what,
+  for (const auto &gs : good_selects) {
+    table.Select(gs).Observe();
+    Streamf(std::cerr, "%o: %o: Succeeded as expected\n", what,
         separatedList(gs.begin(), gs.end()));
   }
 }

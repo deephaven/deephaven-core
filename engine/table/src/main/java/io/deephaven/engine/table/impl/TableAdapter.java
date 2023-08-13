@@ -229,6 +229,11 @@ public interface TableAdapter extends TableDefaults {
     }
 
     @Override
+    default Table slicePct(double startPercentInclusive, double endPercentExclusive) {
+        return throwUnsupported();
+    }
+
+    @Override
     default Table headPct(double percent) {
         return throwUnsupported();
     }

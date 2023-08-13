@@ -17,10 +17,7 @@ import io.deephaven.proto.backplane.grpc.PartitionByResponse;
 import io.deephaven.proto.backplane.grpc.PartitionedTableServiceGrpc;
 import io.deephaven.proto.util.Exceptions;
 import io.deephaven.server.auth.AuthorizationProvider;
-import io.deephaven.server.session.SessionService;
-import io.deephaven.server.session.SessionState;
-import io.deephaven.server.session.TicketResolverBase;
-import io.deephaven.server.session.TicketRouter;
+import io.deephaven.server.session.*;
 import io.grpc.stub.StreamObserver;
 import org.jetbrains.annotations.NotNull;
 
@@ -38,7 +35,7 @@ public class PartitionedTableServiceGrpcImpl extends PartitionedTableServiceGrpc
     private final TicketRouter ticketRouter;
     private final SessionService sessionService;
     private final PartitionedTableServiceContextualAuthWiring authWiring;
-    private final TicketResolverBase.AuthTransformation authorizationTransformation;
+    private final TicketResolver.Authorization authorizationTransformation;
 
     @Inject
     public PartitionedTableServiceGrpcImpl(
@@ -49,7 +46,7 @@ public class PartitionedTableServiceGrpcImpl extends PartitionedTableServiceGrpc
         this.ticketRouter = ticketRouter;
         this.sessionService = sessionService;
         this.authWiring = authWiring;
-        this.authorizationTransformation = authorizationProvider.getTicketTransformation();
+        this.authorizationTransformation = authorizationProvider.getTicketResolverAuthorization();
     }
 
     @Override

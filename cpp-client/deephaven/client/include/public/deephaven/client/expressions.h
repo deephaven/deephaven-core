@@ -55,9 +55,9 @@ public:
   BooleanExpression isNull() const;
   /**
    * Builds an AssignedColumn expression representing this expression as assigned to a new
-   * column name. Used for example in the TableHandle::select() method.
+   * column name. Used for example in the TableHandle::Select() method.
    * @code
-   * auto newTable = tableHandle.select(A, B, (C + 5).as("NewCol"));
+   * auto newTable = tableHandle.Select(A, B, (C + 5).as("NewCol"));
    * @endcode
    * @return The new AssignedColumn
    */

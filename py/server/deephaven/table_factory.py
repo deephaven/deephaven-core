@@ -47,13 +47,15 @@ def empty_table(size: int) -> Table:
         raise DHError(e, "failed to create an empty table.") from e
 
 
-def time_table(period: Union[str, int], start_time: str = None) -> Table:
+def time_table(period: Union[str, int], start_time: str = None, blink_table: bool = False) -> Table:
     """Creates a table that adds a new row on a regular interval.
 
     Args:
         period (Union[str, int]): time interval between new row additions, can be expressed as an integer in
-            nanoseconds or a time interval string, e.g. "PT00:00:00.001"
-        start_time (str): start time for adding new rows
+            nanoseconds or a time interval string, e.g. "PT00:00:00.001" or "PT1s"
+        start_time (str, optional): start time for adding new rows, defaults to None which means use the current time
+            as the start time
+        blink_table (bool, optional): if the time table should be a blink table, defaults to False
 
     Returns:
         a Table
@@ -62,11 +64,13 @@ def time_table(period: Union[str, int], start_time: str = None) -> Table:
         DHError
     """
     try:
+        builder = _JTableTools.timeTableBuilder()
+        builder.period(period)
         if start_time:
-            return Table(j_table=_JTableTools.timeTable(start_time, period))
-        else:
-            return Table(j_table=_JTableTools.timeTable(period))
-
+            builder.startTime(start_time)
+        if blink_table:
+            builder.blinkTable(blink_table)
+        return Table(j_table=builder.build())
     except Exception as e:
         raise DHError(e, "failed to create a time table.") from e
 

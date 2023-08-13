@@ -3,15 +3,19 @@
  */
 #pragma once
 
+#include <chrono>
 #include <cstring>
+#include <cstdio>
 #include <iostream>
 #include <memory>
 #include <string>
+#include <thread>
+#include <typeinfo>
 #include <vector>
 
 namespace deephaven::dhcore::utility {
 template<typename Dest, typename Src>
-inline Dest bit_cast(const Src &item) {
+inline Dest Bit_cast(const Src &item) {
   static_assert(sizeof(Src) == sizeof(Dest), "Src and Dest are not the same size");
   Dest dest;
   std::memcpy(static_cast<void *>(&dest), static_cast<const void *>(&item), sizeof(Dest));
@@ -19,13 +23,13 @@ inline Dest bit_cast(const Src &item) {
 }
 
 template<typename T>
-std::vector<T> makeReservedVector(size_t n) {
+std::vector<T> MakeReservedVector(size_t n) {
   std::vector<T> v;
   v.reserve(n);
   return v;
 }
 
-std::string base64Encode(const std::string &s);
+std::string Base64Encode(const std::string &input_buffer);
 
 // A more efficient ostringstream that also allows you to grab the internal buffer if you want it.
 // Or, if you don't want to use the internal buffer, it allows you to provide your own.
@@ -33,7 +37,7 @@ class SimpleOstringstream final : private std::basic_streambuf<char>, public std
   using Buf = std::basic_streambuf<char>;
 public:
   SimpleOstringstream();
-  explicit SimpleOstringstream(std::string *clientBuffer);
+  explicit SimpleOstringstream(std::string *client_buffer);
   SimpleOstringstream(const SimpleOstringstream &other) = delete;
   SimpleOstringstream &operator=(const SimpleOstringstream &other) = delete;
   ~SimpleOstringstream() final;
@@ -51,21 +55,21 @@ private:
 namespace internal {
 // Dumps chars up to the next %o or NUL. Updates *fmt to the point past the %o or at the NUL.
 // Returns true iff %o was the last thing seen.
-bool dumpFormat(std::ostream &s, const char **fmt, bool placeholderExpected);
+bool DumpFormat(std::ostream &s, const char **fmt, bool placeholder_expected);
 }  // namespace internal
 
-std::ostream &streamf(std::ostream &s, const char *fmt);
+std::ostream &Streamf(std::ostream &s, const char *fmt);
 
 template<typename HEAD, typename... REST>
-std::ostream &streamf(std::ostream &s, const char *fmt, const HEAD &head, REST &&... rest) {
-  (void) deephaven::dhcore::utility::internal::dumpFormat(s, &fmt, true);
+std::ostream &Streamf(std::ostream &s, const char *fmt, const HEAD &head, REST &&... rest) {
+  (void) deephaven::dhcore::utility::internal::DumpFormat(s, &fmt, true);
   s << head;
-  return streamf(s, fmt, std::forward<REST>(rest)...);
+  return Streamf(s, fmt, std::forward<REST>(rest)...);
 }
 
 template<typename... ARGS>
-std::ostream &coutf(const char *fmt, ARGS &&... args) {
-  streamf(std::cout, fmt, std::forward<ARGS>(args)...);
+std::ostream &Coutf(const char *fmt, ARGS &&... args) {
+  Streamf(std::cout, fmt, std::forward<ARGS>(args)...);
 #ifndef NDEBUG
   std::cout.flush();
 #endif
@@ -73,8 +77,8 @@ std::ostream &coutf(const char *fmt, ARGS &&... args) {
 }
 
 template<typename... ARGS>
-std::ostream &cerrf(const char *fmt, ARGS &&... args) {
-  streamf(std::cerr, fmt, std::forward<ARGS>(args)...);
+std::ostream &Cerrf(const char *fmt, ARGS &&... args) {
+  Streamf(std::cerr, fmt, std::forward<ARGS>(args)...);
 #ifndef NDEBUG
   std::cerr.flush();
 #endif
@@ -82,15 +86,15 @@ std::ostream &cerrf(const char *fmt, ARGS &&... args) {
 }
 
 template<typename... ARGS>
-void appendf(std::string *buffer, const char *fmt, ARGS &&... args) {
+void Appendf(std::string *buffer, const char *fmt, ARGS &&... args) {
   SimpleOstringstream s(buffer);
-  streamf(s, fmt, std::forward<ARGS>(args)...);
+  Streamf(s, fmt, std::forward<ARGS>(args)...);
 }
 
 template<typename... ARGS>
-std::string stringf(const char *fmt, ARGS &&... args) {
+std::string Stringf(const char *fmt, ARGS &&... args) {
   std::string result;
-  appendf(&result, fmt, std::forward<ARGS>(args)...);
+  Appendf(&result, fmt, std::forward<ARGS>(args)...);
   return result;
 }
 
@@ -172,7 +176,7 @@ private:
   friend std::ostream &operator<<(std::ostream &s, const DebugInfo &o);
 };
 
-std::string formatDebugString(const char *func, const char *file, size_t line,
+std::string FormatDebugString(const char *func, const char *file, size_t line,
     const std::string &message);
 
 /**
@@ -184,58 +188,60 @@ std::string formatDebugString(const char *func, const char *file, size_t line,
   ::deephaven::dhcore::utility::DebugInfo(DEEPHAVEN_PRETTY_FUNCTION, __FILE__, __LINE__, #ARGS),ARGS
 
 #define DEEPHAVEN_DEBUG_MSG(MESSAGE) \
-  ::deephaven::dhcore::utility::formatDebugString( \
+  ::deephaven::dhcore::utility::FormatDebugString( \
     DEEPHAVEN_PRETTY_FUNCTION, __FILE__, __LINE__, MESSAGE)
 
-// https://stackoverflow.com/questions/281818/unmangling-the-result-of-stdtype-infoname
-template <typename T>
-constexpr std::string_view getTypeName() {
-#if defined(__clang__)
-  constexpr auto prefix = std::string_view{"[T = "};
-  constexpr auto suffix = "]";
-#elif defined(__GNUC__)
-  constexpr auto prefix = std::string_view{"with T = "};
-  constexpr auto suffix = "; ";
-#elif defined(__MSC_VER)
-  constexpr auto prefix = std::string_view{"get_type_name<"};
-  constexpr auto suffix = ">(void)";
-#else
-# error Unsupported compiler
-#endif
-
-  constexpr auto function = std::string_view{DEEPHAVEN_PRETTY_FUNCTION};
-
-  const auto start = function.find(prefix) + prefix.size();
-  const auto end = function.find(suffix);
-  const auto size = end - start;
-
-  return function.substr(start, size);
-}
+[[nodiscard]] std::string demangle(const char* name);
 
 template<typename DESTP, typename SRCP>
-DESTP verboseCast(const DebugInfo &debugInfo, SRCP ptr) {
-  using deephaven::dhcore::utility::stringf;
+DESTP VerboseCast(const DebugInfo &debugInfo, SRCP ptr) {
+  using deephaven::dhcore::utility::Stringf;
 
   auto *typedPtr = dynamic_cast<DESTP>(ptr);
   if (typedPtr != nullptr) {
     return typedPtr;
   }
   typedef decltype(*std::declval<DESTP>()) destType_t;
-  auto message = stringf("%o: Expected type %o. Got type %o",
-      debugInfo, getTypeName<destType_t>(), typeid(*ptr).name());
+  auto message = Stringf("%o: Expected type %o. Got type %o",
+      debugInfo,
+      demangle(typeid(destType_t).name()),
+      demangle(typeid(*ptr).name()));
   throw std::runtime_error(message);
 }
 
-std::string getWhat(std::exception_ptr eptr);
+std::string GetWhat(std::exception_ptr eptr);
 
 namespace internal {
-void trueOrThrowHelper(const DebugInfo &debugInfo);
+void TrueOrThrowHelper(const DebugInfo &debug_info);
 }  // namespace internal
 
-inline void trueOrThrow(const DebugInfo &debugInfo, bool value) {
+inline void TrueOrThrow(const DebugInfo &debugInfo, bool value) {
   if (value) {
     return;
   }
-  internal::trueOrThrowHelper(debugInfo);
+  internal::TrueOrThrowHelper(debugInfo);
 }
+
+[[nodiscard]] std::string
+EpochMillisToStr(std::chrono::milliseconds::rep epoch_millis);
+
+[[nodiscard]] std::int64_t
+TimePointToEpochMillis(
+    const std::chrono::time_point<std::chrono::system_clock> time_point);
+
+[[nodiscard]] std::string
+TimePointToStr(
+    const std::chrono::time_point<std::chrono::system_clock> time_point);
+
+template <class T> [[nodiscard]] std::string
+TypeName(const T& t) {
+  return demangle(typeid(t).name());
+}
+
+[[nodiscard]] std::string
+ObjectId(const std::string &class_short_name, void* this_ptr);
+
+[[nodiscard]] inline std::string
+ThreadIdToString(std::thread::id tid);
+
 }  // namespace deephaven::dhcore::utility
