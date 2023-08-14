@@ -30,6 +30,7 @@ setMethod(
   "merge",
   signature = c(x = "list"),
   function(x, y = NULL, ...) {
+    verify_type("x", x, "TableHandle", "Deephaven TableHandle", FALSE)
     return(base_merge(x, y, c(...)))
   }
 )
