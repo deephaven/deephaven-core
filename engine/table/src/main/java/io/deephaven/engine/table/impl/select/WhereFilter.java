@@ -130,7 +130,9 @@ public interface WhereFilter extends Filter {
      *
      * @return The subset of selection accepted by this filter; ownership passes to the caller
      */
-    WritableRowSet filter(RowSet selection, RowSet fullSet, Table table, boolean usePrev);
+    @NotNull
+    WritableRowSet filter(
+            @NotNull RowSet selection, @NotNull RowSet fullSet, @NotNull Table table, boolean usePrev);
 
     /**
      * Filter selection to only non-matching rows.
@@ -161,7 +163,9 @@ public interface WhereFilter extends Filter {
      *
      * @return The subset of selection not accepted by this filter; ownership passes to the caller
      */
-    default WritableRowSet filterInverse(RowSet selection, RowSet fullSet, Table table, boolean usePrev) {
+    @NotNull
+    default WritableRowSet filterInverse(
+            @NotNull RowSet selection, @NotNull RowSet fullSet, @NotNull Table table, boolean usePrev) {
         try (final WritableRowSet regular = filter(selection, fullSet, table, usePrev)) {
             return selection.minus(regular);
         }

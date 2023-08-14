@@ -11,6 +11,7 @@ import org.apache.parquet.format.converter.ParquetMetadataConverter;
 import org.apache.parquet.internal.column.columnindex.OffsetIndex;
 import org.apache.parquet.schema.MessageType;
 import org.apache.parquet.schema.Type;
+import org.jetbrains.annotations.NotNull;
 
 import java.io.BufferedInputStream;
 import java.io.IOException;
@@ -34,8 +35,12 @@ public class RowGroupReaderImpl implements RowGroupReader {
 
     private final Path rootPath;
 
-    RowGroupReaderImpl(RowGroup rowGroup, SeekableChannelsProvider channelsProvider, Path rootPath,
-            MessageType type, MessageType schema) {
+    RowGroupReaderImpl(
+            @NotNull final RowGroup rowGroup,
+            @NotNull final SeekableChannelsProvider channelsProvider,
+            @NotNull final Path rootPath,
+            @NotNull final MessageType type,
+            @NotNull final MessageType schema) {
         this.channelsProvider = channelsProvider;
         this.rowGroup = rowGroup;
         this.rootPath = rootPath;
@@ -57,7 +62,7 @@ public class RowGroupReaderImpl implements RowGroupReader {
     }
 
     @Override
-    public ColumnChunkReaderImpl getColumnChunk(List<String> path) {
+    public ColumnChunkReaderImpl getColumnChunk(@NotNull final List<String> path) {
         String key = path.toString();
         ColumnChunk columnChunk = chunkMap.get(key);
         List<Type> fieldTypes = schemaMap.get(key);
