@@ -72,6 +72,25 @@ setMethod(
   }
 )
 
+setGeneric(
+  "bind_to_variable",
+  function(table_handle_instance, name) {
+    return(standardGeneric("bind_to_variable"))
+  },
+  signature = c("table_handle_instance", "name")
+)
+
+#' @export
+setMethod(
+  "bind_to_variable",
+  signature = c(table_handle_instance = "TableHandle", name = "character"),
+  function(table_handle_instance, name) {
+    verify_string("name", name, TRUE)
+    table_handle_instance@.internal_rcpp_object$bind_to_variable(name)
+    return(NULL)
+  }
+)
+
 
 ### TABLEHANDLE CONVERSIONS ###
 
@@ -118,23 +137,11 @@ setMethod(
   }
 )
 
-### TABLEHANDLE OPERATIONS ###
-
-setGeneric(
-  "bind_to_variable",
-  function(table_handle_instance, name) {
-    return(standardGeneric("bind_to_variable"))
-  },
-  signature = c("table_handle_instance", "name")
-)
-
 #' @export
 setMethod(
-  "bind_to_variable",
-  signature = c(table_handle_instance = "TableHandle", name = "character"),
-  function(table_handle_instance, name) {
-    verify_string("name", name, TRUE)
-    table_handle_instance@.internal_rcpp_object$bind_to_variable(name)
-    return(NULL)
+  "as_data_frame",
+  signature = c(x = "TableHandle"),
+  function(x, ...) {
+    return(as.data.frame(x))
   }
 )

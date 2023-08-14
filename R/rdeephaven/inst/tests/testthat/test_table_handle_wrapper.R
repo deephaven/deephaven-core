@@ -106,7 +106,7 @@ test_that("bind_to_variable binds the table to a variable", {
   close(data$client)
 })
 
-test_that("to_record_batch_reader returns an identical stream reader", {
+test_that("as_record_batch_reader returns an identical stream reader", {
   data <- setup()
 
   # actual equality of RecordBatchStreamReaders is not expected, as they contain underlying pointers to relevant data,
@@ -129,7 +129,7 @@ test_that("to_record_batch_reader returns an identical stream reader", {
   close(data$client)
 })
 
-test_that("to_arrow_table returns a valid Arrow table", {
+test_that("as_arrow_table returns the correct Arrow table", {
   data <- setup()
 
   # The rationale for casting RecordBatchStreamReaders to dataframes for comparison also applies to Arrow Tables.
@@ -150,7 +150,7 @@ test_that("to_arrow_table returns a valid Arrow table", {
   close(data$client)
 })
 
-test_that("to_tibble returns a valid Tibble", {
+test_that("as_tibble returns the correct Tibble", {
   data <- setup()
 
   tibble1 <- as_tibble(data$th1)
@@ -168,7 +168,7 @@ test_that("to_tibble returns a valid Tibble", {
   close(data$client)
 })
 
-test_that("to_data_frame returns a valid data frame", {
+test_that("as.data.frame returns the correct data frame", {
   data <- setup()
 
   data_frame1 <- as.data.frame(data$th1)
@@ -183,6 +183,24 @@ test_that("to_data_frame returns a valid data frame", {
   data_frame4 <- as.data.frame(data$th4)
   expect_equal(data_frame4, data$df4)
 
+  close(data$client)
+})
+
+test_that("as_data_frame returns the correct data frame", {
+  data <- setup()
+  
+  data_frame1 <- as_data_frame(data$th1)
+  expect_equal(data_frame1, data$df1)
+  
+  data_frame2 <- as_data_frame(data$th2)
+  expect_equal(data_frame2, data$df2)
+  
+  data_frame3 <- as_data_frame(data$th3)
+  expect_equal(data_frame3, data$df3)
+  
+  data_frame4 <- as_data_frame(data$th4)
+  expect_equal(data_frame4, data$df4)
+  
   close(data$client)
 })
 

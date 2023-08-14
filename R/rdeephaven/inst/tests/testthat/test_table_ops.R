@@ -99,6 +99,12 @@ test_that("merge behaves as expected", {
   new_th12 <- merge(c(data$th5, data$th6, data$th6, data$th5))
   expect_equal(as.data.frame(new_th12), new_df3)
   
+  new_th13 <- merge(data$th5, c(data$th6, NULL))
+  expect_equal(as.data.frame(new_th13), new_df2)
+  
+  new_th14 <- merge(c(NULL, data$th5), data$th6)
+  expect_equal(as.data.frame(new_th14), new_df2)
+  
 })
 
 test_that("select behaves as expected", {
