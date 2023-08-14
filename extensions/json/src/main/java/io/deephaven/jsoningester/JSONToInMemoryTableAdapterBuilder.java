@@ -53,8 +53,8 @@ public class JSONToInMemoryTableAdapterBuilder {
         }
 
         /**
-         * Calls {@link JSONToTableWriterAdapter#shutdown() shutdown()} on the table writer adapter, which
-         * will also {@link TableWriter#close() close()} the TableWriters.
+         * Calls {@link JSONToTableWriterAdapter#shutdown() shutdown()} on the table writer adapter, which will also
+         * {@link TableWriter#close() close()} the TableWriters.
          */
         public void shutdown() {
             tableWriterAdapter.shutdown();

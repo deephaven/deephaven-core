@@ -28,7 +28,7 @@ public class StreamJsonMessage extends BaseMessageMetadata implements JsonMessag
      *        HTTP response).
      */
     public StreamJsonMessage(Instant sentTime, Instant receiveTime, Instant ingestTime, String messageId,
-                             long messageNumber, InputStream inputStream, Runnable afterParseAction) {
+            long messageNumber, InputStream inputStream, Runnable afterParseAction) {
         super(sentTime, receiveTime, ingestTime, messageId, messageNumber);
         this.inputStream = inputStream;
         this.afterParseAction = afterParseAction;

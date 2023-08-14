@@ -10,6 +10,7 @@ dependencies {
     api project(':Util')
     api project(':engine-table')
     api project(':engine-time')
+    api project(':engine-context')
     api project(':table-api')
     api project(':IO')
     api project(':extensions-parquet-table')

@@ -20,7 +20,7 @@ public class TextJsonMessage extends TextMessage implements JsonMessage {
      * @param text The String message body.
      */
     public TextJsonMessage(Instant sentTime, Instant receiveTime, Instant ingestTime, String messageId,
-                           long messageNumber, String text) {
+            long messageNumber, String text) {
         super(sentTime, receiveTime, ingestTime, messageId, messageNumber, text);
     }
 

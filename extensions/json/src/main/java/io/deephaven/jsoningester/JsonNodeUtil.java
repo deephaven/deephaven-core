@@ -36,9 +36,14 @@ public class JsonNodeUtil {
     }
 
     @Nullable
+    public static JsonNode makeJsonNode(final String text) {
+        return makeJsonNode(null, text);
+    }
+
+    @Nullable
     public static JsonNode makeJsonNode(final InputStream json) {
         try {
-            return objectMapper.readTree(json);
+            return DEFAULT_OBJECT_MAPPER.readTree(json);
         } catch (IOException ex) {
             throw new JsonStringParseException("Failed to parse JSON string.", ex);
         }

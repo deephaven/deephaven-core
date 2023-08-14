@@ -51,7 +51,8 @@ public class ComplexJsonImportTest {
         JSONToInMemoryTableAdapterBuilder propertiesBuilder = new JSONToInMemoryTableAdapterBuilder();
 
         propertiesBuilder.addColumnFromField("Station", "station", String.class);
-        propertiesBuilder.addColumnFromFunction("Timestamp", Instant.class, value -> Instant.from(DateTimeFormatter.ISO_DATE_TIME.parse(value.get("timestamp").textValue())));
+        propertiesBuilder.addColumnFromFunction("Timestamp", Instant.class,
+                value -> Instant.from(DateTimeFormatter.ISO_DATE_TIME.parse(value.get("timestamp").textValue())));
         // propertiesBuilder.addColumnFromField("timestamp", "Timestamp");
         propertiesBuilder.addColumnFromField("Description", "textDescription", String.class);
         propertiesBuilder.addColumnFromField("RawMessage", "rawMessage", String.class);

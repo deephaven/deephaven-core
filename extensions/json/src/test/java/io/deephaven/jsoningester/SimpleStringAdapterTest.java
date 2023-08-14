@@ -4,36 +4,29 @@
 
 package io.deephaven.jsoningester;
 
+import io.deephaven.engine.context.ExecutionContext;
 import io.deephaven.engine.table.Table;
 import io.deephaven.engine.table.impl.UpdateSourceQueryTable;
 import io.deephaven.engine.table.impl.util.DynamicTableWriter;
-import io.deephaven.engine.updategraph.UpdateGraphProcessor;
+import io.deephaven.engine.testutil.ControlledUpdateGraph;
+import io.deephaven.engine.testutil.testcase.RefreshingTableTestCase;
 import io.deephaven.io.log.LogLevel;
 import io.deephaven.io.logger.NullLoggerImpl;
 import io.deephaven.qst.column.header.ColumnHeader;
 import io.deephaven.qst.table.TableHeader;
 import io.deephaven.qst.type.Type;
 import io.deephaven.tablelogger.TableWriter;
-import io.deephaven.time.DateTime;
 import io.deephaven.time.DateTimeUtils;
 import io.deephaven.util.QueryConstants;
 import org.junit.*;
 
 import java.io.IOException;
+import java.time.Instant;
 import java.util.function.Function;
 
 import static io.deephaven.engine.util.TableTools.*;
 
-public class SimpleStringAdapterTest {
-    @BeforeClass
-    static public void setup() {
-        UpdateGraphProcessor.DEFAULT.enableUnitTestMode();
-    }
-
-    @After
-    public void reset() {
-        UpdateGraphProcessor.DEFAULT.resetForUnitTests(true);
-    }
+public class SimpleStringAdapterTest extends RefreshingTableTestCase {
 
     @Test
     public void testSimple() throws IOException {
@@ -55,7 +48,8 @@ public class SimpleStringAdapterTest {
         final StringMessageHolder msg = new StringMessageHolder(input);
         adapter.consumeMessage("id", msg);
 
-        UpdateGraphProcessor.DEFAULT.runWithinUnitTestCycle(result::run);
+        final ControlledUpdateGraph updateGraph = ExecutionContext.getContext().getUpdateGraph().cast();
+        updateGraph.runWithinUnitTestCycle(result::run);
 
         final Table expected = newTable(col("a", input));
         Assert.assertEquals("", diff(result, expected, 10));
@@ -91,22 +85,23 @@ public class SimpleStringAdapterTest {
 
         final String[] names = new String[] {testCol, sentCol, idCol};
         @SuppressWarnings("rawtypes")
-        final Class[] types = new Class[] {String.class, DateTime.class, String.class};
+        final Class[] types = new Class[] {String.class, Instant.class, String.class};
 
         final DynamicTableWriter writer = new DynamicTableWriter(names, Type.fromClasses(types));
         final UpdateSourceQueryTable result = writer.getTable();
 
         final StringMessageToTableAdapter<StringMessageHolder> adapter = factory.apply(writer);
 
-        final DateTime sendTime = DateTime.now();
-        final long sendTimeMillis = sendTime.getMillis();
-        final DateTime sendTimeTruncated = DateTimeUtils.millisToTime(sendTimeMillis);
+        final Instant sendTime = Instant.now();
+        final long sendTimeMillis = sendTime.toEpochMilli();
+        final Instant sendTimeTruncated = DateTimeUtils.epochMillisToInstant(sendTimeMillis);
 
         final String input = "{\"a\": \"Yo\", \"b\": 42.2, \"c\": 123}";
         final StringMessageHolder msg = new StringMessageHolder(sendTimeMillis * 1000L, input);
         adapter.consumeMessage("id", msg);
 
-        UpdateGraphProcessor.DEFAULT.runWithinUnitTestCycle(result::run);
+        final ControlledUpdateGraph updateGraph = ExecutionContext.getContext().getUpdateGraph().cast();
+        updateGraph.runWithinUnitTestCycle(result::run);
 
         final Table expected = newTable(col(testCol, input), col(sentCol, sendTimeTruncated), col(idCol, "id"));
         Assert.assertEquals("", diff(result, expected, 10));
@@ -127,7 +122,7 @@ public class SimpleStringAdapterTest {
 
         final String[] names = new String[] {testCol, sentCol};
         @SuppressWarnings("rawtypes")
-        final Class[] types = new Class[] {String.class, DateTime.class};
+        final Class[] types = new Class[] {String.class, Instant.class};
 
         final DynamicTableWriter writer = new DynamicTableWriter(names, Type.fromClasses(types));
         final UpdateSourceQueryTable result = writer.getTable();
@@ -138,9 +133,10 @@ public class SimpleStringAdapterTest {
         final StringMessageHolder msg = new StringMessageHolder(QueryConstants.NULL_LONG, input);
         adapter.consumeMessage("id", msg);
 
-        UpdateGraphProcessor.DEFAULT.runWithinUnitTestCycle(result::run);
+        final ControlledUpdateGraph updateGraph = ExecutionContext.getContext().getUpdateGraph().cast();
+        updateGraph.runWithinUnitTestCycle(result::run);
 
-        final Table expected = newTable(col(testCol, input), col(sentCol, (DateTime) null));
+        final Table expected = newTable(col(testCol, input), col(sentCol, (Instant) null));
         Assert.assertEquals("", diff(result, expected, 10));
     }
 
@@ -161,7 +157,7 @@ public class SimpleStringAdapterTest {
 
         final String[] names = new String[] {testCol, rcvCol, procCol};
         @SuppressWarnings("rawtypes")
-        final Class[] types = new Class[] {String.class, DateTime.class, DateTime.class};
+        final Class[] types = new Class[] {String.class, Instant.class, Instant.class};
 
         final DynamicTableWriter writer = new DynamicTableWriter(names, Type.fromClasses(types));
         final UpdateSourceQueryTable result = writer.getTable();
@@ -172,10 +168,11 @@ public class SimpleStringAdapterTest {
         final StringMessageHolder msg = new StringMessageHolder(input);
         adapter.consumeMessage("id", msg);
 
-        UpdateGraphProcessor.DEFAULT.runWithinUnitTestCycle(result::run);
+        final ControlledUpdateGraph updateGraph = ExecutionContext.getContext().getUpdateGraph().cast();
+        updateGraph.runWithinUnitTestCycle(result::run);
 
         final Table expected =
-                newTable(col(testCol, input), col(rcvCol, (DateTime) null), col(procCol, (DateTime) null));
+                newTable(col(testCol, input), col(rcvCol, (Instant) null), col(procCol, (Instant) null));
         final String results = diff(result, expected, 10);
         // The timestamps are variable, so just check that it was different, not the actual value.
         Assert.assertTrue(results
@@ -203,7 +200,8 @@ public class SimpleStringAdapterTest {
         final StringMessageHolder msg = new StringMessageHolder(input);
         adapter.consumeMessage("id", msg);
 
-        UpdateGraphProcessor.DEFAULT.runWithinUnitTestCycle(result::run);
+        final ControlledUpdateGraph updateGraph = ExecutionContext.getContext().getUpdateGraph().cast();
+        updateGraph.runWithinUnitTestCycle(result::run);
 
         final Table expected = newTable(col("a", input));
         Assert.assertEquals("", diff(result, expected, 10));
@@ -229,7 +227,8 @@ public class SimpleStringAdapterTest {
         final StringMessageHolder msg = new StringMessageHolder(input);
         adapter.consumeMessage("id", msg);
 
-        UpdateGraphProcessor.DEFAULT.runWithinUnitTestCycle(result::run);
+        final ControlledUpdateGraph updateGraph = ExecutionContext.getContext().getUpdateGraph().cast();
+        updateGraph.runWithinUnitTestCycle(result::run);
 
         final Table expected = newTable(col("a", input));
         Assert.assertEquals("", diff(result, expected, 10));

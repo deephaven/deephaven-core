@@ -1032,7 +1032,7 @@ public class JSONToTableWriterAdapter implements StringToTableWriterAdapter {
             fieldConsumer = (JsonNode record,
                     int holderNumber) -> getSingleRowSetterAndCapturePosition(columnName, setterType, position,
                             holderNumber)
-                                    .setInt(JsonNodeUtil.getInt(record, fieldName, allowMissingKeys, allowNullValues));
+                            .setInt(JsonNodeUtil.getInt(record, fieldName, allowMissingKeys, allowNullValues));
             fieldSetter = (InMemoryRowHolder holder) -> setter.setInt(holder.getInt(position.intValue()));
         } else if (setterType == long.class) {
             fieldConsumer = (JsonNode record,
@@ -1056,7 +1056,7 @@ public class JSONToTableWriterAdapter implements StringToTableWriterAdapter {
             fieldConsumer = (JsonNode record,
                     int holderNumber) -> getSingleRowSetterAndCapturePosition(columnName, setterType, position,
                             holderNumber)
-                                    .set(JsonNodeUtil.getString(record, fieldName, allowMissingKeys, allowNullValues));
+                            .set(JsonNodeUtil.getString(record, fieldName, allowMissingKeys, allowNullValues));
             // noinspection unchecked
             fieldSetter = (InMemoryRowHolder holder) -> setter.set(holder.getObject(position.intValue()));
         } else if (setterType == Instant.class) {
@@ -1180,8 +1180,8 @@ public class JSONToTableWriterAdapter implements StringToTableWriterAdapter {
             fieldConsumer = (JsonNode record,
                     int holderNumber) -> getSingleRowSetterAndCapturePosition(columnName, setterType, position,
                             holderNumber)
-                                    .setInt(JsonNodeUtil.getInt(record, jsonPointer, allowMissingKeys,
-                                            allowNullValues));
+                            .setInt(JsonNodeUtil.getInt(record, jsonPointer, allowMissingKeys,
+                                    allowNullValues));
             fieldSetter = (InMemoryRowHolder holder) -> setter.setInt(holder.getInt(position.intValue()));
         } else if (setterType == long.class) {
             fieldConsumer = (JsonNode record,
@@ -1205,8 +1205,8 @@ public class JSONToTableWriterAdapter implements StringToTableWriterAdapter {
             fieldConsumer = (JsonNode record,
                     int holderNumber) -> getSingleRowSetterAndCapturePosition(columnName, setterType, position,
                             holderNumber)
-                                    .set(JsonNodeUtil.getString(record, jsonPointer, allowMissingKeys,
-                                            allowNullValues));
+                            .set(JsonNodeUtil.getString(record, jsonPointer, allowMissingKeys,
+                                    allowNullValues));
             // noinspection unchecked
             fieldSetter = (InMemoryRowHolder holder) -> setter.set(holder.getObject(position.intValue()));
         } else if (setterType == Instant.class) {
