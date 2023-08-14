@@ -859,7 +859,6 @@ test_that("natural_join behaves as expected", {
   close(data$client)
 })
 
-# TODO: Verify that inner_join is the analog of exact_join
 test_that("exact_join behaves as expected", {
   data <- setup()
 
@@ -877,7 +876,7 @@ test_that("exact_join behaves as expected", {
     dplyr::group_by(X) %>%
     summarise(across(everything(), mean))
   new_tb1 <- data$df5 %>%
-    inner_join(new_tb2, by = "X") %>%
+    left_join(new_tb2, by = "X") %>%
     rename(Number1 = Number1.x, Number2 = Number2.x, Number3 = Number1.y, Number4 = Number2.y)
   expect_equal(as.data.frame(new_th1), as.data.frame(new_tb1))
 
