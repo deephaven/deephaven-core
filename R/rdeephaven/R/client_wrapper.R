@@ -1,3 +1,91 @@
+#' @title The Deephaven Client
+#' @description The Deephaven Client class is responsible for establishing and maintaining
+#' a connection to a running Deephaven server and facilitating basic server requests.
+#' @usage NULL
+#' @format NULL
+#' @docType class
+#' @md
+#'
+#' @section Establishing a server connection with `connect`:
+#' Connections to the Deephaven server are established with a call to `connect`,
+#' which returns a `Client` object responsible for maintaining the connection and
+#' providing an interface to basic server requests. 
+#' * `x`: an R vector, list, or `data.frame`
+#' * `type`: an optional [data type][data-type] for `x`. If omitted, the type
+#'    will be inferred from the data.
+#'
+#' `Array$create()` will return the appropriate subclass of `Array`, such as
+#' `DictionaryArray` when given an R factor.
+#'
+#' To compose a `DictionaryArray` directly, call `DictionaryArray$create()`,
+#' which takes two arguments:
+#' * `x`: an R vector or `Array` of integers for the dictionary indices
+#' * `dict`: an R vector or `Array` of dictionary values (like R factor levels
+#'   but not limited to strings only)
+#' @section Usage:
+#'
+#' ```
+#' a <- Array$create(x)
+#' length(a)
+#'
+#' print(a)
+#' a == a
+#' ```
+#'
+#' @section Methods:
+#'
+#' - `$IsNull(i)`: Return true if value at index is null. Does not boundscheck
+#' - `$IsValid(i)`: Return true if value at index is valid. Does not boundscheck
+#' - `$length()`: Size in the number of elements this array contains
+#' - `$nbytes()`: Total number of bytes consumed by the elements of the array
+#' - `$offset`: A relative position into another array's data, to enable zero-copy slicing
+#' - `$null_count`: The number of null entries in the array
+#' - `$type`: logical type of data
+#' - `$type_id()`: type id
+#' - `$Equals(other)` : is this array equal to `other`
+#' - `$ApproxEquals(other)` :
+#' - `$Diff(other)` : return a string expressing the difference between two arrays
+#' - `$data()`: return the underlying [ArrayData][ArrayData]
+#' - `$as_vector()`: convert to an R vector
+#' - `$ToString()`: string representation of the array
+#' - `$Slice(offset, length = NULL)`: Construct a zero-copy slice of the array
+#'    with the indicated offset and length. If length is `NULL`, the slice goes
+#'    until the end of the array.
+#' - `$Take(i)`: return an `Array` with values at positions given by integers
+#'    (R vector or Array Array) `i`.
+#' - `$Filter(i, keep_na = TRUE)`: return an `Array` with values at positions where logical
+#'    vector (or Arrow boolean Array) `i` is `TRUE`.
+#' - `$SortIndices(descending = FALSE)`: return an `Array` of integer positions that can be
+#'    used to rearrange the `Array` in ascending or descending order
+#' - `$RangeEquals(other, start_idx, end_idx, other_start_idx)` :
+#' - `$cast(target_type, safe = TRUE, options = cast_options(safe))`: Alter the
+#'    data in the array to change its type.
+#' - `$View(type)`: Construct a zero-copy view of this array with the given type.
+#' - `$Validate()` : Perform any validation checks to determine obvious inconsistencies
+#'    within the array's internal data. This can be an expensive check, potentially `O(length)`
+#'
+#' @rdname array-class
+#' @examples
+#' my_array <- Array$create(1:10)
+#' my_array$type
+#' my_array$cast(int8())
+#'
+#' # Check if value is null; zero-indexed
+#' na_array <- Array$create(c(1:5, NA))
+#' na_array$IsNull(0)
+#' na_array$IsNull(5)
+#' na_array$IsValid(5)
+#' na_array$null_count
+#'
+#' # zero-copy slicing; the offset of the new Array will be the same as the index passed to $Slice
+#' new_array <- na_array$Slice(5)
+#' new_array$offset
+#'
+#' # Compare 2 arrays
+#' na_array2 <- na_array
+#' na_array2 == na_array # element-wise comparison
+#' na_array2$Equals(na_array) # overall comparison
+
 #' @export
 setClass(
   "Client",
