@@ -112,6 +112,14 @@ std::shared_ptr<TableHandleImpl> TableHandleImpl::Update(std::vector<std::string
   return TableHandleImpl::Create(managerImpl_, std::move(result_ticket), std::move(ls));
 }
 
+std::shared_ptr<TableHandleImpl> TableHandleImpl::LazyUpdate(std::vector<std::string> column_specs) {
+  auto *server = managerImpl_->Server().get();
+  auto result_ticket = server->NewTicket();
+  auto [cb, ls] = TableHandleImpl::CreateEtcCallback(shared_from_this(), managerImpl_.get(), result_ticket);
+  server->LazyUpdateAsync(ticket_, std::move(column_specs), std::move(cb), result_ticket);
+  return TableHandleImpl::Create(managerImpl_, std::move(result_ticket), std::move(ls));
+}
+
 std::shared_ptr<TableHandleImpl> TableHandleImpl::View(std::vector<std::string> column_specs) {
   auto *server = managerImpl_->Server().get();
   auto result_ticket = server->NewTicket();
@@ -361,14 +369,33 @@ std::shared_ptr<TableHandleImpl> TableHandleImpl::ExactJoin(const TableHandleImp
   return TableHandleImpl::Create(managerImpl_, std::move(result_ticket), std::move(ls));
 }
 
-std::shared_ptr<TableHandleImpl> TableHandleImpl::AsOfJoin(AsOfJoinTablesRequest::MatchRule match_rule,
-    const TableHandleImpl &right_side, std::vector<std::string> columns_to_match,
-    std::vector<std::string> columns_to_add) {
+std::shared_ptr<TableHandleImpl> TableHandleImpl::Aj(const TableHandleImpl &right_side,
+    std::vector<std::string> on, std::vector<std::string> joins) {
   auto *server = managerImpl_->Server().get();
   auto result_ticket = server->NewTicket();
   auto [cb, ls] = TableHandleImpl::CreateEtcCallback(shared_from_this(), managerImpl_.get(), result_ticket);
-  server->AsOfJoinAsync(match_rule, ticket_, right_side.Ticket(), std::move(columns_to_match),
-      std::move(columns_to_add), std::move(cb), result_ticket);
+  server->AjAsync(ticket_, right_side.ticket_, std::move(on), std::move(joins),
+      std::move(cb), result_ticket);
+  return TableHandleImpl::Create(managerImpl_, std::move(result_ticket), std::move(ls));
+}
+
+std::shared_ptr<TableHandleImpl> TableHandleImpl::Raj(const TableHandleImpl &right_side,
+    std::vector<std::string> on, std::vector<std::string> joins) {
+  auto *server = managerImpl_->Server().get();
+  auto result_ticket = server->NewTicket();
+  auto [cb, ls] = TableHandleImpl::CreateEtcCallback(shared_from_this(), managerImpl_.get(), result_ticket);
+  server->RajAsync(ticket_, right_side.ticket_, std::move(on), std::move(joins),
+      std::move(cb), result_ticket);
+  return TableHandleImpl::Create(managerImpl_, std::move(result_ticket), std::move(ls));
+}
+
+std::shared_ptr<TableHandleImpl> TableHandleImpl::LeftOuterJoin(const TableHandleImpl &right_side,
+    std::vector<std::string> on, std::vector<std::string> joins) {
+  auto *server = managerImpl_->Server().get();
+  auto result_ticket = server->NewTicket();
+  auto [cb, ls] = TableHandleImpl::CreateEtcCallback(shared_from_this(), managerImpl_.get(), result_ticket);
+  server->LeftOuterJoinAsync(ticket_, right_side.ticket_, std::move(on), std::move(joins),
+      std::move(cb), result_ticket);
   return TableHandleImpl::Create(managerImpl_, std::move(result_ticket), std::move(ls));
 }
 
@@ -383,6 +410,25 @@ TableHandleImpl::UpdateBy(std::vector<std::shared_ptr<UpdateByOperationImpl>> op
   auto result_ticket = server->NewTicket();
   auto [cb, ls] = TableHandleImpl::CreateEtcCallback(shared_from_this(), managerImpl_.get(), result_ticket);
   server->UpdateByAsync(ticket_, std::move(protos), std::move(by), std::move(cb), result_ticket);
+  return TableHandleImpl::Create(managerImpl_, std::move(result_ticket), std::move(ls));
+}
+
+std::shared_ptr<TableHandleImpl>
+TableHandleImpl::SelectDistinct(std::vector<std::string> columns) {
+  auto *server = managerImpl_->Server().get();
+  auto result_ticket = server->NewTicket();
+  auto [cb, ls] = TableHandleImpl::CreateEtcCallback(shared_from_this(), managerImpl_.get(), result_ticket);
+  server->SelectDistinctAsync(ticket_, std::move(columns), std::move(cb), result_ticket);
+  return TableHandleImpl::Create(managerImpl_, std::move(result_ticket), std::move(ls));
+}
+
+std::shared_ptr<TableHandleImpl>
+TableHandleImpl::WhereIn(const deephaven::client::impl::TableHandleImpl &filter_table,
+    std::vector<std::string> columns) {
+  auto *server = managerImpl_->Server().get();
+  auto result_ticket = server->NewTicket();
+  auto [cb, ls] = TableHandleImpl::CreateEtcCallback(shared_from_this(), managerImpl_.get(), result_ticket);
+  server->WhereInAsync(ticket_, filter_table.ticket_, std::move(columns), std::move(cb), result_ticket);
   return TableHandleImpl::Create(managerImpl_, std::move(result_ticket), std::move(ls));
 }
 

@@ -25,6 +25,7 @@ using deephaven::dhcore::utility::SFCallback;
 using deephaven::dhcore::utility::Bit_cast;
 using deephaven::dhcore::utility::Streamf;
 using deephaven::dhcore::utility::Stringf;
+using io::deephaven::proto::backplane::grpc::AjRajTablesRequest;
 using io::deephaven::proto::backplane::grpc::AuthenticationConstantsRequest;
 using io::deephaven::proto::backplane::grpc::ConfigurationConstantsRequest;
 using io::deephaven::proto::backplane::grpc::ConfigurationConstantsResponse;
@@ -33,27 +34,32 @@ using io::deephaven::proto::backplane::grpc::CrossJoinTablesRequest;
 using io::deephaven::proto::backplane::grpc::DropColumnsRequest;
 using io::deephaven::proto::backplane::grpc::EmptyTableRequest;
 using io::deephaven::proto::backplane::grpc::ExactJoinTablesRequest;
+using io::deephaven::proto::backplane::grpc::ExportedTableCreationResponse;
 using io::deephaven::proto::backplane::grpc::FetchTableRequest;
 using io::deephaven::proto::backplane::grpc::HandshakeRequest;
 using io::deephaven::proto::backplane::grpc::HeadOrTailRequest;
 using io::deephaven::proto::backplane::grpc::HeadOrTailByRequest;
+using io::deephaven::proto::backplane::grpc::LeftJoinTablesRequest;
 using io::deephaven::proto::backplane::grpc::MergeTablesRequest;
 using io::deephaven::proto::backplane::grpc::NaturalJoinTablesRequest;
 using io::deephaven::proto::backplane::grpc::ReleaseRequest;
 using io::deephaven::proto::backplane::grpc::ReleaseResponse;
+using io::deephaven::proto::backplane::grpc::SelectDistinctRequest;
 using io::deephaven::proto::backplane::grpc::SelectOrUpdateRequest;
 using io::deephaven::proto::backplane::grpc::SortTableRequest;
+using io::deephaven::proto::backplane::grpc::Ticket;
 using io::deephaven::proto::backplane::grpc::TimeTableRequest;
+using io::deephaven::proto::backplane::grpc::WhereInRequest;
 using io::deephaven::proto::backplane::grpc::UpdateByRequest;
 using io::deephaven::proto::backplane::grpc::UnstructuredFilterTableRequest;
 using io::deephaven::proto::backplane::grpc::UngroupRequest;
-using io::deephaven::proto::backplane::grpc::Ticket;
 using io::deephaven::proto::backplane::script::grpc::BindTableToVariableRequest;
 using io::deephaven::proto::backplane::script::grpc::ExecuteCommandRequest;
 using io::deephaven::proto::backplane::script::grpc::ExecuteCommandResponse;
 using io::deephaven::proto::backplane::script::grpc::StartConsoleRequest;
 
-typedef io::deephaven::proto::backplane::grpc::UpdateByRequest::UpdateByOperation UpdateByOperation;
+using UpdateByOperation = io::deephaven::proto::backplane::grpc::UpdateByRequest::UpdateByOperation;
+using EtcCallback = SFCallback<ExportedTableCreationResponse>;
 
 namespace deephaven::client::server {
 
@@ -380,6 +386,12 @@ void Server::UpdateAsync(Ticket parent_ticket, std::vector<std::string> column_s
       &TableService::Stub::AsyncUpdate);
 }
 
+void Server::LazyUpdateAsync(Ticket parent_ticket, std::vector<std::string> column_specs,
+    std::shared_ptr<EtcCallback> etc_callback, Ticket result) {
+  SelectOrUpdateHelper(std::move(parent_ticket), std::move(column_specs), std::move(etc_callback), std::move(result),
+      &TableService::Stub::AsyncLazyUpdate);
+}
+
 void Server::ViewAsync(Ticket parent_ticket, std::vector<std::string> column_specs,
     std::shared_ptr<EtcCallback> etc_callback, Ticket result) {
   SelectOrUpdateHelper(std::move(parent_ticket), std::move(column_specs), std::move(etc_callback), std::move(result),
@@ -532,18 +544,52 @@ void Server::ExactJoinAsync(Ticket left_table_ticket, Ticket right_table_ticket,
   SendRpc(req, std::move(etc_callback), TableStub(), &TableService::Stub::AsyncExactJoinTables);
 }
 
-void Server::AsOfJoinAsync(AsOfJoinTablesRequest::MatchRule match_rule, Ticket left_table_ticket,
-    Ticket right_table_ticket, std::vector<std::string> columns_to_match,
-    std::vector<std::string> columns_to_add, std::shared_ptr<EtcCallback> etc_callback,
-    Ticket result) {
-  AsOfJoinTablesRequest req;
+namespace {
+AjRajTablesRequest MakeAjRajTablesRequest(Ticket left_table_ticket, Ticket right_table_ticket,
+    std::vector<std::string> on, std::vector<std::string> joins, Ticket result) {
+  if (on.empty()) {
+    throw std::runtime_error(DEEPHAVEN_DEBUG_MSG("Need at least one 'on' column"));
+  }
+  AjRajTablesRequest req;
   *req.mutable_result_id() = std::move(result);
   *req.mutable_left_id()->mutable_ticket() = std::move(left_table_ticket);
   *req.mutable_right_id()->mutable_ticket() = std::move(right_table_ticket);
-  MoveVectorData(std::move(columns_to_match), req.mutable_columns_to_match());
-  MoveVectorData(std::move(columns_to_add), req.mutable_columns_to_add());
-  req.set_as_of_match_rule(match_rule);
-  SendRpc(req, std::move(etc_callback), TableStub(), &TableService::Stub::AsyncAsOfJoinTables);
+  // The final 'on' column is the as of column
+  *req.mutable_as_of_column() = std::move(on.back());
+  on.pop_back();
+  // The remaining 'on' columns are the exact_match_columns
+  MoveVectorData(std::move(on), req.mutable_exact_match_columns());
+  MoveVectorData(std::move(joins), req.mutable_columns_to_add());
+  return req;
+}
+}  // namespace
+
+void
+Server::AjAsync(Ticket left_table_ticket, Ticket right_table_ticket, std::vector<std::string> on,
+    std::vector<std::string> joins, std::shared_ptr<EtcCallback> etc_callback, Ticket result) {
+  auto req = MakeAjRajTablesRequest(std::move(left_table_ticket), std::move(right_table_ticket),
+      std::move(on), std::move(joins), std::move(result));
+  SendRpc(req, std::move(etc_callback), TableStub(), &TableService::Stub::AsyncAjTables);
+}
+
+void
+Server::RajAsync(Ticket left_table_ticket, Ticket right_table_ticket, std::vector<std::string> on,
+    std::vector<std::string> joins, std::shared_ptr<EtcCallback> etc_callback, Ticket result) {
+  auto req = MakeAjRajTablesRequest(std::move(left_table_ticket), std::move(right_table_ticket),
+      std::move(on), std::move(joins), std::move(result));
+  SendRpc(req, std::move(etc_callback), TableStub(), &TableService::Stub::AsyncRajTables);
+}
+
+void Server::LeftOuterJoinAsync(Ticket left_table_ticket, Ticket right_table_ticket,
+    std::vector<std::string> on, std::vector<std::string> joins,
+    std::shared_ptr<EtcCallback> etc_callback, Ticket result) {
+  LeftJoinTablesRequest req;
+  *req.mutable_result_id() = std::move(result);
+  *req.mutable_left_id()->mutable_ticket() = std::move(left_table_ticket);
+  *req.mutable_right_id()->mutable_ticket() = std::move(right_table_ticket);
+  MoveVectorData(std::move(on), req.mutable_columns_to_match());
+  MoveVectorData(std::move(joins), req.mutable_columns_to_add());
+  SendRpc(req, std::move(etc_callback), TableStub(), &TableService::Stub::AsyncLeftJoinTables);
 }
 
 void Server::UpdateByAsync(Ticket source, std::vector<UpdateByOperation> operations,
@@ -555,6 +601,26 @@ void Server::UpdateByAsync(Ticket source, std::vector<UpdateByOperation> operati
   MoveVectorData(std::move(operations), req.mutable_operations());
   MoveVectorData(std::move(groupByColumns), req.mutable_group_by_columns());
   SendRpc(req, std::move(etcCallback), TableStub(), &TableService::Stub::AsyncUpdateBy);
+}
+
+void Server::SelectDistinctAsync(Ticket source, std::vector<std::string> columns,
+    std::shared_ptr<EtcCallback> etc_callback, Ticket result) {
+  SelectDistinctRequest req;
+  *req.mutable_result_id() = std::move(result);
+  *req.mutable_source_id()->mutable_ticket() = std::move(source);
+  MoveVectorData(std::move(columns), req.mutable_column_names());
+  SendRpc(req, std::move(etc_callback), TableStub(), &TableService::Stub::AsyncSelectDistinct);
+}
+
+void Server::WhereInAsync(Ticket left_table_ticket, Ticket right_table_ticket,
+    std::vector<std::string> columns, std::shared_ptr<EtcCallback> etc_callback, Ticket result) {
+  WhereInRequest req;
+  *req.mutable_result_id() = std::move(result);
+  *req.mutable_left_id()->mutable_ticket() = std::move(left_table_ticket);
+  *req.mutable_right_id()->mutable_ticket() = std::move(right_table_ticket);
+  req.set_inverted(false);
+  MoveVectorData(std::move(columns), req.mutable_columns_to_match());
+  SendRpc(req, std::move(etc_callback), TableStub(), &TableService::Stub::AsyncWhereIn);
 }
 
 void
