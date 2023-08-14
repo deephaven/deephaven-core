@@ -37,7 +37,7 @@ dependencies {
 
     testRuntimeOnly project(path: ':test-configs')
 
-    testRuntimeOnly project(':log-to-slf4j'),
+    runtimeOnly project(':log-to-slf4j'),
             project(path: ':configs')
 
 

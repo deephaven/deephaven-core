@@ -5,14 +5,14 @@ import io.deephaven.base.verify.Require;
 import io.deephaven.configuration.Configuration;
 import io.deephaven.engine.context.ExecutionContext;
 import io.deephaven.engine.table.Table;
-import io.deephaven.engine.updategraph.UpdateGraph;
+import io.deephaven.engine.updategraph.impl.PeriodicUpdateGraph;
 import io.deephaven.engine.util.TableTools;
 import io.deephaven.io.logger.Logger;
 import io.deephaven.io.logger.ProcessStreamLoggerImpl;
 import io.deephaven.jsoningester.JSONToInMemoryTableAdapterBuilder;
 import io.deephaven.jsoningester.JSONToTableWriterAdapter;
 import io.deephaven.qst.column.header.ColumnHeader;
-import io.deephaven.time.DateTimeUtils;
+import io.deephaven.util.SafeCloseable;
 import io.deephaven.util.process.ProcessEnvironment;
 import io.deephaven.util.type.TypeUtils;
 
@@ -42,85 +42,103 @@ public class ComplexJsonImportTest {
         // https://api.weather.gov/stations/KNYC/observations
         // https://api.weather.gov/stations/kcos/observations
 
+        // final ExecutionContext executionContext = ExecutionContext.getDefaultContext();
 
-        JSONToInMemoryTableAdapterBuilder mainBuilder = new JSONToInMemoryTableAdapterBuilder();
-        mainBuilder.addColumnFromField("Id", "id", String.class);
-        mainBuilder.addColumnFromField("Type", "type", String.class);
+        final PeriodicUpdateGraph updateGraph = PeriodicUpdateGraph.newBuilder("MyUpdateGraph").existingOrBuild();
 
-        // builder for 'properties', which has all the actual observations
-        JSONToInMemoryTableAdapterBuilder propertiesBuilder = new JSONToInMemoryTableAdapterBuilder();
+        final ExecutionContext context = ExecutionContext.newBuilder()
+                .emptyQueryScope()
+                .newQueryLibrary()
+                .captureQueryCompiler()
+                .setUpdateGraph(updateGraph)
+                .build();
 
-        propertiesBuilder.addColumnFromField("Station", "station", String.class);
-        propertiesBuilder.addColumnFromFunction("Timestamp", Instant.class,
-                value -> Instant.from(DateTimeFormatter.ISO_DATE_TIME.parse(value.get("timestamp").textValue())));
-        // propertiesBuilder.addColumnFromField("timestamp", "Timestamp");
-        propertiesBuilder.addColumnFromField("Description", "textDescription", String.class);
-        propertiesBuilder.addColumnFromField("RawMessage", "rawMessage", String.class);
+        try (SafeCloseable ignored = context.open()) {
 
-        addObservationNestedFieldBuilderAndGetColHeaders(propertiesBuilder, "elevation", Integer.class);
-        addObservationNestedFieldBuilderAndGetColHeaders(propertiesBuilder, "temperature", Double.class);
-        addObservationNestedFieldBuilderAndGetColHeaders(propertiesBuilder, "dewpoint", Double.class);
-        addObservationNestedFieldBuilderAndGetColHeaders(propertiesBuilder, "windDirection", Double.class);
-        addObservationNestedFieldBuilderAndGetColHeaders(propertiesBuilder, "windSpeed", Double.class);
-        addObservationNestedFieldBuilderAndGetColHeaders(propertiesBuilder, "windGust", Double.class);
-        addObservationNestedFieldBuilderAndGetColHeaders(propertiesBuilder, "barometricPressure", Integer.class);
-        addObservationNestedFieldBuilderAndGetColHeaders(propertiesBuilder, "seaLevelPressure", Integer.class);
-        addObservationNestedFieldBuilderAndGetColHeaders(propertiesBuilder, "visibility", Integer.class);
-        addObservationNestedFieldBuilderAndGetColHeaders(propertiesBuilder, "maxTemperatureLast24Hours", Double.class);
-        addObservationNestedFieldBuilderAndGetColHeaders(propertiesBuilder, "minTemperatureLast24Hours", Double.class);
-        addObservationNestedFieldBuilderAndGetColHeaders(propertiesBuilder, "precipitationLastHour", Double.class);
-        addObservationNestedFieldBuilderAndGetColHeaders(propertiesBuilder, "precipitationLast3Hours", Double.class);
-        addObservationNestedFieldBuilderAndGetColHeaders(propertiesBuilder, "precipitationLast6Hours", Double.class);
-        addObservationNestedFieldBuilderAndGetColHeaders(propertiesBuilder, "relativeHumidity", Double.class);
-        addObservationNestedFieldBuilderAndGetColHeaders(propertiesBuilder, "windChill", Double.class);
-        addObservationNestedFieldBuilderAndGetColHeaders(propertiesBuilder, "heatIndex", Double.class);
+            JSONToInMemoryTableAdapterBuilder mainBuilder = new JSONToInMemoryTableAdapterBuilder("observations");
+            mainBuilder.addColumnFromField("Id", "id", String.class);
+            mainBuilder.addColumnFromField("Type", "type", String.class);
+
+            // builder for 'properties', which has all the actual observations
+            JSONToInMemoryTableAdapterBuilder propertiesBuilder = new JSONToInMemoryTableAdapterBuilder();
+
+            propertiesBuilder.addColumnFromField("Station", "station", String.class);
+            propertiesBuilder.addColumnFromFunction("Timestamp", Instant.class,
+                    value -> Instant.from(DateTimeFormatter.ISO_DATE_TIME.parse(value.get("timestamp").textValue())));
+            // propertiesBuilder.addColumnFromField("timestamp", "Timestamp");
+            propertiesBuilder.addColumnFromField("Description", "textDescription", String.class);
+            propertiesBuilder.addColumnFromField("RawMessage", "rawMessage", String.class);
+
+            addObservationNestedFieldBuilderAndGetColHeaders(propertiesBuilder, "elevation", Integer.class);
+            addObservationNestedFieldBuilderAndGetColHeaders(propertiesBuilder, "temperature", Double.class);
+            addObservationNestedFieldBuilderAndGetColHeaders(propertiesBuilder, "dewpoint", Double.class);
+            addObservationNestedFieldBuilderAndGetColHeaders(propertiesBuilder, "windDirection", Double.class);
+            addObservationNestedFieldBuilderAndGetColHeaders(propertiesBuilder, "windSpeed", Double.class);
+            addObservationNestedFieldBuilderAndGetColHeaders(propertiesBuilder, "windGust", Double.class);
+            addObservationNestedFieldBuilderAndGetColHeaders(propertiesBuilder, "barometricPressure", Integer.class);
+            addObservationNestedFieldBuilderAndGetColHeaders(propertiesBuilder, "seaLevelPressure", Integer.class);
+            addObservationNestedFieldBuilderAndGetColHeaders(propertiesBuilder, "visibility", Integer.class);
+            addObservationNestedFieldBuilderAndGetColHeaders(propertiesBuilder, "maxTemperatureLast24Hours",
+                    Double.class);
+            addObservationNestedFieldBuilderAndGetColHeaders(propertiesBuilder, "minTemperatureLast24Hours",
+                    Double.class);
+            addObservationNestedFieldBuilderAndGetColHeaders(propertiesBuilder, "precipitationLastHour", Double.class);
+            addObservationNestedFieldBuilderAndGetColHeaders(propertiesBuilder, "precipitationLast3Hours",
+                    Double.class);
+            addObservationNestedFieldBuilderAndGetColHeaders(propertiesBuilder, "precipitationLast6Hours",
+                    Double.class);
+            addObservationNestedFieldBuilderAndGetColHeaders(propertiesBuilder, "relativeHumidity", Double.class);
+            addObservationNestedFieldBuilderAndGetColHeaders(propertiesBuilder, "windChill", Double.class);
+            addObservationNestedFieldBuilderAndGetColHeaders(propertiesBuilder, "heatIndex", Double.class);
 
 
-        final JSONToInMemoryTableAdapterBuilder cloudLayersBuilder = new JSONToInMemoryTableAdapterBuilder();
-        cloudLayersBuilder.processArrays(true);
+            final JSONToInMemoryTableAdapterBuilder cloudLayersBuilder = new JSONToInMemoryTableAdapterBuilder();
+            cloudLayersBuilder.processArrays(true);
 
-        final JSONToInMemoryTableAdapterBuilder cloudLayersBaseBuilder = new JSONToInMemoryTableAdapterBuilder();
-        cloudLayersBaseBuilder.addColumnFromField("base_unitCode", "unitCode", String.class);
-        cloudLayersBaseBuilder.addColumnFromField("base", "value", int.class);
+            final JSONToInMemoryTableAdapterBuilder cloudLayersBaseBuilder = new JSONToInMemoryTableAdapterBuilder();
+            cloudLayersBaseBuilder.addColumnFromField("base_unitCode", "unitCode", String.class);
+            cloudLayersBaseBuilder.addColumnFromField("base", "value", int.class);
 
-        cloudLayersBuilder.addNestedField("base", cloudLayersBaseBuilder);
-        cloudLayersBuilder.addColumnFromField("amount", "amount", String.class);
+            cloudLayersBuilder.addNestedField("base", cloudLayersBaseBuilder);
+            cloudLayersBuilder.addColumnFromField("amount", "amount", String.class);
 
-        propertiesBuilder.addFieldToSubTableMapping("cloudLayers", cloudLayersBuilder);
+            propertiesBuilder.addFieldToSubTableMapping("cloudLayers", cloudLayersBuilder);
 
-        mainBuilder.addNestedField("properties", propertiesBuilder);
+            mainBuilder.addNestedField("properties", propertiesBuilder);
 
-        final JSONToInMemoryTableAdapterBuilder.TableAndAdapterBuilderResult adapterAndTables = mainBuilder.build(log);
-        final JSONToTableWriterAdapter adapter = adapterAndTables.tableWriterAdapter;
-        final Map<String, Table> resultTables = adapterAndTables.resultTables;
+            final JSONToInMemoryTableAdapterBuilder.TableAndAdapterBuilderResult adapterAndTables =
+                    mainBuilder.build(log);
+            final JSONToTableWriterAdapter adapter = adapterAndTables.tableWriterAdapter;
+            final Map<String, Table> resultTables = adapterAndTables.resultTables;
 
-        // Get the output tables:
-        final Table mainTable = Require.neqNull(resultTables.get("MAIN_TABLE"), "mainTable");
-        final Table cloudLayers = Require.neqNull(resultTables.get("cloudLayers"), "cloudLayers");
+            // Get the output tables:
+            final Table observations = Require.neqNull(resultTables.get("observations"), "observations");
+            final Table cloudLayers = Require.neqNull(resultTables.get("cloudLayers"), "cloudLayers");
 
-        TableTools.show(mainTable);
-        TableTools.show(cloudLayers);
-
-        System.out.println("Consuming message!");
-        adapter.consumeString(ExampleJSON.observationsJson);
-        System.out.println("Consumed message!");
-
-        TableTools.show(mainTable);
-        TableTools.show(cloudLayers);
-
-        adapter.waitForProcessing(100000);
-        adapter.cleanup();
-
-        System.out.println("Cleaned up");
-
-        final UpdateGraph updateGraph = ExecutionContext.getContext().getUpdateGraph();
-        updateGraph.requestRefresh();
-        updateGraph.sharedLock().doLocked(() -> {
-            TableTools.show(mainTable);
+            TableTools.show(observations);
             TableTools.show(cloudLayers);
-        });
 
-        System.out.println("Exiting");
+            System.out.println("Consuming message!");
+            adapter.consumeString(ExampleJSON.observationsJson);
+            System.out.println("Consumed message!");
+
+            TableTools.show(observations);
+            TableTools.show(cloudLayers);
+
+            adapter.waitForProcessing(100000);
+            adapter.cleanup();
+
+            System.out.println("Cleaned up");
+
+            // final UpdateGraph updateGraph = ExecutionContext.getContext().getUpdateGraph();
+            updateGraph.requestRefresh();
+            updateGraph.sharedLock().doLocked(() -> {
+                TableTools.show(observations);
+                TableTools.show(cloudLayers);
+            });
+
+            System.out.println("Exiting");
+        }
     }
 
     public static List<ColumnHeader<?>> addObservationNestedFieldBuilderAndGetColHeaders(
