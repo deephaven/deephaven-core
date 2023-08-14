@@ -54,7 +54,24 @@ setMethod(
   }
 )
 
-# TODO: Implement ncol, dim
+#' @export
+setMethod(
+  "ncol",
+  signature = c(x = "TableHandle"),
+  function(x) {
+    return(x@.internal_rcpp_object$num_cols())
+  }
+)
+
+#' @export
+setMethod(
+  "dim",
+  signature = c(x = "TableHandle"),
+  function(x) {
+    return(c(x@.internal_rcpp_object$num_rows(), x@.internal_rcpp_object$num_cols()))
+  }
+)
+
 
 ### TABLEHANDLE CONVERSIONS ###
 

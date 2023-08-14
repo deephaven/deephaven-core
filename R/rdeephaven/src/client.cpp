@@ -278,6 +278,10 @@ public:
         return internal_tbl_hdl.NumRows();
     }
 
+    int64_t NumCols() {
+        return internal_tbl_hdl.Schema()->NumCols();
+    }
+
     void BindToVariable(std::string tableName) {
         internal_tbl_hdl.BindToVariable(tableName);
     }
@@ -531,6 +535,7 @@ RCPP_MODULE(DeephavenInternalModule) {
 
     .method("is_static", &TableHandleWrapper::IsStatic)
     .method("num_rows", &TableHandleWrapper::NumRows)
+    .method("num_cols", &TableHandleWrapper::NumCols)
     .method("bind_to_variable", &TableHandleWrapper::BindToVariable)
     .method("get_arrow_array_stream_ptr", &TableHandleWrapper::GetArrowArrayStreamPtr)
     ;

@@ -66,6 +66,28 @@ test_that("nrow returns the correct number of rows", {
   close(data$client)
 })
 
+test_that("ncol returns the correct number of columns", {
+  data <- setup()
+  
+  expect_equal(ncol(data$th1), ncol(data$df1))
+  expect_equal(ncol(data$th2), ncol(data$df2))
+  expect_equal(ncol(data$th3), ncol(data$df3))
+  expect_equal(ncol(data$th4), ncol(data$df4))
+  
+  close(data$client)
+})
+
+test_that("dim returns the correct dimension", {
+  data <- setup()
+  
+  expect_equal(dim(data$th1), dim(data$df1))
+  expect_equal(dim(data$th2), dim(data$df2))
+  expect_equal(dim(data$th3), dim(data$df3))
+  expect_equal(dim(data$th4), dim(data$df4))
+  
+  close(data$client)
+})
+
 test_that("bind_to_variable binds the table to a variable", {
   data <- setup()
 
