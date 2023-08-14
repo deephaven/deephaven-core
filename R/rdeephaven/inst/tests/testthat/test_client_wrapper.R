@@ -186,7 +186,7 @@ test_that("dhConnect fails nicely with bad inputs", {
   
   expect_error(
     dhConnect(target = "localhost:10000", auth_type = "basic"),
-    "Basic authentication was requested, but no 'auth_token' was provided."
+    "Basic authentication was requested, but at least one of 'username' or 'password' was not provided."
   )
   expect_error(
     dhConnect(target = "localhost:10000", auth_type = "custom"),
@@ -198,7 +198,7 @@ test_that("dhConnect fails nicely with bad inputs", {
   )
   expect_error(
     dhConnect(target = "localhost:10000", auth_type = "basic", auth_token = 1234),
-    "'auth_token' must be a single string. Got an object of class numeric."
+    "Basic authentication was requested, but at least one of 'username' or 'password' was not provided."
   )
   expect_error(
     dhConnect(target = "localhost:10000", session_type = "blahblah"),

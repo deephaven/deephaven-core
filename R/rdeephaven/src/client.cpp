@@ -241,29 +241,23 @@ public:
         return new TableHandleWrapper(internal_tbl_hdl.Merge(converted_sources));
     };
 
-    TableHandleWrapper* Sort(std::vector<std::string> columnSpecs, std::vector<bool> descending) {
+    TableHandleWrapper* Sort(std::vector<std::string> columnSpecs, std::vector<bool> descending, std::vector<bool> absCol) {
         std::vector<deephaven::client::SortPair> sort_pairs;
         sort_pairs.reserve(columnSpecs.size());
 
         if (descending.size() == 1) {
-            if (!descending[0]) {
-                for(int i = 0; i < columnSpecs.size(); i++) {
-                    sort_pairs.push_back(deephaven::client::SortPair::Ascending(columnSpecs[i], false));
-                }
-            } else {
-                for(int i = 0; i < columnSpecs.size(); i++) {
-                    sort_pairs.push_back(deephaven::client::SortPair::Descending(columnSpecs[i], false));
-                }
-            }
+            descending = std::vector<bool>(columnSpecs.size(), descending[0]);
         }
 
-        else {
-            for(int i = 0; i < columnSpecs.size(); i++) {
-                if (!descending[i]) {
-                    sort_pairs.push_back(deephaven::client::SortPair::Ascending(columnSpecs[i], false));
-                } else {
-                    sort_pairs.push_back(deephaven::client::SortPair::Descending(columnSpecs[i], false));
-                }
+        if (absCol.size() == 1) {
+            absCol = std::vector<bool>(columnSpecs.size(), absCol[0]);
+        }
+
+        for(int i = 0; i < columnSpecs.size(); i++) {
+            if (!descending[i]) {
+                sort_pairs.push_back(deephaven::client::SortPair::Ascending(columnSpecs[i], absCol[i]));
+            } else {
+                sort_pairs.push_back(deephaven::client::SortPair::Descending(columnSpecs[i], absCol[i]));
             }
         }
 
@@ -335,9 +329,8 @@ public:
         internal_options->SetDefaultAuthentication();
     }
 
-    void SetBasicAuthentication(const std::string &authentication_token) {
-        const std::string authentication_token_base64 = Base64Encode(authentication_token);
-        internal_options->SetCustomAuthentication("Basic", authentication_token_base64);
+    void SetBasicAuthentication(const std::string &username, const std::string &password) {
+        internal_options->SetBasicAuthentication(username, password);
     }
 
     void SetCustomAuthentication(const std::string &authentication_type, const std::string &authentication_token) {

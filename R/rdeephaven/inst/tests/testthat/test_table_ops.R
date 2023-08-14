@@ -72,39 +72,13 @@ test_that("merge behaves as expected", {
   new_th3 <- merge(data$th5, data$th6, data$th6, data$th5)
   expect_equal(as.data.frame(new_th3), new_df3)
   
-  new_th4 <- merge(data$th5, NULL)
-  expect_equal(as.data.frame(new_th4), new_df1)
+  new_th4 <- merge(c(data$th5, data$th6))
+  expect_equal(as.data.frame(new_th4), new_df2)
   
-  new_th5 <- merge(NULL, data$th5)
-  expect_equal(as.data.frame(new_th5), new_df1)
+  new_th5 <- merge(c(data$th5, data$th6, NULL, data$th6, data$th5))
+  expect_equal(as.data.frame(new_th5), new_df3)
   
-  new_th6 <- merge(c(data$th5, data$th6))
-  expect_equal(as.data.frame(new_th6), new_df2)
-  
-  new_th7 <- merge(NULL, c(data$th5, data$th6))
-  expect_equal(as.data.frame(new_th7), new_df2)
-  
-  new_th8 <- merge(c(data$th5, data$th6), NULL)
-  expect_equal(as.data.frame(new_th8), new_df2)
-  
-  new_th9 <- merge(data$th5, c(data$th6, data$th6, data$th5))
-  expect_equal(as.data.frame(new_th9), new_df3)
-  
-  new_th10 <- merge(c(data$th5, data$th6, data$th6), data$th5)
-  expect_equal(as.data.frame(new_th10), new_df3)
-  
-  new_th11 <- merge(c(data$th5, data$th6), c(data$th6, data$th5))
-  expect_equal(as.data.frame(new_th11), new_df3)
-  
-  new_th12 <- merge(c(data$th5, data$th6, data$th6, data$th5))
-  expect_equal(as.data.frame(new_th12), new_df3)
-  
-  new_th13 <- merge(data$th5, c(data$th6, NULL))
-  expect_equal(as.data.frame(new_th13), new_df2)
-  
-  new_th14 <- merge(c(NULL, data$th5), data$th6)
-  expect_equal(as.data.frame(new_th14), new_df2)
-  
+  close(data$client)
 })
 
 test_that("select behaves as expected", {

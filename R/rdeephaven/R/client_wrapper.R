@@ -20,6 +20,8 @@ setMethod(
   signature = c(target = "character"),
   function(target,
            auth_type = "anonymous",
+           username = "",
+           password = "",
            auth_token = "",
            session_type = "python",
            use_tls = FALSE,
@@ -40,11 +42,12 @@ setMethod(
     if (auth_type == "anonymous") {
       options$set_default_authentication()
     } else if (auth_type == "basic") {
-      if (auth_token != "") {
-        verify_string("auth_token", auth_token, TRUE)
-        options$set_basic_authentication(auth_token)
+      if ((username != "") && (password != "")) {
+        verify_string("username", username, TRUE)
+        verify_string("password", password, TRUE)
+        options$set_basic_authentication(username, password)
       } else {
-        stop("Basic authentication was requested, but no 'auth_token' was provided.")
+        stop("Basic authentication was requested, but at least one of 'username' or 'password' was not provided.")
       }
     } else {
       if (auth_token != "") {
@@ -101,6 +104,10 @@ setMethod(
 
     if ((auth_token != "") && (auth_type == "anonymous")) {
       warning("'auth_token' was set but it will not be used, as 'auth_type' is 'anonymous'.")
+    }
+    
+    if (((username != "") || (password != "")) && auth_type != "basic") {
+      warning("At least one of 'username' and 'password' were set but they will not be used, as 'auth_type' is not 'basic'.")
     }
 
     if ((tls_root_certs != "") && (use_tls == FALSE)) {

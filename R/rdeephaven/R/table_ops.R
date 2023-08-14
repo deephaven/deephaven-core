@@ -19,39 +19,19 @@ base_merge <- function(x, y, ...) {
 #' @export
 setMethod(
   "merge",
-  signature = c(x = "TableHandle"),
-  function(x, y = NULL, ...) {
-    return(base_merge(x, y, c(...)))
-  }
-)
-
-#' @export
-setMethod(
-  "merge",
-  signature = c(x = "list"),
-  function(x, y = NULL, ...) {
+  signature = c(x = "list", y = "missing"),
+  function(x, y = NULL) {
     verify_type("x", x, "TableHandle", "Deephaven TableHandle", FALSE)
-    return(base_merge(x, y, c(...)))
+    return(base_merge(x, y))
   }
 )
 
 #' @export
 setMethod(
   "merge",
-  signature = c(x = "TableHandle", y = "list"),
-  function(x, y, ...) {
-    verify_type("y", y, "TableHandle", "Deephaven TableHandle", FALSE)
-    return(base_merge(x, y, c(...)))
-  }
-)
-
-#' @export
-setMethod(
-  "merge",
-  signature = c(x = "list", y = "TableHandle"),
-  function(x, y, ...) {
-    verify_type("x", x, "TableHandle", "Deephaven TableHandle", FALSE)
-    return(base_merge(x, y, c(...)))
+  signature = c(x = "TableHandle", y = "missing"),
+  function(x, y = NULL) {
+    return(base_merge(x, y))
   }
 )
 
@@ -60,58 +40,90 @@ setMethod(
   "merge",
   signature = c(x = "TableHandle", y = "TableHandle"),
   function(x, y, ...) {
+    if (length(c(...)) != 0) {
+      verify_type("...", c(...), "TableHandle", "Deephaven TableHandle", FALSE)
+    }
     return(base_merge(x, y, c(...)))
   }
 )
 
-#' @export
-setMethod(
-  "merge",
-  signature = c(x = "list", y = "list"),
-  function(x, y, ...) {
-    verify_type("x", x, "TableHandle", "Deephaven TableHandle", FALSE)
-    verify_type("y", y, "TableHandle", "Deephaven TableHandle", FALSE)
-    return(base_merge(x, y, c(...)))
-  }
-)
-
-#' @export
-setMethod(
-  "merge",
-  signature = c(x = "NULL", y = "TableHandle"),
-  function(x, y, ...) {
-    return(base_merge(x, y, c(...)))
-  }
-)
-
-#' @export
-setMethod(
-  "merge",
-  signature = c(x = "NULL", y = "list"),
-  function(x, y, ...) {
-    verify_type("y", y, "TableHandle", "Deephaven TableHandle", FALSE)
-    return(base_merge(x, y, c(...)))
-  }
-)
-
-#' @export
-setMethod(
-  "merge",
-  signature = c(x = "TableHandle", y = "NULL"),
-  function(x, y, ...) {
-    return(base_merge(x, y, c(...)))
-  }
-)
-
-#' @export
-setMethod(
-  "merge",
-  signature = c(x = "list", y = "NULL"),
-  function(x, y, ...) {
-    verify_type("x", x, "TableHandle", "Deephaven TableHandle", FALSE)
-    return(base_merge(x, y, c(...)))
-  }
-)
+#' #' @export
+#' setMethod(
+#'   "merge",
+#'   signature = c(x = "TableHandle", y = "list"),
+#'   function(x, y, ...) {
+#'     verify_type("y", y, "TableHandle", "Deephaven TableHandle", FALSE)
+#'     return(base_merge(x, y, c(...)))
+#'   }
+#' )
+#' 
+#' #' @export
+#' setMethod(
+#'   "merge",
+#'   signature = c(x = "list", y = "TableHandle"),
+#'   function(x, y, ...) {
+#'     verify_type("x", x, "TableHandle", "Deephaven TableHandle", FALSE)
+#'     return(base_merge(x, y, c(...)))
+#'   }
+#' )
+#' 
+#' #' @export
+#' setMethod(
+#'   "merge",
+#'   signature = c(x = "TableHandle", y = "TableHandle"),
+#'   function(x, y, ...) {
+#'     return(base_merge(x, y, c(...)))
+#'   }
+#' )
+#' 
+#' #' @export
+#' setMethod(
+#'   "merge",
+#'   signature = c(x = "list", y = "list"),
+#'   function(x, y, ...) {
+#'     verify_type("x", x, "TableHandle", "Deephaven TableHandle", FALSE)
+#'     verify_type("y", y, "TableHandle", "Deephaven TableHandle", FALSE)
+#'     return(base_merge(x, y, c(...)))
+#'   }
+#' )
+#' 
+#' #' @export
+#' setMethod(
+#'   "merge",
+#'   signature = c(x = "NULL", y = "TableHandle"),
+#'   function(x, y, ...) {
+#'     return(base_merge(x, y, c(...)))
+#'   }
+#' )
+#' 
+#' #' @export
+#' setMethod(
+#'   "merge",
+#'   signature = c(x = "NULL", y = "list"),
+#'   function(x, y, ...) {
+#'     verify_type("y", y, "TableHandle", "Deephaven TableHandle", FALSE)
+#'     return(base_merge(x, y, c(...)))
+#'   }
+#' )
+#' 
+#' #' @export
+#' setMethod(
+#'   "merge",
+#'   signature = c(x = "TableHandle", y = "NULL"),
+#'   function(x, y, ...) {
+#'     return(base_merge(x, y, c(...)))
+#'   }
+#' )
+#' 
+#' #' @export
+#' setMethod(
+#'   "merge",
+#'   signature = c(x = "list", y = "NULL"),
+#'   function(x, y, ...) {
+#'     verify_type("x", x, "TableHandle", "Deephaven TableHandle", FALSE)
+#'     return(base_merge(x, y, c(...)))
+#'   }
+#' )
 
 setGeneric(
   "select",
@@ -622,7 +634,7 @@ setMethod(
 #' @export
 setGeneric(
   "sort",
-  function(table_handle, by = character(), descending = FALSE, ...) {
+  function(table_handle, by = character(), descending = FALSE, abs_col = FALSE, ...) {
     standardGeneric("sort")
   },
   signature = c("table_handle", "by", "descending")
@@ -632,12 +644,16 @@ setGeneric(
 setMethod(
   "sort",
   signature = c(table_handle = "TableHandle"),
-  function(table_handle, by, descending = FALSE) {
+  function(table_handle, by, descending = FALSE, abs_col = FALSE) {
     verify_string("by", by, FALSE)
     verify_bool("descending", descending, FALSE)
+    verify_bool("abs_col", abs_col, FALSE)
     if ((length(descending) > 1) && length(descending) != length(by)) {
-      stop(paste0("'descending' must be the same length as 'by' if more than one entry is supplied. Got 'by' with length ", length(by), " and 'descending' with length", length(descending), "."))
+      stop(paste0("'descending' must be the same length as 'by' if more than one entry is supplied. Got 'by' with length ", length(by), " and 'descending' with length ", length(descending), "."))
     }
-    return(new("TableHandle", .internal_rcpp_object = table_handle@.internal_rcpp_object$sort(by, descending)))
+    if ((length(abs_col) > 1) && length(abs_col) != length(by)) {
+      stop(paste0("'abs_col' must be the same length as 'by' if more than one entry is supplied. Got 'by' with length ", length(by), " and 'abs_col' with length ", length(abs_col), "."))
+    }
+    return(new("TableHandle", .internal_rcpp_object = table_handle@.internal_rcpp_object$sort(by, descending, abs_col)))
   }
 )
