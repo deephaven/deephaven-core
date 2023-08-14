@@ -3,7 +3,7 @@
  */
 /*
  * ---------------------------------------------------------------------------------------------------------------------
- * AUTO-GENERATED CLASS - DO NOT EDIT MANUALLY - for any changes edit CharTimsortKernel and regenerate
+ * AUTO-GENERATED CLASS - DO NOT EDIT MANUALLY - for any changes edit CharTimsortDescendingKernel and regenerate
  * ---------------------------------------------------------------------------------------------------------------------
  */
 package io.deephaven.engine.table.impl.sort.timsort;
@@ -21,8 +21,8 @@ import io.deephaven.util.compare.IntComparisons;
  * <a href="https://bugs.python.org/file4451/timsort.txt">Python</a> and <a href="https://en.wikipedia.org/wiki/Timsort">Wikipedia</a> do a decent job of describing
  * the algorithm.
  */
-public class IntTimsortKernel {
-    private IntTimsortKernel() {
+public class IntTimsortDescendingKernel {
+    private IntTimsortDescendingKernel() {
         throw new UnsupportedOperationException();
     }
 
@@ -42,7 +42,7 @@ public class IntTimsortKernel {
         }
 
         public void sort(WritableChunk<ATTR> valuesToSort) {
-            IntTimsortKernel.sort(this, valuesToSort.asWritableIntChunk());
+            IntTimsortDescendingKernel.sort(this, valuesToSort.asWritableIntChunk());
         }
 
         public void close() {
@@ -156,8 +156,9 @@ public class IntTimsortKernel {
     }
 
     // region comparison functions
+    // note that this is a descending kernel, thus the comparisons here are backwards (e.g., the lt function is in terms of the sort direction, so is implemented by gt)
     private static int doComparison(int lhs, int rhs) {
-        return IntComparisons.compare(lhs, rhs);
+        return -1 * IntComparisons.compare(lhs, rhs);
     }
     // endregion comparison functions
 
