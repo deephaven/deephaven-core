@@ -929,6 +929,18 @@ public class TestDateTimeUtils extends BaseArrayTestCase {
 
     public void testParseDuration() {
         final String[] periods = {
+                "12:00",
+                "12:00:00",
+                "12:00:00.123",
+                "12:00:00.1234",
+                "12:00:00.123456789",
+                "2:00",
+                "2:00:00",
+                "2:00:00",
+                "2:00:00.123",
+                "2:00:00.1234",
+                "2:00:00.123456789",
+                "15:25:49.064106107",
                 "PT20.345S",
                 "PT15M",
                 "PT10H",
@@ -957,6 +969,18 @@ public class TestDateTimeUtils extends BaseArrayTestCase {
 
     public void testParseDurationQuiet() {
         final String[] periods = {
+                "12:00",
+                "12:00:00",
+                "12:00:00.123",
+                "12:00:00.1234",
+                "12:00:00.123456789",
+                "2:00",
+                "2:00:00",
+                "2:00:00",
+                "2:00:00.123",
+                "2:00:00.1234",
+                "2:00:00.123456789",
+                "15:25:49.064106107",
                 "PT20.345S",
                 "PT15M",
                 "PT10H",
