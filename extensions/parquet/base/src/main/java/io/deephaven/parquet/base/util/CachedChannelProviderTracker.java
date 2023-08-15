@@ -63,6 +63,9 @@ public class CachedChannelProviderTracker { // TODO Think of a better name
         cleanup();
         final String filePath = file.getCanonicalPath();
         List<WeakReference<CachedChannelProvider>> providerList = fileToProviderMap.remove(filePath);
+        if (providerList == null) {
+            return;
+        }
         for (WeakReference<CachedChannelProvider> providerWeakRef : providerList) {
             final CachedChannelProvider ccp = providerWeakRef.get();
             if (ccp != null) {
