@@ -1,65 +1,13 @@
-setGeneric(
-  "merge",
-  function(x, y = NULL, ...) {
-    standardGeneric("merge")
+#' @export
+merge_tables <- function(...) {
+  table_list <- unlist(c(...))
+  verify_type("table_list", table_list, "TableHandle", "Deephaven TableHandle", FALSE)
+  if (length(table_list) == 1) {
+    return(table_list[[1]])
   }
-)
-
-# We need many implementations of 'merge' because of the kind of args it should support
-
-base_merge <- function(x, y, ...) {
-  arg_list <- c(unlist(x), unlist(y), unlist(c(...)))
-  if (length(arg_list) == 1) {
-    return(arg_list[[1]])
-  }
-  unwrapped_arg_list <- lapply(arg_list, strip_s4_wrapping)
-  return(new("TableHandle", .internal_rcpp_object = unwrapped_arg_list[[1]]$merge(unwrapped_arg_list[2:length(unwrapped_arg_list)])))
+  unwrapped_table_list <- lapply(table_list, strip_s4_wrapping)
+  return(new("TableHandle", .internal_rcpp_object = unwrapped_table_list[[1]]$merge(unwrapped_table_list[2:length(unwrapped_table_list)])))
 }
-
-# supports merge(c(t1, t2, t3))
-#' @export
-setMethod(
-  "merge",
-  signature = c(x = "list", y = "missing"),
-  function(x, y = NULL) {
-    verify_type("x", x, "TableHandle", "Deephaven TableHandle", FALSE)
-    return(base_merge(x, y))
-  }
-)
-
-# supports merge(t1) edge case
-#' @export
-setMethod(
-  "merge",
-  signature = c(x = "TableHandle", y = "missing"),
-  function(x, y = NULL) {
-    return(base_merge(x, y))
-  }
-)
-
-# supports merge(t1, t2, t3)
-#' @export
-setMethod(
-  "merge",
-  signature = c(x = "TableHandle", y = "TableHandle"),
-  function(x, y, ...) {
-    if (length(c(...)) != 0) {
-      verify_type("...", c(...), "TableHandle", "Deephaven TableHandle", FALSE)
-    }
-    return(base_merge(x, y, c(...)))
-  }
-)
-
-# supports merge(t1, c(t2, t3))
-#' @export
-setMethod(
-  "merge",
-  signature = c(x = "TableHandle", y = "list"),
-  function(x, y) {
-    verify_type("y", y, "TableHandle", "Deephaven TableHandle", FALSE)
-    return(base_merge(x, y))
-  }
-)
 
 setGeneric(
   "select",

@@ -57,28 +57,28 @@ setup <- function() {
 
 ##### TESTING GOOD INPUTS #####
 
-test_that("merge behaves as expected", {
+test_that("merge_tables behaves as expected", {
   data <- setup()
   
   new_df1 <- rbind(data$df5)
-  new_th1 <- merge(data$th5)
+  new_th1 <- merge_tables(data$th5)
   expect_equal(as.data.frame(new_th1), new_df1)
   
   new_df2 <- rbind(data$df5, data$df6)
-  new_th2 <- merge(data$th5, data$th6)
+  new_th2 <- merge_tables(data$th5, data$th6)
   expect_equal(as.data.frame(new_th2), new_df2)
   
   new_df3 <- rbind(data$df5, data$df6, data$df6, data$df5)
-  new_th3 <- merge(data$th5, data$th6, data$th6, data$th5)
+  new_th3 <- merge_tables(data$th5, data$th6, data$th6, data$th5)
   expect_equal(as.data.frame(new_th3), new_df3)
   
-  new_th4 <- merge(c(data$th5, data$th6))
+  new_th4 <- merge_tables(c(data$th5, data$th6))
   expect_equal(as.data.frame(new_th4), new_df2)
   
-  new_th5 <- merge(c(data$th5, data$th6, NULL, data$th6, data$th5))
+  new_th5 <- merge_tables(c(data$th5, data$th6, NULL, data$th6, data$th5))
   expect_equal(as.data.frame(new_th5), new_df3)
   
-  new_th6 <- merge(data$th5, c(data$th6, data$th6, data$th5))
+  new_th6 <- merge_tables(data$th5, c(data$th6, data$th6, data$th5))
   expect_equal(as.data.frame(new_th6), new_df3)
   
   close(data$client)
