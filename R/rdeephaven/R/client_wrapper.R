@@ -42,12 +42,18 @@ setMethod(
     if (auth_type == "anonymous") {
       options$set_default_authentication()
     } else if (auth_type == "basic") {
-      if ((username != "") && (password != "")) {
+      if (((username != "") && (password != "")) && (auth_token == "")) {
         verify_string("username", username, TRUE)
         verify_string("password", password, TRUE)
-        options$set_basic_authentication(username, password)
+        user_pass_token = paste(username, ":", password, sep = "")
+        options$set_basic_authentication(user_pass_token)
+      } else if (((username == "") && (password == "")) && (auth_token != "")) {
+        verify_string("auth_token", auth_token, TRUE)
+        options$set_basic_authentication(auth_token)
+      } else if (((username != "") || (password != "")) && (auth_token != "")) {
+        stop("Basic authentication was requested, but 'auth_token' was provided, as well as least one of 'username' and 'password'. Please provide either 'username' and 'password', or 'auth_token'.")
       } else {
-        stop("Basic authentication was requested, but at least one of 'username' or 'password' was not provided.")
+        stop("Basic authentication was requested, but 'auth_token' was not provided, and at most one of 'username' or 'password' was provided. Please provide either 'username' and 'password', or 'auth_token'.")
       }
     } else {
       if (auth_token != "") {
@@ -189,16 +195,16 @@ setMethod(
 )
 
 setGeneric(
-  "as_dh_table",
+  "push_to_table",
   function(client_instance, table_object) {
-    return(standardGeneric("as_dh_table"))
+    return(standardGeneric("push_to_table"))
   },
   signature = c("client_instance", "table_object")
 )
 
 #' @export
 setMethod(
-  "as_dh_table",
+  "push_to_table",
   signature = c(client_instance = "Client", table_object = "RecordBatchReader"),
   function(client_instance, table_object) {
     ptr <- client_instance@.internal_rcpp_object$new_arrow_array_stream_ptr()
@@ -213,28 +219,28 @@ setMethod(
 
 #' @export
 setMethod(
-  "as_dh_table",
+  "push_to_table",
   signature = c(client_instance = "Client", table_object = "Table"),
   function(client_instance, table_object) {
-    return(as_dh_table(client_instance, as_record_batch_reader(table_object)))
+    return(push_to_table(client_instance, as_record_batch_reader(table_object)))
   }
 )
 
 #' @export
 setMethod(
-  "as_dh_table",
+  "push_to_table",
   signature = c(client_instance = "Client", table_object = "tbl_df"),
   function(client_instance, table_object) {
-    return(as_dh_table(client_instance, arrow_table(table_object)))
+    return(push_to_table(client_instance, arrow_table(table_object)))
   }
 )
 
 #' @export
 setMethod(
-  "as_dh_table",
+  "push_to_table",
   signature = c(client_instance = "Client", table_object = "data.frame"),
   function(client_instance, table_object) {
-    return(as_dh_table(client_instance, arrow_table(table_object)))
+    return(push_to_table(client_instance, arrow_table(table_object)))
   }
 )
 

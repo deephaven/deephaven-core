@@ -16,6 +16,7 @@ base_merge <- function(x, y, ...) {
   return(new("TableHandle", .internal_rcpp_object = unwrapped_arg_list[[1]]$merge(unwrapped_arg_list[2:length(unwrapped_arg_list)])))
 }
 
+# supports merge(c(t1, t2, t3))
 #' @export
 setMethod(
   "merge",
@@ -26,6 +27,7 @@ setMethod(
   }
 )
 
+# supports merge(t1) edge case
 #' @export
 setMethod(
   "merge",
@@ -35,6 +37,7 @@ setMethod(
   }
 )
 
+# supports merge(t1, t2, t3)
 #' @export
 setMethod(
   "merge",
@@ -47,83 +50,16 @@ setMethod(
   }
 )
 
-#' #' @export
-#' setMethod(
-#'   "merge",
-#'   signature = c(x = "TableHandle", y = "list"),
-#'   function(x, y, ...) {
-#'     verify_type("y", y, "TableHandle", "Deephaven TableHandle", FALSE)
-#'     return(base_merge(x, y, c(...)))
-#'   }
-#' )
-#' 
-#' #' @export
-#' setMethod(
-#'   "merge",
-#'   signature = c(x = "list", y = "TableHandle"),
-#'   function(x, y, ...) {
-#'     verify_type("x", x, "TableHandle", "Deephaven TableHandle", FALSE)
-#'     return(base_merge(x, y, c(...)))
-#'   }
-#' )
-#' 
-#' #' @export
-#' setMethod(
-#'   "merge",
-#'   signature = c(x = "TableHandle", y = "TableHandle"),
-#'   function(x, y, ...) {
-#'     return(base_merge(x, y, c(...)))
-#'   }
-#' )
-#' 
-#' #' @export
-#' setMethod(
-#'   "merge",
-#'   signature = c(x = "list", y = "list"),
-#'   function(x, y, ...) {
-#'     verify_type("x", x, "TableHandle", "Deephaven TableHandle", FALSE)
-#'     verify_type("y", y, "TableHandle", "Deephaven TableHandle", FALSE)
-#'     return(base_merge(x, y, c(...)))
-#'   }
-#' )
-#' 
-#' #' @export
-#' setMethod(
-#'   "merge",
-#'   signature = c(x = "NULL", y = "TableHandle"),
-#'   function(x, y, ...) {
-#'     return(base_merge(x, y, c(...)))
-#'   }
-#' )
-#' 
-#' #' @export
-#' setMethod(
-#'   "merge",
-#'   signature = c(x = "NULL", y = "list"),
-#'   function(x, y, ...) {
-#'     verify_type("y", y, "TableHandle", "Deephaven TableHandle", FALSE)
-#'     return(base_merge(x, y, c(...)))
-#'   }
-#' )
-#' 
-#' #' @export
-#' setMethod(
-#'   "merge",
-#'   signature = c(x = "TableHandle", y = "NULL"),
-#'   function(x, y, ...) {
-#'     return(base_merge(x, y, c(...)))
-#'   }
-#' )
-#' 
-#' #' @export
-#' setMethod(
-#'   "merge",
-#'   signature = c(x = "list", y = "NULL"),
-#'   function(x, y, ...) {
-#'     verify_type("x", x, "TableHandle", "Deephaven TableHandle", FALSE)
-#'     return(base_merge(x, y, c(...)))
-#'   }
-#' )
+# supports merge(t1, c(t2, t3))
+#' @export
+setMethod(
+  "merge",
+  signature = c(x = "TableHandle", y = "list"),
+  function(x, y) {
+    verify_type("y", y, "TableHandle", "Deephaven TableHandle", FALSE)
+    return(base_merge(x, y))
+  }
+)
 
 setGeneric(
   "select",

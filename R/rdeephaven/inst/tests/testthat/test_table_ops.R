@@ -41,12 +41,12 @@ setup <- function() {
   client <- dhConnect(target = "localhost:10000")
 
   # move dataframes to server and get TableHandles for testing
-  th1 <- as_dh_table(client, df1)
-  th2 <- as_dh_table(client, df2)
-  th3 <- as_dh_table(client, df3)
-  th4 <- as_dh_table(client, df4)
-  th5 <- as_dh_table(client, df5)
-  th6 <- as_dh_table(client, df6)
+  th1 <- push_to_table(client, df1)
+  th2 <- push_to_table(client, df2)
+  th3 <- push_to_table(client, df3)
+  th4 <- push_to_table(client, df4)
+  th5 <- push_to_table(client, df5)
+  th6 <- push_to_table(client, df6)
 
   return(list(
     "client" = client,
@@ -77,6 +77,9 @@ test_that("merge behaves as expected", {
   
   new_th5 <- merge(c(data$th5, data$th6, NULL, data$th6, data$th5))
   expect_equal(as.data.frame(new_th5), new_df3)
+  
+  new_th6 <- merge(data$th5, c(data$th6, data$th6, data$th5))
+  expect_equal(as.data.frame(new_th6), new_df3)
   
   close(data$client)
 })

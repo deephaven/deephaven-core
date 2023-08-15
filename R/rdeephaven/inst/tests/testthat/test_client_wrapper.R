@@ -34,59 +34,59 @@ test_that("client dhConnection works in the simple case of anonymous authenticat
   
 })
 
-test_that("as_dh_table does not fail with data frame inputs of simple column types", {
+test_that("push_to_table does not fail with data frame inputs of simple column types", {
   data <- setup()
 
   client <- dhConnect(target = "localhost:10000")
 
-  expect_no_error(as_dh_table(client, data$df1))
-  expect_no_error(as_dh_table(client, data$df2))
-  expect_no_error(as_dh_table(client, data$df3))
-  expect_no_error(as_dh_table(client, data$df4))
+  expect_no_error(push_to_table(client, data$df1))
+  expect_no_error(push_to_table(client, data$df2))
+  expect_no_error(push_to_table(client, data$df3))
+  expect_no_error(push_to_table(client, data$df4))
 
   close(client)
 })
 
-test_that("as_dh_table does not fail with tibble inputs of simple column types", {
+test_that("push_to_table does not fail with tibble inputs of simple column types", {
   data <- setup()
 
   client <- dhConnect(target = "localhost:10000")
 
-  expect_no_error(as_dh_table(client, as_tibble(data$df1)))
-  expect_no_error(as_dh_table(client, as_tibble(data$df2)))
-  expect_no_error(as_dh_table(client, as_tibble(data$df3)))
-  expect_no_error(as_dh_table(client, as_tibble(data$df4)))
+  expect_no_error(push_to_table(client, as_tibble(data$df1)))
+  expect_no_error(push_to_table(client, as_tibble(data$df2)))
+  expect_no_error(push_to_table(client, as_tibble(data$df3)))
+  expect_no_error(push_to_table(client, as_tibble(data$df4)))
 
   close(client)
 })
 
-test_that("as_dh_table does not fail with arrow table inputs of simple column types", {
+test_that("push_to_table does not fail with arrow table inputs of simple column types", {
   data <- setup()
 
   client <- dhConnect(target = "localhost:10000")
 
-  expect_no_error(as_dh_table(client, as_arrow_table(data$df1)))
-  expect_no_error(as_dh_table(client, as_arrow_table(data$df2)))
-  expect_no_error(as_dh_table(client, as_arrow_table(data$df3)))
-  expect_no_error(as_dh_table(client, as_arrow_table(data$df4)))
+  expect_no_error(push_to_table(client, as_arrow_table(data$df1)))
+  expect_no_error(push_to_table(client, as_arrow_table(data$df2)))
+  expect_no_error(push_to_table(client, as_arrow_table(data$df3)))
+  expect_no_error(push_to_table(client, as_arrow_table(data$df4)))
 
   close(client)
 })
 
-test_that("as_dh_table does not fail with record batch reader inputs of simple column types", {
+test_that("push_to_table does not fail with record batch reader inputs of simple column types", {
   data <- setup()
 
   client <- dhConnect(target = "localhost:10000")
 
-  expect_no_error(as_dh_table(client, as_record_batch_reader(data$df1)))
-  expect_no_error(as_dh_table(client, as_record_batch_reader(data$df2)))
-  expect_no_error(as_dh_table(client, as_record_batch_reader(data$df3)))
-  expect_no_error(as_dh_table(client, as_record_batch_reader(data$df4)))
+  expect_no_error(push_to_table(client, as_record_batch_reader(data$df1)))
+  expect_no_error(push_to_table(client, as_record_batch_reader(data$df2)))
+  expect_no_error(push_to_table(client, as_record_batch_reader(data$df3)))
+  expect_no_error(push_to_table(client, as_record_batch_reader(data$df4)))
 
   close(client)
 })
 
-# The following tests assume the correctness of as_dh_table(...) AND bind_to_variable(),
+# The following tests assume the correctness of push_to_table(...) AND bind_to_variable(),
 # as we have to create data, push it to the server, and name it in order to test open_table().
 # Additionally, we assume the correctness of as.data.frame() to make concrete comparisons.
 
@@ -95,19 +95,19 @@ test_that("open_table opens the correct table from the server using %>%", {
 
   client <- dhConnect(target = "localhost:10000")
 
-  th1 <- as_dh_table(client, data$df1)
+  th1 <- push_to_table(client, data$df1)
   th1 %>% bind_to_variable("table1")
   expect_equal(as.data.frame(open_table(client, "table1")), as.data.frame(th1))
 
-  th2 <- as_dh_table(client, data$df2)
+  th2 <- push_to_table(client, data$df2)
   th2 %>% bind_to_variable("table2")
   expect_equal(as.data.frame(open_table(client, "table2")), as.data.frame(th2))
 
-  th3 <- as_dh_table(client, data$df3)
+  th3 <- push_to_table(client, data$df3)
   th3 %>% bind_to_variable("table3")
   expect_equal(as.data.frame(open_table(client, "table3")), as.data.frame(th3))
 
-  th4 <- as_dh_table(client, data$df4)
+  th4 <- push_to_table(client, data$df4)
   th4 %>% bind_to_variable("table4")
   expect_equal(as.data.frame(open_table(client, "table4")), as.data.frame(th4))
 
@@ -119,19 +119,19 @@ test_that("open_table opens the correct table from the server using |>", {
 
   client <- dhConnect(target = "localhost:10000")
 
-  th1 <- as_dh_table(client, data$df1)
+  th1 <- push_to_table(client, data$df1)
   th1 |> bind_to_variable("table1")
   expect_equal(as.data.frame(open_table(client, "table1")), as.data.frame(th1))
 
-  th2 <- as_dh_table(client, data$df2)
+  th2 <- push_to_table(client, data$df2)
   th2 |> bind_to_variable("table2")
   expect_equal(as.data.frame(open_table(client, "table2")), as.data.frame(th2))
 
-  th3 <- as_dh_table(client, data$df3)
+  th3 <- push_to_table(client, data$df3)
   th3 |> bind_to_variable("table3")
   expect_equal(as.data.frame(open_table(client, "table3")), as.data.frame(th3))
 
-  th4 <- as_dh_table(client, data$df4)
+  th4 <- push_to_table(client, data$df4)
   th4 |> bind_to_variable("table4")
   expect_equal(as.data.frame(open_table(client, "table4")), as.data.frame(th4))
 
@@ -186,7 +186,27 @@ test_that("dhConnect fails nicely with bad inputs", {
   
   expect_error(
     dhConnect(target = "localhost:10000", auth_type = "basic"),
-    "Basic authentication was requested, but at least one of 'username' or 'password' was not provided."
+    "Basic authentication was requested, but 'auth_token' was not provided, and at most one of 'username' or 'password' was provided. Please provide either 'username' and 'password', or 'auth_token'."
+  )
+  expect_error(
+    dhConnect(target = "localhost:10000", auth_type = "basic", username = "user"),
+    "Basic authentication was requested, but 'auth_token' was not provided, and at most one of 'username' or 'password' was provided. Please provide either 'username' and 'password', or 'auth_token'."
+  )
+  expect_error(
+    dhConnect(target = "localhost:10000", auth_type = "basic", password = "pass"),
+    "Basic authentication was requested, but 'auth_token' was not provided, and at most one of 'username' or 'password' was provided. Please provide either 'username' and 'password', or 'auth_token'."
+  )
+  expect_error(
+    dhConnect(target = "localhost:10000", auth_type = "basic", username = "user", auth_token = "token"),
+    "Basic authentication was requested, but 'auth_token' was provided, as well as least one of 'username' and 'password'. Please provide either 'username' and 'password', or 'auth_token'."
+  )
+  expect_error(
+    dhConnect(target = "localhost:10000", auth_type = "basic", password = "pass", auth_token = "token"),
+    "Basic authentication was requested, but 'auth_token' was provided, as well as least one of 'username' and 'password'. Please provide either 'username' and 'password', or 'auth_token'."
+  )
+  expect_error(
+    dhConnect(target = "localhost:10000", auth_type = "basic", username = "user", password = "pass", auth_token = "token"),
+    "Basic authentication was requested, but 'auth_token' was provided, as well as least one of 'username' and 'password'. Please provide either 'username' and 'password', or 'auth_token'."
   )
   expect_error(
     dhConnect(target = "localhost:10000", auth_type = "custom"),
@@ -198,7 +218,7 @@ test_that("dhConnect fails nicely with bad inputs", {
   )
   expect_error(
     dhConnect(target = "localhost:10000", auth_type = "basic", auth_token = 1234),
-    "Basic authentication was requested, but at least one of 'username' or 'password' was not provided."
+    "'auth_token' must be a single string. Got an object of class numeric."
   )
   expect_error(
     dhConnect(target = "localhost:10000", session_type = "blahblah"),
@@ -227,20 +247,20 @@ test_that("dhConnect fails nicely with bad inputs", {
   
 })
 
-test_that("as_dh_table fails nicely with bad inputs", {
+test_that("push_to_table fails nicely with bad inputs", {
   library(datasets)
 
   client <- dhConnect(target = "localhost:10000")
 
-  expect_error(as_dh_table(client, 12345), cat("unable to find an inherited method for function ‘as_dh_table’ for signature ‘\"Client\", \"numeric\"’"))
-  expect_error(as_dh_table(client, "hello!"), cat("unable to find an inherited method for function ‘as_dh_table’ for signature ‘\"Client\", \"character\"’"))
+  expect_error(push_to_table(client, 12345), cat("unable to find an inherited method for function ‘push_to_table’ for signature ‘\"Client\", \"numeric\"’"))
+  expect_error(push_to_table(client, "hello!"), cat("unable to find an inherited method for function ‘push_to_table’ for signature ‘\"Client\", \"character\"’"))
 
   # TODO: this needs better error handling, but it is unclear whether that happens on the server side or the R side.
   data(iris)
-  expect_error(as_dh_table(client, iris))
+  expect_error(push_to_table(client, iris))
 
   data(HairEyeColor)
-  expect_error(as_dh_table(client, HairEyeColor), cat("unable to find an inherited method for function ‘as_dh_table’ for signature ‘\"Client\", \"table\"’"))
+  expect_error(push_to_table(client, HairEyeColor), cat("unable to find an inherited method for function ‘push_to_table’ for signature ‘\"Client\", \"table\"’"))
 
   close(client)
 })
