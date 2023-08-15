@@ -61,12 +61,6 @@ public final class FileHandle implements SeekableByteChannel {
     private final Runnable postCloseProcedure;
 
     /**
-     * If set, fileHandle will fail when refreshing through {@link FileHandleAccessor#refreshFileHandle}. Used to
-     * prevent reopening a file which has been moved or overwritten.
-     */
-    private boolean invalid;
-
-    /**
      * <p>
      * Wrap the supplied {@link FileChannel}.
      * <p>
@@ -80,7 +74,6 @@ public final class FileHandle implements SeekableByteChannel {
     public FileHandle(@NotNull final FileChannel fileChannel, @NotNull final Runnable postCloseProcedure) {
         this.fileChannel = Require.neqNull(fileChannel, "fileChannel");
         this.postCloseProcedure = Require.neqNull(postCloseProcedure, "postCloseProcedure");
-        this.invalid = false;
     }
 
     /**
@@ -338,13 +331,5 @@ public final class FileHandle implements SeekableByteChannel {
         } finally {
             postCloseProcedure.run();
         }
-    }
-
-    public void invalidate() {
-        invalid = true;
-    }
-
-    public boolean invalid() {
-        return invalid;
     }
 }

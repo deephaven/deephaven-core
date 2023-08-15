@@ -38,7 +38,7 @@ public final class TrackedSeekableByteChannel extends FileHandleAccessor impleme
     }
 
     @Override
-    public final int read(@NotNull final ByteBuffer destination) throws IOException {
+    public int read(@NotNull final ByteBuffer destination) throws IOException {
         long localPosition = position;
         checkClosed(localPosition);
         if (!destination.hasRemaining()) {
@@ -67,7 +67,7 @@ public final class TrackedSeekableByteChannel extends FileHandleAccessor impleme
     }
 
     @Override
-    public final int write(@NotNull final ByteBuffer source) throws IOException {
+    public int write(@NotNull final ByteBuffer source) throws IOException {
         long localPosition = position;
         checkClosed(localPosition);
         if (!source.hasRemaining()) {
@@ -109,21 +109,21 @@ public final class TrackedSeekableByteChannel extends FileHandleAccessor impleme
     }
 
     @Override
-    public final long position() throws IOException {
+    public long position() throws IOException {
         final long localPosition = position;
         checkClosed(localPosition);
         return localPosition;
     }
 
     @Override
-    public final SeekableByteChannel position(final long newPosition) throws IOException {
+    public SeekableByteChannel position(final long newPosition) throws IOException {
         checkClosed(position);
         position = newPosition;
         return this;
     }
 
     @Override
-    public final long size() throws IOException {
+    public long size() throws IOException {
         checkClosed(position);
         FileHandle localHandle = fileHandle;
         while (true) {
@@ -138,7 +138,7 @@ public final class TrackedSeekableByteChannel extends FileHandleAccessor impleme
     }
 
     @Override
-    public final SeekableByteChannel truncate(final long size) throws IOException {
+    public SeekableByteChannel truncate(final long size) throws IOException {
         checkClosed(position);
         FileHandle localHandle = fileHandle;
         while (true) {
@@ -163,12 +163,12 @@ public final class TrackedSeekableByteChannel extends FileHandleAccessor impleme
     }
 
     @Override
-    public final boolean isOpen() {
+    public boolean isOpen() {
         return position != CLOSED_SENTINEL;
     }
 
     @Override
-    public final void close() throws IOException {
+    public void close() throws IOException {
         position = CLOSED_SENTINEL;
         fileHandle.close();
     }

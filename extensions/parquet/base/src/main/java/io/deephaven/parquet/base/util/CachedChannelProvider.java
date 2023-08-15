@@ -6,12 +6,14 @@ package io.deephaven.parquet.base.util;
 import io.deephaven.base.RAPriQueue;
 import io.deephaven.base.verify.Assert;
 import io.deephaven.base.verify.Require;
+import io.deephaven.engine.util.file.FileHandleAccessor;
 import io.deephaven.hash.KeyedObjectHashMap;
 import io.deephaven.hash.KeyedObjectKey;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
 import java.io.IOException;
+import java.lang.ref.WeakReference;
 import java.nio.ByteBuffer;
 import java.nio.channels.SeekableByteChannel;
 import java.nio.file.Path;
@@ -27,6 +29,12 @@ public class CachedChannelProvider implements SeekableChannelsProvider {
 
     private long logicalClock;
     private long pooledCount;
+
+    /**
+     * An invalid {@link CachedChannelProvider} will invalidate all the channels it has produced and will not create any
+     * more channels. Used to prevent creating channels to files which have been modified.
+     */
+    private boolean invalid = false;
 
     enum ChannelType {
         Read, Write, WriteAppend
@@ -45,6 +53,12 @@ public class CachedChannelProvider implements SeekableChannelsProvider {
     private final RAPriQueue<PerPathPool> releasePriority =
             new RAPriQueue<>(8, PerPathPool.RAPQ_ADAPTER, PerPathPool.class);
 
+    /**
+     * Following stores all the channels (and not just the pooled ones) created by this provider for any path and is
+     * used for invalidating all file handles associated with a file.
+     */
+    private final Collection<WeakReference<SeekableByteChannel>> channelList = new ArrayList<>();
+
     public CachedChannelProvider(@NotNull final SeekableChannelsProvider wrappedProvider,
             final int maximumPooledCount) {
         this.wrappedProvider = wrappedProvider;
@@ -56,9 +70,12 @@ public class CachedChannelProvider implements SeekableChannelsProvider {
         final String pathKey = path.toAbsolutePath().toString();
         final KeyedObjectHashMap<String, PerPathPool> channelPool = channelPools.get(ChannelType.Read);
         final CachedChannel result = tryGetPooledChannel(pathKey, channelPool);
-        return result == null
-                ? new CachedChannel(wrappedProvider.getReadChannel(path), ChannelType.Read, pathKey)
-                : result.position(0);
+        if (result != null) {
+            return result.position(0);
+        }
+        final SeekableByteChannel newReadChannel = wrappedProvider.getReadChannel(path);
+        channelCreatorHelper(path, newReadChannel);
+        return new CachedChannel(newReadChannel, ChannelType.Read, pathKey);
     }
 
     @Override
@@ -67,17 +84,46 @@ public class CachedChannelProvider implements SeekableChannelsProvider {
         final ChannelType channelType = append ? ChannelType.WriteAppend : ChannelType.Write;
         final KeyedObjectHashMap<String, PerPathPool> channelPool = channelPools.get(channelType);
         final CachedChannel result = tryGetPooledChannel(pathKey, channelPool);
-        return result == null
-                ? new CachedChannel(wrappedProvider.getWriteChannel(path, append), channelType, pathKey)
-                : result.position(append ? result.size() : 0); // The seek isn't really necessary for append; will be at
-                                                               // end no matter what.
+        if (result != null) {
+            // The seek isn't really necessary for append; will be at end no matter what.
+            return result.position(append ? result.size() : 0);
+        }
+        final SeekableByteChannel newWriteChannel = wrappedProvider.getWriteChannel(path, append);
+        channelCreatorHelper(path, newWriteChannel);
+        return new CachedChannel(newWriteChannel, channelType, pathKey);
+    }
+
+    private void channelCreatorHelper(@NotNull final Path path, @NotNull final SeekableByteChannel newChannel)
+            throws IOException {
+        // Register self with tracker
+        CachedChannelProviderTracker.getInstance().registerCachedChannelProvider(this, path.toFile());
+        channelList.add(new WeakReference<>(newChannel));
+    }
+
+    public void invalidate() {
+        invalid = true;
+        final Iterator<WeakReference<SeekableByteChannel>> channelIt = channelList.iterator();
+        while (channelIt.hasNext()) {
+            final WeakReference<SeekableByteChannel> channelWeakRef = channelIt.next();
+            final SeekableByteChannel channel = channelWeakRef.get();
+            if (channel == null) {
+                channelIt.remove();
+            } else if (channel instanceof FileHandleAccessor) {
+                ((FileHandleAccessor) channel).invalidate();
+            }
+        }
+    }
+
+    public boolean invalid() {
+        // TODO Test this
+        return invalid;
     }
 
     @Nullable
     private synchronized CachedChannel tryGetPooledChannel(@NotNull final String pathKey,
             @NotNull final KeyedObjectHashMap<String, PerPathPool> channelPool) {
         final PerPathPool perPathPool = channelPool.get(pathKey);
-        final CachedChannel result;
+        final @Nullable CachedChannel result;
         if (perPathPool == null || perPathPool.availableChannels.isEmpty()) {
             result = null;
         } else {
@@ -209,7 +255,7 @@ public class CachedChannelProvider implements SeekableChannelsProvider {
      */
     private static class PerPathPool {
 
-        private static final RAPriQueue.Adapter<PerPathPool> RAPQ_ADAPTER = new RAPriQueue.Adapter<PerPathPool>() {
+        private static final RAPriQueue.Adapter<PerPathPool> RAPQ_ADAPTER = new RAPriQueue.Adapter<>() {
 
             @Override
             public boolean less(@NotNull final PerPathPool ppp1, @NotNull final PerPathPool ppp2) {
@@ -232,7 +278,7 @@ public class CachedChannelProvider implements SeekableChannelsProvider {
         };
 
         private static final KeyedObjectKey<String, PerPathPool> KOHM_KEY =
-                new KeyedObjectKey.Basic<String, PerPathPool>() {
+                new KeyedObjectKey.Basic<>() {
 
                     @Override
                     public String getKey(@NotNull final PerPathPool ppp) {

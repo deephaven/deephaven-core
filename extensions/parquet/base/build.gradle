@@ -12,6 +12,7 @@ dependencies {
     implementation project(':Base')
     implementation project(':Util')
     implementation depCommonsIo
+    implementation project(path: ':engine-table') // TODO Look for a better way to do this
 
     compileOnly depAnnotations
     Classpaths.inheritJUnitClassic(project, 'testImplementation')

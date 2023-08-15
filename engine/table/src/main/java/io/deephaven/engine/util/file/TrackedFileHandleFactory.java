@@ -26,7 +26,7 @@ import java.util.concurrent.atomic.AtomicInteger;
  * Simple least-recently-opened "cache" for FileHandles, to avoid running up against ulimits. Will probably not achieve
  * satisfactory results if the number of file handles concurrently in active use exceeds capacity. Note that returned
  * FileHandles may be closed asynchronously by the factory.
- *
+ * <p>
  * TODO: Consider adding a lookup to enable handle sharing. Not necessary for current usage.
  */
 public class TrackedFileHandleFactory implements FileHandleFactory {
@@ -60,8 +60,6 @@ public class TrackedFileHandleFactory implements FileHandleFactory {
     private final Queue<HandleReference> handleReferences = new ConcurrentLinkedQueue<>();
 
     public final FileToHandleFunction readOnlyHandleCreator = FileHandleFactory.toReadOnlyHandleCreator(this);
-    public final FileToHandleFunction readWriteCreateHandleCreator =
-            FileHandleFactory.toReadWriteCreateHandleCreator(this);
     public final FileToHandleFunction writeAppendCreateHandleCreator =
             FileHandleFactory.toWriteAppendCreateHandleCreator(this);
     public final FileToHandleFunction writeTruncateCreateHandleCreator =
@@ -117,7 +115,8 @@ public class TrackedFileHandleFactory implements FileHandleFactory {
 
     @Override
     @NotNull
-    public FileHandle makeHandle(@NotNull final File file, @NotNull final OpenOption[] openOptions) throws IOException {
+    public final FileHandle makeHandle(@NotNull final File file, @NotNull final OpenOption[] openOptions)
+            throws IOException {
         if (size.get() >= capacity) {
             // Synchronous cleanup at full capacity.
             cleanup();
@@ -129,7 +128,7 @@ public class TrackedFileHandleFactory implements FileHandleFactory {
         return handle;
     }
 
-    protected void cleanup() {
+    private void cleanup() {
         for (final Iterator<HandleReference> handleReferenceIterator =
                 handleReferences.iterator(); handleReferenceIterator.hasNext();) {
             final HandleReference handleReference = handleReferenceIterator.next();

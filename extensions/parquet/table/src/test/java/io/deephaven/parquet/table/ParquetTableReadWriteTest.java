@@ -15,7 +15,6 @@ import io.deephaven.engine.testutil.TstUtils;
 import io.deephaven.engine.testutil.junit4.EngineCleanup;
 import io.deephaven.engine.util.BigDecimalUtils;
 import io.deephaven.engine.util.file.InvalidFileHandleException;
-import io.deephaven.engine.util.file.TrackedFileHandleFactoryWithLookup;
 import io.deephaven.engine.util.file.TrackedFileHandleFactory;
 import io.deephaven.parquet.table.location.ParquetTableLocationKey;
 import io.deephaven.stringset.ArrayStringSet;
@@ -752,7 +751,7 @@ public class ParquetTableReadWriteTest {
         TstUtils.assertTableEquals(stringTable, stringFromDisk);
 
         // Close all the file handles so that next time when fromDisk is accessed, we need to reopen the file handle
-        TrackedFileHandleFactoryWithLookup.getInstance().closeAll();
+        TrackedFileHandleFactory.getInstance().closeAll();
 
         // Read back fromDisk and compare it with original table. Since the underlying file has changed,
         // assertTableEquals will try to read the file and would crash
@@ -811,7 +810,7 @@ public class ParquetTableReadWriteTest {
         ParquetTools.writeTable(table2, destFile);
 
         // Close all old file handles so that we read the file fresh instead of using any old handles
-        TrackedFileHandleFactoryWithLookup.getInstance().closeAll();
+        TrackedFileHandleFactory.getInstance().closeAll();
 
         // This will attempt to read the file using old handle and should fail
         try {
@@ -821,4 +820,30 @@ public class ParquetTableReadWriteTest {
             assertTrue(expected.getCause() instanceof InvalidFileHandleException);
         }
     }
+
+    @Test
+    public void multiReadTest() {
+        // There should be just one file in the directory on a successful write and no temporary files
+        final Table table1 = TableTools.emptyTable(5).update("A=(int)i");
+        final File destFile = new File(rootFile, "table1.parquet");
+        ParquetTools.writeTable(table1, destFile);
+        Table fromDisk = ParquetTools.readTable(destFile);
+        TstUtils.assertTableEquals(fromDisk, table1);
+        fromDisk = ParquetTools.readTable(destFile);
+        TstUtils.assertTableEquals(fromDisk, table1);
+        fromDisk = ParquetTools.readTable(destFile);
+        TstUtils.assertTableEquals(fromDisk, table1);
+
+        // final Table table2 = TableTools.emptyTable(5).update("B=(int)i*5");
+        // ParquetTools.writeTable(table2, destFile);
+        // fromDisk = ParquetTools.readTable(destFile);
+        // TstUtils.assertTableEquals(fromDisk, table2);
+
+        // final Table table2 = TableTools.emptyTable(5).update("C=(int)i*5");
+        // ParquetTools.writeTable(table3, destFile);
+        // fromDisk = ParquetTools.readTable(destFile);
+        // TstUtils.assertTableEquals(fromDisk, table2);
+    }
+
+    // TODO Add a test for testing invalidating grouping files as well
 }
