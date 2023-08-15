@@ -241,7 +241,7 @@ public:
         return new TableHandleWrapper(internal_tbl_hdl.Merge(converted_sources));
     };
 
-    TableHandleWrapper* Sort(std::vector<std::string> columnSpecs, std::vector<bool> descending, std::vector<bool> abs) {
+    TableHandleWrapper* Sort(std::vector<std::string> columnSpecs, std::vector<bool> descending, std::vector<bool> absSort) {
         std::vector<deephaven::client::SortPair> sort_pairs;
         sort_pairs.reserve(columnSpecs.size());
 
@@ -249,15 +249,15 @@ public:
             descending = std::vector<bool>(columnSpecs.size(), descending[0]);
         }
 
-        if (abs.size() == 1) {
-            abs = std::vector<bool>(columnSpecs.size(), abs[0]);
+        if (absSort.size() == 1) {
+            absSort = std::vector<bool>(columnSpecs.size(), absSort[0]);
         }
 
         for(int i = 0; i < columnSpecs.size(); i++) {
             if (!descending[i]) {
-                sort_pairs.push_back(deephaven::client::SortPair::Ascending(columnSpecs[i], abs[i]));
+                sort_pairs.push_back(deephaven::client::SortPair::Ascending(columnSpecs[i], absSort[i]));
             } else {
-                sort_pairs.push_back(deephaven::client::SortPair::Descending(columnSpecs[i], abs[i]));
+                sort_pairs.push_back(deephaven::client::SortPair::Descending(columnSpecs[i], absSort[i]));
             }
         }
 

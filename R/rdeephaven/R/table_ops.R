@@ -518,7 +518,7 @@ setMethod(
 #' @export
 setGeneric(
   "sort",
-  function(table_handle, by = character(), descending = FALSE, abs_col = FALSE, ...) {
+  function(table_handle, by = character(), descending = FALSE, abs_sort = FALSE, ...) {
     standardGeneric("sort")
   },
   signature = c("table_handle", "by", "descending")
@@ -528,16 +528,16 @@ setGeneric(
 setMethod(
   "sort",
   signature = c(table_handle = "TableHandle"),
-  function(table_handle, by, descending = FALSE, abs_col = FALSE) {
+  function(table_handle, by, descending = FALSE, abs_sort = FALSE) {
     verify_string("by", by, FALSE)
     verify_bool("descending", descending, FALSE)
-    verify_bool("abs_col", abs_col, FALSE)
+    verify_bool("abs_sort", abs_sort, FALSE)
     if ((length(descending) > 1) && length(descending) != length(by)) {
       stop(paste0("'descending' must be the same length as 'by' if more than one entry is supplied. Got 'by' with length ", length(by), " and 'descending' with length ", length(descending), "."))
     }
-    if ((length(abs_col) > 1) && length(abs_col) != length(by)) {
-      stop(paste0("'abs_col' must be the same length as 'by' if more than one entry is supplied. Got 'by' with length ", length(by), " and 'abs_col' with length ", length(abs_col), "."))
+    if ((length(abs_sort) > 1) && length(abs_sort) != length(by)) {
+      stop(paste0("'abs_sort' must be the same length as 'by' if more than one entry is supplied. Got 'by' with length ", length(by), " and 'abs_sort' with length ", length(abs_sort), "."))
     }
-    return(new("TableHandle", .internal_rcpp_object = table_handle@.internal_rcpp_object$sort(by, descending, abs_col)))
+    return(new("TableHandle", .internal_rcpp_object = table_handle@.internal_rcpp_object$sort(by, descending, abs_sort)))
   }
 )
