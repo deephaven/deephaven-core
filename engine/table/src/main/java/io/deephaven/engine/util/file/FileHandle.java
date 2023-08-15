@@ -85,7 +85,7 @@ public final class FileHandle implements SeekableByteChannel {
      * @return The current size of the file
      */
     @Override
-    public long size() throws IOException {
+    public final long size() throws IOException {
         try {
             final long startTimeNanos = System.nanoTime();
             try {
@@ -108,7 +108,7 @@ public final class FileHandle implements SeekableByteChannel {
      * @return This file handle's position
      */
     @Override
-    public long position() throws IOException {
+    public final long position() throws IOException {
         try {
             final long startTimeNanos = System.nanoTime();
             try {
@@ -132,7 +132,7 @@ public final class FileHandle implements SeekableByteChannel {
      * @return This file handle
      */
     @Override
-    public FileHandle position(long newPosition) throws IOException {
+    public final FileHandle position(long newPosition) throws IOException {
         try {
             final long startTimeNanos = System.nanoTime();
             try {
@@ -158,7 +158,7 @@ public final class FileHandle implements SeekableByteChannel {
      * @param position The position in the file to start reading from
      * @return The number of bytes read, or -1 if end of file is reached
      */
-    public int read(@NotNull final ByteBuffer destination, final long position) throws IOException {
+    public final int read(@NotNull final ByteBuffer destination, final long position) throws IOException {
         try {
             final long startTimeNanos = System.nanoTime();
             final int sizeBytes = destination.remaining();
@@ -185,7 +185,7 @@ public final class FileHandle implements SeekableByteChannel {
      * @return The number of bytes read, or -1 of end of file is reached
      */
     @Override
-    public int read(@NotNull final ByteBuffer destination) throws IOException {
+    public final int read(@NotNull final ByteBuffer destination) throws IOException {
         try {
             final long startTimeNanos = System.nanoTime();
             final int sizeBytes = destination.remaining();
@@ -212,7 +212,7 @@ public final class FileHandle implements SeekableByteChannel {
      * @param position The position in the file to start writing at
      * @return The number of bytes written
      */
-    public int write(@NotNull final ByteBuffer source, final long position) throws IOException {
+    public final int write(@NotNull final ByteBuffer source, final long position) throws IOException {
         try {
             final long startTimeNanos = System.nanoTime();
             final int sizeBytes = source.remaining();
@@ -240,7 +240,7 @@ public final class FileHandle implements SeekableByteChannel {
      * @return The number of bytes written
      */
     @Override
-    public int write(@NotNull final ByteBuffer source) throws IOException {
+    public final int write(@NotNull final ByteBuffer source) throws IOException {
         try {
             final long startTimeNanos = System.nanoTime();
             final int sizeBytes = source.remaining();
@@ -266,7 +266,7 @@ public final class FileHandle implements SeekableByteChannel {
      * @return This handle
      */
     @Override
-    public FileHandle truncate(final long size) throws IOException {
+    public final FileHandle truncate(final long size) throws IOException {
         try {
             final long startTimeNanos = System.nanoTime();
             try {
@@ -287,7 +287,7 @@ public final class FileHandle implements SeekableByteChannel {
      * <p>
      * See {@link FileChannel#force(boolean)}.
      */
-    public void force() throws IOException {
+    public final void force() throws IOException {
         try {
             final long startTimeNanos = System.nanoTime();
             try {
@@ -310,7 +310,7 @@ public final class FileHandle implements SeekableByteChannel {
      * @return If the file handle is open
      */
     @Override
-    public boolean isOpen() {
+    public final boolean isOpen() {
         final boolean isOpen = fileChannel.isOpen();
         if (!isOpen) {
             postCloseProcedure.run();
@@ -325,7 +325,7 @@ public final class FileHandle implements SeekableByteChannel {
      * See {@link FileChannel#close()}.
      */
     @Override
-    public void close() throws IOException {
+    public final void close() throws IOException {
         try {
             fileChannel.close();
         } finally {

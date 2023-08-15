@@ -167,10 +167,10 @@ public class ParquetTableWriter {
             write(t, definition, writeInstructions, destPathName, incomingMeta, tableInfoBuilder);
         } catch (Exception e) {
             if (groupingFiles != null) {
-                for (final File cleanupFile : groupingFiles) {
+                for (final File groupingFile : groupingFiles) {
                     try {
                         // noinspection ResultOfMethodCallIgnored
-                        cleanupFile.delete();
+                        groupingFile.delete();
                     } catch (Exception ignored) {
                     }
                 }
@@ -302,6 +302,7 @@ public class ParquetTableWriter {
      * @param writeInstructions write instructions for the file
      * @param tableMeta metadata to include in the parquet metadata
      * @param tableInfoBuilder a builder for accumulating per-column information to construct the deephaven metadata
+     *
      * @return a new file writer
      */
     @NotNull

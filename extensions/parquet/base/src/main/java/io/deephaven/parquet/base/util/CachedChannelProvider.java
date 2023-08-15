@@ -32,7 +32,7 @@ public class CachedChannelProvider implements SeekableChannelsProvider {
 
     /**
      * An invalid {@link CachedChannelProvider} will invalidate all the channels it has produced and will not create any
-     * more channels. Used to prevent creating channels to files which have been modified.
+     * more channels. Used to prevent creating channels to files which have been overwritten.
      */
     private boolean invalid = false;
 
@@ -55,7 +55,7 @@ public class CachedChannelProvider implements SeekableChannelsProvider {
 
     /**
      * Following stores all the channels (and not just the pooled ones) created by this provider for any path and is
-     * used for invalidating all file handles associated with a file.
+     * useful for invalidating all file handles associated with this provider.
      */
     private final Collection<WeakReference<SeekableByteChannel>> channelList = new ArrayList<>();
 
@@ -67,6 +67,9 @@ public class CachedChannelProvider implements SeekableChannelsProvider {
 
     @Override
     public SeekableByteChannel getReadChannel(@NotNull final Path path) throws IOException {
+        if (invalid) {
+            return null;
+        }
         final String pathKey = path.toAbsolutePath().toString();
         final KeyedObjectHashMap<String, PerPathPool> channelPool = channelPools.get(ChannelType.Read);
         final CachedChannel result = tryGetPooledChannel(pathKey, channelPool);
@@ -80,6 +83,9 @@ public class CachedChannelProvider implements SeekableChannelsProvider {
 
     @Override
     public SeekableByteChannel getWriteChannel(@NotNull final Path path, final boolean append) throws IOException {
+        if (invalid) {
+            return null;
+        }
         final String pathKey = path.toAbsolutePath().toString();
         final ChannelType channelType = append ? ChannelType.WriteAppend : ChannelType.Write;
         final KeyedObjectHashMap<String, PerPathPool> channelPool = channelPools.get(channelType);
@@ -106,12 +112,14 @@ public class CachedChannelProvider implements SeekableChannelsProvider {
         while (channelIt.hasNext()) {
             final WeakReference<SeekableByteChannel> channelWeakRef = channelIt.next();
             final SeekableByteChannel channel = channelWeakRef.get();
-            if (channel == null) {
-                channelIt.remove();
-            } else if (channel instanceof FileHandleAccessor) {
+            if (channel != null) {
+                // Assuming that these channels are instances of FileHandleAccessor. This will be the true if
+                // "wrappedProvider" is an instance of TrackedSeekableChannelsProvider.
+                assert channel instanceof FileHandleAccessor;
                 ((FileHandleAccessor) channel).invalidate();
             }
         }
+        channelList.clear();
     }
 
     public boolean invalid() {
@@ -123,7 +131,7 @@ public class CachedChannelProvider implements SeekableChannelsProvider {
     private synchronized CachedChannel tryGetPooledChannel(@NotNull final String pathKey,
             @NotNull final KeyedObjectHashMap<String, PerPathPool> channelPool) {
         final PerPathPool perPathPool = channelPool.get(pathKey);
-        final @Nullable CachedChannel result;
+        final CachedChannel result;
         if (perPathPool == null || perPathPool.availableChannels.isEmpty()) {
             result = null;
         } else {

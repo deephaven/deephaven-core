@@ -60,7 +60,7 @@ public class TrackedSeekableChannelsProvider implements SeekableChannelsProvider
     @Override
     public final SeekableByteChannel getWriteChannel(@NotNull final Path filePath, final boolean append)
             throws IOException {
-        // NB: I'm not sure if this is actually the intended behavior; the "truncate-once" is per-handle, not per file.
+        // NB: I'm not sure this is actually the intended behavior; the "truncate-once" is per-handle, not per file.
         return new TrackedSeekableByteChannel(append ? fileHandleFactory.writeAppendCreateHandleCreator
                 : new TruncateOnceFileCreator(fileHandleFactory), filePath.toFile());
     }
@@ -82,7 +82,7 @@ public class TrackedSeekableChannelsProvider implements SeekableChannelsProvider
 
         @NotNull
         @Override
-        public FileHandle invoke(@NotNull final File file) throws IOException {
+        public final FileHandle invoke(@NotNull final File file) throws IOException {
             if (FIRST_TIME_UPDATER.compareAndSet(this, FIRST_TIME_TRUE, FIRST_TIME_FALSE)) {
                 return fileHandleFactory.writeTruncateCreateHandleCreator.invoke(file);
             }

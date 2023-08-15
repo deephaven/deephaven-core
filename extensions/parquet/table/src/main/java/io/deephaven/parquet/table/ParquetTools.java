@@ -451,7 +451,7 @@ public class ParquetTools {
             // Write to shadow files was successful
             for (int tableIdx = 0; tableIdx < sources.length; tableIdx++) {
                 destFiles.add(destinations[tableIdx]);
-                // Invalidate old file handles so that we don't read from files which have been updated
+                // Invalidate old file handles to prevent reading from files which have been overwritten
                 CachedChannelProviderTracker.getInstance().invalidateChannels(destinations[tableIdx]);
                 installShadowFile(destinations[tableIdx], shadowDestFiles[tableIdx]);
                 if (groupingColumnWritingInfoMaps != null) {

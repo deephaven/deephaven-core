@@ -46,8 +46,7 @@ public class CachedChannelProviderTracker { // TODO Think of a better name
      * @param file File path
      */
     public final synchronized void registerCachedChannelProvider(@NotNull final CachedChannelProvider ccp,
-            @NotNull final File file)
-            throws IOException {
+            @NotNull final File file) throws IOException {
         cleanup();
         final String filePath = file.getCanonicalPath();
         List<WeakReference<CachedChannelProvider>> providerList =
@@ -64,9 +63,6 @@ public class CachedChannelProviderTracker { // TODO Think of a better name
         cleanup();
         final String filePath = file.getCanonicalPath();
         List<WeakReference<CachedChannelProvider>> providerList = fileToProviderMap.remove(filePath);
-        if (providerList == null) {
-            return;
-        }
         for (WeakReference<CachedChannelProvider> providerWeakRef : providerList) {
             final CachedChannelProvider ccp = providerWeakRef.get();
             if (ccp != null) {
@@ -75,17 +71,17 @@ public class CachedChannelProviderTracker { // TODO Think of a better name
         }
     }
 
+    // TODO Add tests for this file
+
     /**
-     * Clear any null weak-references
+     * Clear any null weak-references to providers
      */
     // TODO Where should I call cleanup from? Right now, I am calling it from inside public API
     private void cleanup() {
         final Iterator<Map.Entry<String, List<WeakReference<CachedChannelProvider>>>> mapIter =
                 fileToProviderMap.entrySet().iterator();
         while (mapIter.hasNext()) {
-            final Map.Entry<String, List<WeakReference<CachedChannelProvider>>> mapEntry = mapIter.next(); // Concurrent
-                                                                                                           // access
-            final List<WeakReference<CachedChannelProvider>> providerList = mapEntry.getValue();
+            final List<WeakReference<CachedChannelProvider>> providerList = mapIter.next().getValue();
             final Iterator<WeakReference<CachedChannelProvider>> providerWeakRefIt = providerList.iterator();
             while (providerWeakRefIt.hasNext()) {
                 final WeakReference<CachedChannelProvider> providerWeakRef = providerWeakRefIt.next();
