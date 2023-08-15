@@ -117,7 +117,7 @@ setMethod(
     }
 
     if ((tls_root_certs != "") && (use_tls == FALSE)) {
-      warning("'tls_root_certs' was set but it will not be used, as 'use_tls is FALSE.")
+      warning("'tls_root_certs' was set but it will not be used, as 'use_tls' is FALSE.")
     }
 
     internal_client <- new(INTERNAL_Client,

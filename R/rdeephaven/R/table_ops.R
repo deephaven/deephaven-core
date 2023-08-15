@@ -1,6 +1,9 @@
 #' @export
 merge_tables <- function(...) {
   table_list <- unlist(c(...))
+  if (length(table_list) == 0) {
+    return(NULL)
+  }
   verify_type("table_list", table_list, "TableHandle", "Deephaven TableHandle", FALSE)
   if (length(table_list) == 1) {
     return(table_list[[1]])

@@ -60,6 +60,8 @@ setup <- function() {
 test_that("merge_tables behaves as expected", {
   data <- setup()
   
+  expect_equal(NULL, merge_tables(NULL))
+  
   new_df1 <- rbind(data$df5)
   new_th1 <- merge_tables(data$th5)
   expect_equal(as.data.frame(new_th1), new_df1)
