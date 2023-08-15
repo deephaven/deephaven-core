@@ -195,16 +195,16 @@ setMethod(
 )
 
 setGeneric(
-  "push_to_table",
+  "import_table",
   function(client_instance, table_object) {
-    return(standardGeneric("push_to_table"))
+    return(standardGeneric("import_table"))
   },
   signature = c("client_instance", "table_object")
 )
 
 #' @export
 setMethod(
-  "push_to_table",
+  "import_table",
   signature = c(client_instance = "Client", table_object = "RecordBatchReader"),
   function(client_instance, table_object) {
     ptr <- client_instance@.internal_rcpp_object$new_arrow_array_stream_ptr()
@@ -219,28 +219,28 @@ setMethod(
 
 #' @export
 setMethod(
-  "push_to_table",
+  "import_table",
   signature = c(client_instance = "Client", table_object = "Table"),
   function(client_instance, table_object) {
-    return(push_to_table(client_instance, as_record_batch_reader(table_object)))
+    return(import_table(client_instance, as_record_batch_reader(table_object)))
   }
 )
 
 #' @export
 setMethod(
-  "push_to_table",
+  "import_table",
   signature = c(client_instance = "Client", table_object = "tbl_df"),
   function(client_instance, table_object) {
-    return(push_to_table(client_instance, arrow_table(table_object)))
+    return(import_table(client_instance, arrow_table(table_object)))
   }
 )
 
 #' @export
 setMethod(
-  "push_to_table",
+  "import_table",
   signature = c(client_instance = "Client", table_object = "data.frame"),
   function(client_instance, table_object) {
-    return(push_to_table(client_instance, arrow_table(table_object)))
+    return(import_table(client_instance, arrow_table(table_object)))
   }
 )
 
