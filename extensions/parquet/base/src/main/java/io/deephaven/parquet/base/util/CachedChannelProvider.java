@@ -34,7 +34,7 @@ public class CachedChannelProvider implements SeekableChannelsProvider {
      * An invalid {@link CachedChannelProvider} will invalidate all the channels it has produced and will not create any
      * more channels. Used to prevent creating channels to files which have been overwritten.
      */
-    private boolean invalid = false;
+    private boolean invalid;
 
     enum ChannelType {
         Read, Write, WriteAppend
@@ -65,6 +65,7 @@ public class CachedChannelProvider implements SeekableChannelsProvider {
             final int maximumPooledCount) {
         this.wrappedProvider = wrappedProvider;
         this.maximumPooledCount = Require.gtZero(maximumPooledCount, "maximumPooledCount");
+        this.invalid = false;
     }
 
     @Override
@@ -119,9 +120,7 @@ public class CachedChannelProvider implements SeekableChannelsProvider {
 
     public void invalidate() {
         invalid = true;
-        final Iterator<WeakReference<SeekableByteChannel>> channelIt = channelList.iterator();
-        while (channelIt.hasNext()) {
-            final WeakReference<SeekableByteChannel> channelWeakRef = channelIt.next();
+        for (WeakReference<SeekableByteChannel> channelWeakRef : channelList) {
             final SeekableByteChannel channel = channelWeakRef.get();
             if (channel != null) {
                 invalidateChannel(channel);

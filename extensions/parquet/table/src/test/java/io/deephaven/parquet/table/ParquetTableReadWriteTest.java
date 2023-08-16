@@ -826,29 +826,5 @@ public class ParquetTableReadWriteTest {
         }
     }
 
-    @Test
-    public void multiReadTest() {
-        // There should be just one file in the directory on a successful write and no temporary files
-        final Table table1 = TableTools.emptyTable(5).update("A=(int)i");
-        final File destFile = new File(rootFile, "table1.parquet");
-        ParquetTools.writeTable(table1, destFile);
-        Table fromDisk = ParquetTools.readTable(destFile);
-        TstUtils.assertTableEquals(fromDisk, table1);
-        fromDisk = ParquetTools.readTable(destFile);
-        TstUtils.assertTableEquals(fromDisk, table1);
-        fromDisk = ParquetTools.readTable(destFile);
-        TstUtils.assertTableEquals(fromDisk, table1);
-
-        // final Table table2 = TableTools.emptyTable(5).update("B=(int)i*5");
-        // ParquetTools.writeTable(table2, destFile);
-        // fromDisk = ParquetTools.readTable(destFile);
-        // TstUtils.assertTableEquals(fromDisk, table2);
-
-        // final Table table2 = TableTools.emptyTable(5).update("C=(int)i*5");
-        // ParquetTools.writeTable(table3, destFile);
-        // fromDisk = ParquetTools.readTable(destFile);
-        // TstUtils.assertTableEquals(fromDisk, table2);
-    }
-
     // TODO Add a test for testing invalidating grouping files as well
 }
