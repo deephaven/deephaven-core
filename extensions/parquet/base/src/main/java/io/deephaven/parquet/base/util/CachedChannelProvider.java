@@ -24,7 +24,6 @@ import java.util.*;
  */
 public class CachedChannelProvider implements SeekableChannelsProvider {
 
-    private static final int CHANNEL_LIST_CLEANUP_LIMIT = 100;
     private final SeekableChannelsProvider wrappedProvider;
     private final int maximumPooledCount;
 
@@ -59,6 +58,8 @@ public class CachedChannelProvider implements SeekableChannelsProvider {
      * useful for invalidating all file handles associated with this provider.
      */
     private final Collection<WeakReference<SeekableByteChannel>> channelList = new ArrayList<>();
+
+    private static final int CHANNEL_LIST_CLEANUP_LIMIT = 100;
 
     public CachedChannelProvider(@NotNull final SeekableChannelsProvider wrappedProvider,
             final int maximumPooledCount) {

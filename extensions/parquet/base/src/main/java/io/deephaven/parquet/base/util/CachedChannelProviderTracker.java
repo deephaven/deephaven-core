@@ -2,10 +2,6 @@ package io.deephaven.parquet.base.util;
 
 import io.deephaven.hash.KeyedObjectHashMap;
 import io.deephaven.hash.KeyedObjectKey;
-import io.deephaven.io.logger.Logger;
-import io.deephaven.io.sched.Scheduler;
-import io.deephaven.io.sched.TimedJob;
-import io.deephaven.net.CommBase;
 import org.jetbrains.annotations.NotNull;
 
 import java.io.File;
@@ -22,10 +18,6 @@ import java.util.Iterator;
  */
 public class CachedChannelProviderTracker { // TODO Think of a better name
     private static volatile CachedChannelProviderTracker instance;
-
-    private static final long CLEANUP_INTERVAL_MILLIS = 60_000;
-
-    private final Scheduler scheduler;
 
     public static CachedChannelProviderTracker getInstance() {
         if (instance == null) {
@@ -53,6 +45,10 @@ public class CachedChannelProviderTracker { // TODO Think of a better name
 
     private final Map<String, FileToProviderMapEntry> fileToProviderMap;
 
+    private static final int PROVIDER_MAP_CLEANUP_LIMIT = 100;
+
+    private int numProvidersMapped;
+
     private CachedChannelProviderTracker() {
         fileToProviderMap = new KeyedObjectHashMap<>(new KeyedObjectKey.Basic<>() {
             @Override
@@ -60,17 +56,7 @@ public class CachedChannelProviderTracker { // TODO Think of a better name
                 return entry.fileCanonicalPath;
             }
         });
-
-        // Schedule a cleanup job
-        scheduler =
-                CommBase.singleThreadedScheduler("CachedChannelProviderTracker.CleanupScheduler", Logger.NULL).start();
-        scheduler.installJob(new TimedJob() {
-            @Override
-            public void timedOut() {
-                tryCleanup();
-                scheduler.installJob(this, scheduler.currentTimeMillis() + CLEANUP_INTERVAL_MILLIS);
-            }
-        }, scheduler.currentTimeMillis() + CLEANUP_INTERVAL_MILLIS);
+        numProvidersMapped = 0;
     }
 
     /**
@@ -85,6 +71,10 @@ public class CachedChannelProviderTracker { // TODO Think of a better name
         FileToProviderMapEntry entry = fileToProviderMap.computeIfAbsent(filePath,
                 k -> new FileToProviderMapEntry(filePath, new CopyOnWriteArrayList<>()));
         entry.providerList.add(new WeakReference<>(ccp));
+        numProvidersMapped++;
+        if (numProvidersMapped >= PROVIDER_MAP_CLEANUP_LIMIT) {
+            tryCleanup();
+        }
     }
 
     /**
@@ -98,12 +88,14 @@ public class CachedChannelProviderTracker { // TODO Think of a better name
         if (entry == null) {
             return;
         }
+        numProvidersMapped -= entry.providerList.size();
         for (WeakReference<CachedChannelProvider> providerWeakRef : entry.providerList) {
             final CachedChannelProvider ccp = providerWeakRef.get();
             if (ccp != null) {
                 ccp.invalidate();
             }
         }
+
     }
 
     /**
