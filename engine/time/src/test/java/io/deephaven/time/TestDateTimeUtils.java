@@ -947,11 +947,11 @@ public class TestDateTimeUtils extends BaseArrayTestCase {
 
         final String[][] timeFormats = {
                 {"PT12:00", "PT12h"},
-                {"PT12:00:00",  "PT12h"},
+                {"PT12:00:00", "PT12h"},
                 {"PT12:00:00.123", "PT12h0.123s"},
                 {"PT12:00:00.1234", "PT12h0.1234s"},
                 {"PT12:00:00.123456789", "PT12h0.123456789s"},
-                {"PT2:00",  "PT2h"},
+                {"PT2:00", "PT2h"},
                 {"PT2:00:00", "PT2h"},
                 {"PT2:00:00", "PT2h"},
                 {"PT2:00:00.123", "PT2h0.123s"},
@@ -995,11 +995,11 @@ public class TestDateTimeUtils extends BaseArrayTestCase {
 
         final String[][] timeFormats = {
                 {"PT12:00", "PT12h"},
-                {"PT12:00:00",  "PT12h"},
+                {"PT12:00:00", "PT12h"},
                 {"PT12:00:00.123", "PT12h0.123s"},
                 {"PT12:00:00.1234", "PT12h0.1234s"},
                 {"PT12:00:00.123456789", "PT12h0.123456789s"},
-                {"PT2:00",  "PT2h"},
+                {"PT2:00", "PT2h"},
                 {"PT2:00:00", "PT2h"},
                 {"PT2:00:00", "PT2h"},
                 {"PT2:00:00.123", "PT2h0.123s"},

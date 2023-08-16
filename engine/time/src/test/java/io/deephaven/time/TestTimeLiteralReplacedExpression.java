@@ -43,7 +43,8 @@ public class TestTimeLiteralReplacedExpression extends BaseArrayTestCase {
         newVars.put("_duration0", Duration.class);
         TestCase.assertEquals(newVars, tlre.getNewVariables());
 
-        TestCase.assertEquals("        private java.time.Duration _duration0=DateTimeUtils.parseDuration(\"PT12:00\");\n",
+        TestCase.assertEquals(
+                "        private java.time.Duration _duration0=DateTimeUtils.parseDuration(\"PT12:00\");\n",
                 tlre.getInstanceVariablesString());
     }
 
@@ -104,8 +105,9 @@ public class TestTimeLiteralReplacedExpression extends BaseArrayTestCase {
         newVars.put("_duration1", Duration.class);
         TestCase.assertEquals(newVars, tlre.getNewVariables());
 
-        TestCase.assertEquals("        private java.time.Duration _duration0=DateTimeUtils.parseDuration(\"PT12:00\");\n" +
-                "        private java.time.Duration _duration1=DateTimeUtils.parseDuration(\"PT04:21\");\n",
+        TestCase.assertEquals(
+                "        private java.time.Duration _duration0=DateTimeUtils.parseDuration(\"PT12:00\");\n" +
+                        "        private java.time.Duration _duration1=DateTimeUtils.parseDuration(\"PT04:21\");\n",
                 tlre.getInstanceVariablesString());
     }
 
@@ -119,8 +121,9 @@ public class TestTimeLiteralReplacedExpression extends BaseArrayTestCase {
         newVars.put("_duration1", Duration.class);
         TestCase.assertEquals(newVars, tlre.getNewVariables());
 
-        TestCase.assertEquals("        private java.time.Duration _duration0=DateTimeUtils.parseDuration(\"PT12:00\");\n" +
-                "        private java.time.Duration _duration1=DateTimeUtils.parseDuration(\"PT4H\");\n",
+        TestCase.assertEquals(
+                "        private java.time.Duration _duration0=DateTimeUtils.parseDuration(\"PT12:00\");\n" +
+                        "        private java.time.Duration _duration1=DateTimeUtils.parseDuration(\"PT4H\");\n",
                 tlre.getInstanceVariablesString());
     }
 
