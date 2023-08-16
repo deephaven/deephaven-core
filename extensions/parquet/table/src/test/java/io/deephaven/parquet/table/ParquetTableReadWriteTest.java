@@ -799,7 +799,6 @@ public class ParquetTableReadWriteTest {
 
     @Test
     public void multiHandleTest() {
-        // There should be just one file in the directory on a successful write and no temporary files
         final Table table1 = TableTools.emptyTable(5).update("A=(int)i");
         final File destFile = new File(rootFile, "table1.parquet");
         ParquetTools.writeTable(table1, destFile);

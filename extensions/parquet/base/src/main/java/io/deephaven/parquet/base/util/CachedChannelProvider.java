@@ -24,6 +24,7 @@ import java.util.*;
  */
 public class CachedChannelProvider implements SeekableChannelsProvider {
 
+    private static final int CHANNEL_LIST_CLEANUP_LIMIT = 100;
     private final SeekableChannelsProvider wrappedProvider;
     private final int maximumPooledCount;
 
@@ -67,9 +68,6 @@ public class CachedChannelProvider implements SeekableChannelsProvider {
 
     @Override
     public SeekableByteChannel getReadChannel(@NotNull final Path path) throws IOException {
-        if (invalid) {
-            return null;
-        }
         final String pathKey = path.toAbsolutePath().toString();
         final KeyedObjectHashMap<String, PerPathPool> channelPool = channelPools.get(ChannelType.Read);
         final CachedChannel result = tryGetPooledChannel(pathKey, channelPool);
@@ -83,9 +81,6 @@ public class CachedChannelProvider implements SeekableChannelsProvider {
 
     @Override
     public SeekableByteChannel getWriteChannel(@NotNull final Path path, final boolean append) throws IOException {
-        if (invalid) {
-            return null;
-        }
         final String pathKey = path.toAbsolutePath().toString();
         final ChannelType channelType = append ? ChannelType.WriteAppend : ChannelType.Write;
         final KeyedObjectHashMap<String, PerPathPool> channelPool = channelPools.get(channelType);
@@ -101,9 +96,24 @@ public class CachedChannelProvider implements SeekableChannelsProvider {
 
     private void channelCreatorHelper(@NotNull final Path path, @NotNull final SeekableByteChannel newChannel)
             throws IOException {
-        // Register self with tracker
+        // If channel creator already marked invalid, mark the new channels invalid.
+        // This is needed because we cannot return a null channel. So we return invalidated channels.
+        if (invalid) {
+            invalidateChannel(newChannel);
+            return;
+        }
         CachedChannelProviderTracker.getInstance().registerCachedChannelProvider(this, path.toFile());
         channelList.add(new WeakReference<>(newChannel));
+        if (channelList.size() >= CHANNEL_LIST_CLEANUP_LIMIT) {
+            channelList.removeIf(channelWeakRef -> channelWeakRef.get() == null);
+        }
+    }
+
+    private void invalidateChannel(@NotNull final SeekableByteChannel channel) {
+        // Assuming that these channels are instances of FileHandleAccessor. This will be the true if
+        // "wrappedProvider" is an instance of TrackedSeekableChannelsProvider.
+        assert channel instanceof FileHandleAccessor;
+        ((FileHandleAccessor) channel).invalidate();
     }
 
     public void invalidate() {
@@ -113,17 +123,13 @@ public class CachedChannelProvider implements SeekableChannelsProvider {
             final WeakReference<SeekableByteChannel> channelWeakRef = channelIt.next();
             final SeekableByteChannel channel = channelWeakRef.get();
             if (channel != null) {
-                // Assuming that these channels are instances of FileHandleAccessor. This will be the true if
-                // "wrappedProvider" is an instance of TrackedSeekableChannelsProvider.
-                assert channel instanceof FileHandleAccessor;
-                ((FileHandleAccessor) channel).invalidate();
+                invalidateChannel(channel);
             }
         }
         channelList.clear();
     }
 
     public boolean invalid() {
-        // TODO Test this
         return invalid;
     }
 
