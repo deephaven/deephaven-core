@@ -8,6 +8,7 @@
 #include "deephaven/client/columns.h"
 #include "deephaven/client/client_options.h"
 #include "deephaven/client/expressions.h"
+#include "deephaven/client/utility/misc_types.h"
 #include "deephaven/dhcore/clienttable/schema.h"
 #include "deephaven/dhcore/ticking/ticking.h"
 #include "deephaven/dhcore/utility/callbacks.h"
@@ -71,6 +72,10 @@ namespace deephaven::client {
 class TableHandleManager {
   template<typename... Args>
   using SFCallback = deephaven::dhcore::utility::SFCallback<Args...>;
+
+  using DurationSpecifier = deephaven::client::utility::DurationSpecifier;
+  using TimePointSpecifier = deephaven::client::utility::TimePointSpecifier;
+
 public:
   /*
    * Default constructor. Creates a (useless) empty client object.
@@ -107,22 +112,15 @@ public:
   TableHandle FetchTable(std::string table_name) const;
   /**
    * Creates a ticking table.
-   * @param startTimeNanos When the table should start ticking (in units of nanoseconds since the epoch).
-   * @param periodNanos Table ticking frequency (in nanoseconds).
+   * @param period Table ticking frequency, specified as a std::chrono::duration,
+   *   int64_t nanoseconds, or a string containing an ISO duration representation.
+   * @param start_time When the table should start ticking, specified as a std::chrono::time_point,
+   *   int64_t nanoseconds since the epoch, or a string containing an ISO time point specifier.
    * @return The TableHandle of the new table.
    */
   [[nodiscard]]
-  TableHandle TimeTable(int64_t start_time_nanos, int64_t period_nanos) const;
-  /**
-   * Creates a ticking table. This is an overload of TimeTable(int64_t, int64_t) const that takes
-   * different parameter types.
-   * @param startTime When the table should start ticking.
-   * @param periodNanos Table ticking frequency.
-   * @return The TableHandle of the new table.
-   */
-  [[nodiscard]]
-  TableHandle TimeTable(std::chrono::system_clock::time_point start_time,
-      std::chrono::system_clock::duration period) const;
+  TableHandle TimeTable(DurationSpecifier period, TimePointSpecifier start_time = 0,
+      bool blink_table = false) const;
   /**
    * Allocate a fresh client ticket. This is a low level operation, typically used when the caller wants to do an Arrow
    * doPut operation.
@@ -376,7 +374,7 @@ public:
    * group, for each input column.
    */
   [[nodiscard]]
-  static Aggregate pct(double percentile, bool avg_median, std::vector<std::string> column_specs);
+  static Aggregate Pct(double percentile, bool avg_median, std::vector<std::string> column_specs);
 
   /**
    * Returns an aggregator that computes the standard deviation of values, within an aggregation
@@ -1680,7 +1678,7 @@ Aggregate Aggregate::Pct(double percentile, bool avg_median, Args &&... args) {
   std::vector<std::string> column_specs = {
       internal::ConvertToString::ToString(std::forward<Args>(args))...
   };
-  return pct(percentile, avg_median, std::move(column_specs));
+  return Pct(percentile, avg_median, std::move(column_specs));
 }
 
 template<typename ...Args>
