@@ -890,7 +890,6 @@ public class TestDateTimeUtils extends BaseArrayTestCase {
         }
 
         try {
-            // noinspection ConstantConditions
             DateTimeUtils.parsePeriod("JUNK");
             TestCase.fail("Should throw an exception");
         } catch (Exception ex) {
