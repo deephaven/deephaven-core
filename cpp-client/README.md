@@ -124,7 +124,7 @@ C++ compiler and tool suite (cmake etc).
       file to ensure you have the correct environment variable definitions
       in your shell for the steps below.
 
-   2. In the `proto/proto-backend-grpc/src/main/proto` directory
+   2. In the `proto/proto-backplane-grpc/src/main/proto` directory
       (relative from your deephave-core clone base directory),
       run the `build-cpp-protos.sh` script.
       This should generate up-to-date versions of the C++ stubs
