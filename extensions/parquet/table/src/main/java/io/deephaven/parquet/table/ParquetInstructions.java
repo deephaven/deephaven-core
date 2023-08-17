@@ -218,7 +218,6 @@ public abstract class ParquetInstructions implements ColumnToCodecMappings {
         @Override
         public int getTargetPageSize() {
             return defaultTargetPageSize;
-            // return defaultTargetPageSize/8;
         }
 
         @Override
