@@ -113,9 +113,9 @@ public:
   /**
    * Creates a ticking table.
    * @param period Table ticking frequency, specified as a std::chrono::duration,
-   *   int64_t nanoseconds, or a string containing an ISO duration representation.
+   *   int64_t nanoseconds, or a string containing an ISO 8601 duration representation.
    * @param start_time When the table should start ticking, specified as a std::chrono::time_point,
-   *   int64_t nanoseconds since the epoch, or a string containing an ISO time point specifier.
+   *   int64_t nanoseconds since the epoch, or a string containing an ISO 8601 time point specifier.
    * @return The TableHandle of the new table.
    */
   [[nodiscard]]
