@@ -590,7 +590,6 @@ public class ParquetTableWriter {
                 maxValuesPerPage,
                 columnType,
                 writeInstructions)) {
-            final Object bufferToWrite = transferObject.getBuffer();
             final VectorColumnWriterHelper vectorHelper = writingHelper.isVectorFormat()
                     ? (VectorColumnWriterHelper) writingHelper
                     : null;
@@ -618,6 +617,7 @@ public class ParquetTableWriter {
                             valueRowSetIterator.getNextRowSequenceWithLength(valuePageSizeGetter.getAsInt());
                     transferObject.fetchData(rs);
                     transferObject.propagateChunkData();
+                    final Object bufferToWrite = transferObject.getBuffer();
                     if (vectorHelper != null) {
                         final IntChunk<? extends Values> lenChunk = vectorHelper.lengthSource.getChunk(
                                 lengthSourceContext,
@@ -652,6 +652,7 @@ public class ParquetTableWriter {
 
         final boolean useDictionaryHint = writeInstructions.useDictionary(columnDefinition.getName());
         final int maxKeys = useDictionaryHint ? Integer.MAX_VALUE : writeInstructions.getMaximumDictionaryKeys();
+        final int maxDictSize = useDictionaryHint ? Integer.MAX_VALUE : writeInstructions.getMaximumDictionarySize();
         final VectorColumnWriterHelper vectorHelper = writingHelper.isVectorFormat()
                 ? (VectorColumnWriterHelper) writingHelper
                 : null;
@@ -664,6 +665,7 @@ public class ParquetTableWriter {
                             Constants.DEFAULT_LOAD_FACTOR,
                             QueryConstants.NULL_INT);
             int keyCount = 0;
+            int dictSize = 0;
             boolean hasNulls = false;
             final IntSupplier valuePageSizeGetter = writingHelper.valuePageSizeSupplier();
             try (final ChunkSource.GetContext context = valueSource.makeGetContext(maxValuesPerPage);
@@ -683,16 +685,18 @@ public class ParquetTableWriter {
                                 hasNulls = true;
                             } else {
                                 if (keyCount == encodedKeys.length) {
-                                    if (keyCount >= maxKeys) {
-                                        throw new DictionarySizeExceededException(
-                                                "Dictionary maximum size exceeded for " + columnDefinition.getName());
-                                    }
-
+                                    // Copy into an array of double the size with upper limit at maxKeys
                                     encodedKeys = Arrays.copyOf(encodedKeys, (int) Math.min(keyCount * 2L, maxKeys));
                                 }
                                 encodedKeys[keyCount] = Binary.fromString(key);
                                 dictionaryPos = keyCount;
+                                dictSize += encodedKeys[keyCount].length();
                                 keyCount++;
+                                if ((keyCount >= maxKeys) || (dictSize >= maxDictSize)) {
+                                    throw new DictionarySizeExceededException(
+                                            String.format("Dictionary maximum size exceeded for %s",
+                                                    columnDefinition.getName()));
+                                }
                             }
                             keyToPos.put(key, dictionaryPos);
                         }

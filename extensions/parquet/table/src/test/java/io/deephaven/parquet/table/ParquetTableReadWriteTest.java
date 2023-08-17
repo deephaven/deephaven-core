@@ -24,6 +24,7 @@ import io.deephaven.engine.util.TableTools;
 import io.deephaven.engine.table.impl.QueryTable;
 import io.deephaven.test.types.OutOfBandTest;
 import junit.framework.TestCase;
+import org.apache.parquet.hadoop.metadata.ParquetMetadata;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Ignore;
@@ -37,6 +38,8 @@ import java.math.BigInteger;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
+import java.util.Collection;
+
 import org.junit.experimental.categories.Category;
 
 import static io.deephaven.engine.testutil.TstUtils.assertTableEquals;
@@ -794,5 +797,32 @@ public class ParquetTableReadWriteTest {
         // Read back fromDisk and compare it with original table. If the underlying file has not been corrupted or
         // swapped out, then we would not be able to read from the file
         TstUtils.assertTableEquals(tableToSave, fromDisk);
+    }
+
+    @Test
+    public void dictionaryEncodingTest() {
+        Collection<String> columns = new ArrayList<>(Arrays.asList(
+                "shortStringColumn = `Row ` + i",
+                "longStringColumn = `This is row ` + i",
+                "someIntColumn = i"));
+        final int numRows = 10;
+        final ParquetInstructions writeInstructions = new ParquetInstructions.Builder()
+                .setMaximumDictionarySize(100) // Force "longStringColumn" to use non-dictionary encoding
+                .build();
+        final Table stringTable = TableTools.emptyTable(numRows).select(Selectable.from(columns));
+        final File dest = new File(rootFile + File.separator + "dictEncoding.parquet");
+        ParquetTools.writeTable(stringTable, dest, writeInstructions);
+        Table fromDisk = ParquetTools.readTable(dest);
+        assertTableEquals(stringTable, fromDisk);
+
+        // Verify that string columns are properly dictionary encoded
+        final ParquetMetadata metadata = new ParquetTableLocationKey(dest, 0, null).getMetadata();
+        final String firstColumnMetadata = metadata.getBlocks().get(0).getColumns().get(0).toString();
+        assertTrue(firstColumnMetadata.contains("shortStringColumn") && firstColumnMetadata.contains("RLE_DICTIONARY"));
+        final String secondColumnMetadata = metadata.getBlocks().get(0).getColumns().get(1).toString();
+        assertTrue(
+                secondColumnMetadata.contains("longStringColumn") && !secondColumnMetadata.contains("RLE_DICTIONARY"));
+        final String thirdColumnMetadata = metadata.getBlocks().get(0).getColumns().get(2).toString();
+        assertTrue(thirdColumnMetadata.contains("someIntColumn") && !thirdColumnMetadata.contains("RLE_DICTIONARY"));
     }
 }
