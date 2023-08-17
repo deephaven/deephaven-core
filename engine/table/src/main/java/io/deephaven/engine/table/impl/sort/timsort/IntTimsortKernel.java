@@ -13,7 +13,6 @@ import io.deephaven.chunk.WritableIntChunk;
 import io.deephaven.chunk.WritableChunk;
 import io.deephaven.chunk.attributes.Any;
 import io.deephaven.util.annotations.VisibleForTesting;
-import io.deephaven.util.compare.IntComparisons;
 
 /**
  * This implements a timsort kernel for Integers.
@@ -157,7 +156,7 @@ public class IntTimsortKernel {
 
     // region comparison functions
     private static int doComparison(int lhs, int rhs) {
-        return IntComparisons.compare(lhs, rhs);
+        return Integer.compare(lhs, rhs);
     }
     // endregion comparison functions
 

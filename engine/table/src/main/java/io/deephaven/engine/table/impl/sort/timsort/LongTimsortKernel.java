@@ -13,7 +13,6 @@ import io.deephaven.chunk.WritableLongChunk;
 import io.deephaven.chunk.WritableChunk;
 import io.deephaven.chunk.attributes.Any;
 import io.deephaven.util.annotations.VisibleForTesting;
-import io.deephaven.util.compare.LongComparisons;
 
 /**
  * This implements a timsort kernel for Longs.
@@ -157,7 +156,7 @@ public class LongTimsortKernel {
 
     // region comparison functions
     private static int doComparison(long lhs, long rhs) {
-        return LongComparisons.compare(lhs, rhs);
+        return Long.compare(lhs, rhs);
     }
     // endregion comparison functions
 

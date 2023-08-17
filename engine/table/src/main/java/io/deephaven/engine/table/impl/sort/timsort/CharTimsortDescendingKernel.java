@@ -152,7 +152,7 @@ public class CharTimsortDescendingKernel {
 
     // region comparison functions
     private static int doComparison(char lhs, char rhs) {
-        return -1 * CharComparisons.compare(lhs, rhs);
+        return -1 * Character.compare(lhs, rhs);
     }
     // endregion comparison functions
 

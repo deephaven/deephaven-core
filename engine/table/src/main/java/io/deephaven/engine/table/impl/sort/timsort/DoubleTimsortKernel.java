@@ -15,7 +15,6 @@ import io.deephaven.chunk.WritableDoubleChunk;
 import io.deephaven.chunk.WritableChunk;
 import io.deephaven.chunk.attributes.Any;
 import io.deephaven.util.annotations.VisibleForTesting;
-import io.deephaven.util.compare.DoubleComparisons;
 
 /**
  * This implements a timsort kernel for Doubles.

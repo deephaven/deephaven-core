@@ -13,7 +13,6 @@ import io.deephaven.chunk.WritableShortChunk;
 import io.deephaven.chunk.WritableChunk;
 import io.deephaven.chunk.attributes.Any;
 import io.deephaven.util.annotations.VisibleForTesting;
-import io.deephaven.util.compare.ShortComparisons;
 
 /**
  * This implements a timsort kernel for Shorts.
@@ -157,7 +156,7 @@ public class ShortTimsortKernel {
 
     // region comparison functions
     private static int doComparison(short lhs, short rhs) {
-        return ShortComparisons.compare(lhs, rhs);
+        return Short.compare(lhs, rhs);
     }
     // endregion comparison functions
 

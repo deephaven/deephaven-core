@@ -13,7 +13,6 @@ import io.deephaven.chunk.WritableByteChunk;
 import io.deephaven.chunk.WritableChunk;
 import io.deephaven.chunk.attributes.Any;
 import io.deephaven.util.annotations.VisibleForTesting;
-import io.deephaven.util.compare.ByteComparisons;
 
 /**
  * This implements a timsort kernel for Bytes.
@@ -157,7 +156,7 @@ public class ByteTimsortKernel {
 
     // region comparison functions
     private static int doComparison(byte lhs, byte rhs) {
-        return ByteComparisons.compare(lhs, rhs);
+        return Byte.compare(lhs, rhs);
     }
     // endregion comparison functions
 

@@ -8,7 +8,6 @@ import io.deephaven.chunk.WritableCharChunk;
 import io.deephaven.chunk.WritableChunk;
 import io.deephaven.chunk.attributes.Any;
 import io.deephaven.util.annotations.VisibleForTesting;
-import io.deephaven.util.compare.CharComparisons;
 
 /**
  * This implements a timsort kernel for Characters.
@@ -152,7 +151,7 @@ public class CharTimsortKernel {
 
     // region comparison functions
     private static int doComparison(char lhs, char rhs) {
-        return CharComparisons.compare(lhs, rhs);
+        return Character.compare(lhs, rhs);
     }
     // endregion comparison functions
 
