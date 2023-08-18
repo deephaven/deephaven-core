@@ -139,7 +139,10 @@ public class ObjectServiceGrpcImpl extends ObjectServiceGrpc.ObjectServiceImplBa
                 this.object = object;
                 manage(this.object);
                 runOrEnqueue(() -> {
-                    final Object o = object.get();
+                    Object o = object.get();
+                    if (o instanceof PyObjectRefCountedNode) {
+                        o = ((PyObjectRefCountedNode) o).getPythonObject();
+                    }
                     final ObjectType objectType = getObjectTypeInstance(type, o);
 
                     PluginMessageSender clientConnection = new PluginMessageSender(responseObserver, session);
@@ -155,7 +158,15 @@ public class ObjectServiceGrpcImpl extends ObjectServiceGrpc.ObjectServiceImplBa
                         .map(typedTicket -> ticketRouter.resolve(session, typedTicket.getTicket(), "ticket"))
                         .collect(Collectors.toList());
                 runOrEnqueue(referenceObjects, () -> {
-                    Object[] objs = referenceObjects.stream().map(ExportObject::get).toArray();
+                    Object[] objs = referenceObjects.stream()
+                            .map(ExportObject::get)
+                            .map(o -> {
+                                if (o instanceof PyObjectRefCountedNode) {
+                                    return ((PyObjectRefCountedNode) o).getPythonObject();
+                                }
+                                return o;
+                            })
+                            .toArray();
                     messageStream.onData(data.getPayload().asReadOnlyByteBuffer(), objs);
                 });
             }
