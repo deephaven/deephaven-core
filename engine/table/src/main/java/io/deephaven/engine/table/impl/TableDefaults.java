@@ -6,7 +6,6 @@ package io.deephaven.engine.table.impl;
 import io.deephaven.api.*;
 import io.deephaven.api.agg.Aggregation;
 import io.deephaven.api.Pair;
-import io.deephaven.api.agg.Aggregations;
 import io.deephaven.api.agg.spec.AggSpec;
 import io.deephaven.api.snapshot.SnapshotWhenOptions;
 import io.deephaven.api.snapshot.SnapshotWhenOptions.Flag;
@@ -239,11 +238,7 @@ public interface TableDefaults extends Table, TableOperationsDefaults<Table, Tab
         return updateView(selectColumns);
     }
 
-    default void validateColor(String color) throws IllegalArgumentException {
-        new Color(color); // Throws if it can't create it
-    }
-
-    default void validateDataBarOptions(String column, String valueColumn, DataBarAxisOptions axis, double min,
+    private void validateDataBarOptions(String column, String valueColumn, DataBarAxisOptions axis, double min,
             double max, String positiveColor, String negativeColor, DataBarValuePlacementOptions valuePlacement,
             DataBarDirectionOptions direction, double opacity, String markerColumn, String markerColor)
             throws IllegalArgumentException {
@@ -252,16 +247,16 @@ public interface TableDefaults extends Table, TableOperationsDefaults<Table, Tab
         }
         if (positiveColor != null) {
             for (String color : positiveColor.split(",")) {
-                validateColor(color);
+                new Color(color); // Throws if it can't create it
             }
         }
         if (negativeColor != null) {
             for (String color : negativeColor.split(",")) {
-                validateColor(color);
+                new Color(color); // Throws if it can't create it
             }
         }
         if (markerColor != null) {
-            validateColor(markerColor);
+            new Color(markerColor); // Throws if it can't create it
         }
         if (opacity != QueryConstants.NULL_DOUBLE && (opacity > 1 || opacity < 0)) {
             throw new IllegalArgumentException("Opacity: " + opacity + ", must be between 0 and 1.");
@@ -279,19 +274,65 @@ public interface TableDefaults extends Table, TableOperationsDefaults<Table, Tab
 
         String minColumn =
                 ColumnFormatting.getDataBarFormatColumnName(column, ColumnFormatting.DataBarFormatColumnType.MIN);
-        if (min == QueryConstants.NULL_DOUBLE) {
-            newTable = newTable.naturalJoin(this.aggBy(AggMin(minColumn + "=" + valueColumn)), "");
+        String maxColumn =
+                ColumnFormatting.getDataBarFormatColumnName(column, ColumnFormatting.DataBarFormatColumnType.MAX);
+
+        if (min == QueryConstants.NULL_DOUBLE && max == QueryConstants.NULL_DOUBLE) {
+            List<Aggregation> aggregations =
+                    Arrays.asList(AggMin(minColumn + "=" + valueColumn), AggMax(maxColumn + "=" + valueColumn));
+            newTable = newTable.naturalJoin(this.aggBy(aggregations), "");
+        } else if (min == QueryConstants.NULL_DOUBLE) {
+            Table range = this.aggBy(AggMin(minColumn + "=" + valueColumn)).update(maxColumn + "=" + max);
+            newTable = newTable.naturalJoin(range, "");
+        } else if (max == QueryConstants.NULL_DOUBLE) {
+            Table range = this.aggBy(AggMax(maxColumn + "=" + valueColumn)).update(minColumn + "=" + min);
+            newTable = newTable.naturalJoin(range, "");
         } else {
-            newTable = newTable.naturalJoin(TableTools.newTable(TableTools.col(minColumn, min)), "");
+            newTable = newTable.updateView(maxColumn + "=" + max, minColumn + "=" + min);
         }
+
+        String valueOutputColumn =
+                ColumnFormatting.getDataBarFormatColumnName(column, ColumnFormatting.DataBarFormatColumnType.VALUE);
+        newTable = newTable.updateView(valueOutputColumn + "=" + valueColumn);
+
+        String markerOutputColumn =
+                ColumnFormatting.getDataBarFormatColumnName(column, ColumnFormatting.DataBarFormatColumnType.MARKER);
+        newTable = newTable.updateView(markerOutputColumn + "=" + markerColumn);
+
+        return newTable.naturalJoin(
+                TableTools.newTable(
+                        TableTools.col(ColumnFormatting.getDataBarFormatColumnName(column,
+                                ColumnFormatting.DataBarFormatColumnType.AXIS), axis == null ? "proportional" : axis),
+                        TableTools.col(ColumnFormatting.getDataBarFormatColumnName(column,
+                                ColumnFormatting.DataBarFormatColumnType.POSITIVE_COLOR), positiveColor),
+                        TableTools.col(ColumnFormatting.getDataBarFormatColumnName(column,
+                                ColumnFormatting.DataBarFormatColumnType.NEGATIVE_COLOR), negativeColor),
+                        TableTools.col(ColumnFormatting.getDataBarFormatColumnName(column,
+                                ColumnFormatting.DataBarFormatColumnType.VALUE_PLACEMENT),
+                                valuePlacement == null ? "beside" : valuePlacement),
+                        TableTools.col(ColumnFormatting.getDataBarFormatColumnName(column,
+                                ColumnFormatting.DataBarFormatColumnType.DIRECTION),
+                                direction == null ? "LTR" : direction),
+                        TableTools.col(ColumnFormatting.getDataBarFormatColumnName(column,
+                                ColumnFormatting.DataBarFormatColumnType.OPACITY),
+                                opacity == QueryConstants.NULL_DOUBLE ? 1.0 : opacity),
+                        TableTools.col(ColumnFormatting.getDataBarFormatColumnName(column,
+                                ColumnFormatting.DataBarFormatColumnType.MARKER_COLOR), markerColor)),
+                "");
+    }
+
+    default Table formatDataBar(String column, String valueColumn, DataBarAxisOptions axis, String min, String max,
+            String positiveColor, String negativeColor, DataBarValuePlacementOptions valuePlacement,
+            DataBarDirectionOptions direction, double opacity, String markerColumn, String markerColor) {
+        Table newTable = this;
+
+        String minColumn =
+                ColumnFormatting.getDataBarFormatColumnName(column, ColumnFormatting.DataBarFormatColumnType.MIN);
+        newTable = newTable.updateView(minColumn + "=" + min);
 
         String maxColumn =
                 ColumnFormatting.getDataBarFormatColumnName(column, ColumnFormatting.DataBarFormatColumnType.MAX);
-        if (max == QueryConstants.NULL_DOUBLE) {
-            newTable = newTable.naturalJoin(this.aggBy(AggMax(maxColumn + "=" + valueColumn)), "");
-        } else {
-            newTable = newTable.naturalJoin(TableTools.newTable(TableTools.col(maxColumn, max)), "");
-        }
+        newTable = newTable.updateView(maxColumn + "=" + max);
 
         String valueOutputColumn =
                 ColumnFormatting.getDataBarFormatColumnName(column, ColumnFormatting.DataBarFormatColumnType.VALUE);

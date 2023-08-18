@@ -8,7 +8,6 @@ import com.vertispan.tsdefs.annotations.TsName;
 import elemental2.core.JsArray;
 import elemental2.dom.CustomEventInit;
 import io.deephaven.web.client.api.*;
-import io.deephaven.web.client.api.barrage.DatabarFormatColumnType;
 import io.deephaven.web.client.fu.JsSettings;
 import io.deephaven.web.shared.data.*;
 import io.deephaven.web.shared.data.columns.ColumnData;
@@ -503,90 +502,27 @@ public class SubscriptionTableData {
                 formatString = formatStrings.getAtAsAny(redirectedIndex).asString();
             }
             if (column.getFormatDataBarColumnIndices() != null) {
-                formatDataBar = getDataBarFormat(column);
+                Map<String, Integer> formatDatabarColumnIndices = column.getFormatDataBarColumnIndices();
+                formatDataBar = new DataBarFormat(formatDatabarColumnIndices, data, redirectedIndex);
             }
             return new Format(cellColors, rowColors, numberFormat, formatString, formatDataBar);
         }
-
-        @Override
-        public DataBarFormat getDataBarFormat(Column column) {
-            Map<String, Integer> formatDatabarColumnIndices = column.getFormatDataBarColumnIndices();
-            DatabarFormatBuilder formatBuilder = new DatabarFormatBuilder();
-            int redirectedIndex = (int) (long) redirectedIndexes.get(this.index);
-
-            if (!formatDatabarColumnIndices.isEmpty()) {
-                formatDatabarColumnIndices.entrySet().forEach(entry -> {
-                    String name = entry.getKey().split("__")[1];
-                    int index = entry.getValue().intValue();
-                    JsArray<Any> val = Js.uncheckedCast(data[index]);
-                    DatabarFormatColumnType type = DatabarFormatColumnType.valueOf(name);
-                    switch (type) {
-                        case MIN:
-                            formatBuilder.setMin(val.getAtAsAny(redirectedIndex).asDouble());
-                            break;
-                        case MAX:
-                            formatBuilder.setMax(val.getAtAsAny(redirectedIndex).asDouble());
-                            break;
-                        case VALUE:
-                            formatBuilder.setValue(val.getAtAsAny(redirectedIndex).asDouble());
-                            break;
-                        case AXIS:
-                            formatBuilder.setAxis(val.getAtAsAny(redirectedIndex).asString());
-                            break;
-                        case POSITIVE_COLOR:
-                            if (val.getAtAsAny(redirectedIndex) != null) {
-                                formatBuilder.setPositiveColor(val.getAtAsAny(redirectedIndex).asString());
-                            }
-                            break;
-                        case NEGATIVE_COLOR:
-                            if (val.getAtAsAny(redirectedIndex) != null) {
-                                formatBuilder.setNegativeColor(val.getAtAsAny(redirectedIndex).asString());
-                            }
-                            break;
-                        case VALUE_PLACEMENT:
-                            formatBuilder.setValuePlacement(val.getAtAsAny(redirectedIndex).asString());
-                            break;
-                        case DIRECTION:
-                            formatBuilder.setDirection(val.getAtAsAny(redirectedIndex).asString());
-                            break;
-                        case OPACITY:
-                            formatBuilder.setOpacity(val.getAtAsAny(redirectedIndex).asDouble());
-                            break;
-                        case MARKER:
-                            if (val.getAtAsAny(redirectedIndex) != null) {
-                                formatBuilder.setMarker(val.getAtAsAny(redirectedIndex).asDouble());
-                            }
-                            break;
-                        case MARKER_COLOR:
-                            if (val.getAtAsAny(redirectedIndex) != null) {
-                                formatBuilder.setMarkerColor(val.getAtAsAny(redirectedIndex).asString());
-                            }
-                            break;
-                        default:
-                            throw new RuntimeException("Invalid data bar format column type: " + type);
-                    }
-                });
-            }
-
-            return new DatabarFormatBuilder().build();
-        }
     }
 
-
-    /**
-     * Event data, describing the indexes that were added/removed/updated, and providing access to Rows (and thus data
-     * in columns) either by index, or scanning the complete present index.
-     *
-     * This class supports two ways of reading the table - checking the changes made since the last update, and reading
-     * all data currently in the table. While it is more expensive to always iterate over every single row in the table,
-     * it may in some cases actually be cheaper than maintaining state separately and updating only the changes, though
-     * both options should be considered.
-     *
-     * The RangeSet objects allow iterating over the LongWrapper indexes in the table. Note that these "indexes" are not
-     * necessarily contiguous and may be negative, and represent some internal state on the server, allowing it to keep
-     * track of data efficiently. Those LongWrapper objects can be passed to the various methods on this instance to
-     * read specific rows or cells out of the table.
-     */
+        /**
+         * Event data, describing the indexes that were added/removed/updated, and providing access to Rows (and thus data
+         * in columns) either by index, or scanning the complete present index.
+         * <p>
+         * This class supports two ways of reading the table - checking the changes made since the last update, and reading
+         * all data currently in the table. While it is more expensive to always iterate over every single row in the table,
+         * it may in some cases actually be cheaper than maintaining state separately and updating only the changes, though
+         * both options should be considered.
+         * <p>
+         * The RangeSet objects allow iterating over the LongWrapper indexes in the table. Note that these "indexes" are not
+         * necessarily contiguous and may be negative, and represent some internal state on the server, allowing it to keep
+         * track of data efficiently. Those LongWrapper objects can be passed to the various methods on this instance to
+         * read specific rows or cells out of the table.
+         */
     @TsInterface
     @TsName(name = "SubscriptionTableData", namespace = "dh")
     public class UpdateEventData implements TableData {
@@ -605,7 +541,7 @@ public class SubscriptionTableData {
 
         /**
          * A lazily computed array of all rows in the entire table
-         * 
+         *
          * @return {@link SubscriptionRow} array.
          */
         @Override
@@ -629,7 +565,7 @@ public class SubscriptionTableData {
 
         /**
          * Reads a row object from the table, from which any subscribed column can be read
-         * 
+         *
          * @param index
          * @return {@link SubscriptionRow}
          */
@@ -645,7 +581,7 @@ public class SubscriptionTableData {
 
         /**
          * a specific cell from the table, from the specified row and column
-         * 
+         *
          * @param index
          * @param column
          * @return Any
@@ -659,7 +595,7 @@ public class SubscriptionTableData {
 
         /**
          * the Format to use for a cell from the specified row and column
-         * 
+         *
          * @param index
          * @param column
          * @return {@link Format}
@@ -667,73 +603,6 @@ public class SubscriptionTableData {
         @Override
         public Format getFormat(int index, Column column) {
             return getFormat((long) index, column);
-        }
-
-        @Override
-        public DataBarFormat getDataBarFormat(int index, Column column) {
-            return getDataBarFormat((long) index, column);
-        }
-
-        public DataBarFormat getDataBarFormat(long index, Column column) {
-            Map<String, Integer> formatDatabarColumnIndices = column.getFormatDataBarColumnIndices();
-            DatabarFormatBuilder formatBuilder = new DatabarFormatBuilder();
-            int redirectedIndex = (int) (long) redirectedIndexes.get(index);
-
-            if (!formatDatabarColumnIndices.isEmpty()) {
-                formatDatabarColumnIndices.entrySet().forEach(entry -> {
-                    String name = entry.getKey().split("__")[1];
-                    int idx = entry.getValue().intValue();
-                    JsArray<Any> val = Js.uncheckedCast(data[idx]);
-                    DatabarFormatColumnType type = DatabarFormatColumnType.valueOf(name);
-                    switch (type) {
-                        case MIN:
-                            formatBuilder.setMin(val.getAtAsAny(redirectedIndex).asDouble());
-                            break;
-                        case MAX:
-                            formatBuilder.setMax(val.getAtAsAny(redirectedIndex).asDouble());
-                            break;
-                        case VALUE:
-                            formatBuilder.setValue(val.getAtAsAny(redirectedIndex).asDouble());
-                            break;
-                        case AXIS:
-                            formatBuilder.setAxis(val.getAtAsAny(redirectedIndex).asString());
-                            break;
-                        case POSITIVE_COLOR:
-                            if (val.getAtAsAny(redirectedIndex) != null) {
-                                formatBuilder.setPositiveColor(val.getAtAsAny(redirectedIndex).asString());
-                            }
-                            break;
-                        case NEGATIVE_COLOR:
-                            if (val.getAtAsAny(redirectedIndex) != null) {
-                                formatBuilder.setNegativeColor(val.getAtAsAny(redirectedIndex).asString());
-                            }
-                            break;
-                        case VALUE_PLACEMENT:
-                            formatBuilder.setValuePlacement(val.getAtAsAny(redirectedIndex).asString());
-                            break;
-                        case DIRECTION:
-                            formatBuilder.setDirection(val.getAtAsAny(redirectedIndex).asString());
-                            break;
-                        case OPACITY:
-                            formatBuilder.setOpacity(val.getAtAsAny(redirectedIndex).asDouble());
-                            break;
-                        case MARKER:
-                            if (val.getAtAsAny(redirectedIndex) != null) {
-                                formatBuilder.setMarker(val.getAtAsAny(redirectedIndex).asDouble());
-                            }
-                            break;
-                        case MARKER_COLOR:
-                            if (val.getAtAsAny(redirectedIndex) != null) {
-                                formatBuilder.setMarkerColor(val.getAtAsAny(redirectedIndex).asString());
-                            }
-                            break;
-                        default:
-                            throw new RuntimeException("Invalid data bar format column type: " + type);
-                    }
-                });
-            }
-
-            return new DatabarFormatBuilder().build();
         }
 
         @Override
@@ -761,7 +630,8 @@ public class SubscriptionTableData {
                 formatString = formatStrings.getAtAsAny(redirectedIndex).asString();
             }
             if (column.getFormatDataBarColumnIndices() != null) {
-                formatDataBar = getDataBarFormat(index, column);
+                Map<String, Integer> formatDatabarColumnIndices = column.getFormatDataBarColumnIndices();
+                formatDataBar = new DataBarFormat(formatDatabarColumnIndices, data, redirectedIndex);
             }
             return new Format(cellColors, rowColors, numberFormat, formatString, formatDataBar);
         }
@@ -773,7 +643,7 @@ public class SubscriptionTableData {
 
         /**
          * The ordered set of row indexes added since the last update
-         * 
+         *
          * @return dh.RangeSet
          */
         @JsProperty
@@ -783,7 +653,7 @@ public class SubscriptionTableData {
 
         /**
          * The ordered set of row indexes removed since the last update
-         * 
+         *
          * @return dh.RangeSet
          */
         @JsProperty
@@ -793,7 +663,7 @@ public class SubscriptionTableData {
 
         /**
          * The ordered set of row indexes updated since the last update
-         * 
+         *
          * @return dh.RangeSet
          */
         @JsProperty

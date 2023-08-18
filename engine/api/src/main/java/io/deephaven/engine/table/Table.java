@@ -396,6 +396,12 @@ public interface Table extends
             DataBarDirectionOptions direction, double opacity,
             String markerColumn, String markerColor);
 
+    @ConcurrentMethod
+    Table formatDataBar(String column, String valueColumn, DataBarAxisOptions axis, String min, String max,
+            String positiveColor, String negativeColor, DataBarValuePlacementOptions valuePlacement,
+            DataBarDirectionOptions direction, double opacity,
+            String markerColumn, String markerColor);
+
     /**
      * Produce a new table with the specified columns moved to the leftmost position. Columns can be renamed with the
      * usual syntax, i.e. {@code "NewColumnName=OldColumnName")}.

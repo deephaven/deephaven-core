@@ -106,6 +106,11 @@ public class Format {
         return formatString;
     }
 
+    /**
+     * The data bar format object to apply to the cell
+     *
+     * @return DataBarFormat
+     */
     @JsNullable
     @JsProperty
     public DataBarFormat getFormatDataBar() {

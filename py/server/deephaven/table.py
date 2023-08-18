@@ -2013,7 +2013,7 @@ class Table(JObjectWrapper):
         except Exception as e:
             raise DHError(e, "failed to color format rows conditionally.") from e
 
-    def format_data_bar(self, column: str, value_column: str = None, min: float = NULL_DOUBLE, max: float = NULL_DOUBLE,
+    def format_data_bar(self, column: str, value_column: str = None, min: Union[float, str] = NULL_DOUBLE, max: Union[float, str] = NULL_DOUBLE,
                         axis: Union[DataBarAxisOption, str] = None, positive_color: Union[str, List[str]] = None,
                         negative_color: Union[str, List[str]] = None, value_placement: Union[DataBarValuePlacementOption, str] = None,
                         direction: Union[DataBarDirectionOption, str] = None, opacity: float = NULL_DOUBLE, marker_column: str = None,
@@ -2023,8 +2023,8 @@ class Table(JObjectWrapper):
         Args:
             column (str): where to place the data bars
             value_column (str): where to get the values to form the data bars from
-            min (float): minimum value for data bar scaling
-            max (float): maximum value for data bar scaling
+            min (Union[float, str]): minimum value or column to get value from
+            max (Union[float, str]): maximum value or column to get value from
             axis (DataBarAxisOption): orientation of data bar relative to cell
             positive_color (Union[str, List[str]]): color or list of colors for positive bar
             negative_color (Union[str, List[str]]): color or list of colors for negative bar
@@ -2049,6 +2049,12 @@ class Table(JObjectWrapper):
 
             if value_column is None:
                 value_column = column
+
+            if isinstance(min, str) and isinstance(max, float):
+                max = value_column
+
+            if isinstance(max, str) and isinstance(min, float):
+                min = value_column
 
             axis_value = None
             if axis is not None:

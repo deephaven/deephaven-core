@@ -91,18 +91,6 @@ public interface TableData {
 
     Format getFormat(long index, Column column);
 
-    @JsMethod
-    default DataBarFormat getDataBarFormat(RowPositionUnion index, Column column) {
-        if (index.isLongWrapper()) {
-            return getDataBarFormat(index.asLongWrapper().getWrapped(), column);
-        }
-        return getDataBarFormat(index.asInt(), column);
-    }
-
-    DataBarFormat getDataBarFormat(int index, Column column);
-
-    DataBarFormat getDataBarFormat(long index, Column column);
-
     @TsName(namespace = "dh")
     public interface Row {
         @JsProperty
@@ -113,8 +101,5 @@ public interface TableData {
 
         @JsMethod
         Format getFormat(Column column);
-
-        @JsMethod
-        DataBarFormat getDataBarFormat(Column column);
     }
 }

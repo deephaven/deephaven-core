@@ -7,7 +7,6 @@ import com.vertispan.tsdefs.annotations.TsInterface;
 import com.vertispan.tsdefs.annotations.TsName;
 import elemental2.core.JsArray;
 import io.deephaven.web.client.api.*;
-import io.deephaven.web.client.api.barrage.DatabarFormatColumnType;
 import jsinterop.annotations.JsMethod;
 import jsinterop.base.Any;
 import jsinterop.base.Js;
@@ -82,70 +81,9 @@ public class ViewportRow implements TableData.Row {
             formatString = formatStrings.getAtAsAny(offsetInSnapshot).asString();
         }
         if (column.getFormatDataBarColumnIndices() != null) {
-            formatDataBar = getDataBarFormat(column);
+            Map<String, Integer> formatDatabarColumnIndices = column.getFormatDataBarColumnIndices();
+            formatDataBar = new DataBarFormat(formatDatabarColumnIndices, dataColumns, offsetInSnapshot);;
         }
         return new Format(cellColors, rowColors, numberFormat, formatString, formatDataBar);
-    }
-
-    @Override
-    @JsMethod
-    public DataBarFormat getDataBarFormat(Column column) {
-        Map<String, Integer> formatDatabarColumnIndices = column.getFormatDataBarColumnIndices();
-        DatabarFormatBuilder formatBuilder = new DatabarFormatBuilder();
-
-        if (!formatDatabarColumnIndices.isEmpty()) {
-            formatDatabarColumnIndices.entrySet().forEach(entry -> {
-                String name = entry.getKey().split("__")[1];
-                int index = entry.getValue().intValue();
-                JsArray<Any> val = Js.uncheckedCast(dataColumns[index]);
-                DatabarFormatColumnType type = DatabarFormatColumnType.valueOf(name);
-                switch (type) {
-                    case MIN:
-                        formatBuilder.setMin(val.getAtAsAny(offsetInSnapshot).asDouble());
-                        break;
-                    case MAX:
-                        formatBuilder.setMax(val.getAtAsAny(offsetInSnapshot).asDouble());
-                        break;
-                    case VALUE:
-                        formatBuilder.setValue(val.getAtAsAny(offsetInSnapshot).asDouble());
-                        break;
-                    case AXIS:
-                        formatBuilder.setAxis(val.getAtAsAny(offsetInSnapshot).asString());
-                        break;
-                    case POSITIVE_COLOR:
-                        if (val.getAtAsAny(offsetInSnapshot) != null) {
-                            formatBuilder.setPositiveColor(val.getAtAsAny(offsetInSnapshot).asString());
-                        }
-                        break;
-                    case NEGATIVE_COLOR:
-                        if (val.getAtAsAny(offsetInSnapshot) != null) {
-                            formatBuilder.setNegativeColor(val.getAtAsAny(offsetInSnapshot).asString());
-                        }
-                        break;
-                    case VALUE_PLACEMENT:
-                        formatBuilder.setValuePlacement(val.getAtAsAny(offsetInSnapshot).asString());
-                        break;
-                    case DIRECTION:
-                        formatBuilder.setDirection(val.getAtAsAny(offsetInSnapshot).asString());
-                        break;
-                    case OPACITY:
-                        formatBuilder.setOpacity(val.getAtAsAny(offsetInSnapshot).asDouble());
-                        break;
-                    case MARKER:
-                        if (val.getAtAsAny(offsetInSnapshot) != null) {
-                            formatBuilder.setMarker(val.getAtAsAny(offsetInSnapshot).asDouble());
-                        }
-                        break;
-                    case MARKER_COLOR:
-                        if (val.getAtAsAny(offsetInSnapshot) != null) {
-                            formatBuilder.setMarkerColor(val.getAtAsAny(offsetInSnapshot).asString());
-                        }
-                        break;
-                    default:
-                        throw new RuntimeException("Invalid data bar format column type: " + type);
-                }
-            });
-        }
-        return formatBuilder.build();
     }
 }

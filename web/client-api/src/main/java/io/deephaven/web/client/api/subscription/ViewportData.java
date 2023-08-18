@@ -320,15 +320,6 @@ public class ViewportData implements TableData {
      * 
      * @return {@link ViewportRow} array.
      */
-    @Override
-    public DataBarFormat getDataBarFormat(int index, Column column) {
-        return getRows().getAt(index).getDataBarFormat(column);
-    }
-
-    @Override
-    public DataBarFormat getDataBarFormat(long index, Column column) {
-        return getRows().getAt((int) index).getDataBarFormat(column);
-    }
 
     @Override
     @JsProperty
