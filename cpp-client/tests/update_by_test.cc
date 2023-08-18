@@ -157,7 +157,7 @@ std::vector<TableHandle> MakeTables(const Client &client) {
   std::vector<TableHandle> result;
   auto tm = client.GetManager();
   auto static_table = MakeRandomTable(client).Update("Timestamp=now()");
-  auto ticking_table = tm.TimeTable(std::chrono::system_clock::now(), std::chrono::seconds(1))
+  auto ticking_table = tm.TimeTable(std::chrono::seconds(1))
       .Update("a = i", "b = i*i % 13", "c = i * 13 % 23", "d = a + b", "e = a - b");
   return {static_table, ticking_table};
 }

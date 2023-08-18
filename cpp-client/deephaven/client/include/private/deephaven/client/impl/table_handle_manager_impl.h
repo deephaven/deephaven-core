@@ -23,6 +23,8 @@ class TableHandleManagerImpl final : public std::enable_shared_from_this<TableHa
   using SortDescriptor = io::deephaven::proto::backplane::grpc::SortDescriptor;
   using Ticket = io::deephaven::proto::backplane::grpc::Ticket;
   using BindTableToVariableResponse = io::deephaven::proto::backplane::script::grpc::BindTableToVariableResponse;
+  using DurationSpecifier = deephaven::client::utility::DurationSpecifier;
+  using TimePointSpecifier = deephaven::client::utility::TimePointSpecifier;
 
   template<typename ...Args>
   using SFCallback = deephaven::dhcore::utility::SFCallback<Args...>;
@@ -47,7 +49,8 @@ public:
   [[nodiscard]]
   std::shared_ptr<TableHandleImpl> FetchTable(std::string table_name);
   [[nodiscard]]
-  std::shared_ptr<TableHandleImpl> TimeTable(int64_t start_time_nanos, int64_t period_nanos);
+  std::shared_ptr<TableHandleImpl> TimeTable(DurationSpecifier period, TimePointSpecifier start_time,
+      bool blink_table);
   void RunScriptAsync(std::string code, std::shared_ptr<SFCallback<>> callback);
 
   /**

@@ -18,7 +18,7 @@ TEST_CASE("TableHandle Attributes", "[attributes]") {
 TEST_CASE("TableHandle Dynamic Attributes", "[attributes]") {
   auto client = TableMakerForTests::CreateClient();
   auto thm = client.GetManager();
-  auto t = thm.TimeTable(0, 1'000'000'000).Update("II = ii");
+  auto t = thm.TimeTable(1'000'000'000).Update("II = ii");
   CHECK(!t.IsStatic());
 }
 
