@@ -122,6 +122,8 @@ def wrap_j_object(j_obj: jpy.JType) -> Union[JObjectWrapper, jpy.JType]:
     the raw Java object. """
     if j_obj is None:
         return None
+    if 'getPythonObject' in j_obj:
+        return j_obj.getPythonObject()
 
     wc = _lookup_wrapped_class(j_obj)
 

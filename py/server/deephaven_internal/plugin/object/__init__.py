@@ -11,17 +11,22 @@ from deephaven._wrapper import JObjectWrapper, wrap_j_object
 JReference = jpy.get_type('io.deephaven.plugin.type.Exporter$Reference')
 JExporterAdapter = jpy.get_type('io.deephaven.server.plugin.python.ExporterAdapter')
 JMessageStream = jpy.get_type('io.deephaven.plugin.type.ObjectType$MessageStream')
+JPyObjectRefCountedNode = jpy.get_type('io.deephaven.server.plugin.python.PyObjectRefCountedNode')
 
 
 def _adapt_reference(ref: JReference) -> Reference:
     return Reference(ref.index(), ref.type().orElse(None))
 
 
-def _unwrap(object):
+def _unwrap(obj):
     # todo: we should have generic unwrapping code ABC
-    if isinstance(object, JObjectWrapper):
-        return object.j_object
-    return object
+    if isinstance(obj, JObjectWrapper):
+        return obj.j_object
+    if isinstance(obj, jpy.JType):
+        return obj
+    # we must return a java object, so wrap in a PyObjectLivenessNode so that the server's liveness tracking
+    # will correctly notify python that the object was released
+    return JPyObjectRefCountedNode(obj)
 
 
 class ExporterAdapter(Exporter):
