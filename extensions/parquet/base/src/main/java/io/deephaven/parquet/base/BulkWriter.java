@@ -47,6 +47,7 @@ public interface BulkWriter<BUFFER_TYPE> {
      * @param bulkValues the values to write
      * @param dlEncoder the encoder for definition levels
      * @param rowCount the number of rows being written
+     * @param statistics the {@link Statistics} object to modify.
      * @return a {@link WriteResult} containing the statistics of the result.
      * @throws IOException if there was an error during write.
      */

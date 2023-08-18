@@ -3,6 +3,10 @@ package io.deephaven.parquet.base;
 import org.apache.parquet.column.statistics.IntStatistics;
 import org.apache.parquet.io.api.Binary;
 
+/**
+ * A lightweight statistics object that does nothing. This should be passed to BulkWriters when we don't want to track
+ * statistics.
+ */
 public class NullStatistics extends IntStatistics {
     public static final NullStatistics INSTANCE = new NullStatistics();
 

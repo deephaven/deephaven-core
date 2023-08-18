@@ -50,12 +50,12 @@ public interface ColumnWriter extends SafeCloseable {
     void addVectorPage(Object pageData, IntBuffer repeatCount, int valuesCount) throws IOException;
 
     /**
-     * Reset statistics min and max
+     * Reset the statistics for this column. This needs to be done between row groups
      */
     void resetStats();
 
     /**
-     * Return the current statistics object
+     * Return the current statistics.
      */
     Statistics<?> getStats();
 }

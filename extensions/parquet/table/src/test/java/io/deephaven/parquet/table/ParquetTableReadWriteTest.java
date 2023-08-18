@@ -231,8 +231,8 @@ public class ParquetTableReadWriteTest {
 
     @Test
     public void flatParquetFormat() {
-        // flatTable("emptyFlatParquet", 0, true);
-        // flatTable("smallFlatParquet", 20, true);
+        flatTable("emptyFlatParquet", 0, true);
+        flatTable("smallFlatParquet", 20, true);
         flatTable("largeFlatParquet", LARGE_TABLE_SIZE, false);
     }
 
