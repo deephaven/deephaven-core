@@ -613,6 +613,12 @@ public abstract class ParquetInstructions implements ColumnToCodecMappings {
             return this;
         }
 
+        @VisibleForTesting
+        public Builder forceSetDefaultTargetPageSizeForTesting(final int targetPageSize) {
+            this.targetPageSize = targetPageSize;
+            return this;
+        }
+
         public Builder setIsRefreshing(final boolean isRefreshing) {
             this.isRefreshing = isRefreshing;
             return this;

@@ -6,6 +6,8 @@ package io.deephaven.parquet.table;
 import io.deephaven.UncheckedDeephavenException;
 import io.deephaven.api.Selectable;
 import io.deephaven.base.FileUtils;
+import io.deephaven.csv.CsvTools;
+import io.deephaven.csv.util.CsvReaderException;
 import io.deephaven.engine.context.ExecutionContext;
 import io.deephaven.engine.primitive.iterator.CloseableIterator;
 import io.deephaven.engine.table.ColumnDefinition;
@@ -805,9 +807,10 @@ public class ParquetTableReadWriteTest {
                 "shortStringColumn = `Row ` + i",
                 "longStringColumn = `This is row ` + i",
                 "someIntColumn = i"));
-        final int numRows = 10;
+        final int numRows = 21;
         final ParquetInstructions writeInstructions = new ParquetInstructions.Builder()
-                .setMaximumDictionarySize(100) // Force "longStringColumn" to use non-dictionary encoding
+                .setMaximumDictionarySize(120) // Force "longStringColumn" to use non-dictionary encoding
+                .forceSetDefaultTargetPageSizeForTesting(64)
                 .build();
         final Table stringTable = TableTools.emptyTable(numRows).select(Selectable.from(columns));
         final File dest = new File(rootFile + File.separator + "dictEncoding.parquet");
@@ -825,4 +828,15 @@ public class ParquetTableReadWriteTest {
         final String thirdColumnMetadata = metadata.getBlocks().get(0).getColumns().get(2).toString();
         assertTrue(thirdColumnMetadata.contains("someIntColumn") && !thirdColumnMetadata.contains("RLE_DICTIONARY"));
     }
+
+    // TODO Add some proper tests for overflowing strings
+    // @Test
+    // public void issue_3328() throws CsvReaderException {
+    // Table csvTable = CsvTools.readCsv("/Users/shivammalhotra/Documents/data.csv");
+    // csvTable = csvTable.select(); // 519120 rows
+    // final File dest = new File(rootFile, "issue_3328.parquet");
+    // ParquetTools.writeTable(csvTable, dest);
+    // Table fromDisk = ParquetTools.readTable(dest);
+    // TstUtils.assertTableEquals(fromDisk, csvTable);
+    // }
 }

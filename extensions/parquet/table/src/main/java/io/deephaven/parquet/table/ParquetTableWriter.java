@@ -89,13 +89,33 @@ public class ParquetTableWriter {
      * @param <B>
      */
     interface TransferObject<B> extends SafeCloseable {
-        void propagateChunkData();
+        /**
+         * Fetch all data corresponding to the provided row sequence.
+         */
+        void fetchData(RowSequence rs);
 
-        B getBuffer();
-
+        /**
+         * Total number of rows fetched
+         */
         int rowCount();
 
-        void fetchData(RowSequence rs);
+        /**
+         * Check if there is any fetched data which can be copied into buffer
+         */
+        boolean hasDataToCopy();
+
+        /**
+         * Copy the fetched data in an internal buffer. This data can then be accessed using
+         * {@link TransferObject#getBuffer()}. The method should only be called after
+         * {@link TransferObject#fetchData(RowSequence)}}
+         *
+         * @return The number of fetched data entries copied into the buffer. This can be different from the
+         *         {@link TransferObject#rowCount()}, particularly for strings, if we cannot fit all the fetched data
+         *         into the buffer.
+         */
+        int copyFetchedData();
+
+        B getBuffer();
     }
 
     /**
@@ -616,8 +636,6 @@ public class ParquetTableWriter {
                     final RowSequence rs =
                             valueRowSetIterator.getNextRowSequenceWithLength(valuePageSizeGetter.getAsInt());
                     transferObject.fetchData(rs);
-                    transferObject.propagateChunkData();
-                    final Object bufferToWrite = transferObject.getBuffer();
                     if (vectorHelper != null) {
                         final IntChunk<? extends Values> lenChunk = vectorHelper.lengthSource.getChunk(
                                 lengthSourceContext,
@@ -625,10 +643,17 @@ public class ParquetTableWriter {
                                 .asIntChunk();
                         lenChunk.copyToTypedBuffer(0, repeatCount, 0, lenChunk.size());
                         repeatCount.limit(lenChunk.size());
-                        columnWriter.addVectorPage(bufferToWrite, repeatCount, transferObject.rowCount());
+                        transferObject.copyFetchedData();
+                        // Return value ignored, this can lead to errors in case we are not able to fit all the data in
+                        // a single page, which is possible for string columns.
+                        columnWriter.addVectorPage(transferObject.getBuffer(), repeatCount, transferObject.rowCount());
                         repeatCount.clear();
                     } else {
-                        columnWriter.addPage(bufferToWrite, transferObject.rowCount());
+                        // We might need to split a single page into multiple if we are not able to fit all the entries
+                        do {
+                            int numValuesCopied = transferObject.copyFetchedData();
+                            columnWriter.addPage(transferObject.getBuffer(), numValuesCopied);
+                        } while (transferObject.hasDataToCopy());
                     }
                 }
             }
@@ -812,7 +837,7 @@ public class ParquetTableWriter {
         } else if (byte.class.equals(columnType)) {
             return new ByteTransfer(columnSource, maxValuesPerPage);
         } else if (String.class.equals(columnType)) {
-            return new StringTransfer(columnSource, maxValuesPerPage);
+            return new StringTransfer(columnSource, maxValuesPerPage, instructions.getTargetPageSize());
         }
 
         // If there's an explicit codec, we should disregard the defaults for these CodecLookup#lookup() will properly
@@ -842,18 +867,30 @@ public class ParquetTableWriter {
         private final B buffer;
         private final ColumnSource<?> columnSource;
         private final ChunkSource.FillContext context;
+        private boolean hasDataToCopy;
 
         PrimitiveTransfer(ColumnSource<?> columnSource, C chunk, B buffer, int targetSize) {
             this.columnSource = columnSource;
             this.chunk = chunk;
             this.buffer = buffer;
             context = columnSource.makeFillContext(targetSize);
+            hasDataToCopy = false;
         }
 
         @Override
-        public void propagateChunkData() {
+        public boolean hasDataToCopy() {
+            return hasDataToCopy;
+        }
+
+        @Override
+        public int copyFetchedData() {
+            if (!hasDataToCopy) {
+                return 0;
+            }
             buffer.position(0);
             buffer.limit(chunk.size());
+            hasDataToCopy = false;
+            return chunk.size();
         }
 
         @Override
@@ -866,10 +903,10 @@ public class ParquetTableWriter {
             return chunk.size();
         }
 
-
         @Override
         public void fetchData(RowSequence rs) {
             columnSource.fillChunk(context, chunk, rs);
+            hasDataToCopy = true;
         }
 
         @Override
@@ -884,22 +921,33 @@ public class ParquetTableWriter {
         private final IntBuffer buffer;
         private final ColumnSource<?> columnSource;
         private final ChunkSource.GetContext context;
+        private boolean hasDataToCopy;
 
         ShortTransfer(ColumnSource<?> columnSource, int targetSize) {
 
             this.columnSource = columnSource;
             this.buffer = IntBuffer.allocate(targetSize);
             context = columnSource.makeGetContext(targetSize);
+            hasDataToCopy = false;
         }
 
+        @Override
+        public boolean hasDataToCopy() {
+            return hasDataToCopy;
+        }
 
         @Override
-        public void propagateChunkData() {
+        public int copyFetchedData() {
+            if (!hasDataToCopy) {
+                return 0;
+            }
             buffer.clear();
             for (int i = 0; i < chunk.size(); i++) {
                 buffer.put(chunk.get(i));
             }
             buffer.flip();
+            hasDataToCopy = false;
+            return chunk.size();
         }
 
         @Override
@@ -916,6 +964,7 @@ public class ParquetTableWriter {
         public void fetchData(RowSequence rs) {
             // noinspection unchecked
             chunk = (ShortChunk<Values>) columnSource.getChunk(context, rs);
+            hasDataToCopy = true;
         }
 
         @Override
@@ -925,25 +974,36 @@ public class ParquetTableWriter {
     }
 
     static class CharTransfer implements TransferObject<IntBuffer> {
-
         private final ColumnSource<?> columnSource;
         private final ChunkSource.GetContext context;
         private CharChunk<Values> chunk;
         private final IntBuffer buffer;
+        private boolean hasDataToCopy;
 
         CharTransfer(ColumnSource<?> columnSource, int targetSize) {
             this.columnSource = columnSource;
             this.buffer = IntBuffer.allocate(targetSize);
             context = this.columnSource.makeGetContext(targetSize);
+            hasDataToCopy = false;
         }
 
         @Override
-        public void propagateChunkData() {
+        public boolean hasDataToCopy() {
+            return hasDataToCopy;
+        }
+
+        @Override
+        public int copyFetchedData() {
+            if (!hasDataToCopy) {
+                return 0;
+            }
             buffer.clear();
             for (int i = 0; i < chunk.size(); i++) {
                 buffer.put(chunk.get(i));
             }
             buffer.flip();
+            hasDataToCopy = false;
+            return chunk.size();
         }
 
         @Override
@@ -960,6 +1020,7 @@ public class ParquetTableWriter {
         public void fetchData(RowSequence rs) {
             // noinspection unchecked
             chunk = (CharChunk<Values>) columnSource.getChunk(context, rs);
+            hasDataToCopy = true;
         }
 
         @Override
@@ -974,20 +1035,32 @@ public class ParquetTableWriter {
         private final IntBuffer buffer;
         private final ColumnSource<?> columnSource;
         private final ChunkSource.GetContext context;
+        private boolean hasDataToCopy;
 
         ByteTransfer(ColumnSource<?> columnSource, int targetSize) {
             this.columnSource = columnSource;
             this.buffer = IntBuffer.allocate(targetSize);
             context = this.columnSource.makeGetContext(targetSize);
+            hasDataToCopy = false;
         }
 
         @Override
-        public void propagateChunkData() {
+        public boolean hasDataToCopy() {
+            return hasDataToCopy;
+        }
+
+        @Override
+        public int copyFetchedData() {
+            if (!hasDataToCopy) {
+                return 0;
+            }
             buffer.clear();
             for (int i = 0; i < chunk.size(); i++) {
                 buffer.put(chunk.get(i));
             }
             buffer.flip();
+            hasDataToCopy = false;
+            return chunk.size();
         }
 
         @Override
@@ -1004,6 +1077,7 @@ public class ParquetTableWriter {
         public void fetchData(RowSequence rs) {
             // noinspection unchecked
             chunk = (ByteChunk<Values>) columnSource.getChunk(context, rs);
+            hasDataToCopy = true;
         }
 
         @Override
@@ -1016,22 +1090,55 @@ public class ParquetTableWriter {
 
         private final ChunkSource.GetContext context;
         private ObjectChunk<String, Values> chunk;
-        private final Binary[] buffer;
+        private Binary[] buffer;
         private final ColumnSource<?> columnSource;
+        private final int maxValuesPerPage; // Stores the maximum number of values in a single page
+        private final int targetPageSize;
+        // ^Stores the maximum size of data in a single page. For strings, we don't know in advance what the length of
+        // each entry would be, therefore we need to keep track of both maximum size and number of values.
+        private int totalChunksCopied;
 
-
-        StringTransfer(ColumnSource<?> columnSource, int targetSize) {
+        StringTransfer(ColumnSource<?> columnSource, int maxValuesPerPage, int targetPageSize) {
             this.columnSource = columnSource;
-            this.buffer = new Binary[targetSize];
-            context = this.columnSource.makeGetContext(targetSize);
+            this.buffer = new Binary[maxValuesPerPage];
+            context = this.columnSource.makeGetContext(maxValuesPerPage);
+            totalChunksCopied = 0;
+            this.maxValuesPerPage = maxValuesPerPage;
+            this.targetPageSize = targetPageSize;
         }
 
         @Override
-        public void propagateChunkData() {
-            for (int i = 0; i < chunk.size(); i++) {
-                String value = chunk.get(i);
-                buffer[i] = value == null ? null : Binary.fromString(value);
+        public boolean hasDataToCopy() {
+            return ((chunk != null) && (totalChunksCopied < chunk.size()));
+        }
+
+        public int copyFetchedData() {
+            if (totalChunksCopied != 0) {
+                // Clear any old data in the buffer
+                buffer = new Binary[maxValuesPerPage];
             }
+            int bufferedDataSize = 0;
+            int numChunksCopied = 0; // Stores the number of chunks copied in this iteration
+            while (totalChunksCopied < chunk.size()) {
+                final String value = chunk.get(totalChunksCopied);
+                if (value == null) {
+                    buffer[numChunksCopied] = null;
+                } else {
+                    Binary binaryVal = Binary.fromString(value);
+                    if (binaryVal.length() > targetPageSize) {
+                        throw new UncheckedDeephavenException(String.format("Cannot fit string data of size %d in a " +
+                                "single page of maximum size %d", value.length(), targetPageSize));
+                    }
+                    if (bufferedDataSize + binaryVal.length() > targetPageSize) {
+                        break;
+                    }
+                    buffer[numChunksCopied] = binaryVal;
+                    bufferedDataSize += binaryVal.length();
+                }
+                numChunksCopied++;
+                totalChunksCopied++;
+            }
+            return numChunksCopied;
         }
 
         @Override
@@ -1048,6 +1155,7 @@ public class ParquetTableWriter {
         public void fetchData(RowSequence rs) {
             // noinspection unchecked
             chunk = (ObjectChunk<String, Values>) columnSource.getChunk(context, rs);
+            totalChunksCopied = 0;
         }
 
         @Override
@@ -1063,21 +1171,32 @@ public class ParquetTableWriter {
         private ObjectChunk<T, Values> chunk;
         private final Binary[] buffer;
         private final ColumnSource<T> columnSource;
-
+        private boolean hasDataToCopy;
 
         CodecTransfer(ColumnSource<T> columnSource, ObjectCodec<? super T> codec, int targetSize) {
             this.columnSource = columnSource;
             this.buffer = new Binary[targetSize];
             context = this.columnSource.makeGetContext(targetSize);
             this.codec = codec;
+            hasDataToCopy = false;
         }
 
         @Override
-        public void propagateChunkData() {
+        public boolean hasDataToCopy() {
+            return hasDataToCopy;
+        }
+
+        @Override
+        public int copyFetchedData() {
+            if (!hasDataToCopy) {
+                return 0;
+            }
             for (int i = 0; i < chunk.size(); i++) {
                 T value = chunk.get(i);
                 buffer[i] = value == null ? null : Binary.fromConstantByteArray(codec.encode(value));
             }
+            hasDataToCopy = false;
+            return chunk.size();
         }
 
         @Override
@@ -1094,6 +1213,7 @@ public class ParquetTableWriter {
         public void fetchData(RowSequence rs) {
             // noinspection unchecked
             chunk = (ObjectChunk<T, Values>) columnSource.getChunk(context, rs);
+            hasDataToCopy = true;
         }
 
         @Override
