@@ -1571,15 +1571,30 @@ public class Numeric {
             return null;
         }
 
-        if (values.length == 0) {
+        if (values.isEmpty()) {
             return new ${pt.primitive}[0];
         }
 
-        ${pt.primitive}[] result = new ${pt.primitive}[values.length];
-        result[0] = values[0];
+        final int n = values.intSize("cummax");
+        ${pt.primitive}[] result = new ${pt.primitive}[n];
 
-        for (int i = 1; i < values.length; i++) {
-            result[i] = compare(result[i-1], values[i]) > 0 ? result[i-1] : values[i];
+        try ( final ${pt.vectorIterator} vi = values.iterator() ) {
+            result[0] = vi.${pt.iteratorNext}();
+            int i = 1;
+
+            while (vi.hasNext()) {
+                final ${pt.primitive} v = vi.${pt.iteratorNext}();
+
+                if (isNull(result[i - 1])) {
+                    result[i] = v;
+                } else if (isNull(v)) {
+                    result[i] = result[i - 1];
+                } else {
+                    result[i] = (${pt.primitive})Math.max(result[i - 1],  v);
+                }
+
+                i++;
+            }
         }
 
         return result;
