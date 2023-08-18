@@ -1571,29 +1571,20 @@ public class Numeric {
             return null;
         }
 
-        if (values.isEmpty()) {
+        if (values.length == 0) {
             return new ${pt.primitive}[0];
         }
 
-        final int n = values.intSize("cummax");
-        ${pt.primitive}[] result = new ${pt.primitive}[n];
+        ${pt.primitive}[] result = new ${pt.primitive}[values.length];
+        result[0] = values[0];
 
-        try ( final ${pt.vectorIterator} vi = values.iterator() ) {
-            result[0] = vi.${pt.iteratorNext}();
-            int i = 1;
-
-            while (vi.hasNext()) {
-                final ${pt.primitive} v = vi.${pt.iteratorNext}();
-
-                if (isNull(result[i - 1])) {
-                    result[i] = v;
-                } else if (isNull(v)) {
-                    result[i] = result[i - 1];
-                } else {
-                    result[i] = (${pt.primitive})Math.max(result[i - 1],  v);
-                }
-
-                i++;
+        for (int i = 1; i < values.length; i++) {
+            if (isNull(result[i - 1])) {
+                result[i] = values[i];
+            } else if (isNull(values[i])) {
+                result[i] = result[i - 1];
+            } else {
+                result[i] = (${pt.primitive})Math.max(result[i - 1],  values[i]);
             }
         }
 
@@ -1621,10 +1612,18 @@ public class Numeric {
         try ( final ${pt.vectorIterator} vi = values.iterator() ) {
             result[0] = vi.${pt.iteratorNext}();
             int i = 1;
-    
+
             while (vi.hasNext()) {
                 final ${pt.primitive} v = vi.${pt.iteratorNext}();
-                result[i] = compare(result[i-1], v) > 0 ? result[i-1] : v;
+
+                if (isNull(result[i - 1])) {
+                    result[i] = v;
+                } else if (isNull(v)) {
+                    result[i] = result[i - 1];
+                } else {
+                    result[i] = (${pt.primitive})Math.max(result[i - 1],  v);
+                }
+
                 i++;
             }
         }
