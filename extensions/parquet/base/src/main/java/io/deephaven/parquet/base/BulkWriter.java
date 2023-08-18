@@ -96,7 +96,7 @@ public interface BulkWriter<BUFFER_TYPE> {
      *
      * @return a {@link ByteBuffer} containing the written data.
      *
-     * @throws IOException  if there is an exception reading the data.
+     * @throws IOException if there is an exception reading the data.
      */
     ByteBuffer getByteBufferView() throws IOException;
 
