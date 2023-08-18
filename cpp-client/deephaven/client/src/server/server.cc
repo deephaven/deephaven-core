@@ -329,12 +329,42 @@ void Server::FetchTableAsync(std::string tableName, std::shared_ptr<EtcCallback>
   SendRpc(req, std::move(callback), TableStub(), &TableService::Stub::AsyncFetchTable);
 }
 
-void Server::TimeTableAsync(int64_t start_time_nanos, int64_t period_nanos, std::shared_ptr<EtcCallback> etc_callback,
-    Ticket result) {
+void Server::TimeTableAsync(DurationSpecifier period, TimePointSpecifier start_time,
+    bool blink_table, std::shared_ptr<EtcCallback> etc_callback, Ticket result) {
+  struct DurationVisitor {
+    void operator()(std::chrono::nanoseconds nsecs) const {
+      req->set_period_nanos(nsecs.count());
+    }
+    void operator()(int64_t nsecs) const {
+      req->set_period_nanos(nsecs);
+    }
+    void operator()(std::string duration_text) const {
+      *req->mutable_period_string() = std::move(duration_text);
+    }
+
+    TimeTableRequest *req = nullptr;
+  };
+
+  struct TimePointVisitor {
+    void operator()(std::chrono::system_clock::time_point start) const {
+      auto as_duration = std::chrono::duration_cast<std::chrono::nanoseconds>(start.time_since_epoch());
+      req->set_start_time_nanos(as_duration.count());
+    }
+    void operator()(int64_t nsecs) const {
+      req->set_start_time_nanos(nsecs);
+    }
+    void operator()(std::string start_time_text) const {
+      *req->mutable_start_time_string() = std::move(start_time_text);
+    }
+
+    TimeTableRequest *req = nullptr;
+  };
+
   TimeTableRequest req;
   *req.mutable_result_id() = std::move(result);
-  req.set_start_time_nanos(start_time_nanos);
-  req.set_period_nanos(period_nanos);
+  std::visit(DurationVisitor{&req}, std::move(period));
+  std::visit(TimePointVisitor{&req}, std::move(start_time));
+  req.set_blink_table(blink_table);
   SendRpc(req, std::move(etc_callback), TableStub(), &TableService::Stub::AsyncTimeTable);
 }
 

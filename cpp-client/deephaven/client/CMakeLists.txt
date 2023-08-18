@@ -63,7 +63,6 @@ set(ALL_FILES
     include/public/deephaven/client/client_options.h
     include/public/deephaven/client/flight.h
     include/public/deephaven/client/update_by.h
-    include/public/deephaven/client/utility/arrow_util.h
 
     src/subscription/subscribe_thread.cc
 
@@ -75,6 +74,8 @@ set(ALL_FILES
     include/private/deephaven/client/utility/executor.h
 
     src/utility/table_maker.cc
+    include/public/deephaven/client/utility/arrow_util.h
+    include/public/deephaven/client/utility/misc_types.h
     include/public/deephaven/client/utility/table_maker.h
 
     proto/deephaven/proto/application.grpc.pb.cc
@@ -113,7 +114,7 @@ set(ALL_FILES
     proto/deephaven/proto/ticket.grpc.pb.h
     proto/deephaven/proto/ticket.pb.cc
     proto/deephaven/proto/ticket.pb.h
-    )
+)
 
 add_library(client ${ALL_FILES})
 # In order to make a shared library suitable for Cython.

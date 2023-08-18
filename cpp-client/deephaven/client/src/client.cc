@@ -109,16 +109,10 @@ TableHandle TableHandleManager::FetchTable(std::string tableName) const {
   return TableHandle(std::move(qs_impl));
 }
 
-TableHandle TableHandleManager::TimeTable(int64_t startTimeNanos, int64_t periodNanos) const {
-  auto qs_impl = impl_->TimeTable(startTimeNanos, periodNanos);
-  return TableHandle(std::move(qs_impl));
-}
-
-TableHandle TableHandleManager::TimeTable(std::chrono::system_clock::time_point startTime,
-    std::chrono::system_clock::duration period) const {
-  auto st_nanos = std::chrono::duration_cast<std::chrono::nanoseconds>(startTime.time_since_epoch()).count();
-  auto d_nanos = std::chrono::duration_cast<std::chrono::nanoseconds>(period).count();
-  return TimeTable(st_nanos, d_nanos);
+TableHandle TableHandleManager::TimeTable(DurationSpecifier period, TimePointSpecifier start_time,
+    bool blink_table) const {
+  auto impl = impl_->TimeTable(std::move(period), std::move(start_time), blink_table);
+  return TableHandle(std::move(impl));
 }
 
 std::string TableHandleManager::NewTicket() const {
@@ -200,7 +194,7 @@ Aggregate Aggregate::Min(std::vector<std::string> column_specs) {
   return createAggForMatchPairs(ComboAggregateRequest::MIN, std::move(column_specs));
 }
 
-Aggregate Aggregate::pct(double percentile, bool avg_median, std::vector<std::string> column_specs) {
+Aggregate Aggregate::Pct(double percentile, bool avg_median, std::vector<std::string> column_specs) {
   ComboAggregateRequest::Aggregate pd;
   pd.set_type(ComboAggregateRequest::PERCENTILE);
   pd.set_percentile(percentile);

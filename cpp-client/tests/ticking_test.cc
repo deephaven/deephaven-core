@@ -73,7 +73,7 @@ TEST_CASE("Ticking Table eventually reaches 10 rows", "[ticking]") {
   auto client = TableMakerForTests::CreateClient();
   auto tm = client.GetManager();
 
-  auto table = tm.TimeTable(0, 500'000'000).Update("II = ii");
+  auto table = tm.TimeTable(std::chrono::milliseconds(500)).Update("II = ii");
   table.BindToVariable("ticking");
   auto callback = std::make_shared<ReachesNRowsCallback>(max_rows);
   auto cookie = table.Subscribe(callback);
@@ -128,7 +128,7 @@ TEST_CASE("Ticking Table modified rows are eventually all greater than 10", "[ti
   auto client = TableMakerForTests::CreateClient();
   auto tm = client.GetManager();
 
-  auto table = tm.TimeTable(0, 500'000'000)
+  auto table = tm.TimeTable(std::chrono::milliseconds(500))
       .View({"Key = (long)(ii % 10)", "Value = ii"})
       .LastBy("Key");
   table.BindToVariable("ticking");
