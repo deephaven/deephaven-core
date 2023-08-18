@@ -282,10 +282,10 @@ public interface TableDefaults extends Table, TableOperationsDefaults<Table, Tab
                     Arrays.asList(AggMin(minColumn + "=" + valueColumn), AggMax(maxColumn + "=" + valueColumn));
             newTable = newTable.naturalJoin(this.aggBy(aggregations), "");
         } else if (min == QueryConstants.NULL_DOUBLE) {
-            Table range = this.aggBy(AggMin(minColumn + "=" + valueColumn)).update(maxColumn + "=" + max);
+            Table range = this.aggBy(AggMin(minColumn + "=" + valueColumn)).updateView(maxColumn + "=" + max);
             newTable = newTable.naturalJoin(range, "");
         } else if (max == QueryConstants.NULL_DOUBLE) {
-            Table range = this.aggBy(AggMax(maxColumn + "=" + valueColumn)).update(minColumn + "=" + min);
+            Table range = this.aggBy(AggMax(maxColumn + "=" + valueColumn)).updateView(minColumn + "=" + min);
             newTable = newTable.naturalJoin(range, "");
         } else {
             newTable = newTable.updateView(maxColumn + "=" + max, minColumn + "=" + min);
@@ -321,6 +321,7 @@ public interface TableDefaults extends Table, TableOperationsDefaults<Table, Tab
                 "");
     }
 
+    @Override
     default Table formatDataBar(String column, String valueColumn, DataBarAxisOptions axis, String min, String max,
             String positiveColor, String negativeColor, DataBarValuePlacementOptions valuePlacement,
             DataBarDirectionOptions direction, double opacity, String markerColumn, String markerColor) {

@@ -377,7 +377,7 @@ public interface Table extends
      * Produce a new table with data bars generated at the specified column
      * 
      * @param column Column to generate data bars in
-     * @param valueColumn Column obtaining the values to generate data bars from
+     * @param valueColumn Column containing the values to generate data bars from
      * @param axis Orientation of data bar relative to the cell
      * @param min Minimum value for data bar scaling
      * @param max Maximum value for data bar scaling
@@ -385,8 +385,8 @@ public interface Table extends
      * @param negativeColor Color or list of colors for negative bar
      * @param valuePlacement Orientation of values relative to the data bar
      * @param direction Orientation of values relative to the horizontal axis
-     * @param opacity Opacity of data. Accepts values from 0 to 1
-     * @param markerColumn Column obtaining the values to generate markers from
+     * @param opacity Opacity of data bar. Accepts values from 0 to 1
+     * @param markerColumn Column containing the values to generate markers from
      * @param markerColor Color for markers
      * @return The new table with data bars generated at the specified column
      */
