@@ -21,6 +21,8 @@ import jpy
 _di_wrapper_classes: Set[JObjectWrapper] = set()
 _has_all_wrappers_imported = False
 
+JPyObjectRefCountedNode = jpy.get_type('io.deephaven.server.plugin.python.PyObjectRefCountedNode')
+
 
 def _recursive_import(package_path: str) -> None:
     """ Recursively import every module in a package. """
@@ -117,13 +119,36 @@ def _lookup_wrapped_class(j_obj: jpy.JType) -> Optional[type]:
     return None
 
 
+def javaify(obj: Union[JObjectWrapper, jpy.JType, Any]) -> Optional[jpy.JType]:
+    if obj is None:
+        return None
+    if isinstance(obj, JObjectWrapper):
+        return obj.j_object
+    if isinstance(obj, jpy.JType):
+        return obj
+    # we must return a java object, so wrap in a PyObjectLivenessNode so that the server's liveness tracking
+    # will correctly notify python that the object was released
+    return JPyObjectRefCountedNode(obj)
+
+
+def pythonify(j_obj: Union[jpy.JType, Any]) -> Optional[Union[JObjectWrapper, jpy.JType, Any]]:
+    # if obj is None:
+    #     return None
+    if not isinstance(j_obj, jpy.JType):
+        return j_obj
+    # definitely a JType, check if it is a PyObjectRefCountedNode
+    if hasattr(j_obj,'getPythonObject'):
+        return j_obj.getPythonObject()
+    # Vanilla Java object, see if we have explicit wrapping for it
+    return wrap_j_object(j_obj)
+
+
 def wrap_j_object(j_obj: jpy.JType) -> Union[JObjectWrapper, jpy.JType]:
     """ Wraps the specified Java object as an instance of a custom wrapper class if one is available, otherwise returns
     the raw Java object. """
     if j_obj is None:
         return None
-    if 'getPythonObject' in j_obj:
-        return j_obj.getPythonObject()
+
 
     wc = _lookup_wrapped_class(j_obj)
 

@@ -28,10 +28,10 @@ final class ObjectTypeAdapter extends ObjectTypeBase implements AutoCloseable {
 
     @Override
     public boolean isType(Object object) {
-        if (!(object instanceof PyObject)) {
+        if (!(object instanceof PyObjectRefCountedNode) && !(object instanceof PyObject)) {
             return false;
         }
-        return objectTypeAdapter.call(boolean.class, "is_type", PyObject.class, (PyObject) object);
+        return objectTypeAdapter.call(boolean.class, "is_type", Object.class, (Object) object);
     }
 
     @Override
@@ -54,8 +54,8 @@ final class ObjectTypeAdapter extends ObjectTypeBase implements AutoCloseable {
             return MessageStream.NOOP;
         } else {
             PyObject newConnection =
-                    objectTypeAdapter.call(PyObject.class, "create_client_connection", PyObject.class,
-                            (PyObject) object, PythonClientMessageStream.class,
+                    objectTypeAdapter.call(PyObject.class, "create_client_connection", Object.class,
+                            object, PythonClientMessageStream.class,
                             new PythonClientMessageStream(connection));
             return new PythonServerMessageStream(newConnection);
         }

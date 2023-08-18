@@ -14,7 +14,6 @@ import io.deephaven.plugin.type.ObjectTypeLookup;
 import io.deephaven.proto.backplane.grpc.*;
 import io.deephaven.proto.util.Exceptions;
 import io.deephaven.server.grpc.GrpcErrorHelper;
-import io.deephaven.server.plugin.python.PyObjectRefCountedNode;
 import io.deephaven.server.session.SessionService;
 import io.deephaven.server.session.SessionState;
 import io.deephaven.server.session.SessionState.ExportObject;
@@ -140,9 +139,6 @@ public class ObjectServiceGrpcImpl extends ObjectServiceGrpc.ObjectServiceImplBa
                 manage(this.object);
                 runOrEnqueue(() -> {
                     Object o = object.get();
-                    if (o instanceof PyObjectRefCountedNode) {
-                        o = ((PyObjectRefCountedNode) o).getPythonObject();
-                    }
                     final ObjectType objectType = getObjectTypeInstance(type, o);
 
                     PluginMessageSender clientConnection = new PluginMessageSender(responseObserver, session);
@@ -160,12 +156,6 @@ public class ObjectServiceGrpcImpl extends ObjectServiceGrpc.ObjectServiceImplBa
                 runOrEnqueue(referenceObjects, () -> {
                     Object[] objs = referenceObjects.stream()
                             .map(ExportObject::get)
-                            .map(o -> {
-                                if (o instanceof PyObjectRefCountedNode) {
-                                    return ((PyObjectRefCountedNode) o).getPythonObject();
-                                }
-                                return o;
-                            })
                             .toArray();
                     messageStream.onData(data.getPayload().asReadOnlyByteBuffer(), objs);
                 });
@@ -377,12 +367,7 @@ public class ObjectServiceGrpcImpl extends ObjectServiceGrpc.ObjectServiceImplBa
                 Data.Builder payload = Data.newBuilder().setPayload(ByteString.copyFrom(message));
 
                 for (Object reference : references) {
-                    final String type;
-                    if (reference instanceof PyObjectRefCountedNode) {
-                        type = typeLookup.type(((PyObjectRefCountedNode) reference).getPythonObject()).orElse(null);
-                    } else {
-                        type = typeLookup.type(reference).orElse(null);
-                    }
+                    final String type = typeLookup.type(reference).orElse(null);
                     final ExportObject<?> exportObject = sessionState.newServerSideExport(reference);
                     exports.add(exportObject);
                     TypedTicket typedTicket = ticketForExport(exportObject, type);
