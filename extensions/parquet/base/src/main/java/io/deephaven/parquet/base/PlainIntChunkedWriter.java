@@ -8,6 +8,7 @@ import io.deephaven.util.QueryConstants;
 import org.apache.parquet.bytes.ByteBufferAllocator;
 import org.apache.parquet.bytes.BytesInput;
 import org.apache.parquet.column.Encoding;
+import org.apache.parquet.column.statistics.Statistics;
 import org.apache.parquet.column.values.rle.RunLengthBitPackingHybridEncoder;
 import org.jetbrains.annotations.NotNull;
 
@@ -93,8 +94,14 @@ public class PlainIntChunkedWriter extends AbstractBulkValuesWriter<IntBuffer> {
     }
 
     @Override
-    public void writeBulk(@NotNull IntBuffer bulkValues, int rowCount) {
+    public void writeBulk(@NotNull IntBuffer bulkValues,
+                          final int rowCount,
+                          @NotNull final Statistics<?> statistics) {
         ensureCapacityFor(bulkValues);
+        // Generate statistics before we perform the bulk write.
+        for (int i = 0; i < rowCount; i++) {
+            statistics.updateStats(bulkValues.get(i));
+        }
         targetBuffer.put(bulkValues);
     }
 
@@ -102,14 +109,18 @@ public class PlainIntChunkedWriter extends AbstractBulkValuesWriter<IntBuffer> {
     @Override
     public WriteResult writeBulkFilterNulls(@NotNull final IntBuffer bulkValues,
                                             @NotNull final RunLengthBitPackingHybridEncoder dlEncoder,
-                                            final int rowCount) throws IOException {
+                                            final int rowCount,
+                                            @NotNull final Statistics<?> statistics) throws IOException {
         ensureCapacityFor(bulkValues);
+        // Track statistics while we write the values.
         while (bulkValues.hasRemaining()) {
-            final int next = bulkValues.get();
-            if (next != nullValue) {
-                writeInteger(next);
+            final int v = bulkValues.get();
+            if (v != nullValue) {
+                writeInteger(v);
+                statistics.updateStats(v);
                 dlEncoder.writeInt(DL_ITEM_PRESENT);
             } else {
+                statistics.incrementNumNulls();
                 dlEncoder.writeInt(DL_ITEM_NULL);
             }
         }

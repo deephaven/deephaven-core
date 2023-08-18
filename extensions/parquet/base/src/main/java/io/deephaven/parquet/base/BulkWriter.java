@@ -3,6 +3,7 @@
  */
 package io.deephaven.parquet.base;
 
+import org.apache.parquet.column.statistics.Statistics;
 import org.apache.parquet.column.values.rle.RunLengthBitPackingHybridEncoder;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
@@ -36,7 +37,7 @@ public interface BulkWriter<BUFFER_TYPE> {
      * @param bulkValues the buffer of values
      * @param rowCount the total number of rows to write.
      */
-    void writeBulk(@NotNull BUFFER_TYPE bulkValues, int rowCount);
+    void writeBulk(@NotNull BUFFER_TYPE bulkValues, int rowCount, @NotNull Statistics<?> statistics);
 
     /**
      * Write a buffer's worth of values to the underlying page. This method will find, without writing, {@code null}
@@ -52,7 +53,8 @@ public interface BulkWriter<BUFFER_TYPE> {
     @NotNull
     WriteResult writeBulkFilterNulls(@NotNull BUFFER_TYPE bulkValues,
             @NotNull RunLengthBitPackingHybridEncoder dlEncoder,
-            int rowCount) throws IOException;
+            final int rowCount,
+            @NotNull Statistics<?> statistics) throws IOException;
 
     /**
      * Write a buffer's worth of packed vector values to the underlying page. This method will set the proper definition
@@ -81,7 +83,8 @@ public interface BulkWriter<BUFFER_TYPE> {
      * @return a {@link WriteResult} containing the statistics of the result.
      */
     @NotNull
-    WriteResult writeBulkFilterNulls(@NotNull BUFFER_TYPE bulkValues, int rowCount);
+    WriteResult writeBulkFilterNulls(@NotNull BUFFER_TYPE bulkValues,
+            final int rowCount);
 
     /**
      * Clear all internal state.
@@ -93,7 +96,7 @@ public interface BulkWriter<BUFFER_TYPE> {
      *
      * @return a {@link ByteBuffer} containing the written data.
      *
-     * @throws IOException
+     * @throws IOException  if there is an exception reading the data.
      */
     ByteBuffer getByteBufferView() throws IOException;
 
