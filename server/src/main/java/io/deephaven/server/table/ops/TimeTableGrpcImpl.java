@@ -44,7 +44,7 @@ public class TimeTableGrpcImpl extends GrpcTableOperation<TimeTableRequest> {
         final long periodNanos = adaptPeriod(request);
         if (periodNanos <= 0) {
             throw Exceptions.statusRuntimeException(Code.FAILED_PRECONDITION,
-                    "periodNanos must be >= 0 (found: " + periodNanos + ")");
+                    "periodNanos must be > 0 (found: " + periodNanos + ")");
         }
     }
 
