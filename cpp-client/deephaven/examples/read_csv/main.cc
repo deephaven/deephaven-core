@@ -81,10 +81,10 @@ arrow::Status Doit(const TableHandleManager &manager, const std::string &csvfn) 
 
   const auto &srcColumns = arrow_table->columns();
   const size_t ncols = srcColumns.size();
-  const int nchunks = srcColumns[0]->num_chunks();
+  const size_t nchunks = srcColumns[0]->num_chunks();
   std::vector<std::shared_ptr<arrow::Array>> destColumns(ncols);
-  for (int chunkIndex = 0; chunkIndex < nchunks; ++chunkIndex) {
-    for (int colIndex = 0; colIndex < ncols; ++colIndex) {
+  for (size_t chunkIndex = 0; chunkIndex < nchunks; ++chunkIndex) {
+    for (size_t colIndex = 0; colIndex < ncols; ++colIndex) {
       destColumns[colIndex] = srcColumns[colIndex]->chunk(chunkIndex);
     }
     auto batch = arrow::RecordBatch::Make(arrow_table->schema(), destColumns[0]->length(), destColumns);

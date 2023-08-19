@@ -36,5 +36,4 @@ add_executable(tests
 target_compile_options(tests PRIVATE -Wall -Werror)
 target_include_directories(tests PUBLIC "..")
 
-add_subdirectory("../deephaven" "libclient")
 target_link_libraries(tests deephaven::client)

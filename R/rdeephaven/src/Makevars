@@ -26,7 +26,6 @@ DEPENDENCY_DIRS = \
 # The value -lprotobufd matches the default build type `Debug`
 #
 DEPENDENCY_LIBS = \
-        -lclient \
         -lprotobufd \
         -larrow_flight -larrow -larrow_bundled_dependencies \
         -lgrpc++ -lgrpc -laddress_sorting -lgpr -lupb -labsl_raw_hash_set \
@@ -59,9 +58,9 @@ PKG_LIBS = \
 	$(R_CPPFLAGS) \
 	-L/usr/lib/R/lib -lR \
 	$(R_CXXFLAGS) \
+	-L$(DHCPP)/local/deephaven/lib -ldhclient -ldhcore \
 	$(DEPENDENCY_DIRS) \
 	$(DEPENDENCY_LIBS) \
-	-L$(DHCPP)/local/deephaven/lib -ldhcore -lclient
 
 
 CC = `"${R_HOME}/bin/R" CMD config CC`

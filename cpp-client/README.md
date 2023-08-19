@@ -100,21 +100,23 @@ C++ compiler and tool suite (cmake etc).
    ```
 
 8. Build and run the deephaven example which uses the installed client.
-   Note this assumes deephaven server is running (see step 2).
+   Note this assumes deephaven server is running (see step 2),
+   and the build created on step 7 is available in the same directory.
 
    ```
-   cd $DHSRC/deephaven-core/cpp-examples/hello_world
-   mkdir build && cd build
-   cmake .. && make -j$NCPUS
+   cd $DHSRC/deephaven-core/cpp-client/deephaven/build/examples
+   make -j$NCPUS
+   cd hello_world
    ./hello_world
    ```
 
 9. (Optional) run the unit tests
+   This assumes the build created on step 7 is available in the same directory.
 
     ```
-    cd $DHSRC/deephaven-core/cpp-client/tests
-    mkdir build && cd build
-    cmake .. && make -j$NCPUS
+    cd $DHSRC/deephaven-core/cpp-client/deephaven/build/tests
+    make -j$NCPUS
+    cd tests
     ./tests
     ```
 
