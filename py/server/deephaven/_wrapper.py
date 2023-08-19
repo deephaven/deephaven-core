@@ -126,17 +126,15 @@ def javaify(obj: Union[JObjectWrapper, jpy.JType, Any]) -> Optional[jpy.JType]:
         return obj.j_object
     if isinstance(obj, jpy.JType):
         return obj
-    # we must return a java object, so wrap in a PyObjectLivenessNode so that the server's liveness tracking
+    # We must return a java object, so wrap in a PyObjectLivenessNode so that the server's liveness tracking
     # will correctly notify python that the object was released
     return JPyObjectRefCountedNode(obj)
 
 
 def pythonify(j_obj: Union[jpy.JType, Any]) -> Optional[Union[JObjectWrapper, jpy.JType, Any]]:
-    # if obj is None:
-    #     return None
     if not isinstance(j_obj, jpy.JType):
         return j_obj
-    # definitely a JType, check if it is a PyObjectRefCountedNode
+    # Definitely a JType, check if it is a PyObjectRefCountedNode
     if hasattr(j_obj,'getPythonObject'):
         return j_obj.getPythonObject()
     # Vanilla Java object, see if we have explicit wrapping for it
@@ -148,7 +146,6 @@ def wrap_j_object(j_obj: jpy.JType) -> Union[JObjectWrapper, jpy.JType]:
     the raw Java object. """
     if j_obj is None:
         return None
-
 
     wc = _lookup_wrapped_class(j_obj)
 

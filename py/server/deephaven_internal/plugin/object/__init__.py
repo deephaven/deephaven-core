@@ -65,10 +65,7 @@ class ObjectTypeAdapter:
         self._user_object_type = user_object_type
 
     def is_type(self, obj) -> bool:
-        is_type = self._user_object_type.is_type(pythonify(obj))
-        print(str(self._user_object_type), obj, pythonify(obj), is_type)
-
-        return is_type
+        return self._user_object_type.is_type(pythonify(obj))
 
     def is_fetch_only(self) -> bool:
         return isinstance(self._user_object_type, FetchOnlyObjectType)

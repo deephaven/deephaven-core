@@ -138,7 +138,7 @@ public class ObjectServiceGrpcImpl extends ObjectServiceGrpc.ObjectServiceImplBa
                 this.object = object;
                 manage(this.object);
                 runOrEnqueue(() -> {
-                    Object o = object.get();
+                    final Object o = object.get();
                     final ObjectType objectType = getObjectTypeInstance(type, o);
 
                     PluginMessageSender clientConnection = new PluginMessageSender(responseObserver, session);
@@ -154,9 +154,7 @@ public class ObjectServiceGrpcImpl extends ObjectServiceGrpc.ObjectServiceImplBa
                         .map(typedTicket -> ticketRouter.resolve(session, typedTicket.getTicket(), "ticket"))
                         .collect(Collectors.toList());
                 runOrEnqueue(referenceObjects, () -> {
-                    Object[] objs = referenceObjects.stream()
-                            .map(ExportObject::get)
-                            .toArray();
+                    Object[] objs = referenceObjects.stream().map(ExportObject::get).toArray();
                     messageStream.onData(data.getPayload().asReadOnlyByteBuffer(), objs);
                 });
             }
