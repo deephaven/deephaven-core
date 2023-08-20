@@ -56,10 +56,16 @@ CFLAGS="-I${DHCPP}/local/deephaven/include" LDFLAGS="-L${DHCPP}/local/deephaven/
 
 ### Install pydeephaven-ticking
 
-Install the package with a command like
+Build the wheel with
 
 ```
-pip install --force --no-deps dist/pydeephaven_ticking-0.28.0-cp310-cp310-linux_x86_64.whl 
+python3 setup.py bdist_wheel
+```
+
+Then install the package with
+
+```
+pip3 install --force --no-deps dist/pydeephaven_ticking-0.28.0-cp310-cp310-linux_x86_64.whl
 ```
 
 The reason for the "--force" flag is to overwrite any previously-built version of the package that
