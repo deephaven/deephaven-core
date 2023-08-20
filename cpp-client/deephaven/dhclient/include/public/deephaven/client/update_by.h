@@ -7,6 +7,7 @@
 #include "deephaven/client/columns.h"
 #include "deephaven/client/client_options.h"
 #include "deephaven/client/expressions.h"
+#include "deephaven/client/utility/misc_types.h"
 #include "deephaven/dhcore/clienttable/schema.h"
 #include "deephaven/dhcore/ticking/ticking.h"
 #include "deephaven/dhcore/utility/callbacks.h"
@@ -86,12 +87,6 @@ struct OperationControl {
 };
 
 /**
- * Allows the caller to specify durations either as any of the std::chrono::durations (which will
- * be auto-converted to nanoseconds) or as an ISO 8601 duration string.
- */
-using durationSpecifier_t = std::variant<std::chrono::nanoseconds, std::string>;
-
-/**
  * Creates a cumulative sum UpdateByOperation for the supplied column names.
  * @param cols the column(s) to be operated on, can include expressions to rename the output,
  *  i.e. "new_col = col"; when empty, update_by performs the operation on all applicable columns.
@@ -160,8 +155,9 @@ UpdateByOperation emaTick(double decay_ticks, std::vector<std::string> cols,
  *   i.e. "new_col = col"; when empty, update_by performs the operation on all applicable columns.
  * @param opControl defines how special cases should behave
  */
-UpdateByOperation emaTime(std::string timestamp_col, durationSpecifier_t decay_time,
-    std::vector<std::string> cols, const OperationControl &op_control = OperationControl());
+UpdateByOperation emaTime(std::string timestamp_col,
+    deephaven::client::utility::DurationSpecifier decay_time, std::vector<std::string> cols,
+    const OperationControl &op_control = OperationControl());
 /**
  * Creates an EMS (exponential moving sum) UpdateByOperation for the supplied column names, using
  * ticks as the decay unit.
@@ -189,8 +185,9 @@ UpdateByOperation emsTick(double decay_ticks, std::vector<std::string> cols,
  *   i.e. "new_col = col"; when empty, update_by performs the operation on all applicable columns.
  * @param opControl defines how special cases should behave
  */
-UpdateByOperation emsTime(std::string timestamp_col, durationSpecifier_t decay_time,
-    std::vector<std::string> cols, const OperationControl &op_control = OperationControl());
+UpdateByOperation emsTime(std::string timestamp_col,
+    deephaven::client::utility::DurationSpecifier decay_time, std::vector<std::string> cols,
+    const OperationControl &op_control = OperationControl());
 /**
  * Creates an EM Min (exponential moving minimum) UpdateByOperation for the supplied column names,
  * using ticks as the decay unit.
@@ -217,8 +214,9 @@ UpdateByOperation emminTick(double decay_ticks, std::vector<std::string> cols,
  *   i.e. "new_col = col"; when empty, update_by performs the operation on all applicable columns.
  * @param opControl defines how special cases should behave
  */
-UpdateByOperation emminTime(std::string timestamp_col, durationSpecifier_t decay_time,
-    std::vector<std::string> cols, const OperationControl &op_control = OperationControl());
+UpdateByOperation emminTime(std::string timestamp_col,
+    deephaven::client::utility::DurationSpecifier decay_time, std::vector<std::string> cols,
+    const OperationControl &op_control = OperationControl());
 /**
  * Creates an EM Max (exponential moving maximum) UpdateByOperation for the supplied column names,
  * using ticks as the decay unit.
@@ -245,8 +243,9 @@ UpdateByOperation emmaxTick(double decay_ticks, std::vector<std::string> cols,
  *   i.e. "new_col = col"; when empty, update_by performs the operation on all applicable columns.
  * @param opControl defines how special cases should behave
  */
-UpdateByOperation emmaxTime(std::string timestamp_col, durationSpecifier_t decay_time,
-    std::vector<std::string> cols, const OperationControl &op_control = OperationControl());
+UpdateByOperation emmaxTime(std::string timestamp_col,
+    deephaven::client::utility::DurationSpecifier decay_time, std::vector<std::string> cols,
+    const OperationControl &op_control = OperationControl());
 /**
  * Creates an EM Std (exponential moving standard deviation) UpdateByOperation for the supplied
  * column names, using ticks as the decay unit.
@@ -277,8 +276,9 @@ UpdateByOperation emstdTick(double decay_ticks, std::vector<std::string> cols,
  *   i.e. "new_col = col"; when empty, update_by performs the operation on all applicable columns.
  * @param opControl defines how special cases should behave
  */
-UpdateByOperation emstdTime(std::string timestamp_col, durationSpecifier_t decay_time,
-    std::vector<std::string> cols, const OperationControl &op_control = OperationControl());
+UpdateByOperation emstdTime(std::string timestamp_col,
+    deephaven::client::utility::DurationSpecifier decay_time, std::vector<std::string> cols,
+    const OperationControl &op_control = OperationControl());
 /**
  * Creates a rolling sum UpdateByOperation for the supplied column names, using ticks as the
  * windowing unit. Ticks are row counts, and you may specify the reverse and forward window in
@@ -330,7 +330,8 @@ UpdateByOperation rollingSumTick(std::vector<std::string> cols, int rev_ticks, i
  * @param fwdTime the look-ahead window size
  */
 UpdateByOperation rollingSumTime(std::string timestamp_col, std::vector<std::string> cols,
-    durationSpecifier_t rev_time, durationSpecifier_t fwd_time = std::chrono::nanoseconds(0));
+    deephaven::client::utility::DurationSpecifier rev_time,
+    deephaven::client::utility::DurationSpecifier fwd_time = 0);
 /**
  * Creates a rolling Group UpdateByOperation for the supplied column names, using ticks as the
  * windowing unit. Ticks are row counts, and you may specify the reverse and forward window in
@@ -362,7 +363,8 @@ UpdateByOperation rollingGroupTick(std::vector<std::string> cols, int rev_ticks,
  * @param fwdTime the look-ahead window size
  */
 UpdateByOperation rollingGroupTime(std::string timestamp_col, std::vector<std::string> cols,
-    durationSpecifier_t rev_time, durationSpecifier_t fwd_time = std::chrono::nanoseconds(0));
+    deephaven::client::utility::DurationSpecifier rev_time,
+    deephaven::client::utility::DurationSpecifier fwd_time = 0);
 /**
  * Creates a rolling average UpdateByOperation for the supplied column names, using ticks as the
  * windowing unit. Ticks are row counts, and you may specify the reverse and forward window in
@@ -394,7 +396,8 @@ UpdateByOperation rollingAvgTick(std::vector<std::string> cols, int rev_ticks, i
  * @param fwdTime the look-ahead window size
  */
 UpdateByOperation rollingAvgTime(std::string timestamp_col, std::vector<std::string> cols,
-    durationSpecifier_t rev_time, durationSpecifier_t fwd_time = std::chrono::nanoseconds(0));
+    deephaven::client::utility::DurationSpecifier rev_time,
+    deephaven::client::utility::DurationSpecifier fwd_time = 0);
 /**
  * Creates a rolling Min UpdateByOperation for the supplied column names, using ticks as the
  * windowing unit. Ticks are row counts, and you may specify the reverse and forward window in
@@ -426,7 +429,8 @@ UpdateByOperation rollingMinTick(std::vector<std::string> cols, int rev_ticks, i
  * @param fwdTime the look-ahead window size
  */
 UpdateByOperation rollingMinTime(std::string timestamp_col, std::vector<std::string> cols,
-    durationSpecifier_t rev_time, durationSpecifier_t fwd_time = std::chrono::nanoseconds(0));
+    deephaven::client::utility::DurationSpecifier rev_time,
+    deephaven::client::utility::DurationSpecifier fwd_time = 0);
 /**
  * Creates a rolling Max UpdateByOperation for the supplied column names, using ticks as the
  * windowing unit. Ticks are row counts, and you may specify the reverse and forward window in
@@ -458,7 +462,8 @@ UpdateByOperation rollingMaxTick(std::vector<std::string> cols, int rev_ticks, i
  * @param fwdTime the look-ahead window size
  */
 UpdateByOperation rollingMaxTime(std::string timestamp_col, std::vector<std::string> cols,
-    durationSpecifier_t rev_time, durationSpecifier_t fwd_time = std::chrono::nanoseconds(0));
+    deephaven::client::utility::DurationSpecifier rev_time,
+    deephaven::client::utility::DurationSpecifier fwd_time = 0);
 /**
  * Creates a rolling product UpdateByOperation for the supplied column names, using ticks as the
  * windowing unit. Ticks are row counts, and you may specify the reverse and forward window in
@@ -490,7 +495,8 @@ UpdateByOperation rollingProdTick(std::vector<std::string> cols, int rev_ticks, 
  * @param fwdTime the look-ahead window size
  */
 UpdateByOperation rollingProdTime(std::string timestamp_col, std::vector<std::string> cols,
-    durationSpecifier_t rev_time, durationSpecifier_t fwd_time = std::chrono::nanoseconds(0));
+    deephaven::client::utility::DurationSpecifier rev_time,
+    deephaven::client::utility::DurationSpecifier fwd_time = 0);
 /**
  * Creates a rolling count UpdateByOperation for the supplied column names, using ticks as the
  * windowing unit. Ticks are row counts, and you may specify the reverse and forward window in
@@ -522,7 +528,8 @@ UpdateByOperation rollingCountTick(std::vector<std::string> cols, int rev_ticks,
  * @param fwdTime the look-ahead window size
  */
 UpdateByOperation rollingCountTime(std::string timestamp_col, std::vector<std::string> cols,
-    durationSpecifier_t rev_time, durationSpecifier_t fwd_time = std::chrono::nanoseconds(0));
+    deephaven::client::utility::DurationSpecifier rev_time,
+    deephaven::client::utility::DurationSpecifier fwd_time = 0);
 /**
  * Creates a rolling standard deviation UpdateByOperation for the supplied column names, using ticks as the
  * windowing unit. Ticks are row counts, and you may specify the reverse and forward window in
@@ -554,7 +561,8 @@ UpdateByOperation rollingStdTick(std::vector<std::string> cols, int rev_ticks, i
  * @param fwdTime the look-ahead window size
  */
 UpdateByOperation rollingStdTime(std::string timestamp_col, std::vector<std::string> cols,
-    durationSpecifier_t rev_time, durationSpecifier_t fwd_time = std::chrono::nanoseconds(0));
+    deephaven::client::utility::DurationSpecifier rev_time,
+    deephaven::client::utility::DurationSpecifier fwd_time = 0);
 /**
  * Creates a rolling weighted average UpdateByOperation for the supplied column names, using ticks as the
  * windowing unit. Ticks are row counts, and you may specify the reverse and forward window in
@@ -589,6 +597,6 @@ UpdateByOperation rollingWavgTick(std::string weight_col, std::vector<std::strin
  * @param fwdTime the look-ahead window size
  */
 UpdateByOperation rollingWavgTime(std::string timestamp_col, std::string weight_col,
-    std::vector<std::string> cols, durationSpecifier_t rev_time,
-    durationSpecifier_t fwd_time = std::chrono::nanoseconds(0));
+    std::vector<std::string> cols, deephaven::client::utility::DurationSpecifier rev_time,
+    deephaven::client::utility::DurationSpecifier fwd_time = 0);
 }  // namespace deephaven::client::update_by

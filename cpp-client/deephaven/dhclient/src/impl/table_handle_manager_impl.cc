@@ -66,11 +66,12 @@ std::shared_ptr<TableHandleImpl> TableHandleManagerImpl::FetchTable(std::string 
   return TableHandleImpl::Create(shared_from_this(), std::move(result_ticket), std::move(ls));
 }
 
-std::shared_ptr<TableHandleImpl> TableHandleManagerImpl::TimeTable(int64_t start_time_nanos,
-    int64_t period_nanos) {
+std::shared_ptr<TableHandleImpl> TableHandleManagerImpl::TimeTable(DurationSpecifier period,
+    TimePointSpecifier start_time, bool blink_table) {
   auto result_ticket = server_->NewTicket();
   auto [cb, ls] = TableHandleImpl::CreateEtcCallback(nullptr, this, result_ticket);
-  server_->TimeTableAsync(start_time_nanos, period_nanos, std::move(cb), result_ticket);
+  server_->TimeTableAsync(std::move(period), std::move(start_time), blink_table, std::move(cb),
+      result_ticket);
   return TableHandleImpl::Create(shared_from_this(), std::move(result_ticket), std::move(ls));
 }
 

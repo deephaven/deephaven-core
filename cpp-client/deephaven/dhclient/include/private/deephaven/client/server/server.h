@@ -16,6 +16,7 @@
 
 #include "deephaven/client/client_options.h"
 #include "deephaven/client/utility/executor.h"
+#include "deephaven/client/utility/misc_types.h"
 #include "deephaven/dhcore/utility/callbacks.h"
 #include "deephaven/dhcore/utility/utility.h"
 #include "deephaven/proto/ticket.pb.h"
@@ -94,6 +95,8 @@ class Server : public std::enable_shared_from_this<Server> {
   using ConsoleService = io::deephaven::proto::backplane::script::grpc::ConsoleService;
   using StartConsoleResponse = io::deephaven::proto::backplane::script::grpc::StartConsoleResponse;
   using ExecuteCommandResponse = io::deephaven::proto::backplane::script::grpc::ExecuteCommandResponse;
+  using DurationSpecifier = deephaven::client::utility::DurationSpecifier;
+  using TimePointSpecifier = deephaven::client::utility::TimePointSpecifier;
 
   using ClientOptions = deephaven::client::ClientOptions;
   using Executor = deephaven::client::utility::Executor;
@@ -167,8 +170,8 @@ public:
   //  std::shared_ptr<TableHandle> tempTableAsync(std::shared_ptr<std::vector<std::shared_ptr<ColumnHolder>>> columnHolders,
   //      std::shared_ptr<ItdCallback> itdCallback);
 
-  void TimeTableAsync(int64_t start_time_nanos, int64_t period_nanos, std::shared_ptr<EtcCallback> etc_callback,
-      Ticket result);
+  void TimeTableAsync(DurationSpecifier period, TimePointSpecifier start_time, bool blink_table,
+      std::shared_ptr<EtcCallback> etc_callback, Ticket result);
   //
   //  std::shared_ptr<TableHandle> snapshotAsync(std::shared_ptr<TableHandle> leftTableHandle,
   //      std::shared_ptr<TableHandle> rightTableHandle,

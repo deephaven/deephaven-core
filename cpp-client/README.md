@@ -96,7 +96,9 @@ C++ compiler and tool suite (cmake etc).
    source $DHCPP/env.sh
    cd $DHSRC/deephaven-core/cpp-client/deephaven/
    mkdir build && cd build
-   cmake -DCMAKE_INSTALL_PREFIX=${DHCPP}/local/deephaven .. && make -j$NCPUS install
+   cmake -DCMAKE_INSTALL_PREFIX=${DHCPP}/local/deephaven \
+       -DCMAKE_BUILD_TYPE=Debug -DBUILD_SHARED_LIBS=ON .. && \
+     make -j$NCPUS install
    ```
 
 8. Build and run the deephaven example which uses the installed client.
