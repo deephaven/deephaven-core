@@ -110,7 +110,7 @@ def testCppClient = Docker.registerDockerTask(project, 'testCppClient') {
                       cd ..; \\
                       rm -fr /cpp-client/deephaven/build; \\
                       sed -i \\
-                        2i"LD_LIBRARY_PATH=$LD_LIBRARY_PATH:/cpp-client/install/deephaven/lib; export LD_LIBRARY_PATH" \\
+                        2i"LD_LIBRARY_PATH=$LD_LIBRARY_PATH:/cpp-client/install/lib; export LD_LIBRARY_PATH" \\
                         /cpp-client/install/bin/cpp-tests-to-junit.sh
                    ''')
         //
