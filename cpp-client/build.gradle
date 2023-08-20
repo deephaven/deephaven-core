@@ -39,10 +39,10 @@ license {
     ignoreFailures true
 }
 tasks.getByName('license').dependsOn(tasks.create("licensePy", com.hierynomus.gradle.license.tasks.LicenseCheck) {
-    source = ['deephaven', 'tests', '../cpp-examples']
+    source = ['deephaven']
 })
 tasks.getByName('licenseFormat').dependsOn(tasks.create("licenseFormatPy", com.hierynomus.gradle.license.tasks.LicenseFormat) {
-    source = ['deephaven', 'tests', '../cpp-examples']
+    source = ['deephaven']
 })
 
 project.tasks.getByName('quick').dependsOn project.tasks.getByName('license')
