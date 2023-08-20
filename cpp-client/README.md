@@ -118,7 +118,6 @@ C++ compiler and tool suite (cmake etc).
     ```
     cd $DHSRC/deephaven-core/cpp-client/deephaven/build/tests
     make -j$NCPUS
-    cd tests
     ./tests
     ```
 
