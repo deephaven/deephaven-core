@@ -15,7 +15,7 @@ configurations {
 dependencies {
     cpp project(path: ':proto:proto-backplane-grpc', configuration: 'cpp')
 }
-def protoSourceDir = layout.projectDirectory.dir('deephaven/client/proto')
+def protoSourceDir = layout.projectDirectory.dir('deephaven/dhclient/proto')
 def compare = tasks.register('compareProtobuf', DiffTask) {
     expectedContents.set configurations.cpp
     actualContents.set protoSourceDir
@@ -65,7 +65,7 @@ def testCppClient = Docker.registerDockerTask(project, 'testCppClient') {
         from(layout.projectDirectory) {
             include 'cpp-tests-to-junit.sh'
             include 'deephaven/CMakeLists.txt'
-            include 'deephaven/client/**'
+            include 'deephaven/dhclient/**'
             include 'deephaven/dhcore/**'
             include 'tests/CMakeLists.txt'
             include 'tests/*.cc'
@@ -81,9 +81,9 @@ def testCppClient = Docker.registerDockerTask(project, 'testCppClient') {
         //
         // Build client library.
         //
-        runCommand('mkdir -p /cpp-client/deephaven/client /cpp-client/deephaven/dhcore /cpp-client/deephaven/build')
+        runCommand('mkdir -p /cpp-client/deephaven/dhclient /cpp-client/deephaven/dhcore /cpp-client/deephaven/build')
         copyFile('deephaven/CMakeLists.txt', '/cpp-client/deephaven')
-        copyFile('deephaven/client', '/cpp-client/deephaven/client/')
+        copyFile('deephaven/dhclient', '/cpp-client/deephaven/dhclient/')
         copyFile('deephaven/dhcore', '/cpp-client/deephaven/dhcore/')
         runCommand('''set -eux; \\
                       cd /cpp-client/deephaven/build; \\
