@@ -6,8 +6,6 @@ package io.deephaven.parquet.table;
 import io.deephaven.UncheckedDeephavenException;
 import io.deephaven.api.Selectable;
 import io.deephaven.base.FileUtils;
-import io.deephaven.csv.CsvTools;
-import io.deephaven.csv.util.CsvReaderException;
 import io.deephaven.engine.context.ExecutionContext;
 import io.deephaven.engine.primitive.iterator.CloseableIterator;
 import io.deephaven.engine.table.ColumnDefinition;
@@ -26,6 +24,8 @@ import io.deephaven.engine.util.TableTools;
 import io.deephaven.engine.table.impl.QueryTable;
 import io.deephaven.test.types.OutOfBandTest;
 import junit.framework.TestCase;
+import org.apache.parquet.column.Encoding;
+import org.apache.parquet.hadoop.metadata.ColumnChunkMetaData;
 import org.apache.parquet.hadoop.metadata.ParquetMetadata;
 import org.junit.After;
 import org.junit.Before;
@@ -807,10 +807,9 @@ public class ParquetTableReadWriteTest {
                 "shortStringColumn = `Row ` + i",
                 "longStringColumn = `This is row ` + i",
                 "someIntColumn = i"));
-        final int numRows = 21;
+        final int numRows = 10;
         final ParquetInstructions writeInstructions = new ParquetInstructions.Builder()
-                .setMaximumDictionarySize(120) // Force "longStringColumn" to use non-dictionary encoding
-                .forceSetDefaultTargetPageSizeForTesting(64)
+                .setMaximumDictionarySize(100) // Force "longStringColumn" to use non-dictionary encoding
                 .build();
         final Table stringTable = TableTools.emptyTable(numRows).select(Selectable.from(columns));
         final File dest = new File(rootFile + File.separator + "dictEncoding.parquet");
@@ -829,14 +828,36 @@ public class ParquetTableReadWriteTest {
         assertTrue(thirdColumnMetadata.contains("someIntColumn") && !thirdColumnMetadata.contains("RLE_DICTIONARY"));
     }
 
-    // TODO Add some proper tests for overflowing strings
-    // @Test
-    // public void issue_3328() throws CsvReaderException {
-    // Table csvTable = CsvTools.readCsv("/Users/shivammalhotra/Documents/data.csv");
-    // csvTable = csvTable.select(); // 519120 rows
-    // final File dest = new File(rootFile, "issue_3328.parquet");
-    // ParquetTools.writeTable(csvTable, dest);
-    // Table fromDisk = ParquetTools.readTable(dest);
-    // TstUtils.assertTableEquals(fromDisk, csvTable);
-    // }
+    @Test
+    public void overflowingStringsTest() {
+        Collection<String> columns = new ArrayList<>(Arrays.asList(
+                "someStringColumn = `This is row ` + i%10"));
+        class ParquetInstructionsTestBuilder extends ParquetInstructions.Builder {
+            ParquetInstructions.Builder forceSetTargetPageSize(final int targetPageSize) {
+                // Bypasses the minimum targetPageSize requirements for testing
+                this.targetPageSize = targetPageSize;
+                return this;
+            }
+        }
+        final ParquetInstructions writeInstructions = new ParquetInstructionsTestBuilder()
+                .forceSetTargetPageSize(64) // Force a small page size to cause splitting across pages
+                .setMaximumDictionarySize(50) // Force "someStringColumn" to use non-dictionary encoding
+                .build();
+        final int numRows = 21;
+        final Table stringTable = TableTools.emptyTable(numRows).select(Selectable.from(columns));
+        final File dest = new File(rootFile + File.separator + "dictEncoding.parquet");
+        ParquetTools.writeTable(stringTable, dest, writeInstructions);
+        Table fromDisk = ParquetTools.readTable(dest).select();
+        assertTableEquals(stringTable, fromDisk);
+
+        final ParquetMetadata metadata = new ParquetTableLocationKey(dest, 0, null).getMetadata();
+        final ColumnChunkMetaData columnMetadata = metadata.getBlocks().get(0).getColumns().get(0);
+        final String metadataStr = columnMetadata.toString();
+        assertTrue(metadataStr.contains("someStringColumn") && metadataStr.contains("PLAIN")
+                && !metadataStr.contains("RLE_DICTIONARY"));
+        // We forced the page size to be 64. So internally, maximum number of rows in a page is 64/4 = 16.
+        // Further, Binary.fromString("This is row 0").length() is 13. So we can only fit 4 strings per page.
+        // Therefore, we should have total 6 pages containing 4, 4, 4, 4, 4, 1 rows respectively.
+        assertEquals(columnMetadata.getEncodingStats().getNumDataPagesEncodedAs(Encoding.PLAIN), 6);
+    }
 }

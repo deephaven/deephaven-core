@@ -445,7 +445,8 @@ public abstract class ParquetInstructions implements ColumnToCodecMappings {
         private int maximumDictionaryKeys = defaultMaximumDictionaryKeys;
         private int maximumDictionarySize = defaultMaximumDictionarySize;
         private boolean isLegacyParquet;
-        private int targetPageSize = defaultTargetPageSize;
+        @VisibleForTesting
+        int targetPageSize = defaultTargetPageSize;
         private boolean isRefreshing = DEFAULT_IS_REFRESHING;
 
         public Builder() {}
@@ -609,12 +610,6 @@ public abstract class ParquetInstructions implements ColumnToCodecMappings {
             if (targetPageSize < MIN_DEFAULT_PAGE_SIZE) {
                 throw new IllegalArgumentException("Target page size should be >= " + MIN_DEFAULT_PAGE_SIZE);
             }
-            this.targetPageSize = targetPageSize;
-            return this;
-        }
-
-        @VisibleForTesting
-        public Builder forceSetDefaultTargetPageSizeForTesting(final int targetPageSize) {
             this.targetPageSize = targetPageSize;
             return this;
         }
