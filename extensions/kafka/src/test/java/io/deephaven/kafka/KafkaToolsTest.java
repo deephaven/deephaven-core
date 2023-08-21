@@ -42,6 +42,18 @@ public class KafkaToolsTest {
         assertEquals(double.class, colDefs.get(1).getDataType());
     }
 
+    @Test
+    public void testAvroSchemaWithUTF8Strings() {
+        final Schema avroSchema = new Schema.Parser().parse(schemaWithNull);
+        final List<ColumnDefinition<?>> colDefs = new ArrayList<>();
+        KafkaTools.avroSchemaToColumnDefinitions(colDefs, null, avroSchema, KafkaTools.DIRECT_MAPPING, true);
+        assertEquals(2, colDefs.size());
+        assertEquals("Symbol", colDefs.get(0).getName());
+        assertEquals(CharSequence.class, colDefs.get(0).getDataType());
+        assertEquals("Price", colDefs.get(1).getName());
+        assertEquals(double.class, colDefs.get(1).getDataType());
+    }
+
     private static final String schemaWithNesting =
             "  { "
                     + "    \"type\": \"record\", "

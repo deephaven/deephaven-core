@@ -24,6 +24,7 @@ import io.deephaven.kafka.ingest.GenericRecordChunkAdapter;
 import io.deephaven.kafka.ingest.KeyOrValueProcessor;
 import io.deephaven.kafka.publish.GenericRecordKeyOrValueSerializer;
 import io.deephaven.kafka.publish.KeyOrValueSerializer;
+import io.deephaven.qst.type.Type;
 import io.deephaven.stream.StreamChunkUtils;
 import io.deephaven.vector.ByteVector;
 import org.apache.avro.LogicalType;
@@ -68,6 +69,8 @@ class AvroImpl {
         /** fields mapped to null are skipped. */
         private final Function<String, String> fieldPathToColumnName;
 
+        boolean useUTF8Strings = false;
+
         AvroConsume(final Schema schema, final Function<String, String> fieldPathToColumnName) {
             this.schema = schema;
             this.schemaName = null;
@@ -105,7 +108,7 @@ class AvroImpl {
                     ? schema
                     : getAvroSchema(schemaRegistryClient, schemaName, schemaVersion);
             avroSchemaToColumnDefinitions(columnDefinitionsOut, data.fieldPathToColumnName, localSchema,
-                    fieldPathToColumnName);
+                    fieldPathToColumnName, useUTF8Strings);
             data.extra = localSchema;
             return data;
         }
@@ -119,6 +122,11 @@ class AvroImpl {
                     NESTED_FIELD_NAME_SEPARATOR_PATTERN,
                     (Schema) data.extra,
                     true);
+        }
+
+        public AvroConsume useUTF8Strings() {
+            this.useUTF8Strings = true;
+            return this;
         }
     }
 
@@ -383,7 +391,8 @@ class AvroImpl {
 
     static void avroSchemaToColumnDefinitions(List<ColumnDefinition<?>> columnsOut,
             Map<String, String> fieldPathToColumnNameOut, Schema schema,
-            Function<String, String> requestedFieldPathToColumnName) {
+            Function<String, String> requestedFieldPathToColumnName,
+            final boolean useUTF8Strings) {
         if (schema.isUnion()) {
             throw new UnsupportedOperationException("Schemas defined as a union of records are not supported");
         }
@@ -394,7 +403,7 @@ class AvroImpl {
         final List<Field> fields = schema.getFields();
         for (final Field field : fields) {
             pushColumnTypesFromAvroField(columnsOut, fieldPathToColumnNameOut, "", field,
-                    requestedFieldPathToColumnName);
+                    requestedFieldPathToColumnName, useUTF8Strings);
         }
     }
 
@@ -403,7 +412,8 @@ class AvroImpl {
             final Map<String, String> fieldPathToColumnNameOut,
             final String fieldNamePrefix,
             final Field field,
-            final Function<String, String> fieldPathToColumnName) {
+            final Function<String, String> fieldPathToColumnName,
+            final boolean useUTF8Strings) {
         final Schema fieldSchema = field.schema();
         final String fieldName = field.name();
         final String mappedNameForColumn = fieldPathToColumnName.apply(fieldNamePrefix + fieldName);
@@ -415,7 +425,7 @@ class AvroImpl {
         pushColumnTypesFromAvroField(
                 columnsOut, fieldPathToColumnNameOut,
                 fieldNamePrefix, fieldName,
-                fieldSchema, mappedNameForColumn, fieldType, fieldPathToColumnName);
+                fieldSchema, mappedNameForColumn, fieldType, fieldPathToColumnName, useUTF8Strings);
     }
 
     private static void pushColumnTypesFromAvroField(
@@ -426,7 +436,8 @@ class AvroImpl {
             final Schema fieldSchema,
             final String mappedNameForColumn,
             final Schema.Type fieldType,
-            final Function<String, String> fieldPathToColumnName) {
+            final Function<String, String> fieldPathToColumnName,
+            final boolean useUTF8Strings) {
         switch (fieldType) {
             case BOOLEAN:
                 columnsOut.add(ColumnDefinition.ofBoolean(mappedNameForColumn));
@@ -453,7 +464,11 @@ class AvroImpl {
                 break;
             case ENUM:
             case STRING:
-                columnsOut.add(ColumnDefinition.ofString(mappedNameForColumn));
+                if(useUTF8Strings) {
+                    columnsOut.add(ColumnDefinition.of(mappedNameForColumn, Type.find(CharSequence.class)));
+                } else {
+                    columnsOut.add(ColumnDefinition.ofString(mappedNameForColumn));
+                }
                 break;
             case UNION: {
                 final Schema effectiveSchema = KafkaSchemaUtils.getEffectiveSchema(fieldName, fieldSchema);
@@ -467,7 +482,7 @@ class AvroImpl {
                 pushColumnTypesFromAvroField(
                         columnsOut, fieldPathToColumnNameOut,
                         fieldNamePrefix, fieldName,
-                        effectiveSchema, mappedNameForColumn, effectiveSchema.getType(), fieldPathToColumnName);
+                        effectiveSchema, mappedNameForColumn, effectiveSchema.getType(), fieldPathToColumnName, useUTF8Strings);
                 return;
             }
             case RECORD:
@@ -476,7 +491,7 @@ class AvroImpl {
                     pushColumnTypesFromAvroField(
                             columnsOut, fieldPathToColumnNameOut,
                             fieldNamePrefix + fieldName + NESTED_FIELD_NAME_SEPARATOR, nestedField,
-                            fieldPathToColumnName);
+                            fieldPathToColumnName, useUTF8Strings);
                 }
                 return;
             case BYTES:
