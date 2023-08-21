@@ -120,8 +120,8 @@ public class PlainBinaryChunkedWriter extends AbstractBulkValuesWriter<Binary[]>
     }
 
     @Override
-    public @NotNull WriteResult writeBulkFilterNulls(@NotNull Binary[] bulkValues,
-                                                     final int nonNullLeafCount) {
+    public @NotNull WriteResult writeBulkVectorFilterNulls(@NotNull Binary[] bulkValues,
+                                                           final int nonNullLeafCount) {
         IntBuffer nullOffsets = IntBuffer.allocate(4);
         for (int i = 0; i < nonNullLeafCount; i++) {
             if (bulkValues[i] != null) {

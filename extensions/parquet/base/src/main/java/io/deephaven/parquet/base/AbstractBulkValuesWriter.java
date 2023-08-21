@@ -37,7 +37,7 @@ public abstract class AbstractBulkValuesWriter<BUFFER_TYPE> extends ValuesWriter
             @NotNull final RunLengthBitPackingHybridEncoder rlEncoder,
             @NotNull final RunLengthBitPackingHybridEncoder dlEncoder,
             final int nonNullValueCount) throws IOException {
-        final IntBuffer nullsOffsets = writeBulkFilterNulls(bulkValues, nonNullValueCount).nullOffsets;
+        final IntBuffer nullsOffsets = writeBulkVectorFilterNulls(bulkValues, nonNullValueCount).nullOffsets;
         return applyDlAndRl(vectorSizes, rlEncoder, dlEncoder, nullsOffsets);
     }
 

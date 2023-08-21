@@ -6,11 +6,19 @@ package io.deephaven.parquet.table;
 import io.deephaven.UncheckedDeephavenException;
 import io.deephaven.api.Selectable;
 import io.deephaven.base.FileUtils;
+import io.deephaven.datastructures.util.CollectionUtil;
 import io.deephaven.engine.context.ExecutionContext;
+import io.deephaven.engine.primitive.function.ByteConsumer;
+import io.deephaven.engine.primitive.function.CharConsumer;
+import io.deephaven.engine.primitive.function.FloatConsumer;
+import io.deephaven.engine.primitive.function.ShortConsumer;
 import io.deephaven.engine.primitive.iterator.CloseableIterator;
 import io.deephaven.engine.table.ColumnDefinition;
+import io.deephaven.engine.table.ColumnSource;
+import io.deephaven.engine.table.impl.sources.ReinterpretUtils;
 import io.deephaven.engine.table.impl.util.ColumnHolder;
 import io.deephaven.engine.table.impl.select.FormulaEvaluationException;
+import io.deephaven.engine.table.iterators.*;
 import io.deephaven.engine.testutil.TstUtils;
 import io.deephaven.engine.testutil.junit4.EngineCleanup;
 import io.deephaven.engine.util.BigDecimalUtils;
@@ -23,7 +31,15 @@ import io.deephaven.stringset.StringSet;
 import io.deephaven.engine.util.TableTools;
 import io.deephaven.engine.table.impl.QueryTable;
 import io.deephaven.test.types.OutOfBandTest;
+import io.deephaven.time.DateTimeUtils;
+import io.deephaven.util.compare.DoubleComparisons;
+import io.deephaven.util.compare.FloatComparisons;
 import junit.framework.TestCase;
+import org.apache.commons.lang3.mutable.*;
+import org.apache.parquet.column.statistics.Statistics;
+import org.apache.parquet.hadoop.metadata.ColumnChunkMetaData;
+import org.apache.parquet.hadoop.metadata.ParquetMetadata;
+import org.apache.parquet.io.api.Binary;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Ignore;
@@ -34,12 +50,18 @@ import java.io.File;
 import java.io.Serializable;
 import java.math.BigDecimal;
 import java.math.BigInteger;
+import java.time.Instant;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
+import java.util.function.DoubleConsumer;
+import java.util.function.IntConsumer;
+import java.util.function.LongConsumer;
+
 import org.junit.experimental.categories.Category;
 
 import static io.deephaven.engine.testutil.TstUtils.assertTableEquals;
+import static io.deephaven.util.QueryConstants.*;
 import static org.junit.Assert.*;
 
 @Category(OutOfBandTest.class)
@@ -794,5 +816,492 @@ public class ParquetTableReadWriteTest {
         // Read back fromDisk and compare it with original table. If the underlying file has not been corrupted or
         // swapped out, then we would not be able to read from the file
         TstUtils.assertTableEquals(tableToSave, fromDisk);
+    }
+
+    @Test
+    public void readWriteStatisticsTest() {
+        // Test flat columns.
+        final Table flatTableToSave = getTableFlat(10_000, true, true);
+        final File flatTableDest = new File(rootFile, "ParquetTest_flat_statistics_test.parquet");
+        ParquetTools.writeTable(flatTableToSave, flatTableDest);
+
+        final Table flatFromDisk = ParquetTools.readTable(flatTableDest);
+        TstUtils.assertTableEquals(maybeFixBigDecimal(flatTableToSave), flatFromDisk);
+
+        assertTableStatistics(flatTableToSave, flatTableDest);
+
+        // Test nested columns.
+        final Table groupedTableToSave = getGroupedTable(10_000, true);
+        final File groupedTableDest = new File(rootFile, "ParquetTest_grouped_statistics_test.parquet");
+        ParquetTools.writeTable(groupedTableToSave, groupedTableDest, groupedTableToSave.getDefinition());
+
+        final Table groupedFromDisk = ParquetTools.readTable(groupedTableDest);
+        TstUtils.assertTableEquals(groupedTableToSave, groupedFromDisk);
+
+        assertTableStatistics(groupedTableToSave, groupedTableDest);
+    }
+
+    private void assertTableStatistics(Table inputTable, File dest) {
+        // Verify that the columns have the correct statistics.
+        final ParquetMetadata metadata = new ParquetTableLocationKey(dest, 0, null).getMetadata();
+
+        final String[] colNames =
+                inputTable.getColumnSourceMap().keySet().toArray(CollectionUtil.ZERO_LENGTH_STRING_ARRAY);
+        for (int colIdx = 0; colIdx < inputTable.numColumns(); ++colIdx) {
+            final String colName = colNames[colIdx];
+
+            final ColumnSource<?> columnSource = inputTable.getColumnSource(colName);
+            final ColumnChunkMetaData columnChunkMetaData = metadata.getBlocks().get(0).getColumns().get(colIdx);
+            final Statistics<?> statistics = columnChunkMetaData.getStatistics();
+
+            final Class<?> csType = columnSource.getType();
+
+            if (csType == boolean.class || csType == Boolean.class) {
+                assertBooleanColumnStatistics(
+                        new SerialByteColumnIterator(
+                                ReinterpretUtils.booleanToByteSource((ColumnSource<Boolean>) columnSource),
+                                inputTable.getRowSet()),
+                        (Statistics<Integer>) statistics);
+            } else if (csType == byte.class || csType == Byte.class) {
+                assertByteColumnStatistics(
+                        new SerialByteColumnIterator(
+                                (ColumnSource<Byte>) columnSource, inputTable.getRowSet()),
+                        (Statistics<Integer>) statistics);
+            } else if (csType == char.class || csType == Character.class) {
+                assertCharColumnStatistics(
+                        new SerialCharacterColumnIterator(
+                                (ColumnSource<Character>) columnSource, inputTable.getRowSet()),
+                        (Statistics<Integer>) statistics);
+            } else if (csType == short.class || csType == Short.class) {
+                assertShortColumnStatistics(
+                        new SerialShortColumnIterator(
+                                (ColumnSource<Short>) columnSource, inputTable.getRowSet()),
+                        (Statistics<Integer>) statistics);
+            } else if (csType == int.class || csType == Integer.class) {
+                assertIntColumnStatistics(
+                        new SerialIntegerColumnIterator(
+                                (ColumnSource<Integer>) columnSource, inputTable.getRowSet()),
+                        (Statistics<Integer>) statistics);
+            } else if (csType == long.class || csType == Long.class) {
+                assertLongColumnStatistics(
+                        new SerialLongColumnIterator(
+                                (ColumnSource<Long>) columnSource, inputTable.getRowSet()),
+                        (Statistics<Long>) statistics);
+            } else if (csType == float.class || csType == Float.class) {
+                assertFloatColumnStatistics(
+                        new SerialFloatColumnIterator(
+                                (ColumnSource<Float>) columnSource, inputTable.getRowSet()),
+                        (Statistics<Float>) statistics);
+            } else if (csType == double.class || csType == Double.class) {
+                assertDoubleColumnStatistics(
+                        new SerialDoubleColumnIterator(
+                                (ColumnSource<Double>) columnSource, inputTable.getRowSet()),
+                        (Statistics<Double>) statistics);
+            } else if (csType == String.class) {
+                assertStringColumnStatistics(
+                        new SerialObjectColumnIterator<>(
+                                (ColumnSource<String>) columnSource, inputTable.getRowSet()),
+                        (Statistics<Binary>) statistics);
+            } else if (csType == BigInteger.class) {
+                assertBigIntegerColumnStatistics(
+                        new SerialObjectColumnIterator(
+                                (ColumnSource<BigInteger>) columnSource, inputTable.getRowSet()),
+                        (Statistics<Binary>) statistics);
+            } else if (csType == BigDecimal.class) {
+                assertBigDecimalColumnStatistics(
+                        new SerialObjectColumnIterator<>(
+                                (ColumnSource<BigDecimal>) columnSource, inputTable.getRowSet()),
+                        (Statistics<Binary>) statistics);
+            } else if (csType == Instant.class) {
+                assertInstantColumnStatistic(
+                        new SerialObjectColumnIterator<>(
+                                (ColumnSource<Instant>) columnSource, inputTable.getRowSet()),
+                        (Statistics<Long>) statistics);
+            } else {
+                // We can only check primitive types, not vectors or other serializable types.
+                System.out.println("Ignoring column " + colName + " of type " + csType.getName());
+            }
+        }
+    }
+
+    private void assertBooleanColumnStatistics(SerialByteColumnIterator iterator, Statistics<Integer> statistics) {
+        MutableLong itemCount = new MutableLong(0);
+        MutableLong nullCount = new MutableLong(0);
+        MutableInt min = new MutableInt(NULL_BYTE);
+        MutableInt max = new MutableInt(NULL_BYTE);
+
+        iterator.forEachRemaining((ByteConsumer) value -> {
+            itemCount.increment();
+            if (value == NULL_BYTE) {
+                nullCount.increment();
+            } else {
+                if (min.getValue() == NULL_BYTE || value < min.getValue()) {
+                    min.setValue(value);
+                }
+                if (max.getValue() == NULL_BYTE || value > max.getValue()) {
+                    max.setValue(value);
+                }
+            }
+        });
+
+        assertEquals(nullCount.intValue(), statistics.getNumNulls());
+        if (!itemCount.getValue().equals(nullCount.getValue())) {
+            // There are some non-null values, so min and max should be non-null and equal to observed values.
+            assertEquals(min.getValue() == 1, statistics.genericGetMin());
+            assertEquals(max.getValue() == 1, statistics.genericGetMax());
+        } else {
+            // Everything is null, statistics should be empty.
+            assertFalse(statistics.hasNonNullValue());
+        }
+    }
+
+    private void assertByteColumnStatistics(SerialByteColumnIterator iterator, Statistics<Integer> statistics) {
+        MutableLong itemCount = new MutableLong(0);
+        MutableLong nullCount = new MutableLong(0);
+        MutableInt min = new MutableInt(NULL_BYTE);
+        MutableInt max = new MutableInt(NULL_BYTE);
+
+        iterator.forEachRemaining((ByteConsumer) value -> {
+            itemCount.increment();
+            if (value == NULL_BYTE) {
+                nullCount.increment();
+            } else {
+                if (min.getValue() == NULL_BYTE || value < min.getValue()) {
+                    min.setValue(value);
+                }
+                if (max.getValue() == NULL_BYTE || value > max.getValue()) {
+                    max.setValue(value);
+                }
+            }
+        });
+
+        assertEquals(nullCount.intValue(), statistics.getNumNulls());
+        if (!itemCount.getValue().equals(nullCount.getValue())) {
+            // There are some non-null values, so min and max should be non-null and equal to observed values.
+            assertEquals(min.getValue(), statistics.genericGetMin());
+            assertEquals(max.getValue(), statistics.genericGetMax());
+        } else {
+            // Everything is null, statistics should be empty.
+            assertFalse(statistics.hasNonNullValue());
+        }
+    }
+
+    private void assertCharColumnStatistics(SerialCharacterColumnIterator iterator, Statistics<Integer> statistics) {
+        MutableLong itemCount = new MutableLong(0);
+        MutableLong nullCount = new MutableLong(0);
+        MutableInt min = new MutableInt(NULL_CHAR);
+        MutableInt max = new MutableInt(NULL_CHAR);
+
+        iterator.forEachRemaining((CharConsumer) value -> {
+            itemCount.increment();
+            if (value == NULL_CHAR) {
+                nullCount.increment();
+            } else {
+                if (min.getValue() == NULL_CHAR || value < min.getValue()) {
+                    min.setValue(value);
+                }
+                if (max.getValue() == NULL_CHAR || value > max.getValue()) {
+                    max.setValue(value);
+                }
+            }
+        });
+
+        assertEquals(nullCount.intValue(), statistics.getNumNulls());
+        if (!itemCount.getValue().equals(nullCount.getValue())) {
+            // There are some non-null values, so min and max should be non-null and equal to observed values.
+            assertEquals(min.getValue(), statistics.genericGetMin());
+            assertEquals(max.getValue(), statistics.genericGetMax());
+        } else {
+            // Everything is null, statistics should be empty.
+            assertFalse(statistics.hasNonNullValue());
+        }
+    }
+
+    private void assertShortColumnStatistics(SerialShortColumnIterator iterator, Statistics<Integer> statistics) {
+        MutableLong itemCount = new MutableLong(0);
+        MutableLong nullCount = new MutableLong(0);
+        MutableInt min = new MutableInt(NULL_SHORT);
+        MutableInt max = new MutableInt(NULL_SHORT);
+
+        iterator.forEachRemaining((ShortConsumer) value -> {
+            itemCount.increment();
+            if (value == NULL_SHORT) {
+                nullCount.increment();
+            } else {
+                if (min.getValue() == NULL_SHORT || value < min.getValue()) {
+                    min.setValue(value);
+                }
+                if (max.getValue() == NULL_SHORT || value > max.getValue()) {
+                    max.setValue(value);
+                }
+            }
+        });
+
+        assertEquals(nullCount.intValue(), statistics.getNumNulls());
+        if (!itemCount.getValue().equals(nullCount.getValue())) {
+            // There are some non-null values, so min and max should be non-null and equal to observed values.
+            assertEquals(min.getValue(), statistics.genericGetMin());
+            assertEquals(max.getValue(), statistics.genericGetMax());
+        } else {
+            // Everything is null, statistics should be empty.
+            assertFalse(statistics.hasNonNullValue());
+        }
+    }
+
+    private void assertIntColumnStatistics(SerialIntegerColumnIterator iterator, Statistics<Integer> statistics) {
+        MutableLong itemCount = new MutableLong(0);
+        MutableLong nullCount = new MutableLong(0);
+        MutableInt min = new MutableInt(NULL_INT);
+        MutableInt max = new MutableInt(NULL_INT);
+
+        iterator.forEachRemaining((IntConsumer) value -> {
+            itemCount.increment();
+            if (value == NULL_INT) {
+                nullCount.increment();
+            } else {
+                if (min.getValue() == NULL_INT || value < min.getValue()) {
+                    min.setValue(value);
+                }
+                if (max.getValue() == NULL_INT || value > max.getValue()) {
+                    max.setValue(value);
+                }
+            }
+        });
+
+        assertEquals(nullCount.intValue(), statistics.getNumNulls());
+        if (!itemCount.getValue().equals(nullCount.getValue())) {
+            // There are some non-null values, so min and max should be non-null and equal to observed values.
+            assertEquals(min.getValue(), statistics.genericGetMin());
+            assertEquals(max.getValue(), statistics.genericGetMax());
+        } else {
+            // Everything is null, statistics should be empty.
+            assertFalse(statistics.hasNonNullValue());
+        }
+    }
+
+    private void assertLongColumnStatistics(SerialLongColumnIterator iterator, Statistics<Long> statistics) {
+        MutableLong itemCount = new MutableLong(0);
+        MutableLong nullCount = new MutableLong(0);
+        MutableLong min = new MutableLong(NULL_LONG);
+        MutableLong max = new MutableLong(NULL_LONG);
+
+        iterator.forEachRemaining((LongConsumer) value -> {
+            itemCount.increment();
+            if (value == NULL_LONG) {
+                nullCount.increment();
+            } else {
+                if (min.getValue() == NULL_LONG || value < min.getValue()) {
+                    min.setValue(value);
+                }
+                if (max.getValue() == NULL_LONG || value > max.getValue()) {
+                    max.setValue(value);
+                }
+            }
+        });
+
+        assertEquals(nullCount.intValue(), statistics.getNumNulls());
+        if (!itemCount.getValue().equals(nullCount.getValue())) {
+            // There are some non-null values, so min and max should be non-null and equal to observed values.
+            assertEquals(min.getValue(), statistics.genericGetMin());
+            assertEquals(max.getValue(), statistics.genericGetMax());
+        } else {
+            // Everything is null, statistics should be empty.
+            assertFalse(statistics.hasNonNullValue());
+        }
+    }
+
+    private void assertFloatColumnStatistics(SerialFloatColumnIterator iterator, Statistics<Float> statistics) {
+        MutableLong itemCount = new MutableLong(0);
+        MutableLong nullCount = new MutableLong(0);
+        MutableFloat min = new MutableFloat(NULL_FLOAT);
+        MutableFloat max = new MutableFloat(NULL_FLOAT);
+
+        iterator.forEachRemaining((FloatConsumer) value -> {
+            itemCount.increment();
+            if (value == NULL_FLOAT) {
+                nullCount.increment();
+            } else {
+                if (min.getValue() == NULL_FLOAT || value < min.getValue()) {
+                    min.setValue(value);
+                }
+                if (max.getValue() == NULL_FLOAT || value > max.getValue()) {
+                    max.setValue(value);
+                }
+            }
+        });
+
+        assertEquals(nullCount.intValue(), statistics.getNumNulls());
+        if (!itemCount.getValue().equals(nullCount.getValue())) {
+            // There are some non-null values, so min and max should be non-null and equal to observed values.
+            // Use FloatComparisons.compare() to handle -0.0f == 0.0f properly
+            assertEquals(FloatComparisons.compare(min.getValue(), statistics.genericGetMin()), 0);
+            assertEquals(FloatComparisons.compare(max.getValue(), statistics.genericGetMax()), 0);
+        } else {
+            // Everything is null, statistics should be empty.
+            assertFalse(statistics.hasNonNullValue());
+        }
+    }
+
+    private void assertDoubleColumnStatistics(SerialDoubleColumnIterator iterator, Statistics<Double> statistics) {
+        MutableLong itemCount = new MutableLong(0);
+        MutableLong nullCount = new MutableLong(0);
+        MutableDouble min = new MutableDouble(NULL_DOUBLE);
+        MutableDouble max = new MutableDouble(NULL_DOUBLE);
+
+        iterator.forEachRemaining((DoubleConsumer) value -> {
+            itemCount.increment();
+            if (value == NULL_DOUBLE) {
+                nullCount.increment();
+            } else {
+                if (min.getValue() == NULL_DOUBLE || value < min.getValue()) {
+                    min.setValue(value);
+                }
+                if (max.getValue() == NULL_DOUBLE || value > max.getValue()) {
+                    max.setValue(value);
+                }
+            }
+        });
+
+        assertEquals(nullCount.intValue(), statistics.getNumNulls());
+        if (!itemCount.getValue().equals(nullCount.getValue())) {
+            // There are some non-null values, so min and max should be non-null and equal to observed values.
+            // Use DoubleComparisons.compare() to handle -0.0f == 0.0f properly
+            assertEquals(DoubleComparisons.compare(min.getValue(), statistics.genericGetMin()), 0);
+            assertEquals(DoubleComparisons.compare(max.getValue(), statistics.genericGetMax()), 0);
+        } else {
+            // Everything is null, statistics should be empty.
+            assertFalse(statistics.hasNonNullValue());
+        }
+    }
+
+    private void assertStringColumnStatistics(SerialObjectColumnIterator<String> iterator,
+            Statistics<Binary> statistics) {
+        MutableLong itemCount = new MutableLong(0);
+        MutableLong nullCount = new MutableLong(0);
+        MutableObject<String> min = new MutableObject<>(null);
+        MutableObject<String> max = new MutableObject<>(null);
+
+        iterator.forEachRemaining((value) -> {
+            itemCount.increment();
+            if (value == null) {
+                nullCount.increment();
+            } else {
+                if (min.getValue() == null || value.compareTo(min.getValue()) < 0) {
+                    min.setValue(value);
+                }
+                if (max.getValue() == null || value.compareTo(max.getValue()) > 0) {
+                    max.setValue(value);
+                }
+            }
+        });
+
+        assertEquals(nullCount.intValue(), statistics.getNumNulls());
+        if (!itemCount.getValue().equals(nullCount.getValue())) {
+            // There are some non-null values, so min and max should be non-null and equal to observed values.
+            assertEquals(Binary.fromString(min.getValue()), statistics.genericGetMin());
+            assertEquals(Binary.fromString(max.getValue()), statistics.genericGetMax());
+        } else {
+            // Everything is null, statistics should be empty.
+            assertFalse(statistics.hasNonNullValue());
+        }
+    }
+
+    private void assertInstantColumnStatistic(SerialObjectColumnIterator<Instant> iterator,
+            Statistics<Long> statistics) {
+        MutableLong itemCount = new MutableLong(0);
+        MutableLong nullCount = new MutableLong(0);
+        MutableLong min = new MutableLong(NULL_LONG);
+        MutableLong max = new MutableLong(NULL_LONG);
+
+        iterator.forEachRemaining((value) -> {
+            itemCount.increment();
+            if (value == null) {
+                nullCount.increment();
+            } else {
+                // DateTimeUtils.epochNanos() is the correct conversion for Instant to long.
+                if (min.getValue() == NULL_LONG || DateTimeUtils.epochNanos(value) < min.getValue()) {
+                    min.setValue(DateTimeUtils.epochNanos(value));
+                }
+                if (max.getValue() == NULL_LONG || DateTimeUtils.epochNanos(value) > max.getValue()) {
+                    max.setValue(DateTimeUtils.epochNanos(value));
+                }
+            }
+        });
+
+        assertEquals(nullCount.intValue(), statistics.getNumNulls());
+        if (!itemCount.getValue().equals(nullCount.getValue())) {
+            // There are some non-null values, so min and max should be non-null and equal to observed values.
+            assertEquals(min.getValue(), statistics.genericGetMin());
+            assertEquals(max.getValue(), statistics.genericGetMax());
+        } else {
+            // Everything is null, statistics should be empty.
+            assertFalse(statistics.hasNonNullValue());
+        }
+    }
+
+    private void assertBigDecimalColumnStatistics(SerialObjectColumnIterator<BigDecimal> iterator,
+            Statistics<Binary> statistics) {
+        MutableLong itemCount = new MutableLong(0);
+        MutableLong nullCount = new MutableLong(0);
+        MutableObject<BigDecimal> min = new MutableObject<>(null);
+        MutableObject<BigDecimal> max = new MutableObject<>(null);
+
+        iterator.forEachRemaining((value) -> {
+            itemCount.increment();
+            if (value == null) {
+                nullCount.increment();
+            } else {
+                if (min.getValue() == null || value.compareTo(min.getValue()) < 0) {
+                    min.setValue(value);
+                }
+                if (max.getValue() == null || value.compareTo(max.getValue()) > 0) {
+                    max.setValue(value);
+                }
+            }
+        });
+
+        assertEquals(nullCount.intValue(), statistics.getNumNulls());
+        if (!itemCount.getValue().equals(nullCount.getValue())) {
+            // There are some non-null values, so min and max should be non-null and equal to observed values.
+            assertEquals(Binary.fromConstantByteArray(min.getValue().unscaledValue().toByteArray()),
+                    statistics.genericGetMin());
+            assertEquals(Binary.fromConstantByteArray(max.getValue().unscaledValue().toByteArray()),
+                    statistics.genericGetMax());
+        } else {
+            // Everything is null, statistics should be empty.
+            assertFalse(statistics.hasNonNullValue());
+        }
+    }
+
+    private void assertBigIntegerColumnStatistics(SerialObjectColumnIterator<BigInteger> iterator,
+            Statistics<Binary> statistics) {
+        MutableLong itemCount = new MutableLong(0);
+        MutableLong nullCount = new MutableLong(0);
+        MutableObject<BigInteger> min = new MutableObject<>(null);
+        MutableObject<BigInteger> max = new MutableObject<>(null);
+
+        iterator.forEachRemaining((value) -> {
+            itemCount.increment();
+            if (value == null) {
+                nullCount.increment();
+            } else {
+                if (min.getValue() == null || value.compareTo(min.getValue()) < 0) {
+                    min.setValue(value);
+                }
+                if (max.getValue() == null || value.compareTo(max.getValue()) > 0) {
+                    max.setValue(value);
+                }
+            }
+        });
+
+        assertEquals(nullCount.intValue(), statistics.getNumNulls());
+        if (!itemCount.getValue().equals(nullCount.getValue())) {
+            // There are some non-null values, so min and max should be non-null and equal to observed values.
+            assertEquals(Binary.fromConstantByteArray(min.getValue().toByteArray()), statistics.genericGetMin());
+            assertEquals(Binary.fromConstantByteArray(max.getValue().toByteArray()), statistics.genericGetMax());
+        } else {
+            // Everything is null, statistics should be empty.
+            assertFalse(statistics.hasNonNullValue());
+        }
     }
 }

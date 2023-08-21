@@ -595,7 +595,7 @@ public class ParquetTableWriter {
             final VectorColumnWriterHelper vectorHelper = writingHelper.isVectorFormat()
                     ? (VectorColumnWriterHelper) writingHelper
                     : null;
-            // Don't actually track statistics for vector columns, since we don't know what they mean for vectors.
+            // We won't track statistics for vector columns.
             final Statistics<?> statistics = vectorHelper == null ? columnWriter.getStats() : NullStatistics.INSTANCE;
             // @formatter:off
             try (final RowSequence.Iterator lengthRowSetIterator = vectorHelper != null
@@ -749,10 +749,8 @@ public class ParquetTableWriter {
                 if (vectorHelper != null) {
                     columnWriter.addVectorPage(pageBuffer, arraySizeIt.next(), pageBuffer.remaining());
                 } else if (pageHasNulls) {
-                    // Not tracking stats, we already have them.
                     columnWriter.addPage(pageBuffer, pageBuffer.remaining());
                 } else {
-                    // Not tracking stats, we already have them.
                     columnWriter.addPageNoNulls(pageBuffer, pageBuffer.remaining());
                 }
             }

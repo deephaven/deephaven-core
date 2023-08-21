@@ -106,7 +106,7 @@ public class PlainBooleanChunkedWriter extends AbstractBulkValuesWriter<ByteBuff
     }
 
     @Override
-    public @NotNull WriteResult writeBulkFilterNulls(@NotNull ByteBuffer bulkValues, int rowCount) {
+    public @NotNull WriteResult writeBulkVectorFilterNulls(@NotNull ByteBuffer bulkValues, int rowCount) {
         IntBuffer nullOffsets = IntBuffer.allocate(4);
         int i = 0;
         while (bulkValues.hasRemaining()) {

@@ -124,8 +124,8 @@ public class PlainLongChunkedWriter extends AbstractBulkValuesWriter<LongBuffer>
 
     @NotNull
     @Override
-    public WriteResult writeBulkFilterNulls(@NotNull final LongBuffer bulkValues,
-                                            final int rowCount) {
+    public WriteResult writeBulkVectorFilterNulls(@NotNull final LongBuffer bulkValues,
+                                                  final int rowCount) {
         ensureCapacityFor(bulkValues);
         int i = 0;
         IntBuffer nullOffsets = IntBuffer.allocate(4);

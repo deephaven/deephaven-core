@@ -130,7 +130,7 @@ public class RleIntChunkedWriter extends AbstractBulkValuesWriter<IntBuffer> {
     }
 
     @Override
-    public @NotNull WriteResult writeBulkFilterNulls(@NotNull IntBuffer bulkValues, int rowCount) {
+    public @NotNull WriteResult writeBulkVectorFilterNulls(@NotNull IntBuffer bulkValues, int rowCount) {
         IntBuffer nullOffsets = IntBuffer.allocate(4);
         int i = 0;
         while (bulkValues.hasRemaining()) {

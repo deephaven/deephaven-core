@@ -124,8 +124,8 @@ public class PlainDoubleChunkedWriter extends AbstractBulkValuesWriter<DoubleBuf
 
     @NotNull
     @Override
-    public WriteResult writeBulkFilterNulls(@NotNull final DoubleBuffer bulkValues,
-                                            final int rowCount) {
+    public WriteResult writeBulkVectorFilterNulls(@NotNull final DoubleBuffer bulkValues,
+                                                  final int rowCount) {
         ensureCapacityFor(bulkValues);
         int i = 0;
         IntBuffer nullOffsets = IntBuffer.allocate(4);

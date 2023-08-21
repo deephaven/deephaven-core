@@ -84,7 +84,7 @@ public interface BulkWriter<BUFFER_TYPE> {
      * @return a {@link WriteResult} containing the statistics of the result.
      */
     @NotNull
-    WriteResult writeBulkFilterNulls(@NotNull BUFFER_TYPE bulkValues,
+    WriteResult writeBulkVectorFilterNulls(@NotNull BUFFER_TYPE bulkValues,
             final int rowCount);
 
     /**
