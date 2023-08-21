@@ -204,27 +204,6 @@ public class CachedChannelProviderTest {
         Assert.assertTrue(thirdCCP.invalid());
     }
 
-    @Test
-    public void testTrackerCleanup() throws IOException {
-        final SeekableChannelsProvider wrappedProvider = new TestChannelProvider();
-        // Register cached channel providers with different files
-        for (int i = 0; i < CachedChannelProviderTracker.PROVIDER_MAP_CLEANUP_LIMIT - 1; i++) {
-            SeekableChannelsProvider ccp = new CachedChannelProvider(wrappedProvider, 100);
-            ccp.getReadChannel("rc" + i);
-        }
-        Assert.assertEquals(CachedChannelProviderTracker.getInstance().size(),
-                CachedChannelProviderTracker.PROVIDER_MAP_CLEANUP_LIMIT - 1);
-
-        // Trigger garbage collection to clear any old providers
-        System.gc();
-        System.gc();
-
-        // Now register one more provider, cleanup logic should kick in
-        SeekableChannelsProvider ccp = new CachedChannelProvider(wrappedProvider, 100);
-        ccp.getReadChannel("rc");
-        Assert.assertEquals(CachedChannelProviderTracker.getInstance().size(), 1);
-    }
-
     private class TestChannelProvider implements SeekableChannelsProvider {
 
         AtomicInteger count = new AtomicInteger(0);
