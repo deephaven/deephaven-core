@@ -87,6 +87,17 @@ class AvroImpl {
             this.fieldPathToColumnName = fieldPathToColumnName;
         }
 
+        private AvroConsume(final String schemaName,
+                final String schemaVersion,
+                final Function<String, String> fieldPathToColumnName,
+                final boolean useUTF8Strings) {
+            this.schema = null;
+            this.schemaName = schemaName;
+            this.schemaVersion = schemaVersion;
+            this.fieldPathToColumnName = fieldPathToColumnName;
+            this.useUTF8Strings = useUTF8Strings;
+        }
+
         @Override
         public Optional<SchemaProvider> getSchemaProvider() {
             return Optional.of(new AvroSchemaProvider());
@@ -125,8 +136,7 @@ class AvroImpl {
         }
 
         public AvroConsume useUTF8Strings() {
-            this.useUTF8Strings = true;
-            return this;
+            return new AvroConsume(schemaName, schemaVersion, fieldPathToColumnName, true);
         }
     }
 
@@ -464,7 +474,7 @@ class AvroImpl {
                 break;
             case ENUM:
             case STRING:
-                if(useUTF8Strings) {
+                if (useUTF8Strings) {
                     columnsOut.add(ColumnDefinition.of(mappedNameForColumn, Type.find(CharSequence.class)));
                 } else {
                     columnsOut.add(ColumnDefinition.ofString(mappedNameForColumn));
@@ -482,7 +492,8 @@ class AvroImpl {
                 pushColumnTypesFromAvroField(
                         columnsOut, fieldPathToColumnNameOut,
                         fieldNamePrefix, fieldName,
-                        effectiveSchema, mappedNameForColumn, effectiveSchema.getType(), fieldPathToColumnName, useUTF8Strings);
+                        effectiveSchema, mappedNameForColumn, effectiveSchema.getType(), fieldPathToColumnName,
+                        useUTF8Strings);
                 return;
             }
             case RECORD:

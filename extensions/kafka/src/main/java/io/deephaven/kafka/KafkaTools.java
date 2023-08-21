@@ -193,8 +193,10 @@ public class KafkaTools {
             final Map<String, String> fieldPathToColumnNameOut,
             final Schema schema,
             final Function<String, String> requestedFieldPathToColumnName) {
-        avroSchemaToColumnDefinitions(columnsOut, fieldPathToColumnNameOut, schema, requestedFieldPathToColumnName, false);
+        avroSchemaToColumnDefinitions(columnsOut, fieldPathToColumnNameOut, schema, requestedFieldPathToColumnName,
+                false);
     }
+
     public static void avroSchemaToColumnDefinitions(
             final List<ColumnDefinition<?>> columnsOut,
             final Map<String, String> fieldPathToColumnNameOut,
