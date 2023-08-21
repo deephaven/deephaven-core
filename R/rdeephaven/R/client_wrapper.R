@@ -45,8 +45,8 @@ setMethod(
       if (((username != "") && (password != "")) && (auth_token == "")) {
         verify_string("username", username, TRUE)
         verify_string("password", password, TRUE)
-        user_pass_token = paste(username, ":", password, sep = "")
-        options$set_basic_authentication(user_pass_token)
+        user_pass_token = INTERNAL_base64_encode(paste(username, ":", password, sep = ""))
+        options$set_custom_authentication("Basic", user_pass_token)
       } else if (((username == "") && (password == "")) && (auth_token != "")) {
         verify_string("auth_token", auth_token, TRUE)
         options$set_basic_authentication(auth_token)
