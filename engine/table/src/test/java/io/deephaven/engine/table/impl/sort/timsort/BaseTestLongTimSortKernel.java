@@ -391,18 +391,14 @@ public abstract class BaseTestLongTimSortKernel extends TestTimSortKernel {
     }
 
     static private void verify(int size, List<LongLongTuple> javaTuples, LongChunk longChunk, LongChunk rowKeys) {
-//        System.out.println("Verify: " + javaTuples);
-//        dumpChunk(valuesChunk);
-
         for (int ii = 0; ii < size; ++ii) {
             final long timSorted = longChunk.get(ii);
             final long javaSorted = javaTuples.get(ii).getFirstElement();
-
-            final long timIndex = rowKeys == null ? 0 : rowKeys.get(ii);
-            final long javaIndex = javaTuples.get(ii).getSecondElement();
-
             TestCase.assertEquals("values[" + ii + "]", javaSorted, timSorted);
+
             if (rowKeys != null) {
+                final long timIndex = rowKeys.get(ii);
+                final long javaIndex = javaTuples.get(ii).getSecondElement();
                 TestCase.assertEquals("rowKeys[" + ii + "]", javaIndex, timIndex);
             }
         }

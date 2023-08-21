@@ -391,18 +391,14 @@ public abstract class BaseTestByteTimSortKernel extends TestTimSortKernel {
     }
 
     static private void verify(int size, List<ByteLongTuple> javaTuples, ByteChunk byteChunk, LongChunk rowKeys) {
-//        System.out.println("Verify: " + javaTuples);
-//        dumpChunk(valuesChunk);
-
         for (int ii = 0; ii < size; ++ii) {
             final byte timSorted = byteChunk.get(ii);
             final byte javaSorted = javaTuples.get(ii).getFirstElement();
-
-            final long timIndex = rowKeys == null ? 0 : rowKeys.get(ii);
-            final long javaIndex = javaTuples.get(ii).getSecondElement();
-
             TestCase.assertEquals("values[" + ii + "]", javaSorted, timSorted);
+
             if (rowKeys != null) {
+                final long timIndex = rowKeys.get(ii);
+                final long javaIndex = javaTuples.get(ii).getSecondElement();
                 TestCase.assertEquals("rowKeys[" + ii + "]", javaIndex, timIndex);
             }
         }
