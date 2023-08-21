@@ -53,7 +53,7 @@ TableHandle <- R6Class("TableHandle",
     },
     
     dim = function() {
-      return(c(self$nrow, self$ncol))
+      return(c(self$nrow(), self$ncol()))
     },
     
     ### CONVERSION METHODS, ALSO IMPLEMENTED FUNCTIONALLY
@@ -71,7 +71,7 @@ TableHandle <- R6Class("TableHandle",
     #' Imports the table referenced by this TableHandle into an Arrow Table.
     #' @return A Table containing the data from the table referenced by this TableHandle.
     as_arrow_table = function() {
-      rbsr <- self$to_arrow_record_batch_stream_reader()
+      rbsr <- self$as_record_batch_reader()
       arrow_tbl <- rbsr$read_table()
       return(arrow_tbl)
     },
@@ -80,7 +80,7 @@ TableHandle <- R6Class("TableHandle",
     #' Imports the table referenced by this TableHandle into a dplyr Tibble.
     #' @return A Tibble containing the data from the table referenced by this TableHandle.
     as_tibble = function() {
-      rbsr <- self$to_arrow_record_batch_stream_reader()
+      rbsr <- self$as_record_batch_reader()
       arrow_tbl <- rbsr$read_table()
       return(as_tibble(arrow_tbl))
     },
@@ -89,7 +89,7 @@ TableHandle <- R6Class("TableHandle",
     #' Imports the table referenced by this TableHandle into an R Data Frame.
     #' @return A Data Frame containing the data from the table referenced by this TableHandle.
     as_data_frame = function() {
-      arrow_tbl <- self$to_arrow_table()
+      arrow_tbl <- self$as_arrow_table()
       return(as.data.frame(as.data.frame(arrow_tbl))) # TODO: for some reason as.data.frame on arrow table returns a tibble, not a data frame
     },
     
@@ -277,3 +277,54 @@ TableHandle <- R6Class("TableHandle",
     }
   )
 )
+
+#' @export
+head.TableHandle <- function(x, n = 1, ...) {
+  return(x$head(n))
+}
+
+#' @export
+tail.TableHandle <- function(x, n = 1, ...) {
+  return(x$tail(n))
+}
+
+#' @export
+nrow.TableHandle <- function(x) {
+  return(x$nrow())
+}
+
+#' @export
+ncol.TableHandle <- function(x) {
+  return(x$ncol())
+}
+
+#' @export
+dim.TableHandle <- function(x) {
+  return(x$dim())
+}
+
+#' @export
+as_record_batch_reader.TableHandle <- function(x, ...) {
+  return(x$as_record_batch_reader())
+}
+
+#' @export
+as_arrow_table.TableHandle <- function(x, ...) {
+  return(x$as_arrow_table())
+}
+
+#' @export
+as_tibble.TableHandle <- function(x, ...) {
+  return(x$as_tibble())
+}
+
+#' @export
+as_data_frame.TableHandle <- function(x, ...) {
+  return(x$as_data_frame())
+}
+
+#' @export
+as.data.frame.TableHandle <- function(x, row.names = NULL, optional = FALSE, ...) {
+  return(x$as_data_frame())
+}
+

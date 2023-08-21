@@ -136,7 +136,7 @@ Client <- R6Class("Client",
     open_table = function(name) {
       verify_string("name", name, TRUE)
       if (!private$check_for_table(name)) {
-        stop(paste0("The table '", name, "' you're trying to pull does not exist on the server."))
+        stop(paste0("The table '", name, "' does not exist on the server."))
       }
       return(TableHandle$new(self$.internal_rcpp_object$open_table(name)))
     },
@@ -161,7 +161,7 @@ Client <- R6Class("Client",
         table_object_class[[3]] == "ArrowObject")) {
         return(TableHandle$new(private$arrow_to_dh_table(table_object)))
       } else {
-        stop(paste0("'table_object' must be either an R Data Frame, a dplyr Tibble, an Arrow Table, or an Arrow Record Batch Reader. Got an object of class ", table_object_class[[1]], " instead."))
+        stop(paste0("'table_object' must be a single data frame, tibble, arrow table, or record batch reader. Got an object of class ", table_object_class[[1]], "."))
       }
     },
 
