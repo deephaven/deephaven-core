@@ -93,7 +93,7 @@ public class CachedChannelProviderTracker {
         for (WeakReference<CachedChannelProvider> providerWeakRef : entry.providerList) {
             final CachedChannelProvider ccp = providerWeakRef.get();
             if (ccp != null) {
-                ccp.invalidate();
+                ccp.invalidate(filePath);
             }
         }
     }
@@ -111,6 +111,11 @@ public class CachedChannelProviderTracker {
                 mapIter.remove();
             }
         }
+    }
+
+    @VisibleForTesting
+    void reset() {
+        fileToProviderMap.clear();
     }
 
     @VisibleForTesting

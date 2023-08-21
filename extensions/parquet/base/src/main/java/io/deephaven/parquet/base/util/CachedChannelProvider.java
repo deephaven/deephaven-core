@@ -7,6 +7,7 @@ import io.deephaven.base.RAPriQueue;
 import io.deephaven.base.verify.Assert;
 import io.deephaven.base.verify.Require;
 import io.deephaven.engine.util.file.FileHandleAccessor;
+import io.deephaven.engine.util.file.InvalidFileHandleException;
 import io.deephaven.hash.KeyedObjectHashMap;
 import io.deephaven.hash.KeyedObjectKey;
 import io.deephaven.util.annotations.VisibleForTesting;
@@ -37,6 +38,11 @@ public class CachedChannelProvider implements SeekableChannelsProvider {
      */
     private boolean invalid;
 
+    /**
+     * The path to file that caused this provider to be invalidated.
+     */
+    private String invalidatingFilePath;
+
     enum ChannelType {
         Read, Write, WriteAppend
     }
@@ -66,12 +72,16 @@ public class CachedChannelProvider implements SeekableChannelsProvider {
             final int maximumPooledCount) {
         this.wrappedProvider = wrappedProvider;
         this.maximumPooledCount = Require.gtZero(maximumPooledCount, "maximumPooledCount");
-        this.invalid = false;
     }
 
     @Override
     public SeekableByteChannel getReadChannel(@NotNull final Path path) throws IOException {
         final String pathKey = path.toAbsolutePath().toString();
+        if (invalid) {
+            throw new InvalidFileHandleException(
+                    String.format("Cannot create channel for %s since underlying file at %s has been overwritten",
+                            pathKey, invalidatingFilePath));
+        }
         final KeyedObjectHashMap<String, PerPathPool> channelPool = channelPools.get(ChannelType.Read);
         final CachedChannel result = tryGetPooledChannel(pathKey, channelPool);
         if (result != null) {
@@ -85,6 +95,11 @@ public class CachedChannelProvider implements SeekableChannelsProvider {
     @Override
     public SeekableByteChannel getWriteChannel(@NotNull final Path path, final boolean append) throws IOException {
         final String pathKey = path.toAbsolutePath().toString();
+        if (invalid) {
+            throw new InvalidFileHandleException(
+                    String.format("Cannot create channel for %s since underlying file at %s has been overwritten",
+                            pathKey, invalidatingFilePath));
+        }
         final ChannelType channelType = append ? ChannelType.WriteAppend : ChannelType.Write;
         final KeyedObjectHashMap<String, PerPathPool> channelPool = channelPools.get(channelType);
         final CachedChannel result = tryGetPooledChannel(pathKey, channelPool);
@@ -99,13 +114,6 @@ public class CachedChannelProvider implements SeekableChannelsProvider {
 
     private void channelCreatorHelper(@NotNull final Path path, @NotNull final SeekableByteChannel newChannel)
             throws IOException {
-        // If channel creator is already marked invalid, mark the new channels invalid.
-        // Required because CachedChannelProvider cannot return a null channel, so it returns invalid channels.
-        // TODO Should we just throw an exception here?
-        if (invalid) {
-            invalidateChannel(newChannel);
-            return;
-        }
         CachedChannelProviderTracker.getInstance().registerCachedChannelProvider(this, path.toFile());
         channelList.add(new WeakReference<>(newChannel));
         if (channelList.size() >= CHANNEL_LIST_CLEANUP_LIMIT) {
@@ -113,19 +121,16 @@ public class CachedChannelProvider implements SeekableChannelsProvider {
         }
     }
 
-    private void invalidateChannel(@NotNull final SeekableByteChannel channel) {
-        // Assuming that these channels are instances of FileHandleAccessor. This will be the true if
-        // "wrappedProvider" is an instance of TrackedSeekableChannelsProvider.
-        assert channel instanceof FileHandleAccessor;
-        ((FileHandleAccessor) channel).invalidate();
-    }
-
-    public void invalidate() {
+    public void invalidate(final String invalidatingFilePath) {
         invalid = true;
+        this.invalidatingFilePath = invalidatingFilePath;
         for (WeakReference<SeekableByteChannel> channelWeakRef : channelList) {
             final SeekableByteChannel channel = channelWeakRef.get();
             if (channel != null) {
-                invalidateChannel(channel);
+                // Assuming that these channels are instances of FileHandleAccessor. This will be the true if
+                // "wrappedProvider" is an instance of TrackedSeekableChannelsProvider.
+                assert channel instanceof FileHandleAccessor;
+                ((FileHandleAccessor) channel).invalidate();
             }
         }
         channelList.clear();

@@ -6,6 +6,8 @@ package io.deephaven.parquet.base.util;
 import io.deephaven.engine.util.file.FileHandle;
 import io.deephaven.engine.util.file.FileHandleAccessor;
 import io.deephaven.engine.util.file.FileHandleFactory;
+import io.deephaven.engine.util.file.InvalidFileHandleException;
+import junit.framework.TestCase;
 import org.jetbrains.annotations.NotNull;
 import org.junit.Assert;
 import org.junit.Test;
@@ -197,15 +199,17 @@ public class CachedChannelProviderTest {
                 ((CachedChannelProvider.CachedChannel) rc1).invalid() &&
                 ((CachedChannelProvider.CachedChannel) wc1).invalid());
         Assert.assertTrue(thirdCCP.invalid());
+
+        try {
+            thirdCCP.getWriteChannel("wc1", true);
+            TestCase.fail("Exception expected for invalid provider");
+        } catch (InvalidFileHandleException expected) {
+        }
     }
 
     @Test
     public void testTrackerCleanup() throws IOException {
-        // Trigger garbage collection to clear any old providers
-        System.gc();
-        System.gc();
-        CachedChannelProviderTracker.getInstance().tryCleanup();
-
+        CachedChannelProviderTracker.getInstance().reset();
         final SeekableChannelsProvider wrappedProvider = new TestChannelProvider();
         // Register cached channel providers with different files
         for (int i = 0; i < CachedChannelProviderTracker.PROVIDER_MAP_CLEANUP_LIMIT - 1; i++) {
@@ -216,7 +220,6 @@ public class CachedChannelProviderTest {
                 CachedChannelProviderTracker.PROVIDER_MAP_CLEANUP_LIMIT - 1);
 
         // Trigger garbage collection to clear any old providers
-        System.gc();
         System.gc();
 
         // Now register one more provider, cleanup logic should kick in

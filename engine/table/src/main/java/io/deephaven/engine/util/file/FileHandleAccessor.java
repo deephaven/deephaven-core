@@ -21,7 +21,7 @@ public abstract class FileHandleAccessor {
      * Invalid {@link FileHandleAccessor} objects will fail on refresh. Useful to prevent refreshing files which have
      * been overwritten.
      */
-    private boolean invalid = false;
+    private boolean invalid;
 
     protected volatile FileHandle fileHandle;
 
