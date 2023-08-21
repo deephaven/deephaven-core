@@ -3,7 +3,9 @@
  */
 package io.deephaven.engine.table.impl.locations;
 
+import io.deephaven.util.annotations.InternalUseOnly;
 import io.deephaven.util.type.NamedImplementation;
+import org.jetbrains.annotations.ApiStatus;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
@@ -34,6 +36,15 @@ public interface TableLocationProvider extends NamedImplementation {
          * @param tableLocationKey The new table location key
          */
         void handleTableLocationKey(@NotNull ImmutableTableLocationKey tableLocationKey);
+
+        /**
+         * Notify the listener of a table location that has been removed encountered while initiating or maintaining the location
+         * subscription.  This should occur at most once per location, but the order of delivery is <i>not</i>
+         * guaranteed.
+         *
+         * @param tableLocation The table location
+         */
+        void handleTableLocationRemoved(@NotNull TableLocation tableLocation);
     }
 
     /**
@@ -100,6 +111,18 @@ public interface TableLocationProvider extends NamedImplementation {
      * @return Whether the key is known to this provider
      */
     boolean hasTableLocationKey(@NotNull final TableLocationKey tableLocationKey);
+
+    /**
+     * Remove the given table location.
+     *
+     * Use with caution: the intent is that when a TableLocationProvider is told that a location is gone, we should
+     * quit providing it in the list of locations, and quit asking downstream providers how big it is.
+     *
+     * @param locationKey the TableLocation to remove
+     */
+    @InternalUseOnly
+    @ApiStatus.Experimental
+    void removeTableLocationKey(@NotNull final TableLocationKey locationKey);
 
     /**
      * @param tableLocationKey A {@link TableLocationKey} specifying the location to get

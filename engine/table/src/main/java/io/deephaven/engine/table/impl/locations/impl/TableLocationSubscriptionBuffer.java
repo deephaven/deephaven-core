@@ -6,6 +6,7 @@ package io.deephaven.engine.table.impl.locations.impl;
 import io.deephaven.base.verify.Require;
 import io.deephaven.engine.table.impl.locations.ImmutableTableLocationKey;
 import io.deephaven.engine.table.impl.locations.TableDataException;
+import io.deephaven.engine.table.impl.locations.TableLocation;
 import io.deephaven.engine.table.impl.locations.TableLocationProvider;
 import org.jetbrains.annotations.NotNull;
 
@@ -17,6 +18,7 @@ import java.util.*;
 public class TableLocationSubscriptionBuffer implements TableLocationProvider.Listener {
 
     private static final Set<ImmutableTableLocationKey> EMPTY_TABLE_LOCATION_KEYS = Collections.emptySet();
+    private static final Set<TableLocation> EMPTY_TABLE_LOCATIONS = Collections.emptySet();
 
     private final TableLocationProvider tableLocationProvider;
 
@@ -24,6 +26,8 @@ public class TableLocationSubscriptionBuffer implements TableLocationProvider.Li
 
     private final Object updateLock = new Object();
     private Set<ImmutableTableLocationKey> pendingLocationKeys = EMPTY_TABLE_LOCATION_KEYS;
+
+    private Set<TableLocation> pendingLocationsRemoved = EMPTY_TABLE_LOCATIONS;
     private TableDataException pendingException = null;
 
     public TableLocationSubscriptionBuffer(@NotNull final TableLocationProvider tableLocationProvider) {
@@ -52,15 +56,25 @@ public class TableLocationSubscriptionBuffer implements TableLocationProvider.Li
             subscribed = true;
         }
         final Collection<ImmutableTableLocationKey> resultLocationKeys;
+        final Collection<TableLocation> resultLocationsRemoved;
         final TableDataException resultException;
         synchronized (updateLock) {
             resultLocationKeys = pendingLocationKeys;
             pendingLocationKeys = EMPTY_TABLE_LOCATION_KEYS;
+            resultLocationsRemoved = pendingLocationsRemoved;
+            pendingLocationsRemoved = EMPTY_TABLE_LOCATIONS;
             resultException = pendingException;
             pendingException = null;
         }
+
+        // TODO: Maybe we should combine these into a single exception -- or even better set the pending exception in
+        //       handleRemoved, since this is not allowed in the first place.
         if (resultException != null) {
             throw new TableDataException("Processed pending exception", resultException);
+        }
+
+        if(!pendingLocationsRemoved.isEmpty()) {
+            throw new TableDataException("Removed TableLocations are not handled in TableLocationSubscriptionBuffer: " + pendingLocationsRemoved);
         }
         return resultLocationKeys;
     }
@@ -77,6 +91,7 @@ public class TableLocationSubscriptionBuffer implements TableLocationProvider.Li
         }
         synchronized (updateLock) {
             pendingLocationKeys = EMPTY_TABLE_LOCATION_KEYS;
+            pendingLocationsRemoved = EMPTY_TABLE_LOCATIONS;
             pendingException = null;
         }
     }
@@ -92,6 +107,16 @@ public class TableLocationSubscriptionBuffer implements TableLocationProvider.Li
                 pendingLocationKeys = new HashSet<>();
             }
             pendingLocationKeys.add(tableLocationKey);
+        }
+    }
+
+    @Override
+    public void handleTableLocationRemoved(@NotNull TableLocation tableLocation) {
+        synchronized (updateLock) {
+            if (pendingLocationsRemoved == EMPTY_TABLE_LOCATIONS) {
+                pendingLocationsRemoved = new HashSet<>();
+            }
+            pendingLocationsRemoved.add(tableLocation);
         }
     }
 

@@ -136,11 +136,20 @@ public class FilteredTableDataService extends AbstractTableDataService {
 
         @Nullable
         @Override
-        public TableLocation getTableLocationIfPresent(@NotNull TableLocationKey tableLocationKey) {
+        public TableLocation getTableLocationIfPresent(@NotNull final TableLocationKey tableLocationKey) {
             if (!locationKeyFilter.accept(tableLocationKey)) {
                 return null;
             }
             return inputProvider.getTableLocationIfPresent(tableLocationKey);
+        }
+
+        @Override
+        public void removeTableLocationKey(@NotNull final TableLocationKey locationKey) {
+            if (!locationKeyFilter.accept(locationKey)) {
+                return;
+            }
+
+            inputProvider.removeTableLocationKey(locationKey);
         }
 
         @Override
@@ -167,7 +176,15 @@ public class FilteredTableDataService extends AbstractTableDataService {
         }
 
         @Override
-        public void handleException(@NotNull TableDataException exception) {
+        public void handleTableLocationRemoved(@NotNull final TableLocation tableLocation) {
+            final TableLocationProvider.Listener outputListener = getWrapped();
+            if (outputListener != null && locationKeyFilter.accept(tableLocation.getKey())) {
+                outputListener.handleTableLocationRemoved(tableLocation);
+            }
+        }
+
+        @Override
+        public void handleException(@NotNull final TableDataException exception) {
             final TableLocationProvider.Listener outputListener = getWrapped();
             // See note in handleTableLocationKey.
             if (outputListener != null) {

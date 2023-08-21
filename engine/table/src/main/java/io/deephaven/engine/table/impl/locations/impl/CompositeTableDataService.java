@@ -135,6 +135,11 @@ public class CompositeTableDataService extends AbstractTableDataService {
         }
 
         @Override
+        public void removeTableLocationKey(@NotNull final TableLocationKey locationKey) {
+            inputProviders.forEach(provider -> provider.removeTableLocationKey(locationKey));
+        }
+
+        @Override
         public TableLocationProvider ensureInitialized() {
             inputProviders.forEach(TableLocationProvider::ensureInitialized);
             return this;

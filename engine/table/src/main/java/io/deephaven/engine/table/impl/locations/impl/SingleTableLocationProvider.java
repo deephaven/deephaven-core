@@ -70,6 +70,11 @@ public final class SingleTableLocationProvider implements TableLocationProvider 
         return tableLocation.getKey().equals(tableLocationKey);
     }
 
+    @Override
+    public void removeTableLocationKey(@NotNull TableLocationKey locationKey) {
+        throw new UnsupportedOperationException("SingleTableLocationProvider does not support removal");
+    }
+
     @Nullable
     @Override
     public TableLocation getTableLocationIfPresent(@NotNull final TableLocationKey tableLocationKey) {

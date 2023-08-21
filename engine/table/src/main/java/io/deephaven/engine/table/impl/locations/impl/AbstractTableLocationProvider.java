@@ -204,7 +204,37 @@ public abstract class AbstractTableLocationProvider
         }
     }
 
-    private void verifyPartitionKeys(@NotNull TableLocationKey locationKey) {
+    @Override
+    public void removeTableLocationKey(@NotNull final TableLocationKey locationKey) {
+        final Object removedLocation = tableLocations.remove(locationKey);
+
+        // need to notify subscribers of removed location, and of "removed" size
+        if (removedLocation instanceof TableLocation) {
+            // remove the location from the TableLocationProvider (and notify subscribers)
+            handleTableLocationRemoved((TableLocation) removedLocation);
+            // notify subscribers of this location that the data is gone
+            ((AbstractTableLocation) removedLocation).handleUpdate(null, System.currentTimeMillis());
+            ((AbstractTableLocation) removedLocation).clearColumnLocations();
+        }
+    }
+
+    /**
+     * Remove the location, and notify subscribers that it is gone
+     *
+     * @param location the TableLocation to be removed
+     */
+    public void handleTableLocationRemoved(@NotNull final TableLocation location) {
+        // Note: the location has already been removed from tableLocations
+        if (supportsSubscriptions()) {
+            synchronized (subscriptions) {
+                if (subscriptions.deliverNotification(Listener::handleTableLocationRemoved, location, true)) {
+                    onEmpty();
+                }
+            }
+        }
+    }
+
+    private void verifyPartitionKeys(@NotNull final TableLocationKey locationKey) {
         if (partitionKeys == null) {
             partitionKeys = new ArrayList<>(locationKey.getPartitionKeys());
         } else if (!equals(partitionKeys, locationKey.getPartitionKeys())) {
