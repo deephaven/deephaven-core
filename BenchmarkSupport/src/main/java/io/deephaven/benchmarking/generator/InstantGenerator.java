@@ -13,12 +13,12 @@ public class InstantGenerator implements ObjectGenerator<Instant> {
 
     private final NumberGenerator generator;
 
-    public InstantGenerator(final @NotNull NumberGenerator generator) {
+    public InstantGenerator(@NotNull final NumberGenerator generator) {
         this.generator = generator;
     }
 
     @Override
-    public void init(final @NotNull ExtendedRandom random) {
+    public void init(@NotNull final ExtendedRandom random) {
         generator.init(random);
     }
 

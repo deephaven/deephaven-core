@@ -19,6 +19,7 @@ import io.deephaven.gui.table.filters.Condition;
 import io.deephaven.util.QueryConstants;
 import io.deephaven.util.compare.IntComparisons;
 import io.deephaven.util.type.TypeUtils;
+import org.jetbrains.annotations.NotNull;
 
 public class IntRangeFilter extends AbstractRangeFilter {
     public static IntRangeFilter lt(String columnName, int x) {
@@ -104,8 +105,13 @@ public class IntRangeFilter extends AbstractRangeFilter {
                 (upperInclusive ? "]" : ")") + ")";
     }
 
+    @NotNull
     @Override
-    WritableRowSet binarySearch(RowSet selection, ColumnSource columnSource, boolean usePrev, boolean reverse) {
+    WritableRowSet binarySearch(
+            @NotNull final RowSet selection,
+            @NotNull final ColumnSource<?> columnSource,
+            final boolean usePrev,
+            final boolean reverse) {
         if (selection.isEmpty()) {
             return selection.copy();
         }

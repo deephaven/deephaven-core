@@ -53,7 +53,7 @@ public class ByteChunkInputStreamGenerator extends BaseChunkInputStreamGenerator
     }
 
     @Override
-    public DrainableColumn getInputStream(final StreamReaderOptions options, final @Nullable RowSet subset) {
+    public DrainableColumn getInputStream(final StreamReaderOptions options, @Nullable final RowSet subset) {
         return new ByteChunkInputStream(options, subset);
     }
 
