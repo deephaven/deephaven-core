@@ -323,7 +323,7 @@ public class FloatTimsortKernel {
 
             while (run1wins < context.minGallop && run2wins < context.minGallop) {
                 if (leq(val1, val2)) {
-                    valuesToSort.set(ii, val1);
+                    valuesToSort.set(ii++, val1);
 
                     if (++tempCursor == run1size) {
                         break nodataleft;
@@ -333,7 +333,7 @@ public class FloatTimsortKernel {
                     run1wins++;
                     run2wins = 0;
                 } else {
-                    valuesToSort.set(ii, val2);
+                    valuesToSort.set(ii++, val2);
 
                     if (++run2Cursor == mergeEndExclusive) {
                         break nodataleft;
@@ -428,7 +428,7 @@ public class FloatTimsortKernel {
 
             while (run1wins < context.minGallop && run2wins < context.minGallop) {
                 if (geq(val2, val1)) {
-                    valuesToSort.set(ii, val2);
+                    valuesToSort.set(ii--, val2);
 
                     if (--tempCursor < 0) {
                         break nodataleft;
@@ -438,7 +438,7 @@ public class FloatTimsortKernel {
                     run2wins++;
                     run1wins = 0;
                 } else {
-                    valuesToSort.set(ii, val1);
+                    valuesToSort.set(ii--, val1);
 
                     if (--run1Cursor < mergeStartPosition) {
                         break nodataleft;
