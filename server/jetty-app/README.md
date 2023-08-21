@@ -15,7 +15,9 @@ This README deals with general development for either the Python or Groovy serve
 
 ```shell
 ./gradlew server-jetty-app:run # Python session (default)
+./gradlew server-jetty-app:run -Pdebug # Attach a debugger to the Python session
 ./gradlew server-jetty-app:run -Pgroovy # Groovy session
+./gradlew server-jetty-app:run -Pgroovy -Pdebug # Attach a debugger to the Groovy session
 ```
 
 ## Development with infrequent changes
@@ -49,7 +51,7 @@ See [config-file](https://deephaven.io/core/docs/how-to-guides/configuration/con
 There are multiple ways to shut down the Deephaven server. The easiest it to `ctrl+C` the process. If it's being run in background mode, you can kill it with a `SIGINT`.
 
 ```sh
-kill -3 <pid>
+kill -2 <pid>
 ```
 
 ### SSL

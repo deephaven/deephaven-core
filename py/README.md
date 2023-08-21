@@ -4,7 +4,7 @@ This folder contains Deephaven Community Core's Python source code, tests, and m
 
 ## Requirements
 
-Development and contribution requires _at least_ Python 3.8 or later. We recommend always staying up-to-date on the latest Python version.
+Development and contribution requires Python 3.8+. We recommend always staying up-to-date on the latest Python version.
 
 ## Virtual environments
 
@@ -16,6 +16,8 @@ From the root directory of your `deephaven-core` clone:
 python3 -m venv .venv # Create a venv. Only needed once.
 source .venv/bin/activate # Activate the virtual environment.
 ```
+
+A virtual environment only exists in the terminal it's run from. New or other terminal windows or tabs will need to activate the virtual environment again.
 
 Once finished with a virtual environment, exiting is done with a single command.
 
@@ -30,10 +32,8 @@ Using a `pip` editable install is recommended so that Python changes are reflect
 Install the Python server package. This will install the dependencies as well as the autocomplete dependencies.
 
 ```sh
-DEEPHAVEN_VERSION=0.23.0 pip install -e "py/server[autocomplete]"
+DEEPHAVEN_VERSION=0.dev pip install -e "py/server[autocomplete]"
 ```
-
-**Note:** Pip may report an error that the version is not what is expected if you have installed the locally built version before. Adjust the version to match what `pip` expects.
 
 After installing, a `pip list` should include `deephaven-core` with an editable project location listed.
 
@@ -65,7 +65,7 @@ pip install --force py/server/build/wheel/deephaven_core-<version>-py3-none-any.
 pip install --force py/embedded-server/build/wheel/deephaven_server-<version>-py3-none-any.whl
 ```
 
-**If you make Python code changes that affect the wheel, you will need to re-install it.**
+**If you make Python server code changes, you will need to re-build and re-install the wheel.**
 
 Start the Java server by following the instructions [here](../server/jetty-app/README.md).
 
