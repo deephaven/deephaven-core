@@ -21,6 +21,7 @@ import org.apache.parquet.internal.column.columnindex.OffsetIndexBuilder;
 import org.apache.parquet.io.ParquetEncodingException;
 import org.apache.parquet.schema.LogicalTypeAnnotation;
 import org.apache.parquet.schema.PrimitiveType;
+import org.jetbrains.annotations.NotNull;
 
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
@@ -87,7 +88,7 @@ public class ColumnWriterImpl implements ColumnWriter {
     }
 
     @Override
-    public void addPageNoNulls(final Object pageData, final int valuesCount) throws IOException {
+    public void addPageNoNulls(@NotNull final Object pageData, final int valuesCount) throws IOException {
         initWriter();
         // noinspection unchecked
         bulkWriter.writeBulk(pageData, valuesCount);
@@ -114,7 +115,7 @@ public class ColumnWriterImpl implements ColumnWriter {
     }
 
     @Override
-    public void addDictionaryPage(final Object dictionaryValues, final int valuesCount) throws IOException {
+    public void addDictionaryPage(@NotNull final Object dictionaryValues, final int valuesCount) throws IOException {
         if (pageCount > 0) {
             throw new IllegalStateException("Attempting to add dictionary past the first page");
         }
@@ -195,7 +196,7 @@ public class ColumnWriterImpl implements ColumnWriter {
     }
 
     @Override
-    public void addPage(final Object pageData, final int valuesCount) throws IOException {
+    public void addPage(@NotNull final Object pageData, final int valuesCount) throws IOException {
         if (dlEncoder == null) {
             throw new IllegalStateException("Null values not supported");
         }
@@ -207,8 +208,8 @@ public class ColumnWriterImpl implements ColumnWriter {
     }
 
     public void addVectorPage(
-            final Object pageData,
-            final IntBuffer repeatCount,
+            @NotNull final Object pageData,
+            @NotNull final IntBuffer repeatCount,
             final int nonNullValueCount) throws IOException {
         if (dlEncoder == null) {
             throw new IllegalStateException("Null values not supported");

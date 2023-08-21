@@ -294,8 +294,13 @@ public abstract class AbstractConditionFilter extends WhereFilterImpl {
             TimeLiteralReplacedExpression timeConversionResult,
             QueryLanguageParser.Result result) throws MalformedURLException, ClassNotFoundException;
 
+    @NotNull
     @Override
-    public WritableRowSet filter(RowSet selection, RowSet fullSet, Table table, boolean usePrev) {
+    public WritableRowSet filter(
+            @NotNull final RowSet selection,
+            @NotNull final RowSet fullSet,
+            @NotNull final Table table,
+            final boolean usePrev) {
         if (usePrev && params.length > 0) {
             throw new PreviousFilteringNotSupported("Previous filter with parameters not supported.");
         }
