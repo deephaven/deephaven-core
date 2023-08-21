@@ -3,6 +3,7 @@ package io.deephaven.parquet.base.util;
 import io.deephaven.hash.KeyedObjectHashMap;
 import io.deephaven.hash.KeyedObjectKey;
 import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.VisibleForTesting;
 
 import java.io.File;
 import java.io.IOException;
@@ -16,7 +17,7 @@ import java.util.Iterator;
  * Singleton class for tracking weak references of {@link CachedChannelProvider}, with ability to lookup providers based
  * on file path. This is useful to invalidate channels and file handles in case the underlying file has been modified.
  */
-public class CachedChannelProviderTracker { // TODO Think of a better name
+public class CachedChannelProviderTracker {
     private static volatile CachedChannelProviderTracker instance;
 
     public static CachedChannelProviderTracker getInstance() {
@@ -37,7 +38,8 @@ public class CachedChannelProviderTracker { // TODO Think of a better name
         public final String fileCanonicalPath;
         public final List<WeakReference<CachedChannelProvider>> providerList;
 
-        public FileToProviderMapEntry(final String path, List<WeakReference<CachedChannelProvider>> providerList) {
+        public FileToProviderMapEntry(final String path,
+                final List<WeakReference<CachedChannelProvider>> providerList) {
             this.fileCanonicalPath = path;
             this.providerList = providerList;
         }
@@ -45,9 +47,8 @@ public class CachedChannelProviderTracker { // TODO Think of a better name
 
     private final Map<String, FileToProviderMapEntry> fileToProviderMap;
 
-    private static final int PROVIDER_MAP_CLEANUP_LIMIT = 100;
-
-    private int numProvidersMapped;
+    @VisibleForTesting
+    static final int PROVIDER_MAP_CLEANUP_LIMIT = 100;
 
     private CachedChannelProviderTracker() {
         fileToProviderMap = new KeyedObjectHashMap<>(new KeyedObjectKey.Basic<>() {
@@ -56,7 +57,6 @@ public class CachedChannelProviderTracker { // TODO Think of a better name
                 return entry.fileCanonicalPath;
             }
         });
-        numProvidersMapped = 0;
     }
 
     /**
@@ -65,14 +65,16 @@ public class CachedChannelProviderTracker { // TODO Think of a better name
      * @param ccp {@link CachedChannelProvider} used to create channels for {@code file}
      * @param file File path
      */
-    public final synchronized void registerCachedChannelProvider(@NotNull final CachedChannelProvider ccp,
-            @NotNull final File file) throws IOException {
+    public final void registerCachedChannelProvider(@NotNull final CachedChannelProvider ccp, @NotNull final File file)
+            throws IOException {
         final String filePath = file.getCanonicalPath();
         FileToProviderMapEntry entry = fileToProviderMap.computeIfAbsent(filePath,
                 k -> new FileToProviderMapEntry(filePath, new CopyOnWriteArrayList<>()));
+        if (entry.providerList.stream().anyMatch(providerWeakRef -> providerWeakRef.get() == ccp)) {
+            return;
+        }
         entry.providerList.add(new WeakReference<>(ccp));
-        numProvidersMapped++;
-        if (numProvidersMapped >= PROVIDER_MAP_CLEANUP_LIMIT) {
+        if (fileToProviderMap.size() >= PROVIDER_MAP_CLEANUP_LIMIT) {
             tryCleanup();
         }
     }
@@ -82,20 +84,18 @@ public class CachedChannelProviderTracker { // TODO Think of a better name
      *
      * @param file File path
      */
-    public final synchronized void invalidateChannels(@NotNull final File file) throws IOException {
+    public final void invalidateChannels(@NotNull final File file) throws IOException {
         final String filePath = file.getCanonicalPath();
         FileToProviderMapEntry entry = fileToProviderMap.remove(filePath);
         if (entry == null) {
             return;
         }
-        numProvidersMapped -= entry.providerList.size();
         for (WeakReference<CachedChannelProvider> providerWeakRef : entry.providerList) {
             final CachedChannelProvider ccp = providerWeakRef.get();
             if (ccp != null) {
                 ccp.invalidate();
             }
         }
-
     }
 
     /**
@@ -110,5 +110,10 @@ public class CachedChannelProviderTracker { // TODO Think of a better name
                 mapIter.remove();
             }
         }
+    }
+
+    @VisibleForTesting
+    int size() {
+        return fileToProviderMap.size();
     }
 }

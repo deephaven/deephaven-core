@@ -810,7 +810,7 @@ public class ParquetTableReadWriteTest {
         ParquetTools.writeTable(table2, destFile);
 
         // The following will not fail because we had already opened a file handle to the old file. Therefore, even if
-        // the file got overwritten, the file handle will keep the old alive. This behavior is specific to Unix
+        // the file got overwritten, the file handle will keep the old file alive. This behavior is specific to Unix
         // filesystem.
         TstUtils.assertTableEquals(fromDisk1, table1);
 
@@ -825,6 +825,4 @@ public class ParquetTableReadWriteTest {
             assertTrue(expected.getCause() instanceof InvalidFileHandleException);
         }
     }
-
-    // TODO Add a test for testing invalidating grouping files as well
 }

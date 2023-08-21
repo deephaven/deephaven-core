@@ -3,14 +3,19 @@
  */
 package io.deephaven.parquet.base.util;
 
+import io.deephaven.engine.util.file.FileHandle;
+import io.deephaven.engine.util.file.FileHandleAccessor;
+import io.deephaven.engine.util.file.FileHandleFactory;
 import org.jetbrains.annotations.NotNull;
 import org.junit.Assert;
 import org.junit.Test;
 
+import java.io.File;
 import java.io.IOException;
 import java.nio.ByteBuffer;
-import java.nio.channels.SeekableByteChannel;
+import java.nio.channels.*;
 import java.nio.file.Path;
+import java.nio.file.StandardOpenOption;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -18,6 +23,17 @@ import java.util.concurrent.atomic.AtomicInteger;
 public class CachedChannelProviderTest {
 
     private final List<String> closed = new ArrayList<>();
+
+    private final File f = File.createTempFile("TestFileHandle-", ".dat");
+
+    private final FileHandle fh = new FileHandle(FileChannel.open(f.toPath(),
+            StandardOpenOption.READ, StandardOpenOption.WRITE, StandardOpenOption.CREATE),
+            () -> {
+            });
+
+    private final FileHandleFactory.FileToHandleFunction fthf = (final File file) -> fh;
+
+    public CachedChannelProviderTest() throws IOException {}
 
     @org.junit.After
     public void tearDown() {
@@ -154,6 +170,60 @@ public class CachedChannelProviderTest {
         Assert.assertEquals(closed.size(), 0);
     }
 
+    @Test
+    public void testInvalidation() throws IOException {
+        final SeekableChannelsProvider wrappedProvider = new TestChannelProvider();
+        final CachedChannelProvider firstCCP, secondCCP, thirdCCP;
+        SeekableByteChannel rc1, rc2, wc1;
+
+        firstCCP = new CachedChannelProvider(wrappedProvider, 100);
+        rc1 = firstCCP.getReadChannel("rc1");
+        wc1 = firstCCP.getWriteChannel("wc1", false);
+        // firstCCP -> rc1, wc1
+
+        secondCCP = new CachedChannelProvider(wrappedProvider, 100);
+        rc2 = secondCCP.getReadChannel("rc2");
+        // secondCCP -> rc2
+
+        CachedChannelProviderTracker.getInstance().invalidateChannels(new File("rc2"));
+        Assert.assertTrue(!firstCCP.invalid() &&
+                !((CachedChannelProvider.CachedChannel) rc1).invalid() &&
+                !((CachedChannelProvider.CachedChannel) wc1).invalid());
+        Assert.assertTrue(secondCCP.invalid() &&
+                ((CachedChannelProvider.CachedChannel) rc2).invalid());
+
+        thirdCCP = new CachedChannelProvider(wrappedProvider, 100);
+        wc1 = thirdCCP.getWriteChannel("wc1", true);
+        // thirdCCP -> wc1
+
+        CachedChannelProviderTracker.getInstance().invalidateChannels(new File("wc1"));
+        // Both firstCCP and thirdCCP, and their corresponding channels should be invalidated
+        Assert.assertTrue(firstCCP.invalid() &&
+                ((CachedChannelProvider.CachedChannel) rc1).invalid() &&
+                ((CachedChannelProvider.CachedChannel) wc1).invalid());
+        Assert.assertTrue(thirdCCP.invalid());
+    }
+
+    @Test
+    public void testTrackerCleanup() throws IOException {
+        final SeekableChannelsProvider wrappedProvider = new TestChannelProvider();
+        // Register cached channel providers with different files
+        for (int i = 0; i < CachedChannelProviderTracker.PROVIDER_MAP_CLEANUP_LIMIT - 1; i++) {
+            SeekableChannelsProvider ccp = new CachedChannelProvider(wrappedProvider, 100);
+            ccp.getReadChannel("rc" + i);
+        }
+        Assert.assertEquals(CachedChannelProviderTracker.getInstance().size(),
+                CachedChannelProviderTracker.PROVIDER_MAP_CLEANUP_LIMIT - 1);
+
+        // Trigger garbage collection to clear any old providers
+        System.gc();
+        System.gc();
+
+        // Now register one more provider, cleanup logic should kick in
+        SeekableChannelsProvider ccp = new CachedChannelProvider(wrappedProvider, 100);
+        ccp.getReadChannel("rc");
+        Assert.assertEquals(CachedChannelProviderTracker.getInstance().size(), 1);
+    }
 
     private class TestChannelProvider implements SeekableChannelsProvider {
 
@@ -180,13 +250,11 @@ public class CachedChannelProviderTest {
         }
     }
 
-    private class TestMockChannel implements SeekableByteChannel {
-
-        private final int id;
+    private class TestMockChannel extends FileHandleAccessor implements SeekableByteChannel {
         private final String path;
 
         public TestMockChannel(int id, String path) {
-            this.id = id;
+            super(fthf, new File(path));
             this.path = path;
         }
 
@@ -227,11 +295,11 @@ public class CachedChannelProviderTest {
 
         @Override
         public void close() {
-            closing(id, path);
+            closing(path);
         }
     }
 
-    private void closing(int id, String path) {
+    private void closing(String path) {
         closed.add(path);
     }
 }
