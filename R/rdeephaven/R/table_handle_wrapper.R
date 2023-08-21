@@ -319,11 +319,6 @@ as_tibble.TableHandle <- function(x, ...) {
 }
 
 #' @export
-as_data_frame.TableHandle <- function(x, ...) {
-  return(x$as_data_frame())
-}
-
-#' @export
 as.data.frame.TableHandle <- function(x, row.names = NULL, optional = FALSE, ...) {
   return(x$as_data_frame())
 }
