@@ -266,14 +266,11 @@ TableHandle <- R6Class("TableHandle",
     merge = function(...) {
       table_list <- unlist(c(...))
       if (length(table_list) == 0) {
-        return(NULL)
+        return(TableHandle$new(self$.internal_rcpp_object$merge(NULL)))
       }
       verify_type("table_list", table_list, "TableHandle", "Deephaven TableHandle", FALSE)
-      if (length(table_list) == 1) {
-        return(table_list[[1]])
-      }
       unwrapped_table_list <- lapply(table_list, strip_r6_wrapping)
-      return(TableHandle$new(private$internal_table_object$merge(unwrapped_table_list)))
+      return(TableHandle$new(self$.internal_rcpp_object$merge(unwrapped_table_list)))
     }
   )
 )
