@@ -62,7 +62,8 @@ Build the wheel with
 python3 setup.py bdist_wheel
 ```
 
-Then install the package with
+Then install the package.
+Note the actual name of the `.whl` file may be different depending on system details.
 
 ```
 pip3 install --force --no-deps dist/pydeephaven_ticking-0.28.0-cp310-cp310-linux_x86_64.whl

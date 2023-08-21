@@ -34,6 +34,9 @@ $ python3 -m examples.demo_asof_join
 
 ```
 ## Install
+
+Note the actual name of the `.whl` file may be different depending on system details.
+
 ``` shell
 $ pip3 install dist/pydeephaven-0.28.0-py3-none-any.whl
 ```
