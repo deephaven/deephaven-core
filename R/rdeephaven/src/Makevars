@@ -7,16 +7,7 @@ rwildcard=$(foreach d,$(wildcard $(1:=/*)),$(call rwildcard,$d,$2) $(filter $(su
 # and its dependent libraries was built, as per the instructions in
 # https://github.com/deephaven/deephaven-core/blob/main/cpp-client/README.md
 #
-
-DEPENDENCY_DIRS = \
-	-L$(DHCPP)/local/re2/lib \
-	-L$(DHCPP)/local/zlib/lib \
-	-L$(DHCPP)/local/abseil/lib \
-	-L$(DHCPP)/local/cares/lib \
-	-L$(DHCPP)/local/gflags/lib \
-	-L$(DHCPP)/local/protobuf/lib \
-	-L$(DHCPP)/local/grpc/lib \
-	-L$(DHCPP)/local/arrow/lib
+DEPENDENCY_DIRS = -L$(DHCPP)/local/lib
 
 
 #
@@ -26,30 +17,14 @@ DEPENDENCY_DIRS = \
 # The value -lprotobufd matches the default build type `Debug`
 #
 DEPENDENCY_LIBS = \
-        -lclient \
         -lprotobufd \
         -larrow_flight -larrow -larrow_bundled_dependencies \
-        -lgrpc++ -lgrpc -laddress_sorting -lgpr -lupb -labsl_raw_hash_set \
-        -labsl_hashtablez_sampler -labsl_hash -labsl_low_level_hash -labsl_city \
-        -labsl_statusor -labsl_bad_variant_access -lgpr -lupb -labsl_status \
-        -labsl_random_distributions -labsl_random_seed_sequences \
-        -labsl_random_internal_pool_urbg -labsl_random_internal_randen \
-        -labsl_random_internal_randen_hwaes -labsl_random_internal_randen_hwaes_impl \
-        -labsl_random_internal_randen_slow -labsl_random_internal_platform \
-        -labsl_random_internal_seed_material -labsl_random_seed_gen_exception \
-        -labsl_cord -labsl_cordz_functions -labsl_cordz_info -labsl_cordz_handle -labsl_cord_internal \
-        -labsl_exponential_biased -labsl_bad_optional_access -labsl_str_format_internal \
-        -labsl_synchronization -labsl_stacktrace -labsl_symbolize -labsl_debugging_internal \
-        -labsl_demangle_internal -labsl_graphcycles_internal -labsl_malloc_internal \
-        -labsl_time -labsl_strings -labsl_throw_delegate -labsl_int128 -labsl_strings_internal \
-        -labsl_base -labsl_raw_logging_internal -labsl_log_severity -labsl_spinlock_wait \
-        -labsl_civil_time -labsl_time_zone -lssl -lre2 -lcares
+        `PKG_CONFIG_PATH=$DHCPP/local/lib/pkgconfig --libs grpc`
 
 
 # tells the compiler where to look for additional include directories
 PKG_CXXFLAGS = \
-	-I$(DHCPP)/local/deephaven/include \
-	-I$(DHCPP)/local/arrow/include \
+	-I$(DHCPP)/local/include \
 	-I/usr/share/R/include \
 	-I/usr/local/lib/R/site-library/Rcpp/include
 
@@ -59,9 +34,10 @@ PKG_LIBS = \
 	$(R_CPPFLAGS) \
 	-L/usr/lib/R/lib -lR \
 	$(R_CXXFLAGS) \
+        -L$(DHCPP)/local/lib \
+	-ldhclient -ldhcore \
 	$(DEPENDENCY_DIRS) \
 	$(DEPENDENCY_LIBS) \
-	-L$(DHCPP)/local/deephaven/lib -ldhcore -lclient
 
 
 CC = `"${R_HOME}/bin/R" CMD config CC`

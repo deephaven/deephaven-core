@@ -78,7 +78,7 @@ void Doit(const TableHandleManager &manager) {
   std::vector<std::string> symbols{"FB", "AAPL", "NFLX", "GOOG"};
   std::vector<double> prices{101.1, 102.2, 103.3, 104.4};
   std::vector<int32_t> volumes{1000, 2000, 3000, 4000};
-  auto numRows = static_cast<int64_t>(symbols.size());
+  auto numRows = symbols.size();
   if (numRows != prices.size() || numRows != volumes.size()) {
     throw DEEPHAVEN_EXPR_MSG(std::runtime_error(DEEPHAVEN_DEBUG_MSG("sizes don't match")));
   }
@@ -122,7 +122,7 @@ void Doit(const TableHandleManager &manager) {
   OkOrThrow(DEEPHAVEN_EXPR_MSG(wrapper.FlightClient()->DoPut(options, fd, schema, &fsw, &fmr)));
 
   // 13. Make a RecordBatch containing both the schema and the data
-  auto batch = arrow::RecordBatch::Make(schema, numRows, std::move(columns));
+  auto batch = arrow::RecordBatch::Make(schema, static_cast<std::int64_t>(numRows), std::move(columns));
   OkOrThrow(DEEPHAVEN_EXPR_MSG(fsw->WriteRecordBatch(*batch)));
   OkOrThrow(DEEPHAVEN_EXPR_MSG(fsw->DoneWriting()));
 

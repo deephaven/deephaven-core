@@ -104,9 +104,8 @@ AggregateWrapper* INTERNAL_agg_std(std::vector<std::string> columnSpecs) {
     return new AggregateWrapper(deephaven::client::Aggregate::Std(columnSpecs));
 }
 
-// TODO: capitalize the pct method when a fix is merged
 AggregateWrapper* INTERNAL_agg_percentile(double percentile, std::vector<std::string> columnSpecs) {
-    return new AggregateWrapper(deephaven::client::Aggregate::pct(percentile, false, columnSpecs));
+    return new AggregateWrapper(deephaven::client::Aggregate::Pct(percentile, false, columnSpecs));
 }
 
 AggregateWrapper* INTERNAL_agg_count(std::string columnSpec) {
