@@ -85,6 +85,6 @@ verify_positive_int <- function(arg_name, candidate, is_scalar) {
   verify_in_range(arg_name, candidate, message = "a positive integer", lb = 0, ub = NULL, lb_open = TRUE, ub_open = TRUE)
 }
 
-strip_s4_wrapping <- function(s4_object) {
-  return(s4_object@.internal_rcpp_object)
+strip_r6_wrapping <- function(r6_object) {
+  return(r6_object$.internal_rcpp_object)
 }

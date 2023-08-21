@@ -1,275 +1,208 @@
 #' @export
-setClass(
-  "Client",
-  representation(
-    .internal_rcpp_object = "Rcpp_INTERNAL_Client"
-  )
-)
-
-setGeneric(
-  "dhConnect",
-  function(target, ...) {
-    return(standardGeneric("dhConnect"))
-  },
-  signature = c("target")
-)
-
-#' @export
-setMethod(
-  "dhConnect",
-  signature = c(target = "character"),
-  function(target,
-           auth_type = "anonymous",
-           username = "",
-           password = "",
-           auth_token = "",
-           session_type = "python",
-           use_tls = FALSE,
-           tls_root_certs = "",
-           int_options = list(),
-           string_options = list(),
-           extra_headers = list()) {
-    options <- new(INTERNAL_ClientOptions)
-
-    verify_string("target", target, TRUE)
-    verify_string("auth_type", auth_type, TRUE)
-    if (auth_type == "") {
-      stop("'auth_type' should be a non-empty string.")
-    }
-    verify_bool("use_tls", use_tls, TRUE)
-
-    # check if auth_type needs to be changed and set credentials accordingly
-    if (auth_type == "anonymous") {
-      options$set_default_authentication()
-    } else if (auth_type == "basic") {
-      if (((username != "") && (password != "")) && (auth_token == "")) {
-        verify_string("username", username, TRUE)
-        verify_string("password", password, TRUE)
-        user_pass_token = paste(username, ":", password, sep = "")
-        options$set_basic_authentication(user_pass_token)
-      } else if (((username == "") && (password == "")) && (auth_token != "")) {
-        verify_string("auth_token", auth_token, TRUE)
-        options$set_basic_authentication(auth_token)
-      } else if (((username != "") || (password != "")) && (auth_token != "")) {
-        stop("Basic authentication was requested, but 'auth_token' was provided, as well as least one of 'username' and 'password'. Please provide either 'username' and 'password', or 'auth_token'.")
-      } else {
-        stop("Basic authentication was requested, but 'auth_token' was not provided, and at most one of 'username' or 'password' was provided. Please provide either 'username' and 'password', or 'auth_token'.")
-      }
-    } else {
-      if (auth_token != "") {
-        verify_string("auth_token", auth_token, TRUE)
-        options$set_custom_authentication(auth_type, auth_token)
-      } else {
-        stop("Custom authentication was requested, but no 'auth_token' was provided.")
-      }
-    }
-
-    # set session type if a valid session type is provided
-    if ((session_type == "python") || (session_type == "groovy")) {
-      options$set_session_type(session_type)
-    } else {
-      stop(paste0("'session_type' must be 'python' or 'groovy', but got ", session_type, "."))
-    }
-
-    # if tls is requested, set it and set the root_certs if provided
-    if (use_tls == TRUE) {
-      options$set_use_tls()
-      if (tls_root_certs != "") {
-        verify_string("tls_root_certs", tls_root_certs, TRUE)
-        options$set_tls_root_certs(tls_root_certs)
-      }
-    }
-
-    # set extra header options if they are provided
-    if (length(int_options) != 0) {
-      verify_list("int_options", int_options, TRUE)
-      for (key in names(int_options)) {
-        verify_string("key", key, TRUE)
-        verify_int("value", int_options[[key]], TRUE)
-        options$add_int_options(key, int_options[[key]])
-      }
-    }
-
-    if (length(string_options) != 0) {
-      verify_list("string_options", string_options, TRUE)
-      for (key in names(string_options)) {
-        verify_string("key", key, TRUE)
-        verify_string("value", string_options[[key]], TRUE)
-        options$add_string_options(key, string_options[[key]])
-      }
-    }
-
-    if (length(extra_headers) != 0) {
-      verify_list("extra_headers", extra_headers, TRUE)
-      for (key in names(extra_headers)) {
-        verify_string("key", key, TRUE)
-        verify_string("value", extra_headers[[key]], TRUE)
-        options$add_extra_headers(key, extra_headers[[key]])
-      }
-    }
-
-    if ((auth_token != "") && (auth_type == "anonymous")) {
-      warning("'auth_token' was set but it will not be used, as 'auth_type' is 'anonymous'.")
-    }
+Client <- R6Class("Client",
+  cloneable = FALSE,
+  public = list(
     
-    if (((username != "") || (password != "")) && auth_type != "basic") {
-      warning("At least one of 'username' and 'password' were set but they will not be used, as 'auth_type' is not 'basic'.")
-    }
+    .internal_rcpp_object = NULL,
 
-    if ((tls_root_certs != "") && (use_tls == FALSE)) {
-      warning("'tls_root_certs' was set but it will not be used, as 'use_tls' is FALSE.")
-    }
+    #' @description
+    #' Connect to a running Deephaven server.
+    #' @param target The address of the Deephaven server.
+    #' @param client_options ClientOptions instance with the parameters needed to connect to the server.
+    #' See ?ClientOptions for more information.
+    initialize = function(target,
+                          auth_type = "anonymous",
+                          username = "",
+                          password = "",
+                          auth_token = "",
+                          session_type = "python",
+                          use_tls = FALSE,
+                          tls_root_certs = "",
+                          int_options = list(),
+                          string_options = list(),
+                          extra_headers = list()) {
+      options <- new(INTERNAL_ClientOptions)
 
-    internal_client <- new(INTERNAL_Client,
-      target = target,
-      client_options = options
-    )
-    return(new("Client", .internal_rcpp_object = internal_client))
-  }
-)
+      verify_string("target", target, TRUE)
+      verify_string("auth_type", auth_type, TRUE)
+      if (auth_type == "") {
+        stop("'auth_type' should be a non-empty string.")
+      }
+      verify_bool("use_tls", use_tls, TRUE)
 
-### HELPER FUNCTIONS ###
+      # check if auth_type needs to be changed and set credentials accordingly
+      if (auth_type == "anonymous") {
+        options$set_default_authentication()
+      } else if (auth_type == "basic") {
+        if (((username != "") && (password != "")) && (auth_token == "")) {
+          verify_string("username", username, TRUE)
+          verify_string("password", password, TRUE)
+          user_pass_token <- paste(username, ":", password, sep = "")
+          options$set_basic_authentication(user_pass_token)
+        } else if (((username == "") && (password == "")) && (auth_token != "")) {
+          verify_string("auth_token", auth_token, TRUE)
+          options$set_basic_authentication(auth_token)
+        } else if (((username != "") || (password != "")) && (auth_token != "")) {
+          stop("Basic authentication was requested, but 'auth_token' was provided, as well as least one of 'username' and 'password'. Please provide either 'username' and 'password', or 'auth_token'.")
+        } else {
+          stop("Basic authentication was requested, but 'auth_token' was not provided, and at most one of 'username' or 'password' was provided. Please provide either 'username' and 'password', or 'auth_token'.")
+        }
+      } else {
+        if (auth_token != "") {
+          verify_string("auth_token", auth_token, TRUE)
+          options$set_custom_authentication(auth_type, auth_token)
+        } else {
+          stop("Custom authentication was requested, but no 'auth_token' was provided.")
+        }
+      }
 
-check_for_table <- function(client, name) {
-  return(client@.internal_rcpp_object$check_for_table(name))
-}
+      # set session type if a valid session type is provided
+      if ((session_type == "python") || (session_type == "groovy")) {
+        options$set_session_type(session_type)
+      } else {
+        stop(paste0("'session_type' must be 'python' or 'groovy', but got ", session_type, "."))
+      }
 
-### USER-FACING METHODS ###
+      # if tls is requested, set it and set the root_certs if provided
+      if (use_tls == TRUE) {
+        options$set_use_tls()
+        if (tls_root_certs != "") {
+          verify_string("tls_root_certs", tls_root_certs, TRUE)
+          options$set_tls_root_certs(tls_root_certs)
+        }
+      }
 
-setGeneric(
-  "open_table",
-  function(client_instance, name) {
-    return(standardGeneric("open_table"))
-  },
-  signature = c("client_instance", "name")
-)
+      # set extra header options if they are provided
+      if (length(int_options) != 0) {
+        verify_list("int_options", int_options, TRUE)
+        for (key in names(int_options)) {
+          verify_string("key", key, TRUE)
+          verify_int("value", int_options[[key]], TRUE)
+          options$add_int_options(key, int_options[[key]])
+        }
+      }
 
-#' @export
-setMethod(
-  "open_table",
-  signature = c(client_instance = "Client", name = "character"),
-  function(client_instance, name) {
-    verify_string("name", name, TRUE)
-    if (!check_for_table(client_instance, name)) {
-      stop(paste0("The table '", name, "' does not exist on the server."))
-    }
-    return(new("TableHandle", .internal_rcpp_object = client_instance@.internal_rcpp_object$open_table(name)))
-  }
-)
+      if (length(string_options) != 0) {
+        verify_list("string_options", string_options, TRUE)
+        for (key in names(string_options)) {
+          verify_string("key", key, TRUE)
+          verify_string("value", string_options[[key]], TRUE)
+          options$add_string_options(key, string_options[[key]])
+        }
+      }
 
-setGeneric(
-  "empty_table",
-  function(client_instance, size) {
-    return(standardGeneric("empty_table"))
-  },
-  signature = c("client_instance", "size")
-)
+      if (length(extra_headers) != 0) {
+        verify_list("extra_headers", extra_headers, TRUE)
+        for (key in names(extra_headers)) {
+          verify_string("key", key, TRUE)
+          verify_string("value", extra_headers[[key]], TRUE)
+          options$add_extra_headers(key, extra_headers[[key]])
+        }
+      }
 
-#' @export
-setMethod(
-  "empty_table",
-  signature = c(client_instance = "Client", size = "numeric"),
-  function(client_instance, size) {
-    verify_nonnegative_int("size", size, TRUE)
-    return(new("TableHandle", .internal_rcpp_object = client_instance@.internal_rcpp_object$empty_table(size)))
-  }
-)
+      if ((auth_token != "") && (auth_type == "anonymous")) {
+        warning("'auth_token' was set but it will not be used, as 'auth_type' is 'anonymous'.")
+      }
 
-setGeneric(
-  "time_table",
-  function(client_instance, period, ...) {
-    return(standardGeneric("time_table"))
-  },
-  signature = c("client_instance", "period")
-)
+      if (((username != "") || (password != "")) && auth_type != "basic") {
+        warning("At least one of 'username' and 'password' were set but they will not be used, as 'auth_type' is not 'basic'.")
+      }
 
-#' @export
-setMethod(
-  "time_table",
-  signature = c(client_instance = "Client", period = "numeric"),
-  function(client_instance, period, start_time = 0) {
-    verify_any_int("period", period, TRUE)
-    verify_any_int("start_time", start_time, TRUE)
-    return(new("TableHandle", .internal_rcpp_object = client_instance@.internal_rcpp_object$time_table(start_time, period)))
-  }
-)
+      if ((tls_root_certs != "") && (use_tls == FALSE)) {
+        warning("'tls_root_certs' was set but it will not be used, as 'use_tls' is FALSE.")
+      }
 
-setGeneric(
-  "import_table",
-  function(client_instance, table_object) {
-    return(standardGeneric("import_table"))
-  },
-  signature = c("client_instance", "table_object")
-)
-
-#' @export
-setMethod(
-  "import_table",
-  signature = c(client_instance = "Client", table_object = "RecordBatchReader"),
-  function(client_instance, table_object) {
-    ptr <- client_instance@.internal_rcpp_object$new_arrow_array_stream_ptr()
-    table_object$export_to_c(ptr)
-    return(
-      new("TableHandle",
-        .internal_rcpp_object = client_instance@.internal_rcpp_object$new_table_from_arrow_array_stream_ptr(ptr)
+      self$.internal_rcpp_object <- new(INTERNAL_Client,
+        target = target,
+        client_options = options
       )
-    )
-  }
-)
+    },
+    
+    empty_table = function(size) {
+      verify_nonnegative_int("size", size, TRUE)
+      return(TableHandle$new(self$.internal_rcpp_object$empty_table(size)))
+    },
+    
+    time_table = function(period, start_time = "now") {
+      verify_string("period", period, TRUE)
+      verify_string("start_time", start_time, TRUE)
+      return(TableHandle$new(self$.internal_rcpp_object$time_table(period, start_time)))
+    },
 
-#' @export
-setMethod(
-  "import_table",
-  signature = c(client_instance = "Client", table_object = "Table"),
-  function(client_instance, table_object) {
-    return(import_table(client_instance, as_record_batch_reader(table_object)))
-  }
-)
+    #' @description
+    #' Opens a table named 'name' from the server if it exists.
+    #' @param name Name of the table to open from the server, passed as a string.
+    #' @return TableHandle reference to the requested table.
+    open_table = function(name) {
+      verify_string("name", name, TRUE)
+      if (!private$check_for_table(name)) {
+        stop(paste0("The table '", name, "' you're trying to pull does not exist on the server."))
+      }
+      return(TableHandle$new(self$.internal_rcpp_object$open_table(name)))
+    },
 
-#' @export
-setMethod(
-  "import_table",
-  signature = c(client_instance = "Client", table_object = "tbl_df"),
-  function(client_instance, table_object) {
-    return(import_table(client_instance, arrow_table(table_object)))
-  }
-)
+    #' @description
+    #' Imports a new table to the Deephaven server. Note that this new table is not automatically bound to
+    #' a variable name on the server. See `?TableHandle` for more information.
+    #' @param table_object An R Data Frame, a dplyr Tibble, an Arrow Table, or an Arrow RecordBatchReader
+    #' containing the data to import to the server.
+    #' @return TableHandle reference to the new table.
+    import_table = function(table_object) {
+      table_object_class <- class(table_object)
+      if (table_object_class[[1]] == "data.frame") {
+        return(TableHandle$new(private$df_to_dh_table(table_object)))
+      }
+      if (table_object_class[[1]] == "tbl_df") {
+        return(TableHandle$new(private$tibble_to_dh_table(table_object)))
+      } else if (table_object_class[[1]] == "RecordBatchReader") {
+        return(TableHandle$new(private$rbr_to_dh_table(table_object)))
+      } else if ((length(table_object_class) == 4 &&
+        table_object_class[[1]] == "Table" &&
+        table_object_class[[3]] == "ArrowObject")) {
+        return(TableHandle$new(private$arrow_to_dh_table(table_object)))
+      } else {
+        stop(paste0("'table_object' must be either an R Data Frame, a dplyr Tibble, an Arrow Table, or an Arrow Record Batch Reader. Got an object of class ", table_object_class[[1]], " instead."))
+      }
+    },
 
-#' @export
-setMethod(
-  "import_table",
-  signature = c(client_instance = "Client", table_object = "data.frame"),
-  function(client_instance, table_object) {
-    return(import_table(client_instance, arrow_table(table_object)))
-  }
-)
-
-setGeneric(
-  "run_script",
-  function(client_instance, script) {
-    return(standardGeneric("run_script"))
-  },
-  signature = c("client_instance", "script")
-)
-
-#' @export
-setMethod(
-  "run_script",
-  signature = c(client_instance = "Client", script = "character"),
-  function(client_instance, script) {
-    verify_string("script", script, TRUE)
-    client_instance@.internal_rcpp_object$run_script(script)
-    return(NULL)
-  }
-)
-
-# do not need to set generic for 'close', as it already exists as a generic
-#' @export
-setMethod(
-  "close",
-  signature = c(con = "Client"),
-  function(con) {
-    con@.internal_rcpp_object$close()
-    return(NULL)
-  }
+    #' @description
+    #' Runs a script on the server. The script must be in the language that the server console was started with.
+    #' @param script Code to be executed on the server, passed as a string.
+    run_script = function(script) {
+      verify_string("script", script, TRUE)
+      self$.internal_rcpp_object$run_script(script)
+    },
+    
+    close = function() {
+      self$.internal_rcpp_object$close()
+    }
+  ),
+  
+  private = list(
+    
+    check_for_table = function(name) {
+      return(self$.internal_rcpp_object$check_for_table(name))
+    },
+    
+    rbr_to_dh_table = function(rbr) {
+      ptr <- self$.internal_rcpp_object$new_arrow_array_stream_ptr()
+      rbr$export_to_c(ptr)
+      return(self$.internal_rcpp_object$new_table_from_arrow_array_stream_ptr(ptr))
+    },
+    
+    arrow_to_dh_table = function(arrow_tbl) {
+      rbr <- as_record_batch_reader(arrow_tbl)
+      return(private$rbr_to_dh_table(rbr))
+    },
+    
+    tibble_to_dh_table = function(tibbl) {
+      arrow_tbl <- arrow_table(tibbl)
+      return(private$arrow_to_dh_table(arrow_tbl))
+    },
+    
+    df_to_dh_table = function(data_frame) {
+      arrow_tbl <- arrow_table(data_frame)
+      return(private$arrow_to_dh_table(arrow_tbl))
+    }
+  )
 )
