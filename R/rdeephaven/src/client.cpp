@@ -104,9 +104,8 @@ AggregateWrapper* INTERNAL_agg_std(std::vector<std::string> columnSpecs) {
     return new AggregateWrapper(deephaven::client::Aggregate::Std(columnSpecs));
 }
 
-// TODO: capitalize the pct method when a fix is merged
 AggregateWrapper* INTERNAL_agg_percentile(double percentile, std::vector<std::string> columnSpecs) {
-    return new AggregateWrapper(deephaven::client::Aggregate::pct(percentile, false, columnSpecs));
+    return new AggregateWrapper(deephaven::client::Aggregate::Pct(percentile, false, columnSpecs));
 }
 
 AggregateWrapper* INTERNAL_agg_count(std::string columnSpec) {
@@ -382,8 +381,11 @@ public:
         return new TableHandleWrapper(internal_tbl_hdl_mngr.EmptyTable(size));
     }
 
-    TableHandleWrapper* TimeTable(int64_t startTimeNanos, int64_t periodNanos) {
-        return new TableHandleWrapper(internal_tbl_hdl_mngr.TimeTable(startTimeNanos, periodNanos));
+    TableHandleWrapper* TimeTable(std::string periodISO, std::string startTimeISO) {
+        if(startTimeISO == "now") {
+            return new TableHandleWrapper(internal_tbl_hdl_mngr.TimeTable(periodISO));
+        }
+        return new TableHandleWrapper(internal_tbl_hdl_mngr.TimeTable(periodISO, startTimeISO));
     };
 
     void RunScript(std::string code) {

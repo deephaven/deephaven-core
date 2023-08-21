@@ -177,20 +177,27 @@ setMethod(
 
 setGeneric(
   "time_table",
-  function(client_instance, period, ...) {
+  function(client_instance, period, start_time = "missing") {
     return(standardGeneric("time_table"))
   },
-  signature = c("client_instance", "period")
+  signature = c("client_instance", "period", "start_time")
 )
 
 #' @export
 setMethod(
   "time_table",
-  signature = c(client_instance = "Client", period = "numeric"),
-  function(client_instance, period, start_time = 0) {
-    verify_any_int("period", period, TRUE)
-    verify_any_int("start_time", start_time, TRUE)
-    return(new("TableHandle", .internal_rcpp_object = client_instance@.internal_rcpp_object$time_table(start_time, period)))
+  signature = c(client_instance = "Client", period = "character", start_time = "missing"),
+  function(client_instance, period, start_time = "now") {
+    return(new("TableHandle", .internal_rcpp_object = client_instance@.internal_rcpp_object$time_table(period, start_time)))
+  }
+)
+
+#' @export
+setMethod(
+  "time_table",
+  signature = c(client_instance = "Client", period = "character", start_time = "character"),
+  function(client_instance, period, start_time) {
+    return(new("TableHandle", .internal_rcpp_object = client_instance@.internal_rcpp_object$time_table(period, start_time)))
   }
 )
 
