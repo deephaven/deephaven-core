@@ -101,7 +101,8 @@ public class CachedChannelProviderTracker {
     /**
      * Clear any null weak-references to providers
      */
-    private void tryCleanup() {
+    @VisibleForTesting
+    void tryCleanup() {
         final Iterator<Map.Entry<String, FileToProviderMapEntry>> mapIter = fileToProviderMap.entrySet().iterator();
         while (mapIter.hasNext()) {
             final List<WeakReference<CachedChannelProvider>> providerList = mapIter.next().getValue().providerList;

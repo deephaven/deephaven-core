@@ -21,16 +21,11 @@ import java.util.List;
 import java.util.concurrent.atomic.AtomicInteger;
 
 public class CachedChannelProviderTest {
-
     private final List<String> closed = new ArrayList<>();
 
     private final File f = File.createTempFile("TestFileHandle-", ".dat");
-
-    private final FileHandle fh = new FileHandle(FileChannel.open(f.toPath(),
-            StandardOpenOption.READ, StandardOpenOption.WRITE, StandardOpenOption.CREATE),
-            () -> {
-            });
-
+    private final FileHandle fh = new FileHandle(FileChannel.open(f.toPath(), StandardOpenOption.READ), () -> {
+    });
     private final FileHandleFactory.FileToHandleFunction fthf = (final File file) -> fh;
 
     public CachedChannelProviderTest() throws IOException {}
@@ -202,6 +197,32 @@ public class CachedChannelProviderTest {
                 ((CachedChannelProvider.CachedChannel) rc1).invalid() &&
                 ((CachedChannelProvider.CachedChannel) wc1).invalid());
         Assert.assertTrue(thirdCCP.invalid());
+    }
+
+    @Test
+    public void testTrackerCleanup() throws IOException {
+        // Trigger garbage collection to clear any old providers
+        System.gc();
+        System.gc();
+        CachedChannelProviderTracker.getInstance().tryCleanup();
+
+        final SeekableChannelsProvider wrappedProvider = new TestChannelProvider();
+        // Register cached channel providers with different files
+        for (int i = 0; i < CachedChannelProviderTracker.PROVIDER_MAP_CLEANUP_LIMIT - 1; i++) {
+            SeekableChannelsProvider ccp = new CachedChannelProvider(wrappedProvider, 100);
+            ccp.getReadChannel("rc" + i);
+        }
+        Assert.assertEquals(CachedChannelProviderTracker.getInstance().size(),
+                CachedChannelProviderTracker.PROVIDER_MAP_CLEANUP_LIMIT - 1);
+
+        // Trigger garbage collection to clear any old providers
+        System.gc();
+        System.gc();
+
+        // Now register one more provider, cleanup logic should kick in
+        SeekableChannelsProvider ccp = new CachedChannelProvider(wrappedProvider, 100);
+        ccp.getReadChannel("rc");
+        Assert.assertEquals(CachedChannelProviderTracker.getInstance().size(), 1);
     }
 
     private class TestChannelProvider implements SeekableChannelsProvider {
