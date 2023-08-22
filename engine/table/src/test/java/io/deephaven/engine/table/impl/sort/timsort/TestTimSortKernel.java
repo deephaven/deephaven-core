@@ -178,7 +178,7 @@ public abstract class TestTimSortKernel {
     <T> void correctnessTest(int size, GenerateTupleList<T> tupleListGenerator, Comparator<T> comparator,
             Function<List<T>, SortKernelStuff<T>> prepareFunction) {
         for (int seed = 0; seed < CORRECTNESS_SEEDS; ++seed) {
-            System.out.println("Size = " + size + ", seed=" + seed);
+            System.out.println("size = " + size + ", seed = " + seed);
             final Random random = new Random(seed);
 
             final List<T> javaTuples = tupleListGenerator.generate(random, size);
