@@ -193,8 +193,18 @@ public class KafkaTools {
             final Map<String, String> fieldPathToColumnNameOut,
             final Schema schema,
             final Function<String, String> requestedFieldPathToColumnName) {
+        avroSchemaToColumnDefinitions(columnsOut, fieldPathToColumnNameOut, schema, requestedFieldPathToColumnName,
+                false);
+    }
+
+    public static void avroSchemaToColumnDefinitions(
+            final List<ColumnDefinition<?>> columnsOut,
+            final Map<String, String> fieldPathToColumnNameOut,
+            final Schema schema,
+            final Function<String, String> requestedFieldPathToColumnName,
+            final boolean useUTF8Strings) {
         AvroImpl.avroSchemaToColumnDefinitions(columnsOut, fieldPathToColumnNameOut, schema,
-                requestedFieldPathToColumnName);
+                requestedFieldPathToColumnName, useUTF8Strings);
     }
 
     /**
@@ -438,6 +448,26 @@ public class KafkaTools {
                 final String schemaVersion,
                 final Function<String, String> fieldNameToColumnName) {
             return new AvroConsume(schemaName, schemaVersion, fieldNameToColumnName);
+        }
+
+        /**
+         * Avro spec from fetching an Avro schema from a Confluent compatible Schema Server. The Properties used to
+         * initialize Kafka should contain the URL for the Schema Server to use under the "schema.registry.url"
+         * property.
+         *
+         * @param schemaName The registered name for the schema on Schema Server
+         * @param schemaVersion The version to fetch
+         * @param fieldNameToColumnName A mapping specifying which Avro fields to include and what column name to use
+         *        for them; fields mapped to null are excluded.
+         * @param useUTF8Strings If true, String fields will be not be converted to Java Strings.
+         * @return A spec corresponding to the schema provided.
+         */
+        @SuppressWarnings("unused")
+        public static KeyOrValueSpec avroSpec(final String schemaName,
+                final String schemaVersion,
+                final Function<String, String> fieldNameToColumnName,
+                final boolean useUTF8Strings) {
+            return new AvroConsume(schemaName, schemaVersion, fieldNameToColumnName, useUTF8Strings);
         }
 
         /**
