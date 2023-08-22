@@ -453,6 +453,26 @@ public class KafkaTools {
         /**
          * Avro spec from fetching an Avro schema from a Confluent compatible Schema Server. The Properties used to
          * initialize Kafka should contain the URL for the Schema Server to use under the "schema.registry.url"
+         * property.
+         *
+         * @param schemaName The registered name for the schema on Schema Server
+         * @param schemaVersion The version to fetch
+         * @param fieldNameToColumnName A mapping specifying which Avro fields to include and what column name to use
+         *        for them; fields mapped to null are excluded.
+         * @param useUTF8Strings If true, String fields will be not be converted to Java Strings.
+         * @return A spec corresponding to the schema provided.
+         */
+        @SuppressWarnings("unused")
+        public static KeyOrValueSpec avroSpec(final String schemaName,
+                final String schemaVersion,
+                final Function<String, String> fieldNameToColumnName,
+                final boolean useUTF8Strings) {
+            return new AvroConsume(schemaName, schemaVersion, fieldNameToColumnName, useUTF8Strings);
+        }
+
+        /**
+         * Avro spec from fetching an Avro schema from a Confluent compatible Schema Server. The Properties used to
+         * initialize Kafka should contain the URL for the Schema Server to use under the "schema.registry.url"
          * property. The version fetched would be latest.
          *
          * @param schemaName The registered name for the schema on Schema Server
@@ -491,95 +511,6 @@ public class KafkaTools {
         @SuppressWarnings("unused")
         public static KeyOrValueSpec avroSpec(final String schemaName) {
             return new AvroConsume(schemaName, AVRO_LATEST_VERSION, DIRECT_MAPPING);
-        }
-
-        /**
-         * Avro spec from an Avro schema. String fields will be not be converted to Java Strings.
-         *
-         * @param schema An Avro schema.
-         * @param fieldNameToColumnName A mapping specifying which Avro fields to include and what column name to use
-         *        for them; fields mapped to null are excluded.
-         * @return A spec corresponding to the schema provided.
-         */
-        @SuppressWarnings("unused")
-        public static KeyOrValueSpec avroSpecWithUTF8Strings(final Schema schema,
-                final Function<String, String> fieldNameToColumnName) {
-            return new AvroConsume(schema, fieldNameToColumnName, true);
-        }
-
-        /**
-         * Avro spec from an Avro schema. All fields in the schema are mapped to columns of the same name. String fields
-         * will be not be converted to Java Strings.
-         *
-         * @param schema An Avro schema.
-         * @return A spec corresponding to the schema provided.
-         */
-        @SuppressWarnings("unused")
-        public static KeyOrValueSpec avroSpecWithUTF8Strings(final Schema schema) {
-            return new AvroConsume(schema, DIRECT_MAPPING, true);
-        }
-
-        /**
-         * Avro spec from fetching an Avro schema from a Confluent compatible Schema Server. The Properties used to
-         * initialize Kafka should contain the URL for the Schema Server to use under the "schema.registry.url"
-         * property. String fields will be not be converted to Java Strings.
-         *
-         * @param schemaName The registered name for the schema on Schema Server
-         * @param schemaVersion The version to fetch
-         * @param fieldNameToColumnName A mapping specifying which Avro fields to include and what column name to use
-         *        for them; fields mapped to null are excluded.
-         * @return A spec corresponding to the schema provided.
-         */
-        @SuppressWarnings("unused")
-        public static KeyOrValueSpec avroSpecWithUTF8Strings(final String schemaName,
-                final String schemaVersion,
-                final Function<String, String> fieldNameToColumnName) {
-            return new AvroConsume(schemaName, schemaVersion, fieldNameToColumnName, true);
-        }
-
-        /**
-         * Avro spec from fetching an Avro schema from a Confluent compatible Schema Server. The Properties used to
-         * initialize Kafka should contain the URL for the Schema Server to use under the "schema.registry.url"
-         * property. The version fetched would be latest. String fields will be not be converted to Java Strings.
-         *
-         * @param schemaName The registered name for the schema on Schema Server
-         * @param fieldNameToColumnName A mapping specifying which Avro fields to include and what column name to use
-         *        for them; fields mapped to null are excluded.
-         * @return A spec corresponding to the schema provided.
-         */
-        @SuppressWarnings("unused")
-        public static KeyOrValueSpec avroSpecWithUTF8Strings(final String schemaName,
-                final Function<String, String> fieldNameToColumnName) {
-            return new AvroConsume(schemaName, AVRO_LATEST_VERSION, fieldNameToColumnName, true);
-        }
-
-        /**
-         * Avro spec from fetching an Avro schema from a Confluent compatible Schema Server. The Properties used to
-         * initialize Kafka should contain the URL for the Schema Server to use under the "schema.registry.url"
-         * property. All fields in the schema are mapped to columns of the same name. String fields will be not be
-         * converted to Java Strings.
-         *
-         * @param schemaName The registered name for the schema on Schema Server
-         * @param schemaVersion The version to fetch
-         * @return A spec corresponding to the schema provided
-         */
-        @SuppressWarnings("unused")
-        public static KeyOrValueSpec avroSpecWithUTF8Strings(final String schemaName, final String schemaVersion) {
-            return new AvroConsume(schemaName, schemaVersion, DIRECT_MAPPING, true);
-        }
-
-        /**
-         * Avro spec from fetching an Avro schema from a Confluent compatible Schema Server The Properties used to
-         * initialize Kafka should contain the URL for the Schema Server to use under the "schema.registry.url"
-         * property. The version fetched is latest All fields in the schema are mapped to columns of the same name.
-         * String fields will be not be converted to Java Strings.
-         *
-         * @param schemaName The registered name for the schema on Schema Server.
-         * @return A spec corresponding to the schema provided.
-         */
-        @SuppressWarnings("unused")
-        public static KeyOrValueSpec avroSpecWithUTF8Strings(final String schemaName) {
-            return new AvroConsume(schemaName, AVRO_LATEST_VERSION, DIRECT_MAPPING, true);
         }
 
         /**

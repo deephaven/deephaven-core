@@ -75,16 +75,11 @@ class AvroImpl {
         private final boolean useUTF8Strings;
 
         AvroConsume(final Schema schema, final Function<String, String> fieldPathToColumnName) {
-            this(schema, fieldPathToColumnName, false);
-        }
-
-        AvroConsume(final Schema schema, final Function<String, String> fieldPathToColumnName,
-                final boolean useUTF8Strings) {
             this.schema = schema;
             this.schemaName = null;
             this.schemaVersion = null;
             this.fieldPathToColumnName = fieldPathToColumnName;
-            this.useUTF8Strings = useUTF8Strings;
+            this.useUTF8Strings = false;
         }
 
         AvroConsume(final String schemaName,
