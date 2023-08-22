@@ -18,15 +18,15 @@ public class ZonedDateTimeSparseArraySource extends NanosBasedTimeSparseArraySou
         implements MutableColumnSourceGetDefaults.ForObject<ZonedDateTime>, ConvertibleTimeSource.Zoned {
     private final ZoneId zone;
 
-    public ZonedDateTimeSparseArraySource(final @NotNull String zone) {
+    public ZonedDateTimeSparseArraySource(@NotNull final String zone) {
         this(ZoneId.of(zone));
     }
 
-    public ZonedDateTimeSparseArraySource(final @NotNull ZoneId zone) {
+    public ZonedDateTimeSparseArraySource(@NotNull final ZoneId zone) {
         this(zone, new LongSparseArraySource());
     }
 
-    public ZonedDateTimeSparseArraySource(final @NotNull ZoneId zone, final @NotNull LongSparseArraySource nanoSource) {
+    public ZonedDateTimeSparseArraySource(@NotNull final ZoneId zone, @NotNull final LongSparseArraySource nanoSource) {
         super(ZonedDateTime.class, nanoSource);
         this.zone = zone;
     }
@@ -42,7 +42,7 @@ public class ZonedDateTimeSparseArraySource extends NanosBasedTimeSparseArraySou
     }
 
     @Override
-    public ColumnSource<ZonedDateTime> toZonedDateTime(final @NotNull ZoneId zone) {
+    public ColumnSource<ZonedDateTime> toZonedDateTime(@NotNull final ZoneId zone) {
         if (this.zone.equals(zone)) {
             return this;
         }

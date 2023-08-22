@@ -958,8 +958,8 @@ public class TestEms extends BaseUpdateByTest {
 
     final void assertWithEmsTicks(final OperationControl control,
             final long ticks,
-            final @NotNull Object expected,
-            final @NotNull Object actual,
+            @NotNull final Object expected,
+            @NotNull final Object actual,
             final Class type) {
         if (expected instanceof double[]) {
             assertArrayEquals(compute_ems_ticks(control, ticks, (double[]) expected), (double[]) actual, .001d);
@@ -998,9 +998,9 @@ public class TestEms extends BaseUpdateByTest {
 
     final void assertWithEmsTime(final OperationControl control,
             final long nanos,
-            final @NotNull long[] timestamps,
-            final @NotNull Object expected,
-            final @NotNull Object actual,
+            @NotNull final long[] timestamps,
+            @NotNull final Object expected,
+            @NotNull final Object actual,
             final Class type) {
         if (expected instanceof double[]) {
             assertArrayEquals(compute_ems_time(control, nanos, timestamps, (double[]) expected), (double[]) actual,

@@ -29,8 +29,6 @@ void SumColumnsFull(const TableHandleManager &manager);
 void SumColumnsDiff(const TableHandleManager &manager);
 
 // utilities
-void PrintTable(const TableHandle &table, bool null_aware);
-void CheckNotNull(const void *p, std::string_view where);
 int64_t ReadNumber(std::string_view prompt);
 std::string ReadString(std::string_view prompt);
 

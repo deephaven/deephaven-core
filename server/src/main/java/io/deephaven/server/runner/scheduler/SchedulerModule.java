@@ -70,7 +70,7 @@ public class SchedulerModule {
         }
 
         @Override
-        public Thread newThread(final @NotNull Runnable r) {
+        public Thread newThread(@NotNull final Runnable r) {
             return super.newThread(ThreadInitializationFactory.wrapRunnable(() -> {
                 MultiChunkPool.enableDedicatedPoolForThisThread();
                 // noinspection resource
