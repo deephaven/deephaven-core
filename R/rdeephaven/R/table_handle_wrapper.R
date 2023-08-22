@@ -36,7 +36,7 @@ TableHandle <- R6Class("TableHandle",
       return(TableHandle$new(self$.internal_rcpp_object$head(n)))
     },
     
-    tail = function() {
+    tail = function(n) {
       verify_positive_int("n", n, TRUE)
       return(TableHandle$new(self$.internal_rcpp_object$tail(n)))
     },
@@ -54,6 +54,16 @@ TableHandle <- R6Class("TableHandle",
     
     dim = function() {
       return(c(self$nrow(), self$ncol()))
+    },
+    
+    merge = function(...) {
+      table_list <- unlist(c(...))
+      if (length(table_list) == 0) {
+        return(TableHandle$new(self$.internal_rcpp_object$merge(NULL)))
+      }
+      verify_type("table_list", table_list, "TableHandle", "Deephaven TableHandle", FALSE)
+      unwrapped_table_list <- lapply(table_list, strip_r6_wrapping)
+      return(TableHandle$new(self$.internal_rcpp_object$merge(unwrapped_table_list)))
     },
     
     ### CONVERSION METHODS, ALSO IMPLEMENTED FUNCTIONALLY
@@ -95,29 +105,29 @@ TableHandle <- R6Class("TableHandle",
     
     ### DEEPHAVEN TABLE OPERATIONS
     
-    select = function(by = character()) {
-      verify_string("by", by, FALSE)
-      return(TableHandle$new(self$.internal_rcpp_object$select(by)))
+    select = function(formulas = character()) {
+      verify_string("formulas", formulas, FALSE)
+      return(TableHandle$new(self$.internal_rcpp_object$select(formulas)))
     },
     
-    view = function(by = character()) {
-      verify_string("by", by, FALSE)
-      return(TableHandle$new(self$.internal_rcpp_object$view(by)))
+    view = function(formulas = character()) {
+      verify_string("formulas", formulas, FALSE)
+      return(TableHandle$new(self$.internal_rcpp_object$view(formulas)))
     },
 
-    update = function(by = character()) {
-      verify_string("by", by, FALSE)
-      return(TableHandle$new(self$.internal_rcpp_object$update(by)))
+    update = function(formulas = character()) {
+      verify_string("formulas", formulas, FALSE)
+      return(TableHandle$new(self$.internal_rcpp_object$update(formulas)))
     },
     
-    update_view = function(by = character()) {
-      verify_string("by", by, FALSE)
-      return(TableHandle$new(self$.internal_rcpp_object$update_view(by)))
+    update_view = function(formulas = character()) {
+      verify_string("formulas", formulas, FALSE)
+      return(TableHandle$new(self$.internal_rcpp_object$update_view(formulas)))
     },
     
-    drop_columns = function(by = character()) {
-      verify_string("by", by, FALSE)
-      return(TableHandle$new(self$.internal_rcpp_object$drop_columns(by)))
+    drop_columns = function(cols = character()) {
+      verify_string("cols", cols, FALSE)
+      return(TableHandle$new(self$.internal_rcpp_object$drop_columns(cols)))
     },
     
     where = function(filter) {
@@ -250,27 +260,17 @@ TableHandle <- R6Class("TableHandle",
       )))
     },
     
-    sort = function(by, descending = FALSE, abs_sort = FALSE) {
-      verify_string("by", by, FALSE)
+    sort = function(order_by, descending = FALSE, abs_sort = FALSE) {
+      verify_string("order_by", order_by, FALSE)
       verify_bool("descending", descending, FALSE)
       verify_bool("abs_sort", abs_sort, FALSE)
-      if ((length(descending) > 1) && length(descending) != length(by)) {
-        stop(paste0("'descending' must be the same length as 'by' if more than one entry is supplied. Got 'by' with length ", length(by), " and 'descending' with length ", length(descending), "."))
+      if ((length(descending) > 1) && length(descending) != length(order_by)) {
+        stop(paste0("'descending' must be the same length as 'order_by' if more than one entry is supplied. Got 'order_by' with length ", length(order_by), " and 'descending' with length ", length(descending), "."))
       }
       if ((length(abs_sort) > 1) && length(abs_sort) != length(by)) {
-        stop(paste0("'abs_sort' must be the same length as 'by' if more than one entry is supplied. Got 'by' with length ", length(by), " and 'abs_sort' with length ", length(abs_sort), "."))
+        stop(paste0("'abs_sort' must be the same length as 'order_by' if more than one entry is supplied. Got 'order_by' with length ", length(order_by), " and 'abs_sort' with length ", length(abs_sort), "."))
       }
-      return(TableHandle$new(self$.internal_rcpp_object$sort(by, descending, abs_sort)))
-    },
-    
-    merge = function(...) {
-      table_list <- unlist(c(...))
-      if (length(table_list) == 0) {
-        return(TableHandle$new(self$.internal_rcpp_object$merge(NULL)))
-      }
-      verify_type("table_list", table_list, "TableHandle", "Deephaven TableHandle", FALSE)
-      unwrapped_table_list <- lapply(table_list, strip_r6_wrapping)
-      return(TableHandle$new(self$.internal_rcpp_object$merge(unwrapped_table_list)))
+      return(TableHandle$new(self$.internal_rcpp_object$sort(order_by, descending, abs_sort)))
     }
   )
 )
@@ -298,6 +298,19 @@ ncol.TableHandle <- function(x) {
 #' @export
 dim.TableHandle <- function(x) {
   return(x$dim())
+}
+
+#' @export
+merge_tables <- function(...) {
+  table_list <- unlist(c(...))
+  if (length(table_list) == 0) {
+    return(NULL)
+  }
+  verify_type("table_list", table_list, "TableHandle", "Deephaven TableHandle", FALSE)
+  if (length(table_list) == 1) {
+    return(table_list[[1]])
+  }
+  return(table_list[[1]]$merge(table_list[2:length(table_list)]))
 }
 
 #' @export

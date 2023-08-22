@@ -382,7 +382,7 @@ public:
     }
 
     TableHandleWrapper* TimeTable(std::string periodISO, std::string startTimeISO) {
-        if(startTimeISO == "now") {
+        if((startTimeISO == "now") || (startTimeISO == "")) {
             return new TableHandleWrapper(internal_tbl_hdl_mngr.TimeTable(periodISO));
         }
         return new TableHandleWrapper(internal_tbl_hdl_mngr.TimeTable(periodISO, startTimeISO));
