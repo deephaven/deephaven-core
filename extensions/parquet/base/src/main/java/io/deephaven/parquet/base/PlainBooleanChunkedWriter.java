@@ -75,7 +75,6 @@ public class PlainBooleanChunkedWriter extends AbstractBulkValuesWriter<ByteBuff
     public void writeBulk(@NotNull ByteBuffer bulkValues,
                           final int rowCount,
                           @NotNull final Statistics<?> statistics) {
-        // Track statistics while we write the values.
         while (bulkValues.hasRemaining()) {
             final boolean v = bulkValues.get() == 1;
             writeBoolean(v);
@@ -89,7 +88,6 @@ public class PlainBooleanChunkedWriter extends AbstractBulkValuesWriter<ByteBuff
                                             @NotNull RunLengthBitPackingHybridEncoder dlEncoder,
                                             final int rowCount,
                                             @NotNull final Statistics<?> statistics) throws IOException {
-        // Track statistics while we write the values.
         while (bulkValues.hasRemaining()) {
             final byte next = bulkValues.get();
             if (next != QueryConstants.NULL_BYTE) {
@@ -106,16 +104,21 @@ public class PlainBooleanChunkedWriter extends AbstractBulkValuesWriter<ByteBuff
     }
 
     @Override
-    public @NotNull WriteResult writeBulkVectorFilterNulls(@NotNull ByteBuffer bulkValues, int rowCount) {
+    public @NotNull WriteResult writeBulkVectorFilterNulls(@NotNull ByteBuffer bulkValues,
+                                                           final int rowCount,
+                                                           @NotNull final Statistics<?> statistics) {
         IntBuffer nullOffsets = IntBuffer.allocate(4);
         int i = 0;
         while (bulkValues.hasRemaining()) {
             final byte next = bulkValues.get();
             if (next != QueryConstants.NULL_BYTE) {
-                writeBoolean(next == 1);
+                final boolean v = next == 1;
+                writeBoolean(v);
+                statistics.updateStats(v);
             } else {
                 nullOffsets = Helpers.ensureCapacity(nullOffsets);
                 nullOffsets.put(i);
+                statistics.incrementNumNulls();
             }
             i++;
         }

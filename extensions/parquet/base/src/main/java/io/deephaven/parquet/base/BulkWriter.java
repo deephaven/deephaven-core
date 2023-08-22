@@ -73,7 +73,8 @@ public interface BulkWriter<BUFFER_TYPE> {
             @NotNull final IntBuffer vectorSizes,
             @NotNull final RunLengthBitPackingHybridEncoder rlEncoder,
             @NotNull final RunLengthBitPackingHybridEncoder dlEncoder,
-            final int nonNullValueCount) throws IOException;
+            final int nonNullValueCount,
+            @NotNull Statistics<?> statistics) throws IOException;
 
     /**
      * Write a buffer's worth of packed vector values to the underlying page, skipping null values. This method will
@@ -85,7 +86,8 @@ public interface BulkWriter<BUFFER_TYPE> {
      */
     @NotNull
     WriteResult writeBulkVectorFilterNulls(@NotNull BUFFER_TYPE bulkValues,
-            final int rowCount);
+            final int rowCount,
+            @NotNull Statistics<?> statistics);
 
     /**
      * Clear all internal state.

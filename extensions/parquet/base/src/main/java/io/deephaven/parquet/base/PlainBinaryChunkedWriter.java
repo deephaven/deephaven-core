@@ -90,7 +90,6 @@ public class PlainBinaryChunkedWriter extends AbstractBulkValuesWriter<Binary[]>
     public void writeBulk(@NotNull Binary[] bulkValues,
                           final int rowCount,
                           @NotNull final Statistics<?> statistics) {
-        // Track statistics while we write the values.
         for (int i = 0; i < rowCount; i++) {
             final Binary v = bulkValues[i];
             writeBytes(v);
@@ -104,7 +103,6 @@ public class PlainBinaryChunkedWriter extends AbstractBulkValuesWriter<Binary[]>
                                             @NotNull final RunLengthBitPackingHybridEncoder dlEncoder,
                                             final int rowCount,
                                             @NotNull final Statistics<?> statistics) throws IOException {
-        // Track statistics while we write the values.
         for (int i = 0; i < rowCount; i++) {
             if (bulkValues[i] != null) {
                 final Binary v = bulkValues[i];
@@ -121,15 +119,18 @@ public class PlainBinaryChunkedWriter extends AbstractBulkValuesWriter<Binary[]>
 
     @Override
     public @NotNull WriteResult writeBulkVectorFilterNulls(@NotNull Binary[] bulkValues,
-                                                           final int nonNullLeafCount) {
+                                                           final int nonNullLeafCount,
+                                                           @NotNull final Statistics<?> statistics) {
         IntBuffer nullOffsets = IntBuffer.allocate(4);
         for (int i = 0; i < nonNullLeafCount; i++) {
             if (bulkValues[i] != null) {
                 final Binary v = bulkValues[i];
                 writeBytes(v);
+                statistics.updateStats(v);
             } else {
                 nullOffsets = Helpers.ensureCapacity(nullOffsets);
                 nullOffsets.put(i);
+                statistics.incrementNumNulls();
             }
         }
         return new WriteResult(nonNullLeafCount, nullOffsets);

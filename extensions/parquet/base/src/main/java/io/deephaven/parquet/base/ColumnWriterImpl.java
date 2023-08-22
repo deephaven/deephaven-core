@@ -90,7 +90,7 @@ public class ColumnWriterImpl implements ColumnWriter {
     }
 
     @Override
-    public void addPageNoNulls(final Object pageData, final int valuesCount, @NotNull Statistics<?> statistics)
+    public void addPageNoNulls(final Object pageData, final int valuesCount, @NotNull final Statistics<?> statistics)
             throws IOException {
         initWriter();
         // noinspection unchecked
@@ -214,7 +214,8 @@ public class ColumnWriterImpl implements ColumnWriter {
     public void addVectorPage(
             final Object pageData,
             final IntBuffer repeatCount,
-            final int nonNullValueCount) throws IOException {
+            final int nonNullValueCount,
+            @NotNull final Statistics<?> statistics) throws IOException {
         if (dlEncoder == null) {
             throw new IllegalStateException("Null values not supported");
         }
@@ -224,7 +225,7 @@ public class ColumnWriterImpl implements ColumnWriter {
         initWriter();
         // noinspection unchecked
         int valueCount =
-                bulkWriter.writeBulkVector(pageData, repeatCount, rlEncoder, dlEncoder, nonNullValueCount);
+                bulkWriter.writeBulkVector(pageData, repeatCount, rlEncoder, dlEncoder, nonNullValueCount, statistics);
         writePage(bulkWriter.getByteBufferView(), valueCount);
         bulkWriter.reset();
     }

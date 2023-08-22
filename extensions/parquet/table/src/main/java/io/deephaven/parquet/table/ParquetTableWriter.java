@@ -28,7 +28,6 @@ import io.deephaven.engine.table.impl.select.SourceColumn;
 import io.deephaven.engine.table.impl.sources.ReinterpretUtils;
 import io.deephaven.engine.util.BigDecimalUtils;
 import io.deephaven.parquet.base.ColumnWriter;
-import io.deephaven.parquet.base.NullStatistics;
 import io.deephaven.parquet.base.ParquetFileWriter;
 import io.deephaven.parquet.base.RowGroupWriter;
 import io.deephaven.parquet.table.metadata.CodecInfo;
@@ -595,8 +594,7 @@ public class ParquetTableWriter {
             final VectorColumnWriterHelper vectorHelper = writingHelper.isVectorFormat()
                     ? (VectorColumnWriterHelper) writingHelper
                     : null;
-            // We won't track statistics for vector columns.
-            final Statistics<?> statistics = vectorHelper == null ? columnWriter.getStats() : NullStatistics.INSTANCE;
+            final Statistics<?> statistics = columnWriter.getStats();
             // @formatter:off
             try (final RowSequence.Iterator lengthRowSetIterator = vectorHelper != null
                     ? tableRowSet.getRowSequenceIterator()
@@ -628,7 +626,7 @@ public class ParquetTableWriter {
                                 .asIntChunk();
                         lenChunk.copyToTypedBuffer(0, repeatCount, 0, lenChunk.size());
                         repeatCount.limit(lenChunk.size());
-                        columnWriter.addVectorPage(bufferToWrite, repeatCount, transferObject.rowCount());
+                        columnWriter.addVectorPage(bufferToWrite, repeatCount, transferObject.rowCount(), statistics);
                         repeatCount.clear();
                     } else {
                         columnWriter.addPage(bufferToWrite, transferObject.rowCount(), statistics);
@@ -659,7 +657,7 @@ public class ParquetTableWriter {
                 ? (VectorColumnWriterHelper) writingHelper
                 : null;
         // Don't actually track statistics for vector columns, since we don't know what they mean for vectors.
-        final Statistics<?> statistics = vectorHelper == null ? columnWriter.getStats() : NullStatistics.INSTANCE;
+        final Statistics<?> statistics = columnWriter.getStats();
         try {
             final List<IntBuffer> pageBuffers = new ArrayList<>();
             final BitSet pageBufferHasNull = new BitSet();

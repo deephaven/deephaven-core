@@ -107,7 +107,6 @@ public class PlainDoubleChunkedWriter extends AbstractBulkValuesWriter<DoubleBuf
                                             final int rowCount,
                                             @NotNull final Statistics<?> statistics) throws IOException {
         ensureCapacityFor(bulkValues);
-        // Track statistics while we write the values.
         while (bulkValues.hasRemaining()) {
             final double v = bulkValues.get();
             if (v != QueryConstants.NULL_DOUBLE) {
@@ -125,17 +124,20 @@ public class PlainDoubleChunkedWriter extends AbstractBulkValuesWriter<DoubleBuf
     @NotNull
     @Override
     public WriteResult writeBulkVectorFilterNulls(@NotNull final DoubleBuffer bulkValues,
-                                                  final int rowCount) {
+                                                  final int rowCount,
+                                                  @NotNull final Statistics<?> statistics) {
         ensureCapacityFor(bulkValues);
         int i = 0;
         IntBuffer nullOffsets = IntBuffer.allocate(4);
         while (bulkValues.hasRemaining()) {
-            final double next = bulkValues.get();
-            if (next != QueryConstants.NULL_DOUBLE) {
-                writeDouble(next);
+            final double v = bulkValues.get();
+            if (v != QueryConstants.NULL_DOUBLE) {
+                writeDouble(v);
+                statistics.updateStats(v);
             } else {
                 nullOffsets = Helpers.ensureCapacity(nullOffsets);
                 nullOffsets.put(i);
+                statistics.incrementNumNulls();
             }
             i++;
         }

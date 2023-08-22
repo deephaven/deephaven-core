@@ -45,9 +45,18 @@ public interface ColumnWriter extends SafeCloseable {
     void addPage(Object pageData, int valuesCount, Statistics<?> statistics) throws IOException;
 
     /**
+     * Add a vector page to the file.. Does not track statistics, so the caller must track statistics in another way.
+     */
+    @FinalDefault
+    default void addVectorPage(Object pageData, IntBuffer repeatCount, int valuesCount) throws IOException {
+        addVectorPage(pageData, repeatCount, valuesCount, NullStatistics.INSTANCE);
+    }
+
+    /**
      * Add a vector page to the file.
      */
-    void addVectorPage(Object pageData, IntBuffer repeatCount, int valuesCount) throws IOException;
+    void addVectorPage(Object pageData, IntBuffer repeatCount, int valuesCount, Statistics<?> statistics)
+            throws IOException;
 
     /**
      * Reset the statistics for this column. This needs to be done between row groups

@@ -113,8 +113,7 @@ public class RleIntChunkedWriter extends AbstractBulkValuesWriter<IntBuffer> {
     public WriteResult writeBulkFilterNulls(@NotNull IntBuffer bulkValues,
                                             @NotNull RunLengthBitPackingHybridEncoder dlEncoder,
                                             final int rowCount,
-                                            @Nullable final Statistics<?> statistics) throws IOException {
-        // Track statistics while we write the values.
+                                            @NotNull final Statistics<?> statistics) throws IOException {
         while (bulkValues.hasRemaining()) {
             int v = bulkValues.get();
             if (v != QueryConstants.NULL_INT) {
@@ -130,16 +129,20 @@ public class RleIntChunkedWriter extends AbstractBulkValuesWriter<IntBuffer> {
     }
 
     @Override
-    public @NotNull WriteResult writeBulkVectorFilterNulls(@NotNull IntBuffer bulkValues, int rowCount) {
+    public @NotNull WriteResult writeBulkVectorFilterNulls(@NotNull IntBuffer bulkValues,
+                                                           final int rowCount,
+                                                           @NotNull final Statistics<?> statistics) {
         IntBuffer nullOffsets = IntBuffer.allocate(4);
         int i = 0;
         while (bulkValues.hasRemaining()) {
-            int next = bulkValues.get();
-            if (next != QueryConstants.NULL_INT) {
-                writeInteger(next);
+            int v = bulkValues.get();
+            if (v != QueryConstants.NULL_INT) {
+                writeInteger(v);
+                statistics.updateStats(v);
             } else {
                 nullOffsets = Helpers.ensureCapacity(nullOffsets);
                 nullOffsets.put(i);
+                statistics.incrementNumNulls();
             }
             i++;
         }

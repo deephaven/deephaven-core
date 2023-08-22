@@ -34,6 +34,7 @@ import io.deephaven.test.types.OutOfBandTest;
 import io.deephaven.time.DateTimeUtils;
 import io.deephaven.util.compare.DoubleComparisons;
 import io.deephaven.util.compare.FloatComparisons;
+import io.deephaven.vector.*;
 import junit.framework.TestCase;
 import org.apache.commons.lang3.mutable.*;
 import org.apache.parquet.column.statistics.Statistics;
@@ -862,45 +863,105 @@ public class ParquetTableReadWriteTest {
                                 ReinterpretUtils.booleanToByteSource((ColumnSource<Boolean>) columnSource),
                                 inputTable.getRowSet()),
                         (Statistics<Integer>) statistics);
+            } else if (csType == Boolean[].class) {
+                assertBooleanArrayColumnStatistics(
+                        new SerialObjectColumnIterator<>(
+                                (ColumnSource<Boolean[]>) columnSource,
+                                inputTable.getRowSet()),
+                        (Statistics<Integer>) statistics);
             } else if (csType == byte.class || csType == Byte.class) {
                 assertByteColumnStatistics(
                         new SerialByteColumnIterator(
                                 (ColumnSource<Byte>) columnSource, inputTable.getRowSet()),
+                        (Statistics<Integer>) statistics);
+            } else if (csType == ByteVector.class) {
+                assertByteVectorColumnStatistics(
+                        new SerialObjectColumnIterator<>(
+                                (ColumnSource<ByteVector>) columnSource,
+                                inputTable.getRowSet()),
                         (Statistics<Integer>) statistics);
             } else if (csType == char.class || csType == Character.class) {
                 assertCharColumnStatistics(
                         new SerialCharacterColumnIterator(
                                 (ColumnSource<Character>) columnSource, inputTable.getRowSet()),
                         (Statistics<Integer>) statistics);
+            } else if (csType == CharVector.class) {
+                assertCharVectorColumnStatistics(
+                        new SerialObjectColumnIterator<>(
+                                (ColumnSource<CharVector>) columnSource,
+                                inputTable.getRowSet()),
+                        (Statistics<Integer>) statistics);
             } else if (csType == short.class || csType == Short.class) {
                 assertShortColumnStatistics(
                         new SerialShortColumnIterator(
                                 (ColumnSource<Short>) columnSource, inputTable.getRowSet()),
+                        (Statistics<Integer>) statistics);
+            } else if (csType == ShortVector.class) {
+                assertShortVectorColumnStatistics(
+                        new SerialObjectColumnIterator<>(
+                                (ColumnSource<ShortVector>) columnSource,
+                                inputTable.getRowSet()),
                         (Statistics<Integer>) statistics);
             } else if (csType == int.class || csType == Integer.class) {
                 assertIntColumnStatistics(
                         new SerialIntegerColumnIterator(
                                 (ColumnSource<Integer>) columnSource, inputTable.getRowSet()),
                         (Statistics<Integer>) statistics);
+            } else if (csType == IntVector.class) {
+                assertIntVectorColumnStatistics(
+                        new SerialObjectColumnIterator<>(
+                                (ColumnSource<IntVector>) columnSource,
+                                inputTable.getRowSet()),
+                        (Statistics<Integer>) statistics);
             } else if (csType == long.class || csType == Long.class) {
                 assertLongColumnStatistics(
                         new SerialLongColumnIterator(
                                 (ColumnSource<Long>) columnSource, inputTable.getRowSet()),
+                        (Statistics<Long>) statistics);
+            } else if (csType == LongVector.class) {
+                assertLongVectorColumnStatistics(
+                        new SerialObjectColumnIterator<>(
+                                (ColumnSource<LongVector>) columnSource,
+                                inputTable.getRowSet()),
                         (Statistics<Long>) statistics);
             } else if (csType == float.class || csType == Float.class) {
                 assertFloatColumnStatistics(
                         new SerialFloatColumnIterator(
                                 (ColumnSource<Float>) columnSource, inputTable.getRowSet()),
                         (Statistics<Float>) statistics);
+            } else if (csType == FloatVector.class) {
+                assertFloatVectorColumnStatistics(
+                        new SerialObjectColumnIterator<>(
+                                (ColumnSource<FloatVector>) columnSource,
+                                inputTable.getRowSet()),
+                        (Statistics<Float>) statistics);
             } else if (csType == double.class || csType == Double.class) {
                 assertDoubleColumnStatistics(
                         new SerialDoubleColumnIterator(
                                 (ColumnSource<Double>) columnSource, inputTable.getRowSet()),
                         (Statistics<Double>) statistics);
+            } else if (csType == DoubleVector.class) {
+                assertDoubleVectorColumnStatistics(
+                        new SerialObjectColumnIterator<>(
+                                (ColumnSource<DoubleVector>) columnSource,
+                                inputTable.getRowSet()),
+                        (Statistics<Double>) statistics);
             } else if (csType == String.class) {
                 assertStringColumnStatistics(
                         new SerialObjectColumnIterator<>(
                                 (ColumnSource<String>) columnSource, inputTable.getRowSet()),
+                        (Statistics<Binary>) statistics);
+            } else if (csType == String[].class) {
+                assertStringArrayColumnStatistics(
+                        new SerialObjectColumnIterator<>(
+                                (ColumnSource<String[]>) columnSource,
+                                inputTable.getRowSet()),
+                        (Statistics<Binary>) statistics);
+            } else if (csType == ObjectVector.class && columnSource.getComponentType() == String.class) {
+                assertStringVectorColumnStatistics(
+                        new SerialObjectColumnIterator<>(
+                                (ColumnSource<ObjectVector<String>>) columnSource,
+                                inputTable.getRowSet()),
                         (Statistics<Binary>) statistics);
             } else if (csType == BigInteger.class) {
                 assertBigIntegerColumnStatistics(
@@ -917,13 +978,20 @@ public class ParquetTableReadWriteTest {
                         new SerialObjectColumnIterator<>(
                                 (ColumnSource<Instant>) columnSource, inputTable.getRowSet()),
                         (Statistics<Long>) statistics);
+            } else if (csType == Instant[].class) {
+                assertInstantArrayColumnStatistics(
+                        new SerialObjectColumnIterator<>(
+                                (ColumnSource<Instant[]>) columnSource,
+                                inputTable.getRowSet()),
+                        (Statistics<Long>) statistics);
             } else {
-                // We can only check primitive types, not vectors or other serializable types.
+                // We can only check verify some types.
                 System.out.println("Ignoring column " + colName + " of type " + csType.getName());
             }
         }
     }
 
+    // region Column Statistics Assertions
     private void assertBooleanColumnStatistics(SerialByteColumnIterator iterator, Statistics<Integer> statistics) {
         MutableLong itemCount = new MutableLong(0);
         MutableLong nullCount = new MutableLong(0);
@@ -940,6 +1008,43 @@ public class ParquetTableReadWriteTest {
                 }
                 if (max.getValue() == NULL_BYTE || value > max.getValue()) {
                     max.setValue(value);
+                }
+            }
+        });
+
+        assertEquals(nullCount.intValue(), statistics.getNumNulls());
+        if (!itemCount.getValue().equals(nullCount.getValue())) {
+            // There are some non-null values, so min and max should be non-null and equal to observed values.
+            assertEquals(min.getValue() == 1, statistics.genericGetMin());
+            assertEquals(max.getValue() == 1, statistics.genericGetMax());
+        } else {
+            // Everything is null, statistics should be empty.
+            assertFalse(statistics.hasNonNullValue());
+        }
+    }
+
+    private void assertBooleanArrayColumnStatistics(SerialObjectColumnIterator<Boolean[]> iterator,
+            Statistics<Integer> statistics) {
+        MutableLong itemCount = new MutableLong(0);
+        MutableLong nullCount = new MutableLong(0);
+        MutableInt min = new MutableInt(NULL_BYTE);
+        MutableInt max = new MutableInt(NULL_BYTE);
+
+        iterator.forEachRemaining(values -> {
+            if (values == null) {
+                return;
+            }
+            for (final Boolean value : values) {
+                itemCount.increment();
+                if (value == null) {
+                    nullCount.increment();
+                } else {
+                    if (min.getValue() == NULL_BYTE || (value ? 1 : 0) < min.getValue()) {
+                        min.setValue(value ? 1 : 0);
+                    }
+                    if (max.getValue() == NULL_BYTE || (value ? 1 : 0) > max.getValue()) {
+                        max.setValue(value ? 1 : 0);
+                    }
                 }
             }
         });
@@ -986,6 +1091,43 @@ public class ParquetTableReadWriteTest {
         }
     }
 
+    private void assertByteVectorColumnStatistics(SerialObjectColumnIterator<ByteVector> iterator,
+            Statistics<Integer> statistics) {
+        MutableLong itemCount = new MutableLong(0);
+        MutableLong nullCount = new MutableLong(0);
+        MutableInt min = new MutableInt(NULL_BYTE);
+        MutableInt max = new MutableInt(NULL_BYTE);
+
+        iterator.forEachRemaining(values -> {
+            if (values == null) {
+                return;
+            }
+            for (final byte value : values) {
+                itemCount.increment();
+                if (value == NULL_BYTE) {
+                    nullCount.increment();
+                } else {
+                    if (min.getValue() == NULL_BYTE || value < min.getValue()) {
+                        min.setValue(value);
+                    }
+                    if (max.getValue() == NULL_BYTE || value > max.getValue()) {
+                        max.setValue(value);
+                    }
+                }
+            }
+        });
+
+        assertEquals(nullCount.intValue(), statistics.getNumNulls());
+        if (!itemCount.getValue().equals(nullCount.getValue())) {
+            // There are some non-null values, so min and max should be non-null and equal to observed values.
+            assertEquals(min.getValue(), statistics.genericGetMin());
+            assertEquals(max.getValue(), statistics.genericGetMax());
+        } else {
+            // Everything is null, statistics should be empty.
+            assertFalse(statistics.hasNonNullValue());
+        }
+    }
+
     private void assertCharColumnStatistics(SerialCharacterColumnIterator iterator, Statistics<Integer> statistics) {
         MutableLong itemCount = new MutableLong(0);
         MutableLong nullCount = new MutableLong(0);
@@ -1002,6 +1144,43 @@ public class ParquetTableReadWriteTest {
                 }
                 if (max.getValue() == NULL_CHAR || value > max.getValue()) {
                     max.setValue(value);
+                }
+            }
+        });
+
+        assertEquals(nullCount.intValue(), statistics.getNumNulls());
+        if (!itemCount.getValue().equals(nullCount.getValue())) {
+            // There are some non-null values, so min and max should be non-null and equal to observed values.
+            assertEquals(min.getValue(), statistics.genericGetMin());
+            assertEquals(max.getValue(), statistics.genericGetMax());
+        } else {
+            // Everything is null, statistics should be empty.
+            assertFalse(statistics.hasNonNullValue());
+        }
+    }
+
+    private void assertCharVectorColumnStatistics(SerialObjectColumnIterator<CharVector> iterator,
+            Statistics<Integer> statistics) {
+        MutableLong itemCount = new MutableLong(0);
+        MutableLong nullCount = new MutableLong(0);
+        MutableInt min = new MutableInt(NULL_CHAR);
+        MutableInt max = new MutableInt(NULL_CHAR);
+
+        iterator.forEachRemaining(values -> {
+            if (values == null) {
+                return;
+            }
+            for (final char value : values) {
+                itemCount.increment();
+                if (value == NULL_CHAR) {
+                    nullCount.increment();
+                } else {
+                    if (min.getValue() == NULL_CHAR || value < min.getValue()) {
+                        min.setValue(value);
+                    }
+                    if (max.getValue() == NULL_CHAR || value > max.getValue()) {
+                        max.setValue(value);
+                    }
                 }
             }
         });
@@ -1048,6 +1227,43 @@ public class ParquetTableReadWriteTest {
         }
     }
 
+    private void assertShortVectorColumnStatistics(SerialObjectColumnIterator<ShortVector> iterator,
+            Statistics<Integer> statistics) {
+        MutableLong itemCount = new MutableLong(0);
+        MutableLong nullCount = new MutableLong(0);
+        MutableInt min = new MutableInt(NULL_SHORT);
+        MutableInt max = new MutableInt(NULL_SHORT);
+
+        iterator.forEachRemaining(values -> {
+            if (values == null) {
+                return;
+            }
+            for (final short value : values) {
+                itemCount.increment();
+                if (value == NULL_SHORT) {
+                    nullCount.increment();
+                } else {
+                    if (min.getValue() == NULL_SHORT || value < min.getValue()) {
+                        min.setValue(value);
+                    }
+                    if (max.getValue() == NULL_SHORT || value > max.getValue()) {
+                        max.setValue(value);
+                    }
+                }
+            }
+        });
+
+        assertEquals(nullCount.intValue(), statistics.getNumNulls());
+        if (!itemCount.getValue().equals(nullCount.getValue())) {
+            // There are some non-null values, so min and max should be non-null and equal to observed values.
+            assertEquals(min.getValue(), statistics.genericGetMin());
+            assertEquals(max.getValue(), statistics.genericGetMax());
+        } else {
+            // Everything is null, statistics should be empty.
+            assertFalse(statistics.hasNonNullValue());
+        }
+    }
+
     private void assertIntColumnStatistics(SerialIntegerColumnIterator iterator, Statistics<Integer> statistics) {
         MutableLong itemCount = new MutableLong(0);
         MutableLong nullCount = new MutableLong(0);
@@ -1064,6 +1280,43 @@ public class ParquetTableReadWriteTest {
                 }
                 if (max.getValue() == NULL_INT || value > max.getValue()) {
                     max.setValue(value);
+                }
+            }
+        });
+
+        assertEquals(nullCount.intValue(), statistics.getNumNulls());
+        if (!itemCount.getValue().equals(nullCount.getValue())) {
+            // There are some non-null values, so min and max should be non-null and equal to observed values.
+            assertEquals(min.getValue(), statistics.genericGetMin());
+            assertEquals(max.getValue(), statistics.genericGetMax());
+        } else {
+            // Everything is null, statistics should be empty.
+            assertFalse(statistics.hasNonNullValue());
+        }
+    }
+
+    private void assertIntVectorColumnStatistics(SerialObjectColumnIterator<IntVector> iterator,
+            Statistics<Integer> statistics) {
+        MutableLong itemCount = new MutableLong(0);
+        MutableLong nullCount = new MutableLong(0);
+        MutableInt min = new MutableInt(NULL_INT);
+        MutableInt max = new MutableInt(NULL_INT);
+
+        iterator.forEachRemaining(values -> {
+            if (values == null) {
+                return;
+            }
+            for (final int value : values) {
+                itemCount.increment();
+                if (value == NULL_INT) {
+                    nullCount.increment();
+                } else {
+                    if (min.getValue() == NULL_INT || value < min.getValue()) {
+                        min.setValue(value);
+                    }
+                    if (max.getValue() == NULL_INT || value > max.getValue()) {
+                        max.setValue(value);
+                    }
                 }
             }
         });
@@ -1110,6 +1363,43 @@ public class ParquetTableReadWriteTest {
         }
     }
 
+    private void assertLongVectorColumnStatistics(SerialObjectColumnIterator<LongVector> iterator,
+            Statistics<Long> statistics) {
+        MutableLong itemCount = new MutableLong(0);
+        MutableLong nullCount = new MutableLong(0);
+        MutableLong min = new MutableLong(NULL_LONG);
+        MutableLong max = new MutableLong(NULL_LONG);
+
+        iterator.forEachRemaining(values -> {
+            if (values == null) {
+                return;
+            }
+            for (final long value : values) {
+                itemCount.increment();
+                if (value == NULL_LONG) {
+                    nullCount.increment();
+                } else {
+                    if (min.getValue() == NULL_LONG || value < min.getValue()) {
+                        min.setValue(value);
+                    }
+                    if (max.getValue() == NULL_LONG || value > max.getValue()) {
+                        max.setValue(value);
+                    }
+                }
+            }
+        });
+
+        assertEquals(nullCount.intValue(), statistics.getNumNulls());
+        if (!itemCount.getValue().equals(nullCount.getValue())) {
+            // There are some non-null values, so min and max should be non-null and equal to observed values.
+            assertEquals(min.getValue(), statistics.genericGetMin());
+            assertEquals(max.getValue(), statistics.genericGetMax());
+        } else {
+            // Everything is null, statistics should be empty.
+            assertFalse(statistics.hasNonNullValue());
+        }
+    }
+
     private void assertFloatColumnStatistics(SerialFloatColumnIterator iterator, Statistics<Float> statistics) {
         MutableLong itemCount = new MutableLong(0);
         MutableLong nullCount = new MutableLong(0);
@@ -1126,6 +1416,44 @@ public class ParquetTableReadWriteTest {
                 }
                 if (max.getValue() == NULL_FLOAT || value > max.getValue()) {
                     max.setValue(value);
+                }
+            }
+        });
+
+        assertEquals(nullCount.intValue(), statistics.getNumNulls());
+        if (!itemCount.getValue().equals(nullCount.getValue())) {
+            // There are some non-null values, so min and max should be non-null and equal to observed values.
+            // Use FloatComparisons.compare() to handle -0.0f == 0.0f properly
+            assertEquals(FloatComparisons.compare(min.getValue(), statistics.genericGetMin()), 0);
+            assertEquals(FloatComparisons.compare(max.getValue(), statistics.genericGetMax()), 0);
+        } else {
+            // Everything is null, statistics should be empty.
+            assertFalse(statistics.hasNonNullValue());
+        }
+    }
+
+    private void assertFloatVectorColumnStatistics(SerialObjectColumnIterator<FloatVector> iterator,
+            Statistics<Float> statistics) {
+        MutableLong itemCount = new MutableLong(0);
+        MutableLong nullCount = new MutableLong(0);
+        MutableFloat min = new MutableFloat(NULL_FLOAT);
+        MutableFloat max = new MutableFloat(NULL_FLOAT);
+
+        iterator.forEachRemaining(values -> {
+            if (values == null) {
+                return;
+            }
+            for (final float value : values) {
+                itemCount.increment();
+                if (value == NULL_FLOAT) {
+                    nullCount.increment();
+                } else {
+                    if (min.getValue() == NULL_FLOAT || value < min.getValue()) {
+                        min.setValue(value);
+                    }
+                    if (max.getValue() == NULL_FLOAT || value > max.getValue()) {
+                        max.setValue(value);
+                    }
                 }
             }
         });
@@ -1174,6 +1502,44 @@ public class ParquetTableReadWriteTest {
         }
     }
 
+    private void assertDoubleVectorColumnStatistics(SerialObjectColumnIterator<DoubleVector> iterator,
+            Statistics<Double> statistics) {
+        MutableLong itemCount = new MutableLong(0);
+        MutableLong nullCount = new MutableLong(0);
+        MutableDouble min = new MutableDouble(NULL_DOUBLE);
+        MutableDouble max = new MutableDouble(NULL_DOUBLE);
+
+        iterator.forEachRemaining(values -> {
+            if (values == null) {
+                return;
+            }
+            for (final double value : values) {
+                itemCount.increment();
+                if (value == NULL_DOUBLE) {
+                    nullCount.increment();
+                } else {
+                    if (min.getValue() == NULL_DOUBLE || value < min.getValue()) {
+                        min.setValue(value);
+                    }
+                    if (max.getValue() == NULL_DOUBLE || value > max.getValue()) {
+                        max.setValue(value);
+                    }
+                }
+            }
+        });
+
+        assertEquals(nullCount.intValue(), statistics.getNumNulls());
+        if (!itemCount.getValue().equals(nullCount.getValue())) {
+            // There are some non-null values, so min and max should be non-null and equal to observed values.
+            // Use DoubleComparisons.compare() to handle -0.0f == 0.0f properly
+            assertEquals(DoubleComparisons.compare(min.getValue(), statistics.genericGetMin()), 0);
+            assertEquals(DoubleComparisons.compare(max.getValue(), statistics.genericGetMax()), 0);
+        } else {
+            // Everything is null, statistics should be empty.
+            assertFalse(statistics.hasNonNullValue());
+        }
+    }
+
     private void assertStringColumnStatistics(SerialObjectColumnIterator<String> iterator,
             Statistics<Binary> statistics) {
         MutableLong itemCount = new MutableLong(0);
@@ -1191,6 +1557,80 @@ public class ParquetTableReadWriteTest {
                 }
                 if (max.getValue() == null || value.compareTo(max.getValue()) > 0) {
                     max.setValue(value);
+                }
+            }
+        });
+
+        assertEquals(nullCount.intValue(), statistics.getNumNulls());
+        if (!itemCount.getValue().equals(nullCount.getValue())) {
+            // There are some non-null values, so min and max should be non-null and equal to observed values.
+            assertEquals(Binary.fromString(min.getValue()), statistics.genericGetMin());
+            assertEquals(Binary.fromString(max.getValue()), statistics.genericGetMax());
+        } else {
+            // Everything is null, statistics should be empty.
+            assertFalse(statistics.hasNonNullValue());
+        }
+    }
+
+    private void assertStringArrayColumnStatistics(SerialObjectColumnIterator<String[]> iterator,
+            Statistics<Binary> statistics) {
+        MutableLong itemCount = new MutableLong(0);
+        MutableLong nullCount = new MutableLong(0);
+        MutableObject<String> min = new MutableObject<>(null);
+        MutableObject<String> max = new MutableObject<>(null);
+
+        iterator.forEachRemaining(values -> {
+            if (values == null) {
+                return;
+            }
+            for (final String value : values) {
+                itemCount.increment();
+                if (value == null) {
+                    nullCount.increment();
+                } else {
+                    if (min.getValue() == null || value.compareTo(min.getValue()) < 0) {
+                        min.setValue(value);
+                    }
+                    if (max.getValue() == null || value.compareTo(max.getValue()) > 0) {
+                        max.setValue(value);
+                    }
+                }
+            }
+        });
+
+        assertEquals(nullCount.intValue(), statistics.getNumNulls());
+        if (!itemCount.getValue().equals(nullCount.getValue())) {
+            // There are some non-null values, so min and max should be non-null and equal to observed values.
+            assertEquals(Binary.fromString(min.getValue()), statistics.genericGetMin());
+            assertEquals(Binary.fromString(max.getValue()), statistics.genericGetMax());
+        } else {
+            // Everything is null, statistics should be empty.
+            assertFalse(statistics.hasNonNullValue());
+        }
+    }
+
+    private void assertStringVectorColumnStatistics(SerialObjectColumnIterator<ObjectVector<String>> iterator,
+            Statistics<Binary> statistics) {
+        MutableLong itemCount = new MutableLong(0);
+        MutableLong nullCount = new MutableLong(0);
+        MutableObject<String> min = new MutableObject<>(null);
+        MutableObject<String> max = new MutableObject<>(null);
+
+        iterator.forEachRemaining(values -> {
+            if (values == null) {
+                return;
+            }
+            for (String value : values) {
+                itemCount.increment();
+                if (value == null) {
+                    nullCount.increment();
+                } else {
+                    if (min.getValue() == null || value.compareTo(min.getValue()) < 0) {
+                        min.setValue(value);
+                    }
+                    if (max.getValue() == null || value.compareTo(max.getValue()) > 0) {
+                        max.setValue(value);
+                    }
                 }
             }
         });
@@ -1224,6 +1664,44 @@ public class ParquetTableReadWriteTest {
                 }
                 if (max.getValue() == NULL_LONG || DateTimeUtils.epochNanos(value) > max.getValue()) {
                     max.setValue(DateTimeUtils.epochNanos(value));
+                }
+            }
+        });
+
+        assertEquals(nullCount.intValue(), statistics.getNumNulls());
+        if (!itemCount.getValue().equals(nullCount.getValue())) {
+            // There are some non-null values, so min and max should be non-null and equal to observed values.
+            assertEquals(min.getValue(), statistics.genericGetMin());
+            assertEquals(max.getValue(), statistics.genericGetMax());
+        } else {
+            // Everything is null, statistics should be empty.
+            assertFalse(statistics.hasNonNullValue());
+        }
+    }
+
+    private void assertInstantArrayColumnStatistics(SerialObjectColumnIterator<Instant[]> iterator,
+            Statistics<Long> statistics) {
+        MutableLong itemCount = new MutableLong(0);
+        MutableLong nullCount = new MutableLong(0);
+        MutableLong min = new MutableLong(NULL_LONG);
+        MutableLong max = new MutableLong(NULL_LONG);
+
+        iterator.forEachRemaining(values -> {
+            if (values == null) {
+                return;
+            }
+            for (final Instant value : values) {
+                itemCount.increment();
+                if (value == null) {
+                    nullCount.increment();
+                } else {
+                    // DateTimeUtils.epochNanos() is the correct conversion for Instant to long.
+                    if (min.getValue() == NULL_LONG || DateTimeUtils.epochNanos(value) < min.getValue()) {
+                        min.setValue(DateTimeUtils.epochNanos(value));
+                    }
+                    if (max.getValue() == NULL_LONG || DateTimeUtils.epochNanos(value) > max.getValue()) {
+                        max.setValue(DateTimeUtils.epochNanos(value));
+                    }
                 }
             }
         });
@@ -1304,4 +1782,6 @@ public class ParquetTableReadWriteTest {
             assertFalse(statistics.hasNonNullValue());
         }
     }
+
+    // endregion Column Statistics Assertions
 }
