@@ -875,7 +875,6 @@ public class ParquetTableWriter {
             this.chunk = chunk;
             this.buffer = buffer;
             context = columnSource.makeFillContext(targetSize);
-            hasMoreDataToBuffer = false;
         }
 
         @Override
@@ -1106,34 +1105,34 @@ public class ParquetTableWriter {
         private final int targetPageSize;
 
         /**
-         * Total number of chunks buffered so far
+         * Index of next string to be buffered from the string chunk
          */
-        private int numChunksBuffered;
+        private int currentChunkIdx;
 
 
         StringTransfer(ColumnSource<?> columnSource, int maxValuesPerPage, int targetPageSize) {
             this.columnSource = columnSource;
             this.buffer = new Binary[maxValuesPerPage];
             context = this.columnSource.makeGetContext(maxValuesPerPage);
-            numChunksBuffered = 0;
             this.maxValuesPerPage = maxValuesPerPage;
             this.targetPageSize = targetPageSize;
         }
 
         @Override
         public boolean hasMoreDataToBuffer() {
-            return ((chunk != null) && (numChunksBuffered < chunk.size()));
+            return ((chunk != null) && (currentChunkIdx < chunk.size()));
         }
 
+        @Override
         public int bufferFetchedData() {
-            if (numChunksBuffered != 0) {
-                // Clear any old data in the buffer from previous iterations
-                buffer = new Binary[maxValuesPerPage];
+            if (currentChunkIdx != 0) {
+                // Clear any old buffered data
+                Arrays.fill(buffer, null);
             }
             int bufferedDataSize = 0;
             int bufferIdx = 0; // Stores the number of chunks buffered in this iteration
-            while (numChunksBuffered < chunk.size()) {
-                final String value = chunk.get(numChunksBuffered);
+            while (currentChunkIdx < chunk.size()) {
+                final String value = chunk.get(currentChunkIdx);
                 if (value == null) {
                     buffer[bufferIdx++] = null;
                 } else {
@@ -1148,7 +1147,7 @@ public class ParquetTableWriter {
                     buffer[bufferIdx++] = binaryVal;
                     bufferedDataSize += binaryVal.length();
                 }
-                numChunksBuffered++;
+                currentChunkIdx++;
             }
             return bufferIdx;
         }
@@ -1167,7 +1166,7 @@ public class ParquetTableWriter {
         public void fetchData(RowSequence rs) {
             // noinspection unchecked
             chunk = (ObjectChunk<String, Values>) columnSource.getChunk(context, rs);
-            numChunksBuffered = 0;
+            currentChunkIdx = 0;
         }
 
         @Override
