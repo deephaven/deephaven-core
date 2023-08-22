@@ -123,12 +123,12 @@ public class TestControlledScheduler extends ClockNanoBase implements Scheduler 
     }
 
     @Override
-    public void runAfterDelay(final long delayMs, final @NotNull Runnable command) {
+    public void runAfterDelay(final long delayMs, @NotNull final Runnable command) {
         workQueue.add(new Pair<>(DateTimeUtils.epochNanosToInstant(currentTimeInNs + delayMs * 1_000_000L), command));
     }
 
     @Override
-    public void runImmediately(final @NotNull Runnable command) {
+    public void runImmediately(@NotNull final Runnable command) {
         workQueue.add(new Pair<>(instantNanos(), command));
     }
 

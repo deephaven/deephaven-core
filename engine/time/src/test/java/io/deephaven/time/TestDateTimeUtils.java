@@ -1640,7 +1640,8 @@ public class TestDateTimeUtils extends BaseArrayTestCase {
 
     public void testClock() {
         final long nanos = 123456789123456789L;
-        final @NotNull Clock initial = DateTimeUtils.currentClock();
+        @NotNull
+        final Clock initial = DateTimeUtils.currentClock();
 
         try {
             final io.deephaven.base.clock.Clock clock = new io.deephaven.base.clock.Clock() {

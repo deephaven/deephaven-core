@@ -90,7 +90,9 @@ public class ColumnWriterImpl implements ColumnWriter {
     }
 
     @Override
-    public void addPageNoNulls(final Object pageData, final int valuesCount, @NotNull final Statistics<?> statistics)
+    public void addPageNoNulls(@NotNull final Object pageData,
+                               final int valuesCount,
+                               @NotNull final Statistics<?> statistics)
             throws IOException {
         initWriter();
         // noinspection unchecked
@@ -118,7 +120,7 @@ public class ColumnWriterImpl implements ColumnWriter {
     }
 
     @Override
-    public void addDictionaryPage(final Object dictionaryValues, final int valuesCount) throws IOException {
+    public void addDictionaryPage(@NotNull final Object dictionaryValues, final int valuesCount) throws IOException {
         if (pageCount > 0) {
             throw new IllegalStateException("Attempting to add dictionary past the first page");
         }
@@ -199,7 +201,9 @@ public class ColumnWriterImpl implements ColumnWriter {
     }
 
     @Override
-    public void addPage(final Object pageData, final int valuesCount, @NotNull Statistics<?> statistics)
+    public void addPage(@NotNull final Object pageData,
+                        final int valuesCount,
+                        @NotNull Statistics<?> statistics)
             throws IOException {
         if (dlEncoder == null) {
             throw new IllegalStateException("Null values not supported");
@@ -212,8 +216,8 @@ public class ColumnWriterImpl implements ColumnWriter {
     }
 
     public void addVectorPage(
-            final Object pageData,
-            final IntBuffer repeatCount,
+            @NotNull final Object pageData,
+            @NotNull final IntBuffer repeatCount,
             final int nonNullValueCount,
             @NotNull final Statistics<?> statistics) throws IOException {
         if (dlEncoder == null) {

@@ -128,9 +128,10 @@ public class UpdateByOperatorFactory {
      *         output.
      */
     @NotNull
-    static MatchPair[] createColumnsToAddIfMissing(final @NotNull Table table,
-            final @NotNull MatchPair[] columnsToAdd,
-            final @NotNull UpdateBySpec spec,
+    static MatchPair[] createColumnsToAddIfMissing(
+            @NotNull final Table table,
+            @NotNull final MatchPair[] columnsToAdd,
+            @NotNull final UpdateBySpec spec,
             final MatchPair[] groupByColumns) {
         if (columnsToAdd.length == 0) {
             return createOneToOneMatchPairs(table, groupByColumns, spec);
@@ -146,7 +147,8 @@ public class UpdateByOperatorFactory {
      * @return A new {@link MatchPair}[] that maps each source column 1:1 to the output.
      */
     @NotNull
-    static MatchPair[] createOneToOneMatchPairs(final @NotNull Table table,
+    static MatchPair[] createOneToOneMatchPairs(
+            @NotNull final Table table,
             final MatchPair[] groupByColumns,
             @NotNull final UpdateBySpec spec) {
         final Set<String> usedGroupColumns = groupByColumns.length == 0 ? Collections.emptySet()
@@ -292,7 +294,7 @@ public class UpdateByOperatorFactory {
          * @param type the type
          * @return true if the type is one of the useable time types
          */
-        public boolean isTimeType(final @NotNull Class<?> type) {
+        public boolean isTimeType(@NotNull final Class<?> type) {
             // TODO: extend time handling similar to enterprise (ZonedDateTime, LocalDate, LocalTime)
             return type == Instant.class;
         }
