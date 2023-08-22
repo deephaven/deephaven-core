@@ -24,7 +24,8 @@ public interface ColumnWriter extends SafeCloseable {
     /**
      * Add a page with no nulls to the file.
      */
-    void addPageNoNulls(@NotNull Object pageData, int valuesCount, @NotNull Statistics<?> statistics) throws IOException;
+    void addPageNoNulls(@NotNull Object pageData, int valuesCount, @NotNull Statistics<?> statistics)
+            throws IOException;
 
     /**
      * Add a dictionary page to the file.
@@ -49,14 +50,20 @@ public interface ColumnWriter extends SafeCloseable {
      * Add a vector page to the file.. Does not track statistics, so the caller must track statistics in another way.
      */
     @FinalDefault
-    default void addVectorPage(@NotNull Object pageData, @NotNull IntBuffer repeatCount, int valuesCount) throws IOException {
+    default void addVectorPage(@NotNull Object pageData,
+            @NotNull IntBuffer repeatCount,
+            int valuesCount)
+            throws IOException {
         addVectorPage(pageData, repeatCount, valuesCount, NullStatistics.INSTANCE);
     }
 
     /**
      * Add a vector page to the file.
      */
-    void addVectorPage(@NotNull Object pageData, @NotNull IntBuffer repeatCount, int valuesCount, @NotNull Statistics<?> statistics)
+    void addVectorPage(@NotNull Object pageData,
+            @NotNull IntBuffer repeatCount,
+            int valuesCount,
+            @NotNull Statistics<?> statistics)
             throws IOException;
 
     /**

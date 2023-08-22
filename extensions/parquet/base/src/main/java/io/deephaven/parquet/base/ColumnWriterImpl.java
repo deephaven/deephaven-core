@@ -91,8 +91,8 @@ public class ColumnWriterImpl implements ColumnWriter {
 
     @Override
     public void addPageNoNulls(@NotNull final Object pageData,
-                               final int valuesCount,
-                               @NotNull final Statistics<?> statistics)
+            final int valuesCount,
+            @NotNull final Statistics<?> statistics)
             throws IOException {
         initWriter();
         // noinspection unchecked
@@ -202,8 +202,8 @@ public class ColumnWriterImpl implements ColumnWriter {
 
     @Override
     public void addPage(@NotNull final Object pageData,
-                        final int valuesCount,
-                        @NotNull Statistics<?> statistics)
+            final int valuesCount,
+            @NotNull Statistics<?> statistics)
             throws IOException {
         if (dlEncoder == null) {
             throw new IllegalStateException("Null values not supported");
