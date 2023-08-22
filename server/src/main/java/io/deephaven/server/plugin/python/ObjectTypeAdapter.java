@@ -31,7 +31,7 @@ final class ObjectTypeAdapter extends ObjectTypeBase implements AutoCloseable {
         if (!(object instanceof PyObjectRefCountedNode) && !(object instanceof PyObject)) {
             return false;
         }
-        return objectTypeAdapter.call(boolean.class, "is_type", Object.class, (Object) object);
+        return objectTypeAdapter.call(boolean.class, "is_type", Object.class, object);
     }
 
     @Override
@@ -45,7 +45,7 @@ final class ObjectTypeAdapter extends ObjectTypeBase implements AutoCloseable {
 
             final byte[] bytes = objectTypeAdapter.call(byte[].class, "to_bytes",
                     ExporterAdapter.class, new ExporterAdapter(exporter),
-                    PyObject.class, (PyObject) object);
+                    Object.class, object);
 
             // Send the message and close the stream
             connection.onData(ByteBuffer.wrap(bytes), exporter.references());

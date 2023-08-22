@@ -7,6 +7,7 @@ import jpy
 from typing import Optional, List, Any
 from deephaven.plugin.object_type import Exporter, ObjectType, Reference, MessageStream, FetchOnlyObjectType
 from deephaven._wrapper import pythonify, javaify
+from deephaven.liveness_scope import liveness_scope
 
 JReference = jpy.get_type('io.deephaven.plugin.type.Exporter$Reference')
 JExporterAdapter = jpy.get_type('io.deephaven.server.plugin.python.ExporterAdapter')
@@ -25,6 +26,7 @@ class ExporterAdapter(Exporter):
         self._exporter = exporter
 
     def reference(self, obj: Any, allow_unknown_type: bool = True, force_new: bool = True) -> Optional[Reference]:
+        # No liveness scope required here, this must be called from the same thread as the call from gRPC
         obj = javaify(obj)
         ref = self._exporter.reference(obj, allow_unknown_type, force_new)
         return _adapt_reference(ref) if ref else None
@@ -39,7 +41,10 @@ class ClientResponseStreamAdapter(MessageStream):
         self._wrapped = wrapped
 
     def on_data(self, payload: bytes, references: List[Any]) -> None:
-        self._wrapped.onData(payload, [javaify(ref) for ref in references])
+        # Perform this in a single liveness scope to ensure we safely create PyObjectRefCountedNodes
+        # and pass them off to Java, which now owns them
+        with liveness_scope():
+            self._wrapped.onData(payload, [javaify(ref) for ref in references])
 
     def on_close(self) -> None:
         self._wrapped.onClose()
@@ -51,7 +56,7 @@ class ServerRequestStreamAdapter(MessageStream):
     def __init__(self, wrapped: MessageStream):
         self._wrapped = wrapped
 
-    def on_data(self, payload:bytes, references: List[Any]) -> None:
+    def on_data(self, payload: bytes, references: List[Any]) -> None:
         self._wrapped.on_data(payload, [pythonify(ref) for ref in references])
 
     def on_close(self) -> None:

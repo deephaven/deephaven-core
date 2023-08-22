@@ -120,6 +120,10 @@ def _lookup_wrapped_class(j_obj: jpy.JType) -> Optional[type]:
 
 
 def javaify(obj: Union[JObjectWrapper, jpy.JType, Any]) -> Optional[jpy.JType]:
+    """
+    Returns an object that is safe to pass to Java. Callers should take care to ensure that this happens
+    in a liveness scope that reflects the lifetime of the reference to be passed to Java.
+    """
     if obj is None:
         return None
     if isinstance(obj, JObjectWrapper):
@@ -132,6 +136,10 @@ def javaify(obj: Union[JObjectWrapper, jpy.JType, Any]) -> Optional[jpy.JType]:
 
 
 def pythonify(j_obj: Union[jpy.JType, Any]) -> Optional[Union[JObjectWrapper, jpy.JType, Any]]:
+    """
+    Reciprocal of javaify, returns an object that is safe to be used in Python after being passed
+    from Java.
+    """
     if not isinstance(j_obj, jpy.JType):
         return j_obj
     # Definitely a JType, check if it is a PyObjectRefCountedNode
