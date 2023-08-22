@@ -2,7 +2,7 @@
 # Copyright (c) 2016-2023 Deephaven Data Labs and Patent Pending
 #
 
-#TODO new docstring
+# TODO new docstring
 """ This module defines functions for handling Deephaven date/time data. """
 
 from __future__ import annotations
@@ -16,7 +16,7 @@ import numpy as np
 from deephaven import DHError
 from deephaven.dtypes import Instant, LocalDate, LocalTime, ZonedDateTime, Duration, Period, TimeZone
 
-#TODO: clean up type list
+# TODO: clean up type list
 _JDateTimeUtils = jpy.get_type("io.deephaven.time.DateTimeUtils")
 _JLocalDate = jpy.get_type("java.time.LocalDate")
 _JLocalTime = jpy.get_type("java.time.LocalTime")
@@ -29,9 +29,9 @@ _epoch64 = np.datetime64('1970-01-01T00:00:00Z')
 
 # region Clock
 
-#TODO: rename these methods to system_<X>?
+# TODO: rename these methods to system_<X>?
 
-#TODO: what should these return?
+# TODO: what should these return?
 def now(system: bool = False, resolution: str = 'ns') -> Instant:
     """ Provides the current datetime according to a clock.
 
@@ -65,7 +65,8 @@ def now(system: bool = False, resolution: str = 'ns') -> Instant:
     except Exception as e:
         raise DHError(e) from e
 
-#TODO: what should these return?
+
+# TODO: what should these return?
 
 def today(tz: TimeZone) -> str:
     """ Provides the current date string according to the current clock.
@@ -154,25 +155,24 @@ def time_zone_alias_rm(alias: str) -> bool:
 
 # endregion
 
-#TODO: Document
-
-#TODO: numpy `astype(type)` syntax?
+# TODO: Document
+# TODO: numpy `astype(type)` syntax?
+# TODO: TZ input?
+# TODO: rename as_j_time or asjtype
+# TODO: rename everything
+# TODO: consistently name functions
+# TODO: have these methods parse strings?
+# TODO: convert python time zones?
 
 # region Conversions: To Java
 
-#TODO: TZ input?
-#TODO: rename as_j_time or asjtype
-#TODO: rename everything
-#TODO: consistently name functions
-#TODO: have these methods parse strings?
-#TODO: convert python time zones?
-
+#TODO: Keep?
 def to_j_time_zone(tz: Union[None, str]) -> Optional[TimeZone]:
     if not tz:
         return None
     else:
         return _JDateTimeUtils.timeZone(tz)
-        #TODO: or _JDateTimeUtils.parseTimeZone(s)
+        # TODO: or _JDateTimeUtils.parseTimeZone(s)
 
 
 def to_j_date(dt: Union[None, datetime.date, datetime.time, datetime.datetime, np.datetime64]) -> Optional[LocalDate]:
@@ -214,7 +214,8 @@ def to_j_instant(dt: Union[None, datetime.datetime, np.datetime64]) -> Optional[
     else:
         raise DHError(message="Unsupported conversion: " + str(type(dt)) + " -> Instant")
 
-#TODO: ZDT?
+
+# TODO: ZDT?
 
 def to_j_duration(dt: Union[None, datetime.timedelta, np.timedelta64]) -> Optional[Duration]:
     if not dt:
@@ -234,7 +235,8 @@ def to_j_period(dt: Union[None, datetime.timedelta, np.timedelta64]) -> Optional
         return None
     elif isinstance(dt, datetime.timedelta):
         if dt.seconds or dt.microseconds:
-            raise DHError(message="Unsupported conversion: " + str(type(dt)) + " -> Period: Periods must only be days or weeks")
+            raise DHError(
+                message="Unsupported conversion: " + str(type(dt)) + " -> Period: Periods must only be days or weeks")
         elif dt.days:
             return _JPeriod.ofDays(dt.days)
         else:
@@ -251,10 +253,10 @@ def to_j_period(dt: Union[None, datetime.timedelta, np.timedelta64]) -> Optional
         elif data[0] == 'Y':
             return _JPeriod.ofYears(data[1])
         else:
-            raise DHError(message="Unsupported conversion: " + str(type(dt)) + " -> Period: numpy.datetime64 must have units of 'D', 'W', 'M', or 'Y'")
+            raise DHError(message="Unsupported conversion: " + str(
+                type(dt)) + " -> Period: numpy.datetime64 must have units of 'D', 'W', 'M', or 'Y'")
     else:
         raise DHError(message="Unsupported conversion: " + str(type(dt)) + " -> Period")
-
 
 
 # endregion
@@ -262,6 +264,7 @@ def to_j_period(dt: Union[None, datetime.timedelta, np.timedelta64]) -> Optional
 
 # region Conversions: From Java
 
+#TODO: add py to these names?
 
 def to_date(dt: Union[None, LocalDate]) -> Optional[datetime.date]:
     if not dt:
@@ -293,6 +296,7 @@ def to_datetime(dt: Union[None, Instant, ZonedDateTime]) -> Optional[datetime.da
     else:
         raise DHError(message="Unsupported conversion: " + str(type(dt)) + " -> datetime.datetime")
 
+
 def to_datetime64(dt: Union[None, Instant, ZonedDateTime]) -> Optional[np.datetime64]:
     if not dt:
         return None
@@ -305,20 +309,22 @@ def to_datetime64(dt: Union[None, Instant, ZonedDateTime]) -> Optional[np.dateti
     else:
         raise DHError(message="Unsupported conversion: " + str(type(dt)) + " -> datetime.datetime")
 
+
 def to_timedelta(dt: Union[None, Duration]) -> Optional[datetime.timedelta]:
     if not dt:
         return None
     elif isinstance(dt, Duration):
         return datetime.timedelta(seconds=dt.getSeconds(), microseconds=dt.getNano() // 1000)
     elif isinstance(dt, Period):
-        #TODO: not sure what is right here
+        # TODO: not sure what is right here
         y = dt.getYears()
         m = dt.getMonths()
         d = dt.getDays()
         w = dt.getDays() // 7
 
         if y or m:
-            raise DHError(message="Unsupported conversion: " + str(type(dt)) + " -> datetime.timedelta: Periods must only be days or weeks")
+            raise DHError(message="Unsupported conversion: " + str(
+                type(dt)) + " -> datetime.timedelta: Periods must only be days or weeks")
 
         return datetime.timedelta(days=d, weeks=w)
     else:
@@ -340,7 +346,8 @@ def to_timedelta64(dt: Union[None, Duration, Period]) -> Optional[np.timedelta64
         if count == 0:
             return np.timedelta64(0, 'D')
         elif count > 1:
-            raise DHError(message="Unsupported conversion: " + str(type(dt)) + " -> datetime.timedelta64: Periods must be days, months, or years")
+            raise DHError(message="Unsupported conversion: " +
+                str(type(dt)) + " -> datetime.timedelta64: Periods must be days, months, or years")
         elif y:
             return np.timedelta64(y, 'Y')
         elif m:
@@ -350,7 +357,7 @@ def to_timedelta64(dt: Union[None, Duration, Period]) -> Optional[np.timedelta64
         else:
             raise DHError(message="Unsupported conversion: " + str(type(dt)) + " -> datetime.timedelta64: (" + dt + ")")
     else:
-        raise DHError(message="Unsupported conversion: " + str(type(dt)) + " -> datetime.timedelta")
+        raise DHError(message="Unsupported conversion: " + str(type(dt)) + " -> datetime.timedelta64")
 
 
 # endregion
@@ -360,7 +367,7 @@ def to_timedelta64(dt: Union[None, Duration, Period]) -> Optional[np.timedelta64
 
 # region XXXX
 
-def to_time_zone(tz: Optional[str]**) -> TimeZone:
+def to_time_zone(tz: Optional[str] **) -> TimeZone:
     """ Gets the time zone for a time zone name.
 
     Args:
@@ -372,7 +379,7 @@ def to_time_zone(tz: Optional[str]**) -> TimeZone:
     Raises:
         DHError
     """
-    ***
+    ** *
     try:
         if tz is None:
             return _JDateTimeUtils.timeZone()
@@ -380,8 +387,6 @@ def to_time_zone(tz: Optional[str]**) -> TimeZone:
             return _JDateTimeUtils.timeZone(tz)
     except Exception as e:
         raise DHError(e) from e
-
-
 
 
 datetime.date
@@ -392,7 +397,6 @@ datetime.tzinfo
 datetime.timezone
 np.datetime64
 np.timedelta64
-
 
 
 # endregion
@@ -423,7 +427,7 @@ def parse_time_zone(s: str, quiet: bool = False) -> Optional[TimeZone]:
         raise DHError(e) from e
 
 
-#TODO: remove?
+# TODO: remove?
 def parse_duration_nanos(s: str, quiet: bool = False) -> int:
     """ Parses the string argument as a time duration in nanoseconds.
 
@@ -523,7 +527,7 @@ def parse_duration(s: str, quiet: bool = False) -> Optional[Duration]:
         raise DHError(e) from e
 
 
-#TODO: remove?
+# TODO: remove?
 def parse_epoch_nanos(s: str, quiet: bool = False) -> int:
     """ Parses the string argument as nanoseconds since the Epoch.
 
@@ -601,7 +605,6 @@ def parse_zdt(s: str, quiet: bool = False) -> Optional[ZonedDateTime]:
             return _JDateTimeUtils.parseZonedDateTime(s)
     except Exception as e:
         raise DHError(e) from e
-
 
 
 def parse_local_date(s: str, quiet: bool = False) -> Optional[LocalTime]:
