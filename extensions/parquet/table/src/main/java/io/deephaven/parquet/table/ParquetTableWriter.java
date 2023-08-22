@@ -95,24 +95,29 @@ public class ParquetTableWriter {
         void fetchData(RowSequence rs);
 
         /**
-         * Total number of rows fetched
+         * Copy all the fetched data into an internal buffer, which can then be accessed using
+         * {@link TransferObject#getBuffer()}. This method should only be called after
+         * {@link TransferObject#fetchData(RowSequence)}}. Note that this method can lead to Out-of-Memory error if the
+         * fetched data is too big.
+         *
+         * @return The number of fetched data entries copied into the buffer.
          */
-        int rowCount();
+        int bufferAllFetchedData();
+
+        /**
+         * Copy the fetched data into an internal buffer, which can then be accessed using
+         * {@link TransferObject#getBuffer()}. The method should only be called after
+         * {@link TransferObject#fetchData(RowSequence)}}
+         *
+         * @return The number of fetched data entries copied into the buffer. This can be different from the number of
+         *         entries fetched for types like strings where we enforce additional page size limits while copying.
+         */
+        int bufferFetchedData();
 
         /**
          * Check if there is any fetched data which can be copied into buffer
          */
         boolean hasMoreDataToBuffer();
-
-        /**
-         * Copy the fetched data in an internal buffer. This data can then be accessed using
-         * {@link TransferObject#getBuffer()}. The method should only be called after
-         * {@link TransferObject#fetchData(RowSequence)}}
-         *
-         * @return The number of fetched data entries copied into the buffer. This can be different from the
-         *         {@link TransferObject#rowCount()}, particularly for strings.
-         */
-        int bufferFetchedData();
 
         B getBuffer();
     }
@@ -322,7 +327,6 @@ public class ParquetTableWriter {
      * @param writeInstructions write instructions for the file
      * @param tableMeta metadata to include in the parquet metadata
      * @param tableInfoBuilder a builder for accumulating per-column information to construct the deephaven metadata
-     *
      * @return a new file writer
      */
     @NotNull
@@ -642,16 +646,14 @@ public class ParquetTableWriter {
                                 .asIntChunk();
                         lenChunk.copyToTypedBuffer(0, repeatCount, 0, lenChunk.size());
                         repeatCount.limit(lenChunk.size());
-                        transferObject.bufferFetchedData();
-                        // Return value ignored, this can lead to errors in case we are not able to fit all the data in
-                        // a single page, which is possible for vector<string> columns.
-                        columnWriter.addVectorPage(transferObject.getBuffer(), repeatCount, transferObject.rowCount());
+                        int numValuesBuffered = transferObject.bufferAllFetchedData();
+                        columnWriter.addVectorPage(transferObject.getBuffer(), repeatCount, numValuesBuffered);
                         repeatCount.clear();
                     } else {
                         // We might need to split a single page into multiple if we are not able to fit all the entries
                         do {
-                            int numValuesCopied = transferObject.bufferFetchedData();
-                            columnWriter.addPage(transferObject.getBuffer(), numValuesCopied);
+                            int numValuesBuffered = transferObject.bufferFetchedData();
+                            columnWriter.addPage(transferObject.getBuffer(), numValuesBuffered);
                         } while (transferObject.hasMoreDataToBuffer());
                     }
                 }
@@ -791,7 +793,7 @@ public class ParquetTableWriter {
         if (columnType == String.class) {
             // We don't know the length of strings till we read the actual data. Therefore, we take a relaxed estimate
             // here and final calculation is done when writing the data.
-            return targetPageSize / Integer.BYTES;
+            return targetPageSize;
         }
 
         try {
@@ -851,16 +853,17 @@ public class ParquetTableWriter {
                         computedCache, columnDefinition.getName(), tableRowSet, () -> bigDecimalColumnSource);
                 final ObjectCodec<BigDecimal> codec = new BigDecimalParquetBytesCodec(
                         precisionAndScale.precision, precisionAndScale.scale, -1);
-                return new CodecTransfer<>(bigDecimalColumnSource, codec, maxValuesPerPage);
+                return new CodecTransfer<>(bigDecimalColumnSource, codec, maxValuesPerPage,
+                        instructions.getTargetPageSize());
             } else if (BigInteger.class.equals(columnType)) {
                 // noinspection unchecked
                 return new CodecTransfer<>((ColumnSource<BigInteger>) columnSource, new BigIntegerParquetBytesCodec(-1),
-                        maxValuesPerPage);
+                        maxValuesPerPage, instructions.getTargetPageSize());
             }
         }
 
         final ObjectCodec<? super DATA_TYPE> codec = CodecLookup.lookup(columnDefinition, instructions);
-        return new CodecTransfer<>(columnSource, codec, maxValuesPerPage);
+        return new CodecTransfer<>(columnSource, codec, maxValuesPerPage, instructions.getTargetPageSize());
     }
 
     static class PrimitiveTransfer<C extends WritableChunk<Values>, B extends Buffer> implements TransferObject<B> {
@@ -883,6 +886,11 @@ public class ParquetTableWriter {
         }
 
         @Override
+        public int bufferAllFetchedData() {
+            return bufferFetchedData();
+        }
+
+        @Override
         public int bufferFetchedData() {
             if (!hasMoreDataToBuffer) {
                 return 0;
@@ -896,11 +904,6 @@ public class ParquetTableWriter {
         @Override
         public B getBuffer() {
             return buffer;
-        }
-
-        @Override
-        public int rowCount() {
-            return chunk.size();
         }
 
         @Override
@@ -937,6 +940,11 @@ public class ParquetTableWriter {
         }
 
         @Override
+        public int bufferAllFetchedData() {
+            return bufferFetchedData();
+        }
+
+        @Override
         public int bufferFetchedData() {
             if (!hasMoreDataToBuffer) {
                 return 0;
@@ -953,11 +961,6 @@ public class ParquetTableWriter {
         @Override
         public IntBuffer getBuffer() {
             return buffer;
-        }
-
-        @Override
-        public int rowCount() {
-            return chunk.size();
         }
 
         @Override
@@ -993,6 +996,11 @@ public class ParquetTableWriter {
         }
 
         @Override
+        public int bufferAllFetchedData() {
+            return bufferFetchedData();
+        }
+
+        @Override
         public int bufferFetchedData() {
             if (!hasMoreDataToBuffer) {
                 return 0;
@@ -1009,11 +1017,6 @@ public class ParquetTableWriter {
         @Override
         public IntBuffer getBuffer() {
             return buffer;
-        }
-
-        @Override
-        public int rowCount() {
-            return chunk.size();
         }
 
         @Override
@@ -1050,6 +1053,11 @@ public class ParquetTableWriter {
         }
 
         @Override
+        public int bufferAllFetchedData() {
+            return bufferFetchedData();
+        }
+
+        @Override
         public int bufferFetchedData() {
             if (!hasMoreDataToBuffer) {
                 return 0;
@@ -1069,11 +1077,6 @@ public class ParquetTableWriter {
         }
 
         @Override
-        public int rowCount() {
-            return chunk.size();
-        }
-
-        @Override
         public void fetchData(RowSequence rs) {
             // noinspection unchecked
             chunk = (ByteChunk<Values>) columnSource.getChunk(context, rs);
@@ -1086,17 +1089,15 @@ public class ParquetTableWriter {
         }
     }
 
-    static class StringTransfer implements TransferObject<Binary[]> {
-
+    /**
+     * Used as a base class for transfer object types like strings or big integers that need specialized encoding or
+     * codecs.
+     */
+    abstract static class EncodedTransfer<T> implements TransferObject<Binary[]> {
         private final ChunkSource.GetContext context;
-        private ObjectChunk<String, Values> chunk;
+        private ObjectChunk<T, Values> chunk;
         private Binary[] buffer;
         private final ColumnSource<?> columnSource;
-
-        /**
-         * Stores the maximum number of values in a single page
-         */
-        private final int maxValuesPerPage;
 
         /**
          * Stores the maximum size of data in a single page. For strings, we don't know in advance what the length of
@@ -1110,11 +1111,10 @@ public class ParquetTableWriter {
         private int currentChunkIdx;
 
 
-        StringTransfer(ColumnSource<?> columnSource, int maxValuesPerPage, int targetPageSize) {
+        EncodedTransfer(ColumnSource<?> columnSource, int maxValuesPerPage, int targetPageSize) {
             this.columnSource = columnSource;
             this.buffer = new Binary[maxValuesPerPage];
             context = this.columnSource.makeGetContext(maxValuesPerPage);
-            this.maxValuesPerPage = maxValuesPerPage;
             this.targetPageSize = targetPageSize;
         }
 
@@ -1124,33 +1124,42 @@ public class ParquetTableWriter {
         }
 
         @Override
+        public int bufferAllFetchedData() {
+            if (!hasMoreDataToBuffer()) {
+                return 0;
+            }
+            while (currentChunkIdx < chunk.size()) {
+                final T value = chunk.get(currentChunkIdx);
+                buffer[currentChunkIdx++] = value == null ? null : encodeToBinary(value);
+            }
+            return chunk.size();
+        }
+
+        @Override
         public int bufferFetchedData() {
             if (currentChunkIdx != 0) {
                 // Clear any old buffered data
                 Arrays.fill(buffer, null);
             }
-            int bufferedDataSize = 0;
+            int size = 0;
             int bufferIdx = 0; // Stores the number of chunks buffered in this iteration
             while (currentChunkIdx < chunk.size()) {
-                final String value = chunk.get(currentChunkIdx);
+                final T value = chunk.get(currentChunkIdx++);
                 if (value == null) {
                     buffer[bufferIdx++] = null;
-                } else {
-                    Binary binaryVal = Binary.fromString(value);
-                    if (binaryVal.length() > targetPageSize) {
-                        throw new UncheckedDeephavenException(String.format("Cannot fit string data of size %d in a " +
-                                "single page of maximum size %d", value.length(), targetPageSize));
-                    }
-                    if (bufferedDataSize + binaryVal.length() > targetPageSize) {
-                        break;
-                    }
-                    buffer[bufferIdx++] = binaryVal;
-                    bufferedDataSize += binaryVal.length();
+                    continue;
                 }
-                currentChunkIdx++;
+                Binary binaryVal = encodeToBinary(value);
+                buffer[bufferIdx++] = binaryVal;
+                size += binaryVal.length();
+                if (size > targetPageSize) {
+                    break;
+                }
             }
             return bufferIdx;
         }
+
+        abstract Binary encodeToBinary(T value);
 
         @Override
         public Binary[] getBuffer() {
@@ -1158,14 +1167,9 @@ public class ParquetTableWriter {
         }
 
         @Override
-        public int rowCount() {
-            return chunk.size();
-        }
-
-        @Override
         public void fetchData(RowSequence rs) {
             // noinspection unchecked
-            chunk = (ObjectChunk<String, Values>) columnSource.getChunk(context, rs);
+            chunk = (ObjectChunk<T, Values>) columnSource.getChunk(context, rs);
             currentChunkIdx = 0;
         }
 
@@ -1174,62 +1178,29 @@ public class ParquetTableWriter {
             context.close();
         }
     }
+    static class StringTransfer extends EncodedTransfer<String> {
+        StringTransfer(ColumnSource<?> columnSource, int maxValuesPerPage, int targetPageSize) {
+            super(columnSource, maxValuesPerPage, targetPageSize);
+        }
 
-    static class CodecTransfer<T> implements TransferObject<Binary[]> {
+        @Override
+        Binary encodeToBinary(String value) {
+            return Binary.fromString(value);
+        }
+    }
 
-        private final ChunkSource.GetContext context;
+    static class CodecTransfer<T> extends EncodedTransfer<T> {
         private final ObjectCodec<? super T> codec;
-        private ObjectChunk<T, Values> chunk;
-        private final Binary[] buffer;
-        private final ColumnSource<T> columnSource;
-        private boolean hasMoreDataToBuffer;
 
-        CodecTransfer(ColumnSource<T> columnSource, ObjectCodec<? super T> codec, int targetSize) {
-            this.columnSource = columnSource;
-            this.buffer = new Binary[targetSize];
-            context = this.columnSource.makeGetContext(targetSize);
+        CodecTransfer(ColumnSource<?> columnSource, ObjectCodec<? super T> codec, int maxValuesPerPage,
+                int targetPageSize) {
+            super(columnSource, maxValuesPerPage, targetPageSize);
             this.codec = codec;
-            hasMoreDataToBuffer = false;
         }
 
         @Override
-        public boolean hasMoreDataToBuffer() {
-            return hasMoreDataToBuffer;
-        }
-
-        @Override
-        public int bufferFetchedData() {
-            if (!hasMoreDataToBuffer) {
-                return 0;
-            }
-            for (int i = 0; i < chunk.size(); i++) {
-                T value = chunk.get(i);
-                buffer[i] = value == null ? null : Binary.fromConstantByteArray(codec.encode(value));
-            }
-            hasMoreDataToBuffer = false;
-            return chunk.size();
-        }
-
-        @Override
-        public Binary[] getBuffer() {
-            return buffer;
-        }
-
-        @Override
-        public int rowCount() {
-            return chunk.size();
-        }
-
-        @Override
-        public void fetchData(RowSequence rs) {
-            // noinspection unchecked
-            chunk = (ObjectChunk<T, Values>) columnSource.getChunk(context, rs);
-            hasMoreDataToBuffer = true;
-        }
-
-        @Override
-        public void close() {
-            context.close();
+        Binary encodeToBinary(T value) {
+            return Binary.fromConstantByteArray(codec.encode(value));
         }
     }
 
