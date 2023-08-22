@@ -6,6 +6,7 @@ package io.deephaven.kafka;
 import io.deephaven.engine.table.ColumnDefinition;
 import org.apache.avro.Schema;
 
+import org.apache.avro.util.Utf8;
 import org.junit.Test;
 
 import java.util.ArrayList;
@@ -49,7 +50,7 @@ public class KafkaToolsTest {
         KafkaTools.avroSchemaToColumnDefinitions(colDefs, null, avroSchema, KafkaTools.DIRECT_MAPPING, true);
         assertEquals(2, colDefs.size());
         assertEquals("Symbol", colDefs.get(0).getName());
-        assertEquals(CharSequence.class, colDefs.get(0).getDataType());
+        assertEquals(Utf8.class, colDefs.get(0).getDataType());
         assertEquals("Price", colDefs.get(1).getName());
         assertEquals(double.class, colDefs.get(1).getDataType());
     }

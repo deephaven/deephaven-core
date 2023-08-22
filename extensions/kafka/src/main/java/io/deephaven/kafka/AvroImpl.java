@@ -34,6 +34,7 @@ import org.apache.avro.Schema.Field;
 import org.apache.avro.SchemaBuilder;
 import org.apache.avro.generic.GenericContainer;
 import org.apache.avro.generic.GenericRecord;
+import org.apache.avro.util.Utf8;
 import org.apache.commons.lang3.mutable.MutableInt;
 import org.apache.commons.lang3.mutable.MutableObject;
 import org.apache.kafka.common.serialization.Deserializer;
@@ -59,6 +60,8 @@ import static io.deephaven.kafka.KafkaTools.NESTED_FIELD_NAME_SEPARATOR;
 
 class AvroImpl {
 
+    private static final Type<Utf8> utf8Type = Type.find(Utf8.class);
+
     static final class AvroConsume extends Consume.KeyOrValueSpec {
         private static final Pattern NESTED_FIELD_NAME_SEPARATOR_PATTERN =
                 Pattern.compile(Pattern.quote(NESTED_FIELD_NAME_SEPARATOR));
@@ -69,22 +72,20 @@ class AvroImpl {
         /** fields mapped to null are skipped. */
         private final Function<String, String> fieldPathToColumnName;
 
-        boolean useUTF8Strings = false;
+        private final boolean useUTF8Strings;
 
         AvroConsume(final Schema schema, final Function<String, String> fieldPathToColumnName) {
             this.schema = schema;
             this.schemaName = null;
             this.schemaVersion = null;
             this.fieldPathToColumnName = fieldPathToColumnName;
+            this.useUTF8Strings = false;
         }
 
         AvroConsume(final String schemaName,
                 final String schemaVersion,
                 final Function<String, String> fieldPathToColumnName) {
-            this.schema = null;
-            this.schemaName = schemaName;
-            this.schemaVersion = schemaVersion;
-            this.fieldPathToColumnName = fieldPathToColumnName;
+            this(schemaName, schemaVersion, fieldPathToColumnName, false);
         }
 
         private AvroConsume(final String schemaName,
@@ -475,7 +476,7 @@ class AvroImpl {
             case ENUM:
             case STRING:
                 if (useUTF8Strings) {
-                    columnsOut.add(ColumnDefinition.of(mappedNameForColumn, Type.find(CharSequence.class)));
+                    columnsOut.add(ColumnDefinition.of(mappedNameForColumn, utf8Type));
                 } else {
                     columnsOut.add(ColumnDefinition.ofString(mappedNameForColumn));
                 }
