@@ -75,11 +75,16 @@ class AvroImpl {
         private final boolean useUTF8Strings;
 
         AvroConsume(final Schema schema, final Function<String, String> fieldPathToColumnName) {
+            this(schema, fieldPathToColumnName, false);
+        }
+
+        AvroConsume(final Schema schema, final Function<String, String> fieldPathToColumnName,
+                final boolean useUTF8Strings) {
             this.schema = schema;
             this.schemaName = null;
             this.schemaVersion = null;
             this.fieldPathToColumnName = fieldPathToColumnName;
-            this.useUTF8Strings = false;
+            this.useUTF8Strings = useUTF8Strings;
         }
 
         AvroConsume(final String schemaName,
@@ -88,7 +93,7 @@ class AvroImpl {
             this(schemaName, schemaVersion, fieldPathToColumnName, false);
         }
 
-        private AvroConsume(final String schemaName,
+        AvroConsume(final String schemaName,
                 final String schemaVersion,
                 final Function<String, String> fieldPathToColumnName,
                 final boolean useUTF8Strings) {
@@ -136,9 +141,6 @@ class AvroImpl {
                     true);
         }
 
-        public AvroConsume useUTF8Strings() {
-            return new AvroConsume(schemaName, schemaVersion, fieldPathToColumnName, true);
-        }
     }
 
     static final class AvroProduce extends Produce.KeyOrValueSpec {
