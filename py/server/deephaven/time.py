@@ -1,41 +1,37 @@
 #
-# Copyright (c) 2016-2022 Deephaven Data Labs and Patent Pending
+# Copyright (c) 2016-2023 Deephaven Data Labs and Patent Pending
 #
 
+#TODO new docstring
 """ This module defines functions for handling Deephaven date/time data. """
 
 from __future__ import annotations
+
+import datetime
 from typing import Union, Optional
 
 import jpy
+import numpy as np
 
 from deephaven import DHError
-from deephaven.dtypes import Instant, LocalDate, LocalTime, ZonedDateTime, Duration, Period, TimeZone, from_jtype
-from deephaven.constants import NULL_INT, NULL_LONG, NULL_DOUBLE
+from deephaven.dtypes import Instant, LocalDate, LocalTime, ZonedDateTime, Duration, Period, TimeZone
 
+#TODO: clean up type list
 _JDateTimeUtils = jpy.get_type("io.deephaven.time.DateTimeUtils")
-
-MICRO = 1000  #: One microsecond in nanoseconds.
-MILLI = 1000000  #: One millisecond in nanosecondsl
-SECOND = 1000000000  #: One second in nanoseconds.
-MINUTE = 60 * SECOND  #: One minute in nanoseconds.
-HOUR = 60 * MINUTE  #: One hour in nanoseconds.
-DAY = 24 * HOUR  #: One day in nanoseconds.  This is one hour of wall time and does not take into account calendar adjustments.
-WEEK = 7 * DAY  #: One week in nanoseconds.  This is 7 days of wall time and does not take into account calendar adjustments.
-YEAR_365 = 365 * DAY  #: One 365 day year in nanoseconds.  This is 365 days of wall time and does not take into account calendar adjustments.
-YEAR_AVG = 31556952000000000  #: One average year in nanoseconds.  This is 365.2425 days of wall time and does not take into account calendar adjustments.
-
-SECONDS_PER_NANO = 1 / SECOND  #: Number of seconds per nanosecond.
-MINUTES_PER_NANO = 1 / MINUTE  #: Number of minutes per nanosecond.
-HOURS_PER_NANO = 1 / HOUR  #: Number of hours per nanosecond.
-DAYS_PER_NANO = 1 / DAY  #: Number of days per nanosecond.
-YEARS_PER_NANO_365 = 1 / YEAR_365  #: Number of 365 day years per nanosecond.
-YEARS_PER_NANO_AVG = 1 / YEAR_AVG  #: Number of average (365.2425 day) years per nanosecond.
+_JLocalDate = jpy.get_type("java.time.LocalDate")
+_JLocalTime = jpy.get_type("java.time.LocalTime")
+_JInstant = jpy.get_type("java.time.Instant")
+_JZonedDateTime = jpy.get_type("java.time.ZonedDateTime")
+_JDuration = jpy.get_type("java.time.Duration")
+_JPeriod = jpy.get_type("java.time.Period")
+_epoch64 = np.datetime64('1970-01-01T00:00:00Z')
 
 
 # region Clock
 
+#TODO: rename these methods to system_<X>?
 
+#TODO: what should these return?
 def now(system: bool = False, resolution: str = 'ns') -> Instant:
     """ Provides the current datetime according to a clock.
 
@@ -69,6 +65,7 @@ def now(system: bool = False, resolution: str = 'ns') -> Instant:
     except Exception as e:
         raise DHError(e) from e
 
+#TODO: what should these return?
 
 def today(tz: TimeZone) -> str:
     """ Provides the current date string according to the current clock.
@@ -92,28 +89,30 @@ def today(tz: TimeZone) -> str:
 
 # endregion
 
+
 # region Time Zone
 
 
-def time_zone(tz: Optional[str]) -> TimeZone:
-    """ Gets the time zone for a time zone name.
-
-    Args:
-        tz (Optional[str]): Time zone name.  If None is provided, the system default time zone is returned.
-
-    Returns:
-        TimeZone
-
-    Raises:
-        DHError
-    """
-    try:
-        if tz is None:
-            return _JDateTimeUtils.timeZone()
-        else:
-            return _JDateTimeUtils.timeZone(tz)
-    except Exception as e:
-        raise DHError(e) from e
+##TODO: remove?
+# def time_zone(tz: Optional[str]) -> TimeZone:
+#     """ Gets the time zone for a time zone name.
+#
+#     Args:
+#         tz (Optional[str]): Time zone name.  If None is provided, the system default time zone is returned.
+#
+#     Returns:
+#         TimeZone
+#
+#     Raises:
+#         DHError
+#     """
+#     try:
+#         if tz is None:
+#             return _JDateTimeUtils.timeZone()
+#         else:
+#             return _JDateTimeUtils.timeZone(tz)
+#     except Exception as e:
+#         raise DHError(e) from e
 
 
 def time_zone_alias_add(alias: str, tz: str) -> None:
@@ -155,1610 +154,251 @@ def time_zone_alias_rm(alias: str) -> bool:
 
 # endregion
 
-# region Conversions: Time Units
+#TODO: Document
 
+#TODO: numpy `astype(type)` syntax?
 
-def micros_to_nanos(micros: int) -> int:
-    """ Converts microseconds to nanoseconds.
+# region Conversions: To Java
 
-    Args:
-        micros (int): Microseconds to convert.
+#TODO: TZ input?
+#TODO: rename as_j_time or asjtype
+#TODO: rename everything
+#TODO: consistently name functions
+#TODO: have these methods parse strings?
+#TODO: convert python time zones?
 
-    Returns:
-        NULL_LONG if the input is NULL_LONG; otherwise the input microseconds converted to nanoseconds.
+def to_j_time_zone(tz: Union[None, str]) -> Optional[TimeZone]:
+    if not tz:
+        return None
+    else:
+        return _JDateTimeUtils.timeZone(tz)
+        #TODO: or _JDateTimeUtils.parseTimeZone(s)
 
-    Raises:
-        DHError
-    """
-    try:
-        return _JDateTimeUtils.microsToNanos(micros)
-    except Exception as e:
-        raise DHError(e) from e
 
-
-def millis_to_nanos(millis: int) -> int:
-    """ Converts milliseconds to nanoseconds.
-
-    Args:
-        millis (int): Milliseconds to convert.
-
-    Returns:
-        NULL_LONG if the input is NULL_LONG; otherwise the input milliseconds converted to nanoseconds.
-
-    Raises:
-        DHError
-    """
-    try:
-        return _JDateTimeUtils.millisToNanos(millis)
-    except Exception as e:
-        raise DHError(e) from e
-
-
-def seconds_to_nanos(seconds: int) -> int:
-    """ Converts seconds to nanoseconds.
-
-    Args:
-        seconds (int): Seconds to convert.
-
-    Returns:
-        NULL_LONG if the input is NULL_LONG; otherwise the input seconds converted to nanoseconds.
-
-    Raises:
-        DHError
-    """
-    try:
-        return _JDateTimeUtils.secondsToNanos(seconds)
-    except Exception as e:
-        raise DHError(e) from e
-
-
-def nanos_to_micros(nanos: int) -> int:
-    """ Converts nanoseconds to microseconds.
-
-    Args:
-        nanos (int): nanoseconds to convert.
-
-    Returns:
-        NULL_LONG if the input is NULL_LONG; otherwise the input nanoseconds converted to microseconds, rounded down.
-
-    Raises:
-        DHError
-    """
-    try:
-        return _JDateTimeUtils.nanosToMicros(nanos)
-    except Exception as e:
-        raise DHError(e) from e
-
-
-def millis_to_micros(millis: int) -> int:
-    """ Converts milliseconds to microseconds.
-
-    Args:
-        millis (int): milliseconds to convert.
-
-    Returns:
-        NULL_LONG if the input is NULL_LONG; otherwise the input milliseconds converted to microseconds.
-
-    Raises:
-        DHError
-    """
-    try:
-        return _JDateTimeUtils.millisToMicros(millis)
-    except Exception as e:
-        raise DHError(e) from e
-
-
-def seconds_to_micros(seconds: int) -> int:
-    """ Converts seconds to microseconds.
-
-    Args:
-        seconds (int): Seconds to convert.
-
-    Returns:
-        NULL_LONG if the input is NULL_LONG; otherwise the input seconds converted to microseconds.
-
-    Raises:
-        DHError
-    """
-    try:
-        return _JDateTimeUtils.secondsToMicros(seconds)
-    except Exception as e:
-        raise DHError(e) from e
-
-
-def nanos_to_millis(nanos: int) -> int:
-    """ Converts nanoseconds to milliseconds.
-
-    Args:
-        nanos (int): Nanoseconds to convert.
-
-    Returns:
-        NULL_LONG if the input is NULL_LONG; otherwise the input nanoseconds converted to milliseconds, rounded down.
-
-    Raises:
-        DHError
-    """
-    try:
-        return _JDateTimeUtils.nanosToMillis(nanos)
-    except Exception as e:
-        raise DHError(e) from e
-
-
-def micros_to_millis(micros: int) -> int:
-    """ Converts microseconds to milliseconds.
-
-    Args:
-        micros (int): Microseconds to convert.
-
-    Returns:
-        NULL_LONG if the input is NULL_LONG; otherwise the input microseconds converted to milliseconds, rounded down.
-
-    Raises:
-        DHError
-    """
-    try:
-        return _JDateTimeUtils.microsToMillis(micros)
-    except Exception as e:
-        raise DHError(e) from e
-
-
-def seconds_to_millis(seconds: int) -> int:
-    """ Converts seconds to milliseconds.
-
-    Args:
-        seconds (int): Seconds to convert.
-
-    Returns:
-        NULL_LONG if the input is NULL_LONG; otherwise the input seconds converted to milliseconds.
-
-    Raises:
-        DHError
-    """
-    try:
-        return _JDateTimeUtils.secondsToMillis(seconds)
-    except Exception as e:
-        raise DHError(e) from e
-
-
-def nanos_to_seconds(nanos: int) -> int:
-    """ Converts nanoseconds to seconds.
-
-    Args:
-        nanos (int): Nanoseconds to convert.
-
-    Returns:
-        NULL_LONG if the input is NULL_LONG; otherwise the input nanoseconds converted to seconds.
-
-    Raises:
-        DHError
-    """
-    try:
-        return _JDateTimeUtils.nanosToSeconds(nanos)
-    except Exception as e:
-        raise DHError(e) from e
-
-
-def micros_to_seconds(micros: int) -> int:
-    """ Converts microseconds to seconds.
-
-    Args:
-        micros (int): Microseconds to convert.
-
-    Returns:
-        NULL_LONG if the input is NULL_LONG; otherwise the input microseconds converted to seconds.
-
-    Raises:
-        DHError
-    """
-    try:
-        return _JDateTimeUtils.microsToSeconds(micros)
-    except Exception as e:
-        raise DHError(e) from e
-
-
-def millis_to_seconds(millis: int) -> int:
-    """ Converts milliseconds to seconds.
-
-    Args:
-        millis (int): Milliseconds to convert.
-
-    Returns:
-        NULL_LONG if the input is NULL_LONG; otherwise the input milliseconds converted to seconds.
-
-    Raises:
-        DHError
-    """
-    try:
-        return _JDateTimeUtils.millisToSeconds(millis)
-    except Exception as e:
-        raise DHError(e) from e
-
-
-# endregion
-
-# region Conversions: Date Time Types
-
-def to_instant(dt: ZonedDateTime) -> Instant:
-    """ Converts a date time to an Instant.
-
-    Args:
-        dt (ZonedDateTime): Date time to convert.
-
-    Returns:
-        Instant or None if dt is None.
-
-    Raises:
-        DHError
-    """
+def to_j_date(dt: Union[None, datetime.date, datetime.time, datetime.datetime, np.datetime64]) -> Optional[LocalDate]:
     if not dt:
         return None
+    elif isinstance(dt, datetime.date) or isinstance(dt, datetime.datetime):
+        return _JLocalDate.of(dt.year, dt.month, dt.day)
+    elif isinstance(dt, np.datetime64):
+        return to_j_date(dt.astype(datetime.date))
+    else:
+        raise DHError(message="Unsupported conversion: " + str(type(dt)) + " -> LocalDate")
 
-    try:
-        return _JDateTimeUtils.toInstant(dt)
-    except Exception as e:
-        raise DHError(e) from e
 
-
-def to_zdt(dt: Instant, tz: TimeZone) -> ZonedDateTime:
-    """ Converts a date time to a ZonedDateTime.
-
-    Args:
-        dt (Instant): Date time to convert.
-        tz (TimeZone): Time zone.
-
-    Returns:
-        ZonedDateTime or None if any input is None.
-
-    Raises:
-        DHError
-    """
-    if not dt or not tz:
+def to_j_time(dt: Union[None, datetime.time, datetime.datetime, np.datetime64]) -> Optional[LocalTime]:
+    if not dt:
         return None
+    elif isinstance(dt, datetime.time) or isinstance(dt, datetime.datetime):
+        return _JLocalTime.of(dt.hour, dt.minute, dt.second, dt.microsecond * 1000)
+    elif isinstance(dt, np.datetime64):
+        # Conversion only supports micros resolution
+        return to_j_time(dt.astype(datetime.time))
+    else:
+        raise DHError(message="Unsupported conversion: " + str(type(dt)) + " -> LocalTime")
 
-    try:
-        return _JDateTimeUtils.toZonedDateTime(dt, tz)
-    except Exception as e:
-        raise DHError(e) from e
 
-
-def make_instant(date: LocalDate, time: LocalTime, tz: TimeZone) -> Instant:
-    """ Makes an Instant.
-
-    Args:
-        date (LocalDate): Local date.
-        time (LocalTime): Local time.
-        tz (TimeZone): Time zone.
-
-    Returns:
-        Instant or None if any input is None.
-
-    Raises:
-        DHError
-    """
-    if not date or not time or not tz:
+def to_j_instant(dt: Union[None, datetime.datetime, np.datetime64]) -> Optional[Instant]:
+    if not dt:
         return None
+    elif isinstance(dt, datetime.datetime):
+        epoch_time = dt.timestamp()
+        epoch_sec = int(epoch_time)
+        nanos = (epoch_time - epoch_sec) * 1000000000
+        return _JInstant.ofEpochSecond(epoch_sec, nanos)
+    elif isinstance(dt, np.datetime64):
+        epoch_nanos = (dt - _epoch64).astype('timedelta64[ns]').astype(np.int64)
+        epoch_sec = epoch_nanos // 1000000000
+        nanos = epoch_nanos % 1000000000
+        return _JInstant.ofEpochSecond(epoch_sec, nanos)
+    else:
+        raise DHError(message="Unsupported conversion: " + str(type(dt)) + " -> Instant")
 
-    try:
-        return _JDateTimeUtils.toInstant(date, time, tz)
-    except Exception as e:
-        raise DHError(e) from e
+#TODO: ZDT?
 
-
-def make_zdt(date: LocalDate, time: LocalTime, tz: TimeZone) -> ZonedDateTime:
-    """ Makes a ZonedDateTime.
-
-    Args:
-        date (LocalDate): Local date.
-        time (LocalTime): Local time.
-        tz (TimeZone): Time zone.
-
-    Returns:
-        ZonedDateTime or None if any input is None.
-
-    Raises:
-        DHError
-    """
-    if not date or not time or not tz:
+def to_j_duration(dt: Union[None, datetime.timedelta, np.timedelta64]) -> Optional[Duration]:
+    if not dt:
         return None
-
-    try:
-        return _JDateTimeUtils.toZonedDateTime(date, time, tz)
-    except Exception as e:
-        raise DHError(e) from e
-
-
-def to_local_date(dt: Union[Instant, ZonedDateTime], tz: TimeZone) -> LocalDate:
-    """ Converts a date time to a LocalDate.
-
-    Args:
-        dt (Instant): Date time to convert.
-        tz (TimeZone): Time zone.
-
-    Returns:
-        LocalDate or None if any input is None.
-
-    Raises:
-        DHError
-    """
-    try:
-        if not dt or not tz:
-            return None
-
-        if from_jtype(dt.getClass()) == ZonedDateTime:
-            dt = to_instant(dt)
-
-        return _JDateTimeUtils.toLocalDate(dt, tz)
-    except Exception as e:
-        raise DHError(e) from e
+    elif isinstance(dt, datetime.timedelta):
+        nanos = (dt / datetime.timedelta(microseconds=1)) * 1000
+        return _JDuration.ofNanos(nanos)
+    elif isinstance(dt, np.timedelta64):
+        nanos = dt.astype('timedelta64[ns]').astype(np.int64)
+        return _JDuration.ofNanos(nanos)
+    else:
+        raise DHError(message="Unsupported conversion: " + str(type(dt)) + " -> Duration")
 
 
-def to_local_time(dt: Union[Instant, ZonedDateTime], tz: TimeZone) -> LocalTime:
-    """ Converts a date time to a LocalTime.
-
-    Args:
-        dt (Instant): Date time to convert.
-        tz (TimeZone): Time zone.
-
-    Returns:
-        LocalTime or None if any input is None.
-
-    Raises:
-        DHError
-    """
-    try:
-        if not dt or not tz:
-            return None
-
-        if from_jtype(dt.getClass()) == ZonedDateTime:
-            dt = to_instant(dt)
-
-        return _JDateTimeUtils.toLocalTime(dt, tz)
-    except Exception as e:
-        raise DHError(e) from e
-
-
-# endregion
-
-# region Conversions: Epoch
-
-def epoch_nanos(dt: Union[Instant, ZonedDateTime]) -> int:
-    """ Returns nanoseconds from the Epoch for a date time value.
-
-    Args:
-        dt (Union[Instant,ZonedDateTime]): Date time.
-
-    Returns:
-        nanoseconds since Epoch, or a NULL_LONG value if the date time is null.
-
-    Raises:
-        DHError
-    """
+def to_j_period(dt: Union[None, datetime.timedelta, np.timedelta64]) -> Optional[Period]:
     if not dt:
-        return NULL_LONG
-
-    try:
-        return _JDateTimeUtils.epochNanos(dt)
-    except Exception as e:
-        raise DHError(e) from e
-
-
-def epoch_micros(dt: Union[Instant, ZonedDateTime]) -> int:
-    """ Returns microseconds from the Epoch for a date time value.
-
-    Args:
-        dt (Union[Instant,ZonedDateTime]): Date time.
-
-    Returns:
-        microseconds since Epoch, or a NULL_LONG value if the date time is null.
-
-    Raises:
-        DHError
-    """
-    if not dt:
-        return NULL_LONG
-
-    try:
-        return _JDateTimeUtils.epochMicros(dt)
-    except Exception as e:
-        raise DHError(e) from e
-
-
-def epoch_millis(dt: Union[Instant, ZonedDateTime]) -> int:
-    """ Returns milliseconds from the Epoch for a date time value.
-
-    Args:
-        dt (Union[Instant,ZonedDateTime]): Date time.
-
-    Returns:
-        milliseconds since Epoch, or a NULL_LONG value if the date time is null.
-
-    Raises:
-        DHError
-    """
-    if not dt:
-        return NULL_LONG
-
-    try:
-        return _JDateTimeUtils.epochMillis(dt)
-    except Exception as e:
-        raise DHError(e) from e
-
-
-def epoch_seconds(dt: Union[Instant, ZonedDateTime]) -> int:
-    """ Returns seconds from the Epoch for a date time value.
-
-    Args:
-        dt (Union[Instant,ZonedDateTime]): Date time.
-
-    Returns:
-        seconds since Epoch, or a NULL_LONG value if the date time is null.
-
-    Raises:
-        DHError
-    """
-    if not dt:
-        return NULL_LONG
-
-    try:
-        return _JDateTimeUtils.epochSeconds(dt)
-    except Exception as e:
-        raise DHError(e) from e
-
-
-def epoch_nanos_to_instant(nanos: int) -> Instant:
-    """ Converts nanoseconds from the Epoch to an Instant.
-
-    Args:
-        nanos (int): Nanoseconds since Epoch.
-
-    Returns:
-        Instant or None if the input is NULL_LONG.
-
-    Raises:
-        DHError
-    """
-    try:
-        return _JDateTimeUtils.epochNanosToInstant(nanos)
-    except Exception as e:
-        raise DHError(e) from e
-
-
-def epoch_micros_to_instant(micros: int) -> Instant:
-    """ Converts microseconds from the Epoch to an Instant.
-
-    Args:
-        micros (int): Microseconds since Epoch.
-
-    Returns:
-        Instant or None if the input is NULL_LONG.
-
-    Raises:
-        DHError
-    """
-    try:
-        return _JDateTimeUtils.epochMicrosToInstant(micros)
-    except Exception as e:
-        raise DHError(e) from e
-
-
-def epoch_millis_to_instant(millis: int) -> Instant:
-    """ Converts milliseconds from the Epoch to an Instant.
-
-    Args:
-        millis (int): Milliseconds since Epoch.
-
-    Returns:
-        Instant or None if the input is NULL_LONG.
-
-    Raises:
-        DHError
-    """
-    try:
-        return _JDateTimeUtils.epochMillisToInstant(millis)
-    except Exception as e:
-        raise DHError(e) from e
-
-
-def epoch_seconds_to_instant(seconds: int) -> Instant:
-    """ Converts seconds from the Epoch to an Instant.
-
-    Args:
-        seconds (int): Seconds since Epoch.
-
-    Returns:
-        Instant or None if the input is NULL_LONG.
-
-    Raises:
-        DHError
-    """
-    try:
-        return _JDateTimeUtils.epochSecondsToInstant(seconds)
-    except Exception as e:
-        raise DHError(e) from e
-
-
-def epoch_nanos_to_zdt(nanos: int, tz: TimeZone) -> ZonedDateTime:
-    """ Converts nanoseconds from the Epoch to a ZonedDateTime.
-
-    Args:
-        nanos (int): Nanoseconds since Epoch.
-        tz (TimeZone): Time zone.
-
-    Returns:
-        ZonedDateTime or None if the input is NULL_LONG or None.
-
-    Raises:
-        DHError
-    """
-    try:
-        return _JDateTimeUtils.epochNanosToZonedDateTime(nanos, tz)
-    except Exception as e:
-        raise DHError(e) from e
-
-
-def epoch_micros_to_zdt(micros: int, tz: TimeZone) -> ZonedDateTime:
-    """ Converts microseconds from the Epoch to a ZonedDateTime.
-
-    Args:
-        micros (int): Microseconds since Epoch.
-        tz (TimeZone): Time zone.
-
-    Returns:
-        ZonedDateTime or None if the input is NULL_LONG or None.
-
-    Raises:
-        DHError
-    """
-    try:
-        return _JDateTimeUtils.epochMicrosToZonedDateTime(micros, tz)
-    except Exception as e:
-        raise DHError(e) from e
-
-
-def epoch_millis_to_zdt(millis: int, tz: TimeZone) -> ZonedDateTime:
-    """ Converts milliseconds from the Epoch to a ZonedDateTime.
-
-    Args:
-        millis (int): Milliseconds since Epoch.
-        tz (TimeZone): Time zone.
-
-    Returns:
-        ZonedDateTime or None if the input is NULL_LONG or None.
-
-    Raises:
-        DHError
-    """
-    try:
-        return _JDateTimeUtils.epochMillisToZonedDateTime(millis, tz)
-    except Exception as e:
-        raise DHError(e) from e
-
-
-def epoch_seconds_to_zdt(seconds: int, tz: TimeZone) -> ZonedDateTime:
-    """ Converts seconds from the Epoch to a ZonedDateTime.
-
-    Args:
-        seconds (int): Seconds since Epoch.
-        tz (TimeZone): Time zone.
-
-    Returns:
-        ZonedDateTime or None if the input is NULL_LONG or None.
-
-    Raises:
-        DHError
-    """
-    try:
-        return _JDateTimeUtils.epochSecondsToZonedDateTime(seconds, tz)
-    except Exception as e:
-        raise DHError(e) from e
-
-
-def epoch_auto_to_epoch_nanos(epoch_offset: int) -> int:
-    """ Converts an offset from the Epoch to a nanoseconds from the Epoch.
-    The offset can be in milliseconds, microseconds, or nanoseconds.
-    Expected date ranges are used to infer the units for the offset.
-
-    Args:
-        epoch_offset (int): Time offset from the Epoch.
-
-    Returns:
-        the input offset from the Epoch converted to nanoseconds from the Epoch, or NULL_LONG if the input is NULL_LONG.
-
-    Raises:
-        DHError
-    """
-    try:
-        return _JDateTimeUtils.epochAutoToEpochNanos(epoch_offset)
-    except Exception as e:
-        raise DHError(e) from e
-
-
-def epoch_auto_to_instant(epoch_offset: int) -> Instant:
-    """ Converts an offset from the Epoch to an Instant.
-    The offset can be in milliseconds, microseconds, or nanoseconds.
-    Expected date ranges are used to infer the units for the offset.
-
-    Args:
-        epoch_offset (int): Time offset from the Epoch.
-
-    Returns:
-        Instant or None if the input is NULL_LONG
-
-    Raises:
-        DHError
-    """
-    try:
-        return _JDateTimeUtils.epochAutoToInstant(epoch_offset)
-    except Exception as e:
-        raise DHError(e) from e
-
-
-def epoch_auto_to_zdt(epoch_offset: int, tz: TimeZone) -> ZonedDateTime:
-    """ Converts an offset from the Epoch to a ZonedDateTime.
-    The offset can be in milliseconds, microseconds, or nanoseconds.
-    Expected date ranges are used to infer the units for the offset.
-
-    Args:
-        epoch_offset (int): Time offset from the Epoch.
-        tz (TimeZone): Time zone.
-
-    Returns:
-        ZonedDateTime or None if the input is NULL_LONG
-
-    Raises:
-        DHError
-    """
-    try:
-        return _JDateTimeUtils.epochAutoToZonedDateTime(epoch_offset, tz)
-    except Exception as e:
-        raise DHError(e) from e
-
-
-# endregion
-
-# region Conversions: Excel
-
-def to_excel_time(dt: Union[Instant, ZonedDateTime], tz: TimeZone) -> float:
-    """ Converts a date time to an Excel time represented as a double.
-
-    Args:
-        dt (Instant): Date time.
-        tz (TimeZone): Time zone.
-
-    Returns:
-        Excel time as a double or NULL_DOUBLE if any input is None
-
-    Raises:
-        DHError
-    """
-    if not dt or not tz:
-        return NULL_DOUBLE
-
-    try:
-        if not dt or not tz:
-            return NULL_DOUBLE
-
-        if from_jtype(dt.getClass()) == ZonedDateTime:
-            dt = to_instant(dt)
-
-        return _JDateTimeUtils.toExcelTime(dt, tz)
-    except Exception as e:
-        raise DHError(e) from e
-
-
-def excel_to_instant(excel: float, tz: TimeZone) -> Instant:
-    """ Converts an Excel time represented as a double to an Instant.
-
-    Args:
-        excel (float): Excel time.
-        tz (TimeZone): Time zone.
-
-    Returns:
-        Instant or None if any input is None or NULL_DOUBLE.
-
-    Raises:
-        DHError
-    """
-    try:
-        return _JDateTimeUtils.excelToInstant(excel, tz)
-    except Exception as e:
-        raise DHError(e) from e
-
-
-def excel_to_zdt(excel: float, tz: TimeZone) -> ZonedDateTime:
-    """ Converts an Excel time represented as a double to a ZonedDateTime.
-
-    Args:
-        excel (float): Excel time.
-        tz (TimeZone): Time zone.
-
-    Returns:
-        ZonedDateTime or None if any input is None or NULL_DOUBLE.
-
-    Raises:
-        DHError
-    """
-    try:
-        return _JDateTimeUtils.excelToZonedDateTime(excel, tz)
-    except Exception as e:
-        raise DHError(e) from e
-
-
-# endregion
-
-# region Arithmetic
-
-def plus_period(dt: Union[Instant, ZonedDateTime], period: Union[int, Duration, Period]) -> \
-        Union[Instant, ZonedDateTime]:
-    """ Adds a time period to a date time.
-
-    Args:
-        dt (Union[Instant,ZonedDateTime]): Date time.
-        period (Union[int, Duration, Period]): Time period to add.  Integer inputs are nanoseconds.
-
-    Returns:
-        Date time, or None if any input is None or NULL_LONG.
-
-    Raises:
-        DHError
-    """
-    if not dt or not period:
         return None
+    elif isinstance(dt, datetime.timedelta):
+        if dt.seconds or dt.microseconds:
+            raise DHError(message="Unsupported conversion: " + str(type(dt)) + " -> Period: Periods must only be days or weeks")
+        elif dt.days:
+            return _JPeriod.ofDays(dt.days)
+        else:
+            raise DHError(message="Unsupported conversion: " + str(type(dt)) + " -> Period")
+    elif isinstance(dt, np.timedelta64):
+        data = np.datetime_data(dt)
 
-    try:
-        return _JDateTimeUtils.plus(dt, period)
-    except Exception as e:
-        raise DHError(e) from e
+        if data[0] == 'D':
+            return _JPeriod.ofDays(data[1])
+        elif data[0] == 'W':
+            return _JPeriod.ofDays(data[1] * 7)
+        elif data[0] == 'M':
+            return _JPeriod.ofMonths(data[1])
+        elif data[0] == 'Y':
+            return _JPeriod.ofYears(data[1])
+        else:
+            raise DHError(message="Unsupported conversion: " + str(type(dt)) + " -> Period: numpy.datetime64 must have units of 'D', 'W', 'M', or 'Y'")
+    else:
+        raise DHError(message="Unsupported conversion: " + str(type(dt)) + " -> Period")
 
 
-def minus_period(dt: Union[Instant, ZonedDateTime], period: Union[int, Duration, Period]) -> \
-        Union[Instant, ZonedDateTime]:
-    """ Subtracts a time period from a date time.
 
-    Args:
-        dt (Union[Instant,ZonedDateTime]): Date time.
-        period (Union[int, Duration, Period]): Time period to subtract.  Integer inputs are nanoseconds.
+# endregion
 
-    Returns:
-        Date time, or None if any input is None or NULL_LONG.
 
-    Raises:
-        DHError
-    """
-    if not dt or not period:
+# region Conversions: From Java
+
+
+def to_date(dt: Union[None, LocalDate]) -> Optional[datetime.date]:
+    if not dt:
         return None
+    if isinstance(dt, LocalDate):
+        return datetime.date(dt.getYear(), dt.getMonthValue(), dt.getDayOfMonth())
+    else:
+        raise DHError(message="Unsupported conversion: " + str(type(dt)) + " -> datetime.date")
 
-    try:
-        return _JDateTimeUtils.minus(dt, period)
-    except Exception as e:
-        raise DHError(e) from e
 
-
-def diff_nanos(start: Union[Instant, ZonedDateTime], end: Union[Instant, ZonedDateTime]) -> int:
-    """ Returns the difference in nanoseconds between two date time values.  Both values must be of the same type.
-
-    Args:
-        start (Union[Instant,ZonedDateTime]): Start time.
-        end (Union[Instant,ZonedDateTime]): End time.
-
-    Returns:
-        the difference in start and end in nanoseconds or NULL_LONG if any input is None.
-
-    Raises:
-        DHError
-    """
-    if not start or not end:
-        return NULL_LONG
-
-    try:
-        return _JDateTimeUtils.diffNanos(start, end)
-    except Exception as e:
-        raise DHError(e) from e
-
-
-def diff_micros(start: Union[Instant, ZonedDateTime], end: Union[Instant, ZonedDateTime]) -> int:
-    """ Returns the difference in microseconds between two date time values.  Both values must be of the same type.
-
-    Args:
-        start (Union[Instant,ZonedDateTime]): Start time.
-        end (Union[Instant,ZonedDateTime]): End time.
-
-    Returns:
-        the difference in start and end in microseconds or NULL_LONG if any input is None.
-
-    Raises:
-        DHError
-    """
-    if not start or not end:
-        return NULL_LONG
-
-    try:
-        return _JDateTimeUtils.diffMicros(start, end)
-    except Exception as e:
-        raise DHError(e) from e
-
-
-def diff_millis(start: Union[Instant, ZonedDateTime], end: Union[Instant, ZonedDateTime]) -> int:
-    """ Returns the difference in milliseconds between two date time values.  Both values must be of the same type.
-
-    Args:
-        start (Union[Instant,ZonedDateTime]): Start time.
-        end (Union[Instant,ZonedDateTime]): End time.
-
-    Returns:
-        the difference in start and end in milliseconds or NULL_LONG if any input is None.
-
-    Raises:
-        DHError
-    """
-    if not start or not end:
-        return NULL_LONG
-
-    try:
-        return _JDateTimeUtils.diffMillis(start, end)
-    except Exception as e:
-        raise DHError(e) from e
-
-
-def diff_seconds(start: Union[Instant, ZonedDateTime], end: Union[Instant, ZonedDateTime]) -> float:
-    """ Returns the difference in seconds between two date time values.  Both values must be of the same type.
-
-    Args:
-        start (Union[Instant,ZonedDateTime]): Start time.
-        end (Union[Instant,ZonedDateTime]): End time.
-
-    Returns:
-        the difference in start and end in seconds or NULL_DOUBLE if any input is None.
-
-    Raises:
-        DHError
-    """
-    if not start or not end:
-        return NULL_DOUBLE
-
-    try:
-        return _JDateTimeUtils.diffSeconds(start, end)
-    except Exception as e:
-        raise DHError(e) from e
-
-
-def diff_minutes(start: Union[Instant, ZonedDateTime], end: Union[Instant, ZonedDateTime]) -> float:
-    """ Returns the difference in minutes between two date time values.  Both values must be of the same type.
-
-    Args:
-        start (Union[Instant,ZonedDateTime]): Start time.
-        end (Union[Instant,ZonedDateTime]): End time.
-
-    Returns:
-        the difference in start and end in minutes or NULL_DOUBLE if any input is None.
-
-    Raises:
-        DHError
-    """
-    if not start or not end:
-        return NULL_DOUBLE
-
-    try:
-        return _JDateTimeUtils.diffMinutes(start, end)
-    except Exception as e:
-        raise DHError(e) from e
-
-
-def diff_days(start: Union[Instant, ZonedDateTime], end: Union[Instant, ZonedDateTime]) -> float:
-    """ Returns the difference in days between two date time values.  Both values must be of the same type.
-
-    Args:
-        start (Union[Instant,ZonedDateTime]): Start time.
-        end (Union[Instant,ZonedDateTime]): End time.
-
-    Returns:
-        the difference in start and end in days or NULL_DOUBLE if any input is None.
-
-    Raises:
-        DHError
-    """
-    if not start or not end:
-        return NULL_DOUBLE
-
-    try:
-        return _JDateTimeUtils.diffDays(start, end)
-    except Exception as e:
-        raise DHError(e) from e
-
-
-def diff_years_365(start: Union[Instant, ZonedDateTime], end: Union[Instant, ZonedDateTime]) -> float:
-    """ Returns the difference in years between two date time values.  Both values must be of the same type.
-
-    Years are defined in terms of 365 day years.
-
-    Args:
-        start (Union[Instant,ZonedDateTime]): Start time.
-        end (Union[Instant,ZonedDateTime]): End time.
-
-    Returns:
-        the difference in start and end in years or NULL_DOUBLE if any input is None.
-
-    Raises:
-        DHError
-    """
-    if not start or not end:
-        return NULL_DOUBLE
-
-    try:
-        return _JDateTimeUtils.diffYears365(start, end)
-    except Exception as e:
-        raise DHError(e) from e
-
-
-def diff_years_avg(start: Union[Instant, ZonedDateTime], end: Union[Instant, ZonedDateTime]) -> float:
-    """ Returns the difference in years between two date time values.  Both values must be of the same type.
-
-    Years are defined in terms of 365.2425 day years.
-
-    Args:
-        start (Union[Instant,ZonedDateTime]): Start time.
-        end (Union[Instant,ZonedDateTime]): End time.
-
-    Returns:
-        the difference in start and end in years or NULL_DOUBLE if any input is None.
-
-    Raises:
-        DHError
-    """
-    if not start or not end:
-        return NULL_DOUBLE
-
-    try:
-        return _JDateTimeUtils.diffYearsAvg(start, end)
-    except Exception as e:
-        raise DHError(e) from e
-
-# endregion
-
-# region Comparisons
-
-def is_before(dt1: Union[Instant, ZonedDateTime], dt2: Union[Instant, ZonedDateTime]) -> bool:
-    """ Evaluates whether one date time value is before a second date time value.
-    Both values must be of the same type.
-
-    Args:
-        dt1 (Union[Instant,ZonedDateTime]): First date time.
-        dt2 (Union[Instant,ZonedDateTime]): Second date time.
-
-    Returns:
-        True if dt1 is before dt2; otherwise, False if either value is null or if dt2 is equal to or before dt1.
-
-    Raises:
-        DHError
-    """
-    if not dt1 or not dt2:
-        return False
-
-    try:
-        return _JDateTimeUtils.isBefore(dt1, dt2)
-    except Exception as e:
-        raise DHError(e) from e
-
-
-def is_before_or_equal(dt1: Union[Instant, ZonedDateTime], dt2: Union[Instant, ZonedDateTime]) -> bool:
-    """ Evaluates whether one date time value is before or equal to a second date time value.
-    Both values must be of the same type.
-
-    Args:
-        dt1 (Union[Instant,ZonedDateTime]): First date time.
-        dt2 (Union[Instant,ZonedDateTime]): Second date time.
-
-    Returns:
-        True if dt1 is before or equal to dt2; otherwise, False if either value is null or if dt2 is before dt1.
-
-    Raises:
-        DHError
-    """
-    if not dt1 or not dt2:
-        return False
-
-    try:
-        return _JDateTimeUtils.isBeforeOrEqual(dt1, dt2)
-    except Exception as e:
-        raise DHError(e) from e
-
-
-def is_after(dt1: Union[Instant, ZonedDateTime], dt2: Union[Instant, ZonedDateTime]) -> bool:
-    """ Evaluates whether one date time value is after a second date time value.
-    Both values must be of the same type.
-
-    Args:
-        dt1 (Union[Instant,ZonedDateTime]): First date time.
-        dt2 (Union[Instant,ZonedDateTime]): Second date time.
-
-    Returns:
-        True if dt1 is after dt2; otherwise, False if either value is null or if dt2 is equal to or after dt1.
-
-    Raises:
-        DHError
-    """
-    if not dt1 or not dt2:
-        return False
-
-    try:
-        return _JDateTimeUtils.isAfter(dt1, dt2)
-    except Exception as e:
-        raise DHError(e) from e
-
-
-def is_after_or_equal(dt1: Union[Instant, ZonedDateTime], dt2: Union[Instant, ZonedDateTime]) -> bool:
-    """ Evaluates whether one date time value is after or equal to a second date time value.
-    Both values must be of the same type.
-
-    Args:
-        dt1 (Union[Instant,ZonedDateTime]): First date time.
-        dt2 (Union[Instant,ZonedDateTime]): Second date time.
-
-    Returns:
-        True if dt1 is after or equal to dt2; otherwise, False if either value is null or if dt2 is after dt1.
-
-    Raises:
-        DHError
-    """
-    if not dt1 or not dt2:
-        return False
-
-    try:
-        return _JDateTimeUtils.isAfterOrEqual(dt1, dt2)
-    except Exception as e:
-        raise DHError(e) from e
-
-
-# endregion
-
-# region Chronology
-
-def nanos_of_milli(dt: Union[Instant, ZonedDateTime]) -> int:
-    """ Returns the number of nanoseconds that have elapsed since the top of the millisecond.
-
-    Args:
-        dt (Union[Instant,ZonedDateTime]): Date time.
-
-    Returns:
-        Number of nanoseconds that have elapsed since the top of the millisecond, or NULL_INT if the input is None.
-
-    Raises:
-        DHError
-    """
+def to_time(dt: Union[None, LocalTime]) -> Optional[datetime.time]:
     if not dt:
-        return NULL_INT
+        return None
+    elif isinstance(dt, LocalTime):
+        return datetime.time(dt.getHour(), dt.getMinute(), dt.getSecond(), dt.getNano() // 1000)
+    else:
+        raise DHError(message="Unsupported conversion: " + str(type(dt)) + " -> datetime.time")
 
-    try:
-        return _JDateTimeUtils.nanosOfMilli(dt)
-    except Exception as e:
-        raise DHError(e) from e
 
-
-def micros_of_milli(dt: Union[Instant, ZonedDateTime]) -> int:
-    """ Returns the number of microseconds that have elapsed since the top of the millisecond.
-
-    Args:
-        dt (Union[Instant,ZonedDateTime]): Date time.
-
-    Returns:
-        Number of microseconds that have elapsed since the top of the millisecond, or NULL_INT if the input is None.
-
-    Raises:
-        DHError
-    """
+def to_datetime(dt: Union[None, Instant, ZonedDateTime]) -> Optional[datetime.datetime]:
     if not dt:
-        return NULL_INT
+        return None
+    elif isinstance(dt, Instant):
+        ts = dt.getEpochSecond() + (dt.getNano() / 1000000000)
+        return datetime.datetime.fromtimestamp(ts)
+    elif isinstance(dt, ZonedDateTime):
+        ts = dt.toEpochSecond() + (dt.getNano() / 1000000000)
+        return datetime.datetime.fromtimestamp(ts)
+    else:
+        raise DHError(message="Unsupported conversion: " + str(type(dt)) + " -> datetime.datetime")
 
-    try:
-        return _JDateTimeUtils.microsOfMilli(dt)
-    except Exception as e:
-        raise DHError(e) from e
+def to_datetime64(dt: Union[None, Instant, ZonedDateTime]) -> Optional[np.datetime64]:
+    if not dt:
+        return None
+    elif isinstance(dt, Instant):
+        ts = dt.getEpochSecond() * 1000000000 + dt.getNano()
+        return np.datetime64(ts, 'ns')
+    elif isinstance(dt, ZonedDateTime):
+        ts = dt.toEpochSecond() * 1000000000 + dt.getNano()
+        return np.datetime64(ts, 'ns')
+    else:
+        raise DHError(message="Unsupported conversion: " + str(type(dt)) + " -> datetime.datetime")
+
+def to_timedelta(dt: Union[None, Duration]) -> Optional[datetime.timedelta]:
+    if not dt:
+        return None
+    elif isinstance(dt, Duration):
+        return datetime.timedelta(seconds=dt.getSeconds(), microseconds=dt.getNano() // 1000)
+    elif isinstance(dt, Period):
+        #TODO: not sure what is right here
+        y = dt.getYears()
+        m = dt.getMonths()
+        d = dt.getDays()
+        w = dt.getDays() // 7
+
+        if y or m:
+            raise DHError(message="Unsupported conversion: " + str(type(dt)) + " -> datetime.timedelta: Periods must only be days or weeks")
+
+        return datetime.timedelta(days=d, weeks=w)
+    else:
+        raise DHError(message="Unsupported conversion: " + str(type(dt)) + " -> datetime.timedelta")
 
 
-def nanos_of_second(dt: Union[Instant, ZonedDateTime], tz: TimeZone) -> int:
-    """ Returns the number of nanoseconds that have elapsed since the top of the second.
+def to_timedelta64(dt: Union[None, Duration, Period]) -> Optional[np.timedelta64]:
+    if not dt:
+        return None
+    elif isinstance(dt, Duration):
+        return np.timedelta64(dt.toNanos(), 'ns')
+    elif isinstance(dt, Period):
+        d = dt.getDays()
+        m = dt.getMonths()
+        y = dt.getYears()
+
+        count = (1 if d else 0) + (1 if m else 0) + (1 if y else 0)
+
+        if count == 0:
+            return np.timedelta64(0, 'D')
+        elif count > 1:
+            raise DHError(message="Unsupported conversion: " + str(type(dt)) + " -> datetime.timedelta64: Periods must be days, months, or years")
+        elif y:
+            return np.timedelta64(y, 'Y')
+        elif m:
+            return np.timedelta64(m, 'M')
+        elif d:
+            return np.timedelta64(d, 'D')
+        else:
+            raise DHError(message="Unsupported conversion: " + str(type(dt)) + " -> datetime.timedelta64: (" + dt + ")")
+    else:
+        raise DHError(message="Unsupported conversion: " + str(type(dt)) + " -> datetime.timedelta")
+
+
+# endregion
+
+########################################################################################################################
+
+
+# region XXXX
+
+def to_time_zone(tz: Optional[str]**) -> TimeZone:
+    """ Gets the time zone for a time zone name.
 
     Args:
-        dt (Union[Instant,ZonedDateTime]): Date time.
-        tz (TimeZone): Time zone.
+        tz (Optional[str]): Time zone name.  If None is provided, the system default time zone is returned.
 
     Returns:
-        Number of nanoseconds that have elapsed since the top of the second, or NULL_LONG if any input is None.
+        TimeZone
 
     Raises:
         DHError
     """
+    ***
     try:
-        if not dt or not tz:
-            return NULL_LONG
-
-        if from_jtype(dt.getClass()) == ZonedDateTime:
-            dt = to_instant(dt)
-
-        return _JDateTimeUtils.nanosOfSecond(dt, tz)
+        if tz is None:
+            return _JDateTimeUtils.timeZone()
+        else:
+            return _JDateTimeUtils.timeZone(tz)
     except Exception as e:
         raise DHError(e) from e
 
 
-def micros_of_second(dt: Union[Instant, ZonedDateTime], tz: TimeZone) -> int:
-    """ Returns the number of microseconds that have elapsed since the top of the second.
 
-    Args:
-        dt (Union[Instant,ZonedDateTime]): Date time.
-        tz (TimeZone): Time zone.
 
-    Returns:
-        Number of microseconds that have elapsed since the top of the second, or NULL_LONG if any input is None.
+datetime.date
+datetime.time
+datetime.datetime
+datetime.timedelta
+datetime.tzinfo
+datetime.timezone
+np.datetime64
+np.timedelta64
 
-    Raises:
-        DHError
-    """
-    try:
-        if not dt or not tz:
-            return NULL_LONG
-
-        if from_jtype(dt.getClass()) == ZonedDateTime:
-            dt = to_instant(dt)
-
-        return _JDateTimeUtils.microsOfSecond(dt, tz)
-    except Exception as e:
-        raise DHError(e) from e
-
-
-def millis_of_second(dt: Union[Instant, ZonedDateTime], tz: TimeZone) -> int:
-    """ Returns the number of milliseconds that have elapsed since the top of the second.
-
-    Args:
-        dt (Union[Instant,ZonedDateTime]): Date time.
-        tz (TimeZone): Time zone.
-
-    Returns:
-        Number of milliseconds that have elapsed since the top of the second, or NULL_INT if any input is None.
-
-    Raises:
-        DHError
-    """
-    try:
-        if not dt or not tz:
-            return NULL_INT
-
-        if from_jtype(dt.getClass()) == ZonedDateTime:
-            dt = to_instant(dt)
-
-        return _JDateTimeUtils.millisOfSecond(dt, tz)
-    except Exception as e:
-        raise DHError(e) from e
-
-
-def second_of_minute(dt: Union[Instant, ZonedDateTime], tz: TimeZone) -> int:
-    """ Returns the number of seconds that have elapsed since the top of the minute.
-
-    Args:
-        dt (Union[Instant,ZonedDateTime]): Date time.
-        tz (TimeZone): Time zone.
-
-    Returns:
-        Number of seconds that have elapsed since the top of the minute, or NULL_INT if any input is None.
-
-    Raises:
-        DHError
-    """
-    try:
-        if not dt or not tz:
-            return NULL_INT
-
-        if from_jtype(dt.getClass()) == ZonedDateTime:
-            dt = to_instant(dt)
-
-        return _JDateTimeUtils.secondOfMinute(dt, tz)
-    except Exception as e:
-        raise DHError(e) from e
-
-
-def minute_of_hour(dt: Union[Instant, ZonedDateTime], tz: TimeZone) -> int:
-    """ Returns the number of minutes that have elapsed since the top of the hour.
-
-    Args:
-        dt (Union[Instant,ZonedDateTime]): Date time.
-        tz (TimeZone): Time zone.
-
-    Returns:
-        Number of minutes that have elapsed since the top of the hour, or NULL_INT if any input is None.
-
-    Raises:
-        DHError
-    """
-    try:
-        if not dt or not tz:
-            return NULL_INT
-
-        if from_jtype(dt.getClass()) == ZonedDateTime:
-            dt = to_instant(dt)
-
-        return _JDateTimeUtils.minuteOfHour(dt, tz)
-    except Exception as e:
-        raise DHError(e) from e
-
-
-def nanos_of_day(dt: Union[Instant, ZonedDateTime], tz: TimeZone) -> int:
-    """ Returns the number of nanoseconds that have elapsed since the top of the day.
-
-    Args:
-        dt (Union[Instant,ZonedDateTime]): Date time.
-        tz (TimeZone): Time zone.
-
-    Returns:
-        Number of nanoseconds that have elapsed since the top of the day, or NULL_LONG if any input is None.
-
-    Raises:
-        DHError
-    """
-    try:
-        if not dt or not tz:
-            return NULL_LONG
-
-        if from_jtype(dt.getClass()) == ZonedDateTime:
-            dt = to_instant(dt)
-
-        return _JDateTimeUtils.nanosOfDay(dt, tz)
-    except Exception as e:
-        raise DHError(e) from e
-
-
-def millis_of_day(dt: Union[Instant, ZonedDateTime], tz: TimeZone) -> int:
-    """ Returns the number of milliseconds that have elapsed since the top of the day.
-
-    Args:
-        dt (Union[Instant,ZonedDateTime]): Date time.
-        tz (TimeZone): Time zone.
-
-    Returns:
-        Number of milliseconds that have elapsed since the top of the day, or NULL_INT if any input is None.
-
-    Raises:
-        DHError
-    """
-    try:
-        if not dt or not tz:
-            return NULL_INT
-
-        if from_jtype(dt.getClass()) == ZonedDateTime:
-            dt = to_instant(dt)
-
-        return _JDateTimeUtils.millisOfDay(dt, tz)
-    except Exception as e:
-        raise DHError(e) from e
-
-
-def second_of_day(dt: Union[Instant, ZonedDateTime], tz: TimeZone) -> int:
-    """ Returns the number of seconds that have elapsed since the top of the day.
-
-    Args:
-        dt (Union[Instant,ZonedDateTime]): Date time.
-        tz (TimeZone): Time zone.
-
-    Returns:
-        Number of seconds that have elapsed since the top of the day, or NULL_INT if any input is None.
-
-    Raises:
-        DHError
-    """
-    try:
-        if not dt or not tz:
-            return NULL_INT
-
-        if from_jtype(dt.getClass()) == ZonedDateTime:
-            dt = to_instant(dt)
-
-        return _JDateTimeUtils.secondOfDay(dt, tz)
-    except Exception as e:
-        raise DHError(e) from e
-
-
-def minute_of_day(dt: Union[Instant, ZonedDateTime], tz: TimeZone) -> int:
-    """ Returns the number of minutes that have elapsed since the top of the day.
-
-    Args:
-        dt (Union[Instant,ZonedDateTime]): Date time.
-        tz (TimeZone): Time zone.
-
-    Returns:
-        Number of minutes that have elapsed since the top of the day, or NULL_INT if any input is None.
-
-    Raises:
-        DHError
-    """
-    try:
-        if not dt or not tz:
-            return NULL_INT
-
-        if from_jtype(dt.getClass()) == ZonedDateTime:
-            dt = to_instant(dt)
-
-        return _JDateTimeUtils.minuteOfDay(dt, tz)
-    except Exception as e:
-        raise DHError(e) from e
-
-
-def hour_of_day(dt: Union[Instant, ZonedDateTime], tz: TimeZone) -> int:
-    """ Returns the number of hours that have elapsed since the top of the day.
-
-    Args:
-        dt (Union[Instant,ZonedDateTime]): Date time.
-        tz (TimeZone): Time zone.
-
-    Returns:
-        Number of hours that have elapsed since the top of the day, or NULL_INT if any input is None.
-
-    Raises:
-        DHError
-    """
-    try:
-        if not dt or not tz:
-            return NULL_INT
-
-        if from_jtype(dt.getClass()) == ZonedDateTime:
-            dt = to_instant(dt)
-
-        return _JDateTimeUtils.hourOfDay(dt, tz)
-    except Exception as e:
-        raise DHError(e) from e
-
-
-def day_of_week(dt: Union[Instant, ZonedDateTime], tz: TimeZone) -> int:
-    """ Returns a 1-based int value of the day of the week for a date time in the specified time zone, with 1 being
-    Monday and 7 being Sunday.
-
-    Args:
-        dt (Union[Instant,ZonedDateTime]): Date time.
-        tz (TimeZone): Time zone.
-
-    Returns:
-        Day of the week, or NULL_INT if any input is None.
-
-    Raises:
-        DHError
-    """
-    try:
-        if not dt or not tz:
-            return NULL_INT
-
-        if from_jtype(dt.getClass()) == ZonedDateTime:
-            dt = to_instant(dt)
-
-        return _JDateTimeUtils.dayOfWeek(dt, tz)
-    except Exception as e:
-        raise DHError(e) from e
-
-
-def day_of_month(dt: Union[Instant, ZonedDateTime], tz: TimeZone) -> int:
-    """ Returns a 1-based int value of the day of the month for a date time and specified time zone.
-    The first day of the month returns 1, the second day returns 2, etc.
-
-    Args:
-        dt (Union[Instant,ZonedDateTime]): Date time.
-        tz (TimeZone): Time zone.
-
-    Returns:
-        Day of the month, or NULL_INT if any input is None.
-
-    Raises:
-        DHError
-    """
-    try:
-        if not dt or not tz:
-            return NULL_INT
-
-        if from_jtype(dt.getClass()) == ZonedDateTime:
-            dt = to_instant(dt)
-
-        return _JDateTimeUtils.dayOfMonth(dt, tz)
-    except Exception as e:
-        raise DHError(e) from e
-
-
-def day_of_year(dt: Union[Instant, ZonedDateTime], tz: TimeZone) -> int:
-    """ Returns a 1-based int value of the day of the year (Julian date) for a date time in the specified time zone.
-    The first day of the year returns 1, the second day returns 2, etc.
-
-    Args:
-        dt (Union[Instant,ZonedDateTime]): Date time.
-        tz (TimeZone): Time zone.
-
-    Returns:
-        Day of the year, or NULL_INT if any input is None.
-
-    Raises:
-        DHError
-    """
-    try:
-        if not dt or not tz:
-            return NULL_INT
-
-        if from_jtype(dt.getClass()) == ZonedDateTime:
-            dt = to_instant(dt)
-
-        return _JDateTimeUtils.dayOfYear(dt, tz)
-    except Exception as e:
-        raise DHError(e) from e
-
-
-def month_of_year(dt: Union[Instant, ZonedDateTime], tz: TimeZone) -> int:
-    """ Returns a 1-based int value of the month of the year (Julian date) for a date time in the specified time zone.
-    January is 1, February is 2, etc.
-
-    Args:
-        dt (Union[Instant,ZonedDateTime]): Date time.
-        tz (TimeZone): Time zone.
-
-    Returns:
-        Month of the year, or NULL_INT if any input is None.
-
-    Raises:
-        DHError
-    """
-    try:
-        if not dt or not tz:
-            return NULL_INT
-
-        if from_jtype(dt.getClass()) == ZonedDateTime:
-            dt = to_instant(dt)
-
-        return _JDateTimeUtils.monthOfYear(dt, tz)
-    except Exception as e:
-        raise DHError(e) from e
-
-
-def year(dt: Union[Instant, ZonedDateTime], tz: TimeZone) -> int:
-    """ Returns the year for a date time in the specified time zone.
-
-    Args:
-        dt (Union[Instant,ZonedDateTime]): Date time.
-        tz (TimeZone): Time zone.
-
-    Returns:
-        Year, or NULL_INT if any input is None.
-
-    Raises:
-        DHError
-    """
-    try:
-        if not dt or not tz:
-            return NULL_INT
-
-        if from_jtype(dt.getClass()) == ZonedDateTime:
-            dt = to_instant(dt)
-
-        return _JDateTimeUtils.year(dt, tz)
-    except Exception as e:
-        raise DHError(e) from e
-
-
-def year_of_century(dt: Union[Instant, ZonedDateTime], tz: TimeZone) -> int:
-    """ Returns the year of the century (two-digit year) for a date time in the specified time zone.
-
-    Args:
-        dt (Union[Instant,ZonedDateTime]): Date time.
-        tz (TimeZone): Time zone.
-
-    Returns:
-        Year of the century, or NULL_INT if any input is None.
-
-    Raises:
-        DHError
-    """
-    try:
-        if not dt or not tz:
-            return NULL_INT
-
-        if from_jtype(dt.getClass()) == ZonedDateTime:
-            dt = to_instant(dt)
-
-        return _JDateTimeUtils.yearOfCentury(dt, tz)
-    except Exception as e:
-        raise DHError(e) from e
-
-
-def at_midnight(dt: Union[Instant, ZonedDateTime], tz: TimeZone) -> Union[Instant, ZonedDateTime]:
-    """ Returns a date time for the prior midnight in the specified time zone.
-
-    Args:
-        dt (Union[Instant,ZonedDateTime]): Date time.
-        tz (TimeZone): Time zone.
-
-    Returns:
-        date time for the prior midnight in the specified time zone, or None if any input is None.
-
-    Raises:
-        DHError
-    """
-    try:
-        if not dt or not tz:
-            return None
-
-        if from_jtype(dt.getClass()) == ZonedDateTime:
-            dt = to_instant(dt)
-
-        return _JDateTimeUtils.atMidnight(dt, tz)
-    except Exception as e:
-        raise DHError(e) from e
 
 
 # endregion
 
 
-# region Format
-
-def format_duration_nanos(nanos: int) -> str:
-    """ Returns a nanosecond duration formatted as a "[-]PThhh:mm:ss.nnnnnnnnn" string.
-
-    Args:
-        nanos (int): Nanosecond.
-
-    Returns:
-        Formatted string, or None if the input is NULL_INT.
-
-    Raises:
-        DHError
-    """
-    try:
-        return _JDateTimeUtils.formatDurationNanos(nanos)
-    except Exception as e:
-        raise DHError(e) from e
-
-
-def format_datetime(dt: Union[Instant, ZonedDateTime], tz: TimeZone) -> str:
-    """ Returns a date time formatted as a "yyyy-MM-ddThh:mm:ss.SSSSSSSSS TZ" string.
-
-    Args:
-        dt (Union[Instant,ZonedDateTime]): Date time.
-        tz (TimeZone): Time zone.
-
-    Returns:
-        Formatted string, or None if the any input is None.
-
-    Raises:
-        DHError
-    """
-    try:
-        if not dt or not tz:
-            return None
-
-        if from_jtype(dt.getClass()) == ZonedDateTime:
-            dt = to_instant(dt)
-
-        return _JDateTimeUtils.formatDateTime(dt, tz)
-    except Exception as e:
-        raise DHError(e) from e
-
-
-def format_date(dt: Union[Instant, ZonedDateTime], tz: TimeZone) -> str:
-    """ Returns a date time formatted as a "yyyy-MM-dd" string.
-
-    Args:
-        dt (Union[Instant,ZonedDateTime]): Date time.
-        tz (TimeZone): Time zone.
-
-    Returns:
-        Formatted string, or None if the any input is None.
-
-    Raises:
-        DHError
-    """
-    try:
-        if not dt or not tz:
-            return None
-
-        if from_jtype(dt.getClass()) == ZonedDateTime:
-            dt = to_instant(dt)
-
-        return _JDateTimeUtils.formatDate(dt, tz)
-    except Exception as e:
-        raise DHError(e) from e
-
-
-# endregion
-
+# #TODO: Keep?
 # region Parse
 
 def parse_time_zone(s: str, quiet: bool = False) -> Optional[TimeZone]:
@@ -1783,6 +423,7 @@ def parse_time_zone(s: str, quiet: bool = False) -> Optional[TimeZone]:
         raise DHError(e) from e
 
 
+#TODO: remove?
 def parse_duration_nanos(s: str, quiet: bool = False) -> int:
     """ Parses the string argument as a time duration in nanoseconds.
 
@@ -1882,6 +523,7 @@ def parse_duration(s: str, quiet: bool = False) -> Optional[Duration]:
         raise DHError(e) from e
 
 
+#TODO: remove?
 def parse_epoch_nanos(s: str, quiet: bool = False) -> int:
     """ Parses the string argument as nanoseconds since the Epoch.
 
@@ -1960,32 +602,6 @@ def parse_zdt(s: str, quiet: bool = False) -> Optional[ZonedDateTime]:
     except Exception as e:
         raise DHError(e) from e
 
-
-def parse_time_precision(s: str, quiet: bool = False) -> Optional[str]:
-    """ Returns a string indicating the level of precision in a time, datetime, or period nanos string. (e.g. 'SecondOfMinute').
-
-    Args:
-        s (str): Time string.
-        quiet (bool): False will cause exceptions when strings can not be parsed.  False will cause None to be returned.
-
-    Returns:
-        String indicating the level of precision in a time or datetime string (e.g. 'SecondOfMinute').
-
-    Raises:
-        DHError
-    """
-    try:
-        if quiet:
-            p = _JDateTimeUtils.parseTimePrecisionQuiet(s)
-
-            if p:
-                return p.toString()
-            else:
-                return None
-        else:
-            return _JDateTimeUtils.parseTimePrecision(s).toString()
-    except Exception as e:
-        raise DHError(e) from e
 
 
 def parse_local_date(s: str, quiet: bool = False) -> Optional[LocalTime]:
