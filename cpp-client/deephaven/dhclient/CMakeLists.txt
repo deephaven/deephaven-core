@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 3.16)
-project(client)
+project(dhclient)
 
 set(CMAKE_CXX_STANDARD 17)
 
@@ -12,8 +12,6 @@ find_package(Immer REQUIRED)
 find_package(Protobuf CONFIG REQUIRED)
 find_package(gRPC CONFIG REQUIRED)
 find_package(Threads REQUIRED)
-
-add_subdirectory(../dhcore dhcore_dir)
 
 set(ALL_FILES
     src/server/server.cc
@@ -116,27 +114,27 @@ set(ALL_FILES
     proto/deephaven/proto/ticket.pb.h
 )
 
-add_library(client ${ALL_FILES})
+add_library(dhclient ${ALL_FILES})
 # In order to make a shared library suitable for Cython.
-set_property(TARGET client PROPERTY POSITION_INDEPENDENT_CODE ON)
+set_property(TARGET dhclient PROPERTY POSITION_INDEPENDENT_CODE ON)
 
 # This is so deephaven::client works both when using the installed CMake config
 # and when using this project as a CMake subdirectory of your own project.
-add_library(deephaven::client ALIAS client)
-target_compile_options(client PRIVATE -Wall -Werror -Wno-deprecated-declarations)
+add_library(deephaven::client ALIAS dhclient)
+target_compile_options(dhclient PRIVATE -Wall -Werror -Wno-deprecated-declarations)
 
-target_include_directories(client PRIVATE include/private)
-target_include_directories(client PUBLIC $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include/public>)
+target_include_directories(dhclient PRIVATE include/private)
+target_include_directories(dhclient PUBLIC $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include/public>)
 
 # Protos and flatbuf are doing their own thing.
-target_include_directories(client PRIVATE "./proto")
-target_include_directories(client PRIVATE "./flatbuf")
+target_include_directories(dhclient PRIVATE "./proto")
+target_include_directories(dhclient PRIVATE "./flatbuf")
 
-target_link_libraries(client PUBLIC dhcore)
+target_link_libraries(dhclient PUBLIC dhcore)
 
-target_link_libraries(client PUBLIC arrow_flight_static)
-target_link_libraries(client PUBLIC arrow_static)
-target_link_libraries(client PUBLIC immer)
-target_link_libraries(client PUBLIC protobuf::libprotobuf)
-target_link_libraries(client PUBLIC gRPC::grpc++)
-target_link_libraries(client PUBLIC Threads::Threads)
+target_link_libraries(dhclient PUBLIC arrow_flight_static)
+target_link_libraries(dhclient PUBLIC arrow_static)
+target_link_libraries(dhclient PUBLIC immer)
+target_link_libraries(dhclient PUBLIC protobuf::libprotobuf)
+target_link_libraries(dhclient PUBLIC gRPC::grpc++)
+target_link_libraries(dhclient PUBLIC Threads::Threads)

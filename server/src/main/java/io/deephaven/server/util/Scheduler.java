@@ -98,17 +98,17 @@ public interface Scheduler extends Clock {
         }
 
         @Override
-        public void runImmediately(final @NotNull Runnable command) {
+        public void runImmediately(@NotNull final Runnable command) {
             runAfterDelay(0, command);
         }
 
         @Override
-        public void runAfterDelay(final long delayMs, final @NotNull Runnable command) {
+        public void runAfterDelay(final long delayMs, @NotNull final Runnable command) {
             concurrentDelegate.schedule(command, delayMs, TimeUnit.MILLISECONDS);
         }
 
         @Override
-        public void runSerially(final @NotNull Runnable command) {
+        public void runSerially(@NotNull final Runnable command) {
             serialDelegate.submit(command);
         }
     }

@@ -73,7 +73,8 @@ Currently, the R client is only supported on Ubuntu 20.04 or 22.04 and must be b
    git pull origin main
    ```
 
-3. Start an R console, using some environment variable definitions to speed up compilation.  Use these commands:
+3. Start an R console inside the rdeephaven directory, using some environment variable definitions
+   to speed up compilation.  Use these commands:
    ```bash
    export NCPUS=`getconf _NPROCESSORS_ONLN`
    export MAKEFLAGS="-j$NCPUS"
@@ -86,7 +87,7 @@ Currently, the R client is only supported on Ubuntu 20.04 or 22.04 and must be b
    ```
    then install the deephaven client itself:
    ```r
-   install.packages("/path/to/rdeephaven", repos=NULL, type="source")
+   install.packages(".", repos=NULL, type="source")
    ```
    This last command can also be executed from RStudio without the need for explicitly starting an R console.
 

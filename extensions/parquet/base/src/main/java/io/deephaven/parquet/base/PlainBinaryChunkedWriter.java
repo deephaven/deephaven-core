@@ -123,19 +123,19 @@ public class PlainBinaryChunkedWriter extends AbstractBulkValuesWriter<Binary[]>
     }
 
     private void ensureCapacityFor(@NotNull final Binary v) {
-        if(v.length() == 0 || innerBuffer.remaining() >= v.length() + Integer.BYTES) {
+        if (v.length() == 0 || innerBuffer.remaining() >= v.length() + Integer.BYTES) {
             return;
         }
 
         final int currentCapacity = innerBuffer.capacity();
         final int currentPosition = innerBuffer.position();
         final long requiredCapacity = (long)currentPosition + v.length() + Integer.BYTES;
-        if(requiredCapacity > MAXIMUM_TOTAL_CAPACITY) {
+        if (requiredCapacity > MAXIMUM_TOTAL_CAPACITY) {
             throw new IllegalStateException("Unable to write " + requiredCapacity + " values. (Maximum capacity: " + MAXIMUM_TOTAL_CAPACITY + ".)");
         }
 
         int newCapacity = currentCapacity;
-        while(newCapacity < requiredCapacity) {
+        while (newCapacity < requiredCapacity) {
             newCapacity = (int) Math.min(MAXIMUM_TOTAL_CAPACITY, newCapacity * 2L);
         }
 
