@@ -39,7 +39,7 @@ public class CachedChannelProvider implements SeekableChannelsProvider {
     private boolean invalid;
 
     /**
-     * The path to file that caused this provider to be invalidated.
+     * The path to the file that caused this provider to be invalidated.
      */
     private String invalidatingFilePath;
 
