@@ -157,15 +157,21 @@ def j_lambda(func: Callable, lambda_jtype:jpy.JType, return_dtype: DType = None)
     return jpy.get_type('io.deephaven.integrations.python.JavaLambdaFactory').create(lambda_jtype.jclass, func, coerce_to_type)
 
 
-def to_sequence(v: Union[T, Sequence[T]] = None) -> Sequence[Union[T, jpy.JType]]:
-    """A convenience function to create a sequence of unwrapped object from either one or a sequence of input values to
-    help JPY find the matching Java overloaded method to call.
+def to_sequence(v: Union[T, Sequence[T]] = None, wrapped : bool = False) -> Sequence[Union[T, jpy.JType]]:
+    """A convenience function to create a sequence of wrapped or unwrapped object from either one or a sequence of
+    input values to help JPY find the matching Java overloaded method to call.
 
     This also enables a function to provide parameters that can accept both singular and plural values of the same type
     for the convenience of the users, e.g. both x= "abc" and x = ["abc"] are valid arguments.
     """
     if not v:
         return ()
+    if wrapped:
+        if not isinstance(v, Sequence) or isinstance(v, str):
+            return (v, )
+        else:
+            return tuple(v)
+
     if not isinstance(v, Sequence) or isinstance(v, str):
         return (unwrap(v), )
     else:

@@ -475,7 +475,6 @@ public class QueryTableMultiJoinTest extends QueryTableTestBase {
         final Table result = updateGraph.sharedLock().computeLocked(() -> MultiJoinFactory.of(new String[] {"Key"},
                 inputTables.toArray(TableDefaults.ZERO_LENGTH_TABLE_ARRAY)).table());
 
-
         if (printTableUpdates()) {
             System.out.println("Initial result:");
             TableTools.showWithRowSet(result);
@@ -776,7 +775,7 @@ public class QueryTableMultiJoinTest extends QueryTableTestBase {
         Assert.assertEquals(mji.columnsToAdd()[1].existingColumn().name(), "D");
 
         // Assert whitespace and '==' is handled properly.
-        mji = MultiJoinInput.of(dummyTable, "\tKey1 = A,     \tKey2  ==B ", "C1 =C,  D1=D");
+        mji = MultiJoinInput.of(dummyTable, "\tKey1 = A,     \tKey2  ==B ", " \tC1 =C,  D1=D");
         Assert.assertEquals(mji.inputTable(), dummyTable);
         Assert.assertEquals(mji.columnsToMatch()[0].left().name(), "Key1");
         Assert.assertEquals(mji.columnsToMatch()[0].right().name(), "A");
