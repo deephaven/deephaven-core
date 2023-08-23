@@ -122,7 +122,7 @@ Currently, the R client is only supported on Ubuntu 20.04 or 22.04 and must be b
    > echo $LD_LIBRARY_PATH
    libpath
    ```
-   Now, to resolve this issue, add the following file called `.Renviron`, to the `deephaven-core` directory:
+   Now, to resolve this issue, add the following file called `.Renviron` to the `deephaven-core` directory:
    ```bash
    DHCPP=ABC
    DHCPP_LOCAL=123
