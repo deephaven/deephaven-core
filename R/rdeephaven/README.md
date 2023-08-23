@@ -104,24 +104,47 @@ Currently, the R client is only supported on Ubuntu 20.04 or 22.04 and must be b
    **NOTE**
 
    If using RStudio for this step, the environment variables that were set in step 3 may not persist into the RStudio environment,
-   if it is not a child process of the process where the environment variables were set. To resolve this issue, add the
-   following file, called `.Renviron`, to the `deephaven-core` directory:
+   if it is not a child process of the process where the environment variables were set. Suppose that we have the following values
+   for the environment variables:
+   ```bash
+   > echo $DHCPP
+   ABC
+
+   > echo $DHCPP_LOCAL
+   123
+
+   > echo $CMAKE_PREFIX_PATH
+   XYZ
+
+   > echo $NCPUS
+   4
+
+   > echo $LD_LIBRARY_PATH
+   libpath
    ```
-   DHCPP=value-of-$DHCPP
-   DHCPP_LOCAL=value-of-$DHCPP_LOCAL
-   CMAKE_PREFIX_PATH=value-of-$CMAKE_PREFIX_PATH
-   NCPUS=value-of-$NCPUS
-   LD_LIBRARY_PATH=value-of-$LD_LIBRARY_PATH
+   Now, to resolve this issue, add the following file called `.Renviron`, to the `deephaven-core` directory:
+   ```bash
+   DHCPP=ABC
+   DHCPP_LOCAL=123
+   CMAKE_PREFIX_PATH=XYZ
+   NCPUS=4
+   LD_LIBRARY_PATH=libpath
    ```
-   where each of the `value-of-...` variables are the value of the corresponding variables, as printed by `echo $DHCPP` and so on.
    Setting these to the _exact_ values of the environment variables is critical, as compilation will fail otherwise.
 
    Then, create a new R project from the existing `deephaven-core` directory using RStudio, and the corresponding R session will inherit
    all of the necessary environment variables for successful compilation.
+
+   If RStudio Server is being used, all of the above must be followed for successful compilation. _In addition_, the following line should
+   be added to `rserver.conf`:
+   ```
+   rsession-ld-library-path=libpath
+   ```
+   where `libpath` is the actual value of the `LD_LIBRARY_PATH` environment variable.
    
    ---
 
-5. Now, run
+6. Now, run
    ```r
    library(rdeephaven)
    ```
