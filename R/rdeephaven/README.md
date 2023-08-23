@@ -162,7 +162,7 @@ compilation terminated.
 ```
 this means that the C++ compiler does not know where to find the relevant header files for the Deephaven C++ client. This can happen for a handul of reasons:
 1. Step 1 was skipped, and the Deephaven C++ client was not installed. In this case, please ensure that the client is installed before attempting to build the R client.
-2. The Deephaven C++ client is installed, but step 3 was skilled and the `DHCPP` environment variable is not set. To test this, run
+2. The Deephaven C++ client is installed, but the `DHCPP` environment variable is not set. To test this, run
    ```bash
    echo $DHCPP
    ```
