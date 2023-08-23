@@ -646,11 +646,13 @@ public class ParquetTableWriter {
                                 .asIntChunk();
                         lenChunk.copyToTypedBuffer(0, repeatCount, 0, lenChunk.size());
                         repeatCount.limit(lenChunk.size());
+                        // Write all the fetched vector data into a single Parquet page.
+                        // This can lead to Out-of-Memory errors for types like strings if the entries are very long.
                         int numValuesBuffered = transferObject.bufferAllFetchedData();
                         columnWriter.addVectorPage(transferObject.getBuffer(), repeatCount, numValuesBuffered);
                         repeatCount.clear();
                     } else {
-                        // We might need to split a single page into multiple if we are not able to fit all the entries
+                        // Split a single page into multiple if we are not able to fit all the entries in one page
                         do {
                             int numValuesBuffered = transferObject.bufferFetchedData();
                             columnWriter.addPage(transferObject.getBuffer(), numValuesBuffered);
@@ -1090,8 +1092,7 @@ public class ParquetTableWriter {
     }
 
     /**
-     * Used as a base class for transfer object types like strings or big integers that need specialized encoding or
-     * codecs.
+     * Used as a base class of transfer objects for types like strings or big integers that need specialized encoding.
      */
     abstract static class EncodedTransfer<T> implements TransferObject<Binary[]> {
         private final ChunkSource.GetContext context;
@@ -1100,13 +1101,12 @@ public class ParquetTableWriter {
         private final ColumnSource<?> columnSource;
 
         /**
-         * Stores the maximum size of data in a single page. For strings, we don't know in advance what the length of
-         * each entry would be, therefore we need to keep track of both maximum size and number of values.
+         * Stores the target for maximum size of data in a single page.
          */
         private final int targetPageSize;
 
         /**
-         * Index of next string to be buffered from the string chunk
+         * Index of next object from the chunk to be buffered
          */
         private int currentChunkIdx;
 
