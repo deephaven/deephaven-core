@@ -2,11 +2,7 @@
 Aggregation <- R6Class("Aggregation",
   cloneable = FALSE,
   public = list(
-    
     .internal_rcpp_object = NULL,
-    
-    #' @description
-    #' Create an Aggregation instance.
     initialize = function(aggregation) {
       if (class(aggregation) != "Rcpp_INTERNAL_Aggregate") {
         stop("'aggregation' should be an internal Deephaven Aggregation. If you're seeing this,\n  you are trying to call the constructor of an Aggregation directly, which is not advised.\n  Please use one of the provided aggregation functions instead.")

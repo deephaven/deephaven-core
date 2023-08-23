@@ -66,8 +66,8 @@ verify_numeric <- function(arg_name, candidate, is_scalar) {
 # R cannot distinguish between list(a = "val", b = "val") and c(list(a = "val"), list(b = "val"))
 # So, we remove the is_scalar argument and default it to FALSE in the call to verify_type
 verify_list <- function(arg_name, candidate) {
-   verify_type(arg_name, candidate, "list", "list", FALSE)
- }
+  verify_type(arg_name, candidate, "list", "list", FALSE)
+}
 
 verify_in_unit_interval <- function(arg_name, candidate, is_scalar) {
   verify_numeric(arg_name, candidate, is_scalar)

@@ -2,9 +2,7 @@
 TableHandle <- R6Class("TableHandle",
   cloneable = FALSE,
   public = list(
-    
     .internal_rcpp_object = NULL,
-    
     initialize = function(table_handle) {
       if (class(table_handle)[[1]] != "Rcpp_INTERNAL_TableHandle") {
         stop("'table_handle' should be an internal Deephaven TableHandle. If you're seeing this,
@@ -12,50 +10,33 @@ TableHandle <- R6Class("TableHandle",
       }
       self$.internal_rcpp_object <- table_handle
     },
-
-    #' @description
-    #' Whether the table referenced by this TableHandle is static or not.
-    #' @return TRUE if the table is static, or FALSE if the table is ticking.
     is_static = function() {
       return(self$.internal_rcpp_object$is_static())
     },
-    
-    #' @description
-    #' Binds the table referenced by this TableHandle to a variable on the server,
-    #' enabling it to be accessed by that name from any Deephaven API.
-    #' @param name Name for this table on the server.
     bind_to_variable = function(name) {
       verify_string("name", name, TRUE)
       self$.internal_rcpp_object$bind_to_variable(name)
     },
-    
+
     ### BASE R METHODS, ALSO IMPLEMENTED FUNCTIONALLY
-    
+
     head = function(n) {
       verify_positive_int("n", n, TRUE)
       return(TableHandle$new(self$.internal_rcpp_object$head(n)))
     },
-    
     tail = function(n) {
       verify_positive_int("n", n, TRUE)
       return(TableHandle$new(self$.internal_rcpp_object$tail(n)))
     },
-
-    #' @description
-    #' Number of rows in the table referenced by this TableHandle.
-    #' @return The number of rows in the table.
     nrow = function() {
       return(self$.internal_rcpp_object$num_rows())
     },
-    
     ncol = function() {
       return(self$.internal_rcpp_object$num_cols())
     },
-    
     dim = function() {
       return(c(self$nrow(), self$ncol()))
     },
-    
     merge = function(...) {
       table_list <- unlist(c(...))
       if (length(table_list) == 0) {
@@ -65,86 +46,63 @@ TableHandle <- R6Class("TableHandle",
       unwrapped_table_list <- lapply(table_list, strip_r6_wrapping)
       return(TableHandle$new(self$.internal_rcpp_object$merge(unwrapped_table_list)))
     },
-    
+
     ### CONVERSION METHODS, ALSO IMPLEMENTED FUNCTIONALLY
 
-    #' @description
-    #' Imports the table referenced by this TableHandle into an Arrow RecordBatchStreamReader.
-    #' @return A RecordBatchStreamReader containing the data from the table referenced by this TableHandle.
     as_record_batch_reader = function() {
       ptr <- self$.internal_rcpp_object$get_arrow_array_stream_ptr()
       rbsr <- RecordBatchStreamReader$import_from_c(ptr)
       return(rbsr)
     },
-
-    #' @description
-    #' Imports the table referenced by this TableHandle into an Arrow Table.
-    #' @return A Table containing the data from the table referenced by this TableHandle.
     as_arrow_table = function() {
       rbsr <- self$as_record_batch_reader()
       arrow_tbl <- rbsr$read_table()
       return(arrow_tbl)
     },
-
-    #' @description
-    #' Imports the table referenced by this TableHandle into a dplyr Tibble.
-    #' @return A Tibble containing the data from the table referenced by this TableHandle.
     as_tibble = function() {
       rbsr <- self$as_record_batch_reader()
       arrow_tbl <- rbsr$read_table()
       return(as_tibble(arrow_tbl))
     },
-
-    #' @description
-    #' Imports the table referenced by this TableHandle into an R Data Frame.
-    #' @return A Data Frame containing the data from the table referenced by this TableHandle.
     as_data_frame = function() {
       arrow_tbl <- self$as_arrow_table()
       return(as.data.frame(as.data.frame(arrow_tbl))) # TODO: for some reason as.data.frame on arrow table returns a tibble, not a data frame
     },
-    
+
     ### DEEPHAVEN TABLE OPERATIONS
-    
+
     select = function(formulas = character()) {
       verify_string("formulas", formulas, FALSE)
       return(TableHandle$new(self$.internal_rcpp_object$select(formulas)))
     },
-    
     view = function(formulas = character()) {
       verify_string("formulas", formulas, FALSE)
       return(TableHandle$new(self$.internal_rcpp_object$view(formulas)))
     },
-
     update = function(formulas = character()) {
       verify_string("formulas", formulas, FALSE)
       return(TableHandle$new(self$.internal_rcpp_object$update(formulas)))
     },
-    
     update_view = function(formulas = character()) {
       verify_string("formulas", formulas, FALSE)
       return(TableHandle$new(self$.internal_rcpp_object$update_view(formulas)))
     },
-    
     drop_columns = function(cols = character()) {
       verify_string("cols", cols, FALSE)
       return(TableHandle$new(self$.internal_rcpp_object$drop_columns(cols)))
     },
-    
     where = function(filter) {
       verify_string("filter", filter, TRUE)
       return(TableHandle$new(self$.internal_rcpp_object$where(filter)))
     },
-    
     group_by = function(by = character()) {
       verify_string("by", by, FALSE)
       return(TableHandle$new(self$.internal_rcpp_object$group_by(by)))
     },
-    
     ungroup = function(by = character()) {
       verify_string("by", by, FALSE)
       return(TableHandle$new(self$.internal_rcpp_object$ungroup(by)))
     },
-    
     agg_by = function(aggs, by = character()) {
       verify_type("aggs", aggs, "Aggregation", "Deephaven Aggregation", FALSE)
       verify_string("by", by, FALSE)
@@ -152,87 +110,71 @@ TableHandle <- R6Class("TableHandle",
       unwrapped_aggs <- lapply(aggs, strip_r6_wrapping)
       return(TableHandle$new(self$.internal_rcpp_object$agg_by(unwrapped_aggs, by)))
     },
-    
     first_by = function(by = character()) {
       verify_string("by", by, FALSE)
       return(TableHandle$new(self$.internal_rcpp_object$first_by(by)))
     },
-  
     last_by = function(by = character()) {
       verify_string("by", by, FALSE)
       return(TableHandle$new(self$.internal_rcpp_object$last_by(by)))
     },
-  
     head_by = function(num_rows, by = character()) {
       verify_positive_int("num_rows", num_rows, TRUE)
       verify_string("by", by, FALSE)
       return(TableHandle$new(self$.internal_rcpp_object$head_by(num_rows, by)))
     },
-    
     tail_by = function(num_rows, by = character()) {
       verify_positive_int("num_rows", num_rows, TRUE)
       verify_string("by", by, FALSE)
       return(TableHandle$new(self$.internal_rcpp_object$tail_by(num_rows, by)))
     },
-    
     min_by = function(by = character()) {
       verify_string("by", by, FALSE)
       return(TableHandle$new(self$.internal_rcpp_object$min_by(by)))
     },
-    
     max_by = function(by = character()) {
       verify_string("by", by, FALSE)
       return(TableHandle$new(self$.internal_rcpp_object$max_by(by)))
     },
-    
     sum_by = function(by = character()) {
       verify_string("by", by, FALSE)
       return(TableHandle$new(self$.internal_rcpp_object$sum_by(by)))
     },
-    
     abs_sum_by = function(by = character()) {
       verify_string("by", by, FALSE)
       return(TableHandle$new(self$.internal_rcpp_object$abs_sum_by(by)))
     },
-    
     avg_by = function(by = character()) {
       verify_string("by", by, FALSE)
       return(TableHandle$new(self$.internal_rcpp_object$avg_by(by)))
     },
-    
     w_avg_by = function(wcol, by = character()) {
       verify_string("wcol", wcol, TRUE)
       verify_string("by", by, FALSE)
       return(TableHandle$new(self$.internal_rcpp_object$w_avg_by(wcol, by)))
     },
-    
     median_by = function(by = character()) {
       verify_string("by", by, FALSE)
       return(TableHandle$new(self$.internal_rcpp_object$median_by(by)))
     },
-    
     var_by = function(by = character()) {
       verify_string("by", by, FALSE)
       return(TableHandle$new(self$.internal_rcpp_object$var_by(by)))
     },
-    
     std_by = function(by = character()) {
       verify_string("by", by, FALSE)
       return(TableHandle$new(self$.internal_rcpp_object$std_by(by)))
     },
-    
     percentile_by = function(percentile, by = character()) {
       verify_in_unit_interval("percentile", percentile, TRUE)
       verify_string("by", by, FALSE)
       return(TableHandle$new(self$.internal_rcpp_object$percentile_by(percentile, by)))
     },
-    
     count_by = function(col = "n", by = character()) {
       verify_string("col", col, TRUE)
       verify_string("by", by, FALSE)
       return(TableHandle$new(self$.internal_rcpp_object$count_by(col, by)))
     },
-    
     cross_join = function(table, on = character(), joins = character()) {
       verify_string("on", on, FALSE)
       verify_string("joins", joins, FALSE)
@@ -241,7 +183,6 @@ TableHandle <- R6Class("TableHandle",
         on, joins
       )))
     },
-    
     natural_join = function(table, on = character(), joins = character()) {
       verify_string("on", on, FALSE)
       verify_string("joins", joins, FALSE)
@@ -250,7 +191,6 @@ TableHandle <- R6Class("TableHandle",
         on, joins
       )))
     },
-    
     exact_join = function(table, on = character(), joins = character()) {
       verify_string("on", on, FALSE)
       verify_string("joins", joins, FALSE)
@@ -259,7 +199,6 @@ TableHandle <- R6Class("TableHandle",
         on, joins
       )))
     },
-    
     sort = function(order_by, descending = FALSE, abs_sort = FALSE) {
       verify_string("order_by", order_by, FALSE)
       verify_bool("descending", descending, FALSE)
@@ -332,4 +271,3 @@ as_tibble.TableHandle <- function(x, ...) {
 as.data.frame.TableHandle <- function(x, row.names = NULL, optional = FALSE, ...) {
   return(x$as_data_frame())
 }
-

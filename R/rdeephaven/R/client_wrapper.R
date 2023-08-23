@@ -2,9 +2,7 @@
 Client <- R6Class("Client",
   cloneable = FALSE,
   public = list(
-    
     .internal_rcpp_object = NULL,
-
     initialize = function(target,
                           auth_type = "anonymous",
                           username = "",
@@ -112,18 +110,15 @@ Client <- R6Class("Client",
         client_options = options
       )
     },
-
     empty_table = function(size) {
       verify_nonnegative_int("size", size, TRUE)
       return(TableHandle$new(self$.internal_rcpp_object$empty_table(size)))
     },
-
     time_table = function(period, start_time = "now") {
       verify_string("period", period, TRUE)
       verify_string("start_time", start_time, TRUE)
       return(TableHandle$new(self$.internal_rcpp_object$time_table(period, start_time)))
     },
-
     open_table = function(name) {
       verify_string("name", name, TRUE)
       if (!private$check_for_table(name)) {
@@ -131,7 +126,6 @@ Client <- R6Class("Client",
       }
       return(TableHandle$new(self$.internal_rcpp_object$open_table(name)))
     },
-
     import_table = function(table_object) {
       table_object_class <- class(table_object)
       if (table_object_class[[1]] == "data.frame") {
@@ -148,39 +142,31 @@ Client <- R6Class("Client",
         stop(paste0("'table_object' must be a single data frame, tibble, arrow table, or record batch reader. Got an object of class ", table_object_class[[1]], "."))
       }
     },
-
     run_script = function(script) {
       verify_string("script", script, TRUE)
       self$.internal_rcpp_object$run_script(script)
     },
-    
     close = function() {
       self$.internal_rcpp_object$close()
     }
   ),
-  
   private = list(
-    
     check_for_table = function(name) {
       return(self$.internal_rcpp_object$check_for_table(name))
     },
-    
     rbr_to_dh_table = function(rbr) {
       ptr <- self$.internal_rcpp_object$new_arrow_array_stream_ptr()
       rbr$export_to_c(ptr)
       return(self$.internal_rcpp_object$new_table_from_arrow_array_stream_ptr(ptr))
     },
-    
     arrow_to_dh_table = function(arrow_tbl) {
       rbr <- as_record_batch_reader(arrow_tbl)
       return(private$rbr_to_dh_table(rbr))
     },
-    
     tibble_to_dh_table = function(tibbl) {
       arrow_tbl <- arrow_table(tibbl)
       return(private$arrow_to_dh_table(arrow_tbl))
     },
-    
     df_to_dh_table = function(data_frame) {
       arrow_tbl <- arrow_table(data_frame)
       return(private$arrow_to_dh_table(arrow_tbl))
