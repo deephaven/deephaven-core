@@ -158,15 +158,15 @@ def time_zone_alias_rm(alias: str) -> bool:
 # TODO: Document
 # TODO: numpy `astype(type)` syntax?
 # TODO: TZ input?
-# TODO: rename as_j_time or asjtype
+# TODO: rename as_j_time or asjtype or to_db_<xyz>?
 # TODO: rename everything
 # TODO: consistently name functions
 # TODO: have these methods parse strings?
-# TODO: convert python time zones?
 
-# region Conversions: To Java
+# region Conversions: Python To Java
 
 #TODO: Keep?
+#TODO: convert python time zones?
 def to_j_time_zone(tz: Union[None, str]) -> Optional[TimeZone]:
     try:
         if not tz:
@@ -177,10 +177,12 @@ def to_j_time_zone(tz: Union[None, str]) -> Optional[TimeZone]:
         raise DHError(e) from e
 
 
-def to_j_date(dt: Union[None, datetime.date, datetime.time, datetime.datetime, np.datetime64]) -> Optional[LocalDate]:
+def to_j_date(dt: Union[None, str, datetime.date, datetime.time, datetime.datetime, np.datetime64]) -> Optional[LocalDate]:
     try:
         if not dt:
             return None
+        elif isinstance(dt, str):
+            return _JDateTimeUtils.parseLocalDate(dt)
         elif isinstance(dt, datetime.date) or isinstance(dt, datetime.datetime):
             return _JLocalDate.of(dt.year, dt.month, dt.day)
         elif isinstance(dt, np.datetime64):
@@ -191,10 +193,12 @@ def to_j_date(dt: Union[None, datetime.date, datetime.time, datetime.datetime, n
         raise DHError(e) from e
 
 
-def to_j_time(dt: Union[None, datetime.time, datetime.datetime, np.datetime64]) -> Optional[LocalTime]:
+def to_j_time(dt: Union[None, str, datetime.time, datetime.datetime, np.datetime64]) -> Optional[LocalTime]:
     try:
         if not dt:
             return None
+        elif isinstance(dt, str):
+            return _JDateTimeUtils.parseLocalTime(dt)
         elif isinstance(dt, datetime.time) or isinstance(dt, datetime.datetime):
             return _JLocalTime.of(dt.hour, dt.minute, dt.second, dt.microsecond * 1000)
         elif isinstance(dt, np.datetime64):
@@ -206,10 +210,12 @@ def to_j_time(dt: Union[None, datetime.time, datetime.datetime, np.datetime64]) 
         raise DHError(e) from e
 
 
-def to_j_instant(dt: Union[None, datetime.datetime, np.datetime64]) -> Optional[Instant]:
+def to_j_instant(dt: Union[None, str, datetime.datetime, np.datetime64]) -> Optional[Instant]:
     try:
         if not dt:
             return None
+        elif isinstance(dt, str):
+            return _JDateTimeUtils.parseInstant(dt)
         elif isinstance(dt, datetime.datetime):
             epoch_time = dt.timestamp()
             epoch_sec = int(epoch_time)
@@ -226,12 +232,14 @@ def to_j_instant(dt: Union[None, datetime.datetime, np.datetime64]) -> Optional[
         raise DHError(e) from e
 
 
-# TODO: ZDT?
+# TODO: ZDT? (at least str)
 
-def to_j_duration(dt: Union[None, datetime.timedelta, np.timedelta64]) -> Optional[Duration]:
+def to_j_duration(dt: Union[None, str, datetime.timedelta, np.timedelta64]) -> Optional[Duration]:
     try:
         if not dt:
             return None
+        elif isinstance(dt, str):
+            return _JDateTimeUtils.parseDuration(dt)
         elif isinstance(dt, datetime.timedelta):
             nanos = (dt / datetime.timedelta(microseconds=1)) * 1000
             return _JDuration.ofNanos(nanos)
@@ -244,10 +252,12 @@ def to_j_duration(dt: Union[None, datetime.timedelta, np.timedelta64]) -> Option
         raise DHError(e) from e
 
 
-def to_j_period(dt: Union[None, datetime.timedelta, np.timedelta64]) -> Optional[Period]:
+def to_j_period(dt: Union[None, str, datetime.timedelta, np.timedelta64]) -> Optional[Period]:
     try:
         if not dt:
             return None
+        elif isinstance(dt, str):
+            return _JDateTimeUtils.parsePeriod(dt)
         elif isinstance(dt, datetime.timedelta):
             if dt.seconds or dt.microseconds:
                 raise DHError(
@@ -279,7 +289,7 @@ def to_j_period(dt: Union[None, datetime.timedelta, np.timedelta64]) -> Optional
 # endregion
 
 
-# region Conversions: From Java
+# region Conversions: Java To Python
 
 #TODO: add py to these names?
 
@@ -379,8 +389,7 @@ def to_timedelta64(dt: Union[None, Duration, Period]) -> Optional[np.timedelta64
             if count == 0:
                 return np.timedelta64(0, 'D')
             elif count > 1:
-                raise Exception("Unsupported conversion: " +
-                    str(type(dt)) + " -> datetime.timedelta64: Periods must be days, months, or years")
+                raise Exception("Unsupported conversion: " + str(type(dt)) + " -> datetime.timedelta64: Periods must be days, months, or years")
             elif y:
                 return np.timedelta64(y, 'Y')
             elif m:
@@ -402,36 +411,38 @@ def to_timedelta64(dt: Union[None, Duration, Period]) -> Optional[np.timedelta64
 
 # region XXXX
 
-def to_time_zone(tz: Optional[str] **) -> TimeZone:
-    """ Gets the time zone for a time zone name.
+#TODO: Do we care about exposing the default TZ?
 
-    Args:
-        tz (Optional[str]): Time zone name.  If None is provided, the system default time zone is returned.
+# def to_time_zone(tz: Optional[str] **) -> TimeZone:
+#     """ Gets the time zone for a time zone name.
+#
+#     Args:
+#         tz (Optional[str]): Time zone name.  If None is provided, the system default time zone is returned.
+#
+#     Returns:
+#         TimeZone
+#
+#     Raises:
+#         DHError
+#     """
+#     ** *
+#     try:
+#         if tz is None:
+#             return _JDateTimeUtils.timeZone()
+#         else:
+#             return _JDateTimeUtils.timeZone(tz)
+#     except Exception as e:
+#         raise DHError(e) from e
 
-    Returns:
-        TimeZone
 
-    Raises:
-        DHError
-    """
-    ** *
-    try:
-        if tz is None:
-            return _JDateTimeUtils.timeZone()
-        else:
-            return _JDateTimeUtils.timeZone(tz)
-    except Exception as e:
-        raise DHError(e) from e
-
-
-datetime.date
-datetime.time
-datetime.datetime
-datetime.timedelta
-datetime.tzinfo
-datetime.timezone
-np.datetime64
-np.timedelta64
+# datetime.date
+# datetime.time
+# datetime.datetime
+# datetime.timedelta
+# datetime.tzinfo
+# datetime.timezone
+# np.datetime64
+# np.timedelta64
 
 
 # endregion
@@ -440,254 +451,254 @@ np.timedelta64
 # #TODO: Keep?
 # region Parse
 
-def parse_time_zone(s: str, quiet: bool = False) -> Optional[TimeZone]:
-    """ Parses the string argument as a time zone.
-
-    Args:
-        s (str): String to be converted.
-        quiet (bool): False will cause exceptions when strings can not be parsed.  False will cause None to be returned.
-
-    Returns:
-        Time Zone
-
-    Raises:
-        DHError
-    """
-    try:
-        if quiet:
-            return _JDateTimeUtils.parseTimeZoneQuiet(s)
-        else:
-            return _JDateTimeUtils.parseTimeZone(s)
-    except Exception as e:
-        raise DHError(e) from e
-
-
-# TODO: remove?
-def parse_duration_nanos(s: str, quiet: bool = False) -> int:
-    """ Parses the string argument as a time duration in nanoseconds.
-
-    Time duration strings can be formatted as '[-]PT[-]hh:mm:[ss.nnnnnnnnn]' or as a duration string
-    formatted as '[-]PnDTnHnMn.nS}'.
-
-    Args:
-        s (str): String to be converted.
-        quiet (bool): False will cause exceptions when strings can not be parsed.
-            False will cause NULL_LONG to be returned.
-
-    Returns:
-        number of nanoseconds represented by the string.
-
-    Raises:
-        DHError
-    """
-    try:
-        if quiet:
-            return _JDateTimeUtils.parseDurationNanosQuiet(s)
-        else:
-            return _JDateTimeUtils.parseDurationNanos(s)
-    except Exception as e:
-        raise DHError(e) from e
-
-
-def parse_period(s: str, quiet: bool = False) -> Optional[Period]:
-    """ Parses the string argument as a period, which is a unit of time in terms of calendar time
-    (days, weeks, months, years, etc.).
-
-    Period strings are formatted according to the ISO-8601 duration format as 'PnYnMnD' and 'PnW', where the
-    coefficients can be positive or negative.  Zero coefficients can be omitted.  Optionally, the string can
-    begin with a negative sign.
-
-    Examples:
-      "P2Y"             -- 2 Years
-      "P3M"             -- 3 Months
-      "P4W"             -- 4 Weeks
-      "P5D"             -- 5 Days
-      "P1Y2M3D"         -- 1 Year, 2 Months, 3 Days
-      "P-1Y2M"          -- -1 Year, 2 Months
-      "-P1Y2M"          -- -1 Year, -2 Months
-
-    Args:
-        s (str): String to be converted.
-        quiet (bool): False will cause exceptions when strings can not be parsed.  False will cause None to be returned.
-
-    Returns:
-        Period represented by the string.
-
-    Raises:
-        DHError
-    """
-    try:
-        if quiet:
-            return _JDateTimeUtils.parsePeriodQuiet(s)
-        else:
-            return _JDateTimeUtils.parsePeriod(s)
-    except Exception as e:
-        raise DHError(e) from e
-
-
-def parse_duration(s: str, quiet: bool = False) -> Optional[Duration]:
-    """ Parses the string argument as a duration, which is a unit of time in terms of clock time
-    (24-hour days, hours, minutes, seconds, and nanoseconds).
-
-    Duration strings are formatted according to the ISO-8601 duration format as '[-]PnDTnHnMn.nS', where the
-    coefficients can be positive or negative.  Zero coefficients can be omitted.  Optionally, the string can
-    begin with a negative sign.
-
-    Examples:
-       "PT20.345S" -- parses as "20.345 seconds"
-       "PT15M"     -- parses as "15 minutes" (where a minute is 60 seconds)
-       "PT10H"     -- parses as "10 hours" (where an hour is 3600 seconds)
-       "P2D"       -- parses as "2 days" (where a day is 24 hours or 86400 seconds)
-       "P2DT3H4M"  -- parses as "2 days, 3 hours and 4 minutes"
-       "PT-6H3M"    -- parses as "-6 hours and +3 minutes"
-       "-PT6H3M"    -- parses as "-6 hours and -3 minutes"
-       "-PT-6H+3M"  -- parses as "+6 hours and -3 minutes"
-
-    Args:
-        s (str): String to be converted.
-        quiet (bool): False will cause exceptions when strings can not be parsed.  False will cause None to be returned.
-
-    Returns:
-        Period represented by the string.
-
-    Raises:
-        DHError
-    """
-    try:
-        if quiet:
-            return _JDateTimeUtils.parseDurationQuiet(s)
-        else:
-            return _JDateTimeUtils.parseDuration(s)
-    except Exception as e:
-        raise DHError(e) from e
-
-
-# TODO: remove?
-def parse_epoch_nanos(s: str, quiet: bool = False) -> int:
-    """ Parses the string argument as nanoseconds since the Epoch.
-
-    Date time strings are formatted according to the ISO 8601 date time format
-    'yyyy-MM-ddThh:mm:ss[.SSSSSSSSS] TZ' and others.
-    Additionally, date time strings can be integer values that are nanoseconds, milliseconds, or seconds
-    from the Epoch.  Expected date ranges are used to infer the units.
-
-    Args:
-        s (str): String to be converted.
-        quiet (bool): False will cause exceptions when strings can not be parsed.  False will cause NULL_LONG to be returned.
-
-    Returns:
-        Instant represented by the string.
-
-    Raises:
-        DHError
-    """
-    try:
-        if quiet:
-            return _JDateTimeUtils.parseEpochNanosQuiet(s)
-        else:
-            return _JDateTimeUtils.parseEpochNanos(s)
-    except Exception as e:
-        raise DHError(e) from e
-
-
-def parse_instant(s: str, quiet: bool = False) -> Optional[Instant]:
-    """ Parses the string argument as an Instant.
-
-    Date time strings are formatted according to the ISO 8601 date time format
-    'yyyy-MM-ddThh:mm:ss[.SSSSSSSSS] TZ' and others.
-    Additionally, date time strings can be integer values that are nanoseconds, milliseconds, or seconds
-    from the Epoch.  Expected date ranges are used to infer the units.
-
-    Args:
-        s (str): String to be converted.
-        quiet (bool): False will cause exceptions when strings can not be parsed.  False will cause None to be returned.
-
-    Returns:
-        Instant represented by the string.
-
-    Raises:
-        DHError
-    """
-    try:
-        if quiet:
-            return _JDateTimeUtils.parseInstantQuiet(s)
-        else:
-            return _JDateTimeUtils.parseInstant(s)
-    except Exception as e:
-        raise DHError(e) from e
-
-
-def parse_zdt(s: str, quiet: bool = False) -> Optional[ZonedDateTime]:
-    """ Parses the string argument as a ZonedDateTime.
-
-    Date time strings are formatted according to the ISO 8601 date time format
-    '{@code 'yyyy-MM-ddThh:mm:ss[.SSSSSSSSS] TZ' and others.
-
-    Args:
-        s (str): String to be converted.
-        quiet (bool): False will cause exceptions when strings can not be parsed.  False will cause None to be returned.
-
-    Returns:
-        Instant represented by the string.
-
-    Raises:
-        DHError
-    """
-    try:
-        if quiet:
-            return _JDateTimeUtils.parseZonedDateTimeQuiet(s)
-        else:
-            return _JDateTimeUtils.parseZonedDateTime(s)
-    except Exception as e:
-        raise DHError(e) from e
-
-
-def parse_local_date(s: str, quiet: bool = False) -> Optional[LocalTime]:
-    """ Parses the string argument as a local date, which is a date without a time or time zone.
-
-    Date strings are formatted according to the ISO 8601 date time format as 'YYYY-MM-DD}'.
-
-    Args:
-        s (str): String to be converted.
-        quiet (bool): False will cause exceptions when strings can not be parsed.  True will cause None to be returned.
-
-    Returns:
-        LocalDate represented by the string.
-
-    Raises:
-        DHError
-    """
-    try:
-        if quiet:
-            return _JDateTimeUtils.parseLocalDateQuiet(s)
-        else:
-            return _JDateTimeUtils.parseLocalDate(s)
-    except Exception as e:
-        raise DHError(e) from e
-
-
-def parse_local_time(s: str, quiet: bool = False) -> Optional[LocalTime]:
-    """ Parses the string argument as a local time, which is the time that would be read from a clock and
-    does not have a date or timezone.
-
-    Local time strings can be formatted as 'hh:mm:ss[.nnnnnnnnn]'.
-
-    Args:
-        s (str): String to be converted.
-        quiet (bool): False will cause exceptions when strings can not be parsed.  True will cause None to be returned.
-
-    Returns:
-        LocalTime represented by the string.
-
-    Raises:
-        DHError
-    """
-    try:
-        if quiet:
-            return _JDateTimeUtils.parseLocalTimeQuiet(s)
-        else:
-            return _JDateTimeUtils.parseLocalTime(s)
-    except Exception as e:
-        raise DHError(e) from e
+# def parse_time_zone(s: str, quiet: bool = False) -> Optional[TimeZone]:
+#     """ Parses the string argument as a time zone.
+#
+#     Args:
+#         s (str): String to be converted.
+#         quiet (bool): False will cause exceptions when strings can not be parsed.  False will cause None to be returned.
+#
+#     Returns:
+#         Time Zone
+#
+#     Raises:
+#         DHError
+#     """
+#     try:
+#         if quiet:
+#             return _JDateTimeUtils.parseTimeZoneQuiet(s)
+#         else:
+#             return _JDateTimeUtils.parseTimeZone(s)
+#     except Exception as e:
+#         raise DHError(e) from e
+#
+#
+# # TODO: remove?
+# def parse_duration_nanos(s: str, quiet: bool = False) -> int:
+#     """ Parses the string argument as a time duration in nanoseconds.
+#
+#     Time duration strings can be formatted as '[-]PT[-]hh:mm:[ss.nnnnnnnnn]' or as a duration string
+#     formatted as '[-]PnDTnHnMn.nS}'.
+#
+#     Args:
+#         s (str): String to be converted.
+#         quiet (bool): False will cause exceptions when strings can not be parsed.
+#             False will cause NULL_LONG to be returned.
+#
+#     Returns:
+#         number of nanoseconds represented by the string.
+#
+#     Raises:
+#         DHError
+#     """
+#     try:
+#         if quiet:
+#             return _JDateTimeUtils.parseDurationNanosQuiet(s)
+#         else:
+#             return _JDateTimeUtils.parseDurationNanos(s)
+#     except Exception as e:
+#         raise DHError(e) from e
+#
+#
+# def parse_period(s: str, quiet: bool = False) -> Optional[Period]:
+#     """ Parses the string argument as a period, which is a unit of time in terms of calendar time
+#     (days, weeks, months, years, etc.).
+#
+#     Period strings are formatted according to the ISO-8601 duration format as 'PnYnMnD' and 'PnW', where the
+#     coefficients can be positive or negative.  Zero coefficients can be omitted.  Optionally, the string can
+#     begin with a negative sign.
+#
+#     Examples:
+#       "P2Y"             -- 2 Years
+#       "P3M"             -- 3 Months
+#       "P4W"             -- 4 Weeks
+#       "P5D"             -- 5 Days
+#       "P1Y2M3D"         -- 1 Year, 2 Months, 3 Days
+#       "P-1Y2M"          -- -1 Year, 2 Months
+#       "-P1Y2M"          -- -1 Year, -2 Months
+#
+#     Args:
+#         s (str): String to be converted.
+#         quiet (bool): False will cause exceptions when strings can not be parsed.  False will cause None to be returned.
+#
+#     Returns:
+#         Period represented by the string.
+#
+#     Raises:
+#         DHError
+#     """
+#     try:
+#         if quiet:
+#             return _JDateTimeUtils.parsePeriodQuiet(s)
+#         else:
+#             return _JDateTimeUtils.parsePeriod(s)
+#     except Exception as e:
+#         raise DHError(e) from e
+#
+#
+# def parse_duration(s: str, quiet: bool = False) -> Optional[Duration]:
+#     """ Parses the string argument as a duration, which is a unit of time in terms of clock time
+#     (24-hour days, hours, minutes, seconds, and nanoseconds).
+#
+#     Duration strings are formatted according to the ISO-8601 duration format as '[-]PnDTnHnMn.nS', where the
+#     coefficients can be positive or negative.  Zero coefficients can be omitted.  Optionally, the string can
+#     begin with a negative sign.
+#
+#     Examples:
+#        "PT20.345S" -- parses as "20.345 seconds"
+#        "PT15M"     -- parses as "15 minutes" (where a minute is 60 seconds)
+#        "PT10H"     -- parses as "10 hours" (where an hour is 3600 seconds)
+#        "P2D"       -- parses as "2 days" (where a day is 24 hours or 86400 seconds)
+#        "P2DT3H4M"  -- parses as "2 days, 3 hours and 4 minutes"
+#        "PT-6H3M"    -- parses as "-6 hours and +3 minutes"
+#        "-PT6H3M"    -- parses as "-6 hours and -3 minutes"
+#        "-PT-6H+3M"  -- parses as "+6 hours and -3 minutes"
+#
+#     Args:
+#         s (str): String to be converted.
+#         quiet (bool): False will cause exceptions when strings can not be parsed.  False will cause None to be returned.
+#
+#     Returns:
+#         Period represented by the string.
+#
+#     Raises:
+#         DHError
+#     """
+#     try:
+#         if quiet:
+#             return _JDateTimeUtils.parseDurationQuiet(s)
+#         else:
+#             return _JDateTimeUtils.parseDuration(s)
+#     except Exception as e:
+#         raise DHError(e) from e
+#
+#
+# # TODO: remove?
+# def parse_epoch_nanos(s: str, quiet: bool = False) -> int:
+#     """ Parses the string argument as nanoseconds since the Epoch.
+#
+#     Date time strings are formatted according to the ISO 8601 date time format
+#     'yyyy-MM-ddThh:mm:ss[.SSSSSSSSS] TZ' and others.
+#     Additionally, date time strings can be integer values that are nanoseconds, milliseconds, or seconds
+#     from the Epoch.  Expected date ranges are used to infer the units.
+#
+#     Args:
+#         s (str): String to be converted.
+#         quiet (bool): False will cause exceptions when strings can not be parsed.  False will cause NULL_LONG to be returned.
+#
+#     Returns:
+#         Instant represented by the string.
+#
+#     Raises:
+#         DHError
+#     """
+#     try:
+#         if quiet:
+#             return _JDateTimeUtils.parseEpochNanosQuiet(s)
+#         else:
+#             return _JDateTimeUtils.parseEpochNanos(s)
+#     except Exception as e:
+#         raise DHError(e) from e
+#
+#
+# def parse_instant(s: str, quiet: bool = False) -> Optional[Instant]:
+#     """ Parses the string argument as an Instant.
+#
+#     Date time strings are formatted according to the ISO 8601 date time format
+#     'yyyy-MM-ddThh:mm:ss[.SSSSSSSSS] TZ' and others.
+#     Additionally, date time strings can be integer values that are nanoseconds, milliseconds, or seconds
+#     from the Epoch.  Expected date ranges are used to infer the units.
+#
+#     Args:
+#         s (str): String to be converted.
+#         quiet (bool): False will cause exceptions when strings can not be parsed.  False will cause None to be returned.
+#
+#     Returns:
+#         Instant represented by the string.
+#
+#     Raises:
+#         DHError
+#     """
+#     try:
+#         if quiet:
+#             return _JDateTimeUtils.parseInstantQuiet(s)
+#         else:
+#             return _JDateTimeUtils.parseInstant(s)
+#     except Exception as e:
+#         raise DHError(e) from e
+#
+#
+# def parse_zdt(s: str, quiet: bool = False) -> Optional[ZonedDateTime]:
+#     """ Parses the string argument as a ZonedDateTime.
+#
+#     Date time strings are formatted according to the ISO 8601 date time format
+#     '{@code 'yyyy-MM-ddThh:mm:ss[.SSSSSSSSS] TZ' and others.
+#
+#     Args:
+#         s (str): String to be converted.
+#         quiet (bool): False will cause exceptions when strings can not be parsed.  False will cause None to be returned.
+#
+#     Returns:
+#         Instant represented by the string.
+#
+#     Raises:
+#         DHError
+#     """
+#     try:
+#         if quiet:
+#             return _JDateTimeUtils.parseZonedDateTimeQuiet(s)
+#         else:
+#             return _JDateTimeUtils.parseZonedDateTime(s)
+#     except Exception as e:
+#         raise DHError(e) from e
+#
+#
+# def parse_local_date(s: str, quiet: bool = False) -> Optional[LocalTime]:
+#     """ Parses the string argument as a local date, which is a date without a time or time zone.
+#
+#     Date strings are formatted according to the ISO 8601 date time format as 'YYYY-MM-DD}'.
+#
+#     Args:
+#         s (str): String to be converted.
+#         quiet (bool): False will cause exceptions when strings can not be parsed.  True will cause None to be returned.
+#
+#     Returns:
+#         LocalDate represented by the string.
+#
+#     Raises:
+#         DHError
+#     """
+#     try:
+#         if quiet:
+#             return _JDateTimeUtils.parseLocalDateQuiet(s)
+#         else:
+#             return _JDateTimeUtils.parseLocalDate(s)
+#     except Exception as e:
+#         raise DHError(e) from e
+#
+#
+# def parse_local_time(s: str, quiet: bool = False) -> Optional[LocalTime]:
+#     """ Parses the string argument as a local time, which is the time that would be read from a clock and
+#     does not have a date or timezone.
+#
+#     Local time strings can be formatted as 'hh:mm:ss[.nnnnnnnnn]'.
+#
+#     Args:
+#         s (str): String to be converted.
+#         quiet (bool): False will cause exceptions when strings can not be parsed.  True will cause None to be returned.
+#
+#     Returns:
+#         LocalTime represented by the string.
+#
+#     Raises:
+#         DHError
+#     """
+#     try:
+#         if quiet:
+#             return _JDateTimeUtils.parseLocalTimeQuiet(s)
+#         else:
+#             return _JDateTimeUtils.parseLocalTime(s)
+#     except Exception as e:
+#         raise DHError(e) from e
 
 # endregion
