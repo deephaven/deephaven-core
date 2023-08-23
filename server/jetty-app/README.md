@@ -48,7 +48,7 @@ See [config-file](https://deephaven.io/core/docs/how-to-guides/configuration/con
 
 ### Shutdown
 
-There are multiple ways to shut down the Deephaven server. The easiest it to `ctrl+C` the process. If it's being run in background mode, you can kill it with a `SIGINT`.
+There are multiple ways to shut down the Deephaven server. The easiest is to `ctrl+C` the process. If it's being run in background mode, you can kill it with a `SIGINT`.
 
 ```sh
 kill -2 <pid>
