@@ -94,6 +94,7 @@ final class ObjectTypeAdapter extends ObjectTypeBase implements AutoCloseable {
         @Override
         public void onClose() {
             instance.call("on_close");
+            instance.close();
         }
     }
 
