@@ -3,6 +3,32 @@ Client <- R6Class("Client",
   cloneable = FALSE,
   public = list(
     .internal_rcpp_object = NULL,
+    #' @description
+    #' Connect to a running Deephaven server.
+    #' @param target String denoting the address of the Deephaven server, formatted as `"ip:port"`.
+    #' @param auth_type String denoting the authentication type. Can be `"anonymous"`, `"basic"`,
+    #' or any custom-built authenticator supported by the server, such as `"io.deephaven.authentication.psk.PskAuthenticationHandler"`.
+    #' Default is `anonymous`.
+    #' @param username String denoting the username, which only applies if `auth_type` is `basic`.
+    #' Username and password should not be used in conjunction with `auth_token`. Defaults to an empty string.
+    #' @param password String denoting the password, which only applies if `auth_type` is `basic`.
+    #' Username and password should not be used in conjunction with `auth_token`. Defaults to an empty string.
+    #' @param auth_token String denoting the authentication token. When `auth_type`
+    #' is `anonymous`, it will be ignored; when `auth_type` is `basic`, it must be
+    #' `"user:password"` or left blank; when `auth_type` is a custom-built authenticator, it must
+    #' conform to the specific requirement of that authenticator. This should not be used
+    #' in conjunction with `username` and `password`. Defaults to an empty string.
+    #' @param session_type String denoting the session type supported on the server.
+    #' Currently, `python` and `groovy` are supported. Defaults to `python`.
+    #' @param use_tls Whether or not to use a TLS connection. Defaults to `FALSE`.
+    #' @param tls_root_certs String denoting PEM encoded root certificates to use for TLS connection,
+    #' or `""` to use system defaults. Only used if `use_tls == TRUE`. Defaults to system defaults.
+    #' @param int_options List of name-value pairs for int-valued options to the underlying
+    #' grpc channel creation. Defaults to an empty list, which implies not using any channel options.
+    #' @param string_options List of name-value pairs for string-valued options to the underlying
+    #' grpc channel creation. Defaults to an empty list, which implies not using any channel options.
+    #' @param extra_headers List of name-value pairs for additional headers and values
+    #' to add to server requests. Defaults to an empty list, which implies not using any extra headers.
     initialize = function(target,
                           auth_type = "anonymous",
                           username = "",
@@ -110,15 +136,32 @@ Client <- R6Class("Client",
         client_options = options
       )
     },
+    
+    #' @description
+    #' Create an empty table on the server with 'size' rows and no columns.
+    #' @param size Non-negative integer specifying the number of rows for the new table.
+    #' @return TableHandle reference to the new table.
     empty_table = function(size) {
       verify_nonnegative_int("size", size, TRUE)
       return(TableHandle$new(self$.internal_rcpp_object$empty_table(size)))
     },
+    
+    #' @description
+    #' Create a ticking table on the server.
+    #' @param period ISO-8601-formatted string specifying the update frequency of the new table.
+    #' @param start_time Optional ISO-8601-formatted string specifying the start time of the table.
+    #' Defaults to now.
+    #' @return TableHandle reference to the new table.
     time_table = function(period, start_time = "now") {
       verify_string("period", period, TRUE)
       verify_string("start_time", start_time, TRUE)
       return(TableHandle$new(self$.internal_rcpp_object$time_table(period, start_time)))
     },
+    
+    #' @description
+    #' Open a table named 'name' from the server if it exists.
+    #' @param name String denoting the name of the table to open from the server.
+    #' @return TableHandle reference to the requested table.
     open_table = function(name) {
       verify_string("name", name, TRUE)
       if (!private$check_for_table(name)) {
@@ -126,6 +169,13 @@ Client <- R6Class("Client",
       }
       return(TableHandle$new(self$.internal_rcpp_object$open_table(name)))
     },
+    
+    #' @description
+    #' Import a new table to the Deephaven server. Note that this new table is not automatically bound to
+    #' a variable name on the server. See `?TableHandle` for more information.
+    #' @param table_object R Data Frame, a dplyr Tibble, an Arrow Table, or an Arrow RecordBatchReader
+    #' containing the data to import to the server.
+    #' @return TableHandle reference to the new table.
     import_table = function(table_object) {
       table_object_class <- class(table_object)
       if (table_object_class[[1]] == "data.frame") {
@@ -142,10 +192,18 @@ Client <- R6Class("Client",
         stop(paste0("'table_object' must be a single data frame, tibble, arrow table, or record batch reader. Got an object of class ", table_object_class[[1]], "."))
       }
     },
+    
+    #' @description
+    #' Run a script on the server. The script must be in the language that the server console was started with.
+    #' @param script String containing the code to be executed on the server.
     run_script = function(script) {
       verify_string("script", script, TRUE)
       self$.internal_rcpp_object$run_script(script)
     },
+    
+    #' @description
+    #' Close the client connection. After this method is called, any further server calls will
+    #' be undefined and will likely result in an error.
     close = function() {
       self$.internal_rcpp_object$close()
     }

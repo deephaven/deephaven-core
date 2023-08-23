@@ -10,9 +10,18 @@ TableHandle <- R6Class("TableHandle",
       }
       self$.internal_rcpp_object <- table_handle
     },
+    
+    #' @description
+    #' Determine whether the table referenced by this TableHandle is static or not.
+    #' @return TRUE if the table is static, or FALSE if the table is ticking.
     is_static = function() {
       return(self$.internal_rcpp_object$is_static())
     },
+    
+    #' @description
+    #' Bind the table referenced by this TableHandle to a variable on the server,
+    #' enabling it to be accessed by that name from any Deephaven API.
+    #' @param name Name for this table on the server.
     bind_to_variable = function(name) {
       verify_string("name", name, TRUE)
       self$.internal_rcpp_object$bind_to_variable(name)
@@ -20,23 +29,50 @@ TableHandle <- R6Class("TableHandle",
 
     ### BASE R METHODS, ALSO IMPLEMENTED FUNCTIONALLY
 
+    #' @description
+    #' Get the first n rows of the table referenced by this TableHandle.
+    #' @param n Positive integer specifying the number of rows to return.
+    #' @return A TableHandle referencing the new table consisting of the first n rows of the parent table.
     head = function(n) {
       verify_positive_int("n", n, TRUE)
       return(TableHandle$new(self$.internal_rcpp_object$head(n)))
     },
+
+    #' @description
+    #' Get the last n rows of the table referenced by this TableHandle.
+    #' @param n Positive integer specifying the number of rows to return.
+    #' @return A TableHandle referencing the new table consisting of the last n rows of the parent table.
     tail = function(n) {
       verify_positive_int("n", n, TRUE)
       return(TableHandle$new(self$.internal_rcpp_object$tail(n)))
     },
+    
+    #' @description
+    #' Get the number of rows in the table referenced by this TableHandle.
+    #' @return The number of rows in the table.
     nrow = function() {
       return(self$.internal_rcpp_object$num_rows())
     },
+
+    #' @description
+    #' Get the number of columns in the table referenced by this TableHandle.
+    #' @return The number of columns in the table.
     ncol = function() {
       return(self$.internal_rcpp_object$num_cols())
     },
+
+    #' @description
+    #' Get the dimensions of the table referenced by this TableHandle. Equivalent to c(nrow, ncol).
+    #' @return A vector of length 2, where the first element is the number of rows in the table and the second
+    #' element is the number of columns in the table.
     dim = function() {
       return(c(self$nrow(), self$ncol()))
     },
+
+    #' @description
+    #' Merge one or more TableHandles with this TableHandle. The tables must have the same schema, and can
+    #' be supplied as a list of TableHandles, any number of TableHandles, or a mix of both.
+    #' @return A TableHandle referencing the new table consisting of the rows of all the tables merged together.
     merge = function(...) {
       table_list <- unlist(c(...))
       if (length(table_list) == 0) {
@@ -49,21 +85,36 @@ TableHandle <- R6Class("TableHandle",
 
     ### CONVERSION METHODS, ALSO IMPLEMENTED FUNCTIONALLY
 
+    #' @description
+    #' Convert the table referenced by this TableHandle to an Arrow RecordBatchStreamReader.
+    #' @return An Arrow RecordBatchStreamReader constructed from the data of this TableHandle.
     as_record_batch_reader = function() {
       ptr <- self$.internal_rcpp_object$get_arrow_array_stream_ptr()
       rbsr <- RecordBatchStreamReader$import_from_c(ptr)
       return(rbsr)
     },
+
+    #' @description
+    #' Convert the table referenced by this TableHandle to an Arrow Table.
+    #' @return An Arrow Table constructed from the data of this TableHandle.
     as_arrow_table = function() {
       rbsr <- self$as_record_batch_reader()
       arrow_tbl <- rbsr$read_table()
       return(arrow_tbl)
     },
+
+    #' @description
+    #' Convert the table referenced by this TableHandle to a dplyr tibble.
+    #' @return A dplyr tibble constructed from the data of this TableHandle.
     as_tibble = function() {
       rbsr <- self$as_record_batch_reader()
       arrow_tbl <- rbsr$read_table()
       return(as_tibble(arrow_tbl))
     },
+
+    #' @description
+    #' Convert the table referenced by this TableHandle to an R data frame.
+    #' @return An R data frame constructed from the data of this TableHandle.
     as_data_frame = function() {
       arrow_tbl <- self$as_arrow_table()
       return(as.data.frame(as.data.frame(arrow_tbl))) # TODO: for some reason as.data.frame on arrow table returns a tibble, not a data frame
@@ -71,38 +122,87 @@ TableHandle <- R6Class("TableHandle",
 
     ### DEEPHAVEN TABLE OPERATIONS
 
+    #' @description
+    #' Creates a new in-memory table that includes one column for each formula.
+    #' If no formula is specified, all columns will be included.
+    #' @param formulas String or list of strings denoting the column formulas.
+    #' @return A TableHandle referencing the new table.
     select = function(formulas = character()) {
       verify_string("formulas", formulas, FALSE)
       return(TableHandle$new(self$.internal_rcpp_object$select(formulas)))
     },
+
+    #' @description
+    #' Create a new formula table that includes one column for each formula.
+    #' @param formulas String or list of strings denoting the column formulas.
+    #' @return A TableHandle referencing the new table.
     view = function(formulas = character()) {
       verify_string("formulas", formulas, FALSE)
       return(TableHandle$new(self$.internal_rcpp_object$view(formulas)))
     },
+
+    #' @description
+    #' Create a new table containing a new, in-memory column for each formula.
+    #' @param formulas String or list of strings denoting the column formulas.
+    #' @return A TableHandle referencing the new table.
     update = function(formulas = character()) {
       verify_string("formulas", formulas, FALSE)
       return(TableHandle$new(self$.internal_rcpp_object$update(formulas)))
     },
+
+    #' @description
+    #' Create a new table containing a new formula column for each formula.
+    #' @param formulas String or list of strings denoting the column formulas.
+    #' @return A TableHandle referencing the new table.
     update_view = function(formulas = character()) {
       verify_string("formulas", formulas, FALSE)
       return(TableHandle$new(self$.internal_rcpp_object$update_view(formulas)))
     },
+
+    #' @description
+    #' Create a new table containing only the columns specified in `cols`.
+    #' @param cols String or list of strings denoting the names of the columns to keep.
+    #' @return A TableHandle referencing the new table.
     drop_columns = function(cols = character()) {
       verify_string("cols", cols, FALSE)
       return(TableHandle$new(self$.internal_rcpp_object$drop_columns(cols)))
     },
+
+    #' @description
+    #' Create a new table containing only the rows meeting the filter condition.
+    #' @param filter String denoting the filter condition.
+    #' @return A TableHandle referencing the new table.
     where = function(filter) {
       verify_string("filter", filter, TRUE)
       return(TableHandle$new(self$.internal_rcpp_object$where(filter)))
     },
+
+    #' @description
+    #' Create a new table containing grouping columns and grouped data, with column content is grouped into arrays.
+    #' If no group-by column is given, the content of each column is grouped into its own array.
+    #' @param by String or list of strings denoting the names of the columns to group by.
+    #' @return A TableHandle referencing the new table.
     group_by = function(by = character()) {
       verify_string("by", by, FALSE)
       return(TableHandle$new(self$.internal_rcpp_object$group_by(by)))
     },
+
+    #' @description
+    #' Create a new table in which array columns from the source table are unwrapped into separate rows.
+    #' The ungroup columns should be of array types.
+    #' @param by String or list of strings denoting the names of the columns to ungroup.
+    #' @return A TableHandle referencing the new table.
     ungroup = function(by = character()) {
       verify_string("by", by, FALSE)
       return(TableHandle$new(self$.internal_rcpp_object$ungroup(by)))
     },
+
+    #' @description
+    #' Create a new table containing grouping columns and grouped data. The resulting grouped data is defined by the
+    #' aggregation(s) specified. See `?Aggregations` for more information.
+    #' @param aggs Aggregation or list of Aggregations to perform on non-grouping columns.
+    #' @param by String or list of strings denoting the names of the columns to group by.
+    #' @return A TableHandle referencing the new table.
     agg_by = function(aggs, by = character()) {
       verify_type("aggs", aggs, "Aggregation", "Deephaven Aggregation", FALSE)
       verify_string("by", by, FALSE)
@@ -110,71 +210,152 @@ TableHandle <- R6Class("TableHandle",
       unwrapped_aggs <- lapply(aggs, strip_r6_wrapping)
       return(TableHandle$new(self$.internal_rcpp_object$agg_by(unwrapped_aggs, by)))
     },
+
+    #' @description
+    #' Create a new table containing the first row of each distinct group.
+    #' @param by String or list of strings denoting the names of the columns to group by.
+    #' @return A TableHandle referencing the new table.
     first_by = function(by = character()) {
       verify_string("by", by, FALSE)
       return(TableHandle$new(self$.internal_rcpp_object$first_by(by)))
     },
+
+    #' @description
+    #' Create a new table containing the last row of each distinct group.
+    #' @param by String or list of strings denoting the names of the columns to group by.
+    #' @return A TableHandle referencing the new table.
     last_by = function(by = character()) {
       verify_string("by", by, FALSE)
       return(TableHandle$new(self$.internal_rcpp_object$last_by(by)))
     },
+
+    #' @description
+    #' Create a new table containing the first `num_rows` rows of each distinct group.
+    #' @param num_rows Positive integer specifying the number of rows to return.
+    #' @param by String or list of strings denoting the names of the columns to group by.
+    #' @return A TableHandle referencing the new table.
     head_by = function(num_rows, by = character()) {
       verify_positive_int("num_rows", num_rows, TRUE)
       verify_string("by", by, FALSE)
       return(TableHandle$new(self$.internal_rcpp_object$head_by(num_rows, by)))
     },
+
+    #' @description
+    #' Create a new table containing the last `num_rows` rows of each distinct group.
+    #' @param num_rows Positive integer specifying the number of rows to return.
+    #' @param by String or list of strings denoting the names of the columns to group by.
+    #' @return A TableHandle referencing the new table.
     tail_by = function(num_rows, by = character()) {
       verify_positive_int("num_rows", num_rows, TRUE)
       verify_string("by", by, FALSE)
       return(TableHandle$new(self$.internal_rcpp_object$tail_by(num_rows, by)))
     },
+
+    #' @description
+    #' Create a new table containing the column-wise minimum of each distinct group.
+    #' @param by String or list of strings denoting the names of the columns to group by.
+    #' @return A TableHandle referencing the new table.
     min_by = function(by = character()) {
       verify_string("by", by, FALSE)
       return(TableHandle$new(self$.internal_rcpp_object$min_by(by)))
     },
+
+    #' @description
+    #' Create a new table containing the column-wise maximum of each distinct group.
+    #' @param by String or list of strings denoting the names of the columns to group by.
+    #' @return A TableHandle referencing the new table.
     max_by = function(by = character()) {
       verify_string("by", by, FALSE)
       return(TableHandle$new(self$.internal_rcpp_object$max_by(by)))
     },
+
+    #' @description
+    #' Create a new table containing the column-wise sum of each distinct group.
+    #' @param by String or list of strings denoting the names of the columns to group by.
+    #' @return A TableHandle referencing the new table.
     sum_by = function(by = character()) {
       verify_string("by", by, FALSE)
       return(TableHandle$new(self$.internal_rcpp_object$sum_by(by)))
     },
+
+    #' @description
+    #' Create a new table containing the column-wise absolute sum of each distinct group.
+    #' @param by String or list of strings denoting the names of the columns to group by.
+    #' @return A TableHandle referencing the new table.
     abs_sum_by = function(by = character()) {
       verify_string("by", by, FALSE)
       return(TableHandle$new(self$.internal_rcpp_object$abs_sum_by(by)))
     },
+
+    #' @description
+    #' Create a new table containing the column-wise average of each distinct group.
+    #' @param by String or list of strings denoting the names of the columns to group by.
+    #' @return A TableHandle referencing the new table.
     avg_by = function(by = character()) {
       verify_string("by", by, FALSE)
       return(TableHandle$new(self$.internal_rcpp_object$avg_by(by)))
     },
+
+    #' @description
+    #' Create a new table containing the column-wise weighted average of each distinct group.
+    #' @param wcol String denoting the name of the column to use as weights.
+    #' @param by String or list of strings denoting the names of the columns to group by.
+    #' @return A TableHandle referencing the new table.
     w_avg_by = function(wcol, by = character()) {
       verify_string("wcol", wcol, TRUE)
       verify_string("by", by, FALSE)
       return(TableHandle$new(self$.internal_rcpp_object$w_avg_by(wcol, by)))
     },
+
+    #' @description
+    #' Create a new table containing the column-wise median of each distinct group.
+    #' @param by String or list of strings denoting the names of the columns to group by.
+    #' @return A TableHandle referencing the new table.
     median_by = function(by = character()) {
       verify_string("by", by, FALSE)
       return(TableHandle$new(self$.internal_rcpp_object$median_by(by)))
     },
+
+    #' @description
+    #' Create a new table containing the column-wise variance of each distinct group.
+    #' @param by String or list of strings denoting the names of the columns to group by.
+    #' @return A TableHandle referencing the new table.
     var_by = function(by = character()) {
       verify_string("by", by, FALSE)
       return(TableHandle$new(self$.internal_rcpp_object$var_by(by)))
     },
+
+    #' @description
+    #' Create a new table containing the column-wise standard deviation of each distinct group.
+    #' @param by String or list of strings denoting the names of the columns to group by.
+    #' @return A TableHandle referencing the new table.
     std_by = function(by = character()) {
       verify_string("by", by, FALSE)
       return(TableHandle$new(self$.internal_rcpp_object$std_by(by)))
     },
+
+    #' @description
+    #' Create a new table containing the column-wise percentile of each distinct group.
+    #' @param percentile Numeric scalar between 0 and 1 denoting the percentile to compute.
+    #' @param by String or list of strings denoting the names of the columns to group by.
+    #' @return A TableHandle referencing the new table.
     percentile_by = function(percentile, by = character()) {
       verify_in_unit_interval("percentile", percentile, TRUE)
       verify_string("by", by, FALSE)
       return(TableHandle$new(self$.internal_rcpp_object$percentile_by(percentile, by)))
     },
+
+    #' @description
+    #' Create a new table containing the number of rows in each distinct group.
+    #' @param by String denoting the name of the new column to be created by counting entries in each group.
+    #' @return A TableHandle referencing the new table.
     count_by = function(col = "n", by = character()) {
       verify_string("col", col, TRUE)
       verify_string("by", by, FALSE)
       return(TableHandle$new(self$.internal_rcpp_object$count_by(col, by)))
     },
+
+    #' @export
     cross_join = function(table, on = character(), joins = character()) {
       verify_string("on", on, FALSE)
       verify_string("joins", joins, FALSE)
@@ -183,6 +364,15 @@ TableHandle <- R6Class("TableHandle",
         on, joins
       )))
     },
+
+    #' @description
+    #' Create a new table containing all the rows and columns of this table, plus additional columns containing data
+    #' from the right table. For columns appended to the left table (joins), row values equal the row values from the
+    #' right table where the key values in the left and right tables are equal.
+    #' If there is no matching key in the right table, appended row values are NULL.
+    #' @param table TableHandle referencing the table to join with.
+    #' @param on String or list of strings denoting the names of the columns to join on.
+    #' @param joins String or list of strings denoting the names of the columns to add from `table`.
     natural_join = function(table, on = character(), joins = character()) {
       verify_string("on", on, FALSE)
       verify_string("joins", joins, FALSE)
@@ -191,6 +381,14 @@ TableHandle <- R6Class("TableHandle",
         on, joins
       )))
     },
+
+    #' @description
+    #' Create a new table containing all the rows and columns of this table, plus additional columns containing data
+    #' from the right table. For columns appended to the left table (joins), row values equal the row values from the
+    #' right table where the key values in the left and right tables are equal.
+    #' @param table TableHandle referencing the table to join with.
+    #' @param on String or list of strings denoting the names of the columns to join on.
+    #' @param joins String or list of strings denoting the names of the columns to add from `table`.
     exact_join = function(table, on = character(), joins = character()) {
       verify_string("on", on, FALSE)
       verify_string("joins", joins, FALSE)
@@ -199,6 +397,15 @@ TableHandle <- R6Class("TableHandle",
         on, joins
       )))
     },
+
+    #' @description
+    #' Create a new table containing all the rows and columns of this table, sorted by the specified columns.
+    #' @param order_by String or list of strings denoting the names of the columns to sort by.
+    #' @param descending Boolean or list of booleans denoting whether to sort in descending order.
+    #' If a list is supplied, it must be the same length as `order_by`.
+    #' @param abs_sort Boolean or list of booleans denoting whether to sort by absolute value.
+    #' If a list is supplied, it must be the same length as `order_by`.
+    #' @return A TableHandle referencing the new table.
     sort = function(order_by, descending = FALSE, abs_sort = FALSE) {
       verify_string("order_by", order_by, FALSE)
       verify_bool("descending", descending, FALSE)
@@ -239,6 +446,10 @@ dim.TableHandle <- function(x) {
   return(x$dim())
 }
 
+#' @description
+#' Merge one or more TableHandles. The tables must have the same schema, and can
+#' be supplied as a list of TableHandles, any number of TableHandles, or a mix of both.
+#' @return A TableHandle referencing the new table consisting of the rows of all the tables merged together.
 #' @export
 merge_tables <- function(...) {
   table_list <- unlist(c(...))
