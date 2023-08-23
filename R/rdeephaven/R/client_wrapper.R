@@ -73,7 +73,7 @@ setMethod(
 
     # if tls is requested, set it and set the root_certs if provided
     if (use_tls == TRUE) {
-      options$set_use_tls()
+      options$set_use_tls(TRUE)
       if (tls_root_certs != "") {
         verify_string("tls_root_certs", tls_root_certs, TRUE)
         options$set_tls_root_certs(tls_root_certs)
