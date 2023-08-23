@@ -73,15 +73,24 @@ Currently, the R client is only supported on Ubuntu 20.04 or 22.04 and must be b
    git pull origin main
    ```
 
-3. Start an R console inside the rdeephaven directory, using some environment variable definitions
-   to speed up compilation.  Use these commands:
-   ```bash
-   export NCPUS=`getconf _NPROCESSORS_ONLN`
-   export MAKEFLAGS="-j$NCPUS"
-   R
+3. Ensure that the environment variables from the C++ client installation are set. Print them out with
+   these commands:
    ```
-   In that console, install the dephaven client dependencies (since we are building from source
-   dependencies will not be automatically pulled in):
+   echo $DHCPP
+   echo $DHCPP_LOCAL
+   echo $CMAKE_PREFIX_PATH
+   echo $NCPUS
+   echo $LD_LIBRARY_PATH
+   ```
+   If any or all of these are empty, set them as follows:
+   ```
+   export DHCPP=/path/to/dhcpp
+   source $DHCPP/env.sh
+   ```
+   Refer to the instructions on the C++ client installation for more details on the `dhcpp` directory.
+
+4. Start an R console inside the rdeephaven directory. In that console, install the dephaven client dependencies
+   (since we are building from source, dependencies will not be automatically pulled in):
    ```r
    install.packages(c('Rcpp', 'arrow', 'R6', 'dplyr'))
    ```
@@ -91,7 +100,28 @@ Currently, the R client is only supported on Ubuntu 20.04 or 22.04 and must be b
    ```
    This last command can also be executed from RStudio without the need for explicitly starting an R console.
 
-4. Now, run
+   ---
+   **NOTE**
+
+   If using RStudio for this step, the environment variables that were set in step 3 may not persist into the RStudio environment,
+   if it is not a child process of the process where the environment variables were set. To resolve this issue, add the
+   following file, called `.Renviron`, to the `deephaven-core` directory:
+   ```
+   DHCPP=value-of-$DHCPP
+   DHCPP_LOCAL=value-of-$DHCPP_LOCAL
+   CMAKE_PREFIX_PATH=value-of-$CMAKE_PREFIX_PATH
+   NCPUS=value-of-$NCPUS
+   LD_LIBRARY_PATH=value-of-$LD_LIBRARY_PATH
+   ```
+   where each of the `value-of-...` variables are the value of the corresponding variables, as printed by `echo $DHCPP` and so on.
+   Setting these to the _exact_ values of the environment variables is critical, as compilation will fail otherwise.
+
+   Then, create a new R project from the existing `deephaven-core` directory using RStudio, and the corresponding R session will inherit
+   all of the necessary environment variables for successful compilation.
+   
+   ---
+
+5. Now, run
    ```r
    library(rdeephaven)
    ```
@@ -100,7 +130,7 @@ Currently, the R client is only supported on Ubuntu 20.04 or 22.04 and must be b
 ---
 **NOTE**
 
-If an error like this occurs in step 3:
+If an error like this occurs in step 4:
 ```bash
 client.cpp:7:10: fatal error: deephaven/client/client.h: No such file or directory
  7 | #include "deephaven/client/client.h"
@@ -109,7 +139,7 @@ compilation terminated.
 ```
 this means that the C++ compiler does not know where to find the relevant header files for the Deephaven C++ client. This can happen for a handul of reasons:
 1. Step 1 was skipped, and the Deephaven C++ client was not installed. In this case, please ensure that the client is installed before attempting to build the R client.
-2. The Deephaven C++ client is installed, but the `DHCPP` environment variable is not set. To test this, run
+2. The Deephaven C++ client is installed, but step 3 was skilled and the `DHCPP` environment variable is not set. To test this, run
    ```bash
    echo $DHCPP
    ```
