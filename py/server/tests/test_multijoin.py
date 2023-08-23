@@ -5,12 +5,13 @@
 import unittest
 
 from deephaven import read_csv, time_table, update_graph
-from deephaven.multijoin import MultiJoinInput, MultiJoinTable, multi_join
+from deephaven.table_factory import multi_join
+from deephaven.table import MultiJoinInput, MultiJoinTable
 from tests.testbase import BaseTestCase
 from deephaven.execution_context import get_exec_ctx
 
 
-class UpdateByTestCase(BaseTestCase):
+class MultiJoinTestCase(BaseTestCase):
     def setUp(self):
         super().setUp()
         self.static_tableA = read_csv("tests/data/test_table.csv").rename_columns(["c1=c","d1=d","e1=e"])

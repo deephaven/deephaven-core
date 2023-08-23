@@ -13,7 +13,7 @@ from deephaven._wrapper import JObjectWrapper
 from deephaven.column import InputColumn, Column
 from deephaven.dtypes import DType
 from deephaven.jcompat import to_sequence
-from deephaven.table import Table
+from deephaven.table import Table, MultiJoinTable, MultiJoinInput
 from deephaven.update_graph import auto_locking_ctx
 
 _JTableFactory = jpy.get_type("io.deephaven.engine.table.TableFactory")
@@ -320,3 +320,23 @@ def ring_table(parent: Table, capacity: int, initialize: bool = True) -> Table:
         return Table(j_table=_JRingTableTools.of(parent.j_table, capacity, initialize))
     except Exception as e:
         raise DHError(e, "failed to create a ring table.") from e
+
+
+def multi_join(input: Union[Table, Sequence[Table], MultiJoinInput, Sequence[MultiJoinInput]],
+               on: Union[str, Sequence[str]] = None) -> MultiJoinTable:
+    """ The multi_join method creates a new table by performing a multi-table natural join on the input tables.  The result
+    consists of the set of distinct keys from the input tables natural joined to each input table. Input tables need not
+    have a matching row for each key, but they may not have multiple matching rows for a given key.
+
+    Args:
+        input (Union[Table, Sequence[Table], MultiJoinInput, Sequence[MultiJoinInput]]): the input objects specifying the
+            tables and columns to include in the join.
+        on (Union[str, Sequence[str]], optional): the column(s) to match, can be a common name or an equality expression
+            that matches every input table, i.e. "col_a = col_b" to rename output column names.  When using MultiJoinInput
+            objects, this parameter is ignored.
+
+    Returns:
+        MultiJoinTable: the result of the multi-table natural join operation. To access the underlying Table, use the
+            table() method.
+    """
+    return MultiJoinTable(input, on)
