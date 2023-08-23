@@ -70,7 +70,7 @@ Client <- R6Class("Client",
         verify_named_list("int_options", int_options)
         for (key in names(int_options)) {
           verify_string("key", key, TRUE)
-          verify_int("value", int_options[[key]], TRUE)
+          verify_any_int("value", int_options[[key]], TRUE)
           options$add_int_options(key, int_options[[key]])
         }
       }

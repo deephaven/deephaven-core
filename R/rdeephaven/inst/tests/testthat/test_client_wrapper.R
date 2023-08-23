@@ -200,15 +200,39 @@ test_that("client constructor fails nicely with bad inputs", {
   )
   expect_error(
     Client$new(target = "localhost:10000", int_options = 1234),
-    "'int_options' must be a list or a vector of lists. Got an object of class numeric."
+    "'int_options' must be a named list. Got an object of class numeric."
+  )
+  expect_error(
+    Client$new(target = "localhost:10000", int_options = list(1, 2, 3)),
+    "'int_options' must be a named list. Got a list with 3 elements and 0 names."
+  )
+  expect_error(
+    Client$new(target = "localhost:10000", int_options = list(a = 12.34)),
+    "'value' must be an integer. Got 'value' = 12.34."
   )
   expect_error(
     Client$new(target = "localhost:10000", string_options = 1234),
-    "'string_options' must be a list or a vector of lists. Got an object of class numeric."
+    "'string_options' must be a named list. Got an object of class numeric."
+  )
+  expect_error(
+    Client$new(target = "localhost:10000", string_options = list("a", "b", "c")),
+    "'string_options' must be a named list. Got a list with 3 elements and 0 names."
+  )
+  expect_error(
+    Client$new(target = "localhost:10000", string_options = list(a = 123)),
+    "'value' must be a single string. Got an object of class numeric."
   )
   expect_error(
     Client$new(target = "localhost:10000", extra_headers = 1234),
-    "'extra_headers' must be a list or a vector of lists. Got an object of class numeric."
+    "'extra_headers' must be a named list. Got an object of class numeric."
+  )
+  expect_error(
+    Client$new(target = "localhost:10000", extra_headers = list("a", "b", "c")),
+    "'extra_headers' must be a named list. Got a list with 3 elements and 0 names."
+  )
+  expect_error(
+    Client$new(target = "localhost:10000", extra_headers = list(a = 123)),
+    "'value' must be a single string. Got an object of class numeric."
   )
   
 })
