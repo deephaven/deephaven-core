@@ -13,15 +13,6 @@ import java.nio.IntBuffer;
 
 public interface ColumnWriter extends SafeCloseable {
     /**
-     * Add a page with no nulls to the file. Does not track statistics, so the caller must track statistics in another
-     * way.
-     */
-    @FinalDefault
-    default void addPageNoNulls(@NotNull Object pageData, int valuesCount) throws IOException {
-        addPageNoNulls(pageData, valuesCount, NullStatistics.INSTANCE);
-    }
-
-    /**
      * Add a page with no nulls to the file.
      */
     void addPageNoNulls(@NotNull Object pageData, int valuesCount, @NotNull Statistics<?> statistics)
@@ -33,29 +24,9 @@ public interface ColumnWriter extends SafeCloseable {
     void addDictionaryPage(@NotNull Object dictionaryValues, int valuesCount) throws IOException;
 
     /**
-     * Add a page (potentially containing nulls) to the file. Does not track statistics, so the caller must track
-     * statistics in another way.
-     */
-    @FinalDefault
-    default void addPage(@NotNull Object pageData, int valuesCount) throws IOException {
-        addPage(pageData, valuesCount, NullStatistics.INSTANCE);
-    }
-
-    /**
      * Add a page (potentially containing nulls) to the file.
      */
     void addPage(Object pageData, int valuesCount, Statistics<?> statistics) throws IOException;
-
-    /**
-     * Add a vector page to the file. Does not track statistics, so the caller must track statistics in another way.
-     */
-    @FinalDefault
-    default void addVectorPage(@NotNull Object pageData,
-            @NotNull IntBuffer repeatCount,
-            int valuesCount)
-            throws IOException {
-        addVectorPage(pageData, repeatCount, valuesCount, NullStatistics.INSTANCE);
-    }
 
     /**
      * Add a vector page to the file.
@@ -67,7 +38,7 @@ public interface ColumnWriter extends SafeCloseable {
             throws IOException;
 
     /**
-     * Reset the statistics for this column. This needs to be done between row groups
+     * Reset the statistics for this column. This must be called between each row group.
      */
     void resetStats();
 
