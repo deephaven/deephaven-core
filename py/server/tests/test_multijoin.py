@@ -1,5 +1,5 @@
 #
-# Copyright (c) 2016-2022 Deephaven Data Labs and Patent Pending
+# Copyright (c) 2016-2023 Deephaven Data Labs and Patent Pending
 #
 
 import unittest
@@ -29,6 +29,7 @@ class UpdateByTestCase(BaseTestCase):
         super().tearDown()
 
     def test_static_simple(self):
+        # Test with multiple input tables
         mj_table = multi_join(input=[self.static_tableA, self.static_tableB], on=["a","b"])
 
         # Output table is static
@@ -37,8 +38,17 @@ class UpdateByTestCase(BaseTestCase):
         self.assertEqual(mj_table.table().size, self.static_tableA.size)
         self.assertEqual(mj_table.table().size, self.static_tableB.size)
 
+        # Test with a single input table
+        mj_table = multi_join(self.static_tableA, ["a","b"])
+
+        # Output table is static
+        self.assertFalse(mj_table.table().is_refreshing)
+        # Output table has same # rows as sources
+        self.assertEqual(mj_table.table().size, self.static_tableA.size)
+
 
     def test_ticking_simple(self):
+        # Test with multiple input tables
         mj_table = multi_join(input=[self.ticking_tableA, self.ticking_tableB], on=["a","b"])
 
         # Output table is refreshing
@@ -48,8 +58,18 @@ class UpdateByTestCase(BaseTestCase):
             self.assertEqual(mj_table.table().size, self.ticking_tableA.size)
             self.assertEqual(mj_table.table().size, self.ticking_tableB.size)
 
+        # Test with a single input table
+        mj_table = multi_join(input=self.ticking_tableA, on=["a","b"])
+
+        # Output table is refreshing
+        self.assertTrue(mj_table.table().is_refreshing)
+        # Output table has same # rows as sources
+        with update_graph.exclusive_lock(self.test_update_graph):
+            self.assertEqual(mj_table.table().size, self.ticking_tableA.size)
+
 
     def test_static(self):
+        # Test with multiple input
         mj_input = [
             MultiJoinInput(table=self.static_tableA, on=["key1=a","key2=b"], joins=["c1","e1"]),
             MultiJoinInput(table=self.static_tableB, on=["key1=a","key2=b"], joins=["d2"])
@@ -62,8 +82,17 @@ class UpdateByTestCase(BaseTestCase):
         self.assertEqual(mj_table.table().size, self.static_tableA.size)
         self.assertEqual(mj_table.table().size, self.static_tableB.size)
 
+        # Test with a single input
+        mj_table = multi_join(MultiJoinInput(table=self.static_tableA, on=["key1=a","key2=b"], joins="c1"))
+
+        # Output table is static
+        self.assertFalse(mj_table.table().is_refreshing)
+        # Output table has same # rows as sources
+        self.assertEqual(mj_table.table().size, self.static_tableA.size)
+
 
     def test_ticking(self):
+        # Test with multiple input
         mj_input = [
             MultiJoinInput(table=self.ticking_tableA, on=["key1=a","key2=b"], joins=["c1","e1"]),
             MultiJoinInput(table=self.ticking_tableB, on=["key1=a","key2=b"], joins=["d2"])
@@ -76,6 +105,16 @@ class UpdateByTestCase(BaseTestCase):
         with update_graph.exclusive_lock(self.test_update_graph):
             self.assertEqual(mj_table.table().size, self.ticking_tableA.size)
             self.assertEqual(mj_table.table().size, self.ticking_tableB.size)
+
+        # Test with a single input
+        mj_table = multi_join(input=MultiJoinInput(table=self.ticking_tableA, on=["key1=a","key2=b"], joins="c1"))
+
+        # Output table is refreshing
+        self.assertTrue(mj_table.table().is_refreshing)
+        # Output table has same # rows as sources
+        with update_graph.exclusive_lock(self.test_update_graph):
+            self.assertEqual(mj_table.table().size, self.ticking_tableA.size)
+
 
 if __name__ == '__main__':
     unittest.main()

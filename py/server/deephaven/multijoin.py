@@ -15,25 +15,9 @@ _JMultiJoinInput = jpy.get_type("io.deephaven.engine.table.MultiJoinInput")
 _JMultiJoinTable = jpy.get_type("io.deephaven.engine.table.MultiJoinTable")
 _JMultiJoinFactory = jpy.get_type("io.deephaven.engine.table.MultiJoinFactory")
 
-"""
-The call syntax is the following:
-
-# complex join
-mj_input = [
-    MultiJoinInput(table=t1, on="key"), # all columns added
-    MultiJoinInput(table=t2, on="key=otherKey", joins=["col1", "col2"]), #specific columns added
-]
-multitable = multi_join(input=mj_input)
-
-#simple joins
-multitable = multi_join(tables=[t1,t2], on="common_key") # all columns from t1,t2 included in output
-multitable = multi_join(tables=[t1,t2], on=["common_key1", "common_key2"]) # all columns from t1,t2 included
-
-"""
-
-
 class MultiJoinInput(JObjectWrapper):
-    """A MultiJoinInput represents the input tables, key columns and additional columns to be used in the multiJoin. """
+    """A MultiJoinInput represents the input tables, key columns and additional columns to be used in the multi-table
+    natural join. """
     j_object_type = _JMultiJoinInput
 
     @property
@@ -47,7 +31,7 @@ class MultiJoinInput(JObjectWrapper):
         rows.
 
         Args:
-            table (Table): the table to include in the join
+            table (Table): the right table to include in the join
             on (Union[str, Sequence[str]]): the column(s) to match, can be a common name or an equal expression,
                 i.e. "col_a = col_b" for different column names
             joins (Union[str, Sequence[str]], optional): the column(s) to be added from the this table to the result
@@ -66,7 +50,7 @@ class MultiJoinInput(JObjectWrapper):
 
 
 class MultiJoinTable(JObjectWrapper):
-    """A MultiJoinTable represents the result of a multiJoin. """
+    """A MultiJoinTable represents the result of a multi-table natural join. """
     j_object_type = _JMultiJoinTable
 
     @property
@@ -78,16 +62,14 @@ class MultiJoinTable(JObjectWrapper):
 
     def __init__(self, input: Union[Table, Sequence[Table], MultiJoinInput, Sequence[MultiJoinInput]],
                  on: Union[str, Sequence[str]] = None):
-        """Creates a new MultiJoinTable from MultiJoinInput or directly from Tables and key columns. Either
-        MultiJoinInput objects or Table objects should be provided as the `input` parameter.
+        """Creates a new MultiJoinTable. The join can be specified in terms of either tables or MultiJoinInputs.
 
         Args:
             input (Union[Table, Sequence[Table], MultiJoinInput, Sequence[MultiJoinInput]]): the input objects
                 specifying the tables and columns to include in the join.
-            on (Union[str, Sequence[str]], optional): the column(s) to match if Table objects are provided as the input
-                parameter, must be a common name or an equality expression that matches every input table, i.e.
-                "col_a = col_b" to rename output column names.  When using MultiJoinInput objects, this parameter
-                is ignored.
+            on (Union[str, Sequence[str]], optional): the column(s) to match, can be a common name or an equality
+                expression that matches every input table, i.e. "col_a = col_b" to rename output column names.  When
+                using MultiJoinInput objects, this parameter is ignored.
 
         Raises:
             DHError
@@ -105,21 +87,26 @@ class MultiJoinTable(JObjectWrapper):
                     input = to_sequence(input)
                     self.j_multijointable = _JMultiJoinFactory.of(*input)
             else:
-                raise DHError(message="input must be Table or MultiJoinInput.")
+                raise DHError(message="input must be a Table, a sequence of Tables, a MultiJoinInput, or a sequence of MultiJoinInputs.")
 
         except Exception as e:
             raise DHError(e, "failed to build a MultiJoinTable object.") from e
 
 
-"""Creates a new MultiJoinTable from MultiJoinInput or directly from tables and key columns. Either
-MultiJoinInput objects or Table objects should be provided as the `input` parameter. 
-
+""" The multi_join method creates a new table by performing a multi-table natural join on the input tables.  The result
+consists of the set of distinct keys from the input tables natural joined to each input table. Input tables need not
+have a matching row for each key, but they may not have multiple matching rows for a given key.
+ 
 Args:
     input (Union[Table, Sequence[Table], MultiJoinInput, Sequence[MultiJoinInput]]): the input objects specifying the
         tables and columns to include in the join.
-    on (Union[str, Sequence[str]], optional): the column(s) to match if Table objects are provided as the input 
-        parameter, must be a common name or an equality expression that matches every input table, i.e. "col_a = col_b"
-        to rename output column names.  When using MultiJoinInput objects, this parameter is ignored.
+    on (Union[str, Sequence[str]], optional): the column(s) to match, can be a common name or an equality expression
+        that matches every input table, i.e. "col_a = col_b" to rename output column names.  When using MultiJoinInput
+        objects, this parameter is ignored.
+        
+Returns:
+    MultiJoinTable: the result of the multi-table natural join operation. To access the underlying Table, use the
+        table() method.
 """
 def multi_join(input: Union[Table, Sequence[Table], MultiJoinInput, Sequence[MultiJoinInput]],
                on: Union[str, Sequence[str]] = None) -> MultiJoinTable:
