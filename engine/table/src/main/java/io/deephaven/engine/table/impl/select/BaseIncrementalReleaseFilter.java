@@ -10,6 +10,7 @@ import io.deephaven.engine.table.TableDefinition;
 import io.deephaven.engine.rowset.RowSet;
 import io.deephaven.util.QueryConstants;
 import io.deephaven.util.annotations.ScriptApi;
+import org.jetbrains.annotations.NotNull;
 
 import java.util.Collections;
 import java.util.List;
@@ -76,8 +77,13 @@ public abstract class BaseIncrementalReleaseFilter extends WhereFilterLivenessAr
         }
     }
 
+    @NotNull
     @Override
-    public WritableRowSet filter(RowSet selection, RowSet fullSet, Table table, boolean usePrev) {
+    public WritableRowSet filter(
+            @NotNull final RowSet selection,
+            @NotNull final RowSet fullSet,
+            @NotNull final Table table,
+            final boolean usePrev) {
         if (usePrev) {
             Assert.eqZero(releasedSize, "releasedSize");
             Assert.eq(fullSet.size(), "fullSet.size()", selection.size(), "selection.size()");

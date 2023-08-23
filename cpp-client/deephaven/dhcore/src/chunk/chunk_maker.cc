@@ -20,57 +20,57 @@ using deephaven::dhcore::column::StringColumnSource;
 namespace deephaven::dhcore::chunk {
 namespace {
 struct Visitor final : ColumnSourceVisitor {
-  explicit Visitor(size_t chunkSize) : chunkSize_(chunkSize) {}
+  explicit Visitor(size_t chunk_size) : chunk_size_(chunk_size) {}
 
-  void visit(const CharColumnSource &source) final {
-    result_ = CharChunk::create(chunkSize_);
+  void Visit(const CharColumnSource &/*source*/) final {
+    result_ = CharChunk::Create(chunk_size_);
   }
 
-  void visit(const Int8ColumnSource &source) final {
-    result_ = Int8Chunk::create(chunkSize_);
+  void Visit(const Int8ColumnSource &/*source*/) final {
+    result_ = Int8Chunk::Create(chunk_size_);
   }
 
-  void visit(const Int16ColumnSource &source) final {
-    result_ = Int16Chunk::create(chunkSize_);
+  void Visit(const Int16ColumnSource &/*source*/) final {
+    result_ = Int16Chunk::Create(chunk_size_);
   }
 
-  void visit(const Int32ColumnSource &source) final {
-    result_ = Int32Chunk::create(chunkSize_);
+  void Visit(const Int32ColumnSource &/*source*/) final {
+    result_ = Int32Chunk::Create(chunk_size_);
   }
 
-  void visit(const Int64ColumnSource &source) final {
-    result_ = Int64Chunk::create(chunkSize_);
+  void Visit(const Int64ColumnSource &/*source*/) final {
+    result_ = Int64Chunk::Create(chunk_size_);
   }
 
-  void visit(const FloatColumnSource &source) final {
-    result_ = FloatChunk::create(chunkSize_);
+  void Visit(const FloatColumnSource &/*source*/) final {
+    result_ = FloatChunk::Create(chunk_size_);
   }
 
-  void visit(const DoubleColumnSource &source) final {
-    result_ = DoubleChunk::create(chunkSize_);
+  void Visit(const DoubleColumnSource &/*source*/) final {
+    result_ = DoubleChunk::Create(chunk_size_);
   }
 
-  void visit(const column::BooleanColumnSource &source) final {
-    result_ = BooleanChunk::create(chunkSize_);
+  void Visit(const column::BooleanColumnSource &/*source*/) final {
+    result_ = BooleanChunk::Create(chunk_size_);
   }
 
-  void visit(const StringColumnSource &source) final {
-    result_ = StringChunk::create(chunkSize_);
+  void Visit(const StringColumnSource &/*source*/) final {
+    result_ = StringChunk::Create(chunk_size_);
   }
 
-  void visit(const DateTimeColumnSource &source) final {
-    result_ = DateTimeChunk::create(chunkSize_);
+  void Visit(const DateTimeColumnSource &/*source*/) final {
+    result_ = DateTimeChunk::Create(chunk_size_);
   }
 
-  size_t chunkSize_;
+  size_t chunk_size_;
   AnyChunk result_;
 };
 }  // namespace
 
-AnyChunk ChunkMaker::createChunkFor(const ColumnSource &columnSource,
-    size_t chunkSize) {
-  Visitor v(chunkSize);
-  columnSource.acceptVisitor(&v);
+AnyChunk ChunkMaker::CreateChunkFor(const ColumnSource &column_source,
+    size_t chunk_size) {
+  Visitor v(chunk_size);
+  column_source.AcceptVisitor(&v);
   return std::move(v.result_);
 }
 }  // namespace deephaven::dhcore::chunk

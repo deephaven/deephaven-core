@@ -11,7 +11,7 @@ C++ compiler and tool suite (cmake etc).
 3. Get build tools
    ```
    sudo apt update
-   sudo apt install curl git g++ cmake make build-essential zlib1g-dev libssl-dev
+   sudo apt install curl git g++ cmake make build-essential zlib1g-dev libssl-dev pkg-config
    ```
 
 4. Make a new directory for the Deephaven source code and assign that directory
@@ -96,25 +96,28 @@ C++ compiler and tool suite (cmake etc).
    source $DHCPP/env.sh
    cd $DHSRC/deephaven-core/cpp-client/deephaven/
    mkdir build && cd build
-   cmake -DCMAKE_INSTALL_PREFIX=${DHCPP}/local/deephaven .. && make -j$NCPUS install
+   cmake -DCMAKE_INSTALL_PREFIX=${DHCPP}/local \
+       -DCMAKE_BUILD_TYPE=Debug -DBUILD_SHARED_LIBS=ON .. && \
+     make -j$NCPUS install
    ```
 
 8. Build and run the deephaven example which uses the installed client.
-   Note this assumes deephaven server is running (see step 2).
+   Note this assumes deephaven server is running (see step 2),
+   and the build created on step 7 is available in the same directory.
 
    ```
-   cd $DHSRC/deephaven-core/cpp-examples/hello_world
-   mkdir build && cd build
-   cmake .. && make -j$NCPUS
+   cd $DHSRC/deephaven-core/cpp-client/deephaven/build/examples
+   make -j$NCPUS
+   cd hello_world
    ./hello_world
    ```
 
 9. (Optional) run the unit tests
+   This assumes the build created on step 7 is available in the same directory.
 
     ```
-    cd $DHSRC/deephaven-core/cpp-client/tests
-    mkdir build && cd build
-    cmake .. && make -j$NCPUS
+    cd $DHSRC/deephaven-core/cpp-client/deephaven/build/tests
+    make -j$NCPUS
     ./tests
     ```
 
@@ -124,7 +127,7 @@ C++ compiler and tool suite (cmake etc).
       file to ensure you have the correct environment variable definitions
       in your shell for the steps below.
 
-   2. In the `proto/proto-backend-grpc/src/main/proto` directory
+   2. In the `proto/proto-backplane-grpc/src/main/proto` directory
       (relative from your deephave-core clone base directory),
       run the `build-cpp-protos.sh` script.
       This should generate up-to-date versions of the C++ stubs

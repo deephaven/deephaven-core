@@ -3,15 +3,19 @@
  */
 package io.deephaven.parquet.table;
 
+import io.deephaven.UncheckedDeephavenException;
 import io.deephaven.api.Selectable;
 import io.deephaven.base.FileUtils;
 import io.deephaven.engine.context.ExecutionContext;
 import io.deephaven.engine.primitive.iterator.CloseableIterator;
 import io.deephaven.engine.table.ColumnDefinition;
 import io.deephaven.engine.table.impl.util.ColumnHolder;
+import io.deephaven.engine.table.impl.select.FormulaEvaluationException;
 import io.deephaven.engine.testutil.TstUtils;
 import io.deephaven.engine.testutil.junit4.EngineCleanup;
 import io.deephaven.engine.util.BigDecimalUtils;
+import io.deephaven.engine.util.file.TrackedFileHandleFactory;
+import io.deephaven.parquet.table.location.ParquetTableLocationKey;
 import io.deephaven.stringset.ArrayStringSet;
 import io.deephaven.engine.table.Table;
 import io.deephaven.engine.table.TableDefinition;
@@ -32,6 +36,7 @@ import java.math.BigDecimal;
 import java.math.BigInteger;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.List;
 import org.junit.experimental.categories.Category;
 
 import static io.deephaven.engine.testutil.TstUtils.assertTableEquals;
@@ -423,5 +428,371 @@ public class ParquetTableReadWriteTest {
         return toFix
                 .updateView("bdColE = __codec.encode(bdColumn)", "bdColumn=__codec.decode(bdColE, 0, bdColE.length)")
                 .dropColumns("bdColE");
+    }
+
+    // Following is used for testing both writing APIs for parquet tables
+    private interface TestParquetTableWriter {
+        void writeTable(final Table table, final File destFile);
+    }
+
+    TestParquetTableWriter singleWriter = (table, destFile) -> ParquetTools.writeTable(table, destFile);
+    TestParquetTableWriter multiWriter = (table, destFile) -> ParquetTools.writeTables(new Table[] {table},
+            table.getDefinition(), new File[] {destFile});
+
+    /**
+     * These are tests for writing a table to a parquet file and making sure there are no unnecessary files left in the
+     * directory after we finish writing.
+     */
+    @Test
+    public void basicWriteTests() {
+        basicWriteTestsImpl(singleWriter);
+        basicWriteTestsImpl(multiWriter);
+    }
+
+    private void basicWriteTestsImpl(TestParquetTableWriter writer) {
+        // Create an empty parent directory
+        final File parentDir = new File(rootFile, "tempDir");
+        parentDir.mkdir();
+        assertTrue(parentDir.exists() && parentDir.isDirectory() && parentDir.list().length == 0);
+
+        // There should be just one file in the directory on a successful write and no temporary files
+        final Table tableToSave = TableTools.emptyTable(5).update("A=(int)i", "B=(long)i", "C=(double)i");
+        final String filename = "basicWriteTests.parquet";
+        final File destFile = new File(parentDir, filename);
+        writer.writeTable(tableToSave, destFile);
+        List filesInDir = Arrays.asList(parentDir.list());
+        assertTrue(filesInDir.size() == 1 && filesInDir.contains(filename));
+        Table fromDisk = ParquetTools.readTable(destFile);
+        TstUtils.assertTableEquals(fromDisk, tableToSave);
+
+        // This write should fail
+        final Table badTable = TableTools.emptyTable(5)
+                .updateView("InputString = ii % 2 == 0 ? Long.toString(ii) : null", "A=InputString.charAt(0)");
+        try {
+            writer.writeTable(badTable, destFile);
+            TestCase.fail("Exception expected for invalid formula");
+        } catch (UncheckedDeephavenException e) {
+            assertTrue(e.getCause() instanceof FormulaEvaluationException);
+        }
+
+        // Make sure that original file is preserved and no temporary files
+        filesInDir = Arrays.asList(parentDir.list());
+        assertTrue(filesInDir.size() == 1 && filesInDir.contains(filename));
+        fromDisk = ParquetTools.readTable(destFile);
+        TstUtils.assertTableEquals(fromDisk, tableToSave);
+
+        // Write a new table successfully at the same path
+        final Table newTableToSave = TableTools.emptyTable(5).update("A=(int)i");
+        writer.writeTable(newTableToSave, destFile);
+        filesInDir = Arrays.asList(parentDir.list());
+        assertTrue(filesInDir.size() == 1 && filesInDir.contains(filename));
+        fromDisk = ParquetTools.readTable(destFile);
+        TstUtils.assertTableEquals(fromDisk, newTableToSave);
+        FileUtils.deleteRecursively(parentDir);
+    }
+
+    /**
+     * These are tests for writing multiple parquet tables in a single call.
+     */
+    @Test
+    public void writeMultiTableBasicTest() {
+        // Create an empty parent directory
+        final File parentDir = new File(rootFile, "tempDir");
+        parentDir.mkdir();
+
+        // Write two tables to parquet file and read them back
+        final Table firstTable = TableTools.emptyTable(5)
+                .updateView("InputString = Long.toString(ii)", "A=InputString.charAt(0)");
+        final String firstFilename = "firstTable.parquet";
+        final File firstDestFile = new File(parentDir, firstFilename);
+
+        final Table secondTable = TableTools.emptyTable(5)
+                .updateView("InputString = Long.toString(ii*5)", "A=InputString.charAt(0)");
+        final String secondFilename = "secondTable.parquet";
+        final File secondDestFile = new File(parentDir, secondFilename);
+
+        Table[] tablesToSave = new Table[] {firstTable, secondTable};
+        File[] destFiles = new File[] {firstDestFile, secondDestFile};
+
+        ParquetTools.writeTables(tablesToSave, firstTable.getDefinition(), destFiles);
+
+        List filesInDir = Arrays.asList(parentDir.list());
+        assertTrue(filesInDir.size() == 2 && filesInDir.contains(firstFilename) && filesInDir.contains(secondFilename));
+
+        TstUtils.assertTableEquals(ParquetTools.readTable(firstDestFile), firstTable);
+        TstUtils.assertTableEquals(ParquetTools.readTable(secondDestFile), secondTable);
+    }
+
+    /**
+     * These are tests for writing multiple parquet tables such that there is an exception in the second write.
+     */
+    @Test
+    public void writeMultiTableExceptionTest() {
+        // Create an empty parent directory
+        final File parentDir = new File(rootFile, "tempDir");
+        parentDir.mkdir();
+
+        // Write two tables to parquet file and read them back
+        final Table firstTable = TableTools.emptyTable(5)
+                .updateView("InputString = Long.toString(ii)", "A=InputString.charAt(0)");
+        final File firstDestFile = new File(parentDir, "firstTable.parquet");
+
+        final Table secondTable = TableTools.emptyTable(5)
+                .updateView("InputString = ii % 2 == 0 ? Long.toString(ii*5) : null", "A=InputString.charAt(0)");
+        final File secondDestFile = new File(parentDir, "secondTable.parquet");
+
+        Table[] tablesToSave = new Table[] {firstTable, secondTable};
+        File[] destFiles = new File[] {firstDestFile, secondDestFile};
+
+        // This write should fail
+        try {
+            ParquetTools.writeTables(tablesToSave, firstTable.getDefinition(), destFiles);
+            TestCase.fail("Exception expected for invalid formula");
+        } catch (UncheckedDeephavenException e) {
+            assertTrue(e.getCause() instanceof FormulaEvaluationException);
+        }
+
+        // All files should be deleted even though first table would be written successfully
+        assertTrue(parentDir.list().length == 0);
+    }
+
+
+    /**
+     * These are tests for writing to a table with grouping columns to a parquet file and making sure there are no
+     * unnecessary files left in the directory after we finish writing.
+     */
+    @Test
+    public void groupingColumnsBasicWriteTests() {
+        groupingColumnsBasicWriteTestsImpl(singleWriter);
+        groupingColumnsBasicWriteTestsImpl(multiWriter);
+    }
+
+    public void groupingColumnsBasicWriteTestsImpl(TestParquetTableWriter writer) {
+        // Create an empty parent directory
+        final File parentDir = new File(rootFile, "tempDir");
+        parentDir.mkdir();
+        assertTrue(parentDir.exists() && parentDir.isDirectory() && parentDir.list().length == 0);
+
+        Integer data[] = new Integer[500 * 4];
+        for (int i = 0; i < data.length; i++) {
+            data[i] = i / 4;
+        }
+        final TableDefinition tableDefinition = TableDefinition.of(ColumnDefinition.ofInt("vvv").withGrouping());
+        final Table tableToSave = TableTools.newTable(tableDefinition, TableTools.col("vvv", data));
+
+        // For a completed write, there should be two parquet files in the directory, the table data and the grouping
+        // data
+        final String destFilename = "groupingColumnsWriteTests.parquet";
+        final File destFile = new File(parentDir, destFilename);
+        writer.writeTable(tableToSave, destFile);
+        List filesInDir = Arrays.asList(parentDir.list());
+        String vvvGroupingFilename = ParquetTools.defaultGroupingFileName(destFilename).apply("vvv");
+        assertTrue(filesInDir.size() == 2 && filesInDir.contains(destFilename)
+                && filesInDir.contains(vvvGroupingFilename));
+        Table fromDisk = ParquetTools.readTable(destFile);
+        TstUtils.assertTableEquals(fromDisk, tableToSave);
+
+        // Verify that the key-value metadata in the file has the correct name
+        ParquetTableLocationKey tableLocationKey = new ParquetTableLocationKey(destFile, 0, null);
+        String metadataString = tableLocationKey.getMetadata().getFileMetaData().toString();
+        assertTrue(metadataString.contains(vvvGroupingFilename));
+
+        // Write another table but this write should fail
+        final TableDefinition badTableDefinition = TableDefinition.of(ColumnDefinition.ofInt("www").withGrouping());
+        final Table badTable = TableTools.newTable(badTableDefinition, TableTools.col("www", data))
+                .updateView("InputString = ii % 2 == 0 ? Long.toString(ii) : null", "A=InputString.charAt(0)");
+        try {
+            writer.writeTable(badTable, destFile);
+            TestCase.fail("Exception expected for invalid formula");
+        } catch (UncheckedDeephavenException e) {
+            assertTrue(e.getCause() instanceof FormulaEvaluationException);
+        }
+
+        // Make sure that original file is preserved and no temporary files
+        filesInDir = Arrays.asList(parentDir.list());
+        assertTrue(filesInDir.size() == 2 && filesInDir.contains(destFilename)
+                && filesInDir.contains(vvvGroupingFilename));
+        fromDisk = ParquetTools.readTable(destFile);
+        TstUtils.assertTableEquals(fromDisk, tableToSave);
+        FileUtils.deleteRecursively(parentDir);
+    }
+
+
+    /**
+     * These are tests for writing multiple parquet tables with grouping columns.
+     */
+    @Test
+    public void writeMultiTableGroupingColumnTest() {
+        // Create an empty parent directory
+        final File parentDir = new File(rootFile, "tempDir");
+        parentDir.mkdir();
+
+        Integer data[] = new Integer[500 * 4];
+        for (int i = 0; i < data.length; i++) {
+            data[i] = i / 4;
+        }
+        final TableDefinition tableDefinition = TableDefinition.of(ColumnDefinition.ofInt("vvv").withGrouping());
+        final Table firstTable = TableTools.newTable(tableDefinition, TableTools.col("vvv", data));
+        final String firstFilename = "firstTable.parquet";
+        final File firstDestFile = new File(parentDir, firstFilename);
+
+        final Table secondTable = TableTools.newTable(tableDefinition, TableTools.col("vvv", data));
+        final String secondFilename = "secondTable.parquet";
+        final File secondDestFile = new File(parentDir, secondFilename);
+
+        Table[] tablesToSave = new Table[] {firstTable, secondTable};
+        File[] destFiles = new File[] {firstDestFile, secondDestFile};
+
+        ParquetTools.writeTables(tablesToSave, firstTable.getDefinition(), destFiles);
+
+        List<String> filesInDir = Arrays.asList(parentDir.list());
+        String firstGroupingFilename = ParquetTools.defaultGroupingFileName(firstFilename).apply("vvv");
+        String secondGroupingFilename = ParquetTools.defaultGroupingFileName(secondFilename).apply("vvv");
+        assertTrue(filesInDir.size() == 4 && filesInDir.contains(firstFilename)
+                && filesInDir.contains(secondFilename) && filesInDir.contains(firstGroupingFilename)
+                && filesInDir.contains(secondGroupingFilename));
+
+        // Verify that the key-value metadata in the file has the correct name
+        ParquetTableLocationKey tableLocationKey = new ParquetTableLocationKey(firstDestFile, 0, null);
+        String metadataString = tableLocationKey.getMetadata().getFileMetaData().toString();
+        assertTrue(metadataString.contains(firstGroupingFilename));
+        tableLocationKey = new ParquetTableLocationKey(secondDestFile, 0, null);
+        metadataString = tableLocationKey.getMetadata().getFileMetaData().toString();
+        assertTrue(metadataString.contains(secondGroupingFilename));
+
+        // Read back the files and verify contents match
+        TstUtils.assertTableEquals(ParquetTools.readTable(firstDestFile), firstTable);
+        TstUtils.assertTableEquals(ParquetTools.readTable(secondDestFile), secondTable);
+    }
+
+    @Test
+    public void groupingColumnsOverwritingTests() {
+        groupingColumnsOverwritingTestsImpl(singleWriter);
+        groupingColumnsOverwritingTestsImpl(multiWriter);
+    }
+
+    public void groupingColumnsOverwritingTestsImpl(TestParquetTableWriter writer) {
+        // Create an empty parent directory
+        final File parentDir = new File(rootFile, "tempDir");
+        parentDir.mkdir();
+        assertTrue(parentDir.exists() && parentDir.isDirectory() && parentDir.list().length == 0);
+
+        Integer data[] = new Integer[500 * 4];
+        for (int i = 0; i < data.length; i++) {
+            data[i] = i / 4;
+        }
+        final TableDefinition tableDefinition = TableDefinition.of(ColumnDefinition.ofInt("vvv").withGrouping());
+        final Table tableToSave = TableTools.newTable(tableDefinition, TableTools.col("vvv", data));
+
+        final String destFilename = "groupingColumnsWriteTests.parquet";
+        final File destFile = new File(parentDir, destFilename);
+        writer.writeTable(tableToSave, destFile);
+        String vvvGroupingFilename = ParquetTools.defaultGroupingFileName(destFilename).apply("vvv");
+
+        // Write a new table successfully at the same position with different grouping columns
+        final TableDefinition anotherTableDefinition = TableDefinition.of(ColumnDefinition.ofInt("xxx").withGrouping());
+        Table anotherTableToSave = TableTools.newTable(anotherTableDefinition, TableTools.col("xxx", data));
+        writer.writeTable(anotherTableToSave, destFile);
+        List filesInDir = Arrays.asList(parentDir.list());
+        final String xxxGroupingFilename = ParquetTools.defaultGroupingFileName(destFilename).apply("xxx");
+
+        // The directory now should contain the updated table, its grouping file for column xxx, and old grouping file
+        // for column vvv
+        assertTrue(filesInDir.size() == 3 && filesInDir.contains(destFilename)
+                && filesInDir.contains(vvvGroupingFilename)
+                && filesInDir.contains(xxxGroupingFilename));
+        Table fromDisk = ParquetTools.readTable(destFile);
+        TstUtils.assertTableEquals(fromDisk, anotherTableToSave);
+
+        ParquetTableLocationKey tableLocationKey = new ParquetTableLocationKey(destFile, 0, null);
+        String metadataString = tableLocationKey.getMetadata().getFileMetaData().toString();
+        assertTrue(metadataString.contains(xxxGroupingFilename) && !metadataString.contains(vvvGroupingFilename));
+
+        // Overwrite the table
+        writer.writeTable(anotherTableToSave, destFile);
+
+        // The directory should still contain the updated table, its grouping file for column xxx, and old grouping file
+        // for column vvv
+        filesInDir = Arrays.asList(parentDir.list());
+        final File xxxGroupingFile = new File(parentDir, xxxGroupingFilename);
+        final File backupXXXGroupingFile = ParquetTools.getBackupFile(xxxGroupingFile);
+        final String backupXXXGroupingFileName = backupXXXGroupingFile.getName();
+        assertTrue(filesInDir.size() == 3 && filesInDir.contains(destFilename)
+                && filesInDir.contains(vvvGroupingFilename)
+                && filesInDir.contains(xxxGroupingFilename));
+
+        tableLocationKey = new ParquetTableLocationKey(destFile, 0, null);
+        metadataString = tableLocationKey.getMetadata().getFileMetaData().toString();
+        assertTrue(metadataString.contains(xxxGroupingFilename) && !metadataString.contains(vvvGroupingFilename)
+                && !metadataString.contains(backupXXXGroupingFileName));
+        FileUtils.deleteRecursively(parentDir);
+    }
+
+    @Test
+    public void readChangedUnderlyingFileTests() {
+        readChangedUnderlyingFileTestsImpl(singleWriter);
+        readChangedUnderlyingFileTestsImpl(multiWriter);
+    }
+
+    public void readChangedUnderlyingFileTestsImpl(TestParquetTableWriter writer) {
+        // Write a table to parquet file and read it back
+        final Table tableToSave = TableTools.emptyTable(5).update("A=(int)i", "B=(long)i", "C=(double)i");
+        final String filename = "readChangedUnderlyingFileTests.parquet";
+        final File destFile = new File(rootFile, filename);
+        writer.writeTable(tableToSave, destFile);
+        Table fromDisk = ParquetTools.readTable(destFile);
+        // At this point, fromDisk is not fully materialized in the memory and would be read from the file on demand
+
+        // Change the underlying file
+        final Table stringTable = TableTools.emptyTable(5).update("InputString = Long.toString(ii)");
+        writer.writeTable(stringTable, destFile);
+        Table stringFromDisk = ParquetTools.readTable(destFile).select();
+        TstUtils.assertTableEquals(stringTable, stringFromDisk);
+
+        // Close all the file handles so that next time when fromDisk is accessed, we need to reopen the file handle
+        TrackedFileHandleFactory.getInstance().closeAll();
+
+        // Read back fromDisk and compare it with original table. Since the underlying file has changed,
+        // assertTableEquals will try to read the file and would crash
+        try {
+            TstUtils.assertTableEquals(tableToSave, fromDisk);
+            TestCase.fail();
+        } catch (Exception ignored) {
+        }
+    }
+
+    @Test
+    public void readModifyWriteTests() {
+        readModifyWriteTestsImpl(singleWriter);
+        readModifyWriteTestsImpl(multiWriter);
+    }
+
+    public void readModifyWriteTestsImpl(TestParquetTableWriter writer) {
+        // Write a table to parquet file and read it back
+        final Table tableToSave = TableTools.emptyTable(5).update("A=(int)i", "B=(long)i", "C=(double)i");
+        final String filename = "readModifyWriteTests.parquet";
+        final File destFile = new File(rootFile, filename);
+        writer.writeTable(tableToSave, destFile);
+        Table fromDisk = ParquetTools.readTable(destFile);
+        // At this point, fromDisk is not fully materialized in the memory and would be read from the file on demand
+
+        // Create a view table on fromDisk which should fail on writing, and try to write at the same location
+        // Since we are doing a view() operation and adding a new column and overwriting an existing column, the table
+        // won't be materialized in memory or cache.
+        final Table badTable =
+                fromDisk.view("InputString = ii % 2 == 0 ? Long.toString(ii) : null", "A=InputString.charAt(0)");
+        try {
+            writer.writeTable(badTable, destFile);
+            TestCase.fail();
+        } catch (UncheckedDeephavenException e) {
+            assertTrue(e.getCause() instanceof FormulaEvaluationException);
+        }
+
+        // Close all old file handles so that we read the file path fresh instead of using any old handles
+        TrackedFileHandleFactory.getInstance().closeAll();
+
+        // Read back fromDisk and compare it with original table. If the underlying file has not been corrupted or
+        // swapped out, then we would not be able to read from the file
+        TstUtils.assertTableEquals(tableToSave, fromDisk);
     }
 }

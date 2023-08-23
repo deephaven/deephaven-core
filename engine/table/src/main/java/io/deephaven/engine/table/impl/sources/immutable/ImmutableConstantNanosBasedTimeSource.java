@@ -30,7 +30,7 @@ public abstract class ImmutableConstantNanosBasedTimeSource<TIME_TYPE> extends A
 
     // region constructor
     public ImmutableConstantNanosBasedTimeSource(
-            final @NotNull Class<TIME_TYPE> type,
+            @NotNull final Class<TIME_TYPE> type,
             final ImmutableConstantLongSource nanoSource) {
         super(type);
         this.nanoSource = nanoSource;
@@ -143,17 +143,17 @@ public abstract class ImmutableConstantNanosBasedTimeSource<TIME_TYPE> extends A
     }
 
     @Override
-    public ColumnSource<ZonedDateTime> toZonedDateTime(final @NotNull ZoneId zone) {
+    public ColumnSource<ZonedDateTime> toZonedDateTime(@NotNull final ZoneId zone) {
         return new ImmutableConstantZonedDateTimeSource(Require.neqNull(zone, "zone"), nanoSource);
     }
 
     @Override
-    public ColumnSource<LocalDate> toLocalDate(final @NotNull ZoneId zone) {
+    public ColumnSource<LocalDate> toLocalDate(@NotNull final ZoneId zone) {
         return new LongAsLocalDateColumnSource(nanoSource, zone);
     }
 
     @Override
-    public ColumnSource<LocalTime> toLocalTime(final @NotNull ZoneId zone) {
+    public ColumnSource<LocalTime> toLocalTime(@NotNull final ZoneId zone) {
         return new LongAsLocalTimeColumnSource(nanoSource, zone);
     }
 

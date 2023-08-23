@@ -181,7 +181,7 @@ public final class SessionImpl extends SessionBase {
                 response -> {
                     final String responseType = response.getType();
                     final ByteString data = response.getData();
-                    final List<ExportId> exportIds = response.getTypedExportIdList().stream()
+                    final List<ExportId> exportIds = response.getTypedExportIdsList().stream()
                             .map(t -> {
                                 final String ticketType;
                                 if (t.getType().isEmpty()) {

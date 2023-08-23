@@ -503,7 +503,7 @@ public class TestDelta extends BaseUpdateByTest {
         return result;
     }
 
-    final void assertWithDelta(final @NotNull Object expected, final @NotNull Object actual, DeltaControl control) {
+    final void assertWithDelta(@NotNull final Object expected, @NotNull final Object actual, DeltaControl control) {
 
         if (expected instanceof byte[]) {
             assertArrayEquals(delta((byte[]) expected, control), (byte[]) actual);

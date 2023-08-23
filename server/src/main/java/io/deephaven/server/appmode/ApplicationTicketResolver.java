@@ -61,13 +61,13 @@ public class ApplicationTicketResolver extends TicketResolverBase implements App
 
     @Override
     public <T> SessionState.ExportObject<T> resolve(
-            final @Nullable SessionState session, final ByteBuffer ticket, final String logId) {
+            @Nullable final SessionState session, final ByteBuffer ticket, final String logId) {
         return resolve(appFieldIdFor(ticket, logId), logId);
     }
 
     @Override
     public <T> SessionState.ExportObject<T> resolve(
-            final @Nullable SessionState session, final Flight.FlightDescriptor descriptor, final String logId) {
+            @Nullable final SessionState session, final Flight.FlightDescriptor descriptor, final String logId) {
         return resolve(appFieldIdFor(descriptor, logId), logId);
     }
 
@@ -89,7 +89,7 @@ public class ApplicationTicketResolver extends TicketResolverBase implements App
 
     @Override
     public SessionState.ExportObject<Flight.FlightInfo> flightInfoFor(
-            final @Nullable SessionState session, final Flight.FlightDescriptor descriptor, final String logId) {
+            @Nullable final SessionState session, final Flight.FlightDescriptor descriptor, final String logId) {
         final AppFieldId id = appFieldIdFor(descriptor, logId);
         if (id.app == null) {
             throw Exceptions.statusRuntimeException(Code.FAILED_PRECONDITION,

@@ -39,10 +39,12 @@ Currently, the R client is only supported on Ubuntu 20.04 or 22.04 and must be b
 
    ```
    # Download the key and install it
-   $ wget -qO- https://cloud.r-project.org/bin/linux/ubuntu/marutter_pubkey.asc | sudo gpg --dearmor -o /usr/share/keyrings/r-proj
+   $ wget -qO- https://cloud.r-project.org/bin/linux/ubuntu/marutter_pubkey.asc | \
+       sudo gpg --dearmor -o /usr/share/keyrings/r-project.gpg
 
    # Add the R source list to apt's sources list
-   $ echo "deb [signed-by=/usr/share/keyrings/r-project.gpg] https://cloud.r-project.org/bin/linux/ubuntu jammy-cran40/" | sudo tee -a /etc/apt/sources.list.d/r-project.l
+   $ echo "deb [signed-by=/usr/share/keyrings/r-project.gpg] https://cloud.r-project.org/bin/linux/ubuntu jammy-cran40/" | \
+       sudo tee -a /etc/apt/sources.list.d/r-project.list
 
    # update the apt package list
    $ apt update
@@ -71,7 +73,8 @@ Currently, the R client is only supported on Ubuntu 20.04 or 22.04 and must be b
    git pull origin main
    ```
 
-3. Start an R console, using some environment variable definitions to speed up compilation.  Use these commands:
+3. Start an R console inside the rdeephaven directory, using some environment variable definitions
+   to speed up compilation.  Use these commands:
    ```bash
    export NCPUS=`getconf _NPROCESSORS_ONLN`
    export MAKEFLAGS="-j$NCPUS"
@@ -84,7 +87,7 @@ Currently, the R client is only supported on Ubuntu 20.04 or 22.04 and must be b
    ```
    then install the deephaven client itself:
    ```r
-   install.packages("/path/to/rdeephaven", INSTALL_opts="--install-tests", repos=NULL, type="source")
+   install.packages(".", repos=NULL, type="source")
    ```
    This last command can also be executed from RStudio without the need for explicitly starting an R console.
 

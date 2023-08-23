@@ -386,13 +386,13 @@ class FormulaChunkedOperator implements IterativeChunkedAggregationOperator {
         }
 
         void clearObjectColumnData(@NotNull final RowSequence rowSequence) {
-            try (final RowSequence.Iterator RowSequenceIterator = rowSequence.getRowSequenceIterator();
+            try (final RowSequence.Iterator rowSequenceIterator = rowSequence.getRowSequenceIterator();
                     final WritableObjectChunk<?, Values> nullValueChunk =
                             WritableObjectChunk.makeWritableChunk(BLOCK_SIZE)) {
                 nullValueChunk.fillWithNullValue(0, BLOCK_SIZE);
-                while (RowSequenceIterator.hasMore()) {
-                    final RowSequence rowSequenceSlice = RowSequenceIterator.getNextRowSequenceThrough(
-                            calculateContainingBlockLastKey(RowSequenceIterator.peekNextKey()));
+                while (rowSequenceIterator.hasMore()) {
+                    final RowSequence rowSequenceSlice = rowSequenceIterator.getNextRowSequenceThrough(
+                            calculateContainingBlockLastKey(rowSequenceIterator.peekNextKey()));
                     nullValueChunk.setSize(rowSequenceSlice.intSize());
                     for (int ci = 0; ci < columnsToFillMask.length; ++ci) {
                         final WritableColumnSource<?> resultColumn = resultColumns[ci];
@@ -433,10 +433,10 @@ class FormulaChunkedOperator implements IterativeChunkedAggregationOperator {
         }
 
         private void copyData(@NotNull final RowSequence rowSequence, @NotNull final boolean[] columnsMask) {
-            try (final RowSequence.Iterator RowSequenceIterator = rowSequence.getRowSequenceIterator()) {
-                while (RowSequenceIterator.hasMore()) {
-                    final RowSequence rowSequenceSlice = RowSequenceIterator.getNextRowSequenceThrough(
-                            calculateContainingBlockLastKey(RowSequenceIterator.peekNextKey()));
+            try (final RowSequence.Iterator rowSequenceIterator = rowSequence.getRowSequenceIterator()) {
+                while (rowSequenceIterator.hasMore()) {
+                    final RowSequence rowSequenceSlice = rowSequenceIterator.getNextRowSequenceThrough(
+                            calculateContainingBlockLastKey(rowSequenceIterator.peekNextKey()));
                     for (int ci = 0; ci < columnsToGetMask.length; ++ci) {
                         if (columnsMask[ci]) {
                             resultColumns[ci].fillFromChunk(fillFromContexts[ci],

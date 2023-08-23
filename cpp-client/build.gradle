@@ -15,7 +15,7 @@ configurations {
 dependencies {
     cpp project(path: ':proto:proto-backplane-grpc', configuration: 'cpp')
 }
-def protoSourceDir = layout.projectDirectory.dir('deephaven/client/proto')
+def protoSourceDir = layout.projectDirectory.dir('deephaven/dhclient/proto')
 def compare = tasks.register('compareProtobuf', DiffTask) {
     expectedContents.set configurations.cpp
     actualContents.set protoSourceDir
@@ -39,10 +39,10 @@ license {
     ignoreFailures true
 }
 tasks.getByName('license').dependsOn(tasks.create("licensePy", com.hierynomus.gradle.license.tasks.LicenseCheck) {
-    source = ['deephaven', 'tests', '../cpp-examples']
+    source = ['deephaven']
 })
 tasks.getByName('licenseFormat').dependsOn(tasks.create("licenseFormatPy", com.hierynomus.gradle.license.tasks.LicenseFormat) {
-    source = ['deephaven', 'tests', '../cpp-examples']
+    source = ['deephaven']
 })
 
 project.tasks.getByName('quick').dependsOn project.tasks.getByName('license')
@@ -65,12 +65,10 @@ def testCppClient = Docker.registerDockerTask(project, 'testCppClient') {
         from(layout.projectDirectory) {
             include 'cpp-tests-to-junit.sh'
             include 'deephaven/CMakeLists.txt'
-            include 'deephaven/client/**'
             include 'deephaven/dhcore/**'
-            include 'tests/CMakeLists.txt'
-            include 'tests/*.cc'
-            include 'tests/*.h'
-            include 'tests/third_party/**'
+            include 'deephaven/dhclient/**'
+            include 'deephaven/examples/**'
+            include 'deephaven/tests/**'
         }
     }
     copyOut {
@@ -81,36 +79,39 @@ def testCppClient = Docker.registerDockerTask(project, 'testCppClient') {
         //
         // Build client library.
         //
-        runCommand('mkdir -p /cpp-client/deephaven/client /cpp-client/deephaven/dhcore /cpp-client/deephaven/build')
-        copyFile('deephaven/CMakeLists.txt', '/cpp-client/deephaven')
-        copyFile('deephaven/client', '/cpp-client/deephaven/client/')
-        copyFile('deephaven/dhcore', '/cpp-client/deephaven/dhcore/')
+        runCommand('mkdir -p /cpp-client/deephaven/{dhcore,dhclient,examples,tests}')
+        copyFile('deephaven/CMakeLists.txt',  '/cpp-client/deephaven/')
+        copyFile('deephaven/dhcore/',  '/cpp-client/deephaven/dhcore/')
+        copyFile('deephaven/dhclient/', '/cpp-client/deephaven/dhclient/')
+        copyFile('deephaven/examples/', '/cpp-client/deephaven/examples/')
+        copyFile('deephaven/tests/', '/cpp-client/deephaven/tests/')
         runCommand('''set -eux; \\
+                      mkdir -p /cpp-client/deephaven/build; \\
                       cd /cpp-client/deephaven/build; \\
                       . /cpp-client/deps/env.sh; \\
-                      cmake -DCMAKE_INSTALL_PREFIX=/cpp-client/install ..; \\
-                      make -j\$NCPUS install; \\
-                      cd ..; \\
-                      rm -fr /cpp-client/deephaven/build
+                      cmake -DCMAKE_INSTALL_PREFIX=/cpp-client/install \\
+                        -DCMAKE_BUILD_TYPE=Debug \\
+                        -DBUILD_SHARED_LIBS=ON \\
+                        .. ; \\
+                      make -j\$NCPUS install
                    ''')
         //
         // Build tests.
         //
-        runCommand('mkdir -p /cpp-client/tests/build /cpp-client/install/bin /out')
+        runCommand('mkdir -p /cpp-client/install/bin /out')
         copyFile('cpp-tests-to-junit.sh', '/cpp-client/install/bin')
-        copyFile('tests/*.cc', '/cpp-client/tests/')
-        copyFile('tests/*.h', '/cpp-client/tests/')
-        copyFile('tests/CMakeLists.txt', '/cpp-client/tests/')
-        copyFile('tests/third_party', '/cpp-client/tests/third_party/')
         runCommand('''set -eux; \\
-                      cd /cpp-client/tests/build; \\
+                      cd /cpp-client/deephaven/build/tests; \\
+                      echo build/tests: ==; ls .; echo ../../tests; ls ../../tests; \\
                       . /cpp-client/deps/env.sh; \\
-                      cmake -DCMAKE_PREFIX_PATH=/cpp-client/install:$CMAKE_PREFIX_PATH ..; \\
                       make -j\$NCPUS; \\
                       mkdir -p /cpp-client/install/bin; \\
-                      cp -f /cpp-client/tests/build/tests /cpp-client/install/bin; \
+                      cp -f /cpp-client/deephaven/build/tests/tests /cpp-client/install/bin; \
                       cd ..; \\
-                      rm -fr /cpp-client/tests/build
+                      rm -fr /cpp-client/deephaven/build; \\
+                      sed -i \\
+                        2i"LD_LIBRARY_PATH=$LD_LIBRARY_PATH:/cpp-client/install/lib; export LD_LIBRARY_PATH" \\
+                        /cpp-client/install/bin/cpp-tests-to-junit.sh
                    ''')
         //
         // Setup for test run.
