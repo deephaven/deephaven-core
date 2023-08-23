@@ -137,6 +137,7 @@ def time_zone_alias_rm(alias: str) -> bool:
 #TODO: Review all function names: to_j_<xyz>?  to_db_<xyz>?  to_dh_<xyz>?  as_j_<xyz>?  as_db_<xyz>?  as_dh_<xyz>?
 #TODO: In doc strings use "Deephaven <type>" or "Java <type>"
 
+#TODO "python type" in docs!!!!!
 
 # region Conversions: Python To Java
 
@@ -159,7 +160,8 @@ def to_j_time_zone(tz: Union[None, str]) -> Optional[TimeZone]:
             return None
             #TODO: return system default? -> if return default, then the result is not optional
             # return _JDateTimeUtils.timeZone()
-        # TODO: convert python time zones?
+
+        # TODO: convert python time zones? datetime.tzinfo, datetime.timezone
         else:
             return _JDateTimeUtils.parseTimeZone(s)
     except Exception as e:
@@ -426,6 +428,15 @@ def to_j_period(dt: Union[None, str, datetime.timedelta, np.timedelta64]) -> Opt
 #TODO: add py to these names?
 
 def to_date(dt: Union[None, LocalDate]) -> Optional[datetime.date]:
+    """
+    Converts a Deephaven local date to a python date.
+
+    Args:
+        dt (Union[None, LocalDate]): A Deephaven local date.  If None is provided, None is returned.
+
+    Returns:
+        datetime.date
+    """
     try:
         if not dt:
             return None
@@ -438,6 +449,15 @@ def to_date(dt: Union[None, LocalDate]) -> Optional[datetime.date]:
 
 
 def to_time(dt: Union[None, LocalTime]) -> Optional[datetime.time]:
+    """
+    Converts a Deephaven local time to a python time.
+
+    Args:
+        dt (Union[None, LocalTime]): A Deephaven local time.  If None is provided, None is returned.
+
+    Returns:
+        datetime.time
+    """
     try:
         if not dt:
             return None
@@ -450,6 +470,16 @@ def to_time(dt: Union[None, LocalTime]) -> Optional[datetime.time]:
 
 
 def to_datetime(dt: Union[None, Instant, ZonedDateTime]) -> Optional[datetime.datetime]:
+    """
+    Converts a Deephaven instant or zoned date time to a python date time.
+
+    Args:
+        dt (Union[None, Instant, ZonedDateTime]): A Deephaven instant or zoned date time.  If None is provided, None is
+            returned.
+
+    Returns:
+        datetime.datetime
+    """
     try:
         if not dt:
             return None
@@ -466,6 +496,19 @@ def to_datetime(dt: Union[None, Instant, ZonedDateTime]) -> Optional[datetime.da
 
 
 def to_datetime64(dt: Union[None, Instant, ZonedDateTime]) -> Optional[np.datetime64]:
+    """
+    Converts a Deephaven instant or zoned date time to a numpy datetime64.
+
+    Args:
+        dt (Union[None, Instant, ZonedDateTime]): A Deephaven instant or zoned date time.  If None is provided, None is
+            returned.
+
+    Returns:
+        np.datetime64
+
+    Raises:
+        DHError
+    """
     try:
         if not dt:
             return None
@@ -482,6 +525,15 @@ def to_datetime64(dt: Union[None, Instant, ZonedDateTime]) -> Optional[np.dateti
 
 
 def to_timedelta(dt: Union[None, Duration]) -> Optional[datetime.timedelta]:
+    """
+    Converts a Deephaven duration to a python timedelta.
+
+    Args:
+        dt (Union[None, Duration]): A Deephaven duration.  If None is provided, None is returned.
+
+    Returns:
+        datetime.timedelta
+    """
     try:
         if not dt:
             return None
@@ -506,6 +558,18 @@ def to_timedelta(dt: Union[None, Duration]) -> Optional[datetime.timedelta]:
 
 
 def to_timedelta64(dt: Union[None, Duration, Period]) -> Optional[np.timedelta64]:
+    """
+    Converts a Deephaven duration or period to a numpy timedelta64.
+
+    Args:
+        dt (Union[None, Duration, Period]): A Deephaven duration or period.  If None is provided, None is returned.
+
+    Returns:
+        np.timedelta64
+
+    Raises:
+        DHError
+    """
     try:
         if not dt:
             return None
@@ -538,14 +602,3 @@ def to_timedelta64(dt: Union[None, Duration, Period]) -> Optional[np.timedelta64
 
 
 # endregion
-
-########################################################################################################################
-
-# datetime.date
-# datetime.time
-# datetime.datetime
-# datetime.timedelta
-# datetime.tzinfo
-# datetime.timezone
-# np.datetime64
-# np.timedelta64
