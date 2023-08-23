@@ -57,7 +57,6 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.time.Instant;
 import java.util.*;
-import java.util.function.Function;
 import java.util.function.IntSupplier;
 
 import static io.deephaven.util.QueryConstants.NULL_INT;
@@ -920,20 +919,22 @@ public class ParquetTableWriter {
         }
     }
 
-    static class ShortTransfer implements TransferObject<IntBuffer> {
+    /**
+     * Used as a base class of transfer objects for types where we don't enforce any page size limits
+     */
+    abstract static class BaseTransfer<T extends ChunkBase<Values>> implements TransferObject<IntBuffer> {
+        // TODO Please recommend a better name for this
 
-        private ShortChunk<Values> chunk;
+        private T chunk;
         private final IntBuffer buffer;
         private final ColumnSource<?> columnSource;
         private final ChunkSource.GetContext context;
         private boolean hasMoreDataToBuffer;
 
-        ShortTransfer(ColumnSource<?> columnSource, int targetSize) {
-
+        BaseTransfer(ColumnSource<?> columnSource, int targetSize) {
             this.columnSource = columnSource;
             this.buffer = IntBuffer.allocate(targetSize);
             context = columnSource.makeGetContext(targetSize);
-            hasMoreDataToBuffer = false;
         }
 
         @Override
@@ -952,13 +953,15 @@ public class ParquetTableWriter {
                 return 0;
             }
             buffer.clear();
-            for (int i = 0; i < chunk.size(); i++) {
-                buffer.put(chunk.get(i));
+            for (int chunkIdx = 0; chunkIdx < chunk.size(); chunkIdx++) {
+                copyFromChunkIntoBuffer(chunk, buffer, chunkIdx);
             }
             buffer.flip();
             hasMoreDataToBuffer = false;
             return chunk.size();
         }
+
+        abstract void copyFromChunkIntoBuffer(T chunk, IntBuffer buffer, int chunkIdx);
 
         @Override
         public IntBuffer getBuffer() {
@@ -968,7 +971,7 @@ public class ParquetTableWriter {
         @Override
         public void fetchData(RowSequence rs) {
             // noinspection unchecked
-            chunk = (ShortChunk<Values>) columnSource.getChunk(context, rs);
+            chunk = (T) columnSource.getChunk(context, rs);
             hasMoreDataToBuffer = true;
         }
 
@@ -978,121 +981,42 @@ public class ParquetTableWriter {
         }
     }
 
-    static class CharTransfer implements TransferObject<IntBuffer> {
-        private final ColumnSource<?> columnSource;
-        private final ChunkSource.GetContext context;
-        private CharChunk<Values> chunk;
-        private final IntBuffer buffer;
-        private boolean hasMoreDataToBuffer;
+    static class ShortTransfer extends BaseTransfer<ShortChunk<Values>> {
+        ShortTransfer(ColumnSource<?> columnSource, int targetSize) {
+            super(columnSource, targetSize);
+        }
 
+        @Override
+        void copyFromChunkIntoBuffer(ShortChunk<Values> chunk, IntBuffer buffer, int chunkIdx) {
+            buffer.put(chunk.get(chunkIdx));
+        }
+    }
+
+    static class CharTransfer extends BaseTransfer<CharChunk<Values>> {
         CharTransfer(ColumnSource<?> columnSource, int targetSize) {
-            this.columnSource = columnSource;
-            this.buffer = IntBuffer.allocate(targetSize);
-            context = this.columnSource.makeGetContext(targetSize);
-            hasMoreDataToBuffer = false;
+            super(columnSource, targetSize);
         }
 
         @Override
-        public boolean hasMoreDataToBuffer() {
-            return hasMoreDataToBuffer;
-        }
-
-        @Override
-        public int bufferAllFetchedData() {
-            return bufferFetchedData();
-        }
-
-        @Override
-        public int bufferFetchedData() {
-            if (!hasMoreDataToBuffer) {
-                return 0;
-            }
-            buffer.clear();
-            for (int i = 0; i < chunk.size(); i++) {
-                buffer.put(chunk.get(i));
-            }
-            buffer.flip();
-            hasMoreDataToBuffer = false;
-            return chunk.size();
-        }
-
-        @Override
-        public IntBuffer getBuffer() {
-            return buffer;
-        }
-
-        @Override
-        public void fetchData(RowSequence rs) {
-            // noinspection unchecked
-            chunk = (CharChunk<Values>) columnSource.getChunk(context, rs);
-            hasMoreDataToBuffer = true;
-        }
-
-        @Override
-        public void close() {
-            context.close();
+        void copyFromChunkIntoBuffer(CharChunk<Values> chunk, IntBuffer buffer, int chunkIdx) {
+            buffer.put(chunk.get(chunkIdx));
         }
     }
 
-    static class ByteTransfer implements TransferObject<IntBuffer> {
-
-        private ByteChunk<Values> chunk;
-        private final IntBuffer buffer;
-        private final ColumnSource<?> columnSource;
-        private final ChunkSource.GetContext context;
-        private boolean hasMoreDataToBuffer;
-
+    static class ByteTransfer extends BaseTransfer<ByteChunk<Values>> {
         ByteTransfer(ColumnSource<?> columnSource, int targetSize) {
-            this.columnSource = columnSource;
-            this.buffer = IntBuffer.allocate(targetSize);
-            context = this.columnSource.makeGetContext(targetSize);
-            hasMoreDataToBuffer = false;
+            super(columnSource, targetSize);
         }
 
         @Override
-        public boolean hasMoreDataToBuffer() {
-            return hasMoreDataToBuffer;
-        }
-
-        @Override
-        public int bufferAllFetchedData() {
-            return bufferFetchedData();
-        }
-
-        @Override
-        public int bufferFetchedData() {
-            if (!hasMoreDataToBuffer) {
-                return 0;
-            }
-            buffer.clear();
-            for (int i = 0; i < chunk.size(); i++) {
-                buffer.put(chunk.get(i));
-            }
-            buffer.flip();
-            hasMoreDataToBuffer = false;
-            return chunk.size();
-        }
-
-        @Override
-        public IntBuffer getBuffer() {
-            return buffer;
-        }
-
-        @Override
-        public void fetchData(RowSequence rs) {
-            // noinspection unchecked
-            chunk = (ByteChunk<Values>) columnSource.getChunk(context, rs);
-            hasMoreDataToBuffer = true;
-        }
-
-        @Override
-        public void close() {
-            context.close();
+        void copyFromChunkIntoBuffer(ByteChunk<Values> chunk, IntBuffer buffer, int chunkIdx) {
+            buffer.put(chunk.get(chunkIdx));
         }
     }
 
     /**
-     * Used as a base class of transfer objects for types like strings or big integers that need specialized encoding.
+     * Used as a base class of transfer objects for types like strings or big integers that need specialized encoding,
+     * and thus we need to enforce page size limits while writing.
      */
     abstract static class EncodedTransfer<T> implements TransferObject<Binary[]> {
         private final ChunkSource.GetContext context;
