@@ -163,12 +163,13 @@ def to_j_time_zone(tz: Union[None, str]) -> Optional[TimeZone]:
 
         # TODO: convert python time zones? datetime.tzinfo, datetime.timezone
         else:
-            return _JDateTimeUtils.parseTimeZone(s)
+            return _JDateTimeUtils.parseTimeZone(tz)
     except Exception as e:
         raise DHError(e) from e
 
-#TODO: rename to_j_local_date?
-def to_j_date(dt: Union[None, str, datetime.date, datetime.time, datetime.datetime, np.datetime64]) -> Optional[LocalDate]:
+
+def to_j_local_date(dt: Union[None, str, datetime.date, datetime.time, datetime.datetime, np.datetime64]) -> \
+        Optional[LocalDate]:
     """
     Converts a python type to a Deephaven local date, which is a date without a time or time zone.
 
@@ -193,15 +194,14 @@ def to_j_date(dt: Union[None, str, datetime.date, datetime.time, datetime.dateti
         elif isinstance(dt, datetime.date) or isinstance(dt, datetime.datetime):
             return _JLocalDate.of(dt.year, dt.month, dt.day)
         elif isinstance(dt, np.datetime64):
-            return to_j_date(dt.astype(datetime.date))
+            return to_j_local_date(dt.astype(datetime.date))
         else:
             raise Exception("Unsupported conversion: " + str(type(dt)) + " -> LocalDate")
     except Exception as e:
         raise DHError(e) from e
 
 
-#TODO: rename to_j_local_time?
-def to_j_time(dt: Union[None, str, datetime.time, datetime.datetime, np.datetime64]) -> Optional[LocalTime]:
+def to_j_local_time(dt: Union[None, str, datetime.time, datetime.datetime, np.datetime64]) -> Optional[LocalTime]:
     """
     Converts a python type to a Deephaven local time, which is the time that would be read from a clock and does not
     have a date or timezone.
@@ -209,8 +209,8 @@ def to_j_time(dt: Union[None, str, datetime.time, datetime.datetime, np.datetime
     Time strings can be formatted as 'hh:mm:ss[.nnnnnnnnn]'.
 
     Args:
-        dt (Union[None, str, datetime.time, datetime.datetime, np.datetime64]): A Python time, date time, or time string.
-            If None is provided, None is returned.
+        dt (Union[None, str, datetime.time, datetime.datetime, np.datetime64]): A Python time, date time, or
+            time string.  If None is provided, None is returned.
 
     Returns:
         LocalTime
@@ -228,7 +228,7 @@ def to_j_time(dt: Union[None, str, datetime.time, datetime.datetime, np.datetime
             return _JLocalTime.of(dt.hour, dt.minute, dt.second, dt.microsecond * 1000)
         elif isinstance(dt, np.datetime64):
             # Conversion only supports micros resolution
-            return to_j_time(dt.astype(datetime.time))
+            return to_j_local_time(dt.astype(datetime.time))
         else:
             raise Exception("Unsupported conversion: " + str(type(dt)) + " -> LocalTime")
     except Exception as e:
@@ -425,7 +425,6 @@ def to_j_period(dt: Union[None, str, datetime.timedelta, np.timedelta64]) -> Opt
 
 # region Conversions: Java To Python
 
-#TODO: add py to these names?
 
 def to_date(dt: Union[None, LocalDate]) -> Optional[datetime.date]:
     """
@@ -547,8 +546,8 @@ def to_timedelta(dt: Union[None, Duration]) -> Optional[datetime.timedelta]:
             w = dt.getDays() // 7
 
             if y or m:
-                raise Exception("Unsupported conversion: " + str(
-                    type(dt)) + " -> datetime.timedelta: Periods must only be days or weeks")
+                raise Exception("Unsupported conversion: " + str(type(dt)) +
+                                " -> datetime.timedelta: Periods must only be days or weeks")
 
             return datetime.timedelta(days=d, weeks=w)
         else:
