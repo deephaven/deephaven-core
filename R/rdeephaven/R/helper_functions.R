@@ -59,8 +59,10 @@ verify_numeric <- function(arg_name, candidate, is_scalar) {
   verify_type(arg_name, candidate, "numeric", "numeric", is_scalar)
 }
 
-verify_list <- function(arg_name, candidate, is_scalar) {
-  verify_type(arg_name, candidate, "list", "list", is_scalar)
+verify_list <- function(arg_name, candidate) {
+  if (first_class(candidate) != "list") {
+    stop(paste0("'", arg_name, "' must be a list."))
+  }
 }
 
 verify_in_unit_interval <- function(arg_name, candidate, is_scalar) {
