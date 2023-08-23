@@ -67,7 +67,7 @@ Client <- R6Class("Client",
 
       # set extra header options if they are provided
       if (length(int_options) != 0) {
-        verify_list("int_options", int_options)
+        verify_named_list("int_options", int_options)
         for (key in names(int_options)) {
           verify_string("key", key, TRUE)
           verify_int("value", int_options[[key]], TRUE)
@@ -76,7 +76,7 @@ Client <- R6Class("Client",
       }
 
       if (length(string_options) != 0) {
-        verify_list("string_options", string_options)
+        verify_named_list("string_options", string_options)
         for (key in names(string_options)) {
           verify_string("key", key, TRUE)
           verify_string("value", string_options[[key]], TRUE)
@@ -85,7 +85,7 @@ Client <- R6Class("Client",
       }
 
       if (length(extra_headers) != 0) {
-        verify_list("extra_headers", extra_headers)
+        verify_named_list("extra_headers", extra_headers)
         for (key in names(extra_headers)) {
           verify_string("key", key, TRUE)
           verify_string("value", extra_headers[[key]], TRUE)
