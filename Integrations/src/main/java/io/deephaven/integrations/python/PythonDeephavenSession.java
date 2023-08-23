@@ -308,8 +308,10 @@ public class PythonDeephavenSession extends AbstractScriptSession<PythonSnapshot
     @Override
     public Object unwrapObject(Object object) {
         if (object instanceof PyObject) {
-            final PyObject pyObject = (PyObject) object;
-            final Object unwrapped = module.javaify(pyObject);
+            final Object unwrapped;
+            try (PyObject pyObject = (PyObject) object) {
+                unwrapped = module.javaify(pyObject);
+            }
             if (unwrapped != null) {
                 return unwrapped;
             }
