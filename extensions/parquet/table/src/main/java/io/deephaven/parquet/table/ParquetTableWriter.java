@@ -1101,7 +1101,7 @@ public class ParquetTableWriter {
         private final ColumnSource<?> columnSource;
 
         /**
-         * Stores the target for maximum size of data in a single page.
+         * The maximum size of data to be stored in a single page. This is not a strict limit though.
          */
         private final int targetPageSize;
 
