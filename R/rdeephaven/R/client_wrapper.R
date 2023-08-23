@@ -120,9 +120,7 @@ Client <- R6Class("Client",
 
     time_table = function(period, start_time = "now") {
       verify_string("period", period, TRUE)
-      if(any(start_time != "now") && any(start_time != "")) {
-        verify_string("start_time", start_time, TRUE)
-      }
+      verify_string("start_time", start_time, TRUE)
       return(TableHandle$new(self$.internal_rcpp_object$time_table(period, start_time)))
     },
 
