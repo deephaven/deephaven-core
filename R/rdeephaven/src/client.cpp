@@ -381,8 +381,11 @@ public:
         return new TableHandleWrapper(internal_tbl_hdl_mngr.EmptyTable(size));
     }
 
-    TableHandleWrapper* TimeTable(int64_t startTimeNanos, int64_t periodNanos) {
-        return new TableHandleWrapper(internal_tbl_hdl_mngr.TimeTable(startTimeNanos, periodNanos));
+    TableHandleWrapper* TimeTable(std::string periodISO, std::string startTimeISO) {
+        if((startTimeISO == "now") || (startTimeISO == "")) {
+            return new TableHandleWrapper(internal_tbl_hdl_mngr.TimeTable(periodISO));
+        }
+        return new TableHandleWrapper(internal_tbl_hdl_mngr.TimeTable(periodISO, startTimeISO));
     };
 
     void RunScript(std::string code) {
