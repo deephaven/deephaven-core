@@ -47,7 +47,7 @@ public interface ColumnWriter extends SafeCloseable {
     void addPage(Object pageData, int valuesCount, Statistics<?> statistics) throws IOException;
 
     /**
-     * Add a vector page to the file.. Does not track statistics, so the caller must track statistics in another way.
+     * Add a vector page to the file. Does not track statistics, so the caller must track statistics in another way.
      */
     @FinalDefault
     default void addVectorPage(@NotNull Object pageData,

@@ -44,6 +44,7 @@ import io.deephaven.util.type.TypeUtils;
 import io.deephaven.vector.Vector;
 import org.apache.commons.lang3.tuple.Pair;
 import org.apache.parquet.bytes.HeapByteBufferAllocator;
+import org.apache.parquet.column.statistics.IntStatistics;
 import org.apache.parquet.column.statistics.Statistics;
 import org.apache.parquet.io.api.Binary;
 import org.jetbrains.annotations.NotNull;
@@ -684,10 +685,9 @@ public class ParquetTableWriter {
                         final String key = chunk.get(vi);
                         int dictionaryPos = keyToPos.get(key);
                         if (dictionaryPos == keyToPos.getNoEntryValue()) {
-                            // Track the statistics while the dictionary is being built.
+                            // Track the min/max statistics while the dictionary is being built.
                             if (key == null) {
                                 hasNulls = pageHasNulls = true;
-                                statistics.incrementNumNulls();
                             } else {
                                 if (keyCount == encodedKeys.length) {
                                     if (keyCount >= maxKeys) {
@@ -740,18 +740,22 @@ public class ParquetTableWriter {
 
             columnWriter.addDictionaryPage(encodedKeys, keyCount);
             final Iterator<IntBuffer> arraySizeIt = arraySizeBuffers == null ? null : arraySizeBuffers.iterator();
+            // Accumulate integer statistics in a temporary object.
+            Statistics<Integer> tmpStats = new IntStatistics();
             for (int i = 0; i < pageBuffers.size(); ++i) {
                 final IntBuffer pageBuffer = pageBuffers.get(i);
                 final boolean pageHasNulls = pageBufferHasNull.get(i);
                 pageBuffer.flip();
                 if (vectorHelper != null) {
-                    columnWriter.addVectorPage(pageBuffer, arraySizeIt.next(), pageBuffer.remaining());
+                    columnWriter.addVectorPage(pageBuffer, arraySizeIt.next(), pageBuffer.remaining(), tmpStats);
                 } else if (pageHasNulls) {
-                    columnWriter.addPage(pageBuffer, pageBuffer.remaining());
+                    columnWriter.addPage(pageBuffer, pageBuffer.remaining(), tmpStats);
                 } else {
-                    columnWriter.addPageNoNulls(pageBuffer, pageBuffer.remaining());
+                    columnWriter.addPageNoNulls(pageBuffer, pageBuffer.remaining(), tmpStats);
                 }
             }
+            // Add the nulls from the temp stats to the overall stats.
+            statistics.incrementNumNulls(tmpStats.getNumNulls());
             return true;
         } catch (final DictionarySizeExceededException ignored) {
             // Reset the stats because we will re-encode these in PLAIN encoding.

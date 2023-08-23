@@ -821,6 +821,22 @@ public class ParquetTableReadWriteTest {
 
     @Test
     public void readWriteStatisticsTest() {
+        // Test simple structured table.
+        final ColumnDefinition<byte[]> columnDefinition =
+                ColumnDefinition.fromGenericType("VariableWidthByteArrayColumn", byte[].class, byte.class);
+        final TableDefinition tableDefinition = TableDefinition.of(columnDefinition);
+        final byte[] byteArray = new byte[] {1, 2, 3, 4, NULL_BYTE, 6, 7, 8, 9, NULL_BYTE, 11, 12, 13};
+        final Table simpleTable = TableTools.newTable(tableDefinition,
+                TableTools.col("VariableWidthByteArrayColumn", null, byteArray, byteArray, byteArray, byteArray,
+                        byteArray));
+        final File simpleTableDest = new File(rootFile, "ParquetTest_simple_statistics_test.parquet");
+        ParquetTools.writeTable(simpleTable, simpleTableDest);
+
+        final Table simpleFromDisk = ParquetTools.readTable(simpleTableDest);
+        TstUtils.assertTableEquals(simpleTable, simpleFromDisk);
+
+        assertTableStatistics(simpleTable, simpleTableDest);
+
         // Test flat columns.
         final Table flatTableToSave = getTableFlat(10_000, true, true);
         final File flatTableDest = new File(rootFile, "ParquetTest_flat_statistics_test.parquet");
@@ -873,6 +889,12 @@ public class ParquetTableReadWriteTest {
                 assertByteColumnStatistics(
                         new SerialByteColumnIterator(
                                 (ColumnSource<Byte>) columnSource, inputTable.getRowSet()),
+                        (Statistics<Integer>) statistics);
+            } else if (csType == byte[].class) {
+                assertByteArrayColumnStatistics(
+                        new SerialObjectColumnIterator<>(
+                                (ColumnSource<byte[]>) columnSource,
+                                inputTable.getRowSet()),
                         (Statistics<Integer>) statistics);
             } else if (csType == ByteVector.class) {
                 assertByteVectorColumnStatistics(
@@ -1032,6 +1054,8 @@ public class ParquetTableReadWriteTest {
 
         iterator.forEachRemaining(values -> {
             if (values == null) {
+                itemCount.increment();
+                nullCount.increment();
                 return;
             }
             for (final Boolean value : values) {
@@ -1091,6 +1115,45 @@ public class ParquetTableReadWriteTest {
         }
     }
 
+    private void assertByteArrayColumnStatistics(SerialObjectColumnIterator<byte[]> iterator,
+            Statistics<Integer> statistics) {
+        MutableLong itemCount = new MutableLong(0);
+        MutableLong nullCount = new MutableLong(0);
+        MutableInt min = new MutableInt(NULL_BYTE);
+        MutableInt max = new MutableInt(NULL_BYTE);
+
+        iterator.forEachRemaining(values -> {
+            if (values == null) {
+                itemCount.increment();
+                nullCount.increment();
+                return;
+            }
+            for (final byte value : values) {
+                itemCount.increment();
+                if (value == NULL_BYTE) {
+                    nullCount.increment();
+                } else {
+                    if (min.getValue() == NULL_BYTE || value < min.getValue()) {
+                        min.setValue(value);
+                    }
+                    if (max.getValue() == NULL_BYTE || value > max.getValue()) {
+                        max.setValue(value);
+                    }
+                }
+            }
+        });
+
+        assertEquals(nullCount.intValue(), statistics.getNumNulls());
+        if (!itemCount.getValue().equals(nullCount.getValue())) {
+            // There are some non-null values, so min and max should be non-null and equal to observed values.
+            assertEquals(min.getValue(), statistics.genericGetMin());
+            assertEquals(max.getValue(), statistics.genericGetMax());
+        } else {
+            // Everything is null, statistics should be empty.
+            assertFalse(statistics.hasNonNullValue());
+        }
+    }
+
     private void assertByteVectorColumnStatistics(SerialObjectColumnIterator<ByteVector> iterator,
             Statistics<Integer> statistics) {
         MutableLong itemCount = new MutableLong(0);
@@ -1100,6 +1163,8 @@ public class ParquetTableReadWriteTest {
 
         iterator.forEachRemaining(values -> {
             if (values == null) {
+                itemCount.increment();
+                nullCount.increment();
                 return;
             }
             for (final byte value : values) {
@@ -1168,6 +1233,8 @@ public class ParquetTableReadWriteTest {
 
         iterator.forEachRemaining(values -> {
             if (values == null) {
+                itemCount.increment();
+                nullCount.increment();
                 return;
             }
             for (final char value : values) {
@@ -1236,6 +1303,8 @@ public class ParquetTableReadWriteTest {
 
         iterator.forEachRemaining(values -> {
             if (values == null) {
+                itemCount.increment();
+                nullCount.increment();
                 return;
             }
             for (final short value : values) {
@@ -1304,6 +1373,8 @@ public class ParquetTableReadWriteTest {
 
         iterator.forEachRemaining(values -> {
             if (values == null) {
+                itemCount.increment();
+                nullCount.increment();
                 return;
             }
             for (final int value : values) {
@@ -1372,6 +1443,8 @@ public class ParquetTableReadWriteTest {
 
         iterator.forEachRemaining(values -> {
             if (values == null) {
+                itemCount.increment();
+                nullCount.increment();
                 return;
             }
             for (final long value : values) {
@@ -1441,6 +1514,8 @@ public class ParquetTableReadWriteTest {
 
         iterator.forEachRemaining(values -> {
             if (values == null) {
+                itemCount.increment();
+                nullCount.increment();
                 return;
             }
             for (final float value : values) {
@@ -1511,6 +1586,8 @@ public class ParquetTableReadWriteTest {
 
         iterator.forEachRemaining(values -> {
             if (values == null) {
+                itemCount.increment();
+                nullCount.increment();
                 return;
             }
             for (final double value : values) {
@@ -1581,6 +1658,8 @@ public class ParquetTableReadWriteTest {
 
         iterator.forEachRemaining(values -> {
             if (values == null) {
+                itemCount.increment();
+                nullCount.increment();
                 return;
             }
             for (final String value : values) {
@@ -1618,6 +1697,8 @@ public class ParquetTableReadWriteTest {
 
         iterator.forEachRemaining(values -> {
             if (values == null) {
+                itemCount.increment();
+                nullCount.increment();
                 return;
             }
             for (String value : values) {
@@ -1688,6 +1769,8 @@ public class ParquetTableReadWriteTest {
 
         iterator.forEachRemaining(values -> {
             if (values == null) {
+                itemCount.increment();
+                nullCount.increment();
                 return;
             }
             for (final Instant value : values) {
