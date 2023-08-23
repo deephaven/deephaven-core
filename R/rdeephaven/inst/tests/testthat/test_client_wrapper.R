@@ -200,15 +200,15 @@ test_that("client constructor fails nicely with bad inputs", {
   )
   expect_error(
     Client$new(target = "localhost:10000", int_options = 1234),
-    "'int_options' must be a single list. Got an object of class numeric."
+    "'int_options' must be a list or a vector of lists. Got an object of class numeric."
   )
   expect_error(
     Client$new(target = "localhost:10000", string_options = 1234),
-    "'string_options' must be a single list. Got an object of class numeric."
+    "'string_options' must be a list or a vector of lists. Got an object of class numeric."
   )
   expect_error(
     Client$new(target = "localhost:10000", extra_headers = 1234),
-    "'extra_headers' must be a single list. Got an object of class numeric."
+    "'extra_headers' must be a list or a vector of lists. Got an object of class numeric."
   )
   
 })
