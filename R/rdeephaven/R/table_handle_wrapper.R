@@ -59,7 +59,7 @@ TableHandle <- R6Class("TableHandle",
     merge = function(...) {
       table_list <- unlist(c(...))
       if (length(table_list) == 0) {
-        return(TableHandle$new(self$.internal_rcpp_object$merge(NULL)))
+        return(self)
       }
       verify_type("table_list", table_list, "TableHandle", "Deephaven TableHandle", FALSE)
       unwrapped_table_list <- lapply(table_list, strip_r6_wrapping)
@@ -233,30 +233,30 @@ TableHandle <- R6Class("TableHandle",
       return(TableHandle$new(self$.internal_rcpp_object$count_by(col, by)))
     },
     
-    cross_join = function(right_side, columns_to_match = character(), columns_to_add = character()) {
-      verify_string("columns_to_match", columns_to_match, FALSE)
-      verify_string("columns_to_add", columns_to_add, FALSE)
+    cross_join = function(table, on = character(), joins = character()) {
+      verify_string("on", on, FALSE)
+      verify_string("joins", joins, FALSE)
       return(TableHandle$new(self$.internal_rcpp_object$cross_join(
-        right_side$.internal_rcpp_object,
-        columns_to_match, columns_to_add
+        table$.internal_rcpp_object,
+        on, joins
       )))
     },
     
-    natural_join = function(right_side, columns_to_match = character(), columns_to_add = character()) {
-      verify_string("columns_to_match", columns_to_match, FALSE)
-      verify_string("columns_to_add", columns_to_add, FALSE)
+    natural_join = function(table, on = character(), joins = character()) {
+      verify_string("on", on, FALSE)
+      verify_string("joins", joins, FALSE)
       return(TableHandle$new(self$.internal_rcpp_object$natural_join(
-        right_side$.internal_rcpp_object,
-        columns_to_match, columns_to_add
+        table$.internal_rcpp_object,
+        on, joins
       )))
     },
     
-    exact_join = function(right_side, columns_to_match = character(), columns_to_add = character()) {
-      verify_string("columns_to_match", columns_to_match, FALSE)
-      verify_string("columns_to_add", columns_to_add, FALSE)
+    exact_join = function(table, on = character(), joins = character()) {
+      verify_string("on", on, FALSE)
+      verify_string("joins", joins, FALSE)
       return(TableHandle$new(self$.internal_rcpp_object$exact_join(
-        right_side$.internal_rcpp_object,
-        columns_to_match, columns_to_add
+        table$.internal_rcpp_object,
+        on, joins
       )))
     },
     

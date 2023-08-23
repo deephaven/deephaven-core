@@ -3,10 +3,8 @@ first_class <- function(arg) {
 }
 
 verify_type <- function(arg_name, candidate, required_type, message_type_name, is_scalar) {
-  if (required_type == "list") {
-    if (first_class(candidate) != "list") {
-      stop(paste0("'", arg_name, "' must be a list or a vector of lists. Got an object of class ", first_class(candidate), "."))
-    }
+  if ((required_type == "list") && (first_class(candidate) != "list")) {
+    stop(paste0("'", arg_name, "' must be a list or a vector of lists. Got an object of class ", first_class(candidate), "."))
   } else if (!is_scalar && (first_class(candidate) == "list")) {
     if (any(lapply(candidate, first_class) != required_type)) {
       stop(paste0("'", arg_name, "' must be a ", message_type_name, ", or a vector of ", message_type_name, "s. Got a vector with at least one element that is not a ", message_type_name, "."))

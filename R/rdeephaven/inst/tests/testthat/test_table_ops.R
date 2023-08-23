@@ -773,8 +773,8 @@ test_that("cross_join behaves as expected", {
 
   new_th1 <- data$th5$
     cross_join(data$th6,
-      columns_to_match = character(),
-      columns_to_add = c("X_y = X", "Y_y = Y", "Number1_y = Number1", "Number2_y = Number2")
+      on = character(),
+      joins = c("X_y = X", "Y_y = Y", "Number1_y = Number1", "Number2_y = Number2")
     )
   new_tb1 <- data$df5 %>%
     cross_join(data$df6) %>%
@@ -795,8 +795,8 @@ test_that("natural_join behaves as expected", {
     avg_by("X")
   new_th1 <- data$th5$
     natural_join(new_th2,
-      columns_to_match = "X",
-      columns_to_add = c("Number3 = Number1", "Number4 = Number2")
+      on = "X",
+      joins = c("Number3 = Number1", "Number4 = Number2")
     )
 
   new_tb2 <- data$df6 %>%
@@ -822,8 +822,8 @@ test_that("exact_join behaves as expected", {
     avg_by("X")
   new_th1 <- data$th5$
     exact_join(new_th2,
-      columns_to_match = "X",
-      columns_to_add = c("Number3 = Number1", "Number4 = Number2")
+      on = "X",
+      joins = c("Number3 = Number1", "Number4 = Number2")
     )
 
   new_tb2 <- data$df6 %>%
