@@ -103,8 +103,15 @@ TableHandle <- R6Class("TableHandle",
       verify_string("by", by, FALSE)
       return(TableHandle$new(self$.internal_rcpp_object$ungroup(by)))
     },
+    update_by = function(ops, by = character()) {
+      verify_type("ops", ops, "UpdateByOp", "Deephaven UpdateByOp", FALSE)
+      verify_string("by", by, FALSE)
+      ops <- c(ops)
+      unwrapped_ops <- lapply(ops, strip_r6_wrapping)
+      return(TableHandle$new(self$.internal_rcpp_object$update_by(unwrapped_ops, by)))
+    },
     agg_by = function(aggs, by = character()) {
-      verify_type("aggs", aggs, "Aggregation", "Deephaven Aggregation", FALSE)
+      verify_type("aggs", aggs, "AggOp", "Deephaven AggOp", FALSE)
       verify_string("by", by, FALSE)
       aggs <- c(aggs)
       unwrapped_aggs <- lapply(aggs, strip_r6_wrapping)
