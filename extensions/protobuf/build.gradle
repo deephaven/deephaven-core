@@ -5,12 +5,8 @@ plugins {
 }
 
 dependencies {
-    api project(':engine-api')
-
-    // todo: need to be sure this doesn't conflict w/ gRPC proto?
-    api 'com.google.protobuf:protobuf-java:3.23.2'
-
-    implementation project(':engine-table')
+    api project(':qst')
+    api 'com.google.protobuf:protobuf-java:3.24.1'
 
     Classpaths.inheritImmutables(project)
 
@@ -37,5 +33,11 @@ spotless {
         targetExclude(
                 'build/generated/source/proto/test/java/**',
         )
+    }
+}
+
+protobuf {
+    protoc {
+        artifact = 'com.google.protobuf:protoc:3.24.1'
     }
 }
