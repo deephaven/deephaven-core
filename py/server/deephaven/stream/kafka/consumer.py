@@ -3,21 +3,24 @@
 #
 
 """ The kafka.consumer module supports consuming a Kakfa topic as a Deephaven live table. """
-from typing import Dict, Tuple, List, Callable, Union
+import jpy
+from typing import Dict, Tuple, List, Callable, Union, Optional
 from warnings import warn
 
-import jpy
-
 from deephaven import dtypes
-from deephaven.jcompat import j_hashmap, j_properties
 from deephaven._wrapper import JObjectWrapper
 from deephaven.column import Column
 from deephaven.dherror import DHError
 from deephaven.dtypes import DType
+from deephaven.jcompat import j_hashmap, j_properties, j_array_list
 from deephaven.table import Table, PartitionedTable
 
 _JKafkaTools = jpy.get_type("io.deephaven.kafka.KafkaTools")
 _JKafkaTools_Consume = jpy.get_type("io.deephaven.kafka.KafkaTools$Consume")
+_JProtobufConsumeOptions = jpy.get_type("io.deephaven.kafka.protobuf.ProtobufConsumeOptions")
+_JProtobufDescriptorParserOptions = jpy.get_type("io.deephaven.protobuf.ProtobufDescriptorParserOptions")
+_JFieldPath = jpy.get_type("io.deephaven.protobuf.FieldPath")
+_JBooleanFunction = jpy.get_type("io.deephaven.functions.BooleanFunction")
 _JPythonTools = jpy.get_type("io.deephaven.integrations.python.PythonTools")
 ALL_PARTITIONS = _JKafkaTools.ALL_PARTITIONS
 
@@ -279,6 +282,73 @@ def _consume(
             ))
     except Exception as e:
         raise DHError(e, "failed to consume a Kafka stream.") from e
+
+def protobuf_spec(
+        schema: str,
+        schema_version: Optional[int] = None,
+        include: Optional[List[str]] = None,
+        parse_as_well_known: Optional[List[str]] = None,
+        parse_as_bytes: Optional[List[str]] = None,
+        parse_as_map: Optional[List[str]] = None,
+) -> KeyValueSpec:
+    """The kafka protobuf specs. This will fetch the protobuf descriptor for the schema subject from the schema registry
+    using version schema_version and create protobuf message parsing functions according to parsing options. These
+    functions will be adapted to handle schema changes.
+
+    For purposes of reproducibility across restarts where schema changes may occur, it is advisable for callers
+    to set a specific schema_version. This will ensure the resulting table definition will not change across restarts.
+    This gives the caller an explicit opportunity to update any downstream consumers when updating schema_version if
+    necessary.
+
+    Args:
+        schema (str): the schema subject name
+        schema_version (Optional[int]): the schema version, or None for latest, default is None
+        include (Optional[List[str]]): the '/' separated paths to include. Default is None, which includes all paths.
+        parse_as_well_known (Optional[List[str]]): the '/' separated paths to be parsed as "well-known" types. If a
+            message is a well-known type, but is not in included in this directive, it will be parsed recursively.
+            Default is None, which includes all paths as well-known.
+        parse_as_bytes (Optional[List[str]]): the '/' separated paths to be parsed as byte array types. If a
+            field is the bytes type, but is not in included in this directive, it will be parsed as a ByteString.
+            Default is None, which includes all paths as bytes.
+        parse_as_map (Optional[List[str]]): the '/' separated paths to be parsed as map types. If a
+            field is the map type, but is not in included in this directive, it will be parsed as a repeated
+            MapFieldEntry. Default is None, which includes all paths as maps.
+
+    Returns:
+        a KeyValueSpec
+    """
+    def name_path_starts_with_us(x: str) -> jpy.JType:
+        parts = (x[1:] if x[0] == "/" else x).split("/")
+        return _JFieldPath.namePathStartsWithUs(j_array_list(parts))
+
+    def any_name_path_starts_with_us(paths: List[str]) -> jpy.JType:
+        return getattr(_JBooleanFunction, "or")(
+            j_array_list([name_path_starts_with_us(path) for path in paths])
+        )
+
+    parser_options_builder = _JProtobufDescriptorParserOptions.builder()
+    if include is not None:
+        parser_options_builder.include(any_name_path_starts_with_us(include))
+    if parse_as_well_known is not None:
+        parser_options_builder.parseAsWellKnown(
+            any_name_path_starts_with_us(parse_as_well_known)
+        )
+    if parse_as_bytes is not None:
+        parser_options_builder.parseAsBytes(
+            any_name_path_starts_with_us(parse_as_bytes)
+        )
+    if parse_as_map is not None:
+        parser_options_builder.parseAsMap(any_name_path_starts_with_us(parse_as_map))
+    pb_consume_builder = (
+        _JProtobufConsumeOptions.builder()
+        .schemaSubject(schema)
+        .parserOptions(parser_options_builder.build())
+    )
+    if schema_version:
+        pb_consume_builder.schemaVersion(schema_version)
+    return KeyValueSpec(
+        j_spec=_JKafkaTools_Consume.protobufSpec(pb_consume_builder.build())
+    )
 
 
 def avro_spec(
