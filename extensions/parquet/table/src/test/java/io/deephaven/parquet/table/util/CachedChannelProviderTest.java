@@ -1,12 +1,13 @@
 /**
  * Copyright (c) 2016-2022 Deephaven Data Labs and Patent Pending
  */
-package io.deephaven.parquet.base.util;
+package io.deephaven.parquet.table.util;
 
 import io.deephaven.engine.util.file.FileHandle;
 import io.deephaven.engine.util.file.FileHandleAccessor;
 import io.deephaven.engine.util.file.FileHandleFactory;
 import io.deephaven.engine.util.file.InvalidFileHandleException;
+import io.deephaven.parquet.base.util.SeekableChannelsProvider;
 import junit.framework.TestCase;
 import org.jetbrains.annotations.NotNull;
 import org.junit.Assert;

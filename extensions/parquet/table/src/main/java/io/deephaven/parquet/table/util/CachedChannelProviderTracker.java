@@ -1,4 +1,4 @@
-package io.deephaven.parquet.base.util;
+package io.deephaven.parquet.table.util;
 
 import io.deephaven.hash.KeyedObjectHashMap;
 import io.deephaven.hash.KeyedObjectKey;

@@ -1,7 +1,7 @@
 /**
  * Copyright (c) 2016-2022 Deephaven Data Labs and Patent Pending
  */
-package io.deephaven.parquet.base.util;
+package io.deephaven.parquet.table.util;
 
 import io.deephaven.base.RAPriQueue;
 import io.deephaven.base.verify.Assert;
@@ -10,6 +10,7 @@ import io.deephaven.engine.util.file.FileHandleAccessor;
 import io.deephaven.engine.util.file.InvalidFileHandleException;
 import io.deephaven.hash.KeyedObjectHashMap;
 import io.deephaven.hash.KeyedObjectKey;
+import io.deephaven.parquet.base.util.SeekableChannelsProvider;
 import io.deephaven.util.annotations.VisibleForTesting;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
