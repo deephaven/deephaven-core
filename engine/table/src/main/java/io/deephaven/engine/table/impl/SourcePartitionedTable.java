@@ -187,7 +187,7 @@ public class SourcePartitionedTable extends PartitionedTableImpl {
             });
             return initialLastRowKey == lastInsertedRowKey.longValue()
                     ? RowSetFactory.empty()
-                    : RowSetFactory.fromRange(initialLastRowKey, lastInsertedRowKey.longValue());
+                    : RowSetFactory.fromRange(initialLastRowKey < 0 ? 0 : initialLastRowKey, lastInsertedRowKey.longValue());
         }
 
         private Table makeConstituentTable(@NotNull final TableLocation tableLocation) {
@@ -209,7 +209,7 @@ public class SourcePartitionedTable extends PartitionedTableImpl {
              * population in STM ColumnSources.
              */
             // TODO (https://github.com/deephaven/deephaven-core/issues/867): Refactor around a ticking partition table
-            subscriptionBuffer.processPending().stream().filter(locationKeyMatcher)
+            subscriptionBuffer.processPending().getPendingAddedLocationKeys().stream().filter(locationKeyMatcher)
                     .map(tableLocationProvider::getTableLocation).map(PendingLocationState::new)
                     .forEach(pendingLocationStates::offer);
             for (final Iterator<PendingLocationState> iter = pendingLocationStates.iterator(); iter.hasNext();) {

@@ -74,11 +74,15 @@ public class ListenerRecorder extends InstrumentedTableUpdateListener {
 
     @Override
     protected void onFailureInternal(@NotNull final Throwable originalException, @Nullable final Entry sourceEntry) {
-        this.notificationStep = getUpdateGraph().clock().currentStep();
+        setNotificationStep(getUpdateGraph().clock().currentStep());
         if (mergedListener == null) {
             throw new IllegalStateException("Merged listener not set");
         }
         mergedListener.notifyOnUpstreamError(originalException, sourceEntry);
+    }
+
+    protected void setNotificationStep(final long step) {
+        this.notificationStep = step;
     }
 
     @Override

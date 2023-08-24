@@ -9,12 +9,7 @@ import io.deephaven.hash.KeyedObjectKey;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.Collections;
-import java.util.Iterator;
-import java.util.List;
-import java.util.Objects;
+import java.util.*;
 
 /**
  * Partial {@link TableLocationProvider} implementation for standalone use or as part of a {@link TableDataService}.
@@ -51,6 +46,9 @@ public abstract class AbstractTableLocationProvider
 
     private List<String> partitionKeys;
     private boolean locationCreatedRecorder;
+
+    // Used for Mark/Sweep of locations
+    private Set<TableLocationKey> unvisitedLocations;
 
     /**
      * Construct a provider as part of a service.
@@ -100,8 +98,10 @@ public abstract class AbstractTableLocationProvider
     protected final void handleTableLocationKey(@NotNull final TableLocationKey locationKey) {
         if (!supportsSubscriptions()) {
             tableLocations.putIfAbsent(locationKey, TableLocationKey::makeImmutable);
+            visitLocationKey(locationKey);
             return;
         }
+
         synchronized (subscriptions) {
             // Since we're holding the lock on subscriptions, the following code is overly complicated - we could
             // certainly just deliver the notification in observeInsert. That said, I'm happier with this approach,
@@ -109,6 +109,7 @@ public abstract class AbstractTableLocationProvider
             // observeInsert out of the business of subscription processing.
             locationCreatedRecorder = false;
             final Object result = tableLocations.putIfAbsent(locationKey, this::observeInsert);
+            visitLocationKey(locationKey);
             if (locationCreatedRecorder) {
                 verifyPartitionKeys(locationKey);
                 if (subscriptions.deliverNotification(Listener::handleTableLocationKey, toKeyImmutable(result), true)) {
@@ -223,7 +224,7 @@ public abstract class AbstractTableLocationProvider
      *
      * @param location the TableLocation to be removed
      */
-    public void handleTableLocationRemoved(@NotNull final TableLocation location) {
+    protected void handleTableLocationRemoved(@NotNull final TableLocation location) {
         // Note: the location has already been removed from tableLocations
         if (supportsSubscriptions()) {
             synchronized (subscriptions) {
@@ -243,6 +244,31 @@ public abstract class AbstractTableLocationProvider
                     this, partitionKeys, locationKey.getPartitionKeys()));
         }
     }
+
+    // region Mark / Sweep support
+    protected final void markLocationKeys() {
+        if (unvisitedLocations != null && !unvisitedLocations.isEmpty()) {
+            throw new IllegalStateException("Locations have already been marked, but not swept.");
+        }
+
+        unvisitedLocations = new HashSet(getTableLocationKeys());
+    }
+
+    protected final void visitLocationKey(@NotNull final TableLocationKey key) {
+        if(unvisitedLocations != null) {
+            unvisitedLocations.remove(key);
+        }
+    }
+
+    protected final void sweepUnvisited() {
+        if (unvisitedLocations == null ) {
+            throw new IllegalStateException("Locations have not been marked, cannot sweep.");
+        }
+
+        unvisitedLocations.forEach(this::removeTableLocationKey);
+        unvisitedLocations = null;
+    }
+    // endregion
 
     /**
      * Key definition for {@link TableLocation} or {@link TableLocationKey} lookup by {@link TableLocationKey}.

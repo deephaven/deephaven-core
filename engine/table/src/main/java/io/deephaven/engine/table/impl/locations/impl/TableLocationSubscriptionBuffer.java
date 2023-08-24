@@ -4,13 +4,13 @@
 package io.deephaven.engine.table.impl.locations.impl;
 
 import io.deephaven.base.verify.Require;
-import io.deephaven.engine.table.impl.locations.ImmutableTableLocationKey;
-import io.deephaven.engine.table.impl.locations.TableDataException;
-import io.deephaven.engine.table.impl.locations.TableLocation;
-import io.deephaven.engine.table.impl.locations.TableLocationProvider;
+import io.deephaven.engine.table.impl.locations.*;
 import org.jetbrains.annotations.NotNull;
 
-import java.util.*;
+import java.util.Collection;
+import java.util.Collections;
+import java.util.HashSet;
+import java.util.Set;
 
 /**
  * Intermediates between push-based subscription to a TableLocationProvider and polling on update source refresh.
@@ -34,6 +34,25 @@ public class TableLocationSubscriptionBuffer implements TableLocationProvider.Li
         this.tableLocationProvider = Require.neqNull(tableLocationProvider, "tableLocationProvider");
     }
 
+    public static final class LocationUpdate {
+        private final Collection<ImmutableTableLocationKey> pendingAddedLocationKeys;
+        private final Collection<TableLocation> pendingRemovedLocationKeys;
+
+        public LocationUpdate(@NotNull final Collection<ImmutableTableLocationKey> pendingAddedLocationKeys,
+                              @NotNull final Collection<TableLocation> pendingRemovedLocationKeys) {
+            this.pendingAddedLocationKeys = pendingAddedLocationKeys;
+            this.pendingRemovedLocationKeys = pendingRemovedLocationKeys;
+        }
+
+        public Collection<ImmutableTableLocationKey> getPendingAddedLocationKeys() {
+            return pendingAddedLocationKeys;
+        }
+
+        public Collection<TableLocation> getPendingRemovedLocationKeys() {
+            return pendingRemovedLocationKeys;
+        }
+    }
+
     /**
      * Subscribe if needed, and return any pending location keys (or throw a pending exception) from the table location
      * provider. A given location key will only be returned by a single call to processPending() (unless state is
@@ -42,7 +61,7 @@ public class TableLocationSubscriptionBuffer implements TableLocationProvider.Li
      *
      * @return The collection of pending location keys
      */
-    public synchronized Collection<ImmutableTableLocationKey> processPending() {
+    public synchronized LocationUpdate processPending() {
         // TODO: Should I change this to instead re-use the collection?
         if (!subscribed) {
             if (tableLocationProvider.supportsSubscriptions()) {
@@ -67,16 +86,11 @@ public class TableLocationSubscriptionBuffer implements TableLocationProvider.Li
             pendingException = null;
         }
 
-        // TODO: Maybe we should combine these into a single exception -- or even better set the pending exception in
-        //       handleRemoved, since this is not allowed in the first place.
         if (resultException != null) {
             throw new TableDataException("Processed pending exception", resultException);
         }
 
-        if(!pendingLocationsRemoved.isEmpty()) {
-            throw new TableDataException("Removed TableLocations are not handled in TableLocationSubscriptionBuffer: " + pendingLocationsRemoved);
-        }
-        return resultLocationKeys;
+        return new LocationUpdate(resultLocationKeys, resultLocationsRemoved);
     }
 
     /**

@@ -137,7 +137,10 @@ public abstract class SourceTable<IMPL_TYPE extends SourceTable<IMPL_TYPE>> exte
                 if (isRefreshing()) {
                     final TableLocationSubscriptionBuffer locationBuffer =
                             new TableLocationSubscriptionBuffer(locationProvider);
-                    maybeAddLocations(locationBuffer.processPending());
+                    final TableLocationSubscriptionBuffer.LocationUpdate locationUpdate = locationBuffer.processPending();
+                    assertNoLocationsRemoved(locationUpdate);
+
+                    maybeAddLocations(locationUpdate.getPendingAddedLocationKeys());
                     updateSourceRegistrar.addSource(locationChangePoller = new LocationChangePoller(locationBuffer));
                 } else {
                     locationProvider.refresh();
@@ -202,7 +205,9 @@ public abstract class SourceTable<IMPL_TYPE extends SourceTable<IMPL_TYPE>> exte
         @Override
         protected void instrumentedRefresh() {
             try {
-                maybeAddLocations(locationBuffer.processPending());
+                final TableLocationSubscriptionBuffer.LocationUpdate locationUpdate = locationBuffer.processPending();
+                assertNoLocationsRemoved(locationUpdate);
+                maybeAddLocations(locationUpdate.getPendingAddedLocationKeys());
                 // NB: This class previously had functionality to notify "location listeners", but it was never used.
                 // Resurrect from git history if needed.
                 if (!locationSizesInitialized) {
@@ -218,7 +223,14 @@ public abstract class SourceTable<IMPL_TYPE extends SourceTable<IMPL_TYPE>> exte
             } catch (Exception e) {
                 // Notify listeners to the SourceTable when we had an issue refreshing available locations.
                 notifyListenersOnError(e, null);
+                getUpdateGraph().removeSource(this);
             }
+        }
+    }
+
+    private static void assertNoLocationsRemoved(TableLocationSubscriptionBuffer.LocationUpdate locationUpdate) {
+        if(!locationUpdate.getPendingRemovedLocationKeys().isEmpty()) {
+            throw new TableDataException(SourceTable.class.getSimpleName() + " does not support removing locations");
         }
     }
 

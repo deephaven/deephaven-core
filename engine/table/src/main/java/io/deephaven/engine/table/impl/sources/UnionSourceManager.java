@@ -3,6 +3,7 @@
  */
 package io.deephaven.engine.table.impl.sources;
 
+import io.deephaven.UncheckedDeephavenException;
 import io.deephaven.base.verify.Assert;
 import io.deephaven.engine.rowset.*;
 import io.deephaven.engine.rowset.RowSetFactory;
@@ -201,12 +202,20 @@ public class UnionSourceManager {
     private final class ConstituentListenerRecorder extends LinkedListenerRecorder {
 
         private final ModifiedColumnSet.Transformer modifiedColumnsTransformer;
+        private Throwable error;
 
         ConstituentListenerRecorder(@NotNull final Table constituent) {
             super("PartitionedTable.merge() Constituent", constituent, mergedListener);
             modifiedColumnsTransformer =
                     ((QueryTable) constituent).newModifiedColumnSetTransformer(resultTable, columnNames);
             setMergedListener(mergedListener);
+        }
+
+        @Override
+        protected void onFailureInternal(@NotNull Throwable originalException, @Nullable Entry sourceEntry) {
+            this.setNotificationStep(getUpdateGraph().clock().currentStep());
+            this.error = originalException;
+            mergedListener.notifyChanges();
         }
 
         @Override
@@ -491,6 +500,11 @@ public class UnionSourceManager {
             if (constituent.isRefreshing()) {
                 assert nextListener != null;
                 Assert.eq(nextListener.getParent(), "listener parent", constituent, "existing constituent");
+                if(nextListener.error != null) {
+                    // TODO: Pick a better one.
+                    throw new UncheckedDeephavenException(nextListener.error);
+                }
+
                 changes = nextListener.getUpdate();
                 mcsTransformer = nextListener.modifiedColumnsTransformer;
                 advanceListener();
