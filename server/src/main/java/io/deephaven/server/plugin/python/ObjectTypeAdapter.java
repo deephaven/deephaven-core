@@ -28,15 +28,29 @@ final class ObjectTypeAdapter extends ObjectTypeBase implements AutoCloseable {
 
     @Override
     public boolean isType(Object object) {
-        if (!(object instanceof PyObjectRefCountedNode) && !(object instanceof PyObject)) {
+        final PyObject pyObject;
+        if (object instanceof PyObjectRefCountedNode) {
+            pyObject = ((PyObjectRefCountedNode) object).getPythonObject();
+        } else if (object instanceof PyObject) {
+            pyObject = (PyObject) object;
+        } else {
             return false;
         }
-        return objectTypeAdapter.call(boolean.class, "is_type", Object.class, object);
+        return objectTypeAdapter.call(boolean.class, "is_type", PyObject.class, pyObject);
     }
 
     @Override
     public MessageStream compatibleClientConnection(Object object, MessageStream connection)
             throws ObjectCommunicationException {
+        final PyObject pyObject;
+        if (object instanceof PyObjectRefCountedNode) {
+            pyObject = ((PyObjectRefCountedNode) object).getPythonObject();
+        } else if (object instanceof PyObject) {
+            pyObject = (PyObject) object;
+        } else {
+            // This should be impossible, caught by the superclass's isType check
+            throw new IllegalStateException(object + " is not a python object");
+        }
         if (objectTypeAdapter.call("is_fetch_only").getBooleanValue()) {
             // Fall back and attempt to use old api:
             // Using this simple implementation, even though the python code won't write to this, but instead will
@@ -45,7 +59,7 @@ final class ObjectTypeAdapter extends ObjectTypeBase implements AutoCloseable {
 
             final byte[] bytes = objectTypeAdapter.call(byte[].class, "to_bytes",
                     ExporterAdapter.class, new ExporterAdapter(exporter),
-                    Object.class, object);
+                    PyObject.class, pyObject);
 
             // Send the message and close the stream
             connection.onData(ByteBuffer.wrap(bytes), exporter.references());
@@ -54,9 +68,9 @@ final class ObjectTypeAdapter extends ObjectTypeBase implements AutoCloseable {
             return MessageStream.NOOP;
         } else {
             PyObject newConnection =
-                    objectTypeAdapter.call(PyObject.class, "create_client_connection", Object.class,
-                            object, PythonClientMessageStream.class,
-                            new PythonClientMessageStream(connection));
+                    objectTypeAdapter.call(PyObject.class, "create_client_connection",
+                            PyObject.class, pyObject,
+                            PythonClientMessageStream.class, new PythonClientMessageStream(connection));
             return new PythonServerMessageStream(newConnection);
         }
     }

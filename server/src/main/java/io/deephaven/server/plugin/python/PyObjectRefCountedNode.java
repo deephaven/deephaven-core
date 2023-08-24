@@ -11,7 +11,7 @@ import org.jpy.PyObject;
  * instance represents. This way, as long as PyObjectRefCountedNode instances are managed correctly by their parent
  * scope, the PyObject strong reference will be correctly released when the object is no longer used.
  */
-public class PyObjectRefCountedNode extends LivenessArtifact {
+public final class PyObjectRefCountedNode extends LivenessArtifact {
     private final PyObject pythonObject;
 
     /**

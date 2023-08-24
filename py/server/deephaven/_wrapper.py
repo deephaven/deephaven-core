@@ -139,11 +139,14 @@ def pythonify(j_obj: Union[jpy.JType, Any]) -> Optional[Union[JObjectWrapper, jp
     """
     Reciprocal of javaify, returns an object that is safe to be used in Python after being passed
     from Java.
+
+    Where possible, when passing a python object or wrapper from Java, unwrap from PyObjectLivenessNode
+    to PyObject to avoid excess JNI/GIL overhead.
     """
     if not isinstance(j_obj, jpy.JType):
         return j_obj
     # Definitely a JType, check if it is a PyObjectRefCountedNode
-    if hasattr(j_obj,'getPythonObject'):
+    if j_obj.jclass == JPyObjectRefCountedNode.jclass:
         return j_obj.getPythonObject()
     # Vanilla Java object, see if we have explicit wrapping for it
     return wrap_j_object(j_obj)
