@@ -15,7 +15,7 @@ public class FuzzyNumberGenerator extends SequentialNumberGenerator {
             final double step,
             final double max,
             final double fuzz,
-            final @NotNull Mode mode) {
+            @NotNull final Mode mode) {
         super(start, step, max, mode);
         this.fuzz = fuzz;
     }

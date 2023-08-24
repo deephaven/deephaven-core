@@ -20,8 +20,8 @@ public class ImmutableConstantZonedDateTimeSource extends ImmutableConstantNanos
     private final ZoneId zone;
 
     public ImmutableConstantZonedDateTimeSource(
-            final @NotNull ZoneId zone,
-            final @NotNull ImmutableConstantLongSource nanoSource) {
+            @NotNull final ZoneId zone,
+            @NotNull final ImmutableConstantLongSource nanoSource) {
         super(ZonedDateTime.class, nanoSource);
         this.zone = zone;
     }
@@ -37,7 +37,7 @@ public class ImmutableConstantZonedDateTimeSource extends ImmutableConstantNanos
     }
 
     @Override
-    public ColumnSource<ZonedDateTime> toZonedDateTime(final @NotNull ZoneId zone) {
+    public ColumnSource<ZonedDateTime> toZonedDateTime(@NotNull final ZoneId zone) {
         if (this.zone.equals(zone)) {
             return this;
         }

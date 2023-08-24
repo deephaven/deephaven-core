@@ -25,6 +25,8 @@ public class ReplicateSortKernel {
         replicateLongToInt();
         replicateLongToByte();
         doCharReplication(
+                "engine/table/src/main/java/io/deephaven/engine/table/impl/sort/timsort/CharTimsortKernel.java");
+        doCharReplication(
                 "engine/table/src/main/java/io/deephaven/engine/table/impl/sort/timsort/CharLongTimsortKernel.java");
         doCharReplication(
                 "engine/table/src/main/java/io/deephaven/engine/table/impl/sort/timsort/CharIntTimsortKernel.java");

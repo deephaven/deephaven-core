@@ -13,9 +13,14 @@ set(CMAKE_CXX_STANDARD 17)
 # for CMAKE_INSTALL_{dir}
 include(GNUInstallDirs)
 
-add_subdirectory(client)
+add_compile_options(-Wall -Werror -Wno-deprecated-declarations)
 
-install(DIRECTORY client/include/public/
+add_subdirectory(dhclient)
+add_subdirectory(dhcore)
+add_subdirectory(tests EXCLUDE_FROM_ALL)
+add_subdirectory(examples EXCLUDE_FROM_ALL)
+
+install(DIRECTORY dhclient/include/public/
     DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}
     )
 
@@ -23,7 +28,7 @@ install(DIRECTORY dhcore/include/public/
     DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}
     )
 
-install(TARGETS client dhcore
+install(TARGETS dhclient dhcore
     EXPORT deephavenConfig
     ARCHIVE DESTINATION ${CMAKE_INSTALL_LIBDIR}
     LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR}

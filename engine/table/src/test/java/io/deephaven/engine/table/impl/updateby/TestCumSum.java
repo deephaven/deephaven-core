@@ -339,7 +339,7 @@ public class TestCumSum extends BaseUpdateByTest {
         return result;
     }
 
-    final void assertWithCumSum(final @NotNull Object expected, final @NotNull Object actual, Class type) {
+    final void assertWithCumSum(@NotNull final Object expected, @NotNull final Object actual, Class type) {
         if (expected instanceof byte[]) {
             assertArrayEquals(cumsum((byte[]) expected), (long[]) actual);
         } else if (expected instanceof short[]) {

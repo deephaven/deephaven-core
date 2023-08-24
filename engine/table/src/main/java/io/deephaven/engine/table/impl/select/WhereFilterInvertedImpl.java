@@ -6,6 +6,7 @@ import io.deephaven.engine.table.Table;
 import io.deephaven.engine.table.TableDefinition;
 import io.deephaven.engine.table.impl.BaseTable;
 import io.deephaven.util.annotations.VisibleForTesting;
+import org.jetbrains.annotations.NotNull;
 
 import java.util.List;
 import java.util.Objects;
@@ -42,13 +43,17 @@ class WhereFilterInvertedImpl implements WhereFilter {
         filter.validateSafeForRefresh(sourceTable);
     }
 
+    @NotNull
     @Override
-    public WritableRowSet filter(RowSet selection, RowSet fullSet, Table table, boolean usePrev) {
+    public WritableRowSet filter(
+            @NotNull RowSet selection, @NotNull RowSet fullSet, @NotNull Table table, boolean usePrev) {
         return filter.filterInverse(selection, fullSet, table, usePrev);
     }
 
+    @NotNull
     @Override
-    public WritableRowSet filterInverse(RowSet selection, RowSet fullSet, Table table, boolean usePrev) {
+    public WritableRowSet filterInverse(
+            @NotNull RowSet selection, @NotNull RowSet fullSet, @NotNull Table table, boolean usePrev) {
         return filter.filter(selection, fullSet, table, usePrev);
     }
 

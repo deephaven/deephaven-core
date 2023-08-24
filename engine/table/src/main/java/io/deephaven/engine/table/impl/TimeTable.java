@@ -247,8 +247,12 @@ public final class TimeTable extends QueryTable implements Runnable {
         }
 
         @Override
-        public WritableRowSet match(boolean invertMatch, boolean usePrev, boolean caseInsensitive, RowSet selection,
-                Object... keys) {
+        public WritableRowSet match(
+                final boolean invertMatch,
+                final boolean usePrev,
+                final boolean caseInsensitive,
+                @NotNull final RowSet selection,
+                final Object... keys) {
             if (startTime == null) {
                 // there are no valid rows for this column source yet
                 return RowSetFactory.empty();
@@ -394,7 +398,11 @@ public final class TimeTable extends QueryTable implements Runnable {
 
             @Override
             public WritableRowSet match(
-                    boolean invertMatch, boolean usePrev, boolean caseInsensitive, RowSet selection, Object... keys) {
+                    final boolean invertMatch,
+                    final boolean usePrev,
+                    final boolean caseInsensitive,
+                    @NotNull final RowSet selection,
+                    final Object... keys) {
                 if (startTime == null) {
                     // there are no valid rows for this column source yet
                     return RowSetFactory.empty();
