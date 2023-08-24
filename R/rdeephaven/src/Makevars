@@ -19,7 +19,7 @@ DEPENDENCY_DIRS = -L$(DHCPP)/local/lib
 DEPENDENCY_LIBS = \
         -lprotobufd \
         -larrow_flight -larrow -larrow_bundled_dependencies \
-        `PKG_CONFIG_PATH=$DHCPP/local/lib/pkgconfig --libs grpc`
+        `PKG_CONFIG_PATH=\${DHCPP}/local/lib/pkgconfig pkg-config --libs grpc++`
 
 
 # tells the compiler where to look for additional include directories
