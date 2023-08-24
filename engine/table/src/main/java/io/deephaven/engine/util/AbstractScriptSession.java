@@ -128,7 +128,7 @@ public abstract class AbstractScriptSession<S extends AbstractScriptSession.Snap
     }
 
     @Override
-    public synchronized final Changes evaluateScript(final String script, final @Nullable String scriptName) {
+    public synchronized final Changes evaluateScript(final String script, @Nullable final String scriptName) {
         // Observe scope changes and propagate to the listener before running the script, in case it is long-running
         observeScopeChanges();
 

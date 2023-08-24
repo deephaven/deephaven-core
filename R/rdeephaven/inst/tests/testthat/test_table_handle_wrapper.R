@@ -23,16 +23,16 @@ setup <- function() {
   )
 
   # set up client
-  client <- dhConnect(target = "localhost:10000")
+  client <- Client$new(target = "localhost:10000")
 
   # move dataframes to server and get TableHandles for testing
-  th1 <- import_table(client, df1)
-  th2 <- import_table(client, df2)
-  th3 <- import_table(client, df3)
-  th4 <- import_table(client, df4)
+  th1 <- client$import_table(df1)
+  th2 <- client$import_table(df2)
+  th3 <- client$import_table(df3)
+  th4 <- client$import_table(df4)
 
   # time table to test is_static()
-  th5 <- time_table(client, 1000000000) %>% update("X = ii")
+  th5 <- client$time_table("PT1s")$update("X = ii")
 
   return(list(
     "client" = client,
@@ -46,13 +46,13 @@ setup <- function() {
 test_that("is_static returns the correct value", {
   data <- setup()
 
-  expect_true(is_static(data$th1))
-  expect_true(is_static(data$th2))
-  expect_true(is_static(data$th3))
-  expect_true(is_static(data$th4))
-  expect_false(is_static(data$th5))
+  expect_true(data$th1$is_static())
+  expect_true(data$th2$is_static())
+  expect_true(data$th3$is_static())
+  expect_true(data$th4$is_static())
+  expect_false(data$th5$is_static())
 
-  close(data$client)
+  data$client$close()
 })
 
 test_that("nrow returns the correct number of rows", {
@@ -63,7 +63,7 @@ test_that("nrow returns the correct number of rows", {
   expect_equal(nrow(data$th3), nrow(data$df3))
   expect_equal(nrow(data$th4), nrow(data$df4))
 
-  close(data$client)
+  data$client$close()
 })
 
 test_that("ncol returns the correct number of columns", {
@@ -74,7 +74,7 @@ test_that("ncol returns the correct number of columns", {
   expect_equal(ncol(data$th3), ncol(data$df3))
   expect_equal(ncol(data$th4), ncol(data$df4))
   
-  close(data$client)
+  data$client$close()
 })
 
 test_that("dim returns the correct dimension", {
@@ -85,25 +85,25 @@ test_that("dim returns the correct dimension", {
   expect_equal(dim(data$th3), dim(data$df3))
   expect_equal(dim(data$th4), dim(data$df4))
   
-  close(data$client)
+  data$client$close()
 })
 
 test_that("bind_to_variable binds the table to a variable", {
   data <- setup()
 
-  data$th1 %>% bind_to_variable("table1")
-  expect_no_error(open_table(data$client, "table1"))
+  data$th1$bind_to_variable("table1")
+  expect_no_error(data$client$open_table("table1"))
 
-  data$th2 %>% bind_to_variable("table2")
-  expect_no_error(open_table(data$client, "table2"))
+  data$th2$bind_to_variable("table2")
+  expect_no_error(data$client$open_table("table2"))
 
-  data$th3 %>% bind_to_variable("table3")
-  expect_no_error(open_table(data$client, "table3"))
+  data$th3$bind_to_variable("table3")
+  expect_no_error(data$client$open_table("table3"))
 
-  data$th4 %>% bind_to_variable("table4")
-  expect_no_error(open_table(data$client, "table4"))
+  data$th4$bind_to_variable("table4")
+  expect_no_error(data$client$open_table("table4"))
 
-  close(data$client)
+  data$client$close()
 })
 
 test_that("as_record_batch_reader returns an identical stream reader", {
@@ -126,7 +126,7 @@ test_that("as_record_batch_reader returns an identical stream reader", {
   rbr4 <- as_record_batch_reader(data$th4)
   expect_equal(as.data.frame(as.data.frame(rbr4$read_table())), data$df4)
 
-  close(data$client)
+  data$client$close()
 })
 
 test_that("as_arrow_table returns the correct Arrow table", {
@@ -147,7 +147,7 @@ test_that("as_arrow_table returns the correct Arrow table", {
   arrow_tbl4 <- as_arrow_table(data$th4)
   expect_equal(as.data.frame(as.data.frame(arrow_tbl4)), data$df4)
 
-  close(data$client)
+  data$client$close()
 })
 
 test_that("as_tibble returns the correct Tibble", {
@@ -165,7 +165,7 @@ test_that("as_tibble returns the correct Tibble", {
   tibble4 <- as_tibble(data$th4)
   expect_equal(tibble4, as_tibble(data$df4))
 
-  close(data$client)
+  data$client$close()
 })
 
 test_that("as.data.frame returns the correct data frame", {
@@ -183,25 +183,7 @@ test_that("as.data.frame returns the correct data frame", {
   data_frame4 <- as.data.frame(data$th4)
   expect_equal(data_frame4, data$df4)
 
-  close(data$client)
-})
-
-test_that("as_data_frame returns the correct data frame", {
-  data <- setup()
-  
-  data_frame1 <- as_data_frame(data$th1)
-  expect_equal(data_frame1, data$df1)
-  
-  data_frame2 <- as_data_frame(data$th2)
-  expect_equal(data_frame2, data$df2)
-  
-  data_frame3 <- as_data_frame(data$th3)
-  expect_equal(data_frame3, data$df3)
-  
-  data_frame4 <- as_data_frame(data$th4)
-  expect_equal(data_frame4, data$df4)
-  
-  close(data$client)
+  data$client$close()
 })
 
 ##### TESTING BAD INPUTS #####
@@ -210,24 +192,24 @@ test_that("bind_to_variable fails nicely on bad inputs", {
   data <- setup()
 
   expect_error(
-    data$th1 %>% bind_to_variable(12345),
-    cat("unable to find an inherited method for function ‘bind_to_variable’ for signature ‘\"TableHandle\", \"numeric\"’")
+    data$th1$bind_to_variable(12345),
+    "'name' must be a single string. Got an object of class numeric."
   )
 
   expect_error(
-    data$th1 %>% bind_to_variable(c("multiple", "strings")),
+    data$th1$bind_to_variable(c("multiple", "strings")),
     "'name' must be a single string. Got a vector of length 2."
   )
 
   expect_error(
-    data$th1 %>% bind_to_variable(data$df1),
-    cat("unable to find an inherited method for function 'bind_to_variable' for signature '\"TableHandle\", \"data.frame\"'")
+    data$th1$bind_to_variable(data$df1),
+    "'name' must be a single string. Got an object of class data.frame."
   )
 
   expect_error(
-    data$th1 %>% bind_to_variable(list("list", "of", "strings")),
-    cat("unable to find an inherited method for function ‘bind_to_variable’ for signature ‘\"TableHandle\", \"list\"’")
+    data$th1$bind_to_variable(list("list", "of", "strings")),
+    "'name' must be a single string. Got a vector of length 3."
   )
 
-  close(data$client)
+  data$client$close()
 })

@@ -133,23 +133,23 @@ public class PlainFloatChunkedWriter extends AbstractBulkValuesWriter<FloatBuffe
     }
 
     private void ensureCapacityFor(@NotNull final FloatBuffer valuesToAdd) {
-        if(!valuesToAdd.hasRemaining()) {
+        if (!valuesToAdd.hasRemaining()) {
             return;
         }
 
         final int currentCapacity = targetBuffer.capacity();
         final int currentPosition = targetBuffer.position();
         final long requiredCapacity = (long) currentPosition + valuesToAdd.remaining();
-        if(requiredCapacity < currentCapacity) {
+        if (requiredCapacity < currentCapacity) {
             return;
         }
 
-        if(requiredCapacity > MAXIMUM_TOTAL_CAPACITY) {
+        if (requiredCapacity > MAXIMUM_TOTAL_CAPACITY) {
             throw new IllegalStateException("Unable to write " + requiredCapacity + " values. (Maximum capacity: " + MAXIMUM_TOTAL_CAPACITY + ".)");
         }
 
         int newCapacity = currentCapacity;
-        while(newCapacity < requiredCapacity) {
+        while (newCapacity < requiredCapacity) {
             // note: since MAXIMUM_TOTAL_CAPACITY <= Integer.MAX_VALUE / 2, doubling 'newCapacity' will never overflow
             newCapacity = Math.min(MAXIMUM_TOTAL_CAPACITY, newCapacity * 2);
         }
@@ -164,7 +164,7 @@ public class PlainFloatChunkedWriter extends AbstractBulkValuesWriter<FloatBuffe
         newBuf.mark();
         newFloatBuf.mark();
 
-        if(this.innerBuffer != null) {
+        if (this.innerBuffer != null) {
             targetBuffer.limit(targetBuffer.position());
             targetBuffer.reset();
             newFloatBuf.put(targetBuffer);
