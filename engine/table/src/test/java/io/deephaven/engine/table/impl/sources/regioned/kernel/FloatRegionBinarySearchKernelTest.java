@@ -13,12 +13,16 @@ import io.deephaven.api.SortColumn;
 import io.deephaven.chunk.WritableChunk;
 import io.deephaven.chunk.attributes.Values;
 import io.deephaven.engine.rowset.RowSet;
+import io.deephaven.engine.rowset.RowSetBuilderSequential;
+import io.deephaven.engine.rowset.RowSetFactory;
+import io.deephaven.engine.rowset.WritableRowSet;
 import io.deephaven.engine.table.impl.sources.regioned.ColumnRegionFloat;
 import io.deephaven.engine.table.impl.sources.regioned.RegionedColumnSource;
 import io.deephaven.engine.testutil.junit4.EngineCleanup;
 import io.deephaven.generic.region.AppendOnlyFixedSizePageRegionFloat;
 import io.deephaven.generic.region.AppendOnlyRegionAccessor;
 import io.deephaven.test.types.ParallelTest;
+import io.deephaven.util.QueryConstants;
 import io.deephaven.util.compare.FloatComparisons;
 import org.jetbrains.annotations.NotNull;
 import org.junit.Assert;
@@ -27,6 +31,7 @@ import org.junit.Test;
 import org.junit.experimental.categories.Category;
 
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 import java.util.Random;
 import java.util.function.IntToLongFunction;
@@ -34,6 +39,8 @@ import java.util.function.IntToLongFunction;
 @Category(ParallelTest.class)
 public class FloatRegionBinarySearchKernelTest {
     private static final int[] SIZES = { 10, 100, 1000000 };
+    private static final int MAX_FAILED_LOOKUPS = 1000;
+    private static final int NUM_NEGATIVE_LOOKUPS = 100;
 
     @Rule
     public final EngineCleanup framework = new EngineCleanup();
@@ -42,11 +49,12 @@ public class FloatRegionBinarySearchKernelTest {
             int size, int seed, boolean inverted, IntToLongFunction firstKey, IntToLongFunction lastKey) {
 
         final Random rnd = new Random(seed);
-        final List<Float> data = new ArrayList<>(size);
+        final List<Float> origData = new ArrayList<>(size);
         for (int ii = 0; ii < size; ++ii) {
-            data.add((float) rnd.nextInt());
+            origData.add((float) rnd.nextInt());
         }
-        data.sort(FloatComparisons::compare);
+        origData.sort(FloatComparisons::compare);
+        final List<Float> data = new ArrayList<>(origData);
         if (inverted) {
             java.util.Collections.reverse(data);
         }
@@ -57,7 +65,7 @@ public class FloatRegionBinarySearchKernelTest {
         for (int ii = 0; ii < size; ++ii) {
             final float value = data.get(ii);
             final long startRow = Math.max(0, firstKey.applyAsLong(ii));
-            final long endRow = Math.min(size, lastKey.applyAsLong(ii));
+            final long endRow = Math.min(size - 1, lastKey.applyAsLong(ii));
             try (final RowSet valuesFound = FloatRegionBinarySearchKernel.binSearchMatch(
                     region,
                     startRow, endRow,
@@ -71,6 +79,29 @@ public class FloatRegionBinarySearchKernelTest {
                     Assert.assertFalse("Index should not be populated.",
                             valuesFound.containsRange(ii, ii));
                 }
+            }
+        }
+
+        // Test negative lookups
+        int numFailedLookups = 0;
+        for (int ii = 0; ii < NUM_NEGATIVE_LOOKUPS && numFailedLookups < MAX_FAILED_LOOKUPS; ++ii) {
+            final float value = (float) rnd.nextInt();
+            if (value == QueryConstants.NULL_FLOAT
+                    || Collections.binarySearch(origData, value, FloatComparisons::compare) >= 0) {
+                --ii;
+                ++numFailedLookups;
+                continue;
+            }
+
+            final long startRow = 0;
+            final long endRow = size - 1;
+            try (final RowSet valuesFound = FloatRegionBinarySearchKernel.binSearchMatch(
+                    region,
+                    startRow, endRow,
+                    sortColumn,
+                    new Float[] { value }
+            )) {
+                Assert.assertTrue(valuesFound.isEmpty());
             }
         }
     }
