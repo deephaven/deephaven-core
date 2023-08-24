@@ -1,34 +1,31 @@
-/**
- * Copyright (c) 2016-2022 Deephaven Data Labs and Patent Pending
+/*
+ * Copyright (c) 2016-2023 Deephaven Data Labs and Patent Pending
  */
 package io.deephaven.engine.table.impl;
 
-import io.deephaven.engine.context.ExecutionContext;
-import io.deephaven.engine.rowset.RowSet;
-import io.deephaven.engine.rowset.RowSetFactory;
-import io.deephaven.engine.rowset.RowSetShiftData;
-import io.deephaven.engine.rowset.TrackingWritableRowSet;
+import io.deephaven.chunk.LongChunk;
+import io.deephaven.chunk.ObjectChunk;
+import io.deephaven.chunk.attributes.Values;
+import io.deephaven.engine.rowset.*;
+import io.deephaven.engine.rowset.chunkattributes.OrderedRowKeys;
 import io.deephaven.engine.table.*;
-import io.deephaven.engine.table.impl.partitioned.PartitionedTableImpl;
-import io.deephaven.engine.table.impl.sources.ArrayBackedColumnSource;
-import io.deephaven.engine.updategraph.NotificationQueue;
-import io.deephaven.engine.updategraph.UpdateGraph;
-import io.deephaven.engine.updategraph.UpdateSourceCombiner;
 import io.deephaven.engine.table.impl.locations.*;
 import io.deephaven.engine.table.impl.locations.impl.SingleTableLocationProvider;
 import io.deephaven.engine.table.impl.locations.impl.TableLocationSubscriptionBuffer;
 import io.deephaven.engine.table.impl.locations.impl.TableLocationUpdateSubscriptionBuffer;
+import io.deephaven.engine.table.impl.partitioned.PartitionedTableImpl;
+import io.deephaven.engine.table.impl.sources.ArrayBackedColumnSource;
 import io.deephaven.engine.table.impl.sources.regioned.RegionedTableComponentFactoryImpl;
+import io.deephaven.engine.updategraph.UpdateSourceCombiner;
 import io.deephaven.util.datastructures.linked.IntrusiveDoublyLinkedNode;
 import io.deephaven.util.datastructures.linked.IntrusiveDoublyLinkedQueue;
-
-import java.util.*;
-
 import org.apache.commons.lang3.mutable.MutableLong;
 import org.jetbrains.annotations.NotNull;
 
+import java.util.*;
 import java.util.function.Predicate;
 import java.util.function.UnaryOperator;
+import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 /**
@@ -39,6 +36,8 @@ public class SourcePartitionedTable extends PartitionedTableImpl {
 
     private static final String KEY_COLUMN_NAME = "TableLocationKey";
     private static final String CONSTITUENT_COLUMN_NAME = "LocationTable";
+
+    private static final int CHUNK_CAPACITY = 2048;
 
     /**
      * Construct a {@link SourcePartitionedTable} from the supplied parameters.
@@ -113,11 +112,11 @@ public class SourcePartitionedTable extends PartitionedTableImpl {
             resultRows = RowSetFactory.empty().toTracking();
             resultTableLocationKeys = ArrayBackedColumnSource.getMemoryColumnSource(TableLocationKey.class, null);
             resultLocationTables = ArrayBackedColumnSource.getMemoryColumnSource(Table.class, null);
+
             final Map<String, ColumnSource<?>> resultSources = new LinkedHashMap<>(2);
             resultSources.put(KEY_COLUMN_NAME, resultTableLocationKeys);
             resultSources.put(CONSTITUENT_COLUMN_NAME, resultLocationTables);
             result = new QueryTable(resultRows, resultSources);
-            result.setFlat();
 
             final boolean needToRefreshLocations = refreshLocations && tableLocationProvider.supportsSubscriptions();
             if (needToRefreshLocations || refreshSizes) {
@@ -160,9 +159,7 @@ public class SourcePartitionedTable extends PartitionedTableImpl {
             }
 
             if (result.isRefreshing()) {
-                // noinspection ConstantConditions
-                UpdateGraph updateGraph = result.getUpdateGraph();
-                updateGraph.addSource(refreshCombiner);
+                result.getUpdateGraph().addSource(refreshCombiner);
             }
         }
 
@@ -186,20 +183,43 @@ public class SourcePartitionedTable extends PartitionedTableImpl {
                 result.manage(constituentTable);
             });
             return initialLastRowKey == lastInsertedRowKey.longValue()
-                    ? RowSetFactory.empty()
-                    : RowSetFactory.fromRange(initialLastRowKey < 0 ? 0 : initialLastRowKey, lastInsertedRowKey.longValue());
+                   ? RowSetFactory.empty()
+                   : RowSetFactory.fromRange(initialLastRowKey + 1, lastInsertedRowKey.longValue());
         }
 
         private Table makeConstituentTable(@NotNull final TableLocation tableLocation) {
-            return applyTablePermissions.apply(new PartitionAwareSourceTable(
+            final PartitionAwareSourceTable constituent = new PartitionAwareSourceTable(
                     constituentDefinition,
                     "SingleLocationSourceTable-" + tableLocation,
                     RegionedTableComponentFactoryImpl.INSTANCE,
                     new SingleTableLocationProvider(tableLocation),
-                    refreshSizes ? refreshCombiner : null));
+                    refreshSizes ? refreshCombiner : null);
+
+            // These can't be systemic or when they get notified on error,  they will crash the worker.
+            constituent.setAttribute(Table.SYSTEMIC_TABLE_ATTRIBUTE, false);
+            return applyTablePermissions.apply(constituent);
         }
 
         private void processPendingLocations(final boolean notifyListeners) {
+            // First let's deal with removed locations
+            final TableLocationSubscriptionBuffer.LocationUpdate locationUpdate = subscriptionBuffer.processPending();
+            final RowSet removed = processRemovals(locationUpdate);
+            final RowSet added = processAdditions(locationUpdate);
+
+            resultRows.update(added, removed);
+            if (notifyListeners) {
+                result.notifyListeners(new TableUpdateImpl(added,
+                        removed,
+                        RowSetFactory.empty(),
+                        RowSetShiftData.EMPTY,
+                        ModifiedColumnSet.EMPTY));
+            } else {
+                added.close();
+                removed.close();
+            }
+        }
+
+        private RowSet processAdditions(final TableLocationSubscriptionBuffer.LocationUpdate locationUpdate) {
             /*
              * This block of code is unfortunate, because it largely duplicates the intent and effort of similar code in
              * RegionedColumnSourceManager. I think that the RegionedColumnSourceManager could be changed to
@@ -209,9 +229,11 @@ public class SourcePartitionedTable extends PartitionedTableImpl {
              * population in STM ColumnSources.
              */
             // TODO (https://github.com/deephaven/deephaven-core/issues/867): Refactor around a ticking partition table
-            subscriptionBuffer.processPending().getPendingAddedLocationKeys().stream().filter(locationKeyMatcher)
-                    .map(tableLocationProvider::getTableLocation).map(PendingLocationState::new)
-                    .forEach(pendingLocationStates::offer);
+            locationUpdate.getPendingAddedLocationKeys().stream()
+                          .filter(locationKeyMatcher)
+                          .map(tableLocationProvider::getTableLocation)
+                          .map(PendingLocationState::new)
+                          .forEach(pendingLocationStates::offer);
             for (final Iterator<PendingLocationState> iter = pendingLocationStates.iterator(); iter.hasNext();) {
                 final PendingLocationState pendingLocationState = iter.next();
                 if (pendingLocationState.exists()) {
@@ -219,22 +241,62 @@ public class SourcePartitionedTable extends PartitionedTableImpl {
                     readyLocationStates.offer(pendingLocationState);
                 }
             }
-            final RowSet added = sortAndAddLocations(readyLocationStates.stream().map(PendingLocationState::release));
-            resultRows.insert(added);
-            if (notifyListeners) {
-                result.notifyListeners(new TableUpdateImpl(added,
-                        RowSetFactory.empty(), RowSetFactory.empty(), RowSetShiftData.EMPTY, ModifiedColumnSet.EMPTY));
-            } else {
-                added.close();
-            }
+            final RowSet added = sortAndAddLocations(readyLocationStates.stream()
+                    .map(PendingLocationState::release));
             readyLocationStates.clearFast();
+            return added;
+        }
+
+        private RowSet processRemovals(final TableLocationSubscriptionBuffer.LocationUpdate locationUpdate) {
+            final Set<ImmutableTableLocationKey> relevantRemovedLocations = locationUpdate.getPendingRemovedLocationKeys()
+                    .stream()
+                    .map(TableLocation::getKey)
+                    .filter(locationKeyMatcher)
+                    .collect(Collectors.toSet());
+
+            if(relevantRemovedLocations.isEmpty()) {
+                return RowSetFactory.empty();
+            }
+
+            final RowSetBuilderSequential deleteBuilder = RowSetFactory.builderSequential();
+
+            // We don't have a map of location to row key, so we have to iterate them.  If we decide this is too slow, we could add a TObjectIntMap
+            // as we process pending added locations and then we can just make an index of rows to remove by looking up in that map.
+            try (final ChunkSource.GetContext locContext = resultTableLocationKeys.makeGetContext(CHUNK_CAPACITY);
+                 final ChunkSource.GetContext tableContext = resultLocationTables.makeGetContext(CHUNK_CAPACITY);
+                 final RowSequence.Iterator it = resultRows.getRowSequenceIterator()) {
+
+                while (it.hasMore()) {
+                    final RowSequence subSeq = it.getNextRowSequenceWithLength(CHUNK_CAPACITY);
+                    final LongChunk<OrderedRowKeys> keyChunk = subSeq.asRowKeyChunk();
+                    final ObjectChunk<Table, ? extends Values> tableChunk = resultLocationTables.getChunk(tableContext, subSeq)
+                                                                                                   .asObjectChunk();
+                    final ObjectChunk<ImmutableTableLocationKey, ? extends Values> removedKeys = resultTableLocationKeys.getChunk(locContext,
+                                                                                                                                subSeq)
+                                                                                                                        .asObjectChunk();
+
+                    for (int chunkPos = 0; chunkPos < keyChunk.size(); chunkPos++) {
+                        if (relevantRemovedLocations.contains(removedKeys.get(chunkPos))) {
+                            deleteBuilder.appendKey(keyChunk.get(chunkPos));
+
+                            final Table deletedTable = tableChunk.get(chunkPos);
+                            result.unmanage(deletedTable);
+                            deletedTable.close();
+                        }
+                    }
+                }
+            }
+
+            final WritableRowSet deletedRows = deleteBuilder.build();
+            resultTableLocationKeys.setNull(deletedRows);
+            resultLocationTables.setNull(deletedRows);
+            return deletedRows;
         }
     }
 
-    private static class PendingLocationState extends IntrusiveDoublyLinkedNode.Impl<PendingLocationState> {
+    private static final class PendingLocationState extends IntrusiveDoublyLinkedNode.Impl<PendingLocationState> {
 
         private final TableLocation location;
-
         private final TableLocationUpdateSubscriptionBuffer subscriptionBuffer;
 
         private PendingLocationState(@NotNull final TableLocation location) {
