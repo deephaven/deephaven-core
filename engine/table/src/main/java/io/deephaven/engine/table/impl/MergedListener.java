@@ -317,7 +317,7 @@ public abstract class MergedListener extends LivenessArtifact implements Notific
                 long shifted = 0;
 
                 for (ListenerRecorder recorder : recorders) {
-                    if (false) { //recorder.getNotificationStep() == currentStep) {
+                    if (recorder.getNotificationStep() == currentStep) {
                         added += recorder.getAdded().size();
                         removed += recorder.getRemoved().size();
                         modified += recorder.getModified().size();

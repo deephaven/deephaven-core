@@ -212,10 +212,17 @@ public class UnionSourceManager {
         }
 
         @Override
-        protected void onFailureInternal(@NotNull Throwable originalException, @Nullable Entry sourceEntry) {
+        protected void onFailureInternal(@NotNull final Throwable originalException, @Nullable final Entry sourceEntry) {
+            // We will just record the error here for now.  If the table was removed, then we don't actually care about it
+            // but if the error is real, and the table is not removed, it will be propagated in processExisting()
             this.setNotificationStep(getUpdateGraph().clock().currentStep());
             this.error = originalException;
             mergedListener.notifyChanges();
+        }
+
+        @Override
+        public boolean recordedVariablesAreValid() {
+            return error == null && super.recordedVariablesAreValid();
         }
 
         @Override
@@ -500,8 +507,9 @@ public class UnionSourceManager {
             if (constituent.isRefreshing()) {
                 assert nextListener != null;
                 Assert.eq(nextListener.getParent(), "listener parent", constituent, "existing constituent");
+
+                // Make sure we propagate any actual error on to the listeners
                 if(nextListener.error != null) {
-                    // TODO: Pick a better one.
                     throw new UncheckedDeephavenException(nextListener.error);
                 }
 

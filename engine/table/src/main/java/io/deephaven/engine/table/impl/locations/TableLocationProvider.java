@@ -115,13 +115,11 @@ public interface TableLocationProvider extends NamedImplementation {
     /**
      * Remove the given table location.
      *
-     * Use with caution: the intent is that when a TableLocationProvider is told that a location is gone, we should
-     * quit providing it in the list of locations, and quit asking downstream providers how big it is.
+     * @apiNote Use with caution: the intent is that when a {@link TableLocationProvider} is told that a location is gone, we should
+     * no longer provide it in the list of locations, and stop requesting size from downstream providers.
      *
      * @param locationKey the TableLocation to remove
      */
-    @InternalUseOnly
-    @ApiStatus.Experimental
     void removeTableLocationKey(@NotNull final TableLocationKey locationKey);
 
     /**
