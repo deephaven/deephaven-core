@@ -13,9 +13,6 @@ import io.deephaven.api.SortColumn;
 import io.deephaven.chunk.WritableChunk;
 import io.deephaven.chunk.attributes.Values;
 import io.deephaven.engine.rowset.RowSet;
-import io.deephaven.engine.rowset.RowSetBuilderSequential;
-import io.deephaven.engine.rowset.RowSetFactory;
-import io.deephaven.engine.rowset.WritableRowSet;
 import io.deephaven.engine.table.impl.sources.regioned.ColumnRegionInt;
 import io.deephaven.engine.table.impl.sources.regioned.RegionedColumnSource;
 import io.deephaven.engine.testutil.junit4.EngineCleanup;
@@ -66,7 +63,7 @@ public class IntRegionBinarySearchKernelTest {
             final int value = data.get(ii);
             final long startRow = Math.max(0, firstKey.applyAsLong(ii));
             final long endRow = Math.min(size - 1, lastKey.applyAsLong(ii));
-            try (final RowSet valuesFound = IntRegionBinarySearchKernel.binSearchMatch(
+            try (final RowSet valuesFound = IntRegionBinarySearchKernel.binarySearchMatch(
                     region,
                     startRow, endRow,
                     sortColumn,
@@ -95,7 +92,7 @@ public class IntRegionBinarySearchKernelTest {
 
             final long startRow = 0;
             final long endRow = size - 1;
-            try (final RowSet valuesFound = IntRegionBinarySearchKernel.binSearchMatch(
+            try (final RowSet valuesFound = IntRegionBinarySearchKernel.binarySearchMatch(
                     region,
                     startRow, endRow,
                     sortColumn,

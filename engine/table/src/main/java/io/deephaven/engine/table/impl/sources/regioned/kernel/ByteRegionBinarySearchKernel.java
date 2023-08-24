@@ -22,14 +22,28 @@ import io.deephaven.util.type.ArrayTypeUtils;
 import org.jetbrains.annotations.NotNull;
 
 public class ByteRegionBinarySearchKernel {
-    public static RowSet binSearchMatch(
+    /**
+     * Performs a binary search on a given column region to find the positions (row keys) of specified sorted keys.
+     * The method returns the RowSet containing the matched row keys.
+     *
+     * @param region         The column region in which the search will be performed.
+     * @param firstKey       The first key in the column region to consider for the search.
+     * @param lastKey        The last key in the column region to consider for the search.
+     * @param sortColumn     A {@link SortColumn} object representing the sorting order of the column.
+     * @param searchValues   An array of keys to find within the column region.
+     *
+     * @return               A {@link RowSet} containing the row keys where the sorted keys were found.
+     *
+     * @throws IllegalArgumentException If any input argument is invalid or null.
+     */
+    public static RowSet binarySearchMatch(
             ColumnRegionByte<?> region,
             long firstKey,
             final long lastKey,
             @NotNull final SortColumn sortColumn,
-            @NotNull final Object[] sortedKeys) {
+            @NotNull final Object[] searchValues) {
         final SortColumn.Order order = sortColumn.order();
-        final byte[] unboxed = ArrayTypeUtils.getUnboxedByteArray(sortedKeys);
+        final byte[] unboxed = ArrayTypeUtils.getUnboxedByteArray(searchValues);
         if (order == SortColumn.Order.DESCENDING) {
             try (final ByteTimsortDescendingKernel.ByteSortKernelContext<Any> context =
                          ByteTimsortDescendingKernel.createContext(unboxed.length)) {
@@ -44,7 +58,7 @@ public class ByteRegionBinarySearchKernel {
 
         final RowSetBuilderSequential builder = RowSetFactory.builderSequential();
         for (final byte toFind : unboxed) {
-            final long lastFound = binSearchSingle(region, builder, firstKey, lastKey, order, toFind);
+            final long lastFound = binarySearchSingle(region, builder, firstKey, lastKey, order, toFind);
 
             if (lastFound >= 0) {
                 firstKey = lastFound + 1;
@@ -64,7 +78,7 @@ public class ByteRegionBinarySearchKernel {
      * @param toFind        the element to find
      * @return the last key in the found range.
      */
-    private static long binSearchSingle(
+    private static long binarySearchSingle(
             @NotNull final ColumnRegionByte<?> region,
             @NotNull final RowSetBuilderSequential builder,
             final long firstKey,
@@ -72,7 +86,7 @@ public class ByteRegionBinarySearchKernel {
             SortColumn.Order sortDirection,
             final byte toFind) {
         // Find the beginning of the range
-        long matchStart = findRangePart(region, toFind, firstKey, lastKey, sortDirection, -1);
+        long matchStart = binarySearchRange(region, toFind, firstKey, lastKey, sortDirection, -1);
         if (matchStart < 0) {
             return -1;
         }
@@ -80,14 +94,30 @@ public class ByteRegionBinarySearchKernel {
         // Now we have to locate the actual start and end of the range.
         long matchEnd = matchStart;
         if (matchStart < lastKey && ByteComparisons.eq(region.getByte(matchStart + 1),toFind)) {
-            matchEnd = findRangePart(region, toFind, matchStart + 1, lastKey, sortDirection, 1);
+            matchEnd = binarySearchRange(region, toFind, matchStart + 1, lastKey, sortDirection, 1);
         }
 
         builder.appendRange(matchStart, matchEnd);
         return matchEnd;
     }
 
-    private static long findRangePart(
+    /**
+     * Performs a binary search on a specified column region to find a byteacter within a given range.
+     * The method returns the row key where the byteacter was found. If the byteacter is not found, it returns -1.
+     *
+     * @param region          The column region in which the search will be performed.
+     * @param toFind          The byteacter to find within the column region.
+     * @param start           The first row key in the column region to consider for the search.
+     * @param end             The last row key in the column region to consider for the search.
+     * @param sortDirection   An enum specifying the sorting direction of the column.
+     * @param rangeDirection  An integer indicating the direction of the range search. Positive for forward search,
+     *                        negative for backward search.
+     *
+     * @return                The row key where the specified byteacter was found. If not found, returns -1.
+     *
+     * @throws IllegalArgumentException If any of the input arguments is invalid or null.
+     */
+    private static long binarySearchRange(
             @NotNull final ColumnRegionByte<?> region,
             final byte toFind,
             long start,

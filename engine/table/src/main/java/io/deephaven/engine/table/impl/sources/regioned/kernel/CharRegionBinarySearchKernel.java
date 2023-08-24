@@ -17,14 +17,28 @@ import io.deephaven.util.type.ArrayTypeUtils;
 import org.jetbrains.annotations.NotNull;
 
 public class CharRegionBinarySearchKernel {
-    public static RowSet binSearchMatch(
+    /**
+     * Performs a binary search on a given column region to find the positions (row keys) of specified sorted keys.
+     * The method returns the RowSet containing the matched row keys.
+     *
+     * @param region         The column region in which the search will be performed.
+     * @param firstKey       The first key in the column region to consider for the search.
+     * @param lastKey        The last key in the column region to consider for the search.
+     * @param sortColumn     A {@link SortColumn} object representing the sorting order of the column.
+     * @param searchValues   An array of keys to find within the column region.
+     *
+     * @return               A {@link RowSet} containing the row keys where the sorted keys were found.
+     *
+     * @throws IllegalArgumentException If any input argument is invalid or null.
+     */
+    public static RowSet binarySearchMatch(
             ColumnRegionChar<?> region,
             long firstKey,
             final long lastKey,
             @NotNull final SortColumn sortColumn,
-            @NotNull final Object[] sortedKeys) {
+            @NotNull final Object[] searchValues) {
         final SortColumn.Order order = sortColumn.order();
-        final char[] unboxed = ArrayTypeUtils.getUnboxedCharArray(sortedKeys);
+        final char[] unboxed = ArrayTypeUtils.getUnboxedCharArray(searchValues);
         if (order == SortColumn.Order.DESCENDING) {
             try (final CharTimsortDescendingKernel.CharSortKernelContext<Any> context =
                          CharTimsortDescendingKernel.createContext(unboxed.length)) {
@@ -39,7 +53,7 @@ public class CharRegionBinarySearchKernel {
 
         final RowSetBuilderSequential builder = RowSetFactory.builderSequential();
         for (final char toFind : unboxed) {
-            final long lastFound = binSearchSingle(region, builder, firstKey, lastKey, order, toFind);
+            final long lastFound = binarySearchSingle(region, builder, firstKey, lastKey, order, toFind);
 
             if (lastFound >= 0) {
                 firstKey = lastFound + 1;
@@ -59,7 +73,7 @@ public class CharRegionBinarySearchKernel {
      * @param toFind        the element to find
      * @return the last key in the found range.
      */
-    private static long binSearchSingle(
+    private static long binarySearchSingle(
             @NotNull final ColumnRegionChar<?> region,
             @NotNull final RowSetBuilderSequential builder,
             final long firstKey,
@@ -67,7 +81,7 @@ public class CharRegionBinarySearchKernel {
             SortColumn.Order sortDirection,
             final char toFind) {
         // Find the beginning of the range
-        long matchStart = findRangePart(region, toFind, firstKey, lastKey, sortDirection, -1);
+        long matchStart = binarySearchRange(region, toFind, firstKey, lastKey, sortDirection, -1);
         if (matchStart < 0) {
             return -1;
         }
@@ -75,14 +89,30 @@ public class CharRegionBinarySearchKernel {
         // Now we have to locate the actual start and end of the range.
         long matchEnd = matchStart;
         if (matchStart < lastKey && CharComparisons.eq(region.getChar(matchStart + 1),toFind)) {
-            matchEnd = findRangePart(region, toFind, matchStart + 1, lastKey, sortDirection, 1);
+            matchEnd = binarySearchRange(region, toFind, matchStart + 1, lastKey, sortDirection, 1);
         }
 
         builder.appendRange(matchStart, matchEnd);
         return matchEnd;
     }
 
-    private static long findRangePart(
+    /**
+     * Performs a binary search on a specified column region to find a character within a given range.
+     * The method returns the row key where the character was found. If the character is not found, it returns -1.
+     *
+     * @param region          The column region in which the search will be performed.
+     * @param toFind          The character to find within the column region.
+     * @param start           The first row key in the column region to consider for the search.
+     * @param end             The last row key in the column region to consider for the search.
+     * @param sortDirection   An enum specifying the sorting direction of the column.
+     * @param rangeDirection  An integer indicating the direction of the range search. Positive for forward search,
+     *                        negative for backward search.
+     *
+     * @return                The row key where the specified character was found. If not found, returns -1.
+     *
+     * @throws IllegalArgumentException If any of the input arguments is invalid or null.
+     */
+    private static long binarySearchRange(
             @NotNull final ColumnRegionChar<?> region,
             final char toFind,
             long start,
