@@ -32,8 +32,6 @@ public class ObjectRegionBinarySearchKernel {
      * @param searchValues   An array of keys to find within the column region.
      *
      * @return               A {@link RowSet} containing the row keys where the sorted keys were found.
-     *
-     * @throws IllegalArgumentException If any input argument is invalid or null.
      */
     public static RowSet binarySearchMatch(
             ColumnRegionObject<?, ?> region,
@@ -42,21 +40,21 @@ public class ObjectRegionBinarySearchKernel {
             @NotNull final SortColumn sortColumn,
             @NotNull final Object[] searchValues) {
         final SortColumn.Order order = sortColumn.order();
-        final Object[] sortedKeys = ArrayTypeUtils.getUnboxedObjectArray(searchValues);
+        
         if (order == SortColumn.Order.DESCENDING) {
             try (final ObjectTimsortDescendingKernel.ObjectSortKernelContext<Any> context =
-                         ObjectTimsortDescendingKernel.createContext(sortedKeys.length)) {
-                context.sort(WritableObjectChunk.writableChunkWrap(sortedKeys));
+                         ObjectTimsortDescendingKernel.createContext(searchValues.length)) {
+                context.sort(WritableObjectChunk.writableChunkWrap(searchValues));
             }
         } else {
             try (final ObjectTimsortKernel.ObjectSortKernelContext<Any> context =
-                         ObjectTimsortKernel.createContext(sortedKeys.length)) {
-                context.sort(WritableObjectChunk.writableChunkWrap(sortedKeys));
+                         ObjectTimsortKernel.createContext(searchValues.length)) {
+                context.sort(WritableObjectChunk.writableChunkWrap(searchValues));
             }
         }
 
         final RowSetBuilderSequential builder = RowSetFactory.builderSequential();
-        for (final Object toFind : sortedKeys) {
+        for (final Object toFind : searchValues) {
             final long lastFound = binarySearchSingle(region, builder, firstKey, lastKey, order, toFind);
 
             if (lastFound >= 0) {
@@ -101,20 +99,18 @@ public class ObjectRegionBinarySearchKernel {
     }
 
     /**
-     * Performs a binary search on a specified column region to find a Objectacter within a given range.
-     * The method returns the row key where the Objectacter was found. If the Objectacter is not found, it returns -1.
+     * Performs a binary search on a specified column region to find a Object within a given range.
+     * The method returns the row key where the Object was found. If the Object is not found, it returns -1.
      *
      * @param region          The column region in which the search will be performed.
-     * @param toFind          The Objectacter to find within the column region.
+     * @param toFind          The Object to find within the column region.
      * @param start           The first row key in the column region to consider for the search.
      * @param end             The last row key in the column region to consider for the search.
      * @param sortDirection   An enum specifying the sorting direction of the column.
      * @param rangeDirection  An integer indicating the direction of the range search. Positive for forward search,
      *                        negative for backward search.
      *
-     * @return                The row key where the specified Objectacter was found. If not found, returns -1.
-     *
-     * @throws IllegalArgumentException If any of the input arguments is invalid or null.
+     * @return                The row key where the specified Object was found. If not found, returns -1.
      */
     private static long binarySearchRange(
             @NotNull final ColumnRegionObject<?, ?> region,

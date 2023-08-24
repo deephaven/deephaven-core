@@ -33,8 +33,6 @@ public class DoubleRegionBinarySearchKernel {
      * @param searchValues   An array of keys to find within the column region.
      *
      * @return               A {@link RowSet} containing the row keys where the sorted keys were found.
-     *
-     * @throws IllegalArgumentException If any input argument is invalid or null.
      */
     public static RowSet binarySearchMatch(
             ColumnRegionDouble<?> region,
@@ -102,20 +100,18 @@ public class DoubleRegionBinarySearchKernel {
     }
 
     /**
-     * Performs a binary search on a specified column region to find a doubleacter within a given range.
-     * The method returns the row key where the doubleacter was found. If the doubleacter is not found, it returns -1.
+     * Performs a binary search on a specified column region to find a double within a given range.
+     * The method returns the row key where the double was found. If the double is not found, it returns -1.
      *
      * @param region          The column region in which the search will be performed.
-     * @param toFind          The doubleacter to find within the column region.
+     * @param toFind          The double to find within the column region.
      * @param start           The first row key in the column region to consider for the search.
      * @param end             The last row key in the column region to consider for the search.
      * @param sortDirection   An enum specifying the sorting direction of the column.
      * @param rangeDirection  An integer indicating the direction of the range search. Positive for forward search,
      *                        negative for backward search.
      *
-     * @return                The row key where the specified doubleacter was found. If not found, returns -1.
-     *
-     * @throws IllegalArgumentException If any of the input arguments is invalid or null.
+     * @return                The row key where the specified double was found. If not found, returns -1.
      */
     private static long binarySearchRange(
             @NotNull final ColumnRegionDouble<?> region,

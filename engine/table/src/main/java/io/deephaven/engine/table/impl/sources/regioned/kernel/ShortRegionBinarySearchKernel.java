@@ -33,8 +33,6 @@ public class ShortRegionBinarySearchKernel {
      * @param searchValues   An array of keys to find within the column region.
      *
      * @return               A {@link RowSet} containing the row keys where the sorted keys were found.
-     *
-     * @throws IllegalArgumentException If any input argument is invalid or null.
      */
     public static RowSet binarySearchMatch(
             ColumnRegionShort<?> region,
@@ -102,20 +100,18 @@ public class ShortRegionBinarySearchKernel {
     }
 
     /**
-     * Performs a binary search on a specified column region to find a shortacter within a given range.
-     * The method returns the row key where the shortacter was found. If the shortacter is not found, it returns -1.
+     * Performs a binary search on a specified column region to find a short within a given range.
+     * The method returns the row key where the short was found. If the short is not found, it returns -1.
      *
      * @param region          The column region in which the search will be performed.
-     * @param toFind          The shortacter to find within the column region.
+     * @param toFind          The short to find within the column region.
      * @param start           The first row key in the column region to consider for the search.
      * @param end             The last row key in the column region to consider for the search.
      * @param sortDirection   An enum specifying the sorting direction of the column.
      * @param rangeDirection  An integer indicating the direction of the range search. Positive for forward search,
      *                        negative for backward search.
      *
-     * @return                The row key where the specified shortacter was found. If not found, returns -1.
-     *
-     * @throws IllegalArgumentException If any of the input arguments is invalid or null.
+     * @return                The row key where the specified short was found. If not found, returns -1.
      */
     private static long binarySearchRange(
             @NotNull final ColumnRegionShort<?> region,
