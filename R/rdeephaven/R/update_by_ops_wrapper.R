@@ -61,12 +61,12 @@ udb_ema_tick <- function(decay_ticks, cols = character(), operation_control = op
 }
 
 #' @export
-udb_ema_time <- function(timestamp_col, decay_time, cols = character(), operation_control = op_control()) {
-  verify_string("timestamp_col", timestamp_col, TRUE)
+udb_ema_time <- function(ts_col, decay_time, cols = character(), operation_control = op_control()) {
+  verify_string("ts_col", ts_col, TRUE)
   verify_string("decay_time", decay_time, TRUE)
   verify_string("cols", cols, FALSE)
   verify_type("op_control", op_control, "OperationControl", "Deephaven OperationControl", TRUE)
-  return(UpdateByOp$new(INTERNAL_ema_time(timestamp_col, decay_time, cols, operation_control$.internal_rcpp_object)))
+  return(UpdateByOp$new(INTERNAL_ema_time(ts_col, decay_time, cols, operation_control$.internal_rcpp_object)))
 }
 
 #' @export
@@ -78,12 +78,12 @@ udb_ems_tick <- function(decay_ticks, cols = character(), operation_control = op
 }
 
 #' @export
-udb_ems_time <- function(timestamp_col, decay_time, cols = character(), operation_control = op_control()) {
-  verify_string("timestamp_col", timestamp_col, TRUE)
+udb_ems_time <- function(ts_col, decay_time, cols = character(), operation_control = op_control()) {
+  verify_string("ts_col", ts_col, TRUE)
   verify_string("decay_time", decay_time, TRUE)
   verify_string("cols", cols, FALSE)
   verify_type("op_control", op_control, "OperationControl", "Deephaven OperationControl", TRUE)
-  return(UpdateByOp$new(INTERNAL_ems_time(timestamp_col, decay_time, cols, operation_control$.internal_rcpp_object)))
+  return(UpdateByOp$new(INTERNAL_ems_time(ts_col, decay_time, cols, operation_control$.internal_rcpp_object)))
 }
 
 #' @export
@@ -95,12 +95,12 @@ udb_emmin_tick <- function(decay_ticks, cols = character(), operation_control = 
 }
 
 #' @export
-udb_emmin_time <- function(timestamp_col, decay_time, cols = character(), operation_control = op_control()) {
-  verify_string("timestamp_col", timestamp_col, TRUE)
+udb_emmin_time <- function(ts_col, decay_time, cols = character(), operation_control = op_control()) {
+  verify_string("ts_col", ts_col, TRUE)
   verify_string("decay_time", decay_time, TRUE)
   verify_string("cols", cols, FALSE)
   verify_type("op_control", op_control, "OperationControl", "Deephaven OperationControl", TRUE)
-  return(UpdateByOp$new(INTERNAL_emmin_time(timestamp_col, decay_time, cols, operation_control$.internal_rcpp_object)))
+  return(UpdateByOp$new(INTERNAL_emmin_time(ts_col, decay_time, cols, operation_control$.internal_rcpp_object)))
 }
 
 #' @export
@@ -112,12 +112,12 @@ udb_emmax_tick <- function(decay_ticks, cols = character(), operation_control = 
 }
 
 #' @export
-udb_emmax_time <- function(timestamp_col, decay_time, cols = character(), operation_control = op_control()) {
-  verify_string("timestamp_col", timestamp_col, TRUE)
+udb_emmax_time <- function(ts_col, decay_time, cols = character(), operation_control = op_control()) {
+  verify_string("ts_col", ts_col, TRUE)
   verify_string("decay_time", decay_time, TRUE)
   verify_string("cols", cols, FALSE)
   verify_type("op_control", op_control, "OperationControl", "Deephaven OperationControl", TRUE)
-  return(UpdateByOp$new(INTERNAL_emmax_time(timestamp_col, decay_time, cols, operation_control$.internal_rcpp_object)))
+  return(UpdateByOp$new(INTERNAL_emmax_time(ts_col, decay_time, cols, operation_control$.internal_rcpp_object)))
 }
 
 #' @export
@@ -129,12 +129,12 @@ udb_emstd_tick <- function(decay_ticks, cols = character(), operation_control = 
 }
 
 #' @export
-udb_emstd_time <- function(timestamp_col, decay_time, cols = character(), operation_control = op_control()) {
-  verify_string("timestamp_col", timestamp_col, TRUE)
+udb_emstd_time <- function(ts_col, decay_time, cols = character(), operation_control = op_control()) {
+  verify_string("ts_col", ts_col, TRUE)
   verify_string("decay_time", decay_time, TRUE)
   verify_string("cols", cols, FALSE)
   verify_type("op_control", op_control, "OperationControl", "Deephaven OperationControl", TRUE)
-  return(UpdateByOp$new(INTERNAL_emstd_time(timestamp_col, decay_time, cols, operation_control$.internal_rcpp_object)))
+  return(UpdateByOp$new(INTERNAL_emstd_time(ts_col, decay_time, cols, operation_control$.internal_rcpp_object)))
 }
 
 #' @export
@@ -146,12 +146,12 @@ udb_roll_sum_tick <- function(cols, rev_ticks, fwd_ticks = 0) {
 }
 
 #' @export
-udb_roll_sum_time <- function(timestamp_col, cols, rev_time, fwd_time) {
-  verify_string("timestamp_col", timestamp_col, TRUE)
+udb_roll_sum_time <- function(ts_col, cols, rev_time, fwd_time) {
+  verify_string("ts_col", ts_col, TRUE)
   verify_string("cols", cols, FALSE)
   verify_string("rev_time", rev_time, TRUE)
   verify_string("fwd_time", fwd_time, TRUE)
-  return(UpdateByOp$new(INTERNAL_rolling_sum_time(timestamp_col, cols, rev_time, fwd_time)))
+  return(UpdateByOp$new(INTERNAL_rolling_sum_time(ts_col, cols, rev_time, fwd_time)))
 }
 
 #' @export
@@ -163,12 +163,12 @@ udb_roll_group_tick <- function(cols, rev_ticks, fwd_ticks = 0) {
 }
 
 #' @export
-udb_roll_group_time <- function(timestamp_col, cols, rev_time, fwd_time) {
-  verify_string("timestamp_col", timestamp_col, TRUE)
+udb_roll_group_time <- function(ts_col, cols, rev_time, fwd_time) {
+  verify_string("ts_col", ts_col, TRUE)
   verify_string("cols", cols, FALSE)
   verify_string("rev_time", rev_time, TRUE)
   verify_string("fwd_time", fwd_time, TRUE)
-  return(UpdateByOp$new(INTERNAL_rolling_group_time(timestamp_col, cols, rev_time, fwd_time)))
+  return(UpdateByOp$new(INTERNAL_rolling_group_time(ts_col, cols, rev_time, fwd_time)))
 }
 
 #' @export
@@ -180,12 +180,12 @@ udb_roll_avg_tick <- function(cols, rev_ticks, fwd_ticks = 0) {
 }
 
 #' @export
-udb_roll_avg_time <- function(timestamp_col, cols, rev_time, fwd_time) {
-  verify_string("timestamp_col", timestamp_col, TRUE)
+udb_roll_avg_time <- function(ts_col, cols, rev_time, fwd_time) {
+  verify_string("ts_col", ts_col, TRUE)
   verify_string("cols", cols, FALSE)
   verify_string("rev_time", rev_time, TRUE)
   verify_string("fwd_time", fwd_time, TRUE)
-  return(UpdateByOp$new(INTERNAL_rolling_avg_time(timestamp_col, cols, rev_time, fwd_time)))
+  return(UpdateByOp$new(INTERNAL_rolling_avg_time(ts_col, cols, rev_time, fwd_time)))
 }
 
 #' @export
@@ -197,12 +197,12 @@ udb_roll_min_tick <- function(cols, rev_ticks, fwd_ticks = 0) {
 }
 
 #' @export
-udb_roll_min_time <- function(timestamp_col, cols, rev_time, fwd_time) {
-  verify_string("timestamp_col", timestamp_col, TRUE)
+udb_roll_min_time <- function(ts_col, cols, rev_time, fwd_time) {
+  verify_string("ts_col", ts_col, TRUE)
   verify_string("cols", cols, FALSE)
   verify_string("rev_time", rev_time, TRUE)
   verify_string("fwd_time", fwd_time, TRUE)
-  return(UpdateByOp$new(INTERNAL_rolling_min_time(timestamp_col, cols, rev_time, fwd_time)))
+  return(UpdateByOp$new(INTERNAL_rolling_min_time(ts_col, cols, rev_time, fwd_time)))
 }
 
 #' @export
@@ -214,12 +214,12 @@ udb_roll_max_tick <- function(cols, rev_ticks, fwd_ticks = 0) {
 }
 
 #' @export
-udb_roll_max_time <- function(timestamp_col, cols, rev_time, fwd_time) {
-  verify_string("timestamp_col", timestamp_col, TRUE)
+udb_roll_max_time <- function(ts_col, cols, rev_time, fwd_time) {
+  verify_string("ts_col", ts_col, TRUE)
   verify_string("cols", cols, FALSE)
   verify_string("rev_time", rev_time, TRUE)
   verify_string("fwd_time", fwd_time, TRUE)
-  return(UpdateByOp$new(INTERNAL_rolling_max_time(timestamp_col, cols, rev_time, fwd_time)))
+  return(UpdateByOp$new(INTERNAL_rolling_max_time(ts_col, cols, rev_time, fwd_time)))
 }
 
 #' @export
@@ -231,12 +231,12 @@ udb_roll_prod_tick <- function(cols, rev_ticks, fwd_ticks = 0) {
 }
 
 #' @export
-udb_roll_prod_time <- function(timestamp_col, cols, rev_time, fwd_time) {
-  verify_string("timestamp_col", timestamp_col, TRUE)
+udb_roll_prod_time <- function(ts_col, cols, rev_time, fwd_time) {
+  verify_string("ts_col", ts_col, TRUE)
   verify_string("cols", cols, FALSE)
   verify_string("rev_time", rev_time, TRUE)
   verify_string("fwd_time", fwd_time, TRUE)
-  return(UpdateByOp$new(INTERNAL_rolling_prod_time(timestamp_col, cols, rev_time, fwd_time)))
+  return(UpdateByOp$new(INTERNAL_rolling_prod_time(ts_col, cols, rev_time, fwd_time)))
 }
 
 #' @export
@@ -248,12 +248,12 @@ udb_roll_count_tick <- function(cols, rev_ticks, fwd_ticks = 0) {
 }
 
 #' @export
-udb_roll_count_time <- function(timestamp_col, cols, rev_time, fwd_time) {
-  verify_string("timestamp_col", timestamp_col, TRUE)
+udb_roll_count_time <- function(ts_col, cols, rev_time, fwd_time) {
+  verify_string("ts_col", ts_col, TRUE)
   verify_string("cols", cols, FALSE)
   verify_string("rev_time", rev_time, TRUE)
   verify_string("fwd_time", fwd_time, TRUE)
-  return(UpdateByOp$new(INTERNAL_rolling_count_time(timestamp_col, cols, rev_time, fwd_time)))
+  return(UpdateByOp$new(INTERNAL_rolling_count_time(ts_col, cols, rev_time, fwd_time)))
 }
 
 #' @export
@@ -265,12 +265,12 @@ udb_roll_std_tick <- function(cols, rev_ticks, fwd_ticks = 0) {
 }
 
 #' @export
-udb_roll_std_time <- function(timestamp_col, cols, rev_time, fwd_time) {
-  verify_string("timestamp_col", timestamp_col, TRUE)
+udb_roll_std_time <- function(ts_col, cols, rev_time, fwd_time) {
+  verify_string("ts_col", ts_col, TRUE)
   verify_string("cols", cols, FALSE)
   verify_string("rev_time", rev_time, TRUE)
   verify_string("fwd_time", fwd_time, TRUE)
-  return(UpdateByOp$new(INTERNAL_rolling_std_time(timestamp_col, cols, rev_time, fwd_time)))
+  return(UpdateByOp$new(INTERNAL_rolling_std_time(ts_col, cols, rev_time, fwd_time)))
 }
 
 #' @export
@@ -283,11 +283,11 @@ udb_roll_wavg_tick <- function(wcol, cols, rev_ticks, fwd_ticks = 0) {
 }
 
 #' @export
-udb_roll_wavg_time <- function(timestamp_col, wcol, cols, rev_time, fwd_time) {
-  verify_string("timestamp_col", timestamp_col, TRUE)
+udb_roll_wavg_time <- function(ts_col, wcol, cols, rev_time, fwd_time) {
+  verify_string("ts_col", ts_col, TRUE)
   verify_string("wcol", wcol, TRUE)
   verify_string("cols", cols, FALSE)
   verify_string("rev_time", rev_time, TRUE)
   verify_string("fwd_time", fwd_time, TRUE)
-  return(UpdateByOp$new(INTERNAL_rolling_wavg_time(timestamp_col, wcol, cols, rev_time, fwd_time)))
+  return(UpdateByOp$new(INTERNAL_rolling_wavg_time(ts_col, wcol, cols, rev_time, fwd_time)))
 }
