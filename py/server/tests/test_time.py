@@ -117,32 +117,38 @@ class TimeTestCase(BaseTestCase):
         self.assertEqual(lt, None)
 
     def test_to_j_instant(self):
-        dt = to_j_instant("2021-12-10T14:21:17.123456789 ET")
-        self.assertTrue(str(dt).startswith("2021-12-10T19:21:17.123456789Z"))
+        target = _JDateTimeUtils.parseZonedDateTime("2021-12-10T19:21:17.123456Z")
 
-        x = datetime.datetime(2021, 12, 10, 14, 21, 17, 123456789)
+        dt = to_j_instant("2021-12-10T14:21:17.123456 ET")
+        self.assertEqual(str(target), str(dt))
+
+        # 1 ns is a rounding error
+        target = _JDateTimeUtils.parseZonedDateTime("2021-12-10T19:21:17.123456Z001Z")
+        x = datetime.datetime(2021, 12, 10, 14, 21, 17, 123456)
         dt = to_j_instant(x)
-        self.assertTrue(str(dt).startswith("2021-12-10T14:21:17.123456789Z"))
+        self.assertEqual(str(target), str(dt))
 
         x = np.datetime64(x)
         dt = to_j_instant(x)
-        self.assertTrue(str(dt).startswith("2021-12-10T14:21:17.123456789Z"))
+        self.assertEqual(str(target), str(dt))
 
         dt = to_j_instant(None)
         self.assertEqual(dt, None)
 
 
     def test_to_j_zdt(self):
-        dt = to_j_zdt("2021-12-10T14:21:17.123456789 ET")
-        self.assertTrue(str(dt).startswith("2021-12-10T19:21:17.123456789Z"))
+        target = _JDateTimeUtils.parseZonedDateTime("2021-12-10T14:21:17.123456-05:00[America/New_York]")
 
-        x = datetime.datetime(2021, 12, 10, 14, 21, 17, 123456789)
+        dt = to_j_zdt("2021-12-10T14:21:17.123456 ET")
+        self.assertEqual(str(target), str(dt))
+
+        x = datetime.datetime(2021, 12, 10, 14, 21, 17, 123456)
         dt = to_j_zdt(x)
-        self.assertTrue(str(dt).startswith("2021-12-10T14:21:17.123456789Z"))
+        self.assertEqual(str(target), str(dt))
 
         x = np.datetime64(x)
         dt = to_j_zdt(x)
-        self.assertTrue(str(dt).startswith("2021-12-10T14:21:17.123456789Z"))
+        self.assertEqual(str(target), str(dt))
 
         dt = to_j_zdt(None)
         self.assertEqual(dt, None)
@@ -165,8 +171,8 @@ class TimeTestCase(BaseTestCase):
 
 
     def test_to_j_period(self):
-        p = to_j_period("P1W")
-        self.assertEqual(str(p), "P7D")
+        p = to_j_period("P2W")
+        self.assertEqual(str(p), "P14D")
 
         x = datetime.timedelta(days=2)
         p = to_j_period(x)
@@ -178,7 +184,7 @@ class TimeTestCase(BaseTestCase):
 
         x = np.timedelta64(2, 'W')
         p = to_j_period(x)
-        self.assertEqual(str(p), "P2W")
+        self.assertEqual(str(p), "P14D")
 
         x = np.timedelta64(2, 'Y')
         p = to_j_period(x)

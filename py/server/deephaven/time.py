@@ -157,7 +157,8 @@ def to_j_time_zone(tz: Union[None, str]) -> Optional[TimeZone]:
     """
     try:
         if not tz:
-            return None
+            return _JDateTimeUtils.timeZone()
+            #TODO: return None
             #TODO: return system default? -> if return default, then the result is not optional
             # return _JDateTimeUtils.timeZone()
 
@@ -262,12 +263,12 @@ def to_j_instant(dt: Union[None, str, datetime.datetime, np.datetime64]) -> Opti
         elif isinstance(dt, datetime.datetime):
             epoch_time = dt.timestamp()
             epoch_sec = int(epoch_time)
-            nanos = (epoch_time - epoch_sec) * 1000000000
+            nanos = int((epoch_time - epoch_sec) * 1000000000)
             return _JInstant.ofEpochSecond(epoch_sec, nanos)
         elif isinstance(dt, np.datetime64):
             epoch_nanos = (dt - _epoch64).astype('timedelta64[ns]').astype(np.int64)
-            epoch_sec = epoch_nanos // 1000000000
-            nanos = epoch_nanos % 1000000000
+            epoch_sec = int(epoch_nanos // 1000000000)
+            nanos = int(epoch_nanos % 1000000000)
             return _JInstant.ofEpochSecond(epoch_sec, nanos)
         else:
             raise Exception("Unsupported conversion: " + str(type(dt)) + " -> Instant")
@@ -402,15 +403,17 @@ def to_j_period(dt: Union[None, str, datetime.timedelta, np.timedelta64]) -> Opt
                 raise Exception("Unsupported conversion: " + str(type(dt)) + " -> Period")
         elif isinstance(dt, np.timedelta64):
             data = np.datetime_data(dt)
+            units = data[0]
+            value = int(dt.astype(np.int64))
 
-            if data[0] == 'D':
-                return _JPeriod.ofDays(data[1])
-            elif data[0] == 'W':
-                return _JPeriod.ofDays(data[1] * 7)
-            elif data[0] == 'M':
-                return _JPeriod.ofMonths(data[1])
-            elif data[0] == 'Y':
-                return _JPeriod.ofYears(data[1])
+            if units == 'D':
+                return _JPeriod.ofDays(value)
+            elif units == 'W':
+                return _JPeriod.ofDays(value * 7)
+            elif units == 'M':
+                return _JPeriod.ofMonths(value)
+            elif units == 'Y':
+                return _JPeriod.ofYears(value)
             else:
                 raise Exception("Unsupported conversion: " + str(
                     type(dt)) + " -> Period: numpy.datetime64 must have units of 'D', 'W', 'M', or 'Y'")
