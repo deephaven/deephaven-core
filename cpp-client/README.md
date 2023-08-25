@@ -31,9 +31,9 @@ C++ compiler and tool suite (cmake etc).
 6. Build and install dependencies for Deephaven C++ client.
 
    Get the `build-dependencies.sh` script from Deephaven's base images repository
-   at https://github.com/deephaven/deephaven-base-images/blob/main/cpp-client
+   at the correct version.
    You can download it directly from the link
-   https://github.com/deephaven/deephaven-base-images/raw/main/cpp-client/build-dependencies.sh
+   https://raw.githubusercontent.com/deephaven/deephaven-base-images/53081b141aebea4c43238ddae233be49db28cf7b/cpp-client/build-dependencies.sh
    (this script is also used from our automated tools, to generate a docker image to
    support tests runs; that's why it lives in a separate repo).
    The script downloads, builds and installs the dependent libraries
@@ -55,7 +55,7 @@ C++ compiler and tool suite (cmake etc).
    # If the directory already exists from a previous attempt, ensure is clean/empty
    mkdir -p $DHCPP
    cd $DHCPP
-   wget https://github.com/deephaven/deephaven-base-images/raw/main/cpp-client/build-dependencies.sh
+   wget https://raw.githubusercontent.com/deephaven/deephaven-base-images/53081b141aebea4c43238ddae233be49db28cf7b/cpp-client/build-dependencies.sh
    chmod +x ./build-dependencies.sh
    # Maybe edit build-dependencies.sh to reflect choices of build tools and build target, if you
    # want anything different than defaults; defaults are tested to work,
