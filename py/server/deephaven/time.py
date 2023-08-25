@@ -146,8 +146,9 @@ def to_j_time_zone(tz: Union[None, str]) -> Optional[TimeZone]:
     Converts a python type to a Deephaven time zone.
 
     Args:
-        tz (Union[None, str]): A Python time zone or time zone string.  If None is provided, the system default
-            time zone is returned.  If a string is provided, it is parsed as a time zone name.
+        tz (Union[None, str]): A Python time zone or time zone string.
+            If None is provided, the Deephaven system default time zone is returned.
+            If a string is provided, it is parsed as a time zone name.
 
     Returns:
         TimeZone
@@ -429,12 +430,13 @@ def to_j_period(dt: Union[None, str, datetime.timedelta, np.timedelta64]) -> Opt
 # region Conversions: Java To Python
 
 
-def to_date(dt: Union[None, LocalDate]) -> Optional[datetime.date]:
+def to_date(dt: Union[None, LocalDate, ZonedDateTime]) -> Optional[datetime.date]:
     """
-    Converts a Deephaven local date to a python date.
+    Converts a Deephaven local date or zoned date time to a python date.
 
     Args:
-        dt (Union[None, LocalDate]): A Deephaven local date.  If None is provided, None is returned.
+        dt (Union[None, LocalDate, ZonedDateTime]): A Deephaven local date or zoned date time.
+            If None is provided, None is returned.
 
     Returns:
         datetime.date
@@ -444,19 +446,21 @@ def to_date(dt: Union[None, LocalDate]) -> Optional[datetime.date]:
             return None
         if isinstance(dt, LocalDate.j_type):
             return datetime.date(dt.getYear(), dt.getMonthValue(), dt.getDayOfMonth())
-        #TODO: convert other types?
+        if isinstance(dt, ZonedDateTime.j_type):
+            return datetime.date(dt.getYear(), dt.getMonthValue(), dt.getDayOfMonth())
         else:
             raise Exception("Unsupported conversion: " + str(type(dt)) + " -> datetime.date")
     except Exception as e:
         raise DHError(e) from e
 
 
-def to_time(dt: Union[None, LocalTime]) -> Optional[datetime.time]:
+def to_time(dt: Union[None, LocalTime, ZonedDateTime]) -> Optional[datetime.time]:
     """
-    Converts a Deephaven local time to a python time.
+    Converts a Deephaven local time or zoned date time to a python time.
 
     Args:
-        dt (Union[None, LocalTime]): A Deephaven local time.  If None is provided, None is returned.
+        dt (Union[None, LocalTime, ZonedDateTime]): A Deephaven local time or zoned date time.
+            If None is provided, None is returned.
 
     Returns:
         datetime.time
@@ -466,7 +470,8 @@ def to_time(dt: Union[None, LocalTime]) -> Optional[datetime.time]:
             return None
         elif isinstance(dt, LocalTime.j_type):
             return datetime.time(dt.getHour(), dt.getMinute(), dt.getSecond(), dt.getNano() // 1000)
-        #TODO: support other types?
+        elif isinstance(dt, ZonedDateTime.j_type):
+            return datetime.time(dt.getHour(), dt.getMinute(), dt.getSecond(), dt.getNano() // 1000)
         else:
             raise Exception("Unsupported conversion: " + str(type(dt)) + " -> datetime.time")
     except Exception as e:
@@ -544,7 +549,6 @@ def to_timedelta(dt: Union[None, Duration]) -> Optional[datetime.timedelta]:
         elif isinstance(dt, Duration.j_type):
             return datetime.timedelta(seconds=dt.getSeconds(), microseconds=dt.getNano() // 1000)
         elif isinstance(dt, Period.j_type):
-            # TODO: not sure what is right here
             y = dt.getYears()
             m = dt.getMonths()
             d = dt.getDays()

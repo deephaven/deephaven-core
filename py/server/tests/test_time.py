@@ -275,6 +275,10 @@ class TimeTestCase(BaseTestCase):
         dt = to_date(ld)
         self.assertEqual(dt, target)
 
+        lt = _JDateTimeUtils.parseZonedDateTime("2021-12-10T14:21:17.123456 ET")
+        dt = to_date(lt)
+        self.assertEqual(dt, target)
+
         dt = to_date(None)
         self.assertEqual(dt, None)
 
@@ -288,6 +292,10 @@ class TimeTestCase(BaseTestCase):
         target = datetime.time(14, 21, 17, 123456)
 
         lt = _JDateTimeUtils.parseLocalTime("14:21:17.123456")
+        dt = to_time(lt)
+        self.assertEqual(dt, target)
+
+        lt = _JDateTimeUtils.parseZonedDateTime("2023-07-11T14:21:17.123456 ET")
         dt = to_time(lt)
         self.assertEqual(dt, target)
 
