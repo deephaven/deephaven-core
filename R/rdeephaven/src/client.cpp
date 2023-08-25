@@ -187,8 +187,6 @@ OperationControl* INTERNAL_opControlGenerator(std::string on_null, std::string o
     return op_control;
 }
 
-// TODO: DurationSpecifier
-
 UpdateByOpWrapper* INTERNAL_cumSum(std::vector<std::string> cols) {
     return new UpdateByOpWrapper(deephaven::client::update_by::cumSum(cols));
 }
