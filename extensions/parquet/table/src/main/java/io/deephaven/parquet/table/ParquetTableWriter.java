@@ -657,7 +657,6 @@ public class ParquetTableWriter {
         final VectorColumnWriterHelper vectorHelper = writingHelper.isVectorFormat()
                 ? (VectorColumnWriterHelper) writingHelper
                 : null;
-        // Don't actually track statistics for vector columns, since we don't know what they mean for vectors.
         final Statistics<?> statistics = columnWriter.getStats();
         try {
             final List<IntBuffer> pageBuffers = new ArrayList<>();
@@ -740,7 +739,8 @@ public class ParquetTableWriter {
 
             columnWriter.addDictionaryPage(encodedKeys, keyCount);
             final Iterator<IntBuffer> arraySizeIt = arraySizeBuffers == null ? null : arraySizeBuffers.iterator();
-            // Accumulate integer statistics in a temporary object.
+            // We've already determined min/max statistics while building the dictionary. Now use an integer statistics
+            // object to track the number of nulls that will be written.
             Statistics<Integer> tmpStats = new IntStatistics();
             for (int i = 0; i < pageBuffers.size(); ++i) {
                 final IntBuffer pageBuffer = pageBuffers.get(i);
@@ -754,7 +754,7 @@ public class ParquetTableWriter {
                     columnWriter.addPageNoNulls(pageBuffer, pageBuffer.remaining(), tmpStats);
                 }
             }
-            // Add the nulls from the temp stats to the overall stats.
+            // Add the count of nulls to the overall stats.
             statistics.incrementNumNulls(tmpStats.getNumNulls());
             return true;
         } catch (final DictionarySizeExceededException ignored) {
