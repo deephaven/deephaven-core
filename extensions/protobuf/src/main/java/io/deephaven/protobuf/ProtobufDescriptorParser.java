@@ -18,7 +18,7 @@ public final class ProtobufDescriptorParser {
      *
      * <p>
      * Parsing proceeds through each {@link Descriptor#getFields() descriptor field} that matches
-     * {@link ProtobufDescriptorParserOptions#include()}. By default, this is {@code true} for all fields.
+     * {@link FieldOptions#include()}}. By default, this is {@code true} for all fields.
      *
      * <p>
      * For simple types, the fields are parsed as:
@@ -140,24 +140,21 @@ public final class ProtobufDescriptorParser {
      *
      * <p>
      * ^2 The default behavior for {@link Type#BYTES bytes} is {@code byte[]}. To parse as
-     * {@link com.google.protobuf.ByteString ByteString} instead, configure
-     * {@link ProtobufDescriptorParserOptions#parseAsBytes()} to {@code false} for the field.
+     * {@link com.google.protobuf.ByteString ByteString} instead, configure {@link FieldOptions#bytes()} for the field.
      *
      * <p>
      * For {@link Type#MESSAGE message} (and {@link Type#GROUP group} if proto2) fields, the
      * {@link ProtobufDescriptorParserOptions#parsers()} are used for well-known message types (for example,
      * {@link com.google.protobuf.Timestamp} to {@link java.time.Instant}), otherwise parsing continues recursively with
      * the the {@link FieldDescriptor#getMessageType() field's message descriptor}. To skip parsing as a well-known
-     * type, configure {@link ProtobufDescriptorParserOptions#parseAsWellKnown()} to {@code false} for the field. If the
-     * field is repeated, the function return type will be the array-type with component type equal to what the
-     * non-repeated field function return type would be (for example, {@code repeated com.google.protobuf.Timestamp}
-     * will result in {@code java.time.Instant[]}).
+     * type, configure {@link FieldOptions#wellKnown()} for the field. If the field is repeated, the function return
+     * type will be the array-type with component type equal to what the non-repeated field function return type would
+     * be (for example, {@code repeated com.google.protobuf.Timestamp} will result in {@code java.time.Instant[]}).
      *
      * <p>
      * Protobuf maps are a special case, which result in a function type that returns a {@code Map<Object, Object>},
      * where the keys are the equivalent {@code KeyType} and the values are the equivalent {@code ValueType}. To parse
-     * as a {@code repeated MapFieldEntry} instead of a {@code map}, configure
-     * {@link ProtobufDescriptorParserOptions#parseAsMap()} to {@code false} for the field.
+     * as a {@code repeated MapFieldEntry} instead of a {@code map}, configure {@link FieldOptions#map()} for the field.
      *
      * <p>
      * The {@link FieldPath} context is kept during traversal and is an important part of the returned message

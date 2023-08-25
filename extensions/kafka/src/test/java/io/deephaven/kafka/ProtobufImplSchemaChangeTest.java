@@ -17,6 +17,11 @@ import io.deephaven.kafka.protobuf.gen.RenameV1;
 import io.deephaven.kafka.protobuf.gen.RenameV2;
 import io.deephaven.kafka.protobuf.gen.SpecialTypesV1;
 import io.deephaven.kafka.protobuf.gen.SpecialTypesV2;
+import io.deephaven.protobuf.FieldOptions;
+import io.deephaven.protobuf.FieldOptions.Builder;
+import io.deephaven.protobuf.FieldOptions.BytesBehavior;
+import io.deephaven.protobuf.FieldOptions.MapBehavior;
+import io.deephaven.protobuf.FieldOptions.WellKnownBehavior;
 import io.deephaven.protobuf.FieldPath;
 import io.deephaven.protobuf.ProtobufDescriptorParserOptions;
 import io.deephaven.protobuf.ProtobufFunction;
@@ -35,6 +40,7 @@ import java.time.Instant;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
+import java.util.function.Function;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.failBecauseExceptionWasNotThrown;
@@ -310,8 +316,7 @@ public class ProtobufImplSchemaChangeTest {
     public void specialTypesWellKnown() {
         final BooleanFunction<FieldPath> isTs = FieldPath.namePathEquals(List.of("ts"));
         final ProtobufDescriptorParserOptions options = ProtobufDescriptorParserOptions.builder()
-                .include(isTs)
-                .parseAsWellKnown(isTs)
+                .fieldOptions(options(isTs, isTs, null, null))
                 .build();
         final ProtobufFunctions functions =
                 ProtobufImpl.schemaChangeAwareFunctions(SpecialTypesV1.SpecialTypes.getDescriptor(), options);
@@ -332,8 +337,7 @@ public class ProtobufImplSchemaChangeTest {
     public void specialTypesAntiWellKnown() {
         final BooleanFunction<FieldPath> startsWithTs = FieldPath.namePathStartsWith(List.of("ts"));
         final ProtobufDescriptorParserOptions options = ProtobufDescriptorParserOptions.builder()
-                .include(startsWithTs)
-                .parseAsWellKnown(BooleanFunction.not(startsWithTs))
+                .fieldOptions(options(startsWithTs, BooleanFunction.not(startsWithTs), null, null))
                 .build();
         final ProtobufFunctions functions =
                 ProtobufImpl.schemaChangeAwareFunctions(SpecialTypesV1.SpecialTypes.getDescriptor(), options);
@@ -357,8 +361,7 @@ public class ProtobufImplSchemaChangeTest {
     public void specialTypesBytes() {
         final BooleanFunction<FieldPath> isBs = FieldPath.namePathEquals(List.of("bs"));
         final ProtobufDescriptorParserOptions options = ProtobufDescriptorParserOptions.builder()
-                .include(isBs)
-                .parseAsBytes(isBs)
+                .fieldOptions(options(isBs, null, isBs, null))
                 .build();
         final ProtobufFunctions functions =
                 ProtobufImpl.schemaChangeAwareFunctions(SpecialTypesV1.SpecialTypes.getDescriptor(), options);
@@ -379,8 +382,7 @@ public class ProtobufImplSchemaChangeTest {
     public void specialTypesByteString() {
         final BooleanFunction<FieldPath> isBs = FieldPath.namePathEquals(List.of("bs"));
         final ProtobufDescriptorParserOptions options = ProtobufDescriptorParserOptions.builder()
-                .include(isBs)
-                .parseAsBytes(BooleanFunction.not(isBs))
+                .fieldOptions(options(isBs, null, BooleanFunction.not(isBs), null))
                 .build();
         final ProtobufFunctions functions =
                 ProtobufImpl.schemaChangeAwareFunctions(SpecialTypesV1.SpecialTypes.getDescriptor(), options);
@@ -402,8 +404,7 @@ public class ProtobufImplSchemaChangeTest {
     public void specialTypesMap() {
         final BooleanFunction<FieldPath> isMp = FieldPath.namePathEquals(List.of("mp"));
         final ProtobufDescriptorParserOptions options = ProtobufDescriptorParserOptions.builder()
-                .include(isMp)
-                .parseAsMap(isMp)
+                .fieldOptions(options(isMp, null, null, isMp))
                 .build();
         final ProtobufFunctions functions =
                 ProtobufImpl.schemaChangeAwareFunctions(SpecialTypesV1.SpecialTypes.getDescriptor(), options);
@@ -425,8 +426,7 @@ public class ProtobufImplSchemaChangeTest {
     public void specialTypesAntiMap() {
         final BooleanFunction<FieldPath> startsWithMp = FieldPath.namePathStartsWith(List.of("mp"));
         final ProtobufDescriptorParserOptions options = ProtobufDescriptorParserOptions.builder()
-                .include(startsWithMp)
-                .parseAsMap(BooleanFunction.not(startsWithMp))
+                .fieldOptions(options(startsWithMp, null, null, BooleanFunction.not(startsWithMp)))
                 .build();
         final ProtobufFunctions functions =
                 ProtobufImpl.schemaChangeAwareFunctions(SpecialTypesV1.SpecialTypes.getDescriptor(), options);
@@ -482,5 +482,34 @@ public class ProtobufImplSchemaChangeTest {
 
     private static TypedFunction<Message> get(ProtobufFunctions functions, String... namePath) {
         return functions.find(Arrays.asList(namePath)).map(ProtobufFunction::function).get();
+    }
+
+    private static Function<FieldPath, FieldOptions> options(
+            BooleanFunction<FieldPath> include,
+            BooleanFunction<FieldPath> wellKnown,
+            BooleanFunction<FieldPath> bytes,
+            BooleanFunction<FieldPath> map) {
+        return fp -> {
+            final Builder builder = FieldOptions.builder();
+            if (include != null) {
+                builder.include(include.test(fp));
+            }
+            if (wellKnown != null) {
+                builder.wellKnown(wellKnown.test(fp)
+                        ? WellKnownBehavior.asWellKnown()
+                        : WellKnownBehavior.asRecursive());
+            }
+            if (bytes != null) {
+                builder.bytes(bytes.test(fp)
+                        ? BytesBehavior.asByteArray()
+                        : BytesBehavior.asByteString());
+            }
+            if (map != null) {
+                builder.map(map.test(fp)
+                        ? MapBehavior.asMap()
+                        : MapBehavior.asRepeated());
+            }
+            return builder.build();
+        };
     }
 }

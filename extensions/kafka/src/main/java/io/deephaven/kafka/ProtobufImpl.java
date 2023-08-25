@@ -16,6 +16,17 @@ import io.confluent.kafka.serializers.protobuf.KafkaProtobufDeserializer;
 import io.deephaven.UncheckedDeephavenException;
 import io.deephaven.engine.table.ColumnDefinition;
 import io.deephaven.engine.table.TableDefinition;
+import io.deephaven.functions.BooleanFunction;
+import io.deephaven.functions.ByteFunction;
+import io.deephaven.functions.CharFunction;
+import io.deephaven.functions.DoubleFunction;
+import io.deephaven.functions.FloatFunction;
+import io.deephaven.functions.IntFunction;
+import io.deephaven.functions.LongFunction;
+import io.deephaven.functions.ObjectFunction;
+import io.deephaven.functions.PrimitiveFunction;
+import io.deephaven.functions.ShortFunction;
+import io.deephaven.functions.TypedFunction;
 import io.deephaven.kafka.KafkaTools.Consume;
 import io.deephaven.kafka.KafkaTools.KeyOrValue;
 import io.deephaven.kafka.KafkaTools.KeyOrValueIngestData;
@@ -24,7 +35,7 @@ import io.deephaven.kafka.ingest.FieldCopierAdapter;
 import io.deephaven.kafka.ingest.KeyOrValueProcessor;
 import io.deephaven.kafka.ingest.MultiFieldChunkAdapter;
 import io.deephaven.kafka.protobuf.ProtobufConsumeOptions;
-import io.deephaven.protobuf.FieldNumberPath;
+import io.deephaven.protobuf.FieldOptions;
 import io.deephaven.protobuf.FieldPath;
 import io.deephaven.protobuf.ProtobufDescriptorParser;
 import io.deephaven.protobuf.ProtobufDescriptorParserOptions;
@@ -48,17 +59,6 @@ import io.deephaven.qst.type.ShortType;
 import io.deephaven.qst.type.StringType;
 import io.deephaven.qst.type.Type;
 import io.deephaven.qst.type.Type.Visitor;
-import io.deephaven.functions.BooleanFunction;
-import io.deephaven.functions.ByteFunction;
-import io.deephaven.functions.CharFunction;
-import io.deephaven.functions.DoubleFunction;
-import io.deephaven.functions.FloatFunction;
-import io.deephaven.functions.IntFunction;
-import io.deephaven.functions.LongFunction;
-import io.deephaven.functions.ObjectFunction;
-import io.deephaven.functions.PrimitiveFunction;
-import io.deephaven.functions.ShortFunction;
-import io.deephaven.functions.TypedFunction;
 import io.deephaven.util.annotations.VisibleForTesting;
 import org.apache.commons.lang3.mutable.MutableInt;
 import org.apache.kafka.common.serialization.Deserializer;
@@ -73,7 +73,6 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.function.Function;
-import java.util.stream.Collectors;
 
 class ProtobufImpl {
 
@@ -231,39 +230,24 @@ class ProtobufImpl {
             if (newDescriptor == originalDescriptor) {
                 return withMostAppropriateType(ProtobufDescriptorParser.parse(newDescriptor, options));
             }
-            // We only need to include the field numbers that were parsed for the original descriptor
-            final List<FieldNumberPath> includePaths = parsed.get(originalDescriptor)
-                    .functions()
-                    .stream()
-                    .map(ProtobufFunction::path)
-                    .map(FieldPath::numberPath)
-                    .collect(Collectors.toList());
-            // While we could do
-            // .include(BooleanFunction.ofTrue()) or .include(adapt(options.include()))
-            // the version we are using
-            // .include(FieldPath.anyNumberPathStartsWithUs(includePaths))
-            // is more efficient / selective.
-            final ProtobufDescriptorParserOptions adaptedOptions = ProtobufDescriptorParserOptions.builder()
+            final Function<FieldPath, FieldOptions> adaptedOptions = fieldPath -> {
+                final FieldPath originalFieldPath = adaptFieldPath(fieldPath).orElse(null);
+                if (originalFieldPath == null) {
+                    // This must be a new field, exclude it.
+                    return FieldOptions.exclude();
+                }
+                return options.fieldOptions().apply(originalFieldPath);
+            };
+            final ProtobufDescriptorParserOptions a = ProtobufDescriptorParserOptions.builder()
                     .parsers(options.parsers())
-                    .include(FieldPath.anyNumberPathStartsWithUs(includePaths))
-                    .parseAsWellKnown(adapt(options.parseAsWellKnown()))
-                    .parseAsBytes(adapt(options.parseAsBytes()))
-                    .parseAsMap(adapt(options.parseAsMap()))
+                    .fieldOptions(adaptedOptions)
                     .build();
-            return withMostAppropriateType(ProtobufDescriptorParser.parse(newDescriptor, adaptedOptions));
+            return withMostAppropriateType(ProtobufDescriptorParser.parse(newDescriptor, a));
         }
 
-        private BooleanFunction<FieldPath> adapt(BooleanFunction<FieldPath> original) {
-            if (original == BooleanFunction.<FieldPath>ofTrue() || original == BooleanFunction.<FieldPath>ofFalse()) {
-                // Don't adapt FieldPath, original doesn't use FieldPath.
-                return original;
-            }
-            return original.mapInput(this::adaptFieldPath);
-        }
-
-        private FieldPath adaptFieldPath(FieldPath path) {
+        private Optional<FieldPath> adaptFieldPath(FieldPath path) {
             if (path.path().isEmpty()) {
-                return path;
+                return Optional.of(path);
             }
             final List<FieldDescriptor> originalFds = new ArrayList<>(path.path().size());
             Descriptor descriptor = originalDescriptor;
@@ -271,13 +255,17 @@ class ProtobufImpl {
             while (true) {
                 final FieldDescriptor currentFd = it.next();
                 final FieldDescriptor originalFd = descriptor.findFieldByNumber(currentFd.getNumber());
+                if (originalFd == null) {
+                    // originalFd does not exist
+                    return Optional.empty();
+                }
                 originalFds.add(originalFd);
                 if (!it.hasNext()) {
                     break;
                 }
                 descriptor = originalFd.getMessageType();
             }
-            return FieldPath.of(originalFds);
+            return Optional.of(FieldPath.of(originalFds));
         }
 
         private class ForPath {

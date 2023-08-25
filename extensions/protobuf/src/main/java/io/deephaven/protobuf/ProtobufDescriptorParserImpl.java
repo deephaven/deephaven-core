@@ -9,6 +9,9 @@ import com.google.protobuf.Descriptors.EnumValueDescriptor;
 import com.google.protobuf.Descriptors.FieldDescriptor;
 import com.google.protobuf.Descriptors.FieldDescriptor.JavaType;
 import com.google.protobuf.Message;
+import io.deephaven.protobuf.FieldOptions.BytesBehavior;
+import io.deephaven.protobuf.FieldOptions.MapBehavior;
+import io.deephaven.protobuf.FieldOptions.WellKnownBehavior;
 import io.deephaven.protobuf.ProtobufFunctions.Builder;
 import io.deephaven.qst.type.BoxedBooleanType;
 import io.deephaven.qst.type.BoxedDoubleType;
@@ -98,10 +101,10 @@ class ProtobufDescriptorParserImpl {
             if (svmp == null) {
                 return Optional.empty();
             }
-            if (!options.parseAsWellKnown().test(fieldPath)) {
-                return Optional.empty();
+            if (options.fieldOptions().apply(fieldPath).wellKnown() == WellKnownBehavior.asWellKnown()) {
+                return Optional.of(ProtobufFunctions.unnamed(svmp.messageParser(descriptor, options)));
             }
-            return Optional.of(ProtobufFunctions.unnamed(svmp.messageParser(descriptor, options)));
+            return Optional.empty();
         }
 
         private List<FieldContext> fcs() {
@@ -129,14 +132,15 @@ class ProtobufDescriptorParserImpl {
         }
 
         private ProtobufFunctions functions(boolean forceInclude) {
-            if (!forceInclude && !options.include().test(fieldPath)) {
+            final FieldOptions fo = options.fieldOptions().apply(fieldPath);
+            if (!forceInclude && !fo.include()) {
                 return ProtobufFunctions.empty();
             }
             final ProtobufFunctions wellKnown = wellKnown().orElse(null);
-            if (wellKnown != null && options.parseAsWellKnown().test(fieldPath)) {
+            if (wellKnown != null && fo.wellKnown() == WellKnownBehavior.asWellKnown()) {
                 return wellKnown;
             }
-            if (fd.isMapField() && options.parseAsMap().test(fieldPath)) {
+            if (fd.isMapField() && fo.map() == MapBehavior.asMap()) {
                 return new MapFieldObject().functions();
             }
             if (fd.isRepeated()) {
@@ -215,7 +219,7 @@ class ProtobufDescriptorParserImpl {
                     case STRING:
                         return namedField(mapObj(STRING_OBJ));
                     case BYTE_STRING:
-                        return options.parseAsBytes().test(fieldPath)
+                        return options.fieldOptions().apply(fieldPath).bytes() == BytesBehavior.asByteArray()
                                 ? namedField(mapObj(BYTE_STRING_OBJ).mapObj(BYTE_STRING_FUNCTION))
                                 : namedField(mapObj(BYTE_STRING_OBJ));
                     case ENUM:
@@ -340,7 +344,7 @@ class ProtobufDescriptorParserImpl {
                     case STRING:
                         return namedField(mapGenerics(STRING_OBJ));
                     case BYTE_STRING:
-                        return options.parseAsBytes().test(fieldPath)
+                        return options.fieldOptions().apply(fieldPath).bytes() == BytesBehavior.asByteArray()
                                 ? namedField(mapGenerics(BYTE_STRING_OBJ.mapObj(BYTE_STRING_FUNCTION)))
                                 : namedField(mapGenerics(BYTE_STRING_OBJ));
                     case ENUM:
