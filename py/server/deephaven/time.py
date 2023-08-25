@@ -351,10 +351,10 @@ def to_j_duration(dt: Union[None, str, datetime.timedelta, np.timedelta64]) -> O
         elif isinstance(dt, str):
             return _JDateTimeUtils.parseDuration(dt)
         elif isinstance(dt, datetime.timedelta):
-            nanos = (dt / datetime.timedelta(microseconds=1)) * 1000
+            nanos = int((dt / datetime.timedelta(microseconds=1)) * 1000)
             return _JDuration.ofNanos(nanos)
         elif isinstance(dt, np.timedelta64):
-            nanos = dt.astype('timedelta64[ns]').astype(np.int64)
+            nanos = int(dt.astype('timedelta64[ns]').astype(np.int64))
             return _JDuration.ofNanos(nanos)
         else:
             raise Exception("Unsupported conversion: " + str(type(dt)) + " -> Duration")
