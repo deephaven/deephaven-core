@@ -2013,29 +2013,29 @@ class Table(JObjectWrapper):
         except Exception as e:
             raise DHError(e, "failed to color format rows conditionally.") from e
 
-    def format_data_bar(self, column: str, value_column: str = None, min: Union[float, str] = NULL_DOUBLE, max: Union[float, str] = NULL_DOUBLE,
-                        axis: Union[DataBarAxisOption, str] = None, positive_color: Union[str, List[str]] = None,
-                        negative_color: Union[str, List[str]] = None, value_placement: Union[DataBarValuePlacementOption, str] = None,
-                        direction: Union[DataBarDirectionOption, str] = None, opacity: float = NULL_DOUBLE, marker_column: str = None,
-                        marker_color: str = None) -> Table:
+    def format_data_bar(self, col: str, value_col: str = None, min: Union[float, str] = NULL_DOUBLE, max: Union[float, str] = NULL_DOUBLE,
+                        axis: Union[DataBarAxisOption, str] = None, positive_color: Union['Color', List['Color']] = None,
+                        negative_color: Union['Color', List['Color']] = None, value_placement: Union[DataBarValuePlacementOption, str] = None,
+                        direction: Union[DataBarDirectionOption, str] = None, opacity: float = NULL_DOUBLE, marker_col: str = None,
+                        marker_color: 'Color' = None) -> Table:
         """ Applies data bar formatting to the specified column.
 
         Args:
-            column (str): where to place the data bars
-            value_column (str): where to get the values to form the data bars from
-            min (Union[float, str]): minimum value or column to get value from
-            max (Union[float, str]): maximum value or column to get value from
-            axis (DataBarAxisOption): orientation of data bar relative to cell
-            positive_color (Union[str, List[str]]): color or list of colors for positive bar
-            negative_color (Union[str, List[str]]): color or list of colors for negative bar
-            value_placement (DataBarValuePlacementOption): orientation of values relative to data bar
-            direction (DataBarDirectionOption): orientation of data bar relative to horizontal axis
-            opacity (float): opacity of data bars
-            marker_column (str): where to get the values to form the markers from
-            marker_color (str): color for markers
+            col (str): column to generate data bars in.
+            value_col (str): column containing the values to generate data bars from.
+            min (Union[float, str]): minimum value for data bar scaling or column to get value from.
+            max (Union[float, str]): maximum value for data bar scaling or column to get value from.
+            axis (DataBarAxisOption): orientation of data bar relative to cell.
+            positive_color (Union['Color', List['Color']]): color for positive bars. Use list of colors to form a gradient.
+            negative_color (Union['Color', List['Color']]): color for negative bars. Use list of colors to form a gradient.
+            value_placement (DataBarValuePlacementOption): orientation of values relative to data bar.
+            direction (DataBarDirectionOption): orientation of data bar relative to horizontal axis.
+            opacity (float): opacity of data bars. Accepts values from 0 to 1.
+            marker_col (str): column containing the values to generate markers from.
+            marker_color ('Color'): color for markers.
 
         Returns:
-            a new table
+            a new table with data bars generated at the specified column
 
         Raises:
             DHError
@@ -2047,14 +2047,8 @@ class Table(JObjectWrapper):
             if isinstance(negative_color, list):
                 negative_color = ','.join(negative_color)
 
-            if value_column is None:
-                value_column = column
-
-            if isinstance(min, str) and isinstance(max, float):
-                max = value_column
-
-            if isinstance(max, str) and isinstance(min, float):
-                min = value_column
+            if value_col is None:
+                value_col = col
 
             axis_value = None
             if axis is not None:
@@ -2077,9 +2071,9 @@ class Table(JObjectWrapper):
                 elif isinstance(value_placement, DataBarValuePlacementOption):
                     value_placement_value = value_placement.value
 
-            return Table(j_table=self.j_table.formatDataBar(column, value_column, axis_value, min, max, positive_color,
+            return Table(j_table=self.j_table.formatDataBar(col, value_col, min, max, axis_value, positive_color,
                                                             negative_color, value_placement_value, direction_value, opacity,
-                                                            marker_column, marker_color))
+                                                            marker_col, marker_color))
         except Exception as e:
             raise DHError(e, "failed to format data bar.") from e
 

@@ -13,98 +13,76 @@ import java.util.Map;
 @TsInterface
 @TsName(namespace = "dh")
 public class DataBarFormat {
-    private double min;
-    private double max;
-    private double value;
+    private Double min;
+    private Double max;
+    private Double value;
     private String axis;
     private String positiveColor;
     private String negativeColor;
     private String valuePlacement;
     private String direction;
-    private double opacity;
-    private double marker;
+    private Double opacity;
+    private Double marker;
     private String markerColor;
-
-    public DataBarFormat(double min, double max, double value, String axis, String positiveColor, String negativeColor,
-            String valuePlacement, String direction, double opacity, double marker, String markerColor) {
-        this.min = min;
-        this.max = max;
-        this.value = value;
-        this.axis = axis;
-        this.positiveColor = positiveColor;
-        this.negativeColor = negativeColor;
-        this.valuePlacement = valuePlacement;
-        this.direction = direction;
-        this.opacity = opacity;
-        this.marker = marker;
-        this.markerColor = markerColor;
-    }
 
     public DataBarFormat(Map<String, Integer> dataBarColumnIndices, Object[] dataColumns, int offsetInSnapshot) {
         for (DatabarFormatColumnType type : DatabarFormatColumnType.values()) {
             int index = dataBarColumnIndices.get(type.name());
             JsArray<Any> val = Js.uncheckedCast(dataColumns[index]);
 
-            switch (type) {
-                case MIN:
-                    this.min = val.getAtAsAny(offsetInSnapshot).asDouble();
-                    break;
-                case MAX:
-                    this.max = val.getAtAsAny(offsetInSnapshot).asDouble();
-                    break;
-                case VALUE:
-                    this.value = val.getAtAsAny(offsetInSnapshot).asDouble();
-                    break;
-                case AXIS:
-                    this.axis = val.getAtAsAny(offsetInSnapshot).asString();
-                    break;
-                case POSITIVE_COLOR:
-                    if (val.getAtAsAny(offsetInSnapshot) != null) {
+            if(val.getAtAsAny(offsetInSnapshot) != null) {
+                switch (type) {
+                    case MIN:
+                        this.min = Js.coerceToDouble(val.getAtAsAny(offsetInSnapshot));
+                        break;
+                    case MAX:
+                        this.max = Js.coerceToDouble(val.getAtAsAny(offsetInSnapshot));
+                        break;
+                    case VALUE:
+                        this.value = Js.coerceToDouble(val.getAtAsAny(offsetInSnapshot));
+                        break;
+                    case AXIS:
+                        this.axis = val.getAtAsAny(offsetInSnapshot).asString();
+                        break;
+                    case POSITIVE_COLOR:
                         this.positiveColor = val.getAtAsAny(offsetInSnapshot).asString();
-                    }
-                    break;
-                case NEGATIVE_COLOR:
-                    if (val.getAtAsAny(offsetInSnapshot) != null) {
+                        break;
+                    case NEGATIVE_COLOR:
                         this.negativeColor = val.getAtAsAny(offsetInSnapshot).asString();
-                    }
-                    break;
-                case VALUE_PLACEMENT:
-                    this.valuePlacement = val.getAtAsAny(offsetInSnapshot).asString();
-                    break;
-                case DIRECTION:
-                    this.direction = val.getAtAsAny(offsetInSnapshot).asString();
-                    break;
-                case OPACITY:
-                    this.opacity = val.getAtAsAny(offsetInSnapshot).asDouble();
-                    break;
-                case MARKER:
-                    if (val.getAtAsAny(offsetInSnapshot) != null) {
-                        this.marker = val.getAtAsAny(offsetInSnapshot).asDouble();
-                    }
-                    break;
-                case MARKER_COLOR:
-                    if (val.getAtAsAny(offsetInSnapshot) != null) {
+                        break;
+                    case VALUE_PLACEMENT:
+                        this.valuePlacement = val.getAtAsAny(offsetInSnapshot).asString();
+                        break;
+                    case DIRECTION:
+                        this.direction = val.getAtAsAny(offsetInSnapshot).asString();
+                        break;
+                    case OPACITY:
+                        this.opacity = val.getAtAsAny(offsetInSnapshot).asDouble();
+                        break;
+                    case MARKER:
+                        this.marker = Js.coerceToDouble(val.getAtAsAny(offsetInSnapshot));
+                        break;
+                    case MARKER_COLOR:
                         this.markerColor = val.getAtAsAny(offsetInSnapshot).asString();
-                    }
-                    break;
-                default:
-                    throw new RuntimeException("No column index was found for this data bar type: " + type);
+                        break;
+                    default:
+                        throw new RuntimeException("No column index was found for this data bar type: " + type);
+                }
             }
         }
     }
-
     @JsProperty
-    public double getMin() {
+    public Double getMin() {
         return min;
     }
 
     @JsProperty
-    public double getMax() {
+    public Double getMax() {
         return max;
     }
 
     @JsProperty
-    public double getValue() {
+    public Double getValue() {
         return value;
     }
 
@@ -134,12 +112,12 @@ public class DataBarFormat {
     }
 
     @JsProperty
-    public double getOpacity() {
+    public Double getOpacity() {
         return opacity;
     }
 
     @JsProperty
-    public double getMarker() {
+    public Double getMarker() {
         return marker;
     }
 

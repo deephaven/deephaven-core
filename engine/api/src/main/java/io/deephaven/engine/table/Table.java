@@ -377,27 +377,37 @@ public interface Table extends
      * Produce a new table with data bars generated at the specified column
      * 
      * @param column Column to generate data bars in
-     * @param valueColumn Column containing the values to generate data bars from
+     * @param valueColumn Column containing the values to generate data bars from. Default value is column
+     * @param min Minimum value for data bar scaling or column to get value from
+     * @param max Maximum value for data bar scaling or column to get value from
      * @param axis Orientation of data bar relative to the cell
-     * @param min Minimum value for data bar scaling
-     * @param max Maximum value for data bar scaling
-     * @param positiveColor Color or list of colors for positive bars
-     * @param negativeColor Color or list of colors for negative bar
+     * @param positiveColor Color for positive bars. Use list of colors to form a gradient
+     * @param negativeColor Color for negative bars. Use list of colors to form a gradient
      * @param valuePlacement Orientation of values relative to the data bar
      * @param direction Orientation of values relative to the horizontal axis
-     * @param opacity Opacity of data bar. Accepts values from 0 to 1
+     * @param opacity Opacity of data bars. Accepts values from 0 to 1
      * @param markerColumn Column containing the values to generate markers from
      * @param markerColor Color for markers
      * @return The new table with data bars generated at the specified column
      */
     @ConcurrentMethod
-    Table formatDataBar(String column, String valueColumn, DataBarAxisOptions axis, double min, double max,
+    Table formatDataBar(String column, String valueColumn, double min, double max, DataBarAxisOptions axis,
             String positiveColor, String negativeColor, DataBarValuePlacementOptions valuePlacement,
             DataBarDirectionOptions direction, double opacity,
             String markerColumn, String markerColor);
 
     @ConcurrentMethod
-    Table formatDataBar(String column, String valueColumn, DataBarAxisOptions axis, String min, String max,
+    Table formatDataBar(String column, String valueColumn, String min, double max, DataBarAxisOptions axis,
+            String positiveColor, String negativeColor, DataBarValuePlacementOptions valuePlacement,
+            DataBarDirectionOptions direction, double opacity, String markerColumn, String markerColor);
+
+    @ConcurrentMethod
+    Table formatDataBar(String column, String valueColumn, double min, String max, DataBarAxisOptions axis,
+            String positiveColor, String negativeColor, DataBarValuePlacementOptions valuePlacement,
+            DataBarDirectionOptions direction, double opacity, String markerColumn, String markerColor);
+
+    @ConcurrentMethod
+    Table formatDataBar(String column, String valueColumn, String min, String max, DataBarAxisOptions axis,
             String positiveColor, String negativeColor, DataBarValuePlacementOptions valuePlacement,
             DataBarDirectionOptions direction, double opacity,
             String markerColumn, String markerColor);

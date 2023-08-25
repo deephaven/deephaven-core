@@ -82,7 +82,7 @@ public class ViewportRow implements TableData.Row {
         }
         if (column.getFormatDataBarColumnIndices() != null) {
             Map<String, Integer> formatDatabarColumnIndices = column.getFormatDataBarColumnIndices();
-            formatDataBar = new DataBarFormat(formatDatabarColumnIndices, dataColumns, offsetInSnapshot);;
+            formatDataBar = new DataBarFormat(formatDatabarColumnIndices, dataColumns, offsetInSnapshot);
         }
         return new Format(cellColors, rowColors, numberFormat, formatString, formatDataBar);
     }

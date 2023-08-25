@@ -238,13 +238,8 @@ public interface TableDefaults extends Table, TableOperationsDefaults<Table, Tab
         return updateView(selectColumns);
     }
 
-    private void validateDataBarOptions(String column, String valueColumn, DataBarAxisOptions axis, double min,
-            double max, String positiveColor, String negativeColor, DataBarValuePlacementOptions valuePlacement,
-            DataBarDirectionOptions direction, double opacity, String markerColumn, String markerColor)
+    private void validateDataBarOptions(String positiveColor, String negativeColor, double opacity, String markerColor)
             throws IllegalArgumentException {
-        if (min != QueryConstants.NULL_DOUBLE && max != QueryConstants.NULL_DOUBLE && min > max) {
-            throw new IllegalArgumentException("Min cannot be greater than max. Min: " + min + "Max: " + max);
-        }
         if (positiveColor != null) {
             for (String color : positiveColor.split(",")) {
                 new Color(color); // Throws if it can't create it
@@ -264,11 +259,13 @@ public interface TableDefaults extends Table, TableOperationsDefaults<Table, Tab
     }
 
     @Override
-    default Table formatDataBar(String column, String valueColumn, DataBarAxisOptions axis, double min, double max,
+    default Table formatDataBar(String column, String valueColumn, double min, double max, DataBarAxisOptions axis,
             String positiveColor, String negativeColor, DataBarValuePlacementOptions valuePlacement,
             DataBarDirectionOptions direction, double opacity, String markerColumn, String markerColor) {
-        validateDataBarOptions(column, valueColumn, axis, min, max, positiveColor, negativeColor, valuePlacement,
-                direction, opacity, markerColumn, markerColor);
+        if (min != QueryConstants.NULL_DOUBLE && max != QueryConstants.NULL_DOUBLE && min > max) {
+            throw new IllegalArgumentException("Min cannot be greater than max. Min: " + min + "Max: " + max);
+        }
+        validateDataBarOptions(positiveColor, negativeColor, opacity, markerColor);
 
         Table newTable = this;
 
@@ -291,38 +288,58 @@ public interface TableDefaults extends Table, TableOperationsDefaults<Table, Tab
             newTable = newTable.updateView(maxColumn + "=" + max, minColumn + "=" + min);
         }
 
-        String valueOutputColumn =
-                ColumnFormatting.getDataBarFormatColumnName(column, ColumnFormatting.DataBarFormatColumnType.VALUE);
-        newTable = newTable.updateView(valueOutputColumn + "=" + valueColumn);
-
-        String markerOutputColumn =
-                ColumnFormatting.getDataBarFormatColumnName(column, ColumnFormatting.DataBarFormatColumnType.MARKER);
-        newTable = newTable.updateView(markerOutputColumn + "=" + markerColumn);
-
-        return newTable.naturalJoin(
-                TableTools.newTable(
-                        TableTools.col(ColumnFormatting.getDataBarFormatColumnName(column,
-                                ColumnFormatting.DataBarFormatColumnType.AXIS), axis == null ? "proportional" : axis),
-                        TableTools.col(ColumnFormatting.getDataBarFormatColumnName(column,
-                                ColumnFormatting.DataBarFormatColumnType.POSITIVE_COLOR), positiveColor),
-                        TableTools.col(ColumnFormatting.getDataBarFormatColumnName(column,
-                                ColumnFormatting.DataBarFormatColumnType.NEGATIVE_COLOR), negativeColor),
-                        TableTools.col(ColumnFormatting.getDataBarFormatColumnName(column,
-                                ColumnFormatting.DataBarFormatColumnType.VALUE_PLACEMENT),
-                                valuePlacement == null ? "beside" : valuePlacement),
-                        TableTools.col(ColumnFormatting.getDataBarFormatColumnName(column,
-                                ColumnFormatting.DataBarFormatColumnType.DIRECTION),
-                                direction == null ? "LTR" : direction),
-                        TableTools.col(ColumnFormatting.getDataBarFormatColumnName(column,
-                                ColumnFormatting.DataBarFormatColumnType.OPACITY),
-                                opacity == QueryConstants.NULL_DOUBLE ? 1.0 : opacity),
-                        TableTools.col(ColumnFormatting.getDataBarFormatColumnName(column,
-                                ColumnFormatting.DataBarFormatColumnType.MARKER_COLOR), markerColor)),
-                "");
+        return formatDataBarHelper(newTable, column, valueColumn, axis, positiveColor, negativeColor, valuePlacement,
+                direction, opacity, markerColumn, markerColor);
     }
 
     @Override
-    default Table formatDataBar(String column, String valueColumn, DataBarAxisOptions axis, String min, String max,
+    default Table formatDataBar(String column, String valueColumn, String min, double max, DataBarAxisOptions axis,
+            String positiveColor, String negativeColor, DataBarValuePlacementOptions valuePlacement,
+            DataBarDirectionOptions direction, double opacity, String markerColumn, String markerColor) {
+        validateDataBarOptions(positiveColor, negativeColor, opacity, markerColor);
+
+        Table newTable = this;
+
+        String minColumn =
+                ColumnFormatting.getDataBarFormatColumnName(column, ColumnFormatting.DataBarFormatColumnType.MIN);
+        String maxColumn =
+                ColumnFormatting.getDataBarFormatColumnName(column, ColumnFormatting.DataBarFormatColumnType.MAX);
+        if (max == QueryConstants.NULL_DOUBLE) {
+            Table calculatedMax = this.aggBy(AggMax(maxColumn + "=" + valueColumn));
+            newTable = newTable.naturalJoin(calculatedMax, "").updateView(minColumn + "=" + min);
+        } else {
+            newTable = newTable.updateView(minColumn + "=" + min, maxColumn + "=" + max);
+        }
+
+        return formatDataBarHelper(newTable, column, valueColumn, axis, positiveColor, negativeColor, valuePlacement,
+                direction, opacity, markerColumn, markerColor);
+    }
+
+    @Override
+    default Table formatDataBar(String column, String valueColumn, double min, String max, DataBarAxisOptions axis,
+                                String positiveColor, String negativeColor, DataBarValuePlacementOptions valuePlacement,
+                                DataBarDirectionOptions direction, double opacity, String markerColumn, String markerColor) {
+        validateDataBarOptions(positiveColor, negativeColor, opacity, markerColor);
+
+        Table newTable = this;
+
+        String minColumn =
+                ColumnFormatting.getDataBarFormatColumnName(column, ColumnFormatting.DataBarFormatColumnType.MIN);
+        String maxColumn =
+                ColumnFormatting.getDataBarFormatColumnName(column, ColumnFormatting.DataBarFormatColumnType.MAX);
+        if (min == QueryConstants.NULL_DOUBLE) {
+            Table calculatedMin = this.aggBy(AggMin(minColumn + "=" + valueColumn));
+            newTable = newTable.naturalJoin(calculatedMin, "").updateView(maxColumn + "=" + max);
+        } else {
+            newTable = newTable.updateView(minColumn + "=" + min, maxColumn + "=" + max);
+        }
+
+        return formatDataBarHelper(newTable, column, valueColumn, axis, positiveColor, negativeColor, valuePlacement,
+                direction, opacity, markerColumn, markerColor);
+    }
+
+    @Override
+    default Table formatDataBar(String column, String valueColumn, String min, String max, DataBarAxisOptions axis,
             String positiveColor, String negativeColor, DataBarValuePlacementOptions valuePlacement,
             DataBarDirectionOptions direction, double opacity, String markerColumn, String markerColor) {
         Table newTable = this;
@@ -335,6 +352,13 @@ public interface TableDefaults extends Table, TableOperationsDefaults<Table, Tab
                 ColumnFormatting.getDataBarFormatColumnName(column, ColumnFormatting.DataBarFormatColumnType.MAX);
         newTable = newTable.updateView(maxColumn + "=" + max);
 
+        return formatDataBarHelper(newTable, column, valueColumn, axis, positiveColor, negativeColor, valuePlacement,
+                direction, opacity, markerColumn, markerColor);
+    }
+
+    private Table formatDataBarHelper(Table newTable, String column, String valueColumn, DataBarAxisOptions axis,
+            String positiveColor, String negativeColor, DataBarValuePlacementOptions valuePlacement,
+            DataBarDirectionOptions direction, double opacity, String markerColumn, String markerColor) {
         String valueOutputColumn =
                 ColumnFormatting.getDataBarFormatColumnName(column, ColumnFormatting.DataBarFormatColumnType.VALUE);
         newTable = newTable.updateView(valueOutputColumn + "=" + valueColumn);
