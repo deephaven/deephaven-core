@@ -442,8 +442,9 @@ def to_date(dt: Union[None, LocalDate]) -> Optional[datetime.date]:
     try:
         if not dt:
             return None
-        if isinstance(dt, LocalDate):
+        if isinstance(dt, LocalDate.j_type):
             return datetime.date(dt.getYear(), dt.getMonthValue(), dt.getDayOfMonth())
+        #TODO: convert other types?
         else:
             raise Exception("Unsupported conversion: " + str(type(dt)) + " -> datetime.date")
     except Exception as e:
@@ -463,8 +464,9 @@ def to_time(dt: Union[None, LocalTime]) -> Optional[datetime.time]:
     try:
         if not dt:
             return None
-        elif isinstance(dt, LocalTime):
+        elif isinstance(dt, LocalTime.j_type):
             return datetime.time(dt.getHour(), dt.getMinute(), dt.getSecond(), dt.getNano() // 1000)
+        #TODO: support other types?
         else:
             raise Exception("Unsupported conversion: " + str(type(dt)) + " -> datetime.time")
     except Exception as e:
@@ -485,10 +487,10 @@ def to_datetime(dt: Union[None, Instant, ZonedDateTime]) -> Optional[datetime.da
     try:
         if not dt:
             return None
-        elif isinstance(dt, Instant):
+        elif isinstance(dt, Instant.j_type):
             ts = dt.getEpochSecond() + (dt.getNano() / 1000000000)
             return datetime.datetime.fromtimestamp(ts)
-        elif isinstance(dt, ZonedDateTime):
+        elif isinstance(dt, ZonedDateTime.j_type):
             ts = dt.toEpochSecond() + (dt.getNano() / 1000000000)
             return datetime.datetime.fromtimestamp(ts)
         else:
@@ -514,10 +516,10 @@ def to_datetime64(dt: Union[None, Instant, ZonedDateTime]) -> Optional[np.dateti
     try:
         if not dt:
             return None
-        elif isinstance(dt, Instant):
+        elif isinstance(dt, Instant.j_type):
             ts = dt.getEpochSecond() * 1000000000 + dt.getNano()
             return np.datetime64(ts, 'ns')
-        elif isinstance(dt, ZonedDateTime):
+        elif isinstance(dt, ZonedDateTime.j_type):
             ts = dt.toEpochSecond() * 1000000000 + dt.getNano()
             return np.datetime64(ts, 'ns')
         else:
@@ -539,20 +541,19 @@ def to_timedelta(dt: Union[None, Duration]) -> Optional[datetime.timedelta]:
     try:
         if not dt:
             return None
-        elif isinstance(dt, Duration):
+        elif isinstance(dt, Duration.j_type):
             return datetime.timedelta(seconds=dt.getSeconds(), microseconds=dt.getNano() // 1000)
-        elif isinstance(dt, Period):
+        elif isinstance(dt, Period.j_type):
             # TODO: not sure what is right here
             y = dt.getYears()
             m = dt.getMonths()
             d = dt.getDays()
-            w = dt.getDays() // 7
 
             if y or m:
                 raise Exception("Unsupported conversion: " + str(type(dt)) +
                                 " -> datetime.timedelta: Periods must only be days or weeks")
 
-            return datetime.timedelta(days=d, weeks=w)
+            return datetime.timedelta(days=d)
         else:
             raise Exception("Unsupported conversion: " + str(type(dt)) + " -> datetime.timedelta")
     except Exception as e:
@@ -575,9 +576,9 @@ def to_timedelta64(dt: Union[None, Duration, Period]) -> Optional[np.timedelta64
     try:
         if not dt:
             return None
-        elif isinstance(dt, Duration):
+        elif isinstance(dt, Duration.j_type):
             return np.timedelta64(dt.toNanos(), 'ns')
-        elif isinstance(dt, Period):
+        elif isinstance(dt, Period.j_type):
             d = dt.getDays()
             m = dt.getMonths()
             y = dt.getYears()

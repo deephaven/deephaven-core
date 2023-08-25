@@ -268,262 +268,181 @@ class TimeTestCase(BaseTestCase):
 
     # region Conversions: Java To Python
 
-    def test_xxx(self):
-        self.fail("TODO--more tests")
-        self.fail("TODO--test all branches")
+    def test_to_date(self):
+        target = datetime.date(2021, 12, 10)
+
+        ld = _JDateTimeUtils.parseLocalDate("2021-12-10")
+        dt = to_date(ld)
+        self.assertEqual(dt, target)
+
+        dt = to_date(None)
+        self.assertEqual(dt, None)
+
+        try:
+            to_date(123)
+            self.fail("Expected DHError")
+        except DHError:
+            pass
+
+    def test_to_time(self):
+        target = datetime.time(14, 21, 17, 123456)
+
+        lt = _JDateTimeUtils.parseLocalTime("14:21:17.123456")
+        dt = to_time(lt)
+        self.assertEqual(dt, target)
+
+        dt = to_time(None)
+        self.assertEqual(dt, None)
+
+        try:
+            to_time(123)
+            self.fail("Expected DHError")
+        except DHError:
+            pass
+
+    def test_to_datetime(self):
+        target = datetime.datetime(2021, 12, 10, 14, 21, 17, 123456)
+
+        dt = _JDateTimeUtils.parseInstant("2021-12-10T14:21:17.123456Z")
+        dt = to_datetime(dt)
+        self.assertEqual(dt, target)
+
+        dt = _JDateTimeUtils.parseZonedDateTime("2021-12-10T14:21:17.123456Z")
+        dt = to_datetime(dt)
+        self.assertEqual(dt, target)
+
+        dt = to_datetime(None)
+        self.assertEqual(dt, None)
+
+        try:
+            to_datetime(123)
+            self.fail("Expected DHError")
+        except DHError:
+            pass
+
+    def test_to_datetime64(self):
+        target = np.datetime64("2021-12-10T14:21:17.123456Z")
+
+        dt = _JDateTimeUtils.parseInstant("2021-12-10T14:21:17.123456Z")
+        dt = to_datetime64(dt)
+        self.assertEqual(dt, target)
+
+        dt = _JDateTimeUtils.parseZonedDateTime("2021-12-10T14:21:17.123456Z")
+        dt = to_datetime64(dt)
+        self.assertEqual(dt, target)
+
+        dt = to_datetime64(None)
+        self.assertEqual(dt, None)
+
+        try:
+            to_datetime64(123)
+            self.fail("Expected DHError")
+        except DHError:
+            pass
+
+    def test_to_timedelta(self):
+        target = datetime.timedelta(hours=1, minutes=2, seconds=3, milliseconds=4, microseconds=5)
+
+        d = _JDateTimeUtils.parseDuration("PT1H2M3.004005S")
+        dt = to_timedelta(d)
+        self.assertEqual(dt, target)
+
+        target = datetime.timedelta(days=2)
+        d = _JDateTimeUtils.parsePeriod("P2D")
+        dt = to_timedelta(d)
+        self.assertEqual(dt, target)
+
+        target = datetime.timedelta(days=14)
+        d = _JDateTimeUtils.parsePeriod("P2W")
+        dt = to_timedelta(d)
+        self.assertEqual(dt, target)
+
+        d = to_timedelta(None)
+        self.assertEqual(d, None)
+
+        d = _JDateTimeUtils.parsePeriod("P1Y")
+        try:
+            to_timedelta(d)
+            self.fail("Expected DHError")
+        except DHError:
+            pass
+
+        d = _JDateTimeUtils.parsePeriod("P1M")
+        try:
+            to_timedelta(d)
+            self.fail("Expected DHError")
+        except DHError:
+            pass
+
+        try:
+            to_timedelta(123)
+            self.fail("Expected DHError")
+        except DHError:
+            pass
+
+    def test_to_timedelta64(self):
+        target = np.timedelta64(1, 'h') + np.timedelta64(2, 'm') + np.timedelta64(3, 's') + np.timedelta64(4, 'ms') + np.timedelta64(5, 'us')
+
+        d = _JDateTimeUtils.parseDuration("PT1H2M3.004005S")
+        dt = to_timedelta64(d)
+        self.assertEqual(dt, target)
+
+        target = np.timedelta64(2, 'D')
+        d = _JDateTimeUtils.parsePeriod("P2D")
+        dt = to_timedelta64(d)
+        self.assertEqual(dt, target)
+
+        target = np.timedelta64(14, 'D')
+        d = _JDateTimeUtils.parsePeriod("P2W")
+        dt = to_timedelta64(d)
+        self.assertEqual(dt, target)
+
+        d = to_timedelta64(None)
+        self.assertEqual(d, None)
+
+        target = np.timedelta64(2, 'Y')
+        d = _JDateTimeUtils.parsePeriod("P2Y")
+        dt = to_timedelta64(d)
+        self.assertEqual(dt, target)
+
+        target = np.timedelta64(2, 'M')
+        d = _JDateTimeUtils.parsePeriod("P2M")
+        dt = to_timedelta64(d)
+        self.assertEqual(dt, target)
+
+        target = np.timedelta64(0, 'D')
+        d = _JDateTimeUtils.parsePeriod("P0M")
+        dt = to_timedelta64(d)
+        self.assertEqual(dt, target)
+
+        d = _JDateTimeUtils.parsePeriod("P1Y1M")
+        try:
+            to_timedelta64(d)
+            self.fail("Expected DHError")
+        except DHError:
+            pass
+
+        d = _JDateTimeUtils.parsePeriod("P1Y1D")
+        try:
+            to_timedelta64(d)
+            self.fail("Expected DHError")
+        except DHError:
+            pass
+
+        d = _JDateTimeUtils.parsePeriod("P1M1D")
+        try:
+            to_timedelta64(d)
+            self.fail("Expected DHError")
+        except DHError:
+            pass
+
+        try:
+            to_timedelta64(123)
+            self.fail("Expected DHError")
+        except DHError:
+            pass
 
     # endregion
-
-
-    # #################### TODO REMOVE BELOW ####################
-    #
-    # # region: Conversions: Date Time Types
-    #
-    # def test_to_instant(self):
-    #     dt1 = parse_instant("2021-12-10T14:21:17.123456789 ET")
-    #     dt2 = parse_zdt("2021-12-10T14:21:17.123456789 ET")
-    #
-    #     self.assertEqual(dt1, to_instant(dt2))
-    #     self.assertEquals(None,to_instant(None))
-    #
-    # def test_to_zdt(self):
-    #     dt1 = parse_instant("2021-12-10T14:21:17.123456789 ET")
-    #     dt2 = parse_zdt("2021-12-10T14:21:17.123456789 ET")
-    #
-    #     self.assertEqual(dt2, to_zdt(dt1, time_zone("ET")))
-    #     self.assertEquals(None,to_zdt(None, time_zone("ET")))
-    #
-    # def test_make_instant(self):
-    #     dt = parse_instant("2021-12-10T14:21:17.123456789 ET")
-    #     ld = parse_local_date("2021-12-10")
-    #     lt = parse_local_time("14:21:17.123456789")
-    #     tz = time_zone("ET")
-    #
-    #     self.assertEqual(dt, make_instant(ld, lt, tz))
-    #     self.assertEquals(None,make_instant(ld, lt, None))
-    #     self.assertEquals(None,make_instant(ld, None, tz))
-    #     self.assertEquals(None,make_instant(None, lt, tz))
-    #
-    # def test_make_zdt(self):
-    #     dt = parse_zdt("2021-12-10T14:21:17.123456789 ET")
-    #     ld = parse_local_date("2021-12-10")
-    #     lt = parse_local_time("14:21:17.123456789")
-    #     tz = time_zone("ET")
-    #
-    #     self.assertEqual(dt, make_zdt(ld, lt, tz))
-    #     self.assertEquals(None,make_zdt(ld, lt, None))
-    #     self.assertEquals(None,make_zdt(ld, None, tz))
-    #     self.assertEquals(None,make_zdt(None, lt, tz))
-    #
-    # def test_to_local_date(self):
-    #     dt1 = parse_instant("2021-12-10T14:21:17.123456789 ET")
-    #     dt2 = parse_zdt("2021-12-10T14:21:17.123456789 ET")
-    #     tz = time_zone("ET")
-    #     ld = parse_local_date("2021-12-10")
-    #
-    #     self.assertEqual(ld, to_local_date(dt1, tz))
-    #     self.assertEqual(ld, to_local_date(dt2, tz))
-    #     self.assertEquals(None,to_local_date(dt1, None))
-    #     self.assertEquals(None,to_local_date(dt2, None))
-    #     self.assertEquals(None,to_local_date(None, tz))
-    #
-    # def test_to_local_time(self):
-    #     dt1 = parse_instant("2021-12-10T14:21:17.123456789 ET")
-    #     dt2 = parse_zdt("2021-12-10T14:21:17.123456789 ET")
-    #     tz = time_zone("ET")
-    #     lt = parse_local_time("14:21:17.123456789")
-    #
-    #     self.assertEqual(lt, to_local_time(dt1, tz))
-    #     self.assertEqual(lt, to_local_time(dt2, tz))
-    #     self.assertEquals(None,to_local_time(dt1, None))
-    #     self.assertEquals(None,to_local_time(dt2, None))
-    #     self.assertEquals(None,to_local_time(None, tz))
-    #
-    # # endregion
-    #
-    #
-    # # region: Parse
-    #
-    # def test_parse_time_zone(self):
-    #     tz = parse_time_zone("America/New_York")
-    #     self.assertEqual(str(tz), "America/New_York")
-    #
-    #     tz = parse_time_zone("CT")
-    #     self.assertEqual(str(tz), "America/Chicago")
-    #
-    #     with self.assertRaises(DHError) as cm:
-    #         tz = parse_time_zone(None)
-    #     self.assertTrue(cm.exception.root_cause)
-    #     self.assertIn("Cannot parse", cm.exception.compact_traceback)
-    #
-    #     with self.assertRaises(DHError) as cm:
-    #         tz = parse_time_zone("JUNK")
-    #     self.assertTrue(cm.exception.root_cause)
-    #     self.assertIn("Cannot parse time zone", cm.exception.compact_traceback)
-    #
-    #     tz = parse_time_zone("JUNK", quiet=True)
-    #     self.assertEqual(None, tz)
-    #
-    # def test_parse_duration_nanos(self):
-    #     time_str = "PT530000:59:39.123456789"
-    #     in_nanos = parse_duration_nanos(time_str)
-    #     self.assertEqual(str(in_nanos), "1908003579123456789")
-    #
-    #     with self.assertRaises(DHError) as cm:
-    #         time_str = "PT530000:59:39.X"
-    #         in_nanos = parse_duration_nanos(time_str)
-    #     self.assertIn("DateTimeParseException", str(cm.exception))
-    #
-    #     time_str = "PT00:59:39.X"
-    #     in_nanos = parse_duration_nanos(time_str, quiet=True)
-    #     self.assertEqual(in_nanos, NULL_LONG)
-    #
-    #     time_str = "PT1:02:03"
-    #     in_nanos = parse_duration_nanos(time_str)
-    #     time_str2 = format_duration_nanos(in_nanos)
-    #     self.assertEqual(time_str2, time_str)
-    #
-    #     time_str = "PT1h"
-    #     in_nanos = parse_duration_nanos(time_str)
-    #     time_str2 = format_duration_nanos(in_nanos)
-    #     self.assertEqual(time_str2, "PT1:00:00")
-    #
-    # def test_parse_period(self):
-    #     period_str = "P1W"
-    #     period = parse_period(period_str)
-    #     # Java Period normalizes weeks to days in toString()
-    #     self.assertEqual(str(period).upper(), "P7D")
-    #
-    #     period_str = "P6D"
-    #     period = parse_period(period_str)
-    #     self.assertEqual(str(period).upper(), period_str)
-    #
-    #     period_str = "P1M"
-    #     period = parse_period(period_str)
-    #     self.assertEqual(str(period).upper(), period_str)
-    #
-    #     with self.assertRaises(DHError) as cm:
-    #         period_str = "PT1Y"
-    #         period = parse_period(period_str)
-    #     self.assertIn("DateTimeParseException", str(cm.exception))
-    #
-    #     period = parse_period(period_str, quiet=True)
-    #     self.assertEquals(None,period)
-    #
-    # def test_parse_duration(self):
-    #     duration_str = "PT1M"
-    #     duration = parse_duration(duration_str)
-    #     self.assertEqual(str(duration).upper(), duration_str)
-    #
-    #     duration_str = "PT1H"
-    #     duration = parse_duration(duration_str)
-    #     self.assertEqual(str(duration).upper(), duration_str)
-    #
-    #     with self.assertRaises(DHError) as cm:
-    #         duration = parse_duration("T1Q")
-    #     self.assertIn("DateTimeParseException", str(cm.exception))
-    #
-    #     duration = parse_duration("T1Q", quiet=True)
-    #     self.assertEquals(None,duration)
-    #
-    # def test_parse_epoch_nanos(self):
-    #     datetime_str = "2021-12-10T23:59:59"
-    #     timezone_str = "ET"
-    #     dt = parse_instant(f"{datetime_str} {timezone_str}")
-    #     n = parse_epoch_nanos(f"{datetime_str} {timezone_str}")
-    #     self.assertEqual(epoch_nanos(dt), n)
-    #
-    #     with self.assertRaises(DHError) as cm:
-    #         datetime_str = "2021-12-10T23:59:59"
-    #         timezone_str = "--"
-    #         dt = parse_epoch_nanos(f"{datetime_str} {timezone_str}")
-    #     self.assertIn("RuntimeException", str(cm.exception))
-    #
-    #     datetime_str = "2021-12-10T23:59:59"
-    #     timezone_str = "--"
-    #     dt = parse_epoch_nanos(f"{datetime_str} {timezone_str}", quiet=True)
-    #     self.assertEquals(NULL_LONG,dt)
-    #
-    # def test_parse_instant(self):
-    #     datetime_str = "2021-12-10T23:59:59"
-    #     timezone_str = "ET"
-    #     dt = parse_instant(f"{datetime_str} {timezone_str}")
-    #     self.assertTrue(format_datetime(dt, time_zone("ET")).startswith(datetime_str))
-    #
-    #     with self.assertRaises(DHError) as cm:
-    #         datetime_str = "2021-12-10T23:59:59"
-    #         timezone_str = "--"
-    #         dt = parse_instant(f"{datetime_str} {timezone_str}")
-    #     self.assertIn("RuntimeException", str(cm.exception))
-    #
-    #     datetime_str = "2021-12-10T23:59:59"
-    #     timezone_str = "--"
-    #     dt = parse_instant(f"{datetime_str} {timezone_str}", quiet=True)
-    #     self.assertEquals(None,dt)
-    #
-    # def test_parse_zdt(self):
-    #     datetime_str = "2021-12-10T23:59:59"
-    #     timezone_str = "ET"
-    #     dt = parse_zdt(f"{datetime_str} {timezone_str}")
-    #     self.assertTrue(str(dt).startswith(datetime_str))
-    #
-    #     with self.assertRaises(DHError) as cm:
-    #         datetime_str = "2021-12-10T23:59:59"
-    #         timezone_str = "--"
-    #         dt = parse_zdt(f"{datetime_str} {timezone_str}")
-    #     self.assertIn("RuntimeException", str(cm.exception))
-    #
-    #     datetime_str = "2021-12-10T23:59:59"
-    #     timezone_str = "--"
-    #     dt = parse_zdt(f"{datetime_str} {timezone_str}", quiet=True)
-    #     self.assertEquals(None,dt)
-    #
-    # def test_parse_time_precision(self):
-    #     datetime_str = "2021-12-10T23:59:59"
-    #     timezone_str = "ET"
-    #     tp = parse_time_precision(f"{datetime_str} {timezone_str}")
-    #     self.assertEqual(tp, "SecondOfMinute")
-    #
-    #     with self.assertRaises(DHError) as cm:
-    #         datetime_str = "2021-12-10T23:59:59"
-    #         timezone_str = "--"
-    #         tp = parse_time_precision(f"{datetime_str} {timezone_str}")
-    #     self.assertIn("RuntimeException", str(cm.exception))
-    #
-    #     datetime_str = "2021-12-10T23:59:59"
-    #     timezone_str = "--"
-    #     tp = parse_time_precision(f"{datetime_str} {timezone_str}", quiet=True)
-    #     self.assertEquals(None,tp)
-    #
-    # def test_parse_local_date(self):
-    #     date_str = "2021-12-10"
-    #     dt = parse_local_date(date_str)
-    #     self.assertTrue(str(dt), date_str)
-    #
-    #     with self.assertRaises(DHError) as cm:
-    #         date_str = "2021-x12-10"
-    #         dt = parse_local_date(date_str)
-    #     self.assertIn("DateTimeParseException", str(cm.exception))
-    #
-    #     date_str = "2021-x12-10"
-    #     dt = parse_local_date(date_str, quiet=True)
-    #     self.assertEquals(None,dt)
-    #
-    # def test_parse_local_time(self):
-    #     time_str = "23:59:59"
-    #     dt = parse_local_time(time_str)
-    #     self.assertTrue(str(dt), time_str)
-    #
-    #     with self.assertRaises(DHError) as cm:
-    #         time_str = "23:59x:59"
-    #         dt = parse_local_time(time_str)
-    #     self.assertIn("DateTimeParseException", str(cm.exception))
-    #
-    #     time_str = "23:59x:59"
-    #     dt = parse_local_time(time_str, quiet=True)
-    #     self.assertEquals(None,dt)
-    #
-    # # endregion
 
 
 if __name__ == "__main__":
