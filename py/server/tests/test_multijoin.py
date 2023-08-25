@@ -5,8 +5,7 @@
 import unittest
 
 from deephaven import read_csv, time_table, update_graph
-from deephaven.table_factory import multi_join
-from deephaven.table import MultiJoinInput, MultiJoinTable
+from deephaven.table import MultiJoinInput, MultiJoinTable, multi_join
 from tests.testbase import BaseTestCase
 from deephaven.execution_context import get_exec_ctx
 

@@ -3637,3 +3637,24 @@ class MultiJoinTable(JObjectWrapper):
 
         except Exception as e:
             raise DHError(e, "failed to build a MultiJoinTable object.") from e
+
+
+
+def multi_join(input: Union[Table, Sequence[Table], MultiJoinInput, Sequence[MultiJoinInput]],
+               on: Union[str, Sequence[str]] = None) -> MultiJoinTable:
+    """ The multi_join method creates a new table by performing a multi-table natural join on the input tables.  The result
+    consists of the set of distinct keys from the input tables natural joined to each input table. Input tables need not
+    have a matching row for each key, but they may not have multiple matching rows for a given key.
+
+    Args:
+        input (Union[Table, Sequence[Table], MultiJoinInput, Sequence[MultiJoinInput]]): the input objects specifying the
+            tables and columns to include in the join.
+        on (Union[str, Sequence[str]], optional): the column(s) to match, can be a common name or an equality expression
+            that matches every input table, i.e. "col_a = col_b" to rename output column names.  When using MultiJoinInput
+            objects, this parameter is ignored.
+
+    Returns:
+        MultiJoinTable: the result of the multi-table natural join operation. To access the underlying Table, use the
+            table() method.
+    """
+    return MultiJoinTable(input, on)
