@@ -11,6 +11,7 @@ import io.deephaven.protobuf.ProtobufDescriptorParserOptions;
 import org.immutables.value.Value.Default;
 import org.immutables.value.Value.Immutable;
 
+import java.util.Optional;
 import java.util.OptionalInt;
 import java.util.function.Function;
 
@@ -20,12 +21,6 @@ import java.util.function.Function;
  * create {@link com.google.protobuf.Message message} parsing functions according to
  * {@link io.deephaven.protobuf.ProtobufDescriptorParser#parse(Descriptor, ProtobufDescriptorParserOptions)}. These
  * functions will be adapted to handle schema changes.
- *
- * <p>
- * For purposes of reproducibility across restarts where schema changes may occur, it is advisable for callers to set a
- * specific {@link #schemaVersion()}. This will ensure the resulting {@link io.deephaven.engine.table.TableDefinition
- * table definition} will not change across restarts. This gives the caller an explicit opportunity to update any
- * downstream consumers when updating {@link #schemaVersion()} if necessary.
  *
  * @see Consume#protobufSpec(ProtobufConsumeOptions)
  * @see <a href=
@@ -65,9 +60,27 @@ public abstract class ProtobufConsumeOptions {
     /**
      * The schema version to fetch from the schema registry. When not set, the latest schema will be fetched.
      *
+     * <p>
+     * For purposes of reproducibility across restarts where schema changes may occur, it is advisable for callers to
+     * set this. This will ensure the resulting {@link io.deephaven.engine.table.TableDefinition table definition} will
+     * not change across restarts. This gives the caller an explicit opportunity to update any downstream consumers
+     * before bumping schema versions.
+     *
      * @return the schema version, or none for latest
      */
     public abstract OptionalInt schemaVersion();
+
+    /**
+     * The schema {@link com.google.protobuf.Message} name, whose {@link Descriptor} will be used to inform the
+     * resulting {@link io.deephaven.engine.table.TableDefinition table definition}. When not set, the first message in
+     * the schema will be used.
+     *
+     * <p>
+     * It is advisable for callers to explicitly set this.
+     *
+     * @return the schema message name
+     */
+    public abstract Optional<String> schemaMessageName();
 
     /**
      * The descriptor parsing options. By default, is {@link ProtobufDescriptorParserOptions#defaults()}.
@@ -95,6 +108,8 @@ public abstract class ProtobufConsumeOptions {
         Builder schemaSubject(String schemaSubject);
 
         Builder schemaVersion(int schemaVersion);
+
+        Builder schemaMessageName(String schemaMessageName);
 
         Builder parserOptions(ProtobufDescriptorParserOptions options);
 

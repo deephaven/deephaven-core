@@ -157,10 +157,15 @@ class ProtobufImpl {
                 throw new IllegalStateException(String.format("Expected schema type %s but was %s", ProtobufSchema.TYPE,
                         metadata.getSchemaType()));
             }
-            // todo: we need to handle the dynamic case eventually, where protobuf descriptor is updated
-            return ((ProtobufSchema) schemaRegistryClient.getSchemaBySubjectAndId(specs.schemaSubject(),
-                    metadata.getId()))
-                    .toDescriptor();
+            final ProtobufSchema protobufSchema = (ProtobufSchema) schemaRegistryClient
+                    .getSchemaBySubjectAndId(specs.schemaSubject(), metadata.getId());
+            // The potential need to set io.deephaven.kafka.protobuf.ProtobufConsumeOptions#schemaMessageName
+            // seems unfortunate; I'm surprised the information is not part of the kafka serdes protocol.
+            // Maybe it's so that a single schema can be used, and different topics with different root messages can
+            // all share that common schema?
+            return specs.schemaMessageName().isPresent()
+                    ? protobufSchema.toDescriptor(specs.schemaMessageName().get())
+                    : protobufSchema.toDescriptor();
         }
     }
 
@@ -220,8 +225,8 @@ class ProtobufImpl {
         private ProtobufFunctions create(Descriptor newDescriptor) {
             if (!originalDescriptor.getFullName().equals(newDescriptor.getFullName())) {
                 throw new IllegalArgumentException(String.format(
-                        "Expected descriptor names to match. originalDescriptor.getFullName()=%s, newDescriptor.getFullName()=%s",
-                        originalDescriptor.getFullName(), newDescriptor.getFullName()));
+                        "Expected descriptor names to match. expected='%s', actual='%s'. You may need to explicitly set schema_message_name to '%s'",
+                        originalDescriptor.getFullName(), newDescriptor.getFullName(), newDescriptor.getFullName()));
             }
             if (newDescriptor == originalDescriptor) {
                 return withMostAppropriateType(ProtobufDescriptorParser.parse(newDescriptor, options));

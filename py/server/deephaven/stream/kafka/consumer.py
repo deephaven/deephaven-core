@@ -286,6 +286,7 @@ def _consume(
 def protobuf_spec(
         schema: str,
         schema_version: Optional[int] = None,
+        schema_message_name: Optional[str] = None,
         include: Optional[List[str]] = None,
         parse_as_well_known: Optional[List[str]] = None,
         parse_as_bytes: Optional[List[str]] = None,
@@ -302,7 +303,13 @@ def protobuf_spec(
 
     Args:
         schema (str): the schema subject name
-        schema_version (Optional[int]): the schema version, or None for latest, default is None
+        schema_version (Optional[int]): the schema version, or None for latest, default is None. For purposes of
+            reproducibility across restarts where schema changes may occur, it is advisable for callers to set this.
+            This will ensure the resulting table definition will not change across restarts. This gives the caller an
+            explicit opportunity to update any downstream consumers when updating schema_version if necessary.
+        schema_message_name (Optional[str]): the schema message name, whose descriptor will be used to inform the
+            resulting table definition, or None to use the first message definition in the schema. The default is None.
+            It is advisable for callers to explicitly set this.
         include (Optional[List[str]]): the '/' separated paths to include. Default is None, which includes all paths.
         parse_as_well_known (Optional[List[str]]): the '/' separated paths to be parsed as "well-known" types. If a
             message is a well-known type, but is not in included in this directive, it will be parsed recursively.
@@ -346,6 +353,8 @@ def protobuf_spec(
     )
     if schema_version:
         pb_consume_builder.schemaVersion(schema_version)
+    if schema_message_name:
+        pb_consume_builder.schemaMessageName(schema_message_name)
     return KeyValueSpec(
         j_spec=_JKafkaTools_Consume.protobufSpec(pb_consume_builder.build())
     )
