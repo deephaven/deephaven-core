@@ -30,7 +30,7 @@ public class DataBarFormat {
             int index = dataBarColumnIndices.get(type.name());
             JsArray<Any> val = Js.uncheckedCast(dataColumns[index]);
 
-            if(val.getAtAsAny(offsetInSnapshot) != null) {
+            if (val.getAtAsAny(offsetInSnapshot) != null) {
                 switch (type) {
                     case MIN:
                         this.min = Js.coerceToDouble(val.getAtAsAny(offsetInSnapshot));
@@ -71,6 +71,7 @@ public class DataBarFormat {
             }
         }
     }
+
     @JsProperty
     public Double getMin() {
         return min;

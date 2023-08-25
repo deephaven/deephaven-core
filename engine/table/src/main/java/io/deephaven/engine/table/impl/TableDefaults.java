@@ -317,8 +317,8 @@ public interface TableDefaults extends Table, TableOperationsDefaults<Table, Tab
 
     @Override
     default Table formatDataBar(String column, String valueColumn, double min, String max, DataBarAxisOptions axis,
-                                String positiveColor, String negativeColor, DataBarValuePlacementOptions valuePlacement,
-                                DataBarDirectionOptions direction, double opacity, String markerColumn, String markerColor) {
+            String positiveColor, String negativeColor, DataBarValuePlacementOptions valuePlacement,
+            DataBarDirectionOptions direction, double opacity, String markerColumn, String markerColor) {
         validateDataBarOptions(positiveColor, negativeColor, opacity, markerColor);
 
         Table newTable = this;
