@@ -73,8 +73,22 @@ class TimeTestCase(BaseTestCase):
         tz = to_j_time_zone("CT")
         self.assertEqual(str(tz), "America/Chicago")
 
+        pytz = datetime.datetime.now().astimezone().tzinfo
+        tz = to_j_time_zone(pytz)
+        self.assertEqual(str(tz), "UTC")
+
+        pytz = datetime.datetime.now()
+        tz = to_j_time_zone(pytz)
+        self.assertEqual(str(tz), "UTC")
+
         tz = to_j_time_zone(None)
         self.assertEqual(str(tz), "Etc/UTC")
+
+        try:
+            to_j_time_zone(123)
+            self.fail("Expected DHError")
+        except DHError:
+            pass
 
 
     def test_to_j_local_date(self):

@@ -141,12 +141,12 @@ def time_zone_alias_rm(alias: str) -> bool:
 
 # region Conversions: Python To Java
 
-def to_j_time_zone(tz: Union[None, str]) -> Optional[TimeZone]:
+def to_j_time_zone(tz: Union[None, str, datetime.tzinfo, datetime.datetime]) -> Optional[TimeZone]:
     """
     Converts a python type to a Deephaven time zone.
 
     Args:
-        tz (Union[None, str]): A Python time zone or time zone string.
+        tz (Union[None, str, datetime.tzinfo, datetime.datetime]): A Python time, time zone, or time zone string.
             If None is provided, the Deephaven system default time zone is returned.
             If a string is provided, it is parsed as a time zone name.
 
@@ -162,10 +162,14 @@ def to_j_time_zone(tz: Union[None, str]) -> Optional[TimeZone]:
             #TODO: return None
             #TODO: return system default? -> if return default, then the result is not optional
             # return _JDateTimeUtils.timeZone()
-
-        # TODO: convert python time zones? datetime.tzinfo, datetime.timezone
-        else:
+        elif isinstance(tz, str):
             return _JDateTimeUtils.parseTimeZone(tz)
+        elif isinstance(tz, datetime.tzinfo):
+            return _JDateTimeUtils.parseTimeZone(str(tz))
+        elif isinstance(tz, datetime.datetime):
+            return _JDateTimeUtils.parseTimeZone(tz.tzname())
+        else:
+            raise Exception("Unsupported conversion: " + str(type(dt)) + " -> TimeZone")
     except Exception as e:
         raise DHError(e) from e
 
