@@ -895,11 +895,25 @@ public class ParquetTableReadWriteTest {
     @Test
     public void verifyPyArrowStatistics() {
         final String path = ParquetTableReadWriteTest.class.getResource("/e0/pyarrow_stats.parquet").getFile();
-        final File dest = new File(path);
+        final File pyarrowDest = new File(path);
+        final Table pyarrowFromDisk = ParquetTools.readTable(pyarrowDest);
 
-        final Table simpleFromDisk = ParquetTools.readTable(dest);
+        // Verify that our verification code works for a pyarrow generated table.
+        assertTableStatistics(pyarrowFromDisk, pyarrowDest);
 
-        assertTableStatistics(simpleFromDisk, dest);
+        // Write the table to disk using our code.
+        final File dhDest = new File(rootFile, "ParquetTest_statistics_test.parquet");
+        ParquetTools.writeTable(pyarrowFromDisk, dhDest);
+
+        // Read the table back in using our code.
+        final Table dhFromDisk = ParquetTools.readTable(dhDest);
+
+        // Verify the two tables loaded from disk are equal.
+        TstUtils.assertTableEquals(pyarrowFromDisk, dhFromDisk);
+
+        // Run the verification code against DHC writer stats.
+        assertTableStatistics(pyarrowFromDisk, dhDest);
+        assertTableStatistics(dhFromDisk, dhDest);
     }
 
     private void assertTableStatistics(Table inputTable, File dest) {
