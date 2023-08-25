@@ -96,6 +96,12 @@ class TimeTestCase(BaseTestCase):
         ld = to_j_local_date(None)
         self.assertEqual(ld, None)
 
+        try:
+            to_j_local_date(123)
+            self.fail("Expected DHError")
+        except DHError:
+            pass
+
 
     def test_to_j_local_time(self):
         lt = to_j_local_time("14:21:17.123456")
@@ -116,6 +122,12 @@ class TimeTestCase(BaseTestCase):
         lt = to_j_local_time(None)
         self.assertEqual(lt, None)
 
+        try:
+            to_j_local_time(123)
+            self.fail("Expected DHError")
+        except DHError:
+            pass
+
     def test_to_j_instant(self):
         target = _JDateTimeUtils.parseZonedDateTime("2021-12-10T19:21:17.123456Z")
 
@@ -123,17 +135,24 @@ class TimeTestCase(BaseTestCase):
         self.assertEqual(str(target), str(dt))
 
         # 1 ns is a rounding error
-        target = _JDateTimeUtils.parseZonedDateTime("2021-12-10T19:21:17.123456Z001Z")
-        x = datetime.datetime(2021, 12, 10, 14, 21, 17, 123456)
+        target = _JDateTimeUtils.parseZonedDateTime("2021-12-10T19:21:17.123456001Z")
+        x = datetime.datetime(2021, 12, 10, 19, 21, 17, 123456, tzinfo=datetime.timezone.utc)
         dt = to_j_instant(x)
         self.assertEqual(str(target), str(dt))
 
+        target = _JDateTimeUtils.parseZonedDateTime("2021-12-10T19:21:17.123456Z")
         x = np.datetime64(x)
         dt = to_j_instant(x)
         self.assertEqual(str(target), str(dt))
 
         dt = to_j_instant(None)
         self.assertEqual(dt, None)
+
+        try:
+            to_j_instant(123)
+            self.fail("Expected DHError")
+        except DHError:
+            pass
 
 
     def test_to_j_zdt(self):
@@ -153,6 +172,12 @@ class TimeTestCase(BaseTestCase):
         dt = to_j_zdt(None)
         self.assertEqual(dt, None)
 
+        try:
+            to_j_zdt(123)
+            self.fail("Expected DHError")
+        except DHError:
+            pass
+
 
     def test_to_j_duration(self):
         d = to_j_duration("PT1H")
@@ -168,6 +193,12 @@ class TimeTestCase(BaseTestCase):
 
         d = to_j_duration(None)
         self.assertEqual(d, None)
+
+        try:
+            to_j_duration(123)
+            self.fail("Expected DHError")
+        except DHError:
+            pass
 
 
     def test_to_j_period(self):
@@ -186,12 +217,51 @@ class TimeTestCase(BaseTestCase):
         p = to_j_period(x)
         self.assertEqual(str(p), "P14D")
 
+        x = np.timedelta64(2, 'M')
+        p = to_j_period(x)
+        self.assertEqual(str(p), "P2M")
+
         x = np.timedelta64(2, 'Y')
         p = to_j_period(x)
         self.assertEqual(str(p), "P2Y")
 
         p = to_j_period(None)
         self.assertEqual(p, None)
+
+        try:
+            to_j_period(123)
+            self.fail("Expected DHError")
+        except DHError:
+            pass
+
+        try:
+            x = datetime.timedelta(days=2, seconds=1)
+            to_j_period(x)
+            self.fail("Expected DHError")
+        except DHError:
+            pass
+
+        try:
+            x = datetime.timedelta(days=2, microseconds=1)
+            to_j_period(x)
+            self.fail("Expected DHError")
+        except DHError:
+            pass
+
+        try:
+            x = datetime.timedelta(days=2.3)
+            to_j_period(x)
+            self.fail("Expected DHError")
+        except DHError:
+            pass
+
+        try:
+            x = np.timedelta64(2, 'h')
+            to_j_period(x)
+            self.fail("Expected DHError")
+        except DHError:
+            pass
+
 
     # endregion
 
