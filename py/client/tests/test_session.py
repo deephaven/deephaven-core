@@ -50,10 +50,23 @@ class SessionTestCase(BaseTestCase):
         session.close()
 
     def test_time_table(self):
-        session = Session()
-        t = session.time_table(period=100000)
-        self.assertFalse(t.is_static)
-        session.close()
+        with Session() as session:
+            t = session.time_table(period=100000)
+            self.assertFalse(t.is_static)
+            session.bind_table("t", t)
+            session.run_script("""
+from deephaven import empty_table
+t1 = empty_table(0) if t.is_blink else None
+""")
+            self.assertNotIn("t1", session.tables)
+
+            t = session.time_table(period=100000, blink_table=True)
+            session.bind_table("t", t)
+            session.run_script("""
+from deephaven import empty_table
+t1 = empty_table(0) if t.is_blink else None
+""")
+            self.assertIn("t1", session.tables)
 
     def test_merge_tables(self):
         session = Session()
