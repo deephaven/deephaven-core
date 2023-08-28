@@ -14,7 +14,8 @@ public class ExecutionContextUnitTestModule {
     @Provides
     @Singleton
     public ExecutionContext provideExecutionContext() {
-        final UpdateGraph updateGraph = PeriodicUpdateGraph.newBuilder("TEST")
+        // the primary PUG needs to be named DEFAULT or else UpdatePerformanceTracker will fail to initialize
+        final UpdateGraph updateGraph = PeriodicUpdateGraph.newBuilder(PeriodicUpdateGraph.DEFAULT_UPDATE_GRAPH_NAME)
                 .numUpdateThreads(PeriodicUpdateGraph.NUM_THREADS_DEFAULT_UPDATE_GRAPH)
                 .existingOrBuild();
         return TestExecutionContext.createForUnitTests().withUpdateGraph(updateGraph);

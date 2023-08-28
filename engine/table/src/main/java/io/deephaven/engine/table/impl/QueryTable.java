@@ -135,7 +135,7 @@ public class QueryTable extends BaseTable<QueryTable> {
              * @param resultListener the listener that should be attached to the parent (or null)
              */
             public Result(@NotNull final T resultNode,
-                    final @Nullable TableUpdateListener resultListener) {
+                    @Nullable final TableUpdateListener resultListener) {
                 this.resultNode = resultNode;
                 this.resultListener = resultListener;
             }
@@ -1867,8 +1867,8 @@ public class QueryTable extends BaseTable<QueryTable> {
 
                     checkInitiateOperation();
 
-                    Map<String, String> pairLookup = new HashMap<>();
-                    for (MatchPair pair : pairs) {
+                    final Map<String, String> pairLookup = new HashMap<>();
+                    for (final MatchPair pair : pairs) {
                         if (pair.leftColumn == null || pair.leftColumn.equals("")) {
                             throw new IllegalArgumentException(
                                     "Bad left column in rename pair \"" + pair + "\"");
@@ -1882,10 +1882,10 @@ public class QueryTable extends BaseTable<QueryTable> {
                     int mcsPairIdx = 0;
                     final MatchPair[] modifiedColumnSetPairs = new MatchPair[columns.size()];
 
-                    Map<String, ColumnSource<?>> newColumns = new LinkedHashMap<>();
-                    for (Map.Entry<String, ? extends ColumnSource<?>> entry : columns.entrySet()) {
-                        String oldName = entry.getKey();
-                        ColumnSource<?> columnSource = entry.getValue();
+                    final Map<String, ColumnSource<?>> newColumns = new LinkedHashMap<>();
+                    for (final Map.Entry<String, ? extends ColumnSource<?>> entry : columns.entrySet()) {
+                        final String oldName = entry.getKey();
+                        final ColumnSource<?> columnSource = entry.getValue();
                         String newName = pairLookup.get(oldName);
                         if (newName == null) {
                             newName = oldName;
@@ -2548,37 +2548,6 @@ public class QueryTable extends BaseTable<QueryTable> {
     private static void throwColumnConflictMessage(Set<String> left, Set<String> right) {
         Iterable<String> conflicts = left.stream().filter(right::contains)::iterator;
         throw new RuntimeException("Column name conflicts: " + IterableUtils.makeCommaSeparatedList(conflicts));
-    }
-
-    /**
-     * If we have a column source that is a complex type, but can be reinterpreted or transformed into a simpler type,
-     * do the transformation, otherwise return the original column source.
-     *
-     * @param columnSource the column source to possibly reinterpret
-     * @return the transformed column source, or the original column source if there is not a relevant transformation
-     */
-    static ColumnSource<?> maybeTransformToPrimitive(final ColumnSource<?> columnSource) {
-        if (Instant.class.isAssignableFrom(columnSource.getType())) {
-            if (columnSource.allowsReinterpret(long.class)) {
-                return columnSource.reinterpret(long.class);
-            } else {
-                // noinspection unchecked
-                final ColumnSource<Instant> columnSourceAsInstant = (ColumnSource<Instant>) columnSource;
-                return new InstantAsLongColumnSource(columnSourceAsInstant);
-            }
-        }
-
-        if (Boolean.class.isAssignableFrom(columnSource.getType())) {
-            if (columnSource.allowsReinterpret(byte.class)) {
-                return columnSource.reinterpret(byte.class);
-            } else {
-                // noinspection unchecked
-                final ColumnSource<Boolean> columnSourceAsBoolean = (ColumnSource<Boolean>) columnSource;
-                return new BooleanAsByteColumnSource(columnSourceAsBoolean);
-            }
-        }
-
-        return columnSource;
     }
 
     @Override

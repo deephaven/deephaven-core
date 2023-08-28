@@ -32,7 +32,6 @@ import io.deephaven.engine.table.impl.util.UpdateCoalescer;
 import io.deephaven.engine.updategraph.*;
 import io.deephaven.engine.updategraph.impl.PeriodicUpdateGraph;
 import io.deephaven.extensions.barrage.BarragePerformanceLog;
-import io.deephaven.extensions.barrage.BarragePerformanceLog.WriteMetricsConsumer;
 import io.deephaven.extensions.barrage.BarrageStreamGenerator;
 import io.deephaven.extensions.barrage.BarrageSubscriptionOptions;
 import io.deephaven.extensions.barrage.BarrageSubscriptionPerformanceLogger;
@@ -449,7 +448,7 @@ public class BarrageMessageProducer<MessageView> extends LivenessArtifact
         private Subscription(final StreamObserver<MessageView> listener,
                 final BarrageSubscriptionOptions options,
                 final BitSet subscribedColumns,
-                final @Nullable RowSet initialViewport,
+                @Nullable final RowSet initialViewport,
                 final boolean reverseViewport) {
             this.options = options;
             this.listener = listener;
@@ -476,8 +475,8 @@ public class BarrageMessageProducer<MessageView> extends LivenessArtifact
      */
     public void addSubscription(final StreamObserver<MessageView> listener,
             final BarrageSubscriptionOptions options,
-            final @Nullable BitSet columnsToSubscribe,
-            final @Nullable RowSet initialViewport,
+            @Nullable final BitSet columnsToSubscribe,
+            @Nullable final RowSet initialViewport,
             final boolean reverseViewport) {
         synchronized (this) {
             final boolean hasSubscription = activeSubscriptions.stream().anyMatch(item -> item.listener == listener)
@@ -543,13 +542,13 @@ public class BarrageMessageProducer<MessageView> extends LivenessArtifact
     }
 
     public boolean updateSubscription(final StreamObserver<MessageView> listener,
-            final @Nullable RowSet newViewport, final @Nullable BitSet columnsToSubscribe) {
+            @Nullable final RowSet newViewport, @Nullable final BitSet columnsToSubscribe) {
         // assume forward viewport when not specified
         return updateSubscription(listener, newViewport, columnsToSubscribe, false);
     }
 
-    public boolean updateSubscription(final StreamObserver<MessageView> listener, final @Nullable RowSet newViewport,
-            final @Nullable BitSet columnsToSubscribe, final boolean newReverseViewport) {
+    public boolean updateSubscription(final StreamObserver<MessageView> listener, @Nullable final RowSet newViewport,
+            @Nullable final BitSet columnsToSubscribe, final boolean newReverseViewport) {
         return findAndUpdateSubscription(listener, sub -> {
             if (sub.pendingViewport != null) {
                 sub.pendingViewport.close();
@@ -595,7 +594,7 @@ public class BarrageMessageProducer<MessageView> extends LivenessArtifact
     private class DeltaListener extends InstrumentedTableUpdateListener {
 
         DeltaListener() {
-            super("BarrageMessageProducer");
+            super("BarrageMessageProducer(" + parent.getReferentDescription() + ")");
             Assert.assertion(parentIsRefreshing, "parent.isRefreshing()");
             manage(parent);
             addParentReference(this);
@@ -2194,6 +2193,11 @@ public class BarrageMessageProducer<MessageView> extends LivenessArtifact
                         .append("success=").append(success).append(", step=").append(step).endl();
             }
             return success;
+        }
+
+        @Override
+        public UpdateGraph getUpdateGraph() {
+            return parent.getUpdateGraph();
         }
     }
 

@@ -22,6 +22,7 @@ import io.deephaven.engine.updategraph.UpdateGraph;
 import io.deephaven.io.log.impl.LogOutputStringImpl;
 import io.deephaven.engine.rowset.chunkattributes.OrderedRowKeys;
 import org.apache.commons.lang3.mutable.MutableBoolean;
+import org.jetbrains.annotations.NotNull;
 
 import java.util.*;
 
@@ -191,8 +192,13 @@ public class DynamicWhereFilter extends WhereFilterLivenessArtifactImpl implemen
     @Override
     public void init(TableDefinition tableDefinition) {}
 
+    @NotNull
     @Override
-    public WritableRowSet filter(RowSet selection, RowSet fullSet, Table table, boolean usePrev) {
+    public WritableRowSet filter(
+            @NotNull final RowSet selection,
+            @NotNull final RowSet fullSet,
+            @NotNull final Table table,
+            final boolean usePrev) {
         if (usePrev) {
             throw new PreviousFilteringNotSupported();
         }

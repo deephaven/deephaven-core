@@ -10,16 +10,17 @@
 
 namespace deephaven::dhcore::utility {
 class CythonSupport {
-  typedef deephaven::dhcore::column::ColumnSource ColumnSource;
+  using ColumnSource = deephaven::dhcore::column::ColumnSource;
 public:
-  static std::shared_ptr<ColumnSource> createBooleanColumnSource(const uint8_t *dataBegin, const uint8_t *dataEnd,
-      const uint8_t *validityBegin, const uint8_t *validityEnd, size_t numElements);
-  static std::shared_ptr<ColumnSource> createStringColumnSource(const char *textBegin, const char *textEnd,
-      const uint32_t *offsetsBegin, const uint32_t *offsetsEnd,
-      const uint8_t *validityBegin, const uint8_t *validityEnd, size_t numElements);
-  static std::shared_ptr<ColumnSource> createDateTimeColumnSource(const int64_t *dataBegin, const int64_t *dataEnd,
-      const uint8_t *validityBegin, const uint8_t *validityEnd, size_t numElements);
+  static std::shared_ptr<ColumnSource> CreateBooleanColumnSource(const uint8_t *data_begin,
+      const uint8_t *data_end, const uint8_t *validity_begin, const uint8_t *validity_end,
+      size_t num_elements);
+  static std::shared_ptr<ColumnSource> CreateStringColumnSource(const char *text_begin,
+      const char *text_end, const uint32_t *offsets_begin, const uint32_t *offsets_end,
+      const uint8_t *validity_begin, const uint8_t *validity_end, size_t num_elements);
+  static std::shared_ptr<ColumnSource> CreateDateTimeColumnSource(const int64_t *data_begin, const int64_t *data_end,
+      const uint8_t *validity_begin, const uint8_t *validity_end, size_t num_elements);
 
-  static ElementTypeId::Enum getElementTypeId(const ColumnSource &columnSource);
+  static ElementTypeId::Enum GetElementTypeId(const ColumnSource &column_source);
 };
 }  // namespace deephaven::dhcore::utility

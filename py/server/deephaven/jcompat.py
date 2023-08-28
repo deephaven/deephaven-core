@@ -79,8 +79,22 @@ def j_list_to_list(jlist) -> List[Any]:
 
     return [wrap_j_object(jlist.get(i)) for i in range(jlist.size())]
 
+
 T = TypeVar("T")
 R = TypeVar("R")
+
+
+def j_runnable(callable: Callable[[], None]) -> jpy.JType:
+    """Constructs a Java 'Runnable' implementation from a Python callable that doesn't take any arguments and returns
+    None.
+
+    Args:
+        callable (Callable[[], None]): a Python callable that doesn't take any arguments and returns None
+
+    Returns:
+        io.deephaven.integrations.python.PythonRunnable instance
+    """
+    return jpy.get_type("io.deephaven.integrations.python.PythonRunnable")(callable)
 
 
 def j_function(func: Callable[[T], R], dtype: DType) -> jpy.JType:
@@ -131,18 +145,21 @@ def j_binary_operator(func: Callable[[T, T], T], dtype: DType) -> jpy.JType:
     )
 
 
-def j_lambda(func: Callable, lambda_jtype:jpy.JType, return_dtype: DType = None):
+def j_lambda(func: Callable, lambda_jtype: jpy.JType, return_dtype: DType = None):
     """Wraps a Python Callable as a Java "lambda" type.  
     
     Java lambda types must contain a single abstract method.
     
     Args:
-        func (Callable): Any Python Callable or object with an 'apply' method that accepts the same arguments (number and type) the target Java lambda type
+        func (Callable): Any Python Callable or object with an 'apply' method that accepts the same arguments 
+            (number and type) the target Java lambda type
         lambda_jtype (jpy.JType): The Java lambda interface to wrap the provided callable in
-        return_dtype (DType): The expected return type if conversion should be applied.  None (the default) does not attempt to convert the return value and returns a Java Object.
+        return_dtype (DType): The expected return type if conversion should be applied.  None (the default) does not
+            attempt to convert the return value and returns a Java Object.
     """
     coerce_to_type = return_dtype.qst_type.clazz() if return_dtype is not None else None
-    return jpy.get_type('io.deephaven.integrations.python.JavaLambdaFactory').create(lambda_jtype.jclass, func, coerce_to_type)
+    return jpy.get_type('io.deephaven.integrations.python.JavaLambdaFactory').create(lambda_jtype.jclass, func,
+                                                                                     coerce_to_type)
 
 
 def to_sequence(v: Union[T, Sequence[T]] = None) -> Sequence[Union[T, jpy.JType]]:
@@ -152,8 +169,9 @@ def to_sequence(v: Union[T, Sequence[T]] = None) -> Sequence[Union[T, jpy.JType]
     This also enables a function to provide parameters that can accept both singular and plural values of the same type
     for the convenience of the users, e.g. both x= "abc" and x = ["abc"] are valid arguments.
     """
-    if not v:
+    if v is None or isinstance(v, Sequence) and not v:
         return ()
+
     if not isinstance(v, Sequence) or isinstance(v, str):
         return (unwrap(v), )
     else:

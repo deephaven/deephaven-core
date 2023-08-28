@@ -12,13 +12,13 @@
 
 namespace deephaven::dhcore::ticking {
 class ImmerTableState final {
-  typedef deephaven::dhcore::chunk::AnyChunk AnyChunk;
-  typedef deephaven::dhcore::chunk::Chunk Chunk;
-  typedef deephaven::dhcore::column::ColumnSource ColumnSource;
-  typedef deephaven::dhcore::container::RowSequence RowSequence;
-  typedef deephaven::dhcore::immerutil::AbstractFlexVectorBase AbstractFlexVectorBase;
-  typedef deephaven::dhcore::clienttable::ClientTable ClientTable;
-  typedef deephaven::dhcore::clienttable::Schema Schema;
+  using AnyChunk = deephaven::dhcore::chunk::AnyChunk;
+  using Chunk = deephaven::dhcore::chunk::Chunk;
+  using ColumnSource = deephaven::dhcore::column::ColumnSource;
+  using RowSequence = deephaven::dhcore::container::RowSequence;
+  using AbstractFlexVectorBase = deephaven::dhcore::immerutil::AbstractFlexVectorBase;
+  using ClientTable = deephaven::dhcore::clienttable::ClientTable;
+  using Schema = deephaven::dhcore::clienttable::Schema;
 
 public:
   explicit ImmerTableState(std::shared_ptr<Schema> schema);
@@ -26,36 +26,40 @@ public:
 
   /**
    * When the caller wants to add data to the ImmerTableState, they do it in two steps:
-   * addKeys and then addData. First, they call addKeys, which updates the (key space) ->
-   * (position space) mapping. Immediately after this call (but before addData), the key mapping
-   * will be inconsistent with respect to the data. But then, the caller calls addData (perhaps
+   * AddKeys and then AddData. First, they call AddKeys, which updates the (key space) ->
+   * (position space) mapping. Immediately after this call (but before AddData), the key mapping
+   * will be inconsistent with respect to the data. But then, the caller calls AddData (perhaps
    * all at once, or perhaps in slices) to fill in the data. Once the caller is done, the keys
-   * and data will be consistent once again. Note that addKey/addData only support adding new keys.
+   * and data will be consistent once again. Note that AddKeys/AddData only support adding new keys.
    * It is an error to try to re-add any existing key.
    */
-  std::shared_ptr<RowSequence> addKeys(const RowSequence &rowsToAddKeySpace);
+  [[nodiscard]]
+  std::shared_ptr<RowSequence> AddKeys(const RowSequence &rows_to_add_key_space);
 
-  void addData(const std::vector<std::shared_ptr<ColumnSource>> &src, const std::vector<size_t> &begins,
-      const std::vector<size_t> &ends, const RowSequence &rowsToAddIndexSpace);
+  void AddData(const std::vector<std::shared_ptr<ColumnSource>> &begin_index, const std::vector<size_t> &end_index,
+               const std::vector<size_t> &ends, const RowSequence &rows_to_add_index_space);
 
-  std::shared_ptr<RowSequence> erase(const RowSequence &rowsToRemoveKeySpace);
+  [[nodiscard]]
+  std::shared_ptr<RowSequence> Erase(const RowSequence &begin_key);
 
   /**
    * When the caller wants to modify data in the ImmerTableState, they do it in two steps:
-   * modifyKeys and then modifyData. First, they call convertKeysToIndices, which gives them the
-   * (key space) -> (position space) mapping. Then, the caller calls modifyData (perhaps all at
-   * once, perhaps in slices) to fill in the data. Note that modifyKey/modifyData only support
+   * First, they call ConvertKeysToIndices, which gives them the
+   * (key space) -> (position space) mapping. Then, the caller calls ModifyData (perhaps all at
+   * once, perhaps in slices) to fill in the data. Note that ConvertKeysToIndices / ModifyData only support
    * modifying rows. It is an error to try to use a key that is not already in the map.
    */
-  std::shared_ptr<RowSequence> convertKeysToIndices(const RowSequence &keysRowSpace) const;
+  [[nodiscard]]
+  std::shared_ptr<RowSequence> ConvertKeysToIndices(const RowSequence &keys_row_space) const;
 
-  void modifyData(size_t colNum, const ColumnSource &src, size_t begin, size_t end,
-      const RowSequence &rowsToModify);
+  void ModifyData(size_t begin_index, const ColumnSource &end_index, size_t begin, size_t end,
+                  const RowSequence &rows_to_modify);
 
-  void applyShifts(const RowSequence &startIndex, const RowSequence &endIndex,
-      const RowSequence &destIndex);
+  void ApplyShifts(const RowSequence &start_index, const RowSequence &end_index,
+      const RowSequence &dest_index);
 
-  std::shared_ptr<ClientTable> snapshot() const;
+  [[nodiscard]]
+  std::shared_ptr<ClientTable> Snapshot() const;
 
 private:
   std::shared_ptr<Schema> schema_;

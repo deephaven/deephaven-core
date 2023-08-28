@@ -262,7 +262,7 @@ public class TicketRouter {
      * @param session optional session that the resolver can use to filter which flights a visitor sees
      * @param visitor the callback to invoke per descriptor path
      */
-    public void visitFlightInfo(final @Nullable SessionState session, final Consumer<Flight.FlightInfo> visitor) {
+    public void visitFlightInfo(@Nullable final SessionState session, final Consumer<Flight.FlightInfo> visitor) {
         byteResolverMap.iterator().forEachRemaining(resolver -> resolver.forAllFlightInfo(session, visitor));
     }
 

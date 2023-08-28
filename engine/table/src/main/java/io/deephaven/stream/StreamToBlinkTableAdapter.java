@@ -38,11 +38,13 @@ import org.jetbrains.annotations.Nullable;
 import java.lang.ref.WeakReference;
 import java.time.Instant;
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.stream.Stream;
 
 /**
  * Adapter for converting streams of data into columnar Deephaven {@link Table tables} that conform to
@@ -82,21 +84,68 @@ public class StreamToBlinkTableAdapter
     private volatile QueryTable table;
 
     private final AtomicBoolean alive = new AtomicBoolean(true);
+    private final AtomicBoolean initialized = new AtomicBoolean(false);
 
+    /**
+     * Construct the adapter with {@code initialize == true} and without extra attributes.
+     *
+     * <p>
+     * Equivalent to
+     * {@code new StreamToBlinkTableAdapter(tableDefinition, streamPublisher, updateSourceRegistrar, name, Map.of(), true)}.
+     *
+     * @param tableDefinition the table definition
+     * @param streamPublisher the stream publisher
+     * @param updateSourceRegistrar the update source registrar
+     * @param name the name
+     */
     public StreamToBlinkTableAdapter(
             @NotNull final TableDefinition tableDefinition,
             @NotNull final StreamPublisher streamPublisher,
             @NotNull final UpdateSourceRegistrar updateSourceRegistrar,
             @NotNull final String name) {
-        this(tableDefinition, streamPublisher, updateSourceRegistrar, name, Map.of());
+        this(tableDefinition, streamPublisher, updateSourceRegistrar, name, Map.of(), true);
     }
 
+    /**
+     * Construct the adapter with {@code initialize == true}.
+     *
+     * <p>
+     * Equivalent to
+     * {@code new StreamToBlinkTableAdapter(tableDefinition, streamPublisher, updateSourceRegistrar, name, extraAttributes, true)}.
+     *
+     * @param tableDefinition the table definition
+     * @param streamPublisher the stream publisher
+     * @param updateSourceRegistrar the update source registrar
+     * @param name the name
+     * @param extraAttributes the extra attributes to set on the resulting table
+     */
     public StreamToBlinkTableAdapter(
             @NotNull final TableDefinition tableDefinition,
             @NotNull final StreamPublisher streamPublisher,
             @NotNull final UpdateSourceRegistrar updateSourceRegistrar,
             @NotNull final String name,
             @NotNull final Map<String, Object> extraAttributes) {
+        this(tableDefinition, streamPublisher, updateSourceRegistrar, name, extraAttributes, true);
+    }
+
+    /**
+     * Construct the adapter.
+     *
+     * @param tableDefinition the table definition
+     * @param streamPublisher the stream publisher
+     * @param updateSourceRegistrar the update source registrar
+     * @param name the name
+     * @param extraAttributes the extra attributes to set on the resulting table
+     * @param initialize if the constructor should invoke {@link #initialize()}; if {@code false}, the caller is
+     *        responsible for invoking {@link #initialize()}.
+     */
+    public StreamToBlinkTableAdapter(
+            @NotNull final TableDefinition tableDefinition,
+            @NotNull final StreamPublisher streamPublisher,
+            @NotNull final UpdateSourceRegistrar updateSourceRegistrar,
+            @NotNull final String name,
+            @NotNull final Map<String, Object> extraAttributes,
+            boolean initialize) {
         this.tableDefinition = tableDefinition;
         this.streamPublisher = streamPublisher;
         this.updateSourceRegistrar = updateSourceRegistrar;
@@ -126,7 +175,22 @@ public class StreamToBlinkTableAdapter
             }
         };
         tableRef = new WeakReference<>(table);
+        if (initialize) {
+            initialize();
+        }
+    }
 
+    /**
+     * Initialize this adapter by invoking {@link StreamPublisher#register(StreamConsumer)} and
+     * {@link UpdateSourceRegistrar#addSource(Runnable)} with {@code this}. Must be called once <b>if and only if</b>
+     * {@code this} was constructed with {@code initialize == false}.
+     *
+     * @see #StreamToBlinkTableAdapter(TableDefinition, StreamPublisher, UpdateSourceRegistrar, String, Map, boolean)
+     */
+    public void initialize() {
+        if (!initialized.compareAndSet(false, true)) {
+            throw new IllegalStateException("Must not call StreamToBlinkTableAdapter#initialize more than once");
+        }
         log.info().append("Registering ").append(StreamToBlinkTableAdapter.class.getSimpleName()).append('-')
                 .append(name)
                 .endl();
@@ -212,6 +276,20 @@ public class StreamToBlinkTableAdapter
         return localTable;
     }
 
+    /**
+     * Checks whether {@code this} is alive; if {@code false}, the publisher should stop publishing new data and release
+     * any related resources as soon as practicable since publishing won't have any downstream effects.
+     *
+     * <p>
+     * Once this is {@code false}, it will always remain {@code false}. For more prompt notifications, publishers may
+     * prefer to respond to {@link StreamPublisher#shutdown()}.
+     *
+     * @return if this is alive
+     */
+    public boolean isAlive() {
+        return alive.get();
+    }
+
     @Override
     public void close() {
         if (alive.compareAndSet(true, false)) {
@@ -225,15 +303,10 @@ public class StreamToBlinkTableAdapter
 
     @Override
     public void run() {
-        synchronized (this) {
-            // If we have an enqueued failure we want to process it first, before we allow the streamPublisher to flush
-            // itself.
-            if (!enqueuedFailures.isEmpty()) {
-                deliverFailure(MultiException.maybeWrapInMultiException(
-                        "Multiple errors encountered while ingesting stream",
-                        enqueuedFailures));
-                return;
-            }
+        // If we have an enqueued failure we want to process it first, before we allow the streamPublisher to flush
+        // itself.
+        if (deliverFailures()) {
+            return;
         }
         final TableUpdate downstream;
         try {
@@ -244,7 +317,20 @@ public class StreamToBlinkTableAdapter
             deliverFailure(e);
             return;
         }
+        if (downstream == null) {
+            return;
+        }
         deliverUpdate(downstream);
+    }
+
+    private synchronized boolean deliverFailures() {
+        if (enqueuedFailures.isEmpty()) {
+            return false;
+        }
+        deliverFailure(MultiException.maybeWrapInMultiException(
+                "Multiple errors encountered while ingesting stream",
+                enqueuedFailures));
+        return true;
     }
 
     private void deliverUpdate(@Nullable final TableUpdate downstream) {
@@ -284,6 +370,10 @@ public class StreamToBlinkTableAdapter
 
         final ChunkColumnSource<?>[] capturedBufferSources;
         synchronized (this) {
+            // streamPublisher.flush() may have called acceptFailure
+            if (deliverFailures()) {
+                return null;
+            }
             newSize = bufferChunkSources == null ? 0 : bufferChunkSources[0].getSize();
 
             if (oldSize == 0 && newSize == 0) {
@@ -327,26 +417,46 @@ public class StreamToBlinkTableAdapter
     @SafeVarargs
     @Override
     public final void accept(@NotNull final WritableChunk<Values>... data) {
+        accept(List.<WritableChunk<Values>[]>of(data));
+    }
+
+    /**
+     * {@inheritDoc}
+     *
+     * <p>
+     * Ensures that the blink table sees the full collection of chunks in a single cycle.
+     *
+     * @param data A collection of per-column {@link WritableChunk chunks} of {@link Values values}. All chunks in each
+     *        element must have the same {@link WritableChunk#size() size}, but different elements may have differing
+     *        chunk sizes.
+     */
+    @Override
+    public final void accept(@NotNull Collection<WritableChunk<Values>[]> data) {
         if (!alive.get()) {
+            // If we'll never deliver these chunks, dispose of them immediately.
+            SafeCloseable.closeAll(data.stream().flatMap(Stream::of));
             return;
         }
         // Accumulate data into buffered column sources
         synchronized (this) {
             if (!enqueuedFailures.isEmpty()) {
                 // If we'll never deliver these chunks, dispose of them immediately.
-                SafeCloseable.closeAll(data);
+                SafeCloseable.closeAll(data.stream().flatMap(Stream::of));
                 return;
             }
             if (bufferChunkSources == null) {
                 bufferChunkSources = makeChunkSources(tableDefinition);
             }
-            if (data.length != bufferChunkSources.length) {
-                throw new IllegalStateException("StreamConsumer data length = " + data.length + " chunks, expected "
-                        + bufferChunkSources.length);
-            }
-            for (int ii = 0; ii < data.length; ++ii) {
-                Assert.eq(data[0].size(), "data[0].size()", data[ii].size(), "data[ii].size()");
-                bufferChunkSources[ii].addChunk(data[ii]);
+            for (WritableChunk<Values>[] chunks : data) {
+                if (chunks.length != bufferChunkSources.length) {
+                    throw new IllegalStateException(
+                            "StreamConsumer data length = " + chunks.length + " chunks, expected "
+                                    + bufferChunkSources.length);
+                }
+                for (int ii = 0; ii < chunks.length; ++ii) {
+                    Assert.eq(chunks[0].size(), "data[0].size()", chunks[ii].size(), "data[ii].size()");
+                    bufferChunkSources[ii].addChunk(chunks[ii]);
+                }
             }
         }
     }

@@ -4,11 +4,11 @@
 package io.deephaven.parquet.base;
 
 import io.deephaven.base.Pair;
+import io.deephaven.base.verify.Assert;
 import io.deephaven.parquet.base.util.Helpers;
 import io.deephaven.parquet.base.util.RunLengthBitPackingHybridBufferDecoder;
 import io.deephaven.parquet.base.util.SeekableChannelsProvider;
 import io.deephaven.parquet.compress.CompressorAdapter;
-import org.apache.commons.io.IOUtils;
 import org.apache.parquet.bytes.ByteBufferInputStream;
 import org.apache.parquet.bytes.BytesInput;
 import org.apache.parquet.column.ColumnDescriptor;
@@ -26,7 +26,6 @@ import org.apache.parquet.io.ParquetDecodingException;
 import org.apache.parquet.schema.Type;
 import org.jetbrains.annotations.NotNull;
 
-import java.io.BufferedInputStream;
 import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
@@ -134,6 +133,7 @@ public class ColumnPageReaderImpl implements ColumnPageReader {
             } while (!success);
             file.position(offset);
         }
+        ensureNumValues();
     }
 
     private int readRowCountFromDataPage(ReadableByteChannel file) throws IOException {
@@ -262,7 +262,6 @@ public class ColumnPageReaderImpl implements ColumnPageReader {
     }
 
     private Encoding getEncoding(org.apache.parquet.format.Encoding encoding) {
-
         return org.apache.parquet.column.Encoding.valueOf(encoding.name());
     }
 
@@ -315,7 +314,7 @@ public class ColumnPageReaderImpl implements ColumnPageReader {
                     new KeyIndexReader((DictionaryValuesReader) getDataReader(page.getValueEncoding(),
                             bytes, page.getValueCount()));
             Object result = materialize(PageMaterializer.IntFactory, dlDecoder, rlDecoder,
-                    dataReader, nullPlaceholder, numValues);
+                    dataReader, nullPlaceholder);
             if (result instanceof DataWithOffsets) {
                 keyDest.put((int[]) ((DataWithOffsets) result).materializeResult);
                 return ((DataWithOffsets) result).offsets;
@@ -370,7 +369,7 @@ public class ColumnPageReaderImpl implements ColumnPageReader {
             ValuesReader dataReader =
                     getDataReader(page.getValueEncoding(), bytes, page.getValueCount());
             return materialize(pageMaterializerFactory, dlDecoder, rlDecoder,
-                    dataReader, nullValue, numValues);
+                    dataReader, nullValue);
         } catch (IOException e) {
             throw new ParquetDecodingException("could not read page " + page + " in col " + path,
                     e);
@@ -379,8 +378,8 @@ public class ColumnPageReaderImpl implements ColumnPageReader {
 
     private Object materialize(PageMaterializer.Factory factory,
             RunLengthBitPackingHybridBufferDecoder dlDecoder,
-            RunLengthBitPackingHybridBufferDecoder rlDecoder, ValuesReader dataReader, Object nullValue,
-            int numValues) throws IOException {
+            RunLengthBitPackingHybridBufferDecoder rlDecoder, ValuesReader dataReader, Object nullValue)
+            throws IOException {
         if (dlDecoder == null) {
             return materializeNonNull(factory, numValues, dataReader);
         } else {
@@ -405,9 +404,9 @@ public class ColumnPageReaderImpl implements ColumnPageReader {
             ValuesReader dataReader = getDataReader(page.getDataEncoding(),
                     page.getData().toByteBuffer(), page.getValueCount());
             if (dlDecoder != null) {
-                readKeysWithNulls(keyDest, nullPlaceholder, numValues(), dlDecoder, dataReader);
+                readKeysWithNulls(keyDest, nullPlaceholder, dlDecoder, dataReader);
             } else {
-                readKeysNonNulls(keyDest, numValues, dataReader);
+                readKeysNonNulls(keyDest, dataReader);
             }
         } catch (IOException e) {
             throw new ParquetDecodingException("could not read page " + page + " in col " + path,
@@ -420,7 +419,7 @@ public class ColumnPageReaderImpl implements ColumnPageReader {
         throw new UnsupportedOperationException("Parquet V2 data pages are not supported");
     }
 
-    private void readKeysWithNulls(IntBuffer keysBuffer, int nullPlaceholder, int numValues,
+    private void readKeysWithNulls(IntBuffer keysBuffer, int nullPlaceholder,
             RunLengthBitPackingHybridBufferDecoder dlDecoder, ValuesReader dataReader)
             throws IOException {
         DictionaryValuesReader dictionaryValuesReader = (DictionaryValuesReader) dataReader;
@@ -443,7 +442,7 @@ public class ColumnPageReaderImpl implements ColumnPageReader {
         }
     }
 
-    private void readKeysNonNulls(IntBuffer keysBuffer, int numValues, ValuesReader dataReader)
+    private void readKeysNonNulls(IntBuffer keysBuffer, ValuesReader dataReader)
             throws IOException {
         DictionaryValuesReader dictionaryValuesReader = (DictionaryValuesReader) dataReader;
         for (int i = 0; i < numValues; i++) {
@@ -451,18 +450,18 @@ public class ColumnPageReaderImpl implements ColumnPageReader {
         }
     }
 
-    private Object materializeWithNulls(PageMaterializer.Factory factory,
-            int numValues,
+    private static Object materializeWithNulls(PageMaterializer.Factory factory,
+            int numberOfValues,
             IntBuffer nullOffsets,
             ValuesReader dataReader, Object nullValue) {
-        final PageMaterializer materializer = factory.makeMaterializerWithNulls(dataReader, nullValue, numValues);
+        final PageMaterializer materializer = factory.makeMaterializerWithNulls(dataReader, nullValue, numberOfValues);
         int startIndex = 0;
-        int nextNullPos = nullOffsets.hasRemaining() ? nullOffsets.get() : numValues;
-        while (startIndex < numValues) {
+        int nextNullPos = nullOffsets.hasRemaining() ? nullOffsets.get() : numberOfValues;
+        while (startIndex < numberOfValues) {
             int rangeEnd = startIndex;
-            while (nextNullPos == rangeEnd && rangeEnd < numValues) {
+            while (nextNullPos == rangeEnd && rangeEnd < numberOfValues) {
                 rangeEnd++;
-                nextNullPos = nullOffsets.hasRemaining() ? nullOffsets.get() : numValues;
+                nextNullPos = nullOffsets.hasRemaining() ? nullOffsets.get() : numberOfValues;
             }
             materializer.fillNulls(startIndex, rangeEnd);
             materializer.fillValues(rangeEnd, nextNullPos);
@@ -474,7 +473,8 @@ public class ColumnPageReaderImpl implements ColumnPageReader {
     /**
      * Creates a list of offsets with null entries
      */
-    private IntBuffer combineOptionalAndRepeating(IntBuffer nullOffsets, IntBuffer repeatingRanges, int nullValue) {
+    private static IntBuffer combineOptionalAndRepeating(IntBuffer nullOffsets, IntBuffer repeatingRanges,
+            int nullValue) {
         IntBuffer result = IntBuffer.allocate(nullOffsets.limit() + repeatingRanges.limit());
         int startIndex = 0;
         int nextNullPos = nullOffsets.hasRemaining() ? nullOffsets.get() : result.capacity();
@@ -500,9 +500,8 @@ public class ColumnPageReaderImpl implements ColumnPageReader {
             RunLengthBitPackingHybridBufferDecoder dlDecoder,
             RunLengthBitPackingHybridBufferDecoder rlDecoder, ValuesReader dataReader, Object nullValue)
             throws IOException {
-        Pair<Pair<Type.Repetition, IntBuffer>[], Integer> offsetsAndCount =
-                getOffsetsAndNulls(dlDecoder, rlDecoder, numValues);
-        int numValues = offsetsAndCount.second;
+        Pair<Pair<Type.Repetition, IntBuffer>[], Integer> offsetsAndCount = getOffsetsAndNulls(dlDecoder, rlDecoder);
+        int updatedNumValues = offsetsAndCount.second;
         Pair<Type.Repetition, IntBuffer>[] offsetAndNulls = offsetsAndCount.first;
         List<IntBuffer> offsetsWithNull = new ArrayList<>();
         IntBuffer currentNullOffsets = null;
@@ -524,10 +523,10 @@ public class ColumnPageReaderImpl implements ColumnPageReader {
         }
         Object values;
         if (currentNullOffsets != null && currentNullOffsets.hasRemaining()) {
-            values = materializeWithNulls(factory, numValues, currentNullOffsets,
+            values = materializeWithNulls(factory, updatedNumValues, currentNullOffsets,
                     dataReader, nullValue);
         } else {
-            values = materializeNonNull(factory, numValues, dataReader);
+            values = materializeNonNull(factory, updatedNumValues, dataReader);
         }
         if (offsetsWithNull.isEmpty()) {
             return values;
@@ -538,8 +537,9 @@ public class ColumnPageReaderImpl implements ColumnPageReader {
         return new DataWithMultiLevelOffsets(offsetsWithNull.toArray(new IntBuffer[0]), values);
     }
 
-    private Object materializeNonNull(PageMaterializer.Factory factory, int numValues, ValuesReader dataReader) {
-        return factory.makeMaterializerNonNull(dataReader, numValues).fillAll();
+    private static Object materializeNonNull(PageMaterializer.Factory factory, int numberOfValues,
+            ValuesReader dataReader) {
+        return factory.makeMaterializerNonNull(dataReader, numberOfValues).fillAll();
     }
 
     private ValuesReader getDataReader(Encoding dataEncoding, ByteBuffer in, int valueCount) {
@@ -569,14 +569,22 @@ public class ColumnPageReaderImpl implements ColumnPageReader {
 
     @Override
     public int numValues() throws IOException {
+        ensureNumValues();
+        return numValues;
+    }
+
+    private void ensureNumValues() throws IOException {
         if (numValues >= 0) {
-            return numValues;
+            return;
         }
+        Assert.neqNull(pageHeader, "pageHeader");
         switch (pageHeader.type) {
             case DATA_PAGE:
-                return numValues = pageHeader.getData_page_header().getNum_values();
+                numValues = pageHeader.getData_page_header().getNum_values();
+                break;
             case DATA_PAGE_V2:
-                return numValues = pageHeader.getData_page_header_v2().getNum_values();
+                numValues = pageHeader.getData_page_header_v2().getNum_values();
+                break;
             default:
                 throw new IOException(
                         String.format("Unexpected page of type {%s}", pageHeader.getType()));
@@ -608,7 +616,7 @@ public class ColumnPageReaderImpl implements ColumnPageReader {
 
     private Pair<Pair<Type.Repetition, IntBuffer>[], Integer> getOffsetsAndNulls(
             RunLengthBitPackingHybridBufferDecoder dlDecoder,
-            RunLengthBitPackingHybridBufferDecoder rlDecoder, int numValues) throws IOException {
+            RunLengthBitPackingHybridBufferDecoder rlDecoder) throws IOException {
         dlDecoder.readNextRange();
         if (rlDecoder != null) {
             rlDecoder.readNextRange();

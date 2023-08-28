@@ -23,6 +23,7 @@ import io.deephaven.engine.rowset.chunkattributes.RowKeys;
 import io.deephaven.engine.table.*;
 import io.deephaven.engine.table.impl.*;
 import io.deephaven.engine.table.impl.perf.BasePerformanceEntry;
+import io.deephaven.engine.table.impl.perf.PerformanceEntry;
 import io.deephaven.engine.table.impl.perf.QueryPerformanceNugget;
 import io.deephaven.engine.table.impl.perf.QueryPerformanceRecorder;
 import io.deephaven.engine.table.impl.sources.*;
@@ -936,7 +937,10 @@ public abstract class UpdateBy {
                         @Override
                         public void run() {
                             synchronized (accumulated) {
-                                sourceListener().getEntry().accumulate(accumulated);
+                                final PerformanceEntry entry = sourceListener().getEntry();
+                                if (entry != null) {
+                                    entry.accumulate(accumulated);
+                                }
                             }
                         }
                     });

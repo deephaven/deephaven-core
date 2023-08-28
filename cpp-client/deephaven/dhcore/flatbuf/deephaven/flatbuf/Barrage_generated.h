@@ -438,7 +438,7 @@ struct BarrageSubscriptionOptions FLATBUFFERS_FINAL_CLASS : private flatbuffers:
   bool use_deephaven_nulls() const {
     return GetField<uint8_t>(VT_USE_DEEPHAVEN_NULLS, 0) != 0;
   }
-  /// Explicitly set the update interval for this subscription. Note that subscriptions with different update intervals
+  /// Explicitly set the Update interval for this subscription. Note that subscriptions with different update intervals
   /// cannot share intermediary state with other subscriptions and greatly increases the footprint of the non-conforming subscription.
   ///
   /// Note: if not supplied (default of zero) then the server uses a consistent value to be efficient and fair to all clients
@@ -541,11 +541,11 @@ struct BarrageSubscriptionRequest FLATBUFFERS_FINAL_CLASS : private flatbuffers:
   const flatbuffers::Vector<int8_t> *ticket() const {
     return GetPointer<const flatbuffers::Vector<int8_t> *>(VT_TICKET);
   }
-  /// The bitset of columns to subscribe. If not provided then all columns are subscribed.
+  /// The bitset of columns to Subscribe. If not provided then all columns are subscribed.
   const flatbuffers::Vector<int8_t> *columns() const {
     return GetPointer<const flatbuffers::Vector<int8_t> *>(VT_COLUMNS);
   }
-  /// This is an encoded and compressed RowSet in position-space to subscribe to. If not provided then the entire
+  /// This is an encoded and compressed RowSet in position-space to Subscribe to. If not provided then the entire
   /// table is requested.
   const flatbuffers::Vector<int8_t> *viewport() const {
     return GetPointer<const flatbuffers::Vector<int8_t> *>(VT_VIEWPORT);
@@ -737,7 +737,7 @@ struct BarrageSnapshotRequest FLATBUFFERS_FINAL_CLASS : private flatbuffers::Tab
   const flatbuffers::Vector<int8_t> *columns() const {
     return GetPointer<const flatbuffers::Vector<int8_t> *>(VT_COLUMNS);
   }
-  /// This is an encoded and compressed RowSet in position-space to subscribe to. If not provided then the entire
+  /// This is an encoded and compressed RowSet in position-space to Subscribe to. If not provided then the entire
   /// table is requested.
   const flatbuffers::Vector<int8_t> *viewport() const {
     return GetPointer<const flatbuffers::Vector<int8_t> *>(VT_VIEWPORT);
@@ -874,9 +874,9 @@ inline flatbuffers::Offset<BarragePublicationOptions> CreateBarragePublicationOp
   return builder_.Finish();
 }
 
-/// Describes the table update stream the client would like to push to. This is similar to a DoPut but the client
+/// Describes the table Update stream the client would like to push to. This is similar to a DoPut but the client
 /// will send BarrageUpdateMetadata to explicitly describe the row key space. The updates sent adhere to the table
-/// update model semantics; thus BarragePublication enables the client to upload a ticking table.
+/// Update model semantics; thus BarragePublication enables the client to upload a ticking table.
 struct BarragePublicationRequest FLATBUFFERS_FINAL_CLASS : private flatbuffers::Table {
   typedef BarragePublicationRequestBuilder Builder;
   enum FlatBuffersVTableOffset FLATBUFFERS_VTABLE_UNDERLYING_TYPE {
@@ -1015,7 +1015,7 @@ struct BarrageUpdateMetadata FLATBUFFERS_FINAL_CLASS : private flatbuffers::Tabl
     VT_MOD_COLUMN_NODES = 24
   };
   /// This batch is generated from an upstream table that ticks independently of the stream. If
-  /// multiple events are coalesced into one update, the server may communicate that here for
+  /// multiple events are coalesced into one Update, the server may communicate that here for
   /// informational purposes.
   int64_t first_seq() const {
     return GetField<int64_t>(VT_FIRST_SEQ, 0);
@@ -1041,11 +1041,11 @@ struct BarrageUpdateMetadata FLATBUFFERS_FINAL_CLASS : private flatbuffers::Tabl
   const flatbuffers::Vector<int8_t> *effective_column_set() const {
     return GetPointer<const flatbuffers::Vector<int8_t> *>(VT_EFFECTIVE_COLUMN_SET);
   }
-  /// This is an encoded and compressed RowSet that was added in this update.
+  /// This is an encoded and compressed RowSet that was added in this Update.
   const flatbuffers::Vector<int8_t> *added_rows() const {
     return GetPointer<const flatbuffers::Vector<int8_t> *>(VT_ADDED_ROWS);
   }
-  /// This is an encoded and compressed RowSet that was removed in this update.
+  /// This is an encoded and compressed RowSet that was removed in this Update.
   const flatbuffers::Vector<int8_t> *removed_rows() const {
     return GetPointer<const flatbuffers::Vector<int8_t> *>(VT_REMOVED_ROWS);
   }
@@ -1053,9 +1053,9 @@ struct BarrageUpdateMetadata FLATBUFFERS_FINAL_CLASS : private flatbuffers::Tabl
   const flatbuffers::Vector<int8_t> *shift_data() const {
     return GetPointer<const flatbuffers::Vector<int8_t> *>(VT_SHIFT_DATA);
   }
-  /// This is an encoded and compressed RowSet that was included with this update.
+  /// This is an encoded and compressed RowSet that was included with this Update.
   /// (the server may include rows not in addedRows if this is a viewport subscription to refresh
-  ///  unmodified rows that were scoped into view)
+  ///  unmodified rows that were scoped into View)
   const flatbuffers::Vector<int8_t> *added_rows_included() const {
     return GetPointer<const flatbuffers::Vector<int8_t> *>(VT_ADDED_ROWS_INCLUDED);
   }

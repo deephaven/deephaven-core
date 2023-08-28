@@ -25,10 +25,19 @@ import static io.deephaven.web.client.api.subscription.ViewportData.NO_ROW_FORMA
  * Unlike {@link TableViewportSubscription}, the "original" table does not have a reference to this instance, only the
  * "private" table instance does, since the original cannot modify the subscription, and the private instance must
  * forward data to it.
+ *
+ * Represents a subscription to the table on the server. Changes made to the table will not be reflected here - the
+ * subscription must be closed and a new one optioned to see those changes. The event model is slightly different from
+ * viewports to make it less expensive to compute for large tables.
  */
 @JsType(namespace = "dh")
 public class TableSubscription extends HasEventHandling {
 
+    /**
+     * Indicates that some new data is available on the client, either an initial snapshot or a delta update. The
+     * <b>detail</b> field of the event will contain a TableSubscriptionEventData detailing what has changed, or
+     * allowing access to the entire range of items currently in the subscribed columns.
+     */
     public static final String EVENT_UPDATED = "updated";
 
 
@@ -79,11 +88,19 @@ public class TableSubscription extends HasEventHandling {
         data.handleDelta(delta);
     }
 
+    /**
+     * The columns that were subscribed to when this subscription was created
+     * 
+     * @return {@link Column}
+     */
     @JsProperty
     public JsArray<Column> getColumns() {
         return columns;
     }
 
+    /**
+     * Stops the subscription on the server.
+     */
     public void close() {
         copy.then(table -> {
             table.close();

@@ -144,4 +144,23 @@ public class CategoryErrorBarDataSeriesPartitionedTable extends AbstractTableBas
         return valueCol;
     }
 
+    public TableHandle getTableHandle() {
+        return tableHandle;
+    }
+
+    public String getCategoryColumn() {
+        return categoryCol;
+    }
+
+    public String getValueColumn() {
+        return valueCol;
+    }
+
+    public String getErrorBarLowColumn() {
+        return errorBarLowCol;
+    }
+
+    public String getErrorBarHighColumn() {
+        return errorBarHighCol;
+    }
 }

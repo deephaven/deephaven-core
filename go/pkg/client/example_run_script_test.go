@@ -48,7 +48,6 @@ func Example_runScript() {
 	// Now, let's run a script to do some arbitrary operations on my_example_table...
 	err = cl.RunScript(ctx,
 		`
-from deephaven.time import upper_bin
 example_table_2 = my_example_table.update(["UpperBinned = upperBin(Timestamp, SECOND)"]).head(5)
 `)
 	if err != nil {

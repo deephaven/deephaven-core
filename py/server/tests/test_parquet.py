@@ -4,18 +4,17 @@
 
 import os
 import shutil
-import unittest
 import tempfile
+import unittest
 
 import pandas
-from deephaven.pandas import to_pandas, to_table
+import pyarrow.parquet
 
 from deephaven import empty_table, dtypes, new_table
+from deephaven import arrow as dharrow
 from deephaven.column import InputColumn
+from deephaven.pandas import to_pandas, to_table
 from deephaven.parquet import write, batch_write, read, delete, ColumnInstruction
-from deephaven.table import Table
-from deephaven.time import epoch_nanos_to_instant
-
 from tests.testbase import BaseTestCase
 
 
@@ -147,11 +146,30 @@ class ParquetTestCase(BaseTestCase):
         self.assertTrue(os.path.exists(file_location))
         shutil.rmtree(base_dir)
 
-    def test_round_trip_data(self):
-        """
-        Pass data between DH and pandas via pyarrow, making sure each side can read data the other side writes
-        """
+    def test_int96_timestamps(self):
+        """ Tests for int96 timestamp values """
+        dh_table = empty_table(5).update(formulas=[
+            "nullInstantColumn = (Instant)null",
+            "someInstantColumn = DateTimeUtils.now() + i",
+        ])
+        # Writing Int96 based timestamps are not supported in deephaven parquet code, therefore we use pyarrow to do that
+        dataframe = to_pandas(dh_table)
+        table = pyarrow.Table.from_pandas(dataframe)
+        pyarrow.parquet.write_table(table, 'data_from_pa.parquet', use_deprecated_int96_timestamps=True)
+        from_disk_int96 = read('data_from_pa.parquet')
+        self.assert_table_equals(dh_table, from_disk_int96)
 
+        # Read the parquet file as a pandas dataframe, and ensure all values are written as null
+        dataframe = pandas.read_parquet("data_from_pa.parquet")
+        dataframe_null_columns = dataframe[["nullInstantColumn"]]
+        self.assertTrue(dataframe_null_columns.isnull().values.all())
+
+        # Write the timestamps as int64 using deephaven writing code and compare with int96 table
+        write(dh_table, "data_from_dh.parquet")
+        from_disk_int64 = read('data_from_dh.parquet')
+        self.assert_table_equals(from_disk_int64, from_disk_int96)
+
+    def get_table_data(self):
         # create a table with columns to test different types and edge cases
         dh_table = empty_table(20).update(formulas=[
             "someStringColumn = i % 10 == 0?null:(`` + (i % 101))",
@@ -183,7 +201,40 @@ class ParquetTestCase(BaseTestCase):
             # "nullBigDecColumn = (java.math.BigDecimal)null",
             # "nullBigIntColumn = (java.math.BigInteger)null"
         ])
+        return dh_table
+
+    def get_table_with_array_data(self):
+        # create a table with columns to test different types and edge cases
+        dh_table = empty_table(20).update(formulas=[
+            "someStringArrayColumn = new String[] {i % 10 == 0?null:(`` + (i % 101))}",
+            "someIntArrayColumn = new int[] {i}",
+            "someLongArrayColumn = new long[] {ii}",
+            "someDoubleArrayColumn = new double[] {i*1.1}",
+            "someFloatArrayColumn = new float[] {(float)(i*1.1)}",
+            "someBoolArrayColumn = new Boolean[] {i % 3 == 0?true:i%3 == 1?false:null}",
+            "someShorArrayColumn = new short[] {(short)i}",
+            "someByteArrayColumn = new byte[] {(byte)i}",
+            "someCharArrayColumn = new char[] {(char)i}",
+            "someTimeArrayColumn = new Instant[] {(Instant)DateTimeUtils.now() + i}",
+            "nullStringArrayColumn = new String[] {(String)null}",
+            "nullIntArrayColumn = new int[] {(int)null}",
+            "nullLongArrayColumn = new long[] {(long)null}",
+            "nullDoubleArrayColumn = new double[] {(double)null}",
+            "nullFloatArrayColumn = new float[] {(float)null}",
+            "nullBoolArrayColumn = new Boolean[] {(Boolean)null}",
+            "nullShorArrayColumn = new short[] {(short)null}",
+            "nullByteArrayColumn = new byte[] {(byte)null}",
+            "nullCharArrayColumn = new char[] {(char)null}",
+            "nullTimeArrayColumn = new Instant[] {(Instant)null}"
+        ])
+        return dh_table
+
+    def test_round_trip_data(self):
+        """
+        Pass data between DH and pandas via pyarrow, making sure each side can read data the other side writes
+        """
         # These tests are done with each of the fully-supported compression formats
+        dh_table = self.get_table_data()
         self.round_trip_with_compression("UNCOMPRESSED", dh_table)
         self.round_trip_with_compression("SNAPPY", dh_table)
         # LZO is not fully supported in python/c++
@@ -193,19 +244,47 @@ class ParquetTestCase(BaseTestCase):
         self.round_trip_with_compression("GZIP", dh_table)
         self.round_trip_with_compression("ZSTD", dh_table)
 
-    def round_trip_with_compression(self, compression_codec_name, dh_table):
+        # Perform group_by to convert columns to vector format
+        dh_table_vector_format = dh_table.group_by()
+        self.round_trip_with_compression("UNCOMPRESSED", dh_table_vector_format, True)
+
+        # Perform similar tests on table with array columns
+        dh_table_array_format = self.get_table_with_array_data()
+        self.round_trip_with_compression("UNCOMPRESSED", dh_table_array_format, True)
+
+    def round_trip_with_compression(self, compression_codec_name, dh_table, vector_columns=False):
         # dh->parquet->dataframe (via pyarrow)->dh
         write(dh_table, "data_from_dh.parquet", compression_codec_name=compression_codec_name)
+
+        # Read the parquet file using deephaven.parquet and compare
+        result_table = read('data_from_dh.parquet')
+        self.assert_table_equals(dh_table, result_table)
+
+        # Read the parquet file as a pandas dataframe, convert it to deephaven table and compare
         if pandas.__version__.split('.')[0] == "1":
             dataframe = pandas.read_parquet("data_from_dh.parquet", use_nullable_dtypes=True)
         else:
             dataframe = pandas.read_parquet("data_from_dh.parquet", dtype_backend="numpy_nullable")
 
+        # All null columns should all be stored as "null" in the parquet file, and not as NULL_INT or NULL_CHAR, etc.
+        dataframe_null_columns = dataframe.iloc[:, -10:]
+        if vector_columns:
+            for column in dataframe_null_columns:
+                df = pandas.DataFrame(dataframe_null_columns.at[0, column])
+                self.assertTrue(df.isnull().values.all())
+            return
+        else:
+            self.assertTrue(dataframe_null_columns.isnull().values.all())
+
+        # Convert the dataframe to deephaven table and compare
+        # These steps are not done for tables with vector columns since we don't automatically convert python lists to
+        # java vectors.
         result_table = to_table(dataframe)
         self.assert_table_equals(dh_table, result_table)
 
-        # dh->parquet->dataframe (via pyarrow)->parquet->dh
-        dataframe.to_parquet('data_from_pandas.parquet', compression=None if compression_codec_name is 'UNCOMPRESSED' else compression_codec_name)
+        # Write the pandas dataframe back to parquet (via pyarraow) and read it back using deephaven.parquet to compare
+        dataframe.to_parquet('data_from_pandas.parquet',
+                             compression=None if compression_codec_name is 'UNCOMPRESSED' else compression_codec_name)
         result_table = read('data_from_pandas.parquet')
         self.assert_table_equals(dh_table, result_table)
 
@@ -215,6 +294,17 @@ class ParquetTestCase(BaseTestCase):
         # dataframe.to_parquet('data_from_pandas.parquet', compression=None if compression_codec_name is 'UNCOMPRESSED' else compression_codec_name)
         # result_table = read('data_from_pandas.parquet')
         # self.assert_table_equals(dh_table, result_table)
+
+    def test_writing_via_pyarrow(self):
+        # This function tests that we can write tables with list types to parquet files via pyarrow and read them back
+        # through deephaven's parquet reader code with no exceptions
+        pa_table = pyarrow.table({'numList': [[2, 2, 4]],
+                                  'stringList': [["Flamingo", "Parrot", "Dog"]]})
+        pyarrow.parquet.write_table(pa_table, 'data_from_pa.parquet')
+        from_disk = read('data_from_pa.parquet').select()
+        pa_table_from_disk = dharrow.to_arrow(from_disk)
+        self.assertTrue(pa_table.equals(pa_table_from_disk))
+
 
 if __name__ == '__main__':
     unittest.main()

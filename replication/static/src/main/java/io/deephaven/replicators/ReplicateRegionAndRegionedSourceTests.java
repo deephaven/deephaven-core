@@ -19,5 +19,7 @@ public class ReplicateRegionAndRegionedSourceTests {
                 "engine/table/src/test/java/io/deephaven/engine/table/impl/sources/regioned/TestRegionedColumnSourceChar.java");
         charToAllButBooleanAndByte(
                 "engine/table/src/test/java/io/deephaven/engine/table/impl/sources/regioned/TstColumnRegionChar.java");
+        charToAllButBoolean(
+                "engine/table/src/test/java/io/deephaven/engine/table/impl/sources/regioned/kernel/CharRegionBinarySearchKernelTest.java");
     }
 }

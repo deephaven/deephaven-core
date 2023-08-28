@@ -15,6 +15,7 @@ import io.deephaven.chunk.attributes.Values;
 import io.deephaven.engine.rowset.WritableRowSet;
 import io.deephaven.engine.rowset.RowSet;
 import io.deephaven.util.annotations.TestUseOnly;
+import org.jetbrains.annotations.NotNull;
 
 public class SingleSidedComparableRangeFilter extends AbstractRangeFilter {
     private final Comparable<?> pivot;
@@ -77,7 +78,7 @@ public class SingleSidedComparableRangeFilter extends AbstractRangeFilter {
 
     @Override
     public String toString() {
-        return "SingleSidedComparableRangeFilter(" + columnName + (isGreaterThan ? '>' : '>')
+        return "SingleSidedComparableRangeFilter(" + columnName + (isGreaterThan ? '>' : '<')
                 + (lowerInclusive ? "=" : "") + pivot + ")";
     }
 
@@ -169,14 +170,19 @@ public class SingleSidedComparableRangeFilter extends AbstractRangeFilter {
         }
     }
 
+    @NotNull
     @Override
-    WritableRowSet binarySearch(RowSet selection, ColumnSource columnSource, boolean usePrev, boolean reverse) {
+    WritableRowSet binarySearch(
+            @NotNull final RowSet selection,
+            @NotNull final ColumnSource<?> columnSource,
+            final boolean usePrev,
+            final boolean reverse) {
         if (selection.isEmpty()) {
             return selection.copy();
         }
 
         // noinspection unchecked
-        final ColumnSource<Comparable> comparableColumnSource = (ColumnSource<Comparable>) columnSource;
+        final ColumnSource<Comparable<?>> comparableColumnSource = (ColumnSource<Comparable<?>>) columnSource;
 
         final int compareSign = reverse ? -1 : 1;
         long lowerBoundMin = ComparableRangeFilter.bound(selection, usePrev, comparableColumnSource, 0,
