@@ -175,6 +175,10 @@ test_that("client constructor fails nicely with bad inputs", {
     "Basic authentication was requested, but 'auth_token' was provided, as well as least one of 'username' and 'password'. Please provide either 'username' and 'password', or 'auth_token'."
   )
   expect_error(
+    Client$new(target = "localhost:10000", auth_type = "psk"),
+    "Pre-shared key authentication was requested, but no 'auth_token' was provided."
+  )
+  expect_error(
     Client$new(target = "localhost:10000", auth_type = "custom"),
     "Custom authentication was requested, but no 'auth_token' was provided."
   )
