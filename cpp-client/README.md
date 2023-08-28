@@ -11,7 +11,7 @@ C++ compiler and tool suite (cmake etc).
 3. Get build tools
    ```
    sudo apt update
-   sudo apt install curl git g++ cmake make build-essential zlib1g-dev libssl-dev
+   sudo apt install curl git g++ cmake make build-essential zlib1g-dev libssl-dev pkg-config
    ```
 
 4. Make a new directory for the Deephaven source code and assign that directory
@@ -31,9 +31,9 @@ C++ compiler and tool suite (cmake etc).
 6. Build and install dependencies for Deephaven C++ client.
 
    Get the `build-dependencies.sh` script from Deephaven's base images repository
-   at https://github.com/deephaven/deephaven-base-images/blob/main/cpp-client
+   at the correct version.
    You can download it directly from the link
-   https://github.com/deephaven/deephaven-base-images/raw/main/cpp-client/build-dependencies.sh
+   https://raw.githubusercontent.com/deephaven/deephaven-base-images/53081b141aebea4c43238ddae233be49db28cf7b/cpp-client/build-dependencies.sh
    (this script is also used from our automated tools, to generate a docker image to
    support tests runs; that's why it lives in a separate repo).
    The script downloads, builds and installs the dependent libraries
@@ -55,7 +55,7 @@ C++ compiler and tool suite (cmake etc).
    # If the directory already exists from a previous attempt, ensure is clean/empty
    mkdir -p $DHCPP
    cd $DHCPP
-   wget https://github.com/deephaven/deephaven-base-images/raw/main/cpp-client/build-dependencies.sh
+   wget https://raw.githubusercontent.com/deephaven/deephaven-base-images/53081b141aebea4c43238ddae233be49db28cf7b/cpp-client/build-dependencies.sh
    chmod +x ./build-dependencies.sh
    # Maybe edit build-dependencies.sh to reflect choices of build tools and build target, if you
    # want anything different than defaults; defaults are tested to work,
@@ -96,25 +96,28 @@ C++ compiler and tool suite (cmake etc).
    source $DHCPP/env.sh
    cd $DHSRC/deephaven-core/cpp-client/deephaven/
    mkdir build && cd build
-   cmake -DCMAKE_INSTALL_PREFIX=${DHCPP}/local/deephaven .. && make -j$NCPUS install
+   cmake -DCMAKE_INSTALL_PREFIX=${DHCPP}/local \
+       -DCMAKE_BUILD_TYPE=Debug -DBUILD_SHARED_LIBS=ON .. && \
+     make -j$NCPUS install
    ```
 
 8. Build and run the deephaven example which uses the installed client.
-   Note this assumes deephaven server is running (see step 2).
+   Note this assumes deephaven server is running (see step 2),
+   and the build created on step 7 is available in the same directory.
 
    ```
-   cd $DHSRC/deephaven-core/cpp-examples/hello_world
-   mkdir build && cd build
-   cmake .. && make -j$NCPUS
+   cd $DHSRC/deephaven-core/cpp-client/deephaven/build/examples
+   make -j$NCPUS
+   cd hello_world
    ./hello_world
    ```
 
 9. (Optional) run the unit tests
+   This assumes the build created on step 7 is available in the same directory.
 
     ```
-    cd $DHSRC/deephaven-core/cpp-client/tests
-    mkdir build && cd build
-    cmake .. && make -j$NCPUS
+    cd $DHSRC/deephaven-core/cpp-client/deephaven/build/tests
+    make -j$NCPUS
     ./tests
     ```
 
@@ -124,7 +127,7 @@ C++ compiler and tool suite (cmake etc).
       file to ensure you have the correct environment variable definitions
       in your shell for the steps below.
 
-   2. In the `proto/proto-backend-grpc/src/main/proto` directory
+   2. In the `proto/proto-backplane-grpc/src/main/proto` directory
       (relative from your deephave-core clone base directory),
       run the `build-cpp-protos.sh` script.
       This should generate up-to-date versions of the C++ stubs

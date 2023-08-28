@@ -1716,7 +1716,7 @@ public class TestRollingSum extends BaseUpdateByTest {
     }
 
 
-    final void assertWithRollingSumTicks(final @NotNull Object expected, final @NotNull Object actual, Class type,
+    final void assertWithRollingSumTicks(@NotNull final Object expected, @NotNull final Object actual, Class type,
             int prevTicks, int postTicks) {
         // looking for gross errors like missing entries (NOTE: pairwise results are more accurate than true rolling)
         final float deltaF = .02f;
@@ -1745,8 +1745,8 @@ public class TestRollingSum extends BaseUpdateByTest {
         }
     }
 
-    final void assertWithRollingSumTime(final @NotNull Object expected, final @NotNull Object actual,
-            final @NotNull long[] timestamps, Class type, long prevTime, long postTime) {
+    final void assertWithRollingSumTime(@NotNull final Object expected, @NotNull final Object actual,
+            @NotNull final long[] timestamps, Class type, long prevTime, long postTime) {
         // looking for gross errors like missing entries (NOTE: pairwise results are more accurate than true rolling)
         final float deltaF = .03f;
         final double deltaD = .03d;

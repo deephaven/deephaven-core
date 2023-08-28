@@ -238,8 +238,9 @@ class UpdateByWindowCumulative extends UpdateByWindow {
      * @return the smallest key that participated in any part of the update. This will be the minimum of the first key
      *         of each of added, modified and removed (post-shift) rows.
      */
-    private static long smallestAffectedKey(final @NotNull TableUpdate upstream,
-            final @NotNull TrackingRowSet affectedRowSet,
+    private static long smallestAffectedKey(
+            @NotNull final TableUpdate upstream,
+            @NotNull final TrackingRowSet affectedRowSet,
             final boolean inputModified) {
 
         long smallestModifiedKey = Long.MAX_VALUE;

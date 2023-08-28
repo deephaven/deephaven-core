@@ -786,6 +786,35 @@ public class QueryTableMultiJoinTest extends QueryTableTestBase {
         Assert.assertEquals(mji.columnsToAdd()[0].existingColumn().name(), "C");
         Assert.assertEquals(mji.columnsToAdd()[1].newColumn().name(), "D1");
         Assert.assertEquals(mji.columnsToAdd()[1].existingColumn().name(), "D");
+
+        // Assert that the factory methods are equivalent.
+        final Table dummyTable2 = emptyTable(0);
+
+        MultiJoinInput[] mjiArr = MultiJoinInput.from("Key1=A,Key2=B", dummyTable, dummyTable2);
+        Assert.assertEquals(mjiArr[0].inputTable(), dummyTable);
+        Assert.assertEquals(mjiArr[0].columnsToMatch()[0].left().name(), "Key1");
+        Assert.assertEquals(mjiArr[0].columnsToMatch()[0].right().name(), "A");
+        Assert.assertEquals(mjiArr[0].columnsToMatch()[1].left().name(), "Key2");
+        Assert.assertEquals(mjiArr[0].columnsToMatch()[1].right().name(), "B");
+        Assert.assertEquals(mjiArr[1].inputTable(), dummyTable2);
+        Assert.assertEquals(mjiArr[1].columnsToMatch()[0].left().name(), "Key1");
+        Assert.assertEquals(mjiArr[1].columnsToMatch()[0].right().name(), "A");
+        Assert.assertEquals(mjiArr[1].columnsToMatch()[1].left().name(), "Key2");
+        Assert.assertEquals(mjiArr[1].columnsToMatch()[1].right().name(), "B");
+
+        mjiArr = MultiJoinInput.from(
+                new String[] {"Key1=A", "Key2=B"},
+                new Table[] {dummyTable, dummyTable2});
+        Assert.assertEquals(mjiArr[0].inputTable(), dummyTable);
+        Assert.assertEquals(mjiArr[0].columnsToMatch()[0].left().name(), "Key1");
+        Assert.assertEquals(mjiArr[0].columnsToMatch()[0].right().name(), "A");
+        Assert.assertEquals(mjiArr[0].columnsToMatch()[1].left().name(), "Key2");
+        Assert.assertEquals(mjiArr[0].columnsToMatch()[1].right().name(), "B");
+        Assert.assertEquals(mjiArr[1].inputTable(), dummyTable2);
+        Assert.assertEquals(mjiArr[1].columnsToMatch()[0].left().name(), "Key1");
+        Assert.assertEquals(mjiArr[1].columnsToMatch()[0].right().name(), "A");
+        Assert.assertEquals(mjiArr[1].columnsToMatch()[1].left().name(), "Key2");
+        Assert.assertEquals(mjiArr[1].columnsToMatch()[1].right().name(), "B");
     }
 
 
