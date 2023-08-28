@@ -134,16 +134,15 @@ def time_zone_alias_rm(alias: str) -> bool:
 
 # endregion
 
-#TODO: Review all function names: to_j_<xyz>?  to_db_<xyz>?  to_dh_<xyz>?  as_j_<xyz>?  as_db_<xyz>?  as_dh_<xyz>?
+#TODO: Review all function names: to_j_<xyz>?  to_db_<xyz>?  to_dh_<xyz>?  to_<xyz>? as_j_<xyz>?  as_db_<xyz>?  as_dh_<xyz>?
 #TODO: In doc strings use "Deephaven <type>" or "Java <type>"
 
-#TODO "python type" in docs!!!!!
 
 # region Conversions: Python To Java
 
 def to_j_time_zone(tz: Union[None, str, datetime.tzinfo, datetime.datetime]) -> Optional[TimeZone]:
     """
-    Converts a python type to a Deephaven time zone.
+    Converts a Python string, tzinfo, or datetime to a Deephaven time zone.
 
     Args:
         tz (Union[None, str, datetime.tzinfo, datetime.datetime]): A Python time, time zone, or time zone string.
@@ -172,7 +171,7 @@ def to_j_time_zone(tz: Union[None, str, datetime.tzinfo, datetime.datetime]) -> 
 
             return _JDateTimeUtils.parseTimeZone(tz.tzname())
         else:
-            raise Exception("Unsupported conversion: " + str(type(dt)) + " -> TimeZone")
+            raise Exception("Unsupported conversion: " + str(type(tz)) + " -> TimeZone")
     except Exception as e:
         raise DHError(e) from e
 
@@ -180,7 +179,8 @@ def to_j_time_zone(tz: Union[None, str, datetime.tzinfo, datetime.datetime]) -> 
 def to_j_local_date(dt: Union[None, str, datetime.date, datetime.time, datetime.datetime, np.datetime64]) -> \
         Optional[LocalDate]:
     """
-    Converts a python type to a Deephaven local date, which is a date without a time or time zone.
+    Converts a Python string, date, time, datetime, or numpy datetime64 to a Deephaven local date,
+    which is a date without a time or time zone.
 
     Date strings can be formatted according to the ISO 8601 date time format as 'YYYY-MM-DD'.
 
@@ -212,8 +212,8 @@ def to_j_local_date(dt: Union[None, str, datetime.date, datetime.time, datetime.
 
 def to_j_local_time(dt: Union[None, str, datetime.time, datetime.datetime, np.datetime64]) -> Optional[LocalTime]:
     """
-    Converts a python type to a Deephaven local time, which is the time that would be read from a clock and does not
-    have a date or timezone.
+    Converts a Python string, time, datetime, or numpy datetime64 to a Deephaven local time,
+    which is the time that would be read from a clock and does not have a date or timezone.
 
     Time strings can be formatted as 'hh:mm:ss[.nnnnnnnnn]'.
 
@@ -246,7 +246,8 @@ def to_j_local_time(dt: Union[None, str, datetime.time, datetime.datetime, np.da
 
 def to_j_instant(dt: Union[None, str, datetime.datetime, np.datetime64]) -> Optional[Instant]:
     """
-    Converts a python type to a Deephaven instant, which is a point in time on the time-line.
+    Converts a Python string, datetime, or numpy datetime64 to a Deephaven instant,
+    which is a point in time on the time-line.
 
     Instant strings can be formatted according to the ISO 8601 date time format
     'yyyy-MM-ddThh:mm:ss[.SSSSSSSSS] TZ' and others.
@@ -286,7 +287,8 @@ def to_j_instant(dt: Union[None, str, datetime.datetime, np.datetime64]) -> Opti
 
 def to_j_zdt(dt: Union[None, str, datetime.datetime, np.datetime64]) -> Optional[ZonedDateTime]:
     """
-    Converts a python type to a Deephaven zoned date time, which is a date time with a time zone.
+    Converts a Python string, datetime, or numpy datetime64 to a Deephaven zoned date time,
+    which is a date time with a time zone.
 
     Date time strings can be formatted according to the ISO 8601 date time format
     '{@code 'yyyy-MM-ddThh:mm:ss[.SSSSSSSSS] TZ' and others.
@@ -327,8 +329,8 @@ def to_j_zdt(dt: Union[None, str, datetime.datetime, np.datetime64]) -> Optional
 
 def to_j_duration(dt: Union[None, str, datetime.timedelta, np.timedelta64]) -> Optional[Duration]:
     """
-    Converts a python type to a Deephaven duration, which is a unit of time in terms of clock time
-    (24-hour days, hours, minutes, seconds, and nanoseconds).
+    Converts a Python string, timedelta, or numpy timedelta64 to a Deephaven duration,
+    which is a unit of time in terms of clock time (24-hour days, hours, minutes, seconds, and nanoseconds).
 
     Duration strings can be formatted according to the ISO-8601 duration format as '[-]PnDTnHnMn.nS', where the
     coefficients can be positive or negative.  Zero coefficients can be omitted.  Optionally, the string can
@@ -373,8 +375,8 @@ def to_j_duration(dt: Union[None, str, datetime.timedelta, np.timedelta64]) -> O
 
 def to_j_period(dt: Union[None, str, datetime.timedelta, np.timedelta64]) -> Optional[Period]:
     """
-    Converts a python type to a Deephaven period, which is a unit of time in terms of calendar time
-    (days, weeks, months, years, etc.).
+    Converts a Python string, timedelta, or numpy timedelta64 to a Deephaven period,
+    which is a unit of time in terms of calendar time (days, weeks, months, years, etc.).
 
     Period strings can be formatted according to the ISO-8601 duration format as 'PnYnMnD' and 'PnW', where the
     coefficients can be positive or negative.  Zero coefficients can be omitted.  Optionally, the string can
@@ -439,7 +441,7 @@ def to_j_period(dt: Union[None, str, datetime.timedelta, np.timedelta64]) -> Opt
 
 def to_date(dt: Union[None, LocalDate, ZonedDateTime]) -> Optional[datetime.date]:
     """
-    Converts a Deephaven local date or zoned date time to a python date.
+    Converts a Deephaven local date or zoned date time to a Python date.
 
     Args:
         dt (Union[None, LocalDate, ZonedDateTime]): A Deephaven local date or zoned date time.
@@ -463,7 +465,7 @@ def to_date(dt: Union[None, LocalDate, ZonedDateTime]) -> Optional[datetime.date
 
 def to_time(dt: Union[None, LocalTime, ZonedDateTime]) -> Optional[datetime.time]:
     """
-    Converts a Deephaven local time or zoned date time to a python time.
+    Converts a Deephaven local time or zoned date time to a Python time.
 
     Args:
         dt (Union[None, LocalTime, ZonedDateTime]): A Deephaven local time or zoned date time.
@@ -487,7 +489,7 @@ def to_time(dt: Union[None, LocalTime, ZonedDateTime]) -> Optional[datetime.time
 
 def to_datetime(dt: Union[None, Instant, ZonedDateTime]) -> Optional[datetime.datetime]:
     """
-    Converts a Deephaven instant or zoned date time to a python date time.
+    Converts a Deephaven instant or zoned date time to a Python date time.
 
     Args:
         dt (Union[None, Instant, ZonedDateTime]): A Deephaven instant or zoned date time.  If None is provided, None is
@@ -542,7 +544,7 @@ def to_datetime64(dt: Union[None, Instant, ZonedDateTime]) -> Optional[np.dateti
 
 def to_timedelta(dt: Union[None, Duration]) -> Optional[datetime.timedelta]:
     """
-    Converts a Deephaven duration to a python timedelta.
+    Converts a Deephaven duration to a Python timedelta.
 
     Args:
         dt (Union[None, Duration]): A Deephaven duration.  If None is provided, None is returned.
