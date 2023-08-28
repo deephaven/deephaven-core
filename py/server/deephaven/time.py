@@ -15,7 +15,6 @@ import numpy as np
 from deephaven import DHError
 from deephaven.dtypes import Instant, LocalDate, LocalTime, ZonedDateTime, Duration, Period, TimeZone
 
-# TODO: clean up type list
 _JDateTimeUtils = jpy.get_type("io.deephaven.time.DateTimeUtils")
 _JLocalDate = jpy.get_type("java.time.LocalDate")
 _JLocalTime = jpy.get_type("java.time.LocalTime")
@@ -26,16 +25,12 @@ _JPeriod = jpy.get_type("java.time.Period")
 _epoch64 = np.datetime64('1970-01-01T00:00:00Z')
 
 
-# TODO: Document
-
-
 # region Clock
 
-# TODO: rename these methods to system_<X>?
-
-# TODO: what should these return?
+# TODO: rename to system_now or dh_now?  I lean to now.
+# TODO: return Instant or a python type?  I lean to Instant.
 def now(system: bool = False, resolution: str = 'ns') -> Instant:
-    """ Provides the current datetime according to a clock.
+    """ Provides the current datetime according to the current Deephaven clock.
 
     Args:
         system (bool): True to use the system clock; False to use the default clock.  Under most circumstances,
@@ -68,15 +63,16 @@ def now(system: bool = False, resolution: str = 'ns') -> Instant:
         raise DHError(e) from e
 
 
-# TODO: what should these return?
-
-def today(tz: TimeZone) -> str:
-    """ Provides the current date string according to the current clock.
+# TODO: rename to system_today or dh_now?  I lean to today.
+# TODO: return string or a python date type?  I lean to string.
+def today(tz: Optional[TimeZone] = None) -> str:
+    """ Provides the current date string according to the current Deephaven clock.
     Under most circumstances, this method will return the date according to current system time,
     but during replay simulations, this method can return the date according to replay time.
 
     Args:
         tz (TimeZone): Time zone to use when determining the date.
+            If None is provided, the Deephaven system default time zone is used.
 
     Returns:
         Date string
@@ -85,10 +81,15 @@ def today(tz: TimeZone) -> str:
         DHError
     """
     try:
+        if not tz:
+            tz = _JDateTimeUtils.timeZone()
+
         return _JDateTimeUtils.today(tz)
     except Exception as e:
         raise DHError(e) from e
 
+#TODO: Should there be a system time zone method or get the system time zone from `to_j_time_zone(None)`?
+#TODO: Name system_time_zone()? time_zone()?
 
 # endregion
 
@@ -135,7 +136,7 @@ def time_zone_alias_rm(alias: str) -> bool:
 # endregion
 
 #TODO: Review all function names: to_j_<xyz>?  to_db_<xyz>?  to_dh_<xyz>?  to_<xyz>? as_j_<xyz>?  as_db_<xyz>?  as_dh_<xyz>?
-#TODO: In doc strings use "Deephaven <type>" or "Java <type>"
+#TODO: Should the doc strings refer to "Deephaven" or "Java" types?
 
 
 # region Conversions: Python To Java
@@ -158,9 +159,7 @@ def to_j_time_zone(tz: Union[None, str, datetime.tzinfo, datetime.datetime]) -> 
     try:
         if not tz:
             return _JDateTimeUtils.timeZone()
-            #TODO: return None
-            #TODO: return system default? -> if return default, then the result is not optional
-            # return _JDateTimeUtils.timeZone()
+            #TODO: return None or system default?
         elif isinstance(tz, str):
             return _JDateTimeUtils.parseTimeZone(tz)
         elif isinstance(tz, datetime.tzinfo):
