@@ -45,7 +45,8 @@ final class RegionedColumnSourceZonedDateTime
     @Override
     public void convertRegion(
             @NotNull final WritableChunk<? super Values> destination,
-            @NotNull final Chunk<? extends Values> source, RowSequence rowSequence) {
+            @NotNull final Chunk<? extends Values> source,
+            @NotNull final RowSequence rowSequence) {
         final WritableObjectChunk<ZonedDateTime, ? super Values> objectChunk = destination.asWritableObjectChunk();
         final LongChunk<? extends Values> longChunk = source.asLongChunk();
 

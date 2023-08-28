@@ -4,6 +4,7 @@
 package io.deephaven.parquet.base;
 
 import io.deephaven.util.QueryConstants;
+import org.apache.parquet.column.statistics.Statistics;
 import org.apache.parquet.column.values.ValuesWriter;
 import org.apache.parquet.column.values.rle.RunLengthBitPackingHybridEncoder;
 import org.jetbrains.annotations.NotNull;
@@ -36,9 +37,11 @@ public abstract class AbstractBulkValuesWriter<BUFFER_TYPE> extends ValuesWriter
             @NotNull final IntBuffer vectorSizes,
             @NotNull final RunLengthBitPackingHybridEncoder rlEncoder,
             @NotNull final RunLengthBitPackingHybridEncoder dlEncoder,
-            final int nonNullValueCount) throws IOException {
-        final IntBuffer nullsOffsets = writeBulkFilterNulls(bulkValues, nonNullValueCount).nullOffsets;
-        return applyDlAndRl(vectorSizes, rlEncoder, dlEncoder, nullsOffsets);
+            final int nonNullValueCount,
+            @NotNull Statistics<?> statistics) throws IOException {
+        final IntBuffer nullsOffsets =
+                writeBulkVectorFilterNulls(bulkValues, nonNullValueCount, statistics).nullOffsets;
+        return applyDlAndRl(vectorSizes, rlEncoder, dlEncoder, nullsOffsets, statistics);
     }
 
     /**
@@ -102,7 +105,8 @@ public abstract class AbstractBulkValuesWriter<BUFFER_TYPE> extends ValuesWriter
     int applyDlAndRl(@NotNull final IntBuffer vectorSizes,
             @NotNull final RunLengthBitPackingHybridEncoder rlEncoder,
             @NotNull final RunLengthBitPackingHybridEncoder dlEncoder,
-            @NotNull final IntBuffer nullsOffsets) throws IOException {
+            @NotNull final IntBuffer nullsOffsets,
+            @NotNull Statistics<?> statistics) throws IOException {
         int valueCount = 0;
         int leafCount = 0;
 
@@ -139,6 +143,8 @@ public abstract class AbstractBulkValuesWriter<BUFFER_TYPE> extends ValuesWriter
                 valueCount++;
                 dlEncoder.writeInt(DL_VECTOR_NULL_VECTOR);
                 rlEncoder.writeInt(RL_FIRST_ELEM);
+                // This row is null so include it in the overall null counts for this column.
+                statistics.incrementNumNulls();
             }
         }
         return valueCount;

@@ -227,7 +227,7 @@ public class VarBinaryChunkInputStreamGenerator<T> extends BaseChunkInputStreamG
     }
 
     @Override
-    public DrainableColumn getInputStream(final StreamReaderOptions options, final @Nullable RowSet subset)
+    public DrainableColumn getInputStream(final StreamReaderOptions options, @Nullable final RowSet subset)
                 throws IOException {
         computePayload();
         return new ObjectChunkInputStream(options, subset);

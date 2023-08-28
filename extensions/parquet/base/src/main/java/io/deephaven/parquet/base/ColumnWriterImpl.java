@@ -21,6 +21,7 @@ import org.apache.parquet.internal.column.columnindex.OffsetIndexBuilder;
 import org.apache.parquet.io.ParquetEncodingException;
 import org.apache.parquet.schema.LogicalTypeAnnotation;
 import org.apache.parquet.schema.PrimitiveType;
+import org.jetbrains.annotations.NotNull;
 
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
@@ -45,6 +46,7 @@ public class ColumnWriterImpl implements ColumnWriter {
     private final CompressorAdapter compressorAdapter;
     private boolean hasDictionary;
     private int pageCount = 0;
+    private Statistics<?> statistics;
     private static final ParquetMetadataConverter metadataConverter = new ParquetMetadataConverter();
 
 
@@ -84,13 +86,17 @@ public class ColumnWriterImpl implements ColumnWriter {
                         getWidthFromMaxInt(column.getMaxRepetitionLevel()), MIN_SLAB_SIZE, targetPageSize, allocator);
         this.owner = owner;
         offsetIndexBuilder = OffsetIndexBuilder.getBuilder();
+        statistics = Statistics.createStats(column.getPrimitiveType());
     }
 
     @Override
-    public void addPageNoNulls(final Object pageData, final int valuesCount) throws IOException {
+    public void addPageNoNulls(@NotNull final Object pageData,
+            final int valuesCount,
+            @NotNull final Statistics<?> statistics)
+            throws IOException {
         initWriter();
         // noinspection unchecked
-        bulkWriter.writeBulk(pageData, valuesCount);
+        bulkWriter.writeBulk(pageData, valuesCount, statistics);
         if (dlEncoder != null) {
             for (int i = 0; i < valuesCount; i++) {
                 dlEncoder.writeInt(1); // TODO implement a bulk RLE writer
@@ -114,7 +120,7 @@ public class ColumnWriterImpl implements ColumnWriter {
     }
 
     @Override
-    public void addDictionaryPage(final Object dictionaryValues, final int valuesCount) throws IOException {
+    public void addDictionaryPage(@NotNull final Object dictionaryValues, final int valuesCount) throws IOException {
         if (pageCount > 0) {
             throw new IllegalStateException("Attempting to add dictionary past the first page");
         }
@@ -125,7 +131,7 @@ public class ColumnWriterImpl implements ColumnWriter {
         final BulkWriter dictionaryWriter = getWriter(column.getPrimitiveType());
 
         // noinspection unchecked
-        dictionaryWriter.writeBulk(dictionaryValues, valuesCount);
+        dictionaryWriter.writeBulk(dictionaryValues, valuesCount, NullStatistics.INSTANCE);
         dictionaryOffset = writeChannel.position();
         writeDictionaryPage(dictionaryWriter.getByteBufferView(), valuesCount);
         pageCount++;
@@ -195,21 +201,25 @@ public class ColumnWriterImpl implements ColumnWriter {
     }
 
     @Override
-    public void addPage(final Object pageData, final int valuesCount) throws IOException {
+    public void addPage(@NotNull final Object pageData,
+            final int valuesCount,
+            @NotNull Statistics<?> statistics)
+            throws IOException {
         if (dlEncoder == null) {
             throw new IllegalStateException("Null values not supported");
         }
         initWriter();
         // noinspection unchecked
-        bulkWriter.writeBulkFilterNulls(pageData, dlEncoder, valuesCount);
+        bulkWriter.writeBulkFilterNulls(pageData, dlEncoder, valuesCount, statistics);
         writePage(bulkWriter.getByteBufferView(), valuesCount);
         bulkWriter.reset();
     }
 
     public void addVectorPage(
-            final Object pageData,
-            final IntBuffer repeatCount,
-            final int nonNullValueCount) throws IOException {
+            @NotNull final Object pageData,
+            @NotNull final IntBuffer repeatCount,
+            final int nonNullValueCount,
+            @NotNull final Statistics<?> statistics) throws IOException {
         if (dlEncoder == null) {
             throw new IllegalStateException("Null values not supported");
         }
@@ -219,7 +229,7 @@ public class ColumnWriterImpl implements ColumnWriter {
         initWriter();
         // noinspection unchecked
         int valueCount =
-                bulkWriter.writeBulkVector(pageData, repeatCount, rlEncoder, dlEncoder, nonNullValueCount);
+                bulkWriter.writeBulkVector(pageData, repeatCount, rlEncoder, dlEncoder, nonNullValueCount, statistics);
         writePage(bulkWriter.getByteBufferView(), valueCount);
         bulkWriter.reset();
     }
@@ -415,7 +425,7 @@ public class ColumnWriterImpl implements ColumnWriter {
                         compressorAdapter.getCodecName(),
                         encodingStatsBuilder.build(),
                         encodings,
-                        Statistics.createStats(column.getPrimitiveType()),
+                        statistics,
                         firstDataPageOffset,
                         dictionaryOffset,
                         totalValueCount,
@@ -429,5 +439,15 @@ public class ColumnWriterImpl implements ColumnWriter {
 
     public OffsetIndex getOffsetIndex() {
         return offsetIndexBuilder.build(firstDataPageOffset);
+    }
+
+    @Override
+    public void resetStats() {
+        statistics = Statistics.createStats(column.getPrimitiveType());
+    }
+
+    @Override
+    public Statistics<?> getStats() {
+        return statistics;
     }
 }

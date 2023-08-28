@@ -77,7 +77,8 @@ public class FloatSortKernelBenchmark {
                 doSort = () -> Arrays.sort(javaArray);
                 break;
             case "timsort":
-                final BaseTestFloatTimSortKernel.FloatSortKernelStuff sortStuff = new BaseTestFloatTimSortKernel.FloatSortKernelStuff(stuffToSort);
+                final BaseTestFloatTimSortKernel.FloatLongSortKernelStuff sortStuff
+                        = new BaseTestFloatTimSortKernel.FloatLongSortKernelStuff(stuffToSort);
                 doSort = sortStuff::run;
                 break;
             case "mergesort":

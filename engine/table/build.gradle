@@ -83,6 +83,7 @@ dependencies {
     testImplementation project(':BenchmarkSupport')
     testImplementation project(':extensions-csv')
     testImplementation project(':extensions-parquet-table')
+    testImplementation project(':extensions-source-support')
     testImplementation project(':Numerics')
 
     Classpaths.inheritJUnitClassic(project, 'testImplementation')

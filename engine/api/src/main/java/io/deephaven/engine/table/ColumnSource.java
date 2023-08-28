@@ -40,8 +40,8 @@ public interface ColumnSource<T>
         return ChunkType.fromElementType(dataType);
     }
 
-    WritableRowSet match(boolean invertMatch, boolean usePrev, boolean caseInsensitive, RowSet mapper,
-            final Object... keys);
+    WritableRowSet match(
+            boolean invertMatch, boolean usePrev, boolean caseInsensitive, @NotNull RowSet mapper, Object... keys);
 
     Map<T, RowSet> getValuesMapping(RowSet subRange);
 

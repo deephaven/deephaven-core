@@ -1770,7 +1770,7 @@ public class TestRollingGroup extends BaseUpdateByTest {
         return result;
     }
 
-    final void assertWithRollingGroupTicks(final @NotNull Object expected, final @NotNull Object actual, Class type,
+    final void assertWithRollingGroupTicks(@NotNull final Object expected, @NotNull final Object actual, Class type,
             int prevTicks, int postTicks) {
 
         if (expected instanceof byte[]) {
@@ -1799,8 +1799,8 @@ public class TestRollingGroup extends BaseUpdateByTest {
         }
     }
 
-    final void assertWithRollingGroupTime(final @NotNull Object expected, final @NotNull Object actual,
-            final @NotNull long[] timestamps, Class type, long prevTime, long postTime) {
+    final void assertWithRollingGroupTime(@NotNull final Object expected, @NotNull final Object actual,
+            @NotNull final long[] timestamps, Class type, long prevTime, long postTime) {
 
         if (expected instanceof byte[]) {
             assertArrayEquals(rollingGroupTime((byte[]) expected, timestamps, prevTime, postTime),

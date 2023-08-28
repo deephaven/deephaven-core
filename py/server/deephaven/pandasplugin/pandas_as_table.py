@@ -3,13 +3,13 @@
 #
 
 from deephaven.pandas import to_table
-from deephaven.plugin.object import Exporter, ObjectType
+from deephaven.plugin.object_type import Exporter, FetchOnlyObjectType
 from pandas import DataFrame
 
 NAME = "pandas.DataFrame"
 
 
-class PandasDataFrameSerializer(ObjectType):
+class PandasDataFrameSerializer(FetchOnlyObjectType):
     @property
     def name(self) -> str:
         return NAME

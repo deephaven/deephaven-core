@@ -162,15 +162,19 @@ public class MatchFilter extends WhereFilterImpl {
         initialized = true;
     }
 
+    @NotNull
     @Override
-    public WritableRowSet filter(RowSet selection, RowSet fullSet, Table table, boolean usePrev) {
-        final ColumnSource columnSource = table.getColumnSource(columnName);
+    public WritableRowSet filter(
+            @NotNull RowSet selection, @NotNull RowSet fullSet, @NotNull Table table, boolean usePrev) {
+        final ColumnSource<?> columnSource = table.getColumnSource(columnName);
         return columnSource.match(invertMatch, usePrev, caseInsensitive, selection, values);
     }
 
+    @NotNull
     @Override
-    public WritableRowSet filterInverse(RowSet selection, RowSet fullSet, Table table, boolean usePrev) {
-        final ColumnSource columnSource = table.getColumnSource(columnName);
+    public WritableRowSet filterInverse(
+            @NotNull RowSet selection, @NotNull RowSet fullSet, @NotNull Table table, boolean usePrev) {
+        final ColumnSource<?> columnSource = table.getColumnSource(columnName);
         return columnSource.match(!invertMatch, usePrev, caseInsensitive, selection, values);
     }
 
