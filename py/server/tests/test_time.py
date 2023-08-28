@@ -23,10 +23,10 @@ class TimeTestCase(BaseTestCase):
                 dt = now(system=system, resolution=resolution)
                 sleep(1)
                 dt1 = now(system=system, resolution=resolution)
-                self.assertGreaterEqual(diff_nanos(dt, dt1), 100000000)
+                self.assertGreaterEqual(_JDateTimeUtils.diffNanos(dt, dt1), 100000000)
 
     def test_today(self):
-        tz = time_zone("UTC")
+        tz = _JDateTimeUtils.timeZone("UTC")
         td = today(tz)
         target = datetime.datetime.utcnow().date().strftime('%Y-%m-%d')
         self.assertEqual(td, target)

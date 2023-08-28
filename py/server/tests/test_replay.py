@@ -3,18 +3,20 @@
 #
 
 import unittest
+import jpy
 
 from deephaven import DHError, new_table, TableReplayer
 from deephaven.column import int_col, datetime_col
-from deephaven.time import parse_instant
 from tests.testbase import BaseTestCase
+
+_JDateTimeUtils = jpy.get_type("io.deephaven.time.DateTimeUtils")
 
 
 class ReplayTestCase(BaseTestCase):
     def historical_table_replayer(self, start_time, end_time):
-        dt1 = parse_instant("2000-01-01T00:00:01 ET")
-        dt2 = parse_instant("2000-01-01T00:00:02 ET")
-        dt3 = parse_instant("2000-01-01T00:00:04 ET")
+        dt1 = _JDateTimeUtils.parseInstant("2000-01-01T00:00:01 ET")
+        dt2 = _JDateTimeUtils.parseInstant("2000-01-01T00:00:02 ET")
+        dt3 = _JDateTimeUtils.parseInstant("2000-01-01T00:00:04 ET")
 
         hist_table = new_table(
             [datetime_col("DateTime", [dt1, dt2, dt3]), int_col("Number", [1, 3, 6])]
@@ -55,8 +57,8 @@ class ReplayTestCase(BaseTestCase):
             replayer.shutdown()
 
     def test_historical_table_replayer_instant(self):
-        start_time = parse_instant("2000-01-01T00:00:00 ET")
-        end_time = parse_instant("2000-01-01T00:00:05 ET")
+        start_time = _JDateTimeUtils.parseInstant("2000-01-01T00:00:00 ET")
+        end_time = _JDateTimeUtils.parseInstant("2000-01-01T00:00:05 ET")
 
         self.historical_table_replayer(start_time, end_time)
 

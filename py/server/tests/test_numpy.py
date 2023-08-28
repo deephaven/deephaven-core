@@ -5,6 +5,7 @@
 import unittest
 from dataclasses import dataclass
 
+import jpy
 import numpy as np
 
 from deephaven import DHError, new_table, dtypes
@@ -13,9 +14,9 @@ from deephaven.column import byte_col, char_col, short_col, bool_col, int_col, l
 from deephaven.constants import NULL_LONG, MAX_LONG
 from deephaven.numpy import to_numpy, to_table
 from deephaven.jcompat import j_array_list
-from deephaven.time import epoch_nanos_to_instant
 from tests.testbase import BaseTestCase
 
+_JDateTimeUtils = jpy.get_type("io.deephaven.time.DateTimeUtils")
 
 @dataclass
 class CustomClass:
@@ -39,7 +40,7 @@ class NumpyTestCase(BaseTestCase):
             float_col(name="Float", data=[1.01, -1.01]),
             double_col(name="Double", data=[1.01, -1.01]),
             string_col(name="String", data=["foo", "bar"]),
-            datetime_col(name="Datetime", data=[epoch_nanos_to_instant(1), epoch_nanos_to_instant(-1)]),
+            datetime_col(name="Datetime", data=[_JDateTimeUtils.epochNanosToInstant(1), _JDateTimeUtils.epochNanosToInstant(-1)]),
             pyobj_col(name="PyObj", data=[CustomClass(1, "1"), CustomClass(-1, "-1")]),
             pyobj_col(name="PyObj1", data=[[1, 2, 3], CustomClass(-1, "-1")]),
             pyobj_col(name="PyObj2", data=[False, 'False']),

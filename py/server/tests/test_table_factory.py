@@ -13,13 +13,13 @@ from deephaven.column import byte_col, char_col, short_col, bool_col, int_col, l
     string_col, datetime_col, pyobj_col, jobj_col
 from deephaven.constants import NULL_DOUBLE, NULL_FLOAT, NULL_LONG, NULL_INT, NULL_SHORT, NULL_BYTE
 from deephaven.table_factory import DynamicTableWriter, ring_table
-from deephaven.time import epoch_nanos_to_instant, format_datetime, time_zone
 from tests.testbase import BaseTestCase
 from deephaven.table import Table
 from deephaven.stream import blink_to_append_only, stream_to_append_only
 
 JArrayList = jpy.get_type("java.util.ArrayList")
 _JBlinkTableTools = jpy.get_type("io.deephaven.engine.table.impl.BlinkTableTools")
+_JDateTimeUtils = jpy.get_type("io.deephaven.time.DateTimeUtils")
 
 @dataclass
 class CustomClass:
@@ -55,7 +55,7 @@ class TableFactoryTestCase(BaseTestCase):
         t = time_table("PT00:00:01", start_time="2021-11-06T13:21:00 ET")
         self.assertEqual(1, len(t.columns))
         self.assertTrue(t.is_refreshing)
-        self.assertEqual("2021-11-06T13:21:00.000000000 ET", format_datetime(t.j_table.getColumnSource("Timestamp").get(0), time_zone('ET')))
+        self.assertEqual("2021-11-06T13:21:00.000000000 ET", _JDateTimeUtils.formatDateTime(t.j_table.getColumnSource("Timestamp").get(0), _JDateTimeUtils.timeZone('ET')))
 
         t = time_table(1000_000_000)
         self.assertEqual(1, len(t.columns))
@@ -64,7 +64,7 @@ class TableFactoryTestCase(BaseTestCase):
         t = time_table(1000_1000_1000, start_time="2021-11-06T13:21:00 ET")
         self.assertEqual(1, len(t.columns))
         self.assertTrue(t.is_refreshing)
-        self.assertEqual("2021-11-06T13:21:00.000000000 ET", format_datetime(t.j_table.getColumnSource("Timestamp").get(0), time_zone('ET')))
+        self.assertEqual("2021-11-06T13:21:00.000000000 ET", _JDateTimeUtils.formatDateTime(t.j_table.getColumnSource("Timestamp").get(0), _JDateTimeUtils.timeZone('ET')))
 
     def test_time_table_blink(self):
         t = time_table("PT1s", blink_table=True)
@@ -110,7 +110,7 @@ class TableFactoryTestCase(BaseTestCase):
             float_col(name="Float", data=[1.01, -1.01]),
             double_col(name="Double", data=[1.01, -1.01]),
             string_col(name="String", data=["foo", "bar"]),
-            datetime_col(name="Datetime", data=[epoch_nanos_to_instant(1), epoch_nanos_to_instant(-1)]),
+            datetime_col(name="Datetime", data=[_JDateTimeUtils.epochNanosToInstant(1), _JDateTimeUtils.epochNanosToInstant(-1)]),
             pyobj_col(name="PyObj", data=[CustomClass(1, "1"), CustomClass(-1, "-1")]),
             pyobj_col(name="PyObj1", data=[[1, 2, 3], CustomClass(-1, "-1")]),
             pyobj_col(name="PyObj2", data=[False, 'False']),

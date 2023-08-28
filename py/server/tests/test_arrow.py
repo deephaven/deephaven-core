@@ -6,6 +6,7 @@ import unittest
 from datetime import datetime
 from typing import List, Any
 
+import jpy
 import numpy as np
 import pandas as pd
 import pyarrow as pa
@@ -16,9 +17,9 @@ from deephaven import arrow as dharrow, new_table, time_table
 from deephaven.column import byte_col, char_col, short_col, int_col, long_col, float_col, double_col, \
     string_col, datetime_col, bool_col
 from deephaven.table import Table
-from deephaven.time import epoch_nanos_to_instant
 from tests.testbase import BaseTestCase
 
+_JDateTimeUtils = jpy.get_type("io.deephaven.time.DateTimeUtils")
 
 class ArrowTestCase(BaseTestCase):
     test_table: Table
@@ -36,7 +37,7 @@ class ArrowTestCase(BaseTestCase):
             float_col(name="Float", data=[1.01, -1.01]),
             double_col(name="Double", data=[1.01, -1.01]),
             string_col(name="String", data=["foo", "bar"]),
-            datetime_col(name="Datetime", data=[epoch_nanos_to_instant(1), epoch_nanos_to_instant(-1)]),
+            datetime_col(name="Datetime", data=[_JDateTimeUtils.epochNanosToInstant(1), _JDateTimeUtils.epochNanosToInstant(-1)]),
         ]
         self.test_table = new_table(cols=cols)
 

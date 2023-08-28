@@ -13,9 +13,10 @@ import pandas as pd
 from deephaven import dtypes
 from deephaven.constants import *
 from deephaven.dtypes import Instant, LocalDate, LocalTime, Duration, Period, TimeZone, ZonedDateTime
-from deephaven.time import now, to_zdt, time_zone
+from deephaven.time import now
 from tests.testbase import BaseTestCase
 
+_JDateTimeUtils = jpy.get_type("io.deephaven.time.DateTimeUtils")
 
 def remap_double(v, null_value):
     if v != v or v == NULL_DOUBLE or v == float('inf'):
@@ -238,7 +239,7 @@ class DTypesTestCase(BaseTestCase):
 
     def test_zdt(self):
         dt1 = ZonedDateTime.j_type.now()
-        dt2 = to_zdt(now(), time_zone(None))
+        dt2 = _JDateTimeUtils.toZonedDateTime(now(), _JDateTimeUtils.timeZone())
         values = [dt1, dt2, None]
         j_array = dtypes.array(ZonedDateTime, values)
         self.assertTrue(all(x == y for x, y in zip(j_array, values)))

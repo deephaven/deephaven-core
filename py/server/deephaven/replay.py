@@ -35,10 +35,10 @@ class TableReplayer(JObjectWrapper):
         """
 
         if isinstance(start_time, str):
-            start_time = time.parse_instant(start_time)
+            start_time = time.to_j_instant(start_time)
 
         if isinstance(end_time, str):
-            end_time = time.parse_instant(end_time)
+            end_time = time.to_j_instant(end_time)
 
         self.start_time = start_time
         self.end_time = end_time
