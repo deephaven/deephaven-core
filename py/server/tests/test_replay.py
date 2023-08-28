@@ -5,7 +5,7 @@
 import unittest
 import jpy
 
-from deephaven import DHError, new_table, TableReplayer
+from deephaven import DHError, new_table, TableReplayer, time
 from deephaven.column import int_col, datetime_col
 from tests.testbase import BaseTestCase
 
@@ -65,6 +65,12 @@ class ReplayTestCase(BaseTestCase):
     def test_historical_table_replayer_str(self):
         start_time = "2000-01-01T00:00:00 ET"
         end_time = "2000-01-01T00:00:05 ET"
+
+        self.historical_table_replayer(start_time, end_time)
+
+    def test_historical_table_replayer_datetime(self):
+        start_time = time.to_datetime(_JDateTimeUtils.parseInstant("2000-01-01T00:00:00 ET"))
+        end_time = time.to_datetime(_JDateTimeUtils.parseInstant("2000-01-01T00:00:05 ET"))
 
         self.historical_table_replayer(start_time, end_time)
 

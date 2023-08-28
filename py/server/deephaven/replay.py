@@ -7,6 +7,9 @@
 from typing import Union
 import jpy
 
+import datetime
+import numpy as np
+
 from deephaven import dtypes, DHError, time
 from deephaven._wrapper import JObjectWrapper
 from deephaven.table import Table
@@ -23,21 +26,22 @@ class TableReplayer(JObjectWrapper):
 
     j_object_type = _JReplayer
 
-    def __init__(self, start_time: Union[dtypes.Instant,str], end_time: Union[dtypes.Instant,str]):
+    def __init__(self, start_time: Union[dtypes.Instant,str,datetime.datetime,np.datetime64],
+                 end_time: Union[dtypes.Instant,str,datetime.datetime,np.datetime64]):
         """Initializes the replayer.
 
         Args:
-             start_time (DateTime): replay start time
-             end_time (DateTime): replay end time
+             start_time (Union[dtypes.Instant,str,datetime.datetime,np.datetime64]): replay start time
+             end_time (Union[dtypes.Instant,str,datetime.datetime,np.datetime64]): replay end time
 
         Raises:
             DHError
         """
 
-        if isinstance(start_time, str):
+        if not isinstance(start_time, dtypes.Instant.j_type):
             start_time = time.to_j_instant(start_time)
 
-        if isinstance(end_time, str):
+        if not isinstance(end_time, dtypes.Instant.j_type):
             end_time = time.to_j_instant(end_time)
 
         self.start_time = start_time

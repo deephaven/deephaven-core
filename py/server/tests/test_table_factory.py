@@ -8,7 +8,8 @@ from dataclasses import dataclass
 import jpy
 import numpy as np
 
-from deephaven import DHError, read_csv, time_table, empty_table, merge, merge_sorted, dtypes, new_table, input_table
+from deephaven import DHError, read_csv, time_table, empty_table, merge, merge_sorted, dtypes, new_table, \
+    input_table, time
 from deephaven.column import byte_col, char_col, short_col, bool_col, int_col, long_col, float_col, double_col, \
     string_col, datetime_col, pyobj_col, jobj_col
 from deephaven.constants import NULL_DOUBLE, NULL_FLOAT, NULL_LONG, NULL_INT, NULL_SHORT, NULL_BYTE
@@ -62,6 +63,17 @@ class TableFactoryTestCase(BaseTestCase):
         self.assertTrue(t.is_refreshing)
 
         t = time_table(1000_1000_1000, start_time="2021-11-06T13:21:00 ET")
+        self.assertEqual(1, len(t.columns))
+        self.assertTrue(t.is_refreshing)
+        self.assertEqual("2021-11-06T13:21:00.000000000 ET", _JDateTimeUtils.formatDateTime(t.j_table.getColumnSource("Timestamp").get(0), _JDateTimeUtils.timeZone('ET')))
+
+        p = time.to_timedelta(_JDateTimeUtils.parseDuration("PT1s"))
+        t = time_table(p)
+        self.assertEqual(1, len(t.columns))
+        self.assertTrue(t.is_refreshing)
+
+        st = time.to_datetime(_JDateTimeUtils.parseInstant("2021-11-06T13:21:00 ET"))
+        t = time_table(p, start_time=st)
         self.assertEqual(1, len(t.columns))
         self.assertTrue(t.is_refreshing)
         self.assertEqual("2021-11-06T13:21:00.000000000 ET", _JDateTimeUtils.formatDateTime(t.j_table.getColumnSource("Timestamp").get(0), _JDateTimeUtils.timeZone('ET')))

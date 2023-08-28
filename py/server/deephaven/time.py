@@ -81,7 +81,7 @@ def today(tz: Optional[TimeZone] = None) -> str:
         DHError
     """
     try:
-        if not tz:
+        if tz is None:
             tz = _JDateTimeUtils.timeZone()
 
         return _JDateTimeUtils.today(tz)
@@ -157,7 +157,7 @@ def to_j_time_zone(tz: Union[None, str, datetime.tzinfo, datetime.datetime]) -> 
         DHError
     """
     try:
-        if not tz:
+        if tz is None:
             return _JDateTimeUtils.timeZone()
             #TODO: return None or system default?
         elif isinstance(tz, str):
@@ -195,7 +195,7 @@ def to_j_local_date(dt: Union[None, str, datetime.date, datetime.time, datetime.
     """
 
     try:
-        if not dt:
+        if dt is None:
             return None
         elif isinstance(dt, str):
             return _JDateTimeUtils.parseLocalDate(dt)
@@ -228,7 +228,7 @@ def to_j_local_time(dt: Union[None, str, datetime.time, datetime.datetime, np.da
     """
 
     try:
-        if not dt:
+        if dt is None:
             return None
         elif isinstance(dt, str):
             return _JDateTimeUtils.parseLocalTime(dt)
@@ -264,7 +264,7 @@ def to_j_instant(dt: Union[None, str, datetime.datetime, np.datetime64]) -> Opti
         DHError
     """
     try:
-        if not dt:
+        if dt is None:
             return None
         elif isinstance(dt, str):
             return _JDateTimeUtils.parseInstant(dt)
@@ -308,7 +308,7 @@ def to_j_zdt(dt: Union[None, str, datetime.datetime, np.datetime64]) -> Optional
         DHError
     """
     try:
-        if not dt:
+        if dt is None:
             return None
         elif isinstance(dt, str):
             return _JDateTimeUtils.parseZonedDateTime(dt)
@@ -356,7 +356,7 @@ def to_j_duration(dt: Union[None, str, datetime.timedelta, np.timedelta64]) -> O
         DHError
     """
     try:
-        if not dt:
+        if dt is None:
             return None
         elif isinstance(dt, str):
             return _JDateTimeUtils.parseDuration(dt)
@@ -398,7 +398,7 @@ def to_j_period(dt: Union[None, str, datetime.timedelta, np.timedelta64]) -> Opt
         Period
     """
     try:
-        if not dt:
+        if dt is None:
             return None
         elif isinstance(dt, str):
             return _JDateTimeUtils.parsePeriod(dt)
@@ -450,7 +450,7 @@ def to_date(dt: Union[None, LocalDate, ZonedDateTime]) -> Optional[datetime.date
         datetime.date
     """
     try:
-        if not dt:
+        if dt is None:
             return None
         if isinstance(dt, LocalDate.j_type):
             return datetime.date(dt.getYear(), dt.getMonthValue(), dt.getDayOfMonth())
@@ -474,7 +474,7 @@ def to_time(dt: Union[None, LocalTime, ZonedDateTime]) -> Optional[datetime.time
         datetime.time
     """
     try:
-        if not dt:
+        if dt is None:
             return None
         elif isinstance(dt, LocalTime.j_type):
             return datetime.time(dt.getHour(), dt.getMinute(), dt.getSecond(), dt.getNano() // 1000)
@@ -498,7 +498,7 @@ def to_datetime(dt: Union[None, Instant, ZonedDateTime]) -> Optional[datetime.da
         datetime.datetime
     """
     try:
-        if not dt:
+        if dt is None:
             return None
         elif isinstance(dt, Instant.j_type):
             ts = dt.getEpochSecond() + (dt.getNano() / 1000000000)
@@ -527,7 +527,7 @@ def to_datetime64(dt: Union[None, Instant, ZonedDateTime]) -> Optional[np.dateti
         DHError
     """
     try:
-        if not dt:
+        if dt is None:
             return None
         elif isinstance(dt, Instant.j_type):
             ts = dt.getEpochSecond() * 1000000000 + dt.getNano()
@@ -552,7 +552,7 @@ def to_timedelta(dt: Union[None, Duration]) -> Optional[datetime.timedelta]:
         datetime.timedelta
     """
     try:
-        if not dt:
+        if dt is None:
             return None
         elif isinstance(dt, Duration.j_type):
             return datetime.timedelta(seconds=dt.getSeconds(), microseconds=dt.getNano() // 1000)
@@ -586,7 +586,7 @@ def to_timedelta64(dt: Union[None, Duration, Period]) -> Optional[np.timedelta64
         DHError
     """
     try:
-        if not dt:
+        if dt is None:
             return None
         elif isinstance(dt, Duration.j_type):
             return np.timedelta64(dt.toNanos(), 'ns')

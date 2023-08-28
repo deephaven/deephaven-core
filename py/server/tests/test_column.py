@@ -1,7 +1,7 @@
 #
 # Copyright (c) 2016-2022 Deephaven Data Labs and Patent Pending
 #
-
+import datetime
 import time
 import unittest
 from dataclasses import dataclass
@@ -132,6 +132,11 @@ class ColumnTestCase(BaseTestCase):
         self.assertEqual(t_func_integers.columns[4].data_type, dtypes.long)
         self.assertEqual(t_list_integers.columns[5].data_type, dtypes.float32)
         self.assertEqual(t_list_integers.columns[6].data_type, dtypes.float64)
+
+    def test_datetime_col(self):
+        inst = _JDateTimeUtils.epochNanosToInstant(round(time.time()))
+        dt = datetime.datetime.now()
+        _ = datetime_col(name="Datetime", data=[inst, dt, None])
 
 
 @dataclass
