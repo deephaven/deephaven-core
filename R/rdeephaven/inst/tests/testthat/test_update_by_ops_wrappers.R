@@ -1355,7 +1355,7 @@ test_that("udb_roll_wavg_tick fails nicely when 'wcol' is a bad type", {
     "'wcol' must be a single string. Got an object of class logical."
   )
   expect_error(
-    udb_roll_wavg_tick(c("Many", "strings") "column", 5),
+    udb_roll_wavg_tick(c("Many", "strings"), "column", 5),
     "'wcol' must be a single string. Got a vector of length 2."
   )
 })
@@ -1433,7 +1433,7 @@ test_that("udb_roll_wavg_time fails nicely when 'wcol' is a bad type", {
 
 test_that("udb_roll_wavg_time fails nicely when 'cols' is a bad type", {
   expect_error(
-    udb_roll_wavg_time("PT0s", "wcol", "5, "PT0s", "PT0s"),
+    udb_roll_wavg_time("PT0s", "wcol", 5, "PT0s", "PT0s"),
     "'cols' must be a string or a vector of strings. Got an object of class numeric."
   )
   expect_error(
