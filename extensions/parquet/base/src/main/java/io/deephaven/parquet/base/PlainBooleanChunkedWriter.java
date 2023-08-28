@@ -5,9 +5,9 @@ package io.deephaven.parquet.base;
 
 import io.deephaven.parquet.base.util.Helpers;
 import io.deephaven.util.QueryConstants;
-import org.apache.parquet.bytes.ByteBufferAllocator;
 import org.apache.parquet.bytes.BytesInput;
 import org.apache.parquet.column.Encoding;
+import org.apache.parquet.column.statistics.Statistics;
 import org.apache.parquet.column.values.plain.BooleanPlainValuesWriter;
 import org.apache.parquet.column.values.rle.RunLengthBitPackingHybridEncoder;
 import org.jetbrains.annotations.NotNull;
@@ -72,21 +72,31 @@ public class PlainBooleanChunkedWriter extends AbstractBulkValuesWriter<ByteBuff
     }
 
     @Override
-    public void writeBulk(@NotNull ByteBuffer bulkValues, int rowCount) {
+    public void writeBulk(@NotNull ByteBuffer bulkValues,
+                          final int rowCount,
+                          @NotNull final Statistics<?> statistics) {
         while (bulkValues.hasRemaining()) {
-            writeBoolean(bulkValues.get() == 1);
+            final boolean v = bulkValues.get() == 1;
+            writeBoolean(v);
+            statistics.updateStats(v);
         }
     }
 
     @NotNull
     @Override
-    public WriteResult writeBulkFilterNulls(@NotNull ByteBuffer bulkValues, @NotNull RunLengthBitPackingHybridEncoder dlEncoder, int rowCount) throws IOException {
+    public WriteResult writeBulkFilterNulls(@NotNull ByteBuffer bulkValues,
+                                            @NotNull RunLengthBitPackingHybridEncoder dlEncoder,
+                                            final int rowCount,
+                                            @NotNull final Statistics<?> statistics) throws IOException {
         while (bulkValues.hasRemaining()) {
             final byte next = bulkValues.get();
             if (next != QueryConstants.NULL_BYTE) {
-                writeBoolean(next == 1);
+                final boolean v = next == 1;
+                writeBoolean(v);
+                statistics.updateStats(v);
                 dlEncoder.writeInt(DL_ITEM_PRESENT);
             } else {
+                statistics.incrementNumNulls();
                 dlEncoder.writeInt(DL_ITEM_NULL);
             }
         }
@@ -94,16 +104,21 @@ public class PlainBooleanChunkedWriter extends AbstractBulkValuesWriter<ByteBuff
     }
 
     @Override
-    public @NotNull WriteResult writeBulkFilterNulls(@NotNull ByteBuffer bulkValues, int rowCount) {
+    public @NotNull WriteResult writeBulkVectorFilterNulls(@NotNull ByteBuffer bulkValues,
+                                                           final int rowCount,
+                                                           @NotNull final Statistics<?> statistics) {
         IntBuffer nullOffsets = IntBuffer.allocate(4);
         int i = 0;
         while (bulkValues.hasRemaining()) {
             final byte next = bulkValues.get();
             if (next != QueryConstants.NULL_BYTE) {
-                writeBoolean(next == 1);
+                final boolean v = next == 1;
+                writeBoolean(v);
+                statistics.updateStats(v);
             } else {
                 nullOffsets = Helpers.ensureCapacity(nullOffsets);
                 nullOffsets.put(i);
+                statistics.incrementNumNulls();
             }
             i++;
         }

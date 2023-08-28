@@ -488,17 +488,17 @@ public class Immutable2DLongArraySource extends AbstractDeferredGroupingColumnSo
     }
 
     @Override
-    public ColumnSource<ZonedDateTime> toZonedDateTime(final @NotNull ZoneId zone) {
+    public ColumnSource<ZonedDateTime> toZonedDateTime(@NotNull final ZoneId zone) {
         return new Immutable2DZonedDateTimeArraySource(Require.neqNull(zone, "zone"), this);
     }
 
     @Override
-    public ColumnSource<LocalDate> toLocalDate(final @NotNull ZoneId zone) {
+    public ColumnSource<LocalDate> toLocalDate(@NotNull final ZoneId zone) {
         return new LongAsLocalDateColumnSource(this, zone);
     }
 
     @Override
-    public ColumnSource<LocalTime> toLocalTime(final @NotNull ZoneId zone) {
+    public ColumnSource<LocalTime> toLocalTime(@NotNull final ZoneId zone) {
         return new LongAsLocalTimeColumnSource(this, zone);
     }
 

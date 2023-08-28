@@ -314,7 +314,11 @@ public class WouldMatchOperation implements QueryTable.MemoizableOperation<Query
 
         @Override
         public WritableRowSet match(
-                boolean invertMatch, boolean usePrev, boolean caseInsensitive, RowSet mapper, Object... keys) {
+                final boolean invertMatch,
+                final boolean usePrev,
+                final boolean caseInsensitive,
+                @NotNull final RowSet mapper,
+                final Object... keys) {
             boolean hasFalse = false;
             boolean hasTrue = false;
             boolean hasOther = false;

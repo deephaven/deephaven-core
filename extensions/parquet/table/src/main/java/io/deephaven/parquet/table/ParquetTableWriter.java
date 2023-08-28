@@ -44,6 +44,8 @@ import io.deephaven.util.type.TypeUtils;
 import io.deephaven.vector.Vector;
 import org.apache.commons.lang3.tuple.Pair;
 import org.apache.parquet.bytes.HeapByteBufferAllocator;
+import org.apache.parquet.column.statistics.IntStatistics;
+import org.apache.parquet.column.statistics.Statistics;
 import org.apache.parquet.io.api.Binary;
 import org.jetbrains.annotations.NotNull;
 
@@ -615,6 +617,7 @@ public class ParquetTableWriter {
             final VectorColumnWriterHelper vectorHelper = writingHelper.isVectorFormat()
                     ? (VectorColumnWriterHelper) writingHelper
                     : null;
+            final Statistics<?> statistics = columnWriter.getStats();
             // @formatter:off
             try (final RowSequence.Iterator lengthRowSetIterator = vectorHelper != null
                     ? tableRowSet.getRowSequenceIterator()
@@ -648,13 +651,14 @@ public class ParquetTableWriter {
                         // Write all the fetched vector data into a single Parquet page.
                         // This can lead to Out-of-Memory errors for types like strings if the entries are very long.
                         int numValuesBuffered = transferObject.bufferAllFetchedData();
-                        columnWriter.addVectorPage(transferObject.getBuffer(), repeatCount, numValuesBuffered);
+                        columnWriter.addVectorPage(transferObject.getBuffer(), repeatCount, numValuesBuffered,
+                                statistics);
                         repeatCount.clear();
                     } else {
                         // Split a single page into multiple if we are not able to fit all the entries in one page
                         do {
                             int numValuesBuffered = transferObject.bufferFetchedData();
-                            columnWriter.addPage(transferObject.getBuffer(), numValuesBuffered);
+                            columnWriter.addPage(transferObject.getBuffer(), numValuesBuffered, statistics);
                         } while (transferObject.hasMoreDataToBuffer());
                     }
                 }
@@ -683,8 +687,10 @@ public class ParquetTableWriter {
         final VectorColumnWriterHelper vectorHelper = writingHelper.isVectorFormat()
                 ? (VectorColumnWriterHelper) writingHelper
                 : null;
+        final Statistics<?> statistics = columnWriter.getStats();
         try {
             final List<IntBuffer> pageBuffers = new ArrayList<>();
+            final BitSet pageBufferHasNull = new BitSet();
             Binary[] encodedKeys = new Binary[Math.min(INITIAL_DICTIONARY_SIZE, maxKeys)];
 
             final TObjectIntHashMap<String> keyToPos =
@@ -700,6 +706,7 @@ public class ParquetTableWriter {
                             ? vectorHelper.valueRowSet.getRowSequenceIterator()
                             : tableRowSet.getRowSequenceIterator()) {
                 for (int curPage = 0; curPage < pageCount; curPage++) {
+                    boolean pageHasNulls = false;
                     final RowSequence rs = it.getNextRowSequenceWithLength(valuePageSizeGetter.getAsInt());
                     final ObjectChunk<String, ? extends Values> chunk =
                             valueSource.getChunk(context, rs).asObjectChunk();
@@ -708,18 +715,26 @@ public class ParquetTableWriter {
                         final String key = chunk.get(vi);
                         int dictionaryPos = keyToPos.get(key);
                         if (dictionaryPos == keyToPos.getNoEntryValue()) {
+                            // Track the min/max statistics while the dictionary is being built.
                             if (key == null) {
-                                hasNulls = true;
+                                hasNulls = pageHasNulls = true;
                             } else {
                                 if (keyCount == encodedKeys.length) {
                                     // Copy into an array of double the size with upper limit at maxKeys
                                     encodedKeys = Arrays.copyOf(encodedKeys, (int) Math.min(keyCount * 2L, maxKeys));
                                 }
-                                encodedKeys[keyCount] = Binary.fromString(key);
+                                final Binary encodedKey = Binary.fromString(key);
+                                encodedKeys[keyCount] = encodedKey;
+                                statistics.updateStats(encodedKey);
                                 dictionaryPos = keyCount;
                                 dictSize += encodedKeys[keyCount].length();
                                 keyCount++;
                                 if ((keyCount >= maxKeys) || (dictSize >= maxDictSize)) {
+                                    // Reset the stats because we will re-encode these in PLAIN encoding.
+                                    columnWriter.resetStats();
+                                    // We discard all the dictionary data accumulated so far and fall back to PLAIN
+                                    // encoding. We could have added a dictionary page first with data collected so far
+                                    // and then stored the remaining data via PLAIN encoding (TODO deephaven-core#946).
                                     throw new DictionarySizeExceededException(
                                             String.format("Dictionary maximum size exceeded for %s",
                                                     columnDefinition.getName()));
@@ -730,10 +745,13 @@ public class ParquetTableWriter {
                         posInDictionary.put(dictionaryPos);
                     }
                     pageBuffers.add(posInDictionary);
+                    pageBufferHasNull.set(curPage, pageHasNulls);
                 }
             }
 
             if (keyCount == 0 && hasNulls) {
+                // Reset the stats because we will re-encode these in PLAIN encoding.
+                columnWriter.resetStats();
                 return false;
             }
 
@@ -758,18 +776,27 @@ public class ParquetTableWriter {
 
             columnWriter.addDictionaryPage(encodedKeys, keyCount);
             final Iterator<IntBuffer> arraySizeIt = arraySizeBuffers == null ? null : arraySizeBuffers.iterator();
-            for (final IntBuffer pageBuffer : pageBuffers) {
+            // We've already determined min/max statistics while building the dictionary. Now use an integer statistics
+            // object to track the number of nulls that will be written.
+            Statistics<Integer> tmpStats = new IntStatistics();
+            for (int i = 0; i < pageBuffers.size(); ++i) {
+                final IntBuffer pageBuffer = pageBuffers.get(i);
+                final boolean pageHasNulls = pageBufferHasNull.get(i);
                 pageBuffer.flip();
                 if (vectorHelper != null) {
-                    columnWriter.addVectorPage(pageBuffer, arraySizeIt.next(), pageBuffer.remaining());
-                } else if (hasNulls) {
-                    columnWriter.addPage(pageBuffer, pageBuffer.remaining());
+                    columnWriter.addVectorPage(pageBuffer, arraySizeIt.next(), pageBuffer.remaining(), tmpStats);
+                } else if (pageHasNulls) {
+                    columnWriter.addPage(pageBuffer, pageBuffer.remaining(), tmpStats);
                 } else {
-                    columnWriter.addPageNoNulls(pageBuffer, pageBuffer.remaining());
+                    columnWriter.addPageNoNulls(pageBuffer, pageBuffer.remaining(), tmpStats);
                 }
             }
+            // Add the count of nulls to the overall stats.
+            statistics.incrementNumNulls(tmpStats.getNumNulls());
             return true;
         } catch (final DictionarySizeExceededException ignored) {
+            // Reset the stats because we will re-encode these in PLAIN encoding.
+            columnWriter.resetStats();
             return false;
         }
     }

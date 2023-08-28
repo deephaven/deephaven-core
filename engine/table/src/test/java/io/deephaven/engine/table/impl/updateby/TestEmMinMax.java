@@ -1139,8 +1139,8 @@ public class TestEmMinMax extends BaseUpdateByTest {
 
     final void assertWithEmTicks(final OperationControl control,
             final long ticks,
-            final @NotNull Object expected,
-            final @NotNull Object actual,
+            @NotNull final Object expected,
+            @NotNull final Object actual,
             final Class type,
             final BasePrimitiveEMOperator.EmFunction doubleFunction,
             final BaseBigNumberEMOperator.EmFunction bdFunction) {
@@ -1182,9 +1182,9 @@ public class TestEmMinMax extends BaseUpdateByTest {
 
     final void assertWithEmTime(final OperationControl control,
             final long nanos,
-            final @NotNull long[] timestamps,
-            final @NotNull Object expected,
-            final @NotNull Object actual,
+            @NotNull final long[] timestamps,
+            @NotNull final Object expected,
+            @NotNull final Object actual,
             final Class type,
             final BasePrimitiveEMOperator.EmFunction doubleFunction,
             final BaseBigNumberEMOperator.EmFunction bdFunction) {
