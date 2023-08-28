@@ -3,6 +3,7 @@
  */
 package io.deephaven.server.jetty;
 
+import io.deephaven.configuration.Configuration;
 import io.deephaven.server.browserstreaming.BrowserStreamInterceptor;
 import io.deephaven.server.runner.GrpcServer;
 import io.deephaven.ssl.config.CiphersIntermediate;
@@ -12,10 +13,10 @@ import io.deephaven.ssl.config.TrustJdk;
 import io.deephaven.ssl.config.impl.KickstartUtils;
 import io.grpc.InternalStatus;
 import io.grpc.internal.GrpcUtil;
+import io.grpc.servlet.jakarta.web.GrpcWebFilter;
 import io.grpc.servlet.web.websocket.GrpcWebsocket;
 import io.grpc.servlet.web.websocket.MultiplexedWebSocketServerStream;
 import io.grpc.servlet.web.websocket.WebSocketServerStream;
-import io.grpc.servlet.jakarta.web.GrpcWebFilter;
 import jakarta.servlet.DispatcherType;
 import jakarta.websocket.Endpoint;
 import jakarta.websocket.server.ServerEndpointConfig;
@@ -36,7 +37,6 @@ import org.eclipse.jetty.io.Connection;
 import org.eclipse.jetty.security.ConstraintSecurityHandler;
 import org.eclipse.jetty.server.ForwardedRequestCustomizer;
 import org.eclipse.jetty.server.Handler;
-import org.eclipse.jetty.server.HandlerContainer;
 import org.eclipse.jetty.server.HttpConfiguration;
 import org.eclipse.jetty.server.HttpConnectionFactory;
 import org.eclipse.jetty.server.SecureRequestCustomizer;
@@ -77,6 +77,7 @@ import static io.grpc.servlet.web.websocket.WebSocketServerStream.GRPC_WEBSOCKET
 import static org.eclipse.jetty.servlet.ServletContextHandler.NO_SESSIONS;
 
 public class JettyBackedGrpcServer implements GrpcServer {
+    private static final String JS_PLUGINS_PATH_SPEC = "/" + JsPlugins.JS_PLUGINS + "/*";
 
     private final Server jetty;
     private final boolean websocketsEnabled;
@@ -170,6 +171,16 @@ public class JettyBackedGrpcServer implements GrpcServer {
         // Wire up the provided grpc filter
         context.addFilter(new FilterHolder(filter), "/*", EnumSet.noneOf(DispatcherType.class));
 
+        final JsPluginsZipFilesystem fs;
+        try {
+            fs = JsPlugins.initJsPlugins(Configuration.getInstance());
+        } catch (IOException e) {
+            throw new UncheckedIOException(e);
+        }
+
+        // Wire up /js-plugins/*
+        context.addServlet(fs.servletHolder("js-plugins"), JS_PLUGINS_PATH_SPEC);
+
         // Set up websockets for grpc-web - depending on configuration, we can register both in case we encounter a
         // client using "vanilla"
         // grpc-websocket, that can't multiplex all streams on a single socket
@@ -207,8 +218,7 @@ public class JettyBackedGrpcServer implements GrpcServer {
 
         // Note: handler order matters due to pathSpec order
         HandlerCollection handlers = new HandlerCollection();
-        // Set up /js-plugins/*
-        JsPlugins.maybeAdd(handlers::addHandler);
+
         // Set up /*
         handlers.addHandler(context);
 
