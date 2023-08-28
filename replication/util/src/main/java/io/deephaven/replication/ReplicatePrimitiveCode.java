@@ -4,12 +4,16 @@
 package io.deephaven.replication;
 
 import io.deephaven.base.verify.Require;
+import org.apache.commons.io.IOUtils;
 import org.jetbrains.annotations.NotNull;
 
 import java.io.*;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
+
+import static io.deephaven.replication.ReplicationUtils.findNoLocateRegions;
+import static io.deephaven.replication.ReplicationUtils.replaceRegion;
 
 public class ReplicatePrimitiveCode {
 
@@ -204,13 +208,13 @@ public class ReplicatePrimitiveCode {
                 "Object", "Object", "Object", "Object", "OBJECT");
     }
 
-    private static String intToChar(String sourceClassJavaPath, Map<String, Long> serialVersionUIDs,
+    public static String intToChar(String sourceClassJavaPath, Map<String, Long> serialVersionUIDs,
             String... exemptions) throws IOException {
         return replicateCodeBasedOnInt(sourceClassJavaPath, serialVersionUIDs, exemptions,
                 "Character", "Char", "char", "char", "CHAR");
     }
 
-    private static String intToByte(String sourceClassJavaPath, Map<String, Long> serialVersionUIDs,
+    public static String intToByte(String sourceClassJavaPath, Map<String, Long> serialVersionUIDs,
             String... exemptions) throws IOException {
         return replicateCodeBasedOnInt(sourceClassJavaPath, serialVersionUIDs, exemptions,
                 "Byte", "Byte", "byte", "byte", "BYTE");
@@ -222,7 +226,7 @@ public class ReplicatePrimitiveCode {
                 "Double", "Double", "double", "double", "DOUBLE");
     }
 
-    private static String intToFloat(String sourceClassJavaPath, Map<String, Long> serialVersionUIDs,
+    public static String intToFloat(String sourceClassJavaPath, Map<String, Long> serialVersionUIDs,
             String... exemptions) throws IOException {
         return replicateCodeBasedOnInt(sourceClassJavaPath, serialVersionUIDs, exemptions,
                 "Float", "Float", "float", "float", "FLOAT");
@@ -234,7 +238,7 @@ public class ReplicatePrimitiveCode {
                 "Long", "Long", "long", "long", "LONG");
     }
 
-    private static String intToShort(String sourceClassJavaPath, Map<String, Long> serialVersionUIDs,
+    public static String intToShort(String sourceClassJavaPath, Map<String, Long> serialVersionUIDs,
             String... exemptions) throws IOException {
         return replicateCodeBasedOnInt(sourceClassJavaPath, serialVersionUIDs, exemptions,
                 "Short", "Short", "short", "short", "SHORT");
@@ -361,19 +365,21 @@ public class ReplicatePrimitiveCode {
         charToShort(sourceClassJavaPath, serialVersionUIDs, exemptions);
     }
 
-    public static void charToAllButBooleanAndByte(String sourceClassJavaPath, String... exemptions)
+    public static List<String> charToAllButBooleanAndByte(String sourceClassJavaPath, String... exemptions)
             throws IOException {
-        charToAllButBooleanAndByte(sourceClassJavaPath, null, exemptions);
+        return charToAllButBooleanAndByte(sourceClassJavaPath, null, exemptions);
     }
 
-    private static void charToAllButBooleanAndByte(String sourceClassJavaPath,
+    private static List<String> charToAllButBooleanAndByte(String sourceClassJavaPath,
             Map<String, Long> serialVersionUIDs,
             String... exemptions) throws IOException {
-        charToDouble(sourceClassJavaPath, serialVersionUIDs, exemptions);
-        charToFloat(sourceClassJavaPath, serialVersionUIDs, exemptions);
-        charToInteger(sourceClassJavaPath, serialVersionUIDs, exemptions);
-        charToLong(sourceClassJavaPath, serialVersionUIDs, exemptions);
-        charToShort(sourceClassJavaPath, serialVersionUIDs, exemptions);
+        final List<String> files = new ArrayList<>();
+        files.add(charToDouble(sourceClassJavaPath, serialVersionUIDs, exemptions));
+        files.add(charToFloat(sourceClassJavaPath, serialVersionUIDs, exemptions));
+        files.add(charToInteger(sourceClassJavaPath, serialVersionUIDs, exemptions));
+        files.add(charToLong(sourceClassJavaPath, serialVersionUIDs, exemptions));
+        files.add(charToShort(sourceClassJavaPath, serialVersionUIDs, exemptions));
+        return files;
     }
 
     public static List<String> charToAllButBooleanAndFloats(String sourceClass, String... exemptions)
@@ -476,12 +482,20 @@ public class ReplicatePrimitiveCode {
         final String fullResultClassName = packageName + '.' + resultClassName;
         final Long serialVersionUID = serialVersionUIDs == null ? null : serialVersionUIDs.get(fullResultClassName);
         final String resultClassJavaPath = basePath(sourceClassJavaPath) + '/' + resultClassName + ".java";
-
+        final Map<String, List<String>> noReplicateParts = findNoLocateRegions(resultClassJavaPath);
 
         System.out.println("Generating java file " + resultClassJavaPath);
-        PrintWriter out = new PrintWriter(resultClassJavaPath);
-
         String body = replaceAllInternal(inputText.toString(), serialVersionUID, exemptions, pairs);
+        if (!noReplicateParts.isEmpty()) {
+            final StringReader sr = new StringReader(body);
+            List<String> lines = IOUtils.readLines(sr);
+            for (Map.Entry<String, List<String>> ent : noReplicateParts.entrySet()) {
+                lines = replaceRegion(lines, "@NoReplicate " + ent.getKey(), ent.getValue());
+            }
+            body = String.join("\n", lines);
+        }
+
+        PrintWriter out = new PrintWriter(resultClassJavaPath);
 
         // preserve the first comment of the file; typically the copyright
         if (body.startsWith("/*")) {

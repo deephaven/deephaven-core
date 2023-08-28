@@ -57,8 +57,10 @@ Currently, the R client is only supported on Ubuntu 20.04 or 22.04 and must be b
    https://github.com/deephaven/deephaven-core/blob/main/cpp-client/README.md.
    Follow the instructions at least to the point for "Build and install Deephaven C++ client".
    At that point you would have both the Deephaven C++ client and any C++ libraries it depends on,
-   all installed in a particular directory of your choosing.
-   Define an environment variable `DHCPP` and assign it an absolute path to that directory.
+   all installed in a particular directory of your choosing.  In what follows we assume that
+   directory is `/path/to/dhcpp`.   Independently of where that directory is in your
+   chosen installation, a file called `env.sh` should exist on it, and a `local` subdirectory
+   as well.
 
 2. Choose a directory where the Deephaven R client source code will live.
    Here, the source code will be downloaded into a new directory called `rdeephaven`.
@@ -73,20 +75,26 @@ Currently, the R client is only supported on Ubuntu 20.04 or 22.04 and must be b
    git pull origin main
    ```
 
-3. Ensure that the environment variables from the C++ client installation are set. Print them out with
-   these commands:
+3. Set environment variables from the C++ client installation required for building the package.
+   Use:
+   ```
+   source /path/to/dhcpp/env.sh
+   ```
+   where `/path/to/dhcpp` is the directory you created in step (1) above.
+   You can ensure the environment variables that are necessary for the steps
+   that follow are set by checking their values by running the commands:
+   
    ```
    echo $DHCPP
-   echo $DHCPP_LOCAL
-   echo $CMAKE_PREFIX_PATH
-   echo $NCPUS
    echo $LD_LIBRARY_PATH
    ```
-   If any or all of these are empty, set them as follows:
-   ```
-   export DHCPP=/path/to/dhcpp
-   source $DHCPP/env.sh
-   ```
+
+   Both environment libraries need to be defined for installing the package in the
+   instructions below.  Once the package is installed, you will only need
+   `LD_LIBRARY_PATH` to be set in the R session where you intend to use the `rdeephaven` library.
+   If you are starting R from the command line, you can set the environment variable as explained
+   above.  If you are using RStudio, see the note in the following point.
+
    Refer to the instructions on the C++ client installation for more details on the `dhcpp` directory.
 
 4. Start an R console inside the rdeephaven directory. In that console, install the dephaven client dependencies
@@ -103,45 +111,22 @@ Currently, the R client is only supported on Ubuntu 20.04 or 22.04 and must be b
    ---
    **NOTE**
 
-   If using RStudio for this step, the environment variables that were set in step 3 may not persist into the RStudio environment,
-   if it is not a child process of the process where the environment variables were set. Suppose that we have the following values
-   for the environment variables:
-   ```bash
-   > echo $DHCPP
-   ABC
+   If using RStudio for this step, the environment variables that were set in step 3 may not persist into the RStudio
+   R environment if RStudio is not a child process of the shell where the environment variables were set
+   (ie, if RStudio is not started from that same shell and after the environment variables are set in that shell).
+   R supports using a `.Renviron` file for settings like this.  You can generate the right content to add
+   to your .Renviron file (or for creating a new one) using the script under `etc/generate-dotRenviron-lines.sh`
 
-   > echo $DHCPP_LOCAL
-   123
+   You can create a new `.Renviron` file under the `deephave-core` directory with the lines producing by running
+   the `etc/generate-dotRenviron-lines.sh` in the same shell where you set the environment variables;
+   the script will give you the right content for the `.Renviron` file.
+   Then, create a new R project from the existing `deephaven-core` directory using RStudio, and the corresponding
+   R session will inherit all of the necessary environment variables for successful compilation.
 
-   > echo $CMAKE_PREFIX_PATH
-   XYZ
-
-   > echo $NCPUS
-   4
-
-   > echo $LD_LIBRARY_PATH
-   libpath
-   ```
-   Now, to resolve this issue, add the following file called `.Renviron` to the `deephaven-core` directory:
-   ```bash
-   DHCPP=ABC
-   DHCPP_LOCAL=123
-   CMAKE_PREFIX_PATH=XYZ
-   NCPUS=4
-   LD_LIBRARY_PATH=libpath
-   ```
-   Setting these to the _exact_ values of the environment variables is critical, as compilation will fail otherwise.
-
-   Then, create a new R project from the existing `deephaven-core` directory using RStudio, and the corresponding R session will inherit
-   all of the necessary environment variables for successful compilation.
-
-   If RStudio Server is being used, all of the above must be followed for successful compilation. _In addition_, the following line should
-   be added to `rserver.conf`:
-   ```
-   rsession-ld-library-path=libpath
-   ```
-   where `libpath` is the actual value of the `LD_LIBRARY_PATH` environment variable.
-   
+   If RStudio Server is being used, all of the above must be followed for successful compilation. _In addition_,
+   use the output from the script `etc/generate-rserverdotconf-lines.sh` and add them to the `rserver.conf` file
+   for the RStudio Server installation (the location of that file may depend on your particular RStudio server
+   installation, but a common location is `/etc/rstudio/rserver.conf`).
    ---
 
 6. Now, run
