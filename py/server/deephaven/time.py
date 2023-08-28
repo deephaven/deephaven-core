@@ -167,6 +167,9 @@ def to_j_time_zone(tz: Union[None, str, datetime.tzinfo, datetime.datetime]) -> 
         elif isinstance(tz, datetime.tzinfo):
             return _JDateTimeUtils.parseTimeZone(str(tz))
         elif isinstance(tz, datetime.datetime):
+            if not tz.tzname():
+                return _JDateTimeUtils.parseTimeZone(tz.astimezone().tzname())
+
             return _JDateTimeUtils.parseTimeZone(tz.tzname())
         else:
             raise Exception("Unsupported conversion: " + str(type(dt)) + " -> TimeZone")
@@ -290,6 +293,9 @@ def to_j_zdt(dt: Union[None, str, datetime.datetime, np.datetime64]) -> Optional
     Additionally, date time strings can be integer values that are nanoseconds, milliseconds, or seconds
     from the Epoch.  Expected date ranges are used to infer the units.
 
+    Converting a datetime.datetime to a ZonedDateTime will use the datetime's timezone information.
+    Converting a numpy.datetime64 to a ZonedDateTime will use the Deephaven default time zone.
+
     Args:
         dt (Union[None, str, datetime.datetime, np.datetime64]): A Python date time or date time string.  If None is
             provided, None is returned.
@@ -305,17 +311,14 @@ def to_j_zdt(dt: Union[None, str, datetime.datetime, np.datetime64]) -> Optional
             return None
         elif isinstance(dt, str):
             return _JDateTimeUtils.parseZonedDateTime(dt)
-        #TODO: support datetime types
-        # elif isinstance(dt, datetime.datetime):
-        #     epoch_time = dt.timestamp()
-        #     epoch_sec = int(epoch_time)
-        #     nanos = (epoch_time - epoch_sec) * 1000000000
-        #     return _JZonedDateTime.ofInstant(_JInstant.ofEpochSecond(epoch_sec, nanos), ***_JDateTimeUtils.timeZone())
-        # elif isinstance(dt, np.datetime64):
-        #     epoch_nanos = (dt - _epoch64).astype('timedelta64[ns]').astype(np.int64)
-        #     epoch_sec = epoch_nanos // 1000000000
-        #     nanos = epoch_nanos % 1000000000
-        #     return _JZonedDateTime.ofInstant(_JInstant.ofEpochSecond(epoch_sec, nanos), ***_JDateTimeUtils.timeZone())
+        elif isinstance(dt, datetime.datetime):
+            instant = to_j_instant(dt)
+            tz = to_j_time_zone(dt.tzinfo)
+            return _JZonedDateTime.ofInstant(instant, tz)
+        elif isinstance(dt, np.datetime64):
+            instant = to_j_instant(dt)
+            tz = _JDateTimeUtils.timeZone()
+            return _JZonedDateTime.ofInstant(instant, tz)
         else:
             raise Exception("Unsupported conversion: " + str(type(dt)) + " -> ZonedDateTime")
     except Exception as e:

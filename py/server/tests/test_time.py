@@ -81,6 +81,10 @@ class TimeTestCase(BaseTestCase):
         tz = to_j_time_zone(pytz)
         self.assertEqual(str(tz), "UTC")
 
+        pytz = datetime.datetime.now().astimezone()
+        tz = to_j_time_zone(pytz)
+        self.assertEqual(str(tz), "UTC")
+
         tz = to_j_time_zone(None)
         self.assertEqual(str(tz), "Etc/UTC")
 
@@ -175,10 +179,13 @@ class TimeTestCase(BaseTestCase):
         dt = to_j_zdt("2021-12-10T14:21:17.123456 ET")
         self.assertEqual(str(target), str(dt))
 
+        # 1 ns is a rounding error
+        target = _JDateTimeUtils.parseZonedDateTime("2021-12-10T14:21:17.123456001Z[Etc/UTC]")
         x = datetime.datetime(2021, 12, 10, 14, 21, 17, 123456)
         dt = to_j_zdt(x)
         self.assertEqual(str(target), str(dt))
 
+        target = _JDateTimeUtils.parseZonedDateTime("2021-12-10T14:21:17.123456Z[Etc/UTC]")
         x = np.datetime64(x)
         dt = to_j_zdt(x)
         self.assertEqual(str(target), str(dt))
