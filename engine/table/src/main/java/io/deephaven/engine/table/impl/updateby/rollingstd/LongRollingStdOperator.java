@@ -114,7 +114,10 @@ public class LongRollingStdOperator extends BaseDoubleUpdateByOperator {
                 final double valueSquareSum = valueSquareBuffer.evaluate();
                 final double valueSum = valueBuffer.evaluate();
 
-                final double variance = valueSquareSum / (count - 1) - valueSum * valueSum / count / (count - 1);
+                // When the values are extremely close to zero, the variance can be negative due to floating point
+                // rounding errors.  Use the absolute value to avoid NaNs in the output.
+                final double variance =
+                        Math.abs(valueSquareSum / (count - 1) - valueSum * valueSum / count / (count - 1));
                 final double std = Math.sqrt(variance);
 
                 outputValues.set(outIdx, std);
