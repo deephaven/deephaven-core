@@ -51,7 +51,13 @@ This is the easiest way to get started with Deephaven. For full instructions, se
 TL;DR:
 
 ```sh
+# Python
 docker run --rm --name deephaven -p 10000:10000 ghcr.io/deephaven/server:latest
+```
+
+```sh
+# Groovy
+docker run --rm name deephaven -p 10000:10000 ghcr.io/deephaven/server-slim:latest
 ```
 
 ### From Python
