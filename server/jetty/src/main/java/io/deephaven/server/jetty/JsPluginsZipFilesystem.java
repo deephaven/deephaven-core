@@ -12,6 +12,7 @@ import java.nio.file.FileSystem;
 import java.nio.file.FileSystems;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.nio.file.StandardCopyOption;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
@@ -97,11 +98,15 @@ class JsPluginsZipFilesystem {
     }
 
     private void writeManifest(FileSystem fs) throws IOException {
-        final Path manifestPath = fs.getPath(ZIP_ROOT, MANIFEST_JSON);
+        final Path tmpManifestPath = fs.getPath(ZIP_ROOT, MANIFEST_JSON + ".tmp");
         // jackson impl does buffering internally
-        try (final OutputStream out = Files.newOutputStream(manifestPath)) {
+        try (final OutputStream out = Files.newOutputStream(tmpManifestPath)) {
             new ObjectMapper().writeValue(out, JsManifest.of(plugins));
             out.flush();
         }
+        Files.move(tmpManifestPath, fs.getPath(ZIP_ROOT, MANIFEST_JSON),
+                StandardCopyOption.REPLACE_EXISTING,
+                StandardCopyOption.COPY_ATTRIBUTES,
+                StandardCopyOption.ATOMIC_MOVE);
     }
 }
