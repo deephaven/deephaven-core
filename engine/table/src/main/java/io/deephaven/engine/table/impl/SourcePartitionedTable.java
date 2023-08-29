@@ -196,7 +196,7 @@ public class SourcePartitionedTable extends PartitionedTableImpl {
                     refreshSizes ? refreshCombiner : null);
 
             // These can't be systemic or when they get notified on error,  they will crash the worker.
-            constituent.setAttribute(Table.SYSTEMIC_TABLE_ATTRIBUTE, false);
+            // constituent.setAttribute(Table.SYSTEMIC_TABLE_ATTRIBUTE, false);
             return applyTablePermissions.apply(constituent);
         }
 
@@ -248,7 +248,7 @@ public class SourcePartitionedTable extends PartitionedTableImpl {
         }
 
         private RowSet processRemovals(final TableLocationSubscriptionBuffer.LocationUpdate locationUpdate) {
-            final Set<ImmutableTableLocationKey> relevantRemovedLocations = locationUpdate.getPendingRemovedLocationKeys()
+            final Set<ImmutableTableLocationKey> relevantRemovedLocations = locationUpdate.getPendingRemovedLocations()
                     .stream()
                     .map(TableLocation::getKey)
                     .filter(locationKeyMatcher)

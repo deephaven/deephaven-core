@@ -36,20 +36,20 @@ public class TableLocationSubscriptionBuffer implements TableLocationProvider.Li
 
     public static final class LocationUpdate {
         private final Collection<ImmutableTableLocationKey> pendingAddedLocationKeys;
-        private final Collection<TableLocation> pendingRemovedLocationKeys;
+        private final Collection<TableLocation> pendingRemovedLocations;
 
         public LocationUpdate(@NotNull final Collection<ImmutableTableLocationKey> pendingAddedLocationKeys,
-                              @NotNull final Collection<TableLocation> pendingRemovedLocationKeys) {
+                              @NotNull final Collection<TableLocation> pendingRemovedLocations) {
             this.pendingAddedLocationKeys = pendingAddedLocationKeys;
-            this.pendingRemovedLocationKeys = pendingRemovedLocationKeys;
+            this.pendingRemovedLocations = pendingRemovedLocations;
         }
 
         public Collection<ImmutableTableLocationKey> getPendingAddedLocationKeys() {
             return pendingAddedLocationKeys;
         }
 
-        public Collection<TableLocation> getPendingRemovedLocationKeys() {
-            return pendingRemovedLocationKeys;
+        public Collection<TableLocation> getPendingRemovedLocations() {
+            return pendingRemovedLocations;
         }
     }
 

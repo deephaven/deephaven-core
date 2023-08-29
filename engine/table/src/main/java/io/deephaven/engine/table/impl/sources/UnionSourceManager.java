@@ -14,6 +14,7 @@ import io.deephaven.engine.table.iterators.ChunkedObjectColumnIterator;
 import io.deephaven.engine.table.iterators.ObjectColumnIterator;
 import io.deephaven.engine.updategraph.UpdateCommitter;
 import io.deephaven.engine.table.impl.*;
+import io.deephaven.util.MultiException;
 import io.deephaven.util.SafeCloseable;
 import io.deephaven.util.datastructures.linked.IntrusiveDoublyLinkedNode;
 import io.deephaven.util.datastructures.linked.IntrusiveDoublyLinkedQueue;
@@ -394,6 +395,8 @@ public class UnionSourceManager {
             advanceModified();
             advanceListener();
 
+            List<ConstituentTableErrorException> constituentExceptions = null;
+
             while (nextCurrentSlot < currConstituentCount || nextPreviousSlot < prevConstituentCount) {
                 // Removed constituent processing
                 if (nextPreviousSlot == nextRemovedSlot) {
@@ -418,7 +421,11 @@ public class UnionSourceManager {
                         processRemove(nextModifiedPreviousValue);
                         processAdd(nextCurrentValue);
                     } else {
-                        processExisting(nextCurrentValue);
+                        try {
+                            processExisting(nextCurrentValue);
+                        } catch (ConstituentTableErrorException ex) {
+                            constituentExceptions = collectConstituentException(constituentExceptions, ex);
+                        }
                     }
                     advanceCurrent();
                     advanceModified();
@@ -427,11 +434,21 @@ public class UnionSourceManager {
                 }
                 // Existing constituent processing
                 else {
-                    processExisting(nextCurrentValue);
+                    try {
+                        processExisting(nextCurrentValue);
+                    } catch (ConstituentTableErrorException ex) {
+                        constituentExceptions = collectConstituentException(constituentExceptions, ex);
+                    }
                     advanceCurrent();
                     ++nextCurrentSlot;
                     ++nextPreviousSlot;
                 }
+            }
+
+            if(constituentExceptions != null) {
+                throw new UncheckedDeephavenException(
+                        new MultiException("Errors occurred processing constituent tables:",
+                                constituentExceptions.toArray(Throwable[]::new)));
             }
 
             Assert.eq(nextCurrentKey, "nextCurrentKey", NULL_ROW_KEY, "NULL_ROW_KEY");
@@ -456,6 +473,16 @@ public class UnionSourceManager {
                     downstreamModified,
                     downstreamShiftBuilder.build(),
                     modifiedColumnSet);
+        }
+
+        private List<ConstituentTableErrorException> collectConstituentException(@Nullable List<ConstituentTableErrorException> exceptions,
+                                                                                 @NotNull final ConstituentTableErrorException exception) {
+            if(exceptions == null) {
+                exceptions = new ArrayList<>();
+            }
+
+            exceptions.add(exception);
+            return exceptions;
         }
 
         private void processRemove(@NotNull final Table removedConstituent) {
@@ -510,7 +537,7 @@ public class UnionSourceManager {
 
                 // Make sure we propagate any actual error on to the listeners
                 if(nextListener.error != null) {
-                    throw new UncheckedDeephavenException(nextListener.error);
+                    throw new ConstituentTableErrorException(nextListener.getReferentDescription(), nextListener.error);
                 }
 
                 changes = nextListener.getUpdate();
