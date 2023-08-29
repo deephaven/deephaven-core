@@ -660,11 +660,11 @@ test_that("udb_emmax_time behaves as expected", {
 #   
 #   data$client$close()
 # })
-
-test_that("udb_emstd_time behaves as expected", {
-  data <- setup()
-  data$client$close()
-})
+# 
+# test_that("udb_emstd_time behaves as expected", {
+#   data <- setup()
+#   data$client$close()
+# })
 
 test_that("udb_roll_sum_tick behaves as expected", {
   data <- setup()
