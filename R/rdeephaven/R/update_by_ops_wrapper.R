@@ -146,12 +146,12 @@ udb_roll_sum_tick <- function(cols, rev_ticks, fwd_ticks = 0) {
 }
 
 #' @export
-udb_roll_sum_time <- function(ts_col, cols, rev_time, fwd_time) {
+udb_roll_sum_time <- function(ts_col, cols, rev_time, fwd_time = "PT0s") {
   verify_string("ts_col", ts_col, TRUE)
   verify_string("cols", cols, FALSE)
   verify_string("rev_time", rev_time, TRUE)
   verify_string("fwd_time", fwd_time, TRUE)
-  return(UpdateByOp$new(INTERNAL_rolling_sum_time(ts_col, cols, rev_time, fwd_time)))
+  return(UpdateByOp$new(INTERNAL_rolling_sum_time(ts_col, cols, rev_time, fwd_time))
 }
 
 #' @export
@@ -163,7 +163,7 @@ udb_roll_group_tick <- function(cols, rev_ticks, fwd_ticks = 0) {
 }
 
 #' @export
-udb_roll_group_time <- function(ts_col, cols, rev_time, fwd_time) {
+udb_roll_group_time <- function(ts_col, cols, rev_time, fwd_time = "PT0s") {
   verify_string("ts_col", ts_col, TRUE)
   verify_string("cols", cols, FALSE)
   verify_string("rev_time", rev_time, TRUE)
@@ -180,7 +180,7 @@ udb_roll_avg_tick <- function(cols, rev_ticks, fwd_ticks = 0) {
 }
 
 #' @export
-udb_roll_avg_time <- function(ts_col, cols, rev_time, fwd_time) {
+udb_roll_avg_time <- function(ts_col, cols, rev_time, fwd_time = "PT0s") {
   verify_string("ts_col", ts_col, TRUE)
   verify_string("cols", cols, FALSE)
   verify_string("rev_time", rev_time, TRUE)
@@ -197,7 +197,7 @@ udb_roll_min_tick <- function(cols, rev_ticks, fwd_ticks = 0) {
 }
 
 #' @export
-udb_roll_min_time <- function(ts_col, cols, rev_time, fwd_time) {
+udb_roll_min_time <- function(ts_col, cols, rev_time, fwd_time = "PT0s") {
   verify_string("ts_col", ts_col, TRUE)
   verify_string("cols", cols, FALSE)
   verify_string("rev_time", rev_time, TRUE)
@@ -214,7 +214,7 @@ udb_roll_max_tick <- function(cols, rev_ticks, fwd_ticks = 0) {
 }
 
 #' @export
-udb_roll_max_time <- function(ts_col, cols, rev_time, fwd_time) {
+udb_roll_max_time <- function(ts_col, cols, rev_time, fwd_time = "PT0s") {
   verify_string("ts_col", ts_col, TRUE)
   verify_string("cols", cols, FALSE)
   verify_string("rev_time", rev_time, TRUE)
@@ -231,7 +231,7 @@ udb_roll_prod_tick <- function(cols, rev_ticks, fwd_ticks = 0) {
 }
 
 #' @export
-udb_roll_prod_time <- function(ts_col, cols, rev_time, fwd_time) {
+udb_roll_prod_time <- function(ts_col, cols, rev_time, fwd_time = "PT0s") {
   verify_string("ts_col", ts_col, TRUE)
   verify_string("cols", cols, FALSE)
   verify_string("rev_time", rev_time, TRUE)
@@ -248,7 +248,7 @@ udb_roll_count_tick <- function(cols, rev_ticks, fwd_ticks = 0) {
 }
 
 #' @export
-udb_roll_count_time <- function(ts_col, cols, rev_time, fwd_time) {
+udb_roll_count_time <- function(ts_col, cols, rev_time, fwd_time = "PT0s") {
   verify_string("ts_col", ts_col, TRUE)
   verify_string("cols", cols, FALSE)
   verify_string("rev_time", rev_time, TRUE)
@@ -265,7 +265,7 @@ udb_roll_std_tick <- function(cols, rev_ticks, fwd_ticks = 0) {
 }
 
 #' @export
-udb_roll_std_time <- function(ts_col, cols, rev_time, fwd_time) {
+udb_roll_std_time <- function(ts_col, cols, rev_time, fwd_time = "PT0s") {
   verify_string("ts_col", ts_col, TRUE)
   verify_string("cols", cols, FALSE)
   verify_string("rev_time", rev_time, TRUE)
@@ -283,7 +283,7 @@ udb_roll_wavg_tick <- function(wcol, cols, rev_ticks, fwd_ticks = 0) {
 }
 
 #' @export
-udb_roll_wavg_time <- function(ts_col, wcol, cols, rev_time, fwd_time) {
+udb_roll_wavg_time <- function(ts_col, wcol, cols, rev_time, fwd_time = "PT0s") {
   verify_string("ts_col", ts_col, TRUE)
   verify_string("wcol", wcol, TRUE)
   verify_string("cols", cols, FALSE)

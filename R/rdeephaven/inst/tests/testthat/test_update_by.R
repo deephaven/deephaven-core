@@ -2,6 +2,7 @@ library(testthat)
 library(dplyr)
 library(rdeephaven)
 library(lubridate)
+library(zoo)
 
 setup <- function() {
   df1 <- data.frame(
@@ -239,13 +240,13 @@ test_that("udb_cum_max behaves as expected", {
   data$client$close()
 })
 
-# TODO: These
+# TODO: This
 test_that("udb_forward_fill behaves as expected", {
   data <- setup()
   data$client$close()
 })
 
-# TODO: These
+# TODO: This
 test_that("udb_delta behaves as expected", {
   data <- setup()
   data$client$close()
@@ -668,6 +669,139 @@ test_that("udb_emmax_time behaves as expected", {
 
 test_that("udb_roll_sum_tick behaves as expected", {
   data <- setup()
+  
+  new_tb1a <- data$df1 %>%
+    mutate(dbl_col = rollapply(dbl_col, 3, sum, partial = TRUE, align = "right"))
+  new_th1a <- data$th1$
+    update_by(udb_roll_sum_tick("dbl_col", rev_ticks = 3))
+  expect_equal(as.data.frame(new_th1a), as.data.frame(new_tb1a))
+  
+  new_tb1b <- data$df1 %>%
+    mutate(dbl_col = rollapply(dbl_col, 3, sum, partial = TRUE, align = "left"))
+  new_th1b <- data$th1$
+    update_by(udb_roll_sum_tick("dbl_col", rev_ticks = 1, fwd_ticks = 2))
+  expect_equal(as.data.frame(new_th1b), as.data.frame(new_tb1b))
+  
+  new_tb1c <- data$df1 %>%
+    mutate(dbl_col = rollapply(dbl_col, 3, sum, partial = TRUE, align = "center"))
+  new_th1c <- data$th1$
+    update_by(udb_roll_sum_tick("dbl_col", rev_ticks = 2, fwd_ticks = 1))
+  expect_equal(as.data.frame(new_th1c), as.data.frame(new_tb1c))
+  
+  new_tb2a <- data$df2 %>%
+    mutate(col1 = rollapply(col1, 5, sum, partial = TRUE, align = "right"),
+           col3 = rollapply(col3, 5, sum, partial = TRUE, align = "right"))
+  new_th2a <- data$th2$
+    update_by(udb_roll_sum_tick(c("col1", "col3"), rev_ticks = 5))
+  expect_equal(as.data.frame(new_th2a), as.data.frame(new_tb2a))
+  
+  new_tb2b <- data$df2 %>%
+    mutate(col1 = rollapply(col1, 5, sum, partial = TRUE, align = "left"),
+           col3 = rollapply(col3, 5, sum, partial = TRUE, align = "left"))
+  new_th2b <- data$th2$
+    update_by(udb_roll_sum_tick(c("col1", "col3"), rev_ticks = 1, fwd_ticks = 4))
+  expect_equal(as.data.frame(new_th2b), as.data.frame(new_tb2b))
+  
+  new_tb2c <- data$df2 %>%
+    mutate(col1 = rollapply(col1, 5, sum, partial = TRUE, align = "center"),
+           col3 = rollapply(col3, 5, sum, partial = TRUE, align = "center"))
+  new_th2c <- data$th2$
+    update_by(udb_roll_sum_tick(c("col1", "col3"), rev_ticks = 3, fwd_ticks = 2))
+  expect_equal(as.data.frame(new_th2c), as.data.frame(new_tb2c))
+  
+  new_tb3a <- data$df3 %>%
+    group_by(bool_col) %>%
+    mutate(int_col = rollapply(int_col, 9, sum, partial = TRUE, align = "right"))
+  new_th3a <- data$th3$
+    update_by(udb_roll_sum_tick("int_col", rev_ticks = 9), by = "bool_col")
+  expect_equal(as.data.frame(new_th3a), as.data.frame(new_tb3a))
+  
+  new_tb3b <- data$df3 %>%
+    group_by(bool_col) %>%
+    mutate(int_col = rollapply(int_col, 9, sum, partial = TRUE, align = "left"))
+  new_th3b <- data$th3$
+    update_by(udb_roll_sum_tick("int_col", rev_ticks = 1, fwd_ticks = 8), by = "bool_col")
+  expect_equal(as.data.frame(new_th3b), as.data.frame(new_tb3b))
+  
+  new_tb3c <- data$df3 %>%
+    group_by(bool_col) %>%
+    mutate(int_col = rollapply(int_col, 9, sum, partial = TRUE, align = "center"))
+  new_th3c <- data$th3$
+    update_by(udb_roll_sum_tick("int_col", rev_ticks = 5, fwd_ticks = 4), by = "bool_col")
+  expect_equal(as.data.frame(new_th3c), as.data.frame(new_tb3c))
+  
+  new_tb4a <- data$df4 %>%
+    group_by(X) %>%
+    mutate(Number1 = rollapply(Number1, 3, sum, partial = TRUE, align = "right"),
+           Number2 = rollapply(Number2, 3, sum, partial = TRUE, align = "right"))
+  new_th4a <- data$th4$
+    update_by(udb_roll_sum_tick(c("Number1", "Number2"), rev_ticks = 3), by = "X")
+  expect_equal(as.data.frame(new_th4a), as.data.frame(new_tb4a))
+  
+  new_tb4b <- data$df4 %>%
+    group_by(X) %>%
+    mutate(Number1 = rollapply(Number1, 3, sum, partial = TRUE, align = "left"),
+           Number2 = rollapply(Number2, 3, sum, partial = TRUE, align = "left"))
+  new_th4b <- data$th4$
+    update_by(udb_roll_sum_tick(c("Number1", "Number2"), rev_ticks = 1, fwd_ticks = 2), by = "X")
+  expect_equal(as.data.frame(new_th4b), as.data.frame(new_tb4b))
+  
+  new_tb4c <- data$df4 %>%
+    group_by(X) %>%
+    mutate(Number1 = rollapply(Number1, 3, sum, partial = TRUE, align = "center"),
+           Number2 = rollapply(Number2, 3, sum, partial = TRUE, align = "center"))
+  new_th4c <- data$th4$
+    update_by(udb_roll_sum_tick(c("Number1", "Number2"), rev_ticks = 2, fwd_ticks = 1), by = "X")
+  expect_equal(as.data.frame(new_th4c), as.data.frame(new_tb4c))
+  
+  new_tb5a <- data$df5 %>%
+    group_by(Y) %>%
+    mutate(Number1 = rollapply(Number1, 3, sum, partial = TRUE, align = "right"),
+           Number2 = rollapply(Number2, 3, sum, partial = TRUE, align = "right"))
+  new_th5a <- data$th5$
+    update_by(udb_roll_sum_tick(c("Number1", "Number2"), rev_ticks = 3), by = "Y")
+  expect_equal(as.data.frame(new_th5a), as.data.frame(new_tb5a))
+  
+  new_tb5b <- data$df5 %>%
+    group_by(Y) %>%
+    mutate(Number1 = rollapply(Number1, 3, sum, partial = TRUE, align = "left"),
+           Number2 = rollapply(Number2, 3, sum, partial = TRUE, align = "left"))
+  new_th5b <- data$th5$
+    update_by(udb_roll_sum_tick(c("Number1", "Number2"), rev_ticks = 1, fwd_ticks = 2), by = "Y")
+  expect_equal(as.data.frame(new_th5b), as.data.frame(new_tb5b))
+  
+  new_tb5c <- data$df5 %>%
+    group_by(Y) %>%
+    mutate(Number1 = rollapply(Number1, 3, sum, partial = TRUE, align = "center"),
+           Number2 = rollapply(Number2, 3, sum, partial = TRUE, align = "center"))
+  new_th5c <- data$th5$
+    update_by(udb_roll_sum_tick(c("Number1", "Number2"), rev_ticks = 2, fwd_ticks = 1), by = "Y")
+  expect_equal(as.data.frame(new_th5c), as.data.frame(new_tb5c))
+  
+  new_tb6a <- rbind(data$df4, data$df5, data$df4, data$df5) %>%
+    group_by(X, Y) %>%
+    mutate(Number1 = rollapply(Number1, 3, sum, partial = TRUE, align = "right"),
+           Number2 = rollapply(Number2, 3, sum, partial = TRUE, align = "right"))
+  new_th6a <- merge_tables(data$th4, data$th5, data$th4, data$th5)$
+    update_by(udb_roll_sum_tick(c("Number1", "Number2"), rev_ticks = 3), by = c("X", "Y"))
+  expect_equal(as.data.frame(new_th6a), as.data.frame(new_tb6a))
+  
+  new_tb6b <- rbind(data$df4, data$df5, data$df4, data$df5) %>%
+    group_by(X, Y) %>%
+    mutate(Number1 = rollapply(Number1, 3, sum, partial = TRUE, align = "left"),
+           Number2 = rollapply(Number2, 3, sum, partial = TRUE, align = "left"))
+  new_th6b <- merge_tables(data$th4, data$th5, data$th4, data$th5)$
+    update_by(udb_roll_sum_tick(c("Number1", "Number2"), rev_ticks = 1, fwd_ticks = 2), by = c("X", "Y"))
+  expect_equal(as.data.frame(new_th6b), as.data.frame(new_tb6b))
+  
+  new_tb6c <- rbind(data$df4, data$df5, data$df4, data$df5) %>%
+    group_by(X, Y) %>%
+    mutate(Number1 = rollapply(Number1, 3, sum, partial = TRUE, align = "center"),
+           Number2 = rollapply(Number2, 3, sum, partial = TRUE, align = "center"))
+  new_th6c <- merge_tables(data$th4, data$th5, data$th4, data$th5)$
+    update_by(udb_roll_sum_tick(c("Number1", "Number2"), rev_ticks = 2, fwd_ticks = 1), by = c("X", "Y"))
+  expect_equal(as.data.frame(new_th6c), as.data.frame(new_tb6c))
+  
   data$client$close()
 })
 
@@ -678,6 +812,36 @@ test_that("udb_roll_sum_time behaves as expected", {
 
 test_that("udb_roll_group_tick behaves as expected", {
   data <- setup()
+  
+  right_group <- list(1.65,
+                    c(1.6500, 3.1234),
+                    c(1.6500, 3.1234, 100000.5000),
+                    c(3.1234, 100000.5000, 543.234567),
+                    c(100000.5000, 543.234567, 0.0000))
+  new_th1a <- data$th1$
+    update_by(udb_roll_group_tick("dbl_col_group = dbl_col", rev_ticks = 3))
+  expect_equal(as.list(as.data.frame(new_th1a)$dbl_col_group), right_group)
+  
+  
+  left_group <- list(c(1.6500, 3.1234, 100000.5000),
+                     c(3.1234, 100000.5000, 543.234567),
+                     c(100000.5000, 543.234567, 0.0000),
+                     c(543.234567, 0.0000),
+                     0)
+  new_th1b <- data$th1$
+    update_by(udb_roll_group_tick("dbl_col_group = dbl_col", rev_ticks = 1, fwd_ticks = 2))
+  expect_equal(as.list(as.data.frame(new_th1b)$dbl_col_group), left_group)
+  
+  
+  center_group <- list(c(1.6500, 3.1234),
+                       c(1.6500, 3.1234, 100000.5000),
+                       c(3.1234, 100000.5000, 543.234567),
+                       c(100000.5000, 543.234567, 0.0000),
+                       c(543.234567, 0.0000))
+  new_th1c <- data$th1$
+    update_by(udb_roll_group_tick("dbl_col_group = dbl_col", rev_ticks = 2, fwd_ticks = 1))
+  expect_equal(as.list(as.data.frame(new_th1c)$dbl_col_group), center_group)
+  
   data$client$close()
 })
 
@@ -688,6 +852,139 @@ test_that("udb_roll_group_time behaves as expected", {
 
 test_that("udb_roll_avg_tick behaves as expected", {
   data <- setup()
+  
+  new_tb1a <- data$df1 %>%
+    mutate(dbl_col = rollapply(dbl_col, 3, mean, partial = TRUE, align = "right"))
+  new_th1a <- data$th1$
+    update_by(udb_roll_avg_tick("dbl_col", rev_ticks = 3))
+  expect_equal(as.data.frame(new_th1a), as.data.frame(new_tb1a))
+  
+  new_tb1b <- data$df1 %>%
+    mutate(dbl_col = rollapply(dbl_col, 3, mean, partial = TRUE, align = "left"))
+  new_th1b <- data$th1$
+    update_by(udb_roll_avg_tick("dbl_col", rev_ticks = 1, fwd_ticks = 2))
+  expect_equal(as.data.frame(new_th1b), as.data.frame(new_tb1b))
+  
+  new_tb1c <- data$df1 %>%
+    mutate(dbl_col = rollapply(dbl_col, 3, mean, partial = TRUE, align = "center"))
+  new_th1c <- data$th1$
+    update_by(udb_roll_avg_tick("dbl_col", rev_ticks = 2, fwd_ticks = 1))
+  expect_equal(as.data.frame(new_th1c), as.data.frame(new_tb1c))
+  
+  new_tb2a <- data$df2 %>%
+    mutate(col1 = rollapply(col1, 5, mean, partial = TRUE, align = "right"),
+           col3 = rollapply(col3, 5, mean, partial = TRUE, align = "right"))
+  new_th2a <- data$th2$
+    update_by(udb_roll_avg_tick(c("col1", "col3"), rev_ticks = 5))
+  expect_equal(as.data.frame(new_th2a), as.data.frame(new_tb2a))
+  
+  new_tb2b <- data$df2 %>%
+    mutate(col1 = rollapply(col1, 5, mean, partial = TRUE, align = "left"),
+           col3 = rollapply(col3, 5, mean, partial = TRUE, align = "left"))
+  new_th2b <- data$th2$
+    update_by(udb_roll_avg_tick(c("col1", "col3"), rev_ticks = 1, fwd_ticks = 4))
+  expect_equal(as.data.frame(new_th2b), as.data.frame(new_tb2b))
+  
+  new_tb2c <- data$df2 %>%
+    mutate(col1 = rollapply(col1, 5, mean, partial = TRUE, align = "center"),
+           col3 = rollapply(col3, 5, mean, partial = TRUE, align = "center"))
+  new_th2c <- data$th2$
+    update_by(udb_roll_avg_tick(c("col1", "col3"), rev_ticks = 3, fwd_ticks = 2))
+  expect_equal(as.data.frame(new_th2c), as.data.frame(new_tb2c))
+  
+  new_tb3a <- data$df3 %>%
+    group_by(bool_col) %>%
+    mutate(int_col = rollapply(int_col, 9, mean, partial = TRUE, align = "right"))
+  new_th3a <- data$th3$
+    update_by(udb_roll_avg_tick("int_col", rev_ticks = 9), by = "bool_col")
+  expect_equal(as.data.frame(new_th3a), as.data.frame(new_tb3a))
+  
+  new_tb3b <- data$df3 %>%
+    group_by(bool_col) %>%
+    mutate(int_col = rollapply(int_col, 9, mean, partial = TRUE, align = "left"))
+  new_th3b <- data$th3$
+    update_by(udb_roll_avg_tick("int_col", rev_ticks = 1, fwd_ticks = 8), by = "bool_col")
+  expect_equal(as.data.frame(new_th3b), as.data.frame(new_tb3b))
+  
+  new_tb3c <- data$df3 %>%
+    group_by(bool_col) %>%
+    mutate(int_col = rollapply(int_col, 9, mean, partial = TRUE, align = "center"))
+  new_th3c <- data$th3$
+    update_by(udb_roll_avg_tick("int_col", rev_ticks = 5, fwd_ticks = 4), by = "bool_col")
+  expect_equal(as.data.frame(new_th3c), as.data.frame(new_tb3c))
+  
+  new_tb4a <- data$df4 %>%
+    group_by(X) %>%
+    mutate(Number1 = rollapply(Number1, 3, mean, partial = TRUE, align = "right"),
+           Number2 = rollapply(Number2, 3, mean, partial = TRUE, align = "right"))
+  new_th4a <- data$th4$
+    update_by(udb_roll_avg_tick(c("Number1", "Number2"), rev_ticks = 3), by = "X")
+  expect_equal(as.data.frame(new_th4a), as.data.frame(new_tb4a))
+  
+  new_tb4b <- data$df4 %>%
+    group_by(X) %>%
+    mutate(Number1 = rollapply(Number1, 3, mean, partial = TRUE, align = "left"),
+           Number2 = rollapply(Number2, 3, mean, partial = TRUE, align = "left"))
+  new_th4b <- data$th4$
+    update_by(udb_roll_avg_tick(c("Number1", "Number2"), rev_ticks = 1, fwd_ticks = 2), by = "X")
+  expect_equal(as.data.frame(new_th4b), as.data.frame(new_tb4b))
+  
+  new_tb4c <- data$df4 %>%
+    group_by(X) %>%
+    mutate(Number1 = rollapply(Number1, 3, mean, partial = TRUE, align = "center"),
+           Number2 = rollapply(Number2, 3, mean, partial = TRUE, align = "center"))
+  new_th4c <- data$th4$
+    update_by(udb_roll_avg_tick(c("Number1", "Number2"), rev_ticks = 2, fwd_ticks = 1), by = "X")
+  expect_equal(as.data.frame(new_th4c), as.data.frame(new_tb4c))
+  
+  new_tb5a <- data$df5 %>%
+    group_by(Y) %>%
+    mutate(Number1 = rollapply(Number1, 3, mean, partial = TRUE, align = "right"),
+           Number2 = rollapply(Number2, 3, mean, partial = TRUE, align = "right"))
+  new_th5a <- data$th5$
+    update_by(udb_roll_avg_tick(c("Number1", "Number2"), rev_ticks = 3), by = "Y")
+  expect_equal(as.data.frame(new_th5a), as.data.frame(new_tb5a))
+  
+  new_tb5b <- data$df5 %>%
+    group_by(Y) %>%
+    mutate(Number1 = rollapply(Number1, 3, mean, partial = TRUE, align = "left"),
+           Number2 = rollapply(Number2, 3, mean, partial = TRUE, align = "left"))
+  new_th5b <- data$th5$
+    update_by(udb_roll_avg_tick(c("Number1", "Number2"), rev_ticks = 1, fwd_ticks = 2), by = "Y")
+  expect_equal(as.data.frame(new_th5b), as.data.frame(new_tb5b))
+  
+  new_tb5c <- data$df5 %>%
+    group_by(Y) %>%
+    mutate(Number1 = rollapply(Number1, 3, mean, partial = TRUE, align = "center"),
+           Number2 = rollapply(Number2, 3, mean, partial = TRUE, align = "center"))
+  new_th5c <- data$th5$
+    update_by(udb_roll_avg_tick(c("Number1", "Number2"), rev_ticks = 2, fwd_ticks = 1), by = "Y")
+  expect_equal(as.data.frame(new_th5c), as.data.frame(new_tb5c))
+  
+  new_tb6a <- rbind(data$df4, data$df5, data$df4, data$df5) %>%
+    group_by(X, Y) %>%
+    mutate(Number1 = rollapply(Number1, 3, mean, partial = TRUE, align = "right"),
+           Number2 = rollapply(Number2, 3, mean, partial = TRUE, align = "right"))
+  new_th6a <- merge_tables(data$th4, data$th5, data$th4, data$th5)$
+    update_by(udb_roll_avg_tick(c("Number1", "Number2"), rev_ticks = 3), by = c("X", "Y"))
+  expect_equal(as.data.frame(new_th6a), as.data.frame(new_tb6a))
+  
+  new_tb6b <- rbind(data$df4, data$df5, data$df4, data$df5) %>%
+    group_by(X, Y) %>%
+    mutate(Number1 = rollapply(Number1, 3, mean, partial = TRUE, align = "left"),
+           Number2 = rollapply(Number2, 3, mean, partial = TRUE, align = "left"))
+  new_th6b <- merge_tables(data$th4, data$th5, data$th4, data$th5)$
+    update_by(udb_roll_avg_tick(c("Number1", "Number2"), rev_ticks = 1, fwd_ticks = 2), by = c("X", "Y"))
+  expect_equal(as.data.frame(new_th6b), as.data.frame(new_tb6b))
+  
+  new_tb6c <- rbind(data$df4, data$df5, data$df4, data$df5) %>%
+    group_by(X, Y) %>%
+    mutate(Number1 = rollapply(Number1, 3, mean, partial = TRUE, align = "center"),
+           Number2 = rollapply(Number2, 3, mean, partial = TRUE, align = "center"))
+  new_th6c <- merge_tables(data$th4, data$th5, data$th4, data$th5)$
+    update_by(udb_roll_avg_tick(c("Number1", "Number2"), rev_ticks = 2, fwd_ticks = 1), by = c("X", "Y"))
+  expect_equal(as.data.frame(new_th6c), as.data.frame(new_tb6c))
+  
   data$client$close()
 })
 
@@ -698,6 +995,139 @@ test_that("udb_roll_avg_time behaves as expected", {
 
 test_that("udb_roll_min_tick behaves as expected", {
   data <- setup()
+  
+  new_tb1a <- data$df1 %>%
+    mutate(dbl_col = rollapply(dbl_col, 3, min, partial = TRUE, align = "right"))
+  new_th1a <- data$th1$
+    update_by(udb_roll_min_tick("dbl_col", rev_ticks = 3))
+  expect_equal(as.data.frame(new_th1a), as.data.frame(new_tb1a))
+  
+  new_tb1b <- data$df1 %>%
+    mutate(dbl_col = rollapply(dbl_col, 3, min, partial = TRUE, align = "left"))
+  new_th1b <- data$th1$
+    update_by(udb_roll_min_tick("dbl_col", rev_ticks = 1, fwd_ticks = 2))
+  expect_equal(as.data.frame(new_th1b), as.data.frame(new_tb1b))
+  
+  new_tb1c <- data$df1 %>%
+    mutate(dbl_col = rollapply(dbl_col, 3, min, partial = TRUE, align = "center"))
+  new_th1c <- data$th1$
+    update_by(udb_roll_min_tick("dbl_col", rev_ticks = 2, fwd_ticks = 1))
+  expect_equal(as.data.frame(new_th1c), as.data.frame(new_tb1c))
+  
+  new_tb2a <- data$df2 %>%
+    mutate(col1 = rollapply(col1, 5, min, partial = TRUE, align = "right"),
+           col3 = rollapply(col3, 5, min, partial = TRUE, align = "right"))
+  new_th2a <- data$th2$
+    update_by(udb_roll_min_tick(c("col1", "col3"), rev_ticks = 5))
+  expect_equal(as.data.frame(new_th2a), as.data.frame(new_tb2a))
+  
+  new_tb2b <- data$df2 %>%
+    mutate(col1 = rollapply(col1, 5, min, partial = TRUE, align = "left"),
+           col3 = rollapply(col3, 5, min, partial = TRUE, align = "left"))
+  new_th2b <- data$th2$
+    update_by(udb_roll_min_tick(c("col1", "col3"), rev_ticks = 1, fwd_ticks = 4))
+  expect_equal(as.data.frame(new_th2b), as.data.frame(new_tb2b))
+  
+  new_tb2c <- data$df2 %>%
+    mutate(col1 = rollapply(col1, 5, min, partial = TRUE, align = "center"),
+           col3 = rollapply(col3, 5, min, partial = TRUE, align = "center"))
+  new_th2c <- data$th2$
+    update_by(udb_roll_min_tick(c("col1", "col3"), rev_ticks = 3, fwd_ticks = 2))
+  expect_equal(as.data.frame(new_th2c), as.data.frame(new_tb2c))
+  
+  new_tb3a <- data$df3 %>%
+    group_by(bool_col) %>%
+    mutate(int_col = rollapply(int_col, 9, min, partial = TRUE, align = "right"))
+  new_th3a <- data$th3$
+    update_by(udb_roll_min_tick("int_col", rev_ticks = 9), by = "bool_col")
+  expect_equal(as.data.frame(new_th3a), as.data.frame(new_tb3a))
+  
+  new_tb3b <- data$df3 %>%
+    group_by(bool_col) %>%
+    mutate(int_col = rollapply(int_col, 9, min, partial = TRUE, align = "left"))
+  new_th3b <- data$th3$
+    update_by(udb_roll_min_tick("int_col", rev_ticks = 1, fwd_ticks = 8), by = "bool_col")
+  expect_equal(as.data.frame(new_th3b), as.data.frame(new_tb3b))
+  
+  new_tb3c <- data$df3 %>%
+    group_by(bool_col) %>%
+    mutate(int_col = rollapply(int_col, 9, min, partial = TRUE, align = "center"))
+  new_th3c <- data$th3$
+    update_by(udb_roll_min_tick("int_col", rev_ticks = 5, fwd_ticks = 4), by = "bool_col")
+  expect_equal(as.data.frame(new_th3c), as.data.frame(new_tb3c))
+  
+  new_tb4a <- data$df4 %>%
+    group_by(X) %>%
+    mutate(Number1 = rollapply(Number1, 3, min, partial = TRUE, align = "right"),
+           Number2 = rollapply(Number2, 3, min, partial = TRUE, align = "right"))
+  new_th4a <- data$th4$
+    update_by(udb_roll_min_tick(c("Number1", "Number2"), rev_ticks = 3), by = "X")
+  expect_equal(as.data.frame(new_th4a), as.data.frame(new_tb4a))
+  
+  new_tb4b <- data$df4 %>%
+    group_by(X) %>%
+    mutate(Number1 = rollapply(Number1, 3, min, partial = TRUE, align = "left"),
+           Number2 = rollapply(Number2, 3, min, partial = TRUE, align = "left"))
+  new_th4b <- data$th4$
+    update_by(udb_roll_min_tick(c("Number1", "Number2"), rev_ticks = 1, fwd_ticks = 2), by = "X")
+  expect_equal(as.data.frame(new_th4b), as.data.frame(new_tb4b))
+  
+  new_tb4c <- data$df4 %>%
+    group_by(X) %>%
+    mutate(Number1 = rollapply(Number1, 3, min, partial = TRUE, align = "center"),
+           Number2 = rollapply(Number2, 3, min, partial = TRUE, align = "center"))
+  new_th4c <- data$th4$
+    update_by(udb_roll_min_tick(c("Number1", "Number2"), rev_ticks = 2, fwd_ticks = 1), by = "X")
+  expect_equal(as.data.frame(new_th4c), as.data.frame(new_tb4c))
+  
+  new_tb5a <- data$df5 %>%
+    group_by(Y) %>%
+    mutate(Number1 = rollapply(Number1, 3, min, partial = TRUE, align = "right"),
+           Number2 = rollapply(Number2, 3, min, partial = TRUE, align = "right"))
+  new_th5a <- data$th5$
+    update_by(udb_roll_min_tick(c("Number1", "Number2"), rev_ticks = 3), by = "Y")
+  expect_equal(as.data.frame(new_th5a), as.data.frame(new_tb5a))
+  
+  new_tb5b <- data$df5 %>%
+    group_by(Y) %>%
+    mutate(Number1 = rollapply(Number1, 3, min, partial = TRUE, align = "left"),
+           Number2 = rollapply(Number2, 3, min, partial = TRUE, align = "left"))
+  new_th5b <- data$th5$
+    update_by(udb_roll_min_tick(c("Number1", "Number2"), rev_ticks = 1, fwd_ticks = 2), by = "Y")
+  expect_equal(as.data.frame(new_th5b), as.data.frame(new_tb5b))
+  
+  new_tb5c <- data$df5 %>%
+    group_by(Y) %>%
+    mutate(Number1 = rollapply(Number1, 3, min, partial = TRUE, align = "center"),
+           Number2 = rollapply(Number2, 3, min, partial = TRUE, align = "center"))
+  new_th5c <- data$th5$
+    update_by(udb_roll_min_tick(c("Number1", "Number2"), rev_ticks = 2, fwd_ticks = 1), by = "Y")
+  expect_equal(as.data.frame(new_th5c), as.data.frame(new_tb5c))
+  
+  new_tb6a <- rbind(data$df4, data$df5, data$df4, data$df5) %>%
+    group_by(X, Y) %>%
+    mutate(Number1 = rollapply(Number1, 3, min, partial = TRUE, align = "right"),
+           Number2 = rollapply(Number2, 3, min, partial = TRUE, align = "right"))
+  new_th6a <- merge_tables(data$th4, data$th5, data$th4, data$th5)$
+    update_by(udb_roll_min_tick(c("Number1", "Number2"), rev_ticks = 3), by = c("X", "Y"))
+  expect_equal(as.data.frame(new_th6a), as.data.frame(new_tb6a))
+  
+  new_tb6b <- rbind(data$df4, data$df5, data$df4, data$df5) %>%
+    group_by(X, Y) %>%
+    mutate(Number1 = rollapply(Number1, 3, min, partial = TRUE, align = "left"),
+           Number2 = rollapply(Number2, 3, min, partial = TRUE, align = "left"))
+  new_th6b <- merge_tables(data$th4, data$th5, data$th4, data$th5)$
+    update_by(udb_roll_min_tick(c("Number1", "Number2"), rev_ticks = 1, fwd_ticks = 2), by = c("X", "Y"))
+  expect_equal(as.data.frame(new_th6b), as.data.frame(new_tb6b))
+  
+  new_tb6c <- rbind(data$df4, data$df5, data$df4, data$df5) %>%
+    group_by(X, Y) %>%
+    mutate(Number1 = rollapply(Number1, 3, min, partial = TRUE, align = "center"),
+           Number2 = rollapply(Number2, 3, min, partial = TRUE, align = "center"))
+  new_th6c <- merge_tables(data$th4, data$th5, data$th4, data$th5)$
+    update_by(udb_roll_min_tick(c("Number1", "Number2"), rev_ticks = 2, fwd_ticks = 1), by = c("X", "Y"))
+  expect_equal(as.data.frame(new_th6c), as.data.frame(new_tb6c))
+  
   data$client$close()
 })
 
@@ -706,10 +1136,144 @@ test_that("udb_roll_min_time behaves as expected", {
   data$client$close()
 })
 
-test_that("udb_roll_max_tick behaves as expected", {
-  data <- setup()
-  data$client$close()
-})
+# TODO: Wait for bug fix
+# test_that("udb_roll_max_tick behaves as expected", {
+#   data <- setup()
+#   
+#   new_tb1a <- data$df1 %>%
+#     mutate(dbl_col = rollapply(dbl_col, 3, max, partial = TRUE, align = "right"))
+#   new_th1a <- data$th1$
+#     update_by(udb_roll_max_tick("dbl_col", rev_ticks = 3))
+#   expect_equal(as.data.frame(new_th1a), as.data.frame(new_tb1a))
+#   
+#   new_tb1b <- data$df1 %>%
+#     mutate(dbl_col = rollapply(dbl_col, 3, max, partial = TRUE, align = "left"))
+#   new_th1b <- data$th1$
+#     update_by(udb_roll_max_tick("dbl_col", rev_ticks = 1, fwd_ticks = 2))
+#   expect_equal(as.data.frame(new_th1b), as.data.frame(new_tb1b))
+#   
+#   new_tb1c <- data$df1 %>%
+#     mutate(dbl_col = rollapply(dbl_col, 3, max, partial = TRUE, align = "center"))
+#   new_th1c <- data$th1$
+#     update_by(udb_roll_max_tick("dbl_col", rev_ticks = 2, fwd_ticks = 1))
+#   expect_equal(as.data.frame(new_th1c), as.data.frame(new_tb1c))
+#   
+#   new_tb2a <- data$df2 %>%
+#     mutate(col1 = rollapply(col1, 5, max, partial = TRUE, align = "right"),
+#            col3 = rollapply(col3, 5, max, partial = TRUE, align = "right"))
+#   new_th2a <- data$th2$
+#     update_by(udb_roll_max_tick(c("col1", "col3"), rev_ticks = 5))
+#   expect_equal(as.data.frame(new_th2a), as.data.frame(new_tb2a))
+# 
+#   new_tb2b <- data$df2 %>%
+#     mutate(col1 = rollapply(col1, 5, max, partial = TRUE, align = "left"),
+#            col3 = rollapply(col3, 5, max, partial = TRUE, align = "left"))
+#   new_th2b <- data$th2$
+#     update_by(udb_roll_max_tick(c("col1", "col3"), rev_ticks = 1, fwd_ticks = 4))
+#   expect_equal(as.data.frame(new_th2b), as.data.frame(new_tb2b))
+# 
+#   new_tb2c <- data$df2 %>%
+#     mutate(col1 = rollapply(col1, 5, max, partial = TRUE, align = "center"),
+#            col3 = rollapply(col3, 5, max, partial = TRUE, align = "center"))
+#   new_th2c <- data$th2$
+#     update_by(udb_roll_max_tick(c("col1", "col3"), rev_ticks = 3, fwd_ticks = 2))
+#   expect_equal(as.data.frame(new_th2c), as.data.frame(new_tb2c))
+#   
+#   new_tb3a <- data$df3 %>%
+#     group_by(bool_col) %>%
+#     mutate(int_col = rollapply(int_col, 9, max, partial = TRUE, align = "right"))
+#   new_th3a <- data$th3$
+#     update_by(udb_roll_max_tick("int_col", rev_ticks = 9), by = "bool_col")
+#   expect_equal(as.data.frame(new_th3a), as.data.frame(new_tb3a))
+#   
+#   new_tb3b <- data$df3 %>%
+#     group_by(bool_col) %>%
+#     mutate(int_col = rollapply(int_col, 9, max, partial = TRUE, align = "left"))
+#   new_th3b <- data$th3$
+#     update_by(udb_roll_max_tick("int_col", rev_ticks = 1, fwd_ticks = 8), by = "bool_col")
+#   expect_equal(as.data.frame(new_th3b), as.data.frame(new_tb3b))
+#   
+#   new_tb3c <- data$df3 %>%
+#     group_by(bool_col) %>%
+#     mutate(int_col = rollapply(int_col, 9, max, partial = TRUE, align = "center"))
+#   new_th3c <- data$th3$
+#     update_by(udb_roll_max_tick("int_col", rev_ticks = 5, fwd_ticks = 4), by = "bool_col")
+#   expect_equal(as.data.frame(new_th3c), as.data.frame(new_tb3c))
+#   
+#   new_tb4a <- data$df4 %>%
+#     group_by(X) %>%
+#     mutate(Number1 = rollapply(Number1, 3, max, partial = TRUE, align = "right"),
+#            Number2 = rollapply(Number2, 3, max, partial = TRUE, align = "right"))
+#   new_th4a <- data$th4$
+#     update_by(udb_roll_max_tick(c("Number1", "Number2"), rev_ticks = 3), by = "X")
+#   expect_equal(as.data.frame(new_th4a), as.data.frame(new_tb4a))
+# 
+#   new_tb4b <- data$df4 %>%
+#     group_by(X) %>%
+#     mutate(Number1 = rollapply(Number1, 3, max, partial = TRUE, align = "left"),
+#            Number2 = rollapply(Number2, 3, max, partial = TRUE, align = "left"))
+#   new_th4b <- data$th4$
+#     update_by(udb_roll_max_tick(c("Number1", "Number2"), rev_ticks = 1, fwd_ticks = 2), by = "X")
+#   expect_equal(as.data.frame(new_th4b), as.data.frame(new_tb4b))
+# 
+#   new_tb4c <- data$df4 %>%
+#     group_by(X) %>%
+#     mutate(Number1 = rollapply(Number1, 3, max, partial = TRUE, align = "center"),
+#            Number2 = rollapply(Number2, 3, max, partial = TRUE, align = "center"))
+#   new_th4c <- data$th4$
+#     update_by(udb_roll_max_tick(c("Number1", "Number2"), rev_ticks = 2, fwd_ticks = 1), by = "X")
+#   expect_equal(as.data.frame(new_th4c), as.data.frame(new_tb4c))
+# 
+#   new_tb5a <- data$df5 %>%
+#     group_by(Y) %>%
+#     mutate(Number1 = rollapply(Number1, 3, max, partial = TRUE, align = "right"),
+#            Number2 = rollapply(Number2, 3, max, partial = TRUE, align = "right"))
+#   new_th5a <- data$th5$
+#     update_by(udb_roll_max_tick(c("Number1", "Number2"), rev_ticks = 3), by = "Y")
+#   expect_equal(as.data.frame(new_th5a), as.data.frame(new_tb5a))
+# 
+#   new_tb5b <- data$df5 %>%
+#     group_by(Y) %>%
+#     mutate(Number1 = rollapply(Number1, 3, max, partial = TRUE, align = "left"),
+#            Number2 = rollapply(Number2, 3, max, partial = TRUE, align = "left"))
+#   new_th5b <- data$th5$
+#     update_by(udb_roll_max_tick(c("Number1", "Number2"), rev_ticks = 1, fwd_ticks = 2), by = "Y")
+#   expect_equal(as.data.frame(new_th5b), as.data.frame(new_tb5b))
+# 
+#   new_tb5c <- data$df5 %>%
+#     group_by(Y) %>%
+#     mutate(Number1 = rollapply(Number1, 3, max, partial = TRUE, align = "center"),
+#            Number2 = rollapply(Number2, 3, max, partial = TRUE, align = "center"))
+#   new_th5c <- data$th5$
+#     update_by(udb_roll_max_tick(c("Number1", "Number2"), rev_ticks = 2, fwd_ticks = 1), by = "Y")
+#   expect_equal(as.data.frame(new_th5c), as.data.frame(new_tb5c))
+# 
+#   new_tb6a <- rbind(data$df4, data$df5, data$df4, data$df5) %>%
+#     group_by(X, Y) %>%
+#     mutate(Number1 = rollapply(Number1, 3, max, partial = TRUE, align = "right"),
+#            Number2 = rollapply(Number2, 3, max, partial = TRUE, align = "right"))
+#   new_th6a <- merge_tables(data$th4, data$th5, data$th4, data$th5)$
+#     update_by(udb_roll_max_tick(c("Number1", "Number2"), rev_ticks = 3), by = c("X", "Y"))
+#   expect_equal(as.data.frame(new_th6a), as.data.frame(new_tb6a))
+# 
+#   new_tb6b <- rbind(data$df4, data$df5, data$df4, data$df5) %>%
+#     group_by(X, Y) %>%
+#     mutate(Number1 = rollapply(Number1, 3, max, partial = TRUE, align = "left"),
+#            Number2 = rollapply(Number2, 3, max, partial = TRUE, align = "left"))
+#   new_th6b <- merge_tables(data$th4, data$th5, data$th4, data$th5)$
+#     update_by(udb_roll_max_tick(c("Number1", "Number2"), rev_ticks = 1, fwd_ticks = 2), by = c("X", "Y"))
+#   expect_equal(as.data.frame(new_th6b), as.data.frame(new_tb6b))
+# 
+#   new_tb6c <- rbind(data$df4, data$df5, data$df4, data$df5) %>%
+#     group_by(X, Y) %>%
+#     mutate(Number1 = rollapply(Number1, 3, max, partial = TRUE, align = "center"),
+#            Number2 = rollapply(Number2, 3, max, partial = TRUE, align = "center"))
+#   new_th6c <- merge_tables(data$th4, data$th5, data$th4, data$th5)$
+#     update_by(udb_roll_max_tick(c("Number1", "Number2"), rev_ticks = 2, fwd_ticks = 1), by = c("X", "Y"))
+#   expect_equal(as.data.frame(new_th6c), as.data.frame(new_tb6c))
+#   
+#   data$client$close()
+# })
 
 test_that("udb_roll_max_time behaves as expected", {
   data <- setup()
@@ -718,6 +1282,139 @@ test_that("udb_roll_max_time behaves as expected", {
 
 test_that("udb_roll_prod_tick behaves as expected", {
   data <- setup()
+  
+  new_tb1a <- data$df1 %>%
+    mutate(dbl_col = rollapply(dbl_col, 3, prod, partial = TRUE, align = "right"))
+  new_th1a <- data$th1$
+    update_by(udb_roll_prod_tick("dbl_col", rev_ticks = 3))
+  expect_equal(as.data.frame(new_th1a), as.data.frame(new_tb1a))
+  
+  new_tb1b <- data$df1 %>%
+    mutate(dbl_col = rollapply(dbl_col, 3, prod, partial = TRUE, align = "left"))
+  new_th1b <- data$th1$
+    update_by(udb_roll_prod_tick("dbl_col", rev_ticks = 1, fwd_ticks = 2))
+  expect_equal(as.data.frame(new_th1b), as.data.frame(new_tb1b))
+  
+  new_tb1c <- data$df1 %>%
+    mutate(dbl_col = rollapply(dbl_col, 3, prod, partial = TRUE, align = "center"))
+  new_th1c <- data$th1$
+    update_by(udb_roll_prod_tick("dbl_col", rev_ticks = 2, fwd_ticks = 1))
+  expect_equal(as.data.frame(new_th1c), as.data.frame(new_tb1c))
+  
+  new_tb2a <- data$df2 %>%
+    mutate(col1 = rollapply(col1, 5, prod, partial = TRUE, align = "right"),
+           col3 = rollapply(col3, 5, prod, partial = TRUE, align = "right"))
+  new_th2a <- data$th2$
+    update_by(udb_roll_prod_tick(c("col1", "col3"), rev_ticks = 5))
+  expect_equal(as.data.frame(new_th2a), as.data.frame(new_tb2a))
+  
+  new_tb2b <- data$df2 %>%
+    mutate(col1 = rollapply(col1, 5, prod, partial = TRUE, align = "left"),
+           col3 = rollapply(col3, 5, prod, partial = TRUE, align = "left"))
+  new_th2b <- data$th2$
+    update_by(udb_roll_prod_tick(c("col1", "col3"), rev_ticks = 1, fwd_ticks = 4))
+  expect_equal(as.data.frame(new_th2b), as.data.frame(new_tb2b))
+  
+  new_tb2c <- data$df2 %>%
+    mutate(col1 = rollapply(col1, 5, prod, partial = TRUE, align = "center"),
+           col3 = rollapply(col3, 5, prod, partial = TRUE, align = "center"))
+  new_th2c <- data$th2$
+    update_by(udb_roll_prod_tick(c("col1", "col3"), rev_ticks = 3, fwd_ticks = 2))
+  expect_equal(as.data.frame(new_th2c), as.data.frame(new_tb2c))
+  
+  new_tb3a <- data$df3 %>%
+    group_by(bool_col) %>%
+    mutate(int_col = rollapply(int_col, 9, prod, partial = TRUE, align = "right"))
+  new_th3a <- data$th3$
+    update_by(udb_roll_prod_tick("int_col", rev_ticks = 9), by = "bool_col")
+  expect_equal(as.data.frame(new_th3a), as.data.frame(new_tb3a))
+  
+  new_tb3b <- data$df3 %>%
+    group_by(bool_col) %>%
+    mutate(int_col = rollapply(int_col, 9, prod, partial = TRUE, align = "left"))
+  new_th3b <- data$th3$
+    update_by(udb_roll_prod_tick("int_col", rev_ticks = 1, fwd_ticks = 8), by = "bool_col")
+  expect_equal(as.data.frame(new_th3b), as.data.frame(new_tb3b))
+  
+  new_tb3c <- data$df3 %>%
+    group_by(bool_col) %>%
+    mutate(int_col = rollapply(int_col, 9, prod, partial = TRUE, align = "center"))
+  new_th3c <- data$th3$
+    update_by(udb_roll_prod_tick("int_col", rev_ticks = 5, fwd_ticks = 4), by = "bool_col")
+  expect_equal(as.data.frame(new_th3c), as.data.frame(new_tb3c))
+  
+  new_tb4a <- data$df4 %>%
+    group_by(X) %>%
+    mutate(Number1 = rollapply(Number1, 3, prod, partial = TRUE, align = "right"),
+           Number2 = rollapply(Number2, 3, prod, partial = TRUE, align = "right"))
+  new_th4a <- data$th4$
+    update_by(udb_roll_prod_tick(c("Number1", "Number2"), rev_ticks = 3), by = "X")
+  expect_equal(as.data.frame(new_th4a), as.data.frame(new_tb4a))
+  
+  new_tb4b <- data$df4 %>%
+    group_by(X) %>%
+    mutate(Number1 = rollapply(Number1, 3, prod, partial = TRUE, align = "left"),
+           Number2 = rollapply(Number2, 3, prod, partial = TRUE, align = "left"))
+  new_th4b <- data$th4$
+    update_by(udb_roll_prod_tick(c("Number1", "Number2"), rev_ticks = 1, fwd_ticks = 2), by = "X")
+  expect_equal(as.data.frame(new_th4b), as.data.frame(new_tb4b))
+  
+  new_tb4c <- data$df4 %>%
+    group_by(X) %>%
+    mutate(Number1 = rollapply(Number1, 3, prod, partial = TRUE, align = "center"),
+           Number2 = rollapply(Number2, 3, prod, partial = TRUE, align = "center"))
+  new_th4c <- data$th4$
+    update_by(udb_roll_prod_tick(c("Number1", "Number2"), rev_ticks = 2, fwd_ticks = 1), by = "X")
+  expect_equal(as.data.frame(new_th4c), as.data.frame(new_tb4c))
+  
+  new_tb5a <- data$df5 %>%
+    group_by(Y) %>%
+    mutate(Number1 = rollapply(Number1, 3, prod, partial = TRUE, align = "right"),
+           Number2 = rollapply(Number2, 3, prod, partial = TRUE, align = "right"))
+  new_th5a <- data$th5$
+    update_by(udb_roll_prod_tick(c("Number1", "Number2"), rev_ticks = 3), by = "Y")
+  expect_equal(as.data.frame(new_th5a), as.data.frame(new_tb5a))
+  
+  new_tb5b <- data$df5 %>%
+    group_by(Y) %>%
+    mutate(Number1 = rollapply(Number1, 3, prod, partial = TRUE, align = "left"),
+           Number2 = rollapply(Number2, 3, prod, partial = TRUE, align = "left"))
+  new_th5b <- data$th5$
+    update_by(udb_roll_prod_tick(c("Number1", "Number2"), rev_ticks = 1, fwd_ticks = 2), by = "Y")
+  expect_equal(as.data.frame(new_th5b), as.data.frame(new_tb5b))
+  
+  new_tb5c <- data$df5 %>%
+    group_by(Y) %>%
+    mutate(Number1 = rollapply(Number1, 3, prod, partial = TRUE, align = "center"),
+           Number2 = rollapply(Number2, 3, prod, partial = TRUE, align = "center"))
+  new_th5c <- data$th5$
+    update_by(udb_roll_prod_tick(c("Number1", "Number2"), rev_ticks = 2, fwd_ticks = 1), by = "Y")
+  expect_equal(as.data.frame(new_th5c), as.data.frame(new_tb5c))
+  
+  new_tb6a <- rbind(data$df4, data$df5, data$df4, data$df5) %>%
+    group_by(X, Y) %>%
+    mutate(Number1 = rollapply(Number1, 3, prod, partial = TRUE, align = "right"),
+           Number2 = rollapply(Number2, 3, prod, partial = TRUE, align = "right"))
+  new_th6a <- merge_tables(data$th4, data$th5, data$th4, data$th5)$
+    update_by(udb_roll_prod_tick(c("Number1", "Number2"), rev_ticks = 3), by = c("X", "Y"))
+  expect_equal(as.data.frame(new_th6a), as.data.frame(new_tb6a))
+  
+  new_tb6b <- rbind(data$df4, data$df5, data$df4, data$df5) %>%
+    group_by(X, Y) %>%
+    mutate(Number1 = rollapply(Number1, 3, prod, partial = TRUE, align = "left"),
+           Number2 = rollapply(Number2, 3, prod, partial = TRUE, align = "left"))
+  new_th6b <- merge_tables(data$th4, data$th5, data$th4, data$th5)$
+    update_by(udb_roll_prod_tick(c("Number1", "Number2"), rev_ticks = 1, fwd_ticks = 2), by = c("X", "Y"))
+  expect_equal(as.data.frame(new_th6b), as.data.frame(new_tb6b))
+  
+  new_tb6c <- rbind(data$df4, data$df5, data$df4, data$df5) %>%
+    group_by(X, Y) %>%
+    mutate(Number1 = rollapply(Number1, 3, prod, partial = TRUE, align = "center"),
+           Number2 = rollapply(Number2, 3, prod, partial = TRUE, align = "center"))
+  new_th6c <- merge_tables(data$th4, data$th5, data$th4, data$th5)$
+    update_by(udb_roll_prod_tick(c("Number1", "Number2"), rev_ticks = 2, fwd_ticks = 1), by = c("X", "Y"))
+  expect_equal(as.data.frame(new_th6c), as.data.frame(new_tb6c))
+  
   data$client$close()
 })
 
@@ -736,10 +1433,144 @@ test_that("udb_roll_count_time behaves as expected", {
   data$client$close()
 })
 
-test_that("udb_roll_std_tick behaves as expected", {
-  data <- setup()
-  data$client$close()
-})
+# TODO: Wait for bug fix
+# test_that("udb_roll_std_tick behaves as expected", {
+#   data <- setup()
+#   
+#   new_tb1a <- data$df1 %>%
+#     mutate(dbl_col = rollapply(dbl_col, 3, sd, partial = TRUE, align = "right"))
+#   new_th1a <- data$th1$
+#     update_by(udb_roll_std_tick("dbl_col", rev_ticks = 3))
+#   expect_equal(as.data.frame(new_th1a), as.data.frame(new_tb1a))
+#   
+#   new_tb1b <- data$df1 %>%
+#     mutate(dbl_col = rollapply(dbl_col, 3, sd, partial = TRUE, align = "left"))
+#   new_th1b <- data$th1$
+#     update_by(udb_roll_std_tick("dbl_col", rev_ticks = 1, fwd_ticks = 2))
+#   expect_equal(as.data.frame(new_th1b), as.data.frame(new_tb1b))
+#   
+#   new_tb1c <- data$df1 %>%
+#     mutate(dbl_col = rollapply(dbl_col, 3, sd, partial = TRUE, align = "center"))
+#   new_th1c <- data$th1$
+#     update_by(udb_roll_std_tick("dbl_col", rev_ticks = 2, fwd_ticks = 1))
+#   expect_equal(as.data.frame(new_th1c), as.data.frame(new_tb1c))
+#   
+#   new_tb2a <- data$df2 %>%
+#     mutate(col1 = rollapply(col1, 5, sd, partial = TRUE, align = "right"),
+#            col3 = rollapply(col3, 5, sd, partial = TRUE, align = "right"))
+#   new_th2a <- data$th2$
+#     update_by(udb_roll_std_tick(c("col1", "col3"), rev_ticks = 5))
+#   expect_equal(as.data.frame(new_th2a), as.data.frame(new_tb2a))
+#   
+#   new_tb2b <- data$df2 %>%
+#     mutate(col1 = rollapply(col1, 5, sd, partial = TRUE, align = "left"),
+#            col3 = rollapply(col3, 5, sd, partial = TRUE, align = "left"))
+#   new_th2b <- data$th2$
+#     update_by(udb_roll_std_tick(c("col1", "col3"), rev_ticks = 1, fwd_ticks = 4))
+#   expect_equal(as.data.frame(new_th2b), as.data.frame(new_tb2b))
+#   
+#   new_tb2c <- data$df2 %>%
+#     mutate(col1 = rollapply(col1, 5, sd, partial = TRUE, align = "center"),
+#            col3 = rollapply(col3, 5, sd, partial = TRUE, align = "center"))
+#   new_th2c <- data$th2$
+#     update_by(udb_roll_std_tick(c("col1", "col3"), rev_ticks = 3, fwd_ticks = 2))
+#   expect_equal(as.data.frame(new_th2c), as.data.frame(new_tb2c))
+#   
+#   new_tb3a <- data$df3 %>%
+#     group_by(bool_col) %>%
+#     mutate(int_col = rollapply(int_col, 9, sd, partial = TRUE, align = "right"))
+#   new_th3a <- data$th3$
+#     update_by(udb_roll_std_tick("int_col", rev_ticks = 9), by = "bool_col")
+#   expect_equal(as.data.frame(new_th3a), as.data.frame(new_tb3a))
+#   
+#   new_tb3b <- data$df3 %>%
+#     group_by(bool_col) %>%
+#     mutate(int_col = rollapply(int_col, 9, sd, partial = TRUE, align = "left"))
+#   new_th3b <- data$th3$
+#     update_by(udb_roll_std_tick("int_col", rev_ticks = 1, fwd_ticks = 8), by = "bool_col")
+#   expect_equal(as.data.frame(new_th3b), as.data.frame(new_tb3b))
+#   
+#   new_tb3c <- data$df3 %>%
+#     group_by(bool_col) %>%
+#     mutate(int_col = rollapply(int_col, 9, sd, partial = TRUE, align = "center"))
+#   new_th3c <- data$th3$
+#     update_by(udb_roll_std_tick("int_col", rev_ticks = 5, fwd_ticks = 4), by = "bool_col")
+#   expect_equal(as.data.frame(new_th3c), as.data.frame(new_tb3c))
+#   
+#   new_tb4a <- data$df4 %>%
+#     group_by(X) %>%
+#     mutate(Number1 = rollapply(Number1, 3, sd, partial = TRUE, align = "right"),
+#            Number2 = rollapply(Number2, 3, sd, partial = TRUE, align = "right"))
+#   new_th4a <- data$th4$
+#     update_by(udb_roll_std_tick(c("Number1", "Number2"), rev_ticks = 3), by = "X")
+#   expect_equal(as.data.frame(new_th4a), as.data.frame(new_tb4a))
+#   
+#   new_tb4b <- data$df4 %>%
+#     group_by(X) %>%
+#     mutate(Number1 = rollapply(Number1, 3, sd, partial = TRUE, align = "left"),
+#            Number2 = rollapply(Number2, 3, sd, partial = TRUE, align = "left"))
+#   new_th4b <- data$th4$
+#     update_by(udb_roll_std_tick(c("Number1", "Number2"), rev_ticks = 1, fwd_ticks = 2), by = "X")
+#   expect_equal(as.data.frame(new_th4b), as.data.frame(new_tb4b))
+#   
+#   new_tb4c <- data$df4 %>%
+#     group_by(X) %>%
+#     mutate(Number1 = rollapply(Number1, 3, sd, partial = TRUE, align = "center"),
+#            Number2 = rollapply(Number2, 3, sd, partial = TRUE, align = "center"))
+#   new_th4c <- data$th4$
+#     update_by(udb_roll_std_tick(c("Number1", "Number2"), rev_ticks = 2, fwd_ticks = 1), by = "X")
+#   expect_equal(as.data.frame(new_th4c), as.data.frame(new_tb4c))
+#   
+#   new_tb5a <- data$df5 %>%
+#     group_by(Y) %>%
+#     mutate(Number1 = rollapply(Number1, 3, sd, partial = TRUE, align = "right"),
+#            Number2 = rollapply(Number2, 3, sd, partial = TRUE, align = "right"))
+#   new_th5a <- data$th5$
+#     update_by(udb_roll_std_tick(c("Number1", "Number2"), rev_ticks = 3), by = "Y")
+#   expect_equal(as.data.frame(new_th5a), as.data.frame(new_tb5a))
+#   
+#   new_tb5b <- data$df5 %>%
+#     group_by(Y) %>%
+#     mutate(Number1 = rollapply(Number1, 3, sd, partial = TRUE, align = "left"),
+#            Number2 = rollapply(Number2, 3, sd, partial = TRUE, align = "left"))
+#   new_th5b <- data$th5$
+#     update_by(udb_roll_std_tick(c("Number1", "Number2"), rev_ticks = 1, fwd_ticks = 2), by = "Y")
+#   expect_equal(as.data.frame(new_th5b), as.data.frame(new_tb5b))
+#   
+#   new_tb5c <- data$df5 %>%
+#     group_by(Y) %>%
+#     mutate(Number1 = rollapply(Number1, 3, sd, partial = TRUE, align = "center"),
+#            Number2 = rollapply(Number2, 3, sd, partial = TRUE, align = "center"))
+#   new_th5c <- data$th5$
+#     update_by(udb_roll_std_tick(c("Number1", "Number2"), rev_ticks = 2, fwd_ticks = 1), by = "Y")
+#   expect_equal(as.data.frame(new_th5c), as.data.frame(new_tb5c))
+#   
+#   new_tb6a <- rbind(data$df4, data$df5, data$df4, data$df5) %>%
+#     group_by(X, Y) %>%
+#     mutate(Number1 = rollapply(Number1, 3, sd, partial = TRUE, align = "right"),
+#            Number2 = rollapply(Number2, 3, sd, partial = TRUE, align = "right"))
+#   new_th6a <- merge_tables(data$th4, data$th5, data$th4, data$th5)$
+#     update_by(udb_roll_std_tick(c("Number1", "Number2"), rev_ticks = 3), by = c("X", "Y"))
+#   expect_equal(as.data.frame(new_th6a), as.data.frame(new_tb6a))
+#   
+#   new_tb6b <- rbind(data$df4, data$df5, data$df4, data$df5) %>%
+#     group_by(X, Y) %>%
+#     mutate(Number1 = rollapply(Number1, 3, sd, partial = TRUE, align = "left"),
+#            Number2 = rollapply(Number2, 3, sd, partial = TRUE, align = "left"))
+#   new_th6b <- merge_tables(data$th4, data$th5, data$th4, data$th5)$
+#     update_by(udb_roll_std_tick(c("Number1", "Number2"), rev_ticks = 1, fwd_ticks = 2), by = c("X", "Y"))
+#   expect_equal(as.data.frame(new_th6b), as.data.frame(new_tb6b))
+#   
+#   new_tb6c <- rbind(data$df4, data$df5, data$df4, data$df5) %>%
+#     group_by(X, Y) %>%
+#     mutate(Number1 = rollapply(Number1, 3, sd, partial = TRUE, align = "center"),
+#            Number2 = rollapply(Number2, 3, sd, partial = TRUE, align = "center"))
+#   new_th6c <- merge_tables(data$th4, data$th5, data$th4, data$th5)$
+#     update_by(udb_roll_std_tick(c("Number1", "Number2"), rev_ticks = 2, fwd_ticks = 1), by = c("X", "Y"))
+#   expect_equal(as.data.frame(new_th6c), as.data.frame(new_tb6c))
+#   
+#   data$client$close()
+# })
 
 test_that("udb_roll_std_time behaves as expected", {
   data <- setup()
