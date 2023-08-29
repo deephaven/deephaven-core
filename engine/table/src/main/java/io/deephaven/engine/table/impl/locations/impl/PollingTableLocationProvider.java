@@ -48,9 +48,7 @@ public class PollingTableLocationProvider<TK extends TableKey, TLK extends Table
 
     @Override
     public void refresh() {
-        markLocationKeys();
         locationKeyFinder.findKeys(this::handleTableLocationKey);
-        sweepUnvisited();
         setInitialized();
     }
 

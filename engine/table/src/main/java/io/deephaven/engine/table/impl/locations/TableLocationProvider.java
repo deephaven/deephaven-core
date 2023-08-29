@@ -115,8 +115,10 @@ public interface TableLocationProvider extends NamedImplementation {
     /**
      * Remove the given table location.
      *
-     * @apiNote Use with caution: the intent is that when a {@link TableLocationProvider} is told that a location is gone, we should
-     * no longer provide it in the list of locations, and stop requesting size from downstream providers.
+     * @apiNote Use with caution: When this is called all subscribers to the specified location will be notified,
+     *          causing them to stop updating. Tables backed by those notifications will end up 'failed'.  This
+     *          location provider will continue to update other locations and will no longer provide or request
+     *          information about the deleted location.
      *
      * @param locationKey the TableLocation to remove
      */

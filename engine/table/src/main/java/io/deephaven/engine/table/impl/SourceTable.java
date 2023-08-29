@@ -138,7 +138,7 @@ public abstract class SourceTable<IMPL_TYPE extends SourceTable<IMPL_TYPE>> exte
                     final TableLocationSubscriptionBuffer locationBuffer =
                             new TableLocationSubscriptionBuffer(locationProvider);
                     final TableLocationSubscriptionBuffer.LocationUpdate locationUpdate = locationBuffer.processPending();
-                    assertNoLocationsRemoved(locationUpdate);
+                    throwIfLocationsRemoved(locationUpdate);
 
                     maybeAddLocations(locationUpdate.getPendingAddedLocationKeys());
                     updateSourceRegistrar.addSource(locationChangePoller = new LocationChangePoller(locationBuffer));
@@ -206,7 +206,7 @@ public abstract class SourceTable<IMPL_TYPE extends SourceTable<IMPL_TYPE>> exte
         protected void instrumentedRefresh() {
             try {
                 final TableLocationSubscriptionBuffer.LocationUpdate locationUpdate = locationBuffer.processPending();
-                assertNoLocationsRemoved(locationUpdate);
+                throwIfLocationsRemoved(locationUpdate);
                 maybeAddLocations(locationUpdate.getPendingAddedLocationKeys());
                 // NB: This class previously had functionality to notify "location listeners", but it was never used.
                 // Resurrect from git history if needed.
@@ -228,9 +228,9 @@ public abstract class SourceTable<IMPL_TYPE extends SourceTable<IMPL_TYPE>> exte
         }
     }
 
-    private static void assertNoLocationsRemoved(TableLocationSubscriptionBuffer.LocationUpdate locationUpdate) {
+    private void throwIfLocationsRemoved(TableLocationSubscriptionBuffer.LocationUpdate locationUpdate) {
         if(!locationUpdate.getPendingRemovedLocationKeys().isEmpty()) {
-            throw new TableDataException(SourceTable.class.getSimpleName() + " does not support removing locations");
+            throw new TableDataException(getClass().getSimpleName() + " does not support removing locations");
         }
     }
 

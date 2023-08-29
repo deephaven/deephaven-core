@@ -145,10 +145,6 @@ public class FilteredTableDataService extends AbstractTableDataService {
 
         @Override
         public void removeTableLocationKey(@NotNull final TableLocationKey locationKey) {
-            if (!locationKeyFilter.accept(locationKey)) {
-                return;
-            }
-
             inputProvider.removeTableLocationKey(locationKey);
         }
 

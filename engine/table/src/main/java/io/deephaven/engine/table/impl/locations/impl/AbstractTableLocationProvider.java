@@ -47,9 +47,6 @@ public abstract class AbstractTableLocationProvider
     private List<String> partitionKeys;
     private boolean locationCreatedRecorder;
 
-    // Used for Mark/Sweep of locations
-    private Set<TableLocationKey> unvisitedLocations;
-
     /**
      * Construct a provider as part of a service.
      *
@@ -118,6 +115,15 @@ public abstract class AbstractTableLocationProvider
             }
         }
     }
+
+    /**
+     * Called <i>after</i> a table location has been visited by {@link #handleTableLocationKey(TableLocationKey)}, but
+     * before notifications have been delivered to any subscriptions, if applicable. The default implementation does
+     * nothing, and may be overridden to implement additional features.
+     *
+     * @param locationKey the {@link TableLocationKey} that was visited.
+     */
+    protected void visitLocationKey(@NotNull final TableLocationKey locationKey) { }
 
     @NotNull
     private Object observeInsert(@NotNull final TableLocationKey locationKey) {
@@ -244,31 +250,6 @@ public abstract class AbstractTableLocationProvider
                     this, partitionKeys, locationKey.getPartitionKeys()));
         }
     }
-
-    // region Mark / Sweep support
-    protected final void markLocationKeys() {
-        if (unvisitedLocations != null && !unvisitedLocations.isEmpty()) {
-            throw new IllegalStateException("Locations have already been marked, but not swept.");
-        }
-
-        unvisitedLocations = new HashSet(getTableLocationKeys());
-    }
-
-    protected final void visitLocationKey(@NotNull final TableLocationKey key) {
-        if(unvisitedLocations != null) {
-            unvisitedLocations.remove(key);
-        }
-    }
-
-    protected final void sweepUnvisited() {
-        if (unvisitedLocations == null ) {
-            throw new IllegalStateException("Locations have not been marked, cannot sweep.");
-        }
-
-        unvisitedLocations.forEach(this::removeTableLocationKey);
-        unvisitedLocations = null;
-    }
-    // endregion
 
     /**
      * Key definition for {@link TableLocation} or {@link TableLocationKey} lookup by {@link TableLocationKey}.
