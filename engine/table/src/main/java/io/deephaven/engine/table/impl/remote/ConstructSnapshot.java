@@ -372,7 +372,9 @@ public class ConstructSnapshot {
          * @return Whether this thread currently holds a lock on {@code updateGraph}.
          */
         private static boolean locked(@NotNull final UpdateGraph updateGraph) {
-            return updateGraph.sharedLock().isHeldByCurrentThread()
+            return (updateGraph.clock().currentState() == LogicalClock.State.Updating
+                    && updateGraph.currentThreadProcessesUpdates())
+                    || updateGraph.sharedLock().isHeldByCurrentThread()
                     || updateGraph.exclusiveLock().isHeldByCurrentThread();
         }
 
