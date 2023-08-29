@@ -10,7 +10,8 @@ import org.jpy.PyObject;
  * single <a href='https://docs.python.org/3/glossary.html#term-strong-reference'>strong reference</a> that the PyObject
  * instance represents. This way, as long as PyObjectRefCountedNode instances are managed correctly by their parent
  * scope, the PyObject strong reference will be correctly released when the object is no longer used.
- * <p></p>
+ * <p>
+ * </p>
  * This class is experimental, and may be changed or moved in a future release to a new package.
  */
 public final class PyObjectRefCountedNode extends LivenessArtifact {
