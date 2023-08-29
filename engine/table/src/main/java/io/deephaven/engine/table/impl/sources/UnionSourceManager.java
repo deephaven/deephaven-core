@@ -447,7 +447,7 @@ public class UnionSourceManager {
 
             if(constituentExceptions != null) {
                 throw new UncheckedDeephavenException(
-                        new MultiException("Errors occurred processing constituent tables:",
+                        MultiException.maybeWrapInMultiException("Errors occurred processing constituent tables:",
                                 constituentExceptions.toArray(Throwable[]::new)));
             }
 

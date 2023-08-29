@@ -195,6 +195,8 @@ public class SourcePartitionedTable extends PartitionedTableImpl {
                     new SingleTableLocationProvider(tableLocation),
                     refreshSizes ? refreshCombiner : null);
 
+            // Be careful to propagate the systemic attribute properly to child tables
+            constituent.setAttribute(Table.SYSTEMIC_TABLE_ATTRIBUTE, result.isSystemicObject());
             return applyTablePermissions.apply(constituent);
         }
 
