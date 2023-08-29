@@ -195,8 +195,6 @@ public class SourcePartitionedTable extends PartitionedTableImpl {
                     new SingleTableLocationProvider(tableLocation),
                     refreshSizes ? refreshCombiner : null);
 
-            // These can't be systemic or when they get notified on error,  they will crash the worker.
-            // constituent.setAttribute(Table.SYSTEMIC_TABLE_ATTRIBUTE, false);
             return applyTablePermissions.apply(constituent);
         }
 
