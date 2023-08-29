@@ -294,6 +294,6 @@ with any additional questions or comments.
 
 ## License
 
-Copyright (c) Deephaven Data Labs. All rights reserved.
+Copyright © 2016-2023 Deephaven Data Labs and Patent Pending. All rights reserved.
 
 Provided under the [Deephaven Community License](LICENSE.md).

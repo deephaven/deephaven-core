@@ -40,6 +40,13 @@ Client <- R6Class("Client",
         } else {
           stop("Basic authentication was requested, but 'auth_token' was not provided, and at most one of 'username' or 'password' was provided. Please provide either 'username' and 'password', or 'auth_token'.")
         }
+      } else if (auth_type == "psk") {
+        if (auth_token != "") {
+          verify_string("auth_token", auth_token, TRUE)
+          options$set_custom_authentication("io.deephaven.authentication.psk.PskAuthenticationHandler", auth_token)
+        } else {
+          stop("Pre-shared key authentication was requested, but no 'auth_token' was provided.")
+        }
       } else {
         if (auth_token != "") {
           verify_string("auth_token", auth_token, TRUE)

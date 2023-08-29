@@ -13,6 +13,7 @@ import io.deephaven.chunk.CharChunk;
 import io.deephaven.chunk.WritableCharChunk;
 import io.deephaven.chunk.WritableChunk;
 import io.deephaven.chunk.attributes.Any;
+import io.deephaven.engine.table.Context;
 import io.deephaven.util.annotations.VisibleForTesting;
 
 /**
@@ -27,7 +28,7 @@ public class NullAwareCharTimsortDescendingKernel {
     }
 
     // region Context
-    public static class CharSortKernelContext<ATTR extends Any> {
+    public static class CharSortKernelContext<ATTR extends Any> implements Context {
         int minGallop;
         int runCount = 0;
         private final int [] runStarts;

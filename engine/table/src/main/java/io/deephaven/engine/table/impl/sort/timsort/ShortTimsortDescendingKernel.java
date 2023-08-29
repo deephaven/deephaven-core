@@ -12,6 +12,7 @@ import io.deephaven.chunk.ShortChunk;
 import io.deephaven.chunk.WritableShortChunk;
 import io.deephaven.chunk.WritableChunk;
 import io.deephaven.chunk.attributes.Any;
+import io.deephaven.engine.table.Context;
 import io.deephaven.util.annotations.VisibleForTesting;
 
 /**
@@ -26,7 +27,7 @@ public class ShortTimsortDescendingKernel {
     }
 
     // region Context
-    public static class ShortSortKernelContext<ATTR extends Any> {
+    public static class ShortSortKernelContext<ATTR extends Any> implements Context {
         int minGallop;
         int runCount = 0;
         private final int [] runStarts;
