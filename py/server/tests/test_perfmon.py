@@ -5,11 +5,13 @@
 import unittest
 
 from deephaven import empty_table
+from deephaven.liveness_scope import liveness_scope
 from deephaven.perfmon import process_info_log, process_metrics_log, server_state_log, \
     query_operation_performance_log, query_performance_log, update_performance_log, metrics_get_counters, \
     metrics_reset_counters
 from deephaven.perfmon import query_update_performance, query_performance, query_operation_performance, server_state
 from tests.testbase import BaseTestCase
+from test_helper import py_dh_session
 
 
 def create_some_counters():
@@ -19,6 +21,11 @@ def create_some_counters():
 
 
 class PerfmonTestCase(BaseTestCase):
+    def setUp(self) -> None:
+        ...
+
+    def tearDown(self) -> None:
+        ...
 
     def test_metrics_get_counters(self):
         metrics_reset_counters()

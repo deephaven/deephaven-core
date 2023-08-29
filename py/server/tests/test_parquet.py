@@ -24,11 +24,13 @@ class ParquetTestCase(BaseTestCase):
     @classmethod
     def setUpClass(cls):
         # define a junk table workspace directory
+        super().setUpClass()
         cls.temp_dir = tempfile.TemporaryDirectory()
 
     @classmethod
     def tearDownClass(cls):
         cls.temp_dir.cleanup()
+        super().tearDownClass()
 
     def test_crd(self):
         """ Test suite for reading, writing, and deleting a table to disk """
