@@ -62,8 +62,6 @@ public class MultiplexedWebSocketServerStream extends AbstractWebSocketServerStr
 
     public static final String GRPC_WEBSOCKETS_MULTIPLEX_PROTOCOL = "grpc-websockets-multiplex";
 
-    private final InternalLogId logId = InternalLogId.allocate(MultiplexedWebSocketServerStream.class, null);
-
     // No need to be thread-safe, this will only be accessed from the transport thread.
     private final Map<Integer, MultiplexedWebsocketStreamImpl> streams = new HashMap<>();
     private final boolean isTextRequest = false;// not supported yet
@@ -246,6 +244,8 @@ public class MultiplexedWebSocketServerStream extends AbstractWebSocketServerStr
 
         StatsTraceContext statsTraceCtx =
                 StatsTraceContext.newServerContext(streamTracerFactories, path, headers);
+
+        InternalLogId logId = InternalLogId.allocate(MultiplexedWebSocketServerStream.class, null);
 
         MultiplexedWebsocketStreamImpl stream =
                 new MultiplexedWebsocketStreamImpl(statsTraceCtx, maxInboundMessageSize, websocketSession, logId,
