@@ -5,12 +5,7 @@ package io.deephaven.engine.table.impl.lang;
 
 import com.github.javaparser.StaticJavaParser;
 import com.github.javaparser.TokenRange;
-import com.github.javaparser.ast.ArrayCreationLevel;
-import com.github.javaparser.ast.CompilationUnit;
-import com.github.javaparser.ast.ImportDeclaration;
-import com.github.javaparser.ast.Node;
-import com.github.javaparser.ast.NodeList;
-import com.github.javaparser.ast.PackageDeclaration;
+import com.github.javaparser.ast.*;
 import com.github.javaparser.ast.body.AnnotationDeclaration;
 import com.github.javaparser.ast.body.AnnotationMemberDeclaration;
 import com.github.javaparser.ast.body.ClassOrInterfaceDeclaration;
@@ -1546,7 +1541,7 @@ public final class QueryLanguageParser extends GenericVisitorAdapter<Class<?>, Q
             final BinaryExpr equalsExpr = new BinaryExpr(n.getLeft(), n.getRight(), BinaryExpr.Operator.EQUALS);
 
             final UnaryExpr newExpr = new UnaryExpr(equalsExpr, UnaryExpr.Operator.LOGICAL_COMPLEMENT);
-            newExpr.setComment(QueryLanguageParserComment.BINARY_OP_NEQ_CONVERSION_FLAG);
+            newExpr.setData(QueryLanguageParserDataKeys.BINARY_OP_NEQ_CONVERSION_FLAG, true);
             replaceChildExpression(origParent, n, newExpr);
 
 
@@ -1628,8 +1623,7 @@ public final class QueryLanguageParser extends GenericVisitorAdapter<Class<?>, Q
 
         final Class<?> ret = getTypeWithCaching(n.getExpression());
 
-        final boolean isNonequalOpOverload =
-                n.getComment().orElse(null) == QueryLanguageParserComment.BINARY_OP_NEQ_CONVERSION_FLAG;
+        final boolean isNonequalOpOverload = n.containsData(QueryLanguageParserDataKeys.BINARY_OP_NEQ_CONVERSION_FLAG);
         if (isNonequalOpOverload) {
             Assert.equals(ret, "ret", boolean.class, "boolean.class");
         }
@@ -1778,7 +1772,7 @@ public final class QueryLanguageParser extends GenericVisitorAdapter<Class<?>, Q
 
                 final String unboxingMethodName = unboxedExprType.getSimpleName() + "Cast";
                 final MethodCallExpr unboxingCastExpr = new MethodCallExpr(unboxingMethodName, origExprToCast);
-                unboxingCastExpr.setComment(QueryLanguageParserComment.NO_PARAMETER_REWRITING_FLAG);
+                unboxingCastExpr.setData(QueryLanguageParserDataKeys.NO_PARAMETER_REWRITING_FLAG, true);
                 // Set the unboxing MethodCallExpr as the target of the original CastExpr 'n'.
                 // Next, the CastExpr is replaced with another MethodCallExpr.
                 n.setExpression(unboxingCastExpr);
@@ -1812,7 +1806,7 @@ public final class QueryLanguageParser extends GenericVisitorAdapter<Class<?>, Q
             final MethodCallExpr primitiveCastExpr = new MethodCallExpr(castMethodName, finalExprToCast);
             if (ret.equals(unboxedExprType)) {
                 // tell parser not to rewrite this method call (only needed when unboxing)
-                primitiveCastExpr.setComment(QueryLanguageParserComment.NO_PARAMETER_REWRITING_FLAG);
+                primitiveCastExpr.setData(QueryLanguageParserDataKeys.NO_PARAMETER_REWRITING_FLAG, true);
             }
             replaceChildExpression(origParent, n, primitiveCastExpr);
             nothingPrintedAssertion.run();
@@ -2307,7 +2301,7 @@ public final class QueryLanguageParser extends GenericVisitorAdapter<Class<?>, Q
         final Expression[] convertedArgExpressions;
 
         // now do some parameter conversions...
-        if (n.getComment().orElse(null) != QueryLanguageParserComment.NO_PARAMETER_REWRITING_FLAG) {
+        if (!n.containsData(QueryLanguageParserDataKeys.NO_PARAMETER_REWRITING_FLAG)) {
             convertedArgExpressions =
                     convertParameters(method, argumentTypes, expressionTypes, typeArguments, argExpressions);
         } else {
@@ -2329,7 +2323,8 @@ public final class QueryLanguageParser extends GenericVisitorAdapter<Class<?>, Q
                 final MethodCallExpr callMethodCall =
                         new MethodCallExpr(n.getNameAsExpression(), "call", n.getArguments());
 
-                callMethodCall.setComment(new PyCallableDetailsComment(null, methodName));
+                callMethodCall.setData(QueryLanguageParserDataKeys.PY_CALLABLE_DETAILS,
+                        new PyCallableDetails(null, methodName));
 
                 replaceChildExpression(
                         n.getParentNode().orElseThrow(),
@@ -2378,8 +2373,8 @@ public final class QueryLanguageParser extends GenericVisitorAdapter<Class<?>, Q
                             "call",
                             n.getArguments());
 
-                    callMethodCall
-                            .setComment(new PyCallableDetailsComment(scopePrinter.builder.toString(), methodName));
+                    callMethodCall.setData(QueryLanguageParserDataKeys.PY_CALLABLE_DETAILS,
+                            new PyCallableDetails(scopePrinter.builder.toString(), methodName));
 
                     // Replace the original method call we were visit()ing with the new one
                     replaceChildExpression(
@@ -2449,41 +2444,33 @@ public final class QueryLanguageParser extends GenericVisitorAdapter<Class<?>, Q
         }
         Assert.equals(invokedMethodName, "invokedMethodName", "call");
 
-        final PyCallableDetailsComment pyCallableDetailsComment;
-        {
-            final Optional<Comment> pyMethodCallableCommentOptional = n.getComment();
-            if (pyMethodCallableCommentOptional.isEmpty()) {
-                // Currently, we can only vectorize Python method calls that were not explicitly wrapped by the user.
-                // Supported: `myPythonFunc(a, b, c)`
-                // Not supported: `new PyCallableWrapperJpyImpl(myPythonFunc).call(a, b, c)`
-                // Not supported: `myPyObj.myPythonFunc(a, b, c)`
-                // Not supported: `new PyCallableWrapperJpyImpl(myPyObj.getAttribute("myPythonFunc")).call(a, b, c)`
-                //
-                // (This is because additional information is stored in a PyCallableDetailsComment when the parser
-                // handles implicit calls.)
-                if (log.isDebugEnabled()) {
-                    log.debug().append("Python function call ")
-                            .append(n.toString())
-                            .append(" is not auto-vectorizable:")
-                            .append(" PyCallableDetailsComment not found.")
-                            .endl();
-                }
-                return;
+        if (!n.containsData(QueryLanguageParserDataKeys.PY_CALLABLE_DETAILS)) {
+            // Currently, we can only vectorize Python method calls that were not explicitly wrapped by the user.
+            // Supported: `myPythonFunc(a, b, c)`
+            // Not supported: `new PyCallableWrapperJpyImpl(myPythonFunc).call(a, b, c)`
+            // Not supported: `myPyObj.myPythonFunc(a, b, c)`
+            // Not supported: `new PyCallableWrapperJpyImpl(myPyObj.getAttribute("myPythonFunc")).call(a, b, c)`
+            //
+            // (This is because additional information is stored in a PyCallableDetails when the parser
+            // handles implicit calls.)
+            if (log.isDebugEnabled()) {
+                log.debug().append("Python function call ")
+                        .append(n.toString())
+                        .append(" is not auto-vectorizable:")
+                        .append(" PyCallableDetails not found.")
+                        .endl();
             }
-
-            final Comment pyMethodCallComment = pyMethodCallableCommentOptional.get();
-            Assert.instanceOf(pyMethodCallComment, "pyMethodCallComment", PyCallableDetailsComment.class);
-            pyCallableDetailsComment = (PyCallableDetailsComment) pyMethodCallComment;
+            return;
         }
+        final PyCallableDetails pyCallableDetails = n.getData(QueryLanguageParserDataKeys.PY_CALLABLE_DETAILS);
 
-
-        if (pyCallableDetailsComment.pythonScopeExpr != null) {
+        if (pyCallableDetails.pythonScopeExpr != null) {
             if (log.isDebugEnabled()) {
                 log.debug().append("Python function call ")
                         .append(n.toString())
                         .append(" is not auto-vectorizable:")
                         .append(" method call is scoped. Scope expression: ")
-                        .append(pyCallableDetailsComment.pythonScopeExpr)
+                        .append(pyCallableDetails.pythonScopeExpr)
                         .endl();
             }
             // Currently, only static Python method calls can be vectorized.
@@ -2492,7 +2479,7 @@ public final class QueryLanguageParser extends GenericVisitorAdapter<Class<?>, Q
             return;
         }
 
-        final String pyMethodName = pyCallableDetailsComment.pythonMethodName;
+        final String pyMethodName = pyCallableDetails.pythonMethodName;
         Assert.nonempty(pyMethodName, "pyMethodName");
 
         final QueryScope queryScope = ExecutionContext.getContext().getQueryScope();
@@ -3154,58 +3141,71 @@ public final class QueryLanguageParser extends GenericVisitorAdapter<Class<?>, Q
     }
 
     /**
-     * These are comments that are used as internal flags to control the parser's behavior. (Comments are not supported
-     * within DHQL expressions anyway.)
+     * These are {@link DataKey DataKeys} used for internal data that control the QueryLanguageParser's behavior.
      */
-    private static class QueryLanguageParserComment extends Comment {
+    private static class QueryLanguageParserDataKeys {
+        /**
+         * This key is used to store a flag indicating that a logical complement expr (e.g. "!(a==b)") has been inserted
+         * by the parser and should *NOT* be replaced with an operator overload. In other words, it's used to ensure
+         * "a!=b" is transformed first into "!(a==b)" and then into "!(equals(a, b))", but not further transformed into
+         * "not(equals(a, b))".
+         * <p>
+         * To set this flag on a node, use:
+         * 
+         * <pre>
+         * node.setData(QueryLanguageParserDataKeys.BINARY_OP_NEQ_CONVERSION_FLAG, true);
+         * </pre>
+         *
+         * To check whether this flag is set on a node, use:
+         * 
+         * <pre>
+         * n.containsData(QueryLanguageParserDataKeys.BINARY_OP_NEQ_CONVERSION_FLAG);
+         * </pre>
+         */
+        private static final DataKey<Boolean> BINARY_OP_NEQ_CONVERSION_FLAG = new DataKey<>() {};
 
         /**
-         * This "comment" is a flag used to indicate that a logical complement expr (e.g. "!(a==b)") has been inserted
-         * by the parser and should *NOT* be replaced with an operator overload. In other words, it's used to make sure
-         * "a!=b" is transformed first into "!(a==b)" and then into "!(equals(a, b))", rather than being transformed
-         * into "not(equals(a, b))".
+         * This key is used to store a flag indicating that arguments must not be modified for a method call (i.e.,
+         * {@link #convertParameters} should be skipped). This is used to ensure that {@code (int) myInteger} is
+         * rewritten to {@code intCast(myInteger)} and not {@code intCast(myInteger.longValue()}, which is what normally
+         * would happen because the parser will prefer a method call with primitive arguments over a method call with
+         * reference arguments when possible.
+         * <p>
+         * To set this flag on a node, use:
+         * 
+         * <pre>
+         * node.setData(QueryLanguageParserDataKeys.NO_PARAMETER_REWRITING_FLAG, true);
+         * </pre>
+         *
+         * To check whether this flag is set on a node, use:
+         * 
+         * <pre>
+         * n.containsData(QueryLanguageParserDataKeys.NO_PARAMETER_REWRITING_FLAG);
+         * </pre>
          */
-        private static final QueryLanguageParserComment BINARY_OP_NEQ_CONVERSION_FLAG =
-                new QueryLanguageParserComment("NODE NEEDS LOGICAL COMPLEMENT");
+        private static final DataKey<Boolean> NO_PARAMETER_REWRITING_FLAG = new DataKey<>() {};
 
         /**
-         * This "comment" is a flag used to indicate that {@link #convertParameters} should be skipped for a method
-         * call. This is used to ensure that {@code (int) myInteger} is rewritten to {@code intCast(myInteger)} and not
-         * {@code intCast(myInteger.longValue()}, which is what normally would happen because the parser will prefer a
-         * method call with primitive arguments over a method call with reference arguments when possible.
+         * This key is used to store the {@link PyCallableDetails} for a Python method that has been transformed into a
+         * more complex expression. For example, {@code myPyObj.myPyMethod()} will be transformed into
+         * {@code (new io.deephaven.engine.table.impl.lang.PyCallableWrapperDummyImpl(myPyObject.getAttribute("myPyMethod"))).call()},
+         * and the EnclosedExpr used as the scope of the {@code call()} method will have a {@code PyCallableDetails}
+         * with {@code "myPyMethod"} as its {@link PyCallableDetails#pythonMethodName}.
          */
-        private static final QueryLanguageParserComment NO_PARAMETER_REWRITING_FLAG =
-                new QueryLanguageParserComment("ARGUMENTS MUST NOT BE MODIFIED");
-
-        private QueryLanguageParserComment(String content) {
-            super(content);
-        }
-
-        @Override
-        public <R, A> R accept(GenericVisitor<R, A> v, A arg) {
-            return null;
-        }
-
-        @Override
-        public <A> void accept(VoidVisitor<A> v, A arg) {}
+        private static final DataKey<PyCallableDetails> PY_CALLABLE_DETAILS = new DataKey<>() {};
     }
 
     /**
-     * A special "comment" used to indicate the name of a Python method that has been transformed into a more complex
-     * expression. For example, {@code myPyObj.myPyMethod()} will be transformed into
-     * {@code (new io.deephaven.engine.table.impl.lang.PyCallableWrapperDummyImpl(myPyObject.getAttribute("myPyMethod"))).call()},
-     * and the EnclosedExpr used as the scope of the {@code call()} method will have a PyCallableDetailsComment with the
-     * {@code "myPyMethod"} as its {@link PyCallableDetailsComment#pythonMethodName}.
+     * Stores information on Python method calls that have been transformed by the language parser.
      */
-    private static class PyCallableDetailsComment extends QueryLanguageParserComment {
+    private static class PyCallableDetails {
 
         @Nullable
-        final String pythonScopeExpr;
+        private final String pythonScopeExpr;
         @NotNull
-        final String pythonMethodName;
+        private final String pythonMethodName;
 
-        private PyCallableDetailsComment(@Nullable String pythonScopeExpr, @NotNull String pythonMethodName) {
-            super("PY_CALLABLE_NAME[(" + pythonScopeExpr + ")." + pythonMethodName + ']');
+        private PyCallableDetails(@Nullable String pythonScopeExpr, @NotNull String pythonMethodName) {
             this.pythonScopeExpr = pythonScopeExpr;
             this.pythonMethodName = pythonMethodName;
         }

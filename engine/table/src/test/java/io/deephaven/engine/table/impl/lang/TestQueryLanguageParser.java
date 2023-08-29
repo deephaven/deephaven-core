@@ -2564,6 +2564,14 @@ public class TestQueryLanguageParser extends BaseArrayTestCase {
         resultExpression =
                 "testImplicitConversion_boolean(new boolean[] { myBooleanObj.booleanValue(), binaryAnd(myBooleanObj, isNull(myBooleanObj)).booleanValue() })";
         check(expression, resultExpression, boolean[].class, new String[] {"myBooleanObj"});
+
+        // This comes from io.deephaven.engine.table.impl.QueryTableAjTest.testIds5293():
+        expression =
+                "(float)(myInt%14==0 ? null : myInt%10==0 ? 1.0F/0.0F: myInt%5==0 ? -1.0F/0.0F : (float) myIntObj*(Math.random()*2-1))";
+        resultExpression =
+                "floatCast((eq(remainder(myInt, 14), 0) ? NULL_DOUBLE : eq(remainder(myInt, 10), 0) ? divide(1.0F, 0.0F) : eq(remainder(myInt, 5), 0) ? divide(negate(1.0F), 0.0F) : multiply(floatCast(intCast(myIntObj)), (minus(multiply(Math.random(), 2), 1)))))";
+        check(expression, resultExpression, float.class, new String[] {"myInt", "myIntObj"});
+
     }
 
     public void testUnsupportedOperators() throws Exception {
