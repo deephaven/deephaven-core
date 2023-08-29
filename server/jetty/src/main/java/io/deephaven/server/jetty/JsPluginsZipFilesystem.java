@@ -20,9 +20,7 @@ import java.util.Objects;
 import static io.deephaven.server.jetty.JsPlugins.MANIFEST_JSON;
 
 class JsPluginsZipFilesystem {
-
-    private static final String PLUGINS = "plugins";
-    private static final String ZIP_BASE = "/";
+    private static final String ZIP_ROOT = "/";
 
     /**
      * Creates a new js plugins instance with a temporary zip filesystem.
@@ -68,27 +66,14 @@ class JsPluginsZipFilesystem {
         return jsPlugins;
     }
 
-    public synchronized void addFromManifestBase(Path srcManifestBase, JsPlugin info) throws IOException {
+    public synchronized void addFromPackageRoot(Path packageRootSrc, JsPlugin info) throws IOException {
         checkExisting(info);
-        final Path srcDist = info.distributionDirFromManifestBase(srcManifestBase);
+        final Path distributionSrc = info.distributionDirFromPackageRoot(packageRootSrc);
         // TODO(deephaven-core#3005): js-plugins checksum-based caching
         try (final FileSystem fs = FileSystems.newFileSystem(filesystem, Map.of())) {
-            final Path destManifestBase = fs.getPath(ZIP_BASE);
-            final Path destDist = info.distributionDirFromManifestBase(destManifestBase);
-            CopyHelper.copyRecursive(srcDist, destDist);
-            plugins.add(info);
-            writeManifest(fs);
-        }
-    }
-
-    public synchronized void addFromPackageBase(Path srcPackageBase, JsPlugin info) throws IOException {
-        checkExisting(info);
-        final Path srcDist = info.distributionDirFromPackageBase(srcPackageBase);
-        // TODO(deephaven-core#3005): js-plugins checksum-based caching
-        try (final FileSystem fs = FileSystems.newFileSystem(filesystem, Map.of())) {
-            final Path destManifestBase = fs.getPath(ZIP_BASE);
-            final Path destDist = info.distributionDirFromManifestBase(destManifestBase);
-            CopyHelper.copyRecursive(srcDist, destDist);
+            final Path manifestRootDest = fs.getPath(ZIP_ROOT);
+            final Path distributionDest = info.distributionDirFromManifestRoot(manifestRootDest);
+            CopyHelper.copyRecursive(distributionSrc, distributionDest);
             plugins.add(info);
             writeManifest(fs);
         }
@@ -112,10 +97,10 @@ class JsPluginsZipFilesystem {
     }
 
     private void writeManifest(FileSystem fs) throws IOException {
-        final Path manifestPath = fs.getPath(ZIP_BASE, MANIFEST_JSON);
+        final Path manifestPath = fs.getPath(ZIP_ROOT, MANIFEST_JSON);
         // jackson impl does buffering internally
         try (final OutputStream out = Files.newOutputStream(manifestPath)) {
-            new ObjectMapper().writeValue(out, Map.of(PLUGINS, plugins));
+            new ObjectMapper().writeValue(out, JsManifest.of(plugins));
             out.flush();
         }
     }

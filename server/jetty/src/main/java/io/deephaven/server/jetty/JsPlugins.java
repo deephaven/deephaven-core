@@ -13,6 +13,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.HashSet;
 import java.util.Iterator;
+import java.util.Objects;
 import java.util.Set;
 
 class JsPlugins {
@@ -26,14 +27,14 @@ class JsPlugins {
 
     static JsPluginsZipFilesystem initJsPlugins(Configuration config) throws IOException {
         final JsPluginsZipFilesystem fs = JsPluginsZipFilesystem.create();
-        // deephaven.jsPlugins.resourceBase
+        // deephaven.jsPlugins.resourceBase (manifest root)
         {
             final String resourceBase = config.getStringWithDefault(DEEPHAVEN_JS_PLUGINS_PREFIX + RESOURCE_BASE, null);
             if (resourceBase != null) {
-                addAllManifestBase(fs, Path.of(resourceBase));
+                addAllManifestRoot(fs, Path.of(resourceBase));
             }
         }
-        // <configDir>/js-plugins/
+        // <configDir>/js-plugins/ (manifest root)
         {
             final Path resourceBase = ConfigDir.get()
                     .map(p -> p.resolve(JS_PLUGINS).resolve(MANIFEST_JSON))
@@ -41,10 +42,10 @@ class JsPlugins {
                     .map(Path::getParent)
                     .orElse(null);
             if (resourceBase != null) {
-                addAllManifestBase(fs, resourceBase);
+                addAllManifestRoot(fs, resourceBase);
             }
         }
-        // deephaven.jsPlugins.<part>
+        // deephaven.jsPlugins.<part> (package root)
         {
             final Set<String> parts = partsThatStartWith(DEEPHAVEN_JS_PLUGINS_PREFIX, config);
             for (String part : parts) {
@@ -52,28 +53,42 @@ class JsPlugins {
                     // handled earlier
                     continue;
                 }
-                final String packageBase = config.getStringWithDefault(DEEPHAVEN_JS_PLUGINS_PREFIX + part, null);
-                if (packageBase != null) {
-                    final Path packageBasePath = Path.of(packageBase);
-                    final Path packageJson = packageBasePath.resolve(PACKAGE_JSON);
-                    final JsPlugin plugin = plugin(packageJson);
-                    log.info().append("Adding JsPlugin ").append(plugin.name()).append(" from ")
-                            .append(packageJson.toString()).endl();
-                    fs.addFromPackageBase(packageBasePath, plugin);
+                final String packageRoot = config.getStringWithDefault(DEEPHAVEN_JS_PLUGINS_PREFIX + part, null);
+                if (packageRoot == null) {
+                    continue;
                 }
+                final Path packageRootPath = Path.of(packageRoot);
+                addPackageRoot(fs, packageRootPath, null);
             }
         }
         return fs;
     }
 
-    private static void addAllManifestBase(JsPluginsZipFilesystem fs, Path srcManifestBase) throws IOException {
-        final Path manifestJson = srcManifestBase.resolve(MANIFEST_JSON);
+    private static void addAllManifestRoot(JsPluginsZipFilesystem fs, Path manifestRootSrc) throws IOException {
+        final Path manifestJson = manifestRootSrc.resolve(MANIFEST_JSON);
+        log.info().append("Adding JsPlugin manifest from ").append(manifestJson.toString()).endl();
         final JsManifest manifestInfo = manifest(manifestJson);
         for (JsPlugin plugin : manifestInfo.plugins()) {
-            log.info().append("Adding JsPlugin ").append(plugin.name()).append(" from ").append(manifestJson.toString())
-                    .endl();
-            fs.addFromManifestBase(srcManifestBase, plugin);
+            addPackageRoot(fs, plugin.packageRootFromManifestRoot(manifestRootSrc), plugin);
         }
+    }
+
+    private static void addPackageRoot(JsPluginsZipFilesystem fs, Path packageRootSrc, JsPlugin expected)
+            throws IOException {
+        final Path packageJson = packageRootSrc.resolve(PACKAGE_JSON);
+        final JsPlugin plugin = plugin(packageJson);
+        log.info().append("Adding JsPlugin ")
+                .append(plugin.name())
+                .append("@")
+                .append(plugin.version())
+                .append(" from ")
+                .append(packageJson.toString())
+                .endl();
+        if (expected != null && !expected.equals(plugin)) {
+            throw new IllegalStateException(String.format(
+                    "Inconsistency between manifest.json and package.json, expected=%s, actual=%s", expected, plugin));
+        }
+        fs.addFromPackageRoot(packageRootSrc, plugin);
     }
 
     private static JsManifest manifest(Path manifestJson) throws IOException {

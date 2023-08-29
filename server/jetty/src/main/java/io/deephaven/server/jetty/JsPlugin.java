@@ -48,27 +48,15 @@ abstract class JsPlugin {
     @JsonProperty(MAIN)
     public abstract String main();
 
-    /**
-     * Equivalent to {@code manifestBase.resolve(name()).resolve(main())}.
-     *
-     * @param manifestBase the manifestBase path
-     * @return the main path
-     */
-    public final Path mainFilePathFromManifestBase(Path manifestBase) {
-        return manifestBase.resolve(name()).resolve(main());
+    public final Path packageRootFromManifestRoot(Path manifestRoot) {
+        return manifestRoot.resolve(name());
     }
 
-    /**
-     * Equivalent to {@code manifestBase.resolve(name()).resolve(main()).getParent()}.
-     *
-     * @param manifestBase the manifestBase path
-     * @return the distribution path
-     */
-    public final Path distributionDirFromManifestBase(Path manifestBase) {
-        return mainFilePathFromManifestBase(manifestBase).getParent();
+    public final Path distributionDirFromPackageRoot(Path packageRoot) {
+        return packageRoot.resolve(main()).getParent();
     }
 
-    public final Path distributionDirFromPackageBase(Path packageBase) {
-        return packageBase.resolve(main()).getParent();
+    public final Path distributionDirFromManifestRoot(Path manifestRoot) {
+        return distributionDirFromPackageRoot(packageRootFromManifestRoot(manifestRoot));
     }
 }
