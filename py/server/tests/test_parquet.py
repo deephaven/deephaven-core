@@ -23,8 +23,8 @@ class ParquetTestCase(BaseTestCase):
 
     @classmethod
     def setUpClass(cls):
-        # define a junk table workspace directory
         super().setUpClass()
+        # define a junk table workspace directory
         cls.temp_dir = tempfile.TemporaryDirectory()
 
     @classmethod

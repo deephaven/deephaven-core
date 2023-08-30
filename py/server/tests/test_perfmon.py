@@ -20,6 +20,10 @@ def create_some_counters():
 
 
 class PerfmonTestCase(BaseTestCase):
+    # global performance log tables are supposed to be persistent, and in the production environment they are created
+    # in the system default liveness scope during server initialization. The current test environment skips that as it
+    # only partially initialize the server. So here we need to disable calling the super setUP to skip opening a user
+    # liveness scope which would result in the destroying of these tables.
     def setUp(self) -> None:
         ...
 
