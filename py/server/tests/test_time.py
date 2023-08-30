@@ -35,16 +35,6 @@ class TimeTestCase(BaseTestCase):
     
     # region: Time Zone
 
-    # def test_time_zone(self):
-    #     tz = time_zone("America/New_York")
-    #     self.assertEqual(str(tz), "America/New_York")
-    #
-    #     tz = time_zone("CT")
-    #     self.assertEqual(str(tz), "America/Chicago")
-    #
-    #     tz = time_zone(None)
-    #     self.assertEqual(str(tz), "Etc/UTC")
-
     def test_time_zone_alias_add_rm(self):
         alias = "TestAlias"
         tz_str = "Etc/UTC"
