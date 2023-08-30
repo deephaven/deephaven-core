@@ -42,6 +42,7 @@ _JPair = jpy.get_type("io.deephaven.api.Pair")
 _JLayoutHintBuilder = jpy.get_type("io.deephaven.engine.util.LayoutHintBuilder")
 _JSearchDisplayMode = jpy.get_type("io.deephaven.engine.util.LayoutHintBuilder$SearchDisplayModes")
 _JSnapshotWhenOptions = jpy.get_type("io.deephaven.api.snapshot.SnapshotWhenOptions")
+_JBlinkTableTools = jpy.get_type("io.deephaven.engine.table.impl.BlinkTableTools")
 
 # PartitionedTable
 _JPartitionedTable = jpy.get_type("io.deephaven.engine.table.PartitionedTable")
@@ -537,6 +538,11 @@ class Table(JObjectWrapper):
         if self._is_refreshing is None:
             self._is_refreshing = self.j_table.isRefreshing()
         return self._is_refreshing
+
+    @property
+    def is_blink(self) -> bool:
+        """Whether this table is a blink table."""
+        return _JBlinkTableTools.isBlink(self.j_table)
 
     @property
     def update_graph(self) -> UpdateGraph:
