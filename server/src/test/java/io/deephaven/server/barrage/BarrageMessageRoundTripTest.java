@@ -1253,12 +1253,10 @@ public class BarrageMessageRoundTripTest extends RefreshingTableTestCase {
                 modRowsBuilder.appendKey(jj);
             }
             updateGraph.runWithinUnitTestCycle(() -> {
-                final RowSet modRows = modRowsBuilder.build();
-                TstUtils.addToTable(sourceTable, modRows);
                 sourceTable.notifyListeners(new TableUpdateImpl(
                         RowSetFactory.empty(),
                         RowSetFactory.empty(),
-                        modRows,
+                        modRowsBuilder.build(),
                         RowSetShiftData.EMPTY, ModifiedColumnSet.ALL));
             });
         }
