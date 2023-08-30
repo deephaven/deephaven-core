@@ -11,7 +11,6 @@ from deephaven.perfmon import process_info_log, process_metrics_log, server_stat
     metrics_reset_counters
 from deephaven.perfmon import query_update_performance, query_performance, query_operation_performance, server_state
 from tests.testbase import BaseTestCase
-from test_helper import py_dh_session
 
 
 def create_some_counters():
