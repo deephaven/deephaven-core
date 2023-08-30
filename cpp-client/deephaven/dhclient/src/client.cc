@@ -178,6 +178,10 @@ Aggregate Aggregate::First(std::vector<std::string> column_specs) {
   return createAggForMatchPairs(ComboAggregateRequest::FIRST, std::move(column_specs));
 }
 
+Aggregate Aggregate::Group(std::vector<std::string> column_specs) {
+  return createAggForMatchPairs(ComboAggregateRequest::GROUP, std::move(column_specs));
+}
+
 Aggregate Aggregate::Last(std::vector<std::string> column_specs) {
   return createAggForMatchPairs(ComboAggregateRequest::LAST, std::move(column_specs));
 }
@@ -315,6 +319,11 @@ TableHandle TableHandle::Select(std::vector<std::string> columnSpecs) const {
 
 TableHandle TableHandle::Update(std::vector<std::string> columnSpecs) const {
   auto qt_impl = impl_->Update(std::move(columnSpecs));
+  return TableHandle(std::move(qt_impl));
+}
+
+TableHandle TableHandle::LazyUpdate(std::vector<std::string> columnSpecs) const {
+  auto qt_impl = impl_->LazyUpdate(std::move(columnSpecs));
   return TableHandle(std::move(qt_impl));
 }
 
@@ -499,6 +508,24 @@ TableHandle TableHandle::ExactJoin(const TableHandle &rightSide,
   return TableHandle(std::move(qt_impl));
 }
 
+TableHandle TableHandle::Aj(const TableHandle &right_side,
+    std::vector<std::string> on, std::vector<std::string> joins) const {
+  auto qt_impl = impl_->Aj(*right_side.impl_, std::move(on), std::move(joins));
+  return TableHandle(std::move(qt_impl));
+}
+
+TableHandle TableHandle::Raj(const TableHandle &right_side,
+    std::vector<std::string> on, std::vector<std::string> joins) const {
+  auto qt_impl = impl_->Raj(*right_side.impl_, std::move(on), std::move(joins));
+  return TableHandle(std::move(qt_impl));
+}
+
+TableHandle TableHandle::LeftOuterJoin(const TableHandle &right_side, std::vector<std::string> on,
+    std::vector<std::string> joins) const {
+  auto qt_impl = impl_->LeftOuterJoin(*right_side.impl_, std::move(on), std::move(joins));
+  return TableHandle(std::move(qt_impl));
+}
+
 TableHandle TableHandle::ExactJoin(const TableHandle &rightSide,
     std::vector<MatchWithColumn> columnsToMatch, std::vector<SelectColumn> columnsToAdd) const {
   auto ctm_strings = toIrisRepresentation(columnsToMatch);
@@ -512,6 +539,17 @@ TableHandle TableHandle::UpdateBy(std::vector<UpdateByOperation> ops, std::vecto
     op_impls.push_back(op.impl_);
   }
   auto th_impl = impl_->UpdateBy(std::move(op_impls), std::move(by));
+  return TableHandle(std::move(th_impl));
+}
+
+TableHandle TableHandle::SelectDistinct(std::vector<std::string> columns) const {
+  auto qt_impl = impl_->SelectDistinct(std::move(columns));
+  return TableHandle(std::move(qt_impl));
+}
+
+TableHandle TableHandle::WhereIn(const TableHandle &filter_table,
+    std::vector<std::string> columns) const {
+  auto th_impl = impl_->WhereIn(*filter_table.impl_, std::move(columns));
   return TableHandle(std::move(th_impl));
 }
 

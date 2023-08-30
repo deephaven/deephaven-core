@@ -33,7 +33,7 @@ public class FloatRollingMinMaxOperator extends BaseFloatUpdateByOperator {
         protected Context(final int affectedChunkSize, final int influencerChunkSize) {
             super(affectedChunkSize);
             if (isMax) {
-                aggMinMax = new AggregatingFloatRingBuffer(BUFFER_INITIAL_CAPACITY, Float.MIN_VALUE, (a, b) -> {
+                aggMinMax = new AggregatingFloatRingBuffer(BUFFER_INITIAL_CAPACITY, NULL_FLOAT, (a, b) -> {
                     if (a == NULL_FLOAT) {
                         return b;
                     } else if (b == NULL_FLOAT) {
@@ -51,7 +51,7 @@ public class FloatRollingMinMaxOperator extends BaseFloatUpdateByOperator {
                     return (float)Math.min(a, b);
                 });
             }
-            curVal = isMax ? Float.MIN_VALUE : Float.MAX_VALUE;
+            curVal = isMax ? NULL_FLOAT : Float.MAX_VALUE;
             evaluationNeeded = false;
         }
 
@@ -126,7 +126,7 @@ public class FloatRollingMinMaxOperator extends BaseFloatUpdateByOperator {
         public void reset() {
             super.reset();
             aggMinMax.clear();
-            curVal = isMax ? Float.MIN_VALUE : Float.MAX_VALUE;
+            curVal = isMax ? NULL_FLOAT : Float.MAX_VALUE;
             evaluationNeeded = false;
         }
     }

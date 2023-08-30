@@ -1320,8 +1320,13 @@ public class SessionState {
                 final String dependentStr = dependentExportId == null ? ""
                         : (" (related parent export id: " + dependentExportId + ")");
                 if (cause == null) {
-                    errorHandler.onError(Exceptions.statusRuntimeException(Code.FAILED_PRECONDITION,
-                            "Export in state " + resultState + dependentStr));
+                    if (resultState == ExportNotification.State.CANCELLED) {
+                        errorHandler.onError(Exceptions.statusRuntimeException(Code.CANCELLED,
+                                "Export is cancelled" + dependentStr));
+                    } else {
+                        errorHandler.onError(Exceptions.statusRuntimeException(Code.FAILED_PRECONDITION,
+                                "Export in state " + resultState + dependentStr));
+                    }
                 } else {
                     errorHandler.onError(Exceptions.statusRuntimeException(Code.FAILED_PRECONDITION,
                             "Details Logged w/ID '" + errorContext + "'" + dependentStr));
