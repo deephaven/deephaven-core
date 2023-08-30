@@ -151,7 +151,7 @@ udb_roll_sum_time <- function(ts_col, cols, rev_time, fwd_time = "PT0s") {
   verify_string("cols", cols, FALSE)
   verify_string("rev_time", rev_time, TRUE)
   verify_string("fwd_time", fwd_time, TRUE)
-  return(UpdateByOp$new(INTERNAL_rolling_sum_time(ts_col, cols, rev_time, fwd_time))
+  return(UpdateByOp$new(INTERNAL_rolling_sum_time(ts_col, cols, rev_time, fwd_time)))
 }
 
 #' @export

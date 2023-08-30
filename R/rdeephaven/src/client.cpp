@@ -345,7 +345,7 @@ UpdateByOpWrapper* INTERNAL_rollingStdTime(std::string timestamp_col, std::vecto
     return new UpdateByOpWrapper(deephaven::client::update_by::rollingStdTime(timestamp_col, cols, rev_time, fwd_time));
 }
 
-UpdateByOpWrapper* INTERNAL_rollingWavgTick(std::string timestamp_col, std::string weight_col, std::vector<std::string> cols,
+UpdateByOpWrapper* INTERNAL_rollingWavgTick(std::string weight_col, std::vector<std::string> cols,
                                             int rev_ticks, int fwd_ticks) {
     return new UpdateByOpWrapper(deephaven::client::update_by::rollingWavgTick(weight_col, cols, rev_ticks, fwd_ticks));
 }
