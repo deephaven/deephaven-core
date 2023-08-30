@@ -184,6 +184,9 @@ public:
   void UpdateAsync(Ticket parent_ticket, std::vector<std::string> column_specs,
       std::shared_ptr<EtcCallback> etc_callback, Ticket result);
 
+  void LazyUpdateAsync(Ticket parent_ticket, std::vector<std::string> column_specs,
+      std::shared_ptr<EtcCallback> etc_callback, Ticket result);
+
   void ViewAsync(Ticket parent_ticket, std::vector<std::string> column_specs,
       std::shared_ptr<EtcCallback> etc_callback, Ticket result);
 
@@ -231,13 +234,27 @@ public:
       std::vector<std::string> columns_to_match, std::vector<std::string> columns_to_add,
       std::shared_ptr<EtcCallback> etc_callback, Ticket result);
 
-  void AsOfJoinAsync(AsOfJoinTablesRequest::MatchRule match_rule, Ticket left_table_ticket,
-      Ticket right_table_ticket, std::vector<std::string> columns_to_match,
-      std::vector<std::string> columns_to_add, std::shared_ptr<EtcCallback> etc_callback, Ticket result);
+  void AjAsync(Ticket left_table_ticket, Ticket right_table_ticket,
+      std::vector<std::string> on, std::vector<std::string> joins,
+      std::shared_ptr<EtcCallback> etc_callback, Ticket result);
+
+  void RajAsync(Ticket left_table_ticket, Ticket right_table_ticket,
+      std::vector<std::string> on, std::vector<std::string> joins,
+      std::shared_ptr<EtcCallback> etc_callback, Ticket result);
+
+  void LeftOuterJoinAsync(Ticket left_table_ticket, Ticket right_table_ticket,
+      std::vector<std::string> on, std::vector<std::string> joins,
+      std::shared_ptr<EtcCallback> etc_callback, Ticket result);
 
   void UpdateByAsync(Ticket source, std::vector<UpdateByOperation> operations,
       std::vector<std::string> group_by_columns,
       std::shared_ptr<EtcCallback> etc_callback, Ticket result);
+
+  void SelectDistinctAsync(Ticket source, std::vector<std::string> columns,
+      std::shared_ptr<EtcCallback> etc_callback, Ticket result);
+
+  void WhereInAsync(Ticket left_table_ticket, Ticket right_table_ticket,
+      std::vector<std::string> columns,  std::shared_ptr<EtcCallback> etc_callback, Ticket result);
 
   void BindToVariableAsync(const Ticket &console_id, const Ticket &table_id, std::string variable,
       std::shared_ptr<SFCallback<BindTableToVariableResponse>> callback);
