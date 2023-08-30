@@ -4,8 +4,6 @@ library(rdeephaven)
 library(lubridate)
 library(zoo)
 
-# TODO: udb_emstd_tick, udb_emstd_time, udb_roll_std_tick
-
 # We suppress warnings because warnings are thrown when min() and max() are
 # applied to empty sets, which happens in the pure-R versions of roll_*_time()
 options(warn=-1)
@@ -704,59 +702,101 @@ test_that("udb_emmax_time behaves as expected", {
   data$client$close()
 })
 
-# test_that("udb_emstd_tick behaves as expected", {
-#   data <- setup()
-#   
-#   custom_emstd <- function(decay_ticks, x) {
-#   }
-#   
-#   new_tb1 <- data$df1 %>%
-#     mutate(dbl_col = custom_emstd(2, dbl_col))
-#   new_th1 <- data$th1$
-#     update_by(udb_emstd_tick(2, "dbl_col"))
-#   expect_equal(as.data.frame(new_th1), as.data.frame(new_tb1))
-#   
-#   new_tb2 <- data$df2 %>%
-#     mutate(col1 = custom_emstd(5, col1), col3 = custom_emstd(5, col3))
-#   new_th2 <- data$th2$
-#     update_by(udb_emstd_tick(5, c("col1", "col3")))
-#   expect_equal(as.data.frame(new_th2), as.data.frame(new_tb2))
-#   
-#   new_tb3 <- data$df3 %>%
-#     group_by(bool_col) %>%
-#     mutate(emstd_int_col = custom_emstd(9, int_col))
-#   new_th3 <- data$th3$
-#     update_by(udb_emstd_tick(9, "emstd_int_col = int_col"), by = "bool_col")
-#   expect_equal(as.data.frame(new_th3), as.data.frame(new_tb3))
-#   
-#   new_tb4 <- data$df4 %>%
-#     group_by(X) %>%
-#     mutate(emstd_Number1 = custom_emstd(3, Number1), emstd_Number2 = custom_emstd(3, Number2))
-#   new_th4 <- data$th4$
-#     update_by(udb_emstd_tick(3, c("emstd_Number1 = Number1", "emstd_Number2 = Number2")), by = "X")
-#   expect_equal(as.data.frame(new_th4), as.data.frame(new_tb4))
-#   
-#   new_tb5 <- data$df5 %>%
-#     group_by(Y) %>%
-#     mutate(emstd_Number1 = custom_emstd(3, Number1), emstd_Number2 = custom_emstd(3, Number2))
-#   new_th5 <- data$th5$
-#     update_by(udb_emstd_tick(3, c("emstd_Number1 = Number1", "emstd_Number2 = Number2")), by = "Y")
-#   expect_equal(as.data.frame(new_th5), as.data.frame(new_tb5))
-#   
-#   new_tb6 <- rbind(data$df4, data$df5, data$df4, data$df5) %>%
-#     group_by(X, Y) %>%
-#     mutate(emstd_Number1 = custom_emstd(3, Number1), emstd_Number2 = custom_emstd(3, Number2))
-#   new_th6 <- merge_tables(data$th4, data$th5, data$th4, data$th5)$
-#     update_by(udb_emstd_tick(3, c("emstd_Number1 = Number1", "emstd_Number2 = Number2")), by = c("X", "Y"))
-#   expect_equal(as.data.frame(new_th6), as.data.frame(new_tb6))
-#   
-#   data$client$close()
-# })
-# 
-# test_that("udb_emstd_time behaves as expected", {
-#   data <- setup()
-#   data$client$close()
-# })
+test_that("udb_emstd_tick behaves as expected", {
+  data <- setup()
+  
+  custom_emstd <- function(decay_ticks, x) {
+    if (length(x) == 1) {
+      return(NA)
+    }
+    a = exp(-1/decay_ticks)
+    ema = c(x[1])
+    emvar = c(0)
+    for(i in seq(2,length(x))) {
+      ema[i] = a*ema[i-1] + (1-a)*x[i]
+      emvar[i] = a*(emvar[i-1] + (1-a)*((x[i] - ema[i-1])^2))
+    }
+    emvar[1] = NA
+    return(sqrt(emvar))
+  }
+
+  new_tb1 <- data$df1 %>%
+    mutate(dbl_col = custom_emstd(2, dbl_col))
+  new_th1 <- data$th1$
+    update_by(udb_emstd_tick(2, "dbl_col"))
+  expect_equal(as.data.frame(new_th1), as.data.frame(new_tb1))
+
+  new_tb2 <- data$df2 %>%
+    mutate(col1 = custom_emstd(5, col1), col3 = custom_emstd(5, col3))
+  new_th2 <- data$th2$
+    update_by(udb_emstd_tick(5, c("col1", "col3")))
+  expect_equal(as.data.frame(new_th2), as.data.frame(new_tb2))
+
+  new_tb3 <- data$df3 %>%
+    group_by(bool_col) %>%
+    mutate(emstd_int_col = custom_emstd(9, int_col))
+  new_th3 <- data$th3$
+    update_by(udb_emstd_tick(9, "emstd_int_col = int_col"), by = "bool_col")
+  expect_equal(as.data.frame(new_th3), as.data.frame(new_tb3))
+
+  new_tb4 <- data$df4 %>%
+    group_by(X) %>%
+    mutate(emstd_Number1 = custom_emstd(3, Number1), emstd_Number2 = custom_emstd(3, Number2))
+  new_th4 <- data$th4$
+    update_by(udb_emstd_tick(3, c("emstd_Number1 = Number1", "emstd_Number2 = Number2")), by = "X")
+  expect_equal(as.data.frame(new_th4), as.data.frame(new_tb4))
+
+  new_tb5 <- data$df5 %>%
+    group_by(Y) %>%
+    mutate(emstd_Number1 = custom_emstd(3, Number1), emstd_Number2 = custom_emstd(3, Number2))
+  new_th5 <- data$th5$
+    update_by(udb_emstd_tick(3, c("emstd_Number1 = Number1", "emstd_Number2 = Number2")), by = "Y")
+  expect_equal(as.data.frame(new_th5), as.data.frame(new_tb5))
+
+  new_tb6 <- rbind(data$df4, data$df5, data$df4, data$df5) %>%
+    group_by(X, Y) %>%
+    mutate(emstd_Number1 = custom_emstd(3, Number1), emstd_Number2 = custom_emstd(3, Number2))
+  new_th6 <- merge_tables(data$th4, data$th5, data$th4, data$th5)$
+    update_by(udb_emstd_tick(3, c("emstd_Number1 = Number1", "emstd_Number2 = Number2")), by = c("X", "Y"))
+  expect_equal(as.data.frame(new_th6), as.data.frame(new_tb6))
+
+  data$client$close()
+})
+
+test_that("udb_emstd_time behaves as expected", {
+  data <- setup()
+  
+  custom_emstd_time <- function(ts, decay_time, x) {
+    if (length(x) == 1) {
+      return(NA)
+    }
+    time_diffs = as.numeric(ts[2:length(ts)] - ts[1:length(ts)-1])
+    a = exp(-time_diffs/as.numeric(duration(decay_time)))
+    ema = c(x[1])
+    emvar = c(0)
+    for(i in seq(2,length(x))) {
+      ema[i] = a[i-1]*ema[i-1] + (1-a[i-1])*x[i]
+      emvar[i] = a[i-1]*(emvar[i-1] + (1-a[i-1])*((x[i] - ema[i-1])^2))
+    }
+    emvar[1] = NA
+    return(sqrt(emvar))
+  }
+  
+  new_tb1 <- data$df3 %>%
+    mutate(emstd_int_col = custom_emstd_time(time_col, "PT3s", int_col))
+  new_th1 <- data$th3$
+    update_by(udb_emstd_time("time_col", "PT3s", "emstd_int_col = int_col"))
+  expect_equal(as.data.frame(new_th1), as.data.frame(new_tb1))
+  
+  new_tb2 <- data$df3 %>%
+    group_by(bool_col) %>%
+    mutate(emstd_int_col = custom_emstd_time(time_col, "PT3s", int_col))
+  new_th2 <- data$th3$
+    update_by(udb_emstd_time("time_col", "PT3s", "emstd_int_col = int_col"), by = "bool_col")
+  expect_equal(as.data.frame(new_th2), as.data.frame(new_tb2))
+  
+  data$client$close()
+})
 
 test_that("udb_roll_sum_tick behaves as expected", {
   data <- setup()
@@ -1896,6 +1936,7 @@ test_that("udb_roll_count_time behaves as expected", {
   data$client$close()
 })
 
+# TODO: Uncomment when 4400 is merged
 # test_that("udb_roll_std_tick behaves as expected", {
 #   data <- setup()
 # 
@@ -2082,7 +2123,6 @@ test_that("udb_roll_wavg_tick behaves as expected", {
   # There is not a clean analog to our grouped weighted average in R, so we create
   # these tables directly
   
-  # TODO: Verify correctness here
   new_df1a <- data.frame(
     string_col = c("I", "am", "a", "string", "column"),
     int_col = c(0, 1, 2, 3, 4),
