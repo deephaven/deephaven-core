@@ -401,11 +401,7 @@ public class JsonNodeUtil {
         if (isNullOrMissingField(node)) {
             return QueryConstants.NULL_BYTE;
         }
-        final byte[] bytes = node.asText().getBytes();
-        if (bytes.length == 0) {
-            return QueryConstants.NULL_BYTE;
-        }
-        return bytes[0];
+        return (byte) node.asInt();
     }
 
     /**
@@ -433,11 +429,7 @@ public class JsonNodeUtil {
         if (isNullOrMissingField(node)) {
             return null;
         }
-        final byte[] bytes = node.asText().getBytes();
-        if (bytes.length == 0) {
-            return null;
-        }
-        return bytes[0];
+        return (byte) node.asInt();
     }
 
     /**
@@ -476,7 +468,15 @@ public class JsonNodeUtil {
         if (isNullOrMissingField(node)) {
             return QueryConstants.NULL_CHAR;
         }
+        if (node.isNumber()) {
+            // We don't expect this to be a common case; but if the node happens to be a number, we'll assume it's meant
+            // to represent a char by casting. This is much more appropriate than just taking the first character of the
+            // number's string.
+            return (char) node.numberValue().intValue();
+        }
         final String s = node.asText();
+        // It would not be unreasonable for us to throw an error if s.length() != 1.
+        // All of the other code paths are very lenient though, so we'll be lenient here too.
         if (s.isEmpty()) {
             return QueryConstants.NULL_CHAR;
         }
@@ -498,11 +498,19 @@ public class JsonNodeUtil {
     }
 
     @Nullable
-    public static Character getBoxedChar(final JsonNode tmpNode) {
-        if (isNullOrMissingField(tmpNode)) {
+    public static Character getBoxedChar(final JsonNode node) {
+        if (isNullOrMissingField(node)) {
             return null;
         }
-        final String s = tmpNode.asText();
+        if (node.isNumber()) {
+            // We don't expect this to be a common case; but if the node happens to be a number, we'll assume it's meant
+            // to represent a char by casting. This is much more appropriate than just taking the first character of the
+            // number's string.
+            return (char) node.numberValue().intValue();
+        }
+        final String s = node.asText();
+        // It would not be unreasonable for us to throw an error if s.length() != 1.
+        // All of the other code paths are very lenient though, so we'll be lenient here too.
         if (s.isEmpty()) {
             return null;
         }
