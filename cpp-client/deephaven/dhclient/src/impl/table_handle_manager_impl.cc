@@ -90,7 +90,7 @@ void TableHandleManagerImpl::RunScriptAsync(std::string code, std::shared_ptr<SF
     std::shared_ptr<SFCallback<>> outerCb_;
   };
   if (!consoleId_.has_value()) {
-    auto eptr = std::make_exception_ptr(std::runtime_error(DEEPHAVEN_DEBUG_MSG(
+    auto eptr = std::make_exception_ptr(std::runtime_error(DEEPHAVEN_LOCATION(
         "Client was created without specifying a script language")));
     callback->OnFailure(std::move(eptr));
     return;

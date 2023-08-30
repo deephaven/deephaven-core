@@ -645,7 +645,7 @@ void printTableData(std::ostream &s, const TableHandle &table_handle, bool want_
 
   while (true) {
     arrow::flight::FlightStreamChunk chunk;
-    OkOrThrow(DEEPHAVEN_EXPR_MSG(fsr->Next(&chunk)));
+    OkOrThrow(DEEPHAVEN_LOCATION_WITH_EXPR(fsr->Next(&chunk)));
     if (chunk.data == nullptr) {
       break;
     }

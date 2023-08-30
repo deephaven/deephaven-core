@@ -532,7 +532,7 @@ void TableHandleImpl::LookupHelper(const std::string &column_name,
   auto message = Stringf("Column lookup for %o: Expected Arrow type: one of {%o}. Actual type %o",
       column_name, separatedList(valid_types.begin(), valid_types.end(), ", ", render),
       static_cast<int>(actual_type));
-  throw std::runtime_error(DEEPHAVEN_DEBUG_MSG(message));
+  throw std::runtime_error(DEEPHAVEN_LOCATION(message));
 }
 
 void TableHandleImpl::BindToVariableAsync(std::string variable, std::shared_ptr<SFCallback<>> callback) {
@@ -550,7 +550,7 @@ void TableHandleImpl::BindToVariableAsync(std::string variable, std::shared_ptr<
     std::shared_ptr<SFCallback<>> outerCb_;
   };
   if (!managerImpl_->ConsoleId().has_value()) {
-    auto eptr = std::make_exception_ptr(std::runtime_error(DEEPHAVEN_DEBUG_MSG(
+    auto eptr = std::make_exception_ptr(std::runtime_error(DEEPHAVEN_LOCATION(
         "Client was created without specifying a script language")));
     callback->OnFailure(std::move(eptr));
     return;
@@ -592,14 +592,14 @@ ExportedTableCreationCallback::~ExportedTableCreationCallback() = default;
 void ExportedTableCreationCallback::OnSuccess(ExportedTableCreationResponse item) {
   if (!item.result_id().has_ticket()) {
     const char *message = "ExportedTableCreationResponse did not contain a ticket";
-    auto ep = std::make_exception_ptr(std::runtime_error(DEEPHAVEN_DEBUG_MSG(message)));
+    auto ep = std::make_exception_ptr(std::runtime_error(DEEPHAVEN_LOCATION(message)));
     OnFailure(std::move(ep));
     return;
   }
 
   if (item.result_id().ticket().ticket() != expectedTicket_.ticket()) {
     const char *message = "Result ticket was not equal to expected ticket";
-    auto ep = std::make_exception_ptr(std::runtime_error(DEEPHAVEN_DEBUG_MSG(message)));
+    auto ep = std::make_exception_ptr(std::runtime_error(DEEPHAVEN_LOCATION(message)));
     OnFailure(std::move(ep));
     return;
   }
@@ -721,17 +721,17 @@ public:
     auto fd = ConvertTicketToFlightDescriptor(ticket_.ticket());
     std::unique_ptr<arrow::flight::SchemaResult> schema_result;
     auto gs_result = server_->FlightClient()->GetSchema(options, fd, &schema_result);
-    OkOrThrow(DEEPHAVEN_EXPR_MSG(gs_result));
+    OkOrThrow(DEEPHAVEN_LOCATION_WITH_EXPR(gs_result));
 
     std::shared_ptr<arrow::Schema> arrow_schema;
     auto schema_res = schema_result->GetSchema(nullptr, &arrow_schema);
-    OkOrThrow(DEEPHAVEN_EXPR_MSG(schema_res));
+    OkOrThrow(DEEPHAVEN_LOCATION_WITH_EXPR(schema_res));
 
     auto names = MakeReservedVector<std::string>(arrow_schema->fields().size());
     auto types = MakeReservedVector<ElementTypeId::Enum>(arrow_schema->fields().size());
     for (const auto &f : arrow_schema->fields()) {
       ArrowToElementTypeId v;
-      OkOrThrow(DEEPHAVEN_EXPR_MSG(f->type()->Accept(&v)));
+      OkOrThrow(DEEPHAVEN_LOCATION_WITH_EXPR(f->type()->Accept(&v)));
       names.push_back(f->name());
       types.push_back(v.typeId_);
     }
