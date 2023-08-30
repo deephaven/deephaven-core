@@ -356,7 +356,7 @@ void Server::SendRpc(const TReq &req, std::shared_ptr<SFCallback<TResp>> respons
   // since it is not dependent on any template arguments.
   guard.unlock();
   const char *message = "Server cancelled. All further RPCs are being rejected";
-  auto eptr = std::make_exception_ptr(std::runtime_error(DEEPHAVEN_LOCATION(message)));
+  auto eptr = std::make_exception_ptr(std::runtime_error(DEEPHAVEN_LOCATION_STR(message)));
   response->OnFailure(std::move(eptr));
 }
 }  // namespace deephaven::client::server

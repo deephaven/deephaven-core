@@ -20,16 +20,16 @@ TableMaker::~TableMaker() = default;
 
 void TableMaker::FinishAddColumn(std::string name, internal::TypeConverter info) {
   auto kvMetadata = std::make_shared<arrow::KeyValueMetadata>();
-  OkOrThrow(DEEPHAVEN_LOCATION_WITH_EXPR(kvMetadata->Set("deephaven:type", info.DeephavenType())));
+  OkOrThrow(DEEPHAVEN_LOCATION_EXPR(kvMetadata->Set("deephaven:type", info.DeephavenType())));
 
   auto field = std::make_shared<arrow::Field>(std::move(name), std::move(info.DataType()), true,
       std::move(kvMetadata));
-  OkOrThrow(DEEPHAVEN_LOCATION_WITH_EXPR(schemaBuilder_.AddField(field)));
+  OkOrThrow(DEEPHAVEN_LOCATION_EXPR(schemaBuilder_.AddField(field)));
 
   if (columns_.empty()) {
     numRows_ = info.Column()->length();
   } else if (numRows_ != info.Column()->length()) {
-    throw std::runtime_error(DEEPHAVEN_LOCATION(
+    throw std::runtime_error(DEEPHAVEN_LOCATION_STR(
         Stringf("Column sizes not consistent: expected %o, have %o", numRows_,
             info.Column()->length())));
   }
@@ -38,7 +38,7 @@ void TableMaker::FinishAddColumn(std::string name, internal::TypeConverter info)
 }
 
 TableHandle TableMaker::MakeTable(const TableHandleManager &manager) {
-  auto schema = ValueOrThrow(DEEPHAVEN_LOCATION_WITH_EXPR(schemaBuilder_.Finish()));
+  auto schema = ValueOrThrow(DEEPHAVEN_LOCATION_EXPR(schemaBuilder_.Finish()));
 
   auto wrapper = manager.CreateFlightWrapper();
   auto ticket = manager.NewTicket();
@@ -49,16 +49,16 @@ TableHandle TableMaker::MakeTable(const TableHandleManager &manager) {
 
   std::unique_ptr<arrow::flight::FlightStreamWriter> fsw;
   std::unique_ptr<arrow::flight::FlightMetadataReader> fmr;
-  OkOrThrow(DEEPHAVEN_LOCATION_WITH_EXPR(wrapper.FlightClient()->DoPut(options, flightDescriptor,
+  OkOrThrow(DEEPHAVEN_LOCATION_EXPR(wrapper.FlightClient()->DoPut(options, flightDescriptor,
       schema, &fsw, &fmr)));
   auto batch = arrow::RecordBatch::Make(schema, numRows_, std::move(columns_));
 
-  OkOrThrow(DEEPHAVEN_LOCATION_WITH_EXPR(fsw->WriteRecordBatch(*batch)));
-  OkOrThrow(DEEPHAVEN_LOCATION_WITH_EXPR(fsw->DoneWriting()));
+  OkOrThrow(DEEPHAVEN_LOCATION_EXPR(fsw->WriteRecordBatch(*batch)));
+  OkOrThrow(DEEPHAVEN_LOCATION_EXPR(fsw->DoneWriting()));
 
   std::shared_ptr<arrow::Buffer> buf;
-  OkOrThrow(DEEPHAVEN_LOCATION_WITH_EXPR(fmr->ReadMetadata(&buf)));
-  OkOrThrow(DEEPHAVEN_LOCATION_WITH_EXPR(fsw->Close()));
+  OkOrThrow(DEEPHAVEN_LOCATION_EXPR(fmr->ReadMetadata(&buf)));
+  OkOrThrow(DEEPHAVEN_LOCATION_EXPR(fsw->Close()));
   return manager.MakeTableHandleFromTicket(std::move(ticket));
 }
 

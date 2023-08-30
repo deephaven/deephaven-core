@@ -106,7 +106,7 @@ std::shared_ptr<Server> Server::CreateFromTarget(
       const ClientOptions &client_options) {
   if (!client_options.UseTls() && !client_options.TlsRootCerts().empty()) {
     const char *message = "Server::CreateFromTarget: ClientOptions: UseTls is false but pem provided";
-    throw std::runtime_error(DEEPHAVEN_LOCATION(message));
+    throw std::runtime_error(DEEPHAVEN_LOCATION_STR(message));
   }
 
   grpc::ChannelArguments channel_args;
@@ -151,7 +151,7 @@ std::shared_ptr<Server> Server::CreateFromTarget(
   if (!rc1.ok()) {
     auto message = Stringf("Location::Parse(%o) failed, error = %o",
         flightTarget, rc1.ToString());
-    throw std::runtime_error(DEEPHAVEN_LOCATION(message));
+    throw std::runtime_error(DEEPHAVEN_LOCATION_STR(message));
   }
 
   if (!client_options.TlsRootCerts().empty()) {
@@ -195,14 +195,14 @@ std::shared_ptr<Server> Server::CreateFromTarget(
     if (!result.ok()) {
       auto message = Stringf("Can't get configuration constants. Error %o: %o",
           result.error_code(), result.error_message());
-      throw std::runtime_error(DEEPHAVEN_LOCATION(message));
+      throw std::runtime_error(DEEPHAVEN_LOCATION_STR(message));
     }
 
     const auto &md = ctx.GetServerInitialMetadata();
     auto ip = md.find(kAuthorizationKey);
     if (ip == md.end()) {
       throw std::runtime_error(
-          DEEPHAVEN_LOCATION("Configuration response didn't contain authorization token"));
+          DEEPHAVEN_LOCATION_STR("Configuration response didn't contain authorization token"));
     }
     sessionToken.assign(ip->second.begin(), ip->second.end());
 
@@ -548,7 +548,7 @@ namespace {
 AjRajTablesRequest MakeAjRajTablesRequest(Ticket left_table_ticket, Ticket right_table_ticket,
     std::vector<std::string> on, std::vector<std::string> joins, Ticket result) {
   if (on.empty()) {
-    throw std::runtime_error(DEEPHAVEN_LOCATION("Need at least one 'on' column"));
+    throw std::runtime_error(DEEPHAVEN_LOCATION_STR("Need at least one 'on' column"));
   }
   AjRajTablesRequest req;
   *req.mutable_result_id() = std::move(result);
@@ -663,7 +663,7 @@ bool Server::ProcessNextCompletionQueueItem() {
     std::unique_ptr<CompletionQueueCallback> cqcb(static_cast<CompletionQueueCallback *>(tag));
 
     if (!ok) {
-      auto eptr = std::make_exception_ptr(std::runtime_error(DEEPHAVEN_LOCATION(
+      auto eptr = std::make_exception_ptr(std::runtime_error(DEEPHAVEN_LOCATION_STR(
           "Some GRPC network or connection error")));
       cqcb->OnFailure(std::move(eptr));
       return true;
@@ -672,7 +672,7 @@ bool Server::ProcessNextCompletionQueueItem() {
     const auto &stat = cqcb->status_;
     if (!stat.ok()) {
       auto message = Stringf("Error %o. Message: %o", stat.error_code(), stat.error_message());
-      auto eptr = std::make_exception_ptr(std::runtime_error(DEEPHAVEN_LOCATION(message)));
+      auto eptr = std::make_exception_ptr(std::runtime_error(DEEPHAVEN_LOCATION_STR(message)));
       cqcb->OnFailure(std::move(eptr));
       return true;
     }
@@ -813,7 +813,7 @@ std::optional<std::chrono::milliseconds> extractExpirationInterval(
   auto [ptr, ec] = std::from_chars(begin, end, millis);
   if (ec != std::errc() || ptr != end) {
     auto message = Stringf("Failed to parse %o as an integer", targetValue);
-    throw std::runtime_error(DEEPHAVEN_LOCATION(message));
+    throw std::runtime_error(DEEPHAVEN_LOCATION_STR(message));
   }
   // As a matter of policy we use half of whatever the server tells us is the expiration time.
   return std::chrono::milliseconds(millis / 2);
