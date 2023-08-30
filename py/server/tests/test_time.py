@@ -88,11 +88,9 @@ class TimeTestCase(BaseTestCase):
         tz = to_j_time_zone(None)
         self.assertEqual(str(tz), "Etc/UTC")
 
-        try:
+        with self.assertRaises(DHError):
             to_j_time_zone(123)
             self.fail("Expected DHError")
-        except DHError:
-            pass
 
 
     def test_to_j_local_date(self):
@@ -114,11 +112,9 @@ class TimeTestCase(BaseTestCase):
         ld = to_j_local_date(None)
         self.assertEqual(ld, None)
 
-        try:
+        with self.assertRaises(DHError):
             to_j_local_date(123)
             self.fail("Expected DHError")
-        except DHError:
-            pass
 
 
     def test_to_j_local_time(self):
@@ -140,11 +136,9 @@ class TimeTestCase(BaseTestCase):
         lt = to_j_local_time(None)
         self.assertEqual(lt, None)
 
-        try:
+        with self.assertRaises(DHError):
             to_j_local_time(123)
             self.fail("Expected DHError")
-        except DHError:
-            pass
 
     def test_to_j_instant(self):
         target = _JDateTimeUtils.parseZonedDateTime("2021-12-10T19:21:17.123456Z")
@@ -166,11 +160,9 @@ class TimeTestCase(BaseTestCase):
         dt = to_j_instant(None)
         self.assertEqual(dt, None)
 
-        try:
+        with self.assertRaises(DHError):
             to_j_instant(123)
             self.fail("Expected DHError")
-        except DHError:
-            pass
 
 
     def test_to_j_zdt(self):
@@ -193,11 +185,9 @@ class TimeTestCase(BaseTestCase):
         dt = to_j_zdt(None)
         self.assertEqual(dt, None)
 
-        try:
+        with self.assertRaises(DHError):
             to_j_zdt(123)
             self.fail("Expected DHError")
-        except DHError:
-            pass
 
 
     def test_to_j_duration(self):
@@ -215,11 +205,9 @@ class TimeTestCase(BaseTestCase):
         d = to_j_duration(None)
         self.assertEqual(d, None)
 
-        try:
+        with self.assertRaises(DHError):
             to_j_duration(123)
             self.fail("Expected DHError")
-        except DHError:
-            pass
 
 
     def test_to_j_period(self):
@@ -249,39 +237,29 @@ class TimeTestCase(BaseTestCase):
         p = to_j_period(None)
         self.assertEqual(p, None)
 
-        try:
+        with self.assertRaises(DHError):
             to_j_period(123)
             self.fail("Expected DHError")
-        except DHError:
-            pass
 
-        try:
+        with self.assertRaises(DHError):
             x = datetime.timedelta(days=2, seconds=1)
             to_j_period(x)
             self.fail("Expected DHError")
-        except DHError:
-            pass
 
-        try:
+        with self.assertRaises(DHError):
             x = datetime.timedelta(days=2, microseconds=1)
             to_j_period(x)
             self.fail("Expected DHError")
-        except DHError:
-            pass
 
-        try:
+        with self.assertRaises(DHError):
             x = datetime.timedelta(days=2.3)
             to_j_period(x)
             self.fail("Expected DHError")
-        except DHError:
-            pass
 
-        try:
+        with self.assertRaises(DHError):
             x = np.timedelta64(2, 'h')
             to_j_period(x)
             self.fail("Expected DHError")
-        except DHError:
-            pass
 
 
     # endregion
@@ -303,11 +281,9 @@ class TimeTestCase(BaseTestCase):
         dt = to_date(None)
         self.assertEqual(dt, None)
 
-        try:
+        with self.assertRaises(DHError):
             to_date(123)
             self.fail("Expected DHError")
-        except DHError:
-            pass
 
     def test_to_time(self):
         target = datetime.time(14, 21, 17, 123456)
@@ -323,11 +299,9 @@ class TimeTestCase(BaseTestCase):
         dt = to_time(None)
         self.assertEqual(dt, None)
 
-        try:
+        with self.assertRaises(DHError):
             to_time(123)
             self.fail("Expected DHError")
-        except DHError:
-            pass
 
     def test_to_datetime(self):
         target = datetime.datetime(2021, 12, 10, 14, 21, 17, 123456)
@@ -343,11 +317,9 @@ class TimeTestCase(BaseTestCase):
         dt = to_datetime(None)
         self.assertEqual(dt, None)
 
-        try:
+        with self.assertRaises(DHError):
             to_datetime(123)
             self.fail("Expected DHError")
-        except DHError:
-            pass
 
     def test_to_datetime64(self):
         target = np.datetime64("2021-12-10T14:21:17.123456Z")
@@ -363,11 +335,9 @@ class TimeTestCase(BaseTestCase):
         dt = to_datetime64(None)
         self.assertEqual(dt, None)
 
-        try:
+        with self.assertRaises(DHError):
             to_datetime64(123)
             self.fail("Expected DHError")
-        except DHError:
-            pass
 
     def test_to_timedelta(self):
         target = datetime.timedelta(hours=1, minutes=2, seconds=3, milliseconds=4, microseconds=5)
@@ -390,24 +360,18 @@ class TimeTestCase(BaseTestCase):
         self.assertEqual(d, None)
 
         d = _JDateTimeUtils.parsePeriod("P1Y")
-        try:
+        with self.assertRaises(DHError):
             to_timedelta(d)
             self.fail("Expected DHError")
-        except DHError:
-            pass
 
         d = _JDateTimeUtils.parsePeriod("P1M")
-        try:
+        with self.assertRaises(DHError):
             to_timedelta(d)
             self.fail("Expected DHError")
-        except DHError:
-            pass
 
-        try:
+        with self.assertRaises(DHError):
             to_timedelta(123)
             self.fail("Expected DHError")
-        except DHError:
-            pass
 
     def test_to_timedelta64(self):
         target = np.timedelta64(1, 'h') + np.timedelta64(2, 'm') + np.timedelta64(3, 's') + np.timedelta64(4, 'ms') + np.timedelta64(5, 'us')
@@ -445,31 +409,23 @@ class TimeTestCase(BaseTestCase):
         self.assertEqual(dt, target)
 
         d = _JDateTimeUtils.parsePeriod("P1Y1M")
-        try:
+        with self.assertRaises(DHError):
             to_timedelta64(d)
             self.fail("Expected DHError")
-        except DHError:
-            pass
 
         d = _JDateTimeUtils.parsePeriod("P1Y1D")
-        try:
+        with self.assertRaises(DHError):
             to_timedelta64(d)
             self.fail("Expected DHError")
-        except DHError:
-            pass
 
         d = _JDateTimeUtils.parsePeriod("P1M1D")
-        try:
+        with self.assertRaises(DHError):
             to_timedelta64(d)
             self.fail("Expected DHError")
-        except DHError:
-            pass
 
-        try:
+        with self.assertRaises(DHError):
             to_timedelta64(123)
             self.fail("Expected DHError")
-        except DHError:
-            pass
 
     # endregion
 
