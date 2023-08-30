@@ -259,6 +259,12 @@ t1 = empty_table(0) if t.is_blink else None
             with self.assertRaises(PermissionError):
                 append_input_t.delete(dh_table)
 
+    def test_auto_close(self):
+        session = Session()
+        # this should trigger __del__
+        session = None
+        self.assertIsNone(session)
+
 
 if __name__ == '__main__':
     unittest.main()
