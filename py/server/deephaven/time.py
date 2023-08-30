@@ -274,9 +274,8 @@ def to_j_instant(dt: Union[None, str, datetime.datetime, np.datetime64]) -> Opti
             return _JInstant.ofEpochSecond(epoch_sec, nanos)
         elif isinstance(dt, np.datetime64):
             epoch_nanos = dt.astype('datetime64[ns]').astype(np.int64)
-            epoch_sec = int(epoch_nanos // 1000000000)
-            nanos = int(epoch_nanos % 1000000000)
-            return _JInstant.ofEpochSecond(epoch_sec, nanos)
+            epoch_sec, nanos = divmod(epoch_nanos, 1000000000)
+            return _JInstant.ofEpochSecond(int(epoch_sec), int(nanos))
         else:
             raise Exception("Unsupported conversion: " + str(type(dt)) + " -> Instant")
     except Exception as e:
