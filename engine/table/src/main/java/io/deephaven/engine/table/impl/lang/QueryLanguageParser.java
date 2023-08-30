@@ -648,19 +648,38 @@ public final class QueryLanguageParser extends GenericVisitorAdapter<Class<?>, Q
         return getMethod(scope, methodName, paramTypes, typeArguments).getReturnType();
     }
 
+    /**
+     * Creates an array type from {@code type}, if necessary.
+     * 
+     * @param type The initial type.
+     * @param arrayDimensions The number of array dimensions to add.
+     * @return Either an array type for {@code type} (if {@code arrayDimensions != 0}), or {@code type} itself.
+     */
+    private static Class<?> createArrayType(Class<?> type, int arrayDimensions) {
+        for (; arrayDimensions > 0; arrayDimensions--) {
+            type = Array.newInstance(type, 0).getClass();
+        }
+        return type;
+    }
+
     private Class<?> calculateMethodReturnTypeUsingGenerics(
             final Class<?> scope,
             final Expression scopeExpr,
             final Method method,
             final Class<?>[] argumentTypes,
             final Class<?>[][] typeArgumentsForMethodArguments) {
-        Type methodReturnType = method.getGenericReturnType();
+        final Type methodReturnTypePossibleArray = method.getGenericReturnType();
 
-        int arrayDimensions = 0;
-
-        while (methodReturnType instanceof GenericArrayType) {
-            methodReturnType = ((GenericArrayType) methodReturnType).getGenericComponentType();
-            arrayDimensions++;
+        // Compute the base method return type (after stripping off array dimensions)
+        final int arrayDimensions;
+        Type methodReturnType = methodReturnTypePossibleArray;
+        {
+            int arrayDimensionsTmp = 0;
+            while (methodReturnType instanceof GenericArrayType) {
+                methodReturnType = ((GenericArrayType) methodReturnType).getGenericComponentType();
+                arrayDimensionsTmp++;
+            }
+            arrayDimensions = arrayDimensionsTmp;
         }
 
         if (!(methodReturnType instanceof TypeVariable)) {
@@ -680,7 +699,7 @@ public final class QueryLanguageParser extends GenericVisitorAdapter<Class<?>, Q
                         final Class<?> typeArgument = typeArguments[i];
                         // use the type from the type arg if available; otherwise return first generic bound
                         if (typeArgument != null) {
-                            return typeArgument;
+                            return createArrayType(typeArgument, arrayDimensions);
                         }
                         final Type[] typeParamBounds = scopeTypeParameters[i].getBounds();
                         Assert.neqNull(typeParamBounds, "typeParamBounds");
@@ -690,7 +709,7 @@ public final class QueryLanguageParser extends GenericVisitorAdapter<Class<?>, Q
                             throw new IllegalStateException("Unexpected type: " + genericTypeBound);
                         }
 
-                        return (Class<?>) genericTypeBound;
+                        return createArrayType((Class<?>) genericTypeBound, arrayDimensions);
                     }
                 }
             }
@@ -716,11 +735,7 @@ public final class QueryLanguageParser extends GenericVisitorAdapter<Class<?>, Q
             // Check whether the return type can be captured from a method argument.
             // e.g. calling `T someMethod(T myArg)` with `someMethod("my string")` should return String.class.
             if (genericReturnType.equals(genericParamType)) {
-                for (; arrayDimensions > 0; arrayDimensions--) {
-                    argType = Array.newInstance(argType, 0).getClass();
-                }
-
-                return argType;
+                return createArrayType(argType, arrayDimensions);
             }
 
             // Check whether the return type can be inferred from a type argument of a method argument.
@@ -732,11 +747,7 @@ public final class QueryLanguageParser extends GenericVisitorAdapter<Class<?>, Q
                 for (int j = 0; j < methodParameterizedTypes.length; j++) {
                     if (genericReturnType.equals(methodParameterizedTypes[j])) {
                         Class<?> returnType = typeArgumentsForMethodArguments[i][j];
-                        for (; arrayDimensions > 0; arrayDimensions--) {
-                            returnType = Array.newInstance(returnType, 0).getClass();
-                        }
-
-                        return returnType;
+                        return createArrayType(returnType, arrayDimensions);
                     }
                 }
             }
@@ -944,9 +955,9 @@ public final class QueryLanguageParser extends GenericVisitorAdapter<Class<?>, Q
      * @param e1 The current best-choice executable.
      * @param e2 A possible better-matching execuable.
      * @param argExprTypes The argument types. (Used as a tiebreaker between primitive and boxed parameters.)
+     * @param <EXECUTABLE_TYPE> The kind of executable ({@link Method} vs {@link Constructor}).
      * @return {@code true} if {@code e2} is more specific than {@code e1}, {@code false} if {@code e1} is more specific
      *         than {@code e2}, and {@code null} if no determination could be made.
-     * @param <EXECUTABLE_TYPE> The kind of executable ({@link Method} vs {@link Constructor}).
      */
     private static <EXECUTABLE_TYPE extends Executable> Boolean isMoreSpecificExecutable(
             final EXECUTABLE_TYPE e1, final EXECUTABLE_TYPE e2, Class<?>[] argExprTypes) {

@@ -168,6 +168,10 @@ public class LanguageParserDummyClass {
             return null;
         }
 
+        public T[] getArr() {
+            return null;
+        }
+
         public class DoubleNestedGenericClass<U> {
             public final T varOfOuterType = null;
             public final U varOfInnerType = null;
