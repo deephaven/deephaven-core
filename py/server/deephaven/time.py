@@ -23,6 +23,9 @@ _JZonedDateTime = jpy.get_type("java.time.ZonedDateTime")
 _JDuration = jpy.get_type("java.time.Duration")
 _JPeriod = jpy.get_type("java.time.Period")
 
+_nanos_per_second = 1000000000
+_nanos_per_micro = 1000
+
 
 # region Clock
 
@@ -232,7 +235,7 @@ def to_j_local_time(dt: Union[None, str, datetime.time, datetime.datetime, np.da
         elif isinstance(dt, str):
             return _JDateTimeUtils.parseLocalTime(dt)
         elif isinstance(dt, datetime.time) or isinstance(dt, datetime.datetime):
-            return _JLocalTime.of(dt.hour, dt.minute, dt.second, dt.microsecond * 1000)
+            return _JLocalTime.of(dt.hour, dt.minute, dt.second, dt.microsecond * _nanos_per_micro)
         elif isinstance(dt, np.datetime64):
             # Conversion only supports micros resolution
             return to_j_local_time(dt.astype(datetime.time))
@@ -270,11 +273,11 @@ def to_j_instant(dt: Union[None, str, datetime.datetime, np.datetime64]) -> Opti
         elif isinstance(dt, datetime.datetime):
             epoch_time = dt.timestamp()
             epoch_sec = int(epoch_time)
-            nanos = int((epoch_time - epoch_sec) * 1000000000)
+            nanos = int((epoch_time - epoch_sec) * _nanos_per_second)
             return _JInstant.ofEpochSecond(epoch_sec, nanos)
         elif isinstance(dt, np.datetime64):
             epoch_nanos = dt.astype('datetime64[ns]').astype(np.int64)
-            epoch_sec, nanos = divmod(epoch_nanos, 1000000000)
+            epoch_sec, nanos = divmod(epoch_nanos, _nanos_per_second)
             return _JInstant.ofEpochSecond(int(epoch_sec), int(nanos))
         else:
             raise Exception("Unsupported conversion: " + str(type(dt)) + " -> Instant")
@@ -359,7 +362,7 @@ def to_j_duration(dt: Union[None, str, datetime.timedelta, np.timedelta64]) -> O
         elif isinstance(dt, str):
             return _JDateTimeUtils.parseDuration(dt)
         elif isinstance(dt, datetime.timedelta):
-            nanos = int((dt / datetime.timedelta(microseconds=1)) * 1000)
+            nanos = int((dt / datetime.timedelta(microseconds=1)) * _nanos_per_micro)
             return _JDuration.ofNanos(nanos)
         elif isinstance(dt, np.timedelta64):
             nanos = int(dt.astype('timedelta64[ns]').astype(np.int64))
@@ -475,9 +478,9 @@ def to_time(dt: Union[None, LocalTime, ZonedDateTime]) -> Optional[datetime.time
         if dt is None:
             return None
         elif isinstance(dt, LocalTime.j_type):
-            return datetime.time(dt.getHour(), dt.getMinute(), dt.getSecond(), dt.getNano() // 1000)
+            return datetime.time(dt.getHour(), dt.getMinute(), dt.getSecond(), dt.getNano() // _nanos_per_micro)
         elif isinstance(dt, ZonedDateTime.j_type):
-            return datetime.time(dt.getHour(), dt.getMinute(), dt.getSecond(), dt.getNano() // 1000)
+            return datetime.time(dt.getHour(), dt.getMinute(), dt.getSecond(), dt.getNano() // _nanos_per_micro)
         else:
             raise Exception("Unsupported conversion: " + str(type(dt)) + " -> datetime.time")
     except Exception as e:
@@ -499,10 +502,10 @@ def to_datetime(dt: Union[None, Instant, ZonedDateTime]) -> Optional[datetime.da
         if dt is None:
             return None
         elif isinstance(dt, Instant.j_type):
-            ts = dt.getEpochSecond() + (dt.getNano() / 1000000000)
+            ts = dt.getEpochSecond() + (dt.getNano() / _nanos_per_second)
             return datetime.datetime.fromtimestamp(ts)
         elif isinstance(dt, ZonedDateTime.j_type):
-            ts = dt.toEpochSecond() + (dt.getNano() / 1000000000)
+            ts = dt.toEpochSecond() + (dt.getNano() / _nanos_per_second)
             return datetime.datetime.fromtimestamp(ts)
         else:
             raise Exception("Unsupported conversion: " + str(type(dt)) + " -> datetime.datetime")
@@ -528,10 +531,10 @@ def to_datetime64(dt: Union[None, Instant, ZonedDateTime]) -> Optional[np.dateti
         if dt is None:
             return None
         elif isinstance(dt, Instant.j_type):
-            ts = dt.getEpochSecond() * 1000000000 + dt.getNano()
+            ts = dt.getEpochSecond() * _nanos_per_second + dt.getNano()
             return np.datetime64(ts, 'ns')
         elif isinstance(dt, ZonedDateTime.j_type):
-            ts = dt.toEpochSecond() * 1000000000 + dt.getNano()
+            ts = dt.toEpochSecond() * _nanos_per_second + dt.getNano()
             return np.datetime64(ts, 'ns')
         else:
             raise Exception("Unsupported conversion: " + str(type(dt)) + " -> datetime.datetime")
@@ -553,7 +556,7 @@ def to_timedelta(dt: Union[None, Duration]) -> Optional[datetime.timedelta]:
         if dt is None:
             return None
         elif isinstance(dt, Duration.j_type):
-            return datetime.timedelta(seconds=dt.getSeconds(), microseconds=dt.getNano() // 1000)
+            return datetime.timedelta(seconds=dt.getSeconds(), microseconds=dt.getNano() // _nanos_per_micro)
         elif isinstance(dt, Period.j_type):
             y = dt.getYears()
             m = dt.getMonths()
