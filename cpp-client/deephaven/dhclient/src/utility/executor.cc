@@ -45,7 +45,7 @@ void Executor::Invoke(std::shared_ptr<callback_t> f) {
   auto needsNotify = todo_.empty();
   if (cancelled_) {
     auto message = Stringf("Executor '%o' is cancelled: ignoring Invoke()\n", id_);
-    throw std::runtime_error(DEEPHAVEN_DEBUG_MSG(message));
+    throw std::runtime_error(DEEPHAVEN_LOCATION_STR(message));
   } else {
     todo_.push_back(std::move(f));
   }

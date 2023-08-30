@@ -290,7 +290,7 @@ std::unique_ptr<AbstractFlexVectorBase> MakeFlexVectorFromColumnSource(const Col
 void AssertAllSame(size_t val0, size_t val1, size_t val2) {
   if (val0 != val1 || val0 != val2) {
     auto message = Stringf("Sizes differ: %o vs %o vs %o", val0, val1, val2);
-    throw std::runtime_error(DEEPHAVEN_DEBUG_MSG(message));
+    throw std::runtime_error(DEEPHAVEN_LOCATION_STR(message));
   }
 }
 

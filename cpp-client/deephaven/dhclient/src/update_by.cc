@@ -46,7 +46,7 @@ UpdateByNullBehavior convertDeltaControl(DeltaControl dc) {
     case DeltaControl::kZeroDominates: return UpdateByNullBehavior::ZERO_DOMINATES;
     default: {
       auto message = Stringf("Unexpected DeltaControl %o", static_cast<int>(dc));
-      throw std::runtime_error(DEEPHAVEN_DEBUG_MSG(message));
+      throw std::runtime_error(DEEPHAVEN_LOCATION_STR(message));
     }
   }
 }
@@ -59,7 +59,7 @@ BadDataBehaviorProtoEnum convertBadDataBehavior(BadDataBehavior bdb) {
     case BadDataBehavior::kPoison: return BadDataBehaviorProtoEnum::POISON;
     default: {
       auto message = Stringf("Unexpected BadDataBehavior %o", static_cast<int>(bdb));
-      throw std::runtime_error(DEEPHAVEN_DEBUG_MSG(message));
+      throw std::runtime_error(DEEPHAVEN_LOCATION_STR(message));
     }
   }
 }
@@ -96,7 +96,7 @@ MathContextProto convertMathContext(MathContext mctx) {
     }
     default: {
       auto message = Stringf("Unexpected MathContext %o", static_cast<int>(mctx));
-      throw std::runtime_error(DEEPHAVEN_DEBUG_MSG(message));
+      throw std::runtime_error(DEEPHAVEN_LOCATION_STR(message));
     }
   }
   MathContextProto result;
