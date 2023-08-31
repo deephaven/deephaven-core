@@ -35,7 +35,8 @@ def dh_now(system: bool = False, resolution: str = 'ns') -> Instant:
     """ Provides the current datetime according to the current Deephaven clock.
 
     Query strings should use the built-in "now" function instead of this function.
-    The build-in "now" function is pure Java and will be more efficient.
+    The build-in "now" function is pure Java and will be more efficient
+    because fewer Java/Python boundary crossings will be needed.
 
     Args:
         system (bool): True to use the system clock; False to use the default clock.  Under most circumstances,
@@ -74,7 +75,8 @@ def dh_today(tz: Optional[TimeZone] = None) -> str:
     but during replay simulations, this method can return the date according to replay time.
 
     Query strings should use the built-in "today" function instead of this function.
-    The build-in "today" function is pure Java and will be more efficient.
+    The build-in "today" function is pure Java and will be more efficient
+    because fewer Java/Python boundary crossings will be needed.
 
     Args:
         tz (TimeZone): Time zone to use when determining the date.
@@ -99,7 +101,8 @@ def dh_time_zone() -> TimeZone:
     """ Provides the current Deephaven system time zone.
 
     Query strings should use the built-in "timeZone" function instead of this function.
-    The build-in "timeZone" function is pure Java and will be more efficient.
+    The build-in "timeZone" function is pure Java and will be more efficient
+    because fewer Java/Python boundary crossings will be needed.
 
     Returns:
         TimeZone
