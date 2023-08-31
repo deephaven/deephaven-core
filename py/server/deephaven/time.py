@@ -592,7 +592,7 @@ def to_pd_timestamp(dt: Union[None, Instant, ZonedDateTime]) -> Optional[pandas.
             If None is provided, None is returned.
 
     Returns:
-        pandaw.Timestamp
+        pandas.Timestamp
     """
     try:
         if dt is None:
