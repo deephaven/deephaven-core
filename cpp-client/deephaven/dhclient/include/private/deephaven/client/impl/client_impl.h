@@ -4,6 +4,8 @@
 #pragma once
 
 #include <memory>
+#include <mutex>
+#include "deephaven/client/utility/misc_types.h"
 #include "deephaven/client/impl/table_handle_manager_impl.h"
 #include "deephaven/client/server/server.h"
 #include "deephaven/client/utility/executor.h"
@@ -27,14 +29,24 @@ public:
   ClientImpl(Private, std::shared_ptr<TableHandleManagerImpl> &&manager_impl);
   ~ClientImpl();
 
-  void Shutdown() {
-    managerImpl_->Shutdown();
-  }
+  void Shutdown();
 
   [[nodiscard]]
-  const std::shared_ptr<TableHandleManagerImpl> &ManagerImpl() const { return managerImpl_; }
+  const std::shared_ptr<TableHandleManagerImpl> &ManagerImpl() const { return manager_impl_; }
+
+  using OnCloseCbId = utility::OnCloseCbId;
+  using OnCloseCb = utility::OnCloseCb;
+
+  OnCloseCbId AddOnCloseCallback(OnCloseCb cb);
+  bool RemoveOnCloseCallback(OnCloseCbId cb_id);
 
 private:
-  std::shared_ptr<TableHandleManagerImpl> managerImpl_;
+  std::shared_ptr<TableHandleManagerImpl> manager_impl_;
+  mutable std::mutex on_close_mux_;
+  struct OnCloseCbContext {
+    std::uint32_t next_id_;
+    std::map<OnCloseCbId, OnCloseCb> map_;
+  };
+  std::unique_ptr<OnCloseCbContext> on_close_cb_ctx_;
 };
 }  // namespace deephaven::client::impl

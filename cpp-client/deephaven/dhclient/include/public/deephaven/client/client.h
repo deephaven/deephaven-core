@@ -219,6 +219,24 @@ public:
   [[nodiscard]]
   TableHandleManager GetManager() const;
 
+  using OnCloseCbId = utility::OnCloseCbId;
+  using OnCloseCb = utility::OnCloseCb;
+
+  /**
+   * Adds a callback to be invoked when this client is closed.
+   *
+   * @param cb the callback
+   * @return an id for the added callback that can be used to remove it.
+   */
+  OnCloseCbId AddOnCloseCallback(OnCloseCb cb);
+
+  /**
+   * Removes an on close callback.
+   * @param cb_id the id of the callback to remove
+   * @return true if a callback with that id was found and removed, false otherwise.
+   */
+  bool RemoveOnCloseCallback(OnCloseCbId cb_id);
+
 private:
   explicit Client(std::shared_ptr<impl::ClientImpl> impl);
   std::shared_ptr<impl::ClientImpl> impl_;

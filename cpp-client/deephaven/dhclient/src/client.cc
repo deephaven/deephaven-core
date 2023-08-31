@@ -3,7 +3,8 @@
  */
 #include "deephaven/client/client.h"
 
-#include <grpc/support/log.h>
+#include <stdexcept>
+
 #include <arrow/array.h>
 #include <arrow/scalar.h>
 #include "deephaven/client/columns.h"
@@ -15,47 +16,32 @@
 #include "deephaven/client/impl/table_handle_impl.h"
 #include "deephaven/client/impl/table_handle_manager_impl.h"
 #include "deephaven/client/impl/update_by_operation_impl.h"
-#include "deephaven/client/impl/util.h"
 #include "deephaven/client/subscription/subscription_handle.h"
 #include "deephaven/client/utility/arrow_util.h"
 #include "deephaven/dhcore/clienttable/schema.h"
 #include "deephaven/dhcore/utility/utility.h"
-#include "deephaven/proto/table.pb.h"
-#include "deephaven/proto/table.grpc.pb.h"
 
-using grpc::Channel;
-using grpc::ClientContext;
-using grpc::ClientReader;
 using io::deephaven::proto::backplane::grpc::ComboAggregateRequest;
-using io::deephaven::proto::backplane::grpc::HandshakeRequest;
-using io::deephaven::proto::backplane::grpc::HandshakeResponse;
 using io::deephaven::proto::backplane::grpc::Ticket;
 using deephaven::client::server::Server;
 using deephaven::client::Column;
-using deephaven::client::DateTimeCol;
-using deephaven::client::NumCol;
-using deephaven::client::StrCol;
-using deephaven::client::impl::StrColImpl;
 using deephaven::client::impl::AggregateComboImpl;
 using deephaven::client::impl::AggregateImpl;
 using deephaven::client::impl::ClientImpl;
-using deephaven::client::impl::MoveVectorData;
 using deephaven::client::impl::UpdateByOperationImpl;
 using deephaven::client::subscription::SubscriptionHandle;
 using deephaven::client::utility::Executor;
 using deephaven::client::utility::OkOrThrow;
 using deephaven::dhcore::clienttable::Schema;
-using deephaven::dhcore::utility::Base64Encode;
 using deephaven::dhcore::utility::MakeReservedVector;
 using deephaven::dhcore::utility::separatedList;
-using deephaven::dhcore::utility::SFCallback;
 using deephaven::dhcore::utility::SimpleOstringstream;
-using deephaven::dhcore::utility::Stringf;
 
 
 namespace deephaven::client {
 namespace {
-void printTableData(std::ostream &s, const TableHandle &table_handle, bool want_headers);
+void PrintTableData(std::ostream &s, const TableHandle &table_handle, bool want_headers);
+void CheckNotClosedOrThrow(const std::shared_ptr<ClientImpl> &impl);
 }  // namespace
 
 Client Client::Connect(const std::string &target, const ClientOptions &options) {
@@ -89,9 +75,19 @@ void Client::Close() {
 }
 
 TableHandleManager Client::GetManager() const {
+  CheckNotClosedOrThrow(impl_);
   return TableHandleManager(impl_->ManagerImpl());
 }
 
+Client::OnCloseCbId Client::AddOnCloseCallback(std::function<void()> cb) {
+  CheckNotClosedOrThrow(impl_);
+  return impl_->AddOnCloseCallback(std::move(cb));
+}
+
+bool Client::RemoveOnCloseCallback(OnCloseCbId cb_id) {
+  CheckNotClosedOrThrow(impl_);
+  return impl_->RemoveOnCloseCallback(std::move(cb_id));
+}
 
 TableHandleManager::TableHandleManager() = default;
 TableHandleManager::TableHandleManager(std::shared_ptr<impl::TableHandleManagerImpl> impl) : impl_(std::move(impl)) {}
@@ -619,7 +615,7 @@ TableHandleStreamAdaptor::TableHandleStreamAdaptor(TableHandle table, bool want_
 TableHandleStreamAdaptor::~TableHandleStreamAdaptor() = default;
 
 std::ostream &operator<<(std::ostream &s, const TableHandleStreamAdaptor &o) {
-  printTableData(s, o.table_, o.wantHeaders_);
+  PrintTableData(s, o.table_, o.wantHeaders_);
   return s;
 }
 
@@ -632,7 +628,7 @@ std::string ConvertToString::ToString(
 }  // namespace internal
 
 namespace {
-void printTableData(std::ostream &s, const TableHandle &table_handle, bool want_headers) {
+void PrintTableData(std::ostream &s, const TableHandle &table_handle, bool want_headers) {
   auto fsr = table_handle.GetFlightStreamReader();
 
   if (want_headers) {
@@ -663,6 +659,11 @@ void printTableData(std::ostream &s, const TableHandle &table_handle, bool want_
       };
       s << separatedList(columns.begin(), columns.end(), "\t", stream_array_cell);
     }
+  }
+}
+void CheckNotClosedOrThrow(const std::shared_ptr<ClientImpl> &impl) {
+  if (impl == nullptr) {
+    throw std::runtime_error(DEEPHAVEN_LOCATION_STR("client is already closed"));
   }
 }
 }  // namespace
