@@ -494,7 +494,6 @@ def to_j_period(dt: Union[None, Period, str, datetime.timedelta, numpy.timedelta
 
 # region Conversions: Java To Python
 
-# TODO: support other cross types?
 
 def to_date(dt: Union[None, LocalDate, ZonedDateTime]) -> Optional[datetime.date]:
     """
@@ -593,8 +592,7 @@ def to_pd_timestamp(dt: Union[None, Instant, ZonedDateTime]) -> Optional[pandas.
         raise DHError(e) from e
 
 
-# TODO: rename?
-def to_datetime64(dt: Union[None, Instant, ZonedDateTime]) -> Optional[numpy.datetime64]:
+def to_np_datetime64(dt: Union[None, Instant, ZonedDateTime]) -> Optional[numpy.datetime64]:
     """
     Converts a Java date time to a numpy.datetime64.
 
@@ -686,8 +684,7 @@ def to_pd_timedelta(dt: Union[None, Duration]) -> Optional[pandas.Timedelta]:
         raise DHError(e) from e
 
 
-# TODO: rename?
-def to_timedelta64(dt: Union[None, Duration, Period]) -> Optional[numpy.timedelta64]:
+def to_np_timedelta64(dt: Union[None, Duration, Period]) -> Optional[numpy.timedelta64]:
     """
     Converts a Java time durationto a numpy.timedelta64.
 

@@ -447,22 +447,22 @@ class TimeTestCase(BaseTestCase):
         with self.assertRaises(DHError):
             to_pd_timestamp(False)
 
-    def test_to_datetime64(self):
+    def test_to_np_datetime64(self):
         target = np.datetime64("2021-12-10T14:21:17.123456Z")
 
         dt = _JDateTimeUtils.parseInstant("2021-12-10T14:21:17.123456Z")
-        dt = to_datetime64(dt)
+        dt = to_np_datetime64(dt)
         self.assertEqual(dt, target)
 
         dt = _JDateTimeUtils.parseZonedDateTime("2021-12-10T14:21:17.123456Z")
-        dt = to_datetime64(dt)
+        dt = to_np_datetime64(dt)
         self.assertEqual(dt, target)
 
-        dt = to_datetime64(None)
+        dt = to_np_datetime64(None)
         self.assertEqual(dt, None)
 
         with self.assertRaises(DHError):
-            to_datetime64(False)
+            to_np_datetime64(False)
             self.fail("Expected DHError")
 
     def test_to_timedelta(self):
@@ -533,58 +533,58 @@ class TimeTestCase(BaseTestCase):
             to_pd_timedelta(False)
             self.fail("Expected DHError")
 
-    def test_to_timedelta64(self):
+    def test_to_np_timedelta64(self):
         target = np.timedelta64(1, 'h') + np.timedelta64(2, 'm') + np.timedelta64(3, 's') + np.timedelta64(4, 'ms') + np.timedelta64(5, 'us')
 
         d = _JDateTimeUtils.parseDuration("PT1H2M3.004005S")
-        dt = to_timedelta64(d)
+        dt = to_np_timedelta64(d)
         self.assertEqual(dt, target)
 
         target = np.timedelta64(2, 'D')
         d = _JDateTimeUtils.parsePeriod("P2D")
-        dt = to_timedelta64(d)
+        dt = to_np_timedelta64(d)
         self.assertEqual(dt, target)
 
         target = np.timedelta64(14, 'D')
         d = _JDateTimeUtils.parsePeriod("P2W")
-        dt = to_timedelta64(d)
+        dt = to_np_timedelta64(d)
         self.assertEqual(dt, target)
 
-        d = to_timedelta64(None)
+        d = to_np_timedelta64(None)
         self.assertEqual(d, None)
 
         target = np.timedelta64(2, 'Y')
         d = _JDateTimeUtils.parsePeriod("P2Y")
-        dt = to_timedelta64(d)
+        dt = to_np_timedelta64(d)
         self.assertEqual(dt, target)
 
         target = np.timedelta64(2, 'M')
         d = _JDateTimeUtils.parsePeriod("P2M")
-        dt = to_timedelta64(d)
+        dt = to_np_timedelta64(d)
         self.assertEqual(dt, target)
 
         target = np.timedelta64(0, 'D')
         d = _JDateTimeUtils.parsePeriod("P0M")
-        dt = to_timedelta64(d)
+        dt = to_np_timedelta64(d)
         self.assertEqual(dt, target)
 
         d = _JDateTimeUtils.parsePeriod("P1Y1M")
         with self.assertRaises(DHError):
-            to_timedelta64(d)
+            to_np_timedelta64(d)
             self.fail("Expected DHError")
 
         d = _JDateTimeUtils.parsePeriod("P1Y1D")
         with self.assertRaises(DHError):
-            to_timedelta64(d)
+            to_np_timedelta64(d)
             self.fail("Expected DHError")
 
         d = _JDateTimeUtils.parsePeriod("P1M1D")
         with self.assertRaises(DHError):
-            to_timedelta64(d)
+            to_np_timedelta64(d)
             self.fail("Expected DHError")
 
         with self.assertRaises(DHError):
-            to_timedelta64(False)
+            to_np_timedelta64(False)
             self.fail("Expected DHError")
 
     # endregion
