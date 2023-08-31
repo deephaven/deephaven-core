@@ -39,4 +39,3 @@ struct OnCloseCbId {
 using OnCloseCb = std::function<void()>;
 
 } // namespace deephaven::client::utility
-
