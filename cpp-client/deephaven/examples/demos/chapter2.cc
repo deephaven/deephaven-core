@@ -186,7 +186,7 @@ public:
     auto int64_col_generic = current->GetColumn("IntValue", true);
 
     const auto *typed_int64_col =
-        VerboseCast<const Int64ColumnSource*>(DEEPHAVEN_EXPR_MSG(int64_col_generic.get()));
+        VerboseCast<const Int64ColumnSource*>(DEEPHAVEN_LOCATION_EXPR(int64_col_generic.get()));
 
     auto rows = current->GetRowSequence();
 
@@ -252,7 +252,7 @@ private:
     auto int64_col_generic = table.GetColumn("IntValue", true);
 
     const auto *typed_int64_col =
-        VerboseCast<const Int64ColumnSource*>(DEEPHAVEN_EXPR_MSG(int64_col_generic.get()));
+        VerboseCast<const Int64ColumnSource*>(DEEPHAVEN_LOCATION_EXPR(int64_col_generic.get()));
 
     size_t chunk_size = 8192;
     auto data_chunk = Int64Chunk::Create(chunk_size);

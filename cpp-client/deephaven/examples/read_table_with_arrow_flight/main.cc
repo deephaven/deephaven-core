@@ -51,31 +51,31 @@ void dumpSymbolColumn(const TableHandle &tableHandle) {
   auto fsr = tableHandle.GetFlightStreamReader();
   while (true) {
     arrow::flight::FlightStreamChunk chunk;
-    OkOrThrow(DEEPHAVEN_EXPR_MSG(fsr->Next(&chunk)));
+    OkOrThrow(DEEPHAVEN_LOCATION_EXPR(fsr->Next(&chunk)));
     if (chunk.data == nullptr) {
       break;
     }
 
     auto symbolChunk = chunk.data->GetColumnByName("Symbol");
     if (symbolChunk == nullptr) {
-      throw std::runtime_error(DEEPHAVEN_DEBUG_MSG("Symbol column not found"));
+      throw std::runtime_error(DEEPHAVEN_LOCATION_STR("Symbol column not found"));
     }
     auto priceChunk = chunk.data->GetColumnByName("Price");
     if (priceChunk == nullptr) {
-      throw std::runtime_error(DEEPHAVEN_DEBUG_MSG("Price column not found"));
+      throw std::runtime_error(DEEPHAVEN_LOCATION_STR("Price column not found"));
     }
 
     auto symbolAsStringArray = std::dynamic_pointer_cast<arrow::StringArray>(symbolChunk);
     auto priceAsDoubleArray = std::dynamic_pointer_cast<arrow::DoubleArray>(priceChunk);
     if (symbolAsStringArray == nullptr) {
-      throw std::runtime_error(DEEPHAVEN_DEBUG_MSG("symbolChunk was not an arrow::StringArray"));
+      throw std::runtime_error(DEEPHAVEN_LOCATION_STR("symbolChunk was not an arrow::StringArray"));
     }
     if (priceAsDoubleArray == nullptr) {
-      throw std::runtime_error(DEEPHAVEN_DEBUG_MSG("priceChunk was not an arrow::DoubleArray"));
+      throw std::runtime_error(DEEPHAVEN_LOCATION_STR("priceChunk was not an arrow::DoubleArray"));
     }
 
     if (symbolAsStringArray->length() != priceAsDoubleArray->length()) {
-      throw std::runtime_error(DEEPHAVEN_DEBUG_MSG("Lengths differ"));
+      throw std::runtime_error(DEEPHAVEN_LOCATION_STR("Lengths differ"));
     }
 
     for (int64_t i = 0; i < symbolAsStringArray->length(); ++i) {

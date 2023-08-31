@@ -1249,7 +1249,7 @@ def rolling_std_time(ts_col: str, cols: Union[str, List[str]], rev_time: Union[i
         raise DHError(e, "failed to create a rolling standard deviation (time) UpdateByOperation.") from e
 
 
-def rolling_wavg_tick(weight_col: str, cols: Union[str, List[str]], rev_ticks: int, fwd_ticks: int = 0) -> UpdateByOperation:
+def rolling_wavg_tick(wcol: str, cols: Union[str, List[str]], rev_ticks: int, fwd_ticks: int = 0) -> UpdateByOperation:
     """Creates a rolling weighted average UpdateByOperation for the supplied column names, using ticks as the windowing unit. Ticks
     are row counts, and you may specify the reverse and forward window in number of rows to include. The current row
     is considered to belong to the reverse window but not the forward window. Also, negative values are allowed and
@@ -1272,7 +1272,7 @@ def rolling_wavg_tick(weight_col: str, cols: Union[str, List[str]], rev_ticks: i
             i.e. "new_col = col"; when empty, update_by perform the rolling weighted average operation on all columns.
         cols (Union[str, List[str]]): the column(s) to be operated on, can include expressions to rename the output,
             i.e. "new_col = col"; when empty, update_by perform the rolling weighted average operation on all columns.
-        weight_col (str):  the column containing the weight values
+        wcol (str):  the column containing the weight values
         rev_ticks (int): the look-behind window size (in rows/ticks)
         fwd_ticks (int): the look-forward window size (int rows/ticks), default is 0
 
@@ -1284,12 +1284,12 @@ def rolling_wavg_tick(weight_col: str, cols: Union[str, List[str]], rev_ticks: i
     """
     try:
         cols = to_sequence(cols)
-        return UpdateByOperation(j_updateby_op=_JUpdateByOperation.RollingWAvg(rev_ticks, fwd_ticks, weight_col, *cols))
+        return UpdateByOperation(j_updateby_op=_JUpdateByOperation.RollingWAvg(rev_ticks, fwd_ticks, wcol, *cols))
     except Exception as e:
         raise DHError(e, "failed to create a rolling weighted average (tick) UpdateByOperation.") from e
 
 
-def rolling_wavg_time(ts_col: str, weight_col: str, cols: Union[str, List[str]], rev_time: Union[int, str],
+def rolling_wavg_time(ts_col: str, wcol: str, cols: Union[str, List[str]], rev_time: Union[int, str],
                       fwd_time: Union[int, str] = 0) -> UpdateByOperation:
     """Creates a rolling weighted average UpdateByOperation for the supplied column names, using time as the windowing unit. This
     function accepts nanoseconds or time strings as the reverse and forward window parameters. Negative values are
@@ -1314,7 +1314,7 @@ def rolling_wavg_time(ts_col: str, weight_col: str, cols: Union[str, List[str]],
         ts_col (str): the timestamp column for determining the window
         cols (Union[str, List[str]]): the column(s) to be operated on, can include expressions to rename the output,
             i.e. "new_col = col"; when empty, update_by perform the rolling weighted average operation on all columns.
-        weight_col (str):  the column containing the weight values
+        wcol (str):  the column containing the weight values
         rev_time (int): the look-behind window size, can be expressed as an integer in nanoseconds or a time
             interval string, e.g. "PT00:00:00.001" or "PT5M"
         fwd_time (int): the look-ahead window size, can be expressed as an integer in nanoseconds or a time
@@ -1330,6 +1330,6 @@ def rolling_wavg_time(ts_col: str, weight_col: str, cols: Union[str, List[str]],
         cols = to_sequence(cols)
         rev_time = _JDateTimeUtils.parseDurationNanos(rev_time) if isinstance(rev_time, str) else rev_time
         fwd_time = _JDateTimeUtils.parseDurationNanos(fwd_time) if isinstance(fwd_time, str) else fwd_time
-        return UpdateByOperation(j_updateby_op=_JUpdateByOperation.RollingWAvg(ts_col, rev_time, fwd_time, weight_col, *cols))
+        return UpdateByOperation(j_updateby_op=_JUpdateByOperation.RollingWAvg(ts_col, rev_time, fwd_time, wcol, *cols))
     except Exception as e:
         raise DHError(e, "failed to create a rolling weighted average (time) UpdateByOperation.") from e

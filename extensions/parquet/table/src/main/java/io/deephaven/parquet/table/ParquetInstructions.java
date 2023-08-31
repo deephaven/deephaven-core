@@ -62,6 +62,25 @@ public abstract class ParquetInstructions implements ColumnToCodecMappings {
         return defaultMaximumDictionaryKeys;
     }
 
+    private static volatile int defaultMaximumDictionarySize = 1 << 20;
+
+    /**
+     * Set the default for {@link #getMaximumDictionarySize()}.
+     *
+     * @param maximumDictionarySize The new default
+     * @see Builder#setMaximumDictionarySize(int)
+     */
+    public static void setDefaultMaximumDictionarySize(final int maximumDictionarySize) {
+        defaultMaximumDictionarySize = Require.geqZero(maximumDictionarySize, "maximumDictionarySize");
+    }
+
+    /**
+     * @return The default for {@link #getMaximumDictionarySize()}
+     */
+    public static int getDefaltMaximumDictionarySize() {
+        return defaultMaximumDictionarySize;
+    }
+
     private static final int MIN_DEFAULT_PAGE_SIZE = 64 << 10;
     private static volatile int defaultTargetPageSize = 1 << 20;
     private static final boolean DEFAULT_IS_REFRESHING = false;
@@ -121,6 +140,12 @@ public abstract class ParquetInstructions implements ColumnToCodecMappings {
      */
     public abstract int getMaximumDictionaryKeys();
 
+    /**
+     * @return The maximum number of bytes the writer should add to a dictionary before switching to non-dictionary
+     *         encoding; never evaluated for non-String columns, ignored if {@link #useDictionary(String)}
+     */
+    public abstract int getMaximumDictionarySize();
+
     public abstract boolean isLegacyParquet();
 
     public abstract int getTargetPageSize();
@@ -178,6 +203,11 @@ public abstract class ParquetInstructions implements ColumnToCodecMappings {
         @Override
         public int getMaximumDictionaryKeys() {
             return defaultMaximumDictionaryKeys;
+        }
+
+        @Override
+        public int getMaximumDictionarySize() {
+            return defaultMaximumDictionarySize;
         }
 
         @Override
@@ -256,7 +286,8 @@ public abstract class ParquetInstructions implements ColumnToCodecMappings {
          */
         private final KeyedObjectHashMap<String, ColumnInstructions> parquetColumnNameToInstructions;
         private final String compressionCodecName;
-        private int maximumDictionaryKeys;
+        final private int maximumDictionaryKeys;
+        final private int maximumDictionarySize;
         private final boolean isLegacyParquet;
         private final int targetPageSize;
         private final boolean isRefreshing;
@@ -266,6 +297,7 @@ public abstract class ParquetInstructions implements ColumnToCodecMappings {
                 final KeyedObjectHashMap<String, ColumnInstructions> parquetColumnNameToColumnName,
                 final String compressionCodecName,
                 final int maximumDictionaryKeys,
+                final int maximumDictionarySize,
                 final boolean isLegacyParquet,
                 final int targetPageSize,
                 final boolean isRefreshing) {
@@ -273,6 +305,7 @@ public abstract class ParquetInstructions implements ColumnToCodecMappings {
             this.parquetColumnNameToInstructions = parquetColumnNameToColumnName;
             this.compressionCodecName = compressionCodecName;
             this.maximumDictionaryKeys = maximumDictionaryKeys;
+            this.maximumDictionarySize = maximumDictionarySize;
             this.isLegacyParquet = isLegacyParquet;
             this.targetPageSize = targetPageSize;
             this.isRefreshing = isRefreshing;
@@ -345,6 +378,11 @@ public abstract class ParquetInstructions implements ColumnToCodecMappings {
         }
 
         @Override
+        public int getMaximumDictionarySize() {
+            return maximumDictionarySize;
+        }
+
+        @Override
         public boolean isLegacyParquet() {
             return isLegacyParquet;
         }
@@ -405,6 +443,7 @@ public abstract class ParquetInstructions implements ColumnToCodecMappings {
         private KeyedObjectHashMap<String, ColumnInstructions> parquetColumnNameToInstructions;
         private String compressionCodecName = defaultCompressionCodecName;
         private int maximumDictionaryKeys = defaultMaximumDictionaryKeys;
+        private int maximumDictionarySize = defaultMaximumDictionarySize;
         private boolean isLegacyParquet;
         private int targetPageSize = defaultTargetPageSize;
         private boolean isRefreshing = DEFAULT_IS_REFRESHING;
@@ -549,6 +588,18 @@ public abstract class ParquetInstructions implements ColumnToCodecMappings {
             return this;
         }
 
+        /**
+         * Set the maximum number of bytes the writer should add to the dictionary before switching to non-dictionary
+         * encoding; never evaluated for non-String columns, ignored if {@link #useDictionary(String) use dictionary} is
+         * set for the column.
+         *
+         * @param maximumDictionarySize The maximum size of dictionary (in bytes); must be {@code >= 0}
+         */
+        public Builder setMaximumDictionarySize(final int maximumDictionarySize) {
+            this.maximumDictionarySize = Require.geqZero(maximumDictionarySize, "maximumDictionarySize");
+            return this;
+        }
+
         public Builder setIsLegacyParquet(final boolean isLegacyParquet) {
             this.isLegacyParquet = isLegacyParquet;
             return this;
@@ -574,7 +625,7 @@ public abstract class ParquetInstructions implements ColumnToCodecMappings {
                     parquetColumnNameToInstructions;
             parquetColumnNameToInstructions = null;
             return new ReadOnly(columnNameToInstructionsOut, parquetColumnNameToColumnNameOut, compressionCodecName,
-                    maximumDictionaryKeys, isLegacyParquet, targetPageSize, isRefreshing);
+                    maximumDictionaryKeys, maximumDictionarySize, isLegacyParquet, targetPageSize, isRefreshing);
         }
     }
 
