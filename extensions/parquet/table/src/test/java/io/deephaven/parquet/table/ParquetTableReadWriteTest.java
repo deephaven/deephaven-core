@@ -914,6 +914,7 @@ public class ParquetTableReadWriteTest {
         assertEquals(columnMetadata.getEncodingStats().getNumDataPagesEncodedAs(Encoding.PLAIN), 2);
     }
 
+    @Test
     public void readWriteStatisticsTest() {
         // Test simple structured table.
         final ColumnDefinition<byte[]> columnDefinition =

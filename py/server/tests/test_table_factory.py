@@ -19,7 +19,6 @@ from deephaven.table import Table
 from deephaven.stream import blink_to_append_only, stream_to_append_only
 
 JArrayList = jpy.get_type("java.util.ArrayList")
-_JBlinkTableTools = jpy.get_type("io.deephaven.engine.table.impl.BlinkTableTools")
 
 @dataclass
 class CustomClass:
@@ -69,7 +68,7 @@ class TableFactoryTestCase(BaseTestCase):
     def test_time_table_blink(self):
         t = time_table("PT1s", blink_table=True)
         self.assertEqual(1, len(t.columns))
-        self.assertTrue(_JBlinkTableTools.isBlink(t.j_table))
+        self.assertTrue(t.is_blink)
 
     def test_time_table_error(self):
         with self.assertRaises(DHError) as cm:

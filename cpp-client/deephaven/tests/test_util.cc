@@ -145,7 +145,7 @@ void CompareTableHelper(int depth, const std::shared_ptr<arrow::Table> &table,
   if (field->name() != column_name) {
     auto message = Stringf("Column %o: Expected column name %o, have %o", depth, column_name,
         field->name());
-    throw std::runtime_error(DEEPHAVEN_DEBUG_MSG(message));
+    throw std::runtime_error(DEEPHAVEN_LOCATION_STR(message));
   }
 
   arrow::ChunkedArray chunked_data(data);
@@ -156,13 +156,13 @@ void CompareTableHelper(int depth, const std::shared_ptr<arrow::Table> &table,
   if (column->length() != chunked_data.length()) {
     auto message = Stringf("Column %o: Expected length %o, got %o", depth, chunked_data.length(),
         column->length());
-    throw std::runtime_error(DEEPHAVEN_DEBUG_MSG(message));
+    throw std::runtime_error(DEEPHAVEN_LOCATION_STR(message));
   }
 
   if (!column->type()->Equals(chunked_data.type())) {
     auto message = Stringf("Column %o: Expected type %o, got %o", depth,
         chunked_data.type()->ToString(), column->type()->ToString());
-    throw std::runtime_error(DEEPHAVEN_DEBUG_MSG(message));
+    throw std::runtime_error(DEEPHAVEN_LOCATION_STR(message));
   }
 
   int64_t element_index = 0;
@@ -172,7 +172,7 @@ void CompareTableHelper(int depth, const std::shared_ptr<arrow::Table> &table,
   int r_chunk_index = 0;
   while (element_index < column->length()) {
     if (l_chunk_num >= column->num_chunks() || r_chunk_num >= chunked_data.num_chunks()) {
-      throw std::runtime_error(DEEPHAVEN_DEBUG_MSG("Logic error"));
+      throw std::runtime_error(DEEPHAVEN_LOCATION_STR("Logic error"));
     }
     const auto &l_chunk = column->chunk(l_chunk_num);
     if (l_chunk_index == l_chunk->length()) {
@@ -188,13 +188,13 @@ void CompareTableHelper(int depth, const std::shared_ptr<arrow::Table> &table,
       continue;
     }
 
-    const auto l_item = ValueOrThrow(DEEPHAVEN_EXPR_MSG(l_chunk->GetScalar(l_chunk_index)));
-    const auto r_item = ValueOrThrow(DEEPHAVEN_EXPR_MSG(r_chunk->GetScalar(r_chunk_index)));
+    const auto l_item = ValueOrThrow(DEEPHAVEN_LOCATION_EXPR(l_chunk->GetScalar(l_chunk_index)));
+    const auto r_item = ValueOrThrow(DEEPHAVEN_LOCATION_EXPR(r_chunk->GetScalar(r_chunk_index)));
 
     if (!l_item->Equals(r_item)) {
       auto message = Stringf("Column %o: Columns differ at element %o: %o vs %o",
           depth, element_index, l_item->ToString(), r_item->ToString());
-      throw std::runtime_error(DEEPHAVEN_DEBUG_MSG(message));
+      throw std::runtime_error(DEEPHAVEN_LOCATION_STR(message));
     }
 
     ++element_index;
@@ -203,18 +203,18 @@ void CompareTableHelper(int depth, const std::shared_ptr<arrow::Table> &table,
   }
 
   // TODO(kosak): describe difference
-  throw std::runtime_error(DEEPHAVEN_DEBUG_MSG("Some other difference"));
+  throw std::runtime_error(DEEPHAVEN_LOCATION_STR("Some other difference"));
 }
 
 std::shared_ptr<arrow::Table> BasicValidate(const deephaven::client::TableHandle &table, int expected_columns) {
   auto fsr = table.GetFlightStreamReader();
   std::shared_ptr<arrow::Table> arrow_table;
-  OkOrThrow(DEEPHAVEN_EXPR_MSG(fsr->ReadAll(&arrow_table)));
+  OkOrThrow(DEEPHAVEN_LOCATION_EXPR(fsr->ReadAll(&arrow_table)));
 
   if (expected_columns != arrow_table->num_columns()) {
     auto message = Stringf("Expected %o columns, but Table actually has %o columns",
         expected_columns, arrow_table->num_columns());
-    throw std::runtime_error(DEEPHAVEN_DEBUG_MSG(message));
+    throw std::runtime_error(DEEPHAVEN_LOCATION_STR(message));
   }
 
   return arrow_table;

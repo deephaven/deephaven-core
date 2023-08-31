@@ -135,7 +135,7 @@ RowSequenceBuilder::~RowSequenceBuilder() = default;
 void RowSequenceBuilder::AddInterval(uint64_t begin, uint64_t end) {
   if (begin > end) {
     auto message = Stringf("Malformed range [%o,%o)", begin, end);
-    throw std::runtime_error(DEEPHAVEN_DEBUG_MSG(message));
+    throw std::runtime_error(DEEPHAVEN_LOCATION_STR(message));
   }
 
   if (begin == end) {

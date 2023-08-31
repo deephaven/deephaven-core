@@ -39,10 +39,6 @@ import static io.grpc.internal.GrpcUtil.TIMEOUT_KEY;
  * On the initial request, an extra header is sent from the client, indicating the path to the service method.
  * Technically, this makes it possible for a grpc message to split across several websocket frames, but at this time
  * each grpc message is exactly one websocket frame.
- * <p>
- * </p>
- * JSR356 websockets always handle their incoming messages in a serial manner, so we don't need to worry here about
- * runOnTransportThread while in onMessage, as we're already in the transport thread.
  */
 public class MultiplexedWebSocketServerStream extends AbstractWebSocketServerStream {
     public static final String GRACEFUL_CLOSE = MultiplexedWebSocketServerStream.class.getName() + ".graceful_close";
@@ -62,9 +58,7 @@ public class MultiplexedWebSocketServerStream extends AbstractWebSocketServerStr
 
     public static final String GRPC_WEBSOCKETS_MULTIPLEX_PROTOCOL = "grpc-websockets-multiplex";
 
-    private final InternalLogId logId = InternalLogId.allocate(MultiplexedWebSocketServerStream.class, null);
-
-    // No need to be thread-safe, this will only be accessed from the transport thread.
+    // No need to be thread-safe, this will only be accessed from the jsr356 callbacks in a serial manner
     private final Map<Integer, MultiplexedWebsocketStreamImpl> streams = new HashMap<>();
     private final boolean isTextRequest = false;// not supported yet
 
@@ -246,6 +240,8 @@ public class MultiplexedWebSocketServerStream extends AbstractWebSocketServerStr
 
         StatsTraceContext statsTraceCtx =
                 StatsTraceContext.newServerContext(streamTracerFactories, path, headers);
+
+        InternalLogId logId = InternalLogId.allocate(MultiplexedWebSocketServerStream.class, null);
 
         MultiplexedWebsocketStreamImpl stream =
                 new MultiplexedWebsocketStreamImpl(statsTraceCtx, maxInboundMessageSize, websocketSession, logId,

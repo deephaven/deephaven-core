@@ -192,6 +192,9 @@ class Session:
     def __exit__(self, exc_type, exc_val, exc_tb):
         self.close()
 
+    def __del__(self):
+        self.close()
+
     @property
     def tables(self):
         with self._r_lock:
@@ -430,7 +433,8 @@ class Session:
         with self._r_lock:
             self.console_service.bind_table(table=table, variable_name=name)
 
-    def time_table(self, period: Union[int, str], start_time: Union[int, str] = None) -> Table:
+    def time_table(self, period: Union[int, str], start_time: Union[int, str] = None,
+                   blink_table: bool = False) -> Table:
         """Creates a time table on the server.
 
         Args:
@@ -438,6 +442,7 @@ class Session:
                 or a time interval string, e.g. "PT00:00:.001" or "PT1S"
             start_time (Union[int, str]): the start time for the time table in nanoseconds or as a date time
                 formatted string; default is None (meaning now)
+            blink_table (bool, optional): if the time table should be a blink table, defaults to False
 
         Returns:
             a Table object
@@ -445,7 +450,7 @@ class Session:
         Raises:
             DHError
         """
-        table_op = TimeTableOp(start_time=start_time, period=period)
+        table_op = TimeTableOp(start_time=start_time, period=period, blink_table=blink_table)
         return self.table_service.grpc_table_op(None, table_op)
 
     def empty_table(self, size: int) -> Table:

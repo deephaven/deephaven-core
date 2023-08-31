@@ -37,15 +37,15 @@ struct ImmerColumnSourceImpls {
     using deephaven::dhcore::utility::TrueOrThrow;
     using deephaven::dhcore::utility::VerboseCast;
     typedef typename TypeToChunk<T>::type_t chunkType_t;
-    auto *typed_dest = VerboseCast<chunkType_t *>(DEEPHAVEN_EXPR_MSG(dest_data));
+    auto *typed_dest = VerboseCast<chunkType_t *>(DEEPHAVEN_LOCATION_EXPR(dest_data));
 
     constexpr bool kTypeIsNumeric = deephaven::dhcore::DeephavenTraits<T>::kIsNumeric;
 
-    TrueOrThrow(DEEPHAVEN_EXPR_MSG(rows.Size() <= typed_dest->Size()));
-    TrueOrThrow(DEEPHAVEN_EXPR_MSG(optional_dest_null_flags == nullptr ||
+    TrueOrThrow(DEEPHAVEN_LOCATION_EXPR(rows.Size() <= typed_dest->Size()));
+    TrueOrThrow(DEEPHAVEN_LOCATION_EXPR(optional_dest_null_flags == nullptr ||
         rows.Size() <= optional_dest_null_flags->Size()));
     if (!kTypeIsNumeric) {
-      TrueOrThrow(DEEPHAVEN_EXPR_MSG(src_null_flags != nullptr));
+      TrueOrThrow(DEEPHAVEN_LOCATION_EXPR(src_null_flags != nullptr));
     } else {
       // avoid CLion warning about unused variable.
       (void)src_null_flags;
@@ -108,12 +108,12 @@ struct ImmerColumnSourceImpls {
 
     constexpr bool kTypeIsNumeric = deephaven::dhcore::DeephavenTraits<T>::kIsNumeric;
 
-    auto *typed_dest = VerboseCast<chunkType_t *>(DEEPHAVEN_EXPR_MSG(dest_data));
-    TrueOrThrow(DEEPHAVEN_EXPR_MSG(rows.Size() <= typed_dest->Size()));
-    TrueOrThrow(DEEPHAVEN_EXPR_MSG(optional_dest_null_flags == nullptr ||
+    auto *typed_dest = VerboseCast<chunkType_t *>(DEEPHAVEN_LOCATION_EXPR(dest_data));
+    TrueOrThrow(DEEPHAVEN_LOCATION_EXPR(rows.Size() <= typed_dest->Size()));
+    TrueOrThrow(DEEPHAVEN_LOCATION_EXPR(optional_dest_null_flags == nullptr ||
         rows.Size() <= optional_dest_null_flags->Size()));
     if (!kTypeIsNumeric) {
-      TrueOrThrow(DEEPHAVEN_EXPR_MSG(src_null_flags != nullptr));
+      TrueOrThrow(DEEPHAVEN_LOCATION_EXPR(src_null_flags != nullptr));
     }
     auto *destp = typed_dest->data();
     auto *dest_nullp = optional_dest_null_flags != nullptr ? optional_dest_null_flags->data() : nullptr;

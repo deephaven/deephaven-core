@@ -47,32 +47,32 @@ void Doit(const TableHandleManager &manager) {
   // 2. Add "Symbol" column (type: string) to schema
   {
     auto symbolMetadata = std::make_shared<arrow::KeyValueMetadata>();
-    OkOrThrow(DEEPHAVEN_EXPR_MSG(symbolMetadata->Set("deephaven:type", "java.lang.String")));
+    OkOrThrow(DEEPHAVEN_LOCATION_EXPR(symbolMetadata->Set("deephaven:type", "java.lang.String")));
     auto symbolField = std::make_shared<arrow::Field>("Symbol",
         std::make_shared<arrow::StringType>(), true, std::move(symbolMetadata));
-    OkOrThrow(DEEPHAVEN_EXPR_MSG(schemaBuilder.AddField(symbolField)));
+    OkOrThrow(DEEPHAVEN_LOCATION_EXPR(schemaBuilder.AddField(symbolField)));
   }
 
   // 3. Add "Price" column (type: double) to schema
   {
     auto priceMetadata = std::make_shared<arrow::KeyValueMetadata>();
-    OkOrThrow(DEEPHAVEN_EXPR_MSG(priceMetadata->Set("deephaven:type", "double")));
+    OkOrThrow(DEEPHAVEN_LOCATION_EXPR(priceMetadata->Set("deephaven:type", "double")));
     auto priceField = std::make_shared<arrow::Field>("Price",
         std::make_shared<arrow::DoubleType>(), true, std::move(priceMetadata));
-    OkOrThrow(DEEPHAVEN_EXPR_MSG(schemaBuilder.AddField(priceField)));
+    OkOrThrow(DEEPHAVEN_LOCATION_EXPR(schemaBuilder.AddField(priceField)));
   }
 
   // 4. Add "Volume" column (type: int32) to schema
   {
     auto volumeMetadata = std::make_shared<arrow::KeyValueMetadata>();
-    OkOrThrow(DEEPHAVEN_EXPR_MSG(volumeMetadata->Set("deephaven:type", "int")));
+    OkOrThrow(DEEPHAVEN_LOCATION_EXPR(volumeMetadata->Set("deephaven:type", "int")));
     auto volumeField = std::make_shared<arrow::Field>("Volume",
         std::make_shared<arrow::Int32Type>(), true, std::move(volumeMetadata));
-    OkOrThrow(DEEPHAVEN_EXPR_MSG(schemaBuilder.AddField(volumeField)));
+    OkOrThrow(DEEPHAVEN_LOCATION_EXPR(schemaBuilder.AddField(volumeField)));
   }
 
   // 4. Schema is done
-  auto schema = ValueOrThrow(DEEPHAVEN_EXPR_MSG(schemaBuilder.Finish()));
+  auto schema = ValueOrThrow(DEEPHAVEN_LOCATION_EXPR(schemaBuilder.Finish()));
 
   // 5. Prepare symbol, price, and volume data cells
   std::vector<std::string> symbols{"FB", "AAPL", "NFLX", "GOOG"};
@@ -80,20 +80,20 @@ void Doit(const TableHandleManager &manager) {
   std::vector<int32_t> volumes{1000, 2000, 3000, 4000};
   auto numRows = symbols.size();
   if (numRows != prices.size() || numRows != volumes.size()) {
-    throw DEEPHAVEN_EXPR_MSG(std::runtime_error(DEEPHAVEN_DEBUG_MSG("sizes don't match")));
+    throw DEEPHAVEN_LOCATION_EXPR(std::runtime_error(DEEPHAVEN_LOCATION_STR("sizes don't match")));
   }
 
   // 6. Move data to Arrow column builders
   arrow::StringBuilder symbolBuilder;
   arrow::DoubleBuilder priceBuilder;
   arrow::Int32Builder volumeBuilder;
-  OkOrThrow(DEEPHAVEN_EXPR_MSG(symbolBuilder.AppendValues(symbols)));
-  OkOrThrow(DEEPHAVEN_EXPR_MSG(priceBuilder.AppendValues(prices)));
-  OkOrThrow(DEEPHAVEN_EXPR_MSG(volumeBuilder.AppendValues(volumes)));
+  OkOrThrow(DEEPHAVEN_LOCATION_EXPR(symbolBuilder.AppendValues(symbols)));
+  OkOrThrow(DEEPHAVEN_LOCATION_EXPR(priceBuilder.AppendValues(prices)));
+  OkOrThrow(DEEPHAVEN_LOCATION_EXPR(volumeBuilder.AppendValues(volumes)));
 
-  auto symbolArray = ValueOrThrow(DEEPHAVEN_EXPR_MSG(symbolBuilder.Finish()));
-  auto priceArray = ValueOrThrow(DEEPHAVEN_EXPR_MSG(priceBuilder.Finish()));
-  auto volumeArray = ValueOrThrow(DEEPHAVEN_EXPR_MSG(volumeBuilder.Finish()));
+  auto symbolArray = ValueOrThrow(DEEPHAVEN_LOCATION_EXPR(symbolBuilder.Finish()));
+  auto priceArray = ValueOrThrow(DEEPHAVEN_LOCATION_EXPR(priceBuilder.Finish()));
+  auto volumeArray = ValueOrThrow(DEEPHAVEN_LOCATION_EXPR(volumeBuilder.Finish()));
 
   // 7. Get Arrow columns from builders
   std::vector<std::shared_ptr<arrow::Array>> columns = {
@@ -119,17 +119,17 @@ void Doit(const TableHandleManager &manager) {
   // 12. Perform the doPut
   std::unique_ptr<arrow::flight::FlightStreamWriter> fsw;
   std::unique_ptr<arrow::flight::FlightMetadataReader> fmr;
-  OkOrThrow(DEEPHAVEN_EXPR_MSG(wrapper.FlightClient()->DoPut(options, fd, schema, &fsw, &fmr)));
+  OkOrThrow(DEEPHAVEN_LOCATION_EXPR(wrapper.FlightClient()->DoPut(options, fd, schema, &fsw, &fmr)));
 
   // 13. Make a RecordBatch containing both the schema and the data
   auto batch = arrow::RecordBatch::Make(schema, static_cast<std::int64_t>(numRows), std::move(columns));
-  OkOrThrow(DEEPHAVEN_EXPR_MSG(fsw->WriteRecordBatch(*batch)));
-  OkOrThrow(DEEPHAVEN_EXPR_MSG(fsw->DoneWriting()));
+  OkOrThrow(DEEPHAVEN_LOCATION_EXPR(fsw->WriteRecordBatch(*batch)));
+  OkOrThrow(DEEPHAVEN_LOCATION_EXPR(fsw->DoneWriting()));
 
   // 14. Read back a metadata message (ignored), then close the Writer
   std::shared_ptr<arrow::Buffer> buf;
-  OkOrThrow(DEEPHAVEN_EXPR_MSG(fmr->ReadMetadata(&buf)));
-  OkOrThrow(DEEPHAVEN_EXPR_MSG(fsw->Close()));
+  OkOrThrow(DEEPHAVEN_LOCATION_EXPR(fmr->ReadMetadata(&buf)));
+  OkOrThrow(DEEPHAVEN_LOCATION_EXPR(fsw->Close()));
 
   // 15. Now that the table is ready, bind the ticket to a TableHandle.
   auto table = manager.MakeTableHandleFromTicket(ticket);
