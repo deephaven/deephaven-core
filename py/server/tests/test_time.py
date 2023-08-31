@@ -79,7 +79,14 @@ class TimeTestCase(BaseTestCase):
         tz = to_j_time_zone(pytz)
         self.assertEqual(str(tz), "UTC")
 
+        pytz = pd.Timestamp("2021-12-10T14:21:17.123456Z")
+        tz = to_j_time_zone(pytz)
+        self.assertEqual(str(tz), "UTC")
+
         tz = to_j_time_zone(None)
+        self.assertEqual(tz, None)
+
+        tz = to_j_time_zone(pd.Timestamp("NaT"))
         self.assertEqual(tz, None)
 
         tz1 = to_j_time_zone("CT")

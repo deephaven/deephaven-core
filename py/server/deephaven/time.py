@@ -155,13 +155,15 @@ def time_zone_alias_rm(alias: str) -> bool:
 # region Conversions: Python To Java
 
 
-def to_j_time_zone(tz: Union[None, TimeZone, str, datetime.tzinfo, datetime.datetime]) -> Optional[TimeZone]:
+def to_j_time_zone(tz: Union[None, TimeZone, str, datetime.tzinfo, datetime.datetime, pandas.Timestamp]) -> \
+        Optional[TimeZone]:
     """
     Converts a time zone value to a Java TimeZone.
-    Time zone values can be None, a Java TimeZone, a string, a datetime.tzinfo, or a datetime.datetime.
+    Time zone values can be None, a Java TimeZone, a string, a datetime.tzinfo, a datetime.datetime,
+    or a pandas.Timestamp.
 
     Args:
-        tz (Union[None, TimeZone, str, datetime.tzinfo, datetime.datetime]): A time zone value.
+        tz (Union[None, TimeZone, str, datetime.tzinfo, datetime.datetime, pandas.Timestamp]): A time zone value.
             If None is provided, None is returned.
             If a string is provided, it is parsed as a time zone name.
 
@@ -172,7 +174,7 @@ def to_j_time_zone(tz: Union[None, TimeZone, str, datetime.tzinfo, datetime.date
         DHError
     """
     try:
-        if tz is None:
+        if tz is None or pandas.isnull(tz):
             return None
         elif isinstance(tz, TimeZone.j_type):
             return tz
@@ -452,7 +454,7 @@ def to_j_period(dt: Union[None, Period, str, datetime.timedelta, numpy.timedelta
       "-P1Y2M"          -- -1 Year, -2 Months
 
     Args:
-        dt (Union[None, Period, str, datetime.timedelta, numpy.timedelta64]):
+        dt (Union[None, Period, str, datetime.timedelta, numpy.timedelta64, pandas.Timedelta]):
             A Python period or period string.  If None is provided, None is returned.
 
     Returns:
