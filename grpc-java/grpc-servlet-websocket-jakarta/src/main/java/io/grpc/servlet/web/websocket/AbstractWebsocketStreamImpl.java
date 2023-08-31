@@ -91,16 +91,20 @@ public abstract class AbstractWebsocketStreamImpl extends AbstractServerStream {
     }
 
     public void createStream(ServerTransportListener transportListener, String methodName, Metadata headers) {
-        transportListener.streamCreated(this, methodName, headers);
-        transportState().onStreamAllocated();
+        transportState().runOnTransportThread(() -> {
+            transportListener.streamCreated(this, methodName, headers);
+            transportState().onStreamAllocated();
+        });
     }
 
     public void inboundDataReceived(ReadableBuffer message, boolean endOfStream) {
-        transportState().inboundDataReceived(message, endOfStream);
+        transportState().runOnTransportThread(() -> {
+            transportState().inboundDataReceived(message, endOfStream);
+        });
     }
 
     public void transportReportStatus(Status status) {
-        transportState().transportReportStatus(status);
+        transportState().runOnTransportThread(() -> transportState().transportReportStatus(status));
     }
 
     @Override
