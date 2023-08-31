@@ -23,8 +23,6 @@ import org.junit.*;
 
 import java.io.File;
 import java.io.IOException;
-import java.lang.reflect.InvocationHandler;
-import java.lang.reflect.Method;
 import java.lang.reflect.Proxy;
 import java.nio.file.Files;
 import java.util.ArrayList;
@@ -432,8 +430,9 @@ public class TestParquetTools {
         final Table gzip = ParquetTools.readTable(TestParquetTools.class.getResource("/e0/gzip.parquet").getFile());
         assertTableEquals(uncompressed, gzip);
 
-        final Table lz4 = ParquetTools.readTable(TestParquetTools.class.getResource("/e0/lz4.parquet").getFile());
-        assertTableEquals(uncompressed, lz4);
+        // TODO(deephaven-core#3585): LZ4_RAW parquet support
+        // final Table lz4 = ParquetTools.readTable(TestParquetTools.class.getResource("/e0/lz4.parquet").getFile());
+        // assertTableEquals(uncompressed, lz4);
 
         final Table snappy = ParquetTools.readTable(TestParquetTools.class.getResource("/e0/snappy.parquet").getFile());
         assertTableEquals(uncompressed, snappy);
@@ -461,24 +460,24 @@ public class TestParquetTools {
         assertTableEquals(uncompressed, zstd);
     }
 
-    // TODO(deephaven-core#3588): Unable to read parquet TimestampLogicalTypeAnnotation that is not adjusted to UTC
-    // @Test
-    // public void e2() {
-    // final Table uncompressed =
-    // ParquetTools.readTable(TestParquetTools.class.getResource("/e2/uncompressed.parquet").getFile());
-    //
-    // final Table gzip = ParquetTools.readTable(TestParquetTools.class.getResource("/e2/gzip.parquet").getFile());
-    // assertTableEquals(uncompressed, gzip);
-    //
-    // final Table lz4 = ParquetTools.readTable(TestParquetTools.class.getResource("/e2/lz4.parquet").getFile());
-    // assertTableEquals(uncompressed, lz4);
-    //
-    // final Table snappy = ParquetTools.readTable(TestParquetTools.class.getResource("/e2/snappy.parquet").getFile());
-    // assertTableEquals(uncompressed, snappy);
-    //
-    // final Table zstd = ParquetTools.readTable(TestParquetTools.class.getResource("/e2/zstd.parquet").getFile());
-    // assertTableEquals(uncompressed, zstd);
-    // }
+    @Test
+    public void e2() {
+        final Table uncompressed =
+                ParquetTools.readTable(TestParquetTools.class.getResource("/e2/uncompressed.parquet").getFile());
+
+        final Table gzip = ParquetTools.readTable(TestParquetTools.class.getResource("/e2/gzip.parquet").getFile());
+        assertTableEquals(uncompressed, gzip);
+
+        // TODO(deephaven-core#3585): LZ4_RAW parquet support
+        // final Table lz4 = ParquetTools.readTable(TestParquetTools.class.getResource("/e2/lz4.parquet").getFile());
+        // assertTableEquals(uncompressed, lz4);
+
+        final Table snappy = ParquetTools.readTable(TestParquetTools.class.getResource("/e2/snappy.parquet").getFile());
+        assertTableEquals(uncompressed, snappy);
+
+        final Table zstd = ParquetTools.readTable(TestParquetTools.class.getResource("/e2/zstd.parquet").getFile());
+        assertTableEquals(uncompressed, zstd);
+    }
 
     private void testWriteRead(Table source, Function<Table, Table> transform) {
         final File f2w = new File(testRoot, "testWriteRead.parquet");
