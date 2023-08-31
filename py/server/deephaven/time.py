@@ -430,11 +430,13 @@ def to_j_duration(dt: Union[None, Duration, int, str, datetime.timedelta, numpy.
         raise DHError(e) from e
 
 
-def to_j_period(dt: Union[None, Period, str, datetime.timedelta, numpy.timedelta64]) -> Optional[Period]:
+def to_j_period(dt: Union[None, Period, str, datetime.timedelta, numpy.timedelta64, pandas.Timedelta]) -> \
+        Optional[Period]:
     """
     Converts a time duration value to a Java Period,
     which is a unit of time in terms of calendar time (days, weeks, months, years, etc.).
-    Time duration values can be None, a Java Period, a string, a datetime.timedelta, or a numpy.timedelta64.
+    Time duration values can be None, a Java Period, a string, a datetime.timedelta, a numpy.timedelta64,
+    or a pandas.Timedelta.
 
     Period strings can be formatted according to the ISO-8601 duration format as 'PnYnMnD' and 'PnW', where the
     coefficients can be positive or negative.  Zero coefficients can be omitted.  Optionally, the string can
