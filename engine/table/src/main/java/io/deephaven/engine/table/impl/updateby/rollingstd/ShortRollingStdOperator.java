@@ -22,7 +22,6 @@ import static io.deephaven.util.QueryConstants.NULL_DOUBLE;
 
 public class ShortRollingStdOperator extends BaseDoubleUpdateByOperator {
     private static final int BUFFER_INITIAL_CAPACITY = 128;
-    private static final double VARIANCE_THRESHOLD = 1e-12;
     // region extra-fields
     // endregion extra-fields
 
@@ -115,11 +114,10 @@ public class ShortRollingStdOperator extends BaseDoubleUpdateByOperator {
                 final double valueSquareSum = valueSquareBuffer.evaluate();
                 final double valueSum = valueBuffer.evaluate();
 
-                // Due to floating point error, variance can become less than zero or infinitesimally small (when it
-                // should be exactly zero).  Handle these cases by clamping variance it to 0 when it is lower than a
-                // defined threshold.
-                double variance = valueSquareSum / (count - 1) - valueSum * valueSum / count / (count - 1);
-                variance = variance < VARIANCE_THRESHOLD ? 0.0 : variance;
+                // Due to floating point error, variance can become less than zero (which is mathematically impossible).
+                // Detect and handle this by setting the variance to zero when negative.
+                final double variance = Math.max(0.0,
+                        valueSquareSum / (count - 1) - valueSum * valueSum / count / (count - 1));
 
                 final double std = Math.sqrt(variance);
 
