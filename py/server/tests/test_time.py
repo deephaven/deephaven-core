@@ -17,19 +17,23 @@ class TimeTestCase(BaseTestCase):
 
     # region: CLock
 
-    def test_now(self):
+    def test_dh_now(self):
         for system in [True, False]:
             for resolution in ['ns', 'ms']:
-                dt = now(system=system, resolution=resolution)
+                dt = dh_now(system=system, resolution=resolution)
                 sleep(1)
-                dt1 = now(system=system, resolution=resolution)
+                dt1 = dh_now(system=system, resolution=resolution)
                 self.assertGreaterEqual(_JDateTimeUtils.diffNanos(dt, dt1), 100000000)
 
-    def test_today(self):
+    def test_dh_today(self):
         tz = _JDateTimeUtils.timeZone("UTC")
-        td = today(tz)
+        td = dh_today(tz)
         target = datetime.datetime.utcnow().date().strftime('%Y-%m-%d')
         self.assertEqual(td, target)
+
+    def test_dh_time_zone(self):
+        tz = dh_time_zone()
+        self.assertEqual(str(tz), "Etc/UTC")
 
     # endregion
     
@@ -76,7 +80,7 @@ class TimeTestCase(BaseTestCase):
         self.assertEqual(str(tz), "UTC")
 
         tz = to_j_time_zone(None)
-        self.assertEqual(str(tz), "Etc/UTC")
+        self.assertEqual(tz, None)
 
         tz1 = to_j_time_zone("CT")
         tz2 = to_j_time_zone(tz1)

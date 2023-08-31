@@ -30,9 +30,8 @@ _nanos_per_micro = 1000
 
 # region Clock
 
-# TODO: rename to system_now or dh_now?  I lean to now.
-# TODO: return Instant or a python type?  I lean to Instant.
-def now(system: bool = False, resolution: str = 'ns') -> Instant:
+
+def dh_now(system: bool = False, resolution: str = 'ns') -> Instant:
     """ Provides the current datetime according to the current Deephaven clock.
 
     Args:
@@ -66,9 +65,7 @@ def now(system: bool = False, resolution: str = 'ns') -> Instant:
         raise DHError(e) from e
 
 
-# TODO: rename to system_today or dh_now?  I lean to today.
-# TODO: return string or a python date type?  I lean to string.
-def today(tz: Optional[TimeZone] = None) -> str:
+def dh_today(tz: Optional[TimeZone] = None) -> str:
     """ Provides the current date string according to the current Deephaven clock.
     Under most circumstances, this method will return the date according to current system time,
     but during replay simulations, this method can return the date according to replay time.
@@ -92,8 +89,20 @@ def today(tz: Optional[TimeZone] = None) -> str:
         raise DHError(e) from e
 
 
-# TODO: Should there be a system time zone method or get the system time zone from `to_j_time_zone(None)`?
-# TODO: Name system_time_zone()? time_zone()?
+def dh_time_zone() -> TimeZone:
+    """ Provides the current Deephaven system time zone.
+
+    Returns:
+        TimeZone
+
+    Raises:
+        DHError
+    """
+    try:
+        return _JDateTimeUtils.timeZone()
+    except Exception as e:
+        raise DHError(e) from e
+
 
 # endregion
 
@@ -153,7 +162,7 @@ def to_j_time_zone(tz: Union[None, TimeZone, str, datetime.tzinfo, datetime.date
 
     Args:
         tz (Union[None, TimeZone, str, datetime.tzinfo, datetime.datetime]): A time zone value.
-            If None is provided, the Deephaven system default time zone is returned.
+            If None is provided, None is returned.
             If a string is provided, it is parsed as a time zone name.
 
     Returns:
@@ -164,8 +173,7 @@ def to_j_time_zone(tz: Union[None, TimeZone, str, datetime.tzinfo, datetime.date
     """
     try:
         if tz is None:
-            return _JDateTimeUtils.timeZone()
-            # TODO: return None or system default?
+            return None
         elif isinstance(tz, TimeZone.j_type):
             return tz
         elif isinstance(tz, str):
@@ -193,8 +201,8 @@ def to_j_local_date(dt: Union[None, LocalDate, str, datetime.date, datetime.time
     Date strings can be formatted according to the ISO 8601 date time format as 'YYYY-MM-DD'.
 
     Args:
-        dt (Union[None, LocalDate, str, datetime.date, datetime.time, datetime.datetime, numpy.datetime64, pandas.Timestamp]):
-            A date time value.  If None is provided, None is returned.
+        dt (Union[None, LocalDate, str, datetime.date, datetime.time, datetime.datetime, numpy.datetime64,
+            pandas.Timestamp]): A date time value.  If None is provided, None is returned.
 
     Returns:
         LocalDate
@@ -349,6 +357,10 @@ def to_j_zdt(dt: Union[None, ZonedDateTime, str, datetime.datetime, numpy.dateti
         elif isinstance(dt, datetime.datetime) or isinstance(dt, pandas.Timestamp):
             instant = to_j_instant(dt)
             tz = to_j_time_zone(dt.tzinfo)
+
+            if tz is None:
+                tz = dh_time_zone()
+
             return _JZonedDateTime.ofInstant(instant, tz)
         elif isinstance(dt, numpy.datetime64):
             instant = to_j_instant(dt)
