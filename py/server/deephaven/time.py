@@ -359,6 +359,7 @@ def to_j_zdt(dt: Union[None, ZonedDateTime, str, datetime.datetime, numpy.dateti
     except Exception as e:
         raise DHError(e) from e
 
+
 def to_j_duration(dt: Union[None, Duration, int, str, datetime.timedelta, numpy.timedelta64, pandas.Timedelta]) -> \
         Optional[Duration]:
     """
@@ -592,7 +593,7 @@ def to_pd_timestamp(dt: Union[None, Instant, ZonedDateTime]) -> Optional[pandas.
         raise DHError(e) from e
 
 
-#TODO: rename?
+# TODO: rename?
 def to_datetime64(dt: Union[None, Instant, ZonedDateTime]) -> Optional[numpy.datetime64]:
     """
     Converts a Java date time to a numpy.datetime64.
@@ -685,7 +686,7 @@ def to_pd_timedelta(dt: Union[None, Duration]) -> Optional[pandas.Timedelta]:
         raise DHError(e) from e
 
 
-#TODO: rename?
+# TODO: rename?
 def to_timedelta64(dt: Union[None, Duration, Period]) -> Optional[numpy.timedelta64]:
     """
     Converts a Java time durationto a numpy.timedelta64.

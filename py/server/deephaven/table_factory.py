@@ -51,7 +51,8 @@ def empty_table(size: int) -> Table:
 
 
 def time_table(period: Union[Duration, int, str, datetime.timedelta, np.timedelta64, pd.Timedelta],
-               start_time: Union[None, Instant, int, str, datetime.datetime, np.datetime64, pd.Timestamp] = None, blink_table: bool = False) -> Table:
+               start_time: Union[None, Instant, int, str, datetime.datetime, np.datetime64, pd.Timestamp] = None,
+               blink_table: bool = False) -> Table:
     """Creates a table that adds a new row on a regular interval.
 
     Args:
