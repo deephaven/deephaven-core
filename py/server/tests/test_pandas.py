@@ -11,7 +11,7 @@ import pandas
 import pandas as pd
 import pyarrow as pa
 
-from deephaven import dtypes, new_table, DHError
+from deephaven import dtypes, new_table, DHError, time
 from deephaven.column import byte_col, char_col, short_col, bool_col, int_col, long_col, float_col, double_col, \
     string_col, datetime_col, pyobj_col, jobj_col
 from deephaven.constants import NULL_LONG, NULL_SHORT, NULL_INT, NULL_BYTE, NULL_CHAR, NULL_FLOAT, NULL_DOUBLE, \
@@ -19,8 +19,6 @@ from deephaven.constants import NULL_LONG, NULL_SHORT, NULL_INT, NULL_BYTE, NULL
 from deephaven.jcompat import j_array_list
 from deephaven.pandas import to_pandas, to_table
 from tests.testbase import BaseTestCase
-
-_JDateTimeUtils = jpy.get_type("io.deephaven.time.DateTimeUtils")
 
 @dataclass
 class CustomClass:
@@ -44,7 +42,7 @@ class PandasTestCase(BaseTestCase):
             float_col(name="Float_", data=[1.01, -1.01]),
             double_col(name="Double_", data=[1.01, -1.01]),
             string_col(name="String", data=["foo", "bar"]),
-            datetime_col(name="Datetime", data=[_JDateTimeUtils.epochNanosToInstant(1), _JDateTimeUtils.epochNanosToInstant(-1)]),
+            datetime_col(name="Datetime", data=[1,-1]),
             pyobj_col(name="PyObj", data=[CustomClass(1, "1"), CustomClass(-1, "-1")]),
             pyobj_col(name="PyObj1", data=[[1, 2, 3], CustomClass(-1, "-1")]),
             pyobj_col(name="PyObj2", data=[False, 'False']),
@@ -132,12 +130,12 @@ class PandasTestCase(BaseTestCase):
 
     def test_to_table_datetime_with_none(self):
         datetime_str = "2021-12-10T23:59:59 ET"
-        dt = _JDateTimeUtils.parseInstant(datetime_str)
+        dt = time.to_j_instant(datetime_str)
 
         datetime_str = "2021-12-10T23:59:59 US/Hawaii"
-        dt1 = _JDateTimeUtils.parseInstant(datetime_str)
+        dt1 = time.to_j_instant(datetime_str)
 
-        input_cols = [datetime_col(name="Datetime", data=[_JDateTimeUtils.epochNanosToInstant(1), None, dt, dt1])]
+        input_cols = [datetime_col(name="Datetime", data=[1, None, dt, dt1])]
         table_with_null_dt = new_table(cols=input_cols)
 
         df = to_pandas(table_with_null_dt)
@@ -158,7 +156,7 @@ class PandasTestCase(BaseTestCase):
             long_col(name="Long_", data=[1, NULL_LONG]),
             float_col(name="Float_", data=[1.01, np.nan]),
             double_col(name="Double_", data=[1.01, np.nan]),
-            datetime_col(name="Datetime", data=[_JDateTimeUtils.epochNanosToInstant(1), None]),
+            datetime_col(name="Datetime", data=[1, None]),
             pyobj_col(name="PyObj", data=[CustomClass(1, "1"), None]),
         ]
         test_table = new_table(cols=input_cols)
@@ -254,7 +252,7 @@ class PandasTestCase(BaseTestCase):
             long_col(name="Long_", data=[1, NULL_LONG]),
             float_col(name="Float_", data=[1.01, np.nan]),
             double_col(name="Double_", data=[1.01, np.nan]),
-            datetime_col(name="Datetime", data=[_JDateTimeUtils.epochNanosToInstant(1), None]),
+            datetime_col(name="Datetime", data=[1, None]),
             string_col(name="String", data=["text1", None])
             # pyobj_col(name="PyObj", data=[CustomClass(1, "1"), None]), #DH arrow export it as strings
         ]
@@ -273,7 +271,7 @@ class PandasTestCase(BaseTestCase):
             long_col(name="Long_", data=[1, NULL_LONG]),
             float_col(name="Float_", data=[1.01, np.nan]),
             double_col(name="Double_", data=[1.01, np.nan]),
-            datetime_col(name="Datetime", data=[_JDateTimeUtils.epochNanosToInstant(1), None]),
+            datetime_col(name="Datetime", data=[1, None]),
             string_col(name="String", data=["text1", None]),
             # pyobj_col(name="PyObj", data=[CustomClass(1, "1"), None]),  # DH arrow export it as strings
         ]
@@ -322,7 +320,7 @@ class PandasTestCase(BaseTestCase):
             long_col(name="Long_", data=[1, NULL_LONG]),
             float_col(name="Float_", data=[np.nan, NULL_FLOAT]),
             double_col(name="Double_", data=[np.nan, NULL_DOUBLE]),
-            datetime_col(name="Datetime", data=[_JDateTimeUtils.epochNanosToInstant(1), None]),
+            datetime_col(name="Datetime", data=[1, None]),
         ]
         t = new_table(cols=input_cols)
         df = to_pandas(t, conv_null=True)

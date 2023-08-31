@@ -16,7 +16,6 @@ from deephaven.numpy import to_numpy, to_table
 from deephaven.jcompat import j_array_list
 from tests.testbase import BaseTestCase
 
-_JDateTimeUtils = jpy.get_type("io.deephaven.time.DateTimeUtils")
 
 @dataclass
 class CustomClass:
@@ -40,7 +39,7 @@ class NumpyTestCase(BaseTestCase):
             float_col(name="Float", data=[1.01, -1.01]),
             double_col(name="Double", data=[1.01, -1.01]),
             string_col(name="String", data=["foo", "bar"]),
-            datetime_col(name="Datetime", data=[_JDateTimeUtils.epochNanosToInstant(1), _JDateTimeUtils.epochNanosToInstant(-1)]),
+            datetime_col(name="Datetime", data=[1, -1]),
             pyobj_col(name="PyObj", data=[CustomClass(1, "1"), CustomClass(-1, "-1")]),
             pyobj_col(name="PyObj1", data=[[1, 2, 3], CustomClass(-1, "-1")]),
             pyobj_col(name="PyObj2", data=[False, 'False']),
