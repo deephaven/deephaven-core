@@ -10,7 +10,8 @@ import datetime
 from typing import Union, Optional
 
 import jpy
-import numpy as np
+import numpy
+import pandas
 
 from deephaven import DHError
 from deephaven.dtypes import Instant, LocalDate, LocalTime, ZonedDateTime, Duration, Period, TimeZone
@@ -90,8 +91,9 @@ def today(tz: Optional[TimeZone] = None) -> str:
     except Exception as e:
         raise DHError(e) from e
 
-#TODO: Should there be a system time zone method or get the system time zone from `to_j_time_zone(None)`?
-#TODO: Name system_time_zone()? time_zone()?
+
+# TODO: Should there be a system time zone method or get the system time zone from `to_j_time_zone(None)`?
+# TODO: Name system_time_zone()? time_zone()?
 
 # endregion
 
@@ -137,18 +139,20 @@ def time_zone_alias_rm(alias: str) -> bool:
 
 # endregion
 
-#TODO: Review all function names: to_j_<xyz>?  to_db_<xyz>?  to_dh_<xyz>?  to_<xyz>? as_j_<xyz>?  as_db_<xyz>?  as_dh_<xyz>?
-#TODO: Should the doc strings refer to "Deephaven" or "Java" types?
+# TODO: Review all function names: to_j_<xyz>?  to_db_<xyz>?  to_dh_<xyz>?  to_<xyz>? as_j_<xyz>?  as_db_<xyz>?  as_dh_<xyz>?
+# TODO: Should the doc strings refer to "Deephaven" or "Java" types?
 
 
 # region Conversions: Python To Java
 
-def to_j_time_zone(tz: Union[None, str, datetime.tzinfo, datetime.datetime]) -> Optional[TimeZone]:
+
+def to_j_time_zone(tz: Union[None, TimeZone, str, datetime.tzinfo, datetime.datetime]) -> Optional[TimeZone]:
     """
-    Converts a Python string, tzinfo, or datetime to a Deephaven time zone.
+    Converts a time zone value to a Java TimeZone.
+    Time zone values can be None, a Java TimeZone, a string, a datetime.tzinfo, or a datetime.datetime.
 
     Args:
-        tz (Union[None, str, datetime.tzinfo, datetime.datetime]): A Python time, time zone, or time zone string.
+        tz (Union[None, TimeZone, str, datetime.tzinfo, datetime.datetime]): A time zone value.
             If None is provided, the Deephaven system default time zone is returned.
             If a string is provided, it is parsed as a time zone name.
 
@@ -161,7 +165,9 @@ def to_j_time_zone(tz: Union[None, str, datetime.tzinfo, datetime.datetime]) -> 
     try:
         if tz is None:
             return _JDateTimeUtils.timeZone()
-            #TODO: return None or system default?
+            # TODO: return None or system default?
+        elif isinstance(tz, TimeZone.j_type):
+            return tz
         elif isinstance(tz, str):
             return _JDateTimeUtils.parseTimeZone(tz)
         elif isinstance(tz, datetime.tzinfo):
@@ -177,17 +183,18 @@ def to_j_time_zone(tz: Union[None, str, datetime.tzinfo, datetime.datetime]) -> 
         raise DHError(e) from e
 
 
-def to_j_local_date(dt: Union[None, str, datetime.date, datetime.time, datetime.datetime, np.datetime64]) -> \
-        Optional[LocalDate]:
+def to_j_local_date(dt: Union[None, LocalDate, str, datetime.date, datetime.time, datetime.datetime,
+                              numpy.datetime64, pandas.Timestamp]) -> Optional[LocalDate]:
     """
-    Converts a Python string, date, time, datetime, or numpy datetime64 to a Deephaven local date,
-    which is a date without a time or time zone.
+    Converts a date time value to a Java LocalDate.
+    Date time values can be None, a Java LocalDate, a string, a datetime.date, a datetime.time, a datetime.datetime,
+    a numpy.datetime64, or a pandas.Timestamp.
 
     Date strings can be formatted according to the ISO 8601 date time format as 'YYYY-MM-DD'.
 
     Args:
-        dt (Union[None, str, datetime.date, datetime.time, datetime.datetime, np.datetime64]): A Python date, date time,
-            or date string.  If None is provided, None is returned.
+        dt (Union[None, LocalDate, str, datetime.date, datetime.time, datetime.datetime, numpy.datetime64, pandas.Timestamp]):
+            A date time value.  If None is provided, None is returned.
 
     Returns:
         LocalDate
@@ -197,13 +204,15 @@ def to_j_local_date(dt: Union[None, str, datetime.date, datetime.time, datetime.
     """
 
     try:
-        if dt is None:
+        if dt is None or pandas.isnull(dt):
             return None
+        elif isinstance(dt, LocalDate.j_type):
+            return dt
         elif isinstance(dt, str):
             return _JDateTimeUtils.parseLocalDate(dt)
-        elif isinstance(dt, datetime.date) or isinstance(dt, datetime.datetime):
+        elif isinstance(dt, datetime.date) or isinstance(dt, datetime.datetime) or isinstance(dt, pandas.Timestamp):
             return _JLocalDate.of(dt.year, dt.month, dt.day)
-        elif isinstance(dt, np.datetime64):
+        elif isinstance(dt, numpy.datetime64):
             return to_j_local_date(dt.astype(datetime.date))
         else:
             raise Exception("Unsupported conversion: " + str(type(dt)) + " -> LocalDate")
@@ -211,16 +220,20 @@ def to_j_local_date(dt: Union[None, str, datetime.date, datetime.time, datetime.
         raise DHError(e) from e
 
 
-def to_j_local_time(dt: Union[None, str, datetime.time, datetime.datetime, np.datetime64]) -> Optional[LocalTime]:
+def to_j_local_time(dt: Union[None, LocalTime, int, str, datetime.time, datetime.datetime,
+                              numpy.datetime64, pandas.Timestamp]) -> Optional[LocalTime]:
     """
-    Converts a Python string, time, datetime, or numpy datetime64 to a Deephaven local time,
-    which is the time that would be read from a clock and does not have a date or timezone.
+    Converts a date time value to a Java LocalTime.
+    Date time values can be None, a Java LocalTime, an int, a string, a datetime.time, a datetime.datetime,
+    a numpy.datetime64, or a pandas.Timestamp.
+
+    int values are the number of nanoseconds since the start of the day.
 
     Time strings can be formatted as 'hh:mm:ss[.nnnnnnnnn]'.
 
     Args:
-        dt (Union[None, str, datetime.time, datetime.datetime, np.datetime64]): A Python time, date time, or
-            time string.  If None is provided, None is returned.
+        dt (Union[None, LocalTime, int, str, datetime.time, datetime.datetime, numpy.datetime64, pandas.Timestamp]):
+            A date time value.  If None is provided, None is returned.
 
     Returns:
         LocalTime
@@ -230,13 +243,19 @@ def to_j_local_time(dt: Union[None, str, datetime.time, datetime.datetime, np.da
     """
 
     try:
-        if dt is None:
+        if dt is None or pandas.isnull(dt):
             return None
+        elif isinstance(dt, LocalTime.j_type):
+            return dt
+        elif isinstance(dt, int) and not isinstance(dt, bool):
+            return _JLocalTime.ofNanoOfDay(dt)
         elif isinstance(dt, str):
             return _JDateTimeUtils.parseLocalTime(dt)
+        elif isinstance(dt, pandas.Timestamp):
+            return _JLocalTime.of(dt.hour, dt.minute, dt.second, dt.microsecond * _nanos_per_micro + dt.nanosecond)
         elif isinstance(dt, datetime.time) or isinstance(dt, datetime.datetime):
             return _JLocalTime.of(dt.hour, dt.minute, dt.second, dt.microsecond * _nanos_per_micro)
-        elif isinstance(dt, np.datetime64):
+        elif isinstance(dt, numpy.datetime64):
             # Conversion only supports micros resolution
             return to_j_local_time(dt.astype(datetime.time))
         else:
@@ -245,10 +264,14 @@ def to_j_local_time(dt: Union[None, str, datetime.time, datetime.datetime, np.da
         raise DHError(e) from e
 
 
-def to_j_instant(dt: Union[None, str, datetime.datetime, np.datetime64]) -> Optional[Instant]:
+def to_j_instant(dt: Union[None, Instant, int, str, datetime.datetime, numpy.datetime64, pandas.Timestamp]) -> \
+        Optional[Instant]:
     """
-    Converts a Python string, datetime, or numpy datetime64 to a Deephaven instant,
-    which is a point in time on the time-line.
+    Converts a date time value to a Java Instant.
+    Date time values can be None, a Java Instant, an int, a string, a datetime.time, a datetime.datetime,
+    a numpy.datetime64, or a pandas.Timestamp.
+
+    int values are the number of nanoseconds since the Epoch.
 
     Instant strings can be formatted according to the ISO 8601 date time format
     'yyyy-MM-ddThh:mm:ss[.SSSSSSSSS] TZ' and others.
@@ -256,8 +279,8 @@ def to_j_instant(dt: Union[None, str, datetime.datetime, np.datetime64]) -> Opti
     from the Epoch.  Expected date ranges are used to infer the units.
 
     Args:
-        dt (Union[None, str, datetime.datetime, np.datetime64]): A Python date time or date time string.  If None is
-            provided, None is returned.
+        dt (Union[None, Instant, int, str, datetime.datetime, numpy.datetime64, pandas.Timestamp]): A date time value.
+            If None is provided, None is returned.
 
     Returns:
         Instant
@@ -266,8 +289,12 @@ def to_j_instant(dt: Union[None, str, datetime.datetime, np.datetime64]) -> Opti
         DHError
     """
     try:
-        if dt is None:
+        if dt is None or pandas.isnull(dt):
             return None
+        elif isinstance(dt, Instant.j_type):
+            return dt
+        elif isinstance(dt, int) and not isinstance(dt, bool):
+            return _JDateTimeUtils.epochNanosToInstant(dt)
         elif isinstance(dt, str):
             return _JDateTimeUtils.parseInstant(dt)
         elif isinstance(dt, datetime.datetime):
@@ -275,32 +302,36 @@ def to_j_instant(dt: Union[None, str, datetime.datetime, np.datetime64]) -> Opti
             epoch_sec = int(epoch_time)
             nanos = int((epoch_time - epoch_sec) * _nanos_per_second)
             return _JInstant.ofEpochSecond(epoch_sec, nanos)
-        elif isinstance(dt, np.datetime64):
-            epoch_nanos = dt.astype('datetime64[ns]').astype(np.int64)
+        elif isinstance(dt, numpy.datetime64):
+            epoch_nanos = dt.astype('datetime64[ns]').astype(numpy.int64)
             epoch_sec, nanos = divmod(epoch_nanos, _nanos_per_second)
             return _JInstant.ofEpochSecond(int(epoch_sec), int(nanos))
+        elif isinstance(dt, pandas.Timestamp):
+            return _JDateTimeUtils.epochNanosToInstant(dt.value)
         else:
             raise Exception("Unsupported conversion: " + str(type(dt)) + " -> Instant")
     except Exception as e:
         raise DHError(e) from e
 
 
-def to_j_zdt(dt: Union[None, str, datetime.datetime, np.datetime64]) -> Optional[ZonedDateTime]:
+def to_j_zdt(dt: Union[None, ZonedDateTime, str, datetime.datetime, numpy.datetime64, pandas.Timestamp]) -> \
+        Optional[ZonedDateTime]:
     """
-    Converts a Python string, datetime, or numpy datetime64 to a Deephaven zoned date time,
-    which is a date time with a time zone.
+    Converts a date time value to a Java ZonedDateTime.
+    Date time values can be None, a Java ZonedDateTime, a string, a datetime.time, a datetime.datetime,
+    a numpy.datetime64, or a pandas.Timestamp.
 
     Date time strings can be formatted according to the ISO 8601 date time format
     '{@code 'yyyy-MM-ddThh:mm:ss[.SSSSSSSSS] TZ' and others.
     Additionally, date time strings can be integer values that are nanoseconds, milliseconds, or seconds
     from the Epoch.  Expected date ranges are used to infer the units.
 
-    Converting a datetime.datetime to a ZonedDateTime will use the datetime's timezone information.
+    Converting a datetime.datetime or pandas.Timestamp to a ZonedDateTime will use the datetime's timezone information.
     Converting a numpy.datetime64 to a ZonedDateTime will use the Deephaven default time zone.
 
     Args:
-        dt (Union[None, str, datetime.datetime, np.datetime64]): A Python date time or date time string.  If None is
-            provided, None is returned.
+        dt (Union[None, ZonedDateTime, str, datetime.datetime, numpy.datetime64, pandas.Timestamp]):
+            A date time value.  If None is provided, None is returned.
 
     Returns:
         ZonedDateTime
@@ -309,15 +340,17 @@ def to_j_zdt(dt: Union[None, str, datetime.datetime, np.datetime64]) -> Optional
         DHError
     """
     try:
-        if dt is None:
+        if dt is None or pandas.isnull(dt):
             return None
+        elif isinstance(dt, ZonedDateTime.j_type):
+            return dt
         elif isinstance(dt, str):
             return _JDateTimeUtils.parseZonedDateTime(dt)
-        elif isinstance(dt, datetime.datetime):
+        elif isinstance(dt, datetime.datetime) or isinstance(dt, pandas.Timestamp):
             instant = to_j_instant(dt)
             tz = to_j_time_zone(dt.tzinfo)
             return _JZonedDateTime.ofInstant(instant, tz)
-        elif isinstance(dt, np.datetime64):
+        elif isinstance(dt, numpy.datetime64):
             instant = to_j_instant(dt)
             tz = _JDateTimeUtils.timeZone()
             return _JZonedDateTime.ofInstant(instant, tz)
@@ -326,11 +359,15 @@ def to_j_zdt(dt: Union[None, str, datetime.datetime, np.datetime64]) -> Optional
     except Exception as e:
         raise DHError(e) from e
 
-
-def to_j_duration(dt: Union[None, str, datetime.timedelta, np.timedelta64]) -> Optional[Duration]:
+def to_j_duration(dt: Union[None, Duration, int, str, datetime.timedelta, numpy.timedelta64, pandas.Timedelta]) -> \
+        Optional[Duration]:
     """
-    Converts a Python string, timedelta, or numpy timedelta64 to a Deephaven duration,
+    Converts a time duration value to a Java Duration,
     which is a unit of time in terms of clock time (24-hour days, hours, minutes, seconds, and nanoseconds).
+    Time duration values can be None, a Java Duration, an int, a string, a datetime.timedelta, a numpy.timedelta64,
+    or a pandas.Timedelta.
+
+    int values are nanoseconds.
 
     Duration strings can be formatted according to the ISO-8601 duration format as '[-]PnDTnHnMn.nS', where the
     coefficients can be positive or negative.  Zero coefficients can be omitted.  Optionally, the string can
@@ -347,8 +384,8 @@ def to_j_duration(dt: Union[None, str, datetime.timedelta, np.timedelta64]) -> O
        "-PT-6H+3M"  -- parses as "+6 hours and -3 minutes"
 
     Args:
-        dt (Union[None, str, datetime.timedelta, np.timedelta64]): A Python duration or duration string.  If None is
-            provided, None is returned.
+        dt (Union[None, Duration, int, str, datetime.timedelta, numpy.timedelta64, pandas.Timedelta]):
+            A time duration value.  If None is provided, None is returned.
 
     Returns:
         Duration
@@ -357,15 +394,22 @@ def to_j_duration(dt: Union[None, str, datetime.timedelta, np.timedelta64]) -> O
         DHError
     """
     try:
-        if dt is None:
+        if dt is None or pandas.isnull(dt):
             return None
+        elif isinstance(dt, Duration.j_type):
+            return dt
+        elif isinstance(dt, int) and not isinstance(dt, bool):
+            return _JDuration.ofNanos(dt)
         elif isinstance(dt, str):
             return _JDateTimeUtils.parseDuration(dt)
+        elif isinstance(dt, pandas.Timedelta):
+            nanos = int((dt / datetime.timedelta(microseconds=1)) * _nanos_per_micro) + dt.nanoseconds
+            return _JDuration.ofNanos(nanos)
         elif isinstance(dt, datetime.timedelta):
             nanos = int((dt / datetime.timedelta(microseconds=1)) * _nanos_per_micro)
             return _JDuration.ofNanos(nanos)
-        elif isinstance(dt, np.timedelta64):
-            nanos = int(dt.astype('timedelta64[ns]').astype(np.int64))
+        elif isinstance(dt, numpy.timedelta64):
+            nanos = int(dt.astype('timedelta64[ns]').astype(numpy.int64))
             return _JDuration.ofNanos(nanos)
         else:
             raise Exception("Unsupported conversion: " + str(type(dt)) + " -> Duration")
@@ -373,10 +417,11 @@ def to_j_duration(dt: Union[None, str, datetime.timedelta, np.timedelta64]) -> O
         raise DHError(e) from e
 
 
-def to_j_period(dt: Union[None, str, datetime.timedelta, np.timedelta64]) -> Optional[Period]:
+def to_j_period(dt: Union[None, Period, str, datetime.timedelta, numpy.timedelta64]) -> Optional[Period]:
     """
-    Converts a Python string, timedelta, or numpy timedelta64 to a Deephaven period,
+    Converts a time duration value to a Java Period,
     which is a unit of time in terms of calendar time (days, weeks, months, years, etc.).
+    Time duration values can be None, a Java Period, a string, a datetime.timedelta, or a numpy.timedelta64.
 
     Period strings can be formatted according to the ISO-8601 duration format as 'PnYnMnD' and 'PnW', where the
     coefficients can be positive or negative.  Zero coefficients can be omitted.  Optionally, the string can
@@ -392,17 +437,27 @@ def to_j_period(dt: Union[None, str, datetime.timedelta, np.timedelta64]) -> Opt
       "-P1Y2M"          -- -1 Year, -2 Months
 
     Args:
-        dt (Union[None, str, datetime.timedelta, np.timedelta64]): A Python period or period string.  If None is
-            provided, None is returned.
+        dt (Union[None, Period, str, datetime.timedelta, numpy.timedelta64]):
+            A Python period or period string.  If None is provided, None is returned.
 
     Returns:
         Period
     """
     try:
-        if dt is None:
+        if dt is None or pandas.isnull(dt):
             return None
+        elif isinstance(dt, Period.j_type):
+            return dt
         elif isinstance(dt, str):
             return _JDateTimeUtils.parsePeriod(dt)
+        elif isinstance(dt, pandas.Timedelta):
+            if dt.seconds or dt.microseconds or dt.nanoseconds:
+                raise Exception("Unsupported conversion: " + str(type(dt)) +
+                                " -> Period: Periods must only be days or weeks")
+            elif dt.days:
+                return _JPeriod.ofDays(dt.days)
+            else:
+                raise Exception("Unsupported conversion: " + str(type(dt)) + " -> Period")
         elif isinstance(dt, datetime.timedelta):
             if dt.seconds or dt.microseconds:
                 raise Exception("Unsupported conversion: " + str(type(dt)) +
@@ -411,10 +466,10 @@ def to_j_period(dt: Union[None, str, datetime.timedelta, np.timedelta64]) -> Opt
                 return _JPeriod.ofDays(dt.days)
             else:
                 raise Exception("Unsupported conversion: " + str(type(dt)) + " -> Period")
-        elif isinstance(dt, np.timedelta64):
-            data = np.datetime_data(dt)
+        elif isinstance(dt, numpy.timedelta64):
+            data = numpy.datetime_data(dt)
             units = data[0]
-            value = int(dt.astype(np.int64))
+            value = int(dt.astype(numpy.int64))
 
             if units == 'D':
                 return _JPeriod.ofDays(value)
@@ -438,13 +493,14 @@ def to_j_period(dt: Union[None, str, datetime.timedelta, np.timedelta64]) -> Opt
 
 # region Conversions: Java To Python
 
+# TODO: support other cross types?
 
 def to_date(dt: Union[None, LocalDate, ZonedDateTime]) -> Optional[datetime.date]:
     """
-    Converts a Deephaven local date or zoned date time to a Python date.
+    Converts a Java date time to a datetime.date.
 
     Args:
-        dt (Union[None, LocalDate, ZonedDateTime]): A Deephaven local date or zoned date time.
+        dt (Union[None, LocalDate, ZonedDateTime]): A Java date time.
             If None is provided, None is returned.
 
     Returns:
@@ -465,10 +521,10 @@ def to_date(dt: Union[None, LocalDate, ZonedDateTime]) -> Optional[datetime.date
 
 def to_time(dt: Union[None, LocalTime, ZonedDateTime]) -> Optional[datetime.time]:
     """
-    Converts a Deephaven local time or zoned date time to a Python time.
+    Converts a Java date time to a datetime.time.
 
     Args:
-        dt (Union[None, LocalTime, ZonedDateTime]): A Deephaven local time or zoned date time.
+        dt (Union[None, LocalTime, ZonedDateTime]): A Java date time.
             If None is provided, None is returned.
 
     Returns:
@@ -489,11 +545,11 @@ def to_time(dt: Union[None, LocalTime, ZonedDateTime]) -> Optional[datetime.time
 
 def to_datetime(dt: Union[None, Instant, ZonedDateTime]) -> Optional[datetime.datetime]:
     """
-    Converts a Deephaven instant or zoned date time to a Python date time.
+    Converts a Java date time to a datetime.datetime.
 
     Args:
-        dt (Union[None, Instant, ZonedDateTime]): A Deephaven instant or zoned date time.  If None is provided, None is
-            returned.
+        dt (Union[None, Instant, ZonedDateTime]): A Java date time.
+            If None is provided, None is returned.
 
     Returns:
         datetime.datetime
@@ -513,16 +569,40 @@ def to_datetime(dt: Union[None, Instant, ZonedDateTime]) -> Optional[datetime.da
         raise DHError(e) from e
 
 
-def to_datetime64(dt: Union[None, Instant, ZonedDateTime]) -> Optional[np.datetime64]:
+def to_pd_timestamp(dt: Union[None, Instant, ZonedDateTime]) -> Optional[pandas.Timestamp]:
     """
-    Converts a Deephaven instant or zoned date time to a numpy datetime64.
+    Converts a Java date time to a pandas.Timestamp.
 
     Args:
-        dt (Union[None, Instant, ZonedDateTime]): A Deephaven instant or zoned date time.  If None is provided, None is
-            returned.
+        dt (Union[None, Instant, ZonedDateTime]): A Java date time.
+            If None is provided, None is returned.
 
     Returns:
-        np.datetime64
+        pandaw.Timestamp
+    """
+    try:
+        if dt is None:
+            return None
+        elif isinstance(dt, Instant.j_type) or isinstance(dt, ZonedDateTime.j_type):
+            ts = _JDateTimeUtils.epochNanos(dt)
+            return pandas.Timestamp(ts_input=ts, unit='ns')
+        else:
+            raise Exception("Unsupported conversion: " + str(type(dt)) + " -> pandas.Timestamp")
+    except Exception as e:
+        raise DHError(e) from e
+
+
+#TODO: rename?
+def to_datetime64(dt: Union[None, Instant, ZonedDateTime]) -> Optional[numpy.datetime64]:
+    """
+    Converts a Java date time to a numpy.datetime64.
+
+    Args:
+        dt (Union[None, Instant, ZonedDateTime]): A Java date time.
+            If None is provided, None is returned.
+
+    Returns:
+        numpy.datetime64
 
     Raises:
         DHError
@@ -532,10 +612,10 @@ def to_datetime64(dt: Union[None, Instant, ZonedDateTime]) -> Optional[np.dateti
             return None
         elif isinstance(dt, Instant.j_type):
             ts = dt.getEpochSecond() * _nanos_per_second + dt.getNano()
-            return np.datetime64(ts, 'ns')
+            return numpy.datetime64(ts, 'ns')
         elif isinstance(dt, ZonedDateTime.j_type):
             ts = dt.toEpochSecond() * _nanos_per_second + dt.getNano()
-            return np.datetime64(ts, 'ns')
+            return numpy.datetime64(ts, 'ns')
         else:
             raise Exception("Unsupported conversion: " + str(type(dt)) + " -> datetime.datetime")
     except Exception as e:
@@ -544,10 +624,10 @@ def to_datetime64(dt: Union[None, Instant, ZonedDateTime]) -> Optional[np.dateti
 
 def to_timedelta(dt: Union[None, Duration]) -> Optional[datetime.timedelta]:
     """
-    Converts a Deephaven duration to a Python timedelta.
+    Converts a Java time duration to a datetime.timedelta.
 
     Args:
-        dt (Union[None, Duration]): A Deephaven duration.  If None is provided, None is returned.
+        dt (Union[None, Duration]): A Java time duration.  If None is provided, None is returned.
 
     Returns:
         datetime.timedelta
@@ -573,15 +653,48 @@ def to_timedelta(dt: Union[None, Duration]) -> Optional[datetime.timedelta]:
         raise DHError(e) from e
 
 
-def to_timedelta64(dt: Union[None, Duration, Period]) -> Optional[np.timedelta64]:
+def to_pd_timedelta(dt: Union[None, Duration]) -> Optional[pandas.Timedelta]:
     """
-    Converts a Deephaven duration or period to a numpy timedelta64.
+    Converts a Java time duration to a pandas.Timedelta.
 
     Args:
-        dt (Union[None, Duration, Period]): A Deephaven duration or period.  If None is provided, None is returned.
+        dt (Union[None, Duration]): A Java time duration.  If None is provided, None is returned.
 
     Returns:
-        np.timedelta64
+        pandas.Timedelta
+    """
+    try:
+        if dt is None:
+            return None
+        elif isinstance(dt, Duration.j_type):
+            micros, nanos = divmod(dt.getNano(), _nanos_per_micro)
+            return pandas.Timedelta(seconds=dt.getSeconds(), microseconds=micros, nanoseconds=nanos)
+        elif isinstance(dt, Period.j_type):
+            y = dt.getYears()
+            m = dt.getMonths()
+            d = dt.getDays()
+
+            if y or m:
+                raise Exception("Unsupported conversion: " + str(type(dt)) +
+                                " -> datetime.timedelta: Periods must only be days or weeks")
+
+            return pandas.Timedelta(days=d)
+        else:
+            raise Exception("Unsupported conversion: " + str(type(dt)) + " -> pandas.Timedelta")
+    except Exception as e:
+        raise DHError(e) from e
+
+
+#TODO: rename?
+def to_timedelta64(dt: Union[None, Duration, Period]) -> Optional[numpy.timedelta64]:
+    """
+    Converts a Java time durationto a numpy.timedelta64.
+
+    Args:
+        dt (Union[None, Duration, Period]): A Java time period.  If None is provided, None is returned.
+
+    Returns:
+        numpy.timedelta64
 
     Raises:
         DHError
@@ -590,7 +703,7 @@ def to_timedelta64(dt: Union[None, Duration, Period]) -> Optional[np.timedelta64
         if dt is None:
             return None
         elif isinstance(dt, Duration.j_type):
-            return np.timedelta64(dt.toNanos(), 'ns')
+            return numpy.timedelta64(dt.toNanos(), 'ns')
         elif isinstance(dt, Period.j_type):
             d = dt.getDays()
             m = dt.getMonths()
@@ -599,22 +712,21 @@ def to_timedelta64(dt: Union[None, Duration, Period]) -> Optional[np.timedelta64
             count = (1 if d else 0) + (1 if m else 0) + (1 if y else 0)
 
             if count == 0:
-                return np.timedelta64(0, 'D')
+                return numpy.timedelta64(0, 'D')
             elif count > 1:
                 raise Exception("Unsupported conversion: " + str(type(dt)) +
                                 " -> datetime.timedelta64: Periods must be days, months, or years")
             elif y:
-                return np.timedelta64(y, 'Y')
+                return numpy.timedelta64(y, 'Y')
             elif m:
-                return np.timedelta64(m, 'M')
+                return numpy.timedelta64(m, 'M')
             elif d:
-                return np.timedelta64(d, 'D')
+                return numpy.timedelta64(d, 'D')
             else:
                 raise Exception("Unsupported conversion: " + str(type(dt)) + " -> datetime.timedelta64: (" + dt + ")")
         else:
             raise Exception("Unsupported conversion: " + str(type(dt)) + " -> datetime.timedelta64")
     except Exception as e:
         raise DHError(e) from e
-
 
 # endregion

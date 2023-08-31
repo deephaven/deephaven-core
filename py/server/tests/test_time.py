@@ -5,9 +5,9 @@
 import unittest
 from time import sleep
 import datetime
+import pandas as pd
+import numpy as np
 
-from deephaven import dtypes
-from deephaven.constants import NULL_LONG, NULL_INT
 from deephaven.time import *
 from tests.testbase import BaseTestCase
 
@@ -78,8 +78,12 @@ class TimeTestCase(BaseTestCase):
         tz = to_j_time_zone(None)
         self.assertEqual(str(tz), "Etc/UTC")
 
+        tz1 = to_j_time_zone("CT")
+        tz2 = to_j_time_zone(tz1)
+        self.assertEqual(tz1, tz2)
+
         with self.assertRaises(DHError):
-            to_j_time_zone(123)
+            to_j_time_zone(False)
             self.fail("Expected DHError")
 
 
@@ -99,16 +103,31 @@ class TimeTestCase(BaseTestCase):
         ld = to_j_local_date(d)
         self.assertEqual(str(ld), "2021-12-10")
 
+        d = pd.Timestamp("2021-12-10T14:21:17.123456Z")
+        ld = to_j_local_date(d)
+        self.assertEqual(str(ld), "2021-12-10")
+
         ld = to_j_local_date(None)
         self.assertEqual(ld, None)
 
+        ld = to_j_local_date(pd.Timestamp("NaT"))
+        self.assertEqual(ld, None)
+
+        ld1 = to_j_local_date("2021-12-10")
+        ld2 = to_j_local_date(ld1)
+        self.assertEqual(ld1, ld2)
+
         with self.assertRaises(DHError):
-            to_j_local_date(123)
+            to_j_local_date(False)
             self.fail("Expected DHError")
 
 
     def test_to_j_local_time(self):
         lt = to_j_local_time("14:21:17.123456")
+        self.assertEqual(str(lt), "14:21:17.123456")
+
+        ltn = lt.toNanoOfDay()
+        lt = to_j_local_time(ltn)
         self.assertEqual(str(lt), "14:21:17.123456")
 
         t = datetime.time(14, 21, 17, 123456)
@@ -123,17 +142,35 @@ class TimeTestCase(BaseTestCase):
         lt = to_j_local_time(t)
         self.assertEqual(str(lt), "14:21:17.123456")
 
+        t = pd.Timestamp("2021-12-10T14:21:17.123456789Z")
+        lt = to_j_local_time(t)
+        self.assertEqual(str(lt), "14:21:17.123456789")
+
         lt = to_j_local_time(None)
         self.assertEqual(lt, None)
 
+        lt = to_j_local_time(np.datetime64("NaT"))
+        self.assertEqual(lt, None)
+
+        lt = to_j_local_time(pd.Timestamp("NaT"))
+        self.assertEqual(lt, None)
+
+        lt1 = to_j_local_time("14:21:17.123456")
+        lt2 = to_j_local_time(lt1)
+        self.assertEqual(lt1, lt2)
+
         with self.assertRaises(DHError):
-            to_j_local_time(123)
+            to_j_local_time(False)
             self.fail("Expected DHError")
 
     def test_to_j_instant(self):
         target = _JDateTimeUtils.parseZonedDateTime("2021-12-10T19:21:17.123456Z")
 
         dt = to_j_instant("2021-12-10T14:21:17.123456 ET")
+        self.assertEqual(str(target), str(dt))
+
+        dtn = _JDateTimeUtils.epochNanos(dt)
+        dt = to_j_instant(dtn)
         self.assertEqual(str(target), str(dt))
 
         # 1 ns is a rounding error
@@ -147,11 +184,27 @@ class TimeTestCase(BaseTestCase):
         dt = to_j_instant(x)
         self.assertEqual(str(target), str(dt))
 
+        # 1 ns is a rounding error
+        target = _JDateTimeUtils.parseZonedDateTime("2021-12-10T19:21:17.123456001Z")
+        x = pd.Timestamp(x)
+        dt = to_j_instant(x)
+        self.assertEqual(str(target), str(dt))
+
         dt = to_j_instant(None)
         self.assertEqual(dt, None)
 
+        dt = to_j_instant(pd.NaT)
+        self.assertEqual(dt, None)
+
+        dt = to_j_instant(np.datetime64("NaT"))
+        self.assertEqual(dt, None)
+
+        dt1 = target.toInstant()
+        dt2 = to_j_instant(dt1)
+        self.assertEqual(dt1, dt2)
+
         with self.assertRaises(DHError):
-            to_j_instant(123)
+            to_j_instant(False)
             self.fail("Expected DHError")
 
 
@@ -167,6 +220,12 @@ class TimeTestCase(BaseTestCase):
         dt = to_j_zdt(x)
         self.assertEqual(str(target), str(dt))
 
+        # 1 ns is a rounding error
+        target = _JDateTimeUtils.parseZonedDateTime("2021-12-10T14:21:17.123456001Z[Etc/UTC]")
+        x = pd.Timestamp(x)
+        dt = to_j_zdt(x)
+        self.assertEqual(str(target), str(dt))
+
         target = _JDateTimeUtils.parseZonedDateTime("2021-12-10T14:21:17.123456Z[Etc/UTC]")
         x = np.datetime64(x)
         dt = to_j_zdt(x)
@@ -175,14 +234,26 @@ class TimeTestCase(BaseTestCase):
         dt = to_j_zdt(None)
         self.assertEqual(dt, None)
 
+        dt = to_j_zdt(np.datetime64("NaT"))
+        self.assertEqual(dt, None)
+
+        dt = to_j_zdt(pd.Timestamp("NaT"))
+        self.assertEqual(dt, None)
+
+        dt = to_j_zdt(target)
+        self.assertEqual(dt, target)
+
         with self.assertRaises(DHError):
-            to_j_zdt(123)
+            to_j_zdt(False)
             self.fail("Expected DHError")
 
 
     def test_to_j_duration(self):
         d = to_j_duration("PT1H")
         self.assertEqual(str(d), "PT1H")
+
+        d = to_j_duration(2)
+        self.assertEqual(str(d), "PT0.000000002S")
 
         x = datetime.timedelta(hours=1, minutes=2, seconds=3, milliseconds=4, microseconds=5)
         dt = to_j_duration(x)
@@ -192,11 +263,25 @@ class TimeTestCase(BaseTestCase):
         dt = to_j_duration(x)
         self.assertEqual(dt, _JDateTimeUtils.parseDuration("PT1H2M3.004005S"))
 
+        x = pd.Timedelta(x)
+        dt = to_j_duration(x)
+        self.assertEqual(dt, _JDateTimeUtils.parseDuration("PT1H2M3.004005S"))
+
         d = to_j_duration(None)
         self.assertEqual(d, None)
 
+        d = to_j_duration(np.timedelta64("NaT"))
+        self.assertEqual(d, None)
+
+        d = to_j_duration(pd.Timedelta("NaT"))
+        self.assertEqual(d, None)
+
+        d1 = to_j_duration("PT1H")
+        d2 = to_j_duration(d1)
+        self.assertEqual(d1, d2)
+
         with self.assertRaises(DHError):
-            to_j_duration(123)
+            to_j_duration(False)
             self.fail("Expected DHError")
 
 
@@ -205,6 +290,10 @@ class TimeTestCase(BaseTestCase):
         self.assertEqual(str(p), "P14D")
 
         x = datetime.timedelta(days=2)
+        p = to_j_period(x)
+        self.assertEqual(str(p), "P2D")
+
+        x = pd.Timedelta(days=2)
         p = to_j_period(x)
         self.assertEqual(str(p), "P2D")
 
@@ -227,8 +316,18 @@ class TimeTestCase(BaseTestCase):
         p = to_j_period(None)
         self.assertEqual(p, None)
 
+        d = to_j_period(np.timedelta64("NaT"))
+        self.assertEqual(d, None)
+
+        d = to_j_period(pd.Timedelta("NaT"))
+        self.assertEqual(d, None)
+
+        p1 = to_j_period("P2W")
+        p2 = to_j_period(p1)
+        self.assertEqual(p1, p2)
+
         with self.assertRaises(DHError):
-            to_j_period(123)
+            to_j_period(False)
             self.fail("Expected DHError")
 
         with self.assertRaises(DHError):
@@ -243,6 +342,26 @@ class TimeTestCase(BaseTestCase):
 
         with self.assertRaises(DHError):
             x = datetime.timedelta(days=2.3)
+            to_j_period(x)
+            self.fail("Expected DHError")
+
+        with self.assertRaises(DHError):
+            x = pd.Timedelta(days=2, seconds=1)
+            to_j_period(x)
+            self.fail("Expected DHError")
+
+        with self.assertRaises(DHError):
+            x = pd.Timedelta(days=2, microseconds=1)
+            to_j_period(x)
+            self.fail("Expected DHError")
+
+        with self.assertRaises(DHError):
+            x = pd.Timedelta(days=2, nanoseconds=1)
+            to_j_period(x)
+            self.fail("Expected DHError")
+
+        with self.assertRaises(DHError):
+            x = pd.Timedelta(days=2.3)
             to_j_period(x)
             self.fail("Expected DHError")
 
@@ -272,7 +391,7 @@ class TimeTestCase(BaseTestCase):
         self.assertEqual(dt, None)
 
         with self.assertRaises(DHError):
-            to_date(123)
+            to_date(False)
             self.fail("Expected DHError")
 
     def test_to_time(self):
@@ -290,7 +409,7 @@ class TimeTestCase(BaseTestCase):
         self.assertEqual(dt, None)
 
         with self.assertRaises(DHError):
-            to_time(123)
+            to_time(False)
             self.fail("Expected DHError")
 
     def test_to_datetime(self):
@@ -308,8 +427,25 @@ class TimeTestCase(BaseTestCase):
         self.assertEqual(dt, None)
 
         with self.assertRaises(DHError):
-            to_datetime(123)
+            to_datetime(False)
             self.fail("Expected DHError")
+
+    def test_to_pd_timestamp(self):
+        target = pd.Timestamp(year=2021, month=12, day=10, hour=14, minute=21, second=17, microsecond=123456, nanosecond=789)
+
+        dt = _JDateTimeUtils.parseInstant("2021-12-10T14:21:17.123456789Z")
+        dt = to_pd_timestamp(dt)
+        self.assertEqual(dt, target)
+
+        dt = _JDateTimeUtils.parseZonedDateTime("2021-12-10T14:21:17.123456789Z")
+        dt = to_pd_timestamp(dt)
+        self.assertEqual(dt, target)
+
+        dt = to_pd_timestamp(None)
+        self.assertEqual(dt, None)
+
+        with self.assertRaises(DHError):
+            to_pd_timestamp(False)
 
     def test_to_datetime64(self):
         target = np.datetime64("2021-12-10T14:21:17.123456Z")
@@ -326,7 +462,7 @@ class TimeTestCase(BaseTestCase):
         self.assertEqual(dt, None)
 
         with self.assertRaises(DHError):
-            to_datetime64(123)
+            to_datetime64(False)
             self.fail("Expected DHError")
 
     def test_to_timedelta(self):
@@ -360,7 +496,41 @@ class TimeTestCase(BaseTestCase):
             self.fail("Expected DHError")
 
         with self.assertRaises(DHError):
-            to_timedelta(123)
+            to_timedelta(False)
+            self.fail("Expected DHError")
+
+    def test_to_pd_timedelta(self):
+        target = pd.Timedelta(hours=1, minutes=2, seconds=3, milliseconds=4, microseconds=5)
+
+        d = _JDateTimeUtils.parseDuration("PT1H2M3.004005S")
+        dt = to_pd_timedelta(d)
+        self.assertEqual(dt, target)
+
+        target = datetime.timedelta(days=2)
+        d = _JDateTimeUtils.parsePeriod("P2D")
+        dt = to_pd_timedelta(d)
+        self.assertEqual(dt, target)
+
+        target = datetime.timedelta(days=14)
+        d = _JDateTimeUtils.parsePeriod("P2W")
+        dt = to_pd_timedelta(d)
+        self.assertEqual(dt, target)
+
+        d = to_pd_timedelta(None)
+        self.assertEqual(d, None)
+
+        d = _JDateTimeUtils.parsePeriod("P1Y")
+        with self.assertRaises(DHError):
+            to_pd_timedelta(d)
+            self.fail("Expected DHError")
+
+        d = _JDateTimeUtils.parsePeriod("P1M")
+        with self.assertRaises(DHError):
+            to_pd_timedelta(d)
+            self.fail("Expected DHError")
+
+        with self.assertRaises(DHError):
+            to_pd_timedelta(False)
             self.fail("Expected DHError")
 
     def test_to_timedelta64(self):
@@ -414,7 +584,7 @@ class TimeTestCase(BaseTestCase):
             self.fail("Expected DHError")
 
         with self.assertRaises(DHError):
-            to_timedelta64(123)
+            to_timedelta64(False)
             self.fail("Expected DHError")
 
     # endregion

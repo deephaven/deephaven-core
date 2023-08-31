@@ -9,6 +9,7 @@ import jpy
 
 import datetime
 import numpy as np
+import pandas as pd
 
 from deephaven import dtypes, DHError, time
 from deephaven._wrapper import JObjectWrapper
@@ -26,24 +27,21 @@ class TableReplayer(JObjectWrapper):
 
     j_object_type = _JReplayer
 
-    def __init__(self, start_time: Union[dtypes.Instant,str,datetime.datetime,np.datetime64],
-                 end_time: Union[dtypes.Instant,str,datetime.datetime,np.datetime64]):
+    def __init__(self, start_time: Union[dtypes.Instant, int, str, datetime.datetime, np.datetime64, pd.Timestamp],
+                 end_time: Union[dtypes.Instant, int, str, datetime.datetime, np.datetime64, pd.Timestamp]):
         """Initializes the replayer.
 
         Args:
-             start_time (Union[dtypes.Instant,str,datetime.datetime,np.datetime64]): replay start time
-             end_time (Union[dtypes.Instant,str,datetime.datetime,np.datetime64]): replay end time
+             start_time (Union[dtypes.Instant, int, str, datetime.datetime, np.datetime64, pd.Timestamp]):
+                replay start time.  Integer values are nanoseconds since the Epoch.
+             end_time (Union[dtypes.Instant, int, str, datetime.datetime, np.datetime64, pd.Timestamp]):
+                replay end time.  Integer values are nanoseconds since the Epoch.
 
         Raises:
             DHError
         """
-
-        if not isinstance(start_time, dtypes.Instant.j_type):
-            start_time = time.to_j_instant(start_time)
-
-        if not isinstance(end_time, dtypes.Instant.j_type):
-            end_time = time.to_j_instant(end_time)
-
+        start_time = time.to_j_instant(start_time)
+        end_time = time.to_j_instant(end_time)
         self.start_time = start_time
         self.end_time = end_time
         try:
