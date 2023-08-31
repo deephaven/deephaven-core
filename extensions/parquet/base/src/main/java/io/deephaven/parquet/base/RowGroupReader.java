@@ -4,6 +4,7 @@
 package io.deephaven.parquet.base;
 
 import org.apache.parquet.format.RowGroup;
+import org.jetbrains.annotations.NotNull;
 
 import java.util.List;
 
@@ -17,7 +18,7 @@ public interface RowGroupReader {
      * @param path the full column path
      * @return the accessor to a given Column Chunk
      */
-    ColumnChunkReader getColumnChunk(List<String> path);
+    ColumnChunkReader getColumnChunk(@NotNull List<String> path);
 
     long numRows();
 

@@ -3,6 +3,7 @@
  */
 package io.deephaven.parquet.base;
 
+import org.apache.parquet.column.statistics.Statistics;
 import org.apache.parquet.column.values.rle.RunLengthBitPackingHybridEncoder;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
@@ -36,7 +37,7 @@ public interface BulkWriter<BUFFER_TYPE> {
      * @param bulkValues the buffer of values
      * @param rowCount the total number of rows to write.
      */
-    void writeBulk(@NotNull BUFFER_TYPE bulkValues, int rowCount);
+    void writeBulk(@NotNull BUFFER_TYPE bulkValues, int rowCount, @NotNull Statistics<?> statistics);
 
     /**
      * Write a buffer's worth of values to the underlying page. This method will find, without writing, {@code null}
@@ -46,13 +47,15 @@ public interface BulkWriter<BUFFER_TYPE> {
      * @param bulkValues the values to write
      * @param dlEncoder the encoder for definition levels
      * @param rowCount the number of rows being written
+     * @param statistics the {@link Statistics} object to modify.
      * @return a {@link WriteResult} containing the statistics of the result.
      * @throws IOException if there was an error during write.
      */
     @NotNull
     WriteResult writeBulkFilterNulls(@NotNull BUFFER_TYPE bulkValues,
             @NotNull RunLengthBitPackingHybridEncoder dlEncoder,
-            int rowCount) throws IOException;
+            final int rowCount,
+            @NotNull Statistics<?> statistics) throws IOException;
 
     /**
      * Write a buffer's worth of packed vector values to the underlying page. This method will set the proper definition
@@ -70,7 +73,8 @@ public interface BulkWriter<BUFFER_TYPE> {
             @NotNull final IntBuffer vectorSizes,
             @NotNull final RunLengthBitPackingHybridEncoder rlEncoder,
             @NotNull final RunLengthBitPackingHybridEncoder dlEncoder,
-            final int nonNullValueCount) throws IOException;
+            final int nonNullValueCount,
+            @NotNull Statistics<?> statistics) throws IOException;
 
     /**
      * Write a buffer's worth of packed vector values to the underlying page, skipping null values. This method will
@@ -81,7 +85,9 @@ public interface BulkWriter<BUFFER_TYPE> {
      * @return a {@link WriteResult} containing the statistics of the result.
      */
     @NotNull
-    WriteResult writeBulkFilterNulls(@NotNull BUFFER_TYPE bulkValues, int rowCount);
+    WriteResult writeBulkVectorFilterNulls(@NotNull BUFFER_TYPE bulkValues,
+            final int rowCount,
+            @NotNull Statistics<?> statistics);
 
     /**
      * Clear all internal state.
@@ -93,7 +99,7 @@ public interface BulkWriter<BUFFER_TYPE> {
      *
      * @return a {@link ByteBuffer} containing the written data.
      *
-     * @throws IOException
+     * @throws IOException if there is an exception reading the data.
      */
     ByteBuffer getByteBufferView() throws IOException;
 

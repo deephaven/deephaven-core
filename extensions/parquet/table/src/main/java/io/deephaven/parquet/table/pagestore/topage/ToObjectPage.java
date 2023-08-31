@@ -19,9 +19,10 @@ public class ToObjectPage<T, ATTR extends Any> implements ToPage<ATTR, T[]> {
     private final ObjectCodec<T> codec;
 
     public static <T, ATTR extends Any>
-    ToPage<ATTR, T[]> create(final Class<T> nativeType,
-                             final @NotNull ObjectCodec<T> codec,
-                             final Supplier<Dictionary> dictionarySupplier) {
+    ToPage<ATTR, T[]> create(
+            final Class<T> nativeType,
+            @NotNull final ObjectCodec<T> codec,
+            final Supplier<Dictionary> dictionarySupplier) {
         if (!nativeType.isPrimitive()) {
             return dictionarySupplier == null ? new ToObjectPage<>(nativeType, codec) :
                     new ToPageWithDictionary<>(

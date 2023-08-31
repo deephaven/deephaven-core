@@ -10,6 +10,7 @@ import io.deephaven.engine.table.impl.select.WhereFilter;
 import io.deephaven.engine.table.impl.select.WhereFilterImpl;
 import io.deephaven.engine.util.TableTools;
 import io.deephaven.test.types.OutOfBandTest;
+import org.jetbrains.annotations.NotNull;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
@@ -55,8 +56,10 @@ public class QueryTableWhereParallelTest extends QueryTableWhereTest {
             @Override
             public void init(TableDefinition tableDefinition) {}
 
+            @NotNull
             @Override
-            public WritableRowSet filter(RowSet selection, RowSet fullSet, Table table, boolean usePrev) {
+            public WritableRowSet filter(
+                    @NotNull RowSet selection, @NotNull RowSet fullSet, @NotNull Table table, boolean usePrev) {
                 synchronized (sizes) {
                     sizes.add(selection.size());
                 }

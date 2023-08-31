@@ -31,6 +31,7 @@ class UpdateByTestCase(BaseTestCase):
 
     @classmethod
     def setUpClass(cls) -> None:
+        super().setUpClass()
         cls.em_op_ctrl = OperationControl(on_null=BadDataBehavior.THROW,
                                       on_nan=BadDataBehavior.RESET,
                                       big_value_context=MathContext.UNLIMITED)
@@ -148,11 +149,11 @@ class UpdateByTestCase(BaseTestCase):
             rolling_std_time(ts_col="Timestamp", cols=["rstd_b = b", "rstd_e = e"], rev_time="PT30S",
                              fwd_time="-PT00:00:20"),
             # rolling weighted average (using "b" as the weight column)
-            rolling_wavg_tick(weight_col="b", cols=["rwavg_a = a", "rwavg_d = d"], rev_ticks=10),
-            rolling_wavg_tick(weight_col="b", cols=["rwavg_a = a", "rwavg_d = d"], rev_ticks=10, fwd_ticks=10),
-            rolling_wavg_time(ts_col="Timestamp", weight_col="b", cols=["rwavg_b = b", "rwavg_e = e"], rev_time="PT00:00:10"),
-            rolling_wavg_time(ts_col="Timestamp", weight_col="b", cols=["rwavg_b = b", "rwavg_e = e"], rev_time=10_000_000_000, fwd_time=-10_000_000_00),
-            rolling_wavg_time(ts_col="Timestamp", weight_col="b", cols=["rwavg_b = b", "rwavg_e = e"], rev_time="PT30S", fwd_time="-PT00:00:20"),
+            rolling_wavg_tick(wcol="b", cols=["rwavg_a = a", "rwavg_d = d"], rev_ticks=10),
+            rolling_wavg_tick(wcol="b", cols=["rwavg_a = a", "rwavg_d = d"], rev_ticks=10, fwd_ticks=10),
+            rolling_wavg_time(ts_col="Timestamp", wcol="b", cols=["rwavg_b = b", "rwavg_e = e"], rev_time="PT00:00:10"),
+            rolling_wavg_time(ts_col="Timestamp", wcol="b", cols=["rwavg_b = b", "rwavg_e = e"], rev_time=10_000_000_000, fwd_time=-10_000_000_00),
+            rolling_wavg_time(ts_col="Timestamp", wcol="b", cols=["rwavg_b = b", "rwavg_e = e"], rev_time="PT30S", fwd_time="-PT00:00:20"),
         ]
 
     @classmethod
@@ -161,6 +162,7 @@ class UpdateByTestCase(BaseTestCase):
         del cls.em_ops
         del cls.simple_ops
         del cls.rolling_ops
+        super().tearDownClass()
 
     def test_em(self):
         for op in self.em_ops:
@@ -245,7 +247,7 @@ class UpdateByTestCase(BaseTestCase):
             cum_max(["max_a=a", "max_d=d"]),
             ema_tick(10, ["ema_d=d", "ema_e=e"]),
             ema_time("Timestamp", "PT00:00:00.1", ["ema_time_d=d", "ema_time_e=e"]),
-            rolling_wavg_tick(weight_col="b", cols=["rwavg_a = a", "rwavg_d = d"], rev_ticks=10),
+            rolling_wavg_tick(wcol="b", cols=["rwavg_a = a", "rwavg_d = d"], rev_ticks=10),
         ]
         for t in (self.static_table, self.ticking_table):
             rt = t.update_by(ops=multiple_ops, by="c")

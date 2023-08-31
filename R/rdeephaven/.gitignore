@@ -3,3 +3,5 @@ lib/cpp-examples/
 lib/cpp-dependencies/local
 lib/cpp-dependencies/src
 lib/cpp-dependencies/env.sh
+*.o
+*.so

@@ -23,12 +23,14 @@ class ParquetTestCase(BaseTestCase):
 
     @classmethod
     def setUpClass(cls):
+        super().setUpClass()
         # define a junk table workspace directory
         cls.temp_dir = tempfile.TemporaryDirectory()
 
     @classmethod
     def tearDownClass(cls):
         cls.temp_dir.cleanup()
+        super().tearDownClass()
 
     def test_crd(self):
         """ Test suite for reading, writing, and deleting a table to disk """
@@ -304,6 +306,25 @@ class ParquetTestCase(BaseTestCase):
         from_disk = read('data_from_pa.parquet').select()
         pa_table_from_disk = dharrow.to_arrow(from_disk)
         self.assertTrue(pa_table.equals(pa_table_from_disk))
+
+    def test_dictionary_encoding(self):
+        dh_table = empty_table(10).update(formulas=[
+            "shortStringColumn = `Row ` + i",
+            "longStringColumn = `This is row ` + i",
+            "someIntColumn = i"
+        ])
+        # Force "longStringColumn" to use non-dictionary encoding
+        write(dh_table, "data_from_dh.parquet", max_dictionary_size=100)
+        from_disk = read('data_from_dh.parquet')
+        self.assert_table_equals(dh_table, from_disk)
+
+        metadata = pyarrow.parquet.read_metadata("data_from_dh.parquet")
+        self.assertTrue((metadata.row_group(0).column(0).path_in_schema == 'shortStringColumn') &
+                        ('RLE_DICTIONARY' in str(metadata.row_group(0).column(0).encodings)))
+        self.assertTrue((metadata.row_group(0).column(1).path_in_schema == 'longStringColumn') &
+                        ('RLE_DICTIONARY' not in str(metadata.row_group(0).column(2).encodings)))
+        self.assertTrue((metadata.row_group(0).column(2).path_in_schema == 'someIntColumn') &
+                        ('RLE_DICTIONARY' not in str(metadata.row_group(0).column(2).encodings)))
 
 
 if __name__ == '__main__':

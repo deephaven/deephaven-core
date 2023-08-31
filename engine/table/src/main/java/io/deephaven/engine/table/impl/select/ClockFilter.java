@@ -55,9 +55,13 @@ public abstract class ClockFilter extends WhereFilterLivenessArtifactImpl implem
         return Collections.emptyList();
     }
 
+    @NotNull
     @Override
-    public final WritableRowSet filter(@NotNull final RowSet selection, @NotNull final RowSet fullSet,
-            @NotNull final Table table, boolean usePrev) {
+    public final WritableRowSet filter(
+            @NotNull final RowSet selection,
+            @NotNull final RowSet fullSet,
+            @NotNull final Table table,
+            final boolean usePrev) {
         if (usePrev) {
             throw new PreviousFilteringNotSupported();
         }
