@@ -56,7 +56,7 @@ class TableFactoryTestCase(BaseTestCase):
         t = time_table("PT00:00:01", start_time="2021-11-06T13:21:00 ET")
         self.assertEqual(1, len(t.columns))
         self.assertTrue(t.is_refreshing)
-        self.assertEqual("2021-11-06T13:21:00.000000000 ET", _JDateTimeUtils.formatDateTime(t.j_table.getColumnSource("Timestamp").get(0), _JDateTimeUtils.timeZone('ET')))
+        self.assertEqual("2021-11-06T13:21:00.000000000 ET", _JDateTimeUtils.formatDateTime(t.j_table.getColumnSource("Timestamp").get(0), time.to_j_time_zone('ET')))
 
         t = time_table(1000_000_000)
         self.assertEqual(1, len(t.columns))
@@ -65,18 +65,18 @@ class TableFactoryTestCase(BaseTestCase):
         t = time_table(1000_1000_1000, start_time="2021-11-06T13:21:00 ET")
         self.assertEqual(1, len(t.columns))
         self.assertTrue(t.is_refreshing)
-        self.assertEqual("2021-11-06T13:21:00.000000000 ET", _JDateTimeUtils.formatDateTime(t.j_table.getColumnSource("Timestamp").get(0), _JDateTimeUtils.timeZone('ET')))
+        self.assertEqual("2021-11-06T13:21:00.000000000 ET", _JDateTimeUtils.formatDateTime(t.j_table.getColumnSource("Timestamp").get(0), time.to_j_time_zone('ET')))
 
-        p = time.to_timedelta(_JDateTimeUtils.parseDuration("PT1s"))
+        p = time.to_timedelta(time.to_j_duration("PT1s"))
         t = time_table(p)
         self.assertEqual(1, len(t.columns))
         self.assertTrue(t.is_refreshing)
 
-        st = time.to_datetime(_JDateTimeUtils.parseInstant("2021-11-06T13:21:00 ET"))
+        st = time.to_datetime(time.to_j_instant("2021-11-06T13:21:00 ET"))
         t = time_table(p, start_time=st)
         self.assertEqual(1, len(t.columns))
         self.assertTrue(t.is_refreshing)
-        self.assertEqual("2021-11-06T13:21:00.000000000 ET", _JDateTimeUtils.formatDateTime(t.j_table.getColumnSource("Timestamp").get(0), _JDateTimeUtils.timeZone('ET')))
+        self.assertEqual("2021-11-06T13:21:00.000000000 ET", _JDateTimeUtils.formatDateTime(t.j_table.getColumnSource("Timestamp").get(0), time.to_j_time_zone('ET')))
 
     def test_time_table_blink(self):
         t = time_table("PT1s", blink_table=True)
@@ -122,7 +122,7 @@ class TableFactoryTestCase(BaseTestCase):
             float_col(name="Float", data=[1.01, -1.01]),
             double_col(name="Double", data=[1.01, -1.01]),
             string_col(name="String", data=["foo", "bar"]),
-            datetime_col(name="Datetime", data=[_JDateTimeUtils.epochNanosToInstant(1), _JDateTimeUtils.epochNanosToInstant(-1)]),
+            datetime_col(name="Datetime", data=[1, -1]),
             pyobj_col(name="PyObj", data=[CustomClass(1, "1"), CustomClass(-1, "-1")]),
             pyobj_col(name="PyObj1", data=[[1, 2, 3], CustomClass(-1, "-1")]),
             pyobj_col(name="PyObj2", data=[False, 'False']),
