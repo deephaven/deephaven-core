@@ -7,7 +7,7 @@ public class ControlledUpdateGraph extends PeriodicUpdateGraph {
 
     public static final ControlledUpdateGraph INSTANCE = new ControlledUpdateGraph();
 
-    private ControlledUpdateGraph() {
+    public ControlledUpdateGraph() {
         super("TEST", true, 1000, 25, -1);
     }
 }

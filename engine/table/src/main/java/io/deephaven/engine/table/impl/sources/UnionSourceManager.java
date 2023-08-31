@@ -535,9 +535,12 @@ public class UnionSourceManager {
                 assert nextListener != null;
                 Assert.eq(nextListener.getParent(), "listener parent", constituent, "existing constituent");
 
-                // Make sure we propagate any actual error on to the listeners
+                // Make sure we propagate any actual error on to the listeners, and advance the listener so we can
+                // continue to process the rest of the tables
                 if(nextListener.error != null) {
-                    throw new ConstituentTableErrorException(nextListener.getReferentDescription(), nextListener.error);
+                    final String referentDescription = nextListener.getReferentDescription();
+                    advanceListener();
+                    throw new ConstituentTableErrorException(referentDescription, nextListener.error);
                 }
 
                 changes = nextListener.getUpdate();
