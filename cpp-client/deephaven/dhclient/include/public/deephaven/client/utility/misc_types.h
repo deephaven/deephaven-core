@@ -28,7 +28,7 @@ using DurationSpecifier = std::variant<std::chrono::nanoseconds, int64_t, std::s
  */
 struct OnCloseCbId {
   std::uint32_t id;
-  friend bool operator<(const OnCloseCbId &lhs, const OnCloseCbId &rhs) {
+  friend bool operator<(const OnCloseCbId lhs, const OnCloseCbId rhs) {
     return lhs.id < rhs.id;
   }
 };
