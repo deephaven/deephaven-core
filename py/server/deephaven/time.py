@@ -34,6 +34,9 @@ _nanos_per_micro = 1000
 def dh_now(system: bool = False, resolution: str = 'ns') -> Instant:
     """ Provides the current datetime according to the current Deephaven clock.
 
+    Query strings should use the built-in "now" function instead of this function.
+    The build-in "now" function is pure Java and will be more efficient.
+
     Args:
         system (bool): True to use the system clock; False to use the default clock.  Under most circumstances,
             the default clock will return the current system time, but during replay simulations, the default
@@ -70,6 +73,9 @@ def dh_today(tz: Optional[TimeZone] = None) -> str:
     Under most circumstances, this method will return the date according to current system time,
     but during replay simulations, this method can return the date according to replay time.
 
+    Query strings should use the built-in "today" function instead of this function.
+    The build-in "today" function is pure Java and will be more efficient.
+
     Args:
         tz (TimeZone): Time zone to use when determining the date.
             If None is provided, the Deephaven system default time zone is used.
@@ -91,6 +97,9 @@ def dh_today(tz: Optional[TimeZone] = None) -> str:
 
 def dh_time_zone() -> TimeZone:
     """ Provides the current Deephaven system time zone.
+
+    Query strings should use the built-in "timeZone" function instead of this function.
+    The build-in "timeZone" function is pure Java and will be more efficient.
 
     Returns:
         TimeZone
