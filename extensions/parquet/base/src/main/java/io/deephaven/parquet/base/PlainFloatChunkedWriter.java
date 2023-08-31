@@ -8,13 +8,12 @@
  */
 package io.deephaven.parquet.base;
 
-import java.nio.IntBuffer;
-
 import io.deephaven.parquet.base.util.Helpers;
 import io.deephaven.util.QueryConstants;
 import org.apache.parquet.bytes.ByteBufferAllocator;
 import org.apache.parquet.bytes.BytesInput;
 import org.apache.parquet.column.Encoding;
+import org.apache.parquet.column.statistics.Statistics;
 import org.apache.parquet.column.values.rle.RunLengthBitPackingHybridEncoder;
 import org.jetbrains.annotations.NotNull;
 
@@ -22,6 +21,7 @@ import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
 import java.nio.FloatBuffer;
+import java.nio.IntBuffer;
 
 /**
  * A writer for encoding floats in the PLAIN format
@@ -89,8 +89,14 @@ public class PlainFloatChunkedWriter extends AbstractBulkValuesWriter<FloatBuffe
     }
 
     @Override
-    public void writeBulk(@NotNull FloatBuffer bulkValues, int rowCount) {
+    public void writeBulk(@NotNull FloatBuffer bulkValues,
+                          final int rowCount,
+                          @NotNull final Statistics<?> statistics) {
         ensureCapacityFor(bulkValues);
+        // Generate statistics before we perform the bulk write.
+        for (int i = 0; i < rowCount; i++) {
+            statistics.updateStats(bulkValues.get(i));
+        }
         targetBuffer.put(bulkValues);
     }
 
@@ -98,14 +104,17 @@ public class PlainFloatChunkedWriter extends AbstractBulkValuesWriter<FloatBuffe
     @Override
     public WriteResult writeBulkFilterNulls(@NotNull final FloatBuffer bulkValues,
                                             @NotNull final RunLengthBitPackingHybridEncoder dlEncoder,
-                                            final int rowCount) throws IOException {
+                                            final int rowCount,
+                                            @NotNull final Statistics<?> statistics) throws IOException {
         ensureCapacityFor(bulkValues);
         while (bulkValues.hasRemaining()) {
-            final float next = bulkValues.get();
-            if (next != QueryConstants.NULL_FLOAT) {
-                writeFloat(next);
+            final float v = bulkValues.get();
+            if (v != QueryConstants.NULL_FLOAT) {
+                writeFloat(v);
+                statistics.updateStats(v);
                 dlEncoder.writeInt(DL_ITEM_PRESENT);
             } else {
+                statistics.incrementNumNulls();
                 dlEncoder.writeInt(DL_ITEM_NULL);
             }
         }
@@ -114,18 +123,21 @@ public class PlainFloatChunkedWriter extends AbstractBulkValuesWriter<FloatBuffe
 
     @NotNull
     @Override
-    public WriteResult writeBulkFilterNulls(@NotNull final FloatBuffer bulkValues,
-                                            final int rowCount) {
+    public WriteResult writeBulkVectorFilterNulls(@NotNull final FloatBuffer bulkValues,
+                                                  final int rowCount,
+                                                  @NotNull final Statistics<?> statistics) {
         ensureCapacityFor(bulkValues);
         int i = 0;
         IntBuffer nullOffsets = IntBuffer.allocate(4);
         while (bulkValues.hasRemaining()) {
-            final float next = bulkValues.get();
-            if (next != QueryConstants.NULL_FLOAT) {
-                writeFloat(next);
+            final float v = bulkValues.get();
+            if (v != QueryConstants.NULL_FLOAT) {
+                writeFloat(v);
+                statistics.updateStats(v);
             } else {
                 nullOffsets = Helpers.ensureCapacity(nullOffsets);
                 nullOffsets.put(i);
+                statistics.incrementNumNulls();
             }
             i++;
         }

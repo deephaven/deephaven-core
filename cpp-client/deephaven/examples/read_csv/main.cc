@@ -53,8 +53,8 @@ int main(int argc, char* argv[]) {
 namespace {
 arrow::Status Doit(const TableHandleManager &manager, const std::string &csvfn) {
   auto input_file = ValueOrThrow(
-      DEEPHAVEN_EXPR_MSG(arrow::io::ReadableFile::Open(csvfn)));
-  auto csv_reader = ValueOrThrow(DEEPHAVEN_EXPR_MSG(
+      DEEPHAVEN_LOCATION_EXPR(arrow::io::ReadableFile::Open(csvfn)));
+  auto csv_reader = ValueOrThrow(DEEPHAVEN_LOCATION_EXPR(
      arrow::csv::TableReader::Make(
        arrow::io::default_io_context(),
        input_file,
@@ -64,7 +64,7 @@ arrow::Status Doit(const TableHandleManager &manager, const std::string &csvfn) 
     )
   ));
     
-  auto arrow_table = ValueOrThrow(DEEPHAVEN_EXPR_MSG(csv_reader->Read()));
+  auto arrow_table = ValueOrThrow(DEEPHAVEN_LOCATION_EXPR(csv_reader->Read()));
 
   auto wrapper = manager.CreateFlightWrapper();
 
@@ -76,7 +76,7 @@ arrow::Status Doit(const TableHandleManager &manager, const std::string &csvfn) 
   auto fd = ConvertTicketToFlightDescriptor(ticket);
   std::unique_ptr<arrow::flight::FlightStreamWriter> fsw;
   std::unique_ptr<arrow::flight::FlightMetadataReader> fmr;
-  OkOrThrow(DEEPHAVEN_EXPR_MSG(
+  OkOrThrow(DEEPHAVEN_LOCATION_EXPR(
       wrapper.FlightClient()->DoPut(options, fd, arrow_table->schema(), &fsw, &fmr)));
 
   const auto &srcColumns = arrow_table->columns();
@@ -88,14 +88,14 @@ arrow::Status Doit(const TableHandleManager &manager, const std::string &csvfn) 
       destColumns[colIndex] = srcColumns[colIndex]->chunk(chunkIndex);
     }
     auto batch = arrow::RecordBatch::Make(arrow_table->schema(), destColumns[0]->length(), destColumns);
-    OkOrThrow(DEEPHAVEN_EXPR_MSG(fsw->WriteRecordBatch(*batch)));
+    OkOrThrow(DEEPHAVEN_LOCATION_EXPR(fsw->WriteRecordBatch(*batch)));
   }
 
-  OkOrThrow(DEEPHAVEN_EXPR_MSG(fsw->DoneWriting()));
+  OkOrThrow(DEEPHAVEN_LOCATION_EXPR(fsw->DoneWriting()));
 
   std::shared_ptr<arrow::Buffer> buf;
-  OkOrThrow(DEEPHAVEN_EXPR_MSG(fmr->ReadMetadata(&buf)));
-  OkOrThrow(DEEPHAVEN_EXPR_MSG(fsw->Close()));
+  OkOrThrow(DEEPHAVEN_LOCATION_EXPR(fmr->ReadMetadata(&buf)));
+  OkOrThrow(DEEPHAVEN_LOCATION_EXPR(fsw->Close()));
 
   auto table_handle = manager.MakeTableHandleFromTicket(ticket);
   std::cout << "table is:\n" << table_handle.Stream(true) << std::endl;

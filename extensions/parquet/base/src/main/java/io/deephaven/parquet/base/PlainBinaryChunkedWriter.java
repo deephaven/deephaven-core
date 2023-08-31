@@ -8,6 +8,7 @@ import io.deephaven.parquet.base.util.Helpers;
 import org.apache.parquet.bytes.ByteBufferAllocator;
 import org.apache.parquet.bytes.BytesInput;
 import org.apache.parquet.column.Encoding;
+import org.apache.parquet.column.statistics.Statistics;
 import org.apache.parquet.column.values.rle.RunLengthBitPackingHybridEncoder;
 import org.apache.parquet.io.api.Binary;
 import org.jetbrains.annotations.NotNull;
@@ -86,9 +87,13 @@ public class PlainBinaryChunkedWriter extends AbstractBulkValuesWriter<Binary[]>
     }
 
     @Override
-    public void writeBulk(@NotNull Binary[] bulkValues, int rowCount) {
+    public void writeBulk(@NotNull Binary[] bulkValues,
+                          final int rowCount,
+                          @NotNull final Statistics<?> statistics) {
         for (int i = 0; i < rowCount; i++) {
-            writeBytes(bulkValues[i]);
+            final Binary v = bulkValues[i];
+            writeBytes(v);
+            statistics.updateStats(v);
         }
     }
 
@@ -96,12 +101,16 @@ public class PlainBinaryChunkedWriter extends AbstractBulkValuesWriter<Binary[]>
     @Override
     public WriteResult writeBulkFilterNulls(@NotNull final Binary[] bulkValues,
                                             @NotNull final RunLengthBitPackingHybridEncoder dlEncoder,
-                                            final int rowCount) throws IOException {
+                                            final int rowCount,
+                                            @NotNull final Statistics<?> statistics) throws IOException {
         for (int i = 0; i < rowCount; i++) {
             if (bulkValues[i] != null) {
-                writeBytes(bulkValues[i]);
+                final Binary v = bulkValues[i];
+                writeBytes(v);
+                statistics.updateStats(v);
                 dlEncoder.writeInt(DL_ITEM_PRESENT);
             } else {
+                statistics.incrementNumNulls();
                 dlEncoder.writeInt(DL_ITEM_NULL);
             }
         }
@@ -109,14 +118,19 @@ public class PlainBinaryChunkedWriter extends AbstractBulkValuesWriter<Binary[]>
     }
 
     @Override
-    public @NotNull WriteResult writeBulkFilterNulls(@NotNull Binary[] bulkValues, int nonNullLeafCount) {
+    public @NotNull WriteResult writeBulkVectorFilterNulls(@NotNull Binary[] bulkValues,
+                                                           final int nonNullLeafCount,
+                                                           @NotNull final Statistics<?> statistics) {
         IntBuffer nullOffsets = IntBuffer.allocate(4);
         for (int i = 0; i < nonNullLeafCount; i++) {
             if (bulkValues[i] != null) {
-                writeBytes(bulkValues[i]);
+                final Binary v = bulkValues[i];
+                writeBytes(v);
+                statistics.updateStats(v);
             } else {
                 nullOffsets = Helpers.ensureCapacity(nullOffsets);
                 nullOffsets.put(i);
+                statistics.incrementNumNulls();
             }
         }
         return new WriteResult(nonNullLeafCount, nullOffsets);

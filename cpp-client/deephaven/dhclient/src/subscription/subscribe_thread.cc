@@ -157,12 +157,12 @@ std::shared_ptr<SubscriptionHandle> SubscribeState::InvokeHelper() {
   descriptor.cmd = std::string(magic_data, 4);
   std::unique_ptr<FlightStreamWriter> fsw;
   std::unique_ptr<FlightStreamReader> fsr;
-  OkOrThrow(DEEPHAVEN_EXPR_MSG(client->DoExchange(fco, descriptor, &fsw, &fsr)));
+  OkOrThrow(DEEPHAVEN_LOCATION_EXPR(client->DoExchange(fco, descriptor, &fsw, &fsr)));
 
   auto sub_req_raw = BarrageProcessor::CreateSubscriptionRequest(ticketBytes_.data(),
       ticketBytes_.size());
   auto buffer = std::make_shared<OwningBuffer>(std::move(sub_req_raw));
-  OkOrThrow(DEEPHAVEN_EXPR_MSG(fsw->WriteMetadata(std::move(buffer))));
+  OkOrThrow(DEEPHAVEN_LOCATION_EXPR(fsw->WriteMetadata(std::move(buffer))));
 
   // Run forever (until error or cancellation)
   auto processor = UpdateProcessor::startThread(std::move(fsr), std::move(schema_),
@@ -221,7 +221,7 @@ void UpdateProcessor::RunForeverHelper() {
   BarrageProcessor bp(schema_);
   // Process Arrow Flight messages until error or cancellation.
   while (true) {
-    OkOrThrow(DEEPHAVEN_EXPR_MSG(fsr_->Next(&flight_stream_chunk)));
+    OkOrThrow(DEEPHAVEN_LOCATION_EXPR(fsr_->Next(&flight_stream_chunk)));
     const auto &cols = flight_stream_chunk.data->columns();
     auto column_sources = MakeReservedVector<std::shared_ptr<ColumnSource>>(cols.size());
     auto sizes = MakeReservedVector<size_t>(cols.size());
@@ -294,20 +294,20 @@ struct ArrayToColumnSourceVisitor final : public arrow::ArrayVisitor {
 
 // Creates a non-owning chunk of the right type that points to the corresponding array data.
 ColumnSourceAndSize ArrayToColumnSource(const arrow::Array &array) {
-  const auto *list_array = VerboseCast<const arrow::ListArray *>(DEEPHAVEN_EXPR_MSG(&array));
+  const auto *list_array = VerboseCast<const arrow::ListArray *>(DEEPHAVEN_LOCATION_EXPR(&array));
 
   if (list_array->length() != 1) {
     auto message = Stringf("Expected array of length 1, got %o", array.length());
-    throw std::runtime_error(DEEPHAVEN_DEBUG_MSG(message));
+    throw std::runtime_error(DEEPHAVEN_LOCATION_STR(message));
   }
 
   const auto listElement = list_array->GetScalar(0).ValueOrDie();
   const auto *list_scalar = VerboseCast<const arrow::ListScalar *>(
-      DEEPHAVEN_EXPR_MSG(listElement.get()));
+      DEEPHAVEN_LOCATION_EXPR(listElement.get()));
   const auto &list_scalar_value = list_scalar->value;
 
   ArrayToColumnSourceVisitor v(list_scalar_value);
-  OkOrThrow(DEEPHAVEN_EXPR_MSG(list_scalar_value->Accept(&v)));
+  OkOrThrow(DEEPHAVEN_LOCATION_EXPR(list_scalar_value->Accept(&v)));
   return {std::move(v.result_), static_cast<size_t>(list_scalar_value->length())};
 }
 }  // namespace
