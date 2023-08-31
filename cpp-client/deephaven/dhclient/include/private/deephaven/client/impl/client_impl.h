@@ -42,11 +42,10 @@ public:
 
 private:
   std::shared_ptr<TableHandleManagerImpl> manager_impl_;
-  mutable std::mutex on_close_mux_;
-  struct OnCloseCbContext {
-    std::uint32_t next_id_;
-    std::map<OnCloseCbId, OnCloseCb> map_;
-  };
-  std::unique_ptr<OnCloseCbContext> on_close_cb_ctx_;
+  struct {
+    mutable std::mutex mux;
+    std::uint32_t next_id;
+    std::map<OnCloseCbId, OnCloseCb> map;
+  } on_close_;
 };
 }  // namespace deephaven::client::impl

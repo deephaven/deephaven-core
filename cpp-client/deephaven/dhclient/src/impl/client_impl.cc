@@ -46,33 +46,25 @@ ClientImpl::ClientImpl(Private, std::shared_ptr<TableHandleManagerImpl> &&manage
 ClientImpl::~ClientImpl() = default;
 
 ClientImpl::OnCloseCbId ClientImpl::AddOnCloseCallback(OnCloseCb cb) {
-  std::unique_lock lock(on_close_mux_);
-  if (on_close_cb_ctx_ == nullptr) {
-    on_close_cb_ctx_ = std::make_unique<OnCloseCbContext>();
-  }
-  OnCloseCbId id({on_close_cb_ctx_->next_id_++});
-  on_close_cb_ctx_->map_[id] = std::move(cb);
+  std::unique_lock lock(on_close_.mux);
+  OnCloseCbId id({on_close_.next_id++});
+  on_close_.map[id] = std::move(cb);
   return id;
 }
 
 bool ClientImpl::RemoveOnCloseCallback(OnCloseCbId cb_id) {
-  std::unique_lock lock(on_close_mux_);
-  if (on_close_cb_ctx_ == nullptr) {
-    return false;
-  }
-  return on_close_cb_ctx_->map_.erase(std::move(cb_id)) > 0;
+  std::unique_lock lock(on_close_.mux);
+  return on_close_.map.erase(std::move(cb_id)) > 0;
 }
 
 void ClientImpl::Shutdown() {
-  std::unique_lock lock(on_close_mux_);
   manager_impl_->Shutdown();
-  if (on_close_cb_ctx_ == nullptr) {
-    return;
-  }
-  for (const auto &entry : on_close_cb_ctx_->map_) {
+  std::unique_lock lock(on_close_.mux);
+  auto map = std::move(on_close_.map);
+  lock.unlock();
+  for (const auto &entry : map) {
     entry.second();
   }
-  on_close_cb_ctx_.reset();
 }
 }  // namespace impl
 }  // namespace deephaven::client
