@@ -4,7 +4,7 @@
 
 import unittest
 
-from deephaven import read_csv, time_table, update_graph
+from deephaven import read_csv, time_table, update_graph, DHError
 from deephaven.table import MultiJoinInput, MultiJoinTable, multi_join
 from tests.testbase import BaseTestCase
 from deephaven.execution_context import get_exec_ctx
@@ -114,6 +114,15 @@ class MultiJoinTestCase(BaseTestCase):
         # Output table has same # rows as sources
         with update_graph.exclusive_lock(self.test_update_graph):
             self.assertEqual(mj_table.table().size, self.ticking_tableA.size)
+
+    def test_errors(self):
+        # Assert the exception is raised when providing MultiJoinInput and the on parameter is not None (omitted).
+        mj_input = [
+            MultiJoinInput(table=self.ticking_tableA, on=["key1=a","key2=b"], joins=["c1","e1"]),
+            MultiJoinInput(table=self.ticking_tableB, on=["key1=a","key2=b"], joins=["d2"])
+        ]
+        with self.assertRaises(DHError):
+            mj_table = multi_join(mj_input, on=["key1=a","key2=b"])
 
 
 if __name__ == '__main__':

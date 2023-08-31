@@ -3596,7 +3596,8 @@ class MultiJoinInput(JObjectWrapper):
 
 
 class MultiJoinTable(JObjectWrapper):
-    """A MultiJoinTable represents the result of a multi-table natural join. """
+    """A MultiJoinTable is an object that contains the result of a multi-table natural join. To retrieve the underlying
+    result Table, use the table() method. """
     j_object_type = _JMultiJoinTable
 
     @property
@@ -3604,6 +3605,7 @@ class MultiJoinTable(JObjectWrapper):
         return self.j_multijointable
 
     def table(self) -> Table:
+        """Returns the Table containing the multi-table natural join output. """
         return Table(j_table=self.j_multijointable.table())
 
     def __init__(self, input: Union[Table, Sequence[Table], MultiJoinInput, Sequence[MultiJoinInput]],
@@ -3614,8 +3616,8 @@ class MultiJoinTable(JObjectWrapper):
             input (Union[Table, Sequence[Table], MultiJoinInput, Sequence[MultiJoinInput]]): the input objects
                 specifying the tables and columns to include in the join.
             on (Union[str, Sequence[str]], optional): the column(s) to match, can be a common name or an equality
-                expression that matches every input table, i.e. "col_a = col_b" to rename output column names.  When
-                using MultiJoinInput objects, this parameter is ignored.
+                expression that matches every input table, i.e. "col_a = col_b" to rename output column names. Note:
+                When MultiJoinInput objects are supplied, this parameter must be omitted.
 
         Raises:
             DHError
@@ -3627,6 +3629,8 @@ class MultiJoinTable(JObjectWrapper):
                     j_tables = to_sequence(input)
                     self.j_multijointable = _JMultiJoinFactory.of(on, *j_tables)
             elif isinstance(input, MultiJoinInput) or (isinstance(input, Sequence) and all(isinstance(ji, MultiJoinInput) for ji in input)):
+                if on is not None:
+                    raise DHError(message="on parameter is not permitted when MultiJoinInput objects are provided.")
                 wrapped_input = to_sequence(input, wrapped=True)
                 tables = [ji.table for ji in wrapped_input]
                 with auto_locking_ctx(*tables):
@@ -3650,8 +3654,8 @@ def multi_join(input: Union[Table, Sequence[Table], MultiJoinInput, Sequence[Mul
         input (Union[Table, Sequence[Table], MultiJoinInput, Sequence[MultiJoinInput]]): the input objects specifying the
             tables and columns to include in the join.
         on (Union[str, Sequence[str]], optional): the column(s) to match, can be a common name or an equality expression
-            that matches every input table, i.e. "col_a = col_b" to rename output column names.  When using MultiJoinInput
-            objects, this parameter is ignored.
+            that matches every input table, i.e. "col_a = col_b" to rename output column names. Note: When
+            MultiJoinInput objects are supplied, this parameter must be omitted.
 
     Returns:
         MultiJoinTable: the result of the multi-table natural join operation. To access the underlying Table, use the
