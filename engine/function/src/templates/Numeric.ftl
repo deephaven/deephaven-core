@@ -476,7 +476,14 @@ public class Numeric {
             }
         }
 
-        return sum2 / (count - 1) - sum * sum / count / (count - 1);
+        // Perform the calculation in a way that minimizes the impact of floating point error.
+        final double eps = Math.ulp(sum2);
+        final double vs2bar = sum * (sum / count);
+        final double delta = sum2 - vs2bar;
+        final double rel_eps = delta / eps;
+
+        // Return zero when the variance is leq the floating point error.
+        return Math.abs(rel_eps) > 1.0 ? delta / (count - 1) : 0.0;
     }
 
     <#list primitiveTypes as pt2>
