@@ -127,6 +127,7 @@ Currently, the R client is only supported on Ubuntu 20.04 or 22.04 and must be b
    use the output from the script `etc/generate-rserverdotconf-lines.sh` and add them to the `rserver.conf` file
    for the RStudio Server installation (the location of that file may depend on your particular RStudio server
    installation, but a common location is `/etc/rstudio/rserver.conf`).
+   
    ---
 
 6. Now, run
