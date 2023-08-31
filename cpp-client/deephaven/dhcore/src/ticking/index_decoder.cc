@@ -95,7 +95,7 @@ std::shared_ptr<RowSequence> IndexDecoder::ReadExternalCompressedDelta(DataInput
 
       default: {
         auto message = Stringf("Bad command: %o", command);
-        throw std::runtime_error(DEEPHAVEN_DEBUG_MSG(message));
+        throw std::runtime_error(DEEPHAVEN_LOCATION_STR(message));
       }
     }
   }
@@ -117,7 +117,7 @@ int64_t DataInput::ReadValue(int command) {
     }
     default: {
       auto message = Stringf("Bad command: %o", command);
-      throw std::runtime_error(DEEPHAVEN_DEBUG_MSG(message));
+      throw std::runtime_error(DEEPHAVEN_LOCATION_STR(message));
     }
   }
 }

@@ -34,6 +34,7 @@ def _build_parquet_instructions(
     col_instructions: List[ColumnInstruction] = None,
     compression_codec_name: str = None,
     max_dictionary_keys: int = None,
+    max_dictionary_size: int = None,
     is_legacy_parquet: bool = False,
     target_page_size: int = None,
     is_refreshing: bool = False,
@@ -44,6 +45,7 @@ def _build_parquet_instructions(
             col_instructions,
             compression_codec_name,
             max_dictionary_keys is not None,
+            max_dictionary_size is not None,
             is_legacy_parquet,
             target_page_size is not None,
             is_refreshing,
@@ -70,6 +72,9 @@ def _build_parquet_instructions(
 
     if max_dictionary_keys is not None:
         builder.setMaximumDictionaryKeys(max_dictionary_keys)
+
+    if max_dictionary_size is not None:
+        builder.setMaximumDictionarySize(max_dictionary_size)
 
     builder.setIsLegacyParquet(is_legacy_parquet)
 
@@ -144,6 +149,7 @@ def write(
     col_instructions: List[ColumnInstruction] = None,
     compression_codec_name: str = None,
     max_dictionary_keys: int = None,
+    max_dictionary_size: int = None,
     target_page_size: int = None,
 ) -> None:
     """ Write a table to a Parquet file.
@@ -157,6 +163,7 @@ def write(
         col_instructions (List[ColumnInstruction]): instructions for customizations while writing, default is None
         compression_codec_name (str): the default compression codec to use, if not specified, defaults to SNAPPY
         max_dictionary_keys (int): the maximum dictionary keys allowed, if not specified, defaults to 2^20 (1,048,576)
+        max_dictionary_size (int): the maximum dictionary size (in bytes) allowed, defaults to 2^20 (1,048,576)
         target_page_size (int): the target page size in bytes, if not specified, defaults to 2^20 bytes (1 MiB)
 
     Raises:
@@ -167,6 +174,7 @@ def write(
             col_instructions=col_instructions,
             compression_codec_name=compression_codec_name,
             max_dictionary_keys=max_dictionary_keys,
+            max_dictionary_size=max_dictionary_size,
             target_page_size=target_page_size,
             for_read=False,
         )
@@ -196,6 +204,7 @@ def batch_write(
     col_instructions: List[ColumnInstruction] = None,
     compression_codec_name: str = None,
     max_dictionary_keys: int = None,
+    max_dictionary_size: int = None,
     target_page_size: int = None,
     grouping_cols: List[str] = None,
 ):
@@ -215,6 +224,7 @@ def batch_write(
         col_instructions (List[ColumnInstruction]): instructions for customizations while writing
         compression_codec_name (str): the compression codec to use, if not specified, defaults to SNAPPY
         max_dictionary_keys (int): the maximum dictionary keys allowed, if not specified, defaults to 2^20 (1,048,576)
+        max_dictionary_size (int): the maximum dictionary size (in bytes) allowed, defaults to 2^20 (1,048,576)
         target_page_size (int): the target page size in bytes, if not specified, defaults to 2^20 bytes (1 MiB)
         grouping_cols (List[str]): the group column names
 
@@ -226,6 +236,7 @@ def batch_write(
             col_instructions=col_instructions,
             compression_codec_name=compression_codec_name,
             max_dictionary_keys=max_dictionary_keys,
+            max_dictionary_size=max_dictionary_size,
             target_page_size=target_page_size,
             for_read=False,
         )

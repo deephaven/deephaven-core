@@ -220,9 +220,9 @@ TypeConverter TypeConverter::CreateNew(const std::vector<T> &values) {
     bool valid;
     const auto *contained_value = TryGetContainedValue(&value, &valid);
     if (valid) {
-      OkOrThrow(DEEPHAVEN_EXPR_MSG(builder.Append(*contained_value)));
+      OkOrThrow(DEEPHAVEN_LOCATION_EXPR(builder.Append(*contained_value)));
     } else {
-      OkOrThrow(DEEPHAVEN_EXPR_MSG(builder.AppendNull()));
+      OkOrThrow(DEEPHAVEN_LOCATION_EXPR(builder.AppendNull()));
     }
   }
   auto builder_res = builder.Finish();
@@ -232,6 +232,34 @@ TypeConverter TypeConverter::CreateNew(const std::vector<T> &values) {
   }
   auto array = builder_res.ValueUnsafe();
   return TypeConverter(std::move(data_type), traits_t::kDeephavenTypeName, std::move(array));
+}
+
+template<>
+inline TypeConverter TypeConverter::CreateNew(const std::vector<deephaven::dhcore::DateTime> &values) {
+  using deephaven::client::utility::OkOrThrow;
+  using deephaven::dhcore::utility::Stringf;
+
+  // TODO(kosak): put somewhere
+  constexpr const char *kDeephavenTypeName = "java.time.ZonedDateTime";
+
+  auto data_type = arrow::timestamp(arrow::TimeUnit::NANO, "UTC");
+  arrow::TimestampBuilder builder(data_type, arrow::default_memory_pool());
+  for (const auto &value : values) {
+    bool valid;
+    const auto *contained_value = TryGetContainedValue(&value, &valid);
+    if (valid) {
+      OkOrThrow(DEEPHAVEN_LOCATION_EXPR(builder.Append(contained_value->Nanos())));
+    } else {
+      OkOrThrow(DEEPHAVEN_LOCATION_EXPR(builder.AppendNull()));
+    }
+  }
+  auto builder_res = builder.Finish();
+  if (!builder_res.ok()) {
+    auto message = Stringf("Error building array of type %o: %o",
+        kDeephavenTypeName, builder_res.status().ToString());
+  }
+  auto array = builder_res.ValueUnsafe();
+  return TypeConverter(std::move(data_type), kDeephavenTypeName, std::move(array));
 }
 }  // namespace internal
 

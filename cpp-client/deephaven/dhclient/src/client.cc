@@ -3,7 +3,8 @@
  */
 #include "deephaven/client/client.h"
 
-#include <grpc/support/log.h>
+#include <stdexcept>
+
 #include <arrow/array.h>
 #include <arrow/scalar.h>
 #include "deephaven/client/columns.h"
@@ -15,47 +16,32 @@
 #include "deephaven/client/impl/table_handle_impl.h"
 #include "deephaven/client/impl/table_handle_manager_impl.h"
 #include "deephaven/client/impl/update_by_operation_impl.h"
-#include "deephaven/client/impl/util.h"
 #include "deephaven/client/subscription/subscription_handle.h"
 #include "deephaven/client/utility/arrow_util.h"
 #include "deephaven/dhcore/clienttable/schema.h"
 #include "deephaven/dhcore/utility/utility.h"
-#include "deephaven/proto/table.pb.h"
-#include "deephaven/proto/table.grpc.pb.h"
 
-using grpc::Channel;
-using grpc::ClientContext;
-using grpc::ClientReader;
 using io::deephaven::proto::backplane::grpc::ComboAggregateRequest;
-using io::deephaven::proto::backplane::grpc::HandshakeRequest;
-using io::deephaven::proto::backplane::grpc::HandshakeResponse;
 using io::deephaven::proto::backplane::grpc::Ticket;
 using deephaven::client::server::Server;
 using deephaven::client::Column;
-using deephaven::client::DateTimeCol;
-using deephaven::client::NumCol;
-using deephaven::client::StrCol;
-using deephaven::client::impl::StrColImpl;
 using deephaven::client::impl::AggregateComboImpl;
 using deephaven::client::impl::AggregateImpl;
 using deephaven::client::impl::ClientImpl;
-using deephaven::client::impl::MoveVectorData;
 using deephaven::client::impl::UpdateByOperationImpl;
 using deephaven::client::subscription::SubscriptionHandle;
 using deephaven::client::utility::Executor;
 using deephaven::client::utility::OkOrThrow;
 using deephaven::dhcore::clienttable::Schema;
-using deephaven::dhcore::utility::Base64Encode;
 using deephaven::dhcore::utility::MakeReservedVector;
 using deephaven::dhcore::utility::separatedList;
-using deephaven::dhcore::utility::SFCallback;
 using deephaven::dhcore::utility::SimpleOstringstream;
-using deephaven::dhcore::utility::Stringf;
 
 
 namespace deephaven::client {
 namespace {
-void printTableData(std::ostream &s, const TableHandle &table_handle, bool want_headers);
+void PrintTableData(std::ostream &s, const TableHandle &table_handle, bool want_headers);
+void CheckNotClosedOrThrow(const std::shared_ptr<ClientImpl> &impl);
 }  // namespace
 
 Client Client::Connect(const std::string &target, const ClientOptions &options) {
@@ -89,9 +75,19 @@ void Client::Close() {
 }
 
 TableHandleManager Client::GetManager() const {
+  CheckNotClosedOrThrow(impl_);
   return TableHandleManager(impl_->ManagerImpl());
 }
 
+Client::OnCloseCbId Client::AddOnCloseCallback(std::function<void()> cb) {
+  CheckNotClosedOrThrow(impl_);
+  return impl_->AddOnCloseCallback(std::move(cb));
+}
+
+bool Client::RemoveOnCloseCallback(OnCloseCbId cb_id) {
+  CheckNotClosedOrThrow(impl_);
+  return impl_->RemoveOnCloseCallback(std::move(cb_id));
+}
 
 TableHandleManager::TableHandleManager() = default;
 TableHandleManager::TableHandleManager(std::shared_ptr<impl::TableHandleManagerImpl> impl) : impl_(std::move(impl)) {}
@@ -176,6 +172,10 @@ Aggregate Aggregate::Count(std::string column_spec) {
 
 Aggregate Aggregate::First(std::vector<std::string> column_specs) {
   return createAggForMatchPairs(ComboAggregateRequest::FIRST, std::move(column_specs));
+}
+
+Aggregate Aggregate::Group(std::vector<std::string> column_specs) {
+  return createAggForMatchPairs(ComboAggregateRequest::GROUP, std::move(column_specs));
 }
 
 Aggregate Aggregate::Last(std::vector<std::string> column_specs) {
@@ -315,6 +315,11 @@ TableHandle TableHandle::Select(std::vector<std::string> columnSpecs) const {
 
 TableHandle TableHandle::Update(std::vector<std::string> columnSpecs) const {
   auto qt_impl = impl_->Update(std::move(columnSpecs));
+  return TableHandle(std::move(qt_impl));
+}
+
+TableHandle TableHandle::LazyUpdate(std::vector<std::string> columnSpecs) const {
+  auto qt_impl = impl_->LazyUpdate(std::move(columnSpecs));
   return TableHandle(std::move(qt_impl));
 }
 
@@ -499,6 +504,24 @@ TableHandle TableHandle::ExactJoin(const TableHandle &rightSide,
   return TableHandle(std::move(qt_impl));
 }
 
+TableHandle TableHandle::Aj(const TableHandle &right_side,
+    std::vector<std::string> on, std::vector<std::string> joins) const {
+  auto qt_impl = impl_->Aj(*right_side.impl_, std::move(on), std::move(joins));
+  return TableHandle(std::move(qt_impl));
+}
+
+TableHandle TableHandle::Raj(const TableHandle &right_side,
+    std::vector<std::string> on, std::vector<std::string> joins) const {
+  auto qt_impl = impl_->Raj(*right_side.impl_, std::move(on), std::move(joins));
+  return TableHandle(std::move(qt_impl));
+}
+
+TableHandle TableHandle::LeftOuterJoin(const TableHandle &right_side, std::vector<std::string> on,
+    std::vector<std::string> joins) const {
+  auto qt_impl = impl_->LeftOuterJoin(*right_side.impl_, std::move(on), std::move(joins));
+  return TableHandle(std::move(qt_impl));
+}
+
 TableHandle TableHandle::ExactJoin(const TableHandle &rightSide,
     std::vector<MatchWithColumn> columnsToMatch, std::vector<SelectColumn> columnsToAdd) const {
   auto ctm_strings = toIrisRepresentation(columnsToMatch);
@@ -512,6 +535,17 @@ TableHandle TableHandle::UpdateBy(std::vector<UpdateByOperation> ops, std::vecto
     op_impls.push_back(op.impl_);
   }
   auto th_impl = impl_->UpdateBy(std::move(op_impls), std::move(by));
+  return TableHandle(std::move(th_impl));
+}
+
+TableHandle TableHandle::SelectDistinct(std::vector<std::string> columns) const {
+  auto qt_impl = impl_->SelectDistinct(std::move(columns));
+  return TableHandle(std::move(qt_impl));
+}
+
+TableHandle TableHandle::WhereIn(const TableHandle &filter_table,
+    std::vector<std::string> columns) const {
+  auto th_impl = impl_->WhereIn(*filter_table.impl_, std::move(columns));
   return TableHandle(std::move(th_impl));
 }
 
@@ -581,7 +615,7 @@ TableHandleStreamAdaptor::TableHandleStreamAdaptor(TableHandle table, bool want_
 TableHandleStreamAdaptor::~TableHandleStreamAdaptor() = default;
 
 std::ostream &operator<<(std::ostream &s, const TableHandleStreamAdaptor &o) {
-  printTableData(s, o.table_, o.wantHeaders_);
+  PrintTableData(s, o.table_, o.wantHeaders_);
   return s;
 }
 
@@ -594,7 +628,7 @@ std::string ConvertToString::ToString(
 }  // namespace internal
 
 namespace {
-void printTableData(std::ostream &s, const TableHandle &table_handle, bool want_headers) {
+void PrintTableData(std::ostream &s, const TableHandle &table_handle, bool want_headers) {
   auto fsr = table_handle.GetFlightStreamReader();
 
   if (want_headers) {
@@ -607,7 +641,7 @@ void printTableData(std::ostream &s, const TableHandle &table_handle, bool want_
 
   while (true) {
     arrow::flight::FlightStreamChunk chunk;
-    OkOrThrow(DEEPHAVEN_EXPR_MSG(fsr->Next(&chunk)));
+    OkOrThrow(DEEPHAVEN_LOCATION_EXPR(fsr->Next(&chunk)));
     if (chunk.data == nullptr) {
       break;
     }
@@ -625,6 +659,11 @@ void printTableData(std::ostream &s, const TableHandle &table_handle, bool want_
       };
       s << separatedList(columns.begin(), columns.end(), "\t", stream_array_cell);
     }
+  }
+}
+void CheckNotClosedOrThrow(const std::shared_ptr<ClientImpl> &impl) {
+  if (impl == nullptr) {
+    throw std::runtime_error(DEEPHAVEN_LOCATION_STR("client is already closed"));
   }
 }
 }  // namespace

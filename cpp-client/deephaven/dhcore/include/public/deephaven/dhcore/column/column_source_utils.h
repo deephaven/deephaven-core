@@ -21,8 +21,8 @@ struct ColumnSourceImpls {
     using deephaven::dhcore::utility::TrueOrThrow;
     using deephaven::dhcore::utility::VerboseCast;
 
-    auto *typed_dest = VerboseCast<ChunkType *>(DEEPHAVEN_EXPR_MSG(dest));
-    TrueOrThrow(DEEPHAVEN_EXPR_MSG(rows.Size() <= typed_dest->Size()));
+    auto *typed_dest = VerboseCast<ChunkType *>(DEEPHAVEN_LOCATION_EXPR(dest));
+    TrueOrThrow(DEEPHAVEN_LOCATION_EXPR(rows.Size() <= typed_dest->Size()));
     auto *dest_data = typed_dest->data();
     auto *dest_null = optional_null_flags != nullptr ? optional_null_flags->data() : nullptr;
     auto apply_chunk = [&dest_data, &dest_null, &backing_store](uint64_t begin, uint64_t end) {
@@ -42,8 +42,8 @@ struct ColumnSourceImpls {
     using deephaven::dhcore::utility::TrueOrThrow;
     using deephaven::dhcore::utility::VerboseCast;
 
-    auto *typed_dest = VerboseCast<ChunkType *>(DEEPHAVEN_EXPR_MSG(dest));
-    TrueOrThrow(DEEPHAVEN_EXPR_MSG(row_keys.Size() <= typed_dest->Size()));
+    auto *typed_dest = VerboseCast<ChunkType *>(DEEPHAVEN_LOCATION_EXPR(dest));
+    TrueOrThrow(DEEPHAVEN_LOCATION_EXPR(row_keys.Size() <= typed_dest->Size()));
     const uint64_t *keys = row_keys.data();
     auto *dest_data = typed_dest->data();
     auto *dest_null = optional_null_flags != nullptr ? optional_null_flags->data() : nullptr;
@@ -65,8 +65,8 @@ struct ColumnSourceImpls {
     using deephaven::dhcore::utility::TrueOrThrow;
     using deephaven::dhcore::utility::VerboseCast;
 
-    const auto *typed_src = VerboseCast<const ChunkType *>(DEEPHAVEN_EXPR_MSG(&src));
-    TrueOrThrow(DEEPHAVEN_EXPR_MSG(rows.Size() <= typed_src->Size()));
+    const auto *typed_src = VerboseCast<const ChunkType *>(DEEPHAVEN_LOCATION_EXPR(&src));
+    TrueOrThrow(DEEPHAVEN_LOCATION_EXPR(rows.Size() <= typed_src->Size()));
 
     const auto *src_data = typed_src->data();
     const auto *null_data = optional_src_null_flags != nullptr ? optional_src_null_flags->data() : nullptr;
@@ -88,9 +88,9 @@ struct ColumnSourceImpls {
     using deephaven::dhcore::utility::TrueOrThrow;
     using deephaven::dhcore::utility::VerboseCast;
 
-    const auto *typed_src = VerboseCast<const ChunkType *>(DEEPHAVEN_EXPR_MSG(&src));
-    TrueOrThrow(DEEPHAVEN_EXPR_MSG(row_keys.Size() <= typed_src->Size()));
-    TrueOrThrow(DEEPHAVEN_EXPR_MSG(optional_src_null_flags == nullptr ||
+    const auto *typed_src = VerboseCast<const ChunkType *>(DEEPHAVEN_LOCATION_EXPR(&src));
+    TrueOrThrow(DEEPHAVEN_LOCATION_EXPR(row_keys.Size() <= typed_src->Size()));
+    TrueOrThrow(DEEPHAVEN_LOCATION_EXPR(optional_src_null_flags == nullptr ||
         row_keys.Size() <= optional_src_null_flags->Size()));
 
     const auto *key_data = row_keys.data();

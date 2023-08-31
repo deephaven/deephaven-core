@@ -3,7 +3,6 @@
  */
 package io.deephaven.parquet.table;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
 import io.deephaven.UncheckedDeephavenException;
 import io.deephaven.stringset.StringSet;
 import io.deephaven.engine.table.impl.locations.TableDataException;
@@ -110,7 +109,7 @@ public class ParquetSchemaReader {
         }
         try {
             return Optional.of(TableInfo.deserializeFromJSON(tableInfoRaw));
-        } catch (JsonProcessingException e) {
+        } catch (IOException e) {
             throw new TableDataException("Failed to parse " + ParquetTableWriter.METADATA_KEY + " metadata", e);
         }
     }

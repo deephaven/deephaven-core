@@ -31,6 +31,7 @@ class UpdateByTestCase(BaseTestCase):
 
     @classmethod
     def setUpClass(cls) -> None:
+        super().setUpClass()
         cls.em_op_ctrl = OperationControl(on_null=BadDataBehavior.THROW,
                                       on_nan=BadDataBehavior.RESET,
                                       big_value_context=MathContext.UNLIMITED)
@@ -161,6 +162,7 @@ class UpdateByTestCase(BaseTestCase):
         del cls.em_ops
         del cls.simple_ops
         del cls.rolling_ops
+        super().tearDownClass()
 
     def test_em(self):
         for op in self.em_ops:
