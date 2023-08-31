@@ -4,6 +4,8 @@
 #pragma once
 
 #include <chrono>
+#include <cstdint>
+#include <functional>
 #include <string>
 #include <variant>
 
@@ -20,4 +22,20 @@ using TimePointSpecifier = std::variant<std::chrono::system_clock::time_point, i
  * string.
  */
 using DurationSpecifier = std::variant<std::chrono::nanoseconds, int64_t, std::string>;
+
+/**
+ * Used to identify OnClose callbacks, eg, allowing their removal after addition.
+ */
+struct OnCloseCbId {
+  std::uint32_t id;
+  friend bool operator<(const OnCloseCbId lhs, const OnCloseCbId rhs) {
+    return lhs.id < rhs.id;
+  }
+};
+
+/**
+ * An OnClose callback.
+ */
+using OnCloseCb = std::function<void()>;
+
 } // namespace deephaven::client::utility

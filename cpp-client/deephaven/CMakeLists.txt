@@ -17,8 +17,8 @@ add_compile_options(-Wall -Werror -Wno-deprecated-declarations)
 
 add_subdirectory(dhclient)
 add_subdirectory(dhcore)
-add_subdirectory(tests EXCLUDE_FROM_ALL)
-add_subdirectory(examples EXCLUDE_FROM_ALL)
+add_subdirectory(tests)
+add_subdirectory(examples)
 
 install(DIRECTORY dhclient/include/public/
     DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}
