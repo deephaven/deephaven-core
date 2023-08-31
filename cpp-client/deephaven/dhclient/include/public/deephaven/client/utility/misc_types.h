@@ -40,13 +40,3 @@ using OnCloseCb = std::function<void()>;
 
 } // namespace deephaven::client::utility
 
-// specialized std::less for deephaven::client::utility::OnCloseCbId.
-namespace std {
-using OnCloseCbId = deephaven::client::utility::OnCloseCbId;
-template<> struct less<OnCloseCbId>
-{
-  bool operator() (const OnCloseCbId &lhs, const OnCloseCbId &rhs) const {
-    return lhs.id < rhs.id;
-  }
-};
-} // namespace std
