@@ -213,8 +213,10 @@ public class UnionSourceManager {
         }
 
         @Override
-        protected void onFailureInternal(@NotNull final Throwable originalException, @Nullable final Entry sourceEntry) {
-            // We will just record the error here for now.  If the table was removed, then we don't actually care about it
+        protected void onFailureInternal(@NotNull final Throwable originalException,
+                @Nullable final Entry sourceEntry) {
+            // We will just record the error here for now. If the table was removed, then we don't actually care about
+            // it
             // but if the error is real, and the table is not removed, it will be propagated in processExisting()
             this.setNotificationStep(getUpdateGraph().clock().currentStep());
             this.error = originalException;
@@ -445,7 +447,7 @@ public class UnionSourceManager {
                 }
             }
 
-            if(constituentExceptions != null) {
+            if (constituentExceptions != null) {
                 throw new UncheckedDeephavenException(
                         MultiException.maybeWrapInMultiException("Errors occurred processing constituent tables:",
                                 constituentExceptions.toArray(Throwable[]::new)));
@@ -475,9 +477,10 @@ public class UnionSourceManager {
                     modifiedColumnSet);
         }
 
-        private List<ConstituentTableErrorException> collectConstituentException(@Nullable List<ConstituentTableErrorException> exceptions,
-                                                                                 @NotNull final ConstituentTableErrorException exception) {
-            if(exceptions == null) {
+        private List<ConstituentTableErrorException> collectConstituentException(
+                @Nullable List<ConstituentTableErrorException> exceptions,
+                @NotNull final ConstituentTableErrorException exception) {
+            if (exceptions == null) {
                 exceptions = new ArrayList<>();
             }
 
@@ -537,7 +540,7 @@ public class UnionSourceManager {
 
                 // Make sure we propagate any actual error on to the listeners, and advance the listener so we can
                 // continue to process the rest of the tables
-                if(nextListener.error != null) {
+                if (nextListener.error != null) {
                     final String referentDescription = nextListener.getReferentDescription();
                     advanceListener();
                     throw new ConstituentTableErrorException(referentDescription, nextListener.error);

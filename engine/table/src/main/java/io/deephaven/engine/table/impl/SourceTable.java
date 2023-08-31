@@ -137,7 +137,8 @@ public abstract class SourceTable<IMPL_TYPE extends SourceTable<IMPL_TYPE>> exte
                 if (isRefreshing()) {
                     final TableLocationSubscriptionBuffer locationBuffer =
                             new TableLocationSubscriptionBuffer(locationProvider);
-                    final TableLocationSubscriptionBuffer.LocationUpdate locationUpdate = locationBuffer.processPending();
+                    final TableLocationSubscriptionBuffer.LocationUpdate locationUpdate =
+                            locationBuffer.processPending();
                     throwIfLocationsRemoved(locationUpdate);
 
                     maybeAddLocations(locationUpdate.getPendingAddedLocationKeys());
@@ -229,7 +230,7 @@ public abstract class SourceTable<IMPL_TYPE extends SourceTable<IMPL_TYPE>> exte
     }
 
     private void throwIfLocationsRemoved(TableLocationSubscriptionBuffer.LocationUpdate locationUpdate) {
-        if(!locationUpdate.getPendingRemovedLocations().isEmpty()) {
+        if (!locationUpdate.getPendingRemovedLocations().isEmpty()) {
             throw new TableDataException(getClass().getSimpleName() + " does not support removing locations");
         }
     }

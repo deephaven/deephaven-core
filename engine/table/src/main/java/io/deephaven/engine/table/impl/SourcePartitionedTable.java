@@ -183,8 +183,8 @@ public class SourcePartitionedTable extends PartitionedTableImpl {
                 result.manage(constituentTable);
             });
             return initialLastRowKey == lastInsertedRowKey.longValue()
-                   ? RowSetFactory.empty()
-                   : RowSetFactory.fromRange(initialLastRowKey + 1, lastInsertedRowKey.longValue());
+                    ? RowSetFactory.empty()
+                    : RowSetFactory.fromRange(initialLastRowKey + 1, lastInsertedRowKey.longValue());
         }
 
         private Table makeConstituentTable(@NotNull final TableLocation tableLocation) {
@@ -230,10 +230,10 @@ public class SourcePartitionedTable extends PartitionedTableImpl {
              */
             // TODO (https://github.com/deephaven/deephaven-core/issues/867): Refactor around a ticking partition table
             locationUpdate.getPendingAddedLocationKeys().stream()
-                          .filter(locationKeyMatcher)
-                          .map(tableLocationProvider::getTableLocation)
-                          .map(PendingLocationState::new)
-                          .forEach(pendingLocationStates::offer);
+                    .filter(locationKeyMatcher)
+                    .map(tableLocationProvider::getTableLocation)
+                    .map(PendingLocationState::new)
+                    .forEach(pendingLocationStates::offer);
             for (final Iterator<PendingLocationState> iter = pendingLocationStates.iterator(); iter.hasNext();) {
                 final PendingLocationState pendingLocationState = iter.next();
                 if (pendingLocationState.exists()) {
@@ -254,26 +254,30 @@ public class SourcePartitionedTable extends PartitionedTableImpl {
                     .filter(locationKeyMatcher)
                     .collect(Collectors.toSet());
 
-            if(relevantRemovedLocations.isEmpty()) {
+            if (relevantRemovedLocations.isEmpty()) {
                 return RowSetFactory.empty();
             }
 
             final RowSetBuilderSequential deleteBuilder = RowSetFactory.builderSequential();
 
-            // We don't have a map of location to row key, so we have to iterate them.  If we decide this is too slow, we could add a TObjectIntMap
-            // as we process pending added locations and then we can just make an index of rows to remove by looking up in that map.
+            // We don't have a map of location to row key, so we have to iterate them. If we decide this is too slow, we
+            // could add a TObjectIntMap
+            // as we process pending added locations and then we can just make an index of rows to remove by looking up
+            // in that map.
             try (final ChunkSource.GetContext locContext = resultTableLocationKeys.makeGetContext(CHUNK_CAPACITY);
-                 final ChunkSource.GetContext tableContext = resultLocationTables.makeGetContext(CHUNK_CAPACITY);
-                 final RowSequence.Iterator it = resultRows.getRowSequenceIterator()) {
+                    final ChunkSource.GetContext tableContext = resultLocationTables.makeGetContext(CHUNK_CAPACITY);
+                    final RowSequence.Iterator it = resultRows.getRowSequenceIterator()) {
 
                 while (it.hasMore()) {
                     final RowSequence subSeq = it.getNextRowSequenceWithLength(CHUNK_CAPACITY);
                     final LongChunk<OrderedRowKeys> keyChunk = subSeq.asRowKeyChunk();
-                    final ObjectChunk<Table, ? extends Values> tableChunk = resultLocationTables.getChunk(tableContext, subSeq)
-                                                                                                   .asObjectChunk();
-                    final ObjectChunk<ImmutableTableLocationKey, ? extends Values> removedKeys = resultTableLocationKeys.getChunk(locContext,
-                                                                                                                                subSeq)
-                                                                                                                        .asObjectChunk();
+                    final ObjectChunk<Table, ? extends Values> tableChunk =
+                            resultLocationTables.getChunk(tableContext, subSeq)
+                                    .asObjectChunk();
+                    final ObjectChunk<ImmutableTableLocationKey, ? extends Values> removedKeys = resultTableLocationKeys
+                            .getChunk(locContext,
+                                    subSeq)
+                            .asObjectChunk();
 
                     for (int chunkPos = 0; chunkPos < keyChunk.size(); chunkPos++) {
                         if (relevantRemovedLocations.contains(removedKeys.get(chunkPos))) {

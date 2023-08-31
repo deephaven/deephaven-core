@@ -123,7 +123,7 @@ public abstract class AbstractTableLocationProvider
      *
      * @param locationKey the {@link TableLocationKey} that was visited.
      */
-    protected void visitLocationKey(@NotNull final TableLocationKey locationKey) { }
+    protected void visitLocationKey(@NotNull final TableLocationKey locationKey) {}
 
     @NotNull
     private Object observeInsert(@NotNull final TableLocationKey locationKey) {

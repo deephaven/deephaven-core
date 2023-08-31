@@ -35,7 +35,9 @@ public final class TableBackedTableLocationProvider extends AbstractTableLocatio
     }
 
     private void processPending(@NotNull final Stream<Table> tableStream) {
-                tableStream.map(table -> (QueryTable) table.coalesce().withAttributes(Map.of(LOCATION_ID_ATTR, nextId.getAndIncrement())))
+        tableStream
+                .map(table -> (QueryTable) table.coalesce()
+                        .withAttributes(Map.of(LOCATION_ID_ATTR, nextId.getAndIncrement())))
                 .peek(table -> Assert.assertion(table.isAppendOnly(), "table is append only"))
                 .map(TableBackedTableLocationKey::new)
                 .forEach(this::handleTableLocationKey);
@@ -56,11 +58,11 @@ public final class TableBackedTableLocationProvider extends AbstractTableLocatio
     }
 
     @Override
-    protected void deactivateUnderlyingDataSource() { }
+    protected void deactivateUnderlyingDataSource() {}
 
     @Override
     public void refresh() {
-        if(pending.isEmpty()) {
+        if (pending.isEmpty()) {
             return;
         }
 

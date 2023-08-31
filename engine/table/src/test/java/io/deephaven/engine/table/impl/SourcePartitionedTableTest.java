@@ -99,8 +99,7 @@ public class SourcePartitionedTableTest extends RefreshingTableTestCase {
         final TableBackedTableLocationProvider tlp = new TableBackedTableLocationProvider(
                 registrar,
                 true,
-                p1, p2
-        );
+                p1, p2);
 
         final SourcePartitionedTable spt = new SourcePartitionedTable(p1.getDefinition(),
                 t -> t,
@@ -124,7 +123,8 @@ public class SourcePartitionedTableTest extends RefreshingTableTestCase {
             updateGraph.refreshSources();
             registrar.run();
         }), errors -> errors.size() == 1 &&
-                FindExceptionCause.findCause(errors.get(0), TableLocationRemovedException.class) instanceof TableLocationRemovedException);
+                FindExceptionCause.findCause(errors.get(0),
+                        TableLocationRemovedException.class) instanceof TableLocationRemovedException);
         getUpdateErrors().clear();
 
         expected = p2.countBy("Count", "Sym");
@@ -149,19 +149,24 @@ public class SourcePartitionedTableTest extends RefreshingTableTestCase {
             updateGraph.refreshSources();
             registrar.run();
         }), errors -> errors.size() == 1 &&
-            FindExceptionCause.findCause(errors.get(0), TableLocationRemovedException.class) instanceof TableLocationRemovedException);
+                FindExceptionCause.findCause(errors.get(0),
+                        TableLocationRemovedException.class) instanceof TableLocationRemovedException);
         getUpdateErrors().clear();
 
         expected = TableTools.merge(p3, p4).countBy("Count", "Sym");
         assertTableEquals(expected, aggs);
 
-        // Prove that we propagate normal errors.  This is a little tricky, we can't test for errors.size == 1 because
-        // The TableBackedTableLocation has a copy() of the p3 table which is itself a leaf.  Erroring P3 will
-        // cause one error to come from the copied table, and one from the merged() table.  We just need to validate
+        // Prove that we propagate normal errors. This is a little tricky, we can't test for errors.size == 1 because
+        // The TableBackedTableLocation has a copy() of the p3 table which is itself a leaf. Erroring P3 will
+        // cause one error to come from the copied table, and one from the merged() table. We just need to validate
         // that the exceptions we see are a ConstituentTableException and an ISE
         allowingError(() -> updateGraph.runWithinUnitTestCycle(
                 () -> p3.notifyListenersOnError(new IllegalStateException("This is a test error"), null)),
-                errors -> errors.stream().anyMatch(e -> FindExceptionCause.findCause(e, IllegalStateException.class) instanceof IllegalStateException) &&
-                        errors.stream().anyMatch(e -> FindExceptionCause.findCause(e, ConstituentTableErrorException.class) instanceof ConstituentTableErrorException));
+                errors -> errors.stream()
+                        .anyMatch(e -> FindExceptionCause.findCause(e,
+                                IllegalStateException.class) instanceof IllegalStateException)
+                        &&
+                        errors.stream().anyMatch(e -> FindExceptionCause.findCause(e,
+                                ConstituentTableErrorException.class) instanceof ConstituentTableErrorException));
     }
 }

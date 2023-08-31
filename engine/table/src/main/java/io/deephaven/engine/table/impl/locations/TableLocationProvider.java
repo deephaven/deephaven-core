@@ -38,8 +38,8 @@ public interface TableLocationProvider extends NamedImplementation {
         void handleTableLocationKey(@NotNull ImmutableTableLocationKey tableLocationKey);
 
         /**
-         * Notify the listener of a table location that has been removed encountered while initiating or maintaining the location
-         * subscription.  This should occur at most once per location, but the order of delivery is <i>not</i>
+         * Notify the listener of a table location that has been removed encountered while initiating or maintaining the
+         * location subscription. This should occur at most once per location, but the order of delivery is <i>not</i>
          * guaranteed.
          *
          * @param tableLocation The table location
@@ -116,9 +116,9 @@ public interface TableLocationProvider extends NamedImplementation {
      * Remove the given table location.
      *
      * @apiNote Use with caution: When this is called all subscribers to the specified location will be notified,
-     *          causing them to stop updating. Tables backed by those notifications will end up 'failed'.  This
-     *          location provider will continue to update other locations and will no longer provide or request
-     *          information about the deleted location.
+     *          causing them to stop updating. Tables backed by those notifications will end up 'failed'. This location
+     *          provider will continue to update other locations and will no longer provide or request information about
+     *          the deleted location.
      *
      * @param locationKey the TableLocation to remove
      */
