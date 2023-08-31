@@ -30,7 +30,7 @@ void ShiftProcessor::ApplyShiftData(const RowSequence &first_index, const RowSeq
     while (start_iter.TryGetNext(&first)) {
       if (!end_iter.TryGetNext(&last) || !dest_iter.TryGetNext(&dest)) {
         const char *message = "Sequences not of same Size";
-        throw std::runtime_error(DEEPHAVEN_DEBUG_MSG(message));
+        throw std::runtime_error(DEEPHAVEN_LOCATION_STR(message));
       }
       if (dest >= first) {
         positive_shifts.emplace_back(first, last, dest);

@@ -13,6 +13,7 @@ from deephaven.liveness_scope import liveness_scope
 from deephaven.update_graph import exclusive_lock
 from tests.testbase import BaseTestCase
 
+
 class LivenessTestCase(BaseTestCase):
 
     def setUp(self) -> None:
@@ -52,6 +53,8 @@ class LivenessTestCase(BaseTestCase):
             l_scope.preserve(must_keep)
             l_scope.close()
             l_scope_2.close()
+        l_scope_2.close()
+        l_scope.close()
 
     def test_liveness_nested(self):
         with liveness_scope() as l_scope:

@@ -72,9 +72,9 @@ import io.deephaven.util.annotations.VisibleForTesting;
  * @param <T> A class that will extend us, to get RefCounted functionality.
  */
 public abstract class RefCountedCow<T> {
-    private static final boolean debug = RspArray.debug ||
-            Configuration.getInstance().getBooleanForClassWithDefault(
-                    RefCountedCow.class, "debug", false);
+    private static final boolean debug =
+            Configuration.getInstance().getBooleanForClassWithDefault(RspArray.class, "debug", false)
+                    || Configuration.getInstance().getBooleanForClassWithDefault(RefCountedCow.class, "debug", false);
 
     /**
      * Field updater for refCount, so we can avoid creating an {@link java.util.concurrent.atomic.AtomicInteger} for

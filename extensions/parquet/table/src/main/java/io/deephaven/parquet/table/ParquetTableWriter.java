@@ -591,7 +591,6 @@ public class ParquetTableWriter {
                 maxValuesPerPage,
                 columnType,
                 writeInstructions)) {
-            final Object bufferToWrite = transferObject.getBuffer();
             final VectorColumnWriterHelper vectorHelper = writingHelper.isVectorFormat()
                     ? (VectorColumnWriterHelper) writingHelper
                     : null;
@@ -620,6 +619,7 @@ public class ParquetTableWriter {
                             valueRowSetIterator.getNextRowSequenceWithLength(valuePageSizeGetter.getAsInt());
                     transferObject.fetchData(rs);
                     transferObject.propagateChunkData();
+                    final Object bufferToWrite = transferObject.getBuffer();
                     if (vectorHelper != null) {
                         final IntChunk<? extends Values> lenChunk = vectorHelper.lengthSource.getChunk(
                                 lengthSourceContext,
@@ -654,6 +654,7 @@ public class ParquetTableWriter {
 
         final boolean useDictionaryHint = writeInstructions.useDictionary(columnDefinition.getName());
         final int maxKeys = useDictionaryHint ? Integer.MAX_VALUE : writeInstructions.getMaximumDictionaryKeys();
+        final int maxDictSize = useDictionaryHint ? Integer.MAX_VALUE : writeInstructions.getMaximumDictionarySize();
         final VectorColumnWriterHelper vectorHelper = writingHelper.isVectorFormat()
                 ? (VectorColumnWriterHelper) writingHelper
                 : null;
@@ -668,6 +669,7 @@ public class ParquetTableWriter {
                             Constants.DEFAULT_LOAD_FACTOR,
                             QueryConstants.NULL_INT);
             int keyCount = 0;
+            int dictSize = 0;
             boolean hasNulls = false;
             final IntSupplier valuePageSizeGetter = writingHelper.valuePageSizeSupplier();
             try (final ChunkSource.GetContext context = valueSource.makeGetContext(maxValuesPerPage);
@@ -689,19 +691,25 @@ public class ParquetTableWriter {
                                 hasNulls = pageHasNulls = true;
                             } else {
                                 if (keyCount == encodedKeys.length) {
-                                    if (keyCount >= maxKeys) {
-                                        // Reset the stats because we will re-encode these in PLAIN encoding.
-                                        columnWriter.resetStats();
-                                        throw new DictionarySizeExceededException(
-                                                "Dictionary maximum size exceeded for " + columnDefinition.getName());
-                                    }
+                                    // Copy into an array of double the size with upper limit at maxKeys
                                     encodedKeys = Arrays.copyOf(encodedKeys, (int) Math.min(keyCount * 2L, maxKeys));
                                 }
                                 final Binary encodedKey = Binary.fromString(key);
                                 encodedKeys[keyCount] = encodedKey;
                                 statistics.updateStats(encodedKey);
                                 dictionaryPos = keyCount;
+                                dictSize += encodedKeys[keyCount].length();
                                 keyCount++;
+                                if ((keyCount >= maxKeys) || (dictSize >= maxDictSize)) {
+                                    // Reset the stats because we will re-encode these in PLAIN encoding.
+                                    columnWriter.resetStats();
+                                    // We discard all the dictionary data accumulated so far and fall back to PLAIN
+                                    // encoding. We could have added a dictionary page first with data collected so far
+                                    // and then stored the remaining data via PLAIN encoding (TODO deephaven-core#946).
+                                    throw new DictionarySizeExceededException(
+                                            String.format("Dictionary maximum size exceeded for %s",
+                                                    columnDefinition.getName()));
+                                }
                             }
                             keyToPos.put(key, dictionaryPos);
                         }

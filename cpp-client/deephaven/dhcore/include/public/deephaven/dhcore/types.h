@@ -203,7 +203,7 @@ public:
    * The special reserved null value constant for the Deephaven int type
    * (which is represented as a signed 32 bit integer).
    */
-  static constexpr const int32_t kNulLInt = std::numeric_limits<int32_t>::min();
+  static constexpr const int32_t kNullInt = std::numeric_limits<int32_t>::min();
   /**
    * The minimum valid value for the Deephaven int type
    * (which is represented as a signed 32 bit integer).
@@ -272,7 +272,7 @@ struct DeephavenTraits<int32_t> {
   /**
    * The Deephaven reserved null value constant for this type.
    */
-  static constexpr const int32_t kNullValue = DeephavenConstants::kNulLInt;
+  static constexpr const int32_t kNullValue = DeephavenConstants::kNullInt;
   static constexpr bool kIsNumeric = true;
 };
 
@@ -332,6 +332,8 @@ public:
     return DateTime(nanos);
   }
 
+  static DateTime Parse(std::string_view iso_8601_timestamp);
+
   /**
    * Default constructor. Sets the DateTime equal to the epoch.
    */
@@ -371,7 +373,7 @@ public:
    * @param second Second.
    * @param nanos Nanoseconds.
    */
-  DateTime(int year, int month, int day, int hour, int minute, int second, long nanos);
+  DateTime(int year, int month, int day, int hour, int minute, int second, int64_t nanos);
 
   /**
    * The DateTime as expressed in nanoseconds since the epoch. Can be negative.
