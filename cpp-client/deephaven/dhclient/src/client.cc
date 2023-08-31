@@ -115,6 +115,12 @@ TableHandle TableHandleManager::TimeTable(DurationSpecifier period, TimePointSpe
   return TableHandle(std::move(impl));
 }
 
+TableHandle TableHandleManager::InputTable(const TableHandle &initial_table,
+    std::vector<std::string> key_columns) const {
+  auto th_impl = impl_->InputTable(*initial_table.Impl(), std::move(key_columns));
+  return TableHandle(std::move(th_impl));
+}
+
 std::string TableHandleManager::NewTicket() const {
   return impl_->NewTicket();
 }
@@ -558,6 +564,14 @@ TableHandle TableHandle::WhereIn(const TableHandle &filter_table,
     std::vector<std::string> columns) const {
   auto th_impl = impl_->WhereIn(*filter_table.impl_, std::move(columns));
   return TableHandle(std::move(th_impl));
+}
+
+void TableHandle::AddTable(const deephaven::client::TableHandle &table_to_add) {
+  impl_->AddTable(*table_to_add.impl_);
+}
+
+void TableHandle::RemoveTable(const deephaven::client::TableHandle &table_to_remove) {
+  impl_->RemoveTable(*table_to_remove.impl_);
 }
 
 void TableHandle::BindToVariable(std::string variable) const {

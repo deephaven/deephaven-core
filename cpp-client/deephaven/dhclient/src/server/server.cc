@@ -25,12 +25,17 @@ using deephaven::dhcore::utility::SFCallback;
 using deephaven::dhcore::utility::Bit_cast;
 using deephaven::dhcore::utility::Streamf;
 using deephaven::dhcore::utility::Stringf;
+using io::deephaven::proto::backplane::grpc::AddTableRequest;
+using io::deephaven::proto::backplane::grpc::AddTableResponse;
 using io::deephaven::proto::backplane::grpc::AjRajTablesRequest;
 using io::deephaven::proto::backplane::grpc::AuthenticationConstantsRequest;
 using io::deephaven::proto::backplane::grpc::ConfigurationConstantsRequest;
 using io::deephaven::proto::backplane::grpc::ConfigurationConstantsResponse;
 using io::deephaven::proto::backplane::grpc::ConfigService;
+using io::deephaven::proto::backplane::grpc::CreateInputTableRequest;
 using io::deephaven::proto::backplane::grpc::CrossJoinTablesRequest;
+using io::deephaven::proto::backplane::grpc::DeleteTableRequest;
+using io::deephaven::proto::backplane::grpc::DeleteTableResponse;
 using io::deephaven::proto::backplane::grpc::DropColumnsRequest;
 using io::deephaven::proto::backplane::grpc::EmptyTableRequest;
 using io::deephaven::proto::backplane::grpc::ExactJoinTablesRequest;
@@ -142,6 +147,7 @@ std::shared_ptr<Server> Server::CreateFromTarget(
   auto ss = SessionService::NewStub(channel);
   auto ts = TableService::NewStub(channel);
   auto cfs = ConfigService::NewStub(channel);
+  auto its = InputTableService::NewStub(channel);
 
   // TODO(kosak): Warn about this string conversion or do something more general.
   auto flightTarget = ((client_options.UseTls()) ? "grpc+tls://" : "grpc://") + target;
@@ -218,8 +224,8 @@ std::shared_ptr<Server> Server::CreateFromTarget(
   auto nextHandshakeTime = sendTime + expirationInterval;
 
   auto result = std::make_shared<Server>(Private(), std::move(as), std::move(cs),
-      std::move(ss), std::move(ts), std::move(cfs), std::move(fc), client_options.ExtraHeaders(),
-      std::move(sessionToken), expirationInterval, nextHandshakeTime);
+      std::move(ss), std::move(ts), std::move(cfs), std::move(its), std::move(fc),
+      client_options.ExtraHeaders(), std::move(sessionToken), expirationInterval, nextHandshakeTime);
   result->completionQueueThread_ = std::thread(&ProcessCompletionQueueLoop, result);
   result->keepAliveThread_ = std::thread(&SendKeepaliveMessages, result);
   return result;
@@ -231,6 +237,7 @@ Server::Server(Private,
     std::unique_ptr<SessionService::Stub> session_stub,
     std::unique_ptr<TableService::Stub> table_stub,
     std::unique_ptr<ConfigService::Stub> config_stub,
+    std::unique_ptr<InputTableService::Stub> input_table_stub,
     std::unique_ptr<arrow::flight::FlightClient> flight_client,
     ClientOptions::extra_headers_t extra_headers,
     std::string session_token, std::chrono::milliseconds expiration_interval,
@@ -242,6 +249,7 @@ Server::Server(Private,
     sessionStub_(std::move(session_stub)),
     tableStub_(std::move(table_stub)),
     configStub_(std::move(config_stub)),
+    input_table_stub_(std::move(input_table_stub)),
     flightClient_(std::move(flight_client)),
     extraHeaders_(std::move(extra_headers)),
     nextFreeTicketId_(1),
@@ -612,6 +620,20 @@ void Server::SelectDistinctAsync(Ticket source, std::vector<std::string> columns
   SendRpc(req, std::move(etc_callback), TableStub(), &TableService::Stub::AsyncSelectDistinct);
 }
 
+void Server::InputTableAsync(Ticket initial_table_ticket, std::vector<std::string> columns,
+    std::shared_ptr<EtcCallback> etc_callback, Ticket result) {
+  CreateInputTableRequest req;
+  *req.mutable_result_id() = std::move(result);
+  *req.mutable_source_table_id()->mutable_ticket() = std::move(initial_table_ticket);
+  if (columns.empty()) {
+    (void)req.mutable_kind()->mutable_in_memory_append_only();
+  } else {
+    MoveVectorData(std::move(columns),
+        req.mutable_kind()->mutable_in_memory_key_backed()->mutable_key_columns());
+  }
+  SendRpc(req, std::move(etc_callback), TableStub(), &TableService::Stub::AsyncCreateInputTable);
+}
+
 void Server::WhereInAsync(Ticket left_table_ticket, Ticket right_table_ticket,
     std::vector<std::string> columns, std::shared_ptr<EtcCallback> etc_callback, Ticket result) {
   WhereInRequest req;
@@ -621,6 +643,24 @@ void Server::WhereInAsync(Ticket left_table_ticket, Ticket right_table_ticket,
   req.set_inverted(false);
   MoveVectorData(std::move(columns), req.mutable_columns_to_match());
   SendRpc(req, std::move(etc_callback), TableStub(), &TableService::Stub::AsyncWhereIn);
+}
+
+void Server::AddTable(Ticket input_table_ticket, Ticket table_to_add_ticket,
+    std::shared_ptr<SFCallback<AddTableResponse>> callback) {
+  AddTableRequest req;
+  *req.mutable_input_table() = std::move(input_table_ticket);
+  *req.mutable_table_to_add() = std::move(table_to_add_ticket);
+  SendRpc(req, std::move(callback), InputTableStub(),
+      &InputTableService::Stub::AsyncAddTableToInputTable);
+}
+
+void Server::RemoveTable(Ticket input_table_ticket, Ticket table_to_remove_ticket,
+    std::shared_ptr<SFCallback<DeleteTableResponse>> callback) {
+  DeleteTableRequest req;
+  *req.mutable_input_table() = std::move(input_table_ticket);
+  *req.mutable_table_to_remove() = std::move(table_to_remove_ticket);
+  SendRpc(req, std::move(callback), InputTableStub(),
+      &InputTableService::Stub::AsyncDeleteTableFromInputTable);
 }
 
 void
