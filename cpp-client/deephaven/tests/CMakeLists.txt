@@ -18,6 +18,7 @@ add_executable(tests
     main.cc
     merge_tables_test.cc
     new_table_test.cc
+    on_close_cb_test.cc
     script_test.cc
     select_test.cc
     sort_test.cc
