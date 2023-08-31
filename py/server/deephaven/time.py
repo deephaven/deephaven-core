@@ -160,9 +160,6 @@ def time_zone_alias_rm(alias: str) -> bool:
 
 # endregion
 
-# TODO: Review all function names: to_j_<xyz>?  to_db_<xyz>?  to_dh_<xyz>?  to_<xyz>? as_j_<xyz>?  as_db_<xyz>?  as_dh_<xyz>?
-# TODO: Should the doc strings refer to "Deephaven" or "Java" types?
-
 
 # region Conversions: Python To Java
 
