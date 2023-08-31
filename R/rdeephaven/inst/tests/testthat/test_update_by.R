@@ -710,11 +710,11 @@ test_that("udb_emstd_tick behaves as expected", {
       return(NA)
     }
     a = exp(-1/decay_ticks)
-    ema = c(x[1])
+    current_ema = x[1]
     emvar = c(0)
     for(i in seq(2,length(x))) {
-      ema[i] = a*ema[i-1] + (1-a)*x[i]
-      emvar[i] = a*(emvar[i-1] + (1-a)*((x[i] - ema[i-1])^2))
+      emvar[i] = a*(emvar[i-1] + (1-a)*((x[i] - current_ema)^2))
+      current_ema = a*current_ema + (1-a)*x[i]
     }
     emvar[1] = NA
     return(sqrt(emvar))
