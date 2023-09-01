@@ -842,11 +842,17 @@ public class ParquetTools {
     }
 
     public static final ParquetInstructions LZ4 = ParquetInstructions.builder().setCompressionCodecName("LZ4").build();
+    public static final ParquetInstructions LZ4_RAW =
+            ParquetInstructions.builder().setCompressionCodecName("LZ4_RAW").build();
     public static final ParquetInstructions LZO = ParquetInstructions.builder().setCompressionCodecName("LZO").build();
     public static final ParquetInstructions GZIP =
             ParquetInstructions.builder().setCompressionCodecName("GZIP").build();
     public static final ParquetInstructions ZSTD =
             ParquetInstructions.builder().setCompressionCodecName("ZSTD").build();
+    public static final ParquetInstructions SNAPPY =
+            ParquetInstructions.builder().setCompressionCodecName("SNAPPY").build();
+    public static final ParquetInstructions BROTLI =
+            ParquetInstructions.builder().setCompressionCodecName("BROTLI").build();
     public static final ParquetInstructions LEGACY = ParquetInstructions.builder().setIsLegacyParquet(true).build();
 
     public static void setDefaultCompressionCodecName(final String compressionCodecName) {

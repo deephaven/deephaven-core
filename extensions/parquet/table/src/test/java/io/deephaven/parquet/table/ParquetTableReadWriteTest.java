@@ -317,52 +317,51 @@ public class ParquetTableReadWriteTest {
         TestCase.assertNotNull(fromDisk.getColumnSource("someBigInt").getGroupToRange());
     }
 
-    private void compressionCodecTestHelper(final String codec) {
-        final String currentCodec = ParquetInstructions.getDefaultCompressionCodecName();
-        try {
-            ParquetInstructions.setDefaultCompressionCodecName(codec);
-            String path = rootFile + File.separator + "Table1.parquet";
-            final Table table1 = getTableFlat(10000, false, true);
-            ParquetTools.writeTable(table1, path);
-            assertTrue(new File(path).length() > 0);
-            final Table table2 = ParquetTools.readTable(path);
-            TstUtils.assertTableEquals(maybeFixBigDecimal(table1), table2);
-        } finally {
-            ParquetInstructions.setDefaultCompressionCodecName(currentCodec);
-        }
+    private void compressionCodecTestHelper(final ParquetInstructions codec) {
+        File dest = new File(rootFile + File.separator + "Table1.parquet");
+        final Table table1 = getTableFlat(10000, false, true);
+        ParquetTools.writeTable(table1, dest, codec);
+        assertTrue(dest.length() > 0L);
+        final Table table2 = ParquetTools.readTable(dest);
+        TstUtils.assertTableEquals(maybeFixBigDecimal(table1), table2);
     }
 
     @Test
     public void testParquetLzoCompressionCodec() {
-        compressionCodecTestHelper("LZO");
+        compressionCodecTestHelper(ParquetTools.LZO);
     }
 
     @Test
     public void testParquetLz4CompressionCodec() {
-        compressionCodecTestHelper("LZ4");
+        compressionCodecTestHelper(ParquetTools.LZ4);
+    }
+
+    @Test
+    public void testParquetLz4RawCompressionCodec() {
+        compressionCodecTestHelper(ParquetTools.LZ4_RAW);
     }
 
     @Ignore("See BrotliParquetReadWriteTest instead")
     @Test
     public void testParquetBrotliCompressionCodec() {
-        compressionCodecTestHelper("BROTLI");
+        compressionCodecTestHelper(ParquetTools.BROTLI);
     }
 
     @Test
     public void testParquetZstdCompressionCodec() {
-        compressionCodecTestHelper("ZSTD");
+        compressionCodecTestHelper(ParquetTools.ZSTD);
     }
 
     @Test
     public void testParquetGzipCompressionCodec() {
-        compressionCodecTestHelper("GZIP");
+        compressionCodecTestHelper(ParquetTools.GZIP);
     }
 
     @Test
     public void testParquetSnappyCompressionCodec() {
         // while Snappy is covered by other tests, this is a very fast test to quickly confirm that it works in the same
         // way as the other similar codec tests.
-        compressionCodecTestHelper("SNAPPY");
+        compressionCodecTestHelper(ParquetTools.SNAPPY);
     }
 
     @Test

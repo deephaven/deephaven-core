@@ -23,8 +23,6 @@ import org.junit.*;
 
 import java.io.File;
 import java.io.IOException;
-import java.lang.reflect.InvocationHandler;
-import java.lang.reflect.Method;
 import java.lang.reflect.Proxy;
 import java.nio.file.Files;
 import java.util.ArrayList;
@@ -450,9 +448,8 @@ public class TestParquetTools {
         final Table gzip = ParquetTools.readTable(TestParquetTools.class.getResource("/e1/gzip.parquet").getFile());
         assertTableEquals(uncompressed, gzip);
 
-        // TODO(deephaven-core#3585): LZ4_RAW parquet support
-        // final Table lz4 = ParquetTools.readTable(TestParquetTools.class.getResource("/e1/lz4.parquet").getFile());
-        // assertTableEquals(uncompressed, lz4);
+        final Table lz4 = ParquetTools.readTable(TestParquetTools.class.getResource("/e1/lz4.parquet").getFile());
+        assertTableEquals(uncompressed, lz4);
 
         final Table snappy = ParquetTools.readTable(TestParquetTools.class.getResource("/e1/snappy.parquet").getFile());
         assertTableEquals(uncompressed, snappy);

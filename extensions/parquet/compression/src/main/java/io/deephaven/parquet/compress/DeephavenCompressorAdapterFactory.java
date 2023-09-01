@@ -18,6 +18,7 @@ import org.apache.hadoop.io.compress.Compressor;
 import org.apache.hadoop.io.compress.Decompressor;
 import org.apache.parquet.bytes.BytesInput;
 import org.apache.parquet.hadoop.codec.SnappyCodec;
+import org.apache.parquet.hadoop.codec.Lz4RawCodec;
 import org.apache.parquet.hadoop.metadata.CompressionCodecName;
 
 import java.io.IOException;
@@ -61,6 +62,14 @@ public class DeephavenCompressorAdapterFactory {
                 // does use platform-specific implementations, but has native implementations for the
                 // platforms we support today.
                 SnappyCodec.class, CompressionCodecName.SNAPPY,
+
+                // Use the Parquet LZ4_RAW codec, which internally uses aircompressor
+                Lz4RawCodec.class, CompressionCodecName.LZ4_RAW,
+                // TODO: The default behavior for Pandas and Pyarrow is that if you ask it to write LZ4, it internally
+                // writes LZ4_RAW, since LZ4 has been deprecated for some time now
+                // (https://github.com/apache/parquet-format/blob/master/Compression.md#lz4). Should we keep the same
+                // behavior or keep LZ4 and LZ4_RAW separate?
+
                 // The rest of these are aircompressor codecs which have fast / pure java implementations
                 JdkGzipCodec.class, CompressionCodecName.GZIP,
                 LzoCodec.class, CompressionCodecName.LZO,
@@ -183,14 +192,20 @@ public class DeephavenCompressorAdapterFactory {
      * @param codecName the name of the codec to search for.
      * @return a compressor instance with a name matching the given codec.
      */
-    public CompressorAdapter getByName(String codecName) {
+    public CompressorAdapter getByName(final String codecName) {
         if (codecName.equalsIgnoreCase("UNCOMPRESSED")) {
             return CompressorAdapter.PASSTHRU;
         }
-        final CompressionCodec codec = compressionCodecFactory.getCodecByName(codecName);
+        CompressionCodec codec = compressionCodecFactory.getCodecByName(codecName);
         if (codec == null) {
-            throw new IllegalArgumentException(
-                    String.format("Failed to find CompressionCodec for codecName=%s", codecName));
+            if (codecName.equalsIgnoreCase("LZ4_RAW")) {
+                // Hacky work-around since codec factory refers to LZ4_RAW as LZ4RAW
+                codec = compressionCodecFactory.getCodecByName("LZ4RAW");
+            }
+            if (codec == null) {
+                throw new IllegalArgumentException(
+                        String.format("Failed to find CompressionCodec for codecName=%s", codecName));
+            }
         }
         final CompressionCodecName ccn = codecClassnameToCodecName.get(codec.getClass().getName());
         if (ccn == null) {
