@@ -86,9 +86,17 @@ public:
    */
   explicit TableHandleManager(std::shared_ptr<impl::TableHandleManagerImpl> impl);
   /**
+   * Copy constructor
+   */
+  TableHandleManager(const TableHandleManager &other) noexcept;
+  /**
    * Move constructor
    */
   TableHandleManager(TableHandleManager &&other) noexcept;
+  /**
+   * Copy assigment operator.
+   */
+  TableHandleManager &operator=(const TableHandleManager &other) noexcept;
   /**
    * Move assigment operator.
    */
@@ -189,9 +197,17 @@ public:
   [[nodiscard]]
   static Client Connect(const std::string &target, const ClientOptions &options = {});
   /**
+   * Copy constructor
+   */
+  Client(const Client &other) noexcept;
+  /**
    * Move constructor
    */
   Client(Client &&other) noexcept;
+  /**
+   * Copy assigment operator.
+   */
+  Client &operator=(const Client &other) noexcept;
   /**
    * Move assigment operator.
    */
@@ -247,6 +263,30 @@ private:
  */
 class Aggregate {
 public:
+  /*
+ * Default constructor. Creates a (useless) empty object.
+ */
+  Aggregate();
+  /**
+   * Copy constructor
+   */
+  Aggregate(const Aggregate &other) noexcept;
+  /**
+   * Move constructor
+   */
+  Aggregate(Aggregate &&other) noexcept;
+  /**
+   * Copy assigment operator.
+   */
+  Aggregate &operator=(const Aggregate &other) noexcept;
+  /**
+   * Move assigment operator.
+   */
+  Aggregate &operator=(Aggregate &&other) noexcept;
+  /**
+   * Destructor
+   */
+  ~Aggregate();
   /**
    * Returns an aggregator that computes the total sum of values, within an aggregation group,
    * for each input column.
