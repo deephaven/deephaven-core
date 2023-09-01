@@ -11,7 +11,7 @@ from typing import Sequence, Any
 import jpy
 
 import deephaven.dtypes as dtypes
-from deephaven import DHError
+from deephaven import DHError, time
 from deephaven.dtypes import DType
 
 _JColumnHeader = jpy.get_type("io.deephaven.qst.column.header.ColumnHeader")
@@ -196,11 +196,13 @@ def datetime_col(name: str, data: Sequence) -> InputColumn:
 
     Args:
         name (str): the column name
-        data (Any): a sequence of Datetime instances
+        data (Any): a sequence of Datetime instances or values that can be converted to Datetime instances
+            (e.g. Instant, int nanoseconds since the Epoch, str, datetime.datetime, numpy.datetime64, pandas.Timestamp).
 
     Returns:
         a new input column
     """
+    data = [time.to_j_instant(d) for d in data]
     return InputColumn(name=name, data_type=dtypes.Instant, input_data=data)
 
 
