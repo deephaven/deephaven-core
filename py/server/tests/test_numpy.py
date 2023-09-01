@@ -5,7 +5,6 @@
 import unittest
 from dataclasses import dataclass
 
-import jpy
 import numpy as np
 
 from deephaven import DHError, new_table, dtypes

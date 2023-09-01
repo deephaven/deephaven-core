@@ -6,17 +6,13 @@ import time
 import unittest
 from dataclasses import dataclass
 
-import jpy
-
-from deephaven import DHError, dtypes, new_table
+from deephaven import DHError, dtypes, new_table, time as dhtime
 from deephaven import empty_table
 from deephaven.column import byte_col, char_col, short_col, bool_col, int_col, long_col, float_col, double_col, \
     string_col, datetime_col, jobj_col, ColumnType
 from deephaven.constants import MAX_BYTE, MAX_SHORT, MAX_INT, MAX_LONG
 from deephaven.jcompat import j_array_list
 from tests.testbase import BaseTestCase
-
-_JDateTimeUtils = jpy.get_type("io.deephaven.time.DateTimeUtils")
 
 
 class ColumnTestCase(BaseTestCase):
@@ -57,7 +53,7 @@ class ColumnTestCase(BaseTestCase):
             _ = string_col(name="String", data=[1, -1.01])
 
         with self.assertRaises(DHError) as cm:
-            _ = datetime_col(name="Datetime", data=[_JDateTimeUtils.epochNanosToInstant(round(time.time())), False])
+            _ = datetime_col(name="Datetime", data=[round(time.time()), False])
 
         with self.assertRaises(DHError) as cm:
             _ = jobj_col(name="JObj", data=[jobj, CustomClass(-1, "-1")])
@@ -134,7 +130,7 @@ class ColumnTestCase(BaseTestCase):
         self.assertEqual(t_list_integers.columns[6].data_type, dtypes.float64)
 
     def test_datetime_col(self):
-        inst = _JDateTimeUtils.epochNanosToInstant(round(time.time()))
+        inst = dhtime.to_j_instant(round(time.time()))
         dt = datetime.datetime.now()
         _ = datetime_col(name="Datetime", data=[inst, dt, None])
 

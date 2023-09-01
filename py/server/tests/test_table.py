@@ -5,8 +5,6 @@ import unittest
 from types import SimpleNamespace
 from typing import List, Any
 
-import jpy
-
 from deephaven import DHError, read_csv, empty_table, SortDirection, time_table, update_graph, new_table, dtypes
 from deephaven.agg import sum_, weighted_avg, avg, pct, group, count_, first, last, max_, median, min_, std, abs_sum, \
     var, formula, partition, unique, count_distinct, distinct

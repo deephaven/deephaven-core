@@ -3,7 +3,6 @@
 #
 
 import unittest
-import jpy
 
 from deephaven import DHError, new_table, TableReplayer, time
 from deephaven.column import int_col, datetime_col

@@ -6,7 +6,6 @@ import unittest
 from datetime import datetime
 from typing import List, Any
 
-import jpy
 import numpy as np
 import pandas as pd
 import pyarrow as pa
