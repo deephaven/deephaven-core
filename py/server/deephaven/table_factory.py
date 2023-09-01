@@ -74,12 +74,12 @@ def time_table(period: Union[Duration, int, str, datetime.timedelta, np.timedelt
         builder = _JTableTools.timeTableBuilder()
 
         if not isinstance(period, str) and not isinstance(period, int):
-            period = str(time.to_j_duration(period))
+            period = time.to_j_duration(period)
 
         builder.period(period)
 
         if start_time:
-            start_time = str(time.to_j_instant(start_time))
+            start_time = time.to_j_instant(start_time)
             builder.startTime(start_time)
 
         if blink_table:
