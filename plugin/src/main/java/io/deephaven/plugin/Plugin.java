@@ -3,6 +3,7 @@
  */
 package io.deephaven.plugin;
 
+import io.deephaven.plugin.js.JsPlugin;
 import io.deephaven.plugin.type.ObjectType;
 
 /**
@@ -24,5 +25,7 @@ public interface Plugin extends Registration {
 
     interface Visitor<T> {
         T visit(ObjectType objectType);
+
+        T visit(JsPlugin jsPlugin);
     }
 }

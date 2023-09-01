@@ -1,0 +1,57 @@
+/**
+ * Copyright (c) 2016-2023 Deephaven Data Labs and Patent Pending
+ */
+package io.deephaven.plugin.js;
+
+import io.deephaven.annotations.SimpleStyle;
+import org.immutables.value.Value.Immutable;
+import org.immutables.value.Value.Parameter;
+
+import java.nio.file.Path;
+
+/**
+ * A js plugin manifest path.
+ */
+@Immutable
+@SimpleStyle
+public abstract class JsPluginManifestPath extends JsPluginBase {
+
+    public static final String MANIFEST_JSON = "manifest.json";
+
+    public static JsPluginManifestPath of(Path manifestRoot) {
+        return ImmutableJsPluginManifestPath.of(manifestRoot);
+    }
+
+    /**
+     * The manifest root path.
+     * 
+     * @return the manifest root path
+     */
+    @Parameter
+    public abstract Path path();
+
+    /**
+     * The {@value MANIFEST_JSON} path, relative to {@link #path()}. Equivalent to
+     * {@code path().resolve(MANIFEST_JSON)}.
+     * 
+     * @return the manifest json path
+     */
+    public final Path manifestJson() {
+        return path().resolve(MANIFEST_JSON);
+    }
+
+    /**
+     * Equivalent to {@code JsPluginPackagePath.of(path().resolve(name))}.
+     *
+     * @param name the package name
+     * @return the package path
+     */
+    public final JsPluginPackagePath packagePath(String name) {
+        return JsPluginPackagePath.of(path().resolve(name));
+    }
+
+    @Override
+    public final <T> T walk(JsPlugin.Visitor<T> visitor) {
+        return visitor.visit(this);
+    }
+}

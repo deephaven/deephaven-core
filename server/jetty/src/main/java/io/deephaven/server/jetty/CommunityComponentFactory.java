@@ -42,6 +42,7 @@ public final class CommunityComponentFactory
     public CommunityComponent build(Configuration configuration, PrintStream out, PrintStream err) {
         final JettyConfig jettyConfig = JettyConfig.buildFromConfig(configuration).build();
         return DaggerCommunityComponentFactory_CommunityComponent.builder()
+                .withConfiguration(configuration)
                 .withOut(out)
                 .withErr(err)
                 .withJettyConfig(jettyConfig)

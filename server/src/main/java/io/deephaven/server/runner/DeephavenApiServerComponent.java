@@ -4,6 +4,7 @@
 package io.deephaven.server.runner;
 
 import dagger.BindsInstance;
+import io.deephaven.configuration.Configuration;
 
 import javax.annotation.Nullable;
 import javax.inject.Named;
@@ -14,6 +15,9 @@ public interface DeephavenApiServerComponent {
     DeephavenApiServer getServer();
 
     interface Builder<Self extends Builder<Self, Component>, Component extends DeephavenApiServerComponent> {
+        @BindsInstance
+        Self withConfiguration(Configuration configuration);
+
         @BindsInstance
         Self withOut(@Nullable @Named("out") PrintStream out);
 

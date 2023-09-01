@@ -1,9 +1,12 @@
+/**
+ * Copyright (c) 2016-2023 Deephaven Data Labs and Patent Pending
+ */
 package io.deephaven.server.jetty;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.deephaven.configuration.CacheDir;
-import org.eclipse.jetty.servlet.DefaultServlet;
-import org.eclipse.jetty.servlet.ServletHolder;
+import io.deephaven.plugin.js.JsPluginManifestPath;
+import io.deephaven.plugin.js.JsPluginPackagePath;
 
 import java.io.IOException;
 import java.io.OutputStream;
@@ -17,8 +20,6 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
-
-import static io.deephaven.server.jetty.JsPlugins.MANIFEST_JSON;
 
 class JsPluginsZipFilesystem {
     private static final String ZIP_ROOT = "/";
@@ -42,46 +43,35 @@ class JsPluginsZipFilesystem {
     }
 
     private final URI filesystem;
-    private final List<JsPlugin> plugins;
+    private final List<JsPluginManifestEntry> entries;
 
     private JsPluginsZipFilesystem(URI filesystem) {
         this.filesystem = Objects.requireNonNull(filesystem);
-        this.plugins = new ArrayList<>();
+        this.entries = new ArrayList<>();
     }
 
-    /**
-     * Creates a {@link DefaultServlet} servlet holder.
-     *
-     * @param name the name
-     * @return the servlet holder
-     */
-    public ServletHolder servletHolder(String name) {
-        final ServletHolder jsPlugins = new ServletHolder(name, DefaultServlet.class);
-        // Note, the URI needs explicitly be parseable as a directory URL ending in "!/", a requirement of the jetty
-        // resource creation implementation, see
-        // org.eclipse.jetty.util.resource.Resource.newResource(java.lang.String, boolean)
-        jsPlugins.setInitParameter("resourceBase", filesystem.toString());
-        jsPlugins.setInitParameter("pathInfoOnly", "true");
-        jsPlugins.setInitParameter("dirAllowed", "false");
-        jsPlugins.setAsyncSupported(true);
-        return jsPlugins;
+    public URI filesystem() {
+        return filesystem;
     }
 
-    public synchronized void addFromPackageRoot(Path packageRootSrc, JsPlugin info) throws IOException {
-        checkExisting(info);
-        final Path distributionSrc = info.distributionDirFromPackageRoot(packageRootSrc);
+    public synchronized void copyFrom(JsPluginPackagePath srcPackagePath, JsPluginManifestEntry srcEntry)
+            throws IOException {
+        checkExisting(srcEntry);
+        final Path srcDist = srcPackagePath.distributionPath(srcEntry.main());
         // TODO(deephaven-core#3005): js-plugins checksum-based caching
         try (final FileSystem fs = FileSystems.newFileSystem(filesystem, Map.of())) {
-            final Path manifestRootDest = fs.getPath(ZIP_ROOT);
-            final Path distributionDest = info.distributionDirFromManifestRoot(manifestRootDest);
-            CopyHelper.copyRecursive(distributionSrc, distributionDest);
-            plugins.add(info);
+            final JsPluginManifestPath manifest = manifest(fs);
+            final Path destDist = manifest
+                    .packagePath(srcEntry.name())
+                    .distributionPath(srcEntry.main());
+            CopyHelper.copyRecursive(srcDist, destDist);
+            entries.add(srcEntry);
             writeManifest(fs);
         }
     }
 
-    private void checkExisting(JsPlugin info) {
-        for (JsPlugin existing : plugins) {
+    private void checkExisting(JsPluginManifestEntry info) {
+        for (JsPluginManifestEntry existing : entries) {
             if (info.name().equals(existing.name())) {
                 // TODO(deephaven-core#3048): Improve JS plugin support around plugins with conflicting names
                 throw new IllegalArgumentException(String.format(
@@ -98,15 +88,20 @@ class JsPluginsZipFilesystem {
     }
 
     private void writeManifest(FileSystem fs) throws IOException {
-        final Path tmpManifestPath = fs.getPath(ZIP_ROOT, MANIFEST_JSON + ".tmp");
+        final Path manifestJson = manifest(fs).manifestJson();
+        final Path manifestJsonTmp = manifestJson.resolveSibling(manifestJson.getFileName().toString() + ".tmp");
         // jackson impl does buffering internally
-        try (final OutputStream out = Files.newOutputStream(tmpManifestPath)) {
-            new ObjectMapper().writeValue(out, JsManifest.of(plugins));
+        try (final OutputStream out = Files.newOutputStream(manifestJsonTmp)) {
+            new ObjectMapper().writeValue(out, JsPluginManifest.of(entries));
             out.flush();
         }
-        Files.move(tmpManifestPath, fs.getPath(ZIP_ROOT, MANIFEST_JSON),
+        Files.move(manifestJsonTmp, manifestJson,
                 StandardCopyOption.REPLACE_EXISTING,
                 StandardCopyOption.COPY_ATTRIBUTES,
                 StandardCopyOption.ATOMIC_MOVE);
+    }
+
+    private static JsPluginManifestPath manifest(FileSystem fs) {
+        return JsPluginManifestPath.of(fs.getPath(ZIP_ROOT));
     }
 }

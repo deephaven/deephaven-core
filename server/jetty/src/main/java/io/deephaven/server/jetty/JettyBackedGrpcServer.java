@@ -3,7 +3,7 @@
  */
 package io.deephaven.server.jetty;
 
-import io.deephaven.configuration.Configuration;
+import io.deephaven.plugin.js.JsPlugin;
 import io.deephaven.server.browserstreaming.BrowserStreamInterceptor;
 import io.deephaven.server.runner.GrpcServer;
 import io.deephaven.ssl.config.CiphersIntermediate;
@@ -48,6 +48,7 @@ import org.eclipse.jetty.server.handler.gzip.GzipHandler;
 import org.eclipse.jetty.servlet.DefaultServlet;
 import org.eclipse.jetty.servlet.ErrorPageErrorHandler;
 import org.eclipse.jetty.servlet.FilterHolder;
+import org.eclipse.jetty.servlet.ServletHolder;
 import org.eclipse.jetty.servlets.CrossOriginFilter;
 import org.eclipse.jetty.util.MultiException;
 import org.eclipse.jetty.util.component.Graceful;
@@ -59,8 +60,10 @@ import org.eclipse.jetty.websocket.jakarta.server.config.JakartaWebSocketServlet
 import org.eclipse.jetty.websocket.jakarta.server.internal.JakartaWebSocketServerContainer;
 
 import javax.inject.Inject;
+import javax.inject.Singleton;
 import java.io.IOException;
 import java.io.UncheckedIOException;
+import java.net.URI;
 import java.net.URL;
 import java.util.ArrayList;
 import java.util.Collection;
@@ -70,16 +73,19 @@ import java.util.List;
 import java.util.Map;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.TimeUnit;
+import java.util.function.Consumer;
 import java.util.function.Supplier;
 
 import static io.grpc.servlet.web.websocket.MultiplexedWebSocketServerStream.GRPC_WEBSOCKETS_MULTIPLEX_PROTOCOL;
 import static io.grpc.servlet.web.websocket.WebSocketServerStream.GRPC_WEBSOCKETS_PROTOCOL;
 import static org.eclipse.jetty.servlet.ServletContextHandler.NO_SESSIONS;
 
+@Singleton
 public class JettyBackedGrpcServer implements GrpcServer {
     private static final String JS_PLUGINS_PATH_SPEC = "/" + JsPlugins.JS_PLUGINS + "/*";
 
     private final Server jetty;
+    private final JsPlugins jsPlugins;
     private final boolean websocketsEnabled;
 
     @Inject
@@ -88,6 +94,11 @@ public class JettyBackedGrpcServer implements GrpcServer {
             final GrpcFilter filter) {
         jetty = new Server();
         jetty.addConnector(createConnector(jetty, config));
+        try {
+            jsPlugins = JsPlugins.create();
+        } catch (IOException e) {
+            throw new UncheckedIOException(e);
+        }
 
         final WebAppContext context =
                 new WebAppContext(null, "/", null, null, null, new ErrorPageErrorHandler(), NO_SESSIONS);
@@ -171,15 +182,8 @@ public class JettyBackedGrpcServer implements GrpcServer {
         // Wire up the provided grpc filter
         context.addFilter(new FilterHolder(filter), "/*", EnumSet.noneOf(DispatcherType.class));
 
-        final JsPluginsZipFilesystem fs;
-        try {
-            fs = JsPlugins.initJsPlugins(Configuration.getInstance());
-        } catch (IOException e) {
-            throw new UncheckedIOException(e);
-        }
-
         // Wire up /js-plugins/*
-        context.addServlet(fs.servletHolder("js-plugins"), JS_PLUGINS_PATH_SPEC);
+        context.addServlet(servletHolder("js-plugins", jsPlugins.filesystem()), JS_PLUGINS_PATH_SPEC);
 
         // Set up websockets for grpc-web - depending on configuration, we can register both in case we encounter a
         // client using "vanilla"
@@ -238,6 +242,10 @@ public class JettyBackedGrpcServer implements GrpcServer {
             handler = handlers;
         }
         jetty.setHandler(handler);
+    }
+
+    public Consumer<JsPlugin> jsPluginConsumer() {
+        return jsPlugins;
     }
 
     @Override
@@ -375,5 +383,17 @@ public class JettyBackedGrpcServer implements GrpcServer {
         });
 
         return serverConnector;
+    }
+
+    private static ServletHolder servletHolder(String name, URI filesystemUri) {
+        final ServletHolder jsPlugins = new ServletHolder(name, DefaultServlet.class);
+        // Note, the URI needs explicitly be parseable as a directory URL ending in "!/", a requirement of the jetty
+        // resource creation implementation, see
+        // org.eclipse.jetty.util.resource.Resource.newResource(java.lang.String, boolean)
+        jsPlugins.setInitParameter("resourceBase", filesystemUri.toString());
+        jsPlugins.setInitParameter("pathInfoOnly", "true");
+        jsPlugins.setInitParameter("dirAllowed", "false");
+        jsPlugins.setAsyncSupported(true);
+        return jsPlugins;
     }
 }

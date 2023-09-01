@@ -1,3 +1,6 @@
+/**
+ * Copyright (c) 2016-2023 Deephaven Data Labs and Patent Pending
+ */
 package io.deephaven.server.jetty;
 
 import com.fasterxml.jackson.annotation.JsonCreator;
@@ -10,16 +13,16 @@ import java.util.List;
 
 @Immutable
 @SimpleStyle
-abstract class JsManifest {
+abstract class JsPluginManifest {
     public static final String PLUGINS = "plugins";
 
     @JsonCreator
-    public static JsManifest of(
-            @JsonProperty(value = PLUGINS, required = true) List<JsPlugin> plugins) {
-        return ImmutableJsManifest.of(plugins);
+    public static JsPluginManifest of(
+            @JsonProperty(value = PLUGINS, required = true) List<JsPluginManifestEntry> plugins) {
+        return ImmutableJsPluginManifest.of(plugins);
     }
 
     @Parameter
     @JsonProperty(PLUGINS)
-    public abstract List<JsPlugin> plugins();
+    public abstract List<JsPluginManifestEntry> plugins();
 }
