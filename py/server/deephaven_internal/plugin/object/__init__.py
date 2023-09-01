@@ -12,7 +12,7 @@ from deephaven.liveness_scope import liveness_scope
 JReference = jpy.get_type('io.deephaven.plugin.type.Exporter$Reference')
 JExporterAdapter = jpy.get_type('io.deephaven.server.plugin.python.ExporterAdapter')
 JMessageStream = jpy.get_type('io.deephaven.plugin.type.ObjectType$MessageStream')
-JPyObjectRefCountedNode = jpy.get_type('io.deephaven.server.plugin.python.PyObjectRefCountedNode')
+JPyObjectRefCountedNode = jpy.get_type('io.deephaven.server.plugin.python.LivePyObjectWrapper')
 
 
 def _adapt_reference(ref: JReference) -> Reference:

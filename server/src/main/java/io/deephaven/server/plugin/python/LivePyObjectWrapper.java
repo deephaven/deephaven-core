@@ -3,6 +3,7 @@ package io.deephaven.server.plugin.python;
 import io.deephaven.engine.liveness.LivenessScopeStack;
 import io.deephaven.engine.liveness.ReferenceCountedLivenessReferent;
 import io.deephaven.util.annotations.ScriptApi;
+import org.jetbrains.annotations.NotNull;
 import org.jpy.PyObject;
 
 /**
@@ -13,8 +14,10 @@ import org.jpy.PyObject;
  * <p>
  * </p>
  * This class is experimental, and may be changed or moved in a future release to a new package.
+ *
+ * @see <a href="https://github.com/deephaven/deephaven-core/issues/1775">deephaven-core#1775</a>
  */
-public final class PyObjectRefCountedNode extends ReferenceCountedLivenessReferent {
+public final class LivePyObjectWrapper extends ReferenceCountedLivenessReferent {
     private final PyObject pythonObject;
 
     /**
@@ -22,7 +25,7 @@ public final class PyObjectRefCountedNode extends ReferenceCountedLivenessRefere
      * liveness scope is open to retain this instance.
      */
     @ScriptApi // Called by internal Python code
-    public PyObjectRefCountedNode(PyObject pythonObject) {
+    public LivePyObjectWrapper(@NotNull PyObject pythonObject) {
         this.pythonObject = pythonObject;
         LivenessScopeStack.peek().manage(this);
     }
@@ -39,5 +42,22 @@ public final class PyObjectRefCountedNode extends ReferenceCountedLivenessRefere
     @ScriptApi // Called by internal Python code
     public PyObject getPythonObject() {
         return pythonObject;
+    }
+
+    @Override
+    public boolean equals(Object o) {
+        if (this == o)
+            return true;
+        if (o == null || getClass() != o.getClass())
+            return false;
+
+        LivePyObjectWrapper that = (LivePyObjectWrapper) o;
+
+        return pythonObject.equals(that.pythonObject);
+    }
+
+    @Override
+    public int hashCode() {
+        return pythonObject.hashCode();
     }
 }

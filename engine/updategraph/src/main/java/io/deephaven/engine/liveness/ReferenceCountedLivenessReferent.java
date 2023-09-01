@@ -41,8 +41,7 @@ public class ReferenceCountedLivenessReferent extends ReferenceCounted implement
      * <p>
      * This is intended to only ever be used as a side effect of decreasing the reference count to 0.
      */
-    protected void destroy() {
-    }
+    protected void destroy() {}
 
     @Override
     protected void onReferenceCountAtZero() {

@@ -21,7 +21,7 @@ import jpy
 _di_wrapper_classes: Set[JObjectWrapper] = set()
 _has_all_wrappers_imported = False
 
-JPyObjectRefCountedNode = jpy.get_type('io.deephaven.server.plugin.python.PyObjectRefCountedNode')
+JLivePyObjectWrapper = jpy.get_type('io.deephaven.server.plugin.python.LivePyObjectWrapper')
 
 
 def _recursive_import(package_path: str) -> None:
@@ -123,6 +123,7 @@ def javaify(obj: Union[JObjectWrapper, jpy.JType, Any]) -> Optional[jpy.JType]:
     """
     Returns an object that is safe to pass to Java. Callers should take care to ensure that this happens
     in a liveness scope that reflects the lifetime of the reference to be passed to Java.
+    https://github.com/deephaven/deephaven-core/issues/1775
     """
     if obj is None:
         return None
@@ -132,7 +133,7 @@ def javaify(obj: Union[JObjectWrapper, jpy.JType, Any]) -> Optional[jpy.JType]:
         return obj
     # We must return a java object, so wrap in a PyObjectLivenessNode so that the server's liveness tracking
     # will correctly notify python that the object was released
-    return JPyObjectRefCountedNode(obj)
+    return JLivePyObjectWrapper(obj)
 
 
 def pythonify(j_obj: Union[jpy.JType, Any]) -> Optional[Union[JObjectWrapper, jpy.JType, Any]]:
@@ -145,8 +146,8 @@ def pythonify(j_obj: Union[jpy.JType, Any]) -> Optional[Union[JObjectWrapper, jp
     """
     if not isinstance(j_obj, jpy.JType):
         return j_obj
-    # Definitely a JType, check if it is a PyObjectRefCountedNode
-    if j_obj.jclass == JPyObjectRefCountedNode.jclass:
+    # Definitely a JType, check if it is a LivePyObjectWrapper
+    if j_obj.jclass == JLivePyObjectWrapper.jclass:
         return j_obj.getPythonObject()
     # Vanilla Java object, see if we have explicit wrapping for it
     return wrap_j_object(j_obj)

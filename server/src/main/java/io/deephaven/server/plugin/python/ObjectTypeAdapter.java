@@ -6,6 +6,7 @@ package io.deephaven.server.plugin.python;
 import io.deephaven.plugin.type.ObjectCommunicationException;
 import io.deephaven.plugin.type.ObjectTypeBase;
 import io.deephaven.plugin.type.Exporter;
+import io.deephaven.util.annotations.ScriptApi;
 import org.jpy.PyObject;
 
 import java.nio.ByteBuffer;
@@ -29,8 +30,8 @@ final class ObjectTypeAdapter extends ObjectTypeBase implements AutoCloseable {
     @Override
     public boolean isType(Object object) {
         final PyObject pyObject;
-        if (object instanceof PyObjectRefCountedNode) {
-            pyObject = ((PyObjectRefCountedNode) object).getPythonObject();
+        if (object instanceof LivePyObjectWrapper) {
+            pyObject = ((LivePyObjectWrapper) object).getPythonObject();
         } else if (object instanceof PyObject) {
             pyObject = (PyObject) object;
         } else {
@@ -43,8 +44,8 @@ final class ObjectTypeAdapter extends ObjectTypeBase implements AutoCloseable {
     public MessageStream compatibleClientConnection(Object object, MessageStream connection)
             throws ObjectCommunicationException {
         final PyObject pyObject;
-        if (object instanceof PyObjectRefCountedNode) {
-            pyObject = ((PyObjectRefCountedNode) object).getPythonObject();
+        if (object instanceof LivePyObjectWrapper) {
+            pyObject = ((LivePyObjectWrapper) object).getPythonObject();
         } else if (object instanceof PyObject) {
             pyObject = (PyObject) object;
         } else {
@@ -82,10 +83,12 @@ final class ObjectTypeAdapter extends ObjectTypeBase implements AutoCloseable {
             this.delegate = delegate;
         }
 
+        @ScriptApi
         public void onData(byte[] payload, Object... references) throws ObjectCommunicationException {
             delegate.onData(ByteBuffer.wrap(payload), references);
         }
 
+        @ScriptApi
         public void onClose() {
             delegate.onClose();
         }
@@ -102,6 +105,14 @@ final class ObjectTypeAdapter extends ObjectTypeBase implements AutoCloseable {
         public void onData(ByteBuffer payload, Object[] references) {
             byte[] bytes = new byte[payload.limit()];
             payload.get(bytes);
+
+            for (int i = 0; i < references.length; i++) {
+                Object reference = references[i];
+                if (reference instanceof LivePyObjectWrapper) {
+                    reference = ((LivePyObjectWrapper) reference).getPythonObject();
+                }
+                references[i] = reference;
+            }
             instance.call(void.class, "on_data", byte[].class, bytes, Object[].class, references);
         }
 
