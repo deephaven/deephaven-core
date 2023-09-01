@@ -821,7 +821,7 @@ public class ParquetTableWriter {
         }
 
         if (columnType == String.class) {
-            // We don't know the length of strings till we read the actual data. Therefore, we take a relaxed estimate
+            // We don't know the length of strings until we read the actual data. Therefore, we take a relaxed estimate
             // here and final calculation is done when writing the data.
             return targetPageSize;
         }
