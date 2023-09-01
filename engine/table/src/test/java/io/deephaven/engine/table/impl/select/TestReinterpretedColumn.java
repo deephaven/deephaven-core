@@ -450,8 +450,8 @@ public class TestReinterpretedColumn extends RefreshingTableTestCase {
                 });
 
                 try (final ChunkSource.FillContext context = source.makeFillContext(rows.intSize());
-                     final WritableObjectChunk<Instant, Values> chunk
-                             = WritableObjectChunk.makeWritableChunk(rows.intSize())) {
+                        final WritableObjectChunk<Instant, Values> chunk =
+                                WritableObjectChunk.makeWritableChunk(rows.intSize())) {
                     source.fillPrevChunk(context, chunk, rows);
 
                     rows.forAllRowKeys(row -> assertEquals(Instant.ofEpochMilli(row), chunk.get((int) row)));
