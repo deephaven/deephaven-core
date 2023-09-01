@@ -52,7 +52,7 @@ class ColumnTestCase(BaseTestCase):
         with self.assertRaises(DHError) as cm:
             _ = string_col(name="String", data=[1, -1.01])
 
-        with self.assertRaises(DHError) as cm:
+        with self.assertRaises(TypeError) as cm:
             _ = datetime_col(name="Datetime", data=[round(time.time()), False])
 
         with self.assertRaises(DHError) as cm:

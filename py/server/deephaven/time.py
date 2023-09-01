@@ -50,7 +50,7 @@ def dh_now(system: bool = False, resolution: str = 'ns') -> Instant:
         Instant
 
     Raises:
-        DHError
+        DHError, TypeError
     """
     try:
         if resolution == "ns":
@@ -64,7 +64,9 @@ def dh_now(system: bool = False, resolution: str = 'ns') -> Instant:
             else:
                 return _JDateTimeUtils.nowMillisResolution()
         else:
-            raise ValueError("Unsupported time resolution: " + resolution)
+            raise TypeError("Unsupported time resolution: " + resolution)
+    except TypeError as e:
+        raise e
     except Exception as e:
         raise DHError(e) from e
 
@@ -180,7 +182,7 @@ def to_j_time_zone(tz: Union[None, TimeZone, str, datetime.tzinfo, datetime.date
         TimeZone
 
     Raises:
-        DHError
+        DHError, TypeError
     """
     try:
         if tz is None or pandas.isnull(tz):
@@ -197,7 +199,9 @@ def to_j_time_zone(tz: Union[None, TimeZone, str, datetime.tzinfo, datetime.date
 
             return _JDateTimeUtils.parseTimeZone(tz.tzname())
         else:
-            raise Exception("Unsupported conversion: " + str(type(tz)) + " -> TimeZone")
+            raise TypeError("Unsupported conversion: " + str(type(tz)) + " -> TimeZone")
+    except TypeError as e:
+        raise e
     except Exception as e:
         raise DHError(e) from e
 
@@ -219,7 +223,7 @@ def to_j_local_date(dt: Union[None, LocalDate, str, datetime.date, datetime.time
         LocalDate
 
     Raises:
-        DHError
+        DHError, TypeError
     """
 
     try:
@@ -234,7 +238,9 @@ def to_j_local_date(dt: Union[None, LocalDate, str, datetime.date, datetime.time
         elif isinstance(dt, numpy.datetime64):
             return to_j_local_date(dt.astype(datetime.date))
         else:
-            raise Exception("Unsupported conversion: " + str(type(dt)) + " -> LocalDate")
+            raise TypeError("Unsupported conversion: " + str(type(dt)) + " -> LocalDate")
+    except TypeError as e:
+        raise e
     except Exception as e:
         raise DHError(e) from e
 
@@ -258,7 +264,7 @@ def to_j_local_time(dt: Union[None, LocalTime, int, str, datetime.time, datetime
         LocalTime
 
     Raises:
-        DHError
+        DHError, TypeError
     """
 
     try:
@@ -278,7 +284,9 @@ def to_j_local_time(dt: Union[None, LocalTime, int, str, datetime.time, datetime
             # Conversion only supports micros resolution
             return to_j_local_time(dt.astype(datetime.time))
         else:
-            raise Exception("Unsupported conversion: " + str(type(dt)) + " -> LocalTime")
+            raise TypeError("Unsupported conversion: " + str(type(dt)) + " -> LocalTime")
+    except TypeError as e:
+        raise e
     except Exception as e:
         raise DHError(e) from e
 
@@ -302,7 +310,7 @@ def to_j_instant(dt: Union[None, Instant, int, str, datetime.datetime, numpy.dat
             If None is provided, None is returned.
 
     Returns:
-        Instant
+        Instant, TypeError
 
     Raises:
         DHError
@@ -328,7 +336,9 @@ def to_j_instant(dt: Union[None, Instant, int, str, datetime.datetime, numpy.dat
         elif isinstance(dt, pandas.Timestamp):
             return _JDateTimeUtils.epochNanosToInstant(dt.value)
         else:
-            raise Exception("Unsupported conversion: " + str(type(dt)) + " -> Instant")
+            raise TypeError("Unsupported conversion: " + str(type(dt)) + " -> Instant")
+    except TypeError as e:
+        raise e
     except Exception as e:
         raise DHError(e) from e
 
@@ -356,7 +366,7 @@ def to_j_zdt(dt: Union[None, ZonedDateTime, str, datetime.datetime, numpy.dateti
         ZonedDateTime
 
     Raises:
-        DHError
+        DHError, TypeError
     """
     try:
         if dt is None or pandas.isnull(dt):
@@ -378,7 +388,9 @@ def to_j_zdt(dt: Union[None, ZonedDateTime, str, datetime.datetime, numpy.dateti
             tz = _JDateTimeUtils.timeZone()
             return _JZonedDateTime.ofInstant(instant, tz)
         else:
-            raise Exception("Unsupported conversion: " + str(type(dt)) + " -> ZonedDateTime")
+            raise TypeError("Unsupported conversion: " + str(type(dt)) + " -> ZonedDateTime")
+    except TypeError as e:
+        raise e
     except Exception as e:
         raise DHError(e) from e
 
@@ -415,7 +427,7 @@ def to_j_duration(dt: Union[None, Duration, int, str, datetime.timedelta, numpy.
         Duration
 
     Raises:
-        DHError
+        DHError, TypeError
     """
     try:
         if dt is None or pandas.isnull(dt):
@@ -436,7 +448,9 @@ def to_j_duration(dt: Union[None, Duration, int, str, datetime.timedelta, numpy.
             nanos = int(dt.astype('timedelta64[ns]').astype(numpy.int64))
             return _JDuration.ofNanos(nanos)
         else:
-            raise Exception("Unsupported conversion: " + str(type(dt)) + " -> Duration")
+            raise TypeError("Unsupported conversion: " + str(type(dt)) + " -> Duration")
+    except TypeError as e:
+        raise e
     except Exception as e:
         raise DHError(e) from e
 
@@ -468,6 +482,9 @@ def to_j_period(dt: Union[None, Period, str, datetime.timedelta, numpy.timedelta
 
     Returns:
         Period
+
+    Raises:
+        DHError, TypeError, ValueError
     """
     try:
         if dt is None or pandas.isnull(dt):
@@ -478,20 +495,20 @@ def to_j_period(dt: Union[None, Period, str, datetime.timedelta, numpy.timedelta
             return _JDateTimeUtils.parsePeriod(dt)
         elif isinstance(dt, pandas.Timedelta):
             if dt.seconds or dt.microseconds or dt.nanoseconds:
-                raise Exception("Unsupported conversion: " + str(type(dt)) +
+                raise ValueError("Unsupported conversion: " + str(type(dt)) +
                                 " -> Period: Periods must only be days or weeks")
             elif dt.days:
                 return _JPeriod.ofDays(dt.days)
             else:
-                raise Exception("Unsupported conversion: " + str(type(dt)) + " -> Period")
+                raise ValueError("Unsupported conversion: " + str(type(dt)) + " -> Period")
         elif isinstance(dt, datetime.timedelta):
             if dt.seconds or dt.microseconds:
-                raise Exception("Unsupported conversion: " + str(type(dt)) +
+                raise ValueError("Unsupported conversion: " + str(type(dt)) +
                                 " -> Period: Periods must only be days or weeks")
             elif dt.days:
                 return _JPeriod.ofDays(dt.days)
             else:
-                raise Exception("Unsupported conversion: " + str(type(dt)) + " -> Period")
+                raise ValueError("Unsupported conversion: " + str(type(dt)) + " -> Period")
         elif isinstance(dt, numpy.timedelta64):
             data = numpy.datetime_data(dt)
             units = data[0]
@@ -506,10 +523,14 @@ def to_j_period(dt: Union[None, Period, str, datetime.timedelta, numpy.timedelta
             elif units == 'Y':
                 return _JPeriod.ofYears(value)
             else:
-                raise Exception("Unsupported conversion: " + str(
+                raise ValueError("Unsupported conversion: " + str(
                     type(dt)) + " -> Period: numpy.datetime64 must have units of 'D', 'W', 'M', or 'Y'")
         else:
-            raise Exception("Unsupported conversion: " + str(type(dt)) + " -> Period")
+            raise TypeError("Unsupported conversion: " + str(type(dt)) + " -> Period")
+    except ValueError as e:
+        raise e
+    except TypeError as e:
+        raise e
     except Exception as e:
         raise DHError(e) from e
 
@@ -530,6 +551,9 @@ def to_date(dt: Union[None, LocalDate, ZonedDateTime]) -> Optional[datetime.date
 
     Returns:
         datetime.date
+
+    Raises:
+        DHError, TypeError
     """
     try:
         if dt is None:
@@ -539,7 +563,9 @@ def to_date(dt: Union[None, LocalDate, ZonedDateTime]) -> Optional[datetime.date
         if isinstance(dt, ZonedDateTime.j_type):
             return datetime.date(dt.getYear(), dt.getMonthValue(), dt.getDayOfMonth())
         else:
-            raise Exception("Unsupported conversion: " + str(type(dt)) + " -> datetime.date")
+            raise TypeError("Unsupported conversion: " + str(type(dt)) + " -> datetime.date")
+    except TypeError as e:
+        raise e
     except Exception as e:
         raise DHError(e) from e
 
@@ -554,6 +580,9 @@ def to_time(dt: Union[None, LocalTime, ZonedDateTime]) -> Optional[datetime.time
 
     Returns:
         datetime.time
+
+    Raises:
+        DHError, TypeError
     """
     try:
         if dt is None:
@@ -563,7 +592,9 @@ def to_time(dt: Union[None, LocalTime, ZonedDateTime]) -> Optional[datetime.time
         elif isinstance(dt, ZonedDateTime.j_type):
             return datetime.time(dt.getHour(), dt.getMinute(), dt.getSecond(), dt.getNano() // _nanos_per_micro)
         else:
-            raise Exception("Unsupported conversion: " + str(type(dt)) + " -> datetime.time")
+            raise TypeError("Unsupported conversion: " + str(type(dt)) + " -> datetime.time")
+    except TypeError as e:
+        raise e
     except Exception as e:
         raise DHError(e) from e
 
@@ -578,6 +609,9 @@ def to_datetime(dt: Union[None, Instant, ZonedDateTime]) -> Optional[datetime.da
 
     Returns:
         datetime.datetime
+
+    Raises:
+        DHError, TypeError
     """
     try:
         if dt is None:
@@ -589,7 +623,9 @@ def to_datetime(dt: Union[None, Instant, ZonedDateTime]) -> Optional[datetime.da
             ts = dt.toEpochSecond() + (dt.getNano() / _nanos_per_second)
             return datetime.datetime.fromtimestamp(ts)
         else:
-            raise Exception("Unsupported conversion: " + str(type(dt)) + " -> datetime.datetime")
+            raise TypeError("Unsupported conversion: " + str(type(dt)) + " -> datetime.datetime")
+    except TypeError as e:
+        raise e
     except Exception as e:
         raise DHError(e) from e
 
@@ -604,6 +640,9 @@ def to_pd_timestamp(dt: Union[None, Instant, ZonedDateTime]) -> Optional[pandas.
 
     Returns:
         pandas.Timestamp
+
+    Raises:
+        DHError, TypeError
     """
     try:
         if dt is None:
@@ -612,7 +651,9 @@ def to_pd_timestamp(dt: Union[None, Instant, ZonedDateTime]) -> Optional[pandas.
             ts = _JDateTimeUtils.epochNanos(dt)
             return pandas.Timestamp(ts_input=ts, unit='ns')
         else:
-            raise Exception("Unsupported conversion: " + str(type(dt)) + " -> pandas.Timestamp")
+            raise TypeError("Unsupported conversion: " + str(type(dt)) + " -> pandas.Timestamp")
+    except TypeError as e:
+        raise e
     except Exception as e:
         raise DHError(e) from e
 
@@ -629,7 +670,7 @@ def to_np_datetime64(dt: Union[None, Instant, ZonedDateTime]) -> Optional[numpy.
         numpy.datetime64
 
     Raises:
-        DHError
+        DHError, TypeError
     """
     try:
         if dt is None:
@@ -641,7 +682,9 @@ def to_np_datetime64(dt: Union[None, Instant, ZonedDateTime]) -> Optional[numpy.
             ts = dt.toEpochSecond() * _nanos_per_second + dt.getNano()
             return numpy.datetime64(ts, 'ns')
         else:
-            raise Exception("Unsupported conversion: " + str(type(dt)) + " -> datetime.datetime")
+            raise TypeError("Unsupported conversion: " + str(type(dt)) + " -> datetime.datetime")
+    except TypeError as e:
+        raise e
     except Exception as e:
         raise DHError(e) from e
 
@@ -655,6 +698,9 @@ def to_timedelta(dt: Union[None, Duration]) -> Optional[datetime.timedelta]:
 
     Returns:
         datetime.timedelta
+
+    Raises:
+        DHError, TypeError, ValueError
     """
     try:
         if dt is None:
@@ -667,12 +713,16 @@ def to_timedelta(dt: Union[None, Duration]) -> Optional[datetime.timedelta]:
             d = dt.getDays()
 
             if y or m:
-                raise Exception("Unsupported conversion: " + str(type(dt)) +
+                raise ValueError("Unsupported conversion: " + str(type(dt)) +
                                 " -> datetime.timedelta: Periods must only be days or weeks")
 
             return datetime.timedelta(days=d)
         else:
-            raise Exception("Unsupported conversion: " + str(type(dt)) + " -> datetime.timedelta")
+            raise TypeError("Unsupported conversion: " + str(type(dt)) + " -> datetime.timedelta")
+    except ValueError as e:
+        raise e
+    except TypeError as e:
+        raise e
     except Exception as e:
         raise DHError(e) from e
 
@@ -686,6 +736,9 @@ def to_pd_timedelta(dt: Union[None, Duration]) -> Optional[pandas.Timedelta]:
 
     Returns:
         pandas.Timedelta
+
+    Raises:
+        DHError, TypeError, ValueError
     """
     try:
         if dt is None:
@@ -699,12 +752,16 @@ def to_pd_timedelta(dt: Union[None, Duration]) -> Optional[pandas.Timedelta]:
             d = dt.getDays()
 
             if y or m:
-                raise Exception("Unsupported conversion: " + str(type(dt)) +
+                raise ValueError("Unsupported conversion: " + str(type(dt)) +
                                 " -> datetime.timedelta: Periods must only be days or weeks")
 
             return pandas.Timedelta(days=d)
         else:
-            raise Exception("Unsupported conversion: " + str(type(dt)) + " -> pandas.Timedelta")
+            raise TypeError("Unsupported conversion: " + str(type(dt)) + " -> pandas.Timedelta")
+    except ValueError as e:
+        raise e
+    except TypeError as e:
+        raise e
     except Exception as e:
         raise DHError(e) from e
 
@@ -720,7 +777,7 @@ def to_np_timedelta64(dt: Union[None, Duration, Period]) -> Optional[numpy.timed
         numpy.timedelta64
 
     Raises:
-        DHError
+        DHError, TypeError, ValueError
     """
     try:
         if dt is None:
@@ -737,7 +794,7 @@ def to_np_timedelta64(dt: Union[None, Duration, Period]) -> Optional[numpy.timed
             if count == 0:
                 return numpy.timedelta64(0, 'D')
             elif count > 1:
-                raise Exception("Unsupported conversion: " + str(type(dt)) +
+                raise ValueError("Unsupported conversion: " + str(type(dt)) +
                                 " -> datetime.timedelta64: Periods must be days, months, or years")
             elif y:
                 return numpy.timedelta64(y, 'Y')
@@ -746,9 +803,13 @@ def to_np_timedelta64(dt: Union[None, Duration, Period]) -> Optional[numpy.timed
             elif d:
                 return numpy.timedelta64(d, 'D')
             else:
-                raise Exception("Unsupported conversion: " + str(type(dt)) + " -> datetime.timedelta64: (" + dt + ")")
+                raise ValueError("Unsupported conversion: " + str(type(dt)) + " -> datetime.timedelta64: (" + dt + ")")
         else:
-            raise Exception("Unsupported conversion: " + str(type(dt)) + " -> datetime.timedelta64")
+            raise TypeError("Unsupported conversion: " + str(type(dt)) + " -> datetime.timedelta64")
+    except ValueError as e:
+        raise e
+    except TypeError as e:
+        raise e
     except Exception as e:
         raise DHError(e) from e
 
