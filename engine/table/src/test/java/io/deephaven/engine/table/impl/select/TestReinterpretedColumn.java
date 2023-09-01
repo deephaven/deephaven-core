@@ -5,7 +5,9 @@ package io.deephaven.engine.table.impl.select;
 
 import io.deephaven.chunk.LongChunk;
 import io.deephaven.chunk.ObjectChunk;
+import io.deephaven.chunk.WritableObjectChunk;
 import io.deephaven.chunk.attributes.Values;
+import io.deephaven.engine.context.ExecutionContext;
 import io.deephaven.engine.rowset.RowSet;
 import io.deephaven.engine.rowset.RowSetFactory;
 import io.deephaven.engine.table.ChunkSource;
@@ -23,6 +25,7 @@ import io.deephaven.engine.table.impl.sources.ObjectSparseArraySource;
 import io.deephaven.engine.table.impl.sources.ZonedDateTimeArraySource;
 import io.deephaven.engine.table.impl.sources.ZonedDateTimeSparseArraySource;
 import io.deephaven.engine.table.impl.util.TableTimeConversions;
+import io.deephaven.engine.testutil.ControlledUpdateGraph;
 import io.deephaven.engine.testutil.testcase.RefreshingTableTestCase;
 import io.deephaven.time.DateTimeUtils;
 import org.apache.commons.lang3.mutable.MutableInt;
@@ -424,5 +427,36 @@ public class TestReinterpretedColumn extends RefreshingTableTestCase {
         final int minute = (startIter + 30) % 60;
 
         return LocalTime.of(hour + hourOff, minute, 0);
+    }
+
+    @Test
+    public void testFillPrevOnInstantColumn() {
+        final InstantArraySource source = new InstantArraySource();
+        source.startTrackingPrevValues();
+
+        final ControlledUpdateGraph updateGraph = ExecutionContext.getContext().getUpdateGraph().cast();
+
+        try (final RowSet rows = RowSetFactory.flat(1024)) {
+            source.ensureCapacity(rows.size());
+            updateGraph.runWithinUnitTestCycle(() -> {
+                rows.forAllRowKeys(row -> {
+                    source.set(row, Instant.ofEpochMilli(row));
+                });
+            });
+
+            updateGraph.runWithinUnitTestCycle(() -> {
+                rows.forAllRowKeys(row -> {
+                    source.set(row, Instant.ofEpochMilli(row + rows.size()));
+                });
+
+                try (final ChunkSource.FillContext context = source.makeFillContext(rows.intSize());
+                     final WritableObjectChunk<Instant, Values> chunk
+                             = WritableObjectChunk.makeWritableChunk(rows.intSize())) {
+                    source.fillPrevChunk(context, chunk, rows);
+
+                    rows.forAllRowKeys(row -> assertEquals(Instant.ofEpochMilli(row), chunk.get((int) row)));
+                }
+            });
+        }
     }
 }
