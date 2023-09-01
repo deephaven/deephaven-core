@@ -476,6 +476,11 @@ public class Numeric {
             }
         }
 
+        // Return NaN if poisoned or too few values to compute variance.
+        if (count <= 1 || Double.isNaN(sum) || Double.isNaN(sum2)) {
+            return Double.NaN;
+        }
+
         // Perform the calculation in a way that minimizes the impact of floating point error.
         final double eps = Math.ulp(sum2);
         final double vs2bar = sum * (sum / count);
@@ -574,8 +579,13 @@ public class Numeric {
             }
         }
 
+        // Return NaN if poisoned or too few values to compute variance.
+        if (count <= 1 || Double.isNaN(sum) || Double.isNaN(sum2) || Double.isNaN(count) || Double.isNaN(count2)) {
+            return Double.NaN;
+        }
+
         // For unbiased estimator derivation see https://en.wikipedia.org/wiki/Weighted_arithmetic_mean#Weighted_sample_variance
-        // For unweighted statistics, there is a (N-1)/N = (1-1/N) Bessel correction.  
+        // For unweighted statistics, there is a (N-1)/N = 1-(1/N) Bessel correction.
         // The analagous correction for weighted statistics is 1-count2/count/count, which yields an effective sample size of Neff = count*count/count2.
         // This yields an unbiased estimator of (sum2/count - sum*sum/count/count) * ((count*count/count2)/((count*count/count2)-1)).
         // This can be simplified to (count * sum2 - sum * sum) / (count * count - count2)

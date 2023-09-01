@@ -106,8 +106,19 @@ public class CharRollingStdOperator extends BaseDoubleUpdateByOperator {
                 outputValues.set(outIdx, NULL_DOUBLE);
             } else {
                 final int count = valueBuffer.size() - nullCount;
+
+                if (count <= 1) {
+                    outputValues.set(outIdx, Double.NaN);
+                    return;
+                }
+
                 final double valueSquareSum = valueSquareBuffer.evaluate();
                 final double valueSum = valueBuffer.evaluate();
+
+                if (Double.isNaN(valueSquareSum) || Double.isNaN(valueSum)) {
+                    outputValues.set(outIdx, Double.NaN);
+                    return;
+                }
 
                 // Perform the calculation in a way that minimizes the impact of floating point error.
                 final double eps = Math.ulp(valueSquareSum);
