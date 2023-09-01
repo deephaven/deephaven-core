@@ -56,7 +56,9 @@ Client::Client() = default;
 
 Client::Client(std::shared_ptr<impl::ClientImpl> impl) : impl_(std::move(impl)) {
 }
+Client::Client(const Client &other) noexcept = default;
 Client::Client(Client &&other) noexcept = default;
+Client &Client::operator=(const Client &other) noexcept = default;
 Client &Client::operator=(Client &&other) noexcept = default;
 
 // There is only one Client associated with the server connection. Clients can only be moved, not
@@ -91,7 +93,9 @@ bool Client::RemoveOnCloseCallback(OnCloseCbId cb_id) {
 
 TableHandleManager::TableHandleManager() = default;
 TableHandleManager::TableHandleManager(std::shared_ptr<impl::TableHandleManagerImpl> impl) : impl_(std::move(impl)) {}
+TableHandleManager::TableHandleManager(const TableHandleManager &other) noexcept = default;
 TableHandleManager::TableHandleManager(TableHandleManager &&other) noexcept = default;
+TableHandleManager &TableHandleManager::operator=(const TableHandleManager &other) noexcept = default;
 TableHandleManager &TableHandleManager::operator=(TableHandleManager &&other) noexcept = default;
 TableHandleManager::~TableHandleManager() = default;
 
@@ -152,6 +156,13 @@ Aggregate createAggForMatchPairs(ComboAggregateRequest::AggType aggregate_type, 
   return Aggregate(std::move(impl));
 }
 }  // namespace
+
+Aggregate::Aggregate() = default;
+Aggregate::Aggregate(const Aggregate &other) noexcept = default;
+Aggregate::Aggregate(Aggregate &&other) noexcept = default;
+Aggregate &Aggregate::operator=(const Aggregate &other) noexcept = default;
+Aggregate &Aggregate::operator=(Aggregate &&other) noexcept = default;
+Aggregate::~Aggregate() = default;
 
 Aggregate::Aggregate(std::shared_ptr<impl::AggregateImpl> impl) : impl_(std::move(impl)) {
 }
