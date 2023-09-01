@@ -1,7 +1,7 @@
 package io.deephaven.server.plugin.python;
 
-import io.deephaven.engine.liveness.LivenessArtifact;
-import io.deephaven.engine.liveness.ReferenceCountedLivenessNode;
+import io.deephaven.engine.liveness.LivenessScopeStack;
+import io.deephaven.engine.liveness.ReferenceCountedLivenessReferent;
 import io.deephaven.util.annotations.ScriptApi;
 import org.jpy.PyObject;
 
@@ -14,7 +14,7 @@ import org.jpy.PyObject;
  * </p>
  * This class is experimental, and may be changed or moved in a future release to a new package.
  */
-public final class PyObjectRefCountedNode extends LivenessArtifact {
+public final class PyObjectRefCountedNode extends ReferenceCountedLivenessReferent {
     private final PyObject pythonObject;
 
     /**
@@ -23,8 +23,8 @@ public final class PyObjectRefCountedNode extends LivenessArtifact {
      */
     @ScriptApi // Called by internal Python code
     public PyObjectRefCountedNode(PyObject pythonObject) {
-        super(true);
         this.pythonObject = pythonObject;
+        LivenessScopeStack.peek().manage(this);
     }
 
     @Override
