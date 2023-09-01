@@ -1584,7 +1584,7 @@ public class Numeric {
             } else if (isNull(values[i])) {
                 result[i] = result[i - 1];
             } else {
-                result[i] = (${pt.primitive})Math.max(result[i - 1],  values[i]);
+                result[i] = (${pt.primitive})Math.max(result[i - 1], values[i]);
             }
         }
 
@@ -1621,7 +1621,7 @@ public class Numeric {
                 } else if (isNull(v)) {
                     result[i] = result[i - 1];
                 } else {
-                    result[i] = (${pt.primitive})Math.max(result[i - 1],  v);
+                    result[i] = (${pt.primitive})Math.max(result[i - 1], v);
                 }
 
                 i++;
