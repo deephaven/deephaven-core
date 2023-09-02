@@ -13,6 +13,7 @@ add_executable(tests
     date_time_test.cc
     filter_test.cc
     head_and_tail_test.cc
+    input_table_test.cc
     join_test.cc
     lastby_test.cc
     main.cc

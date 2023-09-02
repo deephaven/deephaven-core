@@ -76,6 +76,8 @@ class TableHandleManager {
   using DurationSpecifier = deephaven::client::utility::DurationSpecifier;
   using TimePointSpecifier = deephaven::client::utility::TimePointSpecifier;
 
+  using SchemaType = deephaven::dhcore::clienttable::Schema;
+
 public:
   /*
    * Default constructor. Creates a (useless) empty client object.
@@ -129,6 +131,28 @@ public:
   [[nodiscard]]
   TableHandle TimeTable(DurationSpecifier period, TimePointSpecifier start_time = 0,
       bool blink_table = false) const;
+
+  /**
+   * Creates an input table from an initial table. When key columns are provided, the InputTable
+   * will be keyed, otherwise it will be append-only.
+   * @param columns The set of key columns
+   * @return A TableHandle referencing the new table
+   */
+  [[nodiscard]]
+  TableHandle InputTable(const TableHandle &initial_table,
+      std::vector<std::string> key_columns = {}) const;
+
+  // TODO(kosak): not implemented yet.
+  /**
+   * Creates an input table from a Schema. When key columns are provided, the InputTable
+   * will be keyed, otherwise it will be append-only.
+   * @param schema The table schema.
+   * @return A TableHandle referencing the new table
+   */
+//  [[nodiscard]]
+//  TableHandle InputTable(std::shared_ptr<SchemaType> schema,
+//      std::vector<std::string> key_columns = {}) const;
+
   /**
    * Allocate a fresh client ticket. This is a low level operation, typically used when the caller wants to do an Arrow
    * doPut operation.
@@ -1503,10 +1527,25 @@ public:
    * documentation for the difference between "Where" and "WhereIn".
    * @param filter_table The table containing the set of values to filter on
    * @param columns The columns to match on
-   * @return
+   * @return A TableHandle referencing the new table
    */
   [[nodiscard]]
   TableHandle WhereIn(const TableHandle &filter_table, std::vector<std::string> columns) const;
+
+  /**
+   * Adds a table to an input table. Requires that this object be an InputTable (such as that
+   * created by TableHandleManager::InputTable).
+   * @param table_to_add The table to add to the InputTable
+   */
+  void AddTable(const TableHandle &table_to_add);
+
+  /**
+   * Removes a table from an input table. Requires that this object be an InputTable (such as that
+   * created by TableHandleManager::InputTable).
+   * @param table_to_add The table to remove from the InputTable
+   * @return The new table
+   */
+  void RemoveTable(const TableHandle &table_to_remove);
 
   /**
    * Binds this table to a variable name in the QueryScope.
