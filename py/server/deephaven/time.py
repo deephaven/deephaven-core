@@ -17,6 +17,7 @@ from deephaven import DHError
 from deephaven.dtypes import Instant, LocalDate, LocalTime, ZonedDateTime, Duration, Period, TimeZone
 
 _JDateTimeUtils = jpy.get_type("io.deephaven.time.DateTimeUtils")
+_JPythonTimeComponents = jpy.get_type("io.deephaven.integrations.python.PythonTimeComponents")
 _JLocalDate = jpy.get_type("java.time.LocalDate")
 _JLocalTime = jpy.get_type("java.time.LocalTime")
 _JInstant = jpy.get_type("java.time.Instant")
@@ -559,9 +560,11 @@ def to_date(dt: Union[None, LocalDate, ZonedDateTime]) -> Optional[datetime.date
         if dt is None:
             return None
         if isinstance(dt, LocalDate.j_type):
-            return datetime.date(dt.getYear(), dt.getMonthValue(), dt.getDayOfMonth())
+            year, month_value, day_of_month = _JPythonTimeComponents.getComponents(dt)
+            return datetime.date(year, month_value, day_of_month)
         if isinstance(dt, ZonedDateTime.j_type):
-            return datetime.date(dt.getYear(), dt.getMonthValue(), dt.getDayOfMonth())
+            year, month_value, day_of_month = _JPythonTimeComponents.getComponentsLocalDate(dt)
+            return datetime.date(year, month_value, day_of_month)
         else:
             raise TypeError("Unsupported conversion: " + str(type(dt)) + " -> datetime.date")
     except TypeError as e:
@@ -588,9 +591,11 @@ def to_time(dt: Union[None, LocalTime, ZonedDateTime]) -> Optional[datetime.time
         if dt is None:
             return None
         elif isinstance(dt, LocalTime.j_type):
-            return datetime.time(dt.getHour(), dt.getMinute(), dt.getSecond(), dt.getNano() // _nanos_per_micro)
+            hour, minute, second, nano = _JPythonTimeComponents.getComponents(dt)
+            return datetime.time(hour, minute, second, nano // _nanos_per_micro)
         elif isinstance(dt, ZonedDateTime.j_type):
-            return datetime.time(dt.getHour(), dt.getMinute(), dt.getSecond(), dt.getNano() // _nanos_per_micro)
+            hour, minute, second, nano = _JPythonTimeComponents.getComponents(dt)
+            return datetime.time(hour, minute, second, nano // _nanos_per_micro)
         else:
             raise TypeError("Unsupported conversion: " + str(type(dt)) + " -> datetime.time")
     except TypeError as e:
@@ -617,10 +622,12 @@ def to_datetime(dt: Union[None, Instant, ZonedDateTime]) -> Optional[datetime.da
         if dt is None:
             return None
         elif isinstance(dt, Instant.j_type):
-            ts = dt.getEpochSecond() + (dt.getNano() / _nanos_per_second)
+            epoch_second, nano = _JPythonTimeComponents.getComponents(dt)
+            ts = epoch_second + (nano / _nanos_per_second)
             return datetime.datetime.fromtimestamp(ts)
         elif isinstance(dt, ZonedDateTime.j_type):
-            ts = dt.toEpochSecond() + (dt.getNano() / _nanos_per_second)
+            epoch_second, nano = _JPythonTimeComponents.getComponentsInstant(dt)
+            ts = epoch_second + (nano / _nanos_per_second)
             return datetime.datetime.fromtimestamp(ts)
         else:
             raise TypeError("Unsupported conversion: " + str(type(dt)) + " -> datetime.datetime")
@@ -676,10 +683,12 @@ def to_np_datetime64(dt: Union[None, Instant, ZonedDateTime]) -> Optional[numpy.
         if dt is None:
             return None
         elif isinstance(dt, Instant.j_type):
-            ts = dt.getEpochSecond() * _nanos_per_second + dt.getNano()
+            epoch_second, nano = _JPythonTimeComponents.getComponents(dt)
+            ts = epoch_second * _nanos_per_second + nano
             return numpy.datetime64(ts, 'ns')
         elif isinstance(dt, ZonedDateTime.j_type):
-            ts = dt.toEpochSecond() * _nanos_per_second + dt.getNano()
+            epoch_second, nano = _JPythonTimeComponents.getComponentsInstant(dt)
+            ts = epoch_second * _nanos_per_second + nano
             return numpy.datetime64(ts, 'ns')
         else:
             raise TypeError("Unsupported conversion: " + str(type(dt)) + " -> datetime.datetime")
@@ -706,11 +715,10 @@ def to_timedelta(dt: Union[None, Duration]) -> Optional[datetime.timedelta]:
         if dt is None:
             return None
         elif isinstance(dt, Duration.j_type):
-            return datetime.timedelta(seconds=dt.getSeconds(), microseconds=dt.getNano() // _nanos_per_micro)
+            seconds, nano = _JPythonTimeComponents.getComponents(dt)
+            return datetime.timedelta(seconds=seconds, microseconds=nano // _nanos_per_micro)
         elif isinstance(dt, Period.j_type):
-            y = dt.getYears()
-            m = dt.getMonths()
-            d = dt.getDays()
+            y, m, d = _JPythonTimeComponents.getComponents(dt)
 
             if y or m:
                 raise ValueError("Unsupported conversion: " + str(type(dt)) +
@@ -744,12 +752,11 @@ def to_pd_timedelta(dt: Union[None, Duration]) -> Optional[pandas.Timedelta]:
         if dt is None:
             return None
         elif isinstance(dt, Duration.j_type):
-            micros, nanos = divmod(dt.getNano(), _nanos_per_micro)
-            return pandas.Timedelta(seconds=dt.getSeconds(), microseconds=micros, nanoseconds=nanos)
+            seconds, nano = _JPythonTimeComponents.getComponents(dt)
+            micros, nanos = divmod(nano, _nanos_per_micro)
+            return pandas.Timedelta(seconds=seconds, microseconds=micros, nanoseconds=nanos)
         elif isinstance(dt, Period.j_type):
-            y = dt.getYears()
-            m = dt.getMonths()
-            d = dt.getDays()
+            y, m, d = _JPythonTimeComponents.getComponents(dt)
 
             if y or m:
                 raise ValueError("Unsupported conversion: " + str(type(dt)) +
@@ -785,9 +792,7 @@ def to_np_timedelta64(dt: Union[None, Duration, Period]) -> Optional[numpy.timed
         elif isinstance(dt, Duration.j_type):
             return numpy.timedelta64(dt.toNanos(), 'ns')
         elif isinstance(dt, Period.j_type):
-            d = dt.getDays()
-            m = dt.getMonths()
-            y = dt.getYears()
+            y, m, d = _JPythonTimeComponents.getComponents(dt)
 
             count = (1 if d else 0) + (1 if m else 0) + (1 if y else 0)
 
