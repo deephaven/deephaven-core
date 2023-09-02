@@ -90,7 +90,7 @@ void ClientImpl::Shutdown() {
   std::size_t cb_num = 0;
   for (const auto &entry : map) {
     ++cb_num;
-    gpr_log(GPR_DEBUG, "ClientImpl(%p): Executing on close call %lu.", v_this, cb_num);
+    gpr_log(GPR_DEBUG, "ClientImpl(%p): Executing on close call %zu.", v_this, cb_num);
     entry.second();
   }
   gpr_log(GPR_DEBUG, "ClientImpl(%p): Shutdown complete.", v_this);
