@@ -1527,6 +1527,7 @@ public:
    * documentation for the difference between "Where" and "WhereIn".
    * @param filter_table The table containing the set of values to filter on
    * @param columns The columns to match on
+   * @return A TableHandle referencing the new table
    */
   [[nodiscard]]
   TableHandle WhereIn(const TableHandle &filter_table, std::vector<std::string> columns) const;
