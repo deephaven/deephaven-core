@@ -23,8 +23,11 @@ class ClientImpl {
 
 public:
   [[nodiscard]]
-  static std::shared_ptr<ClientImpl> Create(std::shared_ptr<Server> server,
-      std::shared_ptr<Executor> executor, std::shared_ptr<Executor> flight_executor, const std::string &session_type);
+  static std::shared_ptr<ClientImpl> Create(
+      std::shared_ptr<Server> server,
+      std::shared_ptr<Executor> executor,
+      std::shared_ptr<Executor> flight_executor,
+      const std::string &session_type);
 
   ClientImpl(Private, std::shared_ptr<TableHandleManagerImpl> &&manager_impl);
   ClientImpl(const ClientImpl&) = delete;

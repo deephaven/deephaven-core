@@ -49,7 +49,17 @@ ClientImpl::ClientImpl(Private, std::shared_ptr<TableHandleManagerImpl> &&manage
 // There is only one Client associated with the server connection. ClientImpls cannot be
 // copied. When the Client owning the state is destructed, we tear down the state via close().
 ClientImpl::~ClientImpl() {
-  Shutdown();
+  try {
+    Shutdown();
+  } catch (std::exception &ex) {
+    gpr_log(GPR_ERROR,
+        "ClientImpl(%p): exception during destructor's call to shutdown: %s.",
+        static_cast<void*>(this), ex.what());
+  } catch (...) {
+    gpr_log(GPR_ERROR,
+        "ClientImpl(%p): unknown exception during destructor's call to shutdown.",
+        static_cast<void*>(this));
+  }
 }
 
 ClientImpl::OnCloseCbId ClientImpl::AddOnCloseCallback(OnCloseCb cb) {

@@ -218,14 +218,37 @@ public:
   ~Client();
 
   /**
-   * Shuts down the Client and all associated state (GRPC connections, subscriptions, etc).
-   * This method is used if a caller wants to shut down Client state early. If it is not called,
-   * the shutdown actions will happen when this Client is destructed. The caller must not use any
-   * associated data structures (TableHandleManager, TableHandle, etc) after Close() is called or
+   * Releases the underlying gRPC client implementation.  If there are no other
+   * Client objects using the same implementation, that triggers shutdown
+   * (this Client objects handles the underlying client implementation
+   * as a reference counted pointer.
+   * This includes shutting down the gRPC Client and all associated state
+   * (GRPC connections, subscriptions, etc).
+   *
+   * This method is used if a caller wants to release the client early;
+   * otherwise Close will get called when this Client is destructed.
+   * The caller must not use any associated data structures (TableHandleManager, TableHandle, etc)
+   * obtained from this object after Close() is called or
    * after Client's destructor is invoked. If the caller tries to do so, the behavior is
    * unspecified.
    */
-  void Close();
+  void Close() noexcept;
+
+  /**
+   * Forces the underlying gRPC client to shut down.  Note this operation
+   * invalidates any other existing clients which may be using the same underlying
+   * gRPC client object; calling any operations on any Client object is undefined
+   * at this point.
+   *
+   * Normally it should be enough to call Close on each existing Client;
+   * the last call will push the reference count to zero on the underlying gRPC client
+   * object and will trigger it shutting down.  This Shutdown method only exists
+   * for extenuating circumstances which require an immediate shutdown (eg,
+   * forcing the release of gRPC client connections before shutting down on an
+   * unrecoverable error would be an example).
+   *
+   */
+  void Shutdown();
 
   /**
    * Gets a TableHandleManager which you can use to create empty tables, fetch tables, and so on.
@@ -254,8 +277,9 @@ public:
   bool RemoveOnCloseCallback(OnCloseCbId cb_id);
 
 private:
-  explicit Client(std::shared_ptr<impl::ClientImpl> impl);
-  std::shared_ptr<impl::ClientImpl> impl_;
+  using Impl = std::shared_ptr<impl::ClientImpl>;
+  explicit Client(Impl impl);
+  Impl impl_;
 };
 
 /**

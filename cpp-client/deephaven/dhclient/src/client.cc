@@ -5,6 +5,8 @@
 
 #include <stdexcept>
 
+#include <grpc/support/log.h>
+
 #include <arrow/array.h>
 #include <arrow/scalar.h>
 #include "deephaven/client/columns.h"
@@ -41,50 +43,80 @@ using deephaven::dhcore::utility::SimpleOstringstream;
 namespace deephaven::client {
 namespace {
 void PrintTableData(std::ostream &s, const TableHandle &table_handle, bool want_headers);
-void CheckNotClosedOrThrow(const std::shared_ptr<ClientImpl> &impl);
+ClientImpl *CheckClientImpl(const std::shared_ptr<ClientImpl> &impl);
 }  // namespace
 
 Client Client::Connect(const std::string &target, const ClientOptions &options) {
   auto server = Server::CreateFromTarget(target, options);
   auto executor = Executor::Create("Client executor for " + server->me());
   auto flight_executor = Executor::Create("Flight executor for " + server->me());
-  auto impl = ClientImpl::Create(std::move(server), executor, flight_executor, options.sessionType_);
+  auto impl = ClientImpl::Create(
+      std::move(server), executor, flight_executor, options.sessionType_);
+  gpr_log(GPR_INFO,
+      "Client target=%s created ClientImpl(%p).",
+      target.c_str(), static_cast<void*>(impl.get()));
   return Client(std::move(impl));
 }
 
 Client::Client() = default;
 
-Client::Client(std::shared_ptr<impl::ClientImpl> impl) : impl_(std::move(impl)) {
+Client::Client(Impl impl) : impl_(std::move(impl)) {
 }
-Client::Client(const Client &other) noexcept = default;
+Client::Client(const Client &other) noexcept
+    : impl_(other.impl_) {
+  gpr_log(GPR_INFO, "Client copy constructed ClientImpl(%p), use_count=%ld",
+      static_cast<void*>(impl_.get()), impl_.use_count());
+};
+
 Client::Client(Client &&other) noexcept = default;
-Client &Client::operator=(const Client &other) noexcept = default;
+Client &Client::operator=(const Client &other) noexcept {
+  if (other.impl_ == impl_) {
+    gpr_log(GPR_INFO, "Client ClientImpl(%p), use_count=%ld no-op copy assignment.",
+        static_cast<void*>(impl_.get()), impl_.use_count());
+    return *this;
+  }
+  Impl prev_impl = std::move(impl_);
+  impl_ = other.impl_;
+  gpr_log(GPR_INFO,
+      "Client copy assigned, prev: ClientImpl(%p), use_count=%ld;"
+      " new: ClientImpl(%p), use_count=%ld",
+      static_cast<void*>(prev_impl.get()), prev_impl.use_count(),
+      static_cast<void*>(impl_.get()), impl_.use_count());
+  return *this;
+}
+
 Client &Client::operator=(Client &&other) noexcept = default;
 
-Client::~Client() = default;
+Client::~Client() {
+  gpr_log(GPR_INFO, "Destructing Client ClientImpl(%p).",
+      static_cast<void*>(impl_.get()));
+  Close();
+}
 
-// Tear down Client state.
-void Client::Close() {
-  // Move to local variable to be defensive.
-  auto temp = std::move(impl_);
-  if (temp != nullptr) {
-    temp->Shutdown();
+void Client::Close() noexcept {
+  gpr_log(GPR_INFO, "Closing Client ClientImpl(%p), before use_count=%ld",
+      static_cast<void*>(impl_.get()), impl_.use_count());
+  impl_.reset();
+}
+
+void Client::Shutdown() {
+  gpr_log(GPR_INFO, "Shutting down Client ClientImpl(%p), before use_count=%ld.",
+      static_cast<void*>(impl_.get()), impl_.use_count());
+  if (impl_ != nullptr) {
+    impl_->Shutdown();
   }
 }
 
 TableHandleManager Client::GetManager() const {
-  CheckNotClosedOrThrow(impl_);
-  return TableHandleManager(impl_->ManagerImpl());
+  return TableHandleManager(CheckClientImpl(impl_)->ManagerImpl());
 }
 
 Client::OnCloseCbId Client::AddOnCloseCallback(std::function<void()> cb) {
-  CheckNotClosedOrThrow(impl_);
-  return impl_->AddOnCloseCallback(std::move(cb));
+  return CheckClientImpl(impl_)->AddOnCloseCallback(std::move(cb));
 }
 
 bool Client::RemoveOnCloseCallback(OnCloseCbId cb_id) {
-  CheckNotClosedOrThrow(impl_);
-  return impl_->RemoveOnCloseCallback(std::move(cb_id));
+  return CheckClientImpl(impl_)->RemoveOnCloseCallback(std::move(cb_id));
 }
 
 TableHandleManager::TableHandleManager() = default;
@@ -668,10 +700,11 @@ void PrintTableData(std::ostream &s, const TableHandle &table_handle, bool want_
     }
   }
 }
-void CheckNotClosedOrThrow(const std::shared_ptr<ClientImpl> &impl) {
+ClientImpl* CheckClientImpl(const std::shared_ptr<ClientImpl> &impl) {
   if (impl == nullptr) {
     throw std::runtime_error(DEEPHAVEN_LOCATION_STR("client is already closed"));
   }
+  return impl.get();
 }
 }  // namespace
 }  // namespace deephaven::client
