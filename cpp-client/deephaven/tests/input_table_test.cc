@@ -26,8 +26,8 @@ TEST_CASE("Input Table: append", "[input_table]") {
         "B", b_data);
   }
 
-  auto table_to_append = tm.EmptyTable(2).Update({"A = ii", "B = ii + 200"});
-  input_table.AddTable(table_to_append);
+  auto table_to_add = tm.EmptyTable(2).Update({"A = ii", "B = ii + 200"});
+  input_table.AddTable(table_to_add);
 
   // Because of append, expect input_table to be {0, 100}, {1, 101}, {2, 102}, {0, 200}, {1, 201}
   {
@@ -56,8 +56,8 @@ TEST_CASE("Input Table: keyed", "[input_table]") {
         "B", b_data);
   }
 
-  auto table_to_append = tm.EmptyTable(2).Update({"A = ii", "B = ii + 200"});
-  input_table.AddTable(table_to_append);
+  auto table_to_add = tm.EmptyTable(2).Update({"A = ii", "B = ii + 200"});
+  input_table.AddTable(table_to_add);
 
   // Because key is "A", expect input_table to be {0, 200}, {1, 201}, {2, 102}
   {
