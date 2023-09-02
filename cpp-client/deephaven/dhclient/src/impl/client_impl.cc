@@ -7,6 +7,9 @@
 #include <mutex>
 #include <optional>
 #include <stdexcept>
+
+#include <grpcpp/grpcpp.h>
+
 #include "deephaven/client/impl/table_handle_manager_impl.h"
 #include "deephaven/dhcore/utility/callbacks.h"
 
@@ -43,7 +46,11 @@ std::shared_ptr<ClientImpl> ClientImpl::Create(
 ClientImpl::ClientImpl(Private, std::shared_ptr<TableHandleManagerImpl> &&manager_impl) :
     manager_impl_(std::move(manager_impl)) {}
 
-ClientImpl::~ClientImpl() = default;
+// There is only one Client associated with the server connection. ClientImpls cannot be
+// copied. When the Client owning the state is destructed, we tear down the state via close().
+ClientImpl::~ClientImpl() {
+  Shutdown();
+}
 
 ClientImpl::OnCloseCbId ClientImpl::AddOnCloseCallback(OnCloseCb cb) {
   std::unique_lock lock(on_close_.mux);
@@ -58,13 +65,25 @@ bool ClientImpl::RemoveOnCloseCallback(OnCloseCbId cb_id) {
 }
 
 void ClientImpl::Shutdown() {
-  manager_impl_->Shutdown();
+  // Move to local variable to be defensive.
+  auto temp = std::move(manager_impl_);
+  if (temp == nullptr) {
+    return;
+  }
+  const void *const v_this = static_cast<void*>(this);
+  gpr_log(GPR_DEBUG, "ClientImpl(%p): Shutdown starting...", v_this);
+  temp->Shutdown();
   std::unique_lock lock(on_close_.mux);
   auto map = std::move(on_close_.map);
+  gpr_log(GPR_DEBUG, "ClientImpl(%p): Executing on close callbacks...", v_this);
   lock.unlock();
+  std::size_t cb_num = 0;
   for (const auto &entry : map) {
+    ++cb_num;
+    gpr_log(GPR_DEBUG, "ClientImpl(%p): Executing on close call %lu.", v_this, cb_num);
     entry.second();
   }
+  gpr_log(GPR_DEBUG, "ClientImpl(%p): Shutdown complete.", v_this);
 }
 }  // namespace impl
 }  // namespace deephaven::client

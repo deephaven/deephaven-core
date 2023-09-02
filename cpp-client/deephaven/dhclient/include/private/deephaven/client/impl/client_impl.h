@@ -27,6 +27,10 @@ public:
       std::shared_ptr<Executor> executor, std::shared_ptr<Executor> flight_executor, const std::string &session_type);
 
   ClientImpl(Private, std::shared_ptr<TableHandleManagerImpl> &&manager_impl);
+  ClientImpl(const ClientImpl&) = delete;
+  ClientImpl(ClientImpl&&) = delete;
+  ClientImpl& operator=(const ClientImpl&) = delete;
+  ClientImpl& operator=(ClientImpl&&) = delete;
   ~ClientImpl();
 
   void Shutdown();

@@ -61,11 +61,7 @@ Client::Client(Client &&other) noexcept = default;
 Client &Client::operator=(const Client &other) noexcept = default;
 Client &Client::operator=(Client &&other) noexcept = default;
 
-// There is only one Client associated with the server connection. Clients can only be moved, not
-// copied. When the Client owning the state is destructed, we tear down the state via close().
-Client::~Client() {
-  Close();
-}
+Client::~Client() = default;
 
 // Tear down Client state.
 void Client::Close() {

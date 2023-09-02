@@ -31,25 +31,27 @@ std::shared_ptr<TableHandleManagerImpl> TableHandleManagerImpl::Create(std::opti
 TableHandleManagerImpl::TableHandleManagerImpl(Private, std::optional<Ticket> &&console_id,
     std::shared_ptr<ServerType> &&server, std::shared_ptr<ExecutorType> &&executor,
     std::shared_ptr<ExecutorType> &&flight_executor) :
-    me_(deephaven::dhcore::utility::ObjectId("TableHandleManagerImpl", this)),
+    log_id_(deephaven::dhcore::utility::ObjectId("TableHandleManagerImpl", this)),
     consoleId_(std::move(console_id)),
     server_(std::move(server)),
     executor_(std::move(executor)),
     flightExecutor_(std::move(flight_executor)) {
-  gpr_log(GPR_DEBUG, "%s: Created.", me_.c_str());
+  gpr_log(GPR_DEBUG, "%s: Created.", log_id_.c_str());
 }
 
 TableHandleManagerImpl::~TableHandleManagerImpl() {
-  gpr_log(GPR_DEBUG,"%s: Destroyed.", me_.c_str());
+  gpr_log(GPR_DEBUG, "%s: Destroyed.", log_id_.c_str());
 }
 
 void TableHandleManagerImpl::Shutdown() {
+  gpr_log(GPR_DEBUG, "%s: Shutdown starting...", log_id_.c_str());
   for (const auto &sub : subscriptions_) {
     sub->Cancel();
   }
   executor_->Shutdown();
   flightExecutor_->Shutdown();
   server_->Shutdown();
+  gpr_log(GPR_DEBUG, "%s: Shutdown complete.", log_id_.c_str());
 }
 
 std::shared_ptr<TableHandleImpl> TableHandleManagerImpl::EmptyTable(int64_t size) {
