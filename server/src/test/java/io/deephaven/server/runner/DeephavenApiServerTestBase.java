@@ -6,6 +6,7 @@ package io.deephaven.server.runner;
 import dagger.BindsInstance;
 import dagger.Component;
 import io.deephaven.client.ClientDefaultsModule;
+import io.deephaven.configuration.Configuration;
 import io.deephaven.engine.context.TestExecutionContext;
 import io.deephaven.engine.liveness.LivenessScope;
 import io.deephaven.engine.liveness.LivenessScopeStack;
@@ -19,6 +20,7 @@ import io.deephaven.server.auth.CommunityAuthorizationProvider;
 import io.deephaven.server.config.ServerConfig;
 import io.deephaven.server.console.NoConsoleSessionModule;
 import io.deephaven.server.log.LogModule;
+import io.deephaven.server.plugin.js.JsPluginNoopConsumerModule;
 import io.deephaven.server.session.ObfuscatingErrorTransformerModule;
 import io.deephaven.util.SafeCloseable;
 import io.grpc.ManagedChannel;
@@ -49,6 +51,7 @@ public abstract class DeephavenApiServerTestBase {
             ExecutionContextUnitTestModule.class,
             ClientDefaultsModule.class,
             ObfuscatingErrorTransformerModule.class,
+            JsPluginNoopConsumerModule.class,
     })
     public interface TestComponent {
 
@@ -61,6 +64,9 @@ public abstract class DeephavenApiServerTestBase {
 
             @BindsInstance
             Builder withServerConfig(ServerConfig serverConfig);
+
+            @BindsInstance
+            Builder withConfiguration(Configuration config);;
 
             @BindsInstance
             Builder withOut(@Named("out") PrintStream out);
@@ -103,6 +109,7 @@ public abstract class DeephavenApiServerTestBase {
 
         serverComponent = DaggerDeephavenApiServerTestBase_TestComponent.builder()
                 .withServerConfig(config)
+                .withConfiguration(Configuration.getInstance())
                 .withAuthorizationProvider(new CommunityAuthorizationProvider())
                 .withOut(System.out)
                 .withErr(System.err)
