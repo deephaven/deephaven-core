@@ -256,6 +256,9 @@ public:
 
   /**
    * Adds a callback to be invoked when this client is closed.
+   * On close callbacks are invoked before the client is actually shut down,
+   * so they can perform regular client and table manager operations before
+   * closing.
    *
    * @param cb the callback
    * @return an id for the added callback that can be used to remove it.
