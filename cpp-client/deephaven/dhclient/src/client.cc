@@ -56,9 +56,8 @@ Client::Client() = default;
 
 Client::Client(std::shared_ptr<impl::ClientImpl> impl) : impl_(std::move(impl)) {
 }
-Client::Client(const Client &other) noexcept = default;
+
 Client::Client(Client &&other) noexcept = default;
-Client &Client::operator=(const Client &other) noexcept = default;
 Client &Client::operator=(Client &&other) noexcept = default;
 
 // There is only one Client associated with the server connection. Clients can only be moved, not

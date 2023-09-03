@@ -221,17 +221,9 @@ public:
   [[nodiscard]]
   static Client Connect(const std::string &target, const ClientOptions &options = {});
   /**
-   * Copy constructor
-   */
-  Client(const Client &other) noexcept;
-  /**
    * Move constructor
    */
   Client(Client &&other) noexcept;
-  /**
-   * Copy assigment operator.
-   */
-  Client &operator=(const Client &other) noexcept;
   /**
    * Move assigment operator.
    */
