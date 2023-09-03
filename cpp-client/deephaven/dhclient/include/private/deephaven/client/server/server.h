@@ -344,7 +344,7 @@ void Server::SendRpc(const TReq &req, std::shared_ptr<SFCallback<TResp>> respons
   static const auto kTypeName = TypeName(req);
   auto now = std::chrono::system_clock::now();
   gpr_log(GPR_DEBUG,
-      "Server[%p]: "
+      "Server(%p): "
       "Sending RPC %s "
       "at time %s.",
       static_cast<void*>(this),
