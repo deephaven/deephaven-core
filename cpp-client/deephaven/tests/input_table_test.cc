@@ -15,7 +15,6 @@ TEST_CASE("Input Table: append", "[input_table]") {
   auto source = tm.EmptyTable(3).Update({"A = ii", "B = ii + 100"});
   // No keys, so InputTable will be in append-only mode.
   auto input_table = tm.InputTable(source);
-  input_table.AddTable(source);
 
   // expect input_table to be {0, 100}, {1, 101}, {2, 102}
   {
@@ -45,7 +44,6 @@ TEST_CASE("Input Table: keyed", "[input_table]") {
   auto source = tm.EmptyTable(3).Update({"A = ii", "B = ii + 100"});
   // Keys = {"A"}, so InputTable will be in keyed mode
   auto input_table = tm.InputTable(source, {"A"});
-  input_table.AddTable(source);
 
   // expect input_table to be {0, 100}, {1, 101}, {2, 102}
   {

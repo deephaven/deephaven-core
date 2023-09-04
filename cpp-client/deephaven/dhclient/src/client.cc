@@ -129,6 +129,8 @@ TableHandle TableHandleManager::TimeTable(DurationSpecifier period, TimePointSpe
 TableHandle TableHandleManager::InputTable(const TableHandle &initial_table,
     std::vector<std::string> key_columns) const {
   auto th_impl = impl_->InputTable(*initial_table.Impl(), std::move(key_columns));
+  // Populate the InputTable with the contents of 'initial_table'
+  th_impl->AddTable(*initial_table.Impl());
   return TableHandle(std::move(th_impl));
 }
 
