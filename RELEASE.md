@@ -95,7 +95,7 @@ For patch releases, typically the branch will be based off of the previous relea
 The patch release manager is also responsible for bumping the patch version numbers as appropriate (note comment block on the list of commands
 below).
 
-Here is an example going from `X.Y.0` to `X.Y.1`.
+Here is an example going from `X.Y.0` to `X.Y.1`:
 
 ```shell
 $ git fetch upstream
