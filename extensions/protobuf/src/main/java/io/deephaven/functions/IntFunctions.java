@@ -38,26 +38,5 @@ class IntFunctions {
         public int applyAsInt(T value) {
             return g.applyAsInt(f.apply(value));
         }
-
-        @Override
-        public boolean equals(Object o) {
-            if (this == o)
-                return true;
-            if (o == null || getClass() != o.getClass())
-                return false;
-
-            IntMap<?, ?> intMap = (IntMap<?, ?>) o;
-
-            if (!f.equals(intMap.f))
-                return false;
-            return g.equals(intMap.g);
-        }
-
-        @Override
-        public int hashCode() {
-            int result = f.hashCode();
-            result = 31 * result + g.hashCode();
-            return result;
-        }
     }
 }

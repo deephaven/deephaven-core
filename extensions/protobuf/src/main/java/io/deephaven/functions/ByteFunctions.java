@@ -38,26 +38,5 @@ class ByteFunctions {
         public byte applyAsByte(T value) {
             return g.applyAsByte(f.apply(value));
         }
-
-        @Override
-        public boolean equals(Object o) {
-            if (this == o)
-                return true;
-            if (o == null || getClass() != o.getClass())
-                return false;
-
-            ByteMap<?, ?> byteMap = (ByteMap<?, ?>) o;
-
-            if (!f.equals(byteMap.f))
-                return false;
-            return g.equals(byteMap.g);
-        }
-
-        @Override
-        public int hashCode() {
-            int result = f.hashCode();
-            result = 31 * result + g.hashCode();
-            return result;
-        }
     }
 }

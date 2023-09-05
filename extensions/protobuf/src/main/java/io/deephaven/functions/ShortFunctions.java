@@ -39,26 +39,5 @@ class ShortFunctions {
         public short applyAsShort(T value) {
             return g.applyAsShort(f.apply(value));
         }
-
-        @Override
-        public boolean equals(Object o) {
-            if (this == o)
-                return true;
-            if (o == null || getClass() != o.getClass())
-                return false;
-
-            ShortMap<?, ?> shortMap = (ShortMap<?, ?>) o;
-
-            if (!f.equals(shortMap.f))
-                return false;
-            return g.equals(shortMap.g);
-        }
-
-        @Override
-        public int hashCode() {
-            int result = f.hashCode();
-            result = 31 * result + g.hashCode();
-            return result;
-        }
     }
 }

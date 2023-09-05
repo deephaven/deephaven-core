@@ -93,25 +93,6 @@ class BooleanFunctions {
         public boolean test(T value) {
             return g.test(f.apply(value));
         }
-
-        @Override
-        public boolean equals(Object o) {
-            if (this == o)
-                return true;
-            if (o == null || getClass() != o.getClass())
-                return false;
-            BooleanMap<?, ?> that = (BooleanMap<?, ?>) o;
-            if (!f.equals(that.f))
-                return false;
-            return g.equals(that.g);
-        }
-
-        @Override
-        public int hashCode() {
-            int result = f.hashCode();
-            result = 31 * result + g.hashCode();
-            return result;
-        }
     }
 
     private static class BooleanNot<T> implements ToBooleanFunction<T> {
@@ -128,23 +109,6 @@ class BooleanFunctions {
         @Override
         public boolean test(T value) {
             return !function.test(value);
-        }
-
-        @Override
-        public boolean equals(Object o) {
-            if (this == o)
-                return true;
-            if (o == null || getClass() != o.getClass())
-                return false;
-
-            BooleanNot<?> that = (BooleanNot<?>) o;
-
-            return function.equals(that.function);
-        }
-
-        @Override
-        public int hashCode() {
-            return function.hashCode();
         }
     }
 
@@ -164,23 +128,6 @@ class BooleanFunctions {
             }
             return true;
         }
-
-        @Override
-        public boolean equals(Object o) {
-            if (this == o)
-                return true;
-            if (o == null || getClass() != o.getClass())
-                return false;
-
-            BooleanAnd<?> that = (BooleanAnd<?>) o;
-
-            return functions.equals(that.functions);
-        }
-
-        @Override
-        public int hashCode() {
-            return functions.hashCode();
-        }
     }
 
     private static class BooleanOr<T> implements ToBooleanFunction<T> {
@@ -198,23 +145,6 @@ class BooleanFunctions {
                 }
             }
             return false;
-        }
-
-        @Override
-        public boolean equals(Object o) {
-            if (this == o)
-                return true;
-            if (o == null || getClass() != o.getClass())
-                return false;
-
-            BooleanOr<?> booleanOr = (BooleanOr<?>) o;
-
-            return functions.equals(booleanOr.functions);
-        }
-
-        @Override
-        public int hashCode() {
-            return functions.hashCode();
         }
     }
 }

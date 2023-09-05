@@ -39,26 +39,5 @@ class LongFunctions {
         public long applyAsLong(T value) {
             return g.applyAsLong(f.apply(value));
         }
-
-        @Override
-        public boolean equals(Object o) {
-            if (this == o)
-                return true;
-            if (o == null || getClass() != o.getClass())
-                return false;
-
-            LongMap<?, ?> longMap = (LongMap<?, ?>) o;
-
-            if (!f.equals(longMap.f))
-                return false;
-            return g.equals(longMap.g);
-        }
-
-        @Override
-        public int hashCode() {
-            int result = f.hashCode();
-            result = 31 * result + g.hashCode();
-            return result;
-        }
     }
 }

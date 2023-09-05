@@ -134,23 +134,6 @@ class ObjectFunctions {
         public R apply(T value) {
             return returnType.clazz().cast(value);
         }
-
-        @Override
-        public boolean equals(Object x) {
-            if (this == x)
-                return true;
-            if (x == null || getClass() != x.getClass())
-                return false;
-
-            Casted<?, ?> casted = (Casted<?, ?>) x;
-
-            return returnType.equals(casted.returnType);
-        }
-
-        @Override
-        public int hashCode() {
-            return returnType.hashCode();
-        }
     }
 
     private static final class FunctionImpl<T, R> implements ToObjectFunction<T, R> {
@@ -171,27 +154,6 @@ class ObjectFunctions {
         public R apply(T value) {
             return f.apply(value);
         }
-
-        @Override
-        public boolean equals(Object o) {
-            if (this == o)
-                return true;
-            if (o == null || getClass() != o.getClass())
-                return false;
-
-            FunctionImpl<?, ?> that = (FunctionImpl<?, ?>) o;
-
-            if (!returnType.equals(that.returnType))
-                return false;
-            return f.equals(that.f);
-        }
-
-        @Override
-        public int hashCode() {
-            int result = returnType.hashCode();
-            result = 31 * result + f.hashCode();
-            return result;
-        }
     }
 
     private static class ObjectMap<T, R, Z> implements ToObjectFunction<T, Z> {
@@ -211,27 +173,6 @@ class ObjectFunctions {
         @Override
         public Z apply(T value) {
             return g.apply(f.apply(value));
-        }
-
-        @Override
-        public boolean equals(Object o) {
-            if (this == o)
-                return true;
-            if (o == null || getClass() != o.getClass())
-                return false;
-
-            ObjectMap<?, ?, ?> objectMap = (ObjectMap<?, ?, ?>) o;
-
-            if (!f.equals(objectMap.f))
-                return false;
-            return g.equals(objectMap.g);
-        }
-
-        @Override
-        public int hashCode() {
-            int result = f.hashCode();
-            result = 31 * result + g.hashCode();
-            return result;
         }
     }
 

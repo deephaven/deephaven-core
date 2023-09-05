@@ -39,26 +39,5 @@ class DoubleFunctions {
         public double applyAsDouble(T value) {
             return g.applyAsDouble(f.apply(value));
         }
-
-        @Override
-        public boolean equals(Object x) {
-            if (this == x)
-                return true;
-            if (x == null || getClass() != x.getClass())
-                return false;
-
-            DoubleFunctionMap<?, ?> doubleMap = (DoubleFunctionMap<?, ?>) x;
-
-            if (!f.equals(doubleMap.f))
-                return false;
-            return g.equals(doubleMap.g);
-        }
-
-        @Override
-        public int hashCode() {
-            int result = f.hashCode();
-            result = 31 * result + g.hashCode();
-            return result;
-        }
     }
 }

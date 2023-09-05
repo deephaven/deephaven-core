@@ -38,26 +38,5 @@ class CharFunctions {
         public char applyAsChar(T value) {
             return g.applyAsChar(f.apply(value));
         }
-
-        @Override
-        public boolean equals(Object o) {
-            if (this == o)
-                return true;
-            if (o == null || getClass() != o.getClass())
-                return false;
-
-            CharMap<?, ?> charMap = (CharMap<?, ?>) o;
-
-            if (!f.equals(charMap.f))
-                return false;
-            return g.equals(charMap.g);
-        }
-
-        @Override
-        public int hashCode() {
-            int result = f.hashCode();
-            result = 31 * result + g.hashCode();
-            return result;
-        }
     }
 }

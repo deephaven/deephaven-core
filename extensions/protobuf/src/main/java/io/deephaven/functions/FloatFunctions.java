@@ -38,26 +38,5 @@ class FloatFunctions {
         public float applyAsFloat(T value) {
             return g.applyAsFloat(f.apply(value));
         }
-
-        @Override
-        public boolean equals(Object o) {
-            if (this == o)
-                return true;
-            if (o == null || getClass() != o.getClass())
-                return false;
-
-            FloatMap<?, ?> floatMap = (FloatMap<?, ?>) o;
-
-            if (!f.equals(floatMap.f))
-                return false;
-            return g.equals(floatMap.g);
-        }
-
-        @Override
-        public int hashCode() {
-            int result = f.hashCode();
-            result = 31 * result + g.hashCode();
-            return result;
-        }
     }
 }
