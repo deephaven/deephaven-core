@@ -380,8 +380,8 @@ public:
             )
         ) {}
 
-    ClientWrapper(Rcpp::XPtr<deephaven::client::Client> client_xptr) :
-        internal_client(client_xptr) {}
+    ClientWrapper(SEXP sexp) :
+        internal_client(Rcpp::XPtr<ClientWrapper>(sexp)) {}
 
     TableHandleWrapper* OpenTable(std::string tableName) {
         return new TableHandleWrapper(internal_tbl_hdl_mngr.FetchTable(tableName));
@@ -568,7 +568,7 @@ RCPP_MODULE(DeephavenInternalModule) {
 
     class_<ClientWrapper>("INTERNAL_Client")
     .constructor<std::string, const ClientOptionsWrapper&>()
-    .constructor<XPtr<deephaven::client::Client>>()
+    .constructor<SEXP>()
     .method("open_table", &ClientWrapper::OpenTable)
     .method("empty_table", &ClientWrapper::EmptyTable)
     .method("time_table", &ClientWrapper::TimeTable)
