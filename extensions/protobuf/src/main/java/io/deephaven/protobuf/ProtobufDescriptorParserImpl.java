@@ -20,16 +20,16 @@ import io.deephaven.qst.type.BoxedIntType;
 import io.deephaven.qst.type.BoxedLongType;
 import io.deephaven.qst.type.GenericType;
 import io.deephaven.qst.type.Type;
-import io.deephaven.functions.BooleanFunction;
-import io.deephaven.functions.ByteFunction;
-import io.deephaven.functions.CharFunction;
-import io.deephaven.functions.DoubleFunction;
-import io.deephaven.functions.FloatFunction;
-import io.deephaven.functions.IntFunction;
-import io.deephaven.functions.LongFunction;
-import io.deephaven.functions.ObjectFunction;
-import io.deephaven.functions.PrimitiveFunction;
-import io.deephaven.functions.ShortFunction;
+import io.deephaven.functions.ToBooleanFunction;
+import io.deephaven.functions.ToByteFunction;
+import io.deephaven.functions.ToCharFunction;
+import io.deephaven.functions.ToDoubleFunction;
+import io.deephaven.functions.ToFloatFunction;
+import io.deephaven.functions.ToIntFunction;
+import io.deephaven.functions.ToLongFunction;
+import io.deephaven.functions.ToObjectFunction;
+import io.deephaven.functions.ToPrimitiveFunction;
+import io.deephaven.functions.ToShortFunction;
 import io.deephaven.functions.TypedFunction;
 import io.deephaven.functions.TypedFunction.Visitor;
 
@@ -44,22 +44,23 @@ import java.util.stream.Collectors;
 
 class ProtobufDescriptorParserImpl {
 
-    private static final ObjectFunction<Object, String> STRING_OBJ = ObjectFunction.identity(Type.stringType());
-    private static final ObjectFunction<Object, Integer> BOXED_INT_OBJ = ObjectFunction.identity(BoxedIntType.of());
-    private static final ObjectFunction<Object, Long> BOXED_LONG_OBJ = ObjectFunction.identity(BoxedLongType.of());
-    private static final ObjectFunction<Object, Float> BOXED_FLOAT_OBJ = ObjectFunction.identity(BoxedFloatType.of());
-    private static final ObjectFunction<Object, Double> BOXED_DOUBLE_OBJ =
-            ObjectFunction.identity(BoxedDoubleType.of());
-    private static final ObjectFunction<Object, Boolean> BOXED_BOOLEAN_OBJ =
-            ObjectFunction.identity(BoxedBooleanType.of());
-    private static final ObjectFunction<Object, Message> MESSAGE_OBJ =
-            ObjectFunction.identity(Type.ofCustom(Message.class));
-    private static final ObjectFunction<Object, ByteString> BYTE_STRING_OBJ =
-            ObjectFunction.identity(Type.ofCustom(ByteString.class));
-    private static final ObjectFunction<Object, EnumValueDescriptor> ENUM_VALUE_DESCRIPTOR_OBJ =
-            ObjectFunction.identity(Type.ofCustom(EnumValueDescriptor.class));
-    private static final ObjectFunction<ByteString, byte[]> BYTE_STRING_FUNCTION =
-            BypassOnNull.of(ObjectFunction.of(ByteString::toByteArray, Type.byteType().arrayType()));
+    private static final ToObjectFunction<Object, String> STRING_OBJ = ToObjectFunction.identity(Type.stringType());
+    private static final ToObjectFunction<Object, Integer> BOXED_INT_OBJ = ToObjectFunction.identity(BoxedIntType.of());
+    private static final ToObjectFunction<Object, Long> BOXED_LONG_OBJ = ToObjectFunction.identity(BoxedLongType.of());
+    private static final ToObjectFunction<Object, Float> BOXED_FLOAT_OBJ =
+            ToObjectFunction.identity(BoxedFloatType.of());
+    private static final ToObjectFunction<Object, Double> BOXED_DOUBLE_OBJ =
+            ToObjectFunction.identity(BoxedDoubleType.of());
+    private static final ToObjectFunction<Object, Boolean> BOXED_BOOLEAN_OBJ =
+            ToObjectFunction.identity(BoxedBooleanType.of());
+    private static final ToObjectFunction<Object, Message> MESSAGE_OBJ =
+            ToObjectFunction.identity(Type.ofCustom(Message.class));
+    private static final ToObjectFunction<Object, ByteString> BYTE_STRING_OBJ =
+            ToObjectFunction.identity(Type.ofCustom(ByteString.class));
+    private static final ToObjectFunction<Object, EnumValueDescriptor> ENUM_VALUE_DESCRIPTOR_OBJ =
+            ToObjectFunction.identity(Type.ofCustom(EnumValueDescriptor.class));
+    private static final ToObjectFunction<ByteString, byte[]> BYTE_STRING_FUNCTION =
+            BypassOnNull.of(ToObjectFunction.of(ByteString::toByteArray, Type.byteType().arrayType()));
 
     private final ProtobufDescriptorParserOptions options;
     private final Map<String, SingleValuedMessageParser> byFullName;
@@ -166,7 +167,7 @@ class ProtobufDescriptorParserImpl {
             return new DescriptorContext(fieldPath, fd.getMessageType());
         }
 
-        private class FieldObject implements ObjectFunction<Message, Object> {
+        private class FieldObject implements ToObjectFunction<Message, Object> {
 
             @Override
             public GenericType<Object> returnType() {
@@ -199,23 +200,23 @@ class ProtobufDescriptorParserImpl {
                     case INT:
                         return fd.hasPresence()
                                 ? namedField(mapObj(BOXED_INT_OBJ))
-                                : namedField(mapInt(IntFunction.primitive()));
+                                : namedField(mapInt(ToIntFunction.primitive()));
                     case LONG:
                         return fd.hasPresence()
                                 ? namedField(mapObj(BOXED_LONG_OBJ))
-                                : namedField(mapLong(LongFunction.primitive()));
+                                : namedField(mapLong(ToLongFunction.primitive()));
                     case FLOAT:
                         return fd.hasPresence()
                                 ? namedField(mapObj(BOXED_FLOAT_OBJ))
-                                : namedField(mapFloat(FloatFunction.primitive()));
+                                : namedField(mapFloat(ToFloatFunction.primitive()));
                     case DOUBLE:
                         return fd.hasPresence()
                                 ? namedField(mapObj(BOXED_DOUBLE_OBJ))
-                                : namedField(mapDouble(DoubleFunction.primitive()));
+                                : namedField(mapDouble(ToDoubleFunction.primitive()));
                     case BOOLEAN:
                         return fd.hasPresence()
                                 ? namedField(mapObj(BOXED_BOOLEAN_OBJ))
-                                : namedField(mapBoolean(BooleanFunction.primitive()));
+                                : namedField(mapBoolean(ToBooleanFunction.primitive()));
                     case STRING:
                         return namedField(mapObj(STRING_OBJ));
                     case BYTE_STRING:
@@ -225,7 +226,7 @@ class ProtobufDescriptorParserImpl {
                     case ENUM:
                         return namedField(mapObj(ENUM_VALUE_DESCRIPTOR_OBJ));
                     case MESSAGE: {
-                        final ObjectFunction<Message, Message> fieldAsMessage = mapObj(MESSAGE_OBJ);
+                        final ToObjectFunction<Message, Message> fieldAsMessage = mapObj(MESSAGE_OBJ);
                         final DescriptorContext messageContext = toMessageContext();
                         final ProtobufFunctions subF = messageContext.functions();
                         final Builder builder = ProtobufFunctions.builder();
@@ -309,7 +310,7 @@ class ProtobufDescriptorParserImpl {
 
                 final TypedFunction<Message> keyFunction = keyFunctions.functions().get(0).function();
                 final TypedFunction<Message> valueFunction = valueFunctions.functions().get(0).function();
-                return namedField(ObjectFunction.of(message -> {
+                return namedField(ToObjectFunction.of(message -> {
                     final Map<Object, Object> map = new HashMap<>();
                     final int count = message.getRepeatedFieldCount(fd);
                     for (int i = 0; i < count; ++i) {
@@ -332,15 +333,15 @@ class ProtobufDescriptorParserImpl {
             private ProtobufFunctions functions() {
                 switch (fd.getJavaType()) {
                     case INT:
-                        return namedField(mapInts(IntFunction.primitive()));
+                        return namedField(mapInts(ToIntFunction.primitive()));
                     case LONG:
-                        return namedField(mapLongs(LongFunction.primitive()));
+                        return namedField(mapLongs(ToLongFunction.primitive()));
                     case FLOAT:
-                        return namedField(mapFloats(FloatFunction.primitive()));
+                        return namedField(mapFloats(ToFloatFunction.primitive()));
                     case DOUBLE:
-                        return namedField(mapDoubles(DoubleFunction.primitive()));
+                        return namedField(mapDoubles(ToDoubleFunction.primitive()));
                     case BOOLEAN:
-                        return namedField(mapBooleans(BooleanFunction.primitive()));
+                        return namedField(mapBooleans(ToBooleanFunction.primitive()));
                     case STRING:
                         return namedField(mapGenerics(STRING_OBJ));
                     case BYTE_STRING:
@@ -354,7 +355,7 @@ class ProtobufDescriptorParserImpl {
                         final ProtobufFunctions functions = messageContext.functions();
                         final Builder builder = ProtobufFunctions.builder();
                         for (ProtobufFunction f : functions.functions()) {
-                            final ObjectFunction<Message, ?> repeatedTf = f.function().walk(new ToRepeatedType());
+                            final ToObjectFunction<Message, ?> repeatedTf = f.function().walk(new ToRepeatedType());
                             builder.addFunctions(ProtobufFunction.of(f.path().prefixWith(fd), repeatedTf));
                         }
                         return builder.build();
@@ -364,93 +365,93 @@ class ProtobufDescriptorParserImpl {
                 }
             }
 
-            private ObjectFunction<Message, char[]> mapChars(CharFunction<Object> f) {
-                return ObjectFunction.of(m -> toChars(m, fd, f), Type.charType().arrayType());
+            private ToObjectFunction<Message, char[]> mapChars(ToCharFunction<Object> f) {
+                return ToObjectFunction.of(m -> toChars(m, fd, f), Type.charType().arrayType());
             }
 
-            private ObjectFunction<Message, byte[]> mapBytes(ByteFunction<Object> f) {
-                return ObjectFunction.of(m -> toBytes(m, fd, f), Type.byteType().arrayType());
+            private ToObjectFunction<Message, byte[]> mapBytes(ToByteFunction<Object> f) {
+                return ToObjectFunction.of(m -> toBytes(m, fd, f), Type.byteType().arrayType());
             }
 
-            private ObjectFunction<Message, short[]> mapShorts(ShortFunction<Object> f) {
-                return ObjectFunction.of(m -> toShorts(m, fd, f), Type.shortType().arrayType());
+            private ToObjectFunction<Message, short[]> mapShorts(ToShortFunction<Object> f) {
+                return ToObjectFunction.of(m -> toShorts(m, fd, f), Type.shortType().arrayType());
             }
 
-            private ObjectFunction<Message, int[]> mapInts(IntFunction<Object> f) {
-                return ObjectFunction.of(m -> toInts(m, fd, f), Type.intType().arrayType());
+            private ToObjectFunction<Message, int[]> mapInts(ToIntFunction<Object> f) {
+                return ToObjectFunction.of(m -> toInts(m, fd, f), Type.intType().arrayType());
             }
 
-            private ObjectFunction<Message, long[]> mapLongs(LongFunction<Object> f) {
-                return ObjectFunction.of(m -> toLongs(m, fd, f), Type.longType().arrayType());
+            private ToObjectFunction<Message, long[]> mapLongs(ToLongFunction<Object> f) {
+                return ToObjectFunction.of(m -> toLongs(m, fd, f), Type.longType().arrayType());
             }
 
-            private ObjectFunction<Message, float[]> mapFloats(FloatFunction<Object> f) {
-                return ObjectFunction.of(m -> toFloats(m, fd, f), Type.floatType().arrayType());
+            private ToObjectFunction<Message, float[]> mapFloats(ToFloatFunction<Object> f) {
+                return ToObjectFunction.of(m -> toFloats(m, fd, f), Type.floatType().arrayType());
             }
 
-            private ObjectFunction<Message, double[]> mapDoubles(DoubleFunction<Object> f) {
-                return ObjectFunction.of(m -> toDoubles(m, fd, f), Type.doubleType().arrayType());
+            private ToObjectFunction<Message, double[]> mapDoubles(ToDoubleFunction<Object> f) {
+                return ToObjectFunction.of(m -> toDoubles(m, fd, f), Type.doubleType().arrayType());
             }
 
-            private ObjectFunction<Message, boolean[]> mapBooleans(BooleanFunction<Object> f) {
-                return ObjectFunction.of(m -> toBooleans(m, fd, f), Type.booleanType().arrayType());
+            private ToObjectFunction<Message, boolean[]> mapBooleans(ToBooleanFunction<Object> f) {
+                return ToObjectFunction.of(m -> toBooleans(m, fd, f), Type.booleanType().arrayType());
             }
 
-            private <T> ObjectFunction<Message, T[]> mapGenerics(ObjectFunction<Object, T> f) {
-                return ObjectFunction.of(message -> toArray(message, fd, f), f.returnType().arrayType());
+            private <T> ToObjectFunction<Message, T[]> mapGenerics(ToObjectFunction<Object, T> f) {
+                return ToObjectFunction.of(message -> toArray(message, fd, f), f.returnType().arrayType());
             }
 
             private class ToRepeatedType implements
-                    Visitor<Message, ObjectFunction<Message, ?>>,
-                    PrimitiveFunction.Visitor<Message, ObjectFunction<Message, ?>> {
+                    Visitor<Message, ToObjectFunction<Message, ?>>,
+                    ToPrimitiveFunction.Visitor<Message, ToObjectFunction<Message, ?>> {
 
                 @Override
-                public ObjectFunction<Message, ?> visit(ObjectFunction<Message, ?> f) {
+                public ToObjectFunction<Message, ?> visit(ToObjectFunction<Message, ?> f) {
                     return mapGenerics(MESSAGE_OBJ.mapObj(f));
                 }
 
                 @Override
-                public ObjectFunction<Message, ?> visit(PrimitiveFunction<Message> f) {
-                    return f.walk((PrimitiveFunction.Visitor<Message, ObjectFunction<Message, ?>>) this);
+                public ToObjectFunction<Message, ?> visit(ToPrimitiveFunction<Message> f) {
+                    return f.walk((ToPrimitiveFunction.Visitor<Message, ToObjectFunction<Message, ?>>) this);
                 }
 
                 @Override
-                public ObjectFunction<Message, ?> visit(BooleanFunction<Message> f) {
+                public ToObjectFunction<Message, ?> visit(ToBooleanFunction<Message> f) {
                     return mapBooleans(MESSAGE_OBJ.mapBoolean(f));
                 }
 
                 @Override
-                public ObjectFunction<Message, ?> visit(CharFunction<Message> f) {
+                public ToObjectFunction<Message, ?> visit(ToCharFunction<Message> f) {
                     return mapChars(MESSAGE_OBJ.mapChar(f));
                 }
 
                 @Override
-                public ObjectFunction<Message, ?> visit(ByteFunction<Message> f) {
+                public ToObjectFunction<Message, ?> visit(ToByteFunction<Message> f) {
                     return mapBytes(MESSAGE_OBJ.mapByte(f));
                 }
 
                 @Override
-                public ObjectFunction<Message, ?> visit(ShortFunction<Message> f) {
+                public ToObjectFunction<Message, ?> visit(ToShortFunction<Message> f) {
                     return mapShorts(MESSAGE_OBJ.mapShort(f));
                 }
 
                 @Override
-                public ObjectFunction<Message, ?> visit(IntFunction<Message> f) {
+                public ToObjectFunction<Message, ?> visit(ToIntFunction<Message> f) {
                     return mapInts(MESSAGE_OBJ.mapInt(f));
                 }
 
                 @Override
-                public ObjectFunction<Message, ?> visit(LongFunction<Message> f) {
+                public ToObjectFunction<Message, ?> visit(ToLongFunction<Message> f) {
                     return mapLongs(MESSAGE_OBJ.mapLong(f));
                 }
 
                 @Override
-                public ObjectFunction<Message, ?> visit(FloatFunction<Message> f) {
+                public ToObjectFunction<Message, ?> visit(ToFloatFunction<Message> f) {
                     return mapFloats(MESSAGE_OBJ.mapFloat(f));
                 }
 
                 @Override
-                public ObjectFunction<Message, ?> visit(DoubleFunction<Message> f) {
+                public ToObjectFunction<Message, ?> visit(ToDoubleFunction<Message> f) {
                     return mapDoubles(MESSAGE_OBJ.mapDouble(f));
                 }
             }
@@ -461,7 +462,7 @@ class ProtobufDescriptorParserImpl {
         }
     }
 
-    private static char[] toChars(Message message, FieldDescriptor fd, CharFunction<Object> f) {
+    private static char[] toChars(Message message, FieldDescriptor fd, ToCharFunction<Object> f) {
         final int count = message.getRepeatedFieldCount(fd);
         final char[] array = new char[count];
         for (int i = 0; i < count; ++i) {
@@ -470,7 +471,7 @@ class ProtobufDescriptorParserImpl {
         return array;
     }
 
-    private static byte[] toBytes(Message message, FieldDescriptor fd, ByteFunction<Object> f) {
+    private static byte[] toBytes(Message message, FieldDescriptor fd, ToByteFunction<Object> f) {
         final int count = message.getRepeatedFieldCount(fd);
         final byte[] array = new byte[count];
         for (int i = 0; i < count; ++i) {
@@ -479,7 +480,7 @@ class ProtobufDescriptorParserImpl {
         return array;
     }
 
-    private static short[] toShorts(Message message, FieldDescriptor fd, ShortFunction<Object> f) {
+    private static short[] toShorts(Message message, FieldDescriptor fd, ToShortFunction<Object> f) {
         final int count = message.getRepeatedFieldCount(fd);
         final short[] array = new short[count];
         for (int i = 0; i < count; ++i) {
@@ -488,7 +489,7 @@ class ProtobufDescriptorParserImpl {
         return array;
     }
 
-    private static int[] toInts(Message message, FieldDescriptor fd, IntFunction<Object> f) {
+    private static int[] toInts(Message message, FieldDescriptor fd, ToIntFunction<Object> f) {
         final int count = message.getRepeatedFieldCount(fd);
         final int[] array = new int[count];
         for (int i = 0; i < count; ++i) {
@@ -497,7 +498,7 @@ class ProtobufDescriptorParserImpl {
         return array;
     }
 
-    private static long[] toLongs(Message message, FieldDescriptor fd, LongFunction<Object> f) {
+    private static long[] toLongs(Message message, FieldDescriptor fd, ToLongFunction<Object> f) {
         final int count = message.getRepeatedFieldCount(fd);
         final long[] array = new long[count];
         for (int i = 0; i < count; ++i) {
@@ -506,7 +507,7 @@ class ProtobufDescriptorParserImpl {
         return array;
     }
 
-    private static float[] toFloats(Message message, FieldDescriptor fd, FloatFunction<Object> f) {
+    private static float[] toFloats(Message message, FieldDescriptor fd, ToFloatFunction<Object> f) {
         final int count = message.getRepeatedFieldCount(fd);
         final float[] array = new float[count];
         for (int i = 0; i < count; ++i) {
@@ -515,7 +516,7 @@ class ProtobufDescriptorParserImpl {
         return array;
     }
 
-    private static double[] toDoubles(Message message, FieldDescriptor fd, DoubleFunction<Object> f) {
+    private static double[] toDoubles(Message message, FieldDescriptor fd, ToDoubleFunction<Object> f) {
         final int count = message.getRepeatedFieldCount(fd);
         final double[] array = new double[count];
         for (int i = 0; i < count; ++i) {
@@ -524,7 +525,7 @@ class ProtobufDescriptorParserImpl {
         return array;
     }
 
-    private static boolean[] toBooleans(Message message, FieldDescriptor fd, BooleanFunction<Object> f) {
+    private static boolean[] toBooleans(Message message, FieldDescriptor fd, ToBooleanFunction<Object> f) {
         final int count = message.getRepeatedFieldCount(fd);
         final boolean[] array = new boolean[count];
         for (int i = 0; i < count; ++i) {
@@ -533,7 +534,7 @@ class ProtobufDescriptorParserImpl {
         return array;
     }
 
-    private static <T> T[] toArray(Message message, FieldDescriptor fd, ObjectFunction<Object, T> f) {
+    private static <T> T[] toArray(Message message, FieldDescriptor fd, ToObjectFunction<Object, T> f) {
         final int count = message.getRepeatedFieldCount(fd);
         // noinspection unchecked
         final T[] array = (T[]) Array.newInstance(f.returnType().clazz(), count);

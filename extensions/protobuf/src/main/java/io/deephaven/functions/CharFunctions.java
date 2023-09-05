@@ -7,16 +7,16 @@ import java.util.Objects;
 import java.util.function.Function;
 
 class CharFunctions {
-    static <T> CharFunction<T> primitive() {
+    static <T> ToCharFunction<T> primitive() {
         // noinspection unchecked
-        return (CharFunction<T>) PrimitiveChar.INSTANCE;
+        return (ToCharFunction<T>) PrimitiveChar.INSTANCE;
     }
 
-    static <T, R> CharFunction<T> map(Function<T, R> f, CharFunction<R> g) {
+    static <T, R> ToCharFunction<T> map(Function<T, R> f, ToCharFunction<R> g) {
         return new CharMap<>(f, g);
     }
 
-    private enum PrimitiveChar implements CharFunction<Object> {
+    private enum PrimitiveChar implements ToCharFunction<Object> {
         INSTANCE;
 
         @Override
@@ -25,11 +25,11 @@ class CharFunctions {
         }
     }
 
-    private static class CharMap<T, R> implements CharFunction<T> {
+    private static class CharMap<T, R> implements ToCharFunction<T> {
         private final Function<T, R> f;
-        private final CharFunction<R> g;
+        private final ToCharFunction<R> g;
 
-        public CharMap(Function<T, R> f, CharFunction<R> g) {
+        public CharMap(Function<T, R> f, ToCharFunction<R> g) {
             this.f = Objects.requireNonNull(f);
             this.g = Objects.requireNonNull(g);
         }

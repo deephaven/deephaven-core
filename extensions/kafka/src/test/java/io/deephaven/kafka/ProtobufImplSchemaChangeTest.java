@@ -5,11 +5,11 @@ import com.google.protobuf.Descriptors.Descriptor;
 import com.google.protobuf.Message;
 import com.google.protobuf.Timestamp;
 import io.deephaven.UncheckedDeephavenException;
-import io.deephaven.functions.BooleanFunction;
-import io.deephaven.functions.FloatFunction;
-import io.deephaven.functions.IntFunction;
-import io.deephaven.functions.LongFunction;
-import io.deephaven.functions.ObjectFunction;
+import io.deephaven.functions.ToBooleanFunction;
+import io.deephaven.functions.ToFloatFunction;
+import io.deephaven.functions.ToIntFunction;
+import io.deephaven.functions.ToLongFunction;
+import io.deephaven.functions.ToObjectFunction;
 import io.deephaven.functions.TypedFunction;
 import io.deephaven.kafka.protobuf.gen.BoolV1;
 import io.deephaven.kafka.protobuf.gen.BoolV2;
@@ -42,7 +42,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.function.Function;
 
-import static io.deephaven.functions.BooleanFunction.map;
+import static io.deephaven.functions.ToBooleanFunction.map;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.failBecauseExceptionWasNotThrown;
 
@@ -56,7 +56,8 @@ public class ProtobufImplSchemaChangeTest {
     public void myMessageV1toV2() {
         final ProtobufFunctions functions = schemaChangeAwareFunctions(MyMessageV1.MyMessage.getDescriptor());
         assertThat(functions.functions()).hasSize(1);
-        final ObjectFunction<Message, String> nameFunction = (ObjectFunction<Message, String>) get(functions, "name");
+        final ToObjectFunction<Message, String> nameFunction =
+                (ToObjectFunction<Message, String>) get(functions, "name");
         {
             final MyMessageV1.MyMessage v1 = MyMessageV1.MyMessage.newBuilder().setName("v1").build();
             assertThat(nameFunction.apply(v1)).isEqualTo("v1");
@@ -71,8 +72,9 @@ public class ProtobufImplSchemaChangeTest {
     public void myMessageV2toV1() {
         final ProtobufFunctions functions = schemaChangeAwareFunctions(MyMessageV2.MyMessage.getDescriptor());
         assertThat(functions.functions()).hasSize(2);
-        final ObjectFunction<Message, String> nameFunction = (ObjectFunction<Message, String>) get(functions, "name");
-        final IntFunction<Message> ageFunction = (IntFunction<Message>) get(functions, "age");
+        final ToObjectFunction<Message, String> nameFunction =
+                (ToObjectFunction<Message, String>) get(functions, "name");
+        final ToIntFunction<Message> ageFunction = (ToIntFunction<Message>) get(functions, "age");
         {
             final MyMessageV2.MyMessage v2 = MyMessageV2.MyMessage.newBuilder().setName("v2").setAge(2).build();
             assertThat(nameFunction.apply(v2)).isEqualTo("v2");
@@ -89,8 +91,9 @@ public class ProtobufImplSchemaChangeTest {
     public void myMessageV2toV3() {
         final ProtobufFunctions functions = schemaChangeAwareFunctions(MyMessageV2.MyMessage.getDescriptor());
         assertThat(functions.functions()).hasSize(2);
-        final ObjectFunction<Message, String> nameFunction = (ObjectFunction<Message, String>) get(functions, "name");
-        final IntFunction<Message> ageFunction = (IntFunction<Message>) get(functions, "age");
+        final ToObjectFunction<Message, String> nameFunction =
+                (ToObjectFunction<Message, String>) get(functions, "name");
+        final ToIntFunction<Message> ageFunction = (ToIntFunction<Message>) get(functions, "age");
         {
             final MyMessageV2.MyMessage v2 = MyMessageV2.MyMessage.newBuilder().setName("v2").setAge(2).build();
             assertThat(nameFunction.apply(v2)).isEqualTo("v2");
@@ -125,12 +128,13 @@ public class ProtobufImplSchemaChangeTest {
     public void myMessageV3toV2() {
         final ProtobufFunctions functions = schemaChangeAwareFunctions(MyMessageV3.MyMessage.getDescriptor());
         assertThat(functions.functions()).hasSize(4);
-        final ObjectFunction<Message, String> nameFunction = (ObjectFunction<Message, String>) get(functions, "name");
-        final ObjectFunction<Message, String> firstNameFunction =
-                (ObjectFunction<Message, String>) get(functions, "first_and_last", "first_name");
-        final ObjectFunction<Message, String> lastNameFunction =
-                (ObjectFunction<Message, String>) get(functions, "first_and_last", "last_name");
-        final IntFunction<Message> ageFunction = (IntFunction<Message>) get(functions, "age");
+        final ToObjectFunction<Message, String> nameFunction =
+                (ToObjectFunction<Message, String>) get(functions, "name");
+        final ToObjectFunction<Message, String> firstNameFunction =
+                (ToObjectFunction<Message, String>) get(functions, "first_and_last", "first_name");
+        final ToObjectFunction<Message, String> lastNameFunction =
+                (ToObjectFunction<Message, String>) get(functions, "first_and_last", "last_name");
+        final ToIntFunction<Message> ageFunction = (ToIntFunction<Message>) get(functions, "age");
         {
             final MyMessageV3.MyMessage v3 = MyMessageV3.MyMessage.newBuilder().setName("v3").setAge(3).build();
             assertThat(nameFunction.apply(v3)).isEqualTo("v3");
@@ -175,8 +179,9 @@ public class ProtobufImplSchemaChangeTest {
     public void myMessageV3toV4() {
         final ProtobufFunctions functions = schemaChangeAwareFunctions(MyMessageV3.MyMessage.getDescriptor());
         assertThat(functions.functions()).hasSize(4);
-        final ObjectFunction<Message, String> nameFunction = (ObjectFunction<Message, String>) get(functions, "name");
-        final IntFunction<Message> ageFunction = (IntFunction<Message>) get(functions, "age");
+        final ToObjectFunction<Message, String> nameFunction =
+                (ToObjectFunction<Message, String>) get(functions, "name");
+        final ToIntFunction<Message> ageFunction = (ToIntFunction<Message>) get(functions, "age");
         {
             final MyMessageV3.MyMessage v3 = MyMessageV3.MyMessage.newBuilder().setName("v3").setAge(3).build();
             assertThat(nameFunction.apply(v3)).isEqualTo("v3");
@@ -208,9 +213,10 @@ public class ProtobufImplSchemaChangeTest {
     public void myMessageV4toV3() {
         final ProtobufFunctions functions = schemaChangeAwareFunctions(MyMessageV4.MyMessage.getDescriptor());
         assertThat(functions.functions()).hasSize(5);
-        final ObjectFunction<Message, String> nameFunction = (ObjectFunction<Message, String>) get(functions, "name");
-        final IntFunction<Message> ageFunction = (IntFunction<Message>) get(functions, "age");
-        final FloatFunction<Message> agefFunction = (FloatFunction<Message>) get(functions, "agef");
+        final ToObjectFunction<Message, String> nameFunction =
+                (ToObjectFunction<Message, String>) get(functions, "name");
+        final ToIntFunction<Message> ageFunction = (ToIntFunction<Message>) get(functions, "age");
+        final ToFloatFunction<Message> agefFunction = (ToFloatFunction<Message>) get(functions, "agef");
         {
             final MyMessageV4.MyMessage v4 = MyMessageV4.MyMessage.newBuilder().setName("v4").setAge(4).build();
             assertThat(nameFunction.apply(v4)).isEqualTo("v4");
@@ -247,8 +253,8 @@ public class ProtobufImplSchemaChangeTest {
     public void myMessageV4toV5() {
         final ProtobufFunctions functions = schemaChangeAwareFunctions(MyMessageV4.MyMessage.getDescriptor());
         assertThat(functions.functions()).hasSize(5);
-        final ObjectFunction<Message, String> lastNameFunction =
-                (ObjectFunction<Message, String>) get(functions, "first_and_last", "last_name");
+        final ToObjectFunction<Message, String> lastNameFunction =
+                (ToObjectFunction<Message, String>) get(functions, "first_and_last", "last_name");
         {
             final MyMessageV5.MyMessage v5 = MyMessageV5.MyMessage.getDefaultInstance();
             try {
@@ -265,8 +271,8 @@ public class ProtobufImplSchemaChangeTest {
     public void myMessageV5toV4() {
         final ProtobufFunctions functions = schemaChangeAwareFunctions(MyMessageV5.MyMessage.getDescriptor());
         assertThat(functions.functions()).hasSize(5);
-        final LongFunction<Message> lastNameFunction =
-                (LongFunction<Message>) get(functions, "first_and_last", "last_name");
+        final ToLongFunction<Message> lastNameFunction =
+                (ToLongFunction<Message>) get(functions, "first_and_last", "last_name");
         {
             final MyMessageV4.MyMessage v4 = MyMessageV4.MyMessage.getDefaultInstance();
             try {
@@ -283,7 +289,8 @@ public class ProtobufImplSchemaChangeTest {
     public void renameV1toV2() {
         final ProtobufFunctions functions = schemaChangeAwareFunctions(RenameV1.Rename.getDescriptor());
         assertThat(functions.functions()).hasSize(1);
-        final ObjectFunction<Message, String> nameFunction = (ObjectFunction<Message, String>) get(functions, "name");
+        final ToObjectFunction<Message, String> nameFunction =
+                (ToObjectFunction<Message, String>) get(functions, "name");
         {
             final RenameV1.Rename v1 = RenameV1.Rename.newBuilder().setName("v1").build();
             assertThat(nameFunction.apply(v1)).isEqualTo("v1");
@@ -298,9 +305,10 @@ public class ProtobufImplSchemaChangeTest {
     public void renameV2toV1() {
         final ProtobufFunctions functions = schemaChangeAwareFunctions(RenameV2.Rename.getDescriptor());
         assertThat(functions.functions()).hasSize(2);
-        final ObjectFunction<Message, String> nameOldFunction =
-                (ObjectFunction<Message, String>) get(functions, "name_old");
-        final ObjectFunction<Message, String> nameFunction = (ObjectFunction<Message, String>) get(functions, "name");
+        final ToObjectFunction<Message, String> nameOldFunction =
+                (ToObjectFunction<Message, String>) get(functions, "name_old");
+        final ToObjectFunction<Message, String> nameFunction =
+                (ToObjectFunction<Message, String>) get(functions, "name");
         {
             final RenameV2.Rename v2 = RenameV2.Rename.newBuilder().setNameOld("v2").setName("v2-new-name").build();
             assertThat(nameOldFunction.apply(v2)).isEqualTo("v2");
@@ -315,14 +323,14 @@ public class ProtobufImplSchemaChangeTest {
 
     @Test
     public void specialTypesWellKnown() {
-        final BooleanFunction<FieldPath> isTs = namePathEquals(List.of("ts"));
+        final ToBooleanFunction<FieldPath> isTs = namePathEquals(List.of("ts"));
         final ProtobufDescriptorParserOptions options = ProtobufDescriptorParserOptions.builder()
                 .fieldOptions(options(isTs, isTs, null, null))
                 .build();
         final ProtobufFunctions functions =
                 ProtobufImpl.schemaChangeAwareFunctions(SpecialTypesV1.SpecialTypes.getDescriptor(), options);
         assertThat(functions.functions()).hasSize(1);
-        final ObjectFunction<Message, Instant> tsFunction = (ObjectFunction<Message, Instant>) get(functions, "ts");
+        final ToObjectFunction<Message, Instant> tsFunction = (ToObjectFunction<Message, Instant>) get(functions, "ts");
         final Timestamp ts = Timestamp.newBuilder().setSeconds(42).build();
         {
             final SpecialTypesV1.SpecialTypes v1 = SpecialTypesV1.SpecialTypes.newBuilder().setTs(ts).build();
@@ -336,15 +344,15 @@ public class ProtobufImplSchemaChangeTest {
 
     @Test
     public void specialTypesAntiWellKnown() {
-        final BooleanFunction<FieldPath> startsWithTs = namePathStartsWith(List.of("ts"));
+        final ToBooleanFunction<FieldPath> startsWithTs = namePathStartsWith(List.of("ts"));
         final ProtobufDescriptorParserOptions options = ProtobufDescriptorParserOptions.builder()
-                .fieldOptions(options(startsWithTs, BooleanFunction.not(startsWithTs), null, null))
+                .fieldOptions(options(startsWithTs, ToBooleanFunction.not(startsWithTs), null, null))
                 .build();
         final ProtobufFunctions functions =
                 ProtobufImpl.schemaChangeAwareFunctions(SpecialTypesV1.SpecialTypes.getDescriptor(), options);
         assertThat(functions.functions()).hasSize(2);
-        final LongFunction<Message> seconds = (LongFunction<Message>) get(functions, "ts", "seconds");
-        final IntFunction<Message> nanos = (IntFunction<Message>) get(functions, "ts", "nanos");
+        final ToLongFunction<Message> seconds = (ToLongFunction<Message>) get(functions, "ts", "seconds");
+        final ToIntFunction<Message> nanos = (ToIntFunction<Message>) get(functions, "ts", "nanos");
         final Timestamp ts = Timestamp.newBuilder().setSeconds(42).setNanos(43).build();
         {
             final SpecialTypesV1.SpecialTypes v1 = SpecialTypesV1.SpecialTypes.newBuilder().setTs(ts).build();
@@ -360,14 +368,14 @@ public class ProtobufImplSchemaChangeTest {
 
     @Test
     public void specialTypesBytes() {
-        final BooleanFunction<FieldPath> isBs = namePathEquals(List.of("bs"));
+        final ToBooleanFunction<FieldPath> isBs = namePathEquals(List.of("bs"));
         final ProtobufDescriptorParserOptions options = ProtobufDescriptorParserOptions.builder()
                 .fieldOptions(options(isBs, null, isBs, null))
                 .build();
         final ProtobufFunctions functions =
                 ProtobufImpl.schemaChangeAwareFunctions(SpecialTypesV1.SpecialTypes.getDescriptor(), options);
         assertThat(functions.functions()).hasSize(1);
-        final ObjectFunction<Message, byte[]> bsFunction = (ObjectFunction<Message, byte[]>) get(functions, "bs");
+        final ToObjectFunction<Message, byte[]> bsFunction = (ToObjectFunction<Message, byte[]>) get(functions, "bs");
         final ByteString bs = ByteString.copyFromUtf8("foo");
         {
             final SpecialTypesV1.SpecialTypes v1 = SpecialTypesV1.SpecialTypes.newBuilder().setBs(bs).build();
@@ -381,15 +389,15 @@ public class ProtobufImplSchemaChangeTest {
 
     @Test
     public void specialTypesByteString() {
-        final BooleanFunction<FieldPath> isBs = namePathEquals(List.of("bs"));
+        final ToBooleanFunction<FieldPath> isBs = namePathEquals(List.of("bs"));
         final ProtobufDescriptorParserOptions options = ProtobufDescriptorParserOptions.builder()
-                .fieldOptions(options(isBs, null, BooleanFunction.not(isBs), null))
+                .fieldOptions(options(isBs, null, ToBooleanFunction.not(isBs), null))
                 .build();
         final ProtobufFunctions functions =
                 ProtobufImpl.schemaChangeAwareFunctions(SpecialTypesV1.SpecialTypes.getDescriptor(), options);
         assertThat(functions.functions()).hasSize(1);
-        final ObjectFunction<Message, ByteString> bsFunction =
-                (ObjectFunction<Message, ByteString>) get(functions, "bs");
+        final ToObjectFunction<Message, ByteString> bsFunction =
+                (ToObjectFunction<Message, ByteString>) get(functions, "bs");
         final ByteString bs = ByteString.copyFromUtf8("foo");
         {
             final SpecialTypesV1.SpecialTypes v1 = SpecialTypesV1.SpecialTypes.newBuilder().setBs(bs).build();
@@ -403,15 +411,15 @@ public class ProtobufImplSchemaChangeTest {
 
     @Test
     public void specialTypesMap() {
-        final BooleanFunction<FieldPath> isMp = namePathEquals(List.of("mp"));
+        final ToBooleanFunction<FieldPath> isMp = namePathEquals(List.of("mp"));
         final ProtobufDescriptorParserOptions options = ProtobufDescriptorParserOptions.builder()
                 .fieldOptions(options(isMp, null, null, isMp))
                 .build();
         final ProtobufFunctions functions =
                 ProtobufImpl.schemaChangeAwareFunctions(SpecialTypesV1.SpecialTypes.getDescriptor(), options);
         assertThat(functions.functions()).hasSize(1);
-        final ObjectFunction<Message, Map<Object, Object>> mpFunction =
-                (ObjectFunction<Message, Map<Object, Object>>) get(functions, "mp");
+        final ToObjectFunction<Message, Map<Object, Object>> mpFunction =
+                (ToObjectFunction<Message, Map<Object, Object>>) get(functions, "mp");
         {
             final SpecialTypesV1.SpecialTypes v1 = SpecialTypesV1.SpecialTypes.newBuilder().putMp(42, 43).build();
             assertThat(mpFunction.apply(v1)).isEqualTo(Map.of(42, 43));
@@ -425,16 +433,17 @@ public class ProtobufImplSchemaChangeTest {
 
     @Test
     public void specialTypesAntiMap() {
-        final BooleanFunction<FieldPath> startsWithMp = namePathStartsWith(List.of("mp"));
+        final ToBooleanFunction<FieldPath> startsWithMp = namePathStartsWith(List.of("mp"));
         final ProtobufDescriptorParserOptions options = ProtobufDescriptorParserOptions.builder()
-                .fieldOptions(options(startsWithMp, null, null, BooleanFunction.not(startsWithMp)))
+                .fieldOptions(options(startsWithMp, null, null, ToBooleanFunction.not(startsWithMp)))
                 .build();
         final ProtobufFunctions functions =
                 ProtobufImpl.schemaChangeAwareFunctions(SpecialTypesV1.SpecialTypes.getDescriptor(), options);
         assertThat(functions.functions()).hasSize(2);
-        final ObjectFunction<Message, int[]> keyFunction = (ObjectFunction<Message, int[]>) get(functions, "mp", "key");
-        final ObjectFunction<Message, int[]> valueFunction =
-                (ObjectFunction<Message, int[]>) get(functions, "mp", "value");
+        final ToObjectFunction<Message, int[]> keyFunction =
+                (ToObjectFunction<Message, int[]>) get(functions, "mp", "key");
+        final ToObjectFunction<Message, int[]> valueFunction =
+                (ToObjectFunction<Message, int[]>) get(functions, "mp", "value");
         {
             final SpecialTypesV1.SpecialTypes v1 = SpecialTypesV1.SpecialTypes.newBuilder().putMp(42, 43).build();
             assertThat(keyFunction.apply(v1)).containsExactly(42);
@@ -455,8 +464,8 @@ public class ProtobufImplSchemaChangeTest {
         assertThat(functions.functions()).hasSize(1);
         // Note: it's important that this is parsed as ObjectFunction<Message, Boolean> instead of
         // BooleanFunction<Message> because we need to be able to handle schema changes which might remove the field
-        final ObjectFunction<Message, Boolean> myBoolFunction =
-                (ObjectFunction<Message, Boolean>) get(functions, "my_bool");
+        final ToObjectFunction<Message, Boolean> myBoolFunction =
+                (ToObjectFunction<Message, Boolean>) get(functions, "my_bool");
         {
             final BoolV1.MyBool v1 = BoolV1.MyBool.newBuilder().setMyBool(true).build();
             assertThat(myBoolFunction.apply(v1)).isTrue();
@@ -486,10 +495,10 @@ public class ProtobufImplSchemaChangeTest {
     }
 
     private static Function<FieldPath, FieldOptions> options(
-            BooleanFunction<FieldPath> include,
-            BooleanFunction<FieldPath> wellKnown,
-            BooleanFunction<FieldPath> bytes,
-            BooleanFunction<FieldPath> map) {
+            ToBooleanFunction<FieldPath> include,
+            ToBooleanFunction<FieldPath> wellKnown,
+            ToBooleanFunction<FieldPath> bytes,
+            ToBooleanFunction<FieldPath> map) {
         return fp -> {
             final Builder builder = FieldOptions.builder();
             if (include != null) {
@@ -514,11 +523,11 @@ public class ProtobufImplSchemaChangeTest {
         };
     }
 
-    private static BooleanFunction<FieldPath> namePathEquals(List<String> namePath) {
+    private static ToBooleanFunction<FieldPath> namePathEquals(List<String> namePath) {
         return map(FieldPath::namePath, namePath::equals);
     }
 
-    private static BooleanFunction<FieldPath> namePathStartsWith(List<String> prefix) {
+    private static ToBooleanFunction<FieldPath> namePathStartsWith(List<String> prefix) {
         return fieldPath -> fieldPath.startsWith(prefix);
     }
 }

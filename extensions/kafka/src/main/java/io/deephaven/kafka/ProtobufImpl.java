@@ -16,16 +16,16 @@ import io.confluent.kafka.serializers.protobuf.KafkaProtobufDeserializer;
 import io.deephaven.UncheckedDeephavenException;
 import io.deephaven.engine.table.ColumnDefinition;
 import io.deephaven.engine.table.TableDefinition;
-import io.deephaven.functions.BooleanFunction;
-import io.deephaven.functions.ByteFunction;
-import io.deephaven.functions.CharFunction;
-import io.deephaven.functions.DoubleFunction;
-import io.deephaven.functions.FloatFunction;
-import io.deephaven.functions.IntFunction;
-import io.deephaven.functions.LongFunction;
-import io.deephaven.functions.ObjectFunction;
-import io.deephaven.functions.PrimitiveFunction;
-import io.deephaven.functions.ShortFunction;
+import io.deephaven.functions.ToBooleanFunction;
+import io.deephaven.functions.ToByteFunction;
+import io.deephaven.functions.ToCharFunction;
+import io.deephaven.functions.ToDoubleFunction;
+import io.deephaven.functions.ToFloatFunction;
+import io.deephaven.functions.ToIntFunction;
+import io.deephaven.functions.ToLongFunction;
+import io.deephaven.functions.ToObjectFunction;
+import io.deephaven.functions.ToPrimitiveFunction;
+import io.deephaven.functions.ToShortFunction;
 import io.deephaven.functions.TypedFunction;
 import io.deephaven.kafka.KafkaTools.Consume;
 import io.deephaven.kafka.KafkaTools.KeyOrValue;
@@ -84,8 +84,8 @@ class ProtobufImpl {
 
     static final class ProtobufConsumeImpl extends Consume.KeyOrValueSpec {
 
-        private static final ObjectFunction<Object, Message> PROTOBUF_MESSAGE_OBJ =
-                ObjectFunction.identity(Type.ofCustom(Message.class));
+        private static final ToObjectFunction<Object, Message> PROTOBUF_MESSAGE_OBJ =
+                ToObjectFunction.identity(Type.ofCustom(Message.class));
 
         private final ProtobufConsumeOptions specs;
 
@@ -193,7 +193,7 @@ class ProtobufImpl {
      */
     private static <X> TypedFunction<X> withMostAppropriateType(TypedFunction<X> f) {
         final TypedFunction<X> f2 = DhNullableTypeTransform.of(f);
-        final PrimitiveFunction<X> unboxed = UnboxTransform.of(f2).orElse(null);
+        final ToPrimitiveFunction<X> unboxed = UnboxTransform.of(f2).orElse(null);
         return unboxed != null ? unboxed : f2;
     }
 
@@ -293,39 +293,39 @@ class ProtobufImpl {
             }
 
             private boolean test(Message message) {
-                return ((BooleanFunction<Message>) getOrCreateForType(message)).test(message);
+                return ((ToBooleanFunction<Message>) getOrCreateForType(message)).test(message);
             }
 
             private char applyAsChar(Message message) {
-                return ((CharFunction<Message>) getOrCreateForType(message)).applyAsChar(message);
+                return ((ToCharFunction<Message>) getOrCreateForType(message)).applyAsChar(message);
             }
 
             private byte applyAsByte(Message message) {
-                return ((ByteFunction<Message>) getOrCreateForType(message)).applyAsByte(message);
+                return ((ToByteFunction<Message>) getOrCreateForType(message)).applyAsByte(message);
             }
 
             private short applyAsShort(Message message) {
-                return ((ShortFunction<Message>) getOrCreateForType(message)).applyAsShort(message);
+                return ((ToShortFunction<Message>) getOrCreateForType(message)).applyAsShort(message);
             }
 
             private int applyAsInt(Message message) {
-                return ((IntFunction<Message>) getOrCreateForType(message)).applyAsInt(message);
+                return ((ToIntFunction<Message>) getOrCreateForType(message)).applyAsInt(message);
             }
 
             private long applyAsLong(Message message) {
-                return ((LongFunction<Message>) getOrCreateForType(message)).applyAsLong(message);
+                return ((ToLongFunction<Message>) getOrCreateForType(message)).applyAsLong(message);
             }
 
             private float applyAsFloat(Message message) {
-                return ((FloatFunction<Message>) getOrCreateForType(message)).applyAsFloat(message);
+                return ((ToFloatFunction<Message>) getOrCreateForType(message)).applyAsFloat(message);
             }
 
             private double applyAsDouble(Message message) {
-                return ((DoubleFunction<Message>) getOrCreateForType(message)).applyAsDouble(message);
+                return ((ToDoubleFunction<Message>) getOrCreateForType(message)).applyAsDouble(message);
             }
 
             private <T> T applyAsObject(Message message) {
-                return ((ObjectFunction<Message, T>) getOrCreateForType(message)).apply(message);
+                return ((ToObjectFunction<Message, T>) getOrCreateForType(message)).apply(message);
             }
 
             private TypedFunction<Message> getOrCreateForType(Message message) {
@@ -368,48 +368,48 @@ class ProtobufImpl {
                 }
 
                 @Override
-                public ObjectFunction<Message, Object> visit(GenericType<?> genericType) {
+                public ToObjectFunction<Message, Object> visit(GenericType<?> genericType) {
                     // noinspection unchecked
-                    return ObjectFunction.of(ForPath.this::applyAsObject, (GenericType<Object>) genericType);
+                    return ToObjectFunction.of(ForPath.this::applyAsObject, (GenericType<Object>) genericType);
                 }
 
                 @Override
-                public BooleanFunction<Message> visit(BooleanType booleanType) {
+                public ToBooleanFunction<Message> visit(BooleanType booleanType) {
                     return ForPath.this::test;
                 }
 
                 @Override
-                public ByteFunction<Message> visit(ByteType byteType) {
+                public ToByteFunction<Message> visit(ByteType byteType) {
                     return ForPath.this::applyAsByte;
                 }
 
                 @Override
-                public CharFunction<Message> visit(CharType charType) {
+                public ToCharFunction<Message> visit(CharType charType) {
                     return ForPath.this::applyAsChar;
                 }
 
                 @Override
-                public ShortFunction<Message> visit(ShortType shortType) {
+                public ToShortFunction<Message> visit(ShortType shortType) {
                     return ForPath.this::applyAsShort;
                 }
 
                 @Override
-                public IntFunction<Message> visit(IntType intType) {
+                public ToIntFunction<Message> visit(IntType intType) {
                     return ForPath.this::applyAsInt;
                 }
 
                 @Override
-                public LongFunction<Message> visit(LongType longType) {
+                public ToLongFunction<Message> visit(LongType longType) {
                     return ForPath.this::applyAsLong;
                 }
 
                 @Override
-                public FloatFunction<Message> visit(FloatType floatType) {
+                public ToFloatFunction<Message> visit(FloatType floatType) {
                     return ForPath.this::applyAsFloat;
                 }
 
                 @Override
-                public DoubleFunction<Message> visit(DoubleType doubleType) {
+                public ToDoubleFunction<Message> visit(DoubleType doubleType) {
                     return ForPath.this::applyAsDouble;
                 }
             }
@@ -435,7 +435,7 @@ class ProtobufImpl {
         }
 
         @Override
-        public TypedFunction<T> visit(PrimitiveFunction<T> f) {
+        public TypedFunction<T> visit(ToPrimitiveFunction<T> f) {
             if (desiredReturnType.equals(f.returnType().boxedType())) {
                 return BoxTransform.of(f);
             }
@@ -443,7 +443,7 @@ class ProtobufImpl {
         }
 
         @Override
-        public TypedFunction<T> visit(ObjectFunction<T, ?> f) {
+        public TypedFunction<T> visit(ToObjectFunction<T, ?> f) {
             return f.returnType().walk(new GenericType.Visitor<>() {
                 @Override
                 public TypedFunction<T> visit(BoxedType<?> boxedType) {

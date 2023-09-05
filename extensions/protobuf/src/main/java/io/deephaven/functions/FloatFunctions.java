@@ -7,16 +7,16 @@ import java.util.Objects;
 import java.util.function.Function;
 
 class FloatFunctions {
-    static <T> FloatFunction<T> primitive() {
+    static <T> ToFloatFunction<T> primitive() {
         // noinspection unchecked
-        return (FloatFunction<T>) PrimitiveFloat.INSTANCE;
+        return (ToFloatFunction<T>) PrimitiveFloat.INSTANCE;
     }
 
-    static <T, R> FloatFunction<T> map(Function<T, R> f, FloatFunction<R> g) {
+    static <T, R> ToFloatFunction<T> map(Function<T, R> f, ToFloatFunction<R> g) {
         return new FloatMap<>(f, g);
     }
 
-    private enum PrimitiveFloat implements FloatFunction<Object> {
+    private enum PrimitiveFloat implements ToFloatFunction<Object> {
         INSTANCE;
 
         @Override
@@ -25,11 +25,11 @@ class FloatFunctions {
         }
     }
 
-    private static class FloatMap<T, R> implements FloatFunction<T> {
+    private static class FloatMap<T, R> implements ToFloatFunction<T> {
         private final Function<T, R> f;
-        private final FloatFunction<R> g;
+        private final ToFloatFunction<R> g;
 
-        public FloatMap(Function<T, R> f, FloatFunction<R> g) {
+        public FloatMap(Function<T, R> f, ToFloatFunction<R> g) {
             this.f = Objects.requireNonNull(f);
             this.g = Objects.requireNonNull(g);
         }

@@ -3,16 +3,16 @@
  */
 package io.deephaven.kafka;
 
-import io.deephaven.functions.BooleanFunction;
-import io.deephaven.functions.ByteFunction;
-import io.deephaven.functions.CharFunction;
-import io.deephaven.functions.DoubleFunction;
-import io.deephaven.functions.FloatFunction;
-import io.deephaven.functions.IntFunction;
-import io.deephaven.functions.LongFunction;
-import io.deephaven.functions.ObjectFunction;
-import io.deephaven.functions.PrimitiveFunction;
-import io.deephaven.functions.ShortFunction;
+import io.deephaven.functions.ToBooleanFunction;
+import io.deephaven.functions.ToByteFunction;
+import io.deephaven.functions.ToCharFunction;
+import io.deephaven.functions.ToDoubleFunction;
+import io.deephaven.functions.ToFloatFunction;
+import io.deephaven.functions.ToIntFunction;
+import io.deephaven.functions.ToLongFunction;
+import io.deephaven.functions.ToObjectFunction;
+import io.deephaven.functions.ToPrimitiveFunction;
+import io.deephaven.functions.ToShortFunction;
 import io.deephaven.functions.TypedFunction;
 import io.deephaven.qst.type.BoxedBooleanType;
 import io.deephaven.qst.type.BoxedByteType;
@@ -30,7 +30,7 @@ class BoxTransform {
      * Creates the function composition {@code box ∘ f}.
      *
      * <p>
-     * For primitive functions {@code f}, see {@link #of(PrimitiveFunction)}.
+     * For primitive functions {@code f}, see {@link #of(ToPrimitiveFunction)}.
      *
      * <p>
      * For object functions {@code f}, {@code box} is the identity function (and {@code f} will simply be returned).
@@ -38,16 +38,16 @@ class BoxTransform {
      * @param f the function
      * @return the object function
      * @param <T> the input type
-     * @see #of(BooleanFunction)
-     * @see #of(CharFunction)
-     * @see #of(ByteFunction)
-     * @see #of(ShortFunction)
-     * @see #of(IntFunction)
-     * @see #of(LongFunction)
-     * @see #of(FloatFunction)
-     * @see #of(DoubleFunction)
+     * @see #of(ToBooleanFunction)
+     * @see #of(ToCharFunction)
+     * @see #of(ToByteFunction)
+     * @see #of(ToShortFunction)
+     * @see #of(ToIntFunction)
+     * @see #of(ToLongFunction)
+     * @see #of(ToFloatFunction)
+     * @see #of(ToDoubleFunction)
      */
-    public static <T> ObjectFunction<T, ?> of(TypedFunction<T> f) {
+    public static <T> ToObjectFunction<T, ?> of(TypedFunction<T> f) {
         return BoxedVisitor.of(f);
     }
 
@@ -60,16 +60,16 @@ class BoxTransform {
      * @param f the primitive function
      * @return the object function
      * @param <T> the input type
-     * @see #of(BooleanFunction)
-     * @see #of(CharFunction)
-     * @see #of(ByteFunction)
-     * @see #of(ShortFunction)
-     * @see #of(IntFunction)
-     * @see #of(LongFunction)
-     * @see #of(FloatFunction)
-     * @see #of(DoubleFunction)
+     * @see #of(ToBooleanFunction)
+     * @see #of(ToCharFunction)
+     * @see #of(ToByteFunction)
+     * @see #of(ToShortFunction)
+     * @see #of(ToIntFunction)
+     * @see #of(ToLongFunction)
+     * @see #of(ToFloatFunction)
+     * @see #of(ToDoubleFunction)
      */
-    public static <T> ObjectFunction<T, ?> of(PrimitiveFunction<T> f) {
+    public static <T> ToObjectFunction<T, ?> of(ToPrimitiveFunction<T> f) {
         return BoxedVisitor.of(f);
     }
 
@@ -84,8 +84,8 @@ class BoxTransform {
      * @return the object function
      * @param <T> the input type
      */
-    public static <T> ObjectFunction<T, Boolean> of(BooleanFunction<T> f) {
-        return ObjectFunction.of(f::test, BoxedBooleanType.of());
+    public static <T> ToObjectFunction<T, Boolean> of(ToBooleanFunction<T> f) {
+        return ToObjectFunction.of(f::test, BoxedBooleanType.of());
     }
 
     /**
@@ -99,8 +99,8 @@ class BoxTransform {
      * @param <T> the input type
      * @see TypeUtils#box(char)
      */
-    public static <T> ObjectFunction<T, Character> of(CharFunction<T> f) {
-        return ObjectFunction.of(t -> box(f, t), BoxedCharType.of());
+    public static <T> ToObjectFunction<T, Character> of(ToCharFunction<T> f) {
+        return ToObjectFunction.of(t -> box(f, t), BoxedCharType.of());
     }
 
     /**
@@ -114,8 +114,8 @@ class BoxTransform {
      * @param <T> the input type
      * @see TypeUtils#box(byte)
      */
-    public static <T> ObjectFunction<T, Byte> of(ByteFunction<T> f) {
-        return ObjectFunction.of(t -> box(f, t), BoxedByteType.of());
+    public static <T> ToObjectFunction<T, Byte> of(ToByteFunction<T> f) {
+        return ToObjectFunction.of(t -> box(f, t), BoxedByteType.of());
     }
 
     /**
@@ -129,8 +129,8 @@ class BoxTransform {
      * @param <T> the input type
      * @see TypeUtils#box(short)
      */
-    public static <T> ObjectFunction<T, Short> of(ShortFunction<T> f) {
-        return ObjectFunction.of(t -> box(f, t), BoxedShortType.of());
+    public static <T> ToObjectFunction<T, Short> of(ToShortFunction<T> f) {
+        return ToObjectFunction.of(t -> box(f, t), BoxedShortType.of());
     }
 
     /**
@@ -144,8 +144,8 @@ class BoxTransform {
      * @param <T> the input type
      * @see TypeUtils#box(int)
      */
-    public static <T> ObjectFunction<T, Integer> of(IntFunction<T> f) {
-        return ObjectFunction.of(t -> box(f, t), BoxedIntType.of());
+    public static <T> ToObjectFunction<T, Integer> of(ToIntFunction<T> f) {
+        return ToObjectFunction.of(t -> box(f, t), BoxedIntType.of());
     }
 
     /**
@@ -159,8 +159,8 @@ class BoxTransform {
      * @param <T> the input type
      * @see TypeUtils#box(long)
      */
-    public static <T> ObjectFunction<T, Long> of(LongFunction<T> f) {
-        return ObjectFunction.of(t -> box(f, t), BoxedLongType.of());
+    public static <T> ToObjectFunction<T, Long> of(ToLongFunction<T> f) {
+        return ToObjectFunction.of(t -> box(f, t), BoxedLongType.of());
     }
 
     /**
@@ -174,8 +174,8 @@ class BoxTransform {
      * @param <T> the input type
      * @see TypeUtils#box(float)
      */
-    public static <T> ObjectFunction<T, Float> of(FloatFunction<T> f) {
-        return ObjectFunction.of(t -> box(f, t), BoxedFloatType.of());
+    public static <T> ToObjectFunction<T, Float> of(ToFloatFunction<T> f) {
+        return ToObjectFunction.of(t -> box(f, t), BoxedFloatType.of());
     }
 
     /**
@@ -189,101 +189,101 @@ class BoxTransform {
      * @param <T> the input type
      * @see TypeUtils#box(double)
      */
-    public static <T> ObjectFunction<T, Double> of(DoubleFunction<T> f) {
-        return ObjectFunction.of(t -> box(f, t), BoxedDoubleType.of());
+    public static <T> ToObjectFunction<T, Double> of(ToDoubleFunction<T> f) {
+        return ToObjectFunction.of(t -> box(f, t), BoxedDoubleType.of());
     }
 
-    private enum BoxedVisitor implements TypedFunction.Visitor<Object, ObjectFunction<Object, ?>>,
-            PrimitiveFunction.Visitor<Object, ObjectFunction<Object, ?>> {
+    private enum BoxedVisitor implements TypedFunction.Visitor<Object, ToObjectFunction<Object, ?>>,
+            ToPrimitiveFunction.Visitor<Object, ToObjectFunction<Object, ?>> {
         INSTANCE;
 
-        public static <T> ObjectFunction<T, ?> of(TypedFunction<T> f) {
+        public static <T> ToObjectFunction<T, ?> of(TypedFunction<T> f) {
             // noinspection unchecked
-            return f.walk((TypedFunction.Visitor<T, ObjectFunction<T, ?>>) (TypedFunction.Visitor<?, ?>) INSTANCE);
+            return f.walk((TypedFunction.Visitor<T, ToObjectFunction<T, ?>>) (TypedFunction.Visitor<?, ?>) INSTANCE);
         }
 
-        public static <T> ObjectFunction<T, ?> of(PrimitiveFunction<T> f) {
+        public static <T> ToObjectFunction<T, ?> of(ToPrimitiveFunction<T> f) {
             // noinspection unchecked
             return f.walk(
-                    (PrimitiveFunction.Visitor<T, ObjectFunction<T, ?>>) (PrimitiveFunction.Visitor<?, ?>) INSTANCE);
+                    (ToPrimitiveFunction.Visitor<T, ToObjectFunction<T, ?>>) (ToPrimitiveFunction.Visitor<?, ?>) INSTANCE);
         }
 
         @Override
-        public ObjectFunction<Object, ?> visit(PrimitiveFunction<Object> f) {
+        public ToObjectFunction<Object, ?> visit(ToPrimitiveFunction<Object> f) {
             return BoxTransform.of(f);
         }
 
         @Override
-        public ObjectFunction<Object, ?> visit(ObjectFunction<Object, ?> f) {
+        public ToObjectFunction<Object, ?> visit(ToObjectFunction<Object, ?> f) {
             return f;
         }
 
         @Override
-        public ObjectFunction<Object, ?> visit(BooleanFunction<Object> f) {
+        public ToObjectFunction<Object, ?> visit(ToBooleanFunction<Object> f) {
             return BoxTransform.of(f);
         }
 
         @Override
-        public ObjectFunction<Object, ?> visit(CharFunction<Object> f) {
+        public ToObjectFunction<Object, ?> visit(ToCharFunction<Object> f) {
             return BoxTransform.of(f);
         }
 
         @Override
-        public ObjectFunction<Object, ?> visit(ByteFunction<Object> f) {
+        public ToObjectFunction<Object, ?> visit(ToByteFunction<Object> f) {
             return BoxTransform.of(f);
         }
 
         @Override
-        public ObjectFunction<Object, ?> visit(ShortFunction<Object> f) {
+        public ToObjectFunction<Object, ?> visit(ToShortFunction<Object> f) {
             return BoxTransform.of(f);
         }
 
         @Override
-        public ObjectFunction<Object, ?> visit(IntFunction<Object> f) {
+        public ToObjectFunction<Object, ?> visit(ToIntFunction<Object> f) {
             return BoxTransform.of(f);
         }
 
         @Override
-        public ObjectFunction<Object, ?> visit(LongFunction<Object> f) {
+        public ToObjectFunction<Object, ?> visit(ToLongFunction<Object> f) {
             return BoxTransform.of(f);
         }
 
         @Override
-        public ObjectFunction<Object, ?> visit(FloatFunction<Object> f) {
+        public ToObjectFunction<Object, ?> visit(ToFloatFunction<Object> f) {
             return BoxTransform.of(f);
         }
 
         @Override
-        public ObjectFunction<Object, ?> visit(DoubleFunction<Object> f) {
+        public ToObjectFunction<Object, ?> visit(ToDoubleFunction<Object> f) {
             return BoxTransform.of(f);
         }
     }
 
-    private static <T> Character box(CharFunction<T> f, T x) {
+    private static <T> Character box(ToCharFunction<T> f, T x) {
         return TypeUtils.box(f.applyAsChar(x));
     }
 
-    private static <T> Byte box(ByteFunction<T> f, T x) {
+    private static <T> Byte box(ToByteFunction<T> f, T x) {
         return TypeUtils.box(f.applyAsByte(x));
     }
 
-    private static <T> Short box(ShortFunction<T> f, T x) {
+    private static <T> Short box(ToShortFunction<T> f, T x) {
         return TypeUtils.box(f.applyAsShort(x));
     }
 
-    private static <T> Integer box(IntFunction<T> f, T x) {
+    private static <T> Integer box(ToIntFunction<T> f, T x) {
         return TypeUtils.box(f.applyAsInt(x));
     }
 
-    private static <T> Long box(LongFunction<T> f, T x) {
+    private static <T> Long box(ToLongFunction<T> f, T x) {
         return TypeUtils.box(f.applyAsLong(x));
     }
 
-    private static <T> Float box(FloatFunction<T> f, T x) {
+    private static <T> Float box(ToFloatFunction<T> f, T x) {
         return TypeUtils.box(f.applyAsFloat(x));
     }
 
-    private static <T> Double box(DoubleFunction<T> f, T x) {
+    private static <T> Double box(ToDoubleFunction<T> f, T x) {
         return TypeUtils.box(f.applyAsDouble(x));
     }
 }

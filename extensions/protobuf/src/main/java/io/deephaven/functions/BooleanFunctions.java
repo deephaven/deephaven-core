@@ -10,30 +10,30 @@ import java.util.function.Function;
 
 class BooleanFunctions {
 
-    static <T> BooleanFunction<T> primitive() {
+    static <T> ToBooleanFunction<T> primitive() {
         // noinspection unchecked
-        return (BooleanFunction<T>) PrimitiveBoolean.INSTANCE;
+        return (ToBooleanFunction<T>) PrimitiveBoolean.INSTANCE;
     }
 
-    public static <T> BooleanFunction<T> ofTrue() {
+    public static <T> ToBooleanFunction<T> ofTrue() {
         // noinspection unchecked
-        return (BooleanFunction<T>) OfTrue.INSTANCE;
+        return (ToBooleanFunction<T>) OfTrue.INSTANCE;
     }
 
-    public static <T> BooleanFunction<T> ofFalse() {
+    public static <T> ToBooleanFunction<T> ofFalse() {
         // noinspection unchecked
-        return (BooleanFunction<T>) OfFalse.INSTANCE;
+        return (ToBooleanFunction<T>) OfFalse.INSTANCE;
     }
 
-    static <T, R> BooleanFunction<T> map(Function<T, R> f, BooleanFunction<R> g) {
+    static <T, R> ToBooleanFunction<T> map(Function<T, R> f, ToBooleanFunction<R> g) {
         return new BooleanMap<>(f, g);
     }
 
-    static <T> BooleanFunction<T> not(BooleanFunction<T> f) {
+    static <T> ToBooleanFunction<T> not(ToBooleanFunction<T> f) {
         return f instanceof BooleanNot ? ((BooleanNot<T>) f).function() : new BooleanNot<>(f);
     }
 
-    static <T> BooleanFunction<T> or(Collection<BooleanFunction<T>> functions) {
+    static <T> ToBooleanFunction<T> or(Collection<ToBooleanFunction<T>> functions) {
         if (functions.isEmpty()) {
             return ofFalse();
         }
@@ -43,7 +43,7 @@ class BooleanFunctions {
         return new BooleanOr<>(functions);
     }
 
-    static <T> BooleanFunction<T> and(Collection<BooleanFunction<T>> functions) {
+    static <T> ToBooleanFunction<T> and(Collection<ToBooleanFunction<T>> functions) {
         if (functions.isEmpty()) {
             return ofTrue();
         }
@@ -53,7 +53,7 @@ class BooleanFunctions {
         return new BooleanAnd<>(functions);
     }
 
-    private enum OfTrue implements BooleanFunction<Object> {
+    private enum OfTrue implements ToBooleanFunction<Object> {
         INSTANCE;
 
         @Override
@@ -62,7 +62,7 @@ class BooleanFunctions {
         }
     }
 
-    private enum OfFalse implements BooleanFunction<Object> {
+    private enum OfFalse implements ToBooleanFunction<Object> {
         INSTANCE;
 
         @Override
@@ -71,7 +71,7 @@ class BooleanFunctions {
         }
     }
 
-    private enum PrimitiveBoolean implements BooleanFunction<Object> {
+    private enum PrimitiveBoolean implements ToBooleanFunction<Object> {
         INSTANCE;
 
         @Override
@@ -80,11 +80,11 @@ class BooleanFunctions {
         }
     }
 
-    private static class BooleanMap<T, R> implements BooleanFunction<T> {
+    private static class BooleanMap<T, R> implements ToBooleanFunction<T> {
         private final Function<T, R> f;
-        private final BooleanFunction<R> g;
+        private final ToBooleanFunction<R> g;
 
-        public BooleanMap(Function<T, R> f, BooleanFunction<R> g) {
+        public BooleanMap(Function<T, R> f, ToBooleanFunction<R> g) {
             this.f = Objects.requireNonNull(f);
             this.g = Objects.requireNonNull(g);
         }
@@ -114,14 +114,14 @@ class BooleanFunctions {
         }
     }
 
-    private static class BooleanNot<T> implements BooleanFunction<T> {
-        private final BooleanFunction<T> function;
+    private static class BooleanNot<T> implements ToBooleanFunction<T> {
+        private final ToBooleanFunction<T> function;
 
-        public BooleanNot(BooleanFunction<T> function) {
+        public BooleanNot(ToBooleanFunction<T> function) {
             this.function = Objects.requireNonNull(function);
         }
 
-        public BooleanFunction<T> function() {
+        public ToBooleanFunction<T> function() {
             return function;
         }
 
@@ -148,16 +148,16 @@ class BooleanFunctions {
         }
     }
 
-    private static class BooleanAnd<T> implements BooleanFunction<T> {
-        private final Collection<BooleanFunction<T>> functions;
+    private static class BooleanAnd<T> implements ToBooleanFunction<T> {
+        private final Collection<ToBooleanFunction<T>> functions;
 
-        public BooleanAnd(Collection<BooleanFunction<T>> functions) {
+        public BooleanAnd(Collection<ToBooleanFunction<T>> functions) {
             this.functions = List.copyOf(functions);
         }
 
         @Override
         public boolean test(T value) {
-            for (BooleanFunction<T> function : functions) {
+            for (ToBooleanFunction<T> function : functions) {
                 if (!function.test(value)) {
                     return false;
                 }
@@ -183,16 +183,16 @@ class BooleanFunctions {
         }
     }
 
-    private static class BooleanOr<T> implements BooleanFunction<T> {
-        private final Collection<BooleanFunction<T>> functions;
+    private static class BooleanOr<T> implements ToBooleanFunction<T> {
+        private final Collection<ToBooleanFunction<T>> functions;
 
-        public BooleanOr(Collection<BooleanFunction<T>> functions) {
+        public BooleanOr(Collection<ToBooleanFunction<T>> functions) {
             this.functions = List.copyOf(functions);
         }
 
         @Override
         public boolean test(T value) {
-            for (BooleanFunction<T> function : functions) {
+            for (ToBooleanFunction<T> function : functions) {
                 if (function.test(value)) {
                     return true;
                 }

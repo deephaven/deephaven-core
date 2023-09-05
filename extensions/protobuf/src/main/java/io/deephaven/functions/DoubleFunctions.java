@@ -8,16 +8,16 @@ import java.util.function.Function;
 
 class DoubleFunctions {
 
-    static <T> DoubleFunction<T> primitive() {
+    static <T> ToDoubleFunction<T> primitive() {
         // noinspection unchecked
-        return (DoubleFunction<T>) PrimitiveDouble.INSTANCE;
+        return (ToDoubleFunction<T>) PrimitiveDouble.INSTANCE;
     }
 
-    static <T, R> DoubleFunction<T> map(Function<T, R> f, DoubleFunction<R> g) {
+    static <T, R> ToDoubleFunction<T> map(Function<T, R> f, ToDoubleFunction<R> g) {
         return new DoubleFunctionMap<>(f, g);
     }
 
-    private enum PrimitiveDouble implements DoubleFunction<Object> {
+    private enum PrimitiveDouble implements ToDoubleFunction<Object> {
         INSTANCE;
 
         @Override
@@ -26,11 +26,11 @@ class DoubleFunctions {
         }
     }
 
-    private static class DoubleFunctionMap<T, R> implements DoubleFunction<T> {
+    private static class DoubleFunctionMap<T, R> implements ToDoubleFunction<T> {
         private final Function<T, R> f;
-        private final DoubleFunction<R> g;
+        private final ToDoubleFunction<R> g;
 
-        public DoubleFunctionMap(Function<T, R> f, DoubleFunction<R> g) {
+        public DoubleFunctionMap(Function<T, R> f, ToDoubleFunction<R> g) {
             this.f = Objects.requireNonNull(f);
             this.g = Objects.requireNonNull(g);
         }

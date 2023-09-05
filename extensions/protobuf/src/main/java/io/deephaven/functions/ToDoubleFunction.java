@@ -7,7 +7,6 @@ import io.deephaven.qst.type.DoubleType;
 import io.deephaven.qst.type.Type;
 
 import java.util.function.Function;
-import java.util.function.ToDoubleFunction;
 
 /**
  * A {@code double} function.
@@ -15,7 +14,7 @@ import java.util.function.ToDoubleFunction;
  * @param <T> the input type
  */
 @FunctionalInterface
-public interface DoubleFunction<T> extends PrimitiveFunction<T>, ToDoubleFunction<T> {
+public interface ToDoubleFunction<T> extends ToPrimitiveFunction<T>, java.util.function.ToDoubleFunction<T> {
 
     /**
      * Assumes the object value is directly castable to a double. Equivalent to {@code x -> (double)x}.
@@ -23,7 +22,7 @@ public interface DoubleFunction<T> extends PrimitiveFunction<T>, ToDoubleFunctio
      * @return the double function
      * @param <T> the value type
      */
-    static <T> DoubleFunction<T> primitive() {
+    static <T> ToDoubleFunction<T> primitive() {
         return DoubleFunctions.primitive();
     }
 
@@ -39,7 +38,7 @@ public interface DoubleFunction<T> extends PrimitiveFunction<T>, ToDoubleFunctio
      * @param <T> the input type
      * @param <R> the intermediate type
      */
-    static <T, R> DoubleFunction<T> map(Function<T, R> f, DoubleFunction<R> g) {
+    static <T, R> ToDoubleFunction<T> map(Function<T, R> f, ToDoubleFunction<R> g) {
         return DoubleFunctions.map(f, g);
     }
 
@@ -55,7 +54,7 @@ public interface DoubleFunction<T> extends PrimitiveFunction<T>, ToDoubleFunctio
      * @param <T> the input type
      * @param <R> the intermediate type
      */
-    static <T, R> DoubleFunction<T> map(ObjectFunction<T, R> f, DoubleFunction<R> g) {
+    static <T, R> ToDoubleFunction<T> map(ToObjectFunction<T, R> f, ToDoubleFunction<R> g) {
         return DoubleFunctions.map(f, g);
     }
 
@@ -68,7 +67,7 @@ public interface DoubleFunction<T> extends PrimitiveFunction<T>, ToDoubleFunctio
     }
 
     @Override
-    default DoubleFunction<T> mapInput(Function<T, T> f) {
+    default ToDoubleFunction<T> mapInput(Function<T, T> f) {
         return map(f, this);
     }
 

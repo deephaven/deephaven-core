@@ -3,26 +3,26 @@
  */
 package io.deephaven.protobuf;
 
-import io.deephaven.functions.BooleanFunction;
-import io.deephaven.functions.ByteFunction;
-import io.deephaven.functions.CharFunction;
-import io.deephaven.functions.DoubleFunction;
-import io.deephaven.functions.FloatFunction;
-import io.deephaven.functions.IntFunction;
-import io.deephaven.functions.LongFunction;
-import io.deephaven.functions.ObjectFunction;
-import io.deephaven.functions.PrimitiveFunction;
-import io.deephaven.functions.ShortFunction;
+import io.deephaven.functions.ToBooleanFunction;
+import io.deephaven.functions.ToByteFunction;
+import io.deephaven.functions.ToCharFunction;
+import io.deephaven.functions.ToDoubleFunction;
+import io.deephaven.functions.ToFloatFunction;
+import io.deephaven.functions.ToIntFunction;
+import io.deephaven.functions.ToLongFunction;
+import io.deephaven.functions.ToObjectFunction;
+import io.deephaven.functions.ToPrimitiveFunction;
+import io.deephaven.functions.ToShortFunction;
 import io.deephaven.functions.TypedFunction;
 import io.deephaven.functions.TypedFunction.Visitor;
 
-class UpcastApply<T> implements Visitor<T, Object>, PrimitiveFunction.Visitor<T, Object> {
+class UpcastApply<T> implements Visitor<T, Object>, ToPrimitiveFunction.Visitor<T, Object> {
     public static <T> Object apply(TypedFunction<T> f, T value) {
         return f.walk(new UpcastApply<>(value));
     }
 
-    public static <T> Object apply(PrimitiveFunction<T> f, T value) {
-        return f.walk((PrimitiveFunction.Visitor<T, Object>) new UpcastApply<>(value));
+    public static <T> Object apply(ToPrimitiveFunction<T> f, T value) {
+        return f.walk((ToPrimitiveFunction.Visitor<T, Object>) new UpcastApply<>(value));
     }
 
     private final T value;
@@ -32,52 +32,52 @@ class UpcastApply<T> implements Visitor<T, Object>, PrimitiveFunction.Visitor<T,
     }
 
     @Override
-    public Object visit(ObjectFunction<T, ?> f) {
+    public Object visit(ToObjectFunction<T, ?> f) {
         return f.apply(value);
     }
 
     @Override
-    public Object visit(PrimitiveFunction<T> f) {
-        return f.walk((PrimitiveFunction.Visitor<T, Object>) this);
+    public Object visit(ToPrimitiveFunction<T> f) {
+        return f.walk((ToPrimitiveFunction.Visitor<T, Object>) this);
     }
 
     @Override
-    public Object visit(BooleanFunction<T> f) {
+    public Object visit(ToBooleanFunction<T> f) {
         return f.test(value);
     }
 
     @Override
-    public Object visit(CharFunction<T> f) {
+    public Object visit(ToCharFunction<T> f) {
         return f.applyAsChar(value);
     }
 
     @Override
-    public Object visit(ByteFunction<T> f) {
+    public Object visit(ToByteFunction<T> f) {
         return f.applyAsByte(value);
     }
 
     @Override
-    public Object visit(ShortFunction<T> f) {
+    public Object visit(ToShortFunction<T> f) {
         return f.applyAsShort(value);
     }
 
     @Override
-    public Object visit(IntFunction<T> f) {
+    public Object visit(ToIntFunction<T> f) {
         return f.applyAsInt(value);
     }
 
     @Override
-    public Object visit(LongFunction<T> f) {
+    public Object visit(ToLongFunction<T> f) {
         return f.applyAsLong(value);
     }
 
     @Override
-    public Object visit(FloatFunction<T> f) {
+    public Object visit(ToFloatFunction<T> f) {
         return f.applyAsFloat(value);
     }
 
     @Override
-    public Object visit(DoubleFunction<T> f) {
+    public Object visit(ToDoubleFunction<T> f) {
         return f.applyAsDouble(value);
     }
 }

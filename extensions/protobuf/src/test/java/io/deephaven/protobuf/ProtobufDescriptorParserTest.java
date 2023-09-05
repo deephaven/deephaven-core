@@ -16,7 +16,7 @@ import com.google.protobuf.StringValue;
 import com.google.protobuf.Timestamp;
 import com.google.protobuf.UInt32Value;
 import com.google.protobuf.UInt64Value;
-import io.deephaven.functions.ObjectFunction;
+import io.deephaven.functions.ToObjectFunction;
 import io.deephaven.functions.TypedFunction;
 import io.deephaven.protobuf.FieldOptions.BytesBehavior;
 import io.deephaven.protobuf.FieldOptions.MapBehavior;
@@ -1147,7 +1147,7 @@ public class ProtobufDescriptorParserTest {
             @Override
             public TypedFunction<Message> messageParser(Descriptor descriptor,
                     ProtobufDescriptorParserOptions options) {
-                return ObjectFunction.identity(Type.ofCustom(Person.class));
+                return ToObjectFunction.identity(Type.ofCustom(Person.class));
             }
         };
         final ProtobufDescriptorParserOptions options =

@@ -12,32 +12,32 @@ import java.util.function.Function;
 
 class ObjectFunctions {
 
-    static <T> ObjectFunction<T, Object> identity() {
+    static <T> ToObjectFunction<T, Object> identity() {
         // noinspection unchecked
-        return (ObjectFunction<T, Object>) Identity.INSTANCE;
+        return (ToObjectFunction<T, Object>) Identity.INSTANCE;
     }
 
-    static <T, R> ObjectFunction<T, R> cast(GenericType<R> type) {
+    static <T, R> ToObjectFunction<T, R> cast(GenericType<R> type) {
         return new Casted<>(type);
     }
 
-    static <T, R> ObjectFunction<T, R> of(Function<T, R> f, GenericType<R> returnType) {
+    static <T, R> ToObjectFunction<T, R> of(Function<T, R> f, GenericType<R> returnType) {
         return new FunctionImpl<>(f, returnType);
     }
 
-    static <T, R, Z> ObjectFunction<T, Z> map(Function<T, R> f, ObjectFunction<R, Z> g) {
+    static <T, R, Z> ToObjectFunction<T, Z> map(Function<T, R> f, ToObjectFunction<R, Z> g) {
         return new ObjectMap<>(f, g);
     }
 
-    static <T, R> PrimitiveFunction<T> mapPrimitive(ObjectFunction<T, R> f, PrimitiveFunction<R> g) {
+    static <T, R> ToPrimitiveFunction<T> mapPrimitive(ToObjectFunction<T, R> f, ToPrimitiveFunction<R> g) {
         return MapPrimitiveVisitor.of(f, g);
     }
 
-    static <T, R> TypedFunction<T> map(ObjectFunction<T, R> f, TypedFunction<R> g) {
+    static <T, R> TypedFunction<T> map(ToObjectFunction<T, R> f, TypedFunction<R> g) {
         return MapVisitor.of(f, g);
     }
 
-    private enum Identity implements ObjectFunction<Object, Object> {
+    private enum Identity implements ToObjectFunction<Object, Object> {
         INSTANCE;
 
         private static final CustomType<Object> RETURN_TYPE = Type.ofCustom(Object.class);
@@ -53,62 +53,62 @@ class ObjectFunctions {
         }
 
         @Override
-        public ObjectFunction<Object, Object> mapInput(Function<Object, Object> f) {
-            return ObjectFunction.of(f, RETURN_TYPE);
+        public ToObjectFunction<Object, Object> mapInput(Function<Object, Object> f) {
+            return ToObjectFunction.of(f, RETURN_TYPE);
         }
 
         @Override
-        public BooleanFunction<Object> mapBoolean(BooleanFunction<Object> g) {
+        public ToBooleanFunction<Object> mapBoolean(ToBooleanFunction<Object> g) {
             return g;
         }
 
         @Override
-        public CharFunction<Object> mapChar(CharFunction<Object> g) {
+        public ToCharFunction<Object> mapChar(ToCharFunction<Object> g) {
             return g;
         }
 
         @Override
-        public ByteFunction<Object> mapByte(ByteFunction<Object> g) {
+        public ToByteFunction<Object> mapByte(ToByteFunction<Object> g) {
             return g;
         }
 
         @Override
-        public ShortFunction<Object> mapShort(ShortFunction<Object> g) {
+        public ToShortFunction<Object> mapShort(ToShortFunction<Object> g) {
             return g;
         }
 
         @Override
-        public IntFunction<Object> mapInt(IntFunction<Object> g) {
+        public ToIntFunction<Object> mapInt(ToIntFunction<Object> g) {
             return g;
         }
 
         @Override
-        public LongFunction<Object> mapLong(LongFunction<Object> g) {
+        public ToLongFunction<Object> mapLong(ToLongFunction<Object> g) {
             return g;
         }
 
         @Override
-        public FloatFunction<Object> mapFloat(FloatFunction<Object> g) {
+        public ToFloatFunction<Object> mapFloat(ToFloatFunction<Object> g) {
             return g;
         }
 
         @Override
-        public DoubleFunction<Object> mapDouble(DoubleFunction<Object> g) {
+        public ToDoubleFunction<Object> mapDouble(ToDoubleFunction<Object> g) {
             return g;
         }
 
         @Override
-        public <R2> ObjectFunction<Object, R2> mapObj(ObjectFunction<Object, R2> g) {
+        public <R2> ToObjectFunction<Object, R2> mapObj(ToObjectFunction<Object, R2> g) {
             return g;
         }
 
         @Override
-        public <R2> ObjectFunction<Object, R2> mapObj(Function<Object, R2> g, GenericType<R2> returnType) {
-            return ObjectFunction.of(g, returnType);
+        public <R2> ToObjectFunction<Object, R2> mapObj(Function<Object, R2> g, GenericType<R2> returnType) {
+            return ToObjectFunction.of(g, returnType);
         }
 
         @Override
-        public PrimitiveFunction<Object> mapPrimitive(PrimitiveFunction<Object> g) {
+        public ToPrimitiveFunction<Object> mapPrimitive(ToPrimitiveFunction<Object> g) {
             return g;
         }
 
@@ -118,7 +118,7 @@ class ObjectFunctions {
         }
     }
 
-    private static class Casted<T, R> implements ObjectFunction<T, R> {
+    private static class Casted<T, R> implements ToObjectFunction<T, R> {
         private final GenericType<R> returnType;
 
         public Casted(GenericType<R> returnType) {
@@ -153,7 +153,7 @@ class ObjectFunctions {
         }
     }
 
-    private static final class FunctionImpl<T, R> implements ObjectFunction<T, R> {
+    private static final class FunctionImpl<T, R> implements ToObjectFunction<T, R> {
         private final Function<T, R> f;
         private final GenericType<R> returnType;
 
@@ -194,11 +194,11 @@ class ObjectFunctions {
         }
     }
 
-    private static class ObjectMap<T, R, Z> implements ObjectFunction<T, Z> {
+    private static class ObjectMap<T, R, Z> implements ToObjectFunction<T, Z> {
         private final Function<T, R> f;
-        private final ObjectFunction<R, Z> g;
+        private final ToObjectFunction<R, Z> g;
 
-        public ObjectMap(Function<T, R> f, ObjectFunction<R, Z> g) {
+        public ObjectMap(Function<T, R> f, ToObjectFunction<R, Z> g) {
             this.f = Objects.requireNonNull(f);
             this.g = Objects.requireNonNull(g);
         }
@@ -235,78 +235,78 @@ class ObjectFunctions {
         }
     }
 
-    private static class MapPrimitiveVisitor<T, R> implements PrimitiveFunction.Visitor<T, PrimitiveFunction<R>> {
+    private static class MapPrimitiveVisitor<T, R> implements ToPrimitiveFunction.Visitor<T, ToPrimitiveFunction<R>> {
 
-        public static <T, R> PrimitiveFunction<R> of(ObjectFunction<R, T> f, PrimitiveFunction<T> g) {
+        public static <T, R> ToPrimitiveFunction<R> of(ToObjectFunction<R, T> f, ToPrimitiveFunction<T> g) {
             return g.walk(new MapPrimitiveVisitor<>(f));
         }
 
-        private final ObjectFunction<R, T> f;
+        private final ToObjectFunction<R, T> f;
 
-        private MapPrimitiveVisitor(ObjectFunction<R, T> f) {
+        private MapPrimitiveVisitor(ToObjectFunction<R, T> f) {
             this.f = Objects.requireNonNull(f);
         }
 
         @Override
-        public PrimitiveFunction<R> visit(BooleanFunction<T> g) {
+        public ToPrimitiveFunction<R> visit(ToBooleanFunction<T> g) {
             return f.mapBoolean(g);
         }
 
         @Override
-        public PrimitiveFunction<R> visit(CharFunction<T> g) {
+        public ToPrimitiveFunction<R> visit(ToCharFunction<T> g) {
             return f.mapChar(g);
         }
 
         @Override
-        public PrimitiveFunction<R> visit(ByteFunction<T> g) {
+        public ToPrimitiveFunction<R> visit(ToByteFunction<T> g) {
             return f.mapByte(g);
         }
 
         @Override
-        public PrimitiveFunction<R> visit(ShortFunction<T> g) {
+        public ToPrimitiveFunction<R> visit(ToShortFunction<T> g) {
             return f.mapShort(g);
         }
 
         @Override
-        public PrimitiveFunction<R> visit(IntFunction<T> g) {
+        public ToPrimitiveFunction<R> visit(ToIntFunction<T> g) {
             return f.mapInt(g);
         }
 
         @Override
-        public PrimitiveFunction<R> visit(LongFunction<T> g) {
+        public ToPrimitiveFunction<R> visit(ToLongFunction<T> g) {
             return f.mapLong(g);
         }
 
         @Override
-        public PrimitiveFunction<R> visit(FloatFunction<T> g) {
+        public ToPrimitiveFunction<R> visit(ToFloatFunction<T> g) {
             return f.mapFloat(g);
         }
 
         @Override
-        public PrimitiveFunction<R> visit(DoubleFunction<T> g) {
+        public ToPrimitiveFunction<R> visit(ToDoubleFunction<T> g) {
             return f.mapDouble(g);
         }
     }
 
     private static class MapVisitor<T, R> implements TypedFunction.Visitor<T, TypedFunction<R>> {
 
-        public static <T, R> TypedFunction<R> of(ObjectFunction<R, T> f, TypedFunction<T> g) {
+        public static <T, R> TypedFunction<R> of(ToObjectFunction<R, T> f, TypedFunction<T> g) {
             return g.walk(new MapVisitor<>(f));
         }
 
-        private final ObjectFunction<R, T> f;
+        private final ToObjectFunction<R, T> f;
 
-        private MapVisitor(ObjectFunction<R, T> f) {
+        private MapVisitor(ToObjectFunction<R, T> f) {
             this.f = Objects.requireNonNull(f);
         }
 
         @Override
-        public TypedFunction<R> visit(PrimitiveFunction<T> g) {
+        public TypedFunction<R> visit(ToPrimitiveFunction<T> g) {
             return f.mapPrimitive(g);
         }
 
         @Override
-        public TypedFunction<R> visit(ObjectFunction<T, ?> g) {
+        public TypedFunction<R> visit(ToObjectFunction<T, ?> g) {
             return f.mapObj(g);
         }
     }

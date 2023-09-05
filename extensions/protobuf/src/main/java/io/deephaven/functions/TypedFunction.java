@@ -11,8 +11,8 @@ import java.util.function.Function;
  * A common function interface that allows for differentiation based on the return type.
  *
  * @param <T> the input type
- * @see PrimitiveFunction
- * @see ObjectFunction
+ * @see ToPrimitiveFunction
+ * @see ToObjectFunction
  */
 public interface TypedFunction<T> {
 
@@ -37,8 +37,8 @@ public interface TypedFunction<T> {
     <R> R walk(Visitor<T, R> visitor);
 
     interface Visitor<T, R> {
-        R visit(PrimitiveFunction<T> f);
+        R visit(ToPrimitiveFunction<T> f);
 
-        R visit(ObjectFunction<T, ?> f);
+        R visit(ToObjectFunction<T, ?> f);
     }
 }

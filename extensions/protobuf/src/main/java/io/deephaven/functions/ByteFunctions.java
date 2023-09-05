@@ -7,16 +7,16 @@ import java.util.Objects;
 import java.util.function.Function;
 
 class ByteFunctions {
-    static <T> ByteFunction<T> primitive() {
+    static <T> ToByteFunction<T> primitive() {
         // noinspection unchecked
-        return (ByteFunction<T>) PrimitiveByte.INSTANCE;
+        return (ToByteFunction<T>) PrimitiveByte.INSTANCE;
     }
 
-    static <T, R> ByteFunction<T> map(Function<T, R> f, ByteFunction<R> g) {
+    static <T, R> ToByteFunction<T> map(Function<T, R> f, ToByteFunction<R> g) {
         return new ByteMap<>(f, g);
     }
 
-    private enum PrimitiveByte implements ByteFunction<Object> {
+    private enum PrimitiveByte implements ToByteFunction<Object> {
         INSTANCE;
 
         @Override
@@ -25,11 +25,11 @@ class ByteFunctions {
         }
     }
 
-    private static class ByteMap<T, R> implements ByteFunction<T> {
+    private static class ByteMap<T, R> implements ToByteFunction<T> {
         private final Function<T, R> f;
-        private final ByteFunction<R> g;
+        private final ToByteFunction<R> g;
 
-        public ByteMap(Function<T, R> f, ByteFunction<R> g) {
+        public ByteMap(Function<T, R> f, ToByteFunction<R> g) {
             this.f = Objects.requireNonNull(f);
             this.g = Objects.requireNonNull(g);
         }

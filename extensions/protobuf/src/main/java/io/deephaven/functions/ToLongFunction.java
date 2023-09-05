@@ -7,7 +7,6 @@ import io.deephaven.qst.type.LongType;
 import io.deephaven.qst.type.Type;
 
 import java.util.function.Function;
-import java.util.function.ToLongFunction;
 
 /**
  * A {@code long} function.
@@ -15,14 +14,14 @@ import java.util.function.ToLongFunction;
  * @param <T> the input type
  */
 @FunctionalInterface
-public interface LongFunction<T> extends PrimitiveFunction<T>, ToLongFunction<T> {
+public interface ToLongFunction<T> extends ToPrimitiveFunction<T>, java.util.function.ToLongFunction<T> {
     /**
      * Assumes the object value is directly castable to a long. Equivalent to {@code x -> (long)x}.
      *
      * @return the long function
      * @param <T> the value type
      */
-    static <T> LongFunction<T> primitive() {
+    static <T> ToLongFunction<T> primitive() {
         return LongFunctions.primitive();
     }
 
@@ -38,7 +37,7 @@ public interface LongFunction<T> extends PrimitiveFunction<T>, ToLongFunction<T>
      * @param <T> the input type
      * @param <R> the intermediate type
      */
-    static <T, R> LongFunction<T> map(Function<T, R> f, LongFunction<R> g) {
+    static <T, R> ToLongFunction<T> map(Function<T, R> f, ToLongFunction<R> g) {
         return LongFunctions.map(f, g);
     }
 
@@ -51,7 +50,7 @@ public interface LongFunction<T> extends PrimitiveFunction<T>, ToLongFunction<T>
     }
 
     @Override
-    default LongFunction<T> mapInput(Function<T, T> f) {
+    default ToLongFunction<T> mapInput(Function<T, T> f) {
         return map(f, this);
     }
 

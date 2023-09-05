@@ -6,24 +6,24 @@ package io.deephaven.kafka.ingest;
 import io.deephaven.chunk.ObjectChunk;
 import io.deephaven.chunk.WritableChunk;
 import io.deephaven.chunk.attributes.Values;
-import io.deephaven.functions.LongFunction;
-import io.deephaven.functions.ObjectFunction;
+import io.deephaven.functions.ToLongFunction;
+import io.deephaven.functions.ToObjectFunction;
 import io.deephaven.util.type.TypeUtils;
 
 import java.util.Objects;
 
 class LongFieldCopier implements FieldCopier {
-    public static LongFieldCopier of(LongFunction<Object> f) {
+    public static LongFieldCopier of(ToLongFunction<Object> f) {
         return new LongFieldCopier(f);
     }
 
-    public static LongFieldCopier of(ObjectFunction<Object, Long> f) {
+    public static LongFieldCopier of(ToObjectFunction<Object, Long> f) {
         return of(f.mapLong(TypeUtils::unbox));
     }
 
-    private final LongFunction<Object> f;
+    private final ToLongFunction<Object> f;
 
-    private LongFieldCopier(LongFunction<Object> f) {
+    private LongFieldCopier(ToLongFunction<Object> f) {
         this.f = Objects.requireNonNull(f);
     }
 

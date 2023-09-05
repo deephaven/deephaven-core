@@ -13,20 +13,20 @@ import io.deephaven.chunk.WritableIntChunk;
 import io.deephaven.chunk.WritableLongChunk;
 import io.deephaven.chunk.WritableObjectChunk;
 import io.deephaven.chunk.WritableShortChunk;
-import io.deephaven.functions.BooleanFunction;
-import io.deephaven.functions.ByteFunction;
-import io.deephaven.functions.CharFunction;
-import io.deephaven.functions.DoubleFunction;
-import io.deephaven.functions.FloatFunction;
-import io.deephaven.functions.IntFunction;
-import io.deephaven.functions.LongFunction;
-import io.deephaven.functions.ObjectFunction;
-import io.deephaven.functions.ShortFunction;
+import io.deephaven.functions.ToBooleanFunction;
+import io.deephaven.functions.ToByteFunction;
+import io.deephaven.functions.ToCharFunction;
+import io.deephaven.functions.ToDoubleFunction;
+import io.deephaven.functions.ToFloatFunction;
+import io.deephaven.functions.ToIntFunction;
+import io.deephaven.functions.ToLongFunction;
+import io.deephaven.functions.ToObjectFunction;
+import io.deephaven.functions.ToShortFunction;
 
 class ChunkUtils {
 
     public static <T> void applyInto(
-            BooleanFunction<T> booleanFunction,
+            ToBooleanFunction<T> booleanFunction,
             ObjectChunk<T, ?> src,
             int srcOffset,
             WritableBooleanChunk<?> dest,
@@ -38,7 +38,7 @@ class ChunkUtils {
     }
 
     public static <T> void applyInto(
-            ByteFunction<T> byteFunction,
+            ToByteFunction<T> byteFunction,
             ObjectChunk<T, ?> src,
             int srcOffset,
             WritableByteChunk<?> dest,
@@ -50,7 +50,7 @@ class ChunkUtils {
     }
 
     public static <T> void applyInto(
-            CharFunction<T> charFunction,
+            ToCharFunction<T> charFunction,
             ObjectChunk<T, ?> src,
             int srcOffset,
             WritableCharChunk<?> dest,
@@ -62,7 +62,7 @@ class ChunkUtils {
     }
 
     public static <T> void applyInto(
-            ShortFunction<T> shortFunction,
+            ToShortFunction<T> shortFunction,
             ObjectChunk<T, ?> src,
             int srcOffset,
             WritableShortChunk<?> dest,
@@ -74,7 +74,7 @@ class ChunkUtils {
     }
 
     public static <T> void applyInto(
-            IntFunction<T> intFunction,
+            ToIntFunction<T> intFunction,
             ObjectChunk<T, ?> src,
             int srcOffset,
             WritableIntChunk<?> dest,
@@ -87,7 +87,7 @@ class ChunkUtils {
 
 
     public static <T> void applyInto(
-            LongFunction<T> longFunction,
+            ToLongFunction<T> longFunction,
             ObjectChunk<T, ?> src,
             int srcOffset,
             WritableLongChunk<?> dest,
@@ -99,7 +99,7 @@ class ChunkUtils {
     }
 
     public static <T> void applyInto(
-            FloatFunction<T> floatFunction,
+            ToFloatFunction<T> floatFunction,
             ObjectChunk<T, ?> src,
             int srcOffset,
             WritableFloatChunk<?> dest,
@@ -111,7 +111,7 @@ class ChunkUtils {
     }
 
     public static <T> void applyInto(
-            DoubleFunction<T> doubleFunction,
+            ToDoubleFunction<T> doubleFunction,
             ObjectChunk<T, ?> src,
             int srcOffset,
             WritableDoubleChunk<?> dest,
@@ -123,7 +123,7 @@ class ChunkUtils {
     }
 
     public static <T, R> void applyInto(
-            ObjectFunction<T, R> objFunction,
+            ToObjectFunction<T, R> objFunction,
             ObjectChunk<T, ?> src,
             int srcOffset,
             WritableObjectChunk<R, ?> dest,

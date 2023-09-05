@@ -6,18 +6,18 @@ package io.deephaven.functions;
 import java.util.Objects;
 import java.util.function.Function;
 
-public class ShortFunctions {
+class ShortFunctions {
 
-    static <T> ShortFunction<T> primitive() {
+    static <T> ToShortFunction<T> primitive() {
         // noinspection unchecked
-        return (ShortFunction<T>) PrimitiveShort.INSTANCE;
+        return (ToShortFunction<T>) PrimitiveShort.INSTANCE;
     }
 
-    static <T, R> ShortFunction<T> map(Function<T, R> f, ShortFunction<R> g) {
+    static <T, R> ToShortFunction<T> map(Function<T, R> f, ToShortFunction<R> g) {
         return new ShortMap<>(f, g);
     }
 
-    private enum PrimitiveShort implements ShortFunction<Object> {
+    private enum PrimitiveShort implements ToShortFunction<Object> {
         INSTANCE;
 
         @Override
@@ -26,11 +26,11 @@ public class ShortFunctions {
         }
     }
 
-    private static class ShortMap<T, R> implements ShortFunction<T> {
+    private static class ShortMap<T, R> implements ToShortFunction<T> {
         private final Function<T, R> f;
-        private final ShortFunction<R> g;
+        private final ToShortFunction<R> g;
 
-        public ShortMap(Function<T, R> f, ShortFunction<R> g) {
+        public ShortMap(Function<T, R> f, ToShortFunction<R> g) {
             this.f = Objects.requireNonNull(f);
             this.g = Objects.requireNonNull(g);
         }

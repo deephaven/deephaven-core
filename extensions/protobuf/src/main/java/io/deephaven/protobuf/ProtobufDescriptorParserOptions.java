@@ -4,12 +4,7 @@
 package io.deephaven.protobuf;
 
 import com.google.protobuf.Descriptors.Descriptor;
-import com.google.protobuf.Descriptors.FieldDescriptor.Type;
 import io.deephaven.annotations.BuildableStyle;
-import io.deephaven.functions.BooleanFunction;
-import io.deephaven.protobuf.FieldOptions.BytesBehavior;
-import io.deephaven.protobuf.FieldOptions.MapBehavior;
-import io.deephaven.protobuf.FieldOptions.WellKnownBehavior;
 import org.immutables.value.Value.Default;
 import org.immutables.value.Value.Immutable;
 

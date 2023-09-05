@@ -5,7 +5,7 @@ package io.deephaven.protobuf;
 
 import com.google.protobuf.Descriptors.FieldDescriptor;
 import io.deephaven.annotations.SimpleStyle;
-import io.deephaven.functions.BooleanFunction;
+import io.deephaven.functions.ToBooleanFunction;
 import org.immutables.value.Value.Immutable;
 import org.immutables.value.Value.Lazy;
 import org.immutables.value.Value.Parameter;
@@ -14,8 +14,6 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
-
-import static io.deephaven.functions.BooleanFunction.map;
 
 /**
  * The {@link #path()} to a {@link com.google.protobuf.Descriptors.Descriptor Descriptor's} field.
@@ -48,7 +46,7 @@ public abstract class FieldPath {
      * @return the boolean function
      * @see FieldPath#otherStartsWithThis(List)
      */
-    public static BooleanFunction<FieldPath> namePathStartsWithFieldPath(List<String> namePath) {
+    public static ToBooleanFunction<FieldPath> namePathStartsWithFieldPath(List<String> namePath) {
         return fieldPath -> fieldPath.otherStartsWithThis(namePath);
     }
 
@@ -61,7 +59,7 @@ public abstract class FieldPath {
      * @see #namePathStartsWithFieldPath(List)
      * @see #toNamePath(String)
      */
-    public static BooleanFunction<FieldPath> simplePathStartsWithFieldPath(String simplePath) {
+    public static ToBooleanFunction<FieldPath> simplePathStartsWithFieldPath(String simplePath) {
         return namePathStartsWithFieldPath(toNamePath(simplePath));
     }
 
@@ -73,8 +71,8 @@ public abstract class FieldPath {
      * @return the boolean function
      */
     @SuppressWarnings("unused")
-    public static BooleanFunction<FieldPath> anySimplePathStartsWithFieldPath(List<String> simplePaths) {
-        return BooleanFunction
+    public static ToBooleanFunction<FieldPath> anySimplePathStartsWithFieldPath(List<String> simplePaths) {
+        return ToBooleanFunction
                 .or(simplePaths.stream().map(FieldPath::simplePathStartsWithFieldPath).collect(Collectors.toList()));
     }
 

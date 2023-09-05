@@ -6,17 +6,17 @@ package io.deephaven.functions;
 import java.util.Objects;
 import java.util.function.Function;
 
-public class IntFunctions {
-    static <T> IntFunction<T> primitive() {
+class IntFunctions {
+    static <T> ToIntFunction<T> primitive() {
         // noinspection unchecked
-        return (IntFunction<T>) IntFunctions.PrimitiveInt.INSTANCE;
+        return (ToIntFunction<T>) IntFunctions.PrimitiveInt.INSTANCE;
     }
 
-    static <T, R> IntFunction<T> map(Function<T, R> f, IntFunction<R> g) {
+    static <T, R> ToIntFunction<T> map(Function<T, R> f, ToIntFunction<R> g) {
         return new IntFunctions.IntMap<>(f, g);
     }
 
-    private enum PrimitiveInt implements IntFunction<Object> {
+    private enum PrimitiveInt implements ToIntFunction<Object> {
         INSTANCE;
 
         @Override
@@ -25,11 +25,11 @@ public class IntFunctions {
         }
     }
 
-    private static class IntMap<T, R> implements IntFunction<T> {
+    private static class IntMap<T, R> implements ToIntFunction<T> {
         private final Function<T, R> f;
-        private final IntFunction<R> g;
+        private final ToIntFunction<R> g;
 
-        public IntMap(Function<T, R> f, IntFunction<R> g) {
+        public IntMap(Function<T, R> f, ToIntFunction<R> g) {
             this.f = Objects.requireNonNull(f);
             this.g = Objects.requireNonNull(g);
         }

@@ -3,15 +3,15 @@
  */
 package io.deephaven.kafka;
 
-import io.deephaven.functions.ByteFunction;
-import io.deephaven.functions.CharFunction;
-import io.deephaven.functions.DoubleFunction;
-import io.deephaven.functions.FloatFunction;
-import io.deephaven.functions.IntFunction;
-import io.deephaven.functions.LongFunction;
-import io.deephaven.functions.ObjectFunction;
-import io.deephaven.functions.PrimitiveFunction;
-import io.deephaven.functions.ShortFunction;
+import io.deephaven.functions.ToByteFunction;
+import io.deephaven.functions.ToCharFunction;
+import io.deephaven.functions.ToDoubleFunction;
+import io.deephaven.functions.ToFloatFunction;
+import io.deephaven.functions.ToIntFunction;
+import io.deephaven.functions.ToLongFunction;
+import io.deephaven.functions.ToObjectFunction;
+import io.deephaven.functions.ToPrimitiveFunction;
+import io.deephaven.functions.ToShortFunction;
 import io.deephaven.functions.TypedFunction;
 import io.deephaven.qst.type.ArrayType;
 import io.deephaven.qst.type.BoxedBooleanType;
@@ -34,13 +34,13 @@ import java.util.Optional;
 
 class UnboxTransform {
 
-    private static final ByteFunction<Byte> UNBOX_BYTE = TypeUtils::unbox;
-    private static final CharFunction<Character> UNBOX_CHAR = TypeUtils::unbox;
-    private static final ShortFunction<Short> UNBOX_SHORT = TypeUtils::unbox;
-    private static final IntFunction<Integer> UNBOX_INT = TypeUtils::unbox;
-    private static final LongFunction<Long> UNBOX_LONG = TypeUtils::unbox;
-    private static final FloatFunction<Float> UNBOX_FLOAT = TypeUtils::unbox;
-    private static final DoubleFunction<Double> UNBOX_DOULE = TypeUtils::unbox;
+    private static final ToByteFunction<Byte> UNBOX_BYTE = TypeUtils::unbox;
+    private static final ToCharFunction<Character> UNBOX_CHAR = TypeUtils::unbox;
+    private static final ToShortFunction<Short> UNBOX_SHORT = TypeUtils::unbox;
+    private static final ToIntFunction<Integer> UNBOX_INT = TypeUtils::unbox;
+    private static final ToLongFunction<Long> UNBOX_LONG = TypeUtils::unbox;
+    private static final ToFloatFunction<Float> UNBOX_FLOAT = TypeUtils::unbox;
+    private static final ToDoubleFunction<Double> UNBOX_DOULE = TypeUtils::unbox;
 
     /**
      * Returns the Deephaven unboxed equivalent of {@code f}. Relevant for all {@link BoxedType boxed types} except the
@@ -49,15 +49,15 @@ class UnboxTransform {
      * @param f the function
      * @return the unboxed equivalent
      * @param <T> the input type
-     * @see #unboxByte(ObjectFunction)
-     * @see #unboxChar(ObjectFunction)
-     * @see #unboxDouble(ObjectFunction)
-     * @see #unboxFloat(ObjectFunction)
-     * @see #unboxInt(ObjectFunction)
-     * @see #unboxLong(ObjectFunction)
-     * @see #unboxShort(ObjectFunction)
+     * @see #unboxByte(ToObjectFunction)
+     * @see #unboxChar(ToObjectFunction)
+     * @see #unboxDouble(ToObjectFunction)
+     * @see #unboxFloat(ToObjectFunction)
+     * @see #unboxInt(ToObjectFunction)
+     * @see #unboxLong(ToObjectFunction)
+     * @see #unboxShort(ToObjectFunction)
      */
-    public static <T> Optional<PrimitiveFunction<T>> of(TypedFunction<T> f) {
+    public static <T> Optional<ToPrimitiveFunction<T>> of(TypedFunction<T> f) {
         return UnboxFunctionVisitor.of(f);
     }
 
@@ -68,15 +68,15 @@ class UnboxTransform {
      * @param f the object function
      * @return the unboxed equivalent
      * @param <T> the input type
-     * @see #unboxByte(ObjectFunction)
-     * @see #unboxChar(ObjectFunction)
-     * @see #unboxDouble(ObjectFunction)
-     * @see #unboxFloat(ObjectFunction)
-     * @see #unboxInt(ObjectFunction)
-     * @see #unboxLong(ObjectFunction)
-     * @see #unboxShort(ObjectFunction)
+     * @see #unboxByte(ToObjectFunction)
+     * @see #unboxChar(ToObjectFunction)
+     * @see #unboxDouble(ToObjectFunction)
+     * @see #unboxFloat(ToObjectFunction)
+     * @see #unboxInt(ToObjectFunction)
+     * @see #unboxLong(ToObjectFunction)
+     * @see #unboxShort(ToObjectFunction)
      */
-    public static <T> Optional<PrimitiveFunction<T>> of(ObjectFunction<T, ?> f) {
+    public static <T> Optional<ToPrimitiveFunction<T>> of(ToObjectFunction<T, ?> f) {
         return UnboxObjectFunctionVisitor.of(f);
     }
 
@@ -88,7 +88,7 @@ class UnboxTransform {
      * @param <T> the input type
      * @see TypeUtils#unbox(Byte)
      */
-    public static <T> ByteFunction<T> unboxByte(ObjectFunction<T, Byte> f) {
+    public static <T> ToByteFunction<T> unboxByte(ToObjectFunction<T, Byte> f) {
         return f.mapByte(UNBOX_BYTE);
     }
 
@@ -100,7 +100,7 @@ class UnboxTransform {
      * @param <T> the input type
      * @see TypeUtils#unbox(Character)
      */
-    public static <T> CharFunction<T> unboxChar(ObjectFunction<T, Character> f) {
+    public static <T> ToCharFunction<T> unboxChar(ToObjectFunction<T, Character> f) {
         return f.mapChar(UNBOX_CHAR);
     }
 
@@ -112,7 +112,7 @@ class UnboxTransform {
      * @param <T> the input type
      * @see TypeUtils#unbox(Short)
      */
-    public static <T> ShortFunction<T> unboxShort(ObjectFunction<T, Short> f) {
+    public static <T> ToShortFunction<T> unboxShort(ToObjectFunction<T, Short> f) {
         return f.mapShort(UNBOX_SHORT);
     }
 
@@ -124,7 +124,7 @@ class UnboxTransform {
      * @param <T> the input type
      * @see TypeUtils#unbox(Integer)
      */
-    public static <T> IntFunction<T> unboxInt(ObjectFunction<T, Integer> f) {
+    public static <T> ToIntFunction<T> unboxInt(ToObjectFunction<T, Integer> f) {
         return f.mapInt(UNBOX_INT);
     }
 
@@ -136,7 +136,7 @@ class UnboxTransform {
      * @param <T> the input type
      * @see TypeUtils#unbox(Long)
      */
-    public static <T> LongFunction<T> unboxLong(ObjectFunction<T, Long> f) {
+    public static <T> ToLongFunction<T> unboxLong(ToObjectFunction<T, Long> f) {
         return f.mapLong(UNBOX_LONG);
     }
 
@@ -148,7 +148,7 @@ class UnboxTransform {
      * @param <T> the input type
      * @see TypeUtils#unbox(Float)
      */
-    public static <T> FloatFunction<T> unboxFloat(ObjectFunction<T, Float> f) {
+    public static <T> ToFloatFunction<T> unboxFloat(ToObjectFunction<T, Float> f) {
         return f.mapFloat(UNBOX_FLOAT);
     }
 
@@ -160,107 +160,107 @@ class UnboxTransform {
      * @param <T> the input type
      * @see TypeUtils#unbox(Double)
      */
-    public static <T> DoubleFunction<T> unboxDouble(ObjectFunction<T, Double> f) {
+    public static <T> ToDoubleFunction<T> unboxDouble(ToObjectFunction<T, Double> f) {
         return f.mapDouble(UNBOX_DOULE);
     }
 
-    private enum UnboxFunctionVisitor implements TypedFunction.Visitor<Object, PrimitiveFunction<Object>> {
+    private enum UnboxFunctionVisitor implements TypedFunction.Visitor<Object, ToPrimitiveFunction<Object>> {
         INSTANCE;
 
-        public static <T> Optional<PrimitiveFunction<T>> of(TypedFunction<T> f) {
+        public static <T> Optional<ToPrimitiveFunction<T>> of(TypedFunction<T> f) {
             // noinspection unchecked
             return Optional.ofNullable(
-                    f.walk((TypedFunction.Visitor<T, PrimitiveFunction<T>>) (TypedFunction.Visitor<?, ?>) INSTANCE));
+                    f.walk((TypedFunction.Visitor<T, ToPrimitiveFunction<T>>) (TypedFunction.Visitor<?, ?>) INSTANCE));
         }
 
         @Override
-        public PrimitiveFunction<Object> visit(PrimitiveFunction<Object> f) {
+        public ToPrimitiveFunction<Object> visit(ToPrimitiveFunction<Object> f) {
             return f;
         }
 
         @Override
-        public PrimitiveFunction<Object> visit(ObjectFunction<Object, ?> f) {
+        public ToPrimitiveFunction<Object> visit(ToObjectFunction<Object, ?> f) {
             return UnboxTransform.of(f).orElse(null);
         }
     }
 
     private static class UnboxObjectFunctionVisitor<T>
-            implements GenericType.Visitor<PrimitiveFunction<T>>, BoxedType.Visitor<PrimitiveFunction<T>> {
+            implements GenericType.Visitor<ToPrimitiveFunction<T>>, BoxedType.Visitor<ToPrimitiveFunction<T>> {
 
-        public static <T> Optional<PrimitiveFunction<T>> of(ObjectFunction<T, ?> f) {
+        public static <T> Optional<ToPrimitiveFunction<T>> of(ToObjectFunction<T, ?> f) {
             return Optional.ofNullable(f.returnType().walk(new UnboxObjectFunctionVisitor<>(f)));
         }
 
-        private final ObjectFunction<T, ?> f;
+        private final ToObjectFunction<T, ?> f;
 
-        public UnboxObjectFunctionVisitor(ObjectFunction<T, ?> f) {
+        public UnboxObjectFunctionVisitor(ToObjectFunction<T, ?> f) {
             this.f = Objects.requireNonNull(f);
         }
 
         @Override
-        public PrimitiveFunction<T> visit(BoxedType<?> boxedType) {
-            return boxedType.walk((BoxedType.Visitor<PrimitiveFunction<T>>) this);
+        public ToPrimitiveFunction<T> visit(BoxedType<?> boxedType) {
+            return boxedType.walk((BoxedType.Visitor<ToPrimitiveFunction<T>>) this);
         }
 
         @Override
-        public PrimitiveFunction<T> visit(StringType stringType) {
+        public ToPrimitiveFunction<T> visit(StringType stringType) {
             return null;
         }
 
         @Override
-        public PrimitiveFunction<T> visit(InstantType instantType) {
+        public ToPrimitiveFunction<T> visit(InstantType instantType) {
             return null;
         }
 
         @Override
-        public PrimitiveFunction<T> visit(ArrayType<?, ?> arrayType) {
+        public ToPrimitiveFunction<T> visit(ArrayType<?, ?> arrayType) {
             return null;
         }
 
         @Override
-        public PrimitiveFunction<T> visit(CustomType<?> customType) {
+        public ToPrimitiveFunction<T> visit(CustomType<?> customType) {
             return null;
         }
 
         @Override
-        public PrimitiveFunction<T> visit(BoxedBooleanType booleanType) {
+        public ToPrimitiveFunction<T> visit(BoxedBooleanType booleanType) {
             // We don't have an "unboxed boolean".
             // We _can_ transform it to a byte, but that's a separate operation.
             return null;
         }
 
         @Override
-        public PrimitiveFunction<T> visit(BoxedByteType byteType) {
+        public ToPrimitiveFunction<T> visit(BoxedByteType byteType) {
             return unboxByte(f.cast(byteType));
         }
 
         @Override
-        public PrimitiveFunction<T> visit(BoxedCharType charType) {
+        public ToPrimitiveFunction<T> visit(BoxedCharType charType) {
             return unboxChar(f.cast(charType));
         }
 
         @Override
-        public PrimitiveFunction<T> visit(BoxedShortType shortType) {
+        public ToPrimitiveFunction<T> visit(BoxedShortType shortType) {
             return unboxShort(f.cast(shortType));
         }
 
         @Override
-        public PrimitiveFunction<T> visit(BoxedIntType intType) {
+        public ToPrimitiveFunction<T> visit(BoxedIntType intType) {
             return unboxInt(f.cast(intType));
         }
 
         @Override
-        public PrimitiveFunction<T> visit(BoxedLongType longType) {
+        public ToPrimitiveFunction<T> visit(BoxedLongType longType) {
             return unboxLong(f.cast(longType));
         }
 
         @Override
-        public PrimitiveFunction<T> visit(BoxedFloatType floatType) {
+        public ToPrimitiveFunction<T> visit(BoxedFloatType floatType) {
             return unboxFloat(f.cast(floatType));
         }
 
         @Override
-        public PrimitiveFunction<T> visit(BoxedDoubleType doubleType) {
+        public ToPrimitiveFunction<T> visit(BoxedDoubleType doubleType) {
             return unboxDouble(f.cast(doubleType));
         }
     }

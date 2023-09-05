@@ -16,7 +16,7 @@ import java.util.function.Predicate;
  * @param <T> the input type
  */
 @FunctionalInterface
-public interface BooleanFunction<T> extends PrimitiveFunction<T>, Predicate<T> {
+public interface ToBooleanFunction<T> extends ToPrimitiveFunction<T>, Predicate<T> {
 
     /**
      * Assumes the object value is directly castable to a boolean. Equivalent to {@code x -> (boolean)x}.
@@ -24,7 +24,7 @@ public interface BooleanFunction<T> extends PrimitiveFunction<T>, Predicate<T> {
      * @return the boolean function
      * @param <T> the value type
      */
-    static <T> BooleanFunction<T> primitive() {
+    static <T> ToBooleanFunction<T> primitive() {
         return BooleanFunctions.primitive();
     }
 
@@ -34,7 +34,7 @@ public interface BooleanFunction<T> extends PrimitiveFunction<T>, Predicate<T> {
      * @return the true function
      * @param <T> the input type
      */
-    static <T> BooleanFunction<T> ofTrue() {
+    static <T> ToBooleanFunction<T> ofTrue() {
         return BooleanFunctions.ofTrue();
     }
 
@@ -44,7 +44,7 @@ public interface BooleanFunction<T> extends PrimitiveFunction<T>, Predicate<T> {
      * @return the false function
      * @param <T> the input type
      */
-    static <T> BooleanFunction<T> ofFalse() {
+    static <T> ToBooleanFunction<T> ofFalse() {
         return BooleanFunctions.ofFalse();
     }
 
@@ -60,7 +60,7 @@ public interface BooleanFunction<T> extends PrimitiveFunction<T>, Predicate<T> {
      * @param <T> the input type
      * @param <R> the intermediate type
      */
-    static <T, R> BooleanFunction<T> map(Function<T, R> f, BooleanFunction<R> g) {
+    static <T, R> ToBooleanFunction<T> map(Function<T, R> f, ToBooleanFunction<R> g) {
         return BooleanFunctions.map(f, g);
     }
 
@@ -72,7 +72,7 @@ public interface BooleanFunction<T> extends PrimitiveFunction<T>, Predicate<T> {
      * @return the or-function
      * @param <T> the input type
      */
-    static <T> BooleanFunction<T> or(Collection<BooleanFunction<T>> functions) {
+    static <T> ToBooleanFunction<T> or(Collection<ToBooleanFunction<T>> functions) {
         return BooleanFunctions.or(functions);
     }
 
@@ -84,7 +84,7 @@ public interface BooleanFunction<T> extends PrimitiveFunction<T>, Predicate<T> {
      * @return the and-function
      * @param <T> the input type
      */
-    static <T> BooleanFunction<T> and(Collection<BooleanFunction<T>> functions) {
+    static <T> ToBooleanFunction<T> and(Collection<ToBooleanFunction<T>> functions) {
         return BooleanFunctions.and(functions);
     }
 
@@ -95,7 +95,7 @@ public interface BooleanFunction<T> extends PrimitiveFunction<T>, Predicate<T> {
      * @return the not-function
      * @param <T> the input type
      */
-    static <T> BooleanFunction<T> not(BooleanFunction<T> f) {
+    static <T> ToBooleanFunction<T> not(ToBooleanFunction<T> f) {
         return BooleanFunctions.not(f);
     }
 
@@ -108,7 +108,7 @@ public interface BooleanFunction<T> extends PrimitiveFunction<T>, Predicate<T> {
     }
 
     @Override
-    default BooleanFunction<T> mapInput(Function<T, T> f) {
+    default ToBooleanFunction<T> mapInput(Function<T, T> f) {
         return map(f, this);
     }
 

@@ -7,7 +7,6 @@ import io.deephaven.qst.type.IntType;
 import io.deephaven.qst.type.Type;
 
 import java.util.function.Function;
-import java.util.function.ToIntFunction;
 
 /**
  * An {@code int} function.
@@ -15,7 +14,7 @@ import java.util.function.ToIntFunction;
  * @param <T> the input type
  */
 @FunctionalInterface
-public interface IntFunction<T> extends PrimitiveFunction<T>, ToIntFunction<T> {
+public interface ToIntFunction<T> extends ToPrimitiveFunction<T>, java.util.function.ToIntFunction<T> {
 
     /**
      * Assumes the object value is directly castable to an int. Equivalent to {@code x -> (int)x}.
@@ -23,7 +22,7 @@ public interface IntFunction<T> extends PrimitiveFunction<T>, ToIntFunction<T> {
      * @return the int function
      * @param <T> the value type
      */
-    static <T> IntFunction<T> primitive() {
+    static <T> ToIntFunction<T> primitive() {
         return IntFunctions.primitive();
     }
 
@@ -39,7 +38,7 @@ public interface IntFunction<T> extends PrimitiveFunction<T>, ToIntFunction<T> {
      * @param <T> the input type
      * @param <R> the intermediate type
      */
-    static <T, R> IntFunction<T> map(Function<T, R> f, IntFunction<R> g) {
+    static <T, R> ToIntFunction<T> map(Function<T, R> f, ToIntFunction<R> g) {
         return IntFunctions.map(f, g);
     }
 
@@ -52,7 +51,7 @@ public interface IntFunction<T> extends PrimitiveFunction<T>, ToIntFunction<T> {
     }
 
     @Override
-    default IntFunction<T> mapInput(Function<T, T> f) {
+    default ToIntFunction<T> mapInput(Function<T, T> f) {
         return map(f, this);
     }
 

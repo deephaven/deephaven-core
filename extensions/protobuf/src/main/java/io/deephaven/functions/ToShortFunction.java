@@ -14,7 +14,7 @@ import java.util.function.Function;
  * @param <T> the input type
  */
 @FunctionalInterface
-public interface ShortFunction<T> extends PrimitiveFunction<T> {
+public interface ToShortFunction<T> extends ToPrimitiveFunction<T> {
 
     /**
      * Assumes the object value is directly castable to a short. Equivalent to {@code x -> (short)x}.
@@ -22,7 +22,7 @@ public interface ShortFunction<T> extends PrimitiveFunction<T> {
      * @return the short function
      * @param <T> the value type
      */
-    static <T> ShortFunction<T> primitive() {
+    static <T> ToShortFunction<T> primitive() {
         return ShortFunctions.primitive();
     }
 
@@ -38,7 +38,7 @@ public interface ShortFunction<T> extends PrimitiveFunction<T> {
      * @param <T> the input type
      * @param <R> the intermediate type
      */
-    static <T, R> ShortFunction<T> map(Function<T, R> f, ShortFunction<R> g) {
+    static <T, R> ToShortFunction<T> map(Function<T, R> f, ToShortFunction<R> g) {
         return ShortFunctions.map(f, g);
     }
 
@@ -56,7 +56,7 @@ public interface ShortFunction<T> extends PrimitiveFunction<T> {
     }
 
     @Override
-    default ShortFunction<T> mapInput(Function<T, T> f) {
+    default ToShortFunction<T> mapInput(Function<T, T> f) {
         return map(f, this);
     }
 

@@ -23,12 +23,12 @@ import com.google.protobuf.UInt64Value;
 import io.deephaven.qst.type.CustomType;
 import io.deephaven.qst.type.GenericType;
 import io.deephaven.qst.type.Type;
-import io.deephaven.functions.BooleanFunction;
-import io.deephaven.functions.DoubleFunction;
-import io.deephaven.functions.FloatFunction;
-import io.deephaven.functions.IntFunction;
-import io.deephaven.functions.LongFunction;
-import io.deephaven.functions.ObjectFunction;
+import io.deephaven.functions.ToBooleanFunction;
+import io.deephaven.functions.ToDoubleFunction;
+import io.deephaven.functions.ToFloatFunction;
+import io.deephaven.functions.ToIntFunction;
+import io.deephaven.functions.ToLongFunction;
+import io.deephaven.functions.ToObjectFunction;
 import io.deephaven.functions.TypedFunction;
 
 import java.lang.reflect.InvocationTargetException;
@@ -294,7 +294,7 @@ class Builtin {
         @Override
         public TypedFunction<Message> messageParser(Descriptor descriptor, ProtobufDescriptorParserOptions options) {
             checkCompatible(canonicalDescriptor(), descriptor);
-            return ObjectFunction.identity(type);
+            return ToObjectFunction.identity(type);
         }
     }
 
@@ -314,9 +314,9 @@ class Builtin {
         }
     }
 
-    private static final class TimestampFunction implements ObjectFunction<Message, Instant> {
+    private static final class TimestampFunction implements ToObjectFunction<Message, Instant> {
 
-        public static ObjectFunction<Message, Instant> of(Descriptor descriptor) {
+        public static ToObjectFunction<Message, Instant> of(Descriptor descriptor) {
             final FieldDescriptor secondsField = descriptor.findFieldByNumber(Timestamp.SECONDS_FIELD_NUMBER);
             final FieldDescriptor nanosField = descriptor.findFieldByNumber(Timestamp.NANOS_FIELD_NUMBER);
             return new TimestampFunction(secondsField, nanosField);
@@ -343,11 +343,11 @@ class Builtin {
         }
     }
 
-    private static final class DurationFunction implements ObjectFunction<Message, Duration> {
+    private static final class DurationFunction implements ToObjectFunction<Message, Duration> {
 
         private static final GenericType<Duration> RETURN_TYPE = Type.ofCustom(Duration.class);
 
-        public static ObjectFunction<Message, Duration> of(Descriptor descriptor) {
+        public static ToObjectFunction<Message, Duration> of(Descriptor descriptor) {
             final FieldDescriptor secondsField =
                     descriptor.findFieldByNumber(com.google.protobuf.Duration.SECONDS_FIELD_NUMBER);
             final FieldDescriptor nanosField =
@@ -376,7 +376,7 @@ class Builtin {
         }
     }
 
-    private static final class BoolFieldFunction implements BooleanFunction<Message> {
+    private static final class BoolFieldFunction implements ToBooleanFunction<Message> {
         private final FieldDescriptor valueField;
 
         public BoolFieldFunction(FieldDescriptor valueField) {
@@ -390,7 +390,7 @@ class Builtin {
         }
     }
 
-    private static final class IntFieldFunction implements IntFunction<Message> {
+    private static final class IntFieldFunction implements ToIntFunction<Message> {
 
         private final FieldDescriptor valueField;
 
@@ -405,7 +405,7 @@ class Builtin {
         }
     }
 
-    private static final class LongFieldFunction implements LongFunction<Message> {
+    private static final class LongFieldFunction implements ToLongFunction<Message> {
 
         private final FieldDescriptor valueField;
 
@@ -420,7 +420,7 @@ class Builtin {
         }
     }
 
-    private static final class FloatFieldFunction implements FloatFunction<Message> {
+    private static final class FloatFieldFunction implements ToFloatFunction<Message> {
         private final FieldDescriptor valueField;
 
         public FloatFieldFunction(FieldDescriptor valueField) {
@@ -434,7 +434,7 @@ class Builtin {
         }
     }
 
-    private static final class DoubleFieldFunction implements DoubleFunction<Message> {
+    private static final class DoubleFieldFunction implements ToDoubleFunction<Message> {
         private final FieldDescriptor valueField;
 
         public DoubleFieldFunction(FieldDescriptor valueField) {
@@ -448,7 +448,7 @@ class Builtin {
         }
     }
 
-    private static final class StringFieldFunction implements ObjectFunction<Message, String> {
+    private static final class StringFieldFunction implements ToObjectFunction<Message, String> {
         private final FieldDescriptor valueField;
 
         public StringFieldFunction(FieldDescriptor valueField) {
@@ -467,7 +467,7 @@ class Builtin {
         }
     }
 
-    private static final class ByteStringFieldFunction implements ObjectFunction<Message, ByteString> {
+    private static final class ByteStringFieldFunction implements ToObjectFunction<Message, ByteString> {
         private static final CustomType<ByteString> RETURN_TYPE = Type.ofCustom(ByteString.class);
 
         private final FieldDescriptor valueField;

@@ -3,10 +3,10 @@
  */
 package io.deephaven.kafka;
 
-import io.deephaven.functions.ByteFunction;
-import io.deephaven.functions.LongFunction;
-import io.deephaven.functions.ObjectFunction;
-import io.deephaven.functions.PrimitiveFunction;
+import io.deephaven.functions.ToByteFunction;
+import io.deephaven.functions.ToLongFunction;
+import io.deephaven.functions.ToObjectFunction;
+import io.deephaven.functions.ToPrimitiveFunction;
 import io.deephaven.functions.TypedFunction;
 import io.deephaven.qst.type.ArrayType;
 import io.deephaven.qst.type.BoxedBooleanType;
@@ -38,8 +38,8 @@ import static io.deephaven.kafka.UnboxTransform.unboxShort;
 
 class CommonTransform {
 
-    private static final ByteFunction<Boolean> BOOLEAN_AS_BYTE = BooleanUtils::booleanAsByte;
-    private static final LongFunction<Instant> EPOCH_NANOS = DateTimeUtils::epochNanos;
+    private static final ToByteFunction<Boolean> BOOLEAN_AS_BYTE = BooleanUtils::booleanAsByte;
+    private static final ToLongFunction<Instant> EPOCH_NANOS = DateTimeUtils::epochNanos;
 
     /**
      * Potentially transform the {@link TypedFunction function} {@code f} into a common... todo
@@ -47,34 +47,34 @@ class CommonTransform {
      * @param f the function
      * @return the potentially transformed function
      * @param <T> the input type
-     * @see #of(PrimitiveFunction)
-     * @see #of(ObjectFunction)
+     * @see #of(ToPrimitiveFunction)
+     * @see #of(ToObjectFunction)
      */
     public static <T> TypedFunction<T> of(TypedFunction<T> f) {
         return FunctionVisitor.of(f);
     }
 
-    public static <T> TypedFunction<T> of(PrimitiveFunction<T> f) {
+    public static <T> TypedFunction<T> of(ToPrimitiveFunction<T> f) {
         return f;
     }
 
     /**
-     * Potentially transforms the {@link ObjectFunction Object function} {@code f} into a common... todo
+     * Potentially transforms the {@link ToObjectFunction Object function} {@code f} into a common... todo
      *
      * @param f the Object function
      * @return the potentially transformed function
      * @param <T> the input type
-     * @see #toEpochNanos(ObjectFunction)
-     * @see #unboxBooleanAsByte(ObjectFunction)
-     * @see UnboxTransform#unboxByte(ObjectFunction)
-     * @see UnboxTransform#unboxChar(ObjectFunction)
-     * @see UnboxTransform#unboxDouble(ObjectFunction)
-     * @see UnboxTransform#unboxFloat(ObjectFunction)
-     * @see UnboxTransform#unboxInt(ObjectFunction)
-     * @see UnboxTransform#unboxLong(ObjectFunction)
-     * @see UnboxTransform#unboxShort(ObjectFunction)
+     * @see #toEpochNanos(ToObjectFunction)
+     * @see #unboxBooleanAsByte(ToObjectFunction)
+     * @see UnboxTransform#unboxByte(ToObjectFunction)
+     * @see UnboxTransform#unboxChar(ToObjectFunction)
+     * @see UnboxTransform#unboxDouble(ToObjectFunction)
+     * @see UnboxTransform#unboxFloat(ToObjectFunction)
+     * @see UnboxTransform#unboxInt(ToObjectFunction)
+     * @see UnboxTransform#unboxLong(ToObjectFunction)
+     * @see UnboxTransform#unboxShort(ToObjectFunction)
      */
-    public static <T> TypedFunction<T> of(ObjectFunction<T, ?> f) {
+    public static <T> TypedFunction<T> of(ToObjectFunction<T, ?> f) {
         return ObjectFunctionVisitor.of(f);
     }
 
@@ -86,7 +86,7 @@ class CommonTransform {
      * @param <T> the input type
      * @see BooleanUtils#booleanAsByte(Boolean)
      */
-    public static <T> ByteFunction<T> unboxBooleanAsByte(ObjectFunction<T, Boolean> f) {
+    public static <T> ToByteFunction<T> unboxBooleanAsByte(ToObjectFunction<T, Boolean> f) {
         return f.mapByte(BOOLEAN_AS_BYTE);
     }
 
@@ -98,7 +98,7 @@ class CommonTransform {
      * @param <T> the input type
      * @see DateTimeUtils#epochNanos(Instant)
      */
-    public static <T> LongFunction<T> toEpochNanos(ObjectFunction<T, Instant> f) {
+    public static <T> ToLongFunction<T> toEpochNanos(ToObjectFunction<T, Instant> f) {
         return f.mapLong(EPOCH_NANOS);
     }
 
@@ -111,12 +111,12 @@ class CommonTransform {
         private FunctionVisitor() {}
 
         @Override
-        public TypedFunction<T> visit(PrimitiveFunction<T> f) {
+        public TypedFunction<T> visit(ToPrimitiveFunction<T> f) {
             return CommonTransform.of(f);
         }
 
         @Override
-        public TypedFunction<T> visit(ObjectFunction<T, ?> f) {
+        public TypedFunction<T> visit(ToObjectFunction<T, ?> f) {
             return CommonTransform.of(f);
         }
     }
@@ -125,13 +125,13 @@ class CommonTransform {
             GenericType.Visitor<TypedFunction<T>>,
             BoxedType.Visitor<TypedFunction<T>> {
 
-        public static <T> TypedFunction<T> of(ObjectFunction<T, ?> f) {
+        public static <T> TypedFunction<T> of(ToObjectFunction<T, ?> f) {
             return f.returnType().walk(new ObjectFunctionVisitor<>(f));
         }
 
-        private final ObjectFunction<T, ?> f;
+        private final ToObjectFunction<T, ?> f;
 
-        private ObjectFunctionVisitor(ObjectFunction<T, ?> f) {
+        private ObjectFunctionVisitor(ToObjectFunction<T, ?> f) {
             this.f = Objects.requireNonNull(f);
         }
 

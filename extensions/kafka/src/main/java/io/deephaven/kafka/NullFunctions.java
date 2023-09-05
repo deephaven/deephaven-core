@@ -14,16 +14,16 @@ import io.deephaven.qst.type.LongType;
 import io.deephaven.qst.type.PrimitiveType;
 import io.deephaven.qst.type.ShortType;
 import io.deephaven.qst.type.Type;
-import io.deephaven.functions.BooleanFunction;
-import io.deephaven.functions.ByteFunction;
-import io.deephaven.functions.CharFunction;
-import io.deephaven.functions.DoubleFunction;
-import io.deephaven.functions.FloatFunction;
-import io.deephaven.functions.IntFunction;
-import io.deephaven.functions.LongFunction;
-import io.deephaven.functions.ObjectFunction;
-import io.deephaven.functions.PrimitiveFunction;
-import io.deephaven.functions.ShortFunction;
+import io.deephaven.functions.ToBooleanFunction;
+import io.deephaven.functions.ToByteFunction;
+import io.deephaven.functions.ToCharFunction;
+import io.deephaven.functions.ToDoubleFunction;
+import io.deephaven.functions.ToFloatFunction;
+import io.deephaven.functions.ToIntFunction;
+import io.deephaven.functions.ToLongFunction;
+import io.deephaven.functions.ToObjectFunction;
+import io.deephaven.functions.ToPrimitiveFunction;
+import io.deephaven.functions.ToShortFunction;
 import io.deephaven.functions.TypedFunction;
 import io.deephaven.util.QueryConstants;
 
@@ -36,50 +36,50 @@ class NullFunctions {
         return Optional.ofNullable((TypedFunction<T>) returnType.walk(NullFunctionVisitor.INSTANCE));
     }
 
-    public static <T> Optional<PrimitiveFunction<T>> of(PrimitiveType<?> returnType) {
+    public static <T> Optional<ToPrimitiveFunction<T>> of(PrimitiveType<?> returnType) {
         // noinspection unchecked
-        return Optional.ofNullable((PrimitiveFunction<T>) returnType
-                .walk((PrimitiveType.Visitor<PrimitiveFunction<?>>) NullFunctionVisitor.INSTANCE));
+        return Optional.ofNullable((ToPrimitiveFunction<T>) returnType
+                .walk((PrimitiveType.Visitor<ToPrimitiveFunction<?>>) NullFunctionVisitor.INSTANCE));
     }
 
-    public static <T, R> ObjectFunction<T, R> of(GenericType<R> returnType) {
-        return ObjectFunction.of(x -> null, returnType);
+    public static <T, R> ToObjectFunction<T, R> of(GenericType<R> returnType) {
+        return ToObjectFunction.of(x -> null, returnType);
     }
 
-    public static <T> CharFunction<T> nullCharFunction() {
+    public static <T> ToCharFunction<T> nullCharFunction() {
         return x -> QueryConstants.NULL_CHAR;
     }
 
-    public static <T> ByteFunction<T> nullByteFunction() {
+    public static <T> ToByteFunction<T> nullByteFunction() {
         return x -> QueryConstants.NULL_BYTE;
     }
 
-    public static <T> ShortFunction<T> nullShortFunction() {
+    public static <T> ToShortFunction<T> nullShortFunction() {
         return x -> QueryConstants.NULL_SHORT;
     }
 
-    public static <T> IntFunction<T> nullIntFunction() {
+    public static <T> ToIntFunction<T> nullIntFunction() {
         return x -> QueryConstants.NULL_INT;
     }
 
-    public static <T> LongFunction<T> nullLongFunction() {
+    public static <T> ToLongFunction<T> nullLongFunction() {
         return x -> QueryConstants.NULL_LONG;
     }
 
-    public static <T> FloatFunction<T> nullFloatFunction() {
+    public static <T> ToFloatFunction<T> nullFloatFunction() {
         return x -> QueryConstants.NULL_FLOAT;
     }
 
-    public static <T> DoubleFunction<T> nullDoubleFunction() {
+    public static <T> ToDoubleFunction<T> nullDoubleFunction() {
         return x -> QueryConstants.NULL_DOUBLE;
     }
 
     private enum NullFunctionVisitor
-            implements Type.Visitor<TypedFunction<?>>, PrimitiveType.Visitor<PrimitiveFunction<?>> {
+            implements Type.Visitor<TypedFunction<?>>, PrimitiveType.Visitor<ToPrimitiveFunction<?>> {
         INSTANCE;
 
         @Override
-        public PrimitiveFunction<?> visit(PrimitiveType<?> primitiveType) {
+        public ToPrimitiveFunction<?> visit(PrimitiveType<?> primitiveType) {
             return of(primitiveType).orElse(null);
         }
 
@@ -89,42 +89,42 @@ class NullFunctions {
         }
 
         @Override
-        public BooleanFunction<?> visit(BooleanType booleanType) {
+        public ToBooleanFunction<?> visit(BooleanType booleanType) {
             return null;
         }
 
         @Override
-        public ByteFunction<?> visit(ByteType byteType) {
+        public ToByteFunction<?> visit(ByteType byteType) {
             return nullByteFunction();
         }
 
         @Override
-        public PrimitiveFunction<?> visit(CharType charType) {
+        public ToPrimitiveFunction<?> visit(CharType charType) {
             return nullCharFunction();
         }
 
         @Override
-        public PrimitiveFunction<?> visit(ShortType shortType) {
+        public ToPrimitiveFunction<?> visit(ShortType shortType) {
             return nullShortFunction();
         }
 
         @Override
-        public PrimitiveFunction<?> visit(IntType intType) {
+        public ToPrimitiveFunction<?> visit(IntType intType) {
             return nullIntFunction();
         }
 
         @Override
-        public PrimitiveFunction<?> visit(LongType longType) {
+        public ToPrimitiveFunction<?> visit(LongType longType) {
             return nullLongFunction();
         }
 
         @Override
-        public PrimitiveFunction<?> visit(FloatType floatType) {
+        public ToPrimitiveFunction<?> visit(FloatType floatType) {
             return nullFloatFunction();
         }
 
         @Override
-        public PrimitiveFunction<?> visit(DoubleType doubleType) {
+        public ToPrimitiveFunction<?> visit(DoubleType doubleType) {
             return nullDoubleFunction();
         }
     }

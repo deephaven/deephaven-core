@@ -8,16 +8,16 @@ import java.util.function.Function;
 
 class LongFunctions {
 
-    static <T> LongFunction<T> primitive() {
+    static <T> ToLongFunction<T> primitive() {
         // noinspection unchecked
-        return (LongFunction<T>) PrimitiveLong.INSTANCE;
+        return (ToLongFunction<T>) PrimitiveLong.INSTANCE;
     }
 
-    static <T, R> LongFunction<T> map(Function<T, R> f, LongFunction<R> g) {
+    static <T, R> ToLongFunction<T> map(Function<T, R> f, ToLongFunction<R> g) {
         return new LongMap<>(f, g);
     }
 
-    private enum PrimitiveLong implements LongFunction<Object> {
+    private enum PrimitiveLong implements ToLongFunction<Object> {
         INSTANCE;
 
         @Override
@@ -26,11 +26,11 @@ class LongFunctions {
         }
     }
 
-    private static class LongMap<T, R> implements LongFunction<T> {
+    private static class LongMap<T, R> implements ToLongFunction<T> {
         private final Function<T, R> f;
-        private final LongFunction<R> g;
+        private final ToLongFunction<R> g;
 
-        public LongMap(Function<T, R> f, LongFunction<R> g) {
+        public LongMap(Function<T, R> f, ToLongFunction<R> g) {
             this.f = Objects.requireNonNull(f);
             this.g = Objects.requireNonNull(g);
         }

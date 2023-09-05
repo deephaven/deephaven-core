@@ -6,29 +6,29 @@ package io.deephaven.kafka.ingest;
 import io.deephaven.chunk.ObjectChunk;
 import io.deephaven.chunk.WritableChunk;
 import io.deephaven.chunk.attributes.Values;
-import io.deephaven.functions.ByteFunction;
-import io.deephaven.functions.ObjectFunction;
+import io.deephaven.functions.ToByteFunction;
+import io.deephaven.functions.ToObjectFunction;
 import io.deephaven.util.BooleanUtils;
 import io.deephaven.util.type.TypeUtils;
 
 import java.util.Objects;
 
 class ByteFieldCopier implements FieldCopier {
-    public static ByteFieldCopier of(ByteFunction<Object> f) {
+    public static ByteFieldCopier of(ToByteFunction<Object> f) {
         return new ByteFieldCopier(f);
     }
 
-    public static ByteFieldCopier of(ObjectFunction<Object, Byte> f) {
+    public static ByteFieldCopier of(ToObjectFunction<Object, Byte> f) {
         return of(f.mapByte(TypeUtils::unbox));
     }
 
-    public static ByteFieldCopier ofBoolean(ObjectFunction<Object, Boolean> f) {
+    public static ByteFieldCopier ofBoolean(ToObjectFunction<Object, Boolean> f) {
         return of(f.mapByte(BooleanUtils::booleanAsByte));
     }
 
-    private final ByteFunction<Object> f;
+    private final ToByteFunction<Object> f;
 
-    private ByteFieldCopier(ByteFunction<Object> f) {
+    private ByteFieldCopier(ToByteFunction<Object> f) {
         this.f = Objects.requireNonNull(f);
     }
 

@@ -4,63 +4,63 @@
 package io.deephaven.kafka.ingest;
 
 import io.deephaven.qst.type.BoxedBooleanType;
-import io.deephaven.functions.BooleanFunction;
-import io.deephaven.functions.ByteFunction;
-import io.deephaven.functions.CharFunction;
-import io.deephaven.functions.DoubleFunction;
-import io.deephaven.functions.FloatFunction;
-import io.deephaven.functions.IntFunction;
-import io.deephaven.functions.LongFunction;
-import io.deephaven.functions.ObjectFunction;
-import io.deephaven.functions.PrimitiveFunction;
-import io.deephaven.functions.ShortFunction;
+import io.deephaven.functions.ToBooleanFunction;
+import io.deephaven.functions.ToByteFunction;
+import io.deephaven.functions.ToCharFunction;
+import io.deephaven.functions.ToDoubleFunction;
+import io.deephaven.functions.ToFloatFunction;
+import io.deephaven.functions.ToIntFunction;
+import io.deephaven.functions.ToLongFunction;
+import io.deephaven.functions.ToObjectFunction;
+import io.deephaven.functions.ToPrimitiveFunction;
+import io.deephaven.functions.ToShortFunction;
 import io.deephaven.functions.TypedFunction;
 
 public enum FieldCopierAdapter
-        implements TypedFunction.Visitor<Object, FieldCopier>, PrimitiveFunction.Visitor<Object, FieldCopier> {
+        implements TypedFunction.Visitor<Object, FieldCopier>, ToPrimitiveFunction.Visitor<Object, FieldCopier> {
     INSTANCE;
 
     public static FieldCopier of(TypedFunction<Object> f) {
         return f.walk(INSTANCE);
     }
 
-    public static FieldCopier of(PrimitiveFunction<Object> f) {
-        return f.walk((PrimitiveFunction.Visitor<Object, FieldCopier>) INSTANCE);
+    public static FieldCopier of(ToPrimitiveFunction<Object> f) {
+        return f.walk((ToPrimitiveFunction.Visitor<Object, FieldCopier>) INSTANCE);
     }
 
-    public static FieldCopier of(BooleanFunction<Object> f) {
+    public static FieldCopier of(ToBooleanFunction<Object> f) {
         return BooleanFieldCopier.of(f);
     }
 
-    public static FieldCopier of(CharFunction<Object> f) {
+    public static FieldCopier of(ToCharFunction<Object> f) {
         return CharFieldCopier.of(f);
     }
 
-    public static FieldCopier of(ByteFunction<Object> f) {
+    public static FieldCopier of(ToByteFunction<Object> f) {
         return ByteFieldCopier.of(f);
     }
 
-    public static FieldCopier of(ShortFunction<Object> f) {
+    public static FieldCopier of(ToShortFunction<Object> f) {
         return ShortFieldCopier.of(f);
     }
 
-    public static FieldCopier of(IntFunction<Object> f) {
+    public static FieldCopier of(ToIntFunction<Object> f) {
         return IntFieldCopier.of(f);
     }
 
-    public static FieldCopier of(LongFunction<Object> f) {
+    public static FieldCopier of(ToLongFunction<Object> f) {
         return LongFieldCopier.of(f);
     }
 
-    public static FieldCopier of(FloatFunction<Object> f) {
+    public static FieldCopier of(ToFloatFunction<Object> f) {
         return FloatFieldCopier.of(f);
     }
 
-    public static FieldCopier of(DoubleFunction<Object> f) {
+    public static FieldCopier of(ToDoubleFunction<Object> f) {
         return DoubleFieldCopier.of(f);
     }
 
-    public static FieldCopier of(ObjectFunction<Object, ?> f) {
+    public static FieldCopier of(ToObjectFunction<Object, ?> f) {
         if (f.returnType().equals(BoxedBooleanType.of())) {
             return ByteFieldCopier.ofBoolean(f.cast(BoxedBooleanType.of()));
         }
@@ -68,52 +68,52 @@ public enum FieldCopierAdapter
     }
 
     @Override
-    public FieldCopier visit(PrimitiveFunction<Object> f) {
+    public FieldCopier visit(ToPrimitiveFunction<Object> f) {
         return of(f);
     }
 
     @Override
-    public FieldCopier visit(BooleanFunction<Object> f) {
+    public FieldCopier visit(ToBooleanFunction<Object> f) {
         return of(f);
     }
 
     @Override
-    public FieldCopier visit(CharFunction<Object> f) {
+    public FieldCopier visit(ToCharFunction<Object> f) {
         return of(f);
     }
 
     @Override
-    public FieldCopier visit(ByteFunction<Object> f) {
+    public FieldCopier visit(ToByteFunction<Object> f) {
         return of(f);
     }
 
     @Override
-    public FieldCopier visit(ShortFunction<Object> f) {
+    public FieldCopier visit(ToShortFunction<Object> f) {
         return of(f);
     }
 
     @Override
-    public FieldCopier visit(IntFunction<Object> f) {
+    public FieldCopier visit(ToIntFunction<Object> f) {
         return of(f);
     }
 
     @Override
-    public FieldCopier visit(LongFunction<Object> f) {
+    public FieldCopier visit(ToLongFunction<Object> f) {
         return of(f);
     }
 
     @Override
-    public FieldCopier visit(FloatFunction<Object> f) {
+    public FieldCopier visit(ToFloatFunction<Object> f) {
         return of(f);
     }
 
     @Override
-    public FieldCopier visit(DoubleFunction<Object> f) {
+    public FieldCopier visit(ToDoubleFunction<Object> f) {
         return of(f);
     }
 
     @Override
-    public FieldCopier visit(ObjectFunction<Object, ?> f) {
+    public FieldCopier visit(ToObjectFunction<Object, ?> f) {
         return of(f);
     }
 }
