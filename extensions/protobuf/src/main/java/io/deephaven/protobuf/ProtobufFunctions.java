@@ -18,18 +18,39 @@ import java.util.Optional;
 @BuildableStyle
 public abstract class ProtobufFunctions {
 
+    private static final ProtobufFunctions EMPTY = builder().build();
+
     public static Builder builder() {
         return ImmutableProtobufFunctions.builder();
     }
 
+    /**
+     * Creates an empty protobuf functions. Equivalent to {@code builder().build()}.
+     *
+     * @return the empty protobuf functions
+     */
     public static ProtobufFunctions empty() {
-        return builder().build();
+        return EMPTY;
     }
 
-    public static ProtobufFunctions unnamed(TypedFunction<Message> tf) {
-        return of(ProtobufFunction.of(tf));
+    /**
+     * Creates a protobuf functions with a single, unnamed {@code function}. Equivalent to
+     * {@code builder().addFunctions(ProtobufFunction.unnammed(function)).build()}.
+     *
+     * @param function the function
+     * @return the protobuf functions
+     */
+    public static ProtobufFunctions unnamed(TypedFunction<Message> function) {
+        return builder().addFunctions(ProtobufFunction.unnammed(function)).build();
     }
 
+    /**
+     * Creates a protobuf fuctions with {@code functions}. Equivalent to
+     * {@code builder().addFunctions(functions).build()}.
+     *
+     * @param functions the functions
+     * @return the protobuf functions
+     */
     public static ProtobufFunctions of(ProtobufFunction... functions) {
         return builder().addFunctions(functions).build();
     }

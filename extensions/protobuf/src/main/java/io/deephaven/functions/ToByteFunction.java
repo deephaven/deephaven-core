@@ -34,7 +34,7 @@ public interface ToByteFunction<T> extends ToPrimitiveFunction<T> {
      *
      * @param f the inner function
      * @param g the outer function
-     * @return the boolean function
+     * @return the byte function
      * @param <T> the input type
      * @param <R> the intermediate type
      */

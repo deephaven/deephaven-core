@@ -16,10 +16,23 @@ import org.immutables.value.Value.Parameter;
 @SimpleStyle
 public abstract class ProtobufFunction {
 
-    public static ProtobufFunction of(TypedFunction<Message> f) {
+    /**
+     * Creates the unnamed protobuf function. Equivalent to {@code of(FieldPath.empty(), f)}.
+     *
+     * @param f the function
+     * @return the unnamed protobuf function
+     */
+    public static ProtobufFunction unnammed(TypedFunction<Message> f) {
         return of(FieldPath.empty(), f);
     }
 
+    /**
+     * Creates the protobuf function.
+     *
+     * @param path the field path
+     * @param f the function
+     * @return the protobuf function
+     */
     public static ProtobufFunction of(FieldPath path, TypedFunction<Message> f) {
         return ImmutableProtobufFunction.of(path, f);
     }

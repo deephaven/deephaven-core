@@ -41,6 +41,7 @@ import java.util.Objects;
 import java.util.Optional;
 import java.util.function.Function;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 class ProtobufDescriptorParserImpl {
 
@@ -125,7 +126,7 @@ class ProtobufDescriptorParserImpl {
         public FieldContext(DescriptorContext parent, FieldDescriptor fd) {
             this.parent = Objects.requireNonNull(parent);
             this.fd = Objects.requireNonNull(fd);
-            this.fieldPath = parent.fieldPath.append(fd);
+            this.fieldPath = append(parent.fieldPath, fd);
         }
 
         private ProtobufFunctions functions() {
@@ -240,7 +241,7 @@ class ProtobufDescriptorParserImpl {
                                     ? e.function()
                                     : BypassOnNull.of(e.function());
                             builder.addFunctions(
-                                    ProtobufFunction.of(e.path().prefixWith(fd), value.mapInput(fieldAsMessage)));
+                                    ProtobufFunction.of(prepend(e.path(), fd), value.mapInput(fieldAsMessage)));
                         }
                         return builder.build();
                     }
@@ -275,7 +276,7 @@ class ProtobufDescriptorParserImpl {
                 if (valueFd == null) {
                     throw new IllegalStateException("Expected map to have field descriptor number 2 (value)");
                 }
-                final DescriptorContext dc = new DescriptorContext(parent.fieldPath.append(fd), fd.getMessageType());
+                final DescriptorContext dc = new DescriptorContext(append(parent.fieldPath, fd), fd.getMessageType());
 
                 // Note: maps are a "special" case, where even though we don't include the key / value FDs as a return
                 // io.deephaven.protobuf.ProtobufFunction#path, it's important that we force their inclusion if we've
@@ -356,7 +357,7 @@ class ProtobufDescriptorParserImpl {
                         final Builder builder = ProtobufFunctions.builder();
                         for (ProtobufFunction f : functions.functions()) {
                             final ToObjectFunction<Message, ?> repeatedTf = f.function().walk(new ToRepeatedType());
-                            builder.addFunctions(ProtobufFunction.of(f.path().prefixWith(fd), repeatedTf));
+                            builder.addFunctions(ProtobufFunction.of(prepend(f.path(), fd), repeatedTf));
                         }
                         return builder.build();
                     }
@@ -542,5 +543,13 @@ class ProtobufDescriptorParserImpl {
             array[i] = f.apply(message.getRepeatedField(fd, i));
         }
         return array;
+    }
+
+    private static FieldPath prepend(FieldPath f, FieldDescriptor fd) {
+        return FieldPath.of(Stream.concat(Stream.of(fd), f.path().stream()).collect(Collectors.toList()));
+    }
+
+    private static FieldPath append(FieldPath f, FieldDescriptor fd) {
+        return FieldPath.of(Stream.concat(f.path().stream(), Stream.of(fd)).collect(Collectors.toList()));
     }
 }

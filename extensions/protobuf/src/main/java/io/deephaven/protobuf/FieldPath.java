@@ -13,7 +13,6 @@ import org.immutables.value.Value.Parameter;
 import java.util.Arrays;
 import java.util.List;
 import java.util.stream.Collectors;
-import java.util.stream.Stream;
 
 /**
  * The {@link #path()} to a {@link com.google.protobuf.Descriptors.Descriptor Descriptor's} field.
@@ -26,14 +25,33 @@ import java.util.stream.Stream;
 @SimpleStyle
 public abstract class FieldPath {
 
+    private static final FieldPath EMPTY = of(List.of());
+
+    /**
+     * Creates an empty field path. Equivalent to {@code of(List.of())}.
+     *
+     * @return the empty field path
+     */
     public static FieldPath empty() {
-        return of(List.of());
+        return EMPTY;
     }
 
+    /**
+     * Creates a field path with {@code descriptors}.
+     *
+     * @param descriptors the descriptors
+     * @return the field path
+     */
     public static FieldPath of(FieldDescriptor... descriptors) {
         return of(Arrays.asList(descriptors));
     }
 
+    /**
+     * Creates a field path with {@code descriptors}.
+     *
+     * @param descriptors the descriptors
+     * @return the field path
+     */
     public static FieldPath of(List<FieldDescriptor> descriptors) {
         return ImmutableFieldPath.of(descriptors);
     }
@@ -87,25 +105,34 @@ public abstract class FieldPath {
         return Arrays.asList(simplePath.split("/"));
     }
 
+    /**
+     * The ordered field descriptors which make up the field path.
+     *
+     * @return the path
+     */
     @Parameter
     public abstract List<FieldDescriptor> path();
 
+    /**
+     * The number path for this field path. Equivalent to
+     * {@code FieldNumberPath.of(path().stream().mapToInt(FieldDescriptor::getNumber).toArray())}.
+     *
+     * @return the number path
+     */
     @Lazy
     public FieldNumberPath numberPath() {
         return FieldNumberPath.of(path().stream().mapToInt(FieldDescriptor::getNumber).toArray());
     }
 
+    /**
+     * The name path for this field path. Equivalent to
+     * {@code path().stream().map(FieldDescriptor::getName).collect(Collectors.toList())}.
+     *
+     * @return the name path
+     **/
     @Lazy
     public List<String> namePath() {
         return path().stream().map(FieldDescriptor::getName).collect(Collectors.toList());
-    }
-
-    public final FieldPath prefixWith(FieldDescriptor prefix) {
-        return FieldPath.of(Stream.concat(Stream.of(prefix), path().stream()).collect(Collectors.toList()));
-    }
-
-    public final FieldPath append(FieldDescriptor fieldDescriptor) {
-        return FieldPath.of(Stream.concat(path().stream(), Stream.of(fieldDescriptor)).collect(Collectors.toList()));
     }
 
     public final boolean startsWith(List<String> prefix) {
