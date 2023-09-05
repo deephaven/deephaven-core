@@ -47,6 +47,7 @@ import io.deephaven.kafka.IgnoreImpl.IgnoreConsume;
 import io.deephaven.kafka.IgnoreImpl.IgnoreProduce;
 import io.deephaven.kafka.JsonImpl.JsonConsume;
 import io.deephaven.kafka.JsonImpl.JsonProduce;
+import io.deephaven.kafka.KafkaTools.Produce.KeyOrValueSpec;
 import io.deephaven.kafka.KafkaTools.StreamConsumerRegistrarProvider.PerPartition;
 import io.deephaven.kafka.KafkaTools.StreamConsumerRegistrarProvider.Single;
 import io.deephaven.kafka.KafkaTools.TableType.Append;
@@ -571,7 +572,7 @@ public class KafkaTools {
             return IGNORE;
         }
 
-        private static boolean isIgnore(KeyOrValueSpec keyOrValueSpec) {
+        static boolean isIgnore(KeyOrValueSpec keyOrValueSpec) {
             return keyOrValueSpec == IGNORE;
         }
 
@@ -1313,24 +1314,62 @@ public class KafkaTools {
             @NotNull final Produce.KeyOrValueSpec keySpec,
             @NotNull final Produce.KeyOrValueSpec valueSpec,
             final boolean lastByKeyColumns) {
+        return produceFromTable(KafkaPublishOptions.builder()
+                .table(table)
+                .topic(topic)
+                .config(kafkaProperties)
+                .keySpec(keySpec)
+                .valueSpec(valueSpec)
+                .lastBy(lastByKeyColumns && !Produce.isIgnore(keySpec))
+                .publishInitial(true)
+                .build());
+    }
+
+    /**
+     * Produce a Kafka stream from a Deephaven table.
+     *
+     * <p>
+     * Note that {@code table} must only change in ways that are meaningful when turned into a stream of events over
+     * Kafka.
+     * <p>
+     * Two primary use cases are considered:
+     * <ol>
+     * <li><b>A stream of changes (puts and removes) to a key-value data set.</b> In order to handle this efficiently
+     * and allow for correct reconstruction of the state at a consumer, it is assumed that the input data is the result
+     * of a Deephaven aggregation, e.g. {@link Table#aggAllBy}, {@link Table#aggBy}, or {@link Table#lastBy}. This means
+     * that key columns (as specified by {@code keySpec}) must not be modified, and no rows should be shifted if there
+     * are any key columns. Note that specifying {@code lastByKeyColumns=true} can make it easy to satisfy this
+     * constraint if the input data is not already aggregated.</li>
+     * <li><b>A stream of independent log records.</b> In this case, the input table should either be a
+     * {@link Table#BLINK_TABLE_ATTRIBUTE blink table} or should only ever add rows (regardless of whether the
+     * {@link Table#ADD_ONLY_TABLE_ATTRIBUTE attribute} is specified).</li>
+     * </ol>
+     * <p>
+     * If other use cases are identified, a publication mode or extensible listener framework may be introduced at a
+     * later date.
+     *
+     * @param options the options
+     * @return a callback to stop producing and shut down the associated table listener; note a caller should keep a
+     *         reference to this return value to ensure liveliness.
+     */
+    public static Runnable produceFromTable(KafkaPublishOptions options) {
+        final Table table = options.table();
         if (table.isRefreshing()
                 && !table.getUpdateGraph().exclusiveLock().isHeldByCurrentThread()
                 && !table.getUpdateGraph().sharedLock().isHeldByCurrentThread()) {
             throw new KafkaPublisherException(
                     "Calling thread must hold an exclusive or shared UpdateGraph lock to publish live sources");
         }
-        if (Produce.isIgnore(keySpec) && Produce.isIgnore(valueSpec)) {
-            throw new IllegalArgumentException(
-                    "can't ignore both key and value: keySpec and valueSpec can't both be ignore specs");
-        }
-
-        final Map<String, ?> config = asStringMap(kafkaProperties);
+        final Map<String, ?> config = asStringMap(options.config());
+        final KeyOrValueSpec keySpec = options.keySpec();
+        final KeyOrValueSpec valueSpec = options.valueSpec();
         final SchemaRegistryClient schemaRegistryClient = schemaRegistryClient(keySpec, valueSpec, config).orElse(null);
 
-        final Serializer<?> keySpecSerializer = keySpec.getSerializer(schemaRegistryClient, table.getDefinition());
+        final TableDefinition tableDefinition = table.getDefinition();
+        final Serializer<?> keySpecSerializer = keySpec.getSerializer(schemaRegistryClient, tableDefinition);
         keySpecSerializer.configure(config, true);
 
-        final Serializer<?> valueSpecSerializer = valueSpec.getSerializer(schemaRegistryClient, table.getDefinition());
+        final Serializer<?> valueSpecSerializer = valueSpec.getSerializer(schemaRegistryClient, tableDefinition);
         valueSpecSerializer.configure(config, false);
 
         final String[] keyColumns = keySpec.getColumnNames(table, schemaRegistryClient);
@@ -1338,22 +1377,23 @@ public class KafkaTools {
 
         final LivenessScope publisherScope = new LivenessScope(true);
         try (final SafeCloseable ignored = LivenessScopeStack.open(publisherScope, false)) {
-            final Table effectiveTable = (!Produce.isIgnore(keySpec) && lastByKeyColumns)
+            final Table effectiveTable = options.lastBy()
                     ? table.lastBy(keyColumns)
                     : table.coalesce();
             final KeyOrValueSerializer<?> keySerializer = keySpec.getKeyOrValueSerializer(effectiveTable, keyColumns);
             final KeyOrValueSerializer<?> valueSerializer =
                     valueSpec.getKeyOrValueSerializer(effectiveTable, valueColumns);
             final PublishToKafka producer = new PublishToKafka(
-                    kafkaProperties,
+                    options.config(),
                     effectiveTable,
-                    topic,
+                    options.topic(),
                     keyColumns,
                     keySpecSerializer,
                     keySerializer,
                     valueColumns,
                     valueSpecSerializer,
-                    valueSerializer);
+                    valueSerializer,
+                    options.publishInitial());
         }
         return publisherScope::release;
     }

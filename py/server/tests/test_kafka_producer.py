@@ -5,7 +5,7 @@
 import os
 import unittest
 
-from deephaven import kafka_producer as pk, new_table
+from deephaven import kafka_producer as pk, new_table, time_table
 from deephaven.column import string_col, int_col, double_col
 from deephaven.stream import kafka
 from deephaven.stream.kafka.producer import KeyValueSpec
@@ -138,6 +138,23 @@ class KafkaProducerTestCase(BaseTestCase):
         topics = kafka.topics(kafka_config)
         self.assertTrue(len(topics) > 0)
         self.assertIn(topic, topics)
+
+        self.assertIsNotNone(cleanup)
+        cleanup()
+
+    def test_not_publish_initial(self):
+        """
+        Check a simple Kafka producer with publish_initial=False works without errors
+        """
+        t = time_table("PT1s")
+        cleanup = pk.produce(
+            t,
+            {'bootstrap.servers': 'redpanda:29092'},
+            'orders',
+            key_spec=KeyValueSpec.IGNORE,
+            value_spec=pk.simple_spec('Price'),
+            publish_initial=False,
+        )
 
         self.assertIsNotNone(cleanup)
         cleanup()
