@@ -41,7 +41,8 @@ public abstract class ProtobufDescriptorParserOptions {
     }
 
     /**
-     * Equivalent to {@code fieldPath -> FieldOptions.defaults()}.
+     * The field options, allows the caller to specify different options for different field paths. Equivalent to
+     * {@code fieldPath -> FieldOptions.defaults()}.
      *
      * @return the field options
      */
