@@ -112,7 +112,7 @@ public abstract class FieldOptions {
     }
 
     /**
-     * By default, is {@code true}.
+     * If the field should be included for parsing. By default, is {@code true}.
      *
      * @return if the field should be included
      */
@@ -122,7 +122,7 @@ public abstract class FieldOptions {
     }
 
     /**
-     * By default, is {@link WellKnownBehavior#asWellKnown()}.
+     * The well-known message behavior. By default, is {@link WellKnownBehavior#asWellKnown()}.
      *
      * @return the well-known message behavior
      */
@@ -132,7 +132,7 @@ public abstract class FieldOptions {
     }
 
     /**
-     * By default, is {@link BytesBehavior#asByteArray()}.
+     * The {@code bytes} type behavior. By default, is {@link BytesBehavior#asByteArray()}.
      *
      * @return the bytes field behavior
      */
@@ -142,7 +142,7 @@ public abstract class FieldOptions {
     }
 
     /**
-     * By default, is {@link MapBehavior#asMap()}.
+     * The {@code map} type behavior. By default, is {@link MapBehavior#asMap()}.
      *
      * @return the map field behavior.
      */
