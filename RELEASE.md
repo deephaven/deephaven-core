@@ -106,9 +106,7 @@ $ git cherry-pick <...>
 # Edit files, updating from `X.Y` to `X.Y.1`
 #
 # Look in the last section "Version bump in preparation of next release" for a list of
-# files to update to the right version you are producing. After the previous release
-# they were left ready for a next minor release, and as they are they have the wrong
-# number for a patch release.
+# files to update to the right version you are producing.
 #
 # See https://github.com/deephaven/deephaven-core/issues/3466 for future improvements to this process.
 $ ...
