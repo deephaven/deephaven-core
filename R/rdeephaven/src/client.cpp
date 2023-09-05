@@ -288,7 +288,7 @@ public:
         std::shared_ptr<arrow::flight::FlightStreamReader> fsr = internal_tbl_hdl.GetFlightStreamReader();
 
         std::vector<std::shared_ptr<arrow::RecordBatch>> empty_record_batches;
-        deephaven::client::utility::OkOrThrow(DEEPHAVEN_EXPR_MSG(fsr->ReadAll(&empty_record_batches)));
+        deephaven::client::utility::OkOrThrow(DEEPHAVEN_LOCATION_EXPR(fsr->ReadAll(&empty_record_batches)));
 
         std::shared_ptr<arrow::RecordBatchReader> record_batch_reader = arrow::RecordBatchReader::Make(empty_record_batches).ValueOrDie();
         ArrowArrayStream* stream_ptr = new ArrowArrayStream();
@@ -438,17 +438,17 @@ public:
         auto ticket = internal_tbl_hdl_mngr.NewTicket();
         auto fd = deephaven::client::utility::ConvertTicketToFlightDescriptor(ticket);
 
-        deephaven::client::utility::OkOrThrow(DEEPHAVEN_EXPR_MSG(wrapper.FlightClient()->DoPut(options, fd, schema, &fsw, &fmr)));
+        deephaven::client::utility::OkOrThrow(DEEPHAVEN_LOCATION_EXPR(wrapper.FlightClient()->DoPut(options, fd, schema, &fsw, &fmr)));
         while(true) {
             std::shared_ptr<arrow::RecordBatch> this_batch;
-            deephaven::client::utility::OkOrThrow(DEEPHAVEN_EXPR_MSG(record_batch_reader->ReadNext(&this_batch)));
+            deephaven::client::utility::OkOrThrow(DEEPHAVEN_LOCATION_EXPR(record_batch_reader->ReadNext(&this_batch)));
             if (this_batch == nullptr) {
                 break;
             }
-            deephaven::client::utility::OkOrThrow(DEEPHAVEN_EXPR_MSG(fsw->WriteRecordBatch(*this_batch)));
+            deephaven::client::utility::OkOrThrow(DEEPHAVEN_LOCATION_EXPR(fsw->WriteRecordBatch(*this_batch)));
         }
-        deephaven::client::utility::OkOrThrow(DEEPHAVEN_EXPR_MSG(fsw->DoneWriting()));
-        deephaven::client::utility::OkOrThrow(DEEPHAVEN_EXPR_MSG(fsw->Close()));
+        deephaven::client::utility::OkOrThrow(DEEPHAVEN_LOCATION_EXPR(fsw->DoneWriting()));
+        deephaven::client::utility::OkOrThrow(DEEPHAVEN_LOCATION_EXPR(fsw->Close()));
 
         auto new_tbl_hdl = internal_tbl_hdl_mngr.MakeTableHandleFromTicket(ticket);
         return new TableHandleWrapper(new_tbl_hdl);
