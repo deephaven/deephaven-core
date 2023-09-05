@@ -3,7 +3,22 @@ Client <- R6Class("Client",
   cloneable = FALSE,
   public = list(
     .internal_rcpp_object = NULL,
-    initialize = function(target,
+    initialize = function(...) {
+      args <- list(...)
+      if (length(args) == 1) {
+        first_arg <- args[1]
+        class_first_arg = class(first_arg)[[1]]
+        if (class_first_arg != "character" && class_first_arg != "list") {
+          return(self$initialize_for_xptr(first_arg))
+        }
+      }
+      return(do.call(self$initialize_for_target, args))
+    },
+    initialize_for_xptr = function(xptr) {
+      self$.internal_rcpp_object = new(INTERNAL_Client, xptr)
+    },
+    initialize_for_target = function(
+                          target,
                           auth_type = "anonymous",
                           username = "",
                           password = "",

@@ -5,9 +5,10 @@
  */
 
 #include <iostream>
-#include <utility>
 #include <memory>
+#include <stdexcept>
 #include <string>
+#include <utility>
 #include <vector>
 
 #include "deephaven/client/client.h"
@@ -31,7 +32,6 @@ class ClientWrapper;
 // forward declaration of conversion functions
 std::vector<deephaven::client::Aggregate> convertRcppListToVectorOfTypeAggregate(Rcpp::List rcpp_list);
 std::vector<deephaven::client::TableHandle> convertRcppListToVectorOfTypeTableHandle(Rcpp::List rcpp_list);
-
 
 // ######################### DH WRAPPERS #########################
 
@@ -322,7 +322,7 @@ class ClientOptionsWrapper {
 public:
 
     ClientOptionsWrapper() :
-            internal_options(std::make_shared<deephaven::client::ClientOptions>()) {}
+        internal_options(std::make_shared<deephaven::client::ClientOptions>()) {}
 
     void SetDefaultAuthentication() {
         internal_options->SetDefaultAuthentication();
@@ -366,12 +366,22 @@ private:
     friend ClientWrapper;
 };
 
-
 class ClientWrapper {
 public:
 
     ClientWrapper(std::string target, const ClientOptionsWrapper &client_options) :
-            internal_client(deephaven::client::Client::Connect(target, *client_options.internal_options)) {}
+        internal_client(
+            Rcpp::XPtr<deephaven::client::Client>(
+                new deephaven::client::Client(
+                    std::move(
+                        deephaven::client::Client::Connect(target, *client_options.internal_options)
+                    )
+                )
+            )
+        ) {}
+
+    ClientWrapper(Rcpp::XPtr<deephaven::client::Client> client_xptr) :
+        internal_client(client_xptr) {}
 
     TableHandleWrapper* OpenTable(std::string tableName) {
         return new TableHandleWrapper(internal_tbl_hdl_mngr.FetchTable(tableName));
@@ -382,11 +392,16 @@ public:
     }
 
     TableHandleWrapper* TimeTable(std::string periodISO, std::string startTimeISO) {
-        if((startTimeISO == "now") || (startTimeISO == "")) {
+        if ((startTimeISO == "now") || (startTimeISO == "")) {
             return new TableHandleWrapper(internal_tbl_hdl_mngr.TimeTable(periodISO));
         }
         return new TableHandleWrapper(internal_tbl_hdl_mngr.TimeTable(periodISO, startTimeISO));
     };
+
+
+    TableHandleWrapper* MakeTableHandleFromTicket(std::string ticket) {
+        return new TableHandleWrapper(internal_tbl_hdl_mngr.MakeTableHandleFromTicket(ticket));
+    }
 
     void RunScript(std::string code) {
         internal_tbl_hdl_mngr.RunScript(code);
@@ -455,12 +470,12 @@ public:
     }
 
     void Close() {
-        internal_client.Close();
+        internal_client->Close();
     }
 
 private:
-    deephaven::client::Client internal_client;
-    const deephaven::client::TableHandleManager internal_tbl_hdl_mngr = internal_client.GetManager();
+    Rcpp::XPtr<deephaven::client::Client> internal_client;
+    const deephaven::client::TableHandleManager internal_tbl_hdl_mngr = internal_client->GetManager();
 };
 
 
@@ -553,14 +568,15 @@ RCPP_MODULE(DeephavenInternalModule) {
 
     class_<ClientWrapper>("INTERNAL_Client")
     .constructor<std::string, const ClientOptionsWrapper&>()
+    .constructor<XPtr<deephaven::client::Client>>()
     .method("open_table", &ClientWrapper::OpenTable)
     .method("empty_table", &ClientWrapper::EmptyTable)
     .method("time_table", &ClientWrapper::TimeTable)
     .method("check_for_table", &ClientWrapper::CheckForTable)
+    .method("make_table_handle_from_ticket", &ClientWrapper::MakeTableHandleFromTicket)
     .method("run_script", &ClientWrapper::RunScript)
     .method("new_arrow_array_stream_ptr", &ClientWrapper::NewArrowArrayStreamPtr)
     .method("new_table_from_arrow_array_stream_ptr", &ClientWrapper::NewTableFromArrowArrayStreamPtr)
     .method("close", &ClientWrapper::Close)
     ;
-
 }
