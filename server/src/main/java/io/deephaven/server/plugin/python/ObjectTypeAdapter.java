@@ -108,7 +108,7 @@ final class ObjectTypeAdapter extends ObjectTypeBase implements AutoCloseable {
 
             // Make a new array holding objects to pass to python, to avoid mutating the passed array. Note that this
             // will have no impact on GC/liveness, as the JVM is free to GC the original references array after the loop
-            // byt before the call() invocation.
+            // but before the call() invocation.
             Object[] pyReferences = new Object[references.length];
             for (int i = 0; i < references.length; i++) {
                 Object reference = references[i];
