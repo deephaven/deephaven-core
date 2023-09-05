@@ -114,10 +114,13 @@ public interface SingleValuedMessageParser {
     Descriptor canonicalDescriptor();
 
     /**
+     * The message parser.
      *
      * @param descriptor the actual descriptor
      * @param options the parser options
+     * @param fieldPath the field path
      * @return the message parsing function
      */
-    TypedFunction<Message> messageParser(Descriptor descriptor, ProtobufDescriptorParserOptions options);
+    TypedFunction<Message> messageParser(Descriptor descriptor, ProtobufDescriptorParserOptions options,
+            FieldPath fieldPath);
 }

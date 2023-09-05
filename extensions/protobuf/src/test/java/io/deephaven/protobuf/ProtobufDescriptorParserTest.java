@@ -694,16 +694,23 @@ public class ProtobufDescriptorParserTest {
             }
         });
 
-        checkKey(TheWrappers.getDescriptor(), List.of("bytes"), Type.byteType().arrayType(),
-                new HashMap<>() {
-                    {
-                        put(allNull, null);
-                        final ByteString foo = ByteString.copyFromUtf8("foo");
-                        put(TheWrappers.newBuilder().setBytes(BytesValue.newBuilder().setValue(foo).build()).build(),
-                                "foo".getBytes(StandardCharsets.UTF_8));
-                    }
-                });
+        {
+            final ProtobufDescriptorParserOptions options = ProtobufDescriptorParserOptions.builder()
+                    .fieldOptions(fp -> FieldOptions.builder().bytes(BytesBehavior.asByteString()).build())
+                    .build();
+            checkKey(TheWrappers.getDescriptor(), options, List.of("bytes"), Type.ofCustom(ByteString.class),
+                    new HashMap<>() {
+                        {
+                            put(allNull, null);
+                            final ByteString foo = ByteString.copyFromUtf8("foo");
+                            put(TheWrappers.newBuilder().setBytes(BytesValue.newBuilder().setValue(foo).build())
+                                    .build(), foo);
+                        }
+                    });
+        }
     }
+
+
 
     @Test
     void repeated() {
@@ -1146,7 +1153,7 @@ public class ProtobufDescriptorParserTest {
 
             @Override
             public TypedFunction<Message> messageParser(Descriptor descriptor,
-                    ProtobufDescriptorParserOptions options) {
+                    ProtobufDescriptorParserOptions options, FieldPath fieldPath) {
                 return ToObjectFunction.identity(Type.ofCustom(Person.class));
             }
         };

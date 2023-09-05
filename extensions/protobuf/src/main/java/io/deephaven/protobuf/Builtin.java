@@ -20,6 +20,7 @@ import com.google.protobuf.StringValue;
 import com.google.protobuf.Timestamp;
 import com.google.protobuf.UInt32Value;
 import com.google.protobuf.UInt64Value;
+import io.deephaven.protobuf.FieldOptions.BytesBehavior;
 import io.deephaven.qst.type.CustomType;
 import io.deephaven.qst.type.GenericType;
 import io.deephaven.qst.type.Type;
@@ -80,7 +81,8 @@ class Builtin {
         }
 
         @Override
-        public TypedFunction<Message> messageParser(Descriptor descriptor, ProtobufDescriptorParserOptions options) {
+        public TypedFunction<Message> messageParser(Descriptor descriptor, ProtobufDescriptorParserOptions options,
+                FieldPath fieldPath) {
             checkCompatible(canonicalDescriptor(), descriptor);
             return TimestampFunction.of(descriptor);
         }
@@ -99,7 +101,8 @@ class Builtin {
         }
 
         @Override
-        public TypedFunction<Message> messageParser(Descriptor descriptor, ProtobufDescriptorParserOptions options) {
+        public TypedFunction<Message> messageParser(Descriptor descriptor, ProtobufDescriptorParserOptions options,
+                FieldPath fieldPath) {
             checkCompatible(canonicalDescriptor(), descriptor);
             return DurationFunction.of(descriptor);
         }
@@ -118,7 +121,8 @@ class Builtin {
         }
 
         @Override
-        public TypedFunction<Message> messageParser(Descriptor descriptor, ProtobufDescriptorParserOptions options) {
+        public TypedFunction<Message> messageParser(Descriptor descriptor, ProtobufDescriptorParserOptions options,
+                FieldPath fieldPath) {
             checkCompatible(canonicalDescriptor(), descriptor);
             return new BoolFieldFunction(descriptor.findFieldByNumber(BoolValue.VALUE_FIELD_NUMBER));
         }
@@ -137,7 +141,8 @@ class Builtin {
         }
 
         @Override
-        public TypedFunction<Message> messageParser(Descriptor descriptor, ProtobufDescriptorParserOptions options) {
+        public TypedFunction<Message> messageParser(Descriptor descriptor, ProtobufDescriptorParserOptions options,
+                FieldPath fieldPath) {
             checkCompatible(canonicalDescriptor(), descriptor);
             return new IntFieldFunction(descriptor.findFieldByNumber(Int32Value.VALUE_FIELD_NUMBER));
         }
@@ -156,7 +161,8 @@ class Builtin {
         }
 
         @Override
-        public TypedFunction<Message> messageParser(Descriptor descriptor, ProtobufDescriptorParserOptions options) {
+        public TypedFunction<Message> messageParser(Descriptor descriptor, ProtobufDescriptorParserOptions options,
+                FieldPath fieldPath) {
             checkCompatible(canonicalDescriptor(), descriptor);
             return new IntFieldFunction(descriptor.findFieldByNumber(UInt32Value.VALUE_FIELD_NUMBER));
         }
@@ -175,7 +181,8 @@ class Builtin {
         }
 
         @Override
-        public TypedFunction<Message> messageParser(Descriptor descriptor, ProtobufDescriptorParserOptions options) {
+        public TypedFunction<Message> messageParser(Descriptor descriptor, ProtobufDescriptorParserOptions options,
+                FieldPath fieldPath) {
             checkCompatible(canonicalDescriptor(), descriptor);
             return new LongFieldFunction(descriptor.findFieldByNumber(Int64Value.VALUE_FIELD_NUMBER));
         }
@@ -194,7 +201,8 @@ class Builtin {
         }
 
         @Override
-        public TypedFunction<Message> messageParser(Descriptor descriptor, ProtobufDescriptorParserOptions options) {
+        public TypedFunction<Message> messageParser(Descriptor descriptor, ProtobufDescriptorParserOptions options,
+                FieldPath fieldPath) {
             checkCompatible(canonicalDescriptor(), descriptor);
             return new LongFieldFunction(descriptor.findFieldByNumber(UInt64Value.VALUE_FIELD_NUMBER));
         }
@@ -213,7 +221,8 @@ class Builtin {
         }
 
         @Override
-        public TypedFunction<Message> messageParser(Descriptor descriptor, ProtobufDescriptorParserOptions options) {
+        public TypedFunction<Message> messageParser(Descriptor descriptor, ProtobufDescriptorParserOptions options,
+                FieldPath fieldPath) {
             checkCompatible(canonicalDescriptor(), descriptor);
             return new FloatFieldFunction(descriptor.findFieldByNumber(FloatValue.VALUE_FIELD_NUMBER));
         }
@@ -232,7 +241,8 @@ class Builtin {
         }
 
         @Override
-        public TypedFunction<Message> messageParser(Descriptor descriptor, ProtobufDescriptorParserOptions options) {
+        public TypedFunction<Message> messageParser(Descriptor descriptor, ProtobufDescriptorParserOptions options,
+                FieldPath fieldPath) {
             checkCompatible(canonicalDescriptor(), descriptor);
             return new DoubleFieldFunction(descriptor.findFieldByNumber(DoubleValue.VALUE_FIELD_NUMBER));
         }
@@ -251,7 +261,8 @@ class Builtin {
         }
 
         @Override
-        public TypedFunction<Message> messageParser(Descriptor descriptor, ProtobufDescriptorParserOptions options) {
+        public TypedFunction<Message> messageParser(Descriptor descriptor, ProtobufDescriptorParserOptions options,
+                FieldPath fieldPath) {
             checkCompatible(canonicalDescriptor(), descriptor);
             return new StringFieldFunction(descriptor.findFieldByNumber(StringValue.VALUE_FIELD_NUMBER));
         }
@@ -270,10 +281,14 @@ class Builtin {
         }
 
         @Override
-        public TypedFunction<Message> messageParser(Descriptor descriptor, ProtobufDescriptorParserOptions options) {
+        public TypedFunction<Message> messageParser(Descriptor descriptor, ProtobufDescriptorParserOptions options,
+                FieldPath fieldPath) {
             checkCompatible(canonicalDescriptor(), descriptor);
-            return new ByteStringFieldFunction(descriptor.findFieldByNumber(BytesValue.VALUE_FIELD_NUMBER))
-                    .mapToObj(ByteString::toByteArray, Type.byteType().arrayType());
+            final ByteStringFieldFunction bsf =
+                    new ByteStringFieldFunction(descriptor.findFieldByNumber(BytesValue.VALUE_FIELD_NUMBER));
+            return options.fieldOptions().apply(fieldPath).bytes() == BytesBehavior.asByteArray()
+                    ? bsf.mapToObj(ByteString::toByteArray, Type.byteType().arrayType())
+                    : bsf;
         }
     }
 
@@ -292,7 +307,8 @@ class Builtin {
         }
 
         @Override
-        public TypedFunction<Message> messageParser(Descriptor descriptor, ProtobufDescriptorParserOptions options) {
+        public TypedFunction<Message> messageParser(Descriptor descriptor, ProtobufDescriptorParserOptions options,
+                FieldPath fieldPath) {
             checkCompatible(canonicalDescriptor(), descriptor);
             return ToObjectFunction.identity(type);
         }

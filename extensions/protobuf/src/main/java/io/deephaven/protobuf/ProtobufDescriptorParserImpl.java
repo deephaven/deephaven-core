@@ -104,7 +104,7 @@ class ProtobufDescriptorParserImpl {
                 return Optional.empty();
             }
             if (options.fieldOptions().apply(fieldPath).wellKnown() == WellKnownBehavior.asWellKnown()) {
-                return Optional.of(ProtobufFunctions.unnamed(svmp.messageParser(descriptor, options)));
+                return Optional.of(ProtobufFunctions.unnamed(svmp.messageParser(descriptor, options, fieldPath)));
             }
             return Optional.empty();
         }
