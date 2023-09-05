@@ -7,6 +7,9 @@ import io.deephaven.annotations.BuildableStyle;
 import org.immutables.value.Value.Default;
 import org.immutables.value.Value.Immutable;
 
+import java.util.function.Function;
+import java.util.function.Predicate;
+
 @Immutable
 @BuildableStyle
 public abstract class FieldOptions {
@@ -34,6 +37,18 @@ public abstract class FieldOptions {
      */
     public static FieldOptions exclude() {
         return EXCLUDE;
+    }
+
+    /**
+     * Creates a field options function that maps the {@code include} predicate to {@link FieldOptions#include()}.
+     * Equivalent to {@code fp -> builder().include(include.test(fp)).build()}.
+     * 
+     * @param include the include function
+     * @return the field path functions
+     */
+    @SuppressWarnings("unused")
+    public static Function<FieldPath, FieldOptions> includeIf(Predicate<FieldPath> include) {
+        return fp -> builder().include(include.test(fp)).build();
     }
 
     /**

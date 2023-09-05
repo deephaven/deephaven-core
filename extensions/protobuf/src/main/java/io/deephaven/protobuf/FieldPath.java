@@ -11,13 +11,11 @@ import org.immutables.value.Value.Lazy;
 import org.immutables.value.Value.Parameter;
 
 import java.util.Arrays;
-import java.util.Collection;
 import java.util.List;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 import static io.deephaven.functions.BooleanFunction.map;
-import static io.deephaven.functions.BooleanFunction.or;
 
 /**
  * The {@link #path()} to a {@link com.google.protobuf.Descriptors.Descriptor Descriptor's} field.
@@ -42,36 +40,53 @@ public abstract class FieldPath {
         return ImmutableFieldPath.of(descriptors);
     }
 
-    public static BooleanFunction<FieldPath> numberPathStartsWith(FieldNumberPath prefix) {
-        return map(FieldPath::numberPath, x -> x.startsWith(prefix));
+    /**
+     * Creates a function that returns {@code true} if {@code namePath} starts with the {@link FieldPath#namePath()
+     * field path's name path}.
+     *
+     * @param namePath the name path
+     * @return the boolean function
+     * @see FieldPath#otherStartsWithThis(List)
+     */
+    public static BooleanFunction<FieldPath> namePathStartsWithFieldPath(List<String> namePath) {
+        return fieldPath -> fieldPath.otherStartsWithThis(namePath);
     }
 
-    public static BooleanFunction<FieldPath> numberPathStartsWithUs(FieldNumberPath other) {
-        return map(FieldPath::numberPath, other::startsWith);
+    /**
+     * Creates a function that returns {@code true} if the simple path starts with the {@link FieldPath#namePath() field
+     * path's name path}. Equivalent to {@code namePathStartsWithFieldPath(toNamePath(simplePath))}.
+     *
+     * @param simplePath the simple path
+     * @return the boolean function
+     * @see #namePathStartsWithFieldPath(List)
+     * @see #toNamePath(String)
+     */
+    public static BooleanFunction<FieldPath> simplePathStartsWithFieldPath(String simplePath) {
+        return namePathStartsWithFieldPath(toNamePath(simplePath));
     }
 
-    public static BooleanFunction<FieldPath> anyNumberPathStartsWithUs(Collection<FieldNumberPath> numberPaths) {
-        return or(numberPaths.stream().map(FieldPath::numberPathStartsWithUs).collect(Collectors.toList()));
+    /**
+     * Creates a function that returns {@code true} if any of the simple paths start with the
+     * {@link FieldPath#namePath() field path's name path}.
+     *
+     * @param simplePaths the simple paths
+     * @return the boolean function
+     */
+    @SuppressWarnings("unused")
+    public static BooleanFunction<FieldPath> anySimplePathStartsWithFieldPath(List<String> simplePaths) {
+        return BooleanFunction
+                .or(simplePaths.stream().map(FieldPath::simplePathStartsWithFieldPath).collect(Collectors.toList()));
     }
 
-    public static BooleanFunction<FieldPath> namePathStartsWith(List<String> prefix) {
-        return fieldPath -> fieldPath.startsWith(prefix);
-    }
-
-    public static BooleanFunction<FieldPath> namePathStartsWithUs(List<String> us) {
-        return fieldPath -> fieldPath.startsWithUs(us);
-    }
-
-    public static BooleanFunction<FieldPath> anyNamePathStartsWith(Collection<List<String>> namePaths) {
-        return or(namePaths.stream().map(FieldPath::namePathStartsWith).collect(Collectors.toList()));
-    }
-
-    public static BooleanFunction<FieldPath> namePathEquals(List<String> namePath) {
-        return map(FieldPath::namePath, namePath::equals);
-    }
-
-    public static BooleanFunction<FieldPath> numberPathEquals(FieldNumberPath numberPath) {
-        return map(FieldPath::numberPath, numberPath::equals);
+    /**
+     * Parse the simple path to a name path, treating `/` as the separating character.
+     *
+     * @param simplePath the simple path
+     * @return the name path
+     */
+    public static List<String> toNamePath(String simplePath) {
+        simplePath = !simplePath.isEmpty() && simplePath.charAt(0) == '/' ? simplePath.substring(1) : simplePath;
+        return Arrays.asList(simplePath.split("/"));
     }
 
     @Parameter
@@ -99,7 +114,7 @@ public abstract class FieldPath {
         return startsWith(namePath(), prefix);
     }
 
-    public final boolean startsWithUs(List<String> other) {
+    public final boolean otherStartsWithThis(List<String> other) {
         return startsWith(other, namePath());
     }
 

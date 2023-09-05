@@ -5,6 +5,12 @@ import com.google.protobuf.Descriptors.Descriptor;
 import com.google.protobuf.Message;
 import com.google.protobuf.Timestamp;
 import io.deephaven.UncheckedDeephavenException;
+import io.deephaven.functions.BooleanFunction;
+import io.deephaven.functions.FloatFunction;
+import io.deephaven.functions.IntFunction;
+import io.deephaven.functions.LongFunction;
+import io.deephaven.functions.ObjectFunction;
+import io.deephaven.functions.TypedFunction;
 import io.deephaven.kafka.protobuf.gen.BoolV1;
 import io.deephaven.kafka.protobuf.gen.BoolV2;
 import io.deephaven.kafka.protobuf.gen.MyMessageV1;
@@ -26,12 +32,6 @@ import io.deephaven.protobuf.FieldPath;
 import io.deephaven.protobuf.ProtobufDescriptorParserOptions;
 import io.deephaven.protobuf.ProtobufFunction;
 import io.deephaven.protobuf.ProtobufFunctions;
-import io.deephaven.functions.BooleanFunction;
-import io.deephaven.functions.FloatFunction;
-import io.deephaven.functions.IntFunction;
-import io.deephaven.functions.LongFunction;
-import io.deephaven.functions.ObjectFunction;
-import io.deephaven.functions.TypedFunction;
 import io.deephaven.util.QueryConstants;
 import org.junit.Test;
 
@@ -42,6 +42,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.function.Function;
 
+import static io.deephaven.functions.BooleanFunction.map;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.failBecauseExceptionWasNotThrown;
 
@@ -314,7 +315,7 @@ public class ProtobufImplSchemaChangeTest {
 
     @Test
     public void specialTypesWellKnown() {
-        final BooleanFunction<FieldPath> isTs = FieldPath.namePathEquals(List.of("ts"));
+        final BooleanFunction<FieldPath> isTs = namePathEquals(List.of("ts"));
         final ProtobufDescriptorParserOptions options = ProtobufDescriptorParserOptions.builder()
                 .fieldOptions(options(isTs, isTs, null, null))
                 .build();
@@ -335,7 +336,7 @@ public class ProtobufImplSchemaChangeTest {
 
     @Test
     public void specialTypesAntiWellKnown() {
-        final BooleanFunction<FieldPath> startsWithTs = FieldPath.namePathStartsWith(List.of("ts"));
+        final BooleanFunction<FieldPath> startsWithTs = namePathStartsWith(List.of("ts"));
         final ProtobufDescriptorParserOptions options = ProtobufDescriptorParserOptions.builder()
                 .fieldOptions(options(startsWithTs, BooleanFunction.not(startsWithTs), null, null))
                 .build();
@@ -359,7 +360,7 @@ public class ProtobufImplSchemaChangeTest {
 
     @Test
     public void specialTypesBytes() {
-        final BooleanFunction<FieldPath> isBs = FieldPath.namePathEquals(List.of("bs"));
+        final BooleanFunction<FieldPath> isBs = namePathEquals(List.of("bs"));
         final ProtobufDescriptorParserOptions options = ProtobufDescriptorParserOptions.builder()
                 .fieldOptions(options(isBs, null, isBs, null))
                 .build();
@@ -380,7 +381,7 @@ public class ProtobufImplSchemaChangeTest {
 
     @Test
     public void specialTypesByteString() {
-        final BooleanFunction<FieldPath> isBs = FieldPath.namePathEquals(List.of("bs"));
+        final BooleanFunction<FieldPath> isBs = namePathEquals(List.of("bs"));
         final ProtobufDescriptorParserOptions options = ProtobufDescriptorParserOptions.builder()
                 .fieldOptions(options(isBs, null, BooleanFunction.not(isBs), null))
                 .build();
@@ -402,7 +403,7 @@ public class ProtobufImplSchemaChangeTest {
 
     @Test
     public void specialTypesMap() {
-        final BooleanFunction<FieldPath> isMp = FieldPath.namePathEquals(List.of("mp"));
+        final BooleanFunction<FieldPath> isMp = namePathEquals(List.of("mp"));
         final ProtobufDescriptorParserOptions options = ProtobufDescriptorParserOptions.builder()
                 .fieldOptions(options(isMp, null, null, isMp))
                 .build();
@@ -424,7 +425,7 @@ public class ProtobufImplSchemaChangeTest {
 
     @Test
     public void specialTypesAntiMap() {
-        final BooleanFunction<FieldPath> startsWithMp = FieldPath.namePathStartsWith(List.of("mp"));
+        final BooleanFunction<FieldPath> startsWithMp = namePathStartsWith(List.of("mp"));
         final ProtobufDescriptorParserOptions options = ProtobufDescriptorParserOptions.builder()
                 .fieldOptions(options(startsWithMp, null, null, BooleanFunction.not(startsWithMp)))
                 .build();
@@ -511,5 +512,13 @@ public class ProtobufImplSchemaChangeTest {
             }
             return builder.build();
         };
+    }
+
+    private static BooleanFunction<FieldPath> namePathEquals(List<String> namePath) {
+        return map(FieldPath::namePath, namePath::equals);
+    }
+
+    private static BooleanFunction<FieldPath> namePathStartsWith(List<String> prefix) {
+        return fieldPath -> fieldPath.startsWith(prefix);
     }
 }

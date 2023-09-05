@@ -19,8 +19,8 @@ _JKafkaTools = jpy.get_type("io.deephaven.kafka.KafkaTools")
 _JKafkaTools_Consume = jpy.get_type("io.deephaven.kafka.KafkaTools$Consume")
 _JProtobufConsumeOptions = jpy.get_type("io.deephaven.kafka.protobuf.ProtobufConsumeOptions")
 _JProtobufDescriptorParserOptions = jpy.get_type("io.deephaven.protobuf.ProtobufDescriptorParserOptions")
+_JFieldOptions = jpy.get_type("io.deephaven.protobuf.FieldOptions")
 _JFieldPath = jpy.get_type("io.deephaven.protobuf.FieldPath")
-_JBooleanFunction = jpy.get_type("io.deephaven.functions.BooleanFunction")
 _JPythonTools = jpy.get_type("io.deephaven.integrations.python.PythonTools")
 ALL_PARTITIONS = _JKafkaTools.ALL_PARTITIONS
 
@@ -288,9 +288,6 @@ def protobuf_spec(
         schema_version: Optional[int] = None,
         schema_message_name: Optional[str] = None,
         include: Optional[List[str]] = None,
-        parse_as_well_known: Optional[List[str]] = None,
-        parse_as_bytes: Optional[List[str]] = None,
-        parse_as_map: Optional[List[str]] = None,
 ) -> KeyValueSpec:
     """The kafka protobuf specs. This will fetch the protobuf descriptor for the schema subject from the schema registry
     using version schema_version and create protobuf message parsing functions according to parsing options. These
@@ -311,41 +308,17 @@ def protobuf_spec(
             resulting table definition, or None to use the first message definition in the schema. The default is None.
             It is advisable for callers to explicitly set this.
         include (Optional[List[str]]): the '/' separated paths to include. Default is None, which includes all paths.
-        parse_as_well_known (Optional[List[str]]): the '/' separated paths to be parsed as "well-known" types. If a
-            message is a well-known type, but is not in included in this directive, it will be parsed recursively.
-            Default is None, which includes all paths as well-known.
-        parse_as_bytes (Optional[List[str]]): the '/' separated paths to be parsed as byte array types. If a
-            field is the bytes type, but is not in included in this directive, it will be parsed as a ByteString.
-            Default is None, which includes all paths as bytes.
-        parse_as_map (Optional[List[str]]): the '/' separated paths to be parsed as map types. If a
-            field is the map type, but is not in included in this directive, it will be parsed as a repeated
-            MapFieldEntry. Default is None, which includes all paths as maps.
 
     Returns:
         a KeyValueSpec
     """
-    def name_path_starts_with_us(x: str) -> jpy.JType:
-        parts = (x[1:] if x[0] == "/" else x).split("/")
-        return _JFieldPath.namePathStartsWithUs(j_array_list(parts))
-
-    def any_name_path_starts_with_us(paths: List[str]) -> jpy.JType:
-        return getattr(_JBooleanFunction, "or")(
-            j_array_list([name_path_starts_with_us(path) for path in paths])
-        )
-
     parser_options_builder = _JProtobufDescriptorParserOptions.builder()
     if include is not None:
-        parser_options_builder.include(any_name_path_starts_with_us(include))
-    if parse_as_well_known is not None:
-        parser_options_builder.parseAsWellKnown(
-            any_name_path_starts_with_us(parse_as_well_known)
+        parser_options_builder.fieldOptions(
+            _JFieldOptions.includeIf(
+                _JFieldPath.anySimplePathStartsWithFieldPath(j_array_list(include))
+            )
         )
-    if parse_as_bytes is not None:
-        parser_options_builder.parseAsBytes(
-            any_name_path_starts_with_us(parse_as_bytes)
-        )
-    if parse_as_map is not None:
-        parser_options_builder.parseAsMap(any_name_path_starts_with_us(parse_as_map))
     pb_consume_builder = (
         _JProtobufConsumeOptions.builder()
         .schemaSubject(schema)
