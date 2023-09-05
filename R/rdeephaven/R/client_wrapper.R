@@ -6,7 +6,7 @@ Client <- R6Class("Client",
     initialize = function(...) {
       args <- list(...)
       if (length(args) == 1) {
-        first_arg <- args[1]
+        first_arg <- args[[1]]
         class_first_arg = class(first_arg)[[1]]
         if (class_first_arg != "character" && class_first_arg != "list") {
           return(self$initialize_for_xptr(first_arg))
