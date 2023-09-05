@@ -89,7 +89,7 @@ class UnboxTransform {
      * @see TypeUtils#unbox(Byte)
      */
     public static <T> ToByteFunction<T> unboxByte(ToObjectFunction<T, Byte> f) {
-        return f.mapByte(UNBOX_BYTE);
+        return f.mapToByte(UNBOX_BYTE);
     }
 
     /**
@@ -101,7 +101,7 @@ class UnboxTransform {
      * @see TypeUtils#unbox(Character)
      */
     public static <T> ToCharFunction<T> unboxChar(ToObjectFunction<T, Character> f) {
-        return f.mapChar(UNBOX_CHAR);
+        return f.mapToChar(UNBOX_CHAR);
     }
 
     /**
@@ -113,7 +113,7 @@ class UnboxTransform {
      * @see TypeUtils#unbox(Short)
      */
     public static <T> ToShortFunction<T> unboxShort(ToObjectFunction<T, Short> f) {
-        return f.mapShort(UNBOX_SHORT);
+        return f.mapToShort(UNBOX_SHORT);
     }
 
     /**
@@ -125,7 +125,7 @@ class UnboxTransform {
      * @see TypeUtils#unbox(Integer)
      */
     public static <T> ToIntFunction<T> unboxInt(ToObjectFunction<T, Integer> f) {
-        return f.mapInt(UNBOX_INT);
+        return f.mapToInt(UNBOX_INT);
     }
 
     /**
@@ -137,7 +137,7 @@ class UnboxTransform {
      * @see TypeUtils#unbox(Long)
      */
     public static <T> ToLongFunction<T> unboxLong(ToObjectFunction<T, Long> f) {
-        return f.mapLong(UNBOX_LONG);
+        return f.mapToLong(UNBOX_LONG);
     }
 
     /**
@@ -149,7 +149,7 @@ class UnboxTransform {
      * @see TypeUtils#unbox(Float)
      */
     public static <T> ToFloatFunction<T> unboxFloat(ToObjectFunction<T, Float> f) {
-        return f.mapFloat(UNBOX_FLOAT);
+        return f.mapToFloat(UNBOX_FLOAT);
     }
 
     /**
@@ -161,7 +161,7 @@ class UnboxTransform {
      * @see TypeUtils#unbox(Double)
      */
     public static <T> ToDoubleFunction<T> unboxDouble(ToObjectFunction<T, Double> f) {
-        return f.mapDouble(UNBOX_DOULE);
+        return f.mapToDouble(UNBOX_DOULE);
     }
 
     private enum UnboxFunctionVisitor implements TypedFunction.Visitor<Object, ToPrimitiveFunction<Object>> {

@@ -19,11 +19,11 @@ class ByteFieldCopier implements FieldCopier {
     }
 
     public static ByteFieldCopier of(ToObjectFunction<Object, Byte> f) {
-        return of(f.mapByte(TypeUtils::unbox));
+        return of(f.mapToByte(TypeUtils::unbox));
     }
 
     public static ByteFieldCopier ofBoolean(ToObjectFunction<Object, Boolean> f) {
-        return of(f.mapByte(BooleanUtils::booleanAsByte));
+        return of(f.mapToByte(BooleanUtils::booleanAsByte));
     }
 
     private final ToByteFunction<Object> f;

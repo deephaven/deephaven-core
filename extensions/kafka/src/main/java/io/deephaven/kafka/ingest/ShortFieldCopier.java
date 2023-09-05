@@ -18,7 +18,7 @@ class ShortFieldCopier implements FieldCopier {
     }
 
     public static ShortFieldCopier of(ToObjectFunction<Object, Short> f) {
-        return of(f.mapShort(TypeUtils::unbox));
+        return of(f.mapToShort(TypeUtils::unbox));
     }
 
     private final ToShortFunction<Object> f;

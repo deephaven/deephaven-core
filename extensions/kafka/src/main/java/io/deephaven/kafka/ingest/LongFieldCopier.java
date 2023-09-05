@@ -18,7 +18,7 @@ class LongFieldCopier implements FieldCopier {
     }
 
     public static LongFieldCopier of(ToObjectFunction<Object, Long> f) {
-        return of(f.mapLong(TypeUtils::unbox));
+        return of(f.mapToLong(TypeUtils::unbox));
     }
 
     private final ToLongFunction<Object> f;

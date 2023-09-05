@@ -58,57 +58,57 @@ class ObjectFunctions {
         }
 
         @Override
-        public ToBooleanFunction<Object> mapBoolean(ToBooleanFunction<Object> g) {
+        public ToBooleanFunction<Object> mapToBoolean(ToBooleanFunction<Object> g) {
             return g;
         }
 
         @Override
-        public ToCharFunction<Object> mapChar(ToCharFunction<Object> g) {
+        public ToCharFunction<Object> mapToChar(ToCharFunction<Object> g) {
             return g;
         }
 
         @Override
-        public ToByteFunction<Object> mapByte(ToByteFunction<Object> g) {
+        public ToByteFunction<Object> mapToByte(ToByteFunction<Object> g) {
             return g;
         }
 
         @Override
-        public ToShortFunction<Object> mapShort(ToShortFunction<Object> g) {
+        public ToShortFunction<Object> mapToShort(ToShortFunction<Object> g) {
             return g;
         }
 
         @Override
-        public ToIntFunction<Object> mapInt(ToIntFunction<Object> g) {
+        public ToIntFunction<Object> mapToInt(ToIntFunction<Object> g) {
             return g;
         }
 
         @Override
-        public ToLongFunction<Object> mapLong(ToLongFunction<Object> g) {
+        public ToLongFunction<Object> mapToLong(ToLongFunction<Object> g) {
             return g;
         }
 
         @Override
-        public ToFloatFunction<Object> mapFloat(ToFloatFunction<Object> g) {
+        public ToFloatFunction<Object> mapToFloat(ToFloatFunction<Object> g) {
             return g;
         }
 
         @Override
-        public ToDoubleFunction<Object> mapDouble(ToDoubleFunction<Object> g) {
+        public ToDoubleFunction<Object> mapToDouble(ToDoubleFunction<Object> g) {
             return g;
         }
 
         @Override
-        public <R2> ToObjectFunction<Object, R2> mapObj(ToObjectFunction<Object, R2> g) {
+        public <R2> ToObjectFunction<Object, R2> mapToObj(ToObjectFunction<Object, R2> g) {
             return g;
         }
 
         @Override
-        public <R2> ToObjectFunction<Object, R2> mapObj(Function<Object, R2> g, GenericType<R2> returnType) {
+        public <R2> ToObjectFunction<Object, R2> mapToObj(Function<Object, R2> g, GenericType<R2> returnType) {
             return ToObjectFunction.of(g, returnType);
         }
 
         @Override
-        public ToPrimitiveFunction<Object> mapPrimitive(ToPrimitiveFunction<Object> g) {
+        public ToPrimitiveFunction<Object> mapToPrimitive(ToPrimitiveFunction<Object> g) {
             return g;
         }
 
@@ -249,42 +249,42 @@ class ObjectFunctions {
 
         @Override
         public ToPrimitiveFunction<R> visit(ToBooleanFunction<T> g) {
-            return f.mapBoolean(g);
+            return f.mapToBoolean(g);
         }
 
         @Override
         public ToPrimitiveFunction<R> visit(ToCharFunction<T> g) {
-            return f.mapChar(g);
+            return f.mapToChar(g);
         }
 
         @Override
         public ToPrimitiveFunction<R> visit(ToByteFunction<T> g) {
-            return f.mapByte(g);
+            return f.mapToByte(g);
         }
 
         @Override
         public ToPrimitiveFunction<R> visit(ToShortFunction<T> g) {
-            return f.mapShort(g);
+            return f.mapToShort(g);
         }
 
         @Override
         public ToPrimitiveFunction<R> visit(ToIntFunction<T> g) {
-            return f.mapInt(g);
+            return f.mapToInt(g);
         }
 
         @Override
         public ToPrimitiveFunction<R> visit(ToLongFunction<T> g) {
-            return f.mapLong(g);
+            return f.mapToLong(g);
         }
 
         @Override
         public ToPrimitiveFunction<R> visit(ToFloatFunction<T> g) {
-            return f.mapFloat(g);
+            return f.mapToFloat(g);
         }
 
         @Override
         public ToPrimitiveFunction<R> visit(ToDoubleFunction<T> g) {
-            return f.mapDouble(g);
+            return f.mapToDouble(g);
         }
     }
 
@@ -302,12 +302,12 @@ class ObjectFunctions {
 
         @Override
         public TypedFunction<R> visit(ToPrimitiveFunction<T> g) {
-            return f.mapPrimitive(g);
+            return f.mapToPrimitive(g);
         }
 
         @Override
         public TypedFunction<R> visit(ToObjectFunction<T, ?> g) {
-            return f.mapObj(g);
+            return f.mapToObj(g);
         }
     }
 }

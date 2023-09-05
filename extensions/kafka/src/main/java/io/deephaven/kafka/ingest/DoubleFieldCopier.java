@@ -18,7 +18,7 @@ class DoubleFieldCopier implements FieldCopier {
     }
 
     public static DoubleFieldCopier of(ToObjectFunction<Object, Double> f) {
-        return of(f.mapDouble(TypeUtils::unbox));
+        return of(f.mapToDouble(TypeUtils::unbox));
     }
 
     private final ToDoubleFunction<Object> f;

@@ -273,7 +273,7 @@ class Builtin {
         public TypedFunction<Message> messageParser(Descriptor descriptor, ProtobufDescriptorParserOptions options) {
             checkCompatible(canonicalDescriptor(), descriptor);
             return new ByteStringFieldFunction(descriptor.findFieldByNumber(BytesValue.VALUE_FIELD_NUMBER))
-                    .mapObj(ByteString::toByteArray, Type.byteType().arrayType());
+                    .mapToObj(ByteString::toByteArray, Type.byteType().arrayType());
         }
     }
 

@@ -18,7 +18,7 @@ class IntFieldCopier implements FieldCopier {
     }
 
     public static IntFieldCopier of(ToObjectFunction<Object, Integer> f) {
-        return of(f.mapInt(TypeUtils::unbox));
+        return of(f.mapToInt(TypeUtils::unbox));
     }
 
     private final ToIntFunction<Object> f;

@@ -199,34 +199,34 @@ class ProtobufDescriptorParserImpl {
                 switch (fd.getJavaType()) {
                     case INT:
                         return fd.hasPresence()
-                                ? namedField(mapObj(BOXED_INT_OBJ))
-                                : namedField(mapInt(ToIntFunction.primitive()));
+                                ? namedField(mapToObj(BOXED_INT_OBJ))
+                                : namedField(mapToInt(ToIntFunction.primitive()));
                     case LONG:
                         return fd.hasPresence()
-                                ? namedField(mapObj(BOXED_LONG_OBJ))
-                                : namedField(mapLong(ToLongFunction.primitive()));
+                                ? namedField(mapToObj(BOXED_LONG_OBJ))
+                                : namedField(mapToLong(ToLongFunction.primitive()));
                     case FLOAT:
                         return fd.hasPresence()
-                                ? namedField(mapObj(BOXED_FLOAT_OBJ))
-                                : namedField(mapFloat(ToFloatFunction.primitive()));
+                                ? namedField(mapToObj(BOXED_FLOAT_OBJ))
+                                : namedField(mapToFloat(ToFloatFunction.primitive()));
                     case DOUBLE:
                         return fd.hasPresence()
-                                ? namedField(mapObj(BOXED_DOUBLE_OBJ))
-                                : namedField(mapDouble(ToDoubleFunction.primitive()));
+                                ? namedField(mapToObj(BOXED_DOUBLE_OBJ))
+                                : namedField(mapToDouble(ToDoubleFunction.primitive()));
                     case BOOLEAN:
                         return fd.hasPresence()
-                                ? namedField(mapObj(BOXED_BOOLEAN_OBJ))
-                                : namedField(mapBoolean(ToBooleanFunction.primitive()));
+                                ? namedField(mapToObj(BOXED_BOOLEAN_OBJ))
+                                : namedField(mapToBoolean(ToBooleanFunction.primitive()));
                     case STRING:
-                        return namedField(mapObj(STRING_OBJ));
+                        return namedField(mapToObj(STRING_OBJ));
                     case BYTE_STRING:
                         return options.fieldOptions().apply(fieldPath).bytes() == BytesBehavior.asByteArray()
-                                ? namedField(mapObj(BYTE_STRING_OBJ).mapObj(BYTE_STRING_FUNCTION))
-                                : namedField(mapObj(BYTE_STRING_OBJ));
+                                ? namedField(mapToObj(BYTE_STRING_OBJ).mapToObj(BYTE_STRING_FUNCTION))
+                                : namedField(mapToObj(BYTE_STRING_OBJ));
                     case ENUM:
-                        return namedField(mapObj(ENUM_VALUE_DESCRIPTOR_OBJ));
+                        return namedField(mapToObj(ENUM_VALUE_DESCRIPTOR_OBJ));
                     case MESSAGE: {
-                        final ToObjectFunction<Message, Message> fieldAsMessage = mapObj(MESSAGE_OBJ);
+                        final ToObjectFunction<Message, Message> fieldAsMessage = mapToObj(MESSAGE_OBJ);
                         final DescriptorContext messageContext = toMessageContext();
                         final ProtobufFunctions subF = messageContext.functions();
                         final Builder builder = ProtobufFunctions.builder();
@@ -346,7 +346,7 @@ class ProtobufDescriptorParserImpl {
                         return namedField(mapGenerics(STRING_OBJ));
                     case BYTE_STRING:
                         return options.fieldOptions().apply(fieldPath).bytes() == BytesBehavior.asByteArray()
-                                ? namedField(mapGenerics(BYTE_STRING_OBJ.mapObj(BYTE_STRING_FUNCTION)))
+                                ? namedField(mapGenerics(BYTE_STRING_OBJ.mapToObj(BYTE_STRING_FUNCTION)))
                                 : namedField(mapGenerics(BYTE_STRING_OBJ));
                     case ENUM:
                         return namedField(mapGenerics(ENUM_VALUE_DESCRIPTOR_OBJ));
@@ -407,7 +407,7 @@ class ProtobufDescriptorParserImpl {
 
                 @Override
                 public ToObjectFunction<Message, ?> visit(ToObjectFunction<Message, ?> f) {
-                    return mapGenerics(MESSAGE_OBJ.mapObj(f));
+                    return mapGenerics(MESSAGE_OBJ.mapToObj(f));
                 }
 
                 @Override
@@ -417,42 +417,42 @@ class ProtobufDescriptorParserImpl {
 
                 @Override
                 public ToObjectFunction<Message, ?> visit(ToBooleanFunction<Message> f) {
-                    return mapBooleans(MESSAGE_OBJ.mapBoolean(f));
+                    return mapBooleans(MESSAGE_OBJ.mapToBoolean(f));
                 }
 
                 @Override
                 public ToObjectFunction<Message, ?> visit(ToCharFunction<Message> f) {
-                    return mapChars(MESSAGE_OBJ.mapChar(f));
+                    return mapChars(MESSAGE_OBJ.mapToChar(f));
                 }
 
                 @Override
                 public ToObjectFunction<Message, ?> visit(ToByteFunction<Message> f) {
-                    return mapBytes(MESSAGE_OBJ.mapByte(f));
+                    return mapBytes(MESSAGE_OBJ.mapToByte(f));
                 }
 
                 @Override
                 public ToObjectFunction<Message, ?> visit(ToShortFunction<Message> f) {
-                    return mapShorts(MESSAGE_OBJ.mapShort(f));
+                    return mapShorts(MESSAGE_OBJ.mapToShort(f));
                 }
 
                 @Override
                 public ToObjectFunction<Message, ?> visit(ToIntFunction<Message> f) {
-                    return mapInts(MESSAGE_OBJ.mapInt(f));
+                    return mapInts(MESSAGE_OBJ.mapToInt(f));
                 }
 
                 @Override
                 public ToObjectFunction<Message, ?> visit(ToLongFunction<Message> f) {
-                    return mapLongs(MESSAGE_OBJ.mapLong(f));
+                    return mapLongs(MESSAGE_OBJ.mapToLong(f));
                 }
 
                 @Override
                 public ToObjectFunction<Message, ?> visit(ToFloatFunction<Message> f) {
-                    return mapFloats(MESSAGE_OBJ.mapFloat(f));
+                    return mapFloats(MESSAGE_OBJ.mapToFloat(f));
                 }
 
                 @Override
                 public ToObjectFunction<Message, ?> visit(ToDoubleFunction<Message> f) {
-                    return mapDoubles(MESSAGE_OBJ.mapDouble(f));
+                    return mapDoubles(MESSAGE_OBJ.mapToDouble(f));
                 }
             }
 

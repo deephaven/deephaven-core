@@ -18,7 +18,7 @@ class FloatFieldCopier implements FieldCopier {
     }
 
     public static FloatFieldCopier of(ToObjectFunction<Object, Float> f) {
-        return of(f.mapFloat(TypeUtils::unbox));
+        return of(f.mapToFloat(TypeUtils::unbox));
     }
 
     private final ToFloatFunction<Object> f;

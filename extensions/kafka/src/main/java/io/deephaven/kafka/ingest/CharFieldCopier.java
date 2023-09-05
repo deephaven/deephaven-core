@@ -18,7 +18,7 @@ class CharFieldCopier implements FieldCopier {
     }
 
     public static CharFieldCopier of(ToObjectFunction<Object, Character> f) {
-        return of(f.mapChar(TypeUtils::unbox));
+        return of(f.mapToChar(TypeUtils::unbox));
     }
 
     private final ToCharFunction<Object> f;

@@ -87,7 +87,7 @@ public interface ToObjectFunction<T, R> extends TypedFunction<T>, Function<T, R>
      * @param g the outer function
      * @return the boolean function
      */
-    default ToBooleanFunction<T> mapBoolean(ToBooleanFunction<R> g) {
+    default ToBooleanFunction<T> mapToBoolean(ToBooleanFunction<R> g) {
         return ToBooleanFunction.map(this, g);
     }
 
@@ -100,7 +100,7 @@ public interface ToObjectFunction<T, R> extends TypedFunction<T>, Function<T, R>
      * @param g the outer function
      * @return the char function
      */
-    default ToCharFunction<T> mapChar(ToCharFunction<R> g) {
+    default ToCharFunction<T> mapToChar(ToCharFunction<R> g) {
         return ToCharFunction.map(this, g);
     }
 
@@ -113,7 +113,7 @@ public interface ToObjectFunction<T, R> extends TypedFunction<T>, Function<T, R>
      * @param g the outer function
      * @return the byte function
      */
-    default ToByteFunction<T> mapByte(ToByteFunction<R> g) {
+    default ToByteFunction<T> mapToByte(ToByteFunction<R> g) {
         return ToByteFunction.map(this, g);
     }
 
@@ -126,7 +126,7 @@ public interface ToObjectFunction<T, R> extends TypedFunction<T>, Function<T, R>
      * @param g the outer function
      * @return the short function
      */
-    default ToShortFunction<T> mapShort(ToShortFunction<R> g) {
+    default ToShortFunction<T> mapToShort(ToShortFunction<R> g) {
         return ToShortFunction.map(this, g);
     }
 
@@ -139,7 +139,7 @@ public interface ToObjectFunction<T, R> extends TypedFunction<T>, Function<T, R>
      * @param g the outer function
      * @return the int function
      */
-    default ToIntFunction<T> mapInt(ToIntFunction<R> g) {
+    default ToIntFunction<T> mapToInt(ToIntFunction<R> g) {
         return ToIntFunction.map(this, g);
     }
 
@@ -152,7 +152,7 @@ public interface ToObjectFunction<T, R> extends TypedFunction<T>, Function<T, R>
      * @param g the outer function
      * @return the long function
      */
-    default ToLongFunction<T> mapLong(ToLongFunction<R> g) {
+    default ToLongFunction<T> mapToLong(ToLongFunction<R> g) {
         return ToLongFunction.map(this, g);
     }
 
@@ -165,7 +165,7 @@ public interface ToObjectFunction<T, R> extends TypedFunction<T>, Function<T, R>
      * @param g the outer function
      * @return the float function
      */
-    default ToFloatFunction<T> mapFloat(ToFloatFunction<R> g) {
+    default ToFloatFunction<T> mapToFloat(ToFloatFunction<R> g) {
         return ToFloatFunction.map(this, g);
     }
 
@@ -178,7 +178,7 @@ public interface ToObjectFunction<T, R> extends TypedFunction<T>, Function<T, R>
      * @param g the outer function
      * @return the double function
      */
-    default ToDoubleFunction<T> mapDouble(ToDoubleFunction<R> g) {
+    default ToDoubleFunction<T> mapToDouble(ToDoubleFunction<R> g) {
         return ToDoubleFunction.map(this, g);
     }
 
@@ -191,7 +191,7 @@ public interface ToObjectFunction<T, R> extends TypedFunction<T>, Function<T, R>
      * @param g the outer function
      * @return the object function
      */
-    default <R2> ToObjectFunction<T, R2> mapObj(ToObjectFunction<R, R2> g) {
+    default <R2> ToObjectFunction<T, R2> mapToObj(ToObjectFunction<R, R2> g) {
         return map(this, g);
     }
 
@@ -204,7 +204,7 @@ public interface ToObjectFunction<T, R> extends TypedFunction<T>, Function<T, R>
      * @param g the outer function
      * @return the object function
      */
-    default <R2> ToObjectFunction<T, R2> mapObj(Function<R, R2> g, GenericType<R2> returnType) {
+    default <R2> ToObjectFunction<T, R2> mapToObj(Function<R, R2> g, GenericType<R2> returnType) {
         return map(this, of(g, returnType));
     }
 
@@ -216,16 +216,16 @@ public interface ToObjectFunction<T, R> extends TypedFunction<T>, Function<T, R>
      *
      * @param g the outer function
      * @return the function
-     * @see #mapBoolean(ToBooleanFunction)
-     * @see #mapChar(ToCharFunction)
-     * @see #mapByte(ToByteFunction)
-     * @see #mapShort(ToShortFunction)
-     * @see #mapInt(ToIntFunction)
-     * @see #mapLong(ToLongFunction)
-     * @see #mapFloat(ToFloatFunction)
-     * @see #mapDouble(ToDoubleFunction)
+     * @see #mapToBoolean(ToBooleanFunction)
+     * @see #mapToChar(ToCharFunction)
+     * @see #mapToByte(ToByteFunction)
+     * @see #mapToShort(ToShortFunction)
+     * @see #mapToInt(ToIntFunction)
+     * @see #mapToLong(ToLongFunction)
+     * @see #mapToFloat(ToFloatFunction)
+     * @see #mapToDouble(ToDoubleFunction)
      */
-    default ToPrimitiveFunction<T> mapPrimitive(ToPrimitiveFunction<R> g) {
+    default ToPrimitiveFunction<T> mapToPrimitive(ToPrimitiveFunction<R> g) {
         return ObjectFunctions.mapPrimitive(this, g);
     }
 
@@ -237,8 +237,8 @@ public interface ToObjectFunction<T, R> extends TypedFunction<T>, Function<T, R>
      *
      * @param g the outer function
      * @return the function
-     * @see #mapPrimitive(ToPrimitiveFunction)
-     * @see #mapObj(ToObjectFunction)
+     * @see #mapToPrimitive(ToPrimitiveFunction)
+     * @see #mapToObj(ToObjectFunction)
      */
     default TypedFunction<T> map(TypedFunction<R> g) {
         return ObjectFunctions.map(this, g);
@@ -259,7 +259,7 @@ public interface ToObjectFunction<T, R> extends TypedFunction<T>, Function<T, R>
         // noinspection unchecked
         return returnType().equals(returnType)
                 ? (ToObjectFunction<T, R2>) this
-                : mapObj(ObjectFunctions.cast(returnType));
+                : mapToObj(ObjectFunctions.cast(returnType));
     }
 
     @Override

@@ -87,7 +87,7 @@ class CommonTransform {
      * @see BooleanUtils#booleanAsByte(Boolean)
      */
     public static <T> ToByteFunction<T> unboxBooleanAsByte(ToObjectFunction<T, Boolean> f) {
-        return f.mapByte(BOOLEAN_AS_BYTE);
+        return f.mapToByte(BOOLEAN_AS_BYTE);
     }
 
     /**
@@ -99,7 +99,7 @@ class CommonTransform {
      * @see DateTimeUtils#epochNanos(Instant)
      */
     public static <T> ToLongFunction<T> toEpochNanos(ToObjectFunction<T, Instant> f) {
-        return f.mapLong(EPOCH_NANOS);
+        return f.mapToLong(EPOCH_NANOS);
     }
 
     private static class FunctionVisitor<T> implements TypedFunction.Visitor<T, TypedFunction<T>> {
