@@ -106,14 +106,18 @@ final class ObjectTypeAdapter extends ObjectTypeBase implements AutoCloseable {
             byte[] bytes = new byte[payload.limit()];
             payload.get(bytes);
 
+            // Make a new array holding objects to pass to python, to avoid mutating the passed array. Note that this
+            // will have no impact on GC/liveness, as the JVM is free to GC the original references array after the loop
+            // byt before the call() invocation.
+            Object[] pyReferences = new Object[references.length];
             for (int i = 0; i < references.length; i++) {
                 Object reference = references[i];
                 if (reference instanceof LivePyObjectWrapper) {
                     reference = ((LivePyObjectWrapper) reference).getPythonObject();
                 }
-                references[i] = reference;
+                pyReferences[i] = reference;
             }
-            instance.call(void.class, "on_data", byte[].class, bytes, Object[].class, references);
+            instance.call(void.class, "on_data", byte[].class, bytes, Object[].class, pyReferences);
         }
 
         @Override
