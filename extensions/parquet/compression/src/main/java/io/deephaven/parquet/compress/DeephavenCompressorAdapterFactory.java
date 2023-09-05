@@ -65,10 +65,6 @@ public class DeephavenCompressorAdapterFactory {
 
                 // Use the Parquet LZ4_RAW codec, which internally uses aircompressor
                 Lz4RawCodec.class, CompressionCodecName.LZ4_RAW,
-                // TODO: The default behavior for Pandas and Pyarrow is that if you ask it to write LZ4, it internally
-                // writes LZ4_RAW, since LZ4 has been deprecated for some time now
-                // (https://github.com/apache/parquet-format/blob/master/Compression.md#lz4). Should we keep the same
-                // behavior or keep LZ4 and LZ4_RAW separate?
 
                 // The rest of these are aircompressor codecs which have fast / pure java implementations
                 JdkGzipCodec.class, CompressionCodecName.GZIP,
