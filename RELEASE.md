@@ -261,8 +261,7 @@ R/rdeephaven/DESCRIPTION
 This leaves the files "ready" for the next regular release, and also ensures any build done from
 a developer for testing of latest is not confused with the code just released.
 
-In the case of a patch release these would need to be updated to a different version, eg, to 0.31.1 in the case of a patch
-release after 0.31, instead of how they were left at 0.32 in this step.
+In the case of a patch release these would need to be updated to a different version, eg, to 0.31.1 from 0.31.
 
 ## External dependencies
 
