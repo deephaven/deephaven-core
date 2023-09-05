@@ -5,6 +5,8 @@
 
 #include <stdexcept>
 
+#include <grpc/support/log.h>
+
 #include <arrow/array.h>
 #include <arrow/scalar.h>
 #include "deephaven/client/columns.h"
@@ -48,7 +50,13 @@ Client Client::Connect(const std::string &target, const ClientOptions &options) 
   auto server = Server::CreateFromTarget(target, options);
   auto executor = Executor::Create("Client executor for " + server->me());
   auto flight_executor = Executor::Create("Flight executor for " + server->me());
+  void *const server_for_logging = server.get();
   auto impl = ClientImpl::Create(std::move(server), executor, flight_executor, options.sessionType_);
+  gpr_log(GPR_INFO,
+      "Client target=%s created ClientImpl(%p), Server(%p).",
+      target.c_str(),
+      static_cast<void*>(impl.get()),
+      server_for_logging);
   return Client(std::move(impl));
 }
 
@@ -63,11 +71,15 @@ Client &Client::operator=(Client &&other) noexcept = default;
 // There is only one Client associated with the server connection. Clients can only be moved, not
 // copied. When the Client owning the state is destructed, we tear down the state via close().
 Client::~Client() {
+  gpr_log(GPR_INFO, "Destructing Client ClientImpl(%p).",
+      static_cast<void*>(impl_.get()));
   Close();
 }
 
 // Tear down Client state.
 void Client::Close() {
+  gpr_log(GPR_INFO, "Closing Client ClientImpl(%p), before close use_count=%ld.",
+      static_cast<void*>(impl_.get()), impl_.use_count());
   // Move to local variable to be defensive.
   auto temp = std::move(impl_);
   if (temp != nullptr) {
@@ -117,6 +129,8 @@ TableHandle TableHandleManager::TimeTable(DurationSpecifier period, TimePointSpe
 TableHandle TableHandleManager::InputTable(const TableHandle &initial_table,
     std::vector<std::string> key_columns) const {
   auto th_impl = impl_->InputTable(*initial_table.Impl(), std::move(key_columns));
+  // Populate the InputTable with the contents of 'initial_table'
+  th_impl->AddTable(*initial_table.Impl());
   return TableHandle(std::move(th_impl));
 }
 

@@ -136,10 +136,10 @@ std::shared_ptr<Server> Server::CreateFromTarget(
       channel_args);
   gpr_log(GPR_DEBUG,
         "%s: "
-        "grpc::Channel[%p] created, "
+        "grpc::Channel(%p) created, "
         "target=%s",
         "Server::CreateFromTarget",
-        (void*) channel.get(),
+        static_cast<void*>(channel.get()),
         target.c_str());
 
   auto as = ApplicationService::NewStub(channel);
@@ -178,10 +178,10 @@ std::shared_ptr<Server> Server::CreateFromTarget(
   }
   gpr_log(GPR_DEBUG,
           "%s: "
-          "FlightClient[%p] created, "
+          "FlightClient(%p) created, "
           "target=%s",
           "Server::CreateFromTarget",
-          (void*) fc.get(),
+          static_cast<void*>(fc.get()),
           target.c_str());
 
   std::string sessionToken;
@@ -228,6 +228,13 @@ std::shared_ptr<Server> Server::CreateFromTarget(
       client_options.ExtraHeaders(), std::move(sessionToken), expirationInterval, nextHandshakeTime);
   result->completionQueueThread_ = std::thread(&ProcessCompletionQueueLoop, result);
   result->keepAliveThread_ = std::thread(&SendKeepaliveMessages, result);
+  gpr_log(GPR_DEBUG,
+      "%s: "
+      "Server(%p) created, "
+      "target=%s",
+      "Server::CreateFromTarget",
+      (void*) result.get(),
+      target.c_str());
   return result;
 }
 
@@ -256,7 +263,6 @@ Server::Server(Private,
     sessionToken_(std::move(session_token)),
     expirationInterval_(expiration_interval),
     nextHandshakeTime_(next_handshake_time) {
-  gpr_log(GPR_DEBUG, "%s: Created.", me_.c_str());
 }
 
 Server::~Server() {
