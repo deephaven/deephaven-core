@@ -60,7 +60,7 @@ public interface ToBooleanFunction<T> extends ToPrimitiveFunction<T>, Predicate<
      * @param <T> the input type
      * @param <R> the intermediate type
      */
-    static <T, R> ToBooleanFunction<T> map(Function<T, R> f, ToBooleanFunction<R> g) {
+    static <T, R> ToBooleanFunction<T> map(Function<T, R> f, Predicate<R> g) {
         return BooleanFunctions.map(f, g);
     }
 
@@ -72,7 +72,7 @@ public interface ToBooleanFunction<T> extends ToPrimitiveFunction<T>, Predicate<
      * @return the or-function
      * @param <T> the input type
      */
-    static <T> ToBooleanFunction<T> or(Collection<ToBooleanFunction<T>> functions) {
+    static <T> ToBooleanFunction<T> or(Collection<Predicate<T>> functions) {
         return BooleanFunctions.or(functions);
     }
 

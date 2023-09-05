@@ -13,7 +13,7 @@ class LongFunctions {
         return (ToLongFunction<T>) PrimitiveLong.INSTANCE;
     }
 
-    static <T, R> ToLongFunction<T> map(Function<T, R> f, ToLongFunction<R> g) {
+    static <T, R> ToLongFunction<T> map(Function<T, R> f, java.util.function.ToLongFunction<R> g) {
         return new LongMap<>(f, g);
     }
 
@@ -28,9 +28,9 @@ class LongFunctions {
 
     private static class LongMap<T, R> implements ToLongFunction<T> {
         private final Function<T, R> f;
-        private final ToLongFunction<R> g;
+        private final java.util.function.ToLongFunction<R> g;
 
-        public LongMap(Function<T, R> f, ToLongFunction<R> g) {
+        public LongMap(Function<T, R> f, java.util.function.ToLongFunction<R> g) {
             this.f = Objects.requireNonNull(f);
             this.g = Objects.requireNonNull(g);
         }

@@ -37,7 +37,7 @@ public interface ToLongFunction<T> extends ToPrimitiveFunction<T>, java.util.fun
      * @param <T> the input type
      * @param <R> the intermediate type
      */
-    static <T, R> ToLongFunction<T> map(Function<T, R> f, ToLongFunction<R> g) {
+    static <T, R> ToLongFunction<T> map(Function<T, R> f, java.util.function.ToLongFunction<R> g) {
         return LongFunctions.map(f, g);
     }
 

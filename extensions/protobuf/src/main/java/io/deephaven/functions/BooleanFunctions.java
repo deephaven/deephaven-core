@@ -7,12 +7,17 @@ import java.util.Collection;
 import java.util.List;
 import java.util.Objects;
 import java.util.function.Function;
+import java.util.function.Predicate;
 
 class BooleanFunctions {
 
     static <T> ToBooleanFunction<T> cast() {
         // noinspection unchecked
         return (ToBooleanFunction<T>) PrimitiveBoolean.INSTANCE;
+    }
+
+    static <T> ToBooleanFunction<T> of(Predicate<T> predicate) {
+        return predicate instanceof ToBooleanFunction ? (ToBooleanFunction<T>) predicate : predicate::test;
     }
 
     public static <T> ToBooleanFunction<T> ofTrue() {
@@ -25,20 +30,20 @@ class BooleanFunctions {
         return (ToBooleanFunction<T>) OfFalse.INSTANCE;
     }
 
-    static <T, R> ToBooleanFunction<T> map(Function<T, R> f, ToBooleanFunction<R> g) {
+    static <T, R> ToBooleanFunction<T> map(Function<T, R> f, Predicate<R> g) {
         return new BooleanMap<>(f, g);
     }
 
     static <T> ToBooleanFunction<T> not(ToBooleanFunction<T> f) {
-        return f instanceof BooleanNot ? ((BooleanNot<T>) f).function() : new BooleanNot<>(f);
+        return f instanceof BooleanNot ? of(((BooleanNot<T>) f).function()) : new BooleanNot<>(f);
     }
 
-    static <T> ToBooleanFunction<T> or(Collection<ToBooleanFunction<T>> functions) {
+    static <T> ToBooleanFunction<T> or(Collection<Predicate<T>> functions) {
         if (functions.isEmpty()) {
             return ofFalse();
         }
         if (functions.size() == 1) {
-            return functions.iterator().next();
+            return of(functions.iterator().next());
         }
         return new BooleanOr<>(functions);
     }
@@ -82,9 +87,9 @@ class BooleanFunctions {
 
     private static class BooleanMap<T, R> implements ToBooleanFunction<T> {
         private final Function<T, R> f;
-        private final ToBooleanFunction<R> g;
+        private final Predicate<R> g;
 
-        public BooleanMap(Function<T, R> f, ToBooleanFunction<R> g) {
+        public BooleanMap(Function<T, R> f, Predicate<R> g) {
             this.f = Objects.requireNonNull(f);
             this.g = Objects.requireNonNull(g);
         }
@@ -96,13 +101,13 @@ class BooleanFunctions {
     }
 
     private static class BooleanNot<T> implements ToBooleanFunction<T> {
-        private final ToBooleanFunction<T> function;
+        private final Predicate<T> function;
 
         public BooleanNot(ToBooleanFunction<T> function) {
             this.function = Objects.requireNonNull(function);
         }
 
-        public ToBooleanFunction<T> function() {
+        public Predicate<T> function() {
             return function;
         }
 
@@ -113,7 +118,7 @@ class BooleanFunctions {
     }
 
     private static class BooleanAnd<T> implements ToBooleanFunction<T> {
-        private final Collection<ToBooleanFunction<T>> functions;
+        private final Collection<Predicate<T>> functions;
 
         public BooleanAnd(Collection<ToBooleanFunction<T>> functions) {
             this.functions = List.copyOf(functions);
@@ -121,7 +126,7 @@ class BooleanFunctions {
 
         @Override
         public boolean test(T value) {
-            for (ToBooleanFunction<T> function : functions) {
+            for (Predicate<T> function : functions) {
                 if (!function.test(value)) {
                     return false;
                 }
@@ -131,15 +136,15 @@ class BooleanFunctions {
     }
 
     private static class BooleanOr<T> implements ToBooleanFunction<T> {
-        private final Collection<ToBooleanFunction<T>> functions;
+        private final Collection<Predicate<T>> functions;
 
-        public BooleanOr(Collection<ToBooleanFunction<T>> functions) {
+        public BooleanOr(Collection<Predicate<T>> functions) {
             this.functions = List.copyOf(functions);
         }
 
         @Override
         public boolean test(T value) {
-            for (ToBooleanFunction<T> function : functions) {
+            for (Predicate<T> function : functions) {
                 if (function.test(value)) {
                     return true;
                 }

@@ -9,11 +9,11 @@ import java.util.function.Function;
 class IntFunctions {
     static <T> ToIntFunction<T> cast() {
         // noinspection unchecked
-        return (ToIntFunction<T>) IntFunctions.PrimitiveInt.INSTANCE;
+        return (ToIntFunction<T>) PrimitiveInt.INSTANCE;
     }
 
-    static <T, R> ToIntFunction<T> map(Function<T, R> f, ToIntFunction<R> g) {
-        return new IntFunctions.IntMap<>(f, g);
+    static <T, R> ToIntFunction<T> map(Function<T, R> f, java.util.function.ToIntFunction<R> g) {
+        return new IntMap<>(f, g);
     }
 
     private enum PrimitiveInt implements ToIntFunction<Object> {
@@ -27,9 +27,9 @@ class IntFunctions {
 
     private static class IntMap<T, R> implements ToIntFunction<T> {
         private final Function<T, R> f;
-        private final ToIntFunction<R> g;
+        private final java.util.function.ToIntFunction<R> g;
 
-        public IntMap(Function<T, R> f, ToIntFunction<R> g) {
+        public IntMap(Function<T, R> f, java.util.function.ToIntFunction<R> g) {
             this.f = Objects.requireNonNull(f);
             this.g = Objects.requireNonNull(g);
         }
