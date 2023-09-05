@@ -27,6 +27,8 @@
 #include "deephaven/proto/config.grpc.pb.h"
 #include "deephaven/proto/console.pb.h"
 #include "deephaven/proto/console.grpc.pb.h"
+#include "deephaven/proto/inputtable.pb.h"
+#include "deephaven/proto/inputtable.grpc.pb.h"
 #include "deephaven/proto/session.pb.h"
 #include "deephaven/proto/session.grpc.pb.h"
 #include "deephaven/proto/table.pb.h"
@@ -77,13 +79,16 @@ class Server : public std::enable_shared_from_this<Server> {
   };
 
   using ApplicationService = io::deephaven::proto::backplane::grpc::ApplicationService;
+  using AddTableResponse = io::deephaven::proto::backplane::grpc::AddTableResponse;
   using AsOfJoinTablesRequest = io::deephaven::proto::backplane::grpc::AsOfJoinTablesRequest;
   using AuthenticationConstantsResponse = io::deephaven::proto::backplane::grpc::AuthenticationConstantsResponse;
   using ComboAggregateRequest = io::deephaven::proto::backplane::grpc::ComboAggregateRequest;
   using ConfigurationConstantsResponse = io::deephaven::proto::backplane::grpc::ConfigurationConstantsResponse;
   using ConfigService = io::deephaven::proto::backplane::grpc::ConfigService;
+  using DeleteTableResponse = io::deephaven::proto::backplane::grpc::DeleteTableResponse;
   using ExportedTableCreationResponse = io::deephaven::proto::backplane::grpc::ExportedTableCreationResponse;
   using HandshakeResponse = io::deephaven::proto::backplane::grpc::HandshakeResponse;
+  using InputTableService = io::deephaven::proto::backplane::grpc::InputTableService;
   using ReleaseResponse = io::deephaven::proto::backplane::grpc::ReleaseResponse;
   using SelectOrUpdateRequest = io::deephaven::proto::backplane::grpc::SelectOrUpdateRequest;
   using SessionService = io::deephaven::proto::backplane::grpc::SessionService;
@@ -118,6 +123,7 @@ public:
       std::unique_ptr<SessionService::Stub> session_stub,
       std::unique_ptr<TableService::Stub> table_stub,
       std::unique_ptr<ConfigService::Stub> config_stub,
+      std::unique_ptr<InputTableService::Stub> input_table_stub,
       std::unique_ptr<arrow::flight::FlightClient> flight_client,
       ClientOptions::extra_headers_t extra_headers,
       std::string session_token,
@@ -133,6 +139,9 @@ public:
 
   [[nodiscard]]
   ConsoleService::Stub *ConsoleStub() const { return consoleStub_.get(); }
+
+  [[nodiscard]]
+  InputTableService::Stub *InputTableStub() const { return input_table_stub_.get(); }
 
   [[nodiscard]]
   SessionService::Stub *SessionStub() const { return sessionStub_.get(); }
@@ -184,6 +193,9 @@ public:
   void UpdateAsync(Ticket parent_ticket, std::vector<std::string> column_specs,
       std::shared_ptr<EtcCallback> etc_callback, Ticket result);
 
+  void LazyUpdateAsync(Ticket parent_ticket, std::vector<std::string> column_specs,
+      std::shared_ptr<EtcCallback> etc_callback, Ticket result);
+
   void ViewAsync(Ticket parent_ticket, std::vector<std::string> column_specs,
       std::shared_ptr<EtcCallback> etc_callback, Ticket result);
 
@@ -231,13 +243,36 @@ public:
       std::vector<std::string> columns_to_match, std::vector<std::string> columns_to_add,
       std::shared_ptr<EtcCallback> etc_callback, Ticket result);
 
-  void AsOfJoinAsync(AsOfJoinTablesRequest::MatchRule match_rule, Ticket left_table_ticket,
-      Ticket right_table_ticket, std::vector<std::string> columns_to_match,
-      std::vector<std::string> columns_to_add, std::shared_ptr<EtcCallback> etc_callback, Ticket result);
+  void AjAsync(Ticket left_table_ticket, Ticket right_table_ticket,
+      std::vector<std::string> on, std::vector<std::string> joins,
+      std::shared_ptr<EtcCallback> etc_callback, Ticket result);
+
+  void RajAsync(Ticket left_table_ticket, Ticket right_table_ticket,
+      std::vector<std::string> on, std::vector<std::string> joins,
+      std::shared_ptr<EtcCallback> etc_callback, Ticket result);
+
+  void LeftOuterJoinAsync(Ticket left_table_ticket, Ticket right_table_ticket,
+      std::vector<std::string> on, std::vector<std::string> joins,
+      std::shared_ptr<EtcCallback> etc_callback, Ticket result);
 
   void UpdateByAsync(Ticket source, std::vector<UpdateByOperation> operations,
       std::vector<std::string> group_by_columns,
       std::shared_ptr<EtcCallback> etc_callback, Ticket result);
+
+  void SelectDistinctAsync(Ticket source, std::vector<std::string> columns,
+      std::shared_ptr<EtcCallback> etc_callback, Ticket result);
+
+  void InputTableAsync(Ticket initial_table_ticket, std::vector<std::string> columns,
+      std::shared_ptr<EtcCallback> etc_callback, Ticket result);
+
+  void WhereInAsync(Ticket left_table_ticket, Ticket right_table_ticket,
+      std::vector<std::string> columns,  std::shared_ptr<EtcCallback> etc_callback, Ticket result);
+
+  void AddTable(Ticket input_table_ticket, Ticket table_to_add_ticket,
+      std::shared_ptr<SFCallback<AddTableResponse>> callback);
+
+  void RemoveTable(Ticket input_table_ticket, Ticket table_to_remove_ticket,
+      std::shared_ptr<SFCallback<DeleteTableResponse>> callback);
 
   void BindToVariableAsync(const Ticket &console_id, const Ticket &table_id, std::string variable,
       std::shared_ptr<SFCallback<BindTableToVariableResponse>> callback);
@@ -284,6 +319,7 @@ private:
   std::unique_ptr<SessionService::Stub> sessionStub_;
   std::unique_ptr<TableService::Stub> tableStub_;
   std::unique_ptr<ConfigService::Stub> configStub_;
+  std::unique_ptr<InputTableService::Stub> input_table_stub_;
   std::unique_ptr<arrow::flight::FlightClient> flightClient_;
   const ClientOptions::extra_headers_t extraHeaders_;
   grpc::CompletionQueue completionQueue_;
@@ -308,7 +344,7 @@ void Server::SendRpc(const TReq &req, std::shared_ptr<SFCallback<TResp>> respons
   static const auto kTypeName = TypeName(req);
   auto now = std::chrono::system_clock::now();
   gpr_log(GPR_DEBUG,
-      "Server[%p]: "
+      "Server(%p): "
       "Sending RPC %s "
       "at time %s.",
       static_cast<void*>(this),
@@ -339,7 +375,7 @@ void Server::SendRpc(const TReq &req, std::shared_ptr<SFCallback<TResp>> respons
   // since it is not dependent on any template arguments.
   guard.unlock();
   const char *message = "Server cancelled. All further RPCs are being rejected";
-  auto eptr = std::make_exception_ptr(std::runtime_error(DEEPHAVEN_DEBUG_MSG(message)));
+  auto eptr = std::make_exception_ptr(std::runtime_error(DEEPHAVEN_LOCATION_STR(message)));
   response->OnFailure(std::move(eptr));
 }
 }  // namespace deephaven::client::server

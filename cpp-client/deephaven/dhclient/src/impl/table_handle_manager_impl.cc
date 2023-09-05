@@ -75,6 +75,15 @@ std::shared_ptr<TableHandleImpl> TableHandleManagerImpl::TimeTable(DurationSpeci
   return TableHandleImpl::Create(shared_from_this(), std::move(result_ticket), std::move(ls));
 }
 
+std::shared_ptr<TableHandleImpl> TableHandleManagerImpl::InputTable(
+    const TableHandleImpl &initial_table, std::vector<std::string> columns) {
+  auto *server = server_.get();
+  auto result_ticket = server->NewTicket();
+  auto [cb, ls] = TableHandleImpl::CreateEtcCallback(nullptr, this, result_ticket);
+  server->InputTableAsync(initial_table.Ticket(), std::move(columns), std::move(cb), result_ticket);
+  return TableHandleImpl::Create(shared_from_this(), std::move(result_ticket), std::move(ls));
+}
+
 void TableHandleManagerImpl::RunScriptAsync(std::string code, std::shared_ptr<SFCallback<>> callback) {
   struct cb_t final : public SFCallback<ExecuteCommandResponse> {
     explicit cb_t(std::shared_ptr<SFCallback<>> outer_cb) : outerCb_(std::move(outer_cb)) {}
@@ -90,7 +99,7 @@ void TableHandleManagerImpl::RunScriptAsync(std::string code, std::shared_ptr<SF
     std::shared_ptr<SFCallback<>> outerCb_;
   };
   if (!consoleId_.has_value()) {
-    auto eptr = std::make_exception_ptr(std::runtime_error(DEEPHAVEN_DEBUG_MSG(
+    auto eptr = std::make_exception_ptr(std::runtime_error(DEEPHAVEN_LOCATION_STR(
         "Client was created without specifying a script language")));
     callback->OnFailure(std::move(eptr));
     return;

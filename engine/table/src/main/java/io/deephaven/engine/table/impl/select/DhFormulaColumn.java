@@ -27,7 +27,7 @@ import io.deephaven.engine.table.impl.select.python.DeephavenCompatibleFunction;
 import io.deephaven.engine.table.impl.select.python.FormulaColumnPython;
 import io.deephaven.engine.table.impl.util.codegen.CodeGenerator;
 import io.deephaven.engine.table.impl.util.codegen.TypeAnalyzer;
-import io.deephaven.engine.util.PyCallableWrapper;
+import io.deephaven.engine.util.PyCallableWrapperJpyImpl;
 import io.deephaven.engine.util.caching.C14nUtil;
 import io.deephaven.internal.log.LoggerFactory;
 import io.deephaven.io.logger.Logger;
@@ -221,12 +221,15 @@ public class DhFormulaColumn extends AbstractFormulaColumn {
     }
 
     private void checkAndInitializeVectorization(Map<String, ColumnDefinition<?>> columnDefinitionMap) {
-        PyCallableWrapper[] cws = Arrays.stream(params).filter(p -> p.getValue() instanceof PyCallableWrapper)
-                .map(p -> p.getValue()).toArray(PyCallableWrapper[]::new);
+        // noinspection SuspiciousToArrayCall
+        final PyCallableWrapperJpyImpl[] cws = Arrays.stream(params)
+                .filter(p -> p.getValue() instanceof PyCallableWrapperJpyImpl)
+                .map(QueryScopeParam::getValue)
+                .toArray(PyCallableWrapperJpyImpl[]::new);
         if (cws.length != 1) {
             return;
         }
-        PyCallableWrapper pyCallableWrapper = cws[0];
+        final PyCallableWrapperJpyImpl pyCallableWrapper = cws[0];
 
         // could be already vectorized or to-be-vectorized,
         if (pyCallableWrapper.isVectorizable()) {

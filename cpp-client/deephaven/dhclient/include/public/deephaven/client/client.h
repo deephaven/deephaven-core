@@ -76,6 +76,8 @@ class TableHandleManager {
   using DurationSpecifier = deephaven::client::utility::DurationSpecifier;
   using TimePointSpecifier = deephaven::client::utility::TimePointSpecifier;
 
+  using SchemaType = deephaven::dhcore::clienttable::Schema;
+
 public:
   /*
    * Default constructor. Creates a (useless) empty client object.
@@ -86,9 +88,17 @@ public:
    */
   explicit TableHandleManager(std::shared_ptr<impl::TableHandleManagerImpl> impl);
   /**
+   * Copy constructor
+   */
+  TableHandleManager(const TableHandleManager &other) noexcept;
+  /**
    * Move constructor
    */
   TableHandleManager(TableHandleManager &&other) noexcept;
+  /**
+   * Copy assigment operator.
+   */
+  TableHandleManager &operator=(const TableHandleManager &other) noexcept;
   /**
    * Move assigment operator.
    */
@@ -121,6 +131,28 @@ public:
   [[nodiscard]]
   TableHandle TimeTable(DurationSpecifier period, TimePointSpecifier start_time = 0,
       bool blink_table = false) const;
+
+  /**
+   * Creates an input table from an initial table. When key columns are provided, the InputTable
+   * will be keyed, otherwise it will be append-only.
+   * @param columns The set of key columns
+   * @return A TableHandle referencing the new table
+   */
+  [[nodiscard]]
+  TableHandle InputTable(const TableHandle &initial_table,
+      std::vector<std::string> key_columns = {}) const;
+
+  // TODO(kosak): not implemented yet.
+  /**
+   * Creates an input table from a Schema. When key columns are provided, the InputTable
+   * will be keyed, otherwise it will be append-only.
+   * @param schema The table schema.
+   * @return A TableHandle referencing the new table
+   */
+//  [[nodiscard]]
+//  TableHandle InputTable(std::shared_ptr<SchemaType> schema,
+//      std::vector<std::string> key_columns = {}) const;
+
   /**
    * Allocate a fresh client ticket. This is a low level operation, typically used when the caller wants to do an Arrow
    * doPut operation.
@@ -219,6 +251,27 @@ public:
   [[nodiscard]]
   TableHandleManager GetManager() const;
 
+  using OnCloseCbId = utility::OnCloseCbId;
+  using OnCloseCb = utility::OnCloseCb;
+
+  /**
+   * Adds a callback to be invoked when this client is closed.
+   * On close callbacks are invoked before the client is actually shut down,
+   * so they can perform regular client and table manager operations before
+   * closing.
+   *
+   * @param cb the callback
+   * @return an id for the added callback that can be used to remove it.
+   */
+  OnCloseCbId AddOnCloseCallback(OnCloseCb cb);
+
+  /**
+   * Removes an on close callback.
+   * @param cb_id the id of the callback to remove
+   * @return true if a callback with that id was found and removed, false otherwise.
+   */
+  bool RemoveOnCloseCallback(OnCloseCbId cb_id);
+
 private:
   explicit Client(std::shared_ptr<impl::ClientImpl> impl);
   std::shared_ptr<impl::ClientImpl> impl_;
@@ -229,6 +282,30 @@ private:
  */
 class Aggregate {
 public:
+  /*
+ * Default constructor. Creates a (useless) empty object.
+ */
+  Aggregate();
+  /**
+   * Copy constructor
+   */
+  Aggregate(const Aggregate &other) noexcept;
+  /**
+   * Move constructor
+   */
+  Aggregate(Aggregate &&other) noexcept;
+  /**
+   * Copy assigment operator.
+   */
+  Aggregate &operator=(const Aggregate &other) noexcept;
+  /**
+   * Move assigment operator.
+   */
+  Aggregate &operator=(Aggregate &&other) noexcept;
+  /**
+   * Destructor
+   */
+  ~Aggregate();
   /**
    * Returns an aggregator that computes the total sum of values, within an aggregation group,
    * for each input column.
@@ -788,12 +865,21 @@ public:
   TableHandle Update(Args &&... args) const;
   /**
    * Creates a new table from this table, but including the additional specified columns.
-   * @param columnSpecs The columnSpecs to add. For exampe, {"X = A + 5", "Y = X * 2"}.
+   * @param columnSpecs The columnSpecs to add. For example, {"X = A + 5", "Y = X * 2"}.
    * See the Deephaven documentation for the difference between Update() and UpdateView().
    * @return A TableHandle referencing the new table
    */
   [[nodiscard]]
   TableHandle Update(std::vector<std::string> column_specs) const;
+
+  /**
+   * Creates a new table containing a new cached formula column for each argument.
+   * @param columnSpecs The columnSpecs to add. For exampe, {"X = A + 5", "Y = X * 2"}.
+   * See the Deephaven documentation for the difference between Update() and LazyUpdate().
+   * @return A TableHandle referencing the new table
+   */
+  [[nodiscard]]
+  TableHandle LazyUpdate(std::vector<std::string> column_specs) const;
 
   /**
    * A variadic form of UpdateView(std::vector<std::string>) const that takes a combination of
@@ -1351,14 +1437,110 @@ public:
    * @param rightSide The table to join with this table
    * @param columnsToMatch The columns to join on
    * @param columnsToAdd The columns from the right side to add, and possibly rename.
-   * @return
+   * @return A TableHandle referencing the new table
    */
   [[nodiscard]]
   TableHandle ExactJoin(const TableHandle &right_side, std::vector<MatchWithColumn> columnsToMatch,
       std::vector<SelectColumn> columns_to_add) const;
 
+  /**
+   * Creates a new table containing all the rows and columns of the left table, plus additional
+   * columns containing data from the right table. For columns appended to the left table (joins),
+   * row values equal the row values from the right table where the keys from the left table most
+   * closely match the keys from the right table without going over. If there is no matching key in
+   * the right table, appended row values are NULL.
+   *
+   * @param right_side The table to join with this table
+   * @param on The column(s) to match, can be a common name or a match condition of two
+   *    columns, e.g. 'col_a = col_b'. The first 'N-1' matches are exact matches. The final match is
+   *    an inexact match.  The inexact match can use either '>' or '>='.  If a common name is used
+   *    for the inexact match, '>=' is used for the comparison.
+   * @param joins The column(s) to be added from the right table to the result table, can be
+   *   renaming expressions, i.e. "new_col = col"; default is empty, which means all the columns
+   *   from the right table, excluding those specified in 'on'
+   */
+  [[nodiscard]]
+  TableHandle Aj(const TableHandle &right_side, std::vector<std::string> on,
+      std::vector<std::string> joins = {}) const;
+
+  /**
+   * Creates a new table containing all the rows and columns of the left table, plus additional
+   * columns containing data from the right table. For columns appended to the left table (joins),
+   * row values equal the row values from the right table where the keys from the left table most closely
+   * match the keys from the right table without going under. If there is no matching key in the
+   * right table, appended row values are NULL.
+   *
+   * @param right_side The table to join with this table
+   * @param on The column(s) to match, can be a common name or a match condition of two
+   *    columns, e.g. 'col_a = col_b'. The first 'N-1' matches are exact matches. The final match is
+   *    an inexact match.  The inexact match can use either '<' or '<='.  If a common name is used
+   *    for the inexact match, '<=' is used for the comparison.
+   * @param joins The column(s) to be added from the right table to the result table, can be
+   *   renaming expressions, i.e. "new_col = col"; default is empty, which means all the columns
+   *   from the right table, excluding those specified in 'on'
+   */
+  [[nodiscard]]
+  TableHandle Raj(const TableHandle &right_side, std::vector<std::string> on,
+      std::vector<std::string> joins = {}) const;
+
+//  [[nodiscard]]
+//  TableHandle RangeJoin(const TableHandle &right_side, std::vector<std::string> on,
+//      std::vector<Aggregate> aggregations) const;
+
+
+  [[nodiscard]]
+  TableHandle LeftOuterJoin(const TableHandle &right_side, std::vector<std::string> on,
+      std::vector<std::string> joins) const;
+
+  /**
+   * Performs one or more UpdateByOperation ops grouped by zero or more key columns to calculate
+   * cumulative or window-based aggregations of columns in a source table. Operations include
+   * cumulative sums, moving averages, EMAs, etc. The aggregations are defined by the provided
+   * operations, which support incremental aggregations over the corresponding rows in the source
+   * table. Cumulative aggregations use all rows in the source table, whereas rolling aggregations
+   * will apply position or time-based windowing relative to the current row. Calculations are
+   * performed over all rows or each row group as identified by the provided key columns.
+   * @param ops The requested UpdateByOperation ops
+   * @param by The columns to group by
+   * @return A TableHandle referencing the new table
+   */
   [[nodiscard]]
   TableHandle UpdateBy(std::vector<UpdateByOperation> ops, std::vector<std::string> by) const;
+
+  /**
+   * Creates a new table containing all of the unique values for a set of key columns.
+   * When used on multiple columns, it looks for distinct sets of values in the selected columns.
+   * @param columns The set of key columns
+   * @return A TableHandle referencing the new table
+   */
+  [[nodiscard]]
+  TableHandle SelectDistinct(std::vector<std::string> columns) const;
+
+  /**
+   * Creates a new table containing rows from the source table, where the rows match values in the
+   * filter table. The filter is updated whenever either table changes. See the Deephaven
+   * documentation for the difference between "Where" and "WhereIn".
+   * @param filter_table The table containing the set of values to filter on
+   * @param columns The columns to match on
+   * @return A TableHandle referencing the new table
+   */
+  [[nodiscard]]
+  TableHandle WhereIn(const TableHandle &filter_table, std::vector<std::string> columns) const;
+
+  /**
+   * Adds a table to an input table. Requires that this object be an InputTable (such as that
+   * created by TableHandleManager::InputTable).
+   * @param table_to_add The table to add to the InputTable
+   */
+  void AddTable(const TableHandle &table_to_add);
+
+  /**
+   * Removes a table from an input table. Requires that this object be an InputTable (such as that
+   * created by TableHandleManager::InputTable).
+   * @param table_to_add The table to remove from the InputTable
+   * @return The new table
+   */
+  void RemoveTable(const TableHandle &table_to_remove);
 
   /**
    * Binds this table to a variable name in the QueryScope.

@@ -251,7 +251,7 @@ void printTableData(std::ostream &stream, const ClientTable &table,
       if (want_row_numbers) {
         uint64_t row_num;
         if (!rows_iter.TryGetNext(&row_num)) {
-          throw std::runtime_error(DEEPHAVEN_DEBUG_MSG("Impossible: no more rows"));
+          throw std::runtime_error(DEEPHAVEN_LOCATION_STR("Impossible: no more rows"));
         }
         stream << '[' << row_num << "] ";
         separator = "\t";

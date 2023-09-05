@@ -25,35 +25,46 @@ using deephaven::dhcore::utility::SFCallback;
 using deephaven::dhcore::utility::Bit_cast;
 using deephaven::dhcore::utility::Streamf;
 using deephaven::dhcore::utility::Stringf;
+using io::deephaven::proto::backplane::grpc::AddTableRequest;
+using io::deephaven::proto::backplane::grpc::AddTableResponse;
+using io::deephaven::proto::backplane::grpc::AjRajTablesRequest;
 using io::deephaven::proto::backplane::grpc::AuthenticationConstantsRequest;
 using io::deephaven::proto::backplane::grpc::ConfigurationConstantsRequest;
 using io::deephaven::proto::backplane::grpc::ConfigurationConstantsResponse;
 using io::deephaven::proto::backplane::grpc::ConfigService;
+using io::deephaven::proto::backplane::grpc::CreateInputTableRequest;
 using io::deephaven::proto::backplane::grpc::CrossJoinTablesRequest;
+using io::deephaven::proto::backplane::grpc::DeleteTableRequest;
+using io::deephaven::proto::backplane::grpc::DeleteTableResponse;
 using io::deephaven::proto::backplane::grpc::DropColumnsRequest;
 using io::deephaven::proto::backplane::grpc::EmptyTableRequest;
 using io::deephaven::proto::backplane::grpc::ExactJoinTablesRequest;
+using io::deephaven::proto::backplane::grpc::ExportedTableCreationResponse;
 using io::deephaven::proto::backplane::grpc::FetchTableRequest;
 using io::deephaven::proto::backplane::grpc::HandshakeRequest;
 using io::deephaven::proto::backplane::grpc::HeadOrTailRequest;
 using io::deephaven::proto::backplane::grpc::HeadOrTailByRequest;
+using io::deephaven::proto::backplane::grpc::LeftJoinTablesRequest;
 using io::deephaven::proto::backplane::grpc::MergeTablesRequest;
 using io::deephaven::proto::backplane::grpc::NaturalJoinTablesRequest;
 using io::deephaven::proto::backplane::grpc::ReleaseRequest;
 using io::deephaven::proto::backplane::grpc::ReleaseResponse;
+using io::deephaven::proto::backplane::grpc::SelectDistinctRequest;
 using io::deephaven::proto::backplane::grpc::SelectOrUpdateRequest;
 using io::deephaven::proto::backplane::grpc::SortTableRequest;
+using io::deephaven::proto::backplane::grpc::Ticket;
 using io::deephaven::proto::backplane::grpc::TimeTableRequest;
+using io::deephaven::proto::backplane::grpc::WhereInRequest;
 using io::deephaven::proto::backplane::grpc::UpdateByRequest;
 using io::deephaven::proto::backplane::grpc::UnstructuredFilterTableRequest;
 using io::deephaven::proto::backplane::grpc::UngroupRequest;
-using io::deephaven::proto::backplane::grpc::Ticket;
 using io::deephaven::proto::backplane::script::grpc::BindTableToVariableRequest;
 using io::deephaven::proto::backplane::script::grpc::ExecuteCommandRequest;
 using io::deephaven::proto::backplane::script::grpc::ExecuteCommandResponse;
 using io::deephaven::proto::backplane::script::grpc::StartConsoleRequest;
 
-typedef io::deephaven::proto::backplane::grpc::UpdateByRequest::UpdateByOperation UpdateByOperation;
+using UpdateByOperation = io::deephaven::proto::backplane::grpc::UpdateByRequest::UpdateByOperation;
+using EtcCallback = SFCallback<ExportedTableCreationResponse>;
 
 namespace deephaven::client::server {
 
@@ -100,7 +111,7 @@ std::shared_ptr<Server> Server::CreateFromTarget(
       const ClientOptions &client_options) {
   if (!client_options.UseTls() && !client_options.TlsRootCerts().empty()) {
     const char *message = "Server::CreateFromTarget: ClientOptions: UseTls is false but pem provided";
-    throw std::runtime_error(DEEPHAVEN_DEBUG_MSG(message));
+    throw std::runtime_error(DEEPHAVEN_LOCATION_STR(message));
   }
 
   grpc::ChannelArguments channel_args;
@@ -125,10 +136,10 @@ std::shared_ptr<Server> Server::CreateFromTarget(
       channel_args);
   gpr_log(GPR_DEBUG,
         "%s: "
-        "grpc::Channel[%p] created, "
+        "grpc::Channel(%p) created, "
         "target=%s",
         "Server::CreateFromTarget",
-        (void*) channel.get(),
+        static_cast<void*>(channel.get()),
         target.c_str());
 
   auto as = ApplicationService::NewStub(channel);
@@ -136,6 +147,7 @@ std::shared_ptr<Server> Server::CreateFromTarget(
   auto ss = SessionService::NewStub(channel);
   auto ts = TableService::NewStub(channel);
   auto cfs = ConfigService::NewStub(channel);
+  auto its = InputTableService::NewStub(channel);
 
   // TODO(kosak): Warn about this string conversion or do something more general.
   auto flightTarget = ((client_options.UseTls()) ? "grpc+tls://" : "grpc://") + target;
@@ -145,7 +157,7 @@ std::shared_ptr<Server> Server::CreateFromTarget(
   if (!rc1.ok()) {
     auto message = Stringf("Location::Parse(%o) failed, error = %o",
         flightTarget, rc1.ToString());
-    throw std::runtime_error(DEEPHAVEN_DEBUG_MSG(message));
+    throw std::runtime_error(DEEPHAVEN_LOCATION_STR(message));
   }
 
   if (!client_options.TlsRootCerts().empty()) {
@@ -166,10 +178,10 @@ std::shared_ptr<Server> Server::CreateFromTarget(
   }
   gpr_log(GPR_DEBUG,
           "%s: "
-          "FlightClient[%p] created, "
+          "FlightClient(%p) created, "
           "target=%s",
           "Server::CreateFromTarget",
-          (void*) fc.get(),
+          static_cast<void*>(fc.get()),
           target.c_str());
 
   std::string sessionToken;
@@ -189,14 +201,14 @@ std::shared_ptr<Server> Server::CreateFromTarget(
     if (!result.ok()) {
       auto message = Stringf("Can't get configuration constants. Error %o: %o",
           result.error_code(), result.error_message());
-      throw std::runtime_error(DEEPHAVEN_DEBUG_MSG(message));
+      throw std::runtime_error(DEEPHAVEN_LOCATION_STR(message));
     }
 
     const auto &md = ctx.GetServerInitialMetadata();
     auto ip = md.find(kAuthorizationKey);
     if (ip == md.end()) {
       throw std::runtime_error(
-          DEEPHAVEN_DEBUG_MSG("Configuration response didn't contain authorization token"));
+          DEEPHAVEN_LOCATION_STR("Configuration response didn't contain authorization token"));
     }
     sessionToken.assign(ip->second.begin(), ip->second.end());
 
@@ -212,10 +224,17 @@ std::shared_ptr<Server> Server::CreateFromTarget(
   auto nextHandshakeTime = sendTime + expirationInterval;
 
   auto result = std::make_shared<Server>(Private(), std::move(as), std::move(cs),
-      std::move(ss), std::move(ts), std::move(cfs), std::move(fc), client_options.ExtraHeaders(),
-      std::move(sessionToken), expirationInterval, nextHandshakeTime);
+      std::move(ss), std::move(ts), std::move(cfs), std::move(its), std::move(fc),
+      client_options.ExtraHeaders(), std::move(sessionToken), expirationInterval, nextHandshakeTime);
   result->completionQueueThread_ = std::thread(&ProcessCompletionQueueLoop, result);
   result->keepAliveThread_ = std::thread(&SendKeepaliveMessages, result);
+  gpr_log(GPR_DEBUG,
+      "%s: "
+      "Server(%p) created, "
+      "target=%s",
+      "Server::CreateFromTarget",
+      (void*) result.get(),
+      target.c_str());
   return result;
 }
 
@@ -225,6 +244,7 @@ Server::Server(Private,
     std::unique_ptr<SessionService::Stub> session_stub,
     std::unique_ptr<TableService::Stub> table_stub,
     std::unique_ptr<ConfigService::Stub> config_stub,
+    std::unique_ptr<InputTableService::Stub> input_table_stub,
     std::unique_ptr<arrow::flight::FlightClient> flight_client,
     ClientOptions::extra_headers_t extra_headers,
     std::string session_token, std::chrono::milliseconds expiration_interval,
@@ -236,13 +256,13 @@ Server::Server(Private,
     sessionStub_(std::move(session_stub)),
     tableStub_(std::move(table_stub)),
     configStub_(std::move(config_stub)),
+    input_table_stub_(std::move(input_table_stub)),
     flightClient_(std::move(flight_client)),
     extraHeaders_(std::move(extra_headers)),
     nextFreeTicketId_(1),
     sessionToken_(std::move(session_token)),
     expirationInterval_(expiration_interval),
     nextHandshakeTime_(next_handshake_time) {
-  gpr_log(GPR_DEBUG, "%s: Created.", me_.c_str());
 }
 
 Server::~Server() {
@@ -378,6 +398,12 @@ void Server::UpdateAsync(Ticket parent_ticket, std::vector<std::string> column_s
     std::shared_ptr<EtcCallback> etc_callback, Ticket result) {
   SelectOrUpdateHelper(std::move(parent_ticket), std::move(column_specs), std::move(etc_callback), std::move(result),
       &TableService::Stub::AsyncUpdate);
+}
+
+void Server::LazyUpdateAsync(Ticket parent_ticket, std::vector<std::string> column_specs,
+    std::shared_ptr<EtcCallback> etc_callback, Ticket result) {
+  SelectOrUpdateHelper(std::move(parent_ticket), std::move(column_specs), std::move(etc_callback), std::move(result),
+      &TableService::Stub::AsyncLazyUpdate);
 }
 
 void Server::ViewAsync(Ticket parent_ticket, std::vector<std::string> column_specs,
@@ -532,18 +558,52 @@ void Server::ExactJoinAsync(Ticket left_table_ticket, Ticket right_table_ticket,
   SendRpc(req, std::move(etc_callback), TableStub(), &TableService::Stub::AsyncExactJoinTables);
 }
 
-void Server::AsOfJoinAsync(AsOfJoinTablesRequest::MatchRule match_rule, Ticket left_table_ticket,
-    Ticket right_table_ticket, std::vector<std::string> columns_to_match,
-    std::vector<std::string> columns_to_add, std::shared_ptr<EtcCallback> etc_callback,
-    Ticket result) {
-  AsOfJoinTablesRequest req;
+namespace {
+AjRajTablesRequest MakeAjRajTablesRequest(Ticket left_table_ticket, Ticket right_table_ticket,
+    std::vector<std::string> on, std::vector<std::string> joins, Ticket result) {
+  if (on.empty()) {
+    throw std::runtime_error(DEEPHAVEN_LOCATION_STR("Need at least one 'on' column"));
+  }
+  AjRajTablesRequest req;
   *req.mutable_result_id() = std::move(result);
   *req.mutable_left_id()->mutable_ticket() = std::move(left_table_ticket);
   *req.mutable_right_id()->mutable_ticket() = std::move(right_table_ticket);
-  MoveVectorData(std::move(columns_to_match), req.mutable_columns_to_match());
-  MoveVectorData(std::move(columns_to_add), req.mutable_columns_to_add());
-  req.set_as_of_match_rule(match_rule);
-  SendRpc(req, std::move(etc_callback), TableStub(), &TableService::Stub::AsyncAsOfJoinTables);
+  // The final 'on' column is the as of column
+  *req.mutable_as_of_column() = std::move(on.back());
+  on.pop_back();
+  // The remaining 'on' columns are the exact_match_columns
+  MoveVectorData(std::move(on), req.mutable_exact_match_columns());
+  MoveVectorData(std::move(joins), req.mutable_columns_to_add());
+  return req;
+}
+}  // namespace
+
+void
+Server::AjAsync(Ticket left_table_ticket, Ticket right_table_ticket, std::vector<std::string> on,
+    std::vector<std::string> joins, std::shared_ptr<EtcCallback> etc_callback, Ticket result) {
+  auto req = MakeAjRajTablesRequest(std::move(left_table_ticket), std::move(right_table_ticket),
+      std::move(on), std::move(joins), std::move(result));
+  SendRpc(req, std::move(etc_callback), TableStub(), &TableService::Stub::AsyncAjTables);
+}
+
+void
+Server::RajAsync(Ticket left_table_ticket, Ticket right_table_ticket, std::vector<std::string> on,
+    std::vector<std::string> joins, std::shared_ptr<EtcCallback> etc_callback, Ticket result) {
+  auto req = MakeAjRajTablesRequest(std::move(left_table_ticket), std::move(right_table_ticket),
+      std::move(on), std::move(joins), std::move(result));
+  SendRpc(req, std::move(etc_callback), TableStub(), &TableService::Stub::AsyncRajTables);
+}
+
+void Server::LeftOuterJoinAsync(Ticket left_table_ticket, Ticket right_table_ticket,
+    std::vector<std::string> on, std::vector<std::string> joins,
+    std::shared_ptr<EtcCallback> etc_callback, Ticket result) {
+  LeftJoinTablesRequest req;
+  *req.mutable_result_id() = std::move(result);
+  *req.mutable_left_id()->mutable_ticket() = std::move(left_table_ticket);
+  *req.mutable_right_id()->mutable_ticket() = std::move(right_table_ticket);
+  MoveVectorData(std::move(on), req.mutable_columns_to_match());
+  MoveVectorData(std::move(joins), req.mutable_columns_to_add());
+  SendRpc(req, std::move(etc_callback), TableStub(), &TableService::Stub::AsyncLeftJoinTables);
 }
 
 void Server::UpdateByAsync(Ticket source, std::vector<UpdateByOperation> operations,
@@ -555,6 +615,58 @@ void Server::UpdateByAsync(Ticket source, std::vector<UpdateByOperation> operati
   MoveVectorData(std::move(operations), req.mutable_operations());
   MoveVectorData(std::move(groupByColumns), req.mutable_group_by_columns());
   SendRpc(req, std::move(etcCallback), TableStub(), &TableService::Stub::AsyncUpdateBy);
+}
+
+void Server::SelectDistinctAsync(Ticket source, std::vector<std::string> columns,
+    std::shared_ptr<EtcCallback> etc_callback, Ticket result) {
+  SelectDistinctRequest req;
+  *req.mutable_result_id() = std::move(result);
+  *req.mutable_source_id()->mutable_ticket() = std::move(source);
+  MoveVectorData(std::move(columns), req.mutable_column_names());
+  SendRpc(req, std::move(etc_callback), TableStub(), &TableService::Stub::AsyncSelectDistinct);
+}
+
+void Server::InputTableAsync(Ticket initial_table_ticket, std::vector<std::string> columns,
+    std::shared_ptr<EtcCallback> etc_callback, Ticket result) {
+  CreateInputTableRequest req;
+  *req.mutable_result_id() = std::move(result);
+  *req.mutable_source_table_id()->mutable_ticket() = std::move(initial_table_ticket);
+  if (columns.empty()) {
+    (void)req.mutable_kind()->mutable_in_memory_append_only();
+  } else {
+    MoveVectorData(std::move(columns),
+        req.mutable_kind()->mutable_in_memory_key_backed()->mutable_key_columns());
+  }
+  SendRpc(req, std::move(etc_callback), TableStub(), &TableService::Stub::AsyncCreateInputTable);
+}
+
+void Server::WhereInAsync(Ticket left_table_ticket, Ticket right_table_ticket,
+    std::vector<std::string> columns, std::shared_ptr<EtcCallback> etc_callback, Ticket result) {
+  WhereInRequest req;
+  *req.mutable_result_id() = std::move(result);
+  *req.mutable_left_id()->mutable_ticket() = std::move(left_table_ticket);
+  *req.mutable_right_id()->mutable_ticket() = std::move(right_table_ticket);
+  req.set_inverted(false);
+  MoveVectorData(std::move(columns), req.mutable_columns_to_match());
+  SendRpc(req, std::move(etc_callback), TableStub(), &TableService::Stub::AsyncWhereIn);
+}
+
+void Server::AddTable(Ticket input_table_ticket, Ticket table_to_add_ticket,
+    std::shared_ptr<SFCallback<AddTableResponse>> callback) {
+  AddTableRequest req;
+  *req.mutable_input_table() = std::move(input_table_ticket);
+  *req.mutable_table_to_add() = std::move(table_to_add_ticket);
+  SendRpc(req, std::move(callback), InputTableStub(),
+      &InputTableService::Stub::AsyncAddTableToInputTable);
+}
+
+void Server::RemoveTable(Ticket input_table_ticket, Ticket table_to_remove_ticket,
+    std::shared_ptr<SFCallback<DeleteTableResponse>> callback) {
+  DeleteTableRequest req;
+  *req.mutable_input_table() = std::move(input_table_ticket);
+  *req.mutable_table_to_remove() = std::move(table_to_remove_ticket);
+  SendRpc(req, std::move(callback), InputTableStub(),
+      &InputTableService::Stub::AsyncDeleteTableFromInputTable);
 }
 
 void
@@ -597,7 +709,7 @@ bool Server::ProcessNextCompletionQueueItem() {
     std::unique_ptr<CompletionQueueCallback> cqcb(static_cast<CompletionQueueCallback *>(tag));
 
     if (!ok) {
-      auto eptr = std::make_exception_ptr(std::runtime_error(DEEPHAVEN_DEBUG_MSG(
+      auto eptr = std::make_exception_ptr(std::runtime_error(DEEPHAVEN_LOCATION_STR(
           "Some GRPC network or connection error")));
       cqcb->OnFailure(std::move(eptr));
       return true;
@@ -606,7 +718,7 @@ bool Server::ProcessNextCompletionQueueItem() {
     const auto &stat = cqcb->status_;
     if (!stat.ok()) {
       auto message = Stringf("Error %o. Message: %o", stat.error_code(), stat.error_message());
-      auto eptr = std::make_exception_ptr(std::runtime_error(DEEPHAVEN_DEBUG_MSG(message)));
+      auto eptr = std::make_exception_ptr(std::runtime_error(DEEPHAVEN_LOCATION_STR(message)));
       cqcb->OnFailure(std::move(eptr));
       return true;
     }
@@ -747,7 +859,7 @@ std::optional<std::chrono::milliseconds> extractExpirationInterval(
   auto [ptr, ec] = std::from_chars(begin, end, millis);
   if (ec != std::errc() || ptr != end) {
     auto message = Stringf("Failed to parse %o as an integer", targetValue);
-    throw std::runtime_error(DEEPHAVEN_DEBUG_MSG(message));
+    throw std::runtime_error(DEEPHAVEN_LOCATION_STR(message));
   }
   // As a matter of policy we use half of whatever the server tells us is the expiration time.
   return std::chrono::milliseconds(millis / 2);

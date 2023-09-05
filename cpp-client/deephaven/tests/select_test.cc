@@ -5,6 +5,7 @@
 #include "tests/third_party/catch.hpp"
 #include "tests/test_util.h"
 #include "deephaven/client/client.h"
+#include "deephaven/dhcore/types.h"
 #include "deephaven/dhcore/utility/utility.h"
 
 using deephaven::client::Client;
@@ -12,11 +13,12 @@ using deephaven::client::NumCol;
 using deephaven::client::StrCol;
 using deephaven::client::TableHandle;
 using deephaven::client::utility::TableMaker;
+using deephaven::dhcore::DeephavenConstants;
 using deephaven::dhcore::utility::Streamf;
 using deephaven::dhcore::utility::Stringf;
 
 namespace deephaven::client::tests {
-TEST_CASE("Support all types", "[Select]") {
+TEST_CASE("Support all types", "[select]") {
   auto tm = TableMakerForTests::Create();
 
   std::vector<bool> bool_data;
@@ -72,7 +74,7 @@ TEST_CASE("Support all types", "[Select]") {
   );
 }
 
-TEST_CASE("Create / Update / fetch a Table", "[Select]") {
+TEST_CASE("Create / Update / fetch a Table", "[select]") {
   auto tm = TableMakerForTests::Create();
 
   std::vector<int32_t> int_data = {0, 1, 2, 3, 4, 5, 6, 7, 8, 9};
@@ -108,7 +110,7 @@ TEST_CASE("Create / Update / fetch a Table", "[Select]") {
 }
 
 
-TEST_CASE("Select a few columns", "[Select]") {
+TEST_CASE("Select a few columns", "[select]") {
   auto tm = TableMakerForTests::Create();
   auto table = tm.Table();
 
@@ -137,7 +139,7 @@ TEST_CASE("Select a few columns", "[Select]") {
   );
 }
 
-TEST_CASE("LastBy + Select", "[Select]") {
+TEST_CASE("LastBy + Select", "[select]") {
   auto tm = TableMakerForTests::Create();
   auto table = tm.Table();
 
@@ -166,7 +168,7 @@ TEST_CASE("LastBy + Select", "[Select]") {
   );
 }
 
-TEST_CASE("New columns", "[Select]") {
+TEST_CASE("New columns", "[select]") {
   auto tm = TableMakerForTests::Create();
   auto table = tm.Table();
 
@@ -198,7 +200,7 @@ TEST_CASE("New columns", "[Select]") {
   }
 }
 
-TEST_CASE("Simple Where", "[Select]") {
+TEST_CASE("Simple Where", "[select]") {
   auto tm = TableMakerForTests::Create();
   auto table = tm.Table();
   auto updated = table.Update("QQQ = i");
@@ -223,7 +225,7 @@ TEST_CASE("Simple Where", "[Select]") {
   );
 }
 
-TEST_CASE("Formula in the Where clause", "[Select]") {
+TEST_CASE("Formula in the Where clause", "[select]") {
   auto tm = TableMakerForTests::Create();
   auto table = tm.Table();
 
@@ -254,7 +256,7 @@ TEST_CASE("Formula in the Where clause", "[Select]") {
   }
 }
 
-TEST_CASE("Simple 'Where' with syntax error", "[Select]") {
+TEST_CASE("Simple 'Where' with syntax error", "[select]") {
   auto tm = TableMakerForTests::Create();
   auto table = tm.Table();
 
@@ -268,5 +270,81 @@ TEST_CASE("Simple 'Where' with syntax error", "[Select]") {
     return;
   }
   throw std::runtime_error("Expected a failure, but didn't experience one");
+}
+
+TEST_CASE("WhereIn", "[select]") {
+  auto tm = TableMakerForTests::Create();
+
+  std::vector<std::string> letter_data = {"A", "C", "F", "B", "E", "D", "A"};
+  std::vector<std::optional<int32_t>> number_data = { {}, 2, 1, {}, 4, 5, 3};
+  std::vector<std::string> color_data = {"red", "blue", "orange", "purple", "yellow", "pink", "blue"};
+  std::vector<std::optional<int32_t>> code_data = { 12, 13, 11, {}, 16, 14, {}};
+  TableMaker source_maker;
+  source_maker.AddColumn("Letter", letter_data);
+  source_maker.AddColumn("Number", number_data);
+  source_maker.AddColumn("Color", color_data);
+  source_maker.AddColumn("Code", code_data);
+  auto source = source_maker.MakeTable(tm.Client().GetManager());
+
+  std::vector<std::string> filter_color_data = {"blue", "red", "purple", "white"};
+  TableMaker filter_maker;
+  filter_maker.AddColumn("Colors", filter_color_data);
+  auto filter = filter_maker.MakeTable(tm.Client().GetManager());
+
+  auto result = source.WhereIn(filter, {"Color = Colors"});
+
+  std::vector<std::string> letter_expected = {"A", "C", "B", "A"};
+  std::vector<std::optional<int32_t>> number_expected = { {}, 2, {}, 3};
+  std::vector<std::string> color_expected = {"red", "blue", "purple", "blue"};
+  std::vector<std::optional<int32_t>> code_expected = { 12, 13, {}, {}};
+
+  CompareTable(result,
+      "Letter", letter_expected,
+      "Number", number_expected,
+      "Color", color_expected,
+      "Code", code_expected);
+}
+
+TEST_CASE("LazyUpdate", "[select]") {
+  auto tm = TableMakerForTests::Create();
+
+  std::vector<std::string> a_data = {"The", "At", "Is", "On"};
+  std::vector<int32_t> b_data = {1, 2, 3, 4};
+  std::vector<int32_t> c_data = {5, 2, 5, 5};
+  TableMaker source_maker;
+  source_maker.AddColumn("A", a_data);
+  source_maker.AddColumn("B", b_data);
+  source_maker.AddColumn("C", c_data);
+  auto source = source_maker.MakeTable(tm.Client().GetManager());
+
+  auto result = source.LazyUpdate({"Y = sqrt(C)"});
+
+  std::vector<double> sqrt_data = {std::sqrt(5), std::sqrt(2), std::sqrt(5), std::sqrt(5)};
+
+  CompareTable(result,
+      "A", a_data,
+      "B", b_data,
+      "C", c_data,
+      "Y", sqrt_data);
+}
+
+TEST_CASE("SelectDistinct", "[select]") {
+  auto tm = TableMakerForTests::Create();
+
+  std::vector<std::string> a_data = {"apple", "apple", "orange", "orange", "plum", "grape"};
+  std::vector<int32_t> b_data = {1, 1, 2, 2, 3, 3};
+  TableMaker source_maker;
+  source_maker.AddColumn("A", a_data);
+  source_maker.AddColumn("B", b_data);
+  auto source = source_maker.MakeTable(tm.Client().GetManager());
+
+  auto result = source.SelectDistinct({"A"});
+
+  std::cout << result.Stream(true) << '\n';
+
+  std::vector<std::string> expected_data = {"apple", "orange", "plum", "grape"};
+
+  CompareTable(result,
+      "A", expected_data);
 }
 }  // namespace deephaven::client::tests
