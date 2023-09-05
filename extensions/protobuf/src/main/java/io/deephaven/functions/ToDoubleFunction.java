@@ -22,8 +22,8 @@ public interface ToDoubleFunction<T> extends ToPrimitiveFunction<T>, java.util.f
      * @return the double function
      * @param <T> the value type
      */
-    static <T> ToDoubleFunction<T> primitive() {
-        return DoubleFunctions.primitive();
+    static <T> ToDoubleFunction<T> cast() {
+        return DoubleFunctions.cast();
     }
 
     /**

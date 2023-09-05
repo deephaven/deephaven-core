@@ -22,8 +22,8 @@ public interface ToShortFunction<T> extends ToPrimitiveFunction<T> {
      * @return the short function
      * @param <T> the value type
      */
-    static <T> ToShortFunction<T> primitive() {
-        return ShortFunctions.primitive();
+    static <T> ToShortFunction<T> cast() {
+        return ShortFunctions.cast();
     }
 
     /**

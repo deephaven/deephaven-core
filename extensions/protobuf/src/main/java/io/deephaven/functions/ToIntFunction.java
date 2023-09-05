@@ -22,8 +22,8 @@ public interface ToIntFunction<T> extends ToPrimitiveFunction<T>, java.util.func
      * @return the int function
      * @param <T> the value type
      */
-    static <T> ToIntFunction<T> primitive() {
-        return IntFunctions.primitive();
+    static <T> ToIntFunction<T> cast() {
+        return IntFunctions.cast();
     }
 
     /**

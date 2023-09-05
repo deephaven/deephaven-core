@@ -21,8 +21,8 @@ public interface ToLongFunction<T> extends ToPrimitiveFunction<T>, java.util.fun
      * @return the long function
      * @param <T> the value type
      */
-    static <T> ToLongFunction<T> primitive() {
-        return LongFunctions.primitive();
+    static <T> ToLongFunction<T> cast() {
+        return LongFunctions.cast();
     }
 
     /**

@@ -7,7 +7,7 @@ import java.util.Objects;
 import java.util.function.Function;
 
 class ByteFunctions {
-    static <T> ToByteFunction<T> primitive() {
+    static <T> ToByteFunction<T> cast() {
         // noinspection unchecked
         return (ToByteFunction<T>) PrimitiveByte.INSTANCE;
     }

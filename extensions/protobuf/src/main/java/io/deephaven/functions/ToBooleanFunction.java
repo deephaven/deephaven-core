@@ -24,8 +24,8 @@ public interface ToBooleanFunction<T> extends ToPrimitiveFunction<T>, Predicate<
      * @return the boolean function
      * @param <T> the value type
      */
-    static <T> ToBooleanFunction<T> primitive() {
-        return BooleanFunctions.primitive();
+    static <T> ToBooleanFunction<T> cast() {
+        return BooleanFunctions.cast();
     }
 
     /**

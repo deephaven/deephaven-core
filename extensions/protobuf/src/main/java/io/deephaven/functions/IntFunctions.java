@@ -7,7 +7,7 @@ import java.util.Objects;
 import java.util.function.Function;
 
 class IntFunctions {
-    static <T> ToIntFunction<T> primitive() {
+    static <T> ToIntFunction<T> cast() {
         // noinspection unchecked
         return (ToIntFunction<T>) IntFunctions.PrimitiveInt.INSTANCE;
     }

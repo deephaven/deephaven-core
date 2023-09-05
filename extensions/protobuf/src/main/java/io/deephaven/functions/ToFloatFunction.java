@@ -21,8 +21,8 @@ public interface ToFloatFunction<T> extends ToPrimitiveFunction<T> {
      * @return the float function
      * @param <T> the value type
      */
-    static <T> ToFloatFunction<T> primitive() {
-        return FloatFunctions.primitive();
+    static <T> ToFloatFunction<T> cast() {
+        return FloatFunctions.cast();
     }
 
     /**

@@ -8,7 +8,7 @@ import java.util.function.Function;
 
 class ShortFunctions {
 
-    static <T> ToShortFunction<T> primitive() {
+    static <T> ToShortFunction<T> cast() {
         // noinspection unchecked
         return (ToShortFunction<T>) PrimitiveShort.INSTANCE;
     }

@@ -8,7 +8,7 @@ import java.util.function.Function;
 
 class DoubleFunctions {
 
-    static <T> ToDoubleFunction<T> primitive() {
+    static <T> ToDoubleFunction<T> cast() {
         // noinspection unchecked
         return (ToDoubleFunction<T>) PrimitiveDouble.INSTANCE;
     }

@@ -7,7 +7,7 @@ import java.util.Objects;
 import java.util.function.Function;
 
 class FloatFunctions {
-    static <T> ToFloatFunction<T> primitive() {
+    static <T> ToFloatFunction<T> cast() {
         // noinspection unchecked
         return (ToFloatFunction<T>) PrimitiveFloat.INSTANCE;
     }

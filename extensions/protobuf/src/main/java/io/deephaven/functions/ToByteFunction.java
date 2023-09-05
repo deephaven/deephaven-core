@@ -22,8 +22,8 @@ public interface ToByteFunction<T> extends ToPrimitiveFunction<T> {
      * @return the byte function
      * @param <T> the value type
      */
-    static <T> ToByteFunction<T> primitive() {
-        return ByteFunctions.primitive();
+    static <T> ToByteFunction<T> cast() {
+        return ByteFunctions.cast();
     }
 
     /**

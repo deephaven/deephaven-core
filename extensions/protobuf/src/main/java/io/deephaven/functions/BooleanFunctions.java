@@ -10,7 +10,7 @@ import java.util.function.Function;
 
 class BooleanFunctions {
 
-    static <T> ToBooleanFunction<T> primitive() {
+    static <T> ToBooleanFunction<T> cast() {
         // noinspection unchecked
         return (ToBooleanFunction<T>) PrimitiveBoolean.INSTANCE;
     }

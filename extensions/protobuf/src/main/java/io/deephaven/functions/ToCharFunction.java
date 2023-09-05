@@ -21,8 +21,8 @@ public interface ToCharFunction<T> extends ToPrimitiveFunction<T> {
      * @return the char function
      * @param <T> the value type
      */
-    static <T> ToCharFunction<T> primitive() {
-        return CharFunctions.primitive();
+    static <T> ToCharFunction<T> cast() {
+        return CharFunctions.cast();
     }
 
     /**

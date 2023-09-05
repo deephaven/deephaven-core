@@ -7,7 +7,7 @@ import java.util.Objects;
 import java.util.function.Function;
 
 class CharFunctions {
-    static <T> ToCharFunction<T> primitive() {
+    static <T> ToCharFunction<T> cast() {
         // noinspection unchecked
         return (ToCharFunction<T>) PrimitiveChar.INSTANCE;
     }

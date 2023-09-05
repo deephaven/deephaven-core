@@ -200,23 +200,23 @@ class ProtobufDescriptorParserImpl {
                     case INT:
                         return fd.hasPresence()
                                 ? namedField(mapToObj(BOXED_INT_OBJ))
-                                : namedField(mapToInt(ToIntFunction.primitive()));
+                                : namedField(mapToInt(ToIntFunction.cast()));
                     case LONG:
                         return fd.hasPresence()
                                 ? namedField(mapToObj(BOXED_LONG_OBJ))
-                                : namedField(mapToLong(ToLongFunction.primitive()));
+                                : namedField(mapToLong(ToLongFunction.cast()));
                     case FLOAT:
                         return fd.hasPresence()
                                 ? namedField(mapToObj(BOXED_FLOAT_OBJ))
-                                : namedField(mapToFloat(ToFloatFunction.primitive()));
+                                : namedField(mapToFloat(ToFloatFunction.cast()));
                     case DOUBLE:
                         return fd.hasPresence()
                                 ? namedField(mapToObj(BOXED_DOUBLE_OBJ))
-                                : namedField(mapToDouble(ToDoubleFunction.primitive()));
+                                : namedField(mapToDouble(ToDoubleFunction.cast()));
                     case BOOLEAN:
                         return fd.hasPresence()
                                 ? namedField(mapToObj(BOXED_BOOLEAN_OBJ))
-                                : namedField(mapToBoolean(ToBooleanFunction.primitive()));
+                                : namedField(mapToBoolean(ToBooleanFunction.cast()));
                     case STRING:
                         return namedField(mapToObj(STRING_OBJ));
                     case BYTE_STRING:
@@ -333,15 +333,15 @@ class ProtobufDescriptorParserImpl {
             private ProtobufFunctions functions() {
                 switch (fd.getJavaType()) {
                     case INT:
-                        return namedField(mapInts(ToIntFunction.primitive()));
+                        return namedField(mapInts(ToIntFunction.cast()));
                     case LONG:
-                        return namedField(mapLongs(ToLongFunction.primitive()));
+                        return namedField(mapLongs(ToLongFunction.cast()));
                     case FLOAT:
-                        return namedField(mapFloats(ToFloatFunction.primitive()));
+                        return namedField(mapFloats(ToFloatFunction.cast()));
                     case DOUBLE:
-                        return namedField(mapDoubles(ToDoubleFunction.primitive()));
+                        return namedField(mapDoubles(ToDoubleFunction.cast()));
                     case BOOLEAN:
-                        return namedField(mapBooleans(ToBooleanFunction.primitive()));
+                        return namedField(mapBooleans(ToBooleanFunction.cast()));
                     case STRING:
                         return namedField(mapGenerics(STRING_OBJ));
                     case BYTE_STRING:

@@ -8,7 +8,7 @@ import java.util.function.Function;
 
 class LongFunctions {
 
-    static <T> ToLongFunction<T> primitive() {
+    static <T> ToLongFunction<T> cast() {
         // noinspection unchecked
         return (ToLongFunction<T>) PrimitiveLong.INSTANCE;
     }
