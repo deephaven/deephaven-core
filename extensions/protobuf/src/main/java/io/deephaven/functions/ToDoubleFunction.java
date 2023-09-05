@@ -42,22 +42,6 @@ public interface ToDoubleFunction<T> extends ToPrimitiveFunction<T>, java.util.f
         return DoubleFunctions.map(f, g);
     }
 
-    /**
-     * Creates the function composition {@code g ∘ f}.
-     *
-     * <p>
-     * Equivalent to {@code x -> g.applyAsDouble(f.apply(x))}.
-     *
-     * @param f the inner function
-     * @param g the outer function
-     * @return the double function
-     * @param <T> the input type
-     * @param <R> the intermediate type
-     */
-    static <T, R> ToDoubleFunction<T> map(ToObjectFunction<T, R> f, ToDoubleFunction<R> g) {
-        return DoubleFunctions.map(f, g);
-    }
-
     @Override
     double applyAsDouble(T value);
 
