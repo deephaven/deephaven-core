@@ -92,7 +92,8 @@ $ git commit --allow-empty -m "Cut for X.Y.Z"
 #### Procedure for patch releases
 
 For patch releases, typically the branch will be based off of the previous release tag, and not `upstream/main`, and the necessary patch fixes can be cherry-picked from the `upstream/main` branch.
-The patch release manager is also responsible for bumping the patch version numbers as appropriate.
+The patch release manager is also responsible for bumping the patch version numbers as appropriate (note comment block on the list of commands
+below).
 
 Here is an example going from `X.Y.0` to `X.Y.1`:
 
@@ -101,6 +102,8 @@ $ git fetch upstream
 $ git checkout vX.Y.0
 $ git checkout -b release/vX.Y.1
 $ git cherry-pick <...>
+#
+# Edit files, updating from `X.Y` to `X.(Y+1)`
 #
 # Look in the last section "Version bump in preparation of next release" for a list of
 # files to update to the right version you are producing. After the previous release
