@@ -248,42 +248,42 @@ class ObjectFunctions {
         }
 
         @Override
-        public ToPrimitiveFunction<R> visit(ToBooleanFunction<T> g) {
+        public ToBooleanFunction<R> visit(ToBooleanFunction<T> g) {
             return f.mapToBoolean(g);
         }
 
         @Override
-        public ToPrimitiveFunction<R> visit(ToCharFunction<T> g) {
+        public ToCharFunction<R> visit(ToCharFunction<T> g) {
             return f.mapToChar(g);
         }
 
         @Override
-        public ToPrimitiveFunction<R> visit(ToByteFunction<T> g) {
+        public ToByteFunction<R> visit(ToByteFunction<T> g) {
             return f.mapToByte(g);
         }
 
         @Override
-        public ToPrimitiveFunction<R> visit(ToShortFunction<T> g) {
+        public ToShortFunction<R> visit(ToShortFunction<T> g) {
             return f.mapToShort(g);
         }
 
         @Override
-        public ToPrimitiveFunction<R> visit(ToIntFunction<T> g) {
+        public ToIntFunction<R> visit(ToIntFunction<T> g) {
             return f.mapToInt(g);
         }
 
         @Override
-        public ToPrimitiveFunction<R> visit(ToLongFunction<T> g) {
+        public ToLongFunction<R> visit(ToLongFunction<T> g) {
             return f.mapToLong(g);
         }
 
         @Override
-        public ToPrimitiveFunction<R> visit(ToFloatFunction<T> g) {
+        public ToFloatFunction<R> visit(ToFloatFunction<T> g) {
             return f.mapToFloat(g);
         }
 
         @Override
-        public ToPrimitiveFunction<R> visit(ToDoubleFunction<T> g) {
+        public ToDoubleFunction<R> visit(ToDoubleFunction<T> g) {
             return f.mapToDouble(g);
         }
     }
@@ -301,12 +301,12 @@ class ObjectFunctions {
         }
 
         @Override
-        public TypedFunction<R> visit(ToPrimitiveFunction<T> g) {
+        public ToPrimitiveFunction<R> visit(ToPrimitiveFunction<T> g) {
             return f.mapToPrimitive(g);
         }
 
         @Override
-        public TypedFunction<R> visit(ToObjectFunction<T, ?> g) {
+        public ToObjectFunction<R, ?> visit(ToObjectFunction<T, ?> g) {
             return f.mapToObj(g);
         }
     }

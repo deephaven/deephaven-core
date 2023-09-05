@@ -416,42 +416,42 @@ class ProtobufDescriptorParserImpl {
                 }
 
                 @Override
-                public ToObjectFunction<Message, ?> visit(ToBooleanFunction<Message> f) {
+                public ToObjectFunction<Message, boolean[]> visit(ToBooleanFunction<Message> f) {
                     return mapBooleans(MESSAGE_OBJ.mapToBoolean(f));
                 }
 
                 @Override
-                public ToObjectFunction<Message, ?> visit(ToCharFunction<Message> f) {
+                public ToObjectFunction<Message, char[]> visit(ToCharFunction<Message> f) {
                     return mapChars(MESSAGE_OBJ.mapToChar(f));
                 }
 
                 @Override
-                public ToObjectFunction<Message, ?> visit(ToByteFunction<Message> f) {
+                public ToObjectFunction<Message, byte[]> visit(ToByteFunction<Message> f) {
                     return mapBytes(MESSAGE_OBJ.mapToByte(f));
                 }
 
                 @Override
-                public ToObjectFunction<Message, ?> visit(ToShortFunction<Message> f) {
+                public ToObjectFunction<Message, short[]> visit(ToShortFunction<Message> f) {
                     return mapShorts(MESSAGE_OBJ.mapToShort(f));
                 }
 
                 @Override
-                public ToObjectFunction<Message, ?> visit(ToIntFunction<Message> f) {
+                public ToObjectFunction<Message, int[]> visit(ToIntFunction<Message> f) {
                     return mapInts(MESSAGE_OBJ.mapToInt(f));
                 }
 
                 @Override
-                public ToObjectFunction<Message, ?> visit(ToLongFunction<Message> f) {
+                public ToObjectFunction<Message, long[]> visit(ToLongFunction<Message> f) {
                     return mapLongs(MESSAGE_OBJ.mapToLong(f));
                 }
 
                 @Override
-                public ToObjectFunction<Message, ?> visit(ToFloatFunction<Message> f) {
+                public ToObjectFunction<Message, float[]> visit(ToFloatFunction<Message> f) {
                     return mapFloats(MESSAGE_OBJ.mapToFloat(f));
                 }
 
                 @Override
-                public ToObjectFunction<Message, ?> visit(ToDoubleFunction<Message> f) {
+                public ToObjectFunction<Message, double[]> visit(ToDoubleFunction<Message> f) {
                     return mapDoubles(MESSAGE_OBJ.mapToDouble(f));
                 }
             }

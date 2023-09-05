@@ -57,37 +57,37 @@ class DhNullableTypeTransform {
         }
 
         @Override
-        public TypedFunction<Object> visit(ToCharFunction<Object> f) {
+        public ToCharFunction<Object> visit(ToCharFunction<Object> f) {
             return f;
         }
 
         @Override
-        public TypedFunction<Object> visit(ToByteFunction<Object> f) {
+        public ToByteFunction<Object> visit(ToByteFunction<Object> f) {
             return f;
         }
 
         @Override
-        public TypedFunction<Object> visit(ToShortFunction<Object> f) {
+        public ToShortFunction<Object> visit(ToShortFunction<Object> f) {
             return f;
         }
 
         @Override
-        public TypedFunction<Object> visit(ToIntFunction<Object> f) {
+        public ToIntFunction<Object> visit(ToIntFunction<Object> f) {
             return f;
         }
 
         @Override
-        public TypedFunction<Object> visit(ToLongFunction<Object> f) {
+        public ToLongFunction<Object> visit(ToLongFunction<Object> f) {
             return f;
         }
 
         @Override
-        public TypedFunction<Object> visit(ToFloatFunction<Object> f) {
+        public ToFloatFunction<Object> visit(ToFloatFunction<Object> f) {
             return f;
         }
 
         @Override
-        public TypedFunction<Object> visit(ToDoubleFunction<Object> f) {
+        public ToDoubleFunction<Object> visit(ToDoubleFunction<Object> f) {
             return f;
         }
     }

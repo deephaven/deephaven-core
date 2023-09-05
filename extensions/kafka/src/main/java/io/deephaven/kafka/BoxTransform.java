@@ -219,42 +219,42 @@ class BoxTransform {
         }
 
         @Override
-        public ToObjectFunction<Object, ?> visit(ToBooleanFunction<Object> f) {
+        public ToObjectFunction<Object, Boolean> visit(ToBooleanFunction<Object> f) {
             return BoxTransform.of(f);
         }
 
         @Override
-        public ToObjectFunction<Object, ?> visit(ToCharFunction<Object> f) {
+        public ToObjectFunction<Object, Character> visit(ToCharFunction<Object> f) {
             return BoxTransform.of(f);
         }
 
         @Override
-        public ToObjectFunction<Object, ?> visit(ToByteFunction<Object> f) {
+        public ToObjectFunction<Object, Byte> visit(ToByteFunction<Object> f) {
             return BoxTransform.of(f);
         }
 
         @Override
-        public ToObjectFunction<Object, ?> visit(ToShortFunction<Object> f) {
+        public ToObjectFunction<Object, Short> visit(ToShortFunction<Object> f) {
             return BoxTransform.of(f);
         }
 
         @Override
-        public ToObjectFunction<Object, ?> visit(ToIntFunction<Object> f) {
+        public ToObjectFunction<Object, Integer> visit(ToIntFunction<Object> f) {
             return BoxTransform.of(f);
         }
 
         @Override
-        public ToObjectFunction<Object, ?> visit(ToLongFunction<Object> f) {
+        public ToObjectFunction<Object, Long> visit(ToLongFunction<Object> f) {
             return BoxTransform.of(f);
         }
 
         @Override
-        public ToObjectFunction<Object, ?> visit(ToFloatFunction<Object> f) {
+        public ToObjectFunction<Object, Float> visit(ToFloatFunction<Object> f) {
             return BoxTransform.of(f);
         }
 
         @Override
-        public ToObjectFunction<Object, ?> visit(ToDoubleFunction<Object> f) {
+        public ToObjectFunction<Object, Double> visit(ToDoubleFunction<Object> f) {
             return BoxTransform.of(f);
         }
     }

@@ -42,42 +42,42 @@ class UpcastApply<T> implements Visitor<T, Object>, ToPrimitiveFunction.Visitor<
     }
 
     @Override
-    public Object visit(ToBooleanFunction<T> f) {
+    public Boolean visit(ToBooleanFunction<T> f) {
         return f.test(value);
     }
 
     @Override
-    public Object visit(ToCharFunction<T> f) {
+    public Character visit(ToCharFunction<T> f) {
         return f.applyAsChar(value);
     }
 
     @Override
-    public Object visit(ToByteFunction<T> f) {
+    public Byte visit(ToByteFunction<T> f) {
         return f.applyAsByte(value);
     }
 
     @Override
-    public Object visit(ToShortFunction<T> f) {
+    public Short visit(ToShortFunction<T> f) {
         return f.applyAsShort(value);
     }
 
     @Override
-    public Object visit(ToIntFunction<T> f) {
+    public Integer visit(ToIntFunction<T> f) {
         return f.applyAsInt(value);
     }
 
     @Override
-    public Object visit(ToLongFunction<T> f) {
+    public Long visit(ToLongFunction<T> f) {
         return f.applyAsLong(value);
     }
 
     @Override
-    public Object visit(ToFloatFunction<T> f) {
+    public Float visit(ToFloatFunction<T> f) {
         return f.applyAsFloat(value);
     }
 
     @Override
-    public Object visit(ToDoubleFunction<T> f) {
+    public Double visit(ToDoubleFunction<T> f) {
         return f.applyAsDouble(value);
     }
 }
