@@ -103,7 +103,7 @@ $ git checkout vX.Y.0
 $ git checkout -b release/vX.Y.1
 $ git cherry-pick <...>
 #
-# Edit files, updating from `X.Y.0` to `X.Y.1`
+# Edit files, updating from X.Y.0 to X.Y.1, and git add them.
 #
 # Look in the last section "Version bump in preparation of next release" for a list of
 # files to update to the right version you are producing.
@@ -239,12 +239,21 @@ Sometime after a release, old release branches can be safely deleted.
 
 ### 15. Version bump in preparation of the next release.
 
+<<<<<<< HEAD
 Say we just did release 0.31.0. The next expected release is 0.32.0.  We update the repository with a bump to all files that
 mention the version explicitly.  The current list of files that need to be updated is listed below:
 
 ```
 #
 # Edit files, updating from `X.Y.0` to `X.(Y+1).0`
+=======
+Say we just did release `0.31.0`. The next expected release is `0.32.0`  We update the repository with a bump to all files that
+mention the version explicitly. These files are listed below:
+
+```
+#
+# Edit files for version change, updating from 0.31.0 to 0.32.0
+>>>>>>> e21a62ad44a8f0c2270324167a1eab51a8464d49
 #
 authorization-codegen/protoc-gen-contextual-auth-wiring
 authorization-codegen/protoc-gen-service-auth-wiring
@@ -262,7 +271,7 @@ R/rdeephaven/DESCRIPTION
 This leaves the files "ready" for the next regular release, and also ensures any build done from
 a developer for testing of latest is not confused with the code just released.
 
-In the case of a patch release these would need to be updated to a different version, eg, to 0.31.1 from 0.31.
+In the case of a patch release these would need to be updated to a different version, like from `0.31.0` to `0.31.1`.
 
 ## External dependencies
 
