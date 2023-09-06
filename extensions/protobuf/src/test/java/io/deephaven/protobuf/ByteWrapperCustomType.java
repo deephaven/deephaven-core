@@ -2,14 +2,19 @@ package io.deephaven.protobuf;
 
 import com.google.auto.service.AutoService;
 import com.google.protobuf.Descriptors.Descriptor;
-import com.google.protobuf.Descriptors.FieldDescriptor;
 import com.google.protobuf.Message;
-import io.deephaven.protobuf.test.ByteWrapper;
 import io.deephaven.functions.ToByteFunction;
+import io.deephaven.functions.ToObjectFunction;
 import io.deephaven.functions.TypedFunction;
+import io.deephaven.protobuf.test.ByteWrapper;
+import io.deephaven.qst.type.Type;
 
-@AutoService(MessageParserSingle.class)
+@AutoService(MessageParser.class)
 public class ByteWrapperCustomType implements MessageParserSingle {
+    private static final ToByteFunction<Message> CANONICAL_FUNCTION = ToObjectFunction
+            .<Message, ByteWrapper>identity(Type.ofCustom(ByteWrapper.class))
+            .mapToByte(ByteWrapperCustomType::getByte);
+
     public ByteWrapperCustomType() {}
 
     @Override
@@ -20,7 +25,10 @@ public class ByteWrapperCustomType implements MessageParserSingle {
     @Override
     public TypedFunction<Message> messageParser(Descriptor descriptor, ProtobufDescriptorParserOptions options,
             FieldPath fieldPath) {
-        final FieldDescriptor field = descriptor.findFieldByNumber(ByteWrapper.VALUE_FIELD_NUMBER);
-        return (ToByteFunction<Message>) value -> (byte) (int) value.getField(field);
+        return CANONICAL_FUNCTION;
+    }
+
+    private static byte getByte(ByteWrapper wrapper) {
+        return (byte) wrapper.getValue();
     }
 }

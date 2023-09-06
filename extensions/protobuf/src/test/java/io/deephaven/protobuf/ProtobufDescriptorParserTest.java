@@ -1146,7 +1146,7 @@ public class ProtobufDescriptorParserTest {
 
     @Test
     void repeatedPerson() {
-        final MessageParser personParser = MessageParser.adapt(new MessageParserSingle() {
+        final MessageParser personParser = new MessageParserSingle() {
             @Override
             public Descriptor canonicalDescriptor() {
                 return Person.getDescriptor();
@@ -1157,7 +1157,7 @@ public class ProtobufDescriptorParserTest {
                     ProtobufDescriptorParserOptions options, FieldPath fieldPath) {
                 return ToObjectFunction.identity(Type.ofCustom(Person.class));
             }
-        });
+        };
         final ProtobufDescriptorParserOptions options =
                 ProtobufDescriptorParserOptions.builder().parsers(List.of(personParser)).build();
         final Map<List<String>, TypedFunction<Message>> nf = nf(RepeatedMessage.getDescriptor(), options);

@@ -43,7 +43,7 @@ class Builtin {
     // Due to https://github.com/confluentinc/schema-registry/issues/2708, the parsers need to be built in such a way
     // that they work with DynamicMessages.
 
-    static List<MessageParserSingle> parsers() {
+    static List<MessageParser> parsers() {
         // Update javadoc in io.deephaven.protobuf.SingleValuedMessageParser.builtin when editing
         return List.of(
                 TimestampParser.of(),
