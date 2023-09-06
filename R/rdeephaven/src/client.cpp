@@ -5,9 +5,10 @@
  */
 
 #include <iostream>
-#include <utility>
 #include <memory>
+#include <stdexcept>
 #include <string>
+#include <utility>
 #include <vector>
 
 #include "deephaven/client/client.h"
@@ -23,7 +24,6 @@
 using deephaven::dhcore::utility::Base64Encode;
 
 // forward declaration of classes
-class AggregateWrapper;
 class TableHandleWrapper;
 class ClientOptionsWrapper;
 class ClientWrapper;
@@ -31,7 +31,6 @@ class ClientWrapper;
 // forward declaration of conversion functions
 std::vector<deephaven::client::Aggregate> convertRcppListToVectorOfTypeAggregate(Rcpp::List rcpp_list);
 std::vector<deephaven::client::TableHandle> convertRcppListToVectorOfTypeTableHandle(Rcpp::List rcpp_list);
-
 
 // ######################### DH WRAPPERS #########################
 
@@ -116,7 +115,7 @@ AggregateWrapper* INTERNAL_agg_count(std::string columnSpec) {
 class TableHandleWrapper {
 public:
     TableHandleWrapper(deephaven::client::TableHandle ref_table) :
-            internal_tbl_hdl(std::move(ref_table)) {};
+        internal_tbl_hdl(std::move(ref_table)) {};
 
     TableHandleWrapper* Select(std::vector<std::string> columnSpecs) {
         return new TableHandleWrapper(internal_tbl_hdl.Select(columnSpecs));
@@ -322,7 +321,7 @@ class ClientOptionsWrapper {
 public:
 
     ClientOptionsWrapper() :
-            internal_options(std::make_shared<deephaven::client::ClientOptions>()) {}
+        internal_options(std::make_shared<deephaven::client::ClientOptions>()) {}
 
     void SetDefaultAuthentication() {
         internal_options->SetDefaultAuthentication();
@@ -371,7 +370,24 @@ class ClientWrapper {
 public:
 
     ClientWrapper(std::string target, const ClientOptionsWrapper &client_options) :
-            internal_client(deephaven::client::Client::Connect(target, *client_options.internal_options)) {}
+        internal_client(
+            Rcpp::XPtr<deephaven::client::Client>(
+                new deephaven::client::Client(
+                    std::move(
+                        deephaven::client::Client::Connect(target, *client_options.internal_options)
+                    )
+                )
+            )
+        ) {}
+
+    // We need the ability to create a ClientWrapper from the enterprise
+    // client, when the underlying C++ object is already created.
+    ClientWrapper(SEXP sexp) :
+        internal_client(Rcpp::XPtr<ClientWrapper>(sexp)) {}
+
+    SEXP InternalClient() {
+      return internal_client;
+    }
 
     TableHandleWrapper* OpenTable(std::string tableName) {
         return new TableHandleWrapper(internal_tbl_hdl_mngr.FetchTable(tableName));
@@ -382,11 +398,16 @@ public:
     }
 
     TableHandleWrapper* TimeTable(std::string periodISO, std::string startTimeISO) {
-        if((startTimeISO == "now") || (startTimeISO == "")) {
+        if ((startTimeISO == "now") || (startTimeISO == "")) {
             return new TableHandleWrapper(internal_tbl_hdl_mngr.TimeTable(periodISO));
         }
         return new TableHandleWrapper(internal_tbl_hdl_mngr.TimeTable(periodISO, startTimeISO));
     };
+
+
+    TableHandleWrapper* MakeTableHandleFromTicket(std::string ticket) {
+        return new TableHandleWrapper(internal_tbl_hdl_mngr.MakeTableHandleFromTicket(ticket));
+    }
 
     void RunScript(std::string code) {
         internal_tbl_hdl_mngr.RunScript(code);
@@ -455,14 +476,16 @@ public:
     }
 
     void Close() {
-        internal_client.Close();
+        internal_client->Close();
     }
 
 private:
-    deephaven::client::Client internal_client;
-    const deephaven::client::TableHandleManager internal_tbl_hdl_mngr = internal_client.GetManager();
+    // We let R manage the lifetime of internal_client underlying C++ object,
+    // according to its tracking of references.
+    // We hold one here, but there may be other references in the case of the enterprise client.
+    Rcpp::XPtr<deephaven::client::Client> internal_client;
+    const deephaven::client::TableHandleManager internal_tbl_hdl_mngr = internal_client->GetManager();
 };
-
 
 // ######################### RCPP GLUE #########################
 
@@ -553,14 +576,16 @@ RCPP_MODULE(DeephavenInternalModule) {
 
     class_<ClientWrapper>("INTERNAL_Client")
     .constructor<std::string, const ClientOptionsWrapper&>()
+    .constructor<SEXP>()
+    .method("internal_client", &ClientWrapper::InternalClient)
     .method("open_table", &ClientWrapper::OpenTable)
     .method("empty_table", &ClientWrapper::EmptyTable)
     .method("time_table", &ClientWrapper::TimeTable)
     .method("check_for_table", &ClientWrapper::CheckForTable)
+    .method("make_table_handle_from_ticket", &ClientWrapper::MakeTableHandleFromTicket)
     .method("run_script", &ClientWrapper::RunScript)
     .method("new_arrow_array_stream_ptr", &ClientWrapper::NewArrowArrayStreamPtr)
     .method("new_table_from_arrow_array_stream_ptr", &ClientWrapper::NewTableFromArrowArrayStreamPtr)
     .method("close", &ClientWrapper::Close)
     ;
-
 }
