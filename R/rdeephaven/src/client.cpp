@@ -24,7 +24,6 @@
 using deephaven::dhcore::utility::Base64Encode;
 
 // forward declaration of classes
-class AggregateWrapper;
 class TableHandleWrapper;
 class ClientOptionsWrapper;
 class ClientWrapper;
@@ -366,6 +365,7 @@ private:
     friend ClientWrapper;
 };
 
+
 class ClientWrapper {
 public:
 
@@ -380,6 +380,8 @@ public:
             )
         ) {}
 
+    // We need the ability to create a ClientWrapper from the enterprise
+    // client, when the underlying C++ object is already created.
     ClientWrapper(SEXP sexp) :
         internal_client(Rcpp::XPtr<ClientWrapper>(sexp)) {}
 
@@ -478,6 +480,9 @@ public:
     }
 
 private:
+    // We let R manage the lifetime of internal_client underlying C++ object,
+    // according to its tracking of references.
+    // We hold one here, but there may be other references in the case of the enterprise client.
     Rcpp::XPtr<deephaven::client::Client> internal_client;
     const deephaven::client::TableHandleManager internal_tbl_hdl_mngr = internal_client->GetManager();
 };
