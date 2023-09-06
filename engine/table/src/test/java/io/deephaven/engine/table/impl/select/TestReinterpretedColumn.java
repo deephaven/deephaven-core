@@ -16,6 +16,7 @@ import io.deephaven.engine.table.Table;
 import io.deephaven.engine.table.TableDefinition;
 import io.deephaven.engine.table.WritableColumnSource;
 import io.deephaven.engine.table.impl.QueryTable;
+import io.deephaven.engine.table.impl.sources.ArrayBackedColumnSource;
 import io.deephaven.engine.table.impl.sources.InstantArraySource;
 import io.deephaven.engine.table.impl.sources.InstantSparseArraySource;
 import io.deephaven.engine.table.impl.sources.LongArraySource;
@@ -436,25 +437,39 @@ public class TestReinterpretedColumn extends RefreshingTableTestCase {
 
         final ControlledUpdateGraph updateGraph = ExecutionContext.getContext().getUpdateGraph().cast();
 
-        try (final RowSet rows = RowSetFactory.flat(1024)) {
-            source.ensureCapacity(rows.size());
+        try (final RowSet latticeRows = RowSetFactory.flat(1024);
+                final RowSet unchangedRows = RowSetFactory.flat(1024).shift(ArrayBackedColumnSource.BLOCK_SIZE)) {
+            source.ensureCapacity(unchangedRows.lastRowKey() + 1);
             updateGraph.runWithinUnitTestCycle(() -> {
-                rows.forAllRowKeys(row -> {
+                latticeRows.forAllRowKeys(row -> {
+                    source.set(row, Instant.ofEpochMilli(row));
+                });
+
+                // create rows that won't change in a separate block for code coverage
+                unchangedRows.forAllRowKeys(row -> {
                     source.set(row, Instant.ofEpochMilli(row));
                 });
             });
 
             updateGraph.runWithinUnitTestCycle(() -> {
-                rows.forAllRowKeys(row -> {
-                    source.set(row, Instant.ofEpochMilli(row + rows.size()));
+                // change only some rows; for coverage
+                latticeRows.forAllRowKeys(row -> {
+                    if (row % 2 == 0) {
+                        source.set(row, Instant.ofEpochMilli(row + latticeRows.size()));
+                    }
                 });
 
-                try (final ChunkSource.FillContext context = source.makeFillContext(rows.intSize());
+                try (final RowSet allRows = latticeRows.union(unchangedRows);
+                        final ChunkSource.FillContext context = source.makeFillContext(allRows.intSize());
                         final WritableObjectChunk<Instant, Values> chunk =
-                                WritableObjectChunk.makeWritableChunk(rows.intSize())) {
-                    source.fillPrevChunk(context, chunk, rows);
-
-                    rows.forAllRowKeys(row -> assertEquals(Instant.ofEpochMilli(row), chunk.get((int) row)));
+                                WritableObjectChunk.makeWritableChunk(allRows.intSize())) {
+                    source.fillPrevChunk(context, chunk, allRows);
+                    allRows.forAllRowKeys(row -> {
+                        final long chunkOffset = row + (row < ArrayBackedColumnSource.BLOCK_SIZE
+                                ? 0
+                                : (latticeRows.size() - ArrayBackedColumnSource.BLOCK_SIZE));
+                        assertEquals(Instant.ofEpochMilli(row), chunk.get((int) chunkOffset));
+                    });
                 }
             });
         }

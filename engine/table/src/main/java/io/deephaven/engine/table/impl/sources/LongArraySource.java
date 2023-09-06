@@ -596,19 +596,19 @@ public class LongArraySource extends ArraySourceHelper<Long, long[]>
             final long[] inUse = prevInUse[blockNo];
             if (inUse != null) {
                 // region conditionalCopy
+                final int chunkOffset = destOffset.intValue();
                 long[] baseInput = (long[]) getBlock(blockNo);
                 long[] overInput = (long[]) getPrevBlock(blockNo);
-                final boolean flipBase = false;
 
                 final int srcEndOffset = srcOffset + length;
-                int nextBit = CopyKernel.Utils.nextSetBit(inUse, srcOffset, srcEndOffset, flipBase);
+                int nextBit = CopyKernel.Utils.nextSetBit(inUse, srcOffset, srcEndOffset, false);
 
                 for (int ii = 0; ii < length; ++ii) {
                     if (ii != nextBit - srcOffset) {
-                        chunk.set(destOffset.intValue() + ii, converter.apply(baseInput[srcOffset + ii]));
+                        chunk.set(ii + chunkOffset, converter.apply(baseInput[ii + srcOffset]));
                     } else {
-                        nextBit = CopyKernel.Utils.nextSetBit(inUse, nextBit + 1, srcEndOffset, flipBase);
-                        chunk.set(destOffset.intValue() + ii, converter.apply(overInput[srcOffset + ii]));
+                        nextBit = CopyKernel.Utils.nextSetBit(inUse, nextBit + 1, srcEndOffset, false);
+                        chunk.set(ii + chunkOffset, converter.apply(overInput[ii + srcOffset]));
                     }
                 }
                 // endregion conditionalCopy
