@@ -51,11 +51,6 @@ public interface ToIntFunction<T> extends ToPrimitiveFunction<T>, java.util.func
     }
 
     @Override
-    default ToIntFunction<T> mapInput(Function<T, T> f) {
-        return map(f, this);
-    }
-
-    @Override
     default <R> R walk(Visitor<T, R> visitor) {
         return visitor.visit(this);
     }

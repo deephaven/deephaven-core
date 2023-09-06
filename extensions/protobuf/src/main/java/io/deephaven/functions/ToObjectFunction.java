@@ -6,6 +6,7 @@ package io.deephaven.functions;
 import io.deephaven.qst.type.GenericType;
 
 import java.util.function.Function;
+import java.util.function.Predicate;
 
 /**
  * An object function.
@@ -69,14 +70,26 @@ public interface ToObjectFunction<T, R> extends TypedFunction<T>, Function<T, R>
         return ObjectFunctions.map(f, g);
     }
 
+    /**
+     * Creates the function composition {@code g ∘ f}.
+     *
+     * <p>
+     * Equivalent to {@code x -> g.apply(f.apply(x))}.
+     *
+     * @param f the inner function
+     * @param g the outer function
+     * @param returnType the return type
+     * @return the object function
+     * @param <T> the input type
+     * @param <R> the intermediate type
+     */
+    static <T, R, Z> ToObjectFunction<T, Z> map(Function<T, R> f, Function<R, Z> g, GenericType<Z> returnType) {
+        return ObjectFunctions.map(f, g, returnType);
+    }
+
     GenericType<R> returnType();
 
     R apply(T value);
-
-    @Override
-    default ToObjectFunction<T, R> mapInput(Function<T, T> f) {
-        return map(f, this);
-    }
 
     /**
      * Creates the function composition {@code g ∘ this}.
@@ -87,7 +100,7 @@ public interface ToObjectFunction<T, R> extends TypedFunction<T>, Function<T, R>
      * @param g the outer function
      * @return the boolean function
      */
-    default ToBooleanFunction<T> mapToBoolean(ToBooleanFunction<R> g) {
+    default ToBooleanFunction<T> mapToBoolean(Predicate<R> g) {
         return ToBooleanFunction.map(this, g);
     }
 
@@ -139,7 +152,7 @@ public interface ToObjectFunction<T, R> extends TypedFunction<T>, Function<T, R>
      * @param g the outer function
      * @return the int function
      */
-    default ToIntFunction<T> mapToInt(ToIntFunction<R> g) {
+    default ToIntFunction<T> mapToInt(java.util.function.ToIntFunction<R> g) {
         return ToIntFunction.map(this, g);
     }
 
@@ -152,7 +165,7 @@ public interface ToObjectFunction<T, R> extends TypedFunction<T>, Function<T, R>
      * @param g the outer function
      * @return the long function
      */
-    default ToLongFunction<T> mapToLong(ToLongFunction<R> g) {
+    default ToLongFunction<T> mapToLong(java.util.function.ToLongFunction<R> g) {
         return ToLongFunction.map(this, g);
     }
 
@@ -178,7 +191,7 @@ public interface ToObjectFunction<T, R> extends TypedFunction<T>, Function<T, R>
      * @param g the outer function
      * @return the double function
      */
-    default ToDoubleFunction<T> mapToDouble(ToDoubleFunction<R> g) {
+    default ToDoubleFunction<T> mapToDouble(java.util.function.ToDoubleFunction<R> g) {
         return ToDoubleFunction.map(this, g);
     }
 
@@ -205,7 +218,7 @@ public interface ToObjectFunction<T, R> extends TypedFunction<T>, Function<T, R>
      * @return the object function
      */
     default <R2> ToObjectFunction<T, R2> mapToObj(Function<R, R2> g, GenericType<R2> returnType) {
-        return map(this, of(g, returnType));
+        return map(this, g, returnType);
     }
 
     /**
@@ -216,14 +229,14 @@ public interface ToObjectFunction<T, R> extends TypedFunction<T>, Function<T, R>
      *
      * @param g the outer function
      * @return the function
-     * @see #mapToBoolean(ToBooleanFunction)
+     * @see #mapToBoolean(Predicate)
      * @see #mapToChar(ToCharFunction)
      * @see #mapToByte(ToByteFunction)
      * @see #mapToShort(ToShortFunction)
-     * @see #mapToInt(ToIntFunction)
-     * @see #mapToLong(ToLongFunction)
+     * @see #mapToInt(java.util.function.ToIntFunction)
+     * @see #mapToLong(java.util.function.ToLongFunction)
      * @see #mapToFloat(ToFloatFunction)
-     * @see #mapToDouble(ToDoubleFunction)
+     * @see #mapToDouble(java.util.function.ToDoubleFunction)
      */
     default ToPrimitiveFunction<T> mapToPrimitive(ToPrimitiveFunction<R> g) {
         return ObjectFunctions.mapPrimitive(this, g);

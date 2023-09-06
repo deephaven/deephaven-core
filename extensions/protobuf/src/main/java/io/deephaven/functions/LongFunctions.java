@@ -13,6 +13,10 @@ class LongFunctions {
         return (ToLongFunction<T>) PrimitiveLong.INSTANCE;
     }
 
+    static <T> ToLongFunction<T> of(java.util.function.ToLongFunction<T> f) {
+        return f instanceof ToLongFunction ? (ToLongFunction<T>) f : f::applyAsLong;
+    }
+
     static <T, R> ToLongFunction<T> map(Function<T, R> f, java.util.function.ToLongFunction<R> g) {
         return new LongMap<>(f, g);
     }

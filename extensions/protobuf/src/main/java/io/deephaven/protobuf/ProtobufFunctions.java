@@ -55,25 +55,12 @@ public abstract class ProtobufFunctions {
         return builder().addFunctions(functions).build();
     }
 
+    /**
+     * The protobuf functions.
+     *
+     * @return the functions
+     */
     public abstract List<ProtobufFunction> functions();
-
-    public final Optional<ProtobufFunction> find(List<String> namePath) {
-        for (ProtobufFunction function : functions()) {
-            if (namePath.equals(function.path().namePath())) {
-                return Optional.of(function);
-            }
-        }
-        return Optional.empty();
-    }
-
-    public final Optional<ProtobufFunction> find(FieldNumberPath numberPath) {
-        for (ProtobufFunction function : functions()) {
-            if (numberPath.equals(function.path().numberPath())) {
-                return Optional.of(function);
-            }
-        }
-        return Optional.empty();
-    }
 
     public interface Builder {
         Builder addFunctions(ProtobufFunction element);

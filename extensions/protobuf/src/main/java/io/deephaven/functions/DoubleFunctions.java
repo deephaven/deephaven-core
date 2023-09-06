@@ -13,6 +13,10 @@ class DoubleFunctions {
         return (ToDoubleFunction<T>) PrimitiveDouble.INSTANCE;
     }
 
+    static <T> ToDoubleFunction<T> of(java.util.function.ToDoubleFunction<T> f) {
+        return f instanceof ToDoubleFunction ? (ToDoubleFunction<T>) f : f::applyAsDouble;
+    }
+
     static <T, R> ToDoubleFunction<T> map(Function<T, R> f, java.util.function.ToDoubleFunction<R> g) {
         return new DoubleFunctionMap<>(f, g);
     }

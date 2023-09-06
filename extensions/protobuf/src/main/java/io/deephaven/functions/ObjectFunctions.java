@@ -9,6 +9,7 @@ import io.deephaven.qst.type.Type;
 
 import java.util.Objects;
 import java.util.function.Function;
+import java.util.function.Predicate;
 
 class ObjectFunctions {
 
@@ -26,7 +27,11 @@ class ObjectFunctions {
     }
 
     static <T, R, Z> ToObjectFunction<T, Z> map(Function<T, R> f, ToObjectFunction<R, Z> g) {
-        return new ObjectMap<>(f, g);
+        return new ObjectMap<>(f, g, g.returnType());
+    }
+
+    static <T, R, Z> ToObjectFunction<T, Z> map(Function<T, R> f, Function<R, Z> g, GenericType<Z> returnType) {
+        return new ObjectMap<>(f, g, returnType);
     }
 
     static <T, R> ToPrimitiveFunction<T> mapPrimitive(ToObjectFunction<T, R> f, ToPrimitiveFunction<R> g) {
@@ -53,13 +58,8 @@ class ObjectFunctions {
         }
 
         @Override
-        public ToObjectFunction<Object, Object> mapInput(Function<Object, Object> f) {
-            return ToObjectFunction.of(f, RETURN_TYPE);
-        }
-
-        @Override
-        public ToBooleanFunction<Object> mapToBoolean(ToBooleanFunction<Object> g) {
-            return g;
+        public ToBooleanFunction<Object> mapToBoolean(Predicate<Object> g) {
+            return BooleanFunctions.of(g);
         }
 
         @Override
@@ -78,13 +78,13 @@ class ObjectFunctions {
         }
 
         @Override
-        public ToIntFunction<Object> mapToInt(ToIntFunction<Object> g) {
-            return g;
+        public ToIntFunction<Object> mapToInt(java.util.function.ToIntFunction<Object> g) {
+            return IntFunctions.of(g);
         }
 
         @Override
-        public ToLongFunction<Object> mapToLong(ToLongFunction<Object> g) {
-            return g;
+        public ToLongFunction<Object> mapToLong(java.util.function.ToLongFunction<Object> g) {
+            return LongFunctions.of(g);
         }
 
         @Override
@@ -93,8 +93,8 @@ class ObjectFunctions {
         }
 
         @Override
-        public ToDoubleFunction<Object> mapToDouble(ToDoubleFunction<Object> g) {
-            return g;
+        public ToDoubleFunction<Object> mapToDouble(java.util.function.ToDoubleFunction<Object> g) {
+            return DoubleFunctions.of(g);
         }
 
         @Override
@@ -158,16 +158,18 @@ class ObjectFunctions {
 
     private static class ObjectMap<T, R, Z> implements ToObjectFunction<T, Z> {
         private final Function<T, R> f;
-        private final ToObjectFunction<R, Z> g;
+        private final Function<R, Z> g;
+        private final GenericType<Z> returnType;
 
-        public ObjectMap(Function<T, R> f, ToObjectFunction<R, Z> g) {
+        public ObjectMap(Function<T, R> f, Function<R, Z> g, GenericType<Z> returnType) {
             this.f = Objects.requireNonNull(f);
             this.g = Objects.requireNonNull(g);
+            this.returnType = Objects.requireNonNull(returnType);
         }
 
         @Override
         public GenericType<Z> returnType() {
-            return g.returnType();
+            return returnType;
         }
 
         @Override

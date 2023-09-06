@@ -50,11 +50,6 @@ public interface ToLongFunction<T> extends ToPrimitiveFunction<T>, java.util.fun
     }
 
     @Override
-    default ToLongFunction<T> mapInput(Function<T, T> f) {
-        return map(f, this);
-    }
-
-    @Override
     default <R> R walk(Visitor<T, R> visitor) {
         return visitor.visit(this);
     }

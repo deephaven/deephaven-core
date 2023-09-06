@@ -84,7 +84,7 @@ public interface ToBooleanFunction<T> extends ToPrimitiveFunction<T>, Predicate<
      * @return the and-function
      * @param <T> the input type
      */
-    static <T> ToBooleanFunction<T> and(Collection<ToBooleanFunction<T>> functions) {
+    static <T> ToBooleanFunction<T> and(Collection<Predicate<T>> functions) {
         return BooleanFunctions.and(functions);
     }
 
@@ -105,11 +105,6 @@ public interface ToBooleanFunction<T> extends ToPrimitiveFunction<T>, Predicate<
     @Override
     default BooleanType returnType() {
         return Type.booleanType();
-    }
-
-    @Override
-    default ToBooleanFunction<T> mapInput(Function<T, T> f) {
-        return map(f, this);
     }
 
     @Override

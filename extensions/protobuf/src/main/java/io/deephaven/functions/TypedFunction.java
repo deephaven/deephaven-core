@@ -23,17 +23,6 @@ public interface TypedFunction<T> {
      */
     Type<?> returnType();
 
-    /**
-     * Creates the function composition {@code this ∘ f}.
-     *
-     * <p>
-     * Equivalent to {@code x -> theApplyFunction(f.apply(x))}.
-     *
-     * @param f the input function
-     * @return the new function
-     */
-    TypedFunction<T> mapInput(Function<T, T> f);
-
     <R> R walk(Visitor<T, R> visitor);
 
     interface Visitor<T, R> {

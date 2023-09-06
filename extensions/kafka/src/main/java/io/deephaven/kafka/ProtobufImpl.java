@@ -35,6 +35,7 @@ import io.deephaven.kafka.ingest.FieldCopierAdapter;
 import io.deephaven.kafka.ingest.KeyOrValueProcessor;
 import io.deephaven.kafka.ingest.MultiFieldChunkAdapter;
 import io.deephaven.kafka.protobuf.ProtobufConsumeOptions;
+import io.deephaven.protobuf.FieldNumberPath;
 import io.deephaven.protobuf.FieldOptions;
 import io.deephaven.protobuf.FieldPath;
 import io.deephaven.protobuf.ProtobufDescriptorParser;
@@ -116,7 +117,6 @@ class ProtobufImpl {
             final ProtobufFunctions functions = schemaChangeAwareFunctions(descriptor, specs.parserOptions());
             final List<FieldCopier> fieldCopiers = new ArrayList<>(functions.functions().size());
             final KeyOrValueIngestData data = new KeyOrValueIngestData();
-            // arguably, others should be LinkedHashMap as well.
             data.fieldPathToColumnName = new LinkedHashMap<>();
             final Function<FieldPath, String> pathToColumnName = specs.pathToColumnName();
             for (ProtobufFunction f : functions.functions()) {
@@ -137,11 +137,12 @@ class ProtobufImpl {
                 List<FieldCopier> fieldCopiersOut) {
             data.fieldPathToColumnName.put(columnName, columnName);
             columnDefinitionsOut.add(ColumnDefinition.of(columnName, function.returnType()));
-            fieldCopiersOut.add(FieldCopierAdapter.of(PROTOBUF_MESSAGE_OBJ.map(CommonTransform.of(function))));
+            fieldCopiersOut.add(FieldCopierAdapter.of(PROTOBUF_MESSAGE_OBJ.map(ToChunkTypeTransform.of(function))));
         }
 
         @Override
         KeyOrValueProcessor getProcessor(TableDefinition tableDef, KeyOrValueIngestData data) {
+            // noinspection unchecked
             return new KeyOrValueProcessorImpl(
                     MultiFieldChunkAdapter.chunkOffsets(tableDef, data.fieldPathToColumnName),
                     (List<FieldCopier>) data.extra, false);
@@ -224,8 +225,8 @@ class ProtobufImpl {
         private ProtobufFunctions create(Descriptor newDescriptor) {
             if (!originalDescriptor.getFullName().equals(newDescriptor.getFullName())) {
                 throw new IllegalArgumentException(String.format(
-                        "Expected descriptor names to match. expected='%s', actual='%s'. You may need to explicitly set schema_message_name to '%s'",
-                        originalDescriptor.getFullName(), newDescriptor.getFullName(), newDescriptor.getFullName()));
+                        "Expected descriptor names to match. expected='%s', actual='%s'. You may need to explicitly set schema_message_name.",
+                        originalDescriptor.getFullName(), newDescriptor.getFullName()));
             }
             if (newDescriptor == originalDescriptor) {
                 return withMostAppropriateType(ProtobufDescriptorParser.parse(newDescriptor, options));
@@ -338,8 +339,7 @@ class ProtobufImpl {
 
             private TypedFunction<Message> createFunctionFor(Descriptor descriptor) {
                 final Type<?> originalReturnType = originalReturnType();
-                final TypedFunction<Message> newFunction = ParsedStates.this.getOrCreate(descriptor)
-                        .find(originalFunction.path().numberPath())
+                final TypedFunction<Message> newFunction = find(ParsedStates.this.getOrCreate(descriptor), originalFunction.path().numberPath())
                         .map(ProtobufFunction::function)
                         .orElse(null);
                 final TypedFunction<Message> adaptedFunction =
@@ -474,5 +474,14 @@ class ProtobufImpl {
                 }
             });
         }
+    }
+
+    private static Optional<ProtobufFunction> find(ProtobufFunctions f, FieldNumberPath numberPath) {
+        for (ProtobufFunction function : f.functions()) {
+            if (numberPath.equals(function.path().numberPath())) {
+                return Optional.of(function);
+            }
+        }
+        return Optional.empty();
     }
 }

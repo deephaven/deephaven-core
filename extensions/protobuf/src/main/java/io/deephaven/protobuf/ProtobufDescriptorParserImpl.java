@@ -195,7 +195,7 @@ class ProtobufDescriptorParserImpl {
             private ProtobufFunctions functions() {
                 // Note: we might be tempted at this layer to treat null boxed primitives as DH null primitives, but
                 // 1) this parsing layer doesn't / shouldn't need to know about DH nulls
-                // 2) protobuf already has the null object, so it doesn't harm us to propogate it to the calling layer,
+                // 2) protobuf already has the null object, so it doesn't harm us to propagate it to the calling layer,
                 // and for the calling layer to unbox if desired.
                 switch (fd.getJavaType()) {
                     case INT:
@@ -241,7 +241,7 @@ class ProtobufDescriptorParserImpl {
                                     ? e.function()
                                     : BypassOnNull.of(e.function());
                             builder.addFunctions(
-                                    ProtobufFunction.of(prepend(e.path(), fd), value.mapInput(fieldAsMessage)));
+                                    ProtobufFunction.of(prepend(e.path(), fd), fieldAsMessage.map(value)));
                         }
                         return builder.build();
                     }
@@ -258,12 +258,14 @@ class ProtobufDescriptorParserImpl {
                 // For maps fields:
                 // map<KeyType, ValueType> map_field = 1;
                 // The parsed descriptor looks like:
+                // @formatter:off
                 // message MapFieldEntry {
-                // option map_entry = true;
-                // optional KeyType key = 1;
-                // optional ValueType value = 2;
+                //     option map_entry = true;
+                //     optional KeyType key = 1;
+                //     optional ValueType value = 2;
                 // }
                 // repeated MapFieldEntry map_field = 1;
+                // @formatter:on
 
                 if (fd.getMessageType().getFields().size() != 2) {
                     throw new IllegalStateException("Expected map to have exactly 2 field descriptors");
@@ -283,14 +285,18 @@ class ProtobufDescriptorParserImpl {
                 // gotten this far.
                 //
                 // For example, if we have the schema:
+                // @formatter:off
                 // message MyMessage {
-                // map<int32, int32> my_map = 1;
+                //     map<int32, int32> my_map = 1;
                 // }
+                // @formatter:on
                 //
                 // The user should be able to use:
+                // @formatter:off
                 // ProtobufDescriptorParserOptions.builder()
-                // .include(FieldPath.namePathEquals(List.of("my_map")))
-                // .build()
+                //     .fieldOptions(FieldOptions.includeIf(fp -> fp.namePath().equals(List.of("my_map"))))
+                //     .build();
+                // @formatter:on
                 //
                 // This involves parsing ["my_map", "key"] and ["my_map", "value"].
                 //

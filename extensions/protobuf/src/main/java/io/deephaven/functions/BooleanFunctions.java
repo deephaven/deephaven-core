@@ -48,12 +48,12 @@ class BooleanFunctions {
         return new BooleanOr<>(functions);
     }
 
-    static <T> ToBooleanFunction<T> and(Collection<ToBooleanFunction<T>> functions) {
+    static <T> ToBooleanFunction<T> and(Collection<Predicate<T>> functions) {
         if (functions.isEmpty()) {
             return ofTrue();
         }
         if (functions.size() == 1) {
-            return functions.iterator().next();
+            return of(functions.iterator().next());
         }
         return new BooleanAnd<>(functions);
     }
@@ -120,7 +120,7 @@ class BooleanFunctions {
     private static class BooleanAnd<T> implements ToBooleanFunction<T> {
         private final Collection<Predicate<T>> functions;
 
-        public BooleanAnd(Collection<ToBooleanFunction<T>> functions) {
+        public BooleanAnd(Collection<Predicate<T>> functions) {
             this.functions = List.copyOf(functions);
         }
 

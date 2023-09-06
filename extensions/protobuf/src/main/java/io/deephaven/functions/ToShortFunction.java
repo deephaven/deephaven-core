@@ -56,11 +56,6 @@ public interface ToShortFunction<T> extends ToPrimitiveFunction<T> {
     }
 
     @Override
-    default ToShortFunction<T> mapInput(Function<T, T> f) {
-        return map(f, this);
-    }
-
-    @Override
     default <R> R walk(Visitor<T, R> visitor) {
         return visitor.visit(this);
     }

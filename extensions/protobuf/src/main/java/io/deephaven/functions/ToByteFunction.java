@@ -56,11 +56,6 @@ public interface ToByteFunction<T> extends ToPrimitiveFunction<T> {
     }
 
     @Override
-    default ToByteFunction<T> mapInput(Function<T, T> f) {
-        return map(f, this);
-    }
-
-    @Override
     default <R> R walk(Visitor<T, R> visitor) {
         return visitor.visit(this);
     }

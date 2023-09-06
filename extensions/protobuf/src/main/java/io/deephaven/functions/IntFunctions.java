@@ -12,6 +12,10 @@ class IntFunctions {
         return (ToIntFunction<T>) PrimitiveInt.INSTANCE;
     }
 
+    static <T> ToIntFunction<T> of(java.util.function.ToIntFunction<T> f) {
+        return f instanceof ToIntFunction ? (ToIntFunction<T>) f : f::applyAsInt;
+    }
+
     static <T, R> ToIntFunction<T> map(Function<T, R> f, java.util.function.ToIntFunction<R> g) {
         return new IntMap<>(f, g);
     }

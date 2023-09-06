@@ -40,6 +40,7 @@ import java.time.Instant;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.function.Function;
 
 import static io.deephaven.functions.ToBooleanFunction.map;
@@ -491,7 +492,7 @@ public class ProtobufImplSchemaChangeTest {
     }
 
     private static TypedFunction<Message> get(ProtobufFunctions functions, String... namePath) {
-        return functions.find(Arrays.asList(namePath)).map(ProtobufFunction::function).get();
+        return find(functions, Arrays.asList(namePath)).map(ProtobufFunction::function).get();
     }
 
     private static Function<FieldPath, FieldOptions> options(
@@ -529,5 +530,14 @@ public class ProtobufImplSchemaChangeTest {
 
     private static ToBooleanFunction<FieldPath> namePathStartsWith(List<String> prefix) {
         return fieldPath -> fieldPath.startsWith(prefix);
+    }
+
+    private static Optional<ProtobufFunction> find(ProtobufFunctions f, List<String> namePath) {
+        for (ProtobufFunction function : f.functions()) {
+            if (namePath.equals(function.path().namePath())) {
+                return Optional.of(function);
+            }
+        }
+        return Optional.empty();
     }
 }

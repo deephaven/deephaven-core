@@ -36,7 +36,7 @@ import static io.deephaven.kafka.UnboxTransform.unboxInt;
 import static io.deephaven.kafka.UnboxTransform.unboxLong;
 import static io.deephaven.kafka.UnboxTransform.unboxShort;
 
-class CommonTransform {
+class ToChunkTypeTransform {
 
     private static final ToByteFunction<Boolean> BOOLEAN_AS_BYTE = BooleanUtils::booleanAsByte;
     private static final ToLongFunction<Instant> EPOCH_NANOS = DateTimeUtils::epochNanos;
@@ -112,12 +112,12 @@ class CommonTransform {
 
         @Override
         public TypedFunction<T> visit(ToPrimitiveFunction<T> f) {
-            return CommonTransform.of(f);
+            return ToChunkTypeTransform.of(f);
         }
 
         @Override
         public TypedFunction<T> visit(ToObjectFunction<T, ?> f) {
-            return CommonTransform.of(f);
+            return ToChunkTypeTransform.of(f);
         }
     }
 

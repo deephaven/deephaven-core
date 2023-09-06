@@ -136,7 +136,9 @@ public final class ProtobufDescriptorParser {
      *
      * ^1 Unsigned 32-bit and 64-bit integers are represented using their signed counterpart, with the top bit being
      * stored in the sign bit. This matches the Java protobuf behavior,
-     * <a href="https://protobuf.dev/programming-guides/proto3/#scalar">scalar</a>.
+     * <a href="https://protobuf.dev/programming-guides/proto3/#scalar">scalar</a>. Users may use
+     * {@link Integer#toUnsignedLong(int)} or {@link Long#toUnsignedString(long)} /
+     * {@link java.math.BigInteger#BigInteger(String)} to adapt as appropriate.
      *
      * <p>
      * ^2 The default behavior for {@link Type#BYTES bytes} is {@code byte[]}. To parse as

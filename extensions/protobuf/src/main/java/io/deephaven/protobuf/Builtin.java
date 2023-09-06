@@ -39,6 +39,16 @@ import java.time.Instant;
 import java.util.List;
 import java.util.Objects;
 
+/**
+ * The implementation of the {@link SingleValuedMessageParser} may seem weird; and I agree, they are. Unfortunately,
+ * the confluent serdes implementation treats nested well-known types as {@link com.google.protobuf.DynamicMessage}
+ * instead of their well-known type (ie, {@link Timestamp}).
+ *
+ * <p>
+ *
+ *
+ * @see <a href="https://github.com/confluentinc/schema-registry/issues/2708">https://github.com/confluentinc/schema-registry/issues/2708</a>
+ */
 class Builtin {
     static List<SingleValuedMessageParser> parsers() {
         // Update javadoc in io.deephaven.protobuf.SingleValuedMessageParser.builtin when editing
