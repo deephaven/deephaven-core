@@ -103,7 +103,7 @@ $ git checkout vX.Y.0
 $ git checkout -b release/vX.Y.1
 $ git cherry-pick <...>
 #
-# Edit files, updating from `X.Y` to `X.Y.1`
+# Edit files, updating from X.Y.0 to X.Y.1, and git add them.
 #
 # Look in the last section "Version bump in preparation of next release" for a list of
 # files to update to the right version you are producing.
