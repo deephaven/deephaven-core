@@ -289,14 +289,9 @@ def protobuf_spec(
         schema_message_name: Optional[str] = None,
         include: Optional[List[str]] = None,
 ) -> KeyValueSpec:
-    """The kafka protobuf specs. This will fetch the protobuf descriptor for the schema subject from the schema registry
-    using version schema_version and create protobuf message parsing functions according to parsing options. These
-    functions will be adapted to handle schema changes.
-
-    For purposes of reproducibility across restarts where schema changes may occur, it is advisable for callers
-    to set a specific schema_version. This will ensure the resulting table definition will not change across restarts.
-    This gives the caller an explicit opportunity to update any downstream consumers when updating schema_version if
-    necessary.
+    """Creates a spec for how to use Kafka data when consuming a Kafka stream to a Deephaven table. This will fetch the
+    protobuf descriptor for the schema subject from the schema registry using version schema_version and create protobuf
+    message parsing functions according to parsing options. These functions will be adapted to handle schema changes.
 
     Args:
         schema (str): the schema subject name
