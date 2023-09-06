@@ -69,7 +69,7 @@ def init_jvm(*args, **kwargs):
 
 def init_py():
     """Finishes starting Python to be usable from inside of a Java process. Not intended to be called in cases
-    where there process was start as Python, and Java was started from inside Python.
+    where the process was started as Python, and Java was started from inside Python.
     """
 
     import jpy
