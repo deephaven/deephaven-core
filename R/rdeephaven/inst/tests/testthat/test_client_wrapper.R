@@ -305,8 +305,8 @@ test_that("Running Client$new with wrong argument types gives good errors", {
 
 test_that("A Client created from an Rcpp::XPtr is functional.", {
   client <- Client$new(target = target)
-  client$run_script("from deephaven import empty_table; t = empty_table(1).update(\"A=42\")")
-  client_xptr <- client$INTERNAL_client()
+  client$empty_table(1)$update("A = 42")$bind_to_variable("t")
+  client_xptr <- client$.internal_rcpp_object$internal_client()
   client2 <- Client$new(client_xptr)
   t <- client2$open_table("t")
   df <- t$as_data_frame()
@@ -316,7 +316,7 @@ test_that("A Client created from an Rcpp::XPtr is functional.", {
 
 test_that("make_table_handle_from_ticket works.", {
   client <- Client$new(target = target)
-  client$run_script("from deephaven import empty_table; t = empty_table(1).update(\"A=43\")")
+  client$empty_table(1)$update("A = 43")$bind_to_variable("t")
   t <- client$make_table_handle_from_ticket("s/t")
   df <- t$as_data_frame()
   expect_true(df[1,1] == 43)

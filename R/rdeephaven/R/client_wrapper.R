@@ -180,9 +180,6 @@ Client <- R6Class("Client",
     },
     close = function() {
       self$.internal_rcpp_object$close()
-    },
-    INTERNAL_client = function() {
-      return(self$.internal_rcpp_object$internal_client())
     }
   ),
   private = list(
