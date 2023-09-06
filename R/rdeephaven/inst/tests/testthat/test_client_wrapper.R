@@ -314,13 +314,4 @@ test_that("A Client created from an Rcpp::XPtr is functional.", {
   client$close()
 })
 
-test_that("ticket_to_table works.", {
-  client <- Client$new(target = target)
-  client$empty_table(1)$update("A = 43")$bind_to_variable("t")
-  t <- client$ticket_to_table("s/t")
-  df <- t$as_data_frame()
-  expect_true(df[1,1] == 43)
-  client$close()
-})
-
 rm(target)

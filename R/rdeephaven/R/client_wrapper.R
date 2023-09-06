@@ -170,10 +170,6 @@ Client <- R6Class("Client",
         stop(paste0("'table_object' must be a single data frame, tibble, arrow table, or record batch reader. Got an object of class ", table_object_class[[1]], "."))
       }
     },
-    ticket_to_table = function(ticket) {
-      verify_string("ticket", ticket, TRUE)
-      return(TableHandle$new(self$.internal_rcpp_object$make_table_handle_from_ticket(ticket)))
-    },
     run_script = function(script) {
       verify_string("script", script, TRUE)
       self$.internal_rcpp_object$run_script(script)

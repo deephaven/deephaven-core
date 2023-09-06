@@ -49,9 +49,6 @@ demo_table = (empty_table(table_size)
         pa_table = self.session.open_table('demo_table').to_arrow()
         df = pa_table.to_pandas()
         self.assertEquals(1000, len(df.index))
-        pa_table = self.session.ticket_to_table('s/demo_table'.encode(encoding='ascii')).to_arrow()
-        df = pa_table.to_pandas()
-        self.assertEquals(1000, len(df.index))
 
     def test_open_invalid_table(self):
         with self.assertRaises(DHError):
