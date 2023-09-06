@@ -61,6 +61,7 @@ import io.deephaven.engine.util.*;
 import io.deephaven.engine.util.systemicmarking.SystemicObject;
 import io.deephaven.qst.table.AggregateAllTable;
 import io.deephaven.util.annotations.InternalUseOnly;
+import io.deephaven.util.annotations.ReferentialIntegrity;
 import io.deephaven.vector.Vector;
 import io.deephaven.engine.updategraph.NotificationQueue;
 import io.deephaven.engine.table.impl.perf.QueryPerformanceRecorder;
@@ -950,6 +951,7 @@ public class QueryTable extends BaseTable<QueryTable> {
 
     public static class FilteredTable extends QueryTable implements WhereFilter.RecomputeListener {
         private final QueryTable source;
+        @ReferentialIntegrity
         private final WhereFilter[] filters;
         private boolean refilterMatchedRequested = false;
         private boolean refilterUnmatchedRequested = false;
@@ -961,7 +963,7 @@ public class QueryTable extends BaseTable<QueryTable> {
             this.source = source;
             this.filters = filters;
             for (final WhereFilter f : filters) {
-                if (f instanceof LivenessReferent) {
+                if (f instanceof LivenessReferent && f.isRefreshing()) {
                     manage((LivenessReferent) f);
                 }
             }
@@ -1312,22 +1314,6 @@ public class QueryTable extends BaseTable<QueryTable> {
                         return result.getValue();
                     });
                 });
-    }
-
-    @SuppressWarnings("WeakerAccess")
-    protected WritableRowSet filterRows(RowSet currentMapping, RowSet fullSet, boolean usePrev,
-            WhereFilter... filters) {
-        WritableRowSet matched = currentMapping.copy();
-
-        for (WhereFilter filter : filters) {
-            if (Thread.interrupted()) {
-                throw new CancellationException("interrupted while filtering");
-            }
-            try (final SafeCloseable ignored = matched) { // Ensure we close old matched
-                matched = filter.filter(matched, fullSet, this, usePrev);
-            }
-        }
-        return matched;
     }
 
     @Override

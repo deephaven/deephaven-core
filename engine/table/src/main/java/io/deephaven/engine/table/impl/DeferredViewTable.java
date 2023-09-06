@@ -51,8 +51,9 @@ public class DeferredViewTable extends RedefinableTable<DeferredViewTable> {
         this.deferredFilters = deferredFilters == null ? WhereFilter.ZERO_LENGTH_SELECT_FILTER_ARRAY : deferredFilters;
         for (final WhereFilter sf : this.deferredFilters) {
             sf.init(parentDefinition);
-            if (sf instanceof LivenessReferent) {
+            if (sf instanceof LivenessReferent && sf.isRefreshing()) {
                 manage((LivenessReferent) sf);
+                setRefreshing(true);
             }
         }
 
@@ -61,7 +62,10 @@ public class DeferredViewTable extends RedefinableTable<DeferredViewTable> {
         final boolean haveView = this.deferredViewColumns.length > 0;
         final boolean haveFilter = this.deferredFilters.length > 0;
 
-        manage(tableReference);
+        if (tableReference.isRefreshing()) {
+            manage(tableReference);
+            setRefreshing(true);
+        }
 
         if (haveDrop && haveFilter) {
             throw new IllegalStateException("Why do we have a drop and a filter all at the same time?");
@@ -269,7 +273,6 @@ public class DeferredViewTable extends RedefinableTable<DeferredViewTable> {
     protected DeferredViewTable copy() {
         final DeferredViewTable result = new DeferredViewTable(definition, description, new SimpleTableReference(this),
                 null, null, null);
-        result.setRefreshing(isRefreshing());
         LiveAttributeMap.copyAttributes(this, result, ak -> true);
         return result;
     }
@@ -281,19 +284,15 @@ public class DeferredViewTable extends RedefinableTable<DeferredViewTable> {
         for (int cdi = 0; cdi < newView.length; ++cdi) {
             newView[cdi] = new SourceColumn(cDefs.get(cdi).getName());
         }
-        DeferredViewTable deferredViewTable = new DeferredViewTable(newDefinition, description + "-redefined",
+        return new DeferredViewTable(newDefinition, description + "-redefined",
                 new SimpleTableReference(this), null, newView, null);
-        deferredViewTable.setRefreshing(isRefreshing());
-        return deferredViewTable;
     }
 
     @Override
     protected Table redefine(TableDefinition newDefinitionExternal, TableDefinition newDefinitionInternal,
             SelectColumn[] viewColumns) {
-        DeferredViewTable deferredViewTable = new DeferredViewTable(newDefinitionExternal, description + "-redefined",
+        return new DeferredViewTable(newDefinitionExternal, description + "-redefined",
                 new SimpleTableReference(this), null, viewColumns, null);
-        deferredViewTable.setRefreshing(isRefreshing());
-        return deferredViewTable;
     }
 
     /**
@@ -306,6 +305,13 @@ public class DeferredViewTable extends RedefinableTable<DeferredViewTable> {
                 manage(t);
             }
         }
+
+        /**
+         * Is the node updating?
+         *
+         * @return true if the node is updating; false otherwise.
+         */
+        public abstract boolean isRefreshing();
 
         /**
          * Returns the table in a form that the user can run queries on it. This may be as simple as returning a
@@ -376,6 +382,11 @@ public class DeferredViewTable extends RedefinableTable<DeferredViewTable> {
         public SimpleTableReference(Table table) {
             super(table);
             this.table = table;
+        }
+
+        @Override
+        public boolean isRefreshing() {
+            return table.isRefreshing();
         }
 
         @Override

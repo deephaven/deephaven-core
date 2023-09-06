@@ -25,7 +25,7 @@ public abstract class ComposedFilter extends WhereFilterLivenessArtifactImpl imp
         this.componentFilters = componentFilters;
 
         for (WhereFilter f : this.componentFilters) {
-            if (f instanceof LivenessArtifact) {
+            if (f instanceof LivenessArtifact && f.isRefreshing()) {
                 manage((LivenessArtifact) f);
             }
         }
