@@ -101,7 +101,20 @@ $ git fetch upstream
 $ git checkout vX.Y.0
 $ git checkout -b release/vX.Y.1
 $ git cherry-pick <...>
-# Edit files, updating from `X.Y.0` to `X.Y.1`, and git add them.
+# Edit files, updating from `X.Y.0` to `X.Y.1`, and git add them. Currently the list is:
+#
+# * authorization-codegen/protoc-gen-contextual-auth-wiring
+# * authorization-codegen/protoc-gen-service-auth-wiring
+# * buildSrc/src/main/groovy/io.deephaven.common-conventions.gradle
+# * py/client-ticking/README.md
+# * py/client-ticking/setup.py
+# * py/client/README.md
+# * py/client/pydeephaven/__init__.py
+# * py/client/setup.py
+# * py/embedded-server/deephaven_server/__init__.py
+# * py/server/deephaven/__init__.py
+# * R/rdeephaven/DESCRIPTION
+#
 # See https://github.com/deephaven/deephaven-core/issues/3466 for future improvements to this process.
 $ ...
 $ git commit -m "Bump to X.Y.1"
