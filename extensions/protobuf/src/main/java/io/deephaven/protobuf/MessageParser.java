@@ -66,7 +66,7 @@ public interface MessageParser {
      * </tr>
      * <tr>
      * <td>{@link com.google.protobuf.BytesValue}</td>
-     * <td>{@code byte[]}</td>
+     * <td>{@code byte[]} (or {@link com.google.protobuf.ByteString}, see {@link FieldOptions#bytes()})</td>
      * </tr>
      * <tr>
      * <td>{@link com.google.protobuf.Any}</td>
