@@ -121,14 +121,6 @@ def _dict_to_j_func(dict_mapping: Dict, mapped_only: bool) -> Callable[[str], st
     return _JPythonTools.functionFromMapWithDefault(java_map, None)
 
 
-def _build_column_definitions(ts: List[Tuple[str, DType]]) -> List[Column]:
-    """Converts a list of two-element tuples in the form of (name, DType) to a list of Columns."""
-    cols = []
-    for t in ts:
-        cols.append(Column(*t))
-    return cols
-
-
 def consume(
         kafka_config: Dict,
         topic: str,
@@ -336,13 +328,13 @@ def avro_spec(
         raise DHError(e, "failed to create a Kafka key/value spec") from e
 
 
-def json_spec(col_defs: List[Tuple[str, DType]], mapping: Dict = None) -> KeyValueSpec:
+def json_spec(col_defs: Union[Dict[str, DType], List[Tuple[str, DType]]], mapping: Dict = None) -> KeyValueSpec:
     """Creates a spec for how to use JSON data when consuming a Kafka stream to a Deephaven table.
 
     Args:
-        col_defs (List[Tuple[str, DType]]):  a list of tuples specifying names and types for columns to be
-            created on the resulting Deephaven table.  Tuples contain two elements, a string for column name
-            and a Deephaven type for column data type.
+        col_defs (Union[Dict[str, DType], List[Tuple[str, DType]]]): the column definitions, either a map of column
+            names and Deephaven types, or a list of tuples with two elements, a string for column name and a Deephaven
+            type for column data type.
         mapping (Dict):  a dict mapping JSON fields to column names defined in the col_defs
             argument.  Fields starting with a '/' character are interpreted as a JSON Pointer (see RFC 6901,
             ISSN: 2070-1721 for details, essentially nested fields are represented like "/parent/nested").
@@ -357,7 +349,11 @@ def json_spec(col_defs: List[Tuple[str, DType]], mapping: Dict = None) -> KeyVal
         DHError
     """
     try:
-        col_defs = [c.j_column_definition for c in _build_column_definitions(col_defs)]
+        if isinstance(col_defs, dict):
+            col_defs = [Column(k, v).j_column_definition for k, v in col_defs.items()]
+        else:
+            col_defs = [Column(*t).j_column_definition for t in col_defs]
+
         if mapping is None:
             return KeyValueSpec(j_spec=_JKafkaTools_Consume.jsonSpec(col_defs))
         mapping = j_hashmap(mapping)
