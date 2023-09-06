@@ -92,6 +92,7 @@ public class JsWidget extends HasEventHandling implements ServerObject, WidgetMe
     public void close() {
         suppressEvents();
         closeStream();
+        connection.releaseTicket(getTicket());
     }
 
     public Promise<JsWidget> refetch() {
